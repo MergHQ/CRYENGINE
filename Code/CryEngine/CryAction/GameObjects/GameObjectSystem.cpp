@@ -476,7 +476,6 @@ void CGameObjectSystem::GetMemoryUsage(ICrySizer* s) const
 	s->AddObject(m_extensionInfo);
 	s->AddObject(m_dispatch);
 	s->AddObject(m_postUpdateObjects);
-	s->AddObject(m_schedulingParams);
 
 	IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
 	while (IEntity* pEnt = pIt->Next())

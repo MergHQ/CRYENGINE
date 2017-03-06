@@ -28,6 +28,7 @@ struct IGeomCacheRenderNode;
 struct ICharacterInstance;
 struct IParticleEmitter;
 struct IStatObj;
+struct INetEntity;
 
 //////////////////////////////////////////////////////////////////////////
 struct IGameObject;
@@ -390,6 +391,15 @@ enum EEntityEvent
 
 	//! Called when the entity is removed from the list of entities that are updated.
 	ENTITY_EVENT_DEACTIVATED,
+
+	//! Called when the entity's network authority changes. Only the server is able
+	//! to delegate/revoke the authority to/from the client.
+	//! nParam[0] stores the new authority value.
+	ENTITY_EVENT_SET_AUTHORITY,
+
+	//! Sent once to the to the client when the special player entity has spawned.
+	//! \see ENTITY_FLAG_LOCAL_PLAYER
+	ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER,
 
 	//! Called when the entity should be added to the radar.
 	ENTITY_EVENT_ADD_TO_RADAR,
@@ -1260,6 +1270,13 @@ public:
 	virtual int LoadGeomCache(int nSlot, const char* sFilename) = 0;
 #endif
 
+	//! Returns the network proxy associated with the entity. 
+	//! Use the proxy to modify the entity's network behavior.
+	virtual INetEntity* GetNetEntity() = 0;
+
+	//! \details Do not use. Provides a way for CGameObject to replace NetEntity with itself.
+	virtual INetEntity* AssignNetEntityLegacy(INetEntity* ptr) = 0;
+
 	//! Loads a new particle emitter to the specified slot, or to next available slot.
 	//! If same character is already loaded in this slot, operation is ignored.
 	//! If this slot number is occupied by different kind of object it is overwritten.
@@ -1443,3 +1460,12 @@ inline void IEntity::SetOpacity(float fAmount)
 }
 
 ILINE EntityId IEntityComponent::GetEntityId() const { return m_pEntity->GetId(); }
+
+ILINE void IEntityComponent::NetMarkAspectsDirty(const NetworkAspectType aspects)
+{
+	if (INetEntity *pNetEntity = GetEntity()->GetNetEntity())
+	{
+		pNetEntity->MarkAspectsDirty(aspects);
+	}
+}
+

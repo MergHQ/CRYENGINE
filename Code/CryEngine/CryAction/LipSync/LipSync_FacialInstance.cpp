@@ -201,10 +201,6 @@ void CLipSync_FacialInstance::SetChannelId(uint16 id)
 {
 }
 
-void CLipSync_FacialInstance::SetAuthority(bool auth)
-{
-}
-
 void CLipSync_FacialInstance::PostUpdate(float frameTime)
 {
 }

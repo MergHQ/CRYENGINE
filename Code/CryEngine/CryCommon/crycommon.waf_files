@@ -579,6 +579,7 @@
       "CryNetwork/SerializeBuffer.h",
       "CryNetwork/SerializeFwd.h",
       "CryNetwork/SimpleSerialize.h",
+      "CryNetwork/INetEntity.h",
       "CryNetwork/INetwork.h",
       "CryNetwork/INetworkService.h",
       "CryNetwork/INotificationNetwork.h",

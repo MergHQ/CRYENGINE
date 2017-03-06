@@ -21,13 +21,31 @@ CPlayerView::~CPlayerView()
 void CPlayerView::Initialize()
 {
 	m_pPlayer = GetEntity()->GetComponent<CPlayer>();
+}
 
+void CPlayerView::InitLocalPlayer()
+{
 	m_pView = gEnv->pGameFramework->GetIViewSystem()->CreateView(); // non-owning
 	m_pView->LinkTo(GetEntity(), this);
 	gEnv->pGameFramework->GetIViewSystem()->SetActiveView(m_pView);
 
 	// Default view rotation to the entity's orientation
 	m_viewRotation = GetEntity()->GetWorldRotation();
+}
+
+uint64 CPlayerView::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER);
+}
+
+void CPlayerView::ProcessEvent(SEntityEvent& event)
+{
+	switch (event.event)
+	{
+		case ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER:
+			InitLocalPlayer();
+		break;
+	}
 }
 
 void CPlayerView::UpdateView(SViewParams &viewParams)

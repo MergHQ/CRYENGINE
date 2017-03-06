@@ -28,6 +28,7 @@
 #include "ProximityTriggerSystem.h"
 #include "EntitySlot.h"
 #include <CryNetwork/ISerialize.h>
+#include "NetEntity.h"
 #include "EntityLayer.h"
 #include "EntityLoadManager.h"
 #include <CrySystem/Profilers/IStatoscope.h>
@@ -1074,6 +1075,9 @@ void CEntitySystem::Update()
 		}
 
 		PurgeDeferredCollisionEvents();
+
+		// Doesn't depend on anything, previously called in CGameObject::PostUpdate()
+		CNetEntity::UpdateSchedulingProfiles();
 	}
 
 	if (CVar::pDrawAreas->GetIVal() != 0 || CVar::pDrawAreaDebug->GetIVal() != 0)

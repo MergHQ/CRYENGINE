@@ -12,6 +12,7 @@
 #include <CryCore/Containers/CryArray.h>
 #include <CryCore/BitMask.h>
 #include <CryNetwork/ISerialize.h>
+#include <CryNetwork/INetEntity.h>
 
 struct SEntitySpawnParams;
 struct SEntityEvent;
@@ -124,6 +125,22 @@ public:
 	virtual void                         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) {}
 
 	virtual struct IEntityPropertyGroup* GetPropertyGroup()                                                                   { return nullptr; }
+
+	//! \brief Network serialization. Override to provide a mask of active network aspects
+	//! used by this component. Called once during binding to network.
+	virtual NetworkAspectType GetNetSerializeAspectMask() const { return 0; }
+
+	//! \brief Network serialization. Will be called for each active aspect for both reading and writing.
+	//! @param[in,out] ser Serializer for reading/writing values.
+	//! @param[in] aspect The number of the aspect being serialized.
+	//! @param[in] profile Can be ignored, used by CryPhysics only.
+	//! @param[in] flags Can be ignored, used by CryPhysics only.
+	//! \see ISerialize::Value()
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; };
+
+	//! \brief Call this to trigger aspect synchronization over the network. A shortcut.
+	//! \see INetEntity::MarkAspectsDirty()
+	virtual void NetMarkAspectsDirty(const NetworkAspectType aspects); // The definition is in IEntity.h	
 
 	//! SaveGame serialization. Override to specify what to serialize in a saved game.
 	//! \param ser Serializing stream. Use IsReading() to decide read/write phase. Use Value() to read/write a property.

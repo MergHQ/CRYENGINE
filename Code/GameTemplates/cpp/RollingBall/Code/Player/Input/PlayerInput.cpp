@@ -1,16 +1,27 @@
 #include "StdAfx.h"
 #include "PlayerInput.h"
+#include "Player/Player.h"
+#include "Player/Movement/PlayerMovement.h"
 
+#include <CryNetwork/Rmi.h>
 #include <CryGame/IGameFramework.h>
 
-#include "Player/Player.h"
-
 CRYREGISTER_CLASS(CPlayerInput);
+
+CPlayerInput::~CPlayerInput()
+{
+	gEnv->pGameFramework->GetIActionMapManager()->RemoveExtraActionListener(this);
+}
 
 void CPlayerInput::Initialize()
 {
 	m_pPlayer = GetEntity()->GetComponent<CPlayer>();
 
+	SRmi<RMI_WRAP(&CPlayerInput::SvInput)>::Register(this, eRAT_NoAttach, true, eNRT_ReliableOrdered);
+}
+
+void CPlayerInput::InitLocalPlayer()
+{
 	// NOTE: Since CRYENGINE 5.3, the game is responsible to initialize the action maps
 	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 	pActionMapManager->InitActionMaps("Libs/config/defaultprofile.xml");
@@ -30,7 +41,9 @@ void CPlayerInput::Initialize()
 
 uint64 CPlayerInput::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_UPDATE);
+	return BIT64(ENTITY_EVENT_UPDATE)
+		| BIT64(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER)
+	;
 };
 
 void CPlayerInput::ProcessEvent(SEntityEvent& event)
@@ -42,6 +55,9 @@ void CPlayerInput::ProcessEvent(SEntityEvent& event)
 			SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
 			Update(*pCtx);
 		}
+		break;
+		case ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER:
+			InitLocalPlayer();
 		break;
 	}
 }
@@ -71,7 +87,7 @@ void CPlayerInput::OnPlayerRespawn()
 	m_lookOrientation = IDENTITY;
 }
 
-void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type)
+void CPlayerInput::HandleInputFlagChange(TInputFlags flags, int activationMode, EInputFlagType type)
 {
 	switch (type)
 	{
@@ -97,6 +113,9 @@ void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, 
 		}
 		break;
 	}
+
+	// Can be done additionally in Update() to update the look direction.
+	NetMarkAspectsDirty(kInputAspect);
 }
 
 void CPlayerInput::InitializeActionHandler()
@@ -108,6 +127,7 @@ void CPlayerInput::InitializeActionHandler()
 
 	m_actionHandler.AddHandler(ActionId("mouse_rotateyaw"), &CPlayerInput::OnActionMouseRotateYaw);
 	m_actionHandler.AddHandler(ActionId("mouse_rotatepitch"), &CPlayerInput::OnActionMouseRotatePitch);
+	m_actionHandler.AddHandler(ActionId("shoot"), &CPlayerInput::OnActionShoot);
 }
 
 void CPlayerInput::OnAction(const ActionId &action, int activationMode, float value)
@@ -150,5 +170,80 @@ bool CPlayerInput::OnActionMouseRotateYaw(EntityId entityId, const ActionId& act
 bool CPlayerInput::OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value)
 {
 	m_mouseDeltaRotation.y -= value;
+	return true;
+}
+
+bool CPlayerInput::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
+{
+	if (aspect == kInputAspect)
+	{
+		ser.BeginGroup("PlayerInput");
+
+		auto inputs = m_inputFlags;
+		auto prevState = m_inputFlags;
+
+		ser.Value("m_inputFlags", m_inputFlags, 'ui8');
+
+		if (ser.IsReading())
+		{
+			auto changedKeys = inputs ^ m_inputFlags;
+
+			auto pressedKeys = changedKeys & inputs;
+			if (pressedKeys != 0)
+			{
+				HandleInputFlagChange(pressedKeys, eIS_Pressed);
+			}
+
+			auto releasedKeys = changedKeys & prevState;
+			if (releasedKeys != 0)
+			{
+				HandleInputFlagChange(pressedKeys, eIS_Released);
+			}
+		}
+
+		// Serialize the player look orientation
+		ser.Value("m_lookOrientation", m_lookOrientation, 'ori3');
+
+		ser.EndGroup();
+	}
+
+	return true;
+}
+
+struct SvInputParams
+{
+	Vec3 pos;
+	void SerializeWith(TSerialize ser)
+	{
+		ser.Value("pos", pos, 'wrld');
+	}
+};
+
+bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	if (activationMode != eIS_Pressed)
+		return false;
+
+	static bool toServer = true;
+	if (toServer)
+	{
+		SRmi<RMI_WRAP(&CPlayerInput::SvInput)>::Invoke(this,
+			SvInputParams{ GetEntity()->GetPos() }, eRMI_ToServer);
+	}
+	else
+	{
+		SRmi<RMI_WRAP(&CPlayerMovement::SvMovement)>::Invoke(
+			GetEntity()->GetComponent<CPlayerMovement>(),
+			MovementParams{ GetEntity()->GetPos() }, eRMI_ToServer);
+	}
+	toServer = !toServer;
+
+	return true;
+}
+
+bool CPlayerInput::SvInput(SvInputParams&& p, INetChannel *)
+{
+	m_pPlayer->DisplayText(p.pos, stack_string().Format("%s -> Server",
+		GetEntity()->GetName()));
 	return true;
 }

@@ -1512,6 +1512,23 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			}
 		}
 		break;
+	case ENTITY_EVENT_SET_AUTHORITY:
+		{
+			const bool auth = event.nParam[0] ? true : false;
+			// we've been given authority of this entity, mark the physics as changed
+			// so that we send a current position, failure to do this can result in server/client
+			// disagreeing on where the entity is. most likely to happen on restart
+			if (auth)
+			{
+				CHANGED_NETWORK_STATE(this, eEA_Physics | ASPECT_RANK_CLIENT);
+
+				if (g_pGame->IsGameSessionHostMigrating())
+				{
+					// If we're migrating, we've probably set our selected item before we were allowed to, resend it here
+					CHANGED_NETWORK_STATE(this, ASPECT_CURRENT_ITEM);
+				}
+			}
+		}
 	}
 }
 
@@ -4671,23 +4688,6 @@ void CPlayer::UpdateHealthRegeneration(float fHealth, float frameTime)
 				CCCPOINT_IF(! IsClient(), PlayerState_OtherPlayerHealthRegenerate);
 				SetHealth(min(fHealth+regenAmount,maxHealth));
 			}
-		}
-	}
-}
-
-void CPlayer::SetAuthority( bool auth )
-{
-	// we've been given authority of this entity, mark the physics as changed
-	// so that we send a current position, failure to do this can result in server/client
-	// disagreeing on where the entity is. most likely to happen on restart
-	if(auth)
-	{
-		CHANGED_NETWORK_STATE(this, eEA_Physics|ASPECT_RANK_CLIENT);
-
-		if (g_pGame->IsGameSessionHostMigrating())
-		{
-			// If we're migrating, we've probably set our selected item before we were allowed to, resend it here
-			CHANGED_NETWORK_STATE(this, ASPECT_CURRENT_ITEM);
 		}
 	}
 }

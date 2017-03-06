@@ -211,7 +211,7 @@ CActionGame::CActionGame(CScriptRMI* pScriptRMI)
 	, m_pGameClientNub(0)
 	, m_pGameServerNub(0)
 	, m_pGameContext(0)
-	, m_pNetContext(0)
+	, m_pNetContext(gEnv->pNetContext)
 	, m_pGameTokenSystem(0)
 	, m_pPhysicalWorld(0)
 	, m_pGameStats(0)
@@ -1078,11 +1078,6 @@ IActor* CActionGame::GetClientActor()
 	}
 
 	return m_pClientActor;
-}
-
-bool CActionGame::ControlsEntity(EntityId id)
-{
-	return m_pGameContext->ControlsEntity(id);
 }
 
 bool CActionGame::Update()

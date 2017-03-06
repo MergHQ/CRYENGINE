@@ -435,4 +435,10 @@
       <Item Name="Value" Condition="m_index == 9">*($T10*)m_data.c</Item>
     </Expand>
   </Type>
+
+
+  <Type Name="SNetMessageDef">
+    <DisplayString>{description,s} (SNetMessageDef)</DisplayString>
+  </Type>
+
 </AutoVisualizer>

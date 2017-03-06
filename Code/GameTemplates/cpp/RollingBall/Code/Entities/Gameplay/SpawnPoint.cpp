@@ -3,14 +3,16 @@
 
 #include "GamePlugin.h"
 
-#include "Player/Player.h"
+#include <CryEntitySystem/IEntitySystem.h>
+
+CRYREGISTER_CLASS(CSpawnPoint);
 
 class CSpawnPointRegistrator
 	: public IEntityRegistrator
 {
 	virtual void Register() override
 	{
-		CGamePlugin::RegisterEntityWithDefaultComponent<CSpawnPoint>("SpawnPoint");
+		RegisterEntityWithDefaultComponent<CSpawnPoint>("SpawnPoint");
 	}
 
 	virtual void Unregister() override {}

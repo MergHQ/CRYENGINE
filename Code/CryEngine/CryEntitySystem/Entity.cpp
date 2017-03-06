@@ -20,6 +20,7 @@
 #include "AreaProxy.h"
 #include "FlowGraphProxy.h"
 #include <CryNetwork/ISerialize.h>
+#include "NetEntity.h"
 #include "TriggerProxy.h"
 #include "EntityNodeProxy.h"
 #include "PartitionGrid.h"
@@ -62,6 +63,7 @@ Matrix34 sIdentityMatrix = Matrix34::CreateIdentity();
 
 //////////////////////////////////////////////////////////////////////////
 CEntity::CEntity(SEntitySpawnParams& params)
+	: m_pNetEntity(new CNetEntity(this))	// #netentity Will be addressed in BindToNetwork-refactoring
 {
 	m_render.m_pEntity = this;
 	m_physics.m_pEntity = this;
@@ -2696,6 +2698,19 @@ void CEntity::ComputeForwardDir() const
 
 		m_bDirtyForwardDir = false;
 	}
+}
+
+INetEntity* CEntity::AssignNetEntityLegacy(INetEntity* ptr)
+{
+	auto ret = m_pNetEntity.get();
+	m_pNetEntity.release();
+	m_pNetEntity.reset(ptr);
+	return ret;
+}
+
+INetEntity* CEntity::GetNetEntity()
+{
+	return m_pNetEntity.get();
 }
 
 uint32 CEntity::GetEditorObjectID() const

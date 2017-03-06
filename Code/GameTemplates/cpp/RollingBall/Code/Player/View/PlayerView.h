@@ -22,6 +22,10 @@ public:
 
 	// IEntityComponent
 	virtual void Initialize() override;
+	virtual uint64 GetEventMask() const override;
+	virtual void ProcessEvent(SEntityEvent& event) override;
+
+	void InitLocalPlayer();
 
 	// IGameObjectView
 	virtual void UpdateView(SViewParams &viewParams) override;

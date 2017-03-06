@@ -215,13 +215,13 @@ public:
 	virtual CTimeValue                    GetServerTime();
 	virtual uint16                        GetGameChannelId(INetChannel* pNetChannel);
 	virtual INetChannel*                  GetNetChannel(uint16 channelId);
+	virtual void                          SetServerChannelPlayerId(uint16 channelId, EntityId id);
+	virtual const SEntitySchedulingProfiles* GetEntitySchedulerProfiles(IEntity* pEnt);
 	virtual bool                          IsChannelOnHold(uint16 channelId);
 	virtual IGameObject*                  GetGameObject(EntityId id);
 	virtual bool                          GetNetworkSafeClassId(uint16& id, const char* className);
 	virtual bool                          GetNetworkSafeClassName(char* className, size_t classNameSizeInBytes, uint16 id);
 	virtual IGameObjectExtension*         QueryGameObjectExtension(EntityId id, const char* name);
-
-	virtual void                          DelegateAuthority(EntityId entityId, uint16 channelId);
 
 	virtual INetContext*                  GetNetContext();
 
@@ -284,6 +284,9 @@ public:
 	virtual void AddNetworkedClientListener(INetworkedClientListener& listener) { stl::push_back_unique(m_networkClientListeners, &listener); }
 	virtual void RemoveNetworkedClientListener(INetworkedClientListener& listener) { stl::find_and_erase(m_networkClientListeners, &listener); }
 
+	void DefineProtocolRMI(IProtocolBuilder* pBuilder);
+	virtual void DoInvokeRMI(_smart_ptr<IRMIMessageBody> pBody, unsigned where, int channel, const bool isGameObjectRmi);
+
 protected:
 	virtual ICryUnknownPtr        QueryExtensionInterfaceById(const CryInterfaceID& interfaceID) const;
 	// ~IGameFramework
@@ -291,8 +294,6 @@ protected:
 public:
 
 	static CCryAction*          GetCryAction() { return m_pThis; }
-
-	bool                        ControlsEntity(EntityId id) const;
 
 	virtual CGameServerNub*     GetGameServerNub();
 	CGameClientNub*             GetGameClientNub();

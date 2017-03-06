@@ -1291,6 +1291,20 @@ void CVehicle::ProcessEvent(SEntityEvent& entityEvent)
 			}
 		}
 		break;
+	case ENTITY_EVENT_SET_AUTHORITY:
+		{
+			m_hasAuthority = entityEvent.nParam[0] ? true : false;
+			if (m_pMovement)
+			{
+				m_pMovement->SetAuthority(m_hasAuthority);
+			}
+			if (m_hasAuthority)
+			{
+				m_clientSmoothedPosition.t = GetEntity()->GetPos();
+				m_clientSmoothedPosition.q = GetEntity()->GetRotation();
+			}
+	}
+		break;
 	}
 
 	if (m_pMovement)
@@ -1308,6 +1322,7 @@ uint64 CVehicle::GetEventMask() const
 	  BIT64(ENTITY_EVENT_UNHIDE) |
 	  BIT64(ENTITY_EVENT_ANIM_EVENT) |
 	  BIT64(ENTITY_EVENT_START_GAME) |
+	  BIT64(ENTITY_EVENT_SET_AUTHORITY) |
 	  BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
 }
 
@@ -2514,21 +2529,6 @@ IFireController* CVehicle::GetFireController(uint32 controllerNum)
 		return NULL;
 
 	return m_seats[controllerNum].second;
-}
-
-//------------------------------------------------------------------------
-void CVehicle::SetAuthority(bool auth)
-{
-	m_hasAuthority = auth;
-	if (m_pMovement)
-	{
-		m_pMovement->SetAuthority(auth);
-	}
-	if (auth)
-	{
-		m_clientSmoothedPosition.t = GetEntity()->GetPos();
-		m_clientSmoothedPosition.q = GetEntity()->GetRotation();
-	}
 }
 
 //------------------------------------------------------------------------
