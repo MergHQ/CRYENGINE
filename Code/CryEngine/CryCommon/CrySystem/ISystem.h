@@ -1551,7 +1551,7 @@ struct ISystem
 	virtual bool InitializeEngineModule(const char* dllName, const char* moduleClassName, bool bQuitIfNotFound) = 0;
 
 	//! Unloads a dynamic library as well as the corresponding instance of the module class
-	virtual bool UnloadEngineModule(const char* dllName, const char* moduleClassName) = 0;
+	virtual bool UnloadEngineModule(const char* szDllName) = 0;
 
 	//! Gets the root window message handler function.
 	//! The returned pointer is platform-specific: for Windows OS, the pointer is of type WNDPROC

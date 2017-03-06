@@ -709,7 +709,7 @@ CGame::~CGame()
 		}
 	}
 
-	gEnv->pSystem->UnloadEngineModule("CryLobby", "EngineModule_CryLobby");
+	gEnv->pSystem->UnloadEngineModule("CryLobby");
 
 	GAME_FX_SYSTEM.Destroy();
 

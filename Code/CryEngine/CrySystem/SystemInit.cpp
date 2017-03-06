@@ -769,31 +769,19 @@ bool CSystem::InitializeEngineModule(const char* dllName, const char* moduleClas
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CSystem::UnloadEngineModule(const char* dllName, const char* moduleClassName)
+bool CSystem::UnloadEngineModule(const char* szDllName)
 {
 	bool bSuccess = false;
 
-	ICryFactoryRegistryImpl* const pReg = static_cast<ICryFactoryRegistryImpl*>(GetCryFactoryRegistry());
-	ICryFactory* pICryFactory = pReg->GetFactory(moduleClassName);
-	if (pICryFactory != nullptr)
-	{
 #if !defined(_LIB)
-		// Remove all module-dependent factories
-		const SRegFactoryNode* pFactoryRegNode = pICryFactory->GetRegFactoryNode();
-		pReg->UnregisterFactories(pFactoryRegNode);
-#else
-		pReg->UnregisterFactory(pICryFactory);
-#endif
-	}
-
 	stack_string msg;
 	msg = "Unloading ";
-	msg += dllName;
+	msg += szDllName;
 	msg += "...";
 
 	CryLog("%s", msg.c_str());
 
-	stack_string dllfile = dllName;
+	stack_string dllfile = szDllName;
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 	dllfile = "lib" + PathUtil::ReplaceExtension(dllfile, "so");
@@ -803,9 +791,8 @@ bool CSystem::UnloadEngineModule(const char* dllName, const char* moduleClassNam
 	dllfile = PathUtil::ReplaceExtension(dllfile, "dll");
 #endif
 
-#if !defined(_LIB)
 	bSuccess = UnloadDLL(dllfile.c_str());
-#endif // #if !defined(_LIB)
+#endif // !defined(_LIB)
 
 	return bSuccess;
 }

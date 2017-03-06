@@ -148,7 +148,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 	virtual ~CEngineModule_CryAudioSystem()
 	{
 		SAFE_RELEASE(gEnv->pAudioSystem);
-		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl");
+		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str());
 	}
 
 	virtual const char* GetName() const override     { return "CryAudioSystem"; }
@@ -215,7 +215,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			pAudioSystem->SetImpl(nullptr, data);
 
 			// Unload the previous module
-			gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str(), "EngineModule_AudioImpl");
+			gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str());
 		}
 
 		// First try to load and initialize the new engine module.
@@ -261,7 +261,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			pAudioSystem->SetImpl(nullptr, data);
 
 			// The module failed to initialize, unload both as we are running the null implementation now.
-			gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl");
+			gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str());
 			s_currentModuleName.clear();
 		}
 

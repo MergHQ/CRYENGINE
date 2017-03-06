@@ -500,7 +500,7 @@ public:
 	void         SetVersionInfo(const char* const szVersion);
 
 	virtual bool InitializeEngineModule(const char* dllName, const char* moduleClassName, bool bQuitIfNotFound) override;
-	virtual bool UnloadEngineModule(const char* dllName, const char* moduleClassName) override;
+	virtual bool UnloadEngineModule(const char* szDllName) override;
 
 #if CRY_PLATFORM_WINDOWS
 	friend LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
