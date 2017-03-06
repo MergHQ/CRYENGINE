@@ -2015,15 +2015,11 @@ bool CSystem::InitFont()
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	string szFontPath = "Fonts/default.xml";
+	const char* szFontPath = "%engine%/Fonts/default.xml";
 
-	if (!m_pIFont->Load(szFontPath.c_str()))
+	if (!m_pIFont->Load(szFontPath))
 	{
-		string szError = "Error loading the default font from ";
-		szError += szFontPath;
-		szError += ". You're probably running the executable from the wrong working folder.";
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "%s", szError.c_str());
-
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Error loading the default font from '%s'. You're probably running the executable from the wrong working folder.", szFontPath);
 		return false;
 	}
 

@@ -2662,14 +2662,17 @@ void CCryAction::ShutdownEngine()
 	if (m_systemDll)
 	{
 		CryFreeLibrary(m_systemDll);
-		m_systemDll = 0;
+		m_systemDll = nullptr;
 	}
 
 	SAFE_DELETE(m_nextFrameCommand);
 	SAFE_DELETE(m_pPhysicsQueues);
 
-	m_pThis = 0;
-	gEnv->pGameFramework = nullptr;
+	m_pThis = nullptr;
+	if (gEnv)
+	{
+		gEnv->pGameFramework = nullptr;
+	}
 }
 
 //------------------------------------------------------------------------
