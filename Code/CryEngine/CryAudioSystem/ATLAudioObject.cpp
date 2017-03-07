@@ -77,9 +77,13 @@ void CATLAudioObject::ReportStartedTriggerInstance(
 			audioTriggerInstanceState.flags &= ~eAudioTriggerStatus_Starting;
 			audioTriggerInstanceState.flags |= eAudioTriggerStatus_Playing;
 
-			if ((flags & eRequestFlags_SyncFinishedCallback) == 0)
+			if ((flags & eRequestFlags_DoneCallbackOnAudioThread) > 0)
 			{
 				audioTriggerInstanceState.flags |= eAudioTriggerStatus_CallbackOnAudioThread;
+			}
+			else if ((flags & eRequestFlags_DoneCallbackOnExternalThread) > 0)
+			{
+				audioTriggerInstanceState.flags |= eAudioTriggerStatus_CallbackOnExternalThread;
 			}
 		}
 		else
@@ -557,15 +561,18 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 	SAudioTriggerInstanceState& audioTriggerInstanceState = iter->second;
 	SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance> requestData(audioTriggerInstanceState.audioTriggerId);
 	CAudioRequest request(&requestData);
-	request.flags = eRequestFlags_SyncCallback;
 	request.pObject = this;
 	request.pOwner = audioTriggerInstanceState.pOwnerOverride;
 	request.pUserData = audioTriggerInstanceState.pUserData;
 	request.pUserDataOwner = audioTriggerInstanceState.pUserDataOwner;
 
-	if ((audioTriggerInstanceState.flags & eAudioTriggerStatus_CallbackOnAudioThread) > 0)
+	if ((audioTriggerInstanceState.flags & eAudioTriggerStatus_CallbackOnExternalThread) > 0)
 	{
-		request.flags &= ~eRequestFlags_SyncCallback;
+		request.flags = eRequestFlags_CallbackOnExternalOrCallingThread;
+	}
+	else if ((audioTriggerInstanceState.flags & eAudioTriggerStatus_CallbackOnAudioThread) > 0)
+	{
+		request.flags = eRequestFlags_CallbackOnAudioThread;
 	}
 
 	s_pAudioSystem->PushRequest(request);
@@ -1217,12 +1224,15 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 	// Parameters
 	ObjectParameterMap const audioParameters = m_parameters;
+
 	for (auto const& parameterPair : audioParameters)
 	{
 		CParameter const* const pParameter = stl::find_in_map(parameters, parameterPair.first, nullptr);
+
 		if (pParameter != nullptr)
 		{
 			ERequestStatus const result = HandleSetParameter(pParameter, parameterPair.second);
+
 			if (result != eRequestStatus_Success)
 			{
 				g_audioLogger.Log(eAudioLogType_Warning, "Parameter \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pParameter->m_name.c_str(), m_name.c_str());
@@ -1275,6 +1285,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	ObjectTriggerStates& triggerStates = m_triggerStates;
 	auto it = triggerStates.cbegin();
 	auto end = triggerStates.cend();
+
 	while (it != end)
 	{
 		auto const& triggerState = *it;

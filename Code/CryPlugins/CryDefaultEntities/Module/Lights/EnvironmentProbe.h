@@ -7,6 +7,7 @@
 
 #include <CrySerialization/Math.h>
 #include <CrySerialization/Decorators/Resources.h>
+#include <CrySerialization/Color.h>
 
 ////////////////////////////////////////////////////////
 // Sample entity for creating an environment probe
@@ -33,13 +34,36 @@ public:
 	virtual void SerializeProperties(Serialization::IArchive& archive) override
 	{
 		archive(m_bActive, "Active", "Active");
-		archive(m_light.m_ProbeExtents, "BoxSize", "BoxSize");
+		archive(m_light.m_ProbeExtents, "BoxSize", "Box Size");
 
 		if (archive.openBlock("Options", "Options"))
 		{
-			archive(m_bIgnoreVisAreas, "IgnoreVisAreas", "IgnoreVisAreas");
-			archive(m_light.m_nSortPriority, "SortPriority", "SortPriority");
-			archive(m_attentuationFalloffMax, "AttentuationFalloffMax", "AttentuationFalloffMax");
+			archive(m_bIgnoreVisAreas, "IgnoreVisAreas", "Ignore Vis Areas");
+			archive(m_light.m_nSortPriority, "SortPriority", "Sort Priority");
+			archive(m_attenuationFalloffMax, "AttentuationFalloffMax", "Attenuation Falloff Max");
+			archive(m_bVolumetricFogOnly, "VolumetricFogOnly", "Volumetric Fog Only");
+			archive(m_bAffectsVolumetricFog, "AffectsVolumetricFog", "Affects Volumetric Fog");
+			archive(m_bAffectsOnlyThisArea, "AffectsOnlyThisArea", "Affects Only This Area");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("Color", "Color"))
+		{
+			archive(m_color, "Color", "Color");
+			archive(m_diffuseMultiplier, "DiffuseMultiplier", "Diffuse Multiplier");
+			archive(m_light.m_SpecMult, "SpecularMultiplier", "Specular Multiplier");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("Projection", "Projection"))
+		{
+			archive(m_bBoxProjection, "ProjectionActive", "Active");
+
+			archive(m_light.m_fBoxHeight, "ProjectionHeight", "Height");
+			archive(m_light.m_fBoxLength,  "ProjectionLength", "Length");
+			archive(m_light.m_fBoxWidth, "ProjectionWidth", "Width" );
 
 			archive.closeBlock();
 		}
@@ -68,9 +92,17 @@ protected:
 	// Light parameters, updated in the OnResetState function
 	CDLight m_light;
 
+	ColorF m_color = ColorF(1.0f, 1.0f, 1.0f);
+	float m_diffuseMultiplier = 1.0f;
+
+	bool m_bIgnoreVisAreas = false;
+	bool m_bBoxProjection = false;
+	bool m_bVolumetricFogOnly = false;
+	bool m_bAffectsVolumetricFog = true;
+	bool m_bAffectsOnlyThisArea = true;
+
 	bool m_bActive = true;
 	string m_cubemapPath;
 
-	bool m_bIgnoreVisAreas = false;
-	float m_attentuationFalloffMax = 1.f;
+	float m_attenuationFalloffMax = 1.f;
 };

@@ -47,11 +47,11 @@ DRS::IResponseActionInstanceUniquePtr CActionSetGameToken::Execute(DRS::IRespons
 		IGameToken* pToken = pTokenSystem->FindToken(m_tokenName.c_str());
 		if (pToken)
 		{
-			pToken->SetValueAsString(m_valueToSet.c_str());
+			pToken->SetValueFromString(m_valueToSet.c_str());
 		}
 		else
 		{
-			CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR, "Could not find game token with name '%s'", m_tokenName.c_str());
+			CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR, "DRS: Could not find game token with name '%s'", m_tokenName.c_str());
 		}
 
 	}

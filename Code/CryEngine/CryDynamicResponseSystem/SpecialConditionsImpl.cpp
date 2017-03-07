@@ -193,7 +193,7 @@ bool CGameTokenCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 		m_pCachedToken = pGTSys->FindToken(m_tokenName.c_str());
 		if (!m_pCachedToken)
 		{
-			CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR, "Could not find GameToken for condition-check, token-name: %s", m_tokenName.c_str());
+			CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR, "DRS: Could not find GameToken for condition-check, token-name: '%s'", m_tokenName.c_str());
 			return false;
 		}
 		else

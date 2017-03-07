@@ -43,27 +43,31 @@ void CEnvironmentProbeEntity::OnResetState()
 	m_light.m_nLightStyle = 0;
 	m_light.SetPosition(ZERO);
 	m_light.m_fLightFrustumAngle = 45;
-	m_light.m_Flags = DLF_POINT | DLF_THIS_AREA_ONLY | DLF_DEFERRED_CUBEMAPS;
+	m_light.m_Flags = DLF_POINT | DLF_DEFERRED_CUBEMAPS;
 	m_light.m_LensOpticsFrustumAngle = 255;
 
 	m_light.m_fRadius = pow(m_light.m_ProbeExtents.GetLengthSquared(), 0.5f);
 
-	m_light.SetLightColor(ColorF(1.f, 1.f, 1.f, 1.f));
-	m_light.SetSpecularMult(1.f);
+	m_light.SetLightColor(m_color * m_diffuseMultiplier);
 
 	m_light.m_fHDRDynamic = 0.f;
+
+	if (m_bAffectsOnlyThisArea)
+		m_light.m_Flags |= DLF_THIS_AREA_ONLY;
 
 	if (m_bIgnoreVisAreas)
 		m_light.m_Flags |= DLF_IGNORES_VISAREAS;
 
-	/*if (GetPropertyBool(eProperty_BoxProject))
+	if (m_bBoxProjection)
 		m_light.m_Flags |= DLF_BOX_PROJECTED_CM;
 
-	m_light.m_fBoxWidth = GetPropertyFloat(eProperty_BoxSizeX);
-	m_light.m_fBoxLength = GetPropertyFloat(eProperty_BoxSizeY);
-	m_light.m_fBoxHeight = GetPropertyFloat(eProperty_BoxSizeZ);*/
+	if (m_bVolumetricFogOnly)
+		m_light.m_Flags |= DLF_VOLUMETRIC_FOG_ONLY;
 
-	m_light.SetFalloffMax(m_attentuationFalloffMax);
+	if (m_bAffectsVolumetricFog)
+		m_light.m_Flags |= DLF_VOLUMETRIC_FOG;
+
+	m_light.SetFalloffMax(m_attenuationFalloffMax);
 
 	m_light.m_fFogRadialLobe = 0.f;
 

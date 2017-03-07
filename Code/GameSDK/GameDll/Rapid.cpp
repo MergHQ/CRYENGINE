@@ -79,11 +79,14 @@ void CRapid::Update(float frameTime, uint32 frameId)
 		if (m_pWeapon->IsVehicleWeapon())
 		{
 			CVehicleWeapon* const pVehicleWeapon = static_cast<CVehicleWeapon*>(m_pWeapon);
-			IVehicle* const pVehicle = pVehicleWeapon->GetVehicle();
-			CPlayer* const pPlayer = pVehicleWeapon->GetOwnerPlayer();
-			if (pVehicle && pPlayer)
+			if (pVehicleWeapon->IsFiring())
 			{
-				pVehicle->OnAction(eVAI_Attack2, eAAM_OnRelease, 0.0f, pPlayer->GetEntityId());
+				IVehicle* const pVehicle = pVehicleWeapon->GetVehicle();
+				CPlayer* const pPlayer = pVehicleWeapon->GetOwnerPlayer();
+				if (pVehicle && pPlayer)
+				{
+					pVehicle->OnAction(eVAI_Attack2, eAAM_OnRelease, 0.0f, pPlayer->GetEntityId());
+				}
 			}
 		}
 		return;

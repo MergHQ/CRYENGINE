@@ -31,14 +31,14 @@ class CAudioStandaloneFileManager;
 
 enum EAudioTriggerStatus : EnumFlagsType
 {
-	eAudioTriggerStatus_None                  = 0,
-	eAudioTriggerStatus_Playing               = BIT(0),
-	eAudioTriggerStatus_Loaded                = BIT(1),
-	eAudioTriggerStatus_Loading               = BIT(2),
-	eAudioTriggerStatus_Unloading             = BIT(3),
-	eAudioTriggerStatus_Starting              = BIT(4),
-	eAudioTriggerStatus_WaitingForRemoval     = BIT(5),
-	eAudioTriggerStatus_CallbackOnAudioThread = BIT(6),
+	eAudioTriggerStatus_None                     = 0,
+	eAudioTriggerStatus_Playing                  = BIT(0),
+	eAudioTriggerStatus_Loaded                   = BIT(1),
+	eAudioTriggerStatus_Loading                  = BIT(2),
+	eAudioTriggerStatus_Unloading                = BIT(3),
+	eAudioTriggerStatus_Starting                 = BIT(4),
+	eAudioTriggerStatus_CallbackOnExternalThread = BIT(5),
+	eAudioTriggerStatus_CallbackOnAudioThread    = BIT(6),
 };
 
 struct SAudioTriggerImplState

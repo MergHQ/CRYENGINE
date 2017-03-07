@@ -333,7 +333,7 @@ SCommunicationSound CommunicationHandler::PlaySound(CommPlayID playID, const cha
 					playingSound.playID = playID;
 				}
 
-				SRequestUserData const userData(eRequestFlags_SyncFinishedCallback, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_entityId)), this);
+				SRequestUserData const userData(eRequestFlags_DoneCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_entityId)), this);
 				pIEntityAudioComponent->ExecuteTrigger(playCommunicationControlId, DefaultAuxObjectId, userData);
 
 				SCommunicationSound soundInfo;
