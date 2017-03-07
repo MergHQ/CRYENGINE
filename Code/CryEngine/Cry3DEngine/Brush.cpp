@@ -925,6 +925,21 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		pObj->m_ObjFlags |= FOB_AFTER_WATER;
 	else
 		pObj->m_ObjFlags &= ~FOB_AFTER_WATER;
+	
+	if(GetRndFlags() & ERF_RECVWIND)
+	{
+		if (GetCVars()->e_VegetationBending)
+		{
+			pObj->m_vegetationBendingData.scale = 0.1f; // this is default value for vegetation if bending in veg group is set to 1
+			pObj->m_vegetationBendingData.verticalRadius = m_pStatObj->m_fRadiusVert;
+			pObj->m_ObjFlags |= FOB_BENDED | FOB_DYNAMIC_OBJECT;
+		}
+		else
+		{
+			pObj->m_vegetationBendingData.scale = 0.0f;
+			pObj->m_vegetationBendingData.verticalRadius = 0.0f;
+		}
+	}
 
 	//IFoliage* pFoliage = GetFoliage(-1);
 	if (m_pFoliage)
