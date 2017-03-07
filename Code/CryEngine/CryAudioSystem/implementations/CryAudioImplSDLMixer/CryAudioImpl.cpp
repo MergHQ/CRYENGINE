@@ -32,7 +32,7 @@ class CEngineModule_CryAudioImplSDLMixer : public IEngineModule
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
-		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);
+		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_CallbackOnExternalOrCallingThread);
 		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr);
 

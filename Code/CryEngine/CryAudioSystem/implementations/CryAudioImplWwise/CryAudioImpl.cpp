@@ -57,7 +57,7 @@ class CEngineModule_CryAudioImplWwise : public IEngineModule
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
-		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);
+		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_CallbackOnExternalOrCallingThread);
 		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr);
 

@@ -240,7 +240,7 @@ private:
 			{
 			case ePlayMode_Play:
 				{
-					SRequestUserData const userData(eRequestFlags_SyncFinishedCallback, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
+					SRequestUserData const userData(eRequestFlags_DoneCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
 					pIEntityAudioComponent->SetCurrentEnvironments();
 					pIEntityAudioComponent->ExecuteTrigger(audioTriggerId, DefaultAuxObjectId, userData);
 

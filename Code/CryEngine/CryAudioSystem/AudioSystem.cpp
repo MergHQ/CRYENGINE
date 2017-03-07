@@ -130,7 +130,7 @@ void CSystem::PushRequest(CAudioRequest const& request)
 			m_mainEvent.Wait();
 			m_mainEvent.Reset();
 
-			if ((request.flags & eRequestFlags_SyncCallback) > 0)
+			if ((request.flags & eRequestFlags_CallbackOnExternalOrCallingThread) > 0)
 			{
 				m_atl.NotifyListener(m_syncRequest);
 			}
@@ -794,43 +794,43 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 
 	while (requestQueue.dequeue(request))
 	{
-		if ((request.infoFlags & eAudioRequestInfoFlags_WaitingForRemoval) == 0)
+		if (request.status == eRequestStatus_None)
 		{
-			if (request.status == eRequestStatus_None)
-			{
-				request.status = eRequestStatus_Pending;
-				ProcessRequest(request);
-				bSuccess = true;
-			}
-			else
-			{
-				// TODO: handle pending requests!
-			}
+			request.status = eRequestStatus_Pending;
+			ProcessRequest(request);
+			bSuccess = true;
+		}
+		else
+		{
+			// TODO: handle pending requests!
+		}
 
-			if (request.status != eRequestStatus_Pending)
+		if (request.status != eRequestStatus_Pending)
+		{
+			if ((request.flags & eRequestFlags_CallbackOnAudioThread) > 0)
 			{
-				if ((request.flags & eRequestFlags_SyncCallback) == 0)
+				m_atl.NotifyListener(request);
+
+				if ((request.flags & eRequestFlags_ExecuteBlocking) > 0)
 				{
-					m_atl.NotifyListener(request);
-
-					if ((request.flags & eRequestFlags_ExecuteBlocking) > 0)
-					{
-						m_mainEvent.Set();
-					}
+					m_mainEvent.Set();
+				}
+			}
+			else if ((request.flags & eRequestFlags_CallbackOnExternalOrCallingThread) > 0)
+			{
+				if ((request.flags & eRequestFlags_ExecuteBlocking) > 0)
+				{
+					m_syncRequest = request;
+					m_mainEvent.Set();
 				}
 				else
 				{
-					if ((request.flags & eRequestFlags_ExecuteBlocking) > 0)
-					{
-						request.infoFlags |= eAudioRequestInfoFlags_WaitingForRemoval;
-						m_syncRequest = request;
-						m_mainEvent.Set();
-					}
-					else
-					{
-						m_syncCallbacks.enqueue(request);
-					}
+					m_syncCallbacks.enqueue(request);
 				}
+			}
+			else if ((request.flags & eRequestFlags_ExecuteBlocking) > 0)
+			{
+				m_mainEvent.Set();
 			}
 		}
 	}

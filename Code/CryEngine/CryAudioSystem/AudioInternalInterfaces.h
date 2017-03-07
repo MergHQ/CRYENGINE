@@ -21,12 +21,6 @@ enum EAudioRequestType : EnumFlagsType
 	eAudioRequestType_AudioListenerRequest,
 };
 
-enum EAudioRequestInfoFlags : EnumFlagsType
-{
-	eAudioRequestInfoFlags_None              = 0,
-	eAudioRequestInfoFlags_WaitingForRemoval = BIT(0),
-};
-
 enum EAudioStandaloneFileState : EnumFlagsType
 {
 	eAudioStandaloneFileState_None,
@@ -1052,7 +1046,6 @@ public:
 		, pUserData(nullptr)
 		, pUserDataOwner(nullptr)
 		, status(eRequestStatus_None)
-		, infoFlags(eAudioRequestInfoFlags_None)
 		, pData(AllocateRequestData(pRequestData))
 	{}
 
@@ -1069,7 +1062,6 @@ public:
 		, pUserData(_pUserData)
 		, pUserDataOwner(_pUserDataOwner)
 		, status(eRequestStatus_None)
-		, infoFlags(eAudioRequestInfoFlags_None)
 		, pData(AllocateRequestData(_pRequestData))
 	{}
 
@@ -1081,7 +1073,6 @@ public:
 	void*            pUserData = nullptr;
 	void*            pUserDataOwner = nullptr;
 	ERequestStatus   status = eRequestStatus_None;
-	EnumFlagsType    infoFlags = eAudioRequestInfoFlags_None;
 
 private:
 

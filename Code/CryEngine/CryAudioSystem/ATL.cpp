@@ -1540,7 +1540,6 @@ void CAudioTranslationLayer::SetCurrentEnvironmentsOnObject(CATLAudioObject* con
 	static size_t const s_maxAreas = 10;
 	static SAudioAreaInfo s_areaInfos[s_maxAreas];
 
-	// TODO: Clarify whether QueryAudioAreas is thread safe or not!
 	if (pIAreaManager->QueryAudioAreas(position, s_areaInfos, s_maxAreas, numAreas))
 	{
 		for (size_t i = 0; i < numAreas; ++i)
@@ -1718,8 +1717,9 @@ void CAudioTranslationLayer::DrawATLComponentDebugInfo(IRenderAuxGeom& auxGeom, 
 //////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::RetriggerAudioControls()
 {
-	auto& registeredAudioObjects = m_audioObjectMgr.GetAudioObjects();
-	for (auto pAudioObject : registeredAudioObjects)
+	auto const& registeredAudioObjects = m_audioObjectMgr.GetAudioObjects();
+
+	for (auto const pAudioObject : registeredAudioObjects)
 	{
 		pAudioObject->ForceImplementationRefresh(m_triggers, m_parameters, m_switches, m_environments, true);
 	}

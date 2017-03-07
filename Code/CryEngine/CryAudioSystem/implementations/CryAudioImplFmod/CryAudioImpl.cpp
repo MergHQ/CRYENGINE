@@ -34,7 +34,7 @@ class CEngineModule_CryAudioImplFmod : public IEngineModule
 	virtual ~CEngineModule_CryAudioImplFmod() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual char const* GetName()  const override { return "CryAudioImplFmod"; }
+	virtual char const* GetName()  const override     { return "CryAudioImplFmod"; }
 	virtual char const* GetCategory()  const override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
@@ -57,7 +57,7 @@ class CEngineModule_CryAudioImplFmod : public IEngineModule
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplFmod::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
-		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);
+		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_CallbackOnExternalOrCallingThread);
 		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplFmod::OnAudioEvent, nullptr);
 
