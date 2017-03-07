@@ -65,6 +65,60 @@ enum EFlowDataTypes
 	eFDT_Bool = cry_variant::get_index<bool, TFlowInputDataVariant>::value,
 };
 
+inline EFlowDataTypes FlowNameToType(const char *typeName)
+{
+	EFlowDataTypes flowDataType = eFDT_Any;
+	if (0 == strcmp(typeName, "Void"))
+		flowDataType = eFDT_Void;
+	else if (0 == strcmp(typeName, "Int"))
+		flowDataType = eFDT_Int;
+	else if (0 == strcmp(typeName, "Float"))
+		flowDataType = eFDT_Float;
+	else if (0 == strcmp(typeName, "EntityId"))
+		flowDataType = eFDT_EntityId;
+	else if (0 == strcmp(typeName, "Vec3"))
+		flowDataType = eFDT_Vec3;
+	else if (0 == strcmp(typeName, "String"))
+		flowDataType = eFDT_String;
+	else if (0 == strcmp(typeName, "Bool"))
+		flowDataType = eFDT_Bool;
+
+	return flowDataType;
+}
+
+inline const char* FlowTypeToName(EFlowDataTypes flowDataType)
+{
+	switch (flowDataType)
+	{
+	case eFDT_Any:
+		return "Any";
+	case eFDT_Void:
+		return "Void";
+	case eFDT_Int:
+		return "Int";
+	case eFDT_Float:
+		return "Float";
+	case eFDT_EntityId:
+		return "EntityId";
+	case eFDT_Vec3:
+		return "Vec3";
+	case eFDT_String:
+		return "String";
+	case eFDT_Bool:
+		return "Bool";
+	}
+	return "";
+}
+
+inline const char* FlowTypeToHumanName(EFlowDataTypes flowDataType)
+{
+	const char* szTypeName = FlowTypeToName(flowDataType);
+	if (*szTypeName == '\0')
+		return "Unrecognized Flow Data type";
+	else
+		return szTypeName;
+}
+
 //! Default conversion uses C++ rules.
 template<class From, class To>
 struct SFlowSystemConversion
@@ -340,18 +394,24 @@ struct SFlowSystemConversion<string, bool>
 		int to_i;
 		if (1 == sscanf(from.c_str(), "%d", &to_i))
 		{
-			to = !!to_i;
-			return true;
+			if (to_i == 0 || to_i == 1)
+			{
+				to = (to_i == 1);
+				return true;
+			}
 		}
-		if (0 == stricmp(from.c_str(), "true"))
+		else
 		{
-			to = true;
-			return true;
-		}
-		if (0 == stricmp(from.c_str(), "false"))
-		{
-			to = false;
-			return true;
+			if (0 == stricmp(from.c_str(), "true"))
+			{
+				to = true;
+				return true;
+			}
+			if (0 == stricmp(from.c_str(), "false"))
+			{
+				to = false;
+				return true;
+			}
 		}
 		return false;
 	}
@@ -784,6 +844,77 @@ public:
 			m_variant = value.m_variant;
 			return true;
 		}
+	}
+
+	//! Checks if the current value matches the given string or if it would require a conversion due to incompatible with the datatype
+	// eg. setting a Bool with '1' is valid, setting it with '12' is not (so this will return true). For both cases the FlowData will be set to true
+	bool CheckIfForcedConversionOfCurrentValueWithString(const string& valueStr)
+	{
+		string convertedValueStr;
+		/*return !*/ GetValueWithConversion(convertedValueStr); // Note: ideally that return value should be used
+		// but the internal conversions are currently accepting some conversions that we really want a warning for
+		// (eg float to int truncates and is accepted)
+
+		// value was transformed, check if it is accepted for the type
+		if (convertedValueStr.compare(valueStr) != 0)
+		{
+			switch (GetType())
+			{
+			case eFDT_Bool:
+				{
+					// ignore "0" and "1" for bools: conversion will ret "false" and "true" but this accepted as valid
+					if (valueStr.compare("0") == 0 || valueStr.compare("1") == 0)
+					{
+						return false;
+					}
+
+					// "True" and "False" are valid with any casing
+					if (valueStr.compareNoCase("true") == 0 || valueStr.compareNoCase("false") == 0)
+					{
+						return false;
+					}
+				}
+				break;
+			case eFDT_Float:
+				{
+					// ignore trailing zeros. eg input of '-1.0' will be '-1'
+					size_t lastNotZero = valueStr.find_last_not_of('0');
+					if (lastNotZero != string::npos)
+					{
+						size_t dotPos = valueStr.rfind('.');
+						if (dotPos != string::npos)
+						{
+							if (dotPos == lastNotZero)
+							{
+								lastNotZero--;
+							}
+							if (strncmp(convertedValueStr, valueStr.c_str(), lastNotZero + 1) == 0)
+							{
+								return false;
+							}
+						}
+					}
+				}
+				// intentional fallthrough : float also checks for int leading zeros
+			case eFDT_Int:
+				{
+					// ignore leading zeros. eg input of '001' will be '1'
+					size_t firstNotZero = valueStr.find_first_not_of('0');
+					if (firstNotZero != string::npos)
+					{
+						if (strncmp(convertedValueStr, valueStr.c_str() + firstNotZero, valueStr.size() - firstNotZero) == 0)
+						{
+							return false;
+						}
+					}
+				}
+				break;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 
 	template<typename T> T*       GetPtr()       { return stl::get_if<T>(&m_variant); }

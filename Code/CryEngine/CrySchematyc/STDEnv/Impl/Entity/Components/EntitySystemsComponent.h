@@ -16,12 +16,12 @@ namespace Schematyc
 	{
 	private:
 
-		struct SGametokenChangedSignal
+		struct SGameTokenChangedSignal
 		{
-			SGametokenChangedSignal() {}
-			SGametokenChangedSignal(CSharedString tokenname, CSharedString value) : m_tokenname(tokenname), m_value(value) {}
+			SGameTokenChangedSignal() {}
+			SGameTokenChangedSignal(CSharedString tokenname, CSharedString value) : m_tokenname(tokenname), m_value(value) {}
 
-			static void ReflectType(CTypeDesc<SGametokenChangedSignal>& desc);
+			static void ReflectType(CTypeDesc<SGameTokenChangedSignal>& desc);
 
 			CSharedString m_tokenname;
 			CSharedString m_value;
@@ -42,7 +42,7 @@ namespace Schematyc
 		virtual void GetMemoryUsage(class ICrySizer* pSizer) const override {}
 		// ~IGameTokenEventListener
 
-		void SetGametoken(CSharedString tokenName, CSharedString valueToSet, bool bCreateIfNotExisting);
+		void SetGameToken(CSharedString tokenName, CSharedString valueToSet, bool bCreateIfNotExisting);
 
 		static void ReflectType(CTypeDesc<CEntitySystemsComponent>& desc);
 		static void Register(IEnvRegistrar& registrar);
