@@ -187,7 +187,7 @@ struct INetEntity
 	virtual void SetNetworkParent(EntityId id) = 0;
 
 	//! Internal use. \see IEntityComponent::NetSerialize() to implement network serialization.
-	virtual bool NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return false; };
+	virtual bool NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) = 0;
 
 	//--------------------------------------------------------------------------
 

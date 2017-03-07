@@ -140,8 +140,8 @@ public:
 	virtual void         ProcessEvent(SEntityEvent& event) final;
 	virtual uint64       GetEventMask() const final;
 
-	virtual bool         NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
 	virtual NetworkAspectType GetNetSerializeAspectMask() const override;
+	virtual bool NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
 
 	// we have gained (or lost) control of this object
 	virtual void SetAuthority(bool auth) override
