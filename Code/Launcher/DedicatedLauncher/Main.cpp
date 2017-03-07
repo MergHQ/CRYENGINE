@@ -62,7 +62,7 @@ ILINE unsigned Hash( unsigned a )
 // encode size ignore last 3 bits of size in bytes. (encode by 8bytes min)
 #define TEA_GETSIZE( len ) ((len) & (~7))
 
-ILINE int RunGame(const char *commandLine)
+ILINE int RunGame(const char* szCommandLine)
 {
 	SSystemInitParams startupParams;
 	const char* frameworkDLLName = "CryAction.dll";
@@ -106,10 +106,10 @@ ILINE int RunGame(const char *commandLine)
 	}
 #endif //!defined(_LIB)
 
-	strcat((char*)commandLine, (char*)buf);	
+	cry_strcpy(startupParams.szSystemCmdLine, szCommandLine);
+	cry_strcat(startupParams.szSystemCmdLine, (const char*)buf);
 
 	startupParams.sLogFileName = logFileName;
-	strcpy(startupParams.szSystemCmdLine, commandLine);
 
 	for (int i=0; i<4; i++)
 		if (Hash(buf[i])!=hash[i])
