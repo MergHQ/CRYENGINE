@@ -32,7 +32,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Input" FILES ${Input_FILES})
 
 
-	set(Math_FILES Math/Angles3.cs Math/Color.cs Math/MathHelpers.cs Math/Matrix3x4.cs Math/Primitives.cs Math/Quaternion.cs Math/Vector2.cs Math/Vector3.cs Math/Vector4.cs)
+	set(Math_FILES Math/Angles3.cs Math/Color.cs Math/MathHelpers.cs Math/Matrix3x3.cs Math/Matrix3x4.cs Math/Matrix4x4.cs Math/Primitives.cs Math/Quaternion.cs Math/Vector2.cs Math/Vector3.cs Math/Vector4.cs)
 	source_group("Math" FILES ${Math_FILES})
 
 
