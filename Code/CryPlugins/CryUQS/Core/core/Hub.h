@@ -43,6 +43,10 @@ namespace uqs
 
 			bool                                                       HaveConsistencyChecksBeenDoneAlready() const;
 
+#if UQS_SCHEMATYC_SUPPORT
+			static void                                                OnRegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar);  // gcc-4.9 requires this method to be public when registering as a callback
+#endif
+
 		private:
 			                                                           UQS_NON_COPYABLE(CHub);
 

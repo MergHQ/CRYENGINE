@@ -18,30 +18,35 @@ namespace uqs
 		template <class TItem>
 		struct SItemFactoryCallbacks
 		{
-			typedef bool                      (*serializeFunc_t)(Serialization::IArchive& archive, TItem& item, const char* szName, const char* szLabel);
-			typedef TItem                     (*createDefaultObjectFunc_t)();
-			typedef void                      (*addItemToDebugRenderWorldFunc_t)(const TItem& item, core::IDebugRenderWorldPersistent& debugRW);
-			typedef void                      (*createItemDebugProxyFunc_t)(const TItem& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
+			typedef bool                        (*serializeFunc_t)(Serialization::IArchive& archive, TItem& item, const char* szName, const char* szLabel);
+			typedef TItem                       (*createDefaultObjectFunc_t)();
+			typedef void                        (*addItemToDebugRenderWorldFunc_t)(const TItem& item, core::IDebugRenderWorldPersistent& debugRW);
+			typedef void                        (*createItemDebugProxyFunc_t)(const TItem& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
 
 			// - a serialization function is used to convert the item to and from its string representation
 			// - it's used by the query editor to save literals to a query blueprint
 			// - typically, there should be such a function for int, bool, float, Vec3, etc., but usually not for pointers and the like
-			serializeFunc_t                   pSerialize;
+			serializeFunc_t                     pSerialize;
 
 			// - user-defined function that creates an item with meaningful "default" values
 			// - this function usually gets provided for items whose constructor is bypassing initialization (e. g. Vec3's values are undefined by default)
-			createDefaultObjectFunc_t         pCreateDefaultObject;
+			createDefaultObjectFunc_t           pCreateDefaultObject;
 
 			// - an optional function that will add some debug-primitives to a given IDebugRenderWorldPersistent to represent the item in its visual form
 			// - this is typically *not* used for built-in types, such as int, bool, float, etc. because they can have different meanings in different contexts
 			// - but if, for example, the item is an area, then this function would add debug-primitives to draw such an area
-			addItemToDebugRenderWorldFunc_t   pAddItemToDebugRenderWorld;
+			addItemToDebugRenderWorldFunc_t     pAddItemToDebugRenderWorld;
 
 			// - optional function to create a debug-proxy of the item
 			// - it's used by the query history to figure out what the closest item to the camera is, in order to show details about that particular item
-			createItemDebugProxyFunc_t        pCreateItemDebugProxy;
+			createItemDebugProxyFunc_t          pCreateItemDebugProxy;
 
-			explicit                          SItemFactoryCallbacks();
+#if UQS_SCHEMATYC_SUPPORT
+			// callbacks to convert to and from <TItem>
+			CItemConverterCollectionMgr<TItem>  itemConverters;
+#endif
+
+			explicit                            SItemFactoryCallbacks();
 		};
 
 		template <class TItem>
@@ -86,29 +91,35 @@ namespace uqs
 			{
 			public:
 				// IItemFactory
-				virtual const char*                  GetName() const override;
+				virtual const char*                        GetName() const override;
 				// ~IItemFactory
 
 				// IItemFactory: forward these pure virtual methods to the derived class
-				virtual void*                        CreateItems(size_t numItems, EItemInitMode itemInitMode) override = 0;
-				virtual void*                        CloneItem(const void* pOriginalItem) override = 0;
-				virtual void                         DestroyItems(void* pItems) override = 0;
-				virtual const shared::CTypeInfo&     GetItemType() const override = 0;
-				virtual size_t                       GetItemSize() const override = 0;
-				virtual void                         CopyItem(void* pTargetItem, const void* pSourceItem) const override = 0;
-				virtual void*                        GetItemAtIndex(void* pItems, size_t index) const override = 0;
-				virtual const void*                  GetItemAtIndex(const void* pItems, size_t index) const override = 0;
-				virtual void                         AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const override = 0;
-				virtual bool                         CanBeRepresentedInDebugRenderWorld() const override = 0;
-				virtual void                         CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override = 0;
-				virtual bool                         CanBePersistantlySerialized() const override = 0;
-				virtual bool                         TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
-				virtual bool                         TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
-				virtual bool                         TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override = 0;
+#if UQS_SCHEMATYC_SUPPORT
+				virtual const CryGUID&                     GetGUIDForSchematycAddParamFunction() const override = 0;
+				virtual const CryGUID&                     GetGUIDForSchematycGetItemFromResultSetFunction() const override = 0;
+				virtual const IItemConverterCollection&    GetFromForeignTypeConverters() const override = 0;
+				virtual const IItemConverterCollection&    GetToForeignTypeConverters() const override = 0;
+#endif
+				virtual void*                              CreateItems(size_t numItems, EItemInitMode itemInitMode) override = 0;
+				virtual void*                              CloneItem(const void* pOriginalItem) override = 0;
+				virtual void                               DestroyItems(void* pItems) override = 0;
+				virtual const shared::CTypeInfo&           GetItemType() const override = 0;
+				virtual size_t                             GetItemSize() const override = 0;
+				virtual void                               CopyItem(void* pTargetItem, const void* pSourceItem) const override = 0;
+				virtual void*                              GetItemAtIndex(void* pItems, size_t index) const override = 0;
+				virtual const void*                        GetItemAtIndex(const void* pItems, size_t index) const override = 0;
+				virtual void                               AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const override = 0;
+				virtual bool                               CanBeRepresentedInDebugRenderWorld() const override = 0;
+				virtual void                               CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override = 0;
+				virtual bool                               CanBePersistantlySerialized() const override = 0;
+				virtual bool                               TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
+				virtual bool                               TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
+				virtual bool                               TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override = 0;
 				// ~IItemFactory
 
 			protected:
-				explicit                             CItemFactoryBase(const char* name);
+				explicit                                   CItemFactoryBase(const char* name);
 			};
 
 			inline CItemFactoryBase::CItemFactoryBase(const char* name)
@@ -143,64 +154,87 @@ namespace uqs
 
 				struct SHeader
 				{
-					size_t                          itemCount;
-					SHeader*                        pNextInFreeListOfSingleItems;    // item-arrays with exactly 1 element are managed as a free list
-					TItem                           items[1];
+					size_t                                itemCount;
+					SHeader*                              pNextInFreeListOfSingleItems;    // item-arrays with exactly 1 element are managed as a free list
+					TItem                                 items[1];
 
 				private:
 					// instances of this struct are not supported since it would mean that the one item in .items[1] gets created, which we don't want here
-					                                SHeader();
-													SHeader(const SHeader&);
-													SHeader(SHeader&&);
-													~SHeader();
-					SHeader&                        operator=(const SHeader&);
-					SHeader&                        operator=(SHeader&&);
+					                                      SHeader();
+					                                      SHeader(const SHeader&);
+					                                      SHeader(SHeader&&);
+					                                      ~SHeader();
+					SHeader&                              operator=(const SHeader&);
+					SHeader&                              operator=(SHeader&&);
 				};
 
 			public:
 
-				explicit                            CItemFactoryInternal(const char* name, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
-													~CItemFactoryInternal();
+#if UQS_SCHEMATYC_SUPPORT
+				explicit                                  CItemFactoryInternal(const char* name, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
+#else
+				explicit                                  CItemFactoryInternal(const char* name, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
+#endif
+													      ~CItemFactoryInternal();
 
 				// IItemFactory
-				virtual void*                       CreateItems(size_t numItems, EItemInitMode itemInitMode) override;
-				virtual void*                       CloneItem(const void* p) override;
-				virtual void                        DestroyItems(void* p) override;
-				virtual const shared::CTypeInfo&    GetItemType() const override;
-				virtual size_t                      GetItemSize() const override;
-				virtual void                        CopyItem(void* pTargetItem, const void* pSourceItem) const override;
-				virtual void*                       GetItemAtIndex(void* pItems, size_t index) const override;
-				virtual const void*                 GetItemAtIndex(const void* pItems, size_t index) const override;
-				virtual void                        AddItemToDebugRenderWorld(const void* item, core::IDebugRenderWorldPersistent& debugRW) const override;
-				virtual bool                        CanBeRepresentedInDebugRenderWorld() const override;
-				virtual void                        CreateItemDebugProxyForItem(const void* item, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override;
-				virtual bool                        CanBePersistantlySerialized() const override;
-				virtual bool                        TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
-				virtual bool                        TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
-				virtual bool                        TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override;
+#if UQS_SCHEMATYC_SUPPORT
+				virtual const CryGUID&                    GetGUIDForSchematycAddParamFunction() const override;
+				virtual const CryGUID&                    GetGUIDForSchematycGetItemFromResultSetFunction() const override;
+				virtual const IItemConverterCollection&   GetFromForeignTypeConverters() const override;
+				virtual const IItemConverterCollection&   GetToForeignTypeConverters() const override;
+#endif
+				virtual void*                             CreateItems(size_t numItems, EItemInitMode itemInitMode) override;
+				virtual void*                             CloneItem(const void* p) override;
+				virtual void                              DestroyItems(void* p) override;
+				virtual const shared::CTypeInfo&          GetItemType() const override;
+				virtual size_t                            GetItemSize() const override;
+				virtual void                              CopyItem(void* pTargetItem, const void* pSourceItem) const override;
+				virtual void*                             GetItemAtIndex(void* pItems, size_t index) const override;
+				virtual const void*                       GetItemAtIndex(const void* pItems, size_t index) const override;
+				virtual void                              AddItemToDebugRenderWorld(const void* item, core::IDebugRenderWorldPersistent& debugRW) const override;
+				virtual bool                              CanBeRepresentedInDebugRenderWorld() const override;
+				virtual void                              CreateItemDebugProxyForItem(const void* item, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override;
+				virtual bool                              CanBePersistantlySerialized() const override;
+				virtual bool                              TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
+				virtual bool                              TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
+				virtual bool                              TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override;
 				// ~IItemFactory
 
 			private:
 
-				static size_t                       ComputeMemoryRequiredForSingleItem();
-				static size_t                       ComputeMemoryRequired(size_t itemCount);
-				static TItem*                       AllocateUninitializedMemoryForItems(size_t numItems);
+				static size_t                             ComputeMemoryRequiredForSingleItem();
+				static size_t                             ComputeMemoryRequired(size_t itemCount);
+				static TItem*                             AllocateUninitializedMemoryForItems(size_t numItems);
 
 			private:
 
-				const SItemFactoryCallbacks<TItem>  m_callbacks;
+#if UQS_SCHEMATYC_SUPPORT
+				const CryGUID                             m_guidForSchematycAddParamFunction;
+				const CryGUID                             m_guidForSchematycGetItemFromResultSetFunction;
+#endif
+				const SItemFactoryCallbacks<TItem>        m_callbacks;
 
-				static const ptrdiff_t              s_itemsOffsetInHeader = offsetof(SHeader, items);
-				static SHeader*                     s_pFreeListHoldingSingleItems;
+				static const ptrdiff_t                    s_itemsOffsetInHeader = offsetof(SHeader, items);
+				static SHeader*                           s_pFreeListHoldingSingleItems;
 			};
 
 			template <class TItem>
 			typename CItemFactoryInternal<TItem>::SHeader* CItemFactoryInternal<TItem>::s_pFreeListHoldingSingleItems;
 
+#if UQS_SCHEMATYC_SUPPORT
+			template <class TItem>
+			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* name, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
+				: CItemFactoryBase(name)
+				, m_guidForSchematycAddParamFunction(guidForSchematycAddParamFunction)
+				, m_guidForSchematycGetItemFromResultSetFunction(guidForSchematycGetItemFromResultSetFunction)
+				, m_callbacks(callbacks)
+#else
 			template <class TItem>
 			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* name, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
 				: CItemFactoryBase(name)
 				, m_callbacks(callbacks)
+#endif
 			{
 				if (bAutoRegisterBuiltinFunctions)
 				{
@@ -311,6 +345,34 @@ namespace uqs
 					return pHeader->items;
 				}
 			}
+
+#if UQS_SCHEMATYC_SUPPORT
+
+			template <class TItem>
+			const CryGUID& CItemFactoryInternal<TItem>::GetGUIDForSchematycAddParamFunction() const
+			{
+				return m_guidForSchematycAddParamFunction;
+			}
+
+			template <class TItem>
+			const CryGUID& CItemFactoryInternal<TItem>::GetGUIDForSchematycGetItemFromResultSetFunction() const
+			{
+				return m_guidForSchematycGetItemFromResultSetFunction;
+			}
+
+			template <class TItem>
+			const IItemConverterCollection& CItemFactoryInternal<TItem>::GetFromForeignTypeConverters() const
+			{
+				return m_callbacks.itemConverters.GetFromForeignTypeConverters();
+			}
+
+			template <class TItem>
+			const IItemConverterCollection& CItemFactoryInternal<TItem>::GetToForeignTypeConverters() const
+			{
+				return m_callbacks.itemConverters.GetToForeignTypeConverters();
+			}
+
+#endif // UQS_SCHEMATYC_SUPPORT
 
 			template <class TItem>
 			void* CItemFactoryInternal<TItem>::CreateItems(size_t numItems, EItemInitMode itemInitMode)
@@ -442,15 +504,14 @@ namespace uqs
 					return false;
 				}
 
-				void* pSingleItem = CreateItems(1, EItemInitMode::UseDefaultConstructor);
-				if (TryDeserializeItem(pSingleItem, archive, szName, szLabel))
+				TItem tmpItem;
+				if (TryDeserializeItem(&tmpItem, archive, szName, szLabel))
 				{
-					out.__AddOrReplace(szKey, *this, pSingleItem);
+					out.AddOrReplace(szKey, *this, &tmpItem);
 					return true;
 				}
 				else
 				{
-					DestroyItems(pSingleItem);
 					return false;
 				}
 			}
@@ -530,14 +591,44 @@ namespace uqs
 		class CItemFactory
 		{
 		public:
-			explicit CItemFactory(const char* name, const SItemFactoryCallbacks<TItem>& callbacks)
+#if UQS_SCHEMATYC_SUPPORT
+			explicit CItemFactory(const char* szName, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks)
 			{
 				//
 				// register the actual item type the caller intends to register
 				//
 
-				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(name, callbacks, true);
+				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, guidForSchematycAddParamFunction, guidForSchematycGetItemFromResultSetFunction, callbacks, true);
 
+				//
+				// register a very specific container-type to hold items (plural!) of what the caller just registered
+				//
+
+				RegisterShuttledItemsContainer(szName);
+			}
+#endif
+			explicit CItemFactory(const char* szName, const SItemFactoryCallbacks<TItem>& callbacks)
+			{
+				//
+				// register the actual item type the caller intends to register
+				//
+
+#if UQS_SCHEMATYC_SUPPORT
+				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, CryGUID::Null(), CryGUID::Null(), callbacks, true);
+#else
+				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, callbacks, true);
+#endif
+
+				//
+				// register a very specific container-type to hold items (plural!) of what the caller just registered
+				//
+
+				RegisterShuttledItemsContainer(szName);
+			}
+
+		private:
+			static void RegisterShuttledItemsContainer(const char* szName)
+			{
 				//
 				// - register a very specific container-type that holds items (plural!) of what the caller just registered
 				// - this is for ELeafFunctionKind::ShuttledItems functions to give access to the items that were carried over from one query to another
@@ -545,9 +636,13 @@ namespace uqs
 				//
 
 				stack_string itemNameForShuttledItemsContainer("_builtin_ItemFactoryForShuttledItemsContainer_");
-				itemNameForShuttledItemsContainer.append(name);
+				itemNameForShuttledItemsContainer.append(szName);
 				SItemFactoryCallbacks<CItemListProxy_Readable<TItem>> callbacksForShuttledItemsContainer;  // no callbacks actually
+#if UQS_SCHEMATYC_SUPPORT
+				static const internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), CryGUID::Null(), CryGUID::Null(), callbacksForShuttledItemsContainer, false);
+#else
 				static const internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), callbacksForShuttledItemsContainer, false);
+#endif
 			}
 		};
 

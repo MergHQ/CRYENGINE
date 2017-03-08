@@ -19,6 +19,9 @@ namespace uqs
 		{
 			virtual                          ~IUtils() {}
 			virtual client::IItemFactory*    FindItemFactoryByType(const shared::CTypeInfo& type) const = 0;
+#if UQS_SCHEMATYC_SUPPORT
+			virtual client::IItemFactory*    FindItemFactoryBySchematycTypeName(const Schematyc::CTypeName& schematycTypeNameToSearchFor) const = 0;
+#endif
 		};
 
 	}

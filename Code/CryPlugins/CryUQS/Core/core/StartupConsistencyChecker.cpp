@@ -59,6 +59,99 @@ namespace uqs
 				}
 			}
 
+#if UQS_SCHEMATYC_SUPPORT
+			//
+			// ensure no duplicated and clashing item factory GUIDs
+			//
+
+			{
+				const ItemFactoryDatabase& itemFactoryDB = g_hubImpl->GetItemFactoryDatabase();
+
+				for (size_t i1 = 0, n = itemFactoryDB.GetFactoryCount(); i1 < n; ++i1)
+				{
+					static const CryGUID emptyGUID = CryGUID::Null();
+
+					const client::IItemFactory& itemFactory1 = itemFactoryDB.GetFactory(i1);
+					const CryGUID& guid1ofItemFactory1 = itemFactory1.GetGUIDForSchematycAddParamFunction();
+					const CryGUID& guid2ofItemFactory1 = itemFactory1.GetGUIDForSchematycGetItemFromResultSetFunction();
+					
+					//
+					// itemFactory1: skip if both of its GUIDs are empty
+					//
+					
+					if (guid1ofItemFactory1 == emptyGUID && guid2ofItemFactory1 == emptyGUID)
+					{
+						continue;
+					}
+
+					//
+					// itemFactory1: check for one GUID being empty while the other isn't
+					//
+
+					if ((guid1ofItemFactory1 == emptyGUID && guid2ofItemFactory1 != emptyGUID) ||
+					    (guid1ofItemFactory1 != emptyGUID && guid2ofItemFactory1 == emptyGUID))
+					{
+						string error;
+						error.Format("ItemFactory '%s' has inconsistent GUIDs: one is empty while the other is not", itemFactory1.GetName());
+						m_errors.push_back(error);
+						continue;
+					}
+
+					//
+					// itemFactory1: its 2 guids are non-empty -> check for duplicate
+					//
+
+					if (guid1ofItemFactory1 == guid2ofItemFactory1)
+					{
+						string error;
+						error.Format("ItemFactory '%s' has duplicated GUIDs", itemFactory1.GetName());
+						m_errors.push_back(error);
+						continue;
+					}
+
+					//
+					// now check the remaining item-factories for clashes
+					//
+
+					for (size_t i2 = i1 + 1; i2 < n; ++i2)
+					{
+						const client::IItemFactory& itemFactory2 = itemFactoryDB.GetFactory(i2);
+						const CryGUID& guid1ofItemFactory2 = itemFactory2.GetGUIDForSchematycAddParamFunction();
+						const CryGUID& guid2ofItemFactory2 = itemFactory2.GetGUIDForSchematycGetItemFromResultSetFunction();
+
+						if (guid1ofItemFactory1 == guid1ofItemFactory2 ||
+						    guid2ofItemFactory1 == guid2ofItemFactory2 ||
+						    guid1ofItemFactory1 == guid2ofItemFactory2 ||
+						    guid2ofItemFactory1 == guid1ofItemFactory2)
+						{
+							string error;
+							error.Format("Clashing GUIDs in ItemFactories '%s' and '%s'", itemFactory1.GetName(), itemFactory2.GetName());
+							m_errors.push_back(error);
+						}
+					}
+				}
+			}
+
+			//
+			// ensure no duplicate GUIDs in item converters
+			//
+
+			{
+				std::set<CryGUID> guidsInUse;
+
+				const ItemFactoryDatabase& itemFactoryDB = g_hubImpl->GetItemFactoryDatabase();
+
+				for (size_t iItemFactory = 0; iItemFactory < itemFactoryDB.GetFactoryCount(); ++iItemFactory)
+				{
+					const client::IItemFactory& itemFactory = itemFactoryDB.GetFactory(iItemFactory);
+					const char* szItemFactoryNameForErrorMessages = itemFactory.GetName();
+
+					CheckItemConvertersConsistency(itemFactory.GetFromForeignTypeConverters(), szItemFactoryNameForErrorMessages, guidsInUse);
+					CheckItemConvertersConsistency(itemFactory.GetToForeignTypeConverters(), szItemFactoryNameForErrorMessages, guidsInUse);
+				}
+			}
+#endif // UQS_SCHEMATYC_SUPPORT
+
 			//
 			// ensure no duplicate item factories (same name)
 			//
@@ -296,6 +389,30 @@ namespace uqs
 				}
 			}
 		}
+
+#if UQS_SCHEMATYC_SUPPORT
+		void CStartupConsistencyChecker::CheckItemConvertersConsistency(const client::IItemConverterCollection& itemConverters, const char* szItemFactoryNameForErrorMessages, std::set<CryGUID>& guidsInUse)
+		{
+			for (size_t i = 0, n = itemConverters.GetItemConverterCount(); i < n; ++i)
+			{
+				const client::IItemConverter& converter = itemConverters.GetItemConverter(i);
+
+				const CryGUID& guid = converter.GetGUID();
+				auto res = guidsInUse.insert(guid);
+				const bool bInsertSucceeded = res.second;
+
+				if (!bInsertSucceeded)
+				{
+					// duplicate detected
+					shared::CUqsString guidAsString;
+					client::internal::CGUIDHelper::ToString(guidAsString, guid);
+					string error;
+					error.Format("ItemFactory '%s': clashing GUID in ItemConverter '%s -> %s': %s (used by a different ItemConverter already)", szItemFactoryNameForErrorMessages, converter.GetFromName(), converter.GetToName(), guidAsString.c_str());
+					m_errors.push_back(error);
+				}
+			}
+		}
+#endif // UQS_SCHEMATYC_SUPPORT
 
 		size_t CStartupConsistencyChecker::GetErrorCount() const
 		{

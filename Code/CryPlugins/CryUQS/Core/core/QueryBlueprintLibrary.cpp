@@ -83,6 +83,30 @@ namespace uqs
 			return GetQueryBlueprintByIDInternal(blueprintID).get();
 		}
 
+		size_t CQueryBlueprintLibrary::GetQueryBlueprintCount() const
+		{
+			return m_queryBlueprintsVector.size();
+		}
+
+		CQueryBlueprintID CQueryBlueprintLibrary::GetQueryBlueprintID(size_t index) const
+		{
+			assert(index < m_queryBlueprintsVector.size());
+
+			CQueryBlueprintID blueprintID(CQueryBlueprintID::s_invalidIndex, "");
+
+			for (const auto& pair : m_queryBlueprintsMap)
+			{
+				const CQueryBlueprintID& blueprintID = pair.second;
+
+				if (blueprintID.m_index == index)
+					return blueprintID;
+			}
+
+			// cannot reach here
+			assert(0);
+			return CQueryBlueprintID();
+		}
+
 		std::shared_ptr<const CQueryBlueprint> CQueryBlueprintLibrary::GetQueryBlueprintByIDInternal(const CQueryBlueprintID& blueprintID) const
 		{
 			if (blueprintID.IsOrHasBeenValid())

@@ -36,6 +36,7 @@ add_sources("UQS_uber_client.cpp"
 		"client/FactoryRegistrationHelper.h"
 		"client/FactoryRegistrationHelper.cpp"
 		"client/TypeWrapper.h"
+		"client/ItemConverter.h"
 )
 
 end_sources()
@@ -49,3 +50,10 @@ target_include_directories(${THIS_PROJECT}
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
 	INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
 )
+
+if(OPTION_UQS_SCHEMATYC_SUPPORT)
+	target_include_directories(${THIS_PROJECT}
+		PUBLIC ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
+		PUBLIC ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
+	)
+endif()
