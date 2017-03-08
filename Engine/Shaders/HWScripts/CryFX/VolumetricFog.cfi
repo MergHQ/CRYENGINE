@@ -308,8 +308,8 @@ struct SVolumetricFogParams
 
 // TODO: remove these textures after completely moving to new graphics pipeline.
 Texture3D<float4> VolumetricFogTexture : TS_VolumetricFog;
-TextureCube<float4> vfGlobalEnvProbeTexture0 : TS_VolumetricFogGlobalEnvProbe0;
-TextureCube<float4> vfGlobalEnvProbeTexture1 : TS_VolumetricFogGlobalEnvProbe1;
+TextureCube<float4> vfGlobalEnvProbeTexture0 : register(t25) = TS_VolumetricFogGlobalEnvProbe0;
+TextureCube<float4> vfGlobalEnvProbeTexture1 : register(t26) = TS_VolumetricFogGlobalEnvProbe1;
 SamplerState vfTrilinearClampSState : SS_TrilinearClamp;
 
 // x:near distance, y:reciprocal of far minus near distance, z:depth resolution of volume tex, w:reciprocal of depth resolution
