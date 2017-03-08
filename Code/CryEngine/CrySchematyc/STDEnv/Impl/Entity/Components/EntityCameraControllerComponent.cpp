@@ -58,10 +58,10 @@ void CEntityOrbitCameraControllerComponent::Run(ESimulationMode simulationMode)
 			pGameObject->CaptureView(this);
 		}
 
-		m_rotation.x = DEG2RAD(m_pitch);
-		m_rotation.y = DEG2RAD(m_roll);
-		m_rotation.z = DEG2RAD(m_yaw);
-		m_fov = DEG2RAD(m_fov);
+		SetPitch(m_pitch, false);
+		SetRoll(m_roll, false);
+		SetYaw(m_yaw, false);
+		SetFov(m_fov, false);
 		SetActive(m_bActive);
 	}
 }
