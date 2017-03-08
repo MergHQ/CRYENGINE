@@ -12,6 +12,7 @@
 #include <CryString/CryPath.h>
 #include <CryCore/StlUtils.h>
 #include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IProfileData.h>
 #include <CrySerialization/IArchiveHost.h>
 
 namespace ACE
@@ -270,7 +271,7 @@ ACE::TImplControlTypeMask CAudioSystemEditor_sdlmixer::GetCompatibleTypes(EACECo
 
 string CAudioSystemEditor_sdlmixer::GetName() const
 {
-	return "SDL Mixer";
+	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
 }
 
 void CImplementationSettings_sdlmixer::SetProjectPath(const char* szPath)

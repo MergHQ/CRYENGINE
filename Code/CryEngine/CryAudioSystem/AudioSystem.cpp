@@ -5,6 +5,7 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "PropagationProcessor.h"
+#include "ProfileData.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 
@@ -778,6 +779,16 @@ void CSystem::OnLanguageChanged()
 	CAudioRequest request(&requestData);
 	request.flags = eRequestFlags_ExecuteBlocking;
 	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+IProfileData* CSystem::GetProfileData() const
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	return static_cast<IProfileData*>(m_atl.GetProfileData());
+#else
+	return nullptr;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

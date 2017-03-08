@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "AudioSystemEditor_fmod.h"
+#include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IProfileData.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CryString/CryPath.h>
@@ -573,7 +575,7 @@ ACE::TImplControlTypeMask CAudioSystemEditor_fmod::GetCompatibleTypes(EACEContro
 
 string CAudioSystemEditor_fmod::GetName() const
 {
-	return "Fmod Studio";
+	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
 }
 
 void CAudioSystemEditor_fmod::EnableConnection(ConnectionPtr pConnection)

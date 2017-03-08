@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MFXAudioEffect.h"
 #include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IObject.h>
 
 using namespace CryAudio;
 

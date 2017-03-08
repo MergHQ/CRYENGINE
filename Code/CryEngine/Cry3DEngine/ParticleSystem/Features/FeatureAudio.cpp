@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleFeature.h"
 #include <CrySerialization/Decorators/ResourcesAudio.h>
+#include <CryAudio/IObject.h>
 #include "ParamMod.h"
 
 using namespace CryAudio;

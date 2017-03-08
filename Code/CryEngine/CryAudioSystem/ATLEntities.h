@@ -5,6 +5,7 @@
 #include "ATLUtils.h"
 #include "AudioInternalInterfaces.h"
 #include <SharedAudioData.h>
+#include <CryAudio/IListener.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CrySystem/TimeValue.h>
 #include <PoolObject.h>

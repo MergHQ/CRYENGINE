@@ -4,6 +4,7 @@
 #include "EntityAudioProxy.h"
 #include "Entity.h"
 #include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IListener.h>
 
 using namespace CryAudio;
 

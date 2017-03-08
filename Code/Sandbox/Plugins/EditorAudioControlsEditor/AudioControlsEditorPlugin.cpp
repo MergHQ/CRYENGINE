@@ -14,6 +14,7 @@
 #include "AudioControl.h"
 #include <IAudioSystemEditor.h>
 #include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IObject.h>
 #include <CryMath/Cry_Camera.h>
 
 #include <CrySystem/File/CryFile.h>

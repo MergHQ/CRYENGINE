@@ -5,6 +5,8 @@
 #include "StdAfx.h"
 #include "AudioSystemEditor_wwise.h"
 #include "AudioSystemControl_wwise.h"
+#include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IProfileData.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/CryCrc32.h>
@@ -488,7 +490,7 @@ ACE::CID CAudioSystemEditor_wwise::GenerateID(const string& controlName, bool bI
 
 string CAudioSystemEditor_wwise::GetName() const
 {
-	return "Wwise";
+	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
 }
 
 void CAudioSystemEditor_wwise::UpdateConnectedStatus()
