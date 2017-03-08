@@ -267,7 +267,8 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 
 	if (_stricmp(szTag, s_szPortAudioEventTag) == 0)
 	{
-		stack_string path = "GameSDK/audio/portaudio/";
+		stack_string path = m_regularSoundBankFolder.c_str();
+		path += CRY_NATIVE_PATH_SEPSTR;
 		path += pAudioTriggerNode->getAttr(s_szPortAudioEventNameAttribute);
 
 		if (!path.empty())
@@ -295,6 +296,7 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 				switch (subFormat)
 				{
 				case SF_FORMAT_PCM_16:
+				case SF_FORMAT_PCM_24:
 					streamParameters.sampleFormat = paInt16;
 					break;
 				case SF_FORMAT_PCM_32:
