@@ -13,6 +13,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "ProfileData.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -59,7 +60,6 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	, m_fileCacheMgr(m_preloadRequests)
 	, m_xmlProcessor(m_triggers, m_parameters, m_switches, m_environments, m_preloadRequests, m_fileCacheMgr, m_internalControls)
 {
-
 	if (g_audioCVars.m_audioObjectPoolSize < 1)
 	{
 		g_audioCVars.m_audioObjectPoolSize = 1;
@@ -80,6 +80,10 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 		g_audioLogger.Log(eAudioLogType_Warning, "Audio Standalone File pool size should be greater than zero. Forcing the cvar \"s_AudioStandaloneFilePoolSize\" to 1!");
 	}
 	CATLStandaloneFile::CreateAllocator(g_audioCVars.m_audioStandaloneFilePoolSize);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_pProfileData = new CProfileData;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,6 +96,10 @@ CAudioTranslationLayer::~CAudioTranslationLayer()
 	}
 
 	CRY_ASSERT_MESSAGE(!m_pGlobalAudioObject, "Global audio object should have been destroyed in the audio thread, before the ATL is destructed.");
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	delete m_pProfileData;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1361,7 +1369,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 	InitInternalControls();
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_implNameString = m_pImpl->GetImplementationNameString();
+	m_pProfileData->SetImplName(m_pImpl->GetImplementationNameString());
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 
 	return result;
@@ -1580,7 +1588,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		static float const s_colorGreen[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
 		static float const s_colorBlue[4] = { 0.4f, 0.4f, 1.0f, 1.0f };
 
-		pAuxGeom->Draw2dLabel(posX, posY, 1.6f, s_colorBlue, false, "AudioTranslationLayer with %s", m_implNameString.c_str());
+		pAuxGeom->Draw2dLabel(posX, posY, 1.6f, s_colorBlue, false, "AudioTranslationLayer with %s", m_pProfileData->GetImplName());
 		posX += indentation;
 		posY += lineHeight;
 
@@ -1689,6 +1697,12 @@ void CAudioTranslationLayer::GetAudioTriggerData(ControlId const audioTriggerId,
 		audioTriggerData.radius = pTrigger->m_maxRadius;
 		audioTriggerData.occlusionFadeOutDistance = pTrigger->m_occlusionFadeOutDistance;
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+CProfileData* CAudioTranslationLayer::GetProfileData() const
+{
+	return m_pProfileData;
 }
 
 ///////////////////////////////////////////////////////////////////////////

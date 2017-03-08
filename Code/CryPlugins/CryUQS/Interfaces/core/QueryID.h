@@ -73,7 +73,14 @@ namespace uqs
 
 		inline void CQueryID::ToString(shared::IUqsString& out) const
 		{
-			out.Format("%i", (int)m_id);
+			if (IsValid())
+			{
+				out.Format("%i", (int)m_id);
+			}
+			else
+			{
+				out.Set("invalid");
+			}
 		}
 
 		inline void CQueryID::Serialize(Serialization::IArchive& ar)

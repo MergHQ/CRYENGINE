@@ -441,7 +441,6 @@ const SEntitySchedulingProfiles* CGameObjectSystem::GetEntitySchedulerProfiles(I
 
 void CGameObjectSystem::SetSpawnSerializerForEntity(const EntityId entityId, TSerialize* pSerializer)
 {
-	CryLogAlways("Spawnserializers: %d, set", m_spawnSerializers.size());
 	CRY_ASSERT(GetSpawnSerializerForEntity(entityId) == NULL);
 	if (GetSpawnSerializerForEntity(entityId) != NULL)
 	{

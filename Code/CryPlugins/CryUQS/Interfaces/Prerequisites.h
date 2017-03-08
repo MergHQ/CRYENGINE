@@ -72,3 +72,10 @@ namespace uqs
 #else
 #define UQS_TODO(y)
 #endif
+
+// - this #define controls whether some additional sections in the code will be added to adapt to Schematyc
+// - it has to be set from the outside (i. e. at compiler level) to 0 or 1
+// - the reasoning behind forcing it to get set from one central place (and *not* defaulting it to some value *here*) is to detect potential configuration-related bugs as early as possible
+#ifndef UQS_SCHEMATYC_SUPPORT
+#error UQS_SCHEMATYC_SUPPORT has to be set from the outside (i. e. at compiler level) to 0 or 1 (but is not set at all)
+#endif

@@ -1592,7 +1592,7 @@ int CTriMesh::RegisterIntersection(primitive *pprim1,primitive *pprim2, geometry
   int *piFeature[2];
   piFeature[0] = piFeature[1] = &iFeature_dummy;
 	int idx_prim[2] = { ((indexed_triangle*)pprim1)->idx, -1 };
-	int bNoUnprojection=0,bSurfaceSurfaceContact,bSurfaceEdgeContact,bUseLSNormal=0;
+	int bNoUnprojection=0,bSurfaceSurfaceContact=0,bSurfaceEdgeContact=0,bUseLSNormal=0;
 	int i,j,res=0,ipt,ibest,jbest,iop,nprims1,nprims2,nSmallSteps;
 	int indexed_triangle::*pidxoffs=0;
 	const int iCaller = pGTest1->iCaller;

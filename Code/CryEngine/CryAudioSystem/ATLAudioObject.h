@@ -4,9 +4,9 @@
 
 #include "ATLEntities.h"
 #include "PropagationProcessor.h"
+#include <PoolObject.h>
+#include <CryAudio/IObject.h>
 #include <CrySystem/TimeValue.h>
-#include "PoolObject.h"
-#include "SharedAudioData.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 struct IRenderAuxGeom;

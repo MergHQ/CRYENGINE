@@ -384,7 +384,7 @@ uint8 CNetEntity::GetDefaultProfile(EEntityAspects aspect)
 void CNetEntity::UpdateSchedulingProfiles()
 {
 	// We need to check NetContext here, because it's NULL in a dummy editor game session (or at least while starting up the editor).
-	if (!gEnv->pNetContext) // Allegedly can be NULL in a editor
+	if (!gEnv->pNetContext)
 		return;
 
 	AUTO_LOCK(g_updateSchedulingProfileCritSec);

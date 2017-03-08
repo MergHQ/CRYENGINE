@@ -63,7 +63,6 @@ Matrix34 sIdentityMatrix = Matrix34::CreateIdentity();
 
 //////////////////////////////////////////////////////////////////////////
 CEntity::CEntity(SEntitySpawnParams& params)
-	: m_pNetEntity(new CNetEntity(this))	// #netentity Will be addressed in BindToNetwork-refactoring
 {
 	m_render.m_pEntity = this;
 	m_physics.m_pEntity = this;
@@ -141,6 +140,9 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_nKeepAliveCounter = 0;
 
 	m_cloneLayerId = -1;
+
+	// #netentity Will be addressed in BindToNetwork-refactoring
+	m_pNetEntity = std::unique_ptr<INetEntity>(new CNetEntity(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -23,6 +23,8 @@ add_sources("NoUberFile"
 		"client/QueryRequest.h"
 		"client/IQueryBlueprintRuntimeParamVisitor.h"
 		"client/IItemMonitor.h"
+		"client/GUIDHelper.h"
+		"client/IItemConverter.h"
 	SOURCE_GROUP "core"
 		"core/IDebugRenderWorld.h"
 		"core/IDeferredEvaluatorBlueprint.h"
@@ -79,6 +81,13 @@ end_sources()
 #END-FILE-LIST
 
 CryFileContainer(CryUQS_Interfaces SOLUTION_FOLDER "CryPlugins/CryUQS")
+
+if(OPTION_UQS_SCHEMATYC_SUPPORT)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+		INTERFACE ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
+		INTERFACE ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
+	)
+endif()
 
 #set_property(TARGET ${THIS_PROJECT} PROPERTY INTERFACE_INCLUDE_DIRECTORIES
 #	"${CMAKE_CURRENT_SOURCE_DIR}/../.."

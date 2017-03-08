@@ -4,16 +4,24 @@
 
 #include "Prerequisites.h"
 
+#if UQS_SCHEMATYC_SUPPORT
+#include <CrySchematyc/CoreAPI.h>
+#include <CrySchematyc/STDEnvAPI.h>
+#endif
+
 #include "shared/TypeInfo.h"
 #include "shared/DataTypeHelper.h"
 #include "shared/IUqsString.h"
 #include "shared/IVariantDict.h"
+
+#include "client/GUIDHelper.h"
 
 #include "core/IDebugRenderWorld.h"
 #include "core/IFactoryDatabase.h"
 #include "core/IItemDebugProxies.h"
 #include "core/IItemDebugProxyFactory.h"
 
+#include "client/IItemConverter.h"
 #include "client/IItemFactory.h"
 #include "client/IParamsHolder.h"
 #include "client/IItemMonitor.h"

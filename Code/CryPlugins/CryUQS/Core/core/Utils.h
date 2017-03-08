@@ -21,20 +21,26 @@ namespace uqs
 		{
 		public:
 			// IUtils
-			virtual client::IItemFactory*                       FindItemFactoryByType(const shared::CTypeInfo& type) const override;
+			virtual client::IItemFactory*                           FindItemFactoryByType(const shared::CTypeInfo& type) const override;
+#if UQS_SCHEMATYC_SUPPORT
+			virtual client::IItemFactory*                           FindItemFactoryBySchematycTypeName(const Schematyc::CTypeName& schematycTypeNameToSearchFor) const override;
+#endif
 			// ~IUtils
 
 			// IFactoryDatabaseListener<client::IItemFactory>
-			virtual void                                        OnFactoryRegistered(client::IItemFactory* freshlyRegisteredFactory) override;
+			virtual void                                            OnFactoryRegistered(client::IItemFactory* freshlyRegisteredFactory) override;
 			// ~IFactoryDatabaseListener<client::IItemFactory>
 
 			// - called by CHub's ctor + dtor
 			// - this is to ensure that all member variables in CHub are definitely constructed before giving CUtils access to them
-			void                                                SubscribeToStuffInHub(CHub& hub);
-			void                                                UnsubscribeFromStuffInHub(CHub& hub);
+			void                                                    SubscribeToStuffInHub(CHub& hub);
+			void                                                    UnsubscribeFromStuffInHub(CHub& hub);
 
 		private:
-			std::map<shared::CTypeInfo, client::IItemFactory*>  m_type2itemFactory;
+			std::map<shared::CTypeInfo, client::IItemFactory*>      m_type2itemFactory;
+#if UQS_SCHEMATYC_SUPPORT
+			std::map<Schematyc::CTypeName, client::IItemFactory*>   m_schematycTypeName2itemFactory;
+#endif
 		};
 
 	}

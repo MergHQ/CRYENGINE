@@ -31,6 +31,8 @@ namespace uqs
 			virtual bool                                          RemoveStoredQueryBlueprint(const char*szQueryBlueprintName, shared::IUqsString& error) override;
 			virtual CQueryBlueprintID                             FindQueryBlueprintIDByName(const char* szQueryBlueprintName) const override;
 			virtual const IQueryBlueprint*                        GetQueryBlueprintByID(const CQueryBlueprintID& blueprintID) const override;
+			virtual size_t                                        GetQueryBlueprintCount() const override;
+			virtual CQueryBlueprintID                             GetQueryBlueprintID(size_t index) const override;
 			// ~IQueryBlueprintLibrary
 
 			std::shared_ptr<const CQueryBlueprint>                GetQueryBlueprintByIDInternal(const CQueryBlueprintID& blueprintID) const;

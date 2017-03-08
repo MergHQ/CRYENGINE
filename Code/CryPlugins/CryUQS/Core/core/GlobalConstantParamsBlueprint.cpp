@@ -126,8 +126,7 @@ namespace uqs
 		{
 			for (const auto& pair : m_constantParams)
 			{
-				void* pClonedItem = pair.second.pItemFactory->CloneItem(pair.second.pItem);
-				out.__AddOrReplace(pair.first.c_str(), *pair.second.pItemFactory, pClonedItem);
+				out.AddOrReplace(pair.first.c_str(), *pair.second.pItemFactory, pair.second.pItem);
 			}
 		}
 

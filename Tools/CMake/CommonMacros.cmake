@@ -113,6 +113,9 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	IF(ORBIS)
 		set_target_properties_for_orbis(${TargetProject})
 	ENDIF(ORBIS)
+	if(WIN64)
+		set_property(TARGET ${TargetProject} PROPERTY VS_GLOBAL_PreferredToolArchitecture x64)
+	endif()
   
 	if(VC_MDD_ANDROID)
 		if (VC_MDD_ANDROID_PLATFORM_TOOLSET)
@@ -1064,8 +1067,8 @@ function(set_visual_studio_debugger_command TARGET_NAME EXE_PATH CMD_LINE)
 			"<?xml version=\"1.0\" encoding=\"utf-8\"?>
 			<Project ToolsVersion=\"14.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
 				<PropertyGroup>
-					<LocalDebuggerCommand>\"${EXE_PATH}\"</LocalDebuggerCommand>
-					<LocalDebuggerCommandArguments>\"${CMD_LINE}\"</LocalDebuggerCommandArguments>
+					<LocalDebuggerCommand>${EXE_PATH}</LocalDebuggerCommand>
+					<LocalDebuggerCommandArguments>${CMD_LINE}</LocalDebuggerCommandArguments>
 					<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 				</PropertyGroup>
 			</Project>"

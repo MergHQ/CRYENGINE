@@ -68,7 +68,9 @@
 			"client/IItemFactory.h",
 			"client/QueryRequest.h",
 			"client/IQueryBlueprintRuntimeParamVisitor.h",
-			"client/IItemMonitor.h"
+			"client/IItemMonitor.h",
+			"client/GUIDHelper.h",
+			"client/IItemConverter.h"
 		],
 		"datasource":
 		[

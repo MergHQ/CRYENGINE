@@ -15,9 +15,20 @@ namespace uqs
 			return (it == m_type2itemFactory.cend()) ? nullptr : it->second;
 		}
 
+#if UQS_SCHEMATYC_SUPPORT
+		client::IItemFactory* CUtils::FindItemFactoryBySchematycTypeName(const Schematyc::CTypeName& schematycTypeNameToSearchFor) const
+		{
+			auto it = m_schematycTypeName2itemFactory.find(schematycTypeNameToSearchFor);
+			return (it == m_schematycTypeName2itemFactory.cend()) ? nullptr : it->second;
+		}
+#endif
+
 		void CUtils::OnFactoryRegistered(client::IItemFactory* freshlyRegisteredFactory)
 		{
 			m_type2itemFactory[freshlyRegisteredFactory->GetItemType()] = freshlyRegisteredFactory;
+#if UQS_SCHEMATYC_SUPPORT
+			m_schematycTypeName2itemFactory[freshlyRegisteredFactory->GetItemType().GetSchematycTypeName()] = freshlyRegisteredFactory;
+#endif
 		}
 
 		void CUtils::SubscribeToStuffInHub(CHub& hub)

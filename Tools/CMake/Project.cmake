@@ -37,7 +37,11 @@ if (WIN32)  # Either Win32 or Win64
 endif(WIN32)
 
 # Include Common CMake macros used by CRYENGINE cmake files
+set(global_defines)
+set(global_includes)
+set(global_links)
 include(${CMAKE_CURRENT_LIST_DIR}/CommonMacros.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CommonOptions.cmake)
 
 # Enables 3 Default Build Configurations (Debug/Profile/Release)
 set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug Profile)
@@ -62,4 +66,14 @@ endif()
 include_directories(${PROJECT_NAME} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryCommon)
 if (PROJECT_INCLUDE_CryAction)
 	include_directories(${PROJECT_NAME} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction)
+endif()
+
+foreach( define ${global_defines} )
+	add_definitions(-D${define})
+endforeach()
+if(global_includes)
+	include_directories(${global_includes})
+endif()
+if(global_links)
+	link_directories(${global_links})
 endif()

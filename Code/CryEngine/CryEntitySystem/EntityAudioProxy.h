@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IObject.h>
 #include <CryMemory/STLPoolAllocator.h>
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryMemory/CrySizer.h>

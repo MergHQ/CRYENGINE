@@ -70,6 +70,9 @@ namespace uqs
 #include "StartupConsistencyChecker.h"
 #include "EditorService.h"
 #include "Utils.h"
+#if UQS_SCHEMATYC_SUPPORT
+#include "SchematycSupport.h"
+#endif
 #include "Hub.h"
 #include "Cvars.h"
 #include "DrawUtil2d.h"

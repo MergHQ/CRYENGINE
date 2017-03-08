@@ -5,7 +5,7 @@
 #include "VisAreas.h"
 #include "ObjMan.h"
 #include "MatMan.h"
-#include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IObject.h>
 
 #pragma warning(disable: 4244)
 

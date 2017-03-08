@@ -31,6 +31,10 @@ namespace uqs
 		private:
 			void                    CheckInputParametersConsistency(const client::IInputParameterRegistry& registry, const char* errorMessagePrefix);
 
+#if UQS_SCHEMATYC_SUPPORT
+			void                    CheckItemConvertersConsistency(const client::IItemConverterCollection& itemConverters, const char* szItemFactoryNameForErrorMessages, std::set<CryGUID>& guidsInUse);
+#endif
+
 		private:
 			std::vector<string>     m_errors;
 		};

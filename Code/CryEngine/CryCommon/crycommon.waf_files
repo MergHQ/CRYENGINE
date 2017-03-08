@@ -433,17 +433,18 @@
         ]
       }
     ],
-    "CryAudio":[
-      "CryAudio/IAudioInterfacesCommonData.h",
-      "CryAudio/IAudioSystem.h",
-      "CryAudio/IAudioSystem.h",
-      "CryAudio/IAudioInterfacesCommonData.h",
-      {
-        "Dialog":[
-          "CryAudio/Dialog/IDialogSystem.h"
-        ]
-      }
-    ],
+			"CryAudio": [
+				"CryAudio/IAudioInterfacesCommonData.h",
+				"CryAudio/IAudioSystem.h",
+				"CryAudio/IListener.h",
+				"CryAudio/IObject.h",
+				"CryAudio/IProfileData.h",
+				{
+					"Dialog": [
+						"CryAudio/Dialog/IDialogSystem.h"
+					]
+				}
+			],
     "CryAnimation":[
       "CryAnimation/ICryAnimation.h",
       "CryAnimation/IAnimationPoseModifier.h",

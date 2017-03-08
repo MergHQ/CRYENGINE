@@ -1,18 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ParticleSubEmitter.cpp
-//  Created:     20/04/2010 by Corey
-//  Description: Split out from ParticleEmitter.cpp
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleSubEmitter.h"
 #include "ParticleEmitter.h"
-#include <CryAudio/IAudioSystem.h>
+#include <CryAudio/IObject.h>
 
 static const float fMIN_PULSE_PERIOD = 0.1f;
 

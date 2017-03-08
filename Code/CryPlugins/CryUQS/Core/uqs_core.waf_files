@@ -99,7 +99,9 @@
 			"core/TimeBudget.h",
 			"core/TimeBudget.cpp",
 			"core/LeafFunctionReturnValue.h",
-			"core/LeafFunctionReturnValue.cpp"
+			"core/LeafFunctionReturnValue.cpp",
+			"core/SchematycSupport.h",
+			"core/SchematycSupport.cpp"
 		]
 	}
 }
