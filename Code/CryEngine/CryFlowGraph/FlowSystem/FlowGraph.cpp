@@ -130,7 +130,7 @@ CFlowGraphBase::CFlowGraphBase(CFlowSystem* pSys)
 	, m_firstActivatingNode(END_OF_MODIFIED_LIST)
 	, m_bInUpdate(false)
 	, m_firstFinalActivatingNode(END_OF_MODIFIED_LIST)
-	, m_bEnabled(true)
+	, m_bEnabled(false)
 	, m_bActive(true)
 	, m_bEdgesSorted(true)
 	, m_bNeedsInitialize(true)
@@ -1204,7 +1204,7 @@ const IFlowGraph::SGraphToken* CFlowGraphBase::GetGraphToken(size_t index) const
 		return &(m_graphTokens[index]);
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void CFlowGraphBase::ResetGraphToken(const IFlowGraph::SGraphToken& token)
@@ -1214,36 +1214,7 @@ void CFlowGraphBase::ResetGraphToken(const IFlowGraph::SGraphToken& token)
 	IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
 	if (pGTS)
 	{
-		TFlowInputData temp;
-		switch (token.type)
-		{
-		case eFDT_String:
-			{
-				static string emptyString = "";
-				temp.SetValueWithConversion(emptyString);
-				break;
-			}
-
-		case eFDT_Bool:
-			temp.SetValueWithConversion(false);
-			break;
-
-		case eFDT_Int:
-			temp.SetValueWithConversion(0);
-			break;
-
-		case eFDT_EntityId:
-			temp.SetValueWithConversion(0);
-			break;
-
-		case eFDT_Float:
-			temp.SetValueWithConversion(0.0f);
-			break;
-
-		case eFDT_Vec3:
-			temp.SetValueWithConversion(Vec3(ZERO));
-			break;
-		}
+		TFlowInputData temp = TFlowInputData::CreateDefaultInitializedForTag((int)token.type, true);
 		IGameToken* pToken = pGTS->SetOrCreateToken(globalName.c_str(), temp);
 		if (pToken)
 			pToken->SetFlags(pToken->GetFlags() | EGAME_TOKEN_GRAPHVARIABLE);
