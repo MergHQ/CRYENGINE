@@ -79,7 +79,7 @@ namespace Schematyc
 		CRY_ASSERT(pTokenSystem);
 		if (bCreateIfNotExisting)
 		{
-			pTokenSystem->SetOrCreateToken(tokenName.c_str(), valueToSet.c_str());
+			pTokenSystem->SetOrCreateToken(tokenName.c_str(), TFlowInputData(string(valueToSet.c_str()), true));
 		}
 		else
 		{
