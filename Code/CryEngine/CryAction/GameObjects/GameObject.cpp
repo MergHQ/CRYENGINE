@@ -36,6 +36,8 @@
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
 
+CRYREGISTER_CLASS(CGameObject);
+
 #define GET_FLAG_FOR_SLOT(flag, slotbit)        (((flag) & (slotbit)) != 0)
 #define SET_FLAG_FOR_SLOT(flag, slotbit, value) if (value) { flag |= (slotbit); } else { flag &= ~slotbit; }
 

@@ -34,7 +34,6 @@ public:
 	// IGameTokenSystem
 	//////////////////////////////////////////////////////////////////////////
 	virtual IGameToken*   SetOrCreateToken(const char* sTokenName, const TFlowInputData& defaultValue) override;
-	virtual IGameToken*   SetOrCreateToken(const char* sTokenName, const char* szValue) override;
 	virtual void          DeleteToken(IGameToken* pToken) override;
 	virtual IGameToken*   FindToken(const char* sTokenName) override;
 	virtual void          RenameToken(IGameToken* pToken, const char* sNewName) override;
