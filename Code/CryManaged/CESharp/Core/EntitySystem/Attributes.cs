@@ -2,6 +2,7 @@
 
 using CryEngine.Attributes;
 using System;
+using System.Reflection;
 
 namespace CryEngine
 {
@@ -36,6 +37,7 @@ namespace CryEngine
 		#endregion
 
 		#region Constructors
+		[Obsolete("Please use EntityClassAttribute(string name, string category, string helper, IconHelper.IconType icon, bool hide)")]
 		public EntityClassAttribute(string name = "", string category = "Game", string helper = null, string icon = "prompt.bmp", bool hide = false)
 		{
 			Name = name;
@@ -43,6 +45,19 @@ namespace CryEngine
 			Helper = helper;
 			Icon = icon;
 			Hide = hide;
+		}
+
+		public EntityClassAttribute(string name = "", string category = "Game", string helper = null, IconType icon = IconType.None, bool hide = false)
+		{
+			Name = name;
+			EditorPath = category;
+			Helper = helper;
+			Hide = hide;
+			//get icon path attribute bounded to the icon path enum (if available)
+			var enumType = icon.GetType();
+			var enumMemberInfo = enumType.GetMember(icon.ToString());
+			IconPathAttribute iconPathAttribute = (IconPathAttribute)enumMemberInfo[0].GetCustomAttributes(typeof(IconPathAttribute), true)[0];
+			Icon = iconPathAttribute == null ? "": iconPathAttribute.Path;
 		}
 		#endregion
 	}

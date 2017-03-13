@@ -48,7 +48,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Serialization" FILES ${Serialization_FILES})
 
 
-	set(Util_FILES Util/Event.cs Util/FileSystem.cs Util/ReflectionHelper.cs Util/Tools.cs)
+	set(Util_FILES Util/Event.cs Util/FileSystem.cs Util/ReflectionHelper.cs Util/Tools.cs Util/IconType.cs Util/Attribute.cs)
 	source_group("Util" FILES ${Util_FILES})
 
 
