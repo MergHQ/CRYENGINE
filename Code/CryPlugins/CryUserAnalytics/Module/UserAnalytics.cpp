@@ -106,6 +106,7 @@ inline void AddComma(string& message)
 CUserAnalytics::CUserAnalytics()
 	: m_curl(nullptr)
 	, m_curlHeaderList(nullptr)
+	, m_pUserAnalyticsSendThread(nullptr)
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 }
@@ -174,9 +175,12 @@ void CUserAnalytics::Shutdown()
 
 	TriggerEvent("UserAnalyticsSessionEnd"); // note: this will not show up in log
 
-	m_pUserAnalyticsSendThread->SignalStopWork();
-	gEnv->pThreadManager->JoinThread(m_pUserAnalyticsSendThread, eJM_Join);
-	delete m_pUserAnalyticsSendThread;
+	if (m_pUserAnalyticsSendThread)
+	{
+		m_pUserAnalyticsSendThread->SignalStopWork();
+		gEnv->pThreadManager->JoinThread(m_pUserAnalyticsSendThread, eJM_Join);
+		delete m_pUserAnalyticsSendThread;
+	}
 
 	ShutdownCURL();
 
