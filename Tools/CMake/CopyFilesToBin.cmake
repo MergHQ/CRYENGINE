@@ -59,20 +59,28 @@ macro(add_optional_runtime_files)
 	endif()
 	
 	if (OPTION_SANDBOX)
-		set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll
-		)
-		set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
-			${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
-			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll
-			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll
-		)
-		set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
-			${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll
-			${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb
-			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll
-			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb
-		)
+		if (CMAKE_BUILD_TYPE)
+			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll
+			)
+			set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
+				${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll
+			)
+			set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
+				${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll
+				${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb
+			)
+		else()
+			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+				${SDK_DIR}/XT_13_4/bin_vc14/*.dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*.dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb
+			)
+		endif()
 	endif()
 endmacro()
 
@@ -227,16 +235,24 @@ macro(copy_binary_files_to_target)
 			list(GET DEPLOY_FILES ${idxIncr} source_file)
 			list(GET DEPLOY_FILES ${idxIncr2} destination)
 
-			add_custom_command(OUTPUT ${destination} 
-				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${TOOLS_CMAKE_DIR}/deploy_runtime_files.cmake
-				COMMENT "Deploying ${source_file}"
-				DEPENDS ${source_file})
+			if(source MATCHES "<") # Source contains generator expression; deploy at build time
+				add_custom_command(OUTPUT ${destination} 
+					COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${TOOLS_CMAKE_DIR}/deploy_runtime_files.cmake
+					COMMENT "Deploying ${source_file}"
+					DEPENDS ${source})				
+				list(APPEND DEPLOY_DESTINATIONS ${destination})				
+			else()
+				message(STATUS "Deploying ${source_file}")
+				get_filename_component(DEST_DIR ${destination} DIRECTORY)
+				file(COPY ${source} DESTINATION ${DEST_DIR} NO_SOURCE_PERMISSIONS)
+			endif()
 
-			list(APPEND DEPLOY_DESTINATIONS ${destination})
 		endforeach(idx)
 
-		add_custom_target(deployrt ALL DEPENDS ${DEPLOY_DESTINATIONS})
-		set_solution_folder("Deploy" deployrt)
+		if (DEPLOY_DESTINATIONS)
+			add_custom_target(deployrt ALL DEPENDS ${DEPLOY_DESTINATIONS})
+			set_solution_folder("Deploy" deployrt)
+		endif()
 	endif()
   message( STATUS "copy_binary_files_to_target end" )
 endmacro()

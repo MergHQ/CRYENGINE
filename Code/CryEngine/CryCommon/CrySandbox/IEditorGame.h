@@ -14,6 +14,8 @@
 
 #pragma once
 
+typedef unsigned int EntityId;
+
 struct IFlowSystem;
 struct IGameTokenSystem;
 namespace Telemetry {

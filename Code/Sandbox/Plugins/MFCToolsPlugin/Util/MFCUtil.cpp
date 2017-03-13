@@ -241,12 +241,93 @@ QPoint CMFCUtils::CPointToQPointLocal(const QWidget* widget, const CPoint& point
 	return QPoint(QtUtil::QtScale(widget, point.x), QtUtil::QtScale(widget, point.y));
 }
 
-CPoint CMFCUtils::QPointToCPointLocal(const QWidget* widget, const QPoint& point)
+bool CMFCUtils::ExecuteConsoleApp(const string& CommandLine, string& OutputText, bool bNoTimeOut /*= false*/, bool bShowWindow /*= false*/)
 {
-	return CPoint(QtUtil::PixelScale(widget, point.x()), QtUtil::PixelScale(widget, point.y()));
-}
+	// Execute a console application and redirect its output to the console window
+	SECURITY_ATTRIBUTES sa = { 0 };
+	STARTUPINFO si = { 0 };
+	PROCESS_INFORMATION pi = { 0 };
+	HANDLE hPipeOutputRead = NULL;
+	HANDLE hPipeOutputWrite = NULL;
+	HANDLE hPipeInputRead = NULL;
+	HANDLE hPipeInputWrite = NULL;
+	BOOL bTest = FALSE;
+	bool bReturn = true;
+	DWORD dwNumberOfBytesRead = 0;
+	DWORD dwStartTime = 0;
+	char szCharBuffer[65];
+	char szOEMBuffer[65];
 
-CPoint CMFCUtils::QPointToCPointLocal(const QWidget* widget, const QPointF& point)
-{
-	return CPoint(QtUtil::PixelScale(widget, point.x()), QtUtil::PixelScale(widget, point.y()));
+	CryLog("Executing console application '%s'", (const char*)CommandLine);
+	// Initialize the SECURITY_ATTRIBUTES structure
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.bInheritHandle = TRUE;
+	sa.lpSecurityDescriptor = NULL;
+	// Create a pipe for standard output redirection
+	VERIFY(CreatePipe(&hPipeOutputRead, &hPipeOutputWrite, &sa, 0));
+	// Create a pipe for standard inout redirection
+	VERIFY(CreatePipe(&hPipeInputRead, &hPipeInputWrite, &sa, 0));
+	// Make a child process useing hPipeOutputWrite as standard out. Also
+	// make sure it is not shown on the screen
+	si.cb = sizeof(STARTUPINFO);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+
+	if (bShowWindow == false)
+	{
+		si.dwFlags |= STARTF_USESTDHANDLES;
+		si.hStdInput = hPipeInputRead;
+		si.hStdOutput = hPipeOutputWrite;
+		si.hStdError = hPipeOutputWrite;
+	}
+
+	si.wShowWindow = bShowWindow ? SW_SHOW : SW_HIDE;
+	// Save the process start time
+	dwStartTime = GetTickCount();
+
+	// Launch the console application
+	char cmdLine[1024];
+	cry_strcpy(cmdLine, CommandLine);
+
+	if (!CreateProcess(NULL, cmdLine, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi))
+		return false;
+
+	// If no process was spawned
+	if (!pi.hProcess)
+		bReturn = false;
+
+	// Now that the handles have been inherited, close them
+	CloseHandle(hPipeOutputWrite);
+	CloseHandle(hPipeInputRead);
+
+	if (bShowWindow == false)
+	{
+		// Capture the output of the console application by reading from hPipeOutputRead
+		while (true)
+		{
+			// Read from the pipe
+			bTest = ReadFile(hPipeOutputRead, &szOEMBuffer, 64, &dwNumberOfBytesRead, NULL);
+
+			// Break when finished
+			if (!bTest)
+				break;
+
+			// Break when timeout has been exceeded
+			if (bNoTimeOut == false && GetTickCount() - dwStartTime > 5000)
+				break;
+
+			// Null terminate string
+			szOEMBuffer[dwNumberOfBytesRead] = '\0';
+
+			// Translate into ANSI
+			VERIFY(OemToChar(szOEMBuffer, szCharBuffer));
+
+			// Add it to the output text
+			OutputText += szCharBuffer;
+		}
+	}
+
+	// Wait for the process to finish
+	WaitForSingleObject(pi.hProcess, bNoTimeOut ? INFINITE : 1000);
+
+	return bReturn;
 }

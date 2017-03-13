@@ -10,7 +10,7 @@
 #include "Objects/SelectionGroup.h"
 #include "SmartObject.h"
 #include "GameEngine.h"
-#include <MFCUtil.h>
+#include "Util/MFCUtil.h"
 
 #include "AI\AIManager.h"
 #include "ItemDescriptionDlg.h"
@@ -25,6 +25,8 @@
 #include "Controls/QuestionDialog.h"
 #include "Controls/SharedFonts.h"
 #include "ClassFactory.h"
+#include "Objects/ObjectManager.h"
+#include "Util/FileUtil.h"
 
 #define SOED_DIALOGFRAME_CLASSNAME "SmartObjectsEditorDialog"
 #define CLASS_TEMPLATES_FOLDER     "Libs/SmartObjects/ClassTemplates/"

@@ -1,0 +1,12 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"FacialEditorPlugin.cpp",
+			"FacialEditorPlugin.h",
+			"StdAfx.h",
+			"StdAfx.cpp"
+		]
+	}
+}

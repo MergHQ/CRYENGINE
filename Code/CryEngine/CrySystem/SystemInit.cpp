@@ -872,7 +872,6 @@ bool CSystem::OpenRenderLibrary(int type)
 	if (gEnv->IsDedicated())
 		return true;
 
-#if 0
 	#if !defined(DEDICATED_SERVER)
 		#if CRY_PLATFORM_WINDOWS
 	if (!gEnv->IsDedicated())
@@ -902,7 +901,6 @@ bool CSystem::OpenRenderLibrary(int type)
 	}
 		#endif
 	#endif // !defined(DEDICATED_SERVER)
-#endif
 
 #if CRY_PLATFORM_DURANGO
 	type = R_DX11_RENDERER;
@@ -2617,6 +2615,9 @@ bool CSystem::Init()
 			}
 			m_env.pLog->SetFileName(DEFAULT_LOG_FILENAME);
 L_done:;
+#ifdef CRY_USE_CRASHRPT
+			CCrashRpt::ReInstallCrashRptHandler(0);
+#endif
 		}
 		else
 		{

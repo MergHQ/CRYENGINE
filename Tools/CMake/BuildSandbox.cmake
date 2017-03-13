@@ -49,6 +49,7 @@ add_subdirectory("Code/Sandbox/Plugins/VehicleEditor")
 add_subdirectory("Code/Sandbox/Plugins/SmartObjectEditor")
 add_subdirectory("Code/Sandbox/Plugins/DialogEditor")
 add_subdirectory("Code/Sandbox/Plugins/MFCToolsPlugin")
+add_subdirectory("Code/Sandbox/Plugins/FacialEditorPlugin")
 
 #libs
 add_subdirectory ("Code/Libs/prt")

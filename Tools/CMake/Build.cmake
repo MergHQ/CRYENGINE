@@ -13,11 +13,12 @@ include ("${TOOLS_CMAKE_DIR}/BuildEngine.cmake")
 # 2. Games
 add_subdirectories_glob("Code/Game*")
 
-# 3. Launchers
+# 3. Plugins
+include ("${TOOLS_CMAKE_DIR}/BuildPlugins.cmake")
+
+# 4. Launchers
 include ("${TOOLS_CMAKE_DIR}/BuildLaunchers.cmake")
 
-# 3. Launchers
-include ("${TOOLS_CMAKE_DIR}/BuildPlugins.cmake")
 
 # Shaders custom project
 add_subdirectory(Engine/Shaders)
