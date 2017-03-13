@@ -320,7 +320,7 @@ void CD3D9Renderer::SF_CreateResources()
 	}
 }
 
-inline SSF_ResourcesD3D& CD3D9Renderer::SF_GetResources()
+SSF_ResourcesD3D& CD3D9Renderer::SF_GetResources()
 {
 	assert(m_pSFResD3D);
 	return *m_pSFResD3D;
