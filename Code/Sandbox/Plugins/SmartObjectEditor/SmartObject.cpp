@@ -8,6 +8,7 @@
 #include "IIconManager.h"
 #include "SmartObjectsEditorDialog.h"
 #include <CryAISystem/IAgent.h>
+#include "Util/Math.h"
 
 REGISTER_CLASS_DESC(CSmartObjectClassDesc);
 
@@ -239,7 +240,7 @@ IStatObj* CSmartObject::GetIStatObj()
 		m_pStatObj = GetIEditor()->Get3DEngine()->LoadStatObj("Editor/Objects/" + m_pClassTemplate->model, NULL, NULL, false);
 		if (!m_pStatObj)
 		{
-			CLogFile::FormatLine("Error: Load Failed: %s", (const char*) m_pClassTemplate->model);
+			CryLog("Error: Load Failed: %s", (const char*) m_pClassTemplate->model);
 			return NULL;
 		}
 		m_pStatObj->AddRef();
@@ -283,6 +284,7 @@ void CSmartObject::GetScriptProperties(XmlNodeRef xmlEntityNode)
 	}
 }
 
+/*
 //////////////////////////////////////////////////////////////////////////
 void CSmartObject::BeginEditParams(int flags)
 {
@@ -303,7 +305,7 @@ void CSmartObject::EndEditParams()
 	__super::EndEditParams();
 
 	Reload(true);
-}
+}*/
 
 void CSmartObject::OnEvent(ObjectEvent eventID)
 {

@@ -38,8 +38,6 @@ public:
 	bool          IsScalable() const override { return false; }
 	virtual void  OnEvent(ObjectEvent eventID);
 	virtual void  GetScriptProperties(XmlNodeRef xmlEntityNode);
-	virtual void  BeginEditParams(int flags);
-	virtual void  EndEditParams();
 
 	//////////////////////////////////////////////////////////////////////////
 

@@ -51,11 +51,9 @@ struct PLUGIN_API CMFCUtils
 	//! Converts a CPoint to a QPoint, using local space of the provided widget.
 	static QPoint CPointToQPointLocal(const QWidget* widget, const CPoint& point);
 
-	//! Converts a QPoint to a CPoint, using local space of the provided widget.
-	static CPoint QPointToCPointLocal(const QWidget* widget, const QPoint& point);
+	//////////////////////////////////////////////////////////////////////////
 
-	//! Converts a QPointF to a CPoint, using local space of the provided widget.
-	static CPoint QPointToCPointLocal(const QWidget* widget, const QPointF& point);
+	static bool ExecuteConsoleApp(const string& CommandLine, string& OutputText, bool bNoTimeOut = false, bool bShowWindow = false);
 };
 
 //Do not use anymore, only kept for compatibility with old MFC based tools
