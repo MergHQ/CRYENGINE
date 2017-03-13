@@ -2617,6 +2617,9 @@ bool CSystem::Init()
 			}
 			m_env.pLog->SetFileName(DEFAULT_LOG_FILENAME);
 L_done:;
+#ifdef CRY_USE_CRASHRPT
+			CCrashRpt::ReInstallCrashRptHandler(0);
+#endif
 		}
 		else
 		{
