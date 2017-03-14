@@ -121,15 +121,11 @@ public:
 	virtual IEntity* GetChild(int nIndex) const final;
 	virtual void     EnableInheritXForm(bool bEnable);
 	virtual IEntity* GetParent() const final { return m_hierarchy.pParent; }
+	virtual IEntity* GetLocalSimParent() const final { return m_hierarchy.parentBindingType == EBindingType::eBT_LocalSim ? m_hierarchy.pParent : nullptr; }
 	virtual Matrix34 GetParentAttachPointWorldTM() const final;
 	virtual bool     IsParentAttachmentValid() const final;
-	virtual IEntity* GetAdam()
-	{
-		IEntity* pParent, * pAdam = this;
-		while (pParent = pAdam->GetParent()) pAdam = pParent;
-		return pAdam;
-	}
-
+	virtual IEntity* GetAdam();
+																												
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetWorldTM(const Matrix34& tm, int nWhyFlags = 0) final;
 	virtual void SetLocalTM(const Matrix34& tm, int nWhyFlags = 0) final;
@@ -438,7 +434,9 @@ private:
 		eBT_Pivot,
 		eBT_GeomCacheNode,
 		eBT_CharacterBone,
+		eBT_LocalSim,
 	};
+	virtual EBindingType GetParentBindingType() const final { return m_hierarchy.parentBindingType; }
 
 	// Childs structure, only allocated when any child entity is attached.
 	struct STransformHierarchy

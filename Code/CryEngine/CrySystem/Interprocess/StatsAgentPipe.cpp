@@ -1,15 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   StatsAgentPipe.cpp
-//  Version:     v1.00
-//  Created:     20/10/2011 by Sandy MacPherson
-//  Description: Wrapper around platform-dependent pipe comms
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 
 #if defined(ENABLE_STATS_AGENT)
@@ -26,50 +16,47 @@ namespace
 	bool s_pipeOpen = false;
 
 #if CRY_PLATFORM_DURANGO //FIXME ?
-	const char *PIPE_BASE_NAME = "";
+	constexpr char kPipeBaseName[] = "";
 	volatile bool s_commandWaiting = false;
 #elif CRY_PLATFORM_WINDOWS
-	const char *PIPE_BASE_NAME = "\\\\.\\pipe\\CrysisTargetComms";
+	constexpr char kPipeBaseName[] = R"(\\.\pipe\CrysisTargetComms)";
 	HANDLE s_pipe = INVALID_HANDLE_VALUE;
 #endif
 };
 
 static int statsagent_debug = 0;
 
-bool CStatsAgentPipe::PipeOpen()
+bool CStatsAgentPipe::IsPipeOpen()
 {
 	return s_pipeOpen;
 }
 
-void CStatsAgentPipe::OpenPipe(const char *szPipeName)
+bool CStatsAgentPipe::OpenPipe(const char *szPipeName)
 {
 	REGISTER_CVAR(statsagent_debug, 0, 0, "Enable/Disable StatsAgent debug messages");
 
-	CryFixedStringT<255> buffer(PIPE_BASE_NAME);
-
 	// Construct the pipe name
-	buffer += szPipeName;
-	buffer.TrimRight();
-	buffer += ".pipe";
+	string sPipeFullName;
+	sPipeFullName.Format("%s%s.pipe", kPipeBaseName, szPipeName);
 
-	CreatePipe(buffer.c_str());
+	CreatePipe(sPipeFullName.c_str());
 
 	if (statsagent_debug && s_pipeOpen)
 	{
-		CryLogAlways("CStatsAgent: Pipe connection \"%s\" is open", buffer.c_str());
+		CryLogAlways("CStatsAgent: Pipe connection \"%s\" is open", sPipeFullName.c_str());
 	}
 
 	if (s_pipeOpen)
 	{
-		char pMsg[] = "connected";
-		if (!Send(pMsg))
+		if (!Send("connected"))
 			ClosePipe();
 	}
 	else
 	{
 		if (statsagent_debug)
-			CryLogAlways("CStatsAgent: Unable to connect pipe %s", buffer.c_str());
+			CryLogAlways("CStatsAgent: Unable to connect pipe %s", sPipeFullName.c_str());
 	}
+	return s_pipeOpen;
 }
 
 bool CStatsAgentPipe::CreatePipe(const char *szName)
@@ -114,7 +101,7 @@ bool CStatsAgentPipe::Send(const char *szMessage, const char *szPrefix, const ch
 	}
 	pBuffer += szMessage;
 
-	bool ok = true;
+	bool bSuccess = true;
 	uint32 nBytes = pBuffer.size() + 1;
 
 	if (statsagent_debug)
@@ -131,13 +118,13 @@ bool CStatsAgentPipe::Send(const char *szMessage, const char *szPrefix, const ch
 
 #if CRY_PLATFORM_WINDOWS
 	DWORD tx;
-	ok = ::WriteFile(s_pipe, pBuffer.c_str(), nBytes, &tx, 0) == TRUE;
+	bSuccess = ::WriteFile(s_pipe, pBuffer.c_str(), nBytes, &tx, 0) == TRUE;
 #endif
 
-	if (statsagent_debug && !ok)
+	if (statsagent_debug && !bSuccess)
 		CryLogAlways("CStatsAgent: Unable to write to pipe");
 
-	return ok;
+	return bSuccess;
 }
 
 const char* CStatsAgentPipe::Receive()

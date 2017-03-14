@@ -89,7 +89,7 @@ public:
 	virtual bool                           AddGraphToken(const IFlowGraph::SGraphToken& token);
 	virtual size_t                         GetGraphTokenCount() const;
 	virtual const IFlowGraph::SGraphToken* GetGraphToken(size_t index) const;
-	virtual string                         GetGlobalNameForGraphToken(const string& tokenName) const;
+	virtual const char*                    GetGlobalNameForGraphToken(const char* tokenName) const;
 
 	virtual TFlowGraphId                   GetGraphId() const { return m_graphId; }
 

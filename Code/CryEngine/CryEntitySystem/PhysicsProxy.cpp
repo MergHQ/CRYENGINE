@@ -319,7 +319,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 			pe_action_move_parts amp;
 			pChild = (CEntity*)m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
 			pAdam = (CEntity*)GetAdam(pChild, amp.mtxRel);
-			if (pChild)
+			if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
 			{
 				int i;
 				for (i = pChild->GetSlotCount() - 1; i >= 0 && (!pChild->GetCharacter(i) || pChild->GetCharacter(i)->GetObjectType() != CGA); i--)
@@ -349,7 +349,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 			CEntityPhysics* pChildProxy, * pAdamProxy;
 			pChild = (CEntity*)m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
 			pAdam = (CEntity*)m_pEntity->GetAdam();
-			if (pChild)
+			if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
 			{
 				if ((pChildProxy = pChild->GetPhysicalProxy()) && pChildProxy->m_pPhysicalEntity &&
 				    pAdam && (pAdamProxy = pAdam->GetPhysicalProxy()) && pAdamProxy->m_pPhysicalEntity &&
@@ -623,7 +623,10 @@ void CEntityPhysics::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 //////////////////////////////////////////////////////////////////////////
 void CEntityPhysics::OnEntityXForm(SEntityEvent& event)
 {
-	if (event.nParam[0] & ENTITY_XFORM_IGNORE_PHYSICS)
+	if (event.nParam[0] & ENTITY_XFORM_IGNORE_PHYSICS || 
+		  event.nParam[0] & ENTITY_XFORM_FROM_PARENT && (
+				m_pEntity->GetParentBindingType() == CEntity::EBindingType::eBT_LocalSim || 
+				m_pPhysicalEntity && m_pPhysicalEntity->GetType() == PE_GRID))
 		return;
 
 	if (!CheckFlags(FLAG_IGNORE_XFORM_EVENT))
@@ -661,6 +664,14 @@ void CEntityPhysics::OnEntityXForm(SEntityEvent& event)
 			}
 			if (!bAnySet)
 				ppos.pMtx3x4 = const_cast<Matrix34*>(&m_pEntity->GetWorldTM());
+
+			if (m_pEntity->m_hierarchy.pParent && m_pEntity->GetParentBindingType() == CEntity::EBindingType::eBT_LocalSim)
+			{
+				ppos.pos = m_pEntity->GetPos();
+				ppos.q = m_pEntity->GetRotation();
+				ppos.pMtx3x4 = nullptr;
+				ppos.pGridRefEnt = m_pEntity->m_hierarchy.pParent->GetPhysics();
+			}
 
 #ifdef SEG_WORLD
 			if (event.nParam[1])
@@ -1957,10 +1968,19 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 	// Set transformation on the entity from transformation of the physical entity.
 	pe_status_pos ppos;
 	// If Entity is attached do not accept entity position from physics (or assume its world space coords)
-	if (!(m_pEntity->m_hierarchy.pParent))
+	if (!(m_pEntity->m_hierarchy.pParent) || m_pEntity->GetParentBindingType() == CEntity::EBindingType::eBT_LocalSim)
 	{
 		if (pEvent)
+		{
 			ppos.pos = pEvent->pos, ppos.q = pEvent->q;
+			CEntity *pNewHost;
+			if (pEvent->pGrid && (pNewHost = (CEntity*)pEvent->pGrid->GetForeignData(PHYS_FOREIGN_ID_ENTITY)) != m_pEntity->m_hierarchy.pParent)
+			{
+				m_pEntity->DetachThis(IEntity::ATTACHMENT_SUPPRESS_UPDATE);
+				if (pNewHost)
+					pNewHost->AttachChild(m_pEntity, SChildAttachParams(IEntity::ATTACHMENT_LOCAL_SIM | IEntity::ATTACHMENT_SUPPRESS_UPDATE));
+			}
+		}
 		else
 			m_pPhysicalEntity->GetStatus(&ppos);
 

@@ -189,10 +189,6 @@
 
 #include <IPerceptionManager.h>
 
-#ifdef ENABLE_STATS_AGENT
-	#include "StatsAgent.h"
-#endif // #ifdef ENABLE_STATS_AGENT
-
 //#define GAME_DEBUG_MEM  // debug memory usage
 #undef  GAME_DEBUG_MEM
 
@@ -2996,10 +2992,6 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 		}
 	}
 #endif //#if USE_TELEMETRY_BUFFERS
-
-#ifdef ENABLE_STATS_AGENT
-	CStatsAgent::Update();
-#endif // #ifdef ENABLE_STATS_AGENT
 
 	if (m_telemetryCollector)
 	{

@@ -704,6 +704,8 @@ struct IEntity
 		ATTACHMENT_KEEP_TRANSFORMATION = BIT(0),    //!< Keeps world transformation of entity when attaching or detaching it.
 		ATTACHMENT_GEOMCACHENODE       = BIT(1),    //!< Attach to geom cache node.
 		ATTACHMENT_CHARACTERBONE       = BIT(2),    //!< Attached to character bone.
+		ATTACHMENT_LOCAL_SIM           = BIT(3),    //!< Simulated inside the parent by the physics
+		ATTACHMENT_SUPPRESS_UPDATE     = BIT(4),    //!< Suppresses attachment event and matrix update
 	};
 
 #ifdef SEG_WORLD
@@ -845,6 +847,10 @@ public:
 	//! Retrieves the parent of this entity.
 	//! \return Pointer to the parent entity interface, or NULL if this entity does not have a parent.
 	virtual IEntity* GetParent() const = 0;
+
+	//! Retrieves the parent of this entity if the parent is a local simulation grid
+	//! \return Pointer to the parent entity interface, or NULL if this entity does not have a parent or the parent is not a local simulation grid.
+	virtual IEntity* GetLocalSimParent() const = 0;
 
 	//! Retrieves the TM of the point this entity is attached to if it has a parent.
 	//! \note This can be different from GetParent()->GetWorldTM() when the attachment point is not the pivot.

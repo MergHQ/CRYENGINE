@@ -2425,8 +2425,8 @@ bool CCryAction::CompleteInit()
 		gEnv->pRenderer->StopRenderIntroMovies(true);
 	}
 
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT, 0, 0);
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT_DONE, 0, 0);
+	m_pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT, 0, 0);
+	m_pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT_DONE, 0, 0);
 
 	if (gEnv->pMaterialEffects)
 	{
@@ -2439,10 +2439,10 @@ bool CCryAction::CompleteInit()
 	}
 
 #if defined(CRY_UNIT_TESTING)
-	const ICmdLineArg* pRunUnitTest = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "run_unit_tests");
+	const ICmdLineArg* pRunUnitTest = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "run_unit_tests");
 	if (pRunUnitTest)
 	{
-		GetISystem()->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::EReporterType::Excel);
+		m_pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::EReporterType::Excel);
 		gEnv->pConsole->ExecuteString("quit");
 	}
 #endif
@@ -3395,7 +3395,7 @@ void CCryAction::ReleaseGameStats()
 void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 {
 	m_isEditing = true;
-	
+
 	uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
 	if (commConfigCount)
 	{

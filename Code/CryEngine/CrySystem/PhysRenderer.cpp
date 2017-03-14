@@ -36,6 +36,7 @@ CPhysRenderer::CPhysRenderer()
 	, m_pRayGeom(nullptr)
 	, m_pRay(nullptr)
 	, m_offset(ZERO)
+	, m_qrot(IDENTITY)
 	, m_lockDrawGeometry(0)
 {
 }
@@ -340,7 +341,8 @@ void CPhysRenderer::DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, const 
 		pos = pgwd->offset;
 		scale = pgwd->scale;
 	}
-	pos += m_offset;
+	pos = m_qrot*pos + m_offset;
+	R = Matrix33(m_qrot)*R;
 
 	pGeom->GetBBox(&bbox);
 	sz = (bbox.size * (bbox.Basis *= R.T()).Fabs()) * scale;
@@ -383,7 +385,8 @@ void CPhysRenderer::DrawGeometry(int itype, const void* pGeomData, geom_world_da
 		pos = pgwd->offset;
 		scale = pgwd->scale;
 	}
-	pos += m_offset;
+	pos = m_qrot*pos + m_offset;
+	R = Matrix33(m_qrot)*R;
 	campos = m_camera.GetPosition() * 3;
 	(ldir0 = m_camera.GetViewdir()).z = 0;
 	(ldir0 = ldir0.normalized() * 0.5f).z = (float)sqrt3 * -0.5f;

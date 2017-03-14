@@ -152,7 +152,7 @@ public:
 	virtual bool                          IsInTimeDemo();        // Check if time demo is in progress (either playing or recording);
 	virtual bool                          IsTimeDemoRecording(); // Check if time demo is recording;
 
-	virtual ISystem*                      GetISystem()           { return m_pSystem; };
+	virtual ISystem*                      GetISystem()           { return m_pSystem; }
 	virtual ILanQueryListener*            GetILanQueryListener() { return m_pLanQueryListener; }
 	virtual IUIDraw*                      GetIUIDraw();
 	virtual IMannequin&                   GetMannequinInterface();
