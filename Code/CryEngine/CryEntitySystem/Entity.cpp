@@ -576,6 +576,10 @@ void CEntity::AttachChild(IEntity* pChildEntity, const SChildAttachParams& attac
 		const uint32 targetCRC = CCrc32::ComputeLowercase(attachParams.m_target);
 		pCharacterBoneAttachmentManager->RegisterAttachment(pChild, this, targetCRC);
 	}
+	else if (attachParams.m_nAttachFlags & ATTACHMENT_LOCAL_SIM)
+	{
+		pChild->m_hierarchy.parentBindingType = EBindingType::eBT_LocalSim;
+	}
 
 	// Add to child list first to make sure node not get deleted while re-attaching.
 	m_hierarchy.childs.push_back(pChild);
@@ -584,6 +588,9 @@ void CEntity::AttachChild(IEntity* pChildEntity, const SChildAttachParams& attac
 
 	// Assign this entity as parent to child entity.
 	pChild->m_hierarchy.pParent = this;
+
+	if (attachParams.m_nAttachFlags & ATTACHMENT_SUPPRESS_UPDATE)
+		return;
 
 	if (attachParams.m_nAttachFlags & ATTACHMENT_KEEP_TRANSFORMATION)
 	{
@@ -641,6 +648,9 @@ void CEntity::DetachThis(int nDetachFlags, int nWhyFlags)
 
 		// Remove child pointer from parent array of childs.
 		stl::find_and_erase(pParent->m_hierarchy.childs, this);
+
+		if (nDetachFlags & ATTACHMENT_SUPPRESS_UPDATE)
+			return;
 
 		if (bKeepTransform)
 		{
@@ -1006,7 +1016,7 @@ void CEntity::GetLocalBounds(AABB& bbox) const
 	bbox.min.Set(0, 0, 0);
 	bbox.max.Set(0, 0, 0);
 
-	if (GetSlotCount() > 0)
+	if (GetSlotCount() > 0 || m_render.m_bBoundsFixed)
 	{
 		m_render.GetLocalBounds(bbox);
 	}
@@ -2639,6 +2649,15 @@ bool CEntity::IsParentAttachmentValid() const
 	}
 
 	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntity* CEntity::GetAdam()
+{
+	for(IEntity *pAdam = GetParent(); pAdam; pAdam = pAdam->GetParent())
+		if (!pAdam->GetParent() || ((CEntity*)pAdam)->m_hierarchy.parentBindingType == EBindingType::eBT_LocalSim)
+			return pAdam;
+	return this;
 }
 
 //////////////////////////////////////////////////////////////////////////

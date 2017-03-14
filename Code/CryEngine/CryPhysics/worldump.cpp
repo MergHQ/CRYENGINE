@@ -911,7 +911,7 @@ struct CPhysicalPlaceholderSerializer : Serializer {
 	int Finalize(parse_context &ctx, char *str) {
 		if (!ctx.bSaving) {
 			CPhysicalPlaceholder *ppc = (CPhysicalPlaceholder*)ctx.pobj;
-			AtomicAdd(&ctx.pWorld->m_lockGrid,-ctx.pWorld->RepositionEntity(ppc));
+			ctx.pWorld->RepositionEntity(ppc,3|8);
 		}
 		return 0;
 	}
@@ -967,6 +967,7 @@ struct CPhysicalEntityPartSerializer : Serializer {
 	int SerializeGeom(parse_context &ctx,char *str) {
 		int res = SerializeGeomPtr(ctx,str,((geom*)ctx.pobj)->pPhysGeom);
 		((geom*)ctx.pobj)->pPhysGeomProxy = ((geom*)ctx.pobj)->pPhysGeom;
+		++((geom*)ctx.pobj)->pPhysGeom->nRefCount;
 		return res;
 	}
 	int SerializeGeomProxy(parse_context &ctx,char *str) {
@@ -1085,6 +1086,7 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 		CPhysicalEntity trg(0);
 		DECLARE_MEMBER("flags", ft_uint, m_flags)
 		DECLARE_MEMBER("pos", ft_vector, m_pos)
+		DECLARE_PROC("angles", &CPhysicalEntitySerializer::SerializeAngles)
 		DECLARE_MEMBER("quat", ft_quaternion, m_qrot)
 		DECLARE_MEMBER("timeIdle", ft_float, m_timeIdle)
 		DECLARE_MEMBER("maxTimeIdle", ft_float, m_maxTimeIdle)
@@ -1098,6 +1100,15 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 		DECLARE_PROC("StructuralJoint", &CPhysicalEntitySerializer::SerializeJoint)
 	}
 
+	int SerializeAngles(parse_context &ctx, char *str) {
+		CPhysicalEntity *pent = (CPhysicalEntity*)ctx.pobj;
+		if (!ctx.bSaving) {
+			Ang3 ang;
+			sscanf(str, "(%f %f %f)", &ang.x,&ang.y,&ang.z);
+			pent->m_qrot = Quat::CreateRotationXYZ(DEG2RAD(ang));
+		}
+		return ctx.bSaving;
+	}
 	int SerializePart(parse_context &ctx, char *str) {
 		CPhysicalEntity *pent = (CPhysicalEntity*)ctx.pobj;
 		int i,j;
@@ -1221,8 +1232,10 @@ struct CRigidEntitySerializer : CPhysicalEntitySerializer {
 		DECLARE_MEMBER("Maxw", ft_float, m_maxw)
 		DECLARE_MEMBER("collTypes", ft_int, m_collTypes)
 		DECLARE_PROC("Constraint", &CRigidEntitySerializer::SerializeConstraints)
+		DECLARE_PROC("angles", &CRigidEntitySerializer::SerializeAngles)
 		DECLARE_PROC("end", &CRigidEntitySerializer::Finalize)
 	}
+
 	DEFINE_MEMBER_PROC(CRigidEntity, SerializeCollisionCulling, m_bCollisionCulling)
 	DEFINE_MEMBER_PROC(CRigidEntity, SerializeCanSweep, m_bCanSweep)
 	DEFINE_MEMBER_PROC(CRigidEntity, SerializeAwake, m_bAwake)
@@ -1238,6 +1251,18 @@ struct CRigidEntitySerializer : CPhysicalEntitySerializer {
 			ctx.PushState();
 			ctx.pobj = &pent->m_body;
 			(ctx.pSerializer = pRigidBodySerializer)->Serialize(ctx);
+		}
+		return ctx.bSaving;
+	}
+	int SerializeAngles(parse_context &ctx, char *str) {
+		CRigidEntity *pent = (CRigidEntity*)ctx.pobj;
+		if (!ctx.bSaving) {
+			Ang3 ang;
+			sscanf(str, "(%f %f %f)", &ang.x,&ang.y,&ang.z);
+			pent->m_qrot = Quat::CreateRotationXYZ(DEG2RAD(ang));
+			pent->m_body.pos = pent->m_pos+pent->m_qrot*pent->m_body.offsfb;
+			pent->m_body.q = pent->m_qrot*!pent->m_body.qfb;
+			pent->m_body.Iinv = Matrix33(pent->m_body.q)*pent->m_body.Ibody_inv*Matrix33(!pent->m_body.q);
 		}
 		return ctx.bSaving;
 	}
@@ -1271,7 +1296,7 @@ struct CRigidEntitySerializer : CPhysicalEntitySerializer {
 		if (!ctx.bSaving) {
 			pent->m_pNewCoords->pos=pent->m_pos; pent->m_pNewCoords->q=pent->m_qrot;
 			pent->m_prevPos=pent->m_body.pos; pent->m_prevq=pent->m_body.q;
-			AtomicAdd(&ctx.pWorld->m_lockGrid,-ctx.pWorld->RepositionEntity(pent));
+			ctx.pWorld->RepositionEntity(pent,3|8);
 		}
 		return 0;
 	}
@@ -1383,6 +1408,12 @@ struct CWheeledVehicleEntitySerializer : CRigidEntitySerializer {
 		} else {
 			i = atol(str);
 			ctx.PushState();
+			if (i>=pent->m_suspAlloc) {
+				ReallocateList(pent->m_susp, pent->m_suspAlloc, i+4&~3, true);
+				pent->m_suspAlloc = i+4 & ~3;
+				for(int j=pent->m_nHullParts; j<pent->m_nParts; j++) 
+					pent->m_parts[j].pNewCoords = (coord_block_BBox*)&pent->m_susp[j-pent->m_nHullParts].pos;
+			}
 			ctx.pobj = pent->m_susp+i;
 			pent->m_parts[i+pent->m_nHullParts].pNewCoords = (coord_block_BBox*)&pent->m_susp[i].pos;
 			pent->m_susp[i].pos = pent->m_parts[i+pent->m_nHullParts].pos;
@@ -1550,7 +1581,7 @@ struct CArticulatedEntitySerializer : CRigidEntitySerializer {
 		if (!ctx.bSaving) {
 			pent->m_pNewCoords->pos=pent->m_pos; pent->m_pNewCoords->q=pent->m_qrot;
 			pent->m_posPivot = pent->m_pos+pent->m_offsPivot;
-			AtomicAdd(&ctx.pWorld->m_lockGrid,-ctx.pWorld->RepositionEntity(pent));
+			ctx.pWorld->RepositionEntity(pent,3|8);
 		}
 		return 0;
 	}
@@ -1595,7 +1626,7 @@ struct CLivingEntitySerializer : CPhysicalEntitySerializer {
 			dim.axis.Set(0,0,1);
 			pent->m_pCylinderGeom->CreateCylinder(&dim);
 			pent->m_pNewCoords->pos=pent->m_pos; pent->m_pNewCoords->q=pent->m_qrot;
-			AtomicAdd(&ctx.pWorld->m_lockGrid,-ctx.pWorld->RepositionEntity(pent));
+			ctx.pWorld->RepositionEntity(pent,3|8);
 		}
 		return 0;
 	}
@@ -1733,13 +1764,14 @@ struct CRopeEntitySerializer : CPhysicalEntitySerializer {
 		CRopeEntity *pent = (CRopeEntity*)ctx.pobj;
 		if (!ctx.bSaving) {
 			pent->m_pNewCoords->pos=pent->m_pos; pent->m_pNewCoords->q=pent->m_qrot;
-			AtomicAdd(&ctx.pWorld->m_lockGrid,-ctx.pWorld->RepositionEntity(pent));
+			pent->m_ig[0].x = pent->m_flags & pef_traceable ? GRID_REG_PENDING : NO_GRID_REG;
+			ctx.pWorld->RepositionEntity(pent,3|8);
 
 			pe_params_rope pr;
 			for(int i=0;i<2;i++) if (pr.pEntTiedTo[i]=pent->m_pTiedTo[i]) {
 				pr.idPartTiedTo[i] = pent->m_pTiedTo[i]->m_parts[pent->m_iTiedPart[i]].id;
 				Vec3 pos; quaternionf q; float scale;
-				pent->m_pTiedTo[i]->GetLocTransform(pent->m_iTiedPart[i], pos,q,scale);
+				pent->m_pTiedTo[i]->GetLocTransform(pent->m_iTiedPart[i], pos,q,scale, pent);
 				pr.ptTiedTo[i] = q*pent->m_ptTiedLoc[i]+pos;
 				pent->m_pTiedTo[0] = 0;
 			}
@@ -1854,7 +1886,7 @@ struct CSoftEntitySerializer : CPhysicalEntitySerializer {
 			(ctx.pSerializer = pVtxSerializer)->Serialize(ctx);
 		} else if (pent->m_nParts && pent->m_nVtx) {
 			ctx.PushState();
-			ctx.pobj = pent->m_vtx+atol(str);
+			ctx.pobj = pent->m_vtx+min((int)atol(str),pent->m_nVtx-1);
 			(ctx.pSerializer = pVtxSerializer)->Serialize(ctx);
 		}
 		return ctx.bSaving;
@@ -1868,7 +1900,7 @@ struct CSoftEntitySerializer : CPhysicalEntitySerializer {
 			(ctx.pSerializer = pEdgeSerializer)->Serialize(ctx);
 		} else if (pent->m_nParts && pent->m_nEdges) {
 			ctx.PushState();
-			ctx.pobj = pent->m_edges+atol(str);
+			ctx.pobj = pent->m_edges+min((int)atol(str),pent->m_nEdges-1);
 			(ctx.pSerializer = pEdgeSerializer)->Serialize(ctx);
 		}
 		return ctx.bSaving;
@@ -1878,7 +1910,7 @@ struct CSoftEntitySerializer : CPhysicalEntitySerializer {
 		CSoftEntity *pent = (CSoftEntity*)ctx.pobj;
 		if (!ctx.bSaving) {
 			pent->m_pNewCoords->pos=pent->m_pos; pent->m_pNewCoords->q=pent->m_qrot;
-			AtomicAdd(&ctx.pWorld->m_lockGrid,-ctx.pWorld->RepositionEntity(pent));
+			ctx.pWorld->RepositionEntity(pent,3|8);
 		}
 		return 0;
 	}
@@ -1933,7 +1965,7 @@ struct CAreaSerializer : CPhysicalPlaceholderSerializer {
 	CPhysGeometrySerializer *pGeomSerializer;
 
 	int SerializeGeometry(parse_context &ctx, char *str) { 
-		return ((CPhysArea*)ctx.pobj)->m_pGeom->GetType()!=GEOM_HEIGHTFIELD ? pGeomSerializer->SerializeGeometryPtr(ctx,str,((CPhysArea*)ctx.pobj)->m_pGeom) : 0; 
+		return !ctx.bSaving || !((CPhysArea*)ctx.pobj)->m_pGeom || ((CPhysArea*)ctx.pobj)->m_pGeom->GetType()!=GEOM_HEIGHTFIELD ? pGeomSerializer->SerializeGeometryPtr(ctx,str,((CPhysArea*)ctx.pobj)->m_pGeom) : 1; 
 	}
 	int SerializePoints(parse_context &ctx, char *str) {
 		CPhysArea *pArea = (CPhysArea*)ctx.pobj;
@@ -1994,11 +2026,7 @@ struct CAreaSerializer : CPhysicalPlaceholderSerializer {
 struct CEntityGridSerializer : Serializer {
 	CEntityGridSerializer() {
 		CPhysicalWorld trg(0);
-#if !defined(GRID_AXIS_STANDARD)
-		DECLARE_MEMBER("iAxisZ", ft_int, m_iEntAxisz)
-#else
-		DECLARE_PROC("iAxisZ", &CEntityGridSerializer::SerializeAxisZ)
-#endif
+		DECLARE_MEMBER("iAxisZ", ft_int, m_entgrid.iup)
 		DECLARE_MEMBER("CellsX", ft_int, m_entgrid.size.x)
 		DECLARE_MEMBER("CellsY", ft_int, m_entgrid.size.y)
 		DECLARE_MEMBER("StepX", ft_float, m_entgrid.step.x)
@@ -2015,7 +2043,7 @@ struct CEntityGridSerializer : Serializer {
 	int Finalize(parse_context &ctx, char *str) {
 		CPhysicalWorld *pWorld = (CPhysicalWorld*)ctx.pobj;
 		if (!ctx.bSaving)
-			pWorld->SetupEntityGrid(pWorld->m_iEntAxisz, pWorld->m_entgrid.origin, pWorld->m_entgrid.size.x, 
+			pWorld->SetupEntityGrid(pWorld->m_entgrid.iup, pWorld->m_entgrid.origin, pWorld->m_entgrid.size.x, 
 				pWorld->m_entgrid.size.y, pWorld->m_entgrid.step.x,	pWorld->m_entgrid.step.y);
 		return 0;
 	}
@@ -2147,6 +2175,16 @@ struct CPhysicalWorldSerializer : Serializer {
 		return ctx.bSaving;
 	}
 
+	template<class PhysEnt> PhysEnt* CreateEnt(CPhysicalWorld *pWorld, const char* name) {
+		PhysEnt *ent = (PhysEnt*)CryModuleMalloc(sizeof(PhysEnt)+strlen(name)+1);
+		new(ent) PhysEnt(pWorld, nullptr);
+		pe_params_foreign_data pfd;
+		strcpy((char*)(pfd.pForeignData = (char*)ent+sizeof(PhysEnt)), name);
+		pfd.iForeignData = 100;
+		ent->SetParams(&pfd);
+		return ent;
+	}
+
 	int SerializeEntities(parse_context &ctx, char *str) {
 		CPhysicalWorld *pWorld = (CPhysicalWorld*)ctx.pobj;
 		CPhysicalEntity *pent;
@@ -2187,15 +2225,18 @@ struct CPhysicalWorldSerializer : Serializer {
 				ReallocateList(pWorld->m_pGroupNums, 0, pWorld->m_nEntsAlloc);
 			}
 			sscanf(str,"(type %d",&i);
+			char *name = strchr(str,')')+2;
+			if (name[strlen(name)-1]=='\n')
+				name[strlen(name)-1] = 0;
 			switch (i) {
-				case PE_STATIC: pent = CPhysicalEntity::Create<CPhysicalEntity>(pWorld,0); ctx.pSerializer = pStaticEntitySerializer; break;
-				case PE_RIGID : pent = CPhysicalEntity::Create<CRigidEntity>(pWorld,0); ctx.pSerializer = pRigidEntitySerializer; break;
-				case PE_LIVING: pent = CPhysicalEntity::Create<CLivingEntity>(pWorld,0); ctx.pSerializer = pLivingEntitySerializer; break;
-				case PE_WHEELEDVEHICLE: pent = CPhysicalEntity::Create<CWheeledVehicleEntity>(pWorld,0); ctx.pSerializer = pWheeledVehicleEntitySerializer; break;
-				case PE_PARTICLE: pent = CPhysicalEntity::Create<CParticleEntity>(pWorld,0); break;
-				case PE_ARTICULATED: pent = CPhysicalEntity::Create<CArticulatedEntity>(pWorld,0); ctx.pSerializer = pArticulatedEntitySerializer; break;
-				case PE_ROPE: pent = CPhysicalEntity::Create<CRopeEntity>(pWorld,0); ctx.pSerializer = pRopeEntitySerializer; break;
-				case PE_SOFT: pent = CPhysicalEntity::Create<CSoftEntity>(pWorld,0); ctx.pSerializer = pSoftEntitySerializer; break;
+				case PE_STATIC: pent = CreateEnt<CPhysicalEntity>(pWorld,name); ctx.pSerializer = pStaticEntitySerializer; break;
+				case PE_RIGID : pent = CreateEnt<CRigidEntity>(pWorld,name); ctx.pSerializer = pRigidEntitySerializer; break;
+				case PE_LIVING: pent = CreateEnt<CLivingEntity>(pWorld,name); ctx.pSerializer = pLivingEntitySerializer; break;
+				case PE_WHEELEDVEHICLE: pent = CreateEnt<CWheeledVehicleEntity>(pWorld,name); ctx.pSerializer = pWheeledVehicleEntitySerializer; break;
+				case PE_PARTICLE: pent = CreateEnt<CParticleEntity>(pWorld,name); break;
+				case PE_ARTICULATED: pent = CreateEnt<CArticulatedEntity>(pWorld,name); ctx.pSerializer = pArticulatedEntitySerializer; break;
+				case PE_ROPE: pent = CreateEnt<CRopeEntity>(pWorld,name); ctx.pSerializer = pRopeEntitySerializer; break;
+				case PE_SOFT: pent = CreateEnt<CSoftEntity>(pWorld,name); ctx.pSerializer = pSoftEntitySerializer; break;
 			}
 			ctx.pobj = pent;
 			ctx.pSerializer->Serialize(ctx);

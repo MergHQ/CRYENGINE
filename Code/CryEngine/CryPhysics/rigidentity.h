@@ -20,7 +20,6 @@ struct constraint_info {
 	float sensorRadius;
 	CPhysicalEntity *pConstraintEnt;
 	int bActive;
-	quaternionf qprev[2];
 	float limit;
 	float hardness;
 };
@@ -122,7 +121,6 @@ class CRigidEntity : public CPhysicalEntity {
 	virtual void OnContactResolved(entity_contact *pContact, int iop, int iGroupId);
 
 	virtual RigidBody *GetRigidBody(int ipart=-1,int bWillModify=0) { return &m_body; }
-	virtual void GetContactMatrix(const Vec3 &pt, int ipart, Matrix33 &K) { m_body.GetContactMatrix(pt-m_body.pos,K); }
 	virtual float GetMassInv() { return m_flags & aef_recorded_physics ? 0:m_body.Minv; }
 
 	enum snapver { SNAPSHOT_VERSION = 9 };
@@ -300,18 +298,6 @@ class CRigidEntity : public CPhysicalEntity {
 	bool m_hasAuthority;
 #endif
 };
-
-inline Vec3 Loc2Glob(const entity_contact &cnt, const Vec3 &ptloc, int i)
-{
-	return cnt.pent[i]->m_pNewCoords->pos+cnt.pent[i]->m_pNewCoords->q*(
-		cnt.pent[i]->m_parts[cnt.ipart[i]].pNewCoords->q*ptloc*cnt.pent[i]->m_parts[cnt.ipart[i]].scale + 
-		cnt.pent[i]->m_parts[cnt.ipart[i]].pNewCoords->pos);
-}
-inline Vec3 Glob2Loc(const entity_contact &cnt, int i)
-{
-	return ((cnt.pt[i]-cnt.pent[i]->m_pos)*cnt.pent[i]->m_qrot - cnt.pent[i]->m_parts[cnt.ipart[i]].pos)*
-		cnt.pent[i]->m_parts[cnt.ipart[i]].q*(1.0f/cnt.pent[i]->m_parts[cnt.ipart[i]].scale);
-}
 
 struct REdata {
 	CPhysicalEntity *CurColliders[128];

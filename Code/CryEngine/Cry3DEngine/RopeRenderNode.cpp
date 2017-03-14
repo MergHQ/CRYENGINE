@@ -1159,7 +1159,7 @@ void CRopeRenderNode::Physicalize(bool bInstant)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		pe_params_flags par_flags;
-		par_flags.flags = pef_never_affect_triggers | pef_log_state_changes | pef_log_poststep;
+		par_flags.flags = pef_log_state_changes | pef_log_poststep;
 		if (m_params.nFlags & eRope_Subdivide)
 			par_flags.flags |= rope_subdivide_segs;
 		if (m_params.nFlags & eRope_CheckCollisinos)
@@ -1532,6 +1532,7 @@ void CRopeRenderNode::SyncWithPhysicalRope(bool bForce)
 	{
 		pe_status_rope sr;
 		sr.lock = 1;
+		sr.pGridRefEnt = WORLD_ENTITY;
 		if (!m_pPhysicalEntity->GetStatus(&sr))
 			return;
 		sr.lock = -1;
@@ -1761,9 +1762,10 @@ void CRopeRenderNode::OnPhysicsPostStep()
 	// Re-register entity.
 	if (m_bNeedToReRegister)
 	{
-		pe_params_bbox pbb;
-		m_pPhysicalEntity->GetParams(&pbb);
-		m_WSBBox = AABB(pbb.BBox[0], pbb.BBox[1]);
+		pe_status_pos sp;
+		sp.pGridRefEnt = WORLD_ENTITY;
+		m_pPhysicalEntity->GetStatus(&sp);
+		m_WSBBox = AABB(sp.pos+sp.BBox[0], sp.pos+sp.BBox[1]);
 		Get3DEngine()->RegisterEntity(this);
 	}
 	m_bNeedToReRegister = false;
