@@ -1144,30 +1144,25 @@ void CFlowGraphBase::PrecacheResources()
 
 //////////////////////////////////////////////////////////////////////////
 
-string CFlowGraphBase::GetGlobalNameForGraphToken(const string& tokenName) const
+const char* CFlowGraphBase::GetGlobalNameForGraphToken(const char* tokenName) const
 {
 	// graph tokens are registered in the game token system using the format:
 	//	'GraphToken.Graph<id>.<tokenName>'
-	string globalName = "GraphToken.Graph";
-
-	string temp;
-	temp.Format("%u.", m_graphId);
-	globalName += temp;
-	globalName += tokenName;
-
-	return globalName;
+	static stack_string globalName;
+	globalName.Format("GraphToken.Graph%u.%s", m_graphId, tokenName);
+	return globalName.c_str();
 }
 
 void CFlowGraphBase::RemoveGraphTokens()
 {
 	for (TGraphTokens::iterator it = m_graphTokens.begin(), end = m_graphTokens.end(); it != end; ++it)
 	{
-		string globalName = GetGlobalNameForGraphToken(it->name);
+		const char* globalName = GetGlobalNameForGraphToken(it->name.c_str());
 
 		IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
 		if (pGTS)
 		{
-			IGameToken* pToken = pGTS->FindToken(globalName.c_str());
+			IGameToken* pToken = pGTS->FindToken(globalName);
 			assert(pToken && ((pToken->GetFlags() & EGAME_TOKEN_GRAPHVARIABLE) != 0));
 			if (pToken)
 			{
@@ -1175,7 +1170,7 @@ void CFlowGraphBase::RemoveGraphTokens()
 			}
 			else
 			{
-				GameWarning("Attempted to remove nonexistent GraphToken: %s", globalName.c_str());
+				GameWarning("Attempted to remove nonexistent GraphToken: %s", globalName);
 			}
 		}
 	}
@@ -1209,13 +1204,13 @@ const IFlowGraph::SGraphToken* CFlowGraphBase::GetGraphToken(size_t index) const
 
 void CFlowGraphBase::ResetGraphToken(const IFlowGraph::SGraphToken& token)
 {
-	string globalName = GetGlobalNameForGraphToken(token.name);
+	const char* globalName = GetGlobalNameForGraphToken(token.name);
 
 	IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
 	if (pGTS)
 	{
 		TFlowInputData temp = TFlowInputData::CreateDefaultInitializedForTag((int)token.type, true);
-		IGameToken* pToken = pGTS->SetOrCreateToken(globalName.c_str(), temp);
+		IGameToken* pToken = pGTS->SetOrCreateToken(globalName, temp);
 		if (pToken)
 			pToken->SetFlags(pToken->GetFlags() | EGAME_TOKEN_GRAPHVARIABLE);
 	}

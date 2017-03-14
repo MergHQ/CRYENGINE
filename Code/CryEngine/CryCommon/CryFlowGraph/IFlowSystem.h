@@ -1701,7 +1701,7 @@ struct IFlowGraph : public NFlowSystemUtils::IFlowSystemTyped
 	virtual bool                           AddGraphToken(const SGraphToken& token) = 0;
 	virtual size_t                         GetGraphTokenCount() const = 0;
 	virtual const IFlowGraph::SGraphToken* GetGraphToken(size_t index) const = 0;
-	virtual string                         GetGlobalNameForGraphToken(const string& tokenName) const = 0;
+	virtual const char*                    GetGlobalNameForGraphToken(const char* tokenName) const = 0;
 
 	virtual TFlowGraphId                   GetGraphId() const = 0;
 };
