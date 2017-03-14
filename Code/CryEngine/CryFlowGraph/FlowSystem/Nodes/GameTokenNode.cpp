@@ -22,9 +22,9 @@ IGameToken* GetGameToken(const char* callingNodeName, IFlowNode::SActivationInfo
 	if (!pToken)
 	{
 		// try graph token instead:
-		string name = pActInfo->pGraph->GetGlobalNameForGraphToken(tokenName);
+		const char* name = pActInfo->pGraph->GetGlobalNameForGraphToken(tokenName.c_str());
 
-		pToken = pGTS->FindToken(name.c_str());
+		pToken = pGTS->FindToken(name);
 		assert(!pToken || pToken->GetFlags() & EGAME_TOKEN_GRAPHVARIABLE);
 
 		if (!pToken && bForceCreate)
@@ -33,14 +33,14 @@ IGameToken* GetGameToken(const char* callingNodeName, IFlowNode::SActivationInfo
 
 	if (!pToken)
 	{
-		CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR, "[FG] %s: cannot find GameToken: '%s'", callingNodeName, tokenName.c_str());
+		CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR, "[FG] %s (ID %u): cannot find GameToken: '%s'", callingNodeName, pActInfo->myID, tokenName.c_str());
 	}
 
 	return pToken;
 }
 
 //! Check if the value was inserted correctly in the token or if there was a type coercion
-void WarningIfGameTokenUsedWithWrongType(const char* place, const char* tokenName, TFlowInputData& data, const string& valueStr)
+void WarningIfGameTokenUsedWithWrongType(const char* place, TFlowNodeId nodeId, const char* tokenName, TFlowInputData& data, const string& valueStr)
 {
 	// give designers a warning that they're probably using a token incorrectly
 	// don't warn for empty value strings as that is a common use case to just listen to a token without actually wanting a comparison
@@ -49,8 +49,8 @@ void WarningIfGameTokenUsedWithWrongType(const char* place, const char* tokenNam
 		if (data.CheckIfForcedConversionOfCurrentValueWithString(valueStr))
 		{
 			CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR,
-				"[FG] %s: Forced conversion of GameToken '%s' of type '%s' with value >%s<",
-				place, tokenName,
+				"[FG] %s (ID %u): Forced conversion of GameToken '%s' of type '%s' with value >%s<",
+				place, nodeId, tokenName,
 				FlowTypeToName(data.GetType()),
 				valueStr.c_str()
 			);
@@ -72,7 +72,7 @@ void DryRunAndWarningIfGameTokenUsedWithWrongType(const char* place, IFlowNode::
 			TFlowInputData tempFD(tempFDRef); // copy
 			tempFD.SetValueWithConversion(valueStr); // set without affecting the real GT
 
-			WarningIfGameTokenUsedWithWrongType(place, GetPortString(pActInfo, tokenPort), tempFD, valueStr);
+			WarningIfGameTokenUsedWithWrongType(place, pActInfo->myID, GetPortString(pActInfo, tokenPort), tempFD, valueStr);
 		}
 	}
 }
@@ -427,7 +427,7 @@ private:
 		const string& valueStr = GetPortString(pActInfo, eIN_Value);
 		m_cachedValue.SetValueWithConversion(valueStr); // set even if string is empty
 		#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-		WarningIfGameTokenUsedWithWrongType(s_sNodeName, m_pCachedToken->GetName(), m_cachedValue, valueStr);
+		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo->myID, m_pCachedToken->GetName(), m_cachedValue, valueStr);
 		#endif
 	}
 
@@ -598,7 +598,7 @@ private:
 		const string& valueStr = GetPortString(pActInfo, eIN_FirstValue + i);
 		m_cachedValues[i].SetValueWithConversion(valueStr); // set even if string is empty
 		#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-		WarningIfGameTokenUsedWithWrongType(s_sNodeName, m_pCachedToken->GetName(), m_cachedValues[i], valueStr);
+		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo->myID, m_pCachedToken->GetName(), m_cachedValues[i], valueStr);
 		#endif
 	}
 
@@ -633,7 +633,7 @@ public:
 		eIN_GameToken,
 		eIN_Value,
 		eIn_FireOnStart,
-		eIn_TriggerOnlyOnChange,
+		eIn_TriggerOnlyOnResultChange,
 	};
 
 	enum EOutputs
@@ -673,7 +673,10 @@ public:
 			InputPortConfig<string>("gametoken_Token", _HELP("GameToken to set/get"), _HELP("Token")),
 			InputPortConfig<string>("compare_Value",   _HELP("Value to compare to"),  _HELP("CompareTo")),
 			InputPortConfig<bool>("FireOnStart", false, _HELP("If this node should trigger the output on game start"),  _HELP("FireOnStart")),
-			InputPortConfig<bool>("TriggerOnlyOnChange", false, _HELP("Set to false to trigger the comparison result always, or to true for only when it is different from the previous check. The value port will still always trigger.")),
+			InputPortConfig<bool>("FireOnlyOnResultChange", false,
+				_HELP("The value port will always trigger when the token value changes, regardless of this setting."
+				" Set this to TRUE to trigger the 'Equal..' ports only if the result of the comparison changed."
+				" Set to FALSE to also trigger the ports on token value change, even if the comparison result is the same.")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -750,7 +753,7 @@ public:
 			m_cachedValue.SetValueWithConversion(comparisonString);
 
 			#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-			WarningIfGameTokenUsedWithWrongType(s_sNodeName, m_pCachedToken->GetName(), m_cachedValue, comparisonString);
+			WarningIfGameTokenUsedWithWrongType(s_sNodeName, this->m_actInfo.myID, m_pCachedToken->GetName(), m_cachedValue, comparisonString);
 			#endif
 		}
 	}
@@ -786,7 +789,7 @@ private:
 		{
 			bEquals = CompareTokenWithValue(tokenData, m_cachedValue);
 		}
-		if (!GetPortBool(&m_actInfo, eIn_TriggerOnlyOnChange) || (int)bEquals != m_prevEqualResult)
+		if (!GetPortBool(&m_actInfo, eIn_TriggerOnlyOnResultChange) || (int)bEquals != m_prevEqualResult)
 		{
 			ActivateOutput(&m_actInfo, bEquals ? eOUT_EqualsTrue : eOUT_EqualsFalse, true);
 			ActivateOutput(&m_actInfo, eOUT_Equals, bEquals);
@@ -1087,7 +1090,7 @@ private:
 		const string& valueStr = GetPortString(pActInfo, eIN_Value);
 		m_cachedValue.SetValueWithConversion(valueStr); // set even if string is empty
 		#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-		WarningIfGameTokenUsedWithWrongType(s_sNodeName, m_pCachedToken->GetName(), m_cachedValue, valueStr);
+		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo->myID, m_pCachedToken->GetName(), m_cachedValue, valueStr);
 		#endif
 	}
 
