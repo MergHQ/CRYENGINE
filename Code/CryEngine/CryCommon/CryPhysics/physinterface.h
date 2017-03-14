@@ -3151,6 +3151,7 @@ struct EventPhysEntityDeleted : EventPhysMono
 	enum entype { id = 14, flagsCall = 0, flagsLog = 0 };
 	EventPhysEntityDeleted() { idval = id; }
 	int mode;
+	int isFromPOD;
 };
 
 struct EventPhysPostPump : EventPhys
