@@ -6,8 +6,10 @@
 %import "CryScriptSystem.i"
 %import "CryPhysics.i"
 %import "CryRender.i"
+%import "CryAnimation.i"
 
 %{
+#include <CryAnimation/ICryAnimation.h>
 #include <CryNetwork/INetwork.h>
 
 #include <CryEntitySystem/IEntity.h>
@@ -21,7 +23,6 @@
 #include <CryExtension/CryTypeID.h>
 #include <CryExtension/ICryFactoryRegistry.h>
 #include <CryExtension/ICryFactory.h>
-#include <CryExtension/ICryUnknown.h>
 
 #include <IGameObjectSystem.h>
 #include <IGameObject.h>
@@ -41,8 +42,6 @@
 %include "../../../CryEngine/CryCommon/CryExtension/CryGUID.h"
 %include "../../../CryEngine/CryCommon/CryExtension/CryTypeID.h"
 %include "../../../CryEngine/CryCommon/CryExtension/ICryFactoryRegistry.h"
-%include "../../../CryEngine/CryCommon/CryExtension/ICryFactory.h"
-%include "../../../CryEngine/CryCommon/CryExtension/ICryUnknown.h"
 
 %feature("director") IEntityComponent;
 %feature("director") IEntityAudioProxy;

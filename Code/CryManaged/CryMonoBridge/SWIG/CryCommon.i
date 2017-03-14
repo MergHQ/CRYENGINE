@@ -13,6 +13,7 @@
 #include <CryAction/IMaterialEffects.h>
 #include <CryCore/CryTypeInfo.h>
 #include <CryLobby/ICryStats.h>
+#include <CryExtension/ICryUnknown.h>
 %}
 
 %feature("nspace", 1);
@@ -127,6 +128,9 @@
 %template(ColorF) Color_tpl<float>; // [0.0, 1.0]
 %include "../../../../CryEngine/CryCommon/CryMath/Range.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/CryVersion.h"
+
+%include "../../../CryEngine/CryCommon/CryExtension/ICryFactory.h"
+%include "../../../CryEngine/CryCommon/CryExtension/ICryUnknown.h"
 
 SMART_PTR_TEMPLATE(CPriorityPulseState)
 SMART_PTR_TEMPLATE(IAttachmentSkin)
