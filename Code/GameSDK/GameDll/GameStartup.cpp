@@ -26,10 +26,6 @@
 #if ENABLE_AUTO_TESTER 
 static CAutoTester s_autoTesterSingleton;
 #endif
- 
-#if defined(ENABLE_STATS_AGENT)
-#include "StatsAgent.h"
-#endif
 
 #ifdef __LINK_GCOV__
 extern "C" void __gcov_flush(void);
@@ -476,11 +472,6 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 		pConsole->ExecuteString(command.c_str(), true, false);
 	}
 
-#if defined(ENABLE_STATS_AGENT)
-	const ICmdLineArg *pPipeArg = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre,"lt_pipename");
-	CStatsAgent::CreatePipe( pPipeArg );
-#endif
-
 	// load the appropriate game/mod
 #if !defined(_RELEASE)
 	const ICmdLineArg *pModArg = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre,"MOD");
@@ -537,10 +528,6 @@ void CGameStartup::Shutdown()
 
 #if CRY_PLATFORM_WINDOWS
 	AllowAccessibilityShortcutKeys(true);
-#endif
-
-#if defined(ENABLE_STATS_AGENT)
-	CStatsAgent::ClosePipe();
 #endif
 
 	GetISystem()->UnregisterErrorObserver(&m_errorObsever);

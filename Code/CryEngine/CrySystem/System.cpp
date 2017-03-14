@@ -111,6 +111,7 @@ WATERMARKDATA(_m);
 #include <../CryAction/IViewSystem.h>
 
 #include <CryCore/CrtDebugStats.h>
+#include "Interprocess/StatsAgent.h"
 
 // Define global cvars.
 SSystemCVars g_cvars;
@@ -219,7 +220,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	if (m_pSystemEventDispatcher)
 	{
-		m_pSystemEventDispatcher->RegisterListener(this,"CSystem");
+		m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
 	}
 
 #if CRY_PLATFORM_WINDOWS
@@ -555,7 +556,7 @@ void LvlRes_export(IConsoleCmdArgs* pParams);
 ///////////////////////////////////////////////////
 void CSystem::ShutDown()
 {
-	CryLogAlways("System Shutdown");  
+	CryLogAlways("System Shutdown");
 
 	m_FrameProfileSystem.Enable(false, false);
 
@@ -574,6 +575,13 @@ void CSystem::ShutDown()
 	GetIRemoteConsole()->Stop();
 
 	SAFE_DELETE(m_pTextModeConsole);
+
+	//////////////////////////////////////////////////////////////////////////
+	// Interprocess Communication
+	//////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_STATS_AGENT)
+	CStatsAgent::ClosePipe();
+#endif
 
 	KillPhysicsThread();
 
@@ -2087,6 +2095,12 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 		//CryLog("Task calculate PI = %f ", Pi); // Thats funny , but it works :-)
 	}
 #endif
+
+	//////////////////////////////////////////////////////////////////////////
+	//update stats agent
+#ifdef ENABLE_STATS_AGENT
+	CStatsAgent::Update();
+#endif // #ifdef ENABLE_STATS_AGENT
 
 	m_pSystemEventDispatcher->Update();
 

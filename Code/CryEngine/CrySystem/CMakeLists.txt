@@ -333,6 +333,11 @@ add_sources("CrySystem_uber_5.cpp"
 	SOURCE_GROUP "UserAnalytics"
 		"UserAnalytics/UserAnalyticsSystem.cpp"
 		"UserAnalytics/UserAnalyticsSystem.h"
+	SOURCE_GROUP "Interprocess"
+		"Interprocess/StatsAgent.cpp"
+		"Interprocess/StatsAgent.h"
+		"Interprocess/StatsAgentPipe.cpp"
+		"Interprocess/StatsAgentPipe.h"
 )
 
 add_sources("CrySystem_uber_6.cpp"

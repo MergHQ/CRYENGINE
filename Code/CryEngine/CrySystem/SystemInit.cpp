@@ -86,6 +86,7 @@
 #include "ServiceNetwork.h"
 #include "RemoteCommand.h"
 #include "NullImplementation/NULLAudioSystems.h"
+#include "Interprocess/StatsAgent.h"
 #include <CryNetwork/ISimpleHttpServer.h>
 
 #include "ProjectManager/ProjectManager.h"
@@ -503,7 +504,7 @@ static void OnSysSpecChange(ICVar* pVar)
 	// finish any outstanding rendering tasks
 	if (gEnv->pRenderer)
 		gEnv->pRenderer->FlushRTCommands(true, true, true);
-	
+
 	// Called when sys_spec (client config spec) variable changes.
 	int spec = pVar->GetIVal();
 
@@ -1360,7 +1361,7 @@ bool CSystem::InitPhysics()
 	const char* physDLL = m_pPhysicsLibrary ? m_pPhysicsLibrary->GetString() : DLL_PHYSICS;
 	if (!InitializeEngineModule(physDLL, "EngineModule_CryPhysics", true))
 	{
-		CryFatalError("Error loading physics dll: %s",physDLL);
+		CryFatalError("Error loading physics dll: %s", physDLL);
 		return false;
 	}
 #endif
@@ -2910,6 +2911,15 @@ L_done:;
 
 #if CRY_PLATFORM_WINDOWS
 		if (g_cvars.sys_WER) SetUnhandledExceptionFilter(CryEngineExceptionFilterWER);
+#endif
+
+		//////////////////////////////////////////////////////////////////////////
+		// Interprocess Communication
+		//////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_STATS_AGENT)
+		const ICmdLineArg* pPipeArg = m_pCmdLine->FindArg(eCLAT_Pre, "lt_pipename");
+		if (pPipeArg != nullptr)
+			CStatsAgent::CreatePipe(pPipeArg);
 #endif
 
 		//////////////////////////////////////////////////////////////////////////
@@ -5228,8 +5238,8 @@ void CSystem::CreateSystemVars()
 
 	static const char* p_physics_library_default = "CryPhysics";
 	m_pPhysicsLibrary = REGISTER_STRING("p_physics_library", p_physics_library_default, VF_DUMPTODISK,
-		"Sets the physics library to be used. Default is 'CryPhysics'"
-		"Specify in system.cfg like this: p_physics_library = \"CryPhysics\"");
+	                                    "Sets the physics library to be used. Default is 'CryPhysics'"
+	                                    "Specify in system.cfg like this: p_physics_library = \"CryPhysics\"");
 
 #ifdef SEG_WORLD
 	REGISTER_INT("sys_max_stdio", 2048, 0, "Sets a maximum for the number of simultaneously open files at the stdio level");
@@ -5420,9 +5430,9 @@ void CSystem::OnAssert(const char* condition, const char* message, const char* f
 		if (g_cvars.sys_asserts >= 3)
 		{
 #ifndef _RELEASE
-#ifdef WIN32
+	#ifdef WIN32
 			__debugbreak();
-#endif
+	#endif
 #endif
 		}
 	}
