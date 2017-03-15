@@ -2932,6 +2932,9 @@ void CEntitySystem::ChangeEntityName(CEntity* pEntity, const char* sNewName)
 	{
 		pEntity->m_szName = sNewName;
 	}
+
+	SEntityEvent event(ENTITY_EVENT_SET_NAME);
+	pEntity->SendEvent(event);
 }
 
 //////////////////////////////////////////////////////////////////////////

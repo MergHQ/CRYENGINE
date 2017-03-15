@@ -102,6 +102,14 @@ ERequestStatus SAudioObject::StopFile(IAudioStandaloneFile* const pIFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
+ERequestStatus SAudioObject::SetName(char const* const szName)
+{
+	// SDL_mixer does not have the concept of audio objects and with that the debugging of such.
+	// Therefore the name is currently not needed here.
+	return eRequestStatus_Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
 ERequestStatus SAudioListener::Set3DAttributes(SObject3DAttributes const& attributes)
 {
 	SoundEngine::SetListenerPosition(listenerId, attributes.transformation);

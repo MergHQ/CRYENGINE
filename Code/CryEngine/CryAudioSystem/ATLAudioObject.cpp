@@ -44,6 +44,10 @@ void CATLAudioObject::Release()
 		triggerStatesPair.second.numPlayingEvents = 0;
 	}
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_name.clear();
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	m_pImplData = nullptr;
 }
 
@@ -592,7 +596,7 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData)
 {
-	CAudioRequest request(userData.flags, this, userData.pOwner, userData.pUserData, userData.pUserDataOwner, &requestData);
+	CAudioRequest const request(userData.flags, this, userData.pOwner, userData.pUserData, userData.pUserDataOwner, &requestData);
 	s_pAudioSystem->PushRequest(request);
 }
 
@@ -1378,6 +1382,13 @@ void CATLAudioObject::ForceImplementationRefresh(
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CATLAudioObject::HandleSetName(char const* const szName)
+{
+	m_name = szName;
+	return m_pImplData->SetName(szName);
+}
+
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -1467,5 +1478,12 @@ void CATLAudioObject::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserDa
 void CATLAudioObject::StopFile(char const* const szFile, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioObjectRequestData<eAudioObjectRequestType_StopFile> requestData(szFile);
+	PushRequest(requestData, userData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::SetName(char const* const szName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SAudioObjectRequestData<eAudioObjectRequestType_SetName> requestData(szName);
 	PushRequest(requestData, userData);
 }

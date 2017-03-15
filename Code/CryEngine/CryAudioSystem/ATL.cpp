@@ -464,7 +464,7 @@ void CAudioTranslationLayer::NotifyListener(CAudioRequest const& request)
 	  request.pUserDataOwner,
 	  audioSystemEvent,
 	  audioControlID,
-	  request.pObject,
+	  static_cast<IObject*>(request.pObject),
 	  pStandaloneFile,
 	  pAudioEvent);
 
@@ -750,7 +750,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		{
 			SAudioManagerRequestData<eAudioManagerRequestType_GetAudioFileData> const* const pRequestData =
 			  static_cast<SAudioManagerRequestData<eAudioManagerRequestType_GetAudioFileData> const* const>(request.GetData());
-			m_pImpl->GetAudioFileData(pRequestData->szFilename, pRequestData->audioFileData);
+			m_pImpl->GetAudioFileData(pRequestData->name.c_str(), pRequestData->fileData);
 			break;
 		}
 	case eAudioManagerRequestType_None:
@@ -1182,7 +1182,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			pObject->Init(pRequestData->name.c_str(), m_pImpl->ConstructAudioObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
 #else
 			pObject->Init(nullptr, m_pImpl->ConstructAudioObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 			CRY_ASSERT(result == eRequestStatus_Success);
@@ -1213,7 +1213,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			m_audioObjectMgr.RegisterObject(pObject);
 			result = eRequestStatus_Success;
-
 			break;
 		}
 	case eAudioObjectRequestType_ReleaseObject:
@@ -1239,17 +1238,32 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			result = eRequestStatus_Success;
 			break;
 		}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	case eAudioObjectRequestType_SetName:
+		{
+			SAudioObjectRequestData<eAudioObjectRequestType_SetName> const* const pRequestData =
+			  static_cast<SAudioObjectRequestData<eAudioObjectRequestType_SetName> const* const>(request.GetData());
+
+			result = pObject->HandleSetName(pRequestData->name.c_str());
+
+			if (result == eRequestStatus_SuccessNeedsRefresh)
+			{
+				pObject->ForceImplementationRefresh(m_triggers, m_parameters, m_switches, m_environments, true);
+				result = eRequestStatus_Success;
+			}
+
+			break;
+		}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	case eAudioObjectRequestType_None:
 		{
 			result = eRequestStatus_Success;
-
 			break;
 		}
 	default:
 		{
-			result = eRequestStatus_FailureInvalidRequest;
 			g_audioLogger.Log(eAudioLogType_Warning, "ATL received an unknown AudioObject request type: %u", pBaseRequestData->type);
-
+			result = eRequestStatus_FailureInvalidRequest;
 			break;
 		}
 	}

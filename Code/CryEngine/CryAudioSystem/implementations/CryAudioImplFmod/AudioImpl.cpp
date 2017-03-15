@@ -64,7 +64,6 @@ void CAudioImpl::Update(float const deltaTime)
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const eventPoolSize)
 {
-
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Object Pool");
 	CAudioObject::CreateAllocator(audioObjectPoolSize);
 

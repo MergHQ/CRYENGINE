@@ -3379,7 +3379,7 @@ void CSmartObjectsEditorDialog::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT*
 			if (pAction)
 			{
 				CFlowGraphManager* pManager = GetIEditor()->GetFlowGraphManager();
-				CFlowGraph* pFlowGraph = pManager->FindGraphForAction(pAction);
+				CHyperFlowGraph* pFlowGraph = pManager->FindGraphForAction(pAction);
 				assert(pFlowGraph);
 				if (pFlowGraph)
 					pManager->OpenView(pFlowGraph);

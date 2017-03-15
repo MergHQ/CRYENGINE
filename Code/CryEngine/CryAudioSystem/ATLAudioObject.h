@@ -94,33 +94,19 @@ public:
 	CATLAudioObject& operator=(CATLAudioObject const&) = delete;
 	CATLAudioObject& operator=(CATLAudioObject&&) = delete;
 
-	// CryAudio::IObject
-	virtual void ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void SetSwitchState(ControlId const audioSwitchId, SwitchStateId const audioSwitchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void SetEnvironment(EnvironmentId const audioEnvironmentId, float const amount, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void ResetEnvironments(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	// ~CryAudio::IObject
+	ERequestStatus   HandleExecuteTrigger(CATLTrigger const* const pTrigger, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr, EnumFlagsType const flags = InvalidEnumFlagType);
+	ERequestStatus   HandleStopTrigger(CATLTrigger const* const pTrigger);
+	ERequestStatus   HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
+	ERequestStatus   HandleSetParameter(CParameter const* const pParameter, float const value);
+	ERequestStatus   HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
+	ERequestStatus   HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount);
+	ERequestStatus   HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup);
+	void             HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& audioListenerPosition);
+	ERequestStatus   HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
+	ERequestStatus   HandleStopFile(char const* const szFile);
 
-	ERequestStatus HandleExecuteTrigger(CATLTrigger const* const pTrigger, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr, EnumFlagsType const flags = InvalidEnumFlagType);
-	ERequestStatus HandleStopTrigger(CATLTrigger const* const pTrigger);
-	ERequestStatus HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
-	ERequestStatus HandleSetParameter(CParameter const* const pParameter, float const value);
-	ERequestStatus HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
-	ERequestStatus HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount);
-	ERequestStatus HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup);
-	void           HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& audioListenerPosition);
-	ERequestStatus HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
-	ERequestStatus HandleStopFile(char const* const szFile);
-
-	void           Init(char const* const szName, Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition);
-	void           Release();
+	void             Init(char const* const szName, Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition);
+	void             Release();
 
 	// Callbacks
 	void                           ReportStartingTriggerInstance(TriggerInstanceId const audioTriggerInstanceId, ControlId const audioTriggerId);
@@ -169,6 +155,21 @@ public:
 
 private:
 
+	// CryAudio::IObject
+	virtual void ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetSwitchState(ControlId const audioSwitchId, SwitchStateId const audioSwitchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetEnvironment(EnvironmentId const audioEnvironmentId, float const amount, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void ResetEnvironments(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	// ~CryAudio::IObject
+
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator& iter);
 	void PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData);
 
@@ -211,6 +212,8 @@ public:
 	  AudioSwitchLookup const& switches,
 	  AudioEnvironmentLookup const& environments,
 	  bool const bSet3DAttributes);
+
+	ERequestStatus HandleSetName(char const* const szName);
 
 	CryFixedStringT<MaxObjectNameLength> m_name;
 

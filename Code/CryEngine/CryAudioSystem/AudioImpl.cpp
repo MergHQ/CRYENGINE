@@ -7,17 +7,17 @@ using namespace CryAudio;
 using namespace CryAudio::Impl;
 using namespace CryAudio::Impl::Null;
 
-struct SNullAudioEvent : IAudioEvent
+struct SNullAudioEvent final : IAudioEvent
 {
 	virtual ERequestStatus Stop() override { return eRequestStatus_Success; }
 };
 
-struct SNullAudioListener : IAudioListener
+struct SNullAudioListener final : IAudioListener
 {
 	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return eRequestStatus_Success; }
 };
 
-struct SNullAudioTrigger : IAudioTrigger
+struct SNullAudioTrigger final : IAudioTrigger
 {
 	virtual ERequestStatus Load() const override                                       { return eRequestStatus_Success; }
 	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
@@ -25,7 +25,7 @@ struct SNullAudioTrigger : IAudioTrigger
 	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
 };
 
-struct SNullAudioObject : IAudioObject
+struct SNullAudioObject final : IAudioObject
 {
 	virtual ERequestStatus Update() override                                                                                   { return eRequestStatus_Success; }
 	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override                                     { return eRequestStatus_Success; }
@@ -37,6 +37,7 @@ struct SNullAudioObject : IAudioObject
 	virtual ERequestStatus StopAllTriggers() override                                                                          { return eRequestStatus_Success; }
 	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override                                               { return eRequestStatus_Success; }
 	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override                                               { return eRequestStatus_Success; }
+	virtual ERequestStatus SetName(char const* const szName) override                                                          { return eRequestStatus_Success; }
 };
 
 ///////////////////////////////////////////////////////////////////////////

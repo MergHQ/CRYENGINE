@@ -12,7 +12,6 @@ namespace Impl
 {
 namespace Fmod
 {
-
 class CAudioEvent;
 class CAudioParameter;
 class CAudioSwitchState;
@@ -22,6 +21,7 @@ class CAudioFileBase;
 class CAudioObjectBase : public IAudioObject
 {
 public:
+
 	CAudioObjectBase();
 	virtual ~CAudioObjectBase();
 
@@ -38,6 +38,7 @@ public:
 	virtual ERequestStatus StopAllTriggers() override;
 	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override;
 	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override;
+	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~IAudioObject
 
 protected:
@@ -59,28 +60,28 @@ protected:
 	float m_occlusion = 0.0f;
 
 public:
-	static FMOD::Studio::System* s_pSystem;
 
+	static FMOD::Studio::System* s_pSystem;
 };
 
 using AudioObjects = std::vector<CAudioObjectBase*>;
 
 class CAudioObject final : public CAudioObjectBase, public CPoolObject<CAudioObject, stl::PSyncNone>
 {
-
 public:
+
 	// IAudioObject
 	virtual ERequestStatus SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount) override;
 	virtual ERequestStatus SetParameter(IParameter const* const pIAudioParameter, float const value) override;
 	virtual ERequestStatus SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState) override;
 	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
 	// ~IAudioObject
-
 };
 
 class CGlobalAudioObject final : public CAudioObjectBase
 {
 public:
+
 	CGlobalAudioObject(AudioObjects const& audioObjectsList)
 		: m_audioObjectsList(audioObjectsList)
 	{}
@@ -94,7 +95,6 @@ public:
 
 	AudioObjects const& m_audioObjectsList;
 };
-
-}
-}
-}
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

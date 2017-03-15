@@ -262,6 +262,14 @@ struct IAudioObject
 	 * @see PlayFile
 	 */
 	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) = 0;
+
+	/**
+	* Sets this audio object's name.
+	* Is only used during production whenever an entity's name is changed to adjust corresponding audio objects as well.
+	* @param szName - name to set.
+	* @return eRequestStatus_Success if the object was renamed successfully, eRequestStatus_Failure otherwise.
+	*/
+	virtual ERequestStatus SetName(char const* const szName) = 0;
 };
 
 /**

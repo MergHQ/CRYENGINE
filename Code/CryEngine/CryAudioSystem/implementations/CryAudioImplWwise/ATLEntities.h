@@ -15,7 +15,6 @@ namespace Impl
 {
 namespace Wwise
 {
-
 class CAudioObject final : public IAudioObject, public CPoolObject<CAudioObject, stl::PSyncNone>
 {
 public:
@@ -45,6 +44,7 @@ public:
 	virtual ERequestStatus StopAllTriggers() override;
 	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override { return eRequestStatus_Success; }
 	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override { return eRequestStatus_Success; }
+	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~IAudioObject
 
 	AkGameObjectID const  m_id;
@@ -275,7 +275,6 @@ struct SEnvPairCompare
 		return (pair1.second > pair2.second);
 	}
 };
-
-}
-}
-}
+} // namespace Wwise
+} // namespace Impl
+} // namespace CryAudio

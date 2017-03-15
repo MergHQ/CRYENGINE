@@ -305,7 +305,6 @@ ERequestStatus CAudioObject::SetObstructionOcclusion(float const obstruction, fl
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent)
 {
-
 	ERequestStatus result = eRequestStatus_Failure;
 
 	SAudioTrigger const* const pAudioTrigger = static_cast<SAudioTrigger const* const>(pIAudioTrigger);
@@ -357,9 +356,26 @@ ERequestStatus CAudioObject::StopAllTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioObject::SetName(char const* const szName)
+{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	StopAllTriggers();
+
+	AKRESULT wwiseResult = AK::SoundEngine::UnregisterGameObj(m_id);
+	CRY_ASSERT(wwiseResult == AK_Success);
+
+	wwiseResult = AK::SoundEngine::RegisterGameObj(m_id, szName);
+	CRY_ASSERT(wwiseResult == AK_Success);
+
+	return eRequestStatus_SuccessNeedsRefresh;
+#else
+	return eRequestStatus_Success;
+#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioObject::PostEnvironmentAmounts()
 {
-
 	ERequestStatus result = eRequestStatus_Failure;
 	AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
 	uint32 auxIndex = 0;

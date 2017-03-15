@@ -63,12 +63,13 @@ enum ERequestStatus : EnumFlagsType
 {
 	eRequestStatus_None                    = 0,
 	eRequestStatus_Success                 = 1,
-	eRequestStatus_PartialSuccess          = 2,
-	eRequestStatus_Failure                 = 3,
-	eRequestStatus_Pending                 = 4,
-	eRequestStatus_FailureInvalidObjectId  = 5,
-	eRequestStatus_FailureInvalidControlId = 6,
-	eRequestStatus_FailureInvalidRequest   = 7,
+	eRequestStatus_SuccessNeedsRefresh     = 2,
+	eRequestStatus_PartialSuccess          = 3,
+	eRequestStatus_Failure                 = 4,
+	eRequestStatus_Pending                 = 5,
+	eRequestStatus_FailureInvalidObjectId  = 6,
+	eRequestStatus_FailureInvalidControlId = 7,
+	eRequestStatus_FailureInvalidRequest   = 8,
 };
 
 enum ERequestResult : EnumFlagsType
