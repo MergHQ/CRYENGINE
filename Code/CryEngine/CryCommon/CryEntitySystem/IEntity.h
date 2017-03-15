@@ -320,7 +320,7 @@ enum EEntityEvent
 
 	//! Sent only if ENTITY_FLAG_SEND_RENDER_EVENT is set
 	//! Called when entity is first rendered (When any of the entity render nodes are considered by 3D engine for rendering this frame)
-  //! Or called when entity is not being rendered for at least several frames
+	//! Or called when entity is not being rendered for at least several frames
 	//! nParam[0] == 0 if rendeing Stops.
 	//! nParam[0] == 1 if rendeing Starts.
 	ENTITY_EVENT_RENDER_VISIBILITY_CHANGE,
@@ -407,11 +407,14 @@ enum EEntityEvent
 	//! Called when the entity should be removed from the radar.
 	ENTITY_EVENT_REMOVE_FROM_RADAR,
 
+	//! Called when the entity's name is set.
+	ENTITY_EVENT_SET_NAME,
+
 	//! Last entity event in list.
 	ENTITY_EVENT_LAST,
 };
 
-#define ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK (BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE)|BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)|BIT64(ENTITY_EVENT_UPDATE))
+#define ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK (BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) | BIT64(ENTITY_EVENT_PREPHYSICSUPDATE) | BIT64(ENTITY_EVENT_UPDATE))
 
 //! Variant of default BIT macro to safely handle 64-bit numbers.
 #define ENTITY_EVENT_BIT(x) BIT64((x))
@@ -525,8 +528,8 @@ enum EEntityFlagsExtended
 	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(7), // Bit2 of entity GI mode, see IRenderNode::EGIMode
 };
 
-#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 5               // Bit offset of entity GI mode in EEntityFlagsExtended.
-#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 5                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended.
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK   (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
 
 //! Flags can be passed to IEntity::Serialize().
 enum EEntitySerializeFlags
@@ -1031,7 +1034,7 @@ public:
 	//! \param flags IEntityComponent.h contains the relevent flags to control registration behaviour.
 	//! \param eventMask is a bit mask of the EEntityEvents flags.
 	//! \return if input param pComponent is null AddComponent will try to create a component for the provided interface id.
-	virtual IEntityComponent* AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent,bool bAllowDuplicate) = 0;
+	virtual IEntityComponent* AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent, bool bAllowDuplicate) = 0;
 
 	//! Remove previously created component from the Entity
 	//! \param pComponent Component pointer to remove from the Entity
@@ -1054,22 +1057,21 @@ public:
 	//! Instance of the component is created by the lookup in the class registry for the first class that implements ComponentType interface,
 	//! If such class is not previously registered the assert will be raised and method will fail.
 	template<typename ComponentType>
-	ComponentType* CreateComponent(bool bAllowDuplicate=false);
+	ComponentType* CreateComponent(bool bAllowDuplicate = false);
 
 	//! Create a new initialized component using a new operator of the class type, typeid of the component is null guid.
 	template<typename ComponentClass>
-	ComponentClass* CreateComponentClass(bool bAllowDuplicate=false);
+	ComponentClass* CreateComponentClass(bool bAllowDuplicate = false);
 
 	//! Helper template function to simplify querying components
 	//! ex: auto pScriptProxy = pEntity->GetComponent<IEntityScriptComponent>();
 	template<typename ComponentType>
-	ComponentType* GetComponent() const 
+	ComponentType* GetComponent() const
 	{
 		//static_assert(IEntityComponent::IsDeclared<ComponentType>::Check, "Tried to query component  that was not declared with CRY_ENTITY_COMPONENT_INTERFACE, CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS or CRY_ENTITY_COMPONENT_CLASS!");
 
-		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>())); 
+		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>()));
 	}
-
 
 	//! Creates instances of the components contained in the other entity
 	//! Also copies over properties for all the components created.
@@ -1118,8 +1120,8 @@ public:
 
 	//! Enable/disable network serialization of the physics aspect.
 	virtual void PhysicsNetSerializeEnable(bool enable) = 0;
-	virtual void PhysicsNetSerializeTyped(TSerialize &ser, int type, int flags) = 0;
-	virtual void PhysicsNetSerialize(TSerialize &ser) = 0;
+	virtual void PhysicsNetSerializeTyped(TSerialize& ser, int type, int flags) = 0;
+	virtual void PhysicsNetSerialize(TSerialize& ser) = 0;
 	//////////////////////////////////////////////////////////////////////////
 
 	// Custom entity material.
@@ -1276,7 +1278,7 @@ public:
 	virtual int LoadGeomCache(int nSlot, const char* sFilename) = 0;
 #endif
 
-	//! Returns the network proxy associated with the entity. 
+	//! Returns the network proxy associated with the entity.
 	//! Use the proxy to modify the entity's network behavior.
 	virtual INetEntity* GetNetEntity() = 0;
 
@@ -1309,12 +1311,12 @@ public:
 
 	//! Check if Entity is being Rendered by 3dengine.
 	//! It doesn't necessary mean that it will be visible on screen but only that 3d engine considers it for a rendering now
-	virtual bool         IsRendered() const = 0;
+	virtual bool IsRendered() const = 0;
 
 	//! Render a preview of the Entity
 	//! This method is not used when entity is normally rendered
 	//! But only used for previewing the entity in the Sandbox Editor
-	virtual void         PreviewRender(SPreviewRenderParams &params) = 0;
+	virtual void PreviewRender(SPreviewRenderParams& params) = 0;
 
 	//! Sets common parameters that are applied on all render nodes for this render proxy.
 	virtual void                       SetRenderNodeParams(const IEntity::SRenderNodeParams& params) = 0;
@@ -1373,9 +1375,9 @@ public:
 	//! so it should be set by editor and have a 1-1 correspondence with a baseobject. This is intended as a
 	//! runtime ID and does not need to be serialized
 	virtual uint32 GetEditorObjectID() const = 0;
-	virtual void   SetObjectID(uint32 ID) = 0;
-	virtual void   GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const = 0;
-	virtual void   SetEditorObjectInfo(bool bSelected, bool bHighlighted) = 0;
+	virtual void SetObjectID(uint32 ID) = 0;
+	virtual void GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const = 0;
+	virtual void SetEditorObjectInfo(bool bSelected, bool bHighlighted) = 0;
 
 	// </interfuscator:shuffle>
 
@@ -1467,11 +1469,10 @@ inline void IEntity::SetOpacity(float fAmount)
 
 ILINE EntityId IEntityComponent::GetEntityId() const { return m_pEntity->GetId(); }
 
-ILINE void IEntityComponent::NetMarkAspectsDirty(const NetworkAspectType aspects)
+ILINE void     IEntityComponent::NetMarkAspectsDirty(const NetworkAspectType aspects)
 {
-	if (INetEntity *pNetEntity = GetEntity()->GetNetEntity())
+	if (INetEntity* pNetEntity = GetEntity()->GetNetEntity())
 	{
 		pNetEntity->MarkAspectsDirty(aspects);
 	}
 }
-

@@ -36,6 +36,7 @@ public:
 	virtual ERequestStatus StopAllTriggers() override;
 	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override;
 	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override;
+	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~AudioObject
 
 	void StopAudioEvent(uint32 const pathId);
@@ -46,6 +47,6 @@ private:
 
 	std::vector<CAudioEvent*> m_activeEvents;
 };
-}
-}
-}
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

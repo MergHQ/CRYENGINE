@@ -140,7 +140,8 @@ uint64 CEntityComponentAudio::GetEventMask() const
 	  BIT64(ENTITY_EVENT_ENTERAREA) |
 	  BIT64(ENTITY_EVENT_MOVENEARAREA) |
 	  BIT64(ENTITY_EVENT_ENTERNEARAREA) |
-	  BIT64(ENTITY_EVENT_MOVEINSIDEAREA);
+	  BIT64(ENTITY_EVENT_MOVEINSIDEAREA) |
+	  BIT64(ENTITY_EVENT_SET_NAME);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -232,6 +233,28 @@ void CEntityComponentAudio::ProcessEvent(SEntityEvent& event)
 
 				break;
 			}
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+		case ENTITY_EVENT_SET_NAME:
+			{
+				CryFixedStringT<MaxObjectNameLength> name(m_pEntity->GetName());
+				size_t numAuxObjects = 0;
+
+				for (auto const& objectPair : m_mapAuxAudioProxies)
+				{
+					if (numAuxObjects > 0)
+					{
+						// First AuxAudioObject is not explicitly identified, it keeps the entity's name.
+						// All additional objects however are being explicitly identified.
+						name.Format("%s_aux_object_#%" PRISIZE_T, m_pEntity->GetName(), numAuxObjects + 1);
+					}
+
+					objectPair.second.pIObject->SetName(name.c_str());
+					++numAuxObjects;
+				}
+
+				break;
+			}
+#endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 		}
 	}
 }
@@ -557,17 +580,17 @@ AuxObjectId CEntityComponentAudio::CreateAudioAuxObject()
 			CryFatalError("<Audio> nullptr entity pointer during CEntityAudioProxy::CreateAudioProxy!");
 		}
 
-		CryFixedStringT<MaxObjectNameLength> sFinalName(m_pEntity->GetName());
-		size_t const numAudioAuxObjects = m_mapAuxAudioProxies.size();
+		CryFixedStringT<MaxObjectNameLength> name(m_pEntity->GetName());
+		size_t const numAuxObjects = m_mapAuxAudioProxies.size();
 
-		if (numAudioAuxObjects > 0)
+		if (numAuxObjects > 0)
 		{
-			// First AuxAudioProxy is not explicitly identified, it keeps the entity's name.
-			// All additionally AuxaudioProxies however are being explicitly identified.
-			sFinalName.Format("%s_auxaudioproxy_#%" PRISIZE_T, m_pEntity->GetName(), numAudioAuxObjects + 1);
+			// First AuxAudioObject is not explicitly identified, it keeps the entity's name.
+			// All additional objects however are being explicitly identified.
+			name.Format("%s_aux_object_#%" PRISIZE_T, m_pEntity->GetName(), numAuxObjects + 1);
 		}
 
-		szName = sFinalName.c_str();
+		szName = name.c_str();
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 
 		SCreateObjectData const objectData(szName, eOcclusionType_Ignore, m_pEntity->GetWorldTM(), m_pEntity->GetId(), true);

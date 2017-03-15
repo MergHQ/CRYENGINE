@@ -376,6 +376,13 @@ ERequestStatus CAudioObjectBase::StopFile(IAudioStandaloneFile* const pIFile)
 
 	return eRequestStatus_Failure;
 }
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioObjectBase::SetName(char const* const szName)
+{
+	// Fmod does not have the concept of audio objects and with that the debugging of such.
+	// Therefore the name is currently not needed here.
+	return eRequestStatus_Success;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioObjectBase::StopEvent(uint32 const eventPathId)

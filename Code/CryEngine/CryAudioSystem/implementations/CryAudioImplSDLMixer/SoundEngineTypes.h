@@ -154,6 +154,7 @@ struct SAudioObject final : public IAudioObject, public CPoolObject<SAudioObject
 	virtual ERequestStatus StopAllTriggers() override;
 	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override;
 	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override;
+	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~ IAudioObject
 
 	const uint32               audioObjectId;
@@ -195,6 +196,6 @@ struct SAudioFileEntry final : public IAudioFileEntry
 
 	SampleId sampleId;
 };
-}
-}
-}
+} // namespace SDL_mixer
+} // namespace Impl
+} // namespace CryAudio

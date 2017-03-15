@@ -112,6 +112,15 @@ struct IObject
 	 * @see PlayFile
 	 */
 	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Sets this audio object's name.
+	 * Is only used during production whenever an entity's name is changed to adjust corresponding audio objects as well.
+	 * @param szName - name to set.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

@@ -133,3 +133,11 @@ ERequestStatus CAudioObject::StopFile(IAudioStandaloneFile* const pIFile)
 	return eRequestStatus_Success;
 
 }
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioObject::SetName(char const* const szName)
+{
+	// PortAudio does not have the concept of audio objects and with that the debugging of such.
+	// Therefore the name is currently not needed here.
+	return eRequestStatus_Success;
+}

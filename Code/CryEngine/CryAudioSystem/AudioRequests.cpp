@@ -91,6 +91,7 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_RegisterObject)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_ReleaseObject)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_ProcessPhysicsRay)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetName)
 			default:
 				{
 					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio object request type (%u)", pBase->type);

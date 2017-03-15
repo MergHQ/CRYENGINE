@@ -90,6 +90,7 @@ enum EAudioObjectRequestType : EnumFlagsType
 	eAudioObjectRequestType_RegisterObject         = BIT(14),
 	eAudioObjectRequestType_ReleaseObject          = BIT(15),
 	eAudioObjectRequestType_ProcessPhysicsRay      = BIT(16),
+	eAudioObjectRequestType_SetName                = BIT(17),
 };
 
 enum EAudioListenerRequestType : EnumFlagsType
@@ -433,22 +434,22 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_ReloadControlsData> fin
 template<>
 struct SAudioManagerRequestData<eAudioManagerRequestType_GetAudioFileData> final : public SAudioManagerRequestDataBase
 {
-	explicit SAudioManagerRequestData(char const* const _szFilename, SFileData& _audioFileData)
+	explicit SAudioManagerRequestData(char const* const szName, SFileData& _fileData)
 		: SAudioManagerRequestDataBase(eAudioManagerRequestType_GetAudioFileData)
-		, szFilename(_szFilename)
-		, audioFileData(_audioFileData)
+		, name(szName)
+		, fileData(_fileData)
 	{}
 
 	explicit SAudioManagerRequestData(SAudioManagerRequestData<eAudioManagerRequestType_GetAudioFileData> const* const pAMRData)
 		: SAudioManagerRequestDataBase(eAudioManagerRequestType_GetAudioFileData)
-		, szFilename(pAMRData->szFilename)
-		, audioFileData(pAMRData->audioFileData)
+		, name(pAMRData->name)
+		, fileData(pAMRData->fileData)
 	{}
 
 	virtual ~SAudioManagerRequestData() override = default;
 
-	char const* const szFilename;
-	SFileData&        audioFileData;
+	CryFixedStringT<MaxFileNameLength> const name;
+	SFileData&                               fileData;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -958,6 +959,25 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> final 
 	virtual ~SAudioObjectRequestData() override = default;
 
 	CAudioRayInfo* const pAudioRayInfo;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestData<eAudioObjectRequestType_SetName> final : public SAudioObjectRequestDataBase
+{
+	explicit SAudioObjectRequestData(char const* const szName)
+		: SAudioObjectRequestDataBase(eAudioObjectRequestType_SetName)
+		, name(szName)
+	{}
+
+	explicit SAudioObjectRequestData(SAudioObjectRequestData<eAudioObjectRequestType_SetName> const* const pAORData)
+		: SAudioObjectRequestDataBase(eAudioObjectRequestType_SetName)
+		, name(pAORData->name)
+	{}
+
+	virtual ~SAudioObjectRequestData() override = default;
+
+	CryFixedStringT<MaxObjectNameLength> const name;
 };
 
 //////////////////////////////////////////////////////////////////////////
