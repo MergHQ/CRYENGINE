@@ -1343,8 +1343,7 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent,int mode,int bT
 				eped.pEntity=ppc; eped.mode=mode;
 				eped.pForeignData=ppc->m_pForeignData; eped.iForeignData=ppc->m_iForeignData;
 				eped.isFromPOD = IsPODThread(this);
-				if (!SignalEvent(&eped,0))
-					return 0;
+				SignalEvent(&eped,0);
 			}
 			((CPhysicalEntity*)ppc)->m_iDeletionTime = mode+1;
 			if (mode==0) {
