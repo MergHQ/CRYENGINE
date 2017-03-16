@@ -865,6 +865,8 @@ add_sources("NoUberFile"
 		"StdAfx.h"
 )
 
+# -- cryaction_durango.waf_files --
+sources_platform(DURANGO)
 add_sources("CryAction_main_uber_durango.cpp"
 	PROJECTS CryAction
 	SOURCE_GROUP "Player Profiles"
