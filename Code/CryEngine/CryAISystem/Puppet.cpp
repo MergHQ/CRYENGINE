@@ -1336,6 +1336,8 @@ void CPuppet::Event(unsigned short eType, SAIEVENT* pEvent)
 				m_coverUser.SetCoverID(CoverID());
 			}
 
+			ResetModularBehaviorTree(AIOBJRESET_SHUTDOWN);
+
 			pAISystem->NotifyTargetDead(this);
 
 			m_bCheckedBody = false;

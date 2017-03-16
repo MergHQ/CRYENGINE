@@ -926,6 +926,7 @@ void CWheeledVehicleEntity::CheckAdditionalGeometry(float time_interval)
 		}
 		m_susp[iwheel].curlen = min(newlen, m_susp[iwheel].curlen+time_interval*7.0f);
 		m_susp[iwheel].pos.z += m_susp[iwheel].fullen-m_susp[iwheel].curlen;
+		m_parts[iwheel+m_nHullParts].pos = m_susp[iwheel].pos;
 	}
 
 	if (bFakeInnerWheels) {
@@ -959,6 +960,7 @@ void CWheeledVehicleEntity::CheckAdditionalGeometry(float time_interval)
 				if (m_susp[iwheel].pbody)
 					m_susp[iwheel].vrel -= m_susp[iwheel].pbody->v + (m_susp[iwheel].pbody->w^m_susp[iwheel].ptcontact-m_susp[iwheel].pbody->pos);
 				m_susp[iwheel].contact.vreq.zero();
+				m_parts[iwheel+m_nHullParts].pos = m_susp[iwheel].pos;
 			}
 	}
 
