@@ -39,6 +39,7 @@ namespace uqs
 			virtual void                       GetDetailsOfFocusedItem(IQueryHistoryConsumer& receiver) const override;
 			virtual size_t                     GetRoughMemoryUsageOfQueryHistory(EHistoryOrigin whichHistory) const override;
 			virtual size_t                     GetHistoricQueriesCount(EHistoryOrigin whichHistory) const override;
+			virtual SDebugCameraView           GetIdealDebugCameraView(EHistoryOrigin whichHistory, const CQueryID& queryID, const SDebugCameraView& currentCameraView) const override;
 			// ~IQueryHistoryManager
 
 			HistoricQuerySharedPtr             AddNewLiveHistoricQuery(const CQueryID& queryID, const char* querierName, const CQueryID& parentQueryID);

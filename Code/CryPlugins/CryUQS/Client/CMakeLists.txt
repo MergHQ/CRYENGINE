@@ -37,6 +37,8 @@ add_sources("UQS_uber_client.cpp"
 		"client/FactoryRegistrationHelper.cpp"
 		"client/TypeWrapper.h"
 		"client/ItemConverter.h"
+		"client/QueryHost.h"
+		"client/QueryHost.cpp"
 )
 
 end_sources()

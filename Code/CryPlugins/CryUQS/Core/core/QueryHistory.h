@@ -143,6 +143,7 @@ namespace uqs
 			size_t                                              GetRoughMemoryUsage() const;
 			bool                                                FindClosestItemInView(const SDebugCameraView& cameraView, size_t& outItemIndex) const;     // returns true and outputs the index of the closest item to outItemIndex or just returns false if there are no good candidates nearby
 			void                                                DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks) const;
+			SDebugCameraView                                    GetIdealDebugCameraView(const SDebugCameraView& currentCameraView) const;
 
 			void                                                FillQueryHistoryConsumerWithShortInfoAboutQuery(IQueryHistoryConsumer& consumer, bool bHighlight) const;
 			void                                                FillQueryHistoryConsumerWithDetailedInfoAboutQuery(IQueryHistoryConsumer& consumer) const;

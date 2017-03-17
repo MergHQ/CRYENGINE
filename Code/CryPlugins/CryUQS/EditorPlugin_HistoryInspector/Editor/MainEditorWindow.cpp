@@ -29,6 +29,9 @@
 
 // UQS 3d rendering
 #include <IDisplayViewport.h>
+#include <SandboxAPI.h>	// SANDBOX_API
+struct IDataBaseItem;	// CViewport should have forward-declared this
+#include <Viewport.h>
 
 //#pragma optimize("", off)
 
@@ -397,6 +400,40 @@ protected:
 		}
 	}
 
+	virtual void mouseDoubleClickEvent(QMouseEvent *event) override
+	{
+		QTreeView::mouseDoubleClickEvent(event);
+
+		if (CViewport* pActiveView = GetIEditor()->GetActiveView())
+		{
+			if (uqs::core::IQueryHistoryManager* pQueryHistoryManager = GetHistoryQueryManager())
+			{
+				uqs::core::SDebugCameraView cameraView;
+
+				// construct the current camera view
+				{
+					const Matrix34& viewTM = pActiveView->GetViewTM();
+					Matrix33 orientation;
+					viewTM.GetRotation33(orientation);
+					cameraView.pos = viewTM.GetTranslation();
+					cameraView.dir = orientation * Vec3(0, 1, 0);
+				}
+
+				cameraView = pQueryHistoryManager->GetIdealDebugCameraView(
+					pQueryHistoryManager->GetCurrentQueryHistory(),
+					pQueryHistoryManager->GetCurrentHistoricQueryForInWorldRendering(pQueryHistoryManager->GetCurrentQueryHistory()),
+					cameraView);
+
+				// change the editor's camera view
+				{
+					const Matrix33 orientation = Matrix33::CreateRotationVDir(cameraView.dir);
+					const Matrix34 transform(orientation, cameraView.pos);
+					pActiveView->SetViewTM(transform);
+				}
+			}
+		}
+	}
+
 private:
 	uqs::core::IQueryHistoryManager* GetHistoryQueryManager()
 	{
@@ -510,11 +547,11 @@ const char* CMainEditorWindow::GetPaneTitle() const
 	// check for whether the UQS engine plugin has been loaded
 	if (uqs::core::IHubPlugin::GetHubPtr())
 	{
-		return "UQS Query History Inspector";
+		return "UQS History";
 	}
 	else
 	{
-		return "UQS Query History Inspector (disabled due to the UQS engine-plugin not being loaded)";
+		return "UQS History (disabled due to the UQS engine-plugin not being loaded)";
 	}
 }
 

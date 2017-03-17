@@ -26,3 +26,4 @@
 #include "client/DeferredEvaluatorFactory.h"
 #include "client/FactoryRegistrationHelper.h"
 #include "client/TypeWrapper.h"
+#include "client/QueryHost.h"
