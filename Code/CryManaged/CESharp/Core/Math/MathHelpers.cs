@@ -52,9 +52,21 @@ namespace CryEngine
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static float Clamp(float min, float max, float value)
+		public static float Clamp(float value, float min, float max)
 		{
 			return Math.Min(Math.Max(min, value), max);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int Clamp(int value, int min, int max)
+		{
+			return Math.Min(Math.Max(min, value), max);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float Clamp01(float value)
+		{
+			return Clamp(value, 0.0f, 1.0f);
 		}
 
 		/// <summary>
@@ -101,6 +113,7 @@ namespace CryEngine
 		/// <param name="min"></param>
 		/// <param name="max"></param>
 		/// <returns></returns>
+		[Obsolete("Please use the non-generic functions")]
 		public static T Clamp<T>(T value, T min, T max) where T : IComparable<T>
 		{
 			if (value.CompareTo(min) < 0)
@@ -110,7 +123,7 @@ namespace CryEngine
 
 			return value;
 		}
-
+		
 		public static float ClampAngleDegrees(float angle, float min, float max)
 		{
 			if (angle < -360)
@@ -166,7 +179,7 @@ namespace CryEngine
 		public static float Lerp(float a , float b, float t)
 		{
 			t = Math.Max(Math.Min(1.0f, t), 0f);
-			return Lerp(a, b, t);
+			return LerpUnclamped(a, b, t);
 		}
 
 		[Obsolete("Please use Vector3.Lerp")]
