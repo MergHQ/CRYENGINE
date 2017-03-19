@@ -680,6 +680,40 @@ namespace uqs
 			}
 		}
 
+		SDebugCameraView CHistoricQuery::GetIdealDebugCameraView(const SDebugCameraView& currentCameraView) const
+		{
+			// put the direction flat on the x/y plane
+			Vec3 dir = currentCameraView.dir;
+			dir.z = 0.0f;
+			dir.NormalizeSafe(Vec3(0, 1, 0));
+
+			const Vec3 zAxis(0, 0, 1);
+			const Vec3 xAxis = dir.Cross(zAxis).GetNormalized();
+			const Matrix34 localTransform = Matrix34::CreateFromVectors(xAxis, dir, zAxis, currentCameraView.pos).GetInverted();
+			AABB localExtents(AABB::RESET);
+
+			for (const SHistoricItem& item : m_items)
+			{
+				if (const CItemDebugProxyBase* pDebugProxy = item.pDebugProxy.get())
+				{
+					Vec3 itemPivot = localTransform * pDebugProxy->GetPivot();
+					localExtents.Add(itemPivot);
+				}
+			}
+
+			SDebugCameraView suggestedCameraView = currentCameraView;
+
+			if (!localExtents.IsReset())
+			{
+				suggestedCameraView.pos.x = (localExtents.max.x + localExtents.min.x) * 0.5f;
+				suggestedCameraView.pos.y = localExtents.min.y - 3.0f;	// 3 meters behind the closest item
+				suggestedCameraView.pos.z = localExtents.max.z + 3.0f;	// 3 meters above the highest item
+				suggestedCameraView.pos = localTransform.GetInverted() * suggestedCameraView.pos;
+			}
+
+			return suggestedCameraView;
+		}
+
 		void CHistoricQuery::FillQueryHistoryConsumerWithShortInfoAboutQuery(IQueryHistoryConsumer& consumer, bool bHighlight) const
 		{
 			ColorF color;

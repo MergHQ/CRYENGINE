@@ -88,13 +88,23 @@ namespace CryEngine
 
 		#region Components
 		/// <summary>
+		/// Adds a new instance of the component.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public T AddComponent<T>() where T : EntityComponent, new()
+		{
+			return NativeInternals.Entity.AddComponent(NativeEntityPointer, typeof(T)) as T;
+		}
+
+		/// <summary>
 		/// Returns the first EntityComponent that matches the specified type. If nothing is found, returns null.
 		/// </summary>
 		public T GetComponent<T>() where T : EntityComponent
 		{
-            return NativeInternals.Entity.GetComponent(NativeEntityPointer, typeof(T)) as T;
-        }
-        
+			return NativeInternals.Entity.GetComponent(NativeEntityPointer, typeof(T)) as T;
+		}
+		
 		/// <summary>
 		/// Returns the first EntityComponent that matches the specified type, if it exists. Otherwise, adds a new instance of the component.
 		/// </summary>
@@ -102,13 +112,13 @@ namespace CryEngine
 		/// <returns></returns>
 		public T GetOrCreateComponent<T>() where T : EntityComponent, new()
 		{
-            return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, typeof(T)) as T;
+			return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, typeof(T)) as T;
 		}
 
-        public bool HasComponent<T>() where T : EntityComponent
-        {
-            return GetComponent<T>() != null;
-        }
+		public bool HasComponent<T>() where T : EntityComponent
+		{
+			return GetComponent<T>() != null;
+		}
 		#endregion
 
 		/// <summary>

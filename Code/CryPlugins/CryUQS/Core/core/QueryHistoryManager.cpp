@@ -280,6 +280,18 @@ namespace uqs
 			return m_queryHistories[whichHistory].GetHistorySize();
 		}
 
+		SDebugCameraView CQueryHistoryManager::GetIdealDebugCameraView(EHistoryOrigin whichHistory, const CQueryID& queryID, const SDebugCameraView& currentCameraView) const
+		{
+			if (const CHistoricQuery* pHistoricQuery = m_queryHistories[whichHistory].FindHistoryEntryByQueryID(queryID))
+			{
+				return pHistoricQuery->GetIdealDebugCameraView(currentCameraView);
+			}
+			else
+			{
+				return currentCameraView;
+			}
+		}
+
 		HistoricQuerySharedPtr CQueryHistoryManager::AddNewLiveHistoricQuery(const CQueryID& queryID, const char* querierName, const CQueryID& parentQueryID)
 		{
 			HistoricQuerySharedPtr newHistoricQuery = m_queryHistories[IQueryHistoryManager::EHistoryOrigin::Live].AddNewHistoryEntry(queryID, querierName, parentQueryID, this);

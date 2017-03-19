@@ -19,6 +19,9 @@ namespace CryEngine.NativeInternals
         extern public static object GetOrCreateComponent(IntPtr entityPtr, Type type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        extern public static object AddComponent(IntPtr entityPtr, Type type);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         extern public static void RegisterComponentProperty(Type type, PropertyInfo propertyInfo, string name, string label, string description, EntityPropertyType propertyType);
     }
 }

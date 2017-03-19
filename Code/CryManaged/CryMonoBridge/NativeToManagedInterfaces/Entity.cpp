@@ -64,11 +64,30 @@ static void RegisterManagedEntityWithDefaultComponent(MonoString* pName, MonoStr
 static MonoObject* GetComponent(IEntity* pEntity, MonoReflectionType* pType)
 {
 	auto it = s_entityComponentFactoryMap.find(pType);
-	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
+
+	if (it == s_entityComponentFactoryMap.end())
+	{
+		return nullptr;
+	}
 
 	if (auto* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second.GetId())))
 	{
-		return (MonoObject*)pComponent->GetObject()->GetHandle();
+		return static_cast<MonoObject*>(pComponent->GetObject()->GetHandle());
+	}
+
+	return nullptr;
+}
+
+static MonoObject* AddComponent(IEntity* pEntity, MonoReflectionType* pType)
+{
+	auto it = s_entityComponentFactoryMap.find(pType);
+	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
+
+	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second.GetId(), std::make_shared<CManagedEntityComponent>(it->second), true));
+
+	if (pComponent != nullptr)
+	{
+		return static_cast<MonoObject*>(pComponent->GetObject()->GetHandle());
 	}
 
 	return nullptr;
@@ -100,7 +119,8 @@ void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* p
 {
 	func(RegisterComponent, "RegisterComponent");
 	func(RegisterManagedEntityWithDefaultComponent, "RegisterEntityWithDefaultComponent");
-	func(GetOrCreateComponent, "GetComponent");
+	func(GetComponent, "GetComponent");
 	func(GetOrCreateComponent, "GetOrCreateComponent");
+	func(AddComponent, "AddComponent");
 	func(RegisterComponentProperty, "RegisterComponentProperty");
 }

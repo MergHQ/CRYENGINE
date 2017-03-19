@@ -169,6 +169,12 @@ namespace uqs
 			//
 
 			virtual size_t                  GetHistoricQueriesCount(EHistoryOrigin whichHistory) const = 0;
+
+			//
+			// ideal camera position and orientation for a given historic query considering an already existing camera view
+			//
+
+			virtual SDebugCameraView        GetIdealDebugCameraView(EHistoryOrigin whichHistory, const CQueryID& queryID, const SDebugCameraView& currentCameraView) const = 0;
 		};
 
 		inline IQueryHistoryManager::SEvaluatorDrawMasks::SEvaluatorDrawMasks(evaluatorsBitfield_t _maskInstantEvaluators, evaluatorsBitfield_t _maskDeferredEvaluators)
