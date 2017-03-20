@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -31,8 +31,8 @@ namespace uqs
 			virtual const char*                                  GetEvaluatorName() const override;
 			virtual const ITextualInputBlueprint&                GetInputRoot() const override;
 
-			virtual void                                         SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr) override;
-			virtual datasource::ISyntaxErrorCollector*           GetSyntaxErrorCollector() const override;
+			virtual void                                         SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) override;
+			virtual DataSource::ISyntaxErrorCollector*           GetSyntaxErrorCollector() const override;
 
 		private:
 			                                                     UQS_NON_COPYABLE(CTextualDeferredEvaluatorBlueprint);
@@ -41,7 +41,7 @@ namespace uqs
 			string                                               m_evaluatorName;
 			float                                                m_weight;
 			CTextualInputBlueprint                               m_rootInput;
-			datasource::SyntaxErrorCollectorUniquePtr            m_pSyntaxErrorCollector;
+			DataSource::SyntaxErrorCollectorUniquePtr            m_pSyntaxErrorCollector;
 		};
 
 		//===================================================================================
@@ -56,7 +56,7 @@ namespace uqs
 			explicit                                      CDeferredEvaluatorBlueprint();
 
 			bool                                          Resolve(const ITextualDeferredEvaluatorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking);
-			client::IDeferredEvaluatorFactory&            GetFactory() const;
+			Client::IDeferredEvaluatorFactory&            GetFactory() const;
 			float                                         GetWeight() const;
 			void                                          PrintToConsole(CLogger& logger, const char* messagePrefix) const;
 
@@ -64,7 +64,7 @@ namespace uqs
 			                                              UQS_NON_COPYABLE(CDeferredEvaluatorBlueprint);
 
 		private:
-			client::IDeferredEvaluatorFactory*            m_pDeferredEvaluatorFactory;
+			Client::IDeferredEvaluatorFactory*            m_pDeferredEvaluatorFactory;
 			float                                         m_weight;
 		};
 

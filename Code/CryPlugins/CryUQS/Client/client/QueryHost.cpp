@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
 
 		//===================================================================================
@@ -20,7 +20,7 @@ namespace uqs
 			, m_pExpectedOutputType(nullptr)
 			, m_queryBlueprintID()
 			, m_runtimeParams()
-			, m_queryID(core::CQueryID::CreateInvalid())
+			, m_queryID(Core::CQueryID::CreateInvalid())
 			, m_pResultSet()
 		{
 			// nothing
@@ -31,21 +31,21 @@ namespace uqs
 			// cancel a possibly running query
 			if (m_queryID.IsValid())
 			{
-				if (core::IHub* pHub = core::IHubPlugin::GetHubPtr())
+				if (Core::IHub* pHub = Core::IHubPlugin::GetHubPtr())
 				{
 					pHub->GetQueryManager().CancelQuery(m_queryID);
 				}
 			}
 		}
 
-		void CQueryHost::SetExpectedOutputType(const shared::CTypeInfo* pExpectedOutputType)
+		void CQueryHost::SetExpectedOutputType(const Shared::CTypeInfo* pExpectedOutputType)
 		{
 			m_pExpectedOutputType = pExpectedOutputType;
 		}
 
 		void CQueryHost::SetQueryBlueprint(const char* szQueryBlueprintName)
 		{
-			if (core::IHub* pHub = core::IHubPlugin::GetHubPtr())
+			if (Core::IHub* pHub = Core::IHubPlugin::GetHubPtr())
 			{
 				m_queryBlueprintID = pHub->GetQueryBlueprintLibrary().FindQueryBlueprintIDByName(szQueryBlueprintName);
 			}
@@ -58,7 +58,7 @@ namespace uqs
 			return m_queryBlueprintName.c_str();
 		}
 
-		void CQueryHost::SetQueryBlueprint(const core::CQueryBlueprintID& queryBlueprintID)
+		void CQueryHost::SetQueryBlueprint(const Core::CQueryBlueprintID& queryBlueprintID)
 		{
 			m_queryBlueprintID = queryBlueprintID;
 			m_queryBlueprintName = queryBlueprintID.GetQueryBlueprintName();
@@ -69,7 +69,7 @@ namespace uqs
 			m_querierName = szQuerierName;
 		}
 
-		shared::CVariantDict& CQueryHost::GetRuntimeParamsStorage()
+		Shared::CVariantDict& CQueryHost::GetRuntimeParamsStorage()
 		{
 			return m_runtimeParams;
 		}
@@ -84,7 +84,7 @@ namespace uqs
 
 		void CQueryHost::HelpStartQuery()
 		{
-			core::IHub* pHub = core::IHubPlugin::GetHubPtr();
+			Core::IHub* pHub = Core::IHubPlugin::GetHubPtr();
 
 			//
 			// get rid of the previous result set (if not yet done via ClearResultSet())
@@ -103,7 +103,7 @@ namespace uqs
 					pHub->GetQueryManager().CancelQuery(m_queryID);
 				}
 
-				m_queryID = core::CQueryID::CreateInvalid();
+				m_queryID = Core::CQueryID::CreateInvalid();
 			}
 
 			//
@@ -122,7 +122,7 @@ namespace uqs
 			// (it could be that the blueprint has been reloaded after it was changed by the designer [at runtime!] and is now producing a different kind of items)
 			//
 
-			const core::IQueryBlueprint* pQueryBlueprint = pHub->GetQueryBlueprintLibrary().GetQueryBlueprintByID(m_queryBlueprintID);
+			const Core::IQueryBlueprint* pQueryBlueprint = pHub->GetQueryBlueprintLibrary().GetQueryBlueprintByID(m_queryBlueprintID);
 			if (!pQueryBlueprint)
 			{
 				m_exceptionMessageIfAny.Format("Query blueprint '%s' is not present in the blueprint library.", m_queryBlueprintID.GetQueryBlueprintName());
@@ -136,7 +136,7 @@ namespace uqs
 
 			if (m_pExpectedOutputType)
 			{
-				const shared::CTypeInfo& typeOfGeneratedItems = pQueryBlueprint->GetOutputType();
+				const Shared::CTypeInfo& typeOfGeneratedItems = pQueryBlueprint->GetOutputType();
 
 				if (*m_pExpectedOutputType != typeOfGeneratedItems)
 				{
@@ -151,7 +151,7 @@ namespace uqs
 			//
 
 			const SQueryRequest queryRequest(m_queryBlueprintID, m_runtimeParams, m_querierName.c_str(), functor(*this, &CQueryHost::OnUQSQueryFinished));
-			uqs::shared::CUqsString error;
+			UQS::Shared::CUqsString error;
 			m_queryID = pHub->GetQueryManager().StartQuery(queryRequest, error);
 			m_runningStatus = ERunningStatus::StillRunning;
 		}
@@ -166,7 +166,7 @@ namespace uqs
 			return m_runningStatus == ERunningStatus::FinishedWithSuccess;
 		}
 
-		const core::IQueryResultSet& CQueryHost::GetResultSet() const
+		const Core::IQueryResultSet& CQueryHost::GetResultSet() const
 		{
 			assert(m_runningStatus == ERunningStatus::FinishedWithSuccess);
 			assert(m_pResultSet);
@@ -184,25 +184,25 @@ namespace uqs
 			m_pResultSet.reset();
 		}
 
-		void CQueryHost::OnUQSQueryFinished(const core::SQueryResult& result)
+		void CQueryHost::OnUQSQueryFinished(const Core::SQueryResult& result)
 		{
 			assert(result.queryID == m_queryID);
 
-			m_queryID = core::CQueryID::CreateInvalid();
+			m_queryID = Core::CQueryID::CreateInvalid();
 
 			switch (result.status)
 			{
-			case core::SQueryResult::EStatus::Success:
+			case Core::SQueryResult::EStatus::Success:
 				m_pResultSet = std::move(result.pResultSet);
 				m_runningStatus = ERunningStatus::FinishedWithSuccess;
 				break;
 
-			case core::SQueryResult::EStatus::ExceptionOccurred:
+			case Core::SQueryResult::EStatus::ExceptionOccurred:
 				m_exceptionMessageIfAny = result.error;
 				m_runningStatus = ERunningStatus::ExceptionOccurred;
 				break;
 
-			case core::SQueryResult::EStatus::CanceledByHubTearDown:
+			case Core::SQueryResult::EStatus::CanceledByHubTearDown:
 				// FIXME: is it OK to treat this as an exception as well? (after all, the query hasn't fully finished!)
 				m_exceptionMessageIfAny = "Query got canceled due to Hub being torn down now.";
 				m_runningStatus = ERunningStatus::ExceptionOccurred;

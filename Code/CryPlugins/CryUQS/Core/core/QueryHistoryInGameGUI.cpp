@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -128,7 +128,7 @@ namespace uqs
 
 		void CQueryHistoryInGameGUI::AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview)
 		{
-			shared::CUqsString queryIdAsString;
+			Shared::CUqsString queryIdAsString;
 			overview.queryID.ToString(queryIdAsString);
 
 			string shortInfo;

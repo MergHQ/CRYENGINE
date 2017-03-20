@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace shared
+	namespace Shared
 	{
 
 		//===================================================================================
@@ -21,18 +21,18 @@ namespace uqs
 			struct SDataEntry
 			{
 				explicit                         SDataEntry();
-				client::IItemFactory*            pItemFactory;
+				Client::IItemFactory*            pItemFactory;
 				void*                            pObject;
 			};
 
 		public:
 			                                     CVariantDict();
 			                                     ~CVariantDict();
-			virtual void                         AddOrReplace(const char* szKey, client::IItemFactory& itemFactory, const void* pItemToClone) override;
+			virtual void                         AddOrReplace(const char* szKey, Client::IItemFactory& itemFactory, const void* pItemToClone) override;
 			virtual void                         AddSelfToOtherAndReplace(IVariantDict& out) const override;
 			virtual bool                         Exists(const char* key) const override;
-			virtual client::IItemFactory*        FindItemFactory(const char* key) const override;
-			virtual bool                         FindItemFactoryAndObject(const char* key, client::IItemFactory* &outItemItemFactory, void* &outObject) const override;
+			virtual Client::IItemFactory*        FindItemFactory(const char* key) const override;
+			virtual bool                         FindItemFactoryAndObject(const char* key, Client::IItemFactory* &outItemItemFactory, void* &outObject) const override;
 
 			const std::map<string, SDataEntry>&  GetEntries() const;
 
@@ -53,8 +53,8 @@ namespace uqs
 		{
 			// FIXME: searching for the item-factory might not be the best approach; we could have the caller pass in the item-factory and assert() type matching,
 			//        but that would also mean more responsibility on the client side
-			const CTypeInfo& typeOfOriginalValue = shared::SDataTypeHelper<TItem>::GetTypeInfo();
-			client::IItemFactory* pItemFactoryOfOriginalValue = uqs::core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(typeOfOriginalValue);
+			const CTypeInfo& typeOfOriginalValue = Shared::SDataTypeHelper<TItem>::GetTypeInfo();
+			Client::IItemFactory* pItemFactoryOfOriginalValue = UQS::Core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(typeOfOriginalValue);
 
 			// If this fails then there is obviously no item-factory registered that can create items of given type.
 			// Currently we do nothing about it since it should be the responsibility of the caller to ensure consistency beforehand.

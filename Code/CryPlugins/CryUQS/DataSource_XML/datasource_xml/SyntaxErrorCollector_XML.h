@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace datasource_xml
+	namespace DataSource_XML
 	{
 
 		class CXMLDataErrorCollector;    // below
@@ -17,7 +17,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CSyntaxErrorCollector_XML : public datasource::ISyntaxErrorCollector
+		class CSyntaxErrorCollector_XML : public DataSource::ISyntaxErrorCollector
 		{
 		public:
 			explicit                                   CSyntaxErrorCollector_XML(int xmlLineNumber, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector);

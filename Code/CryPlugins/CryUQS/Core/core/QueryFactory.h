@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -46,15 +46,15 @@ namespace uqs
 			// ~IQueryFactory
 
 			virtual QueryBaseUniquePtr          CreateQuery(const CQueryBase::SCtorContext& ctorContext) = 0;
-			virtual const shared::CTypeInfo&    GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const = 0;
+			virtual const Shared::CTypeInfo&    GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const = 0;
 			virtual bool                        CheckOutputTypeCompatibilityAmongChildQueryBlueprints(const CQueryBlueprint& parentQueryBlueprint, string& error, size_t& childIndexCausingTheError) const = 0;
 
-			const shared::CTypeInfo*            GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const;
+			const Shared::CTypeInfo*            GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const;
 
 			static void                         RegisterAllInstancesInDatabase(QueryFactoryDatabase& databaseToRegisterIn);
 
 		private:
-			virtual const shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const = 0;
+			virtual const Shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const = 0;
 
 		protected:
 			explicit                            CQueryFactoryBase(const char* name, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
@@ -84,13 +84,13 @@ namespace uqs
 
 			// CQueryFactoryBase
 			virtual QueryBaseUniquePtr          CreateQuery(const CQueryBase::SCtorContext& ctorContext) override;
-			virtual const shared::CTypeInfo&    GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const override;
+			virtual const Shared::CTypeInfo&    GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const override;
 			virtual bool                        CheckOutputTypeCompatibilityAmongChildQueryBlueprints(const CQueryBlueprint& parentQueryBlueprint, string& error, size_t& childIndexCausingTheError) const override;
 			// ~CQueryFactoryBase
 
 		private:
 			// CQueryFactoryBase
-			virtual const shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const override;
+			virtual const Shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const override;
 			// ~CQueryFactoryBase
 		};
 

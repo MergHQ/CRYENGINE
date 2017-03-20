@@ -5,15 +5,15 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		void CStdLibRegistration::InstantiateFunctionFactoriesForRegistration()
 		{
-			static const client::CFunctionFactory<CFunction_Pos3AddOfs3> functionFactory_Vec3Add("std::Pos3AddOfs3");
-			static const client::CFunctionFactory<CFunction_PosFromEntity> functionFactory_PosFromEntity("std::PosFromEntity");
+			static const Client::CFunctionFactory<CFunction_Pos3AddOfs3> functionFactory_Vec3Add("std::Pos3AddOfs3");
+			static const Client::CFunctionFactory<CFunction_PosFromEntity> functionFactory_PosFromEntity("std::PosFromEntity");
 		}
 
 		//===================================================================================

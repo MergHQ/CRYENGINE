@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -69,7 +69,7 @@ namespace uqs
 				return *m_pParamsHolderFactory;
 			}
 
-		} // namespace internal
+		} // namespace Internal
 
 		//===================================================================================
 		//
@@ -78,7 +78,7 @@ namespace uqs
 		//===================================================================================
 
 		template <class TInstantEvaluator>
-		class CInstantEvaluatorFactory final : public internal::CInstantEvaluatorFactoryBase
+		class CInstantEvaluatorFactory final : public Internal::CInstantEvaluatorFactoryBase
 		{
 		public:
 			explicit                             CInstantEvaluatorFactory(const char* evaluatorName);
@@ -125,7 +125,7 @@ namespace uqs
 			// notice: we assign the instantiated evaluator to its base class pointer to ensure that the evaluator type itself (and not accidentally another evaluator type) was injected at its class definition
 			CInstantEvaluatorBase<TInstantEvaluator, TInstantEvaluator::kCostCategory, TInstantEvaluator::kEvaluationModality>* pEvaluator = new TInstantEvaluator;
 #endif
-			internal::CInstantEvaluatorDeleter deleter(*this);
+			Internal::CInstantEvaluatorDeleter deleter(*this);
 			return InstantEvaluatorUniquePtr(pEvaluator, deleter);
 		}
 
@@ -138,7 +138,7 @@ namespace uqs
 		template <class TInstantEvaluator>
 		ParamsHolderUniquePtr CInstantEvaluatorFactory<TInstantEvaluator>::CreateParamsHolder()
 		{
-			internal::CParamsHolder<typename TInstantEvaluator::SParams>* pParamsHolder = new internal::CParamsHolder<typename TInstantEvaluator::SParams>;
+			Internal::CParamsHolder<typename TInstantEvaluator::SParams>* pParamsHolder = new Internal::CParamsHolder<typename TInstantEvaluator::SParams>;
 			CParamsHolderDeleter deleter(*this);
 			return ParamsHolderUniquePtr(pParamsHolder, deleter);
 		}

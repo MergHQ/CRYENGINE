@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
 
 		//===================================================================================
@@ -31,14 +31,14 @@ namespace uqs
 			virtual                                 ~IFunctionFactory() {}
 			virtual const char*                     GetName() const = 0;
 			virtual const IInputParameterRegistry&  GetInputParameterRegistry() const = 0;
-			virtual const shared::CTypeInfo&        GetReturnType() const = 0;
-			virtual const shared::CTypeInfo*        GetContainedType() const = 0;   // this is for ELeafFunctionKind::ShuttledItems functions: these functions actually return a ["pointer-to" ("list-of" "item")] and we need to get the type of that "item"
+			virtual const Shared::CTypeInfo&        GetReturnType() const = 0;
+			virtual const Shared::CTypeInfo*        GetContainedType() const = 0;   // this is for ELeafFunctionKind::ShuttledItems functions: these functions actually return a ["pointer-to" ("list-of" "item")] and we need to get the type of that "item"
 			virtual ELeafFunctionKind               GetLeafFunctionKind() const = 0;
 			virtual FunctionUniquePtr               CreateFunction(const IFunction::SCtorContext& ctorContext) = 0;
 			virtual void                            DestroyFunction(IFunction* pFunctionToDestroy) = 0;
 		};
 
-		namespace internal
+		namespace Internal
 		{
 			//===================================================================================
 			//
@@ -70,6 +70,6 @@ namespace uqs
 				assert(m_functionFactory);
 				m_functionFactory->DestroyFunction(functionToDestroy);
 			}
-		} // namespace internal
+		} // namespace Internal
 	}
 }

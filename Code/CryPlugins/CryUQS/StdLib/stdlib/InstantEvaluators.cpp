@@ -6,19 +6,19 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		void CStdLibRegistration::InstantiateInstantEvaluatorFactoriesForRegistration()
 		{
-			static const client::CInstantEvaluatorFactory<CInstantEvaluator_TestMinDistance> instantEvaluatorFactory_TestMinDistance("std::TestMinDistance");
-			static const client::CInstantEvaluatorFactory<CInstantEvaluator_TestMaxDistance> instantEvaluatorFactory_TestMaxDistance("std::TestMaxDistance");
-			static const client::CInstantEvaluatorFactory<CInstantEvaluator_TestLocationInNavMesh> instantEvaluatorFactory_TestLocationInNavMesh("std::TestLocationInNavMesh");
-			static const client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistance> instantEvaluatorFactory_ScoreDistance("std::ScoreDistance");
-			static const client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistanceInverse> instantEvaluatorFactory_ScoreDistanceInverse("std::ScoreDistanceInverse");
-			static const client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreRandom> instantEvaluatorFactory_ScoreRandom("std::ScoreRandom");
+			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMinDistance> instantEvaluatorFactory_TestMinDistance("std::TestMinDistance");
+			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMaxDistance> instantEvaluatorFactory_TestMaxDistance("std::TestMaxDistance");
+			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestLocationInNavMesh> instantEvaluatorFactory_TestLocationInNavMesh("std::TestLocationInNavMesh");
+			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistance> instantEvaluatorFactory_ScoreDistance("std::ScoreDistance");
+			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistanceInverse> instantEvaluatorFactory_ScoreDistanceInverse("std::ScoreDistanceInverse");
+			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreRandom> instantEvaluatorFactory_ScoreRandom("std::ScoreRandom");
 		}
 
 		//===================================================================================
@@ -27,7 +27,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestMinDistance::DoRun(const SRunContext& runContext, const SParams& params) const
+		Client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestMinDistance::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			const float minRequiredDistanceSqr = sqr(params.minRequiredDistance);
 			const float actualDistanceSqr = (params.pos1.value - params.pos2.value).GetLengthSquared();
@@ -46,7 +46,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestMaxDistance::DoRun(const SRunContext& runContext, const SParams& params) const
+		Client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestMaxDistance::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			const float maxAllowedDistanceSqr = sqr(params.maxAllowedDistance);
 			const float actualDistanceSqr = (params.pos1.value - params.pos2.value).GetLengthSquared();
@@ -71,7 +71,7 @@ namespace uqs
 			assert(m_pNavSys);
 		}
 
-		client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestLocationInNavMesh::DoRun(const SRunContext& runContext, const SParams& params) const
+		Client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestLocationInNavMesh::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			const bool bIsInNavMesh = m_pNavSys->IsLocationValidInNavigationMesh(params.navigationAgentTypeID, params.locationToTest.value);
 			runContext.evaluationResult.bDiscardItem = !bIsInNavMesh;
@@ -84,7 +84,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		client::IInstantEvaluator::ERunStatus CInstantEvaluator_ScoreDistance::DoRun(const SRunContext& runContext, const SParams& params) const
+		Client::IInstantEvaluator::ERunStatus CInstantEvaluator_ScoreDistance::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			// guard against potential div-by-zero and other weird behavior
 			IF_UNLIKELY(params.distanceThreshold <= 0.0f)
@@ -104,7 +104,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		client::IInstantEvaluator::ERunStatus CInstantEvaluator_ScoreDistanceInverse::DoRun(const SRunContext& runContext, const SParams& params) const
+		Client::IInstantEvaluator::ERunStatus CInstantEvaluator_ScoreDistanceInverse::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			// guard against potential div-by-zero and other weird behavior
 			IF_UNLIKELY(params.distanceThreshold <= 0.0f)
@@ -124,7 +124,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		client::IInstantEvaluator::ERunStatus CInstantEvaluator_ScoreRandom::DoRun(const SRunContext& runContext, const SParams& params) const
+		Client::IInstantEvaluator::ERunStatus CInstantEvaluator_ScoreRandom::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			runContext.evaluationResult.score = cry_random(0.0f, 1.0f);
 			return ERunStatus::Finished;

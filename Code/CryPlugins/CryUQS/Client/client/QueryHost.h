@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
 
 		//===================================================================================
@@ -41,12 +41,12 @@ namespace uqs
 			// - the query will fail with an exception and not yield a result set if the types mismatch
 			// - this is basically an assurance to always get the types that the caller can deal with
 			// - persists when starting a new query
-			void                            SetExpectedOutputType(const shared::CTypeInfo* pExpectedOutputType);
+			void                            SetExpectedOutputType(const Shared::CTypeInfo* pExpectedOutputType);
 
 			// - needs to be called before starting a query so that we know which query blueprint to instantiate
 			// - persists when starting a new query
 			void                            SetQueryBlueprint(const char* szQueryBlueprintName);
-			void                            SetQueryBlueprint(const core::CQueryBlueprintID& queryBlueprintID);
+			void                            SetQueryBlueprint(const Core::CQueryBlueprintID& queryBlueprintID);
 
 			// - returns the name of the query blueprint (previously set via SetQueryBlueprint())
 			// - can be used for error messages
@@ -59,7 +59,7 @@ namespace uqs
 
 			// - gives write-access to the runtime-parameters that the query may need
 			// - once the query gets started via StartQuery(), all provided runtime-parameters will be cleared again
-			shared::CVariantDict&           GetRuntimeParamsStorage();
+			Shared::CVariantDict&           GetRuntimeParamsStorage();
 
 			// - actually starts the query that has been prepared so far
 			// - cancels a possibly running query
@@ -74,7 +74,7 @@ namespace uqs
 
 			// - gives access to the result set for a successfully finished query
 			// - may *only* be called if HasSucceeded() returns true
-			const core::IQueryResultSet&    GetResultSet() const;
+			const Core::IQueryResultSet&    GetResultSet() const;
 
 			// - allows inspecting what has gone wrong at the start or during the execution of the query
 			// - this may *only* be called if HasSucceed() return false
@@ -90,18 +90,18 @@ namespace uqs
 			                                UQS_NON_COPYABLE(CQueryHost);
 
 			void                            HelpStartQuery();  // helper for StartQuery()
-			void                            OnUQSQueryFinished(const core::SQueryResult& result);
+			void                            OnUQSQueryFinished(const Core::SQueryResult& result);
 
 		private:
 
 			string                          m_queryBlueprintName;
 			ERunningStatus                  m_runningStatus;
-			const shared::CTypeInfo*        m_pExpectedOutputType;
-			core::CQueryBlueprintID         m_queryBlueprintID;
+			const Shared::CTypeInfo*        m_pExpectedOutputType;
+			Core::CQueryBlueprintID         m_queryBlueprintID;
 			string                          m_querierName;
-			shared::CVariantDict            m_runtimeParams;
-			core::CQueryID                  m_queryID;
-			core::QueryResultSetUniquePtr   m_pResultSet;
+			Shared::CVariantDict            m_runtimeParams;
+			Core::CQueryID                  m_queryID;
+			Core::QueryResultSetUniquePtr   m_pResultSet;
 			string                          m_exceptionMessageIfAny;
 		};
 
@@ -148,7 +148,7 @@ namespace uqs
 		template <class TItem>
 		CQueryHostT<TItem>::CQueryHostT()
 		{
-			SetExpectedOutputType(&shared::SDataTypeHelper<TItem>::GetTypeInfo());
+			SetExpectedOutputType(&Shared::SDataTypeHelper<TItem>::GetTypeInfo());
 		}
 
 		template <class TItem>
@@ -160,8 +160,8 @@ namespace uqs
 		template <class TItem>
 		typename CQueryHostT<TItem>::SResultingItemWithScore CQueryHostT<TItem>::GetResultSetItem(size_t index) const
 		{
-			assert(GetResultSet().GetItemFactory().GetItemType() == shared::SDataTypeHelper<TItem>::GetTypeInfo());
-			const core::IQueryResultSet::SResultSetEntry& resultSetEntry = GetResultSet().GetResult(index);
+			assert(GetResultSet().GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
+			const Core::IQueryResultSet::SResultSetEntry& resultSetEntry = GetResultSet().GetResult(index);
 			SResultingItemWithScore res = { *static_cast<const TItem*>(resultSetEntry.pItem), resultSetEntry.score };
 			return res;
 		}

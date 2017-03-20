@@ -6,9 +6,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -66,7 +66,7 @@ namespace uqs
 			// nothing
 		}
 
-		CQueryID CQueryManager::StartQuery(const client::SQueryRequest& request, shared::IUqsString& errorMessage)
+		CQueryID CQueryManager::StartQuery(const Client::SQueryRequest& request, Shared::IUqsString& errorMessage)
 		{
 			if (!request.queryBlueprintID.IsOrHasBeenValid())
 			{
@@ -98,7 +98,7 @@ namespace uqs
 			}
 		}
 
-		void CQueryManager::AddItemMonitorToQuery(const CQueryID& queryID, client::ItemMonitorUniquePtr&& pItemMonitorToInstall)
+		void CQueryManager::AddItemMonitorToQuery(const CQueryID& queryID, Client::ItemMonitorUniquePtr&& pItemMonitorToInstall)
 		{
 			assert(pItemMonitorToInstall);
 
@@ -108,7 +108,7 @@ namespace uqs
 			}
 		}
 
-		CQueryID CQueryManager::StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> qbp, const shared::IVariantDict& runtimeParams, const char* querierName, Functor1<const core::SQueryResult&> callback, std::unique_ptr<CItemList>& potentialResultingItemsFromPreviousQuery, shared::IUqsString& errorMessage)
+		CQueryID CQueryManager::StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> qbp, const Shared::IVariantDict& runtimeParams, const char* querierName, Functor1<const Core::SQueryResult&> callback, std::unique_ptr<CItemList>& potentialResultingItemsFromPreviousQuery, Shared::IUqsString& errorMessage)
 		{
 			// generate a new query ID (even if the query fails to start)
 			const CQueryID id = ++m_queryIDProvider;
@@ -125,7 +125,7 @@ namespace uqs
 			std::unique_ptr<CQueryBase> q = qbp->CreateQuery(queryCtorContext);
 
 			// instantiate that query (cannot be done in the query's ctor as it needs to return success/failure)
-			shared::CUqsString error;
+			Shared::CUqsString error;
 			if (!q->InstantiateFromQueryBlueprint(qbp, runtimeParams, error))
 			{
 				errorMessage.Format("CQueryManager::StartQueryInternal: %s", error.c_str());
@@ -247,7 +247,7 @@ namespace uqs
 					// - keep track of the used time for donating unused time to the whole pool (so that the upcoming queries can benefit from it)
 					//
 
-					shared::CUqsString error;
+					Shared::CUqsString error;
 					const CTimeValue timestampBeforeQueryUpdate = gEnv->pTimer->GetAsyncTime();
 					const CQueryBase::EUpdateState queryState = q->Update(timeBudgetForThisQuery, error);
 					const CTimeValue timestampAfterQueryUpdate = gEnv->pTimer->GetAsyncTime();
@@ -405,7 +405,7 @@ namespace uqs
 			CQueryBase::SStatistics stats;
 			query.GetStatistics(stats);
 
-			shared::CUqsString queryIdAsString;
+			Shared::CUqsString queryIdAsString;
 			queryID.ToString(queryIdAsString);
 			logger.Printf("--- UQS query #%s ('%s': '%s') ---", queryIdAsString.c_str(), stats.querierName.c_str(), stats.queryBlueprintName.c_str());
 
@@ -457,7 +457,7 @@ namespace uqs
 
 		int CQueryManager::DebugDrawQueryStatistics(const CQueryBase::SStatistics& statisticsToDraw, const CQueryID& queryID, int row, const ColorF& color)
 		{
-			shared::CUqsString queryIDAsString;
+			Shared::CUqsString queryIDAsString;
 			queryID.ToString(queryIDAsString);
 
 			CDrawUtil2d::DrawLabel(row, color, "#%s: '%s' / '%s' (%i/%i) still to inspect: %i",

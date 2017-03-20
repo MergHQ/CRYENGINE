@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 			class CDeferredEvaluatorDeleter;    // below
 		}
@@ -19,7 +19,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		typedef std::unique_ptr<IDeferredEvaluator, internal::CDeferredEvaluatorDeleter>  DeferredEvaluatorUniquePtr;
+		typedef std::unique_ptr<IDeferredEvaluator, Internal::CDeferredEvaluatorDeleter>  DeferredEvaluatorUniquePtr;
 
 		//===================================================================================
 		//
@@ -37,7 +37,7 @@ namespace uqs
 			virtual IParamsHolderFactory&              GetParamsHolderFactory() const = 0;
 		};
 
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -71,7 +71,7 @@ namespace uqs
 				m_deferredEvaluatorFactory->DestroyDeferredEvaluator(deferredEvaluatorToDelete);
 			}
 
-		} // namespace internal
+		} // namespace Internal
 
 	}
 }

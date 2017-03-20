@@ -4,9 +4,9 @@
 
 #if UQS_SCHEMATYC_SUPPORT
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		class CSchematycUqsComponent; // below
@@ -161,11 +161,11 @@ namespace uqs
 		{
 		public:
 
-			static void                    GenerateAddParamFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, client::IItemFactory& itemFactory);
+			static void                    GenerateAddParamFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, Client::IItemFactory& itemFactory);
 
 		private:
 
-			explicit                       CSchematycUqsComponentEnvFunction_AddParam(const Schematyc::SSourceFileInfo& sourceFileInfo, client::IItemFactory& itemFactory, const client::IItemConverter* pOptionalFromForeignTypeConverter);
+			explicit                       CSchematycUqsComponentEnvFunction_AddParam(const Schematyc::SSourceFileInfo& sourceFileInfo, Client::IItemFactory& itemFactory, const Client::IItemConverter* pOptionalFromForeignTypeConverter);
 
 			// CSchematycUqsComponentEnvFunctionBase
 			virtual void                   ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const override;
@@ -173,8 +173,8 @@ namespace uqs
 
 		private:
 
-			client::IItemFactory&          m_itemFactory;
-			const client::IItemConverter*  m_pFromForeignTypeConverter;
+			Client::IItemFactory&          m_itemFactory;
+			const Client::IItemConverter*  m_pFromForeignTypeConverter;
 		};
 
 		//===================================================================================
@@ -187,11 +187,11 @@ namespace uqs
 		{
 		public:
 
-			static void                    GenerateGetItemFromResultSetFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, client::IItemFactory& itemFactory);
+			static void                    GenerateGetItemFromResultSetFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, Client::IItemFactory& itemFactory);
 
 		private:
 
-			explicit                       CSchematycUqsComponentEnvFunction_GetItemFromResultSet(const Schematyc::SSourceFileInfo& sourceFileInfo, client::IItemFactory& itemFactory, const client::IItemConverter* pOptionalToForeignTypeConverter);
+			explicit                       CSchematycUqsComponentEnvFunction_GetItemFromResultSet(const Schematyc::SSourceFileInfo& sourceFileInfo, Client::IItemFactory& itemFactory, const Client::IItemConverter* pOptionalToForeignTypeConverter);
 
 			// CSchematycUqsComponentEnvFunctionBase
 			virtual void                   ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const override;
@@ -199,8 +199,8 @@ namespace uqs
 
 		private:
 
-			client::IItemFactory&          m_itemFactory;
-			const client::IItemConverter*  m_pToForeignTypeConverter;
+			Client::IItemFactory&          m_itemFactory;
+			const Client::IItemConverter*  m_pToForeignTypeConverter;
 		};
 
 		//===================================================================================
@@ -279,7 +279,7 @@ namespace uqs
 
 				CQueryBlueprintID                               queryBlueprintID;
 				Schematyc::CSharedString                        querierName;
-				shared::CVariantDict                            runtimeParams;
+				Shared::CVariantDict                            runtimeParams;
 			};
 
 			//===================================================================================
@@ -310,7 +310,7 @@ namespace uqs
 			// ~Schematyc::CComponent
 
 			// these 2 are called by the generated "AddParam" and "GetItemFromResultSet" functions
-			shared::CVariantDict&                               GetRuntimeParamsStorageOfUpcomingQuery();
+			Shared::CVariantDict&                               GetRuntimeParamsStorageOfUpcomingQuery();
 			const IQueryResultSet*                              GetQueryResultSet(const CQueryID& queryID) const;
 
 			static void                                         ReflectType(Schematyc::CTypeDesc<CSchematycUqsComponent>& desc);

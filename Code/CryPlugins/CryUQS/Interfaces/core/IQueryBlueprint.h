@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 		//===================================================================================
 		//
@@ -52,8 +52,8 @@ namespace uqs
 			// syntax error collector
 			//
 
-			virtual void                                                SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr) = 0;
-			virtual datasource::ISyntaxErrorCollector*                  GetSyntaxErrorCollector() const = 0;     // called while resolving a blueprint from its textual representation into the "in-memory" representation
+			virtual void                                                SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) = 0;
+			virtual DataSource::ISyntaxErrorCollector*                  GetSyntaxErrorCollector() const = 0;     // called while resolving a blueprint from its textual representation into the "in-memory" representation
 		};
 
 		//===================================================================================
@@ -66,8 +66,8 @@ namespace uqs
 		{
 			virtual                                                     ~IQueryBlueprint() {}
 			virtual const char*                                         GetName() const = 0;
-			virtual void                                                VisitRuntimeParams(client::IQueryBlueprintRuntimeParamVisitor& visitor) const = 0;
-			virtual const shared::CTypeInfo&                            GetOutputType() const = 0;  // the type of the resulting items
+			virtual void                                                VisitRuntimeParams(Client::IQueryBlueprintRuntimeParamVisitor& visitor) const = 0;
+			virtual const Shared::CTypeInfo&                            GetOutputType() const = 0;  // the type of the resulting items
 		};
 
 	}

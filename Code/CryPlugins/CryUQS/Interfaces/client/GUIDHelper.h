@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -29,7 +29,7 @@ namespace uqs
 			public:
 
 				static CryGUID  FromString(const char* szGuidAsString);
-				static void     ToString(shared::IUqsString& out, const CryGUID& guid);
+				static void     ToString(Shared::IUqsString& out, const CryGUID& guid);
 
 			private:
 
@@ -115,7 +115,7 @@ namespace uqs
 				return CryGUID::Construct(data1, data2, data3, data4[0], data4[1], data4[2], data4[3], data4[4], data4[5], data4[6], data4[7]);
 			}
 
-			inline void CGUIDHelper::ToString(shared::IUqsString& out, const CryGUID& guid)
+			inline void CGUIDHelper::ToString(Shared::IUqsString& out, const CryGUID& guid)
 			{
 				uint32 data1;
 				uint16 data2;
@@ -199,5 +199,5 @@ namespace uqs
 
 inline CryGUID operator"" _uqs_guid(const char* szGUID, size_t)
 {
-	return uqs::client::internal::CGUIDHelper::FromString(szGUID);
+	return UQS::Client::Internal::CGUIDHelper::FromString(szGUID);
 }

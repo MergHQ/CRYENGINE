@@ -8,9 +8,9 @@
 
 #if UQS_SCHEMATYC_SUPPORT
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		static const Schematyc::SGUID g_uqsStdlibModuleGUID = "29fade44-bd65-470f-863e-458342f1ab92"_schematyc_guid;
@@ -98,7 +98,7 @@ namespace Schematyc   // freestanding ReflectType() functions need to be in the 
 
 static bool Serialize(Serialization::IArchive& archive, NavigationAgentTypeID& value, const char* szName, const char* szLabel)
 {
-	return uqs::stdlib::NavigationAgentTypeID_Serialize(archive, value, szName, szLabel);
+	return UQS::StdLib::NavigationAgentTypeID_Serialize(archive, value, szName, szLabel);
 }
 
 #endif // UQS_SCHEMATYC_SUPPORT

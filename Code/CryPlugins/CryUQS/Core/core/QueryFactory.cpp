@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -30,7 +30,7 @@ namespace uqs
 
 		// specialization for CQuery_Regular: in a regular query, it's the generator of that query that dictates the output type
 		template <>
-		const shared::CTypeInfo& CQueryFactory<CQuery_Regular>::GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const
+		const Shared::CTypeInfo& CQueryFactory<CQuery_Regular>::GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const
 		{
 			const CGeneratorBlueprint* pGeneratorBlueprint = queryBlueprint.GetGeneratorBlueprint();
 			assert(pGeneratorBlueprint);  // a CQuery_Regular without a generator-blueprint can never ever be valid
@@ -39,7 +39,7 @@ namespace uqs
 
 		// specialization for CQuery_Chained: in a chained query, the last child in the chain dictates the output type
 		template <>
-		const shared::CTypeInfo& CQueryFactory<CQuery_Chained>::GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const
+		const Shared::CTypeInfo& CQueryFactory<CQuery_Chained>::GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const
 		{
 			const size_t childCount = queryBlueprint.GetChildCount();
 			assert(childCount > 0);  // a chained query without children can never ever be valid
@@ -49,7 +49,7 @@ namespace uqs
 
 		// specialization for CQuery_Fallbacks: in a fallback query, all children are supposed to return the same item type, so it doesn't matter which child dictates the output type (we'll just pick the first one)
 		template <>
-		const shared::CTypeInfo& CQueryFactory<CQuery_Fallbacks>::GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const
+		const Shared::CTypeInfo& CQueryFactory<CQuery_Fallbacks>::GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const
 		{
 			assert(queryBlueprint.GetChildCount() > 0);  // a fallback query without children can never ever be valid
 			std::shared_ptr<const CQueryBlueprint> pFirstChild = queryBlueprint.GetChild(0);
@@ -82,7 +82,7 @@ namespace uqs
 				std::shared_ptr<const CQueryBlueprint> childB = parentQueryBlueprint.GetChild(i + 1);
 
 				// grab the expected type of the succeeding child's input
-				const shared::CTypeInfo* pInputType = childB->GetTypeOfShuttledItemsToExpect();
+				const Shared::CTypeInfo* pInputType = childB->GetTypeOfShuttledItemsToExpect();
 
 				if (!pInputType)
 				{
@@ -94,7 +94,7 @@ namespace uqs
 				}
 
 				// the output of previous child must match the expected input of the next child
-				const shared::CTypeInfo& outputType = childA->GetOutputType();
+				const Shared::CTypeInfo& outputType = childA->GetOutputType();
 				if (outputType != *pInputType)
 				{
 					error.Format("the shuttle type (%s) mismatches the output type of the preceding child (%s)", pInputType->name(), outputType.name());
@@ -118,8 +118,8 @@ namespace uqs
 				std::shared_ptr<const CQueryBlueprint> childA = parentQueryBlueprint.GetChild(i);
 				std::shared_ptr<const CQueryBlueprint> childB = parentQueryBlueprint.GetChild(i + 1);
 
-				const shared::CTypeInfo& typeA = childA->GetOutputType();
-				const shared::CTypeInfo& typeB = childB->GetOutputType();
+				const Shared::CTypeInfo& typeA = childA->GetOutputType();
+				const Shared::CTypeInfo& typeB = childB->GetOutputType();
 
 				if (typeA != typeB)
 				{
@@ -140,7 +140,7 @@ namespace uqs
 
 		// specialization for CQuery_Regular: according to how GetTypeOfShuttledItemsToExpect() works, this method should never get called at all
 		template <>
-		const shared::CTypeInfo* CQueryFactory<CQuery_Regular>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
+		const Shared::CTypeInfo* CQueryFactory<CQuery_Regular>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
 		{
 			assert(0);  // we should never get called
 			return nullptr;
@@ -148,7 +148,7 @@ namespace uqs
 
 		// specialization for CQuery_Chained: given the child's query blueprint, this method will inspect its sibling for the type of potentially shuttled items
 		template <>
-		const shared::CTypeInfo* CQueryFactory<CQuery_Chained>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
+		const Shared::CTypeInfo* CQueryFactory<CQuery_Chained>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
 		{
 			const CQueryBlueprint* pParentQueryBlueprint = childQueryBlueprint.GetParent();
 			assert(pParentQueryBlueprint);
@@ -172,7 +172,7 @@ namespace uqs
 
 		// specialization for CQuery_Fallbacks: fallback-queries never propagate the resulting items from one child to the next
 		template <>
-		const shared::CTypeInfo* CQueryFactory<CQuery_Fallbacks>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
+		const Shared::CTypeInfo* CQueryFactory<CQuery_Fallbacks>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
 		{
 			return nullptr;
 		}
@@ -227,7 +227,7 @@ namespace uqs
 			return m_maxAllowedChildren;
 		}
 
-		const shared::CTypeInfo* CQueryFactoryBase::GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const
+		const Shared::CTypeInfo* CQueryFactoryBase::GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const
 		{
 			const CQueryBlueprint* pParentQueryBlueprint = queryBlueprintAskingForThis.GetParent();
 

@@ -6,9 +6,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -106,12 +106,12 @@ namespace uqs
 			return nullptr;
 		}
 
-		void CTextualInputBlueprint::SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualInputBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
 		{
 			m_pSyntaxErrorCollector = std::move(ptr);
 		}
 
-		datasource::ISyntaxErrorCollector* CTextualInputBlueprint::GetSyntaxErrorCollector() const
+		DataSource::ISyntaxErrorCollector* CTextualInputBlueprint::GetSyntaxErrorCollector() const
 		{
 			return m_pSyntaxErrorCollector.get();
 		}
@@ -136,7 +136,7 @@ namespace uqs
 			}
 		}
 
-		bool CInputBlueprint::Resolve(const ITextualInputBlueprint& sourceParent, const client::IInputParameterRegistry& inputParamsReg, const CQueryBlueprint& queryBlueprintForGlobalParamChecking, bool bResolvingForAGenerator)
+		bool CInputBlueprint::Resolve(const ITextualInputBlueprint& sourceParent, const Client::IInputParameterRegistry& inputParamsReg, const CQueryBlueprint& queryBlueprintForGlobalParamChecking, bool bResolvingForAGenerator)
 		{
 			bool bResolveSucceeded = true;
 
@@ -149,7 +149,7 @@ namespace uqs
 
 			if (numParamsProvided != numParamsExpected)
 			{
-				if (datasource::ISyntaxErrorCollector* pSE = sourceParent.GetSyntaxErrorCollector())
+				if (DataSource::ISyntaxErrorCollector* pSE = sourceParent.GetSyntaxErrorCollector())
 				{
 					pSE->AddErrorMessage("Incorrect number of parameters provided: expected %i, got %i", (int)numParamsExpected, (int)numParamsProvided);
 				}
@@ -162,7 +162,7 @@ namespace uqs
 
 			for (size_t i = 0; i < numParamsExpected; ++i)
 			{
-				const client::IInputParameterRegistry::SParameterInfo& pi = inputParamsReg.GetParameter(i);
+				const Client::IInputParameterRegistry::SParameterInfo& pi = inputParamsReg.GetParameter(i);
 
 				//
 				// look up the child by the name of the parameter it's being represented by
@@ -171,7 +171,7 @@ namespace uqs
 				const ITextualInputBlueprint* pSourceChild = sourceParent.FindChildByParamName(pi.name);
 				if (!pSourceChild)
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = sourceParent.GetSyntaxErrorCollector())
+					if (DataSource::ISyntaxErrorCollector* pSE = sourceParent.GetSyntaxErrorCollector())
 					{
 						pSE->AddErrorMessage("Missing parameter: '%s'", pi.name);
 					}
@@ -190,7 +190,7 @@ namespace uqs
 				pNewChild->m_pFunctionFactory = g_hubImpl->GetFunctionFactoryDatabase().FindFactoryByName(funcName);
 				if (!pNewChild->m_pFunctionFactory)
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+					if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 					{
 						pSE->AddErrorMessage("Unknown function: '%s'", funcName);
 					}
@@ -202,10 +202,10 @@ namespace uqs
 				// ensure that the function's return type matches the parameter's type
 				//
 
-				const shared::CTypeInfo& childReturnType = pNewChild->m_pFunctionFactory->GetReturnType();
+				const Shared::CTypeInfo& childReturnType = pNewChild->m_pFunctionFactory->GetReturnType();
 				if (childReturnType != pi.type)
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+					if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 					{
 						pSE->AddErrorMessage("Parameter '%s' is of type '%s', but Function '%s' returns a '%s'", pi.name, pi.type.name(), funcName, childReturnType.name());
 					}
@@ -223,9 +223,9 @@ namespace uqs
 				// - reason: at runtime, there's no iteration going on during the generator phase, only during the evaluator phase (of course)
 				//
 
-				if (bResolvingForAGenerator && pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == client::IFunctionFactory::ELeafFunctionKind::IteratedItem)
+				if (bResolvingForAGenerator && pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == Client::IFunctionFactory::ELeafFunctionKind::IteratedItem)
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+					if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 					{
 						pSE->AddErrorMessage("Generators cannot use functions that return the iterated item (this is only possible for evaluators)");
 					}
@@ -236,17 +236,17 @@ namespace uqs
 				// if the function returns the iterated item, ensure that this item type matches the type of items to generate
 				//
 
-				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == client::IFunctionFactory::ELeafFunctionKind::IteratedItem)
+				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == Client::IFunctionFactory::ELeafFunctionKind::IteratedItem)
 				{
 					// just in case the generator had already problems getting resolved and we ended up without one so far...
 					if (const CGeneratorBlueprint* pGeneratorBP = queryBlueprintForGlobalParamChecking.GetGeneratorBlueprint())
 					{
-						const shared::CTypeInfo& returnType = pNewChild->m_pFunctionFactory->GetReturnType();
-						const shared::CTypeInfo& typeOfItemsToGenerate = pGeneratorBP->GetTypeOfItemsToGenerate();
+						const Shared::CTypeInfo& returnType = pNewChild->m_pFunctionFactory->GetReturnType();
+						const Shared::CTypeInfo& typeOfItemsToGenerate = pGeneratorBP->GetTypeOfItemsToGenerate();
 
 						if (returnType != typeOfItemsToGenerate)
 						{
-							if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+							if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 							{
 								pSE->AddErrorMessage("This function returns items of type '%s', which mismatches the type of items to generate: '%s'", returnType.name(), typeOfItemsToGenerate.name());
 							}
@@ -263,10 +263,10 @@ namespace uqs
 				// if the function returns a global param (ELeafFunctionKind::GlobalParam), ensure that this global param exists and that its type matches
 				//
 
-				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == client::IFunctionFactory::ELeafFunctionKind::GlobalParam)
+				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == Client::IFunctionFactory::ELeafFunctionKind::GlobalParam)
 				{
 					const char* nameOfGlobalParam = pSourceChild->GetFuncReturnValueLiteral();
-					const client::IItemFactory* pItemFactoryOfThatGlobalParam = nullptr;
+					const Client::IItemFactory* pItemFactoryOfThatGlobalParam = nullptr;
 
 					// search among the global constant-params
 					{
@@ -294,13 +294,13 @@ namespace uqs
 					// if the global param exists, then check for type mismatches
 					if (pItemFactoryOfThatGlobalParam)
 					{
-						const shared::CTypeInfo& typeOfGlobalParam = pItemFactoryOfThatGlobalParam->GetItemType();
-						const shared::CTypeInfo& returnTypeOfFunction = pNewChild->m_pFunctionFactory->GetReturnType();
+						const Shared::CTypeInfo& typeOfGlobalParam = pItemFactoryOfThatGlobalParam->GetItemType();
+						const Shared::CTypeInfo& returnTypeOfFunction = pNewChild->m_pFunctionFactory->GetReturnType();
 
 						// types mismatch?
 						if (typeOfGlobalParam != returnTypeOfFunction)
 						{
-							if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+							if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 							{
 								pSE->AddErrorMessage("Return type of function '%s' (%s) mismatches the type of the global param '%s' (%s)", pNewChild->m_pFunctionFactory->GetName(), returnTypeOfFunction.name(), nameOfGlobalParam, typeOfGlobalParam.name());
 							}
@@ -314,7 +314,7 @@ namespace uqs
 					else
 					{
 						// the referenced global param doesn't exist -> syntax error
-						if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+						if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 						{
 							pSE->AddErrorMessage("Function '%s' returns an unknown global param: '%s'", pNewChild->m_pFunctionFactory->GetName(), nameOfGlobalParam);
 						}
@@ -326,10 +326,10 @@ namespace uqs
 				// if the function returns a literal (ELeafFunctionKind::Literal), then make sure the textual representation of that literal can be parsed
 				//
 
-				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == client::IFunctionFactory::ELeafFunctionKind::Literal)
+				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == Client::IFunctionFactory::ELeafFunctionKind::Literal)
 				{
-					const shared::CTypeInfo& returnType = pNewChild->m_pFunctionFactory->GetReturnType();
-					client::IItemFactory* pItemFactoryOfReturnType = g_hubImpl->GetUtils().FindItemFactoryByType(returnType);
+					const Shared::CTypeInfo& returnType = pNewChild->m_pFunctionFactory->GetReturnType();
+					Client::IItemFactory* pItemFactoryOfReturnType = g_hubImpl->GetUtils().FindItemFactoryByType(returnType);
 
 					// notice: if no item-factory for the function's return type was found, then the function's return type hasn't been registered in the item-factory-database
 					//         (in fact, the StartupConsistencyChecker should have detected this already, but still, we handle it gracefully here)
@@ -340,10 +340,10 @@ namespace uqs
 							// try to deserialize the literal from its textual representation
 
 							const char* szTextualRepresentationOfThatLiteral = pSourceChild->GetFuncReturnValueLiteral();
-							IItemSerializationSupport& itemSerializationSupport = uqs::core::IHubPlugin::GetHub().GetItemSerializationSupport();
-							shared::CUqsString deserializationErrorMessage;
+							IItemSerializationSupport& itemSerializationSupport = UQS::Core::IHubPlugin::GetHub().GetItemSerializationSupport();
+							Shared::CUqsString deserializationErrorMessage;
 
-							void* pTmpItem = pItemFactoryOfReturnType->CreateItems(1, client::IItemFactory::EItemInitMode::UseDefaultConstructor);
+							void* pTmpItem = pItemFactoryOfReturnType->CreateItems(1, Client::IItemFactory::EItemInitMode::UseDefaultConstructor);
 							const bool bDeserializationSucceeded = itemSerializationSupport.DeserializeItemFromCStringLiteral(pTmpItem, *pItemFactoryOfReturnType, szTextualRepresentationOfThatLiteral, &deserializationErrorMessage);
 
 							if (bDeserializationSucceeded)
@@ -352,7 +352,7 @@ namespace uqs
 							}
 							else
 							{
-								if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+								if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 								{
 									pSE->AddErrorMessage("Function '%s' returns a literal of type %s, but the literal could not be parsed from its archive representation: '%s'. Reason:\n%s", pNewChild->m_pFunctionFactory->GetName(), returnType.name(), szTextualRepresentationOfThatLiteral, deserializationErrorMessage.c_str());
 								}
@@ -366,7 +366,7 @@ namespace uqs
 							// - the type of the literal has no textual representation (e. g. it could be a pointer or some complex struct)
 							// - in fact, we should never get here, unless a client has forcefully hacked around or accidentally
 							//   registered a wrong function as ELeafFunctionKind::Literal
-							if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+							if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 							{
 								pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::Literal but its return type (%s) cannot be represented in textual form", pNewChild->m_pFunctionFactory->GetName(), returnType.name());
 							}
@@ -379,19 +379,19 @@ namespace uqs
 				// if the function returns the shuttled items (ELeafFunctionKind::ShuttledItems), then make sure that the query will be provided (at runtime) with shuttled items that match the type of the function's return value
 				//
 
-				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == client::IFunctionFactory::ELeafFunctionKind::ShuttledItems)
+				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == Client::IFunctionFactory::ELeafFunctionKind::ShuttledItems)
 				{
-					if (const shared::CTypeInfo* pTypeOfPossiblyShuttledItems = queryBlueprintForGlobalParamChecking.GetTypeOfShuttledItemsToExpect())
+					if (const Shared::CTypeInfo* pTypeOfPossiblyShuttledItems = queryBlueprintForGlobalParamChecking.GetTypeOfShuttledItemsToExpect())
 					{
 						// notice: the type of the shuttle actually specifies the *container* type of items, hence we need access to the *contained* type
-						const shared::CTypeInfo* pContainedType = pNewChild->m_pFunctionFactory->GetContainedType();
+						const Shared::CTypeInfo* pContainedType = pNewChild->m_pFunctionFactory->GetContainedType();
 
-						// if this assert fails, then something must have become inconsistent between client::internal::CFunc_ShuttledItems<> and client::internal::SContainedTypeRetriever<>
+						// if this assert fails, then something must have become inconsistent between Client::internal::CFunc_ShuttledItems<> and Client::internal::SContainedTypeRetriever<>
 						assert(pContainedType);
 
 						if (*pContainedType != *pTypeOfPossiblyShuttledItems)
 						{
-							if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+							if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 							{
 								pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems and expects the shuttled items to be of type '%s', but they are actually of type '%s'", pNewChild->m_pFunctionFactory->GetName(), pTypeOfPossiblyShuttledItems->name(), pContainedType->name());
 							}
@@ -404,7 +404,7 @@ namespace uqs
 					}
 					else
 					{
-						if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+						if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 						{
 							pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems, but the query does not support shuttled items in this context", pNewChild->m_pFunctionFactory->GetName());
 						}
@@ -436,7 +436,7 @@ namespace uqs
 			return *m_children[index];
 		}
 
-		client::IFunctionFactory* CInputBlueprint::GetFunctionFactory() const
+		Client::IFunctionFactory* CInputBlueprint::GetFunctionFactory() const
 		{
 			return m_pFunctionFactory;
 		}

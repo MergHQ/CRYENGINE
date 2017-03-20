@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -21,7 +21,7 @@ namespace uqs
 			// nothing
 		}
 
-		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* name, const char* type, bool bAddToDebugRenderWorld, datasource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
+		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* name, const char* type, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
 		{
 			m_parameters.emplace_back(name, type, bAddToDebugRenderWorld, std::move(syntaxErrorCollector));
 		}
@@ -67,7 +67,7 @@ namespace uqs
 				// ensure each parameter exists only once
 				if (m_runtimeParameters.find(p.name) != m_runtimeParameters.cend())
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
 						pSE->AddErrorMessage("Duplicate parameter: '%s'", p.name);
 					}
@@ -76,10 +76,10 @@ namespace uqs
 				}
 
 				// find the item factory
-				client::IItemFactory* pItemFactory = g_hubImpl->GetItemFactoryDatabase().FindFactoryByName(p.type);
+				Client::IItemFactory* pItemFactory = g_hubImpl->GetItemFactoryDatabase().FindFactoryByName(p.type);
 				if (!pItemFactory)
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
 						pSE->AddErrorMessage("Unknown item type: '%s'", p.type);
 					}
@@ -106,14 +106,14 @@ namespace uqs
 						=> A is fine, but B is not as the types differ in the queries
 					*/
 
-					if (const client::IItemFactory* pParentItemFactory = FindItemFactoryByParamNameInParentRecursively(p.name, *pParentQueryBlueprint))
+					if (const Client::IItemFactory* pParentItemFactory = FindItemFactoryByParamNameInParentRecursively(p.name, *pParentQueryBlueprint))
 					{
 						// name clash detected (this is totally fine, though)
 						// -> now check for type clash
 						if (pParentItemFactory != pItemFactory)
 						{
 							// type clash detected
-							if (datasource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+							if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 							{
 								pSE->AddErrorMessage("Type mismatch: expected '%s' (since the parent's parameter is of that type), but got a '%s'", pParentItemFactory->GetItemType().name(), pItemFactory->GetItemType().name());
 							}
@@ -147,13 +147,13 @@ namespace uqs
 				for (const auto& entry : m_runtimeParameters)
 				{
 					const char* paramName = entry.first.c_str();
-					const client::IItemFactory* pItemFactory = entry.second.pItemFactory;
+					const Client::IItemFactory* pItemFactory = entry.second.pItemFactory;
 					logger.Printf("\"%s\" [%s]", paramName, pItemFactory->GetName());
 				}
 			}
 		}
 
-		const client::IItemFactory* CGlobalRuntimeParamsBlueprint::FindItemFactoryByParamNameInParentRecursively(const char* paramNameToSearchFor, const CQueryBlueprint& parentalQueryBlueprint) const
+		const Client::IItemFactory* CGlobalRuntimeParamsBlueprint::FindItemFactoryByParamNameInParentRecursively(const char* paramNameToSearchFor, const CQueryBlueprint& parentalQueryBlueprint) const
 		{
 			const CGlobalRuntimeParamsBlueprint& parentGlobalRuntimeParamsBP = parentalQueryBlueprint.GetGlobalRuntimeParamsBlueprint();
 			const std::map<string, SParamInfo>& params = parentGlobalRuntimeParamsBP.GetParams();

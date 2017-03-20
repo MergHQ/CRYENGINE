@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -22,7 +22,7 @@ namespace uqs
 			{
 			public:
 				template <class TFactoryInterface>
-				static void                                 RegisterAllInstancesInFactoryDatabase(core::IFactoryDatabase<TFactoryInterface>& databaseToRegisterInstancesIn);
+				static void                                 RegisterAllInstancesInFactoryDatabase(Core::IFactoryDatabase<TFactoryInterface>& databaseToRegisterInstancesIn);
 
 			protected:
 				explicit                                    CFactoryBase(const char* name);
@@ -57,7 +57,7 @@ namespace uqs
 
 			template <class TFactory>
 			template <class TFactoryInterface>
-			void CFactoryBase<TFactory>::RegisterAllInstancesInFactoryDatabase(core::IFactoryDatabase<TFactoryInterface>& databaseToRegisterInstancesIn)
+			void CFactoryBase<TFactory>::RegisterAllInstancesInFactoryDatabase(Core::IFactoryDatabase<TFactoryInterface>& databaseToRegisterInstancesIn)
 			{
 				for (TFactory* pCur = s_pList; pCur; pCur = pCur->m_pNext)
 				{

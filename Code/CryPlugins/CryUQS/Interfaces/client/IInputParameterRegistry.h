@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
 
 		//===================================================================================
@@ -19,10 +19,10 @@ namespace uqs
 		{
 			struct SParameterInfo
 			{
-				explicit                        SParameterInfo(const char* _name, const shared::CTypeInfo& _type, size_t _offset);
+				explicit                        SParameterInfo(const char* _name, const Shared::CTypeInfo& _type, size_t _offset);
 
 				const char*                     name;
-				const shared::CTypeInfo&        type;
+				const Shared::CTypeInfo&        type;
 				size_t                          offset;    // memory offset of where the parameter is located in the SParams struct of the according generator/function/evaluator class
 			};
 
@@ -31,7 +31,7 @@ namespace uqs
 			virtual SParameterInfo              GetParameter(size_t index) const = 0;
 		};
 
-		inline IInputParameterRegistry::SParameterInfo::SParameterInfo(const char* _name, const shared::CTypeInfo& _type, size_t _offset)
+		inline IInputParameterRegistry::SParameterInfo::SParameterInfo(const char* _name, const Shared::CTypeInfo& _type, size_t _offset)
 			: name(_name)
 			, type(_type)
 			, offset(_offset)

@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -60,8 +60,8 @@ namespace uqs
 			// TODO pavloi 2016.04.07: maybe editor library provider doesn't really belong here.
 			// Instead, we should use other means to pass pointer from game to editor (like, register
 			// provider as game extension CRYINTERFACE and query it by GUID - same as Hub).
-			virtual datasource::IEditorLibraryProvider*                GetEditorLibraryProvider() = 0;
-			virtual void                                               SetEditorLibraryProvider(datasource::IEditorLibraryProvider* pProvider) = 0;
+			virtual DataSource::IEditorLibraryProvider*                GetEditorLibraryProvider() = 0;
+			virtual void                                               SetEditorLibraryProvider(DataSource::IEditorLibraryProvider* pProvider) = 0;
 		};
 
 	}

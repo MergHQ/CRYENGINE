@@ -61,8 +61,8 @@ struct SQuery
 	// control data
 	SQuery*              pParent;
 	std::vector<SQuery*> children;
-	uqs::core::CQueryID  queryID;
-	uqs::core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks;
+	UQS::Core::CQueryID  queryID;
+	UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks;
 
 	std::vector<string> instantEvaluatorNames;
 	std::vector<string> deferredEvaluatorNames;
@@ -72,11 +72,11 @@ struct SQuery
 	// display data
 	QVariant dataPerColumn[ColumnCount];
 
-	SQuery() : pParent(nullptr), queryID(uqs::core::CQueryID::CreateInvalid()), evaluatorDrawMasks(uqs::core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet()) {}
-	SQuery(SQuery* _pParent, const uqs::core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
+	SQuery() : pParent(nullptr), queryID(UQS::Core::CQueryID::CreateInvalid()), evaluatorDrawMasks(UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet()) {}
+	SQuery(SQuery* _pParent, const UQS::Core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
 		: pParent(_pParent)
 		, queryID(overview.queryID)
-		, evaluatorDrawMasks(uqs::core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet())
+		, evaluatorDrawMasks(UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet())
 	{
 		UpdateInformation(overview);
 	}
@@ -87,9 +87,9 @@ struct SQuery
 			delete pChild;
 	}
 
-	void UpdateInformation(const uqs::core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
+	void UpdateInformation(const UQS::Core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
 	{
-		uqs::shared::CUqsString queryIdAsString;
+		UQS::Shared::CUqsString queryIdAsString;
 		stack_string queryIdAndQuerierName;
 		stack_string itemCountsAsString;
 		stack_string elapsedTimeAsString;
@@ -105,13 +105,13 @@ struct SQuery
 		this->dataPerColumn[Column_ElapsedTime] = QtUtil::ToQString(elapsedTimeAsString.c_str());
 	}
 
-	static void HelpSerializeEvaluatorsBitfield(Serialization::IArchive& ar, uqs::core::evaluatorsBitfield_t& bitfieldToSerialize, const std::vector<string>& evaluatorNames, const std::vector<string>& evaluatorLabelsForUI)
+	static void HelpSerializeEvaluatorsBitfield(Serialization::IArchive& ar, UQS::Core::evaluatorsBitfield_t& bitfieldToSerialize, const std::vector<string>& evaluatorNames, const std::vector<string>& evaluatorLabelsForUI)
 	{
 		assert(evaluatorNames.size() == evaluatorLabelsForUI.size());
 
 		for (size_t i = 0, n = evaluatorNames.size(); i < n; ++i)
 		{
-			const uqs::core::evaluatorsBitfield_t bit = (uqs::core::evaluatorsBitfield_t)1 << i;
+			const UQS::Core::evaluatorsBitfield_t bit = (UQS::Core::evaluatorsBitfield_t)1 << i;
 			bool bValue;
 
 			if (ar.isInput())
@@ -141,7 +141,7 @@ struct SQuery
 		HelpSerializeEvaluatorsBitfield(ar, this->evaluatorDrawMasks.maskDeferredEvaluators, this->deferredEvaluatorNames, this->deferredEvaluatorLabelsForUI);
 	}
 
-	static SQuery* FindQueryByQueryID(SQuery* pStart, const uqs::core::CQueryID& queryID)
+	static SQuery* FindQueryByQueryID(SQuery* pStart, const UQS::Core::CQueryID& queryID)
 	{
 		if (pStart->queryID == queryID)
 			return pStart;
@@ -296,7 +296,7 @@ public:
 	}
 
 public:
-	SQuery* AddOrUpdateHistoricQuery(const uqs::core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
+	SQuery* AddOrUpdateHistoricQuery(const UQS::Core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
 	{
 		SQuery* pParent;
 
@@ -387,7 +387,7 @@ protected:
 	{
 		QTreeView::currentChanged(current, previous);
 
-		uqs::core::IQueryHistoryManager* pHistoryQueryManager = GetHistoryQueryManager();
+		UQS::Core::IQueryHistoryManager* pHistoryQueryManager = GetHistoryQueryManager();
 
 		if (!pHistoryQueryManager)
 			return;
@@ -395,7 +395,7 @@ protected:
 		if (current.isValid())
 		{
 			const SQuery* pQueryToSwitchTo = static_cast<const SQuery*>(current.internalPointer());
-			const uqs::core::IQueryHistoryManager::EHistoryOrigin whichHistory = pHistoryQueryManager->GetCurrentQueryHistory();
+			const UQS::Core::IQueryHistoryManager::EHistoryOrigin whichHistory = pHistoryQueryManager->GetCurrentQueryHistory();
 			pHistoryQueryManager->MakeHistoricQueryCurrentForInWorldRendering(whichHistory, pQueryToSwitchTo->queryID);
 		}
 	}
@@ -406,9 +406,9 @@ protected:
 
 		if (CViewport* pActiveView = GetIEditor()->GetActiveView())
 		{
-			if (uqs::core::IQueryHistoryManager* pQueryHistoryManager = GetHistoryQueryManager())
+			if (UQS::Core::IQueryHistoryManager* pQueryHistoryManager = GetHistoryQueryManager())
 			{
-				uqs::core::SDebugCameraView cameraView;
+				UQS::Core::SDebugCameraView cameraView;
 
 				// construct the current camera view
 				{
@@ -435,9 +435,9 @@ protected:
 	}
 
 private:
-	uqs::core::IQueryHistoryManager* GetHistoryQueryManager()
+	UQS::Core::IQueryHistoryManager* GetHistoryQueryManager()
 	{
-		if (uqs::core::IHub* pHub = uqs::core::IHubPlugin::GetHubPtr())
+		if (UQS::Core::IHub* pHub = UQS::Core::IHubPlugin::GetHubPtr())
 		{
 			return &pHub->GetQueryHistoryManager();
 		}
@@ -470,8 +470,8 @@ CMainEditorWindow::CMainEditorWindow()
 	}
 
 	m_pComboBoxHistoryOrigin = new QComboBox(this);
-	m_pComboBoxHistoryOrigin->addItem("Live history", QVariant(uqs::core::IQueryHistoryManager::EHistoryOrigin::Live));
-	m_pComboBoxHistoryOrigin->addItem("Deserialized history", QVariant(uqs::core::IQueryHistoryManager::EHistoryOrigin::Deserialized));
+	m_pComboBoxHistoryOrigin->addItem("Live history", QVariant(UQS::Core::IQueryHistoryManager::EHistoryOrigin::Live));
+	m_pComboBoxHistoryOrigin->addItem("Deserialized history", QVariant(UQS::Core::IQueryHistoryManager::EHistoryOrigin::Deserialized));
 
 	m_pButtonClearCurrentHistory = new QPushButton(this);
 	m_pButtonClearCurrentHistory->setText("Clear history");
@@ -518,7 +518,7 @@ CMainEditorWindow::CMainEditorWindow()
 	QObject::connect(m_pButtonClearCurrentHistory, &QPushButton::clicked, this, &CMainEditorWindow::OnClearHistoryButtonClicked);
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainEditorWindow::OnTreeViewCurrentChanged);
 
-	if (uqs::core::IHub* pHub = uqs::core::IHubPlugin::GetHubPtr())
+	if (UQS::Core::IHub* pHub = UQS::Core::IHubPlugin::GetHubPtr())
 	{
 		m_pQueryHistoryManager = &pHub->GetQueryHistoryManager();
 		m_pQueryHistoryManager->RegisterQueryHistoryListener(this);
@@ -545,7 +545,7 @@ CMainEditorWindow::~CMainEditorWindow()
 const char* CMainEditorWindow::GetPaneTitle() const
 {
 	// check for whether the UQS engine plugin has been loaded
-	if (uqs::core::IHubPlugin::GetHubPtr())
+	if (UQS::Core::IHubPlugin::GetHubPtr())
 	{
 		return "UQS History";
 	}
@@ -567,11 +567,11 @@ void CMainEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 				const Matrix34& viewTM = pActiveDisplayViewport->GetViewTM();
 				Matrix33 orientation;
 				viewTM.GetRotation33(orientation);
-				uqs::core::SDebugCameraView uqsCameraView;
+				UQS::Core::SDebugCameraView uqsCameraView;
 				uqsCameraView.pos = viewTM.GetTranslation();
 				uqsCameraView.dir = orientation * Vec3(0, 1, 0);
 
-				uqs::core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks = uqs::core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet();
+				UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks = UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet();
 
 				if (const SQuery* pSelectedQuery = m_pTreeView->GetSelectedQuery())
 				{
@@ -585,57 +585,57 @@ void CMainEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 	}
 }
 
-void CMainEditorWindow::OnQueryHistoryEvent(const uqs::core::IQueryHistoryListener::SEvent& ev)
+void CMainEditorWindow::OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListener::SEvent& ev)
 {
 	switch (ev.type)
 	{
-	case uqs::core::IQueryHistoryListener::EEventType::HistoricQueryJustGotCreatedInLiveQueryHistory:
-	case uqs::core::IQueryHistoryListener::EEventType::HistoricQueryJustFinishedInLiveQueryHistory:
-		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == uqs::core::IQueryHistoryManager::EHistoryOrigin::Live)
+	case UQS::Core::IQueryHistoryListener::EEventType::HistoricQueryJustGotCreatedInLiveQueryHistory:
+	case UQS::Core::IQueryHistoryListener::EEventType::HistoricQueryJustFinishedInLiveQueryHistory:
+		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == UQS::Core::IQueryHistoryManager::EHistoryOrigin::Live)
 		{
 			assert(ev.relatedQueryID.IsValid());
 			m_pQueryHistoryManager->EnumerateSingleHistoricQuery(m_pQueryHistoryManager->GetCurrentQueryHistory(), ev.relatedQueryID, *this);
 		}
 		break;
 
-	case uqs::core::IQueryHistoryListener::EEventType::CurrentQueryHistorySwitched:
+	case UQS::Core::IQueryHistoryListener::EEventType::CurrentQueryHistorySwitched:
 		m_pTreeModel->ClearAllHistoricQueries();
 		m_pQueryHistoryManager->EnumerateHistoricQueries(m_pQueryHistoryManager->GetCurrentQueryHistory(), *this);
 		break;
 
-	case uqs::core::IQueryHistoryListener::EEventType::DeserializedQueryHistoryCleared:
-		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == uqs::core::IQueryHistoryManager::EHistoryOrigin::Deserialized)
+	case UQS::Core::IQueryHistoryListener::EEventType::DeserializedQueryHistoryCleared:
+		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == UQS::Core::IQueryHistoryManager::EHistoryOrigin::Deserialized)
 		{
 			m_pTreeModel->ClearAllHistoricQueries();
 		}
 		break;
 
-	case uqs::core::IQueryHistoryListener::EEventType::LiveQueryHistoryCleared:
-		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == uqs::core::IQueryHistoryManager::EHistoryOrigin::Live)
+	case UQS::Core::IQueryHistoryListener::EEventType::LiveQueryHistoryCleared:
+		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == UQS::Core::IQueryHistoryManager::EHistoryOrigin::Live)
 		{
 			m_pTreeModel->ClearAllHistoricQueries();
 		}
 		break;
 
-	case uqs::core::IQueryHistoryListener::EEventType::DifferentHistoricQuerySelected:
+	case UQS::Core::IQueryHistoryListener::EEventType::DifferentHistoricQuerySelected:
 		{
-			const uqs::core::IQueryHistoryManager::EHistoryOrigin historyOrigin = m_pQueryHistoryManager->GetCurrentQueryHistory();
-			const uqs::core::CQueryID queryID = m_pQueryHistoryManager->GetCurrentHistoricQueryForInWorldRendering(historyOrigin);
+			const UQS::Core::IQueryHistoryManager::EHistoryOrigin historyOrigin = m_pQueryHistoryManager->GetCurrentQueryHistory();
+			const UQS::Core::CQueryID queryID = m_pQueryHistoryManager->GetCurrentHistoricQueryForInWorldRendering(historyOrigin);
 			m_pTextQueryDetails->clear();
 			m_pTextItemDetails->clear();   // get rid of some leftovers in case no item will be focused anymore
 			m_pQueryHistoryManager->GetDetailsOfHistoricQuery(historyOrigin, queryID, *this);
 		}
 		break;
 
-	case uqs::core::IQueryHistoryListener::EEventType::FocusedItemChanged:
+	case UQS::Core::IQueryHistoryListener::EEventType::FocusedItemChanged:
 		{
 			m_pTextItemDetails->clear();
 			m_pQueryHistoryManager->GetDetailsOfFocusedItem(*this);
 		}
 		break;
 
-	case uqs::core::IQueryHistoryListener::EEventType::QueryHistoryDeserialized:
-		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == uqs::core::IQueryHistoryManager::EHistoryOrigin::Deserialized)
+	case UQS::Core::IQueryHistoryListener::EEventType::QueryHistoryDeserialized:
+		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == UQS::Core::IQueryHistoryManager::EHistoryOrigin::Deserialized)
 		{
 			m_pTreeModel->ClearAllHistoricQueries();
 			m_pQueryHistoryManager->EnumerateHistoricQueries(m_pQueryHistoryManager->GetCurrentQueryHistory(), *this);
@@ -716,7 +716,7 @@ void CMainEditorWindow::OnHistoryOriginComboBoxSelectionChanged(int index)
 	{
 		const QVariant data = m_pComboBoxHistoryOrigin->itemData(index);
 		assert(data.type() == QVariant::Int);
-		const uqs::core::IQueryHistoryManager::EHistoryOrigin origin = (uqs::core::IQueryHistoryManager::EHistoryOrigin)data.toInt();
+		const UQS::Core::IQueryHistoryManager::EHistoryOrigin origin = (UQS::Core::IQueryHistoryManager::EHistoryOrigin)data.toInt();
 		m_pQueryHistoryManager->MakeQueryHistoryCurrent(origin);
 	}
 }
@@ -735,7 +735,7 @@ void CMainEditorWindow::OnSaveLiveHistoryToFile()
 	string sFilePath = QtUtil::ToString(qFilePath);
 	if (!sFilePath.empty())  // would be empty if pressing the "cancel" button
 	{
-		uqs::shared::CUqsString uqsErrorMessage;
+		UQS::Shared::CUqsString uqsErrorMessage;
 		if (!m_pQueryHistoryManager->SerializeLiveQueryHistory(sFilePath.c_str(), uqsErrorMessage))
 		{
 			// show the error message
@@ -753,7 +753,7 @@ void CMainEditorWindow::OnLoadHistoryFromFile()
 	if (!qFilePath.isEmpty())
 	{
 		string sFilePath = QtUtil::ToString(qFilePath);
-		uqs::shared::CUqsString uqsErrorMessage;
+		UQS::Shared::CUqsString uqsErrorMessage;
 		if (m_pQueryHistoryManager->DeserializeQueryHistory(sFilePath.c_str(), uqsErrorMessage))
 		{
 			// ensure the "deserialized" entry in the history origin combo-box is selected

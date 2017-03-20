@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -28,8 +28,8 @@ namespace uqs
 			virtual const char*                                  GetGeneratorName() const override;
 			virtual const ITextualInputBlueprint&                GetInputRoot() const override;
 
-			virtual void                                         SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr) override;
-			virtual datasource::ISyntaxErrorCollector*           GetSyntaxErrorCollector() const override;
+			virtual void                                         SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) override;
+			virtual DataSource::ISyntaxErrorCollector*           GetSyntaxErrorCollector() const override;
 
 		private:
 			                                                     UQS_NON_COPYABLE(CTextualGeneratorBlueprint);
@@ -37,7 +37,7 @@ namespace uqs
 		private:
 			string                                               m_generatorName;
 			CTextualInputBlueprint                               m_rootInput;
-			datasource::SyntaxErrorCollectorUniquePtr            m_pSyntaxErrorCollector;
+			DataSource::SyntaxErrorCollectorUniquePtr            m_pSyntaxErrorCollector;
 		};
 
 		//===================================================================================
@@ -52,15 +52,15 @@ namespace uqs
 			explicit                          CGeneratorBlueprint();
 
 			bool                              Resolve(const ITextualGeneratorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking);
-			const shared::CTypeInfo&          GetTypeOfItemsToGenerate() const;
-			client::GeneratorUniquePtr        InstantiateGenerator(const SQueryBlackboard& blackboard, shared::CUqsString& error) const;
+			const Shared::CTypeInfo&          GetTypeOfItemsToGenerate() const;
+			Client::GeneratorUniquePtr        InstantiateGenerator(const SQueryBlackboard& blackboard, Shared::CUqsString& error) const;
 			void                              PrintToConsole(CLogger& logger) const;
 
 		private:
 			                                  UQS_NON_COPYABLE(CGeneratorBlueprint);
 
 		private:
-			client::IGeneratorFactory*        m_pGeneratorFactory;
+			Client::IGeneratorFactory*        m_pGeneratorFactory;
 		};
 
 	}

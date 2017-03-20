@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace shared
+	namespace Shared
 	{
 
 		CVariantDict::SDataEntry::SDataEntry()
@@ -27,7 +27,7 @@ namespace uqs
 			Clear();
 		}
 
-		void CVariantDict::AddOrReplace(const char* szKey, client::IItemFactory& itemFactory, const void* pItemToClone)
+		void CVariantDict::AddOrReplace(const char* szKey, Client::IItemFactory& itemFactory, const void* pItemToClone)
 		{
 			assert(pItemToClone);
 
@@ -73,13 +73,13 @@ namespace uqs
 			return (m_dataItems.find(key) != m_dataItems.cend());
 		}
 
-		client::IItemFactory* CVariantDict::FindItemFactory(const char* key) const
+		Client::IItemFactory* CVariantDict::FindItemFactory(const char* key) const
 		{
 			auto it = m_dataItems.find(key);
 			return (it == m_dataItems.cend()) ? nullptr : it->second.pItemFactory;
 		}
 
-		bool CVariantDict::FindItemFactoryAndObject(const char* key, client::IItemFactory* &outItemItemFactory, void* &outObject) const
+		bool CVariantDict::FindItemFactoryAndObject(const char* key, Client::IItemFactory* &outItemItemFactory, void* &outObject) const
 		{
 			auto it = m_dataItems.find(key);
 			if (it != m_dataItems.cend())

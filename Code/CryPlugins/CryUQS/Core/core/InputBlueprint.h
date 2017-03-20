@@ -4,12 +4,12 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client { struct IFunctionFactory; }
-	namespace client { struct IInputParameterRegistry; }
+	namespace Client { struct IFunctionFactory; }
+	namespace Client { struct IInputParameterRegistry; }
 
-	namespace core
+	namespace Core
 	{
 
 		class CInputBlueprint;
@@ -44,8 +44,8 @@ namespace uqs
 			virtual const ITextualInputBlueprint&       GetChild(size_t index) const override;
 			virtual const ITextualInputBlueprint*       FindChildByParamName(const char* paramName) const override;
 
-			virtual void                                SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr) override;
-			virtual datasource::ISyntaxErrorCollector*  GetSyntaxErrorCollector() const override;
+			virtual void                                SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) override;
+			virtual DataSource::ISyntaxErrorCollector*  GetSyntaxErrorCollector() const override;
 
 		private:
 			explicit                                    CTextualInputBlueprint(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
@@ -58,7 +58,7 @@ namespace uqs
 			string                                      m_funcReturnValueLiteral;
 			bool                                        m_bAddReturnValueToDebugRenderWorldUponExecution;
 			std::vector<CTextualInputBlueprint*>        m_children;
-			datasource::SyntaxErrorCollectorUniquePtr   m_pSyntaxErrorCollector;
+			DataSource::SyntaxErrorCollectorUniquePtr   m_pSyntaxErrorCollector;
 		};
 
 		class CQueryBlueprint;
@@ -78,11 +78,11 @@ namespace uqs
 			explicit                            CInputBlueprint();
 			                                    ~CInputBlueprint();
 
-			bool                                Resolve(const ITextualInputBlueprint& sourceParent, const client::IInputParameterRegistry& inputParamsReg, const CQueryBlueprint& queryBlueprintForGlobalParamChecking, bool bResolvingForAGenerator);
+			bool                                Resolve(const ITextualInputBlueprint& sourceParent, const Client::IInputParameterRegistry& inputParamsReg, const CQueryBlueprint& queryBlueprintForGlobalParamChecking, bool bResolvingForAGenerator);
 
 			size_t                              GetChildCount() const;
 			const CInputBlueprint&              GetChild(size_t index) const;
-			client::IFunctionFactory*           GetFunctionFactory() const;
+			Client::IFunctionFactory*           GetFunctionFactory() const;
 			const CLeafFunctionReturnValue&     GetLeafFunctionReturnValue() const;
 			bool                                GetAddReturnValueToDebugRenderWorldUponExecution() const;
 
@@ -90,7 +90,7 @@ namespace uqs
 			                                    UQS_NON_COPYABLE(CInputBlueprint);
 
 		private:
-			client::IFunctionFactory*           m_pFunctionFactory;
+			Client::IFunctionFactory*           m_pFunctionFactory;
 			CLeafFunctionReturnValue            m_leafFunctionReturnValue;
 			bool                                m_bAddReturnValueToDebugRenderWorldUponExecution;
 			std::vector<CInputBlueprint*>       m_children;	// in order of how the input parameters need to appear at runtime

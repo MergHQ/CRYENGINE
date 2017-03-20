@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -27,8 +27,8 @@ namespace uqs
 			explicit                                              CQueryBlueprintLibrary();
 
 			// IQueryBlueprintLibrary
-			virtual ELoadAndStoreResult                           LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, datasource::IQueryBlueprintLoader& loader, shared::IUqsString& error) override;
-			virtual bool                                          RemoveStoredQueryBlueprint(const char*szQueryBlueprintName, shared::IUqsString& error) override;
+			virtual ELoadAndStoreResult                           LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, DataSource::IQueryBlueprintLoader& loader, Shared::IUqsString& error) override;
+			virtual bool                                          RemoveStoredQueryBlueprint(const char*szQueryBlueprintName, Shared::IUqsString& error) override;
 			virtual CQueryBlueprintID                             FindQueryBlueprintIDByName(const char* szQueryBlueprintName) const override;
 			virtual const IQueryBlueprint*                        GetQueryBlueprintByID(const CQueryBlueprintID& blueprintID) const override;
 			virtual size_t                                        GetQueryBlueprintCount() const override;

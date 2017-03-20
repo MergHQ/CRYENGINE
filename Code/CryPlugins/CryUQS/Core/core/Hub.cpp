@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -154,12 +154,12 @@ namespace uqs
 			return m_itemSerializationSupport;
 		}
 
-		datasource::IEditorLibraryProvider* CHub::GetEditorLibraryProvider()
+		DataSource::IEditorLibraryProvider* CHub::GetEditorLibraryProvider()
 		{
 			return m_pEditorLibraryProvider;
 		}
 
-		void CHub::SetEditorLibraryProvider(datasource::IEditorLibraryProvider* pProvider)
+		void CHub::SetEditorLibraryProvider(DataSource::IEditorLibraryProvider* pProvider)
 		{
 			m_pEditorLibraryProvider = pProvider;
 		}
@@ -178,7 +178,7 @@ namespace uqs
 				// - the sub-systems should have used ESYSTEM_EVENT_GAME_POST_INIT (*not* the _DONE event) to subscribe to the IHub for receiving events
 				//
 
-				SendHubEventToAllListeners(uqs::core::EHubEvent::RegisterYourFactoriesNow);
+				SendHubEventToAllListeners(UQS::Core::EHubEvent::RegisterYourFactoriesNow);
 
 				//
 				// check for consistency errors (this needs to be done *after* all subsystems registered their item types, functions, generators, evaluators)
@@ -202,7 +202,7 @@ namespace uqs
 					}
 				}
 
-				// from now on, don't allow any further factory registrations (uqs::core::CFactoryDatabase<>::RegisterFactory() will assert for it)
+				// from now on, don't allow any further factory registrations (UQS::Core::CFactoryDatabase<>::RegisterFactory() will assert for it)
 				m_consistencyChecksDoneAlready = true;
 
 #if UQS_SCHEMATYC_SUPPORT
@@ -302,7 +302,7 @@ namespace uqs
 					return;
 				}
 
-				shared::CUqsString error;
+				Shared::CUqsString error;
 				if (!g_hubImpl->m_queryHistoryManager.SerializeLiveQueryHistory(adjustedFilePath, error))
 				{
 					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Serializing the live query to '%s' failed: %s", pArgs->GetArg(0), unadjustedFilePath.c_str(), error.c_str());
@@ -332,7 +332,7 @@ namespace uqs
 					return;
 				}
 
-				shared::CUqsString error;
+				Shared::CUqsString error;
 				if (!g_hubImpl->m_queryHistoryManager.DeserializeQueryHistory(xmlQueryHistoryFilePath, error))
 				{
 					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Could not de-serialize the query history: ", pArgs->GetArg(0), xmlQueryHistoryFilePath, error.c_str());

@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		//===================================================================================
@@ -22,7 +22,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CDeferredEvaluator_TestRaycast : public client::IDeferredEvaluator
+		class CDeferredEvaluator_TestRaycast : public Client::IDeferredEvaluator
 		{
 		public:
 			struct SParams

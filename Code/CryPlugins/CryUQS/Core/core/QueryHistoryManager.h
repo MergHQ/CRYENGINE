@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -24,8 +24,8 @@ namespace uqs
 			virtual void                       RegisterQueryHistoryListener(IQueryHistoryListener* pListener) override;
 			virtual void                       UnregisterQueryHistoryListener(IQueryHistoryListener* pListener) override;
 			virtual void                       UpdateDebugRendering3D(const SDebugCameraView& view, const SEvaluatorDrawMasks& evaluatorDrawMasks) override;
-			virtual bool                       SerializeLiveQueryHistory(const char* xmlFilePath, shared::IUqsString& error) override;
-			virtual bool                       DeserializeQueryHistory(const char* xmlFilePath, shared::IUqsString& error) override;
+			virtual bool                       SerializeLiveQueryHistory(const char* xmlFilePath, Shared::IUqsString& error) override;
+			virtual bool                       DeserializeQueryHistory(const char* xmlFilePath, Shared::IUqsString& error) override;
 			virtual void                       MakeQueryHistoryCurrent(EHistoryOrigin whichHistory) override;
 			virtual EHistoryOrigin             GetCurrentQueryHistory() const override;
 			virtual void                       ClearQueryHistory(EHistoryOrigin whichHistory) override;

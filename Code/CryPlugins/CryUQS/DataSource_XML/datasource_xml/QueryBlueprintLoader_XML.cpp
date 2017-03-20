@@ -5,19 +5,19 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace datasource_xml
+	namespace DataSource_XML
 	{
 
-		static void DeleteErrorProvider(datasource::ISyntaxErrorCollector* pSyntaxErrorCollectorToDelete)
+		static void DeleteErrorProvider(DataSource::ISyntaxErrorCollector* pSyntaxErrorCollectorToDelete)
 		{
 			delete pSyntaxErrorCollectorToDelete;
 		}
 
-		static datasource::SyntaxErrorCollectorUniquePtr MakeNewSyntaxErrorCollectorUniquePtr(int lineNumber, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector)
+		static DataSource::SyntaxErrorCollectorUniquePtr MakeNewSyntaxErrorCollectorUniquePtr(int lineNumber, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector)
 		{
-			return datasource::SyntaxErrorCollectorUniquePtr(new CSyntaxErrorCollector_XML(lineNumber, dataErrorCollector), datasource::CSyntaxErrorCollectorDeleter(&DeleteErrorProvider));
+			return DataSource::SyntaxErrorCollectorUniquePtr(new CSyntaxErrorCollector_XML(lineNumber, dataErrorCollector), DataSource::CSyntaxErrorCollectorDeleter(&DeleteErrorProvider));
 		}
 
 		CQueryBlueprintLoader_XML::CQueryBlueprintLoader_XML(const char* queryName, const char* xmlFilePath, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector)
@@ -30,7 +30,7 @@ namespace uqs
 			// nothing
 		}
 
-		bool CQueryBlueprintLoader_XML::LoadTextualQueryBlueprint(core::ITextualQueryBlueprint& out, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::LoadTextualQueryBlueprint(Core::ITextualQueryBlueprint& out, Shared::IUqsString& error)
 		{
 			// load the XML file
 			m_queryElement = gEnv->pSystem->LoadXmlFromFile(m_xmlFilePath.c_str());
@@ -58,7 +58,7 @@ namespace uqs
 			return success;
 		}
 
-		bool CQueryBlueprintLoader_XML::ParseQueryElement(const XmlNodeRef& queryElement, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::ParseQueryElement(const XmlNodeRef& queryElement, Shared::IUqsString& error)
 		{
 			assert(queryElement->isTag("Query"));
 
@@ -103,7 +103,7 @@ namespace uqs
 				{
 					// child queries
 
-					core::ITextualQueryBlueprint* parentQuery = m_query;
+					Core::ITextualQueryBlueprint* parentQuery = m_query;
 					m_query = &m_query->AddChild();
 					const bool succeeded = ParseQueryElement(child, error);
 					m_query = parentQuery;
@@ -122,7 +122,7 @@ namespace uqs
 			return true;
 		}
 
-		bool CQueryBlueprintLoader_XML::ParseGlobalParamsElement(const XmlNodeRef& globalParamsElement, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::ParseGlobalParamsElement(const XmlNodeRef& globalParamsElement, Shared::IUqsString& error)
 		{
 			assert(globalParamsElement->isTag("GlobalParams"));
 
@@ -197,11 +197,11 @@ namespace uqs
 			return true;
 		}
 
-		bool CQueryBlueprintLoader_XML::ParseGeneratorElement(const XmlNodeRef& generatorElement, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::ParseGeneratorElement(const XmlNodeRef& generatorElement, Shared::IUqsString& error)
 		{
 			assert(generatorElement->isTag("Generator"));
 
-			core::ITextualGeneratorBlueprint& textualGeneratorBP = m_query->SetGenerator();
+			Core::ITextualGeneratorBlueprint& textualGeneratorBP = m_query->SetGenerator();
 			textualGeneratorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_dataErrorCollector));
 
 			// "name" attribute
@@ -214,7 +214,7 @@ namespace uqs
 			textualGeneratorBP.SetGeneratorName(name);
 
 			// parse <Input> elements (expect only these elements)
-			core::ITextualInputBlueprint& textualInputRoot = textualGeneratorBP.GetInputRoot();
+			Core::ITextualInputBlueprint& textualInputRoot = textualGeneratorBP.GetInputRoot();
 			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_dataErrorCollector));	// same as its parent (the textual-generator-blueprint)
 			for (int i = 0; i < generatorElement->getChildCount(); ++i)
 			{
@@ -235,11 +235,11 @@ namespace uqs
 			return true;
 		}
 
-		bool CQueryBlueprintLoader_XML::ParseInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElement, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::ParseInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElement, Shared::IUqsString& error)
 		{
 			assert(instantEvaluatorElement->isTag("InstantEvaluator"));
 
-			core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_query->AddInstantEvaluator();
+			Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_query->AddInstantEvaluator();
 			textualInstantEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_dataErrorCollector));
 
 			// "name" attribute
@@ -261,7 +261,7 @@ namespace uqs
 			textualInstantEvaluatorBP.SetWeight(weight);
 
 			// parse <Input> elements (expect only these elements)
-			core::ITextualInputBlueprint& textualInputRoot = textualInstantEvaluatorBP.GetInputRoot();
+			Core::ITextualInputBlueprint& textualInputRoot = textualInstantEvaluatorBP.GetInputRoot();
 			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_dataErrorCollector));	// same as its parent (the textual-instant-evaluator-blueprint)
 			for (int i = 0; i < instantEvaluatorElement->getChildCount(); ++i)
 			{
@@ -282,11 +282,11 @@ namespace uqs
 			return true;
 		}
 
-		bool CQueryBlueprintLoader_XML::ParseDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElement, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::ParseDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElement, Shared::IUqsString& error)
 		{
 			assert(deferredEvaluatorElement->isTag("DeferredEvaluator"));
 
-			core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_query->AddDeferredEvaluator();
+			Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_query->AddDeferredEvaluator();
 			textualDeferredEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_dataErrorCollector));
 
 			// "name" attribute
@@ -308,7 +308,7 @@ namespace uqs
 			textualDeferredEvaluatorBP.SetWeight(weight);
 
 			// parse <Input> elements (expect only these elements)
-			core::ITextualInputBlueprint& textualInputRoot = textualDeferredEvaluatorBP.GetInputRoot();
+			Core::ITextualInputBlueprint& textualInputRoot = textualDeferredEvaluatorBP.GetInputRoot();
 			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_dataErrorCollector));	// same as its parent (the textual-deferred-evaluator-blueprint)
 			for (int i = 0; i < deferredEvaluatorElement->getChildCount(); ++i)
 			{
@@ -329,7 +329,7 @@ namespace uqs
 			return true;
 		}
 
-		bool CQueryBlueprintLoader_XML::ParseFunctionElement(const XmlNodeRef& functionElement, core::ITextualInputBlueprint& parentInput, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::ParseFunctionElement(const XmlNodeRef& functionElement, Core::ITextualInputBlueprint& parentInput, Shared::IUqsString& error)
 		{
 			assert(functionElement->isTag("Function"));
 
@@ -363,7 +363,7 @@ namespace uqs
 			return true;
 		}
 
-		bool CQueryBlueprintLoader_XML::ParseInputElement(const XmlNodeRef& inputElement, core::ITextualInputBlueprint& parentInput, shared::IUqsString& error)
+		bool CQueryBlueprintLoader_XML::ParseInputElement(const XmlNodeRef& inputElement, Core::ITextualInputBlueprint& parentInput, Shared::IUqsString& error)
 		{
 			assert(inputElement->isTag("Input"));
 
@@ -398,7 +398,7 @@ namespace uqs
 			bool bAddReturnValueToDebugRenderWorldUponExecution = false;
 			functionElement->getAttr("addReturnValueToDebugRenderWorldUponExecution", bAddReturnValueToDebugRenderWorldUponExecution);
 
-			core::ITextualInputBlueprint& newChild = parentInput.AddChild(paramName, functionName, functionReturnValue, bAddReturnValueToDebugRenderWorldUponExecution);
+			Core::ITextualInputBlueprint& newChild = parentInput.AddChild(paramName, functionName, functionReturnValue, bAddReturnValueToDebugRenderWorldUponExecution);
 			newChild.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(functionElement->getLine(), m_dataErrorCollector));
 
 			return ParseFunctionElement(functionElement, newChild, error);

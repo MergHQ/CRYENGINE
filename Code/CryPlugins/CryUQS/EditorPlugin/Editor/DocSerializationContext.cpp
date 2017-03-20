@@ -10,39 +10,39 @@
 // CUqsDocSerializationContext
 //////////////////////////////////////////////////////////////////////////
 
-uqs::client::IItemFactory* CUqsDocSerializationContext::GetItemFactoryByName(const SItemTypeName& typeName) const
+UQS::Client::IItemFactory* CUqsDocSerializationContext::GetItemFactoryByName(const SItemTypeName& typeName) const
 {
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetItemFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetItemFactoryDatabase();
 	return db.FindFactoryByName(typeName.c_str());
 }
 
-uqs::client::IGeneratorFactory* CUqsDocSerializationContext::GetGeneratorFactoryByName(const char* szName) const
+UQS::Client::IGeneratorFactory* CUqsDocSerializationContext::GetGeneratorFactoryByName(const char* szName) const
 {
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetGeneratorFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetGeneratorFactoryDatabase();
 	return db.FindFactoryByName(szName);
 }
 
-uqs::client::IFunctionFactory* CUqsDocSerializationContext::GetFunctionFactoryByName(const char* szName) const
+UQS::Client::IFunctionFactory* CUqsDocSerializationContext::GetFunctionFactoryByName(const char* szName) const
 {
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetFunctionFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetFunctionFactoryDatabase();
 	return db.FindFactoryByName(szName);
 }
 
-uqs::client::IInstantEvaluatorFactory* CUqsDocSerializationContext::GetInstantEvaluatorFactoryByName(const char* szName) const
+UQS::Client::IInstantEvaluatorFactory* CUqsDocSerializationContext::GetInstantEvaluatorFactoryByName(const char* szName) const
 {
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetInstantEvaluatorFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetInstantEvaluatorFactoryDatabase();
 	return db.FindFactoryByName(szName);
 }
 
-uqs::client::IDeferredEvaluatorFactory* CUqsDocSerializationContext::GetDeferredEvaluatorFactoryByName(const char* szName) const
+UQS::Client::IDeferredEvaluatorFactory* CUqsDocSerializationContext::GetDeferredEvaluatorFactoryByName(const char* szName) const
 {
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetDeferredEvaluatorFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetDeferredEvaluatorFactoryDatabase();
 	return db.FindFactoryByName(szName);
 }
 
-uqs::core::IQueryFactory* CUqsDocSerializationContext::GetQueryFactoryByName(const char* szName) const
+UQS::Core::IQueryFactory* CUqsDocSerializationContext::GetQueryFactoryByName(const char* szName) const
 {
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetQueryFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetQueryFactoryDatabase();
 	return db.FindFactoryByName(szName);
 }
 
@@ -78,7 +78,7 @@ const Serialization::StringList& CUqsDocSerializationContext::GetEvaluatorNamesL
 	return m_editorContext.GetSerializationCache().GetEvaluatorNamesList();
 }
 
-SItemTypeName CUqsDocSerializationContext::GetItemTypeNameFromType(const uqs::shared::CTypeInfo& typeInfo) const
+SItemTypeName CUqsDocSerializationContext::GetItemTypeNameFromType(const UQS::Shared::CTypeInfo& typeInfo) const
 {
 	return m_editorContext.GetSerializationCache().GetItemTypeNameFromType(typeInfo);
 }
@@ -93,37 +93,37 @@ bool CUqsDocSerializationContext::ShouldForceSelectionHelpersEvaluation() const
 	return m_bForceSelectionHelpersEvaluation;
 }
 
-uqseditor::CParametersListContext* CUqsDocSerializationContext::GetParametersListContext() const
+UQSEditor::CParametersListContext* CUqsDocSerializationContext::GetParametersListContext() const
 {
 	if (!m_paramListContextStack.empty())
 		return m_paramListContextStack.top();
 	return nullptr;
 }
 
-uqseditor::CSelectedGeneratorContext* CUqsDocSerializationContext::GetSelectedGeneratorContext() const
+UQSEditor::CSelectedGeneratorContext* CUqsDocSerializationContext::GetSelectedGeneratorContext() const
 {
 	if (!m_selectedGeneratorContextStack.empty())
 		return m_selectedGeneratorContextStack.top();
 	return nullptr;
 }
 
-void CUqsDocSerializationContext::PushParametersListContext(uqseditor::CParametersListContext* pContext)
+void CUqsDocSerializationContext::PushParametersListContext(UQSEditor::CParametersListContext* pContext)
 {
 	m_paramListContextStack.push(pContext);
 }
 
-void CUqsDocSerializationContext::PopParametersListContext(uqseditor::CParametersListContext* pContext)
+void CUqsDocSerializationContext::PopParametersListContext(UQSEditor::CParametersListContext* pContext)
 {
 	CRY_ASSERT(!m_paramListContextStack.empty() && m_paramListContextStack.top() == pContext);
 	m_paramListContextStack.pop();
 }
 
-void CUqsDocSerializationContext::PushSelectedGeneratorContext(uqseditor::CSelectedGeneratorContext* pContext)
+void CUqsDocSerializationContext::PushSelectedGeneratorContext(UQSEditor::CSelectedGeneratorContext* pContext)
 {
 	m_selectedGeneratorContextStack.push(pContext);
 }
 
-void CUqsDocSerializationContext::PopSelectedGeneratorContext(uqseditor::CSelectedGeneratorContext* pContext)
+void CUqsDocSerializationContext::PopSelectedGeneratorContext(UQSEditor::CSelectedGeneratorContext* pContext)
 {
 	CRY_ASSERT(!m_selectedGeneratorContextStack.empty() && m_selectedGeneratorContextStack.top() == pContext);
 	m_selectedGeneratorContextStack.pop();

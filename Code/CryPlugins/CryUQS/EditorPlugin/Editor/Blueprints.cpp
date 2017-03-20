@@ -40,7 +40,7 @@ static bool IsStringEmpty(const TString& str)
 	return str.empty();
 }
 
-namespace uqseditor
+namespace UQSEditor
 {
 
 // TODO pavloi 2015.12.09: we shouldn't expose undefined type to UI, but right now I'm going to use it for debug purposes.
@@ -52,7 +52,7 @@ SERIALIZATION_ENUM_END()
 
 //////////////////////////////////////////////////////////////////////////
 
-class CSyntaxErrorCollector : public uqs::datasource::ISyntaxErrorCollector
+class CSyntaxErrorCollector : public UQS::DataSource::ISyntaxErrorCollector
 {
 public:
 	explicit CSyntaxErrorCollector(const std::shared_ptr<CErrorCollector>& pErrorCollector)
@@ -77,14 +77,14 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-static void DeleteSyntaxErrorCollector(uqs::datasource::ISyntaxErrorCollector* pSyntaxErrorCollectorToDelete)
+static void DeleteSyntaxErrorCollector(UQS::DataSource::ISyntaxErrorCollector* pSyntaxErrorCollectorToDelete)
 {
 	delete pSyntaxErrorCollectorToDelete;
 }
 
-static uqs::datasource::SyntaxErrorCollectorUniquePtr MakeNewSyntaxErrorCollectorUniquePtr(const std::shared_ptr<CErrorCollector>& pErrorCollector)
+static UQS::DataSource::SyntaxErrorCollectorUniquePtr MakeNewSyntaxErrorCollectorUniquePtr(const std::shared_ptr<CErrorCollector>& pErrorCollector)
 {
-	return uqs::datasource::SyntaxErrorCollectorUniquePtr(new CSyntaxErrorCollector(pErrorCollector), uqs::datasource::CSyntaxErrorCollectorDeleter(&DeleteSyntaxErrorCollector));
+	return UQS::DataSource::SyntaxErrorCollectorUniquePtr(new CSyntaxErrorCollector(pErrorCollector), UQS::DataSource::CSyntaxErrorCollectorDeleter(&DeleteSyntaxErrorCollector));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -108,7 +108,7 @@ public:
 		}
 	}
 
-	const uqs::client::IInputParameterRegistry& GetInputParameterRegistry() const
+	const UQS::Client::IInputParameterRegistry& GetInputParameterRegistry() const
 	{
 		assert(IsValid());
 		if (m_pInstantFactory)
@@ -145,8 +145,8 @@ public:
 	}
 
 private:
-	uqs::client::IInstantEvaluatorFactory*  m_pInstantFactory;
-	uqs::client::IDeferredEvaluatorFactory* m_pDeferredFactory;
+	UQS::Client::IInstantEvaluatorFactory*  m_pInstantFactory;
+	UQS::Client::IDeferredEvaluatorFactory* m_pDeferredFactory;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -231,13 +231,13 @@ CItemUniquePtr& CItemUniquePtr::operator=(CItemUniquePtr&& other)
 	return *this;
 }
 
-CItemUniquePtr::CItemUniquePtr(uqs::client::IItemFactory* pItemFactory)
+CItemUniquePtr::CItemUniquePtr(UQS::Client::IItemFactory* pItemFactory)
 	: m_pItem(nullptr)
 	, m_pItemFactory(pItemFactory)
 {
 	if (pItemFactory && pItemFactory->CanBePersistantlySerialized())
 	{
-		m_pItem = pItemFactory->CreateItems(1, uqs::client::IItemFactory::EItemInitMode::UseUserProvidedFunction);
+		m_pItem = pItemFactory->CreateItems(1, UQS::Client::IItemFactory::EItemInitMode::UseUserProvidedFunction);
 	}
 }
 
@@ -250,7 +250,7 @@ bool CItemUniquePtr::SetFromStringLiteral(const string& stringLiteral)
 {
 	if (m_pItem && m_pItemFactory)
 	{
-		return uqs::core::IHubPlugin::GetHub().GetItemSerializationSupport().DeserializeItemFromCStringLiteral(m_pItem, *m_pItemFactory, stringLiteral, nullptr);
+		return UQS::Core::IHubPlugin::GetHub().GetItemSerializationSupport().DeserializeItemFromCStringLiteral(m_pItem, *m_pItemFactory, stringLiteral, nullptr);
 	}
 	return false;
 }
@@ -260,8 +260,8 @@ void CItemUniquePtr::ConvertToStringLiteral(string& outString) const
 	outString.clear();
 	if (m_pItem && m_pItemFactory)
 	{
-		uqs::shared::CUqsString literalString;
-		if (uqs::core::IHubPlugin::GetHub().GetItemSerializationSupport().SerializeItemToStringLiteral(m_pItem, *m_pItemFactory, literalString))
+		UQS::Shared::CUqsString literalString;
+		if (UQS::Core::IHubPlugin::GetHub().GetItemSerializationSupport().SerializeItemToStringLiteral(m_pItem, *m_pItemFactory, literalString))
 		{
 			outString = literalString.c_str();
 		}
@@ -328,7 +328,7 @@ void CFunctionSerializationHelper::CFunctionList::Build(const SItemTypeName& typ
 	allFunctions.reserve(namesList.size());
 	for (const auto& name : namesList)
 	{
-		if (uqs::client::IFunctionFactory* pFactory = context.GetFunctionFactoryByName(name.c_str()))
+		if (UQS::Client::IFunctionFactory* pFactory = context.GetFunctionFactoryByName(name.c_str()))
 		{
 			allFunctions.emplace_back();
 			SFunction& func = allFunctions.back();
@@ -352,7 +352,7 @@ void CFunctionSerializationHelper::CFunctionList::Build(const SItemTypeName& typ
 		{
 			std::vector<SFunction> functionsForIteratedItem;
 			std::copy_if(allFunctions.begin(), allFunctions.end(), std::back_inserter(functionsForIteratedItem),
-			             [](const SFunction& func) { return func.leafFunctionKind == uqs::client::IFunctionFactory::ELeafFunctionKind::IteratedItem; });
+			             [](const SFunction& func) { return func.leafFunctionKind == UQS::Client::IFunctionFactory::ELeafFunctionKind::IteratedItem; });
 
 			pSelectedGeneratorContext->BuildFunctionListForAvailableGenerators(typeName, context, functionsForIteratedItem, functions);
 
@@ -380,14 +380,14 @@ void CFunctionSerializationHelper::CFunctionList::Build(const SItemTypeName& typ
 		{
 			std::vector<SFunction> functionsForGlobalParams;
 			std::copy_if(allFunctions.begin(), allFunctions.end(), std::back_inserter(functionsForGlobalParams),
-			             [](const SFunction& func) { return func.leafFunctionKind == uqs::client::IFunctionFactory::ELeafFunctionKind::GlobalParam; });
+			             [](const SFunction& func) { return func.leafFunctionKind == UQS::Client::IFunctionFactory::ELeafFunctionKind::GlobalParam; });
 
 			pParams->BuildFunctionListForAvailableParameters(typeName, context, functionsForGlobalParams, globalParams);
 		}
 
 		for (SFunction& func : globalParams)
 		{
-			assert(func.leafFunctionKind == uqs::client::IFunctionFactory::ELeafFunctionKind::GlobalParam);
+			assert(func.leafFunctionKind == UQS::Client::IFunctionFactory::ELeafFunctionKind::GlobalParam);
 			assert(!func.param.empty());
 
 			functions.emplace_back(std::move(func));
@@ -402,7 +402,7 @@ void CFunctionSerializationHelper::CFunctionList::Build(const SItemTypeName& typ
 	{
 		for (const SFunction& func : allFunctions)
 		{
-			if (func.leafFunctionKind == uqs::client::IFunctionFactory::ELeafFunctionKind::Literal)
+			if (func.leafFunctionKind == UQS::Client::IFunctionFactory::ELeafFunctionKind::Literal)
 			{
 				functions.emplace_back(func);
 				SFunction& iteratedItemFunc = functions.back();
@@ -422,7 +422,7 @@ void CFunctionSerializationHelper::CFunctionList::Build(const SItemTypeName& typ
 	// TODO: the expectedShuttleType already gets properly serialized and such, but we also need a way for the user to specify the type somehow (preferably through a drop-down-list?)
 	for (const SFunction& func : allFunctions)
 	{
-		if (func.leafFunctionKind == uqs::client::IFunctionFactory::ELeafFunctionKind::ShuttledItems)
+		if (func.leafFunctionKind == UQS::Client::IFunctionFactory::ELeafFunctionKind::ShuttledItems)
 		{
 			functions.emplace_back(func);
 			SFunction& shuttledItemsFunc = functions.back();
@@ -515,7 +515,7 @@ int CFunctionSerializationHelper::CFunctionList::FindByInternalNameAndParam(cons
 	{
 		if (m_functions[i].internalName == internalName)
 		{
-			if (m_functions[i].leafFunctionKind == uqs::client::IFunctionFactory::ELeafFunctionKind::GlobalParam)
+			if (m_functions[i].leafFunctionKind == UQS::Client::IFunctionFactory::ELeafFunctionKind::GlobalParam)
 			{
 				if (m_functions[i].param == param)
 				{
@@ -559,7 +559,7 @@ CFunctionSerializationHelper::CFunctionSerializationHelper(const char* szFunctio
 	, m_selectedFunctionIdx(npos)
 {}
 
-CFunctionSerializationHelper::CFunctionSerializationHelper(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
+CFunctionSerializationHelper::CFunctionSerializationHelper(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
 	: m_funcInternalName(functionFactory.GetName())
 	, m_funcParam()
 	, m_itemLiteral()
@@ -613,7 +613,7 @@ void CFunctionSerializationHelper::Reset(const SItemTypeName& typeName, const CU
 		if (m_selectedFunctionIdx != npos)
 		{
 			const SFunction& function = m_functionsList.GetByIdx(m_selectedFunctionIdx);
-			const bool bIsLiteral = (function.leafFunctionKind == uqs::client::IFunctionFactory::ELeafFunctionKind::Literal);
+			const bool bIsLiteral = (function.leafFunctionKind == UQS::Client::IFunctionFactory::ELeafFunctionKind::Literal);
 			
 			if (bIsLiteral)
 			{
@@ -666,12 +666,12 @@ bool CFunctionSerializationHelper::SerializeFunctionName(
 				
 				switch (function.leafFunctionKind)
 				{
-				case uqs::client::IFunctionFactory::ELeafFunctionKind::GlobalParam:
+				case UQS::Client::IFunctionFactory::ELeafFunctionKind::GlobalParam:
 					m_funcParam = function.param;
 					m_itemLiteral = CItemLiteral();
 					break;
 
-				case uqs::client::IFunctionFactory::ELeafFunctionKind::Literal:
+				case UQS::Client::IFunctionFactory::ELeafFunctionKind::Literal:
 					if (!m_itemLiteral.IsExist())
 					{
 						m_itemLiteral = CItemLiteral(function.returnType, context);
@@ -737,7 +737,7 @@ void CFunctionSerializationHelper::SerializeFunctionParam(Serialization::IArchiv
 
 			switch (function.leafFunctionKind)
 			{
-			case uqs::client::IFunctionFactory::ELeafFunctionKind::Literal:
+			case UQS::Client::IFunctionFactory::ELeafFunctionKind::Literal:
 				if (m_itemLiteral.IsExist())
 				{
 					archive(m_itemLiteral, "returnValue", "^");
@@ -768,7 +768,7 @@ void CFunctionSerializationHelper::SerializeAddReturnValueToDebugRenderWorldUpon
 	// check for whether the item can be represented in the debug render world
 	if (const SFunction* pFunction = GetSelectedFunction())
 	{
-		if (const uqs::client::IItemFactory* pItemFactory = uqs::core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(pFunction->pFactory->GetReturnType()))
+		if (const UQS::Client::IItemFactory* pItemFactory = UQS::Core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(pFunction->pFactory->GetReturnType()))
 		{
 			if (pItemFactory->CanBeRepresentedInDebugRenderWorld())
 			{
@@ -804,7 +804,7 @@ const string& CFunctionSerializationHelper::GetFunctionParamOrReturnValue() cons
 	}
 }
 
-uqs::client::IFunctionFactory* CFunctionSerializationHelper::GetFunctionFactory() const
+UQS::Client::IFunctionFactory* CFunctionSerializationHelper::GetFunctionFactory() const
 {
 	if (const SFunction* pFunction = GetSelectedFunction())
 	{
@@ -851,7 +851,7 @@ CInputBlueprint::CInputBlueprint(const char* szParamName)
 	, m_pErrorCollector(new CErrorCollector)
 {}
 
-CInputBlueprint::CInputBlueprint(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
+CInputBlueprint::CInputBlueprint(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
 	: m_paramName()
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 	, m_functionHelper(functionFactory, context)
@@ -882,13 +882,13 @@ CInputBlueprint& CInputBlueprint::operator=(CInputBlueprint&& other)
 	return *this;
 }
 
-void CInputBlueprint::ResetChildrenFromFactory(const uqs::client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context)
+void CInputBlueprint::ResetChildrenFromFactory(const UQS::Client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context)
 {
 	m_children.clear();
 	SetChildrenFromFactoryInputRegistry(generatorFactory, context);
 }
 
-void CInputBlueprint::ResetChildrenFromFactory(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
+void CInputBlueprint::ResetChildrenFromFactory(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
 {
 	m_children.clear();
 	SetChildrenFromFactoryInputRegistry(functionFactory, context);
@@ -903,11 +903,11 @@ void CInputBlueprint::ResetChildrenFromFactory(const CEvaluatorFactoryHelper& ev
 template<typename TFactory>
 void CInputBlueprint::SetChildrenFromFactoryInputRegistry(const TFactory& factory, const CUqsDocSerializationContext& context)
 {
-	const uqs::client::IInputParameterRegistry& inputRegistry = factory.GetInputParameterRegistry();
+	const UQS::Client::IInputParameterRegistry& inputRegistry = factory.GetInputParameterRegistry();
 	const size_t paramCount = inputRegistry.GetParameterCount();
 	for (size_t i = 0; i < paramCount; ++i)
 	{
-		const uqs::client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
+		const UQS::Client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
 		const CInputBlueprint* pParam = FindChildByParamName(paramInfo.name);
 		if (!pParam)
 		{
@@ -917,7 +917,7 @@ void CInputBlueprint::SetChildrenFromFactoryInputRegistry(const TFactory& factor
 	}
 }
 
-void CInputBlueprint::PrepareHelpers(const uqs::client::IGeneratorFactory* pGeneratorFactory, const CUqsDocSerializationContext& context)
+void CInputBlueprint::PrepareHelpers(const UQS::Client::IGeneratorFactory* pGeneratorFactory, const CUqsDocSerializationContext& context)
 {
 	if (pGeneratorFactory)
 	{
@@ -927,7 +927,7 @@ void CInputBlueprint::PrepareHelpers(const uqs::client::IGeneratorFactory* pGene
 	PrepareHelpersRoot(context);
 }
 
-void CInputBlueprint::PrepareHelpers(const uqs::client::IFunctionFactory* pFunctionFactory, const CUqsDocSerializationContext& context)
+void CInputBlueprint::PrepareHelpers(const UQS::Client::IFunctionFactory* pFunctionFactory, const CUqsDocSerializationContext& context)
 {
 	if (pFunctionFactory)
 	{
@@ -957,20 +957,20 @@ void CInputBlueprint::PrepareHelpersRoot(const CUqsDocSerializationContext& cont
 
 void CInputBlueprint::PrepareHelpersChild(const CUqsDocSerializationContext& context)
 {
-	uqs::client::IFunctionFactory* pFunctionFactory = m_functionHelper.GetFunctionFactory();
+	UQS::Client::IFunctionFactory* pFunctionFactory = m_functionHelper.GetFunctionFactory();
 	PrepareHelpers(pFunctionFactory, context);
 }
 
 template<typename TFactory>
 void CInputBlueprint::DeriveChildrenInfoFromFactoryInputRegistry(const TFactory& factory, const CUqsDocSerializationContext& context)
 {
-	const uqs::client::IInputParameterRegistry& inputRegistry = factory.GetInputParameterRegistry();
+	const UQS::Client::IInputParameterRegistry& inputRegistry = factory.GetInputParameterRegistry();
 
 	const size_t paramCount = inputRegistry.GetParameterCount();
 	std::map<string, size_t> nameToParameterInfoIdx;
 	for (size_t i = 0; i < paramCount; ++i)
 	{
-		const uqs::client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
+		const UQS::Client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
 		nameToParameterInfoIdx[string(paramInfo.name)] = i;
 	}
 
@@ -984,7 +984,7 @@ void CInputBlueprint::DeriveChildrenInfoFromFactoryInputRegistry(const TFactory&
 	}
 }
 
-void CInputBlueprint::SetAdditionalParamInfo(const uqs::client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context)
+void CInputBlueprint::SetAdditionalParamInfo(const UQS::Client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context)
 {
 	m_functionHelper.Reset(context.GetItemTypeNameFromType(paramInfo.type), context);
 }
@@ -1035,7 +1035,7 @@ void CInputBlueprint::SerializeRoot(Serialization::IArchive& archive, const char
 
 void CInputBlueprint::SerializeFunction(Serialization::IArchive& archive, const CUqsDocSerializationContext& context, const char* szParamLabel)
 {
-	uqs::client::IFunctionFactory* pFactory = nullptr;
+	UQS::Client::IFunctionFactory* pFactory = nullptr;
 
 	const bool bNameChanged = m_functionHelper.SerializeFunctionName(archive, "funcName", szParamLabel, context);
 
@@ -1050,8 +1050,8 @@ void CInputBlueprint::SerializeFunction(Serialization::IArchive& archive, const 
 	}
 
 	bool bIsLeafUndecided = true;
-	uqs::client::IFunctionFactory::ELeafFunctionKind leafFunctionKind =
-	  uqs::client::IFunctionFactory::ELeafFunctionKind::None;
+	UQS::Client::IFunctionFactory::ELeafFunctionKind leafFunctionKind =
+	  UQS::Client::IFunctionFactory::ELeafFunctionKind::None;
 
 	if (context.GetSettings().bUseSelectionHelpers)
 	{
@@ -1098,19 +1098,19 @@ void CInputBlueprint::SerializeFunction(Serialization::IArchive& archive, const 
 	{
 		switch (leafFunctionKind)
 		{
-		case uqs::client::IFunctionFactory::ELeafFunctionKind::None:
+		case UQS::Client::IFunctionFactory::ELeafFunctionKind::None:
 			SerializeChildren(archive, "inputs", "Inputs", context);
 			break;
 
-		case uqs::client::IFunctionFactory::ELeafFunctionKind::IteratedItem:
+		case UQS::Client::IFunctionFactory::ELeafFunctionKind::IteratedItem:
 			// do nothing
 			break;
 
-		case uqs::client::IFunctionFactory::ELeafFunctionKind::GlobalParam:
+		case UQS::Client::IFunctionFactory::ELeafFunctionKind::GlobalParam:
 			// do nothing
 			break;
 
-		case uqs::client::IFunctionFactory::ELeafFunctionKind::Literal:
+		case UQS::Client::IFunctionFactory::ELeafFunctionKind::Literal:
 			m_functionHelper.SerializeFunctionParam(archive, context);
 			break;
 		}
@@ -1280,7 +1280,7 @@ void CConstParamBlueprint::SConstParam::SerializeImpl(Serialization::IArchive& a
 	archive(value, "value", "^Value");
 
 	bool bItemCanBeRepresentedInDebugRenderWorld = false;
-	if (const uqs::client::IItemFactory* pItemFactory = context.GetItemFactoryByName(type))
+	if (const UQS::Client::IItemFactory* pItemFactory = context.GetItemFactoryByName(type))
 	{
 		bItemCanBeRepresentedInDebugRenderWorld = pItemFactory->CanBeRepresentedInDebugRenderWorld();
 	}
@@ -1421,7 +1421,7 @@ void CRuntimeParamBlueprint::SRuntimeParam::SerializeImpl(Serialization::IArchiv
 	bool bItemCanBeRepresentedInDebugRenderWorld = false;
 	if (CUqsDocSerializationContext* pContext = archive.context<CUqsDocSerializationContext>())
 	{
-		if (const uqs::client::IItemFactory* pItemFactory = pContext->GetItemFactoryByName(type))
+		if (const UQS::Client::IItemFactory* pItemFactory = pContext->GetItemFactoryByName(type))
 		{
 			bItemCanBeRepresentedInDebugRenderWorld = pItemFactory->CanBeRepresentedInDebugRenderWorld();
 		}
@@ -1499,7 +1499,7 @@ CGeneratorBlueprint::CGeneratorBlueprint()
 	: m_pErrorCollector(new CErrorCollector)
 {}
 
-CGeneratorBlueprint::CGeneratorBlueprint(const uqs::client::IGeneratorFactory& factory, const CUqsDocSerializationContext& context)
+CGeneratorBlueprint::CGeneratorBlueprint(const UQS::Client::IGeneratorFactory& factory, const CUqsDocSerializationContext& context)
 	: m_name(factory.GetName())
 	, m_pErrorCollector(new CErrorCollector)
 {
@@ -1578,7 +1578,7 @@ bool CGeneratorBlueprint::SerializeName(Serialization::IArchive& archive, const 
 
 void CGeneratorBlueprint::SerializeInputs(Serialization::IArchive& archive, const char* szName, const char* szLabel, const bool bNameChanged, const CUqsDocSerializationContext& context)
 {
-	uqs::client::IGeneratorFactory* pFactory = nullptr;
+	UQS::Client::IGeneratorFactory* pFactory = nullptr;
 
 	if (context.GetSettings().bUseSelectionHelpers)
 	{
@@ -1605,7 +1605,7 @@ void CGeneratorBlueprint::SerializeInputs(Serialization::IArchive& archive, cons
 
 void CGeneratorBlueprint::PrepareHelpers(CUqsDocSerializationContext& context)
 {
-	uqs::client::IGeneratorFactory* pFactory = nullptr;
+	UQS::Client::IGeneratorFactory* pFactory = nullptr;
 
 	if (context.GetSettings().bUseSelectionHelpers)
 	{
@@ -2072,7 +2072,7 @@ SQueryFactoryType::CTraits::CTraits()
 	: m_pQueryFactory(nullptr)
 {}
 
-SQueryFactoryType::CTraits::CTraits(const uqs::core::IQueryFactory& queryFactory)
+SQueryFactoryType::CTraits::CTraits(const UQS::Core::IQueryFactory& queryFactory)
 	: m_pQueryFactory(&queryFactory)
 {}
 
@@ -2119,12 +2119,12 @@ size_t SQueryFactoryType::CTraits::GetMinRequiredChildren() const
 size_t SQueryFactoryType::CTraits::GetMaxAllowedChildren() const
 {
 	if (m_pQueryFactory) return m_pQueryFactory->GetMaxAllowedChildren();
-	return uqs::core::IQueryFactory::kUnlimitedChildren;
+	return UQS::Core::IQueryFactory::kUnlimitedChildren;
 }
 
 bool SQueryFactoryType::CTraits::IsUnlimitedChildren() const
 {
-	return GetMaxAllowedChildren() == uqs::core::IQueryFactory::kUnlimitedChildren;
+	return GetMaxAllowedChildren() == UQS::Core::IQueryFactory::kUnlimitedChildren;
 }
 
 bool SQueryFactoryType::CTraits::CanHaveChildren() const
@@ -2219,7 +2219,7 @@ bool SQueryFactoryType::Serialize(Serialization::IArchive& archive, const char* 
 	return bNameChanged;
 }
 
-const uqs::core::IQueryFactory* SQueryFactoryType::GetFactory(const CUqsDocSerializationContext* pContext) const
+const UQS::Core::IQueryFactory* SQueryFactoryType::GetFactory(const CUqsDocSerializationContext* pContext) const
 {
 	if (pContext && pContext->GetSettings().bUseSelectionHelpers)
 	{
@@ -2232,7 +2232,7 @@ void SQueryFactoryType::UpdateTraits(const CUqsDocSerializationContext* pContext
 {
 	if (pContext && pContext->GetSettings().bUseSelectionHelpers)
 	{
-		if (const uqs::core::IQueryFactory* pQueryFactory = pContext->GetQueryFactoryByName(queryFactoryName.c_str()))
+		if (const UQS::Core::IQueryFactory* pQueryFactory = pContext->GetQueryFactoryByName(queryFactoryName.c_str()))
 		{
 			queryTraits = CTraits(*pQueryFactory);
 			return;
@@ -2258,7 +2258,7 @@ CQueryBlueprint::CQueryBlueprint()
 {
 }
 
-void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const uqs::core::ITextualQueryBlueprint& source, CUqsDocSerializationContext& context)
+void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::ITextualQueryBlueprint& source, CUqsDocSerializationContext& context)
 {
 	// name
 	{
@@ -2275,7 +2275,7 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const uqs::core::IText
 		m_queryChildren.reserve(source.GetChildCount());
 		for (size_t i = 0; i < source.GetChildCount(); ++i)
 		{
-			const uqs::core::ITextualQueryBlueprint& childQueryBP = source.GetChild(i);
+			const UQS::Core::ITextualQueryBlueprint& childQueryBP = source.GetChild(i);
 			m_queryChildren.emplace_back();
 			m_queryChildren.back().BuildSelfFromITextualQueryBlueprint(childQueryBP, context);
 		}
@@ -2288,11 +2288,11 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const uqs::core::IText
 
 	// global constant-params
 	{
-		const uqs::core::ITextualGlobalConstantParamsBlueprint& sourceGlobalConstParams = source.GetGlobalConstantParams();
+		const UQS::Core::ITextualGlobalConstantParamsBlueprint& sourceGlobalConstParams = source.GetGlobalConstantParams();
 
 		for (size_t i = 0, n = sourceGlobalConstParams.GetParameterCount(); i < n; ++i)
 		{
-			const uqs::core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = sourceGlobalConstParams.GetParameter(i);
+			const UQS::Core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = sourceGlobalConstParams.GetParameter(i);
 			CItemLiteral value(pi.type, context);
 			value.SetFromStringLiteral(CONST_TEMP_STRING(pi.value));
 			m_constParams.AddParameter(pi.name, pi.type, std::move(value), pi.bAddToDebugRenderWorld);
@@ -2301,18 +2301,18 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const uqs::core::IText
 
 	// global runtime-params
 	{
-		const uqs::core::ITextualGlobalRuntimeParamsBlueprint& sourceGlobalRuntimeParams = source.GetGlobalRuntimeParams();
+		const UQS::Core::ITextualGlobalRuntimeParamsBlueprint& sourceGlobalRuntimeParams = source.GetGlobalRuntimeParams();
 
 		for (size_t i = 0, n = sourceGlobalRuntimeParams.GetParameterCount(); i < n; ++i)
 		{
-			const uqs::core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = sourceGlobalRuntimeParams.GetParameter(i);
+			const UQS::Core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = sourceGlobalRuntimeParams.GetParameter(i);
 			m_runtimeParams.AddParameter(pi.name, pi.type, pi.bAddToDebugRenderWorld);
 		}
 	}
 
 	// generator (optional and typically never used by composite queries)
 	{
-		if (const uqs::core::ITextualGeneratorBlueprint* pSourceGeneratorBlueprint = source.GetGenerator())
+		if (const UQS::Core::ITextualGeneratorBlueprint* pSourceGeneratorBlueprint = source.GetGenerator())
 		{
 			m_generator.SetGeneratorName(pSourceGeneratorBlueprint->GetGeneratorName());
 
@@ -2324,7 +2324,7 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const uqs::core::IText
 	{
 		for (size_t i = 0, n = source.GetInstantEvaluatorCount(); i < n; ++i)
 		{
-			const uqs::core::ITextualInstantEvaluatorBlueprint& sourceInstantEvaluatorBlueprint = source.GetInstantEvaluator(i);
+			const UQS::Core::ITextualInstantEvaluatorBlueprint& sourceInstantEvaluatorBlueprint = source.GetInstantEvaluator(i);
 			CInstantEvaluatorBlueprint& targetInstantEvaluatorBlueprint = m_evaluators.AddInstantEvaluator();
 
 			targetInstantEvaluatorBlueprint.SetEvaluatorName(sourceInstantEvaluatorBlueprint.GetEvaluatorName());
@@ -2338,7 +2338,7 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const uqs::core::IText
 	{
 		for (size_t i = 0, n = source.GetDeferredEvaluatorCount(); i < n; ++i)
 		{
-			const uqs::core::ITextualDeferredEvaluatorBlueprint& sourceDeferredEvaluatorBlueprint = source.GetDeferredEvaluator(i);
+			const UQS::Core::ITextualDeferredEvaluatorBlueprint& sourceDeferredEvaluatorBlueprint = source.GetDeferredEvaluator(i);
 			CDeferredEvaluatorBlueprint& targetDeferredEvaluatorBlueprint = m_evaluators.AddDeferredEvaluator();
 
 			targetDeferredEvaluatorBlueprint.SetEvaluatorName(sourceDeferredEvaluatorBlueprint.GetEvaluatorName());
@@ -2349,7 +2349,7 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const uqs::core::IText
 	}
 }
 
-void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQueryBlueprint& target) const
+void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQueryBlueprint& target) const
 {
 	target.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(m_pErrorCollector));
 
@@ -2367,7 +2367,7 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQue
 	{
 		for (const CQueryBlueprint& childQuery : m_queryChildren)
 		{
-			uqs::core::ITextualQueryBlueprint& targetChild = target.AddChild();
+			UQS::Core::ITextualQueryBlueprint& targetChild = target.AddChild();
 			childQuery.BuildITextualQueryBlueprintFromSelf(targetChild);
 		}
 	}
@@ -2379,7 +2379,7 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQue
 
 	// global constant-params
 	{
-		uqs::core::ITextualGlobalConstantParamsBlueprint& targetConstParams = target.GetGlobalConstantParams();
+		UQS::Core::ITextualGlobalConstantParamsBlueprint& targetConstParams = target.GetGlobalConstantParams();
 
 		string value;
 		for (size_t i = 0, n = m_constParams.GetParameterCount(); i < n; ++i)
@@ -2396,7 +2396,7 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQue
 
 	// global runtime-params
 	{
-		uqs::core::ITextualGlobalRuntimeParamsBlueprint& targetRuntimeParams = target.GetGlobalRuntimeParams();
+		UQS::Core::ITextualGlobalRuntimeParamsBlueprint& targetRuntimeParams = target.GetGlobalRuntimeParams();
 
 		for (size_t i = 0, n = m_runtimeParams.GetParameterCount(); i < n; ++i)
 		{
@@ -2412,7 +2412,7 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQue
 	// generator
 	if (m_generator.IsSet())
 	{
-		uqs::core::ITextualGeneratorBlueprint& targetGeneratorBlueprint = target.SetGenerator();
+		UQS::Core::ITextualGeneratorBlueprint& targetGeneratorBlueprint = target.SetGenerator();
 
 		targetGeneratorBlueprint.SetGeneratorName(m_generator.GetGeneratorName());
 		targetGeneratorBlueprint.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(m_generator.GetErrorCollectorSharedPtr()));
@@ -2425,7 +2425,7 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQue
 		for (size_t i = 0, n = m_evaluators.GetInstantEvaluatorCount(); i < n; ++i)
 		{
 			const CInstantEvaluatorBlueprint& sourceInstantEvaluatorBlueprint = m_evaluators.GetInstantEvaluator(i);
-			uqs::core::ITextualInstantEvaluatorBlueprint& targetInstantEvaluatorBlueprint = target.AddInstantEvaluator();
+			UQS::Core::ITextualInstantEvaluatorBlueprint& targetInstantEvaluatorBlueprint = target.AddInstantEvaluator();
 
 			targetInstantEvaluatorBlueprint.SetEvaluatorName(sourceInstantEvaluatorBlueprint.GetEvaluatorName());
 			targetInstantEvaluatorBlueprint.SetWeight(sourceInstantEvaluatorBlueprint.GetWeight());
@@ -2440,7 +2440,7 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQue
 		for (size_t i = 0, n = m_evaluators.GetDeferredEvaluatorCount(); i < n; ++i)
 		{
 			const CDeferredEvaluatorBlueprint& sourceDeferredEvaluatorBlueprint = m_evaluators.GetDeferredEvaluator(i);
-			uqs::core::ITextualDeferredEvaluatorBlueprint& targetDeferredEvaluatorBlueprint = target.AddDeferredEvaluator();
+			UQS::Core::ITextualDeferredEvaluatorBlueprint& targetDeferredEvaluatorBlueprint = target.AddDeferredEvaluator();
 
 			targetDeferredEvaluatorBlueprint.SetEvaluatorName(sourceDeferredEvaluatorBlueprint.GetEvaluatorName());
 			targetDeferredEvaluatorBlueprint.SetWeight(sourceDeferredEvaluatorBlueprint.GetWeight());
@@ -2451,11 +2451,11 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQue
 	}
 }
 
-void CQueryBlueprint::HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(CInputBlueprint& targetRoot, const uqs::core::ITextualInputBlueprint& sourceRoot)
+void CQueryBlueprint::HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(CInputBlueprint& targetRoot, const UQS::Core::ITextualInputBlueprint& sourceRoot)
 {
 	for (size_t i = 0, n = sourceRoot.GetChildCount(); i < n; ++i)
 	{
-		const uqs::core::ITextualInputBlueprint& sourceChild = sourceRoot.GetChild(i);
+		const UQS::Core::ITextualInputBlueprint& sourceChild = sourceRoot.GetChild(i);
 		const char* szParamName = sourceChild.GetParamName();
 		const char* szFuncName = sourceChild.GetFuncName();
 		const char* szFuncReturnValueLiteral = sourceChild.GetFuncReturnValueLiteral();
@@ -2468,7 +2468,7 @@ void CQueryBlueprint::HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprin
 	}
 }
 
-void CQueryBlueprint::HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(uqs::core::ITextualInputBlueprint& targetRoot, const CInputBlueprint& sourceRoot)
+void CQueryBlueprint::HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(UQS::Core::ITextualInputBlueprint& targetRoot, const CInputBlueprint& sourceRoot)
 {
 	for (size_t i = 0, n = sourceRoot.GetChildCount(); i < n; ++i)
 	{
@@ -2479,7 +2479,7 @@ void CQueryBlueprint::HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprin
 		bool bAddReturnValueToDebugRenderWorldUponExecution = sourceChild.GetAddReturnValueToDebugRenderWorldUponExecution();
 		const std::shared_ptr<CErrorCollector>& pErrorCollector = sourceChild.GetErrorCollectorSharedPtr();
 
-		uqs::core::ITextualInputBlueprint& newChild = targetRoot.AddChild(szParamName, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
+		UQS::Core::ITextualInputBlueprint& newChild = targetRoot.AddChild(szParamName, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
 		newChild.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(pErrorCollector));
 
 		// recurse down
@@ -2774,7 +2774,7 @@ void CSelectedGeneratorContext::BuildFunctionListForAvailableGenerators(
 	{
 		SItemTypeName generatorType;
 		const char* szGeneratorName = m_pOwner->GetGenerator().GetGeneratorName();
-		if (uqs::client::IGeneratorFactory* pFactory = context.GetGeneratorFactoryByName(szGeneratorName))
+		if (UQS::Client::IGeneratorFactory* pFactory = context.GetGeneratorFactoryByName(szGeneratorName))
 		{
 			generatorType = context.GetItemTypeNameFromType(pFactory->GetTypeOfItemsToGenerate());
 		}
@@ -2794,4 +2794,4 @@ void CSelectedGeneratorContext::BuildFunctionListForAvailableGenerators(
 	}
 }
 
-} // namespace uqseditor
+} // namespace UQSEditor

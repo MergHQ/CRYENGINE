@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -37,8 +37,8 @@ namespace uqs
 			virtual CUtils&                                            GetUtils() override;
 			virtual CEditorService&                                    GetEditorService() override;
 			virtual CItemSerializationSupport&                         GetItemSerializationSupport() override;
-			virtual datasource::IEditorLibraryProvider*                GetEditorLibraryProvider() override;
-			virtual void                                               SetEditorLibraryProvider(datasource::IEditorLibraryProvider* pProvider) override;
+			virtual DataSource::IEditorLibraryProvider*                GetEditorLibraryProvider() override;
+			virtual void                                               SetEditorLibraryProvider(DataSource::IEditorLibraryProvider* pProvider) override;
 			// ~IHub
 
 			bool                                                       HaveConsistencyChecksBeenDoneAlready() const;
@@ -77,7 +77,7 @@ namespace uqs
 			CQueryManager                                              m_queryManager;
 			CEditorService                                             m_editorService;
 			CItemSerializationSupport                                  m_itemSerializationSupport;
-			datasource::IEditorLibraryProvider*                        m_pEditorLibraryProvider;
+			DataSource::IEditorLibraryProvider*                        m_pEditorLibraryProvider;
 			CUtils                                                     m_utils;
 		};
 
