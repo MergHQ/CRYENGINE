@@ -1946,7 +1946,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 		string gameFolder = (!PathUtil::GetGameFolder().empty()) ? (PathUtil::GetGameFolder() + "/") : "";
 		AddCVarGroupDirectory(gameFolder + "Config/CVarGroups");
 	}
-	AddCVarGroupDirectory("Engine/Config/CVarGroups");
+    AddCVarGroupDirectory("Config/CVarGroups");
 
 #ifdef SEG_WORLD
 	int maxStdio = gEnv->pConsole->GetCVar("sys_max_stdio")->GetIVal();
