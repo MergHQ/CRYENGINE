@@ -936,23 +936,6 @@ struct SParticlesDG : public IStatoscopeDataGroup
 		SParticleCounts particleCounts;
 		gEnv->pParticleManager->GetCounts(particleCounts);
 
-		SParticleCounts particleCountsPfx2;
-		pfx2::GetIParticleSystem()->GetCounts(particleCountsPfx2);
-
-		particleCounts.ParticlesRendered    += particleCountsPfx2.ParticlesRendered;
-		particleCounts.ParticlesActive      += particleCountsPfx2.ParticlesActive;
-		particleCounts.ParticlesAlloc       += particleCountsPfx2.ParticlesAlloc;
-		particleCounts.PixelsRendered       += particleCountsPfx2.PixelsRendered;
-		particleCounts.PixelsProcessed      += particleCountsPfx2.PixelsProcessed;
-		particleCounts.EmittersRendered     += particleCountsPfx2.EmittersRendered;
-		particleCounts.EmittersActive       += particleCountsPfx2.EmittersActive;
-		particleCounts.EmittersAlloc        += particleCountsPfx2.EmittersAlloc;
-		particleCounts.ParticlesReiterate   += particleCountsPfx2.ParticlesReiterate;
-		particleCounts.ParticlesReject      += particleCountsPfx2.ParticlesReject;
-		particleCounts.ParticlesCollideTest += particleCountsPfx2.ParticlesCollideTest;
-		particleCounts.ParticlesCollideHit  += particleCountsPfx2.ParticlesCollideHit;
-		particleCounts.ParticlesClip        += particleCountsPfx2.ParticlesClip;
-
 		float fScreenPix = (float)(gEnv->pRenderer->GetWidth() * gEnv->pRenderer->GetHeight());
 		fr.AddValue(particleCounts.ParticlesRendered);
 		fr.AddValue(particleCounts.ParticlesActive);
@@ -967,6 +950,39 @@ struct SParticlesDG : public IStatoscopeDataGroup
 		fr.AddValue(particleCounts.ParticlesCollideTest);
 		fr.AddValue(particleCounts.ParticlesCollideHit);
 		fr.AddValue(particleCounts.ParticlesClip);
+	}
+};
+
+struct SWavicleDG : public IStatoscopeDataGroup
+{
+	virtual SDescription GetDescription() const
+	{
+		return SDescription(
+			'P', "Wavicle", "['/Wavicle/'"
+			"(int emittersAlive)(int emittersUpdated)(int emittersRendererd)"
+			"(int componentAlive)(int componentUpdated)(int componentRendered)"
+			"(int particlesAllocated)(int particlesAlive)(int particlesUpdated)(int particlesRendered)(int particlesClipped)"
+			"]");
+	}
+
+	virtual void Write(IStatoscopeFrameRecord& fr)
+	{
+		using namespace pfx2;
+
+		SParticleStats stats;
+		GetIParticleSystem()->GetStats(stats);
+		
+		fr.AddValue(int(stats.m_emittersAlive));
+		fr.AddValue(int(stats.m_emittersUpdated));
+		fr.AddValue(int(stats.m_emittersRendererd));
+		fr.AddValue(int(stats.m_runtimesAlive));
+		fr.AddValue(int(stats.m_runtimesUpdated));
+		fr.AddValue(int(stats.m_runtimesRendered));
+		fr.AddValue(int(stats.m_particlesAllocated));
+		fr.AddValue(int(stats.m_particlesAlive));
+		fr.AddValue(int(stats.m_particlesUpdated));
+		fr.AddValue(int(stats.m_particlesRendered));
+		fr.AddValue(int(stats.m_particlesClipped));
 	}
 };
 
@@ -2787,6 +2803,7 @@ void CStatoscope::RegisterBuiltInDataGroups()
 	RegisterDataGroup(new SCPUTimesDG());
 	RegisterDataGroup(new SVertexCostDG());
 	RegisterDataGroup(new SParticlesDG);
+	RegisterDataGroup(new SWavicleDG);
 	RegisterDataGroup(new SLocationDG());
 	RegisterDataGroup(new SPerCGFGPUProfilersDG());
 	RegisterDataGroup(m_pParticleProfilers);

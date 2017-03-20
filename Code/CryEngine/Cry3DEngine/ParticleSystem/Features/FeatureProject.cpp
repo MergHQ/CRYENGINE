@@ -27,7 +27,7 @@ public:
 		, m_projectPosition(true)
 		, m_projectVelocity(true)
 		, m_projectAngles(false)
-		, m_spawnOnly(false) {}
+		, m_spawnOnly(true) {}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{

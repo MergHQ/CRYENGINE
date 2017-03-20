@@ -17,26 +17,20 @@ CRY_PFX2_DBG
 namespace pfx2
 {
 
-enum class EContactPointsFlags
-{
-	Active   = BIT(0),
-	Collided = BIT(1),
-	Sliding  = BIT(2),
-	Ignore   = BIT(3),
-};
-
 struct SContactPoint
 {
-	SContactPoint()
-		: m_point(ZERO)
-		, m_normal(ZERO)
-		, m_flags(0)
-		, m_totalCollisions(0) {}
+	Vec3  m_point;
+	Vec3  m_normal;
+	float m_time;	// fraction of frame time
+	uint  m_totalCollisions;
+	struct  
+	{
+		uint collided: 1,
+		     sliding: 1,
+		     ignore: 1;
+	} m_state;
 
-	Vec3 m_point;
-	Vec3 m_normal;
-	uint m_totalCollisions;
-	uint m_flags;	// EContactPointsFlags
+	SContactPoint() { ZeroStruct(*this); }
 };
 
 extern EParticleDataType EPDT_ContactPoint;
@@ -61,17 +55,21 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void Update(const SUpdateContext& context) override;
+	virtual void InitParticles(const SUpdateContext& context) override;
+	virtual void PostUpdate(const SUpdateContext& context) override;
 
 	bool  IsActive() const           { return m_terrain || m_staticObjects || m_staticObjects; }
 	float GetElasticity() const      { return m_elasticity; }
 	int   GetRayTraceFilter() const;
 
 private:
+	void ProcessCollisions(const SUpdateContext& context);
+
 	template<typename TCollisionLimit>
 	void UpdateCollisionLimit(const SUpdateContext& context);
 
 	UUnitFloat          m_elasticity;
+	UUnitFloat          m_slidingFriction;
 	ECollisionLimitMode m_collisionsLimitMode;
 	UBytePos            m_maxCollisions;
 	bool                m_terrain;

@@ -451,6 +451,7 @@ CParticleComponentRuntime::CParticleComponentRuntime(pfx2::IParticleComponent* p
 	, m_parentId(params.parentId)
 	, m_isSecondGen(params.isSecondGen)
 	, m_version(params.version)
+	, m_pEmitter(nullptr)
 {
 	for (int i = 0; i < eGpuUpdateList_COUNT; ++i)
 	{
@@ -478,6 +479,7 @@ void CParticleComponentRuntime::SetEmitterData(::IParticleEmitter* pEmitter)
 		pEmitter->GetParentData(m_parentId, &m_subInstances[0], m_parentData.size(),
 		                        &m_parentData[0]);
 	}
+	m_pEmitter = pEmitter;
 }
 
 void CParticleComponentRuntime::AddSubInstances(SInstance* pInstances, size_t count)

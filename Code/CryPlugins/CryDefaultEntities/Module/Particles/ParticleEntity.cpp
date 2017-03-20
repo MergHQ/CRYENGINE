@@ -1,8 +1,11 @@
 #include "StdAfx.h"
-#include "ParticleEntity.h"
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryParticleSystem/IParticlesPfx2.h>
+#include <CrySerialization/Decorators/Resources.h>
+#include <CrySerialization/Decorators/ActionButton.h>
+
+#include "ParticleEntity.h"
 
 class CParticleRegistrator
 	: public IEntityRegistrator
@@ -25,14 +28,50 @@ CParticleRegistrator g_particleRegistrator;
 CRYREGISTER_CLASS(CDefaultParticleEntity);
 
 CDefaultParticleEntity::CDefaultParticleEntity()
-	: m_particleSlot(-1)
 {
+	m_pAttributes = pfx2::GetIParticleSystem()->CreateParticleAttributes();
 }
 
 void CDefaultParticleEntity::SetParticleEffectName(cstr effectName)
 {
 	m_particleEffectPath = effectName;
 	OnResetState();
+}
+
+void CDefaultParticleEntity::SerializeProperties(Serialization::IArchive& archive)
+{
+	IEntity& entity = *GetEntity();
+	string prevEffectPath = m_particleEffectPath;
+	bool wasActive = m_bActive;
+
+	if (archive.openBlock("particleButtons", "Emitter"))
+	{
+		archive(Serialization::ActionButton(functor(*this, &CDefaultParticleEntity::Restart)), "Restart", "^Restart");
+		archive(Serialization::ActionButton(functor(*this, &CDefaultParticleEntity::Kill)), "Kill", "^Kill");
+		archive.closeBlock();
+	}
+
+	archive(Serialization::ParticleName(m_particleEffectPath), "ParticleEffect", "ParticleEffect");
+	archive(m_bActive, "Active", "Active");
+	archive(m_spawnParams, "Parameters", "Parameters");
+
+	if (archive.isInput())
+	{
+		if (m_particleEffectPath != prevEffectPath || wasActive != m_bActive)
+		{
+			OnResetState();
+		}
+		else
+		{
+			IParticleEmitter* pEmitter = entity.GetParticleEmitter(m_particleSlot);
+			if (pEmitter)
+				pEmitter->SetSpawnParams(m_spawnParams);
+		}
+	}
+
+	archive(*m_pAttributes, "Attributes", "Attributes");
+	if (archive.isInput() && m_particleSlot != -1)
+		GetEmitter()->GetAttributes().Reset(m_pAttributes.get());
 }
 
 void CDefaultParticleEntity::OnResetState()
@@ -46,12 +85,37 @@ void CDefaultParticleEntity::OnResetState()
 		m_particleSlot = -1;
 	}
 
-	// Check if the light is active
+	// Check if the emitter is active
 	if (!m_bActive)
 		return;
 
-	if (IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(m_particleEffectPath, "ParticleEntity"))
+	IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(m_particleEffectPath, "ParticleEntity");
+	if (pEffect)
 	{
-		m_particleSlot = entity.LoadParticleEmitter(-1, pEffect);
+		m_particleSlot = entity.LoadParticleEmitter(-1, pEffect, &m_spawnParams);
+		GetEmitter()->GetAttributes().TransferInto(m_pAttributes.get());
+		GetEmitter()->GetAttributes().Reset(m_pAttributes.get());
 	}
+}
+
+void CDefaultParticleEntity::Restart()
+{
+	m_bActive = true;
+	OnResetState();
+}
+
+void CDefaultParticleEntity::Kill()
+{
+	m_bActive = false;
+	IEntity& entity = *GetEntity();
+	IParticleEmitter* pEmitter = entity.GetParticleEmitter(m_particleSlot);
+	if (pEmitter)
+		pEmitter->Kill();
+	OnResetState();
+}
+
+IParticleEmitter* CDefaultParticleEntity::GetEmitter()
+{
+	IEntity& entity = *GetEntity();
+	return entity.GetParticleEmitter(m_particleSlot);
 }

@@ -1401,6 +1401,8 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 			              _fSpawnPeriod, sEffectName);
 		}
 
+		chain.GetValue("bActive", params.bActive);
+		chain.GetValue("bPrime", params.bPrime);
 		chain.GetValue("PulsePeriod", params.fPulsePeriod);
 		chain.GetValue("Strength", params.fStrength);
 		chain.GetValue("Scale", params.fSizeScale);
@@ -1408,7 +1410,6 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 		chain.GetValue("TimeScale", params.fTimeScale);
 		chain.GetValue("CountScale", params.fCountScale);
 		chain.GetValue("bCountPerUnit", params.bCountPerUnit);
-		chain.GetValue("bPrime", params.bPrime);
 		chain.GetValue("bRegisterByBBox", params.bRegisterByBBox);
 		chain.GetValue("iSeed", params.nSeed);
 
@@ -1437,12 +1438,6 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 
 		// Load the effect; mark for no serialization; scripts will handle it if needed.
 		nLoadedSlot = pEntity->LoadParticleEmitter(nSlot, pEffect, &params);
-
-		SmartScriptTable attributesTable;
-		table->GetValueChain("Attributes", attributesTable);
-		IParticleEmitter* pEmitter = pEntity->GetParticleEmitter(nLoadedSlot);
-		if (pEmitter && attributesTable)
-			pEmitter->GetAttributes().UpdateScriptTable(attributesTable);
 	}
 
 	if (nLoadedSlot < 0 && sEffectName && *sEffectName)

@@ -55,7 +55,6 @@ public:
 			pComponent->AddParticleData(EPDT_Tile);
 			if (m_variantMode == EVariantMode::Ordered)
 				pComponent->AddParticleData(EPDT_SpawnId);
-			pComponent->AddParticleData(EPDT_Tile);
 			pComponent->AddToUpdateList(EUL_InitUpdate, this);
 		}
 	}
@@ -299,7 +298,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pParams->m_visibility = static_cast<const SVisibilityParams&>(*this);
+		pParams->m_visibility.Combine(*this);
 		if (m_drawNear)
 			pParams->m_renderObjectFlags |= FOB_NEAREST;
 		if (m_drawOnTop)

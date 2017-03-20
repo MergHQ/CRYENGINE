@@ -16,26 +16,32 @@
 #include <CryRenderer/RenderElements/CREParticle.h>
 
 // compile options
-// #define CRY_DEBUG_PARTICLE_SYSTEM				// enable debugging on all particle source code
-// #define CRY_PFX1_BAIL_UNSUPPORTED		// disable pfx1 features that not yet supported by pfx2 for precision profiling
-// #define CRY_PFX2_LOAD_PRIORITY					// when trying to load a pfx1 effect, try to load pfx2 effect with the same name first
-#define CRY_PFX2_PROFILE_DETAILS // more in detail profile of pfx2. Individual features and sub update parts will appear here.
+// #define CRY_DEBUG_PARTICLE_SYSTEM    // enable debugging on all particle source code
+// #define CRY_PFX1_BAIL_UNSUPPORTED	// disable pfx1 features that not yet supported by pfx2 for precision profiling
+// #define CRY_PFX2_LOAD_PRIORITY		// when trying to load a pfx1 effect, try to load pfx2 effect with the same name first
+#define CRY_PFX2_PROFILE_DETAILS        // more in detail profile of pfx2. Individual features and sub update parts will appear here.
 // ~compile options
 
 #if defined(CRY_DEBUG_PARTICLE_SYSTEM) && CRY_PLATFORM_WINDOWS
-	#define CRY_PFX2_DBG          \
-	  __pragma(optimize("", off)) \
-	  __pragma(inline_depth(0))
-#else
-	#define CRY_PFX2_DBG
+	#pragma optimize("", off)
+	#pragma inline_depth(0)
+	#undef ILINE
+	#define ILINE inline
 #endif
+#define CRY_PFX2_DBG	// obsolete
 #
 #ifndef _RELEASE
 	#define CRY_PFX2_ASSERT(cond) { CRY_ASSERT(cond); }
 #else
 	#define CRY_PFX2_ASSERT(cond)
 #endif
-#
+
+#ifdef _DEBUG
+#	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond) CRY_PFX2_ASSERT(cond);
+#else
+#	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond)
+#endif
+
 #ifdef CRY_PFX2_PROFILE_DETAILS
 	#define CRY_PFX2_PROFILE_DETAIL FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 #else
@@ -75,12 +81,14 @@ struct SComponentParams;
 typedef _smart_ptr<CParticleFeature> TParticleFeaturePtr;
 
 typedef uint32                       TInstanceDataOffset;
-const TParticleId gInvalidId = -1;
-const float gInfinity = std::numeric_limits<float>::infinity();
 
-typedef stl::HeapAllocator<stl::PSyncNone>                                    TParticleHeap;
-typedef TParticleHeap::Array<TParticleId, uint, CRY_PFX2_PARTICLES_ALIGNMENT> TParticleIdArray;
-typedef TParticleHeap::Array<float, uint, CRY_PFX2_PARTICLES_ALIGNMENT>       TFloatArray;
+const TParticleId gInvalidId = -1;
+const float gInfinity        = std::numeric_limits<float>::infinity();
+
+using TParticleHeap                   = stl::HeapAllocator<stl::PSyncNone>;
+template<typename T> using THeapArray = TParticleHeap::Array<T, uint, CRY_PFX2_PARTICLES_ALIGNMENT>;
+using TParticleIdArray                = THeapArray<TParticleId>;
+using TFloatArray                     = THeapArray<float>;
 
 #ifdef CRY_PFX2_USE_SSE
 

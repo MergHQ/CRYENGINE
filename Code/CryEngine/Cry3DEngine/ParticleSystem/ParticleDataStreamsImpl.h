@@ -25,12 +25,6 @@ ILINE T TIStream<T, Tv >::Load(TParticleId pId) const
 }
 
 template<typename T, typename Tv>
-ILINE T TIStream<T, Tv >::Load(TParticleId pId, T defaultVal) const
-{
-	return (pId != gInvalidId) ? *(m_pStream + pId) : defaultVal;
-}
-
-template<typename T, typename Tv>
 ILINE T TIStream<T, Tv >::SafeLoad(TParticleId pId) const
 {
 	return *(m_pStream + (pId & m_safeMask));
@@ -74,7 +68,7 @@ ILINE void IOVec3Stream::Store(TParticleId pId, Vec3 value)
 }
 
 ILINE IQuatStream::IQuatStream(const float* pX, const float* pY, const float* pZ, const float* pW, Quat defaultVal)
-	: m_safeSink(defaultVal)
+	: m_safeSink(ToFloatv(defaultVal.w), ToFloatv(defaultVal.v.x), ToFloatv(defaultVal.v.y), ToFloatv(defaultVal.v.z))
 	, m_pXStream((pX && pY && pZ && pW) ? pX : (float*)&m_safeSink.v.x)
 	, m_pYStream((pX && pY && pZ && pW) ? pY : (float*)&m_safeSink.v.y)
 	, m_pZStream((pX && pY && pZ && pW) ? pZ : (float*)&m_safeSink.v.z)

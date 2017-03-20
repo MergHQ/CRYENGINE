@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryParticleSystem/IParticlesPfx2.h>
 #include <Schematyc/Component.h>
 #include <Schematyc/Types/MathTypes.h>
 #include <Schematyc/Types/ResourceTypes.h>
@@ -20,12 +21,8 @@ public:
 	{
 		static void ReflectType(CTypeDesc<SAdvancedProperties>& desc);
 
-		float scale = 1.0f;
-		float countScale = 1.0f;
-		float speedScale = 1.0f;
-		float timeScale = 1.0f;
-		float pulsePeriod = 0.0f;
-		float strength = -1.0f;
+		SpawnParams spawnParams;
+		GeomRef     geomRef;
 	};
 
 public:
@@ -37,9 +34,15 @@ public:
 	virtual int  GetSlot() const override;
 	// ~CComponent
 
-	void        SetTransform(const CTransform& transform);
-	void        SetVisible(bool bVisible);
-	bool        IsVisible() const;
+	void       SetTransform(const CTransform& transform);
+	void       SetVisible(bool bVisible);
+	bool       IsVisible() const;
+	void       SetParameters(float uniformScale, float countScale, float speedScale, float timeScale);
+	void       SetAttributeAsFloat(CSharedString attributeName, float value);
+	void       SetAttributeAsInteger(CSharedString attributeName, int value);
+	void       SetAttributeAsBoolean(CSharedString attributeName, bool value);
+	void       SetAttributeAsColor(CSharedString attributeName, ColorF value);
+	void       SetSpawnGeom(const GeomFileName& geomName);
 
 	static void ReflectType(CTypeDesc<CEntityParticleEmitterComponent>& desc);
 	static void Register(IEnvRegistrar& registrar);
@@ -52,11 +55,9 @@ private:
 
 	ParticleEffectName  m_effectName;
 	bool                m_bInitVisible = true;
-	bool                m_bPrime = false;
 	SAdvancedProperties m_advancedProperties;
-
-	int                m_slot = EmptySlot;
-	bool               m_bVisible = false;
+	int                 m_slot = EmptySlot;
+	bool                m_bVisible = false;
 };
 
 } // Schematyc

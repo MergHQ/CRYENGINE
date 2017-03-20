@@ -104,9 +104,14 @@ ColorFv operator*(const ColorFv& a, const ColorFv& b);
 ColorFv operator*(const ColorFv& a, floatv b);
 #endif
 
-// Special
-float  DeltaTime(float  normAge, float  frameTime);
-floatv DeltaTime(floatv normAge, floatv frameTime);
+// Return the correct update time for a particle
+template<typename T>
+T DeltaTime(T frameTime, T normAge, T lifeTime);
+
+// Return the start-time of a particle in the previous frame
+template<typename T>
+T StartTime(T curTime, T frameTime, T normAge);
+
 
 // non vectorized
 

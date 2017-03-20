@@ -60,7 +60,7 @@ CParticleFluidSimulation::CParticleFluidSimulation(const int maxBodies)
 	m_passBuildGridIndices.SetTechnique(pShader, CCryNameTSCRC("BuildGridIndices"), 0);
 	m_passRearrangeParticles.SetTechnique(pShader, CCryNameTSCRC("RearrangeParticles"), 0);
 	m_passEvolveExternalParticles.SetTechnique(pShader, CCryNameTSCRC("EvolveExternalParticles"), 0);
-	m_passCollisionsScreenSpace.SetTechnique(pShader, CCryNameTSCRC("CollisionsScreenSpace"), 0);
+	m_passCollisionsScreenSpace.SetTechnique(pShader, CCryNameTSCRC("CollisionScreenSpace"), 0);
 
 	CreateResources();
 }

@@ -245,7 +245,6 @@ void CParticleEmitter::UpdateTimes(float fAgeAdjust)
 
 void CParticleEmitter::Kill()
 {
-	Reset();
 	if (m_fDeathAge >= 0.f)
 	{
 		CParticleSource::Kill();
@@ -309,10 +308,13 @@ CParticleEmitter::CParticleEmitter(const IParticleEffect* pEffect, const QuatTS&
 	SetEffect(pEffect);
 
 	// Set active
-	float fStartAge = 0.f;
-	if (m_SpawnParams.bPrime)
-		fStartAge = m_pTopEffect->GetEquilibriumAge(true);
-	Start(-fStartAge);
+	if (m_SpawnParams.bActive)
+	{
+		float fStartAge = 0.f;
+		if (m_SpawnParams.bPrime)
+			fStartAge = m_pTopEffect->GetEquilibriumAge(true);
+		Start(-fStartAge);
+	}
 
 	UpdateTimes();
 }

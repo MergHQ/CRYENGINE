@@ -115,7 +115,8 @@ void SComponentParams::Reset()
 	m_renderObjectFlags = 0;
 	m_instanceDataStride = 0;
 	m_scaleParticleCount = 1.0f;
-	m_baseParticleLifeTime = 0.0f;
+	m_emitterLifeTime = {};
+	m_maxParticleLifeTime = 0.0f;
 	m_particleRange = 0;
 	m_renderStateFlags = OS_ALPHA_BLEND;
 	m_maxParticleSize = 0.0f;
@@ -164,12 +165,18 @@ void SComponentParams::MakeMaterial(CParticleComponent* pComponent)
 
 	if (m_pMaterial)
 		return;
+		
 	const SRuntimeInitializationParameters& params = pComponent->GetRuntimeInitializationParameters();
 	const char* shaderName = params.usesGpuImplementation ? "Particles.ParticlesGpu" : "Particles";
 	string materialName = string(pComponent->GetEffect()->GetName()) + pComponent->GetName();
 	m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->CreateMaterial(materialName);
 	if (gEnv->pRenderer)
 	{
+		const uint32 textureLoadFlags = FT_DONT_STREAM;
+		const int textureId = gEnv->pRenderer->EF_LoadTexture(m_diffuseMap.c_str(), textureLoadFlags)->GetTextureID();
+		if (textureId <= 0)
+			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_WARNING, "Particle effect texture %s not found", m_diffuseMap.c_str());
+
 		SInputShaderResourcesPtr pResources = gEnv->pRenderer->EF_CreateInputShaderResource();
 		pResources->m_Textures[EFTT_DIFFUSE].m_Name = m_diffuseMap;
 		uint32 mask = eGpuParticlesVertexShaderFlags_None;
@@ -177,17 +184,15 @@ void SComponentParams::MakeMaterial(CParticleComponent* pComponent)
 			mask |= eGpuParticlesVertexShaderFlags_FacingVelocity;
 		SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, 0, pResources, mask);
 		m_pMaterial->AssignShaderItem(shaderItem);
+
+		if (textureId > 0)
+			gEnv->pRenderer->RemoveTexture(textureId);
 	}
 	Vec3 white = Vec3(1.0f, 1.0f, 1.0f);
 	float defaultOpacity = 1.0f;
 	m_pMaterial->SetGetMaterialParamVec3("diffuse", white, false);
 	m_pMaterial->SetGetMaterialParamFloat("opacity", defaultOpacity, false);
 	m_pMaterial->RequestTexturesLoading(0.0f);
-}
-
-float SComponentParams::GetPrimeTime() const
-{
-	return m_baseParticleLifeTime;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -300,11 +305,13 @@ void CParticleComponent::AddParticleData(EParticleDataType type)
 		m_useParticleData[i] = true;
 }
 
-bool CParticleComponent::SetSecondGeneration(CParticleComponent* pParentComponent)
+bool CParticleComponent::SetSecondGeneration(CParticleComponent* pParentComponent, bool delayed)
 {
 	if (m_componentParams.m_parentId != gInvalidId)
 		return false;   // PFX2_TODO - user error - a component can only have one parent component at a time
 	m_componentParams.m_parentId = pParentComponent->GetComponentId();
+	if (delayed)
+		m_componentParams.m_emitterLifeTime.end = gInfinity;
 	m_runtimeInitializationParameters.parentId = m_componentParams.m_parentId;
 	m_runtimeInitializationParameters.isSecondGen = m_componentParams.IsSecondGen();
 	auto& subIds = pParentComponent->m_componentParams.m_subComponentIds;
@@ -320,6 +327,27 @@ CParticleComponent* CParticleComponent::GetParentComponent() const
 		return m_pEffect->GetCComponent(m_componentParams.m_parentId);
 	return 0;
 }
+
+float CParticleComponent::GetEquilibriumTime(Range parentLife) const
+{
+	Range compLife(
+		parentLife.start + m_componentParams.m_emitterLifeTime.start,
+		min(parentLife.end, parentLife.start + m_componentParams.m_emitterLifeTime.end) + m_componentParams.m_maxParticleLifeTime);
+	float eqTime = std::isfinite(compLife.end) ? 
+		compLife.end : 
+		compLife.start + (std::isfinite(m_componentParams.m_maxParticleLifeTime) ? m_componentParams.m_maxParticleLifeTime : 0.0f);
+	for (auto childId : m_componentParams.m_subComponentIds)
+	{
+		const CParticleComponent* child = m_pEffect->GetCComponent(childId);
+		if (child->IsEnabled())
+		{
+			float childEqTime = child->GetEquilibriumTime(compLife);
+			eqTime = max(eqTime, childEqTime);
+		}
+	}
+	return eqTime;
+}
+
 
 void CParticleComponent::PrepareRenderObjects(CParticleEmitter* pEmitter)
 {

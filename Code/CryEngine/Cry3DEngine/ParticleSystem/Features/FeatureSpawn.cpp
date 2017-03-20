@@ -62,17 +62,24 @@ public:
 		m_duration.AddToComponent(pComponent, this);
 		m_restart.AddToComponent(pComponent, this);
 
-		if (auto pInt = GetGpuInterface())
+		pParams->m_emitterLifeTime.start += m_delay.GetValueRange().start;
+		if (m_useDuration)
+			pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
+		else
+			pParams->m_emitterLifeTime.end = gInfinity;
+
+		auto pGpuInterface = GetGpuInterface();
+		if (pGpuInterface)
 		{
-			gpu_pfx2::SFeatureParametersSpawn params;
-			params.amount = m_amount.GetBaseValue();
-			params.delay = m_delay.GetBaseValue();
-			params.duration = m_duration.GetBaseValue();
-			params.restart = m_restart.GetBaseValue();
-			params.useDelay = m_delay.GetBaseValue() > 0.0f;
-			params.useDuration = m_useDuration;
-			params.useRestart = m_useRestart;
-			pInt->SetParameters(params);
+			gpu_pfx2::SFeatureParametersSpawn gpuSpawnParams;
+			gpuSpawnParams.amount = m_amount.GetBaseValue();
+			gpuSpawnParams.delay = m_delay.GetBaseValue();
+			gpuSpawnParams.duration = m_duration.GetBaseValue();
+			gpuSpawnParams.restart = m_restart.GetBaseValue();
+			gpuSpawnParams.useDelay = m_delay.GetBaseValue() > 0.0f;
+			gpuSpawnParams.useDuration = m_useDuration;
+			gpuSpawnParams.useRestart = m_useRestart;
+			pGpuInterface->SetParameters(gpuSpawnParams);
 		}
 	}
 
@@ -82,7 +89,7 @@ public:
 		range.m_firstParticleId = 0;
 		range.m_lastParticleId = lastInstance - firstInstance;
 		SUpdateContext context(pComponentRuntime, range);
-		RestartInstances(context, firstInstance, lastInstance, true);
+		StartInstances(context, firstInstance, lastInstance, true);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -137,12 +144,19 @@ protected:
 		if (numInstances == 0)
 			return;
 
+		const CParticleEmitter* pEmitter = context.m_runtime.GetEmitter();
+		const bool isEmitterIndependent = pEmitter->IsIndependent();
+		const bool isSecondGen = context.m_params.IsSecondGen();
+		if (isEmitterIndependent && !isSecondGen)
+			return;
+
+		const float countScale = runtime.GetEmitter()->GetSpawnParams().fCountScale;
 		const float dT = context.m_deltaTime;
 		const float invDT = dT ? 1.0f / dT : 0.0f;
 		SUpdateRange range(0, numInstances);
 
-		if (m_useRestart)
-			RestartInstances(context, 0, numInstances + 1, false);
+		if (m_useRestart && !isEmitterIndependent)
+			StartInstances(context, 0, numInstances + 1, false);
 
 		TFloatArray amounts(*context.m_pMemHeap, numInstances);
 		for (size_t i = 0; i < numInstances; ++i)
@@ -161,7 +175,7 @@ protected:
 			const float startTime = max(pSpawn->m_timer, pSpawn->m_delay);
 			const float endTime = min(pSpawn->m_timer + dT, pSpawn->m_delay + pSpawn->m_duration);
 			const float spawnTime = endTime - startTime;
-			const float amount = amounts[i];
+			const float amount = amounts[i] * countScale;
 
 			if (spawnTime >= 0.0f && amount > 0.0f)
 			{
@@ -169,16 +183,14 @@ protected:
 
 				CParticleContainer::SSpawnEntry entry = {};
 				entry.m_parentId = instance.m_parentId;
-				entry.m_ageBegin = (pSpawn->m_timer - startTime) * invDT;
+				entry.m_ageBegin = (startTime - pSpawn->m_timer - dT) * invDT;
 
 				const float spawnedBefore = pSpawn->m_spawned;
 
 				impl.UpdateSpawnInfo(*pSpawn, i, entry, context, amount, spawnTime);
 
 				entry.m_count = uint(ceil(pSpawn->m_spawned) - ceil(spawnedBefore));
-
-				const float spawnPast = 1.0f - (spawnedBefore - floor(spawnedBefore));
-				entry.m_ageBegin += spawnPast * entry.m_ageIncrement - 1.0f;
+				entry.m_ageBegin += (ceil(spawnedBefore) - spawnedBefore) * entry.m_ageIncrement;
 				entry.m_fractionBegin = floor(spawnedBefore) * entry.m_fractionCounter + entry.m_fractionCounter;
 
 				runtime.SpawnParticles(entry);
@@ -188,7 +200,7 @@ protected:
 		}
 	}
 
-	void RestartInstances(const SUpdateContext& context, size_t firstInstance, size_t lastInstance, bool restartAll)
+	void StartInstances(const SUpdateContext& context, size_t firstInstance, size_t lastInstance, bool startAll)
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -198,7 +210,7 @@ protected:
 		typedef TParticleHeap::Array<size_t> TIndicesArray;
 		TIndicesArray indicesArray(*context.m_pMemHeap);
 		indicesArray.reserve(numInstances);
-		if (restartAll)
+		if (startAll)
 		{
 			indicesArray.resize(numInstances);
 			for (size_t i = 0; i < numInstances; ++i)
@@ -219,31 +231,31 @@ protected:
 		if (indicesArray.empty())
 			return;
 
-		const uint numRestarts = indicesArray.size();
-		SUpdateRange restartRange;
-		restartRange.m_firstParticleId = 0;
-		restartRange.m_lastParticleId = numRestarts;
-		TFloatArray amounts(*context.m_pMemHeap, numRestarts);
-		TFloatArray delays(*context.m_pMemHeap, numRestarts);
-		TFloatArray durations(*context.m_pMemHeap, numRestarts);
-		TFloatArray restarts(*context.m_pMemHeap, numRestarts);
-		m_amount.ModifyInit(context, amounts.data(), restartRange);
-		m_delay.ModifyInit(context, delays.data(), restartRange);
+		const uint numStarts = indicesArray.size();
+		SUpdateRange startRange;
+		startRange.m_firstParticleId = 0;
+		startRange.m_lastParticleId = numStarts;
+		TFloatArray amounts(*context.m_pMemHeap, numStarts);
+		TFloatArray delays(*context.m_pMemHeap, numStarts);
+		TFloatArray durations(*context.m_pMemHeap, numStarts);
+		TFloatArray starts(*context.m_pMemHeap, numStarts);
+		m_amount.ModifyInit(context, amounts.data(), startRange);
+		m_delay.ModifyInit(context, delays.data(), startRange);
 		if (m_useDuration)
-			m_duration.ModifyInit(context, durations.data(), restartRange);
+			m_duration.ModifyInit(context, durations.data(), startRange);
 		if (m_useRestart)
-			m_restart.ModifyInit(context, restarts.data(), restartRange);
+			m_restart.ModifyInit(context, starts.data(), startRange);
 
-		for (size_t i = 0; i < numRestarts; ++i)
+		for (size_t i = 0; i < numStarts; ++i)
 		{
 			const size_t idx = indicesArray[i];
 			SSpawnData* pSpawn = GetSpawnData(runtime, idx);
 			pSpawn->m_timer = 0.0f;
-			pSpawn->m_spawned = -FLT_EPSILON;
+			pSpawn->m_spawned = 0.0f;
 			pSpawn->m_amount = amounts[i];
-			pSpawn->m_delay = delays[i];
+			pSpawn->m_delay = delays[i] + runtime.GetInstance(idx).m_startDelay;
 			pSpawn->m_duration = m_useDuration ? durations[i] : gInfinity;
-			pSpawn->m_restart = m_useRestart ? restarts[i] : gInfinity;
+			pSpawn->m_restart = m_useRestart ? starts[i] : gInfinity;
 		}
 	}
 
@@ -289,7 +301,7 @@ public:
 
 	ILINE void UpdateSpawnInfo(SSpawnData& spawn, size_t instanceId, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
 	{
-		const float spawnTime = min(context.m_params.m_baseParticleLifeTime, spawn.m_duration);
+		const float spawnTime = min(context.m_params.m_maxParticleLifeTime, spawn.m_duration);
 		if (spawnTime > 0.0f)
 		{
 			const float rate = amount * rcp_fast(spawnTime);
@@ -310,9 +322,10 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnCount, "Spawn", "Count
 //////////////////////////////////////////////////////////////////////////
 
 SERIALIZATION_DECLARE_ENUM(ESpawnRateMode,
-                           ParticlesPerSecond,
-                           _SecondPerParticle, SecondsPerParticle = _SecondPerParticle
-                           )
+	ParticlesPerSecond,
+	_SecondPerParticle, SecondsPerParticle = _SecondPerParticle,
+	ParticlesPerFrame
+)
 
 class CFeatureSpawnRate : public CParticleFeatureSpawnBase
 {
@@ -345,13 +358,15 @@ public:
 	}
 
 	virtual void SpawnParticles(const SUpdateContext& context) override
-	{
+	{		
 		SpawnParticlesT(*this, context);
 	}
 
 	ILINE void UpdateSpawnInfo(SSpawnData& spawn, size_t instanceId, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
 	{
-		const float spawned = dt * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount : rcp(amount));
+		const float spawned = 
+			m_mode == ESpawnRateMode::ParticlesPerFrame ? amount
+			: dt * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount : rcp(amount));
 		spawn.m_spawned += spawned;
 		entry.m_ageIncrement = rcp_safe(spawned);
 	}
@@ -393,8 +408,15 @@ public:
 	virtual void InitSubInstance(CParticleComponentRuntime* pComponentRuntime, size_t firstInstance, size_t lastInstance) override
 	{
 		CParticleFeatureSpawnBase::InitSubInstance(pComponentRuntime, firstInstance, lastInstance);
+
+		SUpdateContext context(pComponentRuntime, SUpdateRange(0, lastInstance - firstInstance));
 		for (size_t inst = firstInstance; inst < lastInstance; ++inst)
-			*GetEmitPosition(*pComponentRuntime, inst) = Vec3(gInfinity);
+		{
+			auto& instance = pComponentRuntime->GetInstance(inst);
+			const TParticleId parentId = instance.m_parentId;
+			Vec3* pEmitPos = EmitPositionData(context.m_runtime, inst);
+			*pEmitPos = EmitPosition(context, instance.m_parentId);
+		}
 	}
 
 	virtual void SpawnParticles(const SUpdateContext& context) override
@@ -404,22 +426,10 @@ public:
 
 	void UpdateSpawnInfo(SSpawnData& spawn, size_t instanceId, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
 	{
-		CParticleContainer& parentContainer = context.m_parentContainer;
-		const TParticleId parentId = entry.m_parentId;
-
-		QuatT parentLoc;
-		parentLoc.t = parentContainer.GetIVec3Stream(EPVF_Position).SafeLoad(parentId);
-		parentLoc.q = parentContainer.GetIQuatStream(EPQF_Orientation).SafeLoad(parentId);
-		Vec3 emitOffset(0);
-		for (auto& it : context.m_runtime.GetComponent()->GetUpdateList(EUL_GetEmitOffset))
-			emitOffset += it->GetEmitOffset(context, entry.m_parentId);
-		const Vec3 emitPos1 = parentLoc * emitOffset;
-
-		Vec3* pEmitPos = GetEmitPosition(context.m_runtime, instanceId);
+		Vec3* pEmitPos = EmitPositionData(context.m_runtime, instanceId);
 		const Vec3 emitPos0 = *pEmitPos;
+		const Vec3 emitPos1 = EmitPosition(context, entry.m_parentId);
 		*pEmitPos = emitPos1;
-		if (!std::isfinite(emitPos0.x))
-			return;
 
 		const float distance = (emitPos1 - emitPos0).GetLengthFast();
 		const float spawned = distance * (m_mode == ESpawnDistanceMode::ParticlesPerMeter ? amount : rcp(amount));
@@ -431,7 +441,19 @@ private:
 	ESpawnDistanceMode m_mode;
 	TInstanceDataOffset m_emitPosOffset;
 
-	Vec3* GetEmitPosition(CParticleComponentRuntime& runtime, size_t idx) const { return runtime.GetSubInstanceData<Vec3>(idx, m_emitPosOffset); }
+	Vec3* EmitPositionData(CParticleComponentRuntime& runtime, size_t idx) const { return runtime.GetSubInstanceData<Vec3>(idx, m_emitPosOffset); }
+
+	Vec3 EmitPosition(const SUpdateContext& context, TParticleId parentId) const
+	{
+		QuatT parentLoc;
+		parentLoc.t = context.m_parentContainer.GetIVec3Stream(EPVF_Position).SafeLoad(parentId);
+		parentLoc.q = context.m_parentContainer.GetIQuatStream(EPQF_Orientation).SafeLoad(parentId);
+
+		Vec3 emitOffset(0);
+		for (auto& it : context.m_runtime.GetComponent()->GetUpdateList(EUL_GetEmitOffset))
+			emitOffset += it->GetEmitOffset(context, parentId);
+		return parentLoc * emitOffset;
+	}
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", colorSpawn);

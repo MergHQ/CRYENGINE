@@ -23,6 +23,8 @@ CRY_PFX2_DBG
 namespace pfx2
 {
 
+#if !defined(_RELEASE)
+
 namespace
 {
 
@@ -178,10 +180,13 @@ void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
 	{
 		SContactPoint contact = contactPoints.Load(particleId);
 
+		if (contact.m_totalCollisions == 0)
+			continue;
+
 		ColorB color = ColorB(0, 0, 0);
-		if (contact.m_flags & uint(EContactPointsFlags::Ignore))
+		if (contact.m_state.ignore)
 			color = ColorB(128, 128, 128);
-		else if (contact.m_flags & uint(EContactPointsFlags::Sliding))
+		else if (contact.m_state.sliding)
 			color = ColorB(255, 128, 64);
 		else
 			color = ColorB(64, 128, 255);
@@ -304,10 +309,11 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 	DebugOptSpline();
 
 	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	const bool debugContainers = (pCVars->e_ParticlesDebug & AlphaBit('b')) != 0;
-	const bool debugCollisions = (pCVars->e_ParticlesDebug & AlphaBit('c')) != 0;
+	const bool internalDebug = (pCVars->e_ParticlesDebug & AlphaBit('t')) != 0;
+	static volatile uint debugContainers = 0;
+	static volatile uint debugCollisions = 1;
 
-	if (debugContainers || debugCollisions)
+	if (internalDebug)
 	{
 		IRenderer* pRender = gEnv->pRenderer;
 		IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -334,5 +340,11 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 		}
 	}
 }
+
+#else
+
+void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& activeEmitters) {}
+
+#endif
 
 }

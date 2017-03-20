@@ -66,6 +66,11 @@ void CEntityGeomComponent::Set(const GeomFileName& fileName)
 	}
 }
 
+const GeomFileName& CEntityGeomComponent::Get() const
+{
+	return m_fileName;
+}
+
 void CEntityGeomComponent::SetTransform(const CTransform& transform)
 {
 	CComponent::GetTransform() = transform;
@@ -107,6 +112,13 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 			pFunction->SetDescription("Set geometry");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'file', "FileName");
+			componentScope.Register(pFunction);
+		}
+		{
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::Get, "276FCB5A-9DF7-47A4-866F-650DA888A4D3"_schematyc_guid, "GetGeom");
+			pFunction->SetDescription("Get geometry");
+			pFunction->SetFlags(EEnvFunctionFlags::Construction);
+			pFunction->BindOutput(0, 'file', "FileName");
 			componentScope.Register(pFunction);
 		}
 		{

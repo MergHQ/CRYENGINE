@@ -76,18 +76,19 @@ public:
 	CParticleComponent*       GetCComponent(TComponentId componentIdx)       { return m_components[componentIdx]; }
 	const CParticleComponent* GetCComponent(TComponentId componentIdx) const { return m_components[componentIdx]; }
 	TComponentId              FindComponentIdByName(const char* name) const;
-	const CAttributeTable& GetAttributeTable() const                      { return m_attributes; }
-	string                 MakeUniqueName(TComponentId forComponentId, const char* name);
-	uint                   AddRenderObjectId();
-	uint                   GetNumRenderObjectIds() const;
+	TAttributeTablePtr        GetAttributeTable() const                      { return m_pAttributes; }
+	string                    MakeUniqueName(TComponentId forComponentId, const char* name);
+	uint                      AddRenderObjectId();
+	uint                      GetNumRenderObjectIds() const;
+	float                     GetEquilibriumTime() const;
 
-	int                    GetEditVersion() const { return m_editVersion; }
+	int                       GetEditVersion() const { return m_editVersion; }
 
 
 	int m_id;
 
 private:
-	CAttributeTable    m_attributes;
+	TAttributeTablePtr m_pAttributes;
 	CAttributeInstance m_attributeInstance;
 	TComponents        m_components;
 	string             m_name;

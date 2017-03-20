@@ -29,13 +29,6 @@ std::vector<SParticleFeatureParams> &GetFeatureParams()
 	return featureParams;
 }
 
-CParticleSystem* GetPSystem()
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
-	static std::shared_ptr<IParticleSystem> pSystem(GetIParticleSystem());
-	return static_cast<CParticleSystem*>(pSystem.get());
-};
-
 CParticleSystem::CParticleSystem()
 	: m_memHeap(gEnv->pJobManager->GetNumWorkerThreads() + 1)
 {
@@ -76,7 +69,7 @@ PParticleEmitter CParticleSystem::CreateEmitter(PParticleEffect pEffect)
 
 	_smart_ptr<CParticleEmitter> pEmitter = new CParticleEmitter(m_nextEmitterId++);
 	pEmitter->SetCEffect(pCEffect);
-	m_emitters.push_back(pEmitter);
+	m_newEmitters.push_back(pEmitter);
 	return pEmitter;
 }
 
@@ -88,6 +81,11 @@ uint CParticleSystem::GetNumFeatureParams() const
 SParticleFeatureParams& CParticleSystem::GetFeatureParam(uint featureIdx) const
 {
 	return GetFeatureParams()[featureIdx];
+}
+
+TParticleAttributesPtr CParticleSystem::CreateParticleAttributes() const
+{
+	return TParticleAttributesPtr(new CAttributeInstance());
 }
 
 void CParticleSystem::OnFrameStart()
@@ -138,13 +136,17 @@ void CParticleSystem::Update()
 		for (auto& it : m_memHeap)
 			CRY_PFX2_ASSERT(it.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
 
-		m_counts = SParticleCounts();
-		for (auto& pEmitter : m_emitters)
-			pEmitter->AccumCounts(m_counts);
-		m_profiler.Display();
-
 		TrimEmitters();
+		m_emitters.insert(m_emitters.end(), m_newEmitters.begin(), m_newEmitters.end());
+		m_newEmitters.clear();
 
+		m_stats = SParticleStats();
+		m_stats.m_emittersAlive = m_emitters.size();
+		for (auto& pEmitter : m_emitters)
+			pEmitter->AccumStats(m_stats);
+
+		m_profiler.Display();
+				
 		for (auto& pEmitter : m_emitters)
 		{
 			pEmitter->Update();
@@ -171,6 +173,47 @@ void CParticleSystem::DeferredRender()
 {
 	m_jobManager.DeferredRender();
 	DebugParticleSystem(m_emitters);
+
+	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
+	const bool debugBBox = (pCVars->e_ParticlesDebug & AlphaBit('b')) != 0;
+	if (debugBBox)
+	{
+		for (auto& pEmitter : m_emitters)
+			pEmitter->DebugRender();
+	}
+}
+
+float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
+{
+	const char* titleBar =       "Wavicle Stats - Renderered/  Alive/ Updated";
+	const char* particlesLabel =     "Particles -     %6d/ %6d/  %6d";
+	const char* emittersLabel  =      "Emitters -     %6d/ %6d/  %6d";
+	const char* runtimesLabel  =    "Components -     %6d/ %6d/  %6d";
+
+	Get3DEngine()->DrawTextRightAligned(
+		displayLocation.x, displayLocation.y,
+		titleBar);
+	displayLocation.y += lineHeight;
+
+	Get3DEngine()->DrawTextRightAligned(
+		displayLocation.x, displayLocation.y,
+		particlesLabel,
+		m_stats.m_particlesRendered, m_stats.m_particlesAlive, m_stats.m_particlesUpdated);
+	displayLocation.y += lineHeight;
+
+	Get3DEngine()->DrawTextRightAligned(
+		displayLocation.x, displayLocation.y,
+		emittersLabel,
+		m_stats.m_emittersRendererd, m_stats.m_emittersAlive, m_stats.m_emittersUpdated);
+	displayLocation.y += lineHeight;
+
+	Get3DEngine()->DrawTextRightAligned(
+		displayLocation.x, displayLocation.y,
+		runtimesLabel,
+		m_stats.m_runtimesRendered, m_stats.m_runtimesAlive, m_stats.m_runtimesUpdated);
+	displayLocation.y += lineHeight;
+
+	return displayLocation.y;
 }
 
 void CParticleSystem::ClearRenderResources()
@@ -235,9 +278,9 @@ void CParticleSystem::UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter)
 	}
 }
 
-void CParticleSystem::GetCounts(SParticleCounts& counts)
+void CParticleSystem::GetStats(SParticleStats& stats)
 {
-	counts = m_counts;
+	stats = m_stats;
 }
 
 void CParticleSystem::GetMemoryUsage(ICrySizer* pSizer) const

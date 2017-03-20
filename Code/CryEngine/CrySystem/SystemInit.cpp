@@ -5227,6 +5227,8 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR2("sys_enable_crash_handler", &g_cvars.sys_enable_crash_handler, 0, VF_CHEAT, "Enable/Disable crash handler (PC only)");
 
+	REGISTER_INT("sys_debugger_adjustments", 0, VF_CHEAT, "Adjust behavior to help with debugger breakpoints");
+
 	// [VR]
 	if (m_pHmdManager)
 	{
