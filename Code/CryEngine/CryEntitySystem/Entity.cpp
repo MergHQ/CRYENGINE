@@ -86,6 +86,8 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_bGarbage = 0;
 	m_nUpdateCounter = 0;
 
+	m_nGuidComponentCounter = 0;
+
 	m_bTrigger = 0;
 	m_bWasRelocated = 0;
 	m_bNotInheritXform = 0;
@@ -1261,7 +1263,7 @@ void CEntity::SerializeProperties(Serialization::IArchive& ar)
 		// Parse component properties, if any
 		if (IEntityPropertyGroup* pProperties = componentRecord.pComponent->GetPropertyGroup())
 		{
-			if (ar.openBlock("Component", pProperties->GetLabel()))
+			if (ar.openBlock(componentRecord.guid.c_str(), pProperties->GetLabel()))
 			{
 				pProperties->SerializeProperties(ar);
 
@@ -1362,6 +1364,12 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	SEntityComponentRecord componentRecord;
 	componentRecord.pComponent = pComponent;
 	componentRecord.typeId = typeId;
+
+	// Generate a unique name for the serialization
+	componentRecord.guid.Append(ToString(componentRecord.typeId.lopart));
+	componentRecord.guid.Append(ToString(componentRecord.typeId.hipart));
+	componentRecord.guid.Append(ToString(m_nGuidComponentCounter++)); //add the component count so we can distinguish between same types
+
 	componentRecord.registeredEventsMask = pComponent->GetEventMask();
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
