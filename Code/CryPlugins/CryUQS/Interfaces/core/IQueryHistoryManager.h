@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -91,8 +91,8 @@ namespace uqs
 			// growing during gameplay.
 			//
 
-			virtual bool                    SerializeLiveQueryHistory(const char* xmlFilePath, shared::IUqsString& error) = 0;
-			virtual bool                    DeserializeQueryHistory(const char* xmlFilePath, shared::IUqsString& error) = 0;
+			virtual bool                    SerializeLiveQueryHistory(const char* xmlFilePath, Shared::IUqsString& error) = 0;
+			virtual bool                    DeserializeQueryHistory(const char* xmlFilePath, Shared::IUqsString& error) = 0;
 
 			//
 			// selects the query history from which we will be able to select one of its historic queries for rendering their debug primitives in the 3D world

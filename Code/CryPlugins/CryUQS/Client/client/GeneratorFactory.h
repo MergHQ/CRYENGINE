@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -27,7 +27,7 @@ namespace uqs
 				// ~IGeneratorFactory
 
 				// IGeneratorFactory: forward to derived class
-				virtual const shared::CTypeInfo&          GetTypeOfItemsToGenerate() const override = 0;
+				virtual const Shared::CTypeInfo&          GetTypeOfItemsToGenerate() const override = 0;
 				virtual GeneratorUniquePtr                CreateGenerator(const void* pParams) override = 0;
 				virtual void                              DestroyGenerator(IGenerator* pGeneratorToDestroy) override = 0;
 				// ~IGeneratorFactory
@@ -68,7 +68,7 @@ namespace uqs
 				return *m_pParamsHolderFactory;
 			}
 
-		} // namespace internal
+		} // namespace Internal
 
 		//===================================================================================
 		//
@@ -77,13 +77,13 @@ namespace uqs
 		//===================================================================================
 
 		template <class TGenerator>
-		class CGeneratorFactory final : public internal::CGeneratorFactoryBase
+		class CGeneratorFactory final : public Internal::CGeneratorFactoryBase
 		{
 		public:
 			explicit                                  CGeneratorFactory(const char* generatorName);
 
 			// IGeneratorFactory
-			virtual const shared::CTypeInfo&          GetTypeOfItemsToGenerate() const override;
+			virtual const Shared::CTypeInfo&          GetTypeOfItemsToGenerate() const override;
 			virtual GeneratorUniquePtr                CreateGenerator(const void* pParams) override;
 			virtual void                              DestroyGenerator(IGenerator* pGeneratorToDestroy) override;
 			// ~IGeneratorFactory
@@ -103,9 +103,9 @@ namespace uqs
 		}
 
 		template <class TGenerator>
-		const shared::CTypeInfo& CGeneratorFactory<TGenerator>::GetTypeOfItemsToGenerate() const
+		const Shared::CTypeInfo& CGeneratorFactory<TGenerator>::GetTypeOfItemsToGenerate() const
 		{
-			return shared::SDataTypeHelper<typename TGenerator::ItemType>::GetTypeInfo();
+			return Shared::SDataTypeHelper<typename TGenerator::ItemType>::GetTypeInfo();
 		}
 
 		template <class TGenerator>
@@ -118,7 +118,7 @@ namespace uqs
 			// notice: we assign the instantiated generator to its base class pointer to ensure that the generator type itself (and not accidentally another generator type) was injected at its class definition
 			CGeneratorBase<TGenerator, typename TGenerator::ItemType>* pGenerator = new TGenerator(*pActualParams);
 #endif
-			internal::CGeneratorDeleter deleter(*this);
+			Internal::CGeneratorDeleter deleter(*this);
 			return GeneratorUniquePtr(pGenerator, deleter);
 		}
 
@@ -131,7 +131,7 @@ namespace uqs
 		template <class TGenerator>
 		ParamsHolderUniquePtr CGeneratorFactory<TGenerator>::CreateParamsHolder()
 		{
-			internal::CParamsHolder<typename TGenerator::SParams>* pParamsHolder = new internal::CParamsHolder<typename TGenerator::SParams>;
+			Internal::CParamsHolder<typename TGenerator::SParams>* pParamsHolder = new Internal::CParamsHolder<typename TGenerator::SParams>;
 			CParamsHolderDeleter deleter(*this);
 			return ParamsHolderUniquePtr(pParamsHolder, deleter);
 		}

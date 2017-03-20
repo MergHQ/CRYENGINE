@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -21,7 +21,7 @@ namespace uqs
 			// nothing
 		}
 
-		void CTextualGlobalConstantParamsBlueprint::AddParameter(const char* name, const char* type, const char* value, bool bAddToDebugRenderWorld, datasource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
+		void CTextualGlobalConstantParamsBlueprint::AddParameter(const char* name, const char* type, const char* value, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
 		{
 			m_parameters.emplace_back(name, type, value, bAddToDebugRenderWorld, std::move(syntaxErrorCollector));
 		}
@@ -69,7 +69,7 @@ namespace uqs
 				// ensure each parameter exists only once
 				if (m_constantParams.find(p.name) != m_constantParams.cend())
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
 						pSE->AddErrorMessage("Duplicate parameter: '%s'", p.name);
 					}
@@ -77,10 +77,10 @@ namespace uqs
 				}
 
 				// find the item factory
-				client::IItemFactory* pItemFactory = g_hubImpl->GetItemFactoryDatabase().FindFactoryByName(p.type);
+				Client::IItemFactory* pItemFactory = g_hubImpl->GetItemFactoryDatabase().FindFactoryByName(p.type);
 				if (!pItemFactory)
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
 						pSE->AddErrorMessage("Unknown item type: '%s'", p.type);
 					}
@@ -89,7 +89,7 @@ namespace uqs
 
 				if (!pItemFactory->CanBePersistantlySerialized())
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
 						pSE->AddErrorMessage("Items of type '%s' cannot be represented in textual form", p.type);
 					}
@@ -97,13 +97,13 @@ namespace uqs
 				}
 
 				IItemSerializationSupport& itemSerializationSupport = g_hubImpl->GetItemSerializationSupport();
-				shared::CUqsString errorMessage;
-				shared::IUqsString* pErrorMessage = (p.pSyntaxErrorCollector) ? &errorMessage : nullptr;
-				void* pItem = pItemFactory->CreateItems(1, client::IItemFactory::EItemInitMode::UseDefaultConstructor);
+				Shared::CUqsString errorMessage;
+				Shared::IUqsString* pErrorMessage = (p.pSyntaxErrorCollector) ? &errorMessage : nullptr;
+				void* pItem = pItemFactory->CreateItems(1, Client::IItemFactory::EItemInitMode::UseDefaultConstructor);
 
 				if (!itemSerializationSupport.DeserializeItemFromCStringLiteral(pItem, *pItemFactory, p.value, pErrorMessage))
 				{
-					if (datasource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
 						pSE->AddErrorMessage("Parameter '%s' could not be parsed from its serialized representation ('%s'). Reason:\n%s", p.name, p.value, errorMessage.c_str());
 					}
@@ -122,7 +122,7 @@ namespace uqs
 			return m_constantParams;
 		}
 
-		void CGlobalConstantParamsBlueprint::AddSelfToDictAndReplace(shared::CVariantDict& out) const
+		void CGlobalConstantParamsBlueprint::AddSelfToDictAndReplace(Shared::CVariantDict& out) const
 		{
 			for (const auto& pair : m_constantParams)
 			{
@@ -144,8 +144,8 @@ namespace uqs
 				for (const auto& e : m_constantParams)
 				{
 					const char* paramName = e.first.c_str();
-					const client::IItemFactory* pItemFactory = e.second.pItemFactory;
-					shared::CUqsString itemAsString;
+					const Client::IItemFactory* pItemFactory = e.second.pItemFactory;
+					Shared::CUqsString itemAsString;
 					assert(pItemFactory->CanBePersistantlySerialized()); // constant params can *always* be represented in textual form (how else should the query author provide them via e. g. an XML file?)
 					itemSerializationSupport.SerializeItemToStringLiteral(e.second.pItem, *pItemFactory, itemAsString);
 					logger.Printf("\"%s\" = %s [%s]", paramName, itemAsString.c_str(), pItemFactory->GetName());

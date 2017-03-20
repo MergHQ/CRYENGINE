@@ -59,8 +59,8 @@ public:
 	void                              Trim();
 	void                              Clear();
 
-	template<typename T> T*           GetData(EParticleDataType type)       { CRY_PFX2_ASSERT(type.info().isType<T>()); return reinterpret_cast<T*>(m_pData[type]); }
-	template<typename T> const T*     GetData(EParticleDataType type) const { CRY_PFX2_ASSERT(type.info().isType<T>()); return reinterpret_cast<const T*>(m_pData[type]); }
+	template<typename T> T*           GetData(EParticleDataType type);
+	template<typename T> const T*     GetData(EParticleDataType type) const;
 	template<typename T> void         FillData(EParticleDataType type, const T& data, SUpdateRange range);
 	void                              CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range);
 
@@ -70,7 +70,7 @@ public:
 	IOVec3Stream                      GetIOVec3Stream(EParticleDataType type);
 	IQuatStream                       GetIQuatStream(EParticleDataType type, Quat defaultVal = Quat(IDENTITY)) const;
 	IOQuatStream                      GetIOQuatStream(EParticleDataType type);
-	IColorStream                      GetIColorStream(EParticleDataType type) const;
+	IColorStream                      GetIColorStream(EParticleDataType type, UCol defaultVal = UCol()) const;
 	IOColorStream                     GetIOColorStream(EParticleDataType type);
 	IUintStream                       GetIUintStream(EParticleDataType type, uint32 defaultVal = 0) const;
 	IOUintStream                      GetIOUintStream(EParticleDataType type);

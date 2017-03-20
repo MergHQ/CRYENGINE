@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		bool Serialize(Serialization::IArchive& ar, CTimeValue& timeValue, const char* name, const char* label)

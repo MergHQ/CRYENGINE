@@ -5,14 +5,14 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
-			CInputParameterRegistry::SStoredParameterInfo::SStoredParameterInfo(const char* _name, const shared::CTypeInfo& _type, size_t _offset)
+			CInputParameterRegistry::SStoredParameterInfo::SStoredParameterInfo(const char* _name, const Shared::CTypeInfo& _type, size_t _offset)
 				: name(_name)
 				, type(_type)
 				, offset(_offset)
@@ -20,7 +20,7 @@ namespace uqs
 				// nothing
 			}
 
-			void CInputParameterRegistry::RegisterParameterType(const char* paramName, const shared::CTypeInfo& typeInfo, size_t offset)
+			void CInputParameterRegistry::RegisterParameterType(const char* paramName, const Shared::CTypeInfo& typeInfo, size_t offset)
 			{
 				// prevent duplicates
 				assert(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [paramName](const SStoredParameterInfo& p) { return p.name == paramName; }) == m_parametersInOrder.cend());

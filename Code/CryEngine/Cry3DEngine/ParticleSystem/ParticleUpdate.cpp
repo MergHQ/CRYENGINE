@@ -55,7 +55,7 @@ SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime, const SUpdat
 	, m_parentContainer(pRuntime->GetParentContainer())
 	, m_params(pRuntime->GetComponentParams())
 	, m_updateRange(updateRange)
-	, m_deltaTime(gEnv->pTimer->GetFrameTime() * pRuntime->GetEmitter()->GetTimeScale())
+	, m_deltaTime(pRuntime->GetEmitter()->GetDeltaTime())
 	, m_time(pRuntime->GetEmitter()->GetTime())
 	, m_spawnRng(MakeSpawnSeed(pRuntime))
 	, m_spawnRngv(MakeSpawnSeed(pRuntime))

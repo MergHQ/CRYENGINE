@@ -6,15 +6,15 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		void CStdLibRegistration::InstantiateGeneratorFactoriesForRegistration()
 		{
-			static const client::CGeneratorFactory<CGenerator_PointsOnPureGrid> generatorFactory_PointsOnPureGrid("std::PointsOnPureGrid");
-			static const client::CGeneratorFactory<CGenerator_PointsOnNavMesh> generatorFactory_PointsOnNavMesh("std::PointsOnNavMesh");
+			static const Client::CGeneratorFactory<CGenerator_PointsOnPureGrid> generatorFactory_PointsOnPureGrid("std::PointsOnPureGrid");
+			static const Client::CGeneratorFactory<CGenerator_PointsOnNavMesh> generatorFactory_PointsOnNavMesh("std::PointsOnNavMesh");
 		}
 
 		//===================================================================================
@@ -29,7 +29,7 @@ namespace uqs
 			// nothing
 		}
 
-		client::IGenerator::EUpdateStatus CGenerator_PointsOnPureGrid::DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Pos3>& itemListToPopulate)
+		Client::IGenerator::EUpdateStatus CGenerator_PointsOnPureGrid::DoUpdate(const SUpdateContext& updateContext, Client::CItemListProxy_Writable<Pos3>& itemListToPopulate)
 		{
 			const float halfSize = (float)m_params.size * 0.5f;
 
@@ -70,7 +70,7 @@ namespace uqs
 			// nothing
 		}
 
-		client::IGenerator::EUpdateStatus CGenerator_PointsOnNavMesh::DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Pos3>& itemListToPopulate)
+		Client::IGenerator::EUpdateStatus CGenerator_PointsOnNavMesh::DoUpdate(const SUpdateContext& updateContext, Client::CItemListProxy_Writable<Pos3>& itemListToPopulate)
 		{
 			INavigationSystem* pNavigationSystem = gEnv->pAISystem->GetNavigationSystem();
 
@@ -103,7 +103,7 @@ namespace uqs
 						pItemMonitorNavMeshChanges->AddPointToMonitoredArea(triangleCenters[i]);
 					}
 
-					core::IHubPlugin::GetHub().GetQueryManager().AddItemMonitorToQuery(updateContext.queryID, std::move(pItemMonitorNavMeshChanges));
+					Core::IHubPlugin::GetHub().GetQueryManager().AddItemMonitorToQuery(updateContext.queryID, std::move(pItemMonitorNavMeshChanges));
 				}
 			}
 

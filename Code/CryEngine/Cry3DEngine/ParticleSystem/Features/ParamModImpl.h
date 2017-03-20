@@ -120,9 +120,7 @@ void CParamMod<TParamModContext, T >::InitParticles(const SUpdateContext& contex
 
 	CRY_PFX2_ASSERT(dataStream.IsValid());
 
-	SUpdateRange spawnRange;
-	spawnRange.m_firstParticleId = context.m_container.GetFirstSpawnParticleId();
-	spawnRange.m_lastParticleId = context.m_container.GetLastParticleId();
+	SUpdateRange spawnRange = container.GetSpawnedRange();
 	const floatv baseValue = ToFloatv(m_baseValue);
 
 	CRY_PFX2_FOR_SPAWNED_PARTICLEGROUP(context)

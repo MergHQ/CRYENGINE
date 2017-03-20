@@ -9,7 +9,7 @@
 
 struct SValidatorKey;
 
-namespace uqseditor
+namespace UQSEditor
 {
 //////////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@ public:
 	CItemUniquePtr(CItemUniquePtr&& other);
 	CItemUniquePtr& operator=(CItemUniquePtr&& other);
 
-	explicit CItemUniquePtr(uqs::client::IItemFactory* pItemFactory);
+	explicit CItemUniquePtr(UQS::Client::IItemFactory* pItemFactory);
 
 	bool IsExist() const { return m_pItem != nullptr; }
 	bool IsSerializable() const;
@@ -43,7 +43,7 @@ private:
 	friend bool Serialize(Serialization::IArchive& archive, CItemUniquePtr& value, const char* szName, const char* szLabel);
 
 	void* m_pItem;
-	uqs::client::IItemFactory* m_pItemFactory;
+	UQS::Client::IItemFactory* m_pItemFactory;
 };
 
 bool Serialize(Serialization::IArchive& archive, CItemUniquePtr& value, const char* szName, const char* szLabel);
@@ -85,8 +85,8 @@ public:
 	{
 		string                                           internalName;
 		string                                           prettyName;
-		uqs::client::IFunctionFactory::ELeafFunctionKind leafFunctionKind;
-		uqs::client::IFunctionFactory*                   pFactory;
+		UQS::Client::IFunctionFactory::ELeafFunctionKind leafFunctionKind;
+		UQS::Client::IFunctionFactory*                   pFactory;
 		string                                           param;
 		SItemTypeName                                    returnType;
 	};
@@ -120,7 +120,7 @@ public:
 
 	CFunctionSerializationHelper();
 	CFunctionSerializationHelper(const char* szFunctionName, const char* szParamOrReturnValue, bool bAddReturnValueToDebugRenderWorldUponExecution);
-	CFunctionSerializationHelper(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	CFunctionSerializationHelper(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
 	void Reset(const SItemTypeName& typeName, const CUqsDocSerializationContext& context);
 	void ReserializeFunctionLiteralFromParam();
@@ -140,7 +140,7 @@ public:
 
 	const string&                  GetFunctionInternalName() const;
 	const string&                  GetFunctionParamOrReturnValue() const;
-	uqs::client::IFunctionFactory* GetFunctionFactory() const;
+	UQS::Client::IFunctionFactory* GetFunctionFactory() const;
 	const SFunction*               GetSelectedFunction() const;
 
 	const SItemTypeName&           GetExpectedType() const { return m_typeName; }
@@ -258,7 +258,7 @@ public:
 private:
 
 	std::vector<string>                            m_messages;
-	uqs::datasource::SyntaxErrorCollectorUniquePtr m_pExternalCollector;
+	UQS::DataSource::SyntaxErrorCollectorUniquePtr m_pExternalCollector;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -280,13 +280,13 @@ public:
 
 	CInputBlueprint(const char* szParamName);
 
-	CInputBlueprint(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	CInputBlueprint(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
 	CInputBlueprint(CInputBlueprint&& other);
 	CInputBlueprint&                        operator=(CInputBlueprint&& other);
 
-	void                                    ResetChildrenFromFactory(const uqs::client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context);
-	void                                    ResetChildrenFromFactory(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	void                                    ResetChildrenFromFactory(const UQS::Client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context);
+	void                                    ResetChildrenFromFactory(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 	void                                    ResetChildrenFromFactory(const CEvaluatorFactoryHelper& evaluatorFactory, const CUqsDocSerializationContext& context);
 
 	void                                    Serialize(Serialization::IArchive& archive);
@@ -294,8 +294,8 @@ public:
 
 	const std::vector<CInputBlueprint>&     GetChildren() const { return m_children; }
 
-	void                                    PrepareHelpers(const uqs::client::IGeneratorFactory* pGeneratorFactory, const CUqsDocSerializationContext& context);
-	void                                    PrepareHelpers(const uqs::client::IFunctionFactory* pFunctionFactory, const CUqsDocSerializationContext& context);
+	void                                    PrepareHelpers(const UQS::Client::IGeneratorFactory* pGeneratorFactory, const CUqsDocSerializationContext& context);
+	void                                    PrepareHelpers(const UQS::Client::IFunctionFactory* pFunctionFactory, const CUqsDocSerializationContext& context);
 	void                                    PrepareHelpers(const CEvaluatorFactoryHelper* pEvaluatorFactory, const CUqsDocSerializationContext& context);
 	void                                    ClearErrors();
 
@@ -312,7 +312,7 @@ private:
 	void PrepareHelpersRoot(const CUqsDocSerializationContext& context);
 	void PrepareHelpersChild(const CUqsDocSerializationContext& context);
 
-	void SetAdditionalParamInfo(const uqs::client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context);
+	void SetAdditionalParamInfo(const UQS::Client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context);
 
 	void SerializeFunction(Serialization::IArchive& archive, const CUqsDocSerializationContext& context, const char* szParamLabel);
 	void SerializeChildren(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context);
@@ -414,7 +414,7 @@ class CGeneratorBlueprint
 {
 public:
 	CGeneratorBlueprint();
-	explicit CGeneratorBlueprint(const uqs::client::IGeneratorFactory& factory, const CUqsDocSerializationContext& context);
+	explicit CGeneratorBlueprint(const UQS::Client::IGeneratorFactory& factory, const CUqsDocSerializationContext& context);
 
 	void                                    SetGeneratorName(const char* szGeneratorName);
 	CInputBlueprint&                        GetInputRoot();
@@ -598,7 +598,7 @@ struct SQueryFactoryType
 	{
 	public:
 		CTraits();
-		CTraits(const uqs::core::IQueryFactory& queryFactory);
+		CTraits(const UQS::Core::IQueryFactory& queryFactory);
 
 		bool   operator==(const CTraits& other) const;
 		bool   operator!=(const CTraits& other) const { return !(*this == other); }
@@ -614,7 +614,7 @@ struct SQueryFactoryType
 		bool   CanHaveChildren() const;
 
 	private:
-		const uqs::core::IQueryFactory* m_pQueryFactory;
+		const UQS::Core::IQueryFactory* m_pQueryFactory;
 	};
 
 	static const char* GetQueryFactoryNameByType(const EType queryFactoryType);
@@ -625,7 +625,7 @@ struct SQueryFactoryType
 
 	bool                            Serialize(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext* pContext);
 
-	const uqs::core::IQueryFactory* GetFactory(const CUqsDocSerializationContext* pContext) const;
+	const UQS::Core::IQueryFactory* GetFactory(const CUqsDocSerializationContext* pContext) const;
 	const CTraits&                  GetTraits() const { return queryTraits; }
 
 	void                            UpdateTraits(const CUqsDocSerializationContext* pContext);
@@ -648,8 +648,8 @@ public:
 
 	const string& GetName() const { return m_name; }
 
-	void          BuildSelfFromITextualQueryBlueprint(const uqs::core::ITextualQueryBlueprint& source, CUqsDocSerializationContext& context);
-	void          BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQueryBlueprint& target) const;
+	void          BuildSelfFromITextualQueryBlueprint(const UQS::Core::ITextualQueryBlueprint& source, CUqsDocSerializationContext& context);
+	void          BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQueryBlueprint& target) const;
 
 	void          Serialize(Serialization::IArchive& archive);
 
@@ -660,8 +660,8 @@ private:
 
 	void        CheckQueryTraitsChange(const SQueryFactoryType::CTraits& queryTraits, const SQueryFactoryType::CTraits& oldTraits, CParametersListContext& paramListContext);
 
-	static void HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(CInputBlueprint& targetRoot, const uqs::core::ITextualInputBlueprint& sourceRoot);
-	static void HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(uqs::core::ITextualInputBlueprint& targetRoot, const CInputBlueprint& sourceRoot);
+	static void HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(CInputBlueprint& targetRoot, const UQS::Core::ITextualInputBlueprint& sourceRoot);
+	static void HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(UQS::Core::ITextualInputBlueprint& targetRoot, const CInputBlueprint& sourceRoot);
 
 private:
 
@@ -677,4 +677,4 @@ private:
 	QueryBlueprintChildren                   m_queryChildren;
 	mutable std::shared_ptr<CErrorCollector> m_pErrorCollector;
 };
-} // uqseditor
+} // UQSEditor

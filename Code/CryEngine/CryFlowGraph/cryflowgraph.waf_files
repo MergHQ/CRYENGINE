@@ -110,7 +110,8 @@
       "FlowSystem/Nodes/FlowXmlDataNodes.cpp",
       "FlowSystem/Nodes/FlowXmlFileNodes.cpp",
       "FlowSystem/Nodes/FlowXmlNavNodes.cpp",
-      "FlowSystem/Nodes/FlowKinectNodesDurango.cpp"
+      "FlowSystem/Nodes/FlowKinectNodesDurango.cpp",
+      "FlowSystem/Nodes/FlowParticle.cpp"
     ],
     "Flow System/Unit Tests":[
       "FlowSystem/UnitTests/FlowGraphDebuggerUnitTests.cpp"

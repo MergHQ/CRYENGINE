@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		void CStartupConsistencyChecker::CheckForConsistencyErrors()
@@ -27,15 +27,15 @@ namespace uqs
 
 				for (size_t i1 = 0, n = itemFactoryDB.GetFactoryCount(); i1 < n; ++i1)
 				{
-					const client::IItemFactory& itemFactory1 = itemFactoryDB.GetFactory(i1);
-					const shared::CTypeInfo& itemType1 = itemFactory1.GetItemType();
+					const Client::IItemFactory& itemFactory1 = itemFactoryDB.GetFactory(i1);
+					const Shared::CTypeInfo& itemType1 = itemFactory1.GetItemType();
 					int duplicateCount = 0;
 					stack_string typeNamesForErrorMessage;
 
 					for (size_t i2 = i1 + 1; i2 < n; ++i2)
 					{
-						const client::IItemFactory& itemFactory2 = itemFactoryDB.GetFactory(i2);
-						const shared::CTypeInfo& itemType2 = itemFactory2.GetItemType();
+						const Client::IItemFactory& itemFactory2 = itemFactoryDB.GetFactory(i2);
+						const Shared::CTypeInfo& itemType2 = itemFactory2.GetItemType();
 
 						if (itemType1 == itemType2)
 						{
@@ -71,7 +71,7 @@ namespace uqs
 				{
 					static const CryGUID emptyGUID = CryGUID::Null();
 
-					const client::IItemFactory& itemFactory1 = itemFactoryDB.GetFactory(i1);
+					const Client::IItemFactory& itemFactory1 = itemFactoryDB.GetFactory(i1);
 					const CryGUID& guid1ofItemFactory1 = itemFactory1.GetGUIDForSchematycAddParamFunction();
 					const CryGUID& guid2ofItemFactory1 = itemFactory1.GetGUIDForSchematycGetItemFromResultSetFunction();
 					
@@ -115,7 +115,7 @@ namespace uqs
 
 					for (size_t i2 = i1 + 1; i2 < n; ++i2)
 					{
-						const client::IItemFactory& itemFactory2 = itemFactoryDB.GetFactory(i2);
+						const Client::IItemFactory& itemFactory2 = itemFactoryDB.GetFactory(i2);
 						const CryGUID& guid1ofItemFactory2 = itemFactory2.GetGUIDForSchematycAddParamFunction();
 						const CryGUID& guid2ofItemFactory2 = itemFactory2.GetGUIDForSchematycGetItemFromResultSetFunction();
 
@@ -143,7 +143,7 @@ namespace uqs
 
 				for (size_t iItemFactory = 0; iItemFactory < itemFactoryDB.GetFactoryCount(); ++iItemFactory)
 				{
-					const client::IItemFactory& itemFactory = itemFactoryDB.GetFactory(iItemFactory);
+					const Client::IItemFactory& itemFactory = itemFactoryDB.GetFactory(iItemFactory);
 					const char* szItemFactoryNameForErrorMessages = itemFactory.GetName();
 
 					CheckItemConvertersConsistency(itemFactory.GetFromForeignTypeConverters(), szItemFactoryNameForErrorMessages, guidsInUse);
@@ -251,8 +251,8 @@ namespace uqs
 
 				for (size_t i = 0, n = generatorFactoryDB.GetFactoryCount(); i < n; ++i)
 				{
-					const client::IGeneratorFactory& generatorFactory = generatorFactoryDB.GetFactory(i);
-					const shared::CTypeInfo& itemTypeToGenerate = generatorFactory.GetTypeOfItemsToGenerate();
+					const Client::IGeneratorFactory& generatorFactory = generatorFactoryDB.GetFactory(i);
+					const Shared::CTypeInfo& itemTypeToGenerate = generatorFactory.GetTypeOfItemsToGenerate();
 
 					if (!g_hubImpl->GetUtils().FindItemFactoryByType(itemTypeToGenerate))
 					{
@@ -272,8 +272,8 @@ namespace uqs
 
 				for (size_t i = 0, n = functionFactoryDB.GetFactoryCount(); i < n; ++i)
 				{
-					const client::IFunctionFactory& functionFactory = functionFactoryDB.GetFactory(i);
-					const shared::CTypeInfo& returnTypeOfFunction = functionFactory.GetReturnType();
+					const Client::IFunctionFactory& functionFactory = functionFactoryDB.GetFactory(i);
+					const Shared::CTypeInfo& returnTypeOfFunction = functionFactory.GetReturnType();
 
 					if (!g_hubImpl->GetUtils().FindItemFactoryByType(returnTypeOfFunction))
 					{
@@ -300,7 +300,7 @@ namespace uqs
 
 					for (size_t i = 0, n = functionFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
-						const client::IFunctionFactory& functionFactory = functionFactoryDB.GetFactory(i);
+						const Client::IFunctionFactory& functionFactory = functionFactoryDB.GetFactory(i);
 						stack_string messagePrefixForPossibleError;
 						messagePrefixForPossibleError.Format("Function '%s'", functionFactory.GetName());
 						CheckInputParametersConsistency(functionFactory.GetInputParameterRegistry(), messagePrefixForPossibleError.c_str());
@@ -313,7 +313,7 @@ namespace uqs
 
 					for (size_t i = 0, n = generatorFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
-						const client::IGeneratorFactory& generatorFactory = generatorFactoryDB.GetFactory(i);
+						const Client::IGeneratorFactory& generatorFactory = generatorFactoryDB.GetFactory(i);
 						stack_string messagePrefixForPossibleError;
 						messagePrefixForPossibleError.Format("Generator '%s'", generatorFactory.GetName());
 						CheckInputParametersConsistency(generatorFactory.GetInputParameterRegistry(), messagePrefixForPossibleError.c_str());
@@ -326,7 +326,7 @@ namespace uqs
 
 					for (size_t i = 0, n = ieFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
-						const client::IInstantEvaluatorFactory& ieFactory = ieFactoryDB.GetFactory(i);
+						const Client::IInstantEvaluatorFactory& ieFactory = ieFactoryDB.GetFactory(i);
 						stack_string messagePrefixForPossibleError;
 						messagePrefixForPossibleError.Format("Instant-Evaluator '%s'", ieFactory.GetName());
 						CheckInputParametersConsistency(ieFactory.GetInputParameterRegistry(), messagePrefixForPossibleError.c_str());
@@ -339,7 +339,7 @@ namespace uqs
 
 					for (size_t i = 0, n = deFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
-						const client::IDeferredEvaluatorFactory& deFactory = deFactoryDB.GetFactory(i);
+						const Client::IDeferredEvaluatorFactory& deFactory = deFactoryDB.GetFactory(i);
 						stack_string messagePrefixForPossibleError;
 						messagePrefixForPossibleError.Format("Deferred-Evaluator '%s'", deFactory.GetName());
 						CheckInputParametersConsistency(deFactory.GetInputParameterRegistry(), messagePrefixForPossibleError.c_str());
@@ -350,11 +350,11 @@ namespace uqs
 			// TODO: more consistency checks
 		}
 
-		void CStartupConsistencyChecker::CheckInputParametersConsistency(const client::IInputParameterRegistry& registry, const char* errorMessagePrefix)
+		void CStartupConsistencyChecker::CheckInputParametersConsistency(const Client::IInputParameterRegistry& registry, const char* errorMessagePrefix)
 		{
 			for (size_t i = 0, n = registry.GetParameterCount(); i < n; ++i)
 			{
-				const client::IInputParameterRegistry::SParameterInfo& pi = registry.GetParameter(i);
+				const Client::IInputParameterRegistry::SParameterInfo& pi = registry.GetParameter(i);
 
 				// check for known item type
 				if (g_hubImpl->GetUtils().FindItemFactoryByType(pi.type) == nullptr)
@@ -367,7 +367,7 @@ namespace uqs
 				// check for unique name (prevent copy & paste error)
 				for (size_t k = i + 1; k < n; ++k)
 				{
-					const client::IInputParameterRegistry::SParameterInfo& pi2 = registry.GetParameter(k);
+					const Client::IInputParameterRegistry::SParameterInfo& pi2 = registry.GetParameter(k);
 					if (strcmp(pi2.name, pi.name) == 0)
 					{
 						string error;
@@ -379,7 +379,7 @@ namespace uqs
 				// check for unique memory offset (prevent copy & paste error)
 				for (size_t k = i + 1; k < n; ++k)
 				{
-					const client::IInputParameterRegistry::SParameterInfo& pi2 = registry.GetParameter(k);
+					const Client::IInputParameterRegistry::SParameterInfo& pi2 = registry.GetParameter(k);
 					if (pi2.offset == pi.offset)
 					{
 						string error;
@@ -391,11 +391,11 @@ namespace uqs
 		}
 
 #if UQS_SCHEMATYC_SUPPORT
-		void CStartupConsistencyChecker::CheckItemConvertersConsistency(const client::IItemConverterCollection& itemConverters, const char* szItemFactoryNameForErrorMessages, std::set<CryGUID>& guidsInUse)
+		void CStartupConsistencyChecker::CheckItemConvertersConsistency(const Client::IItemConverterCollection& itemConverters, const char* szItemFactoryNameForErrorMessages, std::set<CryGUID>& guidsInUse)
 		{
 			for (size_t i = 0, n = itemConverters.GetItemConverterCount(); i < n; ++i)
 			{
-				const client::IItemConverter& converter = itemConverters.GetItemConverter(i);
+				const Client::IItemConverter& converter = itemConverters.GetItemConverter(i);
 
 				const CryGUID& guid = converter.GetGUID();
 				auto res = guidsInUse.insert(guid);
@@ -404,8 +404,8 @@ namespace uqs
 				if (!bInsertSucceeded)
 				{
 					// duplicate detected
-					shared::CUqsString guidAsString;
-					client::internal::CGUIDHelper::ToString(guidAsString, guid);
+					Shared::CUqsString guidAsString;
+					Client::Internal::CGUIDHelper::ToString(guidAsString, guid);
 					string error;
 					error.Format("ItemFactory '%s': clashing GUID in ItemConverter '%s -> %s': %s (used by a different ItemConverter already)", szItemFactoryNameForErrorMessages, converter.GetFromName(), converter.GetToName(), guidAsString.c_str());
 					m_errors.push_back(error);

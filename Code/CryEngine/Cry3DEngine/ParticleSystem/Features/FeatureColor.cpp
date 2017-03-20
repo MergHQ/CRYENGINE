@@ -94,9 +94,7 @@ void CFeatureFieldColor::InitParticles(const SUpdateContext& context)
 	}
 	CRY_PFX2_FOR_END
 
-	SUpdateRange spawnRange;
-	spawnRange.m_firstParticleId = context.m_container.GetFirstSpawnParticleId();
-	spawnRange.m_lastParticleId = context.m_container.GetLastParticleId();
+	SUpdateRange spawnRange = context.m_container.GetSpawnedRange();
 	for (auto& pModifier : m_modInit)
 		pModifier->Modify(context, spawnRange, colors);
 
@@ -295,6 +293,8 @@ public:
 
 	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOColorStream stream) const
 	{
+		CRY_PFX2_PROFILE_DETAIL;
+
 		CParticleContainer& container = context.m_container;
 		const CAttributeInstance& attributes = context.m_runtime.GetEmitter()->GetAttributeInstance();
 		auto attributeId = attributes.FindAttributeIdByName(m_name.c_str());
@@ -355,15 +355,13 @@ public:
 		if (!parentContainer.HasData(EPDT_Color))
 			return;
 		IPidStream parentIds = context.m_container.GetIPidStream(EPDT_ParentId);
-		IColorStream parentColors = parentContainer.GetIColorStream(EPDT_Color);
-		UCol defaultColor;
-		defaultColor.dcolor = ~0u;
+		IColorStream parentColors = parentContainer.GetIColorStream(EPDT_Color, UCol{ {~0u} });
 
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range)
 		{
 			const TParticleIdv parentId = parentIds.Load(particleGroupId);
 			const ColorFv color0 = ToColorFv(stream.Load(particleGroupId));
-			const ColorFv parent = ToColorFv(parentColors.Load(parentId, defaultColor));
+			const ColorFv parent = ToColorFv(parentColors.Load(parentId));
 			const ColorFv color1 = color0 * parent;
 			stream.Store(particleGroupId, ColorFvToUColv(color1));
 		}

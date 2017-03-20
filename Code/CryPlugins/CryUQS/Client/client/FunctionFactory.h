@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -26,8 +26,8 @@ namespace uqs
 				// ~IFunctionFactory
 
 				// IFunctionFactory: forward to derived class
-				virtual const shared::CTypeInfo&          GetReturnType() const override = 0;
-				virtual const shared::CTypeInfo*          GetContainedType() const override = 0;
+				virtual const Shared::CTypeInfo&          GetReturnType() const override = 0;
+				virtual const Shared::CTypeInfo*          GetContainedType() const override = 0;
 				virtual ELeafFunctionKind                 GetLeafFunctionKind() const override = 0;
 				virtual FunctionUniquePtr                 CreateFunction(const IFunction::SCtorContext& ctorContext) override = 0;
 				virtual void                              DestroyFunction(IFunction* pFunctionToDestroy) override = 0;
@@ -89,7 +89,7 @@ namespace uqs
 				}
 			};
 
-		} // namespace internal
+		} // namespace Internal
 
 		//===================================================================================
 		//
@@ -98,14 +98,14 @@ namespace uqs
 		//===================================================================================
 
 		template <class TFunction>
-		class CFunctionFactory : public internal::CFunctionFactoryBase
+		class CFunctionFactory : public Internal::CFunctionFactoryBase
 		{
 		public:
 			explicit                            CFunctionFactory(const char* functionName);
 
 			// IFunctionFactory
-			virtual const shared::CTypeInfo&    GetReturnType() const override final;
-			virtual const shared::CTypeInfo*    GetContainedType() const override final;
+			virtual const Shared::CTypeInfo&    GetReturnType() const override final;
+			virtual const Shared::CTypeInfo*    GetContainedType() const override final;
 			virtual ELeafFunctionKind           GetLeafFunctionKind() const override final;
 			virtual FunctionUniquePtr           CreateFunction(const IFunction::SCtorContext& ctorContext) override final;
 			virtual void                        DestroyFunction(IFunction* pFunctionToDestroy) override final;
@@ -117,19 +117,19 @@ namespace uqs
 			: CFunctionFactoryBase(functionName)
 		{
 			const bool bIsLeafFunction = TFunction::kLeafFunctionKind != ELeafFunctionKind::None;
-			internal::SFunctionParamsExpositionHelper<TFunction, bIsLeafFunction>::Expose(m_inputParameterRegistry);
+			Internal::SFunctionParamsExpositionHelper<TFunction, bIsLeafFunction>::Expose(m_inputParameterRegistry);
 		}
 
 		template <class TFunction>
-		const shared::CTypeInfo& CFunctionFactory<TFunction>::GetReturnType() const
+		const Shared::CTypeInfo& CFunctionFactory<TFunction>::GetReturnType() const
 		{
-			return shared::SDataTypeHelper<typename TFunction::ReturnType>::GetTypeInfo();
+			return Shared::SDataTypeHelper<typename TFunction::ReturnType>::GetTypeInfo();
 		}
 
 		template <class TFunction>
-		const shared::CTypeInfo* CFunctionFactory<TFunction>::GetContainedType() const
+		const Shared::CTypeInfo* CFunctionFactory<TFunction>::GetContainedType() const
 		{
-			return internal::SContainedTypeRetriever<typename TFunction::ReturnType>::GetTypeInfo();
+			return Internal::SContainedTypeRetriever<typename TFunction::ReturnType>::GetTypeInfo();
 		}
 
 		template <class TFunction>
@@ -147,7 +147,7 @@ namespace uqs
 			// notice: we assign the instantiated function to its base class pointer to ensure that the function type itself (and not accidentally another function type) was injected at its class definition
 			CFunctionBase<TFunction, typename TFunction::ReturnType, TFunction::kLeafFunctionKind>* pFunction = new TFunction(ctorContext);
 #endif
-			internal::CFunctionDeleter deleter(*this);
+			Internal::CFunctionDeleter deleter(*this);
 			return FunctionUniquePtr(pFunction, deleter);
 		}
 

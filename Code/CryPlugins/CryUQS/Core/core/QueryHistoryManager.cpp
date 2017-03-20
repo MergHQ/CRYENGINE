@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		CQueryHistoryManager::CQueryHistoryManager()
@@ -86,7 +86,7 @@ namespace uqs
 			}
 		}
 
-		bool CQueryHistoryManager::SerializeLiveQueryHistory(const char* xmlFilePath, shared::IUqsString& error)
+		bool CQueryHistoryManager::SerializeLiveQueryHistory(const char* xmlFilePath, Shared::IUqsString& error)
 		{
 			//
 			// add some meta data to the live history before serializing it
@@ -124,7 +124,7 @@ namespace uqs
 			}
 		}
 
-		bool CQueryHistoryManager::DeserializeQueryHistory(const char* xmlFilePath, shared::IUqsString& error)
+		bool CQueryHistoryManager::DeserializeQueryHistory(const char* xmlFilePath, Shared::IUqsString& error)
 		{
 			CQueryHistory tempQueryHistory;
 

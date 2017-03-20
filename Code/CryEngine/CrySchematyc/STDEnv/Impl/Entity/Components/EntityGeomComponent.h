@@ -17,16 +17,17 @@ class CEntityGeomComponent final : public CComponent
 public:
 
 	// CComponent
-	virtual bool Init() override;
-	virtual void Run(ESimulationMode simulationMode) override;
-	virtual void Shutdown() override;
-	virtual int  GetSlot() const override;
+	virtual bool  Init() override;
+	virtual void  Run(ESimulationMode simulationMode) override;
+	virtual void  Shutdown() override;
+	virtual int   GetSlot() const override;
 	// ~CComponent
 
-	void        Set(const GeomFileName& fileName);
-	void        SetTransform(const CTransform& transform);
-	void        SetVisible(bool bVisible);
-	bool        IsVisible() const;
+	void                Set(const GeomFileName& fileName);
+	const GeomFileName& Get() const;
+	void                SetTransform(const CTransform& transform);
+	void                SetVisible(bool bVisible);
+	bool                IsVisible() const;
 
 	static void ReflectType(CTypeDesc<CEntityGeomComponent>& desc);
 	static void Register(IEnvRegistrar& registrar);

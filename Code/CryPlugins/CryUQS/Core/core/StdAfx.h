@@ -21,9 +21,9 @@
 // - redirects to g_hubImpl->HaveConsistencyChecksBeenDoneAlready()
 // - CFactoryDatabase<>::RegisterFactory() doesn't know about the global g_hubImpl variable yet due to the way the headers need to be included, so it uses this function instead
 // - function is implemented in Hub.cpp
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 		bool Hub_HaveConsistencyChecksBeenDoneAlready();
 	}

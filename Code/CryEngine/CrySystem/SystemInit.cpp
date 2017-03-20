@@ -1946,7 +1946,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 		string gameFolder = (!PathUtil::GetGameFolder().empty()) ? (PathUtil::GetGameFolder() + "/") : "";
 		AddCVarGroupDirectory(gameFolder + "Config/CVarGroups");
 	}
-	AddCVarGroupDirectory("Engine/Config/CVarGroups");
+    AddCVarGroupDirectory("Config/CVarGroups");
 
 #ifdef SEG_WORLD
 	int maxStdio = gEnv->pConsole->GetCVar("sys_max_stdio")->GetIVal();
@@ -5226,6 +5226,8 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("sys_error_debugbreak", &g_cvars.sys_error_debugbreak, 0, VF_CHEAT, "__debugbreak() if a VALIDATOR_ERROR_DBGBREAK message is hit");
 
 	REGISTER_CVAR2("sys_enable_crash_handler", &g_cvars.sys_enable_crash_handler, 0, VF_CHEAT, "Enable/Disable crash handler (PC only)");
+
+	REGISTER_INT("sys_debugger_adjustments", 0, VF_CHEAT, "Adjust behavior to help with debugger breakpoints");
 
 	// [VR]
 	if (m_pHmdManager)

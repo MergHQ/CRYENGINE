@@ -179,7 +179,6 @@ public:
 	virtual EState      GetState() const override       { return m_state; };
 	virtual bool        IsActive() const override       { return m_active; }
 	virtual void        SetActive(bool active) override { m_active = active; }
-	virtual void        MainPreUpdate() override        {}
 	virtual bool        IsSecondGen() override          { return m_isSecondGen; }
 
 	virtual bool        IsValidRuntimeForInitializationParameters(const pfx2::SRuntimeInitializationParameters& parameters) override;
@@ -189,6 +188,7 @@ public:
 	virtual void        AccumCounts(SParticleCounts& counts) override;
 	virtual bool        HasParticles() override { return m_parameters->numParticles != 0; }
 
+	IParticleEmitter*   GetEmitter() const { return m_pEmitter; }
 	void                Initialize();
 	void                Reset();
 
@@ -273,6 +273,7 @@ private:
 	// update passes with varying material flags
 	void UpdatePasses();
 
+	IParticleEmitter*                                   m_pEmitter;
 	gpu::CTypedConstantBuffer<SParticleParameters>      m_parameters;
 
 	CParticleContainer                                  m_container;

@@ -6,11 +6,11 @@
 
 #if UQS_SCHEMATYC_SUPPORT
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -67,8 +67,8 @@ namespace uqs
 				// IItemConverter
 				virtual const char*                 GetFromName() const override;
 				virtual const char*                 GetToName() const override;
-				virtual const shared::CTypeInfo&    GetFromItemType() const override;
-				virtual const shared::CTypeInfo&    GetToItemType() const override;
+				virtual const Shared::CTypeInfo&    GetFromItemType() const override;
+				virtual const Shared::CTypeInfo&    GetToItemType() const override;
 				virtual void                        ConvertItem(const void* pFromItem, void* pToItem) const override;
 				virtual const CryGUID&              GetGUID() const override;
 				// ~IItemConverter
@@ -113,15 +113,15 @@ namespace uqs
 			}
 
 			template <class TFromType, class TToType, void(*pConvertFunc)(const TFromType&, TToType&)>
-			const shared::CTypeInfo& CItemConverter<TFromType, TToType, pConvertFunc>::GetFromItemType() const
+			const Shared::CTypeInfo& CItemConverter<TFromType, TToType, pConvertFunc>::GetFromItemType() const
 			{
-				return shared::SDataTypeHelper<TFromType>::GetTypeInfo();
+				return Shared::SDataTypeHelper<TFromType>::GetTypeInfo();
 			}
 
 			template <class TFromType, class TToType, void(*pConvertFunc)(const TFromType&, TToType&)>
-			const shared::CTypeInfo& CItemConverter<TFromType, TToType, pConvertFunc>::GetToItemType() const
+			const Shared::CTypeInfo& CItemConverter<TFromType, TToType, pConvertFunc>::GetToItemType() const
 			{
-				return shared::SDataTypeHelper<TToType>::GetTypeInfo();
+				return Shared::SDataTypeHelper<TToType>::GetTypeInfo();
 			}
 
 			template <class TFromType, class TToType, void(*pConvertFunc)(const TFromType&, TToType&)>
@@ -137,7 +137,7 @@ namespace uqs
 				(*pConvertFunc)(*pFrom, *pTo);
 			}
 
-		} // namespace internal
+		} // namespace Internal
 
 		//===================================================================================
 		//
@@ -161,22 +161,22 @@ namespace uqs
 
 		private:
 
-			internal::CItemConverterCollection  m_fromForeignTypeConverters;
-			internal::CItemConverterCollection  m_toForeignTypeConverters;
+			Internal::CItemConverterCollection  m_fromForeignTypeConverters;
+			Internal::CItemConverterCollection  m_toForeignTypeConverters;
 		};
 
 		template <class TItem>
 		template <class TFromForeignType, void(*pConvertFunc)(const TFromForeignType&, TItem&)>
 		void CItemConverterCollectionMgr<TItem>::AddFromForeignTypeConverter(const char* szFromName, const char* szToName, const CryGUID& guid)
 		{
-			static const internal::CItemConverter<TFromForeignType, TItem, pConvertFunc> converter(szFromName, szToName, guid, m_fromForeignTypeConverters);
+			static const Internal::CItemConverter<TFromForeignType, TItem, pConvertFunc> converter(szFromName, szToName, guid, m_fromForeignTypeConverters);
 		}
 
 		template <class TItem>
 		template <class TToForeignType, void(*pConvertFunc)(const TItem&, TToForeignType&)>
 		void CItemConverterCollectionMgr<TItem>::AddToForeignTypeConverter(const char* szFromName, const char* szToName, const CryGUID& guid)
 		{
-			static const internal::CItemConverter<TItem, TToForeignType, pConvertFunc> converter(szFromName, szToName, guid, m_toForeignTypeConverters);
+			static const Internal::CItemConverter<TItem, TToForeignType, pConvertFunc> converter(szFromName, szToName, guid, m_toForeignTypeConverters);
 		}
 
 		template <class TItem>

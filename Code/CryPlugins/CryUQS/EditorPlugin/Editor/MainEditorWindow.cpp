@@ -105,7 +105,7 @@ CMainEditorWindow::CMainEditorWindow()
 	BuildMenu();
 
 	// disable everything if the UQS engine plugin was not loaded
-	if (!uqs::core::IHubPlugin::GetHubPtr())
+	if (!UQS::Core::IHubPlugin::GetHubPtr())
 	{
 		QMessageBox::warning(this, "UQS engine-plugin not loaded", "The UQS Editor will be disabled as the UQS core engine-plugin hasn't been loaded.");
 		setEnabled(false);
@@ -129,7 +129,7 @@ CMainEditorWindow::~CMainEditorWindow()
 const char* CMainEditorWindow::GetPaneTitle() const
 {
 	// check for whether the UQS engine plugin has been loaded
-	if (uqs::core::IHubPlugin::GetHubPtr())
+	if (UQS::Core::IHubPlugin::GetHubPtr())
 	{
 		return "UQS Editor";
 	}

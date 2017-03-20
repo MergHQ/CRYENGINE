@@ -3198,18 +3198,12 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	{
 		// Show particle stats.
 		static SParticleCounts Counts;
-		static SParticleCounts Pfx2Counts;
 		SParticleCounts CurCounts;
-		SParticleCounts CurPfx2Counts;
 		if (m_pPartManager)
 			m_pPartManager->GetCounts(CurCounts);
-		if (m_pParticleSystem)
-			m_pParticleSystem->GetCounts(CurPfx2Counts);
 
 		// Blend stats.
 		for (float* pd = (float*)&Counts, * ps = (float*)&CurCounts; pd < (float*)(&Counts + 1); pd++, ps++)
-			Blend(*pd, *ps, fBlendCur);
-		for (float* pd = (float*)&Pfx2Counts, * ps = (float*)&CurPfx2Counts; pd < (float*)(&Pfx2Counts + 1); pd++, ps++)
 			Blend(*pd, *ps, fBlendCur);
 
 		float fScreenPix = (float)(GetRenderer()->GetWidth() * GetRenderer()->GetHeight());
@@ -3219,13 +3213,13 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		                     Counts.ParticlesRendered, Counts.ParticlesActive, Counts.ParticlesAlloc,
 		                     Counts.EmittersRendered, Counts.EmittersActive, Counts.EmittersAlloc, Counts.SubEmittersActive,
 		                     Counts.PixelsRendered / fScreenPix, Counts.PixelsProcessed / fScreenPix);
+		fTextPosY += fTextStepY;
+
 		if (m_pParticleSystem)
 		{
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-			                     "pfx2 (Rendered/Active/Alloc): Particles %5.0f/%5.0f/%5.0f, Emitters %3.0f/%3.0f/%3.0f, Containers: %3.0f, Fill %5.2f/%5.2f",
-			                     Pfx2Counts.ParticlesRendered, Pfx2Counts.ParticlesActive, Pfx2Counts.ParticlesAlloc,
-			                     Pfx2Counts.EmittersRendered, Pfx2Counts.EmittersActive, Pfx2Counts.EmittersAlloc, Pfx2Counts.SubEmittersActive,
-			                     Pfx2Counts.PixelsRendered / fScreenPix, Pfx2Counts.PixelsProcessed / fScreenPix);
+			const Vec2 location = Vec2(fTextPosX, fTextPosY);
+			pfx2::CParticleSystem* pPSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
+			fTextPosY = pPSystem->DisplayDebugStats(location, fTextStepY);
 		}
 
 		if (GetCVars()->e_ParticlesDebug & AlphaBit('r'))
@@ -3234,13 +3228,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			                     "Reiter %4.0f, Reject %4.0f, Clip %4.1f, Coll %4.1f / %4.1f",
 			                     Counts.ParticlesReiterate, Counts.ParticlesReject, Counts.ParticlesClip,
 			                     Counts.ParticlesCollideHit, Counts.ParticlesCollideTest);
-			if (m_pParticleSystem)
-			{
-				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-				                     "pfx2: Reiter %4.0f, Reject %4.0f, Clip %4.1f, Coll %4.1f / %4.1f",
-				                     Pfx2Counts.ParticlesReiterate, Pfx2Counts.ParticlesReject, Pfx2Counts.ParticlesClip,
-				                     Pfx2Counts.ParticlesCollideHit, Pfx2Counts.ParticlesCollideTest);
-			}
 		}
 		if (GetCVars()->e_ParticlesDebug & AlphaBits('bx'))
 		{

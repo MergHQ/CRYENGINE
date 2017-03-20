@@ -2,8 +2,6 @@
 
 #include "Helpers/DesignerEntityComponent.h"
 
-#include <CrySerialization/Decorators/Resources.h>
-
 ////////////////////////////////////////////////////////
 // Sample entity for creating a particle entity
 ////////////////////////////////////////////////////////
@@ -13,10 +11,9 @@ class CDefaultParticleEntity final
 {
 	CRY_ENTITY_COMPONENT_CLASS(CDefaultParticleEntity, IParticleEntityComponent, "ParticleEntity", 0x31B3EAD4C34442F7, 0xB794B33746D4232B);
 
-	CDefaultParticleEntity();
-	virtual ~CDefaultParticleEntity() {}
-
 public:
+	CDefaultParticleEntity();
+
 	// CDesignerEntityComponent
 	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
 
@@ -29,22 +26,18 @@ public:
 
 	// IEntityPropertyGroup
 	virtual const char* GetLabel() const override { return "ParticleEffect Properties"; }
-
-	virtual void SerializeProperties(Serialization::IArchive& archive) override
-	{
-		archive(m_bActive, "Active", "Active");
-		archive(Serialization::ParticleName(m_particleEffectPath), "ParticleEffect", "ParticleEffect");
-
-		if (archive.isInput())
-		{
-			OnResetState();
-		}
-	}
+	virtual void SerializeProperties(Serialization::IArchive& archive) override;
 	// ~IEntityPropertyGroup
 
-protected:
-	int m_particleSlot;
+private:
+	void              Restart();
+	void              Kill();
+	IParticleEmitter* GetEmitter();
 
-	bool m_bActive = true;
-	string m_particleEffectPath;
+private:
+	string                 m_particleEffectPath;
+	SpawnParams            m_spawnParams;
+	TParticleAttributesPtr m_pAttributes;
+	int                    m_particleSlot = -1;
+	bool                   m_bActive = true;
 };

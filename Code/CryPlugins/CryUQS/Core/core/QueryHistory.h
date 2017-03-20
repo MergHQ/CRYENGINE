@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		class CQueryHistoryManager;
@@ -138,7 +138,7 @@ namespace uqs
 			void                                                OnFunctionCallExceptionOccurredInDeferredEvaluator(size_t deferredEvaluatorIndex, size_t itemIndex, const char* exceptionMessage);
 			void                                                OnExceptionOccurredInDeferredEvaluator(size_t deferredEvaluatorIndex, size_t itemIndex, const char* exceptionMessage);
 			void                                                OnItemGotDisqualifiedDueToBadScore(size_t itemIndex);
-			void                                                CreateItemDebugProxyViaItemFactoryForItem(const client::IItemFactory& itemFactory, const void* item, size_t indexInGeneratedItemsForWhichToCreateTheProxy);
+			void                                                CreateItemDebugProxyViaItemFactoryForItem(const Client::IItemFactory& itemFactory, const void* item, size_t indexInGeneratedItemsForWhichToCreateTheProxy);
 
 			size_t                                              GetRoughMemoryUsage() const;
 			bool                                                FindClosestItemInView(const SDebugCameraView& cameraView, size_t& outItemIndex) const;     // returns true and outputs the index of the closest item to outItemIndex or just returns false if there are no good candidates nearby

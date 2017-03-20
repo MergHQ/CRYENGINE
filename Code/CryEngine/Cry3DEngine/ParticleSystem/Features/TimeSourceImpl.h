@@ -6,21 +6,13 @@ namespace pfx2
 namespace detail
 {
 
-ILINE float AntiAliasParentAge(const float deltaTime, const float selfAge, const float parentInvLifeTime, const float parentAge)
+template<typename T>
+ILINE floatv AntiAliasParentAge(const T deltaTime, const T selfAge, const T parentInvLifeTime, const T parentAge)
 {
-	if (selfAge >= 0.0f)
-		return 0.0f;
-	return selfAge * parentInvLifeTime * deltaTime + parentAge;
-}
-
-#ifdef CRY_PFX2_USE_SSE
-ILINE floatv AntiAliasParentAge(const floatv deltaTime, const floatv selfAge, const floatv parentInvLifeTime, const floatv parentAge)
-{
-	const floatv tempAntAliasParentAge = MAdd(Mul(selfAge, parentInvLifeTime), deltaTime, parentAge);
-	const floatv sample = __fsel(selfAge, parentAge, tempAntAliasParentAge);
+	const T tempAntAliasParentAge = MAdd(selfAge * parentInvLifeTime, deltaTime, parentAge);
+	const T sample = __fsel(selfAge, parentAge, tempAntAliasParentAge);
 	return sample;
 }
-#endif
 
 class CSelfStreamSampler
 {
@@ -42,16 +34,16 @@ public:
 	CParentStreamSampler(const SUpdateContext& context, EParticleDataType sourceStreamType)
 		: deltaTime(ToFloatv(context.m_deltaTime))
 		, selfAges(context.m_container.GetIFStream(EPDT_NormalAge))
-		, parentSourceStream(context.m_parentContainer.GetIFStream(sourceStreamType))
-		, parentInvLifeTimes(context.m_parentContainer.GetIFStream(EPDT_InvLifeTime))
+		, parentSourceStream(context.m_parentContainer.GetIFStream(sourceStreamType, 1.0f))
+		, parentInvLifeTimes(context.m_parentContainer.GetIFStream(EPDT_InvLifeTime, 1.0f))
 		, parentIds(context.m_container.GetIPidStream(EPDT_ParentId))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
-		const uint32v parentId = parentIds.Load(particleId);
+		const TParticleIdv parentId = parentIds.Load(particleId);
 		const floatv selfAge = selfAges.Load(particleId);
-		const floatv parentData = parentSourceStream.Load(parentId, 1.0f);
-		const floatv parentInvLifeTime = parentInvLifeTimes.Load(parentId, 1.0f);
+		const floatv parentData = parentSourceStream.Load(parentId);
+		const floatv parentInvLifeTime = parentInvLifeTimes.Load(parentId);
 		return AntiAliasParentAge(deltaTime, selfAge, parentInvLifeTime, parentData);
 	}
 private:
@@ -73,7 +65,7 @@ public:
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
 		const floatv selfAge = selfAges.Load(particleId);
-		return levelTime - DeltaTime(selfAge, deltaTime);
+		return StartTime(levelTime, deltaTime, selfAge);
 	}
 private:
 	IFStream selfAges;
@@ -185,6 +177,23 @@ private:
 	Vec3v       m_cameraPosition;
 };
 
+class CCameraDistanceSampler
+{
+public:
+	CCameraDistanceSampler(const SUpdateContext& context)
+		: m_positions(context.m_container.GetIVec3Stream(EPVF_Position))
+		, m_cameraPosition(ToVec3v(gEnv->p3DEngine->GetRenderingCamera().GetPosition())) {}
+	ILINE floatv Sample(TParticleGroupId particleId) const
+	{
+		const Vec3v position = m_positions.Load(particleId);
+		const floatv distance = position.GetDistance(m_cameraPosition);
+		return distance;
+	}
+private:
+	IVec3Stream m_positions;
+	Vec3v       m_cameraPosition;
+};
+
 }
 
 ILINE CTimeSource::CTimeSource()
@@ -270,6 +279,11 @@ ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRan
 		((TBase*)this)->DoModify(
 			context, range, stream,
 			detail::CViewAngleSampler(context));
+		break;
+	case ETimeSource::CameraDistance:
+		((TBase*)this)->DoModify(
+			context, range, stream,
+			detail::CCameraDistanceSampler(context));
 		break;
 
 	case ETimeSource::Speed:

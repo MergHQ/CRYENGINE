@@ -48,10 +48,23 @@ ILINE Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, T b, const Vec3_tpl<T>& c)
 	  MAdd(a.z, b, c.z));
 }
 
-ILINE float DeltaTime(float normAge, float frameTime)
+template<typename T>
+ILINE T DeltaTime(T frameTime, T normAge, T lifeTime)
 {
-	return __fsel(normAge, frameTime, -(normAge * frameTime));
+	T time = __fsel(normAge, 
+		min(frameTime, max(lifeTime - normAge * lifeTime, convert<T>())),  // if normAge >= 0, age = normAge * lifeTime
+		min(-normAge * frameTime, lifeTime)             // if normAge < 0, age = -normAge * frameTime
+	);
+	return time;
 }
+
+template<typename T>
+ILINE T StartTime(T curTime, T frameTime, T normAge)
+{
+	// Start time is curTime - frameTime, limited by birth time of newborns
+	return MAdd(min(normAge, convert<T>()), frameTime, curTime);
+}
+
 
 ILINE uint8 FloatToUFrac8Saturate(float v)
 {
@@ -99,8 +112,8 @@ ILINE Vec3 PolarCoordToVec3(float azimuth, float altitude)
 {
 	float azc, azs;
 	float alc, als;
-	sincos_tpl(azimuth, &azs, &azc);
-	sincos_tpl(altitude, &als, &alc);
+	sincos(azimuth, &azs, &azc);
+	sincos(altitude, &als, &alc);
 	return Vec3(azc*alc, azs*alc, als);
 }
 

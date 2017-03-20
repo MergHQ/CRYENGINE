@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -28,7 +28,7 @@ namespace uqs
 			bool                operator==(const CQueryID& rhs) const;
 			bool                operator!=(const CQueryID& rhs) const;
 			bool                operator<(const CQueryID& rhs) const;
-			void                ToString(shared::IUqsString& out) const;
+			void                ToString(Shared::IUqsString& out) const;
 			void                Serialize(Serialization::IArchive& ar);
 
 		private:
@@ -71,7 +71,7 @@ namespace uqs
 			return m_id < rhs.m_id;
 		}
 
-		inline void CQueryID::ToString(shared::IUqsString& out) const
+		inline void CQueryID::ToString(Shared::IUqsString& out) const
 		{
 			if (IsValid())
 			{

@@ -32,12 +32,6 @@ struct IFeatureMotion
 
 //////////////////////////////////////////////////////////////////////////
 
-enum EIntegrator
-{
-	EI_Linear,
-	EI_DragFast,
-};
-
 class CFeatureMotionPhysics : public CParticleFeature, public IFeatureMotion
 {
 private:
@@ -64,25 +58,21 @@ public:
 
 private:
 	void Integrate(const SUpdateContext& context);
-	void LinearSimpleIntegral(const SUpdateContext& context);
-	void LinearDragFastIntegral(const SUpdateContext& context);
-	void AngularSimpleIntegral(const SUpdateContext& context);
+	void LinearIntegral(const SUpdateContext& context);
+	void QuadraticIntegral(const SUpdateContext& context);
+	void DragFastIntegral(const SUpdateContext& context);
+	void AngularLinearIntegral(const SUpdateContext& context);
 	void AngularDragFastIntegral(const SUpdateContext& context);
-	void ProcessCollisions(const SUpdateContext& context);
-	void CollisionResponse(const SUpdateContext& context);
 
 	std::vector<PLocalEffector>          m_localEffectors;
 	std::vector<ILocalEffector*>         m_computeList;
 	std::vector<ILocalEffector*>         m_moveList;
 	CParamMod<SModParticleField, SFloat> m_gravity;
 	CParamMod<SModParticleField, UFloat> m_drag;
-	CFeatureCollision*                   m_pCollisionFeature;
 	Vec3        m_uniformAcceleration;
 	Vec3        m_uniformWind;
 	UFloat      m_windMultiplier;
 	UFloat      m_angularDragMultiplier;
-	EIntegrator m_linearIntegrator;
-	EIntegrator m_angularIntegrator;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -7,11 +7,11 @@
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
 // make the global Serialize() functions available for use in yasli serialization
-using uqs::core::Serialize;
+using UQS::Core::Serialize;
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -336,7 +336,7 @@ namespace uqs
 			m_items[itemIndex].bDisqualifiedDueToBadScore = true;
 		}
 
-		void CHistoricQuery::CreateItemDebugProxyViaItemFactoryForItem(const client::IItemFactory& itemFactory, const void* item, size_t indexInGeneratedItemsForWhichToCreateTheProxy)
+		void CHistoricQuery::CreateItemDebugProxyViaItemFactoryForItem(const Client::IItemFactory& itemFactory, const void* item, size_t indexInGeneratedItemsForWhichToCreateTheProxy)
 		{
 			itemFactory.CreateItemDebugProxyForItem(item, m_itemDebugProxyFactory);
 			std::unique_ptr<CItemDebugProxyBase> freshlyCreatedItemProxy = m_itemDebugProxyFactory.GetAndForgetLastCreatedDebugItemRenderProxy();
@@ -751,7 +751,7 @@ namespace uqs
 
 			// query ID
 			{
-				shared::CUqsString queryIdAsString;
+				Shared::CUqsString queryIdAsString;
 				m_queryID.ToString(queryIdAsString);
 				consumer.AddTextLineToCurrentHistoricQuery(color, "=== Query #%s ===", queryIdAsString.c_str());
 			}

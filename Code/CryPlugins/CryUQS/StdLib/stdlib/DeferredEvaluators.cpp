@@ -6,14 +6,14 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		void CStdLibRegistration::InstantiateDeferredEvaluatorFactoriesForRegistration()
 		{
-			static const client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast> deferredEvaluatorFactory_TestRaycast("std::TestRaycast");
+			static const Client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast> deferredEvaluatorFactory_TestRaycast("std::TestRaycast");
 		}
 
 		//===================================================================================
@@ -55,7 +55,7 @@ namespace uqs
 			// nothing
 		}
 
-		client::IDeferredEvaluator::EUpdateStatus CDeferredEvaluator_TestRaycast::Update(const SUpdateContext& updateContext)
+		Client::IDeferredEvaluator::EUpdateStatus CDeferredEvaluator_TestRaycast::Update(const SUpdateContext& updateContext)
 		{
 			if (s_regulator.RequestRaycast())
 			{

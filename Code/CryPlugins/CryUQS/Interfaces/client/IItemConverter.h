@@ -6,9 +6,9 @@
 
 #if UQS_SCHEMATYC_SUPPORT
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
 
 		//===================================================================================
@@ -22,8 +22,8 @@ namespace uqs
 			virtual                             ~IItemConverter() {}
 			virtual const char*                 GetFromName() const = 0;   // just a bit more readable type name since CTypeInfo::name() may come up with funky names when C++ templates are involved
 			virtual const char*                 GetToName() const = 0;     // ditto
-			virtual const shared::CTypeInfo&    GetFromItemType() const = 0;
-			virtual const shared::CTypeInfo&    GetToItemType() const = 0;
+			virtual const Shared::CTypeInfo&    GetFromItemType() const = 0;
+			virtual const Shared::CTypeInfo&    GetToItemType() const = 0;
 			virtual void                        ConvertItem(const void* pFromItem, void* pToItem) const = 0;
 			virtual const CryGUID&              GetGUID() const = 0;
 		};

@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		//===================================================================================
@@ -18,10 +18,10 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CInstantEvaluator_TestMinDistance : public client::CInstantEvaluatorBase<
+		class CInstantEvaluator_TestMinDistance : public Client::CInstantEvaluatorBase<
 			CInstantEvaluator_TestMinDistance,
-			client::IInstantEvaluatorFactory::ECostCategory::Cheap,
-			client::IInstantEvaluatorFactory::EEvaluationModality::Testing
+			Client::IInstantEvaluatorFactory::ECostCategory::Cheap,
+			Client::IInstantEvaluatorFactory::EEvaluationModality::Testing
 		>
 		{
 		public:
@@ -49,10 +49,10 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CInstantEvaluator_TestMaxDistance : public client::CInstantEvaluatorBase<
+		class CInstantEvaluator_TestMaxDistance : public Client::CInstantEvaluatorBase<
 			CInstantEvaluator_TestMaxDistance,
-			client::IInstantEvaluatorFactory::ECostCategory::Cheap,
-			client::IInstantEvaluatorFactory::EEvaluationModality::Testing
+			Client::IInstantEvaluatorFactory::ECostCategory::Cheap,
+			Client::IInstantEvaluatorFactory::EEvaluationModality::Testing
 		>
 		{
 		public:
@@ -81,10 +81,10 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CInstantEvaluator_TestLocationInNavMesh : public client::CInstantEvaluatorBase<
+		class CInstantEvaluator_TestLocationInNavMesh : public Client::CInstantEvaluatorBase<
 			CInstantEvaluator_TestLocationInNavMesh,
-			client::IInstantEvaluatorFactory::ECostCategory::Expensive,
-			client::IInstantEvaluatorFactory::EEvaluationModality::Testing
+			Client::IInstantEvaluatorFactory::ECostCategory::Expensive,
+			Client::IInstantEvaluatorFactory::EEvaluationModality::Testing
 		>
 		{
 		public:
@@ -117,10 +117,10 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CInstantEvaluator_ScoreDistance : public client::CInstantEvaluatorBase<
+		class CInstantEvaluator_ScoreDistance : public Client::CInstantEvaluatorBase<
 			CInstantEvaluator_ScoreDistance,
-			client::IInstantEvaluatorFactory::ECostCategory::Cheap,
-			client::IInstantEvaluatorFactory::EEvaluationModality::Scoring
+			Client::IInstantEvaluatorFactory::ECostCategory::Cheap,
+			Client::IInstantEvaluatorFactory::EEvaluationModality::Scoring
 		>
 		{
 		public:
@@ -150,10 +150,10 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CInstantEvaluator_ScoreDistanceInverse : public client::CInstantEvaluatorBase<
+		class CInstantEvaluator_ScoreDistanceInverse : public Client::CInstantEvaluatorBase<
 			CInstantEvaluator_ScoreDistanceInverse,
-			client::IInstantEvaluatorFactory::ECostCategory::Cheap,
-			client::IInstantEvaluatorFactory::EEvaluationModality::Scoring
+			Client::IInstantEvaluatorFactory::ECostCategory::Cheap,
+			Client::IInstantEvaluatorFactory::EEvaluationModality::Scoring
 		>
 		{
 		public:
@@ -181,10 +181,10 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CInstantEvaluator_ScoreRandom : public client::CInstantEvaluatorBase<
+		class CInstantEvaluator_ScoreRandom : public Client::CInstantEvaluatorBase<
 			CInstantEvaluator_ScoreRandom,
-			client::IInstantEvaluatorFactory::ECostCategory::Cheap,
-			client::IInstantEvaluatorFactory::EEvaluationModality::Scoring
+			Client::IInstantEvaluatorFactory::ECostCategory::Cheap,
+			Client::IInstantEvaluatorFactory::EEvaluationModality::Scoring
 		>
 		{
 		public:

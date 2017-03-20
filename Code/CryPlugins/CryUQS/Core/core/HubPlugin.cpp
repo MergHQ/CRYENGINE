@@ -9,9 +9,9 @@
 // - not required when building a .lib
 #include <CryCore/Platform/platform_impl.inl>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================

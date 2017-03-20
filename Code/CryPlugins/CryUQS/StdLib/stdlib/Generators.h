@@ -6,9 +6,9 @@
 
 #include <CryAISystem/INavigationSystem.h>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
 		//===================================================================================
@@ -22,7 +22,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CGenerator_PointsOnPureGrid : public client::CGeneratorBase<CGenerator_PointsOnPureGrid, Pos3>
+		class CGenerator_PointsOnPureGrid : public Client::CGeneratorBase<CGenerator_PointsOnPureGrid, Pos3>
 		{
 		public:
 			struct SParams
@@ -40,7 +40,7 @@ namespace uqs
 
 		public:
 			explicit                    CGenerator_PointsOnPureGrid(const SParams& params);
-			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Pos3>& itemListToPopulate);
+			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, Client::CItemListProxy_Writable<Pos3>& itemListToPopulate);
 
 		private:
 			const SParams               m_params;
@@ -57,7 +57,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CGenerator_PointsOnNavMesh : public client::CGeneratorBase<CGenerator_PointsOnNavMesh, Pos3>
+		class CGenerator_PointsOnNavMesh : public Client::CGeneratorBase<CGenerator_PointsOnNavMesh, Pos3>
 		{
 		public:
 			struct SParams
@@ -77,7 +77,7 @@ namespace uqs
 
 		public:
 			explicit                    CGenerator_PointsOnNavMesh(const SParams& params);
-			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Pos3>& itemListToPopulate);
+			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, Client::CItemListProxy_Writable<Pos3>& itemListToPopulate);
 
 		private:
 			const SParams               m_params;

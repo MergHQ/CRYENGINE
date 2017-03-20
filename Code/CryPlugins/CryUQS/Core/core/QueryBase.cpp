@@ -5,11 +5,11 @@
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
 // make the global Serialize() functions available for use in yasli serialization
-using uqs::core::Serialize;
+using UQS::Core::Serialize;
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -130,7 +130,7 @@ namespace uqs
 			return m_bRequiresSomeTimeBudgetForExecution;
 		}
 
-		bool CQueryBase::InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& queryBlueprint, const shared::IVariantDict& runtimeParams, shared::CUqsString& error)
+		bool CQueryBase::InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& queryBlueprint, const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
 			assert(!m_queryBlueprint);	// we don't support recycling the query
 
@@ -197,7 +197,7 @@ namespace uqs
 			return OnInstantiateFromQueryBlueprint(runtimeParams, error);
 		}
 
-		void CQueryBase::AddItemMonitor(client::ItemMonitorUniquePtr&& pItemMonitor)
+		void CQueryBase::AddItemMonitor(Client::ItemMonitorUniquePtr&& pItemMonitor)
 		{
 			assert(pItemMonitor);
 			m_itemMonitors.push_back(std::move(pItemMonitor));
@@ -207,7 +207,7 @@ namespace uqs
 		{
 			if (!m_itemMonitors.empty())
 			{
-				for (client::ItemMonitorUniquePtr& pItemMonitor : m_itemMonitors)
+				for (Client::ItemMonitorUniquePtr& pItemMonitor : m_itemMonitors)
 				{
 					receiver.m_itemMonitors.push_back(std::move(pItemMonitor));
 				}
@@ -215,7 +215,7 @@ namespace uqs
 			}
 		}
 
-		CQueryBase::EUpdateState CQueryBase::Update(const CTimeValue& amountOfGrantedTime, shared::CUqsString& error)
+		CQueryBase::EUpdateState CQueryBase::Update(const CTimeValue& amountOfGrantedTime, Shared::CUqsString& error)
 		{
 			++m_totalElapsedFrames;
 
@@ -239,13 +239,13 @@ namespace uqs
 
 			if (!m_itemMonitors.empty())
 			{
-				for (const client::ItemMonitorUniquePtr& pItemMonitor : m_itemMonitors)
+				for (const Client::ItemMonitorUniquePtr& pItemMonitor : m_itemMonitors)
 				{
 					assert(pItemMonitor);
 
-					const client::IItemMonitor::EHealthState healthState = pItemMonitor->UpdateAndCheckForCorruption(error);
+					const Client::IItemMonitor::EHealthState healthState = pItemMonitor->UpdateAndCheckForCorruption(error);
 
-					if (healthState == client::IItemMonitor::EHealthState::CorruptionOccurred)
+					if (healthState == Client::IItemMonitor::EHealthState::CorruptionOccurred)
 					{
 						bCorruptionOccurred = true;
 						break;
@@ -337,7 +337,7 @@ namespace uqs
 			if (m_pHistory)
 			{
 				CDebugRenderWorldPersistent& debugRW = m_pHistory->GetDebugRenderWorldPersistent();
-				const std::map<string, shared::CVariantDict::SDataEntry>& globalParamsAsMap = m_globalParams.GetEntries();
+				const std::map<string, Shared::CVariantDict::SDataEntry>& globalParamsAsMap = m_globalParams.GetEntries();
 
 				//
 				// add all items from the global constant-parameters to the debug-render-world that want to be shown
@@ -354,7 +354,7 @@ namespace uqs
 							auto it = globalParamsAsMap.find(paramName);
 							assert(it != globalParamsAsMap.cend());
 
-							const shared::CVariantDict::SDataEntry& entry = it->second;
+							const Shared::CVariantDict::SDataEntry& entry = it->second;
 							entry.pItemFactory->AddItemToDebugRenderWorld(entry.pObject, debugRW);
 						}
 					}
@@ -375,7 +375,7 @@ namespace uqs
 							auto it = globalParamsAsMap.find(paramName);
 							assert(it != globalParamsAsMap.cend());
 
-							const shared::CVariantDict::SDataEntry& entry = it->second;
+							const Shared::CVariantDict::SDataEntry& entry = it->second;
 							entry.pItemFactory->AddItemToDebugRenderWorld(entry.pObject, debugRW);
 						}
 					}

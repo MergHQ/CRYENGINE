@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		CQuery_SequentialBase::CQuery_SequentialBase(const SCtorContext& ctorContext)
@@ -25,7 +25,7 @@ namespace uqs
 			g_hubImpl->GetQueryManager().CancelQuery(m_queryIDOfCurrentlyRunningChild);
 		}
 
-		bool CQuery_SequentialBase::OnInstantiateFromQueryBlueprint(const shared::IVariantDict& runtimeParams, shared::CUqsString& error)
+		bool CQuery_SequentialBase::OnInstantiateFromQueryBlueprint(const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
 			// no children? -> exception
 			if (m_queryBlueprint->GetChildCount() == 0)
@@ -48,7 +48,7 @@ namespace uqs
 			return true;
 		}
 
-		CQueryBase::EUpdateState CQuery_SequentialBase::OnUpdate(shared::CUqsString& error)
+		CQueryBase::EUpdateState CQuery_SequentialBase::OnUpdate(Shared::CUqsString& error)
 		{
 			// did an error occur during the last child query?
 			if (m_bExceptionOccurredInChild)
@@ -124,7 +124,7 @@ namespace uqs
 			// TODO: copying the items from the result set to a separate list is not very efficient
 			//       -> would be better to somehow move-transfer what is in the underlying CItemList
 
-			client::IItemFactory& itemFactory = resultSetOfPreviousChildQuery.GetItemFactory();
+			Client::IItemFactory& itemFactory = resultSetOfPreviousChildQuery.GetItemFactory();
 			const size_t numItemsInResultSet = resultSetOfPreviousChildQuery.GetResultCount();
 
 			m_pResultingItemsOfLastChildQuery.reset(new CItemList);

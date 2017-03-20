@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -22,8 +22,8 @@ namespace uqs
 			virtual ITextualInputBlueprint&               GetInputRoot() = 0;
 			virtual const char*                           GetGeneratorName() const = 0;
 			virtual const ITextualInputBlueprint&         GetInputRoot() const = 0;
-			virtual void                                  SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr) = 0;
-			virtual datasource::ISyntaxErrorCollector*    GetSyntaxErrorCollector() const = 0;     // called while resolving a blueprint from its textual representation into the "in-memory" representation
+			virtual void                                  SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) = 0;
+			virtual DataSource::ISyntaxErrorCollector*    GetSyntaxErrorCollector() const = 0;     // called while resolving a blueprint from its textual representation into the "in-memory" representation
 		};
 
 	}

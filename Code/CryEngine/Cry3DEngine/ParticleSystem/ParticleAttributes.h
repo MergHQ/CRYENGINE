@@ -33,8 +33,8 @@ struct SAttribute
 	EAttributeType  m_type;
 	EAttributeScope m_scope;
 	ColorB          m_asColor;
-	float           m_minInt;
-	float           m_maxInt;
+	int             m_minInt;
+	int             m_maxInt;
 	float           m_asFloat;
 	float           m_minFloat;
 	float           m_maxFloat;
@@ -52,32 +52,39 @@ public:
 	void              Serialize(Serialization::IArchive& ar);
 
 private:
-	std::vector<SAttribute> m_attributes;
+	std::vector<SAttribute>           m_attributes;
+	IParticleAttributes::TAttributeId m_nextId = 0;
 };
+
+typedef std::shared_ptr<CAttributeTable> TAttributeTablePtr;
 
 class CAttributeInstance : public IParticleAttributes
 {
-private:
+public:
 	struct SData
 	{
-		union
-		{
-			bool  m_asBool;
-			int   m_asInt;
-			float m_asFloat;
-			UCol  m_asColor;
-		};
+		SData() = default;
+		explicit SData(ColorB value) : m_asColor(value) {}
+		explicit SData(int value) : m_asInt(value) {}
+		explicit SData(float value) : m_asFloat(value) {}
+		explicit SData(bool value) : m_asBool(value) {}
+		ColorB m_asColor;		
+		int    m_asInt;
+		float  m_asFloat;
+		bool   m_asBool;
 	};
 
 public:
 	CAttributeInstance();
 
 	// IParticleAttributes
-	virtual void         UpdateScriptTable(const SmartScriptTable& scriptTable);
+	virtual void         Reset(IParticleAttributes* pCopySource = nullptr);
+	virtual void         Serialize(Serialization::IArchive& ar);
+	virtual void         TransferInto(IParticleAttributes* pReceiver) const;
 	virtual TAttributeId FindAttributeIdByName(cstr name) const;
 	virtual uint         GetNumAttributes() const;
-	virtual cstr         GetAttributeName(uint idx) const;
-	virtual EType        GetAttributeType(uint idx) const;
+	virtual cstr         GetAttributeName(TAttributeId idx) const;
+	virtual EType        GetAttributeType(TAttributeId idx) const;
 	virtual bool         GetAsBoolean(TAttributeId id, bool defaultValue) const;
 	virtual int          GetAsInteger(TAttributeId id, int defaultValue) const;
 	virtual float        GetAsFloat(TAttributeId id, float defaultValue) const;
@@ -90,14 +97,17 @@ public:
 	virtual void         SetAsColor(TAttributeId id, ColorF value);
 	// ~IParticleAttributes
 
-	void              Reset();
-	void              Reset(const CAttributeTable* pTable, EAttributeScope scope);
+	void              Reset(TAttributeTablePtr pTable, EAttributeScope scope);
 	const SAttribute& GetAttribute(TAttributeId attributeId) const;
 
 private:
-	std::vector<uint>      m_attributeIndices;
-	std::vector<SData>     m_data;
-	const CAttributeTable* m_pAttributeTable;
+	SData SetAttribute(TAttributeId id, const SData& input, IParticleAttributes::EType type);
+	SData GetAttribute(TAttributeId id, const SData& defaultValue, IParticleAttributes::EType type) const;
+
+private:
+	std::vector<uint>                    m_attributeIndices;
+	std::vector<SData>                   m_data;
+	std::weak_ptr<const CAttributeTable> m_pAttributeTable;
 };
 
 }

@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -25,10 +25,10 @@ namespace uqs
 			private:
 				struct SStoredParameterInfo
 				{
-					explicit                        SStoredParameterInfo(const char* _name, const shared::CTypeInfo& _type, size_t _offset);
+					explicit                        SStoredParameterInfo(const char* _name, const Shared::CTypeInfo& _type, size_t _offset);
 
 					string                          name;
-					const shared::CTypeInfo&        type;
+					const Shared::CTypeInfo&        type;
 					size_t                          offset;
 				};
 
@@ -36,7 +36,7 @@ namespace uqs
 				virtual size_t                      GetParameterCount() const override;
 				virtual SParameterInfo              GetParameter(size_t index) const override;
 
-				void                                RegisterParameterType(const char* paramName, const shared::CTypeInfo& typeInfo, size_t offset);
+				void                                RegisterParameterType(const char* paramName, const Shared::CTypeInfo& typeInfo, size_t offset);
 
 			private:
 				std::vector<SStoredParameterInfo>   m_parametersInOrder;

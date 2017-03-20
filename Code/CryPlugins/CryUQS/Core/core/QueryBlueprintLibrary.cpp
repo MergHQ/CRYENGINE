@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		CQueryBlueprintLibrary::CQueryBlueprintLibrary()
@@ -15,7 +15,7 @@ namespace uqs
 			// nothing
 		}
 
-		CQueryBlueprintLibrary::ELoadAndStoreResult CQueryBlueprintLibrary::LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, datasource::IQueryBlueprintLoader& loader, shared::IUqsString& error)
+		CQueryBlueprintLibrary::ELoadAndStoreResult CQueryBlueprintLibrary::LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, DataSource::IQueryBlueprintLoader& loader, Shared::IUqsString& error)
 		{
 			CTextualQueryBlueprint textualQueryBP;
 
@@ -58,7 +58,7 @@ namespace uqs
 			return bQueryBPExistsAlready ? ELoadAndStoreResult::OverwrittenExistingOne : ELoadAndStoreResult::StoredFromScratch;
 		}
 
-		bool CQueryBlueprintLibrary::RemoveStoredQueryBlueprint(const char* szQueryBlueprintName, shared::IUqsString& error)
+		bool CQueryBlueprintLibrary::RemoveStoredQueryBlueprint(const char* szQueryBlueprintName, Shared::IUqsString& error)
 		{
 			auto it = m_queryBlueprintsMap.find(szQueryBlueprintName);
 			if (it == m_queryBlueprintsMap.cend())

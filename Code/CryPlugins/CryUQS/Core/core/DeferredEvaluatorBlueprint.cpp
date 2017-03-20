@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -51,12 +51,12 @@ namespace uqs
 			return m_weight;
 		}
 
-		void CTextualDeferredEvaluatorBlueprint::SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualDeferredEvaluatorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
 		{
 			m_pSyntaxErrorCollector = std::move(ptr);
 		}
 
-		datasource::ISyntaxErrorCollector* CTextualDeferredEvaluatorBlueprint::GetSyntaxErrorCollector() const
+		DataSource::ISyntaxErrorCollector* CTextualDeferredEvaluatorBlueprint::GetSyntaxErrorCollector() const
 		{
 			return m_pSyntaxErrorCollector.get();
 		}
@@ -79,7 +79,7 @@ namespace uqs
 			m_pDeferredEvaluatorFactory = g_hubImpl->GetDeferredEvaluatorFactoryDatabase().FindFactoryByName(evaluatorName);
 			if (!m_pDeferredEvaluatorFactory)
 			{
-				if (datasource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+				if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
 				{
 					pSE->AddErrorMessage("Unknown DeferredEvaluatorFactory '%s'", evaluatorName);
 				}
@@ -90,7 +90,7 @@ namespace uqs
 
 			CInputBlueprint inputRoot;
 			const ITextualInputBlueprint& textualInputRoot = source.GetInputRoot();
-			const client::IInputParameterRegistry& inputParamsReg = m_pDeferredEvaluatorFactory->GetInputParameterRegistry();
+			const Client::IInputParameterRegistry& inputParamsReg = m_pDeferredEvaluatorFactory->GetInputParameterRegistry();
 
 			if (!inputRoot.Resolve(textualInputRoot, inputParamsReg, queryBlueprintForGlobalParamChecking, false))
 			{
@@ -102,7 +102,7 @@ namespace uqs
 			return true;
 		}
 
-		client::IDeferredEvaluatorFactory& CDeferredEvaluatorBlueprint::GetFactory() const
+		Client::IDeferredEvaluatorFactory& CDeferredEvaluatorBlueprint::GetFactory() const
 		{
 			assert(m_pDeferredEvaluatorFactory);
 			return *m_pDeferredEvaluatorFactory;

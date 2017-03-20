@@ -18,6 +18,20 @@ namespace pfx2
 //////////////////////////////////////////////////////////////////////////
 // CParticleContainer
 
+template<typename T>
+ILINE T* CParticleContainer::GetData(EParticleDataType type)
+{
+	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<T>());
+	return reinterpret_cast<T*>(m_pData[type]);
+}
+
+template<typename T>
+ILINE const T* CParticleContainer::GetData(EParticleDataType type) const
+{
+	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<T>());
+	return reinterpret_cast<const T*>(m_pData[type]);
+}
+
 ILINE TParticleId CParticleContainer::GetRealId(TParticleId pId) const
 {
 	if (pId < m_lastId)
@@ -79,7 +93,7 @@ ILINE IOFStream CParticleContainer::GetIOFStream(EParticleDataType type)
 
 ILINE IVec3Stream CParticleContainer::GetIVec3Stream(EParticleDataType type, Vec3 defaultVal) const
 {
-	CRY_PFX2_ASSERT(type.info().isType<float>(3));
+	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(3));
 	return IVec3Stream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),
@@ -89,7 +103,7 @@ ILINE IVec3Stream CParticleContainer::GetIVec3Stream(EParticleDataType type, Vec
 
 ILINE IOVec3Stream CParticleContainer::GetIOVec3Stream(EParticleDataType type)
 {
-	CRY_PFX2_ASSERT(type.info().isType<float>(3));
+	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(3));
 	return IOVec3Stream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),
@@ -98,7 +112,7 @@ ILINE IOVec3Stream CParticleContainer::GetIOVec3Stream(EParticleDataType type)
 
 ILINE IQuatStream CParticleContainer::GetIQuatStream(EParticleDataType type, Quat defaultVal) const
 {
-	CRY_PFX2_ASSERT(type.info().isType<float>(4));
+	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(4));
 	return IQuatStream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),
@@ -108,7 +122,7 @@ ILINE IQuatStream CParticleContainer::GetIQuatStream(EParticleDataType type, Qua
 }
 ILINE IOQuatStream CParticleContainer::GetIOQuatStream(EParticleDataType type)
 {
-	CRY_PFX2_ASSERT(type.info().isType<float>(4));
+	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(4));
 	return IOQuatStream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),
@@ -116,9 +130,9 @@ ILINE IOQuatStream CParticleContainer::GetIOQuatStream(EParticleDataType type)
 	  GetData<float>(type + 3u));
 }
 
-ILINE IColorStream CParticleContainer::GetIColorStream(EParticleDataType type) const
+ILINE IColorStream CParticleContainer::GetIColorStream(EParticleDataType type, UCol defaultVal) const
 {
-	return IColorStream(GetData<UCol>(type));
+	return IColorStream(GetData<UCol>(type), defaultVal);
 }
 
 ILINE IOColorStream CParticleContainer::GetIOColorStream(EParticleDataType type)
@@ -128,7 +142,7 @@ ILINE IOColorStream CParticleContainer::GetIOColorStream(EParticleDataType type)
 
 ILINE IUintStream CParticleContainer::GetIUintStream(EParticleDataType type, uint32 defaultVal) const
 {
-	return IUintStream(GetData<uint>(type));
+	return IUintStream(GetData<uint>(type), defaultVal);
 }
 
 ILINE IOUintStream CParticleContainer::GetIOUintStream(EParticleDataType type)
@@ -138,7 +152,7 @@ ILINE IOUintStream CParticleContainer::GetIOUintStream(EParticleDataType type)
 
 ILINE IPidStream CParticleContainer::GetIPidStream(EParticleDataType type, TParticleId defaultVal) const
 {
-	return IPidStream(GetData<TParticleId>(type));
+	return IPidStream(GetData<TParticleId>(type), defaultVal);
 }
 
 ILINE IOPidStream CParticleContainer::GetIOPidStream(EParticleDataType type)
@@ -149,7 +163,7 @@ ILINE IOPidStream CParticleContainer::GetIOPidStream(EParticleDataType type)
 template<typename T>
 ILINE TIStream<T> CParticleContainer::GetTIStream(EParticleDataType type, const T& defaultVal) const
 {
-	return TIStream<T>(GetData<T>(type));
+	return TIStream<T>(GetData<T>(type), defaultVal);
 }
 
 template<typename T>

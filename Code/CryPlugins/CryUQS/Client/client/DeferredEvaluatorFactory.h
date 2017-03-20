@@ -4,11 +4,11 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -67,7 +67,7 @@ namespace uqs
 				return *m_pParamsHolderFactory;
 			}
 
-		} // namespace internal
+		} // namespace Internal
 
 		//===================================================================================
 		//
@@ -76,7 +76,7 @@ namespace uqs
 		//===================================================================================
 
 		template <class TDeferredEvaluator>
-		class CDeferredEvaluatorFactory final : public internal::CDeferredEvaluatorFactoryBase
+		class CDeferredEvaluatorFactory final : public Internal::CDeferredEvaluatorFactoryBase
 		{
 		public:
 			explicit                                 CDeferredEvaluatorFactory(const char* evaluatorName);
@@ -105,7 +105,7 @@ namespace uqs
 		{
 			const typename TDeferredEvaluator::SParams* pActualParams = static_cast<const typename TDeferredEvaluator::SParams*>(pParams);
 			TDeferredEvaluator* pEvaluator = new TDeferredEvaluator(*pActualParams);
-			internal::CDeferredEvaluatorDeleter deleter(*this);
+			Internal::CDeferredEvaluatorDeleter deleter(*this);
 			return DeferredEvaluatorUniquePtr(pEvaluator, deleter);
 		}
 
@@ -118,7 +118,7 @@ namespace uqs
 		template <class TDeferredEvaluator>
 		ParamsHolderUniquePtr CDeferredEvaluatorFactory<TDeferredEvaluator>::CreateParamsHolder()
 		{
-			internal::CParamsHolder<typename TDeferredEvaluator::SParams>* pParamsHolder = new internal::CParamsHolder<typename TDeferredEvaluator::SParams>;
+			Internal::CParamsHolder<typename TDeferredEvaluator::SParams>* pParamsHolder = new Internal::CParamsHolder<typename TDeferredEvaluator::SParams>;
 			CParamsHolderDeleter deleter(*this);
 			return ParamsHolderUniquePtr(pParamsHolder, deleter);
 		}

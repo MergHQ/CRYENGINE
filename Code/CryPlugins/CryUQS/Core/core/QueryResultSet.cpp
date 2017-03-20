@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -21,7 +21,7 @@ namespace uqs
 			// nothing
 		}
 
-		client::IItemFactory& CQueryResultSet::GetItemFactory() const
+		Client::IItemFactory& CQueryResultSet::GetItemFactory() const
 		{
 			assert(m_pItemFactory);
 			return *m_pItemFactory;
@@ -46,7 +46,7 @@ namespace uqs
 			return SResultSetEntry(item, score);
 		}
 
-		void CQueryResultSet::SetItemFactoryAndCreateItems(client::IItemFactory& itemFactory, size_t numItemsToCreate)
+		void CQueryResultSet::SetItemFactoryAndCreateItems(Client::IItemFactory& itemFactory, size_t numItemsToCreate)
 		{
 			assert(!m_pItemFactory);
 

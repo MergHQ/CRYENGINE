@@ -99,11 +99,6 @@ ILINE ColorFv operator*(const ColorFv& a, floatv b)
 	  Mul(a.b, b));
 }
 
-ILINE floatv DeltaTime(floatv normAge, floatv frameTime)
-{
-	return __fsel(normAge, frameTime, -(normAge * frameTime));
-}
-
 ILINE ColorFv ToColorFv(UColv color)
 {
 	ColorFv result;
@@ -172,7 +167,7 @@ ILINE floatv cos_fast(floatv x)
 ILINE Quatv quat_exp_fast(Vec3v v)
 {
 	const floatv lenSqr = v.len2();
-	const floatv len = sqrt_fast_tpl(lenSqr);
+	const floatv len = sqrt_fast(lenSqr);
 	const floatv invLen = rcp_fast(max(len, convert<floatv>(FLT_MIN)));
 	const floatv s = sin_fast(len) * invLen;
 	const floatv c = cos_fast(len);

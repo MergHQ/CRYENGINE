@@ -815,8 +815,10 @@ float CStatObj::GetExtent(EGeomForm eForm)
 	}
 
 	CGeomExtent& ext = m_Extents.Make(eForm);
-	if (!ext)
+	if (!ext || ext.TotalExtent() == 0.0f)
 	{
+		ext.Clear();
+
 		// Create parts for main and sub-objects.
 		ext.ReserveParts(1 + nSubCount);
 

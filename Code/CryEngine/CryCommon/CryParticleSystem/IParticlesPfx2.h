@@ -24,6 +24,23 @@ struct IParticleEffectPfx2;
 typedef _smart_ptr<IParticleEffectPfx2> PParticleEffect;
 typedef _smart_ptr<IParticleEmitter>    PParticleEmitter;
 
+struct SParticleStats
+{
+	uint m_emittersAlive = 0;
+	uint m_emittersUpdated = 0;
+	uint m_emittersRendererd = 0;
+
+	uint m_runtimesAlive = 0;
+	uint m_runtimesUpdated = 0;
+	uint m_runtimesRendered = 0;
+
+	uint m_particlesAllocated = 0;
+	uint m_particlesAlive = 0;
+	uint m_particlesUpdated = 0;
+	uint m_particlesRendered = 0;
+	uint m_particlesClipped = 0;
+};
+
 struct SParticleFeatureParams
 {
 	const char*       m_groupName;
@@ -62,6 +79,7 @@ enum EUpdateList
 	EUL_KillUpdate,       // this feature needs to run logic for particles that are being killed
 	EUL_PreUpdate,        // this feature changes particles over time before the main update
 	EUL_Update,           // this feature changes particle data over time
+	EUL_PostUpdate,       // this feature changes particles after the main update
 	EUL_Render,           // this feature has geometry to render
 	EUL_RenderDeferred,   // this feature has geometry to render but can only render after all updates are done
 
@@ -125,8 +143,11 @@ class ICommonParticleComponentRuntime : public _i_reference_target_t
 public:
 	struct SInstance
 	{
-		SInstance() {}
+		SInstance(TParticleId id = 0, float delay = 0.0f)
+			: m_parentId(id), m_startDelay(delay) {}
+
 		TParticleId m_parentId;
+		float m_startDelay;
 	};
 	virtual ~ICommonParticleComponentRuntime() {}
 
@@ -142,7 +163,6 @@ public:
 
 	virtual void        AddSubInstances(SInstance* pInstances, size_t count) = 0;
 	virtual void        ReparentParticles(const uint* swapIds, const uint numSwapIds) = 0;
-	virtual void        MainPreUpdate() = 0;
 };
 
 struct IParticleEffectPfx2 : public IParticleEffect
@@ -166,6 +186,7 @@ struct IParticleSystem : public ICryUnknown
 	virtual PParticleEmitter        CreateEmitter(PParticleEffect pEffect) = 0;
 	virtual uint                    GetNumFeatureParams() const = 0;
 	virtual SParticleFeatureParams& GetFeatureParam(uint featureIdx) const = 0;
+	virtual TParticleAttributesPtr  CreateParticleAttributes() const = 0;
 
 	virtual void                    OnFrameStart() = 0;
 	virtual void                    Update() = 0;
@@ -173,7 +194,7 @@ struct IParticleSystem : public ICryUnknown
 
 	virtual void                    Serialize(TSerialize ser) = 0;
 
-	virtual void                    GetCounts(SParticleCounts& counts) = 0;
+	virtual void                    GetStats(SParticleStats& stats) = 0;
 	virtual void                    GetMemoryUsage(ICrySizer* pSizer) const = 0;
 };
 

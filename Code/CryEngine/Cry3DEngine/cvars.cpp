@@ -189,7 +189,8 @@ void CVars::Init()
 	                   " x = show bounding box stats"
 	                   " d = force dynamic bounds and update for all emitters"
 	                   " c = disable clipping against water and vis area bounds"
-	                   " z = freeze particle system");
+	                   " z = freeze particle system"
+	                   " t = used by developers to debug test algorithms");
 	REGISTER_CVAR(e_ParticlesThread, 1, VF_BITFIELD,
 	              "Enable particle threading");
 	REGISTER_CVAR(e_ParticlesObjectCollisions, 2, VF_NULL,
@@ -239,7 +240,8 @@ void CVars::Init()
 	              "2 - disable the warning message when running out of pool memory");
 	REGISTER_CVAR(e_ParticlesProfiler, 0, VF_BITFIELD,
 		          "Wavicle only:\n"
-                  "1 - Display profiler on screen\n"
+                  "1 - Display performance profiler on screen\n"
+                  "2 - Display memory profiler on screen\n"
 		          "f - Output statistics to a csv file");
 	e_ParticlesProfilerOutputFolder = REGISTER_STRING("e_ParticlesProfilerOutputFolder", "%USER%/ParticlesProfiler/", VF_NULL,
 		"Folder to output particle profiler");

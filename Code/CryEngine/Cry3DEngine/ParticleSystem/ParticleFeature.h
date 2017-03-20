@@ -87,6 +87,9 @@ public:
 	// EUL_Update
 	virtual void Update(const SUpdateContext& context) {}
 
+	// EUL_PostUpdate
+	virtual void PostUpdate(const SUpdateContext& context) {}
+
 	// EUL_Render
 	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                            {}
 	virtual void ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                              {}

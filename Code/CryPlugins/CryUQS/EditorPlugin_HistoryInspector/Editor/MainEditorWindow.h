@@ -20,7 +20,7 @@ struct SQuery;
 class CHistoricQueryTreeModel;
 class CHistoricQueryTreeView;
 
-class CMainEditorWindow : public CDockableWindow, public IEditorNotifyListener, public uqs::core::IQueryHistoryListener, public uqs::core::IQueryHistoryConsumer
+class CMainEditorWindow : public CDockableWindow, public IEditorNotifyListener, public UQS::Core::IQueryHistoryListener, public UQS::Core::IQueryHistoryConsumer
 {
 	Q_OBJECT
 
@@ -39,7 +39,7 @@ public:
 	// ~IEditorNotifyListener
 
 	// ~IQueryHistoryListener
-	virtual void OnQueryHistoryEvent(const uqs::core::IQueryHistoryListener::SEvent& ev) override;
+	virtual void OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListener::SEvent& ev) override;
 	// ~IQueryHistoryListener
 
 	// IQueryHistoryConsumer
@@ -58,7 +58,7 @@ private:
 	void OnTreeViewCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
 
 private:
-	uqs::core::IQueryHistoryManager* m_pQueryHistoryManager;
+	UQS::Core::IQueryHistoryManager* m_pQueryHistoryManager;
 	SQuery*                          m_pFreshlyAddedOrUpdatedQuery;
 	CHistoricQueryTreeView*          m_pTreeView;
 	CHistoricQueryTreeModel*         m_pTreeModel;

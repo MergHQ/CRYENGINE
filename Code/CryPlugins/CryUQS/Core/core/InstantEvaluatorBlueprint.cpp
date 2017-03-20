@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace core
+	namespace Core
 	{
 
 		//===================================================================================
@@ -51,12 +51,12 @@ namespace uqs
 			return m_weight;
 		}
 
-		void CTextualInstantEvaluatorBlueprint::SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualInstantEvaluatorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
 		{
 			m_pSyntaxErrorCollector = std::move(ptr);
 		}
 
-		datasource::ISyntaxErrorCollector* CTextualInstantEvaluatorBlueprint::GetSyntaxErrorCollector() const
+		DataSource::ISyntaxErrorCollector* CTextualInstantEvaluatorBlueprint::GetSyntaxErrorCollector() const
 		{
 			return m_pSyntaxErrorCollector.get();
 		}
@@ -79,7 +79,7 @@ namespace uqs
 			m_pInstantEvaluatorFactory = g_hubImpl->GetInstantEvaluatorFactoryDatabase().FindFactoryByName(evaluatorName);
 			if (!m_pInstantEvaluatorFactory)
 			{
-				if (datasource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+				if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
 				{
 					pSE->AddErrorMessage("Unknown InstantEvaluatorFactory '%s'", evaluatorName);
 				}
@@ -90,7 +90,7 @@ namespace uqs
 
 			CInputBlueprint inputRoot;
 			const ITextualInputBlueprint& textualInputRoot = source.GetInputRoot();
-			const client::IInputParameterRegistry& inputParamsReg = m_pInstantEvaluatorFactory->GetInputParameterRegistry();
+			const Client::IInputParameterRegistry& inputParamsReg = m_pInstantEvaluatorFactory->GetInputParameterRegistry();
 
 			if (!inputRoot.Resolve(textualInputRoot, inputParamsReg, queryBlueprintForGlobalParamChecking, false))
 			{
@@ -102,7 +102,7 @@ namespace uqs
 			return true;
 		}
 
-		client::IInstantEvaluatorFactory& CInstantEvaluatorBlueprint::GetFactory() const
+		Client::IInstantEvaluatorFactory& CInstantEvaluatorBlueprint::GetFactory() const
 		{
 			assert(m_pInstantEvaluatorFactory);
 			return *m_pInstantEvaluatorFactory;
@@ -120,11 +120,11 @@ namespace uqs
 
 			switch (m_pInstantEvaluatorFactory->GetCostCategory())
 			{
-			case client::IInstantEvaluatorFactory::ECostCategory::Cheap:
+			case Client::IInstantEvaluatorFactory::ECostCategory::Cheap:
 				cost = "cheap";
 				break;
 
-			case client::IInstantEvaluatorFactory::ECostCategory::Expensive:
+			case Client::IInstantEvaluatorFactory::ECostCategory::Expensive:
 				cost = "expensive";
 				break;
 
@@ -135,11 +135,11 @@ namespace uqs
 
 			switch (m_pInstantEvaluatorFactory->GetEvaluationModality())
 			{
-			case client::IInstantEvaluatorFactory::EEvaluationModality::Testing:
+			case Client::IInstantEvaluatorFactory::EEvaluationModality::Testing:
 				modality = "tester";
 				break;
 
-			case client::IInstantEvaluatorFactory::EEvaluationModality::Scoring:
+			case Client::IInstantEvaluatorFactory::EEvaluationModality::Scoring:
 				modality = "scorer";
 				break;
 

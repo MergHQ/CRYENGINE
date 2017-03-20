@@ -62,10 +62,19 @@ struct TValue
 {
 public:
 	typedef T TType;
-	TValue(TType var = TType(0)) { Set(var); }
-	void Set(TType value) { m_value = CLAMP(TConvert::To(value), HardMin(), HardMax()); }
 
-	operator TType() const { return m_value; }
+	TValue() { Set(TConvert::To(TType())); }
+	TValue(TType var) { Set(var); }
+	void Set(TType value)
+	{
+		if (TLimits::isHardMin)
+			value = max(value, HardMin());
+		if (TLimits::isHardMax)
+			value = min(value, HardMax());
+		m_value = value;
+	}
+
+	operator TType() const    { return m_value; }
 	TType        Get() const  { return m_value; }
 	TType        Base() const { return m_value; }
 	TType        Min() const  { return m_value; }
@@ -82,7 +91,7 @@ private:
 	{
 		TType v = TConvert::From(val.m_value);
 		bool res = ar(
-		  Serialization::Range(v, (TType)HardMin(), (TType)HardMax()),
+		  Serialization::Range(v, HardMin(), HardMax()),
 		  name, label);
 		val.m_value = TConvert::To(v);
 		return res;
@@ -151,6 +160,19 @@ typedef TValue<float, SSoftLimit<360>, ConvertDegrees>        SAngle;
 typedef TValue<float, USoftLimit<360>, ConvertDegrees>        UAngle;
 typedef TValue<float, THardLimits<-360, 360>, ConvertDegrees> SAngle360;
 typedef TValue<float, THardLimits<0, 180>, ConvertDegrees>    UAngle180;
+
+struct ConvertInfinite
+{
+	static float From(float val)
+	{
+		return val < std::numeric_limits<float>::max() ? val : 0.0f;
+	}
+	static float To(float val)
+	{ 
+		return val != 0.0f ? val : gInfinity; 
+	}
+};
+typedef TValue<float, USoftLimit<100>, ConvertInfinite>       UFloatInf;
 
 }
 

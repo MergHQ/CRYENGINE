@@ -5,9 +5,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace datasource_xml
+	namespace DataSource_XML
 	{
 
 		CQueryBlueprintSaver_XML::CQueryBlueprintSaver_XML(const char* xmlFileNameToSaveTo)
@@ -18,7 +18,7 @@ namespace uqs
 			// nothing
 		}
 
-		bool CQueryBlueprintSaver_XML::SaveTextualQueryBlueprint(const core::ITextualQueryBlueprint& queryBlueprintToSave, shared::IUqsString& error)
+		bool CQueryBlueprintSaver_XML::SaveTextualQueryBlueprint(const Core::ITextualQueryBlueprint& queryBlueprintToSave, Shared::IUqsString& error)
 		{
 			m_queryElementToSaveTo = gEnv->pSystem->CreateXmlNode("Query");
 
@@ -62,7 +62,7 @@ namespace uqs
 			// all <InstantEvaluator>s
 			for (size_t i = 0; i < m_query->GetInstantEvaluatorCount(); ++i)
 			{
-				const core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_query->GetInstantEvaluator(i);
+				const Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_query->GetInstantEvaluator(i);
 				XmlNodeRef instantEvaluatorElement = queryElementToSaveTo->newChild("InstantEvaluator");
 				SaveInstantEvaluatorElement(instantEvaluatorElement, textualInstantEvaluatorBP);
 			}
@@ -70,16 +70,16 @@ namespace uqs
 			// all <DeferredEvaluator>s
 			for (size_t i = 0; i < m_query->GetDeferredEvaluatorCount(); ++i)
 			{
-				const core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_query->GetDeferredEvaluator(i);
+				const Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_query->GetDeferredEvaluator(i);
 				XmlNodeRef deferredEvaluatorElement = queryElementToSaveTo->newChild("DeferredEvaluator");
 				SaveDeferredEvaluatorElement(deferredEvaluatorElement, textualDeferredEvaluatorBP);
 			}
 
 			// all child <Query>s
-			const core::ITextualQueryBlueprint* parent = m_query;
+			const Core::ITextualQueryBlueprint* parent = m_query;
 			for (size_t i = 0; i < parent->GetChildCount(); ++i)
 			{
-				const core::ITextualQueryBlueprint& childQueryBP = parent->GetChild(i);
+				const Core::ITextualQueryBlueprint& childQueryBP = parent->GetChild(i);
 				m_query = &childQueryBP;
 				XmlNodeRef childQueryElement = queryElementToSaveTo->newChild("Query");
 				SaveQueryElement(childQueryElement);
@@ -95,10 +95,10 @@ namespace uqs
 
 			// <ConstantParam>s
 			{
-				const core::ITextualGlobalConstantParamsBlueprint& constantParamsBP = m_query->GetGlobalConstantParams();
+				const Core::ITextualGlobalConstantParamsBlueprint& constantParamsBP = m_query->GetGlobalConstantParams();
 				for (size_t i = 0; i < constantParamsBP.GetParameterCount(); ++i)
 				{
-					const core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = constantParamsBP.GetParameter(i);
+					const Core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = constantParamsBP.GetParameter(i);
 					XmlNodeRef constantParamElement = globalParamsElementToSaveTo->newChild("ConstantParam");
 					constantParamElement->setAttr("name", pi.name);
 					constantParamElement->setAttr("type", pi.type);
@@ -109,10 +109,10 @@ namespace uqs
 
 			// <RuntimeParam>s
 			{
-				const core::ITextualGlobalRuntimeParamsBlueprint& runtimeParamsBP = m_query->GetGlobalRuntimeParams();
+				const Core::ITextualGlobalRuntimeParamsBlueprint& runtimeParamsBP = m_query->GetGlobalRuntimeParams();
 				for (size_t i = 0; i < runtimeParamsBP.GetParameterCount(); ++i)
 				{
-					const core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = runtimeParamsBP.GetParameter(i);
+					const Core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = runtimeParamsBP.GetParameter(i);
 					XmlNodeRef runtimeParamElement = globalParamsElementToSaveTo->newChild("RuntimeParam");
 					runtimeParamElement->setAttr("name", pi.name);
 					runtimeParamElement->setAttr("type", pi.type);
@@ -126,24 +126,24 @@ namespace uqs
 			assert(generatorElementToSaveTo->isTag("Generator"));
 			assert(m_query->GetGenerator() != nullptr);
 
-			const core::ITextualGeneratorBlueprint* pGeneratorBP = m_query->GetGenerator();
+			const Core::ITextualGeneratorBlueprint* pGeneratorBP = m_query->GetGenerator();
 
 			// "name"
 			generatorElementToSaveTo->setAttr("name", pGeneratorBP->GetGeneratorName());
 
 			// all <Input>s
 			{
-				const core::ITextualInputBlueprint& inputRootBP = pGeneratorBP->GetInputRoot();
+				const Core::ITextualInputBlueprint& inputRootBP = pGeneratorBP->GetInputRoot();
 				for (size_t i = 0; i < inputRootBP.GetChildCount(); ++i)
 				{
-					const core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
+					const Core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
 					XmlNodeRef inputElement = generatorElementToSaveTo->newChild("Input");
 					SaveInputElement(inputElement, inputBP);
 				}
 			}
 		}
 
-		void CQueryBlueprintSaver_XML::SaveInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElementToSaveTo, const core::ITextualInstantEvaluatorBlueprint& instantEvaluatorBP)
+		void CQueryBlueprintSaver_XML::SaveInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElementToSaveTo, const Core::ITextualInstantEvaluatorBlueprint& instantEvaluatorBP)
 		{
 			assert(instantEvaluatorElementToSaveTo->isTag("InstantEvaluator"));
 
@@ -155,17 +155,17 @@ namespace uqs
 
 			// all <Input>s
 			{
-				const core::ITextualInputBlueprint& inputRootBP = instantEvaluatorBP.GetInputRoot();
+				const Core::ITextualInputBlueprint& inputRootBP = instantEvaluatorBP.GetInputRoot();
 				for (size_t i = 0; i < inputRootBP.GetChildCount(); ++i)
 				{
-					const core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
+					const Core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
 					XmlNodeRef inputElement = instantEvaluatorElementToSaveTo->newChild("Input");
 					SaveInputElement(inputElement, inputBP);
 				}
 			}
 		}
 
-		void CQueryBlueprintSaver_XML::SaveDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElementToSaveTo, const core::ITextualDeferredEvaluatorBlueprint& deferredEvaluatorBP)
+		void CQueryBlueprintSaver_XML::SaveDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElementToSaveTo, const Core::ITextualDeferredEvaluatorBlueprint& deferredEvaluatorBP)
 		{
 			assert(deferredEvaluatorElementToSaveTo->isTag("DeferredEvaluator"));
 
@@ -177,17 +177,17 @@ namespace uqs
 
 			// all <Input>s
 			{
-				const core::ITextualInputBlueprint& inputRootBP = deferredEvaluatorBP.GetInputRoot();
+				const Core::ITextualInputBlueprint& inputRootBP = deferredEvaluatorBP.GetInputRoot();
 				for (size_t i = 0; i < inputRootBP.GetChildCount(); ++i)
 				{
-					const core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
+					const Core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
 					XmlNodeRef inputElement = deferredEvaluatorElementToSaveTo->newChild("Input");
 					SaveInputElement(inputElement, inputBP);
 				}
 			}
 		}
 
-		void CQueryBlueprintSaver_XML::SaveFunctionElement(const XmlNodeRef& functionElementToSaveTo, const core::ITextualInputBlueprint& parentInput)
+		void CQueryBlueprintSaver_XML::SaveFunctionElement(const XmlNodeRef& functionElementToSaveTo, const Core::ITextualInputBlueprint& parentInput)
 		{
 			assert(functionElementToSaveTo->isTag("Function"));
 
@@ -207,14 +207,14 @@ namespace uqs
 				// all <Input>s (we're a non-leaf function!)
 				for (size_t i = 0; i < parentInput.GetChildCount(); ++i)
 				{
-					const core::ITextualInputBlueprint& inputBP = parentInput.GetChild(i);
+					const Core::ITextualInputBlueprint& inputBP = parentInput.GetChild(i);
 					XmlNodeRef inputElement = functionElementToSaveTo->newChild("Input");
 					SaveInputElement(inputElement, inputBP);
 				}
 			}
 		}
 
-		void CQueryBlueprintSaver_XML::SaveInputElement(const XmlNodeRef& inputElementToSaveTo, const core::ITextualInputBlueprint& inputBP)
+		void CQueryBlueprintSaver_XML::SaveInputElement(const XmlNodeRef& inputElementToSaveTo, const Core::ITextualInputBlueprint& inputBP)
 		{
 			assert(inputElementToSaveTo->isTag("Input"));
 

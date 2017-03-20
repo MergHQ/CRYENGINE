@@ -4,9 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace client
+	namespace Client
 	{
 
 		//===================================================================================
@@ -20,8 +20,8 @@ namespace uqs
 		{
 			typedef bool                        (*serializeFunc_t)(Serialization::IArchive& archive, TItem& item, const char* szName, const char* szLabel);
 			typedef TItem                       (*createDefaultObjectFunc_t)();
-			typedef void                        (*addItemToDebugRenderWorldFunc_t)(const TItem& item, core::IDebugRenderWorldPersistent& debugRW);
-			typedef void                        (*createItemDebugProxyFunc_t)(const TItem& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
+			typedef void                        (*addItemToDebugRenderWorldFunc_t)(const TItem& item, Core::IDebugRenderWorldPersistent& debugRW);
+			typedef void                        (*createItemDebugProxyFunc_t)(const TItem& item, Core::IItemDebugProxyFactory& itemDebugProxyFactory);
 
 			// - a serialization function is used to convert the item to and from its string representation
 			// - it's used by the query editor to save literals to a query blueprint
@@ -69,7 +69,7 @@ namespace uqs
 		}
 
 		//-----------------------------------------------------------------------------------
-		// SerializeTypeWrappedItem<>() - serialize function for items of type uqs::client::STypeWrapper<> whose underlying type is already supported by yasli out-of-the-box 
+		// SerializeTypeWrappedItem<>() - serialize function for items of type UQS::Client::STypeWrapper<> whose underlying type is already supported by yasli out-of-the-box 
 		//-----------------------------------------------------------------------------------
 
 		template <class TTypeWrapper>
@@ -78,7 +78,7 @@ namespace uqs
 			return archive(item.value, szName, szLabel);
 		}
 
-		namespace internal
+		namespace Internal
 		{
 
 			//===================================================================================
@@ -104,18 +104,18 @@ namespace uqs
 				virtual void*                              CreateItems(size_t numItems, EItemInitMode itemInitMode) override = 0;
 				virtual void*                              CloneItem(const void* pOriginalItem) override = 0;
 				virtual void                               DestroyItems(void* pItems) override = 0;
-				virtual const shared::CTypeInfo&           GetItemType() const override = 0;
+				virtual const Shared::CTypeInfo&           GetItemType() const override = 0;
 				virtual size_t                             GetItemSize() const override = 0;
 				virtual void                               CopyItem(void* pTargetItem, const void* pSourceItem) const override = 0;
 				virtual void*                              GetItemAtIndex(void* pItems, size_t index) const override = 0;
 				virtual const void*                        GetItemAtIndex(const void* pItems, size_t index) const override = 0;
-				virtual void                               AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const override = 0;
+				virtual void                               AddItemToDebugRenderWorld(const void* pItem, Core::IDebugRenderWorldPersistent& debugRW) const override = 0;
 				virtual bool                               CanBeRepresentedInDebugRenderWorld() const override = 0;
-				virtual void                               CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override = 0;
+				virtual void                               CreateItemDebugProxyForItem(const void* pItem, Core::IItemDebugProxyFactory& itemDebugProxyFactory) const override = 0;
 				virtual bool                               CanBePersistantlySerialized() const override = 0;
 				virtual bool                               TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
 				virtual bool                               TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
-				virtual bool                               TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override = 0;
+				virtual bool                               TryDeserializeItemIntoDict(Shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override = 0;
 				// ~IItemFactory
 
 			protected:
@@ -187,18 +187,18 @@ namespace uqs
 				virtual void*                             CreateItems(size_t numItems, EItemInitMode itemInitMode) override;
 				virtual void*                             CloneItem(const void* p) override;
 				virtual void                              DestroyItems(void* p) override;
-				virtual const shared::CTypeInfo&          GetItemType() const override;
+				virtual const Shared::CTypeInfo&          GetItemType() const override;
 				virtual size_t                            GetItemSize() const override;
 				virtual void                              CopyItem(void* pTargetItem, const void* pSourceItem) const override;
 				virtual void*                             GetItemAtIndex(void* pItems, size_t index) const override;
 				virtual const void*                       GetItemAtIndex(const void* pItems, size_t index) const override;
-				virtual void                              AddItemToDebugRenderWorld(const void* item, core::IDebugRenderWorldPersistent& debugRW) const override;
+				virtual void                              AddItemToDebugRenderWorld(const void* item, Core::IDebugRenderWorldPersistent& debugRW) const override;
 				virtual bool                              CanBeRepresentedInDebugRenderWorld() const override;
-				virtual void                              CreateItemDebugProxyForItem(const void* item, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override;
+				virtual void                              CreateItemDebugProxyForItem(const void* item, Core::IItemDebugProxyFactory& itemDebugProxyFactory) const override;
 				virtual bool                              CanBePersistantlySerialized() const override;
 				virtual bool                              TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
 				virtual bool                              TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
-				virtual bool                              TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override;
+				virtual bool                              TryDeserializeItemIntoDict(Shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel) override;
 				// ~IItemFactory
 
 			private:
@@ -456,9 +456,9 @@ namespace uqs
 			}
 
 			template <class TItem>
-			const shared::CTypeInfo& CItemFactoryInternal<TItem>::GetItemType() const
+			const Shared::CTypeInfo& CItemFactoryInternal<TItem>::GetItemType() const
 			{
-				return shared::SDataTypeHelper<TItem>::GetTypeInfo();
+				return Shared::SDataTypeHelper<TItem>::GetTypeInfo();
 			}
 
 			template <class TItem>
@@ -496,7 +496,7 @@ namespace uqs
 			}
 
 			template <class TItem>
-			bool CItemFactoryInternal<TItem>::TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel)
+			bool CItemFactoryInternal<TItem>::TryDeserializeItemIntoDict(Shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel)
 			{
 				assert(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
 				if (m_callbacks.pSerialize == nullptr)
@@ -556,7 +556,7 @@ namespace uqs
 			}
 			
 			template <class TItem>
-			void CItemFactoryInternal<TItem>::AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const
+			void CItemFactoryInternal<TItem>::AddItemToDebugRenderWorld(const void* pItem, Core::IDebugRenderWorldPersistent& debugRW) const
 			{
 				if (m_callbacks.pAddItemToDebugRenderWorld != nullptr)
 				{
@@ -571,7 +571,7 @@ namespace uqs
 			}
 
 			template <class TItem>
-			void CItemFactoryInternal<TItem>::CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const
+			void CItemFactoryInternal<TItem>::CreateItemDebugProxyForItem(const void* pItem, Core::IItemDebugProxyFactory& itemDebugProxyFactory) const
 			{
 				if (m_callbacks.pCreateItemDebugProxy != nullptr)
 				{
@@ -579,7 +579,7 @@ namespace uqs
 				}
 			}
 
-		} // namespace internal
+		} // namespace Internal
 
 		//===================================================================================
 		//
@@ -598,7 +598,7 @@ namespace uqs
 				// register the actual item type the caller intends to register
 				//
 
-				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, guidForSchematycAddParamFunction, guidForSchematycGetItemFromResultSetFunction, callbacks, true);
+				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, guidForSchematycAddParamFunction, guidForSchematycGetItemFromResultSetFunction, callbacks, true);
 
 				//
 				// register a very specific container-type to hold items (plural!) of what the caller just registered
@@ -614,9 +614,9 @@ namespace uqs
 				//
 
 #if UQS_SCHEMATYC_SUPPORT
-				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, CryGUID::Null(), CryGUID::Null(), callbacks, true);
+				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, CryGUID::Null(), CryGUID::Null(), callbacks, true);
 #else
-				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, callbacks, true);
+				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(szName, callbacks, true);
 #endif
 
 				//
@@ -639,9 +639,9 @@ namespace uqs
 				itemNameForShuttledItemsContainer.append(szName);
 				SItemFactoryCallbacks<CItemListProxy_Readable<TItem>> callbacksForShuttledItemsContainer;  // no callbacks actually
 #if UQS_SCHEMATYC_SUPPORT
-				static const internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), CryGUID::Null(), CryGUID::Null(), callbacksForShuttledItemsContainer, false);
+				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), CryGUID::Null(), CryGUID::Null(), callbacksForShuttledItemsContainer, false);
 #else
-				static const internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), callbacksForShuttledItemsContainer, false);
+				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), callbacksForShuttledItemsContainer, false);
 #endif
 			}
 		};
