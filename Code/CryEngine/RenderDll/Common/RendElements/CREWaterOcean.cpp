@@ -377,6 +377,7 @@ bool CREWaterOcean::Compile(CRenderObject* pObj)
 
 	if (!pShader
 	    || pShader->m_eShaderType != eST_Water
+	    || (shaderItem.m_nPreprocessFlags & (FB_WATER_REFL | FB_WATER_CAUSTIC)) != 0
 	    || !pResources
 	    || !pResources->m_pCompiledResourceSet
 	    || !pResources->m_pipelineStateCache)
