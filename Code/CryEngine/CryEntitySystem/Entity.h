@@ -566,9 +566,6 @@ private:
 	// counter to prevent deletion if entity is processed deferred by for example physics events
 	uint32 m_nKeepAliveCounter;
 
-	//counter how many components were added. This will only be used for the guid generation
-	uint32 m_nGuidComponentCounter;
-
 	// If this entity is part of a layer that was cloned at runtime, this is the cloned layer
 	// id (not related to the layer id)
 	int                              m_cloneLayerId;

@@ -15,7 +15,6 @@ struct SEntityComponentRecord
 	uint64                            registeredEventsMask; //!< Bitmask of the EEntityEvent values
 	CryInterfaceID                    typeId;               //!< Interface IDD for the registered component.
 	std::shared_ptr<IEntityComponent> pComponent;           //!< Pointer to the owned component, Only the entity owns the component life time
-	string                            guid;                 //!< Guid string generate from the typeId to serialize the component
 };
 
 //! Main listener collection class used in conjunction with CEntityComponentsIterator.
