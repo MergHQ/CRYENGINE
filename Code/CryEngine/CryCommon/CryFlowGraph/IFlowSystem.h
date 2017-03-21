@@ -1550,12 +1550,18 @@ struct IFlowGraph : public NFlowSystemUtils::IFlowSystemTyped
 	virtual void SetActive(bool bActive) = 0;
 
 	//! Checks if flowgraph is currently active.
-	virtual bool                       IsActive() const = 0;
+	virtual bool IsActive() const = 0;
 
-	virtual void                       UnregisterFromFlowSystem() = 0;
+	virtual void UnregisterFromFlowSystem() = 0;
 
-	virtual void                       SetType(IFlowGraph::EFlowGraphType type) = 0;
+
+	virtual void SetType(IFlowGraph::EFlowGraphType type) = 0;
 	virtual IFlowGraph::EFlowGraphType GetType() const = 0;
+
+	//! Get a human readable name for debug purposes
+	virtual const char* GetDebugName() const = 0;
+	//! Set a human readable name for debug purposes
+	virtual void SetDebugName(const char* sName) = 0;
 
 	//! Primary game interface.
 
