@@ -231,4 +231,15 @@ public:
 
 } // namespace PoseAligner
 
+class CPoseAlignerC3 :
+	PoseAligner::CPose
+{
+	CRYGENERATE_CLASS(CPoseAlignerC3, "AnimationPoseAlignerC3", 0xf5381a4c1374ff00, 0x8de19ba730cf572b)
+
+		virtual ~CPoseAlignerC3() {}
+
+public:
+	virtual bool Initialize(IEntity& entity) override;
+};
+
 #endif // Animation_PoseAligner_h

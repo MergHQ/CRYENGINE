@@ -8,9 +8,12 @@
 	#include <CrySystem/IEngineModule.h>
 	#include <CryExtension/ClassWeaver.h>
 
-class CEngineModule_ScaleformHelper : public IEngineModule
+class CEngineModule_ScaleformHelper : public IScaleformHelperEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IScaleformHelperEngineModule)
+	CRYINTERFACE_END()
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_ScaleformHelper, "EngineModule_ScaleformHelper", 0x3d38f12a521d43cf, 0xca18fd1fa7ea5020)
 
 	virtual ~CEngineModule_ScaleformHelper() {}
@@ -28,9 +31,6 @@ class CEngineModule_ScaleformHelper : public IEngineModule
 	{
 		if (env.pRenderer)
 		{
-			ISystem* pSystem = env.pSystem;
-
-			ModuleInitISystem(pSystem, "ScaleformHelper");
 			env.pScaleformHelper = new CScaleformHelper();	
 		}
 

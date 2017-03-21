@@ -291,11 +291,6 @@ public:
 		numIIDs = m_numIIDs;
 	}
 
-	virtual const SRegFactoryNode* GetRegFactoryNode() const
-	{
-		return &m_regFactory;
-	}
-
 public:
 	struct CustomDeleter
 	{

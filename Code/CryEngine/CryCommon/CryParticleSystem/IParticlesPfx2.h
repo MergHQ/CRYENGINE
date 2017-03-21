@@ -201,7 +201,7 @@ struct IParticleSystem : public ICryUnknown
 static std::shared_ptr<IParticleSystem> GetIParticleSystem()
 {
 	std::shared_ptr<IParticleSystem> pParticleSystem;
-	CryCreateClassInstance("CryEngine_ParticleSystem", pParticleSystem);
+	CryCreateClassInstanceForInterface(cryiidof<IParticleSystem>(), pParticleSystem);
 	return pParticleSystem;
 }
 

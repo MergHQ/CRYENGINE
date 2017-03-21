@@ -4,6 +4,7 @@
 
 #include <CrySystem/File/ICryPak.h>
 #include <CrySerialization/IArchiveHost.h>
+#include <CrySerialization/STL.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 
 #include "ResponseManager.h"

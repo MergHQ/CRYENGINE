@@ -49,13 +49,6 @@
 #include <CrySystem/ICryMiniGUI.h>
 #include <CryThreading/IThreadManager.h>
 #include <CryThreading/IJobManager.h>
-// CryOnlineDummy
-struct IOnline
-{
-public:
-	IOnline() {}
-	~IOnline() {}
-};
 
 namespace minigui { class CDrawContext{ public: virtual ~CDrawContext() {} }; }
 
@@ -125,13 +118,5 @@ using JobManager::SJobStateBase;
 %include "../../../../CryEngine/CryCommon/CrySystem/ZLib/IZLibCompressor.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ZLib/IZlibDecompressor.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ICryMiniGUI.h"
-
-// CryOnlineDummy
-struct IOnline
-{
-public:
-	IOnline() {}
-	~IOnline() {}
-};
 
 namespace minigui { class CDrawContext{}; }

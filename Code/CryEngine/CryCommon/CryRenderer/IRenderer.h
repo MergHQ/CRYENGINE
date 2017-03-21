@@ -15,6 +15,9 @@
 #include <CryRenderer/IFlares.h> // <> required for Interfuscator
 #include <CryThreading/IJobManager.h>
 
+#include <CryExtension/ClassWeaver.h>
+#include <CrySystem/IEngineModule.h>
+
 // forward declarations
 struct SRenderingPassInfo;
 struct IFoliage;
@@ -1570,6 +1573,11 @@ struct IRenderView : public CMultiThreadRefCount
 	// Water ripples
 	virtual void AddWaterRipple(const SWaterRippleInfo& waterRippleInfo) = 0;
 	virtual void AddPolygon(const SRenderPolygonDescription& poly, const SRenderingPassInfo& passInfo) = 0;
+};
+
+struct IRendererEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IRendererEngineModule, 0x516D044BD6264283, 0xB08D9AD9558204E0);
 };
 
 //////////////////////////////////////////////////////////////////////

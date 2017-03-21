@@ -389,7 +389,7 @@ bool CChain::SetupTargetPoseModifiers(const QuatT& location, const Vec3& limitOf
 		return true;
 
 	if (!m_pPoseAlignerChain)
-		::CryCreateClassInstance<IAnimationPoseAlignerChain>("AnimationPoseModifier_PoseAlignerChain", m_pPoseAlignerChain);
+		CryCreateClassInstanceForInterface<IAnimationPoseAlignerChain>(cryiidof<IAnimationPoseAlignerChain>(), m_pPoseAlignerChain);
 	if (!m_pPoseAlignerChain)
 		return false;
 
@@ -436,7 +436,7 @@ void CChain::DrawDebug(const QuatT& location)
 
 CPose::CPose()
 {
-	CryCreateClassInstance("AnimationPoseModifier_OperatorQueue", m_operatorQueue);
+	CryCreateClassInstanceForInterface(cryiidof<IAnimationOperatorQueue>(), m_operatorQueue);
 
 	Clear();
 }

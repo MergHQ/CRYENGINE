@@ -14,7 +14,7 @@ public:
 	CRYINTERFACE_ADD(IProceduralParamsComparer)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_CLASS(CProceduralParamsComparerDefault, IProceduralParamsComparerDefaultName, 0xfc53bd9248534faa, 0xab0fb42b24e55b3e)
+	CRYGENERATE_CLASS(CProceduralParamsComparerDefault, "ProceduralParamsComparerDefault", 0xfc53bd9248534faa, 0xab0fb42b24e55b3e)
 
 	virtual ~CProceduralParamsComparerDefault() {}
 

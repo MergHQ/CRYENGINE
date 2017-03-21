@@ -23,9 +23,6 @@ struct IResponseCondition;
 #include <CryString/CryString.h>
 
 #include <CrySerialization/yasli/ConfigLocal.h>
-#if !defined(YASLI_CXX11)
-#define YASLI_CXX11 1
-#endif
 
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/ClassFactory.h>

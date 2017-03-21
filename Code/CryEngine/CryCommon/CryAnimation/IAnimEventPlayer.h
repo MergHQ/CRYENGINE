@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <CryExtension/ICryUnknown.h>
+#include <CrySerialization/IArchive.h>
 #include <CrySerialization/CryExtension.h>
-#include <CrySerialization/CryStrings.h>
+#include <CryExtension/ClassWeaver.h>
 
 struct AnimEventInstance;
 struct ICharacterInstance;
@@ -53,6 +53,12 @@ DECLARE_SHARED_POINTERS(IAnimEventPlayer);
 
 inline bool Serialize(Serialization::IArchive& ar, IAnimEventPlayerPtr& pointer, const char* name, const char* label)
 {
-	Serialization::CryExtensionSharedPtr<IAnimEventPlayer, IAnimEventPlayer> serializer(pointer);
-	return ar(static_cast<Serialization::IPointer&>(serializer), name, label);
+	Serialization::CryExtensionPointer<IAnimEventPlayer, IAnimEventPlayer> serializer(pointer);
+	return ar(serializer, name, label);
 }
+
+// Game-specific anim event player, will be automatically found by the character tool
+struct IAnimEventPlayerGame : public IAnimEventPlayer
+{
+	CRYINTERFACE_DECLARE(IAnimEventPlayerGame, 0x3218AD9C82374C5F, 0x8B6487BDEDAF1C4A);
+};

@@ -21,6 +21,8 @@
 #include <CrySystem/ISystemScheduler.h> // <> required for Interfuscator
 
 #include <CryMath/LCGRandom.h>
+#include <CryExtension/ICryFactory.h>
+#include <CryExtension/ICryUnknown.h>
 
 struct ILog;
 struct IProfileLogSystem;
@@ -47,7 +49,6 @@ struct IAISystem;
 struct IFlash;
 struct INetwork;
 struct INetContext;
-struct IOnline;
 struct ICryLobby;
 struct ICryFont;
 struct IMovieSystem;
@@ -796,7 +797,6 @@ struct SSystemGlobalEnvironment
 	I3DEngine*                   p3DEngine;
 	INetwork*                    pNetwork;
 	INetContext*                 pNetContext;
-	IOnline*                     pOnline;
 	ICryLobby*                   pLobby;
 	IScriptSystem*               pScriptSystem;
 	IPhysicalWorld*              pPhysicalWorld;
@@ -1549,8 +1549,28 @@ struct ISystem
 	//! Initializes Steam if needed and returns if it was successful.
 	virtual bool SteamInit() = 0;
 
+	//! Loads a dynamic library and returns the first factory with the specified interface id contained inside the module
+	virtual ICryFactory* LoadModuleWithFactory(const char* szDllName, const CryInterfaceID& moduleInterfaceId) = 0;
+
+	//! Loads a dynamic library and creates an instance of the first factory contained inside the module
+	template<typename T>
+	inline std::shared_ptr<T> LoadModuleAndCreateFactoryInstance(const char* szDllName, const SSystemInitParams& initParams)
+	{
+		if (ICryFactory* pFactory = LoadModuleWithFactory(szDllName, cryiidof<T>()))
+		{
+			// Create an instance of the implementation
+			std::shared_ptr<T> pModule = cryinterface_cast<T, ICryUnknown>(pFactory->CreateClassInstance());
+
+			pModule->Initialize(*GetGlobalEnvironment(), initParams);
+
+			return pModule;
+		}
+
+		return nullptr;
+	}
+
 	//! Loads a dynamic library, creates and initializes an instance of the module class
-	virtual bool InitializeEngineModule(const char* dllName, const char* moduleClassName, bool bQuitIfNotFound) = 0;
+	virtual bool InitializeEngineModule(const char* szDllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound) = 0;
 
 	//! Unloads a dynamic library as well as the corresponding instance of the module class
 	virtual bool UnloadEngineModule(const char* szDllName) = 0;
@@ -2238,3 +2258,11 @@ CRY_ASYNC_MEMCPY_API void cryAsyncMemcpy(
 #endif
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
+
+inline CryGUID CryGUID::Create()
+{
+	CryGUID guid;
+	gEnv->pSystem->FillRandomMT(reinterpret_cast<uint32*>(&guid), sizeof(guid) / sizeof(uint32));
+	MEMORY_RW_REORDERING_BARRIER;
+	return guid;
+}

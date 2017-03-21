@@ -4,10 +4,6 @@
 
 //-----------------------------------------------------------------------------------------------
 
-#ifndef YASLI_CXX11
-	#define YASLI_CXX11 1
-#endif
-
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>  // prerequisite for IGame.h
 #include <CryGame/IGame.h>

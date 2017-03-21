@@ -162,6 +162,11 @@ struct SCryLobbyParameters
 	uint16 m_connectPort;       //!< Connect port the lobby service will use for connections.
 };
 
+struct ILobbyEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(ILobbyEngineModule, 0x3ED8EF8853324BDF, 0xA5CB5A3AD5016279);
+};
+
 struct ICryLobby
 {
 public:

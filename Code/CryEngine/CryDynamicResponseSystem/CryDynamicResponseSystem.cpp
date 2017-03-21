@@ -11,9 +11,13 @@
 #include "VariableCollection.h"
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryDynamicResponseSystem : public IEngineModule
+class CEngineModule_CryDynamicResponseSystem : public DRS::IDynamicResponseSystemEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(DRS::IDynamicResponseSystemEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryDynamicResponseSystem, "EngineModule_CryDynamicResponseSystem", 0xd1ed34dda44c4c17, 0x959a46df79af5db3)
 
 	virtual ~CEngineModule_CryDynamicResponseSystem()

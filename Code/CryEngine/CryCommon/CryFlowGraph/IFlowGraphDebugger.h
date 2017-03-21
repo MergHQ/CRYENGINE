@@ -17,8 +17,6 @@
 #include <CryExtension/ICryUnknown.h>
 #include <CryExtension/CryCreateClassInstance.h>
 
-static const char* IFlowGraphDebuggerExtensionName = "FlowGraphDebugger";
-
 class CFlowNode;
 class CHyperNodePort;
 
@@ -226,9 +224,9 @@ static IFlowGraphDebuggerPtr GetIFlowGraphDebuggerPtr()
 {
 	IFlowGraphDebuggerPtr pFlowGraphDebugger;
 #if defined(INCLUDE_FLOWGRAPHDEBUGGER_EXTENSION)
-	if (!CryCreateClassInstance(IFlowGraphDebuggerExtensionName, pFlowGraphDebugger))
+	if (!CryCreateClassInstanceForInterface(cryiidof<IFlowGraphDebugger>(), pFlowGraphDebugger))
 	{
-		CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR, "Could not create class instance of extension: %s", IFlowGraphDebuggerExtensionName);
+		CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR, "Could not create class instance of flowgraph debugger");
 	}
 #endif
 	return pFlowGraphDebugger;

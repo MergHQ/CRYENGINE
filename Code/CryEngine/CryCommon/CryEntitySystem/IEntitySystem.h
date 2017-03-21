@@ -320,6 +320,11 @@ struct SEntityProximityQuery
 	}
 };
 
+struct IEntitySystemEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IEntitySystemEngineModule, 0xBBBB58B0FF9749CF, 0xBFFE254420CD166F);
+};
+
 //! Interface to the system that manages the entities in the game.
 //! Interface to the system that manages the entities in the game, their creation, deletion and upkeep.
 //! The entities are kept in a map indexed by their unique entity ID. The entity system updates only unbound entities every frame (bound entities

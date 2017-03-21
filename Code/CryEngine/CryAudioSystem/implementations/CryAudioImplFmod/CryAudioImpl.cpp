@@ -25,9 +25,13 @@ MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAudioImplFmod : public IEngineModule
+class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule);
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(CryAudio::IImplModule)
+	CRYINTERFACE_END()
+	
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplFmod, "EngineModule_AudioImpl", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
 
 	CEngineModule_CryAudioImplFmod();

@@ -15,6 +15,7 @@
 #include <CryEntitySystem/IEntity.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 %}
+%ignore I3DEngineModule;
 %ignore ITimeOfDay::NetSerialize;
 %ignore I3DEngine::SerializeState;
 %ignore I3DEngine::SaveStatObj;

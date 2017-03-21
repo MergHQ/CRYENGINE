@@ -174,4 +174,5 @@ protected:
 	virtual void* QueryComposite(const char* name) const = 0;
 };
 
-DECLARE_SHARED_POINTERS(ICryUnknown);
+typedef std::shared_ptr<ICryUnknown> ICryUnknownPtr;
+typedef std::shared_ptr<const ICryUnknown> ICryUnknownConstPtr;

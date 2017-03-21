@@ -4,6 +4,7 @@
 
 #include "IAudioInterfacesCommonData.h"
 #include "../CryCore/CryCrc32.h"
+#include "../CrySystem/IEngineModule.h"
 
 // General macros.
 //#define ENABLE_AUDIO_PORT_MESSAGES
@@ -152,6 +153,16 @@ struct SExecuteTriggerData : public SCreateObjectData
 	{}
 
 	ControlId const triggerId;
+};
+
+struct ISystemModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(ISystemModule, 0x6C7BA422375B4325, 0xAE00918679610D2E);
+};
+
+struct IImplModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IImplModule, 0x5C4ADBECA34349CE, 0xB7992A856CDD553B);
 };
 
 struct IAudioSystem

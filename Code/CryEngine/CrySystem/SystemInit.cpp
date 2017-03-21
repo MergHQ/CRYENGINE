@@ -151,7 +151,6 @@ extern AAssetManager* androidGetAssetManager();
 // This includes the Game DLL, although it is loaded elsewhere
 #define DLL_AUDIOSYSTEM   "CryAudioSystem"
 #define DLL_NETWORK       "CryNetwork"
-#define DLL_ONLINE        "CryOnline"
 #define DLL_ENTITYSYSTEM  "CryEntitySystem"
 #define DLL_SCRIPTSYSTEM  "CryScriptSystem"
 #define DLL_INPUT         "CryInput"
@@ -640,34 +639,55 @@ WIN_HMODULE CSystem::LoadDynamiclibrary(const char* dllName) const
 	#endif
 	return handle;
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////
-WIN_HMODULE CSystem::LoadDLL(const char* dllName, bool bQuitIfNotFound)
+#if !CRY_PLATFORM_ORBIS
+WIN_HMODULE CSystem::LoadDLL(const char* szModulePath, bool bQuitIfNotFound)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	CryComment("Loading DLL: %s", dllName);
+	stack_string modulePath = szModulePath;
+	modulePath = CrySharedLibraryPrefix + PathUtil::ReplaceExtension(modulePath, CrySharedLibraryExtension);
 
-	WIN_HMODULE handle = LoadDynamiclibrary(dllName);
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadDLL");
+	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", modulePath.c_str());
+
+	stack_string msg;
+	msg = "Loading Module ";
+	msg += modulePath;
+	msg += "...";
+
+	if (m_pUserCallback)
+	{
+		m_pUserCallback->OnInitProgress(msg.c_str());
+	}
+	CryLog("%s", msg.c_str());
+
+	WIN_HMODULE handle = LoadDynamiclibrary(modulePath);
 
 	if (!handle)
 	{
 		if (bQuitIfNotFound)
 		{
 	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-			CryFatalError("Error loading DLL: %s, error :  %s\n", dllName, dlerror());
+			CryFatalError("Error loading DLL: %s, error :  %s\n", modulePath.c_str(), dlerror());
 	#else
-			CryFatalError("Error loading DLL: %s, error code %d", dllName, GetLastError());
+			CryFatalError("Error loading DLL: %s, error code %d", modulePath.c_str(), GetLastError());
 	#endif
+
 			Quit();
 		}
+
 		return 0;
 	}
+
+	m_moduleDLLHandles.insert(std::make_pair(CCryNameCRC(modulePath), handle));
 
 	//////////////////////////////////////////////////////////////////////////
 	// After loading DLL initialize it by calling ModuleInitISystem
 	//////////////////////////////////////////////////////////////////////////
-	string moduleName = PathUtil::GetFileName(dllName);
+	string moduleName = PathUtil::GetFileName(modulePath);
 
 	typedef void*(* PtrFunc_ModuleInitISystem)(ISystem* pSystem, const char* moduleName);
 	PtrFunc_ModuleInitISystem pfnModuleInitISystem = (PtrFunc_ModuleInitISystem) CryGetProcAddress(handle, DLL_MODULE_INIT_ISYSTEM);
@@ -681,12 +701,6 @@ WIN_HMODULE CSystem::LoadDLL(const char* dllName, bool bQuitIfNotFound)
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CSystem::LoadEngineDLLs()
-{
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CSystem::UnloadDLL(const char* dllName)
 {
 	bool bSuccess = false;
@@ -695,6 +709,16 @@ bool CSystem::UnloadDLL(const char* dllName)
 
 	if (hModule != NULL)
 	{
+		auto GetHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
+		SRegFactoryNode* pFactoryNode = GetHeadToRegFactories();
+
+		if (pFactoryNode)
+		{
+			ICryFactoryRegistryImpl* const pReg = static_cast<ICryFactoryRegistryImpl*>(GetCryFactoryRegistry());
+
+			pReg->UnregisterFactories(pFactoryNode);
+		}
+
 		CryComment("Unloading DLL: %s", dllName);
 		CryFreeLibrary(hModule);
 		m_moduleDLLHandles.erase(CCryNameCRC(dllName));
@@ -704,57 +728,60 @@ bool CSystem::UnloadDLL(const char* dllName)
 	return bSuccess;
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CSystem::InitializeEngineModule(const char* dllName, const char* moduleClassName, bool bQuitIfNotFound)
+ICryFactory* CSystem::LoadModuleWithFactory(const char* dllName, const CryInterfaceID& moduleInterfaceId)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "IntializeEngineModule");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", moduleClassName);
+#if CRY_PLATFORM_ORBIS
+	SRegFactoryNode* pFactoryNode = GetHeadToRegFactories();
+#else
+	WIN_HMODULE hModule = LoadDLL(dllName, false);
 
-	bool bSuccess = false;
-
-	stack_string msg;
-	msg = "Initializing ";
-	msg += dllName;
-	msg += "...";
-
-	if (m_pUserCallback)
+	if (!hModule)
 	{
-		m_pUserCallback->OnInitProgress(msg.c_str());
+		return nullptr;
 	}
-	CryLog("%s", msg.c_str());
 
+	auto getHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
+	SRegFactoryNode* pFactoryNode = getHeadToRegFactories();
+#endif
+
+	while (pFactoryNode != nullptr)
+	{
+		if (pFactoryNode->m_pFactory->ClassSupports(moduleInterfaceId))
+		{
+			return pFactoryNode->m_pFactory;
+		}
+
+		pFactoryNode = pFactoryNode->m_pNext;
+	}
+
+	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CSystem::InitializeEngineModule(const char* dllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound)
+{
 	IMemoryManager::SProcessMemInfo memStart, memEnd;
 	if (GetIMemoryManager())
 		GetIMemoryManager()->GetProcessMemInfo(memStart);
 	else
 		ZeroStruct(memStart);
 
-	stack_string dllfile = dllName;
-
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-	dllfile = "lib" + PathUtil::ReplaceExtension(dllfile, "so");
-#elif CRY_PLATFORM_APPLE
-	dllfile = "lib" + PathUtil::ReplaceExtension(dllfile, "dylib");
-#else
-	dllfile = PathUtil::ReplaceExtension(dllfile, "dll");
-#endif
-
-	std::shared_ptr<IEngineModule> pModule;
-	if (!CryCreateClassInstance(moduleClassName, pModule))
+	std::shared_ptr<Cry::IDefaultModule> pModule;
+	if (!CryCreateClassInstanceForInterface(moduleInterfaceId, pModule))
 	{
 #if !CRY_PLATFORM_ORBIS
-		WIN_HMODULE hModule = LoadDLL(dllfile.c_str(), bQuitIfNotFound);
-		if (!hModule)
+		if (LoadDLL(dllName, bQuitIfNotFound) == 0)
 			return false;
-		m_moduleDLLHandles.insert(std::make_pair(CCryNameCRC(dllfile), hModule));
 
-		CryCreateClassInstance(moduleClassName, pModule);
+		CryCreateClassInstanceForInterface(moduleInterfaceId, pModule);
 #endif
 	}
 
+	bool bSuccess = false;
+
 	if (pModule)
 	{
-		MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Initialize module: %s", moduleClassName);
+		MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Initialize module: %s", pModule->GetFactory()->GetName());
 		bSuccess = pModule->Initialize(m_env, m_startupParams);
 	}
 
@@ -774,26 +801,19 @@ bool CSystem::UnloadEngineModule(const char* szDllName)
 {
 	bool bSuccess = false;
 
-#if !defined(_LIB)
+	stack_string modulePath = szDllName;
+	modulePath = CrySharedLibraryPrefix + PathUtil::ReplaceExtension(modulePath, CrySharedLibraryExtension);
+
 	stack_string msg;
 	msg = "Unloading ";
-	msg += szDllName;
+	msg += modulePath;
 	msg += "...";
 
 	CryLog("%s", msg.c_str());
 
-	stack_string dllfile = szDllName;
-
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-	dllfile = "lib" + PathUtil::ReplaceExtension(dllfile, "so");
-#elif CRY_PLATFORM_APPLE
-	dllfile = "lib" + PathUtil::ReplaceExtension(dllfile, "dylib");
-#else
-	dllfile = PathUtil::ReplaceExtension(dllfile, "dll");
-#endif
-
-	bSuccess = UnloadDLL(dllfile.c_str());
-#endif // !defined(_LIB)
+#if !defined(_LIB)
+	bSuccess = UnloadDLL(modulePath.c_str());
+#endif // #if !defined(_LIB)
 
 	return bSuccess;
 }
@@ -934,7 +954,7 @@ bool CSystem::OpenRenderLibrary(int type)
 	//	}
 	//#endif
 
-	if (!InitializeEngineModule(libname, "EngineModule_CryRenderer", true))
+	if (!InitializeEngineModule(libname, cryiidof<IRendererEngineModule>(), true))
 	{
 		return false;
 	}
@@ -953,7 +973,7 @@ bool CSystem::InitNetwork()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	if (!InitializeEngineModule(DLL_NETWORK, "EngineModule_CryNetwork", true))
+	if (!InitializeEngineModule(DLL_NETWORK, cryiidof<INetworkEngineModule>(), true))
 		return false;
 
 	if (m_env.pNetwork == NULL)
@@ -965,30 +985,11 @@ bool CSystem::InitNetwork()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-bool CSystem::InitOnline()
-{
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
-
-	if (!InitializeEngineModule(DLL_ONLINE, "EngineModule_CryOnline", false))
-	{
-		return false;
-	}
-
-	if (!m_env.pOnline)
-	{
-		//CryFatalError("Error creating Online System!");
-		return false;
-	}
-
-	return true;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
 bool CSystem::InitEntitySystem()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	if (!InitializeEngineModule(DLL_ENTITYSYSTEM, "EngineModule_CryEntitySystem", true))
+	if (!InitializeEngineModule(DLL_ENTITYSYSTEM, cryiidof<IEntitySystemEngineModule>(), true))
 		return false;
 
 	if (!m_env.pEntitySystem)
@@ -1013,7 +1014,7 @@ bool CSystem::InitDynamicResponseSystem()
 	}
 	else
 	{
-		InitializeEngineModule(sDLLName, "EngineModule_CryDynamicResponseSystem", false);
+		InitializeEngineModule(sDLLName, cryiidof<DRS::IDynamicResponseSystemEngineModule>(), false);
 	}
 
 	if (!m_env.pDynamicResponseSystem)
@@ -1044,7 +1045,7 @@ bool CSystem::InitLiveCreate()
 	if (!bSkip)
 	{
 		// load initialize the module, this will create and setup the LiveCreate interfaces in the m_env.
-		if (!InitializeEngineModule(DLL_LIVECREATE, "EngineModule_CryLiveCreate", false))
+		if (!InitializeEngineModule(DLL_LIVECREATE, cryiidof<ILiveCreateEngineModule>(), false))
 			return false;
 
 		// initialize the new host interface
@@ -1077,7 +1078,7 @@ bool CSystem::InitMonoBridge()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	if (!InitializeEngineModule(DLL_MONO_BRIDGE, "EngineModule_CryMonoBridge", false))
+	if (!InitializeEngineModule(DLL_MONO_BRIDGE, cryiidof<IMonoEngineModule>(), false))
 	{
 		gEnv->pLog->LogWarning("MonoRuntime not created.");
 		m_env.pMonoRuntime = nullptr;
@@ -1098,7 +1099,7 @@ bool CSystem::InitInput()
 		return true;
 	}
 
-	if (!InitializeEngineModule(DLL_INPUT, "EngineModule_CryInput", true))
+	if (!InitializeEngineModule(DLL_INPUT, cryiidof<IInputEngineModule>(), true))
 	{
 #if CRY_PLATFORM_WINDOWS
 		if (!m_startupParams.bUnattendedMode)
@@ -1359,7 +1360,7 @@ bool CSystem::InitPhysics()
 #else
 	// Check m_pPhysicsLibrary - if not specified, load CryPhysics, if specified, load that one
 	const char* physDLL = m_pPhysicsLibrary ? m_pPhysicsLibrary->GetString() : DLL_PHYSICS;
-	if (!InitializeEngineModule(physDLL, "EngineModule_CryPhysics", true))
+	if (!InitializeEngineModule(physDLL, cryiidof<IPhysicsEngineModule>(), true))
 	{
 		CryFatalError("Error loading physics dll: %s", physDLL);
 		return false;
@@ -1687,7 +1688,7 @@ bool CSystem::InitMovieSystem()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	if (!InitializeEngineModule(DLL_MOVIE, "EngineModule_CryMovie", true))
+	if (!InitializeEngineModule(DLL_MOVIE, cryiidof<IMovieEngineModule>(), true))
 		return false;
 
 	if (!m_env.pMovieSystem)
@@ -1707,7 +1708,7 @@ bool CSystem::InitAISystem()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init AISystem ");
 
 	const char* sDLLName = m_sys_dll_ai->GetString();
-	if (!InitializeEngineModule(sDLLName, "EngineModule_CryAISystem", false))
+	if (!InitializeEngineModule(sDLLName, cryiidof<IAIEngineModule>(), false))
 		return false;
 
 	if (!m_env.pAISystem)
@@ -1724,7 +1725,7 @@ bool CSystem::InitScriptSystem()
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_LUA, 0, "Init ScriptSystem");
 
-	if (!InitializeEngineModule(DLL_SCRIPTSYSTEM, "EngineModule_CryScriptSystem", true))
+	if (!InitializeEngineModule(DLL_SCRIPTSYSTEM, cryiidof<IScriptSystemEngineModule>(), true))
 		return false;
 
 	if (m_env.pScriptSystem == NULL)
@@ -1980,7 +1981,7 @@ bool CSystem::InitFont()
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init FontSystem");
 
-	if (!InitializeEngineModule(DLL_FONT, "EngineModule_CryFont", true))
+	if (!InitializeEngineModule(DLL_FONT, cryiidof<IFontEngineModule>(), true))
 		return false;
 
 	if (!m_env.pCryFont)
@@ -2018,7 +2019,7 @@ bool CSystem::Init3DEngine()
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init 3D Engine");
 
-	if (!InitializeEngineModule(DLL_3DENGINE, "EngineModule_Cry3DEngine", true))
+	if (!InitializeEngineModule(DLL_3DENGINE, cryiidof<I3DEngineModule>(), true))
 		return false;
 
 	if (!m_env.p3DEngine)
@@ -2044,7 +2045,7 @@ bool CSystem::InitAnimationSystem()
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init AnimationSystem");
 
-	if (!InitializeEngineModule(DLL_ANIMATION, "EngineModule_CryAnimation", true))
+	if (!InitializeEngineModule(DLL_ANIMATION, cryiidof<IAnimationEngineModule>(), true))
 		return false;
 
 	return true;
@@ -2955,7 +2956,7 @@ L_done:;
 			CryLogAlways("<Audio>: AudioSystem initialization");
 			INDENT_LOG_DURING_SCOPE();
 
-			bAudioInitSuccess = InitializeEngineModule(DLL_AUDIOSYSTEM, "EngineModule_CryAudioSystem", false);
+			bAudioInitSuccess = InitializeEngineModule(DLL_AUDIOSYSTEM, cryiidof<CryAudio::ISystemModule>(), false);
 		}
 
 		if (!bAudioInitSuccess)
@@ -3054,7 +3055,7 @@ L_done:;
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 		if (m_env.pRenderer && !m_bShaderCacheGenMode)
 		{
-			if (!InitializeEngineModule(DLL_SCALEFORM, "EngineModule_ScaleformHelper", false))
+			if (!InitializeEngineModule(DLL_SCALEFORM, cryiidof<IScaleformHelperEngineModule>(), false))
 			{
 				m_env.pScaleformHelper = nullptr;
 				CryLog("Attempt to load Scaleform helper library from '%s' failed, this feature will not be available", DLL_SCALEFORM);
@@ -3189,17 +3190,7 @@ L_done:;
 				m_pServerThrottle.reset(new CServerThrottle(this, m_pCpu->GetCPUCount()));
 		}
 		InlineInitializationProcessing("CSystem::Init InitNetwork");
-
-		//////////////////////////////////////////////////////////////////////////
-		// ONLINE
-		//////////////////////////////////////////////////////////////////////////
-		if (!m_startupParams.bPreview && !m_bUIFrameworkMode && !m_startupParams.bShaderCacheGen)
-		{
-			CryLogAlways("Online initialization");
-			InitOnline();
-		}
-		InlineInitializationProcessing("CSystem::Init InitOnline");
-
+		
 		//////////////////////////////////////////////////////////////////////////
 		// MOVIE
 		//////////////////////////////////////////////////////////////////////////
@@ -3425,7 +3416,7 @@ L_done:;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Load FlowGraph
-		GetISystem()->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryFlowGraph", "EngineModule_FlowGraph");
+		GetISystem()->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryFlowGraph");
 
 		//////////////////////////////////////////////////////////////////////////
 		// AI

@@ -11,9 +11,13 @@
 #include <CryExtension/ClassWeaver.h>
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryScriptSystem : public IEngineModule
+class CEngineModule_CryScriptSystem : public IScriptSystemEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IScriptSystemEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryScriptSystem, "EngineModule_CryScriptSystem", 0xd032b16449784f82, 0xa99e7dc6b6338c5c)
 
 	virtual ~CEngineModule_CryScriptSystem()

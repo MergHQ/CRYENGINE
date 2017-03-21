@@ -22,7 +22,7 @@
 class CFlowGraphDebugger : public IFlowGraphDebugger
 {
 	CRYINTERFACE_SIMPLE(IFlowGraphDebugger)
-	CRYGENERATE_SINGLETONCLASS(CFlowGraphDebugger, IFlowGraphDebuggerExtensionName, 0x2D6810E10CBD467A, 0xB5646539C3778285)
+	CRYGENERATE_SINGLETONCLASS(CFlowGraphDebugger, "FlowgraphDebugger", 0x2D6810E10CBD467A, 0xB5646539C3778285)
 
 	CFlowGraphDebugger();
 	virtual ~CFlowGraphDebugger();

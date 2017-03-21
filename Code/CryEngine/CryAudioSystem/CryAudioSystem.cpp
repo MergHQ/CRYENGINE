@@ -139,9 +139,13 @@ void AddPhysicalBlock(long size)
 }
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAudioSystem : public IEngineModule
+class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(CryAudio::ISystemModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", 0xec73cf4362ca4a7f, 0x8b451076dc6fdb8b)
 
 	CEngineModule_CryAudioSystem();
@@ -157,6 +161,8 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
+		s_pInitParameters = &initParams;
+
 		bool bSuccess = false;
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AudioSystem Memory Pool");
@@ -175,7 +181,10 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 
 			s_currentModuleName = m_pAudioImplNameCVar->GetString();
 
-			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl", false))
+			// Get the first CryAudio::IImplModule factory available in the module and create an instance of it
+			auto pModule = env.pSystem->LoadModuleAndCreateFactoryInstance<CryAudio::IImplModule>(s_currentModuleName.c_str(), initParams);
+	
+			if (pModule != nullptr)
 			{
 				PrepareAudioSystem(static_cast<CSystem*>(env.pAudioSystem));
 			}
@@ -218,9 +227,12 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str());
 		}
 
+		// Get the first CryAudio::ISystemImplementationModule factory available in the module and create an instance of it
+		auto pModule = gEnv->pSystem->LoadModuleAndCreateFactoryInstance<CryAudio::IImplModule>(s_currentModuleName.c_str(), *s_pInitParameters);
+		
 		// First try to load and initialize the new engine module.
 		// This will release the currently running implementation but only if the library loaded successfully.
-		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl", false))
+		if (pModule != nullptr)
 		{
 			SRequestUserData const data(eRequestFlags_ExecuteBlocking);
 
@@ -273,9 +285,11 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 private:
 
 	ICVar* m_pAudioImplNameCVar;
+	static const SSystemInitParams* s_pInitParameters;
 	static CryFixedStringT<MAX_MODULE_NAME_LENGTH> s_currentModuleName;
 };
 
+const SSystemInitParams* CEngineModule_CryAudioSystem::s_pInitParameters = nullptr;
 CryFixedStringT<MAX_MODULE_NAME_LENGTH> CEngineModule_CryAudioSystem::s_currentModuleName;
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAudioSystem)
 

@@ -143,6 +143,11 @@ struct IAnimationSerializable :
 
 DECLARE_SHARED_POINTERS(IAnimationSerializable);
 
+struct IAnimationEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IAnimationEngineModule, 0xEA8FAA6F4EC948FB, 0x935DB54C09823B86);
+};
+
 //! This class is the main access point for any character animation required for a program which uses CRYENGINE.
 struct ICharacterManager
 {

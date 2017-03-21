@@ -2871,7 +2871,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 											{
 												int32 numJoints = corpse.m_numJoints;
 												IAnimationOperatorQueuePtr poseModifier;
-												CryCreateClassInstance("AnimationPoseModifier_OperatorQueue", poseModifier);
+												CryCreateClassInstanceForInterface(cryiidof<IAnimationOperatorQueue>(), poseModifier);
 
 												IAnimationPoseModifierPtr modPtr = poseModifier;
 												pAnim->PushPoseModifier(1, modPtr, "RecordingSystem");

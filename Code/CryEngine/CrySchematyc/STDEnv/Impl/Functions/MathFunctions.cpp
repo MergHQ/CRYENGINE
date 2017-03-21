@@ -4,6 +4,7 @@
 
 #include <CrySerialization/Forward.h>
 #include <CryMath/Cry_Math.h>
+#include <CryMath/Random.h>
 #include <Schematyc/Types/MathTypes.h>
 
 #include "AutoRegister.h"

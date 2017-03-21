@@ -10,8 +10,6 @@
 #include <CryString/CryName.h>
 #include <CryCore/functor.h>
 
-#define IFlashUIExtensionName "FlashUI"
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////// UI variant data /////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1822,7 +1820,7 @@ static IFlashUIPtr GetIFlashUIPtr()
 {
 	IFlashUIPtr pFlashUI;
 	if (gEnv && gEnv->pSystem)
-		CryCreateClassInstance(IFlashUIExtensionName, pFlashUI);
+		CryCreateClassInstanceForInterface<IFlashUI>(cryiidof<IFlashUI>(), pFlashUI);
 	return pFlashUI;
 }
 

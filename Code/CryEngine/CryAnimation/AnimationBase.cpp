@@ -77,9 +77,12 @@ public:
 static CSystemEventListner_Animation g_system_event_listener_anim;
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAnimation : public IEngineModule
+class CEngineModule_CryAnimation : public IAnimationEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IAnimationEngineModule)
+	CRYINTERFACE_END()
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAnimation, "EngineModule_CryAnimation", 0x9c73d2cd142c4256, 0xa8f0706d80cd7ad2)
 
 	virtual ~CEngineModule_CryAnimation()

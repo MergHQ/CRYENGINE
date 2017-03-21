@@ -1,6 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <CrySystem/IEngineModule.h>
+
 #if defined (_LIB)
 #define CRYPHYSICS_API
 #elif defined (PHYSICS_EXPORTS)
@@ -33,6 +35,11 @@ enum EPhysicsForeignIds
 	PHYS_FOREIGN_ID_RAGDOLL                  = 13,
 
 	PHYS_FOREIGN_ID_USER                     = 100, //!< All user defined foreign ids should start from this enum.
+};
+
+struct IPhysicsEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IPhysicsEngineModule, 0x0B6197F33C68, 0xA13408BB46801741);
 };
 
 #include <CryMemory/CrySizer.h>
