@@ -16,8 +16,6 @@
 ///////////////////////////////////////////////
 extern "C" ICryFont * CreateCryFontInterface(ISystem * pSystem)
 {
-	ModuleInitISystem(pSystem, "CryFont");
-
 	if (gEnv->IsDedicated())
 	{
 #if defined(USE_NULLFONT)
@@ -40,9 +38,13 @@ extern "C" ICryFont * CreateCryFontInterface(ISystem * pSystem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryFont : public IEngineModule
+class CEngineModule_CryFont : public IFontEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IFontEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryFont, "EngineModule_CryFont", 0x6758643f43214957, 0x9b920d898d31f434)
 
 	virtual ~CEngineModule_CryFont()

@@ -2192,55 +2192,58 @@ void CActionController::GetStateString(string& state) const
 
 #endif //!_RELEASE
 
-IProceduralContext* CActionController::FindOrCreateProceduralContext(const char* contextName)
+IProceduralContext* CActionController::FindOrCreateProceduralContext(const CryClassID& contextId)
 {
-	IProceduralContext* procContext = FindProceduralContext(contextName);
+	IProceduralContext* procContext = FindProceduralContext(contextId);
 	if (procContext)
 		return procContext;
 
-	return CreateProceduralContext(contextName);
+	return CreateProceduralContext(contextId);
 }
 
-IProceduralContext* CActionController::CreateProceduralContext(const char* contextName)
+IProceduralContext* CActionController::CreateProceduralContext(const CryClassID& contextId)
 {
 	const bool hasValidRootEntity = UpdateRootEntityValidity();
 	if (!hasValidRootEntity)
 		return NULL;
 
-	const uint32 contextNameCRC = CCrc32::ComputeLowercase(contextName);
-
 	SProcContext newProcContext;
-	newProcContext.nameCRC = contextNameCRC;
-	CryCreateClassInstance<IProceduralContext>(contextName, newProcContext.pContext);
-	m_procContexts.push_back(newProcContext);
+	newProcContext.contextId = contextId;
+	CryCreateClassInstance<IProceduralContext>(contextId, newProcContext.pContext);
+	if (newProcContext.pContext)
+	{
+		m_procContexts.push_back(newProcContext);
 
-	newProcContext.pContext->Initialise(*m_cachedEntity, *this);
+		newProcContext.pContext->Initialise(*m_cachedEntity, *this);
+	}
+	
 	return newProcContext.pContext.get();
 }
 
-const IProceduralContext* CActionController::FindProceduralContext(const char* contextName) const
+IProceduralContext* CActionController::FindProceduralContext(const CryClassID& contextId)
 {
-	const uint32 contextNameCRC = CCrc32::ComputeLowercase(contextName);
-	return FindProceduralContext(contextNameCRC);
-}
-
-IProceduralContext* CActionController::FindProceduralContext(const char* contextName)
-{
-	const uint32 contextNameCRC = CCrc32::ComputeLowercase(contextName);
-	return FindProceduralContext(contextNameCRC);
-}
-
-IProceduralContext* CActionController::FindProceduralContext(const uint32 contextNameCRC) const
-{
-	const uint32 numContexts = m_procContexts.size();
-	for (uint32 i = 0; i < numContexts; i++)
+	for (auto& proceduralContext : m_procContexts)
 	{
-		if (m_procContexts[i].nameCRC == contextNameCRC)
+		if (proceduralContext.contextId.hipart == contextId.hipart
+			&& proceduralContext.contextId.lopart == contextId.lopart)
 		{
-			return m_procContexts[i].pContext.get();
+			return proceduralContext.pContext.get();
 		}
 	}
-	return NULL;
+	return nullptr;
+}
+
+const IProceduralContext* CActionController::FindProceduralContext(const CryClassID& contextId) const
+{
+	for(auto& proceduralContext : m_procContexts)
+	{
+		if (proceduralContext.contextId.hipart == contextId.hipart
+			&& proceduralContext.contextId.lopart == contextId.lopart)
+		{
+			return proceduralContext.pContext.get();
+		}
+	}
+	return nullptr;
 }
 
 bool CActionController::IsActionPending(uint32 userToken) const

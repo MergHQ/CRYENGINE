@@ -671,6 +671,10 @@ public:
 		int type;
 
 		SUpdateRecord(ICVar* pCVar);
+		bool operator==(const SUpdateRecord& rhs)
+		{
+			return type == rhs.type && (strcmp(name, rhs.name) == 0);
+		}
 	};
 
 	typedef std::vector<SUpdateRecord> CVarList;
@@ -682,6 +686,7 @@ public:
 	// IConsoleVarSink
 	virtual bool OnBeforeVarChange(ICVar* pVar, const char* sNewValue) { return true; }
 	virtual void OnAfterVarChange(ICVar* pVar);
+	virtual void OnVarUnregister(ICVar* pVar);
 
 	void Reset(); 
 	const CVarList& GetCVars() const;

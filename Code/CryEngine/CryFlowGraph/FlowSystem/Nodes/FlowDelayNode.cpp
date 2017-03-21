@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "FlowDelayNode.h"
 
+#include <CryMath/Random.h>
 
 CFlowDelayNode::CFlowDelayNode(SActivationInfo* pActInfo) : m_actInfo(*pActInfo)
 {

@@ -13,6 +13,7 @@
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	#include <CrySerialization/Enum.h>
+	#include <CrySerialization/ClassFactory.h>
 #endif
 
 namespace BehaviorTree

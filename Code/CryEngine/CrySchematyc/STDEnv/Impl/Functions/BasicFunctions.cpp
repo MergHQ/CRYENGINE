@@ -5,6 +5,8 @@
 #include "AutoRegister.h"
 #include "STDModules.h"
 
+#include <CryMath/Random.h>
+
 namespace Schematyc
 {
 namespace Bool

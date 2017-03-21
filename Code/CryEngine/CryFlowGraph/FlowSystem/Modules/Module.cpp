@@ -138,6 +138,10 @@ bool CFlowGraphModule::LoadModuleGraph(const char* moduleName, const char* fileN
 		{
 			m_pRootGraph->SerializeXML(moduleRef, true);
 
+			stack_string sTemp = "FG-Module ";
+			sTemp.append(moduleName);
+			m_pRootGraph->SetDebugName(sTemp);
+
 			// Root graph is for cloning, so not active!
 			m_pRootGraph->UnregisterFromFlowSystem();
 			m_pRootGraph->SetEnabled(false);
@@ -352,6 +356,9 @@ void CFlowGraphModule::CreateInstance(EntityId entityId, TModuleInstanceId runni
 
 		// Enable the instance's inner nodes
 		pGraphClone->SetType(IFlowGraph::eFGT_Module);
+		stack_string cloneGraphName;
+		cloneGraphName.Format("%s (EntityID %u, InstanceID %u)", m_pRootGraph->GetDebugName(), entityId, runningInstanceId);
+		pGraphClone->SetDebugName(cloneGraphName);
 		pGraphClone->SetEnabled(true);
 		pGraphClone->SetActive(true);
 		pGraphClone->InitializeValues();

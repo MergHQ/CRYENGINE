@@ -2972,7 +2972,7 @@ bool CActor::GetRagdollContext( CProceduralContextRagdoll** ppRagdollContext ) c
 	IActionController* piActionController = m_pAnimatedCharacter->GetActionController();
 	if( !gEnv->bMultiplayer && piActionController )
 	{
-		IProceduralContext* piProcContext = piActionController->FindOrCreateProceduralContext( PROCEDURAL_CONTEXT_RAGDOLL_NAME );
+		IProceduralContext* piProcContext = piActionController->FindOrCreateProceduralContext(CProceduralContextRagdoll::GetCID());
 		if( piProcContext )
 		{
 			*ppRagdollContext = static_cast<CProceduralContextRagdoll*> (piProcContext);

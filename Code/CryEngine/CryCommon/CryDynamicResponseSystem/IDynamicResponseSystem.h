@@ -245,6 +245,11 @@ struct IResponseInstance
 
 //////////////////////////////////////////////////////////////////////////
 
+struct IDynamicResponseSystemEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IDynamicResponseSystemEngineModule, 0xA7C12111E4D6413E, 0xAFD1BF5930DD8C6A);
+};
+
 struct IDynamicResponseSystem
 {
 public:

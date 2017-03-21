@@ -53,9 +53,13 @@ public:
 static CSystemEventListner_Entity g_system_event_listener_entity;
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_EntitySystem : public IEngineModule
+class CEngineModule_EntitySystem : public IEntitySystemEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IEntitySystemEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_EntitySystem, "EngineModule_CryEntitySystem", 0x885655072f014c03, 0x820c5a1a9b4d623b)
 
 	virtual ~CEngineModule_EntitySystem() 

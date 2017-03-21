@@ -8,6 +8,7 @@
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
 #include <CryString/CryString.h>
+#include <CrySystem/IEngineModule.h>
 
 struct ISystem;
 class ICrySizer;
@@ -26,6 +27,11 @@ DLL_IMPORT
 ICryFont * CreateCryFontInterface(ISystem * pSystem);
 
 typedef ICryFont*(* PFNCREATECRYFONTINTERFACE)(ISystem* pSystem);
+
+struct IFontEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IFontEngineModule, 0xCDDD1B3CA1054612, 0xADA4EA7E6F919DF1);
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 struct ICryFont

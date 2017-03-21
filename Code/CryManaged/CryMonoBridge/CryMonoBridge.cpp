@@ -21,9 +21,12 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserve
 #endif // WIN32
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryMonoBridge : public IEngineModule
+class CEngineModule_CryMonoBridge : public IMonoEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IMonoEngineModule)
+	CRYINTERFACE_END()
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMonoBridge, "EngineModule_CryMonoBridge", 0x2b4615a571524d67, 0x920dc857f8503b3a)
 
 	virtual ~CEngineModule_CryMonoBridge() {}

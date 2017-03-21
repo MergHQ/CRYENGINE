@@ -3,7 +3,6 @@
 #pragma once
 
 #include <CrySerialization/IArchive.h>
-#include <CryMath/Random.h>
 
 #include <functional>
 
@@ -31,13 +30,7 @@ struct CryGUID
 		};
 	}
 
-	static CryGUID Create()
-	{
-		CryGUID guid;
-		gEnv->pSystem->FillRandomMT(reinterpret_cast<uint32*>(&guid), sizeof(guid) / sizeof(uint32));
-		MEMORY_RW_REORDERING_BARRIER;
-		return guid;
-	}
+	inline static CryGUID Create();
 
 	constexpr static CryGUID Null()
 	{

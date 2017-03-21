@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "AudioAreaRandom.h"
 #include <CrySerialization/Enum.h>
+#include <CryMath/Random.h>
 
 using namespace CryAudio;
 

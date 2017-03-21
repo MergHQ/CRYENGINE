@@ -3343,6 +3343,16 @@ void CCVarUpdateRecorder::OnAfterVarChange(ICVar* pVar)
 	m_updatedCVars[gcpRendD3D->m_RP.m_nFillThreadID].emplace_back(pVar);
 }
 
+void CCVarUpdateRecorder::OnVarUnregister(ICVar* pVar)
+{
+	SUpdateRecord tempRecord(pVar);
+	for (CVarList& cvarList : m_updatedCVars)
+	{
+		const auto it = std::remove(std::begin(cvarList), std::end(cvarList), tempRecord);
+		cvarList.erase(it, std::end(cvarList));
+	}
+}
+
 void CCVarUpdateRecorder::Reset() 
 { 
 	m_updatedCVars[gcpRendD3D->m_RP.m_nProcessThreadID].clear(); 

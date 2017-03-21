@@ -6,6 +6,9 @@
 #include <CryAudio/IAudioSystem.h>
 %}
 
+%ignore CryAudio::ISystemModule;
+%ignore CryAudio::IImplModule;
+
 %typemap(csbase) CryAudio::ERequestFlags "uint"
 %typemap(csbase) CryAudio::ERequestStatus "uint"
 %typemap(csbase) CryAudio::ERequestResult "uint"

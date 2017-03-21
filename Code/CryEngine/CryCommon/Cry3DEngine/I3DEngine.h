@@ -1284,6 +1284,11 @@ struct SLightVolume
 
 #pragma pack(pop)
 
+struct I3DEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(I3DEngineModule, 0x31BD20FF13474F02, 0xB923C3F83BA73D84);
+};
+
 //! Interface to the 3d Engine.
 struct I3DEngine : public IProcess
 {

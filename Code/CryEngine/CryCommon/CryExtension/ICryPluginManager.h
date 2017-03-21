@@ -31,7 +31,7 @@ struct ICryPluginManager
 	virtual void RegisterEventListener(const CryClassID& pluginClassId, IPluginEventListener* pListener) = 0;
 	virtual void RemoveEventListener(const CryClassID& pluginClassId, IPluginEventListener* pListener) = 0;
 
-	virtual bool LoadPluginFromDisk(EPluginType type, const char* path, const char* className) = 0;
+	virtual bool LoadPluginFromDisk(EPluginType type, const char* path) = 0;
 
 	template<typename T>
 	T* QueryPlugin() const

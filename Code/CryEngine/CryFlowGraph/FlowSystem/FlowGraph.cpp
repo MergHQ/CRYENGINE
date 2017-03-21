@@ -7,6 +7,7 @@
 #include "FlowSystem.h"
 #include <CryString/StringUtils.h>
 #include <CryGame/IGameTokens.h>
+#include <CryAction/ICustomActions.h>
 #include "Modules/ModuleManager.h"
 
 // Debug disabled edges in FlowGraphs
@@ -125,6 +126,13 @@ private:
 	TFlowNodeId m_id;
 };
 
+
+// CFlowGraphBase
+
+const TFlowNodeId CFlowGraphBase::NOT_MODIFIED = ~TFlowNodeId(0);
+const TFlowNodeId CFlowGraphBase::END_OF_MODIFIED_LIST = CFlowGraphBase::NOT_MODIFIED - 1;
+
+
 CFlowGraphBase::CFlowGraphBase(CFlowSystem* pSys)
 	: m_firstModifiedNode(END_OF_MODIFIED_LIST)
 	, m_firstActivatingNode(END_OF_MODIFIED_LIST)
@@ -137,25 +145,26 @@ CFlowGraphBase::CFlowGraphBase(CFlowSystem* pSys)
 	, m_bNeedsUpdating(false)
 	, m_pSys(pSys)
 	, m_nRefs(0)
+	, m_pEntitySystem(nullptr)
 	, m_bSuspended(false)
 	, m_bIsAIAction(false)
-	, m_pAIAction(NULL)
+	, m_pAIAction(nullptr)
 	, m_bIsCustomAction(false)
-	, m_pCustomAction(NULL)
-	, m_pClonedFlowGraph(NULL)
+	, m_pCustomAction(nullptr)
+	, m_pClonedFlowGraph(nullptr)
+	, m_bRegistered(false)
 	, m_graphId(InvalidFlowGraphId)
 	, m_Type(IFlowGraph::eFGT_Default)
+	, m_graphTokens()
 {
 	m_pEntitySystem = gEnv->pEntitySystem;
 
 	for (int i = 0; i < MAX_GRAPH_ENTITIES; i++)
 		m_graphEntityId[i] = 0;
 
-#if defined (FLOW_DEBUG_PENDING_UPDATES)
 	CreateDebugName();
-#endif
 
-	m_graphId = m_pSys->RegisterGraph(this, InternalGetDebugName());
+	m_graphId = m_pSys->RegisterGraph(this, GetDebugName());
 	m_bRegistered = true;
 	m_pFlowGraphDebugger = GetIFlowGraphDebuggerPtr();
 }
@@ -258,25 +267,19 @@ bool CFlowGraphBase::IsSuspended() const
 
 void CFlowGraphBase::SetAIAction(IAIAction* pAIAction)
 {
-#if !defined(FLOW_DEBUG_PENDING_UPDATES)
 	m_pAIAction = pAIAction;
-	if (pAIAction)
-		m_bIsAIAction = true; // once an AIAction, always an AIAction
-#else
 	if (pAIAction)
 	{
 		m_bIsAIAction = true; // once an AIAction, always an AIAction
-		m_pAIAction = pAIAction;
-		CreateDebugName();
+		m_Type = eFGT_AIAction;
 	}
 	else
-		m_pAIAction = 0;
-#endif
-
-	if (m_bIsAIAction)
-		m_Type = eFGT_AIAction;
-	else
+	{
+		// m_bIsAIAction = false?? clearing some things but not others does not look correct, but let's not ask existential questions now
 		m_Type = eFGT_Default;
+	}
+
+	CreateDebugName();
 }
 
 IAIAction* CFlowGraphBase::GetAIAction() const
@@ -286,20 +289,15 @@ IAIAction* CFlowGraphBase::GetAIAction() const
 
 void CFlowGraphBase::SetCustomAction(ICustomAction* pCustomAction)
 {
-#if !defined(FLOW_DEBUG_PENDING_UPDATES)
 	m_pCustomAction = pCustomAction;
-	if (pCustomAction)
-		m_bIsCustomAction = true; // once an CustomAction, always an CustomAction
-#else
+
 	if (pCustomAction)
 	{
 		m_bIsCustomAction = true; // once an CustomAction, always an CustomAction
 		m_pCustomAction = pCustomAction;
 		CreateDebugName();
 	}
-	else
-		m_pCustomAction = 0;
-#endif
+	// else? same as above?
 }
 
 ICustomAction* CFlowGraphBase::GetCustomAction() const
@@ -347,6 +345,62 @@ CFlowGraphBase::~CFlowGraphBase()
 	Cleanup();
 }
 
+
+const char* CFlowGraphBase::GetDebugName() const
+{
+#if !defined(_RELEASE)
+	return m_debugName.c_str();
+#else
+	return "";
+#endif
+}
+
+void CFlowGraphBase::SetDebugName(const char* sName)
+{
+#if !defined(_RELEASE)
+	m_debugName = sName;
+#endif
+}
+
+void CFlowGraphBase::CreateDebugName()
+{
+#if !defined(_RELEASE)
+	char* sType;
+	stack_string sExtra = "";
+
+	switch (m_Type)
+	{
+	case eFGT_Default:
+		{
+			sType = "Entity";
+			IEntity *pEntity = gEnv->pEntitySystem->GetEntity(GetGraphEntity(0));
+			if (pEntity)
+			{
+				sExtra.Format(" '%s'", pEntity->GetName());
+			}
+			break;
+		}
+	case eFGT_AIAction:
+		{
+			sType = "AIAction";
+			sExtra.Format(" '%s'", m_pAIAction->GetName());
+			break;
+		}
+	case eFGT_UIAction: sType = "UIAction"; break;
+	case eFGT_Module: sType = "Module"; break;
+	case eFGT_CustomAction:
+		{
+			sType = "CustomAction";
+			sExtra.Format(" '%s'", m_pCustomAction->GetCustomActionGraphName());
+			break;
+		}
+	case eFGT_MaterialFx: sType = "MaterialFX"; break;
+	}
+
+	m_debugName.Format("FG-%s%s", sType, sExtra.c_str());
+#endif
+}
+
 #if defined (FLOW_DEBUG_PENDING_UPDATES)
 
 namespace {
@@ -370,35 +424,6 @@ string GetPrettyNodeName(IFlowGraph* pGraph, TFlowNodeId id)
 }
 };
 
-const char* CFlowGraphBase::InternalGetDebugName()
-{
-	static char buf[128];
-	bool bFit;
-
-	if (m_pAIAction != 0)
-		bFit = cry_sprintf(buf, "FG-0x%p-AIAction '%s'", this, m_pAIAction->GetName());
-	else
-	{
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(GetGraphEntity(0));
-		if (pEntity != 0)
-			bFit = cry_sprintf(buf, "FG-0x%p-Entity '%s'", this, pEntity->GetName());
-		else
-			bFit = cry_sprintf(buf, "FG-0x%p", this);
-	}
-
-	if (!bFit)
-	{
-		buf[sizeof(buf) - 4] = '\0';
-		cry_strcat(buf, "...");
-	}
-
-	return buf;
-}
-
-void CFlowGraphBase::CreateDebugName()
-{
-	m_debugName = InternalGetDebugName();
-}
 
 void CFlowGraphBase::DebugPendingActivations()
 {
@@ -442,11 +467,7 @@ void CFlowGraphBase::DebugPendingActivations()
 		id = nextId;
 	}
 }
-#else
-const char* CFlowGraphBase::InternalGetDebugName()
-{
-	return "";
-}
+
 #endif
 
 void CFlowGraphBase::AddRef()
@@ -477,10 +498,10 @@ void CFlowGraphBase::UnregisterHook(IFlowGraphHookPtr p)
 void CFlowGraphBase::SetGraphEntity(EntityId id, int nIndex)
 {
 	if (nIndex >= 0 && nIndex < MAX_GRAPH_ENTITIES)
+	{
 		m_graphEntityId[nIndex] = id;
-#if defined (FLOW_DEBUG_PENDING_UPDATES)
-	CreateDebugName();
-#endif
+		CreateDebugName();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -522,8 +543,9 @@ void CFlowGraphBase::CloneInner(CFlowGraphBase* pClone)
 	pClone->m_Type = m_Type;
 	// pClone->m_bActive = m_bActive;
 	// pClone->m_bSuspended = m_bSuspended;
-#if defined (FLOW_DEBUG_PENDING_UPDATES)
-	pClone->CreateDebugName();
+#if !defined (_RELEASE)
+	// copy the name as is. something else should overwrite it (such as the module manager or changing the graph's entity)
+	pClone->m_debugName = m_debugName;
 #endif
 
 	// clone graph tokens
@@ -938,7 +960,7 @@ XmlNodeRef CFlowGraphBase::GetUserData(TFlowNodeId id)
 
 void CFlowGraphBase::Update()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_ACTION, m_debugName);
 
 	// Disabled or Deactivated or Suspended flow graphs shouldn't be updated!
 	if (m_bEnabled == false || m_bActive == false || m_bSuspended || m_bNeedsUpdating == false)
@@ -987,7 +1009,7 @@ void CFlowGraphBase::Update()
 
 void CFlowGraphBase::InitializeValues()
 {
-	//	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_ACTION, m_debugName);
 
 	// flush activation list
 	DoUpdate(IFlowNode::eFE_DontDoAnythingWithThisPlease);
@@ -1021,8 +1043,6 @@ void CFlowGraphBase::InitializeValues()
 
 void CFlowGraphBase::DoUpdate(IFlowNode::EFlowEvent event)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
-
 	IFlowNode::SActivationInfo activationInfo(this, 0);
 
 	CRY_ASSERT(m_firstFinalActivatingNode == END_OF_MODIFIED_LIST);
@@ -1791,7 +1811,7 @@ void CFlowGraphBase::Serialize(TSerialize ser)
 				m_flowData[id].Serialize(&activationInfo, ser);
 			}
 			else
-				GameWarning("[flow] Flowgraph '%s' has changed between save-games. Can't resolve node named '%s'", InternalGetDebugName(), name.c_str());
+				GameWarning("[flow] Flowgraph '%s' has changed between save-games. Can't resolve node named '%s'", GetDebugName(), name.c_str());
 			ser.EndGroup();
 		}
 	}
@@ -1997,8 +2017,3 @@ void CFlowGraph::GetMemoryUsage(ICrySizer* s) const
 	s->Add(*this);
 	CFlowGraphBase::GetMemoryUsage(s);
 }
-
-#if defined(__GNUC__)
-const TFlowNodeId CFlowGraphBase::NOT_MODIFIED = ~TFlowNodeId(0);
-const TFlowNodeId CFlowGraphBase::END_OF_MODIFIED_LIST = NOT_MODIFIED - 1;
-#endif

@@ -3,6 +3,8 @@
 #pragma once
 
 #include <CryCore/functor.h>
+#include <CrySystem/ISystem.h>
+#include <CrySystem/IEngineModule.h>
 
 class ICrySizer;
 struct IWeakScriptObject;
@@ -213,6 +215,11 @@ struct ScriptAnyValue
 	}
 
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
+};
+
+struct IScriptSystemEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IScriptSystemEngineModule, 0x39B5373FB2984AA1, 0xB69188ED53CF5F9D);
 };
 
 //! Scripting Engine interface.

@@ -27,9 +27,13 @@ CAISystem* g_pAISystem;
  */
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAISystem : public IEngineModule
+class CEngineModule_CryAISystem : public IAIEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IAIEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAISystem, "EngineModule_CryAISystem", 0x6b8e79a784004f44, 0x97db7614428ad251)
 
 	virtual ~CEngineModule_CryAISystem()

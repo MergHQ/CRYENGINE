@@ -7,6 +7,8 @@
 #include <CryPhysics/IPhysics.h>
 #include <CrySystem/IWindowMessageHandler.h>
 
+#include <CryMath/Random.h>
+
 #include "Timer.h"
 #include <CrySystem/CryVersion.h>
 #include "CmdLine.h"
@@ -499,8 +501,9 @@ public:
 
 	void         SetVersionInfo(const char* const szVersion);
 
-	virtual bool InitializeEngineModule(const char* dllName, const char* moduleClassName, bool bQuitIfNotFound) override;
-	virtual bool UnloadEngineModule(const char* szDllName) override;
+	virtual ICryFactory* LoadModuleWithFactory(const char* dllName, const CryInterfaceID& moduleInterfaceId) override;
+	virtual bool InitializeEngineModule(const char* dllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound) override;
+	virtual bool UnloadEngineModule(const char* dllName) override;
 
 #if CRY_PLATFORM_WINDOWS
 	friend LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -518,6 +521,9 @@ public:
 #endif
 	// ~IWindowMessageHandler
 
+	WIN_HMODULE LoadDLL(const char* dllName, bool bQuitIfNotFound = true);
+	bool        UnloadDLL(const char* dllName);
+
 private:
 
 	// Release all resources.
@@ -525,13 +531,10 @@ private:
 
 	void SleepIfInactive();
 
-	bool LoadEngineDLLs();
-
 	//! @name Initialization routines
 	//@{
 
 	bool InitNetwork();
-	bool InitOnline();
 	bool InitInput();
 
 	bool InitConsole();
@@ -579,8 +582,6 @@ private:
 	void        RenderJobStats();
 	void        RenderMemStats();
 	void        RenderThreadInfo();
-	WIN_HMODULE LoadDLL(const char* dllName, bool bQuitIfNotFound = true);
-	bool        UnloadDLL(const char* dllName);
 	void        FreeLib(WIN_HMODULE hLibModule);
 	void        QueryVersionInfo();
 	void        LogVersion();

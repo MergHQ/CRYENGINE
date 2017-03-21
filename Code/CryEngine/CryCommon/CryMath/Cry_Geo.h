@@ -1,23 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File: Cry_Geo.h
-//	Description: Common structures for geometry computations
-//
-//	History:
-//	-March 15,2003: Created by Ivo Herzeg
-//
-//////////////////////////////////////////////////////////////////////
+#pragma once
 
-#ifndef CRYGEOSTRUCTS_H
-#define CRYGEOSTRUCTS_H
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-#include "Cry_Math.h"
-#include "Random.h"
+#include <CryMath/Cry_Math.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Forward declarations                                                      //
@@ -880,5 +865,3 @@ inline float CalcArea(const Vec3* vertices, int numvertices, const Vec3& normal)
 	float area = 0.5f * (float)fabs(normal | csum);
 	return (area);
 }
-
-#endif //geostructs

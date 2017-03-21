@@ -28,6 +28,8 @@
 #include <IGameObject.h>
 %}
 
+%ignore IEntitySystemEngineModule;
+
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"
 
 %csconstvalue("0xFFFFFFFF") eEA_All;

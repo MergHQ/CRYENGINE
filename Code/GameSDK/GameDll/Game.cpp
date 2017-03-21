@@ -926,7 +926,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 		}
 #endif
 
-		if (!gEnv->pSystem->InitializeEngineModule("CryLobby", "EngineModule_CryLobby", false))
+		if (!gEnv->pSystem->InitializeEngineModule("CryLobby", cryiidof<ILobbyEngineModule>(), false))
 		{
 			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Error creating Lobby System!");
 		}
@@ -977,7 +977,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 	}
 
 	//perception system plugin must be loaded here by default (cryplugin.csv cannot be used because GameSDK doesn't exist as cry project yet)
-	if (!gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryPerceptionSystem", "Plugin_CryPerceptionSystem"))
+	if (!gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryPerceptionSystem"))
 	{
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Error loading Perception System!");
 	}

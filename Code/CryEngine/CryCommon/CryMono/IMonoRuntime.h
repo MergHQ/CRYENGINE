@@ -27,6 +27,11 @@ struct IManagedNodeCreator
 	virtual BehaviorTree::Node* Create() = 0;
 };
 
+struct IMonoEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IMonoEngineModule, 0xAE47C9890FFA4876, 0xB0B5FBB833C2B4EF);
+};
+
 struct IMonoRuntime
 {
 	virtual ~IMonoRuntime() {}

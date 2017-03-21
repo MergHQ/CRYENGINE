@@ -16,9 +16,13 @@ CAudioLogger g_audioImplLogger;
 CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAudioImplSDLMixer : public IEngineModule
+class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(CryAudio::IImplModule)
+	CRYINTERFACE_END()
+	
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "EngineModule_AudioImpl", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
 
 	CEngineModule_CryAudioImplSDLMixer();

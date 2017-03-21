@@ -967,6 +967,11 @@ struct IMovieListener
 	// </interfuscator:shuffle>
 };
 
+struct IMovieEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IMovieEngineModule, 0x271A9F977E6D4CFA, 0xB3AE2A5C3227D302);
+};
+
 //! Movie System interface.
 //! Main entrance point to engine movie capability.
 //! Enumerate available movies, update all movies, create animation nodes and tracks.

@@ -409,7 +409,7 @@ private:
 					{
 						if (IEntity* pSlaveEntity = &(pActionController->GetEntity()))
 						{
-							if (CProceduralContext_AdjustPos* pSlaveContext = static_cast<CProceduralContext_AdjustPos*>(pActionController->FindProceduralContext("AdjustPosContext")))
+							if (CProceduralContext_AdjustPos* pSlaveContext = static_cast<CProceduralContext_AdjustPos*>(pActionController->FindProceduralContext(CProceduralContext_AdjustPos::GetCID())))
 							{
 								slaveProceduralContexts.push_back(pSlaveContext);
 

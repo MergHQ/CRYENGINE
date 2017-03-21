@@ -2004,8 +2004,8 @@ void CPoseModifierStack::Synchronize()
 
 bool Serialize(Serialization::IArchive& ar, IAnimationPoseModifierPtr& pointer, const char* name, const char* label)
 {
-	Serialization::CryExtensionSharedPtr<IAnimationPoseModifier, IAnimationSerializable> serializer(pointer);
-	return ar(static_cast<Serialization::IPointer&>(serializer), name, label);
+	Serialization::CryExtensionPointer<IAnimationPoseModifier, IAnimationSerializable> serializer(pointer);
+	return ar(serializer, name, label);
 }
 
 void CPoseModifierSetup::Entry::Serialize(Serialization::IArchive& ar)

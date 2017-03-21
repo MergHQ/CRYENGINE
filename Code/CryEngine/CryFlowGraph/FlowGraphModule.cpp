@@ -5,7 +5,7 @@
 
 // Included only once here
 #include <CryCore//Platform/platform_impl.inl>
-#include <CrySystem/IEngineModule.h>
+#include <CryExtension/ICryPluginManager.h>
 
 #include "FlowSystem/FlowSystem.h"
 #include "FlowSystem/Modules/ModuleManager.h"
@@ -13,7 +13,7 @@
 
 
 
-// IEngineModule -----------------------------------
+// Cry::IDefaultModule -----------------------------------
 
 class CEngineModule_FlowGraph : public ICryPlugin
 {
@@ -33,8 +33,7 @@ class CEngineModule_FlowGraph : public ICryPlugin
 	virtual bool Initialize( SSystemGlobalEnvironment &env,const SSystemInitParams &initParams ) override
 	{
 		ISystem* pSystem = env.pSystem;
-		ModuleInitISystem(pSystem,"CryFlowGraph");
-
+		
 		CFlowSystem* pFlowSystem = new CFlowSystem();
 		env.pFlowSystem = pFlowSystem;
 		pFlowSystem->PreInit();

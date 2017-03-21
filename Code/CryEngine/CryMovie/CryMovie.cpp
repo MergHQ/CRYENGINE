@@ -36,9 +36,13 @@ public:
 
 static CSystemEventListner_Movie g_system_event_listener_movie;
 
-class CEngineModule_CryMovie : public IEngineModule
+class CEngineModule_CryMovie : public IMovieEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IMovieEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMovie, "EngineModule_CryMovie", 0xdce26beebdc6400f, 0xa0e9b42839f2dd5b)
 
 	virtual ~CEngineModule_CryMovie()

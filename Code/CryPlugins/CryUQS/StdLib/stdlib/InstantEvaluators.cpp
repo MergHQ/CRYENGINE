@@ -4,6 +4,8 @@
 #include <CryAISystem/IAISystem.h>
 #include <CryAISystem/INavigationSystem.h>
 
+#include <CryMath/Random.h>
+
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
 namespace UQS

@@ -60,9 +60,13 @@ void RegisterCommandClasses()
 }
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryLiveCreate : public IEngineModule
+class CEngineModule_CryLiveCreate : public ILiveCreateEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(ILiveCreateEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryLiveCreate, "EngineModule_CryLiveCreate", 0xdc126beebdc6411f, 0xa111b42839f2dd1b)
 
 	virtual ~CEngineModule_CryLiveCreate() {}

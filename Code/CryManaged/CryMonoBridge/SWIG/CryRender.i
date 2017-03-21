@@ -10,6 +10,7 @@
 #include <CryRenderer/IStereoRenderer.h>
 #include <CryRenderer/IImage.h>
 %}
+%ignore IRendererEngineModule;
 %ignore operator==(const CInputLightMaterial &m1, const CInputLightMaterial &m2);
 %ignore CRenderCamera::GetXform_Screen2Obj;
 %ignore CRenderCamera::GetXform_Obj2Screen;

@@ -477,6 +477,11 @@ enum EAIFilterType
 	eAIFT_None,
 };
 
+struct IAIEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IAIEngineModule, 0x4B00591DC87443C7, 0x9BCA78A59ECD6D9C);
+};
+
 struct IAISystemCallbacks
 {
 	virtual CFunctorsList<Functor1<IAIObject*>>& ObjectCreated() = 0;

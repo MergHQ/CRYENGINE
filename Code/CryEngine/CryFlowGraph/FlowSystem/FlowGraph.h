@@ -1,8 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FLOWGRAPH_H__
-#define __FLOWGRAPH_H__
-
 #pragma once
 
 #include "FlowSystem.h"
@@ -201,28 +198,21 @@ private:
 	template<class T>
 	bool        NotifyFlowNodeActivationListeners(TFlowNodeId srcNode, TFlowPortId srcPort, TFlowNodeId toNode, TFlowPortId toPort, const T& value);
 
-	const char* InternalGetDebugName();
-
 #if defined (FLOW_DEBUG_PENDING_UPDATES)
 	void DebugPendingActivations();
-	void CreateDebugName();
-	// a more or less descriptive name
-	string m_debugName;
 #endif
 
-	// the set of modified nodes
-	// not modified marker
-	static const TFlowNodeId NOT_MODIFIED
-#if !defined(__GNUC__)
-	  = ~TFlowNodeId(0)
-#endif
-	;
+	const char* GetDebugName() const;
+	void SetDebugName(const char* sName);
+	void CreateDebugName();
+
+
+	// the set of modified nodes, not modified marker
+	static const TFlowNodeId NOT_MODIFIED;
 	// end of modified list marker
-	static const TFlowNodeId END_OF_MODIFIED_LIST
-#if !defined(__GNUC__)
-	  = NOT_MODIFIED - 1
-#endif
-	;
+	static const TFlowNodeId END_OF_MODIFIED_LIST;
+
+
 	// PerformActivation works with this
 	std::vector<TFlowNodeId>                  m_modifiedNodes;
 	// This list is used for flowgraph debugging
@@ -316,6 +306,8 @@ private:
 	// inspectors
 	std::vector<IFlowGraphInspectorPtr> m_inspectors;
 
+	IFlowGraphDebuggerPtr               m_pFlowGraphDebugger;
+
 	IEntitySystem*                      m_pEntitySystem;
 
 	// temporary solutions [ ask Dejan ]
@@ -325,8 +317,6 @@ private:
 	//                     it is never reset. needed when activations are pending which is o.k. for Actiongraphs
 	IAIAction* m_pAIAction;
 
-	bool       m_bRegistered;
-
 	bool       m_bIsCustomAction; // flag that this FlowGraph is an AIAction
 	//                     first and only time set in SetAIAction call with an action != 0
 	//                     it is never reset. needed when activations are pending which is o.k. for Actiongraphs
@@ -334,12 +324,17 @@ private:
 
 	IFlowGraphPtr              m_pClonedFlowGraph;
 
+	bool                       m_bRegistered;
+
 	TFlowGraphId               m_graphId;
+
+	IFlowGraph::EFlowGraphType m_Type;
+#if !defined(RELEASE)
+	string                     m_debugName; // name used for more useful warnings, debugging and profiling
+#endif
 	typedef std::vector<IFlowGraph::SGraphToken> TGraphTokens;
 	TGraphTokens               m_graphTokens;
 
-	IFlowGraph::EFlowGraphType m_Type;
-	IFlowGraphDebuggerPtr      m_pFlowGraphDebugger;
 
 #if defined(ALLOW_MULTIPLE_PORT_ACTIVATIONS_PER_UPDATE)
 	struct SCachedActivation
@@ -416,7 +411,7 @@ bool CFlowGraphBase::NotifyFlowNodeActivationListeners(TFlowNodeId srcNode, TFlo
 template<class T>
 ILINE void CFlowGraphBase::PerformActivation(const SFlowAddress addr, const T& value)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
+	// CRY_PROFILE_FUNCTION_ARG(PROFILE_ACTION, m_debugName); // enable only when needed, it increases FG update total time
 	CRY_ASSERT(ValidateAddress(addr));
 
 	if (m_bActive == false || m_bEnabled == false)
@@ -585,5 +580,3 @@ public:
 		CFlowGraphBase::PerformActivation(address, value.value);
 	}
 };
-
-#endif

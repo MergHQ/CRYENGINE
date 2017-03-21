@@ -578,17 +578,6 @@ ILINE bool InitializePoseAligner(PoseAligner::CPose& pose, IEntity& entity, ICha
 	return pose.GetChainCount() != 0;
 }
 
-class CPoseAlignerC3 :
-	PoseAligner::CPose
-{
-	CRYGENERATE_CLASS(CPoseAlignerC3, "AnimationPoseAlignerC3", 0xf5381a4c1374ff00, 0x8de19ba730cf572b)
-
-	virtual ~CPoseAlignerC3() {}
-
-public:
-	virtual bool Initialize(IEntity& entity) override;
-};
-
 bool CPoseAlignerC3::Initialize(IEntity& entity)
 {
 	ICharacterInstance* pCharacter = entity.GetCharacter(0);
