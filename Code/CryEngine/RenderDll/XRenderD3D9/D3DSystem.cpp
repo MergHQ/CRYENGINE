@@ -1015,11 +1015,19 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 		m_DevMan.ReleaseFence(m_frameFences[i]);
 
 	CHWShader::mfFlushPendedShadersWait(-1);
-	if (nFlags == FRR_ALL && !IsShaderCacheGenMode())
+	if (!IsShaderCacheGenMode())
 	{
-		memset(&CTexture::s_TexStages[0], 0, sizeof(CTexture::s_TexStages));
-		CTexture::s_TexStates.clear();
-		FreeResources(FRR_ALL);
+		if (nFlags == FRR_ALL)
+		{
+			memset(&CTexture::s_TexStages[0], 0, sizeof(CTexture::s_TexStages));
+			CTexture::s_TexStates.clear();
+			FreeResources(FRR_ALL);
+		}
+	}
+	else
+	{
+		m_pRT->RC_ReleaseGraphicsPipeline();
+		ForceFlushRTCommands();
 	}
 
 	FX_PipelineShutdown();

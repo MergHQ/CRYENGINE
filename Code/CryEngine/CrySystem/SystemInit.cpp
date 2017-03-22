@@ -3416,7 +3416,10 @@ L_done:;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Load FlowGraph
-		GetISystem()->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryFlowGraph");
+		if (!m_startupParams.bShaderCacheGen)
+		{
+			GetISystem()->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryFlowGraph");
+		}
 
 		//////////////////////////////////////////////////////////////////////////
 		// AI
