@@ -279,7 +279,10 @@ void CParticleEmitter::GetMemoryUsage(ICrySizer* pSizer) const
 
 const AABB CParticleEmitter::GetBBox() const
 {
-	return m_bounds;
+	if (m_bounds.IsReset())
+		return AABB(m_location.t, 0.05f);
+	else
+		return m_bounds;
 }
 
 void CParticleEmitter::FillBBox(AABB& aabb)
