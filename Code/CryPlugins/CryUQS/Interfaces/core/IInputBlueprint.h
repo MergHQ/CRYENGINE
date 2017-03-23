@@ -32,12 +32,12 @@ namespace UQS
 			virtual void                                  SetFuncReturnValueLiteral(const char* szValue) = 0;
 			virtual void                                  SetAddReturnValueToDebugRenderWorldUponExecution(bool bAddReturnValueToDebugRenderWorldUponExecution) = 0;
 
-			virtual ITextualInputBlueprint&               AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution) = 0;
+			virtual ITextualInputBlueprint&               AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution) = 0;
 			virtual size_t                                GetChildCount() const = 0;
 			virtual const ITextualInputBlueprint&         GetChild(size_t index) const = 0;
-			virtual const ITextualInputBlueprint*         FindChildByParamName(const char* paramName) const = 0;
+			virtual const ITextualInputBlueprint*         FindChildByParamName(const char* szParamName) const = 0;
 
-			virtual void                                  SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) = 0;
+			virtual void                                  SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) = 0;
 			virtual DataSource::ISyntaxErrorCollector*    GetSyntaxErrorCollector() const = 0;     // called while resolving a blueprint from its textual representation into the "in-memory" representation
 		};
 

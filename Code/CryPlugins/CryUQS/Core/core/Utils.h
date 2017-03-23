@@ -25,7 +25,7 @@ namespace UQS
 			// ~IUtils
 
 			// IFactoryDatabaseListener<Client::IItemFactory>
-			virtual void                                            OnFactoryRegistered(Client::IItemFactory* freshlyRegisteredFactory) override;
+			virtual void                                            OnFactoryRegistered(Client::IItemFactory* pFreshlyRegisteredFactory) override;
 			// ~IFactoryDatabaseListener<Client::IItemFactory>
 
 			// - called by CHub's ctor + dtor

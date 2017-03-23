@@ -23,7 +23,7 @@ namespace UQS
 
 			// IUqsString
 			virtual void                  Set(const char* szString) override;
-			virtual void                  Format(const char* fmt, ...) override PRINTF_PARAMS(2, 3);
+			virtual void                  Format(const char* szFormat, ...) override PRINTF_PARAMS(2, 3);
 			virtual const char*           c_str() const override;
 			// ~IUqsString
 

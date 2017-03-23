@@ -42,7 +42,7 @@ namespace UQS
 		struct IHub
 		{
 			virtual                                                    ~IHub() {}
-			virtual void                                               RegisterHubEventListener(IHubEventListener* listener) = 0;
+			virtual void                                               RegisterHubEventListener(IHubEventListener* pListener) = 0;
 			virtual void                                               Update() = 0;
 			virtual IQueryFactoryDatabase&                             GetQueryFactoryDatabase() = 0;
 			virtual IItemFactoryDatabase&                              GetItemFactoryDatabase() = 0;

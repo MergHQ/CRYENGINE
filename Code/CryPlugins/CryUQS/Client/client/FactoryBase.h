@@ -25,7 +25,7 @@ namespace UQS
 				static void                                 RegisterAllInstancesInFactoryDatabase(Core::IFactoryDatabase<TFactoryInterface>& databaseToRegisterInstancesIn);
 
 			protected:
-				explicit                                    CFactoryBase(const char* name);
+				explicit                                    CFactoryBase(const char* szName);
 				const char*                                 GetName() const;
 
 			private:
@@ -41,8 +41,8 @@ namespace UQS
 			TFactory* CFactoryBase<TFactory>::s_pList;
 
 			template <class TFactory>
-			CFactoryBase<TFactory>::CFactoryBase(const char* name)
-				: m_name(name)
+			CFactoryBase<TFactory>::CFactoryBase(const char* szName)
+				: m_name(szName)
 			{
 				// notice: we silently accept possible duplicates here (the factory-database will do such consistency checks)
 				m_pNext = s_pList;

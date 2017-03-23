@@ -25,7 +25,7 @@ namespace UQS
 			private:
 				struct SStoredParameterInfo
 				{
-					explicit                        SStoredParameterInfo(const char* _name, const Shared::CTypeInfo& _type, size_t _offset);
+					explicit                        SStoredParameterInfo(const char* _szName, const Shared::CTypeInfo& _type, size_t _offset);
 
 					string                          name;
 					const Shared::CTypeInfo&        type;
@@ -36,7 +36,7 @@ namespace UQS
 				virtual size_t                      GetParameterCount() const override;
 				virtual SParameterInfo              GetParameter(size_t index) const override;
 
-				void                                RegisterParameterType(const char* paramName, const Shared::CTypeInfo& typeInfo, size_t offset);
+				void                                RegisterParameterType(const char* szParamName, const Shared::CTypeInfo& typeInfo, size_t offset);
 
 			private:
 				std::vector<SStoredParameterInfo>   m_parametersInOrder;

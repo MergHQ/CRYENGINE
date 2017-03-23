@@ -21,9 +21,9 @@ namespace UQS
 			// nothing
 		}
 
-		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* name, const char* type, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
+		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* szName, const char* szType, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_parameters.emplace_back(name, type, bAddToDebugRenderWorld, std::move(syntaxErrorCollector));
+			m_parameters.emplace_back(szName, szType, bAddToDebugRenderWorld, std::move(pSyntaxErrorCollector));
 		}
 
 		size_t CTextualGlobalRuntimeParamsBlueprint::GetParameterCount() const
@@ -65,23 +65,23 @@ namespace UQS
 				const ITextualGlobalRuntimeParamsBlueprint::SParameterInfo p = source.GetParameter(i);
 
 				// ensure each parameter exists only once
-				if (m_runtimeParameters.find(p.name) != m_runtimeParameters.cend())
+				if (m_runtimeParameters.find(p.szName) != m_runtimeParameters.cend())
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
-						pSE->AddErrorMessage("Duplicate parameter: '%s'", p.name);
+						pSE->AddErrorMessage("Duplicate parameter: '%s'", p.szName);
 					}
 					bResolveSucceeded = false;
 					continue;
 				}
 
 				// find the item factory
-				Client::IItemFactory* pItemFactory = g_hubImpl->GetItemFactoryDatabase().FindFactoryByName(p.type);
+				Client::IItemFactory* pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByName(p.szType);
 				if (!pItemFactory)
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
-						pSE->AddErrorMessage("Unknown item type: '%s'", p.type);
+						pSE->AddErrorMessage("Unknown item type: '%s'", p.szType);
 					}
 					bResolveSucceeded = false;
 					continue;
@@ -106,7 +106,7 @@ namespace UQS
 						=> A is fine, but B is not as the types differ in the queries
 					*/
 
-					if (const Client::IItemFactory* pParentItemFactory = FindItemFactoryByParamNameInParentRecursively(p.name, *pParentQueryBlueprint))
+					if (const Client::IItemFactory* pParentItemFactory = FindItemFactoryByParamNameInParentRecursively(p.szName, *pParentQueryBlueprint))
 					{
 						// name clash detected (this is totally fine, though)
 						// -> now check for type clash
@@ -123,7 +123,7 @@ namespace UQS
 					}
 				}
 
-				m_runtimeParameters.insert(std::map<string, SParamInfo>::value_type(p.name, SParamInfo(pItemFactory, p.bAddToDebugRenderWorld)));
+				m_runtimeParameters.insert(std::map<string, SParamInfo>::value_type(p.szName, SParamInfo(pItemFactory, p.bAddToDebugRenderWorld)));
 			}
 
 			return bResolveSucceeded;
@@ -146,18 +146,18 @@ namespace UQS
 				CLoggerIndentation _indent;
 				for (const auto& entry : m_runtimeParameters)
 				{
-					const char* paramName = entry.first.c_str();
+					const char* szParamName = entry.first.c_str();
 					const Client::IItemFactory* pItemFactory = entry.second.pItemFactory;
-					logger.Printf("\"%s\" [%s]", paramName, pItemFactory->GetName());
+					logger.Printf("\"%s\" [%s]", szParamName, pItemFactory->GetName());
 				}
 			}
 		}
 
-		const Client::IItemFactory* CGlobalRuntimeParamsBlueprint::FindItemFactoryByParamNameInParentRecursively(const char* paramNameToSearchFor, const CQueryBlueprint& parentalQueryBlueprint) const
+		const Client::IItemFactory* CGlobalRuntimeParamsBlueprint::FindItemFactoryByParamNameInParentRecursively(const char* szParamNameToSearchFor, const CQueryBlueprint& parentalQueryBlueprint) const
 		{
 			const CGlobalRuntimeParamsBlueprint& parentGlobalRuntimeParamsBP = parentalQueryBlueprint.GetGlobalRuntimeParamsBlueprint();
 			const std::map<string, SParamInfo>& params = parentGlobalRuntimeParamsBP.GetParams();
-			auto it = params.find(paramNameToSearchFor);
+			auto it = params.find(szParamNameToSearchFor);
 
 			if (it != params.end())
 			{
@@ -167,7 +167,7 @@ namespace UQS
 			if (const CQueryBlueprint* pGrandParent = parentalQueryBlueprint.GetParent())
 			{
 				// recurse up
-				return pGrandParent->GetGlobalRuntimeParamsBlueprint().FindItemFactoryByParamNameInParentRecursively(paramNameToSearchFor, *pGrandParent);
+				return pGrandParent->GetGlobalRuntimeParamsBlueprint().FindItemFactoryByParamNameInParentRecursively(szParamNameToSearchFor, *pGrandParent);
 			}
 
 			return nullptr;

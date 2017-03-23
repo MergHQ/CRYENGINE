@@ -10,10 +10,10 @@ namespace UQS
 	namespace DataSource_XML
 	{
 
-		CQueryBlueprintSaver_XML::CQueryBlueprintSaver_XML(const char* xmlFileNameToSaveTo)
-			: m_xmlFileNameToSaveTo(xmlFileNameToSaveTo)
+		CQueryBlueprintSaver_XML::CQueryBlueprintSaver_XML(const char* szXmlFileNameToSaveTo)
+			: m_xmlFileNameToSaveTo(szXmlFileNameToSaveTo)
 			, m_queryElementToSaveTo()
-			, m_query(nullptr)
+			, m_pQuery(nullptr)
 		{
 			// nothing
 		}
@@ -22,9 +22,9 @@ namespace UQS
 		{
 			m_queryElementToSaveTo = gEnv->pSystem->CreateXmlNode("Query");
 
-			m_query = &queryBlueprintToSave;
+			m_pQuery = &queryBlueprintToSave;
 			SaveQueryElement(m_queryElementToSaveTo);
-			m_query = nullptr;
+			m_pQuery = nullptr;
 
 			if (m_queryElementToSaveTo->saveToFile(m_xmlFileNameToSaveTo.c_str()))
 			{
@@ -45,48 +45,46 @@ namespace UQS
 			//         (e. g. the name might be that of the file in which the query blueprint is stored)
 
 			// "factory" attribute
-			queryElementToSaveTo->setAttr("factory", m_query->GetQueryFactoryName());
+			queryElementToSaveTo->setAttr("factory", m_pQuery->GetQueryFactoryName());
 
 			// "maxItemsToKeepInResultSet" attribute
-			queryElementToSaveTo->setAttr("maxItemsToKeepInResultSet", m_query->GetMaxItemsToKeepInResultSet());
+			queryElementToSaveTo->setAttr("maxItemsToKeepInResultSet", m_pQuery->GetMaxItemsToKeepInResultSet());
 
 			// <GlobalParams>
 			SaveGlobalParamsElement(queryElementToSaveTo->newChild("GlobalParams"));
 
 			// <Generator>
-			if (m_query->GetGenerator() != nullptr)
+			if (m_pQuery->GetGenerator() != nullptr)
 			{
 				SaveGeneratorElement(queryElementToSaveTo->newChild("Generator"));
 			}
 
 			// all <InstantEvaluator>s
-			for (size_t i = 0; i < m_query->GetInstantEvaluatorCount(); ++i)
+			for (size_t i = 0; i < m_pQuery->GetInstantEvaluatorCount(); ++i)
 			{
-				const Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_query->GetInstantEvaluator(i);
+				const Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_pQuery->GetInstantEvaluator(i);
 				XmlNodeRef instantEvaluatorElement = queryElementToSaveTo->newChild("InstantEvaluator");
 				SaveInstantEvaluatorElement(instantEvaluatorElement, textualInstantEvaluatorBP);
 			}
 
 			// all <DeferredEvaluator>s
-			for (size_t i = 0; i < m_query->GetDeferredEvaluatorCount(); ++i)
+			for (size_t i = 0; i < m_pQuery->GetDeferredEvaluatorCount(); ++i)
 			{
-				const Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_query->GetDeferredEvaluator(i);
+				const Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_pQuery->GetDeferredEvaluator(i);
 				XmlNodeRef deferredEvaluatorElement = queryElementToSaveTo->newChild("DeferredEvaluator");
 				SaveDeferredEvaluatorElement(deferredEvaluatorElement, textualDeferredEvaluatorBP);
 			}
 
 			// all child <Query>s
-			const Core::ITextualQueryBlueprint* parent = m_query;
-			for (size_t i = 0; i < parent->GetChildCount(); ++i)
+			const Core::ITextualQueryBlueprint* pParent = m_pQuery;
+			for (size_t i = 0; i < pParent->GetChildCount(); ++i)
 			{
-				const Core::ITextualQueryBlueprint& childQueryBP = parent->GetChild(i);
-				m_query = &childQueryBP;
+				const Core::ITextualQueryBlueprint& childQueryBP = pParent->GetChild(i);
+				m_pQuery = &childQueryBP;
 				XmlNodeRef childQueryElement = queryElementToSaveTo->newChild("Query");
 				SaveQueryElement(childQueryElement);
 			}
-			m_query = parent;
-
-			// TODO: secondary-generator(s)
+			m_pQuery = pParent;
 		}
 
 		void CQueryBlueprintSaver_XML::SaveGlobalParamsElement(const XmlNodeRef& globalParamsElementToSaveTo)
@@ -95,27 +93,27 @@ namespace UQS
 
 			// <ConstantParam>s
 			{
-				const Core::ITextualGlobalConstantParamsBlueprint& constantParamsBP = m_query->GetGlobalConstantParams();
+				const Core::ITextualGlobalConstantParamsBlueprint& constantParamsBP = m_pQuery->GetGlobalConstantParams();
 				for (size_t i = 0; i < constantParamsBP.GetParameterCount(); ++i)
 				{
 					const Core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = constantParamsBP.GetParameter(i);
 					XmlNodeRef constantParamElement = globalParamsElementToSaveTo->newChild("ConstantParam");
-					constantParamElement->setAttr("name", pi.name);
-					constantParamElement->setAttr("type", pi.type);
-					constantParamElement->setAttr("value", pi.value);
+					constantParamElement->setAttr("name", pi.szName);
+					constantParamElement->setAttr("type", pi.szType);
+					constantParamElement->setAttr("value", pi.szValue);
 					constantParamElement->setAttr("addToDebugRenderWorld", pi.bAddToDebugRenderWorld);
 				}
 			}
 
 			// <RuntimeParam>s
 			{
-				const Core::ITextualGlobalRuntimeParamsBlueprint& runtimeParamsBP = m_query->GetGlobalRuntimeParams();
+				const Core::ITextualGlobalRuntimeParamsBlueprint& runtimeParamsBP = m_pQuery->GetGlobalRuntimeParams();
 				for (size_t i = 0; i < runtimeParamsBP.GetParameterCount(); ++i)
 				{
 					const Core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = runtimeParamsBP.GetParameter(i);
 					XmlNodeRef runtimeParamElement = globalParamsElementToSaveTo->newChild("RuntimeParam");
-					runtimeParamElement->setAttr("name", pi.name);
-					runtimeParamElement->setAttr("type", pi.type);
+					runtimeParamElement->setAttr("name", pi.szName);
+					runtimeParamElement->setAttr("type", pi.szType);
 					runtimeParamElement->setAttr("addToDebugRenderWorld", pi.bAddToDebugRenderWorld);
 				}
 			}
@@ -124,9 +122,9 @@ namespace UQS
 		void CQueryBlueprintSaver_XML::SaveGeneratorElement(const XmlNodeRef& generatorElementToSaveTo)
 		{
 			assert(generatorElementToSaveTo->isTag("Generator"));
-			assert(m_query->GetGenerator() != nullptr);
+			assert(m_pQuery->GetGenerator() != nullptr);
 
-			const Core::ITextualGeneratorBlueprint* pGeneratorBP = m_query->GetGenerator();
+			const Core::ITextualGeneratorBlueprint* pGeneratorBP = m_pQuery->GetGenerator();
 
 			// "name"
 			generatorElementToSaveTo->setAttr("name", pGeneratorBP->GetGeneratorName());

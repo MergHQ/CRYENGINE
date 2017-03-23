@@ -34,14 +34,14 @@ namespace UQS
 				// ~IFunctionFactory
 
 			protected:
-				explicit                                  CFunctionFactoryBase(const char* functionName);
+				explicit                                  CFunctionFactoryBase(const char* szFunctionName);
 
 			protected:
 				CInputParameterRegistry                   m_inputParameterRegistry;
 			};
 
-			inline CFunctionFactoryBase::CFunctionFactoryBase(const char* functionName)
-				: CFactoryBase(functionName)
+			inline CFunctionFactoryBase::CFunctionFactoryBase(const char* szFunctionName)
+				: CFactoryBase(szFunctionName)
 			{}
 
 			inline const char* CFunctionFactoryBase::GetName() const
@@ -101,7 +101,7 @@ namespace UQS
 		class CFunctionFactory : public Internal::CFunctionFactoryBase
 		{
 		public:
-			explicit                            CFunctionFactory(const char* functionName);
+			explicit                            CFunctionFactory(const char* szFunctionName);
 
 			// IFunctionFactory
 			virtual const Shared::CTypeInfo&    GetReturnType() const override final;
@@ -113,8 +113,8 @@ namespace UQS
 		};
 
 		template <class TFunction>
-		inline CFunctionFactory<TFunction>::CFunctionFactory(const char* functionName)
-			: CFunctionFactoryBase(functionName)
+		inline CFunctionFactory<TFunction>::CFunctionFactory(const char* szFunctionName)
+			: CFunctionFactoryBase(szFunctionName)
 		{
 			const bool bIsLeafFunction = TFunction::kLeafFunctionKind != ELeafFunctionKind::None;
 			Internal::SFunctionParamsExpositionHelper<TFunction, bIsLeafFunction>::Expose(m_inputParameterRegistry);

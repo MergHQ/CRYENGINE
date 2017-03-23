@@ -28,7 +28,7 @@ namespace UQS
 
 			// IQueryBlueprintLibrary
 			virtual ELoadAndStoreResult                           LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, DataSource::IQueryBlueprintLoader& loader, Shared::IUqsString& error) override;
-			virtual bool                                          RemoveStoredQueryBlueprint(const char*szQueryBlueprintName, Shared::IUqsString& error) override;
+			virtual bool                                          RemoveStoredQueryBlueprint(const char* szQueryBlueprintName, Shared::IUqsString& error) override;
 			virtual CQueryBlueprintID                             FindQueryBlueprintIDByName(const char* szQueryBlueprintName) const override;
 			virtual const IQueryBlueprint*                        GetQueryBlueprintByID(const CQueryBlueprintID& blueprintID) const override;
 			virtual size_t                                        GetQueryBlueprintCount() const override;

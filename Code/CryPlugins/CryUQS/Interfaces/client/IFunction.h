@@ -35,7 +35,7 @@ namespace UQS
 		{
 			struct SCtorContext
 			{
-				explicit                              SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryBlackboard& _blackboard, const IInputParameterRegistry& _inputParameterRegistry, bool _addReturnValueToDebugRenderWorldUponExecution);
+				explicit                              SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryBlackboard& _blackboard, const IInputParameterRegistry& _inputParameterRegistry, bool _bAddReturnValueToDebugRenderWorldUponExecution);
 				const Core::ILeafFunctionReturnValue* pOptionalReturnValueInCaseOfLeafFunction;    // is a nullptr if this function it not a leaf-function
 				const Core::SQueryBlackboard&         blackboard;
 				const IInputParameterRegistry&        inputParameterRegistry;
@@ -44,8 +44,8 @@ namespace UQS
 
 			struct SValidationContext
 			{
-				explicit                              SValidationContext(const char* _nameOfFunctionBeingValidated, Shared::IUqsString& _error);
-				const char*                           nameOfFunctionBeingValidated;   // for adding more info to a potential error message
+				explicit                              SValidationContext(const char* _szNameOfFunctionBeingValidated, Shared::IUqsString& _error);
+				const char*                           szNameOfFunctionBeingValidated;   // for adding more info to a potential error message
 				Shared::IUqsString&                   error;
 			};
 
@@ -72,15 +72,15 @@ namespace UQS
 			virtual void                              Execute(const SExecuteContext& executeContext, void* pReturnValue) const = 0;   // called recursively on child functions to use their return value as one of our input parameters
 		};
 
-		inline IFunction::SCtorContext::SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryBlackboard& _blackboard, const IInputParameterRegistry& _inputParameterRegistry, bool _addReturnValueToDebugRenderWorldUponExecution)
+		inline IFunction::SCtorContext::SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryBlackboard& _blackboard, const IInputParameterRegistry& _inputParameterRegistry, bool _bAddReturnValueToDebugRenderWorldUponExecution)
 			: pOptionalReturnValueInCaseOfLeafFunction(_pOptionalReturnValueInCaseOfLeafFunction)
 			, blackboard(_blackboard)
 			, inputParameterRegistry(_inputParameterRegistry)
-			, bAddReturnValueToDebugRenderWorldUponExecution(_addReturnValueToDebugRenderWorldUponExecution)
+			, bAddReturnValueToDebugRenderWorldUponExecution(_bAddReturnValueToDebugRenderWorldUponExecution)
 		{}
 
-		inline IFunction::SValidationContext::SValidationContext(const char* _nameOfFunctionBeingValidated, Shared::IUqsString& _error)
-			: nameOfFunctionBeingValidated(_nameOfFunctionBeingValidated)
+		inline IFunction::SValidationContext::SValidationContext(const char* _szNameOfFunctionBeingValidated, Shared::IUqsString& _error)
+			: szNameOfFunctionBeingValidated(_szNameOfFunctionBeingValidated)
 			, error(_error)
 		{}
 

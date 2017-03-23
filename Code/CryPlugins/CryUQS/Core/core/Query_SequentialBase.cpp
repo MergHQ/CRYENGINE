@@ -22,13 +22,13 @@ namespace UQS
 		{
 			// - cancel the possibly running child
 			// - it's important to get rid of the callback pointer before the child could possibly call back into us after we've been destroyed
-			g_hubImpl->GetQueryManager().CancelQuery(m_queryIDOfCurrentlyRunningChild);
+			g_pHub->GetQueryManager().CancelQuery(m_queryIDOfCurrentlyRunningChild);
 		}
 
 		bool CQuery_SequentialBase::OnInstantiateFromQueryBlueprint(const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
 			// no children? -> exception
-			if (m_queryBlueprint->GetChildCount() == 0)
+			if (m_pQueryBlueprint->GetChildCount() == 0)
 			{
 				error.Format("CQuery_SequentialBase::OnInstantiateFromQueryBlueprint: at least 1 child is required to instanitate this query");
 				return false;
@@ -71,7 +71,7 @@ namespace UQS
 		void CQuery_SequentialBase::OnCancel()
 		{
 			// cancel the possibly running child
-			g_hubImpl->GetQueryManager().CancelQuery(m_queryIDOfCurrentlyRunningChild);
+			g_pHub->GetQueryManager().CancelQuery(m_queryIDOfCurrentlyRunningChild);
 		}
 
 		void CQuery_SequentialBase::OnGetStatistics(SStatistics& out) const
@@ -102,7 +102,7 @@ namespace UQS
 			case SQueryResult::EStatus::ExceptionOccurred:
 				// track the exception for returning it on next OnUpdate()
 				m_bExceptionOccurredInChild = true;
-				m_exceptionMessageFromChild.Format("%s", result.error);
+				m_exceptionMessageFromChild.Set(result.szError);
 				break;
 
 			case SQueryResult::EStatus::CanceledByHubTearDown:
@@ -116,7 +116,7 @@ namespace UQS
 
 		bool CQuery_SequentialBase::HasMoreChildrenLeftToInstantiate() const
 		{
-			return (m_indexOfNextChildToInstantiate < m_queryBlueprint->GetChildCount());
+			return (m_indexOfNextChildToInstantiate < m_pQueryBlueprint->GetChildCount());
 		}
 
 		void CQuery_SequentialBase::StoreResultSetForUseInNextChildQuery(const IQueryResultSet& resultSetOfPreviousChildQuery)
@@ -142,16 +142,16 @@ namespace UQS
 
 		void CQuery_SequentialBase::InstantiateNextChildQueryBlueprint()
 		{
-			assert(m_indexOfNextChildToInstantiate < m_queryBlueprint->GetChildCount());
+			assert(m_indexOfNextChildToInstantiate < m_pQueryBlueprint->GetChildCount());
 			assert(!m_queryIDOfCurrentlyRunningChild.IsValid());
 
 			const size_t indexOfChildToInstantiate = m_indexOfNextChildToInstantiate++;
-			std::shared_ptr<const CQueryBlueprint> childQueryBlueprintToInstantiate = m_queryBlueprint->GetChild(indexOfChildToInstantiate);
+			std::shared_ptr<const CQueryBlueprint> childQueryBlueprintToInstantiate = m_pQueryBlueprint->GetChild(indexOfChildToInstantiate);
 
 			stack_string querierName;
 			querierName.Format("%s::[childQuery_#%i]", m_querierName.c_str(), (int)indexOfChildToInstantiate);
 
-			m_queryIDOfCurrentlyRunningChild = g_hubImpl->GetQueryManager().StartQueryInternal(
+			m_queryIDOfCurrentlyRunningChild = g_pHub->GetQueryManager().StartQueryInternal(
 				m_queryID,
 				childQueryBlueprintToInstantiate,
 				m_runtimeParams,

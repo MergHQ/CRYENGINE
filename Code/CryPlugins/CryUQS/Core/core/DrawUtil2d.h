@@ -18,13 +18,13 @@ namespace UQS
 		class CDrawUtil2d
 		{
 		public:
-			static void           DrawLabel(int row, const ColorF& color, const char* fmt, ...);
-			static void           DrawLabel(float xPos, int row, const ColorF& color, const char* fmt, ...);
+			static void           DrawLabel(int row, const ColorF& color, const char* szFormat, ...);
+			static void           DrawLabel(float xPos, int row, const ColorF& color, const char* szFormat, ...);
 			static float          GetRowSize();
 			static float          GetIndentSize();
 
 		private:
-			static void           DoDrawLabel(float xPos, float yPos, const ColorF& color, const char* fmt, va_list args);
+			static void           DoDrawLabel(float xPos, float yPos, const ColorF& color, const char* szFormat, va_list args);
 
 		private:
 			static const float    s_rowSize;

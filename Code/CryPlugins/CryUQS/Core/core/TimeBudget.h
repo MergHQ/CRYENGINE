@@ -17,15 +17,15 @@ namespace UQS
 
 		class CTimeBudget final : public ITimeBudget
 		{
-		private:
-			CTimeValue      m_futureTimestampOfExhaustion;      // timestamp of when we will have run out of granted time
-
 		public:
 			void            Restart(const CTimeValue& amountOfTimeFromNowOn);
 
 			// ITimeBudget
 			virtual bool    IsExhausted() const override;
 			// ~ITimeBudget
+
+		private:
+			CTimeValue      m_futureTimestampOfExhaustion;      // timestamp of when we will have run out of granted time
 		};
 
 	}

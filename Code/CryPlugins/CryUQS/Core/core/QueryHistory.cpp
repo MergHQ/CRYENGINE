@@ -143,11 +143,11 @@ namespace UQS
 			// nothing
 		}
 
-		CHistoricQuery::CHistoricQuery(const CQueryID& queryID, const char* querierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
+		CHistoricQuery::CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
 			: m_pOwningHistoryManager(pOwningHistoryManager)
 			, m_queryID(queryID)
 			, m_parentQueryID(parentQueryID)
-			, m_querierName(querierName)
+			, m_querierName(szQuerierName)
 			, m_queryLifetimeStatus(EQueryLifetimeStatus::QueryIsNotCreatedYet)
 			, m_bGotCanceledPrematurely(false)
 			, m_bExceptionOccurred(false)
@@ -170,9 +170,9 @@ namespace UQS
 			m_pOwningHistoryManager->UnderlyingQueryJustGotCreated(m_queryID);
 		}
 
-		void CHistoricQuery::OnQueryBlueprintInstantiationStarted(const char* queryBlueprintName)
+		void CHistoricQuery::OnQueryBlueprintInstantiationStarted(const char* szQueryBlueprintName)
 		{
-			m_queryBlueprintName = queryBlueprintName;
+			m_queryBlueprintName = szQueryBlueprintName;
 		}
 
 		void CHistoricQuery::OnQueryCanceled(const CQueryBase::SStatistics& finalStatistics)
@@ -195,9 +195,9 @@ namespace UQS
 			m_pOwningHistoryManager->UnderlyingQueryIsGettingDestroyed(m_queryID);
 		}
 
-		void CHistoricQuery::OnExceptionOccurred(const char* exceptionMessage, const CQueryBase::SStatistics& finalStatistics)
+		void CHistoricQuery::OnExceptionOccurred(const char* szExceptionMessage, const CQueryBase::SStatistics& finalStatistics)
 		{
-			m_exceptionMessage = exceptionMessage;
+			m_exceptionMessage = szExceptionMessage;
 			m_bExceptionOccurred = true;
 			m_finalStatistics = finalStatistics;
 		}
@@ -224,20 +224,20 @@ namespace UQS
 
 			// instant-evaluator names
 			m_instantEvaluatorNames.reserve(numInstantEvaluatorBlueprints);
-			for (const CInstantEvaluatorBlueprint* ieBP : instantEvaluatorBlueprints)
+			for (const CInstantEvaluatorBlueprint* pIEBP : instantEvaluatorBlueprints)
 			{
-				const char* name = ieBP->GetFactory().GetName();
-				m_instantEvaluatorNames.push_back(name);
-				m_longestEvaluatorName = std::max(m_longestEvaluatorName, strlen(name));
+				const char* szName = pIEBP->GetFactory().GetName();
+				m_instantEvaluatorNames.push_back(szName);
+				m_longestEvaluatorName = std::max(m_longestEvaluatorName, strlen(szName));
 			}
 
 			// deferred-evaluator names
 			m_deferredEvaluatorNames.reserve(numDeferredEvaluatorBlueprints);
-			for (const CDeferredEvaluatorBlueprint* deBP : deferredEvaluatorBlueprints)
+			for (const CDeferredEvaluatorBlueprint* pDEBP : deferredEvaluatorBlueprints)
 			{
-				const char* name = deBP->GetFactory().GetName();
-				m_deferredEvaluatorNames.push_back(name);
-				m_longestEvaluatorName = std::max(m_longestEvaluatorName, strlen(name));
+				const char* szName = pDEBP->GetFactory().GetName();
+				m_deferredEvaluatorNames.push_back(szName);
+				m_longestEvaluatorName = std::max(m_longestEvaluatorName, strlen(szName));
 			}
 		}
 
@@ -260,22 +260,22 @@ namespace UQS
 			result.status = SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem;
 		}
 
-		void CHistoricQuery::OnFunctionCallExceptionOccurredInInstantEvaluator(size_t instantEvaluatorIndex, size_t itemIndex, const char* exceptionMessage)
+		void CHistoricQuery::OnFunctionCallExceptionOccurredInInstantEvaluator(size_t instantEvaluatorIndex, size_t itemIndex, const char* szExceptionMessage)
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
 			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall;
-			result.furtherInformationAboutStatus = exceptionMessage;
+			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
 
-		void CHistoricQuery::OnExceptionOccurredInInstantEvaluator(size_t instantEvaluatorIndex, size_t itemIndex, const char* exceptionMessage)
+		void CHistoricQuery::OnExceptionOccurredInInstantEvaluator(size_t instantEvaluatorIndex, size_t itemIndex, const char* szExceptionMessage)
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
 			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInHimself;
-			result.furtherInformationAboutStatus = exceptionMessage;
+			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
 
 		void CHistoricQuery::OnDeferredEvaluatorStartedRunningOnItem(size_t deferredEvaluatorIndex, size_t itemIndex)
@@ -305,30 +305,30 @@ namespace UQS
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem;
 		}
 
-		void CHistoricQuery::OnDeferredEvaluatorGotAborted(size_t deferredEvaluatorIndex, size_t itemIndex, const char* reasonForAbort)
+		void CHistoricQuery::OnDeferredEvaluatorGotAborted(size_t deferredEvaluatorIndex, size_t itemIndex, const char* szReasonForAbort)
 		{
 			SHistoricDeferredEvaluatorResult& result = m_items[itemIndex].resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
 			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::GotAborted;
-			result.furtherInformationAboutStatus = reasonForAbort;
+			result.furtherInformationAboutStatus = szReasonForAbort;
 		}
 
-		void CHistoricQuery::OnFunctionCallExceptionOccurredInDeferredEvaluator(size_t deferredEvaluatorIndex, size_t itemIndex, const char* exceptionMessage)
+		void CHistoricQuery::OnFunctionCallExceptionOccurredInDeferredEvaluator(size_t deferredEvaluatorIndex, size_t itemIndex, const char* szExceptionMessage)
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
 			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall;
-			result.furtherInformationAboutStatus = exceptionMessage;
+			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
 
-		void CHistoricQuery::OnExceptionOccurredInDeferredEvaluator(size_t deferredEvaluatorIndex, size_t itemIndex, const char* exceptionMessage)
+		void CHistoricQuery::OnExceptionOccurredInDeferredEvaluator(size_t deferredEvaluatorIndex, size_t itemIndex, const char* szExceptionMessage)
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
 			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInHimself;
-			result.furtherInformationAboutStatus = exceptionMessage;
+			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
 
 		void CHistoricQuery::OnItemGotDisqualifiedDueToBadScore(size_t itemIndex)
@@ -336,9 +336,9 @@ namespace UQS
 			m_items[itemIndex].bDisqualifiedDueToBadScore = true;
 		}
 
-		void CHistoricQuery::CreateItemDebugProxyViaItemFactoryForItem(const Client::IItemFactory& itemFactory, const void* item, size_t indexInGeneratedItemsForWhichToCreateTheProxy)
+		void CHistoricQuery::CreateItemDebugProxyViaItemFactoryForItem(const Client::IItemFactory& itemFactory, const void* pItem, size_t indexInGeneratedItemsForWhichToCreateTheProxy)
 		{
-			itemFactory.CreateItemDebugProxyForItem(item, m_itemDebugProxyFactory);
+			itemFactory.CreateItemDebugProxyForItem(pItem, m_itemDebugProxyFactory);
 			std::unique_ptr<CItemDebugProxyBase> freshlyCreatedItemProxy = m_itemDebugProxyFactory.GetAndForgetLastCreatedDebugItemRenderProxy();
 			m_items[indexInGeneratedItemsForWhichToCreateTheProxy].pDebugProxy = std::move(freshlyCreatedItemProxy);
 		}
@@ -513,7 +513,7 @@ namespace UQS
 		bool CHistoricQuery::FindClosestItemInView(const SDebugCameraView& cameraView, size_t& outItemIndex) const
 		{
 			float closestDistanceSoFar = std::numeric_limits<float>::max();
-			bool foundACloseEnoughItem = false;
+			bool bFoundACloseEnoughItem = false;
 
 			for (size_t i = 0, n = m_items.size(); i < n; ++i)
 			{
@@ -527,11 +527,11 @@ namespace UQS
 					{
 						closestDistanceSoFar = dist;
 						outItemIndex = i;
-						foundACloseEnoughItem = true;
+						bFoundACloseEnoughItem = true;
 					}
 				}
 			}
-			return foundACloseEnoughItem;
+			return bFoundACloseEnoughItem;
 		}
 
 		void CHistoricQuery::DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks) const
@@ -549,9 +549,9 @@ namespace UQS
 			for (const SHistoricItem& itemToAnalyze : m_items)
 			{
 				float accumulatedAndWeightedScoreOfMaskedEvaluators = 0.0f;
-				bool foundScoreOutsideValidRange = false;
+				bool bFoundScoreOutsideValidRange = false;
 
-				const EItemAnalyzeStatus status = AnalyzeItemStatus(itemToAnalyze, evaluatorDrawMasks, accumulatedAndWeightedScoreOfMaskedEvaluators, foundScoreOutsideValidRange);
+				const EItemAnalyzeStatus status = AnalyzeItemStatus(itemToAnalyze, evaluatorDrawMasks, accumulatedAndWeightedScoreOfMaskedEvaluators, bFoundScoreOutsideValidRange);
 
 				if (status == EItemAnalyzeStatus::ExceptionOccurred)
 					continue;
@@ -981,17 +981,17 @@ namespace UQS
 				for (size_t i = 0, n = indexesOfInstantEvaluatorsWithIllegalScores.size(); i < n; ++i)
 				{
 					const size_t index = indexesOfInstantEvaluatorsWithIllegalScores[i];
-					const char* ieName = m_instantEvaluatorNames[index];
+					const char* szIEName = m_instantEvaluatorNames[index];
 					const SHistoricInstantEvaluatorResult& ieResult = item.resultOfAllInstantEvaluators[index];
-					consumer.AddTextLineToFocusedItem(Col_Red, "IE #%i [%-*s]: %f", (int)index, (int)m_longestEvaluatorName, ieName, ieResult.nonWeightedScore);
+					consumer.AddTextLineToFocusedItem(Col_Red, "IE #%i [%-*s]: %f", (int)index, (int)m_longestEvaluatorName, szIEName, ieResult.nonWeightedScore);
 				}
 
 				for (size_t i = 0, n = indexesOfDeferredEvaluatorsWithIllegalScores.size(); i < n; ++i)
 				{
 					const size_t index = indexesOfDeferredEvaluatorsWithIllegalScores[i];
-					const char* deName = m_deferredEvaluatorNames[index];
+					const char* szDEName = m_deferredEvaluatorNames[index];
 					const SHistoricDeferredEvaluatorResult& deResult = item.resultOfAllDeferredEvaluators[index];
-					consumer.AddTextLineToFocusedItem(Col_Red, "DE #%i [%-*s]: %f", (int)index, (int)m_longestEvaluatorName, deName, deResult.nonWeightedScore);
+					consumer.AddTextLineToFocusedItem(Col_Red, "DE #%i [%-*s]: %f", (int)index, (int)m_longestEvaluatorName, szDEName, deResult.nonWeightedScore);
 				}
 			}
 		}
@@ -1074,7 +1074,7 @@ namespace UQS
 			return *this;
 		}
 
-		HistoricQuerySharedPtr CQueryHistory::AddNewHistoryEntry(const CQueryID& queryID, const char* querierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
+		HistoricQuerySharedPtr CQueryHistory::AddNewHistoryEntry(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
 		{
 			//
 			// insert the new historic query into the correct position in the array such that children will always reside somewhere after their parent
@@ -1104,7 +1104,7 @@ namespace UQS
 				}
 			}
 
-			HistoricQuerySharedPtr pNewEntry(new CHistoricQuery(queryID, querierName, parentQueryID, pOwningHistoryManager));
+			HistoricQuerySharedPtr pNewEntry(new CHistoricQuery(queryID, szQuerierName, parentQueryID, pOwningHistoryManager));
 			insertPos = m_history.insert(insertPos, std::move(pNewEntry));
 			return *insertPos;
 		}
@@ -1150,9 +1150,9 @@ namespace UQS
 			return memoryUsed;
 		}
 
-		void CQueryHistory::SetArbitraryMetaDataForSerialization(const char* key, const char* value)
+		void CQueryHistory::SetArbitraryMetaDataForSerialization(const char* szKey, const char* szValue)
 		{
-			m_metaData[key] = value;
+			m_metaData[szKey] = szValue;
 		}
 
 		void CQueryHistory::Serialize(Serialization::IArchive& ar)

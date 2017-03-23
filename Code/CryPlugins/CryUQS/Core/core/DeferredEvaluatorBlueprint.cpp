@@ -21,9 +21,9 @@ namespace UQS
 		{
 		}
 
-		void CTextualDeferredEvaluatorBlueprint::SetEvaluatorName(const char* evaluatorName)
+		void CTextualDeferredEvaluatorBlueprint::SetEvaluatorName(const char* szEvaluatorName)
 		{
-			m_evaluatorName = evaluatorName;
+			m_evaluatorName = szEvaluatorName;
 		}
 
 		ITextualInputBlueprint& CTextualDeferredEvaluatorBlueprint::GetInputRoot()
@@ -51,9 +51,9 @@ namespace UQS
 			return m_weight;
 		}
 
-		void CTextualDeferredEvaluatorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualDeferredEvaluatorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_pSyntaxErrorCollector = std::move(ptr);
+			m_pSyntaxErrorCollector = std::move(pSyntaxErrorCollector);
 		}
 
 		DataSource::ISyntaxErrorCollector* CTextualDeferredEvaluatorBlueprint::GetSyntaxErrorCollector() const
@@ -74,14 +74,14 @@ namespace UQS
 
 		bool CDeferredEvaluatorBlueprint::Resolve(const ITextualDeferredEvaluatorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking)
 		{
-			const char* evaluatorName = source.GetEvaluatorName();
+			const char* szEvaluatorName = source.GetEvaluatorName();
 
-			m_pDeferredEvaluatorFactory = g_hubImpl->GetDeferredEvaluatorFactoryDatabase().FindFactoryByName(evaluatorName);
+			m_pDeferredEvaluatorFactory = g_pHub->GetDeferredEvaluatorFactoryDatabase().FindFactoryByName(szEvaluatorName);
 			if (!m_pDeferredEvaluatorFactory)
 			{
 				if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
 				{
-					pSE->AddErrorMessage("Unknown DeferredEvaluatorFactory '%s'", evaluatorName);
+					pSE->AddErrorMessage("Unknown DeferredEvaluatorFactory '%s'", szEvaluatorName);
 				}
 				return false;
 			}
@@ -113,9 +113,9 @@ namespace UQS
 			return m_weight;
 		}
 
-		void CDeferredEvaluatorBlueprint::PrintToConsole(CLogger& logger, const char* messagePrefix) const
+		void CDeferredEvaluatorBlueprint::PrintToConsole(CLogger& logger, const char* szMessagePrefix) const
 		{
-			logger.Printf("%s%s (weight = %f)", messagePrefix, m_pDeferredEvaluatorFactory->GetName(), m_weight);
+			logger.Printf("%s%s (weight = %f)", szMessagePrefix, m_pDeferredEvaluatorFactory->GetName(), m_weight);
 		}
 
 	}

@@ -44,8 +44,8 @@ public:
 
 	// IQueryHistoryConsumer
 	virtual void AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview) override;
-	virtual void AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* fmt, ...) override;
-	virtual void AddTextLineToFocusedItem(const ColorF& color, const char* fmt, ...) override;
+	virtual void AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* szFormat, ...) override;
+	virtual void AddTextLineToFocusedItem(const ColorF& color, const char* szFormat, ...) override;
 	virtual void AddInstantEvaluatorName(const char* szInstantEvaluatorName) override;
 	virtual void AddDeferredEvaluatorName(const char* szDeferredEvaluatorName) override;
 	// ~IQueryHistoryConsumer

@@ -181,12 +181,12 @@ namespace UQS
 			void                                                  RunInstantEvaluator(const SInstantEvaluatorWithIndex& instantEvaluatorToRun, SItemWorkingData& workingDataToWriteResultTo);
 			void                                                  UpdateDeferredTasks();
 			void                                                  UpdateDeferredTask(SDeferredTask& taskToUpdate);
-			void                                                  AbortDeferredTask(SDeferredTask& taskToAbort, const char* reasonForAbort);
+			void                                                  AbortDeferredTask(SDeferredTask& taskToAbort, const char* szReasonForAbort);
 			bool                                                  CanItemStillBeatTheWorstCandidate(const SItemWorkingData& itemToCheck) const;
 			void                                                  AddItemToResultSetOrDisqualifyIt(SItemWorkingData& itemThatJustFinishedAndSurvivedAllEvaluators);
 			void                                                  FinalizeItemAfterDeferredEvaluation(SItemWorkingData& itemToFinalize);
 			void                                                  StartMoreEvaluatorsOnRemainingItems(const SPhaseUpdateContext& phaseUpdateContext);
-			SDeferredTask*                                        StartDeferredTask(SItemWorkingData* workingDataToInspectNext);
+			SDeferredTask*                                        StartDeferredTask(SItemWorkingData* pWorkingDataToInspectNext);
 
 		private:
 

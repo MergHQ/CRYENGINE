@@ -51,24 +51,24 @@ namespace UQS
 			public:
 				explicit                            CFunctionDeleter();       // default ctor is required for when smart pointer using this deleter gets implicitly constructed via nullptr (i. e. with only 1 argument for the smart pointer's ctor)
 				explicit                            CFunctionDeleter(IFunctionFactory& functionFactory);
-				void                                operator()(IFunction* functionToDestroy);
+				void                                operator()(IFunction* pFunctionToDestroy);
 
 			private:
-				IFunctionFactory*                   m_functionFactory;
+				IFunctionFactory*                   m_pFunctionFactory;
 			};
 
 			inline CFunctionDeleter::CFunctionDeleter()
-				: m_functionFactory(nullptr)
+				: m_pFunctionFactory(nullptr)
 			{}
 
 			inline CFunctionDeleter::CFunctionDeleter(IFunctionFactory& functionFactory)
-				: m_functionFactory(&functionFactory)
+				: m_pFunctionFactory(&functionFactory)
 			{}
 
-			inline void CFunctionDeleter::operator()(IFunction* functionToDestroy)
+			inline void CFunctionDeleter::operator()(IFunction* pFunctionToDestroy)
 			{
-				assert(m_functionFactory);
-				m_functionFactory->DestroyFunction(functionToDestroy);
+				assert(m_pFunctionFactory);
+				m_pFunctionFactory->DestroyFunction(pFunctionToDestroy);
 			}
 		} // namespace Internal
 	}

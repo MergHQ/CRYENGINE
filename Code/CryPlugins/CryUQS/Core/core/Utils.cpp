@@ -15,9 +15,9 @@ namespace UQS
 			return (it == m_type2itemFactory.cend()) ? nullptr : it->second;
 		}
 
-		void CUtils::OnFactoryRegistered(Client::IItemFactory* freshlyRegisteredFactory)
+		void CUtils::OnFactoryRegistered(Client::IItemFactory* pFreshlyRegisteredFactory)
 		{
-			m_type2itemFactory[freshlyRegisteredFactory->GetItemType()] = freshlyRegisteredFactory;
+			m_type2itemFactory[pFreshlyRegisteredFactory->GetItemType()] = pFreshlyRegisteredFactory;
 		}
 
 		void CUtils::SubscribeToStuffInHub(CHub& hub)

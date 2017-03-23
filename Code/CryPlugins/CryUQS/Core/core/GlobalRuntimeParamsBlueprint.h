@@ -21,7 +21,7 @@ namespace UQS
 			explicit                                        CTextualGlobalRuntimeParamsBlueprint();
 
 			// ITextualGlobalRuntimeParamsBlueprint
-			virtual void                                    AddParameter(const char* name, const char* type, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
+			virtual void                                    AddParameter(const char* szName, const char* szType, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual size_t                                  GetParameterCount() const override;
 			virtual SParameterInfo                          GetParameter(size_t index) const override;
 			// ~ITextualGlobalRuntimeParamsBlueprint
@@ -29,7 +29,7 @@ namespace UQS
 		private:
 			struct SStoredParameterInfo
 			{
-				explicit                                    SStoredParameterInfo(const char* _name, const char *_type, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
+				explicit                                    SStoredParameterInfo(const char* _szName, const char* _szType, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
 				explicit                                    SStoredParameterInfo(SStoredParameterInfo&& other);
 				string                                      name;
 				string                                      type;
@@ -44,9 +44,9 @@ namespace UQS
 			std::vector<SStoredParameterInfo>               m_parameters;
 		};
 
-		inline CTextualGlobalRuntimeParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _name, const char *_type, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
-			: name(_name)
-			, type(_type)
+		inline CTextualGlobalRuntimeParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _szName, const char* _szType, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
+			: name(_szName)
+			, type(_szType)
 			, bAddToDebugRenderWorld(_bAddToDebugRenderWorld)
 			, pSyntaxErrorCollector(std::move(_pSyntaxErrorCollector))
 		{}
@@ -83,7 +83,7 @@ namespace UQS
 
 		private:
 			                                                     UQS_NON_COPYABLE(CGlobalRuntimeParamsBlueprint);
-			const Client::IItemFactory*                          FindItemFactoryByParamNameInParentRecursively(const char* paramNameToSearchFor, const CQueryBlueprint& parentalQueryBlueprint) const;
+			const Client::IItemFactory*                          FindItemFactoryByParamNameInParentRecursively(const char* szParamNameToSearchFor, const CQueryBlueprint& parentalQueryBlueprint) const;
 
 		private:
 			std::map<string, SParamInfo>                         m_runtimeParameters;

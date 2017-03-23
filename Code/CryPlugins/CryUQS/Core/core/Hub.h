@@ -22,7 +22,7 @@ namespace UQS
 			                                                           ~CHub();
 
 			// IHub
-			virtual void                                               RegisterHubEventListener(IHubEventListener* listener) override;
+			virtual void                                               RegisterHubEventListener(IHubEventListener* pListener) override;
 			virtual void                                               Update() override;
 			// the co-variant return types are intended to help getting around casting down along the inheritance hierarchy when double-dispatching is involved
 			virtual QueryFactoryDatabase&                              GetQueryFactoryDatabase() override;
@@ -83,7 +83,7 @@ namespace UQS
 
 		// - this gets set to a valid instance in CHub::CHub() and reset in CHub::~CHub()
 		// - only one instance can exist at a time (or an assert() will fail)
-		extern CHub*   g_hubImpl;
+		extern CHub*   g_pHub;
 
 	}
 }

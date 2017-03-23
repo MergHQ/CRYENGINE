@@ -23,7 +23,7 @@ namespace UQS
 			//
 
 			{
-				const ItemFactoryDatabase& itemFactoryDB = g_hubImpl->GetItemFactoryDatabase();
+				const ItemFactoryDatabase& itemFactoryDB = g_pHub->GetItemFactoryDatabase();
 
 				for (size_t i1 = 0, n = itemFactoryDB.GetFactoryCount(); i1 < n; ++i1)
 				{
@@ -65,7 +65,7 @@ namespace UQS
 			//
 
 			{
-				const ItemFactoryDatabase& itemFactoryDB = g_hubImpl->GetItemFactoryDatabase();
+				const ItemFactoryDatabase& itemFactoryDB = g_pHub->GetItemFactoryDatabase();
 
 				for (size_t i1 = 0, n = itemFactoryDB.GetFactoryCount(); i1 < n; ++i1)
 				{
@@ -139,7 +139,7 @@ namespace UQS
 			{
 				std::set<CryGUID> guidsInUse;
 
-				const ItemFactoryDatabase& itemFactoryDB = g_hubImpl->GetItemFactoryDatabase();
+				const ItemFactoryDatabase& itemFactoryDB = g_pHub->GetItemFactoryDatabase();
 
 				for (size_t iItemFactory = 0; iItemFactory < itemFactoryDB.GetFactoryCount(); ++iItemFactory)
 				{
@@ -157,7 +157,7 @@ namespace UQS
 			//
 
 			{
-				const std::map<string, int> duplicateItemFactoryNames = g_hubImpl->GetItemFactoryDatabase().GetDuplicateFactoryNames();
+				const std::map<string, int> duplicateItemFactoryNames = g_pHub->GetItemFactoryDatabase().GetDuplicateFactoryNames();
 
 				if (!duplicateItemFactoryNames.empty())
 				{
@@ -175,7 +175,7 @@ namespace UQS
 			//
 
 			{
-				const std::map<string, int> duplicateFunctionFactoryNames = g_hubImpl->GetFunctionFactoryDatabase().GetDuplicateFactoryNames();
+				const std::map<string, int> duplicateFunctionFactoryNames = g_pHub->GetFunctionFactoryDatabase().GetDuplicateFactoryNames();
 
 				if (!duplicateFunctionFactoryNames.empty())
 				{
@@ -193,7 +193,7 @@ namespace UQS
 			//
 
 			{
-				const std::map<string, int> duplicateGeneratorFactoryNames = g_hubImpl->GetGeneratorFactoryDatabase().GetDuplicateFactoryNames();
+				const std::map<string, int> duplicateGeneratorFactoryNames = g_pHub->GetGeneratorFactoryDatabase().GetDuplicateFactoryNames();
 
 				if (!duplicateGeneratorFactoryNames.empty())
 				{
@@ -211,7 +211,7 @@ namespace UQS
 			//
 
 			{
-				const std::map<string, int> duplicateInstantEvaluatorFactoryNames = g_hubImpl->GetInstantEvaluatorFactoryDatabase().GetDuplicateFactoryNames();
+				const std::map<string, int> duplicateInstantEvaluatorFactoryNames = g_pHub->GetInstantEvaluatorFactoryDatabase().GetDuplicateFactoryNames();
 
 				if (!duplicateInstantEvaluatorFactoryNames.empty())
 				{
@@ -229,7 +229,7 @@ namespace UQS
 			//
 
 			{
-				const std::map<string, int> duplicateDeferredEvaluatorFactoryNames = g_hubImpl->GetDeferredEvaluatorFactoryDatabase().GetDuplicateFactoryNames();
+				const std::map<string, int> duplicateDeferredEvaluatorFactoryNames = g_pHub->GetDeferredEvaluatorFactoryDatabase().GetDuplicateFactoryNames();
 
 				if (!duplicateDeferredEvaluatorFactoryNames.empty())
 				{
@@ -247,14 +247,14 @@ namespace UQS
 			//
 
 			{
-				const GeneratorFactoryDatabase& generatorFactoryDB = g_hubImpl->GetGeneratorFactoryDatabase();
+				const GeneratorFactoryDatabase& generatorFactoryDB = g_pHub->GetGeneratorFactoryDatabase();
 
 				for (size_t i = 0, n = generatorFactoryDB.GetFactoryCount(); i < n; ++i)
 				{
 					const Client::IGeneratorFactory& generatorFactory = generatorFactoryDB.GetFactory(i);
 					const Shared::CTypeInfo& itemTypeToGenerate = generatorFactory.GetTypeOfItemsToGenerate();
 
-					if (!g_hubImpl->GetUtils().FindItemFactoryByType(itemTypeToGenerate))
+					if (!g_pHub->GetUtils().FindItemFactoryByType(itemTypeToGenerate))
 					{
 						string error;
 						error.Format("Generator '%s' wants to generate items of type '%s', but there is no corresponding item-factory for this type registered", generatorFactory.GetName(), itemTypeToGenerate.name());
@@ -268,14 +268,14 @@ namespace UQS
 			//
 
 			{
-				const FunctionFactoryDatabase& functionFactoryDB = g_hubImpl->GetFunctionFactoryDatabase();
+				const FunctionFactoryDatabase& functionFactoryDB = g_pHub->GetFunctionFactoryDatabase();
 
 				for (size_t i = 0, n = functionFactoryDB.GetFactoryCount(); i < n; ++i)
 				{
 					const Client::IFunctionFactory& functionFactory = functionFactoryDB.GetFactory(i);
 					const Shared::CTypeInfo& returnTypeOfFunction = functionFactory.GetReturnType();
 
-					if (!g_hubImpl->GetUtils().FindItemFactoryByType(returnTypeOfFunction))
+					if (!g_pHub->GetUtils().FindItemFactoryByType(returnTypeOfFunction))
 					{
 						string error;
 						error.Format("Function '%s' returns a '%s', but there is no corresponding item-factory for this type registered", functionFactory.GetName(), returnTypeOfFunction.name());
@@ -296,7 +296,7 @@ namespace UQS
 			{
 				// 1. function params
 				{
-					const FunctionFactoryDatabase& functionFactoryDB = g_hubImpl->GetFunctionFactoryDatabase();
+					const FunctionFactoryDatabase& functionFactoryDB = g_pHub->GetFunctionFactoryDatabase();
 
 					for (size_t i = 0, n = functionFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
@@ -309,7 +309,7 @@ namespace UQS
 
 				// 2. generator params
 				{
-					const GeneratorFactoryDatabase& generatorFactoryDB = g_hubImpl->GetGeneratorFactoryDatabase();
+					const GeneratorFactoryDatabase& generatorFactoryDB = g_pHub->GetGeneratorFactoryDatabase();
 
 					for (size_t i = 0, n = generatorFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
@@ -322,7 +322,7 @@ namespace UQS
 
 				// 3. instant-evaluator params
 				{
-					const IInstantEvaluatorFactoryDatabase& ieFactoryDB = g_hubImpl->GetInstantEvaluatorFactoryDatabase();
+					const IInstantEvaluatorFactoryDatabase& ieFactoryDB = g_pHub->GetInstantEvaluatorFactoryDatabase();
 
 					for (size_t i = 0, n = ieFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
@@ -335,7 +335,7 @@ namespace UQS
 
 				// 4. deferred-evaluator params
 				{
-					const IDeferredEvaluatorFactoryDatabase& deFactoryDB = g_hubImpl->GetDeferredEvaluatorFactoryDatabase();
+					const IDeferredEvaluatorFactoryDatabase& deFactoryDB = g_pHub->GetDeferredEvaluatorFactoryDatabase();
 
 					for (size_t i = 0, n = deFactoryDB.GetFactoryCount(); i < n; ++i)
 					{
@@ -350,17 +350,17 @@ namespace UQS
 			// TODO: more consistency checks
 		}
 
-		void CStartupConsistencyChecker::CheckInputParametersConsistency(const Client::IInputParameterRegistry& registry, const char* errorMessagePrefix)
+		void CStartupConsistencyChecker::CheckInputParametersConsistency(const Client::IInputParameterRegistry& registry, const char* szErrorMessagePrefix)
 		{
 			for (size_t i = 0, n = registry.GetParameterCount(); i < n; ++i)
 			{
 				const Client::IInputParameterRegistry::SParameterInfo& pi = registry.GetParameter(i);
 
 				// check for known item type
-				if (g_hubImpl->GetUtils().FindItemFactoryByType(pi.type) == nullptr)
+				if (g_pHub->GetUtils().FindItemFactoryByType(pi.type) == nullptr)
 				{
 					string error;
-					error.Format("%s: parameter '%s' is of type '%s' but there is no such item-factory registered", errorMessagePrefix, pi.name, pi.type.name());
+					error.Format("%s: parameter '%s' is of type '%s' but there is no such item-factory registered", szErrorMessagePrefix, pi.szName, pi.type.name());
 					m_errors.push_back(error);
 				}
 
@@ -368,10 +368,10 @@ namespace UQS
 				for (size_t k = i + 1; k < n; ++k)
 				{
 					const Client::IInputParameterRegistry::SParameterInfo& pi2 = registry.GetParameter(k);
-					if (strcmp(pi2.name, pi.name) == 0)
+					if (strcmp(pi2.szName, pi.szName) == 0)
 					{
 						string error;
-						error.Format("%s: duplicate parameter name: '%s' (could be a copy & paste error)", errorMessagePrefix, pi2.name);
+						error.Format("%s: duplicate parameter name: '%s' (could be a copy & paste error)", szErrorMessagePrefix, pi2.szName);
 						m_errors.push_back(error);
 					}
 				}
@@ -383,7 +383,7 @@ namespace UQS
 					if (pi2.offset == pi.offset)
 					{
 						string error;
-						error.Format("%s: duplicate memory offset for parameter '%s': the parameter '%s' is already using this offset (could be a copy & paste error)", errorMessagePrefix, pi2.name, pi.name);
+						error.Format("%s: duplicate memory offset for parameter '%s': the parameter '%s' is already using this offset (could be a copy & paste error)", szErrorMessagePrefix, pi2.szName, pi.szName);
 						m_errors.push_back(error);
 					}
 				}

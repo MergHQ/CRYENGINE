@@ -28,16 +28,19 @@ namespace UQS
 		public:
 			                                     CVariantDict();
 			                                     ~CVariantDict();
+
+			// IVariantDict
 			virtual void                         AddOrReplace(const char* szKey, Client::IItemFactory& itemFactory, const void* pItemToClone) override;
 			virtual void                         AddSelfToOtherAndReplace(IVariantDict& out) const override;
-			virtual bool                         Exists(const char* key) const override;
-			virtual Client::IItemFactory*        FindItemFactory(const char* key) const override;
-			virtual bool                         FindItemFactoryAndObject(const char* key, Client::IItemFactory* &outItemItemFactory, void* &outObject) const override;
+			virtual bool                         Exists(const char* szKey) const override;
+			virtual Client::IItemFactory*        FindItemFactory(const char* szKey) const override;
+			virtual bool                         FindItemFactoryAndObject(const char* szKey, Client::IItemFactory* &pOutItemItemFactory, void* &pOutObject) const override;
+			// ~IVariantDict
 
 			const std::map<string, SDataEntry>&  GetEntries() const;
 
 			template <class TItem>
-			void                                 AddOrReplaceFromOriginalValue(const char* key, const TItem& originalValueToClone);
+			void                                 AddOrReplaceFromOriginalValue(const char* szKey, const TItem& originalValueToClone);
 
 			void                                 Clear();
 

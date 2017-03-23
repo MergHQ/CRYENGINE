@@ -54,7 +54,7 @@ namespace UQS
 			public:
 				explicit                            CGeneratorDeleter();       // default ctor is required for when smart pointer using this deleter gets implicitly constructed via nullptr (i. e. with only 1 argument for the smart pointer's ctor)
 				explicit                            CGeneratorDeleter(IGeneratorFactory& factory);
-				void                                operator()(IGenerator* generatorToDelete);
+				void                                operator()(IGenerator* pGeneratorToDelete);
 
 			private:
 				IGeneratorFactory*                  m_pFactory;      // this one created the generator before

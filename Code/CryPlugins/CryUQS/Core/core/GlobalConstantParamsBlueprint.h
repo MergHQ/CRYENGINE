@@ -21,7 +21,7 @@ namespace UQS
 			explicit                                      CTextualGlobalConstantParamsBlueprint();
 
 			// ITextualGlobalConstantParamsBlueprint
-			virtual void                                  AddParameter(const char* name, const char* type, const char* value, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
+			virtual void                                  AddParameter(const char* szName, const char* szType, const char* szValue, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual size_t                                GetParameterCount() const override;
 			virtual SParameterInfo                        GetParameter(size_t index) const override;
 			// ~ITextualGlobalConstantParamsBlueprint
@@ -29,7 +29,7 @@ namespace UQS
 		private:
 			struct SStoredParameterInfo
 			{
-				explicit                                  SStoredParameterInfo(const char* _name, const char *_type, const char* _value, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
+				explicit                                  SStoredParameterInfo(const char* _szName, const char* _szType, const char* _szValue, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
 				explicit                                  SStoredParameterInfo(SStoredParameterInfo&& other);
 				string                                    name;
 				string                                    type;
@@ -45,10 +45,10 @@ namespace UQS
 			std::vector<SStoredParameterInfo>             m_parameters;
 		};
 
-		inline CTextualGlobalConstantParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _name, const char *_type, const char* _value, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
-			: name(_name)
-			, type(_type)
-			, value(_value)
+		inline CTextualGlobalConstantParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _szName, const char* _szType, const char* _szValue, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
+			: name(_szName)
+			, type(_szType)
+			, value(_szValue)
 			, bAddToDebugRenderWorld(_bAddToDebugRenderWorld)
 			, pSyntaxErrorCollector(std::move(_pSyntaxErrorCollector))
 		{}

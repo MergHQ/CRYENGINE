@@ -22,10 +22,10 @@ namespace UQS
 		{
 		}
 
-		CTextualInputBlueprint::CTextualInputBlueprint(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
-			: m_paramName(paramName)
-			, m_funcName(funcName)
-			, m_funcReturnValueLiteral(funcReturnValueLiteral)
+		CTextualInputBlueprint::CTextualInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
+			: m_paramName(szParamName)
+			, m_funcName(szFuncName)
+			, m_funcReturnValueLiteral(szFuncReturnValueLiteral)
 			, m_bAddReturnValueToDebugRenderWorldUponExecution(bAddReturnValueToDebugRenderWorldUponExecution)
 		{
 		}
@@ -78,11 +78,11 @@ namespace UQS
 			m_bAddReturnValueToDebugRenderWorldUponExecution = bAddReturnValueToDebugRenderWorldUponExecution;
 		}
 
-		ITextualInputBlueprint& CTextualInputBlueprint::AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
+		ITextualInputBlueprint& CTextualInputBlueprint::AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 		{
-			CTextualInputBlueprint* b = new CTextualInputBlueprint(paramName, funcName, funcReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
-			m_children.push_back(b);
-			return *b;
+			CTextualInputBlueprint* pChild = new CTextualInputBlueprint(szParamName, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
+			m_children.push_back(pChild);
+			return *pChild;
 		}
 
 		size_t CTextualInputBlueprint::GetChildCount() const
@@ -96,19 +96,19 @@ namespace UQS
 			return *m_children[index];
 		}
 
-		const ITextualInputBlueprint* CTextualInputBlueprint::FindChildByParamName(const char* paramName) const
+		const ITextualInputBlueprint* CTextualInputBlueprint::FindChildByParamName(const char* szParamName) const
 		{
-			for(const CTextualInputBlueprint* child : m_children)
+			for(const CTextualInputBlueprint* pChild : m_children)
 			{
-				if(strcmp(child->m_paramName.c_str(), paramName) == 0)
-					return child;
+				if(strcmp(pChild->m_paramName.c_str(), szParamName) == 0)
+					return pChild;
 			}
 			return nullptr;
 		}
 
-		void CTextualInputBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualInputBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_pSyntaxErrorCollector = std::move(ptr);
+			m_pSyntaxErrorCollector = std::move(pSyntaxErrorCollector);
 		}
 
 		DataSource::ISyntaxErrorCollector* CTextualInputBlueprint::GetSyntaxErrorCollector() const
@@ -130,9 +130,9 @@ namespace UQS
 
 		CInputBlueprint::~CInputBlueprint()
 		{
-			for(CInputBlueprint* b : m_children)
+			for(CInputBlueprint* pChild : m_children)
 			{
-				delete b;
+				delete pChild;
 			}
 		}
 
@@ -168,12 +168,12 @@ namespace UQS
 				// look up the child by the name of the parameter it's being represented by
 				//
 
-				const ITextualInputBlueprint* pSourceChild = sourceParent.FindChildByParamName(pi.name);
+				const ITextualInputBlueprint* pSourceChild = sourceParent.FindChildByParamName(pi.szName);
 				if (!pSourceChild)
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = sourceParent.GetSyntaxErrorCollector())
 					{
-						pSE->AddErrorMessage("Missing parameter: '%s'", pi.name);
+						pSE->AddErrorMessage("Missing parameter: '%s'", pi.szName);
 					}
 					bResolveSucceeded = false;
 					continue;
@@ -186,13 +186,13 @@ namespace UQS
 				// look up the function of that new child
 				//
 
-				const char* funcName = pSourceChild->GetFuncName();
-				pNewChild->m_pFunctionFactory = g_hubImpl->GetFunctionFactoryDatabase().FindFactoryByName(funcName);
+				const char* szFuncName = pSourceChild->GetFuncName();
+				pNewChild->m_pFunctionFactory = g_pHub->GetFunctionFactoryDatabase().FindFactoryByName(szFuncName);
 				if (!pNewChild->m_pFunctionFactory)
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 					{
-						pSE->AddErrorMessage("Unknown function: '%s'", funcName);
+						pSE->AddErrorMessage("Unknown function: '%s'", szFuncName);
 					}
 					bResolveSucceeded = false;
 					continue;   // without a function, we cannot continue parsing this child and also cannot go down deeper the call hierarchy
@@ -207,7 +207,7 @@ namespace UQS
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 					{
-						pSE->AddErrorMessage("Parameter '%s' is of type '%s', but Function '%s' returns a '%s'", pi.name, pi.type.name(), funcName, childReturnType.name());
+						pSE->AddErrorMessage("Parameter '%s' is of type '%s', but Function '%s' returns a '%s'", pi.szName, pi.type.name(), szFuncName, childReturnType.name());
 					}
 					bResolveSucceeded = false;
 				}
@@ -265,14 +265,14 @@ namespace UQS
 
 				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == Client::IFunctionFactory::ELeafFunctionKind::GlobalParam)
 				{
-					const char* nameOfGlobalParam = pSourceChild->GetFuncReturnValueLiteral();
+					const char* szNameOfGlobalParam = pSourceChild->GetFuncReturnValueLiteral();
 					const Client::IItemFactory* pItemFactoryOfThatGlobalParam = nullptr;
 
 					// search among the global constant-params
 					{
 						const CGlobalConstantParamsBlueprint& constantParamsBP = queryBlueprintForGlobalParamChecking.GetGlobalConstantParamsBlueprint();
 						const std::map<string, CGlobalConstantParamsBlueprint::SParamInfo>& params = constantParamsBP.GetParams();
-						auto it = params.find(nameOfGlobalParam);
+						auto it = params.find(szNameOfGlobalParam);
 						if (it != params.cend())
 						{
 							pItemFactoryOfThatGlobalParam = it->second.pItemFactory;
@@ -284,7 +284,7 @@ namespace UQS
 					{
 						const CGlobalRuntimeParamsBlueprint& runtimeParamsBP = queryBlueprintForGlobalParamChecking.GetGlobalRuntimeParamsBlueprint();
 						const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& params = runtimeParamsBP.GetParams();
-						auto it = params.find(nameOfGlobalParam);
+						auto it = params.find(szNameOfGlobalParam);
 						if (it != params.cend())
 						{
 							pItemFactoryOfThatGlobalParam = it->second.pItemFactory;
@@ -302,13 +302,13 @@ namespace UQS
 						{
 							if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 							{
-								pSE->AddErrorMessage("Return type of function '%s' (%s) mismatches the type of the global param '%s' (%s)", pNewChild->m_pFunctionFactory->GetName(), returnTypeOfFunction.name(), nameOfGlobalParam, typeOfGlobalParam.name());
+								pSE->AddErrorMessage("Return type of function '%s' (%s) mismatches the type of the global param '%s' (%s)", pNewChild->m_pFunctionFactory->GetName(), returnTypeOfFunction.name(), szNameOfGlobalParam, typeOfGlobalParam.name());
 							}
 							bResolveSucceeded = false;
 						}
 						else
 						{
-							pNewChild->m_leafFunctionReturnValue.SetGlobalParam(nameOfGlobalParam);
+							pNewChild->m_leafFunctionReturnValue.SetGlobalParam(szNameOfGlobalParam);
 						}
 					}
 					else
@@ -316,7 +316,7 @@ namespace UQS
 						// the referenced global param doesn't exist -> syntax error
 						if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 						{
-							pSE->AddErrorMessage("Function '%s' returns an unknown global param: '%s'", pNewChild->m_pFunctionFactory->GetName(), nameOfGlobalParam);
+							pSE->AddErrorMessage("Function '%s' returns an unknown global param: '%s'", pNewChild->m_pFunctionFactory->GetName(), szNameOfGlobalParam);
 						}
 						bResolveSucceeded = false;
 					}
@@ -329,7 +329,7 @@ namespace UQS
 				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == Client::IFunctionFactory::ELeafFunctionKind::Literal)
 				{
 					const Shared::CTypeInfo& returnType = pNewChild->m_pFunctionFactory->GetReturnType();
-					Client::IItemFactory* pItemFactoryOfReturnType = g_hubImpl->GetUtils().FindItemFactoryByType(returnType);
+					Client::IItemFactory* pItemFactoryOfReturnType = g_pHub->GetUtils().FindItemFactoryByType(returnType);
 
 					// notice: if no item-factory for the function's return type was found, then the function's return type hasn't been registered in the item-factory-database
 					//         (in fact, the StartupConsistencyChecker should have detected this already, but still, we handle it gracefully here)
@@ -386,7 +386,7 @@ namespace UQS
 						// notice: the type of the shuttle actually specifies the *container* type of items, hence we need access to the *contained* type
 						const Shared::CTypeInfo* pContainedType = pNewChild->m_pFunctionFactory->GetContainedType();
 
-						// if this assert fails, then something must have become inconsistent between Client::internal::CFunc_ShuttledItems<> and Client::internal::SContainedTypeRetriever<>
+						// if this assert fails, then something must have become inconsistent between Client::Internal::CFunc_ShuttledItems<> and Client::Internal::SContainedTypeRetriever<>
 						assert(pContainedType);
 
 						if (*pContainedType != *pTypeOfPossiblyShuttledItems)

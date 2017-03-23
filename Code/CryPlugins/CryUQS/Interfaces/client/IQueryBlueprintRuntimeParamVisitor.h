@@ -22,7 +22,7 @@ namespace UQS
 		struct IQueryBlueprintRuntimeParamVisitor
 		{
 			virtual          ~IQueryBlueprintRuntimeParamVisitor() {}
-			virtual void     OnRuntimeParamVisited(const char* paramName, IItemFactory& itemFactory) = 0;
+			virtual void     OnRuntimeParamVisited(const char* szParamName, IItemFactory& itemFactory) = 0;
 		};
 
 	}

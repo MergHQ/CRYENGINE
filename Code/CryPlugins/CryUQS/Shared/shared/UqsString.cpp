@@ -33,11 +33,11 @@ namespace UQS
 			m_message = szString;
 		}
 
-		void CUqsString::Format(const char* fmt, ...)
+		void CUqsString::Format(const char* szFormat, ...)
 		{
 			va_list ap;
-			va_start(ap, fmt);
-			m_message.FormatV(fmt, ap);
+			va_start(ap, szFormat);
+			m_message.FormatV(szFormat, ap);
 			va_end(ap);
 		}
 

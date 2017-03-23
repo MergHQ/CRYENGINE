@@ -20,7 +20,7 @@ namespace UQS
 		class CQueryBlueprintLoader_XML : public DataSource::IQueryBlueprintLoader
 		{
 		public:
-			explicit                                  CQueryBlueprintLoader_XML(const char* queryName, const char* xmlFilePath, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector);
+			explicit                                  CQueryBlueprintLoader_XML(const char* szQueryName, const char* szXmlFilePath, const std::shared_ptr<CXMLDataErrorCollector>& pDataErrorCollector);
 			virtual bool                              LoadTextualQueryBlueprint(Core::ITextualQueryBlueprint& out, Shared::IUqsString& error) override;
 
 		private:
@@ -36,8 +36,8 @@ namespace UQS
 			string                                    m_queryName;
 			string                                    m_xmlFilePath;
 			XmlNodeRef                                m_queryElement;
-			std::shared_ptr<CXMLDataErrorCollector>   m_dataErrorCollector;
-			Core::ITextualQueryBlueprint*             m_query;	// points to what was passed in to LoadTextualQueryBlueprint() throughout the loading process
+			std::shared_ptr<CXMLDataErrorCollector>   m_pDataErrorCollector;
+			Core::ITextualQueryBlueprint*             m_pQuery;	// points to what was passed in to LoadTextualQueryBlueprint() throughout the loading process
 		};
 
 	}

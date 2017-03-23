@@ -95,12 +95,12 @@ struct SQuery
 		stack_string elapsedTimeAsString;
 
 		overview.queryID.ToString(queryIdAsString);
-		queryIdAndQuerierName.Format("#%s: %s", queryIdAsString.c_str(), overview.querierName);
+		queryIdAndQuerierName.Format("#%s: %s", queryIdAsString.c_str(), overview.szQuerierName);
 		itemCountsAsString.Format("%i / %i", (int)overview.numResultingItems, (int)overview.numGeneratedItems);
 		elapsedTimeAsString.Format("%.2f ms", overview.timeElapsedUntilResult.GetMilliSeconds());
 
 		this->dataPerColumn[Column_QueryIdAndQuerierName] = QtUtil::ToQString(queryIdAndQuerierName.c_str());
-		this->dataPerColumn[Column_QueryBlueprintName] = QtUtil::ToQString(overview.queryBlueprintName);
+		this->dataPerColumn[Column_QueryBlueprintName] = QtUtil::ToQString(overview.szQueryBlueprintName);
 		this->dataPerColumn[Column_ItemCounts] = QtUtil::ToQString(itemCountsAsString.c_str());
 		this->dataPerColumn[Column_ElapsedTime] = QtUtil::ToQString(elapsedTimeAsString.c_str());
 	}
@@ -656,12 +656,12 @@ void CMainEditorWindow::AddOrUpdateHistoricQuery(const SHistoricQueryOverview& o
 	m_pFreshlyAddedOrUpdatedQuery = nullptr;
 }
 
-void CMainEditorWindow::AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* fmt, ...)
+void CMainEditorWindow::AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* szFormat, ...)
 {
 	stack_string tmpText;
 	va_list ap;
-	va_start(ap, fmt);
-	tmpText.FormatV(fmt, ap);
+	va_start(ap, szFormat);
+	tmpText.FormatV(szFormat, ap);
 	va_end(ap);
 
 	const unsigned int rgb888 = color.pack_rgb888();
@@ -672,12 +672,12 @@ void CMainEditorWindow::AddTextLineToCurrentHistoricQuery(const ColorF& color, c
 	m_pTextQueryDetails->insertHtml(qHtml);
 }
 
-void CMainEditorWindow::AddTextLineToFocusedItem(const ColorF& color, const char* fmt, ...)
+void CMainEditorWindow::AddTextLineToFocusedItem(const ColorF& color, const char* szFormat, ...)
 {
 	stack_string tmpText;
 	va_list ap;
-	va_start(ap, fmt);
-	tmpText.FormatV(fmt, ap);
+	va_start(ap, szFormat);
+	tmpText.FormatV(szFormat, ap);
 	va_end(ap);
 
 	const unsigned int rgb888 = color.pack_rgb888();

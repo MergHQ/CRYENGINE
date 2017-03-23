@@ -21,14 +21,14 @@ namespace UQS
 			explicit                                             CTextualGeneratorBlueprint();
 
 			// called by a loader that reads from an abstract data source to build the blueprint in textual form
-			virtual void                                         SetGeneratorName(const char* generatorName) override;
+			virtual void                                         SetGeneratorName(const char* szGeneratorName) override;
 			virtual ITextualInputBlueprint&                      GetInputRoot() override;
 
 			// called by CGeneratorBlueprint::Resolve()
 			virtual const char*                                  GetGeneratorName() const override;
 			virtual const ITextualInputBlueprint&                GetInputRoot() const override;
 
-			virtual void                                         SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) override;
+			virtual void                                         SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual DataSource::ISyntaxErrorCollector*           GetSyntaxErrorCollector() const override;
 
 		private:

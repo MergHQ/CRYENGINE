@@ -27,8 +27,8 @@ namespace UQS
 			//
 			///////////////////////////////////////////////////////////////////////////////////
 
-			virtual void                                               SetName(const char* name) override;
-			virtual void                                               SetQueryFactoryName(const char* factoryName) override;
+			virtual void                                               SetName(const char* szName) override;
+			virtual void                                               SetQueryFactoryName(const char* szFactoryName) override;
 			virtual void                                               SetMaxItemsToKeepInResultSet(size_t maxItems) override;
 			virtual ITextualGlobalConstantParamsBlueprint&             GetGlobalConstantParams() override;
 			virtual ITextualGlobalRuntimeParamsBlueprint&              GetGlobalRuntimeParams() override;
@@ -60,7 +60,7 @@ namespace UQS
 			// syntax error collector
 			//
 
-			virtual void                                               SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) override;
+			virtual void                                               SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual DataSource::ISyntaxErrorCollector*                 GetSyntaxErrorCollector() const override;
 
 		private:
@@ -115,7 +115,6 @@ namespace UQS
 			const CGeneratorBlueprint*                         GetGeneratorBlueprint() const;
 			const std::vector<CInstantEvaluatorBlueprint*>&    GetInstantEvaluatorBlueprints() const;
 			const std::vector<CDeferredEvaluatorBlueprint*>&   GetDeferredEvaluatorBlueprints() const;
-			// TODO: secondary-generator blueprints?
 			bool                                               CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(const Shared::IVariantDict& runtimeParamsToValidate, Shared::CUqsString& error) const;
 
 			const Shared::CTypeInfo*                           GetTypeOfShuttledItemsToExpect() const;
@@ -141,8 +140,6 @@ namespace UQS
 			std::vector<CDeferredEvaluatorBlueprint*>          m_deferredEvaluators;
 			std::vector<std::shared_ptr<CQueryBlueprint>>      m_children;
 			const CQueryBlueprint*                             m_pParent;
-
-			// TODO: secondary-generator blueprint(s)?
 		};
 
 	}

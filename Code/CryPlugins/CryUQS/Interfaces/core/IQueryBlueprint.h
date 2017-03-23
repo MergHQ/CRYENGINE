@@ -21,8 +21,8 @@ namespace UQS
 			//
 			// methods for writing data
 			//
-			virtual void                                                SetName(const char* name) = 0;
-			virtual void                                                SetQueryFactoryName(const char* factoryName) = 0;
+			virtual void                                                SetName(const char* szName) = 0;
+			virtual void                                                SetQueryFactoryName(const char* szFactoryName) = 0;
 			virtual void                                                SetMaxItemsToKeepInResultSet(size_t maxItems) = 0;
 			virtual ITextualGlobalConstantParamsBlueprint&              GetGlobalConstantParams() = 0;
 			virtual ITextualGlobalRuntimeParamsBlueprint&               GetGlobalRuntimeParams() = 0;
@@ -52,7 +52,7 @@ namespace UQS
 			// syntax error collector
 			//
 
-			virtual void                                                SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) = 0;
+			virtual void                                                SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) = 0;
 			virtual DataSource::ISyntaxErrorCollector*                  GetSyntaxErrorCollector() const = 0;     // called while resolving a blueprint from its textual representation into the "in-memory" representation
 		};
 
