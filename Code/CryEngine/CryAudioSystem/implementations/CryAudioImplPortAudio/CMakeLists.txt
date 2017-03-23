@@ -34,7 +34,7 @@ end_sources()
 #END-FILE-LIST
 
 if(AUDIO_PORTAUDIO)
-	CryEngineModule(CryAudioImplPortAudio PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
+	CryEngineModule(CryAudioImplPortAudio FORCE_SHARED PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPORTAUDIO_FOR_$<UPPER_CASE:$<CONFIG>>)
 	target_include_directories( ${THIS_PROJECT} PRIVATE ../../Common)
 
