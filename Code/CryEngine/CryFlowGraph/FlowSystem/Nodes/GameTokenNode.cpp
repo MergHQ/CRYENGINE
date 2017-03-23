@@ -33,14 +33,18 @@ IGameToken* GetGameToken(const char* callingNodeName, IFlowNode::SActivationInfo
 
 	if (!pToken)
 	{
-		CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR, "[FG] %s (ID %u): cannot find GameToken: '%s'", callingNodeName, pActInfo->myID, tokenName.c_str());
+		CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR,
+			"[FG] Cannot find GameToken: '%s' Node: %s (ID %u) Graph: %s",
+			tokenName.c_str(),
+			callingNodeName, pActInfo->myID, pActInfo->pGraph->GetDebugName()
+		);
 	}
 
 	return pToken;
 }
 
 //! Check if the value was inserted correctly in the token or if there was a type coercion
-void WarningIfGameTokenUsedWithWrongType(const char* place, TFlowNodeId nodeId, const char* tokenName, TFlowInputData& data, const string& valueStr)
+void WarningIfGameTokenUsedWithWrongType(const char* callingNodeName, IFlowNode::SActivationInfo* pActInfo, const char* tokenName, TFlowInputData& data, const string& valueStr)
 {
 	// give designers a warning that they're probably using a token incorrectly
 	// don't warn for empty value strings as that is a common use case to just listen to a token without actually wanting a comparison
@@ -49,10 +53,10 @@ void WarningIfGameTokenUsedWithWrongType(const char* place, TFlowNodeId nodeId, 
 		if (data.CheckIfForcedConversionOfCurrentValueWithString(valueStr))
 		{
 			CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR,
-				"[FG] %s (ID %u): Forced conversion of GameToken '%s' of type '%s' with value >%s<",
-				place, nodeId, tokenName,
-				FlowTypeToName(data.GetType()),
-				valueStr.c_str()
+				"[FG] Forced conversion of GameToken '%s' of type '%s' with value >%s<. Node: %s (ID %u) Graph: %s",
+				tokenName,
+				FlowTypeToName(data.GetType()), valueStr.c_str(),
+				callingNodeName, pActInfo->myID, pActInfo->pGraph->GetDebugName()
 			);
 		}
 	}
@@ -72,7 +76,7 @@ void DryRunAndWarningIfGameTokenUsedWithWrongType(const char* place, IFlowNode::
 			TFlowInputData tempFD(tempFDRef); // copy
 			tempFD.SetValueWithConversion(valueStr); // set without affecting the real GT
 
-			WarningIfGameTokenUsedWithWrongType(place, pActInfo->myID, GetPortString(pActInfo, tokenPort), tempFD, valueStr);
+			WarningIfGameTokenUsedWithWrongType(place, pActInfo, GetPortString(pActInfo, tokenPort), tempFD, valueStr);
 		}
 	}
 }
@@ -427,7 +431,7 @@ private:
 		const string& valueStr = GetPortString(pActInfo, eIN_Value);
 		m_cachedValue.SetValueWithConversion(valueStr); // set even if string is empty
 		#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo->myID, m_pCachedToken->GetName(), m_cachedValue, valueStr);
+		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo, m_pCachedToken->GetName(), m_cachedValue, valueStr);
 		#endif
 	}
 
@@ -598,7 +602,7 @@ private:
 		const string& valueStr = GetPortString(pActInfo, eIN_FirstValue + i);
 		m_cachedValues[i].SetValueWithConversion(valueStr); // set even if string is empty
 		#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo->myID, m_pCachedToken->GetName(), m_cachedValues[i], valueStr);
+		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo, m_pCachedToken->GetName(), m_cachedValues[i], valueStr);
 		#endif
 	}
 
@@ -753,7 +757,7 @@ public:
 			m_cachedValue.SetValueWithConversion(comparisonString);
 
 			#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-			WarningIfGameTokenUsedWithWrongType(s_sNodeName, this->m_actInfo.myID, m_pCachedToken->GetName(), m_cachedValue, comparisonString);
+			WarningIfGameTokenUsedWithWrongType(s_sNodeName, &m_actInfo, m_pCachedToken->GetName(), m_cachedValue, comparisonString);
 			#endif
 		}
 	}
@@ -1090,7 +1094,7 @@ private:
 		const string& valueStr = GetPortString(pActInfo, eIN_Value);
 		m_cachedValue.SetValueWithConversion(valueStr); // set even if string is empty
 		#if (!defined(_RELEASE) && !defined(PERFORMANCE_BUILD))
-		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo->myID, m_pCachedToken->GetName(), m_cachedValue, valueStr);
+		WarningIfGameTokenUsedWithWrongType(s_sNodeName, pActInfo, m_pCachedToken->GetName(), m_cachedValue, valueStr);
 		#endif
 	}
 

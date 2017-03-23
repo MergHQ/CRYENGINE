@@ -20,14 +20,14 @@ namespace UQS
 		class CSyntaxErrorCollector_XML : public DataSource::ISyntaxErrorCollector
 		{
 		public:
-			explicit                                   CSyntaxErrorCollector_XML(int xmlLineNumber, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector);
-			virtual void                               AddErrorMessage(const char* fmt, ...) override;
+			explicit                                   CSyntaxErrorCollector_XML(int xmlLineNumber, const std::shared_ptr<CXMLDataErrorCollector>& pDataErrorCollector);
+			virtual void                               AddErrorMessage(const char* szFormat, ...) override;
 
 		private:
 			                                           UQS_NON_COPYABLE(CSyntaxErrorCollector_XML);
 
 			int                                        m_xmlLineNumber;
-			std::shared_ptr<CXMLDataErrorCollector>    m_dataErrorCollector;
+			std::shared_ptr<CXMLDataErrorCollector>    m_pDataErrorCollector;
 		};
 
 		//===================================================================================
@@ -41,7 +41,7 @@ namespace UQS
 		public:
 			explicit                              CXMLDataErrorCollector();
 
-			void                                  AddError(const char* error);
+			void                                  AddError(const char* szError);
 			size_t                                GetErrorCount() const;
 			const char*                           GetError(size_t index) const;
 

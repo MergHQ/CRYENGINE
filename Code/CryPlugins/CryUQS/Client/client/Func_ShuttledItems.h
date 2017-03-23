@@ -85,7 +85,7 @@ namespace UQS
 				}
 				else
 				{
-					validationContext.error.Format("%s: %s", validationContext.nameOfFunctionBeingValidated, m_errorMessage.c_str());
+					validationContext.error.Format("%s: %s", validationContext.szNameOfFunctionBeingValidated, m_errorMessage.c_str());
 					return false;
 				}
 			}

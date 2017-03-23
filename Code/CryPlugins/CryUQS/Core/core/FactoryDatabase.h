@@ -19,7 +19,7 @@ namespace UQS
 		struct IFactoryDatabaseListener
 		{
 			virtual                     ~IFactoryDatabaseListener() {}
-			virtual void                OnFactoryRegistered(TFactory* freshlyRegisteredFactory) = 0;
+			virtual void                OnFactoryRegistered(TFactory* pFreshlyRegisteredFactory) = 0;
 		};
 
 		//===================================================================================
@@ -35,8 +35,8 @@ namespace UQS
 			explicit                    CFactoryDatabase();
 
 			// IFactoryDatabase<TFactory>
-			virtual void                RegisterFactory(TFactory* pFactoryToRegister, const char* name) override final;
-			virtual TFactory*           FindFactoryByName(const char* name) const override final;
+			virtual void                RegisterFactory(TFactory* pFactoryToRegister, const char* szName) override final;
+			virtual TFactory*           FindFactoryByName(const char* szName) const override final;
 			virtual size_t              GetFactoryCount() const override final;
 			virtual TFactory&           GetFactory(size_t index) const override final;
 			// ~IFactoryDatabase<TFactory>
@@ -47,7 +47,7 @@ namespace UQS
 			// the returned map contains only names of duplicate factories along with their total number of registration attempts (i. e. that counter will always be >= 2)
 			std::map<string, int>       GetDuplicateFactoryNames() const;
 
-			void                        PrintToConsole(CLogger& logger, const char* databaseNameToPrint) const;
+			void                        PrintToConsole(CLogger& logger, const char* szDatabaseNameToPrint) const;
 
 		private:
 			                            UQS_NON_COPYABLE(CFactoryDatabase);
@@ -68,7 +68,7 @@ namespace UQS
 		}
 
 		template <class TFactory>
-		void CFactoryDatabase<TFactory>::RegisterFactory(TFactory* pFactoryToRegister, const char* name)
+		void CFactoryDatabase<TFactory>::RegisterFactory(TFactory* pFactoryToRegister, const char* szName)
 		{
 			assert(pFactoryToRegister);
 
@@ -76,12 +76,12 @@ namespace UQS
 			assert(!Hub_HaveConsistencyChecksBeenDoneAlready());
 
 			// see how many registration attempts for a factory with given name were done before already
-			int& registrationCountSoFar = m_name2registrationCount[name];
+			int& registrationCountSoFar = m_name2registrationCount[szName];
 			if (registrationCountSoFar == 0)
 			{
 				// fine, this will be the (hopefully) one and only factory under this name
 				m_list.push_back(pFactoryToRegister);
-				m_map[name] = pFactoryToRegister;
+				m_map[szName] = pFactoryToRegister;
 
 				// notify all listeners
 				// (notice that since we're using a std::list, the currently being called listener is even allowed to unregister himself
@@ -96,9 +96,9 @@ namespace UQS
 		}
 
 		template <class TFactory>
-		TFactory* CFactoryDatabase<TFactory>::FindFactoryByName(const char* name) const
+		TFactory* CFactoryDatabase<TFactory>::FindFactoryByName(const char* szName) const
 		{
-			auto it = m_map.find(name);
+			auto it = m_map.find(szName);
 			return (it == m_map.cend()) ? nullptr : it->second;
 		}
 
@@ -144,19 +144,19 @@ namespace UQS
 		}
 
 		template <class TFactory>
-		void CFactoryDatabase<TFactory>::PrintToConsole(CLogger& logger, const char* databaseNameToPrint) const
+		void CFactoryDatabase<TFactory>::PrintToConsole(CLogger& logger, const char* szDatabaseNameToPrint) const
 		{
 			const size_t numFactories = GetFactoryCount();
 
-			logger.Printf("=== %i %s-factories in the database: ===", (int)numFactories, databaseNameToPrint);
+			logger.Printf("=== %i %s-factories in the database: ===", (int)numFactories, szDatabaseNameToPrint);
 
 			CLoggerIndentation indent;
 
 			for (size_t i = 0; i < numFactories; ++i)
 			{
 				const TFactory& factory = GetFactory(i);
-				const char* factoryName = factory.GetName();   // this compiles only as long as the TFactory class has such a GetName() method
-				logger.Printf("%s", factoryName);
+				const char* szFactoryName = factory.GetName();   // this compiles only as long as the TFactory class has such a GetName() method
+				logger.Printf("%s", szFactoryName);
 			}
 		}
 

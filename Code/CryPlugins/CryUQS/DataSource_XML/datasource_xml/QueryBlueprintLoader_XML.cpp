@@ -15,17 +15,17 @@ namespace UQS
 			delete pSyntaxErrorCollectorToDelete;
 		}
 
-		static DataSource::SyntaxErrorCollectorUniquePtr MakeNewSyntaxErrorCollectorUniquePtr(int lineNumber, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector)
+		static DataSource::SyntaxErrorCollectorUniquePtr MakeNewSyntaxErrorCollectorUniquePtr(int lineNumber, const std::shared_ptr<CXMLDataErrorCollector>& pDataErrorCollector)
 		{
-			return DataSource::SyntaxErrorCollectorUniquePtr(new CSyntaxErrorCollector_XML(lineNumber, dataErrorCollector), DataSource::CSyntaxErrorCollectorDeleter(&DeleteErrorProvider));
+			return DataSource::SyntaxErrorCollectorUniquePtr(new CSyntaxErrorCollector_XML(lineNumber, pDataErrorCollector), DataSource::CSyntaxErrorCollectorDeleter(&DeleteErrorProvider));
 		}
 
-		CQueryBlueprintLoader_XML::CQueryBlueprintLoader_XML(const char* queryName, const char* xmlFilePath, const std::shared_ptr<CXMLDataErrorCollector>& dataErrorCollector)
-			: m_queryName(queryName)
-			, m_xmlFilePath(xmlFilePath)
+		CQueryBlueprintLoader_XML::CQueryBlueprintLoader_XML(const char* szQueryName, const char* szXmlFilePath, const std::shared_ptr<CXMLDataErrorCollector>& pDataErrorCollector)
+			: m_queryName(szQueryName)
+			, m_xmlFilePath(szXmlFilePath)
 			, m_queryElement()
-			, m_dataErrorCollector(dataErrorCollector)
-			, m_query(nullptr)
+			, m_pDataErrorCollector(pDataErrorCollector)
+			, m_pQuery(nullptr)
 		{
 			// nothing
 		}
@@ -48,32 +48,32 @@ namespace UQS
 				return false;
 			}
 
-			bool success;
+			bool bSuccess;
 
-			m_query = &out;
-			m_query->SetName(m_queryName.c_str());
-			success = ParseQueryElement(m_queryElement, error);
-			m_query = nullptr;
+			m_pQuery = &out;
+			m_pQuery->SetName(m_queryName.c_str());
+			bSuccess = ParseQueryElement(m_queryElement, error);
+			m_pQuery = nullptr;
 
-			return success;
+			return bSuccess;
 		}
 
 		bool CQueryBlueprintLoader_XML::ParseQueryElement(const XmlNodeRef& queryElement, Shared::IUqsString& error)
 		{
 			assert(queryElement->isTag("Query"));
 
-			m_query->SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(queryElement->getLine(), m_dataErrorCollector));
+			m_pQuery->SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(queryElement->getLine(), m_pDataErrorCollector));
 
 			// notice: the name of the query blueprint came in from somewhere outside (e. g. file name) and has already been set by LoadTextualQueryBlueprint()
 
 			// "factory" attribute
-			const char* factory = queryElement->getAttr("factory");
-			m_query->SetQueryFactoryName(factory);
+			const char* szFactory = queryElement->getAttr("factory");
+			m_pQuery->SetQueryFactoryName(szFactory);
 
 			// "maxItemsToKeepInResultSet" attribute
 			unsigned int maxItemsToKeepInResultSet = 0;  // notice: getAttrib() doesn't support size_t, so we use unsigned int
 			queryElement->getAttr("maxItemsToKeepInResultSet", maxItemsToKeepInResultSet);
-			m_query->SetMaxItemsToKeepInResultSet((size_t)maxItemsToKeepInResultSet);
+			m_pQuery->SetMaxItemsToKeepInResultSet((size_t)maxItemsToKeepInResultSet);
 
 			for (int i = 0; i < queryElement->getChildCount(); ++i)
 			{
@@ -103,12 +103,12 @@ namespace UQS
 				{
 					// child queries
 
-					Core::ITextualQueryBlueprint* parentQuery = m_query;
-					m_query = &m_query->AddChild();
-					const bool succeeded = ParseQueryElement(child, error);
-					m_query = parentQuery;
+					Core::ITextualQueryBlueprint* pParentQuery = m_pQuery;
+					m_pQuery = &m_pQuery->AddChild();
+					const bool bSucceeded = ParseQueryElement(child, error);
+					m_pQuery = pParentQuery;
 
-					if (!succeeded)
+					if (!bSucceeded)
 						return false;
 				}
 				// TODO: <SecondaryGenerator> element(s) ?
@@ -134,24 +134,24 @@ namespace UQS
 				if (child->isTag("ConstantParam"))
 				{
 					// "name" attribute
-					const char* name;
-					if (!child->getAttr("name", &name))
+					const char* szName;
+					if (!child->getAttr("name", &szName))
 					{
 						error.Format("line #%i: <ConstantParam> is missing the attribute 'name'", child->getLine());
 						return false;
 					}
 
 					// "type" attribute
-					const char* type;
-					if (!child->getAttr("type", &type))
+					const char* szType;
+					if (!child->getAttr("type", &szType))
 					{
 						error.Format("line #%i: <ConstantParam> is missing the attribute 'type'", child->getLine());
 						return false;
 					}
 
 					// "value" attribute
-					const char* value;
-					if (!child->getAttr("value", &value))
+					const char* szValue;
+					if (!child->getAttr("value", &szValue))
 					{
 						error.Format("line #%i: <ConstantParam> is missing the attribute 'value'", child->getLine());
 						return false;
@@ -161,21 +161,21 @@ namespace UQS
 					bool bAddToDebugRenderWorld = false;
 					child->getAttr("addToDebugRenderWorld", bAddToDebugRenderWorld);
 
-					m_query->GetGlobalConstantParams().AddParameter(name, type, value, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_dataErrorCollector));
+					m_pQuery->GetGlobalConstantParams().AddParameter(szName, szType, szValue, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_pDataErrorCollector));
 				}
 				else if (child->isTag("RuntimeParam"))
 				{
 					// "name" attribute
-					const char* name;
-					if (!child->getAttr("name", &name))
+					const char* szName;
+					if (!child->getAttr("name", &szName))
 					{
 						error.Format("line #%i: <RuntimeParam> is missing the attribute 'name'", child->getLine());
 						return false;
 					}
 
 					// "type" attribute
-					const char* type;
-					if (!child->getAttr("type", &type))
+					const char* szType;
+					if (!child->getAttr("type", &szType))
 					{
 						error.Format("line #%i: <RuntimeParam> is missing the attribute 'type'", child->getLine());
 						return false;
@@ -185,7 +185,7 @@ namespace UQS
 					bool bAddToDebugRenderWorld = false;
 					child->getAttr("addToDebugRenderWorld", bAddToDebugRenderWorld);
 
-					m_query->GetGlobalRuntimeParams().AddParameter(name, type, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_dataErrorCollector));
+					m_pQuery->GetGlobalRuntimeParams().AddParameter(szName, szType, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_pDataErrorCollector));
 				}
 				else
 				{
@@ -201,21 +201,21 @@ namespace UQS
 		{
 			assert(generatorElement->isTag("Generator"));
 
-			Core::ITextualGeneratorBlueprint& textualGeneratorBP = m_query->SetGenerator();
-			textualGeneratorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_dataErrorCollector));
+			Core::ITextualGeneratorBlueprint& textualGeneratorBP = m_pQuery->SetGenerator();
+			textualGeneratorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_pDataErrorCollector));
 
 			// "name" attribute
-			const char* name;
-			if (!generatorElement->getAttr("name", &name))
+			const char* szName;
+			if (!generatorElement->getAttr("name", &szName))
 			{
 				error.Format("line #%i: <Generator> is missing the attribute 'name'", generatorElement->getLine());
 				return false;
 			}
-			textualGeneratorBP.SetGeneratorName(name);
+			textualGeneratorBP.SetGeneratorName(szName);
 
 			// parse <Input> elements (expect only these elements)
 			Core::ITextualInputBlueprint& textualInputRoot = textualGeneratorBP.GetInputRoot();
-			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_dataErrorCollector));	// same as its parent (the textual-generator-blueprint)
+			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the textual-generator-blueprint)
 			for (int i = 0; i < generatorElement->getChildCount(); ++i)
 			{
 				XmlNodeRef child = generatorElement->getChild(i);
@@ -239,17 +239,17 @@ namespace UQS
 		{
 			assert(instantEvaluatorElement->isTag("InstantEvaluator"));
 
-			Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_query->AddInstantEvaluator();
-			textualInstantEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_dataErrorCollector));
+			Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_pQuery->AddInstantEvaluator();
+			textualInstantEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_pDataErrorCollector));
 
 			// "name" attribute
-			const char* evaluatorName;
-			if (!instantEvaluatorElement->getAttr("name", &evaluatorName))
+			const char* szEvaluatorName;
+			if (!instantEvaluatorElement->getAttr("name", &szEvaluatorName))
 			{
 				error.Format("line #%i: <InstantEvaluator> is missing the attribute 'name'", instantEvaluatorElement->getLine());
 				return false;
 			}
-			textualInstantEvaluatorBP.SetEvaluatorName(evaluatorName);
+			textualInstantEvaluatorBP.SetEvaluatorName(szEvaluatorName);
 
 			// "weight" attribute
 			float weight = 1.0f;
@@ -262,7 +262,7 @@ namespace UQS
 
 			// parse <Input> elements (expect only these elements)
 			Core::ITextualInputBlueprint& textualInputRoot = textualInstantEvaluatorBP.GetInputRoot();
-			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_dataErrorCollector));	// same as its parent (the textual-instant-evaluator-blueprint)
+			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the textual-instant-evaluator-blueprint)
 			for (int i = 0; i < instantEvaluatorElement->getChildCount(); ++i)
 			{
 				XmlNodeRef child = instantEvaluatorElement->getChild(i);
@@ -286,17 +286,17 @@ namespace UQS
 		{
 			assert(deferredEvaluatorElement->isTag("DeferredEvaluator"));
 
-			Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_query->AddDeferredEvaluator();
-			textualDeferredEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_dataErrorCollector));
+			Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_pQuery->AddDeferredEvaluator();
+			textualDeferredEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_pDataErrorCollector));
 
 			// "name" attribute
-			const char* evaluatorName;
-			if (!deferredEvaluatorElement->getAttr("name", &evaluatorName))
+			const char* szEvaluatorName;
+			if (!deferredEvaluatorElement->getAttr("name", &szEvaluatorName))
 			{
 				error.Format("line #%i: <DeferredEvaluator> is missing the attribute 'name'", deferredEvaluatorElement->getLine());
 				return false;
 			}
-			textualDeferredEvaluatorBP.SetEvaluatorName(evaluatorName);
+			textualDeferredEvaluatorBP.SetEvaluatorName(szEvaluatorName);
 
 			// "weight" attribute
 			float weight = 1.0f;
@@ -309,7 +309,7 @@ namespace UQS
 
 			// parse <Input> elements (expect only these elements)
 			Core::ITextualInputBlueprint& textualInputRoot = textualDeferredEvaluatorBP.GetInputRoot();
-			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_dataErrorCollector));	// same as its parent (the textual-deferred-evaluator-blueprint)
+			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the textual-deferred-evaluator-blueprint)
 			for (int i = 0; i < deferredEvaluatorElement->getChildCount(); ++i)
 			{
 				XmlNodeRef child = deferredEvaluatorElement->getChild(i);
@@ -368,8 +368,8 @@ namespace UQS
 			assert(inputElement->isTag("Input"));
 
 			// "name" attribute (name of the parameter)
-			const char* paramName;
-			if (!inputElement->getAttr("name", &paramName))
+			const char* szParamName;
+			if (!inputElement->getAttr("name", &szParamName))
 			{
 				error.Format("line #%i: <Input> is missing the attribute 'name'", inputElement->getLine());
 				return false;
@@ -384,22 +384,22 @@ namespace UQS
 			}
 
 			// <Function>'s "name" attribute (name of the function)
-			const char* functionName;
-			if (!functionElement->getAttr("name", &functionName))
+			const char* szFunctionName;
+			if (!functionElement->getAttr("name", &szFunctionName))
 			{
 				error.Format("line #%i: <Function> is missing the attribute 'name'", functionElement->getLine());
 				return false;
 			}
 
 			//  "returnValue"
-			const char* functionReturnValue = functionElement->getAttr("returnValue");   // optional attribute; defaults to ""
+			const char* szFunctionReturnValue = functionElement->getAttr("returnValue");   // optional attribute; defaults to ""
 
 			// "addReturnValueToDebugRenderWorldUponExecution"
 			bool bAddReturnValueToDebugRenderWorldUponExecution = false;
 			functionElement->getAttr("addReturnValueToDebugRenderWorldUponExecution", bAddReturnValueToDebugRenderWorldUponExecution);
 
-			Core::ITextualInputBlueprint& newChild = parentInput.AddChild(paramName, functionName, functionReturnValue, bAddReturnValueToDebugRenderWorldUponExecution);
-			newChild.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(functionElement->getLine(), m_dataErrorCollector));
+			Core::ITextualInputBlueprint& newChild = parentInput.AddChild(szParamName, szFunctionName, szFunctionReturnValue, bAddReturnValueToDebugRenderWorldUponExecution);
+			newChild.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(functionElement->getLine(), m_pDataErrorCollector));
 
 			return ParseFunctionElement(functionElement, newChild, error);
 		}

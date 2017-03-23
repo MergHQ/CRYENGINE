@@ -39,16 +39,16 @@ namespace UQS
 			virtual void                                SetFuncReturnValueLiteral(const char* szValue) override;
 			virtual void                                SetAddReturnValueToDebugRenderWorldUponExecution(bool bAddReturnValueToDebugRenderWorldUponExecution) override;
 
-			virtual ITextualInputBlueprint&             AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution) override;
+			virtual ITextualInputBlueprint&             AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution) override;
 			virtual size_t                              GetChildCount() const override;
 			virtual const ITextualInputBlueprint&       GetChild(size_t index) const override;
-			virtual const ITextualInputBlueprint*       FindChildByParamName(const char* paramName) const override;
+			virtual const ITextualInputBlueprint*       FindChildByParamName(const char* szParamName) const override;
 
-			virtual void                                SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) override;
+			virtual void                                SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual DataSource::ISyntaxErrorCollector*  GetSyntaxErrorCollector() const override;
 
 		private:
-			explicit                                    CTextualInputBlueprint(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
+			explicit                                    CTextualInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 
 			                                            UQS_NON_COPYABLE(CTextualInputBlueprint);
 

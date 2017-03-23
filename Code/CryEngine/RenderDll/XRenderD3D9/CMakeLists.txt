@@ -1047,7 +1047,7 @@ if (NOT EXISTS ${SDK_DIR}/AMD)
 endif()
 
 if (RENDERER_DX11)
-	CryEngineModule(CryRenderD3D11 PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+	CryEngineModule(CryRenderD3D11 FORCE_SHARED PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR}/squish-ccr)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
@@ -1069,7 +1069,7 @@ else()
 endif()
 
 if (RENDERER_OPENGL)
-	CryEngineModule(CryRenderOpenGL PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+	CryEngineModule(CryRenderOpenGL FORCE_SHARED PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR}/squish-ccr)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DOPENGL -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
@@ -1113,7 +1113,7 @@ endif()
 
 
 if (RENDERER_DX12)
-	CryEngineModule(CryRenderD3D12 PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+	CryEngineModule(CryRenderD3D12 FORCE_SHARED PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DDIRECT3D10 -DCRY_USE_DX12 -DXRENDERD3D10_EXPORTS -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR} ${SDK_DIR}/squish-ccr ${CRYENGINE_DIR}/Code/Tools/LibTIFF ${CRYENGINE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)

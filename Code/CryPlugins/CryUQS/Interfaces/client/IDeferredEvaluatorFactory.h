@@ -51,24 +51,24 @@ namespace UQS
 			public:
 				explicit                                CDeferredEvaluatorDeleter();         // default ctor is required for when smart pointer using this deleter gets implicitly constructed via nullptr (i. e. with only 1 argument for the smart pointer's ctor)
 				explicit                                CDeferredEvaluatorDeleter(IDeferredEvaluatorFactory& deferredEvaluatorFactory);
-				void                                    operator()(IDeferredEvaluator* deferredEvaluatorToDelete);
+				void                                    operator()(IDeferredEvaluator* pDeferredEvaluatorToDelete);
 
 			private:
-				IDeferredEvaluatorFactory*              m_deferredEvaluatorFactory;          // this one created the deferred-evaluator before
+				IDeferredEvaluatorFactory*              m_pDeferredEvaluatorFactory;          // this one created the deferred-evaluator before
 			};
 
 			inline CDeferredEvaluatorDeleter::CDeferredEvaluatorDeleter()
-				: m_deferredEvaluatorFactory(nullptr)
+				: m_pDeferredEvaluatorFactory(nullptr)
 			{}
 
 			inline CDeferredEvaluatorDeleter::CDeferredEvaluatorDeleter(IDeferredEvaluatorFactory& deferredEvaluatorFactory)
-				: m_deferredEvaluatorFactory(&deferredEvaluatorFactory)
+				: m_pDeferredEvaluatorFactory(&deferredEvaluatorFactory)
 			{}
 
-			inline void CDeferredEvaluatorDeleter::operator()(IDeferredEvaluator* deferredEvaluatorToDelete)
+			inline void CDeferredEvaluatorDeleter::operator()(IDeferredEvaluator* pDeferredEvaluatorToDelete)
 			{
-				assert(m_deferredEvaluatorFactory);
-				m_deferredEvaluatorFactory->DestroyDeferredEvaluator(deferredEvaluatorToDelete);
+				assert(m_pDeferredEvaluatorFactory);
+				m_pDeferredEvaluatorFactory->DestroyDeferredEvaluator(pDeferredEvaluatorToDelete);
 			}
 
 		} // namespace Internal

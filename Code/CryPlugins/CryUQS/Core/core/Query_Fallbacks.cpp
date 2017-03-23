@@ -32,7 +32,7 @@ namespace UQS
 				m_pResultSet = std::move(pResultSet);
 
 				// transfer all item-monitors from the child to ourself to keep monitoring until a higher-level query decides differently
-				CQueryBase* pChildQuery = g_hubImpl->GetQueryManager().FindQueryByQueryID(childQueryID);
+				CQueryBase* pChildQuery = g_pHub->GetQueryManager().FindQueryByQueryID(childQueryID);
 				assert(pChildQuery);
 				pChildQuery->TransferAllItemMonitorsToOtherQuery(*this);
 			}

@@ -43,10 +43,10 @@ namespace UQS
 
 			struct SCtorContext
 			{
-				explicit                                SCtorContext(const CQueryID& _queryID, const char* _querierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, std::unique_ptr<CItemList>& _optionalResultingItemsFromPreviousChainedQuery);
+				explicit                                SCtorContext(const CQueryID& _queryID, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, std::unique_ptr<CItemList>& _pOptionalResultingItemsFromPreviousChainedQuery);
 
 				CQueryID                                queryID;
-				const char*                             querierName;
+				const char*                             szQuerierName;
 				HistoricQuerySharedPtr                  pOptionalHistoryToWriteTo;
 				std::unique_ptr<CItemList>&             optionalResultingItemsFromPreviousChainedQuery;     // this is how we pass items of a result set from one query to another
 			};
@@ -125,7 +125,7 @@ namespace UQS
 			virtual                                     ~CQueryBase();
 
 			bool                                        RequiresSomeTimeBudgetForExecution() const;
-			bool                                        InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& queryBlueprint, const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error);
+			bool                                        InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint, const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error);
 			void                                        AddItemMonitor(Client::ItemMonitorUniquePtr&& pItemMonitor);
 			void                                        TransferAllItemMonitorsToOtherQuery(CQueryBase& receiver);
 			EUpdateState                                Update(const CTimeValue& amountOfGrantedTime, Shared::CUqsString& error);
@@ -150,7 +150,7 @@ namespace UQS
 			// ~debugging
 
 			const CQueryID                              m_queryID;                        // the unique queryID that can be used to identify this instance from inside the CQueryManager
-			std::shared_ptr<const CQueryBlueprint>      m_queryBlueprint;                 // we'll instantiate all query components (generator, evaluators, etc) via this blueprint
+			std::shared_ptr<const CQueryBlueprint>      m_pQueryBlueprint;                // we'll instantiate all query components (generator, evaluators, etc) via this blueprint
 			QueryResultSetUniquePtr                     m_pResultSet;                     // once the query has finished evaluating all items (and hasn't bumped into a runtime exception), it will write the final items to here
 			CTimeBudget                                 m_timeBudgetForCurrentUpdate;     // this gets "restarted" on each Update() call with the amount of granted time that has been passed in by the caller
 

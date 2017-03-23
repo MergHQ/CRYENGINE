@@ -24,14 +24,14 @@ namespace UQS
 			virtual float                                        GetWeight() const override;
 
 			// called by a loader that reads from an abstract data source to build the blueprint in textual form
-			virtual void                                         SetEvaluatorName(const char* evaluatorName) override;
+			virtual void                                         SetEvaluatorName(const char* szEvaluatorName) override;
 			virtual ITextualInputBlueprint&                      GetInputRoot() override;
 
 			// called by CDeferredEvaluatorBlueprint::Resolve()
 			virtual const char*                                  GetEvaluatorName() const override;
 			virtual const ITextualInputBlueprint&                GetInputRoot() const override;
 
-			virtual void                                         SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr) override;
+			virtual void                                         SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual DataSource::ISyntaxErrorCollector*           GetSyntaxErrorCollector() const override;
 
 		private:
@@ -58,7 +58,7 @@ namespace UQS
 			bool                                          Resolve(const ITextualDeferredEvaluatorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking);
 			Client::IDeferredEvaluatorFactory&            GetFactory() const;
 			float                                         GetWeight() const;
-			void                                          PrintToConsole(CLogger& logger, const char* messagePrefix) const;
+			void                                          PrintToConsole(CLogger& logger, const char* szMessagePrefix) const;
 
 		private:
 			                                              UQS_NON_COPYABLE(CDeferredEvaluatorBlueprint);

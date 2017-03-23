@@ -40,14 +40,14 @@ namespace UQS
 			}
 		}
 
-		void CTextualQueryBlueprint::SetName(const char* name)
+		void CTextualQueryBlueprint::SetName(const char* szName)
 		{
-			m_name = name;
+			m_name = szName;
 		}
 
-		void CTextualQueryBlueprint::SetQueryFactoryName(const char* factoryName)
+		void CTextualQueryBlueprint::SetQueryFactoryName(const char* szFactoryName)
 		{
-			m_queryFactoryName = factoryName;
+			m_queryFactoryName = szFactoryName;
 		}
 
 		void CTextualQueryBlueprint::SetMaxItemsToKeepInResultSet(size_t maxItems)
@@ -155,9 +155,9 @@ namespace UQS
 			return *m_children[index];
 		}
 
-		void CTextualQueryBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualQueryBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_pSyntaxErrorCollector = std::move(ptr);
+			m_pSyntaxErrorCollector = std::move(pSyntaxErrorCollector);
 		}
 
 		DataSource::ISyntaxErrorCollector* CTextualQueryBlueprint::GetSyntaxErrorCollector() const
@@ -181,14 +181,14 @@ namespace UQS
 
 		CQueryBlueprint::~CQueryBlueprint()
 		{
-			for (CInstantEvaluatorBlueprint* ie : m_instantEvaluators)
+			for (CInstantEvaluatorBlueprint* pIE : m_instantEvaluators)
 			{
-				delete ie;
+				delete pIE;
 			}
 
-			for (CDeferredEvaluatorBlueprint* de : m_deferredEvaluators)
+			for (CDeferredEvaluatorBlueprint* pDE : m_deferredEvaluators)
 			{
-				delete de;
+				delete pDE;
 			}
 		}
 
@@ -205,10 +205,10 @@ namespace UQS
 
 			for (const auto& pair : allRuntimeParamsInTheHierarchy)
 			{
-				const char* paramName = pair.first.c_str();
+				const char* szParamName = pair.first.c_str();
 				Client::IItemFactory* pItemFactory = pair.second;
 				assert(pItemFactory);
-				visitor.OnRuntimeParamVisited(paramName, *pItemFactory);
+				visitor.OnRuntimeParamVisited(szParamName, *pItemFactory);
 			}
 		}
 
@@ -228,7 +228,7 @@ namespace UQS
 			// query factory
 			{
 				const char* queryFactoryName = source.GetQueryFactoryName();
-				m_pQueryFactory = static_cast<CQueryFactoryBase*>(g_hubImpl->GetQueryFactoryDatabase().FindFactoryByName(queryFactoryName));  // the static_cast<> is kinda ok'ish here, since IQueryFactory and its derived class CQueryFactoryBase are _both_ defined in the core, so we definitely know about the inheritance hierarchy
+				m_pQueryFactory = static_cast<CQueryFactoryBase*>(g_pHub->GetQueryFactoryDatabase().FindFactoryByName(queryFactoryName));  // the static_cast<> is kinda ok'ish here, since IQueryFactory and its derived class CQueryFactoryBase are _both_ defined in the core, so we definitely know about the inheritance hierarchy
 				if (!m_pQueryFactory)
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
@@ -250,18 +250,18 @@ namespace UQS
 					const CTextualGlobalConstantParamsBlueprint::SParameterInfo p1 = source.GetGlobalConstantParams().GetParameter(i1);
 					const CTextualGlobalRuntimeParamsBlueprint::SParameterInfo p2 = source.GetGlobalRuntimeParams().GetParameter(i2);
 
-					if (strcmp(p1.name, p2.name) == 0)
+					if (strcmp(p1.szName, p2.szName) == 0)
 					{
 						// output error to constant-params
 						if (DataSource::ISyntaxErrorCollector* pSE = p1.pSyntaxErrorCollector)
 						{
-							pSE->AddErrorMessage("Global constant-parameter clashes with runtime-parameter of the same name: '%s'", p1.name);
+							pSE->AddErrorMessage("Global constant-parameter clashes with runtime-parameter of the same name: '%s'", p1.szName);
 						}
 
 						// output error to runtime-params
 						if (DataSource::ISyntaxErrorCollector* pSE = p2.pSyntaxErrorCollector)
 						{
-							pSE->AddErrorMessage("Global runtime-parameter clashes with constant-parameter of the same name: '%s'", p2.name);
+							pSE->AddErrorMessage("Global runtime-parameter clashes with constant-parameter of the same name: '%s'", p2.szName);
 						}
 
 						bResolveSucceeded = false;
@@ -508,12 +508,12 @@ namespace UQS
 
 			for (const auto& pair : expectedRuntimeParams)
 			{
-				const char* key = pair.first.c_str();
-				const Client::IItemFactory* pFoundItemFactory = runtimeParamsToValidate.FindItemFactory(key);
+				const char* szKey = pair.first.c_str();
+				const Client::IItemFactory* pFoundItemFactory = runtimeParamsToValidate.FindItemFactory(szKey);
 
 				if (pFoundItemFactory == nullptr)
 				{
-					error.Format("Missing runtime-param: '%s'", key);
+					error.Format("Missing runtime-param: '%s'", szKey);
 					return false;
 				}
 
@@ -522,7 +522,7 @@ namespace UQS
 
 				if (pFoundItemFactory != pExpectedItemFactory)
 				{
-					error.Format("Runtime-param '%s' mismatches the item-factory: expected '%s', but received '%s'", key, pExpectedItemFactory->GetName(), pFoundItemFactory->GetName());
+					error.Format("Runtime-param '%s' mismatches the item-factory: expected '%s', but received '%s'", szKey, pExpectedItemFactory->GetName(), pFoundItemFactory->GetName());
 					return false;
 				}
 			}
@@ -740,10 +740,10 @@ namespace UQS
 
 			for (const auto& pair : params)
 			{
-				const char* paramName = pair.first.c_str();
+				const char* szParamName = pair.first.c_str();
 				Client::IItemFactory* pItemFactory = pair.second.pItemFactory;
 				assert(pItemFactory);
-				out[paramName] = pItemFactory;	// potentially overwrite the param from a parent; we presume here that both have the same item type (this is ensured by CGlobalRuntimeParamsBlueprint::Resolve())
+				out[szParamName] = pItemFactory;	// potentially overwrite the param from a parent; we presume here that both have the same item type (this is ensured by CGlobalRuntimeParamsBlueprint::Resolve())
 			}
 
 			// recurse down all children

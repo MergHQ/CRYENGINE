@@ -20,9 +20,9 @@ namespace UQS
 		{
 		}
 
-		void CTextualGeneratorBlueprint::SetGeneratorName(const char* generatorName)
+		void CTextualGeneratorBlueprint::SetGeneratorName(const char* szGeneratorName)
 		{
-			m_generatorName = generatorName;
+			m_generatorName = szGeneratorName;
 		}
 
 		ITextualInputBlueprint& CTextualGeneratorBlueprint::GetInputRoot()
@@ -40,9 +40,9 @@ namespace UQS
 			return m_rootInput;
 		}
 
-		void CTextualGeneratorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualGeneratorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_pSyntaxErrorCollector = std::move(ptr);
+			m_pSyntaxErrorCollector = std::move(pSyntaxErrorCollector);
 		}
 
 		DataSource::ISyntaxErrorCollector* CTextualGeneratorBlueprint::GetSyntaxErrorCollector() const
@@ -62,14 +62,14 @@ namespace UQS
 
 		bool CGeneratorBlueprint::Resolve(const ITextualGeneratorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking)
 		{
-			const char* generatorName = source.GetGeneratorName();
+			const char* szGeneratorName = source.GetGeneratorName();
 
-			m_pGeneratorFactory = g_hubImpl->GetGeneratorFactoryDatabase().FindFactoryByName(generatorName);
+			m_pGeneratorFactory = g_pHub->GetGeneratorFactoryDatabase().FindFactoryByName(szGeneratorName);
 			if (!m_pGeneratorFactory)
 			{
 				if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
 				{
-					pSE->AddErrorMessage("Unknown GeneratorFactory '%s'", generatorName);
+					pSE->AddErrorMessage("Unknown GeneratorFactory '%s'", szGeneratorName);
 				}
 				return false;
 			}

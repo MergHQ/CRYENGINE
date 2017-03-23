@@ -18,8 +18,8 @@ namespace UQS
 
 		bool Hub_HaveConsistencyChecksBeenDoneAlready()
 		{
-			assert(g_hubImpl);
-			return g_hubImpl->HaveConsistencyChecksBeenDoneAlready();
+			assert(g_pHub);
+			return g_pHub->HaveConsistencyChecksBeenDoneAlready();
 		}
 
 		//===================================================================================
@@ -28,7 +28,7 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CHub* g_hubImpl;
+		CHub* g_pHub;
 
 		CHub::CHub()
 			: m_consistencyChecksDoneAlready(false)
@@ -36,8 +36,8 @@ namespace UQS
 			, m_queryManager(m_queryHistoryManager)
 			, m_pEditorLibraryProvider(nullptr)
 		{
-			assert(!g_hubImpl);
-			g_hubImpl = this;
+			assert(!g_pHub);
+			g_pHub = this;
 			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CHub");
 			m_utils.SubscribeToStuffInHub(*this);
 
@@ -55,15 +55,15 @@ namespace UQS
 
 		CHub::~CHub()
 		{
-			g_hubImpl = nullptr;
+			g_pHub = nullptr;
 			GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 			m_utils.UnsubscribeFromStuffInHub(*this);
 			SCvars::Unregister();
 		}
 
-		void CHub::RegisterHubEventListener(IHubEventListener* listener)
+		void CHub::RegisterHubEventListener(IHubEventListener* pListener)
 		{
-			stl::push_back_unique(m_eventListeners, listener);
+			stl::push_back_unique(m_eventListeners, pListener);
 		}
 
 		void CHub::Update()
@@ -233,8 +233,8 @@ namespace UQS
 		{
 			for (std::list<IHubEventListener*>::const_iterator it = m_eventListeners.cbegin(); it != m_eventListeners.cend(); )
 			{
-				IHubEventListener* listener = *it++;
-				listener->OnUQSHubEvent(ev);
+				IHubEventListener* pListener = *it++;
+				pListener->OnUQSHubEvent(ev);
 			}
 		}
 
@@ -247,39 +247,39 @@ namespace UQS
 
 		void CHub::CmdListFactoryDatabases(IConsoleCmdArgs* pArgs)
 		{
-			if (g_hubImpl)
+			if (g_pHub)
 			{
 				CLogger logger;
-				g_hubImpl->m_queryFactoryDatabase.PrintToConsole(logger, "Query");
-				g_hubImpl->m_itemFactoryDatabase.PrintToConsole(logger, "Item");
-				g_hubImpl->m_functionFactoryDatabase.PrintToConsole(logger, "Function");
-				g_hubImpl->m_generatorFactoryDatabase.PrintToConsole(logger, "Generator");
-				g_hubImpl->m_instantEvaluatorFactoryDatabase.PrintToConsole(logger, "InstantEvaluator");
-				g_hubImpl->m_deferredEvaluatorFactoryDatabase.PrintToConsole(logger, "DeferredEvaluator");
+				g_pHub->m_queryFactoryDatabase.PrintToConsole(logger, "Query");
+				g_pHub->m_itemFactoryDatabase.PrintToConsole(logger, "Item");
+				g_pHub->m_functionFactoryDatabase.PrintToConsole(logger, "Function");
+				g_pHub->m_generatorFactoryDatabase.PrintToConsole(logger, "Generator");
+				g_pHub->m_instantEvaluatorFactoryDatabase.PrintToConsole(logger, "InstantEvaluator");
+				g_pHub->m_deferredEvaluatorFactoryDatabase.PrintToConsole(logger, "DeferredEvaluator");
 			}
 		}
 
 		void CHub::CmdListQueryBlueprintLibrary(IConsoleCmdArgs* pArgs)
 		{
-			if (g_hubImpl)
+			if (g_pHub)
 			{
 				CLogger logger;
-				g_hubImpl->m_queryBlueprintLibrary.PrintToConsole(logger);
+				g_pHub->m_queryBlueprintLibrary.PrintToConsole(logger);
 			}
 		}
 
 		void CHub::CmdListRunningQueries(IConsoleCmdArgs* pArgs)
 		{
-			if (g_hubImpl)
+			if (g_pHub)
 			{
 				CLogger logger;
-				g_hubImpl->m_queryManager.PrintRunningQueriesToConsole(logger);
+				g_pHub->m_queryManager.PrintRunningQueriesToConsole(logger);
 			}
 		}
 
 		void CHub::CmdDumpQueryHistory(IConsoleCmdArgs* pArgs)
 		{
-			if (g_hubImpl)
+			if (g_pHub)
 			{
 				//
 				// create an XML filename with a unique counter as part of it
@@ -303,7 +303,7 @@ namespace UQS
 				}
 
 				Shared::CUqsString error;
-				if (!g_hubImpl->m_queryHistoryManager.SerializeLiveQueryHistory(adjustedFilePath, error))
+				if (!g_pHub->m_queryHistoryManager.SerializeLiveQueryHistory(adjustedFilePath, error))
 				{
 					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Serializing the live query to '%s' failed: %s", pArgs->GetArg(0), unadjustedFilePath.c_str(), error.c_str());
 					return;
@@ -315,7 +315,7 @@ namespace UQS
 
 		void CHub::CmdLoadQueryHistory(IConsoleCmdArgs* pArgs)
 		{
-			if (g_hubImpl)
+			if (g_pHub)
 			{
 				if (pArgs->GetArgCount() < 2)
 				{
@@ -323,39 +323,39 @@ namespace UQS
 					return;
 				}
 
-				const char* xmlQueryHistoryFilePath = pArgs->GetArg(1);
+				const char* szXmlQueryHistoryFilePath = pArgs->GetArg(1);
 
 				// check if the desired XML file exists at all (just for giving a more precise warning)
-				if (!gEnv->pCryPak->IsFileExist(xmlQueryHistoryFilePath))	// no need to call gEnv->pCryPak->AdjustFileName() beforehand
+				if (!gEnv->pCryPak->IsFileExist(szXmlQueryHistoryFilePath))	// no need to call gEnv->pCryPak->AdjustFileName() beforehand
 				{
-					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: File not found: '%s'", pArgs->GetArg(0), xmlQueryHistoryFilePath);
+					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: File not found: '%s'", pArgs->GetArg(0), szXmlQueryHistoryFilePath);
 					return;
 				}
 
 				Shared::CUqsString error;
-				if (!g_hubImpl->m_queryHistoryManager.DeserializeQueryHistory(xmlQueryHistoryFilePath, error))
+				if (!g_pHub->m_queryHistoryManager.DeserializeQueryHistory(szXmlQueryHistoryFilePath, error))
 				{
-					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Could not de-serialize the query history: ", pArgs->GetArg(0), xmlQueryHistoryFilePath, error.c_str());
+					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Could not de-serialize the query history: ", pArgs->GetArg(0), szXmlQueryHistoryFilePath, error.c_str());
 					return;
 				}
 
-				CryLogAlways("Successfully de-serialized '%s'", xmlQueryHistoryFilePath);
+				CryLogAlways("Successfully de-serialized '%s'", szXmlQueryHistoryFilePath);
 			}
 		}
 
 		void CHub::CmdClearLiveQueryHistory(IConsoleCmdArgs* pArgs)
 		{
-			if (g_hubImpl)
+			if (g_pHub)
 			{
-				g_hubImpl->m_queryHistoryManager.ClearQueryHistory(IQueryHistoryManager::EHistoryOrigin::Live);
+				g_pHub->m_queryHistoryManager.ClearQueryHistory(IQueryHistoryManager::EHistoryOrigin::Live);
 			}
 		}
 
 		void CHub::CmdClearDeserializedQueryHistory(IConsoleCmdArgs* pArgs)
 		{
-			if (g_hubImpl)
+			if (g_pHub)
 			{
-				g_hubImpl->m_queryHistoryManager.ClearQueryHistory(IQueryHistoryManager::EHistoryOrigin::Deserialized);
+				g_pHub->m_queryHistoryManager.ClearQueryHistory(IQueryHistoryManager::EHistoryOrigin::Deserialized);
 			}
 		}
 

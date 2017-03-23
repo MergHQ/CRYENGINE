@@ -20,11 +20,11 @@ namespace UQS
 
 		class CHistoricQuery;
 
-		bool Serialize(Serialization::IArchive& ar, CTimeValue& timeValue, const char* name, const char* label);
-		bool Serialize(Serialization::IArchive& ar, OBB& obb, const char* name, const char* label);
+		bool Serialize(Serialization::IArchive& ar, CTimeValue& timeValue, const char* szName, const char* szLabel);
+		bool Serialize(Serialization::IArchive& ar, OBB& obb, const char* szName, const char* szLabel);
 
 		// this is a UQS-specific function, yet all Serialize() functions should reside in the same place
-		bool Serialize(Serialization::IArchive& ar, std::shared_ptr<CHistoricQuery>& ptr, const char* szName, const char* szLabel);
+		bool Serialize(Serialization::IArchive& ar, std::shared_ptr<CHistoricQuery>& pHistoricQuery, const char* szName, const char* szLabel);
 
 	}
 }

@@ -1703,13 +1703,13 @@ struct IFlowGraph : public NFlowSystemUtils::IFlowSystemTyped
 		string         name;
 		EFlowDataTypes type;
 	};
-	virtual void                           RemoveGraphTokens() = 0;
-	virtual bool                           AddGraphToken(const SGraphToken& token) = 0;
-	virtual size_t                         GetGraphTokenCount() const = 0;
-	virtual const IFlowGraph::SGraphToken* GetGraphToken(size_t index) const = 0;
-	virtual const char*                    GetGlobalNameForGraphToken(const char* tokenName) const = 0;
+	virtual size_t                         GetGraphTokenCount() const = 0; //! Get the number of graph tokens for this graph
+	virtual const IFlowGraph::SGraphToken* GetGraphToken(size_t index) const = 0; //! Get a graph token by index
+	virtual const char*                    GetGlobalNameForGraphToken(const char* tokenName) const = 0; //! Get the corresponding name for the GTS registry
+	virtual bool                           AddGraphToken(const SGraphToken& token) = 0; //! Add a token from the SGraphToken definition to this graph and to the GTS
+	virtual void                           RemoveGraphTokens() = 0; //! Delete all token definitions from the graph and the corresponding tokens from the GTS registry
 
-	virtual TFlowGraphId                   GetGraphId() const = 0;
+	virtual TFlowGraphId                   GetGraphId() const = 0; //! ID with which this graph is registered in the IFlowSystem
 };
 
 struct IFlowNodeFactory

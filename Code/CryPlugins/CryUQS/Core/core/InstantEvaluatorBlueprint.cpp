@@ -21,9 +21,9 @@ namespace UQS
 		{
 		}
 
-		void CTextualInstantEvaluatorBlueprint::SetEvaluatorName(const char* evaluatorName)
+		void CTextualInstantEvaluatorBlueprint::SetEvaluatorName(const char* szEvaluatorName)
 		{
-			m_evaluatorName = evaluatorName;
+			m_evaluatorName = szEvaluatorName;
 		}
 
 		ITextualInputBlueprint& CTextualInstantEvaluatorBlueprint::GetInputRoot()
@@ -51,9 +51,9 @@ namespace UQS
 			return m_weight;
 		}
 
-		void CTextualInstantEvaluatorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr ptr)
+		void CTextualInstantEvaluatorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_pSyntaxErrorCollector = std::move(ptr);
+			m_pSyntaxErrorCollector = std::move(pSyntaxErrorCollector);
 		}
 
 		DataSource::ISyntaxErrorCollector* CTextualInstantEvaluatorBlueprint::GetSyntaxErrorCollector() const
@@ -74,14 +74,14 @@ namespace UQS
 
 		bool CInstantEvaluatorBlueprint::Resolve(const ITextualInstantEvaluatorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking)
 		{
-			const char* evaluatorName = source.GetEvaluatorName();
+			const char* szEvaluatorName = source.GetEvaluatorName();
 
-			m_pInstantEvaluatorFactory = g_hubImpl->GetInstantEvaluatorFactoryDatabase().FindFactoryByName(evaluatorName);
+			m_pInstantEvaluatorFactory = g_pHub->GetInstantEvaluatorFactoryDatabase().FindFactoryByName(szEvaluatorName);
 			if (!m_pInstantEvaluatorFactory)
 			{
 				if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
 				{
-					pSE->AddErrorMessage("Unknown InstantEvaluatorFactory '%s'", evaluatorName);
+					pSE->AddErrorMessage("Unknown InstantEvaluatorFactory '%s'", szEvaluatorName);
 				}
 				return false;
 			}
@@ -113,42 +113,42 @@ namespace UQS
 			return m_weight;
 		}
 
-		void CInstantEvaluatorBlueprint::PrintToConsole(CLogger& logger, const char* messagePrefix) const
+		void CInstantEvaluatorBlueprint::PrintToConsole(CLogger& logger, const char* szMessagePrefix) const
 		{
-			const char* cost;
-			const char* modality;
+			const char* szCost;
+			const char* szModality;
 
 			switch (m_pInstantEvaluatorFactory->GetCostCategory())
 			{
 			case Client::IInstantEvaluatorFactory::ECostCategory::Cheap:
-				cost = "cheap";
+				szCost = "cheap";
 				break;
 
 			case Client::IInstantEvaluatorFactory::ECostCategory::Expensive:
-				cost = "expensive";
+				szCost = "expensive";
 				break;
 
 			default:
-				cost = "? (programming error)";
+				szCost = "? (programming error)";
 				break;
 			}
 
 			switch (m_pInstantEvaluatorFactory->GetEvaluationModality())
 			{
 			case Client::IInstantEvaluatorFactory::EEvaluationModality::Testing:
-				modality = "tester";
+				szModality = "tester";
 				break;
 
 			case Client::IInstantEvaluatorFactory::EEvaluationModality::Scoring:
-				modality = "scorer";
+				szModality = "scorer";
 				break;
 
 			default:
-				modality = "? (programming error)";
+				szModality = "? (programming error)";
 				break;
 			}
 
-			logger.Printf("%s%s [%s %s] (weight = %f)", messagePrefix, m_pInstantEvaluatorFactory->GetName(), cost, modality, m_weight);
+			logger.Printf("%s%s [%s %s] (weight = %f)", szMessagePrefix, m_pInstantEvaluatorFactory->GetName(), szCost, szModality, m_weight);
 		}
 
 	}

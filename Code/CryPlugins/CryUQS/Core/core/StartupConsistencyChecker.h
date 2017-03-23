@@ -29,7 +29,7 @@ namespace UQS
 			const char*             GetError(size_t index) const;
 
 		private:
-			void                    CheckInputParametersConsistency(const Client::IInputParameterRegistry& registry, const char* errorMessagePrefix);
+			void                    CheckInputParametersConsistency(const Client::IInputParameterRegistry& registry, const char* szErrorMessagePrefix);
 
 #if UQS_SCHEMATYC_SUPPORT
 			void                    CheckItemConvertersConsistency(const Client::IItemConverterCollection& itemConverters, const char* szItemFactoryNameForErrorMessages, std::set<CryGUID>& guidsInUse);

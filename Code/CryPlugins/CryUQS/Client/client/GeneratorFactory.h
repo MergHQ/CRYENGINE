@@ -38,7 +38,7 @@ namespace UQS
 				// ~IParamsHolderFactory
 
 			protected:
-				explicit                                  CGeneratorFactoryBase(const char* generatorName);
+				explicit                                  CGeneratorFactoryBase(const char* szGeneratorName);
 
 			protected:
 				CInputParameterRegistry                   m_inputParameterRegistry;
@@ -47,8 +47,8 @@ namespace UQS
 				IParamsHolderFactory*                     m_pParamsHolderFactory;      // points to *this; it's a trick to allow GetParamsHolderFactory() return a non-const reference to *this
 			};
 
-			inline CGeneratorFactoryBase::CGeneratorFactoryBase(const char* generatorName)
-				: CFactoryBase(generatorName)
+			inline CGeneratorFactoryBase::CGeneratorFactoryBase(const char* szGeneratorName)
+				: CFactoryBase(szGeneratorName)
 			{
 				m_pParamsHolderFactory = this;
 			}
@@ -80,7 +80,7 @@ namespace UQS
 		class CGeneratorFactory final : public Internal::CGeneratorFactoryBase
 		{
 		public:
-			explicit                                  CGeneratorFactory(const char* generatorName);
+			explicit                                  CGeneratorFactory(const char* szGeneratorName);
 
 			// IGeneratorFactory
 			virtual const Shared::CTypeInfo&          GetTypeOfItemsToGenerate() const override;
@@ -95,8 +95,8 @@ namespace UQS
 		};
 
 		template <class TGenerator>
-		CGeneratorFactory<TGenerator>::CGeneratorFactory(const char* generatorName)
-			: CGeneratorFactoryBase(generatorName)
+		CGeneratorFactory<TGenerator>::CGeneratorFactory(const char* szGeneratorName)
+			: CGeneratorFactoryBase(szGeneratorName)
 		{
 			typedef typename TGenerator::SParams Params;
 			Params::Expose(m_inputParameterRegistry);

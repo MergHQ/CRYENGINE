@@ -24,8 +24,8 @@ namespace UQS
 			virtual void                       RegisterQueryHistoryListener(IQueryHistoryListener* pListener) override;
 			virtual void                       UnregisterQueryHistoryListener(IQueryHistoryListener* pListener) override;
 			virtual void                       UpdateDebugRendering3D(const SDebugCameraView& view, const SEvaluatorDrawMasks& evaluatorDrawMasks) override;
-			virtual bool                       SerializeLiveQueryHistory(const char* xmlFilePath, Shared::IUqsString& error) override;
-			virtual bool                       DeserializeQueryHistory(const char* xmlFilePath, Shared::IUqsString& error) override;
+			virtual bool                       SerializeLiveQueryHistory(const char* szXmlFilePath, Shared::IUqsString& error) override;
+			virtual bool                       DeserializeQueryHistory(const char* szXmlFilePath, Shared::IUqsString& error) override;
 			virtual void                       MakeQueryHistoryCurrent(EHistoryOrigin whichHistory) override;
 			virtual EHistoryOrigin             GetCurrentQueryHistory() const override;
 			virtual void                       ClearQueryHistory(EHistoryOrigin whichHistory) override;
@@ -42,7 +42,7 @@ namespace UQS
 			virtual SDebugCameraView           GetIdealDebugCameraView(EHistoryOrigin whichHistory, const CQueryID& queryID, const SDebugCameraView& currentCameraView) const override;
 			// ~IQueryHistoryManager
 
-			HistoricQuerySharedPtr             AddNewLiveHistoricQuery(const CQueryID& queryID, const char* querierName, const CQueryID& parentQueryID);
+			HistoricQuerySharedPtr             AddNewLiveHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID);
 			void                               UnderlyingQueryJustGotCreated(const CQueryID& queryID);
 			void                               UnderlyingQueryIsGettingDestroyed(const CQueryID& queryID);
 

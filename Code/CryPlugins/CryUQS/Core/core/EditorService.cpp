@@ -10,12 +10,12 @@ namespace UQS
 	namespace Core
 	{
 
-		bool CEditorService::LoadTextualQueryBlueprint(const char* queryBlueprintName, Editor::IEditorServiceConsumer& callback, Shared::IUqsString& error) const
+		bool CEditorService::LoadTextualQueryBlueprint(const char* szQueryBlueprintName, Editor::IEditorServiceConsumer& callback, Shared::IUqsString& error) const
 		{
-			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_hubImpl->GetEditorLibraryProvider())
+			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_pHub->GetEditorLibraryProvider())
 			{
 				CTextualQueryBlueprint loadedTextualQueryBlueprint;
-				const bool loadedSuccessfully = pEditorLibraryProvider->LoadTextualQueryBlueprint(queryBlueprintName, loadedTextualQueryBlueprint, error);
+				const bool loadedSuccessfully = pEditorLibraryProvider->LoadTextualQueryBlueprint(szQueryBlueprintName, loadedTextualQueryBlueprint, error);
 				if (loadedSuccessfully)
 				{
 					callback.OnTextualQueryBlueprintLoaded(loadedTextualQueryBlueprint);
@@ -33,14 +33,14 @@ namespace UQS
 			}
 		}
 
-		bool CEditorService::SaveTextualQueryBlueprint(const char* queryBlueprintName, Editor::IEditorServiceConsumer& callback, Shared::IUqsString& error) const
+		bool CEditorService::SaveTextualQueryBlueprint(const char* szQueryBlueprintName, Editor::IEditorServiceConsumer& callback, Shared::IUqsString& error) const
 		{
-			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_hubImpl->GetEditorLibraryProvider())
+			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_pHub->GetEditorLibraryProvider())
 			{
 				CTextualQueryBlueprint textualQueryBlueprint;
 				callback.OnTextualQueryBlueprintGettingSaved(textualQueryBlueprint);
 
-				const bool savedSuccessfully = pEditorLibraryProvider->SaveTextualQueryBlueprint(queryBlueprintName, textualQueryBlueprint, error);
+				const bool savedSuccessfully = pEditorLibraryProvider->SaveTextualQueryBlueprint(szQueryBlueprintName, textualQueryBlueprint, error);
 				return savedSuccessfully;
 			}
 			else
@@ -50,12 +50,12 @@ namespace UQS
 			}
 		}
 
-		bool CEditorService::CreateNewTextualQueryBlueprint(const char* queryBlueprintName, Editor::IEditorServiceConsumer& callback, Shared::IUqsString& error) const
+		bool CEditorService::CreateNewTextualQueryBlueprint(const char* szQueryBlueprintName, Editor::IEditorServiceConsumer& callback, Shared::IUqsString& error) const
 		{
-			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_hubImpl->GetEditorLibraryProvider())
+			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_pHub->GetEditorLibraryProvider())
 			{
 				CTextualQueryBlueprint textualQueryBlueprint;
-				const bool createdSuccessfully = pEditorLibraryProvider->CreateNewTextualQueryBlueprint(queryBlueprintName, textualQueryBlueprint, error);
+				const bool createdSuccessfully = pEditorLibraryProvider->CreateNewTextualQueryBlueprint(szQueryBlueprintName, textualQueryBlueprint, error);
 				if (createdSuccessfully)
 				{
 					callback.OnTextualQueryBlueprintLoaded(textualQueryBlueprint);
@@ -73,11 +73,11 @@ namespace UQS
 			}
 		}
 
-		bool CEditorService::RemoveQueryBlueprint(const char* queryBlueprintName, Shared::IUqsString& error) const
+		bool CEditorService::RemoveQueryBlueprint(const char* szQueryBlueprintName, Shared::IUqsString& error) const
 		{
-			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_hubImpl->GetEditorLibraryProvider())
+			if (DataSource::IEditorLibraryProvider* pEditorLibraryProvider = g_pHub->GetEditorLibraryProvider())
 			{
-				return pEditorLibraryProvider->RemoveQueryBlueprint(queryBlueprintName, error);
+				return pEditorLibraryProvider->RemoveQueryBlueprint(szQueryBlueprintName, error);
 			}
 			else
 			{

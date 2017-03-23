@@ -68,24 +68,24 @@ namespace UQS
 			}
 		}
 
-		bool CVariantDict::Exists(const char* key) const
+		bool CVariantDict::Exists(const char* szKey) const
 		{
-			return (m_dataItems.find(key) != m_dataItems.cend());
+			return (m_dataItems.find(szKey) != m_dataItems.cend());
 		}
 
-		Client::IItemFactory* CVariantDict::FindItemFactory(const char* key) const
+		Client::IItemFactory* CVariantDict::FindItemFactory(const char* szKey) const
 		{
-			auto it = m_dataItems.find(key);
+			auto it = m_dataItems.find(szKey);
 			return (it == m_dataItems.cend()) ? nullptr : it->second.pItemFactory;
 		}
 
-		bool CVariantDict::FindItemFactoryAndObject(const char* key, Client::IItemFactory* &outItemItemFactory, void* &outObject) const
+		bool CVariantDict::FindItemFactoryAndObject(const char* szKey, Client::IItemFactory* &pOutItemItemFactory, void* &pOutObject) const
 		{
-			auto it = m_dataItems.find(key);
+			auto it = m_dataItems.find(szKey);
 			if (it != m_dataItems.cend())
 			{
-				outItemItemFactory = it->second.pItemFactory;
-				outObject = it->second.pObject;
+				pOutItemItemFactory = it->second.pItemFactory;
+				pOutObject = it->second.pObject;
 				return true;
 			}
 			else

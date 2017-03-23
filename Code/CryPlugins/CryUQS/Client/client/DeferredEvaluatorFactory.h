@@ -37,7 +37,7 @@ namespace UQS
 				// ~IParamsHolderFactory
 
 			protected:
-				explicit                                 CDeferredEvaluatorFactoryBase(const char* evaluatorName);
+				explicit                                 CDeferredEvaluatorFactoryBase(const char* szEvaluatorName);
 
 			protected:
 				CInputParameterRegistry                  m_inputParameterRegistry;
@@ -46,8 +46,8 @@ namespace UQS
 				IParamsHolderFactory*                    m_pParamsHolderFactory;      // points to *this; it's a trick to allow GetParamsHolderFactory() return a non-const reference to *this
 			};
 
-			inline CDeferredEvaluatorFactoryBase::CDeferredEvaluatorFactoryBase(const char* evaluatorName)
-				: CFactoryBase(evaluatorName)
+			inline CDeferredEvaluatorFactoryBase::CDeferredEvaluatorFactoryBase(const char* szEvaluatorName)
+				: CFactoryBase(szEvaluatorName)
 			{
 				m_pParamsHolderFactory = this;
 			}
@@ -79,7 +79,7 @@ namespace UQS
 		class CDeferredEvaluatorFactory final : public Internal::CDeferredEvaluatorFactoryBase
 		{
 		public:
-			explicit                                 CDeferredEvaluatorFactory(const char* evaluatorName);
+			explicit                                 CDeferredEvaluatorFactory(const char* szEvaluatorName);
 
 			// IDeferredEvaluatorFactory
 			virtual DeferredEvaluatorUniquePtr       CreateDeferredEvaluator(const void* pParams) override;
@@ -93,8 +93,8 @@ namespace UQS
 		};
 
 		template <class TDeferredEvaluator>
-		CDeferredEvaluatorFactory<TDeferredEvaluator>::CDeferredEvaluatorFactory(const char* evaluatorName)
-			: CDeferredEvaluatorFactoryBase(evaluatorName)
+		CDeferredEvaluatorFactory<TDeferredEvaluator>::CDeferredEvaluatorFactory(const char* szEvaluatorName)
+			: CDeferredEvaluatorFactoryBase(szEvaluatorName)
 		{
 			typedef typename TDeferredEvaluator::SParams Params;
 			Params::Expose(m_inputParameterRegistry);

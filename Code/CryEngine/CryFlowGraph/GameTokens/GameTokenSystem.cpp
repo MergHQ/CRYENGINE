@@ -165,7 +165,7 @@ IGameToken* CGameTokenSystem::SetOrCreateToken(const char* sTokenName, const TFl
 	if (*sTokenName == 0) // empty string
 	{
 		GameWarning(_HELP("Creating game token with empty name"));
-		return 0;
+		return nullptr;
 	}
 
 #ifdef DEBUG_GAME_TOKENS

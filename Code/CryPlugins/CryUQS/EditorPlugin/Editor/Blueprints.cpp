@@ -908,10 +908,10 @@ void CInputBlueprint::SetChildrenFromFactoryInputRegistry(const TFactory& factor
 	for (size_t i = 0; i < paramCount; ++i)
 	{
 		const UQS::Client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
-		const CInputBlueprint* pParam = FindChildByParamName(paramInfo.name);
+		const CInputBlueprint* pParam = FindChildByParamName(paramInfo.szName);
 		if (!pParam)
 		{
-			m_children.emplace_back(paramInfo.name);
+			m_children.emplace_back(paramInfo.szName);
 			m_children.back().SetAdditionalParamInfo(paramInfo, context);
 		}
 	}
@@ -971,7 +971,7 @@ void CInputBlueprint::DeriveChildrenInfoFromFactoryInputRegistry(const TFactory&
 	for (size_t i = 0; i < paramCount; ++i)
 	{
 		const UQS::Client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
-		nameToParameterInfoIdx[string(paramInfo.name)] = i;
+		nameToParameterInfoIdx[string(paramInfo.szName)] = i;
 	}
 
 	for (CInputBlueprint& child : m_children)
@@ -2293,9 +2293,9 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 		for (size_t i = 0, n = sourceGlobalConstParams.GetParameterCount(); i < n; ++i)
 		{
 			const UQS::Core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = sourceGlobalConstParams.GetParameter(i);
-			CItemLiteral value(pi.type, context);
-			value.SetFromStringLiteral(CONST_TEMP_STRING(pi.value));
-			m_constParams.AddParameter(pi.name, pi.type, std::move(value), pi.bAddToDebugRenderWorld);
+			CItemLiteral value(pi.szType, context);
+			value.SetFromStringLiteral(CONST_TEMP_STRING(pi.szValue));
+			m_constParams.AddParameter(pi.szName, pi.szType, std::move(value), pi.bAddToDebugRenderWorld);
 		}
 	}
 
@@ -2306,7 +2306,7 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 		for (size_t i = 0, n = sourceGlobalRuntimeParams.GetParameterCount(); i < n; ++i)
 		{
 			const UQS::Core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = sourceGlobalRuntimeParams.GetParameter(i);
-			m_runtimeParams.AddParameter(pi.name, pi.type, pi.bAddToDebugRenderWorld);
+			m_runtimeParams.AddParameter(pi.szName, pi.szType, pi.bAddToDebugRenderWorld);
 		}
 	}
 

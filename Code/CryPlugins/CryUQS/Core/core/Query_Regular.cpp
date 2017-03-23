@@ -134,9 +134,9 @@ namespace UQS
 		bool CQuery_Regular::OnInstantiateFromQueryBlueprint(const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
 			// ensure that a generator exists in the query-blueprint (CQuery_Regular::Phase1_PrepareGenerationPhase() uses it)
-			if (!m_queryBlueprint->GetGeneratorBlueprint())
+			if (!m_pQueryBlueprint->GetGeneratorBlueprint())
 			{
-				error.Format("CQuery_Regular::OnInstantiateFromQueryBlueprint: the query-blueprint '%s' has no generator specified", m_queryBlueprint->GetName());
+				error.Format("CQuery_Regular::OnInstantiateFromQueryBlueprint: the query-blueprint '%s' has no generator specified", m_pQueryBlueprint->GetName());
 				return false;
 			}
 
@@ -223,7 +223,7 @@ namespace UQS
 
 			// Instant-Evaluator runs
 			{
-				const size_t numInstantEvaluatorBPs = m_queryBlueprint->GetInstantEvaluatorBlueprints().size();
+				const size_t numInstantEvaluatorBPs = m_pQueryBlueprint->GetInstantEvaluatorBlueprints().size();
 
 				out.instantEvaluatorsRuns.resize(numInstantEvaluatorBPs);
 
@@ -244,7 +244,7 @@ namespace UQS
 
 			// Deferred-Evaluator runs
 			{
-				const size_t numDeferredEvaluatorBPs = m_queryBlueprint->GetDeferredEvaluatorBlueprints().size();
+				const size_t numDeferredEvaluatorBPs = m_pQueryBlueprint->GetDeferredEvaluatorBlueprints().size();
 
 				out.deferredEvaluatorsFullRuns.resize(numDeferredEvaluatorBPs);
 				out.deferredEvaluatorsAbortedRuns.resize(numDeferredEvaluatorBPs);
@@ -278,7 +278,7 @@ namespace UQS
 			// instantiate the generator
 			//
 
-			const CGeneratorBlueprint* pGenBP = m_queryBlueprint->GetGeneratorBlueprint();
+			const CGeneratorBlueprint* pGenBP = m_pQueryBlueprint->GetGeneratorBlueprint();
 			assert(pGenBP);   // should have been detected by OnInstantiateFromQueryBlueprint() already
 			m_pGenerator = pGenBP->InstantiateGenerator(m_blackboard, phaseUpdateContext.error);
 			if (!m_pGenerator)
@@ -312,7 +312,7 @@ namespace UQS
 			case Client::IGenerator::EUpdateStatus::FinishedGeneratingItems:
 				if (m_pHistory)
 				{
-					m_pHistory->OnGenerationPhaseFinished(m_generatedItems.GetItemCount(), *m_queryBlueprint);
+					m_pHistory->OnGenerationPhaseFinished(m_generatedItems.GetItemCount(), *m_pQueryBlueprint);
 				}
 				m_currentPhaseFn = &CQuery_Regular::Phase3_CreateDebugRepresentationsOfGeneratedItemsIfHistoryLoggingIsDesired;
 				return EPhaseStatus::Ok;
@@ -364,7 +364,7 @@ namespace UQS
 
 			// instant-evaluator blueprints
 			{
-				const std::vector<CInstantEvaluatorBlueprint*>& instantEvaluatorBlueprints = m_queryBlueprint->GetInstantEvaluatorBlueprints();
+				const std::vector<CInstantEvaluatorBlueprint*>& instantEvaluatorBlueprints = m_pQueryBlueprint->GetInstantEvaluatorBlueprints();
 				const size_t numInstantEvaluators = instantEvaluatorBlueprints.size();
 				m_functionCallHierarchyPerInstantEvalBP.reserve(numInstantEvaluators);
 
@@ -381,7 +381,7 @@ namespace UQS
 
 			// deferred-evaluator blueprints
 			{
-				const std::vector<CDeferredEvaluatorBlueprint*>& deferredEvaluatorBlueprints = m_queryBlueprint->GetDeferredEvaluatorBlueprints();
+				const std::vector<CDeferredEvaluatorBlueprint*>& deferredEvaluatorBlueprints = m_pQueryBlueprint->GetDeferredEvaluatorBlueprints();
 				const size_t numDeferredEvaluators = deferredEvaluatorBlueprints.size();
 				m_functionCallHierarchyPerDeferredEvalBP.reserve(numDeferredEvaluators);
 
@@ -402,7 +402,7 @@ namespace UQS
 			//
 
 			{
-				const std::vector<CInstantEvaluatorBlueprint*>& instantEvaluatorBlueprints = m_queryBlueprint->GetInstantEvaluatorBlueprints();
+				const std::vector<CInstantEvaluatorBlueprint*>& instantEvaluatorBlueprints = m_pQueryBlueprint->GetInstantEvaluatorBlueprints();
 				const size_t numInstantEvaluators = instantEvaluatorBlueprints.size();
 
 				for (size_t i = 0; i < numInstantEvaluators; ++i)
@@ -449,7 +449,7 @@ namespace UQS
 			// - notice: we might end up with less candidates than the desired limit after the query finishes
 			//
 
-			const int maxItemsToKeepInResultSet = m_queryBlueprint->GetMaxItemsToKeepInResultSet();
+			const int maxItemsToKeepInResultSet = m_pQueryBlueprint->GetMaxItemsToKeepInResultSet();
 			m_maxCandidates = (maxItemsToKeepInResultSet < 1) ? numGeneratedItems : std::min((size_t)maxItemsToKeepInResultSet, numGeneratedItems);
 			m_candidates.reserve(m_maxCandidates);
 
@@ -532,7 +532,7 @@ namespace UQS
 					else
 					{
 						// update the item's score so far
-						const float weight = m_queryBlueprint->GetInstantEvaluatorBlueprints()[instantEvaluatorIndex]->GetWeight();	// FIXME: could cache the weights of all evaluators and spare the pointer access
+						const float weight = m_pQueryBlueprint->GetInstantEvaluatorBlueprints()[instantEvaluatorIndex]->GetWeight();	// FIXME: could cache the weights of all evaluators and spare the pointer access
 						const float weightedScore = evaluationResult.score * weight;
 						workingDataToWriteResultTo.accumulatedAndWeightedScoreSoFar += weightedScore;
 
@@ -627,9 +627,9 @@ namespace UQS
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase6_SortByScoreSoFar(const SPhaseUpdateContext& phaseUpdateContext)
 		{
 			// sort the remaining items such that the ones with higher scores come first
-			auto sorter = [](const SItemWorkingData* lhs, const SItemWorkingData* rhs)
+			auto sorter = [](const SItemWorkingData* pLHS, const SItemWorkingData* pRHS)
 			{
-				return lhs->accumulatedAndWeightedScoreSoFar > rhs->accumulatedAndWeightedScoreSoFar;
+				return pLHS->accumulatedAndWeightedScoreSoFar > pRHS->accumulatedAndWeightedScoreSoFar;
 			};
 			std::sort(m_remainingItemWorkingDatasToInspect.begin(), m_remainingItemWorkingDatasToInspect.end(), sorter);
 
@@ -745,7 +745,7 @@ namespace UQS
 						}
 						else
 						{
-							const float weight = m_queryBlueprint->GetDeferredEvaluatorBlueprints()[de.originalIndexInQueryBlueprint]->GetWeight();	// FIXME: could cache the weights of all evaluators and spare the pointer access
+							const float weight = m_pQueryBlueprint->GetDeferredEvaluatorBlueprints()[de.originalIndexInQueryBlueprint]->GetWeight();	// FIXME: could cache the weights of all evaluators and spare the pointer access
 							const float weightedScore = evaluationResult.score * weight;
 							taskToUpdate.pWorkingData->accumulatedAndWeightedScoreSoFar += weightedScore;
 
@@ -796,7 +796,7 @@ namespace UQS
 			}
 		}
 
-		void CQuery_Regular::AbortDeferredTask(SDeferredTask& taskToAbort, const char* reasonForAbort)
+		void CQuery_Regular::AbortDeferredTask(SDeferredTask& taskToAbort, const char* szReasonForAbort)
 		{
 			// abort all remaining deferred-evaluators and mark them as "aborted"
 			while (!taskToAbort.deferredEvaluators.empty())
@@ -818,7 +818,7 @@ namespace UQS
 
 				if (m_pHistory)
 				{
-					m_pHistory->OnDeferredEvaluatorGotAborted(originalIndexInQueryBlueprint, taskToAbort.pWorkingData->indexInGeneratedItems, reasonForAbort);
+					m_pHistory->OnDeferredEvaluatorGotAborted(originalIndexInQueryBlueprint, taskToAbort.pWorkingData->indexInGeneratedItems, szReasonForAbort);
 				}
 			}
 		}
@@ -841,7 +841,7 @@ namespace UQS
 
 			// accumulate best possible score from expensive instant-evaluators that haven't run yet
 			{
-				const std::vector<CInstantEvaluatorBlueprint*>& instantEvaluatorBlueprints = m_queryBlueprint->GetInstantEvaluatorBlueprints();
+				const std::vector<CInstantEvaluatorBlueprint*>& instantEvaluatorBlueprints = m_pQueryBlueprint->GetInstantEvaluatorBlueprints();
 
 				for(const SInstantEvaluatorWithIndex& ie : m_expensiveInstantEvaluators)
 				{
@@ -856,7 +856,7 @@ namespace UQS
 
 			// accumulate best possible score from deferred-evaluators
 			{
-				const std::vector<CDeferredEvaluatorBlueprint*>& deferredEvaluatorBlueprints = m_queryBlueprint->GetDeferredEvaluatorBlueprints();
+				const std::vector<CDeferredEvaluatorBlueprint*>& deferredEvaluatorBlueprints = m_pQueryBlueprint->GetDeferredEvaluatorBlueprints();
 				const size_t numDeferredEvaluatorBlueprints = deferredEvaluatorBlueprints.size();
 
 				// figure out the best possible score that given item can still achieve
@@ -972,7 +972,7 @@ namespace UQS
 			//
 
 			// all deferred-evaluators must have had their say on the item
-			assert(itemToFinalize.bitsFinishedDeferredEvaluators == ((evaluatorsBitfield_t)1 << m_queryBlueprint->GetDeferredEvaluatorBlueprints().size()) - 1);
+			assert(itemToFinalize.bitsFinishedDeferredEvaluators == ((evaluatorsBitfield_t)1 << m_pQueryBlueprint->GetDeferredEvaluatorBlueprints().size()) - 1);
 
 			AddItemToResultSetOrDisqualifyIt(itemToFinalize);
 		}
@@ -1071,7 +1071,7 @@ namespace UQS
 					// - if it doesn't then there's no need to set up a costly deferred task that will ultimately be a NOP
 					//
 
-					const size_t numDeferredEvaluatorBlueprints = m_queryBlueprint->GetDeferredEvaluatorBlueprints().size();
+					const size_t numDeferredEvaluatorBlueprints = m_pQueryBlueprint->GetDeferredEvaluatorBlueprints().size();
 
 					if (numDeferredEvaluatorBlueprints > 0)
 					{
@@ -1127,7 +1127,7 @@ namespace UQS
 
 		CQuery_Regular::SDeferredTask* CQuery_Regular::StartDeferredTask(SItemWorkingData* pWorkingDataToInspectNext)
 		{
-			const std::vector<CDeferredEvaluatorBlueprint*>& deferredEvaluatorBlueprints = m_queryBlueprint->GetDeferredEvaluatorBlueprints();
+			const std::vector<CDeferredEvaluatorBlueprint*>& deferredEvaluatorBlueprints = m_pQueryBlueprint->GetDeferredEvaluatorBlueprints();
 			const size_t numDeferredEvaluatorBlueprints = deferredEvaluatorBlueprints.size();
 
 			// create a new task (we'll fill it with deferred-evaluators below)

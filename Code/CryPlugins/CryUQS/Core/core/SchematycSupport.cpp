@@ -699,7 +699,7 @@ namespace UQS
 						//
 
 						{
-							IItemFactoryDatabase& itemFactoryDB = g_hubImpl->GetItemFactoryDatabase();
+							IItemFactoryDatabase& itemFactoryDB = g_pHub->GetItemFactoryDatabase();
 
 							for (size_t i = 0, n = itemFactoryDB.GetFactoryCount(); i < n; ++i)
 							{
@@ -859,7 +859,7 @@ namespace UQS
 				break;
 
 			case SQueryResult::ExceptionOccurred:
-				m_failedQueries[queryResult.queryID] = queryResult.error;
+				m_failedQueries[queryResult.queryID] = queryResult.szError;
 				break;
 
 			case SQueryResult::CanceledByHubTearDown:

@@ -41,9 +41,9 @@ namespace UQS
 				assert(pFunctionFactory);
 				const CLeafFunctionReturnValue& returnValueInCaseOfLeafFunction = input.GetLeafFunctionReturnValue();
 				bool bAddReturnValueToDebugRenderWorldUponExecution = input.GetAddReturnValueToDebugRenderWorldUponExecution();
-				CFunctionBlueprint* bp = new CFunctionBlueprint(*pFunctionFactory, returnValueInCaseOfLeafFunction, bAddReturnValueToDebugRenderWorldUponExecution);
-				m_resolvedInputs.push_back(bp);
-				bp->ResolveInputs(input);
+				CFunctionBlueprint* pFunctionBlueprint = new CFunctionBlueprint(*pFunctionFactory, returnValueInCaseOfLeafFunction, bAddReturnValueToDebugRenderWorldUponExecution);
+				m_resolvedInputs.push_back(pFunctionBlueprint);
+				pFunctionBlueprint->ResolveInputs(input);
 			}
 		}
 

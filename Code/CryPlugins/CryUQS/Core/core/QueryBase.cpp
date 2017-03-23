@@ -18,11 +18,11 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryBase::SCtorContext::SCtorContext(const CQueryID& _queryID, const char* _querierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, std::unique_ptr<CItemList>& _optionalResultingItemsFromPreviousChainedQuery)
+		CQueryBase::SCtorContext::SCtorContext(const CQueryID& _queryID, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, std::unique_ptr<CItemList>& _pOptionalResultingItemsFromPreviousChainedQuery)
 			: queryID(_queryID)
-			, querierName(_querierName)
+			, szQuerierName(_szQuerierName)
 			, pOptionalHistoryToWriteTo(_pOptionalHistoryToWriteTo)
-			, optionalResultingItemsFromPreviousChainedQuery(_optionalResultingItemsFromPreviousChainedQuery)
+			, optionalResultingItemsFromPreviousChainedQuery(_pOptionalResultingItemsFromPreviousChainedQuery)
 		{}
 
 		//===================================================================================
@@ -103,7 +103,7 @@ namespace UQS
 		const CDebugRenderWorldImmediate CQueryBase::s_debugRenderWorldImmediate;
 
 		CQueryBase::CQueryBase(const SCtorContext& ctorContext, bool bRequiresSomeTimeBudgetForExecution)
-			: m_querierName(ctorContext.querierName)
+			: m_querierName(ctorContext.szQuerierName)
 			, m_pHistory(ctorContext.pOptionalHistoryToWriteTo)
 			, m_queryID(ctorContext.queryID)
 			, m_totalElapsedFrames(0)
@@ -130,15 +130,15 @@ namespace UQS
 			return m_bRequiresSomeTimeBudgetForExecution;
 		}
 
-		bool CQueryBase::InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& queryBlueprint, const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
+		bool CQueryBase::InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint, const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
-			assert(!m_queryBlueprint);	// we don't support recycling the query
+			assert(!m_pQueryBlueprint);	// we don't support recycling the query
 
-			m_queryBlueprint = queryBlueprint;
+			m_pQueryBlueprint = pQueryBlueprint;
 
 			if (m_pHistory)
 			{
-				m_pHistory->OnQueryBlueprintInstantiationStarted(queryBlueprint->GetName());
+				m_pHistory->OnQueryBlueprintInstantiationStarted(pQueryBlueprint->GetName());
 			}
 
 			//
@@ -146,7 +146,7 @@ namespace UQS
 			//
 
 			{
-				const size_t numInstantEvaluators = m_queryBlueprint->GetInstantEvaluatorBlueprints().size();
+				const size_t numInstantEvaluators = m_pQueryBlueprint->GetInstantEvaluatorBlueprints().size();
 				if (numInstantEvaluators > UQS_MAX_EVALUATORS)
 				{
 					error.Format("Exceeded the maximum number of instant-evaluators in the query blueprint (max %i supported, %i present in the blueprint)", UQS_MAX_EVALUATORS, (int)numInstantEvaluators);
@@ -155,7 +155,7 @@ namespace UQS
 			}
 
 			{
-				const size_t numDeferredEvaluators = m_queryBlueprint->GetDeferredEvaluatorBlueprints().size();
+				const size_t numDeferredEvaluators = m_pQueryBlueprint->GetDeferredEvaluatorBlueprints().size();
 				if (numDeferredEvaluators > UQS_MAX_EVALUATORS)
 				{
 					error.Format("Exceeded the maximum number of deferred-evaluators in the query blueprint (max %i supported, %i present in the blueprint)", UQS_MAX_EVALUATORS, (int)numDeferredEvaluators);
@@ -168,9 +168,9 @@ namespace UQS
 			// - note: we need to do this only for top-level queries (child queries will get recursively checked when their parent is about to start)
 			//
 
-			if (!m_queryBlueprint->GetParent())
+			if (!m_pQueryBlueprint->GetParent())
 			{
-				if (!m_queryBlueprint->CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(runtimeParams, error))
+				if (!m_pQueryBlueprint->CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(runtimeParams, error))
 				{
 					return false;
 				}
@@ -180,7 +180,7 @@ namespace UQS
 			// merge constant-params and runtime-params into global params
 			//
 
-			const CGlobalConstantParamsBlueprint& constantParamsBlueprint = m_queryBlueprint->GetGlobalConstantParamsBlueprint();
+			const CGlobalConstantParamsBlueprint& constantParamsBlueprint = m_pQueryBlueprint->GetGlobalConstantParamsBlueprint();
 			constantParamsBlueprint.AddSelfToDictAndReplace(m_globalParams); // TODO: don't duplicate the already present constant parameters, but then again, we need to both, constant- and runtime-params, to reside in the m_globalParams container
 			runtimeParams.AddSelfToOtherAndReplace(m_globalParams);
 
@@ -313,8 +313,8 @@ namespace UQS
 		{
 			out.querierName = m_querierName;
 
-			if (m_queryBlueprint)
-				out.queryBlueprintName = m_queryBlueprint->GetName();
+			if (m_pQueryBlueprint)
+				out.queryBlueprintName = m_pQueryBlueprint->GetName();
 
 			out.totalElapsedFrames = m_totalElapsedFrames;
 			out.totalConsumedTime = m_totalConsumedTime;
@@ -344,7 +344,7 @@ namespace UQS
 				//
 
 				{
-					const std::map<string, CGlobalConstantParamsBlueprint::SParamInfo>& constantParamsBlueprint = m_queryBlueprint->GetGlobalConstantParamsBlueprint().GetParams();
+					const std::map<string, CGlobalConstantParamsBlueprint::SParamInfo>& constantParamsBlueprint = m_pQueryBlueprint->GetGlobalConstantParamsBlueprint().GetParams();
 
 					for (const auto& pair : constantParamsBlueprint)
 					{
@@ -365,7 +365,7 @@ namespace UQS
 				//
 
 				{
-					const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& runtimeParamsBlueprint = m_queryBlueprint->GetGlobalRuntimeParamsBlueprint().GetParams();
+					const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& runtimeParamsBlueprint = m_pQueryBlueprint->GetGlobalRuntimeParamsBlueprint().GetParams();
 
 					for (const auto& pair : runtimeParamsBlueprint)
 					{

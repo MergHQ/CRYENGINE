@@ -18,7 +18,7 @@ namespace UQS
 		class CQueryBlueprintSaver_XML : public DataSource::IQueryBlueprintSaver
 		{
 		public:
-			explicit                                    CQueryBlueprintSaver_XML(const char* xmlFileNameToSaveTo);
+			explicit                                    CQueryBlueprintSaver_XML(const char* szXmlFileNameToSaveTo);
 			virtual bool                                SaveTextualQueryBlueprint(const Core::ITextualQueryBlueprint& queryBlueprintToSave, Shared::IUqsString& error) override;
 
 		private:
@@ -33,7 +33,7 @@ namespace UQS
 		private:
 			string                                      m_xmlFileNameToSaveTo;
 			XmlNodeRef                                  m_queryElementToSaveTo;
-			const Core::ITextualQueryBlueprint*         m_query;	// points to what was passed in to SaveTextualQueryBlueprint() throughout the saving process
+			const Core::ITextualQueryBlueprint*         m_pQuery;	// points to what was passed in to SaveTextualQueryBlueprint() throughout the saving process
 		};
 
 	}

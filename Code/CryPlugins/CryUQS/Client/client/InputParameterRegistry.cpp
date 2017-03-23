@@ -12,20 +12,20 @@ namespace UQS
 		namespace Internal
 		{
 
-			CInputParameterRegistry::SStoredParameterInfo::SStoredParameterInfo(const char* _name, const Shared::CTypeInfo& _type, size_t _offset)
-				: name(_name)
+			CInputParameterRegistry::SStoredParameterInfo::SStoredParameterInfo(const char* _szName, const Shared::CTypeInfo& _type, size_t _offset)
+				: name(_szName)
 				, type(_type)
 				, offset(_offset)
 			{
 				// nothing
 			}
 
-			void CInputParameterRegistry::RegisterParameterType(const char* paramName, const Shared::CTypeInfo& typeInfo, size_t offset)
+			void CInputParameterRegistry::RegisterParameterType(const char* szParamName, const Shared::CTypeInfo& typeInfo, size_t offset)
 			{
 				// prevent duplicates
-				assert(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [paramName](const SStoredParameterInfo& p) { return p.name == paramName; }) == m_parametersInOrder.cend());
+				assert(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [szParamName](const SStoredParameterInfo& p) { return p.name == szParamName; }) == m_parametersInOrder.cend());
 
-				SStoredParameterInfo pi(paramName, typeInfo, offset);
+				SStoredParameterInfo pi(szParamName, typeInfo, offset);
 				m_parametersInOrder.push_back(pi);
 			}
 

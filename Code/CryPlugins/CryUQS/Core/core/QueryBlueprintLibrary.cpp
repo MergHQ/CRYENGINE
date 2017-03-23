@@ -24,8 +24,8 @@ namespace UQS
 				return ELoadAndStoreResult::ExceptionOccurred;
 			}
 
-			const char* queryBPName = textualQueryBP.GetName();
-			const CQueryBlueprintID blueprintID = FindQueryBlueprintIDByName(queryBPName);
+			const char* szQueryBPName = textualQueryBP.GetName();
+			const CQueryBlueprintID blueprintID = FindQueryBlueprintIDByName(szQueryBPName);
 			const bool bQueryBPExistsAlready = blueprintID.IsOrHasBeenValid() && (m_queryBlueprintsVector[blueprintID.m_index] != nullptr);
 
 			if (bQueryBPExistsAlready && overwriteBehavior == ELoadAndStoreOverwriteBehavior::KeepExisting)
@@ -36,11 +36,11 @@ namespace UQS
 			std::shared_ptr<CQueryBlueprint> pNewBP(new CQueryBlueprint);
 			if (!pNewBP->Resolve(textualQueryBP))
 			{
-				error.Format("Could not resolve the textual query-blueprint '%s'", queryBPName);
+				error.Format("Could not resolve the textual query-blueprint '%s'", szQueryBPName);
 				return ELoadAndStoreResult::ExceptionOccurred;
 			}
 
-			assert(strcmp(queryBPName, pNewBP->GetName()) == 0);
+			assert(strcmp(szQueryBPName, pNewBP->GetName()) == 0);
 
 			if (blueprintID.IsOrHasBeenValid())
 			{
@@ -50,9 +50,9 @@ namespace UQS
 			else
 			{
 				// this is a completely new blueprint that has never been in the library so far
-				const CQueryBlueprintID newBlueprintID((int32)m_queryBlueprintsVector.size(), queryBPName);
+				const CQueryBlueprintID newBlueprintID((int32)m_queryBlueprintsVector.size(), szQueryBPName);
 				m_queryBlueprintsVector.push_back(pNewBP);
-				m_queryBlueprintsMap[queryBPName] = newBlueprintID;
+				m_queryBlueprintsMap[szQueryBPName] = newBlueprintID;
 			}
 
 			return bQueryBPExistsAlready ? ELoadAndStoreResult::OverwrittenExistingOne : ELoadAndStoreResult::StoredFromScratch;

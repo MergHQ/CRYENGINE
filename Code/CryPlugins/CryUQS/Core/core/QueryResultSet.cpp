@@ -41,9 +41,9 @@ namespace UQS
 			assert(m_items.GetItemCount() == m_scores.size());
 			assert(index < m_items.GetItemCount());
 
-			void* item = m_items.GetItemAtIndex(index);
+			void* pItem = m_items.GetItemAtIndex(index);
 			float score = m_scores[index];
-			return SResultSetEntry(item, score);
+			return SResultSetEntry(pItem, score);
 		}
 
 		void CQueryResultSet::SetItemFactoryAndCreateItems(Client::IItemFactory& itemFactory, size_t numItemsToCreate)

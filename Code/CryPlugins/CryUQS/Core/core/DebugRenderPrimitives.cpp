@@ -388,10 +388,10 @@ namespace UQS
 			, m_color(Col_Black)
 		{}
 
-		CDebugRenderPrimitive_Text::CDebugRenderPrimitive_Text(const Vec3& pos, float size, const char* text, const ColorF& color)
+		CDebugRenderPrimitive_Text::CDebugRenderPrimitive_Text(const Vec3& pos, float size, const char* szText, const ColorF& color)
 			: m_pos(pos)
 			, m_size(size)
-			, m_text(text)
+			, m_text(szText)
 			, m_color(color)
 		{}
 
@@ -414,7 +414,7 @@ namespace UQS
 			ar(m_color, "m_color");
 		}
 
-		void CDebugRenderPrimitive_Text::Draw(const Vec3& pos, float size, const char* text, const ColorF& color, bool bHighlight)
+		void CDebugRenderPrimitive_Text::Draw(const Vec3& pos, float size, const char* szText, const ColorF& color, bool bHighlight)
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
 
@@ -432,7 +432,7 @@ namespace UQS
 				ti.color[1] = color.g;
 				ti.color[2] = color.b;
 				ti.color[3] = color.a;
-				pAux->RenderTextQueued(pos, ti, text);
+				pAux->RenderTextQueued(pos, ti, szText);
 			}
 		}
 

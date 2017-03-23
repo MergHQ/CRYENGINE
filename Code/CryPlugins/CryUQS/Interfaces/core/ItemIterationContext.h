@@ -20,7 +20,7 @@ namespace UQS
 
 		struct SItemIterationContext
 		{
-			explicit                 SItemIterationContext(const IItemList& _items);
+			explicit                 SItemIterationContext(const IItemList& _generatedItems);
 			const IItemList&         generatedItems;        // the list of items a generator has produced and that we will iterate on in the evaluation phase
 		};
 

@@ -19,8 +19,8 @@ namespace UQS
 		struct IFactoryDatabase
 		{
 			virtual               ~IFactoryDatabase() {}
-			virtual void          RegisterFactory(TFactory* pFactoryToRegister, const char* name) = 0;
-			virtual TFactory*     FindFactoryByName(const char* name) const = 0;
+			virtual void          RegisterFactory(TFactory* pFactoryToRegister, const char* szName) = 0;
+			virtual TFactory*     FindFactoryByName(const char* szName) const = 0;
 			virtual size_t        GetFactoryCount() const = 0;
 			virtual TFactory&     GetFactory(size_t index) const = 0;
 		};

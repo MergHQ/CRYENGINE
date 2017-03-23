@@ -198,7 +198,7 @@ namespace UQS
 				break;
 
 			case Core::SQueryResult::EStatus::ExceptionOccurred:
-				m_exceptionMessageIfAny = result.error;
+				m_exceptionMessageIfAny = result.szError;
 				m_runningStatus = ERunningStatus::ExceptionOccurred;
 				break;
 

@@ -62,14 +62,14 @@ namespace UQS
 					else
 					{
 						validationContext.error.Format("%s: item type mismatch: this function expects items of type '%s', but the underlying item list contains items of type '%s'",
-							validationContext.nameOfFunctionBeingValidated, Shared::SDataTypeHelper<TItem>::GetTypeInfo().name(), m_pGeneratedItems->GetItemFactory().GetItemType().name());
+							validationContext.szNameOfFunctionBeingValidated, Shared::SDataTypeHelper<TItem>::GetTypeInfo().name(), m_pGeneratedItems->GetItemFactory().GetItemType().name());
 						return false;
 					}
 				}
 				else
 				{
 					validationContext.error.Format("%s: we're currently not iterating on items (we're most likely still in the Generator phase and this function should only be used in the Evaluator phase)",
-						validationContext.nameOfFunctionBeingValidated);
+						validationContext.szNameOfFunctionBeingValidated);
 					return false;
 				}
 			}

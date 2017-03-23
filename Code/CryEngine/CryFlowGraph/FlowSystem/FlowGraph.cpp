@@ -309,7 +309,10 @@ void CFlowGraphBase::UnregisterFromFlowSystem()
 {
 	assert(m_bRegistered);
 	if (m_pSys && m_bRegistered)
+	{
+		UnregisterGraphTokens();
 		m_pSys->UnregisterGraph(this);
+	}
 
 	m_graphId = InvalidFlowGraphId;
 	m_bRegistered = false;
@@ -335,7 +338,7 @@ void CFlowGraphBase::Cleanup()
 
 CFlowGraphBase::~CFlowGraphBase()
 {
-	//	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	LOADING_TIME_PROFILE_SECTION
 
 	RemoveGraphTokens();
 
@@ -549,12 +552,16 @@ void CFlowGraphBase::CloneInner(CFlowGraphBase* pClone)
 #endif
 
 	// clone graph tokens
-	for (size_t i = 0; i < GetGraphTokenCount(); ++i)
+	const size_t numTokens = GetGraphTokenCount();
+	pClone->m_graphTokens.reserve(numTokens);
+	for (size_t i = 0; i < numTokens; ++i)
 	{
 		const IFlowGraph::SGraphToken* pToken = GetGraphToken(i);
+		// the clone will copy SGraphToken and register a separate CGameToken in the GTS
 		pClone->AddGraphToken(*pToken);
 	}
 
+	// clone the individual nodes
 	IFlowNode::SActivationInfo info;
 	info.pGraph = pClone;
 	for (std::vector<CFlowData>::iterator iter = pClone->m_flowData.begin(); iter != pClone->m_flowData.end(); ++iter)
@@ -1017,8 +1024,7 @@ void CFlowGraphBase::InitializeValues()
 	// reset graph tokens
 	for (TGraphTokens::const_iterator it = m_graphTokens.begin(), end = m_graphTokens.end(); it != end; ++it)
 	{
-		SGraphToken token = *it;
-		ResetGraphToken(token);
+		ResetGraphToken(*it);
 	}
 
 	// Initially suspended flow graphs should never be initialized nor updated!
@@ -1162,50 +1168,9 @@ void CFlowGraphBase::PrecacheResources()
 	}
 }
 
+
 //////////////////////////////////////////////////////////////////////////
-
-const char* CFlowGraphBase::GetGlobalNameForGraphToken(const char* tokenName) const
-{
-	// graph tokens are registered in the game token system using the format:
-	//	'GraphToken.Graph<id>.<tokenName>'
-	static stack_string globalName;
-	globalName.Format("GraphToken.Graph%u.%s", m_graphId, tokenName);
-	return globalName.c_str();
-}
-
-void CFlowGraphBase::RemoveGraphTokens()
-{
-	for (TGraphTokens::iterator it = m_graphTokens.begin(), end = m_graphTokens.end(); it != end; ++it)
-	{
-		const char* globalName = GetGlobalNameForGraphToken(it->name.c_str());
-
-		IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
-		if (pGTS)
-		{
-			IGameToken* pToken = pGTS->FindToken(globalName);
-			assert(pToken && ((pToken->GetFlags() & EGAME_TOKEN_GRAPHVARIABLE) != 0));
-			if (pToken)
-			{
-				pGTS->DeleteToken(pToken);
-			}
-			else
-			{
-				GameWarning("Attempted to remove nonexistent GraphToken: %s", globalName);
-			}
-		}
-	}
-
-	stl::free_container(m_graphTokens);
-}
-
-bool CFlowGraphBase::AddGraphToken(const IFlowGraph::SGraphToken& token)
-{
-	m_graphTokens.push_back(token);
-
-	ResetGraphToken(token);
-
-	return true;
-}
+// Graph Tokens
 
 size_t CFlowGraphBase::GetGraphTokenCount() const
 {
@@ -1222,19 +1187,80 @@ const IFlowGraph::SGraphToken* CFlowGraphBase::GetGraphToken(size_t index) const
 	return nullptr;
 }
 
-void CFlowGraphBase::ResetGraphToken(const IFlowGraph::SGraphToken& token)
+const char* CFlowGraphBase::GetGlobalNameForGraphToken(const char* tokenName) const
 {
-	const char* globalName = GetGlobalNameForGraphToken(token.name);
+	assert(m_graphId != InvalidFlowGraphId);  // a graph may have an invalid id if it is not registered in the flowSystem.
+	// An unregistered graph should not be registering game tokens. Using this ID as unique identifier will surely lead to problems later.
+
+	// graph tokens are registered in the game token system using the format:
+	//	'GraphToken.Graph<id>.<tokenName>'
+	static stack_string globalName;
+	globalName.Format("GraphToken.Graph%u.%s", m_graphId, tokenName);
+	return globalName.c_str();
+}
+
+void CFlowGraphBase::UnregisterGraphTokens()
+{
+	LOADING_TIME_PROFILE_SECTION
 
 	IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
-	if (pGTS)
+	IF_UNLIKELY(!pGTS) return;
+
+	for (TGraphTokens::iterator it = m_graphTokens.begin(), end = m_graphTokens.end(); it != end; ++it)
 	{
-		TFlowInputData temp = TFlowInputData::CreateDefaultInitializedForTag((int)token.type, true);
-		IGameToken* pToken = pGTS->SetOrCreateToken(globalName, temp);
+		const char* globalName = GetGlobalNameForGraphToken(it->name.c_str());
+
+		IGameToken* pToken = pGTS->FindToken(globalName);
+		assert(pToken && ((pToken->GetFlags() & EGAME_TOKEN_GRAPHVARIABLE) != 0));
 		if (pToken)
-			pToken->SetFlags(pToken->GetFlags() | EGAME_TOKEN_GRAPHVARIABLE);
+		{
+			pGTS->DeleteToken(pToken);
+		}
+		else
+		{
+			GameWarning("Attempted to remove nonexistent GraphToken: %s", globalName);
+		}
 	}
 }
+
+void CFlowGraphBase::RemoveGraphTokens()
+{
+	LOADING_TIME_PROFILE_SECTION
+	if (m_graphTokens.empty()) return; //nothing to do
+
+	if (m_bRegistered)
+	{
+		UnregisterGraphTokens();
+	}
+
+	stl::free_container(m_graphTokens);
+}
+
+bool CFlowGraphBase::AddGraphToken(const IFlowGraph::SGraphToken& token)
+{
+	m_graphTokens.push_back(token);
+
+	ResetGraphToken(token);
+
+	return true;
+}
+
+void CFlowGraphBase::ResetGraphToken(const IFlowGraph::SGraphToken& token)
+{
+	// if this graph is not registered in the flow system, the graph tokens should not get registered either
+	if(!m_bRegistered) return;
+
+	IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
+	IF_UNLIKELY(!pGTS) return;
+
+	const char* globalName = GetGlobalNameForGraphToken(token.name);
+
+	TFlowInputData temp = TFlowInputData::CreateDefaultInitializedForTag((int)token.type, true);
+	IGameToken* pToken = pGTS->SetOrCreateToken(globalName, temp);
+	if (pToken)
+		pToken->SetFlags(pToken->GetFlags() | EGAME_TOKEN_GRAPHVARIABLE);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1586,11 +1612,14 @@ bool CFlowGraphBase::ReadXML(const XmlNodeRef& root)
 			break;
 		}
 
+		// Load Graph Tokens
+
 		XmlNodeRef graphTokens = root->findChild("GraphTokens");
 		if (graphTokens)
 		{
 			int nTokens = graphTokens->getChildCount();
 			RemoveGraphTokens();
+			m_graphTokens.reserve(nTokens);
 			for (int j = 0; j < nTokens; ++j)
 			{
 				XmlString tokenName;

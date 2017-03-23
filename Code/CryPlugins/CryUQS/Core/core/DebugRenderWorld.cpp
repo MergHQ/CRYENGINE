@@ -41,13 +41,13 @@ namespace UQS
 			CDebugRenderPrimitive_Cylinder::Draw(pos, dir, radius, height, color, false);
 		}
 
-		void CDebugRenderWorldImmediate::DrawText(const Vec3& pos, float size, const ColorF& color, const char* fmt, ...) const
+		void CDebugRenderWorldImmediate::DrawText(const Vec3& pos, float size, const ColorF& color, const char* szFormat, ...) const
 		{
 			va_list ap;
 			char text[1024];
 
-			va_start(ap, fmt);
-			cry_vsprintf(text, fmt, ap);
+			va_start(ap, szFormat);
+			cry_vsprintf(text, szFormat, ap);
 			va_end(ap);
 
 			CDebugRenderPrimitive_Text::Draw(pos, size, text, color, false);
@@ -173,13 +173,13 @@ namespace UQS
 			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress, m_indexOfCurrentlyRunningInstantEvaluatorInBlueprint, m_indexOfCurrentlyRunningDeferredEvaluatorInBlueprint);
 		}
 
-		void CDebugRenderWorldPersistent::AddText(const Vec3& pos, float size, const ColorF& color, const char* fmt, ...)
+		void CDebugRenderWorldPersistent::AddText(const Vec3& pos, float size, const ColorF& color, const char* szFormat, ...)
 		{
 			va_list ap;
 			char text[1024];
 
-			va_start(ap, fmt);
-			cry_vsprintf(text, fmt, ap);
+			va_start(ap, szFormat);
+			cry_vsprintf(text, szFormat, ap);
 			va_end(ap);
 
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Text(pos, size, text, color));

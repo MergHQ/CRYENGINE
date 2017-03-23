@@ -185,8 +185,8 @@ namespace UQS
 
 		CQueryFactoryBase* CQueryFactoryBase::s_pList;
 
-		CQueryFactoryBase::CQueryFactoryBase(const char* name, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
-			: m_name(name)
+		CQueryFactoryBase::CQueryFactoryBase(const char* szName, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
+			: m_name(szName)
 			, m_bSupportsParameters(bSupportsParameters)
 			, m_bRequiresGenerator(bRequiresGenerator)
 			, m_bSupportsEvaluators(bSupportsEvaluators)

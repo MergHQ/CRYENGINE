@@ -21,9 +21,9 @@ namespace UQS
 			// nothing
 		}
 
-		void CTextualGlobalConstantParamsBlueprint::AddParameter(const char* name, const char* type, const char* value, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
+		void CTextualGlobalConstantParamsBlueprint::AddParameter(const char* szName, const char* szType, const char* szValue, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_parameters.emplace_back(name, type, value, bAddToDebugRenderWorld, std::move(syntaxErrorCollector));
+			m_parameters.emplace_back(szName, szType, szValue, bAddToDebugRenderWorld, std::move(pSyntaxErrorCollector));
 		}
 
 		size_t CTextualGlobalConstantParamsBlueprint::GetParameterCount() const
@@ -67,22 +67,22 @@ namespace UQS
 				const ITextualGlobalConstantParamsBlueprint::SParameterInfo p = source.GetParameter(i);
 
 				// ensure each parameter exists only once
-				if (m_constantParams.find(p.name) != m_constantParams.cend())
+				if (m_constantParams.find(p.szName) != m_constantParams.cend())
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
-						pSE->AddErrorMessage("Duplicate parameter: '%s'", p.name);
+						pSE->AddErrorMessage("Duplicate parameter: '%s'", p.szName);
 					}
 					return false;
 				}
 
 				// find the item factory
-				Client::IItemFactory* pItemFactory = g_hubImpl->GetItemFactoryDatabase().FindFactoryByName(p.type);
+				Client::IItemFactory* pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByName(p.szType);
 				if (!pItemFactory)
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
-						pSE->AddErrorMessage("Unknown item type: '%s'", p.type);
+						pSE->AddErrorMessage("Unknown item type: '%s'", p.szType);
 					}
 					return false;
 				}
@@ -91,27 +91,27 @@ namespace UQS
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
-						pSE->AddErrorMessage("Items of type '%s' cannot be represented in textual form", p.type);
+						pSE->AddErrorMessage("Items of type '%s' cannot be represented in textual form", p.szType);
 					}
 					return false;
 				}
 
-				IItemSerializationSupport& itemSerializationSupport = g_hubImpl->GetItemSerializationSupport();
+				IItemSerializationSupport& itemSerializationSupport = g_pHub->GetItemSerializationSupport();
 				Shared::CUqsString errorMessage;
 				Shared::IUqsString* pErrorMessage = (p.pSyntaxErrorCollector) ? &errorMessage : nullptr;
 				void* pItem = pItemFactory->CreateItems(1, Client::IItemFactory::EItemInitMode::UseDefaultConstructor);
 
-				if (!itemSerializationSupport.DeserializeItemFromCStringLiteral(pItem, *pItemFactory, p.value, pErrorMessage))
+				if (!itemSerializationSupport.DeserializeItemFromCStringLiteral(pItem, *pItemFactory, p.szValue, pErrorMessage))
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
-						pSE->AddErrorMessage("Parameter '%s' could not be parsed from its serialized representation ('%s'). Reason:\n%s", p.name, p.value, errorMessage.c_str());
+						pSE->AddErrorMessage("Parameter '%s' could not be parsed from its serialized representation ('%s'). Reason: %s", p.szName, p.szValue, errorMessage.c_str());
 					}
 					pItemFactory->DestroyItems(pItem);
 					return false;
 				}
 
-				m_constantParams.insert(std::map<string, SParamInfo>::value_type(p.name, SParamInfo(pItemFactory, pItem, p.bAddToDebugRenderWorld)));  // notice: the item will get destroyed by CGlobalConstantParamsBlueprint's dtor
+				m_constantParams.insert(std::map<string, SParamInfo>::value_type(p.szName, SParamInfo(pItemFactory, pItem, p.bAddToDebugRenderWorld)));  // notice: the item will get destroyed by CGlobalConstantParamsBlueprint's dtor
 			}
 
 			return true;
@@ -140,15 +140,15 @@ namespace UQS
 			{
 				logger.Printf("Global constant params:");
 				CLoggerIndentation _indent;
-				CItemSerializationSupport& itemSerializationSupport = g_hubImpl->GetItemSerializationSupport();
+				CItemSerializationSupport& itemSerializationSupport = g_pHub->GetItemSerializationSupport();
 				for (const auto& e : m_constantParams)
 				{
-					const char* paramName = e.first.c_str();
+					const char* szParamName = e.first.c_str();
 					const Client::IItemFactory* pItemFactory = e.second.pItemFactory;
 					Shared::CUqsString itemAsString;
 					assert(pItemFactory->CanBePersistantlySerialized()); // constant params can *always* be represented in textual form (how else should the query author provide them via e. g. an XML file?)
 					itemSerializationSupport.SerializeItemToStringLiteral(e.second.pItem, *pItemFactory, itemAsString);
-					logger.Printf("\"%s\" = %s [%s]", paramName, itemAsString.c_str(), pItemFactory->GetName());
+					logger.Printf("\"%s\" = %s [%s]", szParamName, itemAsString.c_str(), pItemFactory->GetName());
 				}
 			}
 		}

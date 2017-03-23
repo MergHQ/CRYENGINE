@@ -76,13 +76,13 @@ namespace UQS
 					else
 					{
 						validationContext.error.Format("%s: global param '%s' exists, but mismatches the type (expected a '%s', but actually stored is a '%s')",
-							validationContext.nameOfFunctionBeingValidated, m_nameOfGlobalParam.c_str(), expectedType.name(), m_pTypeOfGlobalParam->name());
+							validationContext.szNameOfFunctionBeingValidated, m_nameOfGlobalParam.c_str(), expectedType.name(), m_pTypeOfGlobalParam->name());
 						return false;
 					}
 				}
 				else
 				{
-					validationContext.error.Format("%s: global param '%s' does not exist", validationContext.nameOfFunctionBeingValidated, m_nameOfGlobalParam.c_str());
+					validationContext.error.Format("%s: global param '%s' does not exist", validationContext.szNameOfFunctionBeingValidated, m_nameOfGlobalParam.c_str());
 					return false;
 				}
 			}

@@ -86,7 +86,7 @@ namespace UQS
 			}
 		}
 
-		bool CQueryHistoryManager::SerializeLiveQueryHistory(const char* xmlFilePath, Shared::IUqsString& error)
+		bool CQueryHistoryManager::SerializeLiveQueryHistory(const char* szXmlFilePath, Shared::IUqsString& error)
 		{
 			//
 			// add some meta data to the live history before serializing it
@@ -113,23 +113,23 @@ namespace UQS
 			//
 
 			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
-			if (pArchiveHost->SaveXmlFile(xmlFilePath, Serialization::SStruct(m_queryHistories[EHistoryOrigin::Live]), "UQSQueryHistory"))
+			if (pArchiveHost->SaveXmlFile(szXmlFilePath, Serialization::SStruct(m_queryHistories[EHistoryOrigin::Live]), "UQSQueryHistory"))
 			{
 				return true;
 			}
 			else
 			{
-				error.Format("Could not serialize the live query history to xml file '%s' (Serialization::IArchiveHost::SaveXmlFile() failed for some reason)", xmlFilePath);
+				error.Format("Could not serialize the live query history to xml file '%s' (Serialization::IArchiveHost::SaveXmlFile() failed for some reason)", szXmlFilePath);
 				return false;
 			}
 		}
 
-		bool CQueryHistoryManager::DeserializeQueryHistory(const char* xmlFilePath, Shared::IUqsString& error)
+		bool CQueryHistoryManager::DeserializeQueryHistory(const char* szXmlFilePath, Shared::IUqsString& error)
 		{
 			CQueryHistory tempQueryHistory;
 
 			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
-			if (pArchiveHost->LoadXmlFile(Serialization::SStruct(tempQueryHistory), xmlFilePath))
+			if (pArchiveHost->LoadXmlFile(Serialization::SStruct(tempQueryHistory), szXmlFilePath))
 			{
 				m_queryHistories[EHistoryOrigin::Deserialized] = std::move(tempQueryHistory);
 				m_queryIDOfCurrentHistoricQuery[EHistoryOrigin::Deserialized] = CQueryID::CreateInvalid();
@@ -142,7 +142,7 @@ namespace UQS
 			}
 			else
 			{
-				error.Format("Could not de-serialize the query history from xml file '%s'", xmlFilePath);
+				error.Format("Could not de-serialize the query history from xml file '%s'", szXmlFilePath);
 				return false;
 			}
 		}

@@ -39,7 +39,7 @@ namespace UQS
 				// ~IParamsHolderFactory
 
 			protected:
-				explicit                                 CInstantEvaluatorFactoryBase(const char* evaluatorName);
+				explicit                                 CInstantEvaluatorFactoryBase(const char* szEvaluatorName);
 
 			protected:
 				CInputParameterRegistry                  m_inputParameterRegistry;
@@ -48,8 +48,8 @@ namespace UQS
 				IParamsHolderFactory*                    m_pParamsHolderFactory;      // points to *this; it's a trick to allow GetParamsHolderFactory() return a non-const reference to *this
 			};
 
-			inline CInstantEvaluatorFactoryBase::CInstantEvaluatorFactoryBase(const char* evaluatorName)
-				: CFactoryBase(evaluatorName)
+			inline CInstantEvaluatorFactoryBase::CInstantEvaluatorFactoryBase(const char* szEvaluatorName)
+				: CFactoryBase(szEvaluatorName)
 			{
 				m_pParamsHolderFactory = this;
 			}
@@ -81,7 +81,7 @@ namespace UQS
 		class CInstantEvaluatorFactory final : public Internal::CInstantEvaluatorFactoryBase
 		{
 		public:
-			explicit                             CInstantEvaluatorFactory(const char* evaluatorName);
+			explicit                             CInstantEvaluatorFactory(const char* szEvaluatorName);
 
 			// IInstantEvaluatorFactory
 			virtual ECostCategory                GetCostCategory() const override;
@@ -97,8 +97,8 @@ namespace UQS
 		};
 
 		template <class TInstantEvaluator>
-		CInstantEvaluatorFactory<TInstantEvaluator>::CInstantEvaluatorFactory(const char* evaluatorName)
-			: CInstantEvaluatorFactoryBase(evaluatorName)
+		CInstantEvaluatorFactory<TInstantEvaluator>::CInstantEvaluatorFactory(const char* szEvaluatorName)
+			: CInstantEvaluatorFactoryBase(szEvaluatorName)
 		{
 			typedef typename TInstantEvaluator::SParams Params;
 			Params::Expose(m_inputParameterRegistry);

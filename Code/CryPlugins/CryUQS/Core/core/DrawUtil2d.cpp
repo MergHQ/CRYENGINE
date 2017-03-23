@@ -14,19 +14,19 @@ namespace UQS
 		const float CDrawUtil2d::s_fontSize = 1.3f;
 		const float CDrawUtil2d::s_indentSize = 8.0f;
 
-		void CDrawUtil2d::DrawLabel(int row, const ColorF& color, const char* fmt, ...)
+		void CDrawUtil2d::DrawLabel(int row, const ColorF& color, const char* szFormat, ...)
 		{
 			va_list args;
-			va_start(args, fmt);
-			DoDrawLabel(0.0f, (float)row * s_rowSize, color, fmt, args);
+			va_start(args, szFormat);
+			DoDrawLabel(0.0f, (float)row * s_rowSize, color, szFormat, args);
 			va_end(args);
 		}
 
-		void CDrawUtil2d::DrawLabel(float xPos, int row, const ColorF& color, const char* fmt, ...)
+		void CDrawUtil2d::DrawLabel(float xPos, int row, const ColorF& color, const char* szFormat, ...)
 		{
 			va_list args;
-			va_start(args, fmt);
-			DoDrawLabel(xPos, (float)row * s_rowSize, color, fmt, args);
+			va_start(args, szFormat);
+			DoDrawLabel(xPos, (float)row * s_rowSize, color, szFormat, args);
 			va_end(args);
 		}
 
@@ -40,7 +40,7 @@ namespace UQS
 			return s_indentSize;
 		}
 
-		void CDrawUtil2d::DoDrawLabel(float xPos, float yPos, const ColorF& color, const char* fmt, va_list args)
+		void CDrawUtil2d::DoDrawLabel(float xPos, float yPos, const ColorF& color, const char* szFormat, va_list args)
 		{
 			IRenderer* pRenderer = gEnv->pRenderer;
 			if (!pRenderer)
@@ -57,7 +57,7 @@ namespace UQS
 				ti.color[3] = color.a;
 
 				stack_string text;
-				text.FormatV(fmt, args);
+				text.FormatV(szFormat, args);
 
 				pRenderAuxGeom->RenderTextQueued(Vec3(xPos, yPos, 0.5f), ti, text.c_str());
 			}
