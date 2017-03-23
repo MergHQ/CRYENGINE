@@ -82,11 +82,11 @@ public:
 
 	virtual void                           PrecacheResources();
 
-	virtual void                           RemoveGraphTokens();
-	virtual bool                           AddGraphToken(const IFlowGraph::SGraphToken& token);
 	virtual size_t                         GetGraphTokenCount() const;
 	virtual const IFlowGraph::SGraphToken* GetGraphToken(size_t index) const;
 	virtual const char*                    GetGlobalNameForGraphToken(const char* tokenName) const;
+	virtual bool                           AddGraphToken(const IFlowGraph::SGraphToken& token);
+	virtual void                           RemoveGraphTokens();
 
 	virtual TFlowGraphId                   GetGraphId() const { return m_graphId; }
 
@@ -147,6 +147,7 @@ protected:
 
 private:
 	void ResetGraphToken(const IFlowGraph::SGraphToken& token);
+	void UnregisterGraphTokens();
 
 	class CNodeIterator;
 	class CEdgeIterator;
@@ -333,7 +334,7 @@ private:
 	string                     m_debugName; // name used for more useful warnings, debugging and profiling
 #endif
 	typedef std::vector<IFlowGraph::SGraphToken> TGraphTokens;
-	TGraphTokens               m_graphTokens;
+	TGraphTokens               m_graphTokens; //! definition (name and type) of the game tokens local to this graph
 
 
 #if defined(ALLOW_MULTIPLE_PORT_ACTIVATIONS_PER_UPDATE)
