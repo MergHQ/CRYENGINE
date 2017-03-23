@@ -3098,6 +3098,14 @@ public:
 				}
 			}
 			break;
+		case eFE_PrecacheResources:
+			{
+				if (IGame::IResourcesPreCache* pResourceCache = gEnv->pGameFramework->GetIGame()->GetResourceCache())
+				{
+					pResourceCache->QueueEntityClass(GetPortString(pActInfo, EIP_ClassName));
+				}
+			}
+			break;
 		}
 	}
 
@@ -3265,6 +3273,14 @@ public:
 					else
 						ActivateOutput(pActInfo, EOP_Succeeded, pEntity->GetId());
 					ActivateOutput(pActInfo, EOP_Done, true);
+				}
+			}
+			break;
+		case eFE_PrecacheResources:
+			{
+				if (IGame::IResourcesPreCache* pResourceCache = gEnv->pGameFramework->GetIGame()->GetResourceCache())
+				{
+					pResourceCache->QueueEntityArchetype(GetPortString(pActInfo, EIP_ArchetypeName));
 				}
 			}
 			break;

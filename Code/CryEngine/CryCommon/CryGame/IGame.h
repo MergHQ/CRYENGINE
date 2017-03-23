@@ -38,6 +38,14 @@ struct IGameWebDebugService;
 //! \see IEditorGame.
 struct IGame
 {
+	//! Interface used to communicate what entities/entity archetypes need to be precached.
+	//! Game code can further do some data mining to figure out the resources needed for the entities
+	struct IResourcesPreCache
+	{
+		virtual void QueueEntityClass(const char* szEntityClass) = 0;
+		virtual void QueueEntityArchetype(const char* szEntityArchetype) = 0;
+	};
+
 	struct ExportFilesInfo
 	{
 		ExportFilesInfo(const char* _baseFileName, const uint32 _fileCount)
@@ -144,6 +152,9 @@ struct IGame
 
 	//! Access to game interface.
 	virtual void* GetGameInterface() = 0;
+
+	//! Access game specific resource precache interface
+	virtual IResourcesPreCache* GetResourceCache() { return nullptr; }
 
 	//! Retrieves IGameWebDebugService for web-socket based remote debugging.
 	virtual IGameWebDebugService* GetIWebDebugService() { return nullptr; };
