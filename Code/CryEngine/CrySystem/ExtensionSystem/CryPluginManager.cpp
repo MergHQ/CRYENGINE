@@ -326,16 +326,23 @@ bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
 			// Automatically unloads in destructor
 			SNativePluginModule module(path);
 
-			ICryUnknownPtr pUnk = module.GetFactory()->CreateClassInstance();
-			pPlugin = cryinterface_cast<ICryPlugin>(pUnk);
-			if (!pPlugin)
+			if (auto pFactory = module.GetFactory())
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Could not create an instance of %s in plugin %s!", module.GetFactory()->GetName(), path);
+				ICryUnknownPtr pUnk = pFactory->CreateClassInstance();
+				pPlugin = cryinterface_cast<ICryPlugin>(pUnk);
+				if (!pPlugin)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Could not create an instance of %s in plugin %s!", pFactory->GetName(), path);
+					return false;
+				}
+
+				m_pluginContainer.emplace_back(pPlugin, std::move(module));
+				module.MarkUnloaded();
+			}
+			else
+			{
 				return false;
 			}
-
-			m_pluginContainer.emplace_back(pPlugin, std::move(module));
-			module.MarkUnloaded();
 
 			break;
 		}
