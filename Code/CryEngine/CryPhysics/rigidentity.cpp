@@ -1769,7 +1769,6 @@ entity_contact *CRigidEntity::RegisterContactPoint(int idx, const Vec3 &pt, cons
 
 		float e = (m_pWorld->m_BouncinessTable[pcontacts[idx].id[0]&NSURFACETYPES-1] + 
 							 m_pWorld->m_BouncinessTable[pcontacts[idx].id[1]&NSURFACETYPES-1])*0.5f;
-e=0;
 		if (//m_body.M<2 &&	// bounce only smalll objects
 				//m_nParts+g_CurColliders[idx]->m_nParts<=4 && // bounce only simple objects (bouncing is dangerous)
 				//!bUseSimpleSolver && 
