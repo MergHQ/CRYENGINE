@@ -440,9 +440,10 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 					m_BBox[0] = BBox[0];
 					m_BBox[1] = BBox[1];
 					m_pWorld->UnlockGrid(this,-bPosChanged);
-					RepositionParts();
 				}
 			}
+			if (params->bRecalcBounds)
+				RepositionParts();
 			if (params->bRecalcBounds && !(m_flags & pef_never_affect_triggers)) {
 				CPhysicalEntity **pentlist;
 				m_pWorld->GetEntitiesAround(m_BBox[0],m_BBox[1],pentlist,ent_triggers,this); 
@@ -645,9 +646,9 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 					}
 			}
 			m_pWorld->UnlockGrid(this,-bPosChanged);
-			if (params->bRecalcBBox)
-				RepositionParts();
 		}
+		if (params->bRecalcBBox)
+			RepositionParts();
 		return i+1;
 	} 
 	
@@ -1416,7 +1417,8 @@ bool CPhysicalEntity::OccupiesEntityGridSquare(const AABB &bbox)
 				pGeom[j]->GetBBox(&abox);
 				abox.center = m_qrot*(m_parts[i].q*abox.center*m_parts[i].scale+m_parts[i].pos)+m_pos;
 				abox.size *= m_parts[i].scale;
-				abox.Basis = abox.Basis*Matrix33(!m_parts[i].q*m_qrot);
+				abox.Basis = abox.Basis*Matrix33(!m_parts[i].q*!m_qrot);
+				abox.bOriented = 1;
 				if (box_box_overlap_check(&abox,&bbox,&Overlapper))
 					return true;
 				j++;
