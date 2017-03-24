@@ -611,39 +611,8 @@ struct SCryEngineLanguageConfigLoader : public ILoadConfigurationEntrySink
 	virtual void OnLoadConfigurationEntry_End() {}
 };
 
-#if !CRY_PLATFORM_ORBIS
 //////////////////////////////////////////////////////////////////////////
-WIN_HMODULE CSystem::LoadDynamiclibrary(const char* dllName) const
-{
-	WIN_HMODULE handle = NULL;
-	#if CRY_PLATFORM_WINDOWS
-	if (m_binariesDir.empty())
-	{
-		handle = CryLoadLibrary(dllName);
-		if (!handle)
-		{
-			DWORD dwErrorCode = GetLastError();
-			CryLogAlways("DLL Failed to load, error code: %X", dwErrorCode);
-		}
-	}
-	else
-	{
-		char currentDirectory[1024];
-		GetCurrentDirectory(sizeof(currentDirectory), currentDirectory);
-		SetCurrentDirectory(m_binariesDir.c_str());
-		handle = CryLoadLibrary(dllName);
-		SetCurrentDirectory(currentDirectory);
-	}
-	#else
-	handle = CryLoadLibrary(dllName);
-	#endif
-	return handle;
-}
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-#if !CRY_PLATFORM_ORBIS
-WIN_HMODULE CSystem::LoadDLL(const char* szModulePath, bool bQuitIfNotFound)
+WIN_HMODULE CSystem::LoadDynamicLibrary(const char* szModulePath, bool bQuitIfNotFound, bool bLogLoadingInfo)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
@@ -662,24 +631,49 @@ WIN_HMODULE CSystem::LoadDLL(const char* szModulePath, bool bQuitIfNotFound)
 	{
 		m_pUserCallback->OnInitProgress(msg.c_str());
 	}
-	CryLog("%s", msg.c_str());
 
-	WIN_HMODULE handle = LoadDynamiclibrary(modulePath);
+	if (bLogLoadingInfo)
+	{
+		CryLog(msg);
+	}
 
-	if (!handle)
+	WIN_HMODULE handle = nullptr;
+#if CRY_PLATFORM_WINDOWS
+	if (m_binariesDir.empty())
+	{
+		handle = CryLoadLibrary(modulePath);
+		if (!handle)
+		{
+			DWORD dwErrorCode = GetLastError();
+			CryLogAlways("DLL Failed to load, error code: %X", dwErrorCode);
+		}
+	}
+	else
+	{
+		char currentDirectory[1024];
+		GetCurrentDirectory(sizeof(currentDirectory), currentDirectory);
+		SetCurrentDirectory(m_binariesDir.c_str());
+		handle = CryLoadLibrary(modulePath);
+		SetCurrentDirectory(currentDirectory);
+	}
+#elif !defined(CRY_PLATFORM_ORBIS) // TODO: Orbis support
+	handle = CryLoadLibrary(modulePath);
+#endif
+
+	if (handle == nullptr)
 	{
 		if (bQuitIfNotFound)
 		{
 	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-			CryFatalError("Error loading DLL: %s, error :  %s\n", modulePath.c_str(), dlerror());
+			CryFatalError("Error loading dynamic library: %s, error :  %s\n", modulePath.c_str(), dlerror());
 	#else
-			CryFatalError("Error loading DLL: %s, error code %d", modulePath.c_str(), GetLastError());
+			CryFatalError("Error loading dynamic library: %s, error code %d", modulePath.c_str(), GetLastError());
 	#endif
 
 			Quit();
 		}
 
-		return 0;
+		return nullptr;
 	}
 
 	m_moduleDLLHandles.insert(std::make_pair(CCryNameCRC(modulePath), handle));
@@ -698,17 +692,26 @@ WIN_HMODULE CSystem::LoadDLL(const char* szModulePath, bool bQuitIfNotFound)
 
 	return handle;
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CSystem::UnloadDLL(const char* dllName)
+bool CSystem::UnloadDynamicLibrary(const char* szDllName)
 {
-	bool bSuccess = false;
+	stack_string modulePath = szDllName;
+	modulePath = CrySharedLibraryPrefix + PathUtil::ReplaceExtension(modulePath, CrySharedLibraryExtension);
 
-	WIN_HMODULE const hModule = stl::find_in_map(m_moduleDLLHandles, CCryNameCRC(dllName), NULL);
+	auto moduleCrc = CCryNameCRC(modulePath);
 
-	if (hModule != NULL)
+	const WIN_HMODULE hModule = stl::find_in_map(m_moduleDLLHandles, moduleCrc, nullptr);
+
+	if (hModule != nullptr)
 	{
+		stack_string msg;
+		msg = "Unloading ";
+		msg += modulePath;
+		msg += "...";
+
+		CryLog("%s", msg.c_str());
+
 		auto GetHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
 		SRegFactoryNode* pFactoryNode = GetHeadToRegFactories();
 
@@ -719,30 +722,37 @@ bool CSystem::UnloadDLL(const char* dllName)
 			pReg->UnregisterFactories(pFactoryNode);
 		}
 
-		CryComment("Unloading DLL: %s", dllName);
 		CryFreeLibrary(hModule);
-		m_moduleDLLHandles.erase(CCryNameCRC(dllName));
-		bSuccess = true;
+		m_moduleDLLHandles.erase(moduleCrc);
+
+		return true;
 	}
 
-	return bSuccess;
+	return false;
 }
 
 ICryFactory* CSystem::LoadModuleWithFactory(const char* dllName, const CryInterfaceID& moduleInterfaceId)
 {
-#if CRY_PLATFORM_ORBIS
-	SRegFactoryNode* pFactoryNode = GetHeadToRegFactories();
-#else
-	WIN_HMODULE hModule = LoadDLL(dllName, false);
+	// Start by looking in the current context, in case of static linking
+	ICryFactory* pFactory = nullptr;
+	size_t numFactories = 1;
 
-	if (!hModule)
+	GetCryFactoryRegistry()->IterateFactories(moduleInterfaceId, &pFactory, numFactories);
+	if (numFactories == 1 && pFactory != nullptr)
+	{
+		return pFactory;
+	}
+
+	// Attempt to load the DLL
+	WIN_HMODULE hModule = LoadDynamicLibrary(dllName, false);
+
+	if (hModule == nullptr)
 	{
 		return nullptr;
 	}
 
 	auto getHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
 	SRegFactoryNode* pFactoryNode = getHeadToRegFactories();
-#endif
 
 	while (pFactoryNode != nullptr)
 	{
@@ -769,12 +779,10 @@ bool CSystem::InitializeEngineModule(const char* dllName, const CryInterfaceID& 
 	std::shared_ptr<Cry::IDefaultModule> pModule;
 	if (!CryCreateClassInstanceForInterface(moduleInterfaceId, pModule))
 	{
-#if !CRY_PLATFORM_ORBIS
-		if (LoadDLL(dllName, bQuitIfNotFound) == 0)
+		if (LoadDynamicLibrary(dllName, bQuitIfNotFound, true) == 0)
 			return false;
 
 		CryCreateClassInstanceForInterface(moduleInterfaceId, pModule);
-#endif
 	}
 
 	bool bSuccess = false;
@@ -799,23 +807,7 @@ bool CSystem::InitializeEngineModule(const char* dllName, const CryInterfaceID& 
 //////////////////////////////////////////////////////////////////////////
 bool CSystem::UnloadEngineModule(const char* szDllName)
 {
-	bool bSuccess = false;
-
-	stack_string modulePath = szDllName;
-	modulePath = CrySharedLibraryPrefix + PathUtil::ReplaceExtension(modulePath, CrySharedLibraryExtension);
-
-	stack_string msg;
-	msg = "Unloading ";
-	msg += modulePath;
-	msg += "...";
-
-	CryLog("%s", msg.c_str());
-
-#if !defined(_LIB)
-	bSuccess = UnloadDLL(modulePath.c_str());
-#endif // #if !defined(_LIB)
-
-	return bSuccess;
+	return UnloadDynamicLibrary(szDllName);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3418,7 +3410,7 @@ L_done:;
 		// Load FlowGraph
 		if (!m_startupParams.bShaderCacheGen)
 		{
-			GetISystem()->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryFlowGraph");
+			InitializeEngineModule("CryFlowGraph", cryiidof<IFlowSystemEngineModule>(), true);
 		}
 
 		//////////////////////////////////////////////////////////////////////////

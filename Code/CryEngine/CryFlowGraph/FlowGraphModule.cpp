@@ -15,9 +15,13 @@
 
 // Cry::IDefaultModule -----------------------------------
 
-class CEngineModule_FlowGraph : public ICryPlugin
+class CEngineModule_FlowGraph : public IFlowSystemEngineModule
 {
-	CRYINTERFACE_SIMPLE(ICryPlugin)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(IFlowSystemEngineModule)
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_FlowGraph, "EngineModule_FlowGraph", 0x8D22D250CBF24DBA, 0xADCCA656C06752D7)
 
 	CEngineModule_FlowGraph();
@@ -26,8 +30,6 @@ class CEngineModule_FlowGraph : public ICryPlugin
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char *GetName() const override { return "CryFlowGraph"; };
 	virtual const char *GetCategory() const override { return "CryEngine"; };
-
-	virtual void OnPluginUpdate(EPluginUpdateType updateType) override {};
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize( SSystemGlobalEnvironment &env,const SSystemInitParams &initParams ) override

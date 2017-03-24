@@ -21,8 +21,10 @@ struct ICryPluginManager
 {
 	enum class EPluginType
 	{
-		EPluginType_CPP = 0,
-		EPluginType_CS
+		// C++ plug-in
+		Native = 0,
+		// Mono / C# plug-in
+		Managed
 	};
 
 	ICryPluginManager() {}

@@ -1820,6 +1820,11 @@ typedef IFlowGraphInspector_AutoPtr           IFlowGraphInspectorPtr;
 
 typedef std::shared_ptr<IFlowSystemContainer> IFlowSystemContainerPtr;
 
+struct IFlowSystemEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IFlowSystemEngineModule, 0x96B193486AD3427F, 0x9A8F7764052A5536);
+};
+
 struct IFlowSystem
 {
 	// <interfuscator:shuffle>

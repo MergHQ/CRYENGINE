@@ -55,6 +55,7 @@
 #include <CryAction/ILipSyncProvider.h>
 %}
 
+%ignore IFlowSystemEngineModule;
 %ignore operator==(const SFlowSystemVoid& a, const SFlowSystemVoid& b);
 
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"
