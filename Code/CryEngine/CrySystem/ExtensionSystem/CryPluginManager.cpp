@@ -383,6 +383,9 @@ bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
 				return false;
 			}
 
+			m_pluginContainer.emplace_back(pPlugin, std::move(module));
+			module.MarkUnloaded();
+
 			break;
 		}
 
