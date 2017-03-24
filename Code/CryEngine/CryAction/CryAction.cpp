@@ -2070,14 +2070,11 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 		gEnv->pConsole->ExecuteString("exec autoexec.cfg");
 
 		// run main game loop
-		if (startupParams.bManualEngineLoop)
+		if (!startupParams.bManualEngineLoop)
 		{
-			return true;
+			Run("");
 		}
-		else
-		{
-			return (Run("") != 0);
-		}
+		return true;
 	}
 
 	return false;
@@ -2133,7 +2130,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 }
 
 //------------------------------------------------------------------------
-int CCryAction::Run(const char* szAutoStartLevelName)
+void CCryAction::Run(const char* szAutoStartLevelName)
 {
 	if (szAutoStartLevelName[0])
 	{
@@ -2166,19 +2163,15 @@ int CCryAction::Run(const char* szAutoStartLevelName)
 		gEnv->pHardwareMouse->DecrementCounter();
 #endif
 
-#if defined(CRY_PLATFORM_DURANGO)
-	return 1;
-#endif
-
-	for (;; )
+#if !defined(CRY_PLATFORM_DURANGO)
+	for (;;)
 	{
 		if (!Update(true, 0))
 		{
 			break;
 		}
 	}
-
-	return 0;
+#endif
 }
 
 //------------------------------------------------------------------------
