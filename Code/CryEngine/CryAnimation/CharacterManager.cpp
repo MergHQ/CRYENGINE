@@ -725,8 +725,11 @@ bool CharacterManager::LoadAndLockResources(const char* szFilePath, uint32 nLoad
 			uint32 numAttachments = m_arrCacheForCDF[cdfId].m_arrAttachments.size();
 			for (uint32 a = 0; a < numAttachments; a++)
 			{
-				const char* strAttFilePath = m_arrCacheForCDF[cdfId].m_arrAttachments[a].m_strBindingPath.c_str();
-				const char* strAttFileExt = PathUtil::GetExt(strAttFilePath);
+				const CharacterAttachment& attachment = m_arrCacheForCDF[cdfId].m_arrAttachments[a];
+				const char* strAttFilePath = attachment.m_strBindingPath.c_str();
+				const char* strAttFileExt = PathUtil::GetExt(szFilePath);
+				const char* strSimFilePath = attachment.m_strSimBindingPath.c_str();
+
 				const bool isAttSKEL = stricmp(strAttFileExt, CRY_SKEL_FILE_EXT) == 0;
 				if (isAttSKEL)
 				{
@@ -735,13 +738,8 @@ bool CharacterManager::LoadAndLockResources(const char* szFilePath, uint32 nLoad
 						pModelSKEL->SetKeepInMemory(bKeep);
 				}
 
-				const bool isAttSKIN = stricmp(strAttFileExt, CRY_SKIN_FILE_EXT) == 0;
-				if (isAttSKIN)
-				{
-					CSkin* pModelSKIN = FetchModelSKIN(strAttFilePath, nLoadingFlags);
-					if (pModelSKIN)
-						pModelSKIN->SetKeepInMemory(bKeep);
-				}
+				TryLoadModelSkin(strAttFilePath, nLoadingFlags, bKeep);
+				TryLoadModelSkin(strSimFilePath, nLoadingFlags, bKeep);
 			}
 
 			return true; //success
@@ -749,6 +747,18 @@ bool CharacterManager::LoadAndLockResources(const char* szFilePath, uint32 nLoad
 	}
 
 	return false;
+}
+
+void CharacterManager::TryLoadModelSkin(const char* szFilePath, uint32 nLoadingFlags, bool bKeep)
+{
+	const char* strAttFileExt = PathUtil::GetExt(szFilePath);
+	const bool isAttSKIN = stricmp(strAttFileExt, CRY_SKIN_FILE_EXT) == 0;
+	if (isAttSKIN)
+	{
+		CSkin* pModelSKIN = FetchModelSKIN(szFilePath, nLoadingFlags);
+		if (pModelSKIN)
+			pModelSKIN->SetKeepInMemory(bKeep);
+	}
 }
 
 void CharacterManager::StreamKeepCharacterResourcesResident(const char* szFilePath, int nLod, bool bKeep, bool bUrgent)
