@@ -4381,6 +4381,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 				if (ncont = pgeom->Intersect(pents[i]->m_parts[j].pPhysGeom->pGeom,gwd,gwd+1,&ip,pcontacts)) {
 					for(int ic=0;ic<ncont;ic++) {
 						pcontacts[ic].iNode[0]=pcontacts[ic].iPrim[1];
+						pcontacts[ic].iNode[1]=j;
 						pcontacts[ic].iPrim[0]=pents[i]->m_id; pcontacts[ic].iPrim[1]=pents[i]->m_parts[j].id;
 						pcontacts[ic].id[1] = pents[i]->GetMatId(pcontacts[ic].id[1], j);
 					}
