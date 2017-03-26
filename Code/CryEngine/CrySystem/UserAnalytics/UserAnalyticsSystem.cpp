@@ -21,7 +21,7 @@ CUserAnalyticsSystem::CUserAnalyticsSystem()
 	ICryPluginManager* pPluginManager = GetISystem()->GetIPluginManager();
 	if (pPluginManager != nullptr)
 	{
-		const bool bSuccess = pPluginManager->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryUserAnalytics");
+		const bool bSuccess = pPluginManager->LoadPluginFromDisk(ICryPluginManager::EPluginType::Native, "CryUserAnalytics");
 
 		if (bSuccess)
 		{

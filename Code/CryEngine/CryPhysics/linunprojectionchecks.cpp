@@ -1463,7 +1463,7 @@ int box_cylinder_lin_unprojection(unprojection_mode *pmode, const box *pbox,int 
 		}
 	}
 
-	if (bContact) {
+	if (bContact && (!parea || parea->npt<2)) {
 		// make sure contact point lies on primitives (there might be false hits if they were initially separated)
 		e = 1.1f;
 		pt = (pbox->Basis*(pcontact->pt-pbox->center-pmode->dir*pcontact->t)).abs();

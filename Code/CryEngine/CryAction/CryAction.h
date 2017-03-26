@@ -387,7 +387,7 @@ private:
 	bool InitGame(SSystemInitParams& startupParams);
 	bool ShutdownGame();
 
-	int  Run(const char* szAutoStartLevelName);
+	void Run(const char* szAutoStartLevelName);
 
 	void InitForceFeedbackSystem();
 	void InitGameVolumesManager();

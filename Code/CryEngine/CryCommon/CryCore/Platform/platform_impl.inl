@@ -451,9 +451,9 @@ void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRoot
 		nCurDirSlashPos = strTempPath.rfind(osSeperator, nCurDirSlashPos - 1);
 
 	}
-	while (nCurDirSlashPos > 0);
+	while (nCurDirSlashPos != 0 && nCurDirSlashPos != string::npos);
 
-	if (nCurDirSlashPos == 0)
+	if (nCurDirSlashPos == 0 || nCurDirSlashPos == string::npos)
 	{
 		CryFatalError("Unable to locate CryEngine root folder. Ensure that the 'engine' folder exists in your CryEngine root directory");
 		return;

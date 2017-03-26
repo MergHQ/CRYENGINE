@@ -2596,7 +2596,10 @@ void CEntity::LogEvent(SEntityEvent& event, CTimeValue dt)
 
 IAIObject* CEntity::GetAIObject()
 {
-	return (m_aiObjectID ? gEnv->pAISystem->GetAIObjectManager()->GetAIObject(m_aiObjectID) : NULL);
+	if (gEnv->pAISystem == nullptr)
+		return nullptr;
+
+	return (m_aiObjectID ? gEnv->pAISystem->GetAIObjectManager()->GetAIObject(m_aiObjectID) : nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////

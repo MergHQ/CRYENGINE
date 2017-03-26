@@ -371,20 +371,39 @@ void SRenderThread::RC_ResetToDefault()
 
 void SRenderThread::RC_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CShaderResources* pRes)
 {
-	if (IsRenderThread() || IsLevelLoadingThread())
+	if (IsRenderThread())
 	{
 		return gRenDev->m_cEF.RT_ParseShader(pSH, nMaskGen, flags, pRes);
 	}
-	LOADINGLOCK_COMMANDQUEUE
-	pSH->AddRef();
-	if (pRes)
-		pRes->AddRef();
-	byte* p = AddCommand(eRC_ParseShader, 12 + 2 * sizeof(void*));
-	AddPointer(p, pSH);
-	AddPointer(p, pRes);
-	AddDWORD64(p, nMaskGen);
-	AddDWORD(p, flags);
-	EndCommand(p);
+	else if (IsLevelLoadingThread())
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLoadingLock);
+
+		TArray<byte>& queue = m_CommandsLoading;
+		pSH->AddRef();
+		if (pRes)
+			pRes->AddRef();
+		byte* p = AddCommandTo(eRC_ParseShader, 12 + 2 * sizeof(void*), queue);
+		AddPointer(p, pSH);
+		AddPointer(p, pRes);
+		AddDWORD64(p, nMaskGen);
+		AddDWORD(p, flags);
+		EndCommandTo(p, queue);
+	}
+	else
+	{
+		LOADINGLOCK_COMMANDQUEUE
+		pSH->AddRef();
+		if (pRes)
+			pRes->AddRef();
+		TArray<byte>& queue = m_Commands[m_nCurThreadFill];
+		byte* p = AddCommandTo(eRC_ParseShader, 12 + 2 * sizeof(void*), queue);
+		AddPointer(p, pSH);
+		AddPointer(p, pRes);
+		AddDWORD64(p, nMaskGen);
+		AddDWORD(p, flags);
+		EndCommand(p);
+	}
 }
 
 void SRenderThread::RC_UpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMaterial)

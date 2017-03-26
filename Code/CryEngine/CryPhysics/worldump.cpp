@@ -399,6 +399,15 @@ struct CSphereSerializer : Serializer {
 };
 
 
+struct CPlaneSerializer : Serializer {
+	CPlaneSerializer() {
+		plane trg;
+		DECLARE_MEMBER("Normal", ft_vector, n)
+		DECLARE_MEMBER("Origin", ft_vector, origin)
+	}
+};
+
+
 inline char hex2chr(int h) { return h+'0'+(9-h>>31 & 'A'-'0'-10); }
 inline int chr2hex(char c) { return c-'0'-(9+'0'-c>>31 & 'A'-'0'-10); }
 
@@ -1098,6 +1107,7 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 		DECLARE_MEMBER("collisionClassIgnore", ft_uint, m_collisionClass.ignore)
 		DECLARE_PROC("Part", &CPhysicalEntitySerializer::SerializePart)
 		DECLARE_PROC("StructuralJoint", &CPhysicalEntitySerializer::SerializeJoint)
+		DECLARE_PROC("GroundPlane", &CPhysicalEntitySerializer::SerializeGroundPlane)
 	}
 
 	int SerializeAngles(parse_context &ctx, char *str) {
@@ -1153,6 +1163,26 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 			(ctx.pSerializer = pJointSerializerRead)->Serialize(ctx);
 			for(int i=0;i<2;i++) if (psj.partid[i]>=0) psj.partid[i]=pent->m_parts[psj.partid[i]].id;
 			pent->SetParams(&psj);
+		}
+		return ctx.bSaving;
+	}
+	int SerializeGroundPlane(parse_context &ctx, char *str) {
+		CPhysicalEntity *pent = (CPhysicalEntity*)ctx.pobj;
+		CPlaneSerializer planeSerializer;
+		if (ctx.bSaving) for(int i=0;i<pent->m_nGroundPlanes;i++) {
+			fprintf(ctx.f,"%.*sGroundPlane %d\n", ctx.iStackPos+1,g_strTabs, i);
+			ctx.PushState();
+			ctx.pobj = pent->m_ground+i;
+			(ctx.pSerializer = &planeSerializer)->Serialize(ctx);
+		} else {
+			int i = atol(str); 
+			if (i>=pent->m_nGroundPlanes) {
+				ReallocateList(pent->m_ground, pent->m_nGroundPlanes, i+1);
+				pent->m_nGroundPlanes = i+1;
+			}
+			ctx.PushState();
+			ctx.pobj = pent->m_ground+i;
+			(ctx.pSerializer = &planeSerializer)->Serialize(ctx);
 		}
 		return ctx.bSaving;
 	}
@@ -1329,6 +1359,8 @@ struct CSuspSerializer : Serializer {
 		DECLARE_MEMBER("iBuddy", ft_int, iBuddy)
 		DECLARE_MEMBER("r", ft_float, r)
 		DECLARE_MEMBER("Width", ft_float, width)
+		DECLARE_MEMBER("Tscale", ft_float, Tscale)
+		DECLARE_MEMBER("kLatFriction", ft_float, kLatFriction)
 		DECLARE_PROC("end", &CSuspSerializer::Finalize)
 	}
 	DEFINE_MEMBER_PROC(suspension_point, SerializeDriving, bDriving)
@@ -1419,6 +1451,8 @@ struct CWheeledVehicleEntitySerializer : CRigidEntitySerializer {
 			pent->m_susp[i].pos = pent->m_parts[i+pent->m_nHullParts].pos;
 			pent->m_susp[i].q = pent->m_parts[i+pent->m_nHullParts].q;
 			pent->m_susp[i].scale = pent->m_parts[i+pent->m_nHullParts].scale;
+			pent->m_susp[i].Tscale = 1.0f;
+			pent->m_susp[i].kLatFriction = 1.0f;
 			(ctx.pSerializer = pSuspSerializer)->Serialize(ctx);
 		}
 		return ctx.bSaving;
@@ -1531,8 +1565,8 @@ struct CArticulatedEntitySerializer : CRigidEntitySerializer {
 				pent->m_infos = new ae_part_info[pent->m_nParts];
 				for(int j=0;j<pent->m_nParts;j++) {
 					pent->m_parts[j].pNewCoords = (coord_block_BBox*)&pent->m_infos[j].pos;
-					pent->m_infos[j].pos = pent->m_parts[j].pos;
-					pent->m_infos[j].q = pent->m_parts[j].q;
+					pent->m_infos[j].pos = pent->m_infos[j].posHist[0]=pent->m_infos[j].posHist[1] = pent->m_parts[j].pos;
+					pent->m_infos[j].q = pent->m_infos[j].qHist[0]=pent->m_infos[j].qHist[1] = pent->m_parts[j].q;
 					pent->m_infos[j].scale = pent->m_parts[j].scale;
 				}
 			}

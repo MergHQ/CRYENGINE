@@ -22,11 +22,29 @@ struct SNativePluginModule
 
 	SNativePluginModule(const char* path)
 		: m_engineModulePath(path)
+		, m_pFactory(nullptr)
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadPlugin");
 		MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", path);
 
-		m_pFactory = gEnv->pSystem->LoadModuleWithFactory(path, cryiidof<ICryPlugin>());
+		WIN_HMODULE hModule = static_cast<CSystem*>(gEnv->pSystem)->LoadDynamicLibrary(path, false);
+		if (hModule != nullptr)
+		{
+			// Find the first ICryPlugin instance inside the module
+			PtrFunc_GetHeadToRegFactories getHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
+			SRegFactoryNode* pFactoryNode = getHeadToRegFactories();
+
+			while (pFactoryNode != nullptr)
+			{
+				if (pFactoryNode->m_pFactory->ClassSupports(cryiidof<ICryPlugin>()))
+				{
+					m_pFactory = pFactoryNode->m_pFactory;
+					break;
+				}
+
+				pFactoryNode = pFactoryNode->m_pNext;
+			}
+		}
 
 		if (m_pFactory == nullptr)
 		{
@@ -68,7 +86,7 @@ struct SNativePluginModule
 		bool bSuccess = false;
 		if (m_engineModulePath.size() > 0)
 		{
-			bSuccess = GetISystem()->UnloadEngineModule(m_engineModulePath);
+			bSuccess = static_cast<CSystem*>(gEnv->pSystem)->UnloadDynamicLibrary(m_engineModulePath);
 
 			// Prevent Shutdown twice
 			MarkUnloaded();
@@ -106,7 +124,13 @@ struct SPluginContainer
 
 	// Constructor for managed (Mono) plug-ins, or statically linked ones
 	SPluginContainer(const std::shared_ptr<ICryPlugin>& plugin)
-		: m_pPlugin(plugin) {}
+		: m_pPlugin(plugin) 
+	{
+		if (ICryFactory* pFactory = plugin->GetFactory())
+		{
+			m_pluginClassId = pFactory->GetClassID();
+		}
+	}
 
 	bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 	{
@@ -186,7 +210,7 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 	{
 	case ESYSTEM_EVENT_REGISTER_FLOWNODES:
 		{
-			for (auto& it : m_pluginContainer)
+			for (SPluginContainer& it : m_pluginContainer)
 			{
 				it.GetPluginPtr()->RegisterFlowNodes();
 			}
@@ -198,17 +222,38 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 void CCryPluginManager::Initialize()
 {
 #ifndef _RELEASE
-	REGISTER_COMMAND("sys_reload_plugin", ReloadPluginCmd, 0, "Reload a plugin - not implemented yet");
+	REGISTER_COMMAND("sys_plugin_reload", ReloadPluginCmd, 0, "Reload a plugin - not implemented yet");
 #endif
 
+	// Find out how many ICryPlugin implementations are available
+	size_t numFactories;
+	gEnv->pSystem->GetCryFactoryRegistry()->IterateFactories(cryiidof<ICryPlugin>(), nullptr, numFactories);
+
+	std::vector<ICryFactory*> factories;
+	factories.resize(numFactories);
+
+	// Start by looking for any ICryPlugin implementation in the current module, in case of static linking
+	gEnv->pSystem->GetCryFactoryRegistry()->IterateFactories(cryiidof<ICryPlugin>(), factories.data(), numFactories);
+	for (size_t i = 0; i < numFactories; ++i)
+	{
+		// Create an instance of the plug-in
+		ICryUnknownPtr pUnknown = factories[i]->CreateClassInstance();
+		std::shared_ptr<ICryPlugin> pPlugin = cryinterface_cast<ICryPlugin>(pUnknown);
+
+		m_pluginContainer.emplace_back(pPlugin);
+
+		OnPluginLoaded();
+	}
+
+	// Move on to loading from disk
 	// Start with loading the default engine plug-ins
-	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CryDefaultEntities");
+	LoadPluginFromDisk(EPluginType::Native, "CryDefaultEntities");
 	//Schematyc + Schematyc Standard Enviroment
-	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycCore");
-	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycSTDEnv");
+	LoadPluginFromDisk(EPluginType::Native, "CrySchematycCore");
+	LoadPluginFromDisk(EPluginType::Native, "CrySchematycSTDEnv");
 	//optional plugin, but we load it for now by default
 
-	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySensorSystem");
+	LoadPluginFromDisk(EPluginType::Native, "CrySensorSystem");
 
 	LoadExtensionFile("cryplugin.csv");
 }
@@ -270,9 +315,9 @@ bool CCryPluginManager::LoadExtensionFile(const char* szFilename)
 		const char* pNewline = Parser_StrChr(pTokenStart, pBufferEnd, '\n');
 		const char* pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
 
-		auto pluginType = ICryPluginManager::EPluginType::EPluginType_CPP;
+		ICryPluginManager::EPluginType pluginType = ICryPluginManager::EPluginType::Native;
 		if (Parser_StrEquals(pTokenStart, pSemicolon, "C#"))
-			pluginType = ICryPluginManager::EPluginType::EPluginType_CS;
+			pluginType = ICryPluginManager::EPluginType::Managed;
 
 		// Parsing of plugin name
 		// Not actually used anymore, but no need to break existing setup seeing as we're going to move away from csv soon anyway - Filip
@@ -314,23 +359,27 @@ bool CCryPluginManager::LoadExtensionFile(const char* szFilename)
 
 bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
 {
-	CryLogAlways("Loading plugin %s", path);
+	CryLogAlways("Loading plug-in %s", path);
 
 	std::shared_ptr<ICryPlugin> pPlugin;
 
 	switch (type)
 	{
-	case EPluginType::EPluginType_CPP:
+	case EPluginType::Native:
 		{
 			// Load the module, note that this calls ISystem::InitializeEngineModule
 			// Automatically unloads in destructor
 			SNativePluginModule module(path);
-
-			ICryUnknownPtr pUnk = module.GetFactory()->CreateClassInstance();
-			pPlugin = cryinterface_cast<ICryPlugin>(pUnk);
-			if (!pPlugin)
+			ICryFactory* pFactory = module.GetFactory();
+			if (pFactory == nullptr)
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Could not create an instance of %s in plugin %s!", module.GetFactory()->GetName(), path);
+				return false;
+			}
+
+			ICryUnknownPtr pUnk = pFactory->CreateClassInstance();
+			pPlugin = cryinterface_cast<ICryPlugin>(pUnk);
+			if (pPlugin == nullptr)
+			{
 				return false;
 			}
 
@@ -340,7 +389,7 @@ bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
 			break;
 		}
 
-	case EPluginType::EPluginType_CS:
+	case EPluginType::Managed:
 		{
 			if (gEnv->pMonoRuntime == nullptr)
 			{
@@ -362,11 +411,16 @@ bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
 		}
 	}
 
-	auto &containedPlugin = m_pluginContainer.back();
+	return OnPluginLoaded();
+}
+
+bool CCryPluginManager::OnPluginLoaded()
+{
+	SPluginContainer& containedPlugin = m_pluginContainer.back();
 
 	if (!containedPlugin.Initialize(*gEnv, m_systemInitParams))
 	{
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Failed to initialize plugin %s!", path);
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Failed to initialize!");
 
 		containedPlugin.Shutdown();
 		m_pluginContainer.pop_back();
@@ -382,7 +436,7 @@ bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
 bool CCryPluginManager::UnloadAllPlugins()
 {
 	bool bError = false;
-	for (auto& it : m_pluginContainer)
+	for (SPluginContainer& it : m_pluginContainer)
 	{
 		if (!it.Shutdown())
 		{
@@ -402,7 +456,7 @@ void CCryPluginManager::NotifyEventListeners(const CryClassID& classID, IPluginE
 {
 	for (const auto& it : m_pluginListenerMap)
 	{
-		const auto& classIDs = it.second;
+		const std::vector<CryClassID>& classIDs = it.second;
 		if (std::find(classIDs.cbegin(), classIDs.cend(), classID) != classIDs.cend())
 		{
 			it.first->OnPluginEvent(classID, event);
@@ -412,9 +466,9 @@ void CCryPluginManager::NotifyEventListeners(const CryClassID& classID, IPluginE
 
 void CCryPluginManager::Update(IPluginUpdateListener::EPluginUpdateType updateFlags)
 {
-	for (const auto& it : m_pluginContainer)
+	for (const SPluginContainer& it : m_pluginContainer)
 	{
-		auto pPlugin = it.GetPluginPtr();
+		ICryPlugin* pPlugin = it.GetPluginPtr();
 		CRY_ASSERT(pPlugin != nullptr);
 		if ((pPlugin->GetUpdateFlags() & updateFlags) != 0)
 		{
@@ -425,7 +479,7 @@ void CCryPluginManager::Update(IPluginUpdateListener::EPluginUpdateType updateFl
 
 std::shared_ptr<ICryPlugin> CCryPluginManager::QueryPluginById(const CryClassID& classID) const
 {
-	for (const auto& it : m_pluginContainer)
+	for (const SPluginContainer& it : m_pluginContainer)
 	{
 		ICryFactory* pFactory = it.GetPluginPtr()->GetFactory();
 		if (pFactory)
@@ -452,13 +506,11 @@ std::shared_ptr<ICryPlugin> CCryPluginManager::AcquirePluginById(const CryClassI
 	}
 
 	m_pluginContainer.emplace_back(pPlugin);
-	if (!m_pluginContainer.back().Initialize(*gEnv, m_systemInitParams))
-	{
-		m_pluginContainer.back().Shutdown();
-		m_pluginContainer.pop_back();
 
-		return nullptr;
+	if (OnPluginLoaded())
+	{
+		return pPlugin;
 	}
 
-	return pPlugin;
+	return nullptr;
 }

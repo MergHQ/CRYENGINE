@@ -347,6 +347,7 @@ private:
 	virtual void      ReloadAllCHRPARAMS();
 	virtual void      PreloadLevelModels();
 
+	void              TryLoadModelSkin(const char* szFilePath, uint32 nLoadingFlags, bool bKeep);
 	void              GetModelCacheSize() const;
 	void              DebugModelCache(uint32 printtxt, std::vector<CDefaultSkeletonReferences>& parrModelCache, std::vector<CDefaultSkinningReferences>& parrModelCacheSKIN);
 	virtual void      ClearResources(bool bForceCleanup);      //! Cleans up all resources - currently deletes all bodies and characters (even if there are references on them)

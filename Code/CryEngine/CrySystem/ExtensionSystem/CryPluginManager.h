@@ -42,6 +42,8 @@ protected:
 	virtual std::shared_ptr<ICryPlugin> QueryPluginById(const CryClassID& classID) const override;
 	virtual std::shared_ptr<ICryPlugin> AcquirePluginById(const CryClassID& classID) override;
 
+	bool OnPluginLoaded();
+
 private:
 	bool                    LoadExtensionFile(const char* filename);
 	bool                    UnloadAllPlugins();

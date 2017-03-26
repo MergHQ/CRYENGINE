@@ -87,11 +87,7 @@ struct IMonoRuntime;
 
 #define NUM_UPDATE_TIMES (128U)
 
-#if CRY_PLATFORM_WINDOWS
 typedef void* WIN_HMODULE;
-#else
-typedef void* WIN_HMODULE;
-#endif
 
 #if !defined(CRY_ASYNC_MEMCPY_DELEGATE_TO_CRYSYSTEM)
 CRY_ASYNC_MEMCPY_API void cryAsyncMemcpy(void* dst, const void* src, size_t size, int nFlags, volatile int* sync);
@@ -521,8 +517,8 @@ public:
 #endif
 	// ~IWindowMessageHandler
 
-	WIN_HMODULE LoadDLL(const char* dllName, bool bQuitIfNotFound = true);
-	bool        UnloadDLL(const char* dllName);
+	WIN_HMODULE LoadDynamicLibrary(const char* dllName, bool bQuitIfNotFound = true, bool bLogLoadingInfo = false);
+	bool        UnloadDynamicLibrary(const char* dllName);
 
 private:
 
@@ -604,7 +600,6 @@ private:
 	//   sPath - e.g. "Game/Config/CVarGroups"
 	void        AddCVarGroupDirectory(const string& sPath);
 
-	WIN_HMODULE LoadDynamiclibrary(const char* dllName) const;
 #if CRY_PLATFORM_WINDOWS
 	bool        GetWinGameFolder(char* szMyDocumentsPath, int maxPathSize);
 #endif
