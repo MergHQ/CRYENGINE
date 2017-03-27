@@ -814,106 +814,54 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 	NET_PROFILE_SCOPE(pEntity->GetClass()->GetName(), serialize.IsReading());
 	NET_PROFILE_SCOPE(pEntity->GetName(), serialize.IsReading());
 
-	switch (nAspect)
+	if (nAspect == eEA_Script)
 	{
-	case eEA_GameClientStatic:
-	case eEA_GameServerStatic:
-	case eEA_GameClientDynamic:
-	case eEA_GameServerDynamic:
-	case eEA_GameClientA:
-	case eEA_GameServerA:
-	case eEA_GameClientB:
-	case eEA_GameServerB:
-	case eEA_GameClientC:
-	case eEA_GameServerC:
-	case eEA_GameClientD:
-	case eEA_GameClientE:
-	case eEA_GameClientF:
-	case eEA_GameClientG:
-	case eEA_GameClientH:
-	case eEA_GameClientI:
-	case eEA_GameClientJ:
-	case eEA_GameServerD:
-	case eEA_GameClientK:
-	case eEA_GameClientL:
-	case eEA_GameClientM:
-	case eEA_GameClientN:
-	case eEA_GameClientO:
-	case eEA_GameClientP:
-	case eEA_GameServerE:
-	case eEA_Aspect31:
+		IEntityScriptComponent* pScriptProxy = static_cast<IEntityScriptComponent*>(pEntity->GetProxy(ENTITY_PROXY_SCRIPT));
+		if (pScriptProxy)
 		{
-			NET_PROFILE_SCOPE("NetSerialize", serialize.IsReading());
+			NET_PROFILE_SCOPE("ScriptProxy", serialize.IsReading());
+			pScriptProxy->GameSerialize(serialize);
+		}
 
-			if (!pEntity->GetNetEntity()->NetSerializeEntity(serialize, (EEntityAspects)nAspect, profile, 0))
-			{
-				if (verboseLogging)
-					GameWarning("CGameContext::SynchObject: game fails to serialize aspect %d on profile %d", BitIndex(nAspect), int(profile));
-				NET_PROFILE_COUNT_READ_BITS(false);
-				return eSOR_Failed;
-			}
-		}
-		break;
-	case eEA_Physics:
+		NET_PROFILE_SCOPE("ScriptRMI", serialize.IsReading());
+		if (!m_pScriptRMI->SerializeScript(serialize, pEntity))
 		{
-			int pflags = 0;
-			if (m_pPhysicsSync && serialize.IsReading())
-			{
-				if (m_pPhysicsSync->IgnoreSnapshot())
-				{
-					NET_PROFILE_COUNT_READ_BITS(false);
-					return eSOR_Skip;
-				}
-				else if (m_pPhysicsSync->NeedToCatchup())
-				{
-					pflags |= ssf_compensate_time_diff;
-				}
-			}
-			IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-			if (pProxy)
-			{
-				NET_PROFILE_SCOPE("NetSerialize", serialize.IsReading());
-				if (!pEntity->GetNetEntity()->NetSerializeEntity(serialize, eEA_Physics, profile, pflags))
-				{
-					if (verboseLogging)
-						GameWarning("CGameContext::SynchObject: game fails to serialize physics aspect on profile %d", int(profile));
-					NET_PROFILE_COUNT_READ_BITS(false);
-					return eSOR_Failed;
-				}
-			}
-			else
-			{
-				pEntity->PhysicsNetSerialize(serialize);
-			}
-			if (m_pPhysicsSync && serialize.IsReading() && serialize.ShouldCommitValues())
-				m_pPhysicsSync->UpdatedEntity(entityId);
+			if (verboseLogging)
+				GameWarning("CGameContext::SynchObject: failed to serialize script aspect");
+			NET_PROFILE_COUNT_READ_BITS(false);
+			return eSOR_Failed;
 		}
-		break;
-	case eEA_Script:
-		{
-			IEntityScriptComponent* pScriptProxy = static_cast<IEntityScriptComponent*>(pEntity->GetProxy(ENTITY_PROXY_SCRIPT));
-			if (pScriptProxy)
-			{
-				NET_PROFILE_SCOPE("ScriptProxy", serialize.IsReading());
-				pScriptProxy->GameSerialize(serialize);
-			}
-
-			NET_PROFILE_SCOPE("ScriptRMI", serialize.IsReading());
-			if (!m_pScriptRMI->SerializeScript(serialize, pEntity))
-			{
-				if (verboseLogging)
-					GameWarning("CGameContext::SynchObject: failed to serialize script aspect");
-				NET_PROFILE_COUNT_READ_BITS(false);
-				return eSOR_Failed;
-			}
-		}
-		break;
-	default:
-		;
-		//		GameWarning("Unknown aspect %d", nAspect);
-		//		NET_PROFILE_COUNT_READ_BITS(false);
-		//		return false;
+		return eSOR_Ok;
 	}
+
+	int pflags = 0;
+	if (nAspect == eEA_Physics && m_pPhysicsSync && serialize.IsReading())
+	{
+		if (m_pPhysicsSync->IgnoreSnapshot())
+		{
+			NET_PROFILE_COUNT_READ_BITS(false);
+			return eSOR_Skip;
+		}
+		else if (m_pPhysicsSync->NeedToCatchup())
+		{
+			pflags |= ssf_compensate_time_diff;
+		}
+	}
+
+	bool ok = pEntity->GetNetEntity()->NetSerializeEntity(serialize, (EEntityAspects)nAspect, profile, 0);
+	if (!ok)
+	{
+		if (verboseLogging)
+			GameWarning("CGameContext::SynchObject: game fails to serialize aspect %d on profile %d", BitIndex(nAspect), int(profile));
+		NET_PROFILE_COUNT_READ_BITS(false);
+		return eSOR_Failed;
+	}
+
+	if (nAspect == eEA_Physics && m_pPhysicsSync && serialize.IsReading() && serialize.ShouldCommitValues())
+	{
+		m_pPhysicsSync->UpdatedEntity(entityId);
+	}
+
 	NET_PROFILE_COUNT_READ_BITS(false);
 	return eSOR_Ok;
 }
@@ -1572,7 +1520,7 @@ bool CGameContext::Update()
 	if (0 == (m_broadcastActionEventInGame -= (m_broadcastActionEventInGame != -1)))
 		CCryAction::GetCryAction()->OnActionEvent(eAE_inGame);
 
-#if ENABLE_NETEDEBUG
+#if ENABLE_NETDEBUG
 	if (m_pNetDebug)
 		m_pNetDebug->Update();
 #endif

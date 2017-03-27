@@ -1334,7 +1334,8 @@ void CSystem::SleepIfNeeded()
 			currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
 		}
 
-		sTimeLast = pTimer->GetAsyncTime().GetMicroSecondsAsInt64() + safeMarginMS;
+		m_lastTickTime = pTimer->GetAsyncTime();
+		sTimeLast = m_lastTickTime.GetMicroSecondsAsInt64() + safeMarginMS;
 	}
 }
 
