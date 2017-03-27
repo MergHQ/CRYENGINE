@@ -64,9 +64,12 @@ void CPlayerInput::ProcessEvent(SEntityEvent& event)
 
 void CPlayerInput::Update(SEntityUpdateContext &ctx)
 {
+	if (m_mouseDeltaRotation.IsZero())
+		return;
+
 	// Start by updating look dir
 	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_lookOrientation));
-	
+
 	ypr.x += m_mouseDeltaRotation.x * m_pPlayer->GetCVars().m_rotationSpeedYaw * ctx.fFrameTime;
 
 	// TODO: Perform soft clamp here instead of hard wall, should reduce rot speed in this direction when close to limit.
@@ -76,8 +79,11 @@ void CPlayerInput::Update(SEntityUpdateContext &ctx)
 
 	m_lookOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
 
-	// Reset every frame
 	m_mouseDeltaRotation = ZERO;
+
+	// Look direction needs to be synced to server to calculate the movement in
+	// the right direction.
+	NetMarkAspectsDirty(kInputAspect);
 }
 
 void CPlayerInput::OnPlayerRespawn()
@@ -114,7 +120,6 @@ void CPlayerInput::HandleInputFlagChange(TInputFlags flags, int activationMode, 
 		break;
 	}
 
-	// Can be done additionally in Update() to update the look direction.
 	NetMarkAspectsDirty(kInputAspect);
 }
 

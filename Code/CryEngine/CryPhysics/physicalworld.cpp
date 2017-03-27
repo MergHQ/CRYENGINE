@@ -1013,9 +1013,7 @@ void SEntityGrid::DeactivateOnDemand()
 void CPhysicalWorld::RegisterBBoxInPODGrid(const Vec3 *BBox)
 {
 	WriteLock lock(m_lockPODGrid);
-	MarkAsPODThread(this);
 	m_entgrid.RegisterBBoxInPODGrid(BBox, m_pPhysicsStreamer);
-	UnmarkAsPODThread(this);
 }
 
 void SEntityGrid::RegisterBBoxInPODGrid(const Vec3 *BBox, IPhysicsStreamer *pStreamer)
@@ -1044,14 +1042,18 @@ void SEntityGrid::RegisterBBoxInPODGrid(const Vec3 *BBox, IPhysicsStreamer *pStr
 		if (!pPODcells[i]) {
 			memset(pPODcells[i] = new pe_PODcell[64], 0, sizeof(pe_PODcell)*64);
 			for(int j=0;j<64;j++) pPODcells[i][j].zlim.set(1000.0f,-1000.0f);
+			if (!imask) pPODcells[i][0].lifeTime = 1e10f;
 		}
 		pe_PODcell *pPODcell = pPODcells[i] + ((ix&7)+(iy&7)*8 & imask);
 		pPODcell->zlim[0] = min(pPODcell->zlim[0], gBBox[0].z);
 		pPODcell->zlim[1] = max(pPODcell->zlim[1], gBBox[1].z);
 		pPODcell->nObjects++;
-		if (pPODcell->lifeTime>0) {
+		if (pPODcell->lifeTime>0 && pPODcell->lifeTime<1e10f) {
+			MarkAsPODThread(m_pWorld);
+			++m_pWorld->m_iLastPODUpdate;
 			Vec3 center,sz; GetPODGridCellBBox(ix<<log2PODscale,iy<<log2PODscale, center,sz);
 			pStreamer->DestroyPhysicalEntitiesInBox(center-sz,center+sz);
+			UnmarkAsPODThread(m_pWorld);
 			pPODcell->lifeTime = -1;
 			int *picellNext;
 			pe_PODcell *pPODcell1;
@@ -1874,7 +1876,7 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 									grid.GetPODGridCellBBox(ix,iy,center,size);
 									m_nOnDemandListFailures=0; ++m_iLastPODUpdate;
 									if (m_pPhysicsStreamer->CreatePhysicalEntitiesInBox(center-size,center+size))	{
-										pPODcell->lifeTime = m_nOnDemandListFailures ? 1E10f:8.0f;
+										pPODcell->lifeTime = m_nOnDemandListFailures ? 0.001f:8.0f;
 										pPODcell->inextActive = grid.iActivePODCell0;
 										grid.iActivePODCell0 = iy<<16|ix;
 										szList = max(szList, GetTmpEntList(pTmpEntList, iCaller));

@@ -1423,7 +1423,10 @@ void CEntityPhysics::PhysicalizeSoft(SEntityPhysicalizeParams& params)
 		float scale = scaleVec.x;
 
 		pe_geomparams partpos;
-		partpos.pMtx3x4 = const_cast<Matrix34*>(&pSlot->GetLocalTM());
+		partpos.pos = pSlot->GetLocalTM().GetTranslation();
+		Matrix33 rot = Matrix33(pSlot->GetLocalTM());
+		rot.OrthonormalizeFast();
+		partpos.q = Quat(rot);
 		partpos.density = params.density;
 		partpos.mass = params.mass;
 		partpos.flags = 0;
@@ -1998,7 +2001,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 			if (!m_pEntity->IsActive())
 				m_pEntity->ActivateForNumUpdates(4);
 		}
-		else
+		else if (physType == PE_ARTICULATED)
 		{
 			// Use all slots.
 			ppos.flags = status_local;
@@ -2023,7 +2026,6 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 		{
 			pe_status_softvtx ssv;
 			const Vec3& entityScale = m_pEntity->GetScale();
-			const float rscale = 1.f / m_pEntity->GetWorldTM().GetColumn0().len();
 
 			m_pPhysicalEntity->GetStatus(&ssv);
 			if (m_pEntity->GetParent())
@@ -2035,7 +2037,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 			m_pEntity->SetPosRotScale(ssv.pos, ssv.q, entityScale, ENTITY_XFORM_PHYSICS_STEP);
 
 			IStatObj* pStatObj = m_pEntity->GetStatObj(0);
-			IStatObj* pStatObjNew = pStatObj->UpdateVertices(ssv.pVtx, ssv.pNormals, 0, ssv.nVtx, ssv.pVtxMap, rscale);
+			IStatObj* pStatObjNew = pStatObj->UpdateVertices(ssv.pVtx, ssv.pNormals, 0, ssv.nVtx, ssv.pVtxMap);
 			if (pStatObjNew != pStatObj)
 			{
 				ssv.pMesh->SetForeignData(pStatObjNew, 0);

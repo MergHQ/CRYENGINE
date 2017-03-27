@@ -1044,12 +1044,7 @@ void CGameObject::FullSerialize(TSerialize ser)
 //------------------------------------------------------------------------
 bool CGameObject::NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
 {
-	// Don't call the parent CNetEntity::NetSerializeEntity() as entity components
-	// vector is a duplicate of the CGameObject m_extensions.
-	for (auto& it : m_extensions)
-		if (!it.pExtension->NetSerialize(ser, aspect, profile, flags))
-			return false;
-	return true;
+	return m_pNetEntity->NetSerializeEntity(ser, aspect, profile, flags);
 }
 
 NetworkAspectType CGameObject::GetNetSerializeAspectMask() const
