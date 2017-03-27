@@ -1785,7 +1785,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 
 		pSrcRenderNode = pSrcEntity->GetRenderNode(i);
 		//createParams.nMatLayers = pSrcRenderProxy->GetMaterialLayersMask();
-		createParams.nRenderNodeFlags = pSrcRenderNode->GetRndFlags();
+		createParams.nRenderNodeFlags = pSrcRenderNode ? pSrcRenderNode->GetRndFlags() : (ERF_CASTSHADOWMAPS | ERF_MOVES_EVERY_FRAME);
 		createParams.pCustomMtl = pSrcEntity->GetMaterial();
 		createParams.fScale = pSrcEntity->GetScale().x;
 		createParams.pName = pSrcEntity->GetName();
@@ -1964,7 +1964,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 			bNewEntity = pNewEntity != pPrevNewEntity;
 
 			if (pCreateEvent->nTotParts == 1)
-				SetEntityLifetime(pNewEntity, pNewStatObj->GetProperties(), !pSrcRenderNode->m_pTempData || pSrcRenderNode->GetDrawFrame() + 10 > gEnv->pRenderer->GetFrameID());
+				SetEntityLifetime(pNewEntity, pNewStatObj->GetProperties(), pSrcRenderNode && (!pSrcRenderNode->m_pTempData || pSrcRenderNode->GetDrawFrame() + 10 > gEnv->pRenderer->GetFrameID()));
 		}
 	}
 
