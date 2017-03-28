@@ -2001,7 +2001,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 			if (!m_pEntity->IsActive())
 				m_pEntity->ActivateForNumUpdates(4);
 		}
-		else if (physType == PE_ARTICULATED)
+		else if (physType == PE_ARTICULATED || physType == PE_WHEELEDVEHICLE)
 		{
 			// Use all slots.
 			ppos.flags = status_local;
