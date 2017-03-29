@@ -75,6 +75,7 @@ struct CVar
 
 	static int         es_DebugEntityUsage;
 	static const char* es_DebugEntityUsageFilter;
+	static int         es_DebugEntityUsageSortMode;
 
 	// Entity pool usage
 	static int    es_LayerSaveLoadSerialization;

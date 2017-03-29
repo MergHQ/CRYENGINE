@@ -64,6 +64,7 @@ int CVar::es_DisableTriggers = 0;
 int CVar::es_DrawProximityTriggers = 0;
 int CVar::es_DebugEntityUsage = 0;
 const char* CVar::es_DebugEntityUsageFilter = "";
+int CVar::es_DebugEntityUsageSortMode = 0;
 int CVar::es_LayerSaveLoadSerialization = 0;
 int CVar::es_LayerDebugInfo = 0;
 int CVar::es_SaveLoadUseLUANoSaveFlag = 1;
@@ -266,6 +267,7 @@ void CVar::Init()
 	              "\nUsage: es_DebugEntityUsage update_rate"
 	              "\nupdate_rate - Time in ms to refresh memory usage calculation or 0 to disable");
 	REGISTER_CVAR(es_DebugEntityUsageFilter, "", 0, "Filter entity usage debugging to classes which have this string in their name");
+	REGISTER_CVAR(es_DebugEntityUsageSortMode, 0, 0, "Determines how es_DebugEntityUsage sorts the visual output\n0 = unsorted\n1 = sort by number of active instances\n2 = sort by memory usage");
 
 	REGISTER_CVAR(es_LayerSaveLoadSerialization, 0, VF_CHEAT,
 	              "Switches layer entity serialization: \n"
