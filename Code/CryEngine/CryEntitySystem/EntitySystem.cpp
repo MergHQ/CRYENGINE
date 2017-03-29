@@ -1104,10 +1104,32 @@ void CEntitySystem::DebugDrawEntityUsage()
 	static float fLastUpdate = 0.0f;
 	float fCurrTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();
 
-	typedef std::pair<EntityId, uint32>        TEntityPair;
-	typedef std::vector<TEntityPair>           TEntities;
-	typedef std::map<IEntityClass*, TEntities> TClassEntitiesMap;
-	static TClassEntitiesMap classEntitiesMap;
+	struct SEntityClassDebugInfo
+	{
+		SEntityClassDebugInfo() = default;
+		SEntityClassDebugInfo(IEntityClass* pEntityClass) : pClass(pEntityClass) {}
+
+		IEntityClass* pClass;
+
+		size_t memoryUsage = 0;
+		uint32 numEntities = 0;
+		uint32 numActiveEntities = 0;
+		uint32 numNotHiddenEntities = 0;
+
+		// Amount of memory used by hidden entities
+		size_t hiddenMemoryUsage = 0;
+	};
+
+	static std::vector<SEntityClassDebugInfo> debuggedEntityClasses;
+
+	enum class EEntityUsageSortMode
+	{
+		None = 0,
+		ActiveInstances,
+		MemoryUsage
+	};
+
+	EEntityUsageSortMode sortMode = (EEntityUsageSortMode)CVar::es_DebugEntityUsageSortMode;
 
 	ICrySizer* pSizer = gEnv->pSystem->CreateSizer();
 
@@ -1118,39 +1140,80 @@ void CEntitySystem::DebugDrawEntityUsage()
 		string sFilter = CVar::es_DebugEntityUsageFilter;
 		sFilter.MakeLower();
 
-		classEntitiesMap.clear();
-		std::vector<CEntity*>::const_iterator itEntity = m_EntityArray.begin();
-		std::vector<CEntity*>::const_iterator itEntityEnd = m_EntityArray.end();
-		for (; itEntity != itEntityEnd; ++itEntity)
+		debuggedEntityClasses.clear();
+		debuggedEntityClasses.reserve(GetClassRegistry()->GetClassCount());
+
+		for (CEntity* pEntity : m_EntityArray)
 		{
-			const CEntity* pEntity = *itEntity;
-			if (pEntity)
+			if (pEntity == nullptr)
 			{
-				if (!sFilter.empty())
-				{
-					IEntityClass* pClass = pEntity->GetClass();
-					string szName = pClass->GetName();
-					szName.MakeLower();
-					if (szName.find(sFilter) == string::npos)
-						continue;
-				}
-
-				// Calculate memory usage
-
-				const uint32 prevMemoryUsage = pSizer->GetTotalSize();
-
-				pEntity->GetMemoryUsage(pSizer);
-
-				const uint32 uMemoryUsage = pSizer->GetTotalSize() - prevMemoryUsage;
-
-				classEntitiesMap[pEntity->GetClass()].push_back(TEntityPair(pEntity->GetId(), uMemoryUsage));
+				continue;
 			}
+
+			IEntityClass* pEntityClass = pEntity->GetClass();
+
+			if (!sFilter.empty())
+			{
+				string szName = pEntityClass->GetName();
+				szName.MakeLower();
+				if (szName.find(sFilter) == string::npos)
+					continue;
+			}
+
+			auto debuggedEntityClassIterator = std::find_if(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [pEntityClass](const SEntityClassDebugInfo& classInfo)
+			{
+				return classInfo.pClass == pEntityClass;
+			});
+
+			if (debuggedEntityClassIterator == debuggedEntityClasses.end())
+			{
+				debuggedEntityClasses.emplace_back(pEntityClass);
+				debuggedEntityClassIterator = --debuggedEntityClasses.end();
+			}
+
+			// Calculate memory usage
+			const uint32 prevMemoryUsage = pSizer->GetTotalSize();
+			pEntity->GetMemoryUsage(pSizer);
+			const uint32 uMemoryUsage = pSizer->GetTotalSize() - prevMemoryUsage;
+			pSizer->Reset();
+
+			debuggedEntityClassIterator->memoryUsage += uMemoryUsage;
+			debuggedEntityClassIterator->numEntities++;
+
+			if (pEntity->IsActive())
+			{
+				debuggedEntityClassIterator->numActiveEntities++;
+			}
+
+			if (pEntity->IsHidden())
+			{
+				debuggedEntityClassIterator->hiddenMemoryUsage += uMemoryUsage;
+			}
+			else
+			{
+				debuggedEntityClassIterator->numNotHiddenEntities++;
+			}
+		}
+
+		if (sortMode == EEntityUsageSortMode::ActiveInstances)
+		{
+			std::sort(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [](const SEntityClassDebugInfo& classInfoLeft, const SEntityClassDebugInfo& classInfoRight)
+			{
+				return classInfoLeft.numActiveEntities > classInfoRight.numActiveEntities;
+			});
+		}
+		else if (sortMode == EEntityUsageSortMode::MemoryUsage)
+		{
+			std::sort(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [](const SEntityClassDebugInfo& classInfoLeft, const SEntityClassDebugInfo& classInfoRight)
+			{
+				return classInfoLeft.memoryUsage > classInfoRight.memoryUsage;
+			});
 		}
 	}
 
 	pSizer->Release();
 
-	if (!classEntitiesMap.empty())
+	if (!debuggedEntityClasses.empty())
 	{
 		float fColumnY = 11.0f;
 		const float colWhite[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -1159,7 +1222,7 @@ void CEntitySystem::DebugDrawEntityUsage()
 		const float fColumnX_Class = 50.0f;
 		const float fColumnX_TotalCount = 250.0f;
 		const float fColumnX_ActiveCount = 350.0f;
-		const float fColumnX_HiddenCount = 450.0f;
+		const float fColumnX_NotHiddenCount = 450.0f;
 		const float fColumnX_MemoryUsage = 550.0f;
 		const float fColumnX_MemoryHidden = 650.0f;
 
@@ -1173,54 +1236,20 @@ void CEntitySystem::DebugDrawEntityUsage()
 
 		IRenderAuxText::Draw2dLabel(fColumnX_Class, fColumnY, 1.2f, colWhite, false, "%s", sTitle.c_str());
 		IRenderAuxText::Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.2f, colWhite, true, "Active");
-		IRenderAuxText::Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.2f, colWhite, true, "Hidden");
+		IRenderAuxText::Draw2dLabel(fColumnX_NotHiddenCount, fColumnY, 1.2f, colWhite, true, "Not Hidden");
 		IRenderAuxText::Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.2f, colWhite, true, "Memory Usage");
 		IRenderAuxText::Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.2f, colWhite, true, "[Only Hidden]");
 		fColumnY += 15.0f;
 
-		TClassEntitiesMap::const_iterator itClass = classEntitiesMap.begin();
-		TClassEntitiesMap::const_iterator itClassEnd = classEntitiesMap.end();
-		for (; itClass != itClassEnd; ++itClass)
+		for (const SEntityClassDebugInfo& debugEntityClassInfo : debuggedEntityClasses)
 		{
-			IEntityClass* pClass = itClass->first;
-			const char* szName = pClass->GetName();
-
-			// Skip if empty
-			const TEntities& entities = itClass->second;
-			if (entities.empty())
-				continue;
-
-			// Generate counts
-			uint32 uTotalCount = 0, uActiveCount = 0, uHiddenCount = 0, uTotalMemory = 0, uHiddenMemory = 0;
-			TEntities::const_iterator itEntity = entities.begin();
-			TEntities::const_iterator itEntityEnd = entities.end();
-			for (; itEntity != itEntityEnd; ++itEntity)
-			{
-				EntityId entityId = itEntity->first;
-				const CEntity* pEntity = GetEntityFromID(entityId);
-				if (!pEntity)
-					continue;
-
-				uTotalCount++;
-				uTotalMemory += itEntity->second;
-
-				if (pEntity->IsActive())
-				{
-					uActiveCount++;
-				}
-
-				if (pEntity->IsHidden())
-				{
-					uHiddenCount++;
-					uHiddenMemory += itEntity->second;
-				}
-			}
+			const char* szName = debugEntityClassInfo.pClass->GetName();
 
 			IRenderAuxText::Draw2dLabel(fColumnX_Class, fColumnY, 1.0f, colWhite, false, "%s", szName);
-			IRenderAuxText::Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.0f, colWhite, true, "%u", uActiveCount);
-			IRenderAuxText::Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.0f, colWhite, true, "%u", uHiddenCount);
-			IRenderAuxText::Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.0f, colWhite, true, "%u (%uKb)", uTotalMemory, uTotalMemory / 1000);
-			IRenderAuxText::Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.0f, colGreen, true, "%u (%uKb)", uHiddenMemory, uHiddenMemory / 1000);
+			IRenderAuxText::Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.0f, colWhite, true, "%u", debugEntityClassInfo.numActiveEntities);
+			IRenderAuxText::Draw2dLabel(fColumnX_NotHiddenCount, fColumnY, 1.0f, colWhite, true, "%u", debugEntityClassInfo.numNotHiddenEntities);
+			IRenderAuxText::Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.0f, colWhite, true, "%u (%uKb)", debugEntityClassInfo.memoryUsage, debugEntityClassInfo.memoryUsage / 1000);
+			IRenderAuxText::Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.0f, colGreen, true, "%u (%uKb)", debugEntityClassInfo.hiddenMemoryUsage, debugEntityClassInfo.hiddenMemoryUsage / 1000);
 			fColumnY += 12.0f;
 		}
 	}
