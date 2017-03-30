@@ -10,9 +10,17 @@
 
 #include <CryMono/IMonoAssembly.h>
 
-CMonoObject::CMonoObject(MonoObject* pObject, std::shared_ptr<IMonoClass> pClass)
+CMonoObject::CMonoObject(MonoObject* pObject, std::shared_ptr<CMonoClass> pClass)
 	: m_pClass(pClass)
 	, m_pObject(pObject)
+{
+	CRY_ASSERT_MESSAGE(m_pClass.get() != nullptr, "SetWeakPointer must be called if no class is available!");
+
+	m_gcHandle = mono_gchandle_new(m_pObject, true);
+}
+
+CMonoObject::CMonoObject(MonoObject* pObject)
+	: m_pObject(pObject)
 {
 	m_gcHandle = mono_gchandle_new(m_pObject, true);
 }
@@ -22,16 +30,6 @@ CMonoObject::~CMonoObject()
 	mono_gchandle_free(m_gcHandle);
 }
 
-std::shared_ptr<IMonoObject> CMonoObject::InvokeMethod(const char *methodName, void **pParams, int numParams) const
-{
-	return m_pClass->InvokeMethod(methodName, this, pParams, numParams);
-}
-
-std::shared_ptr<IMonoObject> CMonoObject::InvokeMethodWithDesc(const char* methodDesc, void** pParams) const
-{
-	return m_pClass->InvokeMethodWithDesc(methodDesc, this, pParams);
-}
-
 const char* CMonoObject::ToString() const
 {
 	MonoObject* pException = nullptr;
@@ -39,7 +37,7 @@ const char* CMonoObject::ToString() const
 	MonoString* pStr = mono_object_to_string(m_pObject, &pException);
 	if (pException != nullptr)
 	{
-		static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->HandleException(pException);
+		GetMonoRuntime()->HandleException(pException);
 		return nullptr;
 	}
 
@@ -61,19 +59,24 @@ char* CMonoObject::GetArrayAddress(size_t elementSize, size_t index) const
 	return mono_array_addr_with_size((MonoArray*)m_pObject, elementSize, index);
 }
 
-void CMonoObject::Serialize()
+void CMonoObject::AssignObject(MonoObject* pObject)
 {
-	auto* pDomain = static_cast<CAppDomain*>(m_pClass->GetAssembly()->GetDomain());
-
-	pDomain->Serialize(m_pObject, false);
+	m_pObject = pObject;
+	m_gcHandle = mono_gchandle_new(m_pObject, true);
 }
 
-void CMonoObject::Deserialize()
+IMonoClass* CMonoObject::GetClass()
 {
-	auto* pDomain = static_cast<CAppDomain*>(m_pClass->GetAssembly()->GetDomain());
+	if (m_pClass == nullptr)
+	{
+		MonoClass* pClass = mono_object_get_class(m_pObject);
+		MonoImage* pImage = mono_class_get_image(pClass);
+		MonoAssembly* pAssembly = mono_image_get_assembly(pImage);
 
-	auto pDeserializedObject = pDomain->Deserialize(false);
-	
-	m_pObject = (MonoObject*)pDeserializedObject->GetHandle();
-	m_gcHandle = mono_gchandle_new(m_pObject, true);
+		CMonoLibrary* pLibrary = static_cast<CMonoDomain*>(GetMonoRuntime()->GetActiveDomain())->GetLibraryFromMonoAssembly(pAssembly);
+
+		m_pClass = pLibrary->GetClassFromMonoClass(pClass);
+	}
+
+	return m_pClass.get();
 }

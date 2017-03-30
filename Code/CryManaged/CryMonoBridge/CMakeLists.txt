@@ -32,6 +32,8 @@ add_sources("CryMonoBridge_main_uber_2.cpp"
 		"Wrappers/MonoObject.cpp"
 		"Wrappers/MonoException.h"
 		"Wrappers/MonoException.cpp"
+		"Wrappers/MonoMethod.h"
+		"Wrappers/MonoMethod.cpp"
 )
 
 add_sources("CryMonoBridge_main_uber_3.cpp"

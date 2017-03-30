@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "ManagedEntityComponent.h"
+#include "MonoRuntime.h"
 
-#include <CryMono/IMonoRuntime.h>
 #include <CryMono/IMonoAssembly.h>
 #include <CryMono/IMonoClass.h>
 #include <CryMono/IMonoDomain.h>
@@ -79,11 +79,11 @@ void CManagedEntityComponent::Initialize()
 	pParams[0] = &m_pEntity;
 	pParams[1] = &id;
 
-	IMonoClass* pEntityComponentClass = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
+	IMonoClass* pEntityComponentClass = GetMonoRuntime()->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
 
-	pEntityComponentClass->InvokeMethod("Initialize", m_pMonoObject.get(), pParams, 2);
+	pEntityComponentClass->FindMethodInInheritedClasses("Initialize", 2)->Invoke(m_pMonoObject.get(), pParams);
 
-	m_pMonoObject->InvokeMethod(".ctor");
+	m_pMonoObject->GetClass()->FindMethod(".ctor")->Invoke(m_pMonoObject.get());
 }
 
 void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
@@ -92,7 +92,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 	{
 		case ENTITY_EVENT_XFORM:
 			{
-				m_pMonoObject->InvokeMethod("OnTransformChanged");
+				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnTransformChanged")->Invoke(m_pMonoObject.get());
 			}
 			break;
 		case ENTITY_EVENT_UPDATE:
@@ -100,7 +100,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				void* pParams[1];
 				pParams[0] = &((SEntityUpdateContext*)event.nParam[0])->fFrameTime;
 
-				m_pMonoObject->InvokeMethod("OnUpdate", pParams, 1);
+				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnUpdate", 1)->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 		case ENTITY_EVENT_RESET:
@@ -108,17 +108,17 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				void* pParams[1];
 				pParams[0] = &event.nParam[0];
 
-				m_pMonoObject->InvokeMethod("OnEditorGameModeChange", pParams, 1);
+				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnEditorGameModeChange", 1)->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 		case ENTITY_EVENT_HIDE:
 			{
-				m_pMonoObject->InvokeMethod("OnHide");
+				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnHide")->Invoke(m_pMonoObject.get());
 			}
 			break;
 		case ENTITY_EVENT_UNHIDE:
 			{
-				m_pMonoObject->InvokeMethod("OnUnhide");
+				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnUnhide")->Invoke(m_pMonoObject.get());
 			}
 			break;
 		case ENTITY_EVENT_COLLISION:
@@ -129,7 +129,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				pParams[0] = &pCollision->pEntity[0];
 				pParams[1] = &pCollision->pEntity[1];
 
-				m_pMonoObject->InvokeMethod("OnCollisionInternal", pParams, 2);
+				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnCollisionInternal", 2)->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 		case ENTITY_EVENT_PREPHYSICSUPDATE:
@@ -137,7 +137,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				void* pParams[1];
 				pParams[0] = &event.fParam[0];
 
-				m_pMonoObject->InvokeMethod("OnPrePhysicsUpdate", pParams, 1);
+				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnPrePhysicsUpdate", 1)->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 	}

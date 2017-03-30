@@ -17,8 +17,6 @@
 #define __PARSEENGINECONFIG_H__
 
 #define ENGINE_CFG_FILE              "system.cfg"
-#define GAME_CFG_FILE                "game.cfg"
-#define PROJECT_CFG_FILE             "project.cfg"
 
 #define CONFIG_KEY_FOR_GAMEDLL       "sys_dll_game"
 #define CONFIG_KEY_FOR_GAMEFOLDER    "sys_game_folder"
@@ -45,8 +43,6 @@ public:
 		, m_dataFolder(DEFAULT_DATAFOLDER)
 	{
 		ParseConfig(ENGINE_CFG_FILE);
-		if (!m_gameFolder.empty())
-			ParseConfig(m_gameFolder + CRY_NATIVE_PATH_SEPSTR GAME_CFG_FILE);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -193,33 +189,6 @@ protected:
 	{
 		s.Trim();
 		return s;
-	}
-};
-
-class CProjectConfig : public CEngineConfig
-{
-public:
-	string m_engineVersion;
-
-	CProjectConfig()
-	{
-		ParseConfig(PROJECT_CFG_FILE);
-	}
-
-	void OnLoadConfigurationEntry(const string& strKey, const string& strValue, const string& strGroup) override
-	{
-		if (strKey.compareNoCase(CONFIG_KEY_FOR_ENGINEVERSION) == 0)
-		{
-			m_engineVersion = strValue;
-		}
-		else if (strKey.compareNoCase(CONFIG_KEY_FOR_GAMEDLL) == 0)
-		{
-			m_gameDLL = strValue;
-		}
-		else if (strKey.compareNoCase(CONFIG_KEY_FOR_GAMEFOLDER) == 0)
-		{
-			m_gameFolder = strValue;
-		}
 	}
 };
 

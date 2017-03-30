@@ -4,6 +4,7 @@
 #include "CryPluginManager.h"
 
 #include "System.h"
+#include "ProjectManager/ProjectManager.h"
 
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ICryFactoryRegistry.h>
@@ -174,13 +175,6 @@ struct SPluginContainer
 	SNativePluginModule            m_module;
 };
 
-void CCryPluginManager::ReloadPluginCmd(IConsoleCmdArgs* pArgs)
-{
-	s_pThis->UnloadAllPlugins();
-	s_pThis->LoadExtensionFile("cryplugin.csv");
-	s_pThis->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT_DONE, 0, 0);
-}
-
 CCryPluginManager::CCryPluginManager(const SSystemInitParams& initParams)
 	: m_systemInitParams(initParams)
 {
@@ -221,10 +215,6 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 
 void CCryPluginManager::Initialize()
 {
-#ifndef _RELEASE
-	REGISTER_COMMAND("sys_plugin_reload", ReloadPluginCmd, 0, "Reload a plugin - not implemented yet");
-#endif
-
 	// Find out how many ICryPlugin implementations are available
 	size_t numFactories;
 	gEnv->pSystem->GetCryFactoryRegistry()->IterateFactories(cryiidof<ICryPlugin>(), nullptr, numFactories);
@@ -245,116 +235,14 @@ void CCryPluginManager::Initialize()
 		OnPluginLoaded();
 	}
 
-	// Move on to loading from disk
-	// Start with loading the default engine plug-ins
-	LoadPluginFromDisk(EPluginType::Native, "CryDefaultEntities");
-	//Schematyc + Schematyc Standard Enviroment
-	LoadPluginFromDisk(EPluginType::Native, "CrySchematycCore");
-	LoadPluginFromDisk(EPluginType::Native, "CrySchematycSTDEnv");
-	//optional plugin, but we load it for now by default
+	// Load plug-ins specified in the .cryproject file from disk
+	CProjectManager* pProjectManager = static_cast<CProjectManager*>(gEnv->pSystem->GetIProjectManager());
+	const std::vector<SPluginDefinition>& pluginDefinitions = pProjectManager->GetPluginDefinitions();
 
-	LoadPluginFromDisk(EPluginType::Native, "CrySensorSystem");
-
-	LoadExtensionFile("cryplugin.csv");
-}
-
-//--- UTF8 parse helper routines
-
-static const char* Parser_NextChar(const char* pStart, const char* pEnd)
-{
-	CRY_ASSERT(pStart != nullptr && pEnd != nullptr);
-
-	if (pStart < pEnd)
+	for (const SPluginDefinition& pluginDefinition : pluginDefinitions)
 	{
-		CRY_ASSERT(0 <= *pStart && *pStart <= SCHAR_MAX);
-		pStart++;
+		LoadPluginFromDisk(pluginDefinition.type, pluginDefinition.path);
 	}
-
-	CRY_ASSERT(pStart <= pEnd);
-	return pStart;
-}
-
-static const char* Parser_StrChr(const char* pStart, const char* pEnd, int c)
-{
-	CRY_ASSERT(pStart != nullptr && pEnd != nullptr);
-	CRY_ASSERT(pStart <= pEnd);
-	CRY_ASSERT(0 <= c && c <= SCHAR_MAX);
-	const char* it = (const char*)memchr(pStart, c, pEnd - pStart);
-	return (it != nullptr) ? it : pEnd;
-}
-
-static bool Parser_StrEquals(const char* pStart, const char* pEnd, const char* szKey)
-{
-	size_t klen = strlen(szKey);
-	return (klen == pEnd - pStart) && memcmp(pStart, szKey, klen) == 0;
-}
-
-//---
-
-bool CCryPluginManager::LoadExtensionFile(const char* szFilename)
-{
-	CryLogAlways("Loading extension file %s", szFilename);
-
-	CRY_ASSERT(szFilename != nullptr);
-	bool bResult = true;
-
-	ICryPak* pCryPak = gEnv->pCryPak;
-	FILE* pFile = pCryPak->FOpen(szFilename, "rb", ICryPak::FLAGS_PATH_REAL);
-	if (pFile == nullptr)
-		return bResult;
-
-	size_t iFileSize = pCryPak->FGetSize(pFile);
-	char* pBuffer = new char[iFileSize];
-	pCryPak->FReadRawAll(pBuffer, iFileSize, pFile);
-	pCryPak->FClose(pFile);
-
-	const char* pTokenStart = pBuffer;
-	const char* pBufferEnd = pBuffer + iFileSize;
-	while (pTokenStart != pBufferEnd)
-	{
-		const char* pNewline = Parser_StrChr(pTokenStart, pBufferEnd, '\n');
-		const char* pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-
-		ICryPluginManager::EPluginType pluginType = ICryPluginManager::EPluginType::Native;
-		if (Parser_StrEquals(pTokenStart, pSemicolon, "C#"))
-			pluginType = ICryPluginManager::EPluginType::Managed;
-
-		// Parsing of plugin name
-		// Not actually used anymore, but no need to break existing setup seeing as we're going to move away from csv soon anyway - Filip
-		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
-		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-
-		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
-		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-
-		string pluginClassName;
-		pluginClassName.assign(pTokenStart, pSemicolon - pTokenStart);
-		pluginClassName.Trim();
-
-		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
-		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-
-		string pluginBinaryPath;
-		pluginBinaryPath.assign(pTokenStart, pSemicolon - pTokenStart);
-		pluginBinaryPath.Trim();
-
-		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
-		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-
-		string pluginAssetDirectory;
-		pluginAssetDirectory.assign(pTokenStart, pSemicolon - pTokenStart);
-		pluginAssetDirectory.Trim();
-	#pragma message("TODO: Use plugin asset directory")
-
-		pTokenStart = Parser_NextChar(pNewline, pBufferEnd);
-		if (!LoadPluginFromDisk(pluginType, pluginBinaryPath))
-		{
-			bResult = false;
-		}
-	}
-
-	delete[](pBuffer);
-	return bResult;
 }
 
 bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)

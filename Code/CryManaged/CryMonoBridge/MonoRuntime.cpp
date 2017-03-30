@@ -59,7 +59,7 @@ static IMiniLog::ELogType s_monoToEngineLevels[] =
 
 void OnReloadRequested(IConsoleCmdArgs *pArgs)
 {
-	static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->ReloadPluginDomain();
+	GetMonoRuntime()->ReloadPluginDomain();
 }
 
 CMonoRuntime::CMonoRuntime()
@@ -83,7 +83,7 @@ CMonoRuntime::~CMonoRuntime()
 		CRY_ASSERT(pEngineClass != nullptr);
 	
 		// Call the static Shutdown function
-		pEngineClass->InvokeMethod("OnEngineShutdown");
+		pEngineClass->FindMethod("OnEngineShutdown")->Invoke();
 	}
 
 	for (auto it = m_domainLookupMap.begin(); it != m_domainLookupMap.end(); ++it)
@@ -117,14 +117,16 @@ bool CMonoRuntime::Initialize()
 	char engineRoot[_MAX_PATH];
 	CryFindEngineRootFolder(_MAX_PATH, engineRoot);
 
+	const char* szMonoDirectoryParent = "bin\\common";
+
 	char sMonoLib[_MAX_PATH];
-	sprintf_s(sMonoLib, "%s\\bin\\common\\Mono\\lib", engineRoot);
+	sprintf_s(sMonoLib, "%s\\%s\\Mono\\lib", engineRoot, szMonoDirectoryParent);
 	char sMonoEtc[_MAX_PATH];
-	sprintf_s(sMonoEtc, "%s\\bin\\common\\Mono\\etc", engineRoot);
+	sprintf_s(sMonoEtc, "%s\\%s\\Mono\\etc", engineRoot, szMonoDirectoryParent);
 
 	if (!gEnv->pCryPak->IsFileExist(sMonoLib) || !gEnv->pCryPak->IsFileExist(sMonoEtc))
 	{
-		CryLogAlways("Failed to initialize Mono runtime, Mono directory was not found or incomplete in Engine directory");
+		CryLogAlways("Failed to initialize Mono runtime, Mono directory was not found or incomplete in %s directory", szMonoDirectoryParent);
 		delete this;
 
 		return false;
@@ -227,7 +229,7 @@ MonoAssembly* CMonoRuntime::MonoAssemblySearchCallback(MonoAssemblyName* pAssemb
 {
 	bool bRefOnly = ((int)pUserData == 0);
 
-	auto* pDomain = static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->GetActiveDomain();
+	auto* pDomain = GetMonoRuntime()->GetActiveDomain();
 
 	const char* assemblyName = mono_assembly_name_get_name(pAssemblyName);
 
@@ -380,7 +382,7 @@ CAppDomain* CMonoRuntime::LaunchPluginDomain()
 		CRY_ASSERT(pEngineClass != nullptr);
 
 		// Call the static Initialize function
-		pEngineClass->InvokeMethod("OnEngineStart");
+		pEngineClass->FindMethod("OnEngineStart")->Invoke();
 
 		return m_pPluginDomain;
 	}
@@ -395,14 +397,14 @@ void CMonoRuntime::ReloadPluginDomain()
 	CRY_ASSERT(pEngineClass != nullptr);
 
 	// Call the static Shutdown function
-	pEngineClass->InvokeMethod("OnUnloadStart");
+	pEngineClass->FindMethod("OnUnloadStart")->Invoke();
 
 	if (m_pPluginDomain->Reload())
 	{
 		static_cast<CMonoClass*>(pEngineClass.get())->ReloadClass();
 
 		// Notify the framework so that internal listeners etc. can be added again.
-		pEngineClass->InvokeMethod("OnReloadDone");
+		pEngineClass->FindMethod("OnReloadDone")->Invoke();
 	}
 }
 
@@ -434,7 +436,7 @@ void CMonoRuntime::InvokeManagedConsoleCommandNotification(const char* commandNa
 	{
 		methodArg[0] = &j;
 		methodArg[1] = m_pRootDomain->CreateManagedString(commandArguments->GetArg(j));
-		consoleCommandArgumentHolderInstance->InvokeMethod("SetArgument", methodArg, 2);
+		consoleCommandArgumentHolderInstance->GetClass()->FindMethod("SetArgument", 2)->Invoke(consoleCommandArgumentHolderInstance.get(), methodArg);
 	}
 
 	void* methodArg2[3];
@@ -442,7 +444,7 @@ void CMonoRuntime::InvokeManagedConsoleCommandNotification(const char* commandNa
 	methodArg2[1] = &noArguments;
 	methodArg2[2] = consoleCommandArgumentHolderInstance->GetHandle();
 	IMonoClass* classConsoleCommand = m_pLibCore->GetClass("CryEngine", "ConsoleCommand");
-	classConsoleCommand->InvokeMethod("NotifyManagedConsoleCommand", nullptr, methodArg2, 3);
+	classConsoleCommand->FindMethod("NotifyManagedConsoleCommand", 3)->Invoke(nullptr, methodArg2);
 }
 
 void CMonoRuntime::HandleException(MonoObject* pException)
@@ -469,5 +471,5 @@ void CMonoRuntime::HandleException(MonoObject* pException)
 	CRY_ASSERT(pExceptionHandlerClass != nullptr);
 
 	// Call the static Initialize function
-	pExceptionHandlerClass->InvokeMethod("Display", nullptr, args, 1);
+	pExceptionHandlerClass->FindMethod("Display", 1)->Invoke(nullptr, args);
 }

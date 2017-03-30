@@ -6,7 +6,9 @@
 
 struct SPluginContainer;
 
-class CCryPluginManager final : public ICryPluginManager, public ISystemEventListener
+class CCryPluginManager final 
+	: public ICryPluginManager
+	, public ISystemEventListener
 {
 public:
 	CCryPluginManager(const SSystemInitParams& initParams);
@@ -45,12 +47,9 @@ protected:
 	bool OnPluginLoaded();
 
 private:
-	bool                    LoadExtensionFile(const char* filename);
 	bool                    UnloadAllPlugins();
 	void                    NotifyEventListeners(const CryClassID& classID, IPluginEventListener::EPluginEvent event);
 
-	static void             ReloadPluginCmd(IConsoleCmdArgs* pArgs);
-	
 	std::vector<SPluginContainer> m_pluginContainer;
 	std::map<IPluginEventListener*, std::vector<CryClassID>> m_pluginListenerMap;
 

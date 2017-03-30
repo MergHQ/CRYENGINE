@@ -13,7 +13,7 @@ CMonoException::CMonoException(MonoException* pException)
 
 void CMonoException::Throw()
 {
-	static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->HandleException((MonoObject*)m_pException);
+	GetMonoRuntime()->HandleException((MonoObject*)m_pException);
 
 	//mono_raise_exception(m_pException);
 }

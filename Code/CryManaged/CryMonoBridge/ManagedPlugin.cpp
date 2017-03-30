@@ -25,7 +25,7 @@ CManagedPlugin::~CManagedPlugin()
 
 	if (m_pMonoObject != nullptr)
 	{
-		m_pMonoObject->InvokeMethod("Shutdown");
+		m_pMonoObject->GetClass()->FindMethod("Shutdown")->Invoke(m_pMonoObject.get());
 	}
 }
 
@@ -54,27 +54,27 @@ bool CManagedPlugin::InitializePlugin()
 		return false;
 	}
 
-	auto pEngineClass = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "Engine");
+	auto pEngineClass = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "Engine");
 	
 	void* pRegisterArgs[1];
 	pRegisterArgs[0] = m_pLibrary->GetManagedObject();
 
-	pEngineClass->InvokeMethodWithDesc(":ScanAssembly(System.Reflection.Assembly)", nullptr, pRegisterArgs);
+	pEngineClass->FindMethodWithDesc(":ScanAssembly(System.Reflection.Assembly)")->InvokeStatic(pRegisterArgs);
 
-	m_pMonoObject->InvokeMethod("Initialize");
+	m_pMonoObject->GetClass()->FindMethod("Initialize")->Invoke(m_pMonoObject.get());
 
 	return true;
 }
 
 const char* CManagedPlugin::TryGetPlugin() const
 {
-	auto pReflectionHelper = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "ReflectionHelper");
+	auto pReflectionHelper = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "ReflectionHelper");
 	CRY_ASSERT(pReflectionHelper != nullptr);
 
 	void* args[1];
 	args[0] = m_pLibrary->GetManagedObject();
 
-	auto pReturnValue = pReflectionHelper->InvokeMethodWithDesc("ReflectionHelper:FindPluginInstance(System.Reflection.Assembly)", nullptr, args);
+	auto pReturnValue = pReflectionHelper->FindMethodWithDesc("ReflectionHelper:FindPluginInstance(System.Reflection.Assembly)")->InvokeStatic(args);
 	if (pReturnValue == nullptr)
 	{
 		return nullptr;
@@ -90,7 +90,7 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	case ESYSTEM_EVENT_GAME_POST_INIT:
 	{
 		// Make sure the plugin domain exists, since plugins are always loaded in there
-		auto* pPluginDomain = static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->LaunchPluginDomain();
+		auto* pPluginDomain = GetMonoRuntime()->LaunchPluginDomain();
 		CRY_ASSERT(pPluginDomain != nullptr);
 
 		m_pLibrary = pPluginDomain->LoadLibrary(m_libraryPath);
@@ -104,18 +104,18 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 			if (pluginInitialized)
 			{
 				// scans for console command attributes
-				std::shared_ptr<IMonoClass> attributeManager = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleCommandAttributeManager");
+				std::shared_ptr<IMonoClass> attributeManager = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleCommandAttributeManager");
 				CRY_ASSERT(attributeManager != nullptr);
 				void* args[1];
 				args[0] = m_pLibrary->GetManagedObject(); //load the plugin assembly to scans for ConsoleCommandRegisterAttribute
-				attributeManager->InvokeMethod("RegisterAttribute", nullptr, args, 1);
+				attributeManager->FindMethod("RegisterAttribute", 1)->Invoke(nullptr, args);
 
 				//scans for console variable attributes
-				std::shared_ptr<IMonoClass> consoleVariableAttributeManager = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleVariableAttributeManager");
+				std::shared_ptr<IMonoClass> consoleVariableAttributeManager = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleVariableAttributeManager");
 				CRY_ASSERT(consoleVariableAttributeManager != nullptr);
 				void* args2[1];
 				args2[0] = m_pLibrary->GetManagedObject(); //load the plugin assembly to scans for ConsoleVariableAttribute
-				consoleVariableAttributeManager->InvokeMethod("RegisterAttribute", nullptr, args2, 1);
+				consoleVariableAttributeManager->FindMethod("RegisterAttribute", 1)->Invoke(nullptr, args2);
 			}
 		}
 	}
@@ -124,7 +124,7 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		{
 			if (m_pMonoObject != nullptr)
 			{
-				m_pMonoObject->InvokeMethod("OnLevelLoaded");
+				m_pMonoObject->GetClass()->FindMethod("OnLevelLoaded")->Invoke(m_pMonoObject.get());
 			}
 		}
 		break;
@@ -134,12 +134,12 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 			{
 				if (m_pMonoObject != nullptr)
 				{
-					m_pMonoObject->InvokeMethod("OnGameStart");
+					m_pMonoObject->GetClass()->FindMethod("OnGameStart")->Invoke(m_pMonoObject.get());
 				}
 			}
 			else if (m_pMonoObject != nullptr)
 			{
-				m_pMonoObject->InvokeMethod("OnGameStop");
+				m_pMonoObject->GetClass()->FindMethod("OnGameStop")->Invoke(m_pMonoObject.get());
 			}
 		}
 		break;
@@ -147,7 +147,7 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		{
 			if (m_pMonoObject != nullptr)
 			{
-				m_pMonoObject->InvokeMethod("OnGameStart");
+				m_pMonoObject->GetClass()->FindMethod("OnGameStart")->Invoke(m_pMonoObject.get());
 			}
 		}
 		break;
@@ -155,7 +155,7 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		{
 			if (m_pMonoObject != nullptr)
 			{
-				m_pMonoObject->InvokeMethod("OnGameStop");
+				m_pMonoObject->GetClass()->FindMethod("OnGameStop")->Invoke(m_pMonoObject.get());
 			}
 		}
 		break;

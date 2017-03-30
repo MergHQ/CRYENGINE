@@ -6,14 +6,16 @@ struct IMonoObject
 {
 	virtual ~IMonoObject() {}
 
-	virtual std::shared_ptr<IMonoObject> InvokeMethod(const char *methodName, void **pParams = nullptr, int numParams = 0) const = 0;
-	virtual std::shared_ptr<IMonoObject> InvokeMethodWithDesc(const char* methodDesc, void** pParams = nullptr) const = 0;
-
+	// Gets the string form of the object
 	virtual const char* ToString() const = 0;
 
+	// Gets the size of the array this object represents, if any
 	virtual size_t GetArraySize() const = 0;
+	// Gets the address of an element inside the array
 	virtual char* GetArrayAddress(size_t elementSize, size_t index) const = 0;
-
+	
+	// Gets the internal handle for the object
 	virtual void* GetHandle() const = 0;
-	virtual struct IMonoClass* GetClass() const = 0;
+	// Gets the class of the object, queries if not already available
+	virtual struct IMonoClass* GetClass() = 0;
 };

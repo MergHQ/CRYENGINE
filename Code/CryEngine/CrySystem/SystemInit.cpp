@@ -124,7 +124,7 @@
 extern LONG WINAPI CryEngineExceptionFilterWER(struct _EXCEPTION_POINTERS* pExceptionPointers);
 #endif
 
-#if CRY_PLATFORM_LINUX
+#ifdef USE_UNIXCONSOLE
 CUNIXConsole* pUnixConsole;
 #endif
 
@@ -571,11 +571,6 @@ static void OnSysSpecChange(ICVar* pVar)
 	if (g_cvars.sys_vr_support)
 		GetISystem()->LoadConfiguration("vr.cfg", 0, eLoadConfigSystemSpec);
 
-	if (gEnv->pCryPak->IsFileExist("game.cfg"))
-	{
-		GetISystem()->LoadConfiguration("game.cfg", 0, eLoadConfigSystemSpec);
-	}
-
 	if (gEnv->pRenderer)
 		gEnv->pRenderer->EF_ReloadTextures();
 
@@ -699,16 +694,13 @@ bool CSystem::UnloadDynamicLibrary(const char* szDllName)
 	stack_string modulePath = szDllName;
 	modulePath = CrySharedLibraryPrefix + PathUtil::ReplaceExtension(modulePath, CrySharedLibraryExtension);
 
-	auto moduleCrc = CCryNameCRC(modulePath);
+	CCryNameCRC moduleCrc(modulePath);
 
 	const WIN_HMODULE hModule = stl::find_in_map(m_moduleDLLHandles, moduleCrc, nullptr);
 
 	if (hModule != nullptr)
 	{
-		stack_string msg;
-		msg = "Unloading ";
-		msg += modulePath;
-		msg += "...";
+		string msg = string().Format("Unloading %s...", modulePath.c_str());
 
 		CryLog("%s", msg.c_str());
 
@@ -1771,6 +1763,8 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 		m_env.pCryPak->SetAlias("%ENGINE%", engineDir.c_str(), true);
 	}
 
+	m_pProjectManager->ParseProjectFile();
+
 	bool bRes = m_env.pCryPak->Init("");
 
 	if (bRes)
@@ -1901,8 +1895,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 		m_env.pCryPak->AddMod(PathUtil::AddSlash(g_cvars.sys_build_folder->GetString()) + m_sys_game_folder->GetString());
 	}
 
-	// Load game-specific folder.
-	LoadConfiguration("game.cfg", 0, eLoadConfigGame);
+	m_pProjectManager->MigrateFromLegacyWorkflowIfNecessary();
 
 	// Load engine folders.
 	ChangeUserPath(m_sys_user_folder->GetString());

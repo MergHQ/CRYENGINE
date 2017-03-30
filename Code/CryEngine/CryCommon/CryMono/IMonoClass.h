@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IMonoObject.h"
+#include "IMonoMethod.h"
 
 struct IMonoAssembly;
 struct IMonoException;
@@ -25,17 +26,19 @@ struct IMonoClass
 
 	virtual std::shared_ptr<IMonoObject> CreateInstanceWithDesc(const char* parameterDesc, void** pConstructorParams) = 0;
 	
-	// Invokes a method by name
-	// This will NOT find methods in child or parent classes!
-	// If pObject is null we'll invoke a static function
-	virtual std::shared_ptr<IMonoObject> InvokeMethod(const char *name, const IMonoObject* pObject = nullptr, void** pParams = nullptr, int numParams = 0) const = 0;
+	// Searches the specified class for the method
+	// Will NOT search in base classes, see FindMethodInInheritedClasses
+	virtual std::shared_ptr<IMonoMethod> FindMethod(const char* szName, int numParams = 0) const = 0;
+	// Searches the entire inheritance tree for the specified method
+	virtual std::shared_ptr<IMonoMethod> FindMethodInInheritedClasses(const char* szName, int numParams = 0) const = 0;
 
-	// Invokes a method by method description (e.g. "Env:ScanAssembly(System.Reflection.Assembly)")
-	// This will NOT find methods in child or parent classes!
-	// If pObject is null we'll invoke a static function
-	virtual std::shared_ptr<IMonoObject> InvokeMethodWithDesc(const char* methodDesc, const IMonoObject* pObject = nullptr, void** pParams = nullptr) const = 0;
+	// Searches the specified class for the method by its description
+	// Will NOT search in base classes, see FindMethodWithDescInInheritedClasses
+	virtual std::shared_ptr<IMonoMethod> FindMethodWithDesc(const char* szMethodDesc) const = 0;
+	// Searches the entire inheritance tree for the specified method by its description
+	virtual std::shared_ptr<IMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc) const = 0;
 
 	// Check whether a method with the specified description is implemented in the class hierarchy
 	// Returns false if method was not found, or pBaseClass is encountered in the hierarchy
-	virtual bool IsMethodImplemented(IMonoClass* pBaseClass, const char* methodDesc) = 0;
+	virtual bool IsMethodImplemented(IMonoClass* pBaseClass, const char* szMethodDesc) = 0;
 };
