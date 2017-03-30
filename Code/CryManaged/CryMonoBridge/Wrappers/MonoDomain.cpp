@@ -80,7 +80,7 @@ void CMonoDomain::Unload()
 
 		if (pException)
 		{
-			static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->HandleException(pException);
+			GetMonoRuntime()->HandleException(pException);
 		}
 	}
 }

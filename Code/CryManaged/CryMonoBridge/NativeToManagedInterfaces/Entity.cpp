@@ -19,8 +19,7 @@ static void RegisterComponent(MonoReflectionType* pType, uint64 guidHipart, uint
 	MonoClass* pMonoClass = mono_type_get_class(mono_reflection_type_get_type(pType));
 	MonoImage* pImage = mono_class_get_image(pMonoClass);
 
-	auto* pRuntime = static_cast<CMonoRuntime*>(gEnv->pMonoRuntime);
-	auto* pDomain = pRuntime->FindDomainByHandle(mono_object_get_domain((MonoObject*)pType));
+	auto* pDomain = GetMonoRuntime()->FindDomainByHandle(mono_object_get_domain((MonoObject*)pType));
 
 	auto* pLibrary = pDomain->GetLibraryFromMonoAssembly(mono_image_get_assembly(pImage));
 

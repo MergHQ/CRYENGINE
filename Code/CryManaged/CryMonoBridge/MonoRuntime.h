@@ -141,3 +141,8 @@ private:
 
 	bool                     m_bInitializedManagedEnvironment;
 };
+
+inline static CMonoRuntime* GetMonoRuntime()
+{
+	return static_cast<CMonoRuntime*>(gEnv->pMonoRuntime);
+}
