@@ -97,6 +97,16 @@ if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
 	endif()
 endif()
 
+#Plugins
+option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
+if(WIN32 OR WIN64)
+	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
+	option(PLUGIN_VR_OCULUS "Oculus support" ON)
+	option(PLUGIN_VR_OSVR "OSVR support" ON)
+	option(PLUGIN_VR_OPENVR "OpenVR support" ON)
+	option(OPTION_CRYMONO "C# support" OFF)
+endif()
+
 option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
 option(OPTION_RC "Include RC in the build" OFF)
 option(OPTION_PCH "Enable Precompiled Headers" ON)
