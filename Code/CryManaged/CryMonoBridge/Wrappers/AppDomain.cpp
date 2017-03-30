@@ -41,7 +41,10 @@ void CAppDomain::CreateDomain(char *name, bool bActivate)
 	string sConfigFile;
 	sConfigFile.Format("%smono\\etc\\mono\\4.5\\machine.config", baseDirectory);
 
-	mono_domain_set_config(m_pDomain, gEnv->pSystem->GetIProjectManager()->GetCurrentBinaryDirectoryAbsolute(), sConfigFile);
+	char szEngineBinaryDir[_MAX_PATH];
+	CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineBinaryDir), szEngineBinaryDir);
+
+	mono_domain_set_config(m_pDomain, szEngineBinaryDir, sConfigFile);
 
 	if (bActivate)
 	{

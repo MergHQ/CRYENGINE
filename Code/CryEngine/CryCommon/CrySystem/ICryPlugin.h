@@ -27,19 +27,7 @@ struct ICryPlugin : public ICryUnknown, IPluginUpdateListener, IAutoCleanup
 {
 	CRYINTERFACE_DECLARE(ICryPlugin, 0xF491A0DB38634FCA, 0xB6E6BCFE2D98EEA2);
 
-	virtual ~ICryPlugin()
-	{
-#ifndef _LIB
-		if (gEnv)
-		{
-			if (auto pSystem = gEnv->pSystem)
-			{
-				ICryFactoryRegistryImpl* pCryFactoryImpl = static_cast<ICryFactoryRegistryImpl*>(pSystem->GetCryFactoryRegistry());
-				pCryFactoryImpl->UnregisterFactories(g_pHeadToRegFactories);
-			}
-		}
-#endif
-	}
+	virtual ~ICryPlugin() {}
 
 	//! Retrieve name of the plugin.
 	virtual const char* GetName() const = 0;
