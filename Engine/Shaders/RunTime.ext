@@ -177,6 +177,8 @@ Property
   Precache = MotionBlurVS
   Precache = SkinVS
   Precache = GeneralVS
+  Precache = GlassVS
+  Precache = GlassPS
   Precache = VegetationVS    
   Precache = ShadowVS
   Precache = DetailVS
@@ -186,7 +188,7 @@ Property
   Precache = EffectLayerVS
   Precache = MethaGenVS
   Precache = DebugPassVS
-	Precache = ParticleVS
+  Precache = ParticleVS
 }
 
 Property
