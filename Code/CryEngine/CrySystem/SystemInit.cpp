@@ -124,7 +124,7 @@
 extern LONG WINAPI CryEngineExceptionFilterWER(struct _EXCEPTION_POINTERS* pExceptionPointers);
 #endif
 
-#if CRY_PLATFORM_LINUX
+#ifdef USE_UNIXCONSOLE
 CUNIXConsole* pUnixConsole;
 #endif
 
