@@ -1817,6 +1817,8 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 	if (gEnv->pRenderer)
 	{
+		LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() pFlashUI");
+
 		IFlashUIPtr pFlashUI = GetIFlashUIPtr();
 		m_pSystem->SetIFlashUI(pFlashUI ? pFlashUI.get() : NULL);
 	}
@@ -2082,6 +2084,7 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 bool CCryAction::InitGame(SSystemInitParams& startupParams)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	if (ICVar* pCVarGameDir = gEnv->pConsole->GetCVar("sys_dll_game"))
 	{
 		const char* gameDLLName = pCVarGameDir->GetString();
@@ -2265,6 +2268,8 @@ void CCryAction::InitForceFeedbackSystem()
 
 void CCryAction::InitGameVolumesManager()
 {
+	LOADING_TIME_PROFILE_SECTION;
+
 	if (m_pGameVolumesManager == NULL)
 	{
 		m_pGameVolumesManager = new CGameVolumesManager();
@@ -2447,6 +2452,8 @@ bool CCryAction::CompleteInit()
 //------------------------------------------------------------------------
 void CCryAction::InitScriptBinds()
 {
+	LOADING_TIME_PROFILE_SECTION;
+
 	m_pScriptNet = new CScriptBind_Network(m_pSystem, this);
 	m_pScriptA = new CScriptBind_Action(this);
 	m_pScriptIS = new CScriptBind_ItemSystem(m_pSystem, m_pItemSystem, this);
