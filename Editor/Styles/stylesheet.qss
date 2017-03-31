@@ -44,7 +44,7 @@ QComboBox {
 
 QComboBox::item {
 	color:rgb(166,166,166);
-	background-color:red; /* for debugging purposes - old value (rgb(50,50,50);*/
+	background-color:rgb(50,50,50);
 }
 
 QComboBox::item:selected {
@@ -1306,7 +1306,7 @@ QLineEdit:disabled {
 
 QComboBox:disabled {
 	color:rgb(120,120,120);
-	background-color:red; /* for debugging purposes - old value (rgb(58,58,58);*/
+	background-color:rgb(58,58,58);
 }
 
 QComboBox::drop-down:disabled {
