@@ -50,6 +50,7 @@
 
 void CGameObjectSystem::RegisterFactories(IGameFramework* pFrameWork)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	REGISTER_FACTORY(pFrameWork, "WorldQuery", CWorldQuery, false);
 	REGISTER_FACTORY(pFrameWork, "Interactor", CInteractor, false);
 

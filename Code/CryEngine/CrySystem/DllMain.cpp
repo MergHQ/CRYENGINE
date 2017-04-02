@@ -174,6 +174,7 @@ extern "C"
 		CSystem* pSystem = NULL;
 
 		pSystem = new CSystem(startupParams);
+		LOADING_TIME_PROFILE_SECTION_NAMED("CreateSystemInterface");
 		ModuleInitISystem(pSystem, "CrySystem");
 #if CRY_PLATFORM_DURANGO
 	#if !defined(_LIB)

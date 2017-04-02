@@ -417,6 +417,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	InitThreadSystem();
 
+	LOADING_TIME_PROFILE_SECTION_NAMED("CSystem Boot");
+
 	m_pMiniGUI = NULL;
 	m_pPerfHUD = NULL;
 

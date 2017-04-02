@@ -311,6 +311,9 @@ enum ESystemEvent
 	//! Called when the game framework has been initialized, not loading should happen in this event.
 	ESYSTEM_EVENT_GAME_POST_INIT_DONE,
 
+	//! Called when the sanbox has finished initialization
+	ESYSTEM_EVENT_SANDBOX_POST_INIT_DONE,
+
 	//! Sent when the system is doing a full shutdown.
 	ESYSTEM_EVENT_FULL_SHUTDOWN,
 

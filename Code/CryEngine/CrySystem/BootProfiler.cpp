@@ -624,9 +624,17 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 {
 	switch (event)
 	{
-	case ESYSTEM_EVENT_GAME_POST_INIT_DONE:
+	case ESYSTEM_EVENT_SANDBOX_POST_INIT_DONE:
 		{
 			StopSession();
+			break;
+		}
+	case ESYSTEM_EVENT_GAME_POST_INIT_DONE:
+		{
+			if (!gEnv->IsEditor())
+			{
+				StopSession();
+			}
 			break;
 		}
 	case ESYSTEM_EVENT_GAME_MODE_SWITCH_START:
