@@ -45,6 +45,7 @@
 
 #include "core/IFunctionFactoryDatabase.h"
 #include "core/ItemEvaluationResult.h"
+#include "core/IScoreTransformFactory.h"
 
 #include "client/IInstantEvaluator.h"
 #include "client/IInstantEvaluatorFactory.h"

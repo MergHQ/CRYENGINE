@@ -31,6 +31,8 @@ public:
 
 	const Serialization::StringList& GetEvaluatorNamesList() const;
 
+	const Serialization::StringList& GetScoreTransformNamesList() const;
+
 	SItemTypeName                    GetItemTypeNameFromType(const UQS::Shared::CTypeInfo& typeInfo) const;
 
 private:
@@ -53,6 +55,7 @@ private:
 	Serialization::StringList                       m_instantEvaluatorNamesList;
 	Serialization::StringList                       m_deferredEvaluatorNamesList;
 	Serialization::StringList                       m_evaluatorNamesList;
+	Serialization::StringList                       m_scoreTransformNamesList;
 
 	Serialization::StringList                       m_filteredFunctionNamesList;
 	SItemTypeName                                   m_lastTypeToFilterFunctionNames;

@@ -51,7 +51,8 @@
 			"core/IQueryHistoryConsumer.h",
 			"core/QueryBlueprintID.h",
 			"core/ITimeBudget.h",
-			"core/ILeafFunctionReturnValue.h"
+			"core/ILeafFunctionReturnValue.h",
+			"core/IScoreTransformFactory.h"
 		],
 		"client":
 		[

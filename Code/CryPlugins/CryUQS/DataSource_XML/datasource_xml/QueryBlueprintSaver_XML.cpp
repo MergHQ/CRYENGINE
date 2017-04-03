@@ -151,6 +151,12 @@ namespace UQS
 			// "weight" attribute
 			instantEvaluatorElementToSaveTo->setAttr("weight", instantEvaluatorBP.GetWeight());
 
+			// "scoreTransform" attribute
+			instantEvaluatorElementToSaveTo->setAttr("scoreTransform", instantEvaluatorBP.GetScoreTransform());
+
+			// "negateDiscard" attribute
+			instantEvaluatorElementToSaveTo->setAttr("negateDiscard", instantEvaluatorBP.GetNegateDiscard());
+
 			// all <Input>s
 			{
 				const Core::ITextualInputBlueprint& inputRootBP = instantEvaluatorBP.GetInputRoot();
@@ -172,6 +178,12 @@ namespace UQS
 
 			// "weight" attribute
 			deferredEvaluatorElementToSaveTo->setAttr("weight", deferredEvaluatorBP.GetWeight());
+
+			// "scoreTransform" attribute
+			deferredEvaluatorElementToSaveTo->setAttr("scoreTransform", deferredEvaluatorBP.GetScoreTransform());
+
+			// "negateDiscard" attribute
+			deferredEvaluatorElementToSaveTo->setAttr("negateDiscard", deferredEvaluatorBP.GetNegateDiscard());
 
 			// all <Input>s
 			{

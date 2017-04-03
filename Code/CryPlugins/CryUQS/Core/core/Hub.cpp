@@ -41,7 +41,11 @@ namespace UQS
 			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CHub");
 			m_utils.SubscribeToStuffInHub(*this);
 
-			CQueryFactoryBase::RegisterAllInstancesInDatabase(m_queryFactoryDatabase);
+			CQueryFactoryBase::InstantiateFactories();
+			CQueryFactoryBase::RegisterAllInstancesInFactoryDatabase(m_queryFactoryDatabase);
+
+			CScoreTransformFactory::InstantiateFactories();
+			CScoreTransformFactory::RegisterAllInstancesInFactoryDatabase(m_scoreTransformFactoryDatabase);
 
 			SCvars::Register();
 			REGISTER_COMMAND("UQS_ListFactoryDatabases", CmdListFactoryDatabases, 0, "Prints all registered factories for creating items, functions, generators and evaluators to the console.");
@@ -122,6 +126,11 @@ namespace UQS
 		DeferredEvaluatorFactoryDatabase& CHub::GetDeferredEvaluatorFactoryDatabase()
 		{
 			return m_deferredEvaluatorFactoryDatabase;
+		}
+
+		ScoreTransformFactoryDatabase& CHub::GetScoreTransformFactoryDatabase()
+		{
+			return m_scoreTransformFactoryDatabase;
 		}
 
 		CQueryBlueprintLibrary& CHub::GetQueryBlueprintLibrary()
@@ -256,6 +265,7 @@ namespace UQS
 				g_pHub->m_generatorFactoryDatabase.PrintToConsole(logger, "Generator");
 				g_pHub->m_instantEvaluatorFactoryDatabase.PrintToConsole(logger, "InstantEvaluator");
 				g_pHub->m_deferredEvaluatorFactoryDatabase.PrintToConsole(logger, "DeferredEvaluator");
+				g_pHub->m_scoreTransformFactoryDatabase.PrintToConsole(logger, "ScoreTransform");
 			}
 		}
 

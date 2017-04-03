@@ -17,7 +17,7 @@ namespace UQS
 			//
 			//===================================================================================
 
-			class CDeferredEvaluatorFactoryBase : public IDeferredEvaluatorFactory, public IParamsHolderFactory, public CFactoryBase<CDeferredEvaluatorFactoryBase>
+			class CDeferredEvaluatorFactoryBase : public IDeferredEvaluatorFactory, public IParamsHolderFactory, public Shared::CFactoryBase<CDeferredEvaluatorFactoryBase>
 			{
 			public:
 				// IDeferredEvaluatorFactory

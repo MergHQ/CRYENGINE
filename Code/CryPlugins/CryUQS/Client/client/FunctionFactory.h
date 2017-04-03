@@ -17,7 +17,7 @@ namespace UQS
 			//
 			//===================================================================================
 
-			class CFunctionFactoryBase : public IFunctionFactory, public CFactoryBase<CFunctionFactoryBase>
+			class CFunctionFactoryBase : public IFunctionFactory, public Shared::CFactoryBase<CFunctionFactoryBase>
 			{
 			public:
 				// IFunctionFactory

@@ -114,6 +114,18 @@ const Serialization::StringList& CUqsDatabaseSerializationCache::GetEvaluatorNam
 	return m_evaluatorNamesList;
 }
 
+const Serialization::StringList& CUqsDatabaseSerializationCache::GetScoreTransformNamesList() const
+{
+	if (m_scoreTransformNamesList.empty())
+	{
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetScoreTransformFactoryDatabase();
+		// TODO christianw 2017.03.29: fix const_cast inside lazy getter
+		BuildNameStringList(db, const_cast<Serialization::StringList&>(m_scoreTransformNamesList));
+	}
+
+	return m_scoreTransformNamesList;
+}
+
 SItemTypeName CUqsDatabaseSerializationCache::GetItemTypeNameFromType(const UQS::Shared::CTypeInfo& typeInfo) const
 {
 	if (m_typeInfoToName.empty())

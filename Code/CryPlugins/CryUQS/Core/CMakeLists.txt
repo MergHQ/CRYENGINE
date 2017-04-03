@@ -101,6 +101,10 @@ add_sources("UQS_uber_core.cpp"
 		"core/LeafFunctionReturnValue.cpp"
 		"core/SchematycSupport.h"
 		"core/SchematycSupport.cpp"
+		"core/ScoreTransformFactory.h"
+		"core/ScoreTransformFactory.cpp"
+		"core/EvaluationResultTransform.h"
+		"core/EvaluationResultTransform.cpp"
 )
 
 end_sources()

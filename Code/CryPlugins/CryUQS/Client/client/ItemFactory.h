@@ -87,7 +87,7 @@ namespace UQS
 			//
 			//===================================================================================
 
-			class CItemFactoryBase : public IItemFactory, public CFactoryBase<CItemFactoryBase>
+			class CItemFactoryBase : public IItemFactory, public Shared::CFactoryBase<CItemFactoryBase>
 			{
 			public:
 				// IItemFactory

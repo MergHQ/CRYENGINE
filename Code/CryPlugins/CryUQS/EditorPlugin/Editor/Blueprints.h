@@ -467,7 +467,11 @@ class CInstantEvaluatorBlueprint
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
 	void                   SetWeight(float weight);
+	void                   SetScoreTransform(const char* szScoreTransform);
+	void                   SetNegateDiscard(bool bNegateDiscard);
 	float                  GetWeight() const;
+	const char*            GetScoreTransform() const;
+	bool                   GetNegateDiscard() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
@@ -483,7 +487,11 @@ class CDeferredEvaluatorBlueprint
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
 	void                   SetWeight(float weight);
+	void                   SetScoreTransform(const char* szScoreTransform);
+	void                   SetNegateDiscard(bool bNegateDiscard);
 	float                  GetWeight() const;
+	const char*            GetScoreTransform() const;
+	bool                   GetNegateDiscard() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
@@ -509,7 +517,11 @@ public:
 
 	void                         SetEvaluatorName(const char* szEvaluatorName);
 	void                         SetWeight(float weight);
+	void                         SetScoreTransform(const char* szScoreTransform);
+	void                         SetNegateDiscard(bool bNegateDiscard);
 	float                        GetWeight() const;
+	const char*                  GetScoreTransform() const;
+	bool                         GetNegateDiscard() const;
 	CInputBlueprint&             GetInputRoot();
 	const CInputBlueprint&       GetInputRoot() const;
 	const char*                  GetEvaluatorName() const;
@@ -539,6 +551,7 @@ private:
 	CEvaluator& operator=(const CEvaluator&);
 
 	bool        SerializeName(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context);
+	void        SerializeScoreTransform(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context);
 
 	void        SetType(EEvaluatorType type);
 
@@ -546,6 +559,8 @@ private:
 
 	string                                      m_name;
 	float                                       m_weight;
+	string                                      m_scoreTransform;
+	bool                                        m_bNegateDiscard;
 	CInputBlueprint                             m_inputs;
 	mutable std::shared_ptr<CErrorCollector>    m_pErrorCollector;
 

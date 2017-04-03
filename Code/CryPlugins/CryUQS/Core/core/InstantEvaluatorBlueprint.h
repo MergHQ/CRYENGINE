@@ -31,6 +31,12 @@ namespace UQS
 			virtual const char*                                 GetEvaluatorName() const override;
 			virtual const ITextualInputBlueprint&               GetInputRoot() const override;
 
+			virtual void                                        SetScoreTransform(const char* szScoreTransform) override;
+			virtual const char*                                 GetScoreTransform() const override;
+
+			virtual void                                        SetNegateDiscard(bool bNegateDiscard) override;
+			virtual bool                                        GetNegateDiscard() const override;
+
 			virtual void                                        SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual DataSource::ISyntaxErrorCollector*          GetSyntaxErrorCollector() const override;
 
@@ -41,6 +47,8 @@ namespace UQS
 			string                                              m_evaluatorName;
 			float                                               m_weight;
 			CTextualInputBlueprint                              m_rootInput;
+			string                                              m_scoreTransform;
+			bool                                                m_bNegateDiscard;
 			DataSource::SyntaxErrorCollectorUniquePtr           m_pSyntaxErrorCollector;
 		};
 
@@ -58,6 +66,7 @@ namespace UQS
 			bool                                        Resolve(const ITextualInstantEvaluatorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking);
 			Client::IInstantEvaluatorFactory&           GetFactory() const;
 			float                                       GetWeight() const;
+			const CEvaluationResultTransform&           GetEvaluationResultTransform() const;
 			void                                        PrintToConsole(CLogger& logger, const char* szMessagePrefix) const;
 
 		private:
@@ -66,6 +75,7 @@ namespace UQS
 		private:
 			Client::IInstantEvaluatorFactory*           m_pInstantEvaluatorFactory;
 			float                                       m_weight;
+			CEvaluationResultTransform                  m_evaluationResultTransform;
 		};
 
 	}

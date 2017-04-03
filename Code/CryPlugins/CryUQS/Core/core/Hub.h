@@ -31,6 +31,7 @@ namespace UQS
 			virtual GeneratorFactoryDatabase&                          GetGeneratorFactoryDatabase() override;
 			virtual InstantEvaluatorFactoryDatabase&                   GetInstantEvaluatorFactoryDatabase() override;
 			virtual DeferredEvaluatorFactoryDatabase&                  GetDeferredEvaluatorFactoryDatabase() override;
+			virtual ScoreTransformFactoryDatabase&                     GetScoreTransformFactoryDatabase() override;
 			virtual CQueryBlueprintLibrary&                            GetQueryBlueprintLibrary() override;
 			virtual CQueryManager&                                     GetQueryManager() override;
 			virtual CQueryHistoryManager&                              GetQueryHistoryManager() override;
@@ -71,6 +72,7 @@ namespace UQS
 			GeneratorFactoryDatabase                                   m_generatorFactoryDatabase;
 			InstantEvaluatorFactoryDatabase                            m_instantEvaluatorFactoryDatabase;
 			DeferredEvaluatorFactoryDatabase                           m_deferredEvaluatorFactoryDatabase;
+			ScoreTransformFactoryDatabase                              m_scoreTransformFactoryDatabase;
 			CQueryBlueprintLibrary                                     m_queryBlueprintLibrary;
 			CQueryHistoryManager                                       m_queryHistoryManager;
 			CQueryHistoryInGameGUI                                     m_queryHistoryInGameGUI;

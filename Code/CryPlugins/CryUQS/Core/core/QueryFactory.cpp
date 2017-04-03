@@ -11,19 +11,6 @@ namespace UQS
 
 		//===================================================================================
 		//
-		// - all query factories that the core provides right now
-		// - they need to be defined here as this translation unit is guaranteed to survive even in a .lib (CQueryFactoryBase::RegisterAllInstancesInDatabase() gets called from the central CHub)
-		// - if more query types ever get introduced, then an according factory and specialization for CQueryFactory<>::GetQueryBlueprintType() and
-		//   CQueryFactory<>::CheckOutputTypeCompatibilityAmongChildQueryBlueprints() need to be added
-		//
-		//===================================================================================
-
-		static const CQueryFactory<CQuery_Regular> gs_qf_regularQuery("Regular", true, true, true, 0, 0);
-		static const CQueryFactory<CQuery_Chained> gs_qf_chainedQuery("Chained", false, false, false, 1, IQueryFactory::kUnlimitedChildren);
-		static const CQueryFactory<CQuery_Fallbacks> gs_qf_fallbacksQuery("Fallbacks", false, false, false, 1, IQueryFactory::kUnlimitedChildren);
-
-		//===================================================================================
-		//
 		// specializations for CQueryFactory<>::GetQueryBlueprintType()
 		//
 		//===================================================================================
@@ -183,23 +170,20 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryFactoryBase* CQueryFactoryBase::s_pList;
-
 		CQueryFactoryBase::CQueryFactoryBase(const char* szName, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
-			: m_name(szName)
+			: CFactoryBase(szName)
 			, m_bSupportsParameters(bSupportsParameters)
 			, m_bRequiresGenerator(bRequiresGenerator)
 			, m_bSupportsEvaluators(bSupportsEvaluators)
 			, m_minRequiredChildren(minRequiredChildren)
 			, m_maxAllowedChildren(maxAllowedChildren)
-			, m_pNext(s_pList)
 		{
-			s_pList = this;
+			// nothing
 		}
 
 		const char* CQueryFactoryBase::GetName() const
 		{
-			return m_name.c_str();
+			return CFactoryBase::GetName();
 		}
 
 		bool CQueryFactoryBase::SupportsParameters() const
@@ -239,12 +223,16 @@ namespace UQS
 			return parentQueryFactory.GetShuttleTypeFromPrecedingSibling(queryBlueprintAskingForThis);
 		}
 
-		void CQueryFactoryBase::RegisterAllInstancesInDatabase(QueryFactoryDatabase& databaseToRegisterIn)
+		void CQueryFactoryBase::InstantiateFactories()
 		{
-			for (CQueryFactoryBase* pCurrent = s_pList; pCurrent; pCurrent = pCurrent->m_pNext)
-			{
-				databaseToRegisterIn.RegisterFactory(pCurrent, pCurrent->m_name.c_str());
-			}
+			// - all query factories that the core provides right now
+			// - they need to be defined here as this translation unit is guaranteed to survive even in a .lib
+			// - if more query types ever get introduced, then an according factory and specialization for CQueryFactory<>::GetQueryBlueprintType() and
+			//   CQueryFactory<>::CheckOutputTypeCompatibilityAmongChildQueryBlueprints() need to be added here
+
+			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", true, true, true, 0, 0);
+			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", false, false, false, 1, IQueryFactory::kUnlimitedChildren);
 		}
 
 	}

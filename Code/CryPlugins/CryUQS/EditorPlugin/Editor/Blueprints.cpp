@@ -1636,9 +1636,29 @@ void CInstantEvaluatorBlueprint::SetWeight(float weight)
 	Owner().SetWeight(weight);
 }
 
+void CInstantEvaluatorBlueprint::SetScoreTransform(const char* szScoreTransform)
+{
+	Owner().SetScoreTransform(szScoreTransform);
+}
+
+void CInstantEvaluatorBlueprint::SetNegateDiscard(bool bNegateDiscard)
+{
+	Owner().SetNegateDiscard(bNegateDiscard);
+}
+
 float CInstantEvaluatorBlueprint::GetWeight() const
 {
 	return Owner().GetWeight();
+}
+
+const char* CInstantEvaluatorBlueprint::GetScoreTransform() const
+{
+	return Owner().GetScoreTransform();
+}
+
+bool CInstantEvaluatorBlueprint::GetNegateDiscard() const
+{
+	return Owner().GetNegateDiscard();
 }
 
 CInputBlueprint& CInstantEvaluatorBlueprint::GetInputRoot()
@@ -1670,9 +1690,29 @@ void CDeferredEvaluatorBlueprint::SetWeight(float weight)
 	Owner().SetWeight(weight);
 }
 
+void CDeferredEvaluatorBlueprint::SetScoreTransform(const char* szScoreTransform)
+{
+	Owner().SetScoreTransform(szScoreTransform);
+}
+
+void CDeferredEvaluatorBlueprint::SetNegateDiscard(bool bNegateDiscard)
+{
+	Owner().SetNegateDiscard(bNegateDiscard);
+}
+
 float CDeferredEvaluatorBlueprint::GetWeight() const
 {
 	return Owner().GetWeight();
+}
+
+const char* CDeferredEvaluatorBlueprint::GetScoreTransform() const
+{
+	return Owner().GetScoreTransform();
+}
+
+bool CDeferredEvaluatorBlueprint::GetNegateDiscard() const
+{
+	return Owner().GetNegateDiscard();
 }
 
 CInputBlueprint& CDeferredEvaluatorBlueprint::GetInputRoot()
@@ -1704,9 +1744,29 @@ void CEvaluator::SetWeight(float weight)
 	m_weight = weight;
 }
 
+void CEvaluator::SetScoreTransform(const char* szScoreTransform)
+{
+	m_scoreTransform = szScoreTransform;
+}
+
+void CEvaluator::SetNegateDiscard(bool bNegateDiscard)
+{
+	m_bNegateDiscard = bNegateDiscard;
+}
+
 float CEvaluator::GetWeight() const
 {
 	return m_weight;
+}
+
+const char* CEvaluator::GetScoreTransform() const
+{
+	return m_scoreTransform.c_str();
+}
+
+bool CEvaluator::GetNegateDiscard() const
+{
+	return m_bNegateDiscard;
 }
 
 CInputBlueprint& CEvaluator::GetInputRoot()
@@ -1770,6 +1830,8 @@ EEvaluatorType CEvaluator::GetType() const
 CEvaluator::CEvaluator(const EEvaluatorType type)
 	: m_name()
 	, m_weight(1.0f)
+	, m_scoreTransform()
+	, m_bNegateDiscard(false)
 	, m_inputs()
 	, m_pErrorCollector(new CErrorCollector)
 	, m_evaluatorType(EEvaluatorType::Undefined)
@@ -1802,6 +1864,8 @@ CEvaluator::CEvaluator(CEvaluator&& other)
 	: m_name(std::move(other.m_name))
 	, m_weight(other.m_weight)
 	, m_inputs(std::move(other.m_inputs))
+	, m_scoreTransform(std::move(other.m_scoreTransform))
+	, m_bNegateDiscard(other.m_bNegateDiscard)
 	, m_pErrorCollector(std::move(other.m_pErrorCollector))
 	, m_evaluatorType(other.m_evaluatorType)
 	, m_interfaceAdapter(std::move(other.m_interfaceAdapter))
@@ -1815,6 +1879,8 @@ CEvaluator::CEvaluator(CEvaluator&& other)
 CEvaluator::CEvaluator()
 	: m_name()
 	, m_weight(1.0f)
+	, m_scoreTransform()
+	, m_bNegateDiscard(false)
 	, m_inputs()
 	, m_pErrorCollector(new CErrorCollector)
 	, m_evaluatorType(EEvaluatorType::Undefined)
@@ -1830,6 +1896,8 @@ CEvaluator& CEvaluator::operator=(CEvaluator&& other)
 		m_name = std::move(other.m_name);
 		m_weight = other.m_weight;
 		m_inputs = std::move(other.m_inputs);
+		m_scoreTransform = std::move(other.m_scoreTransform);
+		m_bNegateDiscard = other.m_bNegateDiscard;
 		m_pErrorCollector = std::move(other.m_pErrorCollector);
 		m_evaluatorType = other.m_evaluatorType;
 		m_interfaceAdapter = std::move(other.m_interfaceAdapter);
@@ -1890,6 +1958,10 @@ void CEvaluator::Serialize(Serialization::IArchive& archive)
 
 			archive(m_weight, "weight", "Weight");
 
+			SerializeScoreTransform(archive, "scoreTransform", "^Score Transform", *pContext);
+
+			archive(m_bNegateDiscard, "negateDiscard", "^Negate Discard");
+
 			m_inputs.SerializeRoot(archive, "inputs", "Inputs", *pContext, SValidatorKey::FromObject(*this));
 		}
 	}
@@ -1918,6 +1990,26 @@ bool CEvaluator::SerializeName(Serialization::IArchive& archive, const char* szN
 		SerializeStringWithSetter(archive, szName, szLabel, szOldName, setName);
 	}
 	return bNameChanged;
+}
+
+void CEvaluator::SerializeScoreTransform(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context)
+{
+	const char* szOldScoreTransform = m_scoreTransform.c_str();
+	auto setScoreTransform = [this](const char* szNewValue)
+	{
+		m_scoreTransform = szNewValue;
+	};
+
+	if (context.GetSettings().bUseSelectionHelpers)
+	{
+		const Serialization::StringList& scoreTransformsList = context.GetScoreTransformNamesList();
+
+		SerializeWithStringList(archive, szName, szLabel, scoreTransformsList, szOldScoreTransform, setScoreTransform);
+	}
+	else
+	{
+		SerializeStringWithSetter(archive, szName, szLabel, szOldScoreTransform, setScoreTransform);
+	}
 }
 
 void CEvaluator::PrepareHelpers(CUqsDocSerializationContext& context)
@@ -2329,6 +2421,8 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 
 			targetInstantEvaluatorBlueprint.SetEvaluatorName(sourceInstantEvaluatorBlueprint.GetEvaluatorName());
 			targetInstantEvaluatorBlueprint.SetWeight(sourceInstantEvaluatorBlueprint.GetWeight());
+			targetInstantEvaluatorBlueprint.SetScoreTransform(sourceInstantEvaluatorBlueprint.GetScoreTransform());
+			targetInstantEvaluatorBlueprint.SetNegateDiscard(sourceInstantEvaluatorBlueprint.GetNegateDiscard());
 
 			HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(targetInstantEvaluatorBlueprint.GetInputRoot(), sourceInstantEvaluatorBlueprint.GetInputRoot());
 		}
@@ -2343,6 +2437,8 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 
 			targetDeferredEvaluatorBlueprint.SetEvaluatorName(sourceDeferredEvaluatorBlueprint.GetEvaluatorName());
 			targetDeferredEvaluatorBlueprint.SetWeight(sourceDeferredEvaluatorBlueprint.GetWeight());
+			targetDeferredEvaluatorBlueprint.SetScoreTransform(sourceDeferredEvaluatorBlueprint.GetScoreTransform());
+			targetDeferredEvaluatorBlueprint.SetNegateDiscard(sourceDeferredEvaluatorBlueprint.GetNegateDiscard());
 
 			HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(targetDeferredEvaluatorBlueprint.GetInputRoot(), sourceDeferredEvaluatorBlueprint.GetInputRoot());
 		}
@@ -2429,6 +2525,8 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 
 			targetInstantEvaluatorBlueprint.SetEvaluatorName(sourceInstantEvaluatorBlueprint.GetEvaluatorName());
 			targetInstantEvaluatorBlueprint.SetWeight(sourceInstantEvaluatorBlueprint.GetWeight());
+			targetInstantEvaluatorBlueprint.SetScoreTransform(sourceInstantEvaluatorBlueprint.GetScoreTransform());
+			targetInstantEvaluatorBlueprint.SetNegateDiscard(sourceInstantEvaluatorBlueprint.GetNegateDiscard());
 			targetInstantEvaluatorBlueprint.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(sourceInstantEvaluatorBlueprint.Owner().GetErrorCollectorSharedPtr()));
 
 			HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(targetInstantEvaluatorBlueprint.GetInputRoot(), sourceInstantEvaluatorBlueprint.GetInputRoot());
@@ -2444,6 +2542,8 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 
 			targetDeferredEvaluatorBlueprint.SetEvaluatorName(sourceDeferredEvaluatorBlueprint.GetEvaluatorName());
 			targetDeferredEvaluatorBlueprint.SetWeight(sourceDeferredEvaluatorBlueprint.GetWeight());
+			targetDeferredEvaluatorBlueprint.SetScoreTransform(sourceDeferredEvaluatorBlueprint.GetScoreTransform());
+			targetDeferredEvaluatorBlueprint.SetNegateDiscard(sourceDeferredEvaluatorBlueprint.GetNegateDiscard());
 			targetDeferredEvaluatorBlueprint.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(sourceDeferredEvaluatorBlueprint.Owner().GetErrorCollectorSharedPtr()));
 
 			HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(targetDeferredEvaluatorBlueprint.GetInputRoot(), sourceDeferredEvaluatorBlueprint.GetInputRoot());
