@@ -50,6 +50,7 @@ namespace UQS
 			virtual IGeneratorFactoryDatabase&                         GetGeneratorFactoryDatabase() = 0;
 			virtual IInstantEvaluatorFactoryDatabase&                  GetInstantEvaluatorFactoryDatabase() = 0;
 			virtual IDeferredEvaluatorFactoryDatabase&                 GetDeferredEvaluatorFactoryDatabase() = 0;
+			virtual IScoreTransformFactoryDatabase&                    GetScoreTransformFactoryDatabase() = 0;
 			virtual IQueryBlueprintLibrary&                            GetQueryBlueprintLibrary() = 0;
 			virtual IQueryManager&                                     GetQueryManager() = 0;
 			virtual IQueryHistoryManager&                              GetQueryHistoryManager() = 0;

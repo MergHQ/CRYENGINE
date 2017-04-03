@@ -78,6 +78,11 @@ const Serialization::StringList& CUqsDocSerializationContext::GetEvaluatorNamesL
 	return m_editorContext.GetSerializationCache().GetEvaluatorNamesList();
 }
 
+const Serialization::StringList& CUqsDocSerializationContext::GetScoreTransformNamesList() const
+{
+	return m_editorContext.GetSerializationCache().GetScoreTransformNamesList();
+}
+
 SItemTypeName CUqsDocSerializationContext::GetItemTypeNameFromType(const UQS::Shared::CTypeInfo& typeInfo) const
 {
 	return m_editorContext.GetSerializationCache().GetItemTypeNameFromType(typeInfo);

@@ -62,6 +62,7 @@ namespace UQS
 			ar(status, "status");
 			ar(nonWeightedScore, "nonWeightedScore");
 			ar(weightedScore, "weightedScore");
+			ar(furtherInformationAboutStatus, "furtherInformationAboutStatus");
 		}
 
 		//===================================================================================
@@ -82,6 +83,7 @@ namespace UQS
 			ar(status, "status");
 			ar(nonWeightedScore, "nonWeightedScore");
 			ar(weightedScore, "weightedScore");
+			ar(furtherInformationAboutStatus, "furtherInformationAboutStatus");
 		}
 
 		//===================================================================================
@@ -632,7 +634,7 @@ namespace UQS
 
 						const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
 						const float itemRelativeScore = accumulatedAndWeightedScoreOfMaskedEvaluators - worstScoreAmongAllItems;
-						const float fraction = (range > 0.0f) ? itemRelativeScore / range : 1.0f;
+						const float fraction = (range > FLT_EPSILON) ? itemRelativeScore / range : 1.0f;
 
 						color = Lerp(Col_Red, Col_Green, fraction);
 						bDrawScore = true;

@@ -10,44 +10,47 @@
 
 #include <CrySerialization/Decorators/Resources.h>
 
-CManagedEntityComponentFactory::CManagedEntityComponentFactory(std::shared_ptr<IMonoClass> pClass, CryInterfaceID id)
-	: m_pClass(pClass)
-	, m_id(id)
-	, m_eventMask(0)
+SManagedEntityComponentFactory::SManagedEntityComponentFactory(std::shared_ptr<IMonoClass> pMonoClass, CryInterfaceID identifier)
+	: pClass(pMonoClass)
+	, id(identifier)
+	, eventMask(0)
 {
 	IMonoClass* pEntityComponentClass = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
 
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnTransformChanged()"))
+	pConstructorMethod = pMonoClass->FindMethod(".ctor");
+	pInitializeMethod = pClass->FindMethodInInheritedClasses("Initialize", 2);
+
+	if (pTransformChangedMethod = pClass->FindMethodWithDescInInheritedClasses("OnTransformChanged()", pEntityComponentClass))
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_XFORM);
+		eventMask |= BIT64(ENTITY_EVENT_XFORM);
 	}
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnUpdate(single)"))
+	if (pUpdateMethod = pClass->FindMethodWithDescInInheritedClasses("OnUpdate(single)", pEntityComponentClass))
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_UPDATE);
+		eventMask |= BIT64(ENTITY_EVENT_UPDATE);
 	}
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnEditorGameModeChange(bool)"))
+	if (pGameModeChangeMethod = pClass->FindMethodWithDescInInheritedClasses("OnEditorGameModeChange(bool)", pEntityComponentClass))
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_RESET);
+		eventMask |= BIT64(ENTITY_EVENT_RESET);
 	}
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnHide()"))
+	if (pHideMethod = pClass->FindMethodWithDescInInheritedClasses("OnHide()", pEntityComponentClass))
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_HIDE);
+		eventMask |= BIT64(ENTITY_EVENT_HIDE);
 	}
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnUnhide()"))
+	if (pUnHideMethod = pClass->FindMethodWithDescInInheritedClasses("OnUnhide()", pEntityComponentClass))
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_UNHIDE);
+		eventMask |= BIT64(ENTITY_EVENT_UNHIDE);
 	}
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnCollision(CollisionEvent)"))
+	if (pCollisionMethod = pClass->FindMethodWithDescInInheritedClasses("OnCollision(CollisionEvent)", pEntityComponentClass))
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_COLLISION);
+		eventMask |= BIT64(ENTITY_EVENT_COLLISION);
 	}
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnPrePhysicsUpdate(single)"))
+	if (pPrePhysicsUpdateMethod = pClass->FindMethodWithDescInInheritedClasses("OnPrePhysicsUpdate(single)", pEntityComponentClass))
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+		eventMask |= BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
 	}
 }
 
-CManagedEntityComponentFactory::SProperty::SProperty(MonoReflectionPropertyInternal* pReflectionProperty, const char* szName, const char* szLabel, const char* szDesc, EEntityPropertyType serType)
+SManagedEntityComponentFactory::SProperty::SProperty(MonoReflectionPropertyInternal* pReflectionProperty, const char* szName, const char* szLabel, const char* szDesc, EEntityPropertyType serType)
 	: pProperty(pReflectionProperty)
 	, name(szName)
 	, label(szLabel)
@@ -61,17 +64,16 @@ CManagedEntityComponentFactory::SProperty::SProperty(MonoReflectionPropertyInter
 	type = (MonoTypeEnum)mono_type_get_type(pPropertyType);
 }
 
-CManagedEntityComponent::CManagedEntityComponent(const CManagedEntityComponentFactory& factory)
+CManagedEntityComponent::CManagedEntityComponent(const SManagedEntityComponentFactory& factory)
 	: m_factory(factory)
-	, m_eventMask(factory.GetEventMask())
 {
-	m_propertyLabel = factory.GetClass()->GetName();
+	m_propertyLabel = factory.pClass->GetName();
 	m_propertyLabel.append(" Properties");
 }
 
 void CManagedEntityComponent::Initialize()
 {
-	m_pMonoObject = m_factory.GetClass()->CreateUninitializedInstance();
+	m_pMonoObject = m_factory.pClass->CreateUninitializedInstance();
 
 	EntityId id = GetEntity()->GetId();
 
@@ -79,11 +81,8 @@ void CManagedEntityComponent::Initialize()
 	pParams[0] = &m_pEntity;
 	pParams[1] = &id;
 
-	IMonoClass* pEntityComponentClass = GetMonoRuntime()->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
-
-	pEntityComponentClass->FindMethodInInheritedClasses("Initialize", 2)->Invoke(m_pMonoObject.get(), pParams);
-
-	m_pMonoObject->GetClass()->FindMethod(".ctor")->Invoke(m_pMonoObject.get());
+	m_factory.pInitializeMethod->Invoke(m_pMonoObject.get(), pParams);
+	m_factory.pConstructorMethod->Invoke(m_pMonoObject.get());
 }
 
 void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
@@ -92,7 +91,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 	{
 		case ENTITY_EVENT_XFORM:
 			{
-				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnTransformChanged")->Invoke(m_pMonoObject.get());
+				m_factory.pTransformChangedMethod->Invoke(m_pMonoObject.get());
 			}
 			break;
 		case ENTITY_EVENT_UPDATE:
@@ -100,7 +99,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				void* pParams[1];
 				pParams[0] = &((SEntityUpdateContext*)event.nParam[0])->fFrameTime;
 
-				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnUpdate", 1)->Invoke(m_pMonoObject.get(), pParams);
+				m_factory.pUpdateMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 		case ENTITY_EVENT_RESET:
@@ -108,17 +107,17 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				void* pParams[1];
 				pParams[0] = &event.nParam[0];
 
-				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnEditorGameModeChange", 1)->Invoke(m_pMonoObject.get(), pParams);
+				m_factory.pGameModeChangeMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 		case ENTITY_EVENT_HIDE:
 			{
-				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnHide")->Invoke(m_pMonoObject.get());
+				m_factory.pHideMethod->Invoke(m_pMonoObject.get());
 			}
 			break;
 		case ENTITY_EVENT_UNHIDE:
 			{
-				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnUnhide")->Invoke(m_pMonoObject.get());
+				m_factory.pUnHideMethod->Invoke(m_pMonoObject.get());
 			}
 			break;
 		case ENTITY_EVENT_COLLISION:
@@ -129,7 +128,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				pParams[0] = &pCollision->pEntity[0];
 				pParams[1] = &pCollision->pEntity[1];
 
-				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnCollisionInternal", 2)->Invoke(m_pMonoObject.get(), pParams);
+				m_factory.pCollisionMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 		case ENTITY_EVENT_PREPHYSICSUPDATE:
@@ -137,44 +136,44 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 				void* pParams[1];
 				pParams[0] = &event.fParam[0];
 
-				m_pMonoObject->GetClass()->FindMethodInInheritedClasses("OnPrePhysicsUpdate", 1)->Invoke(m_pMonoObject.get(), pParams);
+				m_factory.pPrePhysicsUpdateMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
 			break;
 	}
 }
 
 template <typename T>
-void SerializePrimitive(Serialization::IArchive& archive, const CManagedEntityComponentFactory::SProperty& property, void* pObject)
+void SerializePrimitive(Serialization::IArchive& archive, const SManagedEntityComponentFactory::SProperty& entityProperty, void* pObject)
 {
 	T value;
 	if (archive.isOutput())
 	{
 		// TODO: Wrap into IMonoProperty and handle exceptions
-		MonoObject *pValue = mono_property_get_value(property.pProperty->property, pObject, nullptr, nullptr);
+		MonoObject *pValue = mono_property_get_value(entityProperty.pProperty->property, pObject, nullptr, nullptr);
 
 		value = *(T*)mono_object_unbox(pValue);
 	}
 
-	archive(value, property.name, property.label);
+	archive(value, entityProperty.name, entityProperty.label);
 
 	if (archive.isInput())
 	{
 		void* pParams[1];
 		pParams[0] = &value;
 
-		mono_property_set_value(property.pProperty->property, pObject, pParams, nullptr);
+		mono_property_set_value(entityProperty.pProperty->property, pObject, pParams, nullptr);
 	}
 }
 
 void CManagedEntityComponent::SerializeProperties(Serialization::IArchive& archive)
 {
-	for (auto it = m_factory.GetProperties().begin(); it != m_factory.GetProperties().end(); ++it)
+	for(const SManagedEntityComponentFactory::SProperty& entityProperty : m_factory.properties)
 	{
-		switch (it->type)
+		switch (entityProperty.type)
 		{
 			case MONO_TYPE_BOOLEAN:
 				{
-					SerializePrimitive<bool>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<bool>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_STRING:
@@ -183,36 +182,36 @@ void CManagedEntityComponent::SerializeProperties(Serialization::IArchive& archi
 					if (archive.isOutput())
 					{
 						// TODO: Wrap into IMonoProperty and handle exceptions
-						MonoObject *pValue = mono_property_get_value(it->pProperty->property, m_pMonoObject->GetHandle(), nullptr, nullptr);
+						MonoObject *pValue = mono_property_get_value(entityProperty.pProperty->property, m_pMonoObject->GetHandle(), nullptr, nullptr);
 
 						value = mono_string_to_utf8((MonoString*)pValue);
 					}
 
-					switch (it->serializationType)
+					switch (entityProperty.serializationType)
 					{
 						case EEntityPropertyType::Primitive:
-							archive(value, it->name, it->label);
+							archive(value, entityProperty.name, entityProperty.label);
 							break;
 						case EEntityPropertyType::Object:
-							archive(Serialization::ModelFilename(value), it->name, it->label);
+							archive(Serialization::ModelFilename(value), entityProperty.name, entityProperty.label);
 							break;
 						case EEntityPropertyType::Texture:
-							archive(Serialization::TextureFilename(value), it->name, it->label);
+							archive(Serialization::TextureFilename(value), entityProperty.name, entityProperty.label);
 							break;
 						case EEntityPropertyType::Particle:
-							archive(Serialization::ParticleName(value), it->name, it->label);
+							archive(Serialization::ParticleName(value), entityProperty.name, entityProperty.label);
 							break;
 						case EEntityPropertyType::AnyFile:
-							archive(Serialization::GeneralFilename(value), it->name, it->label);
+							archive(Serialization::GeneralFilename(value), entityProperty.name, entityProperty.label);
 							break;
 						case EEntityPropertyType::Sound:
-							archive(Serialization::SoundFilename(value), it->name, it->label);
+							archive(Serialization::SoundFilename(value), entityProperty.name, entityProperty.label);
 							break;
 						case EEntityPropertyType::Material:
-							archive(Serialization::MaterialPicker(value), it->name, it->label);
+							archive(Serialization::MaterialPicker(value), entityProperty.name, entityProperty.label);
 							break;
 						case EEntityPropertyType::Animation:
-							archive(Serialization::CharacterAnimationPicker(value), it->name, it->label);
+							archive(Serialization::CharacterAnimationPicker(value), entityProperty.name, entityProperty.label);
 							break;
 					}
 
@@ -223,63 +222,63 @@ void CManagedEntityComponent::SerializeProperties(Serialization::IArchive& archi
 						void* pParams[1];
 						pParams[0] = pDomain->CreateManagedString(value);
 
-						mono_property_set_value(it->pProperty->property, m_pMonoObject->GetHandle(), pParams, nullptr);
+						mono_property_set_value(entityProperty.pProperty->property, m_pMonoObject->GetHandle(), pParams, nullptr);
 					}
 				}
 				break;
 			case MONO_TYPE_U1:
 			case MONO_TYPE_CHAR: // Char is unsigned by default for .NET
 				{
-					SerializePrimitive<uchar>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<uchar>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_I1:
 				{
-					SerializePrimitive<char>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<char>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_I2:
 				{
-					SerializePrimitive<int16>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<int16>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_U2:
 				{
-					SerializePrimitive<uint16>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<uint16>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_I4:
 				{
-					SerializePrimitive<int32>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<int32>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_U4:
 				{
-					SerializePrimitive<uint32>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<uint32>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_I8:
 				{
-					SerializePrimitive<int64>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<int64>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_U8:
 				{
-					SerializePrimitive<uint64>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<uint64>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_R4:
 				{
-					SerializePrimitive<float>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<float>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 			case MONO_TYPE_R8:
 				{
-					SerializePrimitive<double>(archive, *it, m_pMonoObject->GetHandle());
+					SerializePrimitive<double>(archive, entityProperty, m_pMonoObject->GetHandle());
 				}
 				break;
 		}
 
-		archive.doc(it->description);
+		archive.doc(entityProperty.description);
 	}
 }

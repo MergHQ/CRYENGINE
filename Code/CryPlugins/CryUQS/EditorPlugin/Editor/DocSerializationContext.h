@@ -39,6 +39,7 @@ public:
 	const Serialization::StringList&        GetGeneratorNamesList() const;
 	const Serialization::StringList&        GetFunctionNamesList(const SItemTypeName& typeToFilter) const;
 	const Serialization::StringList&        GetEvaluatorNamesList() const;
+	const Serialization::StringList&        GetScoreTransformNamesList() const;
 
 	SItemTypeName                           GetItemTypeNameFromType(const UQS::Shared::CTypeInfo& typeInfo) const;
 

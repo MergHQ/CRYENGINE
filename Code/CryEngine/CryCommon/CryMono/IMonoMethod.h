@@ -11,5 +11,8 @@ struct IMonoMethod
 	virtual std::shared_ptr<IMonoObject> Invoke(const IMonoObject* pObject, void** pParameters, bool &bEncounteredException) const = 0;
 	virtual std::shared_ptr<IMonoObject> Invoke(const IMonoObject* pObject = nullptr, void** pParameters = nullptr) const = 0;
 
+	virtual uint32 GetParameterCount() const = 0;
+	virtual string GetSignatureDescription(bool bIncludeNamespace = false) const = 0;
+
 	inline std::shared_ptr<IMonoObject> InvokeStatic(void** pParameters) const { return Invoke(nullptr, pParameters); }
 };

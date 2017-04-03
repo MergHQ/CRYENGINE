@@ -33,7 +33,7 @@ namespace UQS
 
 		class CQueryBlueprint;
 
-		class CQueryFactoryBase : public IQueryFactory
+		class CQueryFactoryBase : public IQueryFactory, public Shared::CFactoryBase<CQueryFactoryBase>
 		{
 		public:
 			// IQueryFactory
@@ -51,7 +51,7 @@ namespace UQS
 
 			const Shared::CTypeInfo*            GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const;
 
-			static void                         RegisterAllInstancesInDatabase(QueryFactoryDatabase& databaseToRegisterIn);
+			static void                         InstantiateFactories();
 
 		private:
 			virtual const Shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const = 0;
@@ -60,14 +60,11 @@ namespace UQS
 			explicit                            CQueryFactoryBase(const char* szName, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
 
 		private:
-			string                              m_name;
 			bool                                m_bSupportsParameters;
 			bool                                m_bRequiresGenerator;
 			bool                                m_bSupportsEvaluators;
 			size_t                              m_minRequiredChildren;
 			size_t                              m_maxAllowedChildren;
-			CQueryFactoryBase*                  m_pNext;
-			static CQueryFactoryBase*           s_pList;
 		};
 
 		//===================================================================================

@@ -7,6 +7,7 @@
 
 class CMonoLibrary;
 class CMonoObject;
+class CMonoMethod;
 
 class CMonoClass final : public IMonoClass
 {
@@ -27,19 +28,18 @@ public:
 	virtual std::shared_ptr<IMonoObject> CreateInstance(void** pConstructorParams = nullptr, int numParams = 0) override;
 	virtual std::shared_ptr<IMonoObject> CreateInstanceWithDesc(const char* parameterDesc, void** pConstructorParams) override;
 
-	virtual std::shared_ptr<IMonoMethod> FindMethod(const char* szName, int numParams = 0) const override;
-	virtual std::shared_ptr<IMonoMethod> FindMethodInInheritedClasses(const char* szName, int numParams = 0) const override;
+	virtual std::shared_ptr<IMonoMethod> FindMethod(const char* szName, int numParams = 0) override;
+	virtual std::shared_ptr<IMonoMethod> FindMethodInInheritedClasses(const char* szName, int numParams = 0) override;
 
-	virtual std::shared_ptr<IMonoMethod> FindMethodWithDesc(const char* szMethodDesc) const override;
-	virtual std::shared_ptr<IMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc) const override;
-	
-	virtual bool IsMethodImplemented(IMonoClass* pBaseClass, const char* szMethodDesc) override;
+	virtual std::shared_ptr<IMonoMethod> FindMethodWithDesc(const char* szMethodDesc) override;
+	virtual std::shared_ptr<IMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc, IMonoClass* pBaseClass) override;
 	// ~IMonoClass
 
-	void Serialize();
-	void Deserialize();
+	void Serialize(CMonoObject* pSerializer);
+	void Deserialize(CMonoObject* pSerializer);
 
 	void ReloadClass();
+	void OnAssemblyUnload();
 
 	// Temporary classes are assigned a weak pointer of itself to pass on to created objects
 	void SetWeakPointer(std::weak_ptr<CMonoClass> pClass) { m_pThis = pClass; }
@@ -57,6 +57,10 @@ protected:
 	// Vector containing weak pointers to all created objects
 	// We don't actually manage the deletion of these objects, that is up to whoever created the instance.
 	std::vector<std::weak_ptr<CMonoObject>> m_objects;
+
+	// Vector containing weak pointers to all queried methods
+	// Needed to make sure function pointers are activated after serialization
+	std::vector<std::weak_ptr<CMonoMethod>> m_methods;
 
 	string m_namespace;
 	string m_name;

@@ -43,6 +43,8 @@ namespace UQS
 #include "FunctionFactoryDatabase.h"
 #include "FunctionBlueprint.h"
 #include "FunctionCallHierarchy.h"
+#include "ScoreTransformFactory.h"
+#include "EvaluationResultTransform.h"
 #include "InstantEvaluatorFactoryDatabase.h"
 #include "InstantEvaluatorBlueprint.h"
 #include "DeferredEvaluatorFactoryDatabase.h"

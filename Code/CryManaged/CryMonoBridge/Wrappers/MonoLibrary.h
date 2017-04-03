@@ -9,11 +9,13 @@
 
 class CMonoDomain;
 class CMonoClass;
+class CMonoObject;
 
-class CMonoLibrary : public IMonoAssembly
+class CMonoLibrary final : public IMonoAssembly
 {
 public:
-	CMonoLibrary(MonoAssembly* pAssembly, const char* filePath, CMonoDomain* pDomain, char* data = nullptr);
+	CMonoLibrary(const char* filePath, CMonoDomain* pDomain);
+	CMonoLibrary(MonoAssembly* pAssembly, const char* filePath, CMonoDomain* pDomain);
 	virtual ~CMonoLibrary();
 
 	// IMonoAssembly
@@ -29,33 +31,33 @@ public:
 	virtual std::shared_ptr<IMonoException> GetExceptionInternal(const char* nameSpace, const char* exceptionClass, const char* message = "") override;
 	// ~IMonoAssembly
 
+	bool Load();
 	void Unload();
 	void Reload();
 
-	void Serialize();
-	void Deserialize();
+	void Serialize(CMonoObject* pSerializer);
+	void Deserialize(CMonoObject* pSerializer);
 
+	const char*           GetPath() const { return m_assemblyPath; }
 	const char*           GetImageName() const;
-	bool                  IsInMemory() const { return m_pMemory != nullptr; }
 	
 	std::shared_ptr<CMonoClass> GetClassFromMonoClass(MonoClass* pClass);
 
 	MonoObject* GetManagedObject();
 
-	void          SetData(char* data)           { m_pMemory = data; }
-	void          SetDebugData(mono_byte* data) { m_pMemoryDebug = data; }
-
 	MonoAssembly* GetAssembly() const { return m_pAssembly; }
-	MonoImage* GetImage() const;
+	MonoImage* GetImage() const { return m_pImage; }
 
 private:
 	MonoAssembly* m_pAssembly;
+	MonoImage* m_pImage;
+
 	string        m_assemblyPath;
 
 	CMonoDomain*   m_pDomain;
 
-	char*         m_pMemory;
-	mono_byte*    m_pMemoryDebug;
-
 	std::list<std::shared_ptr<CMonoClass>> m_classes;
+
+	std::vector<char> m_assemblyData;
+	std::vector<mono_byte> m_assemblyDebugData;
 };

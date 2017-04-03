@@ -17,7 +17,7 @@ namespace UQS
 			//
 			//===================================================================================
 
-			class CGeneratorFactoryBase : public IGeneratorFactory, public IParamsHolderFactory, public CFactoryBase<CGeneratorFactoryBase>
+			class CGeneratorFactoryBase : public IGeneratorFactory, public IParamsHolderFactory, public Shared::CFactoryBase<CGeneratorFactoryBase>
 			{
 			public:
 				// IGeneratorFactory

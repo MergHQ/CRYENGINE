@@ -260,6 +260,18 @@ namespace UQS
 			}
 			textualInstantEvaluatorBP.SetWeight(weight);
 
+			// "scoreTransform" attribute (treat it as optional for older queries, so that the default score-transform will get picked in such a case)
+			const char* szScoreTransform = "";
+			if (instantEvaluatorElement->getAttr("scoreTransform", &szScoreTransform))
+			{
+				textualInstantEvaluatorBP.SetScoreTransform(szScoreTransform);
+			}
+
+			// "negateDiscard" attribute
+			bool bNegateDiscard = false;
+			instantEvaluatorElement->getAttr("negateDiscard", bNegateDiscard);
+			textualInstantEvaluatorBP.SetNegateDiscard(bNegateDiscard);
+
 			// parse <Input> elements (expect only these elements)
 			Core::ITextualInputBlueprint& textualInputRoot = textualInstantEvaluatorBP.GetInputRoot();
 			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the textual-instant-evaluator-blueprint)
@@ -306,6 +318,18 @@ namespace UQS
 				return false;
 			}
 			textualDeferredEvaluatorBP.SetWeight(weight);
+
+			// "scoreTransform" attribute (treat it as optional for older queries, so that the default score-transform will get picked in such a case)
+			const char* szScoreTransform = "";
+			if (deferredEvaluatorElement->getAttr("scoreTransform", &szScoreTransform))
+			{
+				textualDeferredEvaluatorBP.SetScoreTransform(szScoreTransform);
+			}
+
+			// "negateDiscard" attribute
+			bool bNegateDiscard = false;
+			deferredEvaluatorElement->getAttr("negateDiscard", bNegateDiscard);
+			textualDeferredEvaluatorBP.SetNegateDiscard(bNegateDiscard);
 
 			// parse <Input> elements (expect only these elements)
 			Core::ITextualInputBlueprint& textualInputRoot = textualDeferredEvaluatorBP.GetInputRoot();

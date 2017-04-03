@@ -18,6 +18,7 @@ add_sources("UQS_uber_shared.cpp"
 		"shared/UqsString.cpp"
 		"shared/VariantDict.h"
 		"shared/VariantDict.cpp"
+		"shared/FactoryBase.h"
 )
 
 end_sources()

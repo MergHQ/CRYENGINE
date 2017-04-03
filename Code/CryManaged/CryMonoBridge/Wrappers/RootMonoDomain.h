@@ -12,8 +12,6 @@ public:
 	// CMonoDomain
 	virtual bool IsRoot() override { return true; }
 
-	virtual void Release() override { delete this; }
-
 	virtual bool Reload() override { CRY_ASSERT_MESSAGE(false, "Cannot unload the root domain!"); return false; }
 	// ~CMonoDomain
 

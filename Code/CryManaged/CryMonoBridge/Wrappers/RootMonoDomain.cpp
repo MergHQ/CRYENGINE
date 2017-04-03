@@ -11,7 +11,7 @@ CRootMonoDomain::CRootMonoDomain()
 void CRootMonoDomain::Initialize()
 {
 	m_pDomain = mono_jit_init_version("CryEngine", "v4.0.30319");
-	m_bNativeAssembly = true;
+	m_bNativeDomain = true;
 }
 
 CMonoLibrary* CRootMonoDomain::GetNetCoreLibrary()

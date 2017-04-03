@@ -15,7 +15,6 @@
 		],
 		"client":
 		[
-			"client/FactoryBase.h",
 			"client/ItemFactory.h",
 			"client/ItemListProxy.h",
 			"client/InputParameterRegistry.h",

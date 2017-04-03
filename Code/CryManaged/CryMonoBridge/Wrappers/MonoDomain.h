@@ -4,29 +4,17 @@
 
 #include <CryMono/IMonoDomain.h>
 
-#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/debug-helpers.h>
 
 // Wrapped behavior for mono appdomain functionality
 class CMonoDomain : public IMonoDomain
 {
-	struct SLoadedLibrary
-	{
-		SLoadedLibrary(CMonoLibrary* pLib, const char* path)
-			: pLibrary(pLib)
-			, filePath(path) {}
-
-		SLoadedLibrary(const char* path)
-			: filePath(path) {}
-
-		string filePath;
-		std::unique_ptr<CMonoLibrary> pLibrary;
-	};
-
 public:
 	CMonoDomain();
-	~CMonoDomain();
+	virtual ~CMonoDomain();
 
 	// IMonoDomain
 	virtual bool IsRoot() override { return false; }
@@ -38,25 +26,18 @@ public:
 	virtual void* CreateManagedString(const char* str) override { return CreateString(str); }
 	// ~IMonoDomain
 
-	virtual void Release() = 0;
+	MonoString* CreateString(const char* szText);
 
-	MonoString* CreateString(const char *text);
-
-	MonoAssembly* LoadMonoAssembly(const char* path, FILE* pFile, char** pImageDataOut, mono_byte** pDebugDataOut, bool bRefOnly = false);
-
-	CMonoLibrary* LoadLibrary(const char* path, bool bRefOnly = false);
+	CMonoLibrary* LoadLibrary(const char* szPath);
 	CMonoLibrary* GetLibraryFromMonoAssembly(MonoAssembly* pAssembly);
-	
+
 protected:
 	void Unload();
 
 protected:
 	MonoDomain *m_pDomain;
-	bool m_bNativeAssembly;
+	// Whether or not this domain was created on the native side
+	bool m_bNativeDomain;
 
-	std::vector<SLoadedLibrary> m_loadedLibraries;
-
-	// Folders in which we have loaded assemblies
-	// This is required in order to resolve dependencies reliably
-	std::vector<string> m_binaryDirectories;
+	std::vector<std::unique_ptr<CMonoLibrary>> m_loadedLibraries;
 };

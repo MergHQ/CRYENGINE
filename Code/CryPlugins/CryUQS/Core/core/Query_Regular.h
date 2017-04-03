@@ -99,13 +99,14 @@ namespace UQS
 
 			struct SInstantEvaluatorWithIndex
 			{
-				explicit                                          SInstantEvaluatorWithIndex(Client::InstantEvaluatorUniquePtr _pInstantEvaluator, Client::ParamsHolderUniquePtr _pParamsHolder, const Client::IInputParameterRegistry* _pInputParameterRegistry, size_t _originalIndexInQueryBlueprint);
+				explicit                                          SInstantEvaluatorWithIndex(Client::InstantEvaluatorUniquePtr _pInstantEvaluator, Client::ParamsHolderUniquePtr _pParamsHolder, const Client::IInputParameterRegistry* _pInputParameterRegistry, const CEvaluationResultTransform& _evaluationResultTransform, size_t _originalIndexInQueryBlueprint);
 				explicit                                          SInstantEvaluatorWithIndex(SInstantEvaluatorWithIndex&& other);
 				SInstantEvaluatorWithIndex&                       operator=(SInstantEvaluatorWithIndex&& other);
 
 				Client::InstantEvaluatorUniquePtr                 pInstantEvaluator;                    // instantiated exactly once for all items; gets re-used as it's stateless
 				Client::ParamsHolderUniquePtr                     pParamsHolder;                        // also instantiated exactly once; gets refreshed to on each item iteration before passing it into the instant-evaluator
 				const Client::IInputParameterRegistry*            pInputParameterRegistry;              // points back into the instant-evaluator factory (who owns it); used when making function calls to get the offsets of all parameters in memory so that each function knows where to write its return value to
+				CEvaluationResultTransform                        evaluationResultTransform;            // copy of the evaluation-result-transform that resides in the instant-evaluator-blueprint (we use a copy for cache-friendliness)
 				size_t                                            originalIndexInQueryBlueprint;        // the original position among the instant-evaluator blueprints in the query blueprint (*after* it was loaded from the datasource)
 			};
 
@@ -121,11 +122,12 @@ namespace UQS
 
 			struct SDeferredEvaluatorWithIndex
 			{
-				explicit                                          SDeferredEvaluatorWithIndex(Client::DeferredEvaluatorUniquePtr _pDeferredEvaluator, size_t _originalIndexInQueryBlueprint);
+				explicit                                          SDeferredEvaluatorWithIndex(Client::DeferredEvaluatorUniquePtr _pDeferredEvaluator, const CEvaluationResultTransform& _evaluationResultTransform, size_t _originalIndexInQueryBlueprint);
 				explicit                                          SDeferredEvaluatorWithIndex(SDeferredEvaluatorWithIndex&& other);
 				SDeferredEvaluatorWithIndex&                      operator=(SDeferredEvaluatorWithIndex&& other);
 
 				Client::DeferredEvaluatorUniquePtr                pDeferredEvaluator;                   // instantiated exactly once for all items; gets re-used as it's stateless
+				CEvaluationResultTransform                        evaluationResultTransform;            // copy of the evaluation-result-transform that resides in the deferred-evaluator-blueprint (we use a copy for cache-friendliness)
 				size_t                                            originalIndexInQueryBlueprint;        // the original position among the deferred-evaluator blueprints in the query blueprint as it was loaded from the datasource
 			};
 

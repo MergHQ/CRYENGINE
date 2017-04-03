@@ -5,7 +5,6 @@
 #include "../Interfaces/InterfacesIncludes.h"
 #include "../Shared/SharedIncludes.h"
 
-#include "client/FactoryBase.h"
 #include "client/ItemListProxy.h"
 #include "client/InputParameterRegistry.h"
 #include "client/FunctionBase.h"

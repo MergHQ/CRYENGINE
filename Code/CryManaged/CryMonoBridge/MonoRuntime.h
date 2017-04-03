@@ -119,19 +119,15 @@ private:
 	static void MonoPrintCallback(const char* szMessage, mono_bool is_stdout);
 	static void MonoPrintErrorCallback(const char* szMessage, mono_bool is_stdout);
 
-	static MonoAssembly* MonoAssemblySearchCallback(MonoAssemblyName* pAssemblyName, void* pUserData);
-
 	void RegisterInternalInterfaces();
 
 	void InvokeManagedConsoleCommandNotification(const char* szCommandName, IConsoleCmdArgs* pConsoleCommandArguments);
 
 private:
-	typedef std::unordered_map<MonoDomain*, CMonoDomain*> TDomainLookupMap;
-	typedef std::vector<CManagedNodeCreatorProxy*> TNodeCreators;
-	TDomainLookupMap         m_domainLookupMap;
-	TNodeCreators            m_nodeCreators;
+	std::unordered_map<MonoDomain*, std::shared_ptr<CMonoDomain>> m_domainLookupMap;
+	std::vector<std::shared_ptr<CManagedNodeCreatorProxy>> m_nodeCreators;
 
-	CRootMonoDomain*         m_pRootDomain;
+	std::shared_ptr<CRootMonoDomain>         m_pRootDomain;
 	CAppDomain*              m_pPluginDomain;
 
 	CMonoLibrary*            m_pLibCommon;

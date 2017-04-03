@@ -14,7 +14,6 @@ CManagedPlugin::CManagedPlugin(const char* szBinaryPath)
 	: m_pLibrary(nullptr)
 	, m_pClass(nullptr)
 	, m_libraryPath(szBinaryPath)
-	, m_pMonoObject(nullptr)
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CManagedPlugin");
 }
@@ -43,13 +42,12 @@ bool CManagedPlugin::InitializePlugin()
 	m_pClass = m_pLibrary->GetClass(nameSpace, m_pluginName);
 	if (m_pClass == nullptr)
 	{
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to get class %s:%s for plugin!", nameSpace.c_str(), m_pluginName.c_str());
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to get class %s:%s for plug-in!", nameSpace.c_str(), m_pluginName.c_str());
 		return false;
 	}
 
-	m_pMonoObject = m_pClass->CreateInstance();
-
-	if (!m_pMonoObject)
+	m_pMonoObject = std::static_pointer_cast<CMonoObject>(m_pClass->CreateInstance());
+	if (m_pMonoObject == nullptr)
 	{
 		return false;
 	}

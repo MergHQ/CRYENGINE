@@ -18,6 +18,8 @@ namespace UQS
 
 		CTextualInstantEvaluatorBlueprint::CTextualInstantEvaluatorBlueprint()
 			: m_weight(1.0)
+			, m_bNegateDiscard(false)
+			, m_scoreTransform(CScoreTransformFactory::GetDefaultScoreTransformFactory().GetName())
 		{
 		}
 
@@ -29,6 +31,26 @@ namespace UQS
 		ITextualInputBlueprint& CTextualInstantEvaluatorBlueprint::GetInputRoot()
 		{
 			return m_rootInput;
+		}
+
+		void CTextualInstantEvaluatorBlueprint::SetScoreTransform(const char* szScoreTransform)
+		{
+			m_scoreTransform = szScoreTransform;
+		}
+
+		const char* CTextualInstantEvaluatorBlueprint::GetScoreTransform() const
+		{
+			return m_scoreTransform.c_str();
+		}
+
+		void CTextualInstantEvaluatorBlueprint::SetNegateDiscard(bool bNegateDiscard)
+		{
+			m_bNegateDiscard = bNegateDiscard;
+		}
+
+		bool CTextualInstantEvaluatorBlueprint::GetNegateDiscard() const
+		{
+			return m_bNegateDiscard;
 		}
 
 		const char* CTextualInstantEvaluatorBlueprint::GetEvaluatorName() const
@@ -88,6 +110,24 @@ namespace UQS
 
 			m_weight = source.GetWeight();
 
+			const char* szScoreTransform = source.GetScoreTransform();
+			if (szScoreTransform[0] != '\0')
+			{
+				const IScoreTransformFactory* pScoreTransformFactory = g_pHub->GetScoreTransformFactoryDatabase().FindFactoryByName(szScoreTransform);
+
+				if (!pScoreTransformFactory)
+				{
+					if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+					{
+						pSE->AddErrorMessage("Unknown ScoreTransformFactory: '%s'", szScoreTransform);
+					}
+					return false;
+				}
+
+				m_evaluationResultTransform.SetScoreTransformType(pScoreTransformFactory->GetScoreTransformType());
+			}
+			m_evaluationResultTransform.SetNegateDiscard(source.GetNegateDiscard());
+
 			CInputBlueprint inputRoot;
 			const ITextualInputBlueprint& textualInputRoot = source.GetInputRoot();
 			const Client::IInputParameterRegistry& inputParamsReg = m_pInstantEvaluatorFactory->GetInputParameterRegistry();
@@ -111,6 +151,11 @@ namespace UQS
 		float CInstantEvaluatorBlueprint::GetWeight() const
 		{
 			return m_weight;
+		}
+
+		const CEvaluationResultTransform& CInstantEvaluatorBlueprint::GetEvaluationResultTransform() const
+		{
+			return m_evaluationResultTransform;
 		}
 
 		void CInstantEvaluatorBlueprint::PrintToConsole(CLogger& logger, const char* szMessagePrefix) const

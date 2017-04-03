@@ -50,18 +50,20 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQuery_Regular::SInstantEvaluatorWithIndex::SInstantEvaluatorWithIndex(Client::InstantEvaluatorUniquePtr _pInstantEvaluator, Client::ParamsHolderUniquePtr _pParamsHolder, const Client::IInputParameterRegistry* _pInputParameterRegistry, size_t _originalIndexInQueryBlueprint)
+		CQuery_Regular::SInstantEvaluatorWithIndex::SInstantEvaluatorWithIndex(Client::InstantEvaluatorUniquePtr _pInstantEvaluator, Client::ParamsHolderUniquePtr _pParamsHolder, const Client::IInputParameterRegistry* _pInputParameterRegistry, const CEvaluationResultTransform& _evaluationResultTransform, size_t _originalIndexInQueryBlueprint)
 			: pInstantEvaluator(std::move(_pInstantEvaluator))
 			, pParamsHolder(std::move(_pParamsHolder))
 			, pInputParameterRegistry(_pInputParameterRegistry)
+			, evaluationResultTransform(_evaluationResultTransform)
 			, originalIndexInQueryBlueprint(_originalIndexInQueryBlueprint)
 		{}
 
 		CQuery_Regular::SInstantEvaluatorWithIndex::SInstantEvaluatorWithIndex(SInstantEvaluatorWithIndex&& other)
 			: pInstantEvaluator(std::move(other.pInstantEvaluator))
 			, pParamsHolder(std::move(other.pParamsHolder))
-			, pInputParameterRegistry(other.pInputParameterRegistry)
-			, originalIndexInQueryBlueprint(other.originalIndexInQueryBlueprint)
+			, pInputParameterRegistry(std::move(other.pInputParameterRegistry))
+			, evaluationResultTransform(std::move(other.evaluationResultTransform))
+			, originalIndexInQueryBlueprint(std::move(other.originalIndexInQueryBlueprint))
 		{}
 
 		CQuery_Regular::SInstantEvaluatorWithIndex& CQuery_Regular::SInstantEvaluatorWithIndex::operator=(SInstantEvaluatorWithIndex&& other)
@@ -70,8 +72,9 @@ namespace UQS
 			{
 				pInstantEvaluator = std::move(other.pInstantEvaluator);
 				pParamsHolder = std::move(other.pParamsHolder);
-				pInputParameterRegistry = other.pInputParameterRegistry;
-				originalIndexInQueryBlueprint = other.originalIndexInQueryBlueprint;
+				pInputParameterRegistry = std::move(other.pInputParameterRegistry);
+				evaluationResultTransform = std::move(other.evaluationResultTransform);
+				originalIndexInQueryBlueprint = std::move(other.originalIndexInQueryBlueprint);
 			}
 			return *this;
 		}
@@ -82,14 +85,16 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQuery_Regular::SDeferredEvaluatorWithIndex::SDeferredEvaluatorWithIndex(Client::DeferredEvaluatorUniquePtr _pDeferredEvaluator, size_t _originalIndexInQueryBlueprint)
+		CQuery_Regular::SDeferredEvaluatorWithIndex::SDeferredEvaluatorWithIndex(Client::DeferredEvaluatorUniquePtr _pDeferredEvaluator, const CEvaluationResultTransform& _evaluationResultTransform, size_t _originalIndexInQueryBlueprint)
 			: pDeferredEvaluator(std::move(_pDeferredEvaluator))
+			, evaluationResultTransform(_evaluationResultTransform)
 			, originalIndexInQueryBlueprint(_originalIndexInQueryBlueprint)
 		{}
 
 		CQuery_Regular::SDeferredEvaluatorWithIndex::SDeferredEvaluatorWithIndex(SDeferredEvaluatorWithIndex&& other)
 			: pDeferredEvaluator(std::move(other.pDeferredEvaluator))
-			, originalIndexInQueryBlueprint(other.originalIndexInQueryBlueprint)
+			, evaluationResultTransform(std::move(other.evaluationResultTransform))
+			, originalIndexInQueryBlueprint(std::move(other.originalIndexInQueryBlueprint))
 		{}
 
 		CQuery_Regular::SDeferredEvaluatorWithIndex& CQuery_Regular::SDeferredEvaluatorWithIndex::operator=(SDeferredEvaluatorWithIndex&& other)
@@ -97,7 +102,8 @@ namespace UQS
 			if (this != &other)
 			{
 				pDeferredEvaluator = std::move(other.pDeferredEvaluator);
-				originalIndexInQueryBlueprint = other.originalIndexInQueryBlueprint;
+				evaluationResultTransform = std::move(other.evaluationResultTransform);
+				originalIndexInQueryBlueprint = std::move(other.originalIndexInQueryBlueprint);
 			}
 			return *this;
 		}
@@ -407,20 +413,22 @@ namespace UQS
 
 				for (size_t i = 0; i < numInstantEvaluators; ++i)
 				{
-					Client::IInstantEvaluatorFactory& instantEvaluatorFactory = instantEvaluatorBlueprints[i]->GetFactory();
+					const CInstantEvaluatorBlueprint* pInstantEvaluatorBlueprint = instantEvaluatorBlueprints[i];
+					Client::IInstantEvaluatorFactory& instantEvaluatorFactory = pInstantEvaluatorBlueprint->GetFactory();
 					Client::InstantEvaluatorUniquePtr pEval = instantEvaluatorFactory.CreateInstantEvaluator();
 					Client::ParamsHolderUniquePtr pParamsHolder = instantEvaluatorFactory.GetParamsHolderFactory().CreateParamsHolder();
 					const Client::IInputParameterRegistry* pInputParameterRegistry = &instantEvaluatorFactory.GetInputParameterRegistry();
+					const CEvaluationResultTransform& evaluationResultTransform = pInstantEvaluatorBlueprint->GetEvaluationResultTransform();
 					const Client::IInstantEvaluatorFactory::ECostCategory costCategory = instantEvaluatorFactory.GetCostCategory();
 
 					switch (costCategory)
 					{
 					case Client::IInstantEvaluatorFactory::ECostCategory::Cheap:
-						m_cheapInstantEvaluators.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
+						m_cheapInstantEvaluators.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, evaluationResultTransform, i);
 						break;
 
 					case Client::IInstantEvaluatorFactory::ECostCategory::Expensive:
-						m_expensiveInstantEvaluators.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
+						m_expensiveInstantEvaluators.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, evaluationResultTransform, i);
 						break;
 
 					default:
@@ -518,6 +526,9 @@ namespace UQS
 				{
 					// mark the evaluator as finished (this may only be done if the evaluator finished with whatever he was supposed to do without causing an exception)
 					workingDataToWriteResultTo.bitsFinishedInstantEvaluators |= (evaluatorsBitfield_t)1 << instantEvaluatorIndex;
+
+					// transform the evaluation result
+					instantEvaluatorToRun.evaluationResultTransform.TransformItemEvaluationResult(evaluationResult);
 
 					if (evaluationResult.bDiscardItem)
 					{
@@ -731,6 +742,9 @@ namespace UQS
 
 						// leave our finished mark
 						taskToUpdate.pWorkingData->bitsFinishedDeferredEvaluators |= myOwnBit;
+
+						// transform the evaluation result
+						de.evaluationResultTransform.TransformItemEvaluationResult(evaluationResult);
 
 						if (evaluationResult.bDiscardItem)
 						{
@@ -1142,7 +1156,8 @@ namespace UQS
 			// fill the new task with all deferred-evaluators
 			for (size_t deferredEvaluatorBlueprintIndex = 0; deferredEvaluatorBlueprintIndex < numDeferredEvaluatorBlueprints; ++deferredEvaluatorBlueprintIndex)
 			{
-				Client::IDeferredEvaluatorFactory& deferredEvaluatorFactory = deferredEvaluatorBlueprints[deferredEvaluatorBlueprintIndex]->GetFactory();
+				const CDeferredEvaluatorBlueprint* pDeferredEvaluatorBlueprint = deferredEvaluatorBlueprints[deferredEvaluatorBlueprintIndex];
+				Client::IDeferredEvaluatorFactory& deferredEvaluatorFactory = pDeferredEvaluatorBlueprint->GetFactory();
 
 				// create input parameters (they will get filled by the function calls below)
 				Client::ParamsHolderUniquePtr pParamsHolder = deferredEvaluatorFactory.GetParamsHolderFactory().CreateParamsHolder();
@@ -1163,7 +1178,7 @@ namespace UQS
 
 				// instantiate a new DE and add it to the task
 				Client::DeferredEvaluatorUniquePtr pDeferredEvaluator = deferredEvaluatorFactory.CreateDeferredEvaluator(pParams);
-				freshlyCreatedTask.deferredEvaluators.emplace_back(std::move(pDeferredEvaluator), deferredEvaluatorBlueprintIndex);
+				freshlyCreatedTask.deferredEvaluators.emplace_back(std::move(pDeferredEvaluator), pDeferredEvaluatorBlueprint->GetEvaluationResultTransform(), deferredEvaluatorBlueprintIndex);
 
 				// mark the item as being worked on by this DE
 				pWorkingDataToInspectNext->bitsWorkingDeferredEvaluators |= (evaluatorsBitfield_t)1 << deferredEvaluatorBlueprintIndex;

@@ -17,7 +17,7 @@ namespace UQS
 			//
 			//===================================================================================
 
-			class CInstantEvaluatorFactoryBase : public IInstantEvaluatorFactory, public IParamsHolderFactory, public CFactoryBase<CInstantEvaluatorFactoryBase>
+			class CInstantEvaluatorFactoryBase : public IInstantEvaluatorFactory, public IParamsHolderFactory, public Shared::CFactoryBase<CInstantEvaluatorFactoryBase>
 			{
 			public:
 				// IInstantEvaluatorFactory

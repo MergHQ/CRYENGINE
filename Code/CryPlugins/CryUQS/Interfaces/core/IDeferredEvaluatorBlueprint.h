@@ -24,6 +24,10 @@ namespace UQS
 			virtual ITextualInputBlueprint&               GetInputRoot() = 0;
 			virtual const char*                           GetEvaluatorName() const = 0;
 			virtual const ITextualInputBlueprint&         GetInputRoot() const = 0;
+			virtual void                                  SetScoreTransform(const char* szScoreTransform) = 0;
+			virtual const char*                           GetScoreTransform() const = 0;
+			virtual void                                  SetNegateDiscard(bool bNegateDiscard) = 0;
+			virtual bool                                  GetNegateDiscard() const = 0;
 			virtual void                                  SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) = 0;
 			virtual DataSource::ISyntaxErrorCollector*    GetSyntaxErrorCollector() const = 0;     // called while resolving a blueprint from its textual representation into the "in-memory" representation
 		};
