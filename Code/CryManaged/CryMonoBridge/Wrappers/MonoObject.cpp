@@ -27,7 +27,16 @@ CMonoObject::CMonoObject(MonoObject* pObject)
 
 CMonoObject::~CMonoObject()
 {
-	mono_gchandle_free(m_gcHandle);
+	ReleaseGCHandle();
+}
+
+void CMonoObject::ReleaseGCHandle()
+{
+	if (m_gcHandle != 0)
+	{
+		mono_gchandle_free(m_gcHandle);
+		m_gcHandle = 0;
+	}
 }
 
 const char* CMonoObject::ToString() const

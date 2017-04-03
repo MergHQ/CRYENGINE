@@ -4,6 +4,7 @@
 
 #include <CryMono/IMonoClass.h>
 #include <CryMono/IMonoObject.h>
+#include <CryMono/IMonoMethod.h>
 
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -30,9 +31,8 @@ enum class EEntityPropertyType : uint32
 	Animation
 };
 
-class CManagedEntityComponentFactory
+struct SManagedEntityComponentFactory
 {
-public:
 	struct SProperty
 	{
 		SProperty(MonoReflectionPropertyInternal* pReflectionProperty, const char* szName, const char* szLabel, const char* szDesc, EEntityPropertyType serType);
@@ -47,29 +47,29 @@ public:
 		EEntityPropertyType serializationType;
 	};
 
-	CManagedEntityComponentFactory(std::shared_ptr<IMonoClass> pClass, CryInterfaceID id);
-
-	IMonoClass* GetClass() const { return m_pClass.get(); }
-	CryInterfaceID GetId() const { return m_id; }
-
-	IEntityClass* GetEntityClass() const { return m_pEntityClass; }
-	void SetEntityClass(IEntityClass* pClass) { m_pEntityClass  = pClass; }
-
-	uint64 GetEventMask() const { return m_eventMask; }
+	SManagedEntityComponentFactory(std::shared_ptr<IMonoClass> pClass, CryInterfaceID id);
 
 	template<typename... Args>
-	void AddProperty(Args&&... args) { m_properties.emplace_back(args...); }
+	void AddProperty(Args&&... args) { properties.emplace_back(args...); }
 
-	const std::vector<SProperty>& GetProperties() const { return m_properties; }
+	CryInterfaceID id;
+	std::shared_ptr<IMonoClass> pClass;
 
-protected:
-	CryInterfaceID m_id;
-	std::shared_ptr<IMonoClass> m_pClass;
+	IEntityClass* pEntityClass;
+	uint64 eventMask;
 
-	IEntityClass* m_pEntityClass;
-	uint64 m_eventMask;
+	std::vector<SProperty> properties;
 
-	std::vector<SProperty> m_properties;
+	std::shared_ptr<IMonoMethod> pInitializeMethod;
+	std::shared_ptr<IMonoMethod> pConstructorMethod;
+
+	std::shared_ptr<IMonoMethod> pTransformChangedMethod;
+	std::shared_ptr<IMonoMethod> pUpdateMethod;
+	std::shared_ptr<IMonoMethod> pGameModeChangeMethod;
+	std::shared_ptr<IMonoMethod> pHideMethod;
+	std::shared_ptr<IMonoMethod> pUnHideMethod;
+	std::shared_ptr<IMonoMethod> pCollisionMethod;
+	std::shared_ptr<IMonoMethod> pPrePhysicsUpdateMethod;
 };
 
 // Wrapper of an entity component to allow exposing managed equivalents to native code
@@ -78,14 +78,14 @@ class CManagedEntityComponent final
 	, public IEntityPropertyGroup
 {
 public:
-	CManagedEntityComponent(const CManagedEntityComponentFactory& factory);
+	CManagedEntityComponent(const SManagedEntityComponentFactory& factory);
 	virtual ~CManagedEntityComponent() {}
 
 	// IEntityComponent
 	virtual void Initialize() override;
 
 	virtual	void ProcessEvent(SEntityEvent &event) override;
-	virtual uint64 GetEventMask() const override { return m_eventMask; }
+	virtual uint64 GetEventMask() const override { return m_factory.eventMask; }
 
 	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
 	// ~IEntityComponent
@@ -101,8 +101,6 @@ public:
 protected:
 	string m_propertyLabel;
 
-	const CManagedEntityComponentFactory& m_factory;
+	const SManagedEntityComponentFactory& m_factory;
 	std::shared_ptr<IMonoObject> m_pMonoObject;
-
-	uint64 m_eventMask;
 };

@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>CryEngine</RootNamespace>
     <AssemblyName>CryEngine.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <UseMSBuildEngine>False</UseMSBuildEngine>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -17,11 +17,9 @@
     <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>DEBUG;TRACE;WIN64</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-    <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
@@ -31,31 +29,28 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
-    <DefineConstants>DEBUG;TRACE;WIN86</DefineConstants>
+    <OutputPath>..\..\..\..\bin\win_x86</OutputPath>
+    <DefineConstants>TRACE;DEBUG;WIN86;WIN32</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\..\..\bin\win_x64_release</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x86_release</OutputPath>
     <DefineConstants>TRACE;WIN86</DefineConstants>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
@@ -76,6 +71,8 @@
     <Compile Include="Audio\AudioManager.cs" />
     <Compile Include="Console\ConsoleCommand.cs" />
     <Compile Include="Console\ConsoleVariable.cs" />
+    <Compile Include="Console\Attributes.cs" />
+    <Compile Include="Console\Native\NativeConsoleMethods.cs" />
     <Compile Include="Debugging\DebugDraw.cs" />
     <Compile Include="Debugging\ExceptionHandler.cs" />
     <Compile Include="Debugging\ExceptionMessage.cs">
@@ -124,6 +121,8 @@
     <Compile Include="Util\FileSystem.cs" />
     <Compile Include="Util\ReflectionHelper.cs" />
     <Compile Include="Util\Tools.cs" />
+    <Compile Include="Util\IconType.cs" />
+    <Compile Include="Util\Attribute.cs" />
     <Compile Include="Math\MathHelpers.cs" />
     <Compile Include="Attributes.cs" />
     <Compile Include="Debugging\Log.cs" />
@@ -137,6 +136,9 @@
     <EmbeddedResource Include="Debugging\ExceptionMessage.resx">
       <DependentUpon>ExceptionMessage.cs</DependentUpon>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

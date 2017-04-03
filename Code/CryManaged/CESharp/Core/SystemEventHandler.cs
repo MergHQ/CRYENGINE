@@ -45,7 +45,7 @@ namespace CryEngine
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
-#if WIN64
+#if WIN64 || WIN86
 		public override void OnSystemEvent(ESystemEvent evt, ulong wparam, ulong lparam)
 #elif WIN32
 		public override void OnSystemEvent (ESystemEvent evt, uint wparam, uint lparam)

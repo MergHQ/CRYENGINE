@@ -28,15 +28,15 @@ CMonoClass::CMonoClass(CMonoLibrary* pLibrary, MonoClass* pClass)
 	m_name = mono_class_get_name(m_pClass);
 }
 
-void CMonoClass::Serialize()
+void CMonoClass::Serialize(CMonoObject* pSerializer)
 {
 	auto* pDomain = static_cast<CAppDomain*>(m_pLibrary->GetDomain());
 
 	for (auto it = m_objects.begin(); it != m_objects.end();)
 	{
-		if (auto pObject = it->lock())
+		if (std::shared_ptr<CMonoObject> pObject = it->lock())
 		{
-			pDomain->Serialize((MonoObject*)pObject->GetHandle(), false);
+			pDomain->SerializeObject(pSerializer, (MonoObject*)pObject->GetHandle(), false);
 
 			++it;
 		}
@@ -46,18 +46,63 @@ void CMonoClass::Serialize()
 			it = m_objects.erase(it);
 		}
 	}
+
+	for (auto it = m_methods.begin(); it != m_methods.end();)
+	{
+		if (std::shared_ptr<CMonoMethod> pMethod = it->lock())
+		{
+			pMethod->PrepareForSerialization();
+
+			++it;
+		}
+		else
+		{
+			// Clear out dead methods while we're at it
+			it = m_methods.erase(it);
+		}
+	}
 }
 
-void CMonoClass::Deserialize()
+void CMonoClass::Deserialize(CMonoObject* pSerializer)
 {
 	auto* pDomain = static_cast<CAppDomain*>(m_pLibrary->GetDomain());
 
-	for (auto it = m_objects.begin(); it != m_objects.end(); ++it)
+	// Deserialize objects from memory
+	for (const std::weak_ptr<CMonoObject>& weakObjectPointer : m_objects)
 	{
-		if (auto pObject = it->lock())
+		if (std::shared_ptr<CMonoObject> pObject = weakObjectPointer.lock())
 		{
-			std::shared_ptr<IMonoObject> pDeserializedObject = pDomain->Deserialize(false);
+			std::shared_ptr<IMonoObject> pDeserializedObject = pDomain->DeserializeObject(pSerializer, false);
 			pObject->AssignObject((MonoObject*)pDeserializedObject->GetHandle());
+		}
+	}
+
+	// Refresh method pointers, or invalidate them
+	for (const std::weak_ptr<CMonoMethod>& weakMethodPointer : m_methods)
+	{
+		if (std::shared_ptr<CMonoMethod> pMethod = weakMethodPointer.lock())
+		{
+			// Create an internal mono representation of the description that we saved
+			if (MonoMethodDesc* pMethodDesc = mono_method_desc_new(pMethod->GetSerializedDescription(), false))
+			{
+				// Search for the method signature in all implemented classes
+				MonoClass *pClass = m_pClass;
+
+				while (pClass != nullptr)
+				{
+					if (MonoMethod* pFoundMethod = mono_method_desc_search_in_class(pMethodDesc, pClass))
+					{
+						pMethod->OnDeserialized(pFoundMethod);
+						break;
+					}
+
+					pClass = mono_class_get_parent(pClass);
+					if (pClass == mono_get_object_class())
+						break;
+				}
+
+				mono_method_desc_free(pMethodDesc);
+			}
 		}
 	}
 }
@@ -65,6 +110,17 @@ void CMonoClass::Deserialize()
 void CMonoClass::ReloadClass()
 {
 	m_pClass = mono_class_from_name(m_pLibrary->GetImage(), m_namespace, m_name);
+}
+
+void CMonoClass::OnAssemblyUnload()
+{
+	for (const std::weak_ptr<CMonoObject>& weakObjectPointer : m_objects)
+	{
+		if (std::shared_ptr<CMonoObject> pObject = weakObjectPointer.lock())
+		{
+			pObject->ReleaseGCHandle();
+		}
+	}
 }
 
 const char* CMonoClass::GetName() const
@@ -164,24 +220,28 @@ void CMonoClass::RegisterObject(std::weak_ptr<CMonoObject> pObject)
 	m_objects.push_back(pObject);
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethod(const char* szName, int numParams)const
+std::shared_ptr<IMonoMethod> CMonoClass::FindMethod(const char* szName, int numParams)
 {
 	if (MonoMethod* pMethod = mono_class_get_method_from_name(m_pClass, szName, numParams))
 	{
-		return std::make_shared<CMonoMethod>(pMethod);
+		auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+		m_methods.push_back(pMonoMethod);
+		return pMonoMethod;
 	}
 
 	return nullptr;
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethodInInheritedClasses(const char* szName, int numParams)const
+std::shared_ptr<IMonoMethod> CMonoClass::FindMethodInInheritedClasses(const char* szName, int numParams)
 {
 	MonoClass* pClass = m_pClass;
 	while (pClass != nullptr)
 	{
 		if (MonoMethod* pMethod = mono_class_get_method_from_name(pClass, szName, numParams))
 		{
-			return std::make_shared<CMonoMethod>(pMethod);
+			auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+			m_methods.push_back(pMonoMethod);
+			return pMonoMethod;
 		}
 
 		pClass = mono_class_get_parent(pClass);
@@ -190,7 +250,7 @@ std::shared_ptr<IMonoMethod> CMonoClass::FindMethodInInheritedClasses(const char
 	return nullptr;
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethodDesc) const
+std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethodDesc)
 {
 	auto* pMethodDesc = mono_method_desc_new(szMethodDesc, true);
 	if (pMethodDesc == nullptr)
@@ -202,66 +262,44 @@ std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethod
 	{
 		mono_method_desc_free(pMethodDesc);
 
-		return std::make_shared<CMonoMethod>(pMethod);
+		auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+		m_methods.push_back(pMonoMethod);
+		return pMonoMethod;
 	}
 
 	mono_method_desc_free(pMethodDesc);
 	return nullptr;
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(const char* szMethodDesc) const
+std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(const char* szMethodDesc, IMonoClass* pBaseClass)
 {
-	auto* pMethodDesc = mono_method_desc_new(szMethodDesc, false);
-	if (pMethodDesc == nullptr)
+	MonoClass *pClass = m_pClass;
+
+	string sMethodDesc;
+	sMethodDesc.Format(":%s", szMethodDesc);
+
+	MonoMethodDesc* pDesiredDesc = mono_method_desc_new(sMethodDesc, false);
+	if (pDesiredDesc == nullptr)
 	{
 		return nullptr;
 	}
 
-	MonoClass* pClass = m_pClass;
 	while (pClass != nullptr)
 	{
-		if (MonoMethod* pMethod = mono_method_desc_search_in_class(pMethodDesc, pClass))
+		if (MonoMethod* pMethod = mono_method_desc_search_in_class(pDesiredDesc, pClass))
 		{
-			mono_method_desc_free(pMethodDesc);
-
-			return std::make_shared<CMonoMethod>(pMethod);
-		}
-
-		pClass = mono_class_get_parent(pClass);
-	}
-
-	mono_method_desc_free(pMethodDesc);
-	return nullptr;
-}
-
-bool CMonoClass::IsMethodImplemented(IMonoClass* pBaseClass, const char* szMethodDesc)
-{
-	void *pIterator = 0;
-
-	MonoClass *pClass = m_pClass;
-	
-	while (pClass != nullptr)
-	{
-		string sMethodDesc;
-		sMethodDesc.Format("%s:%s", GetName(), szMethodDesc);
-
-		if(MonoMethodDesc* pDesiredDesc = mono_method_desc_new(sMethodDesc, false))
-		{
-			if (mono_method_desc_search_in_class(pDesiredDesc, pClass) != nullptr)
-			{
-				mono_method_desc_free(pDesiredDesc);
-				return true;
-			}
-
 			mono_method_desc_free(pDesiredDesc);
+
+			auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+			m_methods.push_back(pMonoMethod);
+			return pMonoMethod;
 		}
-		
+
 		pClass = mono_class_get_parent(pClass);
 		if (pClass == mono_get_object_class() || pClass == pBaseClass->GetHandle())
 			break;
-
-		pIterator = 0;
 	}
 
-	return false;
+	mono_method_desc_free(pDesiredDesc);
+	return nullptr;
 }

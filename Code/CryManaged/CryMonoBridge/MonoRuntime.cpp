@@ -86,17 +86,9 @@ CMonoRuntime::~CMonoRuntime()
 		pEngineClass->FindMethod("OnEngineShutdown")->Invoke();
 	}
 
-	for (auto it = m_domainLookupMap.begin(); it != m_domainLookupMap.end(); ++it)
-	{
-		// Root domain HAS to be deleted last, its destructor shuts down the entire runtime!
-		if (it->second != m_pRootDomain)
-		{
-			it->second->Release();
-			it->second = nullptr;
-		}
-	}
-
-	SAFE_DELETE(m_pRootDomain);
+	// Root domain HAS to be deleted last, its destructor shuts down the entire runtime!
+	m_domainLookupMap.clear();
+	m_pRootDomain.reset();
 
 	gEnv->pMonoRuntime = nullptr;
 }
@@ -114,6 +106,7 @@ bool CMonoRuntime::Initialize()
 	mono_jit_parse_options(sizeof(options) / sizeof(char*), options);
 #endif
 
+	// Find the Mono configuration directory
 	char engineRoot[_MAX_PATH];
 	CryFindEngineRootFolder(_MAX_PATH, engineRoot);
 
@@ -140,13 +133,10 @@ bool CMonoRuntime::Initialize()
 	mono_trace_set_print_handler(MonoPrintCallback);
 	mono_trace_set_printerr_handler(MonoPrintErrorCallback);
 
-	mono_install_assembly_search_hook(MonoAssemblySearchCallback, (void *)1);
-	mono_install_assembly_refonly_search_hook(MonoAssemblySearchCallback, (void *)0);
-
-	m_pRootDomain = new CRootMonoDomain();
+	m_pRootDomain = std::make_shared<CRootMonoDomain>();
 	m_pRootDomain->Initialize();
 
-	m_domainLookupMap.insert(TDomainLookupMap::value_type((MonoDomain*)m_pRootDomain->GetHandle(), m_pRootDomain));
+	m_domainLookupMap.emplace(std::make_pair((MonoDomain*)m_pRootDomain->GetHandle(), m_pRootDomain));
 
 	RegisterInternalInterfaces();
 
@@ -156,27 +146,9 @@ bool CMonoRuntime::Initialize()
 	return true;
 }
 
-// This function is required seeing as ICryPak::IsFileExist only works for files in the game directory
-// Should be replaced if that function is fixed.
-bool DoesFileExist(const char* path)
-{
-	if (auto pHandle = gEnv->pCryPak->FOpen(path, "rb", ICryPak::FLAGS_PATH_REAL))
-	{
-		gEnv->pCryPak->FClose(pHandle);
-		return true;
-	}
-
-	return false;
-}
-
 std::shared_ptr<ICryPlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)
 {
-	if (!DoesFileExist(szBinaryPath))
-	{
-		return nullptr;
-	}
-
-	return std::shared_ptr<ICryPlugin>(new CManagedPlugin(szBinaryPath));
+	return std::make_shared<CManagedPlugin>(szBinaryPath);
 }
 
 void CMonoRuntime::Update(int updateFlags, int nPauseMode)
@@ -225,48 +197,30 @@ void CMonoRuntime::MonoPrintErrorCallback(const char* szMessage, mono_bool is_st
 #endif
 }
 
-MonoAssembly* CMonoRuntime::MonoAssemblySearchCallback(MonoAssemblyName* pAssemblyName, void* pUserData)
-{
-	bool bRefOnly = ((int)pUserData == 0);
-
-	auto* pDomain = GetMonoRuntime()->GetActiveDomain();
-
-	const char* assemblyName = mono_assembly_name_get_name(pAssemblyName);
-
-	if (auto* pLibrary = static_cast<CMonoDomain*>(pDomain)->LoadLibrary(assemblyName, bRefOnly))
-	{
-		return pLibrary->GetAssembly();
-	}
-
-	return nullptr;
-}
-
 IMonoDomain* CMonoRuntime::GetRootDomain()
 {
-	return m_pRootDomain;
+	return m_pRootDomain.get();
 }
 
 IMonoDomain* CMonoRuntime::GetActiveDomain()
 {
 	MonoDomain* pActiveMonoDomain = mono_domain_get();
-	auto* pDomain = FindDomainByHandle(pActiveMonoDomain);
-	if (pDomain != nullptr)
+	
+	if (CMonoDomain* pDomain = FindDomainByHandle(pActiveMonoDomain))
 	{
 		return pDomain;
 	}
 
-	pDomain = new CAppDomain(pActiveMonoDomain);
-	m_domainLookupMap.insert(TDomainLookupMap::value_type(pActiveMonoDomain, pDomain));
-
-	return pDomain;
+	auto pair = m_domainLookupMap.emplace(std::make_pair(pActiveMonoDomain, std::make_shared<CAppDomain>(pActiveMonoDomain)));
+	return pair.first->second.get();
 }
 
 IMonoDomain* CMonoRuntime::CreateDomain(char* name, bool bActivate)
 {
-	auto* pAppDomain = new CAppDomain(name, bActivate);
-	m_domainLookupMap.insert(TDomainLookupMap::value_type((MonoDomain*)pAppDomain->GetHandle(), pAppDomain));
+	auto pDomain = std::make_shared<CAppDomain>(name, bActivate);
+	auto pair = m_domainLookupMap.emplace(std::make_pair((MonoDomain*)pDomain->GetHandle(), pDomain));
 
-	return pAppDomain;
+	return pDomain.get();
 }
 
 IMonoAssembly* CMonoRuntime::GetCryCommonLibrary() const
@@ -311,9 +265,8 @@ void CMonoRuntime::RegisterManagedActor(const char* actorClassName)
 void CMonoRuntime::RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator)
 {
 	BehaviorTree::IBehaviorTreeManager& manager = *gEnv->pAISystem->GetIBehaviorTreeManager();
-	CManagedNodeCreatorProxy* pProxy = new CManagedNodeCreatorProxy(szClassName, pCreator);
-	manager.GetNodeFactory().RegisterNodeCreator(pProxy);
-	m_nodeCreators.push_back(pProxy);
+	m_nodeCreators.emplace_back(std::make_shared<CManagedNodeCreatorProxy>(szClassName, pCreator));
+	manager.GetNodeFactory().RegisterNodeCreator(m_nodeCreators.back().get());
 }
 
 void CMonoRuntime::RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& interface)
@@ -336,10 +289,10 @@ CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoDomain* pDomain)
 	auto domainIt = m_domainLookupMap.find(pDomain);
 	if (domainIt == m_domainLookupMap.end())
 	{
-		domainIt = m_domainLookupMap.insert(TDomainLookupMap::value_type(pDomain, new CAppDomain(pDomain))).first;
+		domainIt = m_domainLookupMap.emplace(std::make_pair(pDomain, std::make_shared<CAppDomain>(pDomain))).first;
 	}
 
-	return domainIt->second;
+	return domainIt->second.get();
 }
 
 CAppDomain* CMonoRuntime::LaunchPluginDomain()
@@ -358,10 +311,7 @@ CAppDomain* CMonoRuntime::LaunchPluginDomain()
 		if (m_pLibCommon == nullptr)
 		{
 			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed common library %s", libraryPath.c_str());
-
-			delete m_pPluginDomain;
 			m_pPluginDomain = nullptr;
-
 			return nullptr;
 		}
 
@@ -370,10 +320,7 @@ CAppDomain* CMonoRuntime::LaunchPluginDomain()
 		if (m_pLibCore == nullptr)
 		{
 			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed core library %s", libraryPath.c_str());
-
-			delete m_pPluginDomain;
 			m_pPluginDomain = nullptr;
-
 			return nullptr;
 		}
 

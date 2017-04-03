@@ -5,6 +5,11 @@
 
 #include "MonoObject.h"
 
+CMonoMethod::CMonoMethod(MonoMethod* pMethod)
+	: m_pMethod(pMethod)
+{
+}
+
 std::shared_ptr<IMonoObject> CMonoMethod::Invoke(const IMonoObject* pObject, void** pParameters, bool &bEncounteredException) const
 {
 	return InvokeInternal(pObject != nullptr ? (MonoObject*)pObject->GetHandle() : nullptr, pParameters, bEncounteredException);
@@ -43,4 +48,31 @@ std::shared_ptr<CMonoObject> CMonoMethod::InvokeInternal(MonoObject* pMonoObject
 
 	GetMonoRuntime()->HandleException(pException);
 	return nullptr;
+}
+
+uint32 CMonoMethod::GetParameterCount() const
+{
+	MonoMethodSignature* pSignature = mono_method_signature(m_pMethod);
+	return mono_signature_get_param_count(pSignature);
+}
+
+string CMonoMethod::GetSignatureDescription(bool bIncludeNamespace) const
+{
+	MonoMethodSignature* pSignature = mono_method_signature(m_pMethod);
+	char* desc = mono_signature_get_desc(pSignature, bIncludeNamespace);
+	const char *name = mono_method_get_name(m_pMethod);
+
+	string result;
+	result.Format(":%s(%s)", name, desc);
+
+	mono_free(desc);
+	return result;
+}
+
+void CMonoMethod::PrepareForSerialization()
+{
+	m_description = GetSignatureDescription(false);
+
+	// Invalidate the method so we don't try to use it later
+	m_pMethod = nullptr;
 }

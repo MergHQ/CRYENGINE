@@ -12,7 +12,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
 
-static std::map<MonoReflectionType*, CManagedEntityComponentFactory> s_entityComponentFactoryMap;
+static std::map<MonoReflectionType*, SManagedEntityComponentFactory> s_entityComponentFactoryMap;
 
 static void RegisterComponent(MonoReflectionType* pType, uint64 guidHipart, uint64 guidLopart)
 {
@@ -24,16 +24,16 @@ static void RegisterComponent(MonoReflectionType* pType, uint64 guidHipart, uint
 	auto* pLibrary = pDomain->GetLibraryFromMonoAssembly(mono_image_get_assembly(pImage));
 
 	auto id = CryGUID::Construct(guidHipart, guidLopart);
-	s_entityComponentFactoryMap.emplace(pType, CManagedEntityComponentFactory(pLibrary->GetClassFromMonoClass(pMonoClass), id));
+	s_entityComponentFactoryMap.emplace(pType, SManagedEntityComponentFactory(pLibrary->GetClassFromMonoClass(pMonoClass), id));
 }
 
 static IEntityComponent* CreateManagedComponent(IEntity *pEntity, SEntitySpawnParams& params, void* pUserData)
 {
-	for (auto it = s_entityComponentFactoryMap.begin(); it != s_entityComponentFactoryMap.end(); ++it)
+	for(const auto& entityComponentPair : s_entityComponentFactoryMap)
 	{
-		if (it->second.GetEntityClass() == params.pClass)
+		if (entityComponentPair.second.pEntityClass == params.pClass)
 		{
-			return pEntity->AddComponent(it->second.GetId(), std::make_shared<CManagedEntityComponent>(it->second), false);
+			return pEntity->AddComponent(entityComponentPair.second.id, std::make_shared<CManagedEntityComponent>(entityComponentPair.second), false);
 		}
 	}
 
@@ -54,10 +54,7 @@ static void RegisterManagedEntityWithDefaultComponent(MonoString* pName, MonoStr
 
 	clsDesc.pUserProxyCreateFunc = &CreateManagedComponent;
 
-	if (IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc))
-	{
-		it->second.SetEntityClass(pEntityClass);
-	}
+	it->second.pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
 }
 
 static MonoObject* GetComponent(IEntity* pEntity, MonoReflectionType* pType)
@@ -69,7 +66,7 @@ static MonoObject* GetComponent(IEntity* pEntity, MonoReflectionType* pType)
 		return nullptr;
 	}
 
-	if (auto* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second.GetId())))
+	if (auto* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second.id)))
 	{
 		return static_cast<MonoObject*>(pComponent->GetObject()->GetHandle());
 	}
@@ -82,7 +79,7 @@ static MonoObject* AddComponent(IEntity* pEntity, MonoReflectionType* pType)
 	auto it = s_entityComponentFactoryMap.find(pType);
 	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
 
-	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second.GetId(), std::make_shared<CManagedEntityComponent>(it->second), true));
+	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second.id, std::make_shared<CManagedEntityComponent>(it->second), true));
 
 	if (pComponent != nullptr)
 	{
@@ -97,10 +94,10 @@ static MonoObject* GetOrCreateComponent(IEntity* pEntity, MonoReflectionType* pT
 	auto it = s_entityComponentFactoryMap.find(pType);
 	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
 
-	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second.GetId()));
+	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second.id));
 	if (pComponent == nullptr)
 	{
-		pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second.GetId(), std::make_shared<CManagedEntityComponent>(it->second), false));
+		pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second.id, std::make_shared<CManagedEntityComponent>(it->second), false));
 	}
 
 	return static_cast<MonoObject*>(pComponent->GetObject()->GetHandle());

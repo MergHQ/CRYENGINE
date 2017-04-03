@@ -33,6 +33,8 @@ public:
 	// GetClass needs to be aware of the object weak ptr
 	void SetWeakPointer(std::weak_ptr<CMonoObject> pObject) { m_pThis = pObject; }
 
+	void ReleaseGCHandle();
+
 protected:
 	MonoObject* m_pObject;
 	uint32 m_gcHandle;

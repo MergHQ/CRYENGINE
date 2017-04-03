@@ -47,7 +47,7 @@ protected:
 	CMonoLibrary* m_pLibrary;
 
 	IMonoClass*   m_pClass;
-	std::shared_ptr<IMonoObject>   m_pMonoObject;
+	std::shared_ptr<CMonoObject>   m_pMonoObject;
 
 	string        m_pluginName;
 	string        m_libraryPath;

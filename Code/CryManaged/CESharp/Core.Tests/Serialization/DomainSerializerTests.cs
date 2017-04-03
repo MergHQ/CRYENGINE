@@ -1,4 +1,4 @@
-using CryEngine.Serialization;
+﻿using CryEngine.Serialization;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -603,7 +603,7 @@ namespace Core.Tests.Serialization
 
                     writer.Write(myClass);
                 }
-                
+
                 var reader = new ObjectReader(stream);
                 reader.ReadStatics();
 
@@ -611,6 +611,60 @@ namespace Core.Tests.Serialization
 
                 var readClass = reader.Read() as PrimitiveTestClass;
                 Assert.AreSame(readClass, StaticPrimitiveContainer.TestClass);
+            }
+        }
+
+        class ReadOnlyOwnerClass
+        {
+            public readonly PrimitiveTestClass test;
+
+            public ReadOnlyOwnerClass()
+            {
+                test = new PrimitiveTestClass();
+                test.Float = 5;
+            }
+        }
+
+        [Test]
+        public void ReadOnlySerialization_With_MemoryStream()
+        {
+            using (var stream = new MemoryStream())
+            {
+                {
+                    var myClass = new ReadOnlyOwnerClass();
+                    
+                    var writer = new ObjectWriter(stream);
+                    writer.Write(myClass);
+                }
+
+                var reader = new ObjectReader(stream);
+                
+                var readClass = reader.Read() as ReadOnlyOwnerClass;
+                Assert.AreEqual(readClass.test.Float, 5);
+            }
+        }
+
+        class PropertyHolder
+        {
+            public float Float { get; set; } = 800.0f;
+        }
+        
+        [Test]
+        public void PropertyDefaultValue()
+        {
+            using (var stream = new MemoryStream())
+            {
+                {
+                    var myClass = new PropertyHolder();
+
+                    var writer = new ObjectWriter(stream);
+                    writer.Write(myClass);
+                }
+
+                var reader = new ObjectReader(stream);
+
+                var readClass = reader.Read() as PropertyHolder;
+                Assert.AreEqual(readClass.Float, 800.0);
             }
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -178,7 +178,7 @@ namespace CryEngine.Serialization
 				var fieldInfo = objectType.GetField(fieldName, flags);
 				var fieldValue = Read();
 
-				if (fieldInfo != null && !fieldInfo.IsLiteral && !fieldInfo.IsInitOnly)
+				if (fieldInfo != null && !fieldInfo.IsLiteral)
 				{
 					fieldInfo.SetValue(obj, fieldValue);
 				}

@@ -28,17 +28,14 @@ struct IMonoClass
 	
 	// Searches the specified class for the method
 	// Will NOT search in base classes, see FindMethodInInheritedClasses
-	virtual std::shared_ptr<IMonoMethod> FindMethod(const char* szName, int numParams = 0) const = 0;
+	virtual std::shared_ptr<IMonoMethod> FindMethod(const char* szName, int numParams = 0) = 0;
 	// Searches the entire inheritance tree for the specified method
-	virtual std::shared_ptr<IMonoMethod> FindMethodInInheritedClasses(const char* szName, int numParams = 0) const = 0;
+	virtual std::shared_ptr<IMonoMethod> FindMethodInInheritedClasses(const char* szName, int numParams = 0) = 0;
 
 	// Searches the specified class for the method by its description
 	// Will NOT search in base classes, see FindMethodWithDescInInheritedClasses
-	virtual std::shared_ptr<IMonoMethod> FindMethodWithDesc(const char* szMethodDesc) const = 0;
+	virtual std::shared_ptr<IMonoMethod> FindMethodWithDesc(const char* szMethodDesc) = 0;
 	// Searches the entire inheritance tree for the specified method by its description
-	virtual std::shared_ptr<IMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc) const = 0;
-
-	// Check whether a method with the specified description is implemented in the class hierarchy
-	// Returns false if method was not found, or pBaseClass is encountered in the hierarchy
-	virtual bool IsMethodImplemented(IMonoClass* pBaseClass, const char* szMethodDesc) = 0;
+	// Skips searching after encountering pBaseClass if present
+	virtual std::shared_ptr<IMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc, IMonoClass* pBaseClass = nullptr) = 0;
 };
