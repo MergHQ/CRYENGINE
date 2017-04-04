@@ -669,6 +669,7 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
 
+	UnloadEngineModule("CryFlowGraph");
 	SAFE_DELETE(m_pPluginManager);
 
 	SAFE_DELETE(gEnv->pMonoRuntime);

@@ -12,10 +12,4 @@ struct ICryUserAnalyticsPlugin : public ICryPlugin
 
 public:
 	virtual IUserAnalytics*         GetIUserAnalytics() const = 0;
-	static ICryUserAnalyticsPlugin* GetCryUserAnalytics() { return m_pThis; }
-
-protected:
-	static ICryUserAnalyticsPlugin* m_pThis;
 };
-
-ICryUserAnalyticsPlugin* ICryUserAnalyticsPlugin::m_pThis = 0;
