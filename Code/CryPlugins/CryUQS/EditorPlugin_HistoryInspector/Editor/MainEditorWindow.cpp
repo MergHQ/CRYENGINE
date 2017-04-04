@@ -28,7 +28,7 @@
 #include <Controls/QuestionDialog.h>
 
 // UQS 3d rendering
-#include <IDisplayViewport.h>
+#include <IViewportManager.h>
 #include <SandboxAPI.h>	// SANDBOX_API
 struct IDataBaseItem;	// CViewport should have forward-declared this
 #include <Viewport.h>
@@ -452,12 +452,42 @@ private:
 // CMainEditorWindow
 //////////////////////////////////////////////////////////////////////////
 
+CMainEditorWindow::CUQSHistoryPostRenderer::CUQSHistoryPostRenderer(CHistoricQueryTreeView& historicQueryTreeView)
+	: m_historicQueryTreeView(historicQueryTreeView)
+{
+	// nothing
+}
+
+void CMainEditorWindow::CUQSHistoryPostRenderer::OnPostRender() const
+{
+	if (UQS::Core::IHub* pHub = UQS::Core::IHubPlugin::GetHubPtr())
+	{
+		if (const CViewport* pGameViewport = GetIEditor()->GetViewportManager()->GetGameViewport())
+		{
+			const Matrix34& viewTM = pGameViewport->GetViewTM();
+			Matrix33 orientation;
+			viewTM.GetRotation33(orientation);
+			UQS::Core::SDebugCameraView uqsCameraView;
+			uqsCameraView.pos = viewTM.GetTranslation();
+			uqsCameraView.dir = orientation * Vec3(0, 1, 0);
+
+			UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks = UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet();
+
+			if (const SQuery* pSelectedQuery = m_historicQueryTreeView.GetSelectedQuery())
+			{
+				evaluatorDrawMasks = pSelectedQuery->evaluatorDrawMasks;
+			}
+
+			pHub->GetQueryHistoryManager().UpdateDebugRendering3D(uqsCameraView, evaluatorDrawMasks);
+		}
+	}
+}
+
 CMainEditorWindow::CMainEditorWindow()
 	: m_pQueryHistoryManager(nullptr)
 	, m_pFreshlyAddedOrUpdatedQuery(nullptr)
+	, m_pHistoryPostRenderer(nullptr)
 {
-	GetIEditor()->RegisterNotifyListener(this);
-
 	// "file" menu
 	{
 		QMenu* pFileMenu = menuBar()->addMenu("&File");
@@ -518,6 +548,10 @@ CMainEditorWindow::CMainEditorWindow()
 	QObject::connect(m_pButtonClearCurrentHistory, &QPushButton::clicked, this, &CMainEditorWindow::OnClearHistoryButtonClicked);
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainEditorWindow::OnTreeViewCurrentChanged);
 
+	// instantiate the CUQSHistoryPostRenderer on the heap - it's IPostRenderer is refcounted and deletes itself when un-registering from the game's viewport
+	m_pHistoryPostRenderer = new CUQSHistoryPostRenderer(*m_pTreeView);
+	GetIEditor()->GetViewportManager()->GetGameViewport()->AddPostRenderer(m_pHistoryPostRenderer);	// this increments its refcount
+
 	if (UQS::Core::IHub* pHub = UQS::Core::IHubPlugin::GetHubPtr())
 	{
 		m_pQueryHistoryManager = &pHub->GetQueryHistoryManager();
@@ -539,7 +573,15 @@ CMainEditorWindow::~CMainEditorWindow()
 		m_pQueryHistoryManager->UnregisterQueryHistoryListener(this);
 	}
 
-	GetIEditor()->UnregisterNotifyListener(this);
+	// - remove the QueryHistoryPostRenderer
+	// - notice: we will *not* leak memory if the viewport-manager and/or the game-viewport are already gone, since they would then have decremented its refcount and eventually delete'd the object already
+	if (IViewportManager* pViewportManager = GetIEditor()->GetViewportManager())
+	{
+		if(CViewport* pGameViewport = pViewportManager->GetGameViewport())
+		{
+			pGameViewport->RemovePostRenderer(m_pHistoryPostRenderer);	// this decrements its refcount, eventually delete'ing it
+		}
+	}
 }
 
 const char* CMainEditorWindow::GetPaneTitle() const
@@ -552,36 +594,6 @@ const char* CMainEditorWindow::GetPaneTitle() const
 	else
 	{
 		return "UQS History (disabled due to the UQS engine-plugin not being loaded)";
-	}
-}
-
-void CMainEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent ev)
-{
-	switch (ev)
-	{
-	case eNotify_OnIdleUpdate:
-		if (m_pQueryHistoryManager)
-		{
-			if (IDisplayViewport* pActiveDisplayViewport = GetIEditor()->GetActiveDisplayViewport())
-			{
-				const Matrix34& viewTM = pActiveDisplayViewport->GetViewTM();
-				Matrix33 orientation;
-				viewTM.GetRotation33(orientation);
-				UQS::Core::SDebugCameraView uqsCameraView;
-				uqsCameraView.pos = viewTM.GetTranslation();
-				uqsCameraView.dir = orientation * Vec3(0, 1, 0);
-
-				UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks = UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet();
-
-				if (const SQuery* pSelectedQuery = m_pTreeView->GetSelectedQuery())
-				{
-					evaluatorDrawMasks = pSelectedQuery->evaluatorDrawMasks;
-				}
-
-				m_pQueryHistoryManager->UpdateDebugRendering3D(uqsCameraView, evaluatorDrawMasks);
-			}
-		}
-		break;
 	}
 }
 

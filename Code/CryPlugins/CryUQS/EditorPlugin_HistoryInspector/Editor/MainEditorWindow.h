@@ -12,6 +12,7 @@
 #include <IEditor.h>
 #include <DockedWidget.h>
 #include <Controls/EditorDialog.h>
+#include <IPostRenderer.h>
 
 #include <CryUQS/Interfaces/InterfacesIncludes.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
@@ -20,9 +21,26 @@ struct SQuery;
 class CHistoricQueryTreeModel;
 class CHistoricQueryTreeView;
 
-class CMainEditorWindow : public CDockableWindow, public IEditorNotifyListener, public UQS::Core::IQueryHistoryListener, public UQS::Core::IQueryHistoryConsumer
+class CMainEditorWindow : public CDockableWindow, public UQS::Core::IQueryHistoryListener, public UQS::Core::IQueryHistoryConsumer
 {
 	Q_OBJECT
+
+private:
+
+	class CUQSHistoryPostRenderer : public IPostRenderer
+	{
+	public:
+
+		explicit CUQSHistoryPostRenderer(CHistoricQueryTreeView& historicQueryTreeView);
+
+		// IPostRenderer
+		virtual void OnPostRender() const override;
+		// ~IPostRenderer
+
+	private:
+
+		CHistoricQueryTreeView& m_historicQueryTreeView;
+	};
 
 public:
 
@@ -33,10 +51,6 @@ public:
 	virtual const char*                       GetPaneTitle() const override;
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	// ~CDockableWindow
-
-	// IEditorNotifyListener
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent ev) override;
-	// ~IEditorNotifyListener
 
 	// ~IQueryHistoryListener
 	virtual void OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListener::SEvent& ev) override;
@@ -67,4 +81,5 @@ private:
 	QComboBox*                       m_pComboBoxHistoryOrigin;
 	QPushButton*                     m_pButtonClearCurrentHistory;
 	QPropertyTree*                   m_pPropertyTree;
+	CUQSHistoryPostRenderer*         m_pHistoryPostRenderer;
 };
