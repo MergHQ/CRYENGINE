@@ -1529,7 +1529,7 @@ FILE* CCryPak::FOpenRaw(const char* pName, const char* mode)
 //////////////////////////////////////////////////////////////////////////
 FILE* CCryPak::FOpen(const char* pName, const char* szMode, char* szFileGamePath, int nLen)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	LOADING_TIME_PROFILE_SECTION_ARGS(pName);
 
 	SAutoCollectFileAcessTime accessTime(this);
 
@@ -1555,8 +1555,7 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, char* szFileGamePath
 //////////////////////////////////////////////////////////////////////////
 FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags)
 {
-
-	LOADING_TIME_PROFILE_SECTION;
+	LOADING_TIME_PROFILE_SECTION_ARGS(pName);
 
 	if (strlen(pName) >= g_nMaxPath)
 		return 0;

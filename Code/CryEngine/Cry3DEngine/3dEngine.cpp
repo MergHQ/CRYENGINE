@@ -4720,6 +4720,7 @@ void C3DEngine::SetCachedShadowBounds(const AABB& shadowBounds, float fAdditiona
 
 void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	m_nCachedShadowsUpdateStrategy = nUpdateStrategy;
 
 	// refresh cached shadow casters

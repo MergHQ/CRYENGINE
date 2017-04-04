@@ -18,6 +18,15 @@ struct SPluginDefinition
 		ar(path, "path", "path");
 	}
 
+	bool operator==(const SPluginDefinition& rhs) const
+	{
+		return type == rhs.type && path == rhs.path;
+	}
+	bool operator!=(const SPluginDefinition& rhs) const
+	{
+		return !(*this == rhs);
+	}
+
 	ICryPluginManager::EPluginType type;
 	string path;
 };

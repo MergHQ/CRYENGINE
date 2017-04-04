@@ -3023,9 +3023,9 @@ L_done:;
 			}
 		}
 
-		InlineInitializationProcessing("CSystem::Init LoadPlugins");
-
-		m_pPluginManager->Initialize();
+		InlineInitializationProcessing("CSystem::Init LoadProjectPlugins");
+		m_pPluginManager->LoadProjectPlugins();
+		m_pUserAnalyticsSystem->Initialize();
 
 		InlineInitializationProcessing("CSystem::Init InitRenderer");
 

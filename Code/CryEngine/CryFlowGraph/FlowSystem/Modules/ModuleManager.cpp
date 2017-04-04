@@ -562,16 +562,20 @@ void CFlowGraphModuleManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam,
 		}
 		break;
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
-{
-			if (gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded())
+		{
+			bool bClearModules = true;
+			if (gEnv->pGameFramework->GetILevelSystem() && !gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded())
+				bClearModules = false;
+
+			if (bClearModules)
 				ClearModules();
 		}
 		break;
 	case ESYSTEM_EVENT_EDITOR_GAME_MODE_CHANGED:
 	case ESYSTEM_EVENT_EDITOR_SIMULATION_MODE_CHANGED:
-	{
-			if (wparam == 0)
 		{
+			if (wparam == 0)
+			{
 				DestroyActiveModuleInstances();
 			}
 		}

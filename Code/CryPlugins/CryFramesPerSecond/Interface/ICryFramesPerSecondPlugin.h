@@ -12,10 +12,4 @@ struct ICryFramesPerSecondPlugin : public ICryPlugin
 
 public:
 	virtual IFramesPerSecond*         GetIFramesPerSecond() const = 0;
-	static ICryFramesPerSecondPlugin* GetCryFramesPerSecond() { return m_pThis; }
-
-protected:
-	static ICryFramesPerSecondPlugin* m_pThis;
 };
-
-ICryFramesPerSecondPlugin* ICryFramesPerSecondPlugin::m_pThis = 0;

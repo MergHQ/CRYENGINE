@@ -1268,6 +1268,7 @@ int CParticleManager::AddEventTiming(cstr sEvent, const CParticleContainer* pCon
 //////////////////////////////////////////////////////////////////////////
 void CParticleManager::Serialize(TSerialize ser)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	ser.BeginGroup("ParticleEmitters");
 
 	if (ser.IsWriting())

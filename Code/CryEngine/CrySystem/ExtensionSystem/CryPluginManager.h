@@ -32,7 +32,7 @@ public:
 
 	// Called by CrySystem during early init to initialize the manager and load plugins
 	// Plugins that require later activation can do so by listening to system events such as ESYSTEM_EVENT_PRE_RENDERER_INIT
-	void Initialize();
+	void LoadProjectPlugins();
 
 	void Update(IPluginUpdateListener::EPluginUpdateType updateFlags);
 
@@ -53,6 +53,6 @@ private:
 	std::vector<SPluginContainer> m_pluginContainer;
 	std::map<IPluginEventListener*, std::vector<CryClassID>> m_pluginListenerMap;
 
-	const SSystemInitParams   m_systemInitParams;
-	static CCryPluginManager* s_pThis;
+	const SSystemInitParams m_systemInitParams;
+	bool                    m_bLoadedProjectPlugins;
 };

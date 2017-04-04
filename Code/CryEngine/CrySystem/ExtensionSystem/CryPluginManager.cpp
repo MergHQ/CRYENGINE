@@ -13,7 +13,6 @@
 #include <CryMono/IMonoRuntime.h>
 
 #include <CryCore/Platform/CryLibrary.h>
-CCryPluginManager* CCryPluginManager::s_pThis = 0;
 
 // Descriptor for the binary file of a plugin.
 // This is separate since a plugin does not necessarily have to come from a binary, for example if static linking is used.
@@ -177,9 +176,8 @@ struct SPluginContainer
 
 CCryPluginManager::CCryPluginManager(const SSystemInitParams& initParams)
 	: m_systemInitParams(initParams)
+	, m_bLoadedProjectPlugins(false)
 {
-	s_pThis = this;
-
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CCryPluginManager");
 }
 
@@ -213,7 +211,7 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 	}
 }
 
-void CCryPluginManager::Initialize()
+void CCryPluginManager::LoadProjectPlugins()
 {
 	// Find out how many ICryPlugin implementations are available
 	size_t numFactories;
@@ -235,6 +233,8 @@ void CCryPluginManager::Initialize()
 		OnPluginLoaded();
 	}
 
+	m_bLoadedProjectPlugins = true;
+
 	// Load plug-ins specified in the .cryproject file from disk
 	CProjectManager* pProjectManager = static_cast<CProjectManager*>(gEnv->pSystem->GetIProjectManager());
 	const std::vector<SPluginDefinition>& pluginDefinitions = pProjectManager->GetPluginDefinitions();
@@ -243,10 +243,19 @@ void CCryPluginManager::Initialize()
 	{
 		LoadPluginFromDisk(pluginDefinition.type, pluginDefinition.path);
 	}
+
+	// Always load the CryUserAnalytics plugin
+	SPluginDefinition userAnalyticsPlugin(EPluginType::Native, "CryUserAnalytics");
+	if (std::find(std::begin(pluginDefinitions), std::end(pluginDefinitions), userAnalyticsPlugin) == std::end(pluginDefinitions))
+	{
+		LoadPluginFromDisk(userAnalyticsPlugin.type, userAnalyticsPlugin.path);
+	}
 }
 
 bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
 {
+	CRY_ASSERT_MESSAGE(m_bLoadedProjectPlugins, "Plug-ins must not be loaded before LoadProjectPlugins!");
+
 	CryLogAlways("Loading plug-in %s", path);
 
 	std::shared_ptr<ICryPlugin> pPlugin;

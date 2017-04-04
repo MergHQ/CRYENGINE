@@ -953,6 +953,9 @@ public:
 		{
 			WriteType visitor(ser, IsUserFlagSet());
 			stl::visit(visitor, m_variant);
+
+			bool locked = m_locked;
+			ser.Value("locked", locked);
 		}
 		else
 		{
@@ -967,6 +970,10 @@ public:
 
 			LoadType visitor(ser);
 			stl::visit(visitor, m_variant);
+
+			bool locked;
+			ser.Value("locked", locked);
+			m_locked = locked;
 		}
 	}
 
