@@ -1432,6 +1432,7 @@ void CAreaManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 		// This seems to be enabled by Segmented World, which is turned of in ProjectDefines.h
 		// if(GetEntitySystem()->EntitiesUseGUIDs())
 		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("CAreaManager::OnSystemEvent ESYSTEM_EVENT_LEVEL_LOAD_END");
 			for (auto const pArea : m_areas)
 			{
 				pArea->ResolveEntityIds();

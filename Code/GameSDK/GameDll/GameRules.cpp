@@ -8971,7 +8971,8 @@ void CGameRules::OnSystemEvent( ESystemEvent event,UINT_PTR wparam,UINT_PTR lpar
 	switch(event)
 	{
 		case	ESYSTEM_EVENT_LEVEL_LOAD_END:
-			{ 				
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("CGameRules::OnSystemEvent() ESYSTEM_EVENT_LEVEL_LOAD_END");
 				if(IGameRulesSpectatorModule * pSpectatorModule = GetSpectatorModule())
 				{
 					EntityId spectatorPositionId = pSpectatorModule->GetSpectatorLocation(0);
