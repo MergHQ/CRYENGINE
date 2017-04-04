@@ -1391,6 +1391,7 @@ elseif(DURANGO)
 		"appxmanifest" "AppxManifest.xml"
 		"logo" "DurangoLogo.png"
 		"small_logo" "DurangoSmallLogo.png"
+		"wide_logo" "DurangoWideLogo.png"
 		"splash_screen" "DurangoSplashScreen.png"
 		"store_logo" "DurangoStoreLogo.png"
 	)

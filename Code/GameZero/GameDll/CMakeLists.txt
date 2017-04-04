@@ -65,6 +65,7 @@ elseif(DURANGO)
 		"scid" "84d70100-5e91-4cf0-bcc9-7b2f06bff3bf"
 		"appxmanifest" "AppxManifest.xml"
 		"logo" "DurangoLogo.png"
+		"wide_logo" "DurangoWideLogo.png"
 		"small_logo" "DurangoSmallLogo.png"
 		"splash_screen" "DurangoSplashScreen.png"
 		"store_logo" "DurangoStoreLogo.png"
