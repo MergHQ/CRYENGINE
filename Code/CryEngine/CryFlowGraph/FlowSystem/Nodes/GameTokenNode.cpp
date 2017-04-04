@@ -34,9 +34,9 @@ IGameToken* GetGameToken(const char* callingNodeName, IFlowNode::SActivationInfo
 	if (!pToken)
 	{
 		CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR,
-			"[FG] Cannot find GameToken: '%s' Node: %s (ID %u) Graph: %s",
+			"[FG] Cannot find GameToken: '%s' Node: %s Graph: %s",
 			tokenName.c_str(),
-			callingNodeName, pActInfo->myID, pActInfo->pGraph->GetDebugName()
+			callingNodeName, pActInfo->pGraph->GetDebugName()
 		);
 	}
 
@@ -53,10 +53,10 @@ void WarningIfGameTokenUsedWithWrongType(const char* callingNodeName, IFlowNode:
 		if (data.CheckIfForcedConversionOfCurrentValueWithString(valueStr))
 		{
 			CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_ERROR,
-				"[FG] Forced conversion of GameToken '%s' of type '%s' with value >%s<. Node: %s (ID %u) Graph: %s",
+				"[FG] Forced conversion of GameToken '%s' of type '%s' with value >%s<. Node: %s Graph: %s",
 				tokenName,
 				FlowTypeToName(data.GetType()), valueStr.c_str(),
-				callingNodeName, pActInfo->myID, pActInfo->pGraph->GetDebugName()
+				callingNodeName, pActInfo->pGraph->GetDebugName()
 			);
 		}
 	}
@@ -84,10 +84,12 @@ void DryRunAndWarningIfGameTokenUsedWithWrongType(const char* place, IFlowNode::
 //! Check if token and value FD are the same
 bool CompareTokenWithValue(TFlowInputData& tokenData, TFlowInputData& valueData)
 {
+	CRY_ASSERT(tokenData.GetType() == valueData.GetType());
+
 	// value is always kept in sync with the token data type, so no check here
 
 	bool bEquals = false;
-	if (tokenData.GetType() == eFDT_String)
+	if (tokenData.GetType() == eFDT_String && valueData.GetType() == eFDT_String)
 	{
 		// Treat the strings separately as we want them to be case-insensitive comparisons
 		const string& dataString = *tokenData.GetPtr<string>();

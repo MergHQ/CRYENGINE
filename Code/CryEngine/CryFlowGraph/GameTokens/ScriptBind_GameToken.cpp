@@ -45,88 +45,90 @@ void CScriptBind_GameToken::Release()
 int CScriptBind_GameToken::SetToken(IFunctionHandler* pH)
 {
 	SCRIPT_CHECK_PARAMETERS(2);
-	const char* tokenName = 0;
-	if (pH->GetParams(tokenName) == false)
+	const char* szTokenName = nullptr;
+	if (pH->GetParams(szTokenName) == false)
 	{
 		GameWarning("[GameToken.SetToken] Usage: GameToken.SetToken TokenName TokenValue]");
 		return pH->EndFunction();
 	}
-	ScriptAnyValue val;
-	TFlowInputData data;
 
+	ScriptAnyValue val;
 	if (pH->GetParamAny(2, val) == false)
 	{
-		GameWarning("[GameToken.SetToken(%s)] Usage: GameToken.SetToken TokenName TokenValue]", tokenName);
+		GameWarning("[GameToken.SetToken(%s)] Usage: GameToken.SetToken TokenName TokenValue]", szTokenName);
 		return pH->EndFunction();
 	}
+
+	TFlowInputData data;
 	switch (val.type)
 	{
 	case ANY_TBOOLEAN:
 		{
 			bool v;
 			val.CopyTo(v);
-			data.Set(v);
+
+			data = TFlowInputData::CreateDefaultInitializedForTag(eFDT_Bool, true);
+			data.SetValueWithConversion(v);
 		}
 		break;
+
 	case ANY_TNUMBER:
 		{
 			float v;
 			val.CopyTo(v);
-			data.Set(v);
+
+			data = TFlowInputData::CreateDefaultInitializedForTag(eFDT_Float, true);
+			data.SetValueWithConversion(v);
 		}
 		break;
+
 	case ANY_TSTRING:
 		{
-			const char* v;
+			string v;
 			val.CopyTo(v);
-			data.Set(string(v));
+
+			data = TFlowInputData::CreateDefaultInitializedForTag(eFDT_String, true);
+			data.SetValueWithConversion(v);
 		}
 		break;
+
 	case ANY_TVECTOR:
 		{
 			Vec3 v;
 			val.CopyTo(v);
-			data.Set(v);
+
+			data = TFlowInputData::CreateDefaultInitializedForTag(eFDT_Vec3, true);
+			data.SetValueWithConversion(v);
 		}
+
 	case ANY_TTABLE:
 		{
-			float x, y, z;
-			IScriptTable* pTable = val.table;
-			assert(pTable != 0);
-			if (pTable->GetValue("x", x) && pTable->GetValue("y", y) && pTable->GetValue("z", z))
-			{
-				data.Set(Vec3(x, y, z));
-			}
-			else
-			{
-				GameWarning("[GameToken.SetToken(%s)] Cannot convert parameter type '%s' to Vec3", tokenName, ScriptAnyTypeToString(val.type));
-				return pH->EndFunction();
-			}
+			Vec3 v;
+			val.CopyFromTableTo(v);
+
+			data = TFlowInputData::CreateDefaultInitializedForTag(eFDT_Vec3, true);
+			data.SetValueWithConversion(v);
 		}
 		break;
+
 	case ANY_THANDLE:
 		{
 			ScriptHandle handle;
 			val.CopyTo(handle);
-			data.Set((EntityId)handle.n);
+			const EntityId v = static_cast<EntityId>(handle.n);
+
+			data = TFlowInputData::CreateDefaultInitializedForTag(eFDT_Int, true);
+			data.SetValueWithConversion(v);
 		}
 		break;
+
 	default:
-		GameWarning("[GameToken.SetToken(%s)] Cannot convert parameter type '%s'", tokenName, ScriptAnyTypeToString(val.type));
+		GameWarning("[GameToken.SetToken(%s)] Unsupported type '%s']", szTokenName, ScriptAnyTypeToString(val.type));
 		return pH->EndFunction();
-		break; // dummy ;-)
 	}
-#ifdef SCRIPT_GAMETOKEN_ALWAYS_CREATE
-	m_pTokenSystem->SetOrCreateToken(tokenName, data);
-#else
-	IGameToken* pToken = m_pTokenSystem->FindToken(tokenName);
-	if (!pToken)
-		GameWarning("[GameToken.SetToken] Cannot find token '%s'", tokenName);
-	else
-	{
-		pToken->SetValue(data);
-	}
-#endif
+
+	m_pTokenSystem->SetOrCreateToken(szTokenName, data);
+
 	return pH->EndFunction();
 }
 
