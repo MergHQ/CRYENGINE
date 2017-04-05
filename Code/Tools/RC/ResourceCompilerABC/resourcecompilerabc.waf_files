@@ -1,0 +1,56 @@
+{
+	"ResourceCompilerABC_uber_0.cpp":
+	{
+		"AlembicCompiler":
+		[
+			"AlembicCompiler.cpp",
+			"AlembicConvertor.cpp",
+			"GeomCacheBlockCompressor.cpp",
+			"GeomCacheEncoder.cpp",
+			"GeomCacheWriter.cpp",
+			"AlembicCompiler.h",
+			"AlembicConvertor.h",
+			"GeomCache.h",
+			"GeomCacheBlockCompressor.h",
+			"GeomCacheEncoder.h",
+			"GeomCacheWriter.h"
+		]
+	},
+	"ResourceCompilerABC_uber_1.cpp":
+	{
+		"CryCommonTools":
+		[
+			"../../CryCommonTools/PathHelpers.cpp",
+			"../../CryCommonTools/StringHelpers.cpp",
+			"../../CryCommonTools/PathHelpers.h",
+			"../../CryCommonTools/StringHelpers.h",
+			"../../CryCommonTools/Metadata/Metadata.cpp",
+			"../../CryCommonTools/Metadata/Metadata.h",
+			"../../CryCommonTools/Metadata/MetadataHelpers.cpp",
+			"../../CryCommonTools/Metadata/MetadataHelpers.h",
+			"../../CryCommonTools/CryGUIDHelper.cpp",
+			"../../CryCommonTools/CryGUIDHelper.h"
+		],
+		"MeshCompiler (Cry3DEngine)":
+		[
+			"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.cpp",
+			"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.cpp",
+			"../../../CryEngine/Cry3DEngine/MeshCompiler/TangentSpaceCalculation.cpp",
+			"../../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.cpp"
+		],
+		"Source Files":
+		[
+			"ResourceCompilerABC.cpp",
+			"../ResourceCompiler/IConfig.cpp",
+			"ResourceCompilerPlugin.def",
+			"stdafx.h",
+			"stdafx.cpp"
+		],
+		"Utils":
+		[
+			"../../CryCommonTools/StealingThreadPool.cpp",
+			"../../CryCommonTools/StealingThreadPool.h"
+		]
+	}
+}
+
