@@ -181,7 +181,6 @@
 #include "DynamicResponseSystem/ConditionDistanceToEntity.h"
 #include "DynamicResponseSystem/GameTokenToDrsTranslator.h"
 #include "DynamicResponseSystem/ActionExecuteAudioTrigger.h"
-#include "DynamicResponseSystem/ActionSpeakLineBasedOnVariable.h"
 #include <CrySerialization/ClassFactory.h>
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
@@ -1229,7 +1228,6 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 		REGISTER_DRS_CUSTOM_ACTION(CActionExecuteAudioTrigger);
 		REGISTER_DRS_CUSTOM_ACTION(CActionSetAudioSwitch);
 		REGISTER_DRS_CUSTOM_ACTION(CActionSetAudioParameter);
-		REGISTER_DRS_CUSTOM_ACTION(CActionSpeakLineBasedOnVariable);
 		REGISTER_DRS_CUSTOM_CONDITION(CConditionDistanceToEntity);
 
 		// create a special DrsActor that sends out our automatic signals every time a gametoken changes its value

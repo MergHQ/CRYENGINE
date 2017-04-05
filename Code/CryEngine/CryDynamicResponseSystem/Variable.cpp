@@ -126,6 +126,27 @@ void IVariableUsingBase::_Serialize(Serialization::IArchive& ar, const char* szV
 #endif
 }
 
+CryDRS::CVariable* CryDRS::IVariableUsingBase::GetOrCreateCurrentVariable(CResponseInstance* pResponseInstance)
+{
+	CVariableCollection* pCollection = GetCurrentCollection(pResponseInstance);
+	if (!pCollection && !m_collectionName.IsValid())
+	{
+		pCollection = CResponseSystem::GetInstance()->GetVariableCollectionManager()->CreateVariableCollection(m_collectionName);
+	}
+	if (pCollection)
+	{
+		CVariable* pVariable = pCollection->CreateOrGetVariable(m_variableName);
+#if defined(DRS_COLLECT_DEBUG_DATA)
+		if (pVariable)
+		{
+			s_lastTestedValueAsString = pVariable->m_value.GetValueAsString();
+		}
+#endif
+		return pVariable;
+	}
+	return nullptr;
+}
+
 //--------------------------------------------------------------------------------------------------
 void CryDRS::CVariable::SetValueFromString(const string& valueAsString)
 {

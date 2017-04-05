@@ -1393,8 +1393,6 @@
         "DynamicResponseSystem/GameTokenToDrsTranslator.h",
         "DynamicResponseSystem/ActionExecuteAudioTrigger.cpp",
         "DynamicResponseSystem/ActionExecuteAudioTrigger.h",
-        "DynamicResponseSystem/ActionSpeakLineBasedOnVariable.cpp",
-        "DynamicResponseSystem/ActionSpeakLineBasedOnVariable.h",
         "DynamicResponseSystem/ConditionDistanceToEntity.cpp",
         "DynamicResponseSystem/ConditionDistanceToEntity.h"
       ]

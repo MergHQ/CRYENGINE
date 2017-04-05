@@ -162,8 +162,6 @@ private:
 	mutable string   m_itemCachedLiteral;
 
 	bool             m_bAddReturnValueToDebugRenderWorldUponExecution;
-	string           m_labelAddReturnValueToDebugRenderWorldUponExecution; // for keeping the label around during the whole serialization process (yasli doesn't make copies of strings)
-	string           m_docAddReturnValueToDebugRenderWorldUponExecution;   // for keeping tooltip around during the whole serialization process (yasli doesn't make copies of strings)
 
 	CFunctionList    m_functionsList;
 	int              m_selectedFunctionIdx;
@@ -273,7 +271,8 @@ public:
 	CInputBlueprint&       AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 	size_t                 GetChildCount() const;
 	const CInputBlueprint& GetChild(size_t index) const;
-	const CInputBlueprint* FindChildByParamName(const char* szParamName) const;
+	CInputBlueprint*       FindChildByParamName(const char* szParamName);
+	const CInputBlueprint* FindChildByParamNameConst(const char* szParamName) const;
 
 	CInputBlueprint();
 	CInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
@@ -300,6 +299,10 @@ public:
 	void                                    ClearErrors();
 
 	const std::shared_ptr<CErrorCollector>& GetErrorCollectorSharedPtr() const { return m_pErrorCollector; }
+
+	void                                    EnsureChildrenFromFactory(const UQS::Client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context);
+	void                                    EnsureChildrenFromFactory(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	void                                    EnsureChildrenFromFactory(const CEvaluatorFactoryHelper& evaluatorFactory, const CUqsDocSerializationContext& context);
 
 private:
 

@@ -41,9 +41,3 @@ DRS::IResponseActionInstance::eCurrentState CActionWaitInstance::Update()
 	}
 	return DRS::IResponseActionInstance::CS_RUNNING;
 }
-
-//--------------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------------
-
-REGISTER_DRS_ACTION(CActionWait, "Wait", DEFAULT_DRS_ACTION_COLOR);

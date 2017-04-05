@@ -45,8 +45,8 @@ public:
 	virtual const CVariableCollection* GetLocalVariables() const override;
 	virtual EntityId                   GetLinkedEntityID() const override { return m_linkedEntityID; }
 	virtual IEntity*                   GetLinkedEntity() const override;
-	virtual void                       SetAuxAudioObjectID(CryAudio::AuxObjectId overrideAuxProxy) override { m_AuxProxyToUse = overrideAuxProxy; }
-	virtual CryAudio::AuxObjectId      GetAuxAudioObjectID() const override { return m_AuxProxyToUse; }
+	virtual void                       SetAuxAudioObjectID(CryAudio::AuxObjectId overrideAuxProxy) override { m_auxAudioObjectIdToUse = overrideAuxProxy; }
+	virtual CryAudio::AuxObjectId      GetAuxAudioObjectID() const override { return m_auxAudioObjectIdToUse; }
 	virtual DRS::SignalInstanceId      QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext = nullptr, DRS::IResponseManager::IListener* pSignalListener = nullptr) override;
 	//////////////////////////////////////////////////////////
 
@@ -60,7 +60,7 @@ private:
 	const CHashedString         m_variableCollectionName;
 	const string                m_name;
 	VariableCollectionSharedPtr m_pNonGlobalVariableCollection;
-	CryAudio::AuxObjectId       m_AuxProxyToUse;
+	CryAudio::AuxObjectId       m_auxAudioObjectIdToUse;
 };
 
 //////////////////////////////////////////////////////////////////////////

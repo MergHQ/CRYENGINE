@@ -95,7 +95,15 @@ void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName
 	VariableChangeInfo newEntry;
 	newEntry.timeOfChange = time;
 	newEntry.variableName = collectionName + "::" + variableName;
-	newEntry.change = "'" + oldValue.GetValueAsString() + "' to '" + newValue.GetValueAsString() + "', Type: " + newValue.GetTypeAsString();
+	if (oldValue.GetType() == eDRVT_Undefined 
+		&& oldValue.GetValue() == CVariableValue::DEFAULT_VALUE)
+	{
+		newEntry.change = "'Not Existing' to " + newValue.GetValueAsString() + "', Type: " + newValue.GetTypeAsString();
+	}
+	else
+	{
+		newEntry.change = "'" + oldValue.GetValueAsString() + "' to '" + newValue.GetValueAsString() + "', Type: " + newValue.GetTypeAsString();
+	}
 	newEntry.drsUserName = CResponseSystem::GetInstance()->GetCurrentDrsUserName();
 
 	//hard coded limit
