@@ -73,7 +73,8 @@ namespace Cry
 
 				void Serialize(Serialization::IArchive& ar)
 				{
-					ar(value, key, key);
+					ar(key, "name", "name");
+					ar(value, "value", "value");
 				}
 
 				string key;
