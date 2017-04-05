@@ -11,14 +11,6 @@
 using Schematyc::CSharedString;
 using namespace DRS;
 
-CSchematycEntityDrsComponent::CSchematycEntityDrsComponent()
-{
-}
-
-CSchematycEntityDrsComponent::~CSchematycEntityDrsComponent()
-{
-}
-
 bool CSchematycEntityDrsComponent::Init()
 {
 	IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);

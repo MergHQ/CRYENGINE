@@ -102,6 +102,7 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
+// Checks if the time (stored in variable) is in the specified range
 class CTimeSinceCondition final : public IVariableUsingBase, public DRS::IResponseCondition
 {
 public:
@@ -120,6 +121,7 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
+// Checks if the time since execution of the specified response is in the specified range
 class CTimeSinceResponseCondition final : public DRS::IResponseCondition
 {
 public:

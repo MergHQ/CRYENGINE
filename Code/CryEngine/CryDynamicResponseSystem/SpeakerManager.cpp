@@ -111,54 +111,54 @@ void CSpeakerManager::Update()
 	float currentPos2Y = 10.0f;
 
 	//draw text and flag finished speakers
-	for (SpeakerList::iterator it = m_activeSpeakers.begin(), itEnd = m_activeSpeakers.end(); it != itEnd; ++it)
+	for (SSpeakInfo& currentSpeaker : m_activeSpeakers)
 	{
-		if (m_pLipsyncProvider && it->endingConditions & eEC_WaitingForLipsync)
+		if (m_pLipsyncProvider && currentSpeaker.endingConditions & eEC_WaitingForLipsync)
 		{
-			if (!m_pLipsyncProvider->Update(it->lipsyncId, it->pActor, it->pPickedLine))
+			if (!m_pLipsyncProvider->Update(currentSpeaker.lipsyncId, currentSpeaker.pActor, currentSpeaker.pPickedLine))
 			{
-				it->endingConditions &= ~eEC_WaitingForLipsync;
+				currentSpeaker.endingConditions &= ~eEC_WaitingForLipsync;
 			}
 		}
 
-		if (currentTime - it->finishTime >= 0)
+		if (currentTime - currentSpeaker.finishTime >= 0)
 		{
-			it->endingConditions &= ~eEC_WaitingForTimer;
+			currentSpeaker.endingConditions &= ~eEC_WaitingForTimer;
 		}
 		else if (gEnv->pEntitySystem && gEnv->pRenderer)
 		{
-			CResponseActor* pActor = it->pActor;
+			CResponseActor* pActor = currentSpeaker.pActor;
 			if (pActor)
 			{
-				IEntity* pEntity = it->pEntity;
+				IEntity* pEntity = currentSpeaker.pEntity;
 				if (pEntity)
 				{
-					if (it->speechAuxObjectId != pActor->GetAuxAudioObjectID() && it->speechAuxObjectId != CryAudio::DefaultAuxObjectId)
+					if (currentSpeaker.speechAuxObjectId != pActor->GetAuxAudioObjectID() && currentSpeaker.speechAuxObjectId != CryAudio::DefaultAuxObjectId)
 					{
-						UpdateAudioProxyPosition(pEntity, *it);
+						UpdateAudioProxyPosition(pEntity, currentSpeaker);
 					}
 
 					if (m_displaySubtitlesCVar != 0)
 					{
 						if (gEnv->pGameFramework && gEnv->pGameFramework->GetClientActorId() == pEntity->GetId())
 						{
-							IRenderAuxText::Draw2dLabel(8.0f, currentPos2Y, 2.0f, fColorBlue, false, "%s", it->text.c_str());
+							IRenderAuxText::Draw2dLabel(8.0f, currentPos2Y, 2.0f, fColorBlue, false, "%s", currentSpeaker.text.c_str());
 							currentPos2Y += 10.0f;
 						}
 						else
 						{
-							IRenderAuxText::DrawLabelEx(pEntity->GetWorldPos() + Vec3(0.0f, 0.0f, 2.0f), 2.0f, fColorBlue, true, true, it->text.c_str());
+							IRenderAuxText::DrawLabelEx(pEntity->GetWorldPos() + Vec3(0.0f, 0.0f, 2.0f), 2.0f, fColorBlue, true, true, currentSpeaker.text.c_str());
 						}
 					}
 				}
 				else
 				{
-					CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "An DRS-actor without an Entity detected: LineText: '%s', Actor: '%s'\n", (!it->text.empty()) ? it->text.c_str() : "no text", pActor->GetName().c_str());
+					CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "An DRS-actor without an Entity detected: LineText: '%s', Actor: '%s'\n", (!currentSpeaker.text.empty()) ? currentSpeaker.text.c_str() : "no text", pActor->GetName().c_str());
 				}
 			}
 			else
 			{
-				CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "An active speaker without a DRS-Actor detected: LineText: '%s' \n", (!it->text.empty()) ? it->text.c_str() : "no text");
+				CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "An active speaker without a DRS-Actor detected: LineText: '%s' \n", (!currentSpeaker.text.empty()) ? currentSpeaker.text.c_str() : "no text");
 			}
 		}
 	}
@@ -208,7 +208,7 @@ void CSpeakerManager::Update()
 				}
 				if (!bWasAlreeadyExisting)
 				{
-					m_recentlyFinishedSpeakers.push_back(std::pair<CResponseActor*, float>(it->pActor, currentTime));
+					m_recentlyFinishedSpeakers.emplace_back(std::pair<CResponseActor*, float>(it->pActor, currentTime));
 				}
 			}
 			it = m_activeSpeakers.erase(it);
@@ -232,10 +232,9 @@ void CSpeakerManager::Update()
 					CResponseActor* pFinishedActor = itActorAndFinishTime->first;
 					itActorAndFinishTime = m_recentlyFinishedSpeakers.erase(itActorAndFinishTime);
 
-					for (auto itQueued = m_queuedSpeakersCopy.begin(); itQueued != m_queuedSpeakersCopy.end(); ++itQueued)
+					for (const SWaitingInfo& currentQueuedInfo : m_queuedSpeakersCopy)
 					{
-						const SWaitingInfo& currentQueuedInfo = *itQueued;
-						stl::find_and_erase(m_queuedSpeakers, *itQueued);  //we will now handle the queued-line, so we can already remove it from the list
+						stl::find_and_erase(m_queuedSpeakers, currentQueuedInfo);  //we will now handle the queued-line, so we can already remove it from the list
 
 						if (currentQueuedInfo.pActor == pFinishedActor)
 						{
@@ -269,9 +268,9 @@ void CSpeakerManager::Update()
 //--------------------------------------------------------------------------------------------------
 bool CSpeakerManager::IsSpeaking(const DRS::IResponseActor* pActor, const CHashedString& lineID /* = CHashedString::GetEmpty() */, bool bCheckQueuedLinesAsWell /* = false */) const
 {
-	for (SpeakerList::const_iterator it = m_activeSpeakers.cbegin(), itEnd = m_activeSpeakers.cend(); it != itEnd; ++it)
+	for (const SSpeakInfo& activeSpeaker : m_activeSpeakers)
 	{
-		if (it->pActor == pActor && (!lineID.IsValid() || it->lineID == lineID))
+		if (activeSpeaker.pActor == pActor && (!lineID.IsValid() || activeSpeaker.lineID == lineID))
 		{
 			return true;
 		}
@@ -279,9 +278,9 @@ bool CSpeakerManager::IsSpeaking(const DRS::IResponseActor* pActor, const CHashe
 
 	if (bCheckQueuedLinesAsWell)
 	{
-		for (QueuedSpeakerList::const_iterator it = m_queuedSpeakers.cbegin(), itEnd = m_queuedSpeakers.cend(); it != itEnd; ++it)
+		for (const SWaitingInfo& queuedSpeaker : m_queuedSpeakers)
 		{
-			if (it->pActor == pActor && (!lineID.IsValid() || it->lineID == lineID))
+			if (queuedSpeaker.pActor == pActor && (!lineID.IsValid() || queuedSpeaker.lineID == lineID))
 			{
 				return true;
 			}
@@ -333,9 +332,9 @@ DRS::ISpeakerManager::IListener::eLineEvent CSpeakerManager::StartSpeaking(DRS::
 	{
 		if (actorAndFinishTime.first == pActor)
 		{
-			for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end(); ++itQueued)
+			for (const SWaitingInfo& queuedSpeaker : m_queuedSpeakers)
 			{
-				if (itQueued->pActor == pActor)
+				if (queuedSpeaker.pActor == pActor)
 				{
 					float maxQueueDuration = (pLineSet) ? pLineSet->GetMaxQueuingDuration() : m_defaultMaxQueueTime;
 					if (maxQueueDuration < 0.0f)
@@ -418,10 +417,8 @@ DRS::ISpeakerManager::IListener::eLineEvent CSpeakerManager::StartSpeaking(DRS::
 
 	if (!pSpeakerInfoToUse)  //are we reusing an existing speaker
 	{
-		m_activeSpeakers.push_back(SSpeakInfo());
+		m_activeSpeakers.emplace_back(SSpeakInfo(pActor->GetAuxAudioObjectID()));
 		pSpeakerInfoToUse = &m_activeSpeakers.back();
-		pSpeakerInfoToUse->speechAuxObjectId = pActor->GetAuxAudioObjectID();
-		pSpeakerInfoToUse->voiceAttachmentIndex = -1;  // -1 means invalid ID;
 	}
 
 	if (pLine)

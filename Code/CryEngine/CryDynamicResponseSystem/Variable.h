@@ -72,12 +72,12 @@ struct IVariableUsingBase
 	static bool s_bDoDisplayCurrentValueInDebugOutput;
 	IVariableUsingBase();
 
-protected:
 	void                  _Serialize(Serialization::IArchive& ar, const char* szVariableDisplayName = "^Variable", const char* szCollectionDisplayName = "^Collection");
 	string                GetVariableVerboseName() const;
 	const CVariableValue& GetCurrentVariableValue(CResponseInstance* pResponseInstance);
 	CVariableCollection*  GetCurrentCollection(CResponseInstance* pResponseInstance);
 	CVariable*            GetCurrentVariable(CResponseInstance* pResponseInstance);
+	CVariable*            GetOrCreateCurrentVariable(CResponseInstance* pResponseInstance);
 
 	CHashedString         m_collectionName;
 	CHashedString         m_variableName;

@@ -21,9 +21,9 @@ CVariableCollection::CVariableCollection(const CHashedString& name) : m_name(nam
 //--------------------------------------------------------------------------------------------------
 CVariableCollection::~CVariableCollection()
 {
-	for (VariableList::iterator it = m_allResponseVariables.begin(); it != m_allResponseVariables.end(); ++it)
+	for (CVariable* pVariable : m_allResponseVariables)
 	{
-		delete *it;
+		delete pVariable;
 	}
 }
 
@@ -31,8 +31,10 @@ CVariableCollection::~CVariableCollection()
 CVariable* CVariableCollection::CreateVariable(const CHashedString& name, const CVariableValue& initialValue)
 {
 #if defined ENABLE_VARIABLE_VALUE_TYPE_CHECKINGS
-	CRY_ASSERT_MESSAGE(GetVariable(name) == 0, "Variable with this name already exists");
+	CRY_ASSERT_MESSAGE(GetVariable(name) == nullptr, "Variable with this name already exists");
 #endif
+	if (!name.IsValid())
+		return nullptr;
 
 	//drs-todo optimize me, the variables should be more cache friendly allocated (but they need to stay in exactly the position were they were generated, because we are giving out native PTRs
 	//we could store the names separately in a vector, so that we can iterate fast when searching by name)
@@ -188,12 +190,12 @@ bool CVariableCollection::SetVariableValueForSomeTime(CVariable* pVariable, cons
 	const float currentTime = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 
 	//check if there is already an cooldown for this variable, in that case we dont change the "oldValue"
-	for (CoolingDownVariableList::iterator it = m_coolingDownVariables.begin(), itEnd = m_coolingDownVariables.end(); it != itEnd; ++it)
+	for (VariableCooldownInfo& cooldownInfo : m_coolingDownVariables)
 	{
-		if (it->variable == pVariable)
+		if (cooldownInfo.variable == pVariable)
 		{
 			pVariable->m_value = newValue;  //actual change the value of the variable
-			it->timeOfReset = currentTime + timeBeforeReset;
+			cooldownInfo.timeOfReset = currentTime + timeBeforeReset;
 			return true;
 		}
 	}
@@ -264,10 +266,10 @@ CVariable* CVariableCollection::CreateOrGetVariable(const CHashedString& variabl
 void CVariableCollection::Reset()
 {
 	SET_DRS_USER_SCOPED("Variable Reset");
-	for (VariableList::iterator it = m_allResponseVariables.begin(), itEnd = m_allResponseVariables.end(); it != itEnd; ++it)
+	for (CVariable* pVariable : m_allResponseVariables)
 	{
-		DRS_DEBUG_DATA_ACTION(AddVariableSet((*it)->m_name.GetText(), m_name.GetText(), (*it)->m_value, CVariableValue(), CResponseSystem::GetInstance()->GetCurrentDrsTime()));
-		(*it)->m_value.Reset();
+		DRS_DEBUG_DATA_ACTION(AddVariableSet(pVariable->m_name.GetText(), m_name.GetText(), pVariable->m_value, CVariableValue(), CResponseSystem::GetInstance()->GetCurrentDrsTime()));
+		pVariable->m_value.Reset();
 	}
 }
 
@@ -280,9 +282,9 @@ void CVariableCollection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isOutput())
 	{
-		for (auto it = m_allResponseVariables.cbegin(); it != m_allResponseVariables.cend(); ++it)
+		for (CVariable* pVariable : m_allResponseVariables)
 		{
-			variablesCopy.push_back(*(*it));
+			variablesCopy.push_back(*pVariable);
 		}
 	}
 
@@ -290,10 +292,10 @@ void CVariableCollection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		for (auto it = variablesCopy.begin(); it != variablesCopy.end(); ++it)
+		for (const CVariable& variable : variablesCopy)
 		{
-			CVariable* variable = this->CreateOrGetVariable(it->m_name);
-			variable->m_value = it->m_value;
+			CVariable* pNewVariable = this->CreateOrGetVariable(variable.m_name);
+			pNewVariable->m_value = variable.m_value;
 		}
 	}
 	//do we need to serialize m_coolingDownVariables?
@@ -303,15 +305,15 @@ void CVariableCollection::Serialize(Serialization::IArchive& ar)
 string CVariableCollection::GetVariablesAsString() const
 {
 	string output;
-	for (VariableList::const_iterator it = m_allResponseVariables.begin(), itEnd = m_allResponseVariables.end(); it != itEnd; ++it)
+	for (CVariable* pVariable : m_allResponseVariables)
 	{
 		if (!output.empty())
 		{
 			output += ", ";
 		}
-		output += (*it)->m_name.GetText();
+		output += pVariable->m_name.GetText();
 		output += " = ";
-		output += (*it)->m_value.GetValueAsString();
+		output += pVariable->m_value.GetValueAsString();
 	}
 	return output;
 }
@@ -397,10 +399,9 @@ void CVariableCollectionManager::Serialize(Serialization::IArchive& ar)
 {
 #if defined(HASHEDSTRING_STORES_SOURCE_STRING)
 	//todo drs this will not work for adding/removing variables, also the response manager need to serialize after we change move the variables around here
-	for (size_t i = 0; i < m_variableCollections.size(); ++i)
+	for (CVariableCollection* pCurrentCollection : m_variableCollections)
 	{
-		CVariableCollection& currentCollection = *m_variableCollections[i];
-		ar(currentCollection, currentCollection.GetName().m_textCopy, currentCollection.GetName().m_textCopy);
+		ar(*pCurrentCollection, pCurrentCollection->GetName().m_textCopy, pCurrentCollection->GetName().m_textCopy);
 	}
 #else
 	DrsLogError("Not implemented");
@@ -427,11 +428,11 @@ void CVariableCollectionManager::GetAllVariableCollections(DRS::ValuesList* pOut
 			CVariableValue variableValue = pVariable->m_value;
 
 			//check if there is already a cooldown for this variable, and if yes, we store the old-value instead
-			for (CVariableCollection::CoolingDownVariableList::const_iterator itCooling = coolingDownVariables.begin(); itCooling != coolingDownVariables.end(); ++itCooling)
+			for (const CryDRS::CVariableCollection::VariableCooldownInfo& cooldownInfo : coolingDownVariables)
 			{
-				if (itCooling->variable == pVariable)
+				if (cooldownInfo.variable == pVariable)
 				{
-					variableValue.SetValue(itCooling->oldValue);
+					variableValue.SetValue(cooldownInfo.oldValue);
 				}
 			}
 

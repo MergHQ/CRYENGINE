@@ -69,6 +69,9 @@ private:
 
 	struct SSpeakInfo
 	{
+		SSpeakInfo() = default;
+		SSpeakInfo(CryAudio::AuxObjectId auxAudioObjectId) : speechAuxObjectId(auxAudioObjectId), voiceAttachmentIndex(-1) {} 
+
 		CResponseActor*       pActor;
 		IEntity*              pEntity;
 		string                text;
@@ -77,7 +80,7 @@ private:
 		float                 finishTime;
 		int                   priority;
 
-		int                   voiceAttachmentIndex;      //cached index of the voice attachment index
+		int                   voiceAttachmentIndex;      //cached index of the voice attachment index // -1 means invalid ID;
 		CryAudio::AuxObjectId speechAuxObjectId;
 		CryAudio::ControlId   startTriggerID;
 		CryAudio::ControlId   stopTriggerID;

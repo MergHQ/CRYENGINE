@@ -39,8 +39,8 @@ public:
 		//animation, audioTrigger... do we need these as well?
 	};
 
-	CSchematycEntityDrsComponent();
-	~CSchematycEntityDrsComponent();
+	CSchematycEntityDrsComponent() = default;
+	virtual ~CSchematycEntityDrsComponent() = default;
 
 	// Schematyc::CComponent
 	virtual bool Init() override;

@@ -57,5 +57,3 @@ DRS::IResponseActionInstanceUniquePtr CActionSetGameToken::Execute(DRS::IRespons
 	}
 	return nullptr;
 }
-
-REGISTER_DRS_ACTION(CActionSetGameToken, "SetGameToken", DEFAULT_DRS_ACTION_COLOR);
