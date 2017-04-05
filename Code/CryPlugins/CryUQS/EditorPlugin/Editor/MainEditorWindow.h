@@ -49,7 +49,9 @@ private:
 	QString           m_resultingString;
 };
 
-class CMainEditorWindow : public CDockableWindow, public IEditorNotifyListener
+class CMainEditorWindow 
+	: public CDockableWindow
+	, public IEditorNotifyListener
 {
 	Q_OBJECT
 

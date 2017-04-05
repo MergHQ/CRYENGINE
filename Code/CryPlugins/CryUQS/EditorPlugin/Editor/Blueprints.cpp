@@ -777,13 +777,11 @@ void CFunctionSerializationHelper::SerializeAddReturnValueToDebugRenderWorldUpon
 		}
 	}
 
-	const char* szBasicLabel = bItemCanBeRepresentedInDebugRenderWorld ? "^Add return value to DebugRenderWorld upon execution" : "^(Item has no representation in the DebugRenderWorld)";
-
-	m_labelAddReturnValueToDebugRenderWorldUponExecution.Format("%s%s", bItemCanBeRepresentedInDebugRenderWorld ? "" : "!" , szBasicLabel);
-
-	archive(m_bAddReturnValueToDebugRenderWorldUponExecution, "addReturnValueToDebugRenderWorldUponExecution", m_labelAddReturnValueToDebugRenderWorldUponExecution.c_str());
-
-	// TODO: add some tooltip via archive.doc(), but the underlying IArchive implementation (yasli::BinOArchive) lacks the DOCUMENTAION bit in its capabilities mask
+	if (bItemCanBeRepresentedInDebugRenderWorld)
+	{ 
+		archive(m_bAddReturnValueToDebugRenderWorldUponExecution, "addReturnValueToDebugRenderWorldUponExecution", "^DebugRender");
+		archive.doc("If enabled, the return value is added to DebugRenderWorld upon execution. Then you can view the value in the query history.");
+	}
 }
 
 const string& CFunctionSerializationHelper::GetFunctionInternalName() const
@@ -900,6 +898,21 @@ void CInputBlueprint::ResetChildrenFromFactory(const CEvaluatorFactoryHelper& ev
 	SetChildrenFromFactoryInputRegistry(evaluatorFactory, context);
 }
 
+void CInputBlueprint::EnsureChildrenFromFactory(const UQS::Client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context)
+{
+	SetChildrenFromFactoryInputRegistry(generatorFactory, context);
+}
+
+void CInputBlueprint::EnsureChildrenFromFactory(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
+{
+	SetChildrenFromFactoryInputRegistry(functionFactory, context);
+}
+
+void CInputBlueprint::EnsureChildrenFromFactory(const CEvaluatorFactoryHelper& evaluatorFactory, const CUqsDocSerializationContext& context)
+{
+	SetChildrenFromFactoryInputRegistry(evaluatorFactory, context);
+}
+
 template<typename TFactory>
 void CInputBlueprint::SetChildrenFromFactoryInputRegistry(const TFactory& factory, const CUqsDocSerializationContext& context)
 {
@@ -908,13 +921,33 @@ void CInputBlueprint::SetChildrenFromFactoryInputRegistry(const TFactory& factor
 	for (size_t i = 0; i < paramCount; ++i)
 	{
 		const UQS::Client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
-		const CInputBlueprint* pParam = FindChildByParamName(paramInfo.szName);
+
+		CInputBlueprint* pParam = FindChildByParamName(paramInfo.szName);
 		if (!pParam)
 		{
 			m_children.emplace_back(paramInfo.szName);
-			m_children.back().SetAdditionalParamInfo(paramInfo, context);
+			pParam = &m_children.back();
 		}
+		pParam->SetAdditionalParamInfo(paramInfo, context);
 	}
+
+	CRY_ASSERT(paramCount <= m_children.size());
+
+	if (paramCount < m_children.size())
+	{
+		std::set<string> paramNames;
+		for (size_t i = 0; i < paramCount; ++i)
+		{
+			const UQS::Client::IInputParameterRegistry::SParameterInfo paramInfo = inputRegistry.GetParameter(i);
+			paramNames.insert(paramInfo.szName);
+		}
+
+		auto removeIter = std::remove_if(m_children.begin(), m_children.end(),
+			[&](const CInputBlueprint& param) { return paramNames.find(param.m_paramName) == paramNames.end(); });
+		m_children.erase(removeIter, m_children.end());
+	}
+
+	CRY_ASSERT(paramCount == m_children.size());
 }
 
 void CInputBlueprint::PrepareHelpers(const UQS::Client::IGeneratorFactory* pGeneratorFactory, const CUqsDocSerializationContext& context)
@@ -1039,16 +1072,6 @@ void CInputBlueprint::SerializeFunction(Serialization::IArchive& archive, const 
 
 	const bool bNameChanged = m_functionHelper.SerializeFunctionName(archive, "funcName", szParamLabel, context);
 
-	// bAddReturnValueToDebugRenderWorldUponExecution
-	{
-		m_functionHelper.SerializeAddReturnValueToDebugRenderWorldUponExecution(archive);
-
-		if (archive.isInput())
-		{
-			m_bAddReturnValueToDebugRenderWorldUponExecution = m_functionHelper.GetAddReturnValueToDebugRenderWorldUponExecution();
-		}
-	}
-
 	bool bIsLeafUndecided = true;
 	UQS::Client::IFunctionFactory::ELeafFunctionKind leafFunctionKind =
 	  UQS::Client::IFunctionFactory::ELeafFunctionKind::None;
@@ -1068,20 +1091,9 @@ void CInputBlueprint::SerializeFunction(Serialization::IArchive& archive, const 
 		}
 	}
 
-	if (pFactory)
+	if (pFactory && bNameChanged)
 	{
-		if (bNameChanged)
-		{
-			ResetChildrenFromFactory(*pFactory, context);
-		}
-	}
-
-	if (bNameChanged)
-	{
-		// Name was changed - return right now, so PropertyTree will not try
-		// to insert children of previous function into the new one.
-		// TODO pavloi 2016.04.25: #FIX_COPY
-		return;
+		ResetChildrenFromFactory(*pFactory, context);
 	}
 
 	if (bIsLeafUndecided)
@@ -1113,6 +1125,21 @@ void CInputBlueprint::SerializeFunction(Serialization::IArchive& archive, const 
 		case UQS::Client::IFunctionFactory::ELeafFunctionKind::Literal:
 			m_functionHelper.SerializeFunctionParam(archive, context);
 			break;
+		}
+	}
+
+	if (pFactory)
+	{
+		EnsureChildrenFromFactory(*pFactory, context);
+	}
+
+	// bAddReturnValueToDebugRenderWorldUponExecution
+	{
+		m_functionHelper.SerializeAddReturnValueToDebugRenderWorldUponExecution(archive);
+
+		if (archive.isInput())
+		{
+			m_bAddReturnValueToDebugRenderWorldUponExecution = m_functionHelper.GetAddReturnValueToDebugRenderWorldUponExecution();
 		}
 	}
 }
@@ -1187,10 +1214,15 @@ const CInputBlueprint& CInputBlueprint::GetChild(size_t index) const
 	return m_children[index];
 }
 
-const CInputBlueprint* CInputBlueprint::FindChildByParamName(const char* paramName) const
+CInputBlueprint* CInputBlueprint::FindChildByParamName(const char* szParamName)
+{
+	return const_cast<CInputBlueprint*>(FindChildByParamNameConst(szParamName));
+}
+
+const CInputBlueprint* CInputBlueprint::FindChildByParamNameConst(const char* szParamName) const
 {
 	auto iter = std::find_if(m_children.begin(), m_children.end(),
-	                         [paramName](const CInputBlueprint& bp) { return bp.m_paramName == paramName; });
+	                         [szParamName](const CInputBlueprint& bp) { return bp.m_paramName == szParamName; });
 	return iter != m_children.end() ? &*iter : nullptr;
 }
 
@@ -1284,7 +1316,12 @@ void CConstParamBlueprint::SConstParam::SerializeImpl(Serialization::IArchive& a
 	{
 		bItemCanBeRepresentedInDebugRenderWorld = pItemFactory->CanBeRepresentedInDebugRenderWorld();
 	}
-	archive(bAddToDebugRenderWorld, "bAddToDebugRenderWorld", bItemCanBeRepresentedInDebugRenderWorld ? "^Add to DebugRenderWorld" : "!^(Item has no debug-representation)");
+
+	if (bItemCanBeRepresentedInDebugRenderWorld)
+	{
+		archive(bAddToDebugRenderWorld, "bAddToDebugRenderWorld", "^DebugRender");
+		archive.doc("If enabled, the return value is added to DebugRenderWorld upon execution. Then you can view the value in the query history.");
+	}
 }
 
 void CConstParamBlueprint::SConstParam::ClearErrors()
@@ -1426,7 +1463,12 @@ void CRuntimeParamBlueprint::SRuntimeParam::SerializeImpl(Serialization::IArchiv
 			bItemCanBeRepresentedInDebugRenderWorld = pItemFactory->CanBeRepresentedInDebugRenderWorld();
 		}
 	}
-	archive(bAddToDebugRenderWorld, "bAddToDebugRenderWorld", bItemCanBeRepresentedInDebugRenderWorld ? "^Add to DebugRenderWorld" : "!^(Item has no debug-representation)");
+
+	if (bItemCanBeRepresentedInDebugRenderWorld)
+	{
+		archive(bAddToDebugRenderWorld, "bAddToDebugRenderWorld", "^DebugRender");
+		archive.doc("If enabled, the return value is added to DebugRenderWorld upon execution. Then you can view the value in the query history.");
+	}
 }
 
 void CRuntimeParamBlueprint::SRuntimeParam::ClearErrors()
@@ -1585,22 +1627,17 @@ void CGeneratorBlueprint::SerializeInputs(Serialization::IArchive& archive, cons
 		pFactory = context.GetGeneratorFactoryByName(m_name.c_str());
 	}
 
-	if (pFactory)
+	if (pFactory && bNameChanged)
 	{
-		if (bNameChanged)
-		{
-			m_inputs.ResetChildrenFromFactory(*pFactory, context);
-		}
-	}
-
-	if (bNameChanged)
-	{
-		// Name was changed - return right now, so PropertyTree will not try
-		// to insert children of previous generator into the new one.
-		return;
+		m_inputs.ResetChildrenFromFactory(*pFactory, context);
 	}
 
 	m_inputs.SerializeRoot(archive, szName, szLabel, context, SValidatorKey::FromObject(*this));
+	
+	if (pFactory)
+	{
+		m_inputs.EnsureChildrenFromFactory(*pFactory, context);
+	}
 }
 
 void CGeneratorBlueprint::PrepareHelpers(CUqsDocSerializationContext& context)
@@ -1939,17 +1976,14 @@ void CEvaluator::Serialize(Serialization::IArchive& archive)
 				}
 			}
 
-			if (bNameChanged)
+			// Always set type from factory (if available), and only show it on output as read-only field
+			if (!bUseSelectionHelpers || archive.isOutput())
 			{
-				// Name was changed - return right now, so PropertyTree will not try
-				// to insert children of previous evaluator into the new one.
-				return;
+				const char* const szEvaluatorTypeLabel = bUseSelectionHelpers
+					? "!Evaluator type"
+					: "Evaluator type";
+				archive(m_evaluatorType, "evaluatorType", szEvaluatorTypeLabel);
 			}
-
-			const char* const szEvaluatorTypeLabel = bUseSelectionHelpers
-			                                         ? "!Evaluator type"
-			                                         : "Evaluator type";
-			archive(m_evaluatorType, "evaluatorType", szEvaluatorTypeLabel);
 
 			if (m_evaluatorType == EEvaluatorType::Undefined)
 			{
@@ -1963,6 +1997,11 @@ void CEvaluator::Serialize(Serialization::IArchive& archive)
 			archive(m_bNegateDiscard, "negateDiscard", "^Negate Discard");
 
 			m_inputs.SerializeRoot(archive, "inputs", "Inputs", *pContext, SValidatorKey::FromObject(*this));
+
+			if (factory.IsValid())
+			{
+				m_inputs.EnsureChildrenFromFactory(factory, *pContext);
+			}
 		}
 	}
 }
@@ -2665,8 +2704,6 @@ void CQueryBlueprint::Serialize(Serialization::IArchive& archive)
 		if (paramListContext.GetParamsChanged())
 		{
 			assert(archive.isInput());
-			// Parameters were changed - stop input serialization now or else PropertyTree may discard some references to parameters.
-			// TODO pavloi 2016.04.25: #FIX_COPY
 
 			if (pContext)
 			{
@@ -2674,8 +2711,6 @@ void CQueryBlueprint::Serialize(Serialization::IArchive& archive)
 				selectedGeneratorContext.SetGeneratorProcessed(true);
 				m_evaluators.PrepareHelpers(*pContext);
 			}
-
-			return;
 		}
 
 		if (queryTraits.RequiresGenerator())
@@ -2687,14 +2722,11 @@ void CQueryBlueprint::Serialize(Serialization::IArchive& archive)
 		if (selectedGeneratorContext.GetGeneratorChanged())
 		{
 			assert(archive.isInput());
-			// Parameters were changed - stop input serialization now or else PropertyTree may discard some references to parameters.
-			// TODO pavloi 2016.04.25: #FIX_COPY
 
 			if (pContext)
 			{
 				m_evaluators.PrepareHelpers(*pContext);
 			}
-			return;
 		}
 
 		if (queryTraits.SupportsEvaluators())
