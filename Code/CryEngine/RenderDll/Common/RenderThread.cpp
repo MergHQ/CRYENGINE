@@ -552,7 +552,7 @@ void SRenderThread::RC_ForceMeshGC(bool instant, bool wait)
 
 	if (IsRenderThread())
 	{
-		CRenderMesh::Tick();
+		CRenderMesh::Tick(instant ? MAX_RELEASED_MESH_FRAMES : 1);
 		return;
 	}
 
@@ -3207,7 +3207,7 @@ void SRenderThread::ProcessCommands()
 
 		case eRC_ForceMeshGC:
 			if (m_eVideoThreadMode == eVTM_Disabled)
-				CRenderMesh::Tick();
+				CRenderMesh::Tick(MAX_RELEASED_MESH_FRAMES);
 			break;
 
 		case eRC_DevBufferSync:

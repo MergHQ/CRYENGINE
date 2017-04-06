@@ -1565,8 +1565,8 @@ void CD3D9Renderer::RT_BeginFrame()
 	if (CV_r_usehwskinning != (int)m_bUseHWSkinning)
 	{
 		m_bUseHWSkinning = CV_r_usehwskinning != 0;
-		CRenderElement* pRE = CRenderElement::m_RootGlobal.m_NextGlobal;
-		for (pRE = CRenderElement::m_RootGlobal.m_NextGlobal; pRE != &CRenderElement::m_RootGlobal; pRE = pRE->m_NextGlobal)
+		CRenderElement* pRE = CRenderElement::s_RootGlobal.m_NextGlobal;
+		for (pRE = CRenderElement::s_RootGlobal.m_NextGlobal; pRE != &CRenderElement::s_RootGlobal; pRE = pRE->m_NextGlobal)
 		{
 			CRenderElement* pR = (CRenderElement*)pRE;
 			if (pR->mfIsHWSkinned())
@@ -2190,7 +2190,7 @@ void CD3D9Renderer::PrintResourcesLeaks()
 			if (!psh)
 				continue;
 			nPS++;
-			Warning("--- Vertex Shader '%s' leak after level unload", psh->GetName());
+			Warning("--- Pixel Shader '%s' leak after level unload", psh->GetName());
 		}
 	}
 	iLog->Log("\n \n");
@@ -2215,9 +2215,11 @@ void CD3D9Renderer::PrintResourcesLeaks()
 	iLog->Log("\n \n");
 
 	CRenderElement* pRE;
-	for (pRE = CRenderElement::m_RootGlobal.m_NextGlobal; pRE != &CRenderElement::m_RootGlobal; pRE = pRE->m_NextGlobal)
+	for (pRE = CRenderElement::s_RootGlobal.m_NextGlobal; pRE != &CRenderElement::s_RootGlobal; pRE = pRE->m_NextGlobal)
 	{
-		Warning("--- CRenderElement %s leak after level unload", pRE->mfTypeString());
+		const char* name = pRE->mfGetType() == eDATA_Mesh && ((CREMeshImpl*)pRE)->m_pRenderMesh ? ((CREMeshImpl*)pRE)->m_pRenderMesh->m_sSource : "-";
+
+		Warning("--- CRenderElement \"%s\" leak after level unload: %s", pRE->mfTypeString(), name);
 	}
 	iLog->Log("\n \n");
 
@@ -2330,7 +2332,7 @@ void CD3D9Renderer::DebugDrawStats1()
 	size_t nMemDevIBPoolUsed = 0;
 	{
 		AUTO_LOCK(CRenderMesh::m_sLinkLock);
-		for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.prev; iter != &CRenderMesh::m_MeshList; iter = iter->prev)
+		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.prev; iter != &CRenderMesh::s_MeshList; iter = iter->prev)
 		{
 			CRenderMesh* pRM = iter->item<& CRenderMesh::m_Chain>();
 			nMemApp += pRM->Size(CRenderMesh::SIZE_ONLY_SYSTEM);
@@ -2524,8 +2526,8 @@ void CD3D9Renderer::DebugDrawStats1()
 
 	nSize = 0;
 	n = 0;
-	CRenderElement* pRE = CRenderElement::m_RootGlobal.m_NextGlobal;
-	while (pRE != &CRenderElement::m_RootGlobal)
+	CRenderElement* pRE = CRenderElement::s_RootGlobal.m_NextGlobal;
+	while (pRE != &CRenderElement::s_RootGlobal)
 	{
 		n++;
 		nSize += pRE->Size();
@@ -2801,7 +2803,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	size_t nSizeMeshes = 0;
 	{
 		AUTO_LOCK(CRenderMesh::m_sLinkLock);
-		for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			nSizeMeshes += iter->item<& CRenderMesh::m_Chain>()->Size(CRenderMesh::SIZE_VB | CRenderMesh::SIZE_IB);
 		}
@@ -7216,7 +7218,7 @@ void CD3D9Renderer::GetLogVBuffers()
 	CRenderMesh* pRM = NULL;
 	int nNums = 0;
 	AUTO_LOCK(CRenderMesh::m_sLinkLock);
-	for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+	for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 	{
 		int nTotal = 0;
 		string final;
@@ -7327,7 +7329,7 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 	{
 		SIZER_COMPONENT_NAME(Sizer, "Mesh");
 		AUTO_LOCK(CRenderMesh::m_sLinkLock);
-		for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			CRenderMesh* pRM = iter->item<& CRenderMesh::m_Chain>();
 			pRM->m_sResLock.Lock();
@@ -7341,8 +7343,8 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 		SIZER_COMPONENT_NAME(Sizer, "Render elements");
 
 		AUTO_LOCK(m_sREResLock);
-		CRenderElement* pRE = CRenderElement::m_RootGlobal.m_NextGlobal;
-		while (pRE != &CRenderElement::m_RootGlobal)
+		CRenderElement* pRE = CRenderElement::s_RootGlobal.m_NextGlobal;
+		while (pRE != &CRenderElement::s_RootGlobal)
 		{
 			Sizer->AddObject(pRE);
 			pRE = pRE->m_NextGlobal;

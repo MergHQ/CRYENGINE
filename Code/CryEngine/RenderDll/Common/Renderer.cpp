@@ -798,8 +798,12 @@ void CRenderer::FreeResources(int nFlags)
 
 	if (nFlags & FRR_DELETED_MESHES)
 	{
+		// The mesh-pool is binned by nFrameID. Repeating N times is not
+		// yielding the desired results (is GCs only the current frame N times).
+		// For that reason RC_ForceMeshGC clears all bins when "instant" is set to <true>.
 		for (size_t i = 0; i < MAX_RELEASED_MESH_FRAMES; ++i)
 			m_pRT->RC_ForceMeshGC(true, true);
+
 		ForceFlushRTCommands();
 	}
 
@@ -912,13 +916,15 @@ void CRenderer::FreeResources(int nFlags)
 		m_cEF.mfReleaseSystemShaders();
 		ForceFlushRTCommands();
 
-		m_pRT->RC_ReleaseRenderResources(nFlags);
+		// if (nFlags & ???)
+		m_pRT->RC_ReleaseRenderResources(nFlags | FRR_PERMANENT_RENDER_OBJECTS);
 		ForceFlushRTCommands();
 
 		if (m_pPostProcessMgr)
 			m_pPostProcessMgr->ReleaseResources();
 		ForceFlushRTCommands();
 
+		// if (nFlags & FRR_FLUSH_TEXTURESTREAMING)
 		m_pRT->RC_FlushTextureStreaming(true);
 		ForceFlushRTCommands();
 
@@ -929,7 +935,11 @@ void CRenderer::FreeResources(int nFlags)
 		ForceFlushRTCommands();
 		CTexture::ResetTMUs();
 
-		CRenderElement::Cleanup();
+		// if (nFlags & FRR_DELETED_MESHES)
+		CRenderMesh::Tick(MAX_RELEASED_MESH_FRAMES); // requires PermanentRenderObjects be deleted to function properly (see above)
+		ForceFlushRTCommands();
+
+		CRenderElement::Cleanup(); // requires CRenderMesh::Tick() to function properly (see above)
 		ForceFlushRTCommands();
 
 		// sync dev buffer only once per frame, to prevent syncing to the currently rendered frame
@@ -2189,7 +2199,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	case EFQ_Alloc_APIMesh:
 	{
 		uint32 nSize = 0;
-		for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			CRenderMesh* pRM = iter->item<& CRenderMesh::m_Chain>();
 			nSize += static_cast<uint32>(pRM->Size(CRenderMesh::SIZE_VB));
@@ -2202,7 +2212,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	case EFQ_Alloc_Mesh_SysMem:
 	{
 		uint32 nSize = 0;
-		for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			CRenderMesh* pRM = iter->item<& CRenderMesh::m_Chain>();
 			nSize += static_cast<uint32>(pRM->Size(CRenderMesh::SIZE_ONLY_SYSTEM));
@@ -2215,7 +2225,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	{
 		uint32 nCount = 0;
 		AUTO_LOCK(CRenderMesh::m_sLinkLock);
-		for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			++nCount;
 		}
@@ -2229,7 +2239,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 		AUTO_LOCK(CRenderMesh::m_sLinkLock);
 		IRenderMesh** ppMeshes = NULL;
 		uint32 nSize           = 0;
-		for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			++nSize;
 		}
@@ -2238,7 +2248,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 			//allocate the array. The calling function is responsible for cleaning it up.
 			ppMeshes = new IRenderMesh*[nSize];
 			nSize    = 0;
-			for (util::list<CRenderMesh>* iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+			for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 			{
 				ppMeshes[nSize] = iter->item<& CRenderMesh::m_Chain>();
 				;

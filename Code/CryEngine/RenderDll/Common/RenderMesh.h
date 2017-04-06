@@ -499,10 +499,10 @@ public:
 	util::list<CRenderMesh>          m_Modified[2]; // if linked, mesh has modified data (to be uploaded to vram)
 
 	// The static list heads, corresponds to the entries above
-	static util::list<CRenderMesh> m_MeshList;
-	static util::list<CRenderMesh> m_MeshGarbageList[MAX_RELEASED_MESH_FRAMES];
-	static util::list<CRenderMesh> m_MeshDirtyList[2];
-	static util::list<CRenderMesh> m_MeshModifiedList[2];
+	static util::list<CRenderMesh> s_MeshList;
+	static util::list<CRenderMesh> s_MeshGarbageList[MAX_RELEASED_MESH_FRAMES];
+	static util::list<CRenderMesh> s_MeshDirtyList[2];
+	static util::list<CRenderMesh> s_MeshModifiedList[2];
 
 	TRenderChunkArray  m_Chunks;
 	TRenderChunkArray  m_ChunksSubObjects; // Chunks of sub-objects.
@@ -552,8 +552,8 @@ public:
 	SMeshBoneMapping_uint16* m_pExtraBoneMapping;
 
 	static void Initialize();
-  static void ShutDown();
-  static void Tick();
+	static void ShutDown();
+	static void Tick(uint numFrames = 1);
 	static void UpdateModified();
 	static void UpdateModifiedMeshes(bool bLocked, int threadId);
 	static bool ClearStaleMemory(bool bLocked, int threadId);
