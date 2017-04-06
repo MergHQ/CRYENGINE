@@ -1119,7 +1119,7 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 #define COMPATIBLE_MODE	" /Gec"
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
 	const char* pCompilerOrbis   = "ORBIS/V032/DXOrbisShaderCompiler.exe %s %s %s %s";
-	const char* pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
+	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
 	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
 
 #define ESSL_VERSION   "es310"
@@ -1148,13 +1148,13 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	{
 		// Set debug information
 		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
-		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
 	}
 	else if (CRenderer::CV_r_shadersdebug == 4)
 	{
 		// Set debug information, optimized shaders
 		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
-		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
 	}
 
 	if (pipelineState.opaque != 0)
