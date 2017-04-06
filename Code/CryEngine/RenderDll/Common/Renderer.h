@@ -1132,6 +1132,7 @@ public:
 
 	virtual const char*                               GetTextureFormatName(ETEX_Format eTF) override;
 	virtual int                                       GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) override;
+	virtual bool                                      IsTextureFormatSupported(ETEX_Format eTF) final { return CTexture::IsFormatSupported(eTF); }
 	virtual void                                      SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) override                          { m_pDefaultMaterial = pDefMat; m_pTerrainDefaultMaterial = pTerrainDefMat; }
 	virtual byte*                                     GetTextureSubImageData32(byte* pData, int nDataSize, int nX, int nY, int nW, int nH, CTexture* pTex) { return 0; }
 

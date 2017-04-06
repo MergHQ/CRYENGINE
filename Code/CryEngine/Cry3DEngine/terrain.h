@@ -206,6 +206,7 @@ struct CTextureCache : public Cry3DEngineBase
 	int    GetPoolTexDim() { return m_nPoolDim * m_nDim; }
 	void   ResetTexturePool();
 	int    GetPoolSize();
+	int		 GetPoolItemsNum();
 };
 
 #pragma pack(push,4)
