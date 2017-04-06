@@ -429,17 +429,17 @@ SBufInfoTable CRenderMesh::m_cBufInfoTable[eVF_MaxRenderMesh] =
 
 #undef OOFS
 
-util::list<CRenderMesh> CRenderMesh::m_MeshList;
-util::list<CRenderMesh> CRenderMesh::m_MeshGarbageList[MAX_RELEASED_MESH_FRAMES];
-util::list<CRenderMesh> CRenderMesh::m_MeshDirtyList[2];
-util::list<CRenderMesh> CRenderMesh::m_MeshModifiedList[2];
+util::list<CRenderMesh> CRenderMesh::s_MeshList;
+util::list<CRenderMesh> CRenderMesh::s_MeshGarbageList[MAX_RELEASED_MESH_FRAMES];
+util::list<CRenderMesh> CRenderMesh::s_MeshDirtyList[2];
+util::list<CRenderMesh> CRenderMesh::s_MeshModifiedList[2];
 
 int CRenderMesh::Release()
 {
-  long refCnt = CryInterlockedDecrement(&m_nRefCounter);
+	long refCnt = CryInterlockedDecrement(&m_nRefCounter);
 # if !defined(_RELEASE)
-  if (refCnt < 0)
-  {
+	if (refCnt < 0)
+	{
 		CryLogAlways("CRenderMesh::Release() called so many times on rendermesh that refcount became negative");
 		if (CRenderer::CV_r_BreakOnError)
 			__debugbreak();
@@ -447,7 +447,7 @@ int CRenderMesh::Release()
 # endif
 	if (refCnt == 0)
 	{
-	  AUTO_LOCK(m_sLinkLock);
+		AUTO_LOCK(m_sLinkLock);
 #   if !defined(_RELEASE)
 		if (m_nFlags & FRM_RELEASED)
 		{
@@ -456,13 +456,13 @@ int CRenderMesh::Release()
 				__debugbreak();
 		}
 #   endif
-  	m_nFlags |= FRM_RELEASED;
+		m_nFlags |= FRM_RELEASED;
 		int nFrame = gRenDev->GetFrameID(false);
-		util::list<CRenderMesh>* garbage = &CRenderMesh::m_MeshGarbageList[nFrame & (MAX_RELEASED_MESH_FRAMES-1)];
+		util::list<CRenderMesh>* garbage = &CRenderMesh::s_MeshGarbageList[nFrame & (MAX_RELEASED_MESH_FRAMES - 1)];
 		m_Chain.relink_tail(garbage);
 	}
 
-  return refCnt;
+	return refCnt;
 }
 
 CRenderMesh::CRenderMesh()
@@ -522,7 +522,7 @@ CRenderMesh::CRenderMesh (const char *szType, const char *szSourceName, bool bLo
 
   {
     AUTO_LOCK(m_sLinkLock);
-    m_Chain.relink_tail(&m_MeshList);
+    m_Chain.relink_tail(&s_MeshList);
   }
   m_nPrimetiveType = eptTriangleList;
 
@@ -748,7 +748,7 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
   if (nFlags == FSL_SYSTEM_CREATE)
   {
 	lSysCreate:
-		RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]);
+		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
     if (!MS->m_pUpdateData)
     {
       uint32 nSize = GetStreamSize(nStream);
@@ -765,7 +765,7 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
 	else if (nFlags == FSL_SYSTEM_UPDATE)
   {
 lSysUpdate:
-		RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]);
+		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
     if (!MS->m_pUpdateData)
     {
       MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
@@ -783,7 +783,7 @@ lSysUpdate:
   {
     if (!MS)
       return NULL;
-		RelinkTail(m_Dirty[threadId], m_MeshDirtyList[threadId]);
+		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]);
 		if (MS->m_pUpdateData)
 		{
 			pD = (byte *)MS->m_pUpdateData;
@@ -796,7 +796,7 @@ lSysUpdate:
   {
     if (!MS)
       return NULL; 
-		RelinkTail(m_Dirty[threadId], m_MeshDirtyList[threadId]); 
+		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]); 
 #if RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS == 0
     if (gRenDev->m_pRT && gRenDev->m_pRT->IsMultithreaded())
     {
@@ -836,7 +836,7 @@ lSysUpdate:
     if ((nVB != ~0u && (MS->m_nFrameCreate != nFrame || MS->m_nElements != m_nVerts)) || !CRenderer::CV_r_buffer_enable_lockless_updates)
 #   endif
 			goto lSysCreate;
-		RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]);
+		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
 		if (nVB == ~0u && !CreateVidVertices(m_nVerts, m_eVF, nStream))
     {
       RT_AllocationFailure("Create VB-Stream", GetStreamSize(nStream, m_nVerts) );
@@ -895,7 +895,7 @@ vtx_idx *CRenderMesh::LockIB(uint32 nFlags, int nOffset, int nInds)
   if (nFlags == FSL_SYSTEM_CREATE)
   {
 lSysCreate:
-		RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]);
+		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
     if (!m_IBStream.m_pUpdateData)
     {
       uint32 nSize = m_nInds * sizeof(vtx_idx);
@@ -912,7 +912,7 @@ lSysCreate:
 	else if (nFlags == FSL_SYSTEM_UPDATE)
   {
 lSysUpdate:
-		RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]);
+		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
     if (!m_IBStream.m_pUpdateData)
     {
       MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
@@ -928,7 +928,7 @@ lSysUpdate:
   }
   else if (nFlags == FSL_READ)
   {
-		RelinkTail(m_Dirty[threadId], m_MeshDirtyList[threadId]);
+		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]);
     if (m_IBStream.m_pUpdateData)
     {
       pD = (byte *)m_IBStream.m_pUpdateData;
@@ -939,7 +939,7 @@ lSysUpdate:
 
   if (nFlags == (FSL_READ | FSL_VIDEO))
   {
-		RelinkTail(m_Dirty[threadId], m_MeshDirtyList[threadId]);
+		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]);
     buffer_handle_t nIB = m_IBStream.m_nID;
     if (nIB == ~0u)
       return NULL;
@@ -977,7 +977,7 @@ lSysUpdate:
 		if ((nIB != ~0u && (m_IBStream.m_nFrameCreate || m_IBStream.m_nElements != m_nInds)) || !CRenderer::CV_r_buffer_enable_lockless_updates)
 #   endif
 			goto lSysCreate;
-		RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]);
+		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
 		if (m_IBStream.m_nID == ~0u)
 		{
 			nIB = (m_IBStream.m_nID = gRenDev->m_DevBufMan.Create(BBT_INDEX_BUFFER, (BUFFER_USAGE)m_eType, m_nInds*sizeof(vtx_idx)));
@@ -4102,7 +4102,7 @@ void CRenderMesh::PrintMeshLeaks()
 {
   MEMORY_SCOPE_CHECK_HEAP();
 	AUTO_LOCK(m_sLinkLock);
-	for (util::list<CRenderMesh> *iter = CRenderMesh::m_MeshList.next; iter != &CRenderMesh::m_MeshList; iter = iter->next)
+	for (util::list<CRenderMesh> *iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 	{
 		CRenderMesh* pRM = iter->item<&CRenderMesh::m_Chain>();
 		Warning("--- CRenderMesh '%s' leak after level unload", (!pRM->m_sSource.empty() ? pRM->m_sSource.c_str() : pRM->m_sType.c_str()));
@@ -4118,7 +4118,7 @@ bool CRenderMesh::ClearStaleMemory(bool bLocked, int threadId)
 	bool bKeepSystem = false; 
 	CConditionalLock lock(m_sLinkLock, !bLocked);
 	// Clean up the stale mesh temporary data
-  for (util::list<CRenderMesh>* iter=m_MeshDirtyList[threadId].next, *pos=iter->next; iter != &m_MeshDirtyList[threadId]; iter=pos, pos=pos->next)
+  for (util::list<CRenderMesh>* iter=s_MeshDirtyList[threadId].next, *pos=iter->next; iter != &s_MeshDirtyList[threadId]; iter=pos, pos=pos->next)
   {
 		CRenderMesh* pRM = iter->item<&CRenderMesh::m_Dirty>(threadId);
 		if (pRM->m_sResLock.TryLock() == false)
@@ -4174,7 +4174,7 @@ void CRenderMesh::UpdateModifiedMeshes(bool bLocked, int threadId)
   FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
 	CConditionalLock lock(m_sLinkLock, !bLocked);
 	// Update device buffers on modified meshes
-	for (util::list<CRenderMesh>* iter=m_MeshModifiedList[threadId].next, *pos=iter->next; iter != &m_MeshModifiedList[threadId]; iter=pos, pos=pos->next)
+	for (util::list<CRenderMesh>* iter=s_MeshModifiedList[threadId].next, *pos=iter->next; iter != &s_MeshModifiedList[threadId]; iter=pos, pos=pos->next)
 	{
 		CRenderMesh* pRM = iter->item<&CRenderMesh::m_Modified>(threadId);
 		if (pRM->m_sResLock.TryLock() == false)
@@ -4221,19 +4221,21 @@ void CRenderMesh::UpdateModified()
 }
 
 // Mesh garbage collector
-void CRenderMesh::Tick()
+void CRenderMesh::Tick(uint numFrames)
 {
-  MEMORY_SCOPE_CHECK_HEAP();
-  ASSERT_IS_RENDER_THREAD(gRenDev->m_pRT)
-	bool bKeepSystem = false;
-  const threadID threadId = gRenDev->m_pRT->IsMultithreaded() ? gRenDev->m_RP.m_nProcessThreadID : threadID(1);
+	MEMORY_SCOPE_CHECK_HEAP();
+	ASSERT_IS_RENDER_THREAD(gRenDev->m_pRT)
+		bool bKeepSystem = false;
+	const threadID threadId = gRenDev->m_pRT->IsMultithreaded() ? gRenDev->m_RP.m_nProcessThreadID : threadID(1);
 	int nFrame = gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_nFrameUpdateID;
 
 	// Remove deleted meshes from the list completely
 	bool deleted = false;
+
+	for (int n = 0; n < numFrames; ++n)
 	{
 		AUTO_LOCK(m_sLinkLock);
-		util::list<CRenderMesh>* garbage = &CRenderMesh::m_MeshGarbageList[nFrame & (MAX_RELEASED_MESH_FRAMES-1)];
+		util::list<CRenderMesh>* garbage = &CRenderMesh::s_MeshGarbageList[(nFrame + n) & (MAX_RELEASED_MESH_FRAMES - 1)];
 		while (garbage != garbage->prev)
 		{
 			CRenderMesh* pRM = garbage->next->item<&CRenderMesh::m_Chain>();
@@ -4241,6 +4243,7 @@ void CRenderMesh::Tick()
 			deleted = true;
 		}
 	}
+
 	// If an instance pool is used, try to reclaim any used pages if there are any
 	if (deleted && s_MeshPool.m_MeshInstancePool)
 	{
@@ -4254,7 +4257,6 @@ void CRenderMesh::Tick()
 	// and from any other thread, they still have guarded against contention!
 
 	ClearStaleMemory(true, threadId);
-
 }
 
 void CRenderMesh::Initialize()
@@ -4264,25 +4266,28 @@ void CRenderMesh::Initialize()
 
 void CRenderMesh::ShutDown()
 {
-  if (CRenderer::CV_r_releaseallresourcesonexit)
-  {
+	if (CRenderer::CV_r_releaseallresourcesonexit)
+	{
+		Tick(MAX_RELEASED_MESH_FRAMES);
+
 		AUTO_LOCK(m_sLinkLock);
-    while (&CRenderMesh::m_MeshList != CRenderMesh::m_MeshList.prev)
-    {
-			CRenderMesh* pRM = CRenderMesh::m_MeshList.next->item<&CRenderMesh::m_Chain>();
+		while (&CRenderMesh::s_MeshList != CRenderMesh::s_MeshList.prev)
+		{
+			CRenderMesh* pRM = CRenderMesh::s_MeshList.next->item<&CRenderMesh::m_Chain>();
 			PREFAST_ASSUME(pRM);
-      if (CRenderer::CV_r_printmemoryleaks)
-      {
-        float fSize = pRM->Size(SIZE_ONLY_SYSTEM)/1024.0f/1024.0f;
-        iLog->Log("Warning: CRenderMesh::ShutDown: RenderMesh leak %s: %0.3fMb", pRM->m_sSource.c_str(), fSize);
-      }
-      SAFE_RELEASE_FORCE(pRM);
-    }
-  }
-	new (&CRenderMesh::m_MeshList) util::list<CRenderMesh>();
-	new (&CRenderMesh::m_MeshGarbageList) util::list<CRenderMesh>();
-	new (&CRenderMesh::m_MeshDirtyList) util::list<CRenderMesh>();
-	new (&CRenderMesh::m_MeshModifiedList) util::list<CRenderMesh>();
+			if (CRenderer::CV_r_printmemoryleaks)
+			{
+				float fSize = pRM->Size(SIZE_ONLY_SYSTEM) / 1024.0f / 1024.0f;
+				iLog->Log("Warning: CRenderMesh::ShutDown: RenderMesh leak %s: %0.3fMb", pRM->m_sSource.c_str(), fSize);
+			}
+			SAFE_RELEASE_FORCE(pRM);
+		}
+	}
+
+	new (&CRenderMesh::s_MeshList) util::list<CRenderMesh>();
+	new (&CRenderMesh::s_MeshGarbageList) util::list<CRenderMesh>();
+	new (&CRenderMesh::s_MeshDirtyList) util::list<CRenderMesh>();
+	new (&CRenderMesh::s_MeshModifiedList) util::list<CRenderMesh>();
 
 	ShutdownPool();
 }
@@ -4520,7 +4525,7 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const uint pairGuid, const TRend
 	UnlockIndexStream();
 
 	m_CreatedBoneIndices[threadId].push_back( SBoneIndexStreamRequest( pairGuid, remappedIndices, m_pExtraBoneMapping) );
-	RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]); 
+	RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
 }
 
 void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arrRemapTable, const uint pairGuid, const void* tag)
@@ -4603,7 +4608,7 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arr
 	UnlockIndexStream();
 
 	m_CreatedBoneIndices[threadId].push_back( SBoneIndexStreamRequest(pairGuid, remappedIndices, m_pExtraBoneMapping) );
-	RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]); 
+	RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
 }
 
 void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
@@ -4635,7 +4640,7 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 	if (deleted != ~0u)
 	{
 		m_DeletedBoneIndices[threadId].push_back(pairGuid); 
-		RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]); 
+		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
 	}
 
 	// Check for created but not yet remapped bone indices
@@ -4657,7 +4662,7 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 		if (deleted != ~0u)
 		{
 			m_DeletedBoneIndices[threadId].push_back(pairGuid); 
-			RelinkTail(m_Modified[threadId], m_MeshModifiedList[threadId]); 
+			RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
 		}
 	}
 }

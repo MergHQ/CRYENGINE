@@ -46,7 +46,7 @@ set(GCC_COMMON_FLAGS
 
 set(GCC_CPP_COMMON_FLAGS
 	-fno-rtti 
-	-std=gnu++11
+	-std=c++11
 	-Wno-invalid-offsetof
 	-Wno-reorder
 	-Wno-conversion-null

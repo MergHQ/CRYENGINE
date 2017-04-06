@@ -115,8 +115,8 @@ class CRenderElement : public IRenderElement
 {
 	static int s_nCounter;
 public:
-	static CRenderElement m_RootGlobal;
-	static CRenderElement *m_pRootRelease[];
+	static CRenderElement s_RootGlobal;
+	static CRenderElement *s_pRootRelease[];
 	CRenderElement*       m_NextGlobal;
 	CRenderElement*       m_PrevGlobal;
 

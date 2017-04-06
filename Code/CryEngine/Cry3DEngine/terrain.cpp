@@ -222,7 +222,7 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 		      sizeof(m_lstActiveTextureNodes[0]), CmpTerrainNodesImportance);
 
 		// release unimportant textures and make sure at least one texture is free for possible loading
-		while (m_lstActiveTextureNodes.Count() > GetCVars()->e_TerrainTextureStreamingPoolItemsNum - 1)
+		while (m_lstActiveTextureNodes.Count() > m_texCache[0].GetPoolItemsNum() - 1)
 		{
 			m_lstActiveTextureNodes.Last()->UnloadNodeTexture(false);
 			m_lstActiveTextureNodes.DeleteLast();

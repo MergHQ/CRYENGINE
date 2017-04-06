@@ -527,9 +527,19 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 	gEnv->pCryPak->FClose(fpDiffTexFile);
 	fpDiffTexFile = 0;
 
+	// if texture compression format is not supported by GPU - use uncompressed RGBA and decompress on CPU
+	ETEX_Format eTexPoolFormat = m_arrBaseTexInfos[nSID].m_TerrainTextureLayer[0].eTexFormat;
+
+	if (!GetRenderer()->IsTextureFormatSupported(eTexPoolFormat))
+	{
+		GetLog()->LogWarning("Warning: Terrain texture compression format (%s) is not supported, fall back to CPU decompression", GetRenderer()->GetTextureFormatName(eTexPoolFormat));
+
+		eTexPoolFormat = eTF_R8G8B8A8;
+	}
+
 	// init texture pools
-	m_texCache[0].InitPool(0, m_arrBaseTexInfos[nSID].m_TerrainTextureLayer[0].nSectorSizePixels, m_arrBaseTexInfos[nSID].m_TerrainTextureLayer[0].eTexFormat);
-	m_texCache[1].InitPool(0, m_arrBaseTexInfos[nSID].m_TerrainTextureLayer[1].nSectorSizePixels, m_arrBaseTexInfos[nSID].m_TerrainTextureLayer[1].eTexFormat);
+	m_texCache[0].InitPool(0, m_arrBaseTexInfos[nSID].m_TerrainTextureLayer[0].nSectorSizePixels, eTexPoolFormat);
+	m_texCache[1].InitPool(0, m_arrBaseTexInfos[nSID].m_TerrainTextureLayer[1].nSectorSizePixels, eTexPoolFormat);
 	m_texCache[2].InitPool(0, nSectorHeightMapTextureDim, eTF_R32F);
 
 	return true;

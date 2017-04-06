@@ -19,6 +19,18 @@
 #include "VariableCollection.h"
 #include "ResponseInstance.h"
 #include "SchematycEntityDrsComponent.h"
+#include "ActionCancelSignal.h"
+#include "ActionSpeakLine.h"
+#include "ActionSetVariable.h"
+#include "ActionCopyVariable.h"
+#include "ActionExecuteResponse.h"
+#include "ActionResetTimer.h"
+#include "ActionSendSignal.h"
+#include "ActionSetActor.h"
+#include "ActionSetGameToken.h"
+#include "ActionWait.h"
+#include "SpecialConditionsImpl.h"
+#include "ConditionImpl.h"
 
 using namespace CryDRS;
 
@@ -640,7 +652,6 @@ REGISTER_DRS_ACTION(CActionSetActorByVariable, "SetActorFromVariable", DEFAULT_D
 REGISTER_DRS_ACTION(CActionSetGameToken, "SetGameToken", DEFAULT_DRS_ACTION_COLOR);
 REGISTER_DRS_ACTION(CActionSpeakLine, "SpeakLine", "00FF00");
 REGISTER_DRS_ACTION(CActionWait, "Wait", DEFAULT_DRS_ACTION_COLOR);
-
 
 REGISTER_DRS_CONDITION(CExecutionLimitCondition, "Execution Limit", DEFAULT_DRS_CONDITION_COLOR);
 REGISTER_DRS_CONDITION(CGameTokenCondition, "GameToken", DEFAULT_DRS_CONDITION_COLOR);

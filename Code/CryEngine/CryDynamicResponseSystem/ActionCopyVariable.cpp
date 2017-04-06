@@ -2,6 +2,8 @@
 
 #include "stdafx.h"
 #include "ActionCopyVariable.h"
+#include "VariableCollection.h"
+#include "ResponseInstance.h"
 
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryDynamicResponseSystem/IDynamicResponseAction.h>

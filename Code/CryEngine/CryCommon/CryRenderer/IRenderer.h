@@ -2280,6 +2280,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual const char*                               GetTextureFormatName(ETEX_Format eTF) = 0;
 	virtual int                                       GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) = 0;
+	virtual bool                                      IsTextureFormatSupported(ETEX_Format eTF) = 0;
 
 	virtual void                                      SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) = 0;
 
