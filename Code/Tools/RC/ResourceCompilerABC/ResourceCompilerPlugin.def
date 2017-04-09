@@ -1,3 +1,0 @@
-LIBRARY	ResourceCompilerABC
-EXPORTS
-	RegisterConverters			@1

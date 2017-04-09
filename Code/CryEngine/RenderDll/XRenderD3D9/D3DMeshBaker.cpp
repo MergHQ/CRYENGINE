@@ -757,6 +757,7 @@ bool CD3D9Renderer::BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBa
 			FX_ClearTarget(pTmpDepthSurface, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_R.r, 0);
 			FX_PushRenderTarget(0, pHighPrecisionBuffer[nPhase], pTmpDepthSurface);
 			RT_SetViewport(0, 0, outputWidth, outputHeight);
+			m_RP.m_pCurrentRenderView = passInfo.GetRenderView();
 
 			int nThreadID = m_pRT->GetThreadList();
 

@@ -50,7 +50,9 @@ add_subdirectory("Code/Sandbox/Plugins/SmartObjectEditor")
 add_subdirectory("Code/Sandbox/Plugins/DialogEditor")
 add_subdirectory("Code/Sandbox/Plugins/MFCToolsPlugin")
 add_subdirectory("Code/Sandbox/Plugins/FacialEditorPlugin")
-
+if(EXISTS "${CRYENGINE_DIR}/Code/Sandbox/Plugins/LodGeneratorPlugin")
+  add_subdirectory("Code/Sandbox/Plugins/LodGeneratorPlugin")
+endif()
 #libs
 add_subdirectory ("Code/Libs/prt")
 add_subdirectory ("Code/Libs/python")
