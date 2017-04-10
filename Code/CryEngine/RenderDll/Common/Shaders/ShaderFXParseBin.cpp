@@ -2906,6 +2906,8 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_PackParameters(CParserBin& Parser,
 	// Replace new parameters in shader tokens
 	for (uint32 n = 0; n < AffectedFunc.size(); n++)
 	{
+		CRY_ASSERT_MESSAGE(AffectedFunc[n] < Parser.m_CodeFragments.size(), "function index is larger than number of CodeFragments!");
+
 		SCodeFragment* st = &Parser.m_CodeFragments[AffectedFunc[n]];
 		//const char *szName = Parser.GetString(st->m_dwName);
 
@@ -3180,6 +3182,8 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 	nAffectMask = 0;
 	for (i = 0; i < AffectedFragments.size(); i++)
 	{
+		CRY_ASSERT_MESSAGE(AffectedFragments[i] < Parser.m_CodeFragments.size(), "fragment index is larger than number of CodeFragments!");
+
 		SCodeFragment* s = &Parser.m_CodeFragments[AffectedFragments[i]];
 		if (s->m_eType != eFT_Function && s->m_eType != eFT_Structure && s->m_eType != eFT_ConstBuffer && s->m_eType != eFT_StorageClass)
 			continue;
@@ -4757,6 +4761,8 @@ SShaderTexSlots* CShaderManBin::GetTextureSlots(CParserBin& Parser, SShaderBin* 
 				SParamCacheInfo::AffectedFuncsVec& AffectedFragments = pCache->m_AffectedFuncs;
 				for (uint32 i = 0; i < AffectedFragments.size(); i++)
 				{
+					CRY_ASSERT_MESSAGE(AffectedFragments[i] < Parser.m_CodeFragments.size(), "fragment index is larger than number of CodeFragments!");
+
 					SCodeFragment* s = &Parser.m_CodeFragments[AffectedFragments[i]];
 
 					// if it's a sampler, include this sampler name CRC

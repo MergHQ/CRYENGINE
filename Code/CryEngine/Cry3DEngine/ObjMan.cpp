@@ -66,8 +66,7 @@ void CObjManager::UnloadVegetationModels(bool bDeleteAll)
 			for (int j = 0; j < FAR_TEX_COUNT; ++j)
 			{
 				SVegetationSpriteLightInfo& rLightInfo = rGroup.m_arrSSpriteLightInfo[j];
-				if (rLightInfo.m_pDynTexture)
-					SAFE_RELEASE(rLightInfo.m_pDynTexture);
+				SAFE_RELEASE(rLightInfo.m_pDynTexture);
 			}
 		}
 
@@ -377,6 +376,12 @@ CStatObj* CObjManager::LoadStatObj(const char* __szFileName
 			m_pDefaultCGF = new CStatObj();
 		}
 		m_pDefaultCGF->m_bDefaultObject = true;
+	}
+
+	if (CryStringUtils::stristr(__szFileName, "_lod"))
+	{
+		Warning("Failed to load cgf: %s, '_lod' meshes can be loaded only internally as part of multi-lod CGF loading", __szFileName);
+		return m_pDefaultCGF;
 	}
 
 	LOADING_TIME_PROFILE_SECTION_ARGS(__szFileName);

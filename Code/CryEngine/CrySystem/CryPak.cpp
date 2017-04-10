@@ -1056,6 +1056,8 @@ inline bool CheckFileExistOnDisk(const char* filename)
 
 const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags)
 {
+	CRY_ASSERT(src);
+
 	bool bSkipMods = false;
 
 	if (g_cvars.sys_filesystemCaseSensitivity > 0)
@@ -1067,8 +1069,8 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 	    ((nFlags & FLAGS_PATH_REAL) == 0) &&
 	    ((nFlags & FLAGS_FOR_WRITING) == 0) &&
 	    (!m_arrMods.empty()) &&
-	    (*src != '%') &&                                                                   // If path starts from % it is a special alias.
-	    ((m_pPakVars->nPriority != ePakPriorityPakOnly) || (nFlags & FLAGS_NEVER_IN_PAK))) // When priority is Pak only, we only check Mods directories if we're looking for a file that can't be in a pak
+	    (*src != '%') &&                                                                   // If path starts with '%' it is a special alias.
+	    ((m_pPakVars->nPriority != ePakPriorityPakOnly) || (nFlags & FLAGS_NEVER_IN_PAK) || (*src == '%'))) // When priority is Pak only, we only check Mods directories if we're looking for a file that can't be in a pak
 	{
 		// Scan mod folders
 		std::vector<string>::reverse_iterator it;

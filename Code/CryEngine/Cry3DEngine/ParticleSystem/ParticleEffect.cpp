@@ -170,8 +170,7 @@ IParticleEmitter* CParticleEffect::Spawn(const ParticleLoc& loc, const SpawnPara
 	CParticleEmitter* pCEmitter = static_cast<CParticleEmitter*>(pEmitter.get());
 	if (pSpawnParams)
 		pCEmitter->SetSpawnParams(*pSpawnParams);
-	if (pCEmitter->GetSpawnParams().bActive)
-		pEmitter->Activate(true);
+	pEmitter->Activate(true);
 	pCEmitter->SetLocation(loc);
 	return pEmitter;
 }

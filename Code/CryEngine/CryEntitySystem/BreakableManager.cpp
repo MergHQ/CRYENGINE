@@ -2360,43 +2360,6 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		return 1;
 	}
 
-	bop_meshupdate* pmu = (bop_meshupdate*)pUpdateEvent->pMesh->GetForeignData(DATA_MESHUPDATE);
-	IStatObj* pSrcStatObj = (IStatObj*)pUpdateEvent->pMesh->GetForeignData();
-	if (pmu && pSrcStatObj && GetSurfaceType(pSrcStatObj))
-	{
-		SpawnParams paramsDestroy;
-		paramsDestroy.eAttachForm = GeomForm_Surface;
-		paramsDestroy.eAttachType = GeomType_None;
-		paramsDestroy.fCountScale = 1.0f;
-		paramsDestroy.bCountPerUnit = false;
-		IParticleEffect* pEffect = GetSurfaceEffect(GetSurfaceType(pSrcStatObj), "breakage_carve", paramsDestroy);
-		if (pEffect)
-		{
-			Vec3 center(ZERO), normal(ZERO);
-			mesh_data* md = (mesh_data*)pUpdateEvent->pMesh->GetData();
-			int nTris = 0;
-			for (int i = 0; i < pmu->nNewTri; i++)
-				if (pmu->pNewTri[i].iop)
-				{
-					Vec3 vtx[3];
-					for (int j = 0; j < 3; j++)
-					{
-						int ivtx = pmu->pNewTri[i].iVtx[j];
-						if (ivtx < 0)
-							ivtx = pmu->pNewVtx[-ivtx - 1].idx;
-						vtx[j] = md->pVertices[ivtx];
-					}
-					center += vtx[0] + vtx[1] + vtx[2];
-					normal += vtx[1] - vtx[0] ^ vtx[2] - vtx[0];
-					nTris++;
-				}
-			if (nTris > 0)
-				center /= (float)(nTris * 3), normal.normalize();
-			if (normal.len2() > 0)
-				pEffect->Spawn(true, pCEntity->GetSlotWorldTM(pUpdateEvent->partid) * Matrix34(Vec3(1), Quat::CreateRotationV0V1(Vec3(0, 1, 0), normal), center));
-		}
-	}
-
 	bool bNewEntity = false;
 
 	if (iForeignData == PHYS_FOREIGN_ID_ENTITY)
@@ -2443,6 +2406,43 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 	}
 	else
 		return 1;
+
+	bop_meshupdate* pmu = (bop_meshupdate*)pUpdateEvent->pMesh->GetForeignData(DATA_MESHUPDATE);
+	IStatObj* pSrcStatObj = (IStatObj*)pUpdateEvent->pMesh->GetForeignData();
+	if (pmu && pSrcStatObj && GetSurfaceType(pSrcStatObj))
+	{
+		SpawnParams paramsDestroy;
+		paramsDestroy.eAttachForm = GeomForm_Surface;
+		paramsDestroy.eAttachType = GeomType_None;
+		paramsDestroy.fCountScale = 1.0f;
+		paramsDestroy.bCountPerUnit = false;
+		IParticleEffect* pEffect = GetSurfaceEffect(GetSurfaceType(pSrcStatObj), "breakage_carve", paramsDestroy);
+		if (pEffect)
+		{
+			Vec3 center(ZERO), normal(ZERO);
+			mesh_data* md = (mesh_data*)pUpdateEvent->pMesh->GetData();
+			int nTris = 0;
+			for (int i = 0; i < pmu->nNewTri; i++)
+				if (pmu->pNewTri[i].iop)
+				{
+					Vec3 vtx[3];
+					for (int j = 0; j < 3; j++)
+					{
+						int ivtx = pmu->pNewTri[i].iVtx[j];
+						if (ivtx < 0)
+							ivtx = pmu->pNewVtx[-ivtx - 1].idx;
+						vtx[j] = md->pVertices[ivtx];
+					}
+					center += vtx[0] + vtx[1] + vtx[2];
+					normal += vtx[1] - vtx[0] ^ vtx[2] - vtx[0];
+					nTris++;
+				}
+			if (nTris > 0)
+				center /= (float)(nTris * 3), normal.normalize();
+			if (normal.len2() > 0 && pCEntity)
+				pEffect->Spawn(true, pCEntity->GetSlotWorldTM(pUpdateEvent->partid) * Matrix34(Vec3(1), Quat::CreateRotationV0V1(Vec3(0, 1, 0), normal), center));
+		}
+	}
 
 	//if (pUpdateEvent->iReason==EventPhysUpdateMesh::ReasonExplosion)
 	//	pCEntity->AddFlags(ENTITY_FLAG_MODIFIED_BY_PHYSICS);

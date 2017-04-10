@@ -336,9 +336,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 //! Defines for various encryption methodologies that we support (or did support at some stage).
 #define SUPPORT_UNENCRYPTED_PAKS             //Enable during dev and on consoles to support paks that aren't encrypted in any way
-#if !defined(_RELEASE)
-	#define SUPPORT_UNSIGNED_PAKS              //Enabled during dev to test release builds easier (remove this to enforce signed paks in release builds)
-#endif
+#define SUPPORT_UNSIGNED_PAKS              //Enabled during dev to test release builds easier (remove this to enforce signed paks in release builds)
 
 // #define SUPPORT_XTEA_PAK_ENCRYPTION                             //! C2 Style. Compromised - do not use.
 // #define SUPPORT_STREAMCIPHER_PAK_ENCRYPTION                     //! C2 DLC Style - by Mark Tully.

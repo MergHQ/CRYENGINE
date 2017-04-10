@@ -58,7 +58,7 @@ public:
 	virtual void InitParticles(const SUpdateContext& context) override;
 	virtual void PostUpdate(const SUpdateContext& context) override;
 
-	bool  IsActive() const           { return m_terrain || m_staticObjects || m_staticObjects; }
+	bool  IsActive() const           { return m_terrain || m_staticObjects || m_dynamicObjects; }
 	float GetElasticity() const      { return m_elasticity; }
 	int   GetRayTraceFilter() const;
 
