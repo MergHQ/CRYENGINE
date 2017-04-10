@@ -66,8 +66,7 @@ void CObjManager::UnloadVegetationModels(bool bDeleteAll)
 			for (int j = 0; j < FAR_TEX_COUNT; ++j)
 			{
 				SVegetationSpriteLightInfo& rLightInfo = rGroup.m_arrSSpriteLightInfo[j];
-				if (rLightInfo.m_pDynTexture)
-					SAFE_RELEASE(rLightInfo.m_pDynTexture);
+				SAFE_RELEASE(rLightInfo.m_pDynTexture);
 			}
 		}
 

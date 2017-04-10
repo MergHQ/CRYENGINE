@@ -1536,10 +1536,6 @@ inline typename CryStringT<T>::size_type CryStringT<T >::rfind(value_type ch, si
 	}
 	else
 	{
-		if (pos == npos)
-		{
-			pos = length();
-		}
 		if (pos > length())
 		{
 			return npos;

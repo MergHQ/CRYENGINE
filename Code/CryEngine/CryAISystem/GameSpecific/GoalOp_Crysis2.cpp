@@ -3776,7 +3776,7 @@ void COPCrysis2FlightFireWeapons::ParseParam(const char* param, const GoalParams
 			m_PausedTime = 0.0f;
 			m_PauseOverrideTime = 0.0f;
 		}
-		else if (!paused && (m_State == eFP_PAUSED) && (m_State != eFP_PAUSED_OVERRIDE))
+		else if (!paused && ((m_State == eFP_PAUSED) || (m_State == eFP_PAUSED_OVERRIDE)))
 		{
 			m_State = m_NextState;
 			m_NextState = eFP_STOP;

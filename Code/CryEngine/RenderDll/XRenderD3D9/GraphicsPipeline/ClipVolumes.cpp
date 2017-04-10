@@ -489,7 +489,7 @@ void CClipVolumesStage::PrepareVolumetricFog()
 			{
 				for (int32 i = 0; i < m_jitteredDepthPassArray.size(); ++i)
 				{
-					m_jitteredDepthPassArray[i].release();
+					m_jitteredDepthPassArray[i].reset();
 				}
 
 				m_jitteredDepthPassArray.resize(depth);
@@ -562,7 +562,7 @@ void CClipVolumesStage::PrepareVolumetricFog()
 			{
 				for (int32 i = 0; i < m_volumetricStencilPassArray.size(); ++i)
 				{
-					m_volumetricStencilPassArray[i].release();
+					m_volumetricStencilPassArray[i].reset();
 				}
 
 				m_volumetricStencilPassArray.resize(depth);
@@ -579,7 +579,7 @@ void CClipVolumesStage::PrepareVolumetricFog()
 			{
 				for (int32 i = 0; i < m_resolveVolumetricStencilPassArray.size(); ++i)
 				{
-					m_resolveVolumetricStencilPassArray[i].release();
+					m_resolveVolumetricStencilPassArray[i].reset();
 				}
 
 				m_resolveVolumetricStencilPassArray.resize(depth);
@@ -596,7 +596,7 @@ void CClipVolumesStage::PrepareVolumetricFog()
 			{
 				for (int32 i = 0; i < m_jitteredDepthPassArray.size(); ++i)
 				{
-					m_jitteredDepthPassArray[i].release();
+					m_jitteredDepthPassArray[i].reset();
 				}
 
 				m_jitteredDepthPassArray.resize(depth);
