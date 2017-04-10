@@ -378,6 +378,12 @@ CStatObj* CObjManager::LoadStatObj(const char* __szFileName
 		m_pDefaultCGF->m_bDefaultObject = true;
 	}
 
+	if (CryStringUtils::stristr(__szFileName, "_lod"))
+	{
+		Warning("Failed to load cgf: %s, '_lod' meshes can be loaded only internally as part of multi-lod CGF loading", __szFileName);
+		return m_pDefaultCGF;
+	}
+
 	LOADING_TIME_PROFILE_SECTION_ARGS(__szFileName);
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Static Geometry");
 
