@@ -1381,7 +1381,7 @@ int CArticulatedEntity::Step(float time_interval)
 		m_bSteppedBack = 0;
 
 		// do not request step back if we were in deep penetration state initially
-		i = m_iSimTypeCur | isneg(m_maxPenetrationCur-0.07f) | isneg(0.07f-maxPenetrationPrev);
+		i = 1;//m_iSimTypeCur | isneg(m_maxPenetrationCur-0.07f) | isneg(0.07f-maxPenetrationPrev);
 		if (!i)
 			m_simTimeAux = 0;
 		return UpdateHistory(i | isneg(3-(int)m_nStepBackCount));
