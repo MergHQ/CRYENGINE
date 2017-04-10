@@ -1401,7 +1401,6 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 			              _fSpawnPeriod, sEffectName);
 		}
 
-		chain.GetValue("bActive", params.bActive);
 		chain.GetValue("bPrime", params.bPrime);
 		chain.GetValue("PulsePeriod", params.fPulsePeriod);
 		chain.GetValue("Strength", params.fStrength);

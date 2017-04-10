@@ -308,13 +308,10 @@ CParticleEmitter::CParticleEmitter(const IParticleEffect* pEffect, const QuatTS&
 	SetEffect(pEffect);
 
 	// Set active
-	if (m_SpawnParams.bActive)
-	{
-		float fStartAge = 0.f;
-		if (m_SpawnParams.bPrime)
-			fStartAge = m_pTopEffect->GetEquilibriumAge(true);
-		Start(-fStartAge);
-	}
+	float fStartAge = 0.f;
+	if (m_SpawnParams.bPrime)
+		fStartAge = m_pTopEffect->GetEquilibriumAge(true);
+	Start(-fStartAge);
 
 	UpdateTimes();
 }

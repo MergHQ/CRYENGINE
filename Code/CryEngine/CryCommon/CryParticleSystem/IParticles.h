@@ -38,7 +38,6 @@ SERIALIZATION_DECLARE_ENUM(EParticleSpec,
 //! Some parameters override emitter params.
 struct SpawnParams
 {
-	bool                     bActive;         //!< Emitter starts active
 	bool                     bPrime;          //!< Advance emitter age to its equilibrium state.
 	bool                     bRegisterByBBox; //!< Use the Bounding Box instead of Position to Register in VisArea.
 	bool                     bNowhere;        //!< Exists outside of level.
@@ -61,7 +60,6 @@ struct SpawnParams
 
 	inline SpawnParams()
 	{
-		bActive = true;
 		bPrime = false;
 		bRegisterByBBox = false;
 		bNowhere = false;
