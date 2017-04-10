@@ -938,7 +938,7 @@ public:
 	bool                        CompressDataBlock(const void* input, size_t inputSize, void* output, size_t& outputSize, int level) override;
 	bool                        DecompressDataBlock(const void* input, size_t inputSize, void* output, size_t& outputSize) override;
 
-	void                        OpenBasicPaks();
+	void                        OpenBasicPaks(bool bLoadGamePaks);
 	void                        OpenLanguagePak(char const* const szLanguage);
 	void                        OpenLanguageAudioPak(char const* const szLanguage);
 	void                        GetLocalizedPath(char const* const szLanguage, string& szLocalizedPath);

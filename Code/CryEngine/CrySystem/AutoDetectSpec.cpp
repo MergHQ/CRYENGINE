@@ -822,7 +822,7 @@ static size_t SafeReadLine(ICryPak* pPak, FILE* f, char* buffer, size_t bufferSi
 	return len;
 }
 
-	#define BUILDPATH_GPURATING(x) "config/gpu/" x
+	#define BUILDPATH_GPURATING(x) "%engine%/config/gpu/" x
 
 CGPURating::CGPURating()
 {

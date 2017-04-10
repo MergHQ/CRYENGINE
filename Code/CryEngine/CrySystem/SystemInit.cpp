@@ -527,22 +527,22 @@ static void OnSysSpecChange(ICVar* pVar)
 	switch (spec)
 	{
 	case CONFIG_LOW_SPEC:
-		GetISystem()->LoadConfiguration("LowSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("%engine%/config/LowSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_MEDIUM_SPEC:
-		GetISystem()->LoadConfiguration("MedSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("%engine%/config/MedSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_HIGH_SPEC:
-		GetISystem()->LoadConfiguration("HighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("%engine%/config/HighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_VERYHIGH_SPEC:
-		GetISystem()->LoadConfiguration("VeryHighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("%engine%/config/VeryHighSpec.cfg", &sysSpecOverrideSink, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_DURANGO:
-		GetISystem()->LoadConfiguration("durango.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("%engine%/config/durango.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
 		break;
 	case CONFIG_ORBIS:
-		GetISystem()->LoadConfiguration("orbis.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("%engine%/config/orbis.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
 		break;
 
 	default:
@@ -1829,6 +1829,11 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 {
 	LOADING_TIME_PROFILE_SECTION;
 
+	if (g_cvars.pakVars.nPriority == ePakPriorityPakOnly)
+	{
+		OpenBasicPaks(false);  //we need to open then engine.pak, since we only allow data from pak files
+	}
+
 	// Load value of sys_game_folder from system.cfg into the sys_game_folder console variable
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
 	{
@@ -1924,7 +1929,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 	// simply open all paks if fast load pak can't be found
 	if (!g_cvars.sys_intromoviesduringinit || !m_pResourceManager->LoadFastLoadPaks(true))
 	{
-		OpenBasicPaks();
+		OpenBasicPaks(true);
 	}
 
 	// Load cvar groups first from game folder then from engine folder.
@@ -2096,12 +2101,10 @@ void CSystem::InitLocalization()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::OpenBasicPaks()
+void CSystem::OpenBasicPaks(bool bLoadGamePaks)
 {
-	static bool bBasicPaksLoaded = false;
-	if (bBasicPaksLoaded)
-		return;
-	bBasicPaksLoaded = true;
+	static bool s_bEnginePakLoaded = false;
+	static bool s_bGamePaksLoaded = false;
 
 	LOADING_TIME_PROFILE_SECTION;
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Open Pak Files");
@@ -2109,52 +2112,58 @@ void CSystem::OpenBasicPaks()
 	string buildFolder = PathUtil::AddSlash(g_cvars.sys_build_folder->GetString());
 
 	// open pak files
-	string paksFolder = buildFolder + string(PathUtil::GetGameFolder()) + "/*.pak";
-	m_env.pCryPak->OpenPacks(PathUtil::GetGameFolder(), paksFolder.c_str());
-
-	InlineInitializationProcessing("CSystem::OpenBasicPaks OpenPacks( paksFolder.c_str() )");
-
-	//////////////////////////////////////////////////////////////////////////
-	// Open Paks from Engine folder
-	//////////////////////////////////////////////////////////////////////////
-	// After game paks to have same search order as with files on disk
+	if (bLoadGamePaks && !s_bGamePaksLoaded)
 	{
-		const char* szBindRoot = m_env.pCryPak->GetAlias("%ENGINE%", false);
-		if (buildFolder.empty())
-		{
-			m_env.pCryPak->OpenPacks(szBindRoot, "%ENGINEROOT%/Engine/*.pak");
-		}
-		else
-		{
-			m_env.pCryPak->OpenPacks(szBindRoot, buildFolder + "Engine/*.pak");
-		}
+		string paksFolder = buildFolder + string(PathUtil::GetGameFolder()) + "/*.pak";
+		m_env.pCryPak->OpenPacks(PathUtil::GetGameFolder(), paksFolder.c_str());
+		InlineInitializationProcessing("CSystem::OpenBasicPaks OpenPacks( paksFolder.c_str() )");
+		s_bGamePaksLoaded = true;
 	}
 
-	InlineInitializationProcessing("CSystem::OpenBasicPaks OpenPacks( Engine... )");
+	if (!s_bEnginePakLoaded)
+	{
+		//////////////////////////////////////////////////////////////////////////
+		// Open Paks from Engine folder
+		//////////////////////////////////////////////////////////////////////////
+		// After game paks to have same search order as with files on disk
+		{
+			const char* szBindRoot = m_env.pCryPak->GetAlias("%ENGINE%", false);
+			if (buildFolder.empty())
+			{
+				m_env.pCryPak->OpenPacks(szBindRoot, "%ENGINEROOT%/Engine/*.pak");
+			}
+			else
+			{
+				m_env.pCryPak->OpenPacks(szBindRoot, buildFolder + "Engine/*.pak");
+			}
+		}
 
-	//////////////////////////////////////////////////////////////////////////
-	// Open paks in MOD subfolders.
-	//////////////////////////////////////////////////////////////////////////
+		InlineInitializationProcessing("CSystem::OpenBasicPaks OpenPacks( Engine... )");
+
+		//////////////////////////////////////////////////////////////////////////
+		// Open paks in MOD subfolders.
+		//////////////////////////////////////////////////////////////////////////
 #if !defined(_RELEASE)
-	if (const ICmdLineArg* pModArg = GetICmdLine()->FindArg(eCLAT_Pre, "MOD"))
-	{
-		if (IsMODValid(pModArg->GetValue()))
+		if (const ICmdLineArg* pModArg = GetICmdLine()->FindArg(eCLAT_Pre, "MOD"))
 		{
-			string modFolder = "Mods\\";
-			modFolder += pModArg->GetValue();
-			modFolder += "\\";
-			modFolder += PathUtil::GetGameFolder();
+			if (IsMODValid(pModArg->GetValue()))
+			{
+				string modFolder = "Mods\\";
+				modFolder += pModArg->GetValue();
+				modFolder += "\\";
+				modFolder += PathUtil::GetGameFolder();
 
-			string paksModFolder = modFolder;
-			paksModFolder += "\\*.pak";
-			GetIPak()->OpenPacks(PathUtil::GetGameFolder(), paksModFolder.c_str(), ICryPak::FLAGS_PATH_REAL | ICryArchive::FLAGS_OVERRIDE_PAK);
+				string paksModFolder = modFolder;
+				paksModFolder += "\\*.pak";
+				GetIPak()->OpenPacks(PathUtil::GetGameFolder(), paksModFolder.c_str(), ICryPak::FLAGS_PATH_REAL | ICryArchive::FLAGS_OVERRIDE_PAK);
+			}
 		}
-	}
 #endif // !defined(_RELEASE)
 
-	// Load paks required for game init to mem
-	gEnv->pCryPak->LoadPakToMemory("engine.pak", ICryPak::eInMemoryPakLocale_GPU);
-
+		// Load paks required for game init to mem
+		gEnv->pCryPak->LoadPakToMemory("engine.pak", ICryPak::eInMemoryPakLocale_GPU);
+		s_bEnginePakLoaded = true;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2677,10 +2686,10 @@ L_done:;
 		// Initialise after pLog and CPU feature initialization
 		// AND after console creation (Editor only)
 		// May need access to engine folder .pak files
-		gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("config/engine_core.thread_config");
+		gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/engine_core.thread_config");
 
 		if (m_bEditor)
-			gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("config/engine_sandbox.thread_config");
+			gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/engine_sandbox.thread_config");
 
 		// Setup main thread
 		void* pThreadHandle = 0; // Let system figure out thread handle
@@ -3133,7 +3142,7 @@ L_done:;
 		//////////////////////////////////////////////////////////////////////////
 		// Open basic pak files after intro movie playback started
 		//////////////////////////////////////////////////////////////////////////
-		OpenBasicPaks();
+		OpenBasicPaks(true);
 
 		//////////////////////////////////////////////////////////////////////////
 		// FONT
@@ -3635,7 +3644,7 @@ static void LoadConfigurationCmd(IConsoleCmdArgs* pParams)
 	}
 
 	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetISystem()->GetCVarsWhiteListConfigSink();
-	GetISystem()->LoadConfiguration(string("Config/") + pParams->GetArg(1), pCVarsWhiteListConfigSink, eLoadConfigGame);
+	GetISystem()->LoadConfiguration(string("%engine%/Config/") + pParams->GetArg(1), pCVarsWhiteListConfigSink, eLoadConfigGame);
 }
 
 // --------------------------------------------------------------------------------------------------------------------------
@@ -4021,7 +4030,7 @@ public:
 				if (!bOk)
 					return;
 
-				memcpy((void*)szFile, fd.name, strlen(fd.name));   // set
+				memcpy((void*)szFile, fd.name, strlen(fd.name)+1);   // set
 
 				if (*p == 0)
 					break;

@@ -309,7 +309,7 @@ bool CSystemConfiguration::OpenFile(const string& filename, CCryFile& file, int 
 	flags |= ICryPak::FOPEN_HINT_QUIET;
 
 	// Absolute paths first
-	if (gEnv->pCryPak->IsAbsPath(filename))
+	if (gEnv->pCryPak->IsAbsPath(filename) || filename[0] == '%')
 	{
 		if (file.Open(filename, "rb", flags | ICryPak::FLAGS_PATH_REAL))
 		{

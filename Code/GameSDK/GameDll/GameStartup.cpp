@@ -462,7 +462,7 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
   LOADING_TIME_PROFILE_SECTION(GetISystem());
 
 	// Load thread config
-	gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("config/game.thread_config");
+	gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/game.thread_config");
 
 	const ICmdLineArg* pSvBind = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "sv_bind");
 	IConsole* pConsole = GetISystem()->GetIConsole();
