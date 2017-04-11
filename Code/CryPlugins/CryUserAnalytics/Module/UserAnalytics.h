@@ -36,6 +36,7 @@ private:
 	void    Shutdown();
 
 	void    ReadWriteAnonymousToken();
+	void    ReadUserIdFromDisk();
 	void    PrepareAndSendEvents();
 
 	CryMT::vector<string>     m_messages; // message buffer
@@ -50,6 +51,7 @@ private:
 	static ICVar*             m_userAnalyticsServerAddress;
 
 	string                    m_anonymousUserToken;
+	string                    m_userId;
 };
 #else
 class CUserAnalytics : public IUserAnalytics
