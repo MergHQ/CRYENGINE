@@ -145,7 +145,7 @@ IAudioSystemItem* CAudioSystemEditor_wwise::GetControl(CID id) const
 	return nullptr;
 }
 
-ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionToControl(EACEControlType eATLControlType, IAudioSystemItem* pMiddlewareControl)
+ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionToControl(EItemType eATLControlType, IAudioSystemItem* pMiddlewareControl)
 {
 	if (pMiddlewareControl)
 	{
@@ -153,11 +153,11 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionToControl(EACEControlTyp
 		{
 			switch (eATLControlType)
 			{
-			case EACEControlType::eACEControlType_RTPC:
+			case EItemType::eItemType_RTPC:
 				{
 					return std::make_shared<CRtpcConnection>(pMiddlewareControl->GetId());
 				}
-			case EACEControlType::eACEControlType_State:
+			case EItemType::eItemType_State:
 				{
 					return std::make_shared<CStateToRtpcConnection>(pMiddlewareControl->GetId());
 				}
@@ -188,7 +188,7 @@ IAudioSystemItem* SearchForControl(IAudioSystemItem* pItem, const string& name, 
 	return nullptr;
 }
 
-ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef pNode, EACEControlType eATLControlType)
+ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType eATLControlType)
 {
 	if (pNode)
 	{
@@ -266,7 +266,7 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 				{
 					switch (eATLControlType)
 					{
-					case EACEControlType::eACEControlType_RTPC:
+					case EItemType::eItemType_RTPC:
 						{
 							RtpcConnectionPtr pConnection = std::make_shared<CRtpcConnection>(pControl->GetId());
 
@@ -274,7 +274,7 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 							pNode->getAttr(g_shiftAttribute, pConnection->shift);
 							return pConnection;
 						}
-					case EACEControlType::eACEControlType_State:
+					case EItemType::eItemType_State:
 						{
 							StateConnectionPtr pConnection = std::make_shared<CStateToRtpcConnection>(pControl->GetId());
 							pNode->getAttr(g_valueAttribute, pConnection->value);
@@ -289,7 +289,7 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 	return nullptr;
 }
 
-XmlNodeRef CAudioSystemEditor_wwise::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EACEControlType eATLControlType)
+XmlNodeRef CAudioSystemEditor_wwise::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EItemType eATLControlType)
 {
 	const IAudioSystemItem* pControl = GetControl(pConnection->GetID());
 	if (pControl)
@@ -322,7 +322,7 @@ XmlNodeRef CAudioSystemEditor_wwise::CreateXMLNodeFromConnection(const Connectio
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(pControl->GetType()));
 				pConnectionNode->setAttr(g_nameAttribute, pControl->GetName());
 
-				if (eATLControlType == eACEControlType_RTPC)
+				if (eATLControlType == eItemType_RTPC)
 				{
 					std::shared_ptr<const CRtpcConnection> pRtpcConnection = std::static_pointer_cast<const CRtpcConnection>(pConnection);
 					if (pRtpcConnection->mult != 1.0f)
@@ -335,7 +335,7 @@ XmlNodeRef CAudioSystemEditor_wwise::CreateXMLNodeFromConnection(const Connectio
 					}
 
 				}
-				else if (eATLControlType == eACEControlType_State)
+				else if (eATLControlType == eItemType_State)
 				{
 					std::shared_ptr<const CStateToRtpcConnection> pStateConnection = std::static_pointer_cast<const CStateToRtpcConnection>(pConnection);
 					pConnectionNode->setAttr(g_valueAttribute, pStateConnection->value);
@@ -419,54 +419,54 @@ const char* CAudioSystemEditor_wwise::GetTypeIcon(ItemType type) const
 	return "Editor/Icons/audio/wwise/switchgroup_nor.png";
 }
 
-ACE::EACEControlType CAudioSystemEditor_wwise::ImplTypeToATLType(ItemType type) const
+ACE::EItemType CAudioSystemEditor_wwise::ImplTypeToATLType(ItemType type) const
 {
 	switch (type)
 	{
 	case eWwiseItemTypes_Event:
-		return eACEControlType_Trigger;
+		return eItemType_Trigger;
 		break;
 	case eWwiseItemTypes_Rtpc:
-		return eACEControlType_RTPC;
+		return eItemType_RTPC;
 		break;
 	case eWwiseItemTypes_Switch:
 	case eWwiseItemTypes_State:
-		return eACEControlType_State;
+		return eItemType_State;
 		break;
 	case eWwiseItemTypes_AuxBus:
-		return eACEControlType_Environment;
+		return eItemType_Environment;
 		break;
 	case eWwiseItemTypes_SoundBank:
-		return eACEControlType_Preload;
+		return eItemType_Preload;
 		break;
 	case eWwiseItemTypes_StateGroup:
 	case eWwiseItemTypes_SwitchGroup:
-		return eACEControlType_Switch;
+		return eItemType_Switch;
 		break;
 	}
-	return eACEControlType_NumTypes;
+	return eItemType_Invalid;
 }
 
-ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEControlType atlControlType) const
+ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EItemType atlControlType) const
 {
 	switch (atlControlType)
 	{
-	case eACEControlType_Trigger:
+	case eItemType_Trigger:
 		return eWwiseItemTypes_Event;
 		break;
-	case eACEControlType_RTPC:
+	case eItemType_RTPC:
 		return eWwiseItemTypes_Rtpc;
 		break;
-	case eACEControlType_Switch:
+	case eItemType_Switch:
 		return AUDIO_SYSTEM_INVALID_TYPE;
 		break;
-	case eACEControlType_State:
+	case eItemType_State:
 		return (eWwiseItemTypes_Switch | eWwiseItemTypes_State | eWwiseItemTypes_Rtpc);
 		break;
-	case eACEControlType_Environment:
+	case eItemType_Environment:
 		return (eWwiseItemTypes_AuxBus | eWwiseItemTypes_Switch | eWwiseItemTypes_State | eWwiseItemTypes_Rtpc);
 		break;
-	case eACEControlType_Preload:
+	case eItemType_Preload:
 		return eWwiseItemTypes_SoundBank;
 		break;
 	}

@@ -96,9 +96,7 @@ enum EFmodEventType
 class CEventConnection : public IAudioConnection
 {
 public:
-	explicit CEventConnection(CID nID)
-		: IAudioConnection(nID)
-		, type(eFmodEventType_Start) {}
+	explicit CEventConnection(CID nID) : IAudioConnection(nID) {}
 
 	virtual bool HasProperties() override
 	{
@@ -114,17 +112,13 @@ public:
 		}
 	}
 
-	EFmodEventType type;
+	EFmodEventType type = eFmodEventType_Start;
 };
 
 class CParamConnection : public IAudioConnection
 {
 public:
-	explicit CParamConnection(CID nID)
-		: IAudioConnection(nID)
-		, mult(1.0f)
-		, shift(0.0f)
-	{}
+	explicit CParamConnection(CID nID) : IAudioConnection(nID) {}
 
 	virtual ~CParamConnection() {}
 
@@ -140,17 +134,14 @@ public:
 		}
 	}
 
-	float mult;
-	float shift;
+	float mult = 1.0f;
+	float shift = 0.0f;
 };
 
 class CParamToStateConnection : public IAudioConnection
 {
 public:
-	explicit CParamToStateConnection(CID id)
-		: IAudioConnection(id)
-		, m_value(1.0f)
-	{}
+	explicit CParamToStateConnection(CID id) : IAudioConnection(id) {}
 
 	virtual ~CParamToStateConnection() {}
 
@@ -168,7 +159,7 @@ public:
 		}
 	}
 
-	float m_value;
+	float m_value = 1.0f;
 };
 
 CAudioSystemEditor_fmod::CAudioSystemEditor_fmod()
@@ -326,7 +317,7 @@ IAudioSystemItem* CAudioSystemEditor_fmod::GetControl(CID id) const
 	return nullptr;
 }
 
-ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionToControl(EACEControlType controlType, IAudioSystemItem* pMiddlewareControl)
+ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionToControl(EItemType controlType, IAudioSystemItem* pMiddlewareControl)
 {
 	if (pMiddlewareControl)
 	{
@@ -337,11 +328,11 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionToControl(EACEControlType
 		}
 		else if (type == eFmodItemType_EventParameter || type == eFmodItemType_SnapshotParameter)
 		{
-			if (controlType == eACEControlType_RTPC)
+			if (controlType == eItemType_RTPC)
 			{
 				return std::make_shared<CParamConnection>(pMiddlewareControl->GetId());
 			}
-			else if (controlType == eACEControlType_State)
+			else if (controlType == eItemType_State)
 			{
 				return std::make_shared<CParamToStateConnection>(pMiddlewareControl->GetId());
 			}
@@ -351,7 +342,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionToControl(EACEControlType
 	return nullptr;
 }
 
-ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pNode, EACEControlType controlType)
+ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType controlType)
 {
 	if (pNode)
 	{
@@ -403,7 +394,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 			case eFmodItemType_EventParameter:
 			case eFmodItemType_SnapshotParameter:
 				{
-					if (controlType == eACEControlType_RTPC)
+					if (controlType == eItemType_RTPC)
 					{
 						std::shared_ptr<CParamConnection> pConnection = std::make_shared<CParamConnection>(pItem->GetId());
 						float mult = 1.0f;
@@ -422,7 +413,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 						pConnection->shift = shift;
 						return pConnection;
 					}
-					else if (controlType == eACEControlType_State)
+					else if (controlType == eItemType_State)
 					{
 						std::shared_ptr<CParamToStateConnection> pConnection = std::make_shared<CParamToStateConnection>(pItem->GetId());
 						string value = pNode->getAttr(g_valueAttribute);
@@ -443,7 +434,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 	return nullptr;
 }
 
-XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EACEControlType controlType)
+XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EItemType controlType)
 {
 	IAudioSystemItem* pItem = GetControl(pConnection->GetID());
 	if (pItem)
@@ -473,7 +464,7 @@ XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const Connection
 			{
 				pNode->setAttr(g_nameAttribute, pItem->GetName());
 				pNode->setAttr(g_pathAttribute, GetFullPathName(pItem->GetParent()));
-				if (controlType == eACEControlType_State)
+				if (controlType == eItemType_State)
 				{
 					auto pRtpcConnection = static_cast<const CParamToStateConnection*>(pConnection.get());
 					if (pRtpcConnection)
@@ -481,7 +472,7 @@ XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const Connection
 						pNode->setAttr(g_valueAttribute, pRtpcConnection->m_value);
 					}
 				}
-				else if (controlType == eACEControlType_RTPC)
+				else if (controlType == eItemType_RTPC)
 				{
 					auto pParamConnection = static_cast<const CParamConnection*>(pConnection.get());
 					if (pParamConnection->mult != 1.0f)
@@ -530,43 +521,43 @@ const char* CAudioSystemEditor_fmod::GetTypeIcon(ItemType type) const
 	return "";
 }
 
-ACE::EACEControlType CAudioSystemEditor_fmod::ImplTypeToATLType(ItemType type) const
+ACE::EItemType CAudioSystemEditor_fmod::ImplTypeToATLType(ItemType type) const
 {
 	switch (type)
 	{
 	case eFmodItemType_Event:
-		return eACEControlType_Trigger;
+		return eItemType_Trigger;
 	case eFmodItemType_EventParameter:
-		return eACEControlType_RTPC;
+		return eItemType_RTPC;
 	case eFmodItemType_Snapshot:
-		return eACEControlType_Trigger;
+		return eItemType_Trigger;
 	case eFmodItemType_SnapshotParameter:
-		return eACEControlType_RTPC;
+		return eItemType_RTPC;
 	case eFmodItemType_Bank:
-		return eACEControlType_Preload;
+		return eItemType_Preload;
 	case eFmodItemType_Return:
-		return eACEControlType_Environment;
+		return eItemType_Environment;
 	}
-	return eACEControlType_NumTypes;
+	return eItemType_Invalid;
 }
 
-ACE::TImplControlTypeMask CAudioSystemEditor_fmod::GetCompatibleTypes(EACEControlType controlType) const
+ACE::TImplControlTypeMask CAudioSystemEditor_fmod::GetCompatibleTypes(EItemType controlType) const
 {
 	switch (controlType)
 	{
-	case eACEControlType_Trigger:
+	case eItemType_Trigger:
 		return eFmodItemType_Event | eFmodItemType_Snapshot;
 		break;
-	case eACEControlType_RTPC:
+	case eItemType_RTPC:
 		return eFmodItemType_EventParameter | eFmodItemType_SnapshotParameter;
 		break;
-	case eACEControlType_Preload:
+	case eItemType_Preload:
 		return eFmodItemType_Bank;
 		break;
-	case eACEControlType_State:
+	case eItemType_State:
 		return eFmodItemType_EventParameter | eFmodItemType_SnapshotParameter;
 		break;
-	case eACEControlType_Environment:
+	case eItemType_Environment:
 		return eFmodItemType_Return;
 		break;
 	}

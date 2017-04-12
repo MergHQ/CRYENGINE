@@ -107,7 +107,7 @@ IAudioSystemItem* CAudioSystemEditor_sdlmixer::GetControl(CID id) const
 	return nullptr;
 }
 
-ConnectionPtr CAudioSystemEditor_sdlmixer::CreateConnectionToControl(EACEControlType eATLControlType, IAudioSystemItem* pMiddlewareControl)
+ConnectionPtr CAudioSystemEditor_sdlmixer::CreateConnectionToControl(EItemType eATLControlType, IAudioSystemItem* pMiddlewareControl)
 {
 	std::shared_ptr<CSdlMixerConnection> pConnection = std::make_shared<CSdlMixerConnection>(pMiddlewareControl->GetId());
 	pMiddlewareControl->SetConnected(true);
@@ -115,7 +115,7 @@ ConnectionPtr CAudioSystemEditor_sdlmixer::CreateConnectionToControl(EACEControl
 	return pConnection;
 }
 
-ConnectionPtr CAudioSystemEditor_sdlmixer::CreateConnectionFromXMLNode(XmlNodeRef pNode, EACEControlType eATLControlType)
+ConnectionPtr CAudioSystemEditor_sdlmixer::CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType eATLControlType)
 {
 	if (pNode)
 	{
@@ -175,11 +175,11 @@ ConnectionPtr CAudioSystemEditor_sdlmixer::CreateConnectionFromXMLNode(XmlNodeRe
 	return nullptr;
 }
 
-XmlNodeRef CAudioSystemEditor_sdlmixer::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EACEControlType eATLControlType)
+XmlNodeRef CAudioSystemEditor_sdlmixer::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EItemType eATLControlType)
 {
 	std::shared_ptr<const CSdlMixerConnection> pSDLMixerConnection = std::static_pointer_cast<const CSdlMixerConnection>(pConnection);
 	const IAudioSystemItem* pControl = GetControl(pConnection->GetID());
-	if (pControl && pSDLMixerConnection && eATLControlType == eACEControlType_Trigger)
+	if (pControl && pSDLMixerConnection && eATLControlType == eItemType_Trigger)
 	{
 		XmlNodeRef pConnectionNode = GetISystem()->CreateXmlNode(s_eventConnectionTag);
 		pConnectionNode->setAttr(s_itemNameTag, pControl->GetName());
@@ -249,21 +249,21 @@ const char* CAudioSystemEditor_sdlmixer::GetTypeIcon(ItemType type) const
 	return "Editor/Icons/audio/sdl_mixer/Audio_Event.png";
 }
 
-ACE::EACEControlType CAudioSystemEditor_sdlmixer::ImplTypeToATLType(ItemType type) const
+ACE::EItemType CAudioSystemEditor_sdlmixer::ImplTypeToATLType(ItemType type) const
 {
 	switch (type)
 	{
 	case eSdlMixerTypes_Event:
-		return eACEControlType_Trigger;
+		return eItemType_Trigger;
 	}
-	return eACEControlType_NumTypes;
+	return eItemType_Invalid;
 }
 
-ACE::TImplControlTypeMask CAudioSystemEditor_sdlmixer::GetCompatibleTypes(EACEControlType eATLControlType) const
+ACE::TImplControlTypeMask CAudioSystemEditor_sdlmixer::GetCompatibleTypes(EItemType eATLControlType) const
 {
 	switch (eATLControlType)
 	{
-	case eACEControlType_Trigger:
+	case eItemType_Trigger:
 		return eSdlMixerTypes_Event;
 	}
 	return AUDIO_SYSTEM_INVALID_TYPE;

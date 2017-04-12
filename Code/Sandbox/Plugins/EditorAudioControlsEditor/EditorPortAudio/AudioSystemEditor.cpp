@@ -107,7 +107,7 @@ IAudioSystemItem* CAudioSystemEditor::GetControl(CID id) const
 	return nullptr;
 }
 
-ConnectionPtr CAudioSystemEditor::CreateConnectionToControl(EACEControlType eATLControlType, IAudioSystemItem* pMiddlewareControl)
+ConnectionPtr CAudioSystemEditor::CreateConnectionToControl(EItemType eATLControlType, IAudioSystemItem* pMiddlewareControl)
 {
 	std::shared_ptr<CConnection> pConnection = std::make_shared<CConnection>(pMiddlewareControl->GetId());
 	pMiddlewareControl->SetConnected(true);
@@ -115,7 +115,7 @@ ConnectionPtr CAudioSystemEditor::CreateConnectionToControl(EACEControlType eATL
 	return pConnection;
 }
 
-ConnectionPtr CAudioSystemEditor::CreateConnectionFromXMLNode(XmlNodeRef pNode, EACEControlType eATLControlType)
+ConnectionPtr CAudioSystemEditor::CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType eATLControlType)
 {
 	if (pNode)
 	{
@@ -175,11 +175,11 @@ ConnectionPtr CAudioSystemEditor::CreateConnectionFromXMLNode(XmlNodeRef pNode, 
 	return nullptr;
 }
 
-XmlNodeRef CAudioSystemEditor::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EACEControlType eATLControlType)
+XmlNodeRef CAudioSystemEditor::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EItemType eATLControlType)
 {
 	std::shared_ptr<const CConnection> pSDLMixerConnection = std::static_pointer_cast<const CConnection>(pConnection);
 	const IAudioSystemItem* pControl = GetControl(pConnection->GetID());
-	if (pControl && pSDLMixerConnection && eATLControlType == eACEControlType_Trigger)
+	if (pControl && pSDLMixerConnection && eATLControlType == eItemType_Trigger)
 	{
 		XmlNodeRef pConnectionNode = GetISystem()->CreateXmlNode(s_eventConnectionTag);
 		pConnectionNode->setAttr(s_itemNameTag, pControl->GetName());
@@ -249,21 +249,21 @@ const char* CAudioSystemEditor::GetTypeIcon(ItemType type) const
 	return "Editor/Icons/audio/portaudio/Audio_Event.png";
 }
 
-ACE::EACEControlType CAudioSystemEditor::ImplTypeToATLType(ItemType type) const
+ACE::EItemType CAudioSystemEditor::ImplTypeToATLType(ItemType type) const
 {
 	switch (type)
 	{
 	case ePortAudioTypes_Event:
-		return eACEControlType_Trigger;
+		return eItemType_Trigger;
 	}
-	return eACEControlType_NumTypes;
+	return eItemType_Invalid;
 }
 
-ACE::TImplControlTypeMask CAudioSystemEditor::GetCompatibleTypes(EACEControlType eATLControlType) const
+ACE::TImplControlTypeMask CAudioSystemEditor::GetCompatibleTypes(EItemType eATLControlType) const
 {
 	switch (eATLControlType)
 	{
-	case eACEControlType_Trigger:
+	case eItemType_Trigger:
 		return ePortAudioTypes_Event;
 	}
 	return AUDIO_SYSTEM_INVALID_TYPE;

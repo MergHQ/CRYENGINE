@@ -4,10 +4,10 @@
 #include "AudioControlsEditorWindow.h"
 #include "AudioControlsEditorPlugin.h"
 #include "QAudioControlEditorIcons.h"
-#include "ATLControlsModel.h"
+#include "AudioAssetsManager.h"
 #include <CryAudio/IAudioSystem.h>
 #include "AudioControlsEditorUndo.h"
-#include "ATLControlsPanel.h"
+#include "AudioAssetsExplorer.h"
 #include "InspectorPanel.h"
 #include "AudioSystemPanel.h"
 #include <DockTitleBarWidget.h>
@@ -84,32 +84,31 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	pFileMenu->addAction(pReloadAction);
 	setMenuBar(pMenuBar);
 
-	m_pATLModel = CAudioControlsEditorPlugin::GetATLModel();
+	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 	if (pAudioSystemImpl)
 	{
-		m_pATLControlsPanel = new CATLControlsPanel(m_pATLModel, CAudioControlsEditorPlugin::GetControlsTree());
-		m_pInspectorPanel = new CInspectorPanel(m_pATLModel);
+		m_pExplorer = new CAudioAssetsExplorer(m_pAssetsManager);
+		m_pInspectorPanel = new CInspectorPanel(m_pAssetsManager);
 		m_pAudioSystemPanel = new CAudioSystemPanel();
 
 		Update();
-		connect(m_pATLControlsPanel, &CATLControlsPanel::SelectedControlChanged, [&]()
+		connect(m_pExplorer, &CAudioAssetsExplorer::SelectedControlChanged, [&]()
 			{
-				m_pInspectorPanel->SetSelectedControls(m_pATLControlsPanel->GetSelectedControls());
+				m_pInspectorPanel->SetSelectedControls(m_pExplorer->GetSelectedControls());
 		  });
-		connect(m_pATLControlsPanel, &CATLControlsPanel::SelectedControlChanged, this, &CAudioControlsEditorWindow::UpdateFilterFromSelection);
-		connect(m_pATLControlsPanel, &CATLControlsPanel::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
+		connect(m_pExplorer, &CAudioAssetsExplorer::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
 		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Update);
 		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, this, &CAudioControlsEditorWindow::Update);
 
 		GetIEditor()->RegisterNotifyListener(this);
 
-		QSplitter* pSplitter = new QSplitter(this);
-		pSplitter->setHandleWidth(0);
-		pSplitter->addWidget(m_pATLControlsPanel);
-		pSplitter->addWidget(m_pInspectorPanel);
-		pSplitter->addWidget(m_pAudioSystemPanel);
-		setCentralWidget(pSplitter);
+		m_pSplitter = new QSplitter(this);
+		m_pSplitter->setHandleWidth(0);
+		m_pSplitter->addWidget(m_pExplorer);
+		m_pSplitter->addWidget(m_pInspectorPanel);
+		m_pSplitter->addWidget(m_pAudioSystemPanel);
+		setCentralWidget(m_pSplitter);
 	}
 
 	const uint errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
@@ -126,11 +125,36 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 			CQuestionDialog::SWarning(tr("Audio Controls Editor"), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
 		}
 	}
+
+	// -------------- HACK -------------
+	// There's a bug with the mounting models when being reloaded so we are destroying
+	// and recreating the entire explorer panel to make this work
+	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
+		{
+			delete m_pExplorer;
+			std::vector<CAudioControl*> controls;
+			m_pInspectorPanel->SetSelectedControls(controls);
+	  }, reinterpret_cast<uintptr_t>(this));
+
+	CAudioControlsEditorPlugin::signalLoaded.Connect([&]()
+		{
+			m_pExplorer = new CAudioAssetsExplorer(m_pAssetsManager);
+			m_pSplitter->insertWidget(0, m_pExplorer);
+			connect(m_pExplorer, &CAudioAssetsExplorer::SelectedControlChanged, [&]()
+			{
+				m_pInspectorPanel->SetSelectedControls(m_pExplorer->GetSelectedControls());
+			});
+			connect(m_pExplorer, &CAudioAssetsExplorer::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
+	  }, reinterpret_cast<uintptr_t>(this));
+	// --------------------------------
+
 }
 
 CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
+	CAudioControlsEditorPlugin::signalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 void CAudioControlsEditorWindow::StartWatchingFolder(const QString& folderPath)
@@ -189,7 +213,7 @@ void CAudioControlsEditorWindow::keyPressEvent(QKeyEvent* pEvent)
 
 void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 {
-	if (m_pATLModel && m_pATLModel->IsDirty())
+	if (m_pAssetsManager && m_pAssetsManager->IsDirty())
 	{
 		CQuestionDialog messageBox;
 		messageBox.SetupQuestion("Audio Controls Editor", tr("There are unsaved changes.").append(QString(" ").append(tr("Do you want to save your changes?"))), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
@@ -227,7 +251,7 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 void CAudioControlsEditorWindow::Reload()
 {
 	bool bReload = true;
-	if (m_pATLModel && m_pATLModel->IsDirty())
+	if (m_pAssetsManager && m_pAssetsManager->IsDirty())
 	{
 		CQuestionDialog messageBox;
 		messageBox.SetupQuestion("Audio Controls Editor", tr("If you reload you will lose all your unsaved changes.").append(QString(" ").append(tr("Are you sure you want to reload?"))), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
@@ -243,9 +267,6 @@ void CAudioControlsEditorWindow::Reload()
 
 void CAudioControlsEditorWindow::Update()
 {
-	m_pATLControlsPanel->Reload();
-	UpdateFilterFromSelection();
-	m_pInspectorPanel->SetSelectedControls(m_pATLControlsPanel->GetSelectedControls());
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 	if (pAudioSystemImpl)
 	{
@@ -268,7 +289,7 @@ void CAudioControlsEditorWindow::Update()
 
 void CAudioControlsEditorWindow::Save()
 {
-	bool bPreloadsChanged = m_pATLModel->IsTypeDirty(eACEControlType_Preload);
+	bool bPreloadsChanged = m_pAssetsManager->IsTypeDirty(eItemType_Preload);
 	CAudioControlsEditorPlugin::SaveModels();
 	UpdateAudioSystemData();
 
@@ -293,38 +314,7 @@ void CAudioControlsEditorWindow::Save()
 			gEnv->pAudioSystem->RefreshAudioSystem(szLevelName);
 		}
 	}
-	m_pATLModel->ClearDirtyFlags();
-}
-
-void CAudioControlsEditorWindow::UpdateFilterFromSelection()
-{
-	bool bAllSameType = true;
-	EACEControlType selectedType = eACEControlType_NumTypes;
-	std::vector<ACE::CID> ids = m_pATLControlsPanel->GetSelectedControls();
-	size_t size = ids.size();
-	for (size_t i = 0; i < size; ++i)
-	{
-		CATLControl* pControl = m_pATLModel->GetControlByID(ids[i]);
-		if (pControl)
-		{
-			if (selectedType == eACEControlType_NumTypes)
-			{
-				selectedType = pControl->GetType();
-			}
-			else if (selectedType != pControl->GetType())
-			{
-				bAllSameType = false;
-			}
-		}
-	}
-
-	bool bSelectedFolder = (selectedType == eACEControlType_NumTypes);
-	for (int i = 0; i < eACEControlType_NumTypes; ++i)
-	{
-		EACEControlType type = (EACEControlType)i;
-		bool bAllowed = m_allowedTypes[type] && (bSelectedFolder || (bAllSameType && selectedType == type));
-		m_pAudioSystemPanel->SetAllowedControls((EACEControlType)i, bAllowed);
-	}
+	m_pAssetsManager->ClearDirtyFlags();
 }
 
 void CAudioControlsEditorWindow::UpdateAudioSystemData()
@@ -343,13 +333,13 @@ void CAudioControlsEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-void CAudioControlsEditorWindow::FilterControlType(EACEControlType type, bool bShow)
+void CAudioControlsEditorWindow::FilterControlType(EItemType type, bool bShow)
 {
 	m_allowedTypes[type] = bShow;
-	if (type == eACEControlType_Switch)
+	if (type == eItemType_Switch)
 	{
 		// need to keep states and switches filtering in sync as we don't have a separate filtering for states, only for switches
-		m_allowedTypes[eACEControlType_State] = bShow;
+		m_allowedTypes[eItemType_State] = bShow;
 	}
 	m_pAudioSystemPanel->SetAllowedControls(type, bShow);
 }

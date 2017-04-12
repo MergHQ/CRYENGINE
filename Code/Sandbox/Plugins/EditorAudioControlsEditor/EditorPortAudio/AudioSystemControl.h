@@ -17,7 +17,7 @@ enum EPortAudioTypes
 class IAudioSystemControl final : public IAudioSystemItem
 {
 public:
-	IAudioSystemControl() {}
+	IAudioSystemControl() = default;
 	IAudioSystemControl(const string& name, CID id, ItemType type);
 	virtual ~IAudioSystemControl() {}
 };

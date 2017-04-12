@@ -4,7 +4,7 @@
 #include "QConnectionsModel.h"
 #include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
-#include "AudioControl.h"
+#include "AudioAssets.h"
 #include "AudioControlsEditorPlugin.h"
 #include "AudioSystemModel.h"
 #include "ImplementationManager.h"
@@ -22,7 +22,18 @@ QConnectionModel::QConnectionModel()
 	: m_pControl(nullptr)
 	, m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
 {
-	CAudioControlsEditorPlugin::GetATLModel()->AddListener(this);
+
+	auto resetFunction = [&]()
+	{
+		beginResetModel();
+		ResetCache();
+		endResetModel();
+	};
+
+	CAudioAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+	pAssetsManager->signalItemAdded.Connect(resetFunction);
+	pAssetsManager->signalItemRemoved.Connect(resetFunction);
+	pAssetsManager->signalControlModified.Connect(resetFunction);
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
@@ -47,12 +58,7 @@ QConnectionModel::QConnectionModel()
 	}
 }
 
-QConnectionModel::~QConnectionModel()
-{
-	CAudioControlsEditorPlugin::GetATLModel()->RemoveListener(this);
-}
-
-void QConnectionModel::Init(CATLControl* pControl)
+void QConnectionModel::Init(CAudioControl* pControl)
 {
 	beginResetModel();
 	m_pControl = pControl;
@@ -141,7 +147,7 @@ QVariant QConnectionModel::data(const QModelIndex& index, int role) const
 						break;
 					case Qt::CheckStateRole:
 						{
-							if ((m_pControl->GetType() == eACEControlType_Preload) && (index.column() >= eConnectionModelColumns_Size))
+							if ((m_pControl->GetType() == eItemType_Preload) && (index.column() >= eConnectionModelColumns_Size))
 							{
 								return pConnection->IsPlatformEnabled(index.column() - eConnectionModelColumns_Size) ? Qt::Checked : Qt::Unchecked;
 							}
@@ -294,26 +300,6 @@ bool QConnectionModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 Qt::DropActions QConnectionModel::supportedDropActions() const
 {
 	return Qt::CopyAction;
-}
-
-void QConnectionModel::OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
-{
-	if (pControl == m_pControl)
-	{
-		beginResetModel();
-		ResetCache();
-		endResetModel();
-	}
-}
-
-void QConnectionModel::OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
-{
-	if (pControl == m_pControl)
-	{
-		beginResetModel();
-		ResetCache();
-		endResetModel();
-	}
 }
 
 void QConnectionModel::ResetCache()

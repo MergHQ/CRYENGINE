@@ -3,12 +3,6 @@
 #pragma once
 
 #include <QFrame>
-#include <QMenu>
-#include <QListWidget>
-
-#include "ATLControlsModel.h"
-#include "AudioControl.h"
-#include <IAudioSystemEditor.h>
 
 class QPropertyTree;
 class QLabel;
@@ -16,33 +10,27 @@ class QLabel;
 namespace ACE
 {
 class QConnectionsWidget;
+class CAudioAssetsManager;
+class IAudioSystemItem;
 
-class CInspectorPanel : public QFrame, public IATLControlModelListener
+class CInspectorPanel : public QFrame
 {
 	Q_OBJECT
 public:
-	explicit CInspectorPanel(CATLControlsModel* pATLModel);
+	explicit CInspectorPanel(CAudioAssetsManager* pAssetsManager);
 	~CInspectorPanel();
 	void Reload();
 
 public slots:
-	void SetSelectedControls(const ControlList& selectedControls);
+	void SetSelectedControls(const std::vector<CAudioControl*>& selectedControls);
 
 private:
 	void UpdateConnectionData();
 
-	//////////////////////////////////////////////////////////
-	// IAudioSystemEditor implementation
-	/////////////////////////////////////////////////////////
-	virtual void OnControlModified(ACE::CATLControl* pControl) override;
-	virtual void OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
-	virtual void OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
-	//////////////////////////////////////////////////////////
-
-	CATLControlsModel*  m_pATLModel;
-	QConnectionsWidget* m_pConnectionList;
-	QPropertyTree*      m_pPropertyTree;
-	QLabel*             m_pConnectionsLabel;
-	bool                m_bSupressUpdates;
+	CAudioAssetsManager* m_pAssetsManager;
+	QConnectionsWidget*  m_pConnectionList;
+	QPropertyTree*       m_pPropertyTree;
+	QLabel*              m_pConnectionsLabel;
+	bool                 m_bSupressUpdates = false;
 };
 }

@@ -17,7 +17,7 @@ enum ESdlMixerTypes
 class IAudioSystemControl_sdlmixer final : public IAudioSystemItem
 {
 public:
-	IAudioSystemControl_sdlmixer() {}
+	IAudioSystemControl_sdlmixer() = default;
 	IAudioSystemControl_sdlmixer(const string& name, CID id, ItemType type);
 	virtual ~IAudioSystemControl_sdlmixer() {}
 };
