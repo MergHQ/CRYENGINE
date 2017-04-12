@@ -12,27 +12,11 @@ namespace ACE
 class IAudioSystemItem
 {
 public:
-	IAudioSystemItem::IAudioSystemItem()
-		: m_name("")
-		, m_id(ACE_INVALID_ID)
-		, m_type(AUDIO_SYSTEM_INVALID_TYPE)
-		, m_bPlaceholder(false)
-		, m_bLocalised(false)
-		, m_parent(nullptr)
-		, m_bConnected(false)
-		, m_radius(0.0f)
-	{
-	}
-
-	IAudioSystemItem::IAudioSystemItem(const string& name, CID id, ItemType type)
+	IAudioSystemItem() = default;
+	IAudioSystemItem(const string& name, CID id, ItemType type)
 		: m_name(name)
 		, m_id(id)
 		, m_type(type)
-		, m_bPlaceholder(false)
-		, m_bLocalised(false)
-		, m_parent(nullptr)
-		, m_bConnected(false)
-		, m_radius(0.0f)
 	{
 	}
 
@@ -73,14 +57,14 @@ public:
 	float             GetRadius() const                    { return m_radius; }
 
 private:
-	CID                            m_id;
-	ItemType                       m_type;
+	CID                            m_id = ACE_INVALID_ID;
+	ItemType                       m_type = AUDIO_SYSTEM_INVALID_TYPE;
 	string                         m_name;
-	bool                           m_bPlaceholder;
-	bool                           m_bLocalised;
-	bool                           m_bConnected;
+	bool                           m_bPlaceholder = false;
+	bool                           m_bLocalised = false;
+	bool                           m_bConnected = false;
 	std::vector<IAudioSystemItem*> m_children;
-	IAudioSystemItem*              m_parent;
-	float                          m_radius;
+	IAudioSystemItem*              m_parent = nullptr;
+	float                          m_radius = 0.0f;
 };
 }

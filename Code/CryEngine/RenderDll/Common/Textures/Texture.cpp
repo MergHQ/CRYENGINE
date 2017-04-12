@@ -3503,7 +3503,7 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::CreateIn
 		if (pUIFramework->LoadLayout(name) != INVALID_LAYOUT_ID)
 		{
 			m_layoutName = name;
-			m_pUILayout = pUIFramework->GetLayout(m_layoutName);
+			m_pUILayout = pUIFramework->GetLayoutBase(m_layoutName);
 			if (m_pUILayout)
 			{
 				m_pPlayer = m_pUILayout->GetPlayer();

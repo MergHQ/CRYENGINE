@@ -4,7 +4,7 @@
 #include "QConnectionsWidget.h"
 #include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
-#include "AudioControl.h"
+#include "AudioAssets.h"
 #include "AudioControlsEditorPlugin.h"
 #include "IEditor.h"
 #include "QtUtil.h"
@@ -38,8 +38,8 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 {
 	resize(326, 450);
 	setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
-	setMinimumSize(QSize(0, 450));
-	setMaximumSize(QSize(16777215, 450));
+	setMinimumSize(QSize(0, 200));
+	setMaximumSize(QSize(16777215, 200));
 	QVBoxLayout* pHorizontalLayout = new QVBoxLayout(this);
 	pHorizontalLayout->setSpacing(0);
 	pHorizontalLayout->setContentsMargins(0, 0, 0, 0);
@@ -91,7 +91,15 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 		m_pConnectionsView->SetColumnVisible(i, false);
 	}
 
-	CAudioControlsEditorPlugin::GetATLModel()->AddListener(this);
+	CAudioControlsEditorPlugin::GetAssetsManager()->signalConnectionRemoved.Connect([&](CAudioControl* pControl)
+		{
+			if (m_pControl == pControl)
+			{
+			  // clear the selection if a connection is removed
+			  m_pConnectionsView->selectionModel()->clear();
+			  RefreshConnectionProperties();
+			}
+	  });
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
@@ -99,11 +107,6 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 			RefreshConnectionProperties();
 	  });
 
-}
-
-QConnectionsWidget::~QConnectionsWidget()
-{
-	CAudioControlsEditorPlugin::GetATLModel()->RemoveListener(this);
 }
 
 void QConnectionsWidget::Init()
@@ -172,7 +175,7 @@ void QConnectionsWidget::RemoveSelectedConnection()
 	}
 }
 
-void QConnectionsWidget::SetControl(CATLControl* pControl)
+void QConnectionsWidget::SetControl(CAudioControl* pControl)
 {
 	if (m_pControl != pControl)
 	{
@@ -215,16 +218,6 @@ void QConnectionsWidget::RefreshConnectionProperties()
 	{
 		m_pConnectionProperties->detach();
 		m_pConnectionPropertiesFrame->setHidden(true);
-	}
-}
-
-void QConnectionsWidget::OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
-{
-	if (m_pControl == pControl)
-	{
-		// clear the selection if a connection is removed
-		m_pConnectionsView->selectionModel()->clear();
-		RefreshConnectionProperties();
 	}
 }
 

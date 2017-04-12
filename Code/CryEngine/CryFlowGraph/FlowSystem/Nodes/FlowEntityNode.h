@@ -10,8 +10,6 @@ class CFlowEntityClass : public IFlowNodeFactory
 public:
 	CFlowEntityClass(IEntityClass* pEntityClass);
 	~CFlowEntityClass();
-	virtual void         AddRef()  { m_nRefCount++; }
-	virtual void         Release() { if (0 == --m_nRefCount) delete this; }
 	virtual IFlowNodePtr Create(IFlowNode::SActivationInfo*);
 
 	virtual void         GetMemoryUsage(ICrySizer* s) const
@@ -35,7 +33,6 @@ private:
 	void GetInputsOutputs(IEntityClass* pEntityClass);
 	friend class CFlowEntityNode;
 
-	int                            m_nRefCount;
 	//string m_classname;
 	IEntityClass*                  m_pEntityClass;
 	std::vector<SInputPortConfig>  m_inputs;

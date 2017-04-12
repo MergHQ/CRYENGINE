@@ -17,7 +17,6 @@
 //////////////////////////////////////////////////////////////////////////
 CFlowEntityClass::CFlowEntityClass(IEntityClass* pEntityClass)
 {
-	m_nRefCount = 0;
 	//m_classname = pEntityClass->GetName();
 	m_pEntityClass = pEntityClass;
 }

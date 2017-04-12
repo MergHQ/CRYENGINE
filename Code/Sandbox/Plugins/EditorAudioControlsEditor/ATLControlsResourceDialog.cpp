@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "ATLControlsResourceDialog.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ATLControlsModel.h"
+#include "AudioAssetsManager.h"
 #include "QAudioControlTreeWidget.h"
 #include "QtUtil.h"
 
@@ -12,14 +12,13 @@
 #include <QBoxLayout>
 #include <QApplication>
 #include <QHeaderView>
-#include <QStandardItemModel>
 #include <QPushButton>
 
 namespace ACE
 {
 string ATLControlsDialog::ms_controlName = "";
 
-ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EACEControlType eType)
+ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EItemType eType)
 	: CEditorDialog("ATLControlsDialog", pParent)
 	, m_eType(eType)
 {
@@ -31,7 +30,7 @@ ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EACEControlType eType)
 
 	QLineEdit* pTextFilterLineEdit = new QLineEdit(this);
 	pTextFilterLineEdit->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignVCenter);
-	pTextFilterLineEdit->setPlaceholderText(QApplication::translate("ATLControlsPanel", "Search", 0));
+	pTextFilterLineEdit->setPlaceholderText(QApplication::translate("AudioAssetsExplorer", "Search", 0));
 	connect(pTextFilterLineEdit, SIGNAL(textChanged(QString)), this, SLOT(SetTextFilter(QString)));
 	pLayout->addWidget(pTextFilterLineEdit, 0);
 
@@ -50,10 +49,15 @@ ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EACEControlType eType)
 	m_pControlTree->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	pLayout->addWidget(m_pControlTree, 0);
 
-	m_pATLModel = CAudioControlsEditorPlugin::GetATLModel();
-	m_pTreeModel = CAudioControlsEditorPlugin::GetControlsTree();
+	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	m_pProxyModel = new QAudioControlSortProxy(this);
-	m_pProxyModel->setSourceModel(m_pTreeModel);
+	m_pAssetsModel = new CAudioAssetsExplorerModel(m_pAssetsManager);
+
+	m_pMountedModel = new CMountingProxyModel(WrapMemberFunction(this, &ATLControlsDialog::CreateLibraryModelFromIndex));
+	m_pMountedModel->SetHeaderDataCallbacks(1, &GetHeaderData);
+	m_pMountedModel->SetSourceModel(m_pAssetsModel);
+
+	m_pProxyModel->setSourceModel(m_pMountedModel);
 	m_pControlTree->setModel(m_pProxyModel);
 
 	m_pDialogButtons = new QDialogButtonBox(this);
@@ -88,6 +92,28 @@ ATLControlsDialog::~ATLControlsDialog()
 	StopTrigger();
 }
 
+QAbstractItemModel* ATLControlsDialog::CreateLibraryModelFromIndex(const QModelIndex& sourceIndex)
+{
+	if (sourceIndex.model() != m_pAssetsModel)
+	{
+		return nullptr;
+	}
+
+	const int numLibraries = m_libraryModels.size();
+	const int row = sourceIndex.row();
+	if (row >= m_libraryModels.size())
+	{
+
+		m_libraryModels.resize(row + 1);
+		for (uint i = numLibraries; i < row + 1; ++i)
+		{
+			m_libraryModels[i] = new CAudioLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
+		}
+	}
+
+	return m_libraryModels[row];
+}
+
 const char* ATLControlsDialog::ChooseItem(const char* szCurrentValue)
 {
 	if (std::strcmp(szCurrentValue, "") != 0)
@@ -96,7 +122,7 @@ const char* ATLControlsDialog::ChooseItem(const char* szCurrentValue)
 	}
 
 	// Automatically select the current control
-	if (m_pTreeModel && m_pProxyModel && !ms_controlName.empty())
+	if (m_pProxyModel && !ms_controlName.empty())
 	{
 		QModelIndex index = FindItem(ms_controlName);
 		if (index.isValid())
@@ -114,23 +140,18 @@ const char* ATLControlsDialog::ChooseItem(const char* szCurrentValue)
 
 void ATLControlsDialog::UpdateSelectedControl()
 {
-	if (m_pATLModel)
+	if (m_pAssetsManager)
 	{
-		ControlList controls;
 		QModelIndexList indexes = m_pControlTree->selectionModel()->selectedIndexes();
 		if (!indexes.empty())
 		{
 			const QModelIndex& index = indexes[0];
-			if (index.isValid() && index.data(eDataRole_Type) == eItemType_AudioControl)
+			if (index.isValid())
 			{
-				const CID id = index.data(eDataRole_Id).toUInt();
-				if (id != ACE_INVALID_ID)
+				IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(index);
+				if (pAsset && pAsset->GetType() == m_eType)
 				{
-					CATLControl* pControl = m_pATLModel->GetControlByID(id);
-					if (pControl && pControl->GetType() == m_eType)
-					{
-						ms_controlName = pControl->GetName();
-					}
+					ms_controlName = pAsset->GetName();
 				}
 			}
 		}
@@ -188,7 +209,8 @@ bool ATLControlsDialog::ApplyFilter(const QModelIndex parent)
 		}
 
 		// If it has valid children or it is a valid control (not a folder), show it
-		if (bChildValid || ((parent.data(eDataRole_Type) == eItemType_AudioControl) && IsValid(parent)))
+		IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(parent);
+		if (bChildValid || (pAsset && pAsset->GetType() == m_eType && IsValid(parent)))
 		{
 			m_pControlTree->setRowHidden(parent.row(), parent.parent(), false);
 			return true;
@@ -207,20 +229,21 @@ bool ATLControlsDialog::IsValid(const QModelIndex index)
 	const QString sName = index.data(Qt::DisplayRole).toString();
 	if (m_sFilter.isEmpty() || sName.contains(m_sFilter, Qt::CaseInsensitive))
 	{
-		if (index.data(eDataRole_Type) == eItemType_AudioControl)
+		IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(index);
+		if (pAsset && pAsset->GetType() == m_eType)
 		{
-			const CATLControl* pControl = m_pATLModel->GetControlByID(index.data(eDataRole_Id).toUInt());
+			CAudioControl* pControl = static_cast<CAudioControl*>(pAsset);
 			if (pControl)
 			{
 				const Scope scope = pControl->GetScope();
-				if (pControl->GetType() == m_eType && (scope == m_pATLModel->GetGlobalScope() || scope == m_scope))
+				if (scope == Utils::GetGlobalScope() || scope == m_scope)
 				{
 					return true;
 				}
 				return false;
 			}
 		}
-		return true;
+
 	}
 	return false;
 }
@@ -238,37 +261,25 @@ void ATLControlsDialog::SetScope(Scope scope)
 
 QModelIndex ATLControlsDialog::FindItem(const string& sControlName)
 {
-	if (m_pTreeModel && m_pATLModel)
+	QModelIndexList indexes = m_pProxyModel->match(m_pProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(sControlName), -1, Qt::MatchRecursive);
+	if (!indexes.empty())
 	{
-		QModelIndexList indexes = m_pTreeModel->match(m_pTreeModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(sControlName), -1, Qt::MatchRecursive);
-		if (!indexes.empty())
+		IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(indexes[0]);
+		if (pAsset)
 		{
-			const int size = indexes.size();
-			for (int i = 0; i < size; ++i)
+			CAudioControl* pControl = static_cast<CAudioControl*>(pAsset);
+			if (pControl)
 			{
-				QModelIndex index = indexes[i];
-				if (index.isValid() && (index.data(eDataRole_Type) == eItemType_AudioControl))
+				const Scope scope = pControl->GetScope();
+				if (scope == Utils::GetGlobalScope() || scope == m_scope)
 				{
-					const CID id = index.data(eDataRole_Id).toUInt();
-					if (id != ACE_INVALID_ID)
-					{
-						CATLControl* pControl = m_pATLModel->GetControlByID(id);
-						if (pControl && pControl->GetType() == m_eType)
-						{
-							const Scope scope = pControl->GetScope();
-							if (scope == m_pATLModel->GetGlobalScope() || scope == m_scope)
-							{
-								return m_pProxyModel->mapFromSource(index);
-							}
-						}
-					}
+					return indexes[0];
 				}
 			}
 		}
 	}
 	return QModelIndex();
 }
-
 bool ATLControlsDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if (pEvent->type() == QEvent::KeyRelease)
@@ -277,9 +288,13 @@ bool ATLControlsDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 		if (pKeyEvent && pKeyEvent->key() == Qt::Key_Space)
 		{
 			QModelIndex index = m_pControlTree->currentIndex();
-			if (index.isValid() && index.data(eDataRole_Type) == eItemType_AudioControl)
+			if (index.isValid())
 			{
-				CAudioControlsEditorPlugin::ExecuteTrigger(QtUtil::ToString(index.data(Qt::DisplayRole).toString()));
+				IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(index);
+				if (pAsset)
+				{
+					CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
+				}
 			}
 		}
 	}
@@ -293,21 +308,11 @@ void ATLControlsDialog::StopTrigger()
 
 void ATLControlsDialog::ItemDoubleClicked(const QModelIndex& modelIndex)
 {
-	if (modelIndex.isValid())
+	IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(modelIndex);
+	if (pAsset && pAsset->GetType() == m_eType)
 	{
-		if (modelIndex.data(eDataRole_Type) == eItemType_AudioControl)
-		{
-			const CID id = modelIndex.data(eDataRole_Id).toUInt();
-			if (id != ACE_INVALID_ID)
-			{
-				const CATLControl* const pControl = m_pATLModel->GetControlByID(id);
-				if (pControl && pControl->GetType() == m_eType)
-				{
-					ms_controlName = pControl->GetName();
-					accept();
-				}
-			}
-		}
+		ms_controlName = pAsset->GetName();
+		accept();
 	}
 }
 }

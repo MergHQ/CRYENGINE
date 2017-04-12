@@ -18,12 +18,14 @@ public:
 private:
 	void              LoadSoundBanks(const string& rootFolder, const bool bLocalized, IAudioSystemItem& parent);
 	void              LoadFolder(const string& folderPath, IAudioSystemItem& parent);
-	void              LoadFile(const string& filename, const string& path, IAudioSystemItem& parent);
-	void              LoadXml(XmlNodeRef root, IAudioSystemItem& parent, const string& filePath);
-	IAudioSystemItem* CreateItem(const string& name, ItemType type, IAudioSystemItem& pParent, const string& path = "");
+	void              LoadWorkUnitFile(const string& filePath, IAudioSystemItem& parent);
+	void              LoadXml(XmlNodeRef root, IAudioSystemItem& parent);
+	IAudioSystemItem* CreateItem(const string& name, EWwiseItemTypes type, IAudioSystemItem& pParent);
 	void              LoadEventsMetadata(const string& soundbanksPath);
 
 	IAudioSystemItem* GetControlByName(const string& name, bool bIsLocalised = false, IAudioSystemItem* pParent = nullptr) const;
+
+	void              BuildFileCache(const string& folderPath);
 
 private:
 
@@ -35,6 +37,15 @@ private:
 	EventsInfoMap                    m_eventsInfoMap;
 	IAudioSystemItem&                m_root;
 	std::map<CID, IAudioSystemItem*> m_controlsCache;
-	string m_projectRoot;
+	string                           m_projectRoot;
+
+	// This maps holds the items with the internal IDs given in the Wwise files.
+	std::map<uint32, IAudioSystemItem*> m_items;
+
+	// Cache with the file path to each work unit file
+	std::map<uint32, string> m_filesCache;
+
+	// List of already loaded work unit files
+	std::set<uint32> m_filesLoaded;
 };
 }

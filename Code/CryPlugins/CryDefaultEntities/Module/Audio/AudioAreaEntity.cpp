@@ -51,7 +51,7 @@ public:
 	}
 
 private:
-	CEntityFlowNodeFactory* pFlowNodeFactory = nullptr;
+	_smart_ptr<CEntityFlowNodeFactory> pFlowNodeFactory = nullptr;
 };
 
 CAudioAreaEntityRegistrator g_audioAreaEntityRegistrator;

@@ -7,18 +7,6 @@
 
 CFlowLogNode::CFlowLogNode()
 {
-	m_refs = 0;
-}
-
-void CFlowLogNode::AddRef()
-{
-	++m_refs;
-}
-
-void CFlowLogNode::Release()
-{
-	if (0 == --m_refs)
-		delete this;
 }
 
 IFlowNodePtr CFlowLogNode::Clone(SActivationInfo* pActInfo)

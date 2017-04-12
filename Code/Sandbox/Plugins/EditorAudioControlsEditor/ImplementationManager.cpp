@@ -5,7 +5,7 @@
 #include <CrySystem/IConsole.h>
 #include <IAudioSystemEditor.h>
 #include <IEditor.h>
-#include "ATLControlsModel.h"
+#include "AudioAssetsManager.h"
 #include "AudioControlsEditorPlugin.h"
 #include "IUndoManager.h"
 

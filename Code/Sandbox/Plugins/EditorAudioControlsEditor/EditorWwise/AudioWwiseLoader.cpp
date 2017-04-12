@@ -63,11 +63,33 @@ EWwiseItemTypes TagToItemType(const string& tag)
 	return eWwiseItemTypes_Invalid;
 }
 
+string BuildPath(IAudioSystemItem* pItem)
+{
+	if (pItem)
+	{
+		if (pItem->GetParent())
+		{
+			return BuildPath(pItem->GetParent()) + CRY_NATIVE_PATH_SEPSTR + pItem->GetName();
+		}
+		return pItem->GetName();
+	}
+	return "";
+}
+
 CAudioWwiseLoader::CAudioWwiseLoader(const string& projectPath, const string& soundbanksPath, IAudioSystemItem& root)
 	: m_root(root)
 	, m_projectRoot(projectPath)
 {
 	LoadEventsMetadata(soundbanksPath);
+
+	// Wwise places all the Work Units in the same root physical folder but some of those WU can be nested
+	// inside each other so to be able to reference them in the right order we build a cache with the path and UIDs
+	// so that we can load them in the right order (ie. the top most parent first)
+	BuildFileCache(g_gameParametersFolder);
+	BuildFileCache(g_gameStatesPath);
+	BuildFileCache(g_switchesFolder);
+	BuildFileCache(g_eventsFolder);
+	BuildFileCache(g_environmentsFolder);
 
 	LoadFolder(g_gameParametersFolder, *CreateItem("Game Parameters", eWwiseItemTypes_PhysicalFolder, m_root));
 	LoadFolder(g_gameStatesPath, *CreateItem("States", eWwiseItemTypes_PhysicalFolder, m_root));
@@ -143,7 +165,7 @@ void CAudioWwiseLoader::LoadFolder(const string& folderPath, IAudioSystemItem& p
 				}
 				else
 				{
-					LoadFile(name, folderPath, parent);
+					LoadWorkUnitFile(folderPath + CRY_NATIVE_PATH_SEPSTR + name, parent);
 				}
 			}
 		}
@@ -152,39 +174,89 @@ void CAudioWwiseLoader::LoadFolder(const string& folderPath, IAudioSystemItem& p
 	}
 }
 
-void CAudioWwiseLoader::LoadFile(const string& filename, const string& path, IAudioSystemItem& parent)
+void CAudioWwiseLoader::LoadWorkUnitFile(const string& filePath, IAudioSystemItem& parent)
 {
-	XmlNodeRef pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + path + CRY_NATIVE_PATH_SEPSTR + filename);
+
+	XmlNodeRef pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + filePath);
 	if (pRoot)
 	{
-		LoadXml(pRoot, parent, path);
+		const uint32 fileId = CCrc32::ComputeLowercase(pRoot->getAttr("ID"));
+		if (m_filesLoaded.count(fileId) == 0)
+		{
+
+			// Make sure we've loaded any work units we depend on before loading
+			if (pRoot->haveAttr("RootDocumentID"))
+			{
+				const uint32 parentDocumentId = CCrc32::ComputeLowercase(pRoot->getAttr("RootDocumentID"));
+				if (m_items.count(parentDocumentId) == 0)
+				{
+					// File hasn't been processed so we load it
+					auto it = m_filesCache.find(parentDocumentId);
+					if (it != m_filesCache.end())
+					{
+						LoadWorkUnitFile(it->second, parent);
+					}
+					else
+					{
+						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] [Wwise] Couldn't find Work Unit which file %s depends on. Are you missing wwise project files?.", filePath.c_str());
+					}
+				}
+			}
+
+			// Each files starts with the type of controls and then the WorkUnit
+			const int childCount = pRoot->getChildCount();
+			for (int i = 0; i < childCount; ++i)
+			{
+				LoadXml(pRoot->getChild(i)->findChild("WorkUnit"), parent);
+			}
+
+			m_filesLoaded.insert(fileId);
+		}
+
 	}
 }
 
-void CAudioWwiseLoader::LoadXml(XmlNodeRef pRoot, IAudioSystemItem& parent, const string& filePath)
+void CAudioWwiseLoader::LoadXml(XmlNodeRef pRoot, IAudioSystemItem& parent)
 {
 	if (pRoot)
 	{
 		IAudioSystemItem* pControl = &parent;
-		string childFilePath = filePath;
 		const EWwiseItemTypes type = TagToItemType(pRoot->getTag());
 		if (type != eWwiseItemTypes_Invalid)
 		{
 			string name = pRoot->getAttr("Name");
-			pControl = CreateItem(name, type, parent, filePath);
-			childFilePath += CRY_NATIVE_PATH_SEPSTR + name;
+
+			const uint32 itemId = CCrc32::ComputeLowercase(pRoot->getAttr("ID"));
+
+			// Check if this item has not been created before. It could have been created in
+			// a different Work Unit as a reference
+			auto it = m_items.find(itemId);
+			if (it != m_items.end())
+			{
+				pControl = it->second;
+			}
+			else
+			{
+				pControl = CreateItem(name, type, parent);
+				m_items[itemId] = pControl;
+			}
 		}
 
-		const int childCount = pRoot->getChildCount();
-		for (int i = 0; i < childCount; ++i)
+		XmlNodeRef pChildren = pRoot->findChild("ChildrenList");
+		if (pChildren)
 		{
-			LoadXml(pRoot->getChild(i), *pControl, childFilePath);
+			const int childCount = pChildren->getChildCount();
+			for (int i = 0; i < childCount; ++i)
+			{
+				LoadXml(pChildren->getChild(i), *pControl);
+			}
 		}
 	}
 }
 
-IAudioSystemItem* CAudioWwiseLoader::CreateItem(const string& name, ItemType type, IAudioSystemItem& parent, const string& path)
+IAudioSystemItem* CAudioWwiseLoader::CreateItem(const string& name, EWwiseItemTypes type, IAudioSystemItem& parent)
 {
+	const string path = BuildPath(&parent);
 	const string fullPathName = path.empty() ? name : path + CRY_NATIVE_PATH_SEPSTR + name;
 
 	// The id is always the path of the control from the root of the wwise project
@@ -255,6 +327,39 @@ ACE::IAudioSystemItem* CAudioWwiseLoader::GetControlByName(const string& name, b
 	}
 
 	return stl::find_in_map(m_controlsCache, CCrc32::ComputeLowercase(fullName), nullptr);
+}
+
+void CAudioWwiseLoader::BuildFileCache(const string& folderPath)
+{
+	_finddata_t fd;
+	ICryPak* pCryPak = gEnv->pCryPak;
+	intptr_t handle = pCryPak->FindFirst(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
+	if (handle != -1)
+	{
+		do
+		{
+			string name = fd.name;
+			if (name != "." && name != ".." && !name.empty())
+			{
+				if (fd.attrib & _A_SUBDIR)
+				{
+					BuildFileCache(folderPath + CRY_NATIVE_PATH_SEPSTR + name);
+				}
+				else
+				{
+					string path = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
+					XmlNodeRef pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + path);
+					if (pRoot)
+					{
+						m_filesCache[CCrc32::ComputeLowercase(pRoot->getAttr("ID"))] = path;
+					}
+				}
+			}
+		}
+		while (pCryPak->FindNext(handle, &fd) >= 0);
+		pCryPak->FindClose(handle);
+	}
+
 }
 
 }

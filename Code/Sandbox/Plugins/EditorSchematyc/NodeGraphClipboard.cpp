@@ -8,8 +8,6 @@
 
 #include <Schematyc/SerializationUtils/SerializationUtils.h>
 
-#pragma optimize("", off)
-
 namespace CrySchematycEditor {
 
 CNodeGraphClipboard::CNodeGraphClipboard(CryGraphEditor::CNodeGraphViewModel& model)

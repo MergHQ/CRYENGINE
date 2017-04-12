@@ -159,7 +159,7 @@ void CFlowDataToScriptParamVisitor::VisitVariant<stl::variant_size<TFlowInputDat
  */
 
 CFlowScriptedNode::CFlowScriptedNode(const SActivationInfo* pInfo, CFlowScriptedNodeFactoryPtr pFactory, SmartScriptTable table) :
-	m_refs(0), m_info(*pInfo), m_table(table), m_pFactory(pFactory)
+	m_info(*pInfo), m_table(table), m_pFactory(pFactory)
 {
 	ScriptHandle thisHandle;
 	thisHandle.ptr = this;
@@ -168,17 +168,6 @@ CFlowScriptedNode::CFlowScriptedNode(const SActivationInfo* pInfo, CFlowScripted
 
 CFlowScriptedNode::~CFlowScriptedNode()
 {
-}
-
-void CFlowScriptedNode::AddRef()
-{
-	++m_refs;
-}
-
-void CFlowScriptedNode::Release()
-{
-	if (0 == --m_refs)
-		delete this;
 }
 
 void CFlowScriptedNode::GetMemoryUsage(ICrySizer* s) const
@@ -248,7 +237,6 @@ int CFlowScriptedNode::ActivatePort(IFunctionHandler* pH, size_t nOutput, const 
 
 CFlowScriptedNodeFactory::CFlowScriptedNodeFactory()
 {
-	m_refs = 0;
 }
 
 CFlowScriptedNodeFactory::~CFlowScriptedNodeFactory()
@@ -324,17 +312,6 @@ bool CFlowScriptedNodeFactory::Init(const char* path, const char* nodeName)
 	//m_category = EFLN_NOCATEGORY;
 
 	return true;
-}
-
-void CFlowScriptedNodeFactory::AddRef()
-{
-	++m_refs;
-}
-
-void CFlowScriptedNodeFactory::Release()
-{
-	if (0 == --m_refs)
-		delete this;
 }
 
 IFlowNodePtr CFlowScriptedNodeFactory::Create(IFlowNode::SActivationInfo* pInfo)
@@ -424,23 +401,12 @@ void CFlowScriptedNodeFactory::GetMemoryUsage(ICrySizer* s) const
  */
 
 CFlowSimpleScriptedNode::CFlowSimpleScriptedNode(const SActivationInfo* pInfo, CFlowSimpleScriptedNodeFactoryPtr pFactory) :
-	m_refs(0), m_pFactory(pFactory)
+	m_pFactory(pFactory)
 {
 }
 
 CFlowSimpleScriptedNode::~CFlowSimpleScriptedNode()
 {
-}
-
-void CFlowSimpleScriptedNode::AddRef()
-{
-	++m_refs;
-}
-
-void CFlowSimpleScriptedNode::Release()
-{
-	if (0 >= --m_refs)
-		delete this;
 }
 
 IFlowNodePtr CFlowSimpleScriptedNode::Clone(SActivationInfo* pActInfo)
@@ -490,7 +456,7 @@ bool CFlowSimpleScriptedNode::SerializeXML(SActivationInfo*, const XmlNodeRef& r
  * CFlowSimpleScriptedNodeFactory
  */
 
-CFlowSimpleScriptedNodeFactory::CFlowSimpleScriptedNodeFactory() : m_refs(0), m_func(0), activateFlags(0)
+CFlowSimpleScriptedNodeFactory::CFlowSimpleScriptedNodeFactory() : m_func(0), activateFlags(0)
 {
 }
 
@@ -709,17 +675,6 @@ bool CFlowSimpleScriptedNodeFactory::CallFunction(IFlowNode::SActivationInfo* pA
 		}
 	}
 	return true;
-}
-
-void CFlowSimpleScriptedNodeFactory::AddRef()
-{
-	++m_refs;
-}
-
-void CFlowSimpleScriptedNodeFactory::Release()
-{
-	if (0 == --m_refs)
-		delete this;
 }
 
 IFlowNodePtr CFlowSimpleScriptedNodeFactory::Create(IFlowNode::SActivationInfo* pInfo)
