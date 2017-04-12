@@ -29,7 +29,7 @@ class CTexture;
 class CImageFile;
 struct IFlashPlayer;
 struct IUIElement;
-struct IUILayout;
+struct IUILayoutBase;
 class CTextureStreamPoolMgr;
 class CReactiveTextureStreamer;
 class CMipmapGenPass;
@@ -2628,7 +2628,7 @@ public:
 	private:
 		string                     m_layoutName;
 
-		IUILayout*                 m_pUILayout;
+		IUILayoutBase*             m_pUILayout;
 		IFlashPlayer*              m_pPlayer;
 
 		mutable CryCriticalSection m_lock;
