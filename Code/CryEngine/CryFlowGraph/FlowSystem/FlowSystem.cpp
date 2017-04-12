@@ -42,9 +42,7 @@ template<class T>
 class CAutoFlowFactory : public IFlowNodeFactory
 {
 public:
-	CAutoFlowFactory() : m_refs(0) {}
-	void         AddRef()                                     { m_refs++; }
-	void         Release()                                    { if (0 == --m_refs) delete this; }
+	CAutoFlowFactory() {}
 	IFlowNodePtr Create(IFlowNode::SActivationInfo* pActInfo) { return new T(pActInfo); }
 	void         GetMemoryUsage(ICrySizer* s) const
 	{
@@ -53,18 +51,13 @@ public:
 	}
 
 	void Reset() {}
-
-private:
-	int m_refs;
 };
 
 template<class T>
 class CSingletonFlowFactory : public IFlowNodeFactory
 {
 public:
-	CSingletonFlowFactory() : m_refs(0) { m_pInstance = new T(); }
-	void AddRef()  { m_refs++; }
-	void Release() { if (0 == --m_refs) delete this; }
+	CSingletonFlowFactory() { m_pInstance = new T(); }
 	void GetMemoryUsage(ICrySizer* s) const
 	{
 		SIZER_SUBCOMPONENT_NAME(s, "CSingletonFlowFactory");
@@ -80,7 +73,6 @@ public:
 
 private:
 	IFlowNodePtr m_pInstance;
-	int          m_refs;
 };
 
 // FlowSystem Container

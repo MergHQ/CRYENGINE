@@ -19,16 +19,6 @@ namespace CryEngine.FlowSystem
 	{
 		GCHandle _gcLock;
 
-		/// <summary>
-		/// Called by CryEngine. Do not call directly.
-		/// </summary>
-		public override void AddRef() { }
-
-		/// <summary>
-		/// Called by CryEngine. Do not call directly.
-		/// </summary>
-		public override void Release() { }
-
 		private void Free()
 		{
 			_gcLock.Free();
@@ -69,7 +59,7 @@ namespace CryEngine.FlowSystem
 	}
 
 	/// <summary>
-	/// Represents a specific FlowNide port type, which is dealt with separately from valuetypes. Signals are triggered rhather than holding a value.
+	/// Represents a specific FlowNode port type, which is dealt with separately from value types. Signals are triggered rather than holding a value.
 	/// </summary>
 	public class Signal
 	{
@@ -122,7 +112,6 @@ namespace CryEngine.FlowSystem
 	public class InternalFlowNode<T> : IFlowNode where T : FlowNode
 	{
 		GCHandle _gcLock;
-		int _refs;
 
 		public T Node { get; private set; } ///< The public FlowNode instance for this CRYENGINE FlowNode.
 		public IFlowNode.SActivationInfo Info { get; private set; } ///< Used by CryEngine internally.
@@ -130,18 +119,9 @@ namespace CryEngine.FlowSystem
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
-		public override void AddRef()
+		public override void OnDelete()
 		{
-			_refs++;
-		}
-
-		/// <summary>
-		/// Called by CryEngine. Do not call directly.
-		/// </summary>
-		public override void Release()
-		{
-			if (0 >= --_refs)
-				_gcLock.Free();
+			_gcLock.Free();
 		}
 
 		/// <summary>

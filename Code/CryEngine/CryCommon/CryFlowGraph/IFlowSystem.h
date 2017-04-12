@@ -1282,7 +1282,7 @@ struct IFlowNode;
 TYPEDEF_AUTOPTR(IFlowNode);
 typedef IFlowNode_AutoPtr IFlowNodePtr;
 
-struct IFlowNode
+struct IFlowNode : public _i_reference_target_t
 {
 	struct SActivationInfo
 	{
@@ -1325,10 +1325,36 @@ struct IFlowNode
 		eFE_DontDoAnythingWithThisPlease
 	};
 
+	IFlowNode() = default;
+
 	// <interfuscator:shuffle>
 	virtual ~IFlowNode(){}
-	virtual void         AddRef() = 0;
-	virtual void         Release() = 0;
+
+	//! Provides base copy and move semantic without copying ref count in _i_reference_target_t
+	IFlowNode(IFlowNode const&) { }
+
+	//! Provides base copy and move semantic without copying ref count in _i_reference_target_t
+	IFlowNode& operator= (IFlowNode const&) { return *this; }
+
+	//! notification to be overridden in C# flow node
+	virtual void OnDelete() {}
+	
+	//! override to kick off a notification for C# flow node.
+	//! to be removed when we get rid of C# flow node completely
+	virtual void Release() override
+	{
+		if (--m_nRefCounter == 0)
+		{
+			OnDelete();
+			delete this;
+		}
+		else if (m_nRefCounter < 0)
+		{
+			assert(0);
+			CryFatalError("Deleting Reference Counted Object Twice");
+		}
+	}
+
 	virtual IFlowNodePtr Clone(SActivationInfo*) = 0;
 
 	virtual void         GetConfiguration(SFlowNodeConfig&) = 0;
@@ -1719,12 +1745,10 @@ struct IFlowGraph : public NFlowSystemUtils::IFlowSystemTyped
 	virtual TFlowGraphId                   GetGraphId() const = 0; //! ID with which this graph is registered in the IFlowSystem
 };
 
-struct IFlowNodeFactory
+struct IFlowNodeFactory : public _i_reference_target_t
 {
 	// <interfuscator:shuffle>
 	virtual ~IFlowNodeFactory(){}
-	virtual void         AddRef() = 0;
-	virtual void         Release() = 0;
 	virtual IFlowNodePtr Create(IFlowNode::SActivationInfo*) = 0;
 	virtual void         GetMemoryUsage(ICrySizer* s) const = 0;
 	virtual void         Reset() = 0;

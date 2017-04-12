@@ -19,9 +19,7 @@ class CEntityFlowNodeFactory : public IFlowNodeFactory
 public:
 	CEntityFlowNodeFactory(const char* className);
 	virtual ~CEntityFlowNodeFactory();
-	
-	virtual void AddRef() { m_nRefCount++; }
-	virtual void Release() { if (0 == --m_nRefCount) delete this; }
+
 	virtual IFlowNodePtr Create(IFlowNode::SActivationInfo* pActInfo);
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
@@ -50,7 +48,6 @@ public:
 
 	friend class CEntityFlowNode;
 
-	int m_nRefCount;
 	string m_className;
 	std::vector<FlowNodeInputFunction> m_callbacks;
 	std::vector<SInputPortConfig> m_inputs;

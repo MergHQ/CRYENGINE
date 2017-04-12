@@ -3,7 +3,6 @@
 
 CEntityFlowNodeFactory::CEntityFlowNodeFactory(const char* className)
 {
-	m_nRefCount = 0;
 	m_activateCallback = 0;
 	m_className = className;
 }
@@ -26,9 +25,12 @@ void CEntityFlowNodeFactory::MakeHumanName(SInputPortConfig& config)
 
 void CEntityFlowNodeFactory::UnregisterFactory()
 {
-	if (!gEnv->pFlowSystem->UnregisterType(m_className.c_str()))
+	if (gEnv->pFlowSystem) //un-registration is only necessary if flow system is not already destroyed
 	{
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CryDefaultEntities] Error unregistering flownode '%s'", m_className.c_str());
+		if (!gEnv->pFlowSystem->UnregisterType(m_className.c_str()))
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CryDefaultEntities] Error unregistering flownode '%s'", m_className.c_str());
+		}
 	}
 }
 

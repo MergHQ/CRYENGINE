@@ -12,20 +12,8 @@
 
 CFlowStartNode::CFlowStartNode(SActivationInfo* pActInfo)
 {
-	m_refs = 0;
 	m_bActivated = true;
 	SetActivation(pActInfo, false);
-}
-
-void CFlowStartNode::AddRef()
-{
-	++m_refs;
-}
-
-void CFlowStartNode::Release()
-{
-	if (0 == --m_refs)
-		delete this;
 }
 
 IFlowNodePtr CFlowStartNode::Clone(SActivationInfo* pActInfo)

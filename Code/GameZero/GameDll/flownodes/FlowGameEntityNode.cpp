@@ -5,7 +5,6 @@
 
 CGameEntityNodeFactory::CGameEntityNodeFactory()
 {
-	m_nRefCount = 0;
 	m_activateCallback = 0;
 }
 
