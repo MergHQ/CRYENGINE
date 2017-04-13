@@ -94,6 +94,13 @@ private:
 		  Serialization::Range(v, HardMin(), HardMax()),
 		  name, label);
 		val.m_value = TConvert::To(v);
+		if (ar.isInput())
+		{
+			if (TLimits::isHardMin)
+				val.m_value = max(val.m_value, HardMin());
+			if (TLimits::isHardMax)
+				val.m_value = min(val.m_value, HardMax());
+		}
 		return res;
 	}
 
