@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -90,6 +90,53 @@ namespace CryEngine
 			{
 				_w = 1;
 				_v = new Vector3();
+			}
+		}
+
+		public Quaternion(Matrix3x3 matrix)
+		{
+			float s, p, tr = matrix.m00 + matrix.m11 + matrix.m22;
+			_w = 1;
+			_v = new Vector3(0,0,0);
+			if(tr > 0)
+			{
+				s = (float) Math.Sqrt(tr + 1.0f);
+				p = 0.5f / s;
+				_w = s * 0.5f; 
+				float vx = (matrix.m21 - matrix.m12) * p;
+				float vy = (matrix.m02 - matrix.m20) * p;
+				float vz = (matrix.m10 - matrix.m01) * p;
+				_v = new Vector3(vx, vy, vz);
+			}
+			else if((matrix.m00 >= matrix.m11) && (matrix.m00 >= matrix.m22))
+			{
+				s = (float) Math.Sqrt(matrix.m00 - matrix.m11 - matrix.m22 + 1.0f);
+				p = 0.5f / s;
+				_w = (matrix.m21 - matrix.m12) * p;
+				float vx = s * 0.5f;
+				float vy = (matrix.m10 + matrix.m01) * p;
+				float vz = (matrix.m20 + matrix.m02) * p;
+				_v = new Vector3(vx, vy, vz);
+			}
+			else if((matrix.m11 >= matrix.m00) && (matrix.m11 >= matrix.m22))
+			{
+				s = (float) Math.Sqrt(matrix.m11 - matrix.m22 - matrix.m00 + 1.0f);
+				p = 0.5f / s;
+				_w = (matrix.m02 - matrix.m20) * p;
+				float vx = (matrix.m01 + matrix.m10) * p;
+				float vy = s * 0.5f;
+				float vz = (matrix.m21 + matrix.m12) * p;
+				_v = new Vector3(vx, vy, vz);
+			}
+			else if((matrix.m22 >= matrix.m00) && (matrix.m22 >= matrix.m11))
+			{
+				s = (float) Math.Sqrt(matrix.m22 - matrix.m00 - matrix.m11 + 1.0f);
+				p = 0.5f / s;
+				_w = (matrix.m10 - matrix.m01) * p;
+				float vx = (matrix.m02 + matrix.m20) * p;
+				float vy = (matrix.m12 + matrix.m21) * p;
+				float vz = s * 0.5f;
+				_v = new Vector3(vx, vy, vz);
 			}
 		}
 
@@ -253,7 +300,7 @@ namespace CryEngine
 
 		public bool Equals(Quaternion other)
 		{
-			return MathHelpers.IsEqual(_v.x, other.x) && MathHelpers.IsEqual(_v.y, other.y) && MathHelpers.IsEqual(_v.z, other.z) && MathHelpers.IsEqual(_w, other.w);
+			return MathHelpers.Approximately(_v.x, other.x) && MathHelpers.Approximately(_v.y, other.y) && MathHelpers.Approximately(_v.z, other.z) && MathHelpers.Approximately(_w, other.w);
 		}
 
 		public override string ToString()
@@ -390,8 +437,27 @@ namespace CryEngine
 
 		public void SetLookOrientation(Vector3 forward, Vector3 up)
 		{
-			var right = forward.Cross(up);
-			this = CreateFromVectors(right, forward, up);
+			Vector3 xAxis;
+			Vector3 yAxis;
+			Vector3 zAxis;
+			Vector3 upVector = up.Normalized;
+			if(forward.IsNearlyZero())
+			{
+				Matrix3x3 managedMatrix = Matrix3x3.Identity;
+				this = new Quaternion(managedMatrix);
+				return;
+			}
+			yAxis = forward.Normalized;
+			if(MathHelpers.Approximately(0f, yAxis.x) && MathHelpers.Approximately(0f, yAxis.y) && (up == Vector3.Up))
+			{
+				upVector = new Vector3(-yAxis.z, 0f, 0f);
+			}
+
+			xAxis = (upVector.Cross(yAxis)).Normalized;
+			zAxis = (xAxis.Cross(yAxis)).Normalized;
+
+			Matrix3x3 matrix = new Matrix3x3(xAxis, yAxis, zAxis);
+			this = new Quaternion(matrix);
 		}
 
 		public static Quaternion CreateFromVectors(Vector3 right, Vector3 forward, Vector3 up)
@@ -469,7 +535,7 @@ namespace CryEngine
 
 		public bool IsValid()
 		{
-			if (_v.IsNearlyZero() && Math.Abs(_w) <= MathHelpers.FloatEpsilon) return false;
+			if (_v.IsNearlyZero() && Math.Abs(_w) <= MathHelpers.Epsilon) return false;
 			return true;
 		}
 

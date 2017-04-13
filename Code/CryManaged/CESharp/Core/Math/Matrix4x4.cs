@@ -128,10 +128,10 @@ namespace CryEngine
 
 		public bool Equals(Matrix4x4 obj)
 		{
-			return MathHelpers.IsEqual(m00 , obj.m00) && MathHelpers.IsEqual(m01 , obj.m01) && MathHelpers.IsEqual(m02 , obj.m02) && MathHelpers.IsEqual(m03 , obj.m03)
-				  && MathHelpers.IsEqual(m10 , obj.m10) && MathHelpers.IsEqual(m11 , obj.m11) && MathHelpers.IsEqual(m12 , obj.m12) && MathHelpers.IsEqual(m13 , obj.m13)
-				  && MathHelpers.IsEqual(m20 , obj.m20) && MathHelpers.IsEqual(m21 , obj.m21) && MathHelpers.IsEqual(m22 , obj.m22) && MathHelpers.IsEqual(m23 , obj.m23)
-				  && MathHelpers.IsEqual(m30 , obj.m30) && MathHelpers.IsEqual(m31 , obj.m31) && MathHelpers.IsEqual(m32 , obj.m32) && MathHelpers.IsEqual(m33 , obj.m33);
+			return MathHelpers.Approximately(m00 , obj.m00) && MathHelpers.Approximately(m01 , obj.m01) && MathHelpers.Approximately(m02 , obj.m02) && MathHelpers.Approximately(m03 , obj.m03)
+				  && MathHelpers.Approximately(m10 , obj.m10) && MathHelpers.Approximately(m11 , obj.m11) && MathHelpers.Approximately(m12 , obj.m12) && MathHelpers.Approximately(m13 , obj.m13)
+				  && MathHelpers.Approximately(m20 , obj.m20) && MathHelpers.Approximately(m21 , obj.m21) && MathHelpers.Approximately(m22 , obj.m22) && MathHelpers.Approximately(m23 , obj.m23)
+				  && MathHelpers.Approximately(m30 , obj.m30) && MathHelpers.Approximately(m31 , obj.m31) && MathHelpers.Approximately(m32 , obj.m32) && MathHelpers.Approximately(m33 , obj.m33);
 			
 		}
 

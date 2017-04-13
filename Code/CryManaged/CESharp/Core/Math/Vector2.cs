@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -59,7 +59,7 @@ namespace CryEngine
 
 		public bool Equals(Vector2 other)
 		{
-			return MathHelpers.IsEqual(_x, other.x) && MathHelpers.IsEqual(_y, other.y);
+			return MathHelpers.Approximately(_x, other.x) && MathHelpers.Approximately(_y, other.y);
 		}
 
 		public override string ToString()
@@ -148,7 +148,7 @@ namespace CryEngine
 
 		public bool IsNearlyZero()
 		{
-			return (Math.Abs(_x) <= MathHelpers.FloatEpsilon && Math.Abs(_y) <= MathHelpers.FloatEpsilon);
+			return (Math.Abs(_x) <= MathHelpers.Epsilon && Math.Abs(_y) <= MathHelpers.Epsilon);
 		}
 		
 		public static Vector2 Lerp(Vector2 p, Vector2 q, float t)
@@ -174,7 +174,7 @@ namespace CryEngine
 			CheckUnitVector(q, "q is not unit vector :"+q.ToString());
 			float cosine = (p.x * q.x) + (p.y * q.y);
 
-			if (MathHelpers.IsEqual(cosine, 0.999999f, MathHelpers.Precision.Precision_6)) // vectors are almost parallel
+			if (MathHelpers.Approximately(cosine, 0.999999f, 0.000001f)) // vectors are almost parallel
 			{
 				// use lerp
 				Vector2 result = Lerp(p, q, t);

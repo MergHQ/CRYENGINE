@@ -74,7 +74,7 @@ namespace CryEngine
 
 		public bool Equals(Angles3 other)
 		{
-			return MathHelpers.IsEqual(_x, other.x) && MathHelpers.IsEqual(_y, other.y) && MathHelpers.IsEqual(_z, other.z);
+			return MathHelpers.Approximately(_x, other.x) && MathHelpers.Approximately(_y, other.y) && MathHelpers.Approximately(_z, other.z);
 		}
 
 		public override string ToString()

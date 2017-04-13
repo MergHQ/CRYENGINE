@@ -179,9 +179,9 @@ namespace CryEngine
 
 		public bool Equals(Matrix3x3 other)
 		{
-			return MathHelpers.IsEqual(m00, other.m00) && MathHelpers.IsEqual(m01, other.m01) && MathHelpers.IsEqual(m02, other.m02) 
-					&& MathHelpers.IsEqual(m10, other.m10) && MathHelpers.IsEqual(m11, other.m11) && MathHelpers.IsEqual(m12, other.m12) 
-					&& MathHelpers.IsEqual(m20, other.m20) && MathHelpers.IsEqual(m21, other.m21) && MathHelpers.IsEqual(m22, other.m22) ;
+			return MathHelpers.Approximately(m00, other.m00) && MathHelpers.Approximately(m01, other.m01) && MathHelpers.Approximately(m02, other.m02) 
+					&& MathHelpers.Approximately(m10, other.m10) && MathHelpers.Approximately(m11, other.m11) && MathHelpers.Approximately(m12, other.m12) 
+					&& MathHelpers.Approximately(m20, other.m20) && MathHelpers.Approximately(m21, other.m21) && MathHelpers.Approximately(m22, other.m22) ;
 		}
 
 		public override string ToString()

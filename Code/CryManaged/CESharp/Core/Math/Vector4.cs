@@ -60,7 +60,7 @@ namespace CryEngine
 
 		public bool Equals(Vector4 other)
 		{
-			return MathHelpers.IsEqual(_x, other.x) && MathHelpers.IsEqual(_y, other.y) && MathHelpers.IsEqual(_z, other.z) && MathHelpers.IsEqual(_w, other.w);
+			return MathHelpers.Approximately(_x, other.x) && MathHelpers.Approximately(_y, other.y) && MathHelpers.Approximately(_z, other.z) && MathHelpers.Approximately(_w, other.w);
 		}
 
 		public override string ToString()
@@ -139,7 +139,7 @@ namespace CryEngine
 
 		public bool IsNearlyZero()
 		{
-			return (Math.Abs(_x) <= MathHelpers.FloatEpsilon && Math.Abs(_y) <= MathHelpers.FloatEpsilon) && Math.Abs(_z) <= MathHelpers.FloatEpsilon && Math.Abs(_w) <= MathHelpers.FloatEpsilon;
+			return (Math.Abs(_x) <= MathHelpers.Epsilon && Math.Abs(_y) <= MathHelpers.Epsilon) && Math.Abs(_z) <= MathHelpers.Epsilon && Math.Abs(_w) <= MathHelpers.Epsilon;
 		}
 
 		public static Vector4 Lerp(Vector4 p, Vector4 q, float t)

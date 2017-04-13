@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -71,7 +71,7 @@ namespace CryEngine
 
 		public bool Equals(Vector3 other)
 		{
-			return MathHelpers.IsEqual(_x, other.x) && MathHelpers.IsEqual(_y, other.y) && MathHelpers.IsEqual(_z, other.z);
+			return MathHelpers.Approximately(_x, other.x) && MathHelpers.Approximately(_y, other.y) && MathHelpers.Approximately(_z, other.z);
 		}
 
 		public override string ToString()
@@ -165,7 +165,7 @@ namespace CryEngine
 
 		public bool IsNearlyZero()
 		{
-			return (Math.Abs(_x) <= MathHelpers.FloatEpsilon && Math.Abs(_y) <= MathHelpers.FloatEpsilon) && Math.Abs(_z) <= MathHelpers.FloatEpsilon;
+			return (Math.Abs(_x) <= MathHelpers.Epsilon && Math.Abs(_y) <= MathHelpers.Epsilon) && Math.Abs(_z) <= MathHelpers.Epsilon;
 		}
 
 		
@@ -203,8 +203,8 @@ namespace CryEngine
 			}
 			float cosine = (p.x * q.x) + (p.y * q.y) + (p.z * q.z);
 			cosine = MathHelpers.Clamp(-1, 1, cosine);
-			
-			if (MathHelpers.IsEqual(cosine-1, 0.000001f, MathHelpers.Precision.Precision_6))
+
+			if (MathHelpers.Approximately(cosine, 1, 0.000001f))
 			{
 				// use lerp
 				Vector3 result = LerpUnclamped(p, q, t);
