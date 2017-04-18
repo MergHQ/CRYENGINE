@@ -1101,7 +1101,7 @@ public:
 	virtual bool                     CheckIntersectClouds(const Vec3& p1, const Vec3& p2);
 	virtual void                     OnRenderMeshDeleted(IRenderMesh* pRenderMesh);
 	virtual bool                     RenderMeshRayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo& hitInfo, IMaterial* pCustomMtl = 0);
-
+	virtual void                     OnEntityDeleted(struct IEntity* pEntity);
 	virtual const char*              GetVoxelEditOperationName(EVoxelEditOperation eOperation);
 
 	virtual void                     SetGetLayerIdAtCallback(IGetLayerIdAtCallback* pCallBack) { m_pGetLayerIdAtCallback = pCallBack; }
