@@ -80,7 +80,7 @@ std::vector<string> CAssetImporterImage::GetAssetNames(const std::vector<string>
 {
 	const string basename = PathUtil::GetFileName(ctx.GetInputFilePath());
 	// TODO: Return names only.
-	return { PathUtil::Make(ctx.GetOutputDirectoryPath(), basename + ".dds.cryasset") };
+	return { ctx.GetOutputFilePath(".dds.cryasset") };
 }
 
 std::vector<CAsset*> CAssetImporterImage::ImportAssets(const std::vector<string>& assetPaths, CAssetImportContext& ctx)
@@ -92,23 +92,24 @@ std::vector<CAsset*> CAssetImporterImage::ImportAssets(const std::vector<string>
 		return {};
 	}
 
-	const string absOutputDirectoryPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), ctx.GetOutputDirectoryPath());
-	const string filename = PathUtil::GetFile(ctx.GetInputFilePath());
-	const string absOutputFilePath = PathUtil::Make(absOutputDirectoryPath, filename);
-	CFileImporter fileImporter;
-	if (!fileImporter.Import(ctx.GetInputFilePath(), absOutputFilePath))
+	const string absOutputSourceFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), ctx.GetOutputSourceFilePath());
+	if (!CFileImporter().Import(ctx.GetInputFilePath(), absOutputSourceFilePath))
+	{
+		return {};
+	}
+
 	{
 		return std::vector<CAsset*>();
 	}
 
 	// If the source file is a TIF, we make it writable, as we might call the RC and store settings
 	// in it.
-	if (!stricmp(PathUtil::GetExt(absOutputFilePath), "tif"))
+	if (!stricmp(PathUtil::GetExt(absOutputSourceFilePath), "tif"))
 	{
-		MakeFileWritable(absOutputFilePath);
+		MakeFileWritable(absOutputSourceFilePath);
 	}
 
-	const string tifFilePath = TextureHelpers::CreateCryTif(absOutputFilePath);
+	const string tifFilePath = TextureHelpers::CreateCryTif(absOutputSourceFilePath);
 	if (!tifFilePath)
 	{
 		return {};
@@ -116,12 +117,13 @@ std::vector<CAsset*> CAssetImporterImage::ImportAssets(const std::vector<string>
 
 	// Create DDS.
 	CRcCaller rcCaller;
+	rcCaller.SetAdditionalOptions(CRcCaller::OptionOverwriteFilename(ctx.GetAssetName()));
 	if (!rcCaller.Call(tifFilePath))
 	{
 		return {};
 	}
 
-	CAsset* const pTextureAsset = ctx.LoadAsset(PathUtil::Make(ctx.GetOutputDirectoryPath(), PathUtil::ReplaceExtension(filename, "dds.cryasset")));
+	CAsset* const pTextureAsset = ctx.LoadAsset(ctx.GetOutputFilePath("dds.cryasset"));
 	if (pTextureAsset)
 	{
 		return { pTextureAsset };

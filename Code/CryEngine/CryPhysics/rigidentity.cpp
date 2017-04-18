@@ -2777,11 +2777,12 @@ int CRigidEntity::Step(float time_interval)
 		ip.maxUnproj = max(max(sz.x,sz.y),sz.z);
 		e = m_pWorld->m_vars.maxContactGap*(0.5f-0.4f*bUseSimpleSolver);
 		ip.iUnprojectionMode = 0;
-		ip.bNoIntersection = 1;//bUseSimpleSolver;
+		int bSlowRot = isneg(m_body.w.len2()-sqr(3.0f));
+		ip.bNoIntersection = bSlowRot;//bUseSimpleSolver;
 		ip.maxSurfaceGapAngle = DEG2RAD(3.5f);
 		m_qNew.Normalize();
 
-		if (!EnforceConstraints(time_interval) && m_velFastDir*(time_interval-bNoUnproj)>m_sizeFastDir*0.71f) {
+		if (!EnforceConstraints(time_interval) && m_velFastDir*(time_interval-bNoUnproj)>m_sizeFastDir*0.5f) {
 			pos = m_posNew; m_posNew = m_pos;
 			qrot = m_qNew; m_qNew = m_qrot;
 			ComputeBBox(m_BBoxNew,0);
@@ -2901,7 +2902,7 @@ int CRigidEntity::Step(float time_interval)
 		for(i=0;i<ncontacts;i++) if (pcontacts[i].t>=0) { // penetration contacts - register points and add additional penalty impulse in solver
 			if (!(m_parts[g_CurCollParts[i][0]].flags & geom_squashy)) {
 				Vec3 ntilt(ZERO), offs=pcontacts[i].dir*pcontacts[i].t;	float curdepth;	
-				int bPrimPrimContact = -((pcontacts[i].iNode[0]&pcontacts[i].iNode[1])>>31), hasArea=0, flagsLast=contact_last;
+				int bPrimPrimContact = -((pcontacts[i].iNode[0]&pcontacts[i].iNode[1])>>31)&-bSlowRot, hasArea=0, flagsLast=contact_last;
 				r=0; axis.zero(); 
 				if (pcontacts[i].parea && pcontacts[i].parea->npt>=2) {
 					ntilt = (axis = pcontacts[i].parea->n1)^pcontacts[i].n;

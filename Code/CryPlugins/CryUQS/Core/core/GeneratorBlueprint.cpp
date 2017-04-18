@@ -17,12 +17,18 @@ namespace UQS
 		//===================================================================================
 
 		CTextualGeneratorBlueprint::CTextualGeneratorBlueprint()
+			: m_generatorGUID(CryGUID::Null())
 		{
 		}
 
 		void CTextualGeneratorBlueprint::SetGeneratorName(const char* szGeneratorName)
 		{
 			m_generatorName = szGeneratorName;
+		}
+
+		void CTextualGeneratorBlueprint::SetGeneratorGUID(const CryGUID& generatorGUID)
+		{
+			m_generatorGUID = generatorGUID;
 		}
 
 		ITextualInputBlueprint& CTextualGeneratorBlueprint::GetInputRoot()
@@ -33,6 +39,11 @@ namespace UQS
 		const char* CTextualGeneratorBlueprint::GetGeneratorName() const
 		{
 			return m_generatorName.c_str();
+		}
+
+		const CryGUID& CTextualGeneratorBlueprint::GetGeneratorGUID() const
+		{
+			return m_generatorGUID;
 		}
 
 		const ITextualInputBlueprint& CTextualGeneratorBlueprint::GetInputRoot() const
@@ -62,17 +73,30 @@ namespace UQS
 
 		bool CGeneratorBlueprint::Resolve(const ITextualGeneratorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking)
 		{
+			const CryGUID& generatorGUID = source.GetGeneratorGUID();
 			const char* szGeneratorName = source.GetGeneratorName();
 
-			m_pGeneratorFactory = g_pHub->GetGeneratorFactoryDatabase().FindFactoryByName(szGeneratorName);
-			if (!m_pGeneratorFactory)
+			//
+			// look up the generator factory: first search by its GUID, then by its name
+			//
+
+			if (!(m_pGeneratorFactory = g_pHub->GetGeneratorFactoryDatabase().FindFactoryByGUID(generatorGUID)))
 			{
-				if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+				if (!(m_pGeneratorFactory = g_pHub->GetGeneratorFactoryDatabase().FindFactoryByName(szGeneratorName)))
 				{
-					pSE->AddErrorMessage("Unknown GeneratorFactory '%s'", szGeneratorName);
+					if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+					{
+						Shared::CUqsString guidAsString;
+						Shared::Internal::CGUIDHelper::ToString(generatorGUID, guidAsString);
+						pSE->AddErrorMessage("Unknown GeneratorFactory: GUID = %s, name = '%s'", guidAsString.c_str(), szGeneratorName);
+					}
+					return false;
 				}
-				return false;
 			}
+
+			//
+			// resolve input parameters
+			//
 
 			CInputBlueprint inputRoot;
 			const ITextualInputBlueprint& textualInputRoot = source.GetInputRoot();

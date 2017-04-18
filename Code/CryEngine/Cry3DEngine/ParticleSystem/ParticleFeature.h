@@ -48,6 +48,8 @@ public:
 	void                                    ConnectTo(const char* pOtherName) override        {}
 	void                                    DisconnectFrom(const char* pOtherName) override   {}
 	void                                    SetGpuInterfaceNeeded(bool gpuInterface)          { m_gpuInterfaceNeeded = gpuInterface; }
+	uint                                    GetNumResources() const override                  { return 0; }
+	const char*                             GetResourceName(uint resourceId) const override   { return nullptr; }
 	gpu_pfx2::IParticleFeatureGpuInterface* GetGpuInterface() override;
 	// ~IParticleFeature
 

@@ -27,6 +27,10 @@ namespace UQS
 			void                 SetScoreTransformType(EScoreTransformType scoreTransformType);
 			void                 SetNegateDiscard(bool bNegateDiscard);
 
+			// for debug purpose only when listing all instant- and deferred-evaluators
+			EScoreTransformType  GetScoreTransformType() const;
+			bool                 GetNegateDiscard() const;
+
 			// called at runtime just after an evaluator has finished evaluating the item and before weighting the item's score
 			void                 TransformItemEvaluationResult(SItemEvaluationResult& evaluationResultToTransform) const;
 

@@ -57,7 +57,7 @@ namespace UQS
 // - these macros can be used on the client-side when registering input parameters of functions, generators and evaluators
 // - they have to be put into the SParams struct of the according class
 #define UQS_EXPOSE_PARAMS_BEGIN static void Expose(UQS::Client::Internal::CInputParameterRegistry& registry) {
-#define UQS_EXPOSE_PARAM(nameOfParam, memberInParamsStruct)  registry.RegisterParameterType(nameOfParam, UQS::Shared::SDataTypeHelper<decltype(memberInParamsStruct)>::GetTypeInfo(), offsetof(SParams, memberInParamsStruct))
+#define UQS_EXPOSE_PARAM(nameOfParam, memberInParamsStruct, idAsFourCharacterString, description)  registry.RegisterParameterType(nameOfParam, idAsFourCharacterString, UQS::Shared::SDataTypeHelper<decltype(memberInParamsStruct)>::GetTypeInfo(), offsetof(SParams, memberInParamsStruct), description)
 #define UQS_EXPOSE_PARAMS_END }
 
 // UQS_TODO() macro

@@ -170,8 +170,8 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryFactoryBase::CQueryFactoryBase(const char* szName, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
-			: CFactoryBase(szName)
+		CQueryFactoryBase::CQueryFactoryBase(const char* szName, const CryGUID& guid, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
+			: CFactoryBase(szName, guid)
 			, m_bSupportsParameters(bSupportsParameters)
 			, m_bRequiresGenerator(bRequiresGenerator)
 			, m_bSupportsEvaluators(bSupportsEvaluators)
@@ -184,6 +184,11 @@ namespace UQS
 		const char* CQueryFactoryBase::GetName() const
 		{
 			return CFactoryBase::GetName();
+		}
+
+		const CryGUID& CQueryFactoryBase::GetGUID() const
+		{
+			return CFactoryBase::GetGUID();
 		}
 
 		bool CQueryFactoryBase::SupportsParameters() const
@@ -230,9 +235,9 @@ namespace UQS
 			// - if more query types ever get introduced, then an according factory and specialization for CQueryFactory<>::GetQueryBlueprintType() and
 			//   CQueryFactory<>::CheckOutputTypeCompatibilityAmongChildQueryBlueprints() need to be added here
 
-			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", true, true, true, 0, 0);
-			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", false, false, false, 1, IQueryFactory::kUnlimitedChildren);
-			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", "166b3a88-3cf3-45ea-bb4c-3eb6cb11d6de"_uqs_guid, true, true, true, 0, 0);
+			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", "89b926fb-a825-4de0-8817-ecef882efc0d"_uqs_guid, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", "a5ac314b-29a0-4bd0-82b6-c8ae3752371b"_uqs_guid, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
 		}
 
 	}

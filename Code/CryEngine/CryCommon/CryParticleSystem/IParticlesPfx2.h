@@ -63,6 +63,8 @@ struct IParticleFeature
 	virtual const char*                             GetConnectorName(uint connectorId) const = 0;
 	virtual void                                    ConnectTo(const char* pOtherName) = 0;
 	virtual void                                    DisconnectFrom(const char* pOtherName) = 0;
+	virtual uint                                    GetNumResources() const = 0;
+	virtual const char*                             GetResourceName(uint resourceId) const = 0;
 
 	virtual gpu_pfx2::IParticleFeatureGpuInterface* GetGpuInterface() = 0;
 };

@@ -21,7 +21,7 @@ namespace UQS
 			explicit                                      CTextualGlobalConstantParamsBlueprint();
 
 			// ITextualGlobalConstantParamsBlueprint
-			virtual void                                  AddParameter(const char* szName, const char* szType, const char* szValue, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
+			virtual void                                  AddParameter(const char* szName, const char* szTypeName, const CryGUID& typeGUID, const char* szValue, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual size_t                                GetParameterCount() const override;
 			virtual SParameterInfo                        GetParameter(size_t index) const override;
 			// ~ITextualGlobalConstantParamsBlueprint
@@ -29,10 +29,11 @@ namespace UQS
 		private:
 			struct SStoredParameterInfo
 			{
-				explicit                                  SStoredParameterInfo(const char* _szName, const char* _szType, const char* _szValue, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
+				explicit                                  SStoredParameterInfo(const char* _szName, const char* _szTypeName, const CryGUID& _typeGUID, const char* _szValue, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
 				explicit                                  SStoredParameterInfo(SStoredParameterInfo&& other);
 				string                                    name;
-				string                                    type;
+				string                                    typeName;
+				CryGUID                                   typeGUID;
 				string                                    value;
 				bool                                      bAddToDebugRenderWorld;
 				DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector;
@@ -45,9 +46,10 @@ namespace UQS
 			std::vector<SStoredParameterInfo>             m_parameters;
 		};
 
-		inline CTextualGlobalConstantParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _szName, const char* _szType, const char* _szValue, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
+		inline CTextualGlobalConstantParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _szName, const char* _szTypeName, const CryGUID& _typeGUID, const char* _szValue, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
 			: name(_szName)
-			, type(_szType)
+			, typeName(_szTypeName)
+			, typeGUID(_typeGUID)
 			, value(_szValue)
 			, bAddToDebugRenderWorld(_bAddToDebugRenderWorld)
 			, pSyntaxErrorCollector(std::move(_pSyntaxErrorCollector))
@@ -55,7 +57,8 @@ namespace UQS
 
 		inline CTextualGlobalConstantParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(SStoredParameterInfo&& other)
 			: name(std::move(other.name))
-			, type(std::move(other.type))
+			, typeName(std::move(other.typeName))
+			, typeGUID(std::move(other.typeGUID))
 			, value(std::move(other.value))
 			, bAddToDebugRenderWorld(std::move(other.bAddToDebugRenderWorld))
 			, pSyntaxErrorCollector(std::move(other.pSyntaxErrorCollector))

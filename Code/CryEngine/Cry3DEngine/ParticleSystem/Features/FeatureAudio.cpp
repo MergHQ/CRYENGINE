@@ -81,6 +81,16 @@ public:
 			TriggerSingleAudioEvents(pComponentRuntime, proxyName.c_str());
 	}
 
+	uint GetNumResources() const override
+	{
+		return m_audioName.empty() ? 0 : 1;
+	}
+
+	const char* GetResourceName(uint resourceId) const override
+	{
+		return m_audioName.c_str();
+	}
+
 private:
 	void TriggerSingleAudioEvents(CParticleComponentRuntime* pComponentRuntime, const char* proxyName)
 	{

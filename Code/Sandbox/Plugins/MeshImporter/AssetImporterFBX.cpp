@@ -168,6 +168,7 @@ static bool WriteAssetMetaData(const FbxMetaData::SMetaData& metaData, const str
 	rcCaller.SetEcho(false);
 	rcCaller.SetListener(&CRcListener::GetInstance());
 	rcCaller.OverwriteExtension("fbx");
+	rcCaller.SetAdditionalOptions(CRcCaller::OptionOverwriteFilename(PathUtil::ReplaceExtension(filename, metaData.outputFileExt)));
 	return rcCaller.Call(QtUtil::ToString(pTempFile->fileName()));
 }
 
@@ -386,8 +387,6 @@ string CAssetImporterFBX::GetTempDirPath() const
 
 void CAssetImporterFBX::Import(const std::vector<string>& assetTypes, CAssetImportContext& ctx)
 {
-	const string filename = PathUtil::GetFileName(ctx.GetInputFilePath());
-
 	for (const string& assetType : assetTypes)
 	{
 		if (assetType == "Mesh")
@@ -483,7 +482,7 @@ void CAssetImporterFBX::ImportMesh(CAssetImportContext& ctx)
 	}
 
 	const string filename = PathUtil::GetFile(ctx.GetInputFilePath());
-	const string basename = PathUtil::RemoveExtension(filename);
+	const string basename = ctx.GetAssetName();
 	const string absOutputDirectoryPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), ctx.GetOutputDirectoryPath());
 
 	// Init meta-data.
@@ -501,7 +500,7 @@ void CAssetImporterFBX::ImportSkeleton(CAssetImportContext& ctx)
 	using namespace Private_AssetImporterFBX;
 
 	const string filename = PathUtil::GetFile(ctx.GetInputFilePath());
-	const string basename = PathUtil::RemoveExtension(filename);
+	const string basename = ctx.GetAssetName();
 	const string absOutputDirectoryPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), ctx.GetOutputDirectoryPath());
 
 	// Init meta-data.
@@ -538,7 +537,7 @@ void CAssetImporterFBX::ImportSkin(const FbxTool::SNode* pFbxNode, const string&
 	using namespace Private_AssetImporterFBX;
 
 	const string filename = PathUtil::GetFile(ctx.GetInputFilePath());
-	const string basename = PathUtil::RemoveExtension(filename);
+	const string basename = ctx.GetAssetName();
 
 	// Init meta-data.
 	FbxMetaData::SMetaData metaData;
@@ -582,7 +581,7 @@ void CAssetImporterFBX::ImportAnimation(const FbxTool::SAnimationTake* pTake, co
 	using namespace Private_AssetImporterFBX;
 
 	const string filename = PathUtil::GetFile(ctx.GetInputFilePath());
-	const string basename = PathUtil::RemoveExtension(filename);
+	const string basename = ctx.GetAssetName();
 
 	// Init meta-data.
 	FbxMetaData::SMetaData metaData;
@@ -688,8 +687,7 @@ string CAssetImporterFBX::ImportMaterial(CAssetImportContext& ctx, const std::ve
 
 	const int mtlFlags = materialCount > 1 ? MTL_FLAG_MULTI_SUBMTL : 0;
 
-	const string basename = PathUtil::GetFileName(ctx.GetInputFilePath());
-	string materialName = PathUtil::Make(ctx.GetOutputDirectoryPath(), basename);
+	const string materialName = ctx.GetOutputFilePath("");
 	_smart_ptr<CMaterial> pMaterial = GetIEditor()->GetMaterialManager()->CreateMaterial(materialName, XmlNodeRef(), mtlFlags);
 	if (!pMaterial)
 	{
@@ -767,7 +765,6 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 		rcCaller.SetEcho(false);
 		rcCaller.SetListener(&CRcListener::GetInstance());
 		rcCaller.OverwriteExtension("cryasset");
-		rcCaller.SetAdditionalOptions("/assettypes=cgf,Mesh;chr,Skeleton;skin,SkinnedMesh;dds,Texture;mtl,Material;cga,AnimatedMesh;anm,MeshAnimation;cdf,Character;caf,Animation;wav,Sound;ogg,Sound;cax,GeometryCache;lua,Script;pfx,Particles");
 		if (!rcCaller.Call(absOutputFilePath))
 		{
 			CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_ERROR, string().Format("Compiling file '%s' failed.",

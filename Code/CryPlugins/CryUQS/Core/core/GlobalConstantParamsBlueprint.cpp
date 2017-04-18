@@ -21,9 +21,9 @@ namespace UQS
 			// nothing
 		}
 
-		void CTextualGlobalConstantParamsBlueprint::AddParameter(const char* szName, const char* szType, const char* szValue, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
+		void CTextualGlobalConstantParamsBlueprint::AddParameter(const char* szName, const char* szTypeName, const CryGUID& typeGUID, const char* szValue, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_parameters.emplace_back(szName, szType, szValue, bAddToDebugRenderWorld, std::move(pSyntaxErrorCollector));
+			m_parameters.emplace_back(szName, szTypeName, typeGUID, szValue, bAddToDebugRenderWorld, std::move(pSyntaxErrorCollector));
 		}
 
 		size_t CTextualGlobalConstantParamsBlueprint::GetParameterCount() const
@@ -35,7 +35,7 @@ namespace UQS
 		{
 			assert(index < m_parameters.size());
 			const SStoredParameterInfo& pi = m_parameters[index];
-			return SParameterInfo(pi.name.c_str(), pi.type.c_str(), pi.value.c_str(), pi.bAddToDebugRenderWorld, pi.pSyntaxErrorCollector.get());
+			return SParameterInfo(pi.name.c_str(), pi.typeName.c_str(), pi.typeGUID, pi.value.c_str(), pi.bAddToDebugRenderWorld, pi.pSyntaxErrorCollector.get());
 		}
 
 		//===================================================================================
@@ -76,22 +76,27 @@ namespace UQS
 					return false;
 				}
 
-				// find the item factory
-				Client::IItemFactory* pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByName(p.szType);
-				if (!pItemFactory)
+				// find the item factory: first by GUID, then by name
+				Client::IItemFactory* pItemFactory;
+				if (!(pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByGUID(p.typeGUID)))
 				{
-					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (!(pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByName(p.szTypeName)))
 					{
-						pSE->AddErrorMessage("Unknown item type: '%s'", p.szType);
+						if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+						{
+							Shared::CUqsString typeGuidAsString;
+							Shared::Internal::CGUIDHelper::ToString(p.typeGUID, typeGuidAsString);
+							pSE->AddErrorMessage("Unknown item type: GUID = %s, name = '%s'", typeGuidAsString.c_str(), p.szTypeName);
+						}
+						return false;
 					}
-					return false;
 				}
 
 				if (!pItemFactory->CanBePersistantlySerialized())
 				{
 					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
 					{
-						pSE->AddErrorMessage("Items of type '%s' cannot be represented in textual form", p.szType);
+						pSE->AddErrorMessage("Items of type '%s' cannot be represented in textual form", p.szTypeName);
 					}
 					return false;
 				}

@@ -23,12 +23,13 @@ namespace UQS
 			//
 			virtual void                                                SetName(const char* szName) = 0;
 			virtual void                                                SetQueryFactoryName(const char* szFactoryName) = 0;
+			virtual void                                                SetQueryFactoryGUID(const CryGUID& factoryGUID) = 0;
 			virtual void                                                SetMaxItemsToKeepInResultSet(size_t maxItems) = 0;
 			virtual ITextualGlobalConstantParamsBlueprint&              GetGlobalConstantParams() = 0;
 			virtual ITextualGlobalRuntimeParamsBlueprint&               GetGlobalRuntimeParams() = 0;
 			virtual ITextualGeneratorBlueprint&                         SetGenerator() = 0;             // GetGenerator() returns a nullptr until SetGenerator() gets called
-			virtual ITextualInstantEvaluatorBlueprint&                  AddInstantEvaluator() = 0;
-			virtual ITextualDeferredEvaluatorBlueprint&                 AddDeferredEvaluator() = 0;
+			virtual ITextualEvaluatorBlueprint&                         AddInstantEvaluator() = 0;
+			virtual ITextualEvaluatorBlueprint&                         AddDeferredEvaluator() = 0;
 			virtual ITextualQueryBlueprint&                             AddChild() = 0;
 
 			//
@@ -37,14 +38,15 @@ namespace UQS
 
 			virtual const char*                                         GetName() const = 0;
 			virtual const char*                                         GetQueryFactoryName() const = 0;
+			virtual const CryGUID&                                      GetQueryFactoryGUID() const = 0;
 			virtual size_t                                              GetMaxItemsToKeepInResultSet() const = 0;
 			virtual const ITextualGlobalConstantParamsBlueprint&        GetGlobalConstantParams() const = 0;
 			virtual const ITextualGlobalRuntimeParamsBlueprint&         GetGlobalRuntimeParams() const = 0;
 			virtual const ITextualGeneratorBlueprint*                   GetGenerator() const = 0;
 			virtual size_t                                              GetInstantEvaluatorCount() const = 0;
-			virtual const ITextualInstantEvaluatorBlueprint&            GetInstantEvaluator(size_t index) const = 0;
+			virtual const ITextualEvaluatorBlueprint&                   GetInstantEvaluator(size_t index) const = 0;
 			virtual size_t                                              GetDeferredEvaluatorCount() const = 0;
-			virtual const ITextualDeferredEvaluatorBlueprint&           GetDeferredEvaluator(size_t index) const = 0;
+			virtual const ITextualEvaluatorBlueprint&                   GetDeferredEvaluator(size_t index) const = 0;
 			virtual size_t                                              GetChildCount() const = 0;
 			virtual const ITextualQueryBlueprint&                       GetChild(size_t index) const = 0;
 

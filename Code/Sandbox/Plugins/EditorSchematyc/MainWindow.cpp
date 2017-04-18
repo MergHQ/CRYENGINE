@@ -240,29 +240,28 @@ void CMainWindow::InitMenu()
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu,                                                       /*CEditor::MenuItems::New,*/ CEditor::MenuItems::Save,
 		CEditor::MenuItems::EditMenu,                                                       /*CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo,*/
-		CEditor::MenuItems::Copy,                                                           CEditor::MenuItems::Paste, CEditor::MenuItems::Delete
+		CEditor::MenuItems::Copy,                                                           CEditor::MenuItems::Paste, CEditor::MenuItems::Delete,
+		CEditor::MenuItems::ViewMenu
 	};
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
 
 	if (CVars::sc_EditorAdvanced) // TODO: Add entry to preference page so these entries can be hidden..
 	{
-		QMenu* pAdvancedenu = CEditor::AddMenu("Advanced");
+		CAbstractMenu* const pAdvancedMenu = GetMenu()->CreateMenu(tr("Advanced"));
 		{
-			pAdvancedenu->addSeparator();
-
-			m_pCompileAllMenuAction = pAdvancedenu->addAction(tr("Compile All"));
+			m_pCompileAllMenuAction = pAdvancedMenu->CreateAction(tr("Compile All"));
 			QObject::connect(m_pCompileAllMenuAction, &QAction::triggered, this, &CMainWindow::OnCompileAll);
 
-			m_pRefreshEnvironmentMenuAction = pAdvancedenu->addAction(tr("Refresh Environment"));
+			m_pRefreshEnvironmentMenuAction = pAdvancedMenu->CreateAction(tr("Refresh Environment"));
 			QObject::connect(m_pRefreshEnvironmentMenuAction, &QAction::triggered, this, &CMainWindow::OnRefreshEnv);
 		}
 	}
 
-	QMenu* pViewMenu = GetMenu("View");
-	QObject::connect(pViewMenu, &QMenu::aboutToShow, [pViewMenu, this]()
-		{
-			pViewMenu->clear();
-	  });
+	CAbstractMenu* const pViewMenu = GetMenu(MenuItems::ViewMenu);
+	pViewMenu->signalAboutToShow.Connect([pViewMenu, this]()
+	{
+		pViewMenu->Clear();
+	});
 }
 
 void CMainWindow::InitToolbar(QVBoxLayout* pWindowLayout)

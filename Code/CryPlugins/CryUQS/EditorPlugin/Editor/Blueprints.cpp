@@ -827,22 +827,25 @@ const CFunctionSerializationHelper::SFunction* CFunctionSerializationHelper::Get
 
 CInputBlueprint::CInputBlueprint()
 	: m_paramName()
+	, m_paramID(UQS::Client::CInputParameterID::CreateEmpty())
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 	, m_functionHelper()
 	, m_children()
 	, m_pErrorCollector(new CErrorCollector)
 {}
 
-CInputBlueprint::CInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
+CInputBlueprint::CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 	: m_paramName(szParamName)
+	, m_paramID(paramID)
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(bAddReturnValueToDebugRenderWorldUponExecution)
 	, m_functionHelper(szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution)
 	, m_children()
 	, m_pErrorCollector(new CErrorCollector)
 {}
 
-CInputBlueprint::CInputBlueprint(const char* szParamName)
+CInputBlueprint::CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID)
 	: m_paramName(szParamName)
+	, m_paramID(paramID)
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 	, m_functionHelper()
 	, m_children()
@@ -851,6 +854,7 @@ CInputBlueprint::CInputBlueprint(const char* szParamName)
 
 CInputBlueprint::CInputBlueprint(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
 	: m_paramName()
+	, m_paramID(UQS::Client::CInputParameterID::CreateEmpty())
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 	, m_functionHelper(functionFactory, context)
 	, m_children()
@@ -861,6 +865,7 @@ CInputBlueprint::CInputBlueprint(const UQS::Client::IFunctionFactory& functionFa
 
 CInputBlueprint::CInputBlueprint(CInputBlueprint&& other)
 	: m_paramName(std::move(other.m_paramName))
+	, m_paramID(std::move(other.m_paramID))
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(std::move(other.m_bAddReturnValueToDebugRenderWorldUponExecution))
 	, m_functionHelper(std::move(other.m_functionHelper))
 	, m_children(std::move(other.m_children))
@@ -872,6 +877,7 @@ CInputBlueprint& CInputBlueprint::operator=(CInputBlueprint&& other)
 	if (this != &other)
 	{
 		m_paramName = std::move(other.m_paramName);
+		m_paramID = std::move(other.m_paramID);
 		m_bAddReturnValueToDebugRenderWorldUponExecution = std::move(other.m_bAddReturnValueToDebugRenderWorldUponExecution);
 		m_functionHelper = std::move(other.m_functionHelper);
 		m_children = std::move(other.m_children);
@@ -925,7 +931,7 @@ void CInputBlueprint::SetChildrenFromFactoryInputRegistry(const TFactory& factor
 		CInputBlueprint* pParam = FindChildByParamName(paramInfo.szName);
 		if (!pParam)
 		{
-			m_children.emplace_back(paramInfo.szName);
+			m_children.emplace_back(paramInfo.szName, paramInfo.id);
 			pParam = &m_children.back();
 		}
 		pParam->SetAdditionalParamInfo(paramInfo, context);
@@ -1019,6 +1025,7 @@ void CInputBlueprint::DeriveChildrenInfoFromFactoryInputRegistry(const TFactory&
 
 void CInputBlueprint::SetAdditionalParamInfo(const UQS::Client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context)
 {
+	m_paramID = paramInfo.id;
 	m_functionHelper.Reset(context.GetItemTypeNameFromType(paramInfo.type), context);
 }
 
@@ -1183,9 +1190,27 @@ const char* CInputBlueprint::GetParamName() const
 	return m_paramName.c_str();
 }
 
+const UQS::Client::CInputParameterID& CInputBlueprint::GetParamID() const
+{
+	return m_paramID;
+}
+
 const char* CInputBlueprint::GetFuncName() const
 {
 	return m_functionHelper.GetFunctionInternalName().c_str();
+}
+
+const CryGUID& CInputBlueprint::GetFuncGUID() const
+{
+	if (const UQS::Client::IFunctionFactory* pFunctionFactory = m_functionHelper.GetFunctionFactory())
+	{
+		return pFunctionFactory->GetGUID();
+	}
+	else
+	{
+		static const CryGUID nullGUID = CryGUID::Null();
+		return nullGUID;
+	}
 }
 
 const char* CInputBlueprint::GetFuncReturnValueLiteral() const
@@ -1198,9 +1223,9 @@ bool CInputBlueprint::GetAddReturnValueToDebugRenderWorldUponExecution() const
 	return m_bAddReturnValueToDebugRenderWorldUponExecution;
 }
 
-CInputBlueprint& CInputBlueprint::AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
+CInputBlueprint& CInputBlueprint::AddChild(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 {
-	m_children.emplace_back(szParamName, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
+	m_children.emplace_back(szParamName, paramID, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
 	return m_children.back();
 }
 
@@ -1345,7 +1370,7 @@ size_t CConstParamBlueprint::GetParameterCount() const
 	return m_params.size();
 }
 
-void CConstParamBlueprint::GetParameterInfo(size_t index, const char*& szName, const char*& szType, string& value, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const
+void CConstParamBlueprint::GetParameterInfo(size_t index, const char*& szName, const char*& szType, CryGUID& typeGUID, string& value, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const
 {
 	assert(index < m_params.size());
 
@@ -1355,6 +1380,15 @@ void CConstParamBlueprint::GetParameterInfo(size_t index, const char*& szName, c
 	param.value.ConvertToStringLiteral(*&value);
 	bAddToDebugRenderWorld = param.bAddToDebugRenderWorld;
 	pErrorCollector = param.pErrorCollector;
+
+	if (const UQS::Client::IItemFactory* pItemFactory = UQS::Core::IHubPlugin::GetHub().GetItemFactoryDatabase().FindFactoryByName(param.type.c_str()))
+	{
+		typeGUID = pItemFactory->GetGUID();
+	}
+	else
+	{
+		typeGUID = CryGUID::Null();
+	}
 }
 
 void CConstParamBlueprint::Serialize(Serialization::IArchive& archive)
@@ -1492,7 +1526,7 @@ size_t CRuntimeParamBlueprint::GetParameterCount() const
 	return m_params.size();
 }
 
-void CRuntimeParamBlueprint::GetParameterInfo(size_t index, const char*& szName, const char*& szType, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const
+void CRuntimeParamBlueprint::GetParameterInfo(size_t index, const char*& szName, const char*& szType, CryGUID& typeGUID, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const
 {
 	assert(index < m_params.size());
 
@@ -1501,6 +1535,15 @@ void CRuntimeParamBlueprint::GetParameterInfo(size_t index, const char*& szName,
 	szType = param.type.c_str();
 	bAddToDebugRenderWorld = param.bAddToDebugRenderWorld;
 	pErrorCollector = param.pErrorCollector;
+
+	if (const UQS::Client::IItemFactory* pItemFactory = UQS::Core::IHubPlugin::GetHub().GetItemFactoryDatabase().FindFactoryByName(param.type.c_str()))
+	{
+		typeGUID = pItemFactory->GetGUID();
+	}
+	else
+	{
+		typeGUID = CryGUID::Null();
+	}
 }
 
 void CRuntimeParamBlueprint::Serialize(Serialization::IArchive& archive)
@@ -1566,6 +1609,19 @@ const CInputBlueprint& CGeneratorBlueprint::GetInputRoot() const
 const char* CGeneratorBlueprint::GetGeneratorName() const
 {
 	return m_name.c_str();
+}
+
+const CryGUID& CGeneratorBlueprint::GetGeneratorGUID() const
+{
+	if (const UQS::Client::IGeneratorFactory* pFactory = UQS::Core::IHubPlugin::GetHub().GetGeneratorFactoryDatabase().FindFactoryByName(m_name.c_str()))
+	{
+		return pFactory->GetGUID();
+	}
+	else
+	{
+		static const CryGUID nullGUID = CryGUID::Null();
+		return nullGUID;
+	}
 }
 
 void CGeneratorBlueprint::Serialize(Serialization::IArchive& archive)
@@ -1673,9 +1729,9 @@ void CInstantEvaluatorBlueprint::SetWeight(float weight)
 	Owner().SetWeight(weight);
 }
 
-void CInstantEvaluatorBlueprint::SetScoreTransform(const char* szScoreTransform)
+void CInstantEvaluatorBlueprint::SetScoreTransformName(const char* szScoreTransformName)
 {
-	Owner().SetScoreTransform(szScoreTransform);
+	Owner().SetScoreTransformName(szScoreTransformName);
 }
 
 void CInstantEvaluatorBlueprint::SetNegateDiscard(bool bNegateDiscard)
@@ -1688,9 +1744,14 @@ float CInstantEvaluatorBlueprint::GetWeight() const
 	return Owner().GetWeight();
 }
 
-const char* CInstantEvaluatorBlueprint::GetScoreTransform() const
+const char* CInstantEvaluatorBlueprint::GetScoreTransformName() const
 {
-	return Owner().GetScoreTransform();
+	return Owner().GetScoreTransformName();
+}
+
+const CryGUID& CInstantEvaluatorBlueprint::GetScoreTransformGUID() const
+{
+	return Owner().GetScoreTransformGUID();
 }
 
 bool CInstantEvaluatorBlueprint::GetNegateDiscard() const
@@ -1713,6 +1774,11 @@ const char* CInstantEvaluatorBlueprint::GetEvaluatorName() const
 	return Owner().GetEvaluatorName();
 }
 
+const CryGUID& CInstantEvaluatorBlueprint::GetEvaluatorGUID() const
+{
+	return Owner().GetEvaluatorGUID();
+}
+
 //////////////////////////////////////////////////////////////////////////
 // CDeferredEvaluatorBlueprint
 //////////////////////////////////////////////////////////////////////////
@@ -1727,9 +1793,9 @@ void CDeferredEvaluatorBlueprint::SetWeight(float weight)
 	Owner().SetWeight(weight);
 }
 
-void CDeferredEvaluatorBlueprint::SetScoreTransform(const char* szScoreTransform)
+void CDeferredEvaluatorBlueprint::SetScoreTransformName(const char* szScoreTransformName)
 {
-	Owner().SetScoreTransform(szScoreTransform);
+	Owner().SetScoreTransformName(szScoreTransformName);
 }
 
 void CDeferredEvaluatorBlueprint::SetNegateDiscard(bool bNegateDiscard)
@@ -1742,9 +1808,14 @@ float CDeferredEvaluatorBlueprint::GetWeight() const
 	return Owner().GetWeight();
 }
 
-const char* CDeferredEvaluatorBlueprint::GetScoreTransform() const
+const char* CDeferredEvaluatorBlueprint::GetScoreTransformName() const
 {
-	return Owner().GetScoreTransform();
+	return Owner().GetScoreTransformName();
+}
+
+const CryGUID& CDeferredEvaluatorBlueprint::GetScoreTransformGUID() const
+{
+	return Owner().GetScoreTransformGUID();
 }
 
 bool CDeferredEvaluatorBlueprint::GetNegateDiscard() const
@@ -1767,6 +1838,11 @@ const char* CDeferredEvaluatorBlueprint::GetEvaluatorName() const
 	return Owner().GetEvaluatorName();
 }
 
+const CryGUID& CDeferredEvaluatorBlueprint::GetEvaluatorGUID() const
+{
+	return Owner().GetEvaluatorGUID();
+}
+
 //////////////////////////////////////////////////////////////////////////
 // CEvaluator
 //////////////////////////////////////////////////////////////////////////
@@ -1781,9 +1857,9 @@ void CEvaluator::SetWeight(float weight)
 	m_weight = weight;
 }
 
-void CEvaluator::SetScoreTransform(const char* szScoreTransform)
+void CEvaluator::SetScoreTransformName(const char* szScoreTransformName)
 {
-	m_scoreTransform = szScoreTransform;
+	m_scoreTransformName = szScoreTransformName;
 }
 
 void CEvaluator::SetNegateDiscard(bool bNegateDiscard)
@@ -1796,9 +1872,22 @@ float CEvaluator::GetWeight() const
 	return m_weight;
 }
 
-const char* CEvaluator::GetScoreTransform() const
+const char* CEvaluator::GetScoreTransformName() const
 {
-	return m_scoreTransform.c_str();
+	return m_scoreTransformName.c_str();
+}
+
+const CryGUID& CEvaluator::GetScoreTransformGUID() const
+{
+	if (const UQS::Core::IScoreTransformFactory* pFactory = UQS::Core::IHubPlugin::GetHub().GetScoreTransformFactoryDatabase().FindFactoryByName(m_scoreTransformName.c_str()))
+	{
+		return pFactory->GetGUID();
+	}
+	else
+	{
+		static const CryGUID nullGUID = CryGUID::Null();
+		return nullGUID;
+	}
 }
 
 bool CEvaluator::GetNegateDiscard() const
@@ -1820,6 +1909,29 @@ const char* CEvaluator::GetEvaluatorName() const
 {
 	return m_name.c_str();
 }
+
+const CryGUID& CEvaluator::GetEvaluatorGUID() const
+{
+	static const CryGUID nullGUID = CryGUID::Null();
+
+	if (m_evaluatorType == EEvaluatorType::Instant)
+	{
+		if (const UQS::Client::IInstantEvaluatorFactory* pFactory = UQS::Core::IHubPlugin::GetHub().GetInstantEvaluatorFactoryDatabase().FindFactoryByName(m_name.c_str()))
+		{
+			return pFactory->GetGUID();
+		}
+	}
+	else if (m_evaluatorType == EEvaluatorType::Deferred)
+	{
+		if (const UQS::Client::IDeferredEvaluatorFactory* pFactory = UQS::Core::IHubPlugin::GetHub().GetDeferredEvaluatorFactoryDatabase().FindFactoryByName(m_name.c_str()))
+		{
+			return pFactory->GetGUID();
+		}
+	}
+
+	return nullGUID;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1867,7 +1979,7 @@ EEvaluatorType CEvaluator::GetType() const
 CEvaluator::CEvaluator(const EEvaluatorType type)
 	: m_name()
 	, m_weight(1.0f)
-	, m_scoreTransform()
+	, m_scoreTransformName()
 	, m_bNegateDiscard(false)
 	, m_inputs()
 	, m_pErrorCollector(new CErrorCollector)
@@ -1901,7 +2013,7 @@ CEvaluator::CEvaluator(CEvaluator&& other)
 	: m_name(std::move(other.m_name))
 	, m_weight(other.m_weight)
 	, m_inputs(std::move(other.m_inputs))
-	, m_scoreTransform(std::move(other.m_scoreTransform))
+	, m_scoreTransformName(std::move(other.m_scoreTransformName))
 	, m_bNegateDiscard(other.m_bNegateDiscard)
 	, m_pErrorCollector(std::move(other.m_pErrorCollector))
 	, m_evaluatorType(other.m_evaluatorType)
@@ -1916,7 +2028,7 @@ CEvaluator::CEvaluator(CEvaluator&& other)
 CEvaluator::CEvaluator()
 	: m_name()
 	, m_weight(1.0f)
-	, m_scoreTransform()
+	, m_scoreTransformName()
 	, m_bNegateDiscard(false)
 	, m_inputs()
 	, m_pErrorCollector(new CErrorCollector)
@@ -1933,7 +2045,7 @@ CEvaluator& CEvaluator::operator=(CEvaluator&& other)
 		m_name = std::move(other.m_name);
 		m_weight = other.m_weight;
 		m_inputs = std::move(other.m_inputs);
-		m_scoreTransform = std::move(other.m_scoreTransform);
+		m_scoreTransformName = std::move(other.m_scoreTransformName);
 		m_bNegateDiscard = other.m_bNegateDiscard;
 		m_pErrorCollector = std::move(other.m_pErrorCollector);
 		m_evaluatorType = other.m_evaluatorType;
@@ -2033,10 +2145,10 @@ bool CEvaluator::SerializeName(Serialization::IArchive& archive, const char* szN
 
 void CEvaluator::SerializeScoreTransform(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context)
 {
-	const char* szOldScoreTransform = m_scoreTransform.c_str();
+	const char* szOldScoreTransform = m_scoreTransformName.c_str();
 	auto setScoreTransform = [this](const char* szNewValue)
 	{
-		m_scoreTransform = szNewValue;
+		m_scoreTransformName = szNewValue;
 	};
 
 	if (context.GetSettings().bUseSelectionHelpers)
@@ -2424,9 +2536,9 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 		for (size_t i = 0, n = sourceGlobalConstParams.GetParameterCount(); i < n; ++i)
 		{
 			const UQS::Core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = sourceGlobalConstParams.GetParameter(i);
-			CItemLiteral value(pi.szType, context);
+			CItemLiteral value(pi.szTypeName, context);
 			value.SetFromStringLiteral(CONST_TEMP_STRING(pi.szValue));
-			m_constParams.AddParameter(pi.szName, pi.szType, std::move(value), pi.bAddToDebugRenderWorld);
+			m_constParams.AddParameter(pi.szName, pi.szTypeName, std::move(value), pi.bAddToDebugRenderWorld);
 		}
 	}
 
@@ -2437,7 +2549,7 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 		for (size_t i = 0, n = sourceGlobalRuntimeParams.GetParameterCount(); i < n; ++i)
 		{
 			const UQS::Core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = sourceGlobalRuntimeParams.GetParameter(i);
-			m_runtimeParams.AddParameter(pi.szName, pi.szType, pi.bAddToDebugRenderWorld);
+			m_runtimeParams.AddParameter(pi.szName, pi.szTypeName, pi.bAddToDebugRenderWorld);
 		}
 	}
 
@@ -2455,12 +2567,12 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 	{
 		for (size_t i = 0, n = source.GetInstantEvaluatorCount(); i < n; ++i)
 		{
-			const UQS::Core::ITextualInstantEvaluatorBlueprint& sourceInstantEvaluatorBlueprint = source.GetInstantEvaluator(i);
+			const UQS::Core::ITextualEvaluatorBlueprint& sourceInstantEvaluatorBlueprint = source.GetInstantEvaluator(i);
 			CInstantEvaluatorBlueprint& targetInstantEvaluatorBlueprint = m_evaluators.AddInstantEvaluator();
 
 			targetInstantEvaluatorBlueprint.SetEvaluatorName(sourceInstantEvaluatorBlueprint.GetEvaluatorName());
 			targetInstantEvaluatorBlueprint.SetWeight(sourceInstantEvaluatorBlueprint.GetWeight());
-			targetInstantEvaluatorBlueprint.SetScoreTransform(sourceInstantEvaluatorBlueprint.GetScoreTransform());
+			targetInstantEvaluatorBlueprint.SetScoreTransformName(sourceInstantEvaluatorBlueprint.GetScoreTransformName());
 			targetInstantEvaluatorBlueprint.SetNegateDiscard(sourceInstantEvaluatorBlueprint.GetNegateDiscard());
 
 			HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(targetInstantEvaluatorBlueprint.GetInputRoot(), sourceInstantEvaluatorBlueprint.GetInputRoot());
@@ -2471,12 +2583,12 @@ void CQueryBlueprint::BuildSelfFromITextualQueryBlueprint(const UQS::Core::IText
 	{
 		for (size_t i = 0, n = source.GetDeferredEvaluatorCount(); i < n; ++i)
 		{
-			const UQS::Core::ITextualDeferredEvaluatorBlueprint& sourceDeferredEvaluatorBlueprint = source.GetDeferredEvaluator(i);
+			const UQS::Core::ITextualEvaluatorBlueprint& sourceDeferredEvaluatorBlueprint = source.GetDeferredEvaluator(i);
 			CDeferredEvaluatorBlueprint& targetDeferredEvaluatorBlueprint = m_evaluators.AddDeferredEvaluator();
 
 			targetDeferredEvaluatorBlueprint.SetEvaluatorName(sourceDeferredEvaluatorBlueprint.GetEvaluatorName());
 			targetDeferredEvaluatorBlueprint.SetWeight(sourceDeferredEvaluatorBlueprint.GetWeight());
-			targetDeferredEvaluatorBlueprint.SetScoreTransform(sourceDeferredEvaluatorBlueprint.GetScoreTransform());
+			targetDeferredEvaluatorBlueprint.SetScoreTransformName(sourceDeferredEvaluatorBlueprint.GetScoreTransformName());
 			targetDeferredEvaluatorBlueprint.SetNegateDiscard(sourceDeferredEvaluatorBlueprint.GetNegateDiscard());
 
 			HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(targetDeferredEvaluatorBlueprint.GetInputRoot(), sourceDeferredEvaluatorBlueprint.GetInputRoot());
@@ -2493,9 +2605,17 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 		target.SetName(m_name.c_str());
 	}
 
-	// query factory
+	// query factory name
 	{
 		target.SetQueryFactoryName(m_queryFactory.queryFactoryName.c_str());
+	}
+
+	// query factory GUID
+	{
+		if (const UQS::Core::IQueryFactory* pQueryFactory = UQS::Core::IHubPlugin::GetHub().GetQueryFactoryDatabase().FindFactoryByName(m_queryFactory.queryFactoryName.c_str()))
+		{
+			target.SetQueryFactoryGUID(pQueryFactory->GetGUID());
+		}
 	}
 
 	// query children
@@ -2521,11 +2641,12 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 		{
 			const char* szName;
 			const char* szType;
+			CryGUID typeGUID;
 			bool bAddToDebugRenderWorld;
 			value.clear();
 			std::shared_ptr<CErrorCollector> pErrorCollector;
-			m_constParams.GetParameterInfo(i, szName, szType, *&value, bAddToDebugRenderWorld, pErrorCollector);
-			targetConstParams.AddParameter(szName, szType, value.c_str(), bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(pErrorCollector));
+			m_constParams.GetParameterInfo(i, szName, szType, typeGUID, *&value, bAddToDebugRenderWorld, pErrorCollector);
+			targetConstParams.AddParameter(szName, szType, typeGUID, value.c_str(), bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(pErrorCollector));
 		}
 	}
 
@@ -2537,10 +2658,11 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 		{
 			const char* szName;
 			const char* szType;
+			CryGUID typeGUID;
 			bool bAddToDebugRenderWorld;
 			std::shared_ptr<CErrorCollector> pErrorCollector;
-			m_runtimeParams.GetParameterInfo(i, szName, szType, bAddToDebugRenderWorld, pErrorCollector);
-			targetRuntimeParams.AddParameter(szName, szType, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(pErrorCollector));
+			m_runtimeParams.GetParameterInfo(i, szName, szType, typeGUID, bAddToDebugRenderWorld, pErrorCollector);
+			targetRuntimeParams.AddParameter(szName, szType, typeGUID, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(pErrorCollector));
 		}
 	}
 
@@ -2550,6 +2672,7 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 		UQS::Core::ITextualGeneratorBlueprint& targetGeneratorBlueprint = target.SetGenerator();
 
 		targetGeneratorBlueprint.SetGeneratorName(m_generator.GetGeneratorName());
+		targetGeneratorBlueprint.SetGeneratorGUID(m_generator.GetGeneratorGUID());
 		targetGeneratorBlueprint.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(m_generator.GetErrorCollectorSharedPtr()));
 
 		HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(targetGeneratorBlueprint.GetInputRoot(), m_generator.GetInputRoot());
@@ -2560,11 +2683,13 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 		for (size_t i = 0, n = m_evaluators.GetInstantEvaluatorCount(); i < n; ++i)
 		{
 			const CInstantEvaluatorBlueprint& sourceInstantEvaluatorBlueprint = m_evaluators.GetInstantEvaluator(i);
-			UQS::Core::ITextualInstantEvaluatorBlueprint& targetInstantEvaluatorBlueprint = target.AddInstantEvaluator();
+			UQS::Core::ITextualEvaluatorBlueprint& targetInstantEvaluatorBlueprint = target.AddInstantEvaluator();
 
 			targetInstantEvaluatorBlueprint.SetEvaluatorName(sourceInstantEvaluatorBlueprint.GetEvaluatorName());
+			targetInstantEvaluatorBlueprint.SetEvaluatorGUID(sourceInstantEvaluatorBlueprint.GetEvaluatorGUID());
 			targetInstantEvaluatorBlueprint.SetWeight(sourceInstantEvaluatorBlueprint.GetWeight());
-			targetInstantEvaluatorBlueprint.SetScoreTransform(sourceInstantEvaluatorBlueprint.GetScoreTransform());
+			targetInstantEvaluatorBlueprint.SetScoreTransformName(sourceInstantEvaluatorBlueprint.GetScoreTransformName());
+			targetInstantEvaluatorBlueprint.SetScoreTransformGUID(sourceInstantEvaluatorBlueprint.GetScoreTransformGUID());
 			targetInstantEvaluatorBlueprint.SetNegateDiscard(sourceInstantEvaluatorBlueprint.GetNegateDiscard());
 			targetInstantEvaluatorBlueprint.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(sourceInstantEvaluatorBlueprint.Owner().GetErrorCollectorSharedPtr()));
 
@@ -2577,11 +2702,13 @@ void CQueryBlueprint::BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQue
 		for (size_t i = 0, n = m_evaluators.GetDeferredEvaluatorCount(); i < n; ++i)
 		{
 			const CDeferredEvaluatorBlueprint& sourceDeferredEvaluatorBlueprint = m_evaluators.GetDeferredEvaluator(i);
-			UQS::Core::ITextualDeferredEvaluatorBlueprint& targetDeferredEvaluatorBlueprint = target.AddDeferredEvaluator();
+			UQS::Core::ITextualEvaluatorBlueprint& targetDeferredEvaluatorBlueprint = target.AddDeferredEvaluator();
 
 			targetDeferredEvaluatorBlueprint.SetEvaluatorName(sourceDeferredEvaluatorBlueprint.GetEvaluatorName());
+			targetDeferredEvaluatorBlueprint.SetEvaluatorGUID(sourceDeferredEvaluatorBlueprint.GetEvaluatorGUID());
 			targetDeferredEvaluatorBlueprint.SetWeight(sourceDeferredEvaluatorBlueprint.GetWeight());
-			targetDeferredEvaluatorBlueprint.SetScoreTransform(sourceDeferredEvaluatorBlueprint.GetScoreTransform());
+			targetDeferredEvaluatorBlueprint.SetScoreTransformName(sourceDeferredEvaluatorBlueprint.GetScoreTransformName());
+			targetDeferredEvaluatorBlueprint.SetScoreTransformGUID(sourceDeferredEvaluatorBlueprint.GetScoreTransformGUID());
 			targetDeferredEvaluatorBlueprint.SetNegateDiscard(sourceDeferredEvaluatorBlueprint.GetNegateDiscard());
 			targetDeferredEvaluatorBlueprint.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(sourceDeferredEvaluatorBlueprint.Owner().GetErrorCollectorSharedPtr()));
 
@@ -2596,11 +2723,13 @@ void CQueryBlueprint::HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprin
 	{
 		const UQS::Core::ITextualInputBlueprint& sourceChild = sourceRoot.GetChild(i);
 		const char* szParamName = sourceChild.GetParamName();
+		const UQS::Client::CInputParameterID& paramID = sourceChild.GetParamID();
 		const char* szFuncName = sourceChild.GetFuncName();
+		// notice: we don't care about the Function's GUID as the Function's name is already unique
 		const char* szFuncReturnValueLiteral = sourceChild.GetFuncReturnValueLiteral();
 		bool bAddReturnValueToDebugRenderWorldUponExecution = sourceChild.GetAddReturnValueToDebugRenderWorldUponExecution();
 
-		CInputBlueprint& newChild = targetRoot.AddChild(szParamName, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
+		CInputBlueprint& newChild = targetRoot.AddChild(szParamName, paramID, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
 
 		// recurse down
 		HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(newChild, sourceChild);
@@ -2613,12 +2742,14 @@ void CQueryBlueprint::HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprin
 	{
 		const CInputBlueprint& sourceChild = sourceRoot.GetChild(i);
 		const char* szParamName = sourceChild.GetParamName();
+		const UQS::Client::CInputParameterID& paramID = sourceChild.GetParamID();
 		const char* szFuncName = sourceChild.GetFuncName();
+		const CryGUID& funcGUID = sourceChild.GetFuncGUID();
 		const char* szFuncReturnValueLiteral = sourceChild.GetFuncReturnValueLiteral();
 		bool bAddReturnValueToDebugRenderWorldUponExecution = sourceChild.GetAddReturnValueToDebugRenderWorldUponExecution();
 		const std::shared_ptr<CErrorCollector>& pErrorCollector = sourceChild.GetErrorCollectorSharedPtr();
 
-		UQS::Core::ITextualInputBlueprint& newChild = targetRoot.AddChild(szParamName, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
+		UQS::Core::ITextualInputBlueprint& newChild = targetRoot.AddChild(szParamName, paramID, szFuncName, funcGUID, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
 		newChild.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(pErrorCollector));
 
 		// recurse down

@@ -235,10 +235,72 @@ SMetaData::SMetaData()
 	, bMergeAllNodes(false)
 	, bSceneOrigin(false)
 	, pAutoLodSettings(new CAutoLodSettings())
-	, pEditorMetaData(nullptr)
 	, bVertexPositionFormatF32(false)
-
 {}
+
+SMetaData::SMetaData(const SMetaData& other)
+	: settings(other.settings)
+	, sourceFilename(other.sourceFilename)
+	, outputFileExt(other.outputFileExt)
+	, password(other.password)
+	, materialFilename(other.materialFilename)
+	, unit(other.unit)
+	, scale(other.scale)
+	, bMergeAllNodes(other.bMergeAllNodes)
+	, bSceneOrigin(other.bSceneOrigin)
+	, forwardUpAxes(other.forwardUpAxes)
+	, materialData(other.materialData)
+	, nodeData(other.nodeData)
+	, animationClip(other.animationClip)
+	, jointPhysicsData(other.jointPhysicsData)
+	, pAutoLodSettings(other.pAutoLodSettings)
+	, bVertexPositionFormatF32(other.bVertexPositionFormatF32)
+{
+	if (other.pEditorMetaData)
+	{
+		pEditorMetaData = std::move(other.pEditorMetaData->Clone());
+	}
+}
+
+SMetaData& SMetaData::operator=(const SMetaData& other)
+{
+	if (this == &other)
+	{
+		return *this;
+	}
+
+	settings = other.settings;
+	sourceFilename = other.sourceFilename;
+	outputFileExt = other.outputFileExt;
+	password = other.password;
+	materialFilename = other.materialFilename;
+
+	unit = other.unit;
+	scale = other.scale;
+
+	bMergeAllNodes = other.bMergeAllNodes;
+	bSceneOrigin = other.bSceneOrigin;
+
+	forwardUpAxes = other.forwardUpAxes;
+
+	materialData = other.materialData;
+	nodeData = other.nodeData;
+
+	animationClip = other.animationClip;
+
+	jointPhysicsData = other.jointPhysicsData;
+
+	if (other.pEditorMetaData)
+	{
+		pEditorMetaData = std::move(other.pEditorMetaData->Clone());
+	}
+
+	pAutoLodSettings = other.pAutoLodSettings;
+
+	bVertexPositionFormatF32 = other.bVertexPositionFormatF32;
+
+	return *this;
+}
 
 TString SMetaData::ToJson() const
 {

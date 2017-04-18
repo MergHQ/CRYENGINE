@@ -125,6 +125,31 @@ void QToolWindowArea::addToolWindows(const QList<QWidget*>& toolWindows, int ind
 		{
 			tabBar()->setTabButton(newIndex, QTabBar::ButtonPosition::RightSide, createCloseButton());
 		}
+
+#if QT_VERSION >= 0x050000
+		connect(toolWindow, &QWidget::windowTitleChanged, this, [this, newIndex, toolWindow](const QString& title)
+		{
+			if (indexOf(toolWindow) >= 0)
+			{
+				setTabText(newIndex, title);
+			}
+			if (count() == 1)
+			{
+				setWindowTitle(title);
+			}
+		});
+		connect(toolWindow, &QWidget::windowIconChanged, this, [this, newIndex, toolWindow](const QIcon& icon)
+		{
+			if (indexOf(toolWindow) >= 0)
+			{
+				setTabIcon(newIndex, icon);
+			}
+			if (count() == 1)
+			{
+				setWindowIcon(icon);
+			}
+		});
+#endif
 	}
 	setCurrentWidget(toolWindows.first());
 }
@@ -154,10 +179,20 @@ void QToolWindowArea::closeTab(int index)
 
 void QToolWindowArea::removeToolWindow(QWidget* toolWindow)
 {
-	int i = indexOf(toolWindow);
+	toolWindow->disconnect(this);
+	const int i = indexOf(toolWindow);
 	if (i != -1)
 	{
 		removeTab(i);
+	}
+	else if (m_tabFrame->contents() == toolWindow)
+	{
+		const int i = indexOf(m_tabFrame);
+		if (i != -1)
+		{
+			removeTab(i);
+		}
+		m_tabFrame->setContents(nullptr);
 	}
 }
 

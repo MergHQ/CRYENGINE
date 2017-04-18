@@ -17,19 +17,20 @@ namespace UQS
 		//===================================================================================
 
 		CTextualQueryBlueprint::CTextualQueryBlueprint()
-			: m_maxItemsToKeepInResultSet(0)
+			: m_queryFactoryGUID(CryGUID::Null())
+			, m_maxItemsToKeepInResultSet(0)
 		{
 			// nothing
 		}
 
 		CTextualQueryBlueprint::~CTextualQueryBlueprint()
 		{
-			for (CTextualInstantEvaluatorBlueprint* pIE : m_instantEvaluators)
+			for (CTextualEvaluatorBlueprint* pIE : m_instantEvaluators)
 			{
 				delete pIE;
 			}
 
-			for (CTextualDeferredEvaluatorBlueprint* pDE : m_deferredEvaluators)
+			for (CTextualEvaluatorBlueprint* pDE : m_deferredEvaluators)
 			{
 				delete pDE;
 			}
@@ -48,6 +49,11 @@ namespace UQS
 		void CTextualQueryBlueprint::SetQueryFactoryName(const char* szFactoryName)
 		{
 			m_queryFactoryName = szFactoryName;
+		}
+
+		void CTextualQueryBlueprint::SetQueryFactoryGUID(const CryGUID& factoryGUID)
+		{
+			m_queryFactoryGUID = factoryGUID;
 		}
 
 		void CTextualQueryBlueprint::SetMaxItemsToKeepInResultSet(size_t maxItems)
@@ -71,9 +77,9 @@ namespace UQS
 			return *m_pGenerator;
 		}
 
-		ITextualInstantEvaluatorBlueprint& CTextualQueryBlueprint::AddInstantEvaluator()
+		ITextualEvaluatorBlueprint& CTextualQueryBlueprint::AddInstantEvaluator()
 		{
-			CTextualInstantEvaluatorBlueprint* pNewInstantEvaluatorBP = new CTextualInstantEvaluatorBlueprint;
+			CTextualEvaluatorBlueprint* pNewInstantEvaluatorBP = new CTextualEvaluatorBlueprint;
 			m_instantEvaluators.push_back(pNewInstantEvaluatorBP);
 			return *pNewInstantEvaluatorBP;
 		}
@@ -83,9 +89,9 @@ namespace UQS
 			return m_instantEvaluators.size();
 		}
 
-		ITextualDeferredEvaluatorBlueprint& CTextualQueryBlueprint::AddDeferredEvaluator()
+		ITextualEvaluatorBlueprint& CTextualQueryBlueprint::AddDeferredEvaluator()
 		{
-			CTextualDeferredEvaluatorBlueprint* pNewDeferredEvaluatorBlueprint = new CTextualDeferredEvaluatorBlueprint;
+			CTextualEvaluatorBlueprint* pNewDeferredEvaluatorBlueprint = new CTextualEvaluatorBlueprint;
 			m_deferredEvaluators.push_back(pNewDeferredEvaluatorBlueprint);
 			return *pNewDeferredEvaluatorBlueprint;
 		}
@@ -112,6 +118,11 @@ namespace UQS
 			return m_queryFactoryName.c_str();
 		}
 
+		const CryGUID& CTextualQueryBlueprint::GetQueryFactoryGUID() const
+		{
+			return m_queryFactoryGUID;
+		}
+
 		size_t CTextualQueryBlueprint::GetMaxItemsToKeepInResultSet() const
 		{
 			return m_maxItemsToKeepInResultSet;
@@ -132,13 +143,13 @@ namespace UQS
 			return m_pGenerator.get();
 		}
 
-		const ITextualInstantEvaluatorBlueprint& CTextualQueryBlueprint::GetInstantEvaluator(size_t index) const
+		const ITextualEvaluatorBlueprint& CTextualQueryBlueprint::GetInstantEvaluator(size_t index) const
 		{
 			assert(index < m_instantEvaluators.size());
 			return *m_instantEvaluators[index];
 		}
 
-		const ITextualDeferredEvaluatorBlueprint& CTextualQueryBlueprint::GetDeferredEvaluator(size_t index) const
+		const ITextualEvaluatorBlueprint& CTextualQueryBlueprint::GetDeferredEvaluator(size_t index) const
 		{
 			assert(index < m_deferredEvaluators.size());
 			return *m_deferredEvaluators[index];
@@ -225,17 +236,23 @@ namespace UQS
 			// name
 			m_name = source.GetName();
 
-			// query factory
+			// query factory: first search by its GUID, then by its name
 			{
-				const char* queryFactoryName = source.GetQueryFactoryName();
-				m_pQueryFactory = static_cast<CQueryFactoryBase*>(g_pHub->GetQueryFactoryDatabase().FindFactoryByName(queryFactoryName));  // the static_cast<> is kinda ok'ish here, since IQueryFactory and its derived class CQueryFactoryBase are _both_ defined in the core, so we definitely know about the inheritance hierarchy
-				if (!m_pQueryFactory)
+				const CryGUID& queryFactoryGUID = source.GetQueryFactoryGUID();
+				const char* szQueryFactoryName = source.GetQueryFactoryName();
+
+				if(!(m_pQueryFactory = static_cast<CQueryFactoryBase*>(g_pHub->GetQueryFactoryDatabase().FindFactoryByGUID(queryFactoryGUID))))         // the static_cast<> is kinda ok'ish here, since IQueryFactory and its derived class CQueryFactoryBase are _both_ defined in the core, so we definitely know about the inheritance hierarchy
 				{
-					if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+					if (!(m_pQueryFactory = static_cast<CQueryFactoryBase*>(g_pHub->GetQueryFactoryDatabase().FindFactoryByName(szQueryFactoryName))))  // ditto
 					{
-						pSE->AddErrorMessage("Query factory with name '%s' not found", queryFactoryName);
+						if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+						{
+							Shared::CUqsString guidAsString;
+							Shared::Internal::CGUIDHelper::ToString(queryFactoryGUID, guidAsString);
+							pSE->AddErrorMessage("Unknown QueryFactory: GUID = %s, name = '%s'", guidAsString.c_str(), szQueryFactoryName);
+						}
+						bResolveSucceeded = false;
 					}
-					bResolveSucceeded = false;
 				}
 			}
 

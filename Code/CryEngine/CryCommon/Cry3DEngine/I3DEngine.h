@@ -2117,6 +2117,9 @@ struct I3DEngine : public IProcess
 	//! Removes references to RenderMesh
 	virtual void OnRenderMeshDeleted(IRenderMesh* pRenderMesh) = 0;
 
+	//! Removes references to IEntity
+	virtual void OnEntityDeleted(struct IEntity* pEntity) = 0;
+
 	//! Used to highlight an object under the reticule.
 	virtual void DebugDraw_UpdateDebugNode() = 0;
 

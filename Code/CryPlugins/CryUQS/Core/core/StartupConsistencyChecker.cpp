@@ -13,7 +13,7 @@ namespace UQS
 		void CStartupConsistencyChecker::CheckForConsistencyErrors()
 		{
 			//
-			// clear previous errors so that user can correct some of the problems while editing a query and then re-check for consistency
+			// clear previous errors so that the user can correct some of the problems while editing a query and then re-check for consistency
 			//
 
 			m_errors.clear();
@@ -61,7 +61,7 @@ namespace UQS
 
 #if UQS_SCHEMATYC_SUPPORT
 			//
-			// ensure no duplicated and clashing item factory GUIDs
+			// ensure no duplicated and clashing item factory GUIDs of the Schematyc functions
 			//
 
 			{
@@ -92,7 +92,7 @@ namespace UQS
 					    (guid1ofItemFactory1 != emptyGUID && guid2ofItemFactory1 == emptyGUID))
 					{
 						string error;
-						error.Format("ItemFactory '%s' has inconsistent GUIDs: one is empty while the other is not", itemFactory1.GetName());
+						error.Format("ItemFactory '%s' has inconsistent GUIDs for Schematyc functions: one is empty while the other is not", itemFactory1.GetName());
 						m_errors.push_back(error);
 						continue;
 					}
@@ -104,7 +104,7 @@ namespace UQS
 					if (guid1ofItemFactory1 == guid2ofItemFactory1)
 					{
 						string error;
-						error.Format("ItemFactory '%s' has duplicated GUIDs", itemFactory1.GetName());
+						error.Format("ItemFactory '%s' has duplicated GUIDs for Schematyc functions", itemFactory1.GetName());
 						m_errors.push_back(error);
 						continue;
 					}
@@ -125,7 +125,7 @@ namespace UQS
 						    guid2ofItemFactory1 == guid1ofItemFactory2)
 						{
 							string error;
-							error.Format("Clashing GUIDs in ItemFactories '%s' and '%s'", itemFactory1.GetName(), itemFactory2.GetName());
+							error.Format("Clashing GUIDs for Schematyc functions in ItemFactories '%s' and '%s'", itemFactory1.GetName(), itemFactory2.GetName());
 							m_errors.push_back(error);
 						}
 					}
@@ -153,94 +153,46 @@ namespace UQS
 #endif // UQS_SCHEMATYC_SUPPORT
 
 			//
-			// ensure no duplicate item factories (same name)
+			// ensure consistency of item factories
 			//
 
-			{
-				const std::map<string, int> duplicateItemFactoryNames = g_pHub->GetItemFactoryDatabase().GetDuplicateFactoryNames();
-
-				if (!duplicateItemFactoryNames.empty())
-				{
-					for (const auto& pair : duplicateItemFactoryNames)
-					{
-						string error;
-						error.Format("Duplicate ItemFactory: '%s' (you tried to register an item-factory under this name %i times)", pair.first.c_str(), pair.second);
-						m_errors.push_back(error);
-					}
-				}
-			}
+			CheckFactoryDatabaseConsistency(g_pHub->GetItemFactoryDatabase(), "ItemFactory");
 
 			//
-			// ensure no duplicate function factories
+			// ensure ensure consistency of function factories
 			//
 
-			{
-				const std::map<string, int> duplicateFunctionFactoryNames = g_pHub->GetFunctionFactoryDatabase().GetDuplicateFactoryNames();
-
-				if (!duplicateFunctionFactoryNames.empty())
-				{
-					for (const auto& pair : duplicateFunctionFactoryNames)
-					{
-						string error;
-						error.Format("Duplicate FunctionFactory: '%s' (you tried to register a function-factory under this name %i times)", pair.first.c_str(), pair.second);
-						m_errors.push_back(error);
-					}
-				}
-			}
+			CheckFactoryDatabaseConsistency(g_pHub->GetFunctionFactoryDatabase(), "FunctionFactory");
 
 			//
-			// ensure no duplicate generator factories
+			// ensure ensure consistency of generator factories
 			//
 
-			{
-				const std::map<string, int> duplicateGeneratorFactoryNames = g_pHub->GetGeneratorFactoryDatabase().GetDuplicateFactoryNames();
-
-				if (!duplicateGeneratorFactoryNames.empty())
-				{
-					for (const auto& pair : duplicateGeneratorFactoryNames)
-					{
-						string error;
-						error.Format("Duplicate GeneratorFactory: '%s' (you tried to register a generator-factory under this name %i times)", pair.first.c_str(), pair.second);
-						m_errors.push_back(error);
-					}
-				}
-			}
+			CheckFactoryDatabaseConsistency(g_pHub->GetGeneratorFactoryDatabase(), "GeneratorFactory");
 
 			//
-			// ensure no duplicate instant-evaluator factories
+			// ensure ensure consistency of instant-evaluator factories
 			//
 
-			{
-				const std::map<string, int> duplicateInstantEvaluatorFactoryNames = g_pHub->GetInstantEvaluatorFactoryDatabase().GetDuplicateFactoryNames();
-
-				if (!duplicateInstantEvaluatorFactoryNames.empty())
-				{
-					for (const auto& pair : duplicateInstantEvaluatorFactoryNames)
-					{
-						string error;
-						error.Format("Duplicate InstantEvaluatorFactory: '%s' (you tried to register an instant-evaluator-factory under this name %i times)", pair.first.c_str(), pair.second);
-						m_errors.push_back(error);
-					}
-				}
-			}
+			CheckFactoryDatabaseConsistency(g_pHub->GetInstantEvaluatorFactoryDatabase(), "InstantEvaluatorFactory");
 
 			//
-			// ensure no duplicate deferred-evaluator factories
+			// ensure ensure consistency of deferred-evaluator factories
 			//
 
-			{
-				const std::map<string, int> duplicateDeferredEvaluatorFactoryNames = g_pHub->GetDeferredEvaluatorFactoryDatabase().GetDuplicateFactoryNames();
+			CheckFactoryDatabaseConsistency(g_pHub->GetDeferredEvaluatorFactoryDatabase(), "DeferredEvaluatorFactory");
 
-				if (!duplicateDeferredEvaluatorFactoryNames.empty())
-				{
-					for (const auto& pair : duplicateDeferredEvaluatorFactoryNames)
-					{
-						string error;
-						error.Format("Duplicate DeferredEvaluatorFactory: '%s' (you tried to register a deferred-evaluator-factory under this name %i times)", pair.first.c_str(), pair.second);
-						m_errors.push_back(error);
-					}
-				}
-			}
+			//
+			// ensure ensure consistency of query factories
+			//
+
+			CheckFactoryDatabaseConsistency(g_pHub->GetQueryFactoryDatabase(), "QueryFactory");
+
+			//
+			// ensure ensure consistency of score-transform factories
+			//
+
+			CheckFactoryDatabaseConsistency(g_pHub->GetScoreTransformFactoryDatabase(), "ScoreTransformFactory");
 
 			//
 			// ensure that all generators generate items for which item-factories are registered
@@ -350,6 +302,57 @@ namespace UQS
 			// TODO: more consistency checks
 		}
 
+		template <class TFactoryDB>
+		void CStartupConsistencyChecker::CheckFactoryDatabaseConsistency(const TFactoryDB& factoryDB, const char* szFactoryDatabaseNameForErrorMessages)
+		{
+			// ensure that all factories have a non-empty GUID
+			{
+				const std::set<string> factoryNamesWithEmptyGUIDs = factoryDB.GetFactoryNamesWithEmptyGUIDs();
+
+				if (!factoryNamesWithEmptyGUIDs.empty())
+				{
+					for (const string& factoryName : factoryNamesWithEmptyGUIDs)
+					{
+						string error;
+						error.Format("%s with name = '%s' has an empty GUID", szFactoryDatabaseNameForErrorMessages, factoryName.c_str());
+						m_errors.push_back(error);
+					}
+				}
+			}
+
+			// check for duplicates by name
+			{
+				const std::map<string, int> duplicateFactoryNames = factoryDB.GetDuplicateFactoryNames();
+
+				if (!duplicateFactoryNames.empty())
+				{
+					for (const auto& pair : duplicateFactoryNames)
+					{
+						string error;
+						error.Format("Duplicate %s with name = '%s' (you tried to register a %s under this name %i times)", szFactoryDatabaseNameForErrorMessages, pair.first.c_str(), szFactoryDatabaseNameForErrorMessages, pair.second);
+						m_errors.push_back(error);
+					}
+				}
+			}
+
+			// check for duplicates by GUID
+			{
+				const std::map<CryGUID, int> duplicateFactoryGUIDs = factoryDB.GetDuplicateFactoryGUIDs();
+
+				if (!duplicateFactoryGUIDs.empty())
+				{
+					for (const auto& pair : duplicateFactoryGUIDs)
+					{
+						Shared::CUqsString guidAsString;
+						Shared::Internal::CGUIDHelper::ToString(pair.first, guidAsString);
+						string error;
+						error.Format("Duplicate %s with GUID = %s (you tried to register a %s under this GUID %i times)", szFactoryDatabaseNameForErrorMessages, guidAsString.c_str(), szFactoryDatabaseNameForErrorMessages, pair.second);
+						m_errors.push_back(error);
+					}
+				}
+			}
+		}
+
 		void CStartupConsistencyChecker::CheckInputParametersConsistency(const Client::IInputParameterRegistry& registry, const char* szErrorMessagePrefix)
 		{
 			for (size_t i = 0, n = registry.GetParameterCount(); i < n; ++i)
@@ -372,6 +375,28 @@ namespace UQS
 					{
 						string error;
 						error.Format("%s: duplicate parameter name: '%s' (could be a copy & paste error)", szErrorMessagePrefix, pi2.szName);
+						m_errors.push_back(error);
+					}
+				}
+
+				// ensure that the parameter ID is non-empty
+				if (pi.id.IsEmpty())
+				{
+					string error;
+					error.Format("%s: parameter with name '%s' has an empty ID", szErrorMessagePrefix, pi.szName);
+					m_errors.push_back(error);
+				}
+
+				// check for unique parameter ID (prevent copy & paste error)
+				for (size_t k = i + 1; k < n; ++k)
+				{
+					const Client::IInputParameterRegistry::SParameterInfo& pi2 = registry.GetParameter(k);
+					if (pi2.id == pi.id)
+					{
+						string error;
+						char parameterIdAsString[5];
+						pi2.id.ToString(parameterIdAsString);
+						error.Format("%s: parameter with name '%s' has duplicated ID: '%s' (could be a copy & paste error)", szErrorMessagePrefix, pi2.szName, parameterIdAsString);
 						m_errors.push_back(error);
 					}
 				}
@@ -405,7 +430,7 @@ namespace UQS
 				{
 					// duplicate detected
 					Shared::CUqsString guidAsString;
-					Client::Internal::CGUIDHelper::ToString(guidAsString, guid);
+					Shared::Internal::CGUIDHelper::ToString(guid, guidAsString);
 					string error;
 					error.Format("ItemFactory '%s': clashing GUID in ItemConverter '%s -> %s': %s (used by a different ItemConverter already)", szItemFactoryNameForErrorMessages, converter.GetFromName(), converter.GetToName(), guidAsString.c_str());
 					m_errors.push_back(error);

@@ -292,8 +292,6 @@ private:
 	bool m_bHasLods;
 	bool m_bAutoLodCheckViewSettingsFlag;  // If true, changing the LOD viewport setting should trigger an update of the rc mesh.
 
-	std::unique_ptr<SEditorMetaData> m_pEditorMetaData;
-
 	bool            m_bGlobalAabbNeedsRefresh;
 
 	QString         m_initialFilePath;

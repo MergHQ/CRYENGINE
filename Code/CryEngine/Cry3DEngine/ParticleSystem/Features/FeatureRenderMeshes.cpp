@@ -221,6 +221,16 @@ public:
 		CRY_PFX2_FOR_END;
 	}
 
+	virtual uint GetNumResources() const override
+	{
+		return m_meshName.empty() ? 0 : 1;
+	}
+
+	virtual const char* GetResourceName(uint resourceId) const override
+	{
+		return m_meshName.c_str();
+	}
+
 private:
 	string                             m_meshName;
 	Vec3                               m_scale;

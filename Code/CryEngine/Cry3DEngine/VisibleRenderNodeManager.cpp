@@ -246,3 +246,18 @@ CVisibleRenderNodesManager::Statistics CVisibleRenderNodesManager::GetStatistics
 	stats.numUsed = m_visibleNodes.size();
 	return stats;
 }
+
+void CVisibleRenderNodesManager::OnEntityDeleted(IEntity *pEntity)
+{
+	LOADING_TIME_PROFILE_SECTION;
+
+	for (auto* node : m_visibleNodes)
+	{
+		if (node->userData.pOwnerNode && node->userData.pOwnerNode->GetOwnerEntity() == pEntity)
+		{
+			node->userData.pOwnerNode->SetOwnerEntity(nullptr);
+
+			Cry3DEngineBase::Warning("%s: Dangling IEntity pointer detected in render node: %s", __FUNCTION__, node->userData.pOwnerNode->GetEntityClassName());
+		}
+	}
+}

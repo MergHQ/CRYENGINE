@@ -257,8 +257,6 @@ public:
 	// \p filePath Asset-relative file path to either chunk-file that stores meta data (e.g., .cgf), or asset meta-data (.cryasset).
 	bool Open(const string& filePath);
 
-	bool CanQuit(std::vector<string>& unsavedChanges);
-
 	virtual void        CreateMenu(IDialogHost* pDialogHost);
 
 	virtual const char* GetDialogName() const = 0;
@@ -269,6 +267,9 @@ public:
 	virtual void           OnEditorNotifyEvent(EEditorNotifyEvent evt) override;
 
 	virtual int GetToolButtons() const { return 0; }  // See EToolButtonFlags.
+
+	// Implement this in derived dialogs.
+	virtual bool MayUnloadScene() = 0;
 
 protected:
 	const FbxTool::CScene* GetScene() const;
@@ -291,7 +292,6 @@ protected:
 	string GetTargetFilePath() const;
 
 	// Implement this in derived dialogs.
-	virtual bool MayUnloadScene() = 0;
 	virtual void ReimportFile() {}
 
 	//! Returns a game relative path. If path refers to a directory, it must end with /. An empty string aborts saving.
@@ -317,8 +317,6 @@ protected:
 	// Drag&Drop.
 	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
 	virtual void dropEvent(QDropEvent* pEvent) override;
-
-	virtual void closeEvent(QCloseEvent* pEvent) override;
 
 private:
 	struct SSceneData;

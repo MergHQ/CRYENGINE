@@ -118,12 +118,12 @@ CEditorAdapter::CEditorAdapter(std::unique_ptr<MeshImporter::CBaseDialog> pDialo
 	, m_pDialog(std::move(pDialog))
 {
 	// Create file menu.
-	AddMenu("File");
+	AddToMenu(CEditor::MenuItems::FileMenu);
 
-	AddToMenu("File", "general.open");
+	AddToMenu(CEditor::MenuItems::Open);
+	AddToMenu(CEditor::MenuItems::Save);
+	AddToMenu(CEditor::MenuItems::SaveAs);
 	AddToMenu("File", "meshimporter.import");
-	AddToMenu("File", "general.save");
-	AddToMenu("File", "general.save_as");
 
 	m_pDialog->CreateMenu(this);
 
@@ -161,17 +161,12 @@ CEditorAdapter::CEditorAdapter(std::unique_ptr<MeshImporter::CBaseDialog> pDialo
 
 void CEditorAdapter::Host_AddMenu(const char* menu)
 {
-	AddMenu(menu);
+	GetMenu()->CreateMenu(menu);
 }
 
 void CEditorAdapter::Host_AddToMenu(const char* menu, const char* command)
 {
 	AddToMenu(menu, command);
-}
-
-bool CEditorAdapter::CanQuit(std::vector<string>& unsavedChanges)
-{
-	return m_pDialog->CanQuit(unsavedChanges);
 }
 
 IViewPaneClass::EDockingDirection CEditorAdapter::GetDockingDirection() const
@@ -202,13 +197,14 @@ void CEditorAdapter::customEvent(QEvent* pEvent)
 	}
 }
 
-void CEditorAdapter::closeEvent(QCloseEvent* pEvent)
+bool CEditorAdapter::OnAboutToCloseAsset(string& reason) const
 {
-	QApplication::sendEvent(m_pDialog.get(), pEvent);
-	if (pEvent->isAccepted() && GetAssetBeingEdited())
+	if (GetAssetBeingEdited() && !m_pDialog->MayUnloadScene())
 	{
-		signalAssetClosed(GetAssetBeingEdited());
+		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName()));
+		return false;
 	}
+	return true;
 }
 
 bool CEditorAdapter::OnOpenAsset(CAsset* pAsset)
@@ -244,5 +240,5 @@ bool CEditorAdapter::OnCloseAsset()
 	{
 		signalAssetClosed(GetAssetBeingEdited());
 	}
-	return false;
+	return true;
 }

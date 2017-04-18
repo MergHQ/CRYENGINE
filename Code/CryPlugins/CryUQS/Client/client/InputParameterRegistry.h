@@ -25,18 +25,22 @@ namespace UQS
 			private:
 				struct SStoredParameterInfo
 				{
-					explicit                        SStoredParameterInfo(const char* _szName, const Shared::CTypeInfo& _type, size_t _offset);
+					explicit                        SStoredParameterInfo(const char* _szName, const CInputParameterID& _id, const Shared::CTypeInfo& _type, size_t _offset, const char* _szDescription);
 
 					string                          name;
+					CInputParameterID               id;
 					const Shared::CTypeInfo&        type;
 					size_t                          offset;
+					string                          description;
 				};
 
 			public:
+				// IInputParameterRegistry
 				virtual size_t                      GetParameterCount() const override;
 				virtual SParameterInfo              GetParameter(size_t index) const override;
+				// ~IInputParameterRegistry
 
-				void                                RegisterParameterType(const char* szParamName, const Shared::CTypeInfo& typeInfo, size_t offset);
+				void                                RegisterParameterType(const char* szParamName, const char (&idAsFourCharacterString)[5], const Shared::CTypeInfo& typeInfo, size_t offset, const char* szDescription);
 
 			private:
 				std::vector<SStoredParameterInfo>   m_parametersInOrder;

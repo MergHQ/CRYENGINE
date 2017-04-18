@@ -34,6 +34,7 @@ namespace UQS
 		{
 			virtual                                  ~IGeneratorFactory() {}
 			virtual const char*                      GetName() const = 0;
+			virtual const CryGUID&                   GetGUID() const = 0;
 			virtual const IInputParameterRegistry&   GetInputParameterRegistry() const = 0;
 			virtual const Shared::CTypeInfo&         GetTypeOfItemsToGenerate() const = 0;
 			virtual GeneratorUniquePtr               CreateGenerator(const void* pParams) = 0;

@@ -4717,7 +4717,6 @@ void C3DEngine::SetCachedShadowBounds(const AABB& shadowBounds, float fAdditiona
 }
 
 //////////////////////////////////////////////////////////////////////////
-
 void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -4726,8 +4725,19 @@ void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 	// refresh cached shadow casters
 	if (GetCVars()->e_DynamicDistanceShadows != 0)
 	{
-		for (int nSID = 0; nSID < m_pObjectsTree.Count(); nSID++)
-			m_pObjectsTree[nSID]->MarkAsUncompiled();
+		static int lastFrameId = 0;
+
+		int newFrameId = GetRenderer()->GetFrameID();
+
+		if (lastFrameId != newFrameId)
+		{
+			for (int nSID = 0; nSID < m_pObjectsTree.Count(); nSID++)
+			{
+				m_pObjectsTree[nSID]->MarkAsUncompiled();
+			}
+
+			lastFrameId = newFrameId;
+		}
 	}
 }
 
@@ -6720,4 +6730,10 @@ Vec3 C3DEngine::GetEntityRegisterPoint(IRenderNode* pEnt)
 Vec3 C3DEngine::GetSunDirNormalized() const
 {
 	return m_vSunDirNormalized;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void C3DEngine::OnEntityDeleted(IEntity * pEntity)
+{
+	m_visibleNodesManager.OnEntityDeleted(pEntity);
 }

@@ -15,17 +15,19 @@ namespace UQS
 		//
 		//===================================================================================
 
-		class CTextualGeneratorBlueprint : public ITextualGeneratorBlueprint
+		class CTextualGeneratorBlueprint final : public ITextualGeneratorBlueprint
 		{
 		public:
 			explicit                                             CTextualGeneratorBlueprint();
 
 			// called by a loader that reads from an abstract data source to build the blueprint in textual form
 			virtual void                                         SetGeneratorName(const char* szGeneratorName) override;
+			virtual void                                         SetGeneratorGUID(const CryGUID& generatorGUID) override;
 			virtual ITextualInputBlueprint&                      GetInputRoot() override;
 
 			// called by CGeneratorBlueprint::Resolve()
 			virtual const char*                                  GetGeneratorName() const override;
+			virtual const CryGUID&                               GetGeneratorGUID() const override;
 			virtual const ITextualInputBlueprint&                GetInputRoot() const override;
 
 			virtual void                                         SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
@@ -36,6 +38,7 @@ namespace UQS
 
 		private:
 			string                                               m_generatorName;
+			CryGUID                                              m_generatorGUID;
 			CTextualInputBlueprint                               m_rootInput;
 			DataSource::SyntaxErrorCollectorUniquePtr            m_pSyntaxErrorCollector;
 		};

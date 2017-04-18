@@ -42,6 +42,7 @@ namespace UQS
 		{
 			virtual                      ~IScoreTransformFactory() {}
 			virtual const char*          GetName() const = 0;        // used for showing in the UI as well a unique key (this may change when refactoring the whole UQS system to use GUIDs for such things)
+			virtual const CryGUID&       GetGUID() const = 0;
 			virtual EScoreTransformType  GetScoreTransformType() const = 0;
 		};
 

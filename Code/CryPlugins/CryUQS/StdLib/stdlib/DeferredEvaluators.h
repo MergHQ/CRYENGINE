@@ -32,9 +32,9 @@ namespace UQS
 				bool                   raycastShallSucceed;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("from", from);
-					UQS_EXPOSE_PARAM("to", to);
-					UQS_EXPOSE_PARAM("raycastShallSucceed", raycastShallSucceed);
+					UQS_EXPOSE_PARAM("from", from, "FROM", "Start position of the raycast");
+					UQS_EXPOSE_PARAM("to", to, "TO  ", "End position of the raycast");
+					UQS_EXPOSE_PARAM("raycastShallSucceed", raycastShallSucceed, "SUCC", "Whether the raycast shall succeed or fail in order for the whole evaluator to accept or discard the item");
 				UQS_EXPOSE_PARAMS_END
 			};
 

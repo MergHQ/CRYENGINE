@@ -22,6 +22,7 @@ namespace UQS
 			public:
 				// IGeneratorFactory
 				virtual const char*                       GetName() const override final;
+				virtual const CryGUID&                    GetGUID() const override final;
 				virtual const IInputParameterRegistry&    GetInputParameterRegistry() const override final;
 				virtual IParamsHolderFactory&             GetParamsHolderFactory() const override final;
 				// ~IGeneratorFactory
@@ -38,7 +39,7 @@ namespace UQS
 				// ~IParamsHolderFactory
 
 			protected:
-				explicit                                  CGeneratorFactoryBase(const char* szGeneratorName);
+				explicit                                  CGeneratorFactoryBase(const char* szGeneratorName, const CryGUID& guid);
 
 			protected:
 				CInputParameterRegistry                   m_inputParameterRegistry;
@@ -47,8 +48,8 @@ namespace UQS
 				IParamsHolderFactory*                     m_pParamsHolderFactory;      // points to *this; it's a trick to allow GetParamsHolderFactory() return a non-const reference to *this
 			};
 
-			inline CGeneratorFactoryBase::CGeneratorFactoryBase(const char* szGeneratorName)
-				: CFactoryBase(szGeneratorName)
+			inline CGeneratorFactoryBase::CGeneratorFactoryBase(const char* szGeneratorName, const CryGUID& guid)
+				: CFactoryBase(szGeneratorName, guid)
 			{
 				m_pParamsHolderFactory = this;
 			}
@@ -56,6 +57,11 @@ namespace UQS
 			inline const char* CGeneratorFactoryBase::GetName() const
 			{
 				return CFactoryBase::GetName();
+			}
+
+			inline const CryGUID& CGeneratorFactoryBase::GetGUID() const
+			{
+				return CFactoryBase::GetGUID();
 			}
 
 			inline const IInputParameterRegistry& CGeneratorFactoryBase::GetInputParameterRegistry() const
@@ -80,7 +86,16 @@ namespace UQS
 		class CGeneratorFactory final : public Internal::CGeneratorFactoryBase
 		{
 		public:
-			explicit                                  CGeneratorFactory(const char* szGeneratorName);
+
+			struct SCtorParams
+			{
+				const char*                           szName = "";
+				CryGUID                               guid = CryGUID::Null();
+			};
+
+		public:
+
+			explicit                                  CGeneratorFactory(const SCtorParams& ctorParams);
 
 			// IGeneratorFactory
 			virtual const Shared::CTypeInfo&          GetTypeOfItemsToGenerate() const override;
@@ -95,8 +110,8 @@ namespace UQS
 		};
 
 		template <class TGenerator>
-		CGeneratorFactory<TGenerator>::CGeneratorFactory(const char* szGeneratorName)
-			: CGeneratorFactoryBase(szGeneratorName)
+		CGeneratorFactory<TGenerator>::CGeneratorFactory(const SCtorParams& ctorParams)
+			: CGeneratorFactoryBase(ctorParams.szName, ctorParams.guid)
 		{
 			typedef typename TGenerator::SParams Params;
 			Params::Expose(m_inputParameterRegistry);

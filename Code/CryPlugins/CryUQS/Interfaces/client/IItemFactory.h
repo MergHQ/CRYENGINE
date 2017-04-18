@@ -25,6 +25,7 @@ namespace UQS
 
 			virtual                                   ~IItemFactory() {}
 			virtual const char*                       GetName() const = 0;
+			virtual const CryGUID&                    GetGUID() const = 0;
 
 #if UQS_SCHEMATYC_SUPPORT
 			virtual const CryGUID&                    GetGUIDForSchematycAddParamFunction() const = 0;

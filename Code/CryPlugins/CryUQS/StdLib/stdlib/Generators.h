@@ -32,9 +32,9 @@ namespace UQS
 				float                   spacing;                 // space between individual points on both, the x- and y-axis
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("center", center);
-					UQS_EXPOSE_PARAM("size", size);
-					UQS_EXPOSE_PARAM("spacing", spacing);
+					UQS_EXPOSE_PARAM("center", center, "CENT", "Center of the grid.");
+					UQS_EXPOSE_PARAM("size", size, "SIZE", "Length of one edge of the grid.");
+					UQS_EXPOSE_PARAM("spacing", spacing, "SPAC", "Space between individual points on both the x- and y-axis.");
 				UQS_EXPOSE_PARAMS_END
 			};
 
@@ -68,10 +68,10 @@ namespace UQS
 				NavigationAgentTypeID   navigationAgentTypeID;   // the points will be generated in this layer of the NavMesh
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("pivot", pivot);
-					UQS_EXPOSE_PARAM("localAABBMins", localAABBMins);
-					UQS_EXPOSE_PARAM("localAABBMaxs", localAABBMaxs);
-					UQS_EXPOSE_PARAM("navigationAgentTypeID", navigationAgentTypeID);
+					UQS_EXPOSE_PARAM("pivot", pivot, "PIVO", "Center of the AABB.");
+					UQS_EXPOSE_PARAM("localAABBMins", localAABBMins, "LMIN", "Local min extents of the AABB in which the points will be generated.");
+					UQS_EXPOSE_PARAM("localAABBMaxs", localAABBMaxs, "LMAX", "Local max extents of the AABB in which the points will be generated.");
+					UQS_EXPOSE_PARAM("navigationAgentTypeID", navigationAgentTypeID, "AGEN", "The points will be generated in this layer of the NavMesh.");
 				UQS_EXPOSE_PARAMS_END
 			};
 

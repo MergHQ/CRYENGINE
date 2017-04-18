@@ -32,9 +32,9 @@ namespace UQS
 				float     minRequiredDistance;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("pos1", pos1);
-					UQS_EXPOSE_PARAM("pos2", pos2);
-					UQS_EXPOSE_PARAM("minRequiredDistance", minRequiredDistance);
+					UQS_EXPOSE_PARAM("pos1", pos1, "POS1", "");
+					UQS_EXPOSE_PARAM("pos2", pos2, "POS2", "");
+					UQS_EXPOSE_PARAM("minRequiredDistance", minRequiredDistance, "MIND", "Minimally required distance between Pos1 and Pos2. If smaller then the item will get discarded.");
 				UQS_EXPOSE_PARAMS_END
 			};
 
@@ -63,9 +63,9 @@ namespace UQS
 				float     maxAllowedDistance;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("pos1", pos1);
-					UQS_EXPOSE_PARAM("pos2", pos2);
-					UQS_EXPOSE_PARAM("maxAllowedDistance", maxAllowedDistance);
+					UQS_EXPOSE_PARAM("pos1", pos1, "POS1", "");
+					UQS_EXPOSE_PARAM("pos2", pos2, "POS2", "");
+					UQS_EXPOSE_PARAM("maxAllowedDistance", maxAllowedDistance, "MAXD", "Maximally allowed distance between Pos1 and Pos3. If larger then the item will get discarded.");
 				UQS_EXPOSE_PARAMS_END
 			};
 
@@ -94,8 +94,8 @@ namespace UQS
 				NavigationAgentTypeID   navigationAgentTypeID;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("locationToTest", locationToTest);
-					UQS_EXPOSE_PARAM("navigationAgentTypeID", navigationAgentTypeID);
+					UQS_EXPOSE_PARAM("locationToTest", locationToTest, "LOCA", "Rough location in the Navigatin Mesh to test.");
+					UQS_EXPOSE_PARAM("navigationAgentTypeID", navigationAgentTypeID, "AGEN", "Agent type used to pick the according Navigation Mesh layer for testing.");
 				UQS_EXPOSE_PARAMS_END
 			};
 
@@ -131,9 +131,9 @@ namespace UQS
 				float     distanceThreshold;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("pos1", pos1);
-					UQS_EXPOSE_PARAM("pos2", pos2);
-					UQS_EXPOSE_PARAM("distanceThreshold", distanceThreshold);
+					UQS_EXPOSE_PARAM("pos1", pos1, "POS1", "");
+					UQS_EXPOSE_PARAM("pos2", pos2, "POS2", "");
+					UQS_EXPOSE_PARAM("distanceThreshold", distanceThreshold, "MAXD", "Clamping distance to map between 0.0 and 1.0");
 				UQS_EXPOSE_PARAMS_END
 			};
 
@@ -164,9 +164,9 @@ namespace UQS
 				float     distanceThreshold;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("pos1", pos1);
-					UQS_EXPOSE_PARAM("pos2", pos2);
-					UQS_EXPOSE_PARAM("distanceThreshold", distanceThreshold);
+					UQS_EXPOSE_PARAM("pos1", pos1, "POS1", "");
+					UQS_EXPOSE_PARAM("pos2", pos2, "POS2", "");
+					UQS_EXPOSE_PARAM("distanceThreshold", distanceThreshold, "MAXD", "Clamping distance to map between 0.0 and 1.0");
 				UQS_EXPOSE_PARAMS_END
 			};
 

@@ -29,6 +29,9 @@ namespace UQS
 			const char*             GetError(size_t index) const;
 
 		private:
+			template <class TFactoryDB>
+			void                    CheckFactoryDatabaseConsistency(const TFactoryDB& factoryDB, const char* szFactoryDatabaseNameForErrorMessages);
+
 			void                    CheckInputParametersConsistency(const Client::IInputParameterRegistry& registry, const char* szErrorMessagePrefix);
 
 #if UQS_SCHEMATYC_SUPPORT

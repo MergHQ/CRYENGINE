@@ -12,150 +12,20 @@ namespace UQS
 
 		//===================================================================================
 		//
-		// CTextualInstantEvaluatorBlueprint
-		//
-		//===================================================================================
-
-		CTextualInstantEvaluatorBlueprint::CTextualInstantEvaluatorBlueprint()
-			: m_weight(1.0)
-			, m_bNegateDiscard(false)
-			, m_scoreTransform(CScoreTransformFactory::GetDefaultScoreTransformFactory().GetName())
-		{
-		}
-
-		void CTextualInstantEvaluatorBlueprint::SetEvaluatorName(const char* szEvaluatorName)
-		{
-			m_evaluatorName = szEvaluatorName;
-		}
-
-		ITextualInputBlueprint& CTextualInstantEvaluatorBlueprint::GetInputRoot()
-		{
-			return m_rootInput;
-		}
-
-		void CTextualInstantEvaluatorBlueprint::SetScoreTransform(const char* szScoreTransform)
-		{
-			m_scoreTransform = szScoreTransform;
-		}
-
-		const char* CTextualInstantEvaluatorBlueprint::GetScoreTransform() const
-		{
-			return m_scoreTransform.c_str();
-		}
-
-		void CTextualInstantEvaluatorBlueprint::SetNegateDiscard(bool bNegateDiscard)
-		{
-			m_bNegateDiscard = bNegateDiscard;
-		}
-
-		bool CTextualInstantEvaluatorBlueprint::GetNegateDiscard() const
-		{
-			return m_bNegateDiscard;
-		}
-
-		const char* CTextualInstantEvaluatorBlueprint::GetEvaluatorName() const
-		{
-			return m_evaluatorName.c_str();
-		}
-
-		const ITextualInputBlueprint& CTextualInstantEvaluatorBlueprint::GetInputRoot() const
-		{
-			return m_rootInput;
-		}
-
-		void CTextualInstantEvaluatorBlueprint::SetWeight(float weight)
-		{
-			m_weight = weight;
-		}
-
-		float CTextualInstantEvaluatorBlueprint::GetWeight() const
-		{
-			return m_weight;
-		}
-
-		void CTextualInstantEvaluatorBlueprint::SetSyntaxErrorCollector(DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
-		{
-			m_pSyntaxErrorCollector = std::move(pSyntaxErrorCollector);
-		}
-
-		DataSource::ISyntaxErrorCollector* CTextualInstantEvaluatorBlueprint::GetSyntaxErrorCollector() const
-		{
-			return m_pSyntaxErrorCollector.get();
-		}
-
-		//===================================================================================
-		//
 		// CInstantEvaluatorBlueprint
 		//
 		//===================================================================================
 
 		CInstantEvaluatorBlueprint::CInstantEvaluatorBlueprint()
 			: m_pInstantEvaluatorFactory(nullptr)
-			, m_weight(1.0f)
-		{}
-
-		bool CInstantEvaluatorBlueprint::Resolve(const ITextualInstantEvaluatorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking)
 		{
-			const char* szEvaluatorName = source.GetEvaluatorName();
-
-			m_pInstantEvaluatorFactory = g_pHub->GetInstantEvaluatorFactoryDatabase().FindFactoryByName(szEvaluatorName);
-			if (!m_pInstantEvaluatorFactory)
-			{
-				if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
-				{
-					pSE->AddErrorMessage("Unknown InstantEvaluatorFactory '%s'", szEvaluatorName);
-				}
-				return false;
-			}
-
-			m_weight = source.GetWeight();
-
-			const char* szScoreTransform = source.GetScoreTransform();
-			if (szScoreTransform[0] != '\0')
-			{
-				const IScoreTransformFactory* pScoreTransformFactory = g_pHub->GetScoreTransformFactoryDatabase().FindFactoryByName(szScoreTransform);
-
-				if (!pScoreTransformFactory)
-				{
-					if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
-					{
-						pSE->AddErrorMessage("Unknown ScoreTransformFactory: '%s'", szScoreTransform);
-					}
-					return false;
-				}
-
-				m_evaluationResultTransform.SetScoreTransformType(pScoreTransformFactory->GetScoreTransformType());
-			}
-			m_evaluationResultTransform.SetNegateDiscard(source.GetNegateDiscard());
-
-			CInputBlueprint inputRoot;
-			const ITextualInputBlueprint& textualInputRoot = source.GetInputRoot();
-			const Client::IInputParameterRegistry& inputParamsReg = m_pInstantEvaluatorFactory->GetInputParameterRegistry();
-
-			if (!inputRoot.Resolve(textualInputRoot, inputParamsReg, queryBlueprintForGlobalParamChecking, false))
-			{
-				return false;
-			}
-
-			ResolveInputs(inputRoot);
-
-			return true;
+			// nothing
 		}
 
 		Client::IInstantEvaluatorFactory& CInstantEvaluatorBlueprint::GetFactory() const
 		{
 			assert(m_pInstantEvaluatorFactory);
 			return *m_pInstantEvaluatorFactory;
-		}
-
-		float CInstantEvaluatorBlueprint::GetWeight() const
-		{
-			return m_weight;
-		}
-
-		const CEvaluationResultTransform& CInstantEvaluatorBlueprint::GetEvaluationResultTransform() const
-		{
-			return m_evaluationResultTransform;
 		}
 
 		void CInstantEvaluatorBlueprint::PrintToConsole(CLogger& logger, const char* szMessagePrefix) const
@@ -193,7 +63,51 @@ namespace UQS
 				break;
 			}
 
-			logger.Printf("%s%s [%s %s] (weight = %f)", szMessagePrefix, m_pInstantEvaluatorFactory->GetName(), szCost, szModality, m_weight);
+			const CEvaluationResultTransform& evaluationResultTransform = GetEvaluationResultTransform();
+			const EScoreTransformType scoreTransformType = evaluationResultTransform.GetScoreTransformType();
+			const IScoreTransformFactory* pScoreTransformFactory = g_pHub->GetScoreTransformFactoryDatabase().FindFactoryByCallback([scoreTransformType](const IScoreTransformFactory& scoreTransformFactory) { return scoreTransformFactory.GetScoreTransformType() == scoreTransformType; });
+
+			logger.Printf("%s%s [%s %s] (weight = %f, scoreTransform = %s, negateDiscard = %s)",
+				szMessagePrefix,
+				m_pInstantEvaluatorFactory->GetName(),
+				szCost,
+				szModality,
+				GetWeight(),
+				pScoreTransformFactory ? pScoreTransformFactory->GetName() : "(unknown scoreTransform - cannot happen)",
+				evaluationResultTransform.GetNegateDiscard() ? "true" : "false"
+			);
+		}
+
+		bool CInstantEvaluatorBlueprint::ResolveFactory(const ITextualEvaluatorBlueprint& source)
+		{
+			const CryGUID& evaluatorGUID = source.GetEvaluatorGUID();
+			const char* szEvaluatorName = source.GetEvaluatorName();
+
+			//
+			// instant-evaluator factory: first search by its GUID, then by its name
+			//
+
+			if (!(m_pInstantEvaluatorFactory = g_pHub->GetInstantEvaluatorFactoryDatabase().FindFactoryByGUID(evaluatorGUID)))
+			{
+				if (!(m_pInstantEvaluatorFactory = g_pHub->GetInstantEvaluatorFactoryDatabase().FindFactoryByName(szEvaluatorName)))
+				{
+					if (DataSource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
+					{
+						Shared::CUqsString guidAsString;
+						Shared::Internal::CGUIDHelper::ToString(evaluatorGUID, guidAsString);
+						pSE->AddErrorMessage("Unknown InstantEvaluatorFactory: GUID = %s, name = '%s'", guidAsString.c_str(), szEvaluatorName);
+					}
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		const Client::IInputParameterRegistry& CInstantEvaluatorBlueprint::GetInputParameterRegistry() const
+		{
+			assert(m_pInstantEvaluatorFactory);
+			return m_pInstantEvaluatorFactory->GetInputParameterRegistry();
 		}
 
 	}

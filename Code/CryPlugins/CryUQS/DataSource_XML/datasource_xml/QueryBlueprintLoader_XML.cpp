@@ -70,9 +70,23 @@ namespace UQS
 			const char* szFactory = queryElement->getAttr("factory");
 			m_pQuery->SetQueryFactoryName(szFactory);
 
+			// "queryFactoryGUID" attribute (optional because of backwards compatibility, but must represent a valid GUID if present)
+			CryGUID queryFactoryGUID = CryGUID::Null();
+			const char* szQueryFactoryGUID;
+			if (queryElement->getAttr("queryFactoryGUID", &szQueryFactoryGUID))
+			{
+				if (!Shared::Internal::CGUIDHelper::TryParseFromString(queryFactoryGUID, szQueryFactoryGUID))
+				{
+					error.Format("line #%i: <Query>'s 'queryFactoryGUID' attribute is not in a valid GUID format: '%s'", queryElement->getLine(), szQueryFactoryGUID);
+					return false;
+				}
+			}
+			m_pQuery->SetQueryFactoryGUID(queryFactoryGUID);
+
 			// "maxItemsToKeepInResultSet" attribute
-			unsigned int maxItemsToKeepInResultSet = 0;  // notice: getAttrib() doesn't support size_t, so we use unsigned int
-			queryElement->getAttr("maxItemsToKeepInResultSet", maxItemsToKeepInResultSet);
+			uint64 maxItemsToKeepInResultSet = 0;  // notice: we use an uint64 because that will match the overloaded getAttr() that takes an additional parameter to specify hex format (which we will explicitly disallow!)
+			const bool bUseHexFormat = false;
+			queryElement->getAttr("maxItemsToKeepInResultSet", maxItemsToKeepInResultSet, bUseHexFormat);
 			m_pQuery->SetMaxItemsToKeepInResultSet((size_t)maxItemsToKeepInResultSet);
 
 			for (int i = 0; i < queryElement->getChildCount(); ++i)
@@ -141,12 +155,26 @@ namespace UQS
 						return false;
 					}
 
-					// "type" attribute
-					const char* szType;
-					if (!child->getAttr("type", &szType))
+					// "type" attribute (should actually be called "typeName", but is already in use by now)
+					const char* szTypeName;
+					if (!child->getAttr("type", &szTypeName))
 					{
 						error.Format("line #%i: <ConstantParam> is missing the attribute 'type'", child->getLine());
 						return false;
+					}
+
+					// "typeGUID" (optional because of backwards compatibility, but must represent a valid GUID if present)
+					CryGUID typeGUID = CryGUID::Null();
+					{
+						const char* szTypeGUID;
+						if (child->getAttr("typeGUID", &szTypeGUID))
+						{
+							if (!Shared::Internal::CGUIDHelper::TryParseFromString(typeGUID, szTypeGUID))
+							{
+								error.Format("line #%i: <ConstantParam>'s attribute 'typeGUID' is not in a valid GUID format: '%s'", child->getLine(), szTypeGUID);
+								return false;
+							}
+						}
 					}
 
 					// "value" attribute
@@ -161,7 +189,7 @@ namespace UQS
 					bool bAddToDebugRenderWorld = false;
 					child->getAttr("addToDebugRenderWorld", bAddToDebugRenderWorld);
 
-					m_pQuery->GetGlobalConstantParams().AddParameter(szName, szType, szValue, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_pDataErrorCollector));
+					m_pQuery->GetGlobalConstantParams().AddParameter(szName, szTypeName, typeGUID, szValue, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_pDataErrorCollector));
 				}
 				else if (child->isTag("RuntimeParam"))
 				{
@@ -173,19 +201,33 @@ namespace UQS
 						return false;
 					}
 
-					// "type" attribute
-					const char* szType;
-					if (!child->getAttr("type", &szType))
+					// "type" attribute (should actually be called "typeName", but is already in use by now)
+					const char* szTypeName;
+					if (!child->getAttr("type", &szTypeName))
 					{
 						error.Format("line #%i: <RuntimeParam> is missing the attribute 'type'", child->getLine());
 						return false;
+					}
+
+					// "typeGUID" (optional because of backwards compatibility, but must represent a valid GUID if present)
+					CryGUID typeGUID = CryGUID::Null();
+					{
+						const char* szTypeGUID;
+						if (child->getAttr("typeGUID", &szTypeGUID))
+						{
+							if (!Shared::Internal::CGUIDHelper::TryParseFromString(typeGUID, szTypeGUID))
+							{
+								error.Format("line #%i: <RuntimeParam>'s attribute 'typeGUID' is not in a valid GUID format: '%s'", child->getLine(), szTypeGUID);
+								return false;
+							}
+						}
 					}
 
 					// "addToDebugRenderWorld" attribute (optional because it got introduced after some query blueprints were already in use; default to 'false')
 					bool bAddToDebugRenderWorld = false;
 					child->getAttr("addToDebugRenderWorld", bAddToDebugRenderWorld);
 
-					m_pQuery->GetGlobalRuntimeParams().AddParameter(szName, szType, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_pDataErrorCollector));
+					m_pQuery->GetGlobalRuntimeParams().AddParameter(szName, szTypeName, typeGUID, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_pDataErrorCollector));
 				}
 				else
 				{
@@ -213,6 +255,19 @@ namespace UQS
 			}
 			textualGeneratorBP.SetGeneratorName(szName);
 
+			// "generatorFactoryGUID" attribute (optional because of backwards compatibility, but must represent a valid GUID if present)
+			CryGUID generatorFactoryGUID = CryGUID::Null();
+			const char* szGeneratorFactoryGUID;
+			if (generatorElement->getAttr("generatorFactoryGUID", &szGeneratorFactoryGUID))
+			{
+				if (!Shared::Internal::CGUIDHelper::TryParseFromString(generatorFactoryGUID, szGeneratorFactoryGUID))
+				{
+					error.Format("line #%i: <Generator>'s 'generatorFactoryGUID' attribute is not in a valid GUID format: '%s'", generatorElement->getLine(), szGeneratorFactoryGUID);
+					return false;
+				}
+			}
+			textualGeneratorBP.SetGeneratorGUID(generatorFactoryGUID);
+
 			// parse <Input> elements (expect only these elements)
 			Core::ITextualInputBlueprint& textualInputRoot = textualGeneratorBP.GetInputRoot();
 			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the textual-generator-blueprint)
@@ -239,118 +294,18 @@ namespace UQS
 		{
 			assert(instantEvaluatorElement->isTag("InstantEvaluator"));
 
-			Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_pQuery->AddInstantEvaluator();
-			textualInstantEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_pDataErrorCollector));
+			Core::ITextualEvaluatorBlueprint& textualInstantEvaluatorBP = m_pQuery->AddInstantEvaluator();
 
-			// "name" attribute
-			const char* szEvaluatorName;
-			if (!instantEvaluatorElement->getAttr("name", &szEvaluatorName))
-			{
-				error.Format("line #%i: <InstantEvaluator> is missing the attribute 'name'", instantEvaluatorElement->getLine());
-				return false;
-			}
-			textualInstantEvaluatorBP.SetEvaluatorName(szEvaluatorName);
-
-			// "weight" attribute
-			float weight = 1.0f;
-			if (!instantEvaluatorElement->getAttr("weight", weight))
-			{
-				error.Format("line #%i: <InstantEvaluator> is missing the attribute 'weight'", instantEvaluatorElement->getLine());
-				return false;
-			}
-			textualInstantEvaluatorBP.SetWeight(weight);
-
-			// "scoreTransform" attribute (treat it as optional for older queries, so that the default score-transform will get picked in such a case)
-			const char* szScoreTransform = "";
-			if (instantEvaluatorElement->getAttr("scoreTransform", &szScoreTransform))
-			{
-				textualInstantEvaluatorBP.SetScoreTransform(szScoreTransform);
-			}
-
-			// "negateDiscard" attribute
-			bool bNegateDiscard = false;
-			instantEvaluatorElement->getAttr("negateDiscard", bNegateDiscard);
-			textualInstantEvaluatorBP.SetNegateDiscard(bNegateDiscard);
-
-			// parse <Input> elements (expect only these elements)
-			Core::ITextualInputBlueprint& textualInputRoot = textualInstantEvaluatorBP.GetInputRoot();
-			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(instantEvaluatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the textual-instant-evaluator-blueprint)
-			for (int i = 0; i < instantEvaluatorElement->getChildCount(); ++i)
-			{
-				XmlNodeRef child = instantEvaluatorElement->getChild(i);
-
-				if (child->isTag("Input"))
-				{
-					if (!ParseInputElement(child, textualInputRoot, error))
-						return false;
-				}
-				else
-				{
-					error.Format("line #%i: unknown tag: <%s>", child->getLine(), child->getTag());
-					return false;
-				}
-			}
-
-			return true;
+			return CommonParseEvaluatorElement(instantEvaluatorElement, "instantEvaluatorFactoryGUID", textualInstantEvaluatorBP, error);
 		}
 
 		bool CQueryBlueprintLoader_XML::ParseDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElement, Shared::IUqsString& error)
 		{
 			assert(deferredEvaluatorElement->isTag("DeferredEvaluator"));
 
-			Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_pQuery->AddDeferredEvaluator();
-			textualDeferredEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_pDataErrorCollector));
+			Core::ITextualEvaluatorBlueprint& textualDeferredEvaluatorBP = m_pQuery->AddDeferredEvaluator();
 
-			// "name" attribute
-			const char* szEvaluatorName;
-			if (!deferredEvaluatorElement->getAttr("name", &szEvaluatorName))
-			{
-				error.Format("line #%i: <DeferredEvaluator> is missing the attribute 'name'", deferredEvaluatorElement->getLine());
-				return false;
-			}
-			textualDeferredEvaluatorBP.SetEvaluatorName(szEvaluatorName);
-
-			// "weight" attribute
-			float weight = 1.0f;
-			if (!deferredEvaluatorElement->getAttr("weight", weight))
-			{
-				error.Format("line #%i: <DeferredEvaluator> is missing the attribute 'weight'", deferredEvaluatorElement->getLine());
-				return false;
-			}
-			textualDeferredEvaluatorBP.SetWeight(weight);
-
-			// "scoreTransform" attribute (treat it as optional for older queries, so that the default score-transform will get picked in such a case)
-			const char* szScoreTransform = "";
-			if (deferredEvaluatorElement->getAttr("scoreTransform", &szScoreTransform))
-			{
-				textualDeferredEvaluatorBP.SetScoreTransform(szScoreTransform);
-			}
-
-			// "negateDiscard" attribute
-			bool bNegateDiscard = false;
-			deferredEvaluatorElement->getAttr("negateDiscard", bNegateDiscard);
-			textualDeferredEvaluatorBP.SetNegateDiscard(bNegateDiscard);
-
-			// parse <Input> elements (expect only these elements)
-			Core::ITextualInputBlueprint& textualInputRoot = textualDeferredEvaluatorBP.GetInputRoot();
-			textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(deferredEvaluatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the textual-deferred-evaluator-blueprint)
-			for (int i = 0; i < deferredEvaluatorElement->getChildCount(); ++i)
-			{
-				XmlNodeRef child = deferredEvaluatorElement->getChild(i);
-
-				if (child->isTag("Input"))
-				{
-					if (!ParseInputElement(child, textualInputRoot, error))
-						return false;
-				}
-				else
-				{
-					error.Format("line #%i: unknown tag: <%s>", child->getLine(), child->getTag());
-					return false;
-				}
-			}
-
-			return true;
+			return CommonParseEvaluatorElement(deferredEvaluatorElement, "deferredEvaluatorFactoryGUID", textualDeferredEvaluatorBP, error);
 		}
 
 		bool CQueryBlueprintLoader_XML::ParseFunctionElement(const XmlNodeRef& functionElement, Core::ITextualInputBlueprint& parentInput, Shared::IUqsString& error)
@@ -399,6 +354,22 @@ namespace UQS
 				return false;
 			}
 
+			// "paramID" attribute (unique ID of the paramter; optional for backwards compatibility)
+			Client::CInputParameterID paramID = Client::CInputParameterID::CreateEmpty();
+			const char* szParamID;
+			if (inputElement->getAttr("paramID", &szParamID))
+			{
+				if (strlen(szParamID) != 4)
+				{
+					error.Format("line #%i: <Input>'s 'paramID' is supposed to be exactly 4 characters long (but is: %i) - did the format change? -> please investigate", inputElement->getLine(), (int)strlen(szParamID));
+					return false;
+				}
+
+				char idAsFourCharacterString[5];
+				cry_strcpy(idAsFourCharacterString, szParamID);
+				paramID = Client::CInputParameterID::CreateFromString(idAsFourCharacterString);
+			}
+
 			// <Function> element
 			XmlNodeRef functionElement = inputElement->findChild("Function");
 			if (!functionElement)
@@ -415,6 +386,18 @@ namespace UQS
 				return false;
 			}
 
+			// <Function>'s "functionFactoryGUID" attribute (optional because of backwards compatibility, but must represent a valid GUID if present)
+			CryGUID functionFactoryGUID = CryGUID::Null();
+			const char* szFunctionFactoryGUID;
+			if (functionElement->getAttr("functionFactoryGUID", &szFunctionFactoryGUID))
+			{
+				if (!Shared::Internal::CGUIDHelper::TryParseFromString(functionFactoryGUID, szFunctionFactoryGUID))
+				{
+					error.Format("line #%i: <Function>'s 'functionFactoryGUID' attribute is not in a valid GUID format: '%s'", functionElement->getLine(), szFunctionFactoryGUID);
+					return false;
+				}
+			}
+
 			//  "returnValue"
 			const char* szFunctionReturnValue = functionElement->getAttr("returnValue");   // optional attribute; defaults to ""
 
@@ -422,10 +405,108 @@ namespace UQS
 			bool bAddReturnValueToDebugRenderWorldUponExecution = false;
 			functionElement->getAttr("addReturnValueToDebugRenderWorldUponExecution", bAddReturnValueToDebugRenderWorldUponExecution);
 
-			Core::ITextualInputBlueprint& newChild = parentInput.AddChild(szParamName, szFunctionName, szFunctionReturnValue, bAddReturnValueToDebugRenderWorldUponExecution);
+			Core::ITextualInputBlueprint& newChild = parentInput.AddChild(szParamName, paramID, szFunctionName, functionFactoryGUID, szFunctionReturnValue, bAddReturnValueToDebugRenderWorldUponExecution);
 			newChild.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(functionElement->getLine(), m_pDataErrorCollector));
 
 			return ParseFunctionElement(functionElement, newChild, error);
+		}
+
+		bool CQueryBlueprintLoader_XML::CommonParseEvaluatorElement(const XmlNodeRef& evaluatorElement, const char* szAttributeForEvaluatorFactoryGUID, Core::ITextualEvaluatorBlueprint& outTextualEvaluatorBP, Shared::IUqsString& error)
+		{
+			const char* szEvaluatorElementName = evaluatorElement->getTag(); // for error messages
+
+			outTextualEvaluatorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(evaluatorElement->getLine(), m_pDataErrorCollector));
+
+			// "name" attribute
+			{
+				const char* szEvaluatorName;
+				if (!evaluatorElement->getAttr("name", &szEvaluatorName))
+				{
+					error.Format("line #%i: <%s> is missing the attribute 'name'", evaluatorElement->getLine(), szEvaluatorElementName);
+					return false;
+				}
+				outTextualEvaluatorBP.SetEvaluatorName(szEvaluatorName);
+			}
+
+			// attribute containing the GUID of the evaluator-factory (optional because of backwards compatibility, but must represent a valid GUID if present)
+			{
+				CryGUID evaluatorFactoryGUID = CryGUID::Null();
+				const char* szEvaluatorFactoryGUID;
+				if (evaluatorElement->getAttr(szAttributeForEvaluatorFactoryGUID, &szEvaluatorFactoryGUID))
+				{
+					if (!Shared::Internal::CGUIDHelper::TryParseFromString(evaluatorFactoryGUID, szEvaluatorFactoryGUID))
+					{
+						error.Format("line #%i: <%s>'s '%s' attribute is not in a valid GUID format: '%s'", evaluatorElement->getLine(), szEvaluatorElementName, szAttributeForEvaluatorFactoryGUID, szEvaluatorFactoryGUID);
+						return false;
+					}
+				}
+				outTextualEvaluatorBP.SetEvaluatorGUID(evaluatorFactoryGUID);
+			}
+
+			// "weight" attribute
+			{
+				float weight = 1.0f;
+				if (!evaluatorElement->getAttr("weight", weight))
+				{
+					error.Format("line #%i: <%s> is missing the attribute 'weight'", evaluatorElement->getLine(), szEvaluatorElementName);
+					return false;
+				}
+				outTextualEvaluatorBP.SetWeight(weight);
+			}
+
+			// "scoreTransform" attribute (treat it as optional for older queries, so that the default score-transform will get picked in such a case)
+			{
+				const char* szScoreTransform = "";
+				if (evaluatorElement->getAttr("scoreTransform", &szScoreTransform))
+				{
+					outTextualEvaluatorBP.SetScoreTransformName(szScoreTransform);
+				}
+			}
+
+			// "scoreTransformFactoryGUID" attribute (optional because of backwards compatibility, but must represent a valid GUID if present)
+			{
+				CryGUID scoreTransformFactoryGUID = CryGUID::Null();
+				const char* szScoreTransformGUID;
+				if (evaluatorElement->getAttr("scoreTransformFactoryGUID", &szScoreTransformGUID))
+				{
+					if (!Shared::Internal::CGUIDHelper::TryParseFromString(scoreTransformFactoryGUID, szScoreTransformGUID))
+					{
+						error.Format("line #%i: <%s>'s 'scoreTransformFactoryGUID' attribute is not in a valid GUID format: '%s'", evaluatorElement->getLine(), szEvaluatorElementName, szScoreTransformGUID);
+						return false;
+					}
+				}
+				outTextualEvaluatorBP.SetScoreTransformGUID(scoreTransformFactoryGUID);
+			}
+
+			// "negateDiscard" attribute
+			{
+				bool bNegateDiscard = false;
+				evaluatorElement->getAttr("negateDiscard", bNegateDiscard);
+				outTextualEvaluatorBP.SetNegateDiscard(bNegateDiscard);
+			}
+
+			// parse <Input> elements (expect only these elements)
+			{
+				Core::ITextualInputBlueprint& textualInputRoot = outTextualEvaluatorBP.GetInputRoot();
+				textualInputRoot.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(evaluatorElement->getLine(), m_pDataErrorCollector));	// same as its parent (the evaluator-blueprint)
+				for (int i = 0; i < evaluatorElement->getChildCount(); ++i)
+				{
+					XmlNodeRef child = evaluatorElement->getChild(i);
+
+					if (child->isTag("Input"))
+					{
+						if (!ParseInputElement(child, textualInputRoot, error))
+							return false;
+					}
+					else
+					{
+						error.Format("line #%i: unknown tag: <%s>", child->getLine(), child->getTag());
+						return false;
+					}
+				}
+			}
+
+			return true;
 		}
 
 	}
