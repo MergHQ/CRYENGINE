@@ -252,21 +252,6 @@ void CBaseDialog::dropEvent(QDropEvent* pEvent)
 	OnDropFile(filePaths.first());
 }
 
-void CBaseDialog::closeEvent(QCloseEvent* pEvent)
-{
-	bool bDiscardChanges = false;
-	bDiscardChanges = GetIEditor()->IsMainFrameClosing();
-
-	if (bDiscardChanges || MayUnloadSceneInternal())
-	{
-		pEvent->accept();
-	}
-	else
-	{
-		pEvent->ignore();
-	}
-}
-
 CBaseDialog::~CBaseDialog()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
@@ -612,20 +597,6 @@ void CBaseDialog::OnSave()
 	{
 		CQuestionDialog::SCritical(tr("Save to CGF failed"), tr("Failed to write current data to %1").arg(targetFilePath));
 	}
-}
-
-bool CBaseDialog::CanQuit(std::vector<string>& unsavedChanges)
-{
-	if (!MayUnloadScene())
-	{
-		const IImportFile* const pImportFile = GetSceneManager().GetImportFile();
-		if (pImportFile)
-		{
-			unsavedChanges.push_back(QtUtil::ToString(pImportFile->GetOriginalFilePath()));
-		}
-		return false;
-	}
-	return true;
 }
 
 std::unique_ptr<CTempRcObject> CBaseDialog::CreateTempRcObject()

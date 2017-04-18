@@ -160,9 +160,13 @@ struct SAnimationClip
 	{}
 };
 
+//! Editor meta-data is the part of the meta-data which is only used to restore state of the importer dialog
+//! and is ignored by the RC.
 struct IEditorMetaData
 {
 	virtual ~IEditorMetaData() {}
+
+	virtual std::unique_ptr<IEditorMetaData> Clone() const = 0;
 
 	virtual void Serialize(yasli::Archive& ar) = 0;
 };
@@ -196,13 +200,16 @@ struct SMetaData
 	std::vector<SJointPhysicsData> jointPhysicsData;
 
 	// Editor state.
-	IEditorMetaData* pEditorMetaData;  //!< Used to restore state of editor. Ignored by RC.
+	std::unique_ptr<IEditorMetaData> pEditorMetaData;  //!< Used to restore state of editor. Ignored by RC.
 
 	std::shared_ptr<CAutoLodSettings>         pAutoLodSettings;
 
 	bool bVertexPositionFormatF32;
 
 	SMetaData();
+	SMetaData(const SMetaData& other);
+
+	SMetaData& operator=(const SMetaData& other);
 
 	void Clear()
 	{

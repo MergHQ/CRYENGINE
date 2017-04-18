@@ -40,10 +40,7 @@ namespace Private_GenerateCharacter
 
 static const QString GetRcOptions()
 {
-	const string s = string().Format("%s %s",
-		CRcCaller::OptionOverwriteExtension("fbx").c_str(),
-		CRcCaller::OptionAssetTypes().c_str());
-	return QtUtil::ToQString(s);
+	return QtUtil::ToQString(CRcCaller::OptionOverwriteExtension("fbx"));
 }
 
 struct SRcPayload

@@ -141,6 +141,17 @@ public:
 		ar(TextureFilename(m_textureName), "Texture", "Texture");
 	}
 
+	virtual uint GetNumResources() const override 
+	{ 
+		return !m_materialName.empty() || !m_textureName.empty() ? 1 : 0; 
+	}
+
+	virtual const char* GetResourceName(uint resourceId) const override
+	{ 
+		// Material has priority over the texture.
+		return !m_materialName.empty() ? m_materialName.c_str() : m_textureName.c_str();
+	}
+
 private:
 	string m_materialName;
 	string m_textureName;

@@ -183,9 +183,9 @@ string CRcCaller::OptionOverwriteExtension(const string& ext)
 	return string().Format("/overwriteextension=%s", ext.c_str());
 }
 
-string CRcCaller::OptionAssetTypes()
+string CRcCaller::OptionOverwriteFilename(const string& filename)
 {
-	return "/assettypes=cgf,Mesh;chr,Skeleton;skin,SkinnedMesh;dds,Texture;mtl,Material;cga,AnimatedMesh;anm,MeshAnimation;cdf,Character;caf,Animation;wav,Sound;ogg,Sound;cax,GeometryCache;lua,Script;pfx,Particles";
+	return string().Format("/overwritefilename=\"%s\"", filename);
 }
 
 string CRcCaller::OptionVertexPositionFormat(bool b32bit)

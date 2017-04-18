@@ -230,8 +230,14 @@ static bool CopyResult(const char* szSrcFile, const char* szDstFile)
 	{
 		success = true;
 
-		if (GetFileAttributes(szDstFile) != INVALID_FILE_ATTRIBUTES)
+		const auto attributes = GetFileAttributes(szDstFile);
+		if (attributes != INVALID_FILE_ATTRIBUTES)
 		{
+			if ((attributes & FILE_ATTRIBUTE_READONLY) != 0)
+			{
+				iLog->LogError("Can't write to read-only file: \"%s\"\n", szDstFile);
+				return false;
+			}
 			success = success && (DeleteFile(szDstFile) != FALSE);
 		}
 
@@ -263,9 +269,7 @@ static bool CopyResult(const char* szSrcFile, const char* szDstFile)
 
 			if (!success)
 			{
-	#if defined(DEBUG) && defined(_DEBUG)
-				iLog->Log("Debug: RN: from \"%s\", to \"%s\"\n", szSrcFile, szDstFile);
-	#endif
+				iLog->LogError("Can't copy from \"%s\" to \"%s\"\n", szSrcFile, szDstFile);
 			}
 		}
 	}

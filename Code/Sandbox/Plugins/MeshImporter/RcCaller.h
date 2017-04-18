@@ -23,7 +23,7 @@ public:
 	bool Call(const string& filename);
 
 	static string OptionOverwriteExtension(const string& ext);
-	static string OptionAssetTypes();
+	static string OptionOverwriteFilename(const string& filename);
 	static string OptionVertexPositionFormat(bool b32bit);
 private:
 	string GetOptionsString() const;

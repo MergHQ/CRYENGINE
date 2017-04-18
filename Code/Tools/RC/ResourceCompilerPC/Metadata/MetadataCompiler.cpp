@@ -52,8 +52,8 @@ std::vector<string> FindDdsAssetFiles(const string& filename)
 
 	int i = 0;
 	for (string color = filename, alpha = color + ".a";
-		FileUtil::FileExists(color);
-		color = string().Format("%s.%i", filename.c_str(), ++i), alpha = color + "a")
+	     FileUtil::FileExists(color);
+	     color = string().Format("%s.%i", filename.c_str(), ++i), alpha = color + "a")
 	{
 		files.emplace_back(color);
 
@@ -190,7 +190,7 @@ bool CollectMtlDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCom
 			}
 		}
 
-		// Add sub materials to the queue. 
+		// Add sub materials to the queue.
 		const XmlNodeRef subs = mtl->findChild("SubMaterials");
 		if (subs)
 		{
@@ -215,9 +215,87 @@ bool CollectMtlDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCom
 	return true;
 }
 
+// Assets for XML files have an attribute that store the top-level node tag.
+// On editor side this is used, for example, to classify XML files as libraries (particles, prefabs, ...).
+// Having the tag part of the cryasset means we do not have to touch the data XML file on disk.
+static bool CollectXmlDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCompiler* pRc)
+{
+	XmlNodeRef metadata = AssetManager::GetMetadataNode(xmlnode);
+	if (!metadata)
+	{
+		return false;
+	}
+
+	const XmlNodeRef libRoot = pRc->LoadXml(szFilename);
+	if (!libRoot)
+	{
+		return false;
+	}
+
+	AssetManager::AddDetails(metadata, {
+			{ "rootTag", string(libRoot->getTag()) }
+	  });
+	return true;
+}
+
+bool CollectCdfDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCompiler* pRc)
+{
+	XmlNodeRef metadata = AssetManager::GetMetadataNode(xmlnode);
+	if (!metadata)
+	{
+		return false;
+	}
+
+	const XmlNodeRef cdf = pRc->LoadXml(szFilename);
+	if (!cdf || stricmp(cdf->getTag(), "CharacterDefinition"))
+	{
+		return false;
+	}
+
+	std::vector<string> dependencies;
+
+	const char* filename;
+	const XmlNodeRef model = cdf->findChild("Model");
+	if (model && model->getAttr("File", &filename))
+	{
+		dependencies.emplace_back(filename);
+		if (model->getAttr("Material", &filename))
+		{
+			dependencies.emplace_back(filename);
+		}
+	}
+
+	const XmlNodeRef list = cdf->findChild("AttachmentList");
+	if (list)
+	{
+		static const char* const attributes[]
+		{
+			"Binding", "simBinding", "Material", "MaterialLOD0", "MaterialLOD1", "MaterialLOD2", "MaterialLOD3", "MaterialLOD4", "MaterialLOD5"
+		};
+
+		for (int i = 0, N = list->getChildCount(); i < N; ++i)
+		{
+			const XmlNodeRef item = list->getChild(i);
+			if (!item || stricmp(item->getTag(), "Attachment"))
+			{
+				continue;
+			}
+
+			for (const char* szAttr : attributes)
+			{
+				if (item->getAttr(szAttr, &filename))
+				{
+					dependencies.emplace_back(filename);
+				}
+			}
+		}
+	}
+
+	AssetManager::AddDependencies(metadata, dependencies);
+	return true;
+}
+
 } // namespace
-
-
 
 CMetadataCompiler::CMetadataCompiler(IResourceCompiler* pRc)
 	: m_pResourceCompiler(pRc)
@@ -228,6 +306,8 @@ CMetadataCompiler::CMetadataCompiler(IResourceCompiler* pRc)
 	}
 
 	pRc->GetAssetManager()->RegisterDetailProvider(CollectMtlDetails, "mtl");
+	pRc->GetAssetManager()->RegisterDetailProvider(CollectXmlDetails, "xml");
+	pRc->GetAssetManager()->RegisterDetailProvider(CollectCdfDetails, "cdf");
 }
 
 CMetadataCompiler::~CMetadataCompiler()
@@ -261,7 +341,7 @@ bool CMetadataCompiler::Process()
 	}
 	else if (!stricmp(szExt, "cgf") || !stricmp(szExt, "cga") || !stricmp(szExt, "skin"))
 	{
-		// Do not create cryassets for lod files, but repair existent.  
+		// Do not create cryassets for lod files, but repair existent.
 		if (IsCgfLod(m_CC.GetSourcePath()))
 		{
 			if (FileUtil::FileExists(metadataFilename.c_str()))

@@ -1215,8 +1215,6 @@ void CMainDialog::CreateMeshFromFile(const string& filePath)
 
 	SProxyTree proxyTree(m_pProxyData.get(), GetScene());
 	WriteAutoGenProxies(filePath, &proxyTree);
-
-	TouchLastJson();
 	}
 
 void CMainDialog::CreateUnmergedMeshFromFile(const string& filePath)
@@ -1270,7 +1268,6 @@ CMainDialog::CMainDialog(QWidget* pParent /*= nullptr*/)
 	, m_pUnmergedMeshStatObj(nullptr)
 	, m_ppSelectionMesh(nullptr)
 	, m_pCharacterInstance(nullptr)
-	  , m_pEditorMetaData(new SEditorMetaData())
 {
 	m_pMeshRcObject = CreateTempRcObject();
 
@@ -1528,6 +1525,11 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 // Reads meta data from either .cgf or .json file (in that order).
 bool ReadMetaDataFromFile(const QString& filePath, FbxMetaData::SMetaData& metaData)
 {
+	if (!metaData.pEditorMetaData)
+	{
+		metaData.pEditorMetaData.reset(new SEditorMetaData());
+	}
+
 	CChunkFile cf;
 	if (cf.Read(QtUtil::ToString(filePath).c_str()))
 	{
@@ -1687,6 +1689,8 @@ bool   CMainDialog::SaveAs(SSaveContext& ctx)
 	}
 
 	m_displayScene->cgfFilePath = filePath;
+
+	TouchLastJson();
 
 	return bSuccess;
 }
@@ -2794,9 +2798,6 @@ bool CMainDialog::CreateMetaData(FbxMetaData::SMetaData& metaData, const QString
 	}
 
 	CRY_ASSERT(m_pGlobalImportSettings);
-	CRY_ASSERT(m_pEditorMetaData && m_pEditorMetaData->pEditorGlobalImportSettings);
-
-	metaData.pEditorMetaData = m_pEditorMetaData.get();
 
 	// Gather conversion settings.
 	metaData.unit = m_pGlobalImportSettings->GetUnit();
@@ -2848,14 +2849,16 @@ bool CMainDialog::CreateMetaData(FbxMetaData::SMetaData& metaData, const QString
 
 	////////////////////////////////////////////////////
 	// Save/restore editor state.
-	*m_pEditorMetaData->pEditorGlobalImportSettings = *m_pGlobalImportSettings;
+	auto pEditorMetaData = std::make_unique<SEditorMetaData>();
+	pEditorMetaData->editorGlobalImportSettings = *m_pGlobalImportSettings;
 	m_pAutoLodSettings->getNodeList() = GetAutoLodNodes(GetScene());
 	if ((flags & eCreateMetaDataFlags_OmitAutoLods) == 0)
 	{
 	*metaData.pAutoLodSettings = *m_pAutoLodSettings;
 	}
-	FbxTool::Meta::WriteNodeMetaData(*GetScene(), m_pEditorMetaData->editorNodeMeta);
-	FbxTool::Meta::WriteMaterialMetaData(*GetScene(), m_pEditorMetaData->editorMaterialMeta);
+	FbxTool::Meta::WriteNodeMetaData(*GetScene(), pEditorMetaData->editorNodeMeta);
+	FbxTool::Meta::WriteMaterialMetaData(*GetScene(), pEditorMetaData->editorMaterialMeta);
+	metaData.pEditorMetaData = std::move(pEditorMetaData);
 
 	return true;
 }
@@ -3020,8 +3023,13 @@ void CMainDialog::ApplyMetaDataCommon(const FbxMetaData::SMetaData& metaData)
 
 	m_pGlobalImportSettingsTree->revert();
 
-	FbxTool::Meta::ReadNodeMetaData(m_pEditorMetaData->editorNodeMeta, *GetScene());
-	FbxTool::Meta::ReadMaterialMetaData(m_pEditorMetaData->editorMaterialMeta, *GetScene());
+	CRY_ASSERT(metaData.pEditorMetaData);
+	if (metaData.pEditorMetaData)
+	{
+		SEditorMetaData* const pEditorMetaData = (SEditorMetaData*)metaData.pEditorMetaData.get();
+		FbxTool::Meta::ReadNodeMetaData(pEditorMetaData->editorNodeMeta, *GetScene());
+		FbxTool::Meta::ReadMaterialMetaData(pEditorMetaData->editorMaterialMeta, *GetScene());
+	}
 
 	{
 		// We read the material from the StatObj instead of the json, so that we get a fully qualified
