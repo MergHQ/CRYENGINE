@@ -18,13 +18,17 @@ namespace UQS
 		//===================================================================================
 
 		CTextualInputBlueprint::CTextualInputBlueprint()
-			: m_bAddReturnValueToDebugRenderWorldUponExecution(false)
+			: m_paramID(Client::CInputParameterID::CreateEmpty())
+			, m_funcGUID(CryGUID::Null())
+			, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 		{
 		}
 
-		CTextualInputBlueprint::CTextualInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
+		CTextualInputBlueprint::CTextualInputBlueprint(const char* szParamName, const Client::CInputParameterID& paramID, const char* szFuncName, const CryGUID& funcGUID, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 			: m_paramName(szParamName)
+			, m_paramID(paramID)
 			, m_funcName(szFuncName)
+			, m_funcGUID(funcGUID)
 			, m_funcReturnValueLiteral(szFuncReturnValueLiteral)
 			, m_bAddReturnValueToDebugRenderWorldUponExecution(bAddReturnValueToDebugRenderWorldUponExecution)
 		{
@@ -43,9 +47,19 @@ namespace UQS
 			return m_paramName.c_str();
 		}
 
+		const Client::CInputParameterID& CTextualInputBlueprint::GetParamID() const
+		{
+			return m_paramID;
+		}
+
 		const char* CTextualInputBlueprint::GetFuncName() const
 		{
 			return m_funcName.c_str();
+		}
+
+		const CryGUID& CTextualInputBlueprint::GetFuncGUID() const
+		{
+			return m_funcGUID;
 		}
 
 		const char* CTextualInputBlueprint::GetFuncReturnValueLiteral() const
@@ -63,9 +77,19 @@ namespace UQS
 			m_paramName = szParamName;
 		}
 
+		void CTextualInputBlueprint::SetParamID(const Client::CInputParameterID& paramID)
+		{
+			m_paramID = paramID;
+		}
+
 		void CTextualInputBlueprint::SetFuncName(const char* szFuncName)
 		{
 			m_funcName = szFuncName;
+		}
+
+		void CTextualInputBlueprint::SetFuncGUID(const CryGUID& funcGUID)
+		{
+			m_funcGUID = funcGUID;
 		}
 
 		void CTextualInputBlueprint::SetFuncReturnValueLiteral(const char* szValue)
@@ -78,9 +102,9 @@ namespace UQS
 			m_bAddReturnValueToDebugRenderWorldUponExecution = bAddReturnValueToDebugRenderWorldUponExecution;
 		}
 
-		ITextualInputBlueprint& CTextualInputBlueprint::AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
+		ITextualInputBlueprint& CTextualInputBlueprint::AddChild(const char* szParamName, const Client::CInputParameterID& paramID, const char* szFuncName, const CryGUID& funcGUID, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 		{
-			CTextualInputBlueprint* pChild = new CTextualInputBlueprint(szParamName, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
+			CTextualInputBlueprint* pChild = new CTextualInputBlueprint(szParamName, paramID, szFuncName, funcGUID, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
 			m_children.push_back(pChild);
 			return *pChild;
 		}
@@ -101,6 +125,16 @@ namespace UQS
 			for(const CTextualInputBlueprint* pChild : m_children)
 			{
 				if(strcmp(pChild->m_paramName.c_str(), szParamName) == 0)
+					return pChild;
+			}
+			return nullptr;
+		}
+
+		const ITextualInputBlueprint* CTextualInputBlueprint::FindChildByParamID(const Client::CInputParameterID& paramID) const
+		{
+			for (const CTextualInputBlueprint* pChild : m_children)
+			{
+				if (pChild->m_paramID == paramID)
 					return pChild;
 			}
 			return nullptr;
@@ -165,37 +199,47 @@ namespace UQS
 				const Client::IInputParameterRegistry::SParameterInfo& pi = inputParamsReg.GetParameter(i);
 
 				//
-				// look up the child by the name of the parameter it's being represented by
+				// look up the child it's being represented by: first search by parameter ID, then by parameter name
 				//
 
-				const ITextualInputBlueprint* pSourceChild = sourceParent.FindChildByParamName(pi.szName);
-				if (!pSourceChild)
+				const ITextualInputBlueprint* pSourceChild;
+				if (!(pSourceChild = sourceParent.FindChildByParamID(pi.id)))
 				{
-					if (DataSource::ISyntaxErrorCollector* pSE = sourceParent.GetSyntaxErrorCollector())
+					if (!(pSourceChild = sourceParent.FindChildByParamName(pi.szName)))
 					{
-						pSE->AddErrorMessage("Missing parameter: '%s'", pi.szName);
+						if (DataSource::ISyntaxErrorCollector* pSE = sourceParent.GetSyntaxErrorCollector())
+						{
+							char idAsFourCharacterString[5];
+							pi.id.ToString(idAsFourCharacterString);
+							pSE->AddErrorMessage("Missing parameter: ID = '%s', name = '%s'", idAsFourCharacterString, pi.szName);
+						}
+						bResolveSucceeded = false;
+						continue;
 					}
-					bResolveSucceeded = false;
-					continue;
 				}
 
 				CInputBlueprint *pNewChild = new CInputBlueprint;
 				m_children.push_back(pNewChild);
 
 				//
-				// look up the function of that new child
+				// look up the function of that new child: first search by GUID, then fall back to its name
 				//
 
+				const CryGUID& funcGUID = pSourceChild->GetFuncGUID();
 				const char* szFuncName = pSourceChild->GetFuncName();
-				pNewChild->m_pFunctionFactory = g_pHub->GetFunctionFactoryDatabase().FindFactoryByName(szFuncName);
-				if (!pNewChild->m_pFunctionFactory)
+				if (!(pNewChild->m_pFunctionFactory = g_pHub->GetFunctionFactoryDatabase().FindFactoryByGUID(funcGUID)))
 				{
-					if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+					if (!(pNewChild->m_pFunctionFactory = g_pHub->GetFunctionFactoryDatabase().FindFactoryByName(szFuncName)))
 					{
-						pSE->AddErrorMessage("Unknown function: '%s'", szFuncName);
+						if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
+						{
+							Shared::CUqsString guidAsString;
+							Shared::Internal::CGUIDHelper::ToString(funcGUID, guidAsString);
+							pSE->AddErrorMessage("Unknown function: GUID = %s, name = '%s'", guidAsString.c_str(), szFuncName);
+						}
+						bResolveSucceeded = false;
+						continue;   // without a function, we cannot continue parsing this child and also cannot go down deeper the call hierarchy
 					}
-					bResolveSucceeded = false;
-					continue;   // without a function, we cannot continue parsing this child and also cannot go down deeper the call hierarchy
 				}
 
 				//

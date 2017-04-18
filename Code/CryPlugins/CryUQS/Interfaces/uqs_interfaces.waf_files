@@ -11,12 +11,12 @@
 			"shared/DataTypeHelper.h",
 			"shared/IUqsString.h",
 			"shared/IVariantDict.h",
-			"shared/TypeInfo.h"
+			"shared/TypeInfo.h",
+			"shared/GUIDHelper.h"
 		],
 		"core":
 		[
 			"core/IDebugRenderWorld.h",
-			"core/IDeferredEvaluatorBlueprint.h",
 			"core/IDeferredEvaluatorFactoryDatabase.h",
 			"core/IEditorService.h",
 			"core/IFactoryDatabase.h",
@@ -28,7 +28,6 @@
 			"core/IHub.h",
 			"core/IHubPlugin.h",
 			"core/IInputBlueprint.h",
-			"core/IInstantEvaluatorBlueprint.h",
 			"core/IInstantEvaluatorFactoryDatabase.h",
 			"core/IItemDebugProxies.h",
 			"core/IItemDebugProxyFactory.h",
@@ -52,7 +51,8 @@
 			"core/QueryBlueprintID.h",
 			"core/ITimeBudget.h",
 			"core/ILeafFunctionReturnValue.h",
-			"core/IScoreTransformFactory.h"
+			"core/IScoreTransformFactory.h",
+			"core/ITextualEvaluatorBlueprint.h"
 		],
 		"client":
 		[
@@ -70,7 +70,6 @@
 			"client/QueryRequest.h",
 			"client/IQueryBlueprintRuntimeParamVisitor.h",
 			"client/IItemMonitor.h",
-			"client/GUIDHelper.h",
 			"client/IItemConverter.h"
 		],
 		"datasource":

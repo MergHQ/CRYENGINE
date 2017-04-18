@@ -13,8 +13,23 @@ namespace UQS
 
 		void CStdLibRegistration::InstantiateGeneratorFactoriesForRegistration()
 		{
-			static const Client::CGeneratorFactory<CGenerator_PointsOnPureGrid> generatorFactory_PointsOnPureGrid("std::PointsOnPureGrid");
-			static const Client::CGeneratorFactory<CGenerator_PointsOnNavMesh> generatorFactory_PointsOnNavMesh("std::PointsOnNavMesh");
+			{
+				Client::CGeneratorFactory<CGenerator_PointsOnPureGrid>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::PointsOnPureGrid";
+				ctorParams.guid = "498bce51-a2b9-4e77-b0f9-e127e8a5cc72"_uqs_guid;
+
+				static const Client::CGeneratorFactory<CGenerator_PointsOnPureGrid> generatorFactory_PointsOnPureGrid(ctorParams);
+			}
+
+			{
+				Client::CGeneratorFactory<CGenerator_PointsOnNavMesh>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::PointsOnNavMesh";
+				ctorParams.guid = "70b13c46-e012-4fde-bba5-70ccd4f8b321"_uqs_guid;
+
+				static const Client::CGeneratorFactory<CGenerator_PointsOnNavMesh> generatorFactory_PointsOnNavMesh(ctorParams);
+			}
 		}
 
 		//===================================================================================

@@ -25,10 +25,11 @@ namespace UQS
 			void                                        SaveQueryElement(const XmlNodeRef& queryElementToSaveTo);
 			void                                        SaveGlobalParamsElement(const XmlNodeRef& globalParamsElementToSaveTo);
 			void                                        SaveGeneratorElement(const XmlNodeRef& generatorElementToSaveTo);
-			void                                        SaveInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElementToSaveTo, const Core::ITextualInstantEvaluatorBlueprint& instantEvaluatorBP);
-			void                                        SaveDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElementToSaveTo, const Core::ITextualDeferredEvaluatorBlueprint& deferredEvaluatorBP);
+			void                                        SaveInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElementToSaveTo, const Core::ITextualEvaluatorBlueprint& instantEvaluatorBP);
+			void                                        SaveDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElementToSaveTo, const Core::ITextualEvaluatorBlueprint& deferredEvaluatorBP);
 			void                                        SaveFunctionElement(const XmlNodeRef& functionElementToSaveTo, const Core::ITextualInputBlueprint& parentInput);
 			void                                        SaveInputElement(const XmlNodeRef& inputElementToSaveTo, const Core::ITextualInputBlueprint& inputBP);
+			void                                        CommonSaveEvaluatorElement(const XmlNodeRef& evaluatorElementToSaveTo, const char* szAttributeForEvaluatorFactoryGUID, const Core::ITextualEvaluatorBlueprint& evaluatorBP);  // common code for SaveInstantEvaluatorElement() and SaveDeferredEvaluatorElement()
 
 		private:
 			string                                      m_xmlFileNameToSaveTo;

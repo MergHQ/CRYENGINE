@@ -265,19 +265,21 @@ class CInputBlueprint
 {
 public:
 	const char*            GetParamName() const;
+	const UQS::Client::CInputParameterID& GetParamID() const;
 	const char*            GetFuncName() const;
+	const CryGUID&         GetFuncGUID() const;
 	const char*            GetFuncReturnValueLiteral() const;
 	bool                   GetAddReturnValueToDebugRenderWorldUponExecution() const;
-	CInputBlueprint&       AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
+	CInputBlueprint&       AddChild(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 	size_t                 GetChildCount() const;
 	const CInputBlueprint& GetChild(size_t index) const;
 	CInputBlueprint*       FindChildByParamName(const char* szParamName);
 	const CInputBlueprint* FindChildByParamNameConst(const char* szParamName) const;
 
 	CInputBlueprint();
-	CInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
+	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 
-	CInputBlueprint(const char* szParamName);
+	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID);
 
 	CInputBlueprint(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
@@ -323,6 +325,7 @@ private:
 private:
 
 	string                                   m_paramName;
+	UQS::Client::CInputParameterID           m_paramID;
 	bool                                     m_bAddReturnValueToDebugRenderWorldUponExecution;
 
 	CFunctionSerializationHelper             m_functionHelper;
@@ -341,7 +344,7 @@ class CConstParamBlueprint
 public:
 	void   AddParameter(const char* szName, const char* szType, CItemLiteral&& value, bool bAddToDebugRenderWorld);
 	size_t GetParameterCount() const;
-	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, string& szValue, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
+	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, CryGUID& typeGUID, string& szValue, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
 
 	void   Serialize(Serialization::IArchive& archive);
 	void   PrepareHelpers(CUqsDocSerializationContext& context);
@@ -380,7 +383,7 @@ class CRuntimeParamBlueprint
 public:
 	void   AddParameter(const char* szName, const char* szType, bool bAddToDebugRenderWorld);
 	size_t GetParameterCount() const;
-	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
+	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, CryGUID& typeGUID, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
 
 	void   Serialize(Serialization::IArchive& archive);
 	void   PrepareHelpers(CUqsDocSerializationContext& context);
@@ -423,6 +426,7 @@ public:
 	CInputBlueprint&                        GetInputRoot();
 	const CInputBlueprint&                  GetInputRoot() const;
 	const char*                             GetGeneratorName() const;
+	const CryGUID&                          GetGeneratorGUID() const;
 
 	bool                                    IsSet() const { return !m_name.empty(); }
 
@@ -470,14 +474,16 @@ class CInstantEvaluatorBlueprint
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
 	void                   SetWeight(float weight);
-	void                   SetScoreTransform(const char* szScoreTransform);
+	void                   SetScoreTransformName(const char* szScoreTransformName);
 	void                   SetNegateDiscard(bool bNegateDiscard);
 	float                  GetWeight() const;
-	const char*            GetScoreTransform() const;
+	const char*            GetScoreTransformName() const;
+	const CryGUID&         GetScoreTransformGUID() const;
 	bool                   GetNegateDiscard() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
+	const CryGUID&         GetEvaluatorGUID() const;
 
 	CInstantEvaluatorBlueprint(CEvaluator& owner)
 		: SEvaluatorBlueprintAdapter(owner)
@@ -490,14 +496,16 @@ class CDeferredEvaluatorBlueprint
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
 	void                   SetWeight(float weight);
-	void                   SetScoreTransform(const char* szScoreTransform);
+	void                   SetScoreTransformName(const char* szScoreTransformName);
 	void                   SetNegateDiscard(bool bNegateDiscard);
 	float                  GetWeight() const;
-	const char*            GetScoreTransform() const;
+	const char*            GetScoreTransformName() const;
+	const CryGUID&         GetScoreTransformGUID() const;
 	bool                   GetNegateDiscard() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
+	const CryGUID&         GetEvaluatorGUID() const;
 
 	CDeferredEvaluatorBlueprint(CEvaluator& owner)
 		: SEvaluatorBlueprintAdapter(owner)
@@ -520,14 +528,16 @@ public:
 
 	void                         SetEvaluatorName(const char* szEvaluatorName);
 	void                         SetWeight(float weight);
-	void                         SetScoreTransform(const char* szScoreTransform);
+	void                         SetScoreTransformName(const char* szScoreTransformName);
 	void                         SetNegateDiscard(bool bNegateDiscard);
 	float                        GetWeight() const;
-	const char*                  GetScoreTransform() const;
+	const char*                  GetScoreTransformName() const;
+	const CryGUID&               GetScoreTransformGUID() const;
 	bool                         GetNegateDiscard() const;
 	CInputBlueprint&             GetInputRoot();
 	const CInputBlueprint&       GetInputRoot() const;
 	const char*                  GetEvaluatorName() const;
+	const CryGUID&               GetEvaluatorGUID() const;
 
 	CInstantEvaluatorBlueprint&  AsInstant();
 	CDeferredEvaluatorBlueprint& AsDeferred();
@@ -562,7 +572,7 @@ private:
 
 	string                                      m_name;
 	float                                       m_weight;
-	string                                      m_scoreTransform;
+	string                                      m_scoreTransformName;
 	bool                                        m_bNegateDiscard;
 	CInputBlueprint                             m_inputs;
 	mutable std::shared_ptr<CErrorCollector>    m_pErrorCollector;

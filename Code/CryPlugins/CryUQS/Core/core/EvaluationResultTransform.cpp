@@ -14,7 +14,7 @@ namespace UQS
 		//===================================================================================
 
 		CEvaluationResultTransform::CEvaluationResultTransform()
-			: m_scoreTransformType(EScoreTransformType::Linear)
+			: m_scoreTransformType(CScoreTransformFactory::GetDefaultScoreTransformFactory().GetScoreTransformType())
 			, m_bNegateDiscard(false)
 		{
 			// nothing
@@ -28,6 +28,16 @@ namespace UQS
 		void CEvaluationResultTransform::SetNegateDiscard(bool bNegateDiscard)
 		{
 			m_bNegateDiscard = bNegateDiscard;
+		}
+
+		EScoreTransformType CEvaluationResultTransform::GetScoreTransformType() const
+		{
+			return m_scoreTransformType;
+		}
+
+		bool CEvaluationResultTransform::GetNegateDiscard() const
+		{
+			return m_bNegateDiscard;
 		}
 
 		void CEvaluationResultTransform::TransformItemEvaluationResult(SItemEvaluationResult& evaluationResultToTransform) const

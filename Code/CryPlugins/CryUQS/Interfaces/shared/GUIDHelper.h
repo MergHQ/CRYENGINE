@@ -6,7 +6,7 @@
 
 namespace UQS
 {
-	namespace Client
+	namespace Shared
 	{
 		namespace Internal
 		{
@@ -28,11 +28,15 @@ namespace UQS
 			{
 			public:
 
-				static CryGUID  FromString(const char* szGuidAsString);
-				static void     ToString(Shared::IUqsString& out, const CryGUID& guid);
+				static CryGUID  FromString(const char* szGuidAsString);                        // notice: fails an assert() if given string has no valid GUID representation and returns an empty GUID then
+				static bool     TryParseFromString(CryGUID& out, const char* szGuidAsString);  // returns false and leaves 'out' untouched if given string is no valid GUID representation
+				static void     ToString(const CryGUID& guid, Shared::IUqsString& out);
 
 			private:
 
+				static bool     IsValidStringRepresentation(const char* szGuidAsStringToCheck);
+				static bool     ValidateHexChar(char ch);
+				static bool     ValidateHexCharsInRange(const char* szBegin, const char* szEnd);  // szEnd is exclusive (just like in any STL container)
 				static uint8    HexCharToUint8(char hexChar);
 				static uint16   HexCharToUint16(char hexChar);
 				static uint32   HexCharToUint32(char hexChar);
@@ -45,7 +49,12 @@ namespace UQS
 				//                          012345678901234567890123456789012345
 				//                                    1         2         3
 
-				assert(strlen(szGuidAsString) == 36 && szGuidAsString[8] == '-' && szGuidAsString[13] == '-' && szGuidAsString[18] == '-' && szGuidAsString[23] == '-');
+				assert(IsValidStringRepresentation(szGuidAsString));
+
+				if (!IsValidStringRepresentation(szGuidAsString))
+				{
+					return CryGUID::Null();
+				}
 
 				uint32 data1;
 				uint16 data2;
@@ -115,7 +124,20 @@ namespace UQS
 				return CryGUID::Construct(data1, data2, data3, data4[0], data4[1], data4[2], data4[3], data4[4], data4[5], data4[6], data4[7]);
 			}
 
-			inline void CGUIDHelper::ToString(Shared::IUqsString& out, const CryGUID& guid)
+			inline bool CGUIDHelper::TryParseFromString(CryGUID& out, const char* szGuidAsString)
+			{
+				if (IsValidStringRepresentation(szGuidAsString))
+				{
+					out = FromString(szGuidAsString);
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+			inline void CGUIDHelper::ToString(const CryGUID& guid, Shared::IUqsString& out)
 			{
 				uint32 data1;
 				uint16 data2;
@@ -162,6 +184,70 @@ namespace UQS
 					(unsigned int)data4[7]);
 			}
 
+			inline bool CGUIDHelper::IsValidStringRepresentation(const char* szGuidAsStringToCheck)
+			{
+				// example GUID as string: "dbbb8931-6ab6-42a7-b67e-3e871f7d9bdd"
+				//                          u32      u16  u16  2*u8 6*u8
+				//                          012345678901234567890123456789012345
+				//                                    1         2         3
+
+				if (strlen(szGuidAsStringToCheck) != 36)
+					return false;
+
+				if (szGuidAsStringToCheck[8] != '-')
+					return false;
+
+				if (szGuidAsStringToCheck[13] != '-')
+					return false;
+
+				if (szGuidAsStringToCheck[18] != '-')
+					return false;
+
+				if (szGuidAsStringToCheck[23] != '-')
+					return false;
+
+				if (!ValidateHexCharsInRange(szGuidAsStringToCheck + 0, szGuidAsStringToCheck + 8))
+					return false;
+
+				if (!ValidateHexCharsInRange(szGuidAsStringToCheck + 9, szGuidAsStringToCheck + 13))
+					return false;
+
+				if (!ValidateHexCharsInRange(szGuidAsStringToCheck + 14, szGuidAsStringToCheck + 18))
+					return false;
+
+				if (!ValidateHexCharsInRange(szGuidAsStringToCheck + 19, szGuidAsStringToCheck + 23))
+					return false;
+
+				if (!ValidateHexCharsInRange(szGuidAsStringToCheck + 24, szGuidAsStringToCheck + 36))
+					return false;
+
+				return true;
+			}
+
+			inline bool CGUIDHelper::ValidateHexChar(char ch)
+			{
+				if (ch >= '0' && ch <= '9')
+					return true;
+
+				if (ch >= 'a' && ch <= 'f')
+					return true;
+
+				if (ch >= 'A' && ch <= 'F')
+					return true;
+
+				return false;
+			}
+
+			inline bool CGUIDHelper::ValidateHexCharsInRange(const char* szBegin, const char* szEnd)
+			{
+				for (const char* pWalker = szBegin; pWalker != szEnd; ++pWalker)
+				{
+					if (!ValidateHexChar(*pWalker))
+						return false;
+				}
+				return true;
+			}
+
 			inline uint8 CGUIDHelper::HexCharToUint8(char hexChar)
 			{
 				if (hexChar >= '0' && hexChar <= '9')
@@ -199,5 +285,5 @@ namespace UQS
 
 inline CryGUID operator"" _uqs_guid(const char* szGUID, size_t)
 {
-	return UQS::Client::Internal::CGUIDHelper::FromString(szGUID);
+	return UQS::Shared::Internal::CGUIDHelper::FromString(szGUID);
 }

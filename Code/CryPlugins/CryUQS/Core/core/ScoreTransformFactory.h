@@ -15,14 +15,15 @@ namespace UQS
 		//
 		//===================================================================================
 		
-		class CScoreTransformFactory : public IScoreTransformFactory, public Shared::CFactoryBase<CScoreTransformFactory>
+		class CScoreTransformFactory final : public IScoreTransformFactory, public Shared::CFactoryBase<CScoreTransformFactory>
 		{
 		public:
 
-			explicit                              CScoreTransformFactory(const char* szName, EScoreTransformType scoreTransformType);
+			explicit                              CScoreTransformFactory(const char* szName, const CryGUID& guid, EScoreTransformType scoreTransformType);
 
 			// IScoreTransformFactory
 			virtual const char*                   GetName() const override;
+			virtual const CryGUID&                GetGUID() const override;
 			virtual EScoreTransformType           GetScoreTransformType() const override;
 			// ~IScoreTransformFactory
 

@@ -15,12 +15,59 @@ namespace UQS
 
 		void CStdLibRegistration::InstantiateInstantEvaluatorFactoriesForRegistration()
 		{
-			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMinDistance> instantEvaluatorFactory_TestMinDistance("std::TestMinDistance");
-			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMaxDistance> instantEvaluatorFactory_TestMaxDistance("std::TestMaxDistance");
-			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestLocationInNavMesh> instantEvaluatorFactory_TestLocationInNavMesh("std::TestLocationInNavMesh");
-			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistance> instantEvaluatorFactory_ScoreDistance("std::ScoreDistance");
-			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistanceInverse> instantEvaluatorFactory_ScoreDistanceInverse("std::ScoreDistanceInverse");
-			static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreRandom> instantEvaluatorFactory_ScoreRandom("std::ScoreRandom");
+			{
+				Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMinDistance>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::TestMinDistance";
+				ctorParams.guid = "1913cd53-ba27-4285-a901-fa83997c681f"_uqs_guid;
+
+				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMinDistance> instantEvaluatorFactory_TestMinDistance(ctorParams);
+			}
+
+			{
+				Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMaxDistance>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::TestMaxDistance";
+				ctorParams.guid = "46cb5dcd-aacf-4b6c-b30f-5e678dbac707"_uqs_guid;
+
+				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMaxDistance> instantEvaluatorFactory_TestMaxDistance(ctorParams);
+			}
+
+			{
+				Client::CInstantEvaluatorFactory<CInstantEvaluator_TestLocationInNavMesh>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::TestLocationInNavMesh";
+				ctorParams.guid = "1c62cf8c-09f1-4ee8-a0e5-bd2a6c6c44e3"_uqs_guid;
+
+				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestLocationInNavMesh> instantEvaluatorFactory_TestLocationInNavMesh(ctorParams);
+			}
+
+			{
+				Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistance>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::ScoreDistance";
+				ctorParams.guid = "fc41cc13-3967-462a-b464-b61af028f613"_uqs_guid;
+
+				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistance> instantEvaluatorFactory_ScoreDistance(ctorParams);
+			}
+
+			{
+				Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistanceInverse>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::ScoreDistanceInverse";
+				ctorParams.guid = "78a52467-32a0-4bcd-918a-df7db9d2b715"_uqs_guid;
+
+				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistanceInverse> instantEvaluatorFactory_ScoreDistanceInverse(ctorParams);
+			}
+
+			{
+				Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreRandom>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::ScoreRandom";
+				ctorParams.guid = "ff8bd552-db0d-47a2-9238-14f5e1eeedbf"_uqs_guid;
+
+				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreRandom> instantEvaluatorFactory_ScoreRandom(ctorParams);
+			}
 		}
 
 		//===================================================================================

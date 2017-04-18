@@ -105,6 +105,9 @@ add_sources("UQS_uber_core.cpp"
 		"core/ScoreTransformFactory.cpp"
 		"core/EvaluationResultTransform.h"
 		"core/EvaluationResultTransform.cpp"
+		"core/TextualEvaluatorBlueprint.h"
+		"core/EvaluatorBlueprintBase.h"
+		"core/EvaluatorBlueprintBase.cpp"
 )
 
 end_sources()

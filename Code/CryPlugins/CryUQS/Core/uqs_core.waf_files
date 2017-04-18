@@ -105,7 +105,10 @@
 			"core/ScoreTransformFactory.h",
 			"core/ScoreTransformFactory.cpp",
 			"core/EvaluationResultTransform.h",
-			"core/EvaluationResultTransform.cpp"
+			"core/EvaluationResultTransform.cpp",
+			"core/TextualEvaluatorBlueprint.h",
+			"core/EvaluatorBlueprintBase.h",
+			"core/EvaluatorBlueprintBase.cpp"
 		]
 	}
 }

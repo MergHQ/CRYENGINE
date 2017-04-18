@@ -22,6 +22,7 @@ namespace UQS
 			public:
 				// IInstantEvaluatorFactory
 				virtual const char*                      GetName() const override final;
+				virtual const CryGUID&                   GetGUID() const override final;
 				virtual const IInputParameterRegistry&   GetInputParameterRegistry() const override final;
 				virtual IParamsHolderFactory&            GetParamsHolderFactory() const override final;
 				// ~IInstantEvaluatorFactory
@@ -39,7 +40,7 @@ namespace UQS
 				// ~IParamsHolderFactory
 
 			protected:
-				explicit                                 CInstantEvaluatorFactoryBase(const char* szEvaluatorName);
+				explicit                                 CInstantEvaluatorFactoryBase(const char* szEvaluatorName, const CryGUID& guid);
 
 			protected:
 				CInputParameterRegistry                  m_inputParameterRegistry;
@@ -48,8 +49,8 @@ namespace UQS
 				IParamsHolderFactory*                    m_pParamsHolderFactory;      // points to *this; it's a trick to allow GetParamsHolderFactory() return a non-const reference to *this
 			};
 
-			inline CInstantEvaluatorFactoryBase::CInstantEvaluatorFactoryBase(const char* szEvaluatorName)
-				: CFactoryBase(szEvaluatorName)
+			inline CInstantEvaluatorFactoryBase::CInstantEvaluatorFactoryBase(const char* szEvaluatorName, const CryGUID& guid)
+				: CFactoryBase(szEvaluatorName, guid)
 			{
 				m_pParamsHolderFactory = this;
 			}
@@ -57,6 +58,11 @@ namespace UQS
 			inline const char* CInstantEvaluatorFactoryBase::GetName() const
 			{
 				return CFactoryBase::GetName();
+			}
+
+			inline const CryGUID& CInstantEvaluatorFactoryBase::GetGUID() const
+			{
+				return CFactoryBase::GetGUID();
 			}
 
 			inline const IInputParameterRegistry& CInstantEvaluatorFactoryBase::GetInputParameterRegistry() const
@@ -81,7 +87,16 @@ namespace UQS
 		class CInstantEvaluatorFactory final : public Internal::CInstantEvaluatorFactoryBase
 		{
 		public:
-			explicit                             CInstantEvaluatorFactory(const char* szEvaluatorName);
+
+			struct SCtorParams
+			{
+				const char*                      szName = "";
+				CryGUID                          guid = CryGUID::Null();
+			};
+
+		public:
+
+			explicit                             CInstantEvaluatorFactory(const SCtorParams& ctorParams);
 
 			// IInstantEvaluatorFactory
 			virtual ECostCategory                GetCostCategory() const override;
@@ -97,8 +112,8 @@ namespace UQS
 		};
 
 		template <class TInstantEvaluator>
-		CInstantEvaluatorFactory<TInstantEvaluator>::CInstantEvaluatorFactory(const char* szEvaluatorName)
-			: CInstantEvaluatorFactoryBase(szEvaluatorName)
+		CInstantEvaluatorFactory<TInstantEvaluator>::CInstantEvaluatorFactory(const SCtorParams& ctorParams)
+			: CInstantEvaluatorFactoryBase(ctorParams.szName, ctorParams.guid)
 		{
 			typedef typename TInstantEvaluator::SParams Params;
 			Params::Expose(m_inputParameterRegistry);

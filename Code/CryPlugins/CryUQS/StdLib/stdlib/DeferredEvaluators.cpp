@@ -13,7 +13,14 @@ namespace UQS
 
 		void CStdLibRegistration::InstantiateDeferredEvaluatorFactoriesForRegistration()
 		{
-			static const Client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast> deferredEvaluatorFactory_TestRaycast("std::TestRaycast");
+			{
+				Client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast>::SCtorParams ctorParams;
+
+				ctorParams.szName = "std::TestRaycast";
+				ctorParams.guid = "e8d294e5-ab1f-40ce-abc1-9b6fc687c990"_uqs_guid;
+
+				static const Client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast> deferredEvaluatorFactory_TestRaycast(ctorParams);
+			}
 		}
 
 		//===================================================================================

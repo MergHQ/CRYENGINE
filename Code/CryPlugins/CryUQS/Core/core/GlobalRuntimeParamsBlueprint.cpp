@@ -21,9 +21,9 @@ namespace UQS
 			// nothing
 		}
 
-		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* szName, const char* szType, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
+		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* szName, const char* szTypeName, const CryGUID& typeGUID, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector)
 		{
-			m_parameters.emplace_back(szName, szType, bAddToDebugRenderWorld, std::move(pSyntaxErrorCollector));
+			m_parameters.emplace_back(szName, szTypeName, typeGUID, bAddToDebugRenderWorld, std::move(pSyntaxErrorCollector));
 		}
 
 		size_t CTextualGlobalRuntimeParamsBlueprint::GetParameterCount() const
@@ -35,7 +35,7 @@ namespace UQS
 		{
 			assert(index < m_parameters.size());
 			const SStoredParameterInfo& pi = m_parameters[index];
-			return SParameterInfo(pi.name.c_str(), pi.type.c_str(), pi.bAddToDebugRenderWorld, pi.pSyntaxErrorCollector.get());
+			return SParameterInfo(pi.name.c_str(), pi.typeName.c_str(), pi.typeGUID, pi.bAddToDebugRenderWorld, pi.pSyntaxErrorCollector.get());
 		}
 
 		//===================================================================================
@@ -75,16 +75,21 @@ namespace UQS
 					continue;
 				}
 
-				// find the item factory
-				Client::IItemFactory* pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByName(p.szType);
-				if (!pItemFactory)
+				// find the item factory: first by GUID, then by name
+				Client::IItemFactory* pItemFactory;
+				if (!(pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByGUID(p.typeGUID)))
 				{
-					if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+					if (!(pItemFactory = g_pHub->GetItemFactoryDatabase().FindFactoryByName(p.szTypeName)))
 					{
-						pSE->AddErrorMessage("Unknown item type: '%s'", p.szType);
+						if (DataSource::ISyntaxErrorCollector* pSE = p.pSyntaxErrorCollector)
+						{
+							Shared::CUqsString typeGuidAsString;
+							Shared::Internal::CGUIDHelper::ToString(p.typeGUID, typeGuidAsString);
+							pSE->AddErrorMessage("Unknown item type: GUID = %s, name = '%s'", typeGuidAsString.c_str(), p.szTypeName);
+						}
+						bResolveSucceeded = false;
+						continue;
 					}
-					bResolveSucceeded = false;
-					continue;
 				}
 
 				// - if the same parameter exists already in a parent query, ensure that both have the same data type (name clashes are fine, but type clashes are not!)

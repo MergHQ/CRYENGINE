@@ -47,8 +47,15 @@ namespace UQS
 			// "factory" attribute
 			queryElementToSaveTo->setAttr("factory", m_pQuery->GetQueryFactoryName());
 
+			// "queryFactoryGUID" attribute
+			Shared::CUqsString queryFactoryGuidAsString;
+			Shared::Internal::CGUIDHelper::ToString(m_pQuery->GetQueryFactoryGUID(), queryFactoryGuidAsString);
+			queryElementToSaveTo->setAttr("queryFactoryGUID", queryFactoryGuidAsString.c_str());
+
 			// "maxItemsToKeepInResultSet" attribute
-			queryElementToSaveTo->setAttr("maxItemsToKeepInResultSet", m_pQuery->GetMaxItemsToKeepInResultSet());
+			uint64 maxItemsToKeepInResultSet = m_pQuery->GetMaxItemsToKeepInResultSet();  // notice: we use an uint64 because that will match the overloaded setAttr() that takes an additional parameter to specify hex format (which we will explicitly disallow!)
+			const bool bUseHexFormat = false;
+			queryElementToSaveTo->setAttr("maxItemsToKeepInResultSet", maxItemsToKeepInResultSet, bUseHexFormat);
 
 			// <GlobalParams>
 			SaveGlobalParamsElement(queryElementToSaveTo->newChild("GlobalParams"));
@@ -62,7 +69,7 @@ namespace UQS
 			// all <InstantEvaluator>s
 			for (size_t i = 0; i < m_pQuery->GetInstantEvaluatorCount(); ++i)
 			{
-				const Core::ITextualInstantEvaluatorBlueprint& textualInstantEvaluatorBP = m_pQuery->GetInstantEvaluator(i);
+				const Core::ITextualEvaluatorBlueprint& textualInstantEvaluatorBP = m_pQuery->GetInstantEvaluator(i);
 				XmlNodeRef instantEvaluatorElement = queryElementToSaveTo->newChild("InstantEvaluator");
 				SaveInstantEvaluatorElement(instantEvaluatorElement, textualInstantEvaluatorBP);
 			}
@@ -70,7 +77,7 @@ namespace UQS
 			// all <DeferredEvaluator>s
 			for (size_t i = 0; i < m_pQuery->GetDeferredEvaluatorCount(); ++i)
 			{
-				const Core::ITextualDeferredEvaluatorBlueprint& textualDeferredEvaluatorBP = m_pQuery->GetDeferredEvaluator(i);
+				const Core::ITextualEvaluatorBlueprint& textualDeferredEvaluatorBP = m_pQuery->GetDeferredEvaluator(i);
 				XmlNodeRef deferredEvaluatorElement = queryElementToSaveTo->newChild("DeferredEvaluator");
 				SaveDeferredEvaluatorElement(deferredEvaluatorElement, textualDeferredEvaluatorBP);
 			}
@@ -98,8 +105,11 @@ namespace UQS
 				{
 					const Core::ITextualGlobalConstantParamsBlueprint::SParameterInfo pi = constantParamsBP.GetParameter(i);
 					XmlNodeRef constantParamElement = globalParamsElementToSaveTo->newChild("ConstantParam");
+					Shared::CUqsString typeGuidAsString;
+					Shared::Internal::CGUIDHelper::ToString(pi.typeGUID, typeGuidAsString);
 					constantParamElement->setAttr("name", pi.szName);
-					constantParamElement->setAttr("type", pi.szType);
+					constantParamElement->setAttr("type", pi.szTypeName);
+					constantParamElement->setAttr("typeGUID", typeGuidAsString.c_str());  // should be called "typeName", but is already in use now
 					constantParamElement->setAttr("value", pi.szValue);
 					constantParamElement->setAttr("addToDebugRenderWorld", pi.bAddToDebugRenderWorld);
 				}
@@ -112,8 +122,11 @@ namespace UQS
 				{
 					const Core::ITextualGlobalRuntimeParamsBlueprint::SParameterInfo pi = runtimeParamsBP.GetParameter(i);
 					XmlNodeRef runtimeParamElement = globalParamsElementToSaveTo->newChild("RuntimeParam");
+					Shared::CUqsString typeGuidAsString;
+					Shared::Internal::CGUIDHelper::ToString(pi.typeGUID, typeGuidAsString);
 					runtimeParamElement->setAttr("name", pi.szName);
-					runtimeParamElement->setAttr("type", pi.szType);
+					runtimeParamElement->setAttr("type", pi.szTypeName);  // should be called "typeName", but is already in use now
+					runtimeParamElement->setAttr("typeGUID", typeGuidAsString.c_str());
 					runtimeParamElement->setAttr("addToDebugRenderWorld", pi.bAddToDebugRenderWorld);
 				}
 			}
@@ -129,6 +142,11 @@ namespace UQS
 			// "name"
 			generatorElementToSaveTo->setAttr("name", pGeneratorBP->GetGeneratorName());
 
+			// "generatorFactoryGUID"
+			Shared::CUqsString generatorFactoryGuidAsString;
+			Shared::Internal::CGUIDHelper::ToString(pGeneratorBP->GetGeneratorGUID(), generatorFactoryGuidAsString);
+			generatorElementToSaveTo->setAttr("generatorFactoryGUID", generatorFactoryGuidAsString.c_str());
+
 			// all <Input>s
 			{
 				const Core::ITextualInputBlueprint& inputRootBP = pGeneratorBP->GetInputRoot();
@@ -141,60 +159,18 @@ namespace UQS
 			}
 		}
 
-		void CQueryBlueprintSaver_XML::SaveInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElementToSaveTo, const Core::ITextualInstantEvaluatorBlueprint& instantEvaluatorBP)
+		void CQueryBlueprintSaver_XML::SaveInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElementToSaveTo, const Core::ITextualEvaluatorBlueprint& instantEvaluatorBP)
 		{
 			assert(instantEvaluatorElementToSaveTo->isTag("InstantEvaluator"));
 
-			// "name" attribute
-			instantEvaluatorElementToSaveTo->setAttr("name", instantEvaluatorBP.GetEvaluatorName());
-
-			// "weight" attribute
-			instantEvaluatorElementToSaveTo->setAttr("weight", instantEvaluatorBP.GetWeight());
-
-			// "scoreTransform" attribute
-			instantEvaluatorElementToSaveTo->setAttr("scoreTransform", instantEvaluatorBP.GetScoreTransform());
-
-			// "negateDiscard" attribute
-			instantEvaluatorElementToSaveTo->setAttr("negateDiscard", instantEvaluatorBP.GetNegateDiscard());
-
-			// all <Input>s
-			{
-				const Core::ITextualInputBlueprint& inputRootBP = instantEvaluatorBP.GetInputRoot();
-				for (size_t i = 0; i < inputRootBP.GetChildCount(); ++i)
-				{
-					const Core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
-					XmlNodeRef inputElement = instantEvaluatorElementToSaveTo->newChild("Input");
-					SaveInputElement(inputElement, inputBP);
-				}
-			}
+			CommonSaveEvaluatorElement(instantEvaluatorElementToSaveTo, "instantEvaluatorFactoryGUID", instantEvaluatorBP);
 		}
 
-		void CQueryBlueprintSaver_XML::SaveDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElementToSaveTo, const Core::ITextualDeferredEvaluatorBlueprint& deferredEvaluatorBP)
+		void CQueryBlueprintSaver_XML::SaveDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElementToSaveTo, const Core::ITextualEvaluatorBlueprint& deferredEvaluatorBP)
 		{
 			assert(deferredEvaluatorElementToSaveTo->isTag("DeferredEvaluator"));
 
-			// "name" attribute
-			deferredEvaluatorElementToSaveTo->setAttr("name", deferredEvaluatorBP.GetEvaluatorName());
-
-			// "weight" attribute
-			deferredEvaluatorElementToSaveTo->setAttr("weight", deferredEvaluatorBP.GetWeight());
-
-			// "scoreTransform" attribute
-			deferredEvaluatorElementToSaveTo->setAttr("scoreTransform", deferredEvaluatorBP.GetScoreTransform());
-
-			// "negateDiscard" attribute
-			deferredEvaluatorElementToSaveTo->setAttr("negateDiscard", deferredEvaluatorBP.GetNegateDiscard());
-
-			// all <Input>s
-			{
-				const Core::ITextualInputBlueprint& inputRootBP = deferredEvaluatorBP.GetInputRoot();
-				for (size_t i = 0; i < inputRootBP.GetChildCount(); ++i)
-				{
-					const Core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
-					XmlNodeRef inputElement = deferredEvaluatorElementToSaveTo->newChild("Input");
-					SaveInputElement(inputElement, inputBP);
-				}
-			}
+			CommonSaveEvaluatorElement(deferredEvaluatorElementToSaveTo, "deferredEvaluatorFactoryGUID", deferredEvaluatorBP);
 		}
 
 		void CQueryBlueprintSaver_XML::SaveFunctionElement(const XmlNodeRef& functionElementToSaveTo, const Core::ITextualInputBlueprint& parentInput)
@@ -203,6 +179,11 @@ namespace UQS
 
 			// <Function>'s "name" attribute (name of the function)
 			functionElementToSaveTo->setAttr("name", parentInput.GetFuncName());
+
+			// <Function>'s "functionFactoryGUID" attribute
+			Shared::CUqsString functionFactoryGuidAsString;
+			Shared::Internal::CGUIDHelper::ToString(parentInput.GetFuncGUID(), functionFactoryGuidAsString);
+			functionElementToSaveTo->setAttr("functionFactoryGUID", functionFactoryGuidAsString.c_str());
 
 			// <Function>'s "addReturnValueToDebugRenderWorldUponExecution" attribute
 			functionElementToSaveTo->setAttr("addReturnValueToDebugRenderWorldUponExecution", parentInput.GetAddReturnValueToDebugRenderWorldUponExecution());  // notice: setAttr() will convert the passed in bool to an int
@@ -231,10 +212,63 @@ namespace UQS
 			// "name" attribute (name of the parameter)
 			inputElementToSaveTo->setAttr("name", inputBP.GetParamName());
 
+			// "paramID" (unique ID of the parameter)
+			char paramIdAsFourCharacterString[5];
+			inputBP.GetParamID().ToString(paramIdAsFourCharacterString);
+			inputElementToSaveTo->setAttr("paramID", paramIdAsFourCharacterString);
+
 			// <Function> (value of the parameter)
 			XmlNodeRef functionElement = inputElementToSaveTo->newChild("Function");
 
 			SaveFunctionElement(functionElement, inputBP);
+		}
+
+		void CQueryBlueprintSaver_XML::CommonSaveEvaluatorElement(const XmlNodeRef& evaluatorElementToSaveTo, const char* szAttributeForEvaluatorFactoryGUID, const Core::ITextualEvaluatorBlueprint& evaluatorBP)
+		{
+			// "name" attribute
+			{
+				evaluatorElementToSaveTo->setAttr("name", evaluatorBP.GetEvaluatorName());
+			}
+
+			// attribute for the GUID of the evaluator-factory
+			{
+				Shared::CUqsString evaluatorFactoryGUIDAsString;
+				Shared::Internal::CGUIDHelper::ToString(evaluatorBP.GetEvaluatorGUID(), evaluatorFactoryGUIDAsString);
+				evaluatorElementToSaveTo->setAttr(szAttributeForEvaluatorFactoryGUID, evaluatorFactoryGUIDAsString.c_str());
+			}
+
+			// "weight" attribute
+			{
+				evaluatorElementToSaveTo->setAttr("weight", evaluatorBP.GetWeight());
+			}
+
+			// "scoreTransform" attribute (should actually be called "scoreTransformName", but this is now in use already)
+			{
+				evaluatorElementToSaveTo->setAttr("scoreTransform", evaluatorBP.GetScoreTransformName());
+			}
+
+			// "scoreTransformFactoryGUID" attribute (optional because of backwards compatibility, but must represent a valid GUID if present)
+			{
+				Shared::CUqsString guidAsString;
+				Shared::Internal::CGUIDHelper::ToString(evaluatorBP.GetScoreTransformGUID(), guidAsString);
+				evaluatorElementToSaveTo->setAttr("scoreTransformFactoryGUID", guidAsString.c_str());
+			}
+
+			// "negateDiscard" attribute
+			{
+				evaluatorElementToSaveTo->setAttr("negateDiscard", evaluatorBP.GetNegateDiscard());
+			}
+
+			// all <Input>s
+			{
+				const Core::ITextualInputBlueprint& inputRootBP = evaluatorBP.GetInputRoot();
+				for (size_t i = 0; i < inputRootBP.GetChildCount(); ++i)
+				{
+					const Core::ITextualInputBlueprint& inputBP = inputRootBP.GetChild(i);
+					XmlNodeRef inputElement = evaluatorElementToSaveTo->newChild("Input");
+					SaveInputElement(inputElement, inputBP);
+				}
+			}
 		}
 
 	}

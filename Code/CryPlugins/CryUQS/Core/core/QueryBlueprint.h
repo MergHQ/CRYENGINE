@@ -15,7 +15,7 @@ namespace UQS
 		//
 		//===================================================================================
 
-		class CTextualQueryBlueprint : public ITextualQueryBlueprint
+		class CTextualQueryBlueprint final : public ITextualQueryBlueprint
 		{
 		public:
 			explicit                                                   CTextualQueryBlueprint();
@@ -29,12 +29,13 @@ namespace UQS
 
 			virtual void                                               SetName(const char* szName) override;
 			virtual void                                               SetQueryFactoryName(const char* szFactoryName) override;
+			virtual void                                               SetQueryFactoryGUID(const CryGUID& factoryGUID) override;
 			virtual void                                               SetMaxItemsToKeepInResultSet(size_t maxItems) override;
 			virtual ITextualGlobalConstantParamsBlueprint&             GetGlobalConstantParams() override;
 			virtual ITextualGlobalRuntimeParamsBlueprint&              GetGlobalRuntimeParams() override;
 			virtual ITextualGeneratorBlueprint&                        SetGenerator() override;
-			virtual ITextualInstantEvaluatorBlueprint&                 AddInstantEvaluator() override;
-			virtual ITextualDeferredEvaluatorBlueprint&                AddDeferredEvaluator() override;
+			virtual ITextualEvaluatorBlueprint&                        AddInstantEvaluator() override;
+			virtual ITextualEvaluatorBlueprint&                        AddDeferredEvaluator() override;
 			virtual ITextualQueryBlueprint&                            AddChild() override;
 
 			///////////////////////////////////////////////////////////////////////////////////
@@ -45,14 +46,15 @@ namespace UQS
 
 			virtual const char*                                        GetName() const override;
 			virtual const char*                                        GetQueryFactoryName() const override;
+			virtual const CryGUID&                                     GetQueryFactoryGUID() const override;
 			virtual size_t                                             GetMaxItemsToKeepInResultSet() const override;
 			virtual const ITextualGlobalConstantParamsBlueprint&       GetGlobalConstantParams() const override;
 			virtual const ITextualGlobalRuntimeParamsBlueprint&        GetGlobalRuntimeParams() const override;
 			virtual const ITextualGeneratorBlueprint*                  GetGenerator() const override;
 			virtual size_t                                             GetInstantEvaluatorCount() const override;
-			virtual const ITextualInstantEvaluatorBlueprint&           GetInstantEvaluator(size_t index) const override;
+			virtual const ITextualEvaluatorBlueprint&                  GetInstantEvaluator(size_t index) const override;
 			virtual size_t                                             GetDeferredEvaluatorCount() const override;
-			virtual const ITextualDeferredEvaluatorBlueprint&          GetDeferredEvaluator(size_t index) const override;
+			virtual const ITextualEvaluatorBlueprint&                  GetDeferredEvaluator(size_t index) const override;
 			virtual size_t                                             GetChildCount() const override;
 			virtual const ITextualQueryBlueprint&                      GetChild(size_t index) const override;
 
@@ -69,12 +71,13 @@ namespace UQS
 		private:
 			string                                                     m_name;
 			string                                                     m_queryFactoryName;
+			CryGUID                                                    m_queryFactoryGUID;
 			size_t                                                     m_maxItemsToKeepInResultSet;
 			CTextualGlobalConstantParamsBlueprint                      m_globalConstantParams;
 			CTextualGlobalRuntimeParamsBlueprint                       m_globalRuntimeParams;
 			std::unique_ptr<CTextualGeneratorBlueprint>                m_pGenerator;
-			std::vector<CTextualInstantEvaluatorBlueprint*>            m_instantEvaluators;
-			std::vector<CTextualDeferredEvaluatorBlueprint*>           m_deferredEvaluators;
+			std::vector<CTextualEvaluatorBlueprint*>                   m_instantEvaluators;
+			std::vector<CTextualEvaluatorBlueprint*>                   m_deferredEvaluators;
 			DataSource::SyntaxErrorCollectorUniquePtr                  m_pSyntaxErrorCollector;
 			std::vector<CTextualQueryBlueprint*>                       m_children;
 		};

@@ -26,8 +26,8 @@ namespace UQS
 				Ofs3      ofs;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("pos", pos);
-					UQS_EXPOSE_PARAM("ofs", ofs);
+					UQS_EXPOSE_PARAM("pos", pos, "POS ", "Original position for adding an offset to.");
+					UQS_EXPOSE_PARAM("ofs", ofs, "OFS ", "Offset to add to the position.");
 				UQS_EXPOSE_PARAMS_END
 			};
 
@@ -53,7 +53,7 @@ namespace UQS
 				EntityIdWrapper entityId;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("entityId", entityId);
+					UQS_EXPOSE_PARAM("entityId", entityId, "ENTI", "Entity to get the position from.");
 				UQS_EXPOSE_PARAMS_END
 			};
 

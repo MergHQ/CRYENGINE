@@ -21,7 +21,7 @@ namespace UQS
 			explicit                                        CTextualGlobalRuntimeParamsBlueprint();
 
 			// ITextualGlobalRuntimeParamsBlueprint
-			virtual void                                    AddParameter(const char* szName, const char* szType, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
+			virtual void                                    AddParameter(const char* szName, const char* szTypeName, const CryGUID& typeGUID, bool bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr pSyntaxErrorCollector) override;
 			virtual size_t                                  GetParameterCount() const override;
 			virtual SParameterInfo                          GetParameter(size_t index) const override;
 			// ~ITextualGlobalRuntimeParamsBlueprint
@@ -29,10 +29,11 @@ namespace UQS
 		private:
 			struct SStoredParameterInfo
 			{
-				explicit                                    SStoredParameterInfo(const char* _szName, const char* _szType, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
+				explicit                                    SStoredParameterInfo(const char* _szName, const char* _szTypeName, const CryGUID& _typeGUID, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector);
 				explicit                                    SStoredParameterInfo(SStoredParameterInfo&& other);
 				string                                      name;
-				string                                      type;
+				string                                      typeName;
+				CryGUID                                     typeGUID;
 				bool                                        bAddToDebugRenderWorld;
 				DataSource::SyntaxErrorCollectorUniquePtr   pSyntaxErrorCollector;
 			};
@@ -44,16 +45,18 @@ namespace UQS
 			std::vector<SStoredParameterInfo>               m_parameters;
 		};
 
-		inline CTextualGlobalRuntimeParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _szName, const char* _szType, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
+		inline CTextualGlobalRuntimeParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(const char* _szName, const char* _szTypeName, const CryGUID& _typeGUID, bool _bAddToDebugRenderWorld, DataSource::SyntaxErrorCollectorUniquePtr _pSyntaxErrorCollector)
 			: name(_szName)
-			, type(_szType)
+			, typeName(_szTypeName)
+			, typeGUID(_typeGUID)
 			, bAddToDebugRenderWorld(_bAddToDebugRenderWorld)
 			, pSyntaxErrorCollector(std::move(_pSyntaxErrorCollector))
 		{}
 
 		inline CTextualGlobalRuntimeParamsBlueprint::SStoredParameterInfo::SStoredParameterInfo(SStoredParameterInfo&& other)
 			: name(std::move(other.name))
-			, type(std::move(other.type))
+			, typeName(std::move(other.typeName))
+			, typeGUID(std::move(other.typeGUID))
 			, bAddToDebugRenderWorld(std::move(other.bAddToDebugRenderWorld))
 			, pSyntaxErrorCollector(std::move(other.pSyntaxErrorCollector))
 		{}
