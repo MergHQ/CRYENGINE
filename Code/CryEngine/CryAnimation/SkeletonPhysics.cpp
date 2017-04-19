@@ -1618,8 +1618,13 @@ void CSkeletonPhysics::SynchronizeWithPhysicalEntity(IPhysicalEntity* pent, cons
 	Skeleton::CPoseData& poseDataWriteable = GetPoseDataForceWriteable();
 
 	SetLocation(IDENTITY);
+	uint mode = m_pInstance->m_CharEditMode;
+	m_pInstance->m_CharEditMode |= CA_CharacterTool; // force synchronization
 	Job_SynchronizeWithPhysicsPrepare(*CharacterInstanceProcessing::GetMemoryPool());
-	SynchronizeWithPhysicalEntity(poseDataWriteable, pent, posMaster, qMaster, QuatT(IDENTITY));
+	if (pent)
+		SynchronizeWithPhysicalEntity(poseDataWriteable, pent, posMaster, qMaster, QuatT(IDENTITY));
+	Job_Physics_SynchronizeFromAux(poseDataWriteable);
+	m_pInstance->m_CharEditMode = mode;
 	//	UpdateBBox(1);
 }
 
