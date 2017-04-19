@@ -47,7 +47,7 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 
 	if (err != paNoError)
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Failed to initialize PortAudio: %s", Pa_GetErrorText(err));
+		g_implLogger.Log(ELogType::Error, "Failed to initialize PortAudio: %s", Pa_GetErrorText(err));
 	}
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
@@ -73,7 +73,7 @@ ERequestStatus CAudioImpl::ShutDown()
 
 	if (err != paNoError)
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Failed to shut down PortAudio: %s", Pa_GetErrorText(err));
+		g_implLogger.Log(ELogType::Error, "Failed to shut down PortAudio: %s", Pa_GetErrorText(err));
 	}
 
 	return (err == paNoError) ? ERequestStatus::Success : ERequestStatus::Failure;
@@ -135,7 +135,7 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pFile
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of RegisterInMemoryFile");
+			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of RegisterInMemoryFile");
 		}
 	}
 
@@ -157,7 +157,7 @@ ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pFi
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of UnregisterInMemoryFile");
+			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the PortAudio implementation of UnregisterInMemoryFile");
 		}
 	}
 
@@ -250,12 +250,12 @@ void CAudioImpl::DestructAudioStandaloneFile(IAudioStandaloneFile const* const p
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadConnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadConnected(AudioGamepadUniqueId const deviceUniqueID)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadDisconnected(AudioGamepadUniqueId const deviceUniqueID)
 {
 }
 
@@ -320,14 +320,14 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 
 				if (failure)
 				{
-					g_audioImplLogger.Log(eAudioLogType_Error, "Failed to close SNDFILE during CAudioImpl::NewAudioTrigger");
+					g_implLogger.Log(ELogType::Error, "Failed to close SNDFILE during CAudioImpl::NewAudioTrigger");
 				}
 			}
 		}
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown PortAudio tag: %s", szTag);
+		g_implLogger.Log(ELogType::Warning, "Unknown PortAudio tag: %s", szTag);
 	}
 
 	return pAudioTrigger;

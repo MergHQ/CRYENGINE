@@ -188,7 +188,7 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pAudi
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of RegisterInMemoryFile");
+			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of RegisterInMemoryFile");
 		}
 	}
 	return result;
@@ -210,7 +210,7 @@ ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pAu
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of UnregisterInMemoryFile");
+			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of UnregisterInMemoryFile");
 		}
 	}
 	return result;
@@ -462,11 +462,11 @@ void CAudioImpl::DestructAudioStandaloneFile(IAudioStandaloneFile const* const p
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadConnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadConnected(AudioGamepadUniqueId const deviceUniqueID)
 {}
 
 ///////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadDisconnected(AudioGamepadUniqueId const deviceUniqueID)
 {}
 
 ///////////////////////////////////////////////////////////////////////////

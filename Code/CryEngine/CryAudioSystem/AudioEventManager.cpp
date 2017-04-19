@@ -114,11 +114,11 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 				{
 					pColor = itemPlayingColor;
 				}
-				else if (pEvent->m_audioEventState == eAudioEventState_Loading)
+				else if (pEvent->m_state == EEventState::Loading)
 				{
 					pColor = itemLoadingColor;
 				}
-				else if (pEvent->m_audioEventState == eAudioEventState_Virtual)
+				else if (pEvent->m_state == EEventState::Virtual)
 				{
 					pColor = itemVirtualColor;
 				}

@@ -44,7 +44,7 @@ inline ERequestResult ConvertToRequestResult(ERequestStatus const eAudioRequestS
 		}
 	default:
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Invalid AudioRequestStatus '%u'. Cannot be converted to an AudioRequestResult. ", eAudioRequestStatus);
+			g_logger.Log(ELogType::Error, "Invalid AudioRequestStatus '%u'. Cannot be converted to an AudioRequestResult. ", eAudioRequestStatus);
 			CRY_ASSERT(false);
 			result = ERequestResult::Failure;
 			break;
@@ -63,21 +63,21 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	if (g_audioCVars.m_audioObjectPoolSize < 1)
 	{
 		g_audioCVars.m_audioObjectPoolSize = 1;
-		g_audioLogger.Log(eAudioLogType_Warning, "Audio Object pool size should be greater than zero. Forcing the cvar \"s_AudioObjectPoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, "Audio Object pool size should be greater than zero. Forcing the cvar \"s_AudioObjectPoolSize\" to 1!");
 	}
 	CATLAudioObject::CreateAllocator(g_audioCVars.m_audioObjectPoolSize);
 
 	if (g_audioCVars.m_audioEventPoolSize < 1)
 	{
 		g_audioCVars.m_audioEventPoolSize = 1;
-		g_audioLogger.Log(eAudioLogType_Warning, "Audio Event pool size should be greater than zero. Forcing the cvar \"s_AudioEventPoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, "Audio Event pool size should be greater than zero. Forcing the cvar \"s_AudioEventPoolSize\" to 1!");
 	}
 	CATLEvent::CreateAllocator(g_audioCVars.m_audioEventPoolSize);
 
 	if (g_audioCVars.m_audioStandaloneFilePoolSize < 1)
 	{
 		g_audioCVars.m_audioStandaloneFilePoolSize = 1;
-		g_audioLogger.Log(eAudioLogType_Warning, "Audio Standalone File pool size should be greater than zero. Forcing the cvar \"s_AudioStandaloneFilePoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, "Audio Standalone File pool size should be greater than zero. Forcing the cvar \"s_AudioStandaloneFilePoolSize\" to 1!");
 	}
 	CATLStandaloneFile::CreateAllocator(g_audioCVars.m_audioStandaloneFilePoolSize);
 
@@ -167,7 +167,7 @@ void CAudioTranslationLayer::ProcessRequest(CAudioRequest& request)
 			}
 		default:
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "Unknown audio request type: %d", static_cast<int>(request.GetData()->type));
+				g_logger.Log(ELogType::Error, "Unknown audio request type: %d", static_cast<int>(request.GetData()->type));
 				CRY_ASSERT(false);
 
 				break;
@@ -530,7 +530,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 				}
 				else
 				{
-					g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of lose focus trigger");
+					g_logger.Log(ELogType::Warning, "Could not find definition of lose focus trigger");
 				}
 
 				result = m_pImpl->OnLoseFocus();
@@ -555,7 +555,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 				}
 				else
 				{
-					g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of get focus trigger");
+					g_logger.Log(ELogType::Warning, "Could not find definition of get focus trigger");
 				}
 			}
 
@@ -571,7 +571,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of mute all trigger");
+				g_logger.Log(ELogType::Warning, "Could not find definition of mute all trigger");
 			}
 
 			result = m_pImpl->MuteAll();
@@ -608,7 +608,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of unmute trigger");
+				g_logger.Log(ELogType::Warning, "Could not find definition of unmute trigger");
 			}
 
 			break;
@@ -761,7 +761,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		}
 	default:
 		{
-			g_audioLogger.Log(eAudioLogType_Warning, "ATL received an unknown AudioManager request: %u", pRequestDataBase->type);
+			g_logger.Log(ELogType::Warning, "ATL received an unknown AudioManager request: %u", pRequestDataBase->type);
 			result = ERequestStatus::FailureInvalidRequest;
 
 			break;
@@ -786,7 +786,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 			  static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedEvent> const* const>(request.GetData());
 			CATLEvent& audioEvent = pRequestData->audioEvent;
 
-			audioEvent.m_audioEventState = eAudioEventState_PlayingDelayed;
+			audioEvent.m_state = EEventState::PlayingDelayed;
 
 			if (audioEvent.m_pAudioObject != m_pGlobalAudioObject)
 			{
@@ -827,7 +827,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportVirtualizedEvent> const* const pRequestData =
 			  static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportVirtualizedEvent> const* const>(request.GetData());
 
-			pRequestData->audioEvent.m_audioEventState = eAudioEventState_Virtual;
+			pRequestData->audioEvent.m_state = EEventState::Virtual;
 
 			result = ERequestStatus::Success;
 
@@ -838,7 +838,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportPhysicalizedEvent> const* const pRequestData =
 			  static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportPhysicalizedEvent> const* const>(request.GetData());
 
-			pRequestData->audioEvent.m_audioEventState = eAudioEventState_Playing;
+			pRequestData->audioEvent.m_state = EEventState::Playing;
 
 			result = ERequestStatus::Success;
 
@@ -892,7 +892,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 	default:
 		{
 			result = ERequestStatus::FailureInvalidRequest;
-			g_audioLogger.Log(eAudioLogType_Warning, "ATL received an unknown AudioCallbackManager request: %u", pRequestDataBase->type);
+			g_logger.Log(ELogType::Warning, "ATL received an unknown AudioCallbackManager request: %u", pRequestDataBase->type);
 
 			break;
 		}
@@ -1094,7 +1094,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "ATL received a request to set a position on a global object");
+				g_logger.Log(ELogType::Warning, "ATL received a request to set a position on a global object");
 			}
 
 			break;
@@ -1161,7 +1161,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "ATL received a request to set an environment on a global object");
+				g_logger.Log(ELogType::Warning, "ATL received a request to set an environment on a global object");
 			}
 
 			break;
@@ -1220,7 +1220,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "ATL received a request to release the GlobalAudioObject");
+				g_logger.Log(ELogType::Warning, "ATL received a request to release the GlobalAudioObject");
 			}
 
 			break;
@@ -1258,7 +1258,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	default:
 		{
-			g_audioLogger.Log(eAudioLogType_Warning, "ATL received an unknown AudioObject request type: %u", pBaseRequestData->type);
+			g_logger.Log(ELogType::Warning, "ATL received an unknown AudioObject request type: %u", pBaseRequestData->type);
 			result = ERequestStatus::FailureInvalidRequest;
 			break;
 		}
@@ -1309,7 +1309,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 		break;
 	default:
 		result = ERequestStatus::FailureInvalidRequest;
-		g_audioLogger.Log(eAudioLogType_Warning, "ATL received an unknown AudioListener request type: %u", pPassedRequestData->type);
+		g_logger.Log(ELogType::Warning, "ATL received an unknown AudioListener request type: %u", pPassedRequestData->type);
 		break;
 	}
 
@@ -1329,7 +1329,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 
 	if (m_pImpl == nullptr)
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "nullptr passed to SetImpl, will run with the null implementation");
+		g_logger.Log(ELogType::Warning, "nullptr passed to SetImpl, will run with the null implementation");
 
 		CAudioImpl* pNullImpl = new CAudioImpl();
 		CRY_ASSERT(pNullImpl != nullptr);
@@ -1341,7 +1341,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 	if (result != ERequestStatus::Success)
 	{
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
-		g_audioLogger.Log(eAudioLogType_Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_pImpl->GetImplementationNameString());
+		g_logger.Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_pImpl->GetImplementationNameString());
 
 		// There's no need to call Shutdown when the initialization failed as
 		// we expect the implementation to clean-up itself if it couldn't be initialized
@@ -1422,7 +1422,7 @@ void CAudioTranslationLayer::ReleaseImpl()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLevelName)
 {
-	g_audioLogger.Log(eAudioLogType_Warning, "Beginning to refresh the AudioSystem!");
+	g_logger.Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
 
 	ERequestStatus result = m_pImpl->StopAllSounds();
 	CRY_ASSERT(result == ERequestStatus::Success);
@@ -1471,7 +1471,7 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 		}
 	}
 
-	g_audioLogger.Log(eAudioLogType_Warning, "Done refreshing the AudioSystem!");
+	g_logger.Log(ELogType::Warning, "Done refreshing the AudioSystem!");
 
 	return ERequestStatus::Success;
 }

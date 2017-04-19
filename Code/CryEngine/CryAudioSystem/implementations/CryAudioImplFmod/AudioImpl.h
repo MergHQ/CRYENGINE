@@ -51,8 +51,8 @@ public:
 	virtual void                     DestructAudioEvent(IAudioEvent const* const pAudioEvent) override;
 	virtual IAudioStandaloneFile*    ConstructAudioStandaloneFile(CATLStandaloneFile& atlStandaloneFile, char const* const szFile, bool const bLocalized, IAudioTrigger const* pTrigger = nullptr) override;
 	virtual void                     DestructAudioStandaloneFile(IAudioStandaloneFile const* const pAudioStandaloneFile) override;
-	virtual void                     GamepadConnected(TAudioGamepadUniqueID const deviceUniqueID) override;
-	virtual void                     GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID) override;
+	virtual void                     GamepadConnected(AudioGamepadUniqueId const deviceUniqueID) override;
+	virtual void                     GamepadDisconnected(AudioGamepadUniqueId const deviceUniqueID) override;
 	virtual void                     OnAudioSystemRefresh() override;
 	virtual void                     SetLanguage(char const* const szLanguage) override;
 

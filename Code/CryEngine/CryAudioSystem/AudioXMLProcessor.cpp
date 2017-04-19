@@ -109,7 +109,7 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 								}
 								else
 								{
-									g_audioLogger.Log(eAudioLogType_Warning, "Unknown AudioConfig node: %s", sAudioConfigNodeTag);
+									g_logger.Log(ELogType::Warning, "Unknown AudioConfig node: %s", sAudioConfigNodeTag);
 									CRY_ASSERT(false);
 								}
 							}
@@ -143,7 +143,7 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 	}
 
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
-	g_audioLogger.Log(eAudioLogType_Warning, "Parsed controls data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
+	g_logger.Log(ELogType::Warning, "Parsed controls data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -216,7 +216,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 								}
 								else
 								{
-									g_audioLogger.Log(eAudioLogType_Warning, "Unknown AudioConfig node: %s", szAudioConfigNodeTag);
+									g_logger.Log(ELogType::Warning, "Unknown AudioConfig node: %s", szAudioConfigNodeTag);
 								}
 							}
 						}
@@ -249,7 +249,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 	}
 
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
-	g_audioLogger.Log(eAudioLogType_Warning, "Parsed preloads data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
+	g_logger.Log(ELogType::Warning, "Parsed preloads data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -437,7 +437,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 						}
 						else
 						{
-							g_audioLogger.Log(eAudioLogType_Warning, "Preload request \"%s\" could not create file entry from tag \"%s\"!", szAudioPreloadRequestName, pFileListParentNode->getChild(k)->getTag());
+							g_logger.Log(ELogType::Warning, "Preload request \"%s\" could not create file entry from tag \"%s\"!", szAudioPreloadRequestName, pFileListParentNode->getChild(k)->getTag());
 						}
 					}
 
@@ -469,7 +469,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "Preload request \"%s\" already exists! Skipping this entry!", szAudioPreloadRequestName);
+				g_logger.Log(ELogType::Error, "Preload request \"%s\" already exists! Skipping this entry!", szAudioPreloadRequestName);
 			}
 		}
 	}
@@ -546,7 +546,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 						}
 						else
 						{
-							g_audioLogger.Log(eAudioLogType_Warning, "Could not parse an Environment Implementation with XML tag %s", pEnvironmentImplNode->getTag());
+							g_logger.Log(ELogType::Warning, "Could not parse an Environment Implementation with XML tag %s", pEnvironmentImplNode->getTag());
 						}
 					}
 				}
@@ -569,7 +569,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "AudioEnvironment \"%s\" already exists!", szAudioEnvironmentName);
+				g_logger.Log(ELogType::Error, "AudioEnvironment \"%s\" already exists!", szAudioEnvironmentName);
 				CRY_ASSERT(false);
 			}
 		}
@@ -626,7 +626,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 						}
 						else
 						{
-							g_audioLogger.Log(eAudioLogType_Warning, "Could not parse a Trigger Implementation with XML tag %s", pTriggerImplNode->getTag());
+							g_logger.Log(ELogType::Warning, "Could not parse a Trigger Implementation with XML tag %s", pTriggerImplNode->getTag());
 						}
 					}
 				}
@@ -646,7 +646,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "trigger \"%s\" already exists!", szAudioTriggerName);
+				g_logger.Log(ELogType::Error, "trigger \"%s\" already exists!", szAudioTriggerName);
 				CRY_ASSERT(false);
 			}
 		}
@@ -839,8 +839,8 @@ IAudioSwitchStateImpl const* CAudioXMLProcessor::NewInternalAudioSwitchState(Xml
 	}
 	else
 	{
-		g_audioLogger.Log(
-		  eAudioLogType_Warning,
+		g_logger.Log(
+		  ELogType::Warning,
 		  "An ATLSwitchRequest %s inside ATLSwitchState needs to have exactly one ATLValue.",
 		  sInternalSwitchNodeName);
 	}

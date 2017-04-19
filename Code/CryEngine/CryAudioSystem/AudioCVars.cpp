@@ -344,7 +344,7 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 
 		if (audioTriggerId == InvalidControlId)
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
+			g_logger.Log(ELogType::Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
@@ -353,7 +353,7 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_ExecuteTrigger [TriggerName]");
+		g_logger.Log(ELogType::Error, "Usage: s_ExecuteTrigger [TriggerName]");
 	}
 }
 
@@ -370,7 +370,7 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 
 		if (audioTriggerId == InvalidControlId)
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
+			g_logger.Log(ELogType::Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
@@ -379,7 +379,7 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_StopTrigger [TriggerName]");
+		g_logger.Log(ELogType::Error, "Usage: s_StopTrigger [TriggerName]");
 	}
 }
 
@@ -398,7 +398,7 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 
 		if (parameterId == InvalidControlId)
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Unknown parameter name: %s", pCmdArgs->GetArg(1));
+			g_logger.Log(ELogType::Error, "Unknown parameter name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
@@ -407,7 +407,7 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_SetRtpc [RtpcName] [RtpcValue]");
+		g_logger.Log(ELogType::Error, "Usage: s_SetRtpc [RtpcName] [RtpcValue]");
 	}
 }
 
@@ -433,16 +433,16 @@ void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "Invalid  Switch State name: %s", pCmdArgs->GetArg(2));
+				g_logger.Log(ELogType::Error, "Invalid  Switch State name: %s", pCmdArgs->GetArg(2));
 			}
 		}
 		else
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Unknown Switch name: %s", pCmdArgs->GetArg(1));
+			g_logger.Log(ELogType::Error, "Unknown Switch name: %s", pCmdArgs->GetArg(1));
 		}
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
+		g_logger.Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
 	}
 }

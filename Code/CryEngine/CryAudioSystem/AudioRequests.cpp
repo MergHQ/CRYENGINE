@@ -59,7 +59,7 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetAudioFileData)
 			default:
 				{
-					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio manager request type (%u)", pBase->type);
+					g_logger.Log(ELogType::Error, "Unknown audio manager request type (%u)", pBase->type);
 					CRY_ASSERT(false);
 
 					break;
@@ -94,7 +94,7 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetName)
 			default:
 				{
-					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio object request type (%u)", pBase->type);
+					g_logger.Log(ELogType::Error, "Unknown audio object request type (%u)", pBase->type);
 					CRY_ASSERT(false);
 
 					break;
@@ -112,7 +112,7 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 				AL_REQUEST_BLOCK(EAudioListenerRequestType::ReleaseListener)
 			default:
 				{
-					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio listener request type (%u)", pBase->type);
+					g_logger.Log(ELogType::Error, "Unknown audio listener request type (%u)", pBase->type);
 					CRY_ASSERT(false);
 
 					break;
@@ -136,7 +136,7 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportPhysicalizedEvent)
 			default:
 				{
-					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio callback manager request type (%u)", pBase->type);
+					g_logger.Log(ELogType::Error, "Unknown audio callback manager request type (%u)", pBase->type);
 					CRY_ASSERT(false);
 
 					break;
@@ -147,7 +147,7 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 		}
 	default:
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Unknown audio request type (%u)", requestType);
+			g_logger.Log(ELogType::Error, "Unknown audio request type (%u)", requestType);
 			CRY_ASSERT(false);
 
 			break;

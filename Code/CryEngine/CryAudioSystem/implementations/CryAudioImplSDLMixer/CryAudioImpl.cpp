@@ -12,7 +12,7 @@ using namespace CryAudio;
 using namespace CryAudio::Impl::SDL_mixer;
 
 // Define global objects.
-CAudioLogger g_audioImplLogger;
+CLogger g_implLogger;
 CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
 
 //////////////////////////////////////////////////////////////////////////
@@ -42,11 +42,11 @@ class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
 
 		if (m_bSuccess)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplSDLMixer loaded");
+			g_implLogger.Log(ELogType::Always, "CryAudioImplSDLMixer loaded");
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplSDLMixer failed to load");
+			g_implLogger.Log(ELogType::Error, "CryAudioImplSDLMixer failed to load");
 		}
 
 		return m_bSuccess;

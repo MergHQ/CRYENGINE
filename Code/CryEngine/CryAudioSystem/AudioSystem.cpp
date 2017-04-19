@@ -139,7 +139,7 @@ void CSystem::PushRequest(CAudioRequest const& request)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "Discarded PushRequest due to ATL not allowing for new ones!");
+		g_logger.Log(ELogType::Warning, "Discarded PushRequest due to ATL not allowing for new ones!");
 	}
 }
 

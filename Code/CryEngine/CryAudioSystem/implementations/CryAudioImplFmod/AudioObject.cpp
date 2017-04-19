@@ -127,7 +127,7 @@ bool CAudioObjectBase::SetAudioEvent(CAudioEvent* const pAudioEvent)
 			}
 			else
 			{
-				g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod parameter during \"AddAudioEvent\": %s", parameterPair.first->GetName().c_str());
+				g_implLogger.Log(ELogType::Warning, "Trying to set an unknown Fmod parameter during \"AddAudioEvent\": %s", parameterPair.first->GetName().c_str());
 			}
 		}
 
@@ -158,7 +158,7 @@ bool CAudioObjectBase::SetAudioEvent(CAudioEvent* const pAudioEvent)
 			}
 			else
 			{
-				g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod switch during \"AddAudioEvent\": %s", switchPair.second->name.c_str());
+				g_implLogger.Log(ELogType::Warning, "Trying to set an unknown Fmod switch during \"AddAudioEvent\": %s", switchPair.second->name.c_str());
 			}
 		}
 
@@ -317,7 +317,7 @@ ERequestStatus CAudioObjectBase::ExecuteTrigger(IAudioTrigger const* const pIAud
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData, ATLTriggerData or EventData passed to the Fmod implementation of ExecuteTrigger.");
+		g_implLogger.Log(ELogType::Error, "Invalid AudioObjectData, ATLTriggerData or EventData passed to the Fmod implementation of ExecuteTrigger.");
 	}
 
 	return requestResult;
@@ -354,7 +354,7 @@ ERequestStatus CAudioObjectBase::PlayFile(IAudioStandaloneFile* const pIFile)
 		return ERequestStatus::Success;
 	}
 
-	g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObject, AudioTrigger or StandaloneFile passed to the Fmod implementation of PlayFile.");
+	g_implLogger.Log(ELogType::Error, "Invalid AudioObject, AudioTrigger or StandaloneFile passed to the Fmod implementation of PlayFile.");
 	return ERequestStatus::Failure;
 
 }
@@ -371,7 +371,7 @@ ERequestStatus CAudioObjectBase::StopFile(IAudioStandaloneFile* const pIFile)
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid SAudioStandaloneFileInfo passed to the Fmod implementation of StopFile.");
+		g_implLogger.Log(ELogType::Error, "Invalid SAudioStandaloneFileInfo passed to the Fmod implementation of StopFile.");
 	}
 
 	return ERequestStatus::Failure;
@@ -419,7 +419,7 @@ ERequestStatus CGlobalAudioObject::SetEnvironment(IAudioEnvironment const* const
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid Environment pointer passed to the Fmod implementation of SetEnvironment");
+		g_implLogger.Log(ELogType::Error, "Invalid Environment pointer passed to the Fmod implementation of SetEnvironment");
 	}
 
 	return result;
@@ -444,7 +444,7 @@ ERequestStatus CGlobalAudioObject::SetParameter(IParameter const* const pIAudioP
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetRtpc");
+		g_implLogger.Log(ELogType::Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetRtpc");
 	}
 
 	return result;
@@ -469,7 +469,7 @@ ERequestStatus CGlobalAudioObject::SetSwitchState(IAudioSwitchState const* const
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetSwitchState");
+		g_implLogger.Log(ELogType::Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetSwitchState");
 	}
 
 	return result;
@@ -478,7 +478,7 @@ ERequestStatus CGlobalAudioObject::SetSwitchState(IAudioSwitchState const* const
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CGlobalAudioObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
-	g_audioImplLogger.Log(eAudioLogType_Error, "Trying to set occlusion and obstruction values on the global audio object!");
+	g_implLogger.Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global audio object!");
 	return ERequestStatus::Failure;
 }
 
@@ -514,7 +514,7 @@ ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid Environment pointer passed to the Fmod implementation of SetEnvironment");
+		g_implLogger.Log(ELogType::Error, "Invalid Environment pointer passed to the Fmod implementation of SetEnvironment");
 		result = ERequestStatus::Failure;
 
 	}
@@ -552,7 +552,7 @@ ERequestStatus CAudioObject::SetParameter(IParameter const* const pIAudioParamet
 						}
 						else
 						{
-							g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod parameter index (%d) for (%s)", iter->second, pParameter->GetName().c_str());
+							g_implLogger.Log(ELogType::Warning, "Unknown Fmod parameter index (%d) for (%s)", iter->second, pParameter->GetName().c_str());
 						}
 					}
 					else
@@ -583,7 +583,7 @@ ERequestStatus CAudioObject::SetParameter(IParameter const* const pIAudioParamet
 				}
 				else
 				{
-					g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod parameter: %s", pParameter->GetName().c_str());
+					g_implLogger.Log(ELogType::Warning, "Trying to set an unknown Fmod parameter: %s", pParameter->GetName().c_str());
 				}
 			}
 		}
@@ -601,7 +601,7 @@ ERequestStatus CAudioObject::SetParameter(IParameter const* const pIAudioParamet
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetRtpc");
+		g_implLogger.Log(ELogType::Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetRtpc");
 		result = ERequestStatus::Failure;
 	}
 
@@ -664,7 +664,7 @@ ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 				}
 				else
 				{
-					g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod switch: %s", pSwitchState->name.c_str());
+					g_implLogger.Log(ELogType::Warning, "Trying to set an unknown Fmod switch: %s", pSwitchState->name.c_str());
 				}
 			}
 		}
@@ -682,7 +682,7 @@ ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetSwitchState");
+		g_implLogger.Log(ELogType::Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetSwitchState");
 		result = ERequestStatus::Failure;
 	}
 

@@ -8,19 +8,13 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CryString/CryPath.h> // need to include before AK includes windows.h
-
-#if !defined(_RELEASE)
-// Define this to enable logging via CAudioLogger.
-// We disable logging for Release builds
-	#define ENABLE_AUDIO_LOGGING
-#endif // _RELEASE
-
 #include <AudioLogger.h>
 
-extern CAudioLogger g_audioImplLogger;
+extern CryAudio::CLogger g_implLogger;
 
 #if !defined(_RELEASE)
 	#define INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	#define ENABLE_AUDIO_LOGGING
 #endif // _RELEASE
 
 #if CRY_PLATFORM_DURANGO
@@ -72,49 +66,3 @@ inline bool Secondary_Free(void* pFree)
 	return bFreed;
 }
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
-
-// Windows or Durango
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-#endif
-
-// Windows32
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-#endif
-
-// Windows64
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-#endif
-
-// Durango
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_DURANGO
-//#include <xdk.h>
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_ORBIS
-	#define AK_PS4
-#endif
-
-// Mac
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_MAC
-#endif
-
-// Android
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_ANDROID
-#endif
-
-// iOS
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_IOS
-#endif
-
-// Linux
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_LINUX
-#endif

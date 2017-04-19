@@ -411,14 +411,14 @@ public:
 	ERequestStatus Reset();
 	ERequestStatus Stop();
 	void           SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
-	bool           IsPlaying() const                        { return m_audioEventState == eAudioEventState_Playing || m_audioEventState == eAudioEventState_PlayingDelayed; }
+	bool           IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
 
 	EDataScope         m_dataScope = EDataScope::None;
 	CATLAudioObject*   m_pAudioObject = nullptr;
 	CATLTrigger const* m_pTrigger = nullptr;
 	TriggerImplId      m_audioTriggerImplId = InvalidTriggerImplId;
 	TriggerInstanceId  m_audioTriggerInstanceId = InvalidTriggerInstanceId;
-	EAudioEventState   m_audioEventState = eAudioEventState_None;
+	EEventState        m_state = EEventState::None;
 	Impl::IAudioEvent* m_pImplData = nullptr;
 };
 

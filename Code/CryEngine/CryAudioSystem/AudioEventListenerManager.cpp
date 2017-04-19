@@ -66,7 +66,7 @@ ERequestStatus CAudioEventListenerManager::RemoveRequestListener(void (* func)(S
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (result == ERequestStatus::Failure)
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "Failed to remove a request listener!");
+		g_logger.Log(ELogType::Warning, "Failed to remove a request listener!");
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

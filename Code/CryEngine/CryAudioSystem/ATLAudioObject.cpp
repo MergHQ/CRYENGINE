@@ -99,7 +99,7 @@ void CATLAudioObject::ReportStartedTriggerInstance(
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "Reported a started instance %u that couldn't be found on an object", audioTriggerInstanceId);
+		g_logger.Log(ELogType::Warning, "Reported a started instance %u that couldn't be found on an object", audioTriggerInstanceId);
 	}
 }
 
@@ -122,30 +122,30 @@ void CATLAudioObject::ReportStartedEvent(CATLEvent* const _pEvent)
 	{
 		SAudioTriggerInstanceState& audioTriggerInstanceState = iter->second;
 
-		switch (_pEvent->m_audioEventState)
+		switch (_pEvent->m_state)
 		{
-		case eAudioEventState_Playing:
+		case EEventState::Playing:
 			{
 				++(audioTriggerInstanceState.numPlayingEvents);
 
 				break;
 			}
-		case eAudioEventState_PlayingDelayed:
+		case EEventState::PlayingDelayed:
 			{
 				CRY_ASSERT(audioTriggerInstanceState.numLoadingEvents > 0);
 				--(audioTriggerInstanceState.numLoadingEvents);
 				++(audioTriggerInstanceState.numPlayingEvents);
-				_pEvent->m_audioEventState = eAudioEventState_Playing;
+				_pEvent->m_state = EEventState::Playing;
 
 				break;
 			}
-		case eAudioEventState_Loading:
+		case EEventState::Loading:
 			{
 				++(audioTriggerInstanceState.numLoadingEvents);
 
 				break;
 			}
-		case eAudioEventState_Unloading:
+		case EEventState::Unloading:
 			{
 				// not handled currently
 				break;
@@ -188,9 +188,9 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 
 	if (FindPlace(m_triggerStates, _pEvent->m_audioTriggerInstanceId, iter))
 	{
-		switch (_pEvent->m_audioEventState)
+		switch (_pEvent->m_state)
 		{
-		case eAudioEventState_Playing:
+		case EEventState::Playing:
 			{
 				SAudioTriggerInstanceState& audioTriggerInstanceState = iter->second;
 				CRY_ASSERT(audioTriggerInstanceState.numPlayingEvents > 0);
@@ -204,7 +204,7 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 
 				break;
 			}
-		case eAudioEventState_Loading:
+		case EEventState::Loading:
 			{
 				if (_bSuccess)
 				{
@@ -213,7 +213,7 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 
 				break;
 			}
-		case eAudioEventState_Unloading:
+		case EEventState::Unloading:
 			{
 				if (_bSuccess)
 				{
@@ -236,14 +236,14 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 		if (_pEvent->m_pTrigger != nullptr)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			g_audioLogger.Log(eAudioLogType_Warning, "Reported finished event on an inactive trigger %s", _pEvent->m_pTrigger->m_name.c_str());
+			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %s", _pEvent->m_pTrigger->m_name.c_str());
 #else
-			g_audioLogger.Log(eAudioLogType_Warning, "Reported finished event on an inactive trigger %u", _pEvent->m_pTrigger->GetId());
+			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %u", _pEvent->m_pTrigger->GetId());
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 		else
 		{
-			g_audioLogger.Log(eAudioLogType_Warning, "Reported finished event on a trigger that does not exist anymore");
+			g_logger.Log(ELogType::Warning, "Reported finished event on a trigger that does not exist anymore");
 		}
 	}
 }
@@ -320,11 +320,11 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 
 			if (activateResult == ERequestStatus::Success)
 			{
-				pEvent->m_audioEventState = eAudioEventState_Playing;
+				pEvent->m_state = EEventState::Playing;
 			}
 			else if (activateResult == ERequestStatus::Pending)
 			{
-				pEvent->m_audioEventState = eAudioEventState_Loading;
+				pEvent->m_state = EEventState::Loading;
 			}
 
 			ReportStartedEvent(pEvent);
@@ -345,7 +345,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 	if (result != ERequestStatus::Success)
 	{
 		// No TriggerImpl generated an active event.
-		g_audioLogger.Log(eAudioLogType_Warning, "Trigger \"%s\" failed on AudioObject \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
+		g_logger.Log(ELogType::Warning, "Trigger \"%s\" failed on AudioObject \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -384,7 +384,7 @@ ERequestStatus CATLAudioObject::HandleSetSwitchState(CATLSwitch const* const pSw
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "Failed to set the ATLSwitch \"%s\" to ATLSwitchState \"%s\" on AudioObject \"%s\"", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
+		g_logger.Log(ELogType::Warning, "Failed to set the ATLSwitch \"%s\" to ATLSwitchState \"%s\" on AudioObject \"%s\"", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -408,7 +408,7 @@ ERequestStatus CATLAudioObject::HandleSetParameter(CParameter const* const pPara
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "Failed to set the Audio Parameter \"%s\" to %f on Audio Object \"%s\"", pParameter->m_name.c_str(), value, m_name.c_str());
+		g_logger.Log(ELogType::Warning, "Failed to set the Audio Parameter \"%s\" to %f on Audio Object \"%s\"", pParameter->m_name.c_str(), value, m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -441,7 +441,7 @@ ERequestStatus CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const*
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "Failed to set the ATLAudioEnvironment \"%s\" to %f on AudioObject \"%s\"", pEnvironment->m_name.c_str(), amount, m_name.c_str());
+		g_logger.Log(ELogType::Warning, "Failed to set the ATLAudioEnvironment \"%s\" to %f on AudioObject \"%s\"", pEnvironment->m_name.c_str(), amount, m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -498,7 +498,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 			pEvent->m_pTrigger = pTrigger;
 			pEvent->m_audioTriggerImplId = pTriggerImpl->m_audioTriggerImplId;
 
-			pEvent->m_audioEventState = bLoad ? eAudioEventState_Loading : eAudioEventState_Unloading;
+			pEvent->m_state = bLoad ? EEventState::Loading : EEventState::Unloading;
 		}
 
 		if (prepUnprepResult == ERequestStatus::Success)
@@ -517,7 +517,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 	if (result != ERequestStatus::Success)
 	{
 		// No TriggerImpl produced an active event.
-		g_audioLogger.Log(eAudioLogType_Warning, "LoadTriggerAsync failed on AudioObject \"%s\"", m_name.c_str());
+		g_logger.Log(ELogType::Warning, "LoadTriggerAsync failed on AudioObject \"%s\"", m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -552,7 +552,7 @@ ERequestStatus CATLAudioObject::HandleResetEnvironments(AudioEnvironmentLookup c
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "Failed to Reset AudioEnvironments on AudioObject \"%s\"", m_name.c_str());
+		g_logger.Log(ELogType::Warning, "Failed to Reset AudioEnvironments on AudioObject \"%s\"", m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -717,7 +717,7 @@ ERequestStatus CATLAudioObject::HandlePlayFile(CATLStandaloneFile* const pFile, 
 	else
 	{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		g_audioLogger.Log(eAudioLogType_Warning, "PlayFile failed with \"%s\" on AudioObject \"%s\"", pFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
+		g_logger.Log(ELogType::Warning, "PlayFile failed with \"%s\" on AudioObject \"%s\"", pFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 
 		s_pStandaloneFileManager->ReleaseStandaloneFile(pFile);
@@ -759,7 +759,7 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 				default:
 					break;
 				}
-				g_audioLogger.Log(eAudioLogType_Warning, "Request to stop a standalone audio file that is not playing! State: \"%s\"", szState);
+				g_logger.Log(ELogType::Warning, "Request to stop a standalone audio file that is not playing! State: \"%s\"", szState);
 			}
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -1238,7 +1238,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 			if (result != ERequestStatus::Success)
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "Parameter \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pParameter->m_name.c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, "Parameter \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pParameter->m_name.c_str(), m_name.c_str());
 			}
 		}
 	}
@@ -1260,7 +1260,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 				if (result != ERequestStatus::Success)
 				{
-					g_audioLogger.Log(eAudioLogType_Warning, "SwitchStateImpl \"%s\" : \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
+					g_logger.Log(ELogType::Warning, "SwitchStateImpl \"%s\" : \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
 				}
 			}
 		}
@@ -1279,7 +1279,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 			if (result != ERequestStatus::Success)
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "Environment \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pEnvironment->m_name.c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, "Environment \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pEnvironment->m_name.c_str(), m_name.c_str());
 			}
 		}
 	}
@@ -1314,17 +1314,17 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 						if (activateResult == ERequestStatus::Success)
 						{
-							pEvent->m_audioEventState = eAudioEventState_Playing;
+							pEvent->m_state = EEventState::Playing;
 						}
 						else if (activateResult == ERequestStatus::Pending)
 						{
-							pEvent->m_audioEventState = eAudioEventState_Loading;
+							pEvent->m_state = EEventState::Loading;
 						}
 						ReportStartedEvent(pEvent);
 					}
 					else
 					{
-						g_audioLogger.Log(eAudioLogType_Warning, "TriggerImpl \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
+						g_logger.Log(ELogType::Warning, "TriggerImpl \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
 						s_pEventManager->ReleaseAudioEvent(pEvent);
 					}
 				}
@@ -1333,7 +1333,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 			{
 				// The middleware has no connections set up.
 				// Stop the event in this case.
-				g_audioLogger.Log(eAudioLogType_Warning, "No trigger connections found during audio middleware switch for \"%s\" on \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, "No trigger connections found during audio middleware switch for \"%s\" on \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
 			}
 		}
 		else
@@ -1371,12 +1371,12 @@ void CATLAudioObject::ForceImplementationRefresh(
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Warning, "PlayFile failed with \"%s\" on AudioObject \"%s\"", pStandaloneFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, "PlayFile failed with \"%s\" on AudioObject \"%s\"", pStandaloneFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
 			}
 		}
 		else
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Retrigger active standalone audio files failed on instance: %u and file: %u as m_audioStandaloneFileMgr.LookupID() returned nullptr!", standaloneFilePair.first, standaloneFilePair.second);
+			g_logger.Log(ELogType::Error, "Retrigger active standalone audio files failed on instance: %u and file: %u as m_audioStandaloneFileMgr.LookupID() returned nullptr!", standaloneFilePair.first, standaloneFilePair.second);
 		}
 	}
 }

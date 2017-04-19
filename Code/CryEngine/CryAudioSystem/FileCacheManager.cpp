@@ -106,7 +106,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 				}
 				else
 				{
-					g_audioLogger.Log(eAudioLogType_Warning, "Couldn't find audio file %s for pre-loading.", pNewAudioFileEntry->m_path.c_str());
+					g_logger.Log(ELogType::Warning, "Couldn't find audio file %s for pre-loading.", pNewAudioFileEntry->m_path.c_str());
 				}
 
 				m_audioFileEntries[audioFileEntryId] = pNewAudioFileEntry;
@@ -117,7 +117,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 				{
 					// This file entry is upgraded from "manual loading" to "auto loading" but needs a reset to "manual loading" again!
 					pExisitingAudioFileEntry->m_flags = (pExisitingAudioFileEntry->m_flags | EAudioFileFlags::NeedsResetToManualLoading) & ~EAudioFileFlags::UseCounted;
-					g_audioLogger.Log(eAudioLogType_Always, "Upgraded file entry from \"manual loading\" to \"auto loading\": %s", pExisitingAudioFileEntry->m_path.c_str());
+					g_logger.Log(ELogType::Always, "Upgraded file entry from \"manual loading\" to \"auto loading\": %s", pExisitingAudioFileEntry->m_path.c_str());
 				}
 
 				// Entry already exists, free the memory!
@@ -150,7 +150,7 @@ bool CFileCacheManager::TryRemoveFileCacheEntry(FileEntryId const audioFileEntry
 		else if ((dataScope == EDataScope::LevelSpecific) && ((pAudioFileEntry->m_flags & EAudioFileFlags::NeedsResetToManualLoading) > 0))
 		{
 			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | EAudioFileFlags::UseCounted) & ~EAudioFileFlags::NeedsResetToManualLoading;
-			g_audioLogger.Log(eAudioLogType_Always, "Downgraded file entry from \"auto loading\" to \"manual loading\": %s", pAudioFileEntry->m_path.c_str());
+			g_logger.Log(ELogType::Always, "Downgraded file entry from \"auto loading\" to \"manual loading\": %s", pAudioFileEntry->m_path.c_str());
 		}
 	}
 
@@ -295,7 +295,7 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CATLAudioFileEntry* const 
 		}
 		else if ((pAudioFileEntry->m_flags & EAudioFileFlags::Loading) > 0)
 		{
-			g_audioLogger.Log(eAudioLogType_Always, "Trying to remove a loading file cache entry %s", pAudioFileEntry->m_path.c_str());
+			g_logger.Log(ELogType::Always, "Trying to remove a loading file cache entry %s", pAudioFileEntry->m_path.c_str());
 
 			// Abort loading and reset the entry.
 			UncacheFile(pAudioFileEntry);
@@ -303,7 +303,7 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CATLAudioFileEntry* const 
 		else if ((pAudioFileEntry->m_flags & EAudioFileFlags::MemAllocFail) > 0)
 		{
 			// Only reset the entry.
-			g_audioLogger.Log(eAudioLogType_Always, "Resetting a memalloc-failed file cache entry %s", pAudioFileEntry->m_path.c_str());
+			g_logger.Log(ELogType::Always, "Resetting a memalloc-failed file cache entry %s", pAudioFileEntry->m_path.c_str());
 			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | EAudioFileFlags::NotCached) & ~EAudioFileFlags::MemAllocFail;
 		}
 
@@ -594,12 +594,12 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 		{
 			// We abort this stream only during entry Uncache().
 			// Therefore there's no need to call Uncache() during stream abort with error code ERROR_USER_ABORT.
-			g_audioLogger.Log(eAudioLogType_Always, "AFCM: user aborted stream for file %s (error: %u)", pAudioFileEntry->m_path.c_str(), error);
+			g_logger.Log(ELogType::Always, "AFCM: user aborted stream for file %s (error: %u)", pAudioFileEntry->m_path.c_str(), error);
 		}
 		else
 		{
 			UncacheFileCacheEntryInternal(pAudioFileEntry, true, true);
-			g_audioLogger.Log(eAudioLogType_Error, "AFCM: failed to stream in file %s (error: %u)", pAudioFileEntry->m_path.c_str(), error);
+			g_logger.Log(ELogType::Error, "AFCM: failed to stream in file %s (error: %u)", pAudioFileEntry->m_path.c_str(), error);
 		}
 	}
 
@@ -750,7 +750,7 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 			pAudioFileEntry->m_flags |= EAudioFileFlags::MemAllocFail;
 
 			// The user should be made aware of it.
-			g_audioLogger.Log(eAudioLogType_Error, "AFCM: could not cache \"%s\" as we are out of memory!", pAudioFileEntry->m_path.c_str());
+			g_logger.Log(ELogType::Error, "AFCM: could not cache \"%s\" as we are out of memory!", pAudioFileEntry->m_path.c_str());
 		}
 	}
 	else if ((pAudioFileEntry->m_flags & (EAudioFileFlags::Cached | EAudioFileFlags::Loading)) > 0)
@@ -759,7 +759,7 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		if ((pAudioFileEntry->m_flags & EAudioFileFlags::Loading) > 0)
 		{
-			g_audioLogger.Log(eAudioLogType_Warning, "AFCM: could not cache \"%s\" as it's already loading!", pAudioFileEntry->m_path.c_str());
+			g_logger.Log(ELogType::Warning, "AFCM: could not cache \"%s\" as it's already loading!", pAudioFileEntry->m_path.c_str());
 		}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -768,7 +768,7 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 	else if ((pAudioFileEntry->m_flags & EAudioFileFlags::NotFound) > 0)
 	{
 		// The user should be made aware of it.
-		g_audioLogger.Log(eAudioLogType_Error, "AFCM: could not cache \"%s\" as it was not found at the target location!", pAudioFileEntry->m_path.c_str());
+		g_logger.Log(ELogType::Error, "AFCM: could not cache \"%s\" as it was not found at the target location!", pAudioFileEntry->m_path.c_str());
 	}
 
 	// Increment the used count on GameHints.

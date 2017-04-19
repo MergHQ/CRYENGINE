@@ -172,7 +172,7 @@ void CAudioObjectManager::ReportStartedEvent(CATLEvent* const pEvent)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "NULL pEvent in CAudioObjectManager::ReportStartedEvent");
+		g_logger.Log(ELogType::Warning, "NULL pEvent in CAudioObjectManager::ReportStartedEvent");
 	}
 }
 
@@ -187,7 +187,7 @@ void CAudioObjectManager::ReportFinishedEvent(CATLEvent* const pEvent, bool cons
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "NULL pEvent in CAudioObjectManager::ReportFinishedEvent");
+		g_logger.Log(ELogType::Warning, "NULL pEvent in CAudioObjectManager::ReportFinishedEvent");
 	}
 }
 
@@ -202,7 +202,7 @@ void CAudioObjectManager::GetStartedStandaloneFileRequestData(CATLStandaloneFile
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "NULL _pStandaloneFile in CAudioObjectManager::GetStartedStandaloneFileRequestData");
+		g_logger.Log(ELogType::Warning, "NULL _pStandaloneFile in CAudioObjectManager::GetStartedStandaloneFileRequestData");
 	}
 }
 
@@ -217,7 +217,7 @@ void CAudioObjectManager::ReportFinishedStandaloneFile(CATLStandaloneFile* const
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Warning, "NULL _pStandaloneFile in CAudioObjectManager::ReportFinishedStandaloneFile");
+		g_logger.Log(ELogType::Warning, "NULL _pStandaloneFile in CAudioObjectManager::ReportFinishedStandaloneFile");
 	}
 }
 

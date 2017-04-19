@@ -108,7 +108,7 @@ ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTr
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData, ATLTriggerData or EventData passed to the PortAudio implementation of ExecuteTrigger.");
+		g_implLogger.Log(ELogType::Error, "Invalid AudioObjectData, ATLTriggerData or EventData passed to the PortAudio implementation of ExecuteTrigger.");
 	}
 
 	return requestResult;

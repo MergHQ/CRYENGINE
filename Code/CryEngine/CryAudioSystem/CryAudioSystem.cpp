@@ -22,7 +22,7 @@ using namespace CryAudio;
 
 // Define global objects.
 CAudioCVars g_audioCVars;
-CAudioLogger g_audioLogger;
+CLogger g_logger;
 CTimeValue g_lastMainThreadFrameStartTime;
 
 #define MAX_MODULE_NAME_LENGTH 256
@@ -108,7 +108,7 @@ bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Could not create an instance of CAudioSystem! Keeping the default AudioSystem!\n");
+		g_logger.Log(ELogType::Error, "Could not create an instance of CAudioSystem! Keeping the default AudioSystem!\n");
 	}
 
 	return bSuccess;
@@ -202,7 +202,7 @@ class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 		}
 		else
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Could not create AudioSystem!");
+			g_logger.Log(ELogType::Error, "Could not create AudioSystem!");
 		}
 
 		return bSuccess;

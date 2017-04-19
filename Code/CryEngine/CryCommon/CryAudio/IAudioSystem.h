@@ -107,8 +107,7 @@ enum class EOcclusionType : EnumFlagsType
 	Low,
 	Medium,
 	High,
-
-	Count
+	Count,
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionType);
 

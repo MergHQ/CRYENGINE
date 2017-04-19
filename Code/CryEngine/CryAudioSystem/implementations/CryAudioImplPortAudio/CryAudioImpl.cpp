@@ -12,7 +12,7 @@ using namespace CryAudio;
 using namespace CryAudio::Impl::PortAudio;
 
 // Define global objects.
-CAudioLogger g_audioImplLogger;
+CLogger g_implLogger;
 CAudioImplCVars CryAudio::Impl::PortAudio::g_audioImplCVars;
 
 //////////////////////////////////////////////////////////////////////////
@@ -42,11 +42,11 @@ class CEngineModule_CryAudioImplPortAudio : public CryAudio::IImplModule
 
 		if (m_bSuccess)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplPortAudio loaded");
+			g_implLogger.Log(ELogType::Always, "CryAudioImplPortAudio loaded");
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplPortAudio failed to load");
+			g_implLogger.Log(ELogType::Error, "CryAudioImplPortAudio failed to load");
 		}
 
 		return m_bSuccess;

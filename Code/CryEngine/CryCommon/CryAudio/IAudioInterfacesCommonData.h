@@ -47,7 +47,7 @@ class CATLStandaloneFile;
 
 enum class ERequestFlags : EnumFlagsType
 {
-	None                              = 0,
+	None,
 	ExecuteBlocking                   = BIT(0), // Blocks the calling thread until the requests has been processed.
 	CallbackOnExternalOrCallingThread = BIT(1), // Blocking requests will issue a callback on the calling thread, non-blocking requests will issue a callback on the external thread.
 	CallbackOnAudioThread             = BIT(2), // Issues a callback on the audio thread.

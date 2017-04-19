@@ -189,12 +189,12 @@ void CAudioImpl::DestructAudioStandaloneFile(IAudioStandaloneFile const* const p
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadConnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadConnected(AudioGamepadUniqueId const deviceUniqueID)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadDisconnected(AudioGamepadUniqueId const deviceUniqueID)
 {
 }
 

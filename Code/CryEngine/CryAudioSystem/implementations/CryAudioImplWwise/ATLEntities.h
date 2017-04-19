@@ -222,7 +222,7 @@ struct SAudioEnvironment final : public IAudioEnvironment
 struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent, stl::PSyncNone>
 {
 	explicit SAudioEvent(CATLEvent& _atlEvent)
-		: audioEventState(eAudioEventState_None)
+		: state(EEventState::None)
 		, id(AK_INVALID_UNIQUE_ID)
 		, atlEvent(_atlEvent)
 	{}
@@ -238,9 +238,9 @@ struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent, s
 	virtual ERequestStatus Stop() override;
 	// ~IAudioEvent
 
-	EAudioEventState audioEventState;
-	AkUniqueID       id;
-	CATLEvent&       atlEvent;
+	EEventState state;
+	AkUniqueID  id;
+	CATLEvent&  atlEvent;
 };
 
 struct SAudioFileEntry final : public IAudioFileEntry

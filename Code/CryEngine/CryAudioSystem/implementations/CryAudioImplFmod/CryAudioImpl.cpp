@@ -17,7 +17,7 @@ using namespace CryAudio;
 using namespace CryAudio::Impl::Fmod;
 
 // Define global objects.
-CAudioLogger g_audioImplLogger;
+CLogger g_implLogger;
 CAudioImplCVars CryAudio::Impl::Fmod::g_audioImplCVars;
 
 #if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
@@ -67,11 +67,11 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 
 		if (m_bSuccess)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplFmod loaded");
+			g_implLogger.Log(ELogType::Always, "CryAudioImplFmod loaded");
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplFmod failed to load");
+			g_implLogger.Log(ELogType::Error, "CryAudioImplFmod failed to load");
 		}
 
 		return m_bSuccess;

@@ -12,16 +12,16 @@
  */
 namespace CryAudio
 {
-typedef uint8 TAudioGamepadUniqueID;
+typedef uint8 AudioGamepadUniqueId;
 
-enum EAudioEventState : EnumFlagsType
+enum class EEventState : EnumFlagsType
 {
-	eAudioEventState_None           = 0,
-	eAudioEventState_Playing        = 1,
-	eAudioEventState_PlayingDelayed = 2,
-	eAudioEventState_Loading        = 3,
-	eAudioEventState_Unloading      = 4,
-	eAudioEventState_Virtual        = 5,
+	None,
+	Playing,
+	PlayingDelayed,
+	Loading,
+	Unloading,
+	Virtual,
 };
 
 inline ERequestStatus BoolToARS(bool bResult)
@@ -320,14 +320,14 @@ struct IAudioImpl
 	 * This is used by audio middleware that supports controller effects such as rumble.
 	 * @param deviceUniqueID - unique device identifier
 	 */
-	virtual void GamepadConnected(TAudioGamepadUniqueID const deviceUniqueID) = 0;
+	virtual void GamepadConnected(AudioGamepadUniqueId const deviceUniqueID) = 0;
 
 	/**
 	 * Called whenever a Gamepad gets disconnected.
 	 * This is used by audio middleware that supports controller effects such as rumble.
 	 * @param deviceUniqueID - unique device identifier
 	 */
-	virtual void GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID) = 0;
+	virtual void GamepadDisconnected(AudioGamepadUniqueId const deviceUniqueID) = 0;
 
 	/**
 	 * Informs the audio middleware that the localized sound banks and streamed files need to use

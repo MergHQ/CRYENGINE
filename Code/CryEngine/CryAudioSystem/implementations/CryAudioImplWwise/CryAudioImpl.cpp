@@ -17,7 +17,7 @@ using namespace CryAudio;
 using namespace CryAudio::Impl::Wwise;
 
 // Define global objects.
-CAudioLogger g_audioImplLogger;
+CLogger g_implLogger;
 CAudioImplCVars CryAudio::Impl::Wwise::g_audioImplCVars;
 
 #if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
@@ -67,11 +67,11 @@ class CEngineModule_CryAudioImplWwise : public CryAudio::IImplModule
 
 		if (m_bSuccess)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplWwise loaded");
+			g_implLogger.Log(ELogType::Always, "CryAudioImplWwise loaded");
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplWwise failed to load");
+			g_implLogger.Log(ELogType::Error, "CryAudioImplWwise failed to load");
 		}
 
 		return m_bSuccess;
