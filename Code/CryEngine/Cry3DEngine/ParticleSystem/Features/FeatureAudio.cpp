@@ -23,22 +23,14 @@ SERIALIZATION_DECLARE_ENUM(ETriggerType,
                            OnDeath
                            )
 
-SERIALIZATION_DECLARE_ENUM(EAudioOcclusionMode,
-                           Ignore = eOcclusionType_Ignore,
-                           Adaptive = eOcclusionType_Adaptive,
-                           Low = eOcclusionType_Low,
-                           Medium = eOcclusionType_Medium,
-                           High = eOcclusionType_High
-                           )
-
-class CFeatureAudioTrigger : public CParticleFeature
+class CFeatureAudioTrigger final : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
 	CFeatureAudioTrigger()
 		: m_triggerType(ETriggerType::OnSpawn)
-		, m_occlusionMode(EAudioOcclusionMode::Ignore)
+		, m_occlusionType(EOcclusionType::Ignore)
 		, m_audioId(InvalidControlId)
 		, m_followParticle(true) {}
 
@@ -58,7 +50,7 @@ public:
 		CParticleFeature::Serialize(ar);
 		ar(Serialization::AudioTrigger(m_audioName), "Name", "Name");
 		ar(m_triggerType, "Trigger", "Trigger");
-		ar(m_occlusionMode, "Occlusion", "Occlusion");
+		ar(m_occlusionType, "Occlusion", "Occlusion");
 		if (m_triggerType == ETriggerType::OnSpawn)
 			ar(m_followParticle, "FollowParticle", "Follow Particle");
 		else
@@ -110,7 +102,7 @@ private:
 			if (onSpawn || onDeath)
 			{
 				const Vec3 position = positions.Load(particleId);
-				SExecuteTriggerData const data(proxyName, EOcclusionType(m_occlusionMode), position, true, m_audioId);
+				SExecuteTriggerData const data(proxyName, m_occlusionType, position, true, m_audioId);
 				gEnv->pAudioSystem->ExecuteTriggerEx(data);
 			}
 		}
@@ -173,15 +165,15 @@ private:
 	{
 		const Vec3 position = positions.Load(particleId);
 
-		SCreateObjectData const data(szName, EOcclusionType(m_occlusionMode), position, INVALID_ENTITYID, true);
+		SCreateObjectData const data(szName, m_occlusionType, position, INVALID_ENTITYID, true);
 		return pAudioSystem->CreateObject(data);
 	}
 
-	string              m_audioName;
-	ControlId           m_audioId;
-	ETriggerType        m_triggerType;
-	EAudioOcclusionMode m_occlusionMode;
-	bool                m_followParticle;
+	string         m_audioName;
+	ControlId      m_audioId;
+	ETriggerType   m_triggerType;
+	EOcclusionType m_occlusionType;
+	bool           m_followParticle;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioTrigger, "Audio", "Trigger", colorAudio);

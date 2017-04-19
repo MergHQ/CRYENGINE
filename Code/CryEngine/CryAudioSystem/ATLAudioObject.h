@@ -15,7 +15,7 @@ struct IRenderAuxGeom;
 namespace CryAudio
 {
 static constexpr ControlId OcclusionTypeSwitchId = CCrc32::ComputeLowercase_CompileTime("ObstrOcclCalcType");
-static constexpr SwitchStateId OcclusionTypeStateIds[eOcclusionType_Count] = {
+static constexpr SwitchStateId OcclusionTypeStateIds[IntegralValue(EOcclusionType::Count)] = {
 	InvalidSwitchStateId,
 	IgnoreStateId,
 	AdaptiveStateId,
@@ -29,21 +29,22 @@ class CAudioEventManager;
 class CAudioListenerManager;
 class CAudioStandaloneFileManager;
 
-enum EAudioTriggerStatus : EnumFlagsType
+enum class EAudioTriggerStatus : EnumFlagsType
 {
-	eAudioTriggerStatus_None                     = 0,
-	eAudioTriggerStatus_Playing                  = BIT(0),
-	eAudioTriggerStatus_Loaded                   = BIT(1),
-	eAudioTriggerStatus_Loading                  = BIT(2),
-	eAudioTriggerStatus_Unloading                = BIT(3),
-	eAudioTriggerStatus_Starting                 = BIT(4),
-	eAudioTriggerStatus_CallbackOnExternalThread = BIT(5),
-	eAudioTriggerStatus_CallbackOnAudioThread    = BIT(6),
+	None                     = 0,
+	Playing                  = BIT(0),
+	Loaded                   = BIT(1),
+	Loading                  = BIT(2),
+	Unloading                = BIT(3),
+	Starting                 = BIT(4),
+	CallbackOnExternalThread = BIT(5),
+	CallbackOnAudioThread    = BIT(6),
 };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioTriggerStatus);
 
 struct SAudioTriggerImplState
 {
-	EnumFlagsType flags = eAudioTriggerStatus_None;
+	EAudioTriggerStatus flags = EAudioTriggerStatus::None;
 };
 
 struct SUserDataBase
@@ -51,12 +52,12 @@ struct SUserDataBase
 	SUserDataBase() = default;
 
 	explicit SUserDataBase(
-	  void* const _pOwnerOverride,
-	  void* const _pUserData,
-	  void* const _pUserDataOwner)
-		: pOwnerOverride(_pOwnerOverride)
-		, pUserData(_pUserData)
-		, pUserDataOwner(_pUserDataOwner)
+	  void* const pOwnerOverride_,
+	  void* const pUserData_,
+	  void* const pUserDataOwner_)
+		: pOwnerOverride(pOwnerOverride_)
+		, pUserData(pUserData_)
+		, pUserDataOwner(pUserDataOwner_)
 	{}
 
 	void* pOwnerOverride = nullptr;
@@ -66,12 +67,12 @@ struct SUserDataBase
 
 struct SAudioTriggerInstanceState final : public SUserDataBase
 {
-	EnumFlagsType flags = eAudioTriggerStatus_None;
-	ControlId     audioTriggerId = InvalidControlId;
-	size_t        numPlayingEvents = 0;
-	size_t        numLoadingEvents = 0;
-	float         expirationTimeMS = 0.0f;
-	float         remainingTimeMS = 0.0f;
+	EAudioTriggerStatus flags = EAudioTriggerStatus::None;
+	ControlId           audioTriggerId = InvalidControlId;
+	size_t              numPlayingEvents = 0;
+	size_t              numLoadingEvents = 0;
+	float               expirationTimeMS = 0.0f;
+	float               remainingTimeMS = 0.0f;
 };
 
 // CATLAudioObject-related typedefs
@@ -94,7 +95,7 @@ public:
 	CATLAudioObject& operator=(CATLAudioObject const&) = delete;
 	CATLAudioObject& operator=(CATLAudioObject&&) = delete;
 
-	ERequestStatus   HandleExecuteTrigger(CATLTrigger const* const pTrigger, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr, EnumFlagsType const flags = InvalidEnumFlagType);
+	ERequestStatus   HandleExecuteTrigger(CATLTrigger const* const pTrigger, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr, ERequestFlags const flags = ERequestFlags::None);
 	ERequestStatus   HandleStopTrigger(CATLTrigger const* const pTrigger);
 	ERequestStatus   HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
 	ERequestStatus   HandleSetParameter(CParameter const* const pParameter, float const value);
@@ -110,7 +111,7 @@ public:
 
 	// Callbacks
 	void                           ReportStartingTriggerInstance(TriggerInstanceId const audioTriggerInstanceId, ControlId const audioTriggerId);
-	void                           ReportStartedTriggerInstance(TriggerInstanceId const audioTriggerInstanceId, void* const pOwnerOverride, void* const pUserData, void* const pUserDataOwner, EnumFlagsType const flags);
+	void                           ReportStartedTriggerInstance(TriggerInstanceId const audioTriggerInstanceId, void* const pOwnerOverride, void* const pUserData, void* const pUserDataOwner, ERequestFlags const flags);
 	void                           ReportStartedEvent(CATLEvent* const pEvent);
 	void                           ReportFinishedEvent(CATLEvent* const pEvent, bool const bSuccess);
 	void                           ReportStartedStandaloneFile(CATLStandaloneFile* const pStandaloneFile, void* const pOwner, void* const pUserData, void* const pUserDataOwner);
@@ -138,16 +139,16 @@ public:
 	CObjectTransformation const&   GetTransformation()                                 { return m_attributes.transformation; }
 
 	// Flags / Properties
-	EnumFlagsType GetFlags() const { return m_flags; }
-	void          SetFlag(EAudioObjectFlags const flag);
-	void          RemoveFlag(EAudioObjectFlags const flag);
-	void          SetDopplerTracking(bool const bEnable);
-	void          SetVelocityTracking(bool const bEnable);
-	float         GetMaxRadius() const { return m_maxRadius; }
+	EAudioObjectFlags GetFlags() const { return m_flags; }
+	void              SetFlag(EAudioObjectFlags const flag);
+	void              RemoveFlag(EAudioObjectFlags const flag);
+	void              SetDopplerTracking(bool const bEnable);
+	void              SetVelocityTracking(bool const bEnable);
+	float             GetMaxRadius() const { return m_maxRadius; }
 
-	void          Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
-	void          UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
-	bool          CanBeReleased() const;
+	void              Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
+	void              UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
+	bool              CanBeReleased() const;
 
 	static CSystem*                     s_pAudioSystem;
 	static CAudioEventManager*          s_pEventManager;
@@ -182,7 +183,7 @@ private:
 	ObjectStateMap            m_switchStates;
 	Impl::IAudioObject*       m_pImplData;
 	float                     m_maxRadius;
-	EnumFlagsType             m_flags;
+	EAudioObjectFlags         m_flags;
 	float                     m_previousVelocity;
 	Vec3                      m_velocity;
 	Impl::SObject3DAttributes m_attributes;

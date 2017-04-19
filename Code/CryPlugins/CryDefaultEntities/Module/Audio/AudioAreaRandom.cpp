@@ -159,7 +159,7 @@ void CAudioAreaRandom::OnResetState()
 	// Update values
 	audioEntityComponent.SetFadeDistance(m_parameterDistance);
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioEntityComponent.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_occlusionType]);
+	audioEntityComponent.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
 
 	audioEntityComponent.SetCurrentEnvironments(InvalidAuxObjectId);
 	audioEntityComponent.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
@@ -218,7 +218,7 @@ void CAudioAreaRandom::Play()
 			pIEntityAudioComponent->SetCurrentEnvironments();
 			pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
-			SRequestUserData const userData(eRequestFlags_None, this);
+			SRequestUserData const userData(ERequestFlags::None, this);
 			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, DefaultAuxObjectId, userData);
 		}
 

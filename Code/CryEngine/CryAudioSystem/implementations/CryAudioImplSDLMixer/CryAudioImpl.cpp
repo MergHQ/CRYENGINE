@@ -12,7 +12,7 @@ using namespace CryAudio;
 using namespace CryAudio::Impl::SDL_mixer;
 
 // Define global objects.
-CAudioLogger g_audioImplLogger;
+CLogger g_implLogger;
 CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
 
 //////////////////////////////////////////////////////////////////////////
@@ -35,18 +35,18 @@ class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
-		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_CallbackOnExternalOrCallingThread);
+		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr, ESystemEvents::ImplSet);
+		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
 		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr);
 
 		if (m_bSuccess)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplSDLMixer loaded");
+			g_implLogger.Log(ELogType::Always, "CryAudioImplSDLMixer loaded");
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplSDLMixer failed to load");
+			g_implLogger.Log(ELogType::Error, "CryAudioImplSDLMixer failed to load");
 		}
 
 		return m_bSuccess;
@@ -55,7 +55,7 @@ class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
 	//////////////////////////////////////////////////////////////////////////
 	static void OnAudioEvent(SRequestInfo const* const pAudioRequestInfo)
 	{
-		m_bSuccess = pAudioRequestInfo->requestResult == eRequestResult_Success;
+		m_bSuccess = pAudioRequestInfo->requestResult == ERequestResult::Success;
 	}
 
 	static bool m_bSuccess;

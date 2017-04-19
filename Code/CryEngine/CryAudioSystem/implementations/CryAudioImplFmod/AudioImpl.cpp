@@ -138,7 +138,7 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 
 	if (!LoadMasterBanks())
 	{
-		return eRequestStatus_Failure;
+		return ERequestStatus::Failure;
 	}
 
 	FMOD_3D_ATTRIBUTES attributes = {
@@ -153,13 +153,13 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 	CAudioListener::s_pSystem = m_pSystem;
 	CAudioFileBase::s_pLowLevelSystem = m_pLowLevelSystem;
 
-	return (fmodResult == FMOD_OK) ? eRequestStatus_Success : eRequestStatus_Failure;
+	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnBeforeShutDown()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -175,7 +175,7 @@ ERequestStatus CAudioImpl::ShutDown()
 		ASSERT_FMOD_OK;
 	}
 
-	return (fmodResult == FMOD_OK) ? eRequestStatus_Success : eRequestStatus_Failure;
+	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -188,7 +188,7 @@ ERequestStatus CAudioImpl::Release()
 	CAudioObject::FreeMemoryPool();
 	CAudioEvent::FreeMemoryPool();
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -228,13 +228,13 @@ ERequestStatus CAudioImpl::StopAllSounds()
 		ASSERT_FMOD_OK;
 	}
 
-	return (fmodResult == FMOD_OK) ? eRequestStatus_Success : eRequestStatus_Failure;
+	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pFileEntryInfo)
 {
-	ERequestStatus requestResult = eRequestStatus_Failure;
+	ERequestStatus requestResult = ERequestStatus::Failure;
 
 	if (pFileEntryInfo != nullptr)
 	{
@@ -251,11 +251,11 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pFile
 
 			FMOD_RESULT const fmodResult = m_pSystem->loadBankMemory(static_cast<char*>(pFileEntryInfo->pFileData), static_cast<int>(pFileEntryInfo->size), FMOD_STUDIO_LOAD_MEMORY_POINT, FMOD_STUDIO_LOAD_BANK_NORMAL, &pFmodAudioFileEntry->pBank);
 			ASSERT_FMOD_OK;
-			requestResult = (fmodResult == FMOD_OK) ? eRequestStatus_Success : eRequestStatus_Failure;
+			requestResult = (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioFileEntryData passed to the Fmod implementation of RegisterInMemoryFile");
+			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Fmod implementation of RegisterInMemoryFile");
 		}
 	}
 
@@ -265,7 +265,7 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pFile
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pFileEntryInfo)
 {
-	ERequestStatus requestResult = eRequestStatus_Failure;
+	ERequestStatus requestResult = ERequestStatus::Failure;
 
 	if (pFileEntryInfo != nullptr)
 	{
@@ -288,11 +288,11 @@ ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pFi
 			while (loadingState == FMOD_STUDIO_LOADING_STATE_UNLOADING);
 
 			pFmodAudioFileEntry->pBank = nullptr;
-			requestResult = (fmodResult == FMOD_OK) ? eRequestStatus_Success : eRequestStatus_Failure;
+			requestResult = (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioFileEntryData passed to the Fmod implementation of UnregisterInMemoryFile");
+			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the Fmod implementation of UnregisterInMemoryFile");
 		}
 	}
 
@@ -304,7 +304,7 @@ ERequestStatus CAudioImpl::ParseAudioFileEntry(
   XmlNodeRef const pAudioFileEntryNode,
   SAudioFileEntryInfo* const pFileEntryInfo)
 {
-	ERequestStatus result = eRequestStatus_Failure;
+	ERequestStatus result = ERequestStatus::Failure;
 
 	if ((_stricmp(pAudioFileEntryNode->getTag(), s_szFmodFileTag) == 0) && (pFileEntryInfo != nullptr))
 	{
@@ -321,7 +321,7 @@ ERequestStatus CAudioImpl::ParseAudioFileEntry(
 
 			pFileEntryInfo->pImplData = new CAudioFileEntry();
 
-			result = eRequestStatus_Success;
+			result = ERequestStatus::Success;
 		}
 		else
 		{
@@ -359,7 +359,7 @@ IAudioObject* CAudioImpl::ConstructGlobalAudioObject()
 	CAudioObjectBase* pAudioObject = new CGlobalAudioObject(m_constructedAudioObjects);
 	if (!stl::push_back_unique(m_constructedAudioObjects, pAudioObject))
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to construct an already registered audio object.");
+		g_implLogger.Log(ELogType::Warning, "Trying to construct an already registered audio object.");
 	}
 	return pAudioObject;
 }
@@ -370,7 +370,7 @@ IAudioObject* CAudioImpl::ConstructAudioObject(char const* const /*szAudioObject
 	CAudioObjectBase* pAudioObject = new CAudioObject();
 	if (!stl::push_back_unique(m_constructedAudioObjects, pAudioObject))
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to construct an already registered audio object.");
+		g_implLogger.Log(ELogType::Warning, "Trying to construct an already registered audio object.");
 	}
 
 	return pAudioObject;
@@ -382,7 +382,7 @@ void CAudioImpl::DestructAudioObject(IAudioObject const* const pIAudioObject)
 	CAudioObjectBase const* pAudioObject = static_cast<CAudioObjectBase const*>(pIAudioObject);
 	if (!stl::find_and_erase(m_constructedAudioObjects, pAudioObject))
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to delete a non-existing audio object.");
+		g_implLogger.Log(ELogType::Warning, "Trying to delete a non-existing audio object.");
 	}
 
 	delete pAudioObject;
@@ -451,12 +451,12 @@ void CAudioImpl::DestructAudioStandaloneFile(IAudioStandaloneFile const* const p
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadConnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadConnected(AudioGamepadUniqueId const deviceUniqueID)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImpl::GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID)
+void CAudioImpl::GamepadDisconnected(AudioGamepadUniqueId const deviceUniqueID)
 {
 }
 
@@ -474,13 +474,13 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
-			EFmodEventType eventType = eFmodEventType_Start;
+			EFmodEventType eventType = EFmodEventType::Start;
 			char const* const szFmodEventType = pAudioTriggerNode->getAttr(s_szFmodEventTypeAttribute);
 
 			if (szFmodEventType != nullptr &&
 			    szFmodEventType[0] != '\0' && _stricmp(szFmodEventType, "stop") == 0)
 			{
-				eventType = eFmodEventType_Stop;
+				eventType = EFmodEventType::Stop;
 			}
 
 #if defined (INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
@@ -491,7 +491,7 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod event: %s", path.c_str());
+			g_implLogger.Log(ELogType::Warning, "Unknown Fmod event: %s", path.c_str());
 		}
 	}
 	else if (_stricmp(szTag, s_szFmodSnapshotTag) == 0)
@@ -502,14 +502,14 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
-			EFmodEventType eventType = eFmodEventType_Start;
+			EFmodEventType eventType = EFmodEventType::Start;
 			char const* const szFmodEventType = pAudioTriggerNode->getAttr(s_szFmodEventTypeAttribute);
 
 			if (szFmodEventType != nullptr &&
 			    szFmodEventType[0] != '\0' &&
 			    _stricmp(szFmodEventType, "stop") == 0)
 			{
-				eventType = eFmodEventType_Stop;
+				eventType = EFmodEventType::Stop;
 			}
 
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
@@ -523,12 +523,12 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod snapshot: %s", path.c_str());
+			g_implLogger.Log(ELogType::Warning, "Unknown Fmod snapshot: %s", path.c_str());
 		}
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod tag: %s", szTag);
+		g_implLogger.Log(ELogType::Warning, "Unknown Fmod tag: %s", szTag);
 	}
 
 	return pAudioTrigger;
@@ -573,7 +573,7 @@ IParameter const* CAudioImpl::NewAudioParameter(XmlNodeRef const pAudioParameter
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod tag: %s", szTag);
+		g_implLogger.Log(ELogType::Warning, "Unknown Fmod tag: %s", szTag);
 	}
 
 	return static_cast<IParameter*>(pFmodAudioParameter);
@@ -622,7 +622,7 @@ IAudioSwitchState const* CAudioImpl::NewAudioSwitchState(XmlNodeRef const pAudio
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod tag: %s", szTag);
+		g_implLogger.Log(ELogType::Warning, "Unknown Fmod tag: %s", szTag);
 	}
 
 	return static_cast<IAudioSwitchState*>(pFmodAudioSwitchState);
@@ -663,7 +663,7 @@ IAudioEnvironment const* CAudioImpl::NewAudioEnvironment(XmlNodeRef const pAudio
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod bus: %s", path.c_str());
+			g_implLogger.Log(ELogType::Warning, "Unknown Fmod bus: %s", path.c_str());
 		}
 	}
 	else if (_stricmp(szTag, s_szFmodSnapshotTag) == 0)
@@ -681,7 +681,7 @@ IAudioEnvironment const* CAudioImpl::NewAudioEnvironment(XmlNodeRef const pAudio
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod snapshot: %s", path.c_str());
+			g_implLogger.Log(ELogType::Warning, "Unknown Fmod snapshot: %s", path.c_str());
 		}
 	}
 
@@ -961,7 +961,7 @@ bool CAudioImpl::LoadMasterBanks()
 	{
 		// This does not qualify for a fallback to the NULL implementation!
 		// Still notify the user about this failure!
-		g_audioImplLogger.Log(eAudioLogType_Error, "Fmod failed to load master banks");
+		g_implLogger.Log(ELogType::Error, "Fmod failed to load master banks");
 		return true;
 	}
 
@@ -1001,7 +1001,7 @@ ERequestStatus CAudioImpl::MuteMasterBus(bool const bMute)
 		ASSERT_FMOD_OK;
 	}
 
-	return (fmodResult == FMOD_OK) ? eRequestStatus_Success : eRequestStatus_Failure;
+	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////

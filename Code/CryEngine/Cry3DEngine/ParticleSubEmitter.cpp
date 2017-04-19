@@ -21,7 +21,7 @@ CParticleSubEmitter::CParticleSubEmitter(CParticleSource* pSource, CParticleCont
 	, m_stopAudioTriggerId(CryAudio::InvalidControlId)
 	, m_audioParameterId(CryAudio::InvalidControlId)
 	, m_pIAudioObject(nullptr)
-	, m_currentAudioOcclusionType(CryAudio::eOcclusionType_Ignore)
+	, m_currentAudioOcclusionType(CryAudio::EOcclusionType::Ignore)
 	, m_bExecuteAudioTrigger(false)
 {
 	assert(pCont);

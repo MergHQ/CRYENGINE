@@ -37,7 +37,7 @@ public:
 		FillFmodObjectPosition(attributes, m_attributes);
 		FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
 		ASSERT_FMOD_OK;
-		return eRequestStatus_Success;
+		return ERequestStatus::Success;
 	}
 	// ~IAudioListener
 
@@ -50,11 +50,11 @@ public:
 	static FMOD::Studio::System* s_pSystem;
 };
 
-enum EFmodEventType : EnumFlagsType
+enum class EFmodEventType : EnumFlagsType
 {
-	eFmodEventType_None,
-	eFmodEventType_Start,
-	eFmodEventType_Stop,
+	None,
+	Start,
+	Stop,
 };
 
 class CAudioTrigger final : public IAudioTrigger
@@ -64,7 +64,7 @@ public:
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	explicit CAudioTrigger(
 	  uint32 const eventPathId,
-	  EnumFlagsType const eventType,
+	  EFmodEventType const eventType,
 	  FMOD::Studio::EventDescription* const pEventDescription,
 	  FMOD_GUID const guid,
 	  char const* const szEventPath)
@@ -77,7 +77,7 @@ public:
 #else
 	explicit CAudioTrigger(
 	  uint32 const eventPathId,
-	  EnumFlagsType const eventType,
+	  EFmodEventType const eventType,
 	  FMOD::Studio::EventDescription* const pEventDescription,
 	  FMOD_GUID const guid)
 		: m_eventPathId(eventPathId)
@@ -95,14 +95,14 @@ public:
 	CAudioTrigger& operator=(CAudioTrigger&&) = delete;
 
 	// IAudioTrigger
-	virtual ERequestStatus Load()  const override                                      { return eRequestStatus_Success; }
-	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
-	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return eRequestStatus_Success; }
-	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
+	virtual ERequestStatus Load()  const override                                      { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                     { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return ERequestStatus::Success; }
 	// ~IAudioTrigger
 
 	uint32 const                          m_eventPathId;
-	EnumFlagsType const                   m_eventType;
+	EFmodEventType const                  m_eventType;
 	FMOD::Studio::EventDescription* const m_pEventDescription;
 	FMOD_GUID const                       m_guid;
 
@@ -282,6 +282,6 @@ typedef std::vector<CAudioStandaloneFile*>            StandaloneFiles;
 
 typedef std::map<CAudioParameter const* const, int>   AudioParameterToIndexMap;
 typedef std::map<CAudioSwitchState const* const, int> FmodSwitchToIndexMap;
-}
-}
-}
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

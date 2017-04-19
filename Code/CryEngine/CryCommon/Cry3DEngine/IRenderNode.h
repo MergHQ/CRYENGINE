@@ -1018,7 +1018,7 @@ struct IRopeRenderNode : public IRenderNode
 		CryAudio::ControlId      startTrigger = CryAudio::InvalidControlId;
 		CryAudio::ControlId      stopTrigger = CryAudio::InvalidControlId;
 		CryAudio::ControlId      angleParameter = CryAudio::InvalidControlId;
-		CryAudio::EOcclusionType occlusionType = CryAudio::eOcclusionType_Ignore;
+		CryAudio::EOcclusionType occlusionType = CryAudio::EOcclusionType::Ignore;
 		int                      segementToAttachTo = 1;
 		float                    offset = 0.0f;
 	};

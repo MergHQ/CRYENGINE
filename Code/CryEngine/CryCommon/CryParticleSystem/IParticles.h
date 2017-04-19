@@ -75,7 +75,7 @@ struct SpawnParams
 		eAttachForm = GeomForm_Surface;
 		bCountPerUnit = false;
 		bEnableAudio = true;
-		occlusionType = CryAudio::eOcclusionType_Ignore;
+		occlusionType = CryAudio::EOcclusionType::Ignore;
 	}
 
 	void Serialize(Serialization::IArchive& ar)

@@ -4309,7 +4309,7 @@ int CScriptBind_Entity::ExecuteAudioTrigger(IFunctionHandler* pH, ScriptHandle c
 		// This is an optimizations as AddRequestListener is a blocking request.
 		if (!m_bIsAudioEventListener)
 		{
-			gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, eSystemEvent_TriggerFinished);
+			gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, ESystemEvents::TriggerFinished);
 			m_bIsAudioEventListener = true;
 		}
 
@@ -4329,7 +4329,7 @@ int CScriptBind_Entity::StopAudioTrigger(IFunctionHandler* pH, ScriptHandle cons
 
 	if (pIEntityAudioComponent)
 	{
-		SRequestUserData const userData(eRequestFlags_DoneCallbackOnExternalThread, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
+		SRequestUserData const userData(ERequestFlags::DoneCallbackOnExternalThread, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
 		pIEntityAudioComponent->StopTrigger(HandleToInt<ControlId>(hTriggerID), HandleToInt<AuxObjectId>(hAudioProxyLocalID), userData);
 	}
 
@@ -4364,24 +4364,24 @@ int CScriptBind_Entity::SetAudioObstructionCalcType(IFunctionHandler* pH, int co
 
 	if (pIEntityAudioComponent)
 	{
-		EOcclusionType occlusionType = eOcclusionType_None;
+		EOcclusionType occlusionType = EOcclusionType::None;
 
 		switch (nObstructionCalcType)
 		{
 		case 1:
-			occlusionType = eOcclusionType_Ignore;
+			occlusionType = EOcclusionType::Ignore;
 			break;
 		case 2:
-			occlusionType = eOcclusionType_Adaptive;
+			occlusionType = EOcclusionType::Adaptive;
 			break;
 		case 3:
-			occlusionType = eOcclusionType_Low;
+			occlusionType = EOcclusionType::Low;
 			break;
 		case 4:
-			occlusionType = eOcclusionType_Medium;
+			occlusionType = EOcclusionType::Medium;
 			break;
 		case 5:
-			occlusionType = eOcclusionType_High;
+			occlusionType = EOcclusionType::High;
 			break;
 		}
 

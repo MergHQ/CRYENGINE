@@ -8,20 +8,14 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
-
-#if !defined(_RELEASE)
-// Define this to enable logging via CAudioLogger.
-// We disable logging for Release builds
-	#define ENABLE_AUDIO_LOGGING
-#endif // _RELEASE
-
 #include <AudioLogger.h>
 #include <fmod_studio.hpp>
 
-extern CAudioLogger g_audioImplLogger;
+extern CryAudio::CLogger g_implLogger;
 
 #if !defined(_RELEASE)
 	#define INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+	#define ENABLE_AUDIO_LOGGING
 #endif // _RELEASE
 
 #if CRY_PLATFORM_DURANGO
@@ -73,47 +67,3 @@ inline bool Secondary_Free(void* pFree)
 	return bFreed;
 }
 #endif // PROVIDE_FMOD_IMPL_SECONDARY_POOL
-
-// Windows or XboxOne
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-#endif
-
-// Windows32
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-#endif
-
-// Windows64
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-#endif
-
-// XboxOne
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_DURANGO
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_ORBIS
-#endif
-
-// Mac
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_MAC
-#endif
-
-// Android
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_ANDROID
-#endif
-
-// IOS
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_IOS
-#endif
-
-// Linux
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_LINUX
-#endif

@@ -434,11 +434,11 @@ bool CDialogActorContext::Update(float dt)
 						if (m_SpeechAuxObject == InvalidAuxObjectId)
 						{
 							m_SpeechAuxObject = pActorAudioProxy->CreateAudioAuxObject();
-							pActorAudioProxy->AddAsListenerToAudioAuxObject(m_SpeechAuxObject, &CDialogActorContext::OnAudioTriggerFinished, eSystemEvent_TriggerFinished);
+							pActorAudioProxy->AddAsListenerToAudioAuxObject(m_SpeechAuxObject, &CDialogActorContext::OnAudioTriggerFinished, ESystemEvents::TriggerFinished);
 						}
 						UpdateAuxProxyPosition();
 
-						SRequestUserData const userData(eRequestFlags_DoneCallbackOnExternalThread, nullptr, (void*)CDialogActorContext::GetClassIdentifier(), reinterpret_cast<void*>(static_cast<intptr_t>(m_ContextID)));
+						SRequestUserData const userData(ERequestFlags::DoneCallbackOnExternalThread, nullptr, (void*)CDialogActorContext::GetClassIdentifier(), reinterpret_cast<void*>(static_cast<intptr_t>(m_ContextID)));
 						if (!pActorAudioProxy->ExecuteTrigger(m_pCurLine->m_audioID, m_SpeechAuxObject, userData))
 						{
 							m_bSoundStarted = false;

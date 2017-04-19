@@ -1419,14 +1419,14 @@ void CProjectile::UpdateWhiz(const Vec3& pos, bool destroy)
 //------------------------------------------------------------------------
 void CProjectile::WhizSound(const Vec3& pos)
 {
-	SExecuteTriggerData const data("WhizBy", eOcclusionType_Ignore, pos, true, m_whizTriggerID);
+	SExecuteTriggerData const data("WhizBy", EOcclusionType::Ignore, pos, true, m_whizTriggerID);
 	gEnv->pAudioSystem->ExecuteTriggerEx(data);
 }
 
 //------------------------------------------------------------------------
 void CProjectile::RicochetSound(const Vec3& pos)
 {
-	SExecuteTriggerData const data("Ricochet", eOcclusionType_Ignore, pos, true, m_ricochetTriggerID);
+	SExecuteTriggerData const data("Ricochet", EOcclusionType::Ignore, pos, true, m_ricochetTriggerID);
 	gEnv->pAudioSystem->ExecuteTriggerEx(data);
 }
 

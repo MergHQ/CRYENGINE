@@ -64,7 +64,7 @@ IAudioImpl* CATLControlImpl::s_pImpl = nullptr;
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> requestData(transformation, this);
+	SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> requestData(transformation, this);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;

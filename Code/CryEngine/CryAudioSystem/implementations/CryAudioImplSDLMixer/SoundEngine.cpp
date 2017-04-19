@@ -42,15 +42,16 @@ SChannelData g_channels[s_numMixChannels];
 typedef std::queue<int> TChannelQueue;
 TChannelQueue g_freeChannels;
 
-enum EChannelFinishedRequestQueueId
+enum class EChannelFinishedRequestQueueId : EnumFlagsType
 {
-	eChannelFinishedRequestQueueId_One = 0,
-	eChannelFinishedRequestQueueId_Two = 1,
-	eChannelFinishedRequestQueueId_Count
+	One,
+	Two,
+	Count
 };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EChannelFinishedRequestQueueId);
 
 typedef std::deque<int> ChannelFinishedRequests;
-ChannelFinishedRequests g_channelFinishedRequests[eChannelFinishedRequestQueueId_Count];
+ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
 CryCriticalSection g_channelFinishedCriticalSection;
 
 // Audio Objects
@@ -101,7 +102,7 @@ void SoundEngine::UnloadSample(const SampleId nID)
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Could not find sample with id %d", nID);
+		g_implLogger.Log(ELogType::Error, "Could not find sample with id %d", nID);
 	}
 }
 
@@ -184,7 +185,7 @@ void ChannelFinishedPlaying(int nChannel)
 	if (nChannel >= 0 && nChannel < s_numMixChannels)
 	{
 		CryAutoLock<CryCriticalSection> autoLock(g_channelFinishedCriticalSection);
-		g_channelFinishedRequests[eChannelFinishedRequestQueueId_One].push_back(nChannel);
+		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].push_back(nChannel);
 	}
 }
 
@@ -232,20 +233,20 @@ bool SoundEngine::Init()
 {
 	if (SDL_Init(SDL_INIT_AUDIO) < 0)
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "SDL::SDL_Init() returned: %s", SDL_GetError());
+		g_implLogger.Log(ELogType::Error, "SDL::SDL_Init() returned: %s", SDL_GetError());
 		return false;
 	}
 
 	int loadedFormats = Mix_Init(s_supportedFormats);
 	if ((loadedFormats & s_supportedFormats) != s_supportedFormats)
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "SDLMixer::Mix_Init() failed to init support for format flags %d with error \"%s\"", s_supportedFormats, Mix_GetError());
+		g_implLogger.Log(ELogType::Error, "SDLMixer::Mix_Init() failed to init support for format flags %d with error \"%s\"", s_supportedFormats, Mix_GetError());
 		return false;
 	}
 
 	if (Mix_OpenAudio(s_sampleRate, MIX_DEFAULT_FORMAT, 2, s_bufferSize) < 0)
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error \"%s\"", Mix_GetError());
+		g_implLogger.Log(ELogType::Error, "SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error \"%s\"", Mix_GetError());
 		return false;
 	}
 
@@ -307,7 +308,7 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t siz
 	if (pSample != nullptr)
 	{
 		Mix_FreeChunk(pSample);
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Loading sample %s which had already been loaded", samplePath.c_str());
+		g_implLogger.Log(ELogType::Warning, "Loading sample %s which had already been loaded", samplePath.c_str());
 	}
 	SDL_RWops* pData = SDL_RWFromMem(pMemory, size);
 	if (pData)
@@ -321,12 +322,12 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t siz
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "SDL Mixer failed to load sample. Error: \"%s\"", Mix_GetError());
+			g_implLogger.Log(ELogType::Error, "SDL Mixer failed to load sample. Error: \"%s\"", Mix_GetError());
 		}
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "SDL Mixer failed to transform the audio data. Error: \"%s\"", SDL_GetError());
+		g_implLogger.Log(ELogType::Error, "SDL Mixer failed to transform the audio data. Error: \"%s\"", SDL_GetError());
 	}
 	return s_invalidSampleId;
 }
@@ -341,11 +342,11 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 		SampleNameMap::const_iterator it = g_samplePaths.find(id);
 		if (it != g_samplePaths.end() && it->second != samplePath)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Loaded a Sample with the already existing ID %u, but from a different path source path '%s' <-> '%s'.", static_cast<uint>(id), it->second.c_str(), samplePath.c_str());
+			g_implLogger.Log(ELogType::Error, "Loaded a Sample with the already existing ID %u, but from a different path source path '%s' <-> '%s'.", static_cast<uint>(id), it->second.c_str(), samplePath.c_str());
 		}
 		if (stl::find_in_map(g_sampleData, id, nullptr) != nullptr)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Loading sample '%s' which had already been loaded", samplePath.c_str());
+			g_implLogger.Log(ELogType::Error, "Loading sample '%s' which had already been loaded", samplePath.c_str());
 		}
 #endif
 		g_sampleData[id] = pSample;
@@ -363,7 +364,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 			const SampleId newId = SoundEngine::LoadSampleFromMemory(pData, fileSize, samplePath, id);
 			if (newId == s_invalidSampleId)
 			{
-				g_audioImplLogger.Log(eAudioLogType_Error, "SDL Mixer failed to load sample %s. Error: \"%s\"", samplePath.c_str(), Mix_GetError());
+				g_implLogger.Log(ELogType::Error, "SDL Mixer failed to load sample %s. Error: \"%s\"", samplePath.c_str(), Mix_GetError());
 				bSuccess = false;
 			}
 			CryModuleFree(pData);
@@ -479,7 +480,7 @@ void SetChannelPosition(const SAudioTrigger* pStaticData, const int channelID, c
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "The minimum attenuation distance value is higher than the maximum");
+		g_implLogger.Log(ELogType::Error, "The minimum attenuation distance value is higher than the maximum");
 	}
 }
 
@@ -552,12 +553,12 @@ bool SoundEngine::ExecuteEvent(SAudioObject* const pAudioObject, SAudioTrigger c
 				}
 				else
 				{
-					g_audioImplLogger.Log(eAudioLogType_Error, "Could not play sample. Error: %s", Mix_GetError());
+					g_implLogger.Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 				}
 			}
 			else
 			{
-				g_audioImplLogger.Log(eAudioLogType_Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
+				g_implLogger.Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
 			}
 
 			if (!pEventInstance->channels.empty())
@@ -640,12 +641,12 @@ bool SoundEngine::PlayFile(SAudioObject* const pAudioObject, CAudioStandaloneFil
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Could not play sample. Error: %s", Mix_GetError());
+			g_implLogger.Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 		}
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
+		g_implLogger.Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
 	}
 
 	if (!pStandaloneFile->channels.empty())
@@ -751,10 +752,10 @@ SAudioTrigger* SoundEngine::CreateEventData()
 
 void SoundEngine::Update()
 {
-	ProcessChannelFinishedRequests(g_channelFinishedRequests[eChannelFinishedRequestQueueId_Two]);
+	ProcessChannelFinishedRequests(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
 	{
 		CryAutoLock<CryCriticalSection> oAutoLock(g_channelFinishedCriticalSection);
-		g_channelFinishedRequests[eChannelFinishedRequestQueueId_One].swap(g_channelFinishedRequests[eChannelFinishedRequestQueueId_Two]);
+		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].swap(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
 	}
 
 	AudioObjectList::const_iterator audioObjectIt = g_audioObjects.begin();

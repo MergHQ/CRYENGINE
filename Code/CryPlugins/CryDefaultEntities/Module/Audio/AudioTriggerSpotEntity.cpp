@@ -40,7 +40,7 @@ CRYREGISTER_CLASS(CAudioTriggerSpotEntity);
 
 CAudioTriggerSpotEntity::CAudioTriggerSpotEntity()
 {
-	gEnv->pAudioSystem->AddRequestListener(&CAudioTriggerSpotEntity::OnAudioTriggerFinished, this, eSystemEvent_TriggerFinished);
+	gEnv->pAudioSystem->AddRequestListener(&CAudioTriggerSpotEntity::OnAudioTriggerFinished, this, ESystemEvents::TriggerFinished);
 }
 
 CAudioTriggerSpotEntity::~CAudioTriggerSpotEntity()
@@ -106,7 +106,6 @@ void CAudioTriggerSpotEntity::OnResetState()
 	// Get properties
 	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
 	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
-	const EOcclusionType occlusionType = static_cast<EOcclusionType>(m_occlusionType);
 
 	// Reset values to their default
 	audioProxy.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
@@ -125,7 +124,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 	}
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[occlusionType]);
+	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
 
 	if (m_bEnabled)
 	{
@@ -181,7 +180,7 @@ void CAudioTriggerSpotEntity::Play()
 			pAudioProxy->SetCurrentEnvironments();
 			pAudioProxy->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
-			SRequestUserData const userData(eRequestFlags_None, this);
+			SRequestUserData const userData(ERequestFlags::None, this);
 			pAudioProxy->ExecuteTrigger(m_playTriggerId, DefaultAuxObjectId, userData);
 		}
 

@@ -5,11 +5,11 @@
 #include <ATLEntityData.h>
 #include <portaudio.h>
 
-enum EPortAudioEventType
+enum class EPortAudioEventType : EnumFlagsType
 {
-	ePortAudioEventType_None = 0,
-	ePortAudioEventType_Start,
-	ePortAudioEventType_Stop,
+	None,
+	Start,
+	Stop,
 };
 
 namespace CryAudio
@@ -43,10 +43,10 @@ public:
 	CAudioTrigger& operator=(CAudioTrigger const&) = delete;
 
 	// IAudioTrigger
-	virtual ERequestStatus Load() const override                                       { return eRequestStatus_Success; }
-	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
-	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return eRequestStatus_Success; }
-	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
+	virtual ERequestStatus Load() const override                                       { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                     { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return ERequestStatus::Success; }
 	// ~IAudioTrigger
 
 	uint32 const               pathId;
@@ -56,6 +56,6 @@ public:
 	CryFixedStringT<512> const filePath;
 	PaStreamParameters const   streamParameters;
 };
-}
-}
-}
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

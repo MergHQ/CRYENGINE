@@ -6,6 +6,7 @@
 #include "../CryCore/BaseTypes.h"
 #include "../CryCore/smartptr.h"
 #include "../CryCore/Platform/platform.h"
+#include "../CryCore/CryEnumMacro.h"
 
 #define AUDIO_SYSTEM_DATA_ROOT "audio"
 
@@ -44,39 +45,40 @@ struct IObject;
 class CATLEvent;
 class CATLStandaloneFile;
 
-enum ERequestFlags : EnumFlagsType
+enum class ERequestFlags : EnumFlagsType
 {
-	eRequestFlags_None                              = 0,
-	eRequestFlags_ExecuteBlocking                   = BIT(0), // Blocks the calling thread until the requests has been processed.
-	eRequestFlags_CallbackOnExternalOrCallingThread = BIT(1), // Blocking requests will issue a callback on the calling thread, non-blocking requests will issue a callback on the external thread.
-	eRequestFlags_CallbackOnAudioThread             = BIT(2), // Issues a callback on the audio thread.
-	eRequestFlags_DoneCallbackOnExternalThread      = BIT(3), // Issues a callback on the external thread once a trigger instance finished playback of all its events.
-	eRequestFlags_DoneCallbackOnAudioThread         = BIT(4), // Issues a callback on the audio thread once a trigger instance finished playback of all its events.
+	None,
+	ExecuteBlocking                   = BIT(0), // Blocks the calling thread until the requests has been processed.
+	CallbackOnExternalOrCallingThread = BIT(1), // Blocking requests will issue a callback on the calling thread, non-blocking requests will issue a callback on the external thread.
+	CallbackOnAudioThread             = BIT(2), // Issues a callback on the audio thread.
+	DoneCallbackOnExternalThread      = BIT(3), // Issues a callback on the external thread once a trigger instance finished playback of all its events.
+	DoneCallbackOnAudioThread         = BIT(4), // Issues a callback on the audio thread once a trigger instance finished playback of all its events.
 };
+CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
 
 /**
  * An enum that lists possible statuses of an AudioRequest.
  * Used as a return type for many function used by the AudioSystem internally,
  * and also for most of the IAudioImpl calls
  */
-enum ERequestStatus : EnumFlagsType
+enum class ERequestStatus : EnumFlagsType
 {
-	eRequestStatus_None                    = 0,
-	eRequestStatus_Success                 = 1,
-	eRequestStatus_SuccessNeedsRefresh     = 2,
-	eRequestStatus_PartialSuccess          = 3,
-	eRequestStatus_Failure                 = 4,
-	eRequestStatus_Pending                 = 5,
-	eRequestStatus_FailureInvalidObjectId  = 6,
-	eRequestStatus_FailureInvalidControlId = 7,
-	eRequestStatus_FailureInvalidRequest   = 8,
+	None,
+	Success,
+	SuccessNeedsRefresh,
+	PartialSuccess,
+	Failure,
+	Pending,
+	FailureInvalidObjectId,
+	FailureInvalidControlId,
+	FailureInvalidRequest,
 };
 
-enum ERequestResult : EnumFlagsType
+enum class ERequestResult : EnumFlagsType
 {
-	eRequestResult_None,
-	eRequestResult_Success,
-	eRequestResult_Failure,
+	None,
+	Success,
+	Failure,
 };
 
 class CObjectTransformation
@@ -134,61 +136,22 @@ static const CObjectTransformation s_nullAudioObjectTransformation;
 struct SRequestUserData
 {
 	explicit SRequestUserData(
-	  EnumFlagsType const _flags = eRequestFlags_None,
-	  void* const _pOwner = nullptr,
-	  void* const _pUserData = nullptr,
-	  void* const _pUserDataOwner = nullptr)
-		: flags(_flags)
-		, pOwner(_pOwner)
-		, pUserData(_pUserData)
-		, pUserDataOwner(_pUserDataOwner)
+	  ERequestFlags const flags_ = ERequestFlags::None,
+	  void* const pOwner_ = nullptr,
+	  void* const pUserData_ = nullptr,
+	  void* const pUserDataOwner_ = nullptr)
+		: flags(flags_)
+		, pOwner(pOwner_)
+		, pUserData(pUserData_)
+		, pUserDataOwner(pUserDataOwner_)
 	{}
 
 	static SRequestUserData const& GetEmptyObject() { static SRequestUserData const emptyInstance; return emptyInstance; }
 
-	EnumFlagsType const            flags;
+	ERequestFlags const            flags;
 	void* const                    pOwner;
 	void* const                    pUserData;
 	void* const                    pUserDataOwner;
-};
-
-struct SRequestInfo
-{
-	explicit SRequestInfo(
-	  ERequestResult const _requestResult,
-	  void* const _pOwner,
-	  void* const _pUserData,
-	  void* const _pUserDataOwner,
-	  EnumFlagsType const _audioSystemEvent,
-	  ControlId const _audioControlId,
-	  IObject* const _pAudioObject,
-	  CATLStandaloneFile* _pStandaloneFile,
-	  CATLEvent* _pAudioEvent)
-		: requestResult(_requestResult)
-		, pOwner(_pOwner)
-		, pUserData(_pUserData)
-		, pUserDataOwner(_pUserDataOwner)
-		, audioSystemEvent(_audioSystemEvent)
-		, audioControlId(_audioControlId)
-		, pAudioObject(_pAudioObject)
-		, pStandaloneFile(_pStandaloneFile)
-		, pAudioEvent(_pAudioEvent)
-	{}
-
-	SRequestInfo(SRequestInfo const&) = delete;
-	SRequestInfo(SRequestInfo&&) = delete;
-	SRequestInfo& operator=(SRequestInfo const&) = delete;
-	SRequestInfo& operator=(SRequestInfo&&) = delete;
-
-	ERequestResult const requestResult;
-	void* const          pOwner;
-	void* const          pUserData;
-	void* const          pUserDataOwner;
-	EnumFlagsType const  audioSystemEvent;
-	ControlId const      audioControlId;
-	IObject* const       pAudioObject;
-	CATLStandaloneFile*  pStandaloneFile;
-	CATLEvent*           pAudioEvent;
 };
 
 struct SFileData

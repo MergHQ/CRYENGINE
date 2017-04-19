@@ -69,5 +69,5 @@ protected:
 	string                   m_environmentName;
 	float                    m_environmentDistance = 5.f;
 
-	CryAudio::EOcclusionType m_occlusionType = CryAudio::eOcclusionType_Ignore;
+	CryAudio::EOcclusionType m_occlusionType = CryAudio::EOcclusionType::Ignore;
 };

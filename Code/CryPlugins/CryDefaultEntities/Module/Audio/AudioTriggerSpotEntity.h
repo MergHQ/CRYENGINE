@@ -97,7 +97,7 @@ protected:
 	string                   m_playTriggerName;
 	string                   m_stopTriggerName;
 
-	CryAudio::EOcclusionType m_occlusionType = CryAudio::eOcclusionType_Ignore;
+	CryAudio::EOcclusionType m_occlusionType = CryAudio::EOcclusionType::Ignore;
 
 	EPlayBehavior            m_behavior = ePlayBehavior_Single;
 

@@ -103,7 +103,7 @@ CAudioEvent::~CAudioEvent()
 
 		if (err != paNoError)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CloseStream failed: %s", Pa_GetErrorText(err));
+			g_implLogger.Log(ELogType::Error, "CloseStream failed: %s", Pa_GetErrorText(err));
 		}
 	}
 
@@ -184,12 +184,12 @@ bool CAudioEvent::Execute(
 			}
 			else
 			{
-				g_audioImplLogger.Log(eAudioLogType_Error, "StartStream failed: %s", Pa_GetErrorText(err));
+				g_implLogger.Log(ELogType::Error, "StartStream failed: %s", Pa_GetErrorText(err));
 			}
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "OpenStream failed: %s", Pa_GetErrorText(err));
+			g_implLogger.Log(ELogType::Error, "OpenStream failed: %s", Pa_GetErrorText(err));
 		}
 	}
 
@@ -223,5 +223,5 @@ void CAudioEvent::Update()
 ERequestStatus CAudioEvent::Stop()
 {
 	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }

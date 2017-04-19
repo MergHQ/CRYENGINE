@@ -66,30 +66,33 @@ struct IAudioFileEntry;
 struct IAudioImpl;
 } // namespace Impl
 
-enum EAudioObjectFlags : EnumFlagsType
+enum class EAudioObjectFlags : EnumFlagsType
 {
-	eAudioObjectFlags_None                            = 0,
-	eAudioObjectFlags_TrackDoppler                    = BIT(0),
-	eAudioObjectFlags_TrackVelocity                   = BIT(1),
-	eAudioObjectFlags_NeedsDopplerUpdate              = BIT(2),
-	eAudioObjectFlags_NeedsVelocityUpdate             = BIT(3),
-	eAudioObjectFlags_DoNotRelease                    = BIT(4),
-	eAudioObjectFlags_Virtual                         = BIT(5),
-	eAudioObjectFlags_WaitingForInitialTransformation = BIT(6),
+	None                            = 0,
+	TrackDoppler                    = BIT(0),
+	TrackVelocity                   = BIT(1),
+	NeedsDopplerUpdate              = BIT(2),
+	NeedsVelocityUpdate             = BIT(3),
+	DoNotRelease                    = BIT(4),
+	Virtual                         = BIT(5),
+	WaitingForInitialTransformation = BIT(6),
 };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioObjectFlags);
 
-enum EAudioFileFlags : EnumFlagsType
+enum class EAudioFileFlags : EnumFlagsType
 {
-	eAudioFileFlags_Cached                    = BIT(0),
-	eAudioFileFlags_NotCached                 = BIT(1),
-	eAudioFileFlags_NotFound                  = BIT(2),
-	eAudioFileFlags_MemAllocFail              = BIT(3),
-	eAudioFileFlags_Removable                 = BIT(4),
-	eAudioFileFlags_Loading                   = BIT(5),
-	eAudioFileFlags_UseCounted                = BIT(6),
-	eAudioFileFlags_NeedsResetToManualLoading = BIT(7),
-	eAudioFileFlags_Localized                 = BIT(8),
+	None                      = 0,
+	Cached                    = BIT(0),
+	NotCached                 = BIT(1),
+	NotFound                  = BIT(2),
+	MemAllocFail              = BIT(3),
+	Removable                 = BIT(4),
+	Loading                   = BIT(5),
+	UseCounted                = BIT(6),
+	NeedsResetToManualLoading = BIT(7),
+	Localized                 = BIT(8),
 };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioFileFlags);
 
 template<typename IDType>
 class CATLEntity
@@ -384,11 +387,11 @@ public:
 	explicit CATLStandaloneFile()
 	{}
 
-	bool IsPlaying() const { return (m_state == eAudioStandaloneFileState_Playing) || (m_state == eAudioStandaloneFileState_Stopping); }
+	bool IsPlaying() const { return (m_state == EAudioStandaloneFileState::Playing) || (m_state == EAudioStandaloneFileState::Stopping); }
 
 	CATLAudioObject*            m_pAudioObject = nullptr;
 	Impl::IAudioStandaloneFile* m_pImplData = nullptr;
-	EAudioStandaloneFileState   m_state = eAudioStandaloneFileState_None;
+	EAudioStandaloneFileState   m_state = EAudioStandaloneFileState::None;
 	CHashedString               m_hashedFilename;
 
 	// These variables are only needed when switching middleware
@@ -408,14 +411,14 @@ public:
 	ERequestStatus Reset();
 	ERequestStatus Stop();
 	void           SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
-	bool           IsPlaying() const                        { return m_audioEventState == eAudioEventState_Playing || m_audioEventState == eAudioEventState_PlayingDelayed; }
+	bool           IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
 
-	EDataScope         m_dataScope = eDataScope_None;
+	EDataScope         m_dataScope = EDataScope::None;
 	CATLAudioObject*   m_pAudioObject = nullptr;
 	CATLTrigger const* m_pTrigger = nullptr;
 	TriggerImplId      m_audioTriggerImplId = InvalidTriggerImplId;
 	TriggerInstanceId  m_audioTriggerInstanceId = InvalidTriggerInstanceId;
-	EAudioEventState   m_audioEventState = eAudioEventState_None;
+	EEventState        m_state = EEventState::None;
 	Impl::IAudioEvent* m_pImplData = nullptr;
 };
 
@@ -428,8 +431,8 @@ public:
 		, m_size(0)
 		, m_useCount(0)
 		, m_memoryBlockAlignment(MEMORY_ALLOCATION_ALIGNMENT)
-		, m_flags(eAudioFileFlags_NotFound)
-		, m_dataScope(eDataScope_All)
+		, m_flags(EAudioFileFlags::NotFound)
+		, m_dataScope(EDataScope::All)
 		, m_streamTaskType(eStreamTaskTypeCount)
 		, m_pMemoryBlock(nullptr)
 		, m_pReadStream(nullptr)
@@ -449,7 +452,7 @@ public:
 	size_t                             m_size;
 	size_t                             m_useCount;
 	size_t                             m_memoryBlockAlignment;
-	EnumFlagsType                      m_flags;
+	EAudioFileFlags                    m_flags;
 	EDataScope                         m_dataScope;
 	EStreamTaskType                    m_streamTaskType;
 	_smart_ptr<ICustomMemoryBlock>     m_pMemoryBlock;

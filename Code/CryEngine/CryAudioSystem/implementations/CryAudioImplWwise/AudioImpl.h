@@ -33,8 +33,8 @@ public:
 	virtual ERequestStatus           MuteAll() override;
 	virtual ERequestStatus           UnmuteAll() override;
 	virtual ERequestStatus           StopAllSounds() override;
-	virtual void                     GamepadConnected(TAudioGamepadUniqueID const deviceUniqueID) override;
-	virtual void                     GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID) override;
+	virtual void                     GamepadConnected(AudioGamepadUniqueId const deviceUniqueID) override;
+	virtual void                     GamepadDisconnected(AudioGamepadUniqueId const deviceUniqueID) override;
 	virtual void                     OnAudioSystemRefresh() override;
 	virtual void                     SetLanguage(char const* const szLanguage) override;
 	virtual ERequestStatus           RegisterInMemoryFile(SAudioFileEntryInfo* const pAudioFileEntry) override;
@@ -94,7 +94,7 @@ private:
 	CryFixedStringT<MaxFilePathLength> m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength> m_localizedSoundBankFolder;
 
-	typedef std::map<TAudioGamepadUniqueID, AkUInt8> AudioInputDevices;
+	typedef std::map<AudioGamepadUniqueId, AkUInt8> AudioInputDevices;
 	AudioInputDevices m_mapInputDevices;
 
 #if !defined(WWISE_FOR_RELEASE)

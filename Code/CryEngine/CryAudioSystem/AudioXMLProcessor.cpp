@@ -109,7 +109,7 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 								}
 								else
 								{
-									g_audioLogger.Log(eAudioLogType_Warning, "Unknown AudioConfig node: %s", sAudioConfigNodeTag);
+									g_logger.Log(ELogType::Warning, "Unknown AudioConfig node: %s", sAudioConfigNodeTag);
 									CRY_ASSERT(false);
 								}
 							}
@@ -128,13 +128,13 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 
 	switch (dataScope)
 	{
-	case eDataScope_Global:
+	case EDataScope::Global:
 		{
 			szDataScope = "Global";
 
 			break;
 		}
-	case eDataScope_LevelSpecific:
+	case EDataScope::LevelSpecific:
 		{
 			szDataScope = "Level Specific";
 
@@ -143,7 +143,7 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 	}
 
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
-	g_audioLogger.Log(eAudioLogType_Warning, "Parsed controls data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
+	g_logger.Log(ELogType::Warning, "Parsed controls data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -216,7 +216,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 								}
 								else
 								{
-									g_audioLogger.Log(eAudioLogType_Warning, "Unknown AudioConfig node: %s", szAudioConfigNodeTag);
+									g_logger.Log(ELogType::Warning, "Unknown AudioConfig node: %s", szAudioConfigNodeTag);
 								}
 							}
 						}
@@ -234,13 +234,13 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 
 	switch (dataScope)
 	{
-	case eDataScope_Global:
+	case EDataScope::Global:
 		{
 			szDataScope = "Global";
 
 			break;
 		}
-	case eDataScope_LevelSpecific:
+	case EDataScope::LevelSpecific:
 		{
 			szDataScope = "Level Specific";
 
@@ -249,7 +249,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 	}
 
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
-	g_audioLogger.Log(eAudioLogType_Warning, "Parsed preloads data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
+	g_logger.Log(ELogType::Warning, "Parsed preloads data in \"%s\" for data scope \"%s\" in %.3f ms!", szFolderPath, szDataScope, duration);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -265,7 +265,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CATLTrigger const* const pTrigger = iterTriggers->second;
 
-			if ((pTrigger->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pTrigger->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioTrigger(pTrigger);
 				iterTriggers = m_triggers.erase(iterTriggers);
@@ -283,7 +283,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CParameter const* const pParameter = iterParameters->second;
 
-			if ((pParameter->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pParameter->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioParameter(pParameter);
 				iterParameters = m_parameters.erase(iterParameters);
@@ -301,7 +301,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CATLSwitch const* const pSwitch = iterSwitches->second;
 
-			if ((pSwitch->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pSwitch->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioSwitch(pSwitch);
 				iterSwitches = m_switches.erase(iterSwitches);
@@ -319,7 +319,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CATLAudioEnvironment const* const pEnvironment = iterEnvironments->second;
 
-			if ((pEnvironment->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pEnvironment->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioEnvironment(pEnvironment);
 				iterEnvironments = m_environments.erase(iterEnvironments);
@@ -354,7 +354,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 				szAudioPreloadRequestName = pPreloadRequestNode->getAttr(SATLXMLTags::szATLNameAttribute);
 				audioPreloadRequestId = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
 			}
-			else if (dataScope == eDataScope_LevelSpecific)
+			else if (dataScope == EDataScope::LevelSpecific)
 			{
 				szAudioPreloadRequestName = szFolderName;
 				audioPreloadRequestId = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
@@ -437,7 +437,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 						}
 						else
 						{
-							g_audioLogger.Log(eAudioLogType_Warning, "Preload request \"%s\" could not create file entry from tag \"%s\"!", szAudioPreloadRequestName, pFileListParentNode->getChild(k)->getTag());
+							g_logger.Log(ELogType::Warning, "Preload request \"%s\" could not create file entry from tag \"%s\"!", szAudioPreloadRequestName, pFileListParentNode->getChild(k)->getTag());
 						}
 					}
 
@@ -469,7 +469,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "Preload request \"%s\" already exists! Skipping this entry!", szAudioPreloadRequestName);
+				g_logger.Log(ELogType::Error, "Preload request \"%s\" already exists! Skipping this entry!", szAudioPreloadRequestName);
 			}
 		}
 	}
@@ -487,7 +487,7 @@ void CAudioXMLProcessor::ClearPreloadsData(EDataScope const dataScope)
 		{
 			CATLPreloadRequest const* const pRequest = iRemover->second;
 
-			if ((pRequest->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pRequest->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioPreloadRequest(pRequest);
 				m_preloadRequests.erase(iRemover++);
@@ -546,7 +546,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 						}
 						else
 						{
-							g_audioLogger.Log(eAudioLogType_Warning, "Could not parse an Environment Implementation with XML tag %s", pEnvironmentImplNode->getTag());
+							g_logger.Log(ELogType::Warning, "Could not parse an Environment Implementation with XML tag %s", pEnvironmentImplNode->getTag());
 						}
 					}
 				}
@@ -569,7 +569,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "AudioEnvironment \"%s\" already exists!", szAudioEnvironmentName);
+				g_logger.Log(ELogType::Error, "AudioEnvironment \"%s\" already exists!", szAudioEnvironmentName);
 				CRY_ASSERT(false);
 			}
 		}
@@ -626,7 +626,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 						}
 						else
 						{
-							g_audioLogger.Log(eAudioLogType_Warning, "Could not parse a Trigger Implementation with XML tag %s", pTriggerImplNode->getTag());
+							g_logger.Log(ELogType::Warning, "Could not parse a Trigger Implementation with XML tag %s", pTriggerImplNode->getTag());
 						}
 					}
 				}
@@ -646,7 +646,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 			}
 			else
 			{
-				g_audioLogger.Log(eAudioLogType_Error, "trigger \"%s\" already exists!", szAudioTriggerName);
+				g_logger.Log(ELogType::Error, "trigger \"%s\" already exists!", szAudioTriggerName);
 				CRY_ASSERT(false);
 			}
 		}
@@ -839,8 +839,8 @@ IAudioSwitchStateImpl const* CAudioXMLProcessor::NewInternalAudioSwitchState(Xml
 	}
 	else
 	{
-		g_audioLogger.Log(
-		  eAudioLogType_Warning,
+		g_logger.Log(
+		  ELogType::Warning,
 		  "An ATLSwitchRequest %s inside ATLSwitchState needs to have exactly one ATLValue.",
 		  sInternalSwitchNodeName);
 	}

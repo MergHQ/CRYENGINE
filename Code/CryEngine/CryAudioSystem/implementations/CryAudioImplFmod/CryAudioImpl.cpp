@@ -17,7 +17,7 @@ using namespace CryAudio;
 using namespace CryAudio::Impl::Fmod;
 
 // Define global objects.
-CAudioLogger g_audioImplLogger;
+CLogger g_implLogger;
 CAudioImplCVars CryAudio::Impl::Fmod::g_audioImplCVars;
 
 #if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
@@ -60,18 +60,18 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		g_audioImplMemoryPoolSecondary.InitMem(secondarySize, (uint8*)pSecondaryMemory);
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
-		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplFmod::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
-		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_CallbackOnExternalOrCallingThread);
+		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplFmod::OnAudioEvent, nullptr, ESystemEvents::ImplSet);
+		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
 		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplFmod::OnAudioEvent, nullptr);
 
 		if (m_bSuccess)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplFmod loaded");
+			g_implLogger.Log(ELogType::Always, "CryAudioImplFmod loaded");
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplFmod failed to load");
+			g_implLogger.Log(ELogType::Error, "CryAudioImplFmod failed to load");
 		}
 
 		return m_bSuccess;
@@ -80,7 +80,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 	//////////////////////////////////////////////////////////////////////////
 	static void OnAudioEvent(SRequestInfo const* const pAudioRequestInfo)
 	{
-		m_bSuccess = pAudioRequestInfo->requestResult == eRequestResult_Success;
+		m_bSuccess = pAudioRequestInfo->requestResult == ERequestResult::Success;
 	}
 
 	static bool m_bSuccess;

@@ -402,9 +402,9 @@ CDialogScriptView::CDialogScriptView()
 
 	m_pNewInplaceList = new MyCXTPReportInplaceList();
 
-	CryAudio::SCreateObjectData const objectData("Dialog Lines trigger preview", CryAudio::eOcclusionType_Ignore);
+	CryAudio::SCreateObjectData const objectData("Dialog Lines trigger preview", CryAudio::EOcclusionType::Ignore);
 	m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
-	gEnv->pAudioSystem->AddRequestListener(&CDialogScriptView::OnAudioTriggerFinished, m_pIAudioObject, CryAudio::eSystemEvent_TriggerFinished);
+	gEnv->pAudioSystem->AddRequestListener(&CDialogScriptView::OnAudioTriggerFinished, m_pIAudioObject, CryAudio::ESystemEvents::TriggerFinished);
 }
 
 //////////////////////////////////////////////////////////////////////////

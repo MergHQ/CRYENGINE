@@ -125,7 +125,7 @@ bool CAudioStandaloneFile::IsReady()
 
 		if (state == FMOD_OPENSTATE_ERROR)
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Failed to load audio file %s", m_fileName.c_str());
+			g_implLogger.Log(ELogType::Error, "Failed to load audio file %s", m_fileName.c_str());
 		}
 	}
 

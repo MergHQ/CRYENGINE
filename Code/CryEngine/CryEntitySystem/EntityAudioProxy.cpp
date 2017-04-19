@@ -503,7 +503,7 @@ void CEntityComponentAudio::AudioAuxObjectsMoveWithEntity(bool const bCanMoveWit
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::AddAsListenerToAudioAuxObject(AuxObjectId const audioAuxObjectId, void (* func)(SRequestInfo const* const), EnumFlagsType const eventMask)
+void CEntityComponentAudio::AddAsListenerToAudioAuxObject(AuxObjectId const audioAuxObjectId, void (* func)(SRequestInfo const* const), ESystemEvents const eventMask)
 {
 	AudioAuxObjects::const_iterator const iter(m_mapAuxAudioProxies.find(audioAuxObjectId));
 
@@ -593,7 +593,7 @@ AuxObjectId CEntityComponentAudio::CreateAudioAuxObject()
 		szName = name.c_str();
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 
-		SCreateObjectData const objectData(szName, eOcclusionType_Ignore, m_pEntity->GetWorldTM(), m_pEntity->GetId(), true);
+		SCreateObjectData const objectData(szName, EOcclusionType::Ignore, m_pEntity->GetWorldTM(), m_pEntity->GetId(), true);
 		IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
 		m_mapAuxAudioProxies.insert(AudioAuxObjectPair(++m_audioAuxObjectIdCounter, SAudioAuxObjectWrapper(pIObject)));
 		audioAuxObjectId = m_audioAuxObjectIdCounter;

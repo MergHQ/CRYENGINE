@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <CryAudio/IAudioSystem.h>
 
 class CEditorDialogScript;
 class CDialogScriptView;

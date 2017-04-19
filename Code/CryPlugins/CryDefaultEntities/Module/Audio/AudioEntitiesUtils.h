@@ -19,7 +19,7 @@ enum class EAreaState
 	Inside
 };
 
-static int constexpr numOcclusionTypes = static_cast<int>(CryAudio::eOcclusionType_Count - 1);
+static int constexpr numOcclusionTypes = static_cast<int>(CryAudio::EOcclusionType::Count - 1);
 
 class AudioEntitiesUtils
 {
