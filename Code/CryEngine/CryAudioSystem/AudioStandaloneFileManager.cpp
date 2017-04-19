@@ -93,19 +93,19 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float p
 
 		switch (pStandaloneFile->m_state)
 		{
-		case eAudioStandaloneFileState_Playing:
+		case EAudioStandaloneFileState::Playing:
 			{
 				pColor = itemPlayingColor;
 
 				break;
 			}
-		case eAudioStandaloneFileState_Loading:
+		case EAudioStandaloneFileState::Loading:
 			{
 				pColor = itemLoadingColor;
 
 				break;
 			}
-		case eAudioStandaloneFileState_Stopping:
+		case EAudioStandaloneFileState::Stopping:
 			{
 				pColor = itemStoppingColor;
 

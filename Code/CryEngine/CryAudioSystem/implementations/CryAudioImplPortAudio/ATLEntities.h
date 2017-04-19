@@ -18,7 +18,7 @@ public:
 	virtual ~CAudioListener() override = default;
 
 	// IAudioListener
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return eRequestStatus_Success; }
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return ERequestStatus::Success; }
 	// ~IAudioListener
 
 	CAudioListener(CAudioListener const&) = delete;
@@ -91,6 +91,6 @@ public:
 	CAudioStandaloneFile& operator=(CAudioStandaloneFile const&) = delete;
 	CAudioStandaloneFile& operator=(CAudioStandaloneFile&&) = delete;
 };
-}
-}
-}
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

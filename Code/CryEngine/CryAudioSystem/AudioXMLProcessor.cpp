@@ -128,13 +128,13 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 
 	switch (dataScope)
 	{
-	case eDataScope_Global:
+	case EDataScope::Global:
 		{
 			szDataScope = "Global";
 
 			break;
 		}
-	case eDataScope_LevelSpecific:
+	case EDataScope::LevelSpecific:
 		{
 			szDataScope = "Level Specific";
 
@@ -234,13 +234,13 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 
 	switch (dataScope)
 	{
-	case eDataScope_Global:
+	case EDataScope::Global:
 		{
 			szDataScope = "Global";
 
 			break;
 		}
-	case eDataScope_LevelSpecific:
+	case EDataScope::LevelSpecific:
 		{
 			szDataScope = "Level Specific";
 
@@ -265,7 +265,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CATLTrigger const* const pTrigger = iterTriggers->second;
 
-			if ((pTrigger->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pTrigger->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioTrigger(pTrigger);
 				iterTriggers = m_triggers.erase(iterTriggers);
@@ -283,7 +283,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CParameter const* const pParameter = iterParameters->second;
 
-			if ((pParameter->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pParameter->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioParameter(pParameter);
 				iterParameters = m_parameters.erase(iterParameters);
@@ -301,7 +301,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CATLSwitch const* const pSwitch = iterSwitches->second;
 
-			if ((pSwitch->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pSwitch->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioSwitch(pSwitch);
 				iterSwitches = m_switches.erase(iterSwitches);
@@ -319,7 +319,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CATLAudioEnvironment const* const pEnvironment = iterEnvironments->second;
 
-			if ((pEnvironment->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pEnvironment->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioEnvironment(pEnvironment);
 				iterEnvironments = m_environments.erase(iterEnvironments);
@@ -354,7 +354,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 				szAudioPreloadRequestName = pPreloadRequestNode->getAttr(SATLXMLTags::szATLNameAttribute);
 				audioPreloadRequestId = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
 			}
-			else if (dataScope == eDataScope_LevelSpecific)
+			else if (dataScope == EDataScope::LevelSpecific)
 			{
 				szAudioPreloadRequestName = szFolderName;
 				audioPreloadRequestId = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
@@ -487,7 +487,7 @@ void CAudioXMLProcessor::ClearPreloadsData(EDataScope const dataScope)
 		{
 			CATLPreloadRequest const* const pRequest = iRemover->second;
 
-			if ((pRequest->GetDataScope() == dataScope) || dataScope == eDataScope_All)
+			if ((pRequest->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
 				DeleteAudioPreloadRequest(pRequest);
 				m_preloadRequests.erase(iRemover++);

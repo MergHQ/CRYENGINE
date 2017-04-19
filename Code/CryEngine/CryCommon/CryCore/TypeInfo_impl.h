@@ -186,7 +186,7 @@ Array<CTypeInfo const*> TypeInfoArray1(T const* pt)
 		  }                                                        \
 
 		#define ENUM_ELEM_INFO(Scope, Elem) \
-		  { (CEnumDef::TValue)Scope Elem, # Elem },
+		  { static_cast<CEnumDef::TValue>(Scope Elem), # Elem },
 
 	#else // ENABLE_TYPE_INFO_NAMES
 

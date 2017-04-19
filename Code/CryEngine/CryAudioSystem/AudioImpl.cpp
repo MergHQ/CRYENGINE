@@ -9,35 +9,35 @@ using namespace CryAudio::Impl::Null;
 
 struct SNullAudioEvent final : IAudioEvent
 {
-	virtual ERequestStatus Stop() override { return eRequestStatus_Success; }
+	virtual ERequestStatus Stop() override { return ERequestStatus::Success; }
 };
 
 struct SNullAudioListener final : IAudioListener
 {
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return eRequestStatus_Success; }
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return ERequestStatus::Success; }
 };
 
 struct SNullAudioTrigger final : IAudioTrigger
 {
-	virtual ERequestStatus Load() const override                                       { return eRequestStatus_Success; }
-	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
-	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return eRequestStatus_Success; }
-	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
+	virtual ERequestStatus Load() const override                                       { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                     { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return ERequestStatus::Success; }
 };
 
 struct SNullAudioObject final : IAudioObject
 {
-	virtual ERequestStatus Update() override                                                                                   { return eRequestStatus_Success; }
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override                                     { return eRequestStatus_Success; }
-	virtual ERequestStatus SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount) override      { return eRequestStatus_Success; }
-	virtual ERequestStatus SetParameter(IParameter const* const pIAudioParameter, float const value) override                  { return eRequestStatus_Success; }
-	virtual ERequestStatus SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState) override                          { return eRequestStatus_Success; }
-	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override                    { return eRequestStatus_Success; }
-	virtual ERequestStatus ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent) override { return eRequestStatus_Success; }
-	virtual ERequestStatus StopAllTriggers() override                                                                          { return eRequestStatus_Success; }
-	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override                                               { return eRequestStatus_Success; }
-	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override                                               { return eRequestStatus_Success; }
-	virtual ERequestStatus SetName(char const* const szName) override                                                          { return eRequestStatus_Success; }
+	virtual ERequestStatus Update() override                                                                                   { return ERequestStatus::Success; }
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override                                     { return ERequestStatus::Success; }
+	virtual ERequestStatus SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount) override      { return ERequestStatus::Success; }
+	virtual ERequestStatus SetParameter(IParameter const* const pIAudioParameter, float const value) override                  { return ERequestStatus::Success; }
+	virtual ERequestStatus SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState) override                          { return ERequestStatus::Success; }
+	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override                    { return ERequestStatus::Success; }
+	virtual ERequestStatus ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent) override { return ERequestStatus::Success; }
+	virtual ERequestStatus StopAllTriggers() override                                                                          { return ERequestStatus::Success; }
+	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override                                               { return ERequestStatus::Success; }
+	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override                                               { return ERequestStatus::Success; }
+	virtual ERequestStatus SetName(char const* const szName) override                                                          { return ERequestStatus::Success; }
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -48,67 +48,67 @@ void CAudioImpl::Update(float const deltaTime)
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const eventPoolSize)
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnBeforeShutDown()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::ShutDown()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::Release()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnLoseFocus()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnGetFocus()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::MuteAll()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::UnmuteAll()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::StopAllSounds()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pAudioFileEntry)
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pAudioFileEntry)
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ ERequestStatus CAudioImpl::ParseAudioFileEntry(XmlNodeRef const pAudioFileEntryN
 	pFileEntryInfo->pFileData = nullptr;
 	pFileEntryInfo->pImplData = nullptr;
 	pFileEntryInfo->szFileName = nullptr;
-	return eRequestStatus_Failure; // This is the correct behavior: the NULL implementation does not recognize any EntryNodes.
+	return ERequestStatus::Failure; // This is the correct behavior: the NULL implementation does not recognize any EntryNodes.
 }
 
 //////////////////////////////////////////////////////////////////////////

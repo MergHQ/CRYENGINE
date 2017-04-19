@@ -13,7 +13,7 @@ public:
 		: m_flags(eFlowNodeAudioTriggerFlags_None)
 		, m_playTriggerId(InvalidControlId)
 		, m_stopTriggerId(InvalidControlId)
-		, m_requestUserData(eRequestFlags_None, this)
+		, m_requestUserData(ERequestFlags::None, this)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -240,7 +240,7 @@ private:
 			{
 			case ePlayMode_Play:
 				{
-					SRequestUserData const userData(eRequestFlags_DoneCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
+					SRequestUserData const userData(ERequestFlags::DoneCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
 					pIEntityAudioComponent->SetCurrentEnvironments();
 					pIEntityAudioComponent->ExecuteTrigger(audioTriggerId, DefaultAuxObjectId, userData);
 
@@ -340,7 +340,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void AddRequestListener()
 	{
-		gEnv->pAudioSystem->AddRequestListener(&CFlowNode_AudioTrigger::OnAudioTriggerFinished, this, eSystemEvent_TriggerFinished);
+		gEnv->pAudioSystem->AddRequestListener(&CFlowNode_AudioTrigger::OnAudioTriggerFinished, this, ESystemEvents::TriggerFinished);
 		m_flags |= eFlowNodeAudioTriggerFlags_IsListener;
 	}
 

@@ -23,11 +23,11 @@ using namespace CryAudio;
 #define TEMPORARY_SOUND_FLAGS
 
 SERIALIZATION_ENUM_BEGIN_NESTED(CryAudio, EOcclusionType, "OcclusionType")
-SERIALIZATION_ENUM(CryAudio::eOcclusionType_Ignore, "ignore_state_name", "Ignore");
-SERIALIZATION_ENUM(CryAudio::eOcclusionType_Adaptive, "adaptive_state_name", "Adaptive");
-SERIALIZATION_ENUM(CryAudio::eOcclusionType_Low, "low_state_name", "Low");
-SERIALIZATION_ENUM(CryAudio::eOcclusionType_Medium, "medium_state_name", "Medium");
-SERIALIZATION_ENUM(CryAudio::eOcclusionType_High, "high_state_name", "High");
+SERIALIZATION_ENUM(CryAudio::EOcclusionType::Ignore, "ignore_state_name", "Ignore");
+SERIALIZATION_ENUM(CryAudio::EOcclusionType::Adaptive, "adaptive_state_name", "Adaptive");
+SERIALIZATION_ENUM(CryAudio::EOcclusionType::Low, "low_state_name", "Low");
+SERIALIZATION_ENUM(CryAudio::EOcclusionType::Medium, "medium_state_name", "Medium");
+SERIALIZATION_ENUM(CryAudio::EOcclusionType::High, "high_state_name", "High");
 SERIALIZATION_ENUM_END();
 
 class CAudioContext : public IProceduralContext
@@ -109,7 +109,7 @@ typedef enum
 struct SAudioParams : public IProceduralParams
 {
 	SAudioParams()
-		: audioOcclusionType(eOcclusionType_Ignore)
+		: audioOcclusionType(EOcclusionType::Ignore)
 		, radius(0.0f)
 		, audioParameterValue(0.0f)
 		, synchStop(false)
@@ -172,7 +172,7 @@ public:
 		, m_audioTriggerStartId(InvalidControlId)
 		, m_audioTriggerStopId(InvalidControlId)
 		, m_audioParameterId(InvalidControlId)
-		, m_audioOcclusionType(eOcclusionType_None)
+		, m_audioOcclusionType(EOcclusionType::None)
 		, m_audioParameterValue(0.0f)
 	{
 	}

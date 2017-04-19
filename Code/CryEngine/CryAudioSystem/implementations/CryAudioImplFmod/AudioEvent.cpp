@@ -161,5 +161,5 @@ ERequestStatus CAudioEvent::Stop()
 {
 	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
 	ASSERT_FMOD_OK;
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }

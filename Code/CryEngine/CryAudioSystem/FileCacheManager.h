@@ -15,13 +15,14 @@ struct ICustomMemoryHeap;
 class CATLAudioFileEntry;
 
 // Filter for drawing debug info to the screen
-enum EAudioFileCacheManagerDebugFilter
+enum class EAudioFileCacheManagerDebugFilter : EnumFlagsType
 {
-	eAFCMDF_ALL             = 0,
-	eAFCMDF_GLOBALS         = BIT(6),   // a
-	eAFCMDF_LEVEL_SPECIFICS = BIT(7),   // b
-	eAFCMDF_USE_COUNTED     = BIT(8),   // c
+	All            = 0,
+	Globals        = BIT(6), // a
+	LevelSpecifics = BIT(7), // b
+	UseCounted     = BIT(8), // c
 };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioFileCacheManagerDebugFilter);
 
 class CFileCacheManager final : public IStreamCallback
 {

@@ -11,6 +11,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryGame/IGameFramework.h>
 #include "DialogLineDatabase.h"
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace
 {
@@ -32,7 +33,8 @@ float CSpeakerManager::s_defaultPauseAfterLines = 0.2f;
 CSpeakerManager::CSpeakerManager() : m_listeners(2)
 {
 	//the audio callbacks we are interested in, all related to audio-asset (trigger or standaloneFile) finished or failed to start
-	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, CryAudio::eSystemEvent_TriggerExecuted | CryAudio::eSystemEvent_TriggerFinished | CryAudio::eSystemEvent_FilePlay | CryAudio::eSystemEvent_FileStarted | CryAudio::eSystemEvent_FileStopped);
+  CryAudio::ESystemEvents events = CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished | CryAudio::ESystemEvents::FilePlay | CryAudio::ESystemEvents::FileStarted | CryAudio::ESystemEvents::FileStopped;
+	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, events);
 
 	m_audioRtpcIdGlobal = CryAudio::InvalidControlId;
 	m_audioRtpcIdLocal = CryAudio::InvalidControlId;
@@ -361,7 +363,7 @@ DRS::ISpeakerManager::IListener::eLineEvent CSpeakerManager::StartSpeaking(DRS::
 				{
 					//soft interruption: we execute the stop trigger on the old line. That trigger should cause the old line to end after a while. And only then, do we start the playback of the next line
 					pLine = (pLineSet) ? pLineSet->PickLine() : nullptr;
-					CryAudio::SRequestUserData const userData(CryAudio::eRequestFlags_DoneCallbackOnExternalThread, this, (void* const)(pLine), (void* const)(activateSpeaker.pActor));
+					CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, (void* const)(pLine), (void* const)(activateSpeaker.pActor));
 					if (!pEntityAudioProxy->ExecuteTrigger(activateSpeaker.stopTriggerID, activateSpeaker.speechAuxObjectId, userData))
 					{
 						//failed to start the stop trigger, therefore we fallback to hard-interruption by stopping the start trigger
@@ -536,7 +538,7 @@ void CSpeakerManager::Reset()
 //--------------------------------------------------------------------------------------------------
 void CSpeakerManager::ReleaseSpeakerAudioProxy(SSpeakInfo& speakerInfo, bool stopTrigger)
 {
-	if ((speakerInfo.speechAuxObjectId !=  CryAudio::DefaultAuxObjectId && speakerInfo.speechAuxObjectId != speakerInfo.pActor->GetAuxAudioObjectID()) || stopTrigger)
+	if ((speakerInfo.speechAuxObjectId != CryAudio::DefaultAuxObjectId && speakerInfo.speechAuxObjectId != speakerInfo.pActor->GetAuxAudioObjectID()) || stopTrigger)
 	{
 		IEntity* pEntity = speakerInfo.pActor->GetLinkedEntity();
 		if (pEntity)
@@ -572,9 +574,9 @@ void CSpeakerManager::OnAudioCallback(const CryAudio::SRequestInfo* const pAudio
 	const CDialogLine* pDialogLine = reinterpret_cast<const CDialogLine*>(pAudioRequestInfo->pUserData);
 	const CResponseActor* pActor = reinterpret_cast<const CResponseActor*>(pAudioRequestInfo->pUserDataOwner);
 
-	if (pAudioRequestInfo->requestResult == CryAudio::eRequestResult_Failure &&
-	    (pAudioRequestInfo->audioSystemEvent == CryAudio::eSystemEvent_FilePlay ||
-	     pAudioRequestInfo->audioSystemEvent == CryAudio::eSystemEvent_FileStarted))
+	if (pAudioRequestInfo->requestResult == CryAudio::ERequestResult::Failure &&
+	    (pAudioRequestInfo->systemEvent == CryAudio::ESystemEvents::FilePlay ||
+	     pAudioRequestInfo->systemEvent == CryAudio::ESystemEvents::FileStarted))
 	{
 		//handling of failure executing the start / stop trigger or the standalone file
 		for (SSpeakInfo& speakerInfo : pSpeakerManager->m_activeSpeakers)
@@ -598,8 +600,8 @@ void CSpeakerManager::OnAudioCallback(const CryAudio::SRequestInfo* const pAudio
 			}
 		}
 	}
-	else if (pAudioRequestInfo->audioSystemEvent == CryAudio::eSystemEvent_TriggerFinished ||
-	         pAudioRequestInfo->audioSystemEvent == CryAudio::eSystemEvent_FileStopped)
+	else if (pAudioRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerFinished ||
+	         pAudioRequestInfo->systemEvent == CryAudio::ESystemEvents::FileStopped)
 	{
 		for (SSpeakInfo& speakerInfo : pSpeakerManager->m_activeSpeakers)
 		{
@@ -779,7 +781,7 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 				pSpeakerInfoToUse->speechAuxObjectId = CryAudio::DefaultAuxObjectId;
 		}
 
-		CryAudio::SRequestUserData const userData(CryAudio::eRequestFlags_DoneCallbackOnExternalThread, this, (void* const)(pSpeakerInfoToUse->pPickedLine), (void* const)(pSpeakerInfoToUse->pActor));
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, (void* const)(pSpeakerInfoToUse->pPickedLine), (void* const)(pSpeakerInfoToUse->pActor));
 
 		bool bAudioPlaybackStarted = true;
 

@@ -26,10 +26,10 @@ struct SAudioTrigger final : public IAudioTrigger
 	SAudioTrigger& operator=(SAudioTrigger&&) = delete;
 
 	// IAudioTrigger
-	virtual ERequestStatus Load() const override                                       { return eRequestStatus_Success; }
-	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
-	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return eRequestStatus_Success; }
-	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
+	virtual ERequestStatus Load() const override                                       { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                                     { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return ERequestStatus::Success; }
 	// ~ IAudioTrigger
 
 	SampleId sampleId = 0;

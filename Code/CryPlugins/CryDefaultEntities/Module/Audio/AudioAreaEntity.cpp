@@ -177,7 +177,7 @@ void CAudioAreaEntity::OnResetState()
 	gEnv->pAudioSystem->GetAudioTriggerId(m_environmentName, environmentId);
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_occlusionType]);
+	m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
 
 	m_pProxy->SetFadeDistance(m_fadeDistance);
 	m_pProxy->SetEnvironmentFadeDistance(m_environmentFadeDistance);

@@ -98,16 +98,16 @@ void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes cons
 
 		if (radius <= 0.0f || distance < radius)
 		{
-			if ((pAudioObject->GetFlags() & eAudioObjectFlags_Virtual) > 0)
+			if ((pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) > 0)
 			{
-				pAudioObject->RemoveFlag(eAudioObjectFlags_Virtual);
+				pAudioObject->RemoveFlag(EAudioObjectFlags::Virtual);
 			}
 		}
 		else
 		{
-			if ((pAudioObject->GetFlags() & eAudioObjectFlags_Virtual) == 0)
+			if ((pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) == 0)
 			{
-				pAudioObject->SetFlag(eAudioObjectFlags_Virtual);
+				pAudioObject->SetFlag(EAudioObjectFlags::Virtual);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pAudioObject->ResetObstructionRays();
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -236,7 +236,7 @@ void CAudioObjectManager::ReleasePendingRays()
 //////////////////////////////////////////////////////////////////////////
 bool CAudioObjectManager::IsActive(CATLAudioObject const* const pAudioObject) const
 {
-	if ((pAudioObject->GetFlags() & eAudioObjectFlags_Virtual) == 0)
+	if ((pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) == 0)
 	{
 		return HasActiveData(pAudioObject);
 	}
@@ -335,7 +335,7 @@ void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, flo
 		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_audioCVars.m_pAudioObjectsDebugFilter->GetString());
 		lowerCaseSearchString.MakeLower();
 		bool const bHasActiveData = HasActiveData(pAudioObject);
-		bool const bIsVirtual = (pAudioObject->GetFlags() & eAudioObjectFlags_Virtual) > 0;
+		bool const bIsVirtual = (pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) > 0;
 		bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseAudioObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 		bool const bDraw = bStringFound && ((g_audioCVars.m_showActiveAudioObjectsOnly == 0) || (g_audioCVars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
 

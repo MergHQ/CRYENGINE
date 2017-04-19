@@ -42,15 +42,16 @@ SChannelData g_channels[s_numMixChannels];
 typedef std::queue<int> TChannelQueue;
 TChannelQueue g_freeChannels;
 
-enum EChannelFinishedRequestQueueId
+enum class EChannelFinishedRequestQueueId : EnumFlagsType
 {
-	eChannelFinishedRequestQueueId_One = 0,
-	eChannelFinishedRequestQueueId_Two = 1,
-	eChannelFinishedRequestQueueId_Count
+	One,
+	Two,
+	Count
 };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EChannelFinishedRequestQueueId);
 
 typedef std::deque<int> ChannelFinishedRequests;
-ChannelFinishedRequests g_channelFinishedRequests[eChannelFinishedRequestQueueId_Count];
+ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
 CryCriticalSection g_channelFinishedCriticalSection;
 
 // Audio Objects
@@ -184,7 +185,7 @@ void ChannelFinishedPlaying(int nChannel)
 	if (nChannel >= 0 && nChannel < s_numMixChannels)
 	{
 		CryAutoLock<CryCriticalSection> autoLock(g_channelFinishedCriticalSection);
-		g_channelFinishedRequests[eChannelFinishedRequestQueueId_One].push_back(nChannel);
+		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].push_back(nChannel);
 	}
 }
 
@@ -751,10 +752,10 @@ SAudioTrigger* SoundEngine::CreateEventData()
 
 void SoundEngine::Update()
 {
-	ProcessChannelFinishedRequests(g_channelFinishedRequests[eChannelFinishedRequestQueueId_Two]);
+	ProcessChannelFinishedRequests(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
 	{
 		CryAutoLock<CryCriticalSection> oAutoLock(g_channelFinishedCriticalSection);
-		g_channelFinishedRequests[eChannelFinishedRequestQueueId_One].swap(g_channelFinishedRequests[eChannelFinishedRequestQueueId_Two]);
+		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].swap(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
 	}
 
 	AudioObjectList::const_iterator audioObjectIt = g_audioObjects.begin();

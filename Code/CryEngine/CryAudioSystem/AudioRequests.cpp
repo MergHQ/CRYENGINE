@@ -27,36 +27,36 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 
 	switch (requestType)
 	{
-	case eAudioRequestType_AudioManagerRequest:
+	case EAudioRequestType::AudioManagerRequest:
 		{
 			SAudioManagerRequestDataBase const* const pBase = static_cast<SAudioManagerRequestDataBase const* const>(pRequestData);
 
 			switch (pBase->type)
 			{
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_SetAudioImpl)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReleaseAudioImpl)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_RefreshAudioSystem)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ConstructAudioListener)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_LoseFocus)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_GetFocus)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_MuteAll)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_UnmuteAll)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_StopAllSounds)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ParseControlsData)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ParsePreloadsData)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ClearControlsData)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ClearPreloadsData)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_PreloadSingleRequest)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_UnloadSingleRequest)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_UnloadAFCMDataByScope)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_DrawDebugInfo)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_AddRequestListener)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_RemoveRequestListener)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ChangeLanguage)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_RetriggerAudioControls)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReleasePendingRays)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReloadControlsData)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_GetAudioFileData)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::SetAudioImpl)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ReleaseAudioImpl)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::RefreshAudioSystem)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ConstructAudioListener)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::LoseFocus)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetFocus)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::MuteAll)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::UnmuteAll)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::StopAllSounds)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ParseControlsData)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ParsePreloadsData)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ClearControlsData)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ClearPreloadsData)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::PreloadSingleRequest)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::UnloadSingleRequest)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::UnloadAFCMDataByScope)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::DrawDebugInfo)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::AddRequestListener)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::RemoveRequestListener)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ChangeLanguage)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::RetriggerAudioControls)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ReleasePendingRays)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::ReloadControlsData)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetAudioFileData)
 			default:
 				{
 					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio manager request type (%u)", pBase->type);
@@ -68,30 +68,30 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 
 			break;
 		}
-	case eAudioRequestType_AudioObjectRequest:
+	case EAudioRequestType::AudioObjectRequest:
 		{
 			SAudioObjectRequestDataBase const* const pBase = static_cast<SAudioObjectRequestDataBase const* const>(pRequestData);
 
 			switch (pBase->type)
 			{
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_LoadTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_UnloadTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_PlayFile)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopFile)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ExecuteTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ExecuteTriggerEx)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopAllTriggers)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetTransformation)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetParameter)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetSwitchState)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetCurrentEnvironments)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetEnvironment)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ResetEnvironments)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_RegisterObject)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ReleaseObject)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ProcessPhysicsRay)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetName)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::LoadTrigger)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::UnloadTrigger)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::PlayFile)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::StopFile)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::ExecuteTrigger)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::ExecuteTriggerEx)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::StopTrigger)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::StopAllTriggers)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetTransformation)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetParameter)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetSwitchState)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetCurrentEnvironments)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetEnvironment)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::ResetEnvironments)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::RegisterObject)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::ReleaseObject)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::ProcessPhysicsRay)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetName)
 			default:
 				{
 					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio object request type (%u)", pBase->type);
@@ -102,14 +102,14 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 			}
 			break;
 		}
-	case eAudioRequestType_AudioListenerRequest:
+	case EAudioRequestType::AudioListenerRequest:
 		{
 			SAudioListenerRequestDataBase const* const pBase = static_cast<SAudioListenerRequestDataBase const* const>(pRequestData);
 
 			switch (pBase->type)
 			{
-				AL_REQUEST_BLOCK(eAudioListenerRequestType_SetTransformation)
-				AL_REQUEST_BLOCK(eAudioListenerRequestType_ReleaseListener)
+				AL_REQUEST_BLOCK(EAudioListenerRequestType::SetTransformation)
+				AL_REQUEST_BLOCK(EAudioListenerRequestType::ReleaseListener)
 			default:
 				{
 					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio listener request type (%u)", pBase->type);
@@ -121,19 +121,19 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 
 			break;
 		}
-	case eAudioRequestType_AudioCallbackManagerRequest:
+	case EAudioRequestType::AudioCallbackManagerRequest:
 		{
 			SAudioCallbackManagerRequestDataBase const* const pBase = static_cast<SAudioCallbackManagerRequestDataBase const* const>(pRequestData);
 
 			switch (pBase->type)
 			{
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportStartedEvent)
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportFinishedEvent)
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance)
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportStartedFile)
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportStoppedFile)
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportVirtualizedEvent)
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportPhysicalizedEvent)
+				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportStartedEvent)
+				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportFinishedEvent)
+				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportFinishedTriggerInstance)
+				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportStartedFile)
+				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportStoppedFile)
+				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportVirtualizedEvent)
+				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportPhysicalizedEvent)
 			default:
 				{
 					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio callback manager request type (%u)", pBase->type);

@@ -203,7 +203,7 @@ public:
 
 	void Initialize() override
 	{
-		CryAudio::SCreateObjectData const objectData("Character Tool", CryAudio::eOcclusionType_Ignore);
+		CryAudio::SCreateObjectData const objectData("Character Tool", CryAudio::EOcclusionType::Ignore);
 		m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 		SetPredefinedSwitches();
 	}

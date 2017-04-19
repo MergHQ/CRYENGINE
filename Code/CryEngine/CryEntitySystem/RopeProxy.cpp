@@ -312,8 +312,8 @@ void CEntityComponentRope::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 				{
 					audioParams.angleParameter = tempControlId;
 				}
-				
-				CryAudio::EnumFlagsType tempOcclusionType = CryAudio::EOcclusionType::eOcclusionType_Ignore;
+
+				std::underlying_type<CryAudio::EOcclusionType>::type tempOcclusionType;
 				xmlNodeAudio->getAttr("OcclusionType", tempOcclusionType);
 				audioParams.occlusionType = static_cast<CryAudio::EOcclusionType>(tempOcclusionType);
 				xmlNodeAudio->getAttr("SegmentToAttachTo", audioParams.segementToAttachTo);

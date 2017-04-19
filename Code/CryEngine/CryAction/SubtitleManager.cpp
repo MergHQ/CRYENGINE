@@ -37,8 +37,8 @@ void CSubtitleManager::SetEnabled(bool bEnabled)
 		{
 			if (bEnabled)
 			{
-				gEnv->pAudioSystem->AddRequestListener(&CSubtitleManager::OnAudioTriggerStarted, nullptr, eSystemEvent_TriggerExecuted);
-				gEnv->pAudioSystem->AddRequestListener(&CSubtitleManager::OnAudioTriggerFinished, nullptr, eSystemEvent_TriggerFinished);
+				gEnv->pAudioSystem->AddRequestListener(&CSubtitleManager::OnAudioTriggerStarted, nullptr, ESystemEvents::TriggerExecuted);
+				gEnv->pAudioSystem->AddRequestListener(&CSubtitleManager::OnAudioTriggerFinished, nullptr, ESystemEvents::TriggerFinished);
 			}
 			else
 			{

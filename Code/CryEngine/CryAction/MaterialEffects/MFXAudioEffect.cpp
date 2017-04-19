@@ -153,7 +153,7 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 	}
 	else
 	{
-		SCreateObjectData const objectData("MFXAudioEffect", eOcclusionType_Low, params.pos, INVALID_ENTITYID, true);
+		SCreateObjectData const objectData("MFXAudioEffect", EOcclusionType::Low, params.pos, INVALID_ENTITYID, true);
 		IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
 
 		MaterialEffectsUtils::PrepareForAudioTriggerExecution<IObject>(pIObject, m_audioParams, params);

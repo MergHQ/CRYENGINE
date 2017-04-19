@@ -67,7 +67,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 	FileEntryId audioFileEntryId = CryAudio::InvalidFileEntryId;
 	SAudioFileEntryInfo fileEntryInfo;
 
-	if (m_pImpl->ParseAudioFileEntry(pFileNode, &fileEntryInfo) == eRequestStatus_Success)
+	if (m_pImpl->ParseAudioFileEntry(pFileNode, &fileEntryInfo) == ERequestStatus::Success)
 	{
 		CryFixedStringT<MaxFilePathLength> fullPath(m_pImpl->GetAudioFileLocation(&fileEntryInfo));
 		fullPath += CRY_NATIVE_PATH_SEPSTR;
@@ -80,7 +80,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 
 			if (fileEntryInfo.bLocalized)
 			{
-				pNewAudioFileEntry->m_flags |= eAudioFileFlags_Localized;
+				pNewAudioFileEntry->m_flags |= EAudioFileFlags::Localized;
 			}
 
 			audioFileEntryId = static_cast<FileEntryId>(AudioStringToId(pNewAudioFileEntry->m_path.c_str()));
@@ -91,7 +91,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 				if (!bAutoLoad)
 				{
 					// Can now be ref-counted and therefore manually unloaded.
-					pNewAudioFileEntry->m_flags |= eAudioFileFlags_UseCounted;
+					pNewAudioFileEntry->m_flags |= EAudioFileFlags::UseCounted;
 				}
 
 				pNewAudioFileEntry->m_dataScope = dataScope;
@@ -101,7 +101,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 				if (fileSize > 0)
 				{
 					pNewAudioFileEntry->m_size = fileSize;
-					pNewAudioFileEntry->m_flags = (pNewAudioFileEntry->m_flags | eAudioFileFlags_NotCached) & ~eAudioFileFlags_NotFound;
+					pNewAudioFileEntry->m_flags = (pNewAudioFileEntry->m_flags | EAudioFileFlags::NotCached) & ~EAudioFileFlags::NotFound;
 					pNewAudioFileEntry->m_streamTaskType = eStreamTaskTypeSound;
 				}
 				else
@@ -113,10 +113,10 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 			}
 			else
 			{
-				if ((pExisitingAudioFileEntry->m_flags & eAudioFileFlags_UseCounted) > 0 && bAutoLoad)
+				if ((pExisitingAudioFileEntry->m_flags & EAudioFileFlags::UseCounted) > 0 && bAutoLoad)
 				{
 					// This file entry is upgraded from "manual loading" to "auto loading" but needs a reset to "manual loading" again!
-					pExisitingAudioFileEntry->m_flags = (pExisitingAudioFileEntry->m_flags | eAudioFileFlags_NeedsResetToManualLoading) & ~eAudioFileFlags_UseCounted;
+					pExisitingAudioFileEntry->m_flags = (pExisitingAudioFileEntry->m_flags | EAudioFileFlags::NeedsResetToManualLoading) & ~EAudioFileFlags::UseCounted;
 					g_audioLogger.Log(eAudioLogType_Always, "Upgraded file entry from \"manual loading\" to \"auto loading\": %s", pExisitingAudioFileEntry->m_path.c_str());
 				}
 
@@ -147,9 +147,9 @@ bool CFileCacheManager::TryRemoveFileCacheEntry(FileEntryId const audioFileEntry
 			delete pAudioFileEntry;
 			m_audioFileEntries.erase(iter);
 		}
-		else if ((dataScope == eDataScope_LevelSpecific) && ((pAudioFileEntry->m_flags & eAudioFileFlags_NeedsResetToManualLoading) > 0))
+		else if ((dataScope == EDataScope::LevelSpecific) && ((pAudioFileEntry->m_flags & EAudioFileFlags::NeedsResetToManualLoading) > 0))
 		{
-			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | eAudioFileFlags_UseCounted) & ~eAudioFileFlags_NeedsResetToManualLoading;
+			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | EAudioFileFlags::UseCounted) & ~EAudioFileFlags::NeedsResetToManualLoading;
 			g_audioLogger.Log(eAudioLogType_Always, "Downgraded file entry from \"auto loading\" to \"manual loading\": %s", pAudioFileEntry->m_path.c_str());
 		}
 	}
@@ -164,9 +164,9 @@ void CFileCacheManager::UpdateLocalizedFileCacheEntries()
 	{
 		CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 
-		if (pAudioFileEntry != nullptr && (pAudioFileEntry->m_flags & eAudioFileFlags_Localized) > 0)
+		if (pAudioFileEntry != nullptr && (pAudioFileEntry->m_flags & EAudioFileFlags::Localized) > 0)
 		{
-			if ((pAudioFileEntry->m_flags & (eAudioFileFlags_Cached | eAudioFileFlags_Loading)) > 0)
+			if ((pAudioFileEntry->m_flags & (EAudioFileFlags::Cached | EAudioFileFlags::Loading)) > 0)
 			{
 				// The file needs to be unloaded first.
 				size_t const useCount = pAudioFileEntry->m_useCount;
@@ -208,7 +208,7 @@ ERequestStatus CFileCacheManager::TryLoadRequest(PreloadRequestId const audioPre
 		}
 	}
 
-	return (bFullSuccess) ? eRequestStatus_Success : ((bFullFailure) ? eRequestStatus_Failure : eRequestStatus_PartialSuccess);
+	return (bFullSuccess) ? ERequestStatus::Success : ((bFullFailure) ? ERequestStatus::Failure : ERequestStatus::PartialSuccess);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -235,7 +235,7 @@ ERequestStatus CFileCacheManager::TryUnloadRequest(PreloadRequestId const audioP
 		}
 	}
 
-	return (bFullSuccess) ? eRequestStatus_Success : ((bFullFailure) ? eRequestStatus_Failure : eRequestStatus_PartialSuccess);
+	return (bFullSuccess) ? ERequestStatus::Success : ((bFullFailure) ? ERequestStatus::Failure : ERequestStatus::PartialSuccess);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -263,7 +263,7 @@ ERequestStatus CFileCacheManager::UnloadDataByScope(EDataScope const dataScope)
 		++iter;
 	}
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -280,12 +280,12 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CATLAudioFileEntry* const 
 	if (pAudioFileEntry->m_useCount < 1 || bIgnoreUsedCount)
 	{
 		// Must be cached to proceed.
-		if ((pAudioFileEntry->m_flags & eAudioFileFlags_Cached) > 0)
+		if ((pAudioFileEntry->m_flags & EAudioFileFlags::Cached) > 0)
 		{
 			// Only "use-counted" files can become removable!
-			if ((pAudioFileEntry->m_flags & eAudioFileFlags_UseCounted) > 0)
+			if ((pAudioFileEntry->m_flags & EAudioFileFlags::UseCounted) > 0)
 			{
-				pAudioFileEntry->m_flags |= eAudioFileFlags_Removable;
+				pAudioFileEntry->m_flags |= EAudioFileFlags::Removable;
 			}
 
 			if (bNow || bIgnoreUsedCount)
@@ -293,18 +293,18 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CATLAudioFileEntry* const 
 				UncacheFile(pAudioFileEntry);
 			}
 		}
-		else if ((pAudioFileEntry->m_flags & eAudioFileFlags_Loading) > 0)
+		else if ((pAudioFileEntry->m_flags & EAudioFileFlags::Loading) > 0)
 		{
 			g_audioLogger.Log(eAudioLogType_Always, "Trying to remove a loading file cache entry %s", pAudioFileEntry->m_path.c_str());
 
 			// Abort loading and reset the entry.
 			UncacheFile(pAudioFileEntry);
 		}
-		else if ((pAudioFileEntry->m_flags & eAudioFileFlags_MemAllocFail) > 0)
+		else if ((pAudioFileEntry->m_flags & EAudioFileFlags::MemAllocFail) > 0)
 		{
 			// Only reset the entry.
 			g_audioLogger.Log(eAudioLogType_Always, "Resetting a memalloc-failed file cache entry %s", pAudioFileEntry->m_path.c_str());
-			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | eAudioFileFlags_NotCached) & ~eAudioFileFlags_MemAllocFail;
+			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | EAudioFileFlags::NotCached) & ~EAudioFileFlags::MemAllocFail;
 		}
 
 		// The file was either properly uncached, queued for uncache or not cached at all.
@@ -327,19 +327,19 @@ void CFileCacheManager::StreamAsyncOnComplete(IReadStream* pStream, unsigned int
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float const posY)
 {
-	if ((g_audioCVars.m_drawAudioDebug & eADDF_SHOW_FILECACHE_MANAGER_INFO) > 0)
+	if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowFileCacheManagerInfo) > 0)
 	{
-		EDataScope dataScope = eDataScope_All;
+		EDataScope dataScope = EDataScope::All;
 
-		if ((g_audioCVars.m_fileCacheManagerDebugFilter & eAFCMDF_ALL) == 0)
+		if ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::All) == 0)
 		{
-			if ((g_audioCVars.m_fileCacheManagerDebugFilter & eAFCMDF_GLOBALS) > 0)
+			if ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0)
 			{
-				dataScope = eDataScope_Global;
+				dataScope = EDataScope::Global;
 			}
-			else if ((g_audioCVars.m_fileCacheManagerDebugFilter & eAFCMDF_LEVEL_SPECIFICS) > 0)
+			else if ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0)
 			{
-				dataScope = eDataScope_LevelSpecific;
+				dataScope = EDataScope::LevelSpecific;
 			}
 		}
 
@@ -371,29 +371,29 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 		{
 			CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 
-			if (pAudioFileEntry->m_dataScope == eDataScope_Global &&
-			    ((g_audioCVars.m_fileCacheManagerDebugFilter == eAFCMDF_ALL) ||
-			     (g_audioCVars.m_fileCacheManagerDebugFilter & eAFCMDF_GLOBALS) > 0 ||
-			     ((g_audioCVars.m_fileCacheManagerDebugFilter & eAFCMDF_USE_COUNTED) > 0 &&
-			      (pAudioFileEntry->m_flags & eAudioFileFlags_UseCounted) > 0)))
+			if (pAudioFileEntry->m_dataScope == EDataScope::Global &&
+			    ((g_audioCVars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
+			     (g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0 ||
+			     ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
+			      (pAudioFileEntry->m_flags & EAudioFileFlags::UseCounted) > 0)))
 			{
-				if ((pAudioFileEntry->m_flags & eAudioFileFlags_Loading) > 0)
+				if ((pAudioFileEntry->m_flags & EAudioFileFlags::Loading) > 0)
 				{
 					pColor = red;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_MemAllocFail) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::MemAllocFail) > 0)
 				{
 					pColor = blue;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_Removable) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::Removable) > 0)
 				{
 					pColor = green;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_NotCached) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::NotCached) > 0)
 				{
 					pColor = white;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_NotFound) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::NotFound) > 0)
 				{
 					pColor = redish;
 				}
@@ -409,7 +409,7 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 
 				tempString.clear();
 
-				if ((pAudioFileEntry->m_flags & eAudioFileFlags_UseCounted) > 0)
+				if ((pAudioFileEntry->m_flags & EAudioFileFlags::UseCounted) > 0)
 				{
 					if (pAudioFileEntry->m_size < 1024)
 					{
@@ -442,29 +442,29 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 		{
 			CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 
-			if (pAudioFileEntry->m_dataScope == eDataScope_LevelSpecific &&
-			    ((g_audioCVars.m_fileCacheManagerDebugFilter == eAFCMDF_ALL) ||
-			     (g_audioCVars.m_fileCacheManagerDebugFilter & eAFCMDF_LEVEL_SPECIFICS) > 0 ||
-			     ((g_audioCVars.m_fileCacheManagerDebugFilter & eAFCMDF_USE_COUNTED) > 0 &&
-			      (pAudioFileEntry->m_flags & eAudioFileFlags_UseCounted) > 0)))
+			if (pAudioFileEntry->m_dataScope == EDataScope::LevelSpecific &&
+			    ((g_audioCVars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
+			     (g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0 ||
+			     ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
+			      (pAudioFileEntry->m_flags & EAudioFileFlags::UseCounted) > 0)))
 			{
-				if ((pAudioFileEntry->m_flags & eAudioFileFlags_Loading) > 0)
+				if ((pAudioFileEntry->m_flags & EAudioFileFlags::Loading) > 0)
 				{
 					pColor = red;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_MemAllocFail) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::MemAllocFail) > 0)
 				{
 					pColor = blue;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_Removable) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::Removable) > 0)
 				{
 					pColor = green;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_NotCached) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::NotCached) > 0)
 				{
 					pColor = white;
 				}
-				else if ((pAudioFileEntry->m_flags & eAudioFileFlags_NotFound) > 0)
+				else if ((pAudioFileEntry->m_flags & EAudioFileFlags::NotFound) > 0)
 				{
 					pColor = redish;
 				}
@@ -480,7 +480,7 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 
 				tempString.clear();
 
-				if ((pAudioFileEntry->m_flags & eAudioFileFlags_UseCounted) > 0)
+				if ((pAudioFileEntry->m_flags & EAudioFileFlags::UseCounted) > 0)
 				{
 					if (pAudioFileEntry->m_size < 1024)
 					{
@@ -537,8 +537,8 @@ bool CFileCacheManager::DoesRequestFitInternal(size_t const requestSize)
 			CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 
 			if (pAudioFileEntry != nullptr &&
-			    (pAudioFileEntry->m_flags & eAudioFileFlags_Cached) > 0 &&
-			    (pAudioFileEntry->m_flags & eAudioFileFlags_Removable) > 0)
+			    (pAudioFileEntry->m_flags & EAudioFileFlags::Cached) > 0 &&
+			    (pAudioFileEntry->m_flags & EAudioFileFlags::Removable) > 0)
 			{
 				potentialMemoryGain += pAudioFileEntry->m_size;
 			}
@@ -569,12 +569,12 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 	CRY_ASSERT(pAudioFileEntry != nullptr);
 
 	// Must be loading in to proceed.
-	if (pAudioFileEntry != nullptr && (pAudioFileEntry->m_flags & eAudioFileFlags_Loading) > 0)
+	if (pAudioFileEntry != nullptr && (pAudioFileEntry->m_flags & EAudioFileFlags::Loading) > 0)
 	{
 		if (error == 0)
 		{
 			pAudioFileEntry->m_pReadStream = nullptr;
-			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | eAudioFileFlags_Cached) & ~(eAudioFileFlags_Loading | eAudioFileFlags_NotCached);
+			pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | EAudioFileFlags::Cached) & ~(EAudioFileFlags::Loading | EAudioFileFlags::NotCached);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pAudioFileEntry->m_timeCached = gEnv->pTimer->GetAsyncTime();
@@ -656,7 +656,7 @@ void CFileCacheManager::UncacheFile(CATLAudioFileEntry* const pAudioFileEntry)
 	}
 
 	pAudioFileEntry->m_pMemoryBlock = nullptr;
-	pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | eAudioFileFlags_NotCached) & ~(eAudioFileFlags_Cached | eAudioFileFlags_Removable);
+	pAudioFileEntry->m_flags = (pAudioFileEntry->m_flags | EAudioFileFlags::NotCached) & ~(EAudioFileFlags::Cached | EAudioFileFlags::Removable);
 	CRY_ASSERT(pAudioFileEntry->m_useCount == 0);
 	pAudioFileEntry->m_useCount = 0;
 
@@ -673,8 +673,8 @@ void CFileCacheManager::TryToUncacheFiles()
 		CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 
 		if (pAudioFileEntry != nullptr &&
-		    (pAudioFileEntry->m_flags & eAudioFileFlags_Cached) > 0 &&
-		    (pAudioFileEntry->m_flags & eAudioFileFlags_Removable) > 0)
+		    (pAudioFileEntry->m_flags & EAudioFileFlags::Cached) > 0 &&
+		    (pAudioFileEntry->m_flags & EAudioFileFlags::Removable) > 0)
 		{
 			UncacheFileCacheEntryInternal(pAudioFileEntry, true);
 		}
@@ -714,8 +714,8 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 	bool bSuccess = false;
 
 	if (!pAudioFileEntry->m_path.empty() &&
-	    (pAudioFileEntry->m_flags & eAudioFileFlags_NotCached) > 0 &&
-	    (pAudioFileEntry->m_flags & (eAudioFileFlags_Cached | eAudioFileFlags_Loading)) == 0)
+	    (pAudioFileEntry->m_flags & EAudioFileFlags::NotCached) > 0 &&
+	    (pAudioFileEntry->m_flags & (EAudioFileFlags::Cached | EAudioFileFlags::Loading)) == 0)
 	{
 		if (DoesRequestFitInternal(pAudioFileEntry->m_size) && AllocateMemoryBlockInternal(pAudioFileEntry))
 		{
@@ -729,7 +729,7 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 			streamReadParams.pBuffer = pAudioFileEntry->m_pMemoryBlock->GetData();
 			streamReadParams.nSize = static_cast<int unsigned>(pAudioFileEntry->m_size);
 
-			pAudioFileEntry->m_flags |= eAudioFileFlags_Loading;
+			pAudioFileEntry->m_flags |= EAudioFileFlags::Loading;
 			pAudioFileEntry->m_pReadStream = gEnv->pSystem->GetStreamEngine()->StartRead(eStreamTaskTypeFSBCache, pAudioFileEntry->m_path.c_str(), this, &streamReadParams);
 
 			if (bLoadSynchronously)
@@ -747,17 +747,17 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 			CRY_ASSERT(pAudioFileEntry->m_pMemoryBlock == nullptr || pAudioFileEntry->m_pMemoryBlock->GetData() == nullptr);
 
 			// This unfortunately is a total memory allocation fail.
-			pAudioFileEntry->m_flags |= eAudioFileFlags_MemAllocFail;
+			pAudioFileEntry->m_flags |= EAudioFileFlags::MemAllocFail;
 
 			// The user should be made aware of it.
 			g_audioLogger.Log(eAudioLogType_Error, "AFCM: could not cache \"%s\" as we are out of memory!", pAudioFileEntry->m_path.c_str());
 		}
 	}
-	else if ((pAudioFileEntry->m_flags & (eAudioFileFlags_Cached | eAudioFileFlags_Loading)) > 0)
+	else if ((pAudioFileEntry->m_flags & (EAudioFileFlags::Cached | EAudioFileFlags::Loading)) > 0)
 	{
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		if ((pAudioFileEntry->m_flags & eAudioFileFlags_Loading) > 0)
+		if ((pAudioFileEntry->m_flags & EAudioFileFlags::Loading) > 0)
 		{
 			g_audioLogger.Log(eAudioLogType_Warning, "AFCM: could not cache \"%s\" as it's already loading!", pAudioFileEntry->m_path.c_str());
 		}
@@ -765,14 +765,14 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 
 		bSuccess = true;
 	}
-	else if ((pAudioFileEntry->m_flags & eAudioFileFlags_NotFound) > 0)
+	else if ((pAudioFileEntry->m_flags & EAudioFileFlags::NotFound) > 0)
 	{
 		// The user should be made aware of it.
 		g_audioLogger.Log(eAudioLogType_Error, "AFCM: could not cache \"%s\" as it was not found at the target location!", pAudioFileEntry->m_path.c_str());
 	}
 
 	// Increment the used count on GameHints.
-	if ((pAudioFileEntry->m_flags & eAudioFileFlags_UseCounted) > 0 && (pAudioFileEntry->m_flags & (eAudioFileFlags_Cached | eAudioFileFlags_Loading)) > 0)
+	if ((pAudioFileEntry->m_flags & EAudioFileFlags::UseCounted) > 0 && (pAudioFileEntry->m_flags & (EAudioFileFlags::Cached | EAudioFileFlags::Loading)) > 0)
 	{
 		if (bOverrideUseCount)
 		{
@@ -786,11 +786,11 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 		// Make sure to handle the eAFCS_REMOVABLE flag according to the m_nUsedCount count.
 		if (pAudioFileEntry->m_useCount != 0)
 		{
-			pAudioFileEntry->m_flags &= ~eAudioFileFlags_Removable;
+			pAudioFileEntry->m_flags &= ~EAudioFileFlags::Removable;
 		}
 		else
 		{
-			pAudioFileEntry->m_flags |= eAudioFileFlags_Removable;
+			pAudioFileEntry->m_flags |= EAudioFileFlags::Removable;
 		}
 	}
 

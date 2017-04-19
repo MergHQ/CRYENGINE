@@ -42,8 +42,8 @@ public:
 	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
 	virtual ERequestStatus ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent) override;
 	virtual ERequestStatus StopAllTriggers() override;
-	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override { return eRequestStatus_Success; }
-	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override { return eRequestStatus_Success; }
+	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override { return ERequestStatus::Success; }
+	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override { return ERequestStatus::Success; }
 	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~IAudioObject
 
@@ -125,12 +125,12 @@ struct SAudioRtpc final : public IParameter
 	AkRtpcID const id;
 };
 
-enum EWwiseSwitchType : EnumFlagsType
+enum class EWwiseSwitchType : EnumFlagsType
 {
-	eWwiseSwitchType_None = 0,
-	eWwiseSwitchType_Switch,
-	eWwiseSwitchType_State,
-	eWwiseSwitchType_Rtpc,
+	None,
+	Switch,
+	State,
+	Rtpc,
 };
 
 struct SAudioSwitchState final : public IAudioSwitchState
@@ -159,24 +159,24 @@ struct SAudioSwitchState final : public IAudioSwitchState
 	float const            rtpcValue;
 };
 
-enum EWwiseAudioEnvironmentType : EnumFlagsType
+enum class EWwiseAudioEnvironmentType : EnumFlagsType
 {
-	eWwiseAudioEnvironmentType_None = 0,
-	eWwiseAudioEnvironmentType_AuxBus,
-	eWwiseAudioEnvironmentType_Rtpc,
+	None,
+	AuxBus,
+	Rtpc,
 };
 
 struct SAudioEnvironment final : public IAudioEnvironment
 {
-	explicit SAudioEnvironment(EWwiseAudioEnvironmentType const _type)
-		: type(_type)
+	explicit SAudioEnvironment(EWwiseAudioEnvironmentType const type_)
+		: type(type_)
 	{}
 
-	explicit SAudioEnvironment(EWwiseAudioEnvironmentType const _type, AkAuxBusID const _busId)
-		: type(_type)
-		, busId(_busId)
+	explicit SAudioEnvironment(EWwiseAudioEnvironmentType const type_, AkAuxBusID const busId_)
+		: type(type_)
+		, busId(busId_)
 	{
-		CRY_ASSERT(_type == eWwiseAudioEnvironmentType_AuxBus);
+		CRY_ASSERT(type_ == EWwiseAudioEnvironmentType::AuxBus);
 	}
 
 	explicit SAudioEnvironment(
@@ -189,7 +189,7 @@ struct SAudioEnvironment final : public IAudioEnvironment
 		, multiplier(_multiplier)
 		, shift(_shift)
 	{
-		CRY_ASSERT(_type == eWwiseAudioEnvironmentType_Rtpc);
+		CRY_ASSERT(_type == EWwiseAudioEnvironmentType::Rtpc);
 	}
 
 	virtual ~SAudioEnvironment() override = default;

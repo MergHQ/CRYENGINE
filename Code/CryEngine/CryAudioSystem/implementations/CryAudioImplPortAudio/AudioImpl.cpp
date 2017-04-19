@@ -57,13 +57,13 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 	m_fullImplString += CRY_NATIVE_PATH_SEPSTR PORTAUDIO_IMPL_DATA_ROOT ")";
 #endif // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnBeforeShutDown()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ ERequestStatus CAudioImpl::ShutDown()
 		g_audioImplLogger.Log(eAudioLogType_Error, "Failed to shut down PortAudio: %s", Pa_GetErrorText(err));
 	}
 
-	return (err == paNoError) ? eRequestStatus_Success : eRequestStatus_Failure;
+	return (err == paNoError) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -88,42 +88,42 @@ ERequestStatus CAudioImpl::Release()
 	CAudioObject::FreeMemoryPool();
 	CAudioEvent::FreeMemoryPool();
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnLoseFocus()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnGetFocus()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::MuteAll()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::UnmuteAll()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::StopAllSounds()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pFileEntryInfo)
 {
-	ERequestStatus requestResult = eRequestStatus_Failure;
+	ERequestStatus requestResult = ERequestStatus::Failure;
 
 	if (pFileEntryInfo != nullptr)
 	{
@@ -131,7 +131,7 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pFile
 
 		if (pPAAudioFileEntry != nullptr)
 		{
-			requestResult = eRequestStatus_Success;
+			requestResult = ERequestStatus::Success;
 		}
 		else
 		{
@@ -145,7 +145,7 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pFile
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pFileEntryInfo)
 {
-	ERequestStatus requestResult = eRequestStatus_Failure;
+	ERequestStatus requestResult = ERequestStatus::Failure;
 
 	if (pFileEntryInfo != nullptr)
 	{
@@ -153,7 +153,7 @@ ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pFi
 
 		if (pPAAudioFileEntry != nullptr)
 		{
-			requestResult = eRequestStatus_Success;
+			requestResult = ERequestStatus::Success;
 		}
 		else
 		{
@@ -169,7 +169,7 @@ ERequestStatus CAudioImpl::ParseAudioFileEntry(
   XmlNodeRef const pAudioFileEntryNode,
   SAudioFileEntryInfo* const pFileEntryInfo)
 {
-	return eRequestStatus_Failure;
+	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -281,7 +281,7 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 			if (pSndFile != nullptr)
 			{
 				CryFixedStringT<16> const eventTypeString(pAudioTriggerNode->getAttr(s_szPortAudioEventTypeAttribute));
-				EPortAudioEventType const eventType = eventTypeString.compareNoCase("start") == 0 ? ePortAudioEventType_Start : ePortAudioEventType_Stop;
+				EPortAudioEventType const eventType = eventTypeString.compareNoCase("start") == 0 ? EPortAudioEventType::Start : EPortAudioEventType::Stop;
 
 				// numLoops -1 == infinite, 0 == once, 1 == twice etc
 				int numLoops = 0;

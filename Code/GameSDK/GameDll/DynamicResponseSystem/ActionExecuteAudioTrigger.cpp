@@ -25,7 +25,7 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 			if (m_bWaitToBeFinished)
 			{
 				DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance(pEntityAudioProxy, audioStartTriggerID));
-				CryAudio::SRequestUserData const userData(CryAudio::eRequestFlags_DoneCallbackOnExternalThread, (void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get());
+				CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, (void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get());
 
 				if (pEntityAudioProxy->ExecuteTrigger(audioStartTriggerID, auxProxyId, userData))
 				{
@@ -59,7 +59,7 @@ CActionExecuteAudioTriggerInstance::CActionExecuteAudioTriggerInstance(IEntityAu
 	: m_pEntityAudioProxy(pAudioProxy)
 	, m_audioStartTriggerID(audioStartTriggerID)
 {
-	gEnv->pAudioSystem->AddRequestListener(&CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished, this, CryAudio::eSystemEvent_TriggerExecuted | CryAudio::eSystemEvent_TriggerFinished);
+	gEnv->pAudioSystem->AddRequestListener(&CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished, this, CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -86,9 +86,9 @@ void CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished(const CryAudio::
 {
 	if (pInfo->pUserData == ActionPlaySoundId)
 	{
-		if (pInfo->requestResult == CryAudio::eRequestResult_Failure &&
-			(pInfo->audioSystemEvent == CryAudio::eSystemEvent_TriggerExecuted ||
-				pInfo->audioSystemEvent == CryAudio::eSystemEvent_TriggerFinished))
+		if (pInfo->requestResult == CryAudio::ERequestResult::Failure &&
+		    (pInfo->systemEvent == CryAudio::ESystemEvents::TriggerExecuted ||
+		     pInfo->systemEvent == CryAudio::ESystemEvents::TriggerFinished))
 		{
 			CRY_ASSERT(pInfo->pUserDataOwner != nullptr);
 			CActionExecuteAudioTriggerInstance* pEndedInstance = reinterpret_cast<CActionExecuteAudioTriggerInstance*>(pInfo->pUserDataOwner);
@@ -179,4 +179,3 @@ void CActionSetAudioParameter::Serialize(Serialization::IArchive& ar)
 	ar(Serialization::AudioRTPC(m_audioParameter), "audioParameter", "^ AudioParameter");
 	ar(m_valueToSet, "value", "^ Value");
 }
-

@@ -26,7 +26,7 @@ enum EAudioEventState : EnumFlagsType
 
 inline ERequestStatus BoolToARS(bool bResult)
 {
-	return bResult ? eRequestStatus_Success : eRequestStatus_Failure;
+	return bResult ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 /**

@@ -17,7 +17,7 @@ namespace Schematyc
 bool CEntityAudioComponent::Init()
 {
 	//the audio callbacks we are interested in, all related to executeTrigger, #TODO: Check if it`s worth constantly registering/unregister on ExecuteTrigger/TriggerFinished
-	gEnv->pAudioSystem->AddRequestListener(&CEntityAudioComponent::OnAudioCallback, this, CryAudio::eSystemEvent_TriggerExecuted | CryAudio::eSystemEvent_TriggerFinished);
+	gEnv->pAudioSystem->AddRequestListener(&CEntityAudioComponent::OnAudioCallback, this, CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished);
 
 	IEntity& entity = EntityUtils::GetEntity(*this);
 	m_pAudioProxy = entity.GetOrCreateComponent<IEntityAudioComponent>();
@@ -108,7 +108,7 @@ void CEntityAudioComponent::ExecuteTrigger(const SAudioTriggerSerializeHelper tr
 	{
 		_triggerId = static_cast<uint32>(trigger.m_triggerId);
 		static uint32 currentInstanceId = 1;
-		CryAudio::SRequestUserData const userData(CryAudio::eRequestFlags_DoneCallbackOnExternalThread, this, (void*)static_cast<UINT_PTR>(currentInstanceId), (void*)static_cast<UINT_PTR>(_triggerId));
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, (void*)static_cast<UINT_PTR>(currentInstanceId), (void*)static_cast<UINT_PTR>(_triggerId));
 		if (m_pAudioProxy->ExecuteTrigger(trigger.m_triggerId, m_audioProxyId, userData))
 		{
 			_instanceId = currentInstanceId++;
@@ -160,11 +160,11 @@ void CEntityAudioComponent::OnAudioCallback(CryAudio::SRequestInfo const* const 
 	uint32 triggerId = (uint32) reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserDataOwner);
 	CEntityAudioComponent* pAudioComp = static_cast<CEntityAudioComponent*>(pAudioRequestInfo->pOwner);
 
-	if (pAudioRequestInfo->requestResult == CryAudio::eRequestResult_Failure)  //failed to start/finish
+	if (pAudioRequestInfo->requestResult == CryAudio::ERequestResult::Failure)  //failed to start/finish
 	{
 		pAudioComp->OutputSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, false));
 	}
-	else if (pAudioRequestInfo->audioSystemEvent == CryAudio::eSystemEvent_TriggerFinished)  //finished successful
+	else if (pAudioRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerFinished)  //finished successful
 	{
 		pAudioComp->OutputSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, true));
 	}

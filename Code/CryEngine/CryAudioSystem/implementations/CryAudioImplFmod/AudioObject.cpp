@@ -240,7 +240,7 @@ ERequestStatus CAudioObjectBase::Update()
 		}
 	}
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -260,19 +260,19 @@ ERequestStatus CAudioObjectBase::Set3DAttributes(SObject3DAttributes const& attr
 		pFile->Set3DAttributes(m_attributes);
 	}
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioObjectBase::ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent)
 {
-	ERequestStatus requestResult = eRequestStatus_Failure;
+	ERequestStatus requestResult = ERequestStatus::Failure;
 	CAudioTrigger const* const pAudioTrigger = static_cast<CAudioTrigger const* const>(pIAudioTrigger);
 	CAudioEvent* const pAudioEvent = static_cast<CAudioEvent*>(pIAudioEvent);
 
 	if ((pAudioTrigger != nullptr) && (pAudioEvent != nullptr))
 	{
-		if (pAudioTrigger->m_eventType == eFmodEventType_Start)
+		if (pAudioTrigger->m_eventType == EFmodEventType::Start)
 		{
 			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 			FMOD::Studio::EventDescription* pEventDescription = pAudioTrigger->m_pEventDescription;
@@ -304,7 +304,7 @@ ERequestStatus CAudioObjectBase::ExecuteTrigger(IAudioTrigger const* const pIAud
 
 				CRY_ASSERT_MESSAGE(std::find(m_pendingAudioEvents.begin(), m_pendingAudioEvents.end(), pAudioEvent) == m_pendingAudioEvents.end(), "Event was already in the pending list");
 				m_pendingAudioEvents.push_back(pAudioEvent);
-				requestResult = eRequestStatus_Success;
+				requestResult = ERequestStatus::Success;
 			}
 		}
 		else
@@ -312,7 +312,7 @@ ERequestStatus CAudioObjectBase::ExecuteTrigger(IAudioTrigger const* const pIAud
 			StopEvent(pAudioTrigger->m_eventPathId);
 
 			// Return failure here so the ATL does not keep track of this event.
-			requestResult = eRequestStatus_Failure;
+			requestResult = ERequestStatus::Failure;
 		}
 	}
 	else
@@ -335,7 +335,7 @@ ERequestStatus CAudioObjectBase::StopAllTriggers()
 		ASSERT_FMOD_OK;
 	}
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 
 }
 
@@ -351,11 +351,11 @@ ERequestStatus CAudioObjectBase::PlayFile(IAudioStandaloneFile* const pIFile)
 		CRY_ASSERT_MESSAGE(std::find(m_pendingFiles.begin(), m_pendingFiles.end(), pFile) == m_pendingFiles.end(), "standalone file was already in the pending standalone files list");
 		m_pendingFiles.push_back(pFile);
 
-		return eRequestStatus_Success;
+		return ERequestStatus::Success;
 	}
 
 	g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObject, AudioTrigger or StandaloneFile passed to the Fmod implementation of PlayFile.");
-	return eRequestStatus_Failure;
+	return ERequestStatus::Failure;
 
 }
 
@@ -367,21 +367,22 @@ ERequestStatus CAudioObjectBase::StopFile(IAudioStandaloneFile* const pIFile)
 	if (pFile != nullptr)
 	{
 		pFile->Stop();
-		return eRequestStatus_Pending;
+		return ERequestStatus::Pending;
 	}
 	else
 	{
 		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid SAudioStandaloneFileInfo passed to the Fmod implementation of StopFile.");
 	}
 
-	return eRequestStatus_Failure;
+	return ERequestStatus::Failure;
 }
-//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioObjectBase::SetName(char const* const szName)
 {
 	// Fmod does not have the concept of audio objects and with that the debugging of such.
 	// Therefore the name is currently not needed here.
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -402,7 +403,7 @@ void CAudioObjectBase::StopEvent(uint32 const eventPathId)
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CGlobalAudioObject::SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount)
 {
-	ERequestStatus result = eRequestStatus_Failure;
+	ERequestStatus result = ERequestStatus::Failure;
 	CAudioEnvironment const* const pEnvironment = static_cast<CAudioEnvironment const* const>(pIAudioEnvironment);
 
 	if (pEnvironment != nullptr)
@@ -414,7 +415,7 @@ ERequestStatus CGlobalAudioObject::SetEnvironment(IAudioEnvironment const* const
 				pAudioObject->SetEnvironment(pEnvironment, amount);
 			}
 		}
-		result = eRequestStatus_Success;
+		result = ERequestStatus::Success;
 	}
 	else
 	{
@@ -427,7 +428,7 @@ ERequestStatus CGlobalAudioObject::SetEnvironment(IAudioEnvironment const* const
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CGlobalAudioObject::SetParameter(IParameter const* const pIAudioParameter, float const value)
 {
-	ERequestStatus result = eRequestStatus_Failure;
+	ERequestStatus result = ERequestStatus::Failure;
 	CAudioParameter const* const pParameter = static_cast<CAudioParameter const* const>(pIAudioParameter);
 
 	if (pParameter != nullptr)
@@ -439,7 +440,7 @@ ERequestStatus CGlobalAudioObject::SetParameter(IParameter const* const pIAudioP
 				pAudioObject->SetParameter(pParameter, value);
 			}
 		}
-		result = eRequestStatus_Success;
+		result = ERequestStatus::Success;
 	}
 	else
 	{
@@ -451,7 +452,7 @@ ERequestStatus CGlobalAudioObject::SetParameter(IParameter const* const pIAudioP
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CGlobalAudioObject::SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState)
 {
-	ERequestStatus result = eRequestStatus_Failure;
+	ERequestStatus result = ERequestStatus::Failure;
 	CAudioSwitchState const* const pSwitchState = static_cast<CAudioSwitchState const* const>(pIAudioSwitchState);
 
 	if (pSwitchState != nullptr)
@@ -464,7 +465,7 @@ ERequestStatus CGlobalAudioObject::SetSwitchState(IAudioSwitchState const* const
 			}
 		}
 
-		result = eRequestStatus_Success;
+		result = ERequestStatus::Success;
 	}
 	else
 	{
@@ -478,13 +479,13 @@ ERequestStatus CGlobalAudioObject::SetSwitchState(IAudioSwitchState const* const
 ERequestStatus CGlobalAudioObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
 	g_audioImplLogger.Log(eAudioLogType_Error, "Trying to set occlusion and obstruction values on the global audio object!");
-	return eRequestStatus_Failure;
+	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount)
 {
-	ERequestStatus result = eRequestStatus_Success;
+	ERequestStatus result = ERequestStatus::Success;
 	CAudioEnvironment const* const pEnvironment = static_cast<CAudioEnvironment const* const>(pIAudioEnvironment);
 	if (pEnvironment != nullptr)
 	{
@@ -514,7 +515,7 @@ ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 	else
 	{
 		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid Environment pointer passed to the Fmod implementation of SetEnvironment");
-		result = eRequestStatus_Failure;
+		result = ERequestStatus::Failure;
 
 	}
 
@@ -524,7 +525,7 @@ ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioObject::SetParameter(IParameter const* const pIAudioParameter, float const value)
 {
-	ERequestStatus result = eRequestStatus_Success;
+	ERequestStatus result = ERequestStatus::Success;
 	CAudioParameter const* const pParameter = static_cast<CAudioParameter const* const>(pIAudioParameter);
 
 	if (pParameter != nullptr)
@@ -601,7 +602,7 @@ ERequestStatus CAudioObject::SetParameter(IParameter const* const pIAudioParamet
 	else
 	{
 		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetRtpc");
-		result = eRequestStatus_Failure;
+		result = ERequestStatus::Failure;
 	}
 
 	return result;
@@ -610,7 +611,7 @@ ERequestStatus CAudioObject::SetParameter(IParameter const* const pIAudioParamet
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState)
 {
-	ERequestStatus result = eRequestStatus_Success;
+	ERequestStatus result = ERequestStatus::Success;
 	CAudioSwitchState const* const pSwitchState = static_cast<CAudioSwitchState const* const>(pIAudioSwitchState);
 
 	if (pSwitchState != nullptr)
@@ -682,7 +683,7 @@ ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 	else
 	{
 		g_audioImplLogger.Log(eAudioLogType_Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetSwitchState");
-		result = eRequestStatus_Failure;
+		result = ERequestStatus::Failure;
 	}
 
 	return result;
@@ -699,5 +700,5 @@ ERequestStatus CAudioObject::SetObstructionOcclusion(float const obstruction, fl
 	m_obstruction = obstruction;
 	m_occlusion = occlusion;
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }

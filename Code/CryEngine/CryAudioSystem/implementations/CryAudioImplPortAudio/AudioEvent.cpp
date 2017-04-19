@@ -223,5 +223,5 @@ void CAudioEvent::Update()
 ERequestStatus CAudioEvent::Stop()
 {
 	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }

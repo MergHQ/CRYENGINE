@@ -310,7 +310,7 @@ void CAudioControlsEditorWindow::Save()
 				szLevelName = nullptr;
 			}
 
-			CryAudio::SRequestUserData const data(CryAudio::eRequestFlags_ExecuteBlocking);
+			CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
 			gEnv->pAudioSystem->RefreshAudioSystem(szLevelName);
 		}
 	}

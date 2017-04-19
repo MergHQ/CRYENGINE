@@ -150,7 +150,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	gEnv->pAudioSystem->GetAudioEnvironmentId(m_environmentName, m_environmentId);
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_occlusionType]);
+	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
 
 	audioProxy.SetFadeDistance(m_rtpcDistance);
 	audioProxy.SetEnvironmentFadeDistance(m_environmentDistance);

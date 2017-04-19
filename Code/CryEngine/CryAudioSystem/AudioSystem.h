@@ -77,7 +77,7 @@ public:
 	virtual void          PreloadSingleRequest(PreloadRequestId const audioPreloadRequestId, bool const bAutoLoadOnly, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void          UnloadSingleRequest(PreloadRequestId const audioPreloadRequestId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void          ReloadControlsData(char const* const szFolderPath, char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void          AddRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo, EnumFlagsType const eventMask) override;
+	virtual void          AddRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override;
 	virtual void          RemoveRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
 	virtual void          ExternalUpdate() override;
 	virtual bool          GetAudioTriggerId(char const* const szAudioTriggerName, ControlId& audioTriggerId) const override;
@@ -122,35 +122,10 @@ private:
 	bool ProcessRequests(AudioRequests& requestQueue);
 	void ProcessRequest(CAudioRequest& request);
 
-	bool        m_bSystemInitialized;
-	CTimeValue  m_lastUpdateTime;
-	float       m_deltaTime;
-	CMainThread m_mainThread;
-
-	enum EAudioRequestQueueType : EnumFlagsType
-	{
-		eAudioRequestQueueType_Asynch = 0,
-		eAudioRequestQueueType_Synch  = 1,
-
-		eAudioRequestQueueType_Count
-	};
-
-	enum EAudioRequestQueuePriority : EnumFlagsType
-	{
-		eAudioRequestQueuePriority_High   = 0,
-		eAudioRequestQueuePriority_Normal = 1,
-		eAudioRequestQueuePriority_Low    = 2,
-
-		eAudioRequestQueuePriority_Count
-	};
-
-	enum EAudioRequestQueueIndex : EnumFlagsType
-	{
-		eAudioRequestQueueIndex_One = 0,
-		eAudioRequestQueueIndex_Two = 1,
-
-		eAudioRequestQueueIndex_Count
-	};
+	bool                               m_bSystemInitialized;
+	CTimeValue                         m_lastUpdateTime;
+	float                              m_deltaTime;
+	CMainThread                        m_mainThread;
 
 	CAudioTranslationLayer             m_atl;
 	AudioRequests                      m_requestQueue;

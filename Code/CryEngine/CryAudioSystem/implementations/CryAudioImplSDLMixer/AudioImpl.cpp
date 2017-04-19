@@ -94,21 +94,21 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 	{
 		SoundEngine::RegisterEventFinishedCallback(OnEventFinished);
 		SoundEngine::RegisterStandaloneFileFinishedCallback(OnStandaloneFileFinished);
-		return eRequestStatus_Success;
+		return ERequestStatus::Success;
 	}
-	return eRequestStatus_Failure;
+	return ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnBeforeShutDown()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::ShutDown()
 {
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -128,7 +128,7 @@ ERequestStatus CAudioImpl::Release()
 	SAudioObject::FreeMemoryPool();
 	SAudioEvent::FreeMemoryPool();
 
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -141,41 +141,41 @@ void CAudioImpl::OnAudioSystemRefresh()
 ERequestStatus CAudioImpl::OnLoseFocus()
 {
 	SoundEngine::Pause();
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::OnGetFocus()
 {
 	SoundEngine::Resume();
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::MuteAll()
 {
 	SoundEngine::Mute();
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::UnmuteAll()
 {
 	SoundEngine::UnMute();
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::StopAllSounds()
 {
 	SoundEngine::Stop();
-	return eRequestStatus_Success;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pAudioFileEntry)
 {
-	ERequestStatus result = eRequestStatus_Failure;
+	ERequestStatus result = ERequestStatus::Failure;
 
 	if (pAudioFileEntry != nullptr)
 	{
@@ -184,7 +184,7 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pAudi
 		if (pFileData != nullptr)
 		{
 			pFileData->sampleId = SoundEngine::LoadSampleFromMemory(pAudioFileEntry->pFileData, pAudioFileEntry->size, pAudioFileEntry->szFileName);
-			result = eRequestStatus_Success;
+			result = ERequestStatus::Success;
 		}
 		else
 		{
@@ -197,7 +197,7 @@ ERequestStatus CAudioImpl::RegisterInMemoryFile(SAudioFileEntryInfo* const pAudi
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pAudioFileEntry)
 {
-	ERequestStatus result = eRequestStatus_Failure;
+	ERequestStatus result = ERequestStatus::Failure;
 
 	if (pAudioFileEntry != nullptr)
 	{
@@ -206,7 +206,7 @@ ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pAu
 		if (pFileData != nullptr)
 		{
 			SoundEngine::UnloadSample(pFileData->sampleId);
-			result = eRequestStatus_Success;
+			result = ERequestStatus::Success;
 		}
 		else
 		{
@@ -219,7 +219,7 @@ ERequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* const pAu
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::ParseAudioFileEntry(XmlNodeRef const pAudioFileEntryNode, SAudioFileEntryInfo* const pFileEntryInfo)
 {
-	ERequestStatus result = eRequestStatus_Failure;
+	ERequestStatus result = ERequestStatus::Failure;
 
 	if ((_stricmp(pAudioFileEntryNode->getTag(), s_szSDLFileTag) == 0) && (pFileEntryInfo != nullptr))
 	{
@@ -245,7 +245,7 @@ ERequestStatus CAudioImpl::ParseAudioFileEntry(XmlNodeRef const pAudioFileEntryN
 			pFileEntryInfo->szFileName = fullFilePath.c_str();
 			pFileEntryInfo->memoryBlockAlignment = m_memoryAlignment;
 			pFileEntryInfo->pImplData = new SAudioFileEntry();
-			result = eRequestStatus_Success;
+			result = ERequestStatus::Success;
 		}
 		else
 		{

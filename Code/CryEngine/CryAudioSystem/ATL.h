@@ -14,6 +14,14 @@
 
 namespace CryAudio
 {
+enum class EAudioInternalStates : EnumFlagsType
+{
+	None                        = 0,
+	IsMuted                     = BIT(0),
+	AudioMiddlewareShuttingDown = BIT(1),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioInternalStates);
+
 class CSystem;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -47,7 +55,7 @@ public:
 	bool           GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, PreloadRequestId& audioPreloadRequestId) const;
 	bool           GetAudioEnvironmentId(char const* const szAudioEnvironmentName, EnvironmentId& audioEnvironmentId) const;
 
-	bool           CanProcessRequests() const { return (m_flags & eAudioInternalStates_AudioMiddlewareShuttingDown) == 0; }
+	bool           CanProcessRequests() const { return (m_flags& EAudioInternalStates::AudioMiddlewareShuttingDown) == 0; }
 
 	ERequestStatus ParseControlsData(char const* const szFolderPath, EDataScope const dataScope);
 	ERequestStatus ClearControlsData(EDataScope const dataScope);
@@ -70,13 +78,6 @@ private:
 	void           InitInternalControls();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore, Vec3 const& position);
 
-	enum EAudioInternalStates : EnumFlagsType
-	{
-		eAudioInternalStates_None                        = 0,
-		eAudioInternalStates_IsMuted                     = BIT(0),
-		eAudioInternalStates_AudioMiddlewareShuttingDown = BIT(1),
-	};
-
 	// ATLObject containers
 	AudioTriggerLookup        m_triggers;
 	AudioParameterLookup      m_parameters;
@@ -98,9 +99,9 @@ private:
 	SInternalControls           m_internalControls;
 
 	// Utility members
-	uint32                 m_lastMainThreadFrameId = 0;
-	volatile EnumFlagsType m_flags = eAudioInternalStates_None;
-	Impl::IAudioImpl*      m_pImpl = nullptr;
+	uint32               m_lastMainThreadFrameId = 0;
+	EAudioInternalStates m_flags = EAudioInternalStates::None;
+	Impl::IAudioImpl*    m_pImpl = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
