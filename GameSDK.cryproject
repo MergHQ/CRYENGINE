@@ -13,7 +13,7 @@
 		]
 	},
 	"require": {
-		"engine": "engine-5.4",
+		"engine": ".",
 		"plugins": [
 			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
 			{ "type": "EPluginType::Native", "path": "CrySchematycCore" },
