@@ -95,7 +95,7 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 	posX += 20.0f;
 	posY += 17.0f;
 
-	for (auto pEvent : m_constructedAudioEvents)
+	for (auto const pEvent : m_constructedAudioEvents)
 	{
 		if (pEvent->m_pTrigger != nullptr)
 		{

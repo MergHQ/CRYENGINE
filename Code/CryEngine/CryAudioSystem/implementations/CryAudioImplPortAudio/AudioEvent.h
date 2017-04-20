@@ -34,7 +34,7 @@ public:
 	bool         Execute(
 	  int const numLoops,
 	  double const sampleRate,
-	  CryFixedStringT<512> const& filePath,
+	  CryFixedStringT<MaxFilePathLength> const& filePath,
 	  PaStreamParameters const& streamParameters);
 	void Update();
 

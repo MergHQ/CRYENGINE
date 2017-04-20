@@ -5,36 +5,36 @@
 #include <ATLEntityData.h>
 #include <portaudio.h>
 
-enum class EPortAudioEventType : EnumFlagsType
-{
-	None,
-	Start,
-	Stop,
-};
-
 namespace CryAudio
 {
 namespace Impl
 {
 namespace PortAudio
 {
+enum class EEventType : EnumFlagsType
+{
+	None,
+	Start,
+	Stop,
+};
+
 class CAudioTrigger final : public IAudioTrigger
 {
 public:
 
 	explicit CAudioTrigger(
-	  uint32 const _pathId,
-	  int const _numLoops,
-	  double const _sampleRate,
-	  EPortAudioEventType const _eventType,
-	  CryFixedStringT<512> const& _filePath,
-	  PaStreamParameters const& _streamParameters)
-		: pathId(_pathId)
-		, numLoops(_numLoops)
-		, sampleRate(_sampleRate)
-		, eventType(_eventType)
-		, filePath(_filePath)
-		, streamParameters(_streamParameters)
+	  uint32 const pathId_,
+	  int const numLoops_,
+	  double const sampleRate_,
+	  EEventType const eventType_,
+	  CryFixedStringT<MaxFilePathLength> const& filePath_,
+	  PaStreamParameters const& streamParameters_)
+		: pathId(pathId_)
+		, numLoops(numLoops_)
+		, sampleRate(sampleRate_)
+		, eventType(eventType_)
+		, filePath(filePath_)
+		, streamParameters(streamParameters_)
 	{}
 
 	virtual ~CAudioTrigger() override = default;
@@ -49,12 +49,12 @@ public:
 	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return ERequestStatus::Success; }
 	// ~IAudioTrigger
 
-	uint32 const               pathId;
-	int const                  numLoops;
-	double const               sampleRate;
-	EPortAudioEventType const  eventType;
-	CryFixedStringT<512> const filePath;
-	PaStreamParameters const   streamParameters;
+	uint32 const                             pathId;
+	int const                                numLoops;
+	double const                             sampleRate;
+	EEventType const                         eventType;
+	CryFixedStringT<MaxFilePathLength> const filePath;
+	PaStreamParameters const                 streamParameters;
 };
 } // namespace PortAudio
 } // namespace Impl
