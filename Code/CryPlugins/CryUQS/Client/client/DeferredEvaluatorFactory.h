@@ -23,6 +23,7 @@ namespace UQS
 				// IDeferredEvaluatorFactory
 				virtual const char*                      GetName() const override final;
 				virtual const CryGUID&                   GetGUID() const override final;
+				virtual const char*                      GetDescription() const override final;
 				virtual const IInputParameterRegistry&   GetInputParameterRegistry() const override final;
 				virtual IParamsHolderFactory&            GetParamsHolderFactory() const override final;
 				// ~IDeferredEvaluatorFactory
@@ -38,17 +39,19 @@ namespace UQS
 				// ~IParamsHolderFactory
 
 			protected:
-				explicit                                 CDeferredEvaluatorFactoryBase(const char* szEvaluatorName, const CryGUID& guid);
+				explicit                                 CDeferredEvaluatorFactoryBase(const char* szEvaluatorName, const CryGUID& guid, const char* szDescription);
 
 			protected:
 				CInputParameterRegistry                  m_inputParameterRegistry;
 
 			private:
+				string                                   m_description;
 				IParamsHolderFactory*                    m_pParamsHolderFactory;      // points to *this; it's a trick to allow GetParamsHolderFactory() return a non-const reference to *this
 			};
 
-			inline CDeferredEvaluatorFactoryBase::CDeferredEvaluatorFactoryBase(const char* szEvaluatorName, const CryGUID& guid)
+			inline CDeferredEvaluatorFactoryBase::CDeferredEvaluatorFactoryBase(const char* szEvaluatorName, const CryGUID& guid, const char* szDescription)
 				: CFactoryBase(szEvaluatorName, guid)
+				, m_description(szDescription)
 			{
 				m_pParamsHolderFactory = this;
 			}
@@ -61,6 +64,11 @@ namespace UQS
 			inline const CryGUID& CDeferredEvaluatorFactoryBase::GetGUID() const
 			{
 				return CFactoryBase::GetGUID();
+			}
+
+			inline const char* CDeferredEvaluatorFactoryBase::GetDescription() const
+			{
+				return m_description.c_str();
 			}
 
 			inline const IInputParameterRegistry& CDeferredEvaluatorFactoryBase::GetInputParameterRegistry() const
@@ -90,6 +98,7 @@ namespace UQS
 			{
 				const char*                          szName = "";
 				CryGUID                              guid = CryGUID::Null();
+				const char*                          szDescription = "";
 			};
 
 		public:
@@ -109,7 +118,7 @@ namespace UQS
 
 		template <class TDeferredEvaluator>
 		CDeferredEvaluatorFactory<TDeferredEvaluator>::CDeferredEvaluatorFactory(const SCtorParams& ctorParams)
-			: CDeferredEvaluatorFactoryBase(ctorParams.szName, ctorParams.guid)
+			: CDeferredEvaluatorFactoryBase(ctorParams.szName, ctorParams.guid, ctorParams.szDescription)
 		{
 			typedef typename TDeferredEvaluator::SParams Params;
 			Params::Expose(m_inputParameterRegistry);

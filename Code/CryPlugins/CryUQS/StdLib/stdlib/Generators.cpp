@@ -18,6 +18,10 @@ namespace UQS
 
 				ctorParams.szName = "std::PointsOnPureGrid";
 				ctorParams.guid = "498bce51-a2b9-4e77-b0f9-e127e8a5cc72"_uqs_guid;
+				ctorParams.szDescription =
+					"Generates points on a grid.\n"
+					"The grid is specified by a center, size (of one edge) and a spacing between the points.\n"
+					"Notice: this generator is very limited and doesn't work well if you intend to use it for things like uneven terrain.";
 
 				static const Client::CGeneratorFactory<CGenerator_PointsOnPureGrid> generatorFactory_PointsOnPureGrid(ctorParams);
 			}
@@ -27,6 +31,11 @@ namespace UQS
 
 				ctorParams.szName = "std::PointsOnNavMesh";
 				ctorParams.guid = "70b13c46-e012-4fde-bba5-70ccd4f8b321"_uqs_guid;
+				ctorParams.szDescription =
+					"Generates Pos3s on the navigation mesh limited by an AABB.\n"
+					"The AABB is defined by a pivot and local mins and maxs.\n"
+					"The pivot has to reside within the enclosing volume of a NavMesh or else no points will be generated.\n"
+					"Each of the resulting points will reside on the center of the corresponding NavMesh triangle.";
 
 				static const Client::CGeneratorFactory<CGenerator_PointsOnNavMesh> generatorFactory_PointsOnNavMesh(ctorParams);
 			}

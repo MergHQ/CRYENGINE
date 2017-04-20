@@ -39,6 +39,7 @@ namespace UQS
 			// IQueryFactory
 			virtual const char*                 GetName() const override final;
 			virtual const CryGUID&              GetGUID() const override final;
+			virtual const char*                 GetDescription() const override final;
 			virtual bool                        SupportsParameters() const override final;
 			virtual bool                        RequiresGenerator() const override final;
 			virtual bool                        SupportsEvaluators() const override final;
@@ -58,9 +59,10 @@ namespace UQS
 			virtual const Shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const = 0;
 
 		protected:
-			explicit                            CQueryFactoryBase(const char* szName, const CryGUID& guid, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
+			explicit                            CQueryFactoryBase(const char* szName, const CryGUID& guid, const char* szDescription, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
 
 		private:
+			string                              m_description;
 			bool                                m_bSupportsParameters;
 			bool                                m_bRequiresGenerator;
 			bool                                m_bSupportsEvaluators;
@@ -78,7 +80,7 @@ namespace UQS
 		class CQueryFactory : public CQueryFactoryBase
 		{
 		public:
-			explicit                            CQueryFactory(const char* szName, const CryGUID& guid, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
+			explicit                            CQueryFactory(const char* szName, const CryGUID& guid, const char* szDescription, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
 
 			// CQueryFactoryBase
 			virtual QueryBaseUniquePtr          CreateQuery(const CQueryBase::SCtorContext& ctorContext) override;
@@ -93,8 +95,8 @@ namespace UQS
 		};
 
 		template <class TQuery>
-		CQueryFactory<TQuery>::CQueryFactory(const char* szName, const CryGUID& guid, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
-			: CQueryFactoryBase(szName, guid, bSupportsParameters, bRequiresGenerator, bSupportsEvaluators, minRequiredChildren, maxAllowedChildren)
+		CQueryFactory<TQuery>::CQueryFactory(const char* szName, const CryGUID& guid, const char* szDescription, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
+			: CQueryFactoryBase(szName, guid, szDescription, bSupportsParameters, bRequiresGenerator, bSupportsEvaluators, minRequiredChildren, maxAllowedChildren)
 		{
 			assert(minRequiredChildren <= maxAllowedChildren);
 		}

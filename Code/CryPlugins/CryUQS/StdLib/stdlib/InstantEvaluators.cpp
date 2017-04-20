@@ -20,6 +20,7 @@ namespace UQS
 
 				ctorParams.szName = "std::TestMinDistance";
 				ctorParams.guid = "1913cd53-ba27-4285-a901-fa83997c681f"_uqs_guid;
+				ctorParams.szDescription = "Discards the item currently being evaluated if the distance between 2 points is smaller than a certain amount.";
 
 				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMinDistance> instantEvaluatorFactory_TestMinDistance(ctorParams);
 			}
@@ -29,6 +30,7 @@ namespace UQS
 
 				ctorParams.szName = "std::TestMaxDistance";
 				ctorParams.guid = "46cb5dcd-aacf-4b6c-b30f-5e678dbac707"_uqs_guid;
+				ctorParams.szDescription = "Discards the item currently being evaluated if the distance between 2 points is larger than a certain amount.";
 
 				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestMaxDistance> instantEvaluatorFactory_TestMaxDistance(ctorParams);
 			}
@@ -38,6 +40,7 @@ namespace UQS
 
 				ctorParams.szName = "std::TestLocationInNavMesh";
 				ctorParams.guid = "1c62cf8c-09f1-4ee8-a0e5-bd2a6c6c44e3"_uqs_guid;
+				ctorParams.szDescription = "Checks for whether a given Pos3 resides in the NavMesh(roughly on a walkable surface).\nDiscards the item if it's not on the NavMesh.";
 
 				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_TestLocationInNavMesh> instantEvaluatorFactory_TestLocationInNavMesh(ctorParams);
 			}
@@ -47,6 +50,7 @@ namespace UQS
 
 				ctorParams.szName = "std::ScoreDistance";
 				ctorParams.guid = "fc41cc13-3967-462a-b464-b61af028f613"_uqs_guid;
+				ctorParams.szDescription = "Scores the distance between 2 points.\nThe higher the distance the better the score.\nA threshold is used as a 'reference distance' for increasing the score linearly; distances larger than that will clamp the score to 1.0.";
 
 				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistance> instantEvaluatorFactory_ScoreDistance(ctorParams);
 			}
@@ -56,6 +60,7 @@ namespace UQS
 
 				ctorParams.szName = "std::ScoreDistanceInverse";
 				ctorParams.guid = "78a52467-32a0-4bcd-918a-df7db9d2b715"_uqs_guid;
+				ctorParams.szDescription = "Scores the distance between 2 points.\nThe shorter the distance the better the score.\nA threshold is used as a 'reference distance' for decreasing the score linearly; distances larger than that will clamp the score to 0.0.";
 
 				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreDistanceInverse> instantEvaluatorFactory_ScoreDistanceInverse(ctorParams);
 			}
@@ -65,6 +70,7 @@ namespace UQS
 
 				ctorParams.szName = "std::ScoreRandom";
 				ctorParams.guid = "ff8bd552-db0d-47a2-9238-14f5e1eeedbf"_uqs_guid;
+				ctorParams.szDescription = "Provides a random score between [0.0 .. 1.0].";
 
 				static const Client::CInstantEvaluatorFactory<CInstantEvaluator_ScoreRandom> instantEvaluatorFactory_ScoreRandom(ctorParams);
 			}

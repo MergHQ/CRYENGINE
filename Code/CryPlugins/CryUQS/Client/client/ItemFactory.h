@@ -108,6 +108,7 @@ namespace UQS
 				// IItemFactory
 				virtual const char*                        GetName() const override final;
 				virtual const CryGUID&                     GetGUID() const override final;
+				virtual const char*                        GetDescription() const override final;
 				// ~IItemFactory
 
 				// IItemFactory: forward these pure virtual methods to the derived class
@@ -135,11 +136,15 @@ namespace UQS
 				// ~IItemFactory
 
 			protected:
-				explicit                                   CItemFactoryBase(const char* szName, const CryGUID& guid);
+				explicit                                   CItemFactoryBase(const char* szName, const CryGUID& guid, const char* szDescription);
+
+			private:
+				string                                     m_description;
 			};
 
-			inline CItemFactoryBase::CItemFactoryBase(const char* szName, const CryGUID& guid)
+			inline CItemFactoryBase::CItemFactoryBase(const char* szName, const CryGUID& guid, const char* szDescription)
 				: CFactoryBase(szName, guid)
+				, m_description(szDescription)
 			{}
 
 			inline const char* CItemFactoryBase::GetName() const
@@ -150,6 +155,11 @@ namespace UQS
 			inline const CryGUID& CItemFactoryBase::GetGUID() const
 			{
 				return CFactoryBase::GetGUID();
+			}
+
+			inline const char* CItemFactoryBase::GetDescription() const
+			{
+				return m_description.c_str();
 			}
 
 			//===================================================================================
@@ -192,9 +202,9 @@ namespace UQS
 			public:
 
 #if UQS_SCHEMATYC_SUPPORT
-				explicit                                  CItemFactoryInternal(const char* szName, const CryGUID& guid, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
+				explicit                                  CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
 #else
-				explicit                                  CItemFactoryInternal(const char* szName, const CryGUID& guid, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
+				explicit                                  CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
 #endif
 													      ~CItemFactoryInternal();
 
@@ -245,15 +255,15 @@ namespace UQS
 
 #if UQS_SCHEMATYC_SUPPORT
 			template <class TItem>
-			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* szName, const CryGUID& guid, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
-				: CItemFactoryBase(szName, guid)
+			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
+				: CItemFactoryBase(szName, guid, szDescription)
 				, m_guidForSchematycAddParamFunction(guidForSchematycAddParamFunction)
 				, m_guidForSchematycGetItemFromResultSetFunction(guidForSchematycGetItemFromResultSetFunction)
 				, m_callbacks(callbacks)
 #else
 			template <class TItem>
-			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* szName, const CryGUID& guid, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
-				: CItemFactoryBase(szName, guid)
+			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
+				: CItemFactoryBase(szName, guid, szDescription)
 				, m_callbacks(callbacks)
 #endif
 			{
@@ -282,6 +292,7 @@ namespace UQS
 						ctorParams.szName = functionName.c_str();
 						ctorParams.guid.hipart = SPartialGUIDs::Function_GlobalParam();
 						ctorParams.guid.lopart = guid.lopart;
+						ctorParams.szDescription = "Access to one of the global parameters";
 
 						static const CFunctionFactory<CFunc_GlobalParam<TItem>> gs_functionFactory_globalParam(ctorParams);
 					}
@@ -299,6 +310,7 @@ namespace UQS
 						ctorParams.szName = functionName.c_str();
 						ctorParams.guid.hipart = SPartialGUIDs::Function_IteratedItem();
 						ctorParams.guid.lopart = guid.lopart;
+						ctorParams.szDescription = "Access to the item the query is currently iterating on";
 
 						static const CFunctionFactory<CFunc_IteratedItem<TItem>> gs_functionFactory_iteratedItem(ctorParams);
 					}
@@ -317,6 +329,7 @@ namespace UQS
 						ctorParams.szName = functionName.c_str();
 						ctorParams.guid.hipart = SPartialGUIDs::Function_Literal();
 						ctorParams.guid.lopart = guid.lopart;
+						ctorParams.szDescription = "A literal value";
 
 						static const CFunctionFactory<CFunc_Literal<TItem>> gs_functionFactory_literal(ctorParams);
 					}
@@ -334,6 +347,7 @@ namespace UQS
 						ctorParams.szName = functionName.c_str();
 						ctorParams.guid.hipart = SPartialGUIDs::Function_ShuttledItems();
 						ctorParams.guid.lopart = guid.lopart;
+						ctorParams.szDescription = "Items from a previous query in the chain";
 
 						static const CFunctionFactory<CFunc_ShuttledItems<TItem>> gs_functionFactory_shuttledItems(ctorParams);
 					}
@@ -645,6 +659,7 @@ namespace UQS
 			{
 				const char*                   szName = "";                                                     // name of the item factory; used for displaying in the UI; this can be changed at will
 				CryGUID                       guid = CryGUID::Null();                                          // GUID to uniquely identify the item factory; this should never change!
+				const char*                   szDescription = "";                                              // description of the type for displaying in the UI
 				SItemFactoryCallbacks<TItem>  callbacks;                                                       // set of optional callbacks that operate on the item type; not all of them need to be set
 #if UQS_SCHEMATYC_SUPPORT
 				CryGUID                       guidForSchematycAddParamFunction = CryGUID::Null();              // GUID of the schematyc function to add a runtime-parameter before starting a query; that function will be automatically generated
@@ -661,9 +676,9 @@ namespace UQS
 				//
 
 #if UQS_SCHEMATYC_SUPPORT
-				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(ctorParams.szName, ctorParams.guid, ctorParams.guidForSchematycAddParamFunction, ctorParams.guidForSchematycGetItemFromResultSetFunction, ctorParams.callbacks, true);
+				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(ctorParams.szName, ctorParams.guid, ctorParams.szDescription, ctorParams.guidForSchematycAddParamFunction, ctorParams.guidForSchematycGetItemFromResultSetFunction, ctorParams.callbacks, true);
 #else
-				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(ctorParams.szName, ctorParams.guid, ctorParams.callbacks, true);
+				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(ctorParams.szName, ctorParams.guid, ctorParams.szDescription, ctorParams.callbacks, true);
 #endif
 
 				//
@@ -690,10 +705,12 @@ namespace UQS
 
 				const SItemFactoryCallbacks<CItemListProxy_Readable<TItem>> callbacksForShuttledItemsContainer;  // no callbacks actually
 
+				const char* szDescription = "";
+
 #if UQS_SCHEMATYC_SUPPORT
-				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), newGUID, CryGUID::Null(), CryGUID::Null(), callbacksForShuttledItemsContainer, false);
+				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), newGUID, szDescription, CryGUID::Null(), CryGUID::Null(), callbacksForShuttledItemsContainer, false);
 #else
-				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), newGUID, callbacksForShuttledItemsContainer, false);
+				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), newGUID, szDescription, callbacksForShuttledItemsContainer, false);
 #endif
 			}
 		};

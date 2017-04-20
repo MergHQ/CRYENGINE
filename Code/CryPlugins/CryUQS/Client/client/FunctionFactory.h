@@ -23,6 +23,7 @@ namespace UQS
 				// IFunctionFactory
 				virtual const char*                       GetName() const override final;
 				virtual const CryGUID&                    GetGUID() const override final;
+				virtual const char*                       GetDescription() const override final;
 				virtual const IInputParameterRegistry&    GetInputParameterRegistry() const override final;
 				// ~IFunctionFactory
 
@@ -35,14 +36,16 @@ namespace UQS
 				// ~IFunctionFactory
 
 			protected:
-				explicit                                  CFunctionFactoryBase(const char* szFunctionName, const CryGUID& guid);
+				explicit                                  CFunctionFactoryBase(const char* szFunctionName, const CryGUID& guid, const char* szDescription);
 
 			protected:
+				string                                    m_description;
 				CInputParameterRegistry                   m_inputParameterRegistry;
 			};
 
-			inline CFunctionFactoryBase::CFunctionFactoryBase(const char* szFunctionName, const CryGUID& guid)
+			inline CFunctionFactoryBase::CFunctionFactoryBase(const char* szFunctionName, const CryGUID& guid, const char* szDescription)
 				: CFactoryBase(szFunctionName, guid)
+				, m_description(szDescription)
 			{}
 
 			inline const char* CFunctionFactoryBase::GetName() const
@@ -53,6 +56,11 @@ namespace UQS
 			inline const CryGUID& CFunctionFactoryBase::GetGUID() const
 			{
 				return CFactoryBase::GetGUID();
+			}
+
+			inline const char* CFunctionFactoryBase::GetDescription() const
+			{
+				return m_description.c_str();
 			}
 
 			inline const IInputParameterRegistry& CFunctionFactoryBase::GetInputParameterRegistry() const
@@ -112,6 +120,7 @@ namespace UQS
 			{
 				const char*                     szName = "";
 				CryGUID                         guid = CryGUID::Null();
+				const char*                     szDescription = "";
 			};
 
 		public:
@@ -129,7 +138,7 @@ namespace UQS
 
 		template <class TFunction>
 		inline CFunctionFactory<TFunction>::CFunctionFactory(const SCtorParams& ctorParams)
-			: CFunctionFactoryBase(ctorParams.szName, ctorParams.guid)
+			: CFunctionFactoryBase(ctorParams.szName, ctorParams.guid, ctorParams.szDescription)
 		{
 			const bool bIsLeafFunction = TFunction::kLeafFunctionKind != ELeafFunctionKind::None;
 			Internal::SFunctionParamsExpositionHelper<TFunction, bIsLeafFunction>::Expose(m_inputParameterRegistry);

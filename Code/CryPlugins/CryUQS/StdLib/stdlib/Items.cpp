@@ -118,6 +118,7 @@ namespace UQS
 
 				ctorParams.szName = "std::Pos3";
 				ctorParams.guid = "1b363d0a-dc71-45d4-9a8d-0fdb7d9e228c"_uqs_guid;
+				ctorParams.szDescription = "Vec3-based type intended for global positions in the 3D world";
 				ctorParams.callbacks.pSerialize = &Client::SerializeTypeWrappedItem<Pos3>;
 				ctorParams.callbacks.pCreateDefaultObject = &GetVec3BasedTypeWrapperZero<Pos3>;
 				ctorParams.callbacks.pAddItemToDebugRenderWorld = &Pos3_AddToDebugRenderWorld;
@@ -137,6 +138,7 @@ namespace UQS
 
 				ctorParams.szName = "std::Ofs3";
 				ctorParams.guid = "41e2adc2-8318-43c4-b6f0-9bd549586dcf"_uqs_guid;
+				ctorParams.szDescription = "Vec3-based type intended for use as offsets (i. e. local positions)";
 				ctorParams.callbacks.pSerialize = &Client::SerializeTypeWrappedItem<Ofs3>;
 				ctorParams.callbacks.pCreateDefaultObject = &GetVec3BasedTypeWrapperZero<Ofs3>;
 #if UQS_SCHEMATYC_SUPPORT
@@ -154,6 +156,7 @@ namespace UQS
 
 				ctorParams.szName = "std::Dir3";
 				ctorParams.guid = "eca80817-8631-48ba-9a1b-37d187ec92a2"_uqs_guid;
+				ctorParams.szDescription = "Vec3-based type intended for use as normalized 3D vector";
 				ctorParams.callbacks.pSerialize = &Client::SerializeTypeWrappedItem<Dir3>;
 				ctorParams.callbacks.pCreateDefaultObject = &GetVec3BasedTypeWrapperZero<Dir3>;
 #if UQS_SCHEMATYC_SUPPORT
@@ -171,6 +174,7 @@ namespace UQS
 
 				ctorParams.szName = "std::NavigationAgentTypeID";
 				ctorParams.guid = "4338dd81-718a-4365-a21a-65d5b5d08bd3"_uqs_guid;
+				ctorParams.szDescription = "Type of the agent for use in the Navigation Mesh";
 				ctorParams.callbacks.pSerialize = &NavigationAgentTypeID_Serialize;
 #if UQS_SCHEMATYC_SUPPORT
 				ctorParams.guidForSchematycAddParamFunction = "cdb0111a-a042-41ca-9d4b-b52816a2ffa0"_uqs_guid;
