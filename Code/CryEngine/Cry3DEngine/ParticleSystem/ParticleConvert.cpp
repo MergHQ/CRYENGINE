@@ -255,13 +255,16 @@ void AddParamMods(XmlNodeRef mods, TVarEPParam<T>& param)
 }
 
 template<typename P>
-bool ConvertParam(XmlNodeRef node, cstr name, P& param, float inDefault = 0.f, float outDefault = 0.f, bool bInherit = false)
+void ConvertParam(XmlNodeRef node, cstr name, P& param, float inDefault = 0.f, float outDefault = 0.f, bool bInherit = false)
 {
 	typedef typename P::T PT;
 	if (param(VMAX) == PT(0))
 		ResetValue(param);
 	if (!bInherit && IsConstant(param, PT(outDefault)))
-		return false;
+	{
+		ResetValue(param, inDefault);
+		return;
+	}
 
 	XmlNodeRef p = node->newChild(name);
 	XmlNodeRef mods = p->newChild(SerializeNames<PT>::mods());
@@ -280,8 +283,6 @@ bool ConvertParam(XmlNodeRef node, cstr name, P& param, float inDefault = 0.f, f
 		// Reset param to default value, to mark converted
 		ResetValue(param, inDefault);
 	}
-
-	return true;
 }
 
 // Convert just the base value of a pfx1 variant parameter; the variance remains unconverted
@@ -436,15 +437,16 @@ void ConvertSpawn(IParticleComponent& component, ParticleParams& params)
 
 	spawn = MakeFeature("SpawnCount");
 
-	ConvertParam(spawn, "Amount", params.fCount);
+	ConvertParam(spawn, "Amount", params.fCount, 0.0f, 1.0f);
 	ConvertParam(spawn, "Delay", params.fSpawnDelay);
-	ConvertParam(spawn, "Restart", params.fPulsePeriod);
+	ConvertParam(spawn, "Restart", params.fPulsePeriod, 0.0f, 1.0f);
 	if (ResetValue(params.bContinuous))
 	{
 		XmlNodeRef delay = spawn->newChild("Duration");
 		delay->newChild("State")->setAttr("value", params.fEmitterLifeTime ? "true" : "false");
 		ConvertParam(delay, "Value", params.fEmitterLifeTime);
 	}
+	ResetValue(params.fEmitterLifeTime);
 
 	AddFeature(component, spawn);
 
@@ -548,7 +550,16 @@ void ConvertSprites(IParticleComponent& component, ParticleParams& params)
 	{
 		XmlNodeRef render;
 		XmlNodeRef ang = MakeFeature("AnglesAlign");
-		if (params.Connection)
+
+		if (params.eFacing == ParticleParams::EFacing::Decal)
+		{
+			// RenderDecals feature
+			render = MakeFeature("RenderDecals");
+			ConvertValue(render, "Thickness", params.fThickness, 1.0f);
+			ConvertValue(render, "SortBias", params.fSortOffset);
+		}
+
+		else if (params.Connection)
 		{
 			// RenderRibbon feature
 			render = MakeFeature("RenderRibbon");
@@ -570,7 +581,7 @@ void ConvertSprites(IParticleComponent& component, ParticleParams& params)
 				if (params.bOrientToVelocity || params.fStretch)
 				{
 					AddValue(render, "FacingMode", "Velocity");
-					ConvertParamBase(render, "AxisScale", params.fStretch);
+					ConvertParamBase(render, "AxisScale", params.fStretch, -1.0f);
 
 					// Facing=Velocity requires a rotation
 					params.vInitAngles.y = params.vInitAngles.y - 90.f;
@@ -599,13 +610,28 @@ void ConvertSprites(IParticleComponent& component, ParticleParams& params)
 				ResetValue(params.bOrientToVelocity);
 			}
 
+			ConvertValue(render, "CameraOffset", params.fCameraDistanceOffset);
 			ConvertParamBase(render, "AspectRatio", params.fAspect, 1.f);
+			AddValue(render, "Offset", Vec2(params.fPivotX, -params.fPivotY));
+			params.fPivotX.Set(0); params.fPivotY.Set(0);
 		}
 
-		if (float bias = ResetValue(params.fSortOffset))
-			AddValue(render, "SortBias", -bias);  // Approximate conversion: pfx1 dist += SortOffset; pfx2 dist -= dist * SortBias / 1024
+		if (XmlNodeRef project =
+			(params.eFacing == ParticleParams::EFacing::Terrain ? MakeFeature("ProjectTerrain")
+			: params.eFacing == ParticleParams::EFacing::Water ? MakeFeature("ProjectWater")
+			: nullptr))
+		{
+			AddValue(project, "SpawnOnly", false);
+			AddValue(project, "ProjectAngles", true);
+			AddFeature(component, project, true);
+			ResetValue(params.eFacing);
+		}
 
-		AddFeature(component, render);
+		if (params.eFacing != ParticleParams::EFacing::Decal)
+			if (float bias = ResetValue(params.fSortOffset))
+				AddValue(render, "SortBias", -bias);  // Approximate conversion: pfx1 dist += SortOffset; pfx2 dist -= dist * SortBias / 1024
+
+		AddFeature(component, render, true);
 		AddFeature(component, ang);
 
 		ConvertAppearance(component, params);
@@ -756,11 +782,8 @@ void ConvertMotion(IParticleComponent& component, ParticleParams& params)
 			AddFeature(component, vel);
 		}
 	}
-	else
-	{
-		ResetValue(params.fSpeed);
-		ResetValue(params.fEmitAngle);
-	}
+	ResetValue(params.fSpeed);
+	ResetValue(params.fEmitAngle);
 	if (params.fInheritVelocity)
 	{
 		hasMotion = true;
@@ -785,35 +808,56 @@ void ConvertMotion(IParticleComponent& component, ParticleParams& params)
 		AddFeature(component, cam);
 	}
 
-	// General motion physics
-	XmlNodeRef phys = MakeFeature("MotionPhysics");
-	ConvertParam(phys, "gravity", params.fGravityScale);
-	if (params.fAirResistance(VMAX) == 0.f)
-		ResetValue(params.fAirResistance);
-	ConvertParam(phys, "drag", static_cast<TVarEPParam<::UFloat>&>(params.fAirResistance));
-	ConvertValue(phys, "UniformAcceleration", params.vAcceleration);
-	ConvertValue(phys, "WindMultiplier", params.fAirResistance.fWindScale, 1.f);
-	ConvertValue(phys, "AngularDragMultiplier", params.fAirResistance.fRotationalDragScale, 1.f);
-
-	bool spiraling = params.fTurbulenceSize && params.fTurbulenceSpeed;
-	if (spiraling || params.fTurbulence3DSpeed)
+	switch (params.ePhysicsType)
 	{
-		XmlNodeRef effectors = phys->newChild("localEffectors");
-		if (params.fTurbulence3DSpeed)
-		{
-			XmlNodeRef data = AddPtrElement(effectors, "Turbulence");
-			AddValue(data, "mode", "Brownian");
-			ConvertParamBase(data, "speed", params.fTurbulence3DSpeed);
-		}
-		if (spiraling)
-		{
-			XmlNodeRef data = AddPtrElement(effectors, "Spiral");
-			ConvertParamBase(data, "Speed", params.fTurbulenceSpeed);
-			ConvertParamBase(data, "Size", params.fTurbulenceSize);
-		}
-	}
+	case ParticleParams::EPhysics::SimplePhysics:
+	case ParticleParams::EPhysics::RigidBody:
+	{
+		// CryPhysics particle physics
+		XmlNodeRef phys = MakeFeature("MotionCryPhysics");
+		AddValue(phys, "PhysicsType", ResetValue(params.ePhysicsType) == ParticleParams::EPhysics::RigidBody ? "Mesh" : "Particle");
+		ConvertParamBase(phys, "gravity", params.fGravityScale);
+		ConvertParamBase(phys, "drag", params.fAirResistance);
+		ConvertValue(phys, "UniformAcceleration", params.vAcceleration);
+		AddValue(phys, "density", ResetValue(params.fDensity, 1000.0f) * 0.001f);
+		ConvertValue(phys, "thickness", params.fThickness, 1.0f, 0.0f);
+		AddValue(phys, "SurfaceType", TypeInfo(&params.sSurfaceType).ToString(&params.sSurfaceType));
+		ResetValue(params.sSurfaceType);
 
-	AddFeature(component, phys, hasMotion);
+		AddFeature(component, phys, hasMotion);
+		break;
+	}
+	default:
+	{
+		// General motion physics
+		XmlNodeRef phys = MakeFeature("MotionPhysics");
+		ConvertParam(phys, "gravity", params.fGravityScale);
+		ConvertParam(phys, "drag", static_cast<TVarEPParam<::UFloat>&>(params.fAirResistance));
+		ConvertValue(phys, "UniformAcceleration", params.vAcceleration);
+		ConvertValue(phys, "WindMultiplier", params.fAirResistance.fWindScale, 1.f);
+		ConvertValue(phys, "AngularDragMultiplier", params.fAirResistance.fRotationalDragScale, 1.f);
+
+		bool spiraling = params.fTurbulenceSize && params.fTurbulenceSpeed;
+		if (spiraling || params.fTurbulence3DSpeed)
+		{
+			XmlNodeRef effectors = phys->newChild("localEffectors");
+			if (params.fTurbulence3DSpeed)
+			{
+				XmlNodeRef data = AddPtrElement(effectors, "Turbulence");
+				AddValue(data, "mode", "Brownian");
+				ConvertParamBase(data, "speed", params.fTurbulence3DSpeed);
+			}
+			if (spiraling)
+			{
+				XmlNodeRef data = AddPtrElement(effectors, "Spiral");
+				ConvertParamBase(data, "Speed", params.fTurbulenceSpeed);
+				ConvertParamBase(data, "Size", params.fTurbulenceSize);
+			}
+		}
+
+		AddFeature(component, phys, hasMotion);
+	}
+	}
 }
 
 void ConvertAngles2D(IParticleComponent& component, ParticleParams& params)
@@ -847,6 +891,8 @@ void ConvertCollision(IParticleComponent& component, ParticleParams& params)
 		ConvertValue(coll, "StaticObjects", params.bCollideStaticObjects, false, true);
 		ConvertValue(coll, "DynamicObjects", params.bCollideDynamicObjects, false, true);
 		ConvertValue(coll, "Elasticity", params.fElasticity);
+		ConvertValue(coll, "Friction", params.fDynamicFriction);
+		AddValue(coll, "RotateToNormal", true);
 		if (params.nMaxCollisionEvents)
 		{
 			ConvertValue(coll, "MaxCollisions", params.nMaxCollisionEvents);
@@ -858,6 +904,16 @@ void ConvertCollision(IParticleComponent& component, ParticleParams& params)
 			}
 		}
 		AddFeature(component, coll);
+	}
+	else if (!params.ePhysicsType)
+	{
+		ResetValue(params.bCollideTerrain);
+		ResetValue(params.bCollideStaticObjects);
+		ResetValue(params.bCollideDynamicObjects);
+		ResetValue(params.fElasticity);
+		ResetValue(params.fDynamicFriction);
+		ResetValue(params.nMaxCollisionEvents);
+		ResetValue(params.eFinalCollision);
 	}
 }
 

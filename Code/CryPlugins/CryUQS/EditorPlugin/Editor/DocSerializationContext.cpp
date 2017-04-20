@@ -46,6 +46,12 @@ UQS::Core::IQueryFactory* CUqsDocSerializationContext::GetQueryFactoryByName(con
 	return db.FindFactoryByName(szName);
 }
 
+UQS::Core::IScoreTransformFactory* CUqsDocSerializationContext::GetScoreTransformFactoryByName(const char* szName) const
+{
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetScoreTransformFactoryDatabase();
+	return db.FindFactoryByName(szName);
+}
+
 const Serialization::StringList& CUqsDocSerializationContext::GetQueryFactoryNamesList() const
 {
 	return m_editorContext.GetSerializationCache().GetQueryFactoryNamesList();

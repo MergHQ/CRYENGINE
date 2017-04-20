@@ -170,8 +170,9 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryFactoryBase::CQueryFactoryBase(const char* szName, const CryGUID& guid, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
+		CQueryFactoryBase::CQueryFactoryBase(const char* szName, const CryGUID& guid, const char* szDescription, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
 			: CFactoryBase(szName, guid)
+			, m_description(szDescription)
 			, m_bSupportsParameters(bSupportsParameters)
 			, m_bRequiresGenerator(bRequiresGenerator)
 			, m_bSupportsEvaluators(bSupportsEvaluators)
@@ -189,6 +190,11 @@ namespace UQS
 		const CryGUID& CQueryFactoryBase::GetGUID() const
 		{
 			return CFactoryBase::GetGUID();
+		}
+
+		const char* CQueryFactoryBase::GetDescription() const
+		{
+			return m_description.c_str();
 		}
 
 		bool CQueryFactoryBase::SupportsParameters() const
@@ -235,9 +241,24 @@ namespace UQS
 			// - if more query types ever get introduced, then an according factory and specialization for CQueryFactory<>::GetQueryBlueprintType() and
 			//   CQueryFactory<>::CheckOutputTypeCompatibilityAmongChildQueryBlueprints() need to be added here
 
-			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", "166b3a88-3cf3-45ea-bb4c-3eb6cb11d6de"_uqs_guid, true, true, true, 0, 0);
-			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", "89b926fb-a825-4de0-8817-ecef882efc0d"_uqs_guid, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
-			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", "a5ac314b-29a0-4bd0-82b6-c8ae3752371b"_uqs_guid, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+			const char* szDescription_regular =
+				"Does the actual work of generating items, evaluating them and returning the best N resulting items.\n"
+				"Cannot have any child queries.";
+
+			const char* szDescription_chained =
+				"Runs one child query after another.\n"
+				"Provides the resulting items of the previous child in the form of 'shuttled items' to the next child.\n"
+				"Needs at least 1 child query.";
+
+			const char* szDescription_fallbacks =
+				"Runs child queries until one comes up with at least one item.\n"
+				"If no child can find an item, then ultimately 0 items will be returned.\n"
+				"All child queries must return the same item type.\n"
+				"Needs at least 1 child query.";
+
+			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", "166b3a88-3cf3-45ea-bb4c-3eb6cb11d6de"_uqs_guid, szDescription_regular, true, true, true, 0, 0);
+			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", "89b926fb-a825-4de0-8817-ecef882efc0d"_uqs_guid, szDescription_chained, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", "a5ac314b-29a0-4bd0-82b6-c8ae3752371b"_uqs_guid, szDescription_fallbacks, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
 		}
 
 	}

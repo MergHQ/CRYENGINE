@@ -340,6 +340,14 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	passContext.renderItemGroup = m_numRenderItemGroups++;
 	passContext.profilerSectionIndex = m_profilerSectionIndex;
 
+#if !defined(_RELEASE)
+	if (CRenderer::CV_r_stats == 6)
+	{
+		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
+		passContext.pDrawCallInfoPerNode = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode();
+	}
+#endif
+
 	rp.m_nPassGroupID = profilingListID < 0 ? list : profilingListID;
 	rp.m_nPassGroupDIP = profilingListID < 0 ? list : profilingListID;
 

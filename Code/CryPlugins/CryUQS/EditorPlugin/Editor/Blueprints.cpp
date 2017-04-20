@@ -144,6 +144,22 @@ public:
 		}
 	}
 
+	const char* GetDescription() const
+	{
+		if (m_pInstantFactory)
+		{
+			return m_pInstantFactory->GetDescription();
+		}
+		else if (m_pDeferredFactory)
+		{
+			return m_pDeferredFactory->GetDescription();
+		}
+		else
+		{
+			return "";
+		}
+	}
+
 private:
 	UQS::Client::IInstantEvaluatorFactory*  m_pInstantFactory;
 	UQS::Client::IDeferredEvaluatorFactory* m_pDeferredFactory;
@@ -496,6 +512,12 @@ int CFunctionSerializationHelper::CFunctionList::SerializeName(
 		}
 	}
 
+	// description of the function
+	if (resultFunctionIndex != CFunctionSerializationHelper::npos)
+	{
+		archive.doc(GetByIdx(resultFunctionIndex).pFactory->GetDescription());
+	}
+
 	return resultFunctionIndex;
 }
 
@@ -828,24 +850,27 @@ const CFunctionSerializationHelper::SFunction* CFunctionSerializationHelper::Get
 CInputBlueprint::CInputBlueprint()
 	: m_paramName()
 	, m_paramID(UQS::Client::CInputParameterID::CreateEmpty())
+	, m_paramDescription()
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 	, m_functionHelper()
 	, m_children()
 	, m_pErrorCollector(new CErrorCollector)
 {}
 
-CInputBlueprint::CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
+CInputBlueprint::CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szParamDescription, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 	: m_paramName(szParamName)
 	, m_paramID(paramID)
+	, m_paramDescription(szParamDescription)
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(bAddReturnValueToDebugRenderWorldUponExecution)
 	, m_functionHelper(szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution)
 	, m_children()
 	, m_pErrorCollector(new CErrorCollector)
 {}
 
-CInputBlueprint::CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID)
+CInputBlueprint::CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szParamDescription)
 	: m_paramName(szParamName)
 	, m_paramID(paramID)
+	, m_paramDescription(szParamDescription)
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 	, m_functionHelper()
 	, m_children()
@@ -855,6 +880,7 @@ CInputBlueprint::CInputBlueprint(const char* szParamName, const UQS::Client::CIn
 CInputBlueprint::CInputBlueprint(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context)
 	: m_paramName()
 	, m_paramID(UQS::Client::CInputParameterID::CreateEmpty())
+	, m_paramDescription()
 	, m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 	, m_functionHelper(functionFactory, context)
 	, m_children()
@@ -878,6 +904,7 @@ CInputBlueprint& CInputBlueprint::operator=(CInputBlueprint&& other)
 	{
 		m_paramName = std::move(other.m_paramName);
 		m_paramID = std::move(other.m_paramID);
+		m_paramDescription = std::move(other.m_paramDescription);
 		m_bAddReturnValueToDebugRenderWorldUponExecution = std::move(other.m_bAddReturnValueToDebugRenderWorldUponExecution);
 		m_functionHelper = std::move(other.m_functionHelper);
 		m_children = std::move(other.m_children);
@@ -931,7 +958,7 @@ void CInputBlueprint::SetChildrenFromFactoryInputRegistry(const TFactory& factor
 		CInputBlueprint* pParam = FindChildByParamName(paramInfo.szName);
 		if (!pParam)
 		{
-			m_children.emplace_back(paramInfo.szName, paramInfo.id);
+			m_children.emplace_back(paramInfo.szName, paramInfo.id, paramInfo.szDescription);
 			pParam = &m_children.back();
 		}
 		pParam->SetAdditionalParamInfo(paramInfo, context);
@@ -1026,6 +1053,7 @@ void CInputBlueprint::DeriveChildrenInfoFromFactoryInputRegistry(const TFactory&
 void CInputBlueprint::SetAdditionalParamInfo(const UQS::Client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context)
 {
 	m_paramID = paramInfo.id;
+	m_paramDescription = paramInfo.szDescription;
 	m_functionHelper.Reset(context.GetItemTypeNameFromType(paramInfo.type), context);
 }
 
@@ -1047,17 +1075,22 @@ void CInputBlueprint::Serialize(Serialization::IArchive& archive)
 
 	if (bUseSelectionHelpers)
 	{
-		// Prepare param (and type) name and use it as label for function
+		// Prepare param (and type) name and use it as an extra UI element to show the parameter description as tooltip
 		if (bShowInputParamTypes)
 		{
-			m_paramLabel.Format("^%s (%s)", m_paramName.c_str(), m_functionHelper.GetExpectedType().c_str());
+			m_paramLabel.Format("^!>0>%s (%s)", m_paramName.c_str(), m_functionHelper.GetExpectedType().c_str());
 		}
 		else
 		{
-			m_paramLabel.Format("^%s", m_paramName.c_str());
+			m_paramLabel.Format("^!>0>%s", m_paramName.c_str());
 		}
 
-		SerializeFunction(archive, *pContext, m_paramLabel.c_str());
+		// dummy field just for displaying the parameter's name and its description
+		string dummyValue = "";
+		archive(dummyValue, "paramLabel", m_paramLabel.c_str());
+		archive.doc(m_paramDescription.c_str());
+
+		SerializeFunction(archive, *pContext, "^");
 	}
 	else
 	{
@@ -1225,7 +1258,8 @@ bool CInputBlueprint::GetAddReturnValueToDebugRenderWorldUponExecution() const
 
 CInputBlueprint& CInputBlueprint::AddChild(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 {
-	m_children.emplace_back(szParamName, paramID, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
+	const char* szParamDescription = "";  // FIXME: where to get the description of the parameter from?? ... nevermind, the description eventually ends up in the UI somehow
+	m_children.emplace_back(szParamName, paramID, szParamDescription, szFuncName, szFuncReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
 	return m_children.back();
 }
 
@@ -1332,6 +1366,12 @@ void CConstParamBlueprint::SConstParam::SerializeImpl(Serialization::IArchive& a
 		{
 			value = CItemLiteral(type, context);
 		}
+	}
+
+	// description of the type
+	if (const UQS::Client::IItemFactory* pFactory = context.GetItemFactoryByName(type.c_str()))
+	{
+		archive.doc(pFactory->GetDescription());
 	}
 
 	archive(value, "value", "^Value");
@@ -1489,6 +1529,12 @@ void CRuntimeParamBlueprint::SRuntimeParam::SerializeImpl(Serialization::IArchiv
 	archive(name, "name", "^Name");
 	archive(type, "type", "^Type");
 
+	// description of the type
+	if (const UQS::Client::IItemFactory* pFactory = UQS::Core::IHubPlugin::GetHub().GetItemFactoryDatabase().FindFactoryByName(type.c_str()))
+	{
+		archive.doc(pFactory->GetDescription());
+	}
+
 	bool bItemCanBeRepresentedInDebugRenderWorld = false;
 	if (CUqsDocSerializationContext* pContext = archive.context<CUqsDocSerializationContext>())
 	{
@@ -1631,6 +1677,15 @@ void CGeneratorBlueprint::Serialize(Serialization::IArchive& archive)
 		assert(m_pErrorCollector);
 
 		const bool bNameChanged = SerializeName(archive, "name", "^", *pContext);
+
+		// description of the generator
+		if (!IsStringEmpty(m_name))
+		{
+			if (const UQS::Client::IGeneratorFactory* pFactory = pContext->GetGeneratorFactoryByName(m_name.c_str()))
+			{
+				archive.doc(pFactory->GetDescription());
+			}
+		}
 
 		m_pErrorCollector->Serialize(archive, *this);
 
@@ -2086,6 +2141,9 @@ void CEvaluator::Serialize(Serialization::IArchive& archive)
 				{
 					m_inputs.ResetChildrenFromFactory(factory, *pContext);
 				}
+
+				// description of the evaluator
+				archive.doc(factory.GetDescription());
 			}
 
 			// Always set type from factory (if available), and only show it on output as read-only field
@@ -2160,6 +2218,12 @@ void CEvaluator::SerializeScoreTransform(Serialization::IArchive& archive, const
 	else
 	{
 		SerializeStringWithSetter(archive, szName, szLabel, szOldScoreTransform, setScoreTransform);
+	}
+
+	// description of the score-transform
+	if (const UQS::Core::IScoreTransformFactory* pFactory = context.GetScoreTransformFactoryByName(m_scoreTransformName.c_str()))
+	{
+		archive.doc(pFactory->GetDescription());
 	}
 }
 
@@ -2446,6 +2510,12 @@ bool SQueryFactoryType::Serialize(Serialization::IArchive& archive, const char* 
 	else
 	{
 		SerializeStringWithSetter(archive, szName, szLabel, szOldName, setName);
+	}
+
+	// description of the query type
+	if (const UQS::Core::IQueryFactory* pFactory = pContext->GetQueryFactoryByName(queryFactoryName.c_str()))
+	{
+		archive.doc(pFactory->GetDescription());
 	}
 
 	if (bNameChanged || queryTraits.IsUndefined())

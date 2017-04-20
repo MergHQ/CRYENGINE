@@ -70,7 +70,7 @@ void CDefaultParticleEntity::SerializeProperties(Serialization::IArchive& archiv
 	}
 
 	archive(*m_pAttributes, "Attributes", "Attributes");
-	if (archive.isInput() && m_particleSlot != -1)
+	if (m_particleSlot != -1 && (archive.isInput() || archive.isEdit()))
 		GetEmitter()->GetAttributes().Reset(m_pAttributes.get());
 }
 

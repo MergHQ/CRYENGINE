@@ -45,6 +45,7 @@ namespace UQS
 			virtual                                 ~IInstantEvaluatorFactory() {}
 			virtual const char*                     GetName() const = 0;
 			virtual const CryGUID&                  GetGUID() const = 0;
+			virtual const char*                     GetDescription() const = 0;
 			virtual const IInputParameterRegistry&  GetInputParameterRegistry() const = 0;
 			virtual InstantEvaluatorUniquePtr       CreateInstantEvaluator() = 0;
 			virtual void                            DestroyInstantEvaluator(IInstantEvaluator* pInstantEvaluatorToDestroy) = 0;

@@ -131,6 +131,7 @@ struct SComponentParams
 	bool  IsValid() const     { return m_isValid; }
 	bool  HasChildren() const { return !m_subComponentIds.empty(); }
 	bool  IsSecondGen() const { return m_parentId != gInvalidId; }
+	bool  IsImmortal() const  { return !std::isfinite(m_emitterLifeTime.end + m_maxParticleLifeTime); }
 	void  MakeMaterial(CParticleComponent* pComponent);
 
 	// PFX2_TODO : Reorder from larger to smaller

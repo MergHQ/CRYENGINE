@@ -281,7 +281,7 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 			if (pSndFile != nullptr)
 			{
 				CryFixedStringT<16> const eventTypeString(pAudioTriggerNode->getAttr(s_szPortAudioEventTypeAttribute));
-				EPortAudioEventType const eventType = eventTypeString.compareNoCase("start") == 0 ? EPortAudioEventType::Start : EPortAudioEventType::Stop;
+				EEventType const eventType = eventTypeString.compareNoCase("start") == 0 ? EEventType::Start : EEventType::Stop;
 
 				// numLoops -1 == infinite, 0 == once, 1 == twice etc
 				int numLoops = 0;

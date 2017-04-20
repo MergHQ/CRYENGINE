@@ -168,7 +168,7 @@ struct IParticleAttributes
 		ET_Count,
 	};
 
-	virtual void         Reset(IParticleAttributes* pCopySource = nullptr) = 0;
+	virtual void         Reset(const IParticleAttributes* pCopySource = nullptr) = 0;
 	virtual void         Serialize(Serialization::IArchive& ar) = 0;
 	virtual void         TransferInto(IParticleAttributes* pReceiver) const = 0;
 	virtual TAttributeId FindAttributeIdByName(cstr name) const = 0;

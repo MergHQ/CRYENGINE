@@ -312,7 +312,10 @@ private:
 	void CompilePerInstanceExtraResources(CRenderObject* pRenderObject);
 	void CompileInstancingData(CRenderObject* pRenderObject, bool bForce);
 	void UpdatePerInstanceCB(void* pData, size_t size);
-
+#if !defined(_RELEASE)
+	void TrackStats(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CRenderObject* pRenderObject) const;
+#endif
 private:
 	static CRenderObjectsPools* s_pPools;
+	static CryCriticalSectionNonRecursive m_drawCallInfoLock;
 };

@@ -84,6 +84,8 @@ private:
 	void                     OnMenuActionViewShowInputParamTypes(bool checked);
 	void                     OnMenuActionViewFilterInputsByType(bool checked);
 
+	void                     OnMenuActionHelpOnlineDocumentation();
+
 	void                     OnLibraryExplorerSelectionChanged();
 	void                     OnLibraryExplorerActivated(const Explorer::ExplorerEntry* pExplorerEntry);
 

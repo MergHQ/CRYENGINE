@@ -81,9 +81,7 @@ public:
 	uint                      AddRenderObjectId();
 	uint                      GetNumRenderObjectIds() const;
 	float                     GetEquilibriumTime() const;
-
-	int                       GetEditVersion() const { return m_editVersion; }
-
+	int                       GetEditVersion() const;
 
 	int m_id;
 

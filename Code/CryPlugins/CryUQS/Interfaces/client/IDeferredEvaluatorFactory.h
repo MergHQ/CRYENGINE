@@ -32,6 +32,7 @@ namespace UQS
 			virtual                                    ~IDeferredEvaluatorFactory() {}
 			virtual const char*                        GetName() const = 0;
 			virtual const CryGUID&                     GetGUID() const = 0;
+			virtual const char*                        GetDescription() const = 0;
 			virtual const IInputParameterRegistry&     GetInputParameterRegistry() const = 0;
 			virtual DeferredEvaluatorUniquePtr         CreateDeferredEvaluator(const void* pParams) = 0;
 			virtual void                               DestroyDeferredEvaluator(IDeferredEvaluator* pDeferredEvaluatorToDestroy) = 0;

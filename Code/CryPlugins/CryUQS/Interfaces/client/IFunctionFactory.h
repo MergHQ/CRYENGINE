@@ -31,6 +31,7 @@ namespace UQS
 			virtual                                 ~IFunctionFactory() {}
 			virtual const char*                     GetName() const = 0;
 			virtual const CryGUID&                  GetGUID() const = 0;
+			virtual const char*                     GetDescription() const = 0;
 			virtual const IInputParameterRegistry&  GetInputParameterRegistry() const = 0;
 			virtual const Shared::CTypeInfo&        GetReturnType() const = 0;
 			virtual const Shared::CTypeInfo*        GetContainedType() const = 0;   // this is for ELeafFunctionKind::ShuttledItems functions: these functions actually return a ["pointer-to" ("list-of" "item")] and we need to get the type of that "item"

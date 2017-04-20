@@ -15,6 +15,9 @@
 #include <QDialogButtonbox>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QDesktopServices>
+
+#include <QtUtil.h>
 
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Controls/QuestionDialog.h>
@@ -243,6 +246,11 @@ void CMainEditorWindow::BuildMenu()
 		connect(AddCheckboxAction(pViewMenu, "&Filter inputs by type", m_editorContext.GetSettings().bFilterAvailableInputsByType), &QAction::triggered,
 		        this, &CMainEditorWindow::OnMenuActionViewFilterInputsByType);
 	}
+
+	{
+		QMenu* pHelpMenu = menuBar()->addMenu("&Help");
+		connect(pHelpMenu->addAction("&Online documentation"), &QAction::triggered, this, &CMainEditorWindow::OnMenuActionHelpOnlineDocumentation);
+	}
 }
 
 void CMainEditorWindow::OnMenuActionFileNew()
@@ -297,6 +305,15 @@ void CMainEditorWindow::OnMenuActionViewFilterInputsByType(bool checked)
 	{
 		m_pCurrentDocument->ApplySettings(m_editorContext.GetSettings());
 	}
+}
+
+void CMainEditorWindow::OnMenuActionHelpOnlineDocumentation()
+{
+	// URL to the UQS Query Editor (as of 2017-04-19)
+	const char* szURL = "http://docs.cryengine.com/display/CEMANUAL/Sandbox+Plugin%3A+Query+Editor";
+	const QUrl qURL = QtUtil::ToQString(szURL);
+
+	QDesktopServices::openUrl(qURL);
 }
 
 void CMainEditorWindow::OnLibraryExplorerSelectionChanged()

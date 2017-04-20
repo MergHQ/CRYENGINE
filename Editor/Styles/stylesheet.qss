@@ -1426,8 +1426,12 @@ EditorStyleHelper {
 	qproperty-highlightedTextColor: rgb(255, 255, 255);
 	qproperty-linkColor: rgb(0, 0, 255);
 	qproperty-linkVisitedColor: rgb(255, 0, 255);
-	qproperty-toolTipBaseColor: rgb(255, 255, 200);
-	qproperty-toolTipTextColor: rgb(0, 0, 0);
+	qproperty-toolTipBaseColor: rgb(35, 35, 35);
+	qproperty-toolTipTextColor: rgb(192, 192, 192);
+	qproperty-toolTipMarginTop: 4;
+	qproperty-toolTipMarginLeft: 4;
+	qproperty-toolTipMarginRight: 4;
+	qproperty-toolTipMarginBottom: 4;
 	qproperty-alternateBaseColor: rgb(128, 128, 128);
 	qproperty-disabledWindowTextColor: rgb(192, 192, 192);	
 	qproperty-disabledButtonColor: rgb(66, 66, 66);

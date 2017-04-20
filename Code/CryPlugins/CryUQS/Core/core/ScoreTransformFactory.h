@@ -19,11 +19,12 @@ namespace UQS
 		{
 		public:
 
-			explicit                              CScoreTransformFactory(const char* szName, const CryGUID& guid, EScoreTransformType scoreTransformType);
+			explicit                              CScoreTransformFactory(const char* szName, const CryGUID& guid, const char* szDescription, EScoreTransformType scoreTransformType);
 
 			// IScoreTransformFactory
 			virtual const char*                   GetName() const override;
 			virtual const CryGUID&                GetGUID() const override;
+			virtual const char*                   GetDescription() const override;
 			virtual EScoreTransformType           GetScoreTransformType() const override;
 			// ~IScoreTransformFactory
 
@@ -32,6 +33,7 @@ namespace UQS
 
 		private:
 
+			string                                m_description;
 			EScoreTransformType                   m_scoreTransformType;
 			static const CScoreTransformFactory*  s_pDefaultScoreTransformFactory;     // will be set by InstantiateFactories()
 		};

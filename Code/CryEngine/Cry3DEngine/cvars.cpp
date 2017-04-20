@@ -207,7 +207,10 @@ void CVars::Init()
 	REGISTER_CVAR(e_ParticlesAllowRuntimeLoad, 1, VF_NULL,
 	              "Allow loading of dynamic particle effects at runtime");
 	REGISTER_CVAR(e_ParticlesConvertPfx1, 0, VF_NULL,
-	              "Convert pfx1 to pfx2 when loaded");
+	              "Convert pfx1 to pfx2 when loaded. Combinable options:\n"
+	              "  1 = Convert if pfx2 version doesn't exist.\n"
+	              "  2 = Convert and overwrite pfx2 version.\n"
+	              "  4 = Replace loaded pfx1 effects with pfx2 version.\n");
 	DefineConstIntCVar(e_ParticlesSerializeNamedFields, 1, VF_NULL,
 	                   "Save effects libraries with named fields for future compatibility (compatible with versions >= 24)");
 	REGISTER_CVAR(e_ParticlesLod, 1, VF_NULL,

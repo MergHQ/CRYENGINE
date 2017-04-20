@@ -520,21 +520,26 @@ void CParticleComponent::SetName(const char* name)
 	m_name = m_pEffect->MakeUniqueName(m_componentId, name);
 
 	// #PFX2_TODO - not the best solution but needed for 5.3. Deprecate after SecondGen is reimplemented using UIDs
-	const uint numComponents = m_pEffect->GetNumComponents();
-	for (uint componentIdx = 0; componentIdx < numComponents; ++componentIdx)
+	if (oldName != m_name)
 	{
-		IParticleComponent* pComponent = m_pEffect->GetComponent(componentIdx);
-		const uint numFeatures = pComponent->GetNumFeatures();
-		for (uint featureIdx = 0; featureIdx < numFeatures; ++featureIdx)
+		const uint numComponents = m_pEffect->GetNumComponents();
+		for (uint componentIdx = 0; componentIdx < numComponents; ++componentIdx)
 		{
-			IParticleFeature* pFeature = pComponent->GetFeature(featureIdx);
-			const uint numConnectors = pFeature->GetNumConnectors();
-			for (uint connectorIdx = 0; connectorIdx < numConnectors; ++connectorIdx)
+			IParticleComponent* pComponent = m_pEffect->GetComponent(componentIdx);
+			if (!pComponent)
+				continue;
+			const uint numFeatures = pComponent->GetNumFeatures();
+			for (uint featureIdx = 0; featureIdx < numFeatures; ++featureIdx)
 			{
-				if (strcmp(pFeature->GetConnectorName(connectorIdx), oldName.c_str()) == 0)
+				IParticleFeature* pFeature = pComponent->GetFeature(featureIdx);
+				const uint numConnectors = pFeature->GetNumConnectors();
+				for (uint connectorIdx = 0; connectorIdx < numConnectors; ++connectorIdx)
 				{
-					pFeature->DisconnectFrom(oldName);
-					pFeature->ConnectTo(m_name.c_str());
+					if (strcmp(pFeature->GetConnectorName(connectorIdx), oldName.c_str()) == 0)
+					{
+						pFeature->DisconnectFrom(oldName);
+						pFeature->ConnectTo(m_name.c_str());
+					}
 				}
 			}
 		}

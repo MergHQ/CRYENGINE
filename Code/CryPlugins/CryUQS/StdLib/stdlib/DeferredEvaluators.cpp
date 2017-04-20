@@ -18,6 +18,12 @@ namespace UQS
 
 				ctorParams.szName = "std::TestRaycast";
 				ctorParams.guid = "e8d294e5-ab1f-40ce-abc1-9b6fc687c990"_uqs_guid;
+				ctorParams.szDescription =
+					"Tests a raycast between 2 given positions.\n"
+					"Whether success or failure of the raycast counts as overall success or failure of the evaluator can be specified by a parameter.\n"
+					"NOTICE: The underlying raycaster uses the *renderer* to limit the number of raycasts per frame!\n"
+					"As such, it will not work on a dedicated server as there is no renderer (!) (Read: a null-pointer crash would occur!)\n"
+					"You should rather consider this evaluator as a reference for your own implementation.";
 
 				static const Client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast> deferredEvaluatorFactory_TestRaycast(ctorParams);
 			}

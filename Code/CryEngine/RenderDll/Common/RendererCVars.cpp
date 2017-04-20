@@ -46,6 +46,7 @@ int CRendererCVars::CV_r_FullscreenPreemption = 1;
 #endif
 AllocateConstIntCVar(CRendererCVars, CV_r_SyncToFrameFence);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugTexelDensity);
+AllocateConstIntCVar(CRendererCVars, CV_e_DebugDraw);
 int CRendererCVars::CV_r_minimizeLatency = 0;
 AllocateConstIntCVar(CRendererCVars, CV_r_statsMinDrawcalls);
 AllocateConstIntCVar(CRendererCVars, CV_r_stats);

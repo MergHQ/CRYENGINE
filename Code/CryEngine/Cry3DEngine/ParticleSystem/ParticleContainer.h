@@ -17,7 +17,6 @@
 #include "ParticleDataTypes.h"
 #include "ParticleMath.h"
 #include "ParticleDataStreams.h"
-#include "ParticleUpdate.h"
 
 namespace pfx2
 {
@@ -55,7 +54,7 @@ public:
 	void                              AddParticleData(EParticleDataType type);
 	bool                              HasData(EParticleDataType type) const { return m_useData[type]; }
 	void                              AddParticle();
-	void                              AddRemoveParticles(const SSpawnEntry* pSpawnEntries, size_t numSpawnEntries, const TParticleIdArray* pToRemove, TParticleIdArray* pSwapIds);
+	void                              AddRemoveParticles(TConstArray<SSpawnEntry> spawnEntries, TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 	void                              Trim();
 	void                              Clear();
 
@@ -90,14 +89,13 @@ public:
 	void                              RemoveNewBornFlags();
 	TParticleId                       GetRealId(TParticleId pId) const;
 	uint32                            GetNextSpawnId() const          { return m_nextSpawnId; }
-
-	SUpdateRange                      GetFullRange() const;
-	SUpdateRange                      GetSpawnedRange() const;
+	SUpdateRange                      GetFullRange() const            { return SUpdateRange(0, GetLastParticleId()); }
+	SUpdateRange                      GetSpawnedRange() const         { return SUpdateRange(GetFirstSpawnParticleId(), GetLastParticleId()); }
 
 private:
-	void AddParticles(const SSpawnEntry* pSpawnEntries, size_t numSpawnEntries);
-	void RemoveParticles(const TParticleIdArray& toRemove);
-	void MakeSwapIds(const TParticleIdArray& toRemove, TParticleIdArray* pSwapIds);
+	void AddParticles(TConstArray<SSpawnEntry> spawnEntries);
+	void RemoveParticles(TConstArray<TParticleId> toRemove);
+	void MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 
 	StaticEnumArray<void*, EParticleDataType> m_pData;
 	StaticEnumArray<bool, EParticleDataType>  m_useData;
@@ -111,6 +109,7 @@ private:
 
 }
 
+#include "ParticleUpdate.h"
 #include "ParticleContainerImpl.h"
 
 #endif // PARTICLECONTAINER_H

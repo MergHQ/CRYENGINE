@@ -480,10 +480,17 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 		error_project_json_decode (args)
 	
 	engine_id= cryproject.engine_id(project)	
-	engine_registry= cryregistry.load_engines()
-	engine_path= cryregistry.engine_path (engine_registry, engine_id)
-	if engine_path is None:
-		error_engine_path_not_found (args, engine_id)
+	engine_path = ""
+	
+	# Start by checking for the ability to specifying use of the local engine
+	if engine_id is '.':
+		engine_path = os.path.dirname(args.project_file)
+	else:
+		# Now check the registry
+		engine_registry= cryregistry.load_engines()
+		engine_path= cryregistry.engine_path (engine_registry, engine_id)
+		if engine_path is None:
+			error_engine_path_not_found (args, engine_id)
 		
 	#---
 

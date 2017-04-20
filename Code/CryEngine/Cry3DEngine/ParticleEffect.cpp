@@ -1798,7 +1798,7 @@ IParticleAttributes& CParticleEffect::GetAttributes()
 {
 	static class CNullParticleAttributes : public IParticleAttributes
 	{
-		virtual void         Reset(IParticleAttributes* pCopySource = nullptr)       {}
+		virtual void         Reset(const IParticleAttributes* pCopySource = nullptr) {}
 		virtual void         Serialize(Serialization::IArchive& ar)                  {}
 		virtual void         TransferInto(IParticleAttributes* pReceiver) const      {}
 		virtual TAttributeId FindAttributeIdByName(cstr name) const                  { return -1; }

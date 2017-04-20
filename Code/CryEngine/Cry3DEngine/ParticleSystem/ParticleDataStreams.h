@@ -7,14 +7,6 @@
 namespace pfx2
 {
 
-#ifdef CRY_PFX2_USE_SSE
-  #define CRY_PFX2_PARTICLESGROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
-#else
-  #define CRY_PFX2_PARTICLESGROUP_STRIDE 1
-#endif
-#define CRY_PFX2_PARTICLESGROUP_LOWER(id) ((id) & ~((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
-#define CRY_PFX2_PARTICLESGROUP_UPPER(id) ((id) | ((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
-
 //////////////////////////////////////////////////////////////////////////
 // TIStream
 

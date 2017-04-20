@@ -277,9 +277,9 @@ public:
 	const CInputBlueprint* FindChildByParamNameConst(const char* szParamName) const;
 
 	CInputBlueprint();
-	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
+	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szParamDescription, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 
-	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID);
+	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szParamDescription);
 
 	CInputBlueprint(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
@@ -326,6 +326,7 @@ private:
 
 	string                                   m_paramName;
 	UQS::Client::CInputParameterID           m_paramID;
+	string                                   m_paramDescription;
 	bool                                     m_bAddReturnValueToDebugRenderWorldUponExecution;
 
 	CFunctionSerializationHelper             m_functionHelper;

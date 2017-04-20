@@ -12,6 +12,9 @@
 
 namespace gpu_pfx2
 {
+
+template<typename T> using TConstArray = Array<const T, uint>;
+
 class CREGpuParticle;
 
 static const float kBoundsScale = 100.f;
@@ -166,7 +169,7 @@ public:
 
 	std::vector<_smart_ptr<gpu_pfx2::CFeature>> m_gpuUpdateLists[eGpuUpdateList_COUNT];
 
-	typedef std::vector<uint> TInstances;
+	typedef DynArray<TParticleId, uint> TInstances;
 
 	CParticleComponentRuntime(
 	  pfx2::IParticleComponent* pComponent,
@@ -179,7 +182,7 @@ public:
 	virtual EState      GetState() const override       { return m_state; };
 	virtual bool        IsActive() const override       { return m_active; }
 	virtual void        SetActive(bool active) override { m_active = active; }
-	virtual bool        IsSecondGen() override          { return m_isSecondGen; }
+	virtual bool        IsSecondGen() const override    { return m_isSecondGen; }
 
 	virtual bool        IsValidRuntimeForInitializationParameters(const pfx2::SRuntimeInitializationParameters& parameters) override;
 	virtual void        SetEnvironmentParameters(const SEnvironmentParameters& params) override { m_envParams = params; }
@@ -187,6 +190,10 @@ public:
 	virtual const AABB& GetBounds() const override;
 	virtual void        AccumCounts(SParticleCounts& counts) override;
 	virtual bool        HasParticles() override { return m_parameters->numParticles != 0; }
+
+	virtual void        AddSubInstances(TConstArray<SInstance> instances) override;
+	virtual void        RemoveAllSubInstances() override;
+	virtual void        ReparentParticles(TConstArray<TParticleId> swapIds) override;
 
 	IParticleEmitter*   GetEmitter() const { return m_pEmitter; }
 	void                Initialize();
@@ -224,10 +231,7 @@ public:
 	void                               SetInitializationSRV(EFeatureInitializationSrvSlot slot, CGpuBuffer* pSRV);
 	void                               SetInitializationFlags(uint64 flags);
 
-	virtual void                       AddSubInstances(SInstance* pInstances, size_t count) override;
 	void                               RemoveSubInstance(size_t instanceId);
-	void                               RemoveAllSubInstances() override;
-	virtual void                       ReparentParticles(const uint* swapIds, const uint numSwapIds) override;
 	size_t                             GetNumInstances() const       { return m_subInstancesRenderThread.size(); }
 	const uint&                        GetInstance(size_t idx) const { return m_subInstancesRenderThread[idx]; }
 

@@ -46,6 +46,21 @@ struct ConvertIdentity
 	}
 };
 
+template<int iTo, int iFrom>
+struct ConvertScale
+{
+	template<typename T>
+	static T To(T val)
+	{
+		return RemoveNegZero(val) * T(iTo) / T(iFrom);
+	}
+	template<typename T>
+	static T From(T val)
+	{
+		return RemoveNegZero(val) * T(iFrom) / T(iTo);
+	}
+};
+
 struct SEnable
 {
 public:

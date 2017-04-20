@@ -1542,7 +1542,9 @@ void CD3D9Renderer::RT_BeginFrame()
 
 #ifndef CONSOLE_CONST_CVAR_MODE
 	ICVar* pCVDebugTexelDensity = gEnv->pConsole->GetCVar("e_texeldensity");
-	CV_e_DebugTexelDensity = pCVDebugTexelDensity ? pCVDebugTexelDensity->GetIVal() : 0;
+	ICVar* pCVDebugDraw = gEnv->pConsole->GetCVar("e_debugdraw");
+	CRendererCVars::CV_e_DebugTexelDensity = pCVDebugTexelDensity ? pCVDebugTexelDensity->GetIVal() : 0;
+	CRendererCVars::CV_e_DebugDraw = pCVDebugDraw ? pCVDebugDraw->GetIVal() : 0;
 #endif
 
 	CheckDeviceLost();
@@ -1627,8 +1629,10 @@ void CD3D9Renderer::RT_BeginFrame()
 	UpdateRenderingModesInfo();
 
 #if !defined(_RELEASE)
-	m_RP.m_pRNDrawCallsInfoPerNode[m_RP.m_nProcessThreadID].clear();
+	m_pGraphicsPipeline->GetDrawCallInfoPerMesh()->clear();
+	m_pGraphicsPipeline->GetDrawCallInfoPerNode()->clear();
 	m_RP.m_pRNDrawCallsInfoPerMesh[m_RP.m_nProcessThreadID].clear();
+	m_RP.m_pRNDrawCallsInfoPerNode[m_RP.m_nProcessThreadID].clear();
 #endif
 
 	//////////////////////////////////////////////////////////////////////
@@ -3257,11 +3261,28 @@ void CD3D9Renderer::DebugDrawStats()
 				ColorF clrDPBlue = ColorF(0, 1, 1, 1);
 				ColorF clrDPRed = ColorF(1, 0, 0, 1);
 				ColorF clrDPInterp = ColorF(1, 0, 0, 1);
-				;
 				ColorF clrInfo = ColorF(1, 1, 0, 1);
 
-				IRenderer::RNDrawcallsMapNodeItor pEnd = m_RP.m_pRNDrawCallsInfoPerNode[m_RP.m_nProcessThreadID].end();
-				IRenderer::RNDrawcallsMapNodeItor pItor = m_RP.m_pRNDrawCallsInfoPerNode[m_RP.m_nProcessThreadID].begin();
+				// Support for legacy pipeline
+				for (auto it_legacy = m_RP.m_pRNDrawCallsInfoPerNode[m_RP.m_nProcessThreadID].begin(); it_legacy != m_RP.m_pRNDrawCallsInfoPerNode[m_RP.m_nProcessThreadID].end(); ++it_legacy)
+				{
+					for (auto it = m_pGraphicsPipeline->GetDrawCallInfoPerNode()->begin(); it != m_pGraphicsPipeline->GetDrawCallInfoPerNode()->end(); ++it)
+					{
+						// Same rendernode ?
+						if (it->first == it_legacy->first)
+						{
+							it->second.nGeneral += it_legacy->second.nGeneral;
+							it->second.nZpass += it_legacy->second.nZpass;
+							it->second.nShadows += it_legacy->second.nShadows;
+							it->second.nMisc += it_legacy->second.nMisc;
+							it->second.nTransparent += it_legacy->second.nTransparent;
+						}
+					}
+				}
+
+				IRenderer::RNDrawcallsMapNodeItor pEnd = m_pGraphicsPipeline->GetDrawCallInfoPerNode()->end();
+				IRenderer::RNDrawcallsMapNodeItor pItor = m_pGraphicsPipeline->GetDrawCallInfoPerNode()->begin();
+
 				for (; pItor != pEnd; ++pItor)
 				{
 					IRenderNode* pRenderNode = pItor->first;

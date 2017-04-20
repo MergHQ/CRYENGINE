@@ -308,32 +308,47 @@ int solve_quadratic(T a, T b, T c, T x[2])
 			x[0] = -c / b;
 			return 1;
 		}
-		if (c)
-			return 0;
-		return -1;
+		if (!c)
+		{
+			x[0] = T(0);
+			return 1;
+		}
 	}
 	else
 	{
-		b *= T(-0.5);
-		T d = b * b - a * c;
+		T bh = b * T(-0.5);
+		T d = bh * bh - a * c;
 
 		if (d > T(0))
 		{
-			T s = sqrt(d);
-			T ia = T(1) / a;
+			T s = bh + signnz(bh) * sqrt(d);
 
-			x[0] = (b + s) * ia;
-			x[1] = (b - s) * ia;
+			x[0] = c / s;
+			x[1] = s / a;
 			return 2;
 		}
 		if (!d)
 		{
-			x[0] = b / a;
+			x[0] = bh / a;
 			return 1;
 		}
-		return 0;
 	}
+	return 0;
 }
+
+template<typename T>
+float solve_quadratic_in_range(T a, T b, T c, T lo, T hi)
+{
+	T t[2];
+	for (int n = solve_quadratic(a, b, c, t); --n >= 0; )
+	{
+		if (inrange(t[n], lo, hi))
+			hi = t[n];
+	}
+	return hi;
+}
+
+
 
 } // namespace crymath
 
@@ -488,7 +503,7 @@ ILINE int64 iszero(int64_t x) { return -(x >> 63 ^ (x - 1) >> 63); }
 ILINE int64 iszero(long int x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
 
-template<typename F> ILINE int32 inrange(F x, F end1, F end2) { return isneg(abs(end1 + end2 - x * (F)2) - abs(end1 - end2)); }
+template<typename F> ILINE int32 inrange(F x, F end1, F end2) { return abs(end1 + end2 - x - x) <= abs(end1 - end2); }
 
 template<typename F> ILINE int32 idxmax3(const F* pdata)
 {

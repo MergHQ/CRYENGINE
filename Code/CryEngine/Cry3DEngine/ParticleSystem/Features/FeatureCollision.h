@@ -21,7 +21,8 @@ struct SContactPoint
 {
 	Vec3  m_point;
 	Vec3  m_normal;
-	float m_time;	// fraction of frame time
+	float m_speedIn;          // incoming collision speed
+	float m_time;             // since start of frame
 	uint  m_totalCollisions;
 	struct  
 	{
@@ -32,6 +33,9 @@ struct SContactPoint
 
 	SContactPoint() { ZeroStruct(*this); }
 };
+
+template<typename T, typename F = float> struct QuadPathT;
+typedef QuadPathT<Vec3> QuadPath;
 
 extern EParticleDataType EPDT_ContactPoint;
 
@@ -63,15 +67,17 @@ public:
 	int   GetRayTraceFilter() const;
 
 private:
-	void ProcessCollisions(const SUpdateContext& context);
+	void DoCollisions(const SUpdateContext& context) const;
+	bool DoCollision(SContactPoint& contact, QuadPath& path, int objectFilter, bool doSliding = true) const;
 
 	template<typename TCollisionLimit>
-	void UpdateCollisionLimit(const SUpdateContext& context);
+	void UpdateCollisionLimit(const SUpdateContext& context) const;
 
 	UUnitFloat          m_elasticity;
-	UUnitFloat          m_slidingFriction;
+	UUnitFloat          m_friction;
 	ECollisionLimitMode m_collisionsLimitMode;
 	UBytePos            m_maxCollisions;
+	bool                m_rotateToNormal;
 	bool                m_terrain;
 	bool                m_staticObjects;
 	bool                m_dynamicObjects;

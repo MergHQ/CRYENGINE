@@ -36,7 +36,7 @@ public:
 
 	uint VariantCount() const
 	{
-		return m_tileCount / m_anim.m_frameCount;
+		return m_tileCount / max(1u, uint(m_anim.m_frameCount));
 	}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override

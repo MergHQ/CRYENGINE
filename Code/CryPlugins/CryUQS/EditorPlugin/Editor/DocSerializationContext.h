@@ -33,6 +33,7 @@ public:
 	UQS::Client::IInstantEvaluatorFactory*  GetInstantEvaluatorFactoryByName(const char* szName) const;
 	UQS::Client::IDeferredEvaluatorFactory* GetDeferredEvaluatorFactoryByName(const char* szName) const;
 	UQS::Core::IQueryFactory*               GetQueryFactoryByName(const char* szName) const;
+	UQS::Core::IScoreTransformFactory*      GetScoreTransformFactoryByName(const char* szName) const;
 
 	const Serialization::StringList&        GetQueryFactoryNamesList() const;
 	const Serialization::StringList&        GetItemTypeNamesList() const;

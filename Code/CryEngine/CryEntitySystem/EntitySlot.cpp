@@ -57,6 +57,11 @@ void CEntitySlot::Clear()
 //////////////////////////////////////////////////////////////////////////
 void CEntitySlot::ReleaseObjects()
 {
+	if (m_pRenderNode)
+	{
+		m_pRenderNode->SetOwnerEntity(nullptr);
+	}
+
 	if (m_pStatObj)
 	{
 		m_pStatObj->Release();
@@ -73,15 +78,15 @@ void CEntitySlot::ReleaseObjects()
 		m_pCharacter->Release();
 		m_pCharacter = nullptr;
 	}
-	else if (IParticleEmitter* pEmitter = GetParticleEmitter())
+
+	if (IParticleEmitter* pEmitter = GetParticleEmitter())
 	{
 		pEmitter->Activate(false);
-		pEmitter->SetEntity(NULL, 0);
+		pEmitter->SetEntity(nullptr, 0);
 		pEmitter->Release();
-		m_pRenderNode = 0;
+		m_pRenderNode = nullptr;
 	}
-
-	if (m_pRenderNode)
+	else if (m_pRenderNode)
 	{
 		if (m_bRegisteredRenderNode)
 			gEnv->p3DEngine->UnRegisterEntityDirect(m_pRenderNode);

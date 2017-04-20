@@ -19,21 +19,19 @@ private:
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureRenderDecals();
+	CFeatureRenderDecals()
+		: m_thickness(1.0f) {}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
 
 private:
+	SFloat m_thickness;
 	SFloat m_sortBias;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderDecals, "Render", "Decals", colorRender);
-
-CFeatureRenderDecals::CFeatureRenderDecals()
-{
-}
 
 void CFeatureRenderDecals::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
@@ -44,6 +42,7 @@ void CFeatureRenderDecals::AddToComponent(CParticleComponent* pComponent, SCompo
 void CFeatureRenderDecals::Serialize(Serialization::IArchive& ar)
 {
 	BaseClass::Serialize(ar);
+	ar(m_thickness, "Thickness", "Thickness");
 	ar(m_sortBias, "SortBias", "Sort Bias");
 }
 
@@ -152,7 +151,7 @@ void CFeatureRenderDecals::Render(CParticleEmitter* pEmitter, ICommonParticleCom
 
 		Vec3 xAxis = orientation.GetColumn0() * size;
 		Vec3 yAxis = orientation.GetColumn1() * size;
-		Vec3 zAxis = orientation.GetColumn2() * size;
+		Vec3 zAxis = orientation.GetColumn2() * (size * m_thickness);
 		if (hasAngles2D)
 		{
 			const float angle = angles.Load(particleId);

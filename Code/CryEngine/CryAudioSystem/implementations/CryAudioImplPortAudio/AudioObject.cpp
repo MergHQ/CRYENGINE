@@ -83,7 +83,7 @@ ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTr
 
 	if ((pAudioTrigger != nullptr) && (pAudioEvent != nullptr))
 	{
-		if (pAudioTrigger->eventType == EPortAudioEventType::Start)
+		if (pAudioTrigger->eventType == EEventType::Start)
 		{
 			requestResult = pAudioEvent->Execute(
 			  pAudioTrigger->numLoops,

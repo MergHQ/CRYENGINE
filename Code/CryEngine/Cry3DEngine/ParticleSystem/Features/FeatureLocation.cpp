@@ -58,7 +58,7 @@ public:
 		ar(m_scale, "Scale", "Scale");
 	}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) override
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		if (!m_scale.HasModifiers())
 			return;
@@ -154,7 +154,7 @@ public:
 		ar(m_scale, "Scale", "Scale");
 	}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) override
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		size_t numInstances = context.m_runtime.GetNumInstances();
 		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetLastParticleId());
@@ -262,7 +262,7 @@ public:
 			SphericalDist<false, true>(context);
 	}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) override
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		size_t numInstances = context.m_runtime.GetNumInstances();
 		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetLastParticleId());
@@ -383,7 +383,7 @@ public:
 			CircularDist<false, true>(context);
 	}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) override
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		const size_t numInstances = context.m_runtime.GetNumInstances();
 		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetLastParticleId());
@@ -539,7 +539,7 @@ public:
 			SampleGeometry<false>(context);
 	}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) override
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		if (CParticleEmitter* pEmitter = context.m_runtime.GetEmitter())
 		{
@@ -611,6 +611,7 @@ private:
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position, geomLocation.t);
 		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, geomLocation.q);
+		const IFStream parentSizes = parentContainer.GetIFStream(EPDT_Size, geomLocation.s);
 		const TIStream<IMeshObj*> parentMeshes = parentContainer.GetTIStream<IMeshObj*>(EPDT_MeshGeometry, emitterGeometry.m_pMeshObj);
 		const TIStream<IPhysicalEntity*> parentPhysics = parentContainer.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
@@ -625,23 +626,25 @@ private:
 
 		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 		{
+			GeomRef particleGeometry = emitterGeometry;
 			if (hasParentParticles)
 			{
 				TParticleId parentId = parentIds.Load(particleId);
 				geomLocation.t = parentPositions.SafeLoad(parentId);
 				geomLocation.q = parentQuats.SafeLoad(parentId);
-				if (IMeshObj* mesh = parentMeshes.Load(parentId))
-					emitterGeometry.Set(mesh);
+				geomLocation.s = parentSizes.SafeLoad(parentId);
+				if (IMeshObj* mesh = parentMeshes.SafeLoad(parentId))
+					particleGeometry.Set(mesh);
 				if (m_source == EGeometrySource::Physics)
 				{
-					if (IPhysicalEntity* pPhysics = parentPhysics.Load(parentId))
-						emitterGeometry.Set(pPhysics);
+					if (IPhysicalEntity* pPhysics = parentPhysics.SafeLoad(parentId))
+						particleGeometry.Set(pPhysics);
 				}
 			}
 
 			CRndGen rng(context.m_spawnRng.Rand());
 			PosNorm randPositionNormal;
-			emitterGeometry.GetRandomPos(
+			particleGeometry.GetRandomPos(
 			  randPositionNormal, rng, geomType, geomForm,
 			  geomLocation, geometryCentered);
 
@@ -844,7 +847,7 @@ public:
 		CRY_PFX2_FOR_END;
 	}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) override
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		size_t numInstances = context.m_runtime.GetNumInstances();
 		for (size_t i = 0; i < numInstances; ++i)
@@ -925,22 +928,27 @@ public:
 		CRY_PFX2_PROFILE_DETAIL;
 
 		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
-		const QuatT wCameraPose = QuatT(camera.GetMatrix());
+		const QuatT wCurCameraPose = QuatT(camera.GetMatrix());
+		const QuatT wPrevCameraPoseInv = GetPSystem()->GetLastCameraPose().GetInverted();
 		const QuatT cameraMotion = GetPSystem()->GetCameraMotion();
 
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
+		const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
+			const uint8 state = states.Load(particleId);
+			if (state == ES_NewBorn)
+				continue;
+
 			const Vec3 wPosition0 = positions.Load(particleId);
-			const Vec3 cPosition0 = wPosition0 - wCameraPose.t;
-			const Vec3 cPosition1 = cameraMotion.q * cPosition0 + cameraMotion.t;
-			const Vec3 wPosition1 = cPosition1 + wCameraPose.t;
+			const Vec3 cPosition0 = wPrevCameraPoseInv * wPosition0;
+			const Vec3 wPosition1 = wCurCameraPose * cPosition0;
 			positions.Store(particleId, wPosition1);
 
 			const Vec3 wVelocity0 = velocities.Load(particleId);
@@ -1150,7 +1158,7 @@ public:
 		SERIALIZE_VAR(ar, m_useEmitterLocation);
 	}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) override
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		UpdateCameraData(context);
 		const float visibility = m_visibility.GetValueRange(context).end;

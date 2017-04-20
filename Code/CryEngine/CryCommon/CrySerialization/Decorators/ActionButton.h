@@ -21,14 +21,13 @@ struct IActionButton
 	virtual IActionButtonPtr Clone() const = 0;
 };
 
-typedef Functor0 FunctorActionButtonCallback;
-
+template<typename Functor>
 struct FunctorActionButton : public IActionButton
 {
-	FunctorActionButtonCallback callback;
-	string                      icon;
+	Functor callback;
+	string  icon;
 
-	explicit FunctorActionButton(const FunctorActionButtonCallback& callback, const char* icon = "")
+	explicit FunctorActionButton(const Functor& callback, const char* icon = "")
 		: callback(callback)
 		, icon(icon)
 	{
@@ -38,10 +37,7 @@ struct FunctorActionButton : public IActionButton
 
 	virtual void Callback() const override
 	{
-		if (callback)
-		{
-			callback();
-		}
+		callback();
 	}
 
 	virtual const char* Icon() const override
@@ -51,13 +47,14 @@ struct FunctorActionButton : public IActionButton
 
 	virtual IActionButtonPtr Clone() const override
 	{
-		return IActionButtonPtr(new FunctorActionButton(callback, icon.c_str()));
+		return IActionButtonPtr(new FunctorActionButton<Functor>(callback, icon.c_str()));
 	}
 
 	// ~IActionButton
 };
 
-inline bool Serialize(Serialization::IArchive& ar, FunctorActionButton& button, const char* name, const char* label)
+template<typename Functor>
+inline bool Serialize(Serialization::IArchive& ar, FunctorActionButton<Functor>& button, const char* name, const char* label)
 {
 	if (ar.isEdit())
 		return ar(Serialization::SStruct::forEdit(static_cast<Serialization::IActionButton&>(button)), name, label);
@@ -65,9 +62,10 @@ inline bool Serialize(Serialization::IArchive& ar, FunctorActionButton& button, 
 		return false;
 }
 
-inline FunctorActionButton ActionButton(const FunctorActionButtonCallback& callback, const char* icon = "")
+template<typename Functor>
+inline FunctorActionButton<Functor> ActionButton(const Functor& callback, const char* icon = "")
 {
-	return FunctorActionButton(callback, icon);
+	return FunctorActionButton<Functor>(callback, icon);
 }
 
 }
