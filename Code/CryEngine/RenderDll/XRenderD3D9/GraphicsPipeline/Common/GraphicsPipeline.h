@@ -45,6 +45,11 @@ public:
 		return m_pipelineStages[stageID];
 	}
 
+#if !defined(_RELEASE)
+	std::map<struct IRenderNode*, IRenderer::SDrawCallCountInfo>* GetDrawCallInfoPerNode() { return &m_drawCallInfoPerNode; }
+	std::map<struct IRenderMesh*, IRenderer::SDrawCallCountInfo>* GetDrawCallInfoPerMesh() { return &m_drawCallInfoPerMesh; }
+#endif
+
 protected:
 	template<class T> void RegisterStage(T*& pPipelineStage, uint32 stageID)
 	{
@@ -85,6 +90,11 @@ protected:
 
 protected:
 	std::array<CGraphicsPipelineStage*, 32> m_pipelineStages;
+
+#if !defined(_RELEASE)
+	std::map<struct IRenderNode*, IRenderer::SDrawCallCountInfo> m_drawCallInfoPerNode;
+	std::map<struct IRenderMesh*, IRenderer::SDrawCallCountInfo> m_drawCallInfoPerMesh;
+#endif
 
 private:
 	std::array<SUtilityPassCache, uint32(IUtilityRenderPass::EPassId::MaxPassCount)> m_utilityPassCaches;

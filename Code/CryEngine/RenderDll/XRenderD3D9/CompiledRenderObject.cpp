@@ -15,6 +15,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 CRenderObjectsPools* CCompiledRenderObject::s_pPools = 0;
+CryCriticalSectionNonRecursive CCompiledRenderObject::m_drawCallInfoLock;
 
 //////////////////////////////////////////////////////////////////////////
 CRenderObjectsPools::CRenderObjectsPools()
@@ -410,6 +411,65 @@ void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRen
 }
 
 //////////////////////////////////////////////////////////////////////////
+#if !defined(_RELEASE)
+void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CRenderObject* pRenderObject) const
+{
+	AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_drawCallInfoLock);
+	CD3D9Renderer* pRenderer = gcpRendD3D;
+	if (pRenderObject)
+	{
+		CRenderElement* pElemBase = pRenderObject->m_pCompiledObject->m_pRenderElement;
+
+		if (pElemBase && pElemBase->mfGetType() == eDATA_Mesh)
+		{
+			CREMeshImpl* pMesh = (CREMeshImpl*)pElemBase;
+			IRenderMesh* pRenderMesh = pMesh ? pMesh->m_pRenderMesh : nullptr;
+
+			if (IRenderNode* pRenderNode = (IRenderNode*)pRenderObject->m_pRenderNode)
+			{
+				//Add to per node map for r_stats 6
+				if (pRenderer->CV_r_stats == 6 || pRenderer->m_pDebugRenderNode || pRenderer->m_bCollectDrawCallsInfoPerNode)
+				{
+					IRenderer::RNDrawcallsMapNode& drawCallsInfoPerNode = *passContext.pDrawCallInfoPerNode;
+					IRenderer::RNDrawcallsMapNodeItor pItor = drawCallsInfoPerNode.find(pRenderNode);
+					
+					if (pItor != drawCallsInfoPerNode.end())
+					{
+						CRenderer::SDrawCallCountInfo& pInfoDP = pItor->second;
+						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+					}
+					else
+					{
+						CRenderer::SDrawCallCountInfo pInfoDP;
+						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+						drawCallsInfoPerNode.insert(IRenderer::RNDrawcallsMapNodeItor::value_type(pRenderNode, pInfoDP));
+					}
+				}
+
+				//Add to per mesh map for perfHUD / Statoscope
+				if (pRenderer->m_bCollectDrawCallsInfo)
+				{
+					IRenderer::RNDrawcallsMapMesh& drawCallsInfoPerMesh = *passContext.pDrawCallInfoPerMesh;
+					IRenderer::RNDrawcallsMapMeshItor pItor = drawCallsInfoPerMesh.find(pRenderMesh);
+
+					if (pItor != drawCallsInfoPerMesh.end())
+					{
+						CRenderer::SDrawCallCountInfo& pInfoDP = pItor->second;
+						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+					}
+					else
+					{
+						CRenderer::SDrawCallCountInfo pInfoDP;
+						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+						drawCallsInfoPerMesh.insert(IRenderer::RNDrawcallsMapMeshItor::value_type(pRenderMesh, pInfoDP));
+					}
+				}
+			}
+		}
+	}
+}
+#endif
+//////////////////////////////////////////////////////////////////////////
 bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject)
 {
 	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
@@ -647,6 +707,12 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 				CryInterlockedIncrement(&(rp.m_PS[rp.m_nProcessThreadID].m_NumRendSkinnedObjects));
 			}
 		}
+	#ifdef DO_RENDERSTATS
+		if (passContext.pDrawCallInfoPerMesh || passContext.pDrawCallInfoPerNode)
+		{
+			TrackStats(passContext, m_pRO);
+		}
+	#endif					
 #endif
 
 		commandInterface.SetVertexBuffers(m_nNumVertexStreams, m_nLastVertexStreamSlot, m_vertexStreamSet);

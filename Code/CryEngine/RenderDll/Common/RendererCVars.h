@@ -398,6 +398,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_TextureCompressor, 1);
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebugDumpIntoLog, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugTexelDensity, 0);
+	DeclareStaticConstIntCVar(CV_e_DebugDraw, 0);
 	DeclareStaticConstIntCVar(CV_r_RainDropsEffect, 1);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolves, 2);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolvesDebug, 0);

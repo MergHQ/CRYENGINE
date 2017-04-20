@@ -3563,8 +3563,54 @@ bool CRenderer::IsDebugRenderNode(IRenderNode* pRenderNode) const
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+#if !defined(_RELEASE)
+void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM, EShaderTechniqueID techniqueID)
+{
+	if (((IRenderNode*)pObj->m_pRenderNode))
+	{
+		pPos = pObj->GetTranslation();
 
-void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM)
+		if (meshName[0] == '\0')
+		{
+			const char* pMeshName = pRM->GetSourceName();
+			if (pMeshName)
+			{
+				const size_t nameLen = strlen(pMeshName);
+
+				// truncate if necessary
+				if (nameLen >= sizeof(meshName))
+				{
+					pMeshName += nameLen - (sizeof(meshName) - 1);
+				}
+				cry_strcpy(meshName, pMeshName);
+			}
+
+			const char* pTypeName = pRM->GetTypeName();
+			if (pTypeName)
+			{
+				cry_strcpy(typeName, pTypeName);
+			}
+		}
+
+		if (techniqueID == TTYPE_GENERAL || techniqueID == TTYPE_Z)
+		{
+			nGeneral++;
+		}
+		else if (techniqueID == TTYPE_SHADOWGEN)
+		{
+			nShadows++;
+		}
+		else if (techniqueID == TTYPE_ZPREPASS)
+		{
+			nZpass++;
+		}
+		else
+		{
+			nMisc++;
+		}
+	}
+}
+void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM) // LEGACY support
 {
 	SRenderPipeline& RESTRICT_REFERENCE rRP = gRenDev->m_RP;
 	if (((IRenderNode*)pObj->m_pRenderNode))
@@ -3597,25 +3643,26 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 			nMisc++;
 		else
 		{
-			if (rRP.m_nBatchFilter & FB_GENERAL)
+			if (rRP.m_nPassGroupID == EFSLIST_TRANSP)
 			{
-				if (rRP.m_nPassGroupID == EFSLIST_TRANSP)
-				{
-					nTransparent++;
-				}
-				else
-				{
-					nGeneral++;
-				}
+				nTransparent++;
 			}
-			else if (rRP.m_nBatchFilter & (FB_Z | FB_ZPREPASS))
+			else if (rRP.m_nPassGroupID == EFSLIST_ZPREPASS)
 			{
 				nZpass++;
+			}
+			else if (rRP.m_nPassGroupID == EFSLIST_SHADOW_GEN)
+			{
+				nShadows++;
+			}
+			else
+			{
+				nGeneral++;
 			}
 		}
 	}
 }
-
+#endif
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void S3DEngineCommon::Update(threadID nThreadID)
@@ -4592,21 +4639,13 @@ bool CRenderer::IsShadowPassEnabled() const
 
 CRenderer::RNDrawcallsMapMesh& CRenderer::GetDrawCallsInfoPerMesh(bool mainThread /*=true*/)
 {
-	if (mainThread)
-	{
-		return m_RP.m_pRNDrawCallsInfoPerMesh[m_RP.m_nFillThreadID];
-	}
-	else
-	{
-		return m_RP.m_pRNDrawCallsInfoPerMesh[m_RP.m_nProcessThreadID];
-	}
+	return *gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
 }
 
 int CRenderer::GetDrawCallsPerNode(IRenderNode* pRenderNode)
 {
-	uint32 t = m_RP.m_nFillThreadID;
-	IRenderer::RNDrawcallsMapNodeItor iter = m_RP.m_pRNDrawCallsInfoPerNode[t].find(pRenderNode);
-	if (iter != m_RP.m_pRNDrawCallsInfoPerNode[t].end())
+	IRenderer::RNDrawcallsMapNodeItor iter = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode()->find(pRenderNode);
+	if (iter != gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode()->end())
 	{
 		SDrawCallCountInfo& pInfo = iter->second;
 		uint32 nDrawcalls         = pInfo.nShadows + pInfo.nZpass + pInfo.nGeneral + pInfo.nTransparent + pInfo.nMisc;
@@ -4620,21 +4659,18 @@ void CRenderer::ForceRemoveNodeFromDrawCallsMap(IRenderNode* pNode)
 {
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
 	{
-		IRenderer::RNDrawcallsMapNodeItor pItor = m_RP.m_pRNDrawCallsInfoPerNode[i].find(pNode);
-		if (pItor != m_RP.m_pRNDrawCallsInfoPerNode[i].end())
+		IRenderer::RNDrawcallsMapNodeItor pItor = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode()->find(pNode);
+		if (pItor != gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode()->end())
 		{
-			m_RP.m_pRNDrawCallsInfoPerNode[i].erase(pItor);
+			gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode()->erase(pItor);
 		}
 	}
 }
 
 void CRenderer::ClearDrawCallsInfo()
 {
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
-	{
-		m_RP.m_pRNDrawCallsInfoPerMesh[i].clear();
-		m_RP.m_pRNDrawCallsInfoPerNode[i].clear();
-	}
+	gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode()->clear();
+	gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh()->clear();
 }
 #endif
 

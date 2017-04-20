@@ -2338,7 +2338,10 @@ struct IRenderer//: public IRendererCallbackServer
 			typeName[0] = '\0';
 		}
 
-		void Update(CRenderObject* pObj, IRenderMesh* pRM);
+#if !defined(_RELEASE)
+		void Update(CRenderObject* pObj, IRenderMesh* pRM); // legacy support
+		void Update(CRenderObject* pObj, IRenderMesh* pRM, EShaderTechniqueID techniqueID);
+#endif
 
 		Vec3  pPos;
 		uint8 nZpass, nShadows, nGeneral, nTransparent, nMisc;
