@@ -69,9 +69,11 @@ void CParticleComponentRuntime::Reset()
 
 void CParticleComponentRuntime::SetActive(bool active)
 {
-	if (active == m_active)
-		return;
 	m_active = active;
+	if (active)
+		Initialize();
+	else
+		Reset();
 }
 
 void CParticleComponentRuntime::UpdateAll(const SUpdateContext& context)
@@ -123,15 +125,18 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 	}
 }
 
-void CParticleComponentRuntime::AddSubInstances(SInstance* pInstances, size_t count)
+void CParticleComponentRuntime::AddSubInstances(TConstArray<SInstance> instances)
 {
 	CRY_PFX2_PROFILE_DETAIL;
+
+	if (instances.empty())
+		return;
 
 	const SComponentParams& params = GetComponentParams();
 
 	size_t firstInstance = m_subInstances.size();
-	size_t lastInstance = firstInstance + count;
-	m_subInstances.insert(m_subInstances.end(), pInstances, pInstances + count);
+	size_t lastInstance = firstInstance + instances.size();
+	m_subInstances.insert(m_subInstances.end(), instances.begin(), instances.end());
 	m_subInstanceData.resize(params.m_instanceDataStride * m_subInstances.size());
 	AlignInstances();
 
@@ -149,7 +154,7 @@ void CParticleComponentRuntime::RemoveAllSubInstances()
 	OrphanAllParticles();
 }
 
-void CParticleComponentRuntime::ReparentParticles(const uint* swapIds, const uint numSwapIds)
+void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapIds)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -161,7 +166,7 @@ void CParticleComponentRuntime::ReparentParticles(const uint* swapIds, const uin
 		const TParticleId parentId = parentIds.Load(particleId);
 		if (parentId != gInvalidId)
 		{
-			CRY_PFX2_ASSERT(parentId < numSwapIds);   // this particle was pointing to the wrong parentId already
+			CRY_PFX2_ASSERT(parentId < swapIds.size());   // this particle was pointing to the wrong parentId already
 			parentIds.Store(particleId, swapIds[parentId]);
 		}
 	}
@@ -200,7 +205,7 @@ void CParticleComponentRuntime::MainPreUpdate()
 		it->MainPreUpdate(this);
 }
 
-void CParticleComponentRuntime::GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents)
+void CParticleComponentRuntime::GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents)
 {
 	for (auto& it : GetComponent()->GetUpdateList(EUL_GetExtents))
 		it->GetSpatialExtents(context, scales, extents);
@@ -244,13 +249,11 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 		if (!particleIds.empty())
 		{
 			for (auto& it : GetComponent()->GetUpdateList(EUL_KillUpdate))
-				it->KillParticles(context, &particleIds[0], particleIds.size());
+				it->KillParticles(context, particleIds);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-
-	m_spawnEntries.clear();
 
 	for (auto& it : GetComponent()->GetUpdateList(EUL_Spawn))
 		it->SpawnParticles(context);
@@ -272,7 +275,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 		TParticleIdArray swapIds(*context.m_pMemHeap);
 		swapIds.resize(hasSwapIds ? numParticles : 0);
 
-		m_container.AddRemoveParticles(m_spawnEntries.data(), m_spawnEntries.size(), &particleIds, &swapIds);
+		m_container.AddRemoveParticles(m_spawnEntries, particleIds, swapIds);
 
 		if (hasSwapIds)
 		{
@@ -280,10 +283,12 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 			{
 				ICommonParticleComponentRuntime* pSubRuntime = pEmitter->GetRuntimes()[subComponentId].pRuntime;
 				if (pSubRuntime->IsActive())
-					pSubRuntime->ReparentParticles(&swapIds[0], swapIds.size());
+					pSubRuntime->ReparentParticles(swapIds);
 			}
 		}
 	}
+
+	m_spawnEntries.clear();
 }
 
 void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
@@ -459,8 +464,8 @@ void CParticleComponentRuntime::CalculateBounds()
 #ifdef CRY_PFX2_USE_SSE
 	// vector part
 	const TParticleId lastParticleId = m_container.GetLastParticleId();
-	const TParticleGroupId lastParticleGroupId = CRY_PFX2_PARTICLESGROUP_UPPER(lastParticleId) + 1 - CRY_PFX2_PARTICLESGROUP_STRIDE;
-	for (TParticleGroupId particleGroupId = 0; particleGroupId < lastParticleGroupId; particleGroupId += CRY_PFX2_PARTICLESGROUP_STRIDE)
+	const TParticleGroupId lastParticleGroupId = CRY_PFX2_PARTICLESGROUP_LOWER(lastParticleId);
+	for (auto particleGroupId : SGroupRange(0, lastParticleGroupId))
 	{
 		const floatv size = sizes.Load(particleGroupId);
 		const Vec3v position = positions.Load(particleGroupId);
@@ -471,7 +476,7 @@ void CParticleComponentRuntime::CalculateBounds()
 	m_bounds.max = HMax(bbMax);
 
 	// linear part
-	for (TParticleId particleId = lastParticleGroupId.Get(); particleId < lastParticleId; ++particleId)
+	for (auto particleId : SUpdateRange(+lastParticleGroupId, lastParticleId))
 	{
 		const float size = sizes.Load(particleId);
 		const Vec3 sizev = Vec3(size, size, size);
@@ -480,8 +485,7 @@ void CParticleComponentRuntime::CalculateBounds()
 		m_bounds.max = max(m_bounds.max, position + sizev);
 	}
 #else
-	const TParticleId lastParticleId = m_container.GetLastParticleId();
-	for (TParticleId particleId = 0; particleId < lastParticleId; ++particleId)
+	for (auto particleId : m_container.GetFullRange())
 	{
 		const float size = sizes.Load(particleId);
 		const Vec3 sizev = Vec3(size, size, size);

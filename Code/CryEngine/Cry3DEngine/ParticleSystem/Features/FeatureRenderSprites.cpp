@@ -104,7 +104,7 @@ CFeatureRenderSprites::CFeatureRenderSprites()
 	: m_sortMode(ESortMode::None)
 	, m_facingMode(EFacingMode::Screen)
 	, m_aspectRatio(1.0f)
-	, m_axisScale(0.1f)
+	, m_axisScale(0.0f)
 	, m_offset(ZERO)
 	, m_sphericalProjection(0.0f)
 	, m_sortBias(0.0f)
@@ -368,8 +368,8 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext* pSpritesContext)
 	TParticleHeap& memHeap = GetPSystem()->GetMemHeap(threadId);
 	const uint numSprites = pSpritesContext->m_numSprites;
 
-	TParticleHeap::Array<uint32, uint, CRY_PFX2_PARTICLES_ALIGNMENT> indices(memHeap, numSprites);
-	TParticleHeap::Array<float, uint, CRY_PFX2_PARTICLES_ALIGNMENT> keys(memHeap, numSprites);
+	THeapArray<uint32> indices(memHeap, numSprites);
+	THeapArray<float> keys(memHeap, numSprites);
 	auto& particleIds = pSpritesContext->m_particleIds;
 
 	const CParticleContainer& container = pSpritesContext->m_context.m_container;

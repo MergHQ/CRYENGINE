@@ -106,16 +106,16 @@ ILINE void IOQuatStream::Store(TParticleId pId, Quat value)
 //////////////////////////////////////////////////////////////////////////
 
 ILINE STempVec3Stream::STempVec3Stream(TParticleHeap* pMemHeap, SUpdateRange range)
-	: m_xBuffer(*pMemHeap, range.m_lastParticleId - range.m_firstParticleId)
-	, m_yBuffer(*pMemHeap, range.m_lastParticleId - range.m_firstParticleId)
-	, m_zBuffer(*pMemHeap, range.m_lastParticleId - range.m_firstParticleId)
-	, m_stream(m_xBuffer.data() - range.m_firstParticleId, m_yBuffer.data() - range.m_firstParticleId, m_zBuffer.data() - range.m_firstParticleId)
+	: m_xBuffer(*pMemHeap, range.size())
+	, m_yBuffer(*pMemHeap, range.size())
+	, m_zBuffer(*pMemHeap, range.size())
+	, m_stream(m_xBuffer.data() - *range.begin(), m_yBuffer.data() - *range.begin(), m_zBuffer.data() - *range.begin())
 {
 }
 
 ILINE void STempVec3Stream::Clear(SUpdateRange range)
 {
-	const uint numBytes = (range.m_lastParticleId - range.m_firstParticleId) * sizeof(float);
+	const uint numBytes = range.size() * sizeof(float);
 	memset(m_xBuffer.data(), 0, numBytes);
 	memset(m_yBuffer.data(), 0, numBytes);
 	memset(m_zBuffer.data(), 0, numBytes);

@@ -233,9 +233,12 @@ public:
 	template<typename TTimeKernel>
 	void DoModify(const SUpdateContext& context, const SUpdateRange& range, IOColorStream stream, const TTimeKernel& timeKernel) const
 	{
+		const floatv rate = ToFloatv(m_timeScale);
+		const floatv offset = ToFloatv(m_timeBias);
+
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range);
 		{
-			const floatv sample = timeKernel.Sample(particleGroupId);
+			const floatv sample = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
 			const ColorFv color0 = ToColorFv(stream.Load(particleGroupId));
 			const ColorFv curve = m_spline.Interpolate(sample);
 			const ColorFv color1 = color0 * curve;

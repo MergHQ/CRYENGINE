@@ -126,7 +126,6 @@ void CParticleSystem::Update()
 		m_cameraMotion.t = currentCameraPose.t - m_lastCameraPose.t;
 		m_cameraMotion.q = currentCameraPose.q * m_lastCameraPose.q.GetInverted();
 	}
-	m_lastCameraPose = currentCameraPose;
 
 	if (GetCVars()->e_Particles)
 	{
@@ -167,6 +166,8 @@ void CParticleSystem::SyncronizeUpdateKernels()
 	m_jobManager.SynchronizeUpdate();
 	for (auto& pEmitter : m_emitters)
 		pEmitter->PostUpdate();
+	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
+	m_lastCameraPose = QuatT(camera.GetMatrix());
 }
 
 void CParticleSystem::DeferredRender()

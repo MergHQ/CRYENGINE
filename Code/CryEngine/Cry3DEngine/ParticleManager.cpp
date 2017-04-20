@@ -449,13 +449,15 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 	assert(pEffect);
 	if (pEffect->IsEnabled() || pEffect->GetChildCount())
 	{
+		if (GetCVars()->e_ParticlesConvertPfx1)
+		{
+			auto pEffectPfx2 = m_pParticleSystem->ConvertEffect(pEffect, !!(GetCVars()->e_ParticlesConvertPfx1 & 2));
+			if (GetCVars()->e_ParticlesConvertPfx1 & 4)
+				return pEffectPfx2;
+		}
 		if (bLoad)
 			pEffect->LoadResources(true, sSource);
 
-		if (GetCVars()->e_ParticlesConvertPfx1)
-		{
-			m_pParticleSystem->ConvertEffect(pEffect, GetCVars()->e_ParticlesConvertPfx1 > 1);
-		}
 		return pEffect;
 	}
 

@@ -115,13 +115,26 @@ float CParticleEffect::GetEquilibriumTime() const
 	{
 		// Iterate top-level components
 		auto const& params = comp->GetComponentParams();
-		if (comp->IsEnabled() && !params.IsSecondGen() && !std::isfinite(params.m_emitterLifeTime.end + params.m_maxParticleLifeTime))
+		if (comp->IsEnabled() && !params.IsSecondGen() && params.IsImmortal())
 		{
 			float eqTime = comp->GetEquilibriumTime(Range(params.m_emitterLifeTime.start));
 			maxEqTime = max(maxEqTime, eqTime);
 		}
 	}
 	return maxEqTime;
+}
+
+int CParticleEffect::GetEditVersion() const
+{
+	int version = m_editVersion + m_components.size();
+	for (auto pComponent : m_components)
+	{
+		const SComponentParams& params = pComponent->GetComponentParams();
+		const CMatInfo* pMatInfo = (CMatInfo*)params.m_pMaterial.get();
+		if (pMatInfo)
+			version += pMatInfo->GetModificationId();
+	}
+	return version;
 }
 
 void CParticleEffect::SetName(cstr name)

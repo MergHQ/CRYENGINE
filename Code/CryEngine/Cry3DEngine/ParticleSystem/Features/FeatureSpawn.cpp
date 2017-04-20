@@ -85,9 +85,7 @@ public:
 
 	virtual void InitSubInstance(CParticleComponentRuntime* pComponentRuntime, size_t firstInstance, size_t lastInstance) override
 	{
-		SUpdateRange range;
-		range.m_firstParticleId = 0;
-		range.m_lastParticleId = lastInstance - firstInstance;
+		SUpdateRange range(0, lastInstance - firstInstance);
 		SUpdateContext context(pComponentRuntime, range);
 		StartInstances(context, firstInstance, lastInstance, true);
 	}
@@ -129,7 +127,7 @@ public:
 			ar(SEnabledValue(m_restart, m_useRestart), "Restart", "Restart");
 	}
 
-	void UpdateAmounts(const SUpdateContext& context, Array<float, uint> amounts) const {}
+	void UpdateAmounts(const SUpdateContext& context, TVarArray<float> amounts) const {}
 
 protected:
 	void SetUseDuration(bool value) { m_useDuration = value; }
@@ -145,18 +143,18 @@ protected:
 			return;
 
 		const CParticleEmitter* pEmitter = context.m_runtime.GetEmitter();
-		const bool isEmitterIndependent = pEmitter->IsIndependent();
-		const bool isSecondGen = context.m_params.IsSecondGen();
-		if (isEmitterIndependent && !isSecondGen)
-			return;
+		if (pEmitter->IsIndependent())
+		{
+			if (!context.m_params.IsSecondGen() && context.m_params.IsImmortal())
+				return;
+		}
+		else if (m_useRestart)
+			StartInstances(context, 0, numInstances + 1, false);
 
 		const float countScale = runtime.GetEmitter()->GetSpawnParams().fCountScale;
 		const float dT = context.m_deltaTime;
 		const float invDT = dT ? 1.0f / dT : 0.0f;
 		SUpdateRange range(0, numInstances);
-
-		if (m_useRestart && !isEmitterIndependent)
-			StartInstances(context, 0, numInstances + 1, false);
 
 		TFloatArray amounts(*context.m_pMemHeap, numInstances);
 		for (size_t i = 0; i < numInstances; ++i)
@@ -232,9 +230,7 @@ protected:
 			return;
 
 		const uint numStarts = indicesArray.size();
-		SUpdateRange startRange;
-		startRange.m_firstParticleId = 0;
-		startRange.m_lastParticleId = numStarts;
+		SUpdateRange startRange(0, numStarts);
 		TFloatArray amounts(*context.m_pMemHeap, numStarts);
 		TFloatArray delays(*context.m_pMemHeap, numStarts);
 		TFloatArray durations(*context.m_pMemHeap, numStarts);
@@ -478,7 +474,7 @@ public:
 		SpawnParticlesT(*this, context);
 	}
 
-	void UpdateAmounts(const SUpdateContext& context, Array<float, uint> amounts) const
+	void UpdateAmounts(const SUpdateContext& context, TVarArray<float> amounts) const
 	{
 		CParticleComponentRuntime& runtime = context.m_runtime;
 		const size_t numInstances = runtime.GetNumInstances();

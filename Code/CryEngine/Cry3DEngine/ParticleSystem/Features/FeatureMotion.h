@@ -77,6 +77,14 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
+SERIALIZATION_DECLARE_ENUM(EPhysicsType,
+	Particle,
+	Mesh
+	)
+
+// Dynamic enum for surface types
+typedef DynamicEnum<struct SSurfaceType> ESurfaceType;
+
 class CFeatureMotionCryPhysics : public CParticleFeature
 {
 public:
@@ -92,12 +100,15 @@ public:
 	virtual void Update(const SUpdateContext& context) override;
 
 private:
-	string m_surfaceTypeName;
-	SFloat m_gravity;
-	UFloat m_drag;
-	SFloat m_density;
-	SFloat m_thickness;
-	Vec3   m_uniformAcceleration;
+	typedef TValue<float, USoftLimit<10>, ConvertScale<1000, 1>> UDensity;
+
+	EPhysicsType m_physicsType;
+	ESurfaceType m_surfaceType;
+	SFloat       m_gravity;
+	UFloat       m_drag;
+	UDensity     m_density;
+	SFloat       m_thickness;
+	Vec3         m_uniformAcceleration;
 };
 
 extern EParticleDataType

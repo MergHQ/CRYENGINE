@@ -482,13 +482,13 @@ void CParticleComponentRuntime::SetEmitterData(::IParticleEmitter* pEmitter)
 	m_pEmitter = pEmitter;
 }
 
-void CParticleComponentRuntime::AddSubInstances(SInstance* pInstances, size_t count)
+void CParticleComponentRuntime::AddSubInstances(TConstArray<SInstance> instances)
 {
 	CryAutoLock<CryCriticalSection> lock(m_cs);
-	count = min(m_maxNewBorns - m_subInstances.size(), count);
+	uint count = min(m_maxNewBorns - m_subInstances.size(), instances.size());
 	for (int i = 0; i < count; ++i)
 	{
-		m_subInstances.push_back(pInstances[i].m_parentId);
+		m_subInstances.push_back(instances[i].m_parentId);
 		m_spawnData.push_back(SSpawnData());
 	}
 
@@ -515,7 +515,7 @@ void CParticleComponentRuntime::RemoveAllSubInstances()
 	m_spawnData.clear();
 }
 
-void CParticleComponentRuntime::ReparentParticles(const uint* swapIds, const uint numSwapIds)
+void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapIds)
 {
 	CryAutoLock<CryCriticalSection> lock(m_cs);
 	size_t toCopy = 0;

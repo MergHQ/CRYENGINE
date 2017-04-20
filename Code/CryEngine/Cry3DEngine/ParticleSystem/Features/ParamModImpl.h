@@ -204,7 +204,7 @@ TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpda
 }
 
 template<typename TParamModContext, typename T>
-TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpdateContext& context, Array<TType, uint> data, EModDomain domain, bool updating) const
+TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpdateContext& context, TVarArray<TType> data, EModDomain domain, bool updating) const
 {
 	return GetValues(context, data.data(), SUpdateRange(0, data.size()), domain, updating);
 }

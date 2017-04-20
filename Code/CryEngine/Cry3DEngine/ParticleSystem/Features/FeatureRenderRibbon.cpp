@@ -185,7 +185,7 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 
 	{
 		const uint64 noKey = uint64(-1);
-		TParticleHeap::Array<uint64, uint, CRY_PFX2_PARTICLES_ALIGNMENT> sortEntries(memHep, lastParticleId);
+		THeapArray<uint64> sortEntries(memHep, lastParticleId);
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
 			const TParticleId ribbonId = ribbonIds.Load(particleId);

@@ -120,7 +120,7 @@ protected:
 						newInstances.emplace_back(container.GetRealId(trigger.m_parentId), trigger.m_startDelay);
 				}
 			}
-			pChildComponentRuntime->AddSubInstances(newInstances.data(), newInstances.size());
+			pChildComponentRuntime->AddSubInstances(newInstances);
 			newInstances.clear();
 		}
 	}
@@ -230,20 +230,19 @@ public:
 			pComponent->AddToUpdateList(EUL_KillUpdate, this);
 	}
 
-	void KillParticles(const SUpdateContext& context, TParticleId* pParticles, size_t count) override
+	void KillParticles(const SUpdateContext& context, TConstArray<TParticleId> particleIds) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
 		CParticleContainer& container = context.m_container;
 		TInstanceArray triggers(*context.m_pMemHeap);
-		triggers.reserve(count);
+		triggers.reserve(particleIds.size());
 		
 		IFStream normAges = container.GetIFStream(EPDT_NormalAge);
 		IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
 
-		for (uint i = 0; i < count; ++i)
+		for (auto parentId : particleIds)
 		{
-			const TParticleId parentId = pParticles[i];
 			const float overAge = (normAges.Load(parentId) - 1.0f) * lifeTimes.Load(parentId);
 			const float delay = context.m_deltaTime - overAge;
 			triggers.emplace_back(parentId, delay);

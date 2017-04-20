@@ -158,13 +158,16 @@ public:
 	virtual gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() { return nullptr; }
 	virtual pfx2::CParticleComponentRuntime*     GetCpuRuntime() { return nullptr; }
 
-	virtual bool                                 IsActive() const = 0;
+	virtual bool        IsActive() const = 0;
+	virtual void        SetActive(bool active) = 0;
+	virtual bool        IsSecondGen() const = 0;
 	virtual const AABB& GetBounds() const = 0;
 
 	virtual void        AccumCounts(SParticleCounts& counts) = 0;
 
-	virtual void        AddSubInstances(SInstance* pInstances, size_t count) = 0;
-	virtual void        ReparentParticles(const uint* swapIds, const uint numSwapIds) = 0;
+	virtual void        AddSubInstances(Array<const SInstance, uint> instances) = 0;
+	virtual void        RemoveAllSubInstances() = 0;
+	virtual void        ReparentParticles(Array<const TParticleId, uint> swapIds) = 0;
 };
 
 struct IParticleEffectPfx2 : public IParticleEffect

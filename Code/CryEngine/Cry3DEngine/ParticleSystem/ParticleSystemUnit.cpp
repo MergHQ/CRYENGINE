@@ -43,7 +43,7 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			pfx2::CParticleContainer::SSpawnEntry spawn;
 			spawn.m_count = containerSz;
 			spawn.m_parentId = 0;
-			container.AddRemoveParticles(&spawn, 1, 0, 0);
+			container.AddRemoveParticles({&spawn, 1}, {}, {});
 			container.ResetSpawnedParticles();
 			IOPidStream spawnIds = container.GetIOPidStream(EPDT_SpawnId);
 			for (uint i = 0; i < containerSz; ++i)
@@ -55,7 +55,7 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			for (size_t i = 0; i < toRemoveSz; ++i)
 				toRemoveMem.push_back(toRemove[i]);
 			TParticleIdArray swapIds(heap, container.GetNumParticles());
-			container.AddRemoveParticles(0, 0, &toRemoveMem, &swapIds);
+			container.AddRemoveParticles({}, toRemoveMem, swapIds);
 
 			// check if none of the particles are in the toRemove list
 			for (uint i = 0; i < containerSz - toRemoveSz; ++i)
@@ -153,7 +153,7 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			pfx2::CParticleContainer::SSpawnEntry spawn;
 			spawn.m_count = count;
 			spawn.m_parentId = 0;
-			pContainer->AddRemoveParticles(&spawn, 1, 0, 0);
+			pContainer->AddRemoveParticles({&spawn, 1}, {}, {});
 		}
 
 		void ResetSpawnedParticles()

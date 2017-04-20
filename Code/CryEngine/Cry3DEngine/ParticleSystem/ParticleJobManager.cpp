@@ -233,9 +233,7 @@ void CParticleJobManager::ScheduleUpdateParticles(uint componentRefIdx)
 
 	for (TParticleId pId = 0; pId < lastParticleId; pId += particleCountThreshold)
 	{
-		SUpdateRange range;
-		range.m_firstParticleId = pId;
-		range.m_lastParticleId = MIN(pId + particleCountThreshold, lastParticleId);
+		SUpdateRange range(pId, min<TParticleId>(pId + particleCountThreshold, lastParticleId));
 
 		TUpdateParticlesJob_ job(componentRefIdx, range);
 		job.RegisterJobState(&componentRef.m_subUpdateState);

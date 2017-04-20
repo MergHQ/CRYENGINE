@@ -66,7 +66,7 @@ public:
 	virtual void InitSubInstance(CParticleComponentRuntime* pComponentRuntime, size_t firstInstance, size_t lastInstance) {}
 
 	// EUL_GetExtents
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) {}
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) {}
 
 	// EUL_GetEmitOffset
 	virtual Vec3 GetEmitOffset(const SUpdateContext& context, TParticleId parentId) { return Vec3(0); }
@@ -81,7 +81,7 @@ public:
 	virtual void PostInitParticles(const SUpdateContext& context) {}
 
 	// EUL_KillUpdate
-	virtual void KillParticles(const SUpdateContext& context, TParticleId* pParticles, size_t count) {}
+	virtual void KillParticles(const SUpdateContext& context, TConstArray<TParticleId> particleIds) {}
 
 	// EUL_PreUpdate
 	virtual void PreUpdate(const SUpdateContext& context) {}

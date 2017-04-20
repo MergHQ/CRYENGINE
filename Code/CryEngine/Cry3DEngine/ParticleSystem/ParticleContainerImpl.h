@@ -56,11 +56,10 @@ ILINE void CParticleContainer::FillData(EParticleDataType type, const T& data, S
 		for (uint i = 0; i < dim; ++i)
 		{
 			T* pBuffer = GetData<T>(type + i);
-			CRY_PFX2_FOR_RANGE_PARTICLES(range)
+			for (auto particleId : range)
 			{
 				pBuffer[particleId] = data;
 			}
-			CRY_PFX2_FOR_END;
 		}
 	}
 }
@@ -71,12 +70,12 @@ ILINE void CParticleContainer::CopyData(EParticleDataType dstType, EParticleData
 	if (HasData(dstType) && HasData(srcType))
 	{
 		size_t stride = dstType.info().typeSize();
-		size_t count = range.m_lastParticleId - range.m_firstParticleId;
+		size_t count = range.size();
 		uint dim = dstType.info().dimension;
 		for (uint i = 0; i < dim; ++i)
 			memcpy(
-			  (byte*)m_pData[dstType + i] + stride * range.m_firstParticleId,
-			  (byte*)m_pData[srcType + i] + stride * range.m_firstParticleId,
+			  (byte*)m_pData[dstType + i] + stride * range.m_begin,
+			  (byte*)m_pData[srcType + i] + stride * range.m_begin,
 			  stride * count);
 	}
 }
@@ -170,22 +169,6 @@ template<typename T>
 ILINE TIOStream<T> CParticleContainer::GetTIOStream(EParticleDataType type)
 {
 	return TIOStream<T>(GetData<T>(type));
-}
-
-ILINE SUpdateRange CParticleContainer::GetFullRange() const
-{
-	SUpdateRange range;
-	range.m_firstParticleId = 0;
-	range.m_lastParticleId = GetLastParticleId();
-	return range;
-}
-
-ILINE SUpdateRange CParticleContainer::GetSpawnedRange() const
-{
-	SUpdateRange range;
-	range.m_firstParticleId = GetFirstSpawnParticleId();
-	range.m_lastParticleId = GetLastParticleId();
-	return range;
 }
 
 }

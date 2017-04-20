@@ -24,6 +24,7 @@ EParticleDataType PDT(EPDT_Drag, float, 1, BHasInit(true));
 EParticleDataType PDT(EPVF_Acceleration, float, 3);
 EParticleDataType PDT(EPVF_VelocityField, float, 3);
 EParticleDataType PDT(EPVF_PositionPrev, float, 3);
+extern EParticleDataType EPDT_MeshGeometry;
 
 CFeatureMotionPhysics::CFeatureMotionPhysics()
 	: m_gravity(0.0f)
@@ -267,45 +268,52 @@ void CFeatureMotionPhysics::QuadraticIntegral(const SUpdateContext& context)
 */
 
 /*
-	Approximate exponential-type function in a limited range, with a reciprocal function.
+	Approximate exponential-type function, in a limited range, with a reciprocal function:
 
-	Approx G(x) = (x - 1 + e^(-x)) / x^2 with f(x) = b / (x + a) + c, within range 0 to x1.
-	Match function at x = 0, x1, and a chosen midpoint x2
+	f(x) = b / (x + a) + c, within range 0 to x1.
+	Match function at x = 0, x1, and a chosen midpoint xm
 
 	From Wolfram, the solution is:
-		a = x1 x2 (y1 - y2) / (x1 y2 - x2 y1)
+		a = (x1 xm (y1 - ym)) / (x1 (ym - y0) + xm (y0 - y1))
+
 	b and c are then more accurately computed with a simple linear fit
 		b = (y1 - y0) / (/(x1 + a) - /(x0 + a))
-			= y1 / (/(x1 + a) - /a)
-		c = - b/a
+			= (y1 -y0) / (/(x1 + a) - /a)
+		c = y0 - b/a
 */
 
-template<typename T> T drag_vel_adjust(T in) { return in ? -expm1(-in) / in : T(1); }
-template<typename T> T drag_acc_adjust(T in) { return in ? (expm1(-in) + in) / sqr(in) : T(0.5); }
+template<typename T> T DragVelAdjust(T in) { return in ? -expm1(-in) / in : T(1); }
+template<typename T> T DragAccAdjust(T in) { return in ? (expm1(-in) + in) / sqr(in) : T(0.5); }
 
 template<typename T>
-void drag_acc_coeffs(T coeffs[3], f64 x1)
+void ReciprocalCoeffs(T coeffs[3], f64 y0, f64 xm, f64 ym, f64 x1, f64 y1)
 {
-	f64 x2 = x1 < 4.0 ? x1 * 0.5 : sqrt(x1);
-	f64 y1 = 0.5 - drag_acc_adjust(x1),
-	    y2 = 0.5 - drag_acc_adjust(x2);
-
-	f64 d = x1 * y2 - x2 * y1;
-	f64 a = d ? x1 * x2 * (y1 - y2) / d : 1.0;
+	f64 d = xm * (y0 - y1) + x1 * (ym - y0);
+	f64 a = d ? xm * x1 * (y1 - ym) / d : 1.0;
 
 	coeffs[0] = convert<T>(a);
 
 	T u0 = rcp_fast(coeffs[0]),
 	  u1 = rcp_fast(coeffs[0] + convert<T>(x1));
 
-	coeffs[1] = T(u1 != u0 ? -y1 / (u1 - u0) : 0.0);
-	coeffs[2] = T(0.5 - coeffs[1] * u0);
+	coeffs[1] = T(u1 != u0 ? (y1 - y0) / (u1 - u0) : 0.0);
+	coeffs[2] = T(y0 - coeffs[1] * u0);
 }
 
 template<typename T>
-ILINE T drag_acc(T in, const T coeffs[3])
+void DragAdjustCoeffs(T coeffs[3], f64 x1)
 {
-	return MAdd(rcp_fast(in + coeffs[0]), coeffs[1], coeffs[2]);
+	f64 xm = x1 < 4.0 ? x1 * 0.5 : sqrt(x1);
+	f64 ym = DragAccAdjust(xm);
+	f64 y1 = DragAccAdjust(x1);
+	ReciprocalCoeffs(coeffs, 0.5, xm, ym, x1, y1);
+}
+
+template<typename T>
+ILINE void DragAdjust(T& velAdjust, T& accAdjust, T in, const T coeffs[6])
+{
+	accAdjust = MAdd(rcp_fast(in + coeffs[0]), coeffs[1], coeffs[2]);
+	velAdjust = convert<T>(1.0) - accAdjust * in;
 }
 
 CRY_UNIT_TEST(DragFast)
@@ -314,19 +322,21 @@ CRY_UNIT_TEST(DragFast)
 	for (int i = 0; i < 8; ++i, x1 *= 10.f)
 	{
 		float coeffs[3];
-		drag_acc_coeffs(coeffs, x1);
+		DragAdjustCoeffs(coeffs, x1);
 
 		float errMax = 0.f;
 		for (float x = 0.0f; x <= x1; x += x1 * 0.01f)
 		{
-			float ye = (float)drag_acc_adjust((f64)x);
-			float ya = drag_acc(x, coeffs);
-			float err = abs(ya - ye);
+			float ve = (float)DragVelAdjust((f64)x);
+			float ae = (float)DragAccAdjust((f64)x);
+
+			float va, aa;
+			DragAdjust(va, aa, x, coeffs);
+
+			float err = abs(va - ve);
 			errMax = max(errMax, err);
 
-			float ze = (float)drag_vel_adjust((f64)x);
-			float za = 1.0f - ya * x;
-			err = abs(za - ze);
+			err = abs(aa - ae);
 			errMax = max(errMax, err);
 		}
 		assert(errMax <= 0.01f * max(x1, 1.0f));
@@ -358,7 +368,7 @@ void CFeatureMotionPhysics::DragFastIntegral(const SUpdateContext& context)
 	const float maxDragFactor = m_drag.GetValueRange(context).end * context.m_deltaTime;
 	
 	float coeffs[3];
-	drag_acc_coeffs(coeffs, maxDragFactor);
+	DragAdjustCoeffs(coeffs, maxDragFactor);
 	floatv coeffsv[3] = { ToFloatv(coeffs[0]), ToFloatv(coeffs[1]), ToFloatv(coeffs[2]) };
 
 	CRY_PFX2_FOR_ACTIVE_PARTICLESGROUP(context)
@@ -374,8 +384,7 @@ void CFeatureMotionPhysics::DragFastIntegral(const SUpdateContext& context)
 		const Vec3v v0 = velocities.Load(particleGroupId);
 		const Vec3v a = uniformAccel + partAccel + physAccel * gravMult + (vWind - v0) * drag;
 
-		const floatv da = drag_acc(dragT, coeffsv);
-		const floatv dv = ToFloatv(1.0f) - dragT * da;
+		floatv dv, da; DragAdjust(dv, da, dragT, coeffsv);
 		const Vec3v v1 = v0 + a * (dT * dv);
 		const Vec3v p1 = p0 + v0 * dT + a * (sqr(dT) * da);
 
@@ -482,8 +491,31 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "P
 
 EParticleDataType PDT(EPDT_PhysicalEntity, IPhysicalEntity*);
 
+void PopulateSurfaceTypes()
+{
+	// Populate enum on first serialization call.
+	if (!ESurfaceType::count() && gEnv)
+	{
+		// Trigger surface types loading.
+		gEnv->p3DEngine->GetMaterialManager()->GetDefaultLayersMaterial();
+
+		ISurfaceTypeEnumerator* pSurfaceTypeEnum = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager()->GetEnumerator();
+		for (ISurfaceType* pSurfaceType = pSurfaceTypeEnum->GetFirst(); pSurfaceType; pSurfaceType = pSurfaceTypeEnum->GetNext())
+		{
+			int value = pSurfaceType->GetId();
+			cstr name = pSurfaceType->GetName();
+			if (strlen(name) >= 4 && !strncmp(name, "mat_", 4))
+				name += 4;
+			ESurfaceType::container().add(value, name, name);
+		}
+
+		pSurfaceTypeEnum->Release();
+	}
+}
+
 CFeatureMotionCryPhysics::CFeatureMotionCryPhysics()
-	: m_gravity(1.0f)
+	: m_physicsType(EPhysicsType::Particle)
+	, m_gravity(1.0f)
 	, m_drag(0.0f)
 	, m_density(1.0f)
 	, m_thickness(0.0f)
@@ -504,11 +536,14 @@ void CFeatureMotionCryPhysics::AddToComponent(CParticleComponent* pComponent, SC
 
 void CFeatureMotionCryPhysics::Serialize(Serialization::IArchive& ar)
 {
+	PopulateSurfaceTypes();
+
 	CParticleFeature::Serialize(ar);
-	ar(m_surfaceTypeName, "SurfaceType", "Surface Type");
+	ar(m_physicsType, "PhysicsType", "Physics Type");
+	ar(m_surfaceType, "SurfaceType", "Surface Type");
 	ar(m_gravity, "gravity", "Gravity Scale");
 	ar(m_drag, "drag", "Drag");
-	ar(m_density, "density", "Density");
+	ar(m_density, "density", "Density (g/ml)");
 	ar(m_thickness, "thickness", "Thickness");
 	ar(m_uniformAcceleration, "UniformAcceleration", "Uniform Acceleration");
 }
@@ -528,47 +563,92 @@ void CFeatureMotionCryPhysics::PostInitParticles(const SUpdateContext& context)
 	const IVec3Stream angularVelocities = container.GetIVec3Stream(EPVF_AngularVelocity);
 	const IQuatStream orientations = container.GetIQuatStream(EPQF_Orientation);
 	const IFStream sizes = container.GetIFStream(EPDT_Size);
+	const TIStream<IMeshObj*> meshes = container.GetTIStream<IMeshObj*>(EPDT_MeshGeometry);
+
 	const float sphereVolume = 4.0f / 3.0f * gf_PI;
-	const Vec3 uniformAcceleration = physicsEnv.m_UniformForces.vAccel * m_gravity + m_uniformAcceleration;
-	ISurfaceType* pSurfaceType = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeByName(m_surfaceTypeName.c_str());
-	const int surfaceTypeId = pSurfaceType ? pSurfaceType->GetId() : 0;
+	const Vec3 acceleration = physicsEnv.m_UniformForces.vAccel * m_gravity + m_uniformAcceleration;
+	const int surfaceTypeId = m_surfaceType;
 
 	CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 	{
-		pe_params_pos particlePosition;
-		particlePosition.pos = positions.Load(particleId);
-		particlePosition.q = orientations.Load(particleId);
+		// Check if mesh geometry exists
+		pe_type physicsType = PE_PARTICLE;
+		phys_geometry* pGeom = nullptr;
+		if (m_physicsType == EPhysicsType::Mesh)
+		{
+			if (IMeshObj* pMesh = meshes.SafeLoad(particleId))
+			{
+				pGeom = pMesh->GetPhysGeom();
+			}
+			if (!pGeom && context.m_params.m_pMesh)
+				pGeom = context.m_params.m_pMesh->GetPhysGeom();
+			if (pGeom)
+				physicsType = PE_RIGID;
+		}
+
+		const float size = sizes.Load(particleId);
+
+		pe_params_pos paramsPos;
+		paramsPos.pos = positions.Load(particleId);
+		paramsPos.q = orientations.Load(particleId);
+		paramsPos.scale = size;
 
 		IPhysicalEntity* pPhysicalEntity = pPhysicalWorld->CreatePhysicalEntity(
-			PE_PARTICLE,
-			&particlePosition);
-		pe_params_particle particleParams;
+			physicsType,
+			&paramsPos);
+		if (!pPhysicalEntity)
+			continue;
 
-		// Compute particle mass from volume of object.
-		const float size = sizes.Load(particleId);
-		const float sizeCube = size * size * size;
-		particleParams.size = size;
-		particleParams.mass = m_density * sizeCube * sphereVolume;
+		if (physicsType == PE_RIGID)
+		{
+			// 3D mesh physics
+			pe_geomparams paramsGeom;
 
-		const Vec3 velocity = velocities.Load(particleId);
-		particleParams.thickness = m_thickness * size;
-		particleParams.velocity = velocity.GetLength();
-		if (particleParams.velocity > 0.f)
-			particleParams.heading = velocity / particleParams.velocity;
+			paramsGeom.density = m_density;
+			paramsGeom.flagsCollider = geom_colltype_debris;
+			paramsGeom.flags &= ~geom_colltype_debris; // don't collide with other particles.
 
-		particleParams.surface_idx = surfaceTypeId;
-		particleParams.flags = particle_no_path_alignment;
-		particleParams.kAirResistance = m_drag;
-		particleParams.gravity = uniformAcceleration;
-		particleParams.q0 = particlePosition.q;
-		particleParams.wspin = angularVelocities.Load(particleId);
+			// Override surface index if specified.
+			paramsGeom.surface_idx = surfaceTypeId;
+			paramsGeom.pMatMapping = non_const(&surfaceTypeId);
+			paramsGeom.nMats = 1;
 
-		pPhysicalEntity->SetParams(&particleParams);
+			pPhysicalEntity->AddGeometry(pGeom, &paramsGeom, 0);
 
-		pe_params_flags particleFlags;
-		particleFlags.flagsOR = pef_never_affect_triggers;
-		particleFlags.flagsOR |= pef_log_collisions;
-		pPhysicalEntity->SetParams(&particleFlags);
+			pe_simulation_params paramsSim;
+			paramsSim.minEnergy = (0.2f) * (0.2f);
+			paramsSim.damping = paramsSim.dampingFreefall = m_drag;
+			paramsSim.gravity = paramsSim.gravityFreefall = acceleration;  // Note: currently doesn't work for rigid body
+
+			pPhysicalEntity->SetParams(&paramsSim);
+		}
+		else
+		{
+			// Particle (sphere) physics
+			pe_params_particle paramsParticle;
+
+			// Compute particle mass from volume of object.
+			paramsParticle.mass = m_density * cube(size) * sphereVolume;
+			paramsParticle.thickness = m_thickness * size;
+
+			paramsParticle.surface_idx = surfaceTypeId;
+			paramsParticle.flags = particle_no_path_alignment;
+			paramsParticle.kAirResistance = m_drag;
+			paramsParticle.gravity = acceleration;
+
+			pPhysicalEntity->SetParams(&paramsParticle);
+		}
+
+		pe_action_set_velocity paramsVel;
+		paramsVel.v = velocities.Load(particleId);
+		paramsVel.w = angularVelocities.Load(particleId);
+
+		pPhysicalEntity->Action(&paramsVel);
+
+		pe_params_flags paramsFlags;
+		paramsFlags.flagsOR = pef_never_affect_triggers | pef_log_collisions;
+		pPhysicalEntity->SetParams(&paramsFlags);
+
 		pPhysicalEntity->AddRef();
 
 		physicalEntities.Store(particleId, pPhysicalEntity);

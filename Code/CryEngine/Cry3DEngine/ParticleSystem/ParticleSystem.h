@@ -68,6 +68,7 @@ public:
 	{
 		return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
 	}
+	QuatT                GetLastCameraPose() const { return m_lastCameraPose; }
 	QuatT                GetCameraMotion() const { return m_cameraMotion; }
 	TParticleEmitters    GetActiveEmitters() const { return m_emitters; }
 

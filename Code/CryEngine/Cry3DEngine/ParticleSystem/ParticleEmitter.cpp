@@ -136,7 +136,6 @@ void CParticleEmitter::Update()
 		m_attributeInstance.Reset(m_pEffect->GetAttributeTable(), EAttributeScope::PerEmitter);
 		UpdateRuntimeRefs();
 	}
-	m_editVersion = m_pEffect->GetEditVersion();
 
 	if (m_entityId != 0)
 		UpdateFromEntity();
@@ -149,8 +148,6 @@ void CParticleEmitter::Update()
 
 void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 {
-	using namespace crymath;
-
 	AABB bounds = AABB(m_location.t, 1.0f / 1024.0f);
 	for (auto pRuntime : m_cpuComponentRuntimes)
 		bounds.Add(pRuntime->GetBoundsNonVirtual());
@@ -334,7 +331,6 @@ void CParticleEmitter::Activate(bool activate)
 		m_parentContainer.AddParticleData(EPDT_NormalAge);
 
 		UpdateRuntimeRefs();
-		AddInstance();
 
 		if (m_spawnParams.bPrime)
 		{
@@ -344,14 +340,11 @@ void CParticleEmitter::Activate(bool activate)
 	}
 	else
 	{
-		for (auto pRuntime : m_cpuComponentRuntimes)
+		for (auto ref : m_componentRuntimes)
 		{
-			const bool isSecondGen = pRuntime->GetComponentParams().IsSecondGen();
-			if (!isSecondGen)
-				pRuntime->RemoveAllSubInstances();
+			if (ref.pRuntime->GetGpuRuntime() || !ref.pRuntime->IsSecondGen())
+				ref.pRuntime->RemoveAllSubInstances();
 		}
-		for (auto pRuntime : m_gpuComponentRuntimes)
-			pRuntime->RemoveAllSubInstances();
 	}
 
 	m_active = activate;
@@ -407,26 +400,14 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 
 void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 {
-	const QuatTS location = (pData && pData->bHasLocation) ? pData->Location : QuatTS(m_location);
-	const Velocity3 velocity = (pData && pData->bHasVel) ? pData->Velocity : Velocity3(ZERO);
-
-	CParticleComponentRuntime::SInstance instance;
-	instance.m_parentId = m_parentContainer.GetLastParticleId();
-	m_parentContainer.AddParticle();			
-	m_parentContainer.GetIOVec3Stream(EPVF_Position).Store(instance.m_parentId, location.t);
-	m_parentContainer.GetIOQuatStream(EPQF_Orientation).Store(instance.m_parentId, location.q);
-	m_parentContainer.GetIOVec3Stream(EPVF_Velocity).Store(instance.m_parentId, Vec3(ZERO));
-	m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Store(instance.m_parentId, Vec3(ZERO));
-
-	TComponentId lastComponentId = m_pEffect->GetNumComponents();
-	for (TComponentId componentId = 0; componentId < lastComponentId; ++componentId)
+	// #PFX2_TODO : handle EmitParticleData (create new instances)
+	CParticleContainer::SSpawnEntry spawn = {1, m_parentContainer.GetLastParticleId()};
+	for (auto pRuntime: m_cpuComponentRuntimes)
 	{
-		CParticleComponent* pComponent = m_pEffect->GetCComponent(componentId);
-		const SComponentParams& params = pComponent->GetComponentParams();
-		const bool isEnabled = pComponent->IsEnabled();
-		const bool isvalid = params.IsValid();
-		if (isEnabled && isvalid && !params.IsSecondGen())
-			m_componentRuntimes.back().pRuntime->AddSubInstances(&instance, 1);
+		if (pRuntime->IsActive() && !pRuntime->IsSecondGen())
+		{
+			pRuntime->SpawnParticles(spawn);
+		}
 	}
 }
 
@@ -561,19 +542,25 @@ void CParticleEmitter::UpdateRuntimeRefs()
 	}
 
 	m_componentRuntimes = newRuntimes;
+	m_cpuComponentRuntimes.clear();
+	m_gpuComponentRuntimes.clear();
+
 	for (TComponentId componentId = 0; componentId < lastComponentId; ++componentId)
 	{
+		ICommonParticleComponentRuntime* pRuntime = m_componentRuntimes[componentId].pRuntime;
+
+		if (auto gpuRuntime = pRuntime->GetGpuRuntime())
+			m_gpuComponentRuntimes.push_back(gpuRuntime);
+		else if (auto cpuRuntime = pRuntime->GetCpuRuntime())
+			m_cpuComponentRuntimes.push_back(cpuRuntime);		
+
 		bool isActive = true;
-		TComponentId thisComponentId = componentId;
-		while (thisComponentId != gInvalidId)
+		for (TComponentId thisComponentId = componentId; thisComponentId != gInvalidId; )
 		{
-			const CParticleComponent* pComponent = m_pEffect->GetCComponent(thisComponentId);
+			const CParticleComponent* pComponent = m_componentRuntimes[thisComponentId].pComponent;
 			const SComponentParams& params = pComponent->GetComponentParams();
-			const bool isEnabled = pComponent->IsEnabled();
-			const bool isValid = params.IsValid();
-			// #PFX2_TODO : Cache canMakeRuntime, it is evaluating same components more than once for secondgen.
-			const bool canMakeRuntime = pComponent->CanMakeRuntime(this);
-			if (!(isEnabled && isValid && canMakeRuntime))
+
+			if (!(params.IsValid() && pComponent->IsEnabled() && pComponent->CanMakeRuntime(this)))
 			{
 				isActive = false;
 				break;
@@ -581,56 +568,17 @@ void CParticleEmitter::UpdateRuntimeRefs()
 			thisComponentId = params.m_parentId;
 		}
 
-		CParticleComponent* component = m_pEffect->GetCComponent(componentId);
-		ICommonParticleComponentRuntime* pCommonRuntime = m_componentRuntimes[componentId].pRuntime;
-		if (!component->GetRuntimeInitializationParameters().usesGpuImplementation)
+		pRuntime->RemoveAllSubInstances();
+		pRuntime->SetActive(isActive);
+		CParticleComponent* pComponent = m_componentRuntimes[componentId].pComponent;
+		if (isActive && !pComponent->GetComponentParams().IsSecondGen())
 		{
-			CParticleComponentRuntime* pRuntime    = pCommonRuntime->GetCpuRuntime();
-			const SComponentParams&    params      = pRuntime->GetComponentParams();
-			const bool                 wasActive   = pRuntime->IsActive();
-			const bool                 isSecondGen = params.IsSecondGen();
-			pRuntime->RemoveAllSubInstances();
-			pRuntime->SetActive(isActive);
-			if (isActive)
-				pRuntime->Initialize();
-			else
-				pRuntime->Reset();
-			if (m_active && !isSecondGen)
-			{
-				CParticleComponentRuntime::SInstance instance;
-				instance.m_parentId = 0;
-				pRuntime->AddSubInstances(&instance, 1);
-			}
+			CParticleComponentRuntime::SInstance instance;
+			pRuntime->AddSubInstances({&instance, 1});
 		}
-		else
-		{
-			gpu_pfx2::IParticleComponentRuntime* pRuntime =
-				pCommonRuntime->GetGpuRuntime();
-			pRuntime->RemoveAllSubInstances();
-			pRuntime->SetActive(isActive);
-			const bool isSecondGen = pRuntime->IsSecondGen();
-			if (isActive && !isSecondGen)
-			{
-				CParticleComponentRuntime::SInstance instance;
-				instance.m_parentId = 0;
-				pRuntime->AddSubInstances(&instance, 1);
-			}
-		}
-		component->PrepareRenderObjects(this);
+		pComponent->PrepareRenderObjects(this);
 	}
-
-	m_cpuComponentRuntimes.clear();
-	m_gpuComponentRuntimes.clear();
-	for (auto& ref : m_componentRuntimes)
-	{
-		auto cpuRuntime = ref.pRuntime->GetCpuRuntime();
-		auto gpuRuntime = ref.pRuntime->GetGpuRuntime();
-		if (gpuRuntime)
-			m_gpuComponentRuntimes.push_back(gpuRuntime);
-		else if (cpuRuntime)
-			m_cpuComponentRuntimes.push_back(cpuRuntime);		
-	}
-
+	
 	m_editVersion = m_pEffect->GetEditVersion();
 }
 
@@ -653,20 +601,14 @@ void CParticleEmitter::ResetRenderObjects()
 
 void CParticleEmitter::AddInstance()
 {
+	CParticleComponentRuntime::SInstance instance(m_parentContainer.GetLastParticleId());
+
 	m_parentContainer.AddParticle();
 
-	CParticleComponentRuntime::SInstance instance;
-	instance.m_parentId = 0;
-
-	for (auto& ref : m_componentRuntimes)
+	for (auto ref : m_componentRuntimes)
 	{
-		if (auto pRuntime = ref.pRuntime->GetCpuRuntime())
-		{
-			const SComponentParams& params = pRuntime->GetComponentParams();
-			const bool isSecondGen = params.IsSecondGen();
-			if (!isSecondGen)
-				ref.pRuntime->AddSubInstances(&instance, 1);
-		}
+		if (ref.pRuntime->IsActive() && !ref.pRuntime->IsSecondGen())
+			ref.pRuntime->AddSubInstances({&instance, 1});
 	}
 }
 
