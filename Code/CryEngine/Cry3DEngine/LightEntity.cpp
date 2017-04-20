@@ -2099,10 +2099,12 @@ IRenderNode::EGIMode CLightEntity::GetGIMode() const
 void CLightEntity::SetOwnerEntity(IEntity* pEnt)
 {
 	IRenderNode::SetOwnerEntity(pEnt);
-
-	SetRndFlags(ERF_GI_MODE_BIT0, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT0) != 0);
-	SetRndFlags(ERF_GI_MODE_BIT1, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT1) != 0);
-	SetRndFlags(ERF_GI_MODE_BIT2, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) != 0);
+	if (pEnt)
+	{
+		SetRndFlags(ERF_GI_MODE_BIT0, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT0) != 0);
+		SetRndFlags(ERF_GI_MODE_BIT1, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT1) != 0);
+		SetRndFlags(ERF_GI_MODE_BIT2, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) != 0);
+	}
 }
 
 void CLightEntity::OffsetPosition(const Vec3& delta)

@@ -249,15 +249,20 @@ CVisibleRenderNodesManager::Statistics CVisibleRenderNodesManager::GetStatistics
 
 void CVisibleRenderNodesManager::OnEntityDeleted(IEntity *pEntity)
 {
+#ifdef _DEBUG
 	LOADING_TIME_PROFILE_SECTION;
 
 	for (auto* node : m_visibleNodes)
 	{
-		if (node->userData.pOwnerNode && node->userData.pOwnerNode->GetOwnerEntity() == pEntity)
+		const bool bEntityOwnerdeleted =
+			node->userData.pOwnerNode &&
+			node->userData.pOwnerNode->GetOwnerEntity() == pEntity;
+		if (bEntityOwnerdeleted)
 		{
-			node->userData.pOwnerNode->SetOwnerEntity(nullptr);
-
-			Cry3DEngineBase::Warning("%s: Dangling IEntity pointer detected in render node: %s", __FUNCTION__, node->userData.pOwnerNode->GetEntityClassName());
+			CryFatalError(
+				"%s: Dangling IEntity pointer detected in render node: %s",
+				__FUNCTION__, node->userData.pOwnerNode->GetEntityClassName());
 		}
 	}
+#endif
 }
