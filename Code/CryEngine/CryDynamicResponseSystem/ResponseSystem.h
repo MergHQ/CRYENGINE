@@ -36,7 +36,7 @@ class CResponseActor final : public DRS::IResponseActor
 {
 public:
 	CResponseActor(const string& name, EntityId linkedEntityID, const char* szGlobalVariableCollectionToUse);
-	virtual ~CResponseActor();
+	virtual ~CResponseActor() override;
 
 	//////////////////////////////////////////////////////////
 	// IResponseActor implementation
@@ -69,7 +69,7 @@ class CResponseSystem final : public DRS::IDynamicResponseSystem, public ISystem
 {
 public:
 	CResponseSystem();
-	virtual ~CResponseSystem();
+	virtual ~CResponseSystem() override;
 
 	static CResponseSystem* GetInstance() { return s_pInstance; }
 

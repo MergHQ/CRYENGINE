@@ -734,6 +734,32 @@ bool CResponseManager::HasMappingForSignal(const CHashedString& signalName)
 
 }
 
+void CryDRS::CResponseManager::OnActorRemoved(const CResponseActor* pActor)
+{
+	//We stop any response that the just removed actor might be running
+	for (ResponseInstanceList::iterator it = m_runningResponses.begin(); it != m_runningResponses.end(); )
+	{
+		CResponseInstance* pCurrent = *it;
+		if (pCurrent->GetCurrentActor() == pActor)
+		{
+			InformListenerAboutSignalProcessingFinished(pCurrent->GetSignalName()
+				, pCurrent->GetOriginalSender()
+				, pCurrent->GetContextVariablesImpl()
+				, pCurrent->GetSignalInstanceId()
+				, pCurrent
+				, IResponseManager::IListener::ProcessingResult_Canceled);
+			pCurrent->Cancel();
+			pCurrent->Update();
+			ReleaseInstance(pCurrent, false);
+			it = m_runningResponses.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+}
+
 //--------------------------------------------------------------------------------------------------
 DRS::SignalInstanceId g_currentSignalId = 0;
 
