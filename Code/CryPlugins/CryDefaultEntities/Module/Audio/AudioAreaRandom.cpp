@@ -287,13 +287,13 @@ void CAudioAreaRandom::SerializeProperties(Serialization::IArchive& archive)
 	archive(Serialization::AudioTrigger(m_playTriggerName), "PlayTrigger", "PlayTrigger");
 	archive(Serialization::AudioTrigger(m_stopTriggerName), "StopTrigger", "StopTrigger");
 	archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
-	archive(m_bMoveWithEntity, "Move with Entity", "MoveWithEntity");
+	archive(m_bMoveWithEntity, "MoveWithEntity", "Move with Entity");
 
 	archive(m_occlusionType, "OcclusionType", "Occlusion Type");
 
 	archive(Serialization::AudioRTPC(m_parameterName), "Rtpc", "Rtpc");
-	archive(m_parameterDistance, "RTPC Distance", "RTPCDistance");
-	archive(m_radius, "Radius Random", "RadiusRandom");
+	archive(m_parameterDistance, "RTPCDistance", "RTPC Distance");
+	archive(m_radius, "RadiusRandom", "Radius Random");
 
 	archive(m_minDelay, "MinDelay", "MinDelay");
 	archive(m_maxDelay, "MaxDelay", "MaxDelay");
