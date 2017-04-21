@@ -401,7 +401,11 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();
-	m_pTestSystem = new CTestSystemLegacy;
+
+	std::unique_ptr<ILog> testLogger = stl::make_unique<CLog>(this);
+	testLogger->SetFileName("%USER%/TestResults/TestLog.log");
+	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(std::move(testLogger));
+
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
 	m_pTextModeConsole = NULL;
@@ -2644,11 +2648,8 @@ void CSystem::debug_GetCallStackRaw(void** callstack, uint32& callstackLength)
 void CSystem::ApplicationTest(const char* szParam)
 {
 	assert(szParam);
-
-	if (!m_pTestSystem)
-		m_pTestSystem = new CTestSystemLegacy;
-
-	m_pTestSystem->ApplicationTest(szParam);
+	if (m_pTestSystem)
+		m_pTestSystem->ApplicationTest(szParam);
 }
 
 void CSystem::ExecuteCommandLine()

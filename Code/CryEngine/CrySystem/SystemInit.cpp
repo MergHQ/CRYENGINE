@@ -2650,7 +2650,7 @@ L_done:;
 
 		if (m_env.pConsole != nullptr)
 		{
-			((CTestSystemLegacy*)m_pTestSystem)->Init(m_env.pConsole);
+			CTestSystemLegacy::InitCommands();
 		}
 
 		m_env.pLog->RegisterConsoleVariables();

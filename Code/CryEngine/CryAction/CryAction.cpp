@@ -2437,10 +2437,12 @@ bool CCryAction::CompleteInit()
 	}
 
 #if defined(CRY_UNIT_TESTING)
-	const ICmdLineArg* pRunUnitTest = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "run_unit_tests");
-	if (pRunUnitTest)
+	if (m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "run_unit_tests"))
 	{
-		m_pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::EReporterType::Excel);
+		//in local unit tests we pass in -unit_test_open_failed to notify the user, in automated tests we don't pass in.
+		CryUnitTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
+			CryUnitTest::EReporterType::ExcelWithNotification : CryUnitTest::EReporterType::Excel;
+		m_pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(reporterType);
 		gEnv->pConsole->ExecuteString("quit");
 	}
 #endif

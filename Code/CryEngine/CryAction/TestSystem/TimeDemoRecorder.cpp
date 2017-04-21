@@ -1682,9 +1682,9 @@ bool CTimeDemoRecorder::PlayFrame()
 	//////////////////////////////////////////////////////////////////////////
 	if (m_pTimeDemoInfo)
 	{
-		m_pTimeDemoInfo->pFrames[m_currentFrame].fFrameRate = (float)(1.0 / deltaFrameTime.GetSeconds());
-		m_pTimeDemoInfo->pFrames[m_currentFrame].nPolysRendered = nPolygons;
-		m_pTimeDemoInfo->pFrames[m_currentFrame].nDrawCalls = gEnv->pRenderer->GetCurrentNumberOfDrawCalls();
+		m_pTimeDemoInfo->frames[m_currentFrame].fFrameRate = (float)(1.0 / deltaFrameTime.GetSeconds());
+		m_pTimeDemoInfo->frames[m_currentFrame].nPolysRendered = nPolygons;
+		m_pTimeDemoInfo->frames[m_currentFrame].nDrawCalls = gEnv->pRenderer->GetCurrentNumberOfDrawCalls();
 	}
 	//////////////////////////////////////////////////////////////////////////
 	m_lastFrameTime = GetTime();
@@ -1904,16 +1904,12 @@ void CTimeDemoRecorder::StartSession()
 	if (!m_pTimeDemoInfo)
 	{
 		m_pTimeDemoInfo = new STimeDemoInfo();
-		m_pTimeDemoInfo->pFrames = 0;
 	}
 
 	int size = GetNumberOfFrames();
-	if (m_pTimeDemoInfo && m_pTimeDemoInfo->nFrameCount != size)
+	if (m_pTimeDemoInfo && m_pTimeDemoInfo->frames.size() != size)
 	{
-		delete[]m_pTimeDemoInfo->pFrames;
-		STimeDemoInfo* pTD = m_pTimeDemoInfo;
-		pTD->nFrameCount = size;
-		pTD->pFrames = new STimeDemoFrameInfo[pTD->nFrameCount];
+		m_pTimeDemoInfo->frames.resize(size);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

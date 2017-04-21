@@ -86,9 +86,9 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 
 		AddRow();
 		if (res.autoTestInfo.szTaskName != 0)
-			name.Format("[%s] %s:%s.%s", res.testInfo.module, res.testInfo.suite, res.testInfo.name, res.autoTestInfo.szTaskName);
+			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name, res.autoTestInfo.szTaskName);
 		else
-			name.Format("[%s] %s:%s", res.testInfo.module, res.testInfo.suite, res.testInfo.name);
+			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name);
 		AddCell(name);
 		AddCell("FAIL", CELL_CENTERED);
 		AddCell((int)res.fRunTimeInMs);
@@ -126,9 +126,9 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	{
 		AddRow();
 		if (res.autoTestInfo.szTaskName != 0)
-			name.Format("[%s] %s:%s.%s", res.testInfo.module, res.testInfo.suite, res.testInfo.name, res.autoTestInfo.szTaskName);
+			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name, res.autoTestInfo.szTaskName);
 		else
-			name.Format("[%s] %s:%s", res.testInfo.module, res.testInfo.suite, res.testInfo.name);
+			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name);
 		AddCell(name);
 		if (res.bSuccess)
 			AddCell("OK", CELL_CENTERED);
@@ -142,25 +142,6 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 
 	SaveToFile(kOutputFileName);
 	SaveJUnitCompatableXml();
-
-#if CRY_PLATFORM_WINDOWS
-	//open report file if any test failed.
-	if (context.failedTestCount > 0)
-	{
-		CryLogAlways("%d Tests failed, opening report...", context.failedTestCount);
-		int nAdjustFlags = 0;
-		char path[_MAX_PATH];
-		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(kOutputFileName, path, nAdjustFlags);
-		if (szAdjustedPath != nullptr)
-		{
-			int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
-			if (err <= 32)//returns a value greater than 32 if succeeds.
-			{
-				CryLogAlways("Failed to open report %s, error code: %d", szAdjustedPath, err);
-			}
-		}
-	}
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -197,7 +178,7 @@ void CUnitTestExcelReporter::SaveJUnitCompatableXml()
 		if (!res.bSuccess)
 		{
 			XmlNodeRef failNode = testNode->newChild("failure");
-			failNode->setAttr("type", res.testInfo.module);
+			failNode->setAttr("type", res.testInfo.GetModule());
 			failNode->setAttr("message", res.failureDescription);
 			string err;
 			err.Format("%s at line %d", res.testInfo.filename, res.testInfo.lineNumber);
@@ -212,7 +193,7 @@ void CUnitTestExcelReporter::OnSingleTestStart(const IUnitTest& test)
 {
 	const SUnitTestInfo& testInfo = test.GetInfo();
 	string text;
-	text.Format("Test Started: [%s] %s:%s", testInfo.module, testInfo.suite, testInfo.name);
+	text.Format("Test Started: [%s] %s:%s", testInfo.GetModule(), testInfo.suite, testInfo.name);
 	gEnv->pLog->UpdateLoadingScreen(text);
 }
 
@@ -220,7 +201,7 @@ void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRu
 {
 	const SUnitTestInfo& testInfo = test.GetInfo();
 	string text;
-	text.Format("Test Finished: [%s] %s:%s", testInfo.module, testInfo.suite, testInfo.name);
+	text.Format("Test Finished: [%s] %s:%s", testInfo.GetModule(), testInfo.suite, testInfo.name);
 	gEnv->pLog->UpdateLoadingScreen(text);
 
 	STestResult testResult
@@ -232,4 +213,29 @@ void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRu
 		failureDescription
 	};
 	m_results.push_back(testResult);
+}
+
+void CUnitTestExcelNotificationReporter::OnFinishTesting(const SUnitTestRunContext& context)
+{
+	CUnitTestExcelReporter::OnFinishTesting(context);
+
+	//Open report file if any test failed. Since the notification is used for local testing only, we only need Windows
+#if CRY_PLATFORM_WINDOWS
+	if (context.failedTestCount > 0)
+	{
+		CryLogAlways("%d Tests failed, opening report...", context.failedTestCount);
+		int nAdjustFlags = 0;
+		char path[_MAX_PATH];
+		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(kOutputFileName, path, nAdjustFlags);
+		if (szAdjustedPath != nullptr)
+		{
+			//should open it with Excel
+			int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
+			if (err <= 32)//returns a value greater than 32 if succeeds.
+			{
+				CryLogAlways("Failed to open report %s, error code: %d", szAdjustedPath, err);
+			}
+		}
+	}
+#endif
 }

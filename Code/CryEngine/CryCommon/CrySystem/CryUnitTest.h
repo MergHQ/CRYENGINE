@@ -11,6 +11,7 @@
 
 #include <CrySystem/ITestSystem.h>
 #include <CryString/StringUtils.h>
+#include <CryCore/StaticInstanceList.h>
 
 #if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
 	#include <exception>
@@ -24,15 +25,16 @@ struct IUnitTestReporter;
 //! Describes in what way the test result is reported
 enum class EReporterType
 {
-	Excel,   //!< Writes multiple excel documents for detailed results
-	Minimal, //!< Writes minimal logs
-	Regular, //!< Writes detailed logs for every test
+	Excel,                  //!< Writes multiple excel documents for detailed results
+	ExcelWithNotification,  //!< In addition to excel document, also opens the document locally when any test fails
+	Minimal,                //!< Writes minimal logs
+	Regular,                //!< Writes detailed logs for every test
 };
 
 struct SUnitTestInfo
 {
 	STest&      test;
-	char const* module = "";
+	
 	char const* suite = "";
 	char const* name = "";
 	char const* filename = "";
@@ -50,6 +52,14 @@ struct SUnitTestInfo
 	{
 		return &lhs.test == &rhs.test;
 	}
+
+	//! Sets and gets module (dll name) information for the test. 
+	//! Stores CryString in the back because the raw literal is not persistent across modules.
+	void SetModule(const char* newModuleName) { m_sModule = newModuleName; }
+	const char* const GetModule() const { return m_sModule.c_str(); }
+
+private:
+	string m_sModule;
 };
 
 //! Defines info needed for script bound auto testing.
@@ -75,9 +85,6 @@ struct STest
 
 	SUnitTestInfo m_unitTestInfo { *this };
 	SAutoTestInfo m_autoTestInfo;//!< Currently not in use
-	STest*        m_pNext = nullptr;
-	static STest* m_pFirst;
-	static STest* m_pLast;
 };
 
 struct SUnitTestRunContext
@@ -121,15 +128,6 @@ struct IUnitTestManager
 
 	virtual IUnitTest* GetTestInstance(const SUnitTestInfo& info) = 0;
 
-	void CreateTests(const char* moduleName = "")
-	{
-		for (STest* pTest = STest::m_pFirst; pTest != nullptr; pTest = pTest->m_pNext)
-		{
-			pTest->m_unitTestInfo.module = moduleName;
-			GetTestInstance(pTest->m_unitTestInfo);
-		}
-	}
-
 	//! Runs all test instances and returns exit code.
 	//! \return 0 if all succeeded, non-zero when at least one test failed.
 	virtual int  RunAllTests(EReporterType reporterType) = 0;
@@ -139,6 +137,9 @@ struct IUnitTestManager
 
 	//! 'callback' for failed tests, to prevent storing information in the exception, allowing use of setjmp/longjmp.
 	virtual void SetExceptionCause(const char* expression, const char* file, int line) = 0;
+
+	//! Helper called on module initialization. Do not use directly.
+	void CreateTests(const char* moduleName);
 };
 
 #if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
@@ -162,27 +163,32 @@ public:
 };
 #endif
 
-//////////////////////////////////////////////////////////////////////////
-class CAutoRegisterUnitTest
+//! Helper class whose sole purpose is to register static test instances defined in separate files to the system.
+struct SUnitTestRegistrar : public CStaticInstanceList<SUnitTestRegistrar>
 {
-public:
-	CAutoRegisterUnitTest(STest* pTest, const char* suite, const char* name, const char* filename, int line)
+	SUnitTestRegistrar(STest& test, const char* suite, const char* name, const char* filename, int line)
+		: test(test)
 	{
-		CRY_ASSERT(pTest != nullptr);
-
-		if (!STest::m_pLast)
-			STest::m_pFirst = pTest;
-		else
-			STest::m_pLast->m_pNext = pTest;
-		STest::m_pLast = pTest;
-
-		pTest->m_unitTestInfo.module = "";
-		pTest->m_unitTestInfo.suite = suite;
-		pTest->m_unitTestInfo.name = name;
-		pTest->m_unitTestInfo.filename = filename;
-		pTest->m_unitTestInfo.lineNumber = line;
+		test.m_unitTestInfo.suite = suite;
+		test.m_unitTestInfo.name = name;
+		test.m_unitTestInfo.filename = filename;
+		test.m_unitTestInfo.lineNumber = line;
 	}
+
+	STest& test;
 };
+
+inline void IUnitTestManager::CreateTests(const char* moduleName)
+{
+	for (SUnitTestRegistrar* pTestRegistrar = SUnitTestRegistrar::GetFirstInstance();
+		pTestRegistrar != nullptr;
+		pTestRegistrar = pTestRegistrar->GetNextInstance())
+	{
+		pTestRegistrar->test.m_unitTestInfo.SetModule(moduleName);
+		GetTestInstance(pTestRegistrar->test.m_unitTestInfo);
+	}
+}
+
 } // namespace CryUnitTest
 
 //! Global Suite for all tests that do not specify suite.
@@ -200,7 +206,7 @@ inline const char* GetSuiteName() { return ""; }
     virtual void Run();                                                                                                                                                     \
   };                                                                                                                                                                        \
   ClassName auto_unittest_instance_ ## ClassName;                                                                                                                           \
-  CryUnitTest::CAutoRegisterUnitTest autoreg_unittest_ ## ClassName(&auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), TestName, __FILE__, __LINE__); \
+  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), TestName, __FILE__, __LINE__);     \
   void ClassName::Run()
 
 #define CRY_UNIT_TEST_NAME(ClassName, TestName)            CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, TestName, CryUnitTest::STest)
@@ -209,11 +215,11 @@ inline const char* GetSuiteName() { return ""; }
 
 #define CRY_UNIT_TEST_REGISTER(ClassName)         \
   ClassName auto_unittest_instance_ ## ClassName; \
-  CryUnitTest::CAutoRegisterUnitTest autoreg_unittest_ ## ClassName(&auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), # ClassName, __FILE__, __LINE__);
+  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), # ClassName, __FILE__, __LINE__);
 
 #define CRY_UNIT_TEST_REGISTER_NAME(ClassName, TestName) \
   ClassName auto_unittest_instance_ ## ClassName;        \
-  CryUnitTest::CAutoRegisterUnitTest autoreg_unittest_ ## ClassName(&auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), TestName, __FILE__, __LINE__);
+  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), TestName, __FILE__, __LINE__);
 
 #define CRY_UNIT_TEST_SUITE(SuiteName)                      \
   namespace SuiteName {                                     \

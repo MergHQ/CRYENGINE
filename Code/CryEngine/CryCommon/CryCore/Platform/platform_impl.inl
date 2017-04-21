@@ -56,11 +56,6 @@ extern "C" DLL_EXPORT SRegFactoryNode* GetHeadToRegFactories()
 		#include "WinBase.inl"
 	#endif
 	#undef CRY_PLATFORM_IMPL_H_FILE
-
-// Define UnitTest static variables
-CryUnitTest::STest* CryUnitTest::STest::m_pFirst = nullptr;
-CryUnitTest::STest* CryUnitTest::STest::m_pLast = nullptr;
-
 	#if CRY_PLATFORM_WINDOWS
 void CryPureCallHandler()
 {
