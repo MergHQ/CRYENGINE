@@ -19,18 +19,17 @@
 
 #include <CrySystem/ICmdLine.h>
 #include <CryNetwork/INetwork.h>
-#include <CrySystem/ITestSystem.h> // <> required for Interfuscator
 
 struct IAIActorProxy;
 struct IGameFramework;
 struct IGameStateRecorder;
 struct IGameAudio;
 struct IGameWarningsListener;
-//struct ITestManager;
 struct SGameStartParams;
 struct SRenderingPassInfo;
 struct IGameToEditorInterface;
 struct IGameWebDebugService;
+struct IGameplayListener;
 
 //! Main interface used for the game central object.
 //! The IGame interface should be implemented in the GameDLL.

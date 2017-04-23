@@ -14,7 +14,6 @@ class CActionExecuteAudioTrigger final : public DRS::IResponseAction
 {
 public:
 	CActionExecuteAudioTrigger() : m_bWaitToBeFinished(true) {}
-	virtual ~CActionExecuteAudioTrigger() = default;
 
 	//////////////////////////////////////////////////////////
 	// IResponseAction implementation
@@ -34,8 +33,8 @@ private:
 class CActionExecuteAudioTriggerInstance final : public DRS::IResponseActionInstance
 {
 public:
-	CActionExecuteAudioTriggerInstance(IEntityAudioComponent* pAudioProxy, CryAudio::ControlId audioStartTriggerID);
-	virtual ~CActionExecuteAudioTriggerInstance();
+	CActionExecuteAudioTriggerInstance(DRS::IResponseActor* pActor, CryAudio::ControlId audioStartTriggerID);
+	virtual ~CActionExecuteAudioTriggerInstance() override;
 
 	//////////////////////////////////////////////////////////
 	// IResponseActionInstance implementation
@@ -46,8 +45,8 @@ public:
 	void        SetFinished();
 	static void OnAudioTriggerFinished(const CryAudio::SRequestInfo* const pAudioRequestInfo);
 private:
-	CryAudio::ControlId    m_audioStartTriggerID;
-	IEntityAudioComponent* m_pEntityAudioProxy;
+	CryAudio::ControlId  m_audioStartTriggerID;
+	DRS::IResponseActor* m_pActor;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -57,8 +56,6 @@ private:
 class CActionSetAudioSwitch final : public DRS::IResponseAction
 {
 public:
-	virtual ~CActionSetAudioSwitch() = default;
-
 	//////////////////////////////////////////////////////////
 	// IResponseAction implementation
 	virtual DRS::IResponseActionInstanceUniquePtr Execute(DRS::IResponseInstance* pResponseInstance) override;
@@ -79,8 +76,6 @@ private:
 class CActionSetAudioParameter final : public DRS::IResponseAction
 {
 public:
-	virtual ~CActionSetAudioParameter() = default;
-
 	//////////////////////////////////////////////////////////
 	// IResponseAction implementation
 	virtual DRS::IResponseActionInstanceUniquePtr Execute(DRS::IResponseInstance* pResponseInstance) override;

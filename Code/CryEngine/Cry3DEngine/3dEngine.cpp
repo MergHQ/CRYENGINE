@@ -4722,21 +4722,24 @@ void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 	LOADING_TIME_PROFILE_SECTION;
 	m_nCachedShadowsUpdateStrategy = nUpdateStrategy;
 
-	// refresh cached shadow casters
-	if (GetCVars()->e_DynamicDistanceShadows != 0)
+	if (IRenderer* const pRenderer = GetRenderer())
 	{
-		static int lastFrameId = 0;
-
-		int newFrameId = GetRenderer()->GetFrameID();
-
-		if (lastFrameId != newFrameId)
+		// refresh cached shadow casters
+		if (GetCVars()->e_DynamicDistanceShadows != 0)
 		{
-			for (int nSID = 0; nSID < m_pObjectsTree.Count(); nSID++)
-			{
-				m_pObjectsTree[nSID]->MarkAsUncompiled();
-			}
+			static int lastFrameId = 0;
 
-			lastFrameId = newFrameId;
+			int newFrameId = pRenderer->GetFrameID();
+
+			if (lastFrameId != newFrameId)
+			{
+				for (int nSID = 0; nSID < m_pObjectsTree.Count(); nSID++)
+				{
+					m_pObjectsTree[nSID]->MarkAsUncompiled();
+				}
+
+				lastFrameId = newFrameId;
+			}
 		}
 	}
 }

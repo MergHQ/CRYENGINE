@@ -16,9 +16,10 @@
 
 namespace CryUnitTest
 {
+//! Writes multiple excel documents for detailed results
 class CUnitTestExcelReporter : public CExcelExportBase, public IUnitTestReporter
 {
-public:
+protected:
 	virtual void OnStartTesting(const SUnitTestRunContext& context) override {}
 	virtual void OnFinishTesting(const SUnitTestRunContext& context) override;
 	virtual void OnSingleTestStart(const IUnitTest& test) override;
@@ -26,7 +27,6 @@ public:
 
 	void         SaveJUnitCompatableXml();
 
-private:
 	struct STestResult
 	{
 		SUnitTestInfo testInfo;
@@ -36,5 +36,11 @@ private:
 		string        failureDescription;
 	};
 	std::vector<STestResult> m_results;
+};
+
+//! Extends Excel reporter by opening failed report
+class CUnitTestExcelNotificationReporter : public CUnitTestExcelReporter
+{
+	virtual void OnFinishTesting(const SUnitTestRunContext& context) override;
 };
 }

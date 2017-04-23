@@ -34,6 +34,7 @@ CATLAudioObject::CATLAudioObject()
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::Release()
 {
+	// Do not clear the object's name though!
 	m_activeEvents.clear();
 	m_triggerImplStates.clear();
 	m_activeStandaloneFiles.clear();
@@ -43,10 +44,6 @@ void CATLAudioObject::Release()
 		triggerStatesPair.second.numLoadingEvents = 0;
 		triggerStatesPair.second.numPlayingEvents = 0;
 	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_name.clear();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	m_pImplData = nullptr;
 }

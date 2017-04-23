@@ -567,6 +567,7 @@ CResponseActor::CResponseActor(const string& name, EntityId usedEntityID, const 
 CResponseActor::~CResponseActor()
 {
 	CResponseSystem::GetInstance()->GetSpeakerManager()->OnActorRemoved(this);
+	CResponseSystem::GetInstance()->GetResponseManager()->OnActorRemoved(this);
 	m_pNonGlobalVariableCollection = nullptr;  //Remark: if we are using a global variable collection we are not releasing it. We assume it`s handled outside	
 }
 

@@ -4056,7 +4056,7 @@ void CStatsToExcelExporter::ExportTimeDemoInfo()
 	AddCell(pTD->lastPlayedTotalTime);
 	AddRow();
 	AddCell("Num Frames:", CELL_BOLD);
-	AddCell(pTD->nFrameCount);
+	AddCell((int)pTD->frames.size());
 	AddRow();
 	AddCell("Average FPS:", CELL_BOLD);
 	AddCell(pTD->lastAveFrameRate);
@@ -4072,10 +4072,10 @@ void CStatsToExcelExporter::ExportTimeDemoInfo()
 	AddCell(pTD->maxFPS_Frame);
 	AddRow();
 	AddCell("Average Tri/Sec:", CELL_BOLD);
-	AddCell((uint32)(pTD->nTotalPolysPlayed / pTD->lastPlayedTotalTime));
+	AddCell((uint32)((float)pTD->nTotalPolysPlayed / pTD->lastPlayedTotalTime));
 	AddRow();
 	AddCell("Average Tri/Frame:", CELL_BOLD);
-	AddCell((uint32)(pTD->nTotalPolysPlayed / pTD->nFrameCount));
+	AddCell((uint32)((float)pTD->nTotalPolysPlayed / pTD->frames.size()));
 	AddRow();
 	AddCell("Played/Recorded Tris ratio:", CELL_BOLD);
 	AddCell(pTD->nTotalPolysRecorded ? (float)pTD->nTotalPolysPlayed / pTD->nTotalPolysRecorded : 0.f);
@@ -4099,13 +4099,13 @@ void CStatsToExcelExporter::ExportTimeDemoInfo()
 
 	AddRow();
 
-	for (int i = 0; i < pTD->nFrameCount; i++)
+	for (int i = 0; i < pTD->frames.size(); i++)
 	{
 		AddRow();
 		AddCell(i);
-		AddCell(pTD->pFrames[i].fFrameRate);
-		AddCell(pTD->pFrames[i].nPolysRendered);
-		AddCell(pTD->pFrames[i].nDrawCalls);
+		AddCell(pTD->frames[i].fFrameRate);
+		AddCell(pTD->frames[i].nPolysRendered);
+		AddCell(pTD->frames[i].nDrawCalls);
 	}
 }
 

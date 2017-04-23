@@ -15,33 +15,19 @@
 
 extern int CryMemoryGetAllocatedSize();
 
-CTestSystemLegacy::CTestSystemLegacy() : m_iRenderPause(0), m_fQuitInNSeconds(0.0f)
+CTestSystemLegacy::CTestSystemLegacy(std::unique_ptr<ILog> pLog)
+	: m_pLog(std::move(pLog))
 {
-	m_bFirstUpdate = true;
-	m_bApplicationTest = false;
-	m_pTimeDemoInfo = 0;
-	m_pLog = 0;
-	m_pUnitTestManager = new CryUnitTest::CUnitTestManager;
-}
-
-CTestSystemLegacy::~CTestSystemLegacy()
-{
-	delete m_pUnitTestManager;
-	if (m_pTimeDemoInfo)
-	{
-		delete[]m_pTimeDemoInfo->pFrames;
-		delete m_pTimeDemoInfo;
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTestSystemLegacy::Init(IConsole* pConsole)
+/*static*/ void CTestSystemLegacy::InitCommands()
 {
 	REGISTER_COMMAND("RunUnitTests", RunUnitTests, VF_INVISIBLE | VF_CHEAT, "Execute a set of unit tests");
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTestSystemLegacy::RunUnitTests(IConsoleCmdArgs* pArgs)
+/*static*/ void CTestSystemLegacy::RunUnitTests(IConsoleCmdArgs* pArgs)
 {
 	int nExitCode = gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::EReporterType::Excel);
 
@@ -58,7 +44,7 @@ void CTestSystemLegacy::RunUnitTests(IConsoleCmdArgs* pArgs)
 void CTestSystemLegacy::QuitInNSeconds(const float fInNSeconds)
 {
 	if (fInNSeconds > 0)
-		gEnv->pLog->Log("QuitInNSeconds() requests quit in %f sec", fInNSeconds);
+		m_pLog->Log("QuitInNSeconds() requests quit in %f sec", fInNSeconds);
 
 	m_fQuitInNSeconds = fInNSeconds;
 }
@@ -116,15 +102,13 @@ void CTestSystemLegacy::ApplicationTest(const char* szParam)
 	m_sParameter = szParam;
 	m_iRenderPause = 0;
 
-	m_pLog = new CLog(GetISystem());
-	m_pLog->SetFileName("%USER%/TestResults/TestLog.log");
 	if (!szParam)
 	{
-		gEnv->pLog->LogError("ApplicationTest() parameter missing");
+		m_pLog->LogError("ApplicationTest() parameter missing");
 		return;
 	}
 
-	if (stricmp(m_sParameter.c_str(), "LevelStats") == 0)
+	if (m_sParameter.CompareNoCase("LevelStats") == 0)
 	{
 		if (gEnv->pGameFramework)
 		{
@@ -142,7 +126,7 @@ void CTestSystemLegacy::ApplicationTest(const char* szParam)
 
 	m_bApplicationTest = true;
 
-	//	GetILog()->Log("ApplicationTest '%s'",szParam);
+	//	m_pLog->Log("ApplicationTest '%s'",szParam);
 }
 
 void CTestSystemLegacy::LogLevelStats()
@@ -152,7 +136,7 @@ void CTestSystemLegacy::LogLevelStats()
 	char sVersion[128];
 	ver.ToString(sVersion);
 
-	GetILog()->Log("   LevelStats Level='%s'   Ver=%s", gEnv->pGameFramework->GetLevelName(), sVersion);
+	m_pLog->Log("   LevelStats Level='%s'   Ver=%s", gEnv->pGameFramework->GetLevelName(), sVersion);
 
 	{
 		// copied from CBudgetingSystem::MonitorSystemMemory
@@ -169,7 +153,7 @@ void CTestSystemLegacy::LogLevelStats()
 		memUsageInMB_SysCopyMeshes = RoundToClosestMB(memUsageInMB_SysCopyMeshes);
 		memUsageInMB_SysCopyTextures = RoundToClosestMB(memUsageInMB_SysCopyTextures);
 
-		GetILog()->Log("   System memory: %d MB [%d MB (engine), %d MB (managed textures), %d MB (managed meshes)]",
+		m_pLog->Log("   System memory: %d MB [%d MB (engine), %d MB (managed textures), %d MB (managed meshes)]",
 		               memUsageInMB, memUsageInMB_Engine, memUsageInMB_SysCopyTextures, memUsageInMB_SysCopyMeshes);
 	}
 
@@ -201,7 +185,7 @@ void CTestSystemLegacy::Update()
 
 	if (m_bFirstUpdate)
 	{
-		if (stricmp(m_sParameter.c_str(), "TimeDemo") == 0)
+		if (m_sParameter.CompareNoCase("TimeDemo") == 0)
 		{
 			gEnv->pConsole->ExecuteString("exec TimeDemo.exc");
 		}
@@ -229,7 +213,7 @@ void CTestSystemLegacy::BeforeRender()
 	I3DEngine* p3DEngine = gEnv->p3DEngine;
 	IRenderer* pRenderer = gEnv->pRenderer;
 
-	if (stricmp(m_sParameter, "PrecacheCameraScreenshots") == 0)  // -----------------------------------------------------
+	if (m_sParameter.CompareNoCase("PrecacheCameraScreenshots") == 0)
 	{
 		assert(p3DEngine);
 		assert(pRenderer);
@@ -299,26 +283,17 @@ void CTestSystemLegacy::ScreenShot(const char* szDirectory, const char* szFilena
 	// directory is generated automatically
 	gEnv->pRenderer->ScreenShot(string(szDirectory) + "/" + szFilename);
 
-	GetILog()->Log("Generated screen shot '%s/%s'", szDirectory, szFilename);
+	m_pLog->Log("Generated screen shot '%s/%s'", szDirectory, szFilename);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CTestSystemLegacy::SetTimeDemoInfo(STimeDemoInfo* pTimeDemoInfo)
 {
-	if (m_pTimeDemoInfo)
-		delete[]m_pTimeDemoInfo->pFrames;
-	else
-		m_pTimeDemoInfo = new STimeDemoInfo;
-
-	*m_pTimeDemoInfo = *pTimeDemoInfo;
-
-	m_pTimeDemoInfo->pFrames = new STimeDemoFrameInfo[pTimeDemoInfo->nFrameCount];
-	// Copy per frame data.
-	memcpy(m_pTimeDemoInfo->pFrames, pTimeDemoInfo->pFrames, sizeof(STimeDemoFrameInfo) * pTimeDemoInfo->nFrameCount);
+	m_timeDemoInfo = *pTimeDemoInfo;
 }
 
 //////////////////////////////////////////////////////////////////////////
 STimeDemoInfo* CTestSystemLegacy::GetTimeDemoInfo()
 {
-	return m_pTimeDemoInfo;
+	return &m_timeDemoInfo;
 }

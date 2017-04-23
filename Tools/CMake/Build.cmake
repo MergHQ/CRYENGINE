@@ -48,37 +48,37 @@ if (OPTION_ENGINE AND (WIN32 OR WIN64))
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|x64'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>		
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|Win32'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>		
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 		</Project>")

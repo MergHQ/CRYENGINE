@@ -51,6 +51,7 @@ CUnitTestManager::CUnitTestManager()
 	CreateTests("CrySystem");
 }
 
+//Empty destructor here to enable m_pAutoTestsContext forward declaration
 CUnitTestManager::~CUnitTestManager()
 {
 }
@@ -60,7 +61,9 @@ IUnitTest* CUnitTestManager::GetTestInstance(const SUnitTestInfo& info)
 	for (auto& pt : m_tests)
 	{
 		if (pt->GetInfo() == info)
+		{
 			return pt.get();
+		}
 	}
 
 	auto pTest = stl::make_unique<CUnitTest>(info);
@@ -163,6 +166,9 @@ void CUnitTestManager::StartTesting(SUnitTestRunContext& context, EReporterType 
 	case EReporterType::Excel:
 		context.pReporter = stl::make_unique<CUnitTestExcelReporter>();
 		break;
+	case EReporterType::ExcelWithNotification:
+		context.pReporter = stl::make_unique<CUnitTestExcelNotificationReporter>();
+		break;
 	case EReporterType::Minimal:
 		context.pReporter = stl::make_unique<CMinimalLogUnitTestReporter>();
 		break;
@@ -195,6 +201,7 @@ void CUnitTestManager::RunTest(CUnitTest& test, SUnitTestRunContext& context)
 
 #if defined(CRY_UNIT_TESTING)
 	m_bRunningTest = true;
+	m_failureMsg.clear();
 
 	#if !defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
 	if (setjmp(*GetAssertJmpBuf()) == 0)
@@ -216,7 +223,7 @@ void CUnitTestManager::RunTest(CUnitTest& test, SUnitTestRunContext& context)
 	{
 		context.failedTestCount++;
 		bFail = true;
-		cry_strcpy(m_failureMsg, e.what());
+		m_failureMsg = e.what();
 
 		// copy filename and line number of unit test assert
 		// will be used later for test reporting
@@ -229,15 +236,14 @@ void CUnitTestManager::RunTest(CUnitTest& test, SUnitTestRunContext& context)
 		context.failedTestCount++;
 
 		bFail = true;
-		cry_strcpy(m_failureMsg, "Unhandled exception: ");
-		cry_strcpy(m_failureMsg, e.what());
+		m_failureMsg.Format("Unhandled exception: %s", e.what());
 	}
 	catch (...)
 	{
 		context.failedTestCount++;
 
 		bFail = true;
-		cry_strcpy(m_failureMsg, "Crash");
+		m_failureMsg = "Crash";
 	}
 	#endif
 
@@ -247,7 +253,7 @@ void CUnitTestManager::RunTest(CUnitTest& test, SUnitTestRunContext& context)
 
 	float fRunTimeInMs = (t1 - t0).GetMilliSeconds();
 
-	context.pReporter->OnSingleTestFinish(test, fRunTimeInMs, !bFail, m_failureMsg);
+	context.pReporter->OnSingleTestFinish(test, fRunTimeInMs, !bFail, m_failureMsg.c_str());
 
 	test.Done();
 }
@@ -256,7 +262,7 @@ void CUnitTestManager::SetExceptionCause(const char* szExpression, const char* s
 {
 	if (m_bRunningTest)
 	{
-		cry_strcpy(m_failureMsg, szExpression);
+		m_failureMsg = szExpression;
 	}
 #if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
 	throw CryUnitTest::assert_exception(szExpression, szFile, line);
@@ -295,16 +301,16 @@ void CryUnitTest::CLogUnitTestReporter::OnFinishTesting(const SUnitTestRunContex
 void CryUnitTest::CLogUnitTestReporter::OnSingleTestStart(const IUnitTest& test)
 {
 	auto& info = test.GetInfo();
-	CryLog("UnitTestStart:  [%s]%s:%s", info.module, info.suite, info.name);
+	CryLog("UnitTestStart:  [%s]%s:%s", info.GetModule(), info.suite, info.name);
 }
 
 void CryUnitTest::CLogUnitTestReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
 {
 	auto& info = test.GetInfo();
 	if (bSuccess)
-		CryLog("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.module, info.suite, info.name, fRunTimeInMs);
+		CryLog("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.GetModule(), info.suite, info.name, fRunTimeInMs);
 	else
-		CryLog("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.module, info.suite, info.name, szFailureDescription);
+		CryLog("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.GetModule(), info.suite, info.name, szFailureDescription);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -334,7 +340,7 @@ void CryUnitTest::CMinimalLogUnitTestReporter::OnSingleTestFinish(const IUnitTes
 	if (!bSuccess)
 	{
 		auto& info = test.GetInfo();
-		CryLog("-- FAIL (%s): [%s]%s:%s (%s:%d)", szFailureDescription, info.module, info.suite, info.name, info.filename, info.lineNumber);
+		CryLog("-- FAIL (%s): [%s]%s:%s (%s:%d)", szFailureDescription, info.GetModule(), info.suite, info.name, info.filename, info.lineNumber);
 	}
 }
 

@@ -354,7 +354,7 @@ public:
 	DRS::IDynamicResponseSystem* GetIDynamicResponseSystem()          { return m_env.pDynamicResponseSystem; }
 	IHardwareMouse*              GetIHardwareMouse() override         { return m_env.pHardwareMouse; }
 	ISystemEventDispatcher*      GetISystemEventDispatcher() override { return m_pSystemEventDispatcher; }
-	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem; }
+	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem.get(); }
 	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override   { return m_pUserAnalyticsSystem; }
 	ICryPluginManager*           GetIPluginManager() override         { return m_pPluginManager; }
 	IProjectManager*             GetIProjectManager() override;
@@ -1012,7 +1012,7 @@ public:
 protected: // -------------------------------------------------------------
 	ILoadingProgressListener*                 m_pProgressListener;
 	CCmdLine*                                 m_pCmdLine;
-	ITestSystem*                              m_pTestSystem; // needed for external test application (0 if not activated yet)
+	std::unique_ptr<ITestSystem>              m_pTestSystem; // needed for external test application (0 if not activated yet)
 	CVisRegTest*                              m_pVisRegTest;
 	CThreadManager*                           m_pThreadManager;
 	CResourceManager*                         m_pResourceManager;

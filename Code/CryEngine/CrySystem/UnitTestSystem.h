@@ -80,7 +80,7 @@ private:
 
 private:
 	std::vector<std::unique_ptr<CUnitTest>> m_tests;
-	char                                    m_failureMsg[256] = {};
+	string                                  m_failureMsg;
 	std::unique_ptr<SAutoTestsContext>      m_pAutoTestsContext;
 	bool                                    m_bRunningTest = false;
 };

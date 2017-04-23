@@ -282,9 +282,9 @@ private:
 	CTimeValue m_totalDemoTime;
 	CTimeValue m_recordedDemoTime;
 
-	// How many polygons per frame where recorded.
+	// How many polygons were recorded.
 	int   m_nTotalPolysRecorded;
-	// How many polygons per frame where played.
+	// How many polygons were played.
 	int   m_nTotalPolysPlayed;
 
 	float m_lastPlayedTotalTime;

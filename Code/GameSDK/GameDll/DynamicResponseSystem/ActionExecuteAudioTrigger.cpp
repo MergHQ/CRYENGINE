@@ -24,7 +24,7 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 
 			if (m_bWaitToBeFinished)
 			{
-				DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance(pEntityAudioProxy, audioStartTriggerID));
+				DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance(pResponseInstance->GetCurrentActor(), audioStartTriggerID));
 				CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, (void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get());
 
 				if (pEntityAudioProxy->ExecuteTrigger(audioStartTriggerID, auxProxyId, userData))
@@ -55,8 +55,8 @@ void CActionExecuteAudioTrigger::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-CActionExecuteAudioTriggerInstance::CActionExecuteAudioTriggerInstance(IEntityAudioComponent* pAudioProxy, CryAudio::ControlId audioStartTriggerID)
-	: m_pEntityAudioProxy(pAudioProxy)
+CActionExecuteAudioTriggerInstance::CActionExecuteAudioTriggerInstance(DRS::IResponseActor* pActor, CryAudio::ControlId audioStartTriggerID)
+	: m_pActor(pActor)
 	, m_audioStartTriggerID(audioStartTriggerID)
 {
 	gEnv->pAudioSystem->AddRequestListener(&CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished, this, CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished);
@@ -71,7 +71,7 @@ CActionExecuteAudioTriggerInstance::~CActionExecuteAudioTriggerInstance()
 //--------------------------------------------------------------------------------------------------
 DRS::IResponseActionInstance::eCurrentState CActionExecuteAudioTriggerInstance::Update()
 {
-	if (m_pEntityAudioProxy)
+	if (m_pActor)
 	{
 		return DRS::IResponseActionInstance::CS_RUNNING;
 	}
@@ -100,16 +100,24 @@ void CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished(const CryAudio::
 //--------------------------------------------------------------------------------------------------
 void CActionExecuteAudioTriggerInstance::Cancel()
 {
-	if (m_pEntityAudioProxy)
+	if (m_pActor)
 	{
-		m_pEntityAudioProxy->StopTrigger(m_audioStartTriggerID);
+		if (IEntity* pEntity = m_pActor->GetLinkedEntity())
+		{
+			if (IEntityAudioComponent* pEntityAudioProxy = pEntity->GetComponent<IEntityAudioComponent>())  //we refetch the audio component here, because during entity-destruction it is not guaranteed that the DRS component is deleted first.
+			{
+				pEntityAudioProxy->StopTrigger(m_audioStartTriggerID);
+				return;
+			}
+		}
 	}
+	m_pActor = nullptr;  //we failed to stop the trigger, therefore we hard-cancel this action instance
 }
 
 //--------------------------------------------------------------------------------------------------
 void CActionExecuteAudioTriggerInstance::SetFinished()
 {
-	m_pEntityAudioProxy = nullptr;
+	m_pActor = nullptr;
 }
 
 //--------------------------------------------------------------------------------------------------
