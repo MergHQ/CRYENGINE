@@ -12,15 +12,13 @@ bool IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = false;
 
 void CVariable::Serialize(Serialization::IArchive& ar)
 {
-	ar(m_name, "name", "^!>150>");
+	ar(m_name, "name", "^>150>");
 	m_value.Serialize(ar);
 }
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-
-IVariableUsingBase::IVariableUsingBase() {}
 
 //--------------------------------------------------------------------------------------------------
 CVariableCollection* IVariableUsingBase::GetCurrentCollection(CResponseInstance* pResponseInstance)

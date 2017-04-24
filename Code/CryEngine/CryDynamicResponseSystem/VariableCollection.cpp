@@ -100,7 +100,7 @@ bool CVariableCollection::SetVariableValue(const CHashedString& name, const CVar
 				//check if there is already a cooldown for this variable, and if yes, remove it
 				for (CoolingDownVariableList::iterator itCooling = m_coolingDownVariables.begin(); itCooling != m_coolingDownVariables.end(); ++itCooling)
 				{
-					if (itCooling->variable == variable)
+					if (itCooling->variableName == name)
 					{
 						m_coolingDownVariables.erase(itCooling);
 						break;
@@ -189,19 +189,19 @@ bool CVariableCollection::SetVariableValueForSomeTime(CVariable* pVariable, cons
 #endif
 	const float currentTime = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 
-	//check if there is already an cooldown for this variable, in that case we dont change the "oldValue"
+	//check if there is already an cooldown for this variable, in that case we don't change the "oldValue"
 	for (VariableCooldownInfo& cooldownInfo : m_coolingDownVariables)
 	{
-		if (cooldownInfo.variable == pVariable)
+		if (cooldownInfo.variableName == pVariable->m_name)
 		{
-			pVariable->m_value = newValue;  //actual change the value of the variable
+			pVariable->m_value = newValue;  //the actual change the value of the variable
 			cooldownInfo.timeOfReset = currentTime + timeBeforeReset;
 			return true;
 		}
 	}
 
 	VariableCooldownInfo newCooldown;
-	newCooldown.variable = pVariable;
+	newCooldown.variableName = pVariable->m_name;
 	newCooldown.timeOfReset = currentTime + timeBeforeReset;
 	newCooldown.oldValue = pVariable->m_value.GetValue();
 	m_coolingDownVariables.push_back(newCooldown);
@@ -226,9 +226,12 @@ void CVariableCollection::Update()
 	{
 		if (currentTime > it->timeOfReset)
 		{
-			DRS_DEBUG_DATA_ACTION(AddVariableSet(it->variable->m_name.GetText(), m_name.GetText(), it->variable->m_value, it->oldValue, CResponseSystem::GetInstance()->GetCurrentDrsTime()));
-			DrsLogInfo((string("Reset Variable '") + it->variable->m_name.GetText() + " from '" + it->variable->m_value.GetValueAsString() + "' back to '" + CVariableValue(it->oldValue).GetValueAsString() + "' because the reset-cooldown has expired").c_str());
-			it->variable->m_value.SetValue(it->oldValue);
+			if(CVariable* pVariable = GetVariable(it->variableName))
+			{
+				DrsLogInfo((string("Reset Variable '") + it->variableName.GetText() + " from '" + pVariable->m_value.GetValueAsString() + "' back to '" + CVariableValue(it->oldValue).GetValueAsString() + "' because the reset-cooldown has expired").c_str());
+				DRS_DEBUG_DATA_ACTION(AddVariableSet(pVariable->m_name.GetText(), m_name.GetText(), pVariable->m_value, it->oldValue, CResponseSystem::GetInstance()->GetCurrentDrsTime()));
+				pVariable->m_value.SetValue(it->oldValue);
+			}			
 			it = m_coolingDownVariables.erase(it);
 		}
 		else
@@ -292,13 +295,20 @@ void CVariableCollection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		for (const CVariable& variable : variablesCopy)
+		for (CVariable* pVariable : m_allResponseVariables)
+			delete pVariable;
+		m_allResponseVariables.clear();
+
+		for (const CryDRS::CVariable& variable : variablesCopy)
 		{
-			CVariable* pNewVariable = this->CreateOrGetVariable(variable.m_name);
-			pNewVariable->m_value = variable.m_value;
+			CVariable* pNewVariable = CreateOrGetVariable((variable.m_name.IsValid()) ? variable.m_name : "Unnamed");
+			if (pNewVariable)
+			{
+				pNewVariable->m_value = variable.m_value;
+			}
 		}
 	}
-	//do we need to serialize m_coolingDownVariables?
+	ar(m_coolingDownVariables, "cooldowns", "!Active Cooldowns");
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -430,7 +440,7 @@ void CVariableCollectionManager::GetAllVariableCollections(DRS::ValuesList* pOut
 			//check if there is already a cooldown for this variable, and if yes, we store the old-value instead
 			for (const CryDRS::CVariableCollection::VariableCooldownInfo& cooldownInfo : coolingDownVariables)
 			{
-				if (cooldownInfo.variable == pVariable)
+				if (cooldownInfo.variableName == pVariable->GetName())
 				{
 					variableValue.SetValue(cooldownInfo.oldValue);
 				}
@@ -469,4 +479,11 @@ void CVariableCollectionManager::SetAllVariableCollections(DRS::ValuesListIterat
 		CryDRS::CVariable* pVariable = pCollection->CreateOrGetVariable(variableName);
 		pVariable->SetValueFromString(it->second);
 	}
+}
+
+void CVariableCollection::VariableCooldownInfo::Serialize(Serialization::IArchive& ar)
+{
+	ar(variableName, "variableName", "^^VariableName");
+	ar(timeOfReset, "timeOfReset", "TimeOfReset");
+	ar(oldValue, "oldValue", "OldValue");
 }
