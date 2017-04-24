@@ -129,13 +129,13 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	bool CanTriggerInGame(SActivationInfo* const pActInfo) const
 	{
-		return *(pActInfo->pInputPorts[eIn_TriggerInGame].GetPtr<bool>());
+		return *(pActInfo->GetInputPort(eIn_TriggerInGame).GetPtr<bool>());
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	bool CanTriggerInEditor(SActivationInfo* const pActInfo) const
 	{
-		return *(pActInfo->pInputPorts[eIn_TriggerInEditor].GetPtr<bool>());
+		return *(pActInfo->GetInputPort(eIn_TriggerInEditor).GetPtr<bool>());
 	}
 
 	//////////////////////////////////////////////////////////////////////////

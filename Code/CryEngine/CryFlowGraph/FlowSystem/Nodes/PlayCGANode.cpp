@@ -854,7 +854,7 @@ public:
 		Vec3 vTarget(0, 0, 0);
 		float fFov = 0;
 		ICharacterInstance* pCharacter = 0;
-		if (pActInfo->pEntity && pActInfo->pInputPorts)
+		if (pActInfo->pEntity && pActInfo->HasInputPorts())
 		{
 			pCharacter = pActInfo->pEntity->GetCharacter(0);
 			if (pCharacter)

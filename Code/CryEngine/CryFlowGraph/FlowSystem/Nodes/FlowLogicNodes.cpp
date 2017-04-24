@@ -267,7 +267,7 @@ public:
 			for (int i = 0; i < NUM_INPUTS; i++)
 			{
 				if (IsPortActive(pActInfo, i))
-					ActivateOutput(pActInfo, 0, pActInfo->pInputPorts[i]);
+					ActivateOutput(pActInfo, 0, pActInfo->GetInputPort(i));
 			}
 			break;
 		}
