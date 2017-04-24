@@ -492,7 +492,7 @@ BOOL CFacialEditorDialog::OnInitDialog()
 
 	SetContext(m_pContext);   // Reload context.
 
-	QT_TODO("TODO: Commands disabled now that Facial editor is in plugin, if necessary refactor commands into static methods that call into singleton dialog");
+	//QT_TODO("TODO: Commands disabled now that Facial editor is in plugin, if necessary refactor commands into static methods that call into singleton dialog");
 	/*
 	CEditorCommandManager* comMan = GetIEditor()->GetCommandManager();
 

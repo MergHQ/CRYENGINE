@@ -15,7 +15,3 @@
 #include "Resource.h"
 
 #include "Util/Variable.h"
-
-#define QT_STRINGANIZE2(x) # x
-#define QT_STRINGANIZE1(x) QT_STRINGANIZE2(x)
-#define QT_TODO(y)         __pragma(message(__FILE__ "(" QT_STRINGANIZE1(__LINE__) ") : " "[QT] TODO >>> " QT_STRINGANIZE2(y)))
