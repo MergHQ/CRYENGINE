@@ -7,8 +7,11 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	create_mono_compiler_settings()
 	set(Serialization_FILES Serialization/DomainSerializerTests.cs)
 	source_group("Serialization" FILES ${Serialization_FILES})
+	
+	set (ObjectIcon_FILES Entity/IconsTest.cs)
+	source_group("IconFiles" FILES ${ObjectIcon_FILES})
 
-	set(SOURCE ${Serialization_FILES})
+	set(SOURCE ${Serialization_FILES} ${ObjectIcon_FILES})
 
 	add_custom_target(CryEngine.Core.Tests
 		COMMAND ${MCS_PATH} -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r ${SDK_DIR}/nunit/framework/3.4.1.0/net-4.5/nunit.framework.dll -r:${OUTPUT_DIRECTORY}/CryEngine.Core.dll ${SOURCE} -out:${OUTPUT_DIRECTORY}/CryEngine.Core.Tests.dll
