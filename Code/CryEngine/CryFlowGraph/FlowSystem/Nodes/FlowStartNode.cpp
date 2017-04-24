@@ -43,8 +43,8 @@ void CFlowStartNode::GetConfiguration(SFlowNodeConfig& config)
 bool CFlowStartNode::MayTrigger(SActivationInfo* pActInfo)
 {
 	const bool isEditor = gEnv->IsEditor();
-	const bool canTriggerInGame = *(pActInfo->pInputPorts[0].GetPtr<bool>());
-	const bool canTriggerInEditor = *(pActInfo->pInputPorts[1].GetPtr<bool>());
+	const bool canTriggerInGame = *(pActInfo->GetInputPort(0).GetPtr<bool>());
+	const bool canTriggerInEditor = *(pActInfo->GetInputPort(1).GetPtr<bool>());
 	const bool canTrigger = (isEditor && canTriggerInEditor) || (!isEditor && canTriggerInGame);
 	return canTrigger;
 }

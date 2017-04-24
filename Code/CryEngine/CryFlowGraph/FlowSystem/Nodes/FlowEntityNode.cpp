@@ -502,7 +502,7 @@ public:
 
 				if (IsPortActive(pActInfo, IN_POS))
 				{
-					const Vec3* v = pActInfo->pInputPorts[IN_POS].GetPtr<Vec3>();
+					const Vec3* v = pActInfo->GetInputPort(IN_POS).GetPtr<Vec3>();
 					if (coorSys == CS_WORLD)
 					{
 						Matrix34 tm = pEntity->GetWorldTM();
@@ -518,7 +518,7 @@ public:
 				}
 				if (IsPortActive(pActInfo, IN_ROTATE))
 				{
-					const Vec3* v = pActInfo->pInputPorts[IN_ROTATE].GetPtr<Vec3>();
+					const Vec3* v = pActInfo->GetInputPort(IN_ROTATE).GetPtr<Vec3>();
 					Matrix34 tm = Matrix33(Quat::CreateRotationXYZ(Ang3(DEG2RAD(*v))));
 					if (coorSys == CS_WORLD)
 					{
@@ -533,7 +533,7 @@ public:
 				}
 				if (IsPortActive(pActInfo, IN_SCALE))
 				{
-					const Vec3* v = pActInfo->pInputPorts[IN_SCALE].GetPtr<Vec3>();
+					const Vec3* v = pActInfo->GetInputPort(IN_SCALE).GetPtr<Vec3>();
 					Vec3 scale = *v;
 					if (scale.x == 0) scale.x = 1.0f;
 					if (scale.y == 0) scale.y = 1.0f;

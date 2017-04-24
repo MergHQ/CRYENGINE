@@ -999,6 +999,7 @@ int CEntityRender::LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& pr
 		pRenderNode = GetI3DEngine()->CreateRenderNode(eERType_CloudBlocker);
 		pSlot->SetRenderNode(pRenderNode);
 	}
+	pSlot->SetRenderFlag(true);
 
 	CRY_ASSERT(pRenderNode && pRenderNode->GetRenderNodeType() == eERType_CloudBlocker);
 	ICloudBlockerRenderNode* pCloudBlocker = static_cast<ICloudBlockerRenderNode*>(pRenderNode);

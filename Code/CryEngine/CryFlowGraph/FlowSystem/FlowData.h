@@ -176,7 +176,7 @@ ILINE void CFlowData::ClearInputActivations()
 
 ILINE void CFlowData::CompleteActivationInfo(IFlowNode::SActivationInfo* pActInfo)
 {
-	pActInfo->pInputPorts = m_pInputData + m_hasEntity;
+	pActInfo->m_bNodeHasEntity = m_hasEntity != 0;
 }
 
 ILINE void CFlowData::Activated(IFlowNode::SActivationInfo* pActInfo, IFlowNode::EFlowEvent event)

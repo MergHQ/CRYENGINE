@@ -41,8 +41,8 @@ void CCompositeInteriorNode::ProcessEvent(EFlowEvent event, SActivationInfo* pAc
 
 			for (size_t i = 0; i < numPorts; i++)
 			{
-				if (pActInfo->pInputPorts[i].IsUserFlagSet())
-					pActInfo->pGraph->ActivatePort(SFlowAddress(pActInfo->myID, static_cast<TFlowPortId>(i), true), pActInfo->pInputPorts[i]);
+				if (pActInfo->GetInputPort(i).IsUserFlagSet())
+					pActInfo->pGraph->ActivatePort(SFlowAddress(pActInfo->myID, static_cast<TFlowPortId>(i), true), pActInfo->GetInputPort(i));
 			}
 		}
 		break;
@@ -174,8 +174,8 @@ void CFlowCompositeNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInf
 
 			for (size_t i = 0; i < numPorts; i++)
 			{
-				if (pActInfo->pInputPorts[i].IsUserFlagSet())
-					m_pGraph->ActivatePort(SFlowAddress(interfaceNode, static_cast<TFlowPortId>(i), true), pActInfo->pInputPorts[i]);
+				if (pActInfo->GetInputPort(i).IsUserFlagSet())
+					m_pGraph->ActivatePort(SFlowAddress(interfaceNode, static_cast<TFlowPortId>(i), true), pActInfo->GetInputPort(i));
 			}
 		}
 		break;
