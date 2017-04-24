@@ -1,6 +1,7 @@
 %include "CryEngine.swig"
 
 %import "CryCommon.i"
+%import "CryAudio.i"
 
 %{
 #include <CrySystem/IStreamEngine.h>

@@ -8,7 +8,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	set(AI_FILES AI/Attributes.cs AI/BehaviorTreeNode.cs AI/BehaviorTreeNodeFactory.cs AI/LastingMovementRequest.cs)
 	source_group("AI" FILES ${AI_FILES})
 
-	set(Audio_FILES Audio/AudioManager.cs)
+	set(Audio_FILES Audio/AudioManager.cs Audio/Native/NativeAudioMethods.cs Audio/AudioObject.cs Audio/AudioFile.cs Audio/AudioRequestInfo.cs Audio/Audio.cs)
 	source_group("Audio" FILES ${Audio_FILES})
 
 

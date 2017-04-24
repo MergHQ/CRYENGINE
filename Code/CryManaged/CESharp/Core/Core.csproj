@@ -68,7 +68,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+	<Compile Include="Audio\Audio.cs" />
+	<Compile Include="Audio\AudioFile.cs" />
     <Compile Include="Audio\AudioManager.cs" />
+	<Compile Include="Audio\AudioObject.cs" />
+	<Compile Include="Audio\AudioRequestInfo.cs" />
+	<Compile Include="Audio\Native\NativeAudioMethods.cs" />
     <Compile Include="Console\ConsoleCommand.cs" />
     <Compile Include="Console\ConsoleVariable.cs" />
     <Compile Include="Console\Attributes.cs" />

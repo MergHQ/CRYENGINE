@@ -16,6 +16,7 @@
 
 #include "NativeToManagedInterfaces/Entity.h"
 #include "NativeToManagedInterfaces/Console.h"
+#include "NativeToManagedInterfaces/Audio.h"
 
 #include <CrySystem/ILog.h>
 #include <CryAISystem/IAISystem.h>
@@ -362,6 +363,9 @@ void CMonoRuntime::RegisterInternalInterfaces()
 
 	CConsoleCommandInterface consoleCommandInterface;
 	RegisterNativeToManagedInterface(consoleCommandInterface);
+
+	CAudioInterface audioInterface;
+	RegisterNativeToManagedInterface(audioInterface);
 }
 
 void CMonoRuntime::OnManagedConsoleCommandEvent(const char* commandName, IConsoleCmdArgs* consoleCommandArguments)
