@@ -353,6 +353,9 @@ Property
 	Precache = VolumetricCloudsPS
 	Precache = ReprojectCloudsPS
 	Precache = CloudShadowGenCS
+
+	Precache = DebugPassVS
+	Precache = DebugPassPS
 }
 
 Property

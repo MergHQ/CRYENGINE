@@ -31,6 +31,7 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 		ePass_DebugViewSolid = 0,
 		ePass_DebugViewWireframe,
 		ePass_SelectionIDs, // draw highlighted objects from editor
+		ePass_DebugDraw,
 		ePass_Silhouette,
 	};
 
@@ -52,6 +53,7 @@ private:
 	CConstantBufferPtr       m_pPerPassConstantBuffer;
 	
 	CSceneRenderPass         m_debugViewPass;
+	CSceneRenderPass         m_debugDrawPass;
 
 	CSceneRenderPass         m_selectionIDPass;
 	CFullscreenPass          m_highlightPass;

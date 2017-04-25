@@ -440,9 +440,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					pMaterial = GetMatMan()->GetDefaultHelperMaterial();
 				if (pObj)
 				{
-					pObj->m_II.m_AmbColor = ColorF(clr.r / 155.0f, clr.g / 155.0f, clr.b / 155.0f, 1);
 					pObj->m_nMaterialLayers = 0;
 					pObj->m_ObjFlags |= FOB_SELECTED;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b, clr.g, clr.r);
 				}
 
 				if (!bNoText)
@@ -492,9 +492,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					pMaterial = GetMatMan()->GetDefaultHelperMaterial();
 				if (pObj)
 				{
-					pObj->m_II.m_AmbColor = ColorF(clr.r / 180.0f, clr.g / 180.0f, clr.b / 180.0f, 1);
 					pObj->m_nMaterialLayers = 0;
 					pObj->m_ObjFlags |= FOB_SELECTED;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b, clr.g, clr.r);
 				}
 
 				if (pObj && nNumLods > 1 && !bNoText)
@@ -547,9 +547,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					pMaterial = GetMatMan()->GetDefaultHelperMaterial();
 				if (pObj)
 				{
-					pObj->m_II.m_AmbColor = ColorF(clr.r / 155.0f, clr.g / 155.0f, clr.b / 155.0f, 1);
 					pObj->m_nMaterialLayers = 0;
 					pObj->m_ObjFlags |= FOB_SELECTED;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b, clr.g, clr.r);
 				}
 
 				if (!bNoText)
@@ -730,9 +730,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 						pMaterial = GetMatMan()->GetDefaultHelperMaterial();
 					}
 
-					pObj->m_II.m_AmbColor = clr;
 					pObj->m_nMaterialLayers = 0;
 					pObj->m_ObjFlags |= FOB_SELECTED;
+					pObj->m_data.m_nHUDSilhouetteParams = RGBA8(255.0f, clr.b, clr.g, clr.r);
 				}
 				return false;
 			}
