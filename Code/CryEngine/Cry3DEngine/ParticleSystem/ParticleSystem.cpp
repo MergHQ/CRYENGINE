@@ -31,6 +31,7 @@ std::vector<SParticleFeatureParams> &GetFeatureParams()
 
 CParticleSystem::CParticleSystem()
 	: m_memHeap(gEnv->pJobManager->GetNumWorkerThreads() + 1)
+	, m_nextEmitterId(0)
 {
 }
 
@@ -134,6 +135,7 @@ void CParticleSystem::Update()
 
 		for (auto& it : m_memHeap)
 			CRY_PFX2_ASSERT(it.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
+		m_profiler.Display();
 
 		TrimEmitters();
 		m_emitters.insert(m_emitters.end(), m_newEmitters.begin(), m_newEmitters.end());
@@ -143,8 +145,6 @@ void CParticleSystem::Update()
 		m_stats.m_emittersAlive = m_emitters.size();
 		for (auto& pEmitter : m_emitters)
 			pEmitter->AccumStats(m_stats);
-
-		m_profiler.Display();
 				
 		for (auto& pEmitter : m_emitters)
 		{

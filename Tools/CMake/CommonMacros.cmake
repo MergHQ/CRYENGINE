@@ -556,6 +556,13 @@ function(CryConsoleApplication target)
 	apply_compile_settings()	
 endfunction()
 
+function(CryWindowsApplication target)
+	prepare_project(${ARGN})
+	add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:WINDOWS")
+	apply_compile_settings()	
+endfunction()
+
 function(CryFileContainer target)
 	set(THIS_PROJECT ${target} PARENT_SCOPE)
 	set(THIS_PROJECT ${target})

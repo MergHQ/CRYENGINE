@@ -36,6 +36,7 @@
 #include "ropeentity.h"
 #include "softentity.h"
 #include "tetrlattice.h"
+#include "waterman.h"
 #include "physicalworld.h"
 
 
@@ -2351,8 +2352,13 @@ void SerializeGeometries(CPhysicalWorld *pWorld, const char *fname,int bSave)
 }
 
 
+bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave);
 void SerializeWorld(CPhysicalWorld *pWorld, const char *fname,int bSave) 
 {
+	if (bSave & 2) {
+		SerializeWorldBin(pWorld, fname, bSave&1);
+		return;
+	}
 	CPhysicalPlaceholderSerializer pps;
 	CTetrahedronSerializer ts;
 	CTetrLatticeSerializer tls(&ts);
@@ -2402,6 +2408,385 @@ void SerializeWorld(CPhysicalWorld *pWorld, const char *fname,int bSave)
 	(ctx.pSerializer = &pws)->Serialize(ctx);
 	fclose(ctx.f);
 	g_StaticPhysicalEntity.m_pWorld = pWorld;
+}
+
+
+struct CDummySizer : public ICrySizer {
+	virtual void Release() {}
+	virtual size_t GetTotalSize() { return 0; }
+	virtual size_t GetObjectCount() { return 0; }
+	virtual void Reset() {}
+	virtual void End() {}
+	virtual struct IResourceCollector* GetResourceCollector() { return nullptr; }
+	virtual void SetResourceCollector(IResourceCollector* pColl) {}
+	virtual void Push(const char* szComponentName) {}
+	virtual void PushSubcomponent(const char* szSubcomponentName) {}
+	virtual void Pop() {}
+};
+
+inline bool nonptr(uint &x) { return x<100; }
+inline bool nonptr(float &x) { return x>=0.01f && x<8000.0f; }
+inline bool nonptr(void* &p) { return nonptr(((uint*)&p)[0]) && nonptr(((uint*)&p)[1]) || nonptr(((float*)&p)[0]) && nonptr(((float*)&p)[1]); }
+
+struct CSaverSizer : public CDummySizer {
+	std::map<void*,int> &objs;
+	CMemStream &stm;
+	CSaverSizer(std::map<void*,int> &objs, CMemStream &stm) : objs(objs),stm(stm) {}
+	virtual bool IsLoading() { return false; }
+	virtual bool AddObject(const void* ptr, size_t size, int nCount=1)  { return AddObjectRaw((void*)ptr,size); }
+	virtual bool AddObjectRaw(void* ptr, size_t size, bool hasVMT=false) {
+		int i=0,sz=size/sizeof(void*);
+		stm.Write(size);
+		stm.Write(ptr, size);
+		for(void **p=(void**)ptr; i<sz; i++) if (p[i]) {// && !nonptr(p[i])) {
+			auto iter = objs.find(p[i]);
+			if (iter!=objs.end()) {
+				stm.Write(i);	stm.Write(iter->second);
+			}
+		}
+		stm.Write(-1);
+		return true;
+	}
+};
+
+struct CLoaderSizer : public CDummySizer {
+	std::vector<void*> &objs;
+	CMemStream &stm;
+	CPhysicalWorld *pWorld;
+	CLoaderSizer(std::vector<void*> &objs, CMemStream &stm, CPhysicalWorld *pWorld) : objs(objs),stm(stm),pWorld(pWorld) {}
+	virtual bool IsLoading() { return true; }
+#ifndef STANDALONE_PHYSICS
+	virtual bool AddObject(const void* ptr, size_t size, int nCount=1)  { return false; }
+#endif
+	virtual bool AddPartsAlloc(struct geom* &parts, size_t size) { 
+		parts = size ? pWorld->AllocEntityParts(size/sizeof(geom)) : &CPhysicalEntity::m_defpart;
+		int bChuckStart = parts[0].bChunkStart;
+		AddObjectRaw(parts,size); 
+		parts[0].bChunkStart = bChuckStart;
+		return true;
+	}
+	virtual bool AddContactsAlloc(entity_contact* &ptr, size_t size) { return AddObjectRaw(ptr = size ? new entity_contact[size/sizeof(entity_contact)]:nullptr, size); }
+	virtual bool AddObjectRaw(void* ptr, size_t sizeDst, bool hasVMT=false) {
+		size_t size=stm.Read<size_t>(), offs=0;
+		if (hasVMT) {
+			void *pVMT; stm.Read(pVMT);
+			offs = sizeof(pVMT); 
+		}
+		stm.ReadRaw((char*)ptr+offs, min(size,sizeDst)-offs);
+		stm.m_iPos += size-sizeDst;
+		for(int i; (i=stm.Read<int>())>=0; )
+			((void**)ptr)[i] = objs[stm.Read<int>()];
+		return true;
+	}
+};
+
+void PostLoadEntity(CPhysicalEntity *pent, CLoaderSizer&) {
+	pent->m_pNewCoords = (coord_block*)&pent->m_pos;
+	for(int i=0;i<pent->m_nParts;i++)	{
+		pent->m_parts[i].pNewCoords = (coord_block_BBox*)&pent->m_parts[i].pos;
+		pent->m_parts[i].pMatMapping = pent->m_parts[i].pPhysGeom->pMatMapping;
+		pent->m_parts[i].nMats = pent->m_parts[i].pPhysGeom->nMats;
+	}
+}
+void PostLoadEntityRigid(CRigidEntity *pent, CLoaderSizer& sizer)	{
+	PostLoadEntity(pent,sizer);
+	pent->m_pNewCoords = (coord_block*)&pent->m_posNew;
+	delete[] pent->m_pContactStart;
+	pent->m_pContactStart=pent->m_pContactEnd = CONTACT_END(pent->m_pContactStart);
+	memset(pent->m_pColliderContacts, 0, pent->m_nColliders*sizeof(pent->m_pColliderContacts[0]));
+	for(int i=0;i<pent->m_nConstraintsAlloc;i++) if (pent->m_constraintMask & 1ull<<i) for(int j=0;j<2;j++)
+		pent->m_pConstraints[i].pbody[j] = pent->m_pConstraints[i].pent[j]->GetRigidBody(pent->m_pConstraints[i].ipart[j]);
+	pent->m_nEvents = 0;
+}
+void PostLoadEntityArtic(CArticulatedEntity *pent, CLoaderSizer& sizer) {
+	PostLoadEntityRigid(pent,sizer);
+	for(int i=0;i<pent->m_nParts;i++)
+		pent->m_parts[i].pNewCoords = (coord_block_BBox*)&pent->m_infos[i];
+	for(int i=0;i<pent->m_nJoints;i++)
+		pent->m_joints[i].fs = (featherstone_data*)_align16(pent->m_joints[i].fsbuf);
+}
+void PostLoadEntityVehicle(CWheeledVehicleEntity *pent, CLoaderSizer& sizer) {
+	PostLoadEntityRigid(pent,sizer);
+	for(int i=pent->m_nHullParts;i<pent->m_nParts;i++)
+		pent->m_parts[i].pNewCoords = (coord_block_BBox*)&pent->m_susp[i-pent->m_nHullParts];
+}
+void PostLoadEntityLiving(CLivingEntity *pent, CLoaderSizer& sizer) {
+	pent->m_parts[0].pPhysGeom=pent->m_parts[0].pPhysGeomProxy = &pent->m_CylinderGeomPhys;
+	PostLoadEntity(pent,sizer);
+}
+void (*g_postLoad[PE_GRID+1])(CPhysicalEntity*,CLoaderSizer&) = { PostLoadEntity };
+
+const int NAME_CHUNK_SIZE = 4098;
+std::vector<std::vector<char>> g_nameBufs;
+
+bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
+{
+	if (FILE *f = fopen(fname,bSave ? "wb":"rb")) {
+		int i,j;
+		CPhysicalWorld &w = *pWorld;
+		int version = sizeof(CRigidEntity)+sizeof(CArticulatedEntity)+sizeof(CWheeledVehicleEntity)+sizeof(CRopeEntity)+sizeof(CSoftEntity)+sizeof(CParticleEntity)+sizeof(CLivingEntity)+
+									sizeof(CPhysArea)+sizeof(pe_gridthunk)+sizeof(CWaterMan)+MAX_PHYS_THREADS*17;
+
+		if (bSave) {
+			CMemStream stm(false);
+			std::map<void*,int> objs;
+			CSaverSizer sizer(objs,stm);
+
+			stm.Write(version);
+			stm.Write(&w.m_vars, (int)(INT_PTR)&((PhysicsVars*)0)->helperOffset);
+			stm.Write(w.m_BouncinessTable, sizeof(w.m_SurfaceFlagsTable) + (int)((INT_PTR)&((CPhysicalWorld*)0)->m_SurfaceFlagsTable-(INT_PTR)&((CPhysicalWorld*)0)->m_BouncinessTable));
+
+			stm.Write(!!w.m_pHeightfield[0]);
+			if (w.m_pHeightfield[0]) {
+				heightfield *phf = (heightfield*)w.m_pHeightfield[0]->m_parts[0].pPhysGeom->pGeom->GetData();
+				stm.Write(phf, sizeof(*phf));
+				stm.GrowBuf((phf->size.x+1)*(phf->size.y)*sizeof(int));
+				for(j=0;j<=phf->size.y;j++) for(i=0;i<=phf->size.x;i++)
+					stm.Write(FtoI(min(255.9f,phf->fpGetHeightCallback(i,j)+128.0f)*256.0f) | phf->fpGetSurfTypeCallback(i,j)<<16);
+				for(i=0;i<=MAX_PHYS_THREADS;i++)
+					objs.insert(std::pair<void*,int>(w.m_pHeightfield[i],objs.size()));
+			}
+
+			stm.Write(w.m_nGeomChunks);
+			stm.Write(w.m_nGeomsInLastChunk);
+			for(i=0;i<w.m_nGeomChunks;i++)
+				stm.Write(w.m_pGeoms[i],GEOM_CHUNK_SZ*sizeof(phys_geometry));
+			for(i=0;i<w.m_nGeomChunks;i++) for(j=0;j<GEOM_CHUNK_SZ;j++) if (w.m_pGeoms[i][j].pGeom)	{
+				int flags; mesh_data *md = nullptr;
+				if (w.m_pGeoms[i][j].pGeom->GetType()==GEOM_TRIMESH) {
+					flags = (md = (mesh_data*)w.m_pGeoms[i][j].pGeom->GetData())->flags;
+					(md->flags &= ~mesh_shared_vtx) |= mesh_full_serialization;
+				}
+				w.SaveGeometry(stm, w.m_pGeoms[i][j].pGeom);
+				if (md) md->flags = flags;
+				stm.Write(w.m_pGeoms[i][j].pMatMapping, w.m_pGeoms[i][j].nMats*sizeof(w.m_pGeoms[i][j].pMatMapping[0]));
+				objs.insert(std::pair<void*,int>(w.m_pGeoms[i]+j,objs.size()));
+			}
+			for(CLivingEntity *pent=(CLivingEntity*)w.m_pTypedEnts[3]; pent; pent=(CLivingEntity*)pent->m_next)	if (pent->m_pCylinderGeom) {
+				stm.Write(true); w.SaveGeometry(stm,pent->m_pCylinderGeom);
+				objs.insert(std::pair<void*,int>(pent->m_pCylinderGeom,objs.size()));
+			}
+			for(CPhysArea *parea=(i=objs.size(),w.m_pGlobalArea); parea; parea=parea->m_next) {
+				IGeometry *geoms[3] = { parea->m_pGeom, parea->m_pContainer, parea->m_pSurface };
+				for(i=0;i<3;i++) if (geoms[i]) {
+					stm.Write(true); w.SaveGeometry(stm,geoms[i]);
+					objs.insert(std::pair<void*,int>(geoms[i],objs.size())); 
+					if (!i) geoms[i]->AddRef();
+				}
+			}
+			stm.Write(false);
+			for(i=0;i<8;i++) for(CPhysicalEntity *pent=w.m_pTypedEnts[i];pent;pent=pent->m_next) 
+				for(j=0;j<pent->m_nParts;j++) if (CTetrLattice *lat = pent->m_parts[j].pLattice) {
+					stm.Write(true);
+					stm.Write(lat->m_nVtx);	stm.Write(lat->m_nTetr);
+					stm.Write(lat->m_pVtx, lat->m_nVtx*sizeof(lat->m_pVtx[0]));
+					for(int itet=0; itet<lat->m_nTetr; itet++)
+						stm.Write(lat->m_pTetr[itet].ivtx);
+					objs.insert(std::pair<void*,int>(lat,objs.size()));
+				}
+			stm.Write(false);
+			stm.Write(w.m_nExpl);
+			stm.Write(w.m_pExpl, w.m_nExpl*sizeof(w.m_pExpl[0]));
+			for(i=0;i<w.m_nExpl;i++)
+				w.SaveGeometry(stm,w.m_pExpl[i].pGeom);
+			stm.Write(w.m_thunkPoolSz);
+			stm.Write(w.m_iFreeGThunk0);
+
+			for(CWaterMan *pwater=(i=0,w.m_pWaterMan); pwater; pwater=pwater->m_next,i++)
+				objs.insert(std::pair<void*,int>(pwater,objs.size()));
+			stm.Write(i);
+
+			for(SEntityGrid *pgrid = &w.m_entgrid; pgrid; pgrid=pgrid->m_next) {
+				objs.insert(std::pair<void*,int>(pgrid,objs.size()));
+				stm.Write(true);
+				stm.Write(*static_cast<grid*>(pgrid));
+				stm.Write(pgrid->iup); stm.Write(pgrid->log2PODscale); stm.Write(pgrid->bCyclic);
+				sizer.AddObjectRaw(&pgrid->m_transInHost, sizeof(SEntityGrid)-(int)(INT_PTR)&((SEntityGrid*)0)->m_transInHost);
+				stm.GrowBuf(pgrid->size.x*pgrid->size.y*sizeof(int));
+				for(j=0;j<pgrid->size.y;j++) for(i=0;i<pgrid->size.x;i++)	
+					stm.Write(pgrid->cells[pgrid->getcell_safe(i,j)]);
+				stm.Write(pgrid->cells[pgrid->getcell_safe(-1,-1)]);
+			}
+			stm.Write(false);
+
+			for(i=0;i<8;i++) for(CPhysicalEntity *pent=w.m_pTypedEnts[i]; pent; pent=pent->m_next) {
+				objs.insert(std::pair<void*,int>(pent,objs.size()));
+				stm.Write(pent->GetType());
+				stm.Write(pent->m_id);
+			}
+			stm.Write(-1); 
+			objs.insert(std::pair<void*,int>(&g_StaticPhysicalEntity,objs.size()));
+			for(CPhysArea *parea=(i=objs.size(),w.m_pGlobalArea); parea; parea=parea->m_next)
+				objs.insert(std::pair<void*,int>(parea,objs.size()));
+			stm.Write((int)objs.size()-i);
+			objs.insert(std::pair<void*,int>(pWorld,objs.size()));
+
+			for(i=0;i<=w.m_iLastPlaceholder;i++) if (w.m_pPlaceholderMap[i>>5] & 1<<(i&31)) {
+				CPhysicalPlaceholder *ppc = w.m_pPlaceholders[i>>PLACEHOLDER_CHUNK_SZLG2] + (i&PLACEHOLDER_CHUNK_SZ-1);
+				stm.Write(ppc->m_id);	
+				sizer.AddObjectRaw(ppc,sizeof(*ppc),true);
+				objs.insert(std::pair<void*,int>(ppc,objs.size()));
+			}
+			stm.Write(1<<30);
+			
+			sizer.AddObjectRaw(w.m_gthunks, w.m_thunkPoolSz*sizeof(pe_gridthunk));
+			sizer.AddObjectRaw(w.m_pTypedEnts,sizeof(w.m_pTypedEnts)*2);
+			sizer.AddObjectRaw(w.m_pTypedAreas,sizeof(w.m_pTypedAreas));
+			stm.Write(w.m_numGravityAreas); stm.Write(w.m_numNonWaterAreas); stm.Write(w.m_numAreaTriggers);
+
+			for(i=0;i<8;i++) for(CPhysicalEntity *pent=w.m_pTypedEnts[i]; pent; pent=pent->m_next) {
+				pent->GetMemoryStatistics(&sizer);
+				const char *name = w.m_pRenderer->GetForeignName(pent->m_pForeignData,pent->m_iForeignData,pent->m_iForeignFlags);
+				int len = strlen(name); 
+				stm.Write(len);	stm.Write(name,len);
+			}
+			for(CPhysArea *parea=w.m_pGlobalArea; parea; parea=parea->m_next)	{
+				parea->GetMemoryStatistics(&sizer);
+				if (parea->m_pGeom) parea->m_pGeom->Release();
+			}
+			for(CWaterMan *pwater=w.m_pWaterMan; pwater; pwater=pwater->m_next)
+				pwater->GetMemoryStatistics(&sizer);
+
+			fwrite(stm.GetBuf(),1,stm.m_iPos,f);
+			fclose(f);
+			return true;
+		}	else {
+			fseek(f,0,SEEK_END); i = ftell(f);
+			CMemStream stm(new char[i],i,false); stm.bDeleteBuf=true;
+			fseek(f,0,SEEK_SET); fread(stm.GetBuf(),1,i,f);
+			fclose(f);
+			std::vector<void*> objs;
+			CLoaderSizer sizer(objs,stm,pWorld);
+			for(i=0;i<=PE_GRID;i++) g_postLoad[i] = PostLoadEntity;
+			g_postLoad[PE_RIGID] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityRigid;
+			g_postLoad[PE_ARTICULATED] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityArtic;
+			g_postLoad[PE_WHEELEDVEHICLE] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityVehicle;
+			g_postLoad[PE_LIVING] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityLiving;
+
+			if (stm.Read<int>()!=version)
+				return false;
+			stm.ReadRaw(&w.m_vars, (int)(INT_PTR)&((PhysicsVars*)0)->helperOffset);
+			stm.ReadRaw(w.m_BouncinessTable, sizeof(w.m_SurfaceFlagsTable) + (int)((INT_PTR)&((CPhysicalWorld*)0)->m_SurfaceFlagsTable-(INT_PTR)&((CPhysicalWorld*)0)->m_BouncinessTable));
+
+			if (stm.Read<bool>()) {
+				heightfield hf;	stm.Read(hf);
+				g_hfData = new unsigned short[(hf.size.x+1)*(hf.size.y+1)];
+				g_hfFlags = new unsigned char[(hf.size.x+1)*(hf.size.y+1)];
+				g_hfStride.set(1, hf.size.x+1);
+				for(i=0; i<(hf.size.x+1)*(hf.size.y+1); i++) {
+					int val = stm.Read<int>();
+					g_hfData[i] = val & 0xffff;
+					g_hfFlags[i] = val >> 16;
+				}
+				hf.fpGetHeightCallback = g_getHeightCallback;
+				hf.fpGetSurfTypeCallback = g_getSurfTypeCallback;
+				w.SetHeightfieldData(&hf);
+				for(i=0;i<=MAX_PHYS_THREADS;i++)
+					objs.push_back(w.m_pHeightfield[i]);
+			}
+
+			stm.Read(w.m_nGeomChunks);
+			stm.Read(w.m_nGeomsInLastChunk);
+			w.m_pGeoms = new phys_geometry*[w.m_nGeomChunks];
+			for(i=0;i<w.m_nGeomChunks;i++)
+				stm.ReadRaw(w.m_pGeoms[i] = new phys_geometry[GEOM_CHUNK_SZ], GEOM_CHUNK_SZ*sizeof(phys_geometry));
+			for(i=0;i<w.m_nGeomChunks;i++) for(j=0;j<GEOM_CHUNK_SZ;j++) if (w.m_pGeoms[i][j].pGeom)	{
+				w.m_pGeoms[i][j].pGeom = w.LoadGeometry(stm, 0,0,0);
+				objs.push_back(w.m_pGeoms[i]+j);
+				stm.ReadRaw(w.m_pGeoms[i][j].pMatMapping = w.m_pGeoms[i][j].nMats ? new int[w.m_pGeoms[i][j].nMats]:nullptr, w.m_pGeoms[i][j].nMats*sizeof(int));
+			}
+			int geom0 = objs.size();
+			while(stm.Read<bool>())	{
+				IGeometry *pgeom = w.LoadGeometry(stm,0,0,0);
+				objs.push_back(pgeom); pgeom->AddRef();
+			}
+			int geom1 = objs.size();
+			while(stm.Read<bool>()) {
+				int nvtx = stm.Read<int>(), ntet = stm.Read<int>();
+				Vec3 *vtx = (Vec3*)(stm.m_pBuf+stm.m_iPos); stm.m_iPos += nvtx*sizeof(Vec3);
+				int *tet = (int*)(stm.m_pBuf+stm.m_iPos); stm.m_iPos += ntet*4*sizeof(int);
+				objs.push_back(w.CreateTetrLattice(vtx,nvtx,tet,ntet));
+			}
+			stm.Read(w.m_nExpl);
+			stm.ReadRaw(w.m_pExpl = new SExplosionShape[w.m_nExpl], w.m_nExpl*sizeof(w.m_pExpl[0]));
+			for(i=0;i<w.m_nExpl;i++)
+				w.m_pExpl[i].pGeom = w.LoadGeometry(stm,0,0,0);
+			stm.Read(w.m_thunkPoolSz);
+			stm.Read(w.m_iFreeGThunk0);
+
+			int water0=objs.size(), nwater=stm.Read<int>();
+			for(i=0;i<nwater;i++)
+				objs.push_back(new CWaterMan(pWorld));
+			if (nwater)
+				w.m_pWaterMan = (CWaterMan*)objs[objs.size()-nwater];
+
+			for (SEntityGrid *pgrid=nullptr; stm.Read<bool>();) {
+				pgrid = pgrid ? (pgrid->m_next=new SEntityGrid) : &w.m_entgrid;
+				pgrid->Init(); 
+				pgrid->m_prev = objs.size() ? (SEntityGrid*)objs[objs.size()-1] : nullptr;
+				objs.push_back(pgrid);
+				grid grd; stm.Read(grd);
+				stm.Read(pgrid->iup); stm.Read(pgrid->log2PODscale); stm.Read(pgrid->bCyclic);
+				pgrid->Setup(pgrid->iup, grd.origin, grd.size.x,grd.size.y, grd.step.x,grd.step.y, pgrid->log2PODscale, pgrid->bCyclic);
+				sizer.AddObjectRaw(&pgrid->m_transInHost, sizeof(SEntityGrid)-(int)(INT_PTR)&((SEntityGrid*)0)->m_transInHost);
+				for(j=0;j<pgrid->size.y;j++) for(i=0;i<pgrid->size.x;i++)	if (int icell = stm.Read<int>())
+					pgrid->cells[(uint)pgrid->getcell_safe(i,j)] = icell;
+				pgrid->cells[(uint)pgrid->getcell_safe(-1,-1)] = stm.Read<int>();
+			}
+
+			int ent0 = objs.size();
+			for(;(i=stm.Read<int>())>=0;) {
+				CPhysicalEntity *pent = (CPhysicalEntity*)w.CreatePhysicalEntity((pe_type)i,0,0,0,stm.Read<int>());
+				objs.push_back(pent);
+				if (pent->m_parts != &pent->m_defpart)
+					w.FreeEntityParts(pent->m_parts, pent->m_nPartsAlloc);
+			}
+			int nents=objs.size()-ent0, nareas;
+			objs.push_back(&g_StaticPhysicalEntity);
+			for(i=0,nareas=stm.Read<int>(); i<nareas; i++)
+				objs.push_back(new CPhysArea(pWorld));
+			if (nareas)
+				w.m_pGlobalArea = (CPhysArea*)objs[objs.size()-nareas];
+			objs.push_back(pWorld);
+
+			while((i=stm.Read<int>())!=1<<30) {
+				CPhysicalPlaceholder *ppc = (CPhysicalPlaceholder*)w.CreatePhysicalPlaceholder(PE_STATIC,0,0,0,i);
+				sizer.AddObjectRaw(ppc,sizeof(*ppc),true);
+				objs.push_back(ppc);
+			}
+
+			sizer.AddObjectRaw(w.m_gthunks = new pe_gridthunk[w.m_thunkPoolSz], w.m_thunkPoolSz*sizeof(pe_gridthunk));
+			sizer.AddObjectRaw(w.m_pTypedEnts,sizeof(w.m_pTypedEnts)*2);
+			sizer.AddObjectRaw(w.m_pTypedAreas,sizeof(w.m_pTypedAreas));
+			stm.Read(w.m_numGravityAreas); stm.Read(w.m_numNonWaterAreas); stm.Read(w.m_numAreaTriggers);
+
+			g_nameBufs.resize(0);
+			for(i=0;i<nents;i++) {
+				CPhysicalEntity *pent = (CPhysicalEntity*)objs[ent0+i];
+				pent->GetMemoryStatistics(&sizer);
+				g_postLoad[pent->GetType()](pent,sizer);
+				int len = stm.Read<int>();
+				std::vector<char> *buf;
+				if (g_nameBufs.empty() || (buf=&g_nameBufs.back())->size()+len+1 > g_nameBufs.back().capacity()) {
+					g_nameBufs.push_back(std::vector<char>());
+					(buf = &g_nameBufs.back())->reserve(max(NAME_CHUNK_SIZE,len+1));
+				}
+				buf->resize(buf->size()+len+1);
+				char *name = &buf->back()-len;
+				stm.ReadRaw(name,len); name[len] = 0;
+				pent->m_pForeignData = name;
+				pent->m_iForeignData = 100;
+			}
+			for(i=0;i<nareas;i++)
+				((CPhysArea*)objs[ent0+nents+1+i])->GetMemoryStatistics(&sizer);
+			for(i=0;i<nwater;i++)
+				((CWaterMan*)objs[water0+i])->GetMemoryStatistics(&sizer);
+			for(i=geom0;i<geom1;i++)
+				((IGeometry*)objs[i])->Release();
+			return true;
+		}
+	}
+	return false;
 }
 
 #endif

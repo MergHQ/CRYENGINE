@@ -1477,19 +1477,22 @@ void CPhysArea::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 
 void CPhysArea::GetMemoryStatistics(ICrySizer *pSizer) const
 {
-	pSizer->AddObject(this, sizeof(CPhysicalEntity));
+	pSizer->AddObject(this, sizeof(CPhysArea));
 	if (m_pt) {
-		pSizer->AddObject(m_pt, sizeof(m_pt[0]), m_npt+1);
-		pSizer->AddObject(m_idxSort[0], sizeof(m_idxSort[0][0]), m_npt);
-		pSizer->AddObject(m_idxSort[1], sizeof(m_idxSort[1][0]), m_npt);
-		pSizer->AddObject(m_pMask, sizeof(m_pMask[0]), ((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1));
+		pSizer->AddObject(m_pt, sizeof(m_pt[0])*(m_npt+1));
+		pSizer->AddObject(m_idxSort[0], sizeof(m_idxSort[0][0])*m_npt);
+		pSizer->AddObject(m_idxSort[1], sizeof(m_idxSort[1][0])*m_npt);
+		pSizer->AddObject(m_pMask, sizeof(m_pMask[0])*((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1));
 	}
 	if (m_ptSpline)
-		pSizer->AddObject(m_ptSpline, sizeof(m_ptSpline[0]), m_npt);
-	if (m_pGeom)
-		m_pGeom->GetMemoryStatistics(pSizer);
+		pSizer->AddObject(m_ptSpline, sizeof(m_ptSpline[0])*m_npt);
+	if (m_pGeom) {
+		if (m_pGeom->AddRef()==2)
+			m_pGeom->GetMemoryStatistics(pSizer);
+		m_pGeom->Release();
+	}
 	if (m_pFlows)
-		pSizer->AddObject(m_pFlows, sizeof(m_pFlows[0]), m_npt);
+		pSizer->AddObject(m_pFlows, sizeof(m_pFlows[0])*m_npt);
 }
 
 

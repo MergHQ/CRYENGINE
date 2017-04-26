@@ -150,6 +150,12 @@ namespace UQS
 				if (numInstantEvaluators > UQS_MAX_EVALUATORS)
 				{
 					error.Format("Exceeded the maximum number of instant-evaluators in the query blueprint (max %i supported, %i present in the blueprint)", UQS_MAX_EVALUATORS, (int)numInstantEvaluators);
+					if (m_pHistory)
+					{
+						SStatistics stats;
+						GetStatistics(stats);
+						m_pHistory->OnExceptionOccurred(error.c_str(), stats);
+					}
 					return false;
 				}
 			}
@@ -159,6 +165,12 @@ namespace UQS
 				if (numDeferredEvaluators > UQS_MAX_EVALUATORS)
 				{
 					error.Format("Exceeded the maximum number of deferred-evaluators in the query blueprint (max %i supported, %i present in the blueprint)", UQS_MAX_EVALUATORS, (int)numDeferredEvaluators);
+					if (m_pHistory)
+					{
+						SStatistics stats;
+						GetStatistics(stats);
+						m_pHistory->OnExceptionOccurred(error.c_str(), stats);
+					}
 					return false;
 				}
 			}
@@ -172,6 +184,12 @@ namespace UQS
 			{
 				if (!m_pQueryBlueprint->CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(runtimeParams, error))
 				{
+					if (m_pHistory)
+					{
+						SStatistics stats;
+						GetStatistics(stats);
+						m_pHistory->OnExceptionOccurred(error.c_str(), stats);
+					}
 					return false;
 				}
 			}
@@ -194,7 +212,17 @@ namespace UQS
 			// allow the derived class to do further custom instantiation
 			//
 
-			return OnInstantiateFromQueryBlueprint(runtimeParams, error);
+			const bool bFurtherInstantiationInDerivedClassSucceeded = OnInstantiateFromQueryBlueprint(runtimeParams, error);
+
+			if (!bFurtherInstantiationInDerivedClassSucceeded && m_pHistory)
+			{
+				SStatistics stats;
+				GetStatistics(stats);
+				m_pHistory->OnExceptionOccurred(error.c_str(), stats);
+			}
+
+			return bFurtherInstantiationInDerivedClassSucceeded;
+
 		}
 
 		void CQueryBase::AddItemMonitor(Client::ItemMonitorUniquePtr&& pItemMonitor)

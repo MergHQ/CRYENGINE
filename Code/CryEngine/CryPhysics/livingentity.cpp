@@ -2255,9 +2255,9 @@ void CLivingEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 
 void CLivingEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 {
-	CPhysicalEntity::GetMemoryStatistics(pSizer);
 	if (GetType()==PE_LIVING)
 		pSizer->AddObject(this, sizeof(CLivingEntity));
+	CPhysicalEntity::GetMemoryStatistics(pSizer);
 }
 
 void CLivingEntity::Step_HandleFlying(Vec3 &vel, const Vec3& velGround, int bWasFlying, const Vec3& heightAdj, const float kInertia, const float time_interval)

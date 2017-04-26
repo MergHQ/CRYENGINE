@@ -1805,14 +1805,18 @@ int CSoftEntity::SetStateFromSnapshot(CStream &stm, int flags)
 
 int CSoftEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 {
-	if (m_flags & sef_skeleton)
+	if (m_flags & sef_skeleton || flags & 16)
 		if (ser.BeginOptionalGroup("updated", m_bMeshUpdated != 0)) {
 			ser.Value("pos", m_pos);
 			ser.Value("q", m_qrot);
 			ser.Value("q0", m_qrot0);
+			bool awake = m_bAwake!=0;
+			ser.Value("awake", awake);
 			for(int i=0; i<m_nVtx; i++) {
 				ser.BeginGroup("vtx");
 				ser.Value("pos",m_vtx[i].pos);
+				if (m_bAwake)
+					ser.Value("vel",m_vtx[i].vel);
 				ser.EndGroup();
 			}
 			ser.EndGroup();
@@ -1822,14 +1826,18 @@ int CSoftEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 
 int CSoftEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 {
-	if (m_flags & sef_skeleton) {
+	if (m_flags & sef_skeleton || flags & 16) {
 		if (m_bMeshUpdated = ser.BeginOptionalGroup("updated", true)) {
 			ser.Value("pos", m_pos);
 			ser.Value("q", m_qrot);
 			ser.Value("q0", m_qrot0);
+			bool awake; ser.Value("awake", awake);
+			m_bAwake = awake ? 1:0;
 			int i; for(i=0; i<m_nVtx; i++) {
 				ser.BeginGroup("vtx");
 				ser.Value("pos",m_vtx[i].pos);
+				if (m_bAwake)
+					ser.Value("vel",m_vtx[i].vel);
 				ser.EndGroup();
 			}
 			CTriMesh *pMesh = (CTriMesh*)m_parts[0].pPhysGeomProxy->pGeom;
@@ -1877,12 +1885,16 @@ void CSoftEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 
 void CSoftEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 {
-	CPhysicalEntity::GetMemoryStatistics(pSizer);
 	if (GetType()==PE_SOFT)
 		pSizer->AddObject((CSoftEntity*)this, sizeof(CSoftEntity));
+	CPhysicalEntity::GetMemoryStatistics(pSizer);
 	pSizer->AddObject(m_vtx, m_nVtx*sizeof(m_vtx[0]));
 	pSizer->AddObject(m_edges, m_nEdges*sizeof(m_edges[0]));
 	pSizer->AddObject(m_pVtxEdges, m_nEdges*2*sizeof(m_pVtxEdges[0]));
+	if (m_parts[0].pLattice) {
+		pSizer->AddObject(m_pTetrEdges, m_parts[0].pLattice->m_nTetr*6*sizeof(m_pTetrEdges[0]));
+		pSizer->AddObject(m_pTetrQueue, m_parts[0].pLattice->m_nTetr*sizeof(m_pTetrQueue[0]));
+	}
 }
 
 #undef CMemStream

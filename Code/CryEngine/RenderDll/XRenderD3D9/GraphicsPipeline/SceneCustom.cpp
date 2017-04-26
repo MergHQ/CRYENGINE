@@ -52,17 +52,6 @@ void CSceneCustomStage::Init()
 	  CTexture::s_ptexSceneSelectionIDs
 	  );
 
-	// Debug Draw Pass
-	m_debugDrawPass.SetLabel("DEBUG_DRAW_PASS");
-	m_debugDrawPass.SetupPassContext(m_stageID, ePass_DebugDraw, TTYPE_DEBUG, FB_DEBUG, EFSLIST_HIGHLIGHT);
-	m_debugDrawPass.SetPassResources(m_pResourceLayout, m_pPerPassResources);
-	m_debugDrawPass.SetRenderTargets(
-		// Depth
-		&gcpRendD3D->m_DepthBufferOrigMSAA,
-		// Color 0
-		gcpRendD3D->GetBackBufferTexture()
-	);
-
 	// Silhouette Pass
 	m_silhouetteMaskPass.SetLabel("CUSTOM_SILHOUETTE");
 	m_silhouetteMaskPass.SetupPassContext(m_stageID, ePass_Silhouette, TTYPE_CUSTOMRENDERPASS, FB_CUSTOM_RENDER, EFSLIST_CUSTOM);
@@ -109,12 +98,6 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 		// extract depth format here rather than in ExtractRenderTargetFormats since the depth texture may not exist yet.
 		psoDesc.m_DepthStencilFormat = eTF_D32F;
 	}
-	else if (passID == ePass_DebugDraw)
-	{
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
-		psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL | GS_DEPTHWRITE;
-		pSceneRenderPass = &m_debugDrawPass;
-	}
 	else if(passID == ePass_Silhouette)
 	{
 		// support only the mode of CRenderer::CV_r_customvisions=3.
@@ -153,7 +136,6 @@ bool CSceneCustomStage::CreatePipelineStates(DevicePipelineStatesArray* pStateAr
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewSolid, stageStates[ePass_DebugViewSolid]);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewWireframe, stageStates[ePass_DebugViewWireframe]);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_SelectionIDs, stageStates[ePass_SelectionIDs]);
-	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugDraw, stageStates[ePass_DebugDraw]);
 
 	_stateDesc.technique = TTYPE_CUSTOMRENDERPASS;
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_Silhouette, stageStates[ePass_Silhouette]);
@@ -252,26 +234,14 @@ void CSceneCustomStage::Execute()
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw > 0;
 
-	if (!bViewTexelDensity && !bViewWireframe && !bSelectionIDPass && !bDebugDraw)
+	if (!bViewTexelDensity && !bViewWireframe && !bSelectionIDPass)
 		return;
 
 	PROFILE_LABEL_SCOPE("CUSTOM_SCENE_PASSES");
 
 	if (bViewTexelDensity || bViewWireframe)
 	{
-		// update our depth texture here
-		CTexture* pDepthRT = CTexture::s_ptexSceneHalfDepthStencil;
-
-		m_depthTarget.nWidth = pDepthRT->GetWidth();
-		m_depthTarget.nHeight = pDepthRT->GetHeight();
-		m_depthTarget.nFrameAccess = -1;
-		m_depthTarget.bBusy = false;
-		m_depthTarget.pTexture = pDepthRT;
-		m_depthTarget.pTarget = pDepthRT->GetDevTexture()->Get2DTexture();
-		m_depthTarget.pSurface = pDepthRT->GetDeviceDepthStencilView();
-
 		D3DViewPort viewport = { 0.f, 0.f, float(pRenderer->m_MainViewport.nWidth), float(pRenderer->m_MainViewport.nHeight), 0.0f, 1.0f };
 		pRenderer->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
 
@@ -304,50 +274,6 @@ void CSceneCustomStage::Execute()
 		m_debugViewPass.BeginExecution();
 		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
 		m_debugViewPass.EndExecution();
-
-		RenderView()->GetDrawer().JobifyDrawSubmission();
-		RenderView()->GetDrawer().WaitForDrawSubmission();
-	}
-	else if (bDebugDraw)
-	{
-		// update our depth texture here
-		CTexture* pDepthRT = CTexture::s_ptexSceneHalfDepthStencil;
-
-		m_depthTarget.nWidth = pDepthRT->GetWidth();
-		m_depthTarget.nHeight = pDepthRT->GetHeight();
-		m_depthTarget.nFrameAccess = -1;
-		m_depthTarget.bBusy = false;
-		m_depthTarget.pTexture = pDepthRT;
-		m_depthTarget.pTarget = pDepthRT->GetDevTexture()->Get2DTexture();
-		m_depthTarget.pSurface = pDepthRT->GetDeviceDepthStencilView();
-
-		D3DViewPort viewport = { 0.f, 0.f, float(pRenderer->m_MainViewport.nWidth), float(pRenderer->m_MainViewport.nHeight), 0.0f, 1.0f };
-		pRenderer->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
-
-		{
-			CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
-			cb.UploadZeros();
-		}
-
-		PreparePerPassResources(false);
-
-		const bool bReverseDepth = (pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-		pRenderer->FX_ClearTarget(&pRenderer->m_DepthBufferOrigMSAA, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
-
-		m_debugDrawPass.SetupPassContext(m_stageID, ePass_DebugDraw, TTYPE_DEBUG, FB_DEBUG, EFSLIST_GENERAL);
-
-		auto& RESTRICT_REFERENCE commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
-		m_debugDrawPass.PrepareRenderPassForUse(commandList);
-
-		CRenderView* pRenderView = pRenderer->GetGraphicsPipeline().GetCurrentRenderView();
-		m_debugDrawPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
-		m_debugDrawPass.SetViewport(viewport);
-
-		RenderView()->GetDrawer().InitDrawSubmission();
-
-		m_debugDrawPass.BeginExecution();
-		m_debugDrawPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
-		m_debugDrawPass.EndExecution();
 
 		RenderView()->GetDrawer().JobifyDrawSubmission();
 		RenderView()->GetDrawer().WaitForDrawSubmission();

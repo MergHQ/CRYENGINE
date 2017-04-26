@@ -213,7 +213,7 @@ public:
 	virtual float GetMaxTimeStep(float time_interval) { return time_interval; }
 	virtual float GetLastTimeStep(float time_interval) { return time_interval; }
 	virtual int Step(float time_interval) { return 1; }
-	virtual int DoStep(float time_interval, int iCaller=0) { return 1; }
+	virtual int DoStep(float time_interval, int iCaller=0) { return Step(time_interval); }
 	virtual void StepBack(float time_interval) {} 
 	virtual int GetContactCount(int nMaxPlaneContacts) { return 0; }
 	virtual int RegisterContacts(float time_interval,int nMaxPlaneContacts) { return 0; }
