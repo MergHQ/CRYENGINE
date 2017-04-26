@@ -274,8 +274,7 @@ private:
 
 			for (AUXJobs::iterator job = m_tmpJobs.begin(); job != m_tmpJobs.end(); ++job)
 			{
-				(*job)->Commit();
-				(*job)->Process();				
+				(*job)->Process();
 			}
 
 			m_tmpThreads.clear();
