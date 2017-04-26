@@ -113,8 +113,6 @@ namespace UQS
 
 				// IItemFactory: forward these pure virtual methods to the derived class
 #if UQS_SCHEMATYC_SUPPORT
-				virtual const CryGUID&                     GetGUIDForSchematycAddParamFunction() const override = 0;
-				virtual const CryGUID&                     GetGUIDForSchematycGetItemFromResultSetFunction() const override = 0;
 				virtual const IItemConverterCollection&    GetFromForeignTypeConverters() const override = 0;
 				virtual const IItemConverterCollection&    GetToForeignTypeConverters() const override = 0;
 #endif
@@ -201,17 +199,11 @@ namespace UQS
 
 			public:
 
-#if UQS_SCHEMATYC_SUPPORT
-				explicit                                  CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
-#else
 				explicit                                  CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
-#endif
 													      ~CItemFactoryInternal();
 
 				// IItemFactory
 #if UQS_SCHEMATYC_SUPPORT
-				virtual const CryGUID&                    GetGUIDForSchematycAddParamFunction() const override;
-				virtual const CryGUID&                    GetGUIDForSchematycGetItemFromResultSetFunction() const override;
 				virtual const IItemConverterCollection&   GetFromForeignTypeConverters() const override;
 				virtual const IItemConverterCollection&   GetToForeignTypeConverters() const override;
 #endif
@@ -240,10 +232,6 @@ namespace UQS
 
 			private:
 
-#if UQS_SCHEMATYC_SUPPORT
-				const CryGUID                             m_guidForSchematycAddParamFunction;
-				const CryGUID                             m_guidForSchematycGetItemFromResultSetFunction;
-#endif
 				const SItemFactoryCallbacks<TItem>        m_callbacks;
 
 				static const ptrdiff_t                    s_itemsOffsetInHeader = offsetof(SHeader, items);
@@ -253,19 +241,10 @@ namespace UQS
 			template <class TItem>
 			typename CItemFactoryInternal<TItem>::SHeader* CItemFactoryInternal<TItem>::s_pFreeListHoldingSingleItems;
 
-#if UQS_SCHEMATYC_SUPPORT
-			template <class TItem>
-			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const CryGUID& guidForSchematycAddParamFunction, const CryGUID& guidForSchematycGetItemFromResultSetFunction, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
-				: CItemFactoryBase(szName, guid, szDescription)
-				, m_guidForSchematycAddParamFunction(guidForSchematycAddParamFunction)
-				, m_guidForSchematycGetItemFromResultSetFunction(guidForSchematycGetItemFromResultSetFunction)
-				, m_callbacks(callbacks)
-#else
 			template <class TItem>
 			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* szName, const CryGUID& guid, const char* szDescription, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
 				: CItemFactoryBase(szName, guid, szDescription)
 				, m_callbacks(callbacks)
-#endif
 			{
 				if (bAutoRegisterBuiltinFunctions)
 				{
@@ -410,18 +389,6 @@ namespace UQS
 			}
 
 #if UQS_SCHEMATYC_SUPPORT
-
-			template <class TItem>
-			const CryGUID& CItemFactoryInternal<TItem>::GetGUIDForSchematycAddParamFunction() const
-			{
-				return m_guidForSchematycAddParamFunction;
-			}
-
-			template <class TItem>
-			const CryGUID& CItemFactoryInternal<TItem>::GetGUIDForSchematycGetItemFromResultSetFunction() const
-			{
-				return m_guidForSchematycGetItemFromResultSetFunction;
-			}
 
 			template <class TItem>
 			const IItemConverterCollection& CItemFactoryInternal<TItem>::GetFromForeignTypeConverters() const
@@ -661,10 +628,6 @@ namespace UQS
 				CryGUID                       guid = CryGUID::Null();                                          // GUID to uniquely identify the item factory; this should never change!
 				const char*                   szDescription = "";                                              // description of the type for displaying in the UI
 				SItemFactoryCallbacks<TItem>  callbacks;                                                       // set of optional callbacks that operate on the item type; not all of them need to be set
-#if UQS_SCHEMATYC_SUPPORT
-				CryGUID                       guidForSchematycAddParamFunction = CryGUID::Null();              // GUID of the schematyc function to add a runtime-parameter before starting a query; that function will be automatically generated
-				CryGUID                       guidForSchematycGetItemFromResultSetFunction = CryGUID::Null();  // GUID of the schematyc function to retrieve a single typed item from the result set of a finished query; that function will be automatically generated
-#endif
 			};
 
 		public:
@@ -675,11 +638,7 @@ namespace UQS
 				// register the actual item type the caller intends to register
 				//
 
-#if UQS_SCHEMATYC_SUPPORT
-				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(ctorParams.szName, ctorParams.guid, ctorParams.szDescription, ctorParams.guidForSchematycAddParamFunction, ctorParams.guidForSchematycGetItemFromResultSetFunction, ctorParams.callbacks, true);
-#else
 				static const Internal::CItemFactoryInternal<TItem> gs_itemFactory(ctorParams.szName, ctorParams.guid, ctorParams.szDescription, ctorParams.callbacks, true);
-#endif
 
 				//
 				// register a very specific container-type to hold items (plural!) of what the caller just registered
@@ -707,11 +666,7 @@ namespace UQS
 
 				const char* szDescription = "";
 
-#if UQS_SCHEMATYC_SUPPORT
-				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), newGUID, szDescription, CryGUID::Null(), CryGUID::Null(), callbacksForShuttledItemsContainer, false);
-#else
 				static const Internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), newGUID, szDescription, callbacksForShuttledItemsContainer, false);
-#endif
 			}
 		};
 

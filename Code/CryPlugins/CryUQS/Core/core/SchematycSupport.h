@@ -37,6 +37,78 @@ namespace UQS
 
 		//===================================================================================
 		//
+		// CSchematycEnvDataTypeCollector
+		//
+		//===================================================================================
+
+		class CSchematycEnvDataTypeCollector
+		{
+		public:
+
+			static std::vector<const Schematyc::IEnvDataType*> CollectAllEnvDataTypes();
+
+		private:
+
+			Schematyc::EVisitStatus                            OnVisitEnvDataType(const Schematyc::IEnvDataType& dataType);
+
+		private:
+
+			std::vector<const Schematyc::IEnvDataType*>        m_allEnvDataTypes;
+		};
+
+		//===================================================================================
+		//
+		// CQueryBlueprintRuntimeParamGrabber
+		//
+		//===================================================================================
+
+		class CQueryBlueprintRuntimeParamGrabber : public Client::IQueryBlueprintRuntimeParamVisitor
+		{
+		public:
+
+			static void                             GrabRequiredRuntimeParamsOfQueryBlueprint(const Core::IQueryBlueprint& queryBlueprint, std::map<string, Client::IItemFactory *>& out);
+
+			// Client::IQueryBlueprintRuntimeParamVisitor
+			virtual void                            OnRuntimeParamVisited(const char* szParamName, Client::IItemFactory& itemFactory) override final;
+			// ~Client::IQueryBlueprintRuntimeParamVisitor
+
+		private:
+
+			std::map<string, Client::IItemFactory*> m_requiredRuntimeParams;
+
+		};
+
+		//===================================================================================
+		//
+		// CItemConverterLookup
+		//
+		// - list of IItemConverters with quick look-up by item type
+		// - the key is either the item type to "convert to" or the item type to "convert from" (can be specified in the ctor)
+		//
+		//===================================================================================
+
+		class CItemConverterLookup
+		{
+		public:
+
+			enum class ELookupMethod
+			{
+				UseFromTypeAsKey,
+				UseToTypeAsKey
+			};
+
+		public:
+
+			explicit                        CItemConverterLookup(const std::vector<const Client::IItemConverter*>& itemConverters, ELookupMethod lookupMethod);
+			const Client::IItemConverter*   FindItemConverterByTypeInfo(const Shared::CTypeInfo& typeInfoToSearchFor) const;
+
+		private:
+
+			VectorMap<Schematyc::CTypeName, const Client::IItemConverter*> m_itemConverters;
+		};
+
+		//===================================================================================
+		//
 		// CSchematycUqsComponentEnvFunctionBase
 		//
 		// - abstract base class for a schematyc function that runs on the CSchematycUqsComponent
@@ -161,46 +233,96 @@ namespace UQS
 		{
 		public:
 
-			static void                    GenerateAddParamFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, Client::IItemFactory& itemFactory);
+			explicit             CSchematycUqsComponentEnvFunction_AddParam(const Schematyc::SSourceFileInfo& sourceFileInfo, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters);
 
 		private:
 
-			explicit                       CSchematycUqsComponentEnvFunction_AddParam(const Schematyc::SSourceFileInfo& sourceFileInfo, Client::IItemFactory& itemFactory, const Client::IItemConverter* pOptionalFromForeignTypeConverter);
-
 			// CSchematycUqsComponentEnvFunctionBase
-			virtual void                   ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const override;
+			virtual void         ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const override;
 			// ~CSchematycUqsComponentEnvFunctionBase
 
 		private:
 
-			Client::IItemFactory&          m_itemFactory;
-			const Client::IItemConverter*  m_pFromForeignTypeConverter;
+			CItemConverterLookup m_itemConvertersFromSchematycToUqs;
 		};
 
 		//===================================================================================
 		//
-		// CSchematycUqsComponentEnvFunction_GetItemFromResultSet
+		// CSchematycUqsComponentEnvFunction_GetResult
 		//
 		//===================================================================================
 
-		class CSchematycUqsComponentEnvFunction_GetItemFromResultSet : public CSchematycUqsComponentEnvFunctionBase
+		class CSchematycUqsComponentEnvFunction_GetResult : public CSchematycUqsComponentEnvFunctionBase
 		{
 		public:
 
-			static void                    GenerateGetItemFromResultSetFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, Client::IItemFactory& itemFactory);
+			explicit             CSchematycUqsComponentEnvFunction_GetResult(const Schematyc::SSourceFileInfo& sourceFileInfo, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters);
 
 		private:
 
-			explicit                       CSchematycUqsComponentEnvFunction_GetItemFromResultSet(const Schematyc::SSourceFileInfo& sourceFileInfo, Client::IItemFactory& itemFactory, const Client::IItemConverter* pOptionalToForeignTypeConverter);
-
 			// CSchematycUqsComponentEnvFunctionBase
-			virtual void                   ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const override;
+			virtual void         ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const override;
 			// ~CSchematycUqsComponentEnvFunctionBase
 
 		private:
 
-			Client::IItemFactory&          m_itemFactory;
-			const Client::IItemConverter*  m_pToForeignTypeConverter;
+			CItemConverterLookup m_itemConvertersFromUqsToSchematyc;
+		};
+
+		//===================================================================================
+		//
+		// CSchematycUqsComponentEnvFunctionGeneratorBase - abstract base class to generate schematyc functions via commonly used code that calls pure virtual methods
+		//
+		//===================================================================================
+
+		class CSchematycUqsComponentEnvFunctionGeneratorBase
+		{
+		public:
+
+			void                                             GenerateFunctions(Schematyc::CEnvRegistrationScope& scope) const;
+
+		private:
+
+			virtual const Client::IItemConverterCollection&  GetItemConverterCollectionFromItemFactory(const Client::IItemFactory& itemFactory) const = 0;
+			virtual bool                                     MatchItemConverterAgainstEnvDataType(const Client::IItemConverter& itemConverter, const Schematyc::IEnvDataType& envDataType) const = 0;
+			virtual void                                     GenerateSchematycFunction(Schematyc::CEnvRegistrationScope& scope, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters) const = 0;
+
+		};
+
+		//===================================================================================
+		//
+		// CSchematycUqsComponentEnvFunctionGenerator_AddParam
+		//
+		//===================================================================================
+
+		class CSchematycUqsComponentEnvFunctionGenerator_AddParam final : public CSchematycUqsComponentEnvFunctionGeneratorBase
+		{
+		private:
+
+			// CSchematycUqsComponentEnvFunctionGeneratorBase
+			virtual const Client::IItemConverterCollection&  GetItemConverterCollectionFromItemFactory(const Client::IItemFactory& itemFactory) const override;
+			virtual bool                                     MatchItemConverterAgainstEnvDataType(const Client::IItemConverter& itemConverter, const Schematyc::IEnvDataType& envDataType) const override;
+			virtual void                                     GenerateSchematycFunction(Schematyc::CEnvRegistrationScope& scope, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters) const override;
+			// ~CSchematycUqsComponentEnvFunctionGeneratorBase
+
+		};
+
+		//===================================================================================
+		//
+		// CSchematycUqsComponentEnvFunctionGenerator_GetResult
+		//
+		//===================================================================================
+
+		class CSchematycUqsComponentEnvFunctionGenerator_GetResult final : public CSchematycUqsComponentEnvFunctionGeneratorBase
+		{
+		private:
+
+			// CSchematycUqsComponentEnvFunctionGeneratorBase
+			virtual const Client::IItemConverterCollection&  GetItemConverterCollectionFromItemFactory(const Client::IItemFactory& itemFactory) const override;
+			virtual bool                                     MatchItemConverterAgainstEnvDataType(const Client::IItemConverter& itemConverter, const Schematyc::IEnvDataType& envDataType) const override;
+			virtual void                                     GenerateSchematycFunction(Schematyc::CEnvRegistrationScope& scope, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters) const override;
+			// ~CSchematycUqsComponentEnvFunctionGeneratorBase
+
 		};
 
 		//===================================================================================
@@ -279,6 +401,7 @@ namespace UQS
 
 				CQueryBlueprintID                               queryBlueprintID;
 				Schematyc::CSharedString                        querierName;
+				std::map<string, Client::IItemFactory*>         requiredRuntimeParams;
 				Shared::CVariantDict                            runtimeParams;
 			};
 
@@ -309,7 +432,8 @@ namespace UQS
 			virtual void                                        Shutdown() override;
 			// ~Schematyc::CComponent
 
-			// these 2 are called by the generated "AddParam" and "GetItemFromResultSet" functions
+			// these 3 are called by the generated "AddParam" and "GetItemFromResultSet" functions
+			Client::IItemFactory*                               GetItemFactoryOfRuntimeParam(const char* szRuntimeParamName) const;
 			Shared::CVariantDict&                               GetRuntimeParamsStorageOfUpcomingQuery();
 			const IQueryResultSet*                              GetQueryResultSet(const CQueryID& queryID) const;
 

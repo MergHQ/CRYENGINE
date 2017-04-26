@@ -1687,6 +1687,24 @@ void CGeneratorBlueprint::Serialize(Serialization::IArchive& archive)
 			}
 		}
 
+		// type of items to generate
+		string itemTypeName;
+		if (!IsStringEmpty(m_name))
+		{
+			if (const UQS::Client::IGeneratorFactory* pFactory = pContext->GetGeneratorFactoryByName(m_name.c_str()))
+			{
+				if (const UQS::Client::IItemFactory* pItemFactory = UQS::Core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(pFactory->GetTypeOfItemsToGenerate()))
+				{
+					itemTypeName.Format("(%s)", pItemFactory->GetName());
+				}
+				else
+				{
+					itemTypeName.Format("(%s)", pFactory->GetTypeOfItemsToGenerate().name());
+				}
+			}
+		}
+		archive(itemTypeName, "itemTypeName", "^!");
+
 		m_pErrorCollector->Serialize(archive, *this);
 
 		if (!IsStringEmpty(m_name))

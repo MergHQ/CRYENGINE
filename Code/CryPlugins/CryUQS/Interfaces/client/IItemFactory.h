@@ -29,8 +29,6 @@ namespace UQS
 			virtual const char*                       GetDescription() const = 0;
 
 #if UQS_SCHEMATYC_SUPPORT
-			virtual const CryGUID&                    GetGUIDForSchematycAddParamFunction() const = 0;
-			virtual const CryGUID&                    GetGUIDForSchematycGetItemFromResultSetFunction() const = 0;
 			virtual const IItemConverterCollection&   GetFromForeignTypeConverters() const = 0;
 			virtual const IItemConverterCollection&   GetToForeignTypeConverters() const = 0;
 #endif
