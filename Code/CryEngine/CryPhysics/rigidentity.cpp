@@ -113,9 +113,6 @@ CRigidEntity::CRigidEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 	, m_lockConstraintIdx(0)
 	, m_lockContacts(0)
 	, m_lockStep(0)
-#if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
-	, m_lockNetInterp(0)
-#endif
 	, m_iLastChecksum(0)
 #if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
 	, m_pNetStateHistory(nullptr)
@@ -3367,8 +3364,8 @@ int CRigidEntity::Update(float time_interval, float damping)
 	if (m_flags & ref_use_simple_solver)
 		damping = max(0.9f,damping);
 	CapBodyVel();
-	m_nCanopyContactsLost += iszero((m_bCanopyContact & 3)-2);
-	m_timeCanopyFallen += 3.0f*iszero((m_nCanopyContactsLost & 3)-3);
+	m_nCanopyContactsLost += iszero((int)(m_bCanopyContact & 3)-2);
+	m_timeCanopyFallen += 3.0f*iszero((int)(m_nCanopyContactsLost & 3)-3);
 
 	m_body.v*=damping; m_body.w*=damping; m_body.P*=damping; m_body.L*=damping;
 
@@ -3687,6 +3684,9 @@ int CRigidEntity::GetStateSnapshot( TSerialize ser, float time_back, int flags )
 		int i,count;
 		bool bVal;
 
+		if (flags & 16)
+			WriteContacts(ser);
+
 		if (ser.BeginOptionalGroup("constraints", m_constraintMask != 0))
 		{
 			int scount=0;
@@ -3787,6 +3787,54 @@ int CRigidEntity::WriteContacts(CStream &stm,int flags)
 	}
 
 	return 1;
+}
+
+int CRigidEntity::WriteContacts(TSerialize ser)
+{
+	int n = 0;
+	for(entity_contact *cnt=m_pContactStart; cnt!=CONTACT_END(m_pContactStart); cnt=cnt->next,n++) {
+		ser.BeginOptionalGroup("contact", true);
+		int i;
+		ser.Value("ent1", i=cnt->pent[1]->m_id);
+		ser.Value("ipart0", i=cnt->ipart[0]);
+		ser.Value("ipart1", i=cnt->ipart[1]);
+		ser.Value("pt", cnt->pt[0]);
+		ser.Value("n", cnt->n);
+		ser.Value("t", cnt->penetration);
+		ser.Value("fric", cnt->friction);
+		ser.EndGroup();
+	}
+	ser.BeginOptionalGroup("contact", false);
+	return n;
+}
+int CRigidEntity::ReadContacts(TSerialize ser)
+{
+	DetachAllContacts();
+	int n = 0;
+	for(; ser.BeginOptionalGroup("contact", true); n++) {
+		entity_contact *cnt = m_pWorld->AllocContact();
+		int i; 
+		ser.Value("ent1", i);
+		cnt->pent[1] = (CPhysicalEntity*)m_pWorld->GetPhysicalEntityById(i);
+		ser.Value("ipart0", i); cnt->ipart[0] = i;
+		ser.Value("ipart1", i); cnt->ipart[1] = i;
+		ser.Value("pt", cnt->pt[0]); cnt->pt[1]=cnt->pt[0];
+		ser.Value("n", cnt->n);
+		ser.Value("t", cnt->penetration);
+		ser.Value("fric", cnt->friction);
+		ser.EndGroup();
+		if (!cnt->pent[1]) {
+			m_pWorld->FreeContact(cnt); 
+			continue;
+		}
+		cnt->pent[0] = this;
+		cnt->vreq = cnt->n*min(m_pWorld->m_vars.maxUnprojVel, max(0.0f,cnt->penetration-m_pWorld->m_vars.maxContactGap)*m_pWorld->m_vars.unprojVelScale);
+		for(i=0;i<2;i++)
+			cnt->pbody[i] = cnt->pent[i]->GetRigidBody(cnt->ipart[i]);
+		cnt->pent[1]->AddCollider(this);
+		AttachContact(cnt, AddCollider(cnt->pent[1]), cnt->pent[1]);
+	}
+	return n;
 }
 
 int CRigidEntity::SetStateFromSnapshot(CStream &stm, int flags)
@@ -4159,6 +4207,9 @@ int CRigidEntity::SetStateFromSnapshot( TSerialize ser, int flags )
 
 	if (ser.GetSerializationTarget()!=eST_Network)
 	{
+		if (flags & 16)
+			ReadContacts(ser);
+
 		if (ser.BeginOptionalGroup("constraints",true))
 		{
 			int i,j;
@@ -4867,12 +4918,13 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 
 void CRigidEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 {
-	CPhysicalEntity::GetMemoryStatistics(pSizer);
 	if (GetType()==PE_RIGID)
 		pSizer->AddObject(this, sizeof(CRigidEntity));
+	CPhysicalEntity::GetMemoryStatistics(pSizer);
 	pSizer->AddObject(m_pColliderContacts, m_nCollidersAlloc*sizeof(m_pColliderContacts[0]));
 	pSizer->AddObject(m_pColliderConstraints, m_nCollidersAlloc*sizeof(m_pColliderConstraints[0]));
 	pSizer->AddObject(m_pContactStart, m_nContacts*sizeof(m_pContactStart[0]));
 	pSizer->AddObject(m_pConstraints, m_nConstraintsAlloc*sizeof(m_pConstraints[0]));
 	pSizer->AddObject(m_pConstraintInfos, m_nConstraintsAlloc*sizeof(m_pConstraintInfos[0]));
+	pSizer->AddObject(m_pEventsColl, m_nMaxEvents*sizeof(m_pEventsColl[0]));
 }

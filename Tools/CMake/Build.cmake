@@ -105,6 +105,11 @@ if (OPTION_RC AND EXISTS "Code/Tools/rc")
 	)
 endif()
 
+if (OPTION_PHYSDBGR)
+	add_subdirectory(Code/Tools/PhysDebugger)
+endif()
+
+
 set(CMAKE_INSTALL_MESSAGE LAZY)
 install(FILES ${TOOLS_CMAKE_DIR}/modules/CryCommonConfig.cmake DESTINATION share/cmake)
 install(FILES ${TOOLS_CMAKE_DIR}/modules/CryActionConfig.cmake DESTINATION share/cmake)

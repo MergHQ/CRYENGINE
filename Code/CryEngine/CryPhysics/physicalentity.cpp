@@ -1917,10 +1917,9 @@ void CPhysicalEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 		pSizer->AddObject(this, sizeof(CPhysicalEntity));
 	if (m_pWorld->m_vars.iDrawHelpers & 1<<31 && m_ig[0].x>-1)
 		pSizer->AddObject(&m_iGThunk0, (m_ig[1].x-m_ig[0].x+1)*(m_ig[1].y-m_ig[0].y+1)*sizeof(pe_gridthunk));
-	if (m_parts!=&m_defpart)
-		pSizer->AddObject(m_parts, m_nPartsAlloc*sizeof(m_parts[0]));
+	pSizer->AddObject(m_parts, m_nPartsAlloc*sizeof(m_parts[0]));
 	for(int i=0;i<m_nParts;i++) if (CPhysicalPlaceholder *ppc=m_parts[i].pPlaceholder) {
-		pSizer->AddObject(ppc, sizeof(CPhysicalPlaceholder));
+		//pSizer->AddObject(ppc, sizeof(CPhysicalPlaceholder));
 		if (m_pWorld->m_vars.iDrawHelpers & 1<<31 && ppc->m_ig[0].x>-1)
 			pSizer->AddObject(&ppc->m_iGThunk0, (ppc->m_ig[1].x-ppc->m_ig[0].x+1)*(ppc->m_ig[1].y-ppc->m_ig[0].y+1)*sizeof(pe_gridthunk));
 	}
@@ -1928,21 +1927,24 @@ void CPhysicalEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 		pSizer->AddObject(m_pColliders, m_nCollidersAlloc*sizeof(m_pColliders[0]));
 	if (m_pStructure) {
 		pSizer->AddObject(m_pStructure, sizeof(*m_pStructure));
-		pSizer->AddObject(m_pStructure->pParts, sizeof(m_pStructure->pParts[0]), m_nParts);
+		pSizer->AddObject(m_pStructure->pParts, sizeof(m_pStructure->pParts[0])*m_nParts);
 		if (m_pStructure->Pexpl) {
-			pSizer->AddObject(m_pStructure->Pexpl, sizeof(m_pStructure->Pexpl[0]), m_nParts);
-			pSizer->AddObject(m_pStructure->Lexpl, sizeof(m_pStructure->Lexpl[0]), m_nParts);
+			pSizer->AddObject(m_pStructure->Pexpl, sizeof(m_pStructure->Pexpl[0])*m_nParts);
+			pSizer->AddObject(m_pStructure->Lexpl, sizeof(m_pStructure->Lexpl[0])*m_nParts);
 		}
-		pSizer->AddObject(m_pStructure->pJoints, sizeof(m_pStructure->pJoints[0]), m_pStructure->nJointsAlloc);
+		pSizer->AddObject(m_pStructure->pJoints, sizeof(m_pStructure->pJoints[0])*m_pStructure->nJointsAlloc);
 		if (m_pStructure->defparts) {
-			pSizer->AddObject(m_pStructure->defparts, sizeof(m_pStructure->defparts[0]), m_nParts);
+			pSizer->AddObject(m_pStructure->defparts, sizeof(m_pStructure->defparts[0])*m_nParts);
 			for(int i=0;i<m_nParts;i++) if (m_pStructure->defparts[i].pSkelEnt) {
 				//m_pStructure->defparts[i].pSkelEnt->GetMemoryStatistics(pSizer); // already taken into account in global entity lists
-				if (!((CGeometry*)m_parts[i].pPhysGeom->pGeom)->IsAPrimitive())
-					pSizer->AddObject(m_pStructure->defparts[i].pSkinInfo, sizeof(SSkinInfo), ((mesh_data*)m_parts[i].pPhysGeom->pGeom->GetData())->nVertices);
+				pSizer->AddObject(m_pStructure->defparts[i].pSkinInfo, sizeof(SSkinInfo)*(
+					((CGeometry*)m_parts[i].pPhysGeom->pGeom)->IsAPrimitive() ? 1 : ((mesh_data*)m_parts[i].pPhysGeom->pGeom->GetData())->nVertices));
 			}
 		}
 	}
+	pSizer->AddObject(m_ground, m_nGroundPlanes*sizeof(m_ground[0]));
+	if (m_pUsedParts)
+		pSizer->AddObject(m_pUsedParts, (MAX_PHYS_THREADS+1)*sizeof(m_pUsedParts[0]));
 }
 
 struct SMemSerializer : ISerialize {

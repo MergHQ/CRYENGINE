@@ -2760,16 +2760,14 @@ int CRopeEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 		ser.Value("pos_start", m_segs[0].pt);
 		ser.Value("pos_end", m_segs[m_nSegs].pt);
 	} else {
-		ser.Value("strained", 0);
+		ser.Value("strained", bAwake = false);
 		ser.Value("awake", bAwake = m_bAwake!=0);
 
 		ser.BeginGroup("Segs");
 		for(i=0;i<=m_nSegs;i++) {
 			ser.Value(numbered_tag("pos",i), m_segs[i].pt);
 			if (m_bAwake)
-			{
 				ser.Value(numbered_tag("vel",i), m_segs[i].vel);
-			}
 		}
 		ser.EndGroup();
 
@@ -2780,9 +2778,7 @@ int CRopeEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 			for(i=0;i<m_nVtx;i++) {
 				ser.Value(numbered_tag("pos",i), m_vtx[i].pt);
 				if (m_bAwake)
-				{
 					ser.Value(numbered_tag("vel",i), m_vtx[i].vel);
-				}
 			}
 			ser.EndGroup();
 		}
@@ -2796,8 +2792,7 @@ int CRopeEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 			m_pTiedTo[1] && m_pTiedTo[1]->m_iSimClass<3 && (!m_pForeignData || m_pForeignData!=m_pTiedTo[1]->m_pForeignData)))
 	{
 		ser.Value("saveties", bAwake=true);
-		for(i=0;i<2;i++) 
-		{
+		for(i=0;i<2;i++) {
 			ser.BeginGroup("link");
 			if (m_pTiedTo[i]) {
 				ser.Value("tied", bAwake=true);
@@ -2989,10 +2984,17 @@ void CRopeEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 
 void CRopeEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 {
-	CPhysicalEntity::GetMemoryStatistics(pSizer);
 	if (GetType()==PE_ROPE)
 		pSizer->AddObject(this, sizeof(CRopeEntity));
-	pSizer->AddObject(m_segs, m_nSegs*sizeof(m_segs[0]));
+	CPhysicalEntity::GetMemoryStatistics(pSizer);
+	pSizer->AddObject(m_segs, (m_nSegs+1)*sizeof(m_segs[0]));
+	pSizer->AddObject(m_vtx, m_nVtxAlloc*sizeof(m_vtx[0]));
+	pSizer->AddObject(m_vtx1, m_nVtxAlloc*sizeof(m_vtx1[0]));
+	if (m_vtxSolver)
+		pSizer->AddObject(m_vtxSolver, m_nVtxAlloc*sizeof(m_vtxSolver[0]));
+	if (m_idx)
+		pSizer->AddObject(m_idx, (m_nMaxSubVtx+2)*sizeof(m_idx[0]));
+	pSizer->AddObject(m_attach, m_nAttach*sizeof(m_attach[0]));
 }
 
 int CRopeEntity::GetVertices(strided_pointer<Vec3>& vtx) const

@@ -130,7 +130,8 @@ CPhysicalWorld::CPhysicalWorld(ILog *pLog) : m_nWorkerThreads(0)
 	g_pPhysWorlds[g_nPhysWorlds] = this;
 	g_nPhysWorlds = min(g_nPhysWorlds+1,(int)(CRY_ARRAY_COUNT(g_pPhysWorlds)));
 	m_pEventClient = 0;
-	g_pLockIntersect = &m_lockCaller[MAX_PHYS_THREADS];
+	if (g_nPhysWorlds==1)
+		g_pLockIntersect = &m_lockCaller[MAX_PHYS_THREADS];
 
 	//////////////////////////////////////////////////////////////////////////
 	// Initialize physics event listeners
@@ -642,6 +643,8 @@ void CPhysicalWorld::Shutdown(int bDeleteGeometries)
 		delete[] ((char*)pChunk);
 	}
 	m_szCurEventChunk = 0; m_pCurEventChunk = m_pFirstEventChunk;
+	memset(m_pFreeEvents, 0, sizeof(m_pFreeEvents));
+	memset(m_nEvents, 0, sizeof(m_nEvents));
 
 	for(i=0; i<m_nQueueSlotsAlloc; i++)
 		delete[] m_pQueueSlots[i];
@@ -1507,7 +1510,7 @@ DEBUG_BREAK;
 			freeid:
 			if (pent->m_id<=m_lastExtId)
 				--m_nExtIds;
-			SetPhysicalEntityId(pent,-1);
+			SetPhysicalEntityId(pent,-1);	pent->m_id=-1;
 		}
 		pent->m_iSimClass = 7;
 		m_pTypedEnts[7] = pent;
@@ -2810,6 +2813,9 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 			m_vars.bDoStep = 0;
 			SerializeWorld("worldents.txt",1);
 			SerializeGeometries("worldgeoms.txt",1);
+		}	else if (m_vars.bDoStep==3) {
+			m_vars.bDoStep = 0;
+			SerializeWorld("world.phump",3);
 		}
 		m_vars.bDoStep = 0;
 	}

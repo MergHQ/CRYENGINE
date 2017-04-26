@@ -1774,7 +1774,8 @@ void CWheeledVehicleEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int 
 
 void CWheeledVehicleEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 {
-	CRigidEntity::GetMemoryStatistics(pSizer);
 	if (GetType()==PE_WHEELEDVEHICLE)
 		pSizer->AddObject(this, sizeof(CWheeledVehicleEntity));
+	CRigidEntity::GetMemoryStatistics(pSizer);
+	pSizer->AddObject(m_susp, (m_nParts-m_nHullParts)*sizeof(m_susp[0]));
 }

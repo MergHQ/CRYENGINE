@@ -2610,6 +2610,8 @@ int CArticulatedEntity::GetStateSnapshot(TSerialize ser, float time_back, int fl
 			ser.EndGroup();
 		}
 		ser.Value("offsPivot", m_offsPivot);
+		if (flags & 16)
+			WriteContacts(ser);
 	}
 		
  	return 1;
@@ -2728,6 +2730,8 @@ int CArticulatedEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		for(int i=0;i<m_nJoints;i++)
 			SyncBodyWithJoint(i);
 		ComputeBBox(m_BBoxNew);
+		if (flags & 16)
+			ReadContacts(ser);
 		if ((unsigned int)m_iSimClass>=7u) 
 			return 1;
 		UpdatePosition(m_pWorld->RepositionEntity(this,3,m_BBoxNew));
@@ -3167,9 +3171,11 @@ int CArticulatedEntity::Update(float time_interval, float damping)
 
 void CArticulatedEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 {
-	CRigidEntity::GetMemoryStatistics(pSizer);
 	if (GetType()==PE_ARTICULATED)
 		pSizer->AddObject(this, sizeof(CArticulatedEntity));
+	CRigidEntity::GetMemoryStatistics(pSizer);
 	pSizer->AddObject(m_joints, m_nJointsAlloc*sizeof(m_joints[0]));
+	for(int i=0; i<m_nJoints; i++) if (m_joints[i].fsbuf)
+		pSizer->AddObject(m_joints[i].fsbuf, sizeof(sizeof(featherstone_data)+16));
 	pSizer->AddObject(m_infos, m_nPartsAlloc*sizeof(m_infos[0]));
 }
