@@ -123,6 +123,9 @@ public:
 	{ return m_nEntitySlot; }
 	virtual IParticleAttributes& GetAttributes();
 
+	virtual void   SetOwnerEntity(IEntity* pEntity) final { m_pOwnerEntity = pEntity; }
+	virtual IEntity* GetOwnerEntity() const final         { return m_pOwnerEntity; }
+
 	//////////////////////////////////////////////////////////////////////////
 	// Other methods.
 	//////////////////////////////////////////////////////////////////////////
@@ -317,7 +320,7 @@ private:
 
 	// Entity connection params.
 	int          m_nEntitySlot;
-
+	IEntity*     m_pOwnerEntity = 0;
 	uint32       m_nEmitterFlags;
 
 	SPhysEnviron m_PhysEnviron;                       // Common physical environment (uniform forces only) for emitter.

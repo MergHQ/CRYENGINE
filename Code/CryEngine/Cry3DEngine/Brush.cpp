@@ -608,7 +608,7 @@ void CBrush::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(this, sizeof(*this));
 }
 
-void CBrush::SetEntityStatObj(unsigned int nSlot, IStatObj* pStatObj, const Matrix34A* pMatrix)
+void CBrush::SetEntityStatObj(IStatObj* pStatObj, const Matrix34A* pMatrix)
 {
 	//assert(pStatObj);
 
@@ -987,11 +987,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-IStatObj* CBrush::GetEntityStatObj(unsigned int nPartId, unsigned int nSubPartId, Matrix34A* pMatrix, bool bReturnOnlyVisible)
+IStatObj* CBrush::GetEntityStatObj(unsigned int nSubPartId, Matrix34A* pMatrix, bool bReturnOnlyVisible)
 {
-	if (nPartId != 0)
-		return 0;
-
 	if (pMatrix)
 		*pMatrix = m_Matrix;
 

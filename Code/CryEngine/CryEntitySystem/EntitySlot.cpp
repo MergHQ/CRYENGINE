@@ -147,13 +147,13 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 		// Recreate proper render node in 3d engine if not exist yet.
 		if (GetStatObj())
 		{
-			m_renderNodeType = eERType_Brush;
-			IBrush* pBrushRenderNode = static_cast<IBrush*>(gEnv->p3DEngine->CreateRenderNode(eERType_Brush));
+			m_renderNodeType = eERType_MovableBrush;
+			IBrush* pBrushRenderNode = static_cast<IBrush*>(gEnv->p3DEngine->CreateRenderNode(eERType_MovableBrush));
 			m_pRenderNode = pBrushRenderNode;
 			m_pRenderNode->SetOwnerEntity(m_pEntity);
 			pBrushRenderNode->DisablePhysicalization(true); // We physicalize render node with PhysicalProxy instead.
 			Matrix34A tm = m_worldTM;
-			m_pRenderNode->SetEntityStatObj(0, GetStatObj(), &tm);
+			m_pRenderNode->SetEntityStatObj(GetStatObj(), &tm);
 		}
 		if (GetCharacter())
 		{

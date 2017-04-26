@@ -1168,29 +1168,28 @@ void CEngineStats::CollectGeometry()
 		GetObjectsByType(eERType_Light, lstInstances);
 		GetObjectsByType(eERType_Decal, lstInstances);
 		GetObjectsByType(eERType_Character, lstInstances);
+		GetObjectsByType(eERType_MovableBrush, lstInstances);
 
 		std::vector<IRenderNode*>::const_iterator itEnd = lstInstances.end();
 		for (std::vector<IRenderNode*>::iterator it = lstInstances.begin(); it != itEnd; ++it)
 		{
 			IRenderNode* pRenderNode = *it;
 
-			const int slotCount = pRenderNode->GetSlotCount();
-			for (int dwSlot = 0; dwSlot < slotCount; ++dwSlot)
+			if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj())
 			{
-				if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj(dwSlot))
+				m_ResourceCollector.AddInstance(pEntObject->GetFilePath(), pRenderNode);
+
+				if (IMaterial* pMat = pRenderNode->GetMaterial())    // if this rendernode overwrites the IStatObj material
 				{
-					m_ResourceCollector.AddInstance(pEntObject->GetFilePath(), pRenderNode);
-
-					if (IMaterial* pMat = pRenderNode->GetMaterial())    // if this rendernode overwrites the IStatObj material
-					{
-						m_ResourceCollector.OpenDependencies(pEntObject->GetFilePath());
-						AddResource_Material(*pMat);                    // to report the dependencies of this instance to the IStatObj
-						m_ResourceCollector.CloseDependencies();
-					}
+					m_ResourceCollector.OpenDependencies(pEntObject->GetFilePath());
+					AddResource_Material(*pMat);                    // to report the dependencies of this instance to the IStatObj
+					m_ResourceCollector.CloseDependencies();
 				}
+			}
 
-				if (ICharacterInstance* pCharInst = pRenderNode->GetEntityCharacter(dwSlot))
-					m_ResourceCollector.AddInstance(pCharInst->GetFilePath(), pRenderNode);
+			if (ICharacterInstance* pCharInst = pRenderNode->GetEntityCharacter(0))
+			{
+				m_ResourceCollector.AddInstance(pCharInst->GetFilePath(), pRenderNode);
 			}
 		}
 	}
@@ -1379,30 +1378,27 @@ void CEngineStats::CollectBrushes()
 	for (std::vector<IRenderNode*>::iterator it = lstInstances.begin(); it != itEnd; ++it)
 	{
 		IRenderNode* pRenderNode = *it;
-		const int slotCount      = pRenderNode->GetSlotCount();
-		for (int dwSlot = 0; dwSlot < slotCount; ++dwSlot)
-		{
-			if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj(dwSlot))
-			{
-				IMaterial* pMat = NULL;
-				pMat = pRenderNode->GetMaterial();
-				if (!pMat)
-				{
-					pMat = pEntObject->GetMaterial();
-				}
 
-				if (pMat)
+		if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj())
+		{
+			IMaterial* pMat = NULL;
+			pMat = pRenderNode->GetMaterial();
+			if (!pMat)
+			{
+				pMat = pEntObject->GetMaterial();
+			}
+
+			if (pMat)
+			{
+				for (int idx = 0; idx < 8; idx++)
 				{
-					for (int idx = 0; idx < 8; idx++)
+					if (IRenderMesh* pMesh = pRenderNode->GetRenderMesh(idx))
 					{
-						if (IRenderMesh* pMesh = pRenderNode->GetRenderMesh(idx))
-						{
-							SCryEngineStats::SBrushMemInfo brushInfo;
-							brushInfo.brushName         = string(pRenderNode->GetName());
-							brushInfo.usedTextureMemory = pMesh->GetTextureMemoryUsage(pMat);
-							brushInfo.lodNum            = idx;
-							m_stats.brushes.push_back(brushInfo);
-						}
+						SCryEngineStats::SBrushMemInfo brushInfo;
+						brushInfo.brushName         = string(pRenderNode->GetName());
+						brushInfo.usedTextureMemory = pMesh->GetTextureMemoryUsage(pMat);
+						brushInfo.lodNum            = idx;
+						m_stats.brushes.push_back(brushInfo);
 					}
 				}
 			}

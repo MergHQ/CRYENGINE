@@ -2909,6 +2909,11 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 			CBrush* pBrush = new CBrush();
 			return pBrush;
 		}
+	case eERType_MovableBrush:
+		{
+			CMovableBrush* pEntityBrush = new CMovableBrush();
+			return pEntityBrush;
+		}
 	case eERType_Vegetation:
 		{
 			CVegetation* pVeget = new CVegetation();
@@ -5252,7 +5257,8 @@ void C3DEngine::CleanUpOldDecals()
 
 void C3DEngine::UpdateRenderTypeEnableLookup()
 {
-	SetRenderNodeTypeEnabled(eERType_RenderProxy, (GetCVars()->e_Entities != 0));
+	SetRenderNodeTypeEnabled(eERType_MovableBrush, (GetCVars()->e_Entities != 0));
+	SetRenderNodeTypeEnabled(eERType_Character, (GetCVars()->e_Entities != 0));
 	SetRenderNodeTypeEnabled(eERType_Brush, (GetCVars()->e_Brushes != 0));
 	SetRenderNodeTypeEnabled(eERType_Vegetation, (GetCVars()->e_Vegetation != 0));
 }
@@ -6480,14 +6486,14 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	{
 		UnRegisterEntityImpl(pEnt);
 	}
-	else if (GetCVars()->e_StreamCgf && pEnt->GetOwnerEntity())
+	else if (GetCVars()->e_StreamCgf && pEnt->IsAllocatedOutsideOf3DEngineDLL())
 	{
 		//  Temporary solution: Force streaming priority update for objects that was not registered before
 		//  and was not visible before since usual prediction system was not able to detect them
 
 		if ((uint32)pEnt->GetDrawFrame(0) < nFrameID - 16)
 		{
-			// deferr the render node streaming priority update still we have a correct 3D Engine camera
+			// defer the render node streaming priority update still we have a correct 3D Engine camera
 			int nElementID = m_deferredRenderProxyStreamingPriorityUpdates.Find(pEnt);
 			if (nElementID == -1)  // only add elements once
 				m_deferredRenderProxyStreamingPriorityUpdates.push_back(pEnt);

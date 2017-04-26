@@ -38,8 +38,7 @@ public:
 	virtual bool       GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const final;
 
 	//! Gives access to object components.
-	virtual IMaterial*          GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible = false, bool* pbDrawNear = NULL) final { return m_pMaterial; }
-	virtual ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) final {  if(pMatrix) *pMatrix = m_matrix; return m_pCharacterInstance; }
+	virtual ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) final {  if(pMatrix) *pMatrix = m_matrix; return m_pCharacterInstance; }
 
 	//! Get physical entity.
 	virtual struct IPhysicalEntity* GetPhysics() const final                 { return m_pPhysicsEntity; };
@@ -60,6 +59,10 @@ public:
 	virtual void       SetCameraSpacePos(Vec3* pCameraSpacePos) final;
 
 	virtual void       GetMemoryUsage(ICrySizer* pSizer) const final {};
+
+	virtual void       SetOwnerEntity(IEntity* pEntity) final { m_pOwnerEntity = pEntity; }
+	virtual IEntity*   GetOwnerEntity() const final           { return m_pOwnerEntity; }
+	virtual bool       IsAllocatedOutsideOf3DEngineDLL()      { return GetOwnerEntity() != nullptr; }
 
 	virtual void       UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) final;
 	//////////////////////////////////////////////////////////////////////////
@@ -98,4 +101,7 @@ private:
 	QuatTS   m_renderOffset;
 
 	Vec3*    m_pCameraSpacePos = nullptr;
+
+	// When render node is created by the entity, pointer to the owner entity.
+	IEntity* m_pOwnerEntity = 0;
 };

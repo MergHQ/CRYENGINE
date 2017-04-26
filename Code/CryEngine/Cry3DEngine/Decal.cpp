@@ -485,7 +485,7 @@ void CDecal::AddDecalToRenderView(float fDistance,
 	{
 		// transfer decal into object space
 		Matrix34A objMat;
-		IStatObj* pEntObject = pVegetation->GetEntityStatObj(0, 0, &objMat);
+		IStatObj* pEntObject = pVegetation->GetEntityStatObj(0, &objMat);
 		pRenderObject->m_II.m_Matrix = objMat;
 		pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
 		pVegetation->FillBendingData(pRenderObject);

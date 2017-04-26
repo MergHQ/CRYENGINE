@@ -349,7 +349,7 @@ public:
 	const AABB                         GetBBox() const;
 	virtual const AABB                 GetBBoxVirtual()                                                                                   { return GetBBox(); }
 	virtual void                       FillBBox(AABB& aabb);
-	virtual struct ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; };
+	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; };
 
 	//////////////////////////////////////////////////////////////////////////
 	// IStreamCallback

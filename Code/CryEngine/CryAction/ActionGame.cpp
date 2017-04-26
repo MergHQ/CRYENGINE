@@ -2112,7 +2112,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 	else if (rec.itype == PHYS_FOREIGN_ID_STATIC)
 	{
 		BreakLogAlways("> PHYS_FOREIGN_ID_STATIC");
-		pStatObj = (pBrush = ((IRenderNode*)epc.pForeignData[1]))->GetEntityStatObj(0, 0, &mtx);
+		pStatObj = (pBrush = ((IRenderNode*)epc.pForeignData[1]))->GetEntityStatObj(0, &mtx);
 		if (pStatObj && pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND)
 		{
 			if (pSubObj = (pStatObjHost = pStatObj)->GetSubObject(epc.partid[1]))
@@ -2505,7 +2505,7 @@ ForceObjUpdate:
 					}
 					pStatObjNew = pStatObjHost;
 				}
-				pBrush->SetEntityStatObj(0, pStatObjNew);
+				pBrush->SetEntityStatObj(pStatObjNew);
 				if (!pStatObjHost)
 					pBrush->Physicalize(true);
 				pp.partid = epc.partid[1];
@@ -3477,7 +3477,7 @@ int CActionGame::ReuseBrokenTrees(const EventPhysCollision* pCEvent, float size,
 		STreeBreakInst* rec;
 		IEntity* pentSrc, * pentClone;
 		IPhysicalEntity* pPhysEntSrc, * pPhysEntClone;
-		pVeg->GetEntityStatObj(0, 0, &objMat);
+		pVeg->GetEntityStatObj(0, &objMat);
 		float scale = objMat.GetColumn(0).len();
 		float hHit = pCEvent->pt.z - pVeg->GetPos().z;
 
@@ -3512,7 +3512,7 @@ int CActionGame::ReuseBrokenTrees(const EventPhysCollision* pCEvent, float size,
 
 			epp.type = PE_STATIC;
 			esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Breakage");
-			pStatObj = pVeg->GetEntityStatObj(0, 0, &mtx);
+			pStatObj = pVeg->GetEntityStatObj(0, &mtx);
 			esp.vPosition = mtx.GetTranslation();
 			esp.vScale = Vec3(mtx.GetColumn(0).len());
 			esp.qRotation = Quat(Matrix33(mtx) / esp.vScale.x);
@@ -4584,7 +4584,7 @@ void CActionGame::CloneBrokenObjectsByIndex(uint16* pBreakEventIndices, int32& i
 
 					IRenderNode* pNewNode = BrokenObj.pBrush->Clone();
 
-					pNewNode->SetEntityStatObj(0, BrokenObj.pStatObjOrg);
+					pNewNode->SetEntityStatObj(BrokenObj.pStatObjOrg);
 
 					IPhysicalEntity* pPhysEnt = pNewNode->GetPhysics();
 					if (pPhysEnt)
@@ -4606,11 +4606,11 @@ void CActionGame::CloneBrokenObjectsByIndex(uint16* pBreakEventIndices, int32& i
 					IRenderNode* pNewNode = gEnv->p3DEngine->CreateRenderNode(eERType_Brush);
 
 					Matrix34A mtx;
-					BrokenObj.pBrush->GetEntityStatObj(0, 0, &mtx);
+					BrokenObj.pBrush->GetEntityStatObj(0, &mtx);
 
 					BrokenObj.pBrush->CopyIRenderNodeData(pNewNode);
 
-					pNewNode->SetEntityStatObj(0, BrokenObj.pStatObjOrg, &mtx);
+					pNewNode->SetEntityStatObj(BrokenObj.pStatObjOrg, &mtx);
 
 					IPhysicalEntity* pPhysEnt = pNewNode->GetPhysics();
 					if (pPhysEnt)
@@ -4691,7 +4691,7 @@ void CActionGame::FixBrokenObjects(bool bRestoreBroken)
 			}
 			else
 			{
-				m_brokenObjs[i].pBrush->SetEntityStatObj(0, m_brokenObjs[i].pStatObjOrg);
+				m_brokenObjs[i].pBrush->SetEntityStatObj(m_brokenObjs[i].pStatObjOrg);
 				//m_brokenObjs[i].pBrush->GetEntityStatObj()->Refresh(FRO_GEOMETRY);
 			}
 		}

@@ -1812,7 +1812,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 			createParams.pSrcStaticRenderNode = pSrcRenderNode;
 
 			Matrix34A nodeTM;
-			pSrcStatObj = pSrcRenderNode->GetEntityStatObj(0, 0, &nodeTM);
+			pSrcStatObj = pSrcRenderNode->GetEntityStatObj(0, &nodeTM);
 			createParams.fScale = nodeTM.GetColumn(0).len();
 
 			createParams.nSlotIndex = pCreateEvent->partidNew;
@@ -2093,7 +2093,7 @@ void CBreakableManager::HandlePhysicsRevealSubPartEvent(const EventPhysRevealEnt
 		}
 	}
 	else if (iForeignData == PHYS_FOREIGN_ID_STATIC)
-		if (pStatObj = (pRenderNode = (IRenderNode*)pForeignData)->GetEntityStatObj(0, 0, &nodeTM))
+		if (pStatObj = (pRenderNode = (IRenderNode*)pForeignData)->GetEntityStatObj(0, &nodeTM))
 		{
 			nSubObjHideMask = pStatObj->GetInitialHideMask();
 			bNewObject = true;
@@ -2205,7 +2205,7 @@ void CBreakableManager::HandlePhysicsRemoveSubPartsEvent(const EventPhysRemoveEn
 	{
 		//CryLogAlways( "* RemoveEvent Entity Static" );
 		pRenderNode = (IRenderNode*)pForeignData;
-		pStatObj = pRenderNode->GetEntityStatObj(0, 0, &nodeTM);
+		pStatObj = pRenderNode->GetEntityStatObj(0, &nodeTM);
 		bNewObject = true;
 	}
 
@@ -2375,7 +2375,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		CBreakableManager* pBreakMgr = (CBreakableManager*)GetIEntitySystem()->GetBreakableManager();
 
 		IRenderNode* pRenderNode = (IRenderNode*)pUpdateEvent->pForeignData;
-		IStatObj* pStatObj = pRenderNode->GetEntityStatObj(0, 0, &mtx);
+		IStatObj* pStatObj = pRenderNode->GetEntityStatObj(0, &mtx);
 
 		PhysicsVars* pVars = gEnv->pPhysicalWorld->GetPhysVars();
 		if (pVars->lastTimeStep + 1 - pVars->bLogStructureChanges == 0)
