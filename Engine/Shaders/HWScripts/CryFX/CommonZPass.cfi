@@ -282,10 +282,17 @@ void ApplyTerrainColor(vert2fragZ IN, inout half3 diffCol, inout half3 specCol, 
 #if %TEMP_TERRAIN
 
 	#if %_RT_ALPHABLEND  // Terrain layers
-		half4 baseColor = GetTerrainTex(terrainBaseTex, IN.terrainParams0.xy);
-		baseColor.xyz = sqrt(baseColor.xyz);		
-		diffCol = saturate( baseColor.xyz + ((diffCol - 0.5h) * DetailTextureStrength) );
-		diffCol.xyz *= diffCol.xyz;
+
+		if (DetailTextureHighPass < 16.f)
+		{
+			// automatic high pass, controlled by DetailTextureHighPass
+			half3 diffMipN = GetDiffuseTexLod(diffuseTex, float4(IN.baseTC.xy, 0, DetailTextureHighPass));
+			half4 baseColor = GetTerrainTex(terrainBaseTex, IN.terrainParams0.xy);
+			baseColor.xyz = sqrt(baseColor.xyz);
+			diffCol = saturate(baseColor.xyz + ((diffCol - diffMipN) * DetailTextureStrength));
+			diffCol.xyz *= diffCol.xyz;
+		}
+
 	#else  // Terrain base
 		diffCol = GetTerrainTex(terrainBaseTex, IN.terrainParams0.xy);
 		NormalWorld = lerp(NormalWorld, GetTerrainNormal(terrainNormTex, IN.terrainParams0.xy), IN.terrainParams0.z);
