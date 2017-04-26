@@ -92,14 +92,14 @@ if (OPTION_SHADERCACHEGEN)
 	add_subdirectory(Code/Tools/ShaderCacheGen/ShaderCacheGen)
 endif()
 
-if (OPTION_PAKTOOLS AND EXISTS "Code/Tools/PakEncrypt")
+if (OPTION_PAKTOOLS AND EXISTS "${CRYENGINE_DIR}/Code/Tools/PakEncrypt")
 	add_subdirectory(Code/Tools/PakEncrypt)
 endif()
 
-if (OPTION_RC AND EXISTS "Code/Tools/rc")
+if (OPTION_RC AND EXISTS "${CRYENGINE_DIR}/Code/Tools/rc")
 	include(ExternalProject)
 	ExternalProject_Add(RC
-		SOURCE_DIR "Code/Tools/rc"
+		SOURCE_DIR "${CRYENGINE_DIR}/Code/Tools/rc"
 		BUILD_COMMAND "${CMAKE_COMMAND}" --build "." --config $<$<CONFIG:Profile>:Release>$<$<NOT:$<CONFIG:Profile>>:$<CONFIG>>
 		INSTALL_COMMAND echo "Skipping install"
 	)
