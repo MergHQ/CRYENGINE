@@ -316,10 +316,9 @@ public:
 	//IFlowGraphModuleListener
 	virtual void OnModuleInstanceCreated(IFlowGraphModule* pModule, TModuleInstanceId instanceID);
 	virtual void OnModuleInstanceDestroyed(IFlowGraphModule* pModule, TModuleInstanceId instanceID);
-	virtual void OnPostModuleDestroyed()                                                     {}
 	virtual void OnModuleDestroyed(IFlowGraphModule* pModule)                                {}
 	virtual void OnRootGraphChanged(IFlowGraphModule* module, ERootGraphChangeReason reason) {}
-	virtual void OnScannedForModules()                                                       {}
+	virtual void OnModulesScannedAndReloaded()                                               {}
 	//~IFlowGraphModuleListener
 
 private:

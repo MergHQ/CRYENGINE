@@ -505,7 +505,7 @@ int CPhysicsEventListener::OnJointBreak(const EventPhys* pEvent)
 	case PHYS_FOREIGN_ID_STATIC:
 		{
 			pRenderNode = ((IRenderNode*)pBreakEvent->pForeignData[0]);
-			pStatObj = pRenderNode->GetEntityStatObj(0, 0, &nodeTM);
+			pStatObj = pRenderNode->GetEntityStatObj(0, &nodeTM);
 			//bShatter = pRenderNode->GetMaterialLayers() & MTL_LAYER_FROZEN;
 		}
 	}

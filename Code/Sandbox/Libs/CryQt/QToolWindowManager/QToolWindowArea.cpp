@@ -14,6 +14,8 @@
 #include <QStylePainter>
 #include <QStyleOptionToolBar>
 #include <QMouseEvent>
+#include <QMenu>
+#include <QAction>
 
 QToolWindowArea::QToolWindowArea(QToolWindowManager* manager, QWidget *parent /*= 0*/)
 	: QTabWidget(parent),
@@ -41,7 +43,7 @@ QToolWindowArea::QToolWindowArea(QToolWindowManager* manager, QWidget *parent /*
 	if (areaUseImageHandle)
 	{
 		QPixmap corner_img;
-		corner_img.load(":/QtDockLibrary/gfx/drag_handle.png");
+		corner_img.load(manager->config().value(QTWM_DROPTARGET_COMBINE, ":/QtDockLibrary/gfx/drag_handle.png").toString());
 		corner->setPixmap(corner_img);
 	}
 	else
@@ -354,6 +356,30 @@ bool QToolWindowArea::shouldShowSingleTabFrame()
 	return true;
 }
 
+void QToolWindowArea::mouseReleaseEvent(QMouseEvent * e)
+{
+	if (m_manager->config().value(QTWM_SUPPORT_SIMPLE_TOOLS, false).toBool())
+	{
+		if (e->button() == Qt::RightButton)
+		{
+			int p = tabBar()->rect().height();
+
+			int tabIndex = tabBar()->tabAt(e->pos());
+			if (tabIndex == -1 && e->pos().y() >= 0 && e->pos().y() <= p)
+			{
+				QAction swap("Swap to Rollups", this);
+				e->accept();
+				connect(&swap, SIGNAL(triggered()), this, SLOT(swapToRollup()));
+				QMenu menu(this);
+				menu.addAction(&swap);
+				menu.exec(tabBar()->mapToGlobal(QPoint(e->pos().x(), e->pos().y() + 10)));
+			}
+		}
+	}
+	
+	QTabWidget::mouseReleaseEvent(e);
+}
+
 void QToolWindowArea::adjustDragVisuals()
 {
 	if (m_manager->config().value(QTWM_SINGLE_TAB_FRAME, true).toBool())
@@ -468,7 +494,7 @@ void QToolWindowArea::setCurrentWidget(QWidget* w)
 	}
 }
 
-QRect QToolWindowArea::tabBarRect() const
+QRect QToolWindowArea::combineAreaRect() const
 {
 	if (widget(0) == m_tabFrame)
 		return m_tabFrame->m_caption->rect();
@@ -500,7 +526,12 @@ void QToolWindowArea::showContextMenu(const QPoint &point)
 	}
 }
 
-QToolWindowSingleTabAreaFrame::QToolWindowSingleTabAreaFrame(QToolWindowManager* manager, QWidget* parent) 
+void QToolWindowArea::swapToRollup()
+{
+	m_manager->SwapAreaType(this, watRollups);
+}
+
+QToolWindowSingleTabAreaFrame::QToolWindowSingleTabAreaFrame(QToolWindowManager* manager, QWidget* parent)
 	: QFrame(parent)
 	, m_layout (new QGridLayout(this))
 	, m_manager (manager)

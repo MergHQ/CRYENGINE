@@ -161,6 +161,8 @@ CFlowSystem::CFlowSystem()
 	, m_nextNodeTypeID(InvalidFlowNodeTypeId)
 	, m_bRegisteredDefaultNodes(false)
 {
+	LOADING_TIME_PROFILE_SECTION;
+
 	LoadBlacklistedFlownodeXML();
 
 	m_pGameTokenSystem = new CGameTokenSystem;
@@ -170,6 +172,8 @@ CFlowSystem::CFlowSystem()
 
 void CFlowSystem::PreInit()
 {
+	LOADING_TIME_PROFILE_SECTION;
+
 	m_pModuleManager = new CFlowGraphModuleManager();
 	RegisterAllNodeTypes();
 

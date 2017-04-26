@@ -49,6 +49,67 @@ namespace UQS
 
 		//===================================================================================
 		//
+		// CSchematycEnvDataTypeCollector
+		//
+		//===================================================================================
+
+		std::vector<const Schematyc::IEnvDataType*> CSchematycEnvDataTypeCollector::CollectAllEnvDataTypes()
+		{
+			CSchematycEnvDataTypeCollector collector;
+			Schematyc::EnvDataTypeConstVisitor visitor = Schematyc::EnvDataTypeConstVisitor::FromMemberFunction<CSchematycEnvDataTypeCollector, &CSchematycEnvDataTypeCollector::OnVisitEnvDataType>(collector);
+			gEnv->pSchematyc->GetEnvRegistry().VisitDataTypes(visitor);
+			return std::move(collector.m_allEnvDataTypes);
+		}
+
+		Schematyc::EVisitStatus CSchematycEnvDataTypeCollector::OnVisitEnvDataType(const Schematyc::IEnvDataType& dataType)
+		{
+			m_allEnvDataTypes.push_back(&dataType);
+			return Schematyc::EVisitStatus::Continue;
+		}
+
+		//===================================================================================
+		//
+		// CQueryBlueprintRuntimeParamGrabber
+		//
+		//===================================================================================
+
+		void CQueryBlueprintRuntimeParamGrabber::GrabRequiredRuntimeParamsOfQueryBlueprint(const Core::IQueryBlueprint& queryBlueprint, std::map<string, Client::IItemFactory *>& out)
+		{
+			CQueryBlueprintRuntimeParamGrabber grabber;
+			queryBlueprint.VisitRuntimeParams(grabber);
+			out = std::move(grabber.m_requiredRuntimeParams);
+		}
+
+		void CQueryBlueprintRuntimeParamGrabber::OnRuntimeParamVisited(const char* szParamName, Client::IItemFactory& itemFactory)
+		{
+			m_requiredRuntimeParams[szParamName] = &itemFactory;
+		}
+
+		//===================================================================================
+		//
+		// CItemConverterLookup
+		//
+		//===================================================================================
+
+		CItemConverterLookup::CItemConverterLookup(const std::vector<const Client::IItemConverter*>& itemConverters, ELookupMethod lookupMethod)
+		{
+			for (const Client::IItemConverter* pItemConverter : itemConverters)
+			{
+				const Shared::CTypeInfo& typeInfo = (lookupMethod == ELookupMethod::UseFromTypeAsKey) ? pItemConverter->GetFromItemType() : pItemConverter->GetToItemType();
+				const Schematyc::CTypeName& key = typeInfo.GetSchematycTypeName();
+				m_itemConverters.insert(std::make_pair(key, pItemConverter));
+			}
+		}
+
+		const Client::IItemConverter* CItemConverterLookup::FindItemConverterByTypeInfo(const Shared::CTypeInfo& typeInfoToSearchFor) const
+		{
+			const Schematyc::CTypeName& typeNameToSearchFor = typeInfoToSearchFor.GetSchematycTypeName();
+			VectorMap<Schematyc::CTypeName, const Client::IItemConverter*>::const_iterator it = m_itemConverters.find(typeNameToSearchFor);
+			return (it == m_itemConverters.end()) ? nullptr : it->second;
+		}
+
+		//===================================================================================
+		//
 		// CSchematycUqsComponentEnvFunctionBase
 		//
 		//===================================================================================
@@ -291,159 +352,88 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CSchematycUqsComponentEnvFunction_AddParam::CSchematycUqsComponentEnvFunction_AddParam(const Schematyc::SSourceFileInfo& sourceFileInfo, Client::IItemFactory& itemFactory, const Client::IItemConverter* pOptionalFromForeignTypeConverter)
+		CSchematycUqsComponentEnvFunction_AddParam::CSchematycUqsComponentEnvFunction_AddParam(const Schematyc::SSourceFileInfo& sourceFileInfo, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters)
 			: CSchematycUqsComponentEnvFunctionBase(sourceFileInfo)
-			, m_itemFactory(itemFactory)
-			, m_pFromForeignTypeConverter(pOptionalFromForeignTypeConverter)
+			, m_itemConvertersFromSchematycToUqs(itemConverters, CItemConverterLookup::ELookupMethod::UseToTypeAsKey)
 		{
-			const stack_string patchedItemFactoryName = PatchName(m_itemFactory.GetName());
-			const Shared::CTypeInfo* pInputType = nullptr;
+			static const uint32 partialGUID = (uint32)0x1337babe;
 
-			if (m_pFromForeignTypeConverter)
-			{
-				SetName(stack_string().Format("AddParam [%s to %s]", PatchName(m_pFromForeignTypeConverter->GetFromName()).c_str(), patchedItemFactoryName.c_str()));
-				SetGUID(m_pFromForeignTypeConverter->GetGUID());
-				pInputType = &m_pFromForeignTypeConverter->GetFromItemType();
-			}
-			else
-			{
-				SetName(stack_string().Format("AddParam [%s]", patchedItemFactoryName.c_str()));
-				SetGUID(m_itemFactory.GetGUIDForSchematycAddParamFunction());
-				pInputType = &m_itemFactory.GetItemType();
-			}
+			SetName(stack_string().Format("AddParam [%s]", envDataType.GetName()));
+			SetGUID(Schematyc::SGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
 
 			// inputs
 			AddInputParamByTypeDesc("Name", 'name', Schematyc::GetTypeDesc<Schematyc::CSharedString>());
-			AddInputParamByTypeName("Value", 'valu', pInputType->GetSchematycTypeName());
-		}
-
-		void CSchematycUqsComponentEnvFunction_AddParam::GenerateAddParamFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, Client::IItemFactory& itemFactory)
-		{
-			// generate the default "AddParam" function that expects the same type as given item factory produces (i.e. item type conversion will *not* take place)
-			{
-				std::shared_ptr<CSchematycUqsComponentEnvFunction_AddParam> pAddParamFunction(new CSchematycUqsComponentEnvFunction_AddParam(SCHEMATYC_SOURCE_FILE_INFO, itemFactory, nullptr));
-				if (pAddParamFunction->AreAllParamtersRecognized())
-				{
-					scope.Register(pAddParamFunction);
-				}
-			}
-
-			// generate "AddParam" functions that *do* deal with type conversions from a foreign type
-			{
-				const Client::IItemConverterCollection& fromForeignTypeConverters = itemFactory.GetFromForeignTypeConverters();
-				for (size_t i = 0, n = fromForeignTypeConverters.GetItemConverterCount(); i < n; ++i)
-				{
-					const Client::IItemConverter& fromForeignTypeConverter = fromForeignTypeConverters.GetItemConverter(i);
-					std::shared_ptr<CSchematycUqsComponentEnvFunction_AddParam> pAddParamFunction(new CSchematycUqsComponentEnvFunction_AddParam(SCHEMATYC_SOURCE_FILE_INFO, itemFactory, &fromForeignTypeConverter));
-					if (pAddParamFunction->AreAllParamtersRecognized())
-					{
-						scope.Register(pAddParamFunction);
-					}
-				}
-			}
+			AddInputParamByTypeName("Value", 'valu', envDataType.GetDesc().GetName());
 		}
 
 		void CSchematycUqsComponentEnvFunction_AddParam::ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const
 		{
-			Core::IHub* pHub = Core::IHubPlugin::GetHubPtr();
-
-			if (!pHub)
-			{
-				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_AddParam::ExecuteOnSchematycUqsComponent: UQS system is not available");
-				return;
-			}
-
 			// inputs
 			const Schematyc::CSharedString& name = GetTypedInputParam<Schematyc::CSharedString>(params, 0);
 			Schematyc::CAnyConstRef value = GetUntypedInputParam(params, 1);
 
+			Client::IItemFactory* pItemFactoryOfRuntimeParam = schematycEntityUqsComponent.GetItemFactoryOfRuntimeParam(name.c_str());
+			if (!pItemFactoryOfRuntimeParam)
+			{
+				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_AddParam::ExecuteOnSchematycUqsComponent: unrecognized runtime-parameter: '%s'", name.c_str());
+				return;
+			}
+
 			Shared::IVariantDict& runtimeParams = schematycEntityUqsComponent.GetRuntimeParamsStorageOfUpcomingQuery();
 
-			if (m_pFromForeignTypeConverter)
+			const Schematyc::CTypeName& sourceTypeName = value.GetTypeDesc().GetName();
+			const Shared::CTypeInfo& targetTypeInfo = pItemFactoryOfRuntimeParam->GetItemType();
+			const Schematyc::CTypeName& targetTypeName = targetTypeInfo.GetSchematycTypeName();
+
+			if (targetTypeName == sourceTypeName)
 			{
-				void* pConvertedItem = m_itemFactory.CreateItems(1, Client::IItemFactory::EItemInitMode::UseDefaultConstructor);
-				m_pFromForeignTypeConverter->ConvertItem(value.GetValue(), pConvertedItem);
-				runtimeParams.AddOrReplace(name.c_str(), m_itemFactory, pConvertedItem);
-				m_itemFactory.DestroyItems(pConvertedItem);
+				runtimeParams.AddOrReplace(name.c_str(), *pItemFactoryOfRuntimeParam, value.GetValue());
 			}
 			else
 			{
-				runtimeParams.AddOrReplace(name.c_str(), m_itemFactory, value.GetValue());
+				if (const Client::IItemConverter* pItemConverter = m_itemConvertersFromSchematycToUqs.FindItemConverterByTypeInfo(targetTypeInfo))
+				{
+					assert(pItemConverter->GetToItemType() == targetTypeInfo);
+					assert(pItemConverter->GetFromItemType().GetSchematycTypeName() == sourceTypeName);
+
+					void* pConvertedItem = pItemFactoryOfRuntimeParam->CreateItems(1, Client::IItemFactory::EItemInitMode::UseDefaultConstructor);
+					pItemConverter->ConvertItem(value.GetValue(), pConvertedItem);
+					runtimeParams.AddOrReplace(name.c_str(), *pItemFactoryOfRuntimeParam, pConvertedItem);
+					pItemFactoryOfRuntimeParam->DestroyItems(pConvertedItem);
+				}
+				else
+				{
+					SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_AddParam::ExecuteOnSchematycUqsComponent: no item-converter found for converting from '%s' to '%s'", sourceTypeName.c_str(), pItemFactoryOfRuntimeParam->GetItemType().name());
+				}
 			}
 		}
 
 		//===================================================================================
 		//
-		// CSchematycUqsComponentEnvFunction_GetItemFromResultSet
+		// CSchematycUqsComponentEnvFunction_GetResult
 		//
 		//===================================================================================
 
-		CSchematycUqsComponentEnvFunction_GetItemFromResultSet::CSchematycUqsComponentEnvFunction_GetItemFromResultSet(const Schematyc::SSourceFileInfo& sourceFileInfo, Client::IItemFactory& itemFactory, const Client::IItemConverter* pOptionalToForeignTypeConverter)
+		CSchematycUqsComponentEnvFunction_GetResult::CSchematycUqsComponentEnvFunction_GetResult(const Schematyc::SSourceFileInfo& sourceFileInfo, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters)
 			: CSchematycUqsComponentEnvFunctionBase(sourceFileInfo)
-			, m_itemFactory(itemFactory)
-			, m_pToForeignTypeConverter(pOptionalToForeignTypeConverter)
+			, m_itemConvertersFromUqsToSchematyc(itemConverters, CItemConverterLookup::ELookupMethod::UseFromTypeAsKey)
 		{
-			const stack_string patchedItemFactoryName = PatchName(m_itemFactory.GetName());
-			const Shared::CTypeInfo* pOutputType = nullptr;
+			static const uint32 partialGUID = (uint32)0xb19b00b5;
 
-			if (m_pToForeignTypeConverter)
-			{
-				SetName(stack_string().Format("GetItemFromResultSet [%s to %s]", patchedItemFactoryName.c_str(), PatchName(m_pToForeignTypeConverter->GetToName()).c_str()));
-				SetGUID(m_pToForeignTypeConverter->GetGUID());
-				pOutputType = &m_pToForeignTypeConverter->GetToItemType();
-			}
-			else
-			{
-				SetName(stack_string().Format("GetItemFromResultSet [%s]", patchedItemFactoryName.c_str()));
-				SetGUID(m_itemFactory.GetGUIDForSchematycGetItemFromResultSetFunction());
-				pOutputType = &m_itemFactory.GetItemType();
-			}
+			SetName(stack_string().Format("GetResult [%s]", envDataType.GetName()));
+			SetGUID(Schematyc::SGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
 
 			// inputs
 			AddInputParamByTypeDesc("QueryID", 'quid', Schematyc::GetTypeDesc<CSchematycUqsComponent::SQueryIdWrapper>());
 			AddInputParamByTypeDesc("ResultIdx", 'ridx', Schematyc::GetTypeDesc<int32>());
 
 			// outputs
-			AddOutputParamByTypeName("Item", 'item', pOutputType->GetSchematycTypeName());
+			AddOutputParamByTypeName("Item", 'item', envDataType.GetDesc().GetName());
 			AddOutputParamByTypeDesc("Score", 'scor', Schematyc::GetTypeDesc<float>());
 		}
 
-		void CSchematycUqsComponentEnvFunction_GetItemFromResultSet::GenerateGetItemFromResultSetFunctionsInRegistrationScope(Schematyc::CEnvRegistrationScope& scope, Client::IItemFactory& itemFactory)
+		void CSchematycUqsComponentEnvFunction_GetResult::ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const
 		{
-			// generate the default "GetItemFromResultSet" function outputs the same type as given item factory produces (i.e. item type conversion will *not* take place)
-			{
-				std::shared_ptr<CSchematycUqsComponentEnvFunction_GetItemFromResultSet> pGetItemFromResultSetFunction(new CSchematycUqsComponentEnvFunction_GetItemFromResultSet(SCHEMATYC_SOURCE_FILE_INFO, itemFactory, nullptr));
-				if (pGetItemFromResultSetFunction->AreAllParamtersRecognized())
-				{
-					scope.Register(pGetItemFromResultSetFunction);
-				}
-			}
-
-			// generate "GetItemFromResultSet" functions that *do* deal with type conversions to a foreign type
-			{
-				const Client::IItemConverterCollection& toForeignTypeConverters = itemFactory.GetToForeignTypeConverters();
-				for (size_t i = 0, n = toForeignTypeConverters.GetItemConverterCount(); i < n; ++i)
-				{
-					const Client::IItemConverter& toForeignTypeConverter = toForeignTypeConverters.GetItemConverter(i);
-					std::shared_ptr<CSchematycUqsComponentEnvFunction_GetItemFromResultSet> pGetItemFromResultSetFunction(new CSchematycUqsComponentEnvFunction_GetItemFromResultSet(SCHEMATYC_SOURCE_FILE_INFO, itemFactory, &toForeignTypeConverter));
-					if (pGetItemFromResultSetFunction->AreAllParamtersRecognized())
-					{
-						scope.Register(pGetItemFromResultSetFunction);
-					}
-				}
-			}
-		}
-
-		void CSchematycUqsComponentEnvFunction_GetItemFromResultSet::ExecuteOnSchematycUqsComponent(Schematyc::CRuntimeParamMap& params, CSchematycUqsComponent& schematycEntityUqsComponent) const
-		{
-			Core::IHub* pHub = Core::IHubPlugin::GetHubPtr();
-
-			if (!pHub)
-			{
-				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_GetItemFromResultSet::ExecuteOnSchematycUqsComponent: UQS system is not available");
-				return;
-			}
-
 			// inputs
 			const CSchematycUqsComponent::SQueryIdWrapper& queryId = GetTypedInputParam<CSchematycUqsComponent::SQueryIdWrapper>(params, 0);
 			const int32 resultIdx = GetTypedInputParam<int32>(params, 1);
@@ -458,36 +448,188 @@ namespace UQS
 			{
 				Shared::CUqsString queryIdAsString;
 				queryId.queryId.ToString(queryIdAsString);
-				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_GetItemFromResultSet::ExecuteOnSchematycUqsComponent: unknown queryID: %s", queryIdAsString.c_str());
+				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_GetResult::ExecuteOnSchematycUqsComponent: unknown queryID: %s", queryIdAsString.c_str());
 				return;
 			}
 
 			if (resultIdx < 0 || resultIdx >= (int32)pQueryResultSet->GetResultCount())
 			{
-				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_GetItemFromResultSet::ExecuteOnSchematycUqsComponent: resultIdx out of range (should be [0..%i])", (int)pQueryResultSet->GetResultCount() - 1);
+				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_GetResult::ExecuteOnSchematycUqsComponent: resultIdx out of range (should be [0..%i])", (int)pQueryResultSet->GetResultCount() - 1);
 				return;
 			}
 
 			Client::IItemFactory& itemFactoryOfResultSet = pQueryResultSet->GetItemFactory();
-			const Shared::CTypeInfo& outputType = m_pToForeignTypeConverter ? m_pToForeignTypeConverter->GetToItemType() : itemFactoryOfResultSet.GetItemType();
-
-			if (item.GetTypeDesc().GetName() != outputType.GetSchematycTypeName())
-			{
-				SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_GetItemFromResultSet::ExecuteOnSchematycUqsComponent: item type mismatch: type of resulting item is '%s', but it was tried to retrieve a '%s'", outputType.GetSchematycTypeName().c_str(), item.GetTypeDesc().GetName().c_str());
-				return;
-			}
+			const Shared::CTypeInfo& sourceTypeInfo = itemFactoryOfResultSet.GetItemType();
+			const Schematyc::CTypeName& sourceTypeName = sourceTypeInfo.GetSchematycTypeName();
+			const Schematyc::CTypeName& targetTypeName = item.GetTypeDesc().GetName();
 
 			const Core::IQueryResultSet::SResultSetEntry entry = pQueryResultSet->GetResult((size_t)resultIdx);
 
 			// write outputs
-			score = entry.score;
-			if (m_pToForeignTypeConverter)
+			if (targetTypeName == sourceTypeName)
 			{
-				m_pToForeignTypeConverter->ConvertItem(entry.pItem, item.GetValue());
+				itemFactoryOfResultSet.CopyItem(item.GetValue(), entry.pItem);
+				score = entry.score;
 			}
 			else
 			{
-				itemFactoryOfResultSet.CopyItem(item.GetValue(), entry.pItem);
+				if (const Client::IItemConverter* pItemConverter = m_itemConvertersFromUqsToSchematyc.FindItemConverterByTypeInfo(sourceTypeInfo))
+				{
+					assert(pItemConverter->GetFromItemType() == sourceTypeInfo);
+					assert(pItemConverter->GetToItemType().GetSchematycTypeName() == targetTypeName);
+
+					pItemConverter->ConvertItem(entry.pItem, item.GetValue());
+					score = entry.score;
+				}
+				else
+				{
+					SCHEMATYC_ENV_WARNING("CSchematycUqsComponentEnvFunction_GetResult::ExecuteOnSchematycUqsComponent: no item-converter found for converting from '%s' to '%s'", sourceTypeName.c_str(), targetTypeName.c_str());
+				}
+			}
+		}
+
+		//===================================================================================
+		//
+		// CSchematycUqsComponentEnvFunctionGeneratorBase
+		//
+		//===================================================================================
+
+		void CSchematycUqsComponentEnvFunctionGeneratorBase::GenerateFunctions(Schematyc::CEnvRegistrationScope& scope) const
+		{
+			const ItemFactoryDatabase& itemFactoryDB = g_pHub->GetItemFactoryDatabase();
+
+			//
+			// collect all IEnvDataTypes that exist in Schematyc
+			//
+
+			const std::vector<const Schematyc::IEnvDataType*> allEnvDataTypes = CSchematycEnvDataTypeCollector::CollectAllEnvDataTypes();
+
+			//
+			// build a mapping from IEnvDataType to IItemFactory
+			//
+
+			std::map<const Schematyc::IEnvDataType*, Client::IItemFactory*> envDataType2itemFactory;
+
+			for (size_t i = 0, n = itemFactoryDB.GetFactoryCount(); i < n; ++i)
+			{
+				Client::IItemFactory& itemFactory = itemFactoryDB.GetFactory(i);
+				const Schematyc::CTypeName& schematycTypeName = itemFactory.GetItemType().GetSchematycTypeName();
+				auto it = std::find_if(
+					allEnvDataTypes.cbegin(),
+					allEnvDataTypes.cend(),
+					[schematycTypeName](const Schematyc::IEnvDataType* pEnvDataType) { return pEnvDataType->GetDesc().GetName() == schematycTypeName; });
+
+				if (it != allEnvDataTypes.cend())
+				{
+					envDataType2itemFactory[*it] = &itemFactory;
+				}
+			}
+
+			//
+			// collect all IEnvDataTypes that somehow relate to UQS item types (either directly through an IItemFactory or through at least 1 IItemConverter)
+			//
+
+			struct SEnvDataTypeMapEntry
+			{
+				std::vector<const Client::IItemConverter*> itemConverters;
+			};
+
+			std::map<const Schematyc::IEnvDataType*, SEnvDataTypeMapEntry> envDataTypeMap;
+
+			for (const Schematyc::IEnvDataType* pEnvDataType : allEnvDataTypes)
+			{
+				//
+				// direct match? (i. e. there's an IEnvDataType on the Schematyc side that corresponds to an IItemFactory on the UQS side)
+				//
+
+				if (envDataType2itemFactory.find(pEnvDataType) != envDataType2itemFactory.cend())
+				{
+					// yep (create a new entry that doesn't contain any optional item-converters yet)
+					envDataTypeMap[pEnvDataType];
+				}
+
+				//
+				// check for item converters: collect all that convert from/to the IEnvDataType to/from some item type on the UQS side
+				//
+
+				for (size_t i = 0; i < itemFactoryDB.GetFactoryCount(); ++i)
+				{
+					const Client::IItemFactory& itemFactory = itemFactoryDB.GetFactory(i);
+					const Client::IItemConverterCollection& itemConverters = GetItemConverterCollectionFromItemFactory(itemFactory);
+
+					for (size_t k = 0; k < itemConverters.GetItemConverterCount(); ++k)
+					{
+						const Client::IItemConverter& itemConverter = itemConverters.GetItemConverter(k);
+
+						if (MatchItemConverterAgainstEnvDataType(itemConverter, *pEnvDataType))
+						{
+							envDataTypeMap[pEnvDataType].itemConverters.push_back(&itemConverter);
+						}
+					}
+				}
+			}
+
+			//
+			// now generate all Schematyc functions
+			//
+
+			for (const auto& pair : envDataTypeMap)
+			{
+				const Schematyc::IEnvDataType* pEnvDataType = pair.first;
+				const SEnvDataTypeMapEntry& info = pair.second;
+				GenerateSchematycFunction(scope, *pEnvDataType, info.itemConverters);
+			}
+		}
+
+		//===================================================================================
+		//
+		// CSchematycUqsComponentEnvFunctionGenerator_AddParam
+		//
+		//===================================================================================
+
+		const Client::IItemConverterCollection& CSchematycUqsComponentEnvFunctionGenerator_AddParam::GetItemConverterCollectionFromItemFactory(const Client::IItemFactory& itemFactory) const
+		{
+			return itemFactory.GetFromForeignTypeConverters();
+		}
+
+		bool CSchematycUqsComponentEnvFunctionGenerator_AddParam::MatchItemConverterAgainstEnvDataType(const Client::IItemConverter& itemConverter, const Schematyc::IEnvDataType& envDataType) const
+		{
+			return itemConverter.GetFromItemType().GetSchematycTypeName() == envDataType.GetDesc().GetName();
+		}
+
+		void CSchematycUqsComponentEnvFunctionGenerator_AddParam::GenerateSchematycFunction(Schematyc::CEnvRegistrationScope& scope, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters) const
+		{
+			std::shared_ptr<CSchematycUqsComponentEnvFunction_AddParam> pFunc(new CSchematycUqsComponentEnvFunction_AddParam(SCHEMATYC_SOURCE_FILE_INFO, envDataType, itemConverters));
+
+			if (pFunc->AreAllParamtersRecognized())
+			{
+				scope.Register(pFunc);
+			}
+		}
+
+		//===================================================================================
+		//
+		// CSchematycUqsComponentEnvFunctionGenerator_GetResult
+		//
+		//===================================================================================
+
+		const Client::IItemConverterCollection& CSchematycUqsComponentEnvFunctionGenerator_GetResult::GetItemConverterCollectionFromItemFactory(const Client::IItemFactory& itemFactory) const
+		{
+			return itemFactory.GetToForeignTypeConverters();
+		}
+
+		bool CSchematycUqsComponentEnvFunctionGenerator_GetResult::MatchItemConverterAgainstEnvDataType(const Client::IItemConverter& itemConverter, const Schematyc::IEnvDataType& envDataType) const
+		{
+			return itemConverter.GetToItemType().GetSchematycTypeName() == envDataType.GetDesc().GetName();
+		}
+
+		void CSchematycUqsComponentEnvFunctionGenerator_GetResult::GenerateSchematycFunction(Schematyc::CEnvRegistrationScope& scope, const Schematyc::IEnvDataType& envDataType, const std::vector<const Client::IItemConverter*>& itemConverters) const
+		{
+			std::shared_ptr<CSchematycUqsComponentEnvFunction_GetResult> pFunc(new CSchematycUqsComponentEnvFunction_GetResult(SCHEMATYC_SOURCE_FILE_INFO, envDataType, itemConverters));
+
+			if (pFunc->AreAllParamtersRecognized())
+			{
+				scope.Register(pFunc);
 			}
 		}
 
@@ -618,6 +760,7 @@ namespace UQS
 		{
 			this->queryBlueprintID = CQueryBlueprintID();
 			this->querierName.clear();
+			this->requiredRuntimeParams.clear();
 			this->runtimeParams.Clear();
 		}
 
@@ -654,6 +797,12 @@ namespace UQS
 		void CSchematycUqsComponent::Shutdown()
 		{
 			CancelRunningQueriesAndClearFinishedOnes();
+		}
+
+		Client::IItemFactory* CSchematycUqsComponent::GetItemFactoryOfRuntimeParam(const char* szRuntimeParamName) const
+		{
+			auto it = m_upcomingQueryInfo.requiredRuntimeParams.find(szRuntimeParamName);
+			return (it == m_upcomingQueryInfo.requiredRuntimeParams.cend()) ? nullptr : it->second;
 		}
 
 		Shared::CVariantDict& CSchematycUqsComponent::GetRuntimeParamsStorageOfUpcomingQuery()
@@ -695,24 +844,11 @@ namespace UQS
 					{
 
 						//
-						// generate an "AddParam" and "GetItemFromResultSet" functions for each UQS item type
+						// generate "AddParam" and "GetResult" functions
 						//
 
-						{
-							IItemFactoryDatabase& itemFactoryDB = g_pHub->GetItemFactoryDatabase();
-
-							for (size_t i = 0, n = itemFactoryDB.GetFactoryCount(); i < n; ++i)
-							{
-								Client::IItemFactory& itemFactory = itemFactoryDB.GetFactory(i);
-
-								// skip item factories with no GUID
-								if (itemFactory.GetGUIDForSchematycAddParamFunction() == CryGUID::Null() || itemFactory.GetGUIDForSchematycGetItemFromResultSetFunction() == CryGUID::Null())
-									continue;
-
-								CSchematycUqsComponentEnvFunction_AddParam::GenerateAddParamFunctionsInRegistrationScope(componentScope, itemFactory);
-								CSchematycUqsComponentEnvFunction_GetItemFromResultSet::GenerateGetItemFromResultSetFunctionsInRegistrationScope(componentScope, itemFactory);
-							}
-						}
+						CSchematycUqsComponentEnvFunctionGenerator_AddParam().GenerateFunctions(componentScope);
+						CSchematycUqsComponentEnvFunctionGenerator_GetResult().GenerateFunctions(componentScope);
 
 						//
 						// BeginQuery()
@@ -767,6 +903,12 @@ namespace UQS
 			{
 				SCHEMATYC_ENV_WARNING("CSchematycUqsComponent::SchematycFunction_BeginQuery: unknown or broken query blueprint: '%s'", queryBlueprintName.c_str());
 				return;
+			}
+
+			// grab all required runtime-parameters
+			if (const IQueryBlueprint* pQueryBlueprint = pHub->GetQueryBlueprintLibrary().GetQueryBlueprintByID(queryBlueprintID))
+			{
+				CQueryBlueprintRuntimeParamGrabber::GrabRequiredRuntimeParamsOfQueryBlueprint(*pQueryBlueprint, m_upcomingQueryInfo.requiredRuntimeParams);
 			}
 
 			m_upcomingQueryInfo.queryBlueprintID = queryBlueprintID;

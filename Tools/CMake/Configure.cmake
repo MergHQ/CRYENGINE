@@ -111,6 +111,8 @@ option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
 option(OPTION_RC "Include RC in the build" OFF)
 option(OPTION_PCH "Enable Precompiled Headers" ON)
 
+option(OPTION_UNSIGNED_PAKS_IN_RELEASE "Allow unsigned PAK files to be used for release builds" ON)
+
 if(WIN32 OR WIN64)
 	option(OPTION_CRYMONO "C# support" OFF)
 endif()

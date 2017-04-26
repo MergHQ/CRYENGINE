@@ -3865,7 +3865,7 @@ void S3DEngineCommon::UpdateRainOccInfo(int nThreadID)
 							continue;
 
 						N3DEngineCommon::SRainOccluder rainOccluder;
-						IStatObj* pObj = pRndNode->GetEntityStatObj(0, 0, &rainOccluder.m_WorldMat);
+						IStatObj* pObj = pRndNode->GetEntityStatObj(0, &rainOccluder.m_WorldMat);
 						if (pObj)
 						{
 							const size_t nPrevIdx = m_RainOccluders.m_nNumOccluders;

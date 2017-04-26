@@ -37,7 +37,7 @@ enum EERType
 	eERType_Dummy_3, //!< Used to be  eERType_PrismObject, preserve order for compatibility.
 	eERType_TerrainSector,
 	eERType_Dummy_2, //!< Used to be eERType_LightPropagationVolume, preserve order for compatibility.
-	eERType_RenderProxy,
+	eERType_MovableBrush,
 	eERType_GameEffect,
 	eERType_BreakableGlass,
 	eERType_CloudBlocker,
@@ -158,9 +158,8 @@ struct IShadowCaster
 	virtual void                       Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo) = 0;
 	virtual const AABB                 GetBBoxVirtual() = 0;
 	virtual void                       FillBBox(AABB& aabb) = 0;
-	virtual struct ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) = 0;
+	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) = 0;
 	virtual EERType                    GetRenderNodeType() = 0;
-	virtual bool                       IsRenderNode() { return true; }
 	// </interfuscator:shuffle>
 	uint8                              m_cStaticShadowLod;
 };
@@ -263,17 +262,15 @@ public:
 	virtual void Hide(bool bHide) { SetRndFlags(ERF_HIDDEN, bHide); }
 
 	//! Gives access to object components.
-	virtual IStatObj*  GetEntityStatObj(unsigned int nPartId = 0, unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false);
-	virtual IMaterial* GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible = false, bool* pbDrawNear = NULL) { return NULL; }
-	virtual void       SetEntityStatObj(unsigned int nSlot, IStatObj* pStatObj, const Matrix34A* pMatrix = NULL)             {};
+	virtual IStatObj*  GetEntityStatObj(unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false);
+	virtual void       SetEntityStatObj(IStatObj* pStatObj, const Matrix34A* pMatrix = NULL) {}
 
 	//! Retrieve access to the character instance of the the RenderNode
-	virtual ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return 0; }
+	virtual ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return 0; }
 
 #if defined(USE_GEOM_CACHES)
 	virtual struct IGeomCacheRenderNode* GetGeomCacheRenderNode(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; }
 #endif
-	virtual int                          GetSlotCount() const                                                                                   { return 1; }
 
 	//! \return IRenderMesh of the object.
 	virtual struct IRenderMesh* GetRenderMesh(int nLod) { return 0; };
@@ -324,7 +321,7 @@ public:
 	virtual float      GetMaxViewDist() = 0;
 
 	virtual EERType    GetRenderNodeType() = 0;
-	virtual bool       IsAllocatedOutsideOf3DEngineDLL()             { return GetRenderNodeType() == eERType_RenderProxy; }
+	virtual bool       IsAllocatedOutsideOf3DEngineDLL()             { return GetOwnerEntity() != nullptr; }
 	virtual void       Dephysicalize(bool bKeepIfReferenced = false) {}
 	virtual void       Dematerialize()                               {}
 	virtual void       GetMemoryUsage(ICrySizer* pSizer) const = 0;
@@ -489,9 +486,9 @@ public:
 		InvalidatePermanentRenderObject();
 	}
 	// Set a new owner entity
-	virtual void   SetOwnerEntity(IEntity* pEntity) { m_pOwnerEntity = pEntity; }
+	virtual void   SetOwnerEntity(IEntity* pEntity) { assert(!"Not supported by this object type");  }
 	// Retrieve a pointer to the entity who owns this render node.
-	ILINE IEntity* GetOwnerEntity() const           { return m_pOwnerEntity; }
+	virtual IEntity* GetOwnerEntity() const         { return nullptr; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Variables
@@ -543,9 +540,6 @@ public:
 	//! The high 24 bits store the actual ID of the object. This need not be the same as CryGUID,
 	//! though the CryGUID could be used to generate it
 	uint32 m_nEditorSelectionID;
-private:
-	// When render node is created by the entity, pointer to the owner entity.
-	IEntity* m_pOwnerEntity = 0;
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
@@ -560,7 +554,7 @@ inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline IStatObj* IRenderNode::GetEntityStatObj(unsigned int nPartId, unsigned int nSubPartId, Matrix34A* pMatrix, bool bReturnOnlyVisible)
+inline IStatObj* IRenderNode::GetEntityStatObj(unsigned int nSubPartId, Matrix34A* pMatrix, bool bReturnOnlyVisible)
 {
 	return 0;
 }

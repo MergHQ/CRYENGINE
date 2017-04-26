@@ -33,9 +33,9 @@ public:
 	}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
-	{
-		pParams->m_maxParticleLifeTime = m_lifeTime.GetValueRange().end;
+	{		
 		m_lifeTime.AddToComponent(pComponent, this, EPDT_LifeTime);
+		pParams->m_maxParticleLifeTime = m_lifeTime.GetValueRange().end;
 
 		if (auto pInt = GetGpuInterface())
 		{

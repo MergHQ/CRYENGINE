@@ -1491,7 +1491,7 @@ void CRenderView::SShadows::AddNearestCaster(CRenderObject* pObj)
 	if (pObj->m_pRenderNode)
 	{
 		// CRenderProxy::GetLocalBounds is not thread safe due to lazy evaluation
-		CRY_ASSERT(pObj->m_pRenderNode->GetRenderNodeType() != eERType_RenderProxy ||
+		CRY_ASSERT(pObj->m_pRenderNode->GetRenderNodeType() != eERType_MovableBrush ||
 		           !gRenDev->m_pRT->IsMultithreaded() ||
 		           gRenDev->m_pRT->IsMainThread());
 

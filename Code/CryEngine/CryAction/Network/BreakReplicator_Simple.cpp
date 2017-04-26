@@ -973,7 +973,7 @@ bool PlaneBreak::IsRenderMeshReady()
 			{
 				IStatObj::SSubObject* pSubObj;
 				Matrix34A mtx;
-				IStatObj* pStatObj = pRenderNode->GetEntityStatObj(0, 0, &mtx);
+				IStatObj* pStatObj = pRenderNode->GetEntityStatObj(0, &mtx);
 				if (pStatObj && pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND)
 					if (pSubObj = pStatObj->GetSubObject(m_be.partid[1]))
 						pStatObj = pSubObj->pStatObj;

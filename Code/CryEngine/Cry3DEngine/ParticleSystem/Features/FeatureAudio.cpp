@@ -23,6 +23,15 @@ SERIALIZATION_DECLARE_ENUM(ETriggerType,
                            OnDeath
                            )
 
+SERIALIZATION_ENUM_BEGIN(EOcclusionType, "Occlusion Type")
+SERIALIZATION_ENUM(EOcclusionType::None, "None", "None")
+SERIALIZATION_ENUM(EOcclusionType::Ignore, "Ignore", "Ignore")
+SERIALIZATION_ENUM(EOcclusionType::Adaptive, "Adaptive", "Adaptive")
+SERIALIZATION_ENUM(EOcclusionType::Low, "Low", "Low")
+SERIALIZATION_ENUM(EOcclusionType::Medium, "Medium", "Medium")
+SERIALIZATION_ENUM(EOcclusionType::High, "High", "High")
+SERIALIZATION_ENUM_END()
+
 class CFeatureAudioTrigger final : public CParticleFeature
 {
 public:
