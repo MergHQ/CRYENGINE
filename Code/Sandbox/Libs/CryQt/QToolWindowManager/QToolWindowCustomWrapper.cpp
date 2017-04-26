@@ -190,14 +190,6 @@ bool QToolWindowCustomWrapper::winEvent(MSG *msg, long *result)
 }
 #endif
 
-QRect QToolWindowCustomWrapper::getWrapperFrameSize()
-{
-	QRect wrapperSize;
-	wrapperSize.setTopLeft(-(m_contents->mapToGlobal(QPoint(0, 0)) - mapToGlobal(QPoint(0, 0))));
-	wrapperSize.setBottomRight(rect().bottomRight() - m_contents->rect().bottomRight() + wrapperSize.topLeft());
-	return wrapperSize;
-}
-
 void QToolWindowCustomWrapper::startDrag()
 {
 	m_titleBar->onBeginDrag();

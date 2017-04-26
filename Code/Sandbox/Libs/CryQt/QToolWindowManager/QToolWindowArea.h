@@ -86,11 +86,11 @@ public:
 	void setCurrentWidget(QWidget* w) Q_DECL_OVERRIDE;
 
 	//QTabBar wrappers
-	QPoint mapTabBarFromGlobal(const QPoint & pos) const Q_DECL_OVERRIDE {return tabBar()->mapFromGlobal(pos);}
-	QRect tabBarRect() const Q_DECL_OVERRIDE;
-	QRect tabRect(int index) const Q_DECL_OVERRIDE {return tabBar()->tabRect(index);}
-	int tabBarAt(const QPoint& pos) const Q_DECL_OVERRIDE {return tabBar()->tabAt(pos);}
-
+	QPoint mapCombineDropAreaFromGlobal(const QPoint & pos) const Q_DECL_OVERRIDE {return tabBar()->mapFromGlobal(pos);}
+	QRect combineAreaRect() const Q_DECL_OVERRIDE;
+	QRect combineSubWidgetRect(int index) const Q_DECL_OVERRIDE {return tabBar()->tabRect(index);}
+	int subWidgetAt(const QPoint& pos) const Q_DECL_OVERRIDE {return tabBar()->tabAt(pos);}
+	virtual QTWMWrapperAreaType areaType() const Q_DECL_OVERRIDE { return QTWMWrapperAreaType::watTabs; };
 protected:
 	virtual bool eventFilter(QObject *o, QEvent *ev) Q_DECL_OVERRIDE;
 
@@ -98,10 +98,12 @@ protected Q_SLOTS:
 	void tabCloseButtonClicked();
 	void closeTab(int index);
 	void showContextMenu(const QPoint &point);
+	void swapToRollup();
 
 private:
 	QPushButton* createCloseButton();
 	bool shouldShowSingleTabFrame();
+	virtual void mouseReleaseEvent(QMouseEvent * e);
 	QToolWindowManager* m_manager;
 	bool m_tabDragCanStart;
 	bool m_areaDragCanStart;

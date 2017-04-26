@@ -15,11 +15,74 @@
 class IToolWindowDragHandler;
 class QToolWindowManager;
 
+struct QTOOLWINDOWMANAGER_EXPORT QToolWindowAreaReference
+{
+public:
+	enum eType
+	{
+		Top = 0,
+		Bottom,
+		Left,
+		Right,
+		HSplitTop,
+		HSplitBottom,
+		VSplitLeft,
+		VSplitRight,
+		Combine,
+		Floating,
+		Drag,
+		Hidden
+	};
+
+public:
+	eType type;
+	QToolWindowAreaReference() : type(eType::Combine) { }
+	QToolWindowAreaReference(eType t) : type(t) { }
+	QToolWindowAreaReference(int t) : type((eType)t) { }
+	inline operator eType () const { return type; }
+
+	inline bool isOuter() const { return type <= Right; }
+	inline bool requiresSplit() const { return type < Combine; }
+	Qt::Orientation splitOrientation() const
+	{
+		switch (type)
+		{
+		case Top:
+		case Bottom:
+		case HSplitTop:
+		case HSplitBottom:
+			return Qt::Vertical;
+		case Left:
+		case Right:
+		case VSplitLeft:
+		case VSplitRight:
+			return Qt::Horizontal;
+		case Combine:
+		case Floating:
+		case Hidden:
+		default:
+			return (Qt::Orientation)0; // Invalid
+		}
+	}
+};
+
+struct QTOOLWINDOWMANAGER_EXPORT QToolWindowAreaTarget
+{
+	IToolWindowArea* area;
+	QToolWindowAreaReference reference;
+	int index;
+	QRect geometry;
+
+	QToolWindowAreaTarget() : area(nullptr), reference(QToolWindowAreaReference::Combine), index(-1), geometry() {};
+	QToolWindowAreaTarget(QToolWindowAreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(nullptr), reference(reference), index(index), geometry(geometry) {};
+	QToolWindowAreaTarget(IToolWindowArea* area, QToolWindowAreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(area), reference(reference), index(index), geometry(geometry) {};
+};
+
 class QTOOLWINDOWMANAGER_EXPORT QToolWindowManagerClassFactory : public QObject
 {
 	Q_OBJECT
 public:
-	virtual IToolWindowArea* createArea(QToolWindowManager* manager, QWidget *parent = 0);
+	virtual IToolWindowArea* createArea(QToolWindowManager* manager, QWidget *parent = 0, QTWMWrapperAreaType areaType = watTabs);
 	virtual IToolWindowWrapper* createWrapper(QToolWindowManager* manager);
 	virtual IToolWindowDragHandler* createDragHandler(QToolWindowManager* manager);
 	virtual QSplitter* createSplitter(QToolWindowManager* manager);
@@ -28,7 +91,6 @@ public:
 class QTOOLWINDOWMANAGER_EXPORT QToolWindowManager: public QWidget
 {
 	Q_OBJECT
-
 public:
 	QToolWindowManager(QWidget *parent = 0, QVariant config = QVariant(), QToolWindowManagerClassFactory* factory = nullptr);
 	virtual ~QToolWindowManager();
@@ -48,84 +110,21 @@ public:
 	void startDrag(const QList<QWidget*> &toolWindows, IToolWindowArea* area);
 	void startDrag(IToolWindowWrapper* wrapper);
 
-	class AreaReference
-	{
-	public:
-		enum eType
-		{
-			Top = 0,
-			Bottom,
-			Left,
-			Right,
-			HSplitTop,
-			HSplitBottom,
-			VSplitLeft,
-			VSplitRight,
-			Combine,
-			Floating,
-			Drag,
-			Hidden
-		};
-
-	private:
-		eType type;
-	public:
-		AreaReference(eType& t) : type(t){ }
-		AreaReference(int t) : type((eType)t) { }
-		inline operator eType () const { return type; }
-
-		inline bool isOuter() const { return type <= Right; }
-		inline bool requiresSplit() const { return type < Combine;	}
-		Qt::Orientation splitOrientation() const
-		{
-			switch (type)
-			{
-			case QToolWindowManager::AreaReference::Top:
-			case QToolWindowManager::AreaReference::Bottom:
-			case QToolWindowManager::AreaReference::HSplitTop:
-			case QToolWindowManager::AreaReference::HSplitBottom:
-				return Qt::Vertical;
-			case QToolWindowManager::AreaReference::Left:
-			case QToolWindowManager::AreaReference::Right:
-			case QToolWindowManager::AreaReference::VSplitLeft:
-			case QToolWindowManager::AreaReference::VSplitRight:
-				return Qt::Horizontal;
-			case QToolWindowManager::AreaReference::Combine:
-			case QToolWindowManager::AreaReference::Floating:
-			case QToolWindowManager::AreaReference::Hidden:
-			default:
-				return (Qt::Orientation)0; // Invalid
-			}
-		}
-	};
-
-	struct AreaTarget
-	{
-		IToolWindowArea* area;
-		AreaReference reference;
-		int index;
-		QRect geometry;
-
-		AreaTarget() : area(nullptr), reference(AreaReference::Combine), index(-1), geometry(){};
-		AreaTarget(AreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(nullptr), reference(reference), index(index), geometry(geometry) {};
-		AreaTarget(IToolWindowArea* area, AreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(area), reference(reference), index(index), geometry(geometry) {};
-	};
-
-	void addToolWindow(QWidget* toolWindow, const AreaTarget& target) { addToolWindow(toolWindow, target.area, target.reference, target.index, target.geometry); }
-	void addToolWindow(QWidget* toolWindow, IToolWindowArea* area = nullptr, AreaReference reference = AreaReference::Combine, int index = -1, QRect geometry = QRect());
-	void addToolWindows(const QList<QWidget*>& toolWindows, const AreaTarget& target) { addToolWindows(toolWindows, target.area, target.reference, target.index, target.geometry); }
-	void addToolWindows(const QList<QWidget*>& toolWindows, IToolWindowArea* area, AreaReference reference = AreaReference::Combine, int index = -1, QRect geometry = QRect());
+	void addToolWindow(QWidget* toolWindow, const QToolWindowAreaTarget& target, const QTWMToolType toolType=ttStandard);
+	void addToolWindow(QWidget* toolWindow, IToolWindowArea* area = nullptr, QToolWindowAreaReference::eType reference = QToolWindowAreaReference::Combine, int index = -1, QRect geometry = QRect());
+	void addToolWindows(const QList<QWidget*>& toolWindows, const QToolWindowAreaTarget& target, const QTWMToolType toolType = ttStandard);
+	void addToolWindows(const QList<QWidget*>& toolWindows, IToolWindowArea* area, QToolWindowAreaReference::eType reference = QToolWindowAreaReference::Combine, int index = -1, QRect geometry = QRect());
 	
-	void moveToolWindow(QWidget* toolWindow, const AreaTarget& target) { addToolWindow(toolWindow, target.area, target.reference, target.index, target.geometry); }
-	void moveToolWindow(QWidget* toolWindow, IToolWindowArea* area, AreaReference reference = AreaReference::Combine, int index = -1, QRect geometry = QRect());
-	void moveToolWindows(const QList<QWidget*>& toolWindows, const AreaTarget& target) { addToolWindows(toolWindows, target.area, target.reference, target.index, target.geometry); }
-	void moveToolWindows(const QList<QWidget*>& toolWindows, IToolWindowArea* area, AreaReference reference = AreaReference::Combine, int index = -1, QRect geometry = QRect());
+	void moveToolWindow(QWidget* toolWindow, const QToolWindowAreaTarget& target, const QTWMToolType toolType = ttStandard);
+	void moveToolWindow(QWidget* toolWindow, IToolWindowArea* area, QToolWindowAreaReference::eType reference = QToolWindowAreaReference::Combine, int index = -1, QRect geometry = QRect());
+	void moveToolWindows(const QList<QWidget*>& toolWindows, const QToolWindowAreaTarget& target, const QTWMToolType toolType = ttStandard);
+	void moveToolWindows(const QList<QWidget*>& toolWindows, IToolWindowArea* area, QToolWindowAreaReference::eType reference = QToolWindowAreaReference::Combine, int index = -1, QRect geometry = QRect());
 	
 	bool releaseToolWindow(QWidget *toolWindow, bool allowClose = false);
 	bool releaseToolWindows(QList<QWidget*> toolWindows, bool allowClose = false);
 
 	IToolWindowArea *areaOf(QWidget *toolWindow);
-
+	void SwapAreaType(IToolWindowArea* oldArea, QTWMWrapperAreaType areaType=watTabs);
 	bool isWrapper(QWidget* w)
 	{
 		if (!w)
@@ -160,7 +159,7 @@ public:
 	QVariantMap saveSplitterState(QSplitter* splitter);
 	QSplitter* restoreSplitterState(const QVariantMap& data, int stateFormat);
 
-	IToolWindowArea* createArea();
+	IToolWindowArea* createArea(QTWMWrapperAreaType areyType=watTabs);
 	IToolWindowWrapper* createWrapper();
 
 	class QTOOLWINDOWMANAGER_EXPORT QTWMNotifyLock
@@ -169,9 +168,6 @@ public:
 		QTWMNotifyLock(QToolWindowManager* parent, bool allowNotify = true);
 		QTWMNotifyLock(const QTWMNotifyLock& other);
 		QTWMNotifyLock(QTWMNotifyLock&& other);
-		
-
-
 		~QTWMNotifyLock();
 	private:
 		QToolWindowManager* m_parent;
@@ -207,6 +203,7 @@ protected:
 	QList<IToolWindowArea*> m_areas;
 	QList<IToolWindowWrapper*> m_wrappers;
 	QList<QWidget*> m_toolWindows;
+	QMap<QWidget*, QTWMToolType> m_toolWindowsTypes;
 	QList<QWidget*> m_draggedToolWindows;
 	IToolWindowArea* m_lastArea;
 	IToolWindowWrapper* m_mainWrapper;
@@ -219,12 +216,12 @@ protected:
 	int m_layoutChangeNotifyLocks;
 	
 	QSplitter *createSplitter();
-	QWidget* splitArea(QWidget* area, AreaReference reference, QWidget* insertWidget = nullptr);
+	QWidget* splitArea(QWidget* area, QToolWindowAreaReference reference, QWidget* insertWidget = nullptr);
 
 	IToolWindowArea* getClosestParentArea(QWidget* widget);
 	IToolWindowArea* getFurthestParentArea(QWidget* widget);
 
-	QString textForPosition(AreaReference reference);
+	QString textForPosition(QToolWindowAreaReference reference);
 
 	void simplifyLayout(bool clearMain = false);
 
@@ -250,6 +247,7 @@ private:
 		}
 	}
 
+	void insertToToolTypes(QWidget* tool, QTWMToolType type);
 
 protected slots:
 	void raiseCurrentArea();
