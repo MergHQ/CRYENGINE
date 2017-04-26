@@ -106,6 +106,10 @@ endmacro()
 MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DCODE_BASE_FOLDER=\"${CRYENGINE_DIR}/Code/\"")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE ${COMMON_LIBS} )
+
+	if(OPTION_UNSIGNED_PAKS_IN_RELEASE)
+		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DSUPPORT_UNSIGNED_PAKS")
+	endif()
 		
 	IF(DURANGO)
 		set_target_properties_for_durango(${TargetProject})
