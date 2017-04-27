@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="__m128">
+    <DisplayString>~ f32v4: {m128_f32}</DisplayString>
+    <Expand>
+      <Item Name="0">m128_f32[0]</Item>
+      <Item Name="1">m128_f32[1]</Item>
+      <Item Name="2">m128_f32[2]</Item>
+      <Item Name="3">m128_f32[3]</Item>
+    </Expand>
+  </Type>
   <Type Name="__m128i">
     <DisplayString>~ i32v4: {m128i_i32}</DisplayString>
     <Expand>
@@ -12,7 +21,7 @@
   <!-- CryEngine math types -->
   <Type Name="Vec2_tpl&lt;*&gt;">
     <AlternativeType Name="Vec2"/>
-    <DisplayString>~ Vec2: [{x}, {y}]</DisplayString>
+    <DisplayString>[{x}, {y}]</DisplayString>
     <Expand>
       <Item Name="X">x</Item>
       <Item Name="Y">y</Item>
@@ -22,7 +31,7 @@
 
   <Type Name="Vec3_tpl&lt;*&gt;">
     <AlternativeType Name="Vec3"/>
-    <DisplayString>~ Vec3: [{x}, {y}, {z}]</DisplayString>
+    <DisplayString>[{x}, {y}, {z}]</DisplayString>
     <Expand>
       <Item Name="X">x</Item>
       <Item Name="Y">y</Item>
@@ -33,7 +42,7 @@
 
   <Type Name="Vec4_tpl&lt;*&gt;">
     <AlternativeType Name="Vec4"/>
-    <DisplayString>~ Vec4: [{x}, {y}, {z}, {w}]</DisplayString>
+    <DisplayString>[{x}, {y}, {z}, {w}]</DisplayString>
     <Expand>
       <Item Name="X">x</Item>
       <Item Name="Y">y</Item>
@@ -45,7 +54,7 @@
 
   <Type Name="Quat_tpl&lt;*&gt;">
     <AlternativeType Name="Quat" />
-    <DisplayString>~ Quat: [{v.x}, {v.y}, {v.z}, {w}]</DisplayString>
+    <DisplayString>[{v.x}, {v.y}, {v.z}, {w}]</DisplayString>
     <Expand>
       <Item Name="X">v.x</Item>
       <Item Name="Y">v.y</Item>
@@ -104,7 +113,6 @@
 
   <Type Name="Matrix44_tpl&lt;*&gt;">
     <AlternativeType Name="Matrix44" />
-    <AlternativeType Name="Matrix44A" />
     <DisplayString>~ Matrix4x4</DisplayString>
     <Expand>
       <Synthetic Name="Row: 0">
@@ -119,6 +127,29 @@
       <Synthetic Name="Row: 3">
         <DisplayString>[{m30}, {m31}, {m32}, {m33}]</DisplayString>
       </Synthetic>
+    </Expand>
+  </Type>
+  
+  <Type Name="Matrix34H&lt;*&gt;">
+    <AlternativeType Name="Matrix34H" />
+    <AlternativeType Name="Matrix34A" />
+    <DisplayString>~ Matrix3x4H</DisplayString>
+    <Expand>
+      <Item Name="0">x</Item>
+      <Item Name="1">y</Item>
+      <Item Name="2">z</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Matrix44H&lt;*&gt;">
+    <AlternativeType Name="Matrix44H" />
+    <AlternativeType Name="Matrix44A" />
+    <DisplayString>~ Matrix4x4H</DisplayString>
+    <Expand>
+      <Item Name="0">x</Item>
+      <Item Name="1">y</Item>
+      <Item Name="2">z</Item>
+      <Item Name="3">w</Item>
     </Expand>
   </Type>
 

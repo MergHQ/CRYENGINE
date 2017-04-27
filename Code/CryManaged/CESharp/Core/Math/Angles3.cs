@@ -91,11 +91,15 @@ namespace CryEngine
 
 		public static implicit operator Ang3(Angles3 angles)
 		{
-			var ang3 = new Ang3();
-			ang3.x = angles.x;
-			ang3.y = angles.y;
-			ang3.z = angles.z;
-			return ang3;
+			return new Ang3(angles.x, angles.y, angles.z);
+		}
+		public static implicit operator Angles3(Ang3 angles)
+		{
+			if (angles == null)
+			{
+				return new Angles3();
+			}
+			return new Angles3(angles.x, angles.y, angles.z);
 		}
 
 		public static implicit operator Angles3(Vec3 nativeAngles)

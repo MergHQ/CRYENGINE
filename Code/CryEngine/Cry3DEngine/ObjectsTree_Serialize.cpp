@@ -72,11 +72,11 @@ struct SMergedMeshGroupChunk
 struct SBrushChunk : public SRenderNodeChunk
 {
 	SBrushChunk() { m_flags = 0; }
-	Matrix34 m_Matrix;
-	int16    m_collisionClassIdx;
-	uint16   m_flags;
-	int32    m_nMaterialId;
-	int32    m_nMaterialLayers;
+	Matrix34f m_Matrix;
+	int16     m_collisionClassIdx;
+	uint16    m_flags;
+	int32     m_nMaterialId;
+	int32     m_nMaterialLayers;
 
 	AUTO_STRUCT_INFO_LOCAL;
 };
@@ -122,7 +122,7 @@ struct SWaterVolumeChunk : public SRenderNodeChunk
 	// fog properties
 	f32   m_fogDensity;
 	Vec3  m_fogColor;
-	Plane m_fogPlane;
+	Planef m_fogPlane;
 	f32   m_fogShadowing;
 
 	// caustic propeties
@@ -169,8 +169,8 @@ struct SWaterWaveChunk : public SRenderNodeChunk
 	int32 m_nID;
 
 	// Geometry properties
-	Matrix34 m_pWorldTM;
-	uint32   m_nVertexCount;
+	Matrix34f m_pWorldTM;
+	uint32    m_nVertexCount;
 
 	f32      m_fUScale;
 	f32      m_fVScale;

@@ -124,7 +124,7 @@ struct Vec3f16 : public CryHalf4
 		w = CryConvertFloatToHalf(1.0f);
 		return *this;
 	}
-	inline Vec3f16& operator=(const Vec4A& sl)
+	inline Vec3f16& operator=(const Vec4& sl)
 	{
 		x = CryConvertFloatToHalf(sl.x);
 		y = CryConvertFloatToHalf(sl.y);
@@ -151,12 +151,6 @@ struct Vec2f16 : public CryHalf2
 	{
 		x = CryConvertFloatToHalf(_x);
 		y = CryConvertFloatToHalf(_y);
-	}
-	Vec2f16& operator=(const Vec2f16& sl)
-	{
-		x = sl.x;
-		y = sl.y;
-		return *this;
 	}
 	Vec2f16& operator=(const Vec2& sl)
 	{
@@ -325,7 +319,23 @@ ILINE int16 tPackB2S(const int16 s)
 	return (int16)(s / 32767);
 }
 
-ILINE Vec4sf tPackF2Bv(const Vec4& v)
+#ifdef CRY_TYPE_SIMD4
+
+ILINE Vec4sf tPackF2Bv(const Vec4H<f32>& v)
+{
+	Vec4sf vs;
+
+	vs.x = tPackF2B(v.x);
+	vs.y = tPackF2B(v.y);
+	vs.z = tPackF2B(v.z);
+	vs.w = tPackF2B(v.w);
+
+	return vs;
+}
+
+#endif
+
+ILINE Vec4sf tPackF2Bv(const Vec4f& v)
 {
 	Vec4sf vs;
 

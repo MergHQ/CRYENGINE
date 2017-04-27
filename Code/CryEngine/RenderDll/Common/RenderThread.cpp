@@ -1569,8 +1569,8 @@ void SRenderThread::RC_SetCamera()
 			mObliqueProjMatrix.m22 = pPlane.n[2];
 			mObliqueProjMatrix.m32 = pPlane.d;
 
-			Matrix44* mProj = (Matrix44*)&pData[0];
-			*mProj = (*mProj) * mObliqueProjMatrix;
+			Matrix44f* mProj = (Matrix44f*)&pData[0];
+			*mProj = Matrix44A(*mProj) * mObliqueProjMatrix;
 
 			gRenDev->m_RP.m_TI[m_nCurThreadFill].m_PersFlags &= ~RBPF_OBLIQUE_FRUSTUM_CLIPPING;
 		}

@@ -377,6 +377,17 @@ CRY_UNIT_TEST_SUITE(Math)
 	using namespace crymath;
 	const float HALF_EPSILON = 0.00025f;
 
+	CRndGen MathRand;  // Static generator for reproducible sequence
+
+	float RandomExp(float fMaxExp)
+	{
+		float f = pow(10.0f, MathRand.GetRandom(-fMaxExp, fMaxExp));
+		if (MathRand.GetRandom(0, 1))
+			f = -f;
+		assert(IsValid(f));
+		return f;
+	}
+
 	template<typename Real, typename S>
 	void TestFunction(Real (* func)(Real), S in, S res)
 	{
@@ -401,7 +412,7 @@ CRY_UNIT_TEST_SUITE(Math)
 	template<typename Real, typename S>
 	bool IsEquiv(Real a, Real b, S epsilon)
 	{
-		return NumberValid(a) && All(abs(a - b) <= abs(b) * convert<Real>(epsilon));
+		return NumberValid(a) && NumberValid(b) && IsEquivalent(a, b, -epsilon); // Relative comparison
 	}
 
 	template<typename Real, typename S>
@@ -495,9 +506,10 @@ CRY_UNIT_TEST_SUITE(Math)
 
 	#if CRY_PLATFORM_SSE2
 
-	template<typename V, typename T>
+	template<typename V>
 	void ConvertTest()
 	{
+		using T = scalar_t<V>;
 		V v = convert<V>(T(0), T(1), T(2), T(3));
 		CRY_UNIT_TEST_ASSERT(NumberValid(v));
 		CRY_UNIT_TEST_ASSERT(get_element<0>(v) == T(0));
@@ -557,6 +569,31 @@ CRY_UNIT_TEST_SUITE(Math)
 	}
 
 	template<typename V>
+	void HorizontalTest()
+	{
+		i32v4 idata[] = {
+			convert<i32v4>(1,  -2,  3,   -4),
+			convert<i32v4>(-2, -1,  5,   6),
+			convert<i32v4>(7,  -12, -13, 24),
+			convert<i32v4>(-2, -5,  5,   6)
+		};
+
+		for (i32v4 d : idata)
+		{
+			V v = convert<V>(d);
+
+			auto h_sum = get_element<0>(v) + get_element<1>(v) + get_element<2>(v) + get_element<3>(v);
+			CRY_UNIT_TEST_ASSERT(All(hsumv(v) == to_v4(h_sum)));
+
+			auto h_min = min(get_element<0>(v), min(get_element<1>(v), min(get_element<2>(v), get_element<3>(v))));
+			CRY_UNIT_TEST_ASSERT(All(hminv(v) == to_v4(h_min)));
+
+			auto h_max = max(get_element<0>(v), max(get_element<1>(v), max(get_element<2>(v), get_element<3>(v))));
+			CRY_UNIT_TEST_ASSERT(All(hmaxv(v) == to_v4(h_max)));
+		}
+	}
+
+	template<typename V>
 	void CompareTest()
 	{
 		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) == convert<V>(-3, -5, 6, 9)));
@@ -600,32 +637,48 @@ CRY_UNIT_TEST_SUITE(Math)
 
 	#endif // CRY_PLATFORM_SSE2
 
-	void QuadraticTest()
+	template<typename F> NO_INLINE
+	void QuadraticTest(int mode = 2)
 	{
-		float r[2];
-		for (int i = 0; i < 20; ++i)
+		F maxErrAbs = 0, maxErrRel = 0;
+
+		for (int i = 0; i < 240; ++i)
 		{
-			float c0 = cry_random(-999.f, 999.f) * (i % 5);
-			float c1 = cry_random(-999.f, 999.f) * (i % 4);
-			float c2 = cry_random(-999.f, 999.f) * (i % 3);
+			F c0 = RandomExp(6.0f) * (i % 5);
+			F c1 = RandomExp(6.0f) * (i % 4);
+			F c2 = RandomExp(6.0f) * (i % 3);
+
+			F r[2];
 			int n = solve_quadratic(c2, c1, c0, r);
 			while (--n >= 0)
 			{
-				float f = c0 + c1 * r[n] + c2 * sqr(r[n]);
-				CRY_UNIT_TEST_ASSERT(abs(f) <= 0.01f);
+				F err = abs(c0 + r[n] * (c1 + r[n] * c2));
+				F mag = abs(r[n] * c1) + abs(r[n] * r[n] * c2 * F(2));
+
+				if (err > maxErrAbs)
+					maxErrAbs = err;
+				if (err > mag * maxErrRel)
+				{
+					maxErrRel = err / mag;
+					CRY_UNIT_TEST_ASSERT(err <= mag * std::numeric_limits<F>::epsilon() * F(5));
+				}
 			}
 		}
 	}
 
-	CRY_UNIT_TEST(CUT_Math)
+	CRY_UNIT_TEST(Math)
 	{
-		QuadraticTest();
+		QuadraticTest<f32>();
+		QuadraticTest<f64>();
 		FunctionTest<float, int, uint>();
 	#if CRY_PLATFORM_SSE2
 		FunctionTest<f32v4, i32v4, u32v4>();
-		ConvertTest<f32v4, float>();
-		ConvertTest<i32v4, int>();
+		ConvertTest<f32v4>();
+		ConvertTest<i32v4>();
 		OperatorTest();
+		HorizontalTest<f32v4>();
+		HorizontalTest<i32v4>();
+		HorizontalTest<u32v4>();
 		CompareTest<f32v4>();
 		CompareTest<i32v4>();
 		UCompareTest();
@@ -633,6 +686,190 @@ CRY_UNIT_TEST_SUITE(Math)
 	#endif
 	}
 }
+
+#ifdef CRY_HARDWARE_VECTOR4
+
+#ifndef _DEBUG
+	#define VECTOR_PROFILE
+#endif
+
+CRY_UNIT_TEST_SUITE(MathVector)
+{
+	float RandomFloat()
+	{
+		return Math::RandomExp(3.0f);
+	}
+	Vec4 RandomVec4()
+	{
+		return Vec4(RandomFloat(), RandomFloat(), RandomFloat(), RandomFloat());
+	}
+	Matrix44 RandomMatrix44()
+	{
+		return Matrix44(RandomVec4(), RandomVec4(), RandomVec4(), RandomVec4());
+	}
+
+	static const int VCount = 256;
+	static const int VRep = 1024;
+
+	template<typename Vec, typename Mat>
+	struct Element
+	{
+		float f0;
+		Vec v0, v1;
+		Mat m0, m1;
+
+		Element() {}
+
+		Element(int)
+			: f0(RandomFloat())
+			, v0(RandomVec4()), v1(RandomVec4())
+			, m0(RandomMatrix44()), m1(RandomMatrix44()) {}
+
+		template<typename Vec2, typename Mat2>
+		Element(const Element<Vec2, Mat2>& in)
+			: f0(in.f0)
+			, v0(in.v0), v1(in.v1)
+			, m0(in.m0), m1(in.m1)
+		{}
+	};
+
+	std::vector<cstr> TestNames;
+
+	template<typename Elem>
+	struct Tester
+	{
+		cstr name;
+		std::vector<int64> times;
+		Elem elems[VCount];
+
+		void Log() const
+		{
+			uint32 divide = VCount * VRep;
+			#if CRY_PLATFORM_WINDOWS
+				// Ticks are kilocycles
+				divide /= 1000;
+			#endif
+
+			CryLog("Timings for %s", name);
+			for (int i = 0; i < TestNames.size(); ++i)
+			{
+				uint32 ticks = uint32((times[i] + divide/2) / divide);
+				CryLog(" %3u: %s", ticks, TestNames[i]);
+			}
+		}
+	};
+
+	template<typename Elem1, typename Elem2, typename Code1, typename Code2, typename E>
+	void VerifyCode(cstr message, Tester<Elem1>& tester1, Tester<Elem2>& tester2, Code1 code1, Code2 code2, E tolerance)
+	{
+		for (int i = 0; i < VCount; ++i)
+		{
+			auto res1 = code1(tester1.elems[i]);
+			auto res2 = code2(tester2.elems[i]);
+			CRY_ASSERT_MESSAGE(IsEquivalent(res1, res2, tolerance), message);
+		}
+	}
+
+	enum class TestMode { Verify, Prime, Profile };
+
+	using Element4H = Element<Vec4,  Matrix44>;   Tester<Element4H> test4H = {"Vec4H, Matrix44H"};
+	using Element4  = Element<Vec4f, Matrix44f>;  Tester<Element4>  test4  = {"Vec4, Matrix44"};
+	using Element3H = Element<Vec3,  Matrix34>;   Tester<Element3H> test3H = {"Vec3, Matrix34H"};
+	using Element3  = Element<Vec3,  Matrix34f>;  Tester<Element3>  test3  = {"Vec3, Matrix34"};
+
+	void VectorTest(TestMode mode)
+	{
+		#define	VECTOR_PROFILE_CODE(tester, code) { \
+			auto& e = tester.elems[0]; \
+			typedef decltype(code) Result; \
+			Result results[VCount]; \
+			int i = 0; \
+			int64 time = CryGetTicks(); \
+			for (auto& e: tester.elems) \
+				results[i++] = code; \
+			time = CryGetTicks() - time; \
+			if (mode == TestMode::Prime) \
+				tester.times.resize(TestNames.size()); \
+			if (mode == TestMode::Profile) \
+				tester.times[stat] += time; \
+		}
+
+		#define	VECTOR_TEST_CODE(code, tolerance) \
+			if (mode == TestMode::Verify) \
+			{ \
+				if (add_names) TestNames.push_back(#code); \
+				VerifyCode<Element4H, Element4>("mismatch: " #code, test4H, test4, [](Element4H& e) { return (code); }, [](Element4& e) { return (code); }, tolerance); \
+				VerifyCode<Element3H, Element3>("mismatch: " #code, test3H, test3, [](Element3H& e) { return (code); }, [](Element3& e) { return (code); }, tolerance); \
+			} \
+			else \
+			{ \
+				VECTOR_PROFILE_CODE(test4H, code) \
+				VECTOR_PROFILE_CODE(test4,  code) \
+				VECTOR_PROFILE_CODE(test3H, code) \
+				VECTOR_PROFILE_CODE(test3,  code) \
+				++stat; \
+			} \
+
+		static const float Tolerance = -1e5f;
+		bool add_names = TestNames.empty();
+
+		int stat = 0;
+		VECTOR_TEST_CODE(e.v0, 0.0f);
+		VECTOR_TEST_CODE(e.v0 == e.v1, bool());
+		VECTOR_TEST_CODE(IsEquivalent(e.v0, e.v1, Tolerance), bool());
+		VECTOR_TEST_CODE(IsEquivalent(e.v0, e.v1, Tolerance), bool());
+		VECTOR_TEST_CODE(e.v0 | e.v1, Tolerance);
+		VECTOR_TEST_CODE(e.v0 + e.v1, 0.0f);
+		VECTOR_TEST_CODE(e.v0 * e.f0, Tolerance);
+		VECTOR_TEST_CODE(e.v0.GetLength(), Tolerance);
+		VECTOR_TEST_CODE(e.v0.GetNormalized(), Tolerance);
+		VECTOR_TEST_CODE(e.v0.ProjectionOn(e.v1), Tolerance);
+
+		VECTOR_TEST_CODE(e.m0, 0.0f);
+		VECTOR_TEST_CODE(e.m0 == e.m1, bool());
+		VECTOR_TEST_CODE(IsEquivalent(e.m0, e.m1, Tolerance), bool());
+		VECTOR_TEST_CODE(IsEquivalent(e.m0, e.m1, Tolerance), bool());
+		VECTOR_TEST_CODE(e.m0.GetTransposed(), 0.0f);
+		VECTOR_TEST_CODE(e.m0.GetInverted(), Tolerance);
+		VECTOR_TEST_CODE(e.m0.Determinant(), Tolerance);
+
+		VECTOR_TEST_CODE(e.v0 * e.m0, Tolerance);
+		VECTOR_TEST_CODE(e.m0 * e.v0, Tolerance);
+		VECTOR_TEST_CODE(e.m0.TransformVector(e.v0), Tolerance);
+		VECTOR_TEST_CODE(e.m0.TransformPoint(e.v0), Tolerance);
+		VECTOR_TEST_CODE(e.m0 * e.m1, Tolerance);
+	}
+
+	CRY_UNIT_TEST(Vector)
+	{
+		// Init test to equivalent values
+		for (int i = 0; i < VCount; ++i)
+		{
+			Construct(test4H.elems[i], 1);
+			test4.elems[i]  = test4H.elems[i];
+			test3H.elems[i] = test4H.elems[i];
+			test3.elems[i]  = test3H.elems[i];
+		}
+
+		VectorTest(TestMode::Verify);
+
+		#ifdef VECTOR_PROFILE
+			VectorTest(TestMode::Prime);
+			for (int i = 0; i < VRep; ++i)
+			{
+				VectorTest(TestMode::Profile);
+			}
+
+			test4H.Log();
+			test4.Log();
+			test3H.Log();
+			test3.Log();
+		#endif
+	}
+}
+
+#endif // CRY_HARDWARE_VECTOR4
+
 
 CRY_UNIT_TEST_SUITE(Strings)
 {

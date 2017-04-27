@@ -74,15 +74,6 @@ void AddValue(XmlNodeRef node, cstr name, const Vec2_tpl<T>& value)
 	AddValue(paramNode, "Element", value.y);
 }
 
-template<typename T>
-void AddValue(XmlNodeRef node, cstr name, const Vec3_tpl<T>& value)
-{
-	XmlNodeRef paramNode = node->newChild(name);
-	AddValue(paramNode, "Element", value.x);
-	AddValue(paramNode, "Element", value.y);
-	AddValue(paramNode, "Element", value.z);
-}
-
 void AddValue(XmlNodeRef node, cstr name, const Color3F& color)
 {
 	XmlNodeRef paramNode = node->newChild(name);
@@ -92,7 +83,7 @@ void AddValue(XmlNodeRef node, cstr name, const Color3F& color)
 }
 
 template<typename T>
-void AddValue(XmlNodeRef node, cstr name, const Vec3_Zero<T>& value)
+void AddValue(XmlNodeRef node, cstr name, const Vec3_tpl<T>& value)
 {
 	// Convert Y-up to Z-up.
 	XmlNodeRef paramNode = node->newChild(name);

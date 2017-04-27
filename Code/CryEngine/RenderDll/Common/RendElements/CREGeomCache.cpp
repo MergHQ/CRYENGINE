@@ -241,24 +241,9 @@ void CREGeomCache::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelin
 
 inline static void getObjMatrix(UFloat4* sData, const register float* pData, const bool bRelativeToCamPos, const Vec3& vRelativeToCamPos)
 {
-#if CRY_PLATFORM_SSE2 && !defined(_DEBUG)
-	sData[0].m128 = _mm_load_ps(&pData[0]);
-	sData[1].m128 = _mm_load_ps(&pData[4]);
-	sData[2].m128 = _mm_load_ps(&pData[8]);
-#else
-	sData[0].f[0] = pData[0];
-	sData[0].f[1] = pData[1];
-	sData[0].f[2] = pData[2];
-	sData[0].f[3] = pData[3];
-	sData[1].f[0] = pData[4];
-	sData[1].f[1] = pData[5];
-	sData[1].f[2] = pData[6];
-	sData[1].f[3] = pData[7];
-	sData[2].f[0] = pData[8];
-	sData[2].f[1] = pData[9];
-	sData[2].f[2] = pData[10];
-	sData[2].f[3] = pData[11];
-#endif
+	sData[0].Load(&pData[0]);
+	sData[1].Load(&pData[4]);
+	sData[2].Load(&pData[8]);
 
 	if (bRelativeToCamPos)
 	{

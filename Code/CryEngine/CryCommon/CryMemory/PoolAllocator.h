@@ -64,7 +64,7 @@ protected:
 	}
 	static size_t AllocAlign(size_t nSize, size_t nAlign)
 	{
-		return nAlign > 0 ? nAlign : min<size_t>(nSize, alignof(void*));
+		return nAlign > 0 ? nAlign : min<size_t>(nSize, 16);
 	}
 
 public:

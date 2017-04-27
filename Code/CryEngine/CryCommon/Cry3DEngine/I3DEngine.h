@@ -1142,7 +1142,7 @@ struct SDebugFPSInfo
 };
 
 //! Common scene rain parameters shared across engine and editor.
-struct SRainParams
+struct CRY_ALIGN(16) SRainParams
 {
 	SRainParams()
 		: fAmount(0.f), fCurrentAmount(0.f), fRadius(0.f), nUpdateFrameID(-1), bIgnoreVisareas(false), bDisableOcclusion(false)

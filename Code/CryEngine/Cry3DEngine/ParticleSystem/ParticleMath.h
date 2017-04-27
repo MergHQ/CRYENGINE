@@ -67,11 +67,6 @@ template<typename T, typename U> T ILINE Mul(const T& a, const U& b)            
 template<typename T, typename U> T ILINE MAdd(const T& a, const U& b, const T& c) { return a * b + c; }
 
 ///////////////////////////////////////////////////////////////////////////
-// Vectorized functions
-
-float  HMin(floatv v0);
-float  HMax(floatv v0);
-
 // Vector functions
 
 Vec3v Add(const Vec3v& a, const floatv b);

@@ -38,6 +38,14 @@ struct CryFixedArrayDatum<8>
 	typedef uint64 TDatum;
 };
 
+#if CRY_PLATFORM_SSE2
+template<>
+struct CryFixedArrayDatum<16>
+{
+	typedef u32v4 TDatum;
+};
+#endif
+
 template<class T, unsigned int N> class CryFixedArray
 {
 protected:

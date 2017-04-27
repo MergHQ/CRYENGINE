@@ -8,17 +8,17 @@ namespace pfx2
 ILINE Vec3 HMin(const Vec3v& v0)
 {
 	return Vec3(
-	  HMin(v0.x),
-	  HMin(v0.y),
-	  HMin(v0.z));
+	  hmin(v0.x),
+		hmin(v0.y),
+		hmin(v0.z));
 }
 
 ILINE Vec3 HMax(const Vec3v& v0)
 {
 	return Vec3(
-	  HMax(v0.x),
-	  HMax(v0.y),
-	  HMax(v0.z));
+	  hmax(v0.x),
+		hmax(v0.y),
+		hmax(v0.z));
 }
 
 ILINE Vec3v Add(const Vec3v& a, floatv b)
@@ -155,16 +155,6 @@ ILINE Vec4v ToVec4v(Vec4 v)
 ILINE Planev ToPlanev(Plane v)
 {
 	return v;
-}
-
-ILINE float HMin(floatv v0)
-{
-	return v0;
-}
-
-ILINE float HMax(floatv v0)
-{
-	return v0;
 }
 
 ILINE ColorFv ToColorFv(UColv color)

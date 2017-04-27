@@ -37,42 +37,26 @@
 
 #define INST_PARAM_SIZE   sizeof(Vec4)
 
-#if CRY_PLATFORM_SSE2
-typedef __m128 VECTOR_TYPE;
-	#define VECTOR_CONST(x, y, z, w) { x, y, z, w }  //{ w, z, y, x }
-	#define VECTOR_ZERO()            _mm_setzero_ps()
-	#define VECTOR_XOR(a, b)         _mm_xor_ps(a, b)
-#else
-union USoftVector
-{
-	struct
-	{
-		float x, y, z, w;
-	};
-	uint32 u[4];
-};
-typedef CRY_ALIGN (16) USoftVector VECTOR_TYPE;
-	#define VECTOR_CONST(x, y, z, w) { \
-	  { x, y, z, w }                   \
-}
-const VECTOR_TYPE g_VectorZero = VECTOR_CONST(0.f, 0.f, 0.f, 0.f);
-	#define VECTOR_ZERO()            (g_VectorZero)
-inline VECTOR_TYPE VECTOR_XOR(const VECTOR_TYPE& a, const VECTOR_TYPE& b)
-{
-	VECTOR_TYPE r;
-	r.u[0] = a.u[0] ^ b.u[0];
-	r.u[1] = a.u[1] ^ b.u[1];
-	r.u[2] = a.u[2] ^ b.u[2];
-	r.u[3] = a.u[3] ^ b.u[3];
-	return r;
-}
-#endif
-
-union UFloat4
+union CRY_ALIGN (16) UFloat4
 {
 	float       f[4];
 	uint        ui[4];
-	VECTOR_TYPE m128;
+#ifdef CRY_TYPE_SIMD4
+	f32v4       v;
+
+	ILINE void Load(const float* src)
+	{
+		v = *(f32v4*)src;
+	}
+#else
+	ILINE void Load(const float* src)
+	{
+		f[0] = src[0];
+		f[1] = src[1];
+		f[2] = src[2];
+		f[3] = src[3];
+	}
+#endif
 };
 
 class CConstantBuffer;

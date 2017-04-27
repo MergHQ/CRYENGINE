@@ -105,50 +105,17 @@ namespace
 {
 static inline void TransposeAndStore(UFloat4* sData, const Matrix44A& mMatrix)
 {
-#if CRY_PLATFORM_SSE2
-	__m128 row0 = _mm_load_ps(&mMatrix.m00);
-	__m128 row1 = _mm_load_ps(&mMatrix.m10);
-	__m128 row2 = _mm_load_ps(&mMatrix.m20);
-	__m128 row3 = _mm_load_ps(&mMatrix.m30);
-	_MM_TRANSPOSE4_PS(row0, row1, row2, row3);
-	_mm_store_ps(&sData[0].f[0], row0);
-	_mm_store_ps(&sData[1].f[0], row1);
-	_mm_store_ps(&sData[2].f[0], row2);
-	_mm_store_ps(&sData[3].f[0], row3);
-#else
-	*alias_cast<Matrix44A*>(&sData[0]) = mMatrix.GetTransposed();
-#endif
+	alias_cast<Matrix44A*>(sData)->Transpose(mMatrix);
 }
 
 static inline void Store(UFloat4* sData, const Matrix44A& mMatrix)
 {
-#if CRY_PLATFORM_SSE2
-	__m128 row0 = _mm_load_ps(&mMatrix.m00);
-	_mm_store_ps(&sData[0].f[0], row0);
-	__m128 row1 = _mm_load_ps(&mMatrix.m10);
-	_mm_store_ps(&sData[1].f[0], row1);
-	__m128 row2 = _mm_load_ps(&mMatrix.m20);
-	_mm_store_ps(&sData[2].f[0], row2);
-	__m128 row3 = _mm_load_ps(&mMatrix.m30);
-	_mm_store_ps(&sData[3].f[0], row3);
-#else
-	*alias_cast<Matrix44A*>(&sData[0]) = mMatrix;
-#endif
+	*alias_cast<Matrix44A*>(sData) = mMatrix;
 }
 
 static inline void Store(UFloat4* sData, const Matrix34A& mMatrix)
 {
-#if CRY_PLATFORM_SSE2
-	__m128 row0 = _mm_load_ps(&mMatrix.m00);
-	_mm_store_ps(&sData[0].f[0], row0);
-	__m128 row1 = _mm_load_ps(&mMatrix.m10);
-	_mm_store_ps(&sData[1].f[0], row1);
-	__m128 row2 = _mm_load_ps(&mMatrix.m20);
-	_mm_store_ps(&sData[2].f[0], row2);
-	_mm_store_ps(&sData[3].f[0], _mm_setr_ps(0, 0, 0, 1));
-#else
 	*alias_cast<Matrix44A*>(&sData[0]) = mMatrix;
-#endif
 }
 }
 
@@ -230,7 +197,7 @@ inline void multMatrixf_Transp2(float* product, const float* m1, const float* m2
 		P(i, 2) = ai0 * B(2, 0) + ai1 * B(2, 1) + ai2 * B(2, 2);
 		P(i, 3) = ai0 * B(3, 0) + ai1 * B(3, 1) + ai2 * B(3, 2) + ai3;
 	}
-
+	// P[i,j] = A[*,i] * B[*,j] = A.transpose * B;
 	cryMemcpy(product, temp, sizeof(temp));
 
 #undef A
@@ -1137,7 +1104,7 @@ NO_INLINE float* sGetTerrainLayerGen(UFloat4* sData, CD3D9Renderer* r)
 
 float* sGetTexMatrix(UFloat4* sData, CD3D9Renderer* r, const SCGParam* ParamBind)
 {
-	static CRY_ALIGN(16) Matrix44 m;
+	static Matrix44A m;
 
 	SHRenderTarget* pTarg = (SHRenderTarget*)(UINT_PTR)ParamBind->m_nID;
 	//assert(pTarg);
@@ -1278,25 +1245,9 @@ NO_INLINE void sGetRegularKernel(UFloat4* sData, CD3D9Renderer* r)
 
 NO_INLINE void sGetObjMatrix(UFloat4* sData, CD3D9Renderer* r, const register float* pData)
 {
-	const SRenderPipeline& RESTRICT_REFERENCE rRP = r->m_RP;
-#if CRY_PLATFORM_SSE2 && !defined(_DEBUG)
-	sData[0].m128 = _mm_load_ps(&pData[0]);
-	sData[1].m128 = _mm_load_ps(&pData[4]);
-	sData[2].m128 = _mm_load_ps(&pData[8]);
-#else
-	sData[0].f[0] = pData[0];
-	sData[0].f[1] = pData[1];
-	sData[0].f[2] = pData[2];
-	sData[0].f[3] = pData[3];
-	sData[1].f[0] = pData[4];
-	sData[1].f[1] = pData[5];
-	sData[1].f[2] = pData[6];
-	sData[1].f[3] = pData[7];
-	sData[2].f[0] = pData[8];
-	sData[2].f[1] = pData[9];
-	sData[2].f[2] = pData[10];
-	sData[2].f[3] = pData[11];
-#endif
+	sData[0].Load(pData);
+	sData[1].Load(pData + 4);
+	sData[2].Load(pData + 8);
 }
 
 NO_INLINE void sGetBendInfo(UFloat4* sData, CD3D9Renderer* r, int* vals = NULL)
@@ -1650,24 +1601,6 @@ NO_INLINE Vec4 sGetVolumetricFogDistanceParams(CD3D9Renderer* rndr)
 	return params;
 }
 
-/*  float *sTranspose(Matrix34A& m)
-   {
-    static Matrix44A dst;
-    dst.m00=m.m00;	dst.m01=m.m10;	dst.m02=m.m20;	dst.m03=0;
-    dst.m10=m.m01;	dst.m11=m.m11;	dst.m12=m.m21;	dst.m13=0;
-    dst.m20=m.m02;	dst.m21=m.m12;	dst.m22=m.m22;	dst.m23=0;
-    dst.m30=m.m03;	dst.m31=m.m13;	dst.m32=m.m23;	dst.m33=1;
-
-    return dst.GetData();
-   }
-   void sTranspose(Matrix44A& m, Matrix44A *dst)
-   {
-    dst->m00=m.m00;	dst->m01=m.m10;	dst->m02=m.m20;	dst->m03=m.m30;
-    dst->m10=m.m01;	dst->m11=m.m11;	dst->m12=m.m21;	dst->m13=m.m31;
-    dst->m20=m.m02;	dst->m21=m.m12;	dst->m22=m.m22;	dst->m23=m.m32;
-    dst->m30=m.m03;	dst->m31=m.m13;	dst->m32=m.m23;	dst->m33=m.m33;
-   }
- */
 void sGetMotionBlurData(UFloat4* sData, CD3D9Renderer* r, const CRenderObject::SInstanceInfo& instInfo, SRenderPipeline& rRP)
 {
 	CRenderObject* pObj = r->m_RP.m_pCurObject;
@@ -1683,24 +1616,9 @@ void sGetMotionBlurData(UFloat4* sData, CD3D9Renderer* r, const CRenderObject::S
 	}
 
 	float* pData = mObjPrev.GetData();
-#if CRY_PLATFORM_SSE2 && !defined(_DEBUG)
-	sData[0].m128 = _mm_load_ps(&pData[0]);
-	sData[1].m128 = _mm_load_ps(&pData[4]);
-	sData[2].m128 = _mm_load_ps(&pData[8]);
-#else
-	sData[0].f[0] = pData[0];
-	sData[0].f[1] = pData[1];
-	sData[0].f[2] = pData[2];
-	sData[0].f[3] = pData[3];
-	sData[1].f[0] = pData[4];
-	sData[1].f[1] = pData[5];
-	sData[1].f[2] = pData[6];
-	sData[1].f[3] = pData[7];
-	sData[2].f[0] = pData[8];
-	sData[2].f[1] = pData[9];
-	sData[2].f[2] = pData[10];
-	sData[2].f[3] = pData[11];
-#endif
+	sData[0].Load(pData);
+	sData[1].Load(pData + 4);
+	sData[2].Load(pData + 8);
 }
 
 inline void sPullVerticesInfo(UFloat4* sData, CD3D9Renderer* r)
@@ -2968,6 +2886,40 @@ void CHWShader_D3D::mfCommitParams()
 static char* sSH[] = { "VS", "PS", "GS", "CS", "DS", "HS" };
 static char* sComp[] = { "x", "y", "z", "w" };
 
+static int Reps = 100;
+
+void Thing1(Matrix44& out1, Matrix44& out2, const Matrix44& a, const Matrix44& b)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER)
+	for (int i = 0; i < Reps; ++i)
+	{
+		mathMatrixMultiply_Transp2(out1.GetData(), a.GetData(), b.GetData());
+		TransposeAndStore((UFloat4*)&out2, out1);
+	}
+}
+void Thing2(Matrix44& out1, Matrix44& out2, const Matrix44& a, const Matrix44& b)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER)
+	for (int i = 0; i < Reps; ++i)
+	{
+		Matrix44 bt;
+		bt.Transpose(b);
+		out1 = bt * a;
+		/*
+			a00 b00 + a01 b10 + a02 b20 + a03 b30,  
+			out2 = (at.x * b, at.y * b, at.z * b, at.w * b);
+
+			   broadcast(a.xx) * b.x
+	         + broadcast(a.yx) * b.y
+	         + broadcast(a.zx) * b.z
+	         + broadcast(a.wx) * b.w;
+
+		*/
+
+		out2.Transpose(out1);
+	}
+}
+
 float* CHWShader_D3D::mfSetParametersPI(SCGParam* pParams, const int nINParams, float* pDst, EHWShaderClass eSH, int nMaxVecs)
 {
 	DETAILED_PROFILE_MARKER("mfSetParametersPI");
@@ -3200,6 +3152,7 @@ float* CHWShader_D3D::mfSetParametersPI(SCGParam* pParams, const int nINParams, 
 		}
 		ParamBind++;
 	}
+
 	return pDst;
 }
 
@@ -6461,3 +6414,4 @@ Vec4 CHWShader_D3D::GetFogColorGradientRadial()
 	DETAILED_PROFILE_MARKER("GetFogColorGradientRadial");
 	return sGetFogColorGradientRadial(gcpRendD3D);
 }
+

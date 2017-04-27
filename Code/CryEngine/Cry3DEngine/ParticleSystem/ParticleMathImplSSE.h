@@ -57,24 +57,6 @@ ILINE Planev ToPlanev(Plane v)
 	  ToFloatv(v.d));
 }
 
-ILINE float HMin(floatv v0)
-{
-	const floatv v1 = _mm_shuffle_ps(v0, v0, _MM_SHUFFLE(3, 3, 1, 1));
-	const floatv v2 = _mm_min_ps(v0, v1);
-	const floatv v3 = _mm_shuffle_ps(v2, v2, _MM_SHUFFLE(2, 2, 2, 2));
-	const floatv res = _mm_min_ps(v3, v2);
-	return _mm_cvtss_f32(res);
-}
-
-ILINE float HMax(floatv v0)
-{
-	const floatv v1 = _mm_shuffle_ps(v0, v0, _MM_SHUFFLE(3, 3, 1, 1));
-	const floatv v2 = _mm_max_ps(v0, v1);
-	const floatv v3 = _mm_shuffle_ps(v2, v2, _MM_SHUFFLE(2, 2, 2, 2));
-	const floatv res = _mm_max_ps(v3, v2);
-	return _mm_cvtss_f32(res);
-}
-
 ILINE ColorFv operator+(const ColorFv& a, const ColorFv& b)
 {
 	return ColorFv(

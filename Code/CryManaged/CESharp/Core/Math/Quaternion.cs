@@ -641,11 +641,11 @@ namespace CryEngine
 		{
 			get
 			{
-				return CCamera.CreateAnglesYPR(new Matrix33(this));
+				return Camera.CreateAnglesYPR(new Matrix3x3(this));
 			}
 			set
 			{
-				this = new Quat(CCamera.CreateOrientationYPR(value));
+				this = new Quaternion(Camera.CreateOrientationYPR(value));
 			}
 		}
 		#endregion

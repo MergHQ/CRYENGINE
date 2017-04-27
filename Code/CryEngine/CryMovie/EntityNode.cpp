@@ -782,14 +782,14 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 			{
 				pos = stl::get<Vec3>(pPosTrack->GetValue(animContext.time));
 
-				if (!Vec3::IsEquivalent(pos, GetPos(), 0.0001f))
+				if (!IsEquivalent(pos, GetPos(), 0.0001f))
 				{
 					entityUpdateFlags |= eUpdateEntity_Position;
 				}
 			}
 			else
 			{
-				if (!Vec3::IsEquivalent(pos, GetPos(), 0.0001f))
+				if (!IsEquivalent(pos, GetPos(), 0.0001f))
 				{
 					entityUpdateFlags |= eUpdateEntity_Position;
 					pos = m_vInterpPos;
@@ -846,7 +846,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 					scale = m_scale;
 				}
 
-				if (!Vec3::IsEquivalent(scale, GetScale(), 0.001f))
+				if (!IsEquivalent(scale, GetScale(), 0.001f))
 				{
 					bScaleModified = true;
 				}

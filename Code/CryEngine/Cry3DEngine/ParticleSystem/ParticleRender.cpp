@@ -153,9 +153,9 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, ICommonPar
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
 	if (pEmitter->m_pTempData)
-		*((Vec4*)&pObjData->m_fTempVars[0]) = pEmitter->m_pTempData->userData.vEnvironmentProbeMults;
+		*((Vec4f*)&pObjData->m_fTempVars[0]) = (const Vec4f&)pEmitter->m_pTempData->userData.vEnvironmentProbeMults;
 	else
-		*((Vec4*)&pObjData->m_fTempVars[0]) = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 	if (auto pGpuRuntime = pComponentRuntime->GetGpuRuntime())
 	{

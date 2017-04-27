@@ -22,16 +22,6 @@
 
 //====================================================================================
 
-union UVector4
-{
-	float f[4];
-#if CRY_PLATFORM_SSE2
-	__m128 m128;
-#endif
-};
-
-///////////////////////////////////////////
-
 HRESULT CD3D9Renderer::FX_SetVertexDeclaration(int StreamMask, EVertexFormat eVF)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
@@ -2433,25 +2423,9 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 								pI               = &pRO->m_II;
 							}
 							const float* fSrc = pI->m_Matrix.GetData();
-
-#if CRY_PLATFORM_SSE2 && !defined(_DEBUG)
-							vMatrix[0].m128 = _mm_load_ps(&fSrc[0]);
-							vMatrix[1].m128 = _mm_load_ps(&fSrc[4]);
-							vMatrix[2].m128 = _mm_load_ps(&fSrc[8]);
-#else
-							vMatrix[0].f[0] = fSrc[0];
-							vMatrix[0].f[1] = fSrc[1];
-							vMatrix[0].f[2] = fSrc[2];
-							vMatrix[0].f[3] = fSrc[3];
-							vMatrix[1].f[0] = fSrc[4];
-							vMatrix[1].f[1] = fSrc[5];
-							vMatrix[1].f[2] = fSrc[6];
-							vMatrix[1].f[3] = fSrc[7];
-							vMatrix[2].f[0] = fSrc[8];
-							vMatrix[2].f[1] = fSrc[9];
-							vMatrix[2].f[2] = fSrc[10];
-							vMatrix[2].f[3] = fSrc[11];
-#endif
+							vMatrix[0].Load(fSrc);
+							vMatrix[1].Load(fSrc + 4);
+							vMatrix[2].Load(fSrc + 8);
 
 							float* __restrict fParm = (float*)&pWalkData[3 * sizeof(float[4])];
 							pWalkData += nStride;

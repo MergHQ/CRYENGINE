@@ -165,7 +165,7 @@ struct QuadPathT
 	{
 		F vPar = vel0 | dir,
 		  aPar = acc | dir;
-		if (inrange(-vPar, aPar * kMinBounceTime, aPar * (timeD - kMinBounceTime)))
+		if (-vPar > aPar * kMinBounceTime && -vPar < aPar * (timeD - kMinBounceTime))
 		{
 			F tFlec = -vPar / aPar;
 			F dist = vPar * tFlec + aPar * sqr(tFlec) * F(0.5);
@@ -261,7 +261,7 @@ bool PathWorldIntersection(SContactPoint& contact, const QuadPath& path, float t
 		if (contact.m_totalCollisions && !contact.m_state.sliding)
 			tDiv = path.InflectionTime(contact.m_normal);
 		if (tDiv == t1)
-			tDiv = path.InflectionTime(path.acc.GetNormalizedFast());
+			tDiv = path.InflectionTime(path.acc.GetNormalized());
 
 		if (tDiv > t0 && tDiv < t1)
 		{
@@ -446,6 +446,8 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 			continue;
 
 		float dT = DeltaTime(context.m_deltaTime, particleId, normAges, lifeTimes);
+		if (dT == 0.0f)
+			break;
 
 		Vec3 position0 = positionsPrev.Load(particleId);
 		Vec3 position1 = positions.Load(particleId);
@@ -471,7 +473,6 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 
 		if (contacted)
 		{
-			assert((path.pos1 - position1).GetLengthFast() < 1000.f);
 			contact.m_state.collided = contact.m_totalCollisions > prevCollisions;
 			positions.Store(particleId, path.pos1);
 			velocities.Store(particleId, path.vel1);

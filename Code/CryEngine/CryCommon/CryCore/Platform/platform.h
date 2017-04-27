@@ -355,6 +355,13 @@ inline int IsHeapValid()
 #undef STATIC_CHECK
 #define STATIC_CHECK(expr, msg) static_assert((expr) != 0, # msg)
 
+// Conditionally execute code in debug only
+#ifdef _DEBUG
+	#define IF_DEBUG(expr) (expr)
+#else
+	#define IF_DEBUG(expr)
+#endif
+
 // Assert dialog box macros
 #include <CryCore/Assert/CryAssert.h>
 
@@ -534,6 +541,20 @@ ILINE T* non_const(const T* t)
 	return const_cast<T*>(t);
 }
 
+// Member operator generators
+
+//! Define simple operator, automatically generate compound.
+//! Example: COMPOUND_MEMBER_OP(TThis, +, TOther) { return add(a, b); }
+#define COMPOUND_MEMBER_OP(T, op, B)                                     \
+  ILINE T& operator op ## = (const B& b) { return *this = *this op b; }  \
+  ILINE T operator op(const B& b) const                                  \
+
+//! Define compound operator, automatically generate simple.
+//! Example: COMPOUND_STRUCT_MEMBER_OP(TThis, +, TOther) { return a = add(a, b); }
+#define COMPOUND_MEMBER_OP_EQ(T, op, B)                                      \
+  ILINE T operator op(const B& b) const { T t = *this; return t op ## = b; } \
+  ILINE T& operator op ## = (const B& b)                                     \
+
 #define using_type(super, type) \
   typedef typename super::type type;
 
@@ -542,23 +563,23 @@ typedef unsigned int           uint;
 typedef const char*            cstr;
 
 //! Align function works on integer or pointer values. Only supports power-of-two alignment.
-template<typename T> inline
-T Align(T nData, size_t nAlign)
+template<typename T>
+ILINE T Align(T nData, size_t nAlign)
 {
 	assert((nAlign & (nAlign - 1)) == 0);
 	size_t size = ((size_t)nData + (nAlign - 1)) & ~(nAlign - 1);
 	return T(size);
 }
 
-template<typename T> inline
-bool IsAligned(T nData, size_t nAlign)
+template<typename T>
+ILINE bool IsAligned(T nData, size_t nAlign)
 {
 	assert((nAlign & (nAlign - 1)) == 0);
 	return (size_t(nData) & (nAlign - 1)) == 0;
 }
 
-template<typename T, typename U> inline
-void SetFlags(T& dest, U flags, bool b)
+template<typename T, typename U>
+ILINE void SetFlags(T& dest, U flags, bool b)
 {
 	if (b)
 		dest |= flags;
