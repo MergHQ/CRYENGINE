@@ -356,7 +356,7 @@ namespace UQS
 			: CSchematycUqsComponentEnvFunctionBase(sourceFileInfo)
 			, m_itemConvertersFromSchematycToUqs(itemConverters, CItemConverterLookup::ELookupMethod::UseToTypeAsKey)
 		{
-			static const uint32 partialGUID = (uint32)0x1337babe;
+			static const uint64 partialGUID = (uint64)0x1337babe1337babe;
 
 			SetName(stack_string().Format("AddParam [%s]", envDataType.GetName()));
 			SetGUID(Schematyc::SGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
@@ -418,7 +418,7 @@ namespace UQS
 			: CSchematycUqsComponentEnvFunctionBase(sourceFileInfo)
 			, m_itemConvertersFromUqsToSchematyc(itemConverters, CItemConverterLookup::ELookupMethod::UseFromTypeAsKey)
 		{
-			static const uint32 partialGUID = (uint32)0xb19b00b5;
+			static const uint64 partialGUID = (uint64)0xb19b00b5b19b00b5;
 
 			SetName(stack_string().Format("GetResult [%s]", envDataType.GetName()));
 			SetGUID(Schematyc::SGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
