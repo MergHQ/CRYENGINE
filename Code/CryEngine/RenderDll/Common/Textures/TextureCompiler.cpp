@@ -277,6 +277,13 @@ static bool CopyResult(const char* szSrcFile, const char* szDstFile)
 	return success;
 }
 
+static bool IsFileReadOnly(const char* szPath)
+{
+	const auto attributes = GetFileAttributes(szPath);
+	return (attributes != INVALID_FILE_ATTRIBUTES) && ((attributes & FILE_ATTRIBUTE_READONLY) != 0);
+}
+
+
 // RAII handler of temporary asset data.
 class CTemporaryAsset
 {
@@ -748,7 +755,7 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 		}
 
 		// if both files exist, is the source file newer?
-		if (pSrcFile && pDestFile)
+		if (pSrcFile && pDestFile && !IsFileReadOnly(sFullDestFilename))
 		{
 			ICryPak::FileTime timeSrc = gEnv->pCryPak->GetModificationTime(pSrcFile);
 			ICryPak::FileTime timeDest = gEnv->pCryPak->GetModificationTime(pDestFile);
