@@ -28,14 +28,23 @@ bool Serialize(Serialization::IArchive& ar, Vec3_tpl<T>& value, const char* name
 }
 
 template<typename T>
-inline bool Serialize(Serialization::IArchive& ar, struct Vec4_tpl<T>& v, const char* name, const char* label)
+inline bool Serialize(Serialization::IArchive& ar, Vec4_tpl<T>& v, const char* name, const char* label)
 {
 	typedef T (& Array)[4];
 	return ar((Array)v, name, label);
 }
 
+#ifdef CRY_TYPE_SIMD4
 template<typename T>
-bool Serialize(Serialization::IArchive& ar, struct Quat_tpl<T>& value, const char* name, const char* label)
+inline bool Serialize(Serialization::IArchive& ar, Vec4H<T>& v, const char* name, const char* label)
+{
+	typedef T (& Array)[4];
+	return ar((Array)v, name, label);
+}
+#endif
+
+template<typename T>
+bool Serialize(Serialization::IArchive& ar, Quat_tpl<T>& value, const char* name, const char* label)
 {
 	if (ar.isEdit())
 	{
@@ -89,6 +98,15 @@ bool Serialize(Serialization::IArchive& ar, Matrix34_tpl<T>& value, const char* 
 	typedef T (& Array)[3][4];
 	return ar((Array)value, name, label);
 }
+
+#ifdef CRY_TYPE_SIMD4
+template<typename T>
+bool Serialize(Serialization::IArchive& ar, Matrix34H<T>& value, const char* name, const char* label)
+{
+	typedef T (& Array)[3][4];
+	return ar((Array)value, name, label);
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 

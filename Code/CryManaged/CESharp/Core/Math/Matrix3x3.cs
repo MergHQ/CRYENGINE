@@ -111,6 +111,29 @@ namespace CryEngine
 			m22 = matrix.m22;
 		}
 
+        public Matrix3x3(Quaternion quat)
+        {
+            var v2 = quat.v + quat.v;
+            float xx = 1 - v2.x * quat.v.x;
+            float yy = v2.y * quat.v.y;
+            float xw = v2.x * quat.w;
+            float xy = v2.y * quat.v.x;
+            float yz = v2.z * quat.v.y;
+            float yw = v2.y * quat.w;
+            float xz = v2.z * quat.v.x;
+            float zz = v2.z * quat.v.z;
+            float zw = v2.z * quat.w;
+            m00 = 1 - yy - zz;
+            m01 = xy - zw;
+            m02 = xz + yw;
+            m10 = xy + zw;
+            m11 = xx - zz;
+            m12 = yz - xw;
+            m20 = xz - yw;
+            m21 = yz + xw;
+            m22 = xx - yy;
+        }
+
 		#endregion
 
 		#region Conversion

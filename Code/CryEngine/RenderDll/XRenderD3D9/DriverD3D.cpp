@@ -5981,19 +5981,19 @@ void CD3D9Renderer::Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int t
 void CD3D9Renderer::GetModelViewMatrix(float* mat)
 {
 	int nThreadID = m_pRT->GetThreadList();
-	*(Matrix44*)mat = *m_RP.m_TI[nThreadID].m_matView->GetTop();
+	*(Matrix44f*)mat = *m_RP.m_TI[nThreadID].m_matView->GetTop();
 }
 
 void CD3D9Renderer::GetProjectionMatrix(float* mat)
 {
 	int nThreadID = m_pRT->GetThreadList();
-	*(Matrix44*)mat = *m_RP.m_TI[nThreadID].m_matProj->GetTop();
+	*(Matrix44f*)mat = *m_RP.m_TI[nThreadID].m_matProj->GetTop();
 }
 
 void CD3D9Renderer::GetCameraZeroMatrix(float* mat)
 {
 	int nThreadID = m_pRT->GetThreadList();
-	*(Matrix44*)mat = m_RP.m_TI[nThreadID].m_matCameraZero;
+	*(Matrix44f*)mat = m_RP.m_TI[nThreadID].m_matCameraZero;
 }
 
 void CD3D9Renderer::SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat)

@@ -144,12 +144,7 @@ void CFlareSoftOcclusionQuery::GetOcclusionSectorInfo(SOcclusionSectorInfo& out_
 
 float CFlareSoftOcclusionQuery::ComputeLinearDepth(const Vec3& worldPos, const Matrix44A& cameraMat, float nearDist, float farDist)
 {
-	Vec4 out, wPos4;
-	wPos4.x = worldPos.x;
-	wPos4.y = worldPos.y;
-	wPos4.z = worldPos.z;
-	wPos4.w = 1;
-	mathVec4Transform((f32*)&out, (f32*)(&cameraMat), (f32*)&wPos4);
+	Vec4 out = Vec4(worldPos, 1) * cameraMat;
 	if (out.w == 0.0f)
 		return 0;
 	const CRenderCamera& rc = gRenDev->GetRCamera();

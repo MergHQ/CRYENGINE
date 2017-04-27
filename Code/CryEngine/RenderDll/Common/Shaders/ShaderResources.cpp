@@ -627,7 +627,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		}
 
 		Vec4* pDst = (Vec4*)&m_Constants[0];
-		*alias_cast<Matrix44*>(&pDst[REG_PM_TCM_MATRIX]) = matrixTCM;
+		*alias_cast<Matrix44f*>(&pDst[REG_PM_TCM_MATRIX]) = matrixTCM;
 		pDst[REG_PM_DEFORM_WAVE] = deformWave;
 		pDst[REG_PM_DETAILTILING_ALPHAREF] = detailTilingAndAlpharef;
 

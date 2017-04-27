@@ -3749,7 +3749,6 @@ float CroppedRectArea(const Vec2 &center, const Vec2 &dx,const Vec2 &dy, const V
 		area += (pt[i].x-pt[i+1].x)*(pt[i].y+pt[i+1].y);
 	return fabs_tpl(area)*0.5f;
 }
-ILINE bool NumberValid(const Vec3& x) { return true; } // fixes Vec3_tpl<Vec> compiling
 
 
 int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationParams &params)

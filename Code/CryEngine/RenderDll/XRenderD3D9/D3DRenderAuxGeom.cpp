@@ -724,25 +724,14 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 		// Attention: in d3d terms matWorld is actually matWorld^T
 
 		const Matrix44A& matView = GetCurrentView();
-		Matrix44A        matWorld;
-
-		matWorld.SetIdentity();
-		memcpy(&matWorld, &drawParams.m_matWorld, sizeof(drawParams.m_matWorld));
-
+		Matrix44A        matWorld = drawParams.m_matWorld;
 
 		// LOD calculation
-		Matrix44 matWorldTrans = matWorld.GetTransposed();
-		Vec4 objCenterWorld;
-		Vec3 nullVec(0.0f, 0.0f, 0.0f);
-		mathVec3TransformF(&objCenterWorld, &nullVec, &matWorldTrans);
-		Vec4 objOuterRightWorld(objCenterWorld + (Vec4(matView.m00, matView.m10, matView.m20, 0.0f) * drawParams.m_size));
+		Vec3 objCenterWorld = matWorld.GetRow(3);
+		Vec3 objOuterRightWorld = objCenterWorld + matView.GetTranslation() * drawParams.m_size;
 
-		Vec4 v0, v1;
-
-		Vec3 objCenterWorldVec(objCenterWorld.x, objCenterWorld.y, objCenterWorld.z);
-		Vec3 objOuterRightWorldVec(objOuterRightWorld.x, objOuterRightWorld.y, objOuterRightWorld.z);
-		mathVec3TransformF(&v0, &objCenterWorldVec, m_matrices.m_pCurTransMat);
-		mathVec3TransformF(&v1, &objOuterRightWorldVec, m_matrices.m_pCurTransMat);
+		Vec4 v0 = Vec4(objCenterWorld, 1) * *m_matrices.m_pCurTransMat;
+		Vec4 v1 = Vec4(objOuterRightWorld, 1) * *m_matrices.m_pCurTransMat;
 
 		float scale;
 		assert(fabs(v0.w - v0.w) < 1e-4);

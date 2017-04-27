@@ -19,7 +19,6 @@
 //========================================================================================
 
 #include <CryCore/Platform/platform.h>
-#include "Cry_ValidNumber.h"
 #include <cfloat>
 #include <cmath>
 
@@ -269,6 +268,11 @@ ILINE f32   sign(f32 op)
 }
 ILINE f64 sign(f64 op) { return if_else_zero(op, signnz(op)); }
 
+// Horizontal operating functions; can be specialized for SIMD types
+template<typename T> ILINE T hsum(T v) { return v; }
+template<typename T> ILINE T hmin(T v) { return v; }
+template<typename T> ILINE T hmax(T v) { return v; }
+
 } // namespace crymath
 
 template<typename F> ILINE F sqr(const F& op)         { return op * op; }
@@ -276,6 +280,7 @@ template<typename F> ILINE F square(const F& op)      { return op * op; }  //!< 
 template<typename F> ILINE F sqr_signed(const F& op)  { return op * crymath::abs(op); }
 template<typename F> ILINE F cube(const F& op)        { return op * op * op; }
 
+#include "Cry_ValidNumber.h"
 #include "Cry_Math_SSE.h"
 
 namespace crymath
@@ -299,7 +304,7 @@ template<typename T> ILINE T wrap(T f, T lo, T hi)
 }
 
 template<typename T>
-int solve_quadratic(T a, T b, T c, T x[2])
+ILINE int solve_quadratic(T a, T b, T c, T x[2])
 {
 	if (!a)
 	{
@@ -667,12 +672,6 @@ inline f32 SmoothBlendValue(const f32 fBlend)
 	return __fsel(-fBlend, 0.f, __fsel(fBlend - 1.f, 1.f, 0.5f - 2.f * (fBlendAdj * fBlendAdj * fBlendAdj) + 1.5f * fBlendAdj));
 }
 
-// Default approximate comparison function
-template<typename F> ILINE bool IsEquivalent(const F& a, const F& b, float epsilon = FLT_EPSILON)
-{
-	return sqr(a - b) <= sqr(epsilon);
-}
-
 // Legacy math function names
 #define clamp_tpl      crymath::clamp
 
@@ -723,6 +722,7 @@ enum type_min { VMIN };
 enum type_max { VMAX };
 enum type_identity { IDENTITY };
 
+#include "NumberVector.h"
 #include "Cry_Vector2.h"
 #include "Cry_Vector3.h"
 #include "Cry_Vector4.h"

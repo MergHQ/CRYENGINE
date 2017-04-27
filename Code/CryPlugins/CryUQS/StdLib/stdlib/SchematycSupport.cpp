@@ -26,28 +26,6 @@ namespace UQS
 			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, Schematyc::g_szCrytek, szDescription, callback));
 		}
 
-		static EntityIdWrapper EntityIdToEntityIdWrapper(const EntityId& entityId)
-		{
-			return EntityIdWrapper(entityId);
-		}
-
-		static EntityId EntityIdWrapperToEntityId(const EntityIdWrapper& entityIdWrapper)
-		{
-			return entityIdWrapper.value;
-		}
-
-		template <class T>
-		static T Vec3ToVec3BasedWrapper(const Vec3& v)
-		{
-			return T(v);
-		}
-
-		template <class T>
-		static Vec3 Vec3BasedWrapperToVec3(const T& v)
-		{
-			return v.value;
-		}
-
 		static void OnRegisterInSchematyc(Schematyc::IEnvRegistrar& registrar)
 		{
 			registrar.RootScope().Register(SCHEMATYC_MAKE_ENV_MODULE(g_uqsStdlibModuleGUID, "UQSStdlib"));

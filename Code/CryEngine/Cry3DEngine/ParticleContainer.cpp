@@ -647,20 +647,6 @@ void CParticleContainer::UpdateEffects()
 	}
 }
 
-/* Water sorting / filtering:
-
-                  Effect:::::::::::::::::::::::::::
-   Emitter	Camera		above					both					below
-   -------	------		-----					----					-----
-   above		above			AFTER					AFTER					skip
-        below			BEFORE				BEFORE				skip
-
-   both		above			AFTER\below		AFTER[\below]	BEFORE\above
-        below			BEFORE\below	AFTER[\above]	AFTER\above
-
-   below		above			skip					BEFORE				BEFORE
-        below			skip					AFTER					AFTER
- */
 void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams const& PRParams, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_CONTAINER(this);
@@ -803,9 +789,9 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		pOD->m_LightVolumeId = PRParams.m_nDeferredLightVolumeId;
 
 		if (GetMain().m_pTempData)
-			*((Vec4*)&pOD->m_fTempVars[0]) = GetMain().m_pTempData->userData.vEnvironmentProbeMults;
+			*((Vec4f*)&pOD->m_fTempVars[0]) = (const Vec4f&)(GetMain().m_pTempData->userData.vEnvironmentProbeMults);
 		else
-			*((Vec4*)&pOD->m_fTempVars[0]) = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+			*((Vec4f*)&pOD->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 		;
 
 		// Set sort distance based on params and bounding box.

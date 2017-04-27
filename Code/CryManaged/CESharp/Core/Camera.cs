@@ -124,10 +124,9 @@ namespace CryEngine
 		/// </summary>
 		/// <param name="m"></param>
 		/// <returns></returns>
-		public static Angles3 CreateAnglesYPR(Matrix3x4 m)
+		public static Angles3 CreateAnglesYPR(Matrix3x3 m)
 		{
-			Matrix33 m33 = new Matrix33(m);
-			return CCamera.CreateAnglesYPR(m33);
+			return CCamera.CreateAnglesYPR(m);
 		}
 
 		/// <summary>
@@ -145,9 +144,9 @@ namespace CryEngine
 		/// </summary>
 		/// <param name="ypr"></param>
 		/// <returns></returns>
-		public static Matrix3x4 CreateOrientationYPR(Angles3 ypr)
+		public static Matrix3x3 CreateOrientationYPR(Angles3 ypr)
 		{
-			return new Matrix34(CCamera.CreateOrientationYPR(ypr));
+			return CCamera.CreateOrientationYPR(ypr);
 		}
 
 		/// <summary>

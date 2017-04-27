@@ -58,7 +58,7 @@
 
 #pragma warning(disable: 6255)  // _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead. (Note: _malloca requires _freea.)
 
-stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 8>* g_Alloc_EntitySlot = 0;
+stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 16>* g_Alloc_EntitySlot = 0;
 
 namespace
 {
@@ -213,7 +213,7 @@ void SEntityLoadParams::RemoveRef()
 CEntitySystem::CEntitySystem(ISystem* pSystem)
 {
 	// Assign allocators.
-	g_Alloc_EntitySlot = new stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 8>(stl::FHeap().FreeWhenEmpty(true));
+	g_Alloc_EntitySlot = new stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 16>(stl::FHeap().FreeWhenEmpty(true));
 
 	m_onEventSinks.reserve(5);
 	for (size_t i = 0; i < SinkMaxEventSubscriptionCount; ++i)

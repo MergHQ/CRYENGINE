@@ -976,13 +976,17 @@ struct CPhysicalEntityPartSerializer : Serializer {
 	}
 	int SerializeGeom(parse_context &ctx,char *str) {
 		int res = SerializeGeomPtr(ctx,str,((geom*)ctx.pobj)->pPhysGeom);
-		((geom*)ctx.pobj)->pPhysGeomProxy = ((geom*)ctx.pobj)->pPhysGeom;
-		++((geom*)ctx.pobj)->pPhysGeom->nRefCount;
+		if (!ctx.bSaving) {
+			((geom*)ctx.pobj)->pPhysGeomProxy = ((geom*)ctx.pobj)->pPhysGeom;
+			++((geom*)ctx.pobj)->pPhysGeom->nRefCount;
+		}
 		return res;
 	}
 	int SerializeGeomProxy(parse_context &ctx,char *str) {
 		if (ctx.bSaving && ((geom*)ctx.pobj)->pPhysGeomProxy==((geom*)ctx.pobj)->pPhysGeom)
 			return 1;
+		if (!ctx.bSaving)
+			--((geom*)ctx.pobj)->pPhysGeomProxy->nRefCount;
 		return SerializeGeomPtr(ctx,str,((geom*)ctx.pobj)->pPhysGeomProxy);
 	}
 	int SerializeGeomPtr(parse_context &ctx,char *str,phys_geometry *&pPhysGeom) {

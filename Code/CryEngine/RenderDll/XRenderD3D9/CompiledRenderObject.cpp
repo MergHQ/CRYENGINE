@@ -228,23 +228,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// Fill terrain layer info if present
 		if (float* pData = (float*)m_pRenderElement->m_CustomData)
 		{
-			UFloat4* pOut = (UFloat4*)cb->TerrainLayerInfo.GetData();
-			pOut[0].f[0] = pData[0];
-			pOut[0].f[1] = pData[1];
-			pOut[0].f[2] = pData[2];
-			pOut[0].f[3] = pData[3];
-			pOut[1].f[0] = pData[4];
-			pOut[1].f[1] = pData[5];
-			pOut[1].f[2] = pData[6];
-			pOut[1].f[3] = pData[7];
-			pOut[2].f[0] = pData[8];
-			pOut[2].f[1] = pData[9];
-			pOut[2].f[2] = pData[10];
-			pOut[2].f[3] = pData[11];
-			pOut[3].f[0] = pData[12];
-			pOut[3].f[1] = pData[13];
-			pOut[3].f[2] = pData[14];
-			pOut[3].f[3] = pData[15];
+			cb->TerrainLayerInfo = *(Matrix44f*)pData;
 		}
 
 		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
