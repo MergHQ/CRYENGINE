@@ -19,6 +19,8 @@ namespace UQS
 			: m_runningStatus(ERunningStatus::HasNotBeenStartedYet)
 			, m_pExpectedOutputType(nullptr)
 			, m_queryBlueprintID()
+			, m_pCallback(nullptr)
+			, m_pCallbackUserData(nullptr)
 			, m_runtimeParams()
 			, m_queryID(Core::CQueryID::CreateInvalid())
 			, m_pResultSet()
@@ -69,6 +71,12 @@ namespace UQS
 			m_querierName = szQuerierName;
 		}
 
+		void CQueryHost::SetCallback(const Functor1<void*>& pCallback, void* pUserData /* = nullptr */)
+		{
+			m_pCallback = pCallback;
+			m_pCallbackUserData = pUserData;
+		}
+
 		Shared::CVariantDict& CQueryHost::GetRuntimeParamsStorage()
 		{
 			return m_runtimeParams;
@@ -80,6 +88,15 @@ namespace UQS
 
 			// definitely clear the runtime-params for next start
 			m_runtimeParams.Clear();
+
+			// check for whether starting the query already caused an exception and report to the caller
+			if (m_runningStatus == ERunningStatus::ExceptionOccurred)
+			{
+				if (m_pCallback)
+				{
+					m_pCallback(m_pCallbackUserData);
+				}
+			}
 		}
 
 		void CQueryHost::HelpStartQuery()
@@ -153,7 +170,16 @@ namespace UQS
 			const SQueryRequest queryRequest(m_queryBlueprintID, m_runtimeParams, m_querierName.c_str(), functor(*this, &CQueryHost::OnUQSQueryFinished));
 			UQS::Shared::CUqsString error;
 			m_queryID = pHub->GetQueryManager().StartQuery(queryRequest, error);
-			m_runningStatus = ERunningStatus::StillRunning;
+
+			if (m_queryID.IsValid())
+			{
+				m_runningStatus = ERunningStatus::StillRunning;
+			}
+			else
+			{
+				m_exceptionMessageIfAny = error.c_str();
+				m_runningStatus = ERunningStatus::ExceptionOccurred;
+			}
 		}
 
 		bool CQueryHost::IsStillRunning() const
@@ -213,6 +239,11 @@ namespace UQS
 				m_exceptionMessageIfAny = "CQueryHost::OnUQSQueryFinished: unhandled status enum.";
 				m_runningStatus = ERunningStatus::ExceptionOccurred;
 				break;
+			}
+
+			if (m_pCallback)
+			{
+				m_pCallback(m_pCallbackUserData);
 			}
 		}
 

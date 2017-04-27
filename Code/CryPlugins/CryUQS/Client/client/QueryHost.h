@@ -57,6 +57,13 @@ namespace UQS
 			// - persists when starting a new query
 			void                            SetQuerierName(const char* szQuerierName);
 
+			// - sets an optional callback that will get triggered once the running query finishes (no matter with or without success)
+			// - setting a callback is not necessary, but can be used to circumvent polling the CQueryHost class until it reports that the running query has finished
+			// - notice: the callback will also be triggered by StartQuery() if something went wrong when attempting to start the query (e. g. missing runtime-parameter)
+			// - the void-pointer parameter in the callback is user data provided via 'pUserData'
+			// - persists when starting a new query
+			void                            SetCallback(const Functor1<void*>& pCallback, void* pUserData = nullptr);
+
 			// - gives write-access to the runtime-parameters that the query may need
 			// - once the query gets started via StartQuery(), all provided runtime-parameters will be cleared again
 			Shared::CVariantDict&           GetRuntimeParamsStorage();
@@ -99,6 +106,8 @@ namespace UQS
 			const Shared::CTypeInfo*        m_pExpectedOutputType;
 			Core::CQueryBlueprintID         m_queryBlueprintID;
 			string                          m_querierName;
+			Functor1<void*>                 m_pCallback;
+			void*                           m_pCallbackUserData;
 			Shared::CVariantDict            m_runtimeParams;
 			Core::CQueryID                  m_queryID;
 			Core::QueryResultSetUniquePtr   m_pResultSet;
@@ -134,6 +143,7 @@ namespace UQS
 			using                           CQueryHost::SetQueryBlueprint;
 			using                           CQueryHost::GetQueryBlueprintName;
 			using                           CQueryHost::SetQuerierName;
+			using                           CQueryHost::SetCallback;
 			using                           CQueryHost::GetRuntimeParamsStorage;
 			using                           CQueryHost::StartQuery;
 			using                           CQueryHost::IsStillRunning;
