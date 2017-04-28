@@ -36,8 +36,9 @@ public:
 		else
 		{
 			m_configurationsMask &= ~(1 << platformIndex);
-
 		}
+
+		signalConnectionChanged();
 	}
 
 	bool IsPlatformEnabled(const uint platformIndex)
@@ -47,7 +48,11 @@ public:
 
 	void ClearPlatforms()
 	{
-		m_configurationsMask = 0;
+		if (m_configurationsMask != 0)
+		{
+			m_configurationsMask = 0;
+			signalConnectionChanged();
+		}
 	}
 
 	CCrySignal<void()> signalConnectionChanged;

@@ -21,7 +21,7 @@
 #include "Controls/QuestionDialog.h"
 #include <CryString/CryPath.h>
 #include <DragDrop.h>
-
+#pragma optimize("", off)
 namespace ACE
 {
 
@@ -498,6 +498,7 @@ bool CAudioLibraryModel::setData(const QModelIndex& index, const QVariant& value
 							case EItemType::eItemType_State:
 							case EItemType::eItemType_Switch:
 							case EItemType::eItemType_Trigger:
+							case EItemType::eItemType_Environment:
 								pItem->SetName(Utils::GenerateUniqueControlName(newName, itemType, *m_pAssetsManager));
 								pItem->SetModified(true);
 								break;

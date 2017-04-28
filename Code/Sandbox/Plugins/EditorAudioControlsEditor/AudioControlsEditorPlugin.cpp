@@ -27,7 +27,7 @@ using namespace CryAudio;
 using namespace ACE;
 using namespace PathUtil;
 
-CAudioAssetsManager CAudioControlsEditorPlugin::s_pAssetsManager;
+CAudioAssetsManager CAudioControlsEditorPlugin::s_assetsManager;
 std::set<string> CAudioControlsEditorPlugin::s_currentFilenames;
 IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
 ControlId CAudioControlsEditorPlugin::s_audioTriggerId = InvalidControlId;
@@ -44,8 +44,8 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 	s_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 
 	s_implementationManager.LoadImplementation();
+	s_assetsManager.Initialize();
 	ReloadModels(false);
-	s_pAssetsManager.Initialize();
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorPlugin");
 }
 
@@ -64,7 +64,7 @@ void CAudioControlsEditorPlugin::SaveModels()
 	ACE::IAudioSystemEditor* pImpl = s_implementationManager.GetImplementation();
 	if (pImpl)
 	{
-		CAudioControlsWriter writer(&s_pAssetsManager, pImpl, s_currentFilenames);
+		CAudioControlsWriter writer(&s_assetsManager, pImpl, s_currentFilenames);
 	}
 	s_loadingErrorMask = static_cast<uint>(EErrorCode::eErrorCode_NoError);
 }
@@ -77,32 +77,35 @@ void CAudioControlsEditorPlugin::ReloadModels(bool bReloadImplementation)
 	ACE::IAudioSystemEditor* pImpl = s_implementationManager.GetImplementation();
 	if (pImpl)
 	{
-		s_pAssetsManager.Clear();
+		s_assetsManager.Clear();
+
 		if (bReloadImplementation)
 		{
 			pImpl->Reload();
 		}
-		CAudioControlsLoader loader(&s_pAssetsManager);
+
+		CAudioControlsLoader loader(&s_assetsManager);
 		loader.LoadAll();
-		s_pAssetsManager.ClearDirtyFlags();
+		s_assetsManager.ClearDirtyFlags();
+		s_assetsManager.ReloadAllConnections();
 		s_currentFilenames = loader.GetLoadedFilenamesList();
 		s_loadingErrorMask = loader.GetErrorCodeMask();
 	}
+
 	GetIEditor()->GetIUndoManager()->Resume();
 	signalLoaded();
-
 }
 
 void CAudioControlsEditorPlugin::ReloadScopes()
 {
-	s_pAssetsManager.ClearScopes();
-	CAudioControlsLoader loader(&s_pAssetsManager);
+	s_assetsManager.ClearScopes();
+	CAudioControlsLoader loader(&s_assetsManager);
 	loader.LoadScopes();
 }
 
 CAudioAssetsManager* CAudioControlsEditorPlugin::GetAssetsManager()
 {
-	return &s_pAssetsManager;
+	return &s_assetsManager;
 }
 
 ACE::IAudioSystemEditor* CAudioControlsEditorPlugin::GetAudioSystemEditorImpl()

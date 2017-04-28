@@ -47,7 +47,7 @@ private:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
 	///////////////////////////////////////////////////////////////////////////
 
-	static ACE::CAudioAssetsManager s_pAssetsManager;
+	static ACE::CAudioAssetsManager s_assetsManager;
 	static std::set<string>         s_currentFilenames;
 	static CryAudio::IObject*       s_pIAudioObject;
 	static CryAudio::ControlId      s_audioTriggerId;

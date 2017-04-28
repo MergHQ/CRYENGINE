@@ -82,7 +82,7 @@ private:
 	static char const* const s_szWwiseShiftAttribute;
 	static char const* const s_szWwiseLocalisedAttribute;
 
-	SAudioSwitchState const* ParseWwiseSwitchOrState(XmlNodeRef pNode, EWwiseSwitchType eType);
+	bool                     ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId);
 	SAudioSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef pNode);
 	void                     ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift);
 	void                     SignalAuxAudioThread();

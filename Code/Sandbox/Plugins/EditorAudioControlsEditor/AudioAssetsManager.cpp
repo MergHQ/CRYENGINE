@@ -58,6 +58,16 @@ void CAudioAssetsManager::Initialize()
 			ReloadAllConnections();
 			ClearDirtyFlags();
 	  });
+
+	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
+		{
+			m_bLoading = true;
+	  });
+
+	CAudioControlsEditorPlugin::signalLoaded.Connect([&]()
+		{
+			m_bLoading = false;
+	  });
 }
 
 CAudioControl* CAudioAssetsManager::CreateControl(const string& name, EItemType type, IAudioAsset* pParent)
@@ -75,7 +85,7 @@ CAudioControl* CAudioAssetsManager::CreateControl(const string& name, EItemType 
 
 			signalItemAboutToBeAdded(pParent);
 
-			CAudioControl* pControl = new CAudioControl(name, GenerateUniqueId(), type, this);
+			CAudioControl* pControl = new CAudioControl(name, GenerateUniqueId(), type);
 
 			m_controls.push_back(pControl);
 
@@ -360,11 +370,9 @@ CAudioControl* CAudioAssetsManager::FindControl(string const& controlName, EItem
 
 void CAudioAssetsManager::ClearAllConnections()
 {
-	const size_t size = m_controls.size();
-	for (size_t i = 0; i < size; ++i)
+	for (auto const pControl : m_controls)
 	{
-		CAudioControl* pControl = m_controls[i];
-		if (pControl)
+		if (pControl != nullptr)
 		{
 			pControl->ClearConnections();
 		}
@@ -373,14 +381,13 @@ void CAudioAssetsManager::ClearAllConnections()
 
 void CAudioAssetsManager::ReloadAllConnections()
 {
-	ClearAllConnections();
-	const size_t size = m_controls.size();
-	for (size_t i = 0; i < size; ++i)
+	for (auto const pControl : m_controls)
 	{
-		CAudioControl* pControl = m_controls[i];
-		if (pControl)
+		if (pControl != nullptr)
 		{
+			pControl->ClearConnections();
 			pControl->ReloadConnections();
+			pControl->SetModified(false, true);
 		}
 	}
 }
@@ -432,7 +439,7 @@ IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 		PathUtil::RemoveExtension(name);
 		name = Utils::GenerateUniqueControlName(name, itemType, *this);
 
-		CAudioControl* pControl = new CAudioControl(name, GenerateUniqueId(), itemType, this);
+		CAudioControl* pControl = new CAudioControl(name, GenerateUniqueId(), itemType);
 		m_controls.push_back(pControl);
 		pControl->SetParent(pParent);
 		pParent->AddChild(pControl);
