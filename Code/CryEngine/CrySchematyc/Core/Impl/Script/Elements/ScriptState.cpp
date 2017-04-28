@@ -41,11 +41,11 @@ void CScriptState::RemapDependencies(IGUIDRemapper& guidRemapper)
 
 void CScriptState::ProcessEvent(const SScriptEvent& event)
 {
-	switch(event.id)
+	switch (event.id)
 	{
 	case EScriptEventId::EditorAdd:
 		{
-			// #SchematycTODO : Should we be doing this in editor code?
+			// TODO: This should happen in editor!
 			IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 			IScriptSignalReceiver* pSignalReceiver = scriptRegistry.AddSignalReceiver("SignalGraph", EScriptSignalReceiverType::Universal, SGUID(), this);
 			IScriptGraph* pGraph = static_cast<IScriptGraph*>(pSignalReceiver->GetExtensions().QueryExtension(EScriptExtensionType::Graph));
@@ -63,6 +63,8 @@ void CScriptState::ProcessEvent(const SScriptEvent& event)
 				pUpdateNode->SetPos(Vec2(0.0f, 200.0f));
 				pGraph->AddNode(pUpdateNode);
 			}
+			// ~TODO
+
 			break;
 		}
 	}

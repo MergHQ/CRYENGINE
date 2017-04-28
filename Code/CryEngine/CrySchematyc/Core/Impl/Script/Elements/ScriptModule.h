@@ -22,5 +22,10 @@ public:
 	virtual void ProcessEvent(const SScriptEvent& event) override;
 	virtual void Serialize(Serialization::IArchive& archive) override;
 	// ~IScriptElement
+
+protected:
+	// CMultiPassSerializer
+	virtual void Save(Serialization::IArchive& archive, const ISerializationContext& context) override { CMultiPassSerializer::Save(archive, context); }
+	// ~CMultiPassSerializer
 };
 } // Schematyc

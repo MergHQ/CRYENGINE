@@ -4,7 +4,11 @@
 
 #include "Schematyc/Script/IScriptElement.h"
 
-namespace Schematyc
+namespace Schematyc {
+
+struct IScriptModule : public IScriptElementBase<EScriptElementType::Module>
 {
-struct IScriptModule : public IScriptElementBase<EScriptElementType::Module> {};
+
+};
+
 } // Schematyc

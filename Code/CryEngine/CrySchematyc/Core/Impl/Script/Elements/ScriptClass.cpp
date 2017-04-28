@@ -27,7 +27,7 @@ CScriptClass::CScriptClass(const SGUID& guid, const char* szName)
 
 void CScriptClass::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
-void CScriptClass::RemapDependencies(IGUIDRemapper& guidRemapper) {}
+void CScriptClass::RemapDependencies(IGUIDRemapper& guidRemapper)                                                        {}
 
 void CScriptClass::ProcessEvent(const SScriptEvent& event)
 {
@@ -37,14 +37,13 @@ void CScriptClass::ProcessEvent(const SScriptEvent& event)
 	{
 	case EScriptEventId::EditorAdd:
 		{
-			// #SchematycTODO : Should we be doing this in editor code?
-
+			// TODO: This should happen in editor!
 			IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 			scriptRegistry.AddConstructor("ConstructionGraph", this);
 
 			IScriptSignalReceiver* pSignalReceiver = scriptRegistry.AddSignalReceiver("SignalGraph", EScriptSignalReceiverType::Universal, SGUID(), this);
 			IScriptGraph* pGraph = static_cast<IScriptGraph*>(pSignalReceiver->GetExtensions().QueryExtension(EScriptExtensionType::Graph));
-			if(pGraph)
+			if (pGraph)
 			{
 				IScriptGraphNodePtr pStartNode = std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(SElementId(EDomain::Env, GetTypeDesc<SStartSignal>().GetGUID()))); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
 				pStartNode->SetPos(Vec2(0.0f, 0.0f));
@@ -60,6 +59,8 @@ void CScriptClass::ProcessEvent(const SScriptEvent& event)
 			}
 
 			m_userDocumentation.SetCurrentUserAsAuthor();
+			// ~TODO
+
 			break;
 		}
 	case EScriptEventId::EditorPaste:

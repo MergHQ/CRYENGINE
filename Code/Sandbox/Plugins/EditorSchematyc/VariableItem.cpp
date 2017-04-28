@@ -14,13 +14,14 @@
 
 namespace CrySchematycEditor {
 
-CVariableItem::CVariableItem(Schematyc::IScriptVariable& scriptVariable, CStateItem& state)
-	: CAbstractVariablesModelItem(static_cast<CAbstractVariablesModel&>(state))
-	, m_scriptVariable(scriptVariable)
-	, m_owner(EOwner::State)
-{
+/*
+   CVariableItem::CVariableItem(Schematyc::IScriptVariable& scriptVariable, CStateItem& state)
+   : CAbstractVariablesModelItem(static_cast<CAbstractVariablesModelItem&>(state))
+   , m_scriptVariable(scriptVariable)
+   , m_owner(EOwner::State)
+   {
 
-}
+   }*/
 
 CVariableItem::CVariableItem(Schematyc::IScriptVariable& scriptVariable, CObjectModel& object)
 	: CAbstractVariablesModelItem(static_cast<CAbstractVariablesModel&>(object))

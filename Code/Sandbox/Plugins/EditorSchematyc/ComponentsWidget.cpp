@@ -8,6 +8,7 @@
 #include "PropertiesWidget.h"
 
 #include "ObjectModel.h"
+#include "MainWindow.h"
 
 #include <QtUtil.h>
 #include <QFilteringPanel.h>
@@ -292,8 +293,9 @@ private:
 	QLabel*       m_pLabel;
 };
 
-CComponentsWidget::CComponentsWidget(QWidget* pParent)
+CComponentsWidget::CComponentsWidget(CMainWindow& editor, QWidget* pParent)
 	: QWidget(pParent)
+	, m_pEditor(&editor)
 	, m_pModel(nullptr)
 	, m_pFilter(nullptr)
 	, m_pComponentsList(nullptr)
@@ -352,6 +354,16 @@ CComponentsWidget::CComponentsWidget(QWidget* pParent)
 	QObject::connect(m_pContextMenuContent, &CDictionaryWidget::OnEntryClicked, this, &CComponentsWidget::OnAddComponent);
 
 	m_pContextMenu = new QPopupWidget("Add Component", m_pContextMenuContent, QSize(250, 400), true);
+
+	QObject::connect(m_pEditor, &CMainWindow::SignalOpenedModel, this, &CComponentsWidget::SetModel);
+	QObject::connect(m_pEditor, &CMainWindow::SignalReleasingModel, [this]
+		{
+			SetModel(nullptr);
+	  });
+	QObject::connect(m_pEditor, &QWidget::destroyed, [this](QObject*)
+		{
+			m_pEditor = nullptr;
+	  });
 }
 
 CComponentsWidget::~CComponentsWidget()
@@ -360,6 +372,11 @@ CComponentsWidget::~CComponentsWidget()
 	{
 		m_pFilterProxy->sourceModel()->deleteLater();
 		m_pFilterProxy->deleteLater();
+	}
+
+	if (m_pEditor)
+	{
+		QObject::disconnect(m_pEditor);
 	}
 }
 
@@ -444,7 +461,7 @@ void CComponentsWidget::OnSelectionChanged(const QItemSelection& selected, const
 
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{
-				CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pItem);
+				CPropertiesWidget* pPropertiesWidget = nullptr /*new CPropertiesWidget(*pItem)*/;
 
 				auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
 				{

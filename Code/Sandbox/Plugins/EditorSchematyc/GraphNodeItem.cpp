@@ -9,6 +9,7 @@
 
 #include <NodeGraph/NodeWidget.h>
 #include <NodeGraph/PinGridNodeContentWidget.h>
+#include <NodeGraph/NodeGraphUndo.h>
 
 #include <QString>
 
@@ -79,6 +80,11 @@ void CNodeItem::SetPosition(QPointF position)
 	m_scriptNode.SetPos(pos);
 
 	CAbstractNodeItem::SetPosition(position);
+	if (GetRecordUndo())
+	{
+		CryGraphEditor::CUndoNodeMove* pUndoObject = new CryGraphEditor::CUndoNodeMove(*this);
+		CUndo::Record(pUndoObject);
+	}
 }
 
 QVariant CNodeItem::GetId() const

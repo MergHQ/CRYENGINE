@@ -25,6 +25,8 @@ enum class EScriptEventId
 {
 	Invalid,
 	FileLoad,                 // Sent immediately after loading elements from file.
+	FileReload,               // Sent immediately after reloading elements from file.
+
 	EditorFixUp,              // Editor only. Sent after editor plug-in has been initialized in order to fix-up broken/outdated elements.
 	EditorAdd,                // Editor only. Sent immediately after element is added to registry.
 	EditorPaste,              // Editor only. Sent immediately after element is pasted to registry.
@@ -32,6 +34,7 @@ enum class EScriptEventId
 	EditorDependencyModified, // Editor only. Sent when a dependency has been modified.
 	EditorDependencyRemoved,  // Editor only. Sent when a dependency has been removed.
 	EditorRefresh,            // Editor only. Sent when an element is selected/modified and needs to be refreshed.
+
 	InternalRefresh           // May be sent by an element to itself in order to refresh certain 'internal' aspects.
 };
 

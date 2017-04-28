@@ -41,6 +41,7 @@
 #include <QtUtil.h>
 
 #include "ComponentsDictionaryModel.h"
+#include "InterfacesDictionaryModel.h"
 
 namespace Schematyc
 {
@@ -83,179 +84,6 @@ struct SBase
 
 typedef std::vector<SBase> Bases;
 
-class CBaseQuickSearchOptions : public IQuickSearchOptions
-{
-public:
-
-	inline CBaseQuickSearchOptions(const IScriptElement* pScriptScope)
-	{
-		if (pScriptScope)
-		{
-			m_bases.reserve(32);
-
-			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
-
-			auto visitEnvClass = [this, &pScriptView](const IEnvClass& envClass) -> EVisitStatus
-			{
-				CStackString name;
-				pScriptView->QualifyName(envClass, name);
-				name.insert(0, "Class::");
-				m_bases.push_back(SBase(name.c_str(), /*envClass.GetDescription()*/ "", SElementId(EDomain::Env, envClass.GetGUID())));
-				return EVisitStatus::Continue;
-			};
-			pScriptView->VisitEnvClasses(EnvClassConstVisitor::FromLambda(visitEnvClass));
-
-			/*
-			   auto visitScriptClass = [this, &pScriptView](const IScriptClass& scriptClass)
-			   {
-			   CStackString name;
-			   pScriptView->QualifyName(scriptClass, EDomainQualifier::Local, name);
-			   name.insert(0, "Class::");
-			   m_bases.push_back(SBase(name.c_str(), scriptClass.GetDescription(), SElementId(EDomain::Script, scriptClass.GetGUID())));
-			   return EVisitStatus::Continue;
-			   };
-			   pScriptView->VisitScriptClasses(ScriptClassConstVisitor::FromLambda(visitScriptClass), EDomainScope::Local);
-			 */
-		}
-	}
-
-	// IQuickSearchOptions
-
-	virtual uint32 GetCount() const override
-	{
-		return m_bases.size();
-	}
-
-	virtual const char* GetLabel(uint32 optionIdx) const override
-	{
-		return optionIdx < m_bases.size() ? m_bases[optionIdx].name.c_str() : "";
-	}
-
-	virtual const char* GetDescription(uint32 optionIdx) const override
-	{
-		return optionIdx < m_bases.size() ? m_bases[optionIdx].description.c_str() : "";
-	}
-
-	virtual const char* GetHeader() const override
-	{
-		return "Base";
-	}
-
-	virtual const char* GetDelimiter() const override
-	{
-		return "::";
-	}
-
-	// ~IQuickSearchOptions
-
-	inline const SBase* GetBase(uint32 baseIdx) const
-	{
-		return baseIdx < m_bases.size() ? &m_bases[baseIdx] : nullptr;
-	}
-
-private:
-
-	Bases m_bases;
-};
-
-/*struct SType
-   {
-   inline SType() {}
-
-   inline SType(const char* _szName, const SElementId& _typeId)
-    : name(_szName)
-    , typeId(_typeId)
-   {}
-
-   string     name;
-   SElementId typeId;
-   };
-
-
-   class CTypeQuickSearchOptions : public IQuickSearchOptions
-   {
-   private:
-
-   typedef std::vector<SType> Types;
-
-   public:
-
-   inline CTypeQuickSearchOptions(const IScriptElement* pScriptScope)
-   {
-    if (pScriptScope)
-    {
-      m_types.reserve(50);
-
-      IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
-
-      auto visitEnvDataType = [this, &pScriptView](const IEnvDataType& envDataType) -> EVisitStatus
-      {
-        CStackString name;
-        pScriptView->QualifyName(envDataType, name);
-        m_types.push_back(SType(name.c_str(), SElementId(EDomain::Env, envDataType.GetGUID())));
-        return EVisitStatus::Continue;
-      };
-      pScriptView->VisitEnvDataTypes(EnvDataTypeConstVisitor::FromLambda(visitEnvDataType));
-
-      auto visitScriptEnum = [this, &pScriptView](const IScriptEnum& scriptEnum)
-      {
-        CStackString name;
-        pScriptView->QualifyName(scriptEnum, EDomainQualifier::Global, name);
-        m_types.push_back(SType(name.c_str(), SElementId(EDomain::Script, scriptEnum.GetGUID())));
-        return EVisitStatus::Continue;
-      };
-      pScriptView->VisitScriptEnums(ScriptEnumConstVisitor::FromLambda(visitScriptEnum), EDomainScope::Local);
-
-      auto visitScriptStruct = [this, &pScriptView](const IScriptStruct& scriptStruct)
-      {
-        CStackString name;
-        pScriptView->QualifyName(scriptStruct, EDomainQualifier::Global, name);
-        m_types.push_back(SType(name.c_str(), SElementId(EDomain::Script, scriptStruct.GetGUID())));
-        return EVisitStatus::Continue;
-      };
-      //pScriptView->VisitScriptStructs(ScriptEnumConstVisitor::FromLambda(visitScriptStruct), EDomainScope::Local);
-    }
-   }
-
-   // IQuickSearchOptions
-
-   virtual uint32 GetCount() const override
-   {
-    return m_types.size();
-   }
-
-   virtual const char* GetLabel(uint32 optionIdx) const override
-   {
-    return optionIdx < m_types.size() ? m_types[optionIdx].name.c_str() : "";
-   }
-
-   virtual const char* GetDescription(uint32 optionIdx) const override
-   {
-    return nullptr;
-   }
-
-   virtual const char* GetHeader() const override
-   {
-    return "Type";
-   }
-
-   virtual const char* GetDelimiter() const override
-   {
-    return "::";
-   }
-
-   // ~IQuickSearchOptions
-
-   inline const SType* GetType(uint32 typeIdx) const
-   {
-    return typeIdx < m_types.size() ? &m_types[typeIdx] : nullptr;
-   }
-
-   private:
-
-   Types m_types;
-   };*/
-
 struct SSignalReceiver
 {
 	inline SSignalReceiver(EScriptSignalReceiverType _type, const SGUID& _guid, const char* _szLabel, const char* szDescription)
@@ -290,71 +118,6 @@ struct SInterface
 	string  description;
 };
 
-class CInterfaceQuickSearchOptions : public IQuickSearchOptions
-{
-private:
-
-	typedef std::vector<SInterface> Interfaces;
-
-public:
-
-	inline CInterfaceQuickSearchOptions(const IScriptElement* pScriptScope)
-	{
-		if (pScriptScope)
-		{
-			m_interfaces.reserve(100);
-
-			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
-			auto visitEnvInterface = [this, &pScriptView](const IEnvInterface& envInterface) -> EVisitStatus
-			{
-				CStackString fullName;
-				pScriptView->QualifyName(envInterface, fullName);
-				m_interfaces.push_back(SInterface(EDomain::Env, envInterface.GetGUID(), envInterface.GetName(), fullName.c_str(), envInterface.GetDescription()));
-				return EVisitStatus::Continue;
-			};
-			pScriptView->VisitEnvInterfaces(EnvInterfaceConstVisitor::FromLambda(visitEnvInterface));
-		}
-	}
-
-	// IQuickSearchOptions
-
-	virtual uint32 GetCount() const override
-	{
-		return m_interfaces.size();
-	}
-
-	virtual const char* GetLabel(uint32 optionIdx) const override
-	{
-		return optionIdx < m_interfaces.size() ? m_interfaces[optionIdx].fullName.c_str() : "";
-	}
-
-	virtual const char* GetDescription(uint32 optionIdx) const override
-	{
-		return optionIdx < m_interfaces.size() ? m_interfaces[optionIdx].description.c_str() : "";
-	}
-
-	virtual const char* GetHeader() const override
-	{
-		return "Interface";
-	}
-
-	virtual const char* GetDelimiter() const override
-	{
-		return "::";
-	}
-
-	// ~IQuickSearchOptions
-
-	inline const SInterface* GetInterface(uint32 interfaceIdx) const
-	{
-		return interfaceIdx < m_interfaces.size() ? &m_interfaces[interfaceIdx] : nullptr;
-	}
-
-private:
-
-	Interfaces m_interfaces;
-};
-
 struct SComponent
 {
 	inline SComponent() {}
@@ -370,99 +133,6 @@ struct SComponent
 	string name;
 	string fullName;
 	string description;
-};
-
-class CComponentQuickSearchOptions : public IQuickSearchOptions
-{
-private:
-
-	typedef std::vector<SComponent> Components;
-
-public:
-
-	inline CComponentQuickSearchOptions(const IScriptElement* pScriptScope)
-	{
-		if (pScriptScope)
-		{
-			m_components.reserve(100);
-
-			bool bAttach = false;
-
-			const IScriptComponentInstance* pScriptComponentInstance = DynamicCast<IScriptComponentInstance>(pScriptScope);
-			if (pScriptComponentInstance)
-			{
-				const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(pScriptComponentInstance->GetTypeGUID());
-				if (pEnvComponent)
-				{
-					if (pEnvComponent->GetDesc().GetComponentFlags().Check(EComponentFlags::Socket))
-					{
-						bAttach = true;
-					}
-					else
-					{
-						return;
-					}
-				}
-			}
-
-			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
-			auto visitEnvComponent = [this, bAttach, &pScriptView](const IEnvComponent& envComponent) -> EVisitStatus
-			{
-				if (!bAttach || envComponent.GetDesc().GetComponentFlags().Check(EComponentFlags::Attach))
-				{
-					CStackString fullName;
-					pScriptView->QualifyName(envComponent, fullName);
-					m_components.push_back(SComponent(envComponent.GetGUID(), envComponent.GetName(), fullName.c_str(), envComponent.GetDescription()));
-				}
-				return EVisitStatus::Continue;
-			};
-			pScriptView->VisitEnvComponents(EnvComponentConstVisitor::FromLambda(visitEnvComponent));
-
-			auto compareComponents = [](const SComponent& lhs, const SComponent& rhs)
-			{
-				return lhs.fullName < rhs.fullName;
-			};
-			std::sort(m_components.begin(), m_components.end(), compareComponents);
-		}
-	}
-
-	// IQuickSearchOptions
-
-	virtual uint32 GetCount() const override
-	{
-		return m_components.size();
-	}
-
-	virtual const char* GetLabel(uint32 optionIdx) const override
-	{
-		return optionIdx < m_components.size() ? m_components[optionIdx].fullName.c_str() : "";
-	}
-
-	virtual const char* GetDescription(uint32 optionIdx) const override
-	{
-		return optionIdx < m_components.size() ? m_components[optionIdx].description.c_str() : "";
-	}
-
-	virtual const char* GetHeader() const override
-	{
-		return "Component";
-	}
-
-	virtual const char* GetDelimiter() const override
-	{
-		return "::";
-	}
-
-	// ~IQuickSearchOptions
-
-	inline const SComponent* GetComponent(uint32 componentIdx) const
-	{
-		return componentIdx < m_components.size() ? &m_components[componentIdx] : nullptr;
-	}
-
-private:
-
-	Components m_components;
 };
 
 struct SAction
@@ -484,174 +154,31 @@ struct SAction
 	string description;
 };
 
-class CActionQuickSearchOptions : public IQuickSearchOptions
-{
-private:
-
-	typedef std::vector<const IScriptComponentInstance*> ScriptComponentInstances;
-	typedef std::vector<SAction>                         Actions;
-
-public:
-
-	inline CActionQuickSearchOptions(const IScriptElement* pScriptScope)
-	{
-		if (pScriptScope)
-		{
-			m_actions.reserve(100);
-
-			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
-
-			ScriptComponentInstances scriptComponentInstances;
-			CollectScriptComponentInstances(scriptComponentInstances, *pScriptView);
-
-			auto visitEnvAction = [this, &pScriptView, &scriptComponentInstances](const IEnvAction& envAction) -> EVisitStatus
-			{
-				const IEnvElement* pParent = envAction.GetParent();
-				if (pParent && (pParent->GetType() == EEnvElementType::Component))
-				{
-					const SGUID componentTypeGUID = pParent->GetGUID();
-					for (const IScriptComponentInstance* pScriptComponentInstance : scriptComponentInstances)
-					{
-						if (pScriptComponentInstance->GetTypeGUID() == componentTypeGUID)
-						{
-							CStackString fullName;
-							pScriptView->QualifyName(envAction, fullName);
-							m_actions.push_back(SAction(envAction.GetGUID(), pScriptComponentInstance->GetGUID(), envAction.GetName(), fullName.c_str(), envAction.GetDescription()));
-						}
-					}
-				}
-				else
-				{
-					CStackString fullName;
-					pScriptView->QualifyName(envAction, fullName);
-					m_actions.push_back(SAction(envAction.GetGUID(), SGUID(), envAction.GetName(), fullName.c_str(), envAction.GetDescription()));
-				}
-				return EVisitStatus::Continue;
-			};
-			pScriptView->VisitEnvActions(EnvActionConstVisitor::FromLambda(visitEnvAction));
-
-			auto actionSortPredicate = [](const SAction& lhs, const SAction& rhs)
-			{
-				return lhs.fullName < rhs.fullName;
-			};
-			std::sort(m_actions.begin(), m_actions.end(), actionSortPredicate);
-		}
-	}
-
-	// IQuickSearchOptions
-
-	virtual uint32 GetCount() const override
-	{
-		return m_actions.size();
-	}
-
-	virtual const char* GetLabel(uint32 optionIdx) const override
-	{
-		return optionIdx < m_actions.size() ? m_actions[optionIdx].fullName.c_str() : "";
-	}
-
-	virtual const char* GetDescription(uint32 optionIdx) const override
-	{
-		return optionIdx < m_actions.size() ? m_actions[optionIdx].description.c_str() : "";
-	}
-
-	virtual const char* GetHeader() const override
-	{
-		return "Action";
-	}
-
-	virtual const char* GetDelimiter() const override
-	{
-		return "::";
-	}
-
-	// ~IQuickSearchOptions
-
-	inline const SAction* GetAction(uint32 actionIdx) const
-	{
-		return actionIdx < m_actions.size() ? &m_actions[actionIdx] : nullptr;
-	}
-
-private:
-
-	inline void CollectScriptComponentInstances(ScriptComponentInstances& scriptComponentInstances, const IScriptView& scriptView)
-	{
-		scriptComponentInstances.reserve(100);
-
-		auto visitScriptComponentInstance = [this, &scriptComponentInstances](const IScriptComponentInstance& scriptComponentInstance) -> EVisitStatus
-		{
-			scriptComponentInstances.push_back(&scriptComponentInstance);
-			return EVisitStatus::Continue;
-		};
-		scriptView.VisitScriptComponentInstances(ScriptComponentInstanceConstVisitor::FromLambda(visitScriptComponentInstance), EDomainScope::Local);
-	}
-
-	/*EVisitStatus VisitAction(const IEnvAction& envAction)
-	   {
-	   const SGUID& componentGUID = envAction.GetComponentGUID();
-	   if(componentGUID)
-	   {
-	    const IScriptClass* pScriptClass = DocUtils::FindOwnerClass(m_scriptFile, m_scopeGUID);
-	    if(pScriptClass)
-	    {
-	      TScriptComponentInstanceConstVector componentInstances;
-	      DocUtils::CollectComponentInstances(m_scriptFile, pScriptClass->GetGUID(), true, componentInstances);
-	      for(TScriptComponentInstanceConstVector::const_iterator iComponentInstance = componentInstances.begin(), iEndComponentInstance = componentInstances.end(); iComponentInstance != iEndComponentInstance; ++ iComponentInstance)
-	      {
-	        const IScriptComponentInstance& componentInstance = *(*iComponentInstance);
-	        if(componentInstance.GetComponentGUID() == componentGUID)
-	        {
-	          const char*  szName = envAction.GetName();
-	          CStackString fullName;
-	          DocUtils::GetFullElementName(m_scriptFile, componentInstance, fullName, EScriptElementType::Class);
-	          fullName.append("::");
-	          fullName.append(szName);
-	          m_actions.push_back(SAction(envAction.GetGUID(), componentInstance.GetGUID(), szName, fullName.c_str(), envAction.GetDescription(), (envAction.GetFlags() & EActionFlags::Singleton) != 0));
-	        }
-	      }
-	    }
-	   }
-	   else
-	   {
-	    const char* szNamespace = envAction.GetNamespace();
-	    if(DocUtils::IsElementAvailableInScope(m_scriptFile, m_scopeGUID, szNamespace))
-	    {
-	      const char*  szName = envAction.GetName();
-	      CStackString fullName;
-	      EnvRegistryUtils::GetFullName(szName, szNamespace, componentGUID, fullName);
-	      m_actions.push_back(SAction(envAction.GetGUID(), componentGUID, szName, fullName.c_str(), envAction.GetDescription(), (envAction.GetFlags() & EActionFlags::Singleton) != 0));
-	    }
-	   }
-	   return EVisitStatus::Continue;
-	   }*/
-private:
-
-	Actions m_actions;
-};
-
 inline void MoveRenameScriptsRecursive(IScriptElement& element)
 {
-	IScript* pScript = element.GetScript();
-	if (pScript)
-	{
-		const CStackString prevFileName = pScript->GetName();
-		const CStackString fileName = pScript->SetNameFromRoot();
+	// TODO: Can we remove this function?
+	/*IScript* pScript = element.GetScript();
+	   if (pScript)
+	   {
+	   const CStackString prevFileName = pScript->GetName();
+	   const CStackString fileName = pScript->SetNameFromRoot();
 
-		CStackString folder = fileName.substr(0, fileName.rfind('/'));
-		if (!folder.empty())
-		{
-			gEnv->pCryPak->MakeDir(folder.c_str());
-		}
+	   CStackString folder = fileName.substr(0, fileName.rfind('/'));
+	   if (!folder.empty())
+	   {
+	    gEnv->pCryPak->MakeDir(folder.c_str());
+	   }
 
-		MoveFile(prevFileName.c_str(), fileName.c_str());
+	   MoveFile(prevFileName.c_str(), fileName.c_str());
 
-		// #SchematycTODO : Use RemoveDirectory() to remove empty directories?
-		// #SchematycTODO : Update source control!
-	}
-	for (IScriptElement* pChild = element.GetFirstChild(); pChild; pChild = pChild->GetNextSibling())
-	{
-		MoveRenameScriptsRecursive(*pChild);
-	}
+	   // #SchematycTODO : Use RemoveDirectory() to remove empty directories?
+	   // #SchematycTODO : Update source control!
+	   }
+	   for (IScriptElement* pChild = element.GetFirstChild(); pChild; pChild = pChild->GetNextSibling())
+	   {
+	   MoveRenameScriptsRecursive(*pChild);
+	   }*/
+	// ~TODO
 }
 
 // #SchematycTODO : Move logic to Schematyc core (add IsValidScope() function to IStriptElement).
@@ -758,62 +285,163 @@ const char* GetScriptElementTypeName(EScriptElementType scriptElementType)
 	return nullptr;
 }
 
-const char* GetScriptElementFilterName(EScriptElementType scriptElementType)
+SFilterAttributes GetScriptElementFilterAttributes(EScriptElementType scriptElementType)
 {
+	SFilterAttributes attribute;
 	switch (scriptElementType)
 	{
-	case EScriptElementType::Enum:
+	case EScriptElementType::Base:
 		{
-			return "Enumerations";
+			attribute.szOrder = "A";
+			attribute.filterType = EFilterType::Base;
+			break;
 		}
+	case EScriptElementType::Enum:
 	case EScriptElementType::Struct:
 		{
-			return "Structures";
+			attribute.szName = "Types";
+			attribute.szOrder = "C";
+			attribute.filterType = EFilterType::Types;
+			break;
 		}
 	case EScriptElementType::Signal:
 		{
-			return "Signals";
+			attribute.szName = "Signals";
+			attribute.szOrder = "E";
+			attribute.filterType = EFilterType::Signals;
+			break;
 		}
 	case EScriptElementType::Function:
 	case EScriptElementType::Constructor:
 	case EScriptElementType::SignalReceiver:
 		{
-			return "Graphs";
+			attribute.szName = "Graphs";
+			attribute.szOrder = "F";
+			attribute.filterType = EFilterType::Graphs;
+			break;
 		}
+	case EScriptElementType::InterfaceImpl:
 	case EScriptElementType::Interface:
 		{
-			return "Interfaces";
-		}
-	case EScriptElementType::Class:
-		{
-			return "Classes";
+			attribute.szName = "Interfaces";
+			attribute.szOrder = "H";
+			attribute.filterType = EFilterType::Interfaces;
+			break;
 		}
 	case EScriptElementType::StateMachine:
 		{
-			return "State Machines";
+			attribute.szName = "State Machines";
+			attribute.szOrder = "G";
+			attribute.filterType = EFilterType::StateMachine;
+			break;
 		}
 	case EScriptElementType::Variable:
-		{
-			return "Variables";
-		}
 	case EScriptElementType::Timer:
 		{
-			return "Timers";
-		}
-	case EScriptElementType::InterfaceImpl:
-		{
-			return "Interfaces";
+			attribute.szName = "Variables";
+			attribute.szOrder = "D";
+			attribute.filterType = EFilterType::Variables;
+			break;
 		}
 	case EScriptElementType::ComponentInstance:
 		{
-			return "Components";
+			attribute.szName = "Components";
+			attribute.szOrder = "B";
+			attribute.filterType = EFilterType::Components;
+			break;
 		}
-	case EScriptElementType::ActionInstance:
+	case EScriptElementType::InterfaceFunction:
+	case EScriptElementType::State:
+	case EScriptElementType::Class:
 		{
-			return "Actions";
+			break;
+		}
+	default:
+		{
+			CRY_ASSERT_MESSAGE(false, "Invalid or deprecated element type.");
+			break;
 		}
 	}
-	return nullptr;
+	return attribute;
+}
+
+void AppendFilterTags(EScriptElementType scriptElementType, stack_string& filter)
+{
+	switch (scriptElementType)
+	{
+	case EScriptElementType::Base:
+		{
+			filter.append("Base ");
+			break;
+		}
+	case EScriptElementType::Enum:
+		{
+			filter.append("Type Enum");
+			break;
+		}
+	case EScriptElementType::Struct:
+		{
+			filter.append("Type Struct");
+			break;
+		}
+	case EScriptElementType::Signal:
+		{
+			filter.append("Signal ");
+			break;
+		}
+	case EScriptElementType::Function:
+		{
+			filter.append("Graph Function");
+			break;
+		}
+	case EScriptElementType::Constructor:
+		{
+			filter.append("Graph Constructor");
+			break;
+		}
+	case EScriptElementType::SignalReceiver:
+		{
+			filter.append("Graph Signal Receiver");
+			break;
+		}
+	case EScriptElementType::InterfaceImpl:
+	case EScriptElementType::InterfaceFunction:
+	case EScriptElementType::Interface:
+		{
+			filter.append("Interface ");
+			break;
+		}
+	case EScriptElementType::StateMachine:
+		{
+			filter.append("State Machine ");
+			break;
+		}
+	case EScriptElementType::State:
+		{
+			filter.append("State  ");
+			break;
+		}
+	case EScriptElementType::Variable:
+		{
+			filter.append("Variable  ");
+			break;
+		}
+	case EScriptElementType::Timer:
+		{
+			filter.append("Variable Timer  ");
+			break;
+		}
+	case EScriptElementType::ComponentInstance:
+		{
+			filter.append("Component  ");
+			break;
+		}
+	default:
+		{
+			CRY_ASSERT_MESSAGE(false, "Invalid or deprecated element type.");
+			break;
+		}
+	}
 }
 
 const char* GetScriptElementIcon(const IScriptElement& scriptElement)
@@ -903,7 +531,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 			return g_szScriptComponentIcon;
 		}
 	case EScriptElementType::ActionInstance:
-	   {
+		{
 			const SGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
 			const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(guid);
 			if (pEnvAction)
@@ -915,7 +543,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 				}
 			}
 			return g_szScriptActionIcon;
-	   }
+		}
 	default:
 		{
 			return "";
@@ -992,13 +620,6 @@ void FindReferences(const IScriptElement& element)
 	pReportWidget->show();
 }
 
-IScriptModule* AddScriptModule(IScriptElement* pScope)
-{
-	CStackString name = "NewFolder";
-	MakeScriptElementNameUnique(name, pScope);
-	return gEnv->pSchematyc->GetScriptRegistry().AddModule(name.c_str(), pScope);
-}
-
 IScriptEnum* AddScriptEnum(IScriptElement* pScope)
 {
 	CStackString name = "NewEnumeration";
@@ -1048,34 +669,6 @@ IScriptInterfaceTask* AddScriptInterfaceTask(IScriptElement* pScope)
 	return gEnv->pSchematyc->GetScriptRegistry().AddInterfaceTask(name.c_str(), pScope);
 }
 
-IScriptClass* AddScriptClass(IScriptElement* pScope)
-{
-	const SBase* pBase = nullptr;
-
-	CBaseQuickSearchOptions quickSearchOptions(pScope);
-	if (quickSearchOptions.GetCount() == 1)
-	{
-		pBase = quickSearchOptions.GetBase(0);
-	}
-	/*else
-	   {
-	   CQuickSearchDlg quickSearchDlg(nullptr, GetDlgPos(), quickSearchOptions);
-	   if (quickSearchDlg.DoModal() == IDOK)
-	   {
-	    pBase = quickSearchOptions.GetBase(quickSearchDlg.GetResult());
-	   }
-	   }*/
-
-	if (pBase)
-	{
-		CStackString name = "NewClass";
-		MakeScriptElementNameUnique(name, pScope);
-		return gEnv->pSchematyc->GetScriptRegistry().AddClass(name.c_str(), pBase->id, pScope);
-	}
-
-	return nullptr;
-}
-
 IScriptStateMachine* AddScriptStateMachine(IScriptElement* pScope)
 {
 	CStackString name = "NewStateMachine";
@@ -1111,19 +704,29 @@ IScriptSignalReceiver* AddScriptSignalReceiver(IScriptElement* pScope)
 	return gEnv->pSchematyc->GetScriptRegistry().AddSignalReceiver(name.c_str(), EScriptSignalReceiverType::Universal, SGUID(), pScope);
 }
 
-IScriptInterfaceImpl* AddScriptInterfaceImpl(IScriptElement* pScope)
+IScriptInterfaceImpl* AddScriptInterfaceImpl(IScriptElement* pScope, const QPoint* pPosition)
 {
-	/*CInterfaceQuickSearchOptions quickSearchOptions(pScope);
-	   CQuickSearchDlg quickSearchDlg(nullptr, GetDlgPos(), quickSearchOptions);
-	   if (quickSearchDlg.DoModal() == IDOK)
-	   {
-	   const SInterface* pInterface = quickSearchOptions.GetInterface(quickSearchDlg.GetResult());
-	   SCHEMATYC_EDITOR_ASSERT(pInterface);
-	   if (pInterface)
-	   {
-	    return gEnv->pSchematyc->GetScriptRegistry().AddInterfaceImpl(pInterface->domain, pInterface->guid, pScope);
-	   }
-	   }*/
+	CrySchematycEditor::CInterfacesDictionary dict(&gEnv->pSchematyc->GetScriptRegistry().GetRootElement());
+	QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Schematyc::AddInterfaceImplementation", dict);
+
+	QPoint pos;
+	if (pPosition)
+	{
+		pos = *pPosition;
+	}
+	else
+	{
+		pos = QCursor::pos();
+	}
+
+	pDictionary->ExecAt(pos, QPopupWidget::TopLeft);
+
+	CrySchematycEditor::CInterfaceDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CInterfaceDictionaryEntry*>(pDictionary->GetResult());
+	if (pEntry)
+	{
+		return gEnv->pSchematyc->GetScriptRegistry().AddInterfaceImpl(pEntry->GetDomain(), pEntry->GetInterfaceGUID(), pScope);
+	}
+
 	return nullptr;
 }
 
@@ -1155,24 +758,6 @@ IScriptComponentInstance* AddScriptComponentInstance(IScriptElement* pScope, con
 	return nullptr;
 }
 
-IScriptActionInstance* AddScriptActionInstance(IScriptElement* pScope)
-{
-	/*CActionQuickSearchOptions quickSearchOptions(pScope);
-	   CQuickSearchDlg quickSearchDlg(nullptr, GetDlgPos(), quickSearchOptions);
-	   if (quickSearchDlg.DoModal() == IDOK)
-	   {
-	   const SAction* pAction = quickSearchOptions.GetAction(quickSearchDlg.GetResult());
-	   SCHEMATYC_EDITOR_ASSERT(pAction);
-	   if (pAction)
-	   {
-	    CStackString name = pAction->name.c_str();
-	    MakeScriptElementNameUnique(name, pScope);
-	    return gEnv->pSchematyc->GetScriptRegistry().AddActionInstance(name.c_str(), pAction->guid, pAction->componentInstanceGUID, pScope);
-	   }
-	   }*/
-	return nullptr;
-}
-
 bool RenameScriptElement(IScriptElement& scriptElement, const char* szName)
 {
 	SCHEMATYC_EDITOR_ASSERT(szName);
@@ -1200,10 +785,11 @@ bool RenameScriptElement(IScriptElement& scriptElement, const char* szName)
 				bool bRenameScriptElement = true;
 				bool bMoveRenameScriptFiles = false;
 
+				// TODO: This shouldn't be needed anymore.
 				const IScript* pScript = scriptElement.GetScript();
 				if (pScript)
 				{
-					const char* szScriptName = pScript->GetName();
+					const char* szScriptName = pScript->GetFilePath();
 					if (szScriptName[0] != '\0')
 					{
 						CStackString fileName;
@@ -1222,6 +808,7 @@ bool RenameScriptElement(IScriptElement& scriptElement, const char* szName)
 						}
 					}
 				}
+				// ~TODO
 
 				if (bRenameScriptElement)
 				{

@@ -11,69 +11,61 @@
 #include <Schematyc/Utils/Assert.h>
 #include <Schematyc/Utils/StringUtils.h>
 
+#include <Schematyc/Script/IScriptRegistry.h>
+
+#include "Script/ScriptSerializers.h"
+#include "Script/ScriptRegistry.h"
+
 namespace Schematyc
 {
-CScript::CScript(const SGUID& guid, const char* szName)
+CScript::CScript(const SGUID& guid, const char* szFilePath)
 	: m_guid(guid)
-	, m_name(szName)
+	, m_filePath(szFilePath)
 	, m_timeStamp(gEnv->pTimer->GetAsyncTime())
 	, m_pRoot(nullptr)
 {}
+
+CScript::CScript(const char* szFilePath)
+	: m_guid()
+	, m_filePath(szFilePath)
+	, m_timeStamp(gEnv->pTimer->GetAsyncTime())
+	, m_pRoot(nullptr)
+{
+
+}
 
 SGUID CScript::GetGUID() const
 {
 	return m_guid;
 }
 
-void CScript::SetName(const char* szName)
+const char* CScript::SetFilePath(const char* szFilePath)
 {
-	m_name = szName;
-}
-
-const char* CScript::SetNameFromRoot()
-{
-	// #SchematycTODO : Only store names relative to script folder and re-construct path when saving?
-
-	if (m_pRoot)
+	if (szFilePath)
 	{
-		CStackString name;
-
-		SetNameFromRootRecursive(name, *m_pRoot);
-
-		StringUtils::ToSnakeCase(name);
-
-		string path = gEnv->pCryPak->GetGameFolder();
-		path.append("/");
-		path.append(gEnv->pSchematyc->GetScriptsFolder());
-		path.append("/");
-
-		name.insert(0, path);
+		stack_string filePath = gEnv->pCryPak->GetGameFolder();
+		filePath.append("/");
+		filePath.append(szFilePath);
 
 		switch (m_pRoot->GetType())
 		{
 		case EScriptElementType::Class:
 			{
-				name.append(".sc_class");
+				filePath.append(".schematyc_ent");
 				break;
 			}
 		default:
 			{
-				name.append(".sc_lib");
+				filePath.append(".schematyc_lib");
 				break;
 			}
 		}
 
-		name.MakeLower();
-
-		m_name = name.c_str();
+		filePath.MakeLower();
+		m_filePath = filePath.c_str();
 	}
 
-	return m_name.c_str();
-}
-
-const char* CScript::GetName() const
-{
-	return m_name;
+	return m_filePath.c_str();
 }
 
 const CTimeValue& CScript::GetTimeStamp() const

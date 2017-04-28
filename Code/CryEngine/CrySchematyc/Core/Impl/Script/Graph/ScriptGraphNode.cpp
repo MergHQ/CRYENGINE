@@ -375,6 +375,7 @@ void CScriptGraphNode::ProcessEvent(const SScriptEvent& event)
 {
 	switch (event.id)
 	{
+	case EScriptEventId::FileReload:
 	case EScriptEventId::EditorAdd:
 	case EScriptEventId::EditorPaste:
 	case EScriptEventId::EditorRefresh:
