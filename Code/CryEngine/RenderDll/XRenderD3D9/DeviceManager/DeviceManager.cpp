@@ -85,10 +85,11 @@ void CDeviceManager::Init()
 	m_numInvalidDrawcalls = 0;
 
 	m_texturePool.Init(
-	  4ull * 1024 * 1024 * 1024,
-	  128 * 1024 * 1024,
-	  0,//2ull * 1024  * 1024 * 1024 + 512ull * 1024 * 1024,
-	  poolMemModel);
+		CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024,
+		512 * 1024 * 1024,
+		CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024,
+		poolMemModel,
+		false);
 	m_textureStagingRing.Init(gcpRendD3D->m_pDMA1, 128 * 1024 * 1024);
 #endif
 
@@ -944,11 +945,7 @@ int CDeviceTexture::Cleanup()
 #endif
 
 #if CRY_PLATFORM_DURANGO
-		// #if !defined(_RELEASE) && defined(_DEBUG)
-		//  IF (nRef < 0, 0)
-		//    __debugbreak(); // we need other logic here since Cleanup() is being called twice during texture Release()
-		// #endif
-		if (nRef == 0 && m_gpuHdl)
+		if (nRef <= 0 && m_gpuHdl.IsValid())
 		{
 			gcpRendD3D->m_DevMan.m_texturePool.Free(m_gpuHdl);
 			m_gpuHdl = SGPUMemHdl();

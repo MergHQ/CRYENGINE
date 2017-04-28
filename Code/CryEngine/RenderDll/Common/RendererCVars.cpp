@@ -120,6 +120,9 @@ float CRendererCVars::CV_r_measureoverdrawscale;
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingmipfading);
 int CRendererCVars::CV_r_TexturesStreamPoolSize;
 int CRendererCVars::CV_r_TexturesStreamPoolSecondarySize;
+int CRendererCVars::CV_r_texturesstreampooldefragmentation;
+int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxmoves;
+int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxamount;
 int CRendererCVars::CV_r_texturesskiplowermips;
 int CRendererCVars::CV_r_rendertargetpoolsize;
 float CRendererCVars::CV_r_TexturesStreamingMaxRequestedMB;
@@ -2163,13 +2166,20 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_texturesskiplowermips", CV_r_texturesskiplowermips, 0, VF_NULL,
 	               "Enabled skipping lower mips for X360.\n");
 
-	int nDefaultTexPoolSize = 512;
+	int nDefaultTexPoolSize = 1024;
 
 	REGISTER_CVAR3("r_TexturesStreamPoolSize", CV_r_TexturesStreamPoolSize, nDefaultTexPoolSize, VF_NULL,
 	               "Size of texture streaming pool in MB.\n");
 
 	REGISTER_CVAR3("r_TexturesStreamPoolSecondarySize", CV_r_TexturesStreamPoolSecondarySize, 0, VF_NULL,
 	               "Size of secondary pool for textures in MB.");
+
+	REGISTER_CVAR3("r_texturesstreampooldefragmentation", CV_r_texturesstreampooldefragmentation, nDefaultDefragState, VF_NULL,
+	              "Enabled CPU (1), GPU(2) and disable (0) textures stream pool defragmentation.\n");
+	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxmoves", CV_r_texturesstreampooldefragmentationmaxmoves, 8, VF_NULL,
+	               "Specify the maximum number of blocks to move per defragmentation update");
+	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxamount", CV_r_texturesstreampooldefragmentationmaxamount, 512 * 1024, VF_NULL,
+	               "Specify the limit (in bytes) that defrag update will stop");
 
 	REGISTER_CVAR3("r_TexturesStreamingSync", CV_r_texturesstreamingsync, 0, VF_RENDERER_CVAR,
 	               "Force only synchronous texture streaming.\n"

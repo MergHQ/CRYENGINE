@@ -156,11 +156,9 @@ void CTexture::StreamUploadMip_Durango(const void* pSurfaceData,
 				return;
 			}
 
-			char* pDevTexBase = (char*)pDevTex->GetBasePointer();
+			CDeviceTexturePin pin(pDevTex);
+			char* pBase = (char*)pin.GetBaseAddress();
 
-			const XG_RESOURCE_LAYOUT* pLyt = &pDevTex->GetLayout()->layout;
-			char* pAllocBase = (char*)CryModuleMemalign(pLyt->SizeBytes, pLyt->BaseAlignmentBytes);
-			char* pBase = pAllocBase ? pAllocBase : pDevTexBase;
 			// Expecting that the data has been expanded, or that the src format is an inplace format (expansion is a nop)
 			int nSrcSurfaceSize = TextureDataSize(m_nWidth >> nTexMip, m_nHeight >> nTexMip, 1, 1, 1, m_eTFDst);
 			int nSrcSidePitch = nSrcSurfaceSize + mipState.m_nSideDelta;
@@ -179,17 +177,11 @@ void CTexture::StreamUploadMip_Durango(const void* pSurfaceData,
 	#endif
 
 				pComputer->CopyIntoSubresource(pBase, 0, nDstSubResIdx, pSRSrc, nSrcRowPitch, 0);
-
-				if (pBase != pDevTexBase)
-				{
-					size_t sliceSize = +pLyt->Plane[0].MipLayout[nMip].Slice2DSizeBytes;
-					size_t offs = pLyt->Plane[0].MipLayout[nMip].OffsetBytes + sliceSize * nSlice;
-					memcpy(pDevTexBase + offs, pBase + offs, sliceSize);
-				}
 			}
 
-			if (pAllocBase)
-				CryModuleMemalignFree(pAllocBase);
+#if defined(TEXTURES_IN_CACHED_MEM)
+			D3DFlushCpuCache(pBase, pDevTex->GetDeviceSize());
+#endif
 
 			mipState.m_bUploaded = true;
 			mipState.m_bExpanded = false;
@@ -224,6 +216,8 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 			// Data is in a format that the move engine can tile, wrap it in a placement texture
 			// and move it.
 
+			// Assume that the texture has been properly pinned for the stream op externally
+			char* pBaseAddress = (char*)pDevTex->WeakPin();
 			const int numSides = StreamGetNumSlices();
 
 			CDeviceManager::STileRequest subRes[g_nD3D10MaxSupportedSubres];
@@ -243,7 +237,7 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 						sr.nDstSubResource = D3D11CalcSubresource(nDstMip, nSide, pNewPoolItem->m_pOwner->m_nMips);
 						if (ms.m_bStreamInPlace)
 						{
-							void* pSurface = pDevTex->GetSurfacePointer(nDstMip, nSide);
+							void* pSurface = pBaseAddress + pDevTex->GetSurfaceOffset(nDstMip, nSide);
 							size_t nSurfaceSize = pDevTex->GetSurfaceSize(nDstMip);
 
 	#if defined(TEXTURES_IN_CACHED_MEM)
@@ -527,9 +521,15 @@ void CTexture::StreamCopyMipsTexToMem(int nStartMip, int nEndMip, bool bToDevice
 	}
 	if (bToDevice && pNewPoolItem)
 	{
+		if (m_pDevTexture)
+			m_pDevTexture->SetOwner(NULL);
+
 		assert(pNewPoolItem->m_pDevTexture);
 		pDevTexture = pNewPoolItem->m_pDevTexture;
 		nTexMips = pNewPoolItem->m_pOwner->m_nMips;
+
+		if (m_pDevTexture)
+			m_pDevTexture->SetOwner(this);
 	}
 
 	if (!pDevTexture)
@@ -544,6 +544,7 @@ void CTexture::StreamCopyMipsTexToMem(int nStartMip, int nEndMip, bool bToDevice
 		// If a pool item was provided, it would have a valid dev texture, so we shouldn't have ended up here..
 		assert(!bToDevice || !pNewPoolItem);
 		SetDevTexture(pDevTexture);
+		m_pDevTexture->SetOwner(this);
 	}
 
 	if (CRenderer::CV_r_texturesstreamingnoupload && bToDevice)
@@ -710,7 +711,7 @@ void CTexture::StreamApplyDeferred(ID3D11CommandList* pCmdList)
 #endif
 
 #if CRY_PLATFORM_DURANGO
-bool CTexture::StreamInCheckComplete_Durango(STexStreamInState& state)
+bool CTexture::StreamInCheckTileComplete_Durango(STexStreamInState& state)
 {
 	if (state.m_tileFence)
 	{
@@ -720,6 +721,11 @@ bool CTexture::StreamInCheckComplete_Durango(STexStreamInState& state)
 			return false;
 	}
 
+	return true;
+}
+
+bool CTexture::StreamInCheckCopyComplete_Durango(STexStreamInState& state)
+{
 	if (state.m_copyMipsFence)
 	{
 		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_copyMipsFence))
@@ -733,6 +739,7 @@ bool CTexture::StreamInCheckComplete_Durango(STexStreamInState& state)
 
 bool CTexture::StreamOutCheckComplete_Durango(STexStreamOutState& state)
 {
+#if defined(TEXSTRM_ASYNC_TEXCOPY)
 	if (state.m_copyFence)
 	{
 		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_copyFence))
@@ -740,6 +747,7 @@ bool CTexture::StreamOutCheckComplete_Durango(STexStreamOutState& state)
 		else
 			return false;
 	}
+#endif
 
 	return true;
 }
@@ -772,6 +780,8 @@ void CTexture::StreamRemoveFromPool()
 	m_pFileTexMips->m_pPoolItem = NULL;
 	m_nActualSize = 0;
 	m_nPersistentSize = 0;
+	if (m_pDevTexture)
+		m_pDevTexture->SetOwner(NULL);
 	m_pDevTexture = NULL;
 
 	SetMinLoadedMip(MAX_MIP_LEVELS);
@@ -831,7 +841,14 @@ void CTexture::StreamAssignPoolItem(STexPoolItem* pItem, int nMinMip)
 
 	m_pResourceViewData = new ResourceViewData();
 	m_pDevTexture = pItem->m_pDevTexture;
+	if (m_pDevTexture)
+		m_pDevTexture->SetOwner(this);
+
 	SetShaderResourceView((D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(GetDstFormat(), 0, m_nArraySize, 0, -1, m_bIsSRGB, false)), false);
+
+#if defined(CRY_PLATFORM_DURANGO)
+	m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
+#endif
 
 	SetMinLoadedMip(m_nMips - pItemOwner->m_nMips);
 	StreamActivateLod(nMinMip);
@@ -945,24 +962,95 @@ void CTexture::StreamCopyMipsTexToTex(STexPoolItem* pSrcItem, int nMipSrc, STexP
 {
 	CHK_RENDTH;
 
+	CDeviceTexture* pSrcDevTexture = pSrcItem->m_pDevTexture;
+	CDeviceTexture* pDstDevTexture = pDestItem->m_pDevTexture;
+
 	uint32 nSides = pDestItem->m_pOwner->GetNumSlices();
 
-	for (uint32 iSide = 0; iSide < nSides; ++iSide)
-		CopySliceChain(pDestItem->m_pDevTexture, pDestItem->m_pOwner->m_nMips, iSide, nMipDest, pSrcItem->m_pDevTexture, iSide, nMipSrc, pSrcItem->m_pOwner->m_nMips, nNumMips);
+	if (0)
+	{
+	}
+#if defined(CRY_PLATFORM_DURANGO)
+	else if (!gcpRendD3D->m_pRT->IsRenderThread())
+	{
+		// We can use the move engine!
+
+		CryAutoLock<CryCriticalSection> dmaLock(gcpRendD3D->m_dma1Lock);
+
+		ID3D11DmaEngineContextX* pDMA = gcpRendD3D->m_pDMA1;
+
+		// Need to pin the destination because we're going to invalidate it.
+		// Need to pin both the source and destination to ensure that the D3D texture interfaces remain
+		// valid whilst we issue CSR commands
+
+		DMAPIN_DEVICE_TEXTURE(pDMA, pSrcDevTexture);
+		DMAPIN_DEVICE_TEXTURE(pDMA, pDstDevTexture);
+
+		D3DBaseTexture* pSrcResource = pSrcDevTexture->GetBaseTexture();
+		D3DBaseTexture* pDstResource = pDstDevTexture->GetBaseTexture();
+
+		for(int32 iSide = 0;iSide < nSides;++iSide)
+		{
+			for(int nMip=0;nMip<nNumMips;++nMip)
+			{
+				PREFAST_SUPPRESS_WARNING(6387)
+				pDMA->CopySubresourceRegion(
+					pDstResource,
+					D3D11CalcSubresource(nMipDest + nMip, iSide, pDestItem->m_pOwner->m_nMips),
+					0, 0, 0,
+					pSrcResource,
+					D3D11CalcSubresource(nMipSrc + nMip, iSide, pSrcItem->m_pOwner->m_nMips),
+					NULL,
+					D3D11_COPY_NO_OVERWRITE);
+			}
+		}
+
+#ifdef DURANGO_MONOD3D_DRIVER
+		UINT64 fence = pDMA->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
+#else
+		UINT64 fence = pDMA->InsertFence();
+#endif
+		pDMA->Submit();
+		while (gcpRendD3D->GetPerformanceDevice().IsFencePending(fence))
+			CrySleep(1);
+	}
+#endif
+	else
+	{
+		GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstDevTexture);
+
+		for (uint32 iSide = 0; iSide < nSides; ++iSide)
+			CopySliceChain(pDstDevTexture, pDestItem->m_pOwner->m_nMips, iSide, nMipDest, pSrcDevTexture, iSide, nMipSrc, pSrcItem->m_pOwner->m_nMips, nNumMips);
+	}
 }
 
 #if CRY_PLATFORM_DURANGO
 
+UINT64 CTexture::StreamInsertFence()
+{
+	return gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
+}
+
 UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int nMipSrc, STexPoolItem* pDestItem, int nMipDest, int nNumMips)
 {
-	D3DBaseTexture* pDstResource = pDestItem->m_pDevTexture->GetBaseTexture();
-	D3DBaseTexture* pSrcResource = pSrcItem->m_pDevTexture->GetBaseTexture();
+	CDeviceTexture* pDstDevTexture = pDestItem->m_pDevTexture;
+	CDeviceTexture* pSrcDevTexture = pSrcItem->m_pDevTexture;
 
 	const int32 nSides = pDestItem->m_pOwner->GetNumSlices();
 
 	CryAutoLock<CryCriticalSection> dmaLock(gcpRendD3D->m_dma1Lock);
 
 	ID3D11DmaEngineContextX* pDMA = gcpRendD3D->m_pDMA1;
+
+	// Need to pin the destination because we're going to invalidate it.
+	// Need to pin both the source and destination to ensure that the D3D texture interfaces remain
+	// valid whilst we issue CSR commands
+
+	DMAPIN_DEVICE_TEXTURE(pDMA, pDstDevTexture);
+	DMAPIN_DEVICE_TEXTURE(pDMA, pSrcDevTexture);
+
+	D3DBaseTexture* pDstResource = pDstDevTexture->GetBaseTexture();
+	D3DBaseTexture* pSrcResource = pSrcDevTexture->GetBaseTexture();
 
 	for (int32 iSide = 0; iSide < nSides; ++iSide)
 	{

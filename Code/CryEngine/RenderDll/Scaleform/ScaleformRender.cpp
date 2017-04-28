@@ -1254,6 +1254,8 @@ bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, cons
 	if (!pTex)
 		return false;
 
+	GPUPIN_DEVICE_TEXTURE(GetPerformanceDeviceContext(), pTex);
+
 	for (int i(0); i < numRects; ++i)
 	{
 		int sizePixel(CTexture::BytesPerPixel(eTF));
