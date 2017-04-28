@@ -195,7 +195,7 @@ void CFlowScriptedNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo
 	// pass 1: update data
 	for (size_t i = 0; i < m_pFactory->NumInputs(); i++)
 	{
-		if (pActInfo->GetInputPort(i).IsUserFlagSet())
+		if (IsPortActive(pActInfo, i))
 		{
 			//TODO
 			//pActInfo->pInputPorts[i].Visit( CFlowDataToScriptDataVisitor(m_table.GetPtr(), m_pFactory->InputName(i)) );
@@ -205,7 +205,7 @@ void CFlowScriptedNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo
 	// pass 2: call OnActivate functions
 	for (size_t i = 0; i < m_pFactory->NumInputs(); i++)
 	{
-		if (pActInfo->GetInputPort(i).IsUserFlagSet())
+		if (IsPortActive(pActInfo, i))
 		{
 			static char buffer[256] = "OnActivate_";
 			strcpy(buffer + 11, m_pFactory->InputName(i));
@@ -428,7 +428,7 @@ void CFlowSimpleScriptedNode::ProcessEvent(EFlowEvent event, SActivationInfo* pA
 
 		for (size_t i = 0; i < m_pFactory->NumInputs(); i++)
 		{
-			if (pActInfo->GetInputPort(i).IsUserFlagSet() && (m_pFactory->GetActivateFlags() & (1 << i)))
+			if (IsPortActive(pActInfo, i) && (m_pFactory->GetActivateFlags() & (1 << i)))
 			{
 				pActInfo->pGraph->RequestFinalActivation(pActInfo->myID);
 				break;
@@ -626,7 +626,7 @@ bool CFlowSimpleScriptedNodeFactory::CallFunction(IFlowNode::SActivationInfo* pA
 	for (size_t i = 0; i < m_inputs.size() - 1; i++)
 	{
 		CFlowDataToScriptParamVisitor visitor(pSS);
-		pActInfo->GetInputPort(i).Visit(visitor);
+		pActInfo->pInputPorts[i].Visit(visitor);
 	}
 
 	if (pSS->EndCallAnyN(m_outputValues.size(), &m_outputValues[0]))

@@ -40,33 +40,44 @@ CFlowData::CFlowData(IFlowNodePtr pImpl, const string& name, TFlowNodeTypeId typ
 	SFlowNodeConfig config;
 	DoGetConfiguration(config);
 	m_hasEntity = 0 != (config.nFlags & EFLN_TARGET_ENTITY);
-	if (!config.pInputPorts)
-		m_nInputs = 0;
-	else
-		for (m_nInputs = 0; config.pInputPorts[m_nInputs].name; m_nInputs++)
-			;
+	m_nInputs = 0;
+	if (config.pInputPorts)
+	{
+		while (config.pInputPorts[m_nInputs].name != nullptr)
+		{
+			++m_nInputs;
+		}
+	}
 	if (0 != (config.nFlags & EFLN_DYNAMIC_OUTPUT))
+	{
 		m_nOutputs = DYNAMIC_OUTPUT_MAX; // Allow for so many output ports to be made
+	}
 	else if (!config.pOutputPorts)
+	{
 		m_nOutputs = 0;
+	}
 	else
-		for (m_nOutputs = 0; config.pOutputPorts[m_nOutputs].name; m_nOutputs++)
-			;
-	m_pInputData = new TFlowInputData[m_nInputs];
+	{
+		m_nOutputs = 0;
+		while (config.pOutputPorts[m_nOutputs].name != nullptr)
+		{
+			++m_nOutputs;
+		}
+	}
+
+	m_pInputData = std::unique_ptr<TFlowInputData[]>(new TFlowInputData[m_nInputs]());
 	for (int i = 0; i < m_nInputs; i++)
 	{
 		CRY_ASSERT(config.pInputPorts != NULL);
 		m_pInputData[i] = config.pInputPorts[i].defaultData;
 	}
-	m_pOutputFirstEdge = new int[m_nOutputs];
+	m_pOutputFirstEdge = std::unique_ptr<int[]>(new int[m_nOutputs]());
 }
 
 CFlowData::~CFlowData()
 {
 	if (m_getFlowgraphForwardingEntity)
 		gEnv->pScriptSystem->ReleaseFunc(m_getFlowgraphForwardingEntity);
-	delete[] m_pInputData;
-	delete[] m_pOutputFirstEdge;
 }
 
 CFlowData::CFlowData(const CFlowData& rhs)
@@ -90,8 +101,8 @@ CFlowData::CFlowData(const CFlowData& rhs)
 	m_nInputs = rhs.m_nInputs;
 	m_nOutputs = rhs.m_nOutputs;
 
-	m_pInputData = new TFlowInputData[m_nInputs];
-	m_pOutputFirstEdge = new int[m_nOutputs];
+	m_pInputData = std::unique_ptr<TFlowInputData[]>(new TFlowInputData[m_nInputs]());
+	m_pOutputFirstEdge = std::unique_ptr<int[]>(new int[m_nOutputs]());
 
 	for (int i = 0; i < m_nInputs; ++i)
 		m_pInputData[i] = rhs.m_pInputData[i];
@@ -280,12 +291,19 @@ bool CFlowData::SerializeXML(IFlowNode::SActivationInfo* pActInfo, const XmlNode
 
 				// Recalculate output size
 				if (NULL == config.pOutputPorts)
+				{
 					m_nOutputs = 0;
+				}
 				else
-					for (m_nOutputs = 0; config.pOutputPorts[m_nOutputs].name; m_nOutputs++)
-						;
-				SAFE_DELETE_ARRAY(m_pOutputFirstEdge);
-				m_pOutputFirstEdge = new int[m_nOutputs];
+				{
+					m_nOutputs = 0;
+					while (config.pOutputPorts[m_nOutputs].name != nullptr)
+					{
+						++m_nOutputs;
+					}
+				}
+
+				m_pOutputFirstEdge = std::unique_ptr<int[]>(new int[m_nOutputs]());
 			}
 		}
 

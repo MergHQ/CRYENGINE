@@ -30,10 +30,9 @@ void CFlowLogNode::GetConfiguration(SFlowNodeConfig& config)
 
 void CFlowLogNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
-	if (event == eFE_Activate && pActInfo->GetInputPort(0).IsUserFlagSet())
+	if (event == eFE_Activate && IsPortActive(pActInfo, 0))
 	{
-		string data;
-		pActInfo->GetInputPort(1).GetValueWithConversion(data);
+		string data = GetPortString(pActInfo, 1);
 		CryLogAlways("[flow-log] %s", data.c_str());
 	}
 }

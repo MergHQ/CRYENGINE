@@ -1291,6 +1291,7 @@ struct IFlowNode : public _i_reference_target_t
 			this->pGraph = pGraph;
 			this->myID = myID;
 			this->m_pUserData = pUserData;
+			this->pInputPorts = pInputPorts;
 			this->pEntity = 0;
 			this->connectPort = InvalidFlowPortId;
 		}
@@ -1298,11 +1299,11 @@ struct IFlowNode : public _i_reference_target_t
 		TFlowNodeId     myID;
 		IEntity*        pEntity;
 		TFlowPortId     connectPort;
+		TFlowInputData* pInputPorts;
 		void*           m_pUserData;
-		bool            m_bNodeHasEntity;
 
-		TFlowInputData& GetInputPort(int idx); // Implemented at the end of the file
-		bool HasInputPorts() const;            // Implemented at the end of the file
+		//! Mono-specific Helper.
+		TFlowInputData* GetInputPort(int idx) { return &pInputPorts[idx]; }
 	};
 
 	enum EFlowEvent
@@ -1940,53 +1941,53 @@ struct IFlowSystem
 
 ILINE bool IsPortActive(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
-	return pActInfo->GetInputPort(nPort).IsUserFlagSet();
+	return pActInfo->pInputPorts[nPort].IsUserFlagSet();
 }
 
 ILINE EFlowDataTypes GetPortType(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
-	return static_cast<EFlowDataTypes>(pActInfo->GetInputPort(nPort).GetType());
+	return (EFlowDataTypes)pActInfo->pInputPorts[nPort].GetType();
 }
 
 ILINE const TFlowInputData& GetPortAny(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
-	return pActInfo->GetInputPort(nPort);
+	return pActInfo->pInputPorts[nPort];
 }
 
 ILINE bool GetPortBool(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
 	bool result;
-	return pActInfo->GetInputPort(nPort).GetValueWithConversion(result) ? result : false;
+	return pActInfo->pInputPorts[nPort].GetValueWithConversion(result) ? result : false;
 }
 
 ILINE int GetPortInt(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
 	int result;
-	return pActInfo->GetInputPort(nPort).GetValueWithConversion(result) ? result : 0;
+	return pActInfo->pInputPorts[nPort].GetValueWithConversion(result) ? result : 0;
 }
 
 ILINE EntityId GetPortEntityId(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
 	EntityId result;
-	return pActInfo->GetInputPort(nPort).GetValueWithConversion(result) ? result : INVALID_ENTITYID;
+	return pActInfo->pInputPorts[nPort].GetValueWithConversion(result) ? result : INVALID_ENTITYID;
 }
 
 ILINE float GetPortFloat(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
 	float result;
-	return pActInfo->GetInputPort(nPort).GetValueWithConversion(result) ? result : 0.0f;
+	return pActInfo->pInputPorts[nPort].GetValueWithConversion(result) ? result : 0.0f;
 }
 
 ILINE Vec3 GetPortVec3(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
 	Vec3 result;
-	return pActInfo->GetInputPort(nPort).GetValueWithConversion(result) ? result : Vec3Constants<float>::fVec3_Zero;
+	return pActInfo->pInputPorts[nPort].GetValueWithConversion(result) ? result : Vec3Constants<float>::fVec3_Zero;
 }
 
 ILINE string GetPortString(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
 	string result;
-	if (!pActInfo->GetInputPort(nPort).GetValueWithConversion(result))
+	if (!pActInfo->pInputPorts[nPort].GetValueWithConversion(result))
 		result.clear();
 	return result;
 }
@@ -2010,17 +2011,4 @@ ILINE bool IsOutputConnected(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
 	SFlowAddress addr(pActInfo->myID, nPort, true);
 	return pActInfo->pGraph->IsOutputConnected(addr);
-}
-
-inline TFlowInputData& IFlowNode::SActivationInfo::GetInputPort(int idx)
-{
-	CRY_ASSERT(pGraph != nullptr);
-	auto pInputPort = pGraph->GetInputValue(myID, m_bNodeHasEntity ? idx + 1 : idx);
-	CRY_ASSERT(pInputPort != nullptr);
-	return const_cast<TFlowInputData&>(*pInputPort);
-}
-
-inline bool IFlowNode::SActivationInfo::HasInputPorts() const
-{
-	return pGraph != nullptr && pGraph->GetInputValue(myID, 0) != nullptr;
 }

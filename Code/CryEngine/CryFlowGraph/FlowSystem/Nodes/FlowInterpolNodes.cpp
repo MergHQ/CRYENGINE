@@ -429,7 +429,7 @@ public:
 
 	bool GetValue(SActivationInfo* pActInfo, int nPort, T& value)
 	{
-		T* pVal = (pActInfo->GetInputPort(nPort).GetPtr<T>());
+		T* pVal = (pActInfo->pInputPorts[nPort].GetPtr<T>());
 		if (pVal)
 		{
 			value = *pVal;
@@ -627,7 +627,7 @@ public:
 
 	bool GetValue(SActivationInfo* pActInfo, int nPort, T& value)
 	{
-		T* pVal = (pActInfo->GetInputPort(nPort).GetPtr<T>());
+		T* pVal = (pActInfo->pInputPorts[nPort].GetPtr<T>());
 		if (pVal)
 		{
 			value = *pVal;
