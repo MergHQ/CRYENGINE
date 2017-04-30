@@ -57,6 +57,7 @@ public:
 	bool IsTypeDirty(EItemType eType);
 	bool IsDirty();
 	void ClearDirtyFlags();
+	bool IsLoading() const { return m_bLoading; }
 
 	// Library signals
 	CCrySignal<void()>               signalLibraryAboutToBeAdded;
@@ -89,6 +90,7 @@ private:
 	std::vector<CAudioControl*> m_controls;
 	std::map<Scope, SScopeInfo> m_scopeMap;
 	std::array<bool, 5>         m_bControlTypeModified { false, false, false, false, false };
+	bool                        m_bLoading = false;
 };
 
 namespace Utils

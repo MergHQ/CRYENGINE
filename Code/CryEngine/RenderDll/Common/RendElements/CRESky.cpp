@@ -463,6 +463,8 @@ static void FillSkyTextureData(CTexture* pTexture, const void* pData, const uint
 	if (!pDevTex)
 		return;
 
+	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDevTex);
+
 	gcpRendD3D->GetDeviceContext().UpdateSubresource(pDevTex->Get2DTexture(), 0, 0, pData, sizeof(CryHalf4) * width, sizeof(CryHalf4) * width * height);
 }
 

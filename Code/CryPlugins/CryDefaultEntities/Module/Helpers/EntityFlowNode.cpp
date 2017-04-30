@@ -224,7 +224,7 @@ void CEntityFlowNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 						assert(func);
 						if (func)
 						{
-							func(m_entityId, pActInfo->GetInputPort(i));
+							func(m_entityId, GetPortAny(pActInfo, i));
 						}
 					}
 				}

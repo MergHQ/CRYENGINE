@@ -19,10 +19,12 @@ DECLARE_SHARED_POINTERS(CScript)
 class CScriptRegistry : public IScriptRegistry
 {
 private:
+	friend class CScript;
 
-	typedef std::unordered_map<SGUID, CScriptPtr>        Scripts;
-	typedef std::unordered_map<SGUID, IScriptElementPtr> Elements;   // #SchematycTODO : Would it make more sense to store by raw pointer here and make ownership exclusive to script file?
-	typedef std::vector<SScriptRegistryChange>           ChangeQueue;
+	typedef std::unordered_map<SGUID, CScriptPtr>                   ScriptsByGuid;
+	typedef std::unordered_map<uint32 /* Crc32 hash */, CScriptPtr> ScriptsByFileName;
+	typedef std::unordered_map<SGUID, IScriptElementPtr>            Elements; // #SchematycTODO : Would it make more sense to store by raw pointer here and make ownership exclusive to script file?
+	typedef std::vector<SScriptRegistryChange>                      ChangeQueue;
 
 	struct SSignals
 	{
@@ -48,7 +50,7 @@ public:
 	virtual bool                               IsValidScope(EScriptElementType elementType, IScriptElement* pScope) const override;
 	virtual bool                               IsValidName(const char* szName, IScriptElement* pScope, const char*& szErrorMessage) const override;
 
-	virtual IScriptModule*                     AddModule(const char* szName, IScriptElement* pScope) override;
+	virtual IScriptModule*                     AddModule(const char* szName, const char* szFilePath) override;
 	virtual IScriptEnum*                       AddEnum(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptStruct*                     AddStruct(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptSignal*                     AddSignal(const char* szName, IScriptElement* pScope) override;
@@ -57,7 +59,7 @@ public:
 	virtual IScriptInterface*                  AddInterface(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptInterfaceFunction*          AddInterfaceFunction(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptInterfaceTask*              AddInterfaceTask(const char* szName, IScriptElement* pScope) override;
-	virtual IScriptClass*                      AddClass(const char* szName, const SElementId& baseId, IScriptElement* pScope) override;
+	virtual IScriptClass*                      AddClass(const char* szName, const SElementId& baseId, const char* szFilePath) override;
 	virtual IScriptBase*                       AddBase(const SElementId& baseId, IScriptElement* pScope) override;
 	virtual IScriptStateMachine*               AddStateMachine(const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID, IScriptElement* pScope) override;
 	virtual IScriptState*                      AddState(const char* szName, IScriptElement* pScope) override;
@@ -78,36 +80,44 @@ public:
 	virtual bool                               CopyElementsToXml(XmlNodeRef& output, IScriptElement& scope) const override;
 	virtual bool                               PasteElementsFromXml(const XmlNodeRef& input, IScriptElement* pScope) override;
 
+	virtual bool                               SaveUndo(XmlNodeRef& output, IScriptElement& scope) const override;
+	virtual IScriptElement*                    RestoreUndo(const XmlNodeRef& input, IScriptElement* pScope) override;
+
 	virtual bool                               IsElementNameUnique(const char* szName, IScriptElement* pScope) const override;
 	virtual void                               MakeElementNameUnique(IString& name, IScriptElement* pScope) const override;
 	virtual void                               ElementModified(IScriptElement& element) override;
 
 	virtual ScriptRegistryChangeSignal::Slots& GetChangeSignalSlots() override;
 
+	virtual IScript*                           GetScriptByGuid(const SGUID& guid) const override;
+	virtual IScript*                           GetScriptByFileName(const char* szFilePath) const override;
+
+	virtual IScript*                           LoadScript(const char* szFilePath) override;
+	virtual void                               SaveScript(IScript& script) override;
 	// ~IScriptRegistry
 
 private:
-
-	CScript* CreateScript(const char* szFileName, const SGUID& guid);
-	CScript* CreateScript();
+	CScript* CreateScript(const char* szFilePath, const IScriptElementPtr& pRoot);
 	CScript* GetScript(const SGUID& guid);
 
 	void     ProcessInputBlocks(ScriptInputBlocks& inputBlocks, IScriptElement& scope, EScriptEventId eventId);
-	void     AddElement(const IScriptElementPtr& pElement, IScriptElement& scope);
+	void     AddElement(const IScriptElementPtr& pElement, IScriptElement& scope, const char* szFilePath = nullptr);
 	void     RemoveElement(IScriptElement& element);
 	void     SaveScript(CScript& script);
 
-	void     BeginChange();
-	void     EndChange();
-	void     ProcessChange(const SScriptRegistryChange& change);
-	void     ProcessChangeDependencies(EScriptRegistryChangeType changeType, const SGUID& elementGUID);       // #SchematycTODO : Should we be able to queue dependency changes?
+protected:
+	void BeginChange();
+	void EndChange();
+	void ProcessChange(const SScriptRegistryChange& change);
+	void ProcessChangeDependencies(EScriptRegistryChangeType changeType, const SGUID& elementGUID);           // #SchematycTODO : Should we be able to queue dependency changes?
 
-	bool     IsUniqueElementName(const char* szName, IScriptElement* pScope) const;
+	bool IsUniqueElementName(const char* szName, IScriptElement* pScope) const;
 
 private:
 
 	std::shared_ptr<CScriptRoot> m_pRoot;   // #SchematycTODO : Why can't we use std::unique_ptr?
-	Scripts                      m_scripts;
+	ScriptsByGuid                m_scriptsByGuid;
+	ScriptsByFileName            m_scriptsByFileName;
 	Elements                     m_elements;
 	uint32                       m_changeDepth;
 	ChangeQueue                  m_changeQueue;

@@ -322,6 +322,9 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_pDeviceRTVMS = NULL;
 	m_pDeviceShaderResource = NULL;
 	m_pDeviceShaderResourceSRGB = NULL;
+#if CRY_PLATFORM_DURANGO
+	m_nDeviceAddressInvalidated = 0;
+#endif
 	m_pRenderTargetData = NULL;
 	m_pResourceViewData = NULL;
 
@@ -536,6 +539,9 @@ CTexture* CTexture::NewTexture(const char* name, uint32 nFlags, ETEX_Format eTFD
 
 void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 {
+	if (m_pDevTexture) 
+		m_pDevTexture->SetOwner(NULL);
+
 	m_pDeviceRTV = nullptr;
 	m_pDeviceRTVMS = nullptr;
 	m_pDeviceShaderResource = nullptr;
@@ -551,6 +557,7 @@ void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 	if (m_pDevTexture)
 	{
 		m_pDevTexture->SetNoDelete(!!(m_nFlags & FT_DONT_RELEASE));
+		m_pDevTexture->SetOwner(this);
 	}
 
 	InvalidateDeviceResource(eDeviceResourceDirty);
@@ -2676,6 +2683,10 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 		m_cMinColor = 0.0f;
 		m_cMaxColor = 1.0f;
 		m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
+
+#if CRY_PLATFORM_DURANGO
+		m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
+#endif
 
 		m_bNoTexture = true;
 		if (m_pFileTexMips)

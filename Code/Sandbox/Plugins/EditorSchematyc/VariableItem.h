@@ -26,7 +26,7 @@ class CVariableItem : public CAbstractVariablesModelItem
 	};
 
 public:
-	CVariableItem(Schematyc::IScriptVariable& scriptVariable, CStateItem& state);
+	//CVariableItem(Schematyc::IScriptVariable& scriptVariable, CStateItem& state);
 	CVariableItem(Schematyc::IScriptVariable& scriptVariable, CObjectModel& object);
 	~CVariableItem();
 

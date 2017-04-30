@@ -17,8 +17,8 @@ namespace MathUtils
 
 inline Matrix33 CreateOrthonormalTM33(Vec3 at, Vec3 up = Vec3(0.0f, 0.0f, 1.0f))
 {
-	SCHEMATYC_ENV_ASSERT(IsEquivalent(at, at.GetNormalized()));
-	SCHEMATYC_ENV_ASSERT(IsEquivalent(up, up.GetNormalized()));
+	SCHEMATYC_ENV_ASSERT(at.IsUnit())
+	SCHEMATYC_ENV_ASSERT(up.IsUnit());
 	const Vec3 right = at.Cross(up).GetNormalized();
 	up = right.Cross(at).GetNormalized();
 	return Matrix33::CreateFromVectors(right, at, up);
@@ -691,7 +691,7 @@ CRotation Create(float x, float y, float z)
 
 CRotation Look(const Vec3& forward, const Vec3& up)
 {
-	return CRotation(Quat(MathUtils::CreateOrthonormalTM33(forward.normalized(), up.normalized())));
+	return CRotation(Quat(MathUtils::CreateOrthonormalTM33(forward.GetNormalizedSafe(Vec3Constants<float>::fVec3_OneY), up.GetNormalizedSafe(Vec3Constants<float>::fVec3_OneZ))));
 }
 
 void ToVector3(const CRotation& input, Vec3& right, Vec3& forward, Vec3& up)

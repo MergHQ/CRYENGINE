@@ -502,24 +502,24 @@ public:
 
 				if (IsPortActive(pActInfo, IN_POS))
 				{
-					const Vec3* v = pActInfo->GetInputPort(IN_POS).GetPtr<Vec3>();
+					const Vec3 v = GetPortVec3(pActInfo, IN_POS);
 					if (coorSys == CS_WORLD)
 					{
 						Matrix34 tm = pEntity->GetWorldTM();
-						tm.SetTranslation(*v);
+						tm.SetTranslation(v);
 						pEntity->SetWorldTM(tm);
 					}
 					else
 					{
 						Matrix34 tm = pEntity->GetLocalTM();
-						tm.SetTranslation(*v);
+						tm.SetTranslation(v);
 						pEntity->SetLocalTM(tm);
 					}
 				}
 				if (IsPortActive(pActInfo, IN_ROTATE))
 				{
-					const Vec3* v = pActInfo->GetInputPort(IN_ROTATE).GetPtr<Vec3>();
-					Matrix34 tm = Matrix33(Quat::CreateRotationXYZ(Ang3(DEG2RAD(*v))));
+					const Vec3 v = GetPortVec3(pActInfo, IN_ROTATE);
+					Matrix34 tm = Matrix33(Quat::CreateRotationXYZ(Ang3(DEG2RAD(v))));
 					if (coorSys == CS_WORLD)
 					{
 						tm.SetTranslation(pEntity->GetWorldPos());
@@ -533,12 +533,11 @@ public:
 				}
 				if (IsPortActive(pActInfo, IN_SCALE))
 				{
-					const Vec3* v = pActInfo->GetInputPort(IN_SCALE).GetPtr<Vec3>();
-					Vec3 scale = *v;
-					if (scale.x == 0) scale.x = 1.0f;
-					if (scale.y == 0) scale.y = 1.0f;
-					if (scale.z == 0) scale.z = 1.0f;
-					pEntity->SetScale(scale);
+					Vec3 v = GetPortVec3(pActInfo, IN_SCALE);
+					if (v.x == 0) v.x = 1.0f;
+					if (v.y == 0) v.y = 1.0f;
+					if (v.z == 0) v.z = 1.0f;
+					pEntity->SetScale(v);
 				}
 			}
 			break;

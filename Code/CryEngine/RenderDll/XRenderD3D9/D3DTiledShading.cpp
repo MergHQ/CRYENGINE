@@ -145,7 +145,7 @@ void CTiledShading::CreateResources()
 
 #if CRY_PLATFORM_DURANGO
 		// Perma-pin, as they need to be pinned each frame anyway, and doing it upfront avoids the cost of doing it each frame.
-		//m_specularProbeAtlas.texArray->GetDevTexture()->Pin();
+		m_specularProbeAtlas.texArray->GetDevTexture()->Pin();
 #endif
 	}
 
@@ -159,7 +159,7 @@ void CTiledShading::CreateResources()
 
 #if CRY_PLATFORM_DURANGO
 		// Perma-pin, as they need to be pinned each frame anyway, and doing it upfront avoids the cost of doing it each frame.
-		//m_diffuseProbeAtlas.texArray->GetDevTexture()->Pin();
+		m_diffuseProbeAtlas.texArray->GetDevTexture()->Pin();
 #endif
 	}
 
@@ -174,7 +174,7 @@ void CTiledShading::CreateResources()
 
 #if CRY_PLATFORM_DURANGO
 		// Perma-pin, as they need to be pinned each frame anyway, and doing it upfront avoids the cost of doing it each frame.
-		//m_spotTexAtlas.texArray->GetDevTexture()->Pin();
+		m_spotTexAtlas.texArray->GetDevTexture()->Pin();
 #endif
 	}
 
@@ -319,7 +319,7 @@ int CTiledShading::InsertTexture(CTexture* texture, TextureAtlas& atlas, int arr
 
 	CDeviceTexture* pTexArrayDevTex = atlas.texArray->GetDevTexture();
 
-	//ASSERT_DEVICE_TEXTURE_IS_FIXED(pTexArrayDevTex);
+	ASSERT_DEVICE_TEXTURE_IS_FIXED(pTexArrayDevTex);
 
 	if ((numDstMips == numSrcMips) && (firstSrcMip == 0))
 	{

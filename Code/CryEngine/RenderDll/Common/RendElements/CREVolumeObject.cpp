@@ -73,6 +73,9 @@ bool CVolumeTexture::Update(unsigned int width, unsigned int height, unsigned in
 	unsigned int cpyHeight = min(height, m_height);
 	unsigned int cpyDepth = min(depth, m_depth);
 
+	CDeviceTexture* pVolDevTex = m_pTex->GetDevTexture();
+	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pVolDevTex);
+
 	D3D11_BOX box;
 	box.left = 0;
 	box.right = cpyWidth;
@@ -81,7 +84,7 @@ bool CVolumeTexture::Update(unsigned int width, unsigned int height, unsigned in
 	box.front = 0;
 	box.back = cpyDepth;
 
-	D3DVolumeTexture* pVolTex = m_pTex->GetDevTexture()->GetVolumeTexture();
+	D3DVolumeTexture* pVolTex = pVolDevTex->GetVolumeTexture();
 	gcpRendD3D->GetDeviceContext().UpdateSubresource(pVolTex, 0, &box, pData, width, height * width);
 
 	return true;

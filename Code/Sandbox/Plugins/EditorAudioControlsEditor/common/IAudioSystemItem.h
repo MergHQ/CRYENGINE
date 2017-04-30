@@ -38,23 +38,24 @@ public:
 		}
 	}
 
-	virtual bool      IsPlaceholder() const                { return m_bPlaceholder; }
-	void              SetPlaceholder(bool bIsPlaceholder)  { m_bPlaceholder = bIsPlaceholder; }
+	virtual bool      IsPlaceholder() const                       { return m_bPlaceholder; }
+	void              SetPlaceholder(bool bIsPlaceholder)         { m_bPlaceholder = bIsPlaceholder; }
 
-	virtual bool      IsLocalised() const                  { return m_bLocalised; }
-	void              SetLocalised(bool bIsLocalised)      { m_bLocalised = bIsLocalised; }
+	virtual bool      IsLocalised() const                         { return m_bLocalised; }
+	void              SetLocalised(bool bIsLocalised)             { m_bLocalised = bIsLocalised; }
 
-	virtual bool      IsConnected() const                  { return m_bConnected; }
-	void              SetConnected(bool bConnected)        { m_bConnected = bConnected; }
+	virtual bool      IsConnected() const                         { return m_bConnected; }
+	void              SetConnected(bool bConnected)               { m_bConnected = bConnected; }
 
-	size_t            ChildCount() const                   { return m_children.size(); }
-	void              AddChild(IAudioSystemItem* pChild)   { m_children.push_back(pChild); pChild->SetParent(this); }
-	IAudioSystemItem* GetChildAt(uint index) const         { return m_children[index]; }
-	void              SetParent(IAudioSystemItem* pParent) { m_parent = pParent; }
-	IAudioSystemItem* GetParent() const                    { return m_parent; }
+	size_t            ChildCount() const                          { return m_children.size(); }
+	void              AddChild(IAudioSystemItem* const pChild)    { m_children.push_back(pChild); pChild->SetParent(this); }
+	void              RemoveChild(IAudioSystemItem* const pChild) { stl::find_and_erase(m_children, pChild); pChild->SetParent(nullptr); }
+	IAudioSystemItem* GetChildAt(uint index) const                { return m_children[index]; }
+	void              SetParent(IAudioSystemItem* pParent)        { m_parent = pParent; }
+	IAudioSystemItem* GetParent() const                           { return m_parent; }
 
-	void              SetRadius(float radius)              { m_radius = radius; }
-	float             GetRadius() const                    { return m_radius; }
+	void              SetRadius(float radius)                     { m_radius = radius; }
+	float             GetRadius() const                           { return m_radius; }
 
 private:
 	CID                            m_id = ACE_INVALID_ID;

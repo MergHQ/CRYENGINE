@@ -419,7 +419,7 @@ void CVariablesWidget::OnSelectionChanged(const QItemSelection& selected, const 
 
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{
-				CrySchematycEditor::CPropertiesWidget* pPropertiesWidget = new CrySchematycEditor::CPropertiesWidget(*pItem);
+				CrySchematycEditor::CPropertiesWidget* pPropertiesWidget = nullptr /*new CrySchematycEditor::CPropertiesWidget(*pItem)*/;
 				auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
 				{
 					return pPropertiesWidget;

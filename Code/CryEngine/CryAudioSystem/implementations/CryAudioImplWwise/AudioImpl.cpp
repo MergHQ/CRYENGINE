@@ -1061,13 +1061,25 @@ IAudioSwitchState const* CAudioImpl::NewAudioSwitchState(XmlNodeRef const pAudio
 	char const* const szTag = pAudioSwitchNode->getTag();
 	IAudioSwitchState const* pAudioSwitchState = nullptr;
 
-	if (_stricmp(szTag, s_szWwiseSwitchTag) == 0)
+	if (_stricmp(szTag, s_szWwiseStateTag) == 0)
 	{
-		pAudioSwitchState = ParseWwiseSwitchOrState(pAudioSwitchNode, EWwiseSwitchType::Switch);
+		AkUInt32 stateOrSwitchGroupId = AK_INVALID_UNIQUE_ID;
+		AkUInt32 stateOrSwitchId = AK_INVALID_UNIQUE_ID;
+
+		if (ParseSwitchOrState(pAudioSwitchNode, stateOrSwitchGroupId, stateOrSwitchId))
+		{
+			pAudioSwitchState = new SAudioSwitchState(ESwitchType::StateGroup, stateOrSwitchGroupId, stateOrSwitchId);
+		}
 	}
-	else if (_stricmp(szTag, s_szWwiseStateTag) == 0)
+	else if (_stricmp(szTag, s_szWwiseSwitchTag) == 0)
 	{
-		pAudioSwitchState = ParseWwiseSwitchOrState(pAudioSwitchNode, EWwiseSwitchType::State);
+		AkUInt32 stateOrSwitchGroupId = AK_INVALID_UNIQUE_ID;
+		AkUInt32 stateOrSwitchId = AK_INVALID_UNIQUE_ID;
+
+		if (ParseSwitchOrState(pAudioSwitchNode, stateOrSwitchGroupId, stateOrSwitchId))
+		{
+			pAudioSwitchState = new SAudioSwitchState(ESwitchType::SwitchGroup, stateOrSwitchGroupId, stateOrSwitchId);
+		}
 	}
 	else if (_stricmp(szTag, s_szWwiseRtpcSwitchTag) == 0)
 	{
@@ -1091,22 +1103,24 @@ void CAudioImpl::DeleteAudioSwitchState(IAudioSwitchState const* const pISwitchS
 ///////////////////////////////////////////////////////////////////////////
 IAudioEnvironment const* CAudioImpl::NewAudioEnvironment(XmlNodeRef const pAudioEnvironmentNode)
 {
-	IAudioEnvironment* pAudioEnvironment = nullptr;
-	if (_stricmp(pAudioEnvironmentNode->getTag(), s_szWwiseAuxBusTag) == 0)
+	char const* const szTag = pAudioEnvironmentNode->getTag();
+	IAudioEnvironment const* pAudioEnvironment = nullptr;
+
+	if (_stricmp(szTag, s_szWwiseAuxBusTag) == 0)
 	{
 		char const* const szWwiseAuxBusName = pAudioEnvironmentNode->getAttr(s_szWwiseNameAttribute);
 		AkUniqueID const busId = AK::SoundEngine::GetIDFromString(szWwiseAuxBusName);//Does not check if the string represents an event!!!!
 
 		if (busId != AK_INVALID_AUX_ID)
 		{
-			pAudioEnvironment = new SAudioEnvironment(EWwiseAudioEnvironmentType::AuxBus, static_cast<AkAuxBusID>(busId));
+			pAudioEnvironment = new SAudioEnvironment(EEnvironmentType::AuxBus, static_cast<AkAuxBusID>(busId));
 		}
 		else
 		{
-			CRY_ASSERT(false);// unknown Aux Bus
+			CRY_ASSERT(false); // Unknown AuxBus
 		}
 	}
-	else if (_stricmp(pAudioEnvironmentNode->getTag(), s_szWwiseRtpcTag) == 0)
+	else if (_stricmp(szTag, s_szWwiseRtpcTag) == 0)
 	{
 		AkRtpcID rtpcId = AK_INVALID_RTPC_ID;
 		float multiplier = 1.0f;
@@ -1116,7 +1130,7 @@ IAudioEnvironment const* CAudioImpl::NewAudioEnvironment(XmlNodeRef const pAudio
 
 		if (rtpcId != AK_INVALID_RTPC_ID)
 		{
-			pAudioEnvironment = new SAudioEnvironment(EWwiseAudioEnvironmentType::Rtpc, rtpcId, multiplier, shift);
+			pAudioEnvironment = new SAudioEnvironment(EEnvironmentType::Rtpc, rtpcId, multiplier, shift);
 		}
 		else
 		{
@@ -1186,27 +1200,24 @@ void CAudioImpl::GetAudioFileData(char const* const szFilename, SFileData& audio
 {}
 
 //////////////////////////////////////////////////////////////////////////
-SAudioSwitchState const* CAudioImpl::ParseWwiseSwitchOrState(
-  XmlNodeRef const pNode,
-  EWwiseSwitchType const switchType)
+bool CAudioImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId)
 {
-	SAudioSwitchState* pSwitchStateImpl = nullptr;
+	bool bSuccess = false;
+	char const* const szStateOrSwitchGroupName = pNode->getAttr(s_szWwiseNameAttribute);
 
-	char const* const szWwiseSwitchNodeName = pNode->getAttr(s_szWwiseNameAttribute);
-
-	if ((szWwiseSwitchNodeName != nullptr) && (szWwiseSwitchNodeName[0] != 0) && (pNode->getChildCount() == 1))
+	if ((szStateOrSwitchGroupName != nullptr) && (szStateOrSwitchGroupName[0] != 0) && (pNode->getChildCount() == 1))
 	{
 		XmlNodeRef const pValueNode(pNode->getChild(0));
 
 		if (pValueNode && _stricmp(pValueNode->getTag(), s_szWwiseValueTag) == 0)
 		{
-			char const* const szWwiseSwitchStateName = pValueNode->getAttr(s_szWwiseNameAttribute);
+			char const* const szStateOrSwitchName = pValueNode->getAttr(s_szWwiseNameAttribute);
 
-			if ((szWwiseSwitchStateName != nullptr) && (szWwiseSwitchStateName[0] != 0))
+			if ((szStateOrSwitchName != nullptr) && (szStateOrSwitchName[0] != 0))
 			{
-				AkUniqueID const switchId = AK::SoundEngine::GetIDFromString(szWwiseSwitchNodeName);
-				AkUniqueID const switchStateId = AK::SoundEngine::GetIDFromString(szWwiseSwitchStateName);
-				pSwitchStateImpl = new SAudioSwitchState(switchType, switchId, switchStateId);
+				outStateOrSwitchGroupId = AK::SoundEngine::GetIDFromString(szStateOrSwitchGroupName);
+				outStateOrSwitchId = AK::SoundEngine::GetIDFromString(szStateOrSwitchName);
+				bSuccess = true;
 			}
 		}
 	}
@@ -1214,11 +1225,11 @@ SAudioSwitchState const* CAudioImpl::ParseWwiseSwitchOrState(
 	{
 		g_implLogger.Log(
 		  ELogType::Warning,
-		  "A Wwise Switch or State %s inside ATLSwitchState needs to have exactly one WwiseValue.",
-		  szWwiseSwitchNodeName);
+		  "A Wwise SwitchGroup or StateGroup %s inside ATLSwitchState needs to have exactly one WwiseValue.",
+		  szStateOrSwitchGroupName);
 	}
 
-	return pSwitchStateImpl;
+	return bSuccess;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1235,7 +1246,7 @@ SAudioSwitchState const* CAudioImpl::ParseWwiseRtpcSwitch(XmlNodeRef const pNode
 		if (pNode->getAttr(s_szWwiseValueAttribute, rtpcValue))
 		{
 			AkUniqueID const rtpcId = AK::SoundEngine::GetIDFromString(szWwiseRtpcNodeName);
-			pSwitchStateImpl = new SAudioSwitchState(EWwiseSwitchType::Rtpc, rtpcId, rtpcId, rtpcValue);
+			pSwitchStateImpl = new SAudioSwitchState(ESwitchType::Rtpc, rtpcId, rtpcId, rtpcValue);
 		}
 	}
 	else

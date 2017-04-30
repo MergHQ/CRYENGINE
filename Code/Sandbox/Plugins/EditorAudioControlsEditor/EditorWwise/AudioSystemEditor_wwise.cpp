@@ -18,7 +18,6 @@
 
 namespace ACE
 {
-
 const string g_userSettingsFile = "%USER%/audiocontrolseditor_wwise.user";
 
 class CStringAndHash
@@ -197,8 +196,8 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 		if (type != AUDIO_SYSTEM_INVALID_TYPE)
 		{
 			string name = pNode->getAttr(g_nameAttribute);
-			const string localisedAttribute = pNode->getAttr(g_localizedAttribute);
-			const bool bLocalised = (localisedAttribute.compareNoCase(g_trueAttribute) == 0);
+			const string localizedAttribute = pNode->getAttr(g_localizedAttribute);
+			const bool bLocalized = (localizedAttribute.compareNoCase(g_trueAttribute) == 0);
 
 			IAudioSystemItem* pControl = SearchForControl(&m_rootControl, name, type);
 
@@ -207,14 +206,9 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 			// The user could be using the engine without the wwise project
 			if (pControl == nullptr)
 			{
-				if (bLocalised)
-				{
-					name = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + name;
-				}
-
-				CID id = GenerateID(name);
+				CID const id = GenerateID(name, bLocalized, &m_rootControl);
 				pControl = new IAudioSystemControl_wwise(name, id, type);
-				pControl->SetLocalised(bLocalised);
+				pControl->SetLocalised(bLocalized);
 				pControl->SetPlaceholder(true);
 
 				m_controlsCache[id] = pControl;
@@ -478,13 +472,15 @@ ACE::CID CAudioSystemEditor_wwise::GenerateID(const string& fullPathName) const
 	return CCrc32::ComputeLowercase(fullPathName);
 }
 
-ACE::CID CAudioSystemEditor_wwise::GenerateID(const string& controlName, bool bIsLocalised, IAudioSystemItem* pParent) const
+ACE::CID CAudioSystemEditor_wwise::GenerateID(const string& controlName, bool bIsLocalized, IAudioSystemItem* pParent) const
 {
-	string pathName = (pParent) ? pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + controlName : controlName;
-	if (bIsLocalised)
+	string pathName = (pParent != nullptr && !pParent->GetName().empty()) ? pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + controlName : controlName;
+
+	if (bIsLocalized)
 	{
 		pathName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + pathName;
 	}
+
 	return GenerateID(pathName);
 }
 

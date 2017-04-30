@@ -57,8 +57,7 @@ inline bool WantUpdate()
 
 } // Anonymous
 
-static const char* g_szScriptsFolder = "scripts";
-static const char* g_szSettingsFolder = "settings";
+static const char* g_szSettingsFolder = "SchematycSettings";
 
 CCore::CCore()
 	: m_pEnvRegistry(new CEnvRegistry())
@@ -132,7 +131,7 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CCore");
-	
+
 	env.pSchematyc = this;
 
 	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", g_szCrytek, "Core Schematyc environment", SCHEMATYC_DELEGATE(&RegisterCoreEnvPackage))))
@@ -170,15 +169,13 @@ const char* CCore::GetRootFolder() const
 
 const char* CCore::GetScriptsFolder() const
 {
-	m_scriptsFolder = GetRootFolder();
-	m_scriptsFolder.append("/");
-	m_scriptsFolder.append(g_szScriptsFolder);
+	m_scriptsFolder = PathUtil::GetGameFolder();
 	return m_scriptsFolder.c_str();
 }
 
 const char* CCore::GetSettingsFolder() const
 {
-	m_settingsFolder = GetRootFolder();
+	m_settingsFolder = PathUtil::GetGameFolder();
 	m_settingsFolder.append("/");
 	m_settingsFolder.append(g_szSettingsFolder);
 	return m_settingsFolder.c_str();

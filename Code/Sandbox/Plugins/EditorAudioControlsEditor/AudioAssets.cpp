@@ -18,7 +18,6 @@
 
 namespace ACE
 {
-
 void IAudioAsset::SetParent(IAudioAsset* pParent)
 {
 	m_pParent = pParent;
@@ -37,11 +36,10 @@ void IAudioAsset::RemoveChild(IAudioAsset* pChildControl)
 	SetModified(true);
 }
 
-CAudioControl::CAudioControl(const string& controlName, CID id, EItemType type, CAudioAssetsManager* pAssetsManager)
+CAudioControl::CAudioControl(const string& controlName, CID id, EItemType type)
 	: IAudioAsset(controlName)
 	, m_id(id)
 	, m_type(type)
-	, m_pAssetsManager(pAssetsManager)
 {
 	m_modifiedSignalEnabled = false;
 	m_scope = Utils::GetGlobalScope();
@@ -63,7 +61,7 @@ void CAudioControl::SetName(const string& name)
 	if (name != m_name)
 	{
 		SignalControlAboutToBeModified();
-		m_name = Utils::GenerateUniqueControlName(name, GetType(), *m_pAssetsManager);
+		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
 		SignalControlModified();
 		SetModified(true);
 	}
@@ -251,7 +249,6 @@ void CAudioControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 				SignalConnectionRemoved(pAudioSystemControl);
 				SignalControlModified();
 				SetModified(true);
-				return;
 			}
 		}
 	}
@@ -259,34 +256,28 @@ void CAudioControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 
 void CAudioControl::SignalControlModified()
 {
-	if (m_modifiedSignalEnabled && m_pAssetsManager)
+	if (m_modifiedSignalEnabled)
 	{
-		m_pAssetsManager->OnControlModified(this);
+		CAudioControlsEditorPlugin::GetAssetsManager()->OnControlModified(this);
 	}
 }
 
 void CAudioControl::SignalControlAboutToBeModified()
 {
-	if (m_modifiedSignalEnabled && m_pAssetsManager)
+	if (m_modifiedSignalEnabled)
 	{
-		m_pAssetsManager->OnControlAboutToBeModified(this);
+		CAudioControlsEditorPlugin::GetAssetsManager()->OnControlAboutToBeModified(this);
 	}
 }
 
 void CAudioControl::SignalConnectionAdded(IAudioSystemItem* pMiddlewareControl)
 {
-	if (m_pAssetsManager)
-	{
-		m_pAssetsManager->OnConnectionAdded(this, pMiddlewareControl);
-	}
+	CAudioControlsEditorPlugin::GetAssetsManager()->OnConnectionAdded(this, pMiddlewareControl);
 }
 
 void CAudioControl::SignalConnectionRemoved(IAudioSystemItem* pMiddlewareControl)
 {
-	if (m_pAssetsManager)
-	{
-		m_pAssetsManager->OnConnectionRemoved(this, pMiddlewareControl);
-	}
+	CAudioControlsEditorPlugin::GetAssetsManager()->OnConnectionRemoved(this, pMiddlewareControl);
 }
 
 void CAudioControl::ReloadConnections()
@@ -368,17 +359,17 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 		// Scope
 		Serialization::StringList scopeList;
 		ScopeInfoList scopeInfoList;
-		m_pAssetsManager->GetScopeInfoList(scopeInfoList);
+		CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
 		for (auto& scope : scopeInfoList)
 		{
 			scopeList.push_back(scope.name);
 		}
-		Serialization::StringListValue selectedScope(scopeList, m_pAssetsManager->GetScopeInfo(m_scope).name);
+		Serialization::StringListValue selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
 		Scope newScope = m_scope;
 		if (m_type != eItemType_State)
 		{
 			ar(selectedScope, "scope", "Scope");
-			newScope = m_pAssetsManager->GetScope(scopeList[selectedScope.index()]);
+			newScope = CAudioControlsEditorPlugin::GetAssetsManager()->GetScope(scopeList[selectedScope.index()]);
 		}
 
 		// Auto Load
@@ -471,6 +462,14 @@ bool CAudioControl::IsModified() const
 	return false;
 }
 
+void CAudioControl::SetModified(bool const bModified, bool const bForce /* = false */)
+{
+	if (m_pParent != nullptr && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || bForce))
+	{
+		m_pParent->SetModified(bModified, bForce);
+	}
+}
+
 void CAudioControl::SetRadius(float radius)
 {
 	if (radius != m_radius)
@@ -488,14 +487,6 @@ void CAudioControl::SetOcclusionFadeOutDistance(float fadeOutDistance)
 		SignalControlAboutToBeModified();
 		m_occlusionFadeOutDistance = fadeOutDistance;
 		SignalControlModified();
-	}
-}
-
-void CAudioControl::SetModified(bool bModified)
-{
-	if (m_pParent)
-	{
-		m_pParent->SetModified(bModified);
 	}
 }
 
@@ -537,6 +528,7 @@ void CAudioControl::MatchRadiusToAttenuation()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool CAudioFolder::IsModified() const
 {
 	if (m_pParent)
@@ -546,11 +538,21 @@ bool CAudioFolder::IsModified() const
 	return false;
 }
 
-void CAudioFolder::SetModified(bool bModified)
+//////////////////////////////////////////////////////////////////////////
+void CAudioFolder::SetModified(bool const bModified, bool const bForce /* = false */)
 {
-	if (m_pParent)
+	if (m_pParent != nullptr && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || bForce))
 	{
-		m_pParent->SetModified(bModified);
+		m_pParent->SetModified(bModified, bForce);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioLibrary::SetModified(bool const bModified, bool const bForce /* = false */)
+{
+	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || bForce)
+	{
+		m_bModified = bModified;
 	}
 }
 

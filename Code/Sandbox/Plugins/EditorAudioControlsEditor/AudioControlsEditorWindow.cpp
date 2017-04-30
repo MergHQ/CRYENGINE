@@ -261,6 +261,9 @@ void CAudioControlsEditorWindow::Reload()
 	if (bReload)
 	{
 		CAudioControlsEditorPlugin::ReloadModels(true);
+		m_pInspectorPanel->Reload();
+		m_pAudioSystemPanel->Reset();
+		m_pAudioSystemPanel->ImplementationSettingsChanged();
 		Update();
 	}
 }

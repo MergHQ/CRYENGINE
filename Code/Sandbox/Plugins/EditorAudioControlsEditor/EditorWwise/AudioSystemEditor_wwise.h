@@ -117,7 +117,7 @@ private:
 	void UpdateConnectedStatus();
 
 	// Generates the ID of the control given its full path name.
-	CID GenerateID(const string& controlName, bool bIsLocalised, IAudioSystemItem* pParent) const;
+	CID GenerateID(const string& controlName, bool bIsLocalized, IAudioSystemItem* pParent) const;
 	// Convenience function to form the full path name.
 	// Controls can have the same name if they're under different parents so knowledge of the parent name is needed.
 	// Localized controls live in different areas of disk so we also need to know if its localized.

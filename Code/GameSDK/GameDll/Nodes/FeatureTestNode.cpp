@@ -393,7 +393,7 @@ void CFlowNode_FeatureTest::Cleanup()
 /// Returns the name of the test
 const char* CFlowNode_FeatureTest::Name()
 {
-	if (m_actInfo.HasInputPorts())
+	if (m_actInfo.pInputPorts)
 		return GetPortString(&m_actInfo, eInputPorts_Name).c_str();
 	else
 		return "Unknown";

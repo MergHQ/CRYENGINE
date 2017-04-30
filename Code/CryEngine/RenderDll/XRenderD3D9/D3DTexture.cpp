@@ -2050,6 +2050,10 @@ bool CTexture::RT_CreateDeviceTexture(byte* pData[6])
 	assert(!IsStreamed());
 	if (m_pDevTexture)
 	{
+#if defined(CRY_PLATFORM_DURANGO)
+		m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
+#endif
+
 		m_nActualSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
 		if (m_nFlags & (FT_USAGE_DYNAMIC | FT_USAGE_RENDERTARGET))
 		{
@@ -2066,12 +2070,6 @@ bool CTexture::RT_CreateDeviceTexture(byte* pData[6])
 
 	if (!pData[0])
 		return true;
-
-#ifdef DEVMAN_USE_PINNING
-	CDeviceTexturePin pin(pDevTexture);
-#endif
-
-	int nOffset = 0;
 
 	if (resetSRGB)
 		m_bIsSRGB = false;
@@ -2129,6 +2127,9 @@ void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload)
 			}
 		}
 
+		if (m_pDevTexture)
+			m_pDevTexture->SetOwner(NULL);
+
 		m_pDevTexture = NULL;
 
 		// otherwise it's already taken into account in the m_pFileTexMips->m_pPoolItem's dtor
@@ -2179,6 +2180,9 @@ void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload)
 	}
 	else
 	{
+		if (m_pDevTexture)
+			m_pDevTexture->SetOwner(NULL);
+
 		m_pDevTexture = NULL;
 	}
 
@@ -3011,6 +3015,39 @@ void CTexture::ApplyTexture(int nTUnit, EHWShaderClass eHWSC, SResourceView::Key
 	}
 }
 
+#if defined(CRY_PLATFORM_DURANGO)
+void CTexture::ValidateSRVs()
+{
+	// We should only end up here if the texture was moved due to a defrag. This should only be for static textures.
+#ifndef _RELEASE
+	if (m_pRenderTargetData)
+		__debugbreak();
+#endif
+
+	m_pDeviceRTV = nullptr;
+	m_pDeviceRTVMS = nullptr;
+	m_pDeviceShaderResource = nullptr;
+	m_pDeviceShaderResourceSRGB = nullptr;
+
+	SAFE_DELETE(m_pResourceViewData);
+	SAFE_DELETE(m_pRenderTargetData);
+
+	m_pRenderTargetData = (m_nFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)) ? new RenderTargetData : NULL;
+	m_pResourceViewData = new ResourceViewData;
+
+	m_pDeviceShaderResource = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, m_nMips, m_bIsSRGB, false));
+	if (m_nFlags & FT_USAGE_ALLOWREADSRGB)
+	{
+		m_pDeviceShaderResourceSRGB = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, m_nMips, true, false));
+	}
+
+	// Notify that resource is dirty
+	InvalidateDeviceResource(eDeviceResourceDirty | eDeviceResourceViewDirty);
+
+	m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
+}
+#endif
+
 void CTexture::Apply(int nTUnit, int nState, int nTexMatSlot, int nSUnit, SResourceView::KeyType nResViewKey, EHWShaderClass eHWSC)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
@@ -3119,6 +3156,10 @@ void CTexture::Apply(int nTUnit, int nState, int nTexMatSlot, int nSUnit, SResou
 		SetSamplerState(nTSSel, nSUnit, eHWSC);
 	}
 
+#if defined(CRY_PLATFORM_DURANGO)
+	CheckValidateSRVs();
+#endif
+
 	D3DShaderResource* pResView = GetShaderResourceView(nResViewKey, s_TexStates[nTSSel].m_bSRGBLookup);
 
 	if (pDevTex == TexStages[nTUnit].m_DevTexture && pResView == TexStages[nTUnit].m_pCurResView && eHWSC == TexStages[nTUnit].m_eHWSC)
@@ -3212,6 +3253,8 @@ void CTexture::RT_UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int US
 	assert(pDevTexture);
 	if (!pDevTexture)
 		return;
+
+	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDevTexture);
 
 	DXGI_FORMAT frmtSrc = (DXGI_FORMAT)CTexture::DeviceFormatFromTexFormat(eTFSrc);
 	bool bDone = false;
@@ -3476,6 +3519,8 @@ bool CTexture::RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short
 
 		CDeviceTexture* pDevTextureSrc = CTexture::s_ptexHDRTarget->GetDevTexture();
 		CDeviceTexture* pDevTextureDst = ptexGenEnvironmentCM->GetDevTexture();
+
+		GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDevTextureDst);
 
 		gcpRendD3D->GetDeviceContext().GetRealDeviceContext()->CopySubresourceRegion(pDevTextureDst->Get2DTexture(), 0, 0, 0, 0, pDevTextureSrc->Get2DTexture(), 0, &srcBox);
 

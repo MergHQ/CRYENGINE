@@ -195,8 +195,6 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef pRoot, const string& f
 				}
 			}
 		}
-
-		pLibrary->SetModified(false);
 	}
 }
 
@@ -532,8 +530,7 @@ void CAudioControlsLoader::LoadConnections(XmlNodeRef pRoot, CAudioControl* pCon
 		if (radius != pControl->GetRadius())
 		{
 			m_errorCodeMask |= eErrorCode_NonMatchedActivityRadius;
-			// FIX ME: In here I should set the control/library as dirty
-			//pItem->setData(true, eDataRole_Modified);
+			pControl->SetModified(true, true);
 		}
 	}
 }
@@ -580,8 +577,7 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef pNode, CAudioContro
 			if (platformIndex == -1)
 			{
 				m_errorCodeMask |= static_cast<uint>(EErrorCode::eErrorCode_UnkownPlatform);
-				// FIX ME: In here I should set the control/library as dirty
-				//pItem->setData(true, eDataRole_Modified);
+				pControl->SetModified(true, true);
 			}
 
 			const int numConnections = pGroupNode->getChildCount();

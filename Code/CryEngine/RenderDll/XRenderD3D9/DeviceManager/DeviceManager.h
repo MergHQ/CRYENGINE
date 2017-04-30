@@ -5,27 +5,78 @@
 
 #define DEVMAN_USE_STAGING_POOL
 
+// Might be used in future for defragging
+#if CRY_PLATFORM_DURANGO
+	#define DEVMAN_USE_PINNING
+#endif
+
 #if CRY_PLATFORM_ORBIS
 	#define DEVICE_MANAGER_IMMEDIATE_STATE_WRITE 1
 #else
 	#define DEVICE_MANAGER_IMMEDIATE_STATE_WRITE 0
 #endif
 
-// Might be used in future for defragging
-#if 0
-	#define DEVMAN_USE_PINNING
-#endif
+class SGPUMemHdl
+{
+public:
+	SGPUMemHdl()
+		: m_handleAndFlags(0)
+	{
+	}
 
-#ifdef CRY_USE_DX12
-#else
-	#if CRY_PLATFORM_DURANGO
-		#include "D3D11/DeviceManager_D3D11_Durango.h"
-	#endif
+	explicit SGPUMemHdl(IDefragAllocator::Hdl hdl)
+		: m_handleAndFlags((UINT_PTR)hdl << FlagsShift)
+	{
+	}
 
-	#if defined(USE_NV_API)
-		#include "D3D11/DeviceManager_D3D11_NVAPI.h"
-	#endif
-#endif
+	explicit SGPUMemHdl(void* pFixed)
+		: m_handleAndFlags((UINT_PTR)pFixed | IsFixedFlag)
+	{
+	}
+
+	ILINE bool IsValid() const
+	{
+		return m_handleAndFlags != 0;
+	}
+
+	ILINE int IsFixed() const
+	{
+		return m_handleAndFlags & IsFixedFlag;
+	}
+
+	void* GetFixedAddress() const
+	{
+		assert(IsFixed());
+		return (void*)(m_handleAndFlags & ~FlagsMask);
+	}
+
+	IDefragAllocator::Hdl GetHandle() const
+	{
+		assert(!IsFixed());
+		return (IDefragAllocator::Hdl)(m_handleAndFlags >> FlagsShift);
+	}
+
+	friend bool operator == (const SGPUMemHdl& a, const SGPUMemHdl& b)
+	{
+		return a.m_handleAndFlags == b.m_handleAndFlags;
+	}
+
+	friend bool operator < (const SGPUMemHdl& a, const SGPUMemHdl& b)
+	{
+		return a.m_handleAndFlags < b.m_handleAndFlags;
+	}
+
+private:
+	enum
+	{
+		IsFixedFlag = 0x1,
+		FlagsMask = 0x1,
+		FlagsShift = 1,
+	};
+
+private:
+	UINT_PTR m_handleAndFlags;
+};
 
 class CDeviceTexture;
 class CDeviceVertexBuffer;
@@ -57,6 +108,17 @@ struct STextureInfo
 		m_pData = NULL;
 	}
 };
+
+#ifdef CRY_USE_DX12
+#else
+	#if CRY_PLATFORM_DURANGO
+		#include "D3D11/DeviceManager_D3D11_Durango.h"
+	#endif
+
+	#if defined(USE_NV_API)
+		#include "D3D11/DeviceManager_D3D11_NVAPI.h"
+	#endif
+#endif
 
 //===============================================================================================================
 
@@ -362,6 +424,9 @@ public:
 
 #if CRY_PLATFORM_DURANGO
 	IDefragAllocatorStats GetTexturePoolStats();
+
+	size_t GetTexturePoolSize() const { return m_texturePool.GetPoolSize(); }
+	size_t GetTexturePoolAllocated() const { return m_texturePool.GetPoolAllocated(); }
 #endif
 
 	uint32 GetNumInvalidDrawcalls()
@@ -547,14 +612,20 @@ class CDeviceTexture
 	D3DResource* m_pStagingResource[2];
 	void*        m_pStagingMemory[2];
 #endif
+#ifdef DEVMAN_USE_PINNING
+	SGPUMemHdl m_gpuHdl;
+#endif
 
 #if defined(USE_NV_API)
 	void* m_handleMGPU;
 #endif
-
 #if CRY_PLATFORM_DURANGO
-	SGPUMemHdl                m_gpuHdl;
 	const SDeviceTextureDesc* m_pLayout;
+	uint32                    m_nBaseAddressInvalidated;
+#endif
+
+#if defined(DEVICE_TEXTURE_STORE_OWNER)
+	CTexture* m_pDebugOwner;
 #endif
 
 public:
@@ -587,6 +658,12 @@ public:
 
 	void Unbind();
 
+#if defined(DEVICE_TEXTURE_STORE_OWNER)
+	void SetOwner(CTexture* pOwner) { m_pDebugOwner = pOwner; }
+#else
+	void SetOwner(CTexture* pOwner) {}
+#endif
+
 #if defined(USE_NV_API)
 	void DisableMgpuSync();
 	void MgpuResourceUpdate(bool bUpdating = true);
@@ -598,6 +675,10 @@ public:
 #endif
 #if CRY_PLATFORM_DURANGO
 		, m_pLayout(NULL)
+		, m_nBaseAddressInvalidated(0)
+#endif
+#if defined(DEVICE_TEXTURE_STORE_OWNER)
+		, m_pDebugOwner(NULL)
 #endif
 	{
 #ifdef DEVMAN_USE_STAGING_POOL
@@ -612,6 +693,10 @@ public:
 #endif
 #if CRY_PLATFORM_DURANGO
 		, m_pLayout(NULL)
+		, m_nBaseAddressInvalidated(0)
+#endif
+#if defined(DEVICE_TEXTURE_STORE_OWNER)
+		, m_pDebugOwner(NULL)
 #endif
 	{
 #ifdef DEVMAN_USE_STAGING_POOL
@@ -626,6 +711,10 @@ public:
 #endif
 #if CRY_PLATFORM_DURANGO
 		, m_pLayout(NULL)
+		, m_nBaseAddressInvalidated(0)
+#endif
+#if defined(DEVICE_TEXTURE_STORE_OWNER)
+		, m_pDebugOwner(NULL)
 #endif
 	{
 #ifdef DEVMAN_USE_STAGING_POOL
@@ -659,29 +748,26 @@ public:
 #endif
 
 #ifdef DEVMAN_USE_PINNING
-	void WeakPin();
-	void Pin();
+	void* WeakPin();
+	void* Pin();
 	void Unpin();
-	bool IsMoveable() const
-	{
-		return false;
-	}
+	bool IsMoveable() const { return m_gpuHdl.IsValid() && !m_gpuHdl.IsFixed(); }
+
+#if CRY_PLATFORM_DURANGO
+	void GpuPin();
+	void GpuUnpin(ID3DXboxPerformanceContext* pCtx);
+	void GpuUnpin(ID3D11DmaEngineContextX* pCtx);
+#endif
+
 #endif
 
 #if CRY_PLATFORM_DURANGO
 	void InitD3DTexture();
-	bool IsInPool() const
-	{
-		return m_gpuHdl;
-	}
-	void* GetBasePointer() const
-	{
-		return m_gpuHdl.pCPUBase;
-	}
-	void* GetSurfacePointer(int nMip, int nSlice) const
+	bool IsInPool() const { return m_gpuHdl.IsValid(); }
+	size_t GetSurfaceOffset(int nMip, int nSlice) const
 	{
 		const XG_RESOURCE_LAYOUT& l = m_pLayout->layout;
-		return (char*)m_gpuHdl.pCPUBase + l.Plane[0].MipLayout[nMip].OffsetBytes + l.Plane[0].MipLayout[nMip].Slice2DSizeBytes * nSlice;
+		return l.Plane[0].MipLayout[nMip].OffsetBytes + l.Plane[0].MipLayout[nMip].Slice2DSizeBytes * nSlice;
 	}
 	size_t GetSurfaceSize(int nMip) const
 	{
@@ -693,11 +779,11 @@ public:
 		const XG_RESOURCE_LAYOUT& l = m_pLayout->layout;
 		return l.Plane[0].MipLayout[0].TileMode;
 	}
-	void                      GPUFlush();
-	const SDeviceTextureDesc* GetLayout() const
-	{
-		return m_pLayout;
-	}
+	void GPUFlush();
+	const SDeviceTextureDesc* GetLayout() const { return m_pLayout; }
+
+	void ReplaceTexture(ID3D11Texture2D* pReplacement);
+	uint32 GetBaseAddressInvalidated() const { return m_nBaseAddressInvalidated; }
 #endif
 
 	void GetMemoryUsage(ICrySizer* pSizer) const
@@ -726,7 +812,7 @@ public:
 	CDeviceTexturePin(CDeviceTexture* pDevTex)
 		: m_pTexture(pDevTex)
 	{
-		pDevTex->Pin();
+		m_pBaseAddress = pDevTex->Pin();
 	}
 
 	~CDeviceTexturePin()
@@ -734,13 +820,105 @@ public:
 		m_pTexture->Unpin();
 	}
 
+	void* GetBaseAddress() const { return m_pBaseAddress; }
+
+#if CRY_PLATFORM_DURANGO
+	void* GetSurfaceAddress(int nMip, int nSlice) const
+	{
+		return (char*)m_pBaseAddress + m_pTexture->GetSurfaceOffset(nMip, nSlice);
+	}
+#endif
+
 private:
 	CDeviceTexturePin(const CDeviceTexturePin&);
 	CDeviceTexturePin& operator=(const CDeviceTexturePin&);
 
 private:
 	CDeviceTexture* m_pTexture;
+	void* m_pBaseAddress;
 };
+
+#if CRY_PLATFORM_DURANGO
+
+class CDeviceTextureGpuPin
+{
+public:
+	CDeviceTextureGpuPin(ID3DXboxPerformanceContext* pCtx, CDeviceTexture* pDevTex)
+		: m_pCtx(pCtx)
+		, m_pTexture(pDevTex)
+	{
+		pDevTex->GpuPin();
+	}
+
+	CDeviceTextureGpuPin(CCryPerformanceDeviceContextWrapper& ctx, CDeviceTexture* pDevTex)
+		: m_pCtx(ctx.GetRealPerformanceDeviceContext())
+		, m_pTexture(pDevTex)
+	{
+		pDevTex->GpuPin();
+	}
+
+	~CDeviceTextureGpuPin()
+	{
+		m_pTexture->GpuUnpin(m_pCtx);
+	}
+
+private:
+	CDeviceTextureGpuPin(const CDeviceTextureGpuPin&);
+	CDeviceTextureGpuPin& operator = (const CDeviceTextureGpuPin&);
+
+private:
+	ID3DXboxPerformanceContext* m_pCtx;
+	CDeviceTexture* m_pTexture;
+};
+
+
+class CDeviceTextureDmaPin
+{
+public:
+	CDeviceTextureDmaPin(ID3D11DmaEngineContextX* pDmaCtx, CDeviceTexture* pDevTex)
+		: m_pCtx(pDmaCtx)
+		, m_pTexture(pDevTex)
+	{
+		m_pTexture->GpuPin();
+	}
+
+	~CDeviceTextureDmaPin()
+	{
+		m_pTexture->GpuUnpin(m_pCtx);
+	}
+
+private:
+	CDeviceTextureDmaPin(const CDeviceTextureDmaPin&);
+	CDeviceTextureDmaPin& operator = (const CDeviceTextureDmaPin&);
+
+private:
+	ID3D11DmaEngineContextX* m_pCtx;
+	CDeviceTexture* m_pTexture;
+};
+
+#define PIN_CONCAT_(a,b) a ## b
+#define PIN_CONCAT(a,b) PIN_CONCAT_(a,b)
+#define GPUPIN_DEVICE_TEXTURE(...) CDeviceTextureGpuPin PIN_CONCAT(gpupin, __LINE__) (__VA_ARGS__)
+#define DMAPIN_DEVICE_TEXTURE(...) CDeviceTextureDmaPin PIN_CONCAT(dmapin, __LINE__) (__VA_ARGS__)
+
+#ifndef _RELEASE
+//#define ASSERT_DEVICE_TEXTURE_IS_FIXED(tex) do { if (tex->IsMoveable()) __debugbreak(); } while (0)
+#endif
+
+#endif
+
+#endif
+
+#ifndef GPUPIN_DEVICE_TEXTURE
+#define GPUPIN_DEVICE_TEXTURE(...) do {} while (0)
+#endif
+
+#ifndef DMAPIN_DEVICE_TEXTURE
+#define DMAPIN_DEVICE_TEXTURE(...) do {} while (0)
+#endif
+
+#ifndef ASSERT_DEVICE_TEXTURE_IS_FIXED
+#define ASSERT_DEVICE_TEXTURE_IS_FIXED(...) do {} while(0)
 #endif
 
 class CDeviceVertexBuffer

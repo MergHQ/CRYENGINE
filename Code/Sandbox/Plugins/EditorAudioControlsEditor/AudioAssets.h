@@ -45,7 +45,7 @@ public:
 	virtual void      SetName(const string& name) { m_name = name; }
 
 	virtual bool      IsModified() const = 0;
-	virtual void      SetModified(bool bModified) = 0;
+	virtual void      SetModified(bool const bModified, bool const bForce = false) = 0;
 
 protected:
 	IAudioAsset*              m_pParent = nullptr;
@@ -59,9 +59,9 @@ class CAudioLibrary : public IAudioAsset
 
 public:
 	CAudioLibrary(const string& name) : IAudioAsset(name) {}
-	virtual EItemType GetType() const override    { return eItemType_Library; }
-	bool              IsModified() const override { return m_bModified; }
-	void              SetModified(bool bModified) { m_bModified = bModified; };
+	virtual EItemType GetType() const override                                              { return eItemType_Library; }
+	bool              IsModified() const override                                           { return m_bModified; }
+	virtual void      SetModified(bool const bModified, bool const bForce = false) override;
 
 private:
 	bool m_bModified = false;
@@ -75,8 +75,7 @@ public:
 	CAudioFolder(const string& name) : IAudioAsset(name) {}
 	virtual EItemType GetType() const override { return eItemType_Folder; }
 	bool              IsModified() const override;
-	void              SetModified(bool bModified);
-
+	virtual void      SetModified(bool const bModified, bool const bForce = false) override;
 };
 
 class CAudioControl : public IAudioAsset
@@ -87,7 +86,7 @@ class CAudioControl : public IAudioAsset
 
 public:
 	CAudioControl() = default;
-	CAudioControl(const string& controlName, CID id, EItemType type, CAudioAssetsManager* pAssetsManager);
+	CAudioControl(const string& controlName, CID id, EItemType type);
 	~CAudioControl();
 
 	CID           GetId() const;
@@ -124,8 +123,8 @@ public:
 
 	void          Serialize(Serialization::IArchive& ar);
 
-	bool          IsModified() const override;
-	void          SetModified(bool bModified);
+	virtual bool  IsModified() const override;
+	virtual void  SetModified(bool const bModified, bool const bForce = false) override;
 
 private:
 
@@ -143,14 +142,11 @@ private:
 	bool                       m_bAutoLoad = true;
 	bool                       m_bMatchRadiusAndAttenuation = true;
 
-	CAudioAssetsManager*       m_pAssetsManager = nullptr;
-
 	// All the raw connection nodes. Used for reloading the data when switching middleware.
 	void         AddRawXMLConnection(XmlNodeRef xmlNode, bool bValid, int platformIndex = -1);
 	XMLNodeList& GetRawXMLConnections(int platformIndex = -1);
 	std::map<int, XMLNodeList> m_connectionNodes;
 
 	bool                       m_modifiedSignalEnabled = true;
-
 };
 }

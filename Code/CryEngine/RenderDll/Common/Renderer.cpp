@@ -169,7 +169,9 @@ void CRenderer::InitRenderer()
 	// need to do this because the registering process can modify the default value (getting it from the .cfg) and will not notify the call back
 	SetShadowJittering(CV_r_shadow_jittering);
 
+#if !CRY_PLATFORM_DURANGO
 	m_DevMan.Init();
+#endif
 
 	m_nGPU = 1;
 

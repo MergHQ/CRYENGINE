@@ -681,10 +681,22 @@ SPlanningMemoryState CPlanningTextureStreamer::GetMemoryState()
 
 	ms.nMemStreamed = CTexture::s_nStatsStreamPoolInUseMem;
 
+#if CRY_PLATFORM_DURANGO
+	ms.nPhysicalLimit = gRenDev->m_DevMan.GetTexturePoolSize();
+	ms.nTargetPhysicalLimit = (ptrdiff_t)(static_cast<int64>(ms.nPhysicalLimit - 30 * 1024 * 1024) * 96 / 100);
+	ms.nTargetPhysicalLimit = max((ptrdiff_t)0, ms.nTargetPhysicalLimit);
+
+	ms.nStaticTexUsage = 0;//CTexture::s_nStatsCurManagedNonStreamedTexMem;
+	ms.nUnknownPoolUsage = gRenDev->m_DevMan.GetTexturePoolAllocated() - (CTexture::s_pPoolMgr->GetReservedSize() /*ms.nMemStreamed*/ + ms.nStaticTexUsage);
+
+	ms.nMemLimit = ms.nTargetPhysicalLimit - (ms.nStaticTexUsage + ms.nUnknownPoolUsage);
+	ms.nMemFreeSlack = (ptrdiff_t)((int64)ms.nPhysicalLimit * 4 / 100);
+#else
 	ms.nPhysicalLimit = (ptrdiff_t)CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024;
 
 	ms.nMemLimit = (ptrdiff_t)((int64)ms.nPhysicalLimit * 95 / 100);
 	ms.nMemFreeSlack = (ptrdiff_t)((int64)ms.nPhysicalLimit * 5 / 100);
+#endif
 
 	ms.nMemBoundStreamed = CTexture::s_nStatsStreamPoolBoundMem;
 	ms.nMemTemp = ms.nMemStreamed - ms.nMemBoundStreamed;

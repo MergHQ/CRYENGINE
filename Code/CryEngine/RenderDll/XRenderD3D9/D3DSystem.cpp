@@ -2101,6 +2101,8 @@ bool CD3D9Renderer::SetRes()
 
 	GetPerformanceDevice().CreateDmaEngineContext(&dmaDesc, &m_pDMA1);
 
+	m_DevMan.Init();
+
 	IDXGIDevice1* dxgiDevice;
 	hr |= GetDevice().QueryInterface(__uuidof(IDXGIDevice1), (void**)&dxgiDevice);
 

@@ -78,16 +78,14 @@ ERequestStatus CAudioObject::Set3DAttributes(SObject3DAttributes const& attribut
 ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount)
 {
 	static float const envEpsilon = 0.0001f;
-
 	ERequestStatus result = ERequestStatus::Failure;
-
 	SAudioEnvironment const* const pEnvironment = static_cast<SAudioEnvironment const* const>(pIAudioEnvironment);
 
 	if (pEnvironment != nullptr)
 	{
 		switch (pEnvironment->type)
 		{
-		case EWwiseAudioEnvironmentType::AuxBus:
+		case EEnvironmentType::AuxBus:
 			{
 				float const currentAmount = stl::find_in_map(m_environemntImplAmounts, pEnvironment->busId, -1.0f);
 
@@ -100,10 +98,9 @@ ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 				result = ERequestStatus::Success;
 				break;
 			}
-		case EWwiseAudioEnvironmentType::Rtpc:
+		case EEnvironmentType::Rtpc:
 			{
-				AkRtpcValue rtpcValue = static_cast<AkRtpcValue>(pEnvironment->multiplier * amount + pEnvironment->shift);
-
+				AkRtpcValue const rtpcValue = static_cast<AkRtpcValue>(pEnvironment->multiplier * amount + pEnvironment->shift);
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pEnvironment->rtpcId, rtpcValue, m_id);
 
 				if (IS_WWISE_OK(wwiseResult))
@@ -119,8 +116,8 @@ ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 					  rtpcValue,
 					  m_id);
 				}
-				break;
 
+				break;
 			}
 		default:
 			{
@@ -181,13 +178,34 @@ ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 	{
 		switch (pSwitchState->type)
 		{
-		case EWwiseSwitchType::Switch:
+		case ESwitchType::StateGroup:
+			{
+				AKRESULT const wwiseResult = AK::SoundEngine::SetState(
+				  pSwitchState->stateOrSwitchGroupId,
+				  pSwitchState->stateOrSwitchId);
+
+				if (IS_WWISE_OK(wwiseResult))
+				{
+					result = ERequestStatus::Success;
+				}
+				else
+				{
+					g_implLogger.Log(
+					  ELogType::Warning,
+					  "Wwise failed to set the StateGroup %" PRISIZE_T "to state %" PRISIZE_T,
+					  pSwitchState->stateOrSwitchGroupId,
+					  pSwitchState->stateOrSwitchId);
+				}
+
+				break;
+			}
+		case ESwitchType::SwitchGroup:
 			{
 				AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : s_dummyGameObjectId;
 
 				AKRESULT const wwiseResult = AK::SoundEngine::SetSwitch(
-				  pSwitchState->switchId,
-				  pSwitchState->stateId,
+				  pSwitchState->stateOrSwitchGroupId,
+				  pSwitchState->stateOrSwitchId,
 				  gameObjectId);
 
 				if (IS_WWISE_OK(wwiseResult))
@@ -198,41 +216,22 @@ ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 				{
 					g_implLogger.Log(
 					  ELogType::Warning,
-					  "Wwise failed to set the switch group %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
-					  pSwitchState->switchId,
-					  pSwitchState->stateId,
+					  "Wwise failed to set the SwitchGroup %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
+					  pSwitchState->stateOrSwitchGroupId,
+					  pSwitchState->stateOrSwitchId,
 					  gameObjectId);
 				}
 
 				break;
 			}
-		case EWwiseSwitchType::State:
+		case ESwitchType::Rtpc:
 			{
-				AKRESULT const wwiseResult = AK::SoundEngine::SetState(
-				  pSwitchState->switchId,
-				  pSwitchState->stateId);
+				AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : s_dummyGameObjectId;
 
-				if (IS_WWISE_OK(wwiseResult))
-				{
-					result = ERequestStatus::Success;
-				}
-				else
-				{
-					g_implLogger.Log(
-					  ELogType::Warning,
-					  "Wwise failed to set the state group %" PRISIZE_T "to state %" PRISIZE_T,
-					  pSwitchState->switchId,
-					  pSwitchState->stateId);
-				}
-
-				break;
-			}
-		case EWwiseSwitchType::Rtpc:
-			{
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(
-				  pSwitchState->switchId,
+				  pSwitchState->stateOrSwitchGroupId,
 				  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-				  m_id);
+				  gameObjectId);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -243,20 +242,20 @@ ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 					g_implLogger.Log(
 					  ELogType::Warning,
 					  "Wwise failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
-					  pSwitchState->switchId,
+					  pSwitchState->stateOrSwitchGroupId,
 					  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-					  m_id);
+					  gameObjectId);
 				}
 
 				break;
 			}
-		case EWwiseSwitchType::None:
+		case ESwitchType::None:
 			{
 				break;
 			}
 		default:
 			{
-				g_implLogger.Log(ELogType::Warning, "Unknown EWwiseSwitchType: %" PRISIZE_T, pSwitchState->type);
+				g_implLogger.Log(ELogType::Warning, "Unknown ESwitchType: %" PRISIZE_T, pSwitchState->type);
 
 				break;
 			}
@@ -385,13 +384,13 @@ ERequestStatus CAudioObject::PostEnvironmentAmounts()
 	{
 		for (; iEnvPair != iEnvEnd; ++auxIndex)
 		{
-			float const fAmount = iEnvPair->second;
+			float const amount = iEnvPair->second;
 
 			auxValues[auxIndex].auxBusID = iEnvPair->first;
-			auxValues[auxIndex].fControlValue = fAmount;
+			auxValues[auxIndex].fControlValue = amount;
 
 			// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
-			if (fAmount == 0.0f)
+			if (amount == 0.0f)
 			{
 				m_environemntImplAmounts.erase(iEnvPair++);
 			}

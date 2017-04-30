@@ -46,6 +46,9 @@ void SD3DPostEffectsUtils::ResolveRT(CTexture*& pDst, const RECT* pSrcRect)
 	gcpRendD3D->GetViewport(&iTempX, &iTempY, &iWidth, &iHeight);
 
 	CDeviceTexture* pDstResource = pDst->GetDevTexture();
+
+	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstResource);
+
 	D3DSurface* pOrigRT = gcpRendD3D->m_pNewTarget[0]->m_pTarget;
 	if (pOrigRT && pDstResource)
 	{

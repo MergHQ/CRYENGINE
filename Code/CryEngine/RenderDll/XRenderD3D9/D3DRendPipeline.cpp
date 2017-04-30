@@ -920,6 +920,8 @@ void CD3D9Renderer::FX_ScreenStretchRect(CTexture* pDst, CTexture* pHDRSrc)
 			D3DSurface*  pOrigRT         = m_pNewTarget[0]->m_pTarget;
 			D3DResource* pSrcResource;
 
+			GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstResource);
+
 			// This is a subrect to subrect copy with no resolving or stretching
 			D3D11_BOX box;
 			ZeroStruct(box);

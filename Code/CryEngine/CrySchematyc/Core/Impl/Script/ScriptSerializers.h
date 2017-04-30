@@ -8,6 +8,8 @@
 #include <Schematyc/SerializationUtils/ISerializationContext.h>
 #include <Schematyc/Utils/Delegate.h>
 
+#include "Script/Script.h"
+
 namespace Schematyc
 {
 // Forward declare structures.
@@ -15,18 +17,48 @@ struct SScriptInputElement;
 // Forward declare classes.
 class CScript;
 
+//////////////////////////////////////////////////////////////////////////
+// FILE FORMAT
+//////////////////////////////////////////////////////////////////////////
+// <schematyc>
+//  <version value="..."/>
+//  <guid value="..."/>
+//  <scope value="..."/>
+//  <root>
+//   <elementType value="..."/>
+//   <guid value="..."/>
+//   <name value="..."/>
+//   <extensions />
+//   <children>
+//    <Element>
+//     <elementType value="..."/>
+//     <guid value="..."/>
+//     <name value="..."/>
+//     <inputs />
+//     <userDocumentation>
+//      <author value="..."/>
+//     </userDocumentation>
+//     <extensions />
+//     <children />
+//    </Element>
+//    <Element>
+//			...
+//    </Element>
+//   </children>
+//  </root>
+// </schematyc>
+//////////////////////////////////////////////////////////////////////////
+
 typedef CDelegate<void (IScriptElement&)> ScriptElementSerializeCallback;
 
 class CScriptInputElementSerializer
 {
 public:
-
 	CScriptInputElementSerializer(IScriptElement& element, ESerializationPass serializationPass, const ScriptElementSerializeCallback& callback = ScriptElementSerializeCallback());
 
 	void Serialize(Serialization::IArchive& archive);
 
 private:
-
 	IScriptElement&                m_element;
 	ESerializationPass             m_serializationPass;
 	ScriptElementSerializeCallback m_callback;
@@ -42,7 +74,7 @@ struct SScriptInputElement
 	void Serialize(Serialization::IArchive& archive);
 
 	Serialization::SBlackBox blackBox;
-	IScriptElementPtr        ptr;
+	IScriptElementPtr        instance;
 	ScriptInputElements      children;
 	ScriptInputElementPtrs   dependencies;
 	uint32                   sortPriority;
@@ -54,7 +86,6 @@ struct SScriptInputBlock
 	SGUID               scopeGUID;
 	SScriptInputElement rootElement;
 };
-
 typedef std::vector<SScriptInputBlock> ScriptInputBlocks;
 
 class CScriptLoadSerializer

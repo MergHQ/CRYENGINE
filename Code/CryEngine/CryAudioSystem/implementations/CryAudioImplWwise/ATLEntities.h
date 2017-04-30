@@ -60,8 +60,8 @@ private:
 
 struct SAudioListener final : public IAudioListener
 {
-	explicit SAudioListener(AkUniqueID const _id)
-		: id(_id)
+	explicit SAudioListener(AkUniqueID const id_)
+		: id(id_)
 	{}
 
 	virtual ~SAudioListener() override = default;
@@ -80,8 +80,8 @@ struct SAudioListener final : public IAudioListener
 
 struct SAudioTrigger final : public IAudioTrigger
 {
-	explicit SAudioTrigger(AkUniqueID const _id)
-		: id(_id)
+	explicit SAudioTrigger(AkUniqueID const id_)
+		: id(id_)
 	{}
 
 	virtual ~SAudioTrigger() override = default;
@@ -101,16 +101,17 @@ struct SAudioTrigger final : public IAudioTrigger
 	AkUniqueID const id;
 
 private:
+
 	ERequestStatus SetLoaded(bool bLoad) const;
 	ERequestStatus SetLoadedAsync(IAudioEvent* const pIAudioEvent, bool bLoad) const;
 };
 
 struct SAudioRtpc final : public IParameter
 {
-	explicit SAudioRtpc(AkRtpcID const _id, float const _mult, float const _shift)
-		: mult(_mult)
-		, shift(_shift)
-		, id(_id)
+	explicit SAudioRtpc(AkRtpcID const id_, float const mult_, float const shift_)
+		: mult(mult_)
+		, shift(shift_)
+		, id(id_)
 	{}
 
 	virtual ~SAudioRtpc() override = default;
@@ -125,25 +126,25 @@ struct SAudioRtpc final : public IParameter
 	AkRtpcID const id;
 };
 
-enum class EWwiseSwitchType : EnumFlagsType
+enum class ESwitchType : EnumFlagsType
 {
 	None,
-	Switch,
-	State,
 	Rtpc,
+	StateGroup,
+	SwitchGroup,
 };
 
 struct SAudioSwitchState final : public IAudioSwitchState
 {
 	explicit SAudioSwitchState(
-	  EWwiseSwitchType const _type,
-	  AkUInt32 const _switchId,
-	  AkUInt32 const _stateId,
-	  float const rtpcValue = 0.0f)
-		: type(_type)
-		, switchId(_switchId)
-		, stateId(_stateId)
-		, rtpcValue(rtpcValue)
+	  ESwitchType const type_,
+	  AkUInt32 const stateOrSwitchGroupId_,
+	  AkUInt32 const stateOrSwitchId_,
+	  float const rtpcValue_ = 0.0f)
+		: type(type_)
+		, stateOrSwitchGroupId(stateOrSwitchGroupId_)
+		, stateOrSwitchId(stateOrSwitchId_)
+		, rtpcValue(rtpcValue_)
 	{}
 
 	virtual ~SAudioSwitchState() override = default;
@@ -153,13 +154,13 @@ struct SAudioSwitchState final : public IAudioSwitchState
 	SAudioSwitchState& operator=(SAudioSwitchState const&) = delete;
 	SAudioSwitchState& operator=(SAudioSwitchState&&) = delete;
 
-	EWwiseSwitchType const type;
-	AkUInt32 const         switchId;
-	AkUInt32 const         stateId;
-	float const            rtpcValue;
+	ESwitchType const type;
+	AkUInt32 const    stateOrSwitchGroupId;
+	AkUInt32 const    stateOrSwitchId;
+	float const       rtpcValue;
 };
 
-enum class EWwiseAudioEnvironmentType : EnumFlagsType
+enum class EEnvironmentType : EnumFlagsType
 {
 	None,
 	AuxBus,
@@ -168,28 +169,24 @@ enum class EWwiseAudioEnvironmentType : EnumFlagsType
 
 struct SAudioEnvironment final : public IAudioEnvironment
 {
-	explicit SAudioEnvironment(EWwiseAudioEnvironmentType const type_)
-		: type(type_)
-	{}
-
-	explicit SAudioEnvironment(EWwiseAudioEnvironmentType const type_, AkAuxBusID const busId_)
+	explicit SAudioEnvironment(EEnvironmentType const type_, AkAuxBusID const busId_)
 		: type(type_)
 		, busId(busId_)
 	{
-		CRY_ASSERT(type_ == EWwiseAudioEnvironmentType::AuxBus);
+		CRY_ASSERT(type_ == EEnvironmentType::AuxBus);
 	}
 
 	explicit SAudioEnvironment(
-	  EWwiseAudioEnvironmentType const _type,
-	  AkRtpcID const _rtpcId,
-	  float const _multiplier,
-	  float const _shift)
-		: type(_type)
-		, rtpcId(_rtpcId)
-		, multiplier(_multiplier)
-		, shift(_shift)
+	  EEnvironmentType const type_,
+	  AkRtpcID const rtpcId_,
+	  float const multiplier_,
+	  float const shift_)
+		: type(type_)
+		, rtpcId(rtpcId_)
+		, multiplier(multiplier_)
+		, shift(shift_)
 	{
-		CRY_ASSERT(_type == EWwiseAudioEnvironmentType::Rtpc);
+		CRY_ASSERT(type_ == EEnvironmentType::Rtpc);
 	}
 
 	virtual ~SAudioEnvironment() override = default;
@@ -199,32 +196,32 @@ struct SAudioEnvironment final : public IAudioEnvironment
 	SAudioEnvironment& operator=(SAudioEnvironment const&) = delete;
 	SAudioEnvironment& operator=(SAudioEnvironment&&) = delete;
 
-	EWwiseAudioEnvironmentType const type;
+	EEnvironmentType const type;
 
 	union
 	{
 		// Aux Bus implementation
 		struct
 		{
-			AkAuxBusID busId;
+			AkAuxBusID const busId;
 		};
 
 		// Rtpc implementation
 		struct
 		{
-			AkRtpcID rtpcId;
-			float    multiplier;
-			float    shift;
+			AkRtpcID const rtpcId;
+			float const    multiplier;
+			float const    shift;
 		};
 	};
 };
 
 struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent, stl::PSyncNone>
 {
-	explicit SAudioEvent(CATLEvent& _atlEvent)
+	explicit SAudioEvent(CATLEvent& atlEvent_)
 		: state(EEventState::None)
 		, id(AK_INVALID_UNIQUE_ID)
-		, atlEvent(_atlEvent)
+		, atlEvent(atlEvent_)
 	{}
 
 	virtual ~SAudioEvent() override = default;

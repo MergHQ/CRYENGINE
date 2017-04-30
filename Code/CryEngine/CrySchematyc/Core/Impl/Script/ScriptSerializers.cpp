@@ -31,13 +31,14 @@
 
 namespace Schematyc
 {
-namespace
-{
-CScriptElementFactory g_scriptElementFactory; // #SchematycTODO : Move to CScriptRegistry?
+
+namespace {
+
+CScriptElementFactory g_scriptElementFactory; // #SchematycTODO : Move to CScriptRegistry? Yes!
 
 enum class EScriptElementOutputSerializerFlags
 {
-	None = 0,
+	None    = 0,
 	Copying = BIT(0)
 };
 
@@ -99,6 +100,7 @@ private:
 	IScriptElement*                            m_pElement;
 	const ScriptElementOutputSerializerParams* m_pParams;
 };
+
 } // Anonymous
 
 CScriptInputElementSerializer::CScriptInputElementSerializer(IScriptElement& element, ESerializationPass serializationPass, const ScriptElementSerializeCallback& callback)
@@ -118,20 +120,21 @@ SScriptInputElement::SScriptInputElement()
 
 void SScriptInputElement::Serialize(Serialization::IArchive& archive)
 {
-	if (!ptr)
+	if (!instance)
 	{
 		EScriptElementType elementType = EScriptElementType::None;
 		archive(elementType, "elementType");
-		ptr = g_scriptElementFactory.CreateElement(elementType);
-		if (ptr)
+
+		instance = g_scriptElementFactory.CreateElement(elementType);
+		if (instance)
 		{
 			children.reserve(20);
 			archive(children, "children");
 			for (SScriptInputElement& child : children)
 			{
-				if (child.ptr)
+				if (child.instance)
 				{
-					ptr->AttachChild(*child.ptr);
+					instance->AttachChild(*child.instance);
 				}
 			}
 		}
@@ -211,7 +214,7 @@ void CScriptPasteSerializer::Serialize(Serialization::IArchive& archive)
 
 void UnrollScriptInputElementsRecursive(ScriptInputElementPtrs& output, SScriptInputElement& element)
 {
-	if (element.ptr)
+	if (element.instance)
 	{
 		output.push_back(&element);
 	}
@@ -230,7 +233,7 @@ bool SortScriptInputElementsByDependency(ScriptInputElementPtrs& elements)
 	elementsByGUID.reserve(elementCount);
 	for (SScriptInputElement* pElement : elements)
 	{
-		elementsByGUID.insert(ElementsByGUID::value_type(pElement->ptr->GetGUID(), pElement));
+		elementsByGUID.insert(ElementsByGUID::value_type(pElement->instance->GetGUID(), pElement));
 	}
 
 	for (SScriptInputElement* pElement : elements)
@@ -243,7 +246,7 @@ bool SortScriptInputElementsByDependency(ScriptInputElementPtrs& elements)
 				pElement->dependencies.push_back(itDependency->second);
 			}
 		};
-		pElement->ptr->EnumerateDependencies(ScriptDependencyEnumerator::FromLambda(visitElementDependency), EScriptDependencyType::Load);
+		pElement->instance->EnumerateDependencies(ScriptDependencyEnumerator::FromLambda(visitElementDependency), EScriptDependencyType::Load);
 	}
 
 	uint32 recursiveDependencyCount = 0;

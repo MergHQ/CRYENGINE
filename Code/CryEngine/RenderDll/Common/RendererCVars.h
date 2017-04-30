@@ -171,6 +171,9 @@ public:
 
 	static int CV_r_TexturesStreamPoolSize; //plz do not access directly, always by GetTexturesStreamPoolSize()
 	static int CV_r_TexturesStreamPoolSecondarySize;
+	static int CV_r_texturesstreampooldefragmentation;
+	static int CV_r_texturesstreampooldefragmentationmaxmoves;
+	static int CV_r_texturesstreampooldefragmentationmaxamount;
 
 	static int CV_r_ReprojectOnlyStaticObjects;
 	static int CV_r_ReadZBufferDirectlyFromVMEM;

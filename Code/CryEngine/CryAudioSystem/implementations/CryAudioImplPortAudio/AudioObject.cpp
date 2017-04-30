@@ -12,7 +12,7 @@ using namespace CryAudio::Impl::PortAudio;
 //////////////////////////////////////////////////////////////////////////
 void CAudioObject::StopAudioEvent(uint32 const pathId)
 {
-	for (auto const& pEvent : m_activeEvents)
+	for (auto const pEvent : m_activeEvents)
 	{
 		if (pEvent->pathId == pathId)
 		{
@@ -112,7 +112,6 @@ ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTr
 	}
 
 	return requestResult;
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -131,7 +130,6 @@ ERequestStatus CAudioObject::PlayFile(IAudioStandaloneFile* const pIFile)
 ERequestStatus CAudioObject::StopFile(IAudioStandaloneFile* const pIFile)
 {
 	return ERequestStatus::Success;
-
 }
 
 //////////////////////////////////////////////////////////////////////////

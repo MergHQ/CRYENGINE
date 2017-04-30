@@ -195,6 +195,15 @@ STexStreamInState::STexStreamInState()
 
 void STexStreamInState::Reset()
 {
+#if defined(DEVMAN_USE_PINNING)
+	if (m_bPinned)
+	{
+		CDeviceTexture* pDevTex = m_pNewPoolItem->m_pDevTexture;
+		pDevTex->Unpin();
+		m_bPinned = false;
+	}
+#endif
+
 	if (m_pNewPoolItem)
 	{
 		CTexture::s_pPoolMgr->ReleaseItem(m_pNewPoolItem);
@@ -283,13 +292,14 @@ void STexStreamInState::StreamAsyncOnComplete(IReadStream* pStream, unsigned nEr
 	// Check to see if this is the last mip (and thus owns the job)
 	if (nRef == 0)
 	{
+#if defined(DEVMAN_USE_PINNING) && !CRY_PLATFORM_DURANGO
+		// Should not be durango, it will hold pin until commit, to cover mip copy
 		if (m_bPinned)
 		{
-#ifdef DEVMAN_USE_PINNING
 			CDeviceTexture* pDevTex = m_pNewPoolItem->m_pDevTexture;
 			pDevTex->Unpin();
-#endif
 		}
+#endif
 
 		if (!m_bAborted)
 		{
@@ -297,7 +307,9 @@ void STexStreamInState::StreamAsyncOnComplete(IReadStream* pStream, unsigned nEr
 			tp->StreamUploadMips_Durango(m_nHigherUploadedMip, m_nLowerUploadedMip - m_nHigherUploadedMip + 1, m_pNewPoolItem, *this);
 
 			if (CTexture::s_bStreamDontKeepSystem)
+			{
 				tp->StreamReleaseMipsData(m_nHigherUploadedMip, m_nLowerUploadedMip);
+			}
 #endif
 
 #if defined(TEXSTRM_DEFERRED_UPLOAD)
@@ -313,16 +325,18 @@ void STexStreamInState::StreamAsyncOnComplete(IReadStream* pStream, unsigned nEr
 					m_mips[i].m_bExpanded = false;
 
 				if (CTexture::s_bStreamDontKeepSystem)
+				{
 					tp->StreamReleaseMipsData(m_nHigherUploadedMip, m_nLowerUploadedMip);
+				}
 			}
 
 #endif
 
 #if defined(TEXSTRM_ASYNC_TEXCOPY)
-
 			if (!m_bValidLowMips && tp->CanAsyncCopy())
+			{
 				CopyMips();
-
+			}
 #endif
 		}
 
@@ -383,7 +397,7 @@ bool STexStreamInState::TryCommit()
 #endif
 
 #if CRY_PLATFORM_DURANGO
-		if (!tp->StreamInCheckComplete_Durango(*this))
+		if (!tp->StreamInCheckTileComplete_Durango(*this))
 			return false;
 #endif
 
@@ -406,9 +420,26 @@ bool STexStreamInState::TryCommit()
 				if (CTexture::s_bStreamDontKeepSystem)
 					m_pTexture->StreamReleaseMipsData(m_pTexture->GetNumMipsNonVirtual() - m_pTexture->GetNumPersistentMips(), m_pTexture->GetNumMipsNonVirtual() - 1);
 			}
+#if defined(CRY_PLATFORM_DURANGO)
+			m_copyMipsFence = CTexture::StreamInsertFence();
+#endif
 
 			m_bValidLowMips = true;
 		}
+
+#if defined(CRY_PLATFORM_DURANGO)
+		if (!tp->StreamInCheckCopyComplete_Durango(*this))
+			return false;
+#endif
+
+#if defined(DEVMAN_USE_PINNING)
+		if (m_bPinned)
+		{
+			CDeviceTexture* pDevTex = m_pNewPoolItem->m_pDevTexture;
+			pDevTex->Unpin();
+			m_bPinned = false;
+		}
+#endif
 
 		if (pNewPoolItem)
 		{
@@ -1463,6 +1494,12 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 
 			int nSides = pTex->GetNumSides();
 
+#if defined(CRY_PLATFORM_DURANGO)
+			CDeviceTexture* pDevTex = pNewPoolItem->m_pDevTexture;
+			char* pPinnedBaseAddress = (char*)pDevTex->Pin();
+			pStreamState->m_bPinned = true;
+#endif
+
 			for (DDSSplitted::ChunkInfo* it = chunks, * itEnd = chunks + nNumChunks; it != itEnd; ++it)
 			{
 				const DDSSplitted::ChunkInfo& chunk = *it;
@@ -1500,8 +1537,7 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 					pBaseAddress = static_cast<byte*>(pD3DTex->RawPointer()) + offset;
 					streamRequests[nStreamRequests].params.nFlags |= IStreamEngine::FLAGS_WRITE_ONLY_EXTERNAL_BUFFER;
 #elif CRY_PLATFORM_DURANGO
-					CDeviceTexture* pDevTex = pNewPoolItem->m_pDevTexture;
-					pBaseAddress = static_cast<byte*>(pDevTex->GetSurfacePointer(nMipIdx, 0));
+					pBaseAddress = reinterpret_cast<byte*>(pPinnedBaseAddress + pDevTex->GetSurfaceOffset(nMipIdx, 0));
 
 	#if !defined(TEXTURES_IN_CACHED_MEM)
 					streamRequests[nStreamRequests].params.nFlags |= IStreamEngine::FLAGS_WRITE_ONLY_EXTERNAL_BUFFER;
@@ -1546,6 +1582,16 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 			}
 			else
 			{
+#if defined(DEVMAN_USE_PINNING)
+				if (pStreamState->m_bPinned)
+				{
+					CDeviceTexture* pDevTex = pNewPoolItem->m_pDevTexture;
+
+					pDevTex->Unpin();
+					pStreamState->m_bPinned = false;
+				}
+#endif
+
 				pStreamState->m_pTexture->Release();
 				pStreamState->m_pTexture = NULL;
 				StreamState_ReleaseIn(pStreamState);

@@ -23,7 +23,7 @@
 
 namespace CrySchematycEditor {
 
-	CryIcon CStateItem::s_icon = CryIcon("icons:schematyc/script_state.png");
+CryIcon CStateItem::s_icon = CryIcon("icons:schematyc/script_state.png");
 
 CStateItem::CStateItem(Schematyc::IScriptState& scriptState, CAbstractObjectStructureModel& model)
 	: CAbstractObjectStructureModelItem(model)
@@ -94,58 +94,6 @@ bool CStateItem::AllowsRenaming() const
 {
 	const bool allowsRenaming = !m_scriptState.GetFlags().Check(Schematyc::EScriptElementFlags::FixedName);
 	return allowsRenaming;
-}
-
-CAbstractVariablesModelItem* CStateItem::GetVariableItemByIndex(uint32 index)
-{
-	if (index < m_variables.size())
-	{
-		return m_variables[index];
-	}
-
-	return nullptr;
-}
-
-uint32 CStateItem::GetVariableItemIndex(const CAbstractVariablesModelItem& variableItem) const
-{
-	uint32 index = 0;
-	for (const CVariableItem* pItem : m_variables)
-	{
-		if (pItem == &variableItem)
-		{
-			return index;
-		}
-		++index;
-	}
-
-	return 0xffffffff;
-}
-
-CAbstractVariablesModelItem* CStateItem::CreateVariable()
-{
-	Schematyc::IScriptVariable* pScriptVariable = Schematyc::ScriptBrowserUtils::AddScriptVariable(&m_scriptState);
-	if (pScriptVariable)
-	{
-		CVariableItem* pVariableItem = new CVariableItem(*pScriptVariable, *this);
-
-		m_variables.push_back(pVariableItem);
-		SignalVariableAdded(*pVariableItem);
-
-		return pVariableItem;
-	}
-
-	return nullptr;
-}
-
-bool CStateItem::RemoveVariable(CAbstractVariablesModelItem& variableItem)
-{
-	auto result = std::find(m_variables.begin(), m_variables.end(), &variableItem);
-	if (result != m_variables.end())
-	{
-		SignalVariableRemoved(variableItem);
-		m_variables.erase(result);
-	}
-	return false;
 }
 
 uint32 CStateItem::GetChildItemIndex(const CAbstractObjectStructureModelItem& item) const
@@ -299,9 +247,9 @@ void CStateItem::LoadFromScriptElement()
 			break;
 		case Schematyc::EScriptElementType::Variable:
 			{
-				Schematyc::IScriptVariable& scriptVariable = static_cast<Schematyc::IScriptVariable&>(*pElement);
-				CVariableItem* pVariableItem = new CVariableItem(scriptVariable, *this);
-				m_variables.push_back(pVariableItem);
+				//Schematyc::IScriptVariable& scriptVariable = static_cast<Schematyc::IScriptVariable&>(*pElement);
+				//CVariableItem* pVariableItem = new CVariableItem(scriptVariable, *this);
+				//m_variables.push_back(pVariableItem);
 			}
 			break;
 		default:

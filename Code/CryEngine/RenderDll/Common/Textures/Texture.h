@@ -1474,6 +1474,9 @@ private:
 
 	D3DShaderResource* m_pDeviceShaderResource;
 	D3DShaderResource* m_pDeviceShaderResourceSRGB;
+#if CRY_PLATFORM_DURANGO
+	uint32             m_nDeviceAddressInvalidated;
+#endif
 
 	typedef std::function<void (void*, uint32)> InvalidateCallbackType;
 	std::unordered_map<void*, InvalidateCallbackType> m_invalidateCallbacks;
@@ -1784,6 +1787,16 @@ public:
 	const int          GetSize(bool bIncludePool) const;
 	void               PostCreate();
 
+#if CRY_PLATFORM_DURANGO
+	void CheckValidateSRVs()
+	{
+		if (m_pDevTexture && m_pDevTexture->GetBaseAddressInvalidated() != m_nDeviceAddressInvalidated)
+			ValidateSRVs();
+	}
+
+	void ValidateSRVs();
+#endif
+
 	//////////////////////////////////////////////////////////////////////////
 	// Will notify resource's user that some data of the the resource was invalidated.
 	// dirtyFlags - one or more of the EDeviceDirtyFlags enum bits
@@ -1945,8 +1958,10 @@ public:
 #if CRY_PLATFORM_DURANGO
 	void          StreamUploadMip_Durango(const void* pSurfaceData, int nMip, int nBaseMipOffset, STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState);
 	void          StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolItem* pNewPoolItem, STexStreamInState& streamState);
-	bool          StreamInCheckComplete_Durango(STexStreamInState& state);
+	bool          StreamInCheckTileComplete_Durango(STexStreamInState& state);
+	bool          StreamInCheckCopyComplete_Durango(STexStreamInState& state);
 	bool          StreamOutCheckComplete_Durango(STexStreamOutState& state);
+	static UINT64 StreamInsertFence();
 	static UINT64 StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int nMipSrc, STexPoolItem* pDestItem, int nMipDest, int nNumMips);  // GPU-assisted platform-dependent
 #endif
 #if defined(TEXSTRM_DEFERRED_UPLOAD)

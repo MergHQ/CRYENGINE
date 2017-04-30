@@ -6,8 +6,8 @@
 #include <Schematyc/SerializationUtils/ISerializationContext.h>
 #include <Schematyc/Utils/IGUIDRemapper.h>
 
-namespace Schematyc
-{
+namespace Schematyc {
+
 CScriptModule::CScriptModule()
 	: CScriptElementBase(EScriptElementFlags::MustOwnScript)
 {}
@@ -29,4 +29,5 @@ void CScriptModule::Serialize(Serialization::IArchive& archive)
 	CMultiPassSerializer::Serialize(archive);
 	CScriptElementBase::SerializeExtensions(archive);
 }
+
 } // Schematyc

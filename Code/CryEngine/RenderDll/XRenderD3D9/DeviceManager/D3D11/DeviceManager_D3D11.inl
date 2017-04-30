@@ -298,13 +298,15 @@ void CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload, S
 
 //=============================================================================
 
-#ifdef DEVMAN_USE_PINNING
-void CDeviceTexture::WeakPin()
+#if defined(DEVMAN_USE_PINNING) && !CRY_PLATFORM_DURANGO
+void* CDeviceTexture::WeakPin()
 {
+	return nullptr;
 }
 
-void CDeviceTexture::Pin()
+void* CDeviceTexture::Pin()
 {
+	return nullptr;
 }
 
 void CDeviceTexture::Unpin()

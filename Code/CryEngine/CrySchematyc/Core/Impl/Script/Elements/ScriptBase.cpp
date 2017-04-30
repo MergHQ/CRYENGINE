@@ -30,7 +30,8 @@ CScriptBase::CScriptBase()
 CScriptBase::CScriptBase(const SGUID& guid, const SElementId& classId)
 	: CScriptElementBase(guid, nullptr, { EScriptElementFlags::NotCopyable, EScriptElementFlags::FixedName })
 	, m_classId(classId)
-{}
+{
+}
 
 void CScriptBase::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
@@ -57,6 +58,11 @@ void CScriptBase::ProcessEvent(const SScriptEvent& event)
 	RefreshFlags refreshFlags;
 	switch (event.id)
 	{
+	case EScriptEventId::FileReload:
+		{
+			refreshFlags.Add(ERefreshFlags::All);
+			break;
+		}
 	case EScriptEventId::EditorAdd:
 		{
 			refreshFlags.Add(ERefreshFlags::All);
@@ -70,7 +76,9 @@ void CScriptBase::ProcessEvent(const SScriptEvent& event)
 	case EScriptEventId::EditorPaste:
 	case EScriptEventId::EditorDependencyModified:
 		{
-			refreshFlags.Add(RefreshFlags({ ERefreshFlags::Name, ERefreshFlags::Variables, ERefreshFlags::ComponentInstances }));   // #SchematycTODO : How do we track when new elements are added to base?
+			// TODO : How do we track when new elements are added to base?
+			refreshFlags.Add(RefreshFlags({ ERefreshFlags::Name, ERefreshFlags::Variables, ERefreshFlags::ComponentInstances }));
+			// ~TODO
 			break;
 		}
 	}
@@ -229,6 +237,10 @@ void CScriptBase::RefreshVariables(const IScriptClass& scriptClass)
 				const IScriptVariable& baseVariable = DynamicCast<IScriptVariable>(scriptElement);
 				baseVariables.insert(BaseVariables::value_type(baseVariable.GetGUID(), &baseVariable));
 				return EVisitStatus::Continue;
+			}
+		case EScriptElementType::ComponentInstance:
+			{
+				// TODO: Not implemented yet!
 			}
 		default:
 			{
