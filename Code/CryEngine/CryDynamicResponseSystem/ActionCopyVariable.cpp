@@ -13,7 +13,7 @@ using namespace CryDRS;
 DRS::IResponseActionInstanceUniquePtr CActionCopyVariable::Execute(DRS::IResponseInstance* pResponseInstance)
 {	
 	CResponseInstance* pInstanceImpl = static_cast<CResponseInstance*>(pResponseInstance);
-	if (CryDRS::CVariable* pSourceVar = m_sourceVariable.GetCurrentVariable(pInstanceImpl))
+	if (CVariable* pSourceVar = m_sourceVariable.GetCurrentVariable(pInstanceImpl))
 	{
 		CVariableCollection* pTargetCollection = m_targetVariable.GetCurrentCollection(pInstanceImpl);
 		if (!pTargetCollection && !m_targetVariable.m_collectionName.IsValid())
@@ -22,7 +22,7 @@ DRS::IResponseActionInstanceUniquePtr CActionCopyVariable::Execute(DRS::IRespons
 		}
 		if (pTargetCollection)
 		{
-			if (CryDRS::CVariable* pTargetVar = pTargetCollection->CreateOrGetVariable(m_targetVariable.m_variableName))
+			if (CVariable* pTargetVar = pTargetCollection->CreateOrGetVariable(m_targetVariable.m_variableName))
 			{
 				if (m_changeOperation == eChangeOperation_Set)
 				{

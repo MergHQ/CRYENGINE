@@ -23,8 +23,6 @@ namespace CryDRS
 			eChangeOperation_Decrement = 2
 		};
 
-		virtual ~CActionCopyVariable() = default;
-
 		//////////////////////////////////////////////////////////
 		// IResponseAction implementation
 		virtual DRS::IResponseActionInstanceUniquePtr Execute(DRS::IResponseInstance* pResponseInstance) override;
