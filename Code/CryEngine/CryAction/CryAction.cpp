@@ -3396,6 +3396,7 @@ void CCryAction::ReleaseGameStats()
 
 void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	m_isEditing = true;
 
 	uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
