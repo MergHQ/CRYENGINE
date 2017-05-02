@@ -808,9 +808,10 @@ void AIConsoleVars::Init()
 
 	DefineConstIntCVarName("ai_MNMRaycastImplementation", MNMRaycastImplementation, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Defines which type of raycast implementation to use on the MNM meshes."
-	                       "0 - Old one. This version will be deprecated as it sometimes does not handle correctly the cases where the ray coincides with triangle egdes, which has been fixed in the new version.\n"
-	                       "1 - New one.\n"
-	                       "Any other value is used for the new one");
+	                       "0 - Version 1. This version will be deprecated as it sometimes does not handle correctly the cases where the ray coincides with triangle egdes, which has been fixed in the new version.\n"
+	                       "1 - Version 2. This version also fails in some cases when the ray goes exactly through triangle corners and then hitting the wall. \n"
+	                       "2 - Version 3. The newest version that should be working in all special cases. This version is around 40% faster then the previous one. \n"
+	                       "Any other value is used for the biggest version.");
 
 	DefineConstIntCVarName("ai_SmartPathFollower_useAdvancedPathShortcutting", SmartPathFollower_useAdvancedPathShortcutting, 1, VF_NULL, "Enables a more failsafe way of preventing the AI to shortcut through obstacles (0 = disable, any other value = enable)");
 	DefineConstIntCVarName("ai_SmartPathFollower_useAdvancedPathShortcutting_debug", SmartPathFollower_useAdvancedPathShortcutting_debug, 0, VF_NULL, "Show debug lines for when CVar ai_SmartPathFollower_useAdvancedPathShortcutting_debug is enabled");
