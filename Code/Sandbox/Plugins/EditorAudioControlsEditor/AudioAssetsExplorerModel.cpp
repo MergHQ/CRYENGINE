@@ -21,7 +21,7 @@
 #include "Controls/QuestionDialog.h"
 #include <CryString/CryPath.h>
 #include <DragDrop.h>
-#pragma optimize("", off)
+
 namespace ACE
 {
 
