@@ -89,60 +89,60 @@ void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes cons
 	auto iterEnd = m_constructedAudioObjects.cend();
 	for (auto iter = m_constructedAudioObjects.begin(); iter != iterEnd; )
 	{
-		CATLAudioObject* const pAudioObject = *iter;
+		CATLAudioObject* const pObject = *iter;
 
-		CObjectTransformation const& transformation = pAudioObject->GetTransformation();
+		CObjectTransformation const& transformation = pObject->GetTransformation();
 
 		float const distance = transformation.GetPosition().GetDistance(listenerAttributes.transformation.GetPosition());
-		float const radius = pAudioObject->GetMaxRadius();
+		float const radius = pObject->GetMaxRadius();
 
 		if (radius <= 0.0f || distance < radius)
 		{
-			if ((pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) > 0)
+			if ((pObject->GetFlags() & EObjectFlags::Virtual) > 0)
 			{
-				pAudioObject->RemoveFlag(EAudioObjectFlags::Virtual);
+				pObject->RemoveFlag(EObjectFlags::Virtual);
 			}
 		}
 		else
 		{
-			if ((pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) == 0)
+			if ((pObject->GetFlags() & EObjectFlags::Virtual) == 0)
 			{
-				pAudioObject->SetFlag(EAudioObjectFlags::Virtual);
+				pObject->SetFlag(EObjectFlags::Virtual);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				pAudioObject->ResetObstructionRays();
+				pObject->ResetObstructionRays();
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 		}
 
-		if (IsActive(pAudioObject))
+		if (IsActive(pObject))
 		{
-			pAudioObject->Update(deltaTime, distance, listenerAttributes.transformation.GetPosition());
+			pObject->Update(deltaTime, distance, listenerAttributes.transformation.GetPosition());
 
-			if (pAudioObject->CanRunObstructionOcclusion() && pAudioObject->HasNewOcclusionValues())
+			if (pObject->CanRunObstructionOcclusion() && pObject->HasNewOcclusionValues())
 			{
 				SATLSoundPropagationData propagationData;
-				pAudioObject->GetPropagationData(propagationData);
+				pObject->GetPropagationData(propagationData);
 
-				pAudioObject->GetImplDataPtr()->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
+				pObject->GetImplDataPtr()->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
 			}
 
 			if (bUpdateControls)
 			{
-				pAudioObject->UpdateControls(m_timeSinceLastControlsUpdate, listenerAttributes);
+				pObject->UpdateControls(m_timeSinceLastControlsUpdate, listenerAttributes);
 			}
 
-			pAudioObject->GetImplDataPtr()->Update();
+			pObject->GetImplDataPtr()->Update();
 		}
 		else
 		{
-			if (pAudioObject->CanBeReleased())
+			if (pObject->CanBeReleased())
 			{
 				iter = m_constructedAudioObjects.erase(iter);
 				iterEnd = m_constructedAudioObjects.cend();
-				m_pImpl->DestructAudioObject(pAudioObject->GetImplDataPtr());
-				pAudioObject->SetImplDataPtr(nullptr);
+				m_pImpl->DestructAudioObject(pObject->GetImplDataPtr());
+				pObject->SetImplDataPtr(nullptr);
 
-				delete pAudioObject;
+				delete pObject;
 				continue;
 			}
 		}
@@ -224,11 +224,11 @@ void CAudioObjectManager::ReportFinishedStandaloneFile(CATLStandaloneFile* const
 //////////////////////////////////////////////////////////////////////////
 void CAudioObjectManager::ReleasePendingRays()
 {
-	for (auto pAudioObject : m_constructedAudioObjects)
+	for (auto const pObject : m_constructedAudioObjects)
 	{
-		if (pAudioObject != nullptr)
+		if (pObject != nullptr)
 		{
-			pAudioObject->ReleasePendingRays();
+			pObject->ReleasePendingRays();
 		}
 	}
 }
@@ -236,11 +236,7 @@ void CAudioObjectManager::ReleasePendingRays()
 //////////////////////////////////////////////////////////////////////////
 bool CAudioObjectManager::IsActive(CATLAudioObject const* const pAudioObject) const
 {
-	if ((pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) == 0)
-	{
-		return HasActiveData(pAudioObject);
-	}
-	return false;
+	return HasActiveData(pAudioObject);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -263,6 +259,7 @@ bool CAudioObjectManager::HasActiveData(CATLAudioObject const* const pAudioObjec
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -335,7 +332,7 @@ void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, flo
 		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_audioCVars.m_pAudioObjectsDebugFilter->GetString());
 		lowerCaseSearchString.MakeLower();
 		bool const bHasActiveData = HasActiveData(pAudioObject);
-		bool const bIsVirtual = (pAudioObject->GetFlags() & EAudioObjectFlags::Virtual) > 0;
+		bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) > 0;
 		bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseAudioObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 		bool const bDraw = bStringFound && ((g_audioCVars.m_showActiveAudioObjectsOnly == 0) || (g_audioCVars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
 

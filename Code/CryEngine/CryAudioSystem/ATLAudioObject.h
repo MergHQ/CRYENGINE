@@ -29,7 +29,7 @@ class CAudioEventManager;
 class CAudioListenerManager;
 class CAudioStandaloneFileManager;
 
-enum class EAudioTriggerStatus : EnumFlagsType
+enum class ETriggerStatus : EnumFlagsType
 {
 	None                     = 0,
 	Playing                  = BIT(0),
@@ -40,11 +40,11 @@ enum class EAudioTriggerStatus : EnumFlagsType
 	CallbackOnExternalThread = BIT(5),
 	CallbackOnAudioThread    = BIT(6),
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioTriggerStatus);
+CRY_CREATE_ENUM_FLAG_OPERATORS(ETriggerStatus);
 
 struct SAudioTriggerImplState
 {
-	EAudioTriggerStatus flags = EAudioTriggerStatus::None;
+	ETriggerStatus flags = ETriggerStatus::None;
 };
 
 struct SUserDataBase
@@ -67,12 +67,12 @@ struct SUserDataBase
 
 struct SAudioTriggerInstanceState final : public SUserDataBase
 {
-	EAudioTriggerStatus flags = EAudioTriggerStatus::None;
-	ControlId           audioTriggerId = InvalidControlId;
-	size_t              numPlayingEvents = 0;
-	size_t              numLoadingEvents = 0;
-	float               expirationTimeMS = 0.0f;
-	float               remainingTimeMS = 0.0f;
+	ETriggerStatus flags = ETriggerStatus::None;
+	ControlId      audioTriggerId = InvalidControlId;
+	size_t         numPlayingEvents = 0;
+	size_t         numLoadingEvents = 0;
+	float          expirationTimeMS = 0.0f;
+	float          remainingTimeMS = 0.0f;
 };
 
 // CATLAudioObject-related typedefs
@@ -125,7 +125,7 @@ public:
 
 	float                          GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
 	void                           SetObstructionOcclusion(float const obstruction, float const occlusion);
-	bool                           CanRunObstructionOcclusion() const  { return m_propagationProcessor.CanRunObstructionOcclusion(); }
+	bool                           CanRunObstructionOcclusion() const  { return m_propagationProcessor.CanRunObstructionOcclusion() && (m_flags& EObjectFlags::Virtual) == 0; }
 	void                           ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
 	bool                           HasNewOcclusionValues()             { return m_propagationProcessor.HasNewOcclusionValues(); }
 	void                           GetPropagationData(SATLSoundPropagationData& propagationData) const;
@@ -139,16 +139,16 @@ public:
 	CObjectTransformation const&   GetTransformation()                                 { return m_attributes.transformation; }
 
 	// Flags / Properties
-	EAudioObjectFlags GetFlags() const { return m_flags; }
-	void              SetFlag(EAudioObjectFlags const flag);
-	void              RemoveFlag(EAudioObjectFlags const flag);
-	void              SetDopplerTracking(bool const bEnable);
-	void              SetVelocityTracking(bool const bEnable);
-	float             GetMaxRadius() const { return m_maxRadius; }
+	EObjectFlags GetFlags() const { return m_flags; }
+	void         SetFlag(EObjectFlags const flag);
+	void         RemoveFlag(EObjectFlags const flag);
+	void         SetDopplerTracking(bool const bEnable);
+	void         SetVelocityTracking(bool const bEnable);
+	float        GetMaxRadius() const { return m_maxRadius; }
 
-	void              Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
-	void              UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
-	bool              CanBeReleased() const;
+	void         Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
+	void         UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
+	bool         CanBeReleased() const;
 
 	static CSystem*                     s_pAudioSystem;
 	static CAudioEventManager*          s_pEventManager;
@@ -183,7 +183,7 @@ private:
 	ObjectStateMap            m_switchStates;
 	Impl::IAudioObject*       m_pImplData;
 	float                     m_maxRadius;
-	EAudioObjectFlags         m_flags;
+	EObjectFlags              m_flags;
 	float                     m_previousVelocity;
 	Vec3                      m_velocity;
 	Impl::SObject3DAttributes m_attributes;

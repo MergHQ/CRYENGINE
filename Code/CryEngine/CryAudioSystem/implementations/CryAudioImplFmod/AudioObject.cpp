@@ -71,7 +71,7 @@ void CAudioObjectBase::RemoveEvent(CAudioEvent* const pAudioEvent)
 	{
 		if (!stl::find_and_erase(m_pendingAudioEvents, pAudioEvent))
 		{
-			CRY_ASSERT_MESSAGE(true, "Tried to remove an event from an audio object that does not own that event");
+			g_implLogger.Log(ELogType::Error, "Tried to remove an event from an audio object that does not own that event");
 		}
 	}
 }
@@ -83,7 +83,7 @@ void CAudioObjectBase::RemoveFile(CAudioFileBase const* const pFile)
 	{
 		if (!stl::find_and_erase(m_pendingFiles, pFile))
 		{
-			CRY_ASSERT_MESSAGE(true, "Tried to remove an audio file from an audio object that is not playing that file");
+			g_implLogger.Log(ELogType::Error, "Tried to remove an audio file from an audio object that is not playing that file");
 		}
 	}
 }

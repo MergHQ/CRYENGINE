@@ -520,7 +520,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			  (g_audioCVars.m_ignoreWindowFocus == 0) &&
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-			  (m_flags& EAudioInternalStates::IsMuted) == 0)
+			  (m_flags& EInternalStates::IsMuted) == 0)
 			{
 				CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, LoseFocusTriggerId, nullptr);
 
@@ -544,7 +544,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			  (g_audioCVars.m_ignoreWindowFocus == 0) &&
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-			  (m_flags& EAudioInternalStates::IsMuted) == 0)
+			  (m_flags& EInternalStates::IsMuted) == 0)
 			{
 				result = m_pImpl->OnGetFocus();
 				CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, GetFocusTriggerId, nullptr);
@@ -578,11 +578,11 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 
 			if (result == ERequestStatus::Success)
 			{
-				m_flags |= EAudioInternalStates::IsMuted;
+				m_flags |= EInternalStates::IsMuted;
 			}
 			else
 			{
-				m_flags &= ~EAudioInternalStates::IsMuted;
+				m_flags &= ~EInternalStates::IsMuted;
 			}
 
 			break;
@@ -593,11 +593,11 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 
 			if (result != ERequestStatus::Success)
 			{
-				m_flags |= EAudioInternalStates::IsMuted;
+				m_flags |= EInternalStates::IsMuted;
 			}
 			else
 			{
-				m_flags &= ~EAudioInternalStates::IsMuted;
+				m_flags &= ~EInternalStates::IsMuted;
 			}
 
 			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, UnmuteAllTriggerId, nullptr);
@@ -1048,7 +1048,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				}
 
 				result = pObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				pObject->RemoveFlag(EAudioObjectFlags::DoNotRelease);
+				pObject->RemoveFlag(EObjectFlags::DoNotRelease);
 			}
 			else
 			{
@@ -1215,7 +1215,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		{
 			if (pObject != m_pGlobalAudioObject)
 			{
-				pObject->RemoveFlag(EAudioObjectFlags::DoNotRelease);
+				pObject->RemoveFlag(EObjectFlags::DoNotRelease);
 				result = ERequestStatus::Success;
 			}
 			else
@@ -1389,7 +1389,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 void CAudioTranslationLayer::ReleaseImpl()
 {
 	// During audio middleware shutdown we do not allow for any new requests originating from the "dying" audio middleware!
-	m_flags |= EAudioInternalStates::AudioMiddlewareShuttingDown;
+	m_flags |= EInternalStates::AudioMiddlewareShuttingDown;
 
 	m_pImpl->OnBeforeShutDown();
 
@@ -1416,7 +1416,7 @@ void CAudioTranslationLayer::ReleaseImpl()
 	CRY_ASSERT(result == ERequestStatus::Success);
 
 	m_pImpl = nullptr;
-	m_flags &= ~EAudioInternalStates::AudioMiddlewareShuttingDown;
+	m_flags &= ~EInternalStates::AudioMiddlewareShuttingDown;
 }
 
 //////////////////////////////////////////////////////////////////////////

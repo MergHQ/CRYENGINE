@@ -14,13 +14,13 @@
 
 namespace CryAudio
 {
-enum class EAudioInternalStates : EnumFlagsType
+enum class EInternalStates : EnumFlagsType
 {
 	None                        = 0,
 	IsMuted                     = BIT(0),
 	AudioMiddlewareShuttingDown = BIT(1),
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioInternalStates);
+CRY_CREATE_ENUM_FLAG_OPERATORS(EInternalStates);
 
 class CSystem;
 
@@ -55,7 +55,7 @@ public:
 	bool           GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, PreloadRequestId& audioPreloadRequestId) const;
 	bool           GetAudioEnvironmentId(char const* const szAudioEnvironmentName, EnvironmentId& audioEnvironmentId) const;
 
-	bool           CanProcessRequests() const { return (m_flags& EAudioInternalStates::AudioMiddlewareShuttingDown) == 0; }
+	bool           CanProcessRequests() const { return (m_flags& EInternalStates::AudioMiddlewareShuttingDown) == 0; }
 
 	ERequestStatus ParseControlsData(char const* const szFolderPath, EDataScope const dataScope);
 	ERequestStatus ClearControlsData(EDataScope const dataScope);
@@ -100,7 +100,7 @@ private:
 
 	// Utility members
 	uint32               m_lastMainThreadFrameId = 0;
-	EAudioInternalStates m_flags = EAudioInternalStates::None;
+	EInternalStates m_flags = EInternalStates::None;
 	Impl::IAudioImpl*    m_pImpl = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
