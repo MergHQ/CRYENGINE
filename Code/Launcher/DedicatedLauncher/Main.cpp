@@ -10,8 +10,6 @@
 #include <CryCore/Platform/CryWindows.h>
 #include <ShellAPI.h> // requires <windows.h>
 
-#include <CrySystem/ParseEngineConfig.h>
-
 // We need shell api for Current Root Extruction.
 #include "shlwapi.h"
 #pragma comment(lib, "shlwapi.lib")

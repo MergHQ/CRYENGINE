@@ -30,7 +30,7 @@ public:
 	virtual const char*   GetObjectClassName() const { return TypeName(); }
 
 protected:
-	virtual bool OnCreate(CEditableAsset& editAsset) const override;
+	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
 
 private:
 	virtual CryIcon GetIcon() const override;

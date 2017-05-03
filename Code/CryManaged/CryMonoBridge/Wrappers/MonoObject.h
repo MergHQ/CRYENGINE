@@ -3,32 +3,41 @@
 #pragma once
 
 #include "MonoClass.h"
+#include "MonoString.h"
 
-#include <CryMono/IMonoObject.h>
-
-#include <mono/metadata/object.h>
-#include <mono/metadata/class.h>
-
-struct IMonoClass;
-
-class CMonoObject final : public IMonoObject
+#ifndef HAVE_MONO_API
+namespace MonoInternals
 {
+	struct MonoObject;
+}
+#endif
+
+class CMonoObject
+{
+	friend class CMonoClass;
+	friend class CMonoMethod;
+
+	// Begin public API
 public:
-	CMonoObject(MonoObject* pObject, std::shared_ptr<CMonoClass> pClass);
-	CMonoObject(MonoObject* pObject);
-	virtual ~CMonoObject();
+	CMonoObject(MonoInternals::MonoObject* pObject, std::shared_ptr<CMonoClass> pClass);
+	CMonoObject(MonoInternals::MonoObject* pObject);
+	~CMonoObject();
 
-	// IMonoObject
-	virtual const char* ToString() const override;
+	// Gets the string form of the object
+	std::shared_ptr<CMonoString> ToString() const;
 
-	virtual size_t GetArraySize() const override;
-	virtual char* GetArrayAddress(size_t elementSize, size_t index) const override;
+	// Gets the size of the array this object represents, if any
+	size_t GetArraySize() const;
+	// Gets the address of an element inside the array
+	char* GetArrayAddress(size_t elementSize, size_t index) const;
 
-	virtual void* GetHandle() const override { return m_pObject; }
-	virtual IMonoClass* GetClass() override;
-	// ~IMonoObject
+	// Gets the internal handle for the object
+	MonoInternals::MonoObject* GetManagedObject() const { return m_pObject; }
+	// Gets the class of the object, queries if not already available
+	CMonoClass* GetClass();
 
-	void AssignObject(MonoObject* pObject);
+protected:
+	void AssignObject(MonoInternals::MonoObject* pObject);
 
 	// GetClass needs to be aware of the object weak ptr
 	void SetWeakPointer(std::weak_ptr<CMonoObject> pObject) { m_pThis = pObject; }
@@ -36,7 +45,7 @@ public:
 	void ReleaseGCHandle();
 
 protected:
-	MonoObject* m_pObject;
+	MonoInternals::MonoObject* m_pObject;
 	uint32 m_gcHandle;
 
 	std::shared_ptr<CMonoClass> m_pClass;

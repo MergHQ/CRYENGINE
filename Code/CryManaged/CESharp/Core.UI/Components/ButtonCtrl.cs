@@ -1,10 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using CryEngine.Common;
+using System;
 
-/// <summary>
-/// UI-Components are meant to be used for modifying, controling or viewing content relative to their owning UI elements.
-/// </summary>
+
+// UI-Components are meant to be used for modifying, controling or viewing content relative to their owning UI elements.
 namespace CryEngine.UI.Components
 {
 	/// <summary>
@@ -12,13 +11,29 @@ namespace CryEngine.UI.Components
 	/// </summary>
 	public class ButtonCtrl : UIComponent
 	{
-		public event EventHandler OnEnterMouse;
-		public event EventHandler OnLeaveMouse;
-		public event EventHandler OnFocusEnter; ///< Raised if Focus was entered by Canvas.
-		public event EventHandler OnFocusLost; ///< Raised if Focus was left by Canvas.
-		public event EventHandler OnPressed; ///< Raised if button was pressed.
+		public event Action OnEnterMouse;
+		public event Action OnLeaveMouse;
 
-		public Text Text { get; private set; } ///< Content of the button.
+		/// <summary>
+		/// Raised if Focus was entered by Canvas.
+		/// </summary>
+		public event Action OnFocusEnter;
+
+		/// <summary>
+		/// Raised if Focus was left by Canvas.
+		/// </summary>
+		public event Action OnFocusLost;
+
+		/// <summary>
+		/// Raised if button was pressed.
+		/// </summary>
+		public event Action OnPressed;
+
+		/// <summary>
+		/// Content of the button.
+		/// </summary>
+		/// <value>The text.</value>
+		public Text Text { get; private set; }
 
 		/// <summary>
 		/// Called by framework. Do not call directly.
@@ -85,9 +100,9 @@ namespace CryEngine.UI.Components
 				OnPressed();
 		}
 
-		public override void OnKey(SInputEvent e)
+		public override void OnKey(InputEvent e)
 		{
-			if (e.KeyPressed(EKeyId.eKI_Space) || e.KeyPressed(EKeyId.eKI_Enter) || e.KeyPressed(EKeyId.eKI_XI_A))
+			if (e.KeyPressed(KeyId.Space) || e.KeyPressed(KeyId.Enter) || e.KeyPressed(KeyId.XI_A))
 			{
 				if (OnPressed != null)
 					OnPressed();

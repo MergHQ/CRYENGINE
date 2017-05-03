@@ -351,7 +351,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	//	m_sys_filecache = NULL;
 	m_gpu_particle_physics = NULL;
 	m_pCpu = NULL;
-	m_sys_game_folder = NULL;
 
 	m_bQuit = false;
 	m_bShaderCacheGenMode = false;
@@ -676,7 +675,10 @@ void CSystem::ShutDown()
 	UnloadEngineModule("CryFlowGraph");
 	SAFE_DELETE(m_pPluginManager);
 
-	SAFE_DELETE(gEnv->pMonoRuntime);
+	if (gEnv->pMonoRuntime != nullptr)
+	{
+		gEnv->pMonoRuntime->Shutdown();
+	}
 
 	SAFE_DELETE(m_pUserAnalyticsSystem);
 	UnloadEngineModule(m_sys_dll_response_system->GetString());

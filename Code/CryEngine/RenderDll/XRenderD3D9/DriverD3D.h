@@ -636,7 +636,7 @@ public:
 	                         float r=1,float g=1,float b=1,float a=1,float z=1, float stereoDepth=0) override;
 	virtual void PushUITexture(int srcId, int dstId, float x0, float y0, float w, float h, float u0, float v0, float u1, float v1, float r, float g, float b, float a) override;
   	bool RayIntersectMesh(IRenderMesh* pMesh, const Ray& ray, Vec3& hitpos, Vec3 &p0, Vec3 &p1, Vec3 &p2, Vec2 &uv0, Vec2 &uv1, Vec2 &uv2);
-	virtual int RayToUV(const Vec3& vOrigin, const Vec3& vDirection, float* pUOut, float* pVOut) override;
+	virtual int GetDetailedRayHitInfo(IPhysicalEntity* pCollider, const Vec3& vOrigin, const Vec3& vDirection, const float maxRayDist, float* pUOut, float* pVOut) override;
 	virtual Vec3 UnprojectFromScreen(int x, int y) override;
 
 	virtual void Draw2dImageStretchMode(bool bStretch) override;

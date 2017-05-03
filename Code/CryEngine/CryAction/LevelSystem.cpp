@@ -1365,12 +1365,6 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 			pCustomActionManager->LoadLibraryActions(CUSTOM_ACTIONS_PATH);
 		}
 
-		if (gEnv->pEntitySystem)
-		{
-			gEnv->pEntitySystem->ReserveEntityId(1);
-			gEnv->pEntitySystem->ReserveEntityId(LOCAL_PLAYER_ENTITY_ID);
-		}
-
 		CCryAction::GetCryAction()->GetIGameRulesSystem()->CreateGameRules(CCryAction::GetCryAction()->GetGameContext()->GetRequestedGameRules());
 
 		string missionXml = pLevelInfo->GetDefaultGameType()->xmlFile;

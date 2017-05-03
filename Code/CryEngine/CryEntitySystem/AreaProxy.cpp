@@ -80,16 +80,12 @@ void CEntityComponentArea::OnMove()
 					s_tmpWorldPoints[i] = worldTM.TransformPoint(m_localPoints[i]);
 				}
 
+				CRY_ASSERT_MESSAGE(!s_tmpWorldPoints.empty(), "An area shape without points cannot be moved, Verify that it is properly initialized!");
+
 				if (!s_tmpWorldPoints.empty())
 				{
 					m_pArea->MovePoints(&s_tmpWorldPoints[0], numLocalPoints);
 					s_tmpWorldPoints.clear();
-				}
-				else
-				{
-#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-					CryFatalError("An area shape without points cannot be moved.\nVerify that it is properly initialized.");
-#endif    // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 				}
 			}
 			break;

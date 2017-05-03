@@ -4,11 +4,9 @@
 #include "MonoRuntime.h"
 #include "MonoLibrary.h"
 #include "MonoClass.h"
+#include "MonoMethod.h"
 
 #include "RootMonoDomain.h"
-
-#include <mono/metadata/mono-debug.h>
-#include <mono/metadata/debug-helpers.h>
 
 #include <CrySystem/IProjectManager.h>
 
@@ -20,12 +18,12 @@ CAppDomain::CAppDomain(char *name, bool bActivate)
 	m_bNativeDomain = true;
 }
 
-CAppDomain::CAppDomain(MonoDomain* pMonoDomain)
+CAppDomain::CAppDomain(MonoInternals::MonoDomain* pMonoDomain)
 {
 	m_pDomain = pMonoDomain;
 
 #ifndef _RELEASE
-	mono_debug_domain_create(m_pDomain);
+	MonoInternals::mono_debug_domain_create(m_pDomain);
 #endif
 
 	m_bNativeDomain = false;
@@ -33,7 +31,7 @@ CAppDomain::CAppDomain(MonoDomain* pMonoDomain)
 
 void CAppDomain::CreateDomain(char *name, bool bActivate)
 {
-	m_pDomain = mono_domain_create_appdomain(name, nullptr);
+	m_pDomain = MonoInternals::mono_domain_create_appdomain(name, nullptr);
 
 	char baseDirectory[_MAX_PATH];
 	CryGetExecutableFolder(CRY_ARRAY_COUNT(baseDirectory), baseDirectory);
@@ -44,7 +42,7 @@ void CAppDomain::CreateDomain(char *name, bool bActivate)
 	char szEngineBinaryDir[_MAX_PATH];
 	CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineBinaryDir), szEngineBinaryDir);
 
-	mono_domain_set_config(m_pDomain, szEngineBinaryDir, sConfigFile);
+	MonoInternals::mono_domain_set_config(m_pDomain, szEngineBinaryDir, sConfigFile);
 
 	if (bActivate)
 	{
@@ -52,7 +50,7 @@ void CAppDomain::CreateDomain(char *name, bool bActivate)
 	}
 
 #ifndef _RELEASE
-	mono_debug_domain_create(m_pDomain);
+	MonoInternals::mono_debug_domain_create(m_pDomain);
 #endif
 }
 
@@ -95,17 +93,17 @@ void CAppDomain::SerializeDomainData(std::vector<char>& serializedData)
 {
 	// Create the shared serialization utilities that may be called by libraries and objects
 	// Now serialize the statics contained inside this library
-	auto* pNetCoreLibrary = static_cast<CRootMonoDomain*>(GetMonoRuntime()->GetRootDomain())->GetNetCoreLibrary();
+	CMonoLibrary* pNetCoreLibrary = GetMonoRuntime()->GetRootDomain()->GetNetCoreLibrary();
 
-	auto pMemoryStreamClass = pNetCoreLibrary->GetTemporaryClass("System.IO", "MemoryStream");
+	std::shared_ptr<CMonoClass> pMemoryStreamClass = pNetCoreLibrary->GetTemporaryClass("System.IO", "MemoryStream");
 	std::shared_ptr<CMonoObject> pMemoryStream = std::static_pointer_cast<CMonoObject>(pMemoryStreamClass->CreateInstance());
 
 	m_serializationTicks = 0;
 
-	auto pCryObjectWriterClass = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Serialization", "ObjectWriter");
+	std::shared_ptr<CMonoClass> pCryObjectWriterClass = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Serialization", "ObjectWriter");
 
 	void* writerConstructorArgs[1];
-	writerConstructorArgs[0] = pMemoryStream->GetHandle();
+	writerConstructorArgs[0] = pMemoryStream->GetManagedObject();
 
 	std::shared_ptr<CMonoObject> pSerializer = std::static_pointer_cast<CMonoObject>(pCryObjectWriterClass->CreateInstance(writerConstructorArgs, 1));
 
@@ -115,7 +113,7 @@ void CAppDomain::SerializeDomainData(std::vector<char>& serializedData)
 	}
 
 	// Grab the serialized buffer
-	auto pManagedBuffer = pMemoryStream->GetClass()->FindMethod("GetBuffer")->Invoke(pMemoryStream.get());
+	std::shared_ptr<CMonoObject> pManagedBuffer = pMemoryStream->GetClass()->FindMethod("GetBuffer")->Invoke(pMemoryStream.get());
 
 	serializedData.resize(pManagedBuffer->GetArraySize());
 	char* arrayBuffer = pManagedBuffer->GetArrayAddress(sizeof(char), 0);
@@ -128,18 +126,18 @@ void CAppDomain::SerializeDomainData(std::vector<char>& serializedData)
 void CAppDomain::DeserializeDomainData(const std::vector<char>& serializedData)
 {
 	// Now serialize the statics contained inside this library
-	auto* pNetCoreLibrary = static_cast<CRootMonoDomain*>(GetMonoRuntime()->GetRootDomain())->GetNetCoreLibrary();
+	CMonoLibrary* pNetCoreLibrary = GetMonoRuntime()->GetRootDomain()->GetNetCoreLibrary();
 
 	m_serializationTicks = 0;
 
-	auto pCryObjectReaderClass = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Serialization", "ObjectReader");
+	std::shared_ptr<CMonoClass> pCryObjectReaderClass = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Serialization", "ObjectReader");
 
-	auto* pDomain = static_cast<CMonoDomain*>(pCryObjectReaderClass->GetAssembly()->GetDomain());
+	CMonoDomain* pDomain = pCryObjectReaderClass->GetAssembly()->GetDomain();
 
-	auto* pMonoManagedBuffer = (MonoObject*)mono_array_new((MonoDomain*)pDomain->GetHandle(), mono_get_byte_class(), serializedData.size());
-	auto pBufferClass = pNetCoreLibrary->GetClassFromMonoClass(mono_object_get_class(pMonoManagedBuffer));
+	MonoInternals::MonoArray* pMonoManagedBuffer = MonoInternals::mono_array_new(pDomain->GetMonoDomain(), MonoInternals::mono_get_byte_class(), serializedData.size());
+	std::shared_ptr<CMonoClass> pBufferClass = pNetCoreLibrary->GetClassFromMonoClass(MonoInternals::mono_object_get_class((MonoInternals::MonoObject*)pMonoManagedBuffer));
 
-	auto pManagedBuffer = std::make_shared<CMonoObject>(pMonoManagedBuffer, pBufferClass);
+	std::shared_ptr<CMonoObject> pManagedBuffer = std::make_shared<CMonoObject>((MonoInternals::MonoObject*)pMonoManagedBuffer, pBufferClass);
 	char* arrayBuffer = pManagedBuffer->GetArrayAddress(sizeof(char), 0);
 
 	memcpy(arrayBuffer, serializedData.data(), serializedData.size());
@@ -148,14 +146,14 @@ void CAppDomain::DeserializeDomainData(const std::vector<char>& serializedData)
 	memoryStreamCtorArgs[0] = pMonoManagedBuffer;
 
 	bool bWritable = false;
-	MonoObject* pBoolObject = mono_value_box((MonoDomain*)pDomain->GetHandle(), mono_get_boolean_class(), &bWritable);
+	MonoInternals::MonoObject* pBoolObject = MonoInternals::mono_value_box(pDomain->GetMonoDomain(), MonoInternals::mono_get_boolean_class(), &bWritable);
 	memoryStreamCtorArgs[1] = pBoolObject;
 
-	auto pMemoryStreamClass = pNetCoreLibrary->GetTemporaryClass("System.IO", "MemoryStream");
+	std::shared_ptr<CMonoClass> pMemoryStreamClass = pNetCoreLibrary->GetTemporaryClass("System.IO", "MemoryStream");
 	std::shared_ptr<CMonoObject> pMemoryStream = std::static_pointer_cast<CMonoObject>(pMemoryStreamClass->CreateInstance(memoryStreamCtorArgs, 2));
 
 	void* readerConstructorParams[1];
-	readerConstructorParams[0] = pMemoryStream->GetHandle();
+	readerConstructorParams[0] = pMemoryStream->GetManagedObject();
 
 	std::shared_ptr<CMonoObject> pSerializer = std::static_pointer_cast<CMonoObject>(pCryObjectReaderClass->CreateInstance(readerConstructorParams, 1));
 
@@ -167,9 +165,9 @@ void CAppDomain::DeserializeDomainData(const std::vector<char>& serializedData)
 	CryLogAlways("Total de-serialization time: %f ms", (1000.f * gEnv->pTimer->TicksToSeconds(m_serializationTicks)));
 }
 
-void CAppDomain::SerializeObject(CMonoObject* pSerializer, MonoObject* pObject, bool bIsAssembly)
+void CAppDomain::SerializeObject(CMonoObject* pSerializer, MonoInternals::MonoObject* pObject, bool bIsAssembly)
 {
-	auto startTime = CryGetTicks();
+	int64 startTime = CryGetTicks();
 
 	void* writeParams[1];
 	writeParams[0] = pObject;
@@ -179,12 +177,12 @@ void CAppDomain::SerializeObject(CMonoObject* pSerializer, MonoObject* pObject, 
 	m_serializationTicks += CryGetTicks() - startTime;
 }
 
-std::shared_ptr<IMonoObject> CAppDomain::DeserializeObject(CMonoObject* pSerializer, bool bIsAssembly)
+std::shared_ptr<CMonoObject> CAppDomain::DeserializeObject(CMonoObject* pSerializer, bool bIsAssembly)
 {
-	auto startTime = CryGetTicks();
+	int64 startTime = CryGetTicks();
 
 	// Now serialize the statics contained inside this library
-	auto pReadResult = pSerializer->GetClass()->FindMethod(bIsAssembly ? "ReadStatics" : "Read")->Invoke(pSerializer);
+	std::shared_ptr<CMonoObject> pReadResult = pSerializer->GetClass()->FindMethod(bIsAssembly ? "ReadStatics" : "Read")->Invoke(pSerializer);
 
 	m_serializationTicks += CryGetTicks() - startTime;
 

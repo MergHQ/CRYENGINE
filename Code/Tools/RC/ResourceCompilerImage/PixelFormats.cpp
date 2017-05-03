@@ -618,9 +618,8 @@ bool CPixelFormats::ParseSurfaceHeader(ImageObject* pImage, uint32& maxMipCount,
 		eCube = ImageObject::eCubemap_Yes;
 	}
 
-	Vec4 colMinARGB, colMaxARGB;
-	colMinARGB= *(Vec4*)&header.cMinColor;
-	colMaxARGB= *(Vec4*)&header.cMaxColor;
+	const Vec4 colMinARGB = *(Vec4f*)&header.cMinColor;
+	const Vec4 colMaxARGB = *(Vec4f*)&header.cMaxColor;
 
 	{
 		// DX10

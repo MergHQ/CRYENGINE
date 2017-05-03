@@ -3,14 +3,9 @@
 
 #include "MonoRuntime.h"
 #include "MonoLibrary.h"
-
-#include <mono/jit/jit.h>
+#include "MonoString.h"
 
 #include <CrySystem/IProjectManager.h>
-
-CMonoDomain::CMonoDomain()
-{
-}
 
 CMonoDomain::~CMonoDomain()
 {
@@ -27,17 +22,22 @@ CMonoDomain::~CMonoDomain()
 
 bool CMonoDomain::Activate(bool bForce)
 {
-	return mono_domain_set(m_pDomain, bForce) != 0;
+	return MonoInternals::mono_domain_set(m_pDomain, bForce) != 0;
 }
 
 bool CMonoDomain::IsActive() const
 {
-	return m_pDomain == mono_domain_get(); 
+	return m_pDomain == MonoInternals::mono_domain_get(); 
 }
 
-MonoString* CMonoDomain::CreateString(const char *text)
+std::shared_ptr<CMonoString> CMonoDomain::CreateString(const char* szString)
 {
-	return mono_string_new(m_pDomain, text);
+	return std::make_shared<CMonoString>(m_pDomain, szString);
+}
+
+std::shared_ptr<CMonoString> CMonoDomain::CreateString(MonoInternals::MonoString* pManagedString)
+{
+	return std::make_shared<CMonoString>(pManagedString);
 }
 
 void CMonoDomain::Unload()
@@ -46,24 +46,24 @@ void CMonoDomain::Unload()
 	if (!m_bNativeDomain)
 		return;
 
-	if (m_pDomain == mono_get_root_domain())
+	if (m_pDomain == MonoInternals::mono_get_root_domain())
 	{
-		mono_jit_cleanup(m_pDomain);
+		MonoInternals::mono_jit_cleanup(m_pDomain);
 	}
 	else
 	{
 		if (IsActive())
 		{
 			// Fall back to the root domain
-			mono_domain_set(mono_get_root_domain(), true);
+			MonoInternals::mono_domain_set(MonoInternals::mono_get_root_domain(), true);
 		}
 
-		//mono_domain_finalize(m_pDomain, 2000);
+		//MonoInternals::mono_domain_finalize(m_pDomain, 2000);
 
-		MonoObject *pException;
+		MonoInternals::MonoObject *pException;
 		try
 		{
-			mono_domain_try_unload(m_pDomain, &pException);
+			MonoInternals::mono_domain_try_unload(m_pDomain, &pException);
 		}
 		catch (char *ex)
 		{
@@ -72,7 +72,7 @@ void CMonoDomain::Unload()
 
 		if (pException != nullptr)
 		{
-			GetMonoRuntime()->HandleException(pException);
+			GetMonoRuntime()->HandleException((MonoInternals::MonoException*)pException);
 		}
 	}
 }
@@ -110,7 +110,7 @@ CMonoLibrary* CMonoDomain::LoadLibrary(const char* path)
 	return nullptr;
 }
 
-CMonoLibrary* CMonoDomain::GetLibraryFromMonoAssembly(MonoAssembly* pAssembly)
+CMonoLibrary* CMonoDomain::GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly)
 {
 	for (const std::unique_ptr<CMonoLibrary>& pLibrary : m_loadedLibraries)
 	{
@@ -120,8 +120,8 @@ CMonoLibrary* CMonoDomain::GetLibraryFromMonoAssembly(MonoAssembly* pAssembly)
 		}
 	}
 
-	MonoAssemblyName* pAssemblyName = mono_assembly_get_name(pAssembly);
-	string assemblyPath = mono_assembly_name_get_name(pAssemblyName);
+	MonoInternals::MonoAssemblyName* pAssemblyName = MonoInternals::mono_assembly_get_name(pAssembly);
+	string assemblyPath = MonoInternals::mono_assembly_name_get_name(pAssemblyName);
 	
 	m_loadedLibraries.emplace_back(stl::make_unique<CMonoLibrary>(pAssembly, assemblyPath, this));
 	return m_loadedLibraries.back().get();

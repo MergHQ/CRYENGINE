@@ -1,41 +1,55 @@
 #pragma once
 
 #include "MonoLibrary.h"
+#include "MonoString.h"
 
-#include <CryMono/IMonoDomain.h>
-
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/object.h>
-#include <mono/metadata/mono-debug.h>
-#include <mono/metadata/debug-helpers.h>
-
-// Wrapped behavior for mono appdomain functionality
-class CMonoDomain : public IMonoDomain
+#ifndef HAVE_MONO_API
+namespace MonoInternals
 {
-public:
-	CMonoDomain();
+	struct MonoDomain;
+}
+#endif
+
+// Represents an application domain: https://msdn.microsoft.com/en-us/library/2bh4z9hs(v=vs.110).aspx
+// Each application domain can load assemblies in a "Sandbox" fashion.
+// Assemblies can only be unloaded by unloading the domain that they reside in, with the exception of assemblies in the root domain that is only unloaded on shutdown.
+class CMonoDomain
+{
+	friend class CAppDomain;
+	friend class CMonoLibrary;
+	friend class CMonoClass;
+	friend class CMonoRuntime;
+
+protected:
+	CMonoDomain() = default;
 	virtual ~CMonoDomain();
 
-	// IMonoDomain
-	virtual bool IsRoot() override { return false; }
+	// Begin public API
+public:
+	// Whether or not this domain is the root one
+	virtual bool IsRoot() { return false; }
 
-	virtual bool Activate(bool bForce = false) override;
-	virtual bool IsActive() const override;
+	// Call to make this the currently active domain
+	bool Activate(bool bForce = false);
+	// Used to check if this domain is currently active
+	bool IsActive() const;
 
-	virtual void* GetHandle() const override { return m_pDomain; }
-	virtual void* CreateManagedString(const char* str) override { return CreateString(str); }
-	// ~IMonoDomain
+	// Called to unload an app domain and then reload it afterwards, useful to use newly compiled assemblies without restarting
+	virtual bool Reload() = 0;
 
-	MonoString* CreateString(const char* szText);
-
+	std::shared_ptr<CMonoString> CreateString(const char* szString);
+	static std::shared_ptr<CMonoString> CreateString(MonoInternals::MonoString* pManagedString);
+	
 	CMonoLibrary* LoadLibrary(const char* szPath);
-	CMonoLibrary* GetLibraryFromMonoAssembly(MonoAssembly* pAssembly);
+	CMonoLibrary* GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly);
 
 protected:
 	void Unload();
 
+	MonoInternals::MonoDomain* GetMonoDomain() const { return m_pDomain; }
+
 protected:
-	MonoDomain *m_pDomain;
+	MonoInternals::MonoDomain *m_pDomain;
 	// Whether or not this domain was created on the native side
 	bool m_bNativeDomain;
 

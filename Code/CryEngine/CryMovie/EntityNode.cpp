@@ -738,7 +738,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 	bool bScaleModified = false;
 	bool bApplyNoise = false;
 	bool bScriptPropertyModified = false;
-	bool bForceEntityActivation = false;
 
 	IAnimTrack* pPosTrack = NULL;
 	IAnimTrack* pRotTrack = NULL;
@@ -1241,8 +1240,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 		case eAnimParamType_Animation:
 			if (!animContext.bResetting)
 			{
-				bForceEntityActivation = true;
-
 				if (animCharacterLayer < MAX_CHARACTER_TRACKS + ADDITIVE_LAYERS_OFFSET)
 				{
 					int index = animCharacterLayer;
@@ -1279,7 +1276,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 		case eAnimParamType_Expression:
 			if (!animContext.bResetting)
 			{
-				bForceEntityActivation = true;
 				CExprTrack* pExpTrack = (CExprTrack*)pTrack;
 				AnimateExpressionTrack(pExpTrack, animContext);
 			}
@@ -1289,7 +1285,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 		case eAnimParamType_FaceSequence:
 			if (!animContext.bResetting)
 			{
-				bForceEntityActivation = true;
 				CFaceSequenceTrack* pSelTrack = (CFaceSequenceTrack*)pTrack;
 				AnimateFacialSequence(pSelTrack, animContext);
 			}
@@ -1361,19 +1356,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 	{
 		const bool bUsePhysics = stl::get<bool>(pPhysicalizeTrack->GetValue(m_time));
 		EnableEntityPhysics(bUsePhysics);
-	}
-
-	if (bForceEntityActivation)
-	{
-		const bool bIsCutScene = (GetSequence()->GetFlags() & IAnimSequence::eSeqFlags_CutScene) != 0;
-
-		if (bIsCutScene)
-		{
-			// Activate entity to force CEntityObject::Update which calls StartAnimationProcessing for skeletal animations.
-			// This solves problems in the first frame the entity becomes visible, because it won't be active.
-			// Only do it in cut scenes, because it is too for all sequences.
-			pEntity->Activate(true);
-		}
 	}
 
 	// [*DavidR | 6/Oct/2010] Positioning an entity when ragdollized will not look good at all :)

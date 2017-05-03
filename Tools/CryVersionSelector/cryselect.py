@@ -23,7 +23,6 @@ def command_title (args):
 	'build': 'Build solution',
 	'edit': 'Launch editor',
 	'open': 'Launch game',
-	'monodev': 'Edit code',
 	'switch': 'Switch engine version',
 	'metagen': 'Generate/repair metadata'
 	}.get (args.command, '')
@@ -129,10 +128,9 @@ def cmd_install (args):
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
 			(False, 'open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
-			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
 			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
-			(False, '_cmake-gui', 'Open CMake GUI Application', '"%s" cmake-gui "%%1"' % ScriptPath),			
+			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % ScriptPath),			
 			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
 			(True, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
 		)
@@ -146,10 +144,9 @@ def cmd_install (args):
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
 			(False, 'open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
-			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),		
-			(False, '_cmake-gui', 'Open CMake GUI Application', '"%s" cmake-gui "%%1"' % (PythonPath, ScriptPath)),
+			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
 			(True, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
 		)
@@ -510,17 +507,8 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 	sys_argv= [x for x in sys_argv if x not in ('--silent', )]
 	subcmd.extend (sys_argv)
 
-	(temp_fd, temp_path)= tempfile.mkstemp(suffix='.out', prefix=args.command + '_', text=True)
-	temp_file= os.fdopen(temp_fd, 'w')
-
 	print_subprocess (subcmd)
-	p= subprocess.Popen(subcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-	for line in p.stdout:
-		temp_file.write (line)
-		sys.stdout.write (line)
-	
-	returncode= p.wait()
-	temp_file.close()
+	returncode= subprocess.call(subcmd)
 	
 	if not args.silent and returncode != 0:
 		title= command_title (args)
@@ -529,9 +517,8 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 			text= SUBPROCESS_NO_STDERR
 		result= MessageBox (None, text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
 		if result == win32con.IDOK:
-			subprocess.call(('notepad.exe', temp_path))
-				
-	os.remove (temp_path)
+			input() # Keeps the window from closing
+
 	sys.exit (returncode)
 
 #--- MAIN ---
@@ -594,15 +581,10 @@ if __name__ == '__main__':
 	parser_open.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_open.set_defaults(func=cmd_run)
 
-	parser_monodev= subparsers.add_parser ('monodev')
-	parser_monodev.add_argument ('project_file')
-	parser_monodev.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_monodev.set_defaults(func=cmd_run)
-	
-	parser_projgen= subparsers.add_parser ('metagen')
-	parser_projgen.add_argument ('project_file')
-	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_projgen.set_defaults(func=cmd_run)
+	parser_metagen= subparsers.add_parser ('metagen')
+	parser_metagen.add_argument ('project_file')
+	parser_metagen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_metagen.set_defaults(func=cmd_run)
 
 	#---
 		

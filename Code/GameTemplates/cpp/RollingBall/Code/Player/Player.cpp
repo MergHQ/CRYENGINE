@@ -112,7 +112,6 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 		case ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER:
 		{
 			m_pInput->OnPlayerRespawn();
-			GetEntity()->Activate(true);
 		}
 		break;
 	}
@@ -120,8 +119,6 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 
 void CPlayer::Respawn()
 {
-	GetEntity()->Activate(true);
-
 	// Find a spawn point and move the entity there
 	SelectSpawnPoint();
 

@@ -1,52 +1,75 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Reflection;
-using System.Runtime.Serialization;
-using CryEngine.Common;
-using CryEngine.Attributes;
 
 namespace CryEngine.UI
 {
 	/// <summary>
 	/// Enhances UIComponent by some UI specific functionality
 	/// </summary>
-	[DataContract]
 	public class UIComponent : IUpdateReceiver
 	{
-		[DataMember(Name = "ACT")]
 		protected bool _isActive = false;
-		[DataMember(Name = "ABH")]
 		protected bool _isActiveByHierarchy = true;
 
-        public virtual void OnAwake() { }
+		public virtual void OnAwake() { }
 		public virtual void OnUpdate() { }
-        public virtual void OnDestroy() { }
-        public virtual void OnEnterFocus() { }
-        public virtual void OnLeaveFocus() { }
-        public virtual void OnLeftMouseDown(int x, int y) { }
-        public virtual void OnLeftMouseUp(int x, int y, bool inside) { }
-        public virtual void OnMouseEnter(int x, int y) { }
-        public virtual void OnMouseLeave(int x, int y) { }
-        public virtual void OnMouseMove(int x, int y) { }
-        public virtual void OnKey(SInputEvent e) { }
+		public virtual void OnDestroy() { }
+		public virtual void OnEnterFocus() { }
+		public virtual void OnLeaveFocus() { }
+		public virtual void OnLeftMouseDown(int x, int y) { }
+		public virtual void OnLeftMouseUp(int x, int y, bool inside) { }
+		public virtual void OnMouseEnter(int x, int y) { }
+		public virtual void OnMouseLeave(int x, int y) { }
+		public virtual void OnMouseMove(int x, int y) { }
+		public virtual void OnKey(InputEvent e) { }
 
-        [HideFromInspector]
-		public bool HasFocus { get; private set; } ///< Determines whether this object is Focused (e.g. through processing by Canvas).
-		[HideFromInspector]
-		public bool Enabled { get; set; } ///< Determines whether object is individually focusable.
-		[HideFromInspector]
-		public SceneObject Owner { get; private set; } ///< Owning SceneObject.
+		/// <summary>
+		/// Determines whether this object is Focused (e.g. through processing by Canvas).
+		/// </summary>
+		/// <value><c>true</c> if has focus; otherwise, <c>false</c>.</value>
+		public bool HasFocus { get; private set; }
 
-        public bool IsFocusable { get; private set; } = false; ///< Determines whether object is generally focusable.
-		public SceneObject Root { get { return Owner.Root; } } ///< Root object for this scene tree.
-		public Transform Transform { get { return Owner.Transform; } } ///< Transform of this Components owner.
-		public bool IsUpdateable { get; private set; } = false; ///< Indicates whether this object can be updated.
+		/// <summary>
+		/// Determines whether object is individually focusable.
+		/// </summary>
+		/// <value><c>true</c> if enabled; otherwise, <c>false</c>.</value>
+		public bool Enabled { get; set; }
 
-		[HideFromInspector]
+		/// <summary>
+		/// Owning SceneObject.
+		/// </summary>
+		/// <value>The owner.</value>
+		public SceneObject Owner { get; private set; }
+
+		/// <summary>
+		/// Determines whether object is generally focusable.
+		/// </summary>
+		/// <value><c>true</c> if is focusable; otherwise, <c>false</c>.</value>
+		public bool IsFocusable { get; private set; } = false;
+
+		/// <summary>
+		/// Root object for this scene tree.
+		/// </summary>
+		/// <value>The root.</value>
+		public SceneObject Root { get { return Owner.Root; } }
+
+		/// <summary>
+		/// Transform of this Components owner.
+		/// </summary>
+		/// <value>The transform.</value>
+		public Transform Transform { get { return Owner.Transform; } }
+
+		/// <summary>
+		/// Indicates whether this object can be updated.
+		/// </summary>
+		/// <value><c>true</c> if is updateable; otherwise, <c>false</c>.</value>
+		public bool IsUpdateable { get; private set; } = false;
+
+		/// <summary>
+		/// Determines whether this object should be updated.
+		/// </summary>
+		/// <value><c>true</c> if active; otherwise, <c>false</c>.</value>
 		public bool Active
 		{
 			set
@@ -57,9 +80,12 @@ namespace CryEngine.UI
 			{
 				return _isActive;
 			}
-		} ///< Determines whether this object should be updated.
+		}
 
-		[HideFromInspector]
+		/// <summary>
+		/// Determines whether this object should be updated on a basis of its ancestors activity.
+		/// </summary>
+		/// <value><c>true</c> if active by hierarchy; otherwise, <c>false</c>.</value>
 		public bool ActiveByHierarchy
 		{
 			set
@@ -70,7 +96,7 @@ namespace CryEngine.UI
 			{
 				return _isActiveByHierarchy && Active;
 			}
-		} ///< Determines whether this object should be updated on a basis of its ancestors activity.
+		}
 
 		protected UIComponent()
 		{
@@ -93,16 +119,18 @@ namespace CryEngine.UI
 		/// <param name="order">Intended update order for this component.</param>
 		public void TryRegisterUpdateReceiver(int order)
 		{
-			if (IsUpdateable)
+			if(IsUpdateable)
+			{
 				SceneManager.RegisterUpdateReceiver(this, order);
+			}
 		}
 
 		void InspectOverrides(Type t)
 		{
-            var thisType = typeof(UIComponent);
-            IsFocusable = t.GetMethod("OnEnterFocus").DeclaringType != thisType || t.GetMethod("OnLeaveFocus").DeclaringType != thisType || t.GetMethod("OnLeftMouseDown").DeclaringType != thisType
-                 || t.GetMethod("OnLeftMouseUp").DeclaringType != thisType || t.GetMethod("OnMouseEnter").DeclaringType != thisType || t.GetMethod("OnMouseLeave").DeclaringType != thisType;
-            IsUpdateable = t.GetMethod("OnUpdate").DeclaringType != thisType;
+			var thisType = typeof(UIComponent);
+			IsFocusable = t.GetMethod("OnEnterFocus").DeclaringType != thisType || t.GetMethod("OnLeaveFocus").DeclaringType != thisType || t.GetMethod("OnLeftMouseDown").DeclaringType != thisType
+				 || t.GetMethod("OnLeftMouseUp").DeclaringType != thisType || t.GetMethod("OnMouseEnter").DeclaringType != thisType || t.GetMethod("OnMouseLeave").DeclaringType != thisType;
+			IsUpdateable = t.GetMethod("OnUpdate").DeclaringType != thisType;
 		}
 
 		/// <summary>
@@ -110,7 +138,7 @@ namespace CryEngine.UI
 		/// </summary>
 		public virtual void Update()
 		{
-			if (ActiveByHierarchy)
+			if(ActiveByHierarchy)
 				OnUpdate();
 		}
 
@@ -128,15 +156,17 @@ namespace CryEngine.UI
 			instance.Active = true;
 			return instance;
 		}
-		
+
 		/// <summary>
 		/// Removes this UIComponent from its parent and unregisters it as UpdateReceiver. Invokes function OnDestroy.
 		/// </summary>
 		public void Destroy()
 		{
 			Owner.Components.Remove(this);
-			if (IsUpdateable)
+			if(IsUpdateable)
+			{
 				SceneManager.RemoveUpdateReceiver(this);
+			}
 
 			OnDestroy();
 		}
@@ -187,22 +217,28 @@ namespace CryEngine.UI
 			OnMouseMove(x, y);
 		}
 
-		public void InvokeOnKey(SInputEvent e)
+		public void InvokeOnKey(InputEvent e)
 		{
 			OnKey(e);
 		}
 
 		Canvas _parentCanvas;
 
+		/// <summary>
+		/// Returns Canvas owning this Conponent in hierarchy.
+		/// </summary>
+		/// <value>The parent canvas.</value>
 		public Canvas ParentCanvas
 		{
 			get
 			{
-				if (_parentCanvas == null)
+				if(_parentCanvas == null)
+				{
 					_parentCanvas = (Owner as UIElement).FindParentCanvas();
+				}
 				return _parentCanvas;
 			}
-		} ///< Returns Canvas owning this Conponent in hierarchy.
+		}
 
 		/// <summary>
 		/// Returns Layouted Bounds for this UIComponent.

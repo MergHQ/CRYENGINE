@@ -50,7 +50,7 @@ public:
 	size_t            ChildCount() const                          { return m_children.size(); }
 	void              AddChild(IAudioSystemItem* const pChild)    { m_children.push_back(pChild); pChild->SetParent(this); }
 	void              RemoveChild(IAudioSystemItem* const pChild) { stl::find_and_erase(m_children, pChild); pChild->SetParent(nullptr); }
-	IAudioSystemItem* GetChildAt(uint index) const                { return m_children[index]; }
+	IAudioSystemItem* GetChildAt(size_t const index) const        { return m_children[index]; }
 	void              SetParent(IAudioSystemItem* pParent)        { m_parent = pParent; }
 	IAudioSystemItem* GetParent() const                           { return m_parent; }
 

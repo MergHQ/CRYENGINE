@@ -57,19 +57,21 @@ static void StopTrigger(uint triggerId, bool bExecuteSync)
 	}
 }
 
-static uint GetAudioTriggerId(MonoString* pAudioTriggerName)
+static uint GetAudioTriggerId(MonoInternals::MonoString* pAudioTriggerName)
 {
-	const char* szTriggerName = mono_string_to_utf8(pAudioTriggerName);
+	std::shared_ptr<CMonoString> pAudioTriggerNameObject = CMonoDomain::CreateString(pAudioTriggerName);
+
 	ControlId triggerId = InvalidControlId;
-	gEnv->pAudioSystem->GetAudioTriggerId(szTriggerName, triggerId);
+	gEnv->pAudioSystem->GetAudioTriggerId(pAudioTriggerNameObject->GetString(), triggerId);
 	return triggerId;
 }
 
-static uint GetAudioParameterId(MonoString* pAudioParameterName)
+static uint GetAudioParameterId(MonoInternals::MonoString* pAudioParameterName)
 {
-	const char* szAudioParameterName = mono_string_to_utf8(pAudioParameterName);
+	std::shared_ptr<CMonoString> pAudioParameterNameObject = CMonoDomain::CreateString(pAudioParameterName);
+
 	ControlId parameterId = InvalidControlId;
-	gEnv->pAudioSystem->GetAudioParameterId(szAudioParameterName, parameterId);
+	gEnv->pAudioSystem->GetAudioParameterId(pAudioParameterNameObject->GetString(), parameterId);
 	return parameterId;
 }
 
@@ -78,19 +80,21 @@ static void SetAudioParameter(uint parameterId, float parameterValue)
 	gEnv->pAudioSystem->SetParameter(parameterId, parameterValue);
 }
 
-static uint GetAudioSwitchId(MonoString* pAudioSwitchName)
+static uint GetAudioSwitchId(MonoInternals::MonoString* pAudioSwitchName)
 {
-	const char* szAudioSwitchName = mono_string_to_utf8(pAudioSwitchName);
+	std::shared_ptr<CMonoString> pAudioSwitchNameObject = CMonoDomain::CreateString(pAudioSwitchName);
+
 	ControlId switchId = InvalidControlId;
-	gEnv->pAudioSystem->GetAudioSwitchId(szAudioSwitchName, switchId);
+	gEnv->pAudioSystem->GetAudioSwitchId(pAudioSwitchNameObject->GetString(), switchId);
 	return switchId;
 }
 
-static uint GetAudioSwitchStateId(uint audioSwitchId, MonoString* pAudioSwitchStateName)
+static uint GetAudioSwitchStateId(uint audioSwitchId, MonoInternals::MonoString* pAudioSwitchStateName)
 {
-	const char* szAudioSwitchStateName = mono_string_to_utf8(pAudioSwitchStateName);
+	std::shared_ptr<CMonoString> pAudioSwitchStateNameObject = CMonoDomain::CreateString(pAudioSwitchStateName);
+
 	SwitchStateId switchStateId = InvalidSwitchStateId;
-	gEnv->pAudioSystem->GetAudioSwitchStateId(audioSwitchId, szAudioSwitchStateName, switchStateId);
+	gEnv->pAudioSystem->GetAudioSwitchStateId(audioSwitchId, pAudioSwitchStateNameObject->GetString(), switchStateId);
 	return switchStateId;
 }
 
@@ -104,10 +108,11 @@ static void StopAllSounds()
 	gEnv->pAudioSystem->StopAllSounds();
 }
 
-static MonoString* GetConfigPath()
+static MonoInternals::MonoString* GetConfigPath()
 {
-	const char* szAudioConfigPath = gEnv->pAudioSystem->GetConfigPath();
-	return mono_string_new_wrapper(szAudioConfigPath);
+	std::shared_ptr<CMonoString> pAudioConfigPathObject = gEnv->pMonoRuntime->GetActiveDomain()->CreateString(gEnv->pAudioSystem->GetConfigPath());
+
+	return pAudioConfigPathObject->GetManagedObject();
 }
 
 static void PlayFile(SPlayFileInfo* pPlayFileInfo)
@@ -191,10 +196,11 @@ static void StopAudioObjectTrigger(IObject* pAudioObject, uint triggerId, bool b
 	}
 }
 
-static SPlayFileInfo* CreateSPlayFileInfo(MonoString* pFilePath)
+static SPlayFileInfo* CreateSPlayFileInfo(MonoInternals::MonoString* pFilePath)
 {
-	const char* const szAudioFilePath = mono_string_to_utf8(pFilePath);
-	SPlayFileInfo* pPlayFileInfo = new SPlayFileInfo(szAudioFilePath);
+	std::shared_ptr<CMonoString> pFilePathObject = CMonoDomain::CreateString(pFilePath);
+
+	SPlayFileInfo* pPlayFileInfo = new SPlayFileInfo(pFilePathObject->GetString());
 
 	return pPlayFileInfo;
 }

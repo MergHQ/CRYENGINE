@@ -29,7 +29,7 @@ void ImageObject::ConvertLegacyGloss()
 
 	for (uint32 dwY = 0; dwY < dwHeight; ++dwY)
 	{
-		Vec4* const pPix = (Vec4*)&pMip0Mem[dwY * dwMip0Pitch];
+		Vec4f* const pPix = (Vec4f*)&pMip0Mem[dwY * dwMip0Pitch];
 
 		for (uint32 dwX = 0; dwX < dwWidth; ++dwX)
 		{
@@ -72,7 +72,7 @@ void ImageObject::GlossFromNormals(bool bHasAuthoredGloss)
 
 		for (uint32 dwY = 0; dwY < dwLocalHeight; ++dwY)
 		{				
-			Vec4* const pPix = (Vec4*)&pSrcMem[dwY * dwSrcPitch];
+			Vec4f* const pPix = (Vec4f*)&pSrcMem[dwY * dwSrcPitch];
 
 			for (uint32 dwX = 0; dwX < dwLocalWidth; ++dwX)
 			{

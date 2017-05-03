@@ -23,6 +23,20 @@ typedef UINT_PTR TRUNCATE_PTR,EXPAND_PTR;
 template<class T>	inline void ZeroArray(T& t)	{	memset(&t, 0, sizeof(t[0]) * CRY_ARRAY_COUNT(t));	}
 template<class T> inline void ZeroStruct(T& t) { memset(&t, 0, sizeof(T)); }
 
+#ifdef _DEBUG
+	#define IF_DEBUG(expr) (expr)
+#else
+	#define IF_DEBUG(expr)
+#endif
+#define COMPOUND_MEMBER_OP(T, op, B)                                     \
+  ILINE T& operator op ## = (const B& b) { return *this = *this op b; }  \
+  ILINE T operator op(const B& b) const                                  
+#define COMPOUND_MEMBER_OP_EQ(T, op, B)                                      \
+  ILINE T operator op(const B& b) const { T t = *this; return t op ## = b; } \
+  ILINE T& operator op ## = (const B& b)                                     
+struct CTypeInfo {};
+template<class T> inline CTypeInfo TypeInfo(const T&) { return CTypeInfo(); }
+
 typedef const char* cstr;
 #define NOT_USE_CRY_STRING
 #include <string>

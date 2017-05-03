@@ -119,4 +119,32 @@ using JobManager::SJobStateBase;
 %include "../../../../CryEngine/CryCommon/CrySystem/ZLib/IZlibDecompressor.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ICryMiniGUI.h"
 
+%extend ICryPak
+{
+	_finddata_t* FindAllocateData()
+	{
+		return new _finddata_t();
+	}
+
+	void FindFreeData(_finddata_t* fd)
+	{
+		delete fd;
+	}
+
+	bool FindIsResultValid(intptr_t result)
+	{
+		return result != -1;
+	}
+
+	char* FindDataGetPath(_finddata_t* fd)
+	{
+		if (fd == nullptr)
+		{
+			return nullptr;
+		}
+
+		return fd->name;
+	}
+}
+
 namespace minigui { class CDrawContext{}; }

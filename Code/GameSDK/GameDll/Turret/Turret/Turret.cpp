@@ -673,9 +673,8 @@ void CTurret::OnDestroyed()
 void CTurret::OnPrePhysicsUpdate()
 {
 	IEntity* const pEntity = GetEntity();
-
-	const bool isActive = pEntity->IsActive();
-	if ( ! isActive )
+	
+	if (GetGameObject()->GetUpdateSlotEnables(this, 0) == 0)
 	{
 		const EntityId localPlayerEntityId = g_pGame->GetIGameFramework()->GetClientActorId();
 		const IEntity* const pLocalPlayerEntity = gEnv->pEntitySystem->GetEntity( localPlayerEntityId );
@@ -690,7 +689,7 @@ void CTurret::OnPrePhysicsUpdate()
 				return;
 			}
 
-			pEntity->Activate( true );
+			GetGameObject()->EnableUpdateSlot(this, 0);
 		}
 	}
 

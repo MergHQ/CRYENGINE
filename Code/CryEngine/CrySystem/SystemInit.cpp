@@ -44,7 +44,6 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/ICmdLine.h>
 #include <CrySystem/IProcess.h>
-#include <CryMono/IMonoRuntime.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -1763,6 +1762,22 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 		m_env.pCryPak->SetAlias("%ENGINE%", engineDir.c_str(), true);
 	}
 
+	// Now set up the log
+	InitLog();
+
+	LogVersion();
+
+	((CCryPak*)m_env.pCryPak)->SetLog(m_env.pLog);
+
+	// Load value of sys_game_folder from system.cfg into the sys_game_folder console variable
+	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
+#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
+	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
+	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit);
+#else
+	LoadConfiguration("system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
+#endif
+
 	m_pProjectManager->ParseProjectFile();
 
 	bool bRes = m_env.pCryPak->Init("");
@@ -1801,6 +1816,59 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 	return (bRes);
 }
 
+void CSystem::InitLog()
+{
+	if (m_startupParams.pLog == nullptr)
+	{
+		m_env.pLog = new CLog(this);
+		if (m_startupParams.pLogCallback)
+		{
+			m_env.pLog->AddCallback(m_startupParams.pLogCallback);
+		}
+
+		string sLogFileName = m_startupParams.sLogFileName != nullptr ? m_startupParams.sLogFileName : DEFAULT_LOG_FILENAME;
+
+#if CRY_PLATFORM_WINDOWS
+		if (sLogFileName.size() > 0)
+		{
+			int instance = GetApplicationInstance();
+			if (instance != 0)
+			{
+				string logFileExtension;
+				size_t extensionIndex = sLogFileName.find_last_of('.');
+				string logFileNamePrefix = sLogFileName;
+				if (extensionIndex != string::npos)
+				{
+					logFileExtension = sLogFileName.substr(extensionIndex, sLogFileName.length() - extensionIndex);
+					logFileNamePrefix = sLogFileName.substr(0, extensionIndex);
+				}
+				sLogFileName.Format("%s(%d)%s", logFileNamePrefix.c_str(), instance, logFileExtension.c_str());
+			}
+		}
+#endif
+
+		const ICmdLineArg* logfile = m_pCmdLine->FindArg(eCLAT_Pre, "logfile");
+		if (logfile && strlen(logfile->GetValue()) > 0)
+		{
+			sLogFileName = logfile->GetValue();
+		}
+
+		if (sLogFileName.size() > 0)
+		{
+			if (m_env.pLog->SetFileName(sLogFileName.c_str()))
+			{
+#ifdef CRY_USE_CRASHRPT
+				CCrashRpt::ReInstallCrashRptHandler(0);
+#endif
+			}
+		}
+	}
+	else
+	{
+		m_env.pLog = m_startupParams.pLog;
+	}
+}
+
 void CSystem::LoadPatchPaks()
 {
 	const char* pPatchPakMountPath = "";
@@ -1834,7 +1902,6 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 		OpenBasicPaks(false);  //we need to open then engine.pak, since we only allow data from pak files
 	}
 
-	// Load value of sys_game_folder from system.cfg into the sys_game_folder console variable
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
 	{
 		uint32 nFlags = ICryPak::FLAGS_NEVER_IN_PAK;
@@ -1881,23 +1948,16 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 		}
 	}
 #endif
-	{
-		ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
-#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
-		string path = string(CryGetProjectStoragePath()) + "/system.cfg";
-		LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit);
-#else
-		LoadConfiguration("system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
-#endif
-	}
 
 	// We set now the correct "game" folder to use in Pak File
-	m_env.pCryPak->SetGameFolder(m_sys_game_folder->GetString());
-	CryLogAlways("GameDir: %s\n", m_sys_game_folder->GetString());
+	ICVar* pGameFolderCVar = gEnv->pConsole->GetCVar("sys_game_folder"); 
+	CRY_ASSERT(pGameFolderCVar != nullptr);
+
+	m_env.pCryPak->SetGameFolder(pGameFolderCVar->GetString());
 
 	if (g_cvars.sys_build_folder->GetString() != nullptr && g_cvars.sys_build_folder->GetString()[0] != '\0')
 	{
-		m_env.pCryPak->AddMod(PathUtil::AddSlash(g_cvars.sys_build_folder->GetString()) + m_sys_game_folder->GetString());
+		m_env.pCryPak->AddMod(PathUtil::AddSlash(g_cvars.sys_build_folder->GetString()) + m_pProjectManager->GetCurrentAssetDirectoryRelative());
 	}
 
 	m_pProjectManager->MigrateFromLegacyWorkflowIfNecessary();
@@ -2230,28 +2290,6 @@ void CSystem::OpenLanguageAudioPak(char const* const szLanguage)
 	   m_env.pCryPak->FreePakInfo(pPakInfo);
 
 	   CryLogAlways("Total pak size after loading localization is %d", openPakSize);*/
-}
-
-//////////////////////////////////////////////////////////////////////////
-string GetUniqueLogFileName(string logFileName)
-{
-#if CRY_PLATFORM_WINDOWS
-	int instance = gEnv->pSystem->GetApplicationInstance();
-	if (instance != 0)
-	{
-		string logFileExtension;
-		size_t extensionIndex = logFileName.find_last_of('.');
-		string logFileNamePrefix = logFileName;
-		if (extensionIndex != string::npos)
-		{
-			logFileExtension = logFileName.substr(extensionIndex, logFileName.length() - extensionIndex);
-			logFileNamePrefix = logFileName.substr(0, extensionIndex);
-		}
-		logFileName.Format("%s(%d)%s", logFileNamePrefix.c_str(), instance, logFileExtension.c_str());
-	}
-#endif
-
-	return logFileName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2590,40 +2628,6 @@ bool CSystem::Init()
 				m_root = temp;
 		}
 
-		//////////////////////////////////////////////////////////////////////////
-		// Logging is only available after file system initialization.
-		//////////////////////////////////////////////////////////////////////////
-		if (!m_startupParams.pLog)
-		{
-			m_env.pLog = new CLog(this);
-			if (m_startupParams.pLogCallback)
-				m_env.pLog->AddCallback(m_startupParams.pLogCallback);
-
-			const ICmdLineArg* logfile = m_pCmdLine->FindArg(eCLAT_Pre, "logfile");
-			if (logfile && strlen(logfile->GetValue()) > 0)
-				if (m_env.pLog->SetFileName(logfile->GetValue()))
-					goto L_done;
-			if (m_startupParams.sLogFileName)
-			{
-				const string sUniqueLogFileName = GetUniqueLogFileName(m_startupParams.sLogFileName);
-				if (m_env.pLog->SetFileName(sUniqueLogFileName.c_str()))
-					goto L_done;
-			}
-			m_env.pLog->SetFileName(DEFAULT_LOG_FILENAME);
-L_done:;
-#ifdef CRY_USE_CRASHRPT
-			CCrashRpt::ReInstallCrashRptHandler(0);
-#endif
-		}
-		else
-		{
-			m_env.pLog = m_startupParams.pLog;
-		}
-
-		LogVersion();
-
-		((CCryPak*)m_env.pCryPak)->SetLog(m_env.pLog);
-
 		//here we should be good to ask Crypak to do something
 
 		//#define GEN_PAK_CDR_CRC
@@ -2830,7 +2834,7 @@ L_done:;
 		}
 
 #if defined(CRY_PLATFORM_DESKTOP) && defined(USE_DEDICATED_SERVER_CONSOLE)
-		m_pTextModeConsole->SetTitle(gEnv->pConsole->GetCVar("sys_game_name")->GetString());
+		m_pTextModeConsole->SetTitle(m_pProjectManager->GetCurrentProjectName());
 #endif
 
 		//////////////////////////////////////////////////////////////////////////
@@ -2857,7 +2861,7 @@ L_done:;
 				m_env.pConsole->LoadConfigVar("r_Driver", "GL");
 		}
 
-		LogBuildInfo();
+		CryLogAlways("BuildTime: " __DATE__ " " __TIME__);
 
 		InlineInitializationProcessing("CSystem::Init LoadConfigurations");
 
@@ -4656,9 +4660,7 @@ void CSystem::CreateSystemVars()
 	//
 	EVarFlags dllFlags = (EVarFlags)0;
 	m_sys_dll_ai = REGISTER_STRING("sys_dll_ai", DLL_AI, dllFlags, "Specifies the DLL to load for the AI system");
-	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", dllFlags, "Specifies the game DLL to load");
-	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "GameZero", 0, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
-
+	
 	m_sys_dll_response_system = REGISTER_STRING("sys_dll_response_system", "CryDynamicResponseSystem", dllFlags, "Specifies the DLL to load for the dynamic response system");
 
 	g_cvars.sys_build_folder = REGISTER_STRING("sys_build_folder", "", 0, "Optionally specifies external full path to the build folder to read pak files from. Can be a full path to an external folder or a relative path to a folder inside of the local build.");
@@ -4671,8 +4673,6 @@ void CSystem::CreateSystemVars()
 #ifndef _RELEASE
 	m_sys_resource_cache_folder = REGISTER_STRING("sys_resource_cache_folder", "Editor\\ResourceCache", 0, "Folder for resource compiled locally. Managed by Sandbox.");
 #endif
-
-	m_cvGameName = REGISTER_STRING("sys_game_name", "CRYENGINE", VF_DUMPTODISK, "Specifies the name to be displayed in the Launcher window title bar");
 
 	REGISTER_INT("cvDoVerboseWindowTitle", 0, VF_NULL, "");
 
@@ -5338,21 +5338,21 @@ const char* CSystem::GetLoadingProfilerCallstack()
 #endif
 }
 
-CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args, unsigned int& sessionIndex)
+CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args)
 {
 #if defined(ENABLE_LOADING_PROFILER)
 	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	return profiler.StartBlock(name, args, sessionIndex);
+	return profiler.StartBlock(name, args);
 #else
 	return NULL;
 #endif
 }
 
-void CSystem::StopBootSectionProfiler(CBootProfilerRecord* record, const unsigned int sessionIndex)
+void CSystem::StopBootSectionProfiler(CBootProfilerRecord* record)
 {
 #if defined(ENABLE_LOADING_PROFILER)
 	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	profiler.StopBlock(record, sessionIndex);
+	profiler.StopBlock(record);
 #endif
 }
 

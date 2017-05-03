@@ -1,22 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   - 6:9:2004   12:44 : Created by Márcio Martins
-
-*************************************************************************/
-#ifndef __GAMEOBJECT_H__
-#define __GAMEOBJECT_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <IViewSystem.h>
 #include <IActionMapManager.h>
@@ -367,6 +351,7 @@ private:
 	bool              m_bPhysicsDisabled    : 1;
 	bool              m_bNeedsNetworkRebind : 1;
 	bool              m_bOnInitEventCalled  : 1;
+	bool              m_bShouldUpdate       : 1;
 	enum EUpdateState
 	{
 		eUS_Visible_Close = 0,
@@ -443,5 +428,3 @@ private:
 
 	static CGameObjectSystem* m_pGOS;
 };
-
-#endif //__GAMEOBJECT_H__

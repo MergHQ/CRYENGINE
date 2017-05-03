@@ -130,7 +130,7 @@ void CGameplayRecorder::CExampleMetadataListener::RecordGameData()
 	while (!it->IsEnd())
 	{
 		IEntity* pEntity = it->Next();
-		if (!pEntity->IsActive())
+		if (!pEntity->IsActivatedForUpdates())
 			continue;
 
 		if (IActor* pActor = pActorSystem->GetActor(pEntity->GetId()))

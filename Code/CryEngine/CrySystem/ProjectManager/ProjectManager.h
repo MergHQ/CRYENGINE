@@ -228,6 +228,8 @@ public:
 	const std::vector<SPluginDefinition>& GetPluginDefinitions() const { return m_project.plugins; }
 
 protected:
+	void RegisterCVars();
+
 	void LoadLegacyPluginCSV();
 	void LoadLegacyGameCfg();
 	void AddDefaultPlugins();
@@ -236,4 +238,11 @@ protected:
 
 protected:
 	Cry::ProjectManagerInternals::SProject m_project;
+
+	ICVar* m_sys_project;
+
+	// Legacy CVars
+	ICVar* m_sys_game_name;
+	ICVar* m_sys_dll_game;
+	ICVar* m_sys_game_folder;
 };

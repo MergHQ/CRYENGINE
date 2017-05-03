@@ -86,36 +86,6 @@ void OnRemoveEntityCVarChange(ICVar* pArgs)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void OnActivateEntityCVarChange(ICVar* pArgs)
-{
-	if (gEnv->pEntitySystem)
-	{
-		const char* szEntity = pArgs->GetString();
-		IEntity* pEnt = gEnv->pEntitySystem->FindEntityByName(szEntity);
-		if (pEnt)
-		{
-			CEntity* pcEnt = (CEntity*)(pEnt);
-			pcEnt->Activate(true);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void OnDeactivateEntityCVarChange(ICVar* pArgs)
-{
-	if (gEnv->pEntitySystem)
-	{
-		const char* szEntity = pArgs->GetString();
-		IEntity* pEnt = gEnv->pEntitySystem->FindEntityByName(szEntity);
-		if (pEnt)
-		{
-			CEntity* pcEnt = (CEntity*)(pEnt);
-			pcEnt->Activate(false);
-		}
-	}
-}
-
 //////////////////////////////////////////////////////////////////////
 SEntityLoadParams::SEntityLoadParams()
 {
@@ -258,8 +228,6 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	if (gEnv->pConsole != 0)
 	{
 		REGISTER_STRING_CB("es_removeEntity", "", VF_CHEAT, "Removes an entity", OnRemoveEntityCVarChange);
-		REGISTER_STRING_CB("es_activateEntity", "", VF_CHEAT, "Activates an entity", OnActivateEntityCVarChange);
-		REGISTER_STRING_CB("es_deactivateEntity", "", VF_CHEAT, "Deactivates an entity", OnDeactivateEntityCVarChange);
 	}
 }
 
@@ -443,6 +411,11 @@ void CEntitySystem::Reset()
 	ResetAreas();
 
 	m_EntitySaltBuffer.Reset();
+
+	// Always reserve the legacy game rules and local player entity id's
+	ReserveEntityId(1);
+	ReserveEntityId(LOCAL_PLAYER_ENTITY_ID);
+
 	m_timersMap.clear();
 
 	m_pProximityTriggerSystem->Reset();
@@ -872,7 +845,6 @@ void CEntitySystem::RemoveEntityFromActiveList(CEntity* pEntity)
 		m_mapActiveEntities.erase(pEntity->GetId());
 		ActivatePrePhysicsUpdateForEntity(pEntity, false);
 
-		pEntity->m_bActive = false;
 		if (pEntity->m_bInActiveList)
 		{
 			pEntity->m_bInActiveList = false;
@@ -1183,7 +1155,7 @@ void CEntitySystem::DebugDrawEntityUsage()
 			debuggedEntityClassIterator->memoryUsage += uMemoryUsage;
 			debuggedEntityClassIterator->numEntities++;
 
-			if (pEntity->IsActive())
+			if (pEntity->IsActivatedForUpdates())
 			{
 				debuggedEntityClassIterator->numActiveEntities++;
 			}
@@ -1779,28 +1751,6 @@ void CEntitySystem::SendEventToAll(SEntityEvent& event)
 		if (pEntity)
 			pEntity->SendEvent(event);
 	}
-
-	if (event.event == ENTITY_EVENT_RESET)
-	{
-		// This stuff is necessary because the reset event currently recreates
-		// the character instance and thus removes all attachment data previously set up.
-		for (uint32 dwI = 0; dwI < dwMaxUsed; ++dwI)
-		{
-			CEntity* pEntity = m_EntityArray[dwI];
-
-			if (pEntity)
-			{
-				// Restore the bone attachment by the deprecated CharAttachHelper.
-				if (strcmp(pEntity->GetClass()->GetName(), "CharacterAttachHelper") == 0
-				    && pEntity->GetParent())
-				{
-					SEntityEvent attachEvent(ENTITY_EVENT_ATTACH_THIS);
-					attachEvent.nParam[0] = pEntity->GetParent()->GetId();
-					pEntity->SendEvent(attachEvent);
-				}
-			}
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1982,7 +1932,7 @@ void CEntitySystem::UpdateTimers()
 				if (CVar::es_DebugTimers)
 				{
 					if (pEntity)
-						CryLogAlways("OnTimer Event (timerID=%d,time=%dms) for Entity %s (which is %s)", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription().c_str(), pEntity->IsActive() ? "active" : "inactive");
+						CryLogAlways("OnTimer Event (timerID=%d,time=%dms) for Entity %s (which is %s)", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription().c_str(), pEntity->IsActivatedForUpdates() ? "active" : "inactive");
 				}
 			}
 		}
@@ -2908,7 +2858,7 @@ void CEntitySystem::DumpEntity(IEntity* pEntity)
 	string name(pEntity->GetName());
 	name += string("[$9") + pEntity->GetClass()->GetName() + string("$o]");
 	Vec3 pos(pEntity->GetWorldPos());
-	const char* sStatus = pEntity->IsActive() ? "[$3Active$o]" : "[$9Inactive$o]";
+	const char* sStatus = pEntity->IsActivatedForUpdates() ? "[$3Active$o]" : "[$9Inactive$o]";
 	if (pEntity->IsHidden())
 		sStatus = "[$9Hidden$o]";
 

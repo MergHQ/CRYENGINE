@@ -1,20 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   Description: Entity layer container.
-
-   -------------------------------------------------------------------------
-   History:
-   - 11:2:2010   10:50 : Created by Sergiy Shaykin
-
-*************************************************************************/
-#ifndef __ENTITYLAYER_H__
-#define __ENTITYLAYER_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryCore/StlUtils.h>
 #include <CryEntitySystem/IEntityLayer.h>
@@ -52,15 +38,15 @@ class CEntityLayer : public IEntityLayer
 {
 	struct EntityProp
 	{
-		EntityProp() : m_id(0), m_bIsNoAwake(false), m_bIsHidden(false), m_bIsActive(false)
+		EntityProp() : m_id(0), m_bIsNoAwake(false), m_bIsHidden(false), m_bEnableScriptUpdate(false)
 		{
 		}
 
-		EntityProp(EntityId id, bool bIsNoAwake, bool bIsHidden, bool bIsActive)
+		EntityProp(EntityId id, bool bIsNoAwake, bool bIsHidden, bool bEnableScriptUpdate)
 			: m_id(id)
 			, m_bIsNoAwake(bIsNoAwake)
 			, m_bIsHidden(bIsHidden)
-			, m_bIsActive(bIsActive)
+			, m_bEnableScriptUpdate(bEnableScriptUpdate)
 		{
 		}
 
@@ -71,8 +57,8 @@ class CEntityLayer : public IEntityLayer
 
 		EntityId m_id;
 		bool     m_bIsNoAwake : 1;
-		bool     m_bIsHidden  : 1;
-		bool     m_bIsActive  : 1;
+		bool     m_bIsHidden : 1;
+		bool     m_bEnableScriptUpdate : 1;
 	};
 
 	struct EntityPropFindPred
@@ -134,5 +120,3 @@ private:
 	TGarbageHeaps*             m_pGarbageHeaps;
 	IGeneralMemoryHeap*        m_pHeap;
 };
-
-#endif //__ENTITYLAYER_H__

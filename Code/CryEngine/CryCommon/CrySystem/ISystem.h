@@ -129,7 +129,7 @@ struct IManager;
 struct IHost;
 }
 
-struct IMonoRuntime;
+struct IMonoEngineModule;
 
 struct ILocalMemoryUsage;
 
@@ -852,7 +852,7 @@ struct SSystemGlobalEnvironment
 	LiveCreate::IManager* pLiveCreateManager;
 	LiveCreate::IHost*    pLiveCreateHost;
 
-	IMonoRuntime*         pMonoRuntime;
+	IMonoEngineModule*    pMonoRuntime;
 
 	threadID              mMainThreadId;      //!< The main thread ID is used in multiple systems so should be stored globally.
 
@@ -1267,7 +1267,7 @@ struct ISystem
 	virtual ITimer*                            GetITimer() = 0;
 
 	virtual IThreadManager*                    GetIThreadManager() = 0;
-	virtual IMonoRuntime*                      GetIMonoRuntime() = 0;
+	virtual IMonoEngineModule*                 GetIMonoEngineModule() = 0;
 
 	virtual void                               SetLoadingProgressListener(ILoadingProgressListener* pListener) = 0;
 	virtual ISystem::ILoadingProgressListener* GetLoadingProgressListener() const = 0;
@@ -1347,10 +1347,10 @@ struct ISystem
 	virtual void EndLoadingSectionProfiling(CLoadingTimeProfiler* pProfiler) = 0;
 
 	//! Starts function profiling with bootprofiler (session must be started).
-	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args, unsigned int& sessionIndex) = 0;
+	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args) = 0;
 
 	//! Ends function profiling with bootprofiler.
-	virtual void StopBootSectionProfiler(CBootProfilerRecord* record, const unsigned int sessionIndex) = 0;
+	virtual void StopBootSectionProfiler(CBootProfilerRecord* record) = 0;
 
 	// Summary:
 	//	 Starts bootprofiler session.
@@ -1680,18 +1680,17 @@ class CSYSBootProfileBlock
 {
 	ISystem*             m_pSystem;
 	CBootProfilerRecord* m_pRecord;
-	unsigned int         m_sessionIndex;
 public:
-	CSYSBootProfileBlock(ISystem* pSystem, const char* name, const char* args = NULL) : m_pSystem(pSystem), m_sessionIndex(~0U)
+	CSYSBootProfileBlock(ISystem* pSystem, const char* name, const char* args = NULL) : m_pSystem(pSystem)
 	{
-		m_pRecord = m_pSystem ? m_pSystem->StartBootSectionProfiler(name, args, m_sessionIndex) : nullptr;
+		m_pRecord = m_pSystem ? m_pSystem->StartBootSectionProfiler(name, args) : nullptr;
 	}
 
 	~CSYSBootProfileBlock()
 	{
 		if (m_pRecord)
 		{
-			m_pSystem->StopBootSectionProfiler(m_pRecord, m_sessionIndex);
+			m_pSystem->StopBootSectionProfiler(m_pRecord);
 		}
 	}
 };

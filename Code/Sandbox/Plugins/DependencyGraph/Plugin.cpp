@@ -16,7 +16,7 @@ CDependencyGraph::CDependencyGraph()
 	CRY_ASSERT(g_pInstance == nullptr);
 	g_pInstance = this;
 
-	GetIEditor()->GetAssetManager()->signalContextMenuRequested.Connect([](CAbstractMenu& menu, const std::vector<CAsset*>& assets) 
+	GetIEditor()->GetAssetManager()->signalContextMenuRequested.Connect([](CAbstractMenu& menu, const std::vector<CAsset*>& assets, std::shared_ptr<IUIContext> context)
 	{
 		if (assets.size() == 1)
 		{

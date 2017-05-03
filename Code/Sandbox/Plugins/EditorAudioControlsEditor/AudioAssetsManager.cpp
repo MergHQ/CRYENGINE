@@ -431,28 +431,38 @@ IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 	IAudioSystemEditor* pImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
 	string name = pImplItem->GetName();
-	const EItemType itemType = pImpl->ImplTypeToATLType(pImplItem->GetType());
-	if (itemType != EItemType::eItemType_Invalid)
+	EItemType const type = pImpl->ImplTypeToATLType(pImplItem->GetType());
+
+	if (type != EItemType::eItemType_Invalid)
 	{
 		PathUtil::RemoveExtension(name);
-		name = Utils::GenerateUniqueControlName(name, itemType, *this);
 
-		CAudioControl* pControl = new CAudioControl(name, GenerateUniqueId(), itemType);
-		m_controls.push_back(pControl);
+		if (type != eItemType_State)
+		{
+			name = Utils::GenerateUniqueControlName(name, type, *this);
+		}
+		else
+		{
+			name = Utils::GenerateUniqueName(name, type, pParent);
+		}
+
+		CAudioControl* const pControl = new CAudioControl(name, GenerateUniqueId(), type);
 		pControl->SetParent(pParent);
 		pParent->AddChild(pControl);
+		m_controls.push_back(pControl);
 
 		ConnectionPtr pAudioConnection = pImpl->CreateConnectionToControl(pControl->GetType(), pImplItem);
 		if (pAudioConnection)
 		{
 			pControl->AddConnection(pAudioConnection);
 		}
-		pItem = pControl;
 
+		pItem = pControl;
 	}
 	else
 	{
 		// If the type of the control is invalid then it must be a folder or container
+		name = Utils::GenerateUniqueName(name, EItemType::eItemType_Folder, pParent);
 		CAudioFolder* pFolder = new CAudioFolder(name);
 		pParent->AddChild(pFolder);
 		pFolder->SetParent(pParent);
@@ -460,8 +470,8 @@ IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 		pItem = pFolder;
 	}
 
-	const int size = pImplItem->ChildCount();
-	for (int i = 0; i < size; ++i)
+	size_t const size = pImplItem->ChildCount();
+	for (size_t i = 0; i < size; ++i)
 	{
 		CreateAndConnectImplItemsRecursively(pImplItem->GetChildAt(i), pItem);
 	}

@@ -4,30 +4,39 @@
 
 #include "MonoObject.h"
 
-#include <CryMono/IMonoMethod.h>
-
-class CMonoMethod final : public IMonoMethod
+#ifndef HAVE_MONO_API
+namespace MonoInternals
 {
+	struct MonoMethod;
+}
+#endif
+
+class CMonoMethod
+{
+	friend class CMonoClass;
+
+	// Begin public API
 public:
-	CMonoMethod(MonoMethod* pMethod);
+	CMonoMethod(MonoInternals::MonoMethod* pMethod);
 
-	// IMonoMethod
-	virtual std::shared_ptr<IMonoObject> Invoke(const IMonoObject* pObject, void** pParameters, bool &bEncounteredException) const override;
-	virtual std::shared_ptr<IMonoObject> Invoke(const IMonoObject* pObject = nullptr, void** pParameters = nullptr) const override;
+	std::shared_ptr<CMonoObject> Invoke(const CMonoObject* pObject, void** pParameters, bool &bEncounteredException) const;
+	std::shared_ptr<CMonoObject> Invoke(const CMonoObject* pObject = nullptr, void** pParameters = nullptr) const;
 	
-	virtual uint32 GetParameterCount() const override;
-	virtual string GetSignatureDescription(bool bIncludeNamespace = true) const override;
-	// ~IMonoMethod
+	inline std::shared_ptr<CMonoObject> InvokeStatic(void** pParameters) const { return Invoke(nullptr, pParameters); }
 
-	std::shared_ptr<CMonoObject> InvokeInternal(MonoObject* pMonoObject, void** pParameters, bool &bEncounteredException) const;
+	uint32 GetParameterCount() const;
+	string GetSignatureDescription(bool bIncludeNamespace = true) const;
+	
+protected:
+	std::shared_ptr<CMonoObject> InvokeInternal(MonoInternals::MonoObject* pMonoObject, void** pParameters, bool &bEncounteredException) const;
 
 	void PrepareForSerialization();
 	const char* GetSerializedDescription() const { return m_description; }
 
-	void OnDeserialized(MonoMethod* pMethod) { m_pMethod = pMethod; }
+	void OnDeserialized(MonoInternals::MonoMethod* pMethod) { m_pMethod = pMethod; }
 
 protected:
-	MonoMethod* m_pMethod;
+	MonoInternals::MonoMethod* m_pMethod;
 	
 	string m_description;
 };

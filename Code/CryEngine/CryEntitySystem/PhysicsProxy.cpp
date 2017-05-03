@@ -1958,7 +1958,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 	                ENTITY_XFORM_NO_EVENT & gEnv->pPhysicalWorld->GetPhysVars()->bLogStructureChanges - 1;
 	if (!m_pPhysicalEntity)
 	{
-		if (m_nFlags & FLAG_SYNC_CHARACTER && !m_pEntity->IsActive())
+		if (m_nFlags & FLAG_SYNC_CHARACTER && !m_pEntity->IsActivatedForUpdates())
 			m_pEntity->ActivateForNumUpdates(4);
 		if (pEvent)
 			m_pEntity->SetPosRotScale(pEvent->pos, pEvent->q, m_pEntity->GetScale(), nWhyFlags);
@@ -1998,7 +1998,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 		if (m_nFlags & FLAG_SYNC_CHARACTER)
 		{
 			//SyncCharacterWithPhysics();
-			if (!m_pEntity->IsActive())
+			if (!m_pEntity->IsActivatedForUpdates())
 				m_pEntity->ActivateForNumUpdates(4);
 		}
 		else if (physType == PE_ARTICULATED || physType == PE_WHEELEDVEHICLE)

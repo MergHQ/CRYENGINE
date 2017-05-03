@@ -212,6 +212,10 @@ struct IEntityScriptComponent : public IEntityComponent
 	//! \param type - one of PHYSICPARAM_... values
 	//! \param params script table containing the values to set
 	virtual void SetPhysParams(int type, IScriptTable *params) = 0;
+
+	//! Determines whether or not the script should receive update callbacks
+	//! Replaces IEntity::Activate for legacy projects
+	virtual void EnableScriptUpdate(bool bEnable) = 0;
 };
 
 //! Proximity trigger component interface.

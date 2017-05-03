@@ -18,7 +18,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	set(SOURCE ${Component_FILES} ${Resource_FILES} ${Root_FILES})
 
 	add_custom_target(CryEngine.Core.UI ALL
-		COMMAND ${MCS_PATH} -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r:${OUTPUT_DIRECTORY}/CryEngine.Common.dll -r:${OUTPUT_DIRECTORY}/CryEngine.Core.dll ${SOURCE} -out:${OUTPUT_DIRECTORY}/CryEngine.Core.UI.dll
+		COMMAND ${MCS_PATH} -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml ${MONO_SWIG_OUTPUT_ASSEMBLY_REFERENCE} -r:${OUTPUT_DIRECTORY}/CryEngine.Core.dll ${SOURCE} -out:${OUTPUT_DIRECTORY}/CryEngine.Core.UI.dll -doc:${OUTPUT_DIRECTORY}/CryEngine.Core.UI.xml
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		SOURCES ${SOURCE})
 

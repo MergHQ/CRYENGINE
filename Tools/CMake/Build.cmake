@@ -1,27 +1,29 @@
 cmake_minimum_required(VERSION 3.6.2)
 
 set(TOOLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
+
 include(${TOOLS_CMAKE_DIR}/Configure.cmake)
 
-# Add custom project with just listing of cmake files
-add_subdirectory(${TOOLS_CMAKE_DIR})
+if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX)
+	# Add custom project with just listing of cmake files
+	add_subdirectory(${TOOLS_CMAKE_DIR})
 
-# Order currently matters for Engine, Games and Launchers
-# 1. CryEngine
-include ("${TOOLS_CMAKE_DIR}/BuildEngine.cmake")
-
-# 2. Games
-add_subdirectories_glob("Code/Game*")
-
+	# Order currently matters for Engine, Games and Launchers
+	# 1. CryEngine
+	include ("${TOOLS_CMAKE_DIR}/BuildEngine.cmake")
+endif()
+	
+# Only allow building legacy GameDLL's with the engine
+if(OPTION_ENGINE)
+	# 2. Games
+	add_subdirectories_glob("Code/Game*")
+endif()
+	
 # 3. Plugins
 include ("${TOOLS_CMAKE_DIR}/BuildPlugins.cmake")
 
 # 4. Launchers
 include ("${TOOLS_CMAKE_DIR}/BuildLaunchers.cmake")
-
-
-# Shaders custom project
-add_subdirectory(Engine/Shaders)
 
 if (OPTION_CRYMONO)
 	add_subdirectory(Code/CryManaged/CryMonoBridge)

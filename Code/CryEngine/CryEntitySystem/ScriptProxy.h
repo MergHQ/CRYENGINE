@@ -77,6 +77,8 @@ public:
 	virtual void          SendScriptEvent(int Event, int nParam, bool* pRet = NULL) final;
 
 	virtual void          ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params) final;
+
+	virtual void EnableScriptUpdate(bool bEnable) final;
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass) final;
@@ -101,6 +103,8 @@ public:
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const final;
 
+	bool IsUpdateEnabled() const { return m_bUpdateEnabledOverride; }
+
 private:
 	SScriptState*  CurrentState() { return m_pScript->GetState(m_nCurrStateId); }
 	void           CreateScriptTable(SEntitySpawnParams* pSpawnParams);
@@ -122,8 +126,11 @@ private:
 	// Cache Tables.
 	SmartScriptTable m_hitTable;
 
-	uint32           m_nCurrStateId           : 8;
-	uint32           m_bUpdateScript          : 1;
+	uint32           m_nCurrStateId : 8;
+	// Whether or not the script implemented an OnUpdate function
+	bool             m_bUpdateFuncImplemented : 1;
+	// Whether or not the user requested that update be disabled for this script component
+	bool             m_bUpdateEnabledOverride : 1;
 	bool             m_bEnableSoundAreaEvents : 1;
 };
 

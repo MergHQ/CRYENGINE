@@ -147,7 +147,8 @@ CGameObject::CGameObject() :
 	m_predictionHandle(0),
 	m_bPhysicsDisabled(false),
 	m_bNeedsNetworkRebind(false),
-	m_bOnInitEventCalled(false)
+	m_bOnInitEventCalled(false),
+	m_bShouldUpdate(false)
 {
 	static_assert(eGFE_Last <= 64, "Unexpected enum value!");
 
@@ -724,17 +725,23 @@ void CGameObject::ProcessEvent(SEntityEvent& event)
 
 uint64 CGameObject::GetEventMask() const
 {
-	return
-	  BIT64(ENTITY_EVENT_INIT) |
+	uint64 eventMask =
+		BIT64(ENTITY_EVENT_INIT) |
 		BIT64(ENTITY_EVENT_RESET) |
-	  BIT64(ENTITY_EVENT_DONE) |
-	  BIT64(ENTITY_EVENT_UPDATE) |
-	  BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) |
-	  BIT64(ENTITY_EVENT_ENTERAREA) |
-	  BIT64(ENTITY_EVENT_LEAVEAREA) |
-	  BIT64(ENTITY_EVENT_POST_SERIALIZE) |
-	  BIT64(ENTITY_EVENT_HIDE) |
-	  BIT64(ENTITY_EVENT_UNHIDE);
+		BIT64(ENTITY_EVENT_DONE) |
+		BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) |
+		BIT64(ENTITY_EVENT_ENTERAREA) |
+		BIT64(ENTITY_EVENT_LEAVEAREA) |
+		BIT64(ENTITY_EVENT_POST_SERIALIZE) |
+		BIT64(ENTITY_EVENT_HIDE) |
+		BIT64(ENTITY_EVENT_UNHIDE);
+
+	if (m_bShouldUpdate)
+	{
+		eventMask |= BIT64(ENTITY_EVENT_UPDATE);
+	}
+
+	return eventMask;
 }
 
 //------------------------------------------------------------------------
@@ -1643,8 +1650,6 @@ void CGameObject::EvaluateUpdateActivation()
 
 void CGameObject::SetActivation(bool activate)
 {
-	bool wasActivated = m_pEntity->IsActive();
-
 	if (TestIsProbablyVisible(m_updateState))
 		SetPhysicsDisable(false);
 	else
@@ -1657,14 +1662,15 @@ void CGameObject::SetActivation(bool activate)
 		case eADPM_WhenInvisibleAndFarAway:
 			break;
 		case eADPM_WhenAIDeactivated:
-			if (wasActivated && !activate)
+			if (m_bShouldUpdate && !activate)
 				SetPhysicsDisable(true);
 			break;
 		}
 
-	if (wasActivated != activate)
+	if (m_bShouldUpdate != activate)
 	{
-		m_pEntity->Activate(activate);
+		m_bShouldUpdate = activate;
+		m_pEntity->UpdateComponentEventMask(this);
 
 		if (!activate)
 		{
@@ -1755,6 +1761,8 @@ void CGameObject::ForceUpdate(bool force)
 		--m_forceUpdate;
 
 	CRY_ASSERT(m_forceUpdate >= 0);
+
+	EvaluateUpdateActivation();
 }
 
 struct SContainerSer : public ISerializableInfo
@@ -1815,7 +1823,7 @@ bool CGameObject::SetAIActivation(EGameObjectAIActivationMode mode)
 		EvaluateUpdateActivation(); // need to recheck any updates on slots
 	}
 
-	return GetEntity()->IsActive();
+	return GetEntity()->IsActivatedForUpdates();
 }
 
 bool CGameObject::ShouldUpdateAI()

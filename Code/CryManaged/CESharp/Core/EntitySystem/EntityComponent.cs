@@ -1,10 +1,11 @@
-using CryEngine.Common;
-
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
-
+using System.Security.Cryptography;
+using System.Text;
+using CryEngine.Common;
 using CryEngine.EntitySystem;
 
 namespace CryEngine
@@ -19,33 +20,74 @@ namespace CryEngine
         internal void Initialize(IntPtr entityHandle, uint id)
         {
             Entity = new Entity(new IEntity(entityHandle, false), id); 
+
+			OnInitialize();
         }
         #endregion
 
         #region Entity Event Methods
-        public virtual void OnTransformChanged() { }
 
-        public virtual void OnUpdate(float frameTime) { }
-        public virtual void OnEditorGameModeChange(bool enterGame) { }
-        public virtual void OnUnhide() { }
+		protected virtual void OnTransformChanged() { }
 
-        public virtual void OnCollision(CollisionEvent collisionEvent) { }
-        private void OnCollisionInternal(IntPtr sourceEntityPhysics, IntPtr targetEntityPhysics)
-        {
-            var collisionEvent = new CollisionEvent();
+		protected virtual void OnInitialize() { }
+
+		protected virtual void OnUpdate(float frameTime) { }
+
+		protected virtual void OnEditorUpdate(float frameTime) { }
+
+		protected virtual void OnEditorGameModeChange(bool enterGame) { }
+
+		protected virtual void OnRemove() { }
+
+		protected virtual void OnHide() { }
+
+		protected virtual void OnUnhide() { }
+
+		protected virtual void OnGameplayStart() { }
+
+		protected virtual void OnCollision(CollisionEvent collisionEvent) { }
+
+		private void OnCollisionInternal(IntPtr sourceEntityPhysics, IntPtr targetEntityPhysics)
+		{
+			var collisionEvent = new CollisionEvent();
             collisionEvent.Source = new PhysicsObject(new IPhysicalEntity(sourceEntityPhysics, false));
             collisionEvent.Target = new PhysicsObject(new IPhysicalEntity(targetEntityPhysics, false));
             OnCollision(collisionEvent);
         }
 
-        public virtual void OnPrePhysicsUpdate(float frameTime) { }
+		protected virtual void OnPrePhysicsUpdate(float frameTime) { }
         #endregion
 
         #region Statics
+		private static string TypeToHash(Type type)
+		{
+			string result = string.Empty;
+			string input = type.FullName;
+			using(SHA384 hashGenerator = SHA384.Create())
+			{
+				var hash = hashGenerator.ComputeHash(Encoding.Default.GetBytes(input));
+				var shortHash = new byte[16];
+				for(int i = 0, j = 0; i < hash.Length; ++i, ++j)
+				{
+					if(j >= shortHash.Length)
+					{
+						j = 0;
+					}
+					unchecked
+					{
+						shortHash[j] += hash[i];
+					}
+				}
+				result = BitConverter.ToString(shortHash);
+				result = result.Replace("-", string.Empty);
+			}
+			return result;
+		}
+
         /// <summary>
         /// Register the given entity prototype class. 
         /// </summary>
-        /// <param name="entityType">Entity class prototype.</param>
+        /// <param name="entityComponentType">Entity class prototype.</param>
         internal static void TryRegister(Type entityComponentType)
         {
             if (!typeof(EntityComponent).IsAssignableFrom(entityComponentType) || entityComponentType.IsAbstract)
@@ -58,16 +100,23 @@ namespace CryEngine
             }
 
             // Start with registering a component
+			var guidString = TypeToHash(entityComponentType);
+			var half = (int)(guidString.Length / 2.0f);
+			ulong hipart = 0;
+			ulong lopart = 0;
+			if(!ulong.TryParse(guidString.Substring(0, half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out hipart))
+			{
+				Log.Error("Failed to parse {0} to UInt64", guidString.Substring(0, half));
+			}
+			if(!ulong.TryParse(guidString.Substring(half, guidString.Length - half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out lopart))
+			{
+				Log.Error("Failed to parse {0} to UInt64", guidString.Substring(half, guidString.Length - half));
+			}
             
-            var guidString = entityComponentType.GUID.ToString("N");
-
-            var hipart = UInt64.Parse(guidString.Substring(0, 16));
-            var lopart = UInt64.Parse(guidString.Substring(16, 16));
-
-            CryEngine.NativeInternals.Entity.RegisterComponent(entityComponentType, hipart, lopart);
+			NativeInternals.Entity.RegisterComponent(entityComponentType, hipart, lopart);
 
             // Register all properties
-            PropertyInfo[] properties = entityComponentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
+            var properties = entityComponentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
             foreach (PropertyInfo propertyInfo in properties)
             {
                 var attribute = (EntityPropertyAttribute)propertyInfo.GetCustomAttributes(typeof(EntityPropertyAttribute), true).FirstOrDefault();
