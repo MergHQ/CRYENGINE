@@ -25,7 +25,7 @@ CAudioStandaloneFileManager* CryAudio::CATLAudioObject::s_pStandaloneFileManager
 CATLAudioObject::CATLAudioObject()
 	: m_pImplData(nullptr)
 	, m_maxRadius(0.0f)
-	, m_flags(EAudioObjectFlags::DoNotRelease)
+	, m_flags(EObjectFlags::DoNotRelease)
 	, m_previousVelocity(0.0f)
 	, m_propagationProcessor(m_attributes.transformation)
 	, m_occlusionFadeOutDistance(0.0f)
@@ -53,7 +53,7 @@ void CATLAudioObject::ReportStartingTriggerInstance(TriggerInstanceId const audi
 {
 	SAudioTriggerInstanceState& audioTriggerInstanceState = m_triggerStates.emplace(audioTriggerInstanceId, SAudioTriggerInstanceState()).first->second;
 	audioTriggerInstanceState.audioTriggerId = audioTriggerId;
-	audioTriggerInstanceState.flags |= EAudioTriggerStatus::Starting;
+	audioTriggerInstanceState.flags |= ETriggerStatus::Starting;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -75,16 +75,16 @@ void CATLAudioObject::ReportStartedTriggerInstance(
 			audioTriggerInstanceState.pOwnerOverride = pOwnerOverride;
 			audioTriggerInstanceState.pUserData = pUserData;
 			audioTriggerInstanceState.pUserDataOwner = pUserDataOwner;
-			audioTriggerInstanceState.flags &= ~EAudioTriggerStatus::Starting;
-			audioTriggerInstanceState.flags |= EAudioTriggerStatus::Playing;
+			audioTriggerInstanceState.flags &= ~ETriggerStatus::Starting;
+			audioTriggerInstanceState.flags |= ETriggerStatus::Playing;
 
 			if ((flags& ERequestFlags::DoneCallbackOnAudioThread) > 0)
 			{
-				audioTriggerInstanceState.flags |= EAudioTriggerStatus::CallbackOnAudioThread;
+				audioTriggerInstanceState.flags |= ETriggerStatus::CallbackOnAudioThread;
 			}
 			else if ((flags& ERequestFlags::DoneCallbackOnExternalThread) > 0)
 			{
-				audioTriggerInstanceState.flags |= EAudioTriggerStatus::CallbackOnExternalThread;
+				audioTriggerInstanceState.flags |= ETriggerStatus::CallbackOnExternalThread;
 			}
 		}
 		else
@@ -101,25 +101,25 @@ void CATLAudioObject::ReportStartedTriggerInstance(
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::ReportStartedEvent(CATLEvent* const _pEvent)
+void CATLAudioObject::ReportStartedEvent(CATLEvent* const pEvent)
 {
-	m_activeEvents.insert(_pEvent);
-	m_triggerImplStates.insert(std::make_pair(_pEvent->m_audioTriggerImplId, SAudioTriggerImplState()));
+	m_activeEvents.insert(pEvent);
+	m_triggerImplStates.insert(std::make_pair(pEvent->m_audioTriggerImplId, SAudioTriggerImplState()));
 
 	// Update the radius where events playing in this audio object are audible
-	if (_pEvent->m_pTrigger)
+	if (pEvent->m_pTrigger)
 	{
-		m_maxRadius = std::max(_pEvent->m_pTrigger->m_maxRadius, m_maxRadius);
-		m_occlusionFadeOutDistance = std::max(_pEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
+		m_maxRadius = std::max(pEvent->m_pTrigger->m_maxRadius, m_maxRadius);
+		m_occlusionFadeOutDistance = std::max(pEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
 	}
 
-	ObjectTriggerStates::iterator const iter(m_triggerStates.find(_pEvent->m_audioTriggerInstanceId));
+	ObjectTriggerStates::iterator const iter(m_triggerStates.find(pEvent->m_audioTriggerInstanceId));
 
 	if (iter != m_triggerStates.end())
 	{
 		SAudioTriggerInstanceState& audioTriggerInstanceState = iter->second;
 
-		switch (_pEvent->m_state)
+		switch (pEvent->m_state)
 		{
 		case EEventState::Playing:
 			{
@@ -132,7 +132,7 @@ void CATLAudioObject::ReportStartedEvent(CATLEvent* const _pEvent)
 				CRY_ASSERT(audioTriggerInstanceState.numLoadingEvents > 0);
 				--(audioTriggerInstanceState.numLoadingEvents);
 				++(audioTriggerInstanceState.numPlayingEvents);
-				_pEvent->m_state = EEventState::Playing;
+				pEvent->m_state = EEventState::Playing;
 
 				break;
 			}
@@ -164,10 +164,10 @@ void CATLAudioObject::ReportStartedEvent(CATLEvent* const _pEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _bSuccess)
+void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bSuccess)
 {
-	m_activeEvents.erase(_pEvent);
-	m_triggerImplStates.erase(_pEvent->m_audioTriggerImplId);
+	m_activeEvents.erase(pEvent);
+	m_triggerImplStates.erase(pEvent->m_audioTriggerImplId);
 
 	// recalculate the max radius of the audio object
 	m_maxRadius = 0.0f;
@@ -183,9 +183,9 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 
 	ObjectTriggerStates::iterator iter(m_triggerStates.begin());
 
-	if (FindPlace(m_triggerStates, _pEvent->m_audioTriggerInstanceId, iter))
+	if (FindPlace(m_triggerStates, pEvent->m_audioTriggerInstanceId, iter))
 	{
-		switch (_pEvent->m_state)
+		switch (pEvent->m_state)
 		{
 		case EEventState::Playing:
 			{
@@ -194,7 +194,7 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 
 				if (--(audioTriggerInstanceState.numPlayingEvents) == 0 &&
 				    audioTriggerInstanceState.numLoadingEvents == 0 &&
-				    (audioTriggerInstanceState.flags & EAudioTriggerStatus::Starting) == 0)
+				    (audioTriggerInstanceState.flags & ETriggerStatus::Starting) == 0)
 				{
 					ReportFinishedTriggerInstance(iter);
 				}
@@ -203,18 +203,18 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 			}
 		case EEventState::Loading:
 			{
-				if (_bSuccess)
+				if (bSuccess)
 				{
-					ReportFinishedLoadingTriggerImpl(_pEvent->m_audioTriggerImplId, true);
+					ReportFinishedLoadingTriggerImpl(pEvent->m_audioTriggerImplId, true);
 				}
 
 				break;
 			}
 		case EEventState::Unloading:
 			{
-				if (_bSuccess)
+				if (bSuccess)
 				{
-					ReportFinishedLoadingTriggerImpl(_pEvent->m_audioTriggerImplId, false);
+					ReportFinishedLoadingTriggerImpl(pEvent->m_audioTriggerImplId, false);
 				}
 
 				break;
@@ -230,12 +230,12 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 	}
 	else
 	{
-		if (_pEvent->m_pTrigger != nullptr)
+		if (pEvent->m_pTrigger != nullptr)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %s", _pEvent->m_pTrigger->m_name.c_str());
+			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %s", pEvent->m_pTrigger->m_name.c_str());
 #else
-			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %u", _pEvent->m_pTrigger->GetId());
+			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %u", pEvent->m_pTrigger->GetId());
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 		else
@@ -280,11 +280,11 @@ void CATLAudioObject::ReportFinishedLoadingTriggerImpl(TriggerImplId const audio
 {
 	if (bLoad)
 	{
-		m_triggerImplStates[audioTriggerImplId].flags |= EAudioTriggerStatus::Loaded;
+		m_triggerImplStates[audioTriggerImplId].flags |= ETriggerStatus::Loaded;
 	}
 	else
 	{
-		m_triggerImplStates[audioTriggerImplId].flags &= ~EAudioTriggerStatus::Loaded;
+		m_triggerImplStates[audioTriggerImplId].flags &= ~ETriggerStatus::Loaded;
 	}
 }
 
@@ -298,7 +298,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	// Sets EAudioTriggerStatus::Starting on this TriggerInstance to avoid
+	// Sets ETriggerStatus::Starting on this TriggerInstance to avoid
 	// reporting TriggerFinished while the events are being started.
 	ReportStartingTriggerInstance(s_triggerInstanceIdCounter, pTrigger->GetId());
 
@@ -335,7 +335,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 		}
 	}
 
-	// Either removes the EAudioTriggerStatus::Starting flag on this trigger instance or removes it if no event was started.
+	// Either removes the ETriggerStatus::Starting flag on this trigger instance or removes it if no event was started.
 	ReportStartedTriggerInstance(s_triggerInstanceIdCounter++, pOwner, pUserData, pUserDataOwner, flags);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -465,7 +465,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 
 	for (auto const pTriggerImpl : pTrigger->m_implPtrs)
 	{
-		EAudioTriggerStatus triggerStatus = EAudioTriggerStatus::None;
+		ETriggerStatus triggerStatus = ETriggerStatus::None;
 		ObjectTriggerImplStates::const_iterator iPlace = m_triggerImplStates.end();
 		if (FindPlaceConst(m_triggerImplStates, pTriggerImpl->m_audioTriggerImplId, iPlace))
 		{
@@ -476,14 +476,14 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 
 		if (bLoad)
 		{
-			if (((triggerStatus & EAudioTriggerStatus::Loaded) == 0) && ((triggerStatus & EAudioTriggerStatus::Loading) == 0))
+			if (((triggerStatus& ETriggerStatus::Loaded) == 0) && ((triggerStatus& ETriggerStatus::Loading) == 0))
 			{
 				prepUnprepResult = pTriggerImpl->m_pImplData->LoadAsync(pEvent->m_pImplData);
 			}
 		}
 		else
 		{
-			if (((triggerStatus & EAudioTriggerStatus::Loaded) > 0) && ((triggerStatus & EAudioTriggerStatus::Unloading) == 0))
+			if (((triggerStatus& ETriggerStatus::Loaded) > 0) && ((triggerStatus& ETriggerStatus::Unloading) == 0))
 			{
 				prepUnprepResult = pTriggerImpl->m_pImplData->UnloadAsync(pEvent->m_pImplData);
 			}
@@ -567,21 +567,21 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 	request.pUserData = audioTriggerInstanceState.pUserData;
 	request.pUserDataOwner = audioTriggerInstanceState.pUserDataOwner;
 
-	if ((audioTriggerInstanceState.flags & EAudioTriggerStatus::CallbackOnExternalThread) > 0)
+	if ((audioTriggerInstanceState.flags & ETriggerStatus::CallbackOnExternalThread) > 0)
 	{
 		request.flags = ERequestFlags::CallbackOnExternalOrCallingThread;
 	}
-	else if ((audioTriggerInstanceState.flags & EAudioTriggerStatus::CallbackOnAudioThread) > 0)
+	else if ((audioTriggerInstanceState.flags & ETriggerStatus::CallbackOnAudioThread) > 0)
 	{
 		request.flags = ERequestFlags::CallbackOnAudioThread;
 	}
 
 	s_pAudioSystem->PushRequest(request);
 
-	if ((audioTriggerInstanceState.flags & EAudioTriggerStatus::Loaded) > 0)
+	if ((audioTriggerInstanceState.flags & ETriggerStatus::Loaded) > 0)
 	{
 		// if the trigger instance was manually loaded -- keep it
-		audioTriggerInstanceState.flags &= ~EAudioTriggerStatus::Playing;
+		audioTriggerInstanceState.flags &= ~ETriggerStatus::Playing;
 	}
 	else
 	{
@@ -645,7 +645,7 @@ ERequestStatus CATLAudioObject::HandleSetTransformation(CObjectTransformation co
 		{
 			m_attributes.transformation = transformation;
 			m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
-			m_flags |= EAudioObjectFlags::NeedsVelocityUpdate;
+			m_flags |= EObjectFlags::NeedsVelocityUpdate;
 			m_previousTime = g_lastMainThreadFrameStartTime;
 			m_previousAttributes = m_attributes;
 		}
@@ -802,11 +802,11 @@ void CATLAudioObject::SetDopplerTracking(bool const bEnable)
 	if (bEnable)
 	{
 		m_previousAttributes = m_attributes;
-		m_flags |= EAudioObjectFlags::TrackDoppler;
+		m_flags |= EObjectFlags::TrackDoppler;
 	}
 	else
 	{
-		m_flags &= ~EAudioObjectFlags::TrackDoppler;
+		m_flags &= ~EObjectFlags::TrackDoppler;
 	}
 }
 
@@ -816,18 +816,18 @@ void CATLAudioObject::SetVelocityTracking(bool const bEnable)
 	if (bEnable)
 	{
 		m_previousAttributes = m_attributes;
-		m_flags |= EAudioObjectFlags::TrackVelocity;
+		m_flags |= EObjectFlags::TrackVelocity;
 	}
 	else
 	{
-		m_flags &= ~EAudioObjectFlags::TrackVelocity;
+		m_flags &= ~EObjectFlags::TrackVelocity;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes const& listenerAttributes)
 {
-	if ((m_flags & EAudioObjectFlags::TrackDoppler) > 0)
+	if ((m_flags& EObjectFlags::TrackDoppler) > 0)
 	{
 		// Approaching positive, departing negative value.
 		if (m_attributes.velocity.GetLengthSquared() > 0.0f || listenerAttributes.velocity.GetLengthSquared() > 0.0f)
@@ -840,9 +840,9 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			request.pObject = this;
 			s_pAudioSystem->PushRequest(request);
 
-			m_flags |= EAudioObjectFlags::NeedsDopplerUpdate;
+			m_flags |= EObjectFlags::NeedsDopplerUpdate;
 		}
-		else if ((m_flags & EAudioObjectFlags::NeedsDopplerUpdate) > 0)
+		else if ((m_flags& EObjectFlags::NeedsDopplerUpdate) > 0)
 		{
 			m_attributes.velocity = ZERO;
 
@@ -851,12 +851,12 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			request.pObject = this;
 			s_pAudioSystem->PushRequest(request);
 
-			m_flags &= ~EAudioObjectFlags::NeedsDopplerUpdate;
+			m_flags &= ~EObjectFlags::NeedsDopplerUpdate;
 			m_pImplData->Set3DAttributes(m_attributes);
 		}
 	}
 
-	if ((m_flags & EAudioObjectFlags::TrackVelocity) > 0)
+	if ((m_flags& EObjectFlags::TrackVelocity) > 0)
 	{
 		if (m_attributes.velocity.GetLengthSquared() > 0.0f)
 		{
@@ -872,7 +872,7 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 				s_pAudioSystem->PushRequest(request);
 			}
 		}
-		else if ((m_flags & EAudioObjectFlags::NeedsVelocityUpdate) > 0)
+		else if ((m_flags& EObjectFlags::NeedsVelocityUpdate) > 0)
 		{
 			m_attributes.velocity = ZERO;
 			m_previousVelocity = 0.0f;
@@ -882,7 +882,7 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			request.pObject = this;
 			s_pAudioSystem->PushRequest(request);
 
-			m_flags &= ~EAudioObjectFlags::NeedsVelocityUpdate;
+			m_flags &= ~EObjectFlags::NeedsVelocityUpdate;
 			m_pImplData->Set3DAttributes(m_attributes);
 		}
 	}
@@ -900,20 +900,20 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 ///////////////////////////////////////////////////////////////////////////
 bool CATLAudioObject::CanBeReleased() const
 {
-	return (m_flags & EAudioObjectFlags::DoNotRelease) == 0 &&
+	return (m_flags& EObjectFlags::DoNotRelease) == 0 &&
 	       m_activeEvents.empty() &&
 	       m_activeStandaloneFiles.empty() &&
 	       !m_propagationProcessor.HasPendingRays();
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::SetFlag(EAudioObjectFlags const flag)
+void CATLAudioObject::SetFlag(EObjectFlags const flag)
 {
 	m_flags |= flag;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::RemoveFlag(EAudioObjectFlags const flag)
+void CATLAudioObject::RemoveFlag(EObjectFlags const flag)
 {
 	m_flags &= ~flag;
 }

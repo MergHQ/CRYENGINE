@@ -111,6 +111,7 @@ bool CScriptRegistry::Load()
 
 	auto loadScript = [this, &inputBlocks](const char* szFileName, unsigned attributes)
 	{
+		LOADING_TIME_PROFILE_SECTION_ARGS(szFileName);
 		// TODO: Move this to a separated function.
 		SScriptInputBlock inputBlock;
 		CScriptLoadSerializer serializer(inputBlock);

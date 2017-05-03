@@ -462,14 +462,15 @@ TFlowNodeTypeId CFlowSystem::RegisterType(const char* type, IFlowNodeFactoryPtr 
 	{
 		// overriding
 		TFlowNodeTypeId nTypeId = iter->second;
+		STypeInfo& typeInfo = m_typeRegistryVec[nTypeId];
 
-		if (!factory->AllowOverride())
+		if (!typeInfo.factory->AllowOverride())
 		{
-			CryFatalError("CFlowSystem::RegisterType: Type '%s' Id=%u already registered. Overriding not allowed by node factory.", type, nTypeId);
+			CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "CFlowSystem::RegisterType: Type '%s' Id=%u already registered. Overriding not allowed by node factory.", type, nTypeId);
+			return InvalidFlowNodeTypeId;
 		}
 
 		assert(nTypeId < m_typeRegistryVec.size());
-		STypeInfo& typeInfo = m_typeRegistryVec[nTypeId];
 		typeInfo.factory = factory;
 		return nTypeId;
 	}
@@ -763,7 +764,7 @@ void CFlowSystem::RegisterEntityTypes()
 		INDENT_LOG_DURING_SCOPE(true, "Flow system is registering entity type '%s'", classname.c_str());
 
 		// if the entity lua script does not have input/outputs defined, and there is already an FG node defined for that entity in c++, do not register the empty lua one
-		if (pEntityClass->GetEventCount() == 0 || GetTypeId(classname) != InvalidFlowNodeTypeId)
+		if (pEntityClass->GetEventCount() == 0 && GetTypeId(classname) != InvalidFlowNodeTypeId)
 			continue;
 
 		RegisterType(classname, new CFlowEntityClass(pEntityClass));
@@ -875,7 +876,7 @@ void CFlowSystem::OnEntityClassRegistryEvent(EEntityClassRegistryEvent event, co
 			IEntityClass* pClass = const_cast<IEntityClass*>(pEntityClass);
 			
 			// if the entity lua script does not have input/outputs defined, and there is already an FG node defined for that entity in c++, do not register the empty lua one
-			if (pClass->GetEventCount() == 0 || GetTypeId(className) != InvalidFlowNodeTypeId)
+			if (pClass->GetEventCount() == 0 && GetTypeId(className) != InvalidFlowNodeTypeId)
 				return;
 
 			RegisterType(className, new CFlowEntityClass(pClass));

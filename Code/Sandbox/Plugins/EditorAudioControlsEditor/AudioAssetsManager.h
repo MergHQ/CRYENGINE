@@ -33,12 +33,15 @@ public:
 	size_t         GetLibraryCount() const              { return m_audioLibraries.size(); }
 
 	//
-	IAudioAsset*   CreateFolder(const string& name, IAudioAsset* pParent = nullptr);
-	CAudioControl* CreateControl(const string& controlName, EItemType type, IAudioAsset* pParent = nullptr);
-	void           DeleteItem(IAudioAsset* pItem);
+	IAudioAsset*    CreateFolder(const string& name, IAudioAsset* pParent = nullptr);
+	CAudioControl*  CreateControl(const string& controlName, EItemType type, IAudioAsset* pParent = nullptr);
+	void            DeleteItem(IAudioAsset* pItem);
 
-	CAudioControl* GetControlByID(CID id) const;
-	CAudioControl* FindControl(string const& controlName, EItemType const type, IAudioAsset* const pParent = nullptr) const;
+	CAudioControl*  GetControlByID(CID id) const;
+	CAudioControl*  FindControl(string const& controlName, EItemType const type, IAudioAsset* const pParent = nullptr) const;
+
+	typedef std::vector<CAudioControl*> Controls;
+	Controls const& GetControls() const { return m_controls; }
 
 	// Scope
 	void       ClearScopes();
@@ -87,7 +90,7 @@ private:
 	std::vector<CAudioLibrary*> m_audioLibraries;
 
 	static CID                  m_nextId;
-	std::vector<CAudioControl*> m_controls;
+	Controls                    m_controls;
 	std::map<Scope, SScopeInfo> m_scopeMap;
 	std::array<bool, 5>         m_bControlTypeModified { false, false, false, false, false };
 	bool                        m_bLoading = false;
@@ -96,7 +99,7 @@ private:
 namespace Utils
 {
 Scope         GetGlobalScope();
-string        GenerateUniqueFolderName(const string& name, IAudioAsset* pParent);
+string        GenerateUniqueName(string const& name, EItemType const type, IAudioAsset* const pParent);
 string        GenerateUniqueLibraryName(const string& name, const CAudioAssetsManager& assetManager);
 string        GenerateUniqueControlName(const string& name, EItemType type, const CAudioAssetsManager& assetManager);
 IAudioAsset*  GetParentLibrary(IAudioAsset* pAsset);

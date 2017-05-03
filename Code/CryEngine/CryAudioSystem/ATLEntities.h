@@ -66,7 +66,7 @@ struct IAudioFileEntry;
 struct IAudioImpl;
 } // namespace Impl
 
-enum class EAudioObjectFlags : EnumFlagsType
+enum class EObjectFlags : EnumFlagsType
 {
 	None                            = 0,
 	TrackDoppler                    = BIT(0),
@@ -77,9 +77,9 @@ enum class EAudioObjectFlags : EnumFlagsType
 	Virtual                         = BIT(5),
 	WaitingForInitialTransformation = BIT(6),
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioObjectFlags);
+CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 
-enum class EAudioFileFlags : EnumFlagsType
+enum class EFileFlags : EnumFlagsType
 {
 	None                      = 0,
 	Cached                    = BIT(0),
@@ -92,7 +92,7 @@ enum class EAudioFileFlags : EnumFlagsType
 	NeedsResetToManualLoading = BIT(7),
 	Localized                 = BIT(8),
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioFileFlags);
+CRY_CREATE_ENUM_FLAG_OPERATORS(EFileFlags);
 
 template<typename IDType>
 class CATLEntity
@@ -431,7 +431,7 @@ public:
 		, m_size(0)
 		, m_useCount(0)
 		, m_memoryBlockAlignment(MEMORY_ALLOCATION_ALIGNMENT)
-		, m_flags(EAudioFileFlags::NotFound)
+		, m_flags(EFileFlags::NotFound)
 		, m_dataScope(EDataScope::All)
 		, m_streamTaskType(eStreamTaskTypeCount)
 		, m_pMemoryBlock(nullptr)
@@ -452,7 +452,7 @@ public:
 	size_t                             m_size;
 	size_t                             m_useCount;
 	size_t                             m_memoryBlockAlignment;
-	EAudioFileFlags                    m_flags;
+	EFileFlags                         m_flags;
 	EDataScope                         m_dataScope;
 	EStreamTaskType                    m_streamTaskType;
 	_smart_ptr<ICustomMemoryBlock>     m_pMemoryBlock;

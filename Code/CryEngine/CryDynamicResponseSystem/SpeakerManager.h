@@ -20,7 +20,7 @@ class CDefaultLipsyncProvider final : public DRS::ISpeakerManager::ILipsyncProvi
 	//for now, our default lipsync provider just starts a animation when a line starts, and stops it when the line finishes
 public:
 	CDefaultLipsyncProvider();
-	~CDefaultLipsyncProvider();
+	virtual ~CDefaultLipsyncProvider() override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// ISpeakerManager::ILipsyncProvider implementation
@@ -39,7 +39,7 @@ class CSpeakerManager final : public DRS::ISpeakerManager
 {
 public:
 	CSpeakerManager();
-	~CSpeakerManager();
+	virtual ~CSpeakerManager() override;
 
 	void Init();
 	void Reset();

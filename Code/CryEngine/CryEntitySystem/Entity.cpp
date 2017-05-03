@@ -2481,7 +2481,7 @@ void CEntity::RemoveAllEntityLinks()
 	IEntityLink* pLink = m_pEntityLinks;
 	while (pLink)
 	{
-		IEntityLink* pNext = pLink->next;
+		m_pEntityLinks = pLink->next;
 
 		// Send event.
 		SEntityEvent event(ENTITY_EVENT_DELINK);
@@ -2489,7 +2489,7 @@ void CEntity::RemoveAllEntityLinks()
 		SendEvent(event);
 
 		delete pLink;
-		pLink = pNext;
+		pLink = m_pEntityLinks;
 	}
 	m_pEntityLinks = 0;
 }

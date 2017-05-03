@@ -20,6 +20,9 @@ public:
 		s->AddObject(m_outputs);
 	}
 
+	// Allow overriding since this is the default flow class
+	virtual bool        AllowOverride() const { return true; }
+
 	void        GetConfiguration(SFlowNodeConfig&);
 
 	const char* CopyStr(const char* src);

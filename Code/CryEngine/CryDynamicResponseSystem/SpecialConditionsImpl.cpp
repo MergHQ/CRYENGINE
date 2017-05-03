@@ -81,17 +81,14 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_tokenName, "Token", "Token");
 
+	m_pCachedToken = nullptr;
 	if (gEnv->pGameFramework)
 	{
 		if (auto* pGameTokenSystem = gEnv->pGameFramework->GetIGameTokenSystem())
 		{
 			m_pCachedToken = pGameTokenSystem->FindToken(m_tokenName.c_str());
 		}
-		else
-			m_pCachedToken = nullptr;
 	}
-	else
-		m_pCachedToken = nullptr;
 
 	if (ar.isEdit() &&
 	    ((m_pCachedToken && m_pCachedToken->GetType() == eFDT_Bool) || (ar.isOutput() && (m_minValue.GetType() == eDRVT_Boolean || m_minValue.GetType() == eDRVT_String)))) //for booleans/strings range-tests would not make much sense
@@ -455,8 +452,9 @@ bool CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pResponseInstanc
 	}
 	if (pResponse)
 	{
-		const float timeSinceLastExecution = (pResponse->GetLastEndTime() > 0) ? CResponseSystem::GetInstance()->GetCurrentDrsTime() - pResponse->GetLastEndTime() : std::numeric_limits<float>::max();
-		return timeSinceLastExecution >= m_minTime && ((timeSinceLastExecution <= m_maxTime) || m_maxTime < 0.0f);
+		const float lastStartOrEndTime = std::max(pResponse->GetLastEndTime(), pResponse->GetLastStartTime());  //if the response was started recently, but has not ended yet, then the LastStartTime is actually higher than the LastFinishedTime.
+		const float timeSince = (lastStartOrEndTime > 0) ? CResponseSystem::GetInstance()->GetCurrentDrsTime() - lastStartOrEndTime : std::numeric_limits<float>::max();
+		return timeSince >= m_minTime && ((timeSince <= m_maxTime) || m_maxTime < 0.0f);
 	}
 	else
 	{

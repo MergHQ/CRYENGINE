@@ -249,6 +249,7 @@ void CAudioControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 				SignalConnectionRemoved(pAudioSystemControl);
 				SignalControlModified();
 				SetModified(true);
+				break;
 			}
 		}
 	}

@@ -347,12 +347,19 @@ void CAudioAssetsExplorer::ShowControlType(EItemType type, bool bShow)
 
 CAudioControl* CAudioAssetsExplorer::CreateControl(const string& name, EItemType type, IAudioAsset* pParent)
 {
-	return m_pAssetsManager->CreateControl(Utils::GenerateUniqueControlName(name, type, *m_pAssetsManager), type, pParent);
+	if (type != eItemType_State)
+	{
+		return m_pAssetsManager->CreateControl(Utils::GenerateUniqueControlName(name, type, *m_pAssetsManager), type, pParent);
+	}
+	else
+	{
+		return m_pAssetsManager->CreateControl(Utils::GenerateUniqueName(name, type, pParent), type, pParent);
+	}
 }
 
 IAudioAsset* CAudioAssetsExplorer::CreateFolder(IAudioAsset* pParent)
 {
-	return m_pAssetsManager->CreateFolder(Utils::GenerateUniqueFolderName("new_folder", pParent), pParent);
+	return m_pAssetsManager->CreateFolder(Utils::GenerateUniqueName("new_folder", EItemType::eItemType_Folder, pParent), pParent);
 }
 
 void CAudioAssetsExplorer::ShowControlsContextMenu(const QPoint& pos)

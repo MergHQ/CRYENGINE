@@ -3943,25 +3943,20 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 			const MNM::real_t range = MNM::real_t(1.0f);
 
 			MNM::vector3_t start = MNM::vector3_t(
-			  MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z)) - origin;
+				MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z)) - origin;
 			MNM::vector3_t end = MNM::vector3_t(
-			  MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z)) - origin;
+				MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z)) - origin;
 
 			MNM::TriangleID triStart = navMesh.GetTriangleAt(start, range, range);
 
 			if (triStart)
 			{
-				MNM::vector3_t a, b, c;
-				navMesh.GetVertices(triStart, a, b, c);
+				SAuxGeomRenderFlags oldFlags = renderAuxGeom->GetRenderFlags();
 
-				renderAuxGeom->DrawTriangle(
-				  (a + originOffset).GetVec3(), ColorB(Col_GreenYellow),
-				  (b + originOffset).GetVec3(), ColorB(Col_GreenYellow),
-				  (c + originOffset).GetVec3(), ColorB(Col_GreenYellow));
-			}
-
-			if (triStart)
-			{
+				SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
+				renderFlags.SetAlphaBlendMode(e_AlphaBlended);
+				renderAuxGeom->SetRenderFlags(renderFlags);
+				
 				MNM::TriangleID triEnd = navMesh.GetTriangleAt(end, range, range);
 
 				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
@@ -3975,9 +3970,9 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 					navMesh.GetVertices(raycastRequest.way[i], a, b, c);
 
 					renderAuxGeom->DrawTriangle(
-					  (a + originOffset).GetVec3(), ColorB(Col_Maroon),
-					  (b + originOffset).GetVec3(), ColorB(Col_Maroon),
-					  (c + originOffset).GetVec3(), ColorB(Col_Maroon));
+					  (a + originOffset).GetVec3(), ColorB(Col_Maroon, 0.5f),
+					  (b + originOffset).GetVec3(), ColorB(Col_Maroon, 0.5f),
+					  (c + originOffset).GetVec3(), ColorB(Col_Maroon, 0.5f));
 				}
 
 				if (triStart)
@@ -3986,9 +3981,9 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 					navMesh.GetVertices(triStart, a, b, c);
 
 					renderAuxGeom->DrawTriangle(
-					  (a + originOffset).GetVec3(), ColorB(Col_GreenYellow),
-					  (b + originOffset).GetVec3(), ColorB(Col_GreenYellow),
-					  (c + originOffset).GetVec3(), ColorB(Col_GreenYellow));
+					  (a + originOffset).GetVec3(), ColorB(Col_GreenYellow, 0.5f),
+					  (b + originOffset).GetVec3(), ColorB(Col_GreenYellow, 0.5f),
+					  (c + originOffset).GetVec3(), ColorB(Col_GreenYellow, 0.5f));
 				}
 
 				if (triEnd)
@@ -3997,9 +3992,9 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 					navMesh.GetVertices(triEnd, a, b, c);
 
 					renderAuxGeom->DrawTriangle(
-					  (a + originOffset).GetVec3(), ColorB(Col_Red),
-					  (b + originOffset).GetVec3(), ColorB(Col_Red),
-					  (c + originOffset).GetVec3(), ColorB(Col_Red));
+					  (a + originOffset).GetVec3(), ColorB(Col_Red, 0.5f),
+					  (b + originOffset).GetVec3(), ColorB(Col_Red, 0.5f),
+					  (c + originOffset).GetVec3(), ColorB(Col_Red, 0.5f));
 				}
 
 				const Vec3 offset(0.0f, 0.0f, 0.085f);
@@ -4015,6 +4010,8 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 					renderAuxGeom->DrawLine(startLoc + offset, Col_YellowGreen, hitLoc + offset, Col_YellowGreen, 8.0f);
 					renderAuxGeom->DrawLine(hitLoc + offset, Col_Red, endLoc + offset, Col_Red, 8.0f);
 				}
+
+				renderAuxGeom->SetRenderFlags(oldFlags);
 			}
 		}
 	}
