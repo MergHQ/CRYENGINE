@@ -12,7 +12,7 @@ namespace CryEngine
 	/// <summary>
 	/// Internal class used to manage native code
 	/// </summary>
-	internal sealed class AudioManager
+	internal sealed class AudioManager : IDisposable
 	{
 		private static Dictionary<string, uint> _triggerByName = new Dictionary<string, uint>();
 		private static Dictionary<uint, string> _indexTriggerIdToName = new Dictionary<uint, string>();
@@ -21,6 +21,7 @@ namespace CryEngine
 		private static Audio.RequestListenerDelegate _requestListener;
 
 		private static AudioRequestInfo _info;
+		private static bool _isDisposed;
 
 		static AudioManager()
 		{
@@ -29,6 +30,11 @@ namespace CryEngine
 			//bind listener to c++
 			IntPtr fnPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(_requestListener);
 			NativeAudioSystem.AddAudioRequestListener(fnPtr);
+		}
+
+		~AudioManager()
+		{
+			Dispose(false);
 		}
 
 		private static void OnAudioEvent(IntPtr requestInfo)
@@ -56,6 +62,30 @@ namespace CryEngine
 			string triggerName = AudioManager.GetTriggerName(ctrlId);
 			Audio.ManagedAudioStateListenerDelegate audioStateListenerDelegate = AudioManager.GetAudioStateListener(triggerName);
 			audioStateListenerDelegate?.Invoke(audioState, triggerName);
+		}
+
+		private void Dispose(bool isDisposing)
+		{
+			if (_isDisposed) return;
+
+			if(isDisposing)
+			{
+				_info.Dispose();
+				_info = null;
+				_requestListenersDelegates.Clear();
+				_requestListenersDelegates = null;
+				_indexTriggerIdToName.Clear();
+				_indexTriggerIdToName = null;
+				_triggerByName.Clear();
+				_triggerByName = null;
+			}
+			
+			//remove listener from c++
+			IntPtr fnPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(_requestListener);
+			NativeAudioSystem.RemoveAudioRequestListener(fnPtr);
+			_requestListener = null;
+
+			_isDisposed = true;
 		}
 
 		/// <summary>
@@ -185,6 +215,12 @@ namespace CryEngine
 				return _requestListenersDelegates[triggerName];
 			}
 			return null;
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 	}
 }

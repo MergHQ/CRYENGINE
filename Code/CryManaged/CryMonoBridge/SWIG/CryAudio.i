@@ -7,7 +7,6 @@
 #include <CryAudio/IListener.h>
 #include <CryAudio/IProfileData.h>
 #include <CryAudio/IObject.h>
-#include <CryAudio/IAudioInterfacesCommonData.h>
 %}
 
 %ignore CryAudio::ISystemModule;
@@ -37,7 +36,9 @@
 %include "../../../../CryEngine/CryCommon/CryAudio/IAudioInterfacesCommonData.h"
 %feature("director") IAudioListener;
 
-%include "../../../../CryEngine/CryCommon/CryAudio/IListener.h"
+//suppress IListener 
+%ignore CryAudio::IAudioSystem::CreateListener;
+%ignore CryAudio::IAudioSystem::ReleaseListener(IListener* const pIListener);
 
 //suppress audio functions that are wrapped through extension below
 %ignore CryAudio::IAudioSystem::GetAudioTriggerId(char const* const szAudioTriggerName, ControlId& audioTriggerId) const;
@@ -60,3 +61,5 @@
 
 %include "../../../../CryEngine/CryCommon/CryAudio/IAudioSystem.h"
 %include "../../../../CryEngine/CryCommon/CryAudio/IObject.h"
+
+//test test

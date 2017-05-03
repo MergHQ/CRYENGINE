@@ -14,6 +14,7 @@
 
 #include <CryAudio/IAudioSystem.h>
 #include <CryAudio/IObject.h>
+#include <CryAudio/IListener.h>
 
 using namespace CryAudio;
 
@@ -239,6 +240,21 @@ static void AddAudioRequestListener(AudioRequestListener listener)
 	gEnv->pAudioSystem->AddRequestListener(listener, nullptr, ESystemEvents::TriggerExecuted | ESystemEvents::TriggerFinished);
 }
 
+static void RemoveAudioRequestListener(AudioRequestListener listener)
+{
+	gEnv->pAudioSystem->RemoveRequestListener(listener, nullptr);
+}
+
+static IListener* CreateAudioListener()
+{
+	return gEnv->pAudioSystem->CreateListener();
+}
+
+static void SetAudioListenerTransformation(IListener* pAudioListener, CObjectTransformation* pCObjectTransformation)
+{
+	pAudioListener->SetTransformation(*pCObjectTransformation);
+}
+
 void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* szMethodName)> func)
 {
 	// IAudioSystem
@@ -259,6 +275,8 @@ void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, 
 	func(StopFile, "StopFile");
 	func(EnableAllSound, "EnableAllSound");
 	func(AddAudioRequestListener, "AddAudioRequestListener");
+	func(RemoveAudioRequestListener, "RemoveAudioRequestListener");
+	func(CreateAudioListener, "CreateAudioListener");
 	
 	// IObject
 	func(CreateAudioObject, "CreateAudioObject");
@@ -280,4 +298,7 @@ void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, 
 	func(SRIGetSystemEvent, "SRIGetEnumFlagsType");
 	func(SRIGetControlId, "SRIGetControlId");
 	func(SRIGetAudioObject, "SRIGetAudioObject");
+
+	//IListener
+	func(SetAudioListenerTransformation, "SetAudioListenerTransformation");
 }
