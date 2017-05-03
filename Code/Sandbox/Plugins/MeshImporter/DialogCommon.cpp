@@ -508,8 +508,16 @@ bool CBaseDialog::Open(const string& filePath)
 		return false;
 	}
 
-	// When opening a file, the source file is expected to be in the same directory.
-	const string absSourceFilePath = PathUtil::Make(PathUtil::GetParentDirectory(absSourceMetaFilePath), pMetaData->sourceFilename);
+	string absSourceFilePath;
+	if (pAsset && pAsset->GetSourceFile() && *pAsset->GetSourceFile())
+	{
+		absSourceFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pAsset->GetSourceFile());
+	}
+	else
+	{
+		// When opening a file, the source file is expected to be in the same directory.
+		absSourceFilePath = PathUtil::Make(PathUtil::GetParentDirectory(absSourceMetaFilePath), pMetaData->sourceFilename);
+	}
 
 	std::unique_ptr<MeshImporter::SImportScenePayload> pPayload(new MeshImporter::SImportScenePayload());
 	pPayload->pMetaData = std::move(pMetaData);

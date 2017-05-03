@@ -12,6 +12,28 @@
 #include "IRCLog.h"
 #include "CryExtension/CryGUIDHelper.h"
 
+namespace Private_Cryasset
+{
+
+static string GetLastErrorString()
+{
+	const char szMsgBuf[1024]{};
+
+	FormatMessageA(
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		GetLastError(),
+		0,
+		(LPSTR)&szMsgBuf,
+		1024,
+		NULL);
+
+	return string(szMsgBuf);
+}
+
+}
+
 namespace AssetManager
 {
 
@@ -37,17 +59,16 @@ bool CAsset::Save(const string& filename)
 
 	// Force remove of the read only flag.
 	SetFileAttributes(filename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
-	remove(filename.c_str());
 
 	if (!m_xml->saveToFile(tmpFilename))
 	{
 		return false;
 	}
 
-	if (rename(tmpFilename.c_str(), filename.c_str()) != 0)
+	if (!MoveFileExA(tmpFilename.c_str(), filename.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
 	{
 
-		RCLogError("Can't rename '%s' to '%s'. Error code: %s.", tmpFilename.c_str(), filename.c_str(), strerror(errno));
+		RCLogError("Can't rename '%s' to '%s'. Error code: %s.", tmpFilename.c_str(), filename.c_str(), Private_Cryasset::GetLastErrorString().c_str());
 		remove(tmpFilename.c_str());
 		return false;
 	}

@@ -74,7 +74,7 @@ public:
 	}
 };
 
-bool CEntityAssetType::OnCreate(CEditableAsset& editAsset) const
+bool CEntityAssetType::OnCreate(CEditableAsset& editAsset, const void* /*pTypeSpecificParameter*/) const
 {
 	const string szFilePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
 	const QString basePath = szFilePath.c_str();
