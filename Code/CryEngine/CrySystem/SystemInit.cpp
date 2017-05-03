@@ -5338,21 +5338,21 @@ const char* CSystem::GetLoadingProfilerCallstack()
 #endif
 }
 
-CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args, unsigned int& sessionIndex)
+CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args)
 {
 #if defined(ENABLE_LOADING_PROFILER)
 	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	return profiler.StartBlock(name, args, sessionIndex);
+	return profiler.StartBlock(name, args);
 #else
 	return NULL;
 #endif
 }
 
-void CSystem::StopBootSectionProfiler(CBootProfilerRecord* record, const unsigned int sessionIndex)
+void CSystem::StopBootSectionProfiler(CBootProfilerRecord* record)
 {
 #if defined(ENABLE_LOADING_PROFILER)
 	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	profiler.StopBlock(record, sessionIndex);
+	profiler.StopBlock(record);
 #endif
 }
 

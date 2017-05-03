@@ -956,8 +956,8 @@ public:
 	virtual const char*                   GetLoadingProfilerCallstack() override;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args, unsigned int& sessionIndex) override;
-	virtual void                 StopBootSectionProfiler(CBootProfilerRecord* record, const unsigned int sessionIndex) override;
+	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args) override;
+	virtual void                 StopBootSectionProfiler(CBootProfilerRecord* record) override;
 	virtual void                 StartBootProfilerSession(const char* szName) override;
 	virtual void                 StopBootProfilerSession(const char* szName) override;
 	virtual void                 OnFrameStart(const char* szName) override;
