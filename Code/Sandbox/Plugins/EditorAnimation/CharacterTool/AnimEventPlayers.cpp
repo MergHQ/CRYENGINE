@@ -562,8 +562,66 @@ CRYREGISTER_CLASS(AnimEventPlayerMaterialEffects)
 // ---------------------------------------------------------------------------
 class AnimEventPlayerAnimFXEvents : public IAnimEventPlayer
 {
+	struct SAnimFXSource
+	{
+		string               m_soundFXLib;
+		string               m_enviroment;
+
+		SAnimFXSource()
+			: m_soundFXLib("")
+			, m_enviroment("")
+		{}
+
+		SAnimFXSource(const string& fxLib, const string& enviroment)
+			: m_soundFXLib(fxLib)
+			, m_enviroment(enviroment)
+		{}
+
+		void Serialize(Serialization::IArchive& ar)
+		{
+			Serialization::StringList soundFXLibsList;
+
+			if (IAnimFXEvents* pAnimFXEvents = gEnv->pMaterialEffects->GetAnimFXEvents())
+			{
+				uint32 index = 0;
+				for (uint32 i = 0; i < pAnimFXEvents->GetLibrariesCount(); ++i)
+				{
+					const char* soundLibraryName = pAnimFXEvents->GetLibraryName(i);
+					soundFXLibsList.push_back(soundLibraryName);
+				}
+
+				int foundIdx = soundFXLibsList.find(m_soundFXLib.c_str());
+				index = foundIdx == Serialization::StringList::npos ? 0 : uint32(foundIdx);
+
+				Serialization::StringListValue eventListChoice(soundFXLibsList, index);
+
+				ar.doc("These are the defined anim fx libs coming from the game.dll");
+				ar(eventListChoice, "animFxLib", "^Animation FX Lib");
+
+				if (ISurfaceTypeEnumerator* pSurfaceTypeEnum = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager()->GetEnumerator())
+				{
+					Serialization::StringList envList;
+					for (ISurfaceType* pSurfaceType = pSurfaceTypeEnum->GetFirst(); pSurfaceType; pSurfaceType = pSurfaceTypeEnum->GetNext())
+					{
+						stl::push_back_unique(envList, pSurfaceType->GetType());
+					}
+
+					foundIdx = envList.find(m_enviroment.c_str());
+					index = foundIdx == Serialization::StringList::npos ? 0 : uint32(foundIdx);
+
+					Serialization::StringListValue envListChoice(envList, index);
+					ar(envListChoice, "enviroment", "Enviroment");
+					m_enviroment = envListChoice.c_str();
+				}
+
+				m_soundFXLib = eventListChoice.c_str();
+			}
+		}
+	};
+
 	typedef std::vector<SCustomAnimEventType>    TCustomEventTypes;
 	typedef std::vector<TSerializeParameterFunc> TSerializeParamFuncs;
+	typedef std::vector<SAnimFXSource>           TAnimFxSources;
 
 public:
 	CRYINTERFACE_BEGIN()
@@ -589,43 +647,7 @@ public:
 
 	void Serialize(Serialization::IArchive& ar) override
 	{
-		Serialization::StringList soundFXLibsList;
-
-		if (IAnimFXEvents* pAnimFXEvents = gEnv->pMaterialEffects->GetAnimFXEvents())
-		{
-			uint32 index = 0;
-			for (uint32 i = 0; i < pAnimFXEvents->GetLibrariesCount(); ++i)
-			{
-				const char* soundLibraryName = pAnimFXEvents->GetLibraryName(i);
-				soundFXLibsList.push_back(soundLibraryName);
-			}
-
-			int foundIdx = soundFXLibsList.find(m_soundFXLib.c_str());
-			index = foundIdx == Serialization::StringList::npos ? 0 : uint32(foundIdx);
-
-			Serialization::StringListValue eventListChoice(soundFXLibsList, index);
-
-			ar.doc("These are the defined anim fx libs coming from the game.dll");
-			ar(eventListChoice, "animFxLib", "Animation FX Lib");
-
-			if (ISurfaceTypeEnumerator* pSurfaceTypeEnum = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager()->GetEnumerator())
-			{
-				Serialization::StringList envList;
-				for (ISurfaceType* pSurfaceType = pSurfaceTypeEnum->GetFirst(); pSurfaceType; pSurfaceType = pSurfaceTypeEnum->GetNext())
-				{
-					stl::push_back_unique(envList, pSurfaceType->GetType());
-				}
-
-				foundIdx = envList.find(m_enviroment.c_str());
-				index = foundIdx == Serialization::StringList::npos ? 0 : uint32(foundIdx);
-
-				Serialization::StringListValue envListChoice(envList, index);
-				ar(envListChoice, "enviroment", "Enviroment");
-				m_enviroment = envListChoice.c_str();
-			}
-
-			m_soundFXLib = eventListChoice.c_str();
-		}
+		ar(m_animFxSources, "animFxSources", "Anim FX libs");
 	}
 
 	const char* SerializeCustomParameter(const char* parameterValue, Serialization::IArchive& ar, int customTypeIndex) override
@@ -674,40 +696,49 @@ public:
 			if (IAnimFXEvents* pAnimFXEvents = pMaterialEffects->GetAnimFXEvents())
 			{
 				pAnimFXEvents->GetAnimFXEventInfoById(uint32(eventUid), eventType);
+				bool effectFound(false);
 
-				mfxLibrary.Format("%s/%d/%d", m_soundFXLib.c_str(), eventUid, eventNameUid);
-				subType = m_enviroment.c_str();
-
-				// Check for enviroment effect
-				effectId = pMaterialEffects->GetEffectIdByName(mfxLibrary.c_str(), subType.c_str());
-
-				// Search for regular effect
-				if (effectId == InvalidEffectId)
+				for (const SAnimFXSource& animFxSource : m_animFxSources)
 				{
-					mfxLibrary.Format("%s/%d/0", m_soundFXLib.c_str(), eventUid);
-					subType = pAnimFXEvents->GetAnimFXEventParamName(eventUid, eventNameUid);
+					mfxLibrary.Format("%s/%d/%d", animFxSource.m_soundFXLib.c_str(), eventUid, eventNameUid);
+					subType = animFxSource.m_enviroment.c_str();
 
+					// Check for enviroment effect
 					effectId = pMaterialEffects->GetEffectIdByName(mfxLibrary.c_str(), subType.c_str());
-				}
 
-				if (effectId != InvalidEffectId)
-				{
-					pMaterialEffects->ExecuteEffect(effectId, params);
+					// Search for regular effect
+					if (effectId == InvalidEffectId)
+					{
+						mfxLibrary.Format("%s/%d/0", animFxSource.m_soundFXLib.c_str(), eventUid);
+						subType = pAnimFXEvents->GetAnimFXEventParamName(eventUid, eventNameUid);
+
+						effectId = pMaterialEffects->GetEffectIdByName(mfxLibrary.c_str(), subType.c_str());
+					}
+
+					effectFound = (effectId != InvalidEffectId) || effectFound;
+					if (effectId != InvalidEffectId)
+					{
+						pMaterialEffects->ExecuteEffect(effectId, params);
+					}
 				}
-				else
+				
+				if(!effectFound)
 				{
-					const char* szFullEventName = pAnimFXEvents->GetAnimFXEventParamName(eventUid, eventNameUid);
-					if (!eventType.szName)
+					for (const SAnimFXSource& animFxSource : m_animFxSources)
 					{
-						gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find sound event (UID %d/%d) in environment (%s) and definition in (%s).", eventUid, eventNameUid, m_enviroment.c_str(), m_soundFXLib.c_str());
-					}
-					else if (!szFullEventName)
-					{
-						gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find sound event (%s/ UID %d) in environment (%s) and definition in (%s).", eventType.szName, eventNameUid, m_enviroment.c_str(), m_soundFXLib.c_str());
-					}
-					else
-					{
-						gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find sound event (%s/%s) in environment (%s) and definition in (%s).", eventType.szName, szFullEventName, m_enviroment.c_str(), m_soundFXLib.c_str());
+						const char* szFullEventName = pAnimFXEvents->GetAnimFXEventParamName(eventUid, eventNameUid);
+						if (!eventType.szName)
+						{
+							gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find sound event (UID %d/%d) in environment (%s) and definition in (%s).", eventUid, eventNameUid, animFxSource.m_enviroment.c_str(), animFxSource.m_soundFXLib.c_str());
+						}
+						else if (!szFullEventName)
+						{
+							gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find sound event (%s/ UID %d) in environment (%s) and definition in (%s).", eventType.szName, eventNameUid, animFxSource.m_enviroment.c_str(), animFxSource.m_soundFXLib.c_str());
+						}
+						else
+						{
+							gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find sound event (%s/%s) in environment (%s) and definition in (%s).", eventType.szName, szFullEventName, animFxSource.m_enviroment.c_str(), animFxSource.m_soundFXLib.c_str());
+						}
 					}
 				}
 			}
@@ -719,9 +750,8 @@ public:
 
 private:
 	bool                 m_audioEnabled;
+	TAnimFxSources       m_animFxSources;
 	string               m_parameter;
-	string               m_soundFXLib;
-	string               m_enviroment;
 	QuatT                m_playerLocation;
 	TCustomEventTypes    m_eventTypes;
 	TSerializeParamFuncs m_eventSerializeFuncs;
