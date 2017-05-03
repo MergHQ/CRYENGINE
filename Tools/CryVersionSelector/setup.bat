@@ -11,5 +11,5 @@ c:\Python35\Scripts\PyInstaller.exe cryselect.py --onefile --icon editor_icon16.
 copy /Y dist\cryselect.exe cryselect.exe
 
 REM Build CryRun
-c:\Python35\Scripts\PyInstaller.exe cryrun.py --onefile --icon editor_icon16.ico
+c:\Python35\Scripts\PyInstaller.exe cryrun.py crysolutiongenerator.py --onefile --icon editor_icon16.ico
 copy /Y dist\cryrun.exe cryrun.exe

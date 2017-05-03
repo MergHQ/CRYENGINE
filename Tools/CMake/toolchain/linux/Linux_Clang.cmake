@@ -6,9 +6,7 @@ set(BUILD_PLATFORM Linux64)
 set(LINUX 1)
 set(LINUX64 1)
 
-if (NOT DEFINED OUTPUT_DIRECTORY)
-	set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/linux_x64_clang")
-endif()
+set(OUTPUT_DIRECTORY_NAME "linux_x64_clang")
 
 set(CMAKE_C_COMPILER clang-3.8)
 set(CMAKE_CXX_COMPILER clang++-3.8)

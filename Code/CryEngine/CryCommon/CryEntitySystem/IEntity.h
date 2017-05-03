@@ -933,11 +933,12 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	//! Activates entity, if entity is active it will be updated every frame.
-	virtual void Activate(bool bActive) = 0;
+	//! Used to update the stored mask for a certain component, from IEntityComponent::GetEventMask
+	//! For example, changing IEntityComponent::GetEventMask to return ENTITY_EVENT_UPDATE and then calling GetEventMask will result in the component and its entity being updated the next frame.
+	virtual void UpdateComponentEventMask(IEntityComponent* pComponent) = 0;
 
-	//! Check if the entity is active now.
-	virtual bool IsActive() const = 0;
+	//! Checks whether the entity is set to be updated this / next frame.
+	virtual bool IsActivatedForUpdates() const = 0;
 
 	//! Activates entity, if entity is active it will be updated every frame.
 	virtual void PrePhysicsActivate(bool bActive) = 0;
@@ -957,6 +958,11 @@ public:
 	//! Sends event to the entity.
 	//! \param event Event description (event id, parameters).
 	virtual bool SendEvent(SEntityEvent& event) = 0;
+
+	//! Send event to one specific component
+	//! \param event description
+	//! \param receiving component 
+	virtual void SendEventToComponent(SEntityEvent& event, IEntityComponent* pComponent) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 

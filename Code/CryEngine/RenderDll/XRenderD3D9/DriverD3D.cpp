@@ -5686,112 +5686,112 @@ bool CD3D9Renderer::RayIntersectMesh(IRenderMesh* pMesh, const Ray& ray, Vec3& h
 	return hasHit;
 }
 
-int CD3D9Renderer::RayToUV(const Vec3& vOrigin, const Vec3& vDirection, float* pUOut, float* pVOut)
+int CD3D9Renderer::GetDetailedRayHitInfo(IPhysicalEntity* pCollider, const Vec3& vOrigin, const Vec3& vDirection, const float maxRayDist, float* pUOut, float* pVOut)
 {
-	IGameFramework* pGameFramework = gEnv->pGameFramework;
+	int type = pCollider->GetiForeignData();
 
-	// Setup ray + optionally skip 1 entity
-	ray_hit rayHit;
-	static const float maxRayDist = 100.f;
-	const unsigned int flags = rwi_stop_at_pierceable | rwi_colltype_any;
-	IPhysicalEntity* skipList[1];
-	int skipCount = 0;
-
-	// Check if the ray hits an entity
-	if (gEnv->pSystem->GetIPhysicalWorld()->RayWorldIntersection(vOrigin, vDirection * maxRayDist, ent_all, flags, &rayHit, 1, skipList, skipCount))
+	if (type == PHYS_FOREIGN_ID_ENTITY)
 	{
-		int type = rayHit.pCollider->GetiForeignData();
+		IEntity* pEntity = (IEntity*)pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
+		IEntityRender* pIEntityRender = pEntity ? pEntity->GetRenderInterface() : nullptr;
 
-		if (type == PHYS_FOREIGN_ID_ENTITY)
+		if (pIEntityRender == nullptr)
 		{
-			IEntity* pEntity = (IEntity*)rayHit.pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-			IEntityRender* pIEntityRender = pEntity ? pEntity->GetRenderInterface() : 0;
+			return -1;
+		}
 
-			// Get the renderproxy, and use it to check if the material is a DynTex, and get the UIElement if so
+		int dynTexGeomSlot = 0;
 
+		IStatObj* pObj = nullptr;
+		for (uint i = 0; i < pEntity->GetSlotCount(); ++i)
+		{
+			pObj = pEntity->GetStatObj(i);
+
+			if (pObj != nullptr)
 			{
-				IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
-				if (pRenderNode)
-				{
-					int m_dynTexGeomSlot = 0;
-					IStatObj* pObj = pRenderNode->GetEntityStatObj(m_dynTexGeomSlot);
-
-					// result
-					bool hasHit = false;
-					Vec2 uv0, uv1, uv2;
-					Vec3 p0, p1, p2;
-					Vec3 hitpos;
-
-					// calculate ray dir
-					CCamera cam = gEnv->pRenderer->GetCamera();
-					if (pEntity->GetSlotFlags(m_dynTexGeomSlot) & ENTITY_SLOT_RENDER_NEAREST)
-					{
-						ICVar* r_drawnearfov = gEnv->pConsole->GetCVar("r_DrawNearFoV");
-						assert(r_drawnearfov);
-						cam.SetFrustum(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ(), DEG2RAD(r_drawnearfov->GetFVal()), cam.GetNearPlane(), cam.GetFarPlane(), cam.GetPixelAspectRatio());
-					}
-
-					Vec3 vPos0 = vOrigin;
-					Vec3 vPos1 = vOrigin + vDirection;
-
-					// translate into object space
-					const Matrix34 m = pEntity->GetWorldTM().GetInverted();
-					vPos0 = m * vPos0;
-					vPos1 = m * vPos1;
-
-					// walk through all sub objects
-					const int objCount = pObj->GetSubObjectCount();
-					for (int obj = 0; obj <= objCount && !hasHit; ++obj)
-					{
-						Vec3 vP0, vP1;
-						IStatObj* pSubObj = NULL;
-
-						if (obj == objCount)
-						{
-							vP0 = vPos0;
-							vP1 = vPos1;
-							pSubObj = pObj;
-						}
-						else
-						{
-							IStatObj::SSubObject* pSub = pObj->GetSubObject(obj);
-							const Matrix34 mm = pSub->tm.GetInverted();
-							vP0 = mm * vPos0;
-							vP1 = mm * vPos1;
-							pSubObj = pSub->pStatObj;
-						}
-
-						IRenderMesh* pMesh = pSubObj ? pSubObj->GetRenderMesh() : NULL;
-						if (pMesh)
-						{
-							const Ray ray(vP0, (vP1 - vP0).GetNormalized() * maxRayDist);
-							hasHit = RayIntersectMesh(pMesh, ray, hitpos, p0, p1, p2, uv0, uv1, uv2);
-						}
-					}
-
-					// skip if not hit
-					if (!hasHit)
-						return -1;
-
-					// calculate vectors from hitpos to vertices p0, p1 and p2:
-					const Vec3 v0 = p0 - hitpos;
-					const Vec3 v1 = p1 - hitpos;
-					const Vec3 v2 = p2 - hitpos;
-
-					// calculate factors
-					const float h = (p0 - p1).Cross(p0 - p2).GetLength();
-					const float f0 = v1.Cross(v2).GetLength() / h;
-					const float f1 = v2.Cross(v0).GetLength() / h;
-					const float f2 = v0.Cross(v1).GetLength() / h;
-
-					// find the uv corresponding to hitpos
-					Vec3 uv = uv0 * f0 + uv1 * f1 + uv2 * f2;
-					*pUOut = uv.x;
-					*pVOut = uv.y;
-					return (int)pEntity->GetId();
-				}
+				dynTexGeomSlot = i;
+				break;
 			}
 		}
+
+		if (pObj == nullptr)
+		{
+			return -1;
+		}
+
+		// result
+		bool hasHit = false;
+		Vec2 uv0, uv1, uv2;
+		Vec3 p0, p1, p2;
+		Vec3 hitpos;
+
+		// calculate ray dir
+		CCamera cam = gEnv->pRenderer->GetCamera();
+		if (pEntity->GetSlotFlags(dynTexGeomSlot) & ENTITY_SLOT_RENDER_NEAREST)
+		{
+			ICVar* r_drawnearfov = gEnv->pConsole->GetCVar("r_DrawNearFoV");
+			assert(r_drawnearfov);
+			cam.SetFrustum(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ(), DEG2RAD(r_drawnearfov->GetFVal()), cam.GetNearPlane(), cam.GetFarPlane(), cam.GetPixelAspectRatio());
+		}
+
+		Vec3 vPos0 = vOrigin;
+		Vec3 vPos1 = vOrigin + vDirection;
+
+		// translate into object space
+		const Matrix34 m = pEntity->GetWorldTM().GetInverted();
+		vPos0 = m * vPos0;
+		vPos1 = m * vPos1;
+
+		// walk through all sub objects
+		const int objCount = pObj->GetSubObjectCount();
+		for (int obj = 0; obj <= objCount && !hasHit; ++obj)
+		{
+			Vec3 vP0, vP1;
+			IStatObj* pSubObj = NULL;
+
+			if (obj == objCount)
+			{
+				vP0 = vPos0;
+				vP1 = vPos1;
+				pSubObj = pObj;
+			}
+			else
+			{
+				IStatObj::SSubObject* pSub = pObj->GetSubObject(obj);
+				const Matrix34 mm = pSub->tm.GetInverted();
+				vP0 = mm * vPos0;
+				vP1 = mm * vPos1;
+				pSubObj = pSub->pStatObj;
+			}
+
+			IRenderMesh* pMesh = pSubObj ? pSubObj->GetRenderMesh() : NULL;
+			if (pMesh)
+			{
+				const Ray ray(vP0, (vP1 - vP0).GetNormalized() * maxRayDist);
+				hasHit = RayIntersectMesh(pMesh, ray, hitpos, p0, p1, p2, uv0, uv1, uv2);
+			}
+		}
+
+		// skip if not hit
+		if (!hasHit)
+			return -1;
+
+		// calculate vectors from hitpos to vertices p0, p1 and p2:
+		const Vec3 v0 = p0 - hitpos;
+		const Vec3 v1 = p1 - hitpos;
+		const Vec3 v2 = p2 - hitpos;
+
+		// calculate factors
+		const float h = (p0 - p1).Cross(p0 - p2).GetLength();
+		const float f0 = v1.Cross(v2).GetLength() / h;
+		const float f1 = v2.Cross(v0).GetLength() / h;
+		const float f2 = v0.Cross(v1).GetLength() / h;
+
+		// find the uv corresponding to hitpos
+		Vec3 uv = uv0 * f0 + uv1 * f1 + uv2 * f2;
+		*pUOut = uv.x;
+		*pVOut = uv.y;
+		return (int)pEntity->GetId();
 	}
 	return -1;
 }

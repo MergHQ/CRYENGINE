@@ -21,8 +21,6 @@
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.h>
 #include <CryString/StringUtils.h>
 
-#include <CrySystem/ParseEngineConfig.h>
-
 // Advise notebook graphics drivers to prefer discrete GPU when no explicit application profile exists
 extern "C"
 {

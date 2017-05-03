@@ -44,7 +44,15 @@ void CEntityLayer::AddObject(EntityId id)
 {
 	IEntity* pEntity = g_pIEntitySystem->GetEntityFromID(id);
 	if (pEntity)
-		m_entities[id] = EntityProp(id, false, pEntity->IsHidden(), pEntity->IsActive());
+	{
+		bool bEnableScriptUpdate = false;
+		if (auto* pComponent = static_cast<CEntityComponentLuaScript*>(pEntity->GetComponent<IEntityScriptComponent>()))
+		{
+			bEnableScriptUpdate = pComponent->IsUpdateEnabled();
+		}
+
+		m_entities[id] = EntityProp(id, false, pEntity->IsHidden(), bEnableScriptUpdate);
+	}
 	m_wasReEnabled = false;
 }
 
@@ -205,7 +213,15 @@ void CEntityLayer::EnableEntities(bool isEnable)
 			if (!isEnable && !gEnv->pSystem->IsSerializingFile())
 			{
 				prop.m_bIsHidden = pEntity->IsHidden();
-				prop.m_bIsActive = pEntity->IsActive();
+
+				if (auto* pComponent = static_cast<CEntityComponentLuaScript*>(pEntity->GetComponent<IEntityScriptComponent>()))
+				{
+					prop.m_bEnableScriptUpdate = pComponent->IsUpdateEnabled();
+				}
+				else
+				{
+					prop.m_bEnableScriptUpdate = false;
+				}
 			}
 
 			if (prop.m_bIsHidden)
@@ -214,7 +230,11 @@ void CEntityLayer::EnableEntities(bool isEnable)
 			if (isEnable)
 			{
 				pEntity->Hide(!isEnable);
-				pEntity->Activate(prop.m_bIsActive);
+
+				if (auto* pComponent = static_cast<CEntityComponentLuaScript*>(pEntity->GetComponent<IEntityScriptComponent>()))
+				{
+					pComponent->EnableScriptUpdate(prop.m_bEnableScriptUpdate);
+				}
 
 				if (prop.m_bIsNoAwake && pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
 					pEntity->GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
@@ -249,7 +269,10 @@ void CEntityLayer::EnableEntities(bool isEnable)
 						prop.m_bIsNoAwake = true;
 				}
 				pEntity->Hide(!isEnable);
-				pEntity->Activate(isEnable);
+				if (auto* pComponent = static_cast<CEntityComponentLuaScript*>(pEntity->GetComponent<IEntityScriptComponent>()))
+				{
+					pComponent->EnableScriptUpdate(isEnable);
+				}
 				if (prop.m_bIsNoAwake && pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
 					pEntity->GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
 			}
@@ -318,17 +341,17 @@ void CEntityLayer::Serialize(TSerialize ser, TLayerActivationOpVec& deferredOps)
 			EntityId id = 0;
 			bool hidden = false;
 			bool noAwake = false;
-			bool active = false;
+			bool enableScriptUpdates = false;
 			ser.Value("entityId", id);
 			ser.Value("hidden", hidden);
 			ser.Value("noAwake", noAwake);
-			ser.Value("active", active);
+			ser.Value("active", enableScriptUpdates);
 
 			EntityProp& prop = m_entities[i];
 			prop.m_id = id;
 			prop.m_bIsHidden = hidden;
 			prop.m_bIsNoAwake = noAwake;
-			prop.m_bIsActive = active;
+			prop.m_bEnableScriptUpdate = enableScriptUpdates;
 
 			ser.EndGroup();
 		}
@@ -356,11 +379,11 @@ void CEntityLayer::Serialize(TSerialize ser, TLayerActivationOpVec& deferredOps)
 			EntityId id = prop.m_id;
 			bool hidden = prop.m_bIsHidden;
 			bool noAwake = prop.m_bIsNoAwake;
-			bool active = prop.m_bIsActive;
+			bool enableScriptUpdates = prop.m_bEnableScriptUpdate;
 			ser.Value("entityId", id);
 			ser.Value("hidden", hidden);
 			ser.Value("noAwake", noAwake);
-			ser.Value("active", active);
+			ser.Value("active", enableScriptUpdates);
 			ser.EndGroup();
 		}
 	}

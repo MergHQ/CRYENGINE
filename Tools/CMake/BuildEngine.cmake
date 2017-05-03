@@ -3,6 +3,52 @@
 
 option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin" ON)
 
+option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
+option(OPTION_RC "Include RC in the build" OFF)
+
+if (WIN32 OR WIN64)
+	option(OPTION_ENABLE_CRASHRPT "Enable CrashRpt crash reporting library" ON)
+endif()
+
+if(NOT ANDROID AND NOT ORBIS)
+	option(OPTION_SCALEFORMHELPER "Use Scaleform Helper" ON)
+else()
+	set(OPTION_SCALEFORMHELPER ON)
+endif()
+
+#Plugins
+option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
+if(WIN32 OR WIN64)
+	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
+	option(PLUGIN_VR_OCULUS "Oculus support" ON)
+	option(PLUGIN_VR_OSVR "OSVR support" ON)
+	option(PLUGIN_VR_OPENVR "OpenVR support" ON)
+	option(OPTION_CRYMONO "C# support" OFF)
+	
+	if (OPTION_CRYMONO)
+		option(OPTION_CRYMONO_SWIG "Expose C++ API to C# with SWIG" ON)
+	endif()
+	
+	option(OPTION_PHYSDBGR "Include standalone physics debugger in the build" OFF)
+endif()
+
+option(OPTION_UNSIGNED_PAKS_IN_RELEASE "Allow unsigned PAK files to be used for release builds" ON)
+
+if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
+	option(OPTION_SANDBOX "Enable Sandbox" ON)
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+		set(OPTION_SANDBOX OFF)
+	endif()
+	if(OPTION_SANDBOX)
+		# Sandbox cannot be built in release mode
+		set(CMAKE_CONFIGURATION_TYPES Debug Profile CACHE STRING "Reset the configurations to what we need" FORCE)
+	endif()
+endif()
+
+if(WIN32 OR WIN64)
+	option(OPTION_ENABLE_BROFILER "Enable Brofiler profiler support" ON)
+endif()
+
 #Renderer modules
 if(NOT (ORBIS OR ANDROID))
 	OPTION(RENDERER_DX11 "Renderer for DirectX 11" ON)
@@ -66,40 +112,6 @@ if (PHYSICS_PHYSX)
 	include(${TOOLS_CMAKE_DIR}/modules/PhysX.cmake)
 endif()
 
-#rc
-if(WIN32)
-	if (NOT METADATA_COMPANY)
-		set(METADATA_COMPANY "Crytek GmbH")
-	endif()
-	set(METADATA_COMPANY ${METADATA_COMPANY} CACHE STRING "Company name for executable metadata")
-
-	if (NOT METADATA_COPYRIGHT)
-		string(TIMESTAMP year "%Y")
-		set(METADATA_COPYRIGHT "(C) ${year} ${METADATA_COMPANY}")
-	endif()
-	set(METADATA_COPYRIGHT ${METADATA_COPYRIGHT} CACHE STRING "Copyright string for executable metadata")	
-
-	if (NOT VERSION)
-		set(VERSION "1.0.0.0")
-	endif()
-	set(METADATA_VERSION ${VERSION} CACHE STRING "Version number for executable metadata" FORCE)
-	string(REPLACE . , METADATA_VERSION_COMMA ${METADATA_VERSION})
-endif(WIN32)
-
-
-if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
-	set(MSVC_LIB_PREFIX vc140)
-elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-	set(MSVC_LIB_PREFIX vc140)
-elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-	set(MSVC_LIB_PREFIX vc120)
-elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-	set(MSVC_LIB_PREFIX "vc110")
-else()
-	set(MSVC_LIB_PREFIX "")
-endif()
-
-
 include_directories("Code/CryEngine/CryCommon")
 include_directories("Code/CryEngine/CryCommon/3rdParty")
 include_directories("${SDK_DIR}/boost")
@@ -116,6 +128,9 @@ if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/CryEngine/CrySystem")
 	add_subdirectory ("Code/CryEngine/CryCommon")
 	add_subdirectory ("Code/CryEngine/RenderDll/XRenderD3D9")
+	
+	# Shaders custom project
+	add_subdirectory(Engine/Shaders)
 endif()
 
 #engine

@@ -1,8 +1,6 @@
 set(ANDROID TRUE)
 
-if (NOT DEFINED OUTPUT_DIRECTORY)
-	set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/android")
-endif()
+set(OUTPUT_DIRECTORY_NAME "android")
 
 set(CMAKE_CONFIGURATION_TYPES Debug Profile Release)
 set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "Reset the configurations to what we need" FORCE)

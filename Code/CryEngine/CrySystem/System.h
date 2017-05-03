@@ -57,8 +57,6 @@ struct IManager;
 struct IHost;
 }
 
-struct IMonoRuntime;
-
 #if CRY_PLATFORM_ANDROID
 	#define USE_ANDROIDCONSOLE
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_MAC
@@ -336,7 +334,7 @@ public:
 	LiveCreate::IHost*           GetLiveCreateHost()            { return m_env.pLiveCreateHost; }
 	LiveCreate::IManager*        GetLiveCreateManager()         { return m_env.pLiveCreateManager; }
 	IThreadManager*              GetIThreadManager() override   { return m_env.pThreadManager; }
-	IMonoRuntime*                GetIMonoRuntime() override     { return m_env.pMonoRuntime; }
+	IMonoEngineModule*           GetIMonoEngineModule() override{ return m_env.pMonoRuntime; }
 	ICryFont*                    GetICryFont() override         { return m_env.pCryFont; }
 	ILog*                        GetILog() override             { return m_env.pLog; }
 	ICmdLine*                    GetICmdLine() override         { return m_pCmdLine; }
@@ -543,6 +541,7 @@ private:
 	bool InitAISystem();
 	bool InitScriptSystem();
 	bool InitFileSystem(const IGameStartup* pGameStartup);
+	void InitLog();
 	void LoadPatchPaks();
 	bool InitFileSystem_LoadEngineFolders();
 	bool InitStreamEngine();
@@ -581,7 +580,6 @@ private:
 	void        FreeLib(WIN_HMODULE hLibModule);
 	void        QueryVersionInfo();
 	void        LogVersion();
-	void        LogBuildInfo();
 	void        SetDevMode(bool bEnable);
 	void        InitScriptDebugger();
 
@@ -774,8 +772,6 @@ private: // ------------------------------------------------------
 	// DLL names
 	ICVar* m_sys_dll_ai;
 	ICVar* m_sys_dll_response_system;
-	ICVar* m_sys_dll_game;
-	ICVar* m_sys_game_folder;
 	ICVar* m_sys_user_folder;
 
 #if !defined(_RELEASE)
@@ -796,7 +792,6 @@ private: // ------------------------------------------------------
 	ICVar* m_rFullscreenWindow;
 	ICVar* m_rDriver;
 	ICVar* m_pPhysicsLibrary;
-	ICVar* m_cvGameName;
 	ICVar* m_rDisplayInfo;
 	ICVar* m_rDisplayInfoTargetFPS;
 	ICVar* m_rOverscanBordersDrawDebugView;

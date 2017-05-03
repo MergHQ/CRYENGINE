@@ -53,9 +53,11 @@ namespace CryEngine
 			{
 				int hash = 17;
 
+#pragma warning disable RECS0025 // Non-readonly field referenced in 'GetHashCode()'
 				hash = hash * 23 + _x.GetHashCode();
 				hash = hash * 23 + _y.GetHashCode();
 				hash = hash * 23 + _z.GetHashCode();
+#pragma warning restore RECS0025 // Non-readonly field referenced in 'GetHashCode()'
 
 				return hash;
 			}
@@ -210,7 +212,7 @@ namespace CryEngine
 						return _z;
 
 					default:
-						throw new ArgumentOutOfRangeException("index", "Indices must run from 0 to 2!");
+						throw new ArgumentOutOfRangeException(nameof(index), "Indices must run from 0 to 2!");
 				}
 			}
 			set
@@ -228,7 +230,7 @@ namespace CryEngine
 						break;
 
 					default:
-						throw new ArgumentOutOfRangeException("index", "Indices must run from 0 to 2!");
+						throw new ArgumentOutOfRangeException(nameof(index), "Indices must run from 0 to 2!");
 				}
 			}
 		}

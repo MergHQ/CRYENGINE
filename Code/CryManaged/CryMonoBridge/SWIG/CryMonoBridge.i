@@ -8,7 +8,6 @@
 #include <CryMono/IMonoRuntime.h>
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 %}
-%ignore IMonoEngineModule;
 %feature("director") IMonoListener;
 %feature("director") ICryEngineBasePlugin;
 %feature("director") IManagedNodeCreator;

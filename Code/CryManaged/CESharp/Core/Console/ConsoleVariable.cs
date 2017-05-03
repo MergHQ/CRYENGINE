@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 using CryEngine.Common;
 
 namespace CryEngine
@@ -15,53 +15,51 @@ namespace CryEngine
 
 			public bool Equals(ConsoleVariableItem item)
 			{
-				if (item == null) return false;
-				IntPtr intPtr = ICVar.GetIntPtr(item.m_icVar);
-				IntPtr myIntPtr = ICVar.GetIntPtr(m_icVar);
-				if (intPtr.Equals(myIntPtr))
+				if(item == null) return false;
+				var intPtr = ICVar.GetIntPtr(item.m_icVar);
+				var myIntPtr = ICVar.GetIntPtr(m_icVar);
+				if(intPtr.Equals(myIntPtr))
 				{
 					return true;
 				}
-				else
-				{
-					return false;
-				}
+
+				return false;
 			}
 
 			public override bool Equals(object obj)
 			{
-				if (obj == null) return false;
-				ConsoleVariableItem itemObj = obj as ConsoleVariableItem;
-				if (itemObj == null)
+				if(obj == null) return false;
+				var itemObj = obj as ConsoleVariableItem;
+				if(itemObj == null)
 				{
 					return false;
 				}
-				else
-				{
-					return Equals(itemObj);
-				}
+
+				return Equals(itemObj);
 			}
 
 			public override int GetHashCode()
 			{
-				IntPtr intPtr = ICVar.GetIntPtr(m_icVar);
+#pragma warning disable RECS0025 // Non-readonly field referenced in 'GetHashCode()'
+				var intPtr = ICVar.GetIntPtr(m_icVar);
+#pragma warning restore RECS0025 // Non-readonly field referenced in 'GetHashCode()'
 				return intPtr.GetHashCode();
 			}
 
 			public static bool operator ==(ConsoleVariableItem item1, ConsoleVariableItem item2)
 			{
-				if (((object)item1 == null) || ((object)item2 == null))
+				if(((object)item1 == null) || ((object)item2 == null))
 				{
-					return Object.Equals(item1, item2);
+					return Equals(item1, item2);
 				}
 				return item1.Equals(item2);
 			}
 
 			public static bool operator !=(ConsoleVariableItem item1, ConsoleVariableItem item2)
 			{
-				if (((object)item1 == null) || ((object)item2 == null))
+				if(((object)item1 == null) || ((object)item2 == null))
 				{
-					return !Object.Equals(item1, item2);
+					return !Equals(item1, item2);
 				}
 				return !(item1.Equals(item2));
 			}
@@ -71,7 +69,7 @@ namespace CryEngine
 		private delegate void ConsoleVariableFunctionDelegate(IntPtr consoleVariableArg);
 
 		// public listener for console variable changes in C#
-		public delegate void ManagedConsoleVariableFunctionDelegate(CryEngine.Common.ICVar icVar);
+		public delegate void ManagedConsoleVariableFunctionDelegate(ICVar icVar);
 
 		public delegate void ManagedSFunctorDelegate();
 
@@ -95,17 +93,19 @@ namespace CryEngine
 		public static bool Register(string consoleVariableName, string consoleVariableValue, uint nFlags, string commandHelp, ManagedConsoleVariableFunctionDelegate managedConsoleVariableDelegate, out ICVar newICVar)
 		{
 			//check if console variable with same name exists
-			ICVar existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (existingICVar != null)
+			var existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(existingICVar != null)
 			{
 				newICVar = null;
 				return false;
 			}
-			CryEngine.NativeInternals.IConsole.AddConsoleVariableString(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(s_myDelegate), consoleVariableName, consoleVariableValue, nFlags, commandHelp);
-			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (newICVar == null) return false;
 
-			ConsoleVariableItem newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
+			var pointer = Marshal.GetFunctionPointerForDelegate(s_myDelegate);
+			NativeInternals.IConsole.AddConsoleVariableString(pointer, consoleVariableName, consoleVariableValue, nFlags, commandHelp);
+			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(newICVar == null) return false;
+
+			var newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
 			s_variablesDelegates.Add(consoleVariableName, newItem);
 			return true;
 		}
@@ -113,17 +113,22 @@ namespace CryEngine
 		public static bool Register(string consoleVariableName, long consoleVariableValue, uint nFlags, string commandHelp, ManagedConsoleVariableFunctionDelegate managedConsoleVariableDelegate, out ICVar newICVar)
 		{
 			//check if console variable with same name exists
-			ICVar existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (existingICVar != null)
+			var existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(existingICVar != null)
 			{
 				newICVar = null;
 				return false;
 			}
-			CryEngine.NativeInternals.IConsole.AddConsoleVariableInt64(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(s_myDelegate), consoleVariableName, consoleVariableValue, nFlags, commandHelp);
-			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (newICVar == null) return false;
 
-			ConsoleVariableItem newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
+			var pointer = Marshal.GetFunctionPointerForDelegate(s_myDelegate);
+			NativeInternals.IConsole.AddConsoleVariableInt64(pointer, consoleVariableName, consoleVariableValue, nFlags, commandHelp);
+			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(newICVar == null) 
+			{
+				return false;
+			}
+
+			var newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
 			s_variablesDelegates.Add(consoleVariableName, newItem);
 			return true;
 		}
@@ -141,17 +146,19 @@ namespace CryEngine
 		public static bool Register(string consoleVariableName, int consoleVariableValue, uint nFlags, string commandHelp, ManagedConsoleVariableFunctionDelegate managedConsoleVariableDelegate, out ICVar newICVar)
 		{
 			//check if console variable with same name exists
-			ICVar existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (existingICVar != null)
+			var existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(existingICVar != null)
 			{
 				newICVar = null;
 				return false;
 			}
-			CryEngine.NativeInternals.IConsole.AddConsoleVariableInt(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(s_myDelegate), consoleVariableName, consoleVariableValue, nFlags, commandHelp);
-			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (newICVar == null) return false;
 
-			ConsoleVariableItem newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
+			var pointer = Marshal.GetFunctionPointerForDelegate(s_myDelegate);
+			NativeInternals.IConsole.AddConsoleVariableInt(pointer, consoleVariableName, consoleVariableValue, nFlags, commandHelp);
+			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(newICVar == null) return false;
+
+			var newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
 			s_variablesDelegates.Add(consoleVariableName, newItem);
 			return true;
 		}
@@ -159,17 +166,22 @@ namespace CryEngine
 		public static bool Register(string consoleVariableName, float consoleVariableValue, uint nFlags, string commandHelp, ManagedConsoleVariableFunctionDelegate managedConsoleVariableDelegate, out ICVar newICVar)
 		{
 			//check if console variable with same name exists
-			ICVar existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (existingICVar != null)
+			var existingICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(existingICVar != null)
 			{
 				newICVar = null;
 				return false;
 			}
-			CryEngine.NativeInternals.IConsole.AddConsoleVariableFloat(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(s_myDelegate), consoleVariableName, consoleVariableValue, nFlags, commandHelp);
-			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
-			if (newICVar == null) return false;
 
-			ConsoleVariableItem newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
+			var pointer = Marshal.GetFunctionPointerForDelegate(s_myDelegate);
+			NativeInternals.IConsole.AddConsoleVariableFloat(pointer, consoleVariableName, consoleVariableValue, nFlags, commandHelp);
+			newICVar = Global.gEnv.pConsole.GetCVar(consoleVariableName);
+			if(newICVar == null)
+			{
+				return false;
+			}
+
+			var newItem = new ConsoleVariableItem { m_icVar = newICVar, m_managedConsoleVariableDelegate = managedConsoleVariableDelegate };
 			s_variablesDelegates.Add(consoleVariableName, newItem);
 			return true;
 		}
@@ -187,13 +199,13 @@ namespace CryEngine
 			}
 			bool unregistered = false;
 			//check if registered via C# 
-			string consoleVariableName = consoleVariable.GetName();
-			if (s_variablesDelegates.ContainsKey(consoleVariableName))
+			var consoleVariableName = consoleVariable.GetName();
+			if(s_variablesDelegates.ContainsKey(consoleVariableName))
 			{
 				ConsoleVariableItem consoleVariableItem = null;
 				s_variablesDelegates.TryGetValue(consoleVariableName, out consoleVariableItem);
 				unregistered = s_variablesDelegates.Remove(consoleVariableName);
-				if (unregistered)
+				if(unregistered)
 				{
 					consoleVariableItem.m_icVar = null;
 					consoleVariableItem.m_managedConsoleVariableDelegate = null;
@@ -218,7 +230,7 @@ namespace CryEngine
 		/// <returns></returns>
 		public static bool SetManagedConsoleVariableFunctionDelegate(ICVar icVar, ManagedConsoleVariableFunctionDelegate managedConsoleVariableDelegate)
 		{
-			string consoleVariableName = icVar.GetName();
+			var consoleVariableName = icVar.GetName();
 			if(!s_variablesDelegates.ContainsKey(consoleVariableName))
 			{
 				return false;
@@ -239,9 +251,9 @@ namespace CryEngine
 		/// <returns>true if the control variable exists</returns>
 		public static bool GetManagedConsoleVariableFunctionDelegate(ICVar icVar, out ManagedConsoleVariableFunctionDelegate managedConsoleVariableDelegate)
 		{
-			string consoleVariableName = icVar.GetName();
+			var consoleVariableName = icVar.GetName();
 			managedConsoleVariableDelegate = null;
-			if (!s_variablesDelegates.ContainsKey(consoleVariableName))
+			if(!s_variablesDelegates.ContainsKey(consoleVariableName))
 			{
 				return false;
 			}
@@ -251,7 +263,7 @@ namespace CryEngine
 
 		private static void OnConsoleVariableChanged(IntPtr consoleVariableArg)
 		{
-			var foundValue = s_variablesDelegates.Where(item => ICVar.GetIntPtr(item.Value.m_icVar) == consoleVariableArg).First();
+			var foundValue = s_variablesDelegates.First(item => ICVar.GetIntPtr(item.Value.m_icVar) == consoleVariableArg);
 			foundValue.Value.m_managedConsoleVariableDelegate?.Invoke(foundValue.Value.m_icVar);
 		}
 	}

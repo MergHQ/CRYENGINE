@@ -38,10 +38,12 @@ namespace CryEngine
 			{
 				int hash = 17;
 
+#pragma warning disable RECS0025 // Non-readonly field referenced in 'GetHashCode()'
 				hash = hash * 23 + _x.GetHashCode();
 				hash = hash * 23 + _y.GetHashCode();
 				hash = hash * 23 + _z.GetHashCode();
 				hash = hash * 23 + _w.GetHashCode();
+#pragma warning restore RECS0025 // Non-readonly field referenced in 'GetHashCode()'
 
 				return hash;
 			}
@@ -178,7 +180,7 @@ namespace CryEngine
 						return _w;
 
 					default:
-						throw new ArgumentOutOfRangeException("index", "Indices must run from 0 to 3!");
+						throw new ArgumentOutOfRangeException(nameof(index), "Indices must run from 0 to 3!");
 				}
 			}
 			set
@@ -199,7 +201,7 @@ namespace CryEngine
 						break;
 
 					default:
-						throw new ArgumentOutOfRangeException("index", "Indices must run from 0 to 3!");
+						throw new ArgumentOutOfRangeException(nameof(index), "Indices must run from 0 to 3!");
 				}
 			}
 		}
@@ -208,7 +210,7 @@ namespace CryEngine
 		{
 			get
 			{
-				if (IsNearlyZero()) return new CryEngine.Vector4(0f, 0f, 0f, 0f);
+				if (IsNearlyZero()) return new Vector4(0f, 0f, 0f, 0f);
 				Vector4 result = this * 1.0f / (float)Math.Sqrt(_x * _x + _y * _y + _z * _z + _w * _w);
 				return result;
 			}

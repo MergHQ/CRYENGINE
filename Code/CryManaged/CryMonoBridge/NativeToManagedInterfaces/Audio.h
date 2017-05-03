@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CryMono/IMonoNativeToManagedInterface.h>
+#include "NativeToManagedInterfaces/IMonoNativeToManagedInterface.h"
 
 class CAudioInterface final : public IMonoNativeToManagedInterface
 {

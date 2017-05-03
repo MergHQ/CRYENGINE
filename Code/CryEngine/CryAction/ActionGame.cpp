@@ -577,7 +577,6 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 	{
 		if (!gEnv->pSystem->IsSerializingFile()) //GameSerialize will reset and reserve in the right order
 			gEnv->pEntitySystem->Reset();
-		gEnv->pEntitySystem->ReserveEntityId(LOCAL_PLAYER_ENTITY_ID);
 	}
 
 	m_pPhysicalWorld = gEnv->pPhysicalWorld;

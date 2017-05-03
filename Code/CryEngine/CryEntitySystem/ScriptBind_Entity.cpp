@@ -4905,7 +4905,11 @@ int CScriptBind_Entity::SetPublicParam(IFunctionHandler* pH)
 int CScriptBind_Entity::Activate(IFunctionHandler* pH, int bActive)
 {
 	GET_ENTITY;
-	pEntity->Activate(bActive != 0);
+	if (IEntityScriptComponent* pScriptComponent = pEntity->GetComponent<IEntityScriptComponent>())
+	{
+		pScriptComponent->EnableScriptUpdate(bActive != 0);
+	}
+
 	return pH->EndFunction();
 }
 
@@ -4913,7 +4917,7 @@ int CScriptBind_Entity::Activate(IFunctionHandler* pH, int bActive)
 int CScriptBind_Entity::IsActive(IFunctionHandler* pH)
 {
 	GET_ENTITY;
-	bool bActive = pEntity->IsActive();
+	bool bActive = pEntity->IsActivatedForUpdates();
 	return pH->EndFunction(bActive);
 }
 

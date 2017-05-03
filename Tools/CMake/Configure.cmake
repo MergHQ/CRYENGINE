@@ -13,14 +13,15 @@ if (NOT DEFINED CRYENGINE_DIR)
 	set (CRYENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
+if (NOT DEFINED PROJECT_DIR)
+	set ( PROJECT_DIR "${CMAKE_SOURCE_DIR}" )
+endif()
+	
 set( TOOLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR} )
-
+	
 #Fix slashes on paths
 string(REPLACE "\\" "/" CRYENGINE_DIR ${CRYENGINE_DIR})
 string(REPLACE "\\" "/" TOOLS_CMAKE_DIR ${TOOLS_CMAKE_DIR})
-if (OUTPUT_DIRECTORY)
-	string(REPLACE "\\" "/" OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
-endif()
 
 set(CMAKE_MODULE_PATH "${TOOLS_CMAKE_DIR}/modules")
 
@@ -46,6 +47,18 @@ if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 	if(${config_index} EQUAL -1)
 		message(SEND_ERROR "Build type \"${CMAKE_BUILD_TYPE}\" is not supported, set CMAKE_BUILD_TYPE to one of ${valid_configs}")
 	endif()
+endif()
+
+# Correct output directory slashes, has to be done after toolchain includes
+if (OUTPUT_DIRECTORY)
+	string(REPLACE "\\" "/" OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
+else()
+	# Note that PROJECT_DIR can be different depending on whether we're building the engine or a standalone game / plugin project
+	set(OUTPUT_DIRECTORY "${PROJECT_DIR}/bin")
+endif()
+
+if(OUTPUT_DIRECTORY_NAME)
+	set(OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}/${OUTPUT_DIRECTORY_NAME}")
 endif()
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -77,50 +90,6 @@ endif()
 get_property(global_defines DIRECTORY ${CRYENGINE_DIR} PROPERTY COMPILE_DEFINITIONS)
 get_property(global_includes DIRECTORY ${CRYENGINE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 get_property(global_links DIRECTORY ${CRYENGINE_DIR} PROPERTY LINK_DIRECTORIES)
-include(${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
-option(OPTION_ENGINE "Enable CRYENGINE" ON)
-
-option(OPTION_PROFILE "Enable Profiling" ON)
-option(OPTION_UNITY_BUILD "Enable Unity Build" ON)
-if(WIN32 OR WIN64)
-	option(OPTION_ENABLE_BROFILER "Enable Brofiler profiler support" ON)
-endif()
-
-if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
-	option(OPTION_SANDBOX "Enable Sandbox" ON)
-	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-		set(OPTION_SANDBOX OFF)
-	endif()
-	if(OPTION_SANDBOX)
-		# Sandbox cannot be built in release mode
-		set(CMAKE_CONFIGURATION_TYPES Debug Profile CACHE STRING "Reset the configurations to what we need" FORCE)
-	endif()
-endif()
-
-#Plugins
-option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
-if(WIN32 OR WIN64)
-	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
-	option(PLUGIN_VR_OCULUS "Oculus support" ON)
-	option(PLUGIN_VR_OSVR "OSVR support" ON)
-	option(PLUGIN_VR_OPENVR "OpenVR support" ON)
-	option(OPTION_CRYMONO "C# support" OFF)
-endif()
-
-option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
-option(OPTION_RC "Include RC in the build" OFF)
-option(OPTION_PCH "Enable Precompiled Headers" ON)
-option(OPTION_PHYSDBGR "Include standalone physics debugger in the build" OFF)
-
-option(OPTION_UNSIGNED_PAKS_IN_RELEASE "Allow unsigned PAK files to be used for release builds" ON)
-
-if(WIN32 OR WIN64)
-	option(OPTION_CRYMONO "C# support" OFF)
-endif()
-
-if (WIN32 OR WIN64)
-	option(OPTION_ENABLE_CRASHRPT "Enable CrashRpt crash reporting library" ON)
-endif()
 
 # Print current project settings
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
@@ -142,12 +111,6 @@ if(OPTION_UNITY_BUILD)
 	message(STATUS "UNITY BUILD Enabled")
 endif()
 
-if(ORBIS OR ANDROID)
-	set(OPTION_STATIC_LINKING TRUE)
-else()
-	option(OPTION_STATIC_LINKING "Link all CryEngine modules as static libs to single exe" OFF)
-endif()
-
 # SDK Directory
 set(SDK_DIR ${CRYENGINE_DIR}/Code/SDKs)
 set(CRY_LIBS_DIR ${CRYENGINE_DIR}/Code/Libs)
@@ -163,11 +126,7 @@ include(${TOOLS_CMAKE_DIR}/CopyFilesToBin.cmake)
 # custom defines
 list(APPEND global_defines "CRYENGINE_DEFINE")
 
-if(NOT ANDROID AND NOT ORBIS)
-	option(OPTION_SCALEFORMHELPER "Use Scaleform Helper" ON)
-else()
-	set(OPTION_SCALEFORMHELPER ON)
-endif()
+include(${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
 
 if(OPTION_STATIC_LINKING)
 	# Enable static libraries
@@ -208,7 +167,7 @@ if(WIN32)
 	# Common Libriries linked to all targets
 	set(COMMON_LIBS Ntdll User32 Advapi32 Ntdll Ws2_32)
 
-	if (EXISTS ${SDK_DIR}/GPA)
+	if (EXISTS ${SDK_DIR}/GPA AND OPTION_ENGINE)
 		list(APPEND global_includes ${SDK_DIR}/GPA/include )
 		if (WIN64)
 			list(APPEND global_links ${SDK_DIR}/GPA/lib64 )
@@ -227,7 +186,7 @@ foreach( current_define ${platform_defines} )
 	list(APPEND global_defines ${current_define})
 endforeach()
 
-if ((WIN32 OR WIN64) AND OPTION_ENABLE_BROFILER)
+if ((WIN32 OR WIN64) AND OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
 	list(APPEND global_defines USE_BROFILER)
 	list(APPEND global_includes ${SDK_DIR}/Brofiler )
 	list(APPEND global_links ${SDK_DIR}/Brofiler )
@@ -264,3 +223,35 @@ endif()
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY COMPILE_DEFINITIONS ${global_defines})
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY INCLUDE_DIRECTORIES ${global_includes})
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY LINK_DIRECTORIES ${global_links})
+
+if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
+	set(MSVC_LIB_PREFIX vc140)
+elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+	set(MSVC_LIB_PREFIX vc140)
+elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
+	set(MSVC_LIB_PREFIX vc120)
+elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
+	set(MSVC_LIB_PREFIX "vc110")
+else()
+	set(MSVC_LIB_PREFIX "")
+endif()
+
+#rc
+if(WIN32)
+	if (NOT METADATA_COMPANY)
+		set(METADATA_COMPANY "Crytek GmbH")
+	endif()
+	set(METADATA_COMPANY ${METADATA_COMPANY} CACHE STRING "Company name for executable metadata")
+
+	if (NOT METADATA_COPYRIGHT)
+		string(TIMESTAMP year "%Y")
+		set(METADATA_COPYRIGHT "(C) ${year} ${METADATA_COMPANY}")
+	endif()
+	set(METADATA_COPYRIGHT ${METADATA_COPYRIGHT} CACHE STRING "Copyright string for executable metadata")	
+
+	if (NOT VERSION)
+		set(VERSION "1.0.0.0")
+	endif()
+	set(METADATA_VERSION ${VERSION} CACHE STRING "Version number for executable metadata" FORCE)
+	string(REPLACE . , METADATA_VERSION_COMMA ${METADATA_VERSION})
+endif(WIN32)

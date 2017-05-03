@@ -189,7 +189,6 @@ namespace CryEngine.Serialization
 			{
 				var eventName = Reader.ReadString();
 				var eventInfo = objectType.GetEvent(eventName, flags);
-				var eventField = objectType.GetField(eventName, flags);
 
 				if (Reader.ReadBoolean())
 				{
@@ -362,28 +361,30 @@ namespace CryEngine.Serialization
 			var referenceId = Reader.ReadInt32();
 			var type = ReadType();
 
+#pragma warning disable RECS0035 // Possible mistaken call to 'object.GetType()'
 			AddReference(type.GetType(), type, referenceId);
+#pragma warning restore RECS0035 // Possible mistaken call to 'object.GetType()'
 
 			return type;
 		}
 
 		Type ReadType()
 		{
-			if (Reader.ReadBoolean())
+			if(Reader.ReadBoolean())
 			{
 				var elementType = ReadType();
 				return elementType.MakeArrayType();
 			}
 
-			bool isGeneric = Reader.ReadBoolean();
+			var isGeneric = Reader.ReadBoolean();
 
 			var type = GetType(Reader.ReadString());
 
-			if (isGeneric)
+			if(isGeneric)
 			{
 				var numGenericArgs = Reader.ReadInt32();
 				var genericArgs = new Type[numGenericArgs];
-				for (int i = 0; i < numGenericArgs; i++)
+				for(int i = 0; i < numGenericArgs; i++)
 					genericArgs[i] = ReadType();
 
 				type = type.MakeGenericType(genericArgs);
@@ -392,14 +393,17 @@ namespace CryEngine.Serialization
 			return type;
 		}
 
-		Type _particleType = typeof(CryEngine.Common.IParticleEffect);
-
 		Type GetType(string typeName)
 		{
 			if (typeName == null)
-				throw new ArgumentNullException("typeName");
+			{
+				throw new ArgumentNullException(nameof(typeName));
+			}
+
 			if (typeName.Length == 0)
-				throw new ArgumentException("typeName cannot have zero length");
+			{
+				throw new ArgumentException(string.Format("{0} cannot have zero length!", nameof(typeName)));
+			}
 
 			if (typeName.Contains('+'))
 			{
@@ -409,7 +413,7 @@ namespace CryEngine.Serialization
 				return ownerType.Assembly.GetType(typeName);
 			}
 
-			Type type = Type.GetType(typeName);
+			var type = Type.GetType(typeName);
 			if (type != null)
 				return type;
 

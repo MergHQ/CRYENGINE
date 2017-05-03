@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / CrytekGroup. All rights reserved.
+﻿// Copyright 2001-2017 Crytek GmbH / CrytekGroup. All rights reserved.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -9,6 +9,7 @@ namespace CryEngine
 	{
 		public static class EpsilonData
 		{
+			// The float.Epsilon can be flushed to 0 in certain cases. That's why a slightly higher value is used instead in those cases.
 			internal const float MagicNumber = 1.175494E-37f;
 			internal const float FloatMinVal = float.Epsilon;
 			public static bool IsDeNormalizedFloatEnabled = (double)FloatMinVal == 0.0d;
@@ -17,6 +18,9 @@ namespace CryEngine
 
 	public static class MathHelpers
 	{
+		/// <summary>
+		/// The smallest number a float can be, without being zero.
+		/// </summary>
 		public static readonly float Epsilon = Debug.MathHelpers.EpsilonData.IsDeNormalizedFloatEnabled ? Debug.MathHelpers.EpsilonData.MagicNumber : Debug.MathHelpers.EpsilonData.FloatMinVal;
 
 		/// <summary>
@@ -43,7 +47,7 @@ namespace CryEngine
 		{
 			return Math.Abs(lhs - rhs) <= precision;
 		}
-
+			
 		/// <summary>
 		/// Clamps specified float value between minimum float and maximum float and returns the clamped float value
 		/// </summary>
@@ -71,14 +75,14 @@ namespace CryEngine
 		}
 
 		/// <summary>
-		/// Clamps the specified float value between 0.0 and 1.0 and returns the clamped float value
+		/// Clamps the specified value between 0.0 and 1.0.
 		/// </summary>
-		/// <param name="value"></param>
-		/// <returns></returns>
+		/// <returns>The value clamped between 0.0 and 1.0.</returns>
+		/// <param name="value">Value that needs to be clamped.</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static float Clamp01(float value)
 		{
-			return Clamp(value, 0.0f, 1.0f);
+			return Math.Min(Math.Max(0.0f, value), 1.0f);
 		}
 
 		/// <summary>
@@ -128,7 +132,8 @@ namespace CryEngine
 		/// <param name="min"></param>
 		/// <param name="max"></param>
 		/// <returns></returns>
-		[Obsolete("Please use the non-generic functions")]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[Obsolete("Please use the non-generic Clamp functions")]
 		public static T Clamp<T>(T value, T min, T max) where T : IComparable<T>
 		{
 			if (value.CompareTo(min) < 0)
@@ -138,7 +143,7 @@ namespace CryEngine
 
 			return value;
 		}
-
+		
 		/// <summary>
 		/// Clamps the specified angle between minimum angle and maximum angle and returns the clamped value
 		/// </summary>
@@ -200,8 +205,8 @@ namespace CryEngine
 			return (value & (value - 1)) == 0;
 		}
 
-		/// <summary
-		/// >Returns the inversed square root of the specified value
+		/// <summary>
+		/// Returns the inversed square root of the specified value
 		/// </summary>
 		/// <param name="d"></param>
 		/// <returns></returns>
@@ -274,6 +279,31 @@ namespace CryEngine
 		public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
 		{
 			return a + ((b - a) * t);
+		}
+
+		/// <summary>
+		/// Keeps the value between 0 and length, but instead of clamping the value it will loop it.
+		/// </summary>
+		/// <returns>The repeated value.</returns>
+		/// <param name="t">T.</param>
+		/// <param name="length">Length.</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float Repeat(float length, float t)
+		{
+			return t - (float)Math.Floor(t / length) * length;
+		}
+
+		/// <summary>
+		/// Keeps the value between 0 and length, but instead of clamping the value it will move back and forth between 0 and length.
+		/// </summary>
+		/// <returns>The ping ponged value.</returns>
+		/// <param name="t">T.</param>
+		/// <param name="length">Length.</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float PingPong(float length, float t)
+		{
+			t = Repeat(t, length * 2.0f);
+			return length - Math.Abs(t - length);
 		}
 	}
 }

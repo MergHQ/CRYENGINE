@@ -1,14 +1,17 @@
 #pragma once
 
 #include "MonoDomain.h"
-#include <CryMono/IMonoObject.h>
 
 // Wrapped manager of a mono app domain
 class CAppDomain final : public CMonoDomain
 {
+	friend class CMonoLibrary;
+	friend class CMonoClass;
+	friend class CMonoRuntime;
+
 public:
 	CAppDomain(char *name, bool bActivate = false);
-	CAppDomain(MonoDomain* pMonoDomain);
+	CAppDomain(MonoInternals::MonoDomain* pMonoDomain);
 	virtual ~CAppDomain() {}
 
 	// CMonoDomain
@@ -17,8 +20,8 @@ public:
 	virtual bool Reload() override;
 	// ~CMonoDomain
 
-	void SerializeObject(CMonoObject* pSerializer, MonoObject* pObject, bool bIsAssembly);
-	std::shared_ptr<IMonoObject> DeserializeObject(CMonoObject* pSerializer, bool bIsAssembly);
+	void SerializeObject(CMonoObject* pSerializer, MonoInternals::MonoObject* pObject, bool bIsAssembly);
+	std::shared_ptr<CMonoObject> DeserializeObject(CMonoObject* pSerializer, bool bIsAssembly);
 
 protected:
 	void CreateDomain(char *name, bool bActivate);

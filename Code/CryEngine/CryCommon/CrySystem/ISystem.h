@@ -129,7 +129,7 @@ struct IManager;
 struct IHost;
 }
 
-struct IMonoRuntime;
+struct IMonoEngineModule;
 
 struct ILocalMemoryUsage;
 
@@ -852,7 +852,7 @@ struct SSystemGlobalEnvironment
 	LiveCreate::IManager* pLiveCreateManager;
 	LiveCreate::IHost*    pLiveCreateHost;
 
-	IMonoRuntime*         pMonoRuntime;
+	IMonoEngineModule*    pMonoRuntime;
 
 	threadID              mMainThreadId;      //!< The main thread ID is used in multiple systems so should be stored globally.
 
@@ -1267,7 +1267,7 @@ struct ISystem
 	virtual ITimer*                            GetITimer() = 0;
 
 	virtual IThreadManager*                    GetIThreadManager() = 0;
-	virtual IMonoRuntime*                      GetIMonoRuntime() = 0;
+	virtual IMonoEngineModule*                 GetIMonoEngineModule() = 0;
 
 	virtual void                               SetLoadingProgressListener(ILoadingProgressListener* pListener) = 0;
 	virtual ISystem::ILoadingProgressListener* GetLoadingProgressListener() const = 0;

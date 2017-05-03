@@ -24,8 +24,6 @@
 #include <sys/prctl.h>
 #include <dlfcn.h>
 
-#include <CrySystem/ParseEngineConfig.h>
-
 #if defined(_LIB)
 #include <CryCore/Common_TypeInfo.h>
 STRUCT_INFO_T_INSTANTIATE(Vec2_tpl, <float>)

@@ -5,6 +5,9 @@
 // Wrapped manager of the root mono domain
 class CRootMonoDomain final : public CMonoDomain
 {
+	friend class CAppDomain;
+	friend class CMonoRuntime;
+
 public:
 	CRootMonoDomain();
 	virtual ~CRootMonoDomain() {}

@@ -5,6 +5,7 @@ struct IProjectManager
 {
 	virtual ~IProjectManager() {}
 
+	//! Gets the name of the game, used for the window title on PC
 	virtual const char* GetCurrentProjectName() = 0;
 
 	//! \return Path without trailing separator.

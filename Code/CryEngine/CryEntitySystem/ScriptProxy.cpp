@@ -34,7 +34,8 @@ CEntityComponentLuaScript::CEntityComponentLuaScript()
 	, m_fScriptUpdateRate(0.0f)
 	, m_fScriptUpdateTimer(0.0f)
 	, m_nCurrStateId(0)
-	, m_bUpdateScript(false)
+	, m_bUpdateFuncImplemented(false)
+	, m_bUpdateEnabledOverride(false)
 	, m_bEnableSoundAreaEvents(false)
 {}
 
@@ -66,8 +67,16 @@ void CEntityComponentLuaScript::ChangeScript(IEntityScript* pScript, SEntitySpaw
 		// New object must be created here.
 		CreateScriptTable(params);
 
-		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+		m_bUpdateFuncImplemented = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+		m_pEntity->UpdateComponentEventMask(this);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentLuaScript::EnableScriptUpdate(bool bEnable)
+{
+	m_bUpdateEnabledOverride = bEnable;
+	m_pEntity->UpdateComponentEventMask(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,24 +141,20 @@ void CEntityComponentLuaScript::CreateScriptTable(SEntitySpawnParams* pSpawnPara
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::Update(SEntityUpdateContext& ctx)
 {
-	// Update`s script function if present.
-	if (m_bUpdateScript)
+	// Shouldn't be the case, but we must not call Lua with a 0 frametime to avoid potential FPE
+	assert(ctx.fFrameTime > FLT_EPSILON);
+
+	if (CVar::pUpdateScript->GetIVal())
 	{
-		// Shouldn't be the case, but we must not call Lua with a 0 frametime to avoid potential FPE
-		assert(ctx.fFrameTime > FLT_EPSILON);
-
-		if (CVar::pUpdateScript->GetIVal())
+		m_fScriptUpdateTimer -= ctx.fFrameTime;
+		if (m_fScriptUpdateTimer <= 0)
 		{
-			m_fScriptUpdateTimer -= ctx.fFrameTime;
-			if (m_fScriptUpdateTimer <= 0)
-			{
-				ENTITY_PROFILER
-				  m_fScriptUpdateTimer = m_fScriptUpdateRate;
+			ENTITY_PROFILER
+				m_fScriptUpdateTimer = m_fScriptUpdateRate;
 
-				//////////////////////////////////////////////////////////////////////////
-				// Script Update.
-				m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUpdate, ctx.fFrameTime);
-			}
+			//////////////////////////////////////////////////////////////////////////
+			// Script Update.
+			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUpdate, ctx.fFrameTime);
 		}
 	}
 }
@@ -537,9 +542,14 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 uint64 CEntityComponentLuaScript::GetEventMask() const
 {
 	// All events except runtime expensive ones
-	return 
-	  ~(ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK) |
-	  BIT64(ENTITY_EVENT_UPDATE);
+	uint64 eventMasks = ~ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK;
+
+	if (m_bUpdateFuncImplemented && m_bUpdateEnabledOverride)
+	{
+		eventMasks |= BIT64(ENTITY_EVENT_UPDATE);
+	}
+
+	return eventMasks;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -585,7 +595,8 @@ bool CEntityComponentLuaScript::GotoState(int nState)
 
 	//////////////////////////////////////////////////////////////////////////
 	// Repeat check if update script function is implemented.
-	m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+	m_bUpdateFuncImplemented = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+	m_pEntity->UpdateComponentEventMask(this);
 
 	/*
 	   //////////////////////////////////////////////////////////////////////////
@@ -700,7 +711,8 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 				if (ser.IsReading())
 				{
 					// Repeat check if update script function is implemented.
-					m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+					m_bUpdateFuncImplemented = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+					m_pEntity->UpdateComponentEventMask(this);
 				}
 
 				if (CVar::pEnableFullScriptSave && CVar::pEnableFullScriptSave->GetIVal())

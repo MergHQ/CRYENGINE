@@ -8,35 +8,33 @@
 #include "MonoRuntime.h"
 
 #include "RootMonoDomain.h"
-
-#include <mono/metadata/class.h>
-#include <mono/metadata/exception.h>
+#include "AppDomain.h"
 
 CMonoClass::CMonoClass(CMonoLibrary* pLibrary, const char *nameSpace, const char *name)
 	: m_pLibrary(pLibrary)
 	, m_namespace(nameSpace)
 	, m_name(name)
 {
-	m_pClass = mono_class_from_name(pLibrary->GetImage(), nameSpace, name);
+	m_pClass = MonoInternals::mono_class_from_name(pLibrary->GetImage(), nameSpace, name);
 }
 
-CMonoClass::CMonoClass(CMonoLibrary* pLibrary, MonoClass* pClass)
+CMonoClass::CMonoClass(CMonoLibrary* pLibrary, MonoInternals::MonoClass* pClass)
 	: m_pLibrary(pLibrary)
 	, m_pClass(pClass)
 {
-	m_namespace = mono_class_get_namespace(m_pClass);
-	m_name = mono_class_get_name(m_pClass);
+	m_namespace = MonoInternals::mono_class_get_namespace(m_pClass);
+	m_name = MonoInternals::mono_class_get_name(m_pClass);
 }
 
 void CMonoClass::Serialize(CMonoObject* pSerializer)
 {
-	auto* pDomain = static_cast<CAppDomain*>(m_pLibrary->GetDomain());
+	CAppDomain* pDomain = static_cast<CAppDomain*>(m_pLibrary->GetDomain());
 
 	for (auto it = m_objects.begin(); it != m_objects.end();)
 	{
 		if (std::shared_ptr<CMonoObject> pObject = it->lock())
 		{
-			pDomain->SerializeObject(pSerializer, (MonoObject*)pObject->GetHandle(), false);
+			pDomain->SerializeObject(pSerializer, pObject->GetManagedObject(), false);
 
 			++it;
 		}
@@ -65,15 +63,15 @@ void CMonoClass::Serialize(CMonoObject* pSerializer)
 
 void CMonoClass::Deserialize(CMonoObject* pSerializer)
 {
-	auto* pDomain = static_cast<CAppDomain*>(m_pLibrary->GetDomain());
+	CAppDomain* pDomain = static_cast<CAppDomain*>(m_pLibrary->GetDomain());
 
 	// Deserialize objects from memory
 	for (const std::weak_ptr<CMonoObject>& weakObjectPointer : m_objects)
 	{
 		if (std::shared_ptr<CMonoObject> pObject = weakObjectPointer.lock())
 		{
-			std::shared_ptr<IMonoObject> pDeserializedObject = pDomain->DeserializeObject(pSerializer, false);
-			pObject->AssignObject((MonoObject*)pDeserializedObject->GetHandle());
+			std::shared_ptr<CMonoObject> pDeserializedObject = pDomain->DeserializeObject(pSerializer, false);
+			pObject->AssignObject(pDeserializedObject->GetManagedObject());
 		}
 	}
 
@@ -83,25 +81,25 @@ void CMonoClass::Deserialize(CMonoObject* pSerializer)
 		if (std::shared_ptr<CMonoMethod> pMethod = weakMethodPointer.lock())
 		{
 			// Create an internal mono representation of the description that we saved
-			if (MonoMethodDesc* pMethodDesc = mono_method_desc_new(pMethod->GetSerializedDescription(), false))
+			if (MonoInternals::MonoMethodDesc* pMethodDesc = MonoInternals::mono_method_desc_new(pMethod->GetSerializedDescription(), false))
 			{
 				// Search for the method signature in all implemented classes
-				MonoClass *pClass = m_pClass;
+				MonoInternals::MonoClass *pClass = m_pClass;
 
 				while (pClass != nullptr)
 				{
-					if (MonoMethod* pFoundMethod = mono_method_desc_search_in_class(pMethodDesc, pClass))
+					if (MonoInternals::MonoMethod* pFoundMethod = MonoInternals::mono_method_desc_search_in_class(pMethodDesc, pClass))
 					{
 						pMethod->OnDeserialized(pFoundMethod);
 						break;
 					}
 
-					pClass = mono_class_get_parent(pClass);
-					if (pClass == mono_get_object_class())
+					pClass = MonoInternals::mono_class_get_parent(pClass);
+					if (pClass == MonoInternals::mono_get_object_class())
 						break;
 				}
 
-				mono_method_desc_free(pMethodDesc);
+				MonoInternals::mono_method_desc_free(pMethodDesc);
 			}
 		}
 	}
@@ -109,7 +107,7 @@ void CMonoClass::Deserialize(CMonoObject* pSerializer)
 
 void CMonoClass::ReloadClass()
 {
-	m_pClass = mono_class_from_name(m_pLibrary->GetImage(), m_namespace, m_name);
+	m_pClass = MonoInternals::mono_class_from_name(m_pLibrary->GetImage(), m_namespace, m_name);
 }
 
 void CMonoClass::OnAssemblyUnload()
@@ -125,22 +123,22 @@ void CMonoClass::OnAssemblyUnload()
 
 const char* CMonoClass::GetName() const
 {
-	return mono_class_get_name(m_pClass);
+	return MonoInternals::mono_class_get_name(m_pClass);
 }
 
 const char* CMonoClass::GetNamespace() const
 {
-	return mono_class_get_namespace(m_pClass);
+	return MonoInternals::mono_class_get_namespace(m_pClass);
 }
 
-IMonoAssembly* CMonoClass::GetAssembly() const
+CMonoLibrary* CMonoClass::GetAssembly() const
 {
 	return m_pLibrary;
 }
 
-std::shared_ptr<IMonoObject> CMonoClass::CreateUninitializedInstance()
+std::shared_ptr<CMonoObject> CMonoClass::CreateUninitializedInstance()
 {
-	auto pWrappedObject = std::make_shared<CMonoObject>(mono_object_new((MonoDomain*)static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass), m_pThis.lock());
+	std::shared_ptr<CMonoObject> pWrappedObject = std::make_shared<CMonoObject>(MonoInternals::mono_object_new(m_pLibrary->GetDomain()->GetMonoDomain(), m_pClass), m_pThis.lock());
 
 	// Push back a weak pointer to the instance, so that we can serialize the object in case of app domain reload
 	m_objects.push_back(pWrappedObject);
@@ -148,13 +146,13 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateUninitializedInstance()
 	return pWrappedObject;
 }
 
-std::shared_ptr<IMonoObject> CMonoClass::CreateInstance(void** pConstructorParams, int numParams)
+std::shared_ptr<CMonoObject> CMonoClass::CreateInstance(void** pConstructorParams, int numParams)
 {
-	auto* pObject = mono_object_new((MonoDomain*)static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass);
+	MonoInternals::MonoObject* pObject = MonoInternals::mono_object_new(m_pLibrary->GetDomain()->GetMonoDomain(), m_pClass);
 
 	if (pConstructorParams != nullptr)
 	{
-		MonoMethod* pConstructorMethod = mono_class_get_method_from_name(m_pClass, ".ctor", numParams);
+		MonoInternals::MonoMethod* pConstructorMethod = MonoInternals::mono_class_get_method_from_name(m_pClass, ".ctor", numParams);
 
 		bool bException = false;
 		CMonoMethod method(pConstructorMethod);
@@ -168,10 +166,10 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstance(void** pConstructorParam
 	else
 	{
 		// Execute the default constructor
-		mono_runtime_object_init(pObject);
+		MonoInternals::mono_runtime_object_init(pObject);
 	}
 
-	auto pWrappedObject = std::make_shared<CMonoObject>(pObject, m_pThis.lock());
+	std::shared_ptr<CMonoObject> pWrappedObject = std::make_shared<CMonoObject>(pObject, m_pThis.lock());
 
 	// Push back a weak pointer to the instance, so that we can serialize the object in case of app domain reload
 	m_objects.push_back(pWrappedObject);
@@ -179,18 +177,18 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstance(void** pConstructorParam
 	return pWrappedObject;
 }
 
-std::shared_ptr<IMonoObject> CMonoClass::CreateInstanceWithDesc(const char* parameterDesc, void** pConstructorParams)
+std::shared_ptr<CMonoObject> CMonoClass::CreateInstanceWithDesc(const char* parameterDesc, void** pConstructorParams)
 {
-	auto* pObject = mono_object_new((MonoDomain*)static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass);
+	MonoInternals::MonoObject* pObject = MonoInternals::mono_object_new(m_pLibrary->GetDomain()->GetMonoDomain(), m_pClass);
 
 	string sMethodDesc;
 	sMethodDesc.Format(":.ctor(%s)", parameterDesc);
 
-	auto* pMethodDesc = mono_method_desc_new(sMethodDesc, false);
+	MonoInternals::MonoMethodDesc* pMethodDesc = MonoInternals::mono_method_desc_new(sMethodDesc, false);
 
-	if (MonoMethod* pConstructorMethod = mono_method_desc_search_in_class(pMethodDesc, m_pClass))
+	if (MonoInternals::MonoMethod* pConstructorMethod = MonoInternals::mono_method_desc_search_in_class(pMethodDesc, m_pClass))
 	{
-		mono_method_desc_free(pMethodDesc);
+		MonoInternals::mono_method_desc_free(pMethodDesc);
 
 		bool bException = false;
 		CMonoMethod method(pConstructorMethod);
@@ -201,7 +199,7 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstanceWithDesc(const char* para
 			return nullptr;
 		}
 
-		auto pWrappedObject = std::make_shared<CMonoObject>(pObject, m_pThis.lock());
+		std::shared_ptr<CMonoObject> pWrappedObject = std::make_shared<CMonoObject>(pObject, m_pThis.lock());
 
 		// Push back a weak pointer to the instance, so that we can serialize the object in case of app domain reload
 		m_objects.push_back(pWrappedObject);
@@ -209,9 +207,9 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstanceWithDesc(const char* para
 		return pWrappedObject;
 	}
 
-	mono_method_desc_free(pMethodDesc);
+	MonoInternals::mono_method_desc_free(pMethodDesc);
 
-	GetMonoRuntime()->HandleException((MonoObject*)mono_get_exception_missing_method(GetName(), sMethodDesc));
+	GetMonoRuntime()->HandleException(MonoInternals::mono_get_exception_missing_method(GetName(), sMethodDesc));
 	return nullptr;
 }
 
@@ -220,11 +218,11 @@ void CMonoClass::RegisterObject(std::weak_ptr<CMonoObject> pObject)
 	m_objects.push_back(pObject);
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethod(const char* szName, int numParams)
+std::shared_ptr<CMonoMethod> CMonoClass::FindMethod(const char* szName, int numParams)
 {
-	if (MonoMethod* pMethod = mono_class_get_method_from_name(m_pClass, szName, numParams))
+	if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_class_get_method_from_name(m_pClass, szName, numParams))
 	{
-		auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+		std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
 		m_methods.push_back(pMonoMethod);
 		return pMonoMethod;
 	}
@@ -232,53 +230,53 @@ std::shared_ptr<IMonoMethod> CMonoClass::FindMethod(const char* szName, int numP
 	return nullptr;
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethodInInheritedClasses(const char* szName, int numParams)
+std::shared_ptr<CMonoMethod> CMonoClass::FindMethodInInheritedClasses(const char* szName, int numParams)
 {
-	MonoClass* pClass = m_pClass;
+	MonoInternals::MonoClass* pClass = m_pClass;
 	while (pClass != nullptr)
 	{
-		if (MonoMethod* pMethod = mono_class_get_method_from_name(pClass, szName, numParams))
+		if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_class_get_method_from_name(pClass, szName, numParams))
 		{
-			auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+			std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
 			m_methods.push_back(pMonoMethod);
 			return pMonoMethod;
 		}
 
-		pClass = mono_class_get_parent(pClass);
+		pClass = MonoInternals::mono_class_get_parent(pClass);
 	}
 
 	return nullptr;
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethodDesc)
+std::shared_ptr<CMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethodDesc)
 {
-	auto* pMethodDesc = mono_method_desc_new(szMethodDesc, true);
+	MonoInternals::MonoMethodDesc* pMethodDesc = MonoInternals::mono_method_desc_new(szMethodDesc, true);
 	if (pMethodDesc == nullptr)
 	{
 		return nullptr;
 	}
 
-	if (MonoMethod* pMethod = mono_method_desc_search_in_class(pMethodDesc, m_pClass))
+	if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_method_desc_search_in_class(pMethodDesc, m_pClass))
 	{
-		mono_method_desc_free(pMethodDesc);
+		MonoInternals::mono_method_desc_free(pMethodDesc);
 
-		auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+		std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
 		m_methods.push_back(pMonoMethod);
 		return pMonoMethod;
 	}
 
-	mono_method_desc_free(pMethodDesc);
+	MonoInternals::mono_method_desc_free(pMethodDesc);
 	return nullptr;
 }
 
-std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(const char* szMethodDesc, IMonoClass* pBaseClass)
+std::shared_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(const char* szMethodDesc, CMonoClass* pBaseClass)
 {
-	MonoClass *pClass = m_pClass;
+	MonoInternals::MonoClass *pClass = m_pClass;
 
 	string sMethodDesc;
 	sMethodDesc.Format(":%s", szMethodDesc);
 
-	MonoMethodDesc* pDesiredDesc = mono_method_desc_new(sMethodDesc, false);
+	MonoInternals::MonoMethodDesc* pDesiredDesc = MonoInternals::mono_method_desc_new(sMethodDesc, false);
 	if (pDesiredDesc == nullptr)
 	{
 		return nullptr;
@@ -286,20 +284,20 @@ std::shared_ptr<IMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(co
 
 	while (pClass != nullptr)
 	{
-		if (MonoMethod* pMethod = mono_method_desc_search_in_class(pDesiredDesc, pClass))
+		if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_method_desc_search_in_class(pDesiredDesc, pClass))
 		{
-			mono_method_desc_free(pDesiredDesc);
+			MonoInternals::mono_method_desc_free(pDesiredDesc);
 
-			auto pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+			std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
 			m_methods.push_back(pMonoMethod);
 			return pMonoMethod;
 		}
 
-		pClass = mono_class_get_parent(pClass);
-		if (pClass == mono_get_object_class() || pClass == pBaseClass->GetHandle())
+		pClass = MonoInternals::mono_class_get_parent(pClass);
+		if (pClass == MonoInternals::mono_get_object_class() || pClass == pBaseClass->GetMonoClass())
 			break;
 	}
 
-	mono_method_desc_free(pDesiredDesc);
+	MonoInternals::mono_method_desc_free(pDesiredDesc);
 	return nullptr;
 }

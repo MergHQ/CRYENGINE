@@ -19,13 +19,19 @@ YASLI_ENUM_VALUE_NESTED(ICryPluginManager, EPluginType::Managed, "Managed")
 YASLI_ENUM_END()
 
 CProjectManager::CProjectManager()
+	: m_sys_project(nullptr)
+	, m_sys_game_name(nullptr)
+	, m_sys_dll_game(nullptr)
+	, m_sys_game_folder(nullptr)
 {
+	RegisterCVars();
+
 	CryFindRootFolderAndSetAsCurrentWorkingDirectory();
 }
 
 const char* CProjectManager::GetCurrentProjectName()
 {
-	return gEnv->pConsole->GetCVar("sys_game_name")->GetString();
+	return m_sys_game_name->GetString();
 }
 
 const char* CProjectManager::GetCurrentProjectDirectoryAbsolute()
@@ -82,8 +88,11 @@ void SProject::Serialize(Serialization::IArchive& ar)
 void CProjectManager::ParseProjectFile()
 {
 	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
-	const char* szProjectFile = arg != nullptr ? arg->GetValue() : "game.cryproject";
+	const char* szProjectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
 	
+	char szEngineRootDirectoryBuffer[_MAX_PATH];
+	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDirectoryBuffer), szEngineRootDirectoryBuffer);
+
 #if CRY_PLATFORM_DURANGO
 	if(true)
 #elif CRY_PLATFORM_WINAPI
@@ -92,10 +101,7 @@ void CProjectManager::ParseProjectFile()
 	if (szProjectFile[0] != '/')
 #endif
 	{
-		char buffer[MAX_PATH];
-		CryGetCurrentDirectory(MAX_PATH, buffer);
-
-		m_project.filePath = PathUtil::Make(buffer, szProjectFile);
+		m_project.filePath = PathUtil::Make(szEngineRootDirectoryBuffer, szProjectFile);
 	}
 	else
 	{
@@ -109,9 +115,9 @@ void CProjectManager::ParseProjectFile()
 		// Create the full path to the asset directory
 		m_project.assetDirectoryFullPath = PathUtil::Make(m_project.rootDirectory, m_project.assetDirectory);
 
-		// Set the game folder and name
-		gEnv->pConsole->LoadConfigVar("sys_game_folder", m_project.assetDirectory);
-		gEnv->pConsole->LoadConfigVar("sys_game_name", m_project.name);
+		// Set the legacy game folder and name
+		m_sys_game_folder->Set(m_project.assetDirectory);
+		m_sys_game_name->Set(m_project.name);
 
 		for (SProject::SConsoleVariable& consoleVariable : m_project.consoleVariables)
 		{
@@ -131,13 +137,17 @@ void CProjectManager::ParseProjectFile()
 			gameDllIt = m_project.legacyGameDllPaths.find("win_x86");
 		}
 #endif
+		string legacyGameDllPath;
 
+		// Set legacy Game DLL
 		if (gameDllIt != m_project.legacyGameDllPaths.end())
 		{
-			string legacyGameDllPath = gameDllIt->second;
+			legacyGameDllPath = gameDllIt->second;
 
-			gEnv->pConsole->LoadConfigVar("sys_dll_game", legacyGameDllPath);
+			m_sys_dll_game->Set(legacyGameDllPath);
 		}
+
+		gEnv->pConsole->LoadConfigVar("sys_dll_game", legacyGameDllPath);
 
 #ifdef CRY_PLATFORM_WINDOWS
 		SetDllDirectoryW(CryStringUtils::UTF8ToWStr(m_project.rootDirectory));
@@ -163,6 +173,12 @@ void CProjectManager::ParseProjectFile()
 			SaveProjectChanges();
 		}
 	}
+
+
+	CryLogAlways("\nProject %s", GetCurrentProjectName());
+	CryLogAlways("	Using Project Folder %s", GetCurrentProjectDirectoryAbsolute());
+	CryLogAlways("	Using Asset Folder %s", GetCurrentAssetDirectoryAbsolute());
+	CryLogAlways("	Using Engine Folder %s", szEngineRootDirectoryBuffer);
 }
 
 void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
@@ -173,7 +189,7 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 	{
 		m_project.version = LatestProjectFileVersion;
 		m_project.type = "CRYENGINE Project";
-		m_project.name = gEnv->pConsole->GetCVar("sys_game_name")->GetString();
+		m_project.name = m_sys_game_name->GetString();
 
 		// TODO: Detect latest using CrySelect?
 		m_project.engineVersionId = "engine-5.4";
@@ -192,15 +208,27 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 		LoadLegacyPluginCSV();
 		LoadLegacyGameCfg();
 
-		const char* legacyDllName = gEnv->pConsole->GetCVar("sys_dll_game")->GetString();
+		const char* legacyDllName = m_sys_dll_game->GetString();
 		if (strlen(legacyDllName) > 0)
 		{
 			m_project.legacyGameDllPaths["any"] = PathUtil::RemoveExtension(legacyDllName);
 		}
 
-		string sProjectFile = PathUtil::Make(m_project.rootDirectory, "Game.cryproject");
+		string sProjectFile = PathUtil::Make(m_project.rootDirectory, m_sys_project->GetString());
+		// Make sure we have the .cryproject extension
+		sProjectFile = PathUtil::ReplaceExtension(sProjectFile, ".cryproject");
 		gEnv->pSystem->GetArchiveHost()->SaveJsonFile(sProjectFile, Serialization::SStruct(m_project));
 	}
+}
+
+void CProjectManager::RegisterCVars()
+{
+	m_sys_project = REGISTER_STRING("sys_project", "game.cryproject", VF_NULL, "Specifies which project to load.\nLoads from the engine root if relative path, otherwise full paths are allowed to allow out-of-engine projects\nHas no effect if -project switch is used!");
+
+	// Legacy
+	m_sys_game_name = REGISTER_STRING("sys_game_name", "CRYENGINE", VF_DUMPTODISK, "Specifies the name to be displayed in the Launcher window title bar");
+	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", VF_NULL, "Specifies the game DLL to load");
+	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "", VF_NULL, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
 }
 
 //--- UTF8 parse helper routines
@@ -298,9 +326,9 @@ void CProjectManager::OnLoadConfigurationEntry(const char* szKey, const char* sz
 {
 	// Make sure we set the value in the engine as well
 	gEnv->pConsole->LoadConfigVar(szKey, szValue);
-
+	
 	// Store in our cryproject json, unless the CVar is one that we have in other properties
-	if (strcmp(szKey, "sys_dll_game") != 0 && strcmp(szKey, "sys_game_name") != 0)
+	if (strcmp(szKey, m_sys_dll_game->GetName()) != 0 && strcmp(szKey, m_sys_game_name->GetName()) != 0)
 	{
 		StoreConsoleVariable(szKey, szValue);
 	}

@@ -4,6 +4,7 @@
 #include <CryString/UnicodeFunctions.h>
 #include "DriverD3D.h"
 #include <CryCore/Platform/WindowsUtils.h>
+#include <CrySystem/IProjectManager.h>
 
 #if CRY_PLATFORM_DURANGO
 
@@ -1531,7 +1532,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	iLog->Log("Direct3D driver is creating...");
 	iLog->Log("Crytek Direct3D driver version %4.2f (%s <%s>)", VERSION_D3D, __DATE__, __TIME__);
 
-	const char* sGameName = iConsole->GetCVar("sys_game_name")->GetString();
+	const char* sGameName = gEnv->pSystem->GetIProjectManager()->GetCurrentProjectName();
 	cry_strcpy(m_WinTitle, sGameName);
 
 	iLog->Log("Creating window called '%s' (%dx%d)", m_WinTitle, width, height);

@@ -9,11 +9,11 @@ namespace CryEngine
 {
 	public struct Matrix4x4 : IEquatable<Matrix4x4>
 	{
-		public static readonly Matrix4x4 Identity = 
-			new Matrix4x4(1f,0f,0f,0f,
-										0f,1f,0f,0f,
-										0f,0f,1f,0f,
-										0f,0f,0f,1f);
+		public static readonly Matrix4x4 Identity =
+			new Matrix4x4(1f, 0f, 0f, 0f,
+										0f, 1f, 0f, 0f,
+										0f, 0f, 1f, 0f,
+										0f, 0f, 0f, 1f);
 
 		public float m00, m01, m02, m03;
 		public float m10, m11, m12, m13;
@@ -137,12 +137,12 @@ namespace CryEngine
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is Matrix4x4))
+			if(!(obj is Matrix4x4))
 			{
 				return false;
 			}
 
-			return Equals((Matrix4x4) obj);
+			return Equals((Matrix4x4)obj);
 		}
 
 		public override string ToString()
@@ -163,7 +163,7 @@ namespace CryEngine
 
 		public static implicit operator Matrix4x4(Matrix44 nativeMatrix)
 		{
-			if (nativeMatrix == null)
+			if(nativeMatrix == null)
 			{
 				return new Matrix4x4();
 			}
@@ -221,8 +221,8 @@ namespace CryEngine
 
 		public void Transpose()
 		{
-			Matrix4x4 tmp = new Matrix4x4(this);
-			
+			var tmp = new Matrix4x4(this);
+
 			m01 = tmp.m10;
 			m02 = tmp.m20;
 			m03 = tmp.m30;
@@ -242,8 +242,8 @@ namespace CryEngine
 
 		public Matrix4x4 GetTransposed()
 		{
-			Matrix4x4 tmp = new Matrix4x4(this);
-			
+			var tmp = new Matrix4x4(this);
+
 			tmp.m01 = m10;
 			tmp.m02 = m20;
 			tmp.m03 = m30;
@@ -264,8 +264,8 @@ namespace CryEngine
 
 		public void Invert()
 		{
-			float[] tmp = new float[12];
-			Matrix4x4 m = new Matrix4x4(this);
+			var tmp = new float[12];
+			var m = new Matrix4x4(this);
 
 			// Calculate pairs for first 8 elements (cofactors)
 			tmp[0] = m.m22 * m.m33;
@@ -356,7 +356,7 @@ namespace CryEngine
 
 		public Matrix4x4 GetInverted()
 		{
-			Matrix4x4 dst = new Matrix4x4(this);
+			var dst = new Matrix4x4(this);
 			dst.Invert();
 			return dst;
 		}
@@ -369,7 +369,7 @@ namespace CryEngine
 
 		public Vector3 TransformVector(Vector3 vector)
 		{
-			Vector3 v = new Vector3();
+			var v = new Vector3();
 			v.x = m00 * vector.x + m01 * vector.y + m02 * vector.z;
 			v.y = m10 * vector.x + m11 * vector.y + m12 * vector.z;
 			v.z = m20 * vector.x + m21 * vector.y + m22 * vector.z;
@@ -378,7 +378,7 @@ namespace CryEngine
 
 		public Vector3 TransformPoint(Vector3 point)
 		{
-			Vector3 v = new Vector3();
+			var v = new Vector3();
 			v.x = m00 * point.x + m01 * point.y + m02 * point.z + m03;
 			v.y = m10 * point.x + m11 * point.y + m12 * point.z + m13;
 			v.z = m20 * point.x + m21 * point.y + m22 * point.z + m23;
@@ -387,117 +387,117 @@ namespace CryEngine
 
 		public void SetColumn(int i, Vector3 vec)
 		{
-			switch (i)
+			switch(i)
 			{
-				case 0:
-					{
-						m00 = vec.x;
-						m10 = vec.y;
-						m20 = vec.z;
-						break;
-					}
+			case 0:
+				{
+					m00 = vec.x;
+					m10 = vec.y;
+					m20 = vec.z;
+					break;
+				}
 
-				case 1:
-					{
-						m01 = vec.x;
-						m11 = vec.y;
-						m21 = vec.z;
-						break;
-					}
-				case 2:
-					{
-						m02 = vec.x;
-						m12 = vec.y;
-						m22 = vec.z;
-						break;
-					}
-				case 3:
-					{
-						m03 = vec.x;
-						m13 = vec.y;
-						m23 = vec.z;
-						break;
-					}
+			case 1:
+				{
+					m01 = vec.x;
+					m11 = vec.y;
+					m21 = vec.z;
+					break;
+				}
+			case 2:
+				{
+					m02 = vec.x;
+					m12 = vec.y;
+					m22 = vec.z;
+					break;
+				}
+			case 3:
+				{
+					m03 = vec.x;
+					m13 = vec.y;
+					m23 = vec.z;
+					break;
+				}
 			}
 		}
 
 		public void SetColumn(int i, Vector4 vec)
 		{
-			switch (i)
+			switch(i)
 			{
-				case 0:
-					{
-						m00 = vec.x;
-						m10 = vec.y;
-						m20 = vec.z;
-						m30 = vec.w;
-						break;
-					}
+			case 0:
+				{
+					m00 = vec.x;
+					m10 = vec.y;
+					m20 = vec.z;
+					m30 = vec.w;
+					break;
+				}
 
-				case 1:
-					{
-						m01 = vec.x;
-						m11 = vec.y;
-						m21 = vec.z;
-						m31 = vec.w;
-						break;
-					}
-				case 2:
-					{
-						m02 = vec.x;
-						m12 = vec.y;
-						m22 = vec.z;
-						m32 = vec.w;
-						break;
-					}
-				case 3:
-					{
-						m03 = vec.x;
-						m13 = vec.y;
-						m23 = vec.z;
-						m33 = vec.w;
-						break;
-					}
+			case 1:
+				{
+					m01 = vec.x;
+					m11 = vec.y;
+					m21 = vec.z;
+					m31 = vec.w;
+					break;
+				}
+			case 2:
+				{
+					m02 = vec.x;
+					m12 = vec.y;
+					m22 = vec.z;
+					m32 = vec.w;
+					break;
+				}
+			case 3:
+				{
+					m03 = vec.x;
+					m13 = vec.y;
+					m23 = vec.z;
+					m33 = vec.w;
+					break;
+				}
 			}
 		}
 
 		public void GetColumn(int i, ref Vector4 vector)
 		{
-			switch (i)
+			switch(i)
 			{
-				case 0:
-					{
-						vector.x = m00;
-						vector.y = m10;
-						vector.z = m20;
-						vector.w = m30;
-						break;
-					}
+			case 0:
+				{
+					vector.x = m00;
+					vector.y = m10;
+					vector.z = m20;
+					vector.w = m30;
+					break;
+				}
 
-				case 1:
-					{
-						vector.x = m01;
-						vector.y = m11;
-						vector.z = m21;
-						vector.w = m31;
-						break;
-					}
-				case 2:
-					{
-						vector.x = m02;
-						vector.y = m12;
-						vector.z = m22;
-						vector.w = m32;
-						break;
-					}
-				case 3:
-					{
-						vector.x = m03;
-						vector.y = m13;
-						vector.z = m23;
-						vector.w = m33;
-						break;
-					}
+			case 1:
+				{
+					vector.x = m01;
+					vector.y = m11;
+					vector.z = m21;
+					vector.w = m31;
+					break;
+				}
+			case 2:
+				{
+					vector.x = m02;
+					vector.y = m12;
+					vector.z = m22;
+					vector.w = m32;
+					break;
+				}
+			case 3:
+				{
+					vector.x = m03;
+					vector.y = m13;
+					vector.z = m23;
+					vector.w = m33;
+					break;
+				}
 			}
 		}
 		public Vector3 GetTranslation()
@@ -511,24 +511,24 @@ namespace CryEngine
 			vec.y = m13;
 			vec.z = m23;
 		}
-	
-		public void SetTranslation(Vector3 vec) 
-		{ 
+
+		public void SetTranslation(Vector3 vec)
+		{
 			m03 = vec.x;
 			m13 = vec.y;
-			m23 = vec.z; 
+			m23 = vec.z;
 		}
 
 		static bool IsEquivalent(Matrix4x4 m0, Matrix4x4 m1, float epsilon = 0.05f)
 		{
-			return  
+			return
 				(m0.m00 - m1.m00) <= epsilon && (m0.m01 - m1.m01 <= epsilon) && (m0.m02 - m1.m02 <= epsilon) && (m0.m03 - m1.m03 <= epsilon) &&
 				(m0.m10 - m1.m10 <= epsilon) && (m0.m11 - m1.m11 <= epsilon) && (m0.m12 - m1.m12 <= epsilon) && (m0.m13 - m1.m13 <= epsilon) &&
 				(m0.m20 - m1.m20 <= epsilon) && (m0.m21 - m1.m21 <= epsilon) && (m0.m22 - m1.m22 <= epsilon) && (m0.m23 - m1.m23 <= epsilon) &&
 				(m0.m30 - m1.m30 <= epsilon) && (m0.m31 - m1.m31 <= epsilon) && (m0.m32 - m1.m32 <= epsilon) && (m0.m33 - m1.m33 <= epsilon);
 		}
 
-	#endregion
+		#endregion
 
 		#region Operators
 		public static bool operator ==(Matrix4x4 lhs, Matrix4x4 rhs)
@@ -541,9 +541,9 @@ namespace CryEngine
 			return !(lhs == rhs);
 		}
 
-		public static Matrix4x4 operator*(Matrix4x4 matrix4x4, float multiplier)
+		public static Matrix4x4 operator *(Matrix4x4 matrix4x4, float multiplier)
 		{
-			Matrix4x4 ret = new Matrix4x4(matrix4x4);
+			var ret = new Matrix4x4(matrix4x4);
 			ret.m00 = matrix4x4.m00 * multiplier;
 			ret.m01 = matrix4x4.m01 * multiplier;
 			ret.m02 = matrix4x4.m02 * multiplier;
@@ -563,9 +563,9 @@ namespace CryEngine
 			return ret;
 		}
 
-		public static Matrix4x4 operator+(Matrix4x4 lhs, Matrix4x4 rhs)
+		public static Matrix4x4 operator +(Matrix4x4 lhs, Matrix4x4 rhs)
 		{
-			Matrix4x4 ret = new Matrix4x4();
+			var ret = new Matrix4x4();
 			ret.m00 = lhs.m00 + rhs.m00;
 			ret.m01 = lhs.m01 + rhs.m01;
 			ret.m02 = lhs.m02 + rhs.m02;
@@ -585,69 +585,69 @@ namespace CryEngine
 			return ret;
 		}
 
-		public static Matrix4x4 operator*(Matrix4x4 l, Matrix4x4 r)
+		public static Matrix4x4 operator *(Matrix4x4 l, Matrix4x4 r)
 		{
-			
-				Matrix4x4 res = new Matrix4x4();
-				res.m00 = l.m00* r.m00 + l.m01* r.m10 + l.m02* r.m20 + l.m03* r.m30;
-				res.m10 = l.m10* r.m00 + l.m11* r.m10 + l.m12* r.m20 + l.m13* r.m30;
-				res.m20 = l.m20* r.m00 + l.m21* r.m10 + l.m22* r.m20 + l.m23* r.m30;
-				res.m30 = l.m30* r.m00 + l.m31* r.m10 + l.m32* r.m20 + l.m33* r.m30;
-				res.m01 = l.m00* r.m01 + l.m01* r.m11 + l.m02* r.m21 + l.m03* r.m31;
-				res.m11 = l.m10* r.m01 + l.m11* r.m11 + l.m12* r.m21 + l.m13* r.m31;
-				res.m21 = l.m20* r.m01 + l.m21* r.m11 + l.m22* r.m21 + l.m23* r.m31;
-				res.m31 = l.m30* r.m01 + l.m31* r.m11 + l.m32* r.m21 + l.m33* r.m31;
-				res.m02 = l.m00* r.m02 + l.m01* r.m12 + l.m02* r.m22 + l.m03* r.m32;
-				res.m12 = l.m10* r.m02 + l.m11* r.m12 + l.m12* r.m22 + l.m13* r.m32;
-				res.m22 = l.m20* r.m02 + l.m21* r.m12 + l.m22* r.m22 + l.m23* r.m32;
-				res.m32 = l.m30* r.m02 + l.m31* r.m12 + l.m32* r.m22 + l.m33* r.m32;
-				res.m03 = l.m00* r.m03 + l.m01* r.m13 + l.m02* r.m23 + l.m03* r.m33;
-				res.m13 = l.m10* r.m03 + l.m11* r.m13 + l.m12* r.m23 + l.m13* r.m33;
-				res.m23 = l.m20* r.m03 + l.m21* r.m13 + l.m22* r.m23 + l.m23* r.m33;
-				res.m33 = l.m30* r.m03 + l.m31* r.m13 + l.m32* r.m23 + l.m33* r.m33;
-				return res;
+
+			var res = new Matrix4x4();
+			res.m00 = l.m00 * r.m00 + l.m01 * r.m10 + l.m02 * r.m20 + l.m03 * r.m30;
+			res.m10 = l.m10 * r.m00 + l.m11 * r.m10 + l.m12 * r.m20 + l.m13 * r.m30;
+			res.m20 = l.m20 * r.m00 + l.m21 * r.m10 + l.m22 * r.m20 + l.m23 * r.m30;
+			res.m30 = l.m30 * r.m00 + l.m31 * r.m10 + l.m32 * r.m20 + l.m33 * r.m30;
+			res.m01 = l.m00 * r.m01 + l.m01 * r.m11 + l.m02 * r.m21 + l.m03 * r.m31;
+			res.m11 = l.m10 * r.m01 + l.m11 * r.m11 + l.m12 * r.m21 + l.m13 * r.m31;
+			res.m21 = l.m20 * r.m01 + l.m21 * r.m11 + l.m22 * r.m21 + l.m23 * r.m31;
+			res.m31 = l.m30 * r.m01 + l.m31 * r.m11 + l.m32 * r.m21 + l.m33 * r.m31;
+			res.m02 = l.m00 * r.m02 + l.m01 * r.m12 + l.m02 * r.m22 + l.m03 * r.m32;
+			res.m12 = l.m10 * r.m02 + l.m11 * r.m12 + l.m12 * r.m22 + l.m13 * r.m32;
+			res.m22 = l.m20 * r.m02 + l.m21 * r.m12 + l.m22 * r.m22 + l.m23 * r.m32;
+			res.m32 = l.m30 * r.m02 + l.m31 * r.m12 + l.m32 * r.m22 + l.m33 * r.m32;
+			res.m03 = l.m00 * r.m03 + l.m01 * r.m13 + l.m02 * r.m23 + l.m03 * r.m33;
+			res.m13 = l.m10 * r.m03 + l.m11 * r.m13 + l.m12 * r.m23 + l.m13 * r.m33;
+			res.m23 = l.m20 * r.m03 + l.m21 * r.m13 + l.m22 * r.m23 + l.m23 * r.m33;
+			res.m33 = l.m30 * r.m03 + l.m31 * r.m13 + l.m32 * r.m23 + l.m33 * r.m33;
+			return res;
 		}
 
 		//Post-multiply.
-		public static Vector4 operator*(Matrix4x4 m, Vector4 v)
+		public static Vector4 operator *(Matrix4x4 m, Vector4 v)
 		{
-				return new Vector4(v.x* m.m00 + v.y* m.m01 + v.z* m.m02 + v.w* m.m03,
-													v.x* m.m10 + v.y* m.m11 + v.z* m.m12 + v.w* m.m13,
-													v.x* m.m20 + v.y* m.m21 + v.z* m.m22 + v.w* m.m23,
-													v.x* m.m30 + v.y* m.m31 + v.z* m.m32 + v.w* m.m33);
+			return new Vector4(v.x * m.m00 + v.y * m.m01 + v.z * m.m02 + v.w * m.m03,
+												v.x * m.m10 + v.y * m.m11 + v.z * m.m12 + v.w * m.m13,
+												v.x * m.m20 + v.y * m.m21 + v.z * m.m22 + v.w * m.m23,
+												v.x * m.m30 + v.y * m.m31 + v.z * m.m32 + v.w * m.m33);
 		}
 
-		public static Vector4 operator*(Vector4 v, Matrix4x4 m)
+		public static Vector4 operator *(Vector4 v, Matrix4x4 m)
 		{
-				return new Vector4(v.x* m.m00 + v.y* m.m10 + v.z* m.m20 + v.w* m.m30,
-													v.x* m.m01 + v.y* m.m11 + v.z* m.m21 + v.w* m.m31,
-													v.x* m.m02 + v.y* m.m12 + v.z* m.m22 + v.w* m.m32,
-													v.x* m.m03 + v.y* m.m13 + v.z* m.m23 + v.w* m.m33);
+			return new Vector4(v.x * m.m00 + v.y * m.m10 + v.z * m.m20 + v.w * m.m30,
+												v.x * m.m01 + v.y * m.m11 + v.z * m.m21 + v.w * m.m31,
+												v.x * m.m02 + v.y * m.m12 + v.z * m.m22 + v.w * m.m32,
+												v.x * m.m03 + v.y * m.m13 + v.z * m.m23 + v.w * m.m33);
 		}
 
-		public static Matrix4x4 operator*(Matrix4x4 l, Matrix3x3 r)
+		public static Matrix4x4 operator *(Matrix4x4 l, Matrix3x3 r)
 		{
-				Matrix4x4 result = new Matrix4x4();
-				result.m00 = l.m00* r.m00 + l.m01* r.m10 + l.m02* r.m20;
-				result.m10 = l.m10* r.m00 + l.m11* r.m10 + l.m12* r.m20;
-				result.m20 = l.m20* r.m00 + l.m21* r.m10 + l.m22* r.m20;
-				result.m30 = l.m30* r.m00 + l.m31* r.m10 + l.m32* r.m20;
-				result.m01 = l.m00* r.m01 + l.m01* r.m11 + l.m02* r.m21;
-				result.m11 = l.m10* r.m01 + l.m11* r.m11 + l.m12* r.m21;
-				result.m21 = l.m20* r.m01 + l.m21* r.m11 + l.m22* r.m21;
-				result.m31 = l.m30* r.m01 + l.m31* r.m11 + l.m32* r.m21;
-				result.m02 = l.m00* r.m02 + l.m01* r.m12 + l.m02* r.m22;
-				result.m12 = l.m10* r.m02 + l.m11* r.m12 + l.m12* r.m22;
-				result.m22 = l.m20* r.m02 + l.m21* r.m12 + l.m22* r.m22;
-				result.m32 = l.m30* r.m02 + l.m31* r.m12 + l.m32* r.m22;
-				result.m03 = l.m03;
-				result.m13 = l.m13;
-				result.m23 = l.m23;
-				result.m33 = l.m33;
-				return result;
+			var result = new Matrix4x4();
+			result.m00 = l.m00 * r.m00 + l.m01 * r.m10 + l.m02 * r.m20;
+			result.m10 = l.m10 * r.m00 + l.m11 * r.m10 + l.m12 * r.m20;
+			result.m20 = l.m20 * r.m00 + l.m21 * r.m10 + l.m22 * r.m20;
+			result.m30 = l.m30 * r.m00 + l.m31 * r.m10 + l.m32 * r.m20;
+			result.m01 = l.m00 * r.m01 + l.m01 * r.m11 + l.m02 * r.m21;
+			result.m11 = l.m10 * r.m01 + l.m11 * r.m11 + l.m12 * r.m21;
+			result.m21 = l.m20 * r.m01 + l.m21 * r.m11 + l.m22 * r.m21;
+			result.m31 = l.m30 * r.m01 + l.m31 * r.m11 + l.m32 * r.m21;
+			result.m02 = l.m00 * r.m02 + l.m01 * r.m12 + l.m02 * r.m22;
+			result.m12 = l.m10 * r.m02 + l.m11 * r.m12 + l.m12 * r.m22;
+			result.m22 = l.m20 * r.m02 + l.m21 * r.m12 + l.m22 * r.m22;
+			result.m32 = l.m30 * r.m02 + l.m31 * r.m12 + l.m32 * r.m22;
+			result.m03 = l.m03;
+			result.m13 = l.m13;
+			result.m23 = l.m23;
+			result.m33 = l.m33;
+			return result;
 		}
 
-	#endregion
+		#endregion
 
 		#region Properties
 		public Vector4 this[int row]
@@ -656,62 +656,56 @@ namespace CryEngine
 			{
 				switch(row)
 				{
-					case 0:
-					{
-						return new Vector4(m00, m01, m02, m03);
-					}
-					case 1:
-					{
-							return new Vector4(m10, m11, m12, m13);
-					}
-					case 2:
-					{
-							return new Vector4(m20, m21, m22, m23);
-					}
-					case 3:
-					{
-							return new Vector4(m30, m31, m32, m33);
-					}
-					default:
-						throw new ArgumentOutOfRangeException("row", "Row must run from 0 to 3!");
+				case 0:
+					return new Vector4(m00, m01, m02, m03);
+
+				case 1:
+					return new Vector4(m10, m11, m12, m13);
+					
+				case 2:
+					return new Vector4(m20, m21, m22, m23);
+					
+				case 3:
+					return new Vector4(m30, m31, m32, m33);
+
+				default:
+					throw new ArgumentOutOfRangeException(nameof(row), "Row must run from 0 to 3!");
 				}
 			}
 			set
 			{
-				switch (row)
+				switch(row)
 				{
-					case 0:
-					{
-						m00 = value.x;
-						m01 = value.y;
-						m02 = value.z;
-						m03 = value.w;
-						break;
-					}
-					case 1:
-					{
-						m10 = value.x;
-						m11 = value.y;
-						m12 = value.z;
-						m13 = value.w;
-						break;
-					}
-					case 2:
-					{
-						m20 = value.x;
-						m21 = value.y;
-						m22 = value.z;
-						m23 = value.w;
-						break;
-					}
-					case 3:
-					{
-						m30 = value.x;
-						m31 = value.y;
-						m32 = value.z;
-						m33 = value.w;
-						break;
-					}
+				case 0:
+					m00 = value.x;
+					m01 = value.y;
+					m02 = value.z;
+					m03 = value.w;
+					break;
+
+				case 1:
+					m10 = value.x;
+					m11 = value.y;
+					m12 = value.z;
+					m13 = value.w;
+					break;
+
+				case 2:
+					m20 = value.x;
+					m21 = value.y;
+					m22 = value.z;
+					m23 = value.w;
+					break;
+
+				case 3:
+					m30 = value.x;
+					m31 = value.y;
+					m32 = value.z;
+					m33 = value.w;
+					break;
+
+				default:
+					throw new ArgumentOutOfRangeException(nameof(row), "Row must run from 0 to 3!");
 				}
 			}
 		}
@@ -720,59 +714,65 @@ namespace CryEngine
 		{
 			get
 			{
-				switch (column)
+				if(row < 0 || row > 3)
 				{
-					case 0:
-					{
-						return this[row].x;
-					}
-					case 1:
-					{
-						return this[row].y;
-					}
-					case 2:
-					{
-						return this[row].z;
-					}
-					case 3:
-					{
-						return this[row].w;
-					}
-					default:
-						throw new ArgumentOutOfRangeException("column", "Column must run from 0 to 3!");
+					throw new ArgumentOutOfRangeException(nameof(row), "Row must run from 0 to 3!");
+				}
+
+				switch(column)
+				{
+				case 0:
+					return this[row].x;
+
+				case 1:
+					return this[row].y;
+
+				case 2:
+					return this[row].z;
+
+				case 3:
+					return this[row].w;
+
+				default:
+					throw new ArgumentOutOfRangeException(nameof(column), "Column must run from 0 to 3!");
 				}
 			}
 			set
 			{
-				Vector4 rowValue = this[row];
-				switch (column)
+				if(row < 0 || row > 3)
 				{
-					case 0:
+					throw new ArgumentOutOfRangeException(nameof(row), "Row must run from 0 to 3!");
+				}
+
+				Vector4 rowValue = this[row];
+				switch(column)
+				{
+				case 0:
 					{
-							rowValue.x = value;
-							this[row] = rowValue;
-							break;
+						rowValue.x = value;
+						this[row] = rowValue;
+						break;
 					}
-					case 1:
+				case 1:
 					{
-							rowValue.y = value;
-							this[row] = rowValue;
-							break;
+						rowValue.y = value;
+						this[row] = rowValue;
+						break;
 					}
-					case 2:
+				case 2:
 					{
-							rowValue.z = value;
-							this[row] = rowValue;
-							break;
+						rowValue.z = value;
+						this[row] = rowValue;
+						break;
 					}
-					case 3:
+				case 3:
 					{
-							rowValue.w = value;
-							this[row] = rowValue;
-							break;
+						rowValue.w = value;
+						this[row] = rowValue;
+						break;
 					}
-					default:
-						throw new ArgumentOutOfRangeException("column", "Column must run from 0 to 3!");
+				default:
+					throw new ArgumentOutOfRangeException(nameof(column), "Column must run from 0 to 3!");
 				}
 			}
 		}

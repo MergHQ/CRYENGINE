@@ -1996,7 +1996,7 @@ CPuppet::ENavInteraction CPuppet::NavigateAroundObjectsBasicCheck(const CAIObjec
 	{
 		//to make sure we skip disable entities (hidden in the game, etc)
 		IEntity* pEntity(object->GetEntity());
-		if (pEntity && pEntity->IsActive())
+		if (pEntity && pEntity->IsActivatedForUpdates())
 		{
 			if (AIOBJECT_VEHICLE == object->GetType() || object->IsEnabled()) // vehicles are not enabled when idle, so don't skip them
 			{

@@ -157,8 +157,8 @@ public:
 	virtual const Vec3& GetForwardDir() const final { ComputeForwardDir(); return m_vForwardDir; }
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void Activate(bool bActive) final;
-	virtual bool IsActive() const final { return m_bActive; }
+	virtual void UpdateComponentEventMask(IEntityComponent* pComponent) final;
+	virtual bool IsActivatedForUpdates() const final { return m_bInActiveList; }
 
 	virtual void PrePhysicsActivate(bool bActive) final;
 	virtual bool IsPrePhysicsActive() final;
@@ -167,6 +167,8 @@ public:
 	virtual void Serialize(TSerialize ser, int nFlags) final;
 
 	virtual bool SendEvent(SEntityEvent& event) final;
+	virtual void SendEventToComponent(SEntityEvent& event, IEntityComponent* pComponent) final;
+
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void SetTimer(int nTimerId, int nMilliSeconds) final;
@@ -403,6 +405,8 @@ public:
 	void   GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const final override;
 	void   SetEditorObjectInfo(bool bSelected, bool bHighlighted) final override;
 
+	void OnComponentMaskChanged(const IEntityComponent& component, uint64 newMask);
+
 protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Attachment.
@@ -473,7 +477,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Internal entity flags (must be first member var of CEntity) (Reduce cache misses on access to entity data).
 	//////////////////////////////////////////////////////////////////////////
-	unsigned int         m_bActive        : 1;      // Active Entities are updated every frame.
 	unsigned int         m_bInActiveList  : 1;      // Added to entity system active list.
 	unsigned int         m_bRequiresComponentUpdate  : 1; // Whether or not any components require update callbacks
 	mutable unsigned int m_bBoundsValid   : 1;      // Set when the entity bounding box is valid.

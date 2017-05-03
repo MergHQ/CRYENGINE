@@ -4,8 +4,8 @@
 
 #include <CrySystem/ICryPlugin.h>
 
-struct IMonoClass;
-struct IMonoObject;
+#include "Wrappers/MonoObject.h"
+
 class CMonoLibrary;
 
 // Main entry-point handler for managed code, indirectly created by the plugin manager
@@ -15,6 +15,7 @@ class CManagedPlugin
 {
 public:
 	CManagedPlugin(const char* szBinaryPath);
+	CManagedPlugin(CMonoLibrary* pLibrary);
 	virtual ~CManagedPlugin();
 
 	// ICryUnknown
@@ -38,15 +39,15 @@ public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
-protected:
-	const char* TryGetPlugin() const;
+	void Load(CAppDomain* pDomain);
 
-	bool InitializePlugin();
+protected:
+	void InitializePlugin();
 
 protected:
 	CMonoLibrary* m_pLibrary;
 
-	IMonoClass*   m_pClass;
+	CMonoClass*   m_pClass;
 	std::shared_ptr<CMonoObject>   m_pMonoObject;
 
 	string        m_pluginName;

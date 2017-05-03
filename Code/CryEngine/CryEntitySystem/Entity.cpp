@@ -75,7 +75,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_guid = params.guid;
 
 	// Set flags.
-	m_bActive = 0;
 	m_bRequiresComponentUpdate = 0;
 	m_bInActiveList = 0;
 
@@ -367,6 +366,15 @@ bool CEntity::SendEvent(SEntityEvent& event)
 	}
 
 	return false;
+}
+//////////////////////////////////////////////////////////////////////////
+
+void CEntity::SendEventToComponent(SEntityEvent& event, IEntityComponent* pComponent)
+{
+	if ((pComponent->GetEventMask() & BIT64(event.event)) != 0)
+	{
+		pComponent->ProcessEvent(event);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1076,16 +1084,59 @@ bool CEntity::ShouldActivate()
 		}
 	}
 
-	// TODO: in future handle m_bRequiresComponentUpdate
-	return (m_bActive || m_nUpdateCounter || bActivateByPhysics) && 
+	return (m_bRequiresComponentUpdate || m_nUpdateCounter || bActivateByPhysics) &&
 		(!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::Activate(bool bActive)
+void CEntity::UpdateComponentEventMask(IEntityComponent* pComponent)
 {
-	m_bActive = bActive;
-	ActivateEntityIfNecessary();
+	m_components.ForEach([this, pComponent](SEntityComponentRecord& record)
+	{
+		if (record.pComponent.get() == pComponent)
+		{
+			record.registeredEventsMask = record.pComponent->GetEventMask();
+
+			// Check if the remaining components are still interested in updates
+			m_bRequiresComponentUpdate = 0;
+
+			for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
+			{
+				if (componentRecord.pComponent && (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0)
+				{
+					m_bRequiresComponentUpdate = 1;
+					ActivateEntityIfNecessary();
+					break;
+				}
+			}
+
+			OnComponentMaskChanged(*record.pComponent, record.registeredEventsMask);
+			return;
+		}
+	});
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::OnComponentMaskChanged(const IEntityComponent& component, uint64 newMask)
+{
+	if (newMask & BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE))
+	{
+		// If any component want to process ENTITY_EVENT_RENDER_VISIBILITY_CHANGE we have to enable ENTITY_FLAG_SEND_RENDER_EVENT flag on the entity
+		SetFlags(GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
+	}
+
+	if (newMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE))
+	{
+		// If component want to receive ENTITY_EVENT_PREPHYSICSUPDATE, we must mark this entity to be able to send it.
+		PrePhysicsActivate(true);
+	}
+
+	if (m_bRequiresComponentUpdate == 0 && newMask & BIT64(ENTITY_EVENT_UPDATE))
+	{
+		m_bRequiresComponentUpdate = 1;
+
+		ActivateEntityIfNecessary();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1341,7 +1392,7 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	}
 
 	bool bExist = false;
-	for (auto& componentRecord : m_components.GetVector())
+	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
 		if (componentRecord.pComponent == pComponent)
 		{
@@ -1366,11 +1417,7 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
 
-	if (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE))
-	{
-		// If any component want to process ENTITY_EVENT_RENDER_VISIBILITY_CHANGE we have to enable ENTITY_FLAG_SEND_RENDER_EVENT flag on the entity
-		SetFlags(GetFlags()|ENTITY_FLAG_SEND_RENDER_EVENT);
-	}
+	OnComponentMaskChanged(*pComponent, componentRecord.registeredEventsMask);
 
 	// Proxy component must be last in the order of the event processing
 	if (componentRecord.proxyType == ENTITY_PROXY_SCRIPT)
@@ -1378,22 +1425,9 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 
 	// Sorted insertion, all elements of the m_components are sorted by the proxyType
 	m_components.Add(componentRecord);
-	
+
 	// Call initialization of the component
 	pComponent->Initialize();
-
-	if (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE))
-	{
-		// If component want to receive ENTITY_EVENT_PREPHYSICSUPDATE, we must mark this entity to be able to send it.
-		PrePhysicsActivate(true);
-	}
-
-	if (m_bRequiresComponentUpdate == 0 && componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE))
-	{
-		m_bRequiresComponentUpdate = 1;
-
-		ActivateEntityIfNecessary();
-	}
 
 	return pComponent.get();
 }
@@ -1406,7 +1440,7 @@ void CEntity::RemoveComponent(IEntityComponent* pComponent)
 	// Check if the remaining components are still interested in updates
 	m_bRequiresComponentUpdate = 0;
 
-	for (auto& componentRecord : m_components.GetVector())
+	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
 		if (componentRecord.pComponent && componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE))
 		{
@@ -1422,7 +1456,7 @@ void CEntity::RemoveComponent(IEntityComponent* pComponent)
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& interfaceID) const
 {
-	for (auto& componentRecord : m_components.GetVector())
+	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
 		if (componentRecord.typeId == interfaceID)
 		{
@@ -2313,9 +2347,6 @@ void CEntity::UpdateAIObject()
 //////////////////////////////////////////////////////////////////////////
 void CEntity::ActivateForNumUpdates(int numUpdates)
 {
-	if (m_bActive)
-		return;
-
 	IAIObject* pAIObject = GetAIObject();
 	if (pAIObject && pAIObject->GetProxy())
 		return;
@@ -2499,7 +2530,7 @@ void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 	m_physics.GetMemoryUsage(pSizer);
-	for (auto& componentRecord : m_components.GetVector())
+	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
 		componentRecord.pComponent->GetMemoryUsage(pSizer);
 	}

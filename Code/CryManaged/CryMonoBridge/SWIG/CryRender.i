@@ -1,6 +1,7 @@
 %include "CryEngine.swig"
 
 %import "CryCommon.i"
+%import "CryPhysics.i"
 
 %{
 #include <CryRenderer/IRenderer.h>
@@ -76,7 +77,11 @@
 %include "../../../../CryEngine/CryCommon/CryRenderer/IRenderer.h"
 %extend IRenderer {
 public:
-	int RayToUV(const Vec3& pos, const Vec3& dir, float& fSwigRef1, float& fSwigRef2) { return $self->RayToUV(pos, dir, &fSwigRef1, &fSwigRef2); }
+	int GetDetailedRayHitInfo(IPhysicalEntity& pCollider, const Vec3& vOrigin, const Vec3& vDirection, const float& maxRayDist, float& fSwigRef1, float& fSwigRef2) 
+	{ 
+		return $self->GetDetailedRayHitInfo(&pCollider, vOrigin, vDirection, maxRayDist, &fSwigRef1, &fSwigRef2);
+	}
+
 	Vec3 ProjectToScreen(float ptx, float pty, float ptz) 
 	{
 		float ox, oy, oz;

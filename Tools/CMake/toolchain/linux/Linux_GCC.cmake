@@ -6,9 +6,7 @@ set(BUILD_PLATFORM Linux64)
 set(LINUX 1)
 set(LINUX64 1)
 
-if (NOT DEFINED OUTPUT_DIRECTORY)
-	set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/linux_x64_gcc")
-endif()
+set(OUTPUT_DIRECTORY_NAME "linux_x64_gcc")
 
 set(CMAKE_C_COMPILER gcc-4.9)
 set(CMAKE_CXX_COMPILER g++-4.9)

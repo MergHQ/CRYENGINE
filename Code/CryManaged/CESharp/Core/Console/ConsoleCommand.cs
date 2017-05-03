@@ -1,23 +1,21 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-
-using System.Text;
 using CryEngine.Common;
 
 namespace CryEngine
 {
 	public class ConsoleCommandArgumentsHolder
 	{
-		private List<string> m_arguments;
+		private readonly List<string> m_arguments;
 
-		ConsoleCommandArgumentsHolder(int length)
+		private ConsoleCommandArgumentsHolder(int length)
 		{
 			m_arguments = new List<string>(length);
 		}
-		public void SetArgument(int index, String argument)
+
+		public void SetArgument(int index, string argument)
 		{
-			if (index >= m_arguments.Capacity)
+			if(index >= m_arguments.Capacity)
 			{
 				return;
 			}
@@ -26,7 +24,7 @@ namespace CryEngine
 
 		public string GetArgument(int index)
 		{
-			if (index >= m_arguments.Capacity)
+			if(index >= m_arguments.Capacity)
 			{
 				return null;
 			}
@@ -35,17 +33,21 @@ namespace CryEngine
 
 		public string[] GetAllArguments()
 		{
-			string[] arguments = m_arguments.ToArray();
+			var arguments = m_arguments.ToArray();
 			return arguments;
 		}
 	}
 
 	public class ConsoleCommand
 	{
-		//internal listener for console commands in C++
+		/// <summary>
+		/// internal listener for console commands in C++
+		/// </summary>
 		public delegate void ConsoleCommandFunctionDelegate(IntPtr consoleCommandArg);
 
-		//public listener for console commands in C#
+		/// <summary>
+		/// public listener for console commands in C#
+		/// </summary>
 		public delegate void ManagedConsoleCommandFunctionDelegate(params string[] arguments);
 
 		private static ConsoleCommandFunctionDelegate myDelegate = OnConsoleCommandFunctionInvoked;
@@ -66,7 +68,7 @@ namespace CryEngine
 				UnregisterManagedConsoleCommandFunction(command);
 			}
 			m_commandsAndDelegates.Clear();
-			m_commandsAndDelegates = null;  
+			m_commandsAndDelegates = null;
 		}
 
 		/// <summary>
@@ -89,7 +91,7 @@ namespace CryEngine
 			{
 				m_commandsAndDelegates.Add(command, managedConsoleCmdDelegate);
 
-				CryEngine.NativeInternals.IConsole.AddConsoleCommandFunction(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(myDelegate), command, nFlags, commandHelp, true);
+				NativeInternals.IConsole.AddConsoleCommandFunction(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(myDelegate), command, nFlags, commandHelp, true);
 				ret = true;
 			}
 			return ret;
@@ -106,9 +108,9 @@ namespace CryEngine
 			return ret;
 		}
 
-		public static void NotifyManagedConsoleCommand(string command, int noArguments, ConsoleCommandArgumentsHolder argumentsHolder)
+		public static void NotifyManagedConsoleCommand(string command, ConsoleCommandArgumentsHolder argumentsHolder)
 		{
-			if(argumentsHolder!=null)
+			if(argumentsHolder != null)
 			{
 				ManagedConsoleCommandFunctionDelegate commandDelegate = m_commandsAndDelegates[command];
 				commandDelegate(argumentsHolder.GetAllArguments());
@@ -118,44 +120,6 @@ namespace CryEngine
 		private static void OnConsoleCommandFunctionInvoked(IntPtr arg)
 		{
 			//do nothing
-			
 		}
-
-		/*
-		/// <summary>
-		/// Register a new console command that the user can execute
-		/// </summary>
-		/// <param name="name">Command name.</param>
-		/// <param name="func">Delegate to the console command function to be called when command is invoked.</param>
-		/// <param name="comment">Help string, will be displayed when typing in console "command ?".</param>
-		/// <param name="flags">Bitfield consist of VF_ flags (e.g. VF_CHEAT)</param>
-		public static void Register(string name, ConsoleCommandDelegate func, string comment = "")
-		{
-			IConsole.ConsoleCommandDelegate wrappedFunc = args =>
-			{
-				func(new ConsoleCommandArguments(args));
-			};
-
-			Global.gEnv.pConsole.AddCommand(name, wrappedFunc, 0, comment);
-
-			_instance._commandMap.Add(name, wrappedFunc);
-		}
-
-		static ConsoleCommand()
-		{
-			_instance = new ConsoleCommand();
-		}
-		
-		internal ConsoleCommand()
-		{
-		}
-
-		~ConsoleCommand()
-		{
-			foreach(var command in _commandMap)
-			{
-				Global.gEnv.pConsole.RemoveCommand(command.Key);
-			}
-		}*/
 	}
 }

@@ -1,14 +1,13 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using CryEngine.Attributes;
 using System;
-using System.Reflection;
+using CryEngine.Attributes;
 
 namespace CryEngine
 {
 	/// <summary>
 	/// Allows creating an entity class containing a default entity component that is spawned with every instance. 
-    /// Only used for types inheriting from 'EntityComponent'.
+	/// Only used for types inheriting from 'EntityComponent'.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 	public sealed class EntityClassAttribute : Attribute
@@ -31,12 +30,21 @@ namespace CryEngine
 		/// </summary>
 		public string Icon { get; set; }
 		/// <summary>
-		/// If set, the marked entity class will not be displayed inside Sandbox.
+		/// If set to <c>true</c> the marked entity class will not be displayed inside Sandbox.
 		/// </summary>
 		public bool Hide { get; set; }
 		#endregion
 
 		#region Constructors
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="T:CryEngine.EntityClassAttribute"/> class.
+		/// </summary>
+		/// <param name="name">Display name inside CRYENGINE's EntitySystem as well as Sandbox..</param>
+		/// <param name="category">Entity category inside Sandbox..</param>
+		/// <param name="helper">Geometry path for 3D helper..</param>
+		/// <param name="icon">Bitmap path for 2D helper..</param>
+		/// <param name="hide">If set to <c>true</c> the marked entity class will not be displayed inside Sandbox.</param>
 		[Obsolete("Please use EntityClassAttribute(string name, string category, string helper, IconHelper.IconType icon, bool hide)")]
 		public EntityClassAttribute(string name = "", string category = "Game", string helper = null, string icon = "prompt.bmp", bool hide = false)
 		{
@@ -56,12 +64,12 @@ namespace CryEngine
 			//get icon path attribute bounded to the icon path enum (if available)
 			var enumType = icon.GetType();
 			var enumMemberInfo = enumType.GetMember(icon.ToString());
-			IconPathAttribute iconPathAttribute = (IconPathAttribute)enumMemberInfo[0].GetCustomAttributes(typeof(IconPathAttribute), true)[0];
+			var iconPathAttribute = (IconPathAttribute)enumMemberInfo[0].GetCustomAttributes(typeof(IconPathAttribute), true)[0];
 			Icon = iconPathAttribute == null ? "": iconPathAttribute.Path;
 		}
 		#endregion
 	}
-    
+
 	/// <summary>
 	/// Attribute indicating that an entity represents a player
 	/// This is used to automatically spawn entities when clients connect

@@ -12,23 +12,17 @@
 #include "AppDomain.h"
 #include "RootMonoDomain.h"
 
-#include <mono/metadata/object.h>
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/mono-debug.h>
-#include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/exception.h>
-
 CMonoLibrary::CMonoLibrary(const char* filePath, CMonoDomain* pDomain)
 	: CMonoLibrary(nullptr, filePath, pDomain)
 {
 	Load();
 }
 
-CMonoLibrary::CMonoLibrary(MonoAssembly* pAssembly, const char* filePath, CMonoDomain* pDomain)
+CMonoLibrary::CMonoLibrary(MonoInternals::MonoAssembly* pAssembly, const char* filePath, CMonoDomain* pDomain)
 	: m_pAssembly(pAssembly)
 	, m_pDomain(pDomain)
 	, m_assemblyPath(filePath)
-	, m_pImage(pAssembly != nullptr ? mono_assembly_get_image(pAssembly) : nullptr)
+	, m_pImage(pAssembly != nullptr ? MonoInternals::mono_assembly_get_image(pAssembly) : nullptr)
 {
 }
 
@@ -76,12 +70,12 @@ bool CMonoLibrary::Load()
 	MonoImageOpenStatus status = MONO_IMAGE_ERROR_ERRNO;
 
 	// Load the assembly image
-	m_pImage = mono_image_open_from_data_with_name(m_assemblyData.data(), m_assemblyData.size(), false, &status, false, nullptr);
+	m_pImage = MonoInternals::mono_image_open_from_data_with_name(m_assemblyData.data(), m_assemblyData.size(), false, &status, false, nullptr);
 
 	// Make sure to load references this image requires before loading the assembly itself
-	for (int i = 0; i < mono_image_get_table_rows(m_pImage, MONO_TABLE_ASSEMBLYREF); ++i)
+	for (int i = 0; i < MonoInternals::mono_image_get_table_rows(m_pImage, MONO_TABLE_ASSEMBLYREF); ++i)
 	{
-		mono_assembly_load_reference(m_pImage, i);
+		MonoInternals::mono_assembly_load_reference(m_pImage, i);
 	}
 
 	gEnv->pLog->LogWithType(IMiniLog::eMessage, "[Mono] Load Library: %s", m_assemblyPath.c_str());
@@ -99,11 +93,11 @@ bool CMonoLibrary::Load()
 		debugFile.SeekToBegin();
 		debugFile.ReadType(m_assemblyDebugData.data(), m_assemblyDebugData.size());
 
-		mono_debug_open_image_from_memory(m_pImage, m_assemblyDebugData.data(), m_assemblyPath.size());
+		MonoInternals::mono_debug_open_image_from_memory(m_pImage, m_assemblyDebugData.data(), m_assemblyPath.size());
 	}
 #endif
 
-	m_pAssembly = mono_assembly_load_from_full(m_pImage, m_assemblyPath.c_str(), &status, false);
+	m_pAssembly = MonoInternals::mono_assembly_load_from_full(m_pImage, m_assemblyPath.c_str(), &status, false);
 	
 	return m_pAssembly != nullptr;
 #else
@@ -130,11 +124,11 @@ bool CMonoLibrary::Load()
 	gEnv->pCryPak->CopyFileOnDisk(m_assemblyPath, assemblyPath, false);
 #endif
 
-	m_pAssembly = mono_domain_assembly_open((MonoDomain*)m_pDomain->GetHandle(), assemblyPath);
+	m_pAssembly = MonoInternals::mono_domain_assembly_open(m_pDomain->GetMonoDomain(), assemblyPath);
 	
 	if (m_pAssembly != nullptr)
 	{
-		m_pImage = mono_assembly_get_image(m_pAssembly);
+		m_pImage = MonoInternals::mono_assembly_get_image(m_pAssembly);
 
 		return true;
 	}
@@ -185,78 +179,81 @@ void CMonoLibrary::Deserialize(CMonoObject* pSerializer)
 	}
 }
 
-IMonoClass* CMonoLibrary::GetClass(const char *nameSpace, const char *className)
+CMonoClass* CMonoLibrary::GetClass(const char *szNamespace, const char *szClassName)
 {
-	m_classes.emplace_back(std::make_shared<CMonoClass>(this, nameSpace, className));
+	m_classes.emplace_back(std::make_shared<CMonoClass>(this, szNamespace, szClassName));
 
-	auto pClass = m_classes.back();
+	std::shared_ptr<CMonoClass> pClass = m_classes.back();
 	pClass->SetWeakPointer(pClass);
 
 	return pClass.get();
 }
 
-std::shared_ptr<IMonoClass> CMonoLibrary::GetTemporaryClass(const char *nameSpace, const char *className)
+std::shared_ptr<CMonoClass> CMonoLibrary::GetTemporaryClass(const char *szNamespace, const char *szClassName)
 {
-	auto pClass = std::make_shared<CMonoClass>(this, nameSpace, className);
+	std::shared_ptr<CMonoClass> pClass = std::make_shared<CMonoClass>(this, szNamespace, szClassName);
 
 	// Since this class may expire at any time the class has to contain a weak pointer of itself
 	// This is converted to a shared_ptr when the class creates objects, to ensure that the class always outlives its instances
 	pClass->SetWeakPointer(pClass);
 
-	return pClass;
+	return pClass;;
 }
 
-std::shared_ptr<IMonoException> CMonoLibrary::GetExceptionInternal(const char* nameSpace, const char* exceptionClass, const char* message)
+std::shared_ptr<CMonoException> CMonoLibrary::GetExceptionImplementation(const char* szNamespace, const char* szExceptionClassName, const char* szMessage)
 {
-	MonoException *pException;
-	if (message != nullptr)
-		pException = mono_exception_from_name_msg(m_pImage, nameSpace, exceptionClass, message);
+	MonoInternals::MonoException *pException;
+	if (szMessage != nullptr)
+	{
+		pException = MonoInternals::mono_exception_from_name_msg(m_pImage, szNamespace, szExceptionClassName, szMessage);
+	}
 	else
-		pException = mono_exception_from_name(m_pImage, nameSpace, exceptionClass);
+	{
+		pException = MonoInternals::mono_exception_from_name(m_pImage, szNamespace, szExceptionClassName);
+	}
 
 	return std::make_shared<CMonoException>(pException);
 }
 
-std::shared_ptr<CMonoClass> CMonoLibrary::GetClassFromMonoClass(MonoClass* pMonoClass)
+std::shared_ptr<CMonoClass> CMonoLibrary::GetClassFromMonoClass(MonoInternals::MonoClass* pMonoClass)
 {
 	for (auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
-		if (it->get()->GetHandle() == pMonoClass)
+		if (it->get()->GetMonoClass() == pMonoClass)
 		{
 			return *it;
 		}
 	}
 
-	auto pClass = std::make_shared<CMonoClass>(this, pMonoClass);
+	std::shared_ptr<CMonoClass> pClass = std::make_shared<CMonoClass>(this, pMonoClass);
 	pClass->SetWeakPointer(pClass);
 	m_classes.emplace_back(pClass);
 
 	return pClass;
 }
 
-MonoObject* CMonoLibrary::GetManagedObject()
+MonoInternals::MonoObject* CMonoLibrary::GetManagedObject()
 {
-	return (MonoObject*)mono_assembly_get_object((MonoDomain*)m_pDomain->GetHandle(), m_pAssembly);
+	return (MonoInternals::MonoObject*)MonoInternals::mono_assembly_get_object(m_pDomain->GetMonoDomain(), m_pAssembly);
 }
-
 
 const char* CMonoLibrary::GetImageName() const
 {
-	return mono_image_get_name(m_pImage);
+	return MonoInternals::mono_image_get_name(m_pImage);
 }
 
 const char* CMonoLibrary::GetFilePath()
 {
 	if (m_assemblyPath.size() == 0)
 	{
-		MonoAssemblyName* pAssemblyName = mono_assembly_get_name(m_pAssembly);
-		m_assemblyPath = mono_assembly_name_get_name(pAssemblyName);
+		MonoInternals::MonoAssemblyName* pAssemblyName = MonoInternals::mono_assembly_get_name(m_pAssembly);
+		m_assemblyPath = MonoInternals::mono_assembly_name_get_name(pAssemblyName);
 	}
 
 	return m_assemblyPath;
 }
 
-IMonoDomain* CMonoLibrary::GetDomain() const
+CMonoDomain* CMonoLibrary::GetDomain() const
 {
 	return m_pDomain;
 }
