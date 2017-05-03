@@ -503,7 +503,7 @@ bool CAudioLibraryModel::setData(const QModelIndex& index, const QVariant& value
 								pItem->SetModified(true);
 								break;
 							case EItemType::eItemType_Folder:
-								pItem->SetName(Utils::GenerateUniqueFolderName(newName, pItem->GetParent()));
+								pItem->SetName(Utils::GenerateUniqueName(newName, itemType, pItem->GetParent()));
 								pItem->SetModified(true);
 								break;
 							default:

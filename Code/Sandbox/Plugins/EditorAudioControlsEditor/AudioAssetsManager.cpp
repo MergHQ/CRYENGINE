@@ -10,6 +10,7 @@
 #include "IAudioSystemItem.h"
 #include <IEditor.h>
 #include <CryString/CryPath.h>
+#include <FilePathUtil.h>
 
 namespace ACE
 {
@@ -165,17 +166,14 @@ void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 
 CAudioControl* CAudioAssetsManager::GetControlByID(CID id) const
 {
-	if (id >= 0)
+	for (auto const pControl : m_controls)
 	{
-		size_t size = m_controls.size();
-		for (size_t i = 0; i < size; ++i)
+		if (pControl->GetId() == id)
 		{
-			if (m_controls[i]->GetId() == id)
-			{
-				return m_controls[i];
-			}
+			return pControl;
 		}
 	}
+
 	return nullptr;
 }
 
@@ -473,87 +471,76 @@ IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 
 namespace Utils
 {
-
+//////////////////////////////////////////////////////////////////////////
 Scope GetGlobalScope()
 {
 	static const Scope globalScopeId = CCrc32::Compute("global");
 	return globalScopeId;
 }
 
-string GenerateUniqueFolderName(const string& name, IAudioAsset* pParent)
+//////////////////////////////////////////////////////////////////////////
+string GenerateUniqueName(string const& name, EItemType const type, IAudioAsset* const pParent)
 {
-	string folderName = name;
-	if (pParent)
-	{
-		// Make a valid name for the folder (avoid having folders with the same name under same root)
-		int number = 1;
-		bool bFoundName = false;
-		while (!bFoundName)
-		{
-			bFoundName = true;
-			size_t const size = pParent->ChildCount();
-			for (size_t i = 0; i < size; ++i)
-			{
-				IAudioAsset* pChild = pParent->GetChild(i);
-				if (pChild && (pChild->GetType() == EItemType::eItemType_Folder) && folderName.compareNoCase(pChild->GetName()) == 0)
-				{
-					bFoundName = false;
-					char buffer[16];
-					sprintf(buffer, "%d", number);
+	string finalName = name;
 
-					folderName = name + "_" + buffer;
-					++number;
-					break;
-				}
+	if (pParent != nullptr)
+	{
+		size_t const size = pParent->ChildCount();
+		std::vector<string> names;
+		names.reserve(size);
+
+		for (size_t i = 0; i < size; ++i)
+		{
+			IAudioAsset* const pChild = pParent->GetChild(i);
+
+			if (pChild != nullptr && pChild->GetType() == type)
+			{
+				names.emplace_back(pChild->GetName());
 			}
 		}
+
+		finalName = PathUtil::GetUniqueName(name, names);
 	}
-	return folderName;
+
+	return finalName;
 }
 
+//////////////////////////////////////////////////////////////////////////
 string GenerateUniqueLibraryName(const string& name, const CAudioAssetsManager& assetManager)
 {
-	string libraryName = name;
-	int number = 1;
-	bool bFoundName = false;
-	while (!bFoundName)
+	size_t const size = assetManager.GetLibraryCount();
+	std::vector<string> names;
+	names.reserve(size);
+
+	for (size_t i = 0; i < size; ++i)
 	{
-		bFoundName = true;
-		const int size = assetManager.GetLibraryCount();
-		for (int i = 0; i < size; ++i)
+		CAudioLibrary* const pLibrary = assetManager.GetLibrary(i);
+
+		if (pLibrary != nullptr)
 		{
-			CAudioLibrary* pLibrary = assetManager.GetLibrary(i);
-			if (pLibrary && libraryName.compareNoCase(pLibrary->GetName()) == 0)
-			{
-				bFoundName = false;
-				char buffer[16];
-				sprintf(buffer, "%d", number);
-				libraryName = name + "_" + buffer;
-				++number;
-				break;
-			}
+			names.emplace_back(pLibrary->GetName());
 		}
 	}
-	return libraryName;
+
+	return PathUtil::GetUniqueName(name, names);
 }
 
+//////////////////////////////////////////////////////////////////////////
 string GenerateUniqueControlName(const string& name, EItemType type, const CAudioAssetsManager& assetManager)
 {
-	string controlName = name;
-	if (type != EItemType::eItemType_State) // HACK: Properly guarantee unique names for states which have to be unique ONLY within the same state
+	CAudioAssetsManager::Controls const& controls(assetManager.GetControls());
+	std::vector<string> names;
+	names.reserve(controls.size());
+
+	for (auto const pControl : controls)
 	{
-		int number = 1;
-		while (assetManager.FindControl(controlName, type) != nullptr)
-		{
-			char buffer[16];
-			sprintf(buffer, "%d", number);
-			controlName = name + "_" + buffer;
-			++number;
-		}
+		names.emplace_back(pControl->GetName());
 	}
-	return controlName;
+
+	return PathUtil::GetUniqueName(name, names);
 }
 
+//////////////////////////////////////////////////////////////////////////
 IAudioAsset* GetParentLibrary(IAudioAsset* pAsset)
 {
 	while (pAsset && pAsset->GetType() != EItemType::eItemType_Library)
@@ -564,6 +551,7 @@ IAudioAsset* GetParentLibrary(IAudioAsset* pAsset)
 	return pAsset;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SelectTopLevelAncestors(const std::vector<IAudioAsset*>& source, std::vector<IAudioAsset*>& dest)
 {
 	for (auto pItem : source)
@@ -600,11 +588,12 @@ void SelectTopLevelAncestors(const std::vector<IAudioAsset*>& source, std::vecto
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 const string& GetAssetFolder()
 {
 	static string path = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR;
 	return path;
 }
 
-}
-}
+} // namespace Utils
+} // namespace ACE
