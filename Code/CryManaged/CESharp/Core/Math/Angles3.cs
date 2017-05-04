@@ -190,6 +190,21 @@ namespace CryEngine
 				return new Angles3(-_x, -_y, -_z);
 			}
 		}
+
+		/// <summary>
+		/// Converts the yaw and pitch to a view direction.
+		/// x=yaw
+		/// y=pitch
+		/// z=roll (we ignore this element, since its not possible to convert the roll-component into a vector)
+		/// </summary>
+		/// <value>The view direction.</value>
+		public Vector3 ViewDirection
+		{
+			get
+			{
+				return CCamera.CreateViewdir(this);
+			}
+		}
 		
 		public Quaternion Quaternion { get { return new Quaternion(this); } }
 

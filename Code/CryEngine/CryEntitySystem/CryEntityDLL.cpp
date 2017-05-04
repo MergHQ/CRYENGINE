@@ -26,7 +26,7 @@ public:
 			break;
 		case ESYSTEM_EVENT_LEVEL_LOAD_END:
 			{
-				if (g_pIEntitySystem )
+				if (g_pIEntitySystem)
 				{
 					if (!gEnv->pSystem->IsSerializingFile())
 					{
@@ -36,7 +36,7 @@ public:
 					{
 						LOADING_TIME_PROFILE_SECTION_NAMED("ENTITY_EVENT_LEVEL_LOADED");
 						SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
-						g_pIEntitySystem->SendEventToAll( loadingCompleteEvent );
+						g_pIEntitySystem->SendEventToAll(loadingCompleteEvent);
 					}
 				}
 			}
@@ -56,20 +56,20 @@ static CSystemEventListner_Entity g_system_event_listener_entity;
 class CEngineModule_EntitySystem : public IEntitySystemEngineModule
 {
 	CRYINTERFACE_BEGIN()
-		CRYINTERFACE_ADD(Cry::IDefaultModule)
-		CRYINTERFACE_ADD(IEntitySystemEngineModule)
+	CRYINTERFACE_ADD(Cry::IDefaultModule)
+	CRYINTERFACE_ADD(IEntitySystemEngineModule)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_EntitySystem, "EngineModule_CryEntitySystem", 0x885655072f014c03, 0x820c5a1a9b4d623b)
 
-	virtual ~CEngineModule_EntitySystem() 
+	virtual ~CEngineModule_EntitySystem()
 	{
 		GetISystem()->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_entity);
 		SAFE_RELEASE(gEnv->pEntitySystem);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() const override { return "CryEntitySystem"; };
+	virtual const char* GetName() const override     { return "CryEntitySystem"; };
 	virtual const char* GetCategory() const override { return "CryEngine"; };
 
 	//////////////////////////////////////////////////////////////////////////

@@ -98,7 +98,7 @@ namespace CryEngine
 		{
 			bool ret = false;
 			triggerId = Audio.InvalidControlId;
-			if (!_triggerByName.TryGetValue(triggerName, out triggerId))
+			if(!_triggerByName.TryGetValue(triggerName, out triggerId))
 			{
 				triggerId = NativeAudioSystem.GetAudioTriggerId(triggerName);
 				if (ret=(triggerId != Audio.InvalidControlId))
@@ -151,6 +151,7 @@ namespace CryEngine
 			{
 				ret = _indexTriggerIdToName[triggerId];
 			}
+
 			return ret;
 		}
 

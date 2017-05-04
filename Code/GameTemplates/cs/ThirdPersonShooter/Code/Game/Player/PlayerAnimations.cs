@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 using CryEngine.Animations;
 
 namespace CryEngine.Game
@@ -48,14 +50,15 @@ namespace CryEngine.Game
 
 			// Update entity rotation as the player turns
 			// Start with getting the look orientation's yaw, pitch and roll
-			var ypr = Camera.CreateAnglesYPR(Camera.Rotation);
+			var flatOrientation = Camera.Rotation;
+			var ypr = flatOrientation.YawPitchRoll;
 
 			// We only want to affect Z-axis rotation, zero pitch and roll
 			ypr.Y = 0;
 			ypr.Z = 0;
 
 			// Re-calculate the quaternion based on the corrected look orientation
-			var flatOrientation = Camera.CreateOrientationYPR(ypr);
+			flatOrientation.YawPitchRoll = ypr;
 
 			// Get the player's velocity from physics
 			var dynamicsStatus = physEntity.GetStatus<DynamicsStatus>();

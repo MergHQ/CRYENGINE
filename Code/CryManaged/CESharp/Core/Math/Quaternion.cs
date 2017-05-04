@@ -1,4 +1,4 @@
-﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -613,15 +613,33 @@ namespace CryEngine
 
 		public bool IsIdentity { get { return Math.Abs(_w - 1.0f) < MathHelpers.Epsilon && _v == Vector3.Zero; } }
 
+		/// <summary>
+		/// The yaw, pitch and roll of this Quaternion.
+		/// x-YAW
+		/// y-PITCH (negative=looking down / positive=looking up)
+		/// z-ROLL
+		/// 
+		/// COORDINATE-SYSTEM
+		/// z-axis
+		///  ^
+		///  |
+		///  |  y-axis
+		///  |  /
+		///  | /
+		///  |/
+		///  +--------------->   x-axis
+		/// Note: If we are looking along the z-axis, its not possible to specify the x and z-angle.
+		/// </summary>
+		/// <value>The yaw pitch roll.</value>
 		public Angles3 YawPitchRoll
 		{
 			get
 			{
-				return Camera.CreateAnglesYPR(new Matrix3x3(this));
+				return CCamera.CreateAnglesYPR(new Matrix3x3(this));
 			}
 			set
 			{
-				this = new Quaternion(Camera.CreateOrientationYPR(value));
+				this = new Quaternion(CCamera.CreateOrientationYPR(value));
 			}
 		}
 		#endregion
