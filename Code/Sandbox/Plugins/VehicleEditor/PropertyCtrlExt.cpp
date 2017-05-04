@@ -316,7 +316,7 @@ void CPropertyCtrlExt::OnItemChange(CPropertyItem* item)
 //////////////////////////////////////////////////////////////////////////
 void CPropertyCtrlExt::OnGetEffect(CPropertyItem* pItem)
 {
-	CSelectionGroup* pSel = GetIEditor()->GetObjectManager()->GetSelection();
+	const CSelectionGroup* pSel = GetIEditor()->GetObjectManager()->GetSelection();
 	for (int i = 0; i < pSel->GetCount(); ++i)
 	{
 		CBaseObject* pObject = pSel->GetObject(i);
