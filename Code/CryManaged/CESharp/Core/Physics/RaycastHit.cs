@@ -30,7 +30,7 @@ namespace CryEngine.OldPhysics
 		public IEntity HitNativeEntity { get { return _hitID != 0 ? Global.gEnv.pEntitySystem.GetEntity(_hitID) : null; } }
 
 		/// <summary>
-		/// The CESharp entity that was hit. Returns null if nothing was hit, the entity isn't a CESharp entity, or the hit wasn't an Entity.
+		/// The Entity that was hit. Returns null if nothing was hit, or the hit wasn't an Entity.
 		/// </summary>
 		public Entity HitBaseEntity { get { return Entity.Get(_hitID); } }
 
