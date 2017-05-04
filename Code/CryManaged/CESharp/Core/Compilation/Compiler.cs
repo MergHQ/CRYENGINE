@@ -53,11 +53,8 @@ namespace CryEngine.Compilation
                 compilerParameters.GenerateInMemory = false;
 
 #if RELEASE
-			    if(!compilationParameters.ForceDebugInformation)
-			    {
-				    compilerParameters.GenerateInMemory = true;
-				    compilerParameters.IncludeDebugInformation = false;
-			    }
+				compilerParameters.GenerateInMemory = true;
+				compilerParameters.IncludeDebugInformation = false;
 #endif
 
                 if (!compilerParameters.GenerateInMemory)
