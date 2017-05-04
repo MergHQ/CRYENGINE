@@ -301,7 +301,7 @@ def add_cpp_sources(directoryname, project_name, code_directory, skip_directorie
     sources += "\n)\n"
     
     for entry in os.scandir(directoryname):
-        if os.path.isdir(entry.path) and not os.path.basename(entry.path).startswith("."):
+        if os.path.isdir(entry.path) and not os.path.basename(entry.path).startswith(".") and os.path.basename(entry.path) != 'CMakeFiles':
             if os.path.relpath(entry.path, code_directory) in skip_directories:
                 continue
         
