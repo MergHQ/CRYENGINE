@@ -938,6 +938,23 @@ void CScriptRegistry::SaveScript(IScript& script)
 	SaveScript(static_cast<CScript&>(script));
 }
 
+void CScriptRegistry::OnScriptRenamed(IScript& script, const char* szFilePath)
+{
+	uint32 filePathHash = CCrc32::ComputeLowercase(script.GetFilePath());
+	ScriptsByFileName::const_iterator itScript = m_scriptsByFileName.find(filePathHash);
+	if (itScript != m_scriptsByFileName.end())
+	{
+		CScriptPtr pScript = itScript->second;
+		pScript->SetFilePath(szFilePath);
+		m_scriptsByFileName.erase(itScript);
+
+		filePathHash = CCrc32::ComputeLowercase(szFilePath);
+		m_scriptsByFileName.emplace(filePathHash, pScript);
+
+		// TODO: We should refresh the whole registry.
+	}
+}
+
 CScript* CScriptRegistry::CreateScript(const char* szFilePath, const IScriptElementPtr& pRoot)
 {
 	if (szFilePath)

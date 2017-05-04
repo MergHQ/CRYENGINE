@@ -94,6 +94,8 @@ public:
 
 	virtual IScript*                           LoadScript(const char* szFilePath) override;
 	virtual void                               SaveScript(IScript& script) override;
+
+	virtual void                               OnScriptRenamed(IScript& script, const char* szFilePath) override;
 	// ~IScriptRegistry
 
 private:

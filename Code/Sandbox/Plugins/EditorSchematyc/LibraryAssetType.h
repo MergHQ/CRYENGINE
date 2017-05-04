@@ -25,6 +25,7 @@ public:
 	virtual bool          CanBeEdited() const override      { return true; }
 
 	virtual CAssetEditor* Edit(CAsset* pAsset) const override;
+	virtual bool          RenameAsset(CAsset* pAsset, const char* szNewName) const override;
 	virtual bool          DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const;
 
 	virtual const char*   GetObjectClassName() const { return TypeName(); }
@@ -33,8 +34,10 @@ protected:
 	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
 
 private:
-	virtual CryIcon GetIcon() const override;
+	virtual CryIcon GetIconInternal() const override;
 	// ~CAssetType
+
+	Schematyc::IScript* GetScript(const CAsset& asset) const;
 };
 // ~TODO
 
