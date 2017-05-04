@@ -265,7 +265,7 @@ public:
 
 public slots:
 	void OnFiltered();
-	void OnTreeViewDoubleClicked(const QModelIndex& index);
+	void OnTreeViewClicked(const QModelIndex& index);
 	void OnTreeViewCustomContextMenuRequested(const QPoint& position);
 	void OnTreeViewKeyPress(QKeyEvent* pKeyEvent, bool& bEventHandled);
 	void OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
@@ -305,10 +305,8 @@ private:
 	QAdvancedTreeView*               m_pTreeView;
 	CScriptBrowserModel*             m_pModel;
 	CScriptElementFilterProxyModel*  m_pFilterProxy;
-	//IScriptElement*                 m_pScriptElement;
-	//CScriptBrowserItem*             m_pScriptItem;
 
-	SSignals m_signals;
-	CAsset*  m_pAsset;
+	SSignals                         m_signals;
+	CAsset*                          m_pAsset;
 };
 } // Schematyc

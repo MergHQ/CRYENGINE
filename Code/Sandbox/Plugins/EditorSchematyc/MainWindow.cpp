@@ -434,10 +434,9 @@ bool CMainWindow::OnRedo()
 
 bool CMainWindow::OnCopy()
 {
-	QWidget* pFocusWidget = focusWidget();
-	if (m_pGraphView && pFocusWidget == m_pGraphView)
+	if (m_pGraphView && m_pGraphView->OnCopyEvent())
 	{
-		m_pGraphView->OnCopyEvent();
+		return true;
 	}
 	return true;
 }
@@ -450,12 +449,11 @@ bool CMainWindow::OnCut()
 
 bool CMainWindow::OnPaste()
 {
-	QWidget* pFocusWidget = focusWidget();
-	if (m_pGraphView && pFocusWidget == m_pGraphView)
+	if (m_pGraphView && m_pGraphView->OnPasteEvent())
 	{
-		m_pGraphView->OnPasteEvent();
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool CMainWindow::OnDelete()

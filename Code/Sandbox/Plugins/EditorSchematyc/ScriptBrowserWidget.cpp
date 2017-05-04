@@ -1207,7 +1207,7 @@ CScriptBrowserWidget::CScriptBrowserWidget(CrySchematycEditor::CMainWindow& edit
 	m_pTreeView->setMouseTracking(true);
 	m_pTreeView->setSortingEnabled(true);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_pTreeView->setEditTriggers(QAbstractItemView::SelectedClicked);
+	m_pTreeView->setEditTriggers(QAbstractItemView::DoubleClicked);
 	m_pTreeView->setExpandsOnDoubleClick(false);
 
 	m_pFilter = new QSearchBox(this);
@@ -1217,7 +1217,7 @@ CScriptBrowserWidget::CScriptBrowserWidget(CrySchematycEditor::CMainWindow& edit
 
 	m_pAddButton->setMenu(m_pAddMenu);
 
-	QObject::connect(m_pTreeView, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(OnTreeViewDoubleClicked(const QModelIndex &)));
+	QObject::connect(m_pTreeView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(OnTreeViewClicked(const QModelIndex &)));
 	QObject::connect(m_pTreeView, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(OnTreeViewCustomContextMenuRequested(const QPoint &)));
 	QObject::connect(m_pTreeView, SIGNAL(keyPress(QKeyEvent*, bool&)), this, SLOT(OnTreeViewKeyPress(QKeyEvent*, bool&)));
 
@@ -1345,7 +1345,20 @@ void CScriptBrowserWidget::OnFiltered()
 	}
 }
 
-void CScriptBrowserWidget::OnTreeViewDoubleClicked(const QModelIndex& index) {}
+void CScriptBrowserWidget::OnTreeViewClicked(const QModelIndex& index)
+{
+	if (index.isValid())
+	{
+		if (m_pModel)
+		{
+			CScriptBrowserItem* pItem = m_pModel->ItemFromIndex(TreeViewToModelIndex(index));
+			if (pItem)
+			{
+				m_signals.selection.Send(SScriptBrowserSelection(pItem ? pItem->GetScriptElement() : nullptr));
+			}
+		}
+	}
+}
 
 void CScriptBrowserWidget::OnTreeViewCustomContextMenuRequested(const QPoint& position)
 {
