@@ -738,14 +738,20 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
 		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP);
 		const bool bIsSelectable = ri.pObj->m_editorSelectionID > 0;
+		const bool bNearest = (ri.pObj->m_ObjFlags & FOB_NEAREST) != 0;
 
-		if (nRenderList != EFSLIST_GENERAL && nRenderList != EFSLIST_TERRAINLAYER && (nBatchFlags & FB_Z))
+		const bool bGeneralList =
+			nRenderList == EFSLIST_GENERAL ||
+			nRenderList == EFSLIST_TERRAINLAYER ||
+			nRenderList == EFSLIST_DECAL ||
+			nRenderList == EFSLIST_NEAREST_OBJECTS;
+		if (!bGeneralList && (nBatchFlags & FB_Z))
 		{
 			m_renderItems[EFSLIST_GENERAL].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_GENERAL], nBatchFlags);
 		}
 
-		if (nBatchFlags & FB_ZPREPASS)
+		if ((nBatchFlags & FB_ZPREPASS) && !bNearest)
 		{
 			m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_ZPREPASS], nBatchFlags);
@@ -768,7 +774,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 			}
 		}
 
-		if(nBatchFlags & FB_CUSTOM_RENDER)
+		if (nBatchFlags & FB_CUSTOM_RENDER)
 		{
 			m_renderItems[EFSLIST_CUSTOM].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_CUSTOM], nBatchFlags);
