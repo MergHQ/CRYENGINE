@@ -339,6 +339,7 @@ private:
 	void              UpdateStreaming_SKEL(std::vector<CDefaultSkeletonReferences>& skels, uint32 nRenderFrameId, const uint32* nRoundIds);
 	void              UpdateStreaming_SKIN(std::vector<CDefaultSkinningReferences>& skins, uint32 nRenderFrameId, const uint32* nRoundIds);
 
+	virtual void      ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pCharInstance, const char* szFilepathSKEL, const char** szSkinAttachments, const uint32 skinsCount, const uint32 nLoadingFlags);
 	virtual bool      LoadAndLockResources(const char* szFilePath, uint32 nLoadingFlags);
 	virtual void      StreamKeepCharacterResourcesResident(const char* szFilePath, int nLod, bool bKeep, bool bUrgent = false);
 	virtual bool      StreamHasCharacterResources(const char* szFilePath, int nLod);

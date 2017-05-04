@@ -304,6 +304,9 @@ struct ICharacterManager
 	virtual void                     PostInit() = 0;
 
 	virtual const IAttachmentMerger& GetIAttachmentMerger() const = 0;
+	
+	//! Extends the default skeleton of a character instance with skin attachments
+	virtual void ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pCharInstance, const char* szFilepathSKEL, const char** szSkinAttachments, const uint32 skinCount, const uint32 nLoadingFlags) = 0;
 	// </interfuscator:shuffle>
 
 #if BLENDSPACE_VISUALIZATION
