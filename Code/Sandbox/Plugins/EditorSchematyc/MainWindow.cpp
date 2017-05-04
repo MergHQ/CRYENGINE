@@ -302,7 +302,7 @@ void CMainWindow::closeEvent(QCloseEvent* pEvent)
 
 void CMainWindow::RegisterWidgets()
 {
-	CDockableContainer* const pDockingRegistry = EnableDockingSystem();
+	EnableDockingSystem();
 
 	// Scripts
 	auto createScriptBrowserWidget = [this]()
@@ -314,7 +314,7 @@ void CMainWindow::RegisterWidgets()
 		}
 		return pWidget;
 	};
-	pDockingRegistry->Register("Script Browser", createScriptBrowserWidget, true, false);
+	RegisterWidget("Script Browser", createScriptBrowserWidget, true, false);
 
 	// Graph View
 	auto createGraphViewWidget = [this]()
@@ -326,7 +326,7 @@ void CMainWindow::RegisterWidgets()
 		}
 		return pWidget;
 	};
-	pDockingRegistry->Register("Graph View", createGraphViewWidget, true, false);
+	RegisterWidget("Graph View", createGraphViewWidget, true, false);
 
 	// Preview
 	{
@@ -339,7 +339,7 @@ void CMainWindow::RegisterWidgets()
 			}
 			return pWidget;
 		};
-		pDockingRegistry->Register("Preview", createPreviewWidget, true, false);
+		RegisterWidget("Preview", createPreviewWidget, true, false);
 	}
 
 	// Log
@@ -353,7 +353,7 @@ void CMainWindow::RegisterWidgets()
 			}
 			return pWidget;
 		};
-		pDockingRegistry->Register("Log", createLogWidget, true, false);
+		RegisterWidget("Log", createLogWidget, true, false);
 	}
 
 	// Inspector
@@ -364,7 +364,7 @@ void CMainWindow::RegisterWidgets()
 			pWidget->setWindowTitle("Properties");
 		return pWidget;
 	};
-	pDockingRegistry->Register("Properties", createInspectorWidget, true, false);
+	RegisterWidget("Properties", createInspectorWidget, true, false);
 }
 
 void CMainWindow::InitMenu()
