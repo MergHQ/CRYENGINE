@@ -56,6 +56,23 @@ public:
 		CRY_PFX2_PROFILE_DETAIL;
 
 		m_lifeTime.InitParticles(context, EPDT_LifeTime);
+
+		if (m_lifeTime.HasModifiers())
+			ClampNegativeLifetimes(context);
+	}
+
+private:
+	void ClampNegativeLifetimes(const SUpdateContext& context)
+	{
+		const floatv minimum = ToFloatv(std::numeric_limits<float>::min());
+		IOFStream lifeTimes = context.m_container.GetIOFStream(EPDT_LifeTime);
+		CRY_PFX2_FOR_SPAWNED_PARTICLEGROUP(context)
+		{
+			const floatv lifetime = lifeTimes.Load(particleGroupId);
+			const floatv maxedLifeTime = max(lifetime, minimum);
+			lifeTimes.Store(particleGroupId, maxedLifeTime);
+		}
+		CRY_PFX2_FOR_END;
 	}
 
 private:
