@@ -1277,7 +1277,7 @@ void CScaleformPlayback::SetView3D(const Matrix44& viewMatIn)
 	assert(m_stereo3DiBaseDepth >= 0);
 }
 
-void CScaleformPlayback::SetWorld3D(const Matrix44* pWorldMatIn)
+void CScaleformPlayback::SetWorld3D(const Matrix44f* pWorldMatIn)
 {
 	m_pMatWorld3D       = pWorldMatIn;
 	m_matCachedWVPDirty = pWorldMatIn != 0;
@@ -1545,7 +1545,7 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 	SSF_GlobalDrawParams& __restrict params = m_drawParams;
 
 	//FIXME 3d matrix screws up blur, should this be necessary?
-	const Matrix44 * pMat3D_Cached = m_pMatWorld3D;
+	const Matrix44f* pMat3D_Cached = m_pMatWorld3D;
 	SetWorld3D(NULL);
 
 	// Flash can call in-to-out cases
