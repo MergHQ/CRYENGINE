@@ -132,10 +132,6 @@ if(OPTION_STATIC_LINKING)
 	# Enable static libraries
 	MESSAGE(STATUS "Use Static Linking (.lib/.a)" )
 	set(BUILD_SHARED_LIBS FALSE)
-	if(OPTION_SANDBOX)
-		message(STATUS "Disabling Sandbox - requires dynamic linking")
-		set(OPTION_SANDBOX OFF)
-	endif()
 else()
 	# Enable dynamic libraries
 	MESSAGE(STATUS "Use Dynamic Linking (.dll/.so)" )
@@ -202,23 +198,6 @@ if (OPTION_ENGINE)
 endif()
 include(${TOOLS_CMAKE_DIR}/modules/Boost.cmake)
 include(${TOOLS_CMAKE_DIR}/modules/ncurses.cmake)
-
-if (OPTION_SANDBOX AND WIN64)
-	# Find Qt before including any plugin subdirectories
-	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2015_64/Qt)
-	elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2015_64/Qt)
-	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2013_64)
-	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2012_64)
-	endif()
-	set(Qt5_DIR ${QT_DIR})
-
-	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
-	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "${VS_FOLDER_PREFIX}/Sandbox/AUTOGEN")
-endif()
 
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY COMPILE_DEFINITIONS ${global_defines})
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY INCLUDE_DIRECTORIES ${global_includes})
