@@ -218,9 +218,22 @@ void CScriptGraphGetNode::Register(CScriptGraphNodeFactory& factory)
 				CStackString subject;
 				scriptView.QualifyName(variable, EDomainQualifier::Global, subject);
 				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), variable.GetGUID()));
+
 				return EVisitStatus::Continue;
 			};
 			scriptView.VisitScriptVariables(ScriptVariableConstVisitor::FromLambda(visitScriptVariable), EDomainScope::Derived);
+
+			// Library variables
+			CScriptView gloablView(gEnv->pSchematyc->GetScriptRegistry().GetRootElement().GetGUID());
+			auto visitLibraries = [&nodeCreationMenu](const IScriptVariable& scriptVariable) -> EVisitStatus
+			{
+				CStackString subject;
+				QualifyScriptElementName(gEnv->pSchematyc->GetScriptRegistry().GetRootElement(), scriptVariable, EDomainQualifier::Global, subject);
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), scriptVariable.GetGUID()));
+
+				return EVisitStatus::Continue;
+			};
+			gloablView.VisitScriptModuleVariables(ScriptModuleVariablesConstVisitor::FromLambda(visitLibraries));
 		}
 
 		// ~IScriptGraphNodeCreator

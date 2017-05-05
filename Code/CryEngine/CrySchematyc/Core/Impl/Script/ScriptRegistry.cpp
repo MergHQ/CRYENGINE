@@ -160,7 +160,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 	{
 	case EScriptElementType::Module:
 		{
-			return scopeElementType == EScriptElementType::Root /*|| scopeElementType == EScriptElementType::Module*/;
+			return scopeElementType == EScriptElementType::Root;
 		}
 	case EScriptElementType::Enum:
 		{
@@ -196,7 +196,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 		}
 	case EScriptElementType::Class:
 		{
-			return scopeElementType == EScriptElementType::Root /*|| scopeElementType == EScriptElementType::Module*/;
+			return scopeElementType == EScriptElementType::Root;
 		}
 	case EScriptElementType::Base:
 		{
@@ -234,7 +234,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 		}
 	case EScriptElementType::Variable:
 		{
-			return scopeElementType == EScriptElementType::Class;
+			return scopeElementType == EScriptElementType::Class || scopeElementType == EScriptElementType::Module;
 		}
 	case EScriptElementType::Timer:
 		{
