@@ -283,6 +283,9 @@ public:
 	virtual void                              AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) final;
 	virtual void                              RemoveEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) final;
 
+	virtual void                              AddEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) final;
+	virtual void                              RemoveEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) final;
+
 	virtual EntityId                          FindEntityByGuid(const EntityGUID& guid) const final;
 	virtual EntityId                          FindEntityByEditorGuid(const char* pGuid) const final;
 
@@ -328,8 +331,9 @@ public:
 	virtual void                              ClearLayers() final;
 	virtual void                              EnableDefaultLayers(bool isSerialized = true) final;
 	virtual void                              EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) final;
-	virtual IEntityLayer*                     FindLayer(const char* szLayer) const final;
-	virtual bool                              IsLayerEnabled(const char* layer, bool bMustBeLoaded) const final;
+	virtual void                              EnableLayerSet(const char* const * pLayers, size_t layerCount, bool bIsSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) final;
+	virtual IEntityLayer*                     FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const final;
+	virtual bool                              IsLayerEnabled(const char* layer, bool bMustBeLoaded, bool bCaseSensitive = true) const final;
 	virtual bool                              ShouldSerializedEntity(IEntity* pEntity) final;
 	virtual void                              RegisterPhysicCallbacks() final;
 	virtual void                              UnregisterPhysicCallbacks() final;
@@ -337,6 +341,7 @@ public:
 	// ------------------------------------------------------------------------
 
 	CEntityLayer* GetLayerForEntity(EntityId id);
+	void EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren);
 
 	bool          OnBeforeSpawn(SEntitySpawnParams& params);
 	void          OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params);

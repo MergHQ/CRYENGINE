@@ -199,6 +199,7 @@ extern "C" IGameStartup* CreateGameStartup();
 #include "Network/NetMsgDispatcher.h"
 #include "ManualFrameStep.h"
 #include "EntityContainers/EntityContainerMgr.h"
+#include "FlowSystem/Nodes/FlowEntityCustomNodes.h"
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
@@ -290,6 +291,7 @@ CCryAction::CCryAction()
 	m_pTimer(0),
 	m_pLog(0),
 	m_systemDll(0),
+	m_pGameToEditor(nullptr),
 	m_pGame(0),
 	m_pLevelSystem(0),
 	m_pActorSystem(0),
@@ -367,9 +369,10 @@ CCryAction::CCryAction()
 	m_pPhysicsQueues(0),
 	m_PreUpdateTicks(0),
 	m_pGameVolumesManager(NULL),
-	m_pNetMsgDispatcher(0),
+	m_pNetMsgDispatcher(nullptr),
 	m_pManualFrameStepController(nullptr),
-	m_pEntityContainerMgr(nullptr)
+	m_pEntityContainerMgr(nullptr),
+	m_pEntityAttachmentExNodeRegistry(nullptr)
 {
 	CRY_ASSERT(!m_pThis);
 	m_pThis = this;
@@ -2050,6 +2053,7 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
 	m_pEntityContainerMgr = new CEntityContainerMgr();
+	m_pEntityAttachmentExNodeRegistry = new CEntityAttachmentExNodeRegistry();
 	m_pManualFrameStepController = new CManualFrameStepController();
 
 	if (gEnv->pRenderer)
@@ -2641,6 +2645,7 @@ void CCryAction::ShutdownEngine()
 	SAFE_DELETE(m_pManualFrameStepController);
 	SAFE_DELETE(m_pNetMsgDispatcher);
 	SAFE_DELETE(m_pEntityContainerMgr);
+	SAFE_DELETE(m_pEntityAttachmentExNodeRegistry);
 
 	ReleaseExtensions();
 
@@ -3398,6 +3403,8 @@ void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	m_isEditing = true;
+
+	m_pGameToEditor = pGameToEditor;
 
 	uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
 	if (commConfigCount)

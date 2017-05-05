@@ -174,8 +174,10 @@ public:
 	virtual void SetTimer(int nTimerId, int nMilliSeconds) final;
 	virtual void KillTimer(int nTimerId) final;
 
-	virtual void Hide(bool bHide) final;
+	virtual void Hide(bool bHide, EEntityHideFlags hideFlags = ENTITY_HIDE_NO_FLAG) final;
+	        void SendHideEvent(bool bHide, EEntityHideFlags hideFlags);
 	virtual bool IsHidden() const final { return m_bHidden; }
+	virtual bool IsInHiddenLayer() const final { return m_bIsInHiddenLayer; }
 
 	virtual void Invisible(bool bInvisible) final;
 	virtual bool IsInvisible() const final { return m_bInvisible; }
@@ -315,6 +317,7 @@ public:
 
 	virtual IEntityLink* GetEntityLinks() final;
 	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid = 0) final;
+	virtual void         RenameEntityLink(IEntityLink* pLink, const char* sNewLinkName) final;
 	virtual void         RemoveEntityLink(IEntityLink* pLink) final;
 	virtual void         RemoveAllEntityLinks() final;
 	//////////////////////////////////////////////////////////////////////////
@@ -405,6 +408,8 @@ public:
 	void   GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const final override;
 	void   SetEditorObjectInfo(bool bSelected, bool bHighlighted) final override;
 
+	void SetInHiddenLayer(bool bHiddenLayer);
+
 	void OnComponentMaskChanged(const IEntityComponent& component, uint64 newMask);
 
 protected:
@@ -482,6 +487,7 @@ private:
 	mutable unsigned int m_bBoundsValid   : 1;      // Set when the entity bounding box is valid.
 	unsigned int         m_bInitialized   : 1;      // Set if this entity already Initialized.
 	unsigned int         m_bHidden        : 1;      // Set if this entity is hidden.
+	unsigned int         m_bIsInHiddenLayer : 1;    // Set if this entity is in a hidden layer.
 	unsigned int         m_bGarbage       : 1;      // Set if this entity is garbage and will be removed soon.
 
 	unsigned int         m_bTrigger       : 1;      // Set if entity is proximity trigger itself.
