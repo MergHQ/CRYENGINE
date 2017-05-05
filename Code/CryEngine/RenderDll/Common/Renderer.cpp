@@ -27,6 +27,7 @@
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include <CryThreading/IThreadManager.h>
 
+#include "DriverD3D.h"
 #include "RenderView.h"
 #include "CompiledRenderObject.h"
 #include "../Scaleform/ScaleformRender.h"
@@ -3855,10 +3856,10 @@ void S3DEngineCommon::UpdateRainOccInfo(int nThreadID)
 					IRenderNode* pRndNode = *it;
 					if (pRndNode)
 					{
-						const AABB& aabb             = pRndNode->GetBBox();
-						const Vec3  vDiag            = aabb.max - aabb.min;
-						const float fSqrFlatRadius   = Vec2(vDiag.x, vDiag.y).GetLength2();
-						const unsigned nRndNodeFlags = pRndNode->GetRndFlags();
+						const AABB& aabb                                 = pRndNode->GetBBox();
+						const Vec3  vDiag                                = aabb.max - aabb.min;
+						const float fSqrFlatRadius                       = Vec2(vDiag.x, vDiag.y).GetLength2();
+						const IRenderNode::RenderFlagsType nRndNodeFlags = pRndNode->GetRndFlags();
 						// TODO: rainoccluder should be the only flag tested
 						// (ie. enabled ONLY for small subset of geometry assets - means going through all assets affected by rain)
 						if ((fSqrFlatRadius < CRenderer::CV_r_rainOccluderSizeTreshold)
