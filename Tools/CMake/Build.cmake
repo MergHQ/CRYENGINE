@@ -4,6 +4,15 @@ set(TOOLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 include(${TOOLS_CMAKE_DIR}/Configure.cmake)
 
+if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX OR OPTION_PAKTOOLS)
+	# Add custom project with just listing of cmake files
+	add_subdirectory(${TOOLS_CMAKE_DIR})
+
+	# Order currently matters for Engine, Games and Launchers
+	# 1. CryEngine
+	include ("${TOOLS_CMAKE_DIR}/BuildEngine.cmake")
+endif()
+
 if (OPTION_SANDBOX AND WIN64)
 	# Find Qt before including any plugin subdirectories
 	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
@@ -23,15 +32,6 @@ if (OPTION_SANDBOX AND WIN64)
 	set(Qt5_DIR ${Qt5_DIR} CACHE INTERNAL "QT directory" FORCE)
 
 	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "${VS_FOLDER_PREFIX}/Sandbox/AUTOGEN")
-endif()
-
-if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX OR OPTION_PAKTOOLS)
-	# Add custom project with just listing of cmake files
-	add_subdirectory(${TOOLS_CMAKE_DIR})
-
-	# Order currently matters for Engine, Games and Launchers
-	# 1. CryEngine
-	include ("${TOOLS_CMAKE_DIR}/BuildEngine.cmake")
 endif()
 	
 # Only allow building legacy GameDLL's with the engine
