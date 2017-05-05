@@ -36,8 +36,8 @@ CMonoLibrary::~CMonoLibrary()
 
 bool CMonoLibrary::Load()
 {
-// Loading with CryPak disabled for now, need to make sure that chain-reload works correctly and that images are closed.
-//#define LOAD_MONO_LIBRARIES_WITH_CRYPAK
+	// Loading with CryPak disabled for now, need to make sure that chain-reload works correctly and that images are closed.
+	//#define LOAD_MONO_LIBRARIES_WITH_CRYPAK
 #ifdef LOAD_MONO_LIBRARIES_WITH_CRYPAK
 	// Now load from disk
 	CCryFile file;
@@ -80,7 +80,7 @@ bool CMonoLibrary::Load()
 
 	gEnv->pLog->LogWithType(IMiniLog::eMessage, "[Mono] Load Library: %s", m_assemblyPath.c_str());
 
-#ifndef _RELEASE
+	#ifndef _RELEASE
 	// load debug information
 	string sDebugDatabasePath = m_assemblyPath;
 	sDebugDatabasePath.append(".mdb");
@@ -95,10 +95,10 @@ bool CMonoLibrary::Load()
 
 		MonoInternals::mono_debug_open_image_from_memory(m_pImage, m_assemblyDebugData.data(), m_assemblyPath.size());
 	}
-#endif
+	#endif
 
 	m_pAssembly = MonoInternals::mono_assembly_load_from_full(m_pImage, m_assemblyPath.c_str(), &status, false);
-	
+
 	return m_pAssembly != nullptr;
 #else
 
@@ -106,7 +106,7 @@ bool CMonoLibrary::Load()
 
 	// Do a copy of the binary on windows to allow reload during development
 	// Otherwise Mono will lock the file.
-#if defined(CRY_PLATFORM_WINDOWS) && !defined(RELEASE)
+	#if defined(CRY_PLATFORM_WINDOWS) && !defined(RELEASE)
 	TCHAR tempPath[MAX_PATH];
 	GetTempPathA(MAX_PATH, tempPath);
 
@@ -121,11 +121,23 @@ bool CMonoLibrary::Load()
 	string fileName = PathUtil::GetFile(m_assemblyPath);
 	assemblyPath = PathUtil::Make(tempBinaryDirectory, fileName);
 
+	// Also copy debug databases, if present
+	string mdbPathSource = m_assemblyPath + ".mdb";
+	string mdbPathTarget = assemblyPath + ".mdb";
+
+	// The path can be relative, so the default IsFileExist is not a sure way to check if the file exists.
+	// Instead we try opening the file and if it works the file exists.
+	if (auto handle = gEnv->pCryPak->FOpen(mdbPathSource, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
+	{
+		gEnv->pCryPak->FClose(handle);
+		gEnv->pCryPak->CopyFileOnDisk(mdbPathSource, mdbPathTarget, false);
+	}
+
 	gEnv->pCryPak->CopyFileOnDisk(m_assemblyPath, assemblyPath, false);
-#endif
+	#endif
 
 	m_pAssembly = MonoInternals::mono_domain_assembly_open(m_pDomain->GetMonoDomain(), assemblyPath);
-	
+
 	if (m_pAssembly != nullptr)
 	{
 		m_pImage = MonoInternals::mono_assembly_get_image(m_pAssembly);
@@ -179,7 +191,7 @@ void CMonoLibrary::Deserialize(CMonoObject* pSerializer)
 	}
 }
 
-CMonoClass* CMonoLibrary::GetClass(const char *szNamespace, const char *szClassName)
+CMonoClass* CMonoLibrary::GetClass(const char* szNamespace, const char* szClassName)
 {
 	m_classes.emplace_back(std::make_shared<CMonoClass>(this, szNamespace, szClassName));
 
@@ -189,7 +201,7 @@ CMonoClass* CMonoLibrary::GetClass(const char *szNamespace, const char *szClassN
 	return pClass.get();
 }
 
-std::shared_ptr<CMonoClass> CMonoLibrary::GetTemporaryClass(const char *szNamespace, const char *szClassName)
+std::shared_ptr<CMonoClass> CMonoLibrary::GetTemporaryClass(const char* szNamespace, const char* szClassName)
 {
 	std::shared_ptr<CMonoClass> pClass = std::make_shared<CMonoClass>(this, szNamespace, szClassName);
 
@@ -197,12 +209,12 @@ std::shared_ptr<CMonoClass> CMonoLibrary::GetTemporaryClass(const char *szNamesp
 	// This is converted to a shared_ptr when the class creates objects, to ensure that the class always outlives its instances
 	pClass->SetWeakPointer(pClass);
 
-	return pClass;;
+	return pClass;
 }
 
 std::shared_ptr<CMonoException> CMonoLibrary::GetExceptionImplementation(const char* szNamespace, const char* szExceptionClassName, const char* szMessage)
 {
-	MonoInternals::MonoException *pException;
+	MonoInternals::MonoException* pException;
 	if (szMessage != nullptr)
 	{
 		pException = MonoInternals::mono_exception_from_name_msg(m_pImage, szNamespace, szExceptionClassName, szMessage);

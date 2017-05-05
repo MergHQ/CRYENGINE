@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 using System.Collections.Generic;
 using CryEngine.Common;
 using CryEngine.Animations;
@@ -383,7 +385,7 @@ namespace CryEngine
 			{
 				if(!silent)
 				{
-					Log.Error<CharacterAnimator>("Unable to create ActionController from context for Entity {0}!");
+					Log.Error<CharacterAnimator>("Unable to create ActionController from context for Entity {0}!", entity.Name);
 				}
 				return;
 			}
