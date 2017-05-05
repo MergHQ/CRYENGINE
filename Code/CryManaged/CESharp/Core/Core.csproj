@@ -80,6 +80,8 @@
 		<Compile Include="Audio\AudioManager.cs" />
 		<Compile Include="Audio\AudioObject.cs" />
 		<Compile Include="Audio\AudioRequestInfo.cs" />
+		<Compile Include="Audio\AudioListener.cs" />
+		<Compile Include="Audio\AudioObjectTransformation.cs" />
 		<Compile Include="Audio\Native\NativeAudioMethods.cs" />
 		<Compile Include="Console\Attributes.cs" />
 		<Compile Include="Console\ConsoleCommand.cs" />
