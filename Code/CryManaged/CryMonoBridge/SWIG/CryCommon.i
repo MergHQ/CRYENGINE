@@ -96,19 +96,62 @@
 %template(Vec2) Vec2_tpl<f32>;
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Vector3.h"
 %template(Vec3) Vec3_tpl<f32>;
+// for c# unit test
+%extend Vec3_tpl<f32> {
+	f32 Dot(const Vec3_tpl<f32> vec1)
+	{
+		return $self->dot(vec1);
+	} 
+}
 %template(Ang3) Ang3_tpl<f32>;
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Vector4.h"
 %template(Vec4) Vec4_tpl<f32>;
+// for c# unit test
+%extend Vec4_tpl<f32> {
+	Vec4_tpl<f32> Normalize()
+	{
+		return $self->Normalize();
+	}
+}
+
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_MatrixDiag.h"
 %template(Diag33) Diag33_tpl<f32>;
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Matrix33.h"
 %template(Matrix33) Matrix33_tpl<f32>;
+// for c# unit test
+%extend Matrix33_tpl<f32> {
+	static Matrix33_tpl<f32> CreateMatrix33(Vec3_tpl<f32> right, Vec3_tpl<f32> forward, Vec3_tpl<f32> up)
+	{
+		return Matrix33_tpl<f32>(right, forward,up);
+	}
+}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Matrix34.h"
 %template(Matrix34) Matrix34_tpl<f32>;
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Matrix44.h"
 %template(Matrix44) Matrix44_tpl<f32>;
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Quat.h"
 %template(Quat) Quat_tpl<f32>;
+%extend Quat_tpl<f32> {
+	Quat_tpl<f32> Normalize()
+	{
+		return $self->Normalize();
+	}
+
+	float GetLength()
+	{
+		return $self->GetLength();
+	}
+
+	static Quat_tpl<f32> CreateQuatFromMatrix(Matrix33_tpl<f32> matrix33)
+	{
+		return Quat_tpl<f32>(matrix33);
+	}
+
+	static Quat_tpl<f32> CreateQuatFromMatrix(Matrix34_tpl<f32> matrix34)
+	{
+		return Quat_tpl<f32>(matrix34);
+	}
+}
 %template(QuatTS) QuatTS_tpl<f32>;
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_XOptimise.h" //<-- throwing errors, because of undefined _MSC_VER!
 %ignore Color_tpl<uint8>::set; // <-- until RnD fixes the method defintion

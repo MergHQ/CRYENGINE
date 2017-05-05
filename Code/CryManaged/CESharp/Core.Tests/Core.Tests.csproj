@@ -71,6 +71,14 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\DomainSerializerTests.cs" />
 	<Compile Include="Entity\IconsTest.cs" />
+	<Compile Include="Math\MathHelpersTest.cs" />
+	<Compile Include="Math\Matrix3x3Test.cs" />
+	<Compile Include="Math\Matrix3x3Test.cs" />
+	<Compile Include="Math\Matrix3x3Test.cs" />
+	<Compile Include="Math\QuaternionTest.cs" />
+	<Compile Include="Math\Vector2Test.cs" />
+	<Compile Include="Math\Vector3Test.cs" />
+	<Compile Include="Math\Vector4Test.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
