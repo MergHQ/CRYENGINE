@@ -186,6 +186,56 @@ struct STextureStreamingStats
 	const bool bComputeReuquiredTexturesPerFrame;
 };
 
+struct STexData
+{
+	byte*       m_pData[6];
+	uint16      m_nWidth;
+	uint16      m_nHeight;
+	uint16      m_nDepth;
+protected:
+	uint8       m_reallocated;
+public:
+	ETEX_Format m_eTF;
+	uint8       m_nMips;
+	int         m_nFlags;
+	float       m_fAvgBrightness;
+	ColorF      m_cMinColor;
+	ColorF      m_cMaxColor;
+	const char* m_pFilePath;
+
+	STexData()
+	{
+		m_pData[0] = m_pData[1] = m_pData[2] = m_pData[3] = m_pData[4] = m_pData[5] = 0;
+		m_nWidth = 0;
+		m_nHeight = 0;
+		m_nDepth = 1;
+		m_reallocated = 0;
+		m_eTF = eTF_Unknown;
+		m_nMips = 0;
+		m_nFlags = 0;
+		m_fAvgBrightness = 1.0f;
+		m_cMinColor = 0.0f;
+		m_cMaxColor = 1.0f;
+		m_pFilePath = 0;
+	}
+	void AssignData(unsigned int i, byte* pNewData)
+	{
+		assert(i < 6);
+		if (WasReallocated(i))
+			delete[] m_pData[i];
+		m_pData[i] = pNewData;
+		SetReallocated(i);
+	}
+	bool WasReallocated(unsigned int i) const
+	{
+		return (m_reallocated & (1 << i)) != 0;
+	}
+	void SetReallocated(unsigned int i)
+	{
+		m_reallocated |= (1 << i);
+	}
+};
+
 //! Texture object interface.
 class ITexture
 {
@@ -242,6 +292,7 @@ public:
 	//! Get low res system memory (used for CPU voxelization).
 	virtual const ColorB* GetLowResSystemCopy(uint16& nWidth, uint16& nHeight, int** ppLowResSystemCopyAtlasId) { return 0; }
 
+	virtual void UpdateData(STexData &td, int flags) = 0;
 	// </interfuscator:shuffle>
 
 	virtual void SetRenderTargetTile(uint8 nTile = 0) = 0;

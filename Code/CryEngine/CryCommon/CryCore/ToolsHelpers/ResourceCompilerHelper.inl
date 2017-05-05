@@ -167,6 +167,7 @@ static void CryFindEngineToolsFolder(unsigned int nEngineToolsPathSize, wchar_t*
 	szEngineToolsPath[0] = L'\0';
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 namespace
 {
@@ -274,6 +275,54 @@ private:
 	IResourceCompilerListener* m_listener;
 };
 }
+
+//////////////////////////////////////////////////////////////////////////
+const char* CResourceCompilerHelper::GetResourceCompilerConfigPath(CResourceCompilerHelper::ERcExePath rcExePath)
+{
+	bool dirFound = true;
+	CSettingsManagerTools smTools = CSettingsManagerTools();
+	SettingsManagerHelpers::CFixedString<wchar_t, MAX_PATH * 3> rcIniPath;
+	{
+		wchar_t pathBuffer[512];
+		switch (rcExePath)
+		{
+		case eRcExePath_registry:
+			smTools.GetRootPathUtf16(true, SettingsManagerHelpers::CWCharBuffer(pathBuffer, sizeof(pathBuffer)));
+			if (!pathBuffer[0])
+			{
+				dirFound = false;
+			} else {
+				rcIniPath.append(&pathBuffer[0]);
+				rcIniPath.append(L"/Tools/rc");
+			}
+			
+			break;
+		case eRcExePath_editor:
+			CryFindEngineToolsFolder(CRY_ARRAY_COUNT(pathBuffer), pathBuffer);
+			if (!pathBuffer[0])
+			{
+				dirFound = false;
+			}
+			else {
+				rcIniPath.append(&pathBuffer[0]);
+				rcIniPath.append(L"/rc");
+			}
+			
+			break;
+		default:
+			dirFound = false;
+		}
+	}
+	if (!dirFound)
+		return "";
+	rcIniPath.appendAscii("/");
+	rcIniPath.appendAscii("rc.ini");
+	char buffer[MAX_PATH];
+
+	SettingsManagerHelpers::GetAsciiFilename(rcIniPath.c_str(), SettingsManagerHelpers::CCharBuffer(buffer, sizeof(buffer)));
+	return buffer;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 CResourceCompilerHelper::ERcCallResult CResourceCompilerHelper::CallResourceCompiler(

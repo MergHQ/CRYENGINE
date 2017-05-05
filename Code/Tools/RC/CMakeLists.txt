@@ -25,7 +25,7 @@ set(WIN64 1)
 set(CRYENGINE_SOURCE_DIR ${CMAKE_SOURCE_DIR}/../../..) 
 set(OUTPUT_DIRECTORY "${CRYENGINE_SOURCE_DIR}/Tools/rc")
 
-set(CMAKE_CXX_FLAGS "/W3 /fp:fast /MP /GF /Gy /DWIN32 /D_WINDOWS /W3 /GR- /Gd /Zm250 /Zc:forScope /wd4251 /wd4275 /Gd /utf-8 /Wv:18 /DRESOURCE_COMPILER" CACHE STRING "C++ Flags" FORCE)
+set(CMAKE_CXX_FLAGS "/W3 /fp:fast /MP /GF /Gy /DWIN32 /D_WINDOWS /W3 /GR- /Gd /Zm250 /Zc:forScope /wd4251 /wd4275 /Gd /utf-8 /Wv:18" CACHE STRING "C++ Flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "/Zi /MTd /Od /Ob0 /Oy- /RTC1 /GS /bigobj /DFORCE_STANDARD_ASSERT /D_DEBUG" CACHE STRING "C++ Flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "/MT /Ox /Oi /Ot /Ob2 /Oy- /GS- /D NDEBUG /D_RELEASE /D PURE_CLIENT" CACHE STRING "C++ Flags" FORCE)
 
@@ -106,10 +106,11 @@ add_subdirectory(${CRY_LIBS_DIR}/vco ${CMAKE_CURRENT_BINARY_DIR}/vco)
 
 add_subdirectory(${CRYENGINE_SOURCE_DIR}/Code/Tools/CryXML ${CMAKE_CURRENT_BINARY_DIR}/CryXML)
 add_subdirectory(${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CryPhysics ${CMAKE_CURRENT_BINARY_DIR}/CryPhysics)
-
+add_subdirectory(${CRYENGINE_SOURCE_DIR}/Code/Sandbox/Libs/CrySubstance ${CMAKE_CURRENT_BINARY_DIR}/CrySubstance)
 # ResourceCompiler
 add_subdirectory(ResourceCompiler)
 add_subdirectory(ResourceCompilerABC)
 add_subdirectory(ResourceCompilerImage)
 add_subdirectory(ResourceCompilerPC)
 add_subdirectory(ResourceCompilerXML)
+add_subdirectory(ResourceCompilerSubstance)

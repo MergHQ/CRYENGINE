@@ -50,6 +50,13 @@ private:
 	string GetOutputPath() const;
 
 protected:
+
+	enum CompilerType
+	{
+		TextureSplitter,
+		Decompressor,
+	};
+
 	struct STexture;
 	
 	friend string MakeFileName( const string& filePath, const uint32 nChunk, const uint32 nFlags );
@@ -109,6 +116,8 @@ public:
 	// Used to override reported name of the source file.
 	void SetOverrideSourceFileName( const string &srcFilename );
 	string GetSourceFilename();
+
+	virtual void Init(const ConverterInitContext& context) override;
 
 	enum ETargetType
 	{
@@ -242,7 +251,7 @@ protected:
 	uint32 m_attachedAlphaOffset;
 
 	ConvertContext m_CC;
-
+	CompilerType m_compilerType;
 	string m_sOverrideSourceFile;
 };
 

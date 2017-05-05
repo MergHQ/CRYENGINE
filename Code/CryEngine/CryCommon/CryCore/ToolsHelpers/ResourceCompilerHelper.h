@@ -53,6 +53,8 @@ public:
 
 #if defined(CRY_ENABLE_RC_HELPER)
 
+	static const char* GetResourceCompilerConfigPath(ERcExePath rcExePath = eRcExePath_registry);
+
 	// Arguments:
 	//   szFileName null terminated file path (0 can be used to test for rc.exe existence)
 	//   szAdditionalSettings - 0 or e.g. "/refresh" or "/refresh /xyz=56"

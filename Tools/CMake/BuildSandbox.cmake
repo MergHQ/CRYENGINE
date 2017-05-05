@@ -3,10 +3,11 @@ set(CMAKE_AUTOMOC_RELAXED_MODE TRUE)
 
 #modules
 include("${TOOLS_CMAKE_DIR}/modules/FbxSdk.cmake")
-
+include("${CRYENGINE_DIR}/Tools/CMake/modules/Substance.cmake")
 #---
 
 add_subdirectory("Code/Sandbox/Libs/CryQt")
+add_subdirectory("Code/Sandbox/Libs/CrySubstance")
 
 set(EDITOR_DIR "Code/Sandbox/EditorQt" )
 add_subdirectory("Code/Sandbox/EditorQt")
@@ -54,6 +55,7 @@ add_subdirectory("Code/Sandbox/Plugins/DependencyGraph")
 if(EXISTS "${CRYENGINE_DIR}/Code/Sandbox/Plugins/LodGeneratorPlugin")
   add_subdirectory("Code/Sandbox/Plugins/LodGeneratorPlugin")
 endif()
+add_subdirectory("Code/Sandbox/Plugins/EditorSubstance")
 
 #libs
 add_subdirectory ("Code/Libs/prt")

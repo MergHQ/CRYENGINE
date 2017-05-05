@@ -231,7 +231,7 @@ void __stdcall RegisterConverters(IResourceCompiler* pRC)
 	// Texture splitter
 	{
 		pRC->RegisterConverter("TextureSplitter", new CTextureSplitter());
-
+		pRC->RegisterKey("decompress", "[DDS] 0/1 to decompress dds to tif");
 		pRC->RegisterKey("dont_split","[DDS] don't split the file for streaming layout");	
 		pRC->RegisterKey("numstreamablemips", "[DDS] Number of mips that should be available for streaming - defaults to all");
 	}
