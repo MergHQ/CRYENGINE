@@ -452,7 +452,8 @@ void CBaseDialog::OnOpen()
 
 	string assetFilePath;
 
-	if (gEnv->pConsole->GetCVar("ed_enableAssetPickers")->GetIVal())
+	const auto pickerState = (EAssetResourcePickerState)gEnv->pConsole->GetCVar("ed_enableAssetPickers")->GetIVal();
+	if (pickerState == EAssetResourcePickerState::EnableRecommended || pickerState == EAssetResourcePickerState::EnableAll)
 	{
 		auto assetTypes = GetAssetTypesFromFileFormatFlags(GetOpenFileFormatFlags());
 		const CAsset* const pAsset = CAssetBrowserDialog::OpenSingleAssetForTypes(assetTypes);
