@@ -279,6 +279,9 @@ public slots:
 	void OnSave();
 	void OnExtract();
 
+Q_SIGNALS:
+	void OnScriptElementRemoved(Schematyc::IScriptElement& sriptElement);
+
 protected:
 	virtual void keyPressEvent(QKeyEvent* pKeyEvent) override;
 	virtual void showEvent(QShowEvent* pEvent) override;

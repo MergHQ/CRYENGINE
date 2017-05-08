@@ -791,6 +791,23 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 	pScriptBrowser->InitLayout();
 	pScriptBrowser->GetSelectionSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CMainWindow::OnScriptBrowserSelection, *this), m_connectionScope);
 
+	QObject::connect(pScriptBrowser, &Schematyc::CScriptBrowserWidget::OnScriptElementRemoved, [this](Schematyc::IScriptElement& scriptElement)
+		{
+			if (m_pGraphView)
+			{
+			  CNodeGraphViewModel* pModel = static_cast<CNodeGraphViewModel*>(m_pGraphView->GetModel());
+			  if (pModel)
+			  {
+			    Schematyc::IScriptGraph* pScriptGraph = scriptElement.GetExtensions().QueryExtension<Schematyc::IScriptGraph>();
+			    if (pScriptGraph && &pModel->GetScriptGraph() == pScriptGraph)
+			    {
+			      m_pGraphView->SetModel(nullptr);
+			    }
+			  }
+			}
+
+	  });
+
 	if (m_pModel)
 	{
 		pScriptBrowser->SetModel(m_pModel);

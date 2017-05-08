@@ -220,19 +220,20 @@ void CScriptGraphSetNode::Register(CScriptGraphNodeFactory& factory)
 					scriptView.VisitScriptVariables(ScriptVariableConstVisitor::FromLambda(visitScriptVariable), EDomainScope::Derived);
 
 					// Library variables
-					CScriptView gloablView(gEnv->pSchematyc->GetScriptRegistry().GetRootElement().GetGUID());
-					auto visitLibraries = [&nodeCreationMenu](const IScriptVariable& scriptVariable) -> EVisitStatus
-					{
-						if (!scriptVariable.IsArray())
-						{
-							CStackString subject;
-							QualifyScriptElementName(gEnv->pSchematyc->GetScriptRegistry().GetRootElement(), scriptVariable, EDomainQualifier::Global, subject);
-							nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), scriptVariable.GetGUID()));
-						}
-						return EVisitStatus::Continue;
-					};
-					gloablView.VisitScriptModuleVariables(ScriptModuleVariablesConstVisitor::FromLambda(visitLibraries));
-
+					// TODO: Not yet supported.
+					/*CScriptView gloablView(gEnv->pSchematyc->GetScriptRegistry().GetRootElement().GetGUID());
+					   auto visitLibraries = [&nodeCreationMenu](const IScriptVariable& scriptVariable) -> EVisitStatus
+					   {
+					   if (!scriptVariable.IsArray())
+					   {
+					    CStackString subject;
+					    QualifyScriptElementName(gEnv->pSchematyc->GetScriptRegistry().GetRootElement(), scriptVariable, EDomainQualifier::Global, subject);
+					    nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), scriptVariable.GetGUID()));
+					   }
+					   return EVisitStatus::Continue;
+					   };
+					   gloablView.VisitScriptModuleVariables(ScriptModuleVariablesConstVisitor::FromLambda(visitLibraries));*/
+					// ~TODO
 					break;
 				}
 			}

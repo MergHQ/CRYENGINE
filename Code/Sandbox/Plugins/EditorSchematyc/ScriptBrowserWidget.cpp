@@ -1836,6 +1836,7 @@ void CScriptBrowserWidget::OnRemoveItem()
 					GetIEditor()->GetIUndoManager()->Accept(pUndoObject->GetDescription());
 				}
 
+				OnScriptElementRemoved(*pScriptElement);
 				ScriptBrowserUtils::RemoveScriptElement(*pScriptElement);
 			}
 		}
