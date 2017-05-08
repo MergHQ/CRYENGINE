@@ -1750,6 +1750,15 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 	pCryPak->SetGameFolderWritable(m_bGameFolderWritable);
 	m_env.pCryPak = pCryPak;
 
+	// Check if root folder is overridden by command-line
+	const ICmdLineArg* root = m_pCmdLine->FindArg(eCLAT_Pre, "root");
+	if (root)
+	{
+		string temp = PathUtil::ToUnixPath(PathUtil::AddSlash(root->GetValue()));
+		if (pCryPak->MakeDir(temp.c_str()))
+			m_root = temp;
+	}
+
 	if (m_bEditor || bLvlRes)
 		m_env.pCryPak->RecordFileOpen(ICryPak::RFOM_EngineStartup);
 
@@ -2620,14 +2629,6 @@ bool CSystem::Init()
 #if defined(ENABLE_LOADING_PROFILER)
 		CLoadingProfilerSystem::Init();
 #endif
-
-		const ICmdLineArg* root = m_pCmdLine->FindArg(eCLAT_Pre, "root");
-		if (root)
-		{
-			string temp = PathUtil::ToUnixPath(PathUtil::AddSlash(root->GetValue()));
-			if (gEnv->pCryPak->MakeDir(temp.c_str()))
-				m_root = temp;
-		}
 
 		//here we should be good to ask Crypak to do something
 
