@@ -2221,7 +2221,7 @@ void CD3D9Renderer::PrintResourcesLeaks()
 	CRenderElement* pRE;
 	for (pRE = CRenderElement::s_RootGlobal.m_NextGlobal; pRE != &CRenderElement::s_RootGlobal; pRE = pRE->m_NextGlobal)
 	{
-		const char* name = pRE->mfGetType() == eDATA_Mesh && ((CREMeshImpl*)pRE)->m_pRenderMesh ? ((CREMeshImpl*)pRE)->m_pRenderMesh->m_sSource : "-";
+		const char* name = pRE->mfGetType() == eDATA_Mesh && ((CREMeshImpl*)pRE)->m_pRenderMesh ? ((CREMeshImpl*)pRE)->m_pRenderMesh->m_sSource.c_str() : "-";
 
 		Warning("--- CRenderElement \"%s\" leak after level unload: %s", pRE->mfTypeString(), name);
 	}
