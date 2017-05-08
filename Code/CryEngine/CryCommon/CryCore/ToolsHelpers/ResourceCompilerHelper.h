@@ -53,7 +53,10 @@ public:
 
 #if defined(CRY_ENABLE_RC_HELPER)
 
-	static const char* GetResourceCompilerConfigPath(ERcExePath rcExePath = eRcExePath_registry);
+	//! Returns a file path to RC's INI file.
+	//! \return The number of characters written. If both buffer and bufferCount are 0, no characters are written to the buffer
+	//!		and the return value is number of characters required to write the output.
+	static int GetResourceCompilerConfigPath(char* buffer, size_t bufferCount, ERcExePath rcExePath = eRcExePath_registry);
 
 	// Arguments:
 	//   szFileName null terminated file path (0 can be used to test for rc.exe existence)

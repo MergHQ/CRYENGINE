@@ -66,7 +66,24 @@ CSubstancePlugin::CSubstancePlugin()
 	assert(g_pInstance == nullptr);
 	g_pInstance = this;
 	CFileHandler* fileHandler = new CFileHandler();
-	string iniPath = CResourceCompilerHelper::GetResourceCompilerConfigPath(CResourceCompilerHelper::eRcExePath_editor);
+
+	string iniPath;
+	{
+		std::vector<char> buffer;
+		buffer.resize(MAX_PATH);
+		auto getPath = [](std::vector<char>& buffer)
+		{
+			return CResourceCompilerHelper::GetResourceCompilerConfigPath(&buffer[0], buffer.size(), CResourceCompilerHelper::eRcExePath_editor);
+		};
+		const int len = getPath(buffer);
+		if (len >= buffer.size())
+		{
+			buffer.resize(len + 1);
+			getPath(buffer);
+		}
+		iniPath.assign(&buffer[0]);
+	}
+
 	InitCrySubstanceLib(fileHandler);
 	EditorSubstance::CManager::Instance()->Init();
 }

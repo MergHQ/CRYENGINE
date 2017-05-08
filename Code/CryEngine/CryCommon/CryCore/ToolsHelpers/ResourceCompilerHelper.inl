@@ -20,6 +20,8 @@
 	#include <shellapi.h> // ShellExecuteW()
 	#include <CryCore/Assert/CryAssert.h>
 
+	#include <stdio.h>
+
 // pseudo-variable that represents the DOS header of the module
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
@@ -277,7 +279,7 @@ private:
 }
 
 //////////////////////////////////////////////////////////////////////////
-const char* CResourceCompilerHelper::GetResourceCompilerConfigPath(CResourceCompilerHelper::ERcExePath rcExePath)
+int CResourceCompilerHelper::GetResourceCompilerConfigPath(char* outBuffer, size_t outBufferCount, CResourceCompilerHelper::ERcExePath rcExePath)
 {
 	bool dirFound = true;
 	CSettingsManagerTools smTools = CSettingsManagerTools();
@@ -314,13 +316,16 @@ const char* CResourceCompilerHelper::GetResourceCompilerConfigPath(CResourceComp
 		}
 	}
 	if (!dirFound)
-		return "";
+	{
+		return snprintf(outBuffer, outBufferCount, "");
+	}
 	rcIniPath.appendAscii("/");
 	rcIniPath.appendAscii("rc.ini");
 	char buffer[MAX_PATH];
 
 	SettingsManagerHelpers::GetAsciiFilename(rcIniPath.c_str(), SettingsManagerHelpers::CCharBuffer(buffer, sizeof(buffer)));
-	return buffer;
+
+	return snprintf(outBuffer, outBufferCount, "%s", buffer);
 }
 
 

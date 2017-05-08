@@ -92,7 +92,24 @@ namespace EditorSubstance {
 
 	void CManager::Init()
 	{
-		LoadTexturePresets(CResourceCompilerHelper::GetResourceCompilerConfigPath(CResourceCompilerHelper::eRcExePath_editor));
+		string configPath;
+		{
+			std::vector<char> buffer;
+			buffer.resize(MAX_PATH);
+			auto getPath = [](std::vector<char>& buffer)
+			{
+				return CResourceCompilerHelper::GetResourceCompilerConfigPath(&buffer[0], buffer.size(), CResourceCompilerHelper::eRcExePath_editor);
+			};
+			const int len = getPath(buffer);
+			if (len >= buffer.size())
+			{
+				buffer.resize(len + 1);
+				getPath(buffer);
+			}
+			configPath.assign(&buffer[0]);
+		}
+
+		LoadTexturePresets(configPath);
 
 		m_pCompressedRenderer = new EditorSubstance::Renderers::CCompressedRenderer();
 		m_pPreviewRenderer = new EditorSubstance::Renderers::CPreviewRenderer();
