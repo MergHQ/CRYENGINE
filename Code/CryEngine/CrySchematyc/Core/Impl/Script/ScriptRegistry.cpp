@@ -234,7 +234,9 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 		}
 	case EScriptElementType::Variable:
 		{
-			return scopeElementType == EScriptElementType::Class || scopeElementType == EScriptElementType::Module;
+			// TODO: Variables in modules aren't supported yet.
+			return scopeElementType == EScriptElementType::Class /*|| scopeElementType == EScriptElementType::Module*/;
+			// ~TODO
 		}
 	case EScriptElementType::Timer:
 		{
