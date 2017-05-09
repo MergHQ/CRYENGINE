@@ -22,7 +22,7 @@ add_sources("NoUberFile"
 end_sources()
 
 if(NOT RESOURCE_COMPILER)
-    CreateDynamicModule(CrySubstance PCH stdafx.cpp SOLUTION_FOLDER "Sandbox")
+    CreateDynamicModule(CrySubstance PCH stdafx.cpp SOLUTION_FOLDER "Sandbox/Libs")
     target_link_libraries(CrySubstance PRIVATE Substance)
     target_compile_definitions(${THIS_PROJECT} PRIVATE -DCrySubstanceEXPORTS -DWIN32 -DNOT_USE_CRY_MEMORY_MANAGER)
 else()

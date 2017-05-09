@@ -54,10 +54,11 @@ namespace EditorSubstance
 			const string relativeFileName = PathUtil::AbsolutePathToGamePath(absTargetFilePath);
 
 			CAsset* currentAsset = CAssetManager::GetInstance()->FindAssetForFile(relativeFileName);
+			bool checkDepenencies = true;
 			if (!currentAsset)
 			{
 				currentAsset = new CAsset("SubstanceDefinition", CryGUID::Create(), ctx.GetAssetName());
-
+				checkDepenencies = false;
 			}
 			CEditableAsset editAsset = ctx.CreateEditableAsset(*currentAsset);
 			editAsset.SetMetadataFile(relativeFileName + ".cryasset");
@@ -72,12 +73,15 @@ namespace EditorSubstance
 			editAsset.WriteToFile();
 
 			// after imported, lest try regenerate everything dependant
-			for (CAsset* depAsset : CAssetManager::GetInstance()->GetReverseDependencies(*currentAsset))
+			if (checkDepenencies)
 			{
-				string dependantAssetTypeName(depAsset->GetType()->GetTypeName());
-				if (dependantAssetTypeName == "SubstanceInstance")
+				for (CAsset* depAsset : CAssetManager::GetInstance()->GetReverseDependencies(*currentAsset))
 				{
-					EditorSubstance::CManager::Instance()->ForcePresetRegeneration(depAsset);
+					string dependantAssetTypeName(depAsset->GetType()->GetTypeName());
+					if (dependantAssetTypeName == "SubstanceInstance")
+					{
+						EditorSubstance::CManager::Instance()->ForcePresetRegeneration(depAsset);
+					}
 				}
 			}
 

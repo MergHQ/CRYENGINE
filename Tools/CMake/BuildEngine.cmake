@@ -36,12 +36,19 @@ option(OPTION_UNSIGNED_PAKS_IN_RELEASE "Allow unsigned PAK files to be used for 
 
 if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
 	option(OPTION_SANDBOX "Enable Sandbox" ON)
+	if (EXISTS "${SDK_DIR}/SubstanceEngines")
+		option(OPTION_SANDBOX_SUBSTANCE "Enable Sandbox Substance Integration" ON)
+	endif()
 	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 		set(OPTION_SANDBOX OFF)
 	endif()
 	if(OPTION_SANDBOX)
 		# Sandbox cannot be built in release mode
 		set(CMAKE_CONFIGURATION_TYPES Debug Profile CACHE STRING "Reset the configurations to what we need" FORCE)
+	else()
+		if(OPTION_SANDBOX_SUBSTANCE)
+			set(OPTION_SANDBOX_SUBSTANCE OFF)
+		endif()
 	endif()
 endif()
 
