@@ -98,10 +98,6 @@ std::vector<CAsset*> CAssetImporterImage::ImportAssets(const std::vector<string>
 		return {};
 	}
 
-	{
-		return std::vector<CAsset*>();
-	}
-
 	// If the source file is a TIF, we make it writable, as we might call the RC and store settings
 	// in it.
 	if (!stricmp(PathUtil::GetExt(absOutputSourceFilePath), "tif"))
