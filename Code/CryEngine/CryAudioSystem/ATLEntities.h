@@ -4,7 +4,7 @@
 
 #include "ATLUtils.h"
 #include "AudioInternalInterfaces.h"
-#include <SharedAudioData.h>
+#include "Common/SharedAudioData.h"
 #include <CryAudio/IListener.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CrySystem/TimeValue.h>
@@ -55,15 +55,16 @@ struct SATLXMLTags
 
 namespace Impl
 {
-struct IAudioObject;
-struct IAudioListener;
-struct IAudioTrigger;
+struct IObject;
+struct IListener;
+struct ITrigger;
 struct IParameter;
-struct IAudioSwitchState;
-struct IAudioEnvironment;
-struct IAudioEvent;
-struct IAudioFileEntry;
-struct IAudioImpl;
+struct ISwitchState;
+struct IEnvironment;
+struct IEvent;
+struct IFile;
+struct IStandaloneFile;
+struct IImpl;
 } // namespace Impl
 
 enum class EObjectFlags : EnumFlagsType
@@ -135,7 +136,7 @@ struct SATLSoundPropagationData
 	float occlusion = 0.0f;
 };
 
-class CATLListener final : public IListener
+class CATLListener final : public CryAudio::IListener
 {
 public:
 
@@ -144,7 +145,7 @@ public:
 	CATLListener& operator=(CATLListener const&) = delete;
 	CATLListener& operator=(CATLListener&&) = delete;
 
-	explicit CATLListener(Impl::IAudioListener* const pImplData)
+	explicit CATLListener(Impl::IListener* const pImplData)
 		: m_pImplData(pImplData)
 		, m_bNeedsFinalSetPosition(false)
 	{}
@@ -157,7 +158,7 @@ public:
 	ERequestStatus                   HandleSetTransformation(CObjectTransformation const& transformation);
 	Impl::SObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
 
-	Impl::IAudioListener* m_pImplData;
+	Impl::IListener* m_pImplData;
 
 private:
 
@@ -170,18 +171,19 @@ private:
 
 class CATLControlImpl
 {
-
 public:
+
 	CATLControlImpl() = default;
 	CATLControlImpl(CATLControlImpl const&) = delete;
 	CATLControlImpl(CATLControlImpl&&) = delete;
 	CATLControlImpl& operator=(CATLControlImpl const&) = delete;
 	CATLControlImpl& operator=(CATLControlImpl&&) = delete;
 
-	static void      SetImpl(Impl::IAudioImpl* const pImpl) { s_pImpl = pImpl; }
+	static void      SetImpl(Impl::IImpl* const pIImpl) { s_pIImpl = pIImpl; }
 
 protected:
-	static Impl::IAudioImpl* s_pImpl;
+
+	static Impl::IImpl* s_pIImpl;
 };
 
 class CATLTriggerImpl final : public CATLControlImpl
@@ -190,19 +192,15 @@ public:
 
 	explicit CATLTriggerImpl(
 	  TriggerImplId const audioTriggerImplId,
-	  Impl::IAudioTrigger const* const pImplData = nullptr)
+	  Impl::ITrigger const* const pImplData = nullptr)
 		: m_audioTriggerImplId(audioTriggerImplId)
 		, m_pImplData(pImplData)
 	{}
 
-	~CATLTriggerImpl()
-	{
-		CRY_ASSERT(s_pImpl != nullptr);
-		s_pImpl->DeleteAudioTrigger(m_pImplData);
-	}
+	~CATLTriggerImpl();
 
-	TriggerImplId const              m_audioTriggerImplId;
-	Impl::IAudioTrigger const* const m_pImplData;
+	TriggerImplId const         m_audioTriggerImplId;
+	Impl::ITrigger const* const m_pImplData;
 };
 
 class CATLTrigger final : public ATLControl
@@ -232,6 +230,7 @@ public:
 class IParameterImpl : public CATLControlImpl
 {
 public:
+
 	virtual ~IParameterImpl() = default;
 	virtual ERequestStatus Set(CATLAudioObject& audioObject, float const value) const = 0;
 };
@@ -245,11 +244,7 @@ public:
 		: m_pImplData(pImplData)
 	{}
 
-	~CParameterImpl()
-	{
-		CRY_ASSERT(s_pImpl != nullptr);
-		s_pImpl->DeleteAudioParameter(m_pImplData);
-	}
+	virtual ~CParameterImpl() override;
 
 	virtual ERequestStatus Set(CATLAudioObject& audioObject, float const value) const override;
 
@@ -275,6 +270,7 @@ public:
 class IAudioSwitchStateImpl : public CATLControlImpl
 {
 public:
+
 	virtual ~IAudioSwitchStateImpl() = default;
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const = 0;
 };
@@ -283,15 +279,11 @@ class CExternalAudioSwitchStateImpl final : public IAudioSwitchStateImpl
 {
 public:
 
-	explicit CExternalAudioSwitchStateImpl(Impl::IAudioSwitchState const* const pImplData)
+	explicit CExternalAudioSwitchStateImpl(Impl::ISwitchState const* const pImplData)
 		: m_pImplData(pImplData)
 	{}
 
-	~CExternalAudioSwitchStateImpl()
-	{
-		CRY_ASSERT(s_pImpl != nullptr);
-		s_pImpl->DeleteAudioSwitchState(m_pImplData);
-	}
+	virtual ~CExternalAudioSwitchStateImpl() override;
 
 	// IAudioSwitchStateImpl
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
@@ -299,7 +291,7 @@ public:
 
 private:
 
-	Impl::IAudioSwitchState const* const m_pImplData;
+	Impl::ISwitchState const* const m_pImplData;
 };
 
 class CATLSwitchState final
@@ -353,17 +345,13 @@ class CATLEnvironmentImpl final : public CATLControlImpl
 {
 public:
 
-	explicit CATLEnvironmentImpl(Impl::IAudioEnvironment const* const pImplData)
+	explicit CATLEnvironmentImpl(Impl::IEnvironment const* const pImplData)
 		: m_pImplData(pImplData)
 	{}
 
-	~CATLEnvironmentImpl()
-	{
-		CRY_ASSERT(s_pImpl != nullptr);
-		s_pImpl->DeleteAudioEnvironment(m_pImplData);
-	}
+	~CATLEnvironmentImpl();
 
-	Impl::IAudioEnvironment const* const m_pImplData;
+	Impl::IEnvironment const* const m_pImplData;
 };
 
 class CATLAudioEnvironment final : public CATLEntity<EnvironmentId>
@@ -389,18 +377,18 @@ public:
 
 	bool IsPlaying() const { return (m_state == EAudioStandaloneFileState::Playing) || (m_state == EAudioStandaloneFileState::Stopping); }
 
-	CATLAudioObject*            m_pAudioObject = nullptr;
-	Impl::IAudioStandaloneFile* m_pImplData = nullptr;
-	EAudioStandaloneFileState   m_state = EAudioStandaloneFileState::None;
-	CHashedString               m_hashedFilename;
+	CATLAudioObject*          m_pAudioObject = nullptr;
+	Impl::IStandaloneFile*    m_pImplData = nullptr;
+	EAudioStandaloneFileState m_state = EAudioStandaloneFileState::None;
+	CHashedString             m_hashedFilename;
 
 	// These variables are only needed when switching middleware
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	bool                       m_bLocalized = true;
-	void*                      m_pOwner = nullptr;
-	void*                      m_pUserData = nullptr;
-	void*                      m_pUserDataOwner = nullptr;
-	Impl::IAudioTrigger const* m_pTrigger = nullptr;
+	bool                  m_bLocalized = true;
+	void*                 m_pOwner = nullptr;
+	void*                 m_pUserData = nullptr;
+	void*                 m_pUserDataOwner = nullptr;
+	Impl::ITrigger const* m_pITrigger = nullptr;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 };
@@ -419,14 +407,14 @@ public:
 	TriggerImplId      m_audioTriggerImplId = InvalidTriggerImplId;
 	TriggerInstanceId  m_audioTriggerInstanceId = InvalidTriggerInstanceId;
 	EEventState        m_state = EEventState::None;
-	Impl::IAudioEvent* m_pImplData = nullptr;
+	Impl::IEvent*      m_pImplData = nullptr;
 };
 
 class CATLAudioFileEntry final
 {
 public:
 
-	explicit CATLAudioFileEntry(char const* const szPath = nullptr, Impl::IAudioFileEntry* const pImplData = nullptr)
+	explicit CATLAudioFileEntry(char const* const szPath = nullptr, Impl::IFile* const pImplData = nullptr)
 		: m_path(szPath)
 		, m_size(0)
 		, m_useCount(0)
@@ -457,7 +445,7 @@ public:
 	EStreamTaskType                    m_streamTaskType;
 	_smart_ptr<ICustomMemoryBlock>     m_pMemoryBlock;
 	IReadStreamPtr                     m_pReadStream;
-	Impl::IAudioFileEntry*             m_pImplData;
+	Impl::IFile*                       m_pImplData;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CTimeValue m_timeCached;

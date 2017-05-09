@@ -13,20 +13,19 @@ using namespace CryAudio::Impl::SDL_mixer;
 
 // Define global objects.
 CLogger g_implLogger;
-CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
+CCVars CryAudio::Impl::SDL_mixer::g_cvars;
 
 //////////////////////////////////////////////////////////////////////////
 class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
 {
 	CRYINTERFACE_BEGIN()
-		CRYINTERFACE_ADD(Cry::IDefaultModule)
-		CRYINTERFACE_ADD(CryAudio::IImplModule)
+	CRYINTERFACE_ADD(Cry::IDefaultModule)
+	CRYINTERFACE_ADD(CryAudio::IImplModule)
 	CRYINTERFACE_END()
-	
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "EngineModule_AudioImpl", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
 
 	CEngineModule_CryAudioImplSDLMixer();
-	virtual ~CEngineModule_CryAudioImplSDLMixer() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual char const* GetName() const override     { return "CryAudioImplSDLMixer"; }
@@ -35,10 +34,10 @@ class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr, ESystemEvents::ImplSet);
+		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
-		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
-		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr);
+		gEnv->pAudioSystem->SetImpl(new CImpl, data);
+		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnEvent, nullptr);
 
 		if (m_bSuccess)
 		{
@@ -53,9 +52,9 @@ class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	static void OnAudioEvent(SRequestInfo const* const pAudioRequestInfo)
+	static void OnEvent(SRequestInfo const* const pRequestInfo)
 	{
-		m_bSuccess = pAudioRequestInfo->requestResult == ERequestResult::Success;
+		m_bSuccess = pRequestInfo->requestResult == ERequestResult::Success;
 	}
 
 	static bool m_bSuccess;
@@ -66,7 +65,7 @@ bool CEngineModule_CryAudioImplSDLMixer::m_bSuccess = false;
 
 CEngineModule_CryAudioImplSDLMixer::CEngineModule_CryAudioImplSDLMixer()
 {
-	g_audioImplCVars.RegisterVariables();
+	g_cvars.RegisterVariables();
 }
 
 #include <CryCore/CrtDebugStats.h>

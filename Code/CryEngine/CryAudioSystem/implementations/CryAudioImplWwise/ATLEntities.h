@@ -15,37 +15,35 @@ namespace Impl
 {
 namespace Wwise
 {
-class CAudioObject final : public IAudioObject, public CPoolObject<CAudioObject, stl::PSyncNone>
+class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
 {
 public:
 
-	typedef std::map<AkAuxBusID, float> EnvironmentImplMap;
+	using EnvironmentImplMap = std::map<AkAuxBusID, float>;
 
-	explicit CAudioObject(AkGameObjectID const id)
+	explicit CObject(AkGameObjectID const id)
 		: m_id(id)
 		, m_bNeedsToUpdateEnvironments(false)
 	{}
 
-	virtual ~CAudioObject() override = default;
+	CObject(CObject const&) = delete;
+	CObject(CObject&&) = delete;
+	CObject& operator=(CObject const&) = delete;
+	CObject& operator=(CObject&&) = delete;
 
-	CAudioObject(CAudioObject const&) = delete;
-	CAudioObject(CAudioObject&&) = delete;
-	CAudioObject& operator=(CAudioObject const&) = delete;
-	CAudioObject& operator=(CAudioObject&&) = delete;
-
-	// IAudioObject
+	// CryAudio::Impl::IObject
 	virtual ERequestStatus Update() override;
 	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
-	virtual ERequestStatus SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount) override;
-	virtual ERequestStatus SetParameter(IParameter const* const pIAudioRtpc, float const value) override;
-	virtual ERequestStatus SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState) override;
+	virtual ERequestStatus SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
+	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) override;
+	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
-	virtual ERequestStatus ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent) override;
+	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
 	virtual ERequestStatus StopAllTriggers() override;
-	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override { return ERequestStatus::Success; }
-	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override { return ERequestStatus::Success; }
+	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Success; }
+	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Success; }
 	virtual ERequestStatus SetName(char const* const szName) override;
-	// ~IAudioObject
+	// ~CryAudio::Impl::IObject
 
 	AkGameObjectID const  m_id;
 	bool                  m_bNeedsToUpdateEnvironments;
@@ -58,68 +56,66 @@ private:
 	ERequestStatus PostEnvironmentAmounts();
 };
 
-struct SAudioListener final : public IAudioListener
+class CListener final : public IListener
 {
-	explicit SAudioListener(AkUniqueID const id_)
-		: id(id_)
+public:
+
+	explicit CListener(AkUniqueID const id)
+		: m_id(id)
 	{}
 
-	virtual ~SAudioListener() override = default;
+	CListener(CListener const&) = delete;
+	CListener(CListener&&) = delete;
+	CListener& operator=(CListener const&) = delete;
+	CListener& operator=(CListener&&) = delete;
 
-	SAudioListener(SAudioListener const&) = delete;
-	SAudioListener(SAudioListener&&) = delete;
-	SAudioListener& operator=(SAudioListener const&) = delete;
-	SAudioListener& operator=(SAudioListener&&) = delete;
-
-	// IAudioListener
+	// CryAudio::Impl::IListener
 	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
-	// ~IAudioListener
+	// ~CryAudio::Impl::IListener
 
-	AkUniqueID const id;
+	AkUniqueID const m_id;
 };
 
-struct SAudioTrigger final : public IAudioTrigger
+class CTrigger final : public ITrigger
 {
-	explicit SAudioTrigger(AkUniqueID const id_)
-		: id(id_)
+public:
+
+	explicit CTrigger(AkUniqueID const id)
+		: m_id(id)
 	{}
 
-	virtual ~SAudioTrigger() override = default;
+	CTrigger(CTrigger const&) = delete;
+	CTrigger(CTrigger&&) = delete;
+	CTrigger& operator=(CTrigger const&) = delete;
+	CTrigger& operator=(CTrigger&&) = delete;
 
-	SAudioTrigger(SAudioTrigger const&) = delete;
-	SAudioTrigger(SAudioTrigger&&) = delete;
-	SAudioTrigger& operator=(SAudioTrigger const&) = delete;
-	SAudioTrigger& operator=(SAudioTrigger&&) = delete;
-
-	// IAudioTrigger
+	// CryAudio::Impl::ITrigger
 	virtual ERequestStatus Load() const override;
 	virtual ERequestStatus Unload() const override;
-	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override;
-	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override;
-	// ~IAudioTrigger
+	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override;
+	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override;
+	// ~CryAudio::Impl::ITrigger
 
-	AkUniqueID const id;
+	AkUniqueID const m_id;
 
 private:
 
-	ERequestStatus SetLoaded(bool bLoad) const;
-	ERequestStatus SetLoadedAsync(IAudioEvent* const pIAudioEvent, bool bLoad) const;
+	ERequestStatus SetLoaded(bool const bLoad) const;
+	ERequestStatus SetLoadedAsync(IEvent* const pIEvent, bool const bLoad) const;
 };
 
-struct SAudioRtpc final : public IParameter
+struct SParameter final : public IParameter
 {
-	explicit SAudioRtpc(AkRtpcID const id_, float const mult_, float const shift_)
+	explicit SParameter(AkRtpcID const id_, float const mult_, float const shift_)
 		: mult(mult_)
 		, shift(shift_)
 		, id(id_)
 	{}
 
-	virtual ~SAudioRtpc() override = default;
-
-	SAudioRtpc(SAudioRtpc const&) = delete;
-	SAudioRtpc(SAudioRtpc&&) = delete;
-	SAudioRtpc& operator=(SAudioRtpc const&) = delete;
-	SAudioRtpc& operator=(SAudioRtpc&&) = delete;
+	SParameter(SParameter const&) = delete;
+	SParameter(SParameter&&) = delete;
+	SParameter& operator=(SParameter const&) = delete;
+	SParameter& operator=(SParameter&&) = delete;
 
 	float const    mult;
 	float const    shift;
@@ -134,9 +130,9 @@ enum class ESwitchType : EnumFlagsType
 	SwitchGroup,
 };
 
-struct SAudioSwitchState final : public IAudioSwitchState
+struct SSwitchState final : public ISwitchState
 {
-	explicit SAudioSwitchState(
+	explicit SSwitchState(
 	  ESwitchType const type_,
 	  AkUInt32 const stateOrSwitchGroupId_,
 	  AkUInt32 const stateOrSwitchId_,
@@ -147,12 +143,10 @@ struct SAudioSwitchState final : public IAudioSwitchState
 		, rtpcValue(rtpcValue_)
 	{}
 
-	virtual ~SAudioSwitchState() override = default;
-
-	SAudioSwitchState(SAudioSwitchState const&) = delete;
-	SAudioSwitchState(SAudioSwitchState&&) = delete;
-	SAudioSwitchState& operator=(SAudioSwitchState const&) = delete;
-	SAudioSwitchState& operator=(SAudioSwitchState&&) = delete;
+	SSwitchState(SSwitchState const&) = delete;
+	SSwitchState(SSwitchState&&) = delete;
+	SSwitchState& operator=(SSwitchState const&) = delete;
+	SSwitchState& operator=(SSwitchState&&) = delete;
 
 	ESwitchType const type;
 	AkUInt32 const    stateOrSwitchGroupId;
@@ -167,16 +161,16 @@ enum class EEnvironmentType : EnumFlagsType
 	Rtpc,
 };
 
-struct SAudioEnvironment final : public IAudioEnvironment
+struct SEnvironment final : public IEnvironment
 {
-	explicit SAudioEnvironment(EEnvironmentType const type_, AkAuxBusID const busId_)
+	explicit SEnvironment(EEnvironmentType const type_, AkAuxBusID const busId_)
 		: type(type_)
 		, busId(busId_)
 	{
 		CRY_ASSERT(type_ == EEnvironmentType::AuxBus);
 	}
 
-	explicit SAudioEnvironment(
+	explicit SEnvironment(
 	  EEnvironmentType const type_,
 	  AkRtpcID const rtpcId_,
 	  float const multiplier_,
@@ -189,12 +183,10 @@ struct SAudioEnvironment final : public IAudioEnvironment
 		CRY_ASSERT(type_ == EEnvironmentType::Rtpc);
 	}
 
-	virtual ~SAudioEnvironment() override = default;
-
-	SAudioEnvironment(SAudioEnvironment const&) = delete;
-	SAudioEnvironment(SAudioEnvironment&&) = delete;
-	SAudioEnvironment& operator=(SAudioEnvironment const&) = delete;
-	SAudioEnvironment& operator=(SAudioEnvironment&&) = delete;
+	SEnvironment(SEnvironment const&) = delete;
+	SEnvironment(SEnvironment&&) = delete;
+	SEnvironment& operator=(SEnvironment const&) = delete;
+	SEnvironment& operator=(SEnvironment&&) = delete;
 
 	EEnvironmentType const type;
 
@@ -216,53 +208,49 @@ struct SAudioEnvironment final : public IAudioEnvironment
 	};
 };
 
-struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent, stl::PSyncNone>
+class CEvent final : public IEvent, public CPoolObject<CEvent, stl::PSyncNone>
 {
-	explicit SAudioEvent(CATLEvent& atlEvent_)
-		: state(EEventState::None)
-		, id(AK_INVALID_UNIQUE_ID)
-		, atlEvent(atlEvent_)
+public:
+
+	explicit CEvent(CATLEvent& atlEvent_)
+		: m_state(EEventState::None)
+		, m_id(AK_INVALID_UNIQUE_ID)
+		, m_atlEvent(atlEvent_)
 	{}
 
-	virtual ~SAudioEvent() override = default;
+	CEvent(CEvent const&) = delete;
+	CEvent(CEvent&&) = delete;
+	CEvent& operator=(CEvent const&) = delete;
+	CEvent& operator=(CEvent&&) = delete;
 
-	SAudioEvent(SAudioEvent const&) = delete;
-	SAudioEvent(SAudioEvent&&) = delete;
-	SAudioEvent& operator=(SAudioEvent const&) = delete;
-	SAudioEvent& operator=(SAudioEvent&&) = delete;
-
-	// IAudioEvent
+	// CryAudio::Impl::IEvent
 	virtual ERequestStatus Stop() override;
-	// ~IAudioEvent
+	// ~CryAudio::Impl::IEvent
 
-	EEventState state;
-	AkUniqueID  id;
-	CATLEvent&  atlEvent;
+	EEventState m_state;
+	AkUniqueID  m_id;
+	CATLEvent&  m_atlEvent;
 };
 
-struct SAudioFileEntry final : public IAudioFileEntry
+struct SFile final : public IFile
 {
-	SAudioFileEntry() = default;
-	virtual ~SAudioFileEntry() override = default;
+	SFile() = default;
 
-	SAudioFileEntry(SAudioFileEntry const&) = delete;
-	SAudioFileEntry(SAudioFileEntry&&) = delete;
-	SAudioFileEntry& operator=(SAudioFileEntry const&) = delete;
-	SAudioFileEntry& operator=(SAudioFileEntry&&) = delete;
+	SFile(SFile const&) = delete;
+	SFile(SFile&&) = delete;
+	SFile& operator=(SFile const&) = delete;
+	SFile& operator=(SFile&&) = delete;
 
 	AkBankID bankId = AK_INVALID_BANK_ID;
 };
 
-struct SAudioStandaloneFile final : public IAudioStandaloneFile
+struct SStandaloneFile final : public IStandaloneFile
 {
-	SAudioStandaloneFile() = default;
-	virtual ~SAudioStandaloneFile() override = default;
-
-	SAudioStandaloneFile(SAudioStandaloneFile const&) = delete;
-	SAudioStandaloneFile(SAudioStandaloneFile&&) = delete;
-	SAudioStandaloneFile& operator=(SAudioStandaloneFile const&) = delete;
-	SAudioStandaloneFile& operator=(SAudioStandaloneFile&&) = delete;
-
+	SStandaloneFile() = default;
+	SStandaloneFile(SStandaloneFile const&) = delete;
+	SStandaloneFile(SStandaloneFile&&) = delete;
+	SStandaloneFile& operator=(SStandaloneFile const&) = delete;
+	SStandaloneFile& operator=(SStandaloneFile&&) = delete;
 };
 
 struct SEnvPairCompare

@@ -6,18 +6,18 @@
 
 namespace CryAudio
 {
-class CAudioCVars final
+class CCVars final
 {
 public:
 
-	CAudioCVars() = default;
-	CAudioCVars(CAudioCVars const&) = delete;
-	CAudioCVars(CAudioCVars&&) = delete;
-	CAudioCVars& operator=(CAudioCVars const&) = delete;
-	CAudioCVars& operator=(CAudioCVars&&) = delete;
+	CCVars() = default;
+	CCVars(CCVars const&) = delete;
+	CCVars(CCVars&&) = delete;
+	CCVars& operator=(CCVars const&) = delete;
+	CCVars& operator=(CCVars&&) = delete;
 
-	void         RegisterVariables();
-	void         UnregisterVariables();
+	void    RegisterVariables();
+	void    UnregisterVariables();
 
 	int   m_fileCacheManagerSize = 0;
 	int   m_audioObjectPoolSize = 0;
@@ -54,6 +54,6 @@ private:
 	static void CmdSetRtpc(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
 };
-} // namespace CryAudio
 
-extern CryAudio::CAudioCVars g_audioCVars;
+extern CCVars g_cvars;
+} // namespace CryAudio

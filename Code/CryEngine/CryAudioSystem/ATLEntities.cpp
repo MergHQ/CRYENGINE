@@ -4,6 +4,7 @@
 #include "ATLEntities.h"
 #include "AudioSystem.h"
 #include "ATLAudioObject.h"
+#include "Common/IAudioImpl.h"
 
 using namespace CryAudio;
 using namespace CryAudio::Impl;
@@ -59,7 +60,7 @@ char const* const SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute = "atl_occ
 
 char const* const SATLXMLTags::szATLDataLoadType = "AutoLoad";
 
-IAudioImpl* CATLControlImpl::s_pImpl = nullptr;
+IImpl* CATLControlImpl::s_pIImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
@@ -136,7 +137,35 @@ ERequestStatus CParameterImpl::Set(CATLAudioObject& audioObject, float const val
 }
 
 //////////////////////////////////////////////////////////////////////////
+CParameterImpl::~CParameterImpl()
+{
+	CRY_ASSERT(s_pIImpl != nullptr);
+	s_pIImpl->DestructParameter(m_pImplData);
+}
+
+//////////////////////////////////////////////////////////////////////////
 ERequestStatus CExternalAudioSwitchStateImpl::Set(CATLAudioObject& audioObject) const
 {
 	return audioObject.GetImplDataPtr()->SetSwitchState(m_pImplData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CExternalAudioSwitchStateImpl::~CExternalAudioSwitchStateImpl()
+{
+	CRY_ASSERT(s_pIImpl != nullptr);
+	s_pIImpl->DestructSwitchState(m_pImplData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CATLTriggerImpl::~CATLTriggerImpl()
+{
+	CRY_ASSERT(s_pIImpl != nullptr);
+	s_pIImpl->DestructTrigger(m_pImplData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CATLEnvironmentImpl::~CATLEnvironmentImpl()
+{
+	CRY_ASSERT(s_pIImpl != nullptr);
+	s_pIImpl->DestructEnvironment(m_pImplData);
 }

@@ -12,16 +12,16 @@
 
 namespace CryAudio
 {
-typedef uint32 IdType;
-typedef IdType ControlId;
-typedef IdType SwitchStateId;
-typedef IdType EnvironmentId;
-typedef IdType PreloadRequestId;
-typedef IdType FileEntryId;
-typedef IdType TriggerImplId;
-typedef IdType TriggerInstanceId;
-typedef IdType EnumFlagsType;
-typedef IdType AuxObjectId;
+using IdType = uint32;
+using ControlId = IdType;
+using SwitchStateId = IdType;
+using EnvironmentId = IdType;
+using PreloadRequestId = IdType;
+using FileEntryId = IdType;
+using TriggerImplId = IdType;
+using TriggerInstanceId = IdType;
+using EnumFlagsType = IdType;
+using AuxObjectId = IdType;
 
 static constexpr ControlId InvalidControlId = 0;
 static constexpr SwitchStateId InvalidSwitchStateId = 0;
@@ -33,22 +33,26 @@ static constexpr TriggerInstanceId InvalidTriggerInstanceId = 0;
 static constexpr EnumFlagsType InvalidEnumFlagType = 0;
 static constexpr AuxObjectId InvalidAuxObjectId = 0;
 static constexpr AuxObjectId DefaultAuxObjectId = 1;
-
 static constexpr uint8 MaxControlNameLength = 128;
 static constexpr uint8 MaxFileNameLength = 128;
 static constexpr uint16 MaxFilePathLength = 256;
 static constexpr uint16 MaxObjectNameLength = 256;
 static constexpr uint16 MaxMiscStringLength = 512;
+static constexpr uint32 InvalidCRC32 = 0xFFFFffff;
 
 // Forward declarations.
 struct IObject;
 class CATLEvent;
 class CATLStandaloneFile;
 
+/**
+* An enum listing flags that can be passed into methods via the SRequestUserData parameter.
+* These flags control how an internally generated request behaves.
+*/
 enum class ERequestFlags : EnumFlagsType
 {
 	None,
-	ExecuteBlocking                   = BIT(0), // Blocks the calling thread until the requests has been processed.
+	ExecuteBlocking                   = BIT(0), // Blocks the calling thread until the request has been processed.
 	CallbackOnExternalOrCallingThread = BIT(1), // Blocking requests will issue a callback on the calling thread, non-blocking requests will issue a callback on the external thread.
 	CallbackOnAudioThread             = BIT(2), // Issues a callback on the audio thread.
 	DoneCallbackOnExternalThread      = BIT(3), // Issues a callback on the external thread once a trigger instance finished playback of all its events.
@@ -57,9 +61,9 @@ enum class ERequestFlags : EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
 
 /**
- * An enum that lists possible statuses of an AudioRequest.
- * Used as a return type for many function used by the AudioSystem internally,
- * and also for most of the IAudioImpl calls
+ * An enum that lists possible statuses of an internally generated audio request.
+ * Used as a return type for many methods used by the AudioSystem internally,
+ * and also for most of the CryAudio::Impl::IImpl calls.
  */
 enum class ERequestStatus : EnumFlagsType
 {
@@ -106,6 +110,8 @@ public:
 		m_up.NormalizeFast();
 	}
 
+	static CObjectTransformation const& GetEmptyObject() { static CObjectTransformation const emptyInstance; return emptyInstance; }
+
 	ILINE Vec3 const& GetPosition() const { return m_position; }
 	ILINE Vec3 const& GetForward() const  { return m_forward; }
 	ILINE Vec3 const& GetUp() const       { return m_up; }
@@ -130,8 +136,6 @@ private:
 	Vec3 m_forward;
 	Vec3 m_up;
 };
-
-static const CObjectTransformation s_nullAudioObjectTransformation;
 
 struct SRequestUserData
 {

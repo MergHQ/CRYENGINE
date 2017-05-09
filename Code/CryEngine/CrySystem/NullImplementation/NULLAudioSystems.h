@@ -43,7 +43,7 @@ public:
 	CSystem&              operator=(CSystem&&) = delete;
 
 	virtual void          Release() override                                                                                                                                                           {}
-	virtual void          SetImpl(Impl::IAudioImpl* const pIImpl, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                      {}
+	virtual void          SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                           {}
 	virtual void          LoadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                       {}
 	virtual void          UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                     {}
 	virtual void          ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}

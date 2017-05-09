@@ -25,7 +25,7 @@ public:
 	void         Init(CSystem* const pSystem);
 
 	// IThread
-	virtual void ThreadEntry();
+	virtual void ThreadEntry() override;
 	// ~IThread
 
 	// Signals the thread that it should not accept anymore work and exit
@@ -55,7 +55,7 @@ public:
 
 	// CryAudio::IAudioSystem
 	virtual void          Release() override;
-	virtual void          SetImpl(Impl::IAudioImpl* const pIImpl, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void          SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void          LoadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void          UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void          ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
@@ -115,8 +115,8 @@ public:
 
 private:
 
-	typedef ConcQueue<UnboundMPSC, CAudioRequest> AudioRequests;
-	typedef ConcQueue<UnboundSPSC, CAudioRequest> AudioRequestsSyncCallbacks;
+	using AudioRequests = ConcQueue<UnboundMPSC, CAudioRequest>;
+	using AudioRequestsSyncCallbacks = ConcQueue<UnboundSPSC, CAudioRequest>;
 
 	void UpdateTime();
 	bool ProcessRequests(AudioRequests& requestQueue);

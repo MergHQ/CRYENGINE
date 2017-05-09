@@ -50,7 +50,7 @@ public:
 
 	static void FreeMemoryPool()
 	{
-		ms_pAllocator->FreeMemoryForce();
+		s_pAllocator->FreeMemoryForce();
 	}
 
 protected:
@@ -60,7 +60,7 @@ protected:
 private:
 	static void* AllocateObjectStorage();
 
-	static Allocator* ms_pAllocator;
+	static Allocator* s_pAllocator;
 };
 
 //------------------------------------------------------------------------

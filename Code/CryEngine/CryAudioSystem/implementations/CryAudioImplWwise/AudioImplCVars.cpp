@@ -7,7 +7,7 @@
 using namespace CryAudio::Impl::Wwise;
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImplCVars::RegisterVariables()
+void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
 	m_secondaryMemoryPoolSize = 0;
@@ -182,7 +182,7 @@ void CAudioImplCVars::RegisterVariables()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImplCVars::UnregisterVariables()
+void CCVars::UnregisterVariables()
 {
 	IConsole* const pConsole = gEnv->pConsole;
 

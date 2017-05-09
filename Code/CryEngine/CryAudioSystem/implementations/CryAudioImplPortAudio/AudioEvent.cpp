@@ -25,7 +25,7 @@ static int StreamCallback(
 {
 	CRY_ASSERT(framesPerBuffer == s_bufferLength);
 	sf_count_t numFramesRead = 0;
-	CAudioEvent* const pAudioEvent = static_cast<CAudioEvent*>(pUserData);
+	CEvent* const pAudioEvent = static_cast<CEvent*>(pUserData);
 
 	switch (pAudioEvent->sampleFormat)
 	{
@@ -82,20 +82,20 @@ static int StreamCallback(
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioEvent::CAudioEvent(CATLEvent& _audioEvent)
+CEvent::CEvent(CATLEvent& event_)
 	: pSndFile(nullptr)
 	, pStream(nullptr)
 	, pData(nullptr)
-	, pPAAudioObject(nullptr)
+	, pObject(nullptr)
 	, numChannels(0)
 	, remainingLoops(0)
-	, audioEvent(_audioEvent)
+	, event(event_)
 	, bDone(false)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioEvent::~CAudioEvent()
+CEvent::~CEvent()
 {
 	if (pStream != nullptr)
 	{
@@ -117,14 +117,14 @@ CAudioEvent::~CAudioEvent()
 		delete pData;
 	}
 
-	if (pPAAudioObject != nullptr)
+	if (pObject != nullptr)
 	{
-		pPAAudioObject->UnregisterAudioEvent(this);
+		pObject->UnregisterEvent(this);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioEvent::Execute(
+bool CEvent::Execute(
   int const numLoops,
   double const sampleRate,
   CryFixedStringT<MaxFilePathLength> const& filePath,
@@ -197,7 +197,7 @@ bool CAudioEvent::Execute(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEvent::Update()
+void CEvent::Update()
 {
 	if (bDone)
 	{
@@ -212,7 +212,7 @@ void CAudioEvent::Update()
 		}
 		else
 		{
-			gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
+			gEnv->pAudioSystem->ReportFinishedEvent(event, true);
 		}
 
 		bDone = false;
@@ -220,8 +220,8 @@ void CAudioEvent::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioEvent::Stop()
+ERequestStatus CEvent::Stop()
 {
-	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
+	gEnv->pAudioSystem->ReportFinishedEvent(event, true);
 	return ERequestStatus::Success;
 }

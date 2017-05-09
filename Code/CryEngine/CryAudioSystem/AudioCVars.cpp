@@ -8,7 +8,7 @@
 using namespace CryAudio;
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::RegisterVariables()
+void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
@@ -291,7 +291,7 @@ void CAudioCVars::RegisterVariables()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::UnregisterVariables()
+void CCVars::UnregisterVariables()
 {
 	IConsole* const pConsole = gEnv->pConsole;
 
@@ -332,7 +332,7 @@ void CAudioCVars::UnregisterVariables()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
 	ControlId audioTriggerId = InvalidControlId;
 
@@ -358,7 +358,7 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 {
 	ControlId audioTriggerId = InvalidControlId;
 
@@ -384,7 +384,7 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 {
 	ControlId parameterId = InvalidControlId;
 
@@ -412,7 +412,7 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 {
 	ControlId audioSwitchId = InvalidControlId;
 	SwitchStateId audioSwitchStateId = InvalidSwitchStateId;

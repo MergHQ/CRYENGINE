@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <IAudioImpl.h>
 #include "AudioInternalInterfaces.h"
 
 namespace CryAudio
@@ -29,7 +28,7 @@ public:
 
 private:
 
-	typedef std::vector<SAudioEventListener> ListenerArray;
+	using ListenerArray = std::vector<SAudioEventListener>;
 	ListenerArray m_listeners;
 };
 } // namespace CryAudio

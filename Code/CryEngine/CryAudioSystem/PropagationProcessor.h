@@ -2,20 +2,22 @@
 
 #pragma once
 
-#include "ATLEntities.h"
 #include <CryPhysics/IPhysics.h>
 #include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
 {
+class CATLAudioObject;
+struct SATLSoundPropagationData;
+
 static const size_t s_maxRayHits = 5;
 
 class CAudioRayInfo
 {
 public:
 
-	CAudioRayInfo(CATLAudioObject* _pAudioObject)
-		: pAudioObject(_pAudioObject)
+	CAudioRayInfo(CATLAudioObject* pObject_)
+		: pObject(pObject_)
 		, samplePosIndex(0)
 		, numHits(0)
 		, totalSoundOcclusion(0.0f)
@@ -30,7 +32,7 @@ public:
 
 	void Reset();
 
-	CATLAudioObject* pAudioObject;
+	CATLAudioObject* pObject;
 	size_t           samplePosIndex;
 	size_t           numHits;
 	float            totalSoundOcclusion;
@@ -156,4 +158,4 @@ private:
 	mutable float   m_timeSinceLastUpdateMS;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
-}
+} // namespace CryAudio

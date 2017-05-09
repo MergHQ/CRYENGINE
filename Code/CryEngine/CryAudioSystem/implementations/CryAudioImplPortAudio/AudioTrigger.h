@@ -18,11 +18,11 @@ enum class EEventType : EnumFlagsType
 	Stop,
 };
 
-class CAudioTrigger final : public IAudioTrigger
+class CTrigger final : public ITrigger
 {
 public:
 
-	explicit CAudioTrigger(
+	explicit CTrigger(
 	  uint32 const pathId_,
 	  int const numLoops_,
 	  double const sampleRate_,
@@ -37,17 +37,17 @@ public:
 		, streamParameters(streamParameters_)
 	{}
 
-	virtual ~CAudioTrigger() override = default;
+	virtual ~CTrigger() override = default;
 
-	CAudioTrigger(CAudioTrigger const&) = delete;
-	CAudioTrigger& operator=(CAudioTrigger const&) = delete;
+	CTrigger(CTrigger const&) = delete;
+	CTrigger& operator=(CTrigger const&) = delete;
 
-	// IAudioTrigger
-	virtual ERequestStatus Load() const override                                       { return ERequestStatus::Success; }
-	virtual ERequestStatus Unload() const override                                     { return ERequestStatus::Success; }
-	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return ERequestStatus::Success; }
-	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return ERequestStatus::Success; }
-	// ~IAudioTrigger
+	// CryAudio::Impl::ITrigger
+	virtual ERequestStatus Load() const override                             { return ERequestStatus::Success; }
+	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
+	virtual ERequestStatus LoadAsync(IEvent* const pIEvent) const override   { return ERequestStatus::Success; }
+	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
+	// ~CryAudio::Impl::ITrigger
 
 	uint32 const                             pathId;
 	int const                                numLoops;

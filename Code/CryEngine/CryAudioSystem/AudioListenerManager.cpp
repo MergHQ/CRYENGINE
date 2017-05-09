@@ -15,7 +15,7 @@ CAudioListenerManager::~CAudioListenerManager()
 {
 	if (!m_activeListeners.empty())
 	{
-		for (auto pListener : m_activeListeners)
+		for (auto const pListener : m_activeListeners)
 		{
 			CRY_ASSERT(pListener->m_pImplData == nullptr);
 			delete pListener;
@@ -26,15 +26,15 @@ CAudioListenerManager::~CAudioListenerManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioListenerManager::Init(IAudioImpl* const pImpl)
+void CAudioListenerManager::Init(IImpl* const pIImpl)
 {
-	m_pImpl = pImpl;
+	m_pIImpl = pIImpl;
 
 	if (!m_activeListeners.empty())
 	{
-		for (auto pListener : m_activeListeners)
+		for (auto const pListener : m_activeListeners)
 		{
-			pListener->m_pImplData = m_pImpl->ConstructAudioListener();
+			pListener->m_pImplData = m_pIImpl->ConstructListener();
 			pListener->HandleSetTransformation(pListener->Get3DAttributes().transformation);
 		}
 	}
@@ -43,19 +43,19 @@ void CAudioListenerManager::Init(IAudioImpl* const pImpl)
 //////////////////////////////////////////////////////////////////////////
 void CAudioListenerManager::Release()
 {
-	for (auto pListener : m_activeListeners)
+	for (auto const pListener : m_activeListeners)
 	{
-		m_pImpl->DestructAudioListener(pListener->m_pImplData);
+		m_pIImpl->DestructListener(pListener->m_pImplData);
 		pListener->m_pImplData = nullptr;
 	}
 
-	m_pImpl = nullptr;
+	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioListenerManager::Update(float const deltaTime)
 {
-	for (auto pListener : m_activeListeners)
+	for (auto const pListener : m_activeListeners)
 	{
 		pListener->Update();
 	}
@@ -70,7 +70,7 @@ CATLListener* CAudioListenerManager::CreateListener()
 		return m_activeListeners.front();
 	}
 
-	CATLListener* const pListener = new CATLListener(m_pImpl->ConstructAudioListener());
+	CATLListener* const pListener = new CATLListener(m_pIImpl->ConstructListener());
 	m_activeListeners.push_back(pListener);
 	return pListener;
 }
@@ -85,7 +85,7 @@ void CAudioListenerManager::ReleaseListener(CATLListener* const pListener)
 	{
 		if (pRegisteredListener == pListener)
 		{
-			m_pImpl->DestructAudioListener(pListener->m_pImplData);
+			m_pIImpl->DestructListener(pListener->m_pImplData);
 			delete pListener;
 			return true;
 		}
@@ -104,11 +104,11 @@ size_t CAudioListenerManager::GetNumActiveListeners() const
 //////////////////////////////////////////////////////////////////////////
 SObject3DAttributes const& CAudioListenerManager::GetActiveListenerAttributes() const
 {
-	for (auto pListener : m_activeListeners)
+	for (auto const pListener : m_activeListeners)
 	{
 		// Only one listener supported currently!
 		return pListener->Get3DAttributes();
 	}
 
-	return g_sNullAudioObjectAttributes;
+	return SObject3DAttributes::GetEmptyObject();
 }

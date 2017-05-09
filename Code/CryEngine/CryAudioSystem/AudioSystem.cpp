@@ -272,12 +272,12 @@ void CSystem::Release()
 
 	delete this;
 
-	g_audioCVars.UnregisterVariables();
+	g_cvars.UnregisterVariables();
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::SetImpl(Impl::IAudioImpl* const pIImpl, SRequestUserData const& userData /*= SAudioRequestUserData::GetEmptyObject()*/)
+void CSystem::SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userData /*= SAudioRequestUserData::GetEmptyObject()*/)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::SetAudioImpl> requestData(pIImpl);
 	CAudioRequest request(&requestData);
@@ -662,7 +662,7 @@ char const* CSystem::GetConfigPath() const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CSystem::CreateListener()
+CryAudio::IListener* CSystem::CreateListener()
 {
 	CATLListener* pListener = nullptr;
 	SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> requestData(&pListener);
@@ -670,11 +670,11 @@ IListener* CSystem::CreateListener()
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
 
-	return static_cast<IListener*>(pListener);
+	return static_cast<CryAudio::IListener*>(pListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CSystem::ReleaseListener(IListener* const pIListener)
+void CSystem::ReleaseListener(CryAudio::IListener* const pIListener)
 {
 	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 	SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> requestData(static_cast<CATLListener*>(pIListener));
@@ -683,7 +683,7 @@ void CSystem::ReleaseListener(IListener* const pIListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateObjectData::GetEmptyObject()*/, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateObjectData::GetEmptyObject()*/, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	CATLAudioObject* const pObject = new CATLAudioObject;
 	SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> requestData(objectData);
@@ -694,11 +694,11 @@ IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateOb
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
 	PushRequest(request);
-	return static_cast<IObject*>(pObject);
+	return static_cast<CryAudio::IObject*>(pObject);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ReleaseObject(IObject* const pIObject)
+void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 {
 	SAudioObjectRequestData<EAudioObjectRequestType::ReleaseObject> requestData;
 	CAudioRequest request(&requestData);
@@ -853,7 +853,7 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 void CSystem::DrawAudioDebugData()
 {
-	if (g_audioCVars.m_drawAudioDebug > 0)
+	if (g_cvars.m_drawAudioDebug > 0)
 	{
 		SAudioManagerRequestData<EAudioManagerRequestType::DrawDebugInfo> requestData;
 		CAudioRequest request(&requestData);

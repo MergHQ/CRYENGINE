@@ -12,18 +12,18 @@ using namespace CryAudio;
 using namespace CryAudio::Impl;
 using namespace CryAudio::Impl::Wwise;
 
-AkGameObjectID CAudioObject::s_dummyGameObjectId = static_cast<AkGameObjectID>(-2);
+AkGameObjectID CObject::s_dummyGameObjectId = static_cast<AkGameObjectID>(-2);
 
 // AK callbacks
 void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
 {
 	if (callbackType == AK_EndOfEvent)
 	{
-		SAudioEvent* const pAudioEvent = static_cast<SAudioEvent* const>(pCallbackInfo->pCookie);
+		CEvent* const pAudioEvent = static_cast<CEvent* const>(pCallbackInfo->pCookie);
 
 		if (pAudioEvent != nullptr)
 		{
-			gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->atlEvent, true);
+			gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->m_atlEvent, true);
 		}
 	}
 }
@@ -35,17 +35,17 @@ void PrepareEventCallback(
   AkMemPoolId memPoolId,
   void* pCookie)
 {
-	SAudioEvent* const pAudioEvent = static_cast<SAudioEvent* const>(pCookie);
+	CEvent* const pEvent = static_cast<CEvent* const>(pCookie);
 
-	if (pAudioEvent != nullptr)
+	if (pEvent != nullptr)
 	{
-		pAudioEvent->id = eventId;
-		gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->atlEvent, wwiseResult == AK_Success);
+		pEvent->m_id = eventId;
+		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_atlEvent, wwiseResult == AK_Success);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::Update()
+ERequestStatus CObject::Update()
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
@@ -58,7 +58,7 @@ ERequestStatus CAudioObject::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::Set3DAttributes(SObject3DAttributes const& attributes)
+ERequestStatus CObject::Set3DAttributes(SObject3DAttributes const& attributes)
 {
 	AkSoundPosition soundPos;
 	FillAKObjectPosition(attributes.transformation, soundPos);
@@ -75,11 +75,11 @@ ERequestStatus CAudioObject::Set3DAttributes(SObject3DAttributes const& attribut
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount)
+ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
 	static float const envEpsilon = 0.0001f;
 	ERequestStatus result = ERequestStatus::Failure;
-	SAudioEnvironment const* const pEnvironment = static_cast<SAudioEnvironment const* const>(pIAudioEnvironment);
+	SEnvironment const* const pEnvironment = static_cast<SEnvironment const* const>(pIEnvironment);
 
 	if (pEnvironment != nullptr)
 	{
@@ -134,15 +134,16 @@ ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::SetParameter(IParameter const* const pAudioRtpc, float const value)
+ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	SAudioRtpc const* const pAKRtpcData = static_cast<SAudioRtpc const* const>(pAudioRtpc);
-	if (pAKRtpcData != nullptr)
-	{
-		AkRtpcValue rtpcValue = static_cast<AkRtpcValue>(pAKRtpcData->mult * value + pAKRtpcData->shift);
+	SParameter const* const pParameter = static_cast<SParameter const* const>(pIParameter);
 
-		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pAKRtpcData->id, rtpcValue, m_id);
+	if (pParameter != nullptr)
+	{
+		AkRtpcValue rtpcValue = static_cast<AkRtpcValue>(pParameter->mult * value + pParameter->shift);
+
+		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pParameter->id, rtpcValue, m_id);
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
@@ -153,7 +154,7 @@ ERequestStatus CAudioObject::SetParameter(IParameter const* const pAudioRtpc, fl
 			g_implLogger.Log(
 			  ELogType::Warning,
 			  "Wwise failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
-			  pAKRtpcData->id,
+			  pParameter->id,
 			  static_cast<AkRtpcValue>(value),
 			  m_id);
 		}
@@ -164,15 +165,14 @@ ERequestStatus CAudioObject::SetParameter(IParameter const* const pAudioRtpc, fl
 	}
 
 	return result;
-
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState)
+ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	SAudioSwitchState const* const pSwitchState = static_cast<SAudioSwitchState const* const>(pIAudioSwitchState);
+	SSwitchState const* const pSwitchState = static_cast<SSwitchState const* const>(pISwitchState);
 
 	if (pSwitchState != nullptr)
 	{
@@ -267,11 +267,10 @@ ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 	}
 
 	return result;
-
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
@@ -299,14 +298,14 @@ ERequestStatus CAudioObject::SetObstructionOcclusion(float const obstruction, fl
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent)
+ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	SAudioTrigger const* const pAudioTrigger = static_cast<SAudioTrigger const* const>(pIAudioTrigger);
-	SAudioEvent* const pAudioEvent = static_cast<SAudioEvent*>(pIAudioEvent);
+	CTrigger const* const pTrigger = static_cast<CTrigger const* const>(pITrigger);
+	CEvent* const pEvent = static_cast<CEvent* const>(pIEvent);
 
-	if ((pAudioTrigger != nullptr) && (pAudioEvent != nullptr))
+	if ((pTrigger != nullptr) && (pEvent != nullptr))
 	{
 		AkGameObjectID gameObjectId = AK_INVALID_GAME_OBJECT;
 
@@ -318,21 +317,21 @@ ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTr
 		else
 		{
 			// If ID is invalid, then it is the global audio object
-			gameObjectId = CAudioObject::s_dummyGameObjectId;
+			gameObjectId = CObject::s_dummyGameObjectId;
 		}
 
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pAudioTrigger->id, gameObjectId, AK_EndOfEvent, &EndEventCallback, pAudioEvent);
+		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, gameObjectId, AK_EndOfEvent, &EndEventCallback, pEvent);
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{
-			pAudioEvent->state = EEventState::Playing;
-			pAudioEvent->id = id;
+			pEvent->m_state = EEventState::Playing;
+			pEvent->m_id = id;
 			result = ERequestStatus::Success;
 		}
 		else
 		{
 			// if posting an Event failed, try to prepare it, if it isn't prepared already
-			g_implLogger.Log(ELogType::Warning, "Failed to Post Wwise event %" PRISIZE_T, pAudioEvent->id);
+			g_implLogger.Log(ELogType::Warning, "Failed to Post Wwise event %" PRISIZE_T, pEvent->m_id);
 		}
 	}
 	else
@@ -344,15 +343,15 @@ ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTr
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::StopAllTriggers()
+ERequestStatus CObject::StopAllTriggers()
 {
-	AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : CAudioObject::s_dummyGameObjectId;
+	AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : CObject::s_dummyGameObjectId;
 	AK::SoundEngine::StopAll(gameObjectId);
 	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::SetName(char const* const szName)
+ERequestStatus CObject::SetName(char const* const szName)
 {
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	StopAllTriggers();
@@ -370,15 +369,15 @@ ERequestStatus CAudioObject::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioObject::PostEnvironmentAmounts()
+ERequestStatus CObject::PostEnvironmentAmounts()
 {
 	ERequestStatus result = ERequestStatus::Failure;
 	AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
 	uint32 auxIndex = 0;
 
-	CAudioObject::EnvironmentImplMap::iterator iEnvPair = m_environemntImplAmounts.begin();
-	CAudioObject::EnvironmentImplMap::const_iterator const iEnvStart = m_environemntImplAmounts.begin();
-	CAudioObject::EnvironmentImplMap::const_iterator const iEnvEnd = m_environemntImplAmounts.end();
+	CObject::EnvironmentImplMap::iterator iEnvPair = m_environemntImplAmounts.begin();
+	CObject::EnvironmentImplMap::const_iterator const iEnvStart = m_environemntImplAmounts.begin();
+	CObject::EnvironmentImplMap::const_iterator const iEnvEnd = m_environemntImplAmounts.end();
 
 	if (m_environemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
 	{
@@ -443,18 +442,17 @@ ERequestStatus CAudioObject::PostEnvironmentAmounts()
 	}
 
 	m_bNeedsToUpdateEnvironments = false;
-
 	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioEvent::Stop()
+ERequestStatus CEvent::Stop()
 {
-	switch (state)
+	switch (m_state)
 	{
 	case EEventState::Playing:
 		{
-			AK::SoundEngine::StopPlayingID(id, 10);
+			AK::SoundEngine::StopPlayingID(m_id, 10);
 			break;
 		}
 	default:
@@ -469,12 +467,12 @@ ERequestStatus SAudioEvent::Stop()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioListener::Set3DAttributes(SObject3DAttributes const& attributes)
+ERequestStatus CListener::Set3DAttributes(SObject3DAttributes const& attributes)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 	AkListenerPosition listenerPos;
 	FillAKListenerPosition(attributes.transformation, listenerPos);
-	AKRESULT const wwiseResult = AK::SoundEngine::SetListenerPosition(listenerPos, id);
+	AKRESULT const wwiseResult = AK::SoundEngine::SetListenerPosition(listenerPos, m_id);
 
 	if (IS_WWISE_OK(wwiseResult))
 	{
@@ -484,42 +482,40 @@ ERequestStatus SAudioListener::Set3DAttributes(SObject3DAttributes const& attrib
 	{
 		g_implLogger.Log(ELogType::Warning, "Wwise SetListenerPosition failed with AKRESULT: %" PRISIZE_T, wwiseResult);
 	}
+
 	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioTrigger::Load() const
+ERequestStatus CTrigger::Load() const
 {
 	return SetLoaded(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioTrigger::Unload() const
+ERequestStatus CTrigger::Unload() const
 {
 	return SetLoaded(false);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioTrigger::LoadAsync(IAudioEvent* const pIAudioEvent) const
+ERequestStatus CTrigger::LoadAsync(IEvent* const pIEvent) const
 {
-	return SetLoadedAsync(pIAudioEvent, true);
+	return SetLoadedAsync(pIEvent, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioTrigger::UnloadAsync(IAudioEvent* const pIAudioEvent) const
+ERequestStatus CTrigger::UnloadAsync(IEvent* const pIEvent) const
 {
-	return SetLoadedAsync(pIAudioEvent, false);
+	return SetLoadedAsync(pIEvent, false);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioTrigger::SetLoaded(bool bLoad) const
+ERequestStatus CTrigger::SetLoaded(bool const bLoad) const
 {
 	ERequestStatus result = ERequestStatus::Failure;
-
-	AkUniqueID nImplAKID = id;
-
-	AKRESULT const wwiseResult =
-	  AK::SoundEngine::PrepareEvent(bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload, &nImplAKID, 1);
+	AkUniqueID id = m_id;
+	AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload, &id, 1);
 
 	if (IS_WWISE_OK(wwiseResult))
 	{
@@ -531,7 +527,7 @@ ERequestStatus SAudioTrigger::SetLoaded(bool bLoad) const
 		  ELogType::Warning,
 		  "Wwise PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %" PRISIZE_T,
 		  bLoad ? "Preparation_Load" : "Preparation_Unload",
-		  id,
+		  m_id,
 		  wwiseResult);
 	}
 
@@ -539,27 +535,26 @@ ERequestStatus SAudioTrigger::SetLoaded(bool bLoad) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioTrigger::SetLoadedAsync(IAudioEvent* const pIAudioEvent, bool bLoad) const
+ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad) const
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	SAudioEvent* const pAudioEvent = static_cast<SAudioEvent*>(pIAudioEvent);
+	CEvent* const pEvent = static_cast<CEvent*>(pIEvent);
 
-	if (pAudioEvent != nullptr)
+	if (pEvent != nullptr)
 	{
-		AkUniqueID nImplAKID = id;
+		AkUniqueID id = m_id;
 		AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(
 		  bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload,
-		  &nImplAKID,
+		  &id,
 		  1,
 		  &PrepareEventCallback,
-		  pAudioEvent);
+		  pEvent);
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
-			pAudioEvent->id = id;
-			pAudioEvent->state = EEventState::Unloading;
-
+			pEvent->m_id = m_id;
+			pEvent->m_state = EEventState::Unloading;
 			result = ERequestStatus::Success;
 		}
 		else
@@ -568,14 +563,14 @@ ERequestStatus SAudioTrigger::SetLoadedAsync(IAudioEvent* const pIAudioEvent, bo
 			  ELogType::Warning,
 			  "Wwise PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
 			  bLoad ? "Preparation_Load" : "Preparation_Unload",
-			  id,
+			  m_id,
 			  wwiseResult);
 		}
 	}
 	else
 	{
 		g_implLogger.Log(ELogType::Error,
-		                 "Invalid IAudioEvent passed to the Wwise implementation of %sTriggerAsync",
+		                 "Invalid IEvent passed to the Wwise implementation of %sTriggerAsync",
 		                 bLoad ? "Load" : "Unprepare");
 	}
 

@@ -36,13 +36,13 @@ inline void* Secondary_Allocate(size_t const nSize)
 	// and at the beginning the handle is saved.
 
 	/* Allocate in Referenced Secondary Pool */
-	uint32 const nAllocHandle = g_audioImplMemoryPoolSecondary.Allocate<uint32>(nSize, MEMORY_ALLOCATION_ALIGNMENT);
-	CRY_ASSERT(nAllocHandle > 0);
+	uint32 const allocHandle = g_audioImplMemoryPoolSecondary.Allocate<uint32>(nSize, MEMORY_ALLOCATION_ALIGNMENT);
+	CRY_ASSERT(allocHandle > 0);
 	void* pAlloc = NULL;
 
-	if (nAllocHandle > 0)
+	if (allocHandle > 0)
 	{
-		pAlloc = g_audioImplMemoryPoolSecondary.Resolve<void*>(nAllocHandle);
+		pAlloc = g_audioImplMemoryPoolSecondary.Resolve<void*>(allocHandle);
 	}
 
 	return pAlloc;
@@ -56,11 +56,11 @@ inline bool Secondary_Free(void* pFree)
 
 	// retrieve handle
 	bool bFreed = (pFree == NULL);//true by default when passing NULL
-	uint32 const nAllocHandle = g_audioImplMemoryPoolSecondary.AddressToHandle(pFree);
+	uint32 const allocHandle = g_audioImplMemoryPoolSecondary.AddressToHandle(pFree);
 
-	if (nAllocHandle > 0)
+	if (allocHandle > 0)
 	{
-		bFreed = g_audioImplMemoryPoolSecondary.Free(nAllocHandle);
+		bFreed = g_audioImplMemoryPoolSecondary.Free(allocHandle);
 	}
 
 	return bFreed;

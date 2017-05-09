@@ -106,7 +106,7 @@ public:
 	ERequestStatus   HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
 	ERequestStatus   HandleStopFile(char const* const szFile);
 
-	void             Init(char const* const szName, Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition);
+	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition);
 	void             Release();
 
 	// Callbacks
@@ -131,12 +131,12 @@ public:
 	void                           GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void                           ReleasePendingRays();
 
-	ObjectStandaloneFileMap const& GetActiveStandaloneFiles() const                    { return m_activeStandaloneFiles; }
+	ObjectStandaloneFileMap const& GetActiveStandaloneFiles() const               { return m_activeStandaloneFiles; }
 
-	void                           SetImplDataPtr(Impl::IAudioObject* const pImplData) { m_pImplData = pImplData; }
-	Impl::IAudioObject*            GetImplDataPtr() const                              { return m_pImplData; }
+	void                           SetImplDataPtr(Impl::IObject* const pImplData) { m_pImplData = pImplData; }
+	Impl::IObject*                 GetImplDataPtr() const                         { return m_pImplData; }
 
-	CObjectTransformation const&   GetTransformation()                                 { return m_attributes.transformation; }
+	CObjectTransformation const&   GetTransformation()                            { return m_attributes.transformation; }
 
 	// Flags / Properties
 	EObjectFlags GetFlags() const { return m_flags; }
@@ -181,7 +181,7 @@ private:
 	ObjectParameterMap        m_parameters;
 	ObjectEnvironmentMap      m_environments;
 	ObjectStateMap            m_switchStates;
-	Impl::IAudioObject*       m_pImplData;
+	Impl::IObject*            m_pImplData;
 	float                     m_maxRadius;
 	EObjectFlags              m_flags;
 	float                     m_previousVelocity;

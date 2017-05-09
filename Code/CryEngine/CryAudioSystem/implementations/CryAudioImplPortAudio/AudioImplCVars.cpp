@@ -7,12 +7,12 @@
 using namespace CryAudio::Impl::PortAudio;
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImplCVars::RegisterVariables()
+void CCVars::RegisterVariables()
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImplCVars::UnregisterVariables()
+void CCVars::UnregisterVariables()
 {
 	IConsole* const pConsole = gEnv->pConsole;
 

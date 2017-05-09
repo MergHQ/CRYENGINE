@@ -20,22 +20,22 @@ CFileCacheManager::CFileCacheManager(AudioPreloadRequestLookup& preloadRequests)
 	: m_preloadRequests(preloadRequests)
 	, m_currentByteTotal(0)
 	, m_maxByteTotal(0)
-	, m_pImpl(nullptr)
+	, m_pIImpl(nullptr)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Init(IAudioImpl* const pImpl)
+void CFileCacheManager::Init(IImpl* const pIImpl)
 {
-	m_pImpl = pImpl;
-	AllocateHeap(static_cast<size_t>(g_audioCVars.m_fileCacheManagerSize), "AudioFileCacheManager");
+	m_pIImpl = pIImpl;
+	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::Release()
 {
 	CRY_ASSERT(m_audioFileEntries.empty());
-	m_pImpl = nullptr;
+	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -64,70 +64,70 @@ void CFileCacheManager::AllocateHeap(size_t const size, char const* const szUsag
 //////////////////////////////////////////////////////////////////////////
 FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad)
 {
-	FileEntryId audioFileEntryId = CryAudio::InvalidFileEntryId;
-	SAudioFileEntryInfo fileEntryInfo;
+	FileEntryId fileEntryId = CryAudio::InvalidFileEntryId;
+	SFileInfo fileInfo;
 
-	if (m_pImpl->ParseAudioFileEntry(pFileNode, &fileEntryInfo) == ERequestStatus::Success)
+	if (m_pIImpl->ConstructFile(pFileNode, &fileInfo) == ERequestStatus::Success)
 	{
-		CryFixedStringT<MaxFilePathLength> fullPath(m_pImpl->GetAudioFileLocation(&fileEntryInfo));
+		CryFixedStringT<MaxFilePathLength> fullPath(m_pIImpl->GetFileLocation(&fileInfo));
 		fullPath += CRY_NATIVE_PATH_SEPSTR;
-		fullPath += fileEntryInfo.szFileName;
-		CATLAudioFileEntry* pNewAudioFileEntry = new CATLAudioFileEntry(fullPath, fileEntryInfo.pImplData);
+		fullPath += fileInfo.szFileName;
+		CATLAudioFileEntry* pFileEntry = new CATLAudioFileEntry(fullPath, fileInfo.pImplData);
 
-		if (pNewAudioFileEntry != nullptr)
+		if (pFileEntry != nullptr)
 		{
-			pNewAudioFileEntry->m_memoryBlockAlignment = fileEntryInfo.memoryBlockAlignment;
+			pFileEntry->m_memoryBlockAlignment = fileInfo.memoryBlockAlignment;
 
-			if (fileEntryInfo.bLocalized)
+			if (fileInfo.bLocalized)
 			{
-				pNewAudioFileEntry->m_flags |= EFileFlags::Localized;
+				pFileEntry->m_flags |= EFileFlags::Localized;
 			}
 
-			audioFileEntryId = static_cast<FileEntryId>(AudioStringToId(pNewAudioFileEntry->m_path.c_str()));
-			CATLAudioFileEntry* const __restrict pExisitingAudioFileEntry = stl::find_in_map(m_audioFileEntries, audioFileEntryId, nullptr);
+			fileEntryId = static_cast<FileEntryId>(StringToId(pFileEntry->m_path.c_str()));
+			CATLAudioFileEntry* const __restrict pExisitingFileEntry = stl::find_in_map(m_audioFileEntries, fileEntryId, nullptr);
 
-			if (pExisitingAudioFileEntry == nullptr)
+			if (pExisitingFileEntry == nullptr)
 			{
 				if (!bAutoLoad)
 				{
 					// Can now be ref-counted and therefore manually unloaded.
-					pNewAudioFileEntry->m_flags |= EFileFlags::UseCounted;
+					pFileEntry->m_flags |= EFileFlags::UseCounted;
 				}
 
-				pNewAudioFileEntry->m_dataScope = dataScope;
-				pNewAudioFileEntry->m_path.MakeLower();
-				size_t const fileSize = gEnv->pCryPak->FGetSize(pNewAudioFileEntry->m_path.c_str());
+				pFileEntry->m_dataScope = dataScope;
+				pFileEntry->m_path.MakeLower();
+				size_t const fileSize = gEnv->pCryPak->FGetSize(pFileEntry->m_path.c_str());
 
 				if (fileSize > 0)
 				{
-					pNewAudioFileEntry->m_size = fileSize;
-					pNewAudioFileEntry->m_flags = (pNewAudioFileEntry->m_flags | EFileFlags::NotCached) & ~EFileFlags::NotFound;
-					pNewAudioFileEntry->m_streamTaskType = eStreamTaskTypeSound;
+					pFileEntry->m_size = fileSize;
+					pFileEntry->m_flags = (pFileEntry->m_flags | EFileFlags::NotCached) & ~EFileFlags::NotFound;
+					pFileEntry->m_streamTaskType = eStreamTaskTypeSound;
 				}
 				else
 				{
-					g_logger.Log(ELogType::Warning, "Couldn't find audio file %s for pre-loading.", pNewAudioFileEntry->m_path.c_str());
+					g_logger.Log(ELogType::Warning, "Couldn't find audio file %s for pre-loading.", pFileEntry->m_path.c_str());
 				}
 
-				m_audioFileEntries[audioFileEntryId] = pNewAudioFileEntry;
+				m_audioFileEntries[fileEntryId] = pFileEntry;
 			}
 			else
 			{
-				if ((pExisitingAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0 && bAutoLoad)
+				if ((pExisitingFileEntry->m_flags & EFileFlags::UseCounted) > 0 && bAutoLoad)
 				{
 					// This file entry is upgraded from "manual loading" to "auto loading" but needs a reset to "manual loading" again!
-					pExisitingAudioFileEntry->m_flags = (pExisitingAudioFileEntry->m_flags | EFileFlags::NeedsResetToManualLoading) & ~EFileFlags::UseCounted;
-					g_logger.Log(ELogType::Always, "Upgraded file entry from \"manual loading\" to \"auto loading\": %s", pExisitingAudioFileEntry->m_path.c_str());
+					pExisitingFileEntry->m_flags = (pExisitingFileEntry->m_flags | EFileFlags::NeedsResetToManualLoading) & ~EFileFlags::UseCounted;
+					g_logger.Log(ELogType::Always, "Upgraded file entry from \"manual loading\" to \"auto loading\": %s", pExisitingFileEntry->m_path.c_str());
 				}
 
 				// Entry already exists, free the memory!
-				m_pImpl->DeleteAudioFileEntry(pNewAudioFileEntry->m_pImplData);
-				delete pNewAudioFileEntry;
+				m_pIImpl->DestructFile(pFileEntry->m_pImplData);
+				delete pFileEntry;
 			}
 		}
 	}
 
-	return audioFileEntryId;
+	return fileEntryId;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ bool CFileCacheManager::TryRemoveFileCacheEntry(FileEntryId const audioFileEntry
 		if (pAudioFileEntry->m_dataScope == dataScope)
 		{
 			UncacheFileCacheEntryInternal(pAudioFileEntry, true, true);
-			m_pImpl->DeleteAudioFileEntry(pAudioFileEntry->m_pImplData);
+			m_pIImpl->DestructFile(pAudioFileEntry->m_pImplData);
 			delete pAudioFileEntry;
 			m_audioFileEntries.erase(iter);
 		}
@@ -252,7 +252,7 @@ ERequestStatus CFileCacheManager::UnloadDataByScope(EDataScope const dataScope)
 		{
 			if (UncacheFileCacheEntryInternal(pAudioFileEntry, true, true))
 			{
-				m_pImpl->DeleteAudioFileEntry(pAudioFileEntry->m_pImplData);
+				m_pIImpl->DestructFile(pAudioFileEntry->m_pImplData);
 				delete pAudioFileEntry;
 				iter = m_audioFileEntries.erase(iter);
 				iterEnd = m_audioFileEntries.end();
@@ -327,17 +327,17 @@ void CFileCacheManager::StreamAsyncOnComplete(IReadStream* pStream, unsigned int
 //////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float const posY)
 {
-	if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowFileCacheManagerInfo) > 0)
+	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowFileCacheManagerInfo) > 0)
 	{
 		EDataScope dataScope = EDataScope::All;
 
-		if ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::All) == 0)
+		if ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::All) == 0)
 		{
-			if ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0)
+			if ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0)
 			{
 				dataScope = EDataScope::Global;
 			}
-			else if ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0)
+			else if ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0)
 			{
 				dataScope = EDataScope::LevelSpecific;
 			}
@@ -372,9 +372,9 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 			CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 
 			if (pAudioFileEntry->m_dataScope == EDataScope::Global &&
-			    ((g_audioCVars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
-			     (g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0 ||
-			     ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
+			    ((g_cvars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
+			     (g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0 ||
+			     ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
 			      (pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0)))
 			{
 				if ((pAudioFileEntry->m_flags & EFileFlags::Loading) > 0)
@@ -443,9 +443,9 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 			CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 
 			if (pAudioFileEntry->m_dataScope == EDataScope::LevelSpecific &&
-			    ((g_audioCVars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
-			     (g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0 ||
-			     ((g_audioCVars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
+			    ((g_cvars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
+			     (g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0 ||
+			     ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
 			      (pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0)))
 			{
 				if ((pAudioFileEntry->m_flags & EFileFlags::Loading) > 0)
@@ -580,14 +580,14 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 			pAudioFileEntry->m_timeCached = gEnv->pTimer->GetAsyncTime();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			SAudioFileEntryInfo fileEntryInfo;
+			SFileInfo fileEntryInfo;
 			fileEntryInfo.memoryBlockAlignment = pAudioFileEntry->m_memoryBlockAlignment;
 			fileEntryInfo.pFileData = pAudioFileEntry->m_pMemoryBlock->GetData();
 			fileEntryInfo.size = pAudioFileEntry->m_size;
 			fileEntryInfo.pImplData = pAudioFileEntry->m_pImplData;
 			fileEntryInfo.szFileName = PathUtil::GetFile(pAudioFileEntry->m_path.c_str());
 
-			m_pImpl->RegisterInMemoryFile(&fileEntryInfo);
+			m_pIImpl->RegisterInMemoryFile(&fileEntryInfo);
 			bSuccess = true;
 		}
 		else if (error == ERROR_USER_ABORT)
@@ -645,14 +645,14 @@ void CFileCacheManager::UncacheFile(CATLAudioFileEntry* const pAudioFileEntry)
 
 	if (pAudioFileEntry->m_pMemoryBlock != nullptr && pAudioFileEntry->m_pMemoryBlock->GetData() != nullptr)
 	{
-		SAudioFileEntryInfo fileEntryInfo;
+		SFileInfo fileEntryInfo;
 		fileEntryInfo.memoryBlockAlignment = pAudioFileEntry->m_memoryBlockAlignment;
 		fileEntryInfo.pFileData = pAudioFileEntry->m_pMemoryBlock->GetData();
 		fileEntryInfo.size = pAudioFileEntry->m_size;
 		fileEntryInfo.pImplData = pAudioFileEntry->m_pImplData;
 		fileEntryInfo.szFileName = PathUtil::GetFile(pAudioFileEntry->m_path.c_str());
 
-		m_pImpl->UnregisterInMemoryFile(&fileEntryInfo);
+		m_pIImpl->UnregisterInMemoryFile(&fileEntryInfo);
 	}
 
 	pAudioFileEntry->m_pMemoryBlock = nullptr;
@@ -684,7 +684,7 @@ void CFileCacheManager::TryToUncacheFiles()
 ///////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::UpdateLocalizedFileEntryData(CATLAudioFileEntry* const pAudioFileEntry)
 {
-	static SAudioFileEntryInfo fileEntryInfo;
+	static SFileInfo fileEntryInfo;
 	fileEntryInfo.bLocalized = true;
 	fileEntryInfo.size = 0;
 	fileEntryInfo.pFileData = nullptr;
@@ -694,7 +694,7 @@ void CFileCacheManager::UpdateLocalizedFileEntryData(CATLAudioFileEntry* const p
 	fileEntryInfo.pImplData = pAudioFileEntry->m_pImplData;
 	fileEntryInfo.szFileName = fileName.c_str();
 
-	pAudioFileEntry->m_path = m_pImpl->GetAudioFileLocation(&fileEntryInfo);
+	pAudioFileEntry->m_path = m_pIImpl->GetFileLocation(&fileEntryInfo);
 	pAudioFileEntry->m_path += CRY_NATIVE_PATH_SEPSTR;
 	pAudioFileEntry->m_path += fileName.c_str();
 	pAudioFileEntry->m_path.MakeLower();

@@ -23,7 +23,7 @@
 
 //! \note We need this explicitly here to prevent circular includes to IEntity.
 //! Unique identifier for each entity instance.
-typedef unsigned int EntityId;
+using EntityId = unsigned int;
 #define INVALID_ENTITYID ((EntityId)(0))
 
 /**
@@ -75,7 +75,7 @@ struct IListener;
 struct IProfileData;
 namespace Impl
 {
-struct IAudioImpl;
+struct IImpl;
 }
 
 enum class ESystemEvents : EnumFlagsType
@@ -155,7 +155,7 @@ struct SCreateObjectData
 	explicit SCreateObjectData(
 	  char const* const szName_ = nullptr,
 	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
-	  CObjectTransformation const& transformation_ = s_nullAudioObjectTransformation,
+	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
 	  EntityId const entityToIgnore_ = INVALID_ENTITYID,
 	  bool const bSetCurrentEnvironments_ = false)
 		: szName(szName_)
@@ -224,7 +224,7 @@ struct IAudioSystem
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void SetImpl(Impl::IAudioImpl* const pIImpl, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Loads a trigger's data. This can be used in "loading on demand" situations to prepare the data referenced by a trigger.

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "InternalEntities.h"
-#include "FileCacheManager.h"
 #include "AudioListenerManager.h"
 #include "AudioEventListenerManager.h"
 #include "AudioStandaloneFileManager.h"
@@ -33,7 +32,7 @@ class CAudioTranslationLayer final : public IInputEventListener
 public:
 
 	CAudioTranslationLayer();
-	virtual ~CAudioTranslationLayer();
+	virtual ~CAudioTranslationLayer() override;
 
 	CAudioTranslationLayer(CAudioTranslationLayer const&) = delete;
 	CAudioTranslationLayer(CAudioTranslationLayer&&) = delete;
@@ -41,7 +40,7 @@ public:
 	CAudioTranslationLayer& operator=(CAudioTranslationLayer&&) = delete;
 
 	// IInputEventListener
-	virtual bool OnInputEvent(SInputEvent const& event);
+	virtual bool OnInputEvent(SInputEvent const& event) override;
 	// ~IInputEventListener
 
 	bool           Initialize(CSystem* const pAudioSystem);
@@ -70,7 +69,7 @@ private:
 	ERequestStatus ProcessAudioCallbackManagerRequest(CAudioRequest& request);
 	ERequestStatus ProcessAudioObjectRequest(CAudioRequest const& request);
 	ERequestStatus ProcessAudioListenerRequest(SAudioRequestData const* const pPassedRequestData);
-	ERequestStatus SetImpl(Impl::IAudioImpl* const pImpl);
+	ERequestStatus SetImpl(Impl::IImpl* const pIImpl);
 	void           ReleaseImpl();
 
 	ERequestStatus RefreshAudioSystem(char const* const szLevelName);
@@ -99,9 +98,9 @@ private:
 	SInternalControls           m_internalControls;
 
 	// Utility members
-	uint32               m_lastMainThreadFrameId = 0;
+	uint32          m_lastMainThreadFrameId = 0;
 	EInternalStates m_flags = EInternalStates::None;
-	Impl::IAudioImpl*    m_pImpl = nullptr;
+	Impl::IImpl*    m_pIImpl = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:

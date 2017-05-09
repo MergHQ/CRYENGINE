@@ -17,16 +17,16 @@ using namespace CryAudio::Impl;
 //////////////////////////////////////////////////////////////////////////
 CAudioStandaloneFileManager::~CAudioStandaloneFileManager()
 {
-	if (m_pImpl != nullptr)
+	if (m_pIImpl != nullptr)
 	{
 		Release();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::Init(IAudioImpl* const pImpl)
+void CAudioStandaloneFileManager::Init(IImpl* const pIImpl)
 {
-	m_pImpl = pImpl;
+	m_pIImpl = pIImpl;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -34,28 +34,28 @@ void CAudioStandaloneFileManager::Release()
 {
 	if (!m_constructedStandaloneFiles.empty())
 	{
-		for (auto pStandaloneFile : m_constructedStandaloneFiles)
+		for (auto const pStandaloneFile : m_constructedStandaloneFiles)
 		{
-			m_pImpl->DestructAudioStandaloneFile(pStandaloneFile->m_pImplData);
+			m_pIImpl->DestructStandaloneFile(pStandaloneFile->m_pImplData);
 			delete pStandaloneFile;
 		}
 		m_constructedStandaloneFiles.clear();
 	}
 
-	m_pImpl = nullptr;
+	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char const* const szFile, bool const bLocalized, IAudioTrigger const* const pTriggerImpl)
+CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char const* const szFile, bool const bLocalized, ITrigger const* const pITrigger)
 {
 	CATLStandaloneFile* pStandaloneFile = new CATLStandaloneFile();
 
-	pStandaloneFile->m_pImplData = m_pImpl->ConstructAudioStandaloneFile(*pStandaloneFile, szFile, bLocalized, pTriggerImpl);
+	pStandaloneFile->m_pImplData = m_pIImpl->ConstructStandaloneFile(*pStandaloneFile, szFile, bLocalized, pITrigger);
 	pStandaloneFile->m_hashedFilename = CHashedString(szFile);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	pStandaloneFile->m_bLocalized = bLocalized;
-	pStandaloneFile->m_pTrigger = pTriggerImpl;
+	pStandaloneFile->m_pITrigger = pITrigger;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	m_constructedStandaloneFiles.push_back(pStandaloneFile);
@@ -68,7 +68,7 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 	if (pStandaloneFile != nullptr)
 	{
 		m_constructedStandaloneFiles.remove(pStandaloneFile);
-		m_pImpl->DestructAudioStandaloneFile(pStandaloneFile->m_pImplData);
+		m_pIImpl->DestructStandaloneFile(pStandaloneFile->m_pImplData);
 		delete pStandaloneFile;
 	}
 }

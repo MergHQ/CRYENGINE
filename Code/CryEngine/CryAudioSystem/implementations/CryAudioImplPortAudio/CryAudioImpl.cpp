@@ -13,20 +13,19 @@ using namespace CryAudio::Impl::PortAudio;
 
 // Define global objects.
 CLogger g_implLogger;
-CAudioImplCVars CryAudio::Impl::PortAudio::g_audioImplCVars;
+CCVars CryAudio::Impl::PortAudio::g_cvars;
 
 //////////////////////////////////////////////////////////////////////////
 class CEngineModule_CryAudioImplPortAudio : public CryAudio::IImplModule
 {
 	CRYINTERFACE_BEGIN()
-		CRYINTERFACE_ADD(Cry::IDefaultModule)
-		CRYINTERFACE_ADD(CryAudio::IImplModule)
+	CRYINTERFACE_ADD(Cry::IDefaultModule)
+	CRYINTERFACE_ADD(CryAudio::IImplModule)
 	CRYINTERFACE_END()
-	
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplPortAudio, "EngineModule_AudioImpl", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
 
 	CEngineModule_CryAudioImplPortAudio();
-	virtual ~CEngineModule_CryAudioImplPortAudio() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual char const* GetName()  const override    { return "CryAudioImplPortAudio"; }
@@ -35,10 +34,10 @@ class CEngineModule_CryAudioImplPortAudio : public CryAudio::IImplModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplPortAudio::OnAudioEvent, nullptr, ESystemEvents::ImplSet);
+		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplPortAudio::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
-		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
-		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplPortAudio::OnAudioEvent, nullptr);
+		gEnv->pAudioSystem->SetImpl(new CImpl, data);
+		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplPortAudio::OnEvent, nullptr);
 
 		if (m_bSuccess)
 		{
@@ -53,9 +52,9 @@ class CEngineModule_CryAudioImplPortAudio : public CryAudio::IImplModule
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	static void OnAudioEvent(SRequestInfo const* const pAudioRequestInfo)
+	static void OnEvent(SRequestInfo const* const pRequestInfo)
 	{
-		m_bSuccess = pAudioRequestInfo->requestResult == ERequestResult::Success;
+		m_bSuccess = pRequestInfo->requestResult == ERequestResult::Success;
 	}
 
 	static bool m_bSuccess;
@@ -66,7 +65,7 @@ bool CEngineModule_CryAudioImplPortAudio::m_bSuccess = false;
 
 CEngineModule_CryAudioImplPortAudio::CEngineModule_CryAudioImplPortAudio()
 {
-	g_audioImplCVars.RegisterVariables();
+	g_cvars.RegisterVariables();
 }
 
 #include <CryCore/CrtDebugStats.h>
