@@ -17,6 +17,7 @@ namespace CrySchematycEditor {
 class CComponentItem;
 class CAbstractObjectStructureModelItem;
 class CAbstractVariablesModelItem;
+class CMainWindow;
 
 class CPropertiesWidget : public QScrollableBox
 {
@@ -32,7 +33,7 @@ public:
 	CPropertiesWidget(IDetailItem& item, CMainWindow* pEditor, Schematyc::CPreviewWidget* pPreview = nullptr);
 	// ~TEMP
 
-	~CPropertiesWidget();
+	virtual ~CPropertiesWidget() override;
 
 	virtual void showEvent(QShowEvent* pEvent) override;
 

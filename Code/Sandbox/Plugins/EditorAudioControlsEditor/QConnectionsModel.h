@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include "ACETypes.h"
 
 class QVBoxLayout;
 class QFrame;

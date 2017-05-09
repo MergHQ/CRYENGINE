@@ -3,7 +3,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include "ProxyModels/DeepFilterProxyModel.h"
+#include <ProxyModels/DeepFilterProxyModel.h>
 
 namespace ACE
 {

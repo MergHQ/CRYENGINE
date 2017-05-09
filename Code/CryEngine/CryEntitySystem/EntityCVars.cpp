@@ -6,6 +6,7 @@
 #include "AreaManager.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryEntitySystem/IEntityComponent.h>
+#include <CryAISystem/IAISystem.h>
 
 ICVar* CVar::pDebug = NULL;
 ICVar* CVar::pCharacterIK = NULL;

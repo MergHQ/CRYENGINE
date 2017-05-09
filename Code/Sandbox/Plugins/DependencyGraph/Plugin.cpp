@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "Plugin.h"
 #include "Menu/AbstractMenu.h"
-
+#include <AssetSystem/AssetManager.h>
 #include <CryCore/Platform/platform_impl.inl>
 
 // Plugin instance

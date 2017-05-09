@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Schematyc/Script/IScriptView.h>
+#include <Schematyc/Script/IScriptElement.h>
 
 namespace Schematyc
 {

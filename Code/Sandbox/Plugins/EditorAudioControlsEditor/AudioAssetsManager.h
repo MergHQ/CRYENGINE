@@ -8,11 +8,26 @@
 #include "ACETypes.h"
 #include <CrySandbox/CrySignal.h>
 #include <array>
+#include <QVariant>
 
 namespace ACE
 {
-
 class IAudioSystemItem;
+
+static QVariant GetHeaderData(int section, Qt::Orientation orientation, int role)
+{
+	if (orientation != Qt::Horizontal)
+	{
+		return QVariant();
+	}
+
+	if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
+	{
+		return "name";
+	}
+
+	return QVariant();
+}
 
 class CAudioAssetsManager
 {
@@ -33,12 +48,12 @@ public:
 	size_t         GetLibraryCount() const              { return m_audioLibraries.size(); }
 
 	//
-	IAudioAsset*    CreateFolder(const string& name, IAudioAsset* pParent = nullptr);
-	CAudioControl*  CreateControl(const string& controlName, EItemType type, IAudioAsset* pParent = nullptr);
-	void            DeleteItem(IAudioAsset* pItem);
+	IAudioAsset*   CreateFolder(const string& name, IAudioAsset* pParent = nullptr);
+	CAudioControl* CreateControl(const string& controlName, EItemType type, IAudioAsset* pParent = nullptr);
+	void           DeleteItem(IAudioAsset* pItem);
 
-	CAudioControl*  GetControlByID(CID id) const;
-	CAudioControl*  FindControl(string const& controlName, EItemType const type, IAudioAsset* const pParent = nullptr) const;
+	CAudioControl* GetControlByID(CID id) const;
+	CAudioControl* FindControl(string const& controlName, EItemType const type, IAudioAsset* const pParent = nullptr) const;
 
 	typedef std::vector<CAudioControl*> Controls;
 	Controls const& GetControls() const { return m_controls; }

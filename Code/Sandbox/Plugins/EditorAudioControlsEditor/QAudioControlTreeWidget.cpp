@@ -4,6 +4,7 @@
 #include "QAudioControlTreeWidget.h"
 #include "QAudioControlEditorIcons.h"
 #include "QtUtil.h"
+#include "AudioAssetsExplorerModel.h"
 #include <ACETypes.h>
 
 #include <QAdvancedItemDelegate.h>

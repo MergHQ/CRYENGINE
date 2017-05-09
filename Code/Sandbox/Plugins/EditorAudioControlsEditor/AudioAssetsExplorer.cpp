@@ -31,7 +31,6 @@
 #include <QKeyEvent>
 #include <QSortFilterProxyModel>
 #include <QModelIndex>
-#include <QVariant>
 #include <QAction>
 #include <QApplication>
 #include <QButtonGroup>
@@ -82,22 +81,6 @@ public:
 
 namespace ACE
 {
-
-static QVariant GetHeaderData(int section, Qt::Orientation orientation, int role)
-{
-	if (orientation != Qt::Horizontal)
-	{
-		return QVariant();
-	}
-
-	if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
-	{
-		return "name";
-	}
-
-	return QVariant();
-}
-
 CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pProxyModel(new QControlsProxyFilter(this))
