@@ -790,21 +790,23 @@ void CScriptBrowserModel::Populate()
 		pScripElement->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
 
 		// Base
-		if (pItemBase)
-		{
-			auto visitScriptElementBase = [this, pItemBase](IScriptElement& scriptElement) -> EVisitStatus
-			{
-				const IScriptElement* pParentScriptElement = scriptElement.GetParent();
-				if (pParentScriptElement)
-				{
-					CScriptBrowserItem* pParentItem = GetItemByGUID(pParentScriptElement->GetGUID());
-					CreateScriptElementBaseItem(scriptElement, EScriptBrowserItemFlags::None, pParentItem, pItemBase);
-				}
+		// TODO: Schematyc doesn't support to list components, variables etc. of derived classes yet.
+		/*if (pItemBase)
+		   {
+		   auto visitScriptElementBase = [this, pItemBase](IScriptElement& scriptElement) -> EVisitStatus
+		   {
+		    const IScriptElement* pParentScriptElement = scriptElement.GetParent();
+		    if (pParentScriptElement)
+		    {
+		      CScriptBrowserItem* pParentItem = GetItemByGUID(pParentScriptElement->GetGUID());
+		      CreateScriptElementBaseItem(scriptElement, EScriptBrowserItemFlags::None, pParentItem, pItemBase);
+		    }
 
-				return EVisitStatus::Recurse;
-			};
-			pItemBase->GetScriptElement()->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElementBase));
-		}
+		    return EVisitStatus::Recurse;
+		   };
+		   pItemBase->GetScriptElement()->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElementBase));
+		   }*/
+		// ~TODO
 	}
 }
 
