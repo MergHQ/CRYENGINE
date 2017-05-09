@@ -1218,6 +1218,7 @@ CScriptBrowserWidget::CScriptBrowserWidget(CrySchematycEditor::CMainWindow& edit
 	m_pFilter->signalOnFiltered.Connect(this, &CScriptBrowserWidget::OnFiltered);
 
 	m_pAddButton->setMenu(m_pAddMenu);
+	m_pAddButton->setEnabled(false);
 
 	QObject::connect(m_pTreeView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(OnTreeViewClicked(const QModelIndex &)));
 	QObject::connect(m_pTreeView, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(OnTreeViewCustomContextMenuRequested(const QPoint &)));
@@ -1294,6 +1295,7 @@ bool CScriptBrowserWidget::SetModel(CScriptBrowserModel* pModel)
 
 				m_pAddMenu->clear();
 				PopulateAddMenu(m_pAddMenu, m_pModel->GetRootElement());
+				m_pAddButton->setEnabled(!m_pAddMenu->isEmpty());
 
 				return true;
 			}
@@ -1302,6 +1304,7 @@ bool CScriptBrowserWidget::SetModel(CScriptBrowserModel* pModel)
 
 	m_pModel = nullptr;
 	m_pAddMenu->clear();
+	m_pAddButton->setEnabled(false);
 	return (pModel == nullptr);
 }
 
