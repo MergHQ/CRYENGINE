@@ -212,6 +212,7 @@ bool CCullThread::LoadLevel(const char* pFolderName)
 		}
 		pOut += InstanceSize;
 
+		m_OCMBuffer.reserve(pOut - &OCMBufferOut[0] + static_cast<size_t>(16)); // CE-10494
 		m_OCMBuffer.resize(pOut - &OCMBufferOut[0]);
 		size_t BufferOffset = reinterpret_cast<size_t>(&m_OCMBuffer[0]);
 		BufferOffset = (BufferOffset + 15) & ~15;
