@@ -11,10 +11,12 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CryString/CryPath.h>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::Fmod;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
 ParameterToIndexMap g_parameterToIndex;
 SwitchToIndexMap g_switchToIndex;
 
@@ -101,7 +103,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	m_name += " (";
 	m_name += szAssetDirectory;
 	m_name += CRY_NATIVE_PATH_SEPSTR FMOD_IMPL_DATA_ROOT ")";
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	int sampleRate = 0;
 	int numRawSpeakers = 0;
@@ -242,7 +244,7 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 			{
 				CryFatalError("<Audio>: allocation not %d byte aligned!", 32);
 			}
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 			FMOD_RESULT const fmodResult = m_pSystem->loadBankMemory(static_cast<char*>(pFileInfo->pFileData), static_cast<int>(pFileInfo->size), FMOD_STUDIO_LOAD_MEMORY_POINT, FMOD_STUDIO_LOAD_BANK_NORMAL, &pFileData->pBank);
 			ASSERT_FMOD_OK;
@@ -347,7 +349,7 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject()
 {
 	CObjectBase* const pObject = new CGlobalObject(m_constructedObjects);
 
@@ -360,7 +362,7 @@ Impl::IObject* CImpl::ConstructGlobalObject()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 {
 	CObjectBase* pObject = new CObject();
 
@@ -373,7 +375,7 @@ Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructObject(Impl::IObject const* const pIObject)
+void CImpl::DestructObject(IObject const* const pIObject)
 {
 	CObjectBase const* const pObject = static_cast<CObjectBase const* const>(pIObject);
 
@@ -386,14 +388,14 @@ void CImpl::DestructObject(Impl::IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener()
 {
 	static int id = 0;
 	return static_cast<IListener*>(new CListener(id++));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructListener(Impl::IListener* const pIListener)
+void CImpl::DestructListener(IListener* const pIListener)
 {
 	delete pIListener;
 }
@@ -484,7 +486,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, nullptr, guid, path.c_str());
 #else
 			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, nullptr, guid);
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -516,7 +518,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, pEventDescription, guid, path.c_str());
 #else
 			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, pEventDescription, guid);
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -703,7 +705,7 @@ char const* const CImpl::GetName() const
 {
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	return m_name.c_str();
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	return nullptr;
 }
 
@@ -724,7 +726,7 @@ void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
 	memoryInfo.secondaryPoolSize = 0;
 	memoryInfo.secondaryPoolUsedSize = 0;
 	memoryInfo.secondaryPoolAllocations = 0;
-#endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
+#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 	{
 		auto& allocator = CObject::GetAllocator();
@@ -1019,3 +1021,6 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 		fileData.duration = length / 1000.0f; // convert to seconds
 	}
 }
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

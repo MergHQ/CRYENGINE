@@ -6,8 +6,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CrySerialization/Enum.h>
 
-using namespace CryAudio;
-
 class CAudioAreaAmbienceRegistrator
 	: public IEntityRegistrator
 {
@@ -133,7 +131,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	{
 		if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 		{
-			pAudioProxy->SetEnvironmentId(InvalidEnvironmentId);
+			pAudioProxy->SetEnvironmentId(CryAudio::InvalidEnvironmentId);
 
 			Stop();
 		}
@@ -177,11 +175,11 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	}
 }
 
-void CAudioAreaAmbienceEntity::Play(ControlId triggerId)
+void CAudioAreaAmbienceEntity::Play(CryAudio::ControlId triggerId)
 {
 	if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
-		if (m_playingTriggerId != InvalidControlId)
+		if (m_playingTriggerId != CryAudio::InvalidControlId)
 		{
 			pAudioProxy->StopTrigger(m_playingTriggerId);
 		}
@@ -199,16 +197,16 @@ void CAudioAreaAmbienceEntity::Stop()
 	if (pAudioProxy == nullptr)
 		return;
 
-	if (m_stopTriggerId != InvalidControlId)
+	if (m_stopTriggerId != CryAudio::InvalidControlId)
 	{
 		pAudioProxy->ExecuteTrigger(m_stopTriggerId);
 	}
-	else if (m_playTriggerId != InvalidControlId)
+	else if (m_playTriggerId != CryAudio::InvalidControlId)
 	{
 		pAudioProxy->StopTrigger(m_playingTriggerId);
 	}
 
-	m_playingTriggerId = InvalidControlId;
+	m_playingTriggerId = CryAudio::InvalidControlId;
 }
 
 void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
@@ -217,12 +215,12 @@ void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
 	if (pAudioProxy == nullptr)
 		return;
 
-	if (m_rtpcId != InvalidControlId)
+	if (m_rtpcId != CryAudio::InvalidControlId)
 	{
 		pAudioProxy->SetParameter(m_rtpcId, fadeValue);
 	}
 
-	if (m_globalRtpcId != InvalidControlId)
+	if (m_globalRtpcId != CryAudio::InvalidControlId)
 	{
 		gEnv->pAudioSystem->SetParameter(m_globalRtpcId, fadeValue);
 	}

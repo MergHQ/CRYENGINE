@@ -7,9 +7,8 @@
 #include <IAudioImpl.h>
 #include <algorithm>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 CAudioListenerManager::~CAudioListenerManager()
 {
@@ -26,7 +25,7 @@ CAudioListenerManager::~CAudioListenerManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioListenerManager::Init(IImpl* const pIImpl)
+void CAudioListenerManager::Init(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 
@@ -80,19 +79,19 @@ void CAudioListenerManager::ReleaseListener(CATLListener* const pListener)
 {
 	// As we currently support only one listener we will destroy that instance only on engine shutdown!
 	/*m_activeListeners.erase
-	(
-	  std::find_if(m_activeListeners.begin(), m_activeListeners.end(), [=](CATLListener const* pRegisteredListener)
-	{
-		if (pRegisteredListener == pListener)
-		{
-			m_pIImpl->DestructListener(pListener->m_pImplData);
-			delete pListener;
-			return true;
-		}
+	   (
+	   std::find_if(m_activeListeners.begin(), m_activeListeners.end(), [=](CATLListener const* pRegisteredListener)
+	   {
+	   if (pRegisteredListener == pListener)
+	   {
+	    m_pIImpl->DestructListener(pListener->m_pImplData);
+	    delete pListener;
+	    return true;
+	   }
 
-		return false;
-	})
-	);*/
+	   return false;
+	   })
+	   );*/
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,7 +101,7 @@ size_t CAudioListenerManager::GetNumActiveListeners() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-SObject3DAttributes const& CAudioListenerManager::GetActiveListenerAttributes() const
+Impl::SObject3DAttributes const& CAudioListenerManager::GetActiveListenerAttributes() const
 {
 	for (auto const pListener : m_activeListeners)
 	{
@@ -110,5 +109,6 @@ SObject3DAttributes const& CAudioListenerManager::GetActiveListenerAttributes() 
 		return pListener->Get3DAttributes();
 	}
 
-	return SObject3DAttributes::GetEmptyObject();
+	return Impl::SObject3DAttributes::GetEmptyObject();
 }
+} // namespace CryAudio

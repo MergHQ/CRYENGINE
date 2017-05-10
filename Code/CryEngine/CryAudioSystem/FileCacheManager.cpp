@@ -12,9 +12,8 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 CFileCacheManager::CFileCacheManager(AudioPreloadRequestLookup& preloadRequests)
 	: m_preloadRequests(preloadRequests)
@@ -25,7 +24,7 @@ CFileCacheManager::CFileCacheManager(AudioPreloadRequestLookup& preloadRequests)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Init(IImpl* const pIImpl)
+void CFileCacheManager::Init(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
@@ -65,7 +64,7 @@ void CFileCacheManager::AllocateHeap(size_t const size, char const* const szUsag
 FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad)
 {
 	FileEntryId fileEntryId = CryAudio::InvalidFileEntryId;
-	SFileInfo fileInfo;
+	Impl::SFileInfo fileInfo;
 
 	if (m_pIImpl->ConstructFile(pFileNode, &fileInfo) == ERequestStatus::Success)
 	{
@@ -170,7 +169,7 @@ void CFileCacheManager::UpdateLocalizedFileCacheEntries()
 			{
 				// The file needs to be unloaded first.
 				size_t const useCount = pAudioFileEntry->m_useCount;
-				pAudioFileEntry->m_useCount = 0; // Needed to uncache without an error.
+				pAudioFileEntry->m_useCount = 0;   // Needed to uncache without an error.
 				UncacheFile(pAudioFileEntry);
 				UpdateLocalizedFileEntryData(pAudioFileEntry);
 				TryCacheFileCacheEntryInternal(pAudioFileEntry, audioFileEntryPair.first, true, true, useCount);
@@ -578,9 +577,9 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pAudioFileEntry->m_timeCached = gEnv->pTimer->GetAsyncTime();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			SFileInfo fileEntryInfo;
+			Impl::SFileInfo fileEntryInfo;
 			fileEntryInfo.memoryBlockAlignment = pAudioFileEntry->m_memoryBlockAlignment;
 			fileEntryInfo.pFileData = pAudioFileEntry->m_pMemoryBlock->GetData();
 			fileEntryInfo.size = pAudioFileEntry->m_size;
@@ -645,7 +644,7 @@ void CFileCacheManager::UncacheFile(CATLAudioFileEntry* const pAudioFileEntry)
 
 	if (pAudioFileEntry->m_pMemoryBlock != nullptr && pAudioFileEntry->m_pMemoryBlock->GetData() != nullptr)
 	{
-		SFileInfo fileEntryInfo;
+		Impl::SFileInfo fileEntryInfo;
 		fileEntryInfo.memoryBlockAlignment = pAudioFileEntry->m_memoryBlockAlignment;
 		fileEntryInfo.pFileData = pAudioFileEntry->m_pMemoryBlock->GetData();
 		fileEntryInfo.size = pAudioFileEntry->m_size;
@@ -684,7 +683,7 @@ void CFileCacheManager::TryToUncacheFiles()
 ///////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::UpdateLocalizedFileEntryData(CATLAudioFileEntry* const pAudioFileEntry)
 {
-	static SFileInfo fileEntryInfo;
+	static Impl::SFileInfo fileEntryInfo;
 	fileEntryInfo.bLocalized = true;
 	fileEntryInfo.size = 0;
 	fileEntryInfo.pFileData = nullptr;
@@ -796,3 +795,4 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 
 	return bSuccess;
 }
+} // namespace CryAudio

@@ -11,9 +11,8 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 CAudioStandaloneFileManager::~CAudioStandaloneFileManager()
 {
@@ -24,7 +23,7 @@ CAudioStandaloneFileManager::~CAudioStandaloneFileManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::Init(IImpl* const pIImpl)
+void CAudioStandaloneFileManager::Init(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 }
@@ -46,7 +45,7 @@ void CAudioStandaloneFileManager::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char const* const szFile, bool const bLocalized, ITrigger const* const pITrigger)
+CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITrigger const* const pITrigger)
 {
 	CATLStandaloneFile* pStandaloneFile = new CATLStandaloneFile();
 
@@ -125,3 +124,4 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float p
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

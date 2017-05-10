@@ -22,6 +22,16 @@ enum class EEventState : EnumFlagsType
 };
 
 /**
+* A utility function to convert a string value to an Id.
+* @param szSource - string to convert
+* @return a 32bit CRC computed on the lower case version of the passed string
+*/
+inline uint32 StringToId(char const* const szSource)
+{
+	return CCrc32::ComputeLowercase(szSource);
+}
+
+/**
  * @namespace CryAudio::Impl
  * @brief Sub-namespace of the CryAudio namespace used by audio middleware implementations.
  */
@@ -42,15 +52,5 @@ struct SObject3DAttributes
 	CObjectTransformation transformation;
 	Vec3                  velocity;
 };
-
-/**
- * A utility function to convert a string value to an Id.
- * @param szSource - string to convert
- * @return a 32bit CRC computed on the lower case version of the passed string
- */
-inline uint32 StringToId(char const* const szSource)
-{
-	return CCrc32::ComputeLowercase(szSource);
-}
 } // namespace Impl
 } // namespace CryAudio

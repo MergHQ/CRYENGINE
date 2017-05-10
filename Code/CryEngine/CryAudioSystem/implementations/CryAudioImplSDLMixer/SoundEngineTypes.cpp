@@ -4,10 +4,12 @@
 #include "SoundEngineTypes.h"
 #include "SoundEngine.h"
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::SDL_mixer;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace SDL_mixer
+{
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CEvent::Stop()
 {
@@ -113,3 +115,6 @@ ERequestStatus CListener::Set3DAttributes(SObject3DAttributes const& attributes)
 	SoundEngine::SetListenerPosition(m_id, attributes.transformation);
 	return ERequestStatus::Success;
 }
+} // namespace SDL_mixer
+} // namespace Impl
+} // namespace CryAudio

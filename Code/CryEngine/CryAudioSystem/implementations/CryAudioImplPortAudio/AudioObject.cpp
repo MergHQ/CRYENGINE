@@ -5,10 +5,12 @@
 #include "AudioEvent.h"
 #include "AudioTrigger.h"
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::PortAudio;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace PortAudio
+{
 //////////////////////////////////////////////////////////////////////////
 void CObject::StopEvent(uint32 const pathId)
 {
@@ -139,3 +141,6 @@ ERequestStatus CObject::SetName(char const* const szName)
 	// Therefore the name is currently not needed here.
 	return ERequestStatus::Success;
 }
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

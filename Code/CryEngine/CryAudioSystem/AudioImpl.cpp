@@ -3,21 +3,23 @@
 #include "stdafx.h"
 #include "AudioImpl.h"
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::Null;
-
-struct SNullEvent final : IEvent
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Null
+{
+struct SEvent final : IEvent
 {
 	virtual ERequestStatus Stop() override { return ERequestStatus::Success; }
 };
 
-struct SNullListener final : Impl::IListener
+struct SListener final : IListener
 {
 	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return ERequestStatus::Success; }
 };
 
-struct SNullTrigger final : ITrigger
+struct STrigger final : ITrigger
 {
 	virtual ERequestStatus Load() const override                             { return ERequestStatus::Success; }
 	virtual ERequestStatus Unload() const override                           { return ERequestStatus::Success; }
@@ -25,7 +27,7 @@ struct SNullTrigger final : ITrigger
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 };
 
-struct SNullObject final : Impl::IObject
+struct SObject final : IObject
 {
 	virtual ERequestStatus Update() override                                                                    { return ERequestStatus::Success; }
 	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override                      { return ERequestStatus::Success; }
@@ -46,7 +48,7 @@ void CImpl::Update(float const deltaTime)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
+ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
 {
 	return ERequestStatus::Success;
 }
@@ -135,39 +137,39 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject()
 {
-	return static_cast<IObject*>(new SNullObject());
+	return static_cast<IObject*>(new SObject());
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 {
-	return new SNullObject();
+	return new SObject();
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructObject(Impl::IObject const* const pIObject)
+void CImpl::DestructObject(IObject const* const pIObject)
 {
 	delete pIObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructListener(Impl::IListener* const pIListener)
+void CImpl::DestructListener(IListener* const pIListener)
 {
 	delete pIListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener()
 {
-	return static_cast<IListener*>(new SNullListener());
+	return static_cast<IListener*>(new SListener());
 }
 
 ///////////////////////////////////////////////////////////////////////////
 IEvent* CImpl::ConstructEvent(CATLEvent& event)
 {
-	return static_cast<IEvent*>(new SNullEvent());
+	return static_cast<IEvent*>(new SEvent());
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -262,3 +264,6 @@ void CImpl::SetLanguage(char const* const szLanguage)
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
 }
+} // namespace Null
+} // namespace Impl
+} // namespace CryAudio

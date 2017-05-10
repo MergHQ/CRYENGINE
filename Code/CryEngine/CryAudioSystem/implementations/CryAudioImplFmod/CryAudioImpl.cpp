@@ -13,12 +13,15 @@
 	#include <shapexmacontext.h>
 #endif // CRY_PLATFORM_DURANGO
 
-using namespace CryAudio;
-using namespace CryAudio::Impl::Fmod;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
 // Define global objects.
 CLogger g_implLogger;
-CCVars CryAudio::Impl::Fmod::g_cvars;
+CCVars g_cvars;
 
 #if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
 MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
@@ -54,10 +57,10 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		APU_ADDRESS temp;
 		HRESULT const result = ApuAlloc(&pSecondaryMemory, &temp, secondarySize, SHAPE_XMA_INPUT_BUFFER_ALIGNMENT);
 		CRY_ASSERT(result == S_OK);
-	#endif // CRY_PLATFORM_DURANGO
+	#endif  // CRY_PLATFORM_DURANGO
 
 		g_audioImplMemoryPoolSecondary.InitMem(secondarySize, (uint8*)pSecondaryMemory);
-#endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
+#endif    // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplFmod::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
@@ -92,5 +95,7 @@ CEngineModule_CryAudioImplFmod::CEngineModule_CryAudioImplFmod()
 {
 	g_cvars.RegisterVariables();
 }
-
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio
 #include <CryCore/CrtDebugStats.h>

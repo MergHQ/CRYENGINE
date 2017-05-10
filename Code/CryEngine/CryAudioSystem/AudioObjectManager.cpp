@@ -14,9 +14,8 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 CAudioObjectManager::CAudioObjectManager(
   CAudioEventManager& audioEventMgr,
@@ -46,7 +45,7 @@ CAudioObjectManager::~CAudioObjectManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::Init(IImpl* const pIImpl)
+void CAudioObjectManager::Init(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 
@@ -76,7 +75,7 @@ void CAudioObjectManager::Release()
 float CAudioObjectManager::s_controlsUpdateInterval = 10.0f;
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes const& listenerAttributes)
+void CAudioObjectManager::Update(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CPropagationProcessor::s_totalAsyncPhysRays = 0;
@@ -110,7 +109,7 @@ void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes cons
 				pObject->SetFlag(EObjectFlags::Virtual);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pObject->ResetObstructionRays();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 		}
 
@@ -353,3 +352,4 @@ void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, flo
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

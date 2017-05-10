@@ -8,10 +8,12 @@
 #include <AudioLogger.h>
 #include <fmod_common.h>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::Fmod;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
 extern SwitchToIndexMap g_switchToIndex;
 extern ParameterToIndexMap g_parameterToIndex;
 
@@ -702,3 +704,6 @@ ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float c
 
 	return ERequestStatus::Success;
 }
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

@@ -6,9 +6,8 @@
 #include "ATLAudioObject.h"
 #include "Common/IAudioImpl.h"
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 #if CRY_PLATFORM_WINDOWS
 char const* const SATLXMLTags::szPlatform = "pc";
 #elif CRY_PLATFORM_DURANGO
@@ -60,7 +59,7 @@ char const* const SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute = "atl_occ
 
 char const* const SATLXMLTags::szATLDataLoadType = "AutoLoad";
 
-IImpl* CATLControlImpl::s_pIImpl = nullptr;
+Impl::IImpl* CATLControlImpl::s_pIImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
@@ -169,3 +168,4 @@ CATLEnvironmentImpl::~CATLEnvironmentImpl()
 	CRY_ASSERT(s_pIImpl != nullptr);
 	s_pIImpl->DestructEnvironment(m_pImplData);
 }
+} // namespace CryAudio

@@ -13,8 +13,6 @@
 #include "VehicleClient.h"
 #include "GamePhysicsSettings.h"
 
-using namespace CryAudio;
-
 #define RUNSOUND_FADEIN_TIME 0.5f
 #define RUNSOUND_FADEOUT_TIME 0.5f
 #define WIND_MINSPEED 1.f
@@ -88,7 +86,7 @@ CVehicleMovementBase::CVehicleMovementBase()
 	
 	for (int i=0; i<eSID_Max; ++i)
 	{
-		m_audioControlIDs[i] = InvalidControlId;
+		m_audioControlIDs[i] = CryAudio::InvalidControlId;
 	}
 
 	memset(m_animations, 0, sizeof(m_animations));
@@ -188,12 +186,12 @@ bool CVehicleMovementBase::Init(IVehicle* pVehicle, const CVehicleParams& table)
 	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 	assert(pIEntityAudioComponent);
 
-	SwitchStateId nSurfaceStateID = InvalidSwitchStateId;
-	gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleSurface], "concrete", nSurfaceStateID);
+	CryAudio::SwitchStateId surfaceStateId = CryAudio::InvalidSwitchStateId;
+	gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleSurface], "concrete", surfaceStateId);
 
-	if (nSurfaceStateID != InvalidSwitchStateId)
+	if (surfaceStateId != CryAudio::InvalidSwitchStateId)
 	{
-		pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
+		pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], surfaceStateId);
 	}
 
 	pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, m_enginePos));
@@ -824,7 +822,7 @@ void CVehicleMovementBase::StopEngine()
 	}
 
 	// If no stop trigger is present we will need to manually stop the running event.
-	if (GetAudioControlID(eSID_Stop) != InvalidControlId)
+	if (GetAudioControlID(eSID_Stop) != CryAudio::InvalidControlId)
 	{
 		ExecuteTrigger(eSID_Stop);
 	}
@@ -1222,14 +1220,14 @@ void CVehicleMovementBase::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 				}
 			}
 					
-			SwitchStateId nInOutStateID = InvalidSwitchStateId;
-			gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleINOUT], (m_soundStats.inout == 0.0f) ? "inside" : "outside", nInOutStateID);
+			CryAudio::SwitchStateId outStateId = CryAudio::InvalidSwitchStateId;
+			gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleINOUT], (m_soundStats.inout == 0.0f) ? "inside" : "outside", outStateId);
 
-			if (nInOutStateID != InvalidSwitchStateId)
+			if (outStateId != CryAudio::InvalidSwitchStateId)
 			{
 				IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 				if (pIEntityAudioComponent)
-					pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleINOUT], nInOutStateID);
+					pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleINOUT], outStateId);
 			}
 		}
 		break;
@@ -1268,8 +1266,8 @@ void CVehicleMovementBase::ExecuteTrigger(EVehicleMovementSound eSID)
 	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 	assert(pIEntityAudioComponent && eSID>=0 && eSID<eSID_Max);
 
-	const ControlId id = m_audioControlIDs[eSID];
-	if (id != InvalidControlId)
+	const CryAudio::ControlId id = m_audioControlIDs[eSID];
+	if (id != CryAudio::InvalidControlId)
 	{
 		pIEntityAudioComponent->ExecuteTrigger(id);
 	}
@@ -1280,8 +1278,8 @@ void CVehicleMovementBase::StopTrigger(EVehicleMovementSound eSID)
 	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 	assert(pIEntityAudioComponent && eSID>=0 && eSID<eSID_Max);
 
-	const ControlId id = m_audioControlIDs[eSID];
-	if (id != InvalidControlId)
+	const CryAudio::ControlId id = m_audioControlIDs[eSID];
+	if (id != CryAudio::InvalidControlId)
 	{
 		pIEntityAudioComponent->StopTrigger(id);
 	}
@@ -2089,7 +2087,7 @@ void CVehicleMovementBase::SetAnimationSpeed(EVehicleMovementAnimation eAnim, fl
 }
 
 //------------------------------------------------------------------------
-const ControlId& CVehicleMovementBase::GetAudioControlID(EVehicleMovementSound eSID)
+const CryAudio::ControlId& CVehicleMovementBase::GetAudioControlID(EVehicleMovementSound eSID)
 {
   assert(eSID>=0 && eSID<eSID_Max);
 
@@ -2306,7 +2304,7 @@ IEntityAudioComponent* CVehicleMovementBase::GetAudioProxy() const
 
 void CVehicleMovementBase::CacheAudioControlIDs()
 {
-	IAudioSystem const* const pIAudioSystem = gEnv->pAudioSystem;
+	CryAudio::IAudioSystem const* const pIAudioSystem = gEnv->pAudioSystem;
 
 	if (pIAudioSystem != nullptr)
 	{

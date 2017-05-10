@@ -10,9 +10,8 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 CAudioEventManager::~CAudioEventManager()
 {
@@ -23,7 +22,7 @@ CAudioEventManager::~CAudioEventManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::Init(IImpl* const pIImpl)
+void CAudioEventManager::Init(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 	CRY_ASSERT(m_constructedAudioEvents.empty());
@@ -53,7 +52,6 @@ void CAudioEventManager::Release()
 //////////////////////////////////////////////////////////////////////////
 void CAudioEventManager::Update(float const deltaTime)
 {
-	//TODO: implement
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -83,7 +81,6 @@ size_t CAudioEventManager::GetNumConstructed() const
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-
 //////////////////////////////////////////////////////////////////////////
 void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
@@ -132,5 +129,5 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 		}
 	}
 }
-
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

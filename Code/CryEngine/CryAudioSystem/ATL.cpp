@@ -17,10 +17,8 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::Null;
-
+namespace CryAudio
+{
 ///////////////////////////////////////////////////////////////////////////
 inline ERequestResult ConvertToRequestResult(ERequestStatus const eAudioRequestStatus)
 {
@@ -519,7 +517,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			if (
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			  (g_cvars.m_ignoreWindowFocus == 0) &&
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			  (m_flags& EInternalStates::IsMuted) == 0)
 			{
 				CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, LoseFocusTriggerId, nullptr);
@@ -543,7 +541,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			if (
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			  (g_cvars.m_ignoreWindowFocus == 0) &&
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			  (m_flags& EInternalStates::IsMuted) == 0)
 			{
 				result = m_pIImpl->OnGetFocus();
@@ -688,7 +686,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			RetriggerAudioControls();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			result = ERequestStatus::Success;
 
 			break;
@@ -734,7 +732,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 					}
 				}
 			}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			break;
 		}
 	case EAudioManagerRequestType::DrawDebugInfo:
@@ -742,7 +740,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			DrawAudioSystemDebugInfo();
 			result = ERequestStatus::Success;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			break;
 		}
@@ -960,7 +958,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pRequestData != nullptr && !pRequestData->file.empty())
 			{
-				ITrigger const* pITrigger = nullptr;
+				Impl::ITrigger const* pITrigger = nullptr;
 
 				if (pRequestData->usedAudioTriggerId != InvalidControlId)
 				{
@@ -1024,7 +1022,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
 #else
 				pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 
 				result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 
@@ -1182,7 +1180,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
 #else
 			pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 			CRY_ASSERT(result == ERequestStatus::Success);
@@ -1318,7 +1316,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 	return result;
 }
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioTranslationLayer::SetImpl(IImpl* const pIImpl)
+ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
@@ -1333,9 +1331,9 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IImpl* const pIImpl)
 	{
 		g_logger.Log(ELogType::Warning, "nullptr passed to SetImpl, will run with the null implementation");
 
-		CImpl* pNullImpl = new CImpl();
-		CRY_ASSERT(pNullImpl != nullptr);
-		m_pIImpl = pNullImpl;
+		auto const pImpl = new Impl::Null::CImpl();
+		CRY_ASSERT(pImpl != nullptr);
+		m_pIImpl = static_cast<Impl::IImpl*>(pImpl);
 	}
 
 	result = m_pIImpl->Init(g_cvars.m_audioObjectPoolSize, g_cvars.m_audioEventPoolSize);
@@ -1351,9 +1349,9 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IImpl* const pIImpl)
 		result = m_pIImpl->Release(); // Release the engine specific data.
 		CRY_ASSERT(result == ERequestStatus::Success);
 
-		CImpl* pNullImpl = new CImpl();
-		CRY_ASSERT(pNullImpl != nullptr);
-		m_pIImpl = pNullImpl;
+		auto const pImpl = new Impl::Null::CImpl();
+		CRY_ASSERT(pImpl != nullptr);
+		m_pIImpl = static_cast<Impl::IImpl*>(pImpl);
 	}
 
 	if (m_pGlobalAudioObject == nullptr)
@@ -1640,7 +1638,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 		if (m_pIImpl != nullptr)
 		{
-			SMemoryInfo memoryInfo;
+			Impl::SMemoryInfo memoryInfo;
 			m_pIImpl->GetMemoryInfo(memoryInfo);
 
 			posY += lineHeight;
@@ -1766,3 +1764,4 @@ void CAudioTranslationLayer::DrawAudioObjectDebugInfo(IRenderAuxGeom& auxGeom)
 	  m_environments);
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

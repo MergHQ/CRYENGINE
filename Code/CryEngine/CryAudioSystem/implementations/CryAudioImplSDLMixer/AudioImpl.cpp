@@ -13,10 +13,12 @@
 // SDL Mixer
 #include <SDL_mixer.h>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::SDL_mixer;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace SDL_mixer
+{
 char const* const CImpl::s_szSDLFileTag = "SDLMixerSample";
 char const* const CImpl::s_szSDLCommonAttribute = "sdl_name";
 char const* const CImpl::s_szSDLPathAttribute = "sdl_path";
@@ -56,7 +58,7 @@ CImpl::CImpl()
 
 	m_name = "SDL Mixer 2.0.1 (";
 	m_name += szAssetDirectory + PathUtil::RemoveSlash(s_szSDLSoundLibraryPath) + ")";
-#endif // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 #if CRY_PLATFORM_WINDOWS
 	m_memoryAlignment = 16;
@@ -381,13 +383,13 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject()
 {
 	return static_cast<IObject*>(new CObject(0));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 {
 	static uint32 id = 1;
 	CObject* pObject = new CObject(id++);
@@ -396,13 +398,13 @@ Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	m_idToName[pObject->m_id] = szName;
-#endif // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 	return static_cast<IObject*>(pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructObject(Impl::IObject const* const pIObject)
+void CImpl::DestructObject(IObject const* const pIObject)
 {
 	if (pIObject != nullptr)
 	{
@@ -413,14 +415,14 @@ void CImpl::DestructObject(Impl::IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener()
 {
 	static ListenerId id = 0;
 	return static_cast<IListener*>(new CListener(id++));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructListener(Impl::IListener* const pIListener)
+void CImpl::DestructListener(IListener* const pIListener)
 {
 	delete pIListener;
 }
@@ -462,7 +464,7 @@ void CImpl::DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	const CStandaloneFile* const pStandaloneEvent = static_cast<const CStandaloneFile*>(pIStandaloneFile);
 	CRY_ASSERT_MESSAGE(pStandaloneEvent->m_channels.size() == 0, "Events always have to be stopped/finished before they get deleted");
-#endif // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 	delete pIStandaloneFile;
 }
 
@@ -485,7 +487,7 @@ char const* const CImpl::GetName() const
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	return m_name.c_str();
-#endif // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 	return nullptr;
 }
 
@@ -525,3 +527,6 @@ void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {}
+} // namespace SDL_mixer
+} // namespace Impl
+} // namespace CryAudio

@@ -3,15 +3,13 @@
 #include "StdAfx.h"
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-using namespace CryAudio;
-
 class CFlowNode_AudioSwitch final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
 	explicit CFlowNode_AudioSwitch(SActivationInfo* pActInfo)
 		: m_currentState(0)
-		, m_audioSwitchId(InvalidControlId)
+		, m_audioSwitchId(CryAudio::InvalidControlId)
 	{
 		//sanity checks
 		CRY_ASSERT((eIn_SwitchStateNameLast - eIn_SwitchStateNameFirst) == (NUM_STATES - 1));
@@ -19,7 +17,7 @@ public:
 
 		for (int i = 0; i < NUM_STATES; ++i)
 		{
-			m_audioSwitchStates[i] = InvalidSwitchStateId;
+			m_audioSwitchStates[i] = CryAudio::InvalidSwitchStateId;
 		}
 	}
 
@@ -167,7 +165,7 @@ private:
 	{
 		string const& stateName = GetPortString(pActInfo, stateIndex);
 
-		if (!stateName.empty() && (m_audioSwitchId != InvalidControlId))
+		if (!stateName.empty() && (m_audioSwitchId != CryAudio::InvalidControlId))
 		{
 			gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioSwitchId, stateName.c_str(), m_audioSwitchStates[stateIndex - eIn_SwitchStateNameFirst]);
 		}
@@ -180,7 +178,7 @@ private:
 		{
 			GetSwitchId(pActInfo);
 
-			if (m_audioSwitchId != InvalidControlId)
+			if (m_audioSwitchId != CryAudio::InvalidControlId)
 			{
 				for (int stateIndex = eIn_SwitchStateNameFirst; stateIndex <= eIn_SwitchStateNameLast; ++stateIndex)
 				{
@@ -235,9 +233,9 @@ private:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	int           m_currentState;
-	ControlId     m_audioSwitchId;
-	SwitchStateId m_audioSwitchStates[NUM_STATES];
+	int                     m_currentState;
+	CryAudio::ControlId     m_audioSwitchId;
+	CryAudio::SwitchStateId m_audioSwitchStates[NUM_STATES];
 };
 
 REGISTER_FLOW_NODE("Audio:Switch", CFlowNode_AudioSwitch);

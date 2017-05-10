@@ -6,9 +6,12 @@
 #include "AudioImplCVars.h"
 #include "ATLEntities.h"
 
-using namespace CryAudio;
-using namespace CryAudio::Impl::Fmod;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
 //////////////////////////////////////////////////////////////////////////
 CEvent::~CEvent()
 {
@@ -163,3 +166,6 @@ ERequestStatus CEvent::Stop()
 	ASSERT_FMOD_OK;
 	return ERequestStatus::Success;
 }
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

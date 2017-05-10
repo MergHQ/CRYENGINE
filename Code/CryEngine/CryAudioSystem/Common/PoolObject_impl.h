@@ -13,6 +13,8 @@
 	#include <CrySystem/ISystem.h>
 #endif // INCLUDE_AUDIO_ALLOCATOR_PRODUCTION_CODE
 
+namespace CryAudio
+{
 template<typename T, typename SyncMechanism>
 typename CPoolObject<T, SyncMechanism>::Allocator * CPoolObject<T, SyncMechanism>::s_pAllocator = nullptr;
 
@@ -69,3 +71,4 @@ void CPoolObject<T, SyncMechanism >::operator delete(void* const pObject) noexce
 {
 	GetAllocator().Deallocate(pObject);
 }
+} // namespace CryAudio

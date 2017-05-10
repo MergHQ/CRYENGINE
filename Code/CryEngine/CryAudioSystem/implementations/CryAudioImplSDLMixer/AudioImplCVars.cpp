@@ -4,8 +4,12 @@
 #include "AudioImplCVars.h"
 #include <CrySystem/IConsole.h>
 
-using namespace CryAudio::Impl::SDL_mixer;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace SDL_mixer
+{
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
@@ -20,3 +24,6 @@ void CCVars::UnregisterVariables()
 	{
 	}
 }
+} // namespace SDL_mixer
+} // namespace Impl
+} // namespace CryAudio

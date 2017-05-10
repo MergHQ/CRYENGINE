@@ -18,14 +18,14 @@
 	#include <apu.h>
 #endif // CRY_PLATFORM_DURANGO
 
-using namespace CryAudio;
+#define MAX_MODULE_NAME_LENGTH 256
 
+namespace CryAudio
+{
 // Define global objects.
-CCVars CryAudio::g_cvars;
+CCVars g_cvars;
 CLogger g_logger;
 CTimeValue g_lastMainThreadFrameStartTime;
-
-#define MAX_MODULE_NAME_LENGTH 256
 
 //////////////////////////////////////////////////////////////////////////
 class CSystemEventListner_Sound : public ISystemEventListener
@@ -138,11 +138,11 @@ void AddPhysicalBlock(long size)
 }
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
+class CEngineModule_CryAudioSystem : public ISystemModule
 {
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(Cry::IDefaultModule)
-	CRYINTERFACE_ADD(CryAudio::ISystemModule)
+	CRYINTERFACE_ADD(ISystemModule)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", 0xec73cf4362ca4a7f, 0x8b451076dc6fdb8b)
@@ -177,12 +177,12 @@ class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 			{
 				CryFatalError("<Audio>: AudioSystem failed to allocate APU heap! (%d byte)", g_cvars.m_fileCacheManagerSize << 10);
 			}
-#endif // CRY_PLATFORM_DURANGO
+#endif  // CRY_PLATFORM_DURANGO
 
 			s_currentModuleName = m_pAudioImplNameCVar->GetString();
 
 			// Get the first CryAudio::IImplModule factory available in the module and create an instance of it
-			auto pModule = env.pSystem->LoadModuleAndCreateFactoryInstance<CryAudio::IImplModule>(s_currentModuleName.c_str(), initParams);
+			auto pModule = env.pSystem->LoadModuleAndCreateFactoryInstance<IImplModule>(s_currentModuleName.c_str(), initParams);
 
 			if (pModule != nullptr)
 			{
@@ -228,7 +228,7 @@ class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 		}
 
 		// Get the first CryAudio::ISystemImplementationModule factory available in the module and create an instance of it
-		auto pModule = gEnv->pSystem->LoadModuleAndCreateFactoryInstance<CryAudio::IImplModule>(s_currentModuleName.c_str(), *s_pInitParameters);
+		auto pModule = gEnv->pSystem->LoadModuleAndCreateFactoryInstance<IImplModule>(s_currentModuleName.c_str(), *s_pInitParameters);
 
 		// First try to load and initialize the new engine module.
 		// This will release the currently running implementation but only if the library loaded successfully.
@@ -305,5 +305,5 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 
 	g_cvars.RegisterVariables();
 }
-
+} // namespace CryAudio
 #include <CryCore/CrtDebugStats.h>

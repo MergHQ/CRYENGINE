@@ -8,9 +8,12 @@
 #include <portaudio.h>
 #include <sndfile.hh>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl::PortAudio;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace PortAudio
+{
 static long unsigned const s_bufferLength = 256;
 
 // Callbacks
@@ -225,3 +228,6 @@ ERequestStatus CEvent::Stop()
 	gEnv->pAudioSystem->ReportFinishedEvent(event, true);
 	return ERequestStatus::Success;
 }
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

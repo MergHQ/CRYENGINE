@@ -34,10 +34,97 @@
 	#include <AK/Tools/Common/AkPlatformFuncs.h>
 #endif // WWISE_FOR_RELEASE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::Wwise;
+/////////////////////////////////////////////////////////////////////////////////
+//                              MEMORY HOOKS SETUP
+//
+//                             ##### IMPORTANT #####
+//
+// These custom alloc/free functions are declared as "extern" in AkMemoryMgr.h
+// and MUST be defined by the game developer.
+/////////////////////////////////////////////////////////////////////////////////
 
+namespace AK
+{
+void* AllocHook(size_t in_size)
+{
+	return CryModuleMalloc(in_size);
+}
+
+void FreeHook(void* in_ptr)
+{
+	CryModuleFree(in_ptr);
+}
+
+void* VirtualAllocHook(void* in_pMemAddress, size_t in_size, DWORD in_dwAllocationType, DWORD in_dwProtect)
+{
+	return AllocHook(in_size);
+}
+
+void VirtualFreeHook(void* in_pMemAddress, size_t in_size, DWORD in_dwFreeType)
+{
+	FreeHook(in_pMemAddress);
+}
+
+#if CRY_PLATFORM_DURANGO
+void* APUAllocHook(size_t in_size, unsigned int in_alignment)
+{
+	void* pAlloc = nullptr;
+
+	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
+	size_t const nSecondSize = g_audioImplMemoryPoolSecondary.MemSize();
+
+	if (nSecondSize > 0)
+	{
+		size_t const nAllocHandle = g_audioImplMemoryPoolSecondary.Allocate<size_t>(in_size, in_alignment);
+
+		if (nAllocHandle > 0)
+		{
+			pAlloc = g_audioImplMemoryPoolSecondary.Resolve<void*>(nAllocHandle);
+			g_audioImplMemoryPoolSecondary.Item(nAllocHandle)->Lock();
+		}
+	}
+	#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
+
+	CRY_ASSERT(pAlloc != nullptr);
+	return pAlloc;
+}
+
+void APUFreeHook(void* in_pMemAddress)
+{
+	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
+	size_t const nAllocHandle = g_audioImplMemoryPoolSecondary.AddressToHandle(in_pMemAddress);
+	//size_t const nOldSize = g_MemoryPoolSoundSecondary.Size(nAllocHandle);
+	g_audioImplMemoryPoolSecondary.Free(nAllocHandle);
+	#else
+	CryFatalError("%s", "<Audio>: Called APUFreeHook without secondary pool");
+	#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
+}
+#endif  // CRY_PLATFORM_DURANGO
+}
+
+#if !defined(WWISE_FOR_RELEASE)
+static void ErrorMonitorCallback(
+  AK::Monitor::ErrorCode in_eErrorCode,   ///< Error code number value
+  const AkOSChar* in_pszError,            ///< Message or error string to be displayed
+  AK::Monitor::ErrorLevel in_eErrorLevel, ///< Specifies whether it should be displayed as a message or an error
+  AkPlayingID in_playingID,               ///< Related Playing ID if applicable, AK_INVALID_PLAYING_ID otherwise
+  AkGameObjectID in_gameObjID             ///< Related Game Object ID if applicable, AK_INVALID_GAME_OBJECT otherwise
+  )
+{
+	char* szTemp = nullptr;
+	CONVERT_OSCHAR_TO_CHAR(in_pszError, szTemp);
+	g_implLogger.Log(
+	  ((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
+	  "<Wwise> %s ErrorCode: %d PlayingID: %u GameObjID: %" PRISIZE_T, szTemp, in_eErrorCode, in_playingID, in_gameObjID);
+}
+#endif // WWISE_FOR_RELEASE
+
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Wwise
+{
 char const* const CImpl::s_szWwiseEventTag = "WwiseEvent";
 char const* const CImpl::s_szWwiseRtpcTag = "WwiseRtpc";
 char const* const CImpl::s_szWwiseSwitchTag = "WwiseSwitch";
@@ -133,91 +220,6 @@ public:
 
 CAuxWwiseAudioThread g_auxAudioThread;
 
-/////////////////////////////////////////////////////////////////////////////////
-//                              MEMORY HOOKS SETUP
-//
-//                             ##### IMPORTANT #####
-//
-// These custom alloc/free functions are declared as "extern" in AkMemoryMgr.h
-// and MUST be defined by the game developer.
-/////////////////////////////////////////////////////////////////////////////////
-
-namespace AK
-{
-void* AllocHook(size_t in_size)
-{
-	return CryModuleMalloc(in_size);
-}
-
-void FreeHook(void* in_ptr)
-{
-	CryModuleFree(in_ptr);
-}
-
-void* VirtualAllocHook(void* in_pMemAddress, size_t in_size, DWORD in_dwAllocationType, DWORD in_dwProtect)
-{
-	return AllocHook(in_size);
-}
-
-void VirtualFreeHook(void* in_pMemAddress, size_t in_size, DWORD in_dwFreeType)
-{
-	FreeHook(in_pMemAddress);
-}
-
-#if CRY_PLATFORM_DURANGO
-void* APUAllocHook(size_t in_size, unsigned int in_alignment)
-{
-	void* pAlloc = nullptr;
-
-	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-	size_t const nSecondSize = g_audioImplMemoryPoolSecondary.MemSize();
-
-	if (nSecondSize > 0)
-	{
-		size_t const nAllocHandle = g_audioImplMemoryPoolSecondary.Allocate<size_t>(in_size, in_alignment);
-
-		if (nAllocHandle > 0)
-		{
-			pAlloc = g_audioImplMemoryPoolSecondary.Resolve<void*>(nAllocHandle);
-			g_audioImplMemoryPoolSecondary.Item(nAllocHandle)->Lock();
-		}
-	}
-	#endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
-
-	CRY_ASSERT(pAlloc != nullptr);
-	return pAlloc;
-}
-
-void APUFreeHook(void* in_pMemAddress)
-{
-	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-	size_t const nAllocHandle = g_audioImplMemoryPoolSecondary.AddressToHandle(in_pMemAddress);
-	//size_t const nOldSize = g_MemoryPoolSoundSecondary.Size(nAllocHandle);
-	g_audioImplMemoryPoolSecondary.Free(nAllocHandle);
-	#else
-	CryFatalError("%s", "<Audio>: Called APUFreeHook without secondary pool");
-	#endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
-}
-#endif // CRY_PLATFORM_DURANGO
-}
-
-#if !defined(WWISE_FOR_RELEASE)
-static void ErrorMonitorCallback(
-  AK::Monitor::ErrorCode in_eErrorCode,   ///< Error code number value
-  const AkOSChar* in_pszError,            ///< Message or error string to be displayed
-  AK::Monitor::ErrorLevel in_eErrorLevel, ///< Specifies whether it should be displayed as a message or an error
-  AkPlayingID in_playingID,               ///< Related Playing ID if applicable, AK_INVALID_PLAYING_ID otherwise
-  AkGameObjectID in_gameObjID             ///< Related Game Object ID if applicable, AK_INVALID_GAME_OBJECT otherwise
-  )
-{
-	char* sTemp = nullptr;
-	CONVERT_OSCHAR_TO_CHAR(in_pszError, sTemp);
-	g_implLogger.Log(
-	  ((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? ELogType::Error : ELogType::Comment,
-	  "<Wwise> %s ErrorCode: %d PlayingID: %u GameObjID: %" PRISIZE_T, sTemp, in_eErrorCode, in_playingID, in_gameObjID);
-}
-#endif // WWISE_FOR_RELEASE
-
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_initBankId(AK_INVALID_BANK_ID)
@@ -239,7 +241,7 @@ CImpl::CImpl()
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_name.Format("%s (Build: %d) (%s%s)", WWISE_IMPL_INFO_STRING, AK_WWISESDK_VERSION_BUILD, szAssetDirectory, CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT);
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -265,7 +267,7 @@ void CImpl::Update(float const deltaTime)
 			AKASSERT((wwiseResult == AK_Success) || !"StopOutputCapture failed!");
 			enableOutputCapture = g_cvars.m_enableOutputCapture;
 		}
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 		AK::SoundEngine::RenderAudio();
 	}
@@ -373,7 +375,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	initSettings.uMonitorPoolSize = g_cvars.m_monitorMemoryPoolSize << 10;
 	initSettings.uMonitorQueuePoolSize = g_cvars.m_monitorQueueMemoryPoolSize << 10;
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 	initSettings.uPrepareEventMemoryPoolID = prepareMemPoolId;
 	initSettings.bEnableGameSyncPreparation = false;//TODO: ???
 
@@ -482,7 +484,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 			m_bCommSystemInitialized = false;
 		}
 	}
-#endif // !WWISE_FOR_RELEASE
+#endif  // !WWISE_FOR_RELEASE
 
 #if defined(WWISE_USE_OCULUS)
 	m_pOculusSpatializerLibrary = CryLoadLibrary(OCULUS_SPATIALIZER_DLL);
@@ -542,7 +544,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	{
 		g_implLogger.Log(ELogType::Error, "Failed to load " OCULUS_SPATIALIZER_DLL);
 	}
-#endif // WWISE_USE_OCULUS
+#endif  // WWISE_USE_OCULUS
 
 	REINST("Register Global Callback")
 
@@ -617,7 +619,7 @@ ERequestStatus CImpl::ShutDown()
 
 		m_bCommSystemInitialized = false;
 	}
-#endif // !WWISE_FOR_RELEASE
+#endif  // !WWISE_FOR_RELEASE
 
 	AK::MusicEngine::Term();
 
@@ -681,7 +683,7 @@ ERequestStatus CImpl::ShutDown()
 		CryFreeLibrary(m_pOculusSpatializerLibrary);
 		m_pOculusSpatializerLibrary = nullptr;
 	}
-#endif // WWISE_USE_OCULUS
+#endif  // WWISE_USE_OCULUS
 
 	return ERequestStatus::Success;
 }
@@ -866,13 +868,13 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject()
 {
 	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 {
 	static AkGameObjectID id = 1;
 
@@ -885,13 +887,13 @@ Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 	}
 #else
 	AK::SoundEngine::RegisterGameObj(id);
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	return static_cast<IObject*>(new CObject(id++));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructObject(Impl::IObject const* const pIObject)
+void CImpl::DestructObject(IObject const* const pIObject)
 {
 	CObject const* pObject = static_cast<CObject const*>(pIObject);
 	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(pObject->m_id);
@@ -905,14 +907,14 @@ void CImpl::DestructObject(Impl::IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener()
 {
 	static AkUniqueID id = 0;
 	return static_cast<IListener*>(new CListener(id++));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructListener(Impl::IListener* const pIListener)
+void CImpl::DestructListener(IListener* const pIListener)
 {
 	delete pIListener;
 }
@@ -971,7 +973,7 @@ void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 	{
 		g_implLogger.Log(ELogType::Error, "AddPlayerMotionDevice failed! (%u : %u)", deviceUniqueID, deviceID);
 	}
-#endif // AK_MOTION
+#endif  // AK_MOTION
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -995,7 +997,7 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 	{
 		CRY_ASSERT(m_mapInputDevices.empty());
 	}
-#endif // AK_MOTION
+#endif  // AK_MOTION
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1149,7 +1151,7 @@ char const* const CImpl::GetName() const
 {
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	return m_name.c_str();
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	return nullptr;
 }
@@ -1171,7 +1173,7 @@ void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
 	memoryInfo.secondaryPoolSize = 0;
 	memoryInfo.secondaryPoolUsedSize = 0;
 	memoryInfo.secondaryPoolAllocations = 0;
-#endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
+#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 	{
 		auto& allocator = CObject::GetAllocator();
 		auto mem = allocator.GetTotalMemory();
@@ -1368,3 +1370,6 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_fileIOHandler.SetLanguageFolder(pTemp);
 	}
 }
+} // namespace Wwise
+} // namespace Impl
+} // namespace CryAudio

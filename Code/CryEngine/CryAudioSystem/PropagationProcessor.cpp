@@ -14,9 +14,8 @@
 
 #define ATL_FLOAT_EPSILON 1.0e-6
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 static size_t s_numRaySamplePositionsLow = 0;
 static size_t s_numRaySamplePositionsMedium = 0;
 static size_t s_numRaySamplePositionsHigh = 0;
@@ -356,7 +355,7 @@ void CPropagationProcessor::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 					minDistance = min(minDistance, distance);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 				}
 			}
 		}
@@ -802,3 +801,4 @@ void CPropagationProcessor::ResetRayData()
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

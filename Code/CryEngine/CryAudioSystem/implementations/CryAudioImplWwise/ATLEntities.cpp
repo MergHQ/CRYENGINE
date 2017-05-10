@@ -8,10 +8,12 @@
 #include <AK/SoundEngine/Common/AkTypes.h>
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::Wwise;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Wwise
+{
 AkGameObjectID CObject::s_dummyGameObjectId = static_cast<AkGameObjectID>(-2);
 
 // AK callbacks
@@ -576,3 +578,6 @@ ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad)
 
 	return result;
 }
+} // namespace Wwise
+} // namespace Impl
+} // namespace CryAudio

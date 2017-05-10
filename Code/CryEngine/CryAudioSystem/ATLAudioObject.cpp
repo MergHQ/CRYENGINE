@@ -14,9 +14,8 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 TriggerInstanceId CryAudio::CATLAudioObject::s_triggerInstanceIdCounter = 1;
 CSystem* CryAudio::CATLAudioObject::s_pAudioSystem = nullptr;
 CAudioEventManager* CryAudio::CATLAudioObject::s_pEventManager = nullptr;
@@ -237,7 +236,7 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bS
 			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %s", pEvent->m_pTrigger->m_name.c_str());
 #else
 			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %u", pEvent->m_pTrigger->GetId());
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 		else
 		{
@@ -759,7 +758,7 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 				}
 				g_logger.Log(ELogType::Warning, "Request to stop a standalone audio file that is not playing! State: \"%s\"", szState);
 			}
-#endif //INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  //INCLUDE_AUDIO_PRODUCTION_CODE
 
 			ERequestStatus const tempStatus = m_pImplData->StopFile(pStandaloneFile->m_pImplData);
 
@@ -826,7 +825,7 @@ void CATLAudioObject::SetVelocityTracking(bool const bEnable)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes const& listenerAttributes)
+void CATLAudioObject::UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes)
 {
 	if ((m_flags& EObjectFlags::TrackDoppler) > 0)
 	{
@@ -1482,3 +1481,4 @@ void CATLAudioObject::SetName(char const* const szName, SRequestUserData const& 
 	SAudioObjectRequestData<EAudioObjectRequestType::SetName> requestData(szName);
 	PushRequest(requestData, userData);
 }
+} // namespace CryAudio

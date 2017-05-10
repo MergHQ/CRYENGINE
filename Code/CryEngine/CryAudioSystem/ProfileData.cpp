@@ -3,8 +3,8 @@
 #include "stdafx.h"
 #include "ProfileData.h"
 
-using namespace CryAudio;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 char const* CProfileData::GetImplName() const
 {
@@ -16,3 +16,4 @@ void CProfileData::SetImplName(char const* const szName)
 {
 	m_implName = szName;
 }
+} // namespace CryAudio

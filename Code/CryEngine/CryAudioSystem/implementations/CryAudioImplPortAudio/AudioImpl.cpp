@@ -14,10 +14,12 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CryString/CryPath.h>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-using namespace CryAudio::Impl::PortAudio;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace PortAudio
+{
 char const* const CImpl::s_szPortAudioEventTag = "PortAudioEvent";
 char const* const CImpl::s_szPortAudioEventNameAttribute = "portaudio_name";
 char const* const CImpl::s_szPortAudioEventTypeAttribute = "event_type";
@@ -55,7 +57,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	m_name += " (";
 	m_name += szAssetDirectory;
 	m_name += CRY_NATIVE_PATH_SEPSTR PORTAUDIO_IMPL_DATA_ROOT ")";
-#endif // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 	return ERequestStatus::Success;
 }
@@ -190,13 +192,13 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject()
 {
 	return new CObject();
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 {
 	CObject* pObject = new CObject();
 	stl::push_back_unique(m_constructedObjects, pObject);
@@ -205,7 +207,7 @@ Impl::IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructObject(Impl::IObject const* const pIObject)
+void CImpl::DestructObject(IObject const* const pIObject)
 {
 	CObject const* const pObject = static_cast<CObject const*>(pIObject);
 	stl::find_and_erase(m_constructedObjects, pObject);
@@ -213,13 +215,13 @@ void CImpl::DestructObject(Impl::IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-Impl::IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener()
 {
 	return static_cast<IListener*>(new CListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructListener(Impl::IListener* const pIListener)
+void CImpl::DestructListener(IListener* const pIListener)
 {
 	delete pIListener;
 }
@@ -379,7 +381,7 @@ char const* const CImpl::GetName() const
 {
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 	return m_name.c_str();
-#endif // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 	return nullptr;
 }
@@ -442,3 +444,6 @@ void CImpl::SetLanguage(char const* const szLanguage)
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
 }
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

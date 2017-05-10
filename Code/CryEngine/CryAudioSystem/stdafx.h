@@ -9,8 +9,11 @@
 #include <CryCore/Project/ProjectDefines.h>
 #include <AudioLogger.h>
 
-extern CryAudio::CLogger g_logger;
+namespace CryAudio
+{
+extern CLogger g_logger;
 extern CTimeValue g_lastMainThreadFrameStartTime;
+} // namespace CryAudio
 
 #if !defined(_RELEASE)
 	#define INCLUDE_AUDIO_PRODUCTION_CODE

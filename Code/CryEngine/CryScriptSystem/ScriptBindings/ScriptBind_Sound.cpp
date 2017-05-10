@@ -4,8 +4,6 @@
 #include "ScriptBind_Sound.h"
 #include <CryAudio/IAudioSystem.h>
 
-using namespace CryAudio;
-
 CScriptBind_Sound::CScriptBind_Sound(IScriptSystem* pScriptSystem, ISystem* pSystem)
 {
 	CScriptableBase::Init(pScriptSystem, pSystem);
@@ -36,7 +34,7 @@ int CScriptBind_Sound::GetAudioTriggerID(IFunctionHandler* pH, char const* const
 {
 	if ((sTriggerName != nullptr) && (sTriggerName[0] != '\0'))
 	{
-		ControlId nTriggerID = InvalidControlId;
+		CryAudio::ControlId nTriggerID = CryAudio::InvalidControlId;
 		if (gEnv->pAudioSystem->GetAudioTriggerId(sTriggerName, nTriggerID))
 		{
 			// ID retrieved successfully
@@ -56,7 +54,7 @@ int CScriptBind_Sound::GetAudioSwitchID(IFunctionHandler* pH, char const* const 
 {
 	if ((sSwitchName != nullptr) && (sSwitchName[0] != '\0'))
 	{
-		ControlId nSwitchID = InvalidControlId;
+		CryAudio::ControlId nSwitchID = CryAudio::InvalidControlId;
 		if (gEnv->pAudioSystem->GetAudioSwitchId(sSwitchName, nSwitchID))
 		{
 			// ID retrieved successfully
@@ -76,8 +74,8 @@ int CScriptBind_Sound::GetAudioSwitchStateID(IFunctionHandler* pH, ScriptHandle 
 {
 	if ((sSwitchStateName != nullptr) && (sSwitchStateName[0] != '\0'))
 	{
-		SwitchStateId nSwitchStateID = InvalidSwitchStateId;
-		ControlId nSwitchID = HandleToInt<ControlId>(hSwitchID);
+		CryAudio::SwitchStateId nSwitchStateID = CryAudio::InvalidSwitchStateId;
+		CryAudio::ControlId nSwitchID = HandleToInt<CryAudio::ControlId>(hSwitchID);
 		if (gEnv->pAudioSystem->GetAudioSwitchStateId(nSwitchID, sSwitchStateName, nSwitchStateID))
 		{
 			// ID retrieved successfully
@@ -97,11 +95,11 @@ int CScriptBind_Sound::GetAudioRtpcID(IFunctionHandler* pH, char const* const sR
 {
 	if ((sRtpcName != nullptr) && (sRtpcName[0] != '\0'))
 	{
-		ControlId nRtpcID = InvalidControlId;
-		if (gEnv->pAudioSystem->GetAudioParameterId(sRtpcName, nRtpcID))
+		CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
+		if (gEnv->pAudioSystem->GetAudioParameterId(sRtpcName, parameterId))
 		{
 			// ID retrieved successfully
-			return pH->EndFunction(IntToHandle(nRtpcID));
+			return pH->EndFunction(IntToHandle(parameterId));
 		}
 		else
 		{
@@ -117,7 +115,7 @@ int CScriptBind_Sound::GetAudioEnvironmentID(IFunctionHandler* pH, char const* c
 {
 	if ((sEnvironmentName != nullptr) && (sEnvironmentName[0] != '\0'))
 	{
-		EnvironmentId nEnvironmentID = InvalidEnvironmentId;
+		CryAudio::EnvironmentId nEnvironmentID = CryAudio::InvalidEnvironmentId;
 		if (gEnv->pAudioSystem->GetAudioEnvironmentId(sEnvironmentName, nEnvironmentID))
 		{
 			// ID retrieved successfully
@@ -135,22 +133,22 @@ int CScriptBind_Sound::GetAudioEnvironmentID(IFunctionHandler* pH, char const* c
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Sound::SetAudioRtpcValue(IFunctionHandler* pH, ScriptHandle const hRtpcID, float const fValue)
 {
-	gEnv->pAudioSystem->SetParameter(HandleToInt<ControlId>(hRtpcID), fValue);
+	gEnv->pAudioSystem->SetParameter(HandleToInt<CryAudio::ControlId>(hRtpcID), fValue);
 	return pH->EndFunction();
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Sound::GetAudioTriggerRadius(IFunctionHandler* pH, ScriptHandle const hTriggerID)
 {
-	STriggerData data;
-	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<ControlId>(hTriggerID), data);
+	CryAudio::STriggerData data;
+	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<CryAudio::ControlId>(hTriggerID), data);
 	return pH->EndFunction(data.radius);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Sound::GetAudioTriggerOcclusionFadeOutDistance(IFunctionHandler* pH, ScriptHandle const hTriggerID)
 {
-	STriggerData data;
-	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<ControlId>(hTriggerID), data);
+	CryAudio::STriggerData data;
+	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<CryAudio::ControlId>(hTriggerID), data);
 	return pH->EndFunction(data.occlusionFadeOutDistance);
 }

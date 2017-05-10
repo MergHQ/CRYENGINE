@@ -5,8 +5,8 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
-using namespace CryAudio;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
@@ -446,3 +446,4 @@ void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 		g_logger.Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
 	}
 }
+} // namespace CryAudio

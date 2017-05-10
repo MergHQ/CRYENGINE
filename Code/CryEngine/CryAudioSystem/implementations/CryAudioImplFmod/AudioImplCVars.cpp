@@ -4,8 +4,12 @@
 #include "AudioImplCVars.h"
 #include <CrySystem/IConsole.h>
 
-using namespace CryAudio::Impl::Fmod;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
@@ -95,10 +99,10 @@ void CCVars::RegisterVariables()
 	               "Specifies the size (in KiB) of the memory pool to be used by the Fmod audio system implementation.\n"
 	               "Usage: s_FmodSecondaryPoolSize [0/...]\n"
 	               "Default PC: 0, XboxOne: 32768 (32 MiB), PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
-#endif // CRY_PLATFORM_DURANGO
+#endif  // CRY_PLATFORM_DURANGO
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -118,9 +122,12 @@ void CCVars::UnregisterVariables()
 
 #if CRY_PLATFORM_DURANGO
 		pConsole->UnregisterVariable("s_FmodSecondaryPoolSize");
-#endif // CRY_PLATFORM_DURANGO
+#endif    // CRY_PLATFORM_DURANGO
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif    // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	}
 }
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

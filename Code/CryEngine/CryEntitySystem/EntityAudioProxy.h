@@ -16,7 +16,7 @@ struct CEntityComponentAudio final : public IEntityAudioComponent
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentAudio, IEntityAudioComponent, "CEntityComponentAudio", 0x51AE5FC21B454351, 0xAC889CAF0C757B5F);
 
 	CEntityComponentAudio();
-	virtual ~CEntityComponentAudio();
+	virtual ~CEntityComponentAudio() override;
 
 public:
 	// IEntityComponent
@@ -69,8 +69,6 @@ private:
 			: pIObject(_pIObject)
 			, offset(IDENTITY)
 		{}
-
-		~SAudioAuxObjectWrapper() {}
 
 		CryAudio::IObject* const pIObject;
 		Matrix34                 offset;

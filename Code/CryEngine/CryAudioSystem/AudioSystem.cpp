@@ -9,8 +9,8 @@
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 
-using namespace CryAudio;
-
+namespace CryAudio
+{
 ///////////////////////////////////////////////////////////////////////////
 void CMainThread::Init(CSystem* const pSystem)
 {
@@ -862,3 +862,4 @@ void CSystem::DrawAudioDebugData()
 	}
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

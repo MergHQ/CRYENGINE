@@ -3,14 +3,12 @@
 #include "StdAfx.h"
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-using namespace CryAudio;
-
 class CFlowNode_AudioRtpc final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
 	explicit CFlowNode_AudioRtpc(SActivationInfo* pActInfo)
-		: m_parameterId(InvalidControlId)
+		: m_parameterId(CryAudio::InvalidControlId)
 		, m_value(0.0f)
 	{}
 
@@ -152,9 +150,9 @@ private:
 		}
 	}
 
-	ControlId        m_parameterId;
-	float            m_value;
-	SRequestUserData m_requestUserData;
+	CryAudio::ControlId        m_parameterId;
+	float                      m_value;
+	CryAudio::SRequestUserData m_requestUserData;
 };
 
 REGISTER_FLOW_NODE("Audio:Rtpc", CFlowNode_AudioRtpc);

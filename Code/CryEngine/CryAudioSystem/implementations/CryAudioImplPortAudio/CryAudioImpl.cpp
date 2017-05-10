@@ -8,19 +8,22 @@
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl::PortAudio;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace PortAudio
+{
 // Define global objects.
 CLogger g_implLogger;
-CCVars CryAudio::Impl::PortAudio::g_cvars;
+CCVars g_cvars;
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAudioImplPortAudio : public CryAudio::IImplModule
+class CEngineModule_CryAudioImplPortAudio : public IImplModule
 {
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(Cry::IDefaultModule)
-	CRYINTERFACE_ADD(CryAudio::IImplModule)
+	CRYINTERFACE_ADD(IImplModule)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplPortAudio, "EngineModule_AudioImpl", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
@@ -67,5 +70,7 @@ CEngineModule_CryAudioImplPortAudio::CEngineModule_CryAudioImplPortAudio()
 {
 	g_cvars.RegisterVariables();
 }
-
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio
 #include <CryCore/CrtDebugStats.h>

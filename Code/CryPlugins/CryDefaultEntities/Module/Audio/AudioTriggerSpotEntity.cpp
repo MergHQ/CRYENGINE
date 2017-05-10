@@ -7,8 +7,6 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySerialization/Enum.h>
 
-using namespace CryAudio;
-
 #define DELAY_TIMER_ID 0
 
 class CAudioTriggerSpotRegistrator final : public IEntityRegistrator
@@ -40,7 +38,7 @@ CRYREGISTER_CLASS(CAudioTriggerSpotEntity);
 
 CAudioTriggerSpotEntity::CAudioTriggerSpotEntity()
 {
-	gEnv->pAudioSystem->AddRequestListener(&CAudioTriggerSpotEntity::OnAudioTriggerFinished, this, ESystemEvents::TriggerFinished);
+	gEnv->pAudioSystem->AddRequestListener(&CAudioTriggerSpotEntity::OnAudioTriggerFinished, this, CryAudio::ESystemEvents::TriggerFinished);
 }
 
 CAudioTriggerSpotEntity::~CAudioTriggerSpotEntity()
@@ -80,7 +78,7 @@ void CAudioTriggerSpotEntity::ProcessEvent(SEntityEvent& event)
 	}
 }
 
-void CAudioTriggerSpotEntity::TriggerFinished(const ControlId trigger)
+void CAudioTriggerSpotEntity::TriggerFinished(const CryAudio::ControlId trigger)
 {
 	// If in delay mode, set a timer to play again. Note that the play trigger
 	// could have been changed  and this event refers the previous one finishing
@@ -91,7 +89,7 @@ void CAudioTriggerSpotEntity::TriggerFinished(const ControlId trigger)
 	}
 }
 
-void CAudioTriggerSpotEntity::OnAudioTriggerFinished(SRequestInfo const* const pAudioRequestInfo)
+void CAudioTriggerSpotEntity::OnAudioTriggerFinished(CryAudio::SRequestInfo const* const pAudioRequestInfo)
 {
 	CAudioTriggerSpotEntity* pAudioTriggerSpot = static_cast<CAudioTriggerSpotEntity*>(pAudioRequestInfo->pOwner);
 	pAudioTriggerSpot->TriggerFinished(pAudioRequestInfo->audioControlId);
@@ -109,7 +107,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 
 	// Reset values to their default
 	audioProxy.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
-	audioProxy.SetCurrentEnvironments(InvalidAuxObjectId);
+	audioProxy.SetCurrentEnvironments(CryAudio::InvalidAuxObjectId);
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
 
 	if (m_bTriggerAreasOnMove)
@@ -135,7 +133,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 				m_currentBehavior = m_behavior;
 
 				// Have to stop all running instances if the behavior changes
-				if (m_currentlyPlayingTriggerId != InvalidControlId)
+				if (m_currentlyPlayingTriggerId != CryAudio::InvalidControlId)
 				{
 					audioProxy.StopTrigger(m_currentlyPlayingTriggerId);
 				}
@@ -170,18 +168,18 @@ void CAudioTriggerSpotEntity::Play()
 {
 	if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
-		if (m_currentlyPlayingTriggerId != InvalidControlId && m_playTriggerId != m_currentlyPlayingTriggerId)
+		if (m_currentlyPlayingTriggerId != CryAudio::InvalidControlId && m_playTriggerId != m_currentlyPlayingTriggerId)
 		{
 			pAudioProxy->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		if (m_playTriggerId != InvalidControlId)
+		if (m_playTriggerId != CryAudio::InvalidControlId)
 		{
 			pAudioProxy->SetCurrentEnvironments();
 			pAudioProxy->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
-			SRequestUserData const userData(ERequestFlags::None, this);
-			pAudioProxy->ExecuteTrigger(m_playTriggerId, DefaultAuxObjectId, userData);
+			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::None, this);
+			pAudioProxy->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, userData);
 		}
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
@@ -195,16 +193,16 @@ void CAudioTriggerSpotEntity::Stop()
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{
-		if (m_stopTriggerId != InvalidControlId)
+		if (m_stopTriggerId != CryAudio::InvalidControlId)
 		{
 			pAudioProxy->ExecuteTrigger(m_stopTriggerId);
 		}
-		else if (m_currentlyPlayingTriggerId != InvalidControlId)
+		else if (m_currentlyPlayingTriggerId != CryAudio::InvalidControlId)
 		{
 			pAudioProxy->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		m_currentlyPlayingTriggerId = InvalidControlId;
+		m_currentlyPlayingTriggerId = CryAudio::InvalidControlId;
 	}
 }
 
@@ -237,8 +235,8 @@ void CAudioTriggerSpotEntity::DebugDraw()
 			// Activity Radius
 			if (m_drawActivityRadius > eDrawActivityRadius_Disabled)
 			{
-				const ControlId triggerId = m_drawActivityRadius == eDrawActivityRadius_PlayTrigger ? m_playTriggerId : m_stopTriggerId;
-				STriggerData audioTriggerData;
+				const CryAudio::ControlId triggerId = m_drawActivityRadius == eDrawActivityRadius_PlayTrigger ? m_playTriggerId : m_stopTriggerId;
+				CryAudio::STriggerData audioTriggerData;
 				gEnv->pAudioSystem->GetAudioTriggerData(triggerId, audioTriggerData);
 
 				pRenderAuxGeom->DrawSphere(pos, audioTriggerData.radius, ColorB(250, 100, 100, 100), false);

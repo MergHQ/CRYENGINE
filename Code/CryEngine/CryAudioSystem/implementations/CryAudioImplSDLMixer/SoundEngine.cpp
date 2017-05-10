@@ -11,9 +11,12 @@
 
 #define SDL_MIXER_PROJECT_PATH AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer" CRY_NATIVE_PATH_SEPSTR
 
-using namespace CryAudio;
-using namespace CryAudio::Impl::SDL_mixer;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace SDL_mixer
+{
 static constexpr int s_supportedFormats = MIX_INIT_OGG | MIX_INIT_MP3;
 static constexpr int s_numMixChannels = 512;
 static constexpr SampleId s_invalidSampleId = 0;
@@ -782,3 +785,6 @@ void SoundEngine::Update()
 
 	g_bListenerPosChanged = false;
 }
+} // namespace SDL_mixer
+} // namespace Impl
+} // namespace CryAudio

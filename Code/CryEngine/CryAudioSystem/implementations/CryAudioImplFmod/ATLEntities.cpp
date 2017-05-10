@@ -7,9 +7,12 @@
 #include <fmod_common.h>
 #include <fmod.hpp>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl::Fmod;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
 //////////////////////////////////////////////////////////////////////////
 FMOD_RESULT F_CALLBACK FileCallback(FMOD_CHANNELCONTROL* pChannelControl, FMOD_CHANNELCONTROL_TYPE controlType, FMOD_CHANNELCONTROL_CALLBACK_TYPE callbackType, void* pData1, void* pData2)
 {
@@ -218,3 +221,6 @@ void CProgrammerSoundFile::Stop()
 	fmodResult = m_pEventInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
 	ASSERT_FMOD_OK;
 }
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

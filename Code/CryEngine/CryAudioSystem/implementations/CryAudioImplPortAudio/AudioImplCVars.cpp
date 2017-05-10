@@ -4,8 +4,12 @@
 #include "AudioImplCVars.h"
 #include <CrySystem/IConsole.h>
 
-using namespace CryAudio::Impl::PortAudio;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace PortAudio
+{
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
@@ -20,3 +24,6 @@ void CCVars::UnregisterVariables()
 	{
 	}
 }
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

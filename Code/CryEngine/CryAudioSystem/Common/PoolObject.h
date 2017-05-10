@@ -25,6 +25,8 @@
 //!
 //////////////////////////////////////////////////////////////////////////
 
+namespace CryAudio
+{
 template<typename T, typename SyncMechanism>
 class CPoolObject
 {
@@ -62,8 +64,7 @@ private:
 
 	static Allocator* s_pAllocator;
 };
-
-//------------------------------------------------------------------------
+} // namespace CryAudio
 
 //! \note MSVC (tested@14u3) does not seem to automatically instantiate the
 //! operator delete and new CPoolObject member functions at the point of

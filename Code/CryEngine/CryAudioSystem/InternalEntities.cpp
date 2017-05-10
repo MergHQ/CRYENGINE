@@ -5,8 +5,8 @@
 #include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 
-using namespace CryAudio;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 COcclusionObstructionState::COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager, CATLAudioObject const& globalAudioObject)
 	: m_stateId(stateId)
@@ -109,3 +109,4 @@ ERequestStatus CVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 
 	return ERequestStatus::Success;
 }
+} // namespace CryAudio

@@ -5,8 +5,6 @@
 #include <CrySerialization/Enum.h>
 #include <CryMath/Random.h>
 
-using namespace CryAudio;
-
 class CAudioAreaRandomRegistrator : public IEntityRegistrator
 {
 	virtual void Register() override
@@ -161,7 +159,7 @@ void CAudioAreaRandom::OnResetState()
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
 	audioEntityComponent.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
 
-	audioEntityComponent.SetCurrentEnvironments(InvalidAuxObjectId);
+	audioEntityComponent.SetCurrentEnvironments(CryAudio::InvalidAuxObjectId);
 	audioEntityComponent.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
 	audioEntityComponent.AudioAuxObjectsMoveWithEntity(m_bMoveWithEntity);
 
@@ -208,18 +206,18 @@ void CAudioAreaRandom::Play()
 {
 	if (auto pIEntityAudioComponent = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
-		if (m_currentlyPlayingTriggerId != InvalidControlId && m_playTriggerId != m_currentlyPlayingTriggerId)
+		if (m_currentlyPlayingTriggerId != CryAudio::InvalidControlId && m_playTriggerId != m_currentlyPlayingTriggerId)
 		{
 			pIEntityAudioComponent->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		if (m_playTriggerId != InvalidControlId)
+		if (m_playTriggerId != CryAudio::InvalidControlId)
 		{
 			pIEntityAudioComponent->SetCurrentEnvironments();
 			pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
-			SRequestUserData const userData(ERequestFlags::None, this);
-			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, DefaultAuxObjectId, userData);
+			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::None, this);
+			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, userData);
 		}
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
@@ -236,16 +234,16 @@ void CAudioAreaRandom::Stop()
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{
-		if (m_stopTriggerId != InvalidControlId)
+		if (m_stopTriggerId != CryAudio::InvalidControlId)
 		{
 			pAudioProxy->ExecuteTrigger(m_stopTriggerId);
 		}
-		else if (m_currentlyPlayingTriggerId != InvalidControlId)
+		else if (m_currentlyPlayingTriggerId != CryAudio::InvalidControlId)
 		{
 			pAudioProxy->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		m_currentlyPlayingTriggerId = InvalidControlId;
+		m_currentlyPlayingTriggerId = CryAudio::InvalidControlId;
 	}
 
 	m_bPlaying = false;
@@ -253,7 +251,7 @@ void CAudioAreaRandom::Stop()
 
 void CAudioAreaRandom::UpdateRtpc()
 {
-	if (m_parameterId != InvalidControlId)
+	if (m_parameterId != CryAudio::InvalidControlId)
 	{
 		if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 		{

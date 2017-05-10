@@ -8,19 +8,22 @@
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
 
-using namespace CryAudio;
-using namespace CryAudio::Impl::SDL_mixer;
-
+namespace CryAudio
+{
+namespace Impl
+{
+namespace SDL_mixer
+{
 // Define global objects.
 CLogger g_implLogger;
-CCVars CryAudio::Impl::SDL_mixer::g_cvars;
+CCVars g_cvars;
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAudioImplSDLMixer : public CryAudio::IImplModule
+class CEngineModule_CryAudioImplSDLMixer : public IImplModule
 {
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(Cry::IDefaultModule)
-	CRYINTERFACE_ADD(CryAudio::IImplModule)
+	CRYINTERFACE_ADD(IImplModule)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "EngineModule_AudioImpl", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
@@ -67,5 +70,7 @@ CEngineModule_CryAudioImplSDLMixer::CEngineModule_CryAudioImplSDLMixer()
 {
 	g_cvars.RegisterVariables();
 }
-
+} // namespace SDL_mixer
+} // namespace Impl
+} // namespace CryAudio
 #include <CryCore/CrtDebugStats.h>
