@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "EditorSubstanceManager.h"
 
+#include "SandboxPlugin.h"
 #include <CryString/CryPath.h>
 
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
@@ -11,7 +12,8 @@
 #include "IEditor.h"
 #include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/AssetManager.h>
-#include "FilePathUtil.h"
+#include <FilePathUtil.h>
+#include "Util/FileUtil.h"
 #include "ThreadingUtils.h"
 #include "Util/Image.h"
 #include "Util/ImageUtil.h"
@@ -90,6 +92,12 @@ namespace EditorSubstance {
 		return _instance;
 	}
 
+	CManager::~CManager()
+	{
+		CAssetManager::GetInstance()->signalAssetChanged.DisconnectObject(this);
+		CAssetManager::GetInstance()->signalBeforeAssetsRemoved.DisconnectObject(this);
+	}
+
 	void CManager::Init()
 	{
 		string configPath;
@@ -123,6 +131,7 @@ namespace EditorSubstance {
 		GetIEditor()->GetFileMonitor()->RegisterListener(m_pFileListener, "", "crysub");
 		GetIEditor()->RegisterNotifyListener(this);
 		CAssetManager::GetInstance()->signalAssetChanged.Connect(this, &CManager::OnAssetModified);
+		CAssetManager::GetInstance()->signalBeforeAssetsRemoved.Connect(this, &CManager::OnAssetsRemoved);
 	}
 
 	bool CManager::IsEditing(const string& presetName)
@@ -441,8 +450,37 @@ namespace EditorSubstance {
 		
 	}
 
+	void CManager::OnAssetsRemoved(const std::vector<CAsset*>& assets)
+	{
+		for (const CAsset* asset: assets)
+		{
+			// manualy deleting *.tif files with the same name as dds that has crysub as source.
+			string typeName(asset->GetType()->GetTypeName());
+			if (typeName != "Texture")
+			{
+				continue;
+			}
+
+			string srcExtension = PathUtil::GetExt(asset->GetSourceFile());
+			if (srcExtension.CompareNoCase("crysub") == 0)
+			{
+				string fileName = asset->GetFile(0);
+				fileName = PathUtil::ReplaceExtension(fileName, "tif");
+				const string absPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), fileName);
+				if (CFileUtil::FileExists(absPath))
+				{
+					gEnv->pCryPak->RemoveFile(fileName);
+				}
+			}
+
+		}
+
+	}
+
 	void CManager::CreateInstance(const string& archiveName, const string& instanceName, const string& instanceGraph, const std::vector<SSubstanceOutput>& outputs, const Vec2i& resolution) const
 	{
+		const string absToDir = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetDirectory(instanceName));
+		CFileUtil::CreatePath(absToDir);
 		ISubstanceManager::Instance()->CreateInstance(archiveName, instanceName, instanceGraph, outputs, resolution);
 		CAssetType* presetType = CAssetManager::GetInstance()->FindAssetType("SubstanceInstance");
 		const auto absTargetFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), instanceName);

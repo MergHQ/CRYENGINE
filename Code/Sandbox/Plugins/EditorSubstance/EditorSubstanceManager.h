@@ -87,6 +87,7 @@ class CManager : public QObject, public IEditorNotifyListener
 	Q_OBJECT
 	public:
 		static CManager* Instance();
+		~CManager();
 		void Init();
 		bool IsEditing(const string& presetName);
 		void AddSubstanceArchiveContextMenu(CAsset* asset, CAbstractMenu* menu);
@@ -113,6 +114,7 @@ class CManager : public QObject, public IEditorNotifyListener
 		void OnCreatorAccepted();
 		void OnCreatorRejected();
 		void OnAssetModified(CAsset& asset);
+		void OnAssetsRemoved(const std::vector<CAsset*>& assets);
 	protected:
 		CManager(QObject* parent=nullptr);
 		virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
