@@ -113,7 +113,7 @@ static void ErrorMonitorCallback(
 {
 	char* szTemp = nullptr;
 	CONVERT_OSCHAR_TO_CHAR(in_pszError, szTemp);
-	g_implLogger.Log(
+	CryAudio::Impl::Wwise::g_implLogger.Log(
 	  ((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
 	  "<Wwise> %s ErrorCode: %d PlayingID: %u GameObjID: %" PRISIZE_T, szTemp, in_eErrorCode, in_playingID, in_gameObjID);
 }

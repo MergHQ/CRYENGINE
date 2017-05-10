@@ -10,6 +10,18 @@
 #include <CryString/CryPath.h> // need to include before AK includes windows.h
 #include <AudioLogger.h>
 
+#if CRY_PLATFORM_DURANGO
+	#define PROVIDE_WWISE_IMPL_SECONDARY_POOL
+// Memory Allocation
+	#include <CryMemory/CryPool/PoolAlloc.h>
+#endif
+
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Wwise
+{
 extern CryAudio::CLogger g_implLogger;
 
 #if !defined(_RELEASE)
@@ -23,9 +35,7 @@ extern CryAudio::CLogger g_implLogger;
 
 // Memory Allocation
 #if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-	#include <CryMemory/CryPool/PoolAlloc.h>
-
-typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4*1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
+typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4* 1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
 
 extern MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 
@@ -55,7 +65,7 @@ inline bool Secondary_Free(void* pFree)
 	// and at the beginning the handle is saved.
 
 	// retrieve handle
-	bool bFreed = (pFree == NULL);//true by default when passing NULL
+	bool bFreed = (pFree == NULL);      //true by default when passing NULL
 	uint32 const allocHandle = g_audioImplMemoryPoolSecondary.AddressToHandle(pFree);
 
 	if (allocHandle > 0)
@@ -66,3 +76,6 @@ inline bool Secondary_Free(void* pFree)
 	return bFreed;
 }
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
+}      // Wwise
+}      // Impl
+}      // CryAudio

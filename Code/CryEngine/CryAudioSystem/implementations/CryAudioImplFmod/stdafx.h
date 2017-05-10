@@ -11,8 +11,6 @@
 #include <AudioLogger.h>
 #include <fmod_studio.hpp>
 
-extern CryAudio::CLogger g_implLogger;
-
 #if !defined(_RELEASE)
 	#define INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	#define ENABLE_AUDIO_LOGGING
@@ -20,13 +18,20 @@ extern CryAudio::CLogger g_implLogger;
 
 #if CRY_PLATFORM_DURANGO
 	#define PROVIDE_FMOD_IMPL_SECONDARY_POOL
+// Memory Allocation
+	#include <CryMemory/CryPool/PoolAlloc.h>
 #endif // CRY_PLATFORM_DURANGO
 
-// Memory Allocation
-#if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
-	#include <CryMemory/CryPool/PoolAlloc.h>
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
+extern CLogger g_implLogger;
 
-typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4*1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
+#if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
+typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4* 1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
 
 extern MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 
@@ -56,7 +61,7 @@ inline bool Secondary_Free(void* pFree)
 	// and at the beginning the handle is saved.
 
 	// retrieve handle
-	bool bFreed = (pFree == NULL);//true by default when passing NULL
+	bool bFreed = (pFree == NULL);      //true by default when passing NULL
 	uint32 const allocHandle = g_audioImplMemoryPoolSecondary.AddressToHandle(pFree);
 
 	if (allocHandle > 0)
@@ -67,3 +72,6 @@ inline bool Secondary_Free(void* pFree)
 	return bFreed;
 }
 #endif // PROVIDE_FMOD_IMPL_SECONDARY_POOL
+}      // Fmod
+}      // Impl
+}      // CryAudio
