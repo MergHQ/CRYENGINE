@@ -142,11 +142,12 @@ void CMatInfo::Release()
 {
 	if (CryInterlockedDecrement(&m_nRefCount) == 0)
 	{
-		if (!(m_Flags & MTL_FLAG_DELETE_PENDING) && GetMatMan())
+		if (GetMatMan())
 		{
-			m_Flags |= MTL_FLAG_DELETE_PENDING;
-			((CMatMan*)GetMatMan())->Unregister(this);
-			((CMatMan*)GetMatMan())->DelayedDelete(this);
+			if (!(m_Flags & MTL_FLAG_DELETE_PENDING))
+			{
+				((CMatMan*)GetMatMan())->DelayedDelete(this);
+			}
 		}
 		else
 		{
