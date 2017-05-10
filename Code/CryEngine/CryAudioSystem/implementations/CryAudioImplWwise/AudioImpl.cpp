@@ -71,16 +71,16 @@ void* APUAllocHook(size_t in_size, unsigned int in_alignment)
 	void* pAlloc = nullptr;
 
 	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-	size_t const nSecondSize = g_audioImplMemoryPoolSecondary.MemSize();
+	size_t const nSecondSize = CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.MemSize();
 
 	if (nSecondSize > 0)
 	{
-		size_t const nAllocHandle = g_audioImplMemoryPoolSecondary.Allocate<size_t>(in_size, in_alignment);
+		size_t const nAllocHandle = CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.Allocate<size_t>(in_size, in_alignment);
 
 		if (nAllocHandle > 0)
 		{
-			pAlloc = g_audioImplMemoryPoolSecondary.Resolve<void*>(nAllocHandle);
-			g_audioImplMemoryPoolSecondary.Item(nAllocHandle)->Lock();
+			pAlloc = CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.Resolve<void*>(nAllocHandle);
+			CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.Item(nAllocHandle)->Lock();
 		}
 	}
 	#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
@@ -92,9 +92,8 @@ void* APUAllocHook(size_t in_size, unsigned int in_alignment)
 void APUFreeHook(void* in_pMemAddress)
 {
 	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-	size_t const nAllocHandle = g_audioImplMemoryPoolSecondary.AddressToHandle(in_pMemAddress);
-	//size_t const nOldSize = g_MemoryPoolSoundSecondary.Size(nAllocHandle);
-	g_audioImplMemoryPoolSecondary.Free(nAllocHandle);
+	size_t const nAllocHandle = CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.AddressToHandle(in_pMemAddress);
+	CryAudio::Impl::Wwise::g_audioImplMemoryPoolSecondary.Free(nAllocHandle);
 	#else
 	CryFatalError("%s", "<Audio>: Called APUFreeHook without secondary pool");
 	#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
