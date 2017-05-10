@@ -149,6 +149,13 @@ bool CEntityAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceF
 	return false;
 }
 
+string CEntityAssetType::GetObjectFilePath(const CAsset* pAsset) const
+{
+	string scriptName = PathUtil::RemoveExtension(PathUtil::RemoveExtension(pAsset->GetFile(0)));
+	scriptName.replace("/", "::");
+	return string().Format("Schematyc::%s", scriptName.c_str());
+}
+
 CryIcon CEntityAssetType::GetIconInternal() const
 {
 	return CryIcon();
