@@ -1971,7 +1971,15 @@ int CStatObj::Physicalize(IPhysicalEntity* pent, pe_geomparams* pgp, int id, con
 			// add all solid and non-colliding geoms as individual parts
 			for (i = 0; i < m_arrPhysGeomInfo.GetGeomCount(); i++)
 				if (m_arrPhysGeomInfo.GetGeomType(i) == PHYS_GEOM_TYPE_DEFAULT)
+				{
+					int flags1 = pgp->flags;
+					if (m_arrPhysGeomInfo[i]->surface_idx < m_arrPhysGeomInfo[i]->nMats)
+						if (ISurfaceType* pMat = pSurfaceMan->GetSurfaceType(m_arrPhysGeomInfo[i]->pMatMapping[m_arrPhysGeomInfo[i]->surface_idx]))
+							if (pMat->GetPhyscalParams().collType >= 0)
+								(pgp->flags &= ~(geom_collides | geom_floats)) |= pMat->GetPhyscalParams().collType;
 					res = pent->AddGeometry(m_arrPhysGeomInfo[i], pgp, id);
+					pgp->flags = flags1;
+				}
 			pgp->idmatBreakable = -1;
 			for (i = 0; i < m_arrPhysGeomInfo.GetGeomCount(); i++)
 				if (m_arrPhysGeomInfo.GetGeomType(i) == PHYS_GEOM_TYPE_NO_COLLIDE)
