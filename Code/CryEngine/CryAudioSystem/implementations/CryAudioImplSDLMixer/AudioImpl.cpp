@@ -50,10 +50,12 @@ CImpl::CImpl()
 	: m_pCVarFileExtension(nullptr)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	char const* const szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+	char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+
 	if (strlen(szAssetDirectory) == 0)
 	{
-		CryFatalError("<Audio - SDLMixer>: Needs a valid asset folder to proceed!");
+		g_implLogger.Log(ELogType::Error, "<Audio - SDL_mixer>: No asset folder set!");
+		szAssetDirectory = "no-asset-folder-set";
 	}
 
 	m_name = "SDL Mixer 2.0.1 (";
