@@ -87,14 +87,14 @@ void CRuntimeAreaManager::FillAudioControls()
 
 						if ((szTriggerName != nullptr) && (szTriggerName[0] != '\0'))
 						{
-							gEnv->pAudioSystem->GetAudioTriggerId(szTriggerName, triggerId);
+							gEnv->pAudioSystem->GetTriggerId(szTriggerName, triggerId);
 						}
 
-						char const* const sATLRtpcName = pAudioNode->getAttr(SXMLTags::sATLRtpcAttribute);
+						char const* const szParameterName = pAudioNode->getAttr(SXMLTags::sATLRtpcAttribute);
 
-						if ((sATLRtpcName != nullptr) && (sATLRtpcName[0] != '\0'))
+						if ((szParameterName != nullptr) && (szParameterName[0] != '\0'))
 						{
-							gEnv->pAudioSystem->GetAudioParameterId(sATLRtpcName, parameterId);
+							gEnv->pAudioSystem->GetParameterId(szParameterName, parameterId);
 						}
 
 						if ((triggerId != CryAudio::InvalidControlId) && (parameterId != CryAudio::InvalidControlId))

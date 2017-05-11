@@ -150,9 +150,9 @@ void CAudioAreaRandom::OnResetState()
 	auto& audioEntityComponent = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	// Get properties
-	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
-	gEnv->pAudioSystem->GetAudioParameterId(m_parameterName, m_parameterId);
+	gEnv->pAudioSystem->GetTriggerId(m_playTriggerName, m_playTriggerId);
+	gEnv->pAudioSystem->GetTriggerId(m_stopTriggerName, m_stopTriggerId);
+	gEnv->pAudioSystem->GetParameterId(m_parameterName, m_parameterId);
 
 	// Update values
 	audioEntityComponent.SetFadeDistance(m_parameterDistance);

@@ -207,7 +207,7 @@ void SAudioTriggerSerializeHelper::Serialize(Serialization::IArchive& archive)
 
 	if (archive.isInput())
 	{
-		gEnv->pAudioSystem->GetAudioTriggerId(m_triggerName.c_str(), m_triggerId);
+		gEnv->pAudioSystem->GetTriggerId(m_triggerName.c_str(), m_triggerId);
 	}
 }
 
@@ -217,7 +217,7 @@ void SAudioParameterSerializeHelper::Serialize(Serialization::IArchive& archive)
 
 	if (archive.isInput())
 	{
-		gEnv->pAudioSystem->GetAudioParameterId(m_parameterName.c_str(), m_parameterId);
+		gEnv->pAudioSystem->GetParameterId(m_parameterName.c_str(), m_parameterId);
 	}
 }
 
@@ -228,8 +228,8 @@ void SAudioSwitchWithStateSerializeHelper::Serialize(Serialization::IArchive& ar
 
 	if (archive.isInput())
 	{
-		gEnv->pAudioSystem->GetAudioSwitchId(m_switchName.c_str(), m_switchId);
-		gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchId, m_switchStateName.c_str(), m_switchStateId);
+		gEnv->pAudioSystem->GetSwitchId(m_switchName.c_str(), m_switchId);
+		gEnv->pAudioSystem->GetSwitchStateId(m_switchId, m_switchStateName.c_str(), m_switchStateId);
 	}
 }
 } //Schematyc

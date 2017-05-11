@@ -9,17 +9,17 @@ namespace ATLUtils
 void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAudioComponent* pIEntityAudioComponent)
 {
 	CRY_ASSERT(gEnv && gEnv->pAudioSystem != nullptr);
-	CryAudio::ControlId switchControlId(CryAudio::InvalidControlId);
-	gEnv->pAudioSystem->GetAudioSwitchId(switchIdName, switchControlId);
-	if (switchControlId)
+	CryAudio::ControlId switchId = CryAudio::InvalidControlId;
+	gEnv->pAudioSystem->GetSwitchId(switchIdName, switchId);
+	if (switchId != CryAudio::InvalidControlId)
 	{
-		CryAudio::SwitchStateId switchStateId(CryAudio::InvalidSwitchStateId);
-		gEnv->pAudioSystem->GetAudioSwitchStateId(switchControlId, switchValue, switchStateId);
+		CryAudio::SwitchStateId switchStateId = CryAudio::InvalidSwitchStateId;
+		gEnv->pAudioSystem->GetSwitchStateId(switchId, switchValue, switchStateId);
 		IF_UNLIKELY (switchStateId == CryAudio::InvalidSwitchStateId)
 		{
 			CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "CommunicationHandler - You are trying to switch the state of the audio switch '%s' to the value '%s'. This switch state doesn't exist.", switchIdName, switchValue);
 		}
-		pIEntityAudioComponent->SetSwitchState(switchControlId, switchStateId);
+		pIEntityAudioComponent->SetSwitchState(switchId, switchStateId);
 	}
 }
 } // namespace ATLUtils
@@ -27,7 +27,7 @@ void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAu
 CommunicationHandler::CommunicationHandler(CAIProxy& proxy, IEntity* entity)
 	: m_proxy(proxy)
 	, m_entityId(entity->GetId())
-	, m_agState(0)
+	, m_agState(nullptr)
 	, m_currentQueryID(0)
 	, m_currentPlaying(0)
 	, m_signalInputID(0)
@@ -316,8 +316,8 @@ SCommunicationSound CommunicationHandler::PlaySound(CommPlayID playID, const cha
 			stack_string stopTriggerName;
 			stopTriggerName.Format("%s%s", wiseConfigutation.prefixForStopTrigger.c_str(), name);
 
-			pIAudioSystem->GetAudioTriggerId(playTriggerName, playCommunicationControlId);
-			pIAudioSystem->GetAudioTriggerId(stopTriggerName, stopCommunicationControlId);
+			pIAudioSystem->GetTriggerId(playTriggerName, playCommunicationControlId);
+			pIAudioSystem->GetTriggerId(stopTriggerName, stopCommunicationControlId);
 			if (playCommunicationControlId != CryAudio::InvalidControlId)
 			{
 				if (listener)
@@ -460,7 +460,7 @@ void CommunicationHandler::QueryComplete(TAnimationGraphQueryID queryID, bool su
 void CommunicationHandler::DestroyedState(IAnimationGraphState* agState)
 {
 	if (agState == m_agState)
-		m_agState = 0;
+		m_agState = nullptr;
 }
 
 bool CommunicationHandler::IsPlayingAnimation() const

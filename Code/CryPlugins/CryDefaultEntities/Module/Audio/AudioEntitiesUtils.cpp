@@ -48,12 +48,12 @@ const std::array<const char*, numOcclusionTypes>& AudioEntitiesUtils::GetObstruc
 void AudioEntitiesUtils::Init()
 {
 	// Update the switch ID
-	gEnv->pAudioSystem->GetAudioSwitchId("ObstrOcclCalcType", m_obstructionOcclusionSwitch);
+	gEnv->pAudioSystem->GetSwitchId("ObstrOcclCalcType", m_obstructionOcclusionSwitch);
 
 	// Update the state IDs
 	for (int i = 0; i < numOcclusionTypes; ++i)
 	{
-		gEnv->pAudioSystem->GetAudioSwitchStateId(m_obstructionOcclusionSwitch, m_obstructionNames[i], m_obstructionStateIds[i]);
+		gEnv->pAudioSystem->GetSwitchStateId(m_obstructionOcclusionSwitch, m_obstructionNames[i], m_obstructionStateIds[i]);
 	}
 }
 

@@ -255,7 +255,7 @@ int CDialogLoader::LoadFromTable(XmlNodeRef tableNode, const string& groupName, 
 					if (content == 0)
 						scriptLine.audioID = CryAudio::InvalidControlId;
 					else
-						gEnv->pAudioSystem->GetAudioTriggerId(content, scriptLine.audioID);
+						gEnv->pAudioSystem->GetTriggerId(content, scriptLine.audioID);
 				}
 				break;
 			case ATTR_ANIM:

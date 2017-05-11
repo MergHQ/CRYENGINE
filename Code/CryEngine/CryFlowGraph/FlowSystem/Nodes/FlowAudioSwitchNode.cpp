@@ -9,7 +9,7 @@ public:
 
 	explicit CFlowNode_AudioSwitch(SActivationInfo* pActInfo)
 		: m_currentState(0)
-		, m_audioSwitchId(CryAudio::InvalidControlId)
+		, m_switchId(CryAudio::InvalidControlId)
 	{
 		//sanity checks
 		CRY_ASSERT((eIn_SwitchStateNameLast - eIn_SwitchStateNameFirst) == (NUM_STATES - 1));
@@ -17,7 +17,7 @@ public:
 
 		for (int i = 0; i < NUM_STATES; ++i)
 		{
-			m_audioSwitchStates[i] = CryAudio::InvalidSwitchStateId;
+			m_switchStates[i] = CryAudio::InvalidSwitchStateId;
 		}
 	}
 
@@ -156,7 +156,7 @@ private:
 
 		if (!switchName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioSwitchId(switchName.c_str(), m_audioSwitchId);
+			gEnv->pAudioSystem->GetSwitchId(switchName.c_str(), m_switchId);
 		}
 	}
 
@@ -165,9 +165,9 @@ private:
 	{
 		string const& stateName = GetPortString(pActInfo, stateIndex);
 
-		if (!stateName.empty() && (m_audioSwitchId != CryAudio::InvalidControlId))
+		if (!stateName.empty() && (m_switchId != CryAudio::InvalidControlId))
 		{
-			gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioSwitchId, stateName.c_str(), m_audioSwitchStates[stateIndex - eIn_SwitchStateNameFirst]);
+			gEnv->pAudioSystem->GetSwitchStateId(m_switchId, stateName.c_str(), m_switchStates[stateIndex - eIn_SwitchStateNameFirst]);
 		}
 	}
 
@@ -178,7 +178,7 @@ private:
 		{
 			GetSwitchId(pActInfo);
 
-			if (m_audioSwitchId != CryAudio::InvalidControlId)
+			if (m_switchId != CryAudio::InvalidControlId)
 			{
 				for (int stateIndex = eIn_SwitchStateNameFirst; stateIndex <= eIn_SwitchStateNameLast; ++stateIndex)
 				{
@@ -202,14 +202,14 @@ private:
 
 		if (pIEntityAudioComponent != nullptr)
 		{
-			pIEntityAudioComponent->SetSwitchState(m_audioSwitchId, m_audioSwitchStates[stateIndex]);
+			pIEntityAudioComponent->SetSwitchState(m_switchId, m_switchStates[stateIndex]);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void SetStateOnGlobalObject(int const stateIndex)
 	{
-		gEnv->pAudioSystem->SetSwitchState(m_audioSwitchId, m_audioSwitchStates[stateIndex]);
+		gEnv->pAudioSystem->SetSwitchState(m_switchId, m_switchStates[stateIndex]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -234,8 +234,8 @@ private:
 
 	//////////////////////////////////////////////////////////////////////////
 	int                     m_currentState;
-	CryAudio::ControlId     m_audioSwitchId;
-	CryAudio::SwitchStateId m_audioSwitchStates[NUM_STATES];
+	CryAudio::ControlId     m_switchId;
+	CryAudio::SwitchStateId m_switchStates[NUM_STATES];
 };
 
 REGISTER_FLOW_NODE("Audio:Switch", CFlowNode_AudioSwitch);

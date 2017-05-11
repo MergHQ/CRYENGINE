@@ -102,8 +102,8 @@ void CAudioTriggerSpotEntity::OnResetState()
 	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	// Get properties
-	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
+	gEnv->pAudioSystem->GetTriggerId(m_playTriggerName, m_playTriggerId);
+	gEnv->pAudioSystem->GetTriggerId(m_stopTriggerName, m_stopTriggerId);
 
 	// Reset values to their default
 	audioProxy.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
@@ -236,13 +236,13 @@ void CAudioTriggerSpotEntity::DebugDraw()
 			if (m_drawActivityRadius > eDrawActivityRadius_Disabled)
 			{
 				const CryAudio::ControlId triggerId = m_drawActivityRadius == eDrawActivityRadius_PlayTrigger ? m_playTriggerId : m_stopTriggerId;
-				CryAudio::STriggerData audioTriggerData;
-				gEnv->pAudioSystem->GetAudioTriggerData(triggerId, audioTriggerData);
+				CryAudio::STriggerData triggerData;
+				gEnv->pAudioSystem->GetTriggerData(triggerId, triggerData);
 
-				pRenderAuxGeom->DrawSphere(pos, audioTriggerData.radius, ColorB(250, 100, 100, 100), false);
-				if (audioTriggerData.occlusionFadeOutDistance > 0.0f)
+				pRenderAuxGeom->DrawSphere(pos, triggerData.radius, ColorB(250, 100, 100, 100), false);
+				if (triggerData.occlusionFadeOutDistance > 0.0f)
 				{
-					pRenderAuxGeom->DrawSphere(pos, audioTriggerData.radius - audioTriggerData.occlusionFadeOutDistance, ColorB(200, 200, 255, 100), false);
+					pRenderAuxGeom->DrawSphere(pos, triggerData.radius - triggerData.occlusionFadeOutDistance, ColorB(200, 200, 255, 100), false);
 				}
 			}
 

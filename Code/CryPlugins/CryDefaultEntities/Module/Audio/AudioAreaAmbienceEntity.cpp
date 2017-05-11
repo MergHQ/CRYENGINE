@@ -141,11 +141,11 @@ void CAudioAreaAmbienceEntity::OnResetState()
 
 	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
-	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
-	gEnv->pAudioSystem->GetAudioParameterId(m_rtpcName, m_rtpcId);
-	gEnv->pAudioSystem->GetAudioParameterId(m_globalRtpcName, m_globalRtpcId);
-	gEnv->pAudioSystem->GetAudioEnvironmentId(m_environmentName, m_environmentId);
+	gEnv->pAudioSystem->GetTriggerId(m_playTriggerName, m_playTriggerId);
+	gEnv->pAudioSystem->GetTriggerId(m_stopTriggerName, m_stopTriggerId);
+	gEnv->pAudioSystem->GetParameterId(m_rtpcName, m_rtpcId);
+	gEnv->pAudioSystem->GetParameterId(m_globalRtpcName, m_globalRtpcId);
+	gEnv->pAudioSystem->GetEnvironmentId(m_environmentName, m_environmentId);
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
 	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);

@@ -1035,14 +1035,14 @@ void CDialogScriptView::PlayLine(int index)
 		CDialogScriptRecord* pRecord = static_cast<CDialogScriptRecord*>(pRecords->GetAt(index));
 		const CEditorDialogScript::SScriptLine* pLine = pRecord->GetLine();
 
-		CryAudio::ControlId audioTriggerID = CryAudio::InvalidControlId;
-		gEnv->pAudioSystem->GetAudioTriggerId(pLine->m_audioTriggerName, audioTriggerID);
-		if (audioTriggerID != CryAudio::InvalidControlId && m_pIAudioObject != nullptr)
+		CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
+		gEnv->pAudioSystem->GetTriggerId(pLine->m_audioTriggerName, triggerId);
+		if (triggerId != CryAudio::InvalidControlId && m_pIAudioObject != nullptr)
 		{
 			const CCamera& camera = GetIEditor()->GetSystem()->GetViewCamera();
 			m_pIAudioObject->SetTransformation(camera.GetMatrix());
-			m_pIAudioObject->ExecuteTrigger(audioTriggerID);
-			ms_currentPlayLine = audioTriggerID;
+			m_pIAudioObject->ExecuteTrigger(triggerId);
+			ms_currentPlayLine = triggerId;
 		}
 	}
 }

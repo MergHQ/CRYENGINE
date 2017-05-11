@@ -314,7 +314,7 @@ void CAudioControlsEditorWindow::Save()
 			}
 
 			CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
-			gEnv->pAudioSystem->RefreshAudioSystem(szLevelName);
+			gEnv->pAudioSystem->Refresh(szLevelName, data);
 		}
 	}
 	m_pAssetsManager->ClearDirtyFlags();

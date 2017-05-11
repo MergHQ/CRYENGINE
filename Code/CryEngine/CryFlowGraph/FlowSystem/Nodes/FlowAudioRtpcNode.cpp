@@ -110,11 +110,11 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void GetRtpcId(SActivationInfo* const pActInfo)
 	{
-		string const& rtpcName = GetPortString(pActInfo, eIn_RtpcName);
+		string const& parameterName = GetPortString(pActInfo, eIn_RtpcName);
 
-		if (!rtpcName.empty())
+		if (!parameterName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioParameterId(rtpcName.c_str(), m_parameterId);
+			gEnv->pAudioSystem->GetParameterId(parameterName.c_str(), m_parameterId);
 		}
 	}
 

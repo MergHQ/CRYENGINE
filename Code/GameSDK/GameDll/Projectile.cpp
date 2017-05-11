@@ -484,7 +484,7 @@ bool CProjectile::Init(IGameObject* pGameObject)
 			const string& ricochetTriggerName = m_pAmmoParams->pRicochet->audioTriggerName;
 			if (!ricochetTriggerName.empty())
 			{
-				pIAudioSystem->GetAudioTriggerId(ricochetTriggerName.c_str(), m_ricochetTriggerID);
+				pIAudioSystem->GetTriggerId(ricochetTriggerName.c_str(), m_ricochetTriggerID);
 			}
 		}
 
@@ -493,7 +493,7 @@ bool CProjectile::Init(IGameObject* pGameObject)
 			const string& whizTriggerName = m_pAmmoParams->pWhiz->audioTriggerName;
 			if (!whizTriggerName.empty())
 			{
-				pIAudioSystem->GetAudioTriggerId(whizTriggerName.c_str(), m_whizTriggerID);
+				pIAudioSystem->GetTriggerId(whizTriggerName.c_str(), m_whizTriggerID);
 			}
 		}
 	}

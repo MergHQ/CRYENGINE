@@ -282,12 +282,12 @@ struct IAudioSystem
 
 	/**
 	 * Globally set a switch to a given state.
-	 * @param audioSwitchId - ID of the switch in question.
-	 * @param audioSwitchStateId - ID of the switch's state in question.
+	 * @param switchId - ID of the switch in question.
+	 * @param switchStateId - ID of the switch's state in question.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void SetSwitchState(ControlId const audioSwitchId, SwitchStateId const audioSwitchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Globally plays a file.
@@ -300,22 +300,22 @@ struct IAudioSystem
 
 	/**
 	 * Globally stops a file.
-	 * @param szFile - name of the file in question.
+	 * @param szName - name of the file in question.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 * @see PlayFile
 	 */
-	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void StopFile(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that a file started playback.
 	 * @param standaloneFile - reference to the instance of the file that started playback.
-	 * @param bSuccessfulyStarted - boolean indicating whether playback started successfully or not.
+	 * @param bSuccessfullyStarted - boolean indicating whether playback started successfully or not.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 * @see ReportStoppedFile
 	 */
-	virtual void ReportStartedFile(CATLStandaloneFile& standaloneFile, bool bSuccessfulyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportStartedFile(CATLStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that a file stopped playback.
@@ -328,12 +328,12 @@ struct IAudioSystem
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that an event finished producing sound.
-	 * @param standaloneFile - reference to the instance of the file that finished producing sound.
+	 * @param event - reference to the instance of the event that finished producing sound.
 	 * @param bSuccess - boolean indicating whether the event finished successfully or not.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void ReportFinishedEvent(CATLEvent& audioEvent, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReportFinishedEvent(CATLEvent& event, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by the engine to inform the AudioSystem that the application window lost focus.
@@ -360,7 +360,7 @@ struct IAudioSystem
 	virtual void MuteAll(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Used to instruct the AudioSystem that it should un-mute all active sounds.
+	 * Used to instruct the AudioSystem that it should unmute all active sounds.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 * @see MuteAll
@@ -375,32 +375,32 @@ struct IAudioSystem
 	virtual void StopAllSounds(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Used instruct the AudioSystem that it should reload the registered audio middleware.
+	 * Used to reload the registered audio middleware.
 	 * This is useful when for instance an audio project changed while the application was running.
 	 * @param szLevelName - name of the currently loaded level so that level specific data gets reloaded as well.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void RefreshAudioSystem(char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void Refresh(char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Loads all of the data referenced by the given preload request.
-	 * @param audioPreloadRequestId - ID of the preload request in question.
+	 * @param id - ID of the preload request in question.
 	 * @param bAutoLoadOnly - boolean indicating whether to load the given preload request only if it's been set to AutoLoad.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 * @see UnloadSingleRequest
 	 */
-	virtual void PreloadSingleRequest(PreloadRequestId const audioPreloadRequestId, bool const bAutoLoadOnly, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLoadOnly, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Unloads all of the data referenced by the given preload request.
-	 * @param audioPreloadRequestId - ID of the preload request in question.
+	 * @param id - ID of the preload request in question.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 * @see PreloadSingleRequest
 	 */
-	virtual void UnloadSingleRequest(PreloadRequestId const audioPreloadRequestId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Reloads all of the audio controls and their connections.
@@ -432,58 +432,59 @@ struct IAudioSystem
 
 	/**
 	 * Ideally called by the application's main thread.
+	 * Note: If requests are set to call back from an external thread then this will be the thread that calls back.
 	 * @return void
 	 */
 	virtual void ExternalUpdate() = 0;
 
 	/**
 	 * Used to retrieve an audio trigger's ID.
-	 * @param szAudioTriggerName - name of the audio trigger which ID is to be retrieved.
-	 * @param audioTriggerId - out parameter that receives the ID.
+	 * @param szName - name of the audio trigger which ID is to be retrieved.
+	 * @param id - out parameter that receives the ID.
 	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
 	 */
-	virtual bool GetAudioTriggerId(char const* const szAudioTriggerName, ControlId& audioTriggerId) const = 0;
+	virtual bool GetTriggerId(char const* const szName, ControlId& id) const = 0;
 
 	/**
 	 * Used to retrieve an audio parameter's ID.
-	 * @param szParameterName - name of the audio parameter which ID is to be retrieved.
-	 * @param parameterId - out parameter that receives the ID.
+	 * @param szName - name of the audio parameter which ID is to be retrieved.
+	 * @param id - out parameter that receives the ID.
 	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
 	 */
-	virtual bool GetAudioParameterId(char const* const szParameterName, ControlId& parameterId) const = 0;
+	virtual bool GetParameterId(char const* const szName, ControlId& id) const = 0;
 
 	/**
 	 * Used to retrieve an audio switch's ID.
-	 * @param szAudioSwitchName - name of the audio switch which ID is to be retrieved.
-	 * @param audioSwitchId - out parameter that receives the ID.
+	 * @param szName - name of the audio switch which ID is to be retrieved.
+	 * @param id - out parameter that receives the ID.
 	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
 	 */
-	virtual bool GetAudioSwitchId(char const* const szAudioSwitchName, ControlId& audioSwitchId) const = 0;
+	virtual bool GetSwitchId(char const* const szName, ControlId& id) const = 0;
 
 	/**
 	 * Used to retrieve an audio switch's state ID.
-	 * @param audioSwitchId - ID of the switch to which the state belongs.
-	 * @param szSwitchStateName - name of the audio switch state which ID is to be retrieved.
-	 * @param audioSwitchStateId - out parameter that receives the ID.
+	 * @param switchId - ID of the switch to which the state belongs.
+	 * @param szName - name of the audio switch state which ID is to be retrieved.
+	 * @param id - out parameter that receives the ID.
 	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
 	 */
-	virtual bool GetAudioSwitchStateId(ControlId const audioSwitchId, char const* const szSwitchStateName, SwitchStateId& audioSwitchStateId) const = 0;
+	virtual bool GetSwitchStateId(ControlId const switchId, char const* const szName, SwitchStateId& id) const = 0;
 
 	/**
 	 * Used to retrieve an audio preload request's ID.
-	 * @param szAudioPreloadRequestName - name of the audio preload request which ID is to be retrieved.
-	 * @param audioPreloadRequestId - out parameter that receives the ID.
+	 * @param szName - name of the audio preload request which ID is to be retrieved.
+	 * @param id - out parameter that receives the ID.
 	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
 	 */
-	virtual bool GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, PreloadRequestId& audioPreloadRequestId) const = 0;
+	virtual bool GetPreloadRequestId(char const* const szName, PreloadRequestId& id) const = 0;
 
 	/**
 	 * Used to retrieve an audio environment's ID.
-	 * @param szAudioEnvironmentName - name of the audio environment which ID is to be retrieved.
-	 * @param audioPreloadRequestId - out parameter that receives the ID.
+	 * @param szName - name of the audio environment which ID is to be retrieved.
+	 * @param id - out parameter that receives the ID.
 	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
 	 */
-	virtual bool GetAudioEnvironmentId(char const* const szAudioEnvironmentName, EnvironmentId& audioEnvironmentId) const = 0;
+	virtual bool GetEnvironmentId(char const* const szName, EnvironmentId& id) const = 0;
 
 	/**
 	 * Returns the path in which audio data is stored.
@@ -527,19 +528,19 @@ struct IAudioSystem
 
 	/**
 	 * Retrieve an audio file's attributes.
-	 * @param szFilename - name of the file in question.
-	 * @param audioFileData - out parameter which receives the file's data.
+	 * @param szName - name of the file in question.
+	 * @param fileData - out parameter which receives the file's data.
 	 * @return void
 	 */
-	virtual void GetAudioFileData(char const* const szFilename, SFileData& audioFileData) = 0;
+	virtual void GetFileData(char const* const szName, SFileData& fileData) = 0;
 
 	/**
 	 * Retrieve an audio trigger's attributes.
-	 * @param audioTriggerId - id of the trigger in question.
-	 * @param audioTriggerData - out parameter which receives the trigger's data.
+	 * @param triggerId - id of the trigger in question.
+	 * @param triggerData - out parameter which receives the trigger's data.
 	 * @return void
 	 */
-	virtual void GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) = 0;
+	virtual void GetTriggerData(ControlId const triggerId, STriggerData& triggerData) = 0;
 
 	/**
 	 * This method is called by the LevelSystem whenever a level is loaded.

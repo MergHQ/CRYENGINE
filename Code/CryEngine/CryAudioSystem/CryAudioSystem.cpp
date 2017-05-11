@@ -254,7 +254,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 
 				PreloadRequestId preloadRequestId = InvalidPreloadRequestId;
 
-				if (pAudioSystem->GetAudioPreloadRequestId(levelName.c_str(), preloadRequestId))
+				if (pAudioSystem->GetPreloadRequestId(levelName.c_str(), preloadRequestId))
 				{
 					pAudioSystem->PreloadSingleRequest(preloadRequestId, true, data);
 				}

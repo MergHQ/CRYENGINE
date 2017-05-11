@@ -44,13 +44,13 @@ bool CVehicleMovementTank::Init(IVehicle* pVehicle, const CVehicleParams& table)
 
 	if (pIAudioSystem != nullptr)
 	{
-		pIAudioSystem->GetAudioTriggerId("Play_abrams_cannon_turn", m_audioControlIDs[eSID_TankTurnTurret]);
-		pIAudioSystem->GetAudioParameterId("vehicle_rotation_speed", m_turretTurnRtpcId);
+		pIAudioSystem->GetTriggerId("Play_abrams_cannon_turn", m_audioControlIDs[eSID_TankTurnTurret]);
+		pIAudioSystem->GetParameterId("vehicle_rotation_speed", m_turretTurnRtpcId);
 
-		pIAudioSystem->GetAudioTriggerId("Play_w_tank_cannon_fire", m_audioControlIDs[eSID_VehiclePrimaryWeapon]);
+		pIAudioSystem->GetTriggerId("Play_w_tank_cannon_fire", m_audioControlIDs[eSID_VehiclePrimaryWeapon]);
 		m_audioControlIDs[eSID_VehicleStopPrimaryWeapon] = CryAudio::DoNothingTriggerId;
-		pIAudioSystem->GetAudioTriggerId("Play_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleSecondaryWeapon]);
-		pIAudioSystem->GetAudioTriggerId("Stop_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleStopSecondaryWeapon]);
+		pIAudioSystem->GetTriggerId("Play_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleSecondaryWeapon]);
+		pIAudioSystem->GetTriggerId("Stop_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleStopSecondaryWeapon]);
 	}
 
 	return true;

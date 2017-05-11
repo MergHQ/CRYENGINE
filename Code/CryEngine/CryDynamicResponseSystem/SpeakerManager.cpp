@@ -87,11 +87,11 @@ void CSpeakerManager::Init()
 
 	if (m_pDrsDialogDialogRunningEntityRtpcName)
 	{
-		gEnv->pAudioSystem->GetAudioParameterId(m_pDrsDialogDialogRunningEntityRtpcName->GetString(), m_audioRtpcIdLocal);
+		gEnv->pAudioSystem->GetParameterId(m_pDrsDialogDialogRunningEntityRtpcName->GetString(), m_audioRtpcIdLocal);
 	}
 	if (m_pDrsDialogDialogRunningGlobalRtpcName)
 	{
-		gEnv->pAudioSystem->GetAudioParameterId(m_pDrsDialogDialogRunningGlobalRtpcName->GetString(), m_audioRtpcIdGlobal);
+		gEnv->pAudioSystem->GetParameterId(m_pDrsDialogDialogRunningGlobalRtpcName->GetString(), m_audioRtpcIdGlobal);
 	}
 }
 
@@ -695,7 +695,7 @@ void CSpeakerManager::InformListener(const DRS::IResponseActor* pSpeaker, const 
 //--------------------------------------------------------------------------------------------------
 void CSpeakerManager::SetCustomLipsyncProvider(ILipsyncProvider* pProvider)
 {
-	delete(m_pDefaultLipsyncProvider);  //we dont need the default one anymore, once a custom one is set.
+	delete(m_pDefaultLipsyncProvider);  //we don't need the default one anymore, once a custom one is set.
 	m_pDefaultLipsyncProvider = nullptr;
 
 	m_pLipsyncProvider = pProvider;
@@ -732,13 +732,13 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 		pSpeakerInfoToUse->text = pSpeakerInfoToUse->pPickedLine->GetText();
 		if (!pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().empty())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().c_str(), pSpeakerInfoToUse->startTriggerID);
+			gEnv->pAudioSystem->GetTriggerId(pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().c_str(), pSpeakerInfoToUse->startTriggerID);
 		}
 
 		pSpeakerInfoToUse->standaloneFile = pSpeakerInfoToUse->pPickedLine->GetStandaloneFile();
 		if (!pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().empty())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().c_str(), pSpeakerInfoToUse->stopTriggerID);
+			gEnv->pAudioSystem->GetTriggerId(pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().c_str(), pSpeakerInfoToUse->stopTriggerID);
 		}
 	}
 	else

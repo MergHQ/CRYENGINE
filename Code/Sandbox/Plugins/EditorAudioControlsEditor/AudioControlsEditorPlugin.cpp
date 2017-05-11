@@ -117,7 +117,7 @@ void CAudioControlsEditorPlugin::ExecuteTrigger(const string& sTriggerName)
 	if (!sTriggerName.empty() && s_pIAudioObject)
 	{
 		StopTriggerExecution();
-		gEnv->pAudioSystem->GetAudioTriggerId(sTriggerName.c_str(), s_audioTriggerId);
+		gEnv->pAudioSystem->GetTriggerId(sTriggerName.c_str(), s_audioTriggerId);
 
 		if (s_audioTriggerId != CryAudio::InvalidControlId)
 		{

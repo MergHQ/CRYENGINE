@@ -234,7 +234,7 @@ public:
 		{
 			if (!params.audioParameter.empty())
 			{
-				gEnv->pAudioSystem->GetAudioParameterId(params.audioParameter.c_str(), m_audioParameterId);
+				gEnv->pAudioSystem->GetParameterId(params.audioParameter.c_str(), m_audioParameterId);
 
 				if (m_audioParameterId != CryAudio::InvalidControlId)
 				{
@@ -245,7 +245,7 @@ public:
 
 			if (!params.startTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetAudioTriggerId(params.startTrigger.c_str(), m_audioTriggerStartId);
+				gEnv->pAudioSystem->GetTriggerId(params.startTrigger.c_str(), m_audioTriggerStartId);
 
 				if (m_audioTriggerStartId != CryAudio::InvalidControlId)
 				{
@@ -256,7 +256,7 @@ public:
 
 			if (!params.stopTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetAudioTriggerId(params.stopTrigger.c_str(), m_audioTriggerStopId);
+				gEnv->pAudioSystem->GetTriggerId(params.stopTrigger.c_str(), m_audioTriggerStopId);
 			}
 		}
 	}

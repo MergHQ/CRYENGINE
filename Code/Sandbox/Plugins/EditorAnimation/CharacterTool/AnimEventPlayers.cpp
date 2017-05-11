@@ -275,7 +275,7 @@ public:
 	{
 		if (enableAudio && !m_pIListener)
 		{
-			if(!m_pIListener)
+			if (!m_pIListener)
 				m_pIListener = gEnv->pAudioSystem->CreateListener();
 		}
 		else if (m_pIListener != nullptr)
@@ -330,7 +330,7 @@ public:
 	void SetRTPC(const char* name, float value)
 	{
 		CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
-		gEnv->pAudioSystem->GetAudioParameterId(name, parameterId);
+		gEnv->pAudioSystem->GetParameterId(name, parameterId);
 		m_pIAudioObject->SetParameter(parameterId, value);
 	}
 
@@ -338,20 +338,20 @@ public:
 	{
 		CryAudio::ControlId switchId = CryAudio::InvalidControlId;
 		CryAudio::SwitchStateId stateId = CryAudio::InvalidSwitchStateId;
-		gEnv->pAudioSystem->GetAudioSwitchId(name, switchId);
-		gEnv->pAudioSystem->GetAudioSwitchStateId(switchId, state, stateId);
+		gEnv->pAudioSystem->GetSwitchId(name, switchId);
+		gEnv->pAudioSystem->GetSwitchStateId(switchId, state, stateId);
 		m_pIAudioObject->SetSwitchState(switchId, stateId);
 	}
 
 	void PlayTrigger(const char* trigger, Vec3 const& pos)
 	{
-		CryAudio::ControlId audioControlId = CryAudio::InvalidControlId;
-		gEnv->pAudioSystem->GetAudioTriggerId(trigger, audioControlId);
+		CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
+		gEnv->pAudioSystem->GetTriggerId(trigger, triggerId);
 
-		if (audioControlId != CryAudio::InvalidControlId)
+		if (triggerId != CryAudio::InvalidControlId)
 		{
 			m_pIAudioObject->SetTransformation(pos);
-			m_pIAudioObject->ExecuteTrigger(audioControlId);
+			m_pIAudioObject->ExecuteTrigger(triggerId);
 		}
 	}
 
@@ -564,8 +564,8 @@ class AnimEventPlayerAnimFXEvents : public IAnimEventPlayer
 {
 	struct SAnimFXSource
 	{
-		string               m_soundFXLib;
-		string               m_enviroment;
+		string m_soundFXLib;
+		string m_enviroment;
 
 		SAnimFXSource()
 			: m_soundFXLib("")
@@ -721,8 +721,8 @@ public:
 						pMaterialEffects->ExecuteEffect(effectId, params);
 					}
 				}
-				
-				if(!effectFound)
+
+				if (!effectFound)
 				{
 					for (const SAnimFXSource& animFxSource : m_animFxSources)
 					{

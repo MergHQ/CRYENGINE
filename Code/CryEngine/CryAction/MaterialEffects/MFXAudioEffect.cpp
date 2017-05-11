@@ -48,9 +48,9 @@ private:
 
 	void Initialize()
 	{
-		gEnv->pAudioSystem->GetAudioSwitchId("1stOr3rdP", m_switchID);
-		gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, "1stP", m_1pStateID);
-		gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, "3rdP", m_3pStateID);
+		gEnv->pAudioSystem->GetSwitchId("1stOr3rdP", m_switchID);
+		gEnv->pAudioSystem->GetSwitchStateId(m_switchID, "1stP", m_1pStateID);
+		gEnv->pAudioSystem->GetSwitchStateId(m_switchID, "3rdP", m_3pStateID);
 
 		m_isValid = (m_switchID != CryAudio::InvalidControlId) &&
 		            (m_1pStateID != CryAudio::InvalidSwitchStateId) && (m_3pStateID != CryAudio::InvalidSwitchStateId);
@@ -89,7 +89,7 @@ void PrepareForAudioTriggerExecution(AudioObjectType* pIAudioObject, const SMFXA
 		{
 			CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
 
-			if (gEnv->pAudioSystem->GetAudioParameterId(szParameterName, parameterId))
+			if (gEnv->pAudioSystem->GetParameterId(szParameterName, parameterId))
 			{
 				pIAudioObject->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue);
 			}
@@ -104,7 +104,7 @@ void SAudioTriggerWrapper::Init(const char* triggerName)
 {
 	CRY_ASSERT(triggerName != nullptr);
 
-	gEnv->pAudioSystem->GetAudioTriggerId(triggerName, m_triggerID);
+	gEnv->pAudioSystem->GetTriggerId(triggerName, m_triggerID);
 
 #if defined(MATERIAL_EFFECTS_DEBUG)
 	m_triggerName = triggerName;
@@ -116,8 +116,8 @@ void SAudioSwitchWrapper::Init(const char* switchName, const char* switchStateNa
 	CRY_ASSERT(switchName != nullptr);
 	CRY_ASSERT(switchStateName != nullptr);
 
-	gEnv->pAudioSystem->GetAudioSwitchId(switchName, m_switchID);
-	gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, switchStateName, m_switchStateID);
+	gEnv->pAudioSystem->GetSwitchId(switchName, m_switchID);
+	gEnv->pAudioSystem->GetSwitchStateId(m_switchID, switchStateName, m_switchStateID);
 
 #if defined(MATERIAL_EFFECTS_DEBUG)
 	m_switchName = switchName;

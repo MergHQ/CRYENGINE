@@ -192,14 +192,14 @@ private:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void GetTriggerID(SActivationInfo* const pActInfo, uint32 const portIndex, CryAudio::ControlId& outAudioTriggerId)
+	void GetTriggerID(SActivationInfo* const pActInfo, uint32 const portIndex, CryAudio::ControlId& outTriggerId)
 	{
-		outAudioTriggerId = CryAudio::InvalidControlId;
-		string const& audioTriggerName = GetPortString(pActInfo, portIndex);
+		outTriggerId = CryAudio::InvalidControlId;
+		string const& triggerName = GetPortString(pActInfo, portIndex);
 
-		if (!audioTriggerName.empty())
+		if (!triggerName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(audioTriggerName.c_str(), outAudioTriggerId);
+			gEnv->pAudioSystem->GetTriggerId(triggerName.c_str(), outTriggerId);
 		}
 	}
 

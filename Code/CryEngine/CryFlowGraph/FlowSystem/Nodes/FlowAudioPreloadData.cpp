@@ -81,7 +81,7 @@ public:
 				{
 					CryAudio::PreloadRequestId preloadRequestId = CryAudio::InvalidPreloadRequestId;
 
-					if (gEnv->pAudioSystem->GetAudioPreloadRequestId(preloadName.c_str(), preloadRequestId))
+					if (gEnv->pAudioSystem->GetPreloadRequestId(preloadName.c_str(), preloadRequestId))
 					{
 						if (bEnable)
 						{
