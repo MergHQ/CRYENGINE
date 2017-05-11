@@ -3001,7 +3001,7 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 
 void C3DEngine::DeleteRenderNode(IRenderNode* pRenderNode)
 {
-	LOADING_TIME_PROFILE_SECTION_NAMED(pRenderNode->GetName());
+	LOADING_TIME_PROFILE_SECTION;
 	UnRegisterEntityDirect(pRenderNode);
 	delete pRenderNode;
 }
