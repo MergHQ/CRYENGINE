@@ -189,7 +189,7 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 
 			m_pGizmo = m_pViewport->GetGizmoManager()->AddManipulator(this);
 
-			auto onBeginDrag = [this](IDisplayViewport*, ITransformManipulator*, Vec2i&, int)
+			auto onBeginDrag = [this](IDisplayViewport*, ITransformManipulator*, const Vec2i&, int)
 			{
 				if (GetIEditor()->GetEditMode() == eEditModeMove)
 				{
@@ -208,7 +208,7 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 			};
 			m_pGizmo->signalBeginDrag.Connect(onBeginDrag);
 
-			auto onDrag = [this](IDisplayViewport*, ITransformManipulator*, Vec2i&, Vec3 offset, int)
+			auto onDrag = [this](IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3& offset, int)
 			{
 				if (m_pGizmoTransformOp)
 				{
