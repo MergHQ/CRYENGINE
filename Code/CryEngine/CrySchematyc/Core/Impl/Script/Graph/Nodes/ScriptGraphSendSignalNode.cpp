@@ -140,8 +140,6 @@ void CScriptGraphSendSignalNode::Edit(Serialization::IArchive& archive, const IS
 {
 	archive(m_target, "target", "Target");
 
-	archive(Serialization::ActionButton(functor(*this, &CScriptGraphSendSignalNode::GoToSignal)), "goToSignal", "^Go To Signal");
-
 	Validate(archive, context);
 }
 

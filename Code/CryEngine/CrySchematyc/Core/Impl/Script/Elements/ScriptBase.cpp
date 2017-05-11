@@ -211,10 +211,12 @@ void CScriptBase::Refresh(const RefreshFlags& flags)
 					CScriptElementBase::SetName(name.c_str());
 				}
 
-				if (flags.Check(ERefreshFlags::Variables))
-				{
-					RefreshVariables(*pScriptClass);
-				}
+				// TODO: Not fully working yet.
+				/*if (flags.Check(ERefreshFlags::Variables))
+				   {
+				   RefreshVariables(*pScriptClass);
+				   }*/
+				// ~TODO
 			}
 			break;
 		}

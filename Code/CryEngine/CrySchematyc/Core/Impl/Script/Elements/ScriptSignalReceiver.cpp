@@ -178,16 +178,6 @@ void CScriptSignalReceiver::Edit(Serialization::IArchive& archive, const ISerial
 {
 	archive(m_userDocumentation, "userDocumentation", "Documentation");
 
-	switch (m_type)
-	{
-	case EScriptSignalReceiverType::ScriptSignal:
-	case EScriptSignalReceiverType::ScriptTimer:
-		{
-			archive(Serialization::ActionButton(functor(*this, &CScriptSignalReceiver::GoToSignal)), "goToSignal", "^Go To Signal");
-			break;
-		}
-	}
-
 	if (archive.isValidation())
 	{
 		Validate(archive, context);
