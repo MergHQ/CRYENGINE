@@ -2702,6 +2702,7 @@ void CArea::RemoveEntity(EntityGUID const entGuid)
 //////////////////////////////////////////////////////////////////////////
 void CArea::RemoveEntities()
 {
+	LOADING_TIME_PROFILE_SECTION
 	// Inform all attached entities that they have been disconnected to prevent lost entities.
 	EntityIdVector const tmpVec(std::move(m_entityIds));
 	EntityIdVector::const_iterator Iter(tmpVec.begin());
