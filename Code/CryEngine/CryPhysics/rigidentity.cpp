@@ -1205,6 +1205,7 @@ REdata g_REdata[MAX_PHYS_THREADS+1];
 
 masktype CRigidEntity::MaskIgnoredColliders(int iCaller, int bScheduleForStep)
 {
+	ReadLock lock(m_lockColliders);
 	int i;
 	for(i=0; i<m_nColliders; i++)
 		if (m_pColliders[i]->IgnoreCollisionsWith(this) && !(m_pColliders[i]->m_bProcessed & 1<<iCaller))
@@ -1219,6 +1220,7 @@ masktype CRigidEntity::MaskIgnoredColliders(int iCaller, int bScheduleForStep)
 }
 void CRigidEntity::UnmaskIgnoredColliders(masktype constraint_mask, int iCaller)
 {
+	ReadLock lock(m_lockColliders);
 	int i;
 	for(i=0;i<m_nColliders;i++) if (m_pColliders[i]->m_bProcessed & 1<<iCaller)
 		AtomicAdd(&m_pColliders[i]->m_bProcessed, -(1<<iCaller));
@@ -1301,7 +1303,6 @@ inline int wait_for_ent(volatile CPhysicalEntity *pent)
 
 int CRigidEntity::GetPotentialColliders(CPhysicalEntity **&pentlist, float dt)
 {
-	ReadLock lock(m_lockColliders);
 	int i,j,nents,bSameGroup;
 	masktype constraint_mask;
 	if (m_body.Minv+m_body.v.len2()+m_body.w.len2()<=0)
