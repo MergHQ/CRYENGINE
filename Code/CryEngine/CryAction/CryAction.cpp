@@ -2003,12 +2003,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	BeginLanQuery();
 #endif
 
-	if (m_pVehicleSystem)
-		m_pVehicleSystem->RegisterVehicles(this);
-	if (m_pGameObjectSystem)
-		m_pGameObjectSystem->RegisterFactories(this);
-	CGameContext::RegisterExtensions(this);
-
 	// Player profile stuff
 	if (m_pPlayerProfileManager)
 	{
@@ -2062,6 +2056,12 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	}
 
 	InitGame(startupParams);
+
+	if (m_pVehicleSystem)
+		m_pVehicleSystem->RegisterVehicles(this);
+	if (m_pGameObjectSystem)
+		m_pGameObjectSystem->RegisterFactories(this);
+	CGameContext::RegisterExtensions(this);
 
 	if (startupParams.bExecuteCommandLine)
 		GetISystem()->ExecuteCommandLine();
