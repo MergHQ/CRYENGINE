@@ -196,9 +196,13 @@ struct entity_grid_checker {
 			{				
 				Diag33 gscale(entgrid_step.x*(1.0f/256),entgrid_step.y*(1.0f/256),pWorld_m_zGran);
 				Vec3 gBBox[2], cellOffs(icell.x*256,icell.y*256,0); 
-				pgrid->BBoxFromGrid(gscale*(Vec3(thunk.BBox[0],thunk.BBox[1],thunk.BBoxZ0)+cellOffs), gscale*(Vec3(thunk.BBox[2]+1,thunk.BBox[3]+1,thunk.BBoxZ1)+cellOffs), gBBox);
+				int iz0 = thunk.BBoxZ0, iz1 = thunk.BBoxZ1;
+				iz1 += isneg(iz1-iz0)<<16;
+				pgrid->BBoxFromGrid(gscale*(Vec3(thunk.BBox[0],thunk.BBox[1],iz0)+cellOffs), gscale*(Vec3(thunk.BBox[2]+1,thunk.BBox[3]+1,iz1)+cellOffs), gBBox);
 				bbox.center = (gBBox[1]+gBBox[0])*0.5f;
 				bbox.size = (gBBox[1]-gBBox[0])*0.5f;
+				i = pgrid->iup;
+				bbox.center[i] += float2int((aray.m_ray.origin[i]-bbox.center[i])*pgrid->rzGran*(1.0f/65536))*pgrid->zGran*65536;
 
 				if(!(entgrid.inrange(icell.x,icell.y)&-bNoThunkSubst) || box_ray_overlap_check(&bbox,&aray.m_ray)) {
 					ReadLock lock(thunk.pent->m_lockUpdate);

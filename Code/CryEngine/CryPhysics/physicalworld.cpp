@@ -1899,10 +1899,13 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 					ithunk=ithunk_next, iObjTypesValid = objtypes & 1<<m_gthunks[ithunk].iSimClass)
 				{
 					ithunk_next = m_gthunks[ithunk].inext;
+					int iz0 = m_gthunks[ithunk].BBoxZ0, iz1 = m_gthunks[ithunk].BBoxZ1;
+					iz1 += isneg(iz1-iz0)<<16;
+					int diz = float2int((gBBox[0].z+gBBox[1].z-iz0-iz1)*(0.5f/65536))*65536;
 					if (iObjTypesValid && 
 							(!m_entgrid.inrange(ix,iy) || AABB_overlap(gBBox[0], gBBox[1],
-								Vec3(ix+m_gthunks[ithunk].BBox[0]*(1.0f/256), iy+m_gthunks[ithunk].BBox[1]*(1.0f/256), m_gthunks[ithunk].BBoxZ0),
-								Vec3(ix+(m_gthunks[ithunk].BBox[2]+1)*(1.0f/256), iy+(m_gthunks[ithunk].BBox[3]+1)*(1.0f/256), m_gthunks[ithunk].BBoxZ1))) &&
+								Vec3(ix+m_gthunks[ithunk].BBox[0]*(1.0f/256), iy+m_gthunks[ithunk].BBox[1]*(1.0f/256), iz0+diz),
+								Vec3(ix+(m_gthunks[ithunk].BBox[2]+1)*(1.0f/256), iy+(m_gthunks[ithunk].BBox[3]+1)*(1.0f/256), iz1+diz))) &&
 						!(m_gthunks[ithunk].pent->m_bProcessed & maskCaller))
 					{
 						CPhysicalPlaceholder *pGridEnt = m_gthunks[ithunk].pent;
