@@ -2433,7 +2433,6 @@ bool CSystem::Init()
 	m_bEditor = m_startupParams.bEditor;
 	m_bPreviewMode = m_startupParams.bPreview;
 	m_bUIFrameworkMode = m_startupParams.bUIFramework;
-	m_bTestMode = m_startupParams.bTestMode;
 	m_pUserCallback = m_startupParams.pUserCallback;
 #if defined(CVARS_WHITELIST)
 	m_pCVarsWhitelist = m_startupParams.pCVarsWhitelist;

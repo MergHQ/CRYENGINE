@@ -1763,6 +1763,10 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CryAction Init");
 
+	// set unit test flag at start so multiple systems could handle initialization differently when needed
+	if (strstr(startupParams.szSystemCmdLine, "-run_unit_tests"))
+		startupParams.bTesting = true;
+
 	m_pSystem = startupParams.pSystem;
 
 	startupParams.pGameFramework = this;
@@ -2441,13 +2445,15 @@ bool CCryAction::CompleteInit()
 	}
 
 #if defined(CRY_UNIT_TESTING)
-	if (m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "run_unit_tests"))
+	if (gEnv->bTesting)
 	{
 		//in local unit tests we pass in -unit_test_open_failed to notify the user, in automated tests we don't pass in.
 		CryUnitTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
 			CryUnitTest::EReporterType::ExcelWithNotification : CryUnitTest::EReporterType::Excel;
-		m_pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(reporterType);
-		gEnv->pConsole->ExecuteString("quit");
+		ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
+		CRY_ASSERT(pTestSystem != nullptr);
+		pTestSystem->GetIUnitTestManager()->RunAllTests(reporterType);
+		pTestSystem->QuitInNSeconds(1.f);
 	}
 #endif
 

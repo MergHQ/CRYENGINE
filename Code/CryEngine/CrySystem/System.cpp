@@ -356,7 +356,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bShaderCacheGenMode = false;
 	m_bRelaunch = false;
 	m_iLoadingMode = 0;
-	m_bTestMode = false;
 	m_bEditor = false;
 	m_bPreviewMode = false;
 	m_bIgnoreUpdates = false;
@@ -876,7 +875,7 @@ void CSystem::Quit()
 	if (GetIRenderer())
 		GetIRenderer()->RestoreGamma();
 
-	if ((m_pCVarQuit && m_pCVarQuit->GetIVal() != 0) || m_bTestMode)
+	if ((m_pCVarQuit && m_pCVarQuit->GetIVal() != 0) || gEnv->bTesting)
 	{
 		// Dispatch the fast-shutdown event so other systems can do any last minute processing.
 		if (m_pSystemEventDispatcher != NULL)
