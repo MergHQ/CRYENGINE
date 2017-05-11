@@ -9,6 +9,7 @@
 #include <Schematyc/Env/Elements/IEnvClass.h>
 #include <Schematyc/Env/Elements/IEnvDataType.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
+#include <Schematyc/Script/IScript.h>
 #include <Schematyc/Script/IScriptExtension.h>
 #include <Schematyc/Script/IScriptGraph.h>
 #include <Schematyc/Script/IScriptRegistry.h>
