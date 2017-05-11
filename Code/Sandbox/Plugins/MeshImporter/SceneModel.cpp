@@ -645,6 +645,8 @@ QVariant CSceneModel::GetToolTipForColumn(int column)
 		return tr("Name of the node in the scene");
 	case eColumnType_Type:
 		return tr("Type of this node");
+	case eColumnType_SourceNodeAttribute:
+		return tr("Attributes of this node");
 	default:
 		assert(false);
 		break;
