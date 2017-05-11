@@ -148,7 +148,7 @@ public:
 
 	RootOpticsElement* GetRoot();
 
-	string             GetName() const { return m_name; }
+	const char*        GetName() const { return m_name.c_str(); }
 	void               SetName(const char* newName)
 	{
 		m_name = newName;
