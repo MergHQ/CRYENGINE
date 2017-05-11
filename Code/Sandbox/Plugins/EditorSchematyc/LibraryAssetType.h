@@ -28,8 +28,6 @@ public:
 	virtual bool          RenameAsset(CAsset* pAsset, const char* szNewName) const override;
 	virtual bool          DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const;
 
-	virtual const char*   GetObjectClassName() const { return TypeName(); }
-
 protected:
 	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
 

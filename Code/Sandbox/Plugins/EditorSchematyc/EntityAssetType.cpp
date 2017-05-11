@@ -151,9 +151,18 @@ bool CEntityAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceF
 
 string CEntityAssetType::GetObjectFilePath(const CAsset* pAsset) const
 {
-	string scriptName = PathUtil::RemoveExtension(PathUtil::RemoveExtension(pAsset->GetFile(0)));
-	scriptName.replace("/", "::");
-	return string().Format("Schematyc::%s", scriptName.c_str());
+	if (pAsset)
+	{
+		const size_t fileCount = pAsset->GetFilesCount();
+		CRY_ASSERT_MESSAGE(fileCount == 1, "Asset '%s' has an unexpected amount of script files.", pAsset->GetName());
+		if (fileCount > 0)
+		{
+			string scriptName = PathUtil::RemoveExtension(PathUtil::RemoveExtension(pAsset->GetFile(0)));
+			scriptName.replace("/", "::");
+			return string().Format("Schematyc::%s", scriptName.c_str());
+		}
+	}
+	return string();
 }
 
 CryIcon CEntityAssetType::GetIconInternal() const
