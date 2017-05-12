@@ -257,6 +257,7 @@ public:
 
 	void                                 InitLayout();
 	void                                 SelectItem(const SGUID& guid);
+	CryGUID                              GetSelectedItemGUID() const;
 	bool                                 SetModel(CScriptBrowserModel* pModel);
 	void                                 Serialize(Serialization::IArchive& archive);
 	ScriptBrowserSelectionSignal::Slots& GetSelectionSignalSlots();

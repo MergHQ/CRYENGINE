@@ -174,13 +174,23 @@ bool CMainWindow::SaveUndo(XmlNodeRef& output) const
 
 bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 {
+	CryGUID seletedItem;
 	if (m_pScriptBrowser)
 	{
+		seletedItem = m_pScriptBrowser->GetSelectedItemGUID();
 		m_pScriptBrowser->SetModel(nullptr);
 	}
 
+	QPoint graphPos;
+	CryGraphEditor::GraphItemIds selectedItemIds;
 	if (m_pGraphView)
 	{
+		graphPos = m_pGraphView->GetPosition();
+		for (CryGraphEditor::CAbstractNodeGraphViewModelItem* pItem : m_pGraphView->GetSelectedItems())
+		{
+			if (CNodeItem* pNodeItem = pItem->Cast<CNodeItem>())
+				selectedItemIds.emplace_back(pNodeItem->GetId());
+		}
 		m_pGraphView->SetModel(nullptr);
 	}
 
@@ -189,6 +199,14 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 	if (m_pScriptBrowser)
 	{
 		m_pScriptBrowser->SetModel(m_pModel);
+		if (seletedItem != CryGUID::Null())
+			m_pScriptBrowser->SelectItem(seletedItem);
+	}
+
+	if (m_pGraphView)
+	{
+		m_pGraphView->SetPosition(graphPos);
+		m_pGraphView->SelectItems(selectedItemIds);
 	}
 
 	return true;

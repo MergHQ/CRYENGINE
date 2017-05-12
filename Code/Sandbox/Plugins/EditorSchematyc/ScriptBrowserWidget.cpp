@@ -1259,6 +1259,20 @@ void CScriptBrowserWidget::SelectItem(const SGUID& guid)
 	}
 }
 
+CryGUID CScriptBrowserWidget::GetSelectedItemGUID() const
+{
+	const QItemSelection selection = m_pTreeView->selectionModel()->selection();
+	if (selection.indexes().size() > 0)
+	{
+		if (const CScriptBrowserItem* pItem = m_pModel->ItemFromIndex(TreeViewToModelIndex(selection.indexes().at(0))))
+		{
+			if (IScriptElement* pScriptElement = pItem->GetScriptElement())
+				return pScriptElement->GetGUID();
+		}
+	}
+	return CryGUID::Null();
+}
+
 bool CScriptBrowserWidget::SetModel(CScriptBrowserModel* pModel)
 {
 	if (m_pFilterProxy)
