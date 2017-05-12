@@ -369,23 +369,20 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 
 	// modify with spawn params
 	const SpawnParams& spawnParams = GetEmitter()->GetSpawnParams();
-	if (spawnParams.fSizeScale != 1.0f)
+	if (spawnParams.fSizeScale != 1.0f && m_container.HasData(EPDT_Size))
 	{
 		const floatv scalev = ToFloatv(spawnParams.fSizeScale);
 		IOFStream sizes = m_container.GetIOFStream(EPDT_Size);
-		IOFStream initSizes = m_container.GetIOFStream(InitType(EPDT_Size));
 		CRY_PFX2_FOR_SPAWNED_PARTICLEGROUP(context)
 		{
 			const floatv size0 = sizes.Load(particleGroupId);
-			const floatv initSize0 = initSizes.Load(particleGroupId);
 			const floatv size1 = size0 * scalev;
-			const floatv initSize1 = initSize0 * scalev;
 			sizes.Store(particleGroupId, size1);
-			initSizes.Store(particleGroupId, initSize1);
 		}
 		CRY_PFX2_FOR_END;
+		m_container.CopyData(InitType(EPDT_Size), EPDT_Size, context.GetSpawnedRange());
 	}
-	if (spawnParams.fSpeedScale != 1.0f)
+	if (spawnParams.fSpeedScale != 1.0f && m_container.HasData(EPVF_Velocity))
 	{
 		const floatv scalev = ToFloatv(spawnParams.fSpeedScale);
 		IOVec3Stream velocities = m_container.GetIOVec3Stream(EPVF_Velocity);
@@ -414,7 +411,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	else
 	{
 		CRY_PFX2_FOR_SPAWNED_PARTICLEGROUP(context)
-		invLifeTimes.Store(particleGroupId, ToFloatv(0.0f));
+			invLifeTimes.Store(particleGroupId, ToFloatv(0.0f));
 		CRY_PFX2_FOR_END;
 	}
 
@@ -609,12 +606,14 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 	const TParticleId parentCount = parentContainer.GetLastParticleId();
 	IPidStream parentIds = m_container.GetIPidStream(EPDT_ParentId);
 
-	CRY_PFX2_FOR_SPAWNED_PARTICLES(m_container, m_container.GetFullRange());
-	TParticleId parentId = parentIds.Load(particleId);
-	CRY_PFX2_ASSERT(parentIds.Load(particleId) != gInvalidId);      // recently spawn particles are not supposed to be orphan
+	CRY_PFX2_FOR_SPAWNED_PARTICLES(m_container, m_container.GetFullRange())
+	{
+		TParticleId parentId = parentIds.Load(particleId);
+		CRY_PFX2_ASSERT(parentIds.Load(particleId) != gInvalidId);      // recently spawn particles are not supposed to be orphan
+	}
 	CRY_PFX2_FOR_END;
 
-	CRY_PFX2_FOR_ACTIVE_PARTICLES(m_container, m_container.GetFullRange());
+	CRY_PFX2_FOR_ACTIVE_PARTICLES(m_container, m_container.GetFullRange())
 	{
 		TParticleId parentId = parentIds.Load(particleId);
 		CRY_PFX2_ASSERT(parentId < parentCount || parentId == gInvalidId);    // this particle is not pointing to the correct parent
