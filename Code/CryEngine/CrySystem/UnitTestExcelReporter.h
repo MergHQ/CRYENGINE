@@ -25,7 +25,9 @@ protected:
 	virtual void OnSingleTestStart(const IUnitTest& test) override;
 	virtual void OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* failureDescription) override;
 
-	void         SaveJUnitCompatableXml();
+	virtual void PostFinishTesting(const SUnitTestRunContext& context, bool bSavedReports) const {}
+
+	bool         SaveJUnitCompatableXml();
 
 	struct STestResult
 	{
@@ -41,6 +43,6 @@ protected:
 //! Extends Excel reporter by opening failed report
 class CUnitTestExcelNotificationReporter : public CUnitTestExcelReporter
 {
-	virtual void OnFinishTesting(const SUnitTestRunContext& context) override;
+	virtual void PostFinishTesting(const SUnitTestRunContext& context, bool bSavedReports) const override;
 };
 }

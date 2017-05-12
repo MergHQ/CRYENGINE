@@ -140,12 +140,13 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 		AddCell(res.testInfo.lineNumber);
 	}
 
-	SaveToFile(kOutputFileName);
-	SaveJUnitCompatableXml();
+	bool bSaveSucceed = SaveToFile(kOutputFileName);
+	bSaveSucceed &= SaveJUnitCompatableXml();
+	PostFinishTesting(context, bSaveSucceed);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CUnitTestExcelReporter::SaveJUnitCompatableXml()
+bool CUnitTestExcelReporter::SaveJUnitCompatableXml()
 {
 	XmlNodeRef root = GetISystem()->CreateXmlNode("testsuite");
 
@@ -186,7 +187,7 @@ void CUnitTestExcelReporter::SaveJUnitCompatableXml()
 		}
 	}
 
-	root->saveToFile(kOutputFileNameJUnit);
+	return root->saveToFile(kOutputFileNameJUnit);
 }
 
 void CUnitTestExcelReporter::OnSingleTestStart(const IUnitTest& test)
@@ -215,25 +216,32 @@ void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRu
 	m_results.push_back(testResult);
 }
 
-void CUnitTestExcelNotificationReporter::OnFinishTesting(const SUnitTestRunContext& context)
+void CryUnitTest::CUnitTestExcelNotificationReporter::PostFinishTesting(const SUnitTestRunContext& context, bool bSavedReports) const
 {
-	CUnitTestExcelReporter::OnFinishTesting(context);
-
-	//Open report file if any test failed. Since the notification is used for local testing only, we only need Windows
 #if CRY_PLATFORM_WINDOWS
-	if (context.failedTestCount > 0)
+	if (!bSavedReports)
 	{
-		CryLogAlways("%d Tests failed, opening report...", context.failedTestCount);
-		int nAdjustFlags = 0;
-		char path[_MAX_PATH];
-		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(kOutputFileName, path, nAdjustFlags);
-		if (szAdjustedPath != nullptr)
+		// For local unit testing notify user to close previously opened report.
+		// Use primitive windows msgbox because we are supposed to hide all pop-ups during auto testing. 
+		MessageBox(NULL, "Unit test failed to save one or more report documents, make sure the file is writable!", "Unit Test", MB_OK | MB_ICONWARNING);
+	}
+	else
+	{
+		//Open report file if any test failed. Since the notification is used for local testing only, we only need Windows
+		if (context.failedTestCount > 0)
 		{
-			//should open it with Excel
-			int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
-			if (err <= 32)//returns a value greater than 32 if succeeds.
+			CryLogAlways("%d Tests failed, opening report...", context.failedTestCount);
+			int nAdjustFlags = 0;
+			char path[_MAX_PATH];
+			const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(kOutputFileName, path, nAdjustFlags);
+			if (szAdjustedPath != nullptr)
 			{
-				CryLogAlways("Failed to open report %s, error code: %d", szAdjustedPath, err);
+				//should open it with Excel
+				int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
+				if (err <= 32)//returns a value greater than 32 if succeeds.
+				{
+					CryLogAlways("Failed to open report %s, error code: %d", szAdjustedPath, err);
+				}
 			}
 		}
 	}
