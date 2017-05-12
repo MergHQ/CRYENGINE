@@ -7,6 +7,7 @@
 #include "Navigation/MNM/BoundingVolume.h"
 
 class NavigationSystem;
+struct NavigationMesh;
 
 class CMNMUpdatesManager : public INavigationUpdatesManager
 {
