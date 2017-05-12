@@ -99,6 +99,7 @@ bool CEntityAssetType::OnCreate(CEditableAsset& editAsset, const void* /*pTypeSp
 				editAsset.AddFile(QtUtil::ToString(assetFilePath).c_str());
 
 				scriptRegistry.SaveScript(*pScript);
+				gEnv->pSchematyc->GetCompiler().CompileDependencies(pScript->GetRoot()->GetGUID());
 				return true;
 			}
 		}
