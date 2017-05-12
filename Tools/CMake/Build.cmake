@@ -62,54 +62,66 @@ if (OPTION_SANDBOX AND WIN64)
 	include ("${TOOLS_CMAKE_DIR}/BuildSandbox.cmake")
 endif()
 
-# Run Unit Test
-if (OPTION_ENGINE AND (WIN32 OR WIN64))
-	add_custom_target(run_unit_tests)
-	set_target_properties(run_unit_tests PROPERTIES EXCLUDE_FROM_ALL TRUE)
-	set_target_properties(run_unit_tests PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE)
-	set_property(TARGET run_unit_tests PROPERTY FOLDER "_TEST_")
-	get_property(WindowsLauncherExe TARGET WindowsLauncher PROPERTY OUTPUT_NAME )
+macro(generate_unit_test_targets target_name using_runner_target_name)
+	add_custom_target(${target_name})
+	set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+	set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+	set_property(TARGET ${target_name} PROPERTY FOLDER "_TEST_")
+	get_property(runner TARGET ${using_runner_target_name} PROPERTY OUTPUT_NAME )
+	if(NOT runner)
+		set(runner ${using_runner_target_name})
+	endif()
 	#message("WindowsLauncherExe = ${WindowsLauncherExe}")
-	file( WRITE "${CMAKE_CURRENT_BINARY_DIR}/run_unit_tests.vcxproj.user" 
+	file( WRITE "${CMAKE_CURRENT_BINARY_DIR}/${target_name}.vcxproj.user" 
 	"<?xml version=\"1.0\" encoding=\"utf-8\"?>
 	<Project ToolsVersion=\"14.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
+				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
 				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|x64'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
+				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
 				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>		
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
+				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
 				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
+				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
 				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
+				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
 				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>		
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${WindowsLauncherExe}.exe</LocalDebuggerCommand>
+				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
 				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 		</Project>")
+
+endmacro()
+
+# Run Unit Test
+if (OPTION_ENGINE AND (WIN32 OR WIN64))
+	generate_unit_test_targets(run_unit_tests WindowsLauncher)
+endif()
+
+if (OPTION_SANDBOX AND WIN64)
+	generate_unit_test_targets(run_unit_tests_sandbox Sandbox)
 endif()
 
 if(WIN64 AND EXISTS "Code/Tools/ShaderCacheGen/ShaderCacheGen")
