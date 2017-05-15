@@ -9,6 +9,7 @@
 #include <ACETypes.h>
 #include <IEditor.h>
 #include <QtUtil.h>
+#include <QString>
 
 #include "QAudioControlEditorIcons.h"
 #include "QConnectionsWidget.h"
@@ -34,14 +35,16 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 
 	pMainLayout->addWidget(m_pPropertyTree);
 
-	m_pConnectionsLabel = new QLabel(tr("Connections"));
+	m_pUsageHint.reset(new QString(tr("Select an audio control from the left pane to see its properties!")));
+
+	m_pConnectionsLabel = new QLabel(*m_pUsageHint);
 	m_pConnectionsLabel->setObjectName("ConnectionsTitle");
+	m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
+	m_pConnectionsLabel->setWordWrap(true);
 	pMainLayout->addWidget(m_pConnectionsLabel);
 
-	m_pConnectionList = new QConnectionsWidget(this);
+	m_pConnectionList = new QConnectionsWidget();
 	pMainLayout->addWidget(m_pConnectionList);
-
-	pMainLayout->setAlignment(Qt::AlignTop);
 
 	auto revertFunction = [&]()
 	{
@@ -89,7 +92,7 @@ void CInspectorPanel::SetSelectedControls(const std::vector<CAudioControl*>& sel
 	for (CAudioControl* pAsset : selectedControls)
 	{
 		CRY_ASSERT(pAsset != nullptr);
-		serializers.push_back(Serialization::SStruct(*pAsset));
+		serializers.emplace_back(*pAsset);
 	}
 	m_pPropertyTree->attach(serializers);
 
@@ -101,16 +104,22 @@ void CInspectorPanel::SetSelectedControls(const std::vector<CAudioControl*>& sel
 		{
 			m_pConnectionList->SetControl(pControl);
 			m_pConnectionList->setHidden(false);
+			m_pConnectionsLabel->setAlignment(Qt::AlignLeft);
+			m_pConnectionsLabel->setText(tr("Connections"));
 		}
 		else
 		{
 			m_pConnectionList->setHidden(true);
+			m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
+			m_pConnectionsLabel->setText(tr("Select a switch state to see its properties!"));
 		}
 	}
 	else
 	{
 		m_pConnectionList->setHidden(true);
 		m_pConnectionList->SetControl(nullptr);
+		m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
+		m_pConnectionsLabel->setText(*m_pUsageHint);
 	}
 }
-}
+} // namespace ACE
