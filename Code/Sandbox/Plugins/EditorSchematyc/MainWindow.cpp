@@ -15,6 +15,7 @@
 #include "GraphViewWidget.h"
 #include "GraphViewModel.h"
 #include "VariablesWidget.h"
+#include "GraphNodeItem.h"
 
 #include "LibraryAssetType.h"
 #include "EntityAssetType.h"
