@@ -182,7 +182,7 @@ void CPropagationProcessor::Init(CATLAudioObject* const pAudioObject, Vec3 const
 {
 	for (size_t i = 0; i < s_numConcurrentRaysHigh; ++i)
 	{
-		m_raysInfo.push_back(CAudioRayInfo(pAudioObject));
+		m_raysInfo.emplace_back(pAudioObject);
 	}
 
 	m_currentListenerDistance = audioListenerPosition.GetDistance(m_transformation.GetPosition());
