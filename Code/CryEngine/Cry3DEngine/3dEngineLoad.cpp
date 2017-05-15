@@ -332,6 +332,7 @@ bool C3DEngine::LoadVisAreas(std::vector<struct IStatObj*>** ppStatObjTable, std
 //////////////////////////////////////////////////////////////////////////
 void C3DEngine::UnloadLevel()
 {
+	LOADING_TIME_PROFILE_SECTION;
 	if (GetRenderer())
 	{
 		GetRenderer()->EnableLevelUnloading(true);
