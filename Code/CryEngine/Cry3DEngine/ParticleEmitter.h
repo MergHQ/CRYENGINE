@@ -199,7 +199,6 @@ public:
 		}
 	}
 	void     RenderDebugInfo();
-	IEntity* GetEntity() const;
 	void     UpdateFromEntity();
 	bool     IsIndependent() const
 	{
@@ -241,9 +240,9 @@ public:
 #if CRY_PLATFORM_DESKTOP
 		if (gEnv->IsEditing())
 		{
-			if (IEntity* pEntity = GetEntity())
+			if (m_pOwnerEntity)
 			{
-				if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
+				if (IEntityRender* pIEntityRender = m_pOwnerEntity->GetRenderInterface())
 				{
 					if (IRenderNode* pRenderNode = pIEntityRender->GetRenderNode())
 						return (pRenderNode->GetRndFlags() & ERF_SELECTED) != 0;
