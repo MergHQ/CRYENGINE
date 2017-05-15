@@ -96,6 +96,12 @@ void CMainWindow::RegisterDockingWidgets()
 	RegisterWidget("Graph", createGraphView, false, false);
 }
 
+void CMainWindow::CreateDefaultLayout(CDockableContainer* pSender)
+{
+	CRY_ASSERT(pSender);
+	pSender->SpawnWidget("Graph");
+}
+
 bool CMainWindow::OnOpen()
 {
 	const std::vector<CAssetType*>& types = m_pModel->GetSupportedTypes();
