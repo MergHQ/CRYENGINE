@@ -1043,7 +1043,8 @@ bool CStatCGFCompiler::Process()
 			}
 		}
 
-		if (!m_CC.pRC->GetAssetManager()->SaveCryasset(m_CC.config, m_CC.GetSourcePath(), outputFiles))
+		// NOTE: do not treat intermediate mesh file as a source.
+		if (!m_CC.pRC->GetAssetManager()->SaveCryasset(m_CC.config, /*m_CC.GetSourcePath()*/ string(), outputFiles))
 		{
 			return false;
 		}
