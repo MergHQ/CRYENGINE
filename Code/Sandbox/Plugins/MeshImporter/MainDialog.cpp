@@ -1567,34 +1567,37 @@ bool ReadMetaDataFromFile(const QString& filePath, FbxMetaData::SMetaData& metaD
 	{
 		// Reading JSON data from ChunkType_ImportSettings chunk of a chunk file.
 		const IChunkFile::ChunkDesc* const pChunk = cf.FindChunkByType(ChunkType_ImportSettings);
-		if (!pChunk)
+		if (pChunk)
+		{
+			const string json((const char*)pChunk->data, (size_t)pChunk->size);
+			return metaData.FromJson(json);
+		}
+		else
 		{
 			LogPrintf("ChunkType_ImportSettings chunk (JSON) is missing in '%s'", QtUtil::ToString(filePath).c_str());
-
-			CQuestionDialog::SWarning("Cannot open .cgf file", "Only .cgf files that have been created from .fbx can be opened.");
-
-			return false;
 		}
-		const string json((const char*)pChunk->data, (size_t)pChunk->size);
-		return metaData.FromJson(json);
 	}
 	else
 	{
 		// Reading JSON data from .json file.
 		QFile file(filePath);
-		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+		if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+		{
+			QTextStream inStream(&file);
+			const string json = QtUtil::ToString(inStream.readAll());
+
+			file.close();
+			return metaData.FromJson(json);
+		}
+		else
 		{
 			LogPrintf("unable to open file '%s' for reading.\n", QtUtil::ToString(filePath).c_str());
-			return false;
 		}
-
-		QTextStream inStream(&file);
-		const string json = QtUtil::ToString(inStream.readAll());
-
-		file.close();
-
-		return metaData.FromJson(json);
 	}
+
+	CQuestionDialog::SWarning("Cannot open .cgf file", "Only .cgf files that have been created from .fbx can be opened.");
+	return false;
+
 }
 
 bool CMainDialog::MayUnloadScene()

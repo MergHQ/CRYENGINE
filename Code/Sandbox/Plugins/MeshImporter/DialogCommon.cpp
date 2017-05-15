@@ -510,7 +510,7 @@ bool CBaseDialog::Open(const string& filePath)
 	}
 
 	string absSourceFilePath;
-	if (pAsset && pAsset->GetSourceFile() && *pAsset->GetSourceFile())
+	if (pAsset && pAsset->GetSourceFile() && *pAsset->GetSourceFile() && (!pAsset->GetFilesCount() || stricmp(pAsset->GetSourceFile(), pAsset->GetFile(0)) != 0) )
 	{
 		absSourceFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pAsset->GetSourceFile());
 	}

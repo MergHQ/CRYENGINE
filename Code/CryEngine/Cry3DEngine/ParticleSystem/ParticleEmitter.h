@@ -71,6 +71,8 @@ public:
 	virtual bool             IsAllocatedOutsideOf3DEngineDLL() override;
 	virtual void             SetViewDistRatio(int nViewDistRatio) override;
 	virtual void             ReleaseNode(bool bImmediate) override;
+	virtual void             SetOwnerEntity(IEntity* pEntity) override { SetEntity(pEntity, m_entitySlot); }
+	virtual IEntity*         GetOwnerEntity() const override { return m_entityOwner; }
 	// ~IRenderNode
 
 	// pfx2 IParticleEmitter
@@ -97,10 +99,10 @@ public:
 	virtual void         SetEmitGeom(const GeomRef& geom) override;
 	virtual void         SetSpawnParams(const SpawnParams& spawnParams) override;
 	virtual void         GetSpawnParams(SpawnParams& sp) const override;
-	using IParticleEmitter::GetSpawnParams;
+	using                IParticleEmitter::GetSpawnParams;
 	virtual void         Update() override;
-	virtual unsigned int GetAttachedEntityId() override   { return 0; }
-	virtual int          GetAttachedEntitySlot() override { return 0; }
+	virtual uint         GetAttachedEntityId() override;
+	virtual int          GetAttachedEntitySlot() override { return m_entitySlot; }
 	// ~pfx1 CPArticleEmitter
 
 	void                      DebugRender() const;
@@ -130,7 +132,6 @@ public:
 	float                     GetTime() const              { return m_time; }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const       { return m_currentSeed; }
-	EntityId                  GetEntityId() const          { return m_entityId; }
 	uint                      GetEmitterId() const         { return m_emitterId; }
 	ColorF                    GetProfilerColor() const     { return m_profilerColor; }
 	uint                      GetParticleSpec() const;
@@ -168,12 +169,12 @@ private:
 	SEmitterStats               m_emitterStats;
 	CryMutex                    m_statsMutex;
 	QuatTS                      m_location;
-	ParticleTarget              m_target;
-	EntityId                    m_entityId;
-	GeomRef                     m_emitterGeometry;
-	ColorF                      m_profilerColor;
+	IEntity*                    m_entityOwner;
 	int                         m_entitySlot;
+	ParticleTarget              m_target;
+	GeomRef                     m_emitterGeometry;
 	int                         m_emitterGeometrySlot;
+	ColorF                      m_profilerColor;
 	float                       m_viewDistRatio;
 	float                       m_time;
 	float                       m_deltaTime;

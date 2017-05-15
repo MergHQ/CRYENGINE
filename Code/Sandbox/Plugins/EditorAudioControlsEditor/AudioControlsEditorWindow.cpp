@@ -31,6 +31,7 @@
 #include <QSplitter>
 #include <QKeyEvent>
 #include <QDir>
+#include <QScrollArea>
 
 namespace ACE
 {
@@ -94,20 +95,24 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 
 		Update();
 		connect(m_pExplorer, &CAudioAssetsExplorer::SelectedControlChanged, [&]()
-			{
-				m_pInspectorPanel->SetSelectedControls(m_pExplorer->GetSelectedControls());
-		  });
+		{
+			m_pInspectorPanel->SetSelectedControls(m_pExplorer->GetSelectedControls());
+		});
 		connect(m_pExplorer, &CAudioAssetsExplorer::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
 		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Update);
 		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, this, &CAudioControlsEditorWindow::Update);
 
 		GetIEditor()->RegisterNotifyListener(this);
 
+		QScrollArea* const pScrollArea = new QScrollArea();
+		pScrollArea->setWidgetResizable(true);
+		pScrollArea->setWidget(m_pAudioSystemPanel);
+
 		m_pSplitter = new QSplitter(this);
 		m_pSplitter->setHandleWidth(0);
 		m_pSplitter->addWidget(m_pExplorer);
 		m_pSplitter->addWidget(m_pInspectorPanel);
-		m_pSplitter->addWidget(m_pAudioSystemPanel);
+		m_pSplitter->addWidget(pScrollArea);
 		setCentralWidget(m_pSplitter);
 	}
 
@@ -358,4 +363,4 @@ void CAudioControlsEditorWindow::ReloadMiddlewareData()
 	m_pInspectorPanel->Reload();
 	m_pAudioSystemPanel->Reset();
 }
-}
+} // namespace ACE

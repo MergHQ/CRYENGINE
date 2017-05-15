@@ -72,7 +72,7 @@ public:
 		CParticleComponent* pComponent = pRuntime->GetComponent();
 		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pEmitter->GetEntityId());
+		IEntity* pEntity = pEmitter->GetOwnerEntity();
 		cstr effectName = pEffect->GetFullName();
 		cstr componentName = pComponent->GetName();
 		cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
@@ -410,7 +410,7 @@ void CParticleProfiler::DrawStats(CStatisticsDisplay& output, Vec2 pos, EProfile
 		CParticleComponentRuntime* pRuntime = statEntries[i].pRuntime;
 		CParticleComponent* pComponent = pRuntime->GetComponent();
 		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pEmitter->GetEntityId());
+		IEntity* pEntity = pEmitter->GetOwnerEntity();
 
 		const ColorF color = pEmitter->GetProfilerColor();
 		const uint value = statEntries[i].value;

@@ -14,6 +14,8 @@ public:
 	CMainWindow(QWidget* pParent = nullptr);
 	virtual const char* GetEditorName() const override;
 	static void         CreateNewWindow(CAsset* asset);
+protected:
+	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
 private:
 	void                InitMenu();
 	void                RegisterDockingWidgets();

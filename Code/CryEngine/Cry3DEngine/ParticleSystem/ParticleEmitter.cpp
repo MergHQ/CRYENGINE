@@ -33,7 +33,7 @@ CParticleEmitter::CParticleEmitter(uint emitterId)
 	, m_active(false)
 	, m_location(IDENTITY)
 	, m_editVersion(-1)
-	, m_entityId(0)
+	, m_entityOwner(nullptr)
 	, m_entitySlot(-1)
 	, m_emitterGeometrySlot(-1)
 	, m_time(0.0f)
@@ -137,7 +137,7 @@ void CParticleEmitter::Update()
 		UpdateRuntimeRefs();
 	}
 
-	if (m_entityId != 0)
+	if (m_entityOwner)
 		UpdateFromEntity();
 
 	for (auto pRuntime : m_cpuComponentRuntimes)
@@ -413,13 +413,8 @@ void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 
 void CParticleEmitter::SetEntity(IEntity* pEntity, int nSlot)
 {
-	if (pEntity)
-	{
-		m_entityId = pEntity->GetId();
-		m_entitySlot = nSlot;
-	}
-	else
-		m_entityId = 0;
+	m_entityOwner = pEntity;
+	m_entitySlot = nSlot;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -468,12 +463,9 @@ void CParticleEmitter::GetSpawnParams(SpawnParams& sp) const
 
 void CParticleEmitter::SetEmitGeom(const GeomRef& geom)
 {
+	// If emitter has an OwnerEntity, it will override this GeomRef on the next frame.
+	// So SetOwnerEntity(nullptr) should be called as well.
 	m_emitterGeometry = geom;
-	if (geom)
-	{
-		m_entityId = 0;
-		m_entitySlot = -1;
-	}
 }
 
 void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
@@ -498,6 +490,11 @@ void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 	}
 	m_lastTimeRendered = m_time;
 	m_currentSeed = m_initialSeed;
+}
+
+uint CParticleEmitter::GetAttachedEntityId()
+{
+	return m_entityOwner ? m_entityOwner->GetId() : INVALID_ENTITYID;
 }
 
 void CParticleEmitter::UpdateRuntimeRefs()
@@ -614,15 +611,13 @@ void CParticleEmitter::AddInstance()
 
 void CParticleEmitter::UpdateFromEntity()
 {
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
-	if (!pEntity)
-		return;
-	UpdateTargetFromEntity(pEntity);
+	if (m_entityOwner)
+		UpdateTargetFromEntity(m_entityOwner);
 }
 
 IEntity* CParticleEmitter::GetEmitGeometryEntity() const
 {
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
+	IEntity* pEntity = m_entityOwner;
 	if (pEntity)
 	{
 		// Override m_emitterGeometry with geometry of owning or attached entity if it exists
@@ -636,7 +631,7 @@ void CParticleEmitter::UpdateEmitGeomFromEntity()
 {
 	IEntity* pEntity = GetEmitGeometryEntity();
 	if (pEntity)
-		m_emitterGeometrySlot = m_emitterGeometry.Set(pEntity, m_entitySlot);
+		m_emitterGeometrySlot = m_emitterGeometry.Set(pEntity);
 }
 
 QuatTS CParticleEmitter::GetEmitterGeometryLocation() const

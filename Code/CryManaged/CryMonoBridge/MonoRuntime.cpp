@@ -467,6 +467,11 @@ void CMonoRuntime::CompileAssetSourceFiles()
 	std::vector<string> sourceFiles;
 
 	const char* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute();
+	if (szAssetDirectory == nullptr || strlen(szAssetDirectory) == 0)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to locate asset directory");
+		return;
+	}
 
 	FindSourceFilesInDirectoryRecursive(szAssetDirectory, sourceFiles);
 	if (sourceFiles.size() == 0)

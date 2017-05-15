@@ -191,6 +191,7 @@ struct SVoxRndDataFileHdr
 
 void CSvoEnv::ReconstructTree(bool bMultiPoint)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	char szFolder[256] = "";
 	CVoxelSegment::MakeFolderName(szFolder);
 	CVoxelSegment::m_strRenderDataFileName = szFolder;

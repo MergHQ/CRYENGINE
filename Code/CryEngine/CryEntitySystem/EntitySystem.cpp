@@ -350,6 +350,8 @@ void CEntitySystem::PurgeHeaps()
 
 void CEntitySystem::Reset()
 {
+	LOADING_TIME_PROFILE_SECTION;
+
 	m_pPartitionGrid->BeginReset();
 	m_pProximityTriggerSystem->BeginReset();
 

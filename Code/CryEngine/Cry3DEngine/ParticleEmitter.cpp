@@ -378,9 +378,8 @@ string CParticleEmitter::GetDebugString(char type) const
 	if (type == 's')
 	{
 		// Serialization debugging.
-		IEntity* pEntity = GetEntity();
-		if (pEntity)
-			s += string().Format(" entity=%s slot=%d", pEntity->GetName(), m_nEntitySlot);
+		if (m_pOwnerEntity)
+			s += string().Format(" entity=%s slot=%d", m_pOwnerEntity->GetName(), m_nEntitySlot);
 		if (IsIndependent())
 			s += " Indep";
 		if (IsActive())
@@ -656,11 +655,6 @@ void CParticleEmitter::SetSpawnParams(SpawnParams const& spawnParams)
 	m_SpawnParams = spawnParams;
 }
 
-IEntity* CParticleEmitter::GetEntity() const
-{
-	return GetOwnerEntity();
-}
-
 bool GetPhysicalVelocity(Velocity3& Vel, IEntity* pEnt, const Vec3& vPos)
 {
 	if (pEnt)
@@ -689,7 +683,7 @@ void CParticleEmitter::UpdateFromEntity()
 	m_nEmitterFlags &= ~(ePEF_HasPhysics | ePEF_HasTarget | ePEF_HasAttachment);
 
 	// Get emitter entity.
-	IEntity* pEntity = GetEntity();
+	IEntity* pEntity = m_pOwnerEntity;
 
 	// Set external target.
 	if (!m_Target.bPriority)
@@ -746,7 +740,7 @@ void CParticleEmitter::UpdateFromEntity()
 		{
 			// If entity attached, find attached physics and geometry on parent.
 			GeomRef geom;
-			int iSlot = geom.Set(pEntity, m_nEntitySlot);
+			int iSlot = geom.Set(pEntity);
 			if (iSlot >= 0)
 			{
 				SetMatrix(pEntity->GetSlotWorldTM(iSlot));
@@ -810,7 +804,7 @@ void CParticleEmitter::Update()
 
 	// Update velocity
 	Velocity3 Vel;
-	if ((m_nEmitterFlags & ePEF_HasPhysics) && GetPhysicalVelocity(Vel, GetEntity(), GetLocation().t))
+	if ((m_nEmitterFlags & ePEF_HasPhysics) && GetPhysicalVelocity(Vel, m_pOwnerEntity, GetLocation().t))
 	{
 		// Get velocity from physics.
 		m_Vel = Vel;
@@ -1361,7 +1355,7 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 EntityId CParticleEmitter::GetAttachedEntityId()
 {
 	if (GetOwnerEntity())
-		GetOwnerEntity()->GetId();
+		return GetOwnerEntity()->GetId();
 	return INVALID_ENTITYID;
 }
 

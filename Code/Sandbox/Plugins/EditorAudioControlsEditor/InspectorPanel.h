@@ -6,6 +6,7 @@
 
 class QPropertyTree;
 class QLabel;
+class QString;
 
 namespace ACE
 {
@@ -18,22 +19,23 @@ class CInspectorPanel : public QFrame
 {
 	Q_OBJECT
 public:
-	
+
 	explicit CInspectorPanel(CAudioAssetsManager* pAssetsManager);
 	virtual ~CInspectorPanel() override;
 
 	void Reload();
 
 public slots:
-	
-void SetSelectedControls(const std::vector<CAudioControl*>& selectedControls);
+
+	void SetSelectedControls(const std::vector<CAudioControl*>& selectedControls);
 
 private:
 
-	CAudioAssetsManager* m_pAssetsManager;
-	QConnectionsWidget*  m_pConnectionList;
-	QPropertyTree*       m_pPropertyTree;
-	QLabel*              m_pConnectionsLabel;
-	bool                 m_bSupressUpdates = false;
+	CAudioAssetsManager*     m_pAssetsManager;
+	QConnectionsWidget*      m_pConnectionList;
+	QPropertyTree*           m_pPropertyTree;
+	QLabel*                  m_pConnectionsLabel;
+	std::unique_ptr<QString> m_pUsageHint;
+	bool                     m_bSupressUpdates = false;
 };
-}
+} // namespace ACE
