@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 using System.IO;
 using System.Reflection;
 using CryEngine.Common;
@@ -37,6 +39,13 @@ namespace CryEngine
 		public static bool IsSandboxGameMode { get { return Global.gEnv.IsEditorGameMode(); } }
 
 		/// <summary>
+		/// True if the <see cref="T:CryEngine.Engine"/> is currently running as a dedicated server.
+		/// This means that certain systems like the <see cref="T:CryEngine.Renderer"/> and <see cref="T:CryEngine.Input"/> and input are not initialized.
+		/// </summary>
+		/// <value><c>true</c> if is dedicated server; otherwise, <c>false</c>.</value>
+		public static bool IsDedicatedServer { get { return Global.gEnv.IsDedicated(); } }
+
+		/// <summary>
 		/// Root directory of the engine.
 		/// </summary>
 		/// <value>The engine root directory.</value>
@@ -61,9 +70,14 @@ namespace CryEngine
 		internal static void OnEngineStart()
 		{
 			SystemEventHandler.Instance = new SystemEventHandler();
-			Input.Initialize();
-			Renderer.Instance = new Renderer();
-			Mouse.Instance = new Mouse();
+
+			if(!IsDedicatedServer)
+			{
+				Input.Initialize();
+				Renderer.Instance = new Renderer();
+				Mouse.Instance = new Mouse();
+			}
+
 			CryEngine.GameFramework.Instance = new GameFramework();
 			LevelSystem.Instance = new LevelSystem();
 		}

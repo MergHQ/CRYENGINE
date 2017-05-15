@@ -1,3 +1,5 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
 using System.Collections.Generic;
 using System.IO;
 using MonoDevelop.Core;
@@ -179,6 +181,12 @@ namespace MonoDevelop.CryEngine.Projects
 				if (File.Exists(sandboxPath))
 				{
 					targets.Add(new CryEngineExecutionTarget("Sandbox", "Sandbox", sandboxPath));
+				}
+
+				var serverPath = Path.Combine(directory, "Game_Server.exe");
+				if(File.Exists(serverPath))
+				{
+					targets.Add(new CryEngineExecutionTarget("Server", "Server", serverPath));
 				}
 			}
 
