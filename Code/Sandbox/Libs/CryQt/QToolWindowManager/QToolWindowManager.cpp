@@ -36,6 +36,7 @@ QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config,
 		m_factory->setParent(this);
 	}
 	m_mainWrapper = new QToolWindowWrapper(this);
+	m_mainWrapper->getWidget()->setObjectName("mainWrapper");
 	setLayout(new QVBoxLayout(this));
 	layout()->setMargin(0);
 	layout()->addWidget(m_mainWrapper->getWidget());
@@ -134,6 +135,21 @@ IToolWindowArea* QToolWindowManager::createArea(QTWMWrapperAreaType areaType)
 IToolWindowWrapper* QToolWindowManager::createWrapper()
 {
 	IToolWindowWrapper* w = m_factory->createWrapper(this);
+	QString name;
+	while (true)
+	{
+		int i = qrand();
+		name = QString::asprintf("wrapper#%d", i);
+		foreach(IToolWindowWrapper* w2, m_wrappers)
+		{
+			if (name.compare(w2->getWidget()->objectName()))
+			{
+				continue;
+			}
+		}
+		break;
+	}
+	w->getWidget()->setObjectName(name);
 	m_wrappers << w;
 	return w;
 }
@@ -679,6 +695,21 @@ void QToolWindowManager::finishWrapperDrag()
 	m_preview->setParent(nullptr);
 	m_preview->hide();
 
+	// keep a list of all contained tools for later notifications
+	QWidget* const contents = wrapper->getContents();
+	QList<QWidget*> toolWindows;
+	QList<QWidget*> contentsWidgets = contents->findChildren<QWidget*>();
+	contentsWidgets << contents;
+
+	foreach(QWidget* w, contentsWidgets)
+	{
+		IToolWindowArea* area = qobject_cast<IToolWindowArea*>(w);
+		if (area && ownsArea(area))
+		{
+			toolWindows << area->toolWindows();
+		}
+	}
+
 	if (target.reference != QToolWindowAreaReference::Floating)
 	{
 		QWidget* contents = wrapper->getContents();
@@ -699,24 +730,24 @@ void QToolWindowManager::finishWrapperDrag()
 			splitArea(target.area->getWidget(), target.reference, contents);
 			break;
 		case QToolWindowAreaReference::Combine:
-			// take all widgets anywhere in the wrapper and add them to the selected area
-			QList<QWidget*> toolWindows;
-			QList<QWidget*> contentsWidgets = contents->findChildren<QWidget*>();
-			contentsWidgets << contents;
-
-			foreach(QWidget* w, contentsWidgets)
-			{
-				IToolWindowArea* area = qobject_cast<IToolWindowArea*>(w);
-				if (area && ownsArea(area))
-				{
-					toolWindows << area->toolWindows();
-				}
-			}
+			// take all widgets anywhere in the wrapper and add them to the selected area		
 			moveToolWindows(toolWindows, target);
 			break;
 		}
 		wrapper->getWidget()->close();
 		simplifyLayout();
+	}
+	if (target.reference != QToolWindowAreaReference::Combine)
+	{
+		// Inform about the move of all tools in the dragged wrapper and make sure the layout is saved
+		foreach(QWidget* w, toolWindows)
+		{
+			toolWindowVisibilityChanged(w, true);
+		}
+		if (target.reference != QToolWindowAreaReference::Floating)
+		{
+			notifyLayoutChange();
+		}
 	}
 	updateTrackingTooltip("", QPoint());
 }
@@ -906,6 +937,7 @@ QVariantMap QToolWindowManager::saveWrapperState(IToolWindowWrapper* wrapper)
 
 	QVariantMap result;
 	result["geometry"] = wrapper->getWidget()->saveGeometry().toBase64();
+	result["name"] = wrapper->getWidget()->objectName();
 
 	QSplitter* splitter = qobject_cast<QSplitter*>(wrapper->getContents());
 	IToolWindowArea* area = qobject_cast<IToolWindowArea*>(wrapper->getContents());
@@ -929,6 +961,11 @@ QVariantMap QToolWindowManager::saveWrapperState(IToolWindowWrapper* wrapper)
 IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap &data, int stateFormat, IToolWindowWrapper* wrapper)
 {
 	QWidget* newContents = nullptr;
+	
+	if (wrapper && data.contains("name"))
+	{
+		wrapper->getWidget()->setObjectName(data["name"].toString());
+	}
 
 	if (data.contains("splitter"))
 	{
@@ -958,6 +995,10 @@ IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap &d
 		if (newContents)
 		{
 			wrapper = createWrapper();
+			if (data.contains("name"))
+			{
+				wrapper->getWidget()->setObjectName(data["name"].toString());
+			}
 		}
 		else
 		{
@@ -1200,6 +1241,38 @@ void QToolWindowManager::bringToFront(QWidget* toolWindow)
 	area->setCurrentWidget(toolWindow);
 	area->getWidget()->window()->raise();
 	toolWindow->setFocus();
+}
+
+QString QToolWindowManager::getToolPath(QWidget* toolWindow) const
+{
+	QWidget* w = toolWindow;
+	QString result;
+	while (QWidget* pw = w->parentWidget())
+	{
+		if (QSplitter* s = qobject_cast<QSplitter*>(pw))
+		{
+			result = result.prepend(QString::asprintf("/%c/%d", (s->orientation() == Qt::Horizontal ? 'h' : 'v'), s->indexOf(w)));
+		}
+		else if (qobject_cast<IToolWindowWrapper*>(pw))
+		{
+			result = result.prepend(toolWindow->window()->objectName());
+			break;
+		}
+		w = pw;
+	}
+	return result;
+}
+
+QToolWindowAreaTarget QToolWindowManager::targetFromPath(const QString& toolPath) const
+{
+	foreach(IToolWindowArea* w, m_areas)
+	{
+		if (w->count() > 0 && getToolPath(w->widget(0)) == toolPath)
+		{
+			return QToolWindowAreaTarget(w, QToolWindowAreaReference::Combine);
+		}
+	}
+	return QToolWindowAreaTarget(QToolWindowAreaReference::Floating);
 }
 
 IToolWindowArea *QToolWindowManager::areaOf(QWidget *toolWindow)

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <IAudioImpl.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryString/CryName.h>
 
@@ -163,19 +162,19 @@ struct SAudioManagerRequestData final : public SAudioManagerRequestDataBase
 template<>
 struct SAudioManagerRequestData<EAudioManagerRequestType::SetAudioImpl> final : public SAudioManagerRequestDataBase
 {
-	explicit SAudioManagerRequestData(Impl::IAudioImpl* const pImpl_)
+	explicit SAudioManagerRequestData(Impl::IImpl* const pIImpl_)
 		: SAudioManagerRequestDataBase(EAudioManagerRequestType::SetAudioImpl)
-		, pImpl(pImpl_)
+		, pIImpl(pIImpl_)
 	{}
 
 	explicit SAudioManagerRequestData(SAudioManagerRequestData<EAudioManagerRequestType::SetAudioImpl> const* const pAMRData)
 		: SAudioManagerRequestDataBase(EAudioManagerRequestType::SetAudioImpl)
-		, pImpl(pAMRData->pImpl)
+		, pIImpl(pAMRData->pIImpl)
 	{}
 
 	virtual ~SAudioManagerRequestData() override = default;
 
-	Impl::IAudioImpl* const pImpl;
+	Impl::IImpl* const pIImpl;
 };
 
 //////////////////////////////////////////////////////////////////////////

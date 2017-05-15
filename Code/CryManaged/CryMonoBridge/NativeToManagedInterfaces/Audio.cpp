@@ -16,9 +16,7 @@
 #include <CryAudio/IObject.h>
 #include <CryAudio/IListener.h>
 
-using namespace CryAudio;
-
-typedef void(*AudioRequestListener)(const SRequestInfo * const);
+typedef void(*AudioRequestListener)(const CryAudio::SRequestInfo * const);
 
 static void LoadTrigger(uint triggerId)
 {
@@ -34,12 +32,12 @@ static void ExecuteTrigger(uint triggerId, bool bExecuteSync)
 {
 	if (bExecuteSync)
 	{
-		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread| ERequestFlags::DoneCallbackOnExternalThread);
+		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread| CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId, data);
 	}
 	else
 	{
-		SRequestUserData const data(ERequestFlags::CallbackOnExternalOrCallingThread | ERequestFlags::DoneCallbackOnExternalThread);
+		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId, data);
 	}
 }
@@ -48,7 +46,7 @@ static void StopTrigger(uint triggerId, bool bExecuteSync)
 {
 	if (bExecuteSync)
 	{
-		SRequestUserData const data(ERequestFlags::ExecuteBlocking);
+		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
 		gEnv->pAudioSystem->StopTrigger(triggerId, data);
 	}
 	else
@@ -61,8 +59,8 @@ static uint GetAudioTriggerId(MonoInternals::MonoString* pAudioTriggerName)
 {
 	std::shared_ptr<CMonoString> pAudioTriggerNameObject = CMonoDomain::CreateString(pAudioTriggerName);
 
-	ControlId triggerId = InvalidControlId;
-	gEnv->pAudioSystem->GetAudioTriggerId(pAudioTriggerNameObject->GetString(), triggerId);
+	CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
+	gEnv->pAudioSystem->GetTriggerId(pAudioTriggerNameObject->GetString(), triggerId);
 	return triggerId;
 }
 
@@ -70,8 +68,8 @@ static uint GetAudioParameterId(MonoInternals::MonoString* pAudioParameterName)
 {
 	std::shared_ptr<CMonoString> pAudioParameterNameObject = CMonoDomain::CreateString(pAudioParameterName);
 
-	ControlId parameterId = InvalidControlId;
-	gEnv->pAudioSystem->GetAudioParameterId(pAudioParameterNameObject->GetString(), parameterId);
+	CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
+	gEnv->pAudioSystem->GetParameterId(pAudioParameterNameObject->GetString(), parameterId);
 	return parameterId;
 }
 
@@ -84,8 +82,8 @@ static uint GetAudioSwitchId(MonoInternals::MonoString* pAudioSwitchName)
 {
 	std::shared_ptr<CMonoString> pAudioSwitchNameObject = CMonoDomain::CreateString(pAudioSwitchName);
 
-	ControlId switchId = InvalidControlId;
-	gEnv->pAudioSystem->GetAudioSwitchId(pAudioSwitchNameObject->GetString(), switchId);
+	CryAudio::ControlId switchId = CryAudio::InvalidControlId;
+	gEnv->pAudioSystem->GetSwitchId(pAudioSwitchNameObject->GetString(), switchId);
 	return switchId;
 }
 
@@ -93,8 +91,8 @@ static uint GetAudioSwitchStateId(uint audioSwitchId, MonoInternals::MonoString*
 {
 	std::shared_ptr<CMonoString> pAudioSwitchStateNameObject = CMonoDomain::CreateString(pAudioSwitchStateName);
 
-	SwitchStateId switchStateId = InvalidSwitchStateId;
-	gEnv->pAudioSystem->GetAudioSwitchStateId(audioSwitchId, pAudioSwitchStateNameObject->GetString(), switchStateId);
+	CryAudio::SwitchStateId switchStateId = CryAudio::InvalidSwitchStateId;
+	gEnv->pAudioSystem->GetSwitchStateId(audioSwitchId, pAudioSwitchStateNameObject->GetString(), switchStateId);
 	return switchStateId;
 }
 
@@ -115,12 +113,12 @@ static MonoInternals::MonoString* GetConfigPath()
 	return pAudioConfigPathObject->GetManagedObject();
 }
 
-static void PlayFile(SPlayFileInfo* pPlayFileInfo)
+static void PlayFile(CryAudio::SPlayFileInfo* pPlayFileInfo)
 {
 	gEnv->pAudioSystem->PlayFile(*pPlayFileInfo);
 }
 
-static void StopFile(SPlayFileInfo* pPlayFileInfo)
+static void StopFile(CryAudio::SPlayFileInfo* pPlayFileInfo)
 {
 	gEnv->pAudioSystem->StopFile(pPlayFileInfo->szFile);
 }
@@ -138,56 +136,56 @@ static void EnableAllSound(bool bIsEnabled)
 }
 
 // IObject interface
-static IObject* CreateAudioObject()
+static CryAudio::IObject* CreateAudioObject()
 {
-	IObject* pAudioObject = gEnv->pAudioSystem->CreateObject();
+	CryAudio::IObject* pAudioObject = gEnv->pAudioSystem->CreateObject();
 	return pAudioObject;
 }
 
-static CObjectTransformation* CreateAudioTransformation(float m00, float m01, float m02, float m03,
+static CryAudio::CObjectTransformation* CreateAudioTransformation(float m00, float m01, float m02, float m03,
 																												float m10, float m11, float m12, float m13, 
 																												float m20, float m21, float m22, float m23)
 {
 	Matrix34_tpl<float> m34 = Matrix34_tpl<float>(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23);
-	CObjectTransformation* pAudioTransformation = new CObjectTransformation(m34);
+	CryAudio::CObjectTransformation* pAudioTransformation = new CryAudio::CObjectTransformation(m34);
 	return pAudioTransformation;
 }
 
-static void SetAudioTransformation(IObject* pAudioObject, CObjectTransformation* pObjectTransformation)
+static void SetAudioTransformation(CryAudio::IObject* pAudioObject, CryAudio::CObjectTransformation* pObjectTransformation)
 {
 	pAudioObject->SetTransformation(*pObjectTransformation);
 }
 
-static void ReleaseAudioTransformation(CObjectTransformation* pObjectTransformation)
+static void ReleaseAudioTransformation(CryAudio::CObjectTransformation* pObjectTransformation)
 {
 	delete pObjectTransformation;
 }
 
-static void ReleaseAudioObject(IObject* pAudioObject)
+static void ReleaseAudioObject(CryAudio::IObject* pAudioObject)
 {
 	gEnv->pAudioSystem->ReleaseObject(pAudioObject);
 }
 
-static void ExecuteAudioObjectTrigger(IObject* pAudioObject, uint triggerId, bool bExecuteSync)
+static void ExecuteAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint triggerId, bool bExecuteSync)
 {
 	if (bExecuteSync)
 	{
-		const SRequestUserData data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread | ERequestFlags::DoneCallbackOnExternalThread);
+		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
 		pAudioObject->ExecuteTrigger(triggerId, data);
 	}
 	else
 	{
-		const SRequestUserData data(ERequestFlags::CallbackOnExternalOrCallingThread | ERequestFlags::DoneCallbackOnExternalThread);
+		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
 		pAudioObject->ExecuteTrigger(triggerId, data);
 	}
 	
 }
 
-static void StopAudioObjectTrigger(IObject* pAudioObject, uint triggerId, bool bExecuteSync)
+static void StopAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint triggerId, bool bExecuteSync)
 {
 	if (bExecuteSync)
 	{
-		const SRequestUserData data(ERequestFlags::ExecuteBlocking );
+		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::ExecuteBlocking );
 		pAudioObject->StopTrigger(triggerId, data);
 	}
 	else
@@ -196,54 +194,54 @@ static void StopAudioObjectTrigger(IObject* pAudioObject, uint triggerId, bool b
 	}
 }
 
-static SPlayFileInfo* CreateSPlayFileInfo(MonoInternals::MonoString* pFilePath)
+static CryAudio::SPlayFileInfo* CreateSPlayFileInfo(MonoInternals::MonoString* pFilePath)
 {
 	std::shared_ptr<CMonoString> pFilePathObject = CMonoDomain::CreateString(pFilePath);
 
-	SPlayFileInfo* pPlayFileInfo = new SPlayFileInfo(pFilePathObject->GetString());
+	CryAudio::SPlayFileInfo* pPlayFileInfo = new CryAudio::SPlayFileInfo(pFilePathObject->GetString());
 
 	return pPlayFileInfo;
 }
 
-static void ReleaseSPlayFileInfo(SPlayFileInfo* pPlayFileInfo)
+static void ReleaseSPlayFileInfo(CryAudio::SPlayFileInfo* pPlayFileInfo)
 {
 	delete pPlayFileInfo;
 }
 
-static SRequestInfo* CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, IObject* pAudioObject)
+static CryAudio::SRequestInfo* CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, CryAudio::IObject* pAudioObject)
 {
-	SRequestInfo* pRequestInfo = new SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (ControlId)CtrlId, pAudioObject, nullptr, nullptr);
+	CryAudio::SRequestInfo* pRequestInfo = new CryAudio::SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (CryAudio::ControlId)CtrlId, pAudioObject, nullptr, nullptr);
 	return pRequestInfo;
 }
 
-static void ReleaseSRequestInfo(SRequestInfo* pRequestInfo)
+static void ReleaseSRequestInfo(CryAudio::SRequestInfo* pRequestInfo)
 {
 	delete pRequestInfo;
 }
 
-static uint SRIGetRequestResult(SRequestInfo* pRequestInfo)
+static uint SRIGetRequestResult(CryAudio::SRequestInfo* pRequestInfo)
 {
 	return static_cast<uint>(pRequestInfo->requestResult);
 }
 
-static uint SRIGetSystemEvent(SRequestInfo* pRequestInfo)
+static uint SRIGetSystemEvent(CryAudio::SRequestInfo* pRequestInfo)
 {
 	return static_cast<uint>(pRequestInfo->systemEvent);
 }
 
-static uint SRIGetControlId(SRequestInfo* pRequestInfo)
+static uint SRIGetControlId(CryAudio::SRequestInfo* pRequestInfo)
 {
 	return static_cast<uint>(pRequestInfo->audioControlId);
 }
 
-static IObject* SRIGetAudioObject(SRequestInfo* pRequestInfo)
+static CryAudio::IObject* SRIGetAudioObject(CryAudio::SRequestInfo* pRequestInfo)
 {
 	return pRequestInfo->pAudioObject;
 }
 
 static void AddAudioRequestListener(AudioRequestListener listener)
 {
-	gEnv->pAudioSystem->AddRequestListener(listener, nullptr, ESystemEvents::TriggerExecuted | ESystemEvents::TriggerFinished);
+	gEnv->pAudioSystem->AddRequestListener(listener, nullptr, CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished);
 }
 
 static void RemoveAudioRequestListener(AudioRequestListener listener)
@@ -251,12 +249,12 @@ static void RemoveAudioRequestListener(AudioRequestListener listener)
 	gEnv->pAudioSystem->RemoveRequestListener(listener, nullptr);
 }
 
-static IListener* CreateAudioListener()
+static CryAudio::IListener* CreateAudioListener()
 {
 	return gEnv->pAudioSystem->CreateListener();
 }
 
-static void SetAudioListenerTransformation(IListener* pAudioListener, CObjectTransformation* pCObjectTransformation)
+static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, CryAudio::CObjectTransformation* pCObjectTransformation)
 {
 	pAudioListener->SetTransformation(*pCObjectTransformation);
 }

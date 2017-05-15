@@ -194,6 +194,14 @@ enum EEntityXFormFlags
 	ENTITY_XFORM_USER                     = 0x1000000,
 };
 
+enum EEntityHideFlags
+{
+	ENTITY_HIDE_NO_FLAG = 0,
+
+	ENTITY_HIDE_LAYER = BIT(0),
+	ENTITY_HIDE_PARENT = BIT(1),
+};
+
 //! EEntityEvent defines all events that can be sent to an entity.
 enum EEntityEvent
 {
@@ -255,6 +263,12 @@ enum EEntityEvent
 
 	//! Sent when the entity must become not hidden.
 	ENTITY_EVENT_UNHIDE,
+
+	//! Sent when the entity must be hidden.
+	ENTITY_EVENT_LAYER_HIDE,
+
+	//! Sent when the entity must become not hidden.
+	ENTITY_EVENT_LAYER_UNHIDE,
 
 	//! Sent when a physics processing for the entity must be enabled/disabled.
 	//! nParam[0] == 1 physics must be enabled if 0 physics must be disabled.
@@ -983,10 +997,13 @@ public:
 
 	//! Hides this entity, makes it invisible and disable its physics.
 	//! \param bHide If true hide the entity, is false unhides it.
-	virtual void Hide(bool bHide) = 0;
+	virtual void Hide(bool bHide, EEntityHideFlags hideFlags = ENTITY_HIDE_NO_FLAG) = 0;
 
 	//! Checks if the entity is hidden.
 	virtual bool IsHidden() const = 0;
+
+	//! Checks if the entity is in a hidden layer
+	virtual bool IsInHiddenLayer() const = 0;
 
 	//! Makes the entity invisible and disable its physics.
 	//! Different from hide in that the entity is still updated.
@@ -1335,6 +1352,7 @@ public:
 	//! Gets pointer to the first entity link.
 	virtual IEntityLink* GetEntityLinks() = 0;
 	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid = 0) = 0;
+	virtual void         RenameEntityLink(IEntityLink* pLink, const char* sNewLinkName) = 0;
 	virtual void         RemoveEntityLink(IEntityLink* pLink) = 0;
 	virtual void         RemoveAllEntityLinks() = 0;
 	//////////////////////////////////////////////////////////////////////////

@@ -23,14 +23,13 @@
 
 REGISTER_PLUGIN(CAudioControlsEditorPlugin);
 
-using namespace CryAudio;
 using namespace ACE;
 using namespace PathUtil;
 
 CAudioAssetsManager CAudioControlsEditorPlugin::s_assetsManager;
 std::set<string> CAudioControlsEditorPlugin::s_currentFilenames;
-IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
-ControlId CAudioControlsEditorPlugin::s_audioTriggerId = InvalidControlId;
+CryAudio::IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
+CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
 CImplementationManager CAudioControlsEditorPlugin::s_implementationManager;
 uint CAudioControlsEditorPlugin::s_loadingErrorMask;
 CCrySignal<void()> CAudioControlsEditorPlugin::signalAboutToLoad;
@@ -40,7 +39,7 @@ REGISTER_VIEWPANE_FACTORY(CAudioControlsEditorWindow, "Audio Controls Editor", "
 
 CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 {
-	SCreateObjectData const objectData("Audio trigger preview", EOcclusionType::Ignore);
+	CryAudio::SCreateObjectData const objectData("Audio trigger preview", CryAudio::EOcclusionType::Ignore);
 	s_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 
 	s_implementationManager.LoadImplementation();
@@ -118,9 +117,9 @@ void CAudioControlsEditorPlugin::ExecuteTrigger(const string& sTriggerName)
 	if (!sTriggerName.empty() && s_pIAudioObject)
 	{
 		StopTriggerExecution();
-		gEnv->pAudioSystem->GetAudioTriggerId(sTriggerName.c_str(), s_audioTriggerId);
+		gEnv->pAudioSystem->GetTriggerId(sTriggerName.c_str(), s_audioTriggerId);
 
-		if (s_audioTriggerId != InvalidControlId)
+		if (s_audioTriggerId != CryAudio::InvalidControlId)
 		{
 			const CCamera& camera = GetIEditor()->GetSystem()->GetViewCamera();
 			const Matrix34& cameraMatrix = camera.GetMatrix();
@@ -132,10 +131,10 @@ void CAudioControlsEditorPlugin::ExecuteTrigger(const string& sTriggerName)
 
 void CAudioControlsEditorPlugin::StopTriggerExecution()
 {
-	if (s_pIAudioObject && s_audioTriggerId != InvalidControlId)
+	if (s_pIAudioObject && s_audioTriggerId != CryAudio::InvalidControlId)
 	{
 		s_pIAudioObject->StopTrigger(s_audioTriggerId);
-		s_audioTriggerId = InvalidControlId;
+		s_audioTriggerId = CryAudio::InvalidControlId;
 	}
 }
 

@@ -102,4 +102,7 @@ struct CVar
 	static void SetDebugAnimText(IEntity* entity, const bool enable);
 
 	static void SetAudioListenerOffsets(IConsoleCmdArgs* pArgs);
+
+	// Console commands to enable/disable layers
+	static void ConsoleCommandToggleLayer(IConsoleCmdArgs* pArgs);
 };

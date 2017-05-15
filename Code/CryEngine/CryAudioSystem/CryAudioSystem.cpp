@@ -18,14 +18,14 @@
 	#include <apu.h>
 #endif // CRY_PLATFORM_DURANGO
 
-using namespace CryAudio;
+#define MAX_MODULE_NAME_LENGTH 256
 
+namespace CryAudio
+{
 // Define global objects.
-CAudioCVars g_audioCVars;
+CCVars g_cvars;
 CLogger g_logger;
 CTimeValue g_lastMainThreadFrameStartTime;
-
-#define MAX_MODULE_NAME_LENGTH 256
 
 //////////////////////////////////////////////////////////////////////////
 class CSystemEventListner_Sound : public ISystemEventListener
@@ -34,7 +34,7 @@ public:
 
 	CSystemEventListner_Sound() = default;
 
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
 	{
 		if (gEnv->pAudioSystem != nullptr)
 		{
@@ -92,19 +92,18 @@ static CSystemEventListner_Sound g_system_event_listener_sound;
 bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 {
 	bool bSuccess = false;
-	CSystem* const pAudioSystem = new CSystem;
+	CSystem* const pSystem = new CSystem;
 
-	if (pAudioSystem != nullptr)
+	if (pSystem != nullptr)
 	{
-		//release the old AudioSystem
 		if (env.pAudioSystem != nullptr)
 		{
 			env.pAudioSystem->Release();
 			env.pAudioSystem = nullptr;
 		}
 
-		env.pAudioSystem = static_cast<IAudioSystem*>(pAudioSystem);
-		bSuccess = pAudioSystem->Initialize();
+		env.pAudioSystem = static_cast<IAudioSystem*>(pSystem);
+		bSuccess = pSystem->Initialize();
 	}
 	else
 	{
@@ -139,17 +138,18 @@ void AddPhysicalBlock(long size)
 }
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
+class CEngineModule_CryAudioSystem : public ISystemModule
 {
 	CRYINTERFACE_BEGIN()
-		CRYINTERFACE_ADD(Cry::IDefaultModule)
-		CRYINTERFACE_ADD(CryAudio::ISystemModule)
+	CRYINTERFACE_ADD(Cry::IDefaultModule)
+	CRYINTERFACE_ADD(ISystemModule)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", 0xec73cf4362ca4a7f, 0x8b451076dc6fdb8b)
 
 	CEngineModule_CryAudioSystem();
-	virtual ~CEngineModule_CryAudioSystem()
+
+	virtual ~CEngineModule_CryAudioSystem() override
 	{
 		SAFE_RELEASE(gEnv->pAudioSystem);
 		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str());
@@ -171,19 +171,19 @@ class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 		{
 #if CRY_PLATFORM_DURANGO
 			// Do this before initializing the audio middleware!
-			HRESULT const result = ApuCreateHeap(static_cast<UINT32>(g_audioCVars.m_fileCacheManagerSize << 10));
+			HRESULT const result = ApuCreateHeap(static_cast<UINT32>(g_cvars.m_fileCacheManagerSize << 10));
 
 			if (result != S_OK)
 			{
-				CryFatalError("<Audio>: AudioSystem failed to allocate APU heap! (%d byte)", g_audioCVars.m_fileCacheManagerSize << 10);
+				CryFatalError("<Audio>: AudioSystem failed to allocate APU heap! (%d byte)", g_cvars.m_fileCacheManagerSize << 10);
 			}
-#endif // CRY_PLATFORM_DURANGO
+#endif  // CRY_PLATFORM_DURANGO
 
 			s_currentModuleName = m_pAudioImplNameCVar->GetString();
 
 			// Get the first CryAudio::IImplModule factory available in the module and create an instance of it
-			auto pModule = env.pSystem->LoadModuleAndCreateFactoryInstance<CryAudio::IImplModule>(s_currentModuleName.c_str(), initParams);
-	
+			auto pModule = env.pSystem->LoadModuleAndCreateFactoryInstance<IImplModule>(s_currentModuleName.c_str(), initParams);
+
 			if (pModule != nullptr)
 			{
 				PrepareAudioSystem(static_cast<CSystem*>(env.pAudioSystem));
@@ -228,8 +228,8 @@ class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 		}
 
 		// Get the first CryAudio::ISystemImplementationModule factory available in the module and create an instance of it
-		auto pModule = gEnv->pSystem->LoadModuleAndCreateFactoryInstance<CryAudio::IImplModule>(s_currentModuleName.c_str(), *s_pInitParameters);
-		
+		auto pModule = gEnv->pSystem->LoadModuleAndCreateFactoryInstance<IImplModule>(s_currentModuleName.c_str(), *s_pInitParameters);
+
 		// First try to load and initialize the new engine module.
 		// This will release the currently running implementation but only if the library loaded successfully.
 		if (pModule != nullptr)
@@ -254,7 +254,7 @@ class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 
 				PreloadRequestId preloadRequestId = InvalidPreloadRequestId;
 
-				if (pAudioSystem->GetAudioPreloadRequestId(levelName.c_str(), preloadRequestId))
+				if (pAudioSystem->GetPreloadRequestId(levelName.c_str(), preloadRequestId))
 				{
 					pAudioSystem->PreloadSingleRequest(preloadRequestId, true, data);
 				}
@@ -284,8 +284,8 @@ class CEngineModule_CryAudioSystem : public CryAudio::ISystemModule
 
 private:
 
-	ICVar* m_pAudioImplNameCVar;
-	static const SSystemInitParams* s_pInitParameters;
+	ICVar*                                         m_pAudioImplNameCVar;
+	static const SSystemInitParams*                s_pInitParameters;
 	static CryFixedStringT<MAX_MODULE_NAME_LENGTH> s_currentModuleName;
 };
 
@@ -303,7 +303,7 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 	                                          "Default: CryAudioImplSDLMixer\n",
 	                                          CEngineModule_CryAudioSystem::OnAudioImplChanged);
 
-	g_audioCVars.RegisterVariables();
+	g_cvars.RegisterVariables();
 }
-
+} // namespace CryAudio
 #include <CryCore/CrtDebugStats.h>

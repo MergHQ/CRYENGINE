@@ -292,12 +292,19 @@ void ReciprocalCoeffs(T coeffs[3], f64 y0, f64 xm, f64 ym, f64 x1, f64 y1)
 	f64 a = d ? xm * x1 * (y1 - ym) / d : 1.0;
 
 	coeffs[0] = convert<T>(a);
-
-	T u0 = rcp_fast(coeffs[0]),
-	  u1 = rcp_fast(coeffs[0] + convert<T>(x1));
-
-	coeffs[1] = T(u1 != u0 ? (y1 - y0) / (u1 - u0) : 0.0);
-	coeffs[2] = T(y0 - coeffs[1] * u0);
+	if (coeffs[0])
+	{
+		T u0 = rcp_fast(coeffs[0]),
+		  u1 = rcp_fast(coeffs[0] + convert<T>(x1));
+		coeffs[1] = T(u1 != u0 ? (y1 - y0) / (u1 - u0) : T(0));
+		coeffs[2] = T(y0 - coeffs[1] * u0);
+	}
+	else
+	{
+		coeffs[0] = T(1);
+		coeffs[1] = T(0);
+		coeffs[2] = T(y0);
+	}
 }
 
 template<typename T>
@@ -318,8 +325,8 @@ ILINE void DragAdjust(T& velAdjust, T& accAdjust, T in, const T coeffs[6])
 
 CRY_UNIT_TEST(DragFast)
 {
-	float x1 = 0.00001f;
-	for (int i = 0; i < 8; ++i, x1 *= 10.f)
+	float x1 = 1.0e-12f;
+	for (int i = 0; i < 24; ++i, x1 *= 10.f)
 	{
 		float coeffs[3];
 		DragAdjustCoeffs(coeffs, x1);

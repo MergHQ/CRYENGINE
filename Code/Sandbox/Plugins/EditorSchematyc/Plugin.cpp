@@ -36,16 +36,21 @@ REGISTER_PLUGIN(CSchematycPlugin);
 
 CSchematycPlugin::CSchematycPlugin()
 {
-	Schematyc::CCryLinkCommands::GetInstance().Register(g_pEditor->GetSystem()->GetIConsole());
+	// In case the Schematyc Core module hasn't been loaded we would crash here without this check.
+	// This condition can be removed once Editor plugins are properly handled by the Plugin Manager.
+	if (gEnv->pSchematyc != nullptr)
+	{
+		Schematyc::CCryLinkCommands::GetInstance().Register(g_pEditor->GetSystem()->GetIConsole());
 
-	// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
-	CryLogAlways("[SchematycEditor]: Initializing...");
-	gEnv->pSchematyc->SetGUIDGenerator(SCHEMATYC_DELEGATE(&GenerateGUID));
-	CryLogAlways("[SchematycEditor]: Fixing up script files");
-	gEnv->pSchematyc->GetScriptRegistry().ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorFixUp));
-	CryLogAlways("[SchematycEditor]: Compiling script files");
-	gEnv->pSchematyc->GetCompiler().CompileAll();
-	CryLogAlways("[SchematycEditor]: Initialization complete");
+		// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
+		CryLogAlways("[SchematycEditor]: Initializing...");
+		gEnv->pSchematyc->SetGUIDGenerator(SCHEMATYC_DELEGATE(&GenerateGUID));
+		CryLogAlways("[SchematycEditor]: Fixing up script files");
+		gEnv->pSchematyc->GetScriptRegistry().ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorFixUp));
+		CryLogAlways("[SchematycEditor]: Compiling script files");
+		gEnv->pSchematyc->GetCompiler().CompileAll();
+		CryLogAlways("[SchematycEditor]: Initialization complete");
+	}
 }
 
 int32 CSchematycPlugin::GetPluginVersion()

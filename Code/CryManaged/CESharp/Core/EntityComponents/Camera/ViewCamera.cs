@@ -1,4 +1,6 @@
-﻿using CryEngine.Common;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using CryEngine.Common;
 
 namespace CryEngine
 {
@@ -83,8 +85,6 @@ namespace CryEngine
 			//The Update will return immediatly anyway if it's not active so we can save a managed->unmanaged call here.
 			if(_active)
 			{
-				//var param = _view.GetCurrentParams();
-				//param.position = 
 				_view.Update(frameTime, _active);
 			}
 		}

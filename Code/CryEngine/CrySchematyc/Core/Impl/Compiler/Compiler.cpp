@@ -9,6 +9,7 @@
 #include <Schematyc/Env/Elements/IEnvClass.h>
 #include <Schematyc/Env/Elements/IEnvDataType.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
+#include <Schematyc/Script/IScript.h>
 #include <Schematyc/Script/IScriptExtension.h>
 #include <Schematyc/Script/IScriptGraph.h>
 #include <Schematyc/Script/IScriptRegistry.h>
@@ -272,10 +273,12 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 		CLogMetaData logMetaData;
 		SLogScope logScope(logMetaData);
 
-		// Qualify class name.
-
-		CStackString className;
-		ScriptUtils::QualifyName(className, scriptClass, EScriptElementType::Root);
+		// Qualify class name based on script location.
+		CStackString filePath = scriptClass.GetScript()->GetFilePath();
+		uint32 begin = filePath.find('/');
+		uint32 end = filePath.find(".schematyc_");
+		CStackString className = filePath.Mid(begin + 1, end - begin - 1);
+		className.replace("/", "::");
 
 		// Create new class.
 
@@ -359,7 +362,7 @@ bool CCompiler::CompileComponentInstancesRecursive(SCompilerContext& context, CR
 			{
 				CStackString componentName;
 				ScriptUtils::QualifyName(componentName, *pScriptElement, EScriptElementType::Class);
-				
+
 				const IScriptComponentInstance& scriptComponentInstance = DynamicCast<const IScriptComponentInstance>(*pScriptElement);
 				const uint32 componentInstanceIdx = runtimeClass.AddComponentInstance(scriptComponentInstance.GetGUID(), componentName.c_str(), scriptComponentInstance.GetAccessor() == EScriptElementAccessor::Public, scriptComponentInstance.GetTypeGUID(), scriptComponentInstance.GetTransform(), scriptComponentInstance.GetProperties(), parentIdx);
 				CompileComponentInstancesRecursive(context, runtimeClass, componentInstanceIdx, *pScriptElement);

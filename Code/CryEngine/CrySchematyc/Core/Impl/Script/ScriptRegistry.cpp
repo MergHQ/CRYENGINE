@@ -160,7 +160,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 	{
 	case EScriptElementType::Module:
 		{
-			return scopeElementType == EScriptElementType::Root /*|| scopeElementType == EScriptElementType::Module*/;
+			return scopeElementType == EScriptElementType::Root;
 		}
 	case EScriptElementType::Enum:
 		{
@@ -196,7 +196,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 		}
 	case EScriptElementType::Class:
 		{
-			return scopeElementType == EScriptElementType::Root /*|| scopeElementType == EScriptElementType::Module*/;
+			return scopeElementType == EScriptElementType::Root;
 		}
 	case EScriptElementType::Base:
 		{
@@ -234,7 +234,9 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 		}
 	case EScriptElementType::Variable:
 		{
-			return scopeElementType == EScriptElementType::Class;
+			// TODO: Variables in modules aren't supported yet.
+			return scopeElementType == EScriptElementType::Class /*|| scopeElementType == EScriptElementType::Module*/;
+			// ~TODO
 		}
 	case EScriptElementType::Timer:
 		{
@@ -936,6 +938,23 @@ IScript* CScriptRegistry::LoadScript(const char* szFilePath)
 void CScriptRegistry::SaveScript(IScript& script)
 {
 	SaveScript(static_cast<CScript&>(script));
+}
+
+void CScriptRegistry::OnScriptRenamed(IScript& script, const char* szFilePath)
+{
+	uint32 filePathHash = CCrc32::ComputeLowercase(script.GetFilePath());
+	ScriptsByFileName::const_iterator itScript = m_scriptsByFileName.find(filePathHash);
+	if (itScript != m_scriptsByFileName.end())
+	{
+		CScriptPtr pScript = itScript->second;
+		pScript->SetFilePath(szFilePath);
+		m_scriptsByFileName.erase(itScript);
+
+		filePathHash = CCrc32::ComputeLowercase(szFilePath);
+		m_scriptsByFileName.emplace(filePathHash, pScript);
+
+		// TODO: We should refresh the whole registry.
+	}
 }
 
 CScript* CScriptRegistry::CreateScript(const char* szFilePath, const IScriptElementPtr& pRoot)

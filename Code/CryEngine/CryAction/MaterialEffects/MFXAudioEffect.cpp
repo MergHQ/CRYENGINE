@@ -5,8 +5,6 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CryAudio/IObject.h>
 
-using namespace CryAudio;
-
 namespace MaterialEffectsUtils
 {
 struct SAudio1pOr3pSwitch
@@ -17,17 +15,17 @@ struct SAudio1pOr3pSwitch
 		return theInstance;
 	}
 
-	ControlId GetSwitchId() const
+	CryAudio::ControlId GetSwitchId() const
 	{
 		return m_switchID;
 	}
 
-	SwitchStateId Get1pStateId() const
+	CryAudio::SwitchStateId Get1pStateId() const
 	{
 		return m_1pStateID;
 	}
 
-	SwitchStateId Get3pStateId() const
+	CryAudio::SwitchStateId Get3pStateId() const
 	{
 		return m_3pStateID;
 	}
@@ -40,9 +38,9 @@ struct SAudio1pOr3pSwitch
 private:
 
 	SAudio1pOr3pSwitch()
-		: m_switchID(InvalidControlId)
-		, m_1pStateID(InvalidSwitchStateId)
-		, m_3pStateID(InvalidSwitchStateId)
+		: m_switchID(CryAudio::InvalidControlId)
+		, m_1pStateID(CryAudio::InvalidSwitchStateId)
+		, m_3pStateID(CryAudio::InvalidSwitchStateId)
 		, m_isValid(false)
 	{
 		Initialize();
@@ -50,19 +48,19 @@ private:
 
 	void Initialize()
 	{
-		gEnv->pAudioSystem->GetAudioSwitchId("1stOr3rdP", m_switchID);
-		gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, "1stP", m_1pStateID);
-		gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, "3rdP", m_3pStateID);
+		gEnv->pAudioSystem->GetSwitchId("1stOr3rdP", m_switchID);
+		gEnv->pAudioSystem->GetSwitchStateId(m_switchID, "1stP", m_1pStateID);
+		gEnv->pAudioSystem->GetSwitchStateId(m_switchID, "3rdP", m_3pStateID);
 
-		m_isValid = (m_switchID != InvalidControlId) &&
-		            (m_1pStateID != InvalidSwitchStateId) && (m_3pStateID != InvalidSwitchStateId);
+		m_isValid = (m_switchID != CryAudio::InvalidControlId) &&
+		            (m_1pStateID != CryAudio::InvalidSwitchStateId) && (m_3pStateID != CryAudio::InvalidSwitchStateId);
 	}
 
-	ControlId     m_switchID;
-	SwitchStateId m_1pStateID;
-	SwitchStateId m_3pStateID;
+	CryAudio::ControlId     m_switchID;
+	CryAudio::SwitchStateId m_1pStateID;
+	CryAudio::SwitchStateId m_3pStateID;
 
-	bool          m_isValid;
+	bool                    m_isValid;
 };
 
 template<typename AudioObjectType>
@@ -85,27 +83,28 @@ void PrepareForAudioTriggerExecution(AudioObjectType* pIAudioObject, const SMFXA
 
 	for (int i = 0; i < runtimeParams.numAudioRtpcs; ++i)
 	{
-		const char* rtpcName = runtimeParams.audioRtpcs[i].rtpcName;
-		if (rtpcName && *rtpcName)
+		const char* szParameterName = runtimeParams.audioRtpcs[i].rtpcName;
+
+		if (szParameterName != nullptr && szParameterName[0] != '\0')
 		{
-			ControlId rtpcId = InvalidControlId;
-			if (gEnv->pAudioSystem->GetAudioParameterId(rtpcName, rtpcId))
+			CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
+
+			if (gEnv->pAudioSystem->GetParameterId(szParameterName, parameterId))
 			{
-				pIAudioObject->SetParameter(rtpcId, runtimeParams.audioRtpcs[i].rtpcValue);
+				pIAudioObject->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue);
 			}
 		}
 	}
 }
-
-}
+} // namespace MaterialEffectsUtils
 
 //////////////////////////////////////////////////////////////////////////
 
 void SAudioTriggerWrapper::Init(const char* triggerName)
 {
-	CRY_ASSERT(triggerName != NULL);
+	CRY_ASSERT(triggerName != nullptr);
 
-	gEnv->pAudioSystem->GetAudioTriggerId(triggerName, m_triggerID);
+	gEnv->pAudioSystem->GetTriggerId(triggerName, m_triggerID);
 
 #if defined(MATERIAL_EFFECTS_DEBUG)
 	m_triggerName = triggerName;
@@ -114,11 +113,11 @@ void SAudioTriggerWrapper::Init(const char* triggerName)
 
 void SAudioSwitchWrapper::Init(const char* switchName, const char* switchStateName)
 {
-	CRY_ASSERT(switchName != NULL);
-	CRY_ASSERT(switchStateName != NULL);
+	CRY_ASSERT(switchName != nullptr);
+	CRY_ASSERT(switchStateName != nullptr);
 
-	gEnv->pAudioSystem->GetAudioSwitchId(switchName, m_switchID);
-	gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, switchStateName, m_switchStateID);
+	gEnv->pAudioSystem->GetSwitchId(switchName, m_switchID);
+	gEnv->pAudioSystem->GetSwitchStateId(m_switchID, switchStateName, m_switchStateID);
 
 #if defined(MATERIAL_EFFECTS_DEBUG)
 	m_switchName = switchName;
@@ -141,7 +140,7 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 	IF_UNLIKELY (!m_audioParams.trigger.IsValid())
 		return;
 
-	IEntity* pOwnerEntity = (params.audioProxyEntityId != 0) ? gEnv->pEntitySystem->GetEntity(params.audioProxyEntityId) : NULL;
+	IEntity* pOwnerEntity = (params.audioProxyEntityId != 0) ? gEnv->pEntitySystem->GetEntity(params.audioProxyEntityId) : nullptr;
 	if (pOwnerEntity)
 	{
 		IEntityAudioComponent* pIEntityAudioComponent = pOwnerEntity->GetOrCreateComponent<IEntityAudioComponent>();
@@ -153,10 +152,10 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 	}
 	else
 	{
-		SCreateObjectData const objectData("MFXAudioEffect", EOcclusionType::Low, params.pos, INVALID_ENTITYID, true);
-		IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
+		CryAudio::SCreateObjectData const objectData("MFXAudioEffect", CryAudio::EOcclusionType::Low, params.pos, INVALID_ENTITYID, true);
+		CryAudio::IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
 
-		MaterialEffectsUtils::PrepareForAudioTriggerExecution<IObject>(pIObject, m_audioParams, params);
+		MaterialEffectsUtils::PrepareForAudioTriggerExecution<CryAudio::IObject>(pIObject, m_audioParams, params);
 
 		pIObject->ExecuteTrigger(m_audioParams.trigger.GetTriggerId());
 		gEnv->pAudioSystem->ReleaseObject(pIObject);
@@ -182,7 +181,7 @@ void CMFXAudioEffect::GetResources(SMFXResourceList& resourceList) const
 
 	SMFXAudioListNode* pNextNode = resourceList.m_audioList;
 
-	if (pNextNode == NULL)
+	if (pNextNode == nullptr)
 	{
 		resourceList.m_audioList = pListNode;
 	}

@@ -209,7 +209,7 @@ namespace CryEngine
 
 		public override string ToString()
 		{
-			return string.Format(CultureInfo.CurrentCulture, "[{0}],[{1}],[{2}]", this[0].ToString(), this[1].ToString(), this[2].ToString());
+			return string.Format(CultureInfo.CurrentCulture, "[{0}],[{1}],[{2}]", this[0], this[1], this[2]);
 		}
 
 		#endregion
@@ -248,7 +248,7 @@ namespace CryEngine
 						return new Vector3(m20, m21, m22);
 
 					default:
-						throw new ArgumentOutOfRangeException("index", "Indices must run from 0 to 2!");
+					throw new ArgumentOutOfRangeException(nameof(row), "Indices must run from 0 to 2!");
 				}
 			}
 			set
@@ -278,7 +278,7 @@ namespace CryEngine
 						break;
 
 					default:
-						throw new ArgumentOutOfRangeException("index", "Indices must run from 0 to 2!");
+					throw new ArgumentOutOfRangeException(nameof(row), "Indices must run from 0 to 2!");
 				}
 			}
 		}
@@ -287,6 +287,11 @@ namespace CryEngine
 		{
 			get
 			{
+				if(row < 0 || row > 2)
+				{
+					throw new ArgumentOutOfRangeException(nameof(row), "Row indices must run from 0 to 2!");
+				}
+
 				switch (column)
 				{
 					case 0:
@@ -296,7 +301,7 @@ namespace CryEngine
 					case 2:
 						return this[row].z;
 					default:
-						throw new ArgumentOutOfRangeException("index", "Indices must run from 0 to 2!");
+					throw new ArgumentOutOfRangeException(nameof(column), "Column indices must run from 0 to 2!");
 				}
 			}
 		}

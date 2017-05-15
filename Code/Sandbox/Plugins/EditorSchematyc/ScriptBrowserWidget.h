@@ -257,6 +257,7 @@ public:
 
 	void                                 InitLayout();
 	void                                 SelectItem(const SGUID& guid);
+	CryGUID                              GetSelectedItemGUID() const;
 	bool                                 SetModel(CScriptBrowserModel* pModel);
 	void                                 Serialize(Serialization::IArchive& archive);
 	ScriptBrowserSelectionSignal::Slots& GetSelectionSignalSlots();
@@ -265,7 +266,7 @@ public:
 
 public slots:
 	void OnFiltered();
-	void OnTreeViewDoubleClicked(const QModelIndex& index);
+	void OnTreeViewClicked(const QModelIndex& index);
 	void OnTreeViewCustomContextMenuRequested(const QPoint& position);
 	void OnTreeViewKeyPress(QKeyEvent* pKeyEvent, bool& bEventHandled);
 	void OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
@@ -278,6 +279,9 @@ public slots:
 	void OnRenameItem();
 	void OnSave();
 	void OnExtract();
+
+Q_SIGNALS:
+	void OnScriptElementRemoved(Schematyc::IScriptElement& sriptElement);
 
 protected:
 	virtual void keyPressEvent(QKeyEvent* pKeyEvent) override;
@@ -305,10 +309,8 @@ private:
 	QAdvancedTreeView*               m_pTreeView;
 	CScriptBrowserModel*             m_pModel;
 	CScriptElementFilterProxyModel*  m_pFilterProxy;
-	//IScriptElement*                 m_pScriptElement;
-	//CScriptBrowserItem*             m_pScriptItem;
 
-	SSignals m_signals;
-	CAsset*  m_pAsset;
+	SSignals                         m_signals;
+	CAsset*                          m_pAsset;
 };
 } // Schematyc

@@ -3024,6 +3024,48 @@ void CharacterManager::SkelExtension(CCharInstance* pCharInstance, const char* p
 	}
 }
 
+void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pCharInst, const char* szFilepathSKEL, const char** szSkinAttachments, const uint32 skinsCount, const uint32 nLoadingFlags)
+{
+	CCharInstance* pCharInstance = static_cast<CCharInstance*>(pCharInst);
+	CDefaultSkeleton* const pDefaultSkeleton = pCharInstance->m_pDefaultSkeleton;
+
+	std::vector<const char*> mismatchingSkins;
+	uint64 nExtendedCRC64 = CCrc32::ComputeLowercase(szFilepathSKEL);
+
+	for (uint32 i = 0; i < skinsCount; ++i)
+	{
+		const char* const szSkinPath = szSkinAttachments[i];
+
+		CSkin* const pModelSKIN = static_cast<CSkin*>(LoadModelSKIN(szSkinPath, nLoadingFlags));
+		if (!pModelSKIN)
+		{
+			continue;
+		}
+
+		const uint32 mismatchingJointsCount = CompatibilityTest(pDefaultSkeleton, pModelSKIN);
+		if (mismatchingJointsCount > 0)
+		{
+			mismatchingSkins.push_back(szSkinPath);
+		}
+
+		nExtendedCRC64 += CCrc32::ComputeLowercase(szSkinPath);
+	}
+
+	if (!mismatchingSkins.empty())
+	{
+		CDefaultSkeleton* pExtDefaultSkeleton = CheckIfModelExtSKELCreated(nExtendedCRC64, nLoadingFlags);
+		if (!pExtDefaultSkeleton)
+		{
+			pExtDefaultSkeleton = CreateExtendedSkel(pCharInstance, pDefaultSkeleton, nExtendedCRC64, mismatchingSkins, nLoadingFlags);
+		}
+		if (pExtDefaultSkeleton)
+		{
+			pDefaultSkeleton->SetKeepInMemory(true);
+			pCharInstance->RuntimeInit(pExtDefaultSkeleton);
+		}
+	}
+}
+
 uint32 CharacterManager::CompatibilityTest(CDefaultSkeleton* pCDefaultSkeleton, CSkin* pCSkinModel)
 {
 	uint32 numJointsSkel = pCDefaultSkeleton->m_arrModelJoints.size();

@@ -59,7 +59,7 @@ CPlayerStateSwim::CPlayerStateSwim()
 {
 	if (m_submersionDepthParam == CryAudio::InvalidControlId)
 	{
-		gEnv->pAudioSystem->GetAudioParameterId("submersion_depth", m_submersionDepthParam);
+		gEnv->pAudioSystem->GetParameterId("submersion_depth", m_submersionDepthParam);
 	}
 }
 
@@ -329,7 +329,7 @@ void CPlayerStateSwim::OnExit(CPlayer& player)
 
 	if (player.IsClient())
 	{
-		//check if the camera still exists 
+		//check if the camera still exists
 		if (player.m_playerCamera != nullptr)
 		{
 			player.GetPlayerCamera()->SetCameraMode(eCameraMode_Default, "Leaving swim state");

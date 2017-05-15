@@ -371,7 +371,7 @@ NavigationMeshID NavigationSystem::CreateMeshForVolumeAndUpdate(const char* name
 		SetMeshBoundaryVolume(meshID, volumeID);
 
 		NavigationBoundingVolume& volume = m_volumes[volumeID];
-		m_updatesManager.RequestQueueMeshUpdate(meshID, volume.aabb);
+		m_updatesManager.RequestMeshUpdate(meshID, volume.aabb);
 
 		return meshID;
 	}
@@ -550,7 +550,7 @@ void NavigationSystem::DestroyVolume(NavigationVolumeID volumeID)
 
 				if (stl::find_and_erase(mesh.exclusions, volumeID))
 				{
-					m_updatesManager.RequestQueueMeshUpdate(meshID, volume.aabb);
+					m_updatesManager.RequestMeshUpdate(meshID, volume.aabb);
 					++mesh.version;
 				}
 			}
@@ -613,13 +613,13 @@ void NavigationSystem::SetVolume(NavigationVolumeID volumeID, Vec3* vertices, si
 						++mesh.version;
 						recomputeAABB = true;
 						
-						m_updatesManager.RequestQueueDifferenceUpdate(meshID, volume, newVolume);
+						m_updatesManager.RequestMeshDifferenceUpdate(meshID, volume, newVolume);
 					}
 
 					if (std::find(mesh.exclusions.begin(), mesh.exclusions.end(), volumeID) != mesh.exclusions.end())
 					{
-						m_updatesManager.RequestQueueMeshUpdate(meshID, volume.aabb);
-						m_updatesManager.RequestQueueMeshUpdate(meshID, aabbNew);
+						m_updatesManager.RequestMeshUpdate(meshID, volume.aabb);
+						m_updatesManager.RequestMeshUpdate(meshID, aabbNew);
 						++mesh.version;
 					}
 				}
@@ -681,7 +681,7 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
 
 				if (stl::find_and_erase(mesh.exclusions, volumeID))
 				{
-					m_updatesManager.RequestQueueMeshUpdate(meshID, volume.aabb);
+					m_updatesManager.RequestMeshUpdate(meshID, volume.aabb);
 
 					++mesh.version;
 				}
@@ -711,7 +711,7 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
 					++mesh.version;
 
 					if (mesh.boundary != volumeID)
-						m_updatesManager.RequestQueueMeshUpdate(meshID, volume.aabb);
+						m_updatesManager.RequestMeshUpdate(meshID, volume.aabb);
 					else
 					{
 						AILogComment("NavigationSystem::SetExclusionVolume: volumeID %u for a mesh %u '%s'", (unsigned int)volumeID, (unsigned int)meshID, mesh.name.c_str());
@@ -1027,7 +1027,7 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 			{
 				const CMNMUpdatesManager::TileUpdateRequest& task = m_updatesManager.GetFrontRequest();
 
-				if (task.aborted)
+				if (task.IsAborted())
 				{
 					m_updatesManager.PopFrontRequest();
 					continue;
@@ -1061,7 +1061,7 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 				{
 					const CMNMUpdatesManager::TileUpdateRequest& task = m_updatesManager.GetFrontRequest();
 
-					if (task.aborted)
+					if (task.IsAborted())
 					{
 						m_updatesManager.PopFrontRequest();
 						continue;
@@ -1313,8 +1313,9 @@ void NavigationSystem::ProcessQueuedMeshUpdates()
 
 size_t NavigationSystem::QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb)
 {
-	AIWarning("NavigationSystem::QueueMeshUpdate() is deprecated! RequestQueueDifferenceUpdate should be used instead");
-	return m_updatesManager.QueueMeshUpdate(meshID, aabb);
+	AIWarning("NavigationSystem::QueueMeshUpdate() is deprecated! INavigationUpdatesManager::RequestMeshUpdate should be used instead");
+	m_updatesManager.RequestMeshUpdate(meshID, aabb);
+	return 0;
 }
 
 void NavigationSystem::StopAllTasks()
@@ -1927,9 +1928,10 @@ void NavigationSystem::Clear()
 	StopAllTasks();
 	SetupTasks();
 
+	m_updatesManager.Clear();
+
 	AgentTypes::iterator it = m_agentTypes.begin();
 	AgentTypes::iterator end = m_agentTypes.end();
-
 	for (; it != end; ++it)
 	{
 		AgentType& agentType = *it;
@@ -1960,8 +1962,6 @@ void NavigationSystem::Clear()
 #endif
 
 	m_worldAABB = AABB::RESET;
-
-	m_updatesManager.Clear();
 
 	m_volumeDefCopy.clear();
 	m_volumeDefCopy.resize(MaxVolumeDefCopyCount, VolumeDefCopy());

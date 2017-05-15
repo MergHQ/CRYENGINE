@@ -790,21 +790,23 @@ void CScriptBrowserModel::Populate()
 		pScripElement->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
 
 		// Base
-		if (pItemBase)
-		{
-			auto visitScriptElementBase = [this, pItemBase](IScriptElement& scriptElement) -> EVisitStatus
-			{
-				const IScriptElement* pParentScriptElement = scriptElement.GetParent();
-				if (pParentScriptElement)
-				{
-					CScriptBrowserItem* pParentItem = GetItemByGUID(pParentScriptElement->GetGUID());
-					CreateScriptElementBaseItem(scriptElement, EScriptBrowserItemFlags::None, pParentItem, pItemBase);
-				}
+		// TODO: Schematyc doesn't support to list components, variables etc. of derived classes yet.
+		/*if (pItemBase)
+		   {
+		   auto visitScriptElementBase = [this, pItemBase](IScriptElement& scriptElement) -> EVisitStatus
+		   {
+		    const IScriptElement* pParentScriptElement = scriptElement.GetParent();
+		    if (pParentScriptElement)
+		    {
+		      CScriptBrowserItem* pParentItem = GetItemByGUID(pParentScriptElement->GetGUID());
+		      CreateScriptElementBaseItem(scriptElement, EScriptBrowserItemFlags::None, pParentItem, pItemBase);
+		    }
 
-				return EVisitStatus::Recurse;
-			};
-			pItemBase->GetScriptElement()->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElementBase));
-		}
+		    return EVisitStatus::Recurse;
+		   };
+		   pItemBase->GetScriptElement()->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElementBase));
+		   }*/
+		// ~TODO
 	}
 }
 
@@ -1207,7 +1209,7 @@ CScriptBrowserWidget::CScriptBrowserWidget(CrySchematycEditor::CMainWindow& edit
 	m_pTreeView->setMouseTracking(true);
 	m_pTreeView->setSortingEnabled(true);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_pTreeView->setEditTriggers(QAbstractItemView::SelectedClicked);
+	m_pTreeView->setEditTriggers(QAbstractItemView::DoubleClicked);
 	m_pTreeView->setExpandsOnDoubleClick(false);
 
 	m_pFilter = new QSearchBox(this);
@@ -1216,8 +1218,9 @@ CScriptBrowserWidget::CScriptBrowserWidget(CrySchematycEditor::CMainWindow& edit
 	m_pFilter->signalOnFiltered.Connect(this, &CScriptBrowserWidget::OnFiltered);
 
 	m_pAddButton->setMenu(m_pAddMenu);
+	m_pAddButton->setEnabled(false);
 
-	QObject::connect(m_pTreeView, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(OnTreeViewDoubleClicked(const QModelIndex &)));
+	QObject::connect(m_pTreeView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(OnTreeViewClicked(const QModelIndex &)));
 	QObject::connect(m_pTreeView, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(OnTreeViewCustomContextMenuRequested(const QPoint &)));
 	QObject::connect(m_pTreeView, SIGNAL(keyPress(QKeyEvent*, bool&)), this, SLOT(OnTreeViewKeyPress(QKeyEvent*, bool&)));
 
@@ -1256,6 +1259,20 @@ void CScriptBrowserWidget::SelectItem(const SGUID& guid)
 	}
 }
 
+CryGUID CScriptBrowserWidget::GetSelectedItemGUID() const
+{
+	const QItemSelection selection = m_pTreeView->selectionModel()->selection();
+	if (selection.indexes().size() > 0)
+	{
+		if (const CScriptBrowserItem* pItem = m_pModel->ItemFromIndex(TreeViewToModelIndex(selection.indexes().at(0))))
+		{
+			if (IScriptElement* pScriptElement = pItem->GetScriptElement())
+				return pScriptElement->GetGUID();
+		}
+	}
+	return CryGUID::Null();
+}
+
 bool CScriptBrowserWidget::SetModel(CScriptBrowserModel* pModel)
 {
 	if (m_pFilterProxy)
@@ -1292,6 +1309,7 @@ bool CScriptBrowserWidget::SetModel(CScriptBrowserModel* pModel)
 
 				m_pAddMenu->clear();
 				PopulateAddMenu(m_pAddMenu, m_pModel->GetRootElement());
+				m_pAddButton->setEnabled(!m_pAddMenu->isEmpty());
 
 				return true;
 			}
@@ -1300,6 +1318,7 @@ bool CScriptBrowserWidget::SetModel(CScriptBrowserModel* pModel)
 
 	m_pModel = nullptr;
 	m_pAddMenu->clear();
+	m_pAddButton->setEnabled(false);
 	return (pModel == nullptr);
 }
 
@@ -1345,7 +1364,20 @@ void CScriptBrowserWidget::OnFiltered()
 	}
 }
 
-void CScriptBrowserWidget::OnTreeViewDoubleClicked(const QModelIndex& index) {}
+void CScriptBrowserWidget::OnTreeViewClicked(const QModelIndex& index)
+{
+	if (index.isValid())
+	{
+		if (m_pModel)
+		{
+			CScriptBrowserItem* pItem = m_pModel->ItemFromIndex(TreeViewToModelIndex(index));
+			if (pItem)
+			{
+				m_signals.selection.Send(SScriptBrowserSelection(pItem ? pItem->GetScriptElement() : nullptr));
+			}
+		}
+	}
+}
 
 void CScriptBrowserWidget::OnTreeViewCustomContextMenuRequested(const QPoint& position)
 {
@@ -1823,6 +1855,7 @@ void CScriptBrowserWidget::OnRemoveItem()
 					GetIEditor()->GetIUndoManager()->Accept(pUndoObject->GetDescription());
 				}
 
+				OnScriptElementRemoved(*pScriptElement);
 				ScriptBrowserUtils::RemoveScriptElement(*pScriptElement);
 			}
 		}

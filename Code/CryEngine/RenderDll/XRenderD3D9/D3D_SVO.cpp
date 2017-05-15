@@ -862,7 +862,7 @@ void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<
 
 	for (int g = 0; g < SVO_MAX_NODE_GROUPS; g++)
 	{
-		float matVal[4][4];
+		Vec4 matVal[4];
 
 		for (int x = 0; x < 4; x++)
 		{
@@ -881,7 +881,7 @@ void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<
 			}
 		}
 
-		rp.SetConstantArray(paramNames[g], alias_cast<Vec4*>(&matVal[0][0]), 4);
+		rp.SetConstantArray(paramNames[g], &matVal[0], 4);
 	}
 
 	nNodesForUpdateStartIndex += 4 * 4 * SVO_MAX_NODE_GROUPS;

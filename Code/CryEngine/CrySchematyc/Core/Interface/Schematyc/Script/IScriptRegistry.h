@@ -120,5 +120,7 @@ struct IScriptRegistry
 
 	virtual IScript*                           LoadScript(const char* szFilePath) = 0;
 	virtual void                               SaveScript(IScript& script) = 0;
+
+	virtual void                               OnScriptRenamed(IScript& script, const char* szFilePath) = 0;
 };
 } // Schematyc

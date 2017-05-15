@@ -1803,7 +1803,7 @@ void CPhysicalEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 	}
 
 	if (flags & (pe_helper_geometry|pe_helper_lattice)) {
-		int iLevel = flags>>16, mask=0, bTransp=m_pStructure && (flags & 16 || m_pWorld->m_vars.bLogLatticeTension) || !(m_flags & pef_traceable);
+		int iLevel = flags>>16, mask=0, bTransp=m_pStructure && (flags & 16 || m_pWorld->m_vars.bLogLatticeTension);
 		if (iLevel & 1<<11)
 			mask=iLevel&0xF7FF,iLevel=0;
 		for(i=0;i<m_nParts;i++) if ((m_parts[i].flags & mask)==mask && (m_parts[i].flags || m_parts[i].flagsCollider || m_parts[i].mass>0)) {

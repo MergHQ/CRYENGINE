@@ -86,9 +86,6 @@ namespace UQS
 		{
 			HelpStartQuery();
 
-			// definitely clear the runtime-params for next start
-			m_runtimeParams.Clear();
-
 			// check for whether starting the query already caused an exception and report to the caller
 			if (m_runningStatus == ERunningStatus::ExceptionOccurred)
 			{
@@ -96,6 +93,19 @@ namespace UQS
 				{
 					m_pCallback(m_pCallbackUserData);
 				}
+			}
+		}
+
+		void CQueryHost::CancelQuery()
+		{
+			if (m_queryID.IsValid())
+			{
+				if (Core::IHub* pHub = Core::IHubPlugin::GetHubPtr())
+				{
+					pHub->GetQueryManager().CancelQuery(m_queryID);
+				}
+
+				m_queryID = Core::CQueryID::CreateInvalid();
 			}
 		}
 

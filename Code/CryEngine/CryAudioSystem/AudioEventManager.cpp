@@ -4,27 +4,27 @@
 #include "AudioEventManager.h"
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
+#include <IAudioImpl.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 CAudioEventManager::~CAudioEventManager()
 {
-	if (m_pImpl != nullptr)
+	if (m_pIImpl != nullptr)
 	{
 		Release();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::Init(IAudioImpl* const pImpl)
+void CAudioEventManager::Init(Impl::IImpl* const pIImpl)
 {
-	m_pImpl = pImpl;
+	m_pIImpl = pIImpl;
 	CRY_ASSERT(m_constructedAudioEvents.empty());
 }
 
@@ -37,40 +37,40 @@ void CAudioEventManager::Release()
 	// after the switch.
 	if (!m_constructedAudioEvents.empty())
 	{
-		for (auto pEvent : m_constructedAudioEvents)
+		for (auto const pEvent : m_constructedAudioEvents)
 		{
-			m_pImpl->DestructAudioEvent(pEvent->m_pImplData);
+			m_pIImpl->DestructEvent(pEvent->m_pImplData);
 			delete pEvent;
 		}
+
 		m_constructedAudioEvents.clear();
 	}
 
-	m_pImpl = nullptr;
+	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioEventManager::Update(float const deltaTime)
 {
-	//TODO: implement
 }
 
 //////////////////////////////////////////////////////////////////////////
 CATLEvent* CAudioEventManager::ConstructAudioEvent()
 {
 	CATLEvent* pEvent = new CATLEvent();
-	pEvent->m_pImplData = m_pImpl->ConstructAudioEvent(*pEvent);
+	pEvent->m_pImplData = m_pIImpl->ConstructEvent(*pEvent);
 	m_constructedAudioEvents.push_back(pEvent);
 
 	return pEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::ReleaseAudioEvent(CATLEvent* const pEvent)
+void CAudioEventManager::ReleaseEvent(CATLEvent* const pEvent)
 {
 	CRY_ASSERT(pEvent != nullptr);
 
 	m_constructedAudioEvents.remove(pEvent);
-	m_pImpl->DestructAudioEvent(pEvent->m_pImplData);
+	m_pIImpl->DestructEvent(pEvent->m_pImplData);
 	delete pEvent;
 }
 
@@ -81,7 +81,6 @@ size_t CAudioEventManager::GetNumConstructed() const
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-
 //////////////////////////////////////////////////////////////////////////
 void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
@@ -102,7 +101,7 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 			char const* const szOriginalName = pEvent->m_pTrigger->m_name.c_str();
 			CryFixedStringT<MaxControlNameLength> lowerCaseAudioTriggerName(szOriginalName);
 			lowerCaseAudioTriggerName.MakeLower();
-			CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_audioCVars.m_pAudioTriggersDebugFilter->GetString());
+			CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pAudioTriggersDebugFilter->GetString());
 			lowerCaseSearchString.MakeLower();
 			bool const bDraw = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseAudioTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 
@@ -130,5 +129,5 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 		}
 	}
 }
-
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

@@ -6,6 +6,7 @@
 #include "AudioEventManager.h"
 #include "AudioSystem.h"
 #include "AudioStandaloneFileManager.h"
+#include <IAudioImpl.h>
 #include <CryString/HashedString.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
@@ -13,9 +14,8 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 TriggerInstanceId CryAudio::CATLAudioObject::s_triggerInstanceIdCounter = 1;
 CSystem* CryAudio::CATLAudioObject::s_pAudioSystem = nullptr;
 CAudioEventManager* CryAudio::CATLAudioObject::s_pEventManager = nullptr;
@@ -236,7 +236,7 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bS
 			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %s", pEvent->m_pTrigger->m_name.c_str());
 #else
 			g_logger.Log(ELogType::Warning, "Reported finished event on an inactive trigger %u", pEvent->m_pTrigger->GetId());
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 		else
 		{
@@ -331,7 +331,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 		}
 		else
 		{
-			s_pEventManager->ReleaseAudioEvent(pEvent);
+			s_pEventManager->ReleaseEvent(pEvent);
 		}
 	}
 
@@ -506,7 +506,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 		}
 		else
 		{
-			s_pEventManager->ReleaseAudioEvent(pEvent);
+			s_pEventManager->ReleaseEvent(pEvent);
 		}
 	}
 
@@ -635,7 +635,7 @@ void CATLAudioObject::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo)
 ERequestStatus CATLAudioObject::HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener)
 {
 	ERequestStatus status = ERequestStatus::Success;
-	float const threshold = distanceToListener * g_audioCVars.m_positionUpdateThresholdMultiplier;
+	float const threshold = distanceToListener * g_cvars.m_positionUpdateThresholdMultiplier;
 
 	if (!m_attributes.transformation.IsEquivalent(transformation, threshold))
 	{
@@ -758,7 +758,7 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 				}
 				g_logger.Log(ELogType::Warning, "Request to stop a standalone audio file that is not playing! State: \"%s\"", szState);
 			}
-#endif //INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  //INCLUDE_AUDIO_PRODUCTION_CODE
 
 			ERequestStatus const tempStatus = m_pImplData->StopFile(pStandaloneFile->m_pImplData);
 
@@ -786,7 +786,7 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Init(char const* const szName, Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition)
+void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_name = szName;
@@ -825,7 +825,7 @@ void CATLAudioObject::SetVelocityTracking(bool const bEnable)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes const& listenerAttributes)
+void CATLAudioObject::UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes)
 {
 	if ((m_flags& EObjectFlags::TrackDoppler) > 0)
 	{
@@ -862,7 +862,7 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 		{
 			float const currentVelocity = m_attributes.velocity.GetLength();
 
-			if (fabs(currentVelocity - m_previousVelocity) > g_audioCVars.m_velocityTrackingThreshold)
+			if (fabs(currentVelocity - m_previousVelocity) > g_cvars.m_velocityTrackingThreshold)
 			{
 				m_previousVelocity = currentVelocity;
 
@@ -959,7 +959,7 @@ void CATLAudioObject::DrawDebugInfo(
 {
 	m_propagationProcessor.DrawObstructionRays(auxGeom);
 
-	if (g_audioCVars.m_drawAudioDebug > 0)
+	if (g_cvars.m_drawAudioDebug > 0)
 	{
 		Vec3 const& position = m_attributes.transformation.GetPosition();
 		Vec3 screenPos(ZERO);
@@ -980,7 +980,7 @@ void CATLAudioObject::DrawDebugInfo(
 		{
 			float const distance = position.GetDistance(listenerPosition);
 
-			if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawSpheres) > 0)
+			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawSpheres) > 0)
 			{
 				SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
 				SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
@@ -993,7 +993,7 @@ void CATLAudioObject::DrawDebugInfo(
 			float const fontSize = 1.3f;
 			float const lineHeight = 12.0f;
 
-			if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectStates) > 0 && !m_switchStates.empty())
+			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectStates) > 0 && !m_switchStates.empty())
 			{
 				Vec3 switchPos(screenPos);
 
@@ -1032,7 +1032,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 			CryFixedStringT<MaxMiscStringLength> temp;
 
-			if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectLabel) > 0)
+			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectLabel) > 0)
 			{
 				static float const objectTextColor[4] = { 0.90f, 0.90f, 0.90f, 1.0f };
 				static float const objectGrayTextColor[4] = { 0.50f, 0.50f, 0.50f, 1.0f };
@@ -1053,7 +1053,7 @@ void CATLAudioObject::DrawDebugInfo(
 				  pAudioObject->m_name.c_str(),
 				  distance);
 
-				if (distance < g_audioCVars.m_occlusionMaxDistance)
+				if (distance < g_cvars.m_occlusionMaxDistance)
 				{
 					if (occlusionType == EOcclusionType::Adaptive)
 					{
@@ -1086,7 +1086,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 			float const textColor[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 
-			if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectParameters) > 0 && !m_parameters.empty())
+			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectParameters) > 0 && !m_parameters.empty())
 			{
 				Vec3 parameterPos(screenPos);
 
@@ -1109,7 +1109,7 @@ void CATLAudioObject::DrawDebugInfo(
 				}
 			}
 
-			if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectEnvironments) > 0 && !m_environments.empty())
+			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectEnvironments) > 0 && !m_environments.empty())
 			{
 				Vec3 envPos(screenPos);
 
@@ -1137,7 +1137,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 			CryFixedStringT<MaxMiscStringLength> controls;
 
-			if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectTriggers) > 0 && !m_triggerStates.empty())
+			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectTriggers) > 0 && !m_triggerStates.empty())
 			{
 				TriggerCountMap triggerCounts;
 
@@ -1169,7 +1169,7 @@ void CATLAudioObject::DrawDebugInfo(
 				}
 			}
 
-			if ((g_audioCVars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawObjectStandaloneFiles) > 0 && !m_activeStandaloneFiles.empty())
+			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawObjectStandaloneFiles) > 0 && !m_activeStandaloneFiles.empty())
 			{
 				std::map<CHashedString, size_t> numStandaloneFiles;
 				for (auto const& standaloneFilePair : m_activeStandaloneFiles)
@@ -1322,7 +1322,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 					else
 					{
 						g_logger.Log(ELogType::Warning, "TriggerImpl \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
-						s_pEventManager->ReleaseAudioEvent(pEvent);
+						s_pEventManager->ReleaseEvent(pEvent);
 					}
 				}
 			}
@@ -1481,3 +1481,4 @@ void CATLAudioObject::SetName(char const* const szName, SRequestUserData const& 
 	SAudioObjectRequestData<EAudioObjectRequestType::SetName> requestData(szName);
 	PushRequest(requestData, userData);
 }
+} // namespace CryAudio

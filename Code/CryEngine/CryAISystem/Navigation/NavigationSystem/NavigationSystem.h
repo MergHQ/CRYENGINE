@@ -550,7 +550,7 @@ public:
 	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) override;
 	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) override;
 
-	virtual IPathGraphUpdatesManager*        GetUpdateManager() override { return &m_updatesManager; }
+	virtual INavigationUpdatesManager*        GetUpdateManager() override { return &m_updatesManager; }
 
 	inline const WorldMonitor*               GetWorldMonitor() const
 	{

@@ -14,15 +14,14 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-using namespace CryAudio;
-using namespace CryAudio::Impl;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
 CAudioObjectManager::CAudioObjectManager(
-	CAudioEventManager& audioEventMgr,
-	CAudioStandaloneFileManager& audioStandaloneFileMgr,
-	CAudioListenerManager const& listenerManager)
-	: m_pImpl(nullptr)
+  CAudioEventManager& audioEventMgr,
+  CAudioStandaloneFileManager& audioStandaloneFileMgr,
+  CAudioListenerManager const& listenerManager)
+	: m_pIImpl(nullptr)
 	, m_timeSinceLastControlsUpdate(0.0f)
 	, m_audioEventMgr(audioEventMgr)
 	, m_audioStandaloneFileMgr(audioStandaloneFileMgr)
@@ -32,31 +31,31 @@ CAudioObjectManager::CAudioObjectManager(
 //////////////////////////////////////////////////////////////////////////
 CAudioObjectManager::~CAudioObjectManager()
 {
-	if (m_pImpl != nullptr)
+	if (m_pIImpl != nullptr)
 	{
 		Release();
 	}
 
-	for (auto pAudioObject : m_constructedAudioObjects)
+	for (auto const pObject : m_constructedAudioObjects)
 	{
-		delete pAudioObject;
+		delete pObject;
 	}
 
 	m_constructedAudioObjects.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::Init(IAudioImpl* const pImpl)
+void CAudioObjectManager::Init(Impl::IImpl* const pIImpl)
 {
-	m_pImpl = pImpl;
+	m_pIImpl = pIImpl;
 
-	for (auto const pAudioObject : m_constructedAudioObjects)
+	for (auto const pObject : m_constructedAudioObjects)
 	{
-		CRY_ASSERT(pAudioObject->GetImplDataPtr() == nullptr);
+		CRY_ASSERT(pObject->GetImplDataPtr() == nullptr);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pAudioObject->SetImplDataPtr(m_pImpl->ConstructAudioObject(pAudioObject->m_name.c_str()));
+		pObject->SetImplDataPtr(m_pIImpl->ConstructObject(pObject->m_name.c_str()));
 #else
-		pAudioObject->SetImplDataPtr(m_pImpl->ConstructAudioObject());
+		pObject->SetImplDataPtr(m_pIImpl->ConstructObject());
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 }
@@ -66,17 +65,17 @@ void CAudioObjectManager::Release()
 {
 	for (auto const pAudioObject : m_constructedAudioObjects)
 	{
-		m_pImpl->DestructAudioObject(pAudioObject->GetImplDataPtr());
+		m_pIImpl->DestructObject(pAudioObject->GetImplDataPtr());
 		pAudioObject->Release();
 	}
 
-	m_pImpl = nullptr;
+	m_pIImpl = nullptr;
 }
 
 float CAudioObjectManager::s_controlsUpdateInterval = 10.0f;
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes const& listenerAttributes)
+void CAudioObjectManager::Update(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CPropagationProcessor::s_totalAsyncPhysRays = 0;
@@ -110,7 +109,7 @@ void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes cons
 				pObject->SetFlag(EObjectFlags::Virtual);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pObject->ResetObstructionRays();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 		}
 
@@ -139,7 +138,7 @@ void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes cons
 			{
 				iter = m_constructedAudioObjects.erase(iter);
 				iterEnd = m_constructedAudioObjects.cend();
-				m_pImpl->DestructAudioObject(pObject->GetImplDataPtr());
+				m_pIImpl->DestructObject(pObject->GetImplDataPtr());
 				pObject->SetImplDataPtr(nullptr);
 
 				delete pObject;
@@ -329,12 +328,12 @@ void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, flo
 		char const* const szOriginalName = pAudioObject->m_name.c_str();
 		CryFixedStringT<MaxControlNameLength> lowerCaseAudioObjectName(szOriginalName);
 		lowerCaseAudioObjectName.MakeLower();
-		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_audioCVars.m_pAudioObjectsDebugFilter->GetString());
+		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pAudioObjectsDebugFilter->GetString());
 		lowerCaseSearchString.MakeLower();
 		bool const bHasActiveData = HasActiveData(pAudioObject);
 		bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) > 0;
 		bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseAudioObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-		bool const bDraw = bStringFound && ((g_audioCVars.m_showActiveAudioObjectsOnly == 0) || (g_audioCVars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
+		bool const bDraw = bStringFound && ((g_cvars.m_showActiveAudioObjectsOnly == 0) || (g_cvars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
 
 		if (bDraw)
 		{
@@ -353,3 +352,4 @@ void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, flo
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

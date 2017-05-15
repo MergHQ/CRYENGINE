@@ -419,8 +419,6 @@ public:
 
 	void                                 SetIProcess(IProcess* process) override;
 	IProcess*                            GetIProcess() override      { return m_pProcess; }
-
-	bool                                 IsTestMode() const override { return m_bTestMode; }
 	//@}
 
 	void                    SleepIfNeeded();
@@ -659,7 +657,6 @@ private: // ------------------------------------------------------
 	bool               m_bShaderCacheGenMode;   //!< true if the application runs in shader cache generation mode
 	bool               m_bRelaunch;             //!< relaunching the app or not (true beforerelaunch)
 	int                m_iLoadingMode;          //!< Game is loading w/o changing context (0 not, 1 quickloading, 2 full loading)
-	bool               m_bTestMode;             //!< If running in testing mode.
 	bool               m_bEditor;               //!< If running in Editor.
 	bool               m_bNoCrashDialog;
 	bool               m_bPreviewMode;          //!< If running in Preview mode.

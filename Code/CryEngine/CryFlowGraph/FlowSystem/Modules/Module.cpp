@@ -337,7 +337,7 @@ void CFlowGraphModule::RegisterStartNodeForInstanceBeingCreated(CFlowModuleStart
 
 void CFlowGraphModule::CreateInstance(EntityId entityId, TModuleInstanceId runningInstanceId)
 {
-	CRY_PROFILE_REGION_ARG(PROFILE_ACTION, "CFlowGraphModule::CreateInstance", m_name.c_str());
+	LOADING_TIME_PROFILE_SECTION_ARGS(m_name.c_str());
 
 	assert(m_pRootGraph); // can not clone an instance if the root graph is missing to clone from
 	if (m_pRootGraph)

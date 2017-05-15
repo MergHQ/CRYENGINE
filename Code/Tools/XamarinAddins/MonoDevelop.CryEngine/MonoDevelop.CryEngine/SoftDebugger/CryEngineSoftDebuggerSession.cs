@@ -84,7 +84,6 @@ namespace MonoDevelop.CryEngine.SoftDebugger
 			var instancePort = GetFirstAvailableRandomPort(17615, 18000);
 			psi.Arguments += string.Format(" -monoDebuggerEnable -monoDebuggerPort {0}", instancePort);
 
-			LoggingService.LogInfo("Starting process {0} {1}", psi.FileName, psi.Arguments);
 			_ceProcess = Process.Start(psi);
 
 			_ceProcess.EnableRaisingEvents = true;
@@ -109,13 +108,10 @@ namespace MonoDevelop.CryEngine.SoftDebugger
 			var ceStartInfo = (CryEngineSoftDebuggerStartInfo)startInfo;
 
 			var instancePort = Launch(ceStartInfo);
-			LoggingService.LogInfo("Process launched on port {0}", instancePort);
 
 			var instanceStartInfo = PrepareInstanceStartInfo(instancePort);
 
-			LoggingService.LogInfo("Connecting to process... (5000 attempts, 20 second per attempt)");
 			StartConnecting(instanceStartInfo,5000,20);
-			LoggingService.LogInfo("Done");
 		}
 
 		protected override string GetConnectingMessage(DebuggerStartInfo dsi)

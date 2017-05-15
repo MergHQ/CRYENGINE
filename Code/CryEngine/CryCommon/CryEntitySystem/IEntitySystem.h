@@ -298,6 +298,20 @@ struct IEntityEventListener
 	// </interfuscator:shuffle>
 };
 
+struct IEntityLayerSetUpdateListener
+{
+	virtual void LayerEnablingEvent(const char* szLayerName, bool bEnabled, bool bSerialized) = 0;
+protected:
+	~IEntityLayerSetUpdateListener() {}
+};
+
+struct IEntityLayerListener
+{
+	virtual void LayerEnabled(bool bActivated) = 0;
+protected:
+	~IEntityLayerListener() {}
+};
+
 //! Structure used by proximity query in entity system.
 struct SEntityProximityQuery
 {
@@ -489,6 +503,10 @@ struct IEntitySystem
 	virtual void AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) = 0;
 	virtual void RemoveEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) = 0;
 
+	//! Register entity layer listener
+	virtual void AddEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) = 0;
+	virtual void RemoveEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) = 0;
+
 	// Entity GUIDs
 
 	//! Finds entity by Entity GUID.
@@ -565,11 +583,14 @@ struct IEntitySystem
 	//! Enable entity layer.
 	virtual void EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) = 0;
 
+	//! Enable entity layers specified in the layer set and hide all other known layers.
+	virtual void EnableLayerSet(const char* const * pLayers, size_t layerCount, bool isSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) = 0;
+
 	//! Find a layer with a given name.
-	virtual IEntityLayer* FindLayer(const char* szLayer) const = 0;
+	virtual IEntityLayer* FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const = 0;
 
 	//! Is layer with given name enabled ?.
-	virtual bool IsLayerEnabled(const char* layer, bool bMustBeLoaded) const = 0;
+	virtual bool IsLayerEnabled(const char* layer, bool bMustBeLoaded, bool bCaseSensitive = true) const = 0;
 
 	//! Returns true if entity is not in a layer or the layer is enabled/serialized.
 	virtual bool ShouldSerializedEntity(IEntity* pEntity) = 0;

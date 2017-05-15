@@ -36,7 +36,7 @@ public:
 	CFileCacheManager& operator=(CFileCacheManager&&) = delete;
 
 	// Public methods
-	void           Init(Impl::IAudioImpl* const pImpl);
+	void           Init(Impl::IImpl* const pIImpl);
 	void           Release();
 	void           Update();
 	FileEntryId    TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad);
@@ -53,7 +53,7 @@ public:
 private:
 
 	// Internal type definitions.
-	typedef std::map<FileEntryId, CATLAudioFileEntry*> AudioFileEntries;
+	using AudioFileEntries = std::map<FileEntryId, CATLAudioFileEntry*>;
 
 	// IStreamCallback
 	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned int nError) override;
@@ -72,7 +72,7 @@ private:
 	bool TryCacheFileCacheEntryInternal(CATLAudioFileEntry* const pAudioFileEntry, FileEntryId const audioFileEntryId, bool const bLoadSynchronously, bool const bOverrideUseCount = false, size_t const useCount = 0);
 
 	// Internal members
-	Impl::IAudioImpl*               m_pImpl;
+	Impl::IImpl*                    m_pIImpl;
 	AudioPreloadRequestLookup&      m_preloadRequests;
 	AudioFileEntries                m_audioFileEntries;
 	_smart_ptr<::ICustomMemoryHeap> m_pMemoryHeap;

@@ -13,7 +13,8 @@ enum Scalar {};
 
 template<typename T> struct SIMD_traits
 {
-	using scalar_t = T;
+	using scalar_t  = T;
+	using vector4_t = T;
 };
 
 template<typename F> using vector4_t = typename SIMD_traits<F>::vector4_t;
@@ -64,7 +65,7 @@ typedef __m128i mask32v4;
 
 template<> struct SIMD_traits<f32>
 {
-	using scalar_t = f32;
+	using scalar_t  = f32;
 	using vector4_t = f32v4;
 };
 template<> struct SIMD_traits<f32v4>
@@ -74,7 +75,7 @@ template<> struct SIMD_traits<f32v4>
 
 template<> struct SIMD_traits<int32>
 {
-	using scalar_t = int32;
+	using scalar_t  = int32;
 	using vector4_t = i32v4;
 };
 template<> struct SIMD_traits<i32v4>
@@ -84,13 +85,17 @@ template<> struct SIMD_traits<i32v4>
 
 template<> struct SIMD_traits<uint32>
 {
-	using scalar_t = uint32;
+	using scalar_t  = uint32;
 	using vector4_t = u32v4;
 };
 template<> struct SIMD_traits<u32v4>
 {
 	using scalar_t = uint32;
 };
+
+// Template conversions
+template<typename S> ILINE vector4_t<S> to_vector4(S s) { return convert<vector4_t<S>>(s); }
+template<typename V> ILINE scalar_t<V>  to_scalar(V v)  { return convert<scalar_t<V>>(v); }
 
 ///////////////////////////////////////////////////////////////////////////
 

@@ -81,6 +81,7 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_bBoundsValid = 0;
 	m_bInitialized = 0;
 	m_bHidden = 0;
+	m_bIsInHiddenLayer = 0;
 	m_bInvisible = 0;
 	m_bGarbage = 0;
 	m_nUpdateCounter = 0;
@@ -1163,7 +1164,7 @@ void CEntity::KillTimer(int nTimerId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::Hide(bool bHide)
+void CEntity::Hide(bool bHide, EEntityHideFlags hideFlags)
 {
 	if ((bool)m_bHidden != bHide)
 	{
@@ -1172,27 +1173,26 @@ void CEntity::Hide(bool bHide)
 		// Update registered locations
 		OnRellocate(ENTITY_XFORM_POS);
 
-		if (bHide)
-		{
-			SEntityEvent e(ENTITY_EVENT_HIDE);
-			SendEvent(e);
-		}
-		else
-		{
-			SEntityEvent e(ENTITY_EVENT_UNHIDE);
-			SendEvent(e);
-		}
-
-		// Propagate Hide flag to the child entities.
-		for (int i = 0; i < (int)m_hierarchy.childs.size(); i++)
-		{
-			if (m_hierarchy.childs[i] != NULL)
-			{
-				m_hierarchy.childs[i]->Hide(bHide);
-			}
-		}
+		SendHideEvent(bHide, hideFlags);
 
 		ActivateEntityIfNecessary();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::SendHideEvent(bool bHide, EEntityHideFlags hideFlags)
+{
+	SEntityEvent e(bHide ? ENTITY_EVENT_HIDE : ENTITY_EVENT_UNHIDE);
+	e.nParam[0] = hideFlags;
+	SendEvent(e);
+
+	// Propagate Hide flag to the child entities.
+	for (int i = 0; i < (int)m_hierarchy.childs.size(); i++)
+	{
+		if (m_hierarchy.childs[i] != NULL)
+		{
+			m_hierarchy.childs[i]->Hide(bHide, static_cast<EEntityHideFlags>(hideFlags | ENTITY_HIDE_PARENT));
+		}
 	}
 }
 
@@ -1825,6 +1825,15 @@ void CEntity::SetMaterial(IMaterial* pMaterial)
 	event.nParam[0] = (INT_PTR)pMaterial;
 	SendEvent(event);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::SetInHiddenLayer(bool bHiddenLayer)
+{
+	m_bIsInHiddenLayer = (bHiddenLayer ? 1 : 0);
+	SEntityEvent e(bHiddenLayer ? ENTITY_EVENT_LAYER_HIDE : ENTITY_EVENT_LAYER_UNHIDE);
+	SendEvent(e);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 IMaterial* CEntity::GetMaterial()
@@ -2476,6 +2485,15 @@ IEntityLink* CEntity::AddEntityLink(const char* sLinkName, EntityId entityId, En
 
 	return pNewLink;
 };
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::RenameEntityLink(IEntityLink* pLink, const char* sNewLinkName)
+{
+	if (!m_pEntityLinks || !pLink || !sNewLinkName)
+		return;
+
+	cry_strcpy(pLink->name, ENTITY_LINK_NAME_MAX_LENGTH, sNewLinkName);
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::RemoveEntityLink(IEntityLink* pLink)

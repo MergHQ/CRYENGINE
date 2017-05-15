@@ -1387,6 +1387,13 @@ bool CTexture::CreateTexture(STexData& td)
 	return bRes;
 }
 
+void CTexture::UpdateData(STexData &td, int flags)
+{
+	m_nFlags = flags;
+	m_eTFDst = td.m_eTF;
+	CreateTexture(td);
+}
+
 ETEX_Format CTexture::FormatFixup(ETEX_Format src)
 {
 	switch (src)

@@ -282,8 +282,8 @@ struct SAudioTriggerKey : public STrackDurationKey
 
 		if (ar.isInput())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(m_startTriggerName.c_str(), m_startTriggerId);
-			gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName.c_str(), m_stopTriggerId);
+			gEnv->pAudioSystem->GetTriggerId(m_startTriggerName.c_str(), m_startTriggerId);
+			gEnv->pAudioSystem->GetTriggerId(m_stopTriggerName.c_str(), m_stopTriggerId);
 		}
 	}
 
@@ -321,7 +321,7 @@ struct SAudioFileKey : public STrackDurationKey
 			const string tempFilePath = (pathLength == -1) ? PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + m_audioFile : m_audioFile;
 
 			CryAudio::SFileData audioData;
-			gEnv->pAudioSystem->GetAudioFileData(tempFilePath.c_str(), audioData);
+			gEnv->pAudioSystem->GetFileData(tempFilePath.c_str(), audioData);
 			m_duration = audioData.duration;
 		}
 		else
@@ -365,8 +365,8 @@ struct SAudioSwitchKey : public STrackKey
 
 		if (ar.isInput())
 		{
-			gEnv->pAudioSystem->GetAudioSwitchId(m_audioSwitchName.c_str(), m_audioSwitchId);
-			gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioSwitchId, m_audioSwitchStateName.c_str(), m_audioSwitchStateId);
+			gEnv->pAudioSystem->GetSwitchId(m_audioSwitchName.c_str(), m_audioSwitchId);
+			gEnv->pAudioSystem->GetSwitchStateId(m_audioSwitchId, m_audioSwitchStateName.c_str(), m_audioSwitchStateId);
 		}
 
 		m_keyDescription.Format("%s : %s", m_audioSwitchName.c_str(), m_audioSwitchStateName.c_str());

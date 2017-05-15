@@ -60,7 +60,15 @@ CNodeGraphViewModel::CNodeGraphViewModel(Schematyc::IScriptGraph& scriptGraph /*
 
 CNodeGraphViewModel::~CNodeGraphViewModel()
 {
+	for (CConnectionItem* pConnectionitem : m_connectionsByIndex)
+	{
+		delete pConnectionitem;
+	}
 
+	for (CNodeItem* pNodeItem : m_nodesByIndex)
+	{
+		delete pNodeItem;
+	}
 }
 
 uint32 CNodeGraphViewModel::GetNodeItemCount() const
@@ -149,7 +157,6 @@ bool CNodeGraphViewModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 			CUndo::Record(new CryGraphEditor::CUndoNodeRemove(node));
 		}
 
-		pNodeItem->SignalDeletion(pNodeItem);
 		SignalRemoveNode(*pNodeItem);
 		// ~TODO
 		m_nodesByIndex.erase(result);
@@ -247,7 +254,6 @@ bool CNodeGraphViewModel::RemoveConnection(CryGraphEditor::CAbstractConnectionIt
 				CUndo::Record(new CryGraphEditor::CUndoConnectionRemove(connection));
 			}
 
-			connection.SignalDeletion(&connection);
 			SignalRemoveConnection(connection);
 			// ~TODO
 

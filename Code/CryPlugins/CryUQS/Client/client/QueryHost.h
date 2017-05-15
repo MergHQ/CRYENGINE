@@ -65,12 +65,17 @@ namespace UQS
 			void                            SetCallback(const Functor1<void*>& pCallback, void* pUserData = nullptr);
 
 			// - gives write-access to the runtime-parameters that the query may need
-			// - once the query gets started via StartQuery(), all provided runtime-parameters will be cleared again
+			// - persists when starting a new query (unless explicitly clearing them)
 			Shared::CVariantDict&           GetRuntimeParamsStorage();
 
 			// - actually starts the query that has been prepared so far
 			// - cancels a possibly running query
 			void                            StartQuery();
+
+			// - prematurely cancels the possibly running query
+			// - will *not* trigger the potential callback previously set via SetCallback()
+			// - has no effect if no query is running at the moment
+			void                            CancelQuery();
 
 			// - returns whether the query started via StartQuery() is still running
 			bool                            IsStillRunning() const;
@@ -146,6 +151,7 @@ namespace UQS
 			using                           CQueryHost::SetCallback;
 			using                           CQueryHost::GetRuntimeParamsStorage;
 			using                           CQueryHost::StartQuery;
+			using                           CQueryHost::CancelQuery;
 			using                           CQueryHost::IsStillRunning;
 			using                           CQueryHost::HasSucceeded;
 			using                           CQueryHost::GetExceptionMessage;

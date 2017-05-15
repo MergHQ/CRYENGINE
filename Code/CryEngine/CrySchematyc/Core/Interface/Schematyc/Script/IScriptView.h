@@ -57,6 +57,9 @@ typedef CDelegate<EVisitStatus(const IScriptVariable&)>          ScriptVariableC
 typedef CDelegate<void (const IScriptTimer&)>                    ScriptTimerConstVisitor;
 typedef CDelegate<EVisitStatus(const IScriptComponentInstance&)> ScriptComponentInstanceConstVisitor;
 typedef CDelegate<EVisitStatus(const IScriptActionInstance&)>    ScriptActionInstanceConstVisitor;
+typedef CDelegate<EVisitStatus(const IScriptFunction&)>          ScriptModuleFunctionsConstVisitor;
+typedef CDelegate<EVisitStatus(const IScriptVariable&)>          ScriptModuleVariablesConstVisitor;
+typedef CDelegate<EVisitStatus(const IScriptSignal&)>            ScriptModuleSignalsConstVisitor;
 
 enum class EDomainScope
 {
@@ -77,26 +80,26 @@ struct IScriptView
 {
 	virtual ~IScriptView() {}
 
-	virtual const SGUID&                    GetScopeGUID() const = 0; // #SchematycTODO : Scope using element instead of GUID?
-	virtual const IEnvClass*                GetEnvClass() const = 0;
-	virtual const IScriptClass*             GetScriptClass() const = 0;
+	virtual const SGUID&        GetScopeGUID() const = 0;             // #SchematycTODO : Scope using element instead of GUID?
+	virtual const IEnvClass*    GetEnvClass() const = 0;
+	virtual const IScriptClass* GetScriptClass() const = 0;
 
-	virtual void                            VisitEnvDataTypes(const EnvDataTypeConstVisitor& visitor) const = 0;   // #SchematycTODO : Move to IEnvContext/View?
-	virtual void                            VisitEnvSignals(const EnvSignalConstVisitor& visitor) const = 0;       // #SchematycTODO : Move to IEnvContext/View?
-	virtual void                            VisitEnvFunctions(const EnvFunctionConstVisitor& visitor) const = 0;   // #SchematycTODO : Move to IEnvContext/View?
-	virtual void                            VisitEnvClasses(const EnvClassConstVisitor& visitor) const = 0;        // #SchematycTODO : Move to IEnvContext/View?
-	virtual void                            VisitEnvInterfaces(const EnvInterfaceConstVisitor& visitor) const = 0; // #SchematycTODO : Move to IEnvContext/View?
-	virtual void                            VisitEnvComponents(const EnvComponentConstVisitor& visitor) const = 0; // #SchematycTODO : Move to IEnvContext/View?
-	virtual void                            VisitEnvActions(const EnvActionConstVisitor& visitor) const = 0;       // #SchematycTODO : Move to IEnvContext/View?
+	virtual void                VisitEnvDataTypes(const EnvDataTypeConstVisitor& visitor) const = 0;               // #SchematycTODO : Move to IEnvContext/View?
+	virtual void                VisitEnvSignals(const EnvSignalConstVisitor& visitor) const = 0;                   // #SchematycTODO : Move to IEnvContext/View?
+	virtual void                VisitEnvFunctions(const EnvFunctionConstVisitor& visitor) const = 0;               // #SchematycTODO : Move to IEnvContext/View?
+	virtual void                VisitEnvClasses(const EnvClassConstVisitor& visitor) const = 0;                    // #SchematycTODO : Move to IEnvContext/View?
+	virtual void                VisitEnvInterfaces(const EnvInterfaceConstVisitor& visitor) const = 0;             // #SchematycTODO : Move to IEnvContext/View?
+	virtual void                VisitEnvComponents(const EnvComponentConstVisitor& visitor) const = 0;             // #SchematycTODO : Move to IEnvContext/View?
+	virtual void                VisitEnvActions(const EnvActionConstVisitor& visitor) const = 0;                   // #SchematycTODO : Move to IEnvContext/View?
 
-	virtual void                            VisitScriptModules(const ScriptModuleConstVisitor& visitor) const = 0; // #SchematycTODO : Remove!!!
-	virtual void                            VisitScriptFunctions(const ScriptFunctionConstVisitor& visitor) const = 0;
-	virtual void                            VisitScriptClasses(const ScriptClassConstVisitor& visitor, EDomainScope scope) const = 0;
+	virtual void                VisitScriptModules(const ScriptModuleConstVisitor& visitor) const = 0;             // #SchematycTODO : Remove!!!
+	virtual void                VisitScriptFunctions(const ScriptFunctionConstVisitor& visitor) const = 0;
+	virtual void                VisitScriptClasses(const ScriptClassConstVisitor& visitor, EDomainScope scope) const = 0;
 	//virtual void                            VisitScriptStateMachines(const ScriptStateMachineConstVisitor& visitor, EDomainScope scope) const = 0;
-	virtual void                            VisitScriptVariables(const ScriptVariableConstVisitor& visitor, EDomainScope scope) const = 0;
+	virtual void                VisitScriptVariables(const ScriptVariableConstVisitor& visitor, EDomainScope scope) const = 0;
 	//virtual void                            VisitInterfaceImpls(const ScriptTimerConstVisitor& visitor, EDomainScope scope) const = 0;
-	virtual void                            VisitScriptComponentInstances(const ScriptComponentInstanceConstVisitor& visitor, EDomainScope scope) const = 0;
-	virtual void                            VisitScriptActionInstances(const ScriptActionInstanceConstVisitor& visitor, EDomainScope scope) const = 0;
+	virtual void                VisitScriptComponentInstances(const ScriptComponentInstanceConstVisitor& visitor, EDomainScope scope) const = 0;
+	virtual void                VisitScriptActionInstances(const ScriptActionInstanceConstVisitor& visitor, EDomainScope scope) const = 0;
 
 	// #SchematycTODO : Can't we just access the script registry directly instead of calling VisitEnclosed? Or should we remove visit functionality from script registry? IScriptRegistry::CreateView?
 	virtual void                            VisitEnclosedEnums(const ScriptEnumConstVisitor& visitor) const = 0;
@@ -107,7 +110,7 @@ struct IScriptView
 	virtual void                            VisitAccesibleSignals(const ScriptSignalConstVisitor& visitor) const = 0;
 	virtual void                            VisitEnclosedStates(const ScriptStateConstVisitor& visitor) const = 0;
 	virtual void                            VisitAccesibleStates(const ScriptStateConstVisitor& visitor) const = 0;
-	virtual void                            VisitEnclosedTimers(const ScriptTimerConstVisitor& visitor) const = 0; 
+	virtual void                            VisitEnclosedTimers(const ScriptTimerConstVisitor& visitor) const = 0;
 	virtual void                            VisitAccesibleTimers(const ScriptTimerConstVisitor& visitor) const = 0;
 
 	virtual const IScriptStateMachine*      GetScriptStateMachine(const SGUID& guid) const = 0;      // #SchematycTODO : Can't we just access the script registry directly?

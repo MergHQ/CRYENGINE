@@ -199,8 +199,10 @@ void CMatMan::DelayedMaterialDeletion()
 	AUTO_LOCK(m_DelayedDeletionMtlsLock);
 	while (!m_DelayedDeletionMtls[nID].empty())
 	{
-		_smart_ptr<CMatInfo> ptr = m_DelayedDeletionMtls[nID].back();
+		CMatInfo* ptr = m_DelayedDeletionMtls[nID].back().get();
 		m_DelayedDeletionMtls[nID].pop_back();
+		Unregister(ptr);
+		delete ptr;
 	}
 
 	m_nDelayedDeleteID = nID;
@@ -223,8 +225,9 @@ void CMatMan::ForceDelayedMaterialDeletion()
 		const int nListIndex = (m_nDelayedDeleteID + 1 + i) % MATERIAL_DELETION_DELAY;
 		while (!m_DelayedDeletionMtls[nListIndex].empty())
 		{
-			_smart_ptr<CMatInfo> ptr = m_DelayedDeletionMtls[nListIndex].back();
+			CMatInfo* ptr = m_DelayedDeletionMtls[nListIndex].back();
 			ptr->ShutDown();
+			Unregister(ptr);
 			m_DelayedDeletionMtls[nListIndex].pop_back();
 		}
 	}
@@ -234,6 +237,7 @@ void CMatMan::ForceDelayedMaterialDeletion()
 void CMatMan::DelayedDelete(CMatInfo* pMat)
 {
 	AUTO_LOCK(m_DelayedDeletionMtlsLock);
+	pMat->m_Flags |= MTL_FLAG_DELETE_PENDING;
 	m_DelayedDeletionMtls[m_nDelayedDeleteID].push_back(pMat);
 }
 
@@ -270,6 +274,9 @@ IMaterial* CMatMan::FindMaterial(const char* sMtlName) const
 	MtlNameMap::const_iterator it = m_mtlNameMap.find(CONST_TEMP_STRING(name));
 
 	if (it == m_mtlNameMap.end())
+		return 0;
+
+	if (it->second->GetFlags() & MTL_FLAG_DELETE_PENDING)
 		return 0;
 
 	return it->second;

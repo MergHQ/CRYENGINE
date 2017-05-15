@@ -430,6 +430,18 @@ void CScriptGraphFunctionNode::Register(CScriptGraphNodeFactory& factory)
 				return EVisitStatus::Continue;
 			};
 			scriptView.VisitScriptFunctions(ScriptFunctionConstVisitor::FromLambda(visitScriptFunction));
+
+			// Library functions
+			CScriptView gloablView(gEnv->pSchematyc->GetScriptRegistry().GetRootElement().GetGUID());
+			auto visitLibraries = [&nodeCreationMenu](const IScriptFunction& scriptFunction) -> EVisitStatus
+			{
+				CStackString subject;
+				QualifyScriptElementName(gEnv->pSchematyc->GetScriptRegistry().GetRootElement(), scriptFunction, EDomainQualifier::Global, subject);
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), scriptFunction.GetDescription(), SElementId(EDomain::Script, scriptFunction.GetGUID())));
+
+				return EVisitStatus::Continue;
+			};
+			gloablView.VisitScriptModuleFunctions(ScriptModuleFunctionsConstVisitor::FromLambda(visitLibraries));
 		}
 
 		// ~IScriptGraphNodeCreator

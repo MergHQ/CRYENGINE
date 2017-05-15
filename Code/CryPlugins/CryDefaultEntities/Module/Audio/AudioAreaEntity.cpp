@@ -5,8 +5,6 @@
 #include "Helpers/EntityFlowNode.h"
 #include <CrySerialization/Enum.h>
 
-using namespace CryAudio;
-
 class CAudioAreaEntityRegistrator : public IEntityRegistrator
 {
 	virtual void Register() override
@@ -173,8 +171,8 @@ void CAudioAreaEntity::OnResetState()
 	m_pProxy = entity.GetOrCreateComponent<IEntityAudioComponent>();
 
 	// Get properties
-	ControlId environmentId = InvalidEnvironmentId;
-	gEnv->pAudioSystem->GetAudioTriggerId(m_environmentName, environmentId);
+	CryAudio::EnvironmentId environmentId = CryAudio::InvalidEnvironmentId;
+	gEnv->pAudioSystem->GetEnvironmentId(m_environmentName, environmentId);
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
 	m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
@@ -200,13 +198,13 @@ void CAudioAreaEntity::OnResetState()
 	}
 	else
 	{
-		SetEnvironmentId(InvalidEnvironmentId);
+		SetEnvironmentId(CryAudio::InvalidEnvironmentId);
 	}
 }
 
-void CAudioAreaEntity::SetEnvironmentId(const ControlId environmentId)
+void CAudioAreaEntity::SetEnvironmentId(const CryAudio::ControlId environmentId)
 {
-	const EnvironmentId oldEnvironmentId = m_pProxy->GetEnvironmentId();
+	const CryAudio::EnvironmentId oldEnvironmentId = m_pProxy->GetEnvironmentId();
 	m_pProxy->SetEnvironmentId(environmentId);
 
 	//

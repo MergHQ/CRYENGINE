@@ -662,11 +662,11 @@ CPlayer::CPlayer()
 
 	CALL_PLAYER_EVENT_LISTENERS(OnToggleThirdPerson(this,m_stats.isThirdPerson));
 
-	gEnv->pAudioSystem->GetAudioTriggerId("water_enter", m_waterEnter);
-	gEnv->pAudioSystem->GetAudioTriggerId("water_exit", m_waterExit);
-	gEnv->pAudioSystem->GetAudioTriggerId("water_dive_in", m_waterDiveIn);
-	gEnv->pAudioSystem->GetAudioTriggerId("water_dive_out", m_waterDiveOut);
-	gEnv->pAudioSystem->GetAudioParameterId("water_in_out_speed", m_waterInOutSpeed);
+	gEnv->pAudioSystem->GetTriggerId("water_enter", m_waterEnter);
+	gEnv->pAudioSystem->GetTriggerId("water_exit", m_waterExit);
+	gEnv->pAudioSystem->GetTriggerId("water_dive_in", m_waterDiveIn);
+	gEnv->pAudioSystem->GetTriggerId("water_dive_out", m_waterDiveOut);
+	gEnv->pAudioSystem->GetParameterId("water_in_out_speed", m_waterInOutSpeed);
 }
 
 CPlayer::~CPlayer()
@@ -7409,7 +7409,7 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 			//Only client ones (the rest are processed in AudioProxy)
 			if (isClient && m_pIEntityAudioComponent)
 			{
-				CryAudio::AuxObjectId nAudioProxyID = CryAudio::InvalidAuxObjectId;
+				CryAudio::AuxObjectId auxObjectId = CryAudio::InvalidAuxObjectId;
 
 				if (event.m_BonePathName && event.m_BonePathName[0] && pCharacter)
 				{
@@ -7418,22 +7418,22 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 					int nJointID = rIDefaultSkeleton.GetJointIDByName(event.m_BonePathName);
 					if (nJointID >= 0)
 					{
-						nAudioProxyID = stl::find_in_map(m_cJointAudioProxies, nJointID, CryAudio::InvalidAuxObjectId);
-						if (nAudioProxyID == CryAudio::InvalidAuxObjectId)
+						auxObjectId = stl::find_in_map(m_cJointAudioProxies, nJointID, CryAudio::InvalidAuxObjectId);
+						if (auxObjectId == CryAudio::InvalidAuxObjectId)
 						{
-							nAudioProxyID = m_pIEntityAudioComponent->CreateAudioAuxObject();
-							m_cJointAudioProxies[nJointID] = nAudioProxyID;
+							auxObjectId = m_pIEntityAudioComponent->CreateAudioAuxObject();
+							m_cJointAudioProxies[nJointID] = auxObjectId;
 						}
 
-						m_pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), nAudioProxyID);
+						m_pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), auxObjectId);
 					}
 				}
-				CryAudio::ControlId nTriggerID = CryAudio::InvalidControlId;
-				gEnv->pAudioSystem->GetAudioTriggerId(event.m_CustomParameter, nTriggerID);
+				CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
+				gEnv->pAudioSystem->GetTriggerId(event.m_CustomParameter, triggerId);
 
-				if (nTriggerID != CryAudio::InvalidControlId)
+				if (triggerId != CryAudio::InvalidControlId)
 				{
-					m_pIEntityAudioComponent->ExecuteTrigger(nTriggerID, nAudioProxyID);
+					m_pIEntityAudioComponent->ExecuteTrigger(triggerId, auxObjectId);
 				}
 
 				REINST("needs verification!");

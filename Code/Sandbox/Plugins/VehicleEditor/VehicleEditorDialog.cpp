@@ -987,7 +987,7 @@ void CVehicleEditorDialog::DeleteEditorObjects()
 bool CVehicleEditorDialog::OpenVehicle(bool silent /*=false*/)
 {
 	// create prototype for currently selected vehicle
-	CSelectionGroup* group = GetIEditor()->GetObjectManager()->GetSelection();
+	const CSelectionGroup* group = GetIEditor()->GetObjectManager()->GetSelection();
 
 	if (!group || group->IsEmpty())
 	{

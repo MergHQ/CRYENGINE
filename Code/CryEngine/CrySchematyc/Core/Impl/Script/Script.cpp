@@ -43,25 +43,34 @@ const char* CScript::SetFilePath(const char* szFilePath)
 {
 	if (szFilePath)
 	{
-		stack_string filePath = gEnv->pCryPak->GetGameFolder();
-		filePath.append("/");
-		filePath.append(szFilePath);
+		stack_string gameFolder = gEnv->pCryPak->GetGameFolder();
+		gameFolder.MakeLower();
+		stack_string filePath = szFilePath;
+		filePath.MakeLower();
 
-		switch (m_pRoot->GetType())
+		if (filePath.find(gameFolder.c_str()) != 0)
 		{
-		case EScriptElementType::Class:
+
+			filePath = gEnv->pCryPak->GetGameFolder();
+			filePath.append("/");
+			filePath.append(szFilePath);
+
+			switch (m_pRoot->GetType())
 			{
-				filePath.append(".schematyc_ent");
-				break;
+			case EScriptElementType::Class:
+				{
+					filePath.append(".schematyc_ent");
+					break;
+				}
+			default:
+				{
+					filePath.append(".schematyc_lib");
+					break;
+				}
 			}
-		default:
-			{
-				filePath.append(".schematyc_lib");
-				break;
-			}
+			filePath.MakeLower();
 		}
 
-		filePath.MakeLower();
 		m_filePath = filePath.c_str();
 	}
 

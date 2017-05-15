@@ -45,36 +45,62 @@ CAssetEditor* CLibraryAssetType::Edit(CAsset* pAsset) const
 	return CAssetEditor::OpenAssetForEdit("Schematyc Editor", pAsset);
 }
 
-bool CLibraryAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+bool CLibraryAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 {
-	if (bDeleteSourceFile)
+	if (pAsset)
 	{
-		ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
-		if (pSchematycCore)
+		Schematyc::IScript* pScript = GetScript(*pAsset);
+		if (pScript)
 		{
-			Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
-			const size_t fileCount = asset.GetFilesCount();
-			CRY_ASSERT_MESSAGE(fileCount == 1, "Asset '%s' has an unexpected amount of script files.", asset.GetName());
-			if (fileCount > 0)
+			stack_string prevName = pAsset->GetName();
+			if (CAssetType::RenameAsset(pAsset, szNewName))
 			{
-				const stack_string szFile = PathUtil::GetGameFolder() + "/" + string(asset.GetFile(0));
-				Schematyc::IScript* pScript = scriptRegistry.GetScriptByFileName(szFile);
-				if (pScript)
-				{
-					scriptRegistry.RemoveElement(pScript->GetRoot()->GetGUID());
-				}
+				stack_string filePath = pScript->GetFilePath();
+				filePath.replace(prevName.c_str(), szNewName);
+
+				gEnv->pSchematyc->GetScriptRegistry().OnScriptRenamed(*pScript, filePath);
+				return true;
 			}
-			return CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted);
 		}
-		return false;
 	}
 
-	return true;
+	return false;
 }
 
-CryIcon CLibraryAssetType::GetIcon() const
+bool CLibraryAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+{
+	if (CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted))
+	{
+		Schematyc::IScript* pScript = GetScript(asset);
+		if (pScript)
+		{
+			gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
+		}
+
+		return true;
+	}
+	return false;
+}
+
+CryIcon CLibraryAssetType::GetIconInternal() const
 {
 	return CryIcon();
 }
 
+Schematyc::IScript* CLibraryAssetType::GetScript(const CAsset& asset) const
+{
+	ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
+	if (pSchematycCore)
+	{
+		Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
+		const size_t fileCount = asset.GetFilesCount();
+		CRY_ASSERT_MESSAGE(fileCount == 1, "Asset '%s' has an unexpected amount of script files.", asset.GetName());
+		if (fileCount > 0)
+		{
+			const stack_string szFile = PathUtil::GetGameFolder() + "/" + string(asset.GetFile(0));
+			return scriptRegistry.GetScriptByFileName(szFile);
+		}
+	}
+	return nullptr;
+}
 }

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryCore/Containers/CryListenerSet.h>
 #include <CryCore/StlUtils.h>
 #include <CryEntitySystem/IEntityLayer.h>
 
@@ -95,14 +96,19 @@ public:
 	void                  Serialize(TSerialize ser, TLayerActivationOpVec& deferredOps);
 	virtual bool          IsSkippedBySpec() const override;
 
+	void                  AddListener(IEntityLayerListener* pListener)    { m_listeners.Add(pListener); }
+	void                  RemoveListener(IEntityLayerListener* pListener) { m_listeners.Remove(pListener); }
+
 private:
 
 	void EnableBrushes(bool isEnable);
 	void EnableEntities(bool isEnable);
 	void ReEvalNeedForHeap();
+	void NotifyActivationToListeners(bool bActivated);
 
 private:
 	typedef std::unordered_map<EntityId, EntityProp, stl::hash_uint32> TEntityProps;
+	typedef CListenerSet<IEntityLayerListener*> TListenerSet;
 
 	int                        m_specs;
 	string                     m_name;
@@ -116,6 +122,7 @@ private:
 	uint16                     m_id;
 	std::vector<CEntityLayer*> m_childs;
 	TEntityProps               m_entities;
+	TListenerSet               m_listeners;
 
 	TGarbageHeaps*             m_pGarbageHeaps;
 	IGeneralMemoryHeap*        m_pHeap;

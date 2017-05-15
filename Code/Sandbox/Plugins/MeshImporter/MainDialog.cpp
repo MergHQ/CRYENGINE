@@ -935,9 +935,41 @@ void CMainDialog::RenderStaticMesh(const SRenderContext& rc)
 	// Focus camera to current bounding box.
 	if (m_bCameraNeedsReset && !sceneBox.IsReset())
 	{
-		static const float radiusFactor = 2.0f;
-		rc.viewport->ResetCamera();
-		rc.viewport->LookAt(sceneBox.GetCenter(), radiusFactor * sceneBox.GetRadius(), true);
+		// Move the camera along a given ray for objects relative close to the world's origin to have a nice view.
+		// Put the camera on the ray passing through the world origin in the center of the object box for the remote object.
+		// Interpolate the direction of the ray for the object between these cases.
+		// Thus the world origin will be visible in the viewport that gives the user a visual hint of the object location.
+
+		Vec3 dir = Vec3(1.0f, -1.0f, 0.5f).normalized();
+		const Vec3 lookAtPoint = sceneBox.GetCenter();
+		const float lengthSquared = lookAtPoint.GetLengthSquared();
+		if (lengthSquared > 0 && sceneBox.GetRadius() > 0)
+		{
+			const float length = sqrt(lengthSquared);
+			const float r = length / sceneBox.GetRadius(); // a relative distance to the word origin.
+			const float r0 = 3.0f;
+			const float r1 = 10.0f;
+
+			if (r > r1)
+			{
+				dir = lookAtPoint / length;
+			}
+			else if (r > r0)
+			{
+				const Vec3 dir1 = lookAtPoint / length;
+				const float k = (r - r0) / (r1 - r0);
+				dir = Vec3::CreateSlerp(dir, dir1, k);
+			}
+		}
+
+		// Fit the object into viewport window.
+		const float fow = rc.camera->GetProjRatio() >= 1.0f ? rc.camera->GetFov() : rc.camera->GetFov() * rc.camera->GetProjRatio();
+		const float radiusFactor = tanf(fow * 0.5f);
+
+		SViewportState state = rc.viewport->GetState();
+		state.cameraTarget.t = lookAtPoint + dir * sceneBox.GetRadius() / radiusFactor;
+		rc.viewport->SetState(state);
+		rc.viewport->LookAt(sceneBox.GetCenter(), sceneBox.GetRadius(), true);
 		m_bCameraNeedsReset = false;
 	}
 }

@@ -3,8 +3,8 @@
 #include "stdafx.h"
 #include "AudioInternalInterfaces.h"
 
-using namespace CryAudio;
-
+namespace CryAudio
+{
 #define REQUEST_CASE_BLOCK(CLASS, ENUM, P_SOURCE, P_RESULT)                        \
   case ENUM:                                                                       \
     {                                                                              \
@@ -19,7 +19,7 @@ using namespace CryAudio;
 #define AL_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioListenerRequestData, ENUM, pRequestData, pResult)
 
 ////////////////////////////////////////////////////////////////////////////
-SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const pRequestData)
+SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestData)
 {
 	CRY_ASSERT(pRequestData != nullptr);
 	SAudioRequestData* pResult = nullptr;
@@ -156,3 +156,4 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 
 	return pResult;
 }
+} // namespace CryAudio

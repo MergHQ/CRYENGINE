@@ -108,6 +108,7 @@ class CSegmentedWorld;
 class CNetMessageDistpatcher;
 class CManualFrameStepController;
 class CEntityContainerMgr;
+class CEntityAttachmentExNodeRegistry;
 
 class CCryAction :
 	public IGameFramework
@@ -199,6 +200,7 @@ public:
 	virtual void                          FlushBreakableObjects();   // defined in ActionGame.cpp
 	void                                  ClearBreakHistory();
 
+	IGameToEditorInterface*               GetIGameToEditor() { return m_pGameToEditor; }
 	virtual void                          InitEditor(IGameToEditorInterface* pGameToEditor);
 	virtual void                          SetEditorLevel(const char* levelName, const char* levelFolder);
 	virtual void                          GetEditorLevel(char** levelName, char** levelFolder);
@@ -327,8 +329,8 @@ public:
 
 	CNetMessageDistpatcher*     GetNetMessageDispatcher()      { return m_pNetMsgDispatcher; }
 	CManualFrameStepController* GetManualFrameStepController() { return m_pManualFrameStepController; }
-
 	CEntityContainerMgr&         GetEntityContainerMgr()       { return *m_pEntityContainerMgr; }
+	CEntityAttachmentExNodeRegistry& GetEntityAttachmentExNodeRegistry() { return *m_pEntityAttachmentExNodeRegistry; }
 
 	//	INetQueryListener* GetLanQueryListener() {return m_pLanQueryListener;}
 	bool                          LoadingScreenEnabled() const;
@@ -497,6 +499,7 @@ private:
 	ITimer*                       m_pTimer;
 	ILog*                         m_pLog;
 	void*                         m_systemDll;
+	IGameToEditorInterface*       m_pGameToEditor;
 
 	_smart_ptr<CActionGame>       m_pGame;
 
@@ -673,20 +676,22 @@ private:
 	} m_connectRepeatedly;
 #endif
 
-	float                       m_lastSaveLoad;
-	float                       m_lastFrameTimeUI;
+	float  m_lastSaveLoad;
+	float  m_lastFrameTimeUI;
 
-	bool                        m_pbSvEnabled;
-	bool                        m_pbClEnabled;
-	uint32                      m_PreUpdateTicks;
+	bool   m_pbSvEnabled;
+	bool   m_pbClEnabled;
+	uint32 m_PreUpdateTicks;
 
-	CNetMessageDistpatcher*     m_pNetMsgDispatcher;
-	CManualFrameStepController* m_pManualFrameStepController;
-	SExternalGameLibrary        m_externalGameLibrary;
 
-	CEntityContainerMgr*        m_pEntityContainerMgr;
+	SExternalGameLibrary                   m_externalGameLibrary;
 
-	CTimeValue                  m_levelStartTime;
+	CNetMessageDistpatcher*                m_pNetMsgDispatcher;
+	CManualFrameStepController*            m_pManualFrameStepController;
+	CEntityContainerMgr*                   m_pEntityContainerMgr;
+	CEntityAttachmentExNodeRegistry*       m_pEntityAttachmentExNodeRegistry;
+
+	CTimeValue                             m_levelStartTime;
 
 	std::vector<INetworkedClientListener*> m_networkClientListeners;
 };

@@ -13,6 +13,7 @@
 #include <QApplication>
 #include <QHeaderView>
 #include <QPushButton>
+#include <ProxyModels/MountingProxyModel.h>
 
 namespace ACE
 {

@@ -4,7 +4,9 @@
 
 #include <NodeGraph/NodeGraphView.h>
 
-namespace CrySchematycEditor {
+namespace CrySchematycEditor
+{
+class CMainWindow;
 
 class CGraphViewWidget : public CryGraphEditor::CNodeGraphView
 {

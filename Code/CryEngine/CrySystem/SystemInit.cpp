@@ -17,6 +17,7 @@
 #include <CrySystem/IEngineModule.h>
 #include <CrySystem/ICryPlugin.h>
 #include <CryExtension/CryCreateClassInstance.h>
+#include <CryMono/IMonoRuntime.h>
 
 #if (CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !defined(DEDICATED_SERVER)
 	#include <dlfcn.h>
@@ -1749,6 +1750,15 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 	pCryPak->SetGameFolderWritable(m_bGameFolderWritable);
 	m_env.pCryPak = pCryPak;
 
+	// Check if root folder is overridden by command-line
+	const ICmdLineArg* root = m_pCmdLine->FindArg(eCLAT_Pre, "root");
+	if (root)
+	{
+		string temp = PathUtil::ToUnixPath(PathUtil::AddSlash(root->GetValue()));
+		if (pCryPak->MakeDir(temp.c_str()))
+			m_root = temp;
+	}
+
 	if (m_bEditor || bLvlRes)
 		m_env.pCryPak->RecordFileOpen(ICryPak::RFOM_EngineStartup);
 
@@ -2423,7 +2433,6 @@ bool CSystem::Init()
 	m_bEditor = m_startupParams.bEditor;
 	m_bPreviewMode = m_startupParams.bPreview;
 	m_bUIFrameworkMode = m_startupParams.bUIFramework;
-	m_bTestMode = m_startupParams.bTestMode;
 	m_pUserCallback = m_startupParams.pUserCallback;
 #if defined(CVARS_WHITELIST)
 	m_pCVarsWhitelist = m_startupParams.pCVarsWhitelist;
@@ -2619,14 +2628,6 @@ bool CSystem::Init()
 #if defined(ENABLE_LOADING_PROFILER)
 		CLoadingProfilerSystem::Init();
 #endif
-
-		const ICmdLineArg* root = m_pCmdLine->FindArg(eCLAT_Pre, "root");
-		if (root)
-		{
-			string temp = PathUtil::ToUnixPath(PathUtil::AddSlash(root->GetValue()));
-			if (gEnv->pCryPak->MakeDir(temp.c_str()))
-				m_root = temp;
-		}
 
 		//here we should be good to ask Crypak to do something
 

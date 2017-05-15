@@ -199,6 +199,7 @@ extern "C" IGameStartup* CreateGameStartup();
 #include "Network/NetMsgDispatcher.h"
 #include "ManualFrameStep.h"
 #include "EntityContainers/EntityContainerMgr.h"
+#include "FlowSystem/Nodes/FlowEntityCustomNodes.h"
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
@@ -290,6 +291,7 @@ CCryAction::CCryAction()
 	m_pTimer(0),
 	m_pLog(0),
 	m_systemDll(0),
+	m_pGameToEditor(nullptr),
 	m_pGame(0),
 	m_pLevelSystem(0),
 	m_pActorSystem(0),
@@ -367,9 +369,10 @@ CCryAction::CCryAction()
 	m_pPhysicsQueues(0),
 	m_PreUpdateTicks(0),
 	m_pGameVolumesManager(NULL),
-	m_pNetMsgDispatcher(0),
+	m_pNetMsgDispatcher(nullptr),
 	m_pManualFrameStepController(nullptr),
-	m_pEntityContainerMgr(nullptr)
+	m_pEntityContainerMgr(nullptr),
+	m_pEntityAttachmentExNodeRegistry(nullptr)
 {
 	CRY_ASSERT(!m_pThis);
 	m_pThis = this;
@@ -1760,6 +1763,10 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CryAction Init");
 
+	// set unit test flag at start so multiple systems could handle initialization differently when needed
+	if (strstr(startupParams.szSystemCmdLine, "-run_unit_tests"))
+		startupParams.bTesting = true;
+
 	m_pSystem = startupParams.pSystem;
 
 	startupParams.pGameFramework = this;
@@ -2000,12 +2007,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	BeginLanQuery();
 #endif
 
-	if (m_pVehicleSystem)
-		m_pVehicleSystem->RegisterVehicles(this);
-	if (m_pGameObjectSystem)
-		m_pGameObjectSystem->RegisterFactories(this);
-	CGameContext::RegisterExtensions(this);
-
 	// Player profile stuff
 	if (m_pPlayerProfileManager)
 	{
@@ -2050,6 +2051,7 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
 	m_pEntityContainerMgr = new CEntityContainerMgr();
+	m_pEntityAttachmentExNodeRegistry = new CEntityAttachmentExNodeRegistry();
 	m_pManualFrameStepController = new CManualFrameStepController();
 
 	if (gEnv->pRenderer)
@@ -2058,6 +2060,12 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	}
 
 	InitGame(startupParams);
+
+	if (m_pVehicleSystem)
+		m_pVehicleSystem->RegisterVehicles(this);
+	if (m_pGameObjectSystem)
+		m_pGameObjectSystem->RegisterFactories(this);
+	CGameContext::RegisterExtensions(this);
 
 	if (startupParams.bExecuteCommandLine)
 		GetISystem()->ExecuteCommandLine();
@@ -2437,13 +2445,15 @@ bool CCryAction::CompleteInit()
 	}
 
 #if defined(CRY_UNIT_TESTING)
-	if (m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "run_unit_tests"))
+	if (gEnv->bTesting)
 	{
 		//in local unit tests we pass in -unit_test_open_failed to notify the user, in automated tests we don't pass in.
 		CryUnitTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
 			CryUnitTest::EReporterType::ExcelWithNotification : CryUnitTest::EReporterType::Excel;
-		m_pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(reporterType);
-		gEnv->pConsole->ExecuteString("quit");
+		ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
+		CRY_ASSERT(pTestSystem != nullptr);
+		pTestSystem->GetIUnitTestManager()->RunAllTests(reporterType);
+		pTestSystem->QuitInNSeconds(1.f);
 	}
 #endif
 
@@ -2641,6 +2651,7 @@ void CCryAction::ShutdownEngine()
 	SAFE_DELETE(m_pManualFrameStepController);
 	SAFE_DELETE(m_pNetMsgDispatcher);
 	SAFE_DELETE(m_pEntityContainerMgr);
+	SAFE_DELETE(m_pEntityAttachmentExNodeRegistry);
 
 	ReleaseExtensions();
 
@@ -3398,6 +3409,8 @@ void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	m_isEditing = true;
+
+	m_pGameToEditor = pGameToEditor;
 
 	uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
 	if (commConfigCount)

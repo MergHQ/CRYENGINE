@@ -2136,7 +2136,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 	m_sFirstFilterClass.Empty();
 	SetStrings filterClasses;
 
-	CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
+	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
 	int selCount = pSelection->GetCount();
 
 	// Block UI updates
@@ -2933,7 +2933,7 @@ void CSmartObjectsEditorDialog::OnHelpersNew()
 //////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnHelpersDelete()
 {
-	CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
+	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
 	int selCount = pSelection->GetCount();
 
 	if (!m_sEditedClass.IsEmpty() && selCount == 1 && pSelection->GetObject(0)->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))

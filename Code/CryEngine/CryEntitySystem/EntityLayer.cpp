@@ -15,6 +15,7 @@ CEntityLayer::CEntityLayer(const char* name, uint16 id, bool havePhysics, int sp
 	, m_havePhysics(havePhysics)
 	, m_specs(specs)
 	, m_defaultLoaded(defaultLoaded)
+	, m_listeners(4)
 	, m_pGarbageHeaps(&garbageHeaps)
 	, m_pHeap(NULL)
 {
@@ -209,6 +210,8 @@ void CEntityLayer::EnableEntities(bool isEnable)
 			if (!pEntity)
 				continue;
 
+			pEntity->SetInHiddenLayer(!isEnable);
+
 			// when is serializing (reading, as we never call this on writing), we dont want to change those values. we just use the values that come directly from serialization.
 			if (!isEnable && !gEnv->pSystem->IsSerializingFile())
 			{
@@ -286,6 +289,8 @@ void CEntityLayer::EnableEntities(bool isEnable)
 			}
 		}
 		m_wasReEnabled = isEnable;
+
+		NotifyActivationToListeners(isEnable);
 	}
 
 	ReEvalNeedForHeap();
@@ -299,6 +304,15 @@ void CEntityLayer::ReEvalNeedForHeap()
 		m_pHeap = NULL;
 	}
 }
+
+void CEntityLayer::NotifyActivationToListeners(bool bActivated)
+{
+	for (TListenerSet::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
+	{
+		notifier->LayerEnabled(bActivated);
+	}
+}
+
 
 void CEntityLayer::GetMemoryUsage(ICrySizer* pSizer, int* pOutNumEntities)
 {

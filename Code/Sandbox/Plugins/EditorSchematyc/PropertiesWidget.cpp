@@ -193,6 +193,8 @@ void CPropertiesWidget::OnPushUndo()
 	{
 		m_isPushingUndo = true;
 		CScriptUndoObject* pUndoObject = new CScriptUndoObject("Properties modified.", *m_pEditor);
+		CUndo undo(pUndoObject->GetDescription());
+		CUndo::Record(pUndoObject);
 		m_isPushingUndo = false;
 	}
 }

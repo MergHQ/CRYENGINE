@@ -6,6 +6,7 @@
 #include "AreaManager.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryEntitySystem/IEntityComponent.h>
+#include <CryAISystem/IAISystem.h>
 
 ICVar* CVar::pDebug = NULL;
 ICVar* CVar::pCharacterIK = NULL;
@@ -310,6 +311,8 @@ void CVar::Init()
 	REGISTER_COMMAND("es_debugAnim", (ConsoleCommandFunc)EnableDebugAnimText, 0, "Debug entity animation (toggle on off)");
 	gEnv->pConsole->RegisterAutoComplete("es_debugAnim", &s_entityWithCharacterInstanceAutoComplete);
 
+	REGISTER_COMMAND("es_togglelayer", &ConsoleCommandToggleLayer, VF_DEV_ONLY, "Toggles a layer (on/off)\n Usage: es_togglelayer LAYER_NAME\nPlease bear in mind that layer names are case-sensitive");
+
 	REGISTER_CVAR(es_EntityUpdatePosDelta, 0.1f, 0,
 	              "Indicates the position delta by which an entity must move before the AreaManager updates position relevant data.\n"
 	              "Default: 0.1 (10 cm)");
@@ -462,4 +465,24 @@ void CVar::SetAudioListenerOffsets(IConsoleCmdArgs* pArgs)
 	  Vec3(ZERO),
 	  Quat::CreateRotationXYZ(Ang3(fRotationOffsetX, fRotationOffsetY, fRotationOffsetZ)),
 	  Vec3(fPositionOffsetX, fPositionOffsetY, fPositionOffsetZ));
+}
+
+void CVar::ConsoleCommandToggleLayer(IConsoleCmdArgs* pArgs)
+{
+	// Note: based on Flow Node Engine:LayerSwitch
+	if (pArgs && pArgs->GetArgCount() > 1 && gEnv->pEntitySystem)
+	{
+		const char* szLayerName = pArgs->GetArg(1);
+		const bool bSerialize = false;
+		const bool bShouldBeEnabled = !gEnv->pEntitySystem->IsLayerEnabled(szLayerName, false);
+		
+		CryLogAlways("[Info][Layers] Toggling EntitySystemLayer %s to: %s", szLayerName, bShouldBeEnabled ? "Enabled" : "Disabled");
+		gEnv->pEntitySystem->EnableLayer(szLayerName, bShouldBeEnabled, bSerialize);
+		
+		if (bShouldBeEnabled && gEnv->pAISystem)
+		{
+			CryLogAlways("[Info][Layers] Toggling AISystemLayer %s to: %s", szLayerName, bShouldBeEnabled ? "Enabled" : "Disabled");
+			gEnv->pAISystem->LayerEnabled(szLayerName, bShouldBeEnabled, bSerialize);
+		}
+	}
 }

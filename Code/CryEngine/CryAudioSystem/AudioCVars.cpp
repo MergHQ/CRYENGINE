@@ -5,10 +5,10 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
-using namespace CryAudio;
-
+namespace CryAudio
+{
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::RegisterVariables()
+void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
@@ -214,7 +214,7 @@ void CAudioCVars::RegisterVariables()
 
 	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", DoNothingTriggerName, 0,
 	                "The name of the ATL AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
-	                "an override audioTriggerId that should be used instead.\n"
+	                "an override triggerId that should be used instead.\n"
 	                "Usage: s_DefaultStandaloneFilesAudioTrigger audio_trigger_name.\n"
 	                "If you change this CVar to be empty, the control will not be created automatically.\n"
 	                "Default: \"do_nothing\" \n");
@@ -291,7 +291,7 @@ void CAudioCVars::RegisterVariables()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::UnregisterVariables()
+void CCVars::UnregisterVariables()
 {
 	IConsole* const pConsole = gEnv->pConsole;
 
@@ -332,23 +332,23 @@ void CAudioCVars::UnregisterVariables()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
-	ControlId audioTriggerId = InvalidControlId;
+	ControlId triggerId = InvalidControlId;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
-		gEnv->pAudioSystem->GetAudioTriggerId(pCmdArgs->GetArg(1), audioTriggerId);
+		gEnv->pAudioSystem->GetTriggerId(pCmdArgs->GetArg(1), triggerId);
 
-		if (audioTriggerId == InvalidControlId)
+		if (triggerId == InvalidControlId)
 		{
 			g_logger.Log(ELogType::Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
-			gEnv->pAudioSystem->ExecuteTrigger(audioTriggerId);
+			gEnv->pAudioSystem->ExecuteTrigger(triggerId);
 		}
 	}
 	else
@@ -358,23 +358,23 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 {
-	ControlId audioTriggerId = InvalidControlId;
+	ControlId triggerId = InvalidControlId;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
-		gEnv->pAudioSystem->GetAudioTriggerId(pCmdArgs->GetArg(1), audioTriggerId);
+		gEnv->pAudioSystem->GetTriggerId(pCmdArgs->GetArg(1), triggerId);
 
-		if (audioTriggerId == InvalidControlId)
+		if (triggerId == InvalidControlId)
 		{
 			g_logger.Log(ELogType::Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
-			gEnv->pAudioSystem->StopTrigger(audioTriggerId);
+			gEnv->pAudioSystem->StopTrigger(triggerId);
 		}
 	}
 	else
@@ -384,7 +384,7 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 {
 	ControlId parameterId = InvalidControlId;
 
@@ -392,7 +392,7 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 
 	if ((numArgs == 3) || (numArgs == 4))
 	{
-		gEnv->pAudioSystem->GetAudioParameterId(pCmdArgs->GetArg(1), parameterId);
+		gEnv->pAudioSystem->GetParameterId(pCmdArgs->GetArg(1), parameterId);
 
 		double const value = atof(pCmdArgs->GetArg(2));
 
@@ -412,24 +412,24 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 {
-	ControlId audioSwitchId = InvalidControlId;
-	SwitchStateId audioSwitchStateId = InvalidSwitchStateId;
+	ControlId switchId = InvalidControlId;
+	SwitchStateId switchStateId = InvalidSwitchStateId;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 3) || (numArgs == 4))
 	{
-		gEnv->pAudioSystem->GetAudioSwitchId(pCmdArgs->GetArg(1), audioSwitchId);
+		gEnv->pAudioSystem->GetSwitchId(pCmdArgs->GetArg(1), switchId);
 
-		if (audioSwitchId != InvalidControlId)
+		if (switchId != InvalidControlId)
 		{
-			gEnv->pAudioSystem->GetAudioSwitchStateId(audioSwitchId, pCmdArgs->GetArg(2), audioSwitchStateId);
+			gEnv->pAudioSystem->GetSwitchStateId(switchId, pCmdArgs->GetArg(2), switchStateId);
 
-			if (audioSwitchStateId != InvalidSwitchStateId)
+			if (switchStateId != InvalidSwitchStateId)
 			{
-				gEnv->pAudioSystem->SetSwitchState(audioSwitchId, audioSwitchStateId);
+				gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
 			}
 			else
 			{
@@ -446,3 +446,4 @@ void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 		g_logger.Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
 	}
 }
+} // namespace CryAudio

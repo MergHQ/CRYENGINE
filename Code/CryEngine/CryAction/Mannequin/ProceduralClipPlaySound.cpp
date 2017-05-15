@@ -11,8 +11,6 @@
 #include <CryExtension/ClassWeaver.h>
 #include <CrySerialization/Decorators/ResourcesAudio.h>
 
-using namespace CryAudio;
-
 /*
    TEMPORARY_SOUND_FLAGS wraps soundFlags which are used to specify either
    an audio should be triggered on the local player or not.
@@ -34,9 +32,8 @@ class CAudioContext : public IProceduralContext
 {
 private:
 	CAudioContext();
-	virtual ~CAudioContext() {}
 
-	typedef IProceduralContext BaseClass;
+	using BaseClass = IProceduralContext;
 
 public:
 
@@ -53,7 +50,7 @@ public:
 	{
 	}
 
-	void ExecuteAudioTrigger(ControlId const audioTriggerId, EOcclusionType const occlusionType, bool playFacial)
+	void ExecuteAudioTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::EOcclusionType const occlusionType, bool playFacial)
 	{
 		if (m_pIEntityAudioComponent != nullptr)
 		{
@@ -63,7 +60,7 @@ public:
 		}
 	}
 
-	void StopAudioTrigger(ControlId const audioTriggerId)
+	void StopAudioTrigger(CryAudio::ControlId const audioTriggerId)
 	{
 		if (m_pIEntityAudioComponent != nullptr)
 		{
@@ -79,7 +76,7 @@ public:
 		}
 	}
 
-	void SetAudioParameter(ControlId const audioParameterId, float const value)
+	void SetAudioParameter(CryAudio::ControlId const audioParameterId, float const value)
 	{
 		if (m_pIEntityAudioComponent != nullptr)
 		{
@@ -109,7 +106,7 @@ typedef enum
 struct SAudioParams : public IProceduralParams
 {
 	SAudioParams()
-		: audioOcclusionType(EOcclusionType::Ignore)
+		: audioOcclusionType(CryAudio::EOcclusionType::Ignore)
 		, radius(0.0f)
 		, audioParameterValue(0.0f)
 		, synchStop(false)
@@ -147,17 +144,17 @@ struct SAudioParams : public IProceduralParams
 		extraInfoOut = startTrigger.c_str();
 	}
 
-	TProcClipString startTrigger;
-	TProcClipString stopTrigger;
-	TProcClipString audioParameter;
-	EOcclusionType  audioOcclusionType;
-	SProcDataCRC    attachmentJoint;
-	float           radius;
-	float           audioParameterValue;
-	bool            synchStop;
-	bool            forceStopOnExit;
-	bool            isVoice;
-	bool            playFacial;
+	TProcClipString          startTrigger;
+	TProcClipString          stopTrigger;
+	TProcClipString          audioParameter;
+	CryAudio::EOcclusionType audioOcclusionType;
+	SProcDataCRC             attachmentJoint;
+	float                    radius;
+	float                    audioParameterValue;
+	bool                     synchStop;
+	bool                     forceStopOnExit;
+	bool                     isVoice;
+	bool                     playFacial;
 
 #if defined(TEMPORARY_SOUND_FLAGS)
 	uint32 soundFlags;
@@ -169,10 +166,10 @@ class CProceduralClipAudio : public TProceduralContextualClip<CAudioContext, SAu
 public:
 	CProceduralClipAudio()
 		: m_referenceJointID(0)
-		, m_audioTriggerStartId(InvalidControlId)
-		, m_audioTriggerStopId(InvalidControlId)
-		, m_audioParameterId(InvalidControlId)
-		, m_audioOcclusionType(EOcclusionType::None)
+		, m_audioTriggerStartId(CryAudio::InvalidControlId)
+		, m_audioTriggerStopId(CryAudio::InvalidControlId)
+		, m_audioParameterId(CryAudio::InvalidControlId)
+		, m_audioOcclusionType(CryAudio::EOcclusionType::None)
 		, m_audioParameterValue(0.0f)
 	{
 	}
@@ -188,10 +185,10 @@ private:
 		float  paramValue;
 	};
 
-	typedef std::vector<SAudioParamInfo> TAudioParamVec;
+	using TAudioParamVec = std::vector<SAudioParamInfo>;
 
 public:
-	virtual void OnEnter(float blendTime, float duration, const SAudioParams& params)
+	virtual void OnEnter(float blendTime, float duration, const SAudioParams& params) override
 	{
 #if defined(TEMPORARY_SOUND_FLAGS)
 		if (params.soundFlags)
@@ -237,9 +234,9 @@ public:
 		{
 			if (!params.audioParameter.empty())
 			{
-				gEnv->pAudioSystem->GetAudioParameterId(params.audioParameter.c_str(), m_audioParameterId);
+				gEnv->pAudioSystem->GetParameterId(params.audioParameter.c_str(), m_audioParameterId);
 
-				if (m_audioParameterId != InvalidControlId)
+				if (m_audioParameterId != CryAudio::InvalidControlId)
 				{
 					m_audioParameterValue = params.audioParameterValue;
 					m_context->SetAudioParameter(m_audioParameterId, m_audioParameterValue);
@@ -248,9 +245,9 @@ public:
 
 			if (!params.startTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetAudioTriggerId(params.startTrigger.c_str(), m_audioTriggerStartId);
+				gEnv->pAudioSystem->GetTriggerId(params.startTrigger.c_str(), m_audioTriggerStartId);
 
-				if (m_audioTriggerStartId != InvalidControlId)
+				if (m_audioTriggerStartId != CryAudio::InvalidControlId)
 				{
 					m_audioOcclusionType = params.audioOcclusionType;
 					m_context->ExecuteAudioTrigger(m_audioTriggerStartId, m_audioOcclusionType, playFacial);
@@ -259,28 +256,28 @@ public:
 
 			if (!params.stopTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetAudioTriggerId(params.stopTrigger.c_str(), m_audioTriggerStopId);
+				gEnv->pAudioSystem->GetTriggerId(params.stopTrigger.c_str(), m_audioTriggerStopId);
 			}
 		}
 	}
 
-	virtual void OnExit(float blendTime)
+	virtual void OnExit(float blendTime) override
 	{
-		if (m_audioTriggerStopId != InvalidControlId)
+		if (m_audioTriggerStopId != CryAudio::InvalidControlId)
 		{
 			m_context->ExecuteAudioTrigger(m_audioTriggerStopId, m_audioOcclusionType, false);
 		}
-		else if (m_audioTriggerStartId != InvalidControlId)
+		else if (m_audioTriggerStartId != CryAudio::InvalidControlId)
 		{
 			m_context->StopAudioTrigger(m_audioTriggerStartId);
 		}
 
-		m_audioTriggerStartId = InvalidControlId;
-		m_audioTriggerStopId = InvalidControlId;
-		m_audioParameterId = InvalidControlId;
+		m_audioTriggerStartId = CryAudio::InvalidControlId;
+		m_audioTriggerStopId = CryAudio::InvalidControlId;
+		m_audioParameterId = CryAudio::InvalidControlId;
 	}
 
-	virtual void Update(float timePassed)
+	virtual void Update(float timePassed) override
 	{
 		UpdateSoundParams();
 		UpdateSoundPosition();
@@ -325,17 +322,17 @@ private:
 		return QuatT(ZERO, IDENTITY);
 	}
 
-	TAudioParamVec m_audioParams;
+	TAudioParamVec           m_audioParams;
 
-	int            m_referenceJointID;
+	int                      m_referenceJointID;
 
-	ControlId      m_audioTriggerStartId;
-	ControlId      m_audioTriggerStopId;
-	ControlId      m_audioParameterId;
-	EOcclusionType m_audioOcclusionType;
-	float          m_audioParameterValue;
+	CryAudio::ControlId      m_audioTriggerStartId;
+	CryAudio::ControlId      m_audioTriggerStopId;
+	CryAudio::ControlId      m_audioParameterId;
+	CryAudio::EOcclusionType m_audioOcclusionType;
+	float                    m_audioParameterValue;
 };
 
-typedef CProceduralClipAudio CProceduralClipPlaySound;
+using CProceduralClipPlaySound = CProceduralClipAudio;
 REGISTER_PROCEDURAL_CLIP(CProceduralClipPlaySound, "PlaySound");
 REGISTER_PROCEDURAL_CLIP(CProceduralClipAudio, "Audio");

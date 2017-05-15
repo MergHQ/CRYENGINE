@@ -165,8 +165,6 @@ void CScriptGraphReceiveSignalNode::Save(Serialization::IArchive& archive, const
 
 void CScriptGraphReceiveSignalNode::Edit(Serialization::IArchive& archive, const ISerializationContext& context)
 {
-	archive(Serialization::ActionButton(functor(*this, &CScriptGraphReceiveSignalNode::GoToSignal)), "goToSignal", "^Go To Signal");
-
 	Validate(archive, context);
 }
 
@@ -313,7 +311,7 @@ void CScriptGraphReceiveSignalNode::Register(CScriptGraphNodeFactory& factory)
 						case EEnvElementType::Component:
 							{
 								const SGUID componentTypeGUID = pEnvScope->GetGUID();
-								for(const SComponent& component : components)
+								for (const SComponent& component : components)
 								{
 									if (component.typeGUID == componentTypeGUID)
 									{

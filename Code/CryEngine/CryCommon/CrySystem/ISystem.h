@@ -617,7 +617,6 @@ struct SSystemInitParams
 	bool                 bEditor;             //!< When running in Editor mode.
 	bool                 bManualEngineLoop;   //!< Whether or not the engine should manage the engine loop by itself
 	bool                 bPreview;            //!< When running in Preview mode (Minimal initialization).
-	bool                 bTestMode;           //!< When running in Automated testing mode.
 	bool                 bDedicatedServer;    //!< When running a dedicated server.
 	bool                 bExecuteCommandLine; //!< can be switched of to suppress the feature or do it later during the initialization.
 	bool                 bUIFramework;
@@ -629,7 +628,7 @@ struct SSystemInitParams
 	bool                 bSkipWebsocketServer; //!< Don't create the WebSocket server.
 	bool                 bMinimal;             //!< Don't load banks.
 	bool                 bSkipInput;           //!< do not load CryInput.
-	bool                 bTesting;             //!< CryUnit.
+	bool                 bTesting;             //!< When running CryUnitTest.
 	bool                 bNoRandom;            //!< use fixed generator init/seed.
 	bool                 bShaderCacheGen;      //!< When running in shadercache gen mode.
 	bool                 bUnattendedMode;      //!< When running as part of a build on build-machines: Prevent popping up of any dialog.
@@ -672,7 +671,6 @@ struct SSystemInitParams
 		bEditor = false;
 		bManualEngineLoop = false;
 		bPreview = false;
-		bTestMode = false;
 		bDedicatedServer = false;
 		bExecuteCommandLine = true;
 		bUIFramework = false;
@@ -1331,9 +1329,6 @@ struct ISystem
 	//! Gets the active process.
 	//! \return Pointer to the current active process.
 	virtual IProcess* GetIProcess() = 0;
-
-	//! \return true if system running in Test mode.
-	virtual bool IsTestMode() const = 0;
 
 	//! Frame profiler functions.
 	virtual void SetFrameProfiler(bool on, bool display, char* prefix) = 0;

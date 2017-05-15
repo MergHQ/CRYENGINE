@@ -159,7 +159,7 @@ int RunGame(const char* commandLine)
 	bool oaRun = false;
 
 	if (strstr(commandLine, "-norandom"))
-		startupParams.bNoRandom = 1;
+		startupParams.bNoRandom = true;
 
 	// main game loop
 	if (!pFramework->StartEngine(startupParams))

@@ -14,6 +14,7 @@
 #include <Schematyc/Env/IEnvRegistry.h>
 #include <Schematyc/Env/IEnvElement.h>
 #include <Schematyc/Env/Elements/IEnvComponent.h>
+#include "ComponentsDictionaryModel.h"
 
 namespace CrySchematycEditor {
 

@@ -518,7 +518,7 @@ CTimeOfDay::CTimeOfDay()
 
 	m_pCurrentPreset = NULL;
 
-	gEnv->pAudioSystem->GetAudioParameterId("time_of_day", m_timeOfDayRtpcId);
+	gEnv->pAudioSystem->GetParameterId("time_of_day", m_timeOfDayRtpcId);
 }
 
 //////////////////////////////////////////////////////////////////////////

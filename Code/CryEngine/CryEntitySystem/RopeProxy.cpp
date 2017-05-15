@@ -24,7 +24,7 @@ CEntityComponentRope::~CEntityComponentRope()
 	if (m_pRopeRenderNode)
 	{
 		gEnv->p3DEngine->DeleteRenderNode(m_pRopeRenderNode);
-		m_pRopeRenderNode = 0;
+		m_pRopeRenderNode = nullptr;
 	}
 }
 
@@ -294,21 +294,21 @@ void CEntityComponentRope::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 				char const* szTemp = nullptr;
 				xmlNodeAudio->getAttr("StartTrigger", &szTemp);
 
-				if (gEnv->pAudioSystem->GetAudioTriggerId(szTemp, tempControlId))
+				if (gEnv->pAudioSystem->GetTriggerId(szTemp, tempControlId))
 				{
 					audioParams.startTrigger = tempControlId;
 				}
 
 				xmlNodeAudio->getAttr("StopTrigger", &szTemp);
 
-				if (gEnv->pAudioSystem->GetAudioTriggerId(szTemp, tempControlId))
+				if (gEnv->pAudioSystem->GetTriggerId(szTemp, tempControlId))
 				{
 					audioParams.stopTrigger = tempControlId;
 				}
 
 				xmlNodeAudio->getAttr("AngleParameter", &szTemp);
 
-				if (gEnv->pAudioSystem->GetAudioParameterId(szTemp, tempControlId))
+				if (gEnv->pAudioSystem->GetParameterId(szTemp, tempControlId))
 				{
 					audioParams.angleParameter = tempControlId;
 				}

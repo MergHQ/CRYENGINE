@@ -2081,6 +2081,53 @@ void CEntitySystem::RemoveEntityEventListener(EntityId nEntity, EEntityEvent eve
 }
 
 //////////////////////////////////////////////////////////////////////////
+IEntityLayer* CEntitySystem::FindLayer(const char* szLayerName, const bool bCaseSensitive) const
+{
+	CEntityLayer* pResult = nullptr;
+	if (szLayerName)
+	{
+		if (bCaseSensitive)
+		{
+			TLayers::const_iterator it = m_layers.find(CONST_TEMP_STRING(szLayerName));
+			if (it != m_layers.end())
+			{
+				pResult = it->second;
+			}
+		}
+		else
+		{
+			for (const TLayers::value_type& layerPair : m_layers)
+			{
+				if (0 == stricmp(layerPair.first.c_str(), szLayerName))
+				{
+					pResult = layerPair.second;
+					break;
+				}
+			}
+		}
+	}
+	return pResult;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::AddEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive)
+{
+	if (CEntityLayer* pLayer = static_cast<CEntityLayer*>(FindLayer(szLayerName, bCaseSensitive)))
+	{
+		pLayer->AddListener(pListener);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::RemoveEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive)
+{
+	if (CEntityLayer* pLayer = static_cast<CEntityLayer*>(FindLayer(szLayerName, bCaseSensitive)))
+	{
+		pLayer->RemoveListener(pListener);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 {
 	char szProfInfo[256];
@@ -3007,18 +3054,6 @@ void CEntitySystem::LoadLayers(const char* dataFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEntityLayer* CEntitySystem::FindLayer(const char* szLayer) const
-{
-	if (szLayer)
-	{
-		TLayers::const_iterator found = m_layers.find(CONST_TEMP_STRING(szLayer));
-		if (found != m_layers.end())
-			return found->second;
-	}
-	return NULL;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntitySystem::AddEntityToLayer(const char* layer, EntityId id)
 {
 	IEntityLayer* pLayer = FindLayer(layer);
@@ -3058,7 +3093,7 @@ void CEntitySystem::EnableDefaultLayers(bool isSerialized)
 		EnableLayer(it->first, pLayer->IsDefaultLoaded(), isSerialized);
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CEntitySystem::EnableLayer(const char* layer, bool isEnable, bool isSerialized)
 {
 	if (!gEnv->p3DEngine->IsAreaActivationInUse())
@@ -3066,45 +3101,78 @@ void CEntitySystem::EnableLayer(const char* layer, bool isEnable, bool isSeriali
 	IEntityLayer* pLayer = FindLayer(layer);
 	if (pLayer)
 	{
-		bool bEnableChange = pLayer->IsEnabledBrush() != isEnable;
+		EnableLayer(pLayer, isEnable, isSerialized, true);
+	}
+}
+
+void CEntitySystem::EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren)
+{
+	const bool bEnableChange = pLayer->IsEnabledBrush() != bIsEnable;
 
 #if ENABLE_STATOSCOPE
-		if (gEnv->pStatoscope && (pLayer->IsEnabled() != isEnable))
-		{
-			string userMarker = "LayerSwitching: ";
-			userMarker += isEnable ? "Enable " : "Disable ";
-			userMarker += layer;
-			gEnv->pStatoscope->AddUserMarker("LayerSwitching", userMarker.c_str());
-		}
+	if (gEnv->pStatoscope && (pLayer->IsEnabled() != bIsEnable))
+	{
+		stack_string userMarker = "LayerSwitching: ";
+		userMarker += bIsEnable ? "Enable " : "Disable ";
+		userMarker += pLayer->GetName();
+		gEnv->pStatoscope->AddUserMarker("LayerSwitching", userMarker.c_str());
+	}
 #endif
 
-		pLayer->Enable(isEnable, isSerialized);
+	pLayer->Enable(bIsEnable, bIsSerialized, bAffectsChildren);
 
-		IResourceManager* pResMan = gEnv->pSystem->GetIResourceManager();
-		if (bEnableChange && pResMan)
+	IResourceManager* pResMan = gEnv->pSystem->GetIResourceManager();
+	if (bEnableChange && pResMan)
+	{
+		if (bIsEnable)
 		{
-			if (isEnable)
-			{
-				if (strlen(pLayer->GetParentName()) > 0)
-					pResMan->LoadLayerPak(pLayer->GetParentName());
-				else
-					pResMan->LoadLayerPak(pLayer->GetName());
-			}
+			if (strlen(pLayer->GetParentName()) > 0)
+				pResMan->LoadLayerPak(pLayer->GetParentName());
 			else
-			{
-				if (strlen(pLayer->GetParentName()) > 0)
-					pResMan->UnloadLayerPak(pLayer->GetParentName());
-				else
-					pResMan->UnloadLayerPak(pLayer->GetName());
-			}
+				pResMan->LoadLayerPak(pLayer->GetName());
+		}
+		else
+		{
+			if (strlen(pLayer->GetParentName()) > 0)
+				pResMan->UnloadLayerPak(pLayer->GetParentName());
+			else
+				pResMan->UnloadLayerPak(pLayer->GetName());
+		}
+	}
+}
+
+void CEntitySystem::EnableLayerSet(const char* const * pLayers, size_t layerCount, bool bIsSerialized, IEntityLayerSetUpdateListener* pListener)
+{
+	if(!gEnv->p3DEngine->IsAreaActivationInUse())
+		return;
+
+	const char* const * pVisibleLayersBegin = pLayers;
+	const char* const * pVisibleLayersEnd   = pLayers + layerCount;
+	for (TLayers::iterator it = m_layers.begin(), itEnd = m_layers.end(); it != itEnd; ++it)
+	{
+		const string& searchedString = it->first;
+		const bool bEnabled = std::find_if(pVisibleLayersBegin, pVisibleLayersEnd, [&searchedString](const char* szLayerName)
+		{
+			return searchedString == szLayerName;
+		} ) != pVisibleLayersEnd;
+
+		CEntityLayer* pLayer = it->second;
+		if (bEnabled != pLayer->IsEnabled())
+		{
+			EnableLayer(pLayer, bEnabled, bIsSerialized, false);
+		}
+
+		if (pListener)
+		{
+			pListener->LayerEnablingEvent(searchedString.c_str(), bEnabled, bIsSerialized);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntitySystem::IsLayerEnabled(const char* layer, bool bMustBeLoaded) const
+bool CEntitySystem::IsLayerEnabled(const char* layer, bool bMustBeLoaded, bool bCaseSensitive) const
 {
-	const IEntityLayer* pLayer = FindLayer(layer);
+	const IEntityLayer* pLayer = FindLayer(layer, bCaseSensitive);
 	if (pLayer)
 	{
 		if (pLayer->IsEnabled())

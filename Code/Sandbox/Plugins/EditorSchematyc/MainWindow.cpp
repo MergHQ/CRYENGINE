@@ -174,13 +174,23 @@ bool CMainWindow::SaveUndo(XmlNodeRef& output) const
 
 bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 {
+	CryGUID seletedItem;
 	if (m_pScriptBrowser)
 	{
+		seletedItem = m_pScriptBrowser->GetSelectedItemGUID();
 		m_pScriptBrowser->SetModel(nullptr);
 	}
 
+	QPoint graphPos;
+	CryGraphEditor::GraphItemIds selectedItemIds;
 	if (m_pGraphView)
 	{
+		graphPos = m_pGraphView->GetPosition();
+		for (CryGraphEditor::CAbstractNodeGraphViewModelItem* pItem : m_pGraphView->GetSelectedItems())
+		{
+			if (CNodeItem* pNodeItem = pItem->Cast<CNodeItem>())
+				selectedItemIds.emplace_back(pNodeItem->GetId());
+		}
 		m_pGraphView->SetModel(nullptr);
 	}
 
@@ -189,6 +199,14 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 	if (m_pScriptBrowser)
 	{
 		m_pScriptBrowser->SetModel(m_pModel);
+		if (seletedItem != CryGUID::Null())
+			m_pScriptBrowser->SelectItem(seletedItem);
+	}
+
+	if (m_pGraphView)
+	{
+		m_pGraphView->SetPosition(graphPos);
+		m_pGraphView->SelectItems(selectedItemIds);
 	}
 
 	return true;
@@ -236,12 +254,16 @@ bool CMainWindow::OnOpenAsset(CAsset* pAsset)
 
 bool CMainWindow::OnSaveAsset(CEditableAsset& editAsset)
 {
-	ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
-	Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
+	if (m_pScript)
+	{
+		ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
+		Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
 
-	scriptRegistry.SaveScript(*m_pScript);
+		scriptRegistry.SaveScript(*m_pScript);
+		return true;
+	}
 
-	return (m_pScript != nullptr);
+	return false;
 }
 
 bool CMainWindow::OnCloseAsset()
@@ -302,7 +324,7 @@ void CMainWindow::closeEvent(QCloseEvent* pEvent)
 
 void CMainWindow::RegisterWidgets()
 {
-	CDockableContainer* const pDockingRegistry = EnableDockingSystem();
+	EnableDockingSystem();
 
 	// Scripts
 	auto createScriptBrowserWidget = [this]()
@@ -314,7 +336,7 @@ void CMainWindow::RegisterWidgets()
 		}
 		return pWidget;
 	};
-	pDockingRegistry->Register("Script Browser", createScriptBrowserWidget, true, false);
+	RegisterWidget("Script Browser", createScriptBrowserWidget, true, false);
 
 	// Graph View
 	auto createGraphViewWidget = [this]()
@@ -326,7 +348,7 @@ void CMainWindow::RegisterWidgets()
 		}
 		return pWidget;
 	};
-	pDockingRegistry->Register("Graph View", createGraphViewWidget, true, false);
+	RegisterWidget("Graph View", createGraphViewWidget, true, false);
 
 	// Preview
 	{
@@ -339,7 +361,7 @@ void CMainWindow::RegisterWidgets()
 			}
 			return pWidget;
 		};
-		pDockingRegistry->Register("Preview", createPreviewWidget, true, false);
+		RegisterWidget("Preview", createPreviewWidget, true, false);
 	}
 
 	// Log
@@ -353,7 +375,7 @@ void CMainWindow::RegisterWidgets()
 			}
 			return pWidget;
 		};
-		pDockingRegistry->Register("Log", createLogWidget, true, false);
+		RegisterWidget("Log", createLogWidget, true, false);
 	}
 
 	// Inspector
@@ -364,7 +386,7 @@ void CMainWindow::RegisterWidgets()
 			pWidget->setWindowTitle("Properties");
 		return pWidget;
 	};
-	pDockingRegistry->Register("Properties", createInspectorWidget, true, false);
+	RegisterWidget("Properties", createInspectorWidget, true, false);
 }
 
 void CMainWindow::InitMenu()
@@ -434,10 +456,9 @@ bool CMainWindow::OnRedo()
 
 bool CMainWindow::OnCopy()
 {
-	QWidget* pFocusWidget = focusWidget();
-	if (m_pGraphView && pFocusWidget == m_pGraphView)
+	if (m_pGraphView && m_pGraphView->OnCopyEvent())
 	{
-		m_pGraphView->OnCopyEvent();
+		return true;
 	}
 	return true;
 }
@@ -450,12 +471,11 @@ bool CMainWindow::OnCut()
 
 bool CMainWindow::OnPaste()
 {
-	QWidget* pFocusWidget = focusWidget();
-	if (m_pGraphView && pFocusWidget == m_pGraphView)
+	if (m_pGraphView && m_pGraphView->OnPasteEvent())
 	{
-		m_pGraphView->OnPasteEvent();
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool CMainWindow::OnDelete()
@@ -792,6 +812,23 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 	Schematyc::CScriptBrowserWidget* pScriptBrowser = new Schematyc::CScriptBrowserWidget(*this);
 	pScriptBrowser->InitLayout();
 	pScriptBrowser->GetSelectionSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CMainWindow::OnScriptBrowserSelection, *this), m_connectionScope);
+
+	QObject::connect(pScriptBrowser, &Schematyc::CScriptBrowserWidget::OnScriptElementRemoved, [this](Schematyc::IScriptElement& scriptElement)
+		{
+			if (m_pGraphView)
+			{
+			  CNodeGraphViewModel* pModel = static_cast<CNodeGraphViewModel*>(m_pGraphView->GetModel());
+			  if (pModel)
+			  {
+			    Schematyc::IScriptGraph* pScriptGraph = scriptElement.GetExtensions().QueryExtension<Schematyc::IScriptGraph>();
+			    if (pScriptGraph && &pModel->GetScriptGraph() == pScriptGraph)
+			    {
+			      m_pGraphView->SetModel(nullptr);
+			    }
+			  }
+			}
+
+	  });
 
 	if (m_pModel)
 	{

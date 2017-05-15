@@ -25,7 +25,7 @@ set(WIN64 1)
 set(CRYENGINE_SOURCE_DIR ${CMAKE_SOURCE_DIR}/../../..) 
 set(OUTPUT_DIRECTORY "${CRYENGINE_SOURCE_DIR}/Tools/rc")
 
-set(CMAKE_CXX_FLAGS "/W3 /fp:fast /MP /GF /Gy /DWIN32 /D_WINDOWS /W3 /GR- /Gd /Zm250 /Zc:forScope /wd4251 /wd4275 /Gd /utf-8 /Wv:18 /DRESOURCE_COMPILER" CACHE STRING "C++ Flags" FORCE)
+set(CMAKE_CXX_FLAGS "/W3 /fp:fast /MP /GF /Gy /DWIN32 /D_WINDOWS /W3 /GR- /Gd /Zm250 /Zc:forScope /wd4251 /wd4275 /Gd /utf-8 /Wv:18" CACHE STRING "C++ Flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "/Zi /MTd /Od /Ob0 /Oy- /RTC1 /GS /bigobj /DFORCE_STANDARD_ASSERT /D_DEBUG" CACHE STRING "C++ Flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "/MT /Ox /Oi /Ot /Ob2 /Oy- /GS- /D NDEBUG /D_RELEASE /D PURE_CLIENT" CACHE STRING "C++ Flags" FORCE)
 
@@ -55,6 +55,9 @@ endif()
 if (EXISTS "${SDK_DIR}/FbxSdk")
 	option(OPTION_FBX_SDK "FBX SDK support" ON)
 endif()
+if (EXISTS "${SDK_DIR}/SubstanceEngines")
+	option(OPTION_SUBSTANCE_SUPPORT "Support Substance Integration" ON)
+endif()
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
 
 # Print current project settings
@@ -65,6 +68,7 @@ MESSAGE("BUILD_PLATFORM = ${BUILD_PLATFORM}")
 MESSAGE("OPTION_PCH = ${OPTION_PCH}")
 MESSAGE("OPTION_FBX_SDK = ${OPTION_FBX_SDK}")
 MESSAGE("OPTION_POWERVR = ${OPTION_POWERVR}")
+MESSAGE("OPTION_SUBSTANCE_SUPPORT = ${OPTION_SUBSTANCE_SUPPORT}")
 
 set(RESOURCE_COMPILER TRUE)
 set(BUILD_SHARED_LIBS TRUE)
@@ -106,10 +110,13 @@ add_subdirectory(${CRY_LIBS_DIR}/vco ${CMAKE_CURRENT_BINARY_DIR}/vco)
 
 add_subdirectory(${CRYENGINE_SOURCE_DIR}/Code/Tools/CryXML ${CMAKE_CURRENT_BINARY_DIR}/CryXML)
 add_subdirectory(${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CryPhysics ${CMAKE_CURRENT_BINARY_DIR}/CryPhysics)
-
 # ResourceCompiler
 add_subdirectory(ResourceCompiler)
 add_subdirectory(ResourceCompilerABC)
 add_subdirectory(ResourceCompilerImage)
 add_subdirectory(ResourceCompilerPC)
 add_subdirectory(ResourceCompilerXML)
+if (OPTION_SUBSTANCE_SUPPORT)
+	add_subdirectory(${CRYENGINE_SOURCE_DIR}/Code/Sandbox/Libs/CrySubstance ${CMAKE_CURRENT_BINARY_DIR}/CrySubstance)
+	add_subdirectory(ResourceCompilerSubstance)
+endif()

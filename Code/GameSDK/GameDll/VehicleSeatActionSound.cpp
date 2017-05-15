@@ -39,8 +39,8 @@ bool CVehicleSeatActionSound::Init(IVehicle* pVehicle, IVehicleSeat* pSeat, cons
 	if (!soundTable)
 		return false;
 
-	gEnv->pAudioSystem->GetAudioTriggerId(soundTable.getAttr("startTrigger"), m_audioTriggerStartId);
-	gEnv->pAudioSystem->GetAudioTriggerId(soundTable.getAttr("stopTrigger"), m_audioTriggerStopId);
+	gEnv->pAudioSystem->GetTriggerId(soundTable.getAttr("startTrigger"), m_audioTriggerStartId);
+	gEnv->pAudioSystem->GetTriggerId(soundTable.getAttr("stopTrigger"), m_audioTriggerStopId);
 
 	if (soundTable.haveAttr("helper"))
 		m_pHelper = m_pVehicle->GetHelper(soundTable.getAttr("helper"));

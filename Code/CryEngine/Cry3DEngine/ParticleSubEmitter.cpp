@@ -614,12 +614,12 @@ void CParticleSubEmitter::UpdateAudio()
 		{
 			if (!params.sStartTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetAudioTriggerId(params.sStartTrigger.c_str(), m_startAudioTriggerId);
+				gEnv->pAudioSystem->GetTriggerId(params.sStartTrigger.c_str(), m_startAudioTriggerId);
 			}
 
 			if (!params.sStopTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetAudioTriggerId(params.sStopTrigger.c_str(), m_stopAudioTriggerId);
+				gEnv->pAudioSystem->GetTriggerId(params.sStopTrigger.c_str(), m_stopAudioTriggerId);
 			}
 
 			if (m_startAudioTriggerId != CryAudio::InvalidControlId || m_stopAudioTriggerId != CryAudio::InvalidControlId)
@@ -630,7 +630,7 @@ void CParticleSubEmitter::UpdateAudio()
 
 				if (!spawnParams.audioRtpc.empty())
 				{
-					gEnv->pAudioSystem->GetAudioParameterId(spawnParams.audioRtpc.c_str(), m_audioParameterId);
+					gEnv->pAudioSystem->GetParameterId(spawnParams.audioRtpc.c_str(), m_audioParameterId);
 
 					if (m_audioParameterId != CryAudio::InvalidControlId)
 					{

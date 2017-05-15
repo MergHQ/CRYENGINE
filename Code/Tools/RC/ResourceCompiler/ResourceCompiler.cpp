@@ -750,8 +750,6 @@ void ParseCommandLine(const std::vector<string>& args, IConfig* config, string& 
 
 bool ResourceCompiler::CompileSingleFileNested(const string& fileSpec, const std::vector<string>& args)
 {
-	std::vector<RcFile> list;
-	list.push_back(RcFile("", fileSpec, ""));
 
 	MultiplatformConfig config = m_multiConfig;
 
@@ -762,6 +760,11 @@ bool ResourceCompiler::CompileSingleFileNested(const string& fileSpec, const std
 
 	string unusedFileSpec;
 	ParseCommandLine(extArgs, &config.getConfig(), unusedFileSpec);
+	std::vector<RcFile> list;
+	// TODO we need to figure out how to not pass sourceroot for nested calls
+	// for now we just don't use it together with target root
+	//list.push_back(RcFile(PathHelpers::CanonicalizePath(config.getConfig().GetAsString("sourceroot", "", "")), fileSpec, PathHelpers::CanonicalizePath(config.getConfig().GetAsString("targetroot", "", ""))));
+	list.push_back(RcFile("", fileSpec, ""));
 
 	return CompileFiles(list, &config.getConfig(), CompileFilesSingleThreaded);
 }
@@ -1064,7 +1067,7 @@ bool ResourceCompiler::CompileFile(
 
 	MultiplatformConfig localMultiConfig = m_multiConfig;
 	const IConfig* const config = pThreadData->config;
-
+	localMultiConfig.getConfig().AddConfig(pThreadData->config);
 	const string targetPath = PathHelpers::Join(targetLeftPath, sourceInnerPath);
 
 	if (GetVerbosityLevel() >= 2)

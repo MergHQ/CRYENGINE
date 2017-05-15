@@ -6,8 +6,6 @@
 #include <CrySystem/ISystem.h>
 #include <CrySerialization/Enum.h>
 
-using namespace CryAudio;
-
 CryAudio::ControlId AudioEntitiesUtils::m_obstructionOcclusionSwitch = CryAudio::InvalidControlId;
 
 SERIALIZATION_ENUM_BEGIN_NESTED(CryAudio, EOcclusionType, "OcclusionType")
@@ -24,18 +22,18 @@ SERIALIZATION_ENUM(ePlayBehavior_Delay, "delay_state_name", "Delay")
 SERIALIZATION_ENUM(ePlayBehavior_TriggerRate, "trigger_rate_state_name", "TriggerRate")
 SERIALIZATION_ENUM_END()
 
-ControlId AudioEntitiesUtils::GetObstructionOcclusionSwitch()
+CryAudio::ControlId AudioEntitiesUtils::GetObstructionOcclusionSwitch()
 {
-	if (m_obstructionOcclusionSwitch == InvalidControlId)
+	if (m_obstructionOcclusionSwitch == CryAudio::InvalidControlId)
 	{
 		Init();
 	}
 	return m_obstructionOcclusionSwitch;
 }
 
-const std::array<ControlId, numOcclusionTypes>& AudioEntitiesUtils::GetObstructionOcclusionStateIds()
+const std::array<CryAudio::ControlId, numOcclusionTypes>& AudioEntitiesUtils::GetObstructionOcclusionStateIds()
 {
-	if (m_obstructionOcclusionSwitch == InvalidControlId)
+	if (m_obstructionOcclusionSwitch == CryAudio::InvalidControlId)
 	{
 		Init();
 	}
@@ -50,20 +48,20 @@ const std::array<const char*, numOcclusionTypes>& AudioEntitiesUtils::GetObstruc
 void AudioEntitiesUtils::Init()
 {
 	// Update the switch ID
-	gEnv->pAudioSystem->GetAudioSwitchId("ObstrOcclCalcType", m_obstructionOcclusionSwitch);
+	gEnv->pAudioSystem->GetSwitchId("ObstrOcclCalcType", m_obstructionOcclusionSwitch);
 
 	// Update the state IDs
 	for (int i = 0; i < numOcclusionTypes; ++i)
 	{
-		gEnv->pAudioSystem->GetAudioSwitchStateId(m_obstructionOcclusionSwitch, m_obstructionNames[i], m_obstructionStateIds[i]);
+		gEnv->pAudioSystem->GetSwitchStateId(m_obstructionOcclusionSwitch, m_obstructionNames[i], m_obstructionStateIds[i]);
 	}
 }
 
 std::array<const char*, numOcclusionTypes> AudioEntitiesUtils::m_obstructionNames = {
-	{ IgnoreStateName, AdaptiveStateName, LowStateName, MediumStateName, HighStateName }
+	{ CryAudio::IgnoreStateName, CryAudio::AdaptiveStateName, CryAudio::LowStateName, CryAudio::MediumStateName, CryAudio::HighStateName }
 };
 
-std::array<ControlId, numOcclusionTypes> AudioEntitiesUtils::m_obstructionStateIds = {
+std::array<CryAudio::ControlId, numOcclusionTypes> AudioEntitiesUtils::m_obstructionStateIds = {
 	{ 0 }
 };
 

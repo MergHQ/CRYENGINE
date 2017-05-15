@@ -1237,17 +1237,17 @@ inline void SSequenceAudioTrigger::Serialize(XmlNodeRef xmlNode, bool bLoading)
 		if (xmlNode->getAttr("onStopAudioTrigger"))
 		{
 			m_onStopTriggerName = xmlNode->getAttr("onStopAudioTrigger");
-			gEnv->pAudioSystem->GetAudioTriggerId(m_onStopTriggerName.c_str(), m_onStopTrigger);
+			gEnv->pAudioSystem->GetTriggerId(m_onStopTriggerName.c_str(), m_onStopTrigger);
 		}
 		if (xmlNode->getAttr("onPauseAudioTrigger"))
 		{
 			m_onPauseTriggerName = xmlNode->getAttr("onPauseAudioTrigger");
-			gEnv->pAudioSystem->GetAudioTriggerId(m_onPauseTriggerName.c_str(), m_onPauseTrigger);
+			gEnv->pAudioSystem->GetTriggerId(m_onPauseTriggerName.c_str(), m_onPauseTrigger);
 		}
 		if (xmlNode->getAttr("onResumeAudioTrigger"))
 		{
 			m_onResumeTriggerName = xmlNode->getAttr("onResumeAudioTrigger");
-			gEnv->pAudioSystem->GetAudioTriggerId(m_onResumeTriggerName.c_str(), m_onResumeTrigger);
+			gEnv->pAudioSystem->GetTriggerId(m_onResumeTriggerName.c_str(), m_onResumeTrigger);
 		}
 
 	}
@@ -1276,21 +1276,21 @@ inline void SSequenceAudioTrigger::Serialize(Serialization::IArchive& ar)
 		ar(Serialization::AudioTrigger<string>(stopTriggerName), "onStopAudioTrigger", "onStop");
 		if (!stopTriggerName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(stopTriggerName.c_str(), m_onStopTrigger);
+			gEnv->pAudioSystem->GetTriggerId(stopTriggerName.c_str(), m_onStopTrigger);
 		}
 
 		string pauseTriggerName;
 		ar(Serialization::AudioTrigger<string>(pauseTriggerName), "onPauseAudioTrigger", "onPause");
 		if (!pauseTriggerName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(pauseTriggerName.c_str(), m_onPauseTrigger);
+			gEnv->pAudioSystem->GetTriggerId(pauseTriggerName.c_str(), m_onPauseTrigger);
 		}
 
 		string resumeTriggerName;
 		ar(Serialization::AudioTrigger<string>(resumeTriggerName), "onResumeAudioTrigger", "onResume");
 		if (!resumeTriggerName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(resumeTriggerName.c_str(), m_onResumeTrigger);
+			gEnv->pAudioSystem->GetTriggerId(resumeTriggerName.c_str(), m_onResumeTrigger);
 		}
 	}
 	else

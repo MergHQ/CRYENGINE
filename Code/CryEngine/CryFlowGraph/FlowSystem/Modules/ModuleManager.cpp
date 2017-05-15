@@ -570,6 +570,9 @@ void CFlowGraphModuleManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam,
 			if(gEnv->pGameFramework->GetILevelSystem() && gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded())
 			{
 				ClearLevelModules();
+
+				//Clear all instances in the level.
+				DestroyActiveModuleInstances();
 			}
 		}
 		break;

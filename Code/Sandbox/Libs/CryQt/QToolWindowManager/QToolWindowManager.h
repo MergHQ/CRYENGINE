@@ -92,6 +92,7 @@ class QTOOLWINDOWMANAGER_EXPORT QToolWindowManager: public QWidget
 {
 	Q_OBJECT
 public:
+	
 	QToolWindowManager(QWidget *parent = 0, QVariant config = QVariant(), QToolWindowManagerClassFactory* factory = nullptr);
 	virtual ~QToolWindowManager();
 	bool empty() { return m_areas.empty(); };
@@ -182,6 +183,9 @@ public:
 
 	void bringAllToFront();
 	void bringToFront(QWidget* toolWindow);
+
+	QString getToolPath(QWidget* toolWindow) const;
+	QToolWindowAreaTarget targetFromPath(const QString& toolPath) const;
 
 signals:
 	void toolWindowVisibilityChanged(QWidget* toolWindow, bool visible);

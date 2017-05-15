@@ -1303,7 +1303,7 @@ void CVehicle::ProcessEvent(SEntityEvent& entityEvent)
 				m_clientSmoothedPosition.t = GetEntity()->GetPos();
 				m_clientSmoothedPosition.q = GetEntity()->GetRotation();
 			}
-	}
+		}
 		break;
 	}
 
@@ -1506,10 +1506,10 @@ void CVehicle::Reset(bool enterGame)
 		NeedsUpdate(eVUF_AwakePhysics);
 
 		// Temp Code, testing only
-		CryAudio::ControlId engineAudioTriggerId;
-		if (gEnv->pAudioSystem->GetAudioTriggerId("ENGINE_ON", engineAudioTriggerId))
+		CryAudio::ControlId triggerId;
+		if (gEnv->pAudioSystem->GetTriggerId("ENGINE_ON", triggerId))
 		{
-			m_pIEntityAudioComponent->ExecuteTrigger(engineAudioTriggerId);
+			m_pIEntityAudioComponent->ExecuteTrigger(triggerId);
 		}
 	}
 	else
@@ -1523,10 +1523,10 @@ void CVehicle::Reset(bool enterGame)
 		}
 
 		// Temp Code, testing only
-		CryAudio::ControlId engineAudioTriggerId;
-		if (gEnv->pAudioSystem->GetAudioTriggerId("ENGINE_OFF", engineAudioTriggerId))
+		CryAudio::ControlId triggerId;
+		if (gEnv->pAudioSystem->GetTriggerId("ENGINE_OFF", triggerId))
 		{
-			m_pIEntityAudioComponent->ExecuteTrigger(engineAudioTriggerId);
+			m_pIEntityAudioComponent->ExecuteTrigger(triggerId);
 		}
 	}
 

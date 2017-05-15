@@ -11,7 +11,7 @@ static const char* ActionPlaySoundId = "ExecuteAudioTriggerAction";
 DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::IResponseInstance* pResponseInstance)
 {
 	CryAudio::ControlId audioStartTriggerID;
-	if (gEnv->pAudioSystem->GetAudioTriggerId(m_AudioTriggerName.c_str(), audioStartTriggerID))
+	if (gEnv->pAudioSystem->GetTriggerId(m_AudioTriggerName.c_str(), audioStartTriggerID))
 	{
 		IEntity* pEntity = pResponseInstance->GetCurrentActor()->GetLinkedEntity();
 		if (pEntity)
@@ -127,10 +127,10 @@ void CActionExecuteAudioTriggerInstance::SetFinished()
 DRS::IResponseActionInstanceUniquePtr CActionSetAudioSwitch::Execute(DRS::IResponseInstance* pResponseInstance)
 {
 	CryAudio::ControlId switchID;
-	if (gEnv->pAudioSystem->GetAudioSwitchId(m_switchName.c_str(), switchID))
+	if (gEnv->pAudioSystem->GetSwitchId(m_switchName.c_str(), switchID))
 	{
 		CryAudio::SwitchStateId switchStateID;
-		if (gEnv->pAudioSystem->GetAudioSwitchStateId(switchID, m_stateName.c_str(), switchStateID))
+		if (gEnv->pAudioSystem->GetSwitchStateId(switchID, m_stateName.c_str(), switchStateID))
 		{
 			IEntity* pEntity = pResponseInstance->GetCurrentActor()->GetLinkedEntity();
 			if (pEntity)
@@ -163,7 +163,7 @@ void CActionSetAudioSwitch::Serialize(Serialization::IArchive& ar)
 DRS::IResponseActionInstanceUniquePtr CActionSetAudioParameter::Execute(DRS::IResponseInstance* pResponseInstance)
 {
 	CryAudio::ControlId parameterId;
-	if (gEnv->pAudioSystem->GetAudioParameterId(m_audioParameter.c_str(), parameterId))
+	if (gEnv->pAudioSystem->GetParameterId(m_audioParameter.c_str(), parameterId))
 	{
 		IEntity* pEntity = pResponseInstance->GetCurrentActor()->GetLinkedEntity();
 		if (pEntity)

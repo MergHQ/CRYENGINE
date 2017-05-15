@@ -71,7 +71,7 @@ void CMainWindow::InitMenu()
 
 void CMainWindow::RegisterDockingWidgets()
 {
-	CDockableContainer* const pDockingRegistry = EnableDockingSystem();
+	EnableDockingSystem();
 
 	auto createGraphView = [this]()
 	{
@@ -93,7 +93,7 @@ void CMainWindow::RegisterDockingWidgets()
 
 		return pGraphView;
 	};
-	pDockingRegistry->Register("Graph", createGraphView, false, false);
+	RegisterWidget("Graph", createGraphView, false, false);
 }
 
 bool CMainWindow::OnOpen()

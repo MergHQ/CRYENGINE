@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 
 namespace CryEngine.Game
 {
@@ -33,7 +35,7 @@ namespace CryEngine.Game
 			//Invert the rotation to have proper third-person camera-control.
 			rotationDelta = -rotationDelta;
 
-			var ypr = Camera.CreateAnglesYPR(rotation);
+			var ypr = rotation.YawPitchRoll;
 
 			ypr.X += rotationDelta.X * yawSpeed;
 
@@ -42,7 +44,7 @@ namespace CryEngine.Game
 
 			ypr.Z = 0;
 
-			rotation = Camera.CreateOrientationYPR(ypr);
+			rotation.YawPitchRoll = ypr;
 			_cameraPivot.Rotation = rotation;
 
 			Vector3 aimOffset;
