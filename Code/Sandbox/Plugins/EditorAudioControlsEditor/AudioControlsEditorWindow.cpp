@@ -27,7 +27,7 @@
 #include <QPainter>
 #include <QAction>
 #include <QMenu>
-#include <QMenuBar>
+#include <QToolBar>
 #include <QSplitter>
 #include <QKeyEvent>
 #include <QDir>
@@ -64,26 +64,23 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	setWindowTitle(tr("Audio Controls Editor"));
 	resize(972, 674);
 
-	// Menu
-	QMenuBar* pMenuBar = new QMenuBar(this);
-	pMenuBar->setGeometry(QRect(0, 0, 972, 21));
-
-	QMenu* pFileMenu = new QMenu(pMenuBar);
-	pFileMenu->setTitle(tr("&File"));
-	pMenuBar->addAction(pFileMenu->menuAction());
+	// Tool Bar
+	QToolBar* pToolBar = new QToolBar(this);
+	pToolBar->setFloatable(false);
+	pToolBar->setMovable(false);
 
 	QAction* pSaveAction = new QAction(this);
 	pSaveAction->setIcon(CryIcon("icons:General/File_Save.ico"));
 	pSaveAction->setText(tr("Save All"));
 	connect(pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
-	pFileMenu->addAction(pSaveAction);
+	pToolBar->addAction(pSaveAction);
 
 	QAction* pReloadAction = new QAction(this);
 	pReloadAction->setIcon(CryIcon("icons:General/Reload.ico"));
 	pReloadAction->setText(tr("Reload"));
 	connect(pReloadAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Reload);
-	pFileMenu->addAction(pReloadAction);
-	setMenuBar(pMenuBar);
+	pToolBar->addAction(pReloadAction);
+	addToolBar(pToolBar);
 
 	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
