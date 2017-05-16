@@ -401,7 +401,7 @@ void CMaterialFGManager::GetMemoryUsage(ICrySizer* s) const
 	s->AddObject(m_flowGraphVector);
 }
 
-int CMaterialFGManager::GetFlowGraphCount() const
+size_t CMaterialFGManager::GetFlowGraphCount() const
 {
 	return m_flowGraphVector.size();
 }

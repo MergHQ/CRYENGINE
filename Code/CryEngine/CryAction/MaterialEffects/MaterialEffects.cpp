@@ -906,7 +906,7 @@ void CMaterialEffects::ReloadMatFXFlowGraphs()
 	m_pMaterialFGManager->ReloadFlowGraphs();
 }
 
-int CMaterialEffects::GetMatFXFlowGraphCount() const
+size_t CMaterialEffects::GetMatFXFlowGraphCount() const
 {
 	return m_pMaterialFGManager->GetFlowGraphCount();
 }
