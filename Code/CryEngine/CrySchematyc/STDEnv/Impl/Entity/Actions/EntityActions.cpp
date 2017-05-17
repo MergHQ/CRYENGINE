@@ -62,7 +62,7 @@ static void ReflectType(CTypeDesc<TimerFlags>& desc) // #SchematycTODO : Move to
 	desc.SetGUID("bbcb43b5-df7f-4298-a5d4-ea4413ba671e"_schematyc_guid);
 }
 
-class CEntityTimerAction : public CAction
+class CEntityTimerAction final : public CAction
 {
 public:
 
@@ -152,7 +152,7 @@ private:
 	TimerId        m_timerId = TimerId::Invalid;
 };
 
-class CEntityDebugTextAction : public CAction
+class CEntityDebugTextAction final : public CAction
 {
 public:
 

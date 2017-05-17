@@ -74,12 +74,7 @@ struct pixout_cl
 
 struct pixout_cl_void_depth
 {
-#if !OPENGL
-	float  Depth : SV_Depth;
-#else
-	//HLSLcc compiler crash issue
-	float Depth    : COLOR3; 
-#endif
+	float Depth : SV_Depth;
 };
 
 struct app2vertStencilCull

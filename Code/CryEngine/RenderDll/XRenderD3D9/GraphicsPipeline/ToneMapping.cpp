@@ -10,8 +10,6 @@
 
 void CToneMappingStage::Init()
 {
-	m_samplerPoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
-	m_samplerLinear = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
 }
 
 void CToneMappingStage::Execute()
@@ -26,7 +24,6 @@ void CToneMappingStage::Execute()
 	bool bHighQualitySunshafts = false;
 	bool bColorGrading = false;
 	bool bBloomEnabled = CRenderer::CV_r_HDRBloom && CRenderer::CV_r_PostProcess;
-	bool bFXAAEnabled = (pRenderer->FX_GetAntialiasingType() & eAT_FXAA_MASK) ? true : false;
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;
 	CTexture* pSunShaftsTex = CTexture::s_ptexBlack;
@@ -43,18 +40,16 @@ void CToneMappingStage::Execute()
 		pColorChartTex = pColorChartTexTentative;
 	}
 
-	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) | ((int)bFXAAEnabled << 4) |
+	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) |
 	                  ((CRenderer::CV_r_HDREyeAdaptationMode & 0xF) << 5) | ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
-	if (m_passToneMapping.InputChanged(featureMask, pSunShaftsTex->GetTextureID(), CTexture::s_ptexCurLumTexture->GetTextureID()))
+	if (m_passToneMapping.InputChanged(featureMask, pSunShaftsTex->GetTextureID(), CTexture::s_ptexCurLumTexture->GetTextureID(), pColorChartTex->GetTextureID()))
 	{
 		uint64 rtMask = 0;
 		if (CRenderer::CV_r_HDREyeAdaptationMode == 2)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 		if (bColorGrading)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
-		if (bFXAAEnabled)
-			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE0];
 		if (CRenderer::CV_r_HDRDebug == 5)
 			rtMask |= g_HWSR_MaskBit[HWSR_DEBUG0];
 
@@ -66,13 +61,13 @@ void CToneMappingStage::Execute()
 
 		CTexture* pBloomTex = bBloomEnabled ? CTexture::s_ptexHDRFinalBloom : CTexture::s_ptexBlack;
 
-		m_passToneMapping.SetTextureSamplerPair(0, CTexture::s_ptexHDRTarget, m_samplerLinear);
-		m_passToneMapping.SetTextureSamplerPair(1, CTexture::s_ptexCurLumTexture, m_samplerLinear);
-		m_passToneMapping.SetTextureSamplerPair(2, pBloomTex, m_samplerLinear);
-		m_passToneMapping.SetTextureSamplerPair(5, CTexture::s_ptexZTarget, m_samplerPoint);
-		m_passToneMapping.SetTextureSamplerPair(7, CTexture::s_ptexVignettingMap, m_samplerLinear);
-		m_passToneMapping.SetTextureSamplerPair(8, pColorChartTex, m_samplerLinear);
-		m_passToneMapping.SetTextureSamplerPair(9, pSunShaftsTex, m_samplerLinear);
+		m_passToneMapping.SetTextureSamplerPair(0, CTexture::s_ptexHDRTarget, EDefaultSamplerStates::LinearClamp);
+		m_passToneMapping.SetTextureSamplerPair(1, CTexture::s_ptexCurLumTexture, EDefaultSamplerStates::LinearClamp);
+		m_passToneMapping.SetTextureSamplerPair(2, pBloomTex, EDefaultSamplerStates::LinearClamp);
+		m_passToneMapping.SetTextureSamplerPair(5, CTexture::s_ptexZTarget, EDefaultSamplerStates::PointClamp);
+		m_passToneMapping.SetTextureSamplerPair(7, CTexture::s_ptexVignettingMap, EDefaultSamplerStates::LinearClamp);
+		m_passToneMapping.SetTextureSamplerPair(8, pColorChartTex, EDefaultSamplerStates::LinearClamp);
+		m_passToneMapping.SetTextureSamplerPair(9, pSunShaftsTex, EDefaultSamplerStates::LinearClamp);
 		m_passToneMapping.SetRequireWorldPos(true);
 		m_passToneMapping.SetRequirePerViewConstantBuffer(true);
 	}
@@ -106,4 +101,50 @@ void CToneMappingStage::Execute()
 	m_passToneMapping.SetConstant(shaftsSunColName, shaftsSunCol, eHWSC_Pixel);
 
 	m_passToneMapping.Execute();
+
+	m_pColorChartTex = pColorChartTex; // Keep a ref count on color chart to make sure it is destroyed after m_passToneMapping
+}
+
+void CToneMappingStage::ExecuteFixedExposure()
+{
+	PROFILE_LABEL_SCOPE("TONEMAPPING_FIXED_EXPOSURE");
+
+	CRenderView* pRenderView = RenderView();
+
+	CTexture* pTargetTex = gcpRendD3D->GetCurrentTargetOutput();
+	CTexture* pSrcTex = CTexture::s_ptexHDRTarget;
+
+	const CRenderOutput* pOutput = pRenderView->GetRenderOutput();
+	if (pOutput)
+	{
+		pSrcTex = pOutput->GetHDRTargetTexture();
+	}
+
+	auto& pass = m_passFixedExposureToneMapping;
+
+	{
+		uint64 rtMask = 0;
+		static CCryNameTSCRC techToneMapping("HDRFinalPassFixedExposure");
+		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
+		pass.SetTechnique(CShaderMan::s_shHDRPostProcess, techToneMapping, rtMask);
+		pass.SetRenderTarget(0, pTargetTex);
+		pass.SetState(GS_NODEPTHTEST);
+		pass.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
+
+		pass.SetTextureSamplerPair(0, pSrcTex, EDefaultSamplerStates::LinearClamp);
+		pass.SetRequireWorldPos(true);
+		pass.SetRequirePerViewConstantBuffer(true);
+	}
+
+	pass.BeginConstantUpdate();
+
+#if 0
+	// parameter for filmic response curve.
+	static CCryNameR filmCurveName("HDRFilmCurve");
+	Vec4 hdrSetupParams[5];
+	gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
+	pass.SetConstant(filmCurveName, hdrSetupParams[0], eHWSC_Pixel);
+#endif
+
+	pass.Execute();
 }

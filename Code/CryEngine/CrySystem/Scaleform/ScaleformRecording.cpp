@@ -785,7 +785,7 @@ void CScaleformRecording::GetStats(GStatBag* /*pBag*/, bool /*reset*/)
 
 void CScaleformRecording::ReleaseResources()
 {
-	//GetPlayback()->ReleaseResources();
+	GetPlayback()->ReleaseResources();
 }
 
 namespace CScaleformRecordingClearInternal

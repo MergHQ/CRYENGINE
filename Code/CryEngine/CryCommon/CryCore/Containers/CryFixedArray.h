@@ -49,7 +49,7 @@ struct CryFixedArrayDatum<16>
 template<class T, unsigned int N> class CryFixedArray
 {
 protected:
-	enum { ALIGN = MAX(alignof(T), sizeof(unsigned int)) };   //!< ALIGN at least sizeof(unsigned int).
+	enum { ALIGN = (alignof(T) > sizeof(unsigned int)) ? alignof(T) : sizeof(unsigned int) };   //!< ALIGN at least sizeof(unsigned int).
 
 	typedef typename CryFixedArrayDatum<ALIGN>::TDatum TDatum;
 

@@ -552,7 +552,7 @@ private:
 	bool InitMonoBridge();
 	bool OpenRenderLibrary(int type);
 	bool OpenRenderLibrary(const char* t_rend);
-	bool CloseRenderLibrary();
+	bool CloseRenderLibrary(const char* t_rend);
 
 	//@}
 	void Strange();

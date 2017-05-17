@@ -1229,7 +1229,6 @@ CSvoEnv::~CSvoEnv()
 	GetCVars()->e_svoLoadTree = 0;
 	GetCVars()->e_svoEnabled = 0;
 	gSvoEnv = NULL;
-	GetRenderer()->GetISvoRenderer()->Release();
 
 	{
 		AUTO_MODIFYLOCK(CVoxelSegment::m_arrLockedTextures.m_Lock);

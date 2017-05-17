@@ -121,7 +121,7 @@ struct ICryLobbyService;
 #define XBOX_RELEASE_USE_SECURE_SOCKETS 1
 
 #if CRY_PLATFORM_ORBIS
-	#define USE_PSN 1
+	#define USE_PSN 0
 #else
 	#define USE_PSN 0
 #endif

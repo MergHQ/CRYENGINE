@@ -398,7 +398,7 @@ bool CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes)
 //////////////////////////////////////////////////////////////////////////
 void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
 {
-	char szEngineRootDir[_MAX_PATH];
+	char szEngineRootDir[_MAX_PATH] = "";
 	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
 
 #if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
@@ -415,7 +415,7 @@ void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRoot
 		#elif CRY_PLATFORM_POSIX
 	char osSeperator = '/';
 		#endif
-	char szExecFilePath[_MAX_PATH];
+	char szExecFilePath[_MAX_PATH] = "";
 	CryGetExecutableFolder(CRY_ARRAY_COUNT(szExecFilePath), szExecFilePath);
 
 	string strTempPath(szExecFilePath);

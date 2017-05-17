@@ -2195,7 +2195,7 @@ public:
 
 	size_t Size() const
 	{
-		return MIN(m_count, N);
+		return std::min(m_count, N);
 	}
 
 	size_t Capacity() const

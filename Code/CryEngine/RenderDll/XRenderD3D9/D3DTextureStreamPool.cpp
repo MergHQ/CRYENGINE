@@ -110,9 +110,9 @@ void CTextureStreamPoolMgr::Flush()
 
 STexPool* CTextureStreamPoolMgr::GetPool(int nWidth, int nHeight, int nMips, int nArraySize, ETEX_Format eTF, bool bIsSRGB, ETEX_Type eTT)
 {
-	D3DFormat d3dFmt = CTexture::DeviceFormatFromTexFormat(eTF);
+	D3DFormat d3dFmt = DeviceFormats::ConvertFromTexFormat(eTF);
 	if (bIsSRGB)
-		d3dFmt = CTexture::ConvertToSRGBFmt(d3dFmt);
+		d3dFmt = DeviceFormats::ConvertToSRGB(d3dFmt);
 
 	TexturePoolKey poolKey((uint16)nWidth, (uint16)nHeight, d3dFmt, (uint8)eTT, (uint8)nMips, (uint16)nArraySize);
 
@@ -123,13 +123,13 @@ STexPool* CTextureStreamPoolMgr::GetPool(int nWidth, int nHeight, int nMips, int
 	return NULL;
 }
 
-STexPoolItem* CTextureStreamPoolMgr::GetPoolItem(int nWidth, int nHeight, int nMips, int nArraySize, ETEX_Format eTF, bool bIsSRGB, ETEX_Type eTT, bool bShouldBeCreated, const char* sName, STextureInfo* pTI, bool bCanCreate, bool bWaitForIdle)
+STexPoolItem* CTextureStreamPoolMgr::GetPoolItem(int nWidth, int nHeight, int nMips, int nArraySize, ETEX_Format eTF, bool bIsSRGB, ETEX_Type eTT, bool bShouldBeCreated, const char* sName, const void** pData, bool bCanCreate, bool bWaitForIdle)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "Stream pool item %ix%ix%i", nWidth, nHeight, nMips);
 
-	D3DFormat d3dFmt = CTexture::DeviceFormatFromTexFormat(eTF);
+	D3DFormat d3dFmt = DeviceFormats::ConvertFromTexFormat(eTF);
 	if (bIsSRGB)
-		d3dFmt = CTexture::ConvertToSRGBFmt(d3dFmt);
+		d3dFmt = DeviceFormats::ConvertToSRGB(d3dFmt);
 
 	STexPool* pPool = CreatePool(nWidth, nHeight, nMips, nArraySize, d3dFmt, eTT);
 	if (!pPool)
@@ -144,7 +144,7 @@ STexPoolItem* CTextureStreamPoolMgr::GetPoolItem(int nWidth, int nHeight, int nM
 
 #ifndef TSP_GC_ALL_ITEMS
 
-	if (!pTI)
+	if (!pData)
 	{
 		pITH = m_FreeTexPoolItems.m_PrevFree;
 		pIT = static_cast<STexPoolItem*>(pITH);
@@ -196,16 +196,25 @@ STexPoolItem* CTextureStreamPoolMgr::GetPoolItem(int nWidth, int nHeight, int nM
 #endif
 
 		// Create API texture for the item in DEFAULT pool
-		HRESULT h = S_OK;
-		CDeviceTexture* pDevTex = NULL;
-		if (eTT != eTT_Cube)
-			h = gcpRendD3D->m_DevMan.Create2DTexture(nWidth, nHeight, nMips, nArraySize, STREAMED_TEXTURE_USAGE, Clr_Transparent, d3dFmt, D3DPOOL_DEFAULT, &pDevTex, pTI);
-		else
-			h = gcpRendD3D->m_DevMan.CreateCubeTexture(nWidth, nMips, 1, STREAMED_TEXTURE_USAGE, Clr_Transparent, d3dFmt, D3DPOOL_DEFAULT, &pDevTex, pTI);
-
-		if (FAILED(h) || !pDevTex)
+		STextureLayout Layout =
 		{
-			return NULL;
+			nullptr,
+			nWidth, nHeight, 1, nArraySize, nMips,
+			eTF, eTF, eTM_None, eTT,
+
+			/* TODO: change FT_... to CDeviceObjectFactory::... */
+			0 /* CDeviceObjectFactory::USAGE_STREAMING */, bIsSRGB,
+			Clr_Transparent
+#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
+			, SKIP_ESRAM
+#endif
+		};
+
+		Layout.m_eTFDst = CTexture::GetClosestFormatSupported(Layout.m_eTFDst, Layout.m_pPixelFormat);
+		CDeviceTexture* pDevTex = CDeviceTexture::Create(Layout, pData);
+		if (!pDevTex)
+		{
+			return nullptr;
 		}
 
 #ifdef TEXSTRM_USE_FREEPOOL
@@ -227,6 +236,7 @@ STexPoolItem* CTextureStreamPoolMgr::GetPoolItem(int nWidth, int nHeight, int nM
 		CryInterlockedAdd(&m_nDeviceMemReserved, pPool->m_Size);
 
 #if !defined (_RELEASE) && defined(ENABLE_X360_TEXTURE_CAPTURE)
+		HRESULT h = S_OK;
 		h = PIXSetTextureName(pIT->m_pDevTexture->GetBaseTexture(), sName);
 		assert(SUCCEEDED(h));
 #endif
@@ -282,7 +292,7 @@ STexPool* CTextureStreamPoolMgr::CreatePool(int nWidth, int nHeight, int nMips, 
 		pPool->m_Height = nHeight;
 		pPool->m_nArraySize = nArraySize;
 		pPool->m_nMips = nMips;
-		pPool->m_Size = CDeviceTexture::TextureDataSize(nWidth, nHeight, 1, nMips, nArraySize * (eTT == eTT_Cube ? 6 : 1), CTexture::TexFormatFromDeviceFormat(eTF));
+		pPool->m_Size = CDeviceTexture::TextureDataSize(nWidth, nHeight, 1, nMips, nArraySize * (eTT == eTT_Cube ? 6 : 1), DeviceFormats::ConvertToTexFormat(eTF));
 
 		pPool->m_nItems = 0;
 		pPool->m_nItemsFree = 0;

@@ -442,6 +442,7 @@
       "ParticleSystem/Features/Featurekill.cpp",
       "ParticleSystem/Features/FeatureMotion.h",
 			"ParticleSystem/Features/FeatureMotion.cpp",
+			"ParticleSystem/Features/FeatureRenderDecal.cpp",
 			"ParticleSystem/Features/FeatureRenderGpuSprites.h",
 			"ParticleSystem/Features/FeatureRenderGpuSprites.cpp",
 			"ParticleSystem/Features/FeatureRenderMeshes.cpp",

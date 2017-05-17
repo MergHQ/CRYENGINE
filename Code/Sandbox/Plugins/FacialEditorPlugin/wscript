@@ -2,9 +2,9 @@
 def build(bld):	
 	
 	bld.CryPlugin(
-		target      = 'VehicleEditorPlugin',
+		target      = 'FacialEditorPlugin',
 		vs_filter	= 'Sandbox/Plugins',
-		file_list   = 'VehicleEditorPlugin.waf_files',
+		file_list   = 'FacialEditorPlugin.waf_files',
 		pch			= 'StdAfx.cpp',
 		use			= [ 'MFCToolsPlugin' ],
 		includes	= [ Path('Code/Sandbox/Plugins/MFCToolsPlugin')	]

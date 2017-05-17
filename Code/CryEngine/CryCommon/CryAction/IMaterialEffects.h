@@ -464,7 +464,7 @@ private:
 		m_flowGraphList = 0;
 		m_forceFeedbackList = 0;
 	}
-	~SMFXResourceList()
+	virtual ~SMFXResourceList()
 	{
 		while (m_particleList != 0)
 		{

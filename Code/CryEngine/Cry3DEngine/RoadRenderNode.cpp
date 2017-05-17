@@ -395,7 +395,7 @@ void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses >
 	if (m_dynamicData.indices.Count() && GetRenderer())
 	{
 		m_pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-		  m_dynamicData.vertices.GetElements(), m_dynamicData.vertices.Count(), eVF_P3F_C4B_T2S,
+		  m_dynamicData.vertices.GetElements(), m_dynamicData.vertices.Count(), EDefaultInputLayouts::P3F_C4B_T2S,
 		  m_dynamicData.indices.GetElements(), m_dynamicData.indices.Count(), prtTriangleList,
 		  "RoadRenderNode", GetName(), eRMT_Static, 1, 0, NULL, NULL, false, true, m_dynamicData.tangents.GetElements());
 

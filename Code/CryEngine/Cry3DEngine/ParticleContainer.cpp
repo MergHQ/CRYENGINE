@@ -769,7 +769,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		}
 
 		SAddParticlesToSceneJob& job = CParticleManager::Instance()->GetParticlesToSceneJob(passInfo);
-		job.pPVC = this;
+		job.pVertexCreator = this;
 		job.pRenderObject = pRenderObject;
 		SRenderObjData* pOD = job.pRenderObject->GetObjData();
 
@@ -828,6 +828,7 @@ CRenderObject* CParticleContainer::CreateRenderObject(uint64 nObjFlags)
 	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
 	pRenderObject->m_II.m_Matrix.SetIdentity();
 	pRenderObject->m_RState = uint8(nObjFlags);
+	pRenderObject->m_pCurrMaterial = pParams->pMaterial;
 	pOD->m_pParticleShaderData = &GetEffect()->GetParams().ShaderData;
 
 	IF(!!pParams->fHeatScale, 0)

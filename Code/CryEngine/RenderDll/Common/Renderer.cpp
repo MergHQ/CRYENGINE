@@ -41,11 +41,12 @@
 #endif
 #include <CryRenderer/IShader.h>
 
-#if !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_DURANGO && !defined(OPENGL)
-#ifdef ENABLE_FRAME_PROFILER_LABELS
-// This is need for D3DPERF_ functions
-LINK_SYSTEM_LIBRARY("d3d9.lib")
-#endif
+// TODO: replace by ID3DUserDefinedAnnotation https://msdn.microsoft.com/en-us/library/hh446881.aspx
+#if !CRY_RENDERER_GNM && !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && (CRY_RENDERER_DIRECT3D < 120) && !CRY_PLATFORM_DURANGO && CRY_PLATFORM_WINDOWS
+	#ifdef ENABLE_FRAME_PROFILER_LABELS
+		// This is need for D3DPERF_ functions
+		LINK_SYSTEM_LIBRARY("d3d9.lib")
+	#endif
 #endif
 
 namespace
@@ -65,7 +66,7 @@ namespace
 
 bool QueryIsFullscreen();
 
-#if defined(SUPPORT_D3D_DEBUG_RUNTIME)
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 string D3DDebug_GetLastMessage();
 #endif
 
@@ -148,6 +149,7 @@ void CRenderer::InitRenderer()
 
 	m_nCurMinAniso        = 1;
 	m_nCurMaxAniso        = 16;
+	m_fCurMipLodBias      = 0.0f;
 	m_wireframe_mode      = R_SOLID_MODE;
 	m_wireframe_mode_prev = R_SOLID_MODE;
 	m_RP.m_StateOr        = 0;
@@ -158,8 +160,6 @@ void CRenderer::InitRenderer()
 
 	m_nativeWidth      = 0;
 	m_nativeHeight     = 0;
-	m_backbufferWidth  = 0;
-	m_backbufferHeight = 0;
 	m_numSSAASamples   = 1;
 
 	CRendererCVars::InitCVars();
@@ -319,17 +319,6 @@ void CRenderer::InitRenderer()
 	{
 		m_RP.m_TempObjects[i].Init();
 		m_RP.m_TempObjects[i].SetNoneWorkerThreadID(nThreadId);
-	}
-
-	const char *cc_RenderViewName[IRenderView::eViewType_Count] = { "Normal View", "Recursive View", "Shadow View", "BillboardGen View" };
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
-	{
-		for (int type = 0; type < IRenderView::eViewType_Count; type++)
-		{
-			string name; name.Format("%s %d", cc_RenderViewName[type], i);
-
-			m_RP.m_pRenderViews[i][type].reset(new CRenderView(name, IRenderView::EViewType(type)));
-		}
 	}
 
 	m_pRT = new SRenderThread;
@@ -711,6 +700,7 @@ void CRenderer::ResumeDevice()
 	m_pRT->RC_ResumeDevice();
 }
 #endif
+
 void CRenderer::ForceSwapBuffers()
 {
 	m_pRT->RC_ForceSwapBuffers();
@@ -754,6 +744,18 @@ void CRenderer::InitSystemResources(int nFlags)
 		m_pRT->RC_CreateSystemTargets();
 		ForceFlushRTCommands();
 
+		// allocate renderviews
+		const char *cc_RenderViewName[IRenderView::eViewType_Count] = { "Normal View", "Recursive View", "Shadow View", "BillboardGen View" };
+		for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
+		{
+			for (int type = 0; type < IRenderView::eViewType_Count; type++)
+			{
+				string name; name.Format("%s %d", cc_RenderViewName[type], i);
+
+				m_RP.m_pRenderViews[i][type].reset(new CRenderView(name, IRenderView::EViewType(type)));
+			}
+		}
+
 		/*m_pRT->RC_BeginFrame();
 		   SetState(GS_BLSRC_SRCALPHA|GS_BLDST_ONEMINUSSRCALPHA|GS_NODEPTHTEST);
 		   SetCullMode(R_CULL_NONE);
@@ -774,14 +776,17 @@ void CRenderer::FreeResources(int nFlags)
 {
 	iLog->Log("*** Start clearing render resources ***");
 
-	if (nFlags == FRR_PERMANENT_RENDER_OBJECTS)
-	{
-		m_pRT->RC_ReleaseRenderResources(nFlags);
-		return;
-	}
-
 	if (m_bEditor)
 		return;
+
+	// validate flag combinations
+	constexpr int requiredForSystem          = (FRR_SYSTEM | FRR_OBJECTS);
+	constexpr int requiredForSystemResources = (FRR_SYSTEM_RESOURCES | FRR_DELETED_MESHES | FRR_FLUSH_TEXTURESTREAMING | FRR_RP_BUFFERS | FRR_POST_EFFECTS | FRR_OBJECTS | FRR_PERMANENT_RENDER_OBJECTS | FRR_SVOGI);
+	constexpr int requiredForTextures        = (FRR_SYSTEM_RESOURCES | FRR_DELETED_MESHES | FRR_FLUSH_TEXTURESTREAMING | FRR_RP_BUFFERS | FRR_POST_EFFECTS | FRR_OBJECTS | FRR_PERMANENT_RENDER_OBJECTS | FRR_TEXTURES | FRR_TEXTURES);
+
+	CRY_ASSERT((nFlags & FRR_SYSTEM) == 0           || ((nFlags & requiredForSystem)          == requiredForSystem));
+	CRY_ASSERT((nFlags & FRR_SYSTEM_RESOURCES) == 0 || ((nFlags & requiredForSystemResources) == requiredForSystemResources));
+	CRY_ASSERT((nFlags & FRR_TEXTURES) == 0         || ((nFlags & requiredForTextures)        == requiredForTextures));
 
 	CTimeValue tBegin = gEnv->pTimer->GetAsyncTime();
 
@@ -792,29 +797,10 @@ void CRenderer::FreeResources(int nFlags)
 #endif
 	CHWShader::mfFlushPendedShadersWait(-1);
 
-	EF_ReleaseDeferredData();
-
-	if (nFlags & FRR_FLUSH_TEXTURESTREAMING)
-	{
-		m_pRT->RC_FlushTextureStreaming(true);
-	}
-
-	if (nFlags & FRR_DELETED_MESHES)
-	{
-		// The mesh-pool is binned by nFrameID. Repeating N times is not
-		// yielding the desired results (is GCs only the current frame N times).
-		// For that reason RC_ForceMeshGC clears all bins when "instant" is set to <true>.
-		for (size_t i = 0; i < MAX_RELEASED_MESH_FRAMES; ++i)
-			m_pRT->RC_ForceMeshGC(true, true);
-
-		ForceFlushRTCommands();
-	}
-
-	if (nFlags & FRR_SHADERS)
-		gRenDev->m_cEF.ShutDown();
-
 	if (nFlags & FRR_RP_BUFFERS)
 	{
+		EF_ReleaseDeferredData();
+
 		ForceFlushRTCommands();
 
 		for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
@@ -825,28 +811,25 @@ void CRenderer::FreeResources(int nFlags)
 		for (int i = 0; i < sizeof(m_RP.m_RIs) / sizeof(m_RP.m_RIs[0]); ++i)
 			m_RP.m_RIs[i].Free();
 
-		// Reset render views
+		// Release render views
 		for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 		{
 			for (int j = 0; j < IRenderView::eViewType_Count; ++j)
 			{
-				m_RP.m_pRenderViews[i][j]->Clear();
+				m_RP.m_pRenderViews[i][j].reset();
 			}
 		}
 
-		for (ShadowFrustumListsCache::iterator it = m_FrustumsCache.begin();
-		  it != m_FrustumsCache.end(); ++it)
+		for (ShadowFrustumListsCache::iterator it = m_FrustumsCache.begin(); it != m_FrustumsCache.end(); ++it)
 			SAFE_DELETE(it->second);
-		}
+	}
 
-	if (nFlags & (FRR_SYSTEM | FRR_OBJECTS))
+	if (nFlags & FRR_OBJECTS)
 	{
 		CMotionBlur::FreeData();
 
 		for (int i = 0; i < 3; ++i)
 			m_SkinningDataPool[i].FreePoolMemory();
-
-		ForceFlushRTCommands();
 
 		// Get object pool range
 		CRenderObject* pObjPoolStart = &m_RP.m_ObjectsPool[0];
@@ -858,45 +841,23 @@ void CRenderer::FreeResources(int nFlags)
 			m_RP.m_TempObjects[i].clear(SDeleteNonePoolRenderObjs(pObjPoolStart, pObjPoolEnd));
 		}
 	}
-
-	if (nFlags & (FRR_TEXTURES | FRR_SYSTEM))
+	
+	if (nFlags & FRR_SYSTEM)
 	{
-		m_pRT->RC_ReleaseGraphicsPipeline();
-		ForceFlushRTCommands();
-
-		if (nFlags & FRR_TEXTURES)
+		for (uint32 j = 0; j < RT_COMMAND_BUF_COUNT; j++)
 		{
-			ForceFlushRTCommands();
-			CTexture::ShutDown();
+			m_RP.m_TempObjects[j].clear();
 		}
-
-		if (nFlags & FRR_SYSTEM)
+		if (m_RP.m_ObjectsPool)
 		{
-			for (uint32 j = 0; j < RT_COMMAND_BUF_COUNT; j++)
-			{
-				m_RP.m_TempObjects[j].clear();
-			}
-			if (m_RP.m_ObjectsPool)
-			{
-				CryModuleMemalignFree(m_RP.m_ObjectsPool);
-				m_RP.m_ObjectsPool = NULL;
-				SAFE_DELETE(m_RP.m_pIdendityRenderObject);
-			}
-			FX_PipelineShutdown();
+			CryModuleMemalignFree(m_RP.m_ObjectsPool);
+			m_RP.m_ObjectsPool = NULL;
+			SAFE_DELETE(m_RP.m_pIdendityRenderObject);
 		}
 	}
-
-	if (nFlags & FRR_POST_EFFECTS)
-	{
-		m_pRT->RC_ReleasePostEffects();
-		ForceFlushRTCommands();
-	}
-
+	
 	if (nFlags & FRR_SYSTEM_RESOURCES)
 	{
-		m_pRT->RC_ReleaseGraphicsPipeline();
-		ForceFlushRTCommands();
-
 		CRenderMesh::ClearJobResources();
 
 		// Free sprite vertices (indices are packed into the same buffer so no need to free them explicitly);
@@ -907,72 +868,30 @@ void CRenderer::FreeResources(int nFlags)
 		m_p3DEngineCommon.m_RainOccluders.Release(true);
 		m_p3DEngineCommon.m_CausticInfo.Release();
 
-		m_pRT->RC_UnbindResources();
-		ForceFlushRTCommands();
-
-		m_pRT->RC_ResetGlass();
-		ForceFlushRTCommands();
-
-		m_pRT->RC_ForceMeshGC(true, true);
-		ForceFlushRTCommands();
-
-		m_cEF.mfReleaseSystemShaders();
-		ForceFlushRTCommands();
-
-		// if (nFlags & ???)
-		m_pRT->RC_ReleaseRenderResources(nFlags | FRR_PERMANENT_RENDER_OBJECTS);
-		ForceFlushRTCommands();
-
-		if (m_pPostProcessMgr)
-			m_pPostProcessMgr->ReleaseResources();
-		ForceFlushRTCommands();
-
-		// if (nFlags & FRR_FLUSH_TEXTURESTREAMING)
-		m_pRT->RC_FlushTextureStreaming(true);
-		ForceFlushRTCommands();
-
-		m_pRT->RC_ReleaseSystemTextures();
-		ForceFlushRTCommands();
-
-		m_pRT->RC_UnbindTMUs();
-		ForceFlushRTCommands();
-		CTexture::ResetTMUs();
-
-		// if (nFlags & FRR_DELETED_MESHES)
-		CRenderMesh::Tick(MAX_RELEASED_MESH_FRAMES); // requires PermanentRenderObjects be deleted to function properly (see above)
-		ForceFlushRTCommands();
-
-		CRenderElement::Cleanup(); // requires CRenderMesh::Tick() to function properly (see above)
-		ForceFlushRTCommands();
-
-		// sync dev buffer only once per frame, to prevent syncing to the currently rendered frame
-		// which would result in a deadlock
-		if (nFlags & (FRR_SYSTEM_RESOURCES | FRR_DELETED_MESHES))
+		for (uint i = 0; i < CLightStyle::s_LStyles.Num(); i++)
 		{
-			m_pRT->RC_DevBufferSync();
-			ForceFlushRTCommands();
+			delete CLightStyle::s_LStyles[i];
 		}
+		CLightStyle::s_LStyles.Free();
+	}
+	
+	// Now pass control to render thread and release render thread resources
+	m_pRT->RC_ReleaseRenderResources(nFlags);
+	ForceFlushRTCommands();
 
+	if (nFlags & FRR_SYSTEM_RESOURCES)
+	{
 		PrintResourcesLeaks();
 
 		if (!m_bDeviceLost)
 			m_bDeviceLost = 2;
 		m_bSystemResourcesInit = 0;
-
 	}
 
 	if (nFlags == FRR_ALL)
 	{
-		ForceFlushRTCommands();
 		CRenderElement::ShutDown();
 	}
-	else if (nFlags & FRR_RENDERELEMENTS)
-	{
-		CRenderElement::Cleanup();
-	}
-
-	if ((nFlags & FRR_RESTORE) && !(nFlags & FRR_SYSTEM))
-		m_cEF.mfInit();
 
 	CTimeValue tDeltaTime = gEnv->pTimer->GetAsyncTime() - tBegin;
 	iLog->Log("*** Clearing render resources took %.1f msec ***", tDeltaTime.GetMilliSeconds());
@@ -1524,10 +1443,6 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 		re = new CREHDRSky;
 		break;
 
-	case eDATA_Beam:
-		re = new CREBeam;
-		break;
-
 	case eDATA_FarTreeSprites:
 		re = new CREFarTreeSprites;
 		break;
@@ -1576,11 +1491,12 @@ void CRenderer::FX_StartMerging()
 	if (m_RP.m_FrameMerge != m_RP.m_Frame)
 	{
 		m_RP.m_FrameMerge = m_RP.m_Frame;
-		SBufInfoTable* pOffs = &CRenderMesh::m_cBufInfoTable[m_RP.m_CurVFormat];
-		int Size             = CRenderMesh::m_cSizeVF[m_RP.m_CurVFormat];
-		m_RP.m_StreamStride      = Size;
-		m_RP.m_StreamOffsetColor = pOffs->OffsColor;
-		m_RP.m_StreamOffsetTC    = pOffs->OffsTC;
+
+		const SInputLayout& pLayout = CDeviceObjectFactory::LookupInputLayout(m_RP.m_CurVFormat).first;
+
+		m_RP.m_StreamStride      = pLayout.m_Stride;
+		m_RP.m_StreamOffsetColor = pLayout.m_Offsets[SInputLayout::eOffset_Color];
+		m_RP.m_StreamOffsetTC    = pLayout.m_Offsets[SInputLayout::eOffset_TexCoord];
 		m_RP.m_NextStreamPtr     = m_RP.m_StreamPtr;
 		m_RP.m_NextStreamPtrTang = m_RP.m_StreamPtrTang;
 	}
@@ -1787,11 +1703,6 @@ void CRenderer::EF_CheckLightMaterial(CDLight* pLight, uint16 nRenderLightID, co
 
 			CRenderElement* pRE = pRendElemBase->Get(0);
 			const int32 nList     = (pRE->mfGetType() != eDATA_LensOptics) ? EFSLIST_TRANSP : EFSLIST_LENSOPTICS;
-
-			if (pRE->mfGetType() == eDATA_Beam)
-			{
-				pLight->m_Flags |= DLF_LIGHT_BEAM;
-			}
 
 			const float fWaterLevel = gEnv->p3DEngine->GetWaterLevel();
 			const float fCamZ       = m_RP.m_TI[nThreadID].m_cam.GetPosition().z;
@@ -2445,8 +2356,8 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 		// Guard CrashHandler for nullptr access if texture streaming is turned off
 		if (stats && gRenDev && CTexture::s_pTextureStreamer && CTexture::s_pPoolMgr)
 		{
-#if CRY_PLATFORM_DURANGO
-			IDefragAllocatorStats allocStats = m_DevMan.GetTexturePoolStats();
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+			IDefragAllocatorStats allocStats = GetDeviceObjectFactory().GetTexturePoolStats();
 			stats->nCurrentPoolSize = allocStats.nInUseSize;
 #else
 			stats->nCurrentPoolSize = CTexture::s_pPoolMgr->GetReservedSize();      // s_nStatsStreamPoolInUseMem;
@@ -2465,7 +2376,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 			stats->nNumTexturesPerFrame = gRenDev->m_RP.m_PS[gRenDev->m_RP.m_nProcessThreadID].m_NumTextures;
 #endif
 
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 			stats->fPoolFragmentation = (allocStats.nCapacity > 0)
 			  ? (allocStats.nCapacity - allocStats.nInUseSize - allocStats.nLargestFreeBlockSize) / (float)allocStats.nCapacity
 			  : 0.0f;
@@ -2637,7 +2548,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	break;
 	case EFQ_GetLastD3DDebugMessage:
 	{
-#if defined(SUPPORT_D3D_DEBUG_RUNTIME)
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 		class D3DDebugMessage:public ID3DDebugMessage
 		{
 		public:
@@ -2692,7 +2603,7 @@ _smart_ptr<IRenderMesh> CRenderer::CreateRenderMesh(const char* szType, const ch
 // NOTE: if the pVertBuffer is NULL, the system buffer doesn't get initialized with any values
 // (trash may be in it)
 _smart_ptr<IRenderMesh> CRenderer::CreateRenderMeshInitialized(
-	const void* pVertBuffer, int nVertCount, EVertexFormat eVF,
+	const void* pVertBuffer, int nVertCount, InputLayoutHandle eVF,
 	const vtx_idx* pIndices, int nIndices,
 	const PublicRenderPrimitiveType nPrimetiveType, const char* szType, const char* szSourceName, ERenderMeshType eBufType,
 	int nMatInfoCount, int nClientTextureBindID,
@@ -3428,7 +3339,7 @@ ITexture* CRenderer::CreateTexture(const char* name, int width, int height, int 
 {
 	char uniqueName[128];
 	cry_sprintf(uniqueName, "%s%d", name, m_TexGenID++);
-	return CTexture::Create2DTexture(uniqueName, width, height, numMips, flags, pData, eTF, eTF);
+	return CTexture::GetOrCreate2DTexture(uniqueName, width, height, numMips, flags, pData, eTF, eTF);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3436,7 +3347,7 @@ ITexture* CRenderer::CreateTextureArray(const char* name, ETEX_Type eType, uint3
 {
 	char uniqueName[128];
 	cry_sprintf(uniqueName, "%s%d", name, m_TexGenID++);
-	return CTexture::CreateTextureArray(uniqueName, eType, nWidth, nHeight, nArraySize, nMips, nFlags, eTF, nCustomID);
+	return CTexture::GetOrCreateTextureArray(uniqueName, nWidth, nHeight, nArraySize, nMips, eType, nFlags, eTF, nCustomID);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3478,16 +3389,18 @@ int CRenderer::GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int
 //////////////////////////////////////////////////////////////////////////
 ERenderType CRenderer::GetRenderType() const
 {
-#if CRY_PLATFORM_ORBIS
-	return eRT_PS4;
-#elif CRY_PLATFORM_DURANGO
-	return eRT_XboxOne;
-#elif defined(OPENGL)
-	return eRT_OpenGL;
-#elif defined(CRY_USE_DX12)
-	return eRT_DX12;
+#if CRY_RENDERER_GNM
+	return ERenderType::GNM;
+#elif CRY_RENDERER_OPENGL
+	return ERenderType::OpenGL;
+#elif CRY_RENDERER_VULKAN
+	return ERenderType::Vulkan;
+#elif (CRY_RENDERER_DIRECT3D >= 120)
+	return ERenderType::Direct3D12;
+#elif (CRY_RENDERER_DIRECT3D >= 110)
+	return ERenderType::Direct3D11;
 #else
-	return eRT_DX11;
+	return ERenderType::eRT_Undefined;
 #endif
 }
 
@@ -4757,4 +4670,117 @@ void CRenderer::ResumeRendererFromFrameEnd()
 void CRenderer::QueryActiveGpuInfo(SGpuInfo& info) const
 {
 	info = m_adapterInfo;
+}
+//=============================================================================
+
+alloc_info_struct* CRenderer::GetFreeChunk(int bytes_count, int nBufSize, PodArray<alloc_info_struct>& alloc_info, const char* szSource)
+{
+	int best_i = -1;
+	int min_size = 10000000;
+
+	// find best chunk
+	for (int i = 0; i < alloc_info.Count(); i++)
+	{
+		if (!alloc_info[i].busy)
+		{
+			if (alloc_info[i].bytes_num >= bytes_count)
+			{
+				if (alloc_info[i].bytes_num < min_size)
+				{
+					best_i = i;
+					min_size = alloc_info[i].bytes_num;
+				}
+			}
+		}
+	}
+
+	if (best_i >= 0)
+	{
+		// use best free chunk
+		alloc_info[best_i].busy = true;
+		alloc_info[best_i].szSource = szSource;
+
+		int bytes_free = alloc_info[best_i].bytes_num - bytes_count;
+		if (bytes_free > 0)
+		{
+			// modify reused shunk
+			alloc_info[best_i].bytes_num = bytes_count;
+
+			// insert another free shunk
+			alloc_info_struct new_chunk;
+			new_chunk.bytes_num = bytes_free;
+			new_chunk.ptr = alloc_info[best_i].ptr + alloc_info[best_i].bytes_num;
+			new_chunk.busy = false;
+
+			if (best_i < alloc_info.Count() - 1) // if not last
+			{
+				alloc_info.InsertBefore(new_chunk, best_i + 1);
+			}
+			else
+			{
+				alloc_info.Add(new_chunk);
+			}
+		}
+
+		return &alloc_info[best_i];
+	}
+
+	int res_ptr = 0;
+
+	int piplevel = alloc_info.Count() ? (alloc_info.Last().ptr - alloc_info[0].ptr) + alloc_info.Last().bytes_num : 0;
+	if (piplevel + bytes_count >= nBufSize)
+	{
+		return NULL;
+	}
+	else
+	{
+		res_ptr = piplevel;
+	}
+
+	// register new chunk
+	alloc_info_struct ai;
+	ai.ptr = res_ptr;
+	ai.szSource = szSource;
+	ai.bytes_num = bytes_count;
+	ai.busy = true;
+	alloc_info.Add(ai);
+
+	return &alloc_info[alloc_info.Count() - 1];
+}
+
+bool CRenderer::ReleaseChunk(int p, PodArray<alloc_info_struct>& alloc_info)
+{
+	for (int i = 0; i < alloc_info.Count(); i++)
+	{
+		if (alloc_info[i].ptr == p)
+		{
+			alloc_info[i].busy = false;
+
+			// delete info about last unused chunks
+			while (alloc_info.Count() && alloc_info.Last().busy == false)
+			{
+				alloc_info.Delete(alloc_info.Count() - 1);
+			}
+
+			// merge unused chunks
+			for (int s = 0; s < alloc_info.Count() - 1; s++)
+			{
+				assert(alloc_info[s].ptr < alloc_info[s + 1].ptr);
+
+				if (alloc_info[s].busy == false)
+				{
+					if (alloc_info[s + 1].busy == false)
+					{
+						alloc_info[s].bytes_num += alloc_info[s + 1].bytes_num;
+						alloc_info.Delete(s + 1);
+						s--;
+					}
+				}
+			}
+
+			return true;
+		}
+	}
+
+	return false;
 }

@@ -347,8 +347,6 @@ Vec4 CVolumetricCloudsStage::GetVolumetricCloudShadowParams(const CRenderCamera&
 CVolumetricCloudsStage::CVolumetricCloudsStage()
 	: m_cleared(MaxFrameNum)
 	, m_tick(-1)
-	, m_samplerTrilinearClamp(-1)
-	, m_samplerTrilinearWrap(-1)
 {
 	for (int32 e = 0; e < MaxEyeNum; ++e)
 	{
@@ -408,9 +406,6 @@ void CVolumetricCloudsStage::Init()
 	m_pCloudMiePhaseFuncTex = CTexture::ForName("%ENGINE%/EngineAssets/Shading/cloud_mie_phase_function.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
 	m_pNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
 
-	m_samplerTrilinearClamp = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
-	m_samplerTrilinearWrap = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
-
 	const char* tname[MaxEyeNum][2] =
 	{
 		{
@@ -447,33 +442,33 @@ void CVolumetricCloudsStage::Init()
 		for (int i = 0; i < 2; ++i)
 		{
 			CRY_ASSERT(m_pDownscaledMaxTex[e][i] == nullptr);
-			m_pDownscaledMaxTex[e][i] = CTexture::CreateTextureObject(tname[e][i], 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
+			m_pDownscaledMaxTex[e][i] = CTexture::GetOrCreateTextureObject(tname[e][i], 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
 
 			CRY_ASSERT(m_pDownscaledMinTex[e][i] == nullptr);
-			m_pDownscaledMinTex[e][i] = CTexture::CreateTextureObject(tnameMin[e][i], 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
+			m_pDownscaledMinTex[e][i] = CTexture::GetOrCreateTextureObject(tnameMin[e][i], 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
 		}
 
 		CRY_ASSERT(m_pScaledPrevDepthTex[e] == nullptr);
-		m_pScaledPrevDepthTex[e] = CTexture::CreateTextureObject(tnamePrevDepth[e], 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
+		m_pScaledPrevDepthTex[e] = CTexture::GetOrCreateTextureObject(tnamePrevDepth[e], 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
 	}
 
 	CRY_ASSERT(m_pCloudDepthTex == nullptr);
-	m_pCloudDepthTex = CTexture::CreateTextureObject("$VolCloudDepthScaled", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pCloudDepthTex = CTexture::GetOrCreateTextureObject("$VolCloudDepthScaled", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pDownscaledMaxTempTex == nullptr);
-	m_pDownscaledMaxTempTex = CTexture::CreateTextureObject("$VolCloudMaxTmp", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pDownscaledMaxTempTex = CTexture::GetOrCreateTextureObject("$VolCloudMaxTmp", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pDownscaledMinTempTex == nullptr);
-	m_pDownscaledMinTempTex = CTexture::CreateTextureObject("$VolCloudMinTmp", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pDownscaledMinTempTex = CTexture::GetOrCreateTextureObject("$VolCloudMinTmp", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pDownscaledLeftEyeTex == nullptr);
-	m_pDownscaledLeftEyeTex = CTexture::CreateTextureObject("$VolCloudLeftEye", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pDownscaledLeftEyeTex = CTexture::GetOrCreateTextureObject("$VolCloudLeftEye", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pCloudDensityTex == nullptr);
-	m_pCloudDensityTex = CTexture::CreateTextureObject("$VolCloudDensityTmp", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
+	m_pCloudDensityTex = CTexture::GetOrCreateTextureObject("$VolCloudDensityTmp", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pCloudShadowTex == nullptr);
-	m_pCloudShadowTex = CTexture::CreateTextureObject("$VolCloudShadowTmp", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
+	m_pCloudShadowTex = CTexture::GetOrCreateTextureObject("$VolCloudShadowTmp", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pCloudShadowConstantBuffer.get() == nullptr);
 	m_pCloudShadowConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SCloudShadowShaderParam));
@@ -711,8 +706,7 @@ void CVolumetricCloudsStage::Execute()
 	{
 		const int32 curEye = rd->m_CurRenderEye;
 		const int32 gpuCount = rd->GetActiveGPUCount();
-		SDepthTexture& depthBuffer = rd->m_DepthBufferOrigMSAA;
-		const int32 samplerPointClamp = rd->m_nPointClampSampler;
+		CTexture* depthBuffer = rd->m_pZTexture;
 		auto* pVolFogStage = rd->GetGraphicsPipeline().GetVolumetricFogStage();
 
 		CShader* pShader = CShaderMan::s_ShaderClouds;
@@ -732,9 +726,9 @@ void CVolumetricCloudsStage::Execute()
 
 		if (m_cleared > 0)
 		{
-			rd->GetDeviceContext().CopyResource(prevMaxTex->GetDevTexture()->Get2DTexture(), context.scaledTarget->GetDevTexture()->Get2DTexture());
-			rd->GetDeviceContext().CopyResource(prevMinTex->GetDevTexture()->Get2DTexture(), m_pDownscaledMinTempTex->GetDevTexture()->Get2DTexture());
-			rd->GetDeviceContext().CopyResource(prevScaledDepth->GetDevTexture()->Get2DTexture(), context.scaledZTarget->GetDevTexture()->Get2DTexture());
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledTarget->GetDevTexture(), prevMaxTex->GetDevTexture());
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_pDownscaledMinTempTex->GetDevTexture(), prevMinTex->GetDevTexture());
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledZTarget->GetDevTexture(), prevScaledDepth->GetDevTexture());
 
 			m_cleared -= 1;
 		}
@@ -774,7 +768,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTexture(3, m_pCloudDepthTex);
 				pass.SetTexture(4, bNewTemporalFilter ? CTexture::s_ptexBlack : prevScaledDepth);
 
-				pass.SetSampler(0, m_samplerTrilinearClamp);
+				pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 
 				pass.SetRequireWorldPos(true);
 			}
@@ -818,7 +812,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTexture(3, m_pCloudDepthTex);
 				pass.SetTexture(4, bNewTemporalFilter ? CTexture::s_ptexBlack : prevScaledDepth);
 
-				pass.SetSampler(0, m_samplerTrilinearClamp);
+				pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 
 				pass.SetRequireWorldPos(true);
 			}
@@ -829,7 +823,7 @@ void CVolumetricCloudsStage::Execute()
 		}
 
 		// copy current downscaled depth for next frame's temporal re-projection
-		rd->GetDeviceContext().CopyResource(prevScaledDepth->GetDevTexture()->Get2DTexture(), context.scaledZTarget->GetDevTexture()->Get2DTexture());
+		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledZTarget->GetDevTexture(), prevScaledDepth->GetDevTexture());
 
 		// upscale and blend it with scene.
 		{
@@ -865,7 +859,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
 				pass.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
-				pass.SetDepthTarget(&depthBuffer);
+				pass.SetDepthTarget(depthBuffer);
 
 				// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
 				pass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_SRCALPHA);
@@ -877,7 +871,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTexture(2, currMaxTex);
 				pass.SetTexture(3, currMinTex);
 
-				pass.SetSampler(0, samplerPointClamp);
+				pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 #ifdef ENABLE_FULL_SIZE_FOG
 				pass.SetTexture(4, m_pCloudDepthTex);
@@ -890,7 +884,7 @@ void CVolumetricCloudsStage::Execute()
 				else if (context.renderFogShadow)
 				{
 					pass.SetTexture(8, CTexture::s_ptexVolFogShadowBuf[0]);
-					pass.SetSampler(2, m_samplerTrilinearClamp);
+					pass.SetSampler(2, EDefaultSamplerStates::TrilinearClamp);
 				}
 	#endif
 #endif
@@ -955,7 +949,7 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 
 		pass.SetTexture(0, m_pNoiseTex);
 
-		pass.SetSampler(0, m_samplerTrilinearWrap);
+		pass.SetSampler(0, EDefaultSamplerStates::TrilinearWrap);
 
 		// set cloud base texture.
 		pass.SetTexture(15, cloudVolumeTex);
@@ -979,7 +973,7 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 	{
 		// Prepare buffers and textures which have been used by pixel shaders for use in the compute queue
 		// Reduce resource state switching by requesting the most inclusive resource state
-		pass.PrepareResourcesForUse(*CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList(), EShaderStage_All);
+		pass.PrepareResourcesForUse(GetDeviceObjectFactory().GetCoreCommandList());
 
 		{
 			const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
@@ -1124,9 +1118,9 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			pass.SetTexture(5, CTexture::s_ptexVolCloudShadow);
 			pass.SetTexture(6, m_pNoiseTex);
 
-			pass.SetSampler(0, rd->m_nBilinearBorderSampler);
-			pass.SetSampler(1, m_samplerTrilinearWrap);
-			pass.SetSampler(2, m_samplerTrilinearClamp);
+			pass.SetSampler(0, EDefaultSamplerStates::BilinearBorder_Black);
+			pass.SetSampler(1, EDefaultSamplerStates::TrilinearWrap);
+			pass.SetSampler(2, EDefaultSamplerStates::TrilinearClamp);
 
 			pass.SetTexture(15, cloudVolumeTex);
 		}
@@ -1159,7 +1153,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 		{
 			// Prepare buffers and textures which have been used by pixel shaders for use in the compute queue
 			// Reduce resource state switching by requesting the most inclusive resource state
-			pass.PrepareResourcesForUse(*CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList(), EShaderStage_All);
+			pass.PrepareResourcesForUse(GetDeviceObjectFactory().GetCoreCommandList());
 
 			{
 				const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
@@ -1231,9 +1225,9 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		pass.SetTexture(6, m_pNoiseTex);
 		pass.SetTexture(7, m_pCloudMiePhaseFuncTex);
 
-		pass.SetSampler(0, rd->m_nBilinearBorderSampler);
-		pass.SetSampler(1, m_samplerTrilinearWrap);
-		pass.SetSampler(2, m_samplerTrilinearClamp);
+		pass.SetSampler(0, EDefaultSamplerStates::BilinearBorder_Black);
+		pass.SetSampler(1, EDefaultSamplerStates::TrilinearWrap);
+		pass.SetSampler(2, EDefaultSamplerStates::TrilinearClamp);
 
 		if (context.bVolumetricFog)
 		{
@@ -1243,7 +1237,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		else if (context.renderFogShadow)
 		{
 			pass.SetTexture(8, CTexture::s_ptexVolFogShadowBuf[0]);
-			pass.SetSampler(3, rd->m_nPointClampSampler);
+			pass.SetSampler(3, EDefaultSamplerStates::PointClamp);
 		}
 #endif
 
@@ -1278,7 +1272,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 	{
 		// Prepare buffers and textures which have been used by pixel shaders for use in the compute queue
 		// Reduce resource state switching by requesting the most inclusive resource state
-		pass.PrepareResourcesForUse(*CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList(), EShaderStage_All);
+		pass.PrepareResourcesForUse(GetDeviceObjectFactory().GetCoreCommandList());
 
 		{
 			const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;

@@ -2299,25 +2299,22 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 	switch (gEnv->pRenderer->GetRenderType())
 	{
-	case eRT_OpenGL:
-		pRenderType = "GL";
+	case ERenderType::Direct3D11:
+		pRenderType = STR_DX11_RENDERER;
 		break;
-	case eRT_DX11:
-		pRenderType = "DX11";
+	case ERenderType::Direct3D12:
+		pRenderType = STR_DX12_RENDERER;
 		break;
-	case eRT_DX12:
-		pRenderType = "DX12";
+	case ERenderType::OpenGL:
+		pRenderType = STR_GL_RENDERER;
 		break;
-	case eRT_XboxOne:
-		pRenderType = "XboxOne";
+	case ERenderType::Vulkan:
+		pRenderType = STR_VK_RENDERER;
 		break;
-	case eRT_PS4:
-		pRenderType = "PS4";
+	case ERenderType::GNM:
+		pRenderType = STR_GNM_RENDERER;
 		break;
-	case eRT_Null:
-		pRenderType = "Null";
-		break;
-	case eRT_Undefined:
+	case ERenderType::Undefined:
 	default:
 		assert(0);
 		pRenderType = "Undefined";

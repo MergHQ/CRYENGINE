@@ -149,7 +149,7 @@ CVolumeDataItem::CVolumeDataItem(const char* filePath, const CREVolumeObject* pV
 				m_pHull = new SVolumeDataHull();
 				if (CreateVolumeDataHull(*pData, *m_pHull))
 				{
-					m_pHullMesh = gEnv->pRenderer->CreateRenderMeshInitialized(m_pHull->m_pPts, (int) m_pHull->m_numPts, eVF_P3F_C4B_T2F,
+					m_pHullMesh = gEnv->pRenderer->CreateRenderMeshInitialized(m_pHull->m_pPts, (int) m_pHull->m_numPts, EDefaultInputLayouts::P3F_C4B_T2F,
 					                                                           m_pHull->m_pIdx, (int) m_pHull->m_numTris * 3, prtTriangleList, "VolumeObjectHull", "VolumeObjectHull");
 					m_isValid &= m_pHullMesh != 0;
 				}

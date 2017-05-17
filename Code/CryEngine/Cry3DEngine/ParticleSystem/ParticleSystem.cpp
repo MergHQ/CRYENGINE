@@ -32,6 +32,8 @@ std::vector<SParticleFeatureParams> &GetFeatureParams()
 CParticleSystem::CParticleSystem()
 	: m_memHeap(gEnv->pJobManager->GetNumWorkerThreads() + 1)
 	, m_nextEmitterId(0)
+	, m_lastCameraPose(IDENTITY)
+	, m_lastSysSpec(END_CONFIG_SPEC_ENUM)
 {
 }
 
@@ -111,6 +113,28 @@ void CParticleSystem::TrimEmitters()
 	  m_emitters.end());
 }
 
+void CParticleSystem::InvalidateCachedRenderObjects()
+{
+	// Render objects and PSOs need to be updated when sys_spec changes.
+	static ICVar* pSysSpecCVar = gEnv->pConsole->GetCVar("sys_spec");
+	if (pSysSpecCVar)
+	{
+		const int32 sysSpec = pSysSpecCVar->GetIVal();
+
+		CRY_ASSERT(sysSpec != END_CONFIG_SPEC_ENUM);
+		const bool bInvalidate = ((m_lastSysSpec != END_CONFIG_SPEC_ENUM) && (m_lastSysSpec != sysSpec));
+		m_lastSysSpec = sysSpec;
+
+		if (bInvalidate)
+		{
+			for (auto& pEmitter : m_emitters)
+			{
+				pEmitter->Restart();
+			}
+		}
+	}
+}
+
 void CParticleSystem::Update()
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
@@ -141,11 +165,13 @@ void CParticleSystem::Update()
 		m_emitters.insert(m_emitters.end(), m_newEmitters.begin(), m_newEmitters.end());
 		m_newEmitters.clear();
 
+		InvalidateCachedRenderObjects();
+
 		m_stats = SParticleStats();
 		m_stats.m_emittersAlive = m_emitters.size();
 		for (auto& pEmitter : m_emitters)
 			pEmitter->AccumStats(m_stats);
-				
+
 		for (auto& pEmitter : m_emitters)
 		{
 			pEmitter->Update();
@@ -219,7 +245,15 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 
 void CParticleSystem::ClearRenderResources()
 {
+#if !defined(_RELEASE)
+	for (const auto& pEmitter : m_emitters)
+	{
+		CRY_PFX2_ASSERT(pEmitter->Unique()); // All external references need to be released before this point to prevent leaks
+	}
+#endif
+
 	m_emitters.clear();
+
 	for (auto it = m_effects.begin(); it != m_effects.end(); )
 	{
 		if (!it->second || it->second->Unique())

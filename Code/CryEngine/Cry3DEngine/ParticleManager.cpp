@@ -272,12 +272,24 @@ void CParticleManager::Reset()
 //////////////////////////////////////////////////////////////////////////
 void CParticleManager::ClearRenderResources(bool bForceClear)
 {
+	const bool bClearEmitters = !GetCVars()->e_ParticlesPreload || bForceClear;
+
+#if !defined(_RELEASE)
+	if (bClearEmitters)
+	{
+		for (const auto& pEmitter : m_Emitters)
+		{
+			assert(pEmitter.Unique()); // All external references need to be released before this point to prevent leaks
+		}
+	}
+#endif
+
 	if (GetCVars()->e_ParticlesDebug & AlphaBit('m'))
 		PrintParticleMemory();
 
 	Reset();
 
-	if (!GetCVars()->e_ParticlesPreload || bForceClear)
+	if (bClearEmitters)
 	{
 		m_Effects.clear();
 		m_LoadedLibs.clear();
@@ -854,14 +866,19 @@ void CParticleManager::UpdateEngineData()
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesShadows - 1, FOB_INSHADOW);
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesSoftIntersect - 1, FOB_SOFT_PARTICLE);
 
+	bool bInvalidateCachedRenderObjects = false;
+
 	if (GetRenderer())
 	{
 		bool bParticleTesselation = false;
 		GetRenderer()->EF_Query(EFQ_ParticlesTessellation, bParticleTesselation);
 		m_RenderFlags.SetState(int(bParticleTesselation) - 1, FOB_ALLOW_TESSELLATION);
+
+		bInvalidateCachedRenderObjects = (m_bParticleTessellation != bParticleTesselation);
+		m_bParticleTessellation = bParticleTesselation;
 	}
 
-	if (m_pLastDefaultParams != &GetDefaultParams())
+	if (m_pLastDefaultParams != &GetDefaultParams() || bInvalidateCachedRenderObjects)
 	{
 		// Default effect or config spec changed.
 		m_pLastDefaultParams = &GetDefaultParams();

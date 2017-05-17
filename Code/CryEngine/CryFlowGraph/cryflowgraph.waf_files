@@ -82,6 +82,7 @@
       "FlowSystem/Nodes/FlowAudioRtpcNode.cpp",
       "FlowSystem/Nodes/FlowAudioSwitchNode.cpp",
       "FlowSystem/Nodes/FlowAudioTriggerNode.cpp",
+      "FlowSystem/Nodes/FlowAutoNoiseNodes.cpp",
       "FlowSystem/Nodes/FlowAttachmentNodes.cpp",
       "FlowSystem/Nodes/FlowCustomActionNodes.cpp",
       "FlowSystem/Nodes/AnimationEventListenerNode.cpp",

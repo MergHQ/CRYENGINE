@@ -493,6 +493,8 @@ CSystem::~CSystem()
 
 	SAFE_DELETE(g_pPakHeap);
 
+	m_pTestSystem.reset();
+
 	m_env.pSystem = 0;
 #if !defined(SYS_ENV_AS_STRUCT)
 	gEnv = 0;
@@ -727,17 +729,9 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_pIBudgetingSystem);
 
 	SAFE_RELEASE(m_env.pRenderer);
-#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
-	UnloadEngineModule("CryRenderD3D11");
-#else
+
 	auto r_driver = m_env.pConsole->GetCVar("r_driver")->GetString();
-	if (stricmp(r_driver, "DX11") == 0)
-		UnloadEngineModule("CryRenderD3D11");
-	else if (stricmp(r_driver, "DX12") == 0)
-		UnloadEngineModule("CryRenderD3D12");
-	else if (stricmp(r_driver, "GL") == 0)
-		UnloadEngineModule("CryRenderOpenGL");
-#endif
+	CloseRenderLibrary(r_driver);
 
 	SAFE_RELEASE(m_env.pCodeCheckpointMgr);
 

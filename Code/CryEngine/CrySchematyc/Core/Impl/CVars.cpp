@@ -5,21 +5,21 @@
 
 namespace Schematyc
 {
-ICVar* CVars::sc_RootFolder = nullptr;
+	ICVar* CVars::sc_RootFolder               = nullptr;
 int CVars::sc_IgnorePAKFiles = 0;
 int CVars::sc_IgnoreUnderscoredFolders = 1;
 int CVars::sc_EnableScriptPartitioning = 0;
 
-int CVars::sc_LogToFile = 0;
-ICVar* CVars::sc_LogFileStreams = nullptr;
-ICVar* CVars::sc_LogFileMessageTypes = nullptr;
+	int    CVars::sc_LogToFile                = 0;
+	ICVar* CVars::sc_LogFileStreams           = nullptr;
+	ICVar* CVars::sc_LogFileMessageTypes      = nullptr;
 int CVars::sc_DisplayCriticalErrors = 0;
 
 int CVars::sc_RunUnitTests = 0;
-ICVar* CVars::sc_ExperimentalFeatures = nullptr;
-
-void CVars::Register()
-{
+	ICVar* CVars::sc_ExperimentalFeatures     = nullptr;
+	
+	void CVars::Register()
+	{
 	sc_RootFolder = REGISTER_STRING("sc_RootFolder", "libs/schematyc", VF_READONLY, "Schematyc - Root folder for files");
 	REGISTER_CVAR(sc_IgnorePAKFiles, sc_IgnorePAKFiles, VF_READONLY, "Schematyc - Ignore PAK files");
 	REGISTER_CVAR(sc_IgnoreUnderscoredFolders, sc_IgnoreUnderscoredFolders, VF_READONLY, "Schematyc - Ignore folders whose names begin with an underscore");
@@ -32,7 +32,7 @@ void CVars::Register()
 
 	REGISTER_CVAR(sc_RunUnitTests, sc_RunUnitTests, VF_READONLY, "Schematyc - Enable/disable unit tests on startup");
 	sc_ExperimentalFeatures = REGISTER_STRING("sc_ExperimentalFeatures", "", VF_NULL, "Schematyc - Enable one or more experimental features");
-}
+	}
 
 void CVars::Unregister()
 {

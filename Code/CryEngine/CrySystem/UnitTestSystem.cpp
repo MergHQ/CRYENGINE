@@ -372,6 +372,7 @@ CRY_UNIT_TEST_SUITE(BITFIDDLING)
 		}
 	}
 }
+
 CRY_UNIT_TEST_SUITE(Math)
 {
 	using namespace crymath;

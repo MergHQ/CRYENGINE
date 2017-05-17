@@ -60,10 +60,6 @@ void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CPart
 
 void CParticleRenderBase::ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
 {
-	const bool isGpu = pComponent->GetRuntimeInitializationParameters().usesGpuImplementation;
-	if (isGpu)
-		return;
-
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
 	{
 		ResetRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId);
@@ -103,7 +99,6 @@ void CParticleRenderBase::Render(CParticleEmitter* pEmitter, ICommonParticleComp
 
 void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId, uint64 objFlags)
 {
-	const bool isGpu = pComponent->GetRuntimeInitializationParameters().usesGpuImplementation;
 	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
 	pEmitter->SetRenderObject(pRenderObject, threadId, renderObjectId);
 
@@ -117,7 +112,7 @@ void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParti
 	pRenderObject->m_RState = params.m_renderStateFlags | OS_ENVIRONMENT_CUBEMAP;
 	pRenderObject->m_fSort = 0;
 	pRenderObject->m_ParticleObjFlags = params.m_particleObjFlags;
-	pRenderObject->m_pRE = isGpu ? nullptr : gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
+	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
 
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 	pObjData->m_pParticleShaderData = &params.m_shaderData;
@@ -125,15 +120,13 @@ void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParti
 
 void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId)
 {
-	const bool isGpu = pComponent->GetRuntimeInitializationParameters().usesGpuImplementation;
-
 	if (renderObjectId == -1)
 		return;
 	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
 	if (!pRenderObject)
 		return;
 
-	if (!isGpu && pRenderObject->m_pRE != nullptr)
+	if (pRenderObject->m_pRE != nullptr)
 		pRenderObject->m_pRE->Release();
 	gEnv->pRenderer->EF_FreeObject(pRenderObject);
 	pEmitter->SetRenderObject(nullptr, threadId, renderObjectId);
@@ -157,17 +150,9 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, ICommonPar
 	else
 		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-	if (auto pGpuRuntime = pComponentRuntime->GetGpuRuntime())
-	{
-		pGpuRuntime->Render(pRenderObject, renderContext.m_passInfo, renderContext.m_renderParams);
-	}
-	else
-	{
-		CParticleJobManager& kernel = GetPSystem()->GetJobManager();
-		kernel.ScheduleComputeVertices(
-			pComponentRuntime->GetCpuRuntime(),
-			pRenderObject, renderContext);
-	}
+	CParticleJobManager& kernel = GetPSystem()->GetJobManager();
+	kernel.ScheduleComputeVertices(pComponentRuntime, pRenderObject, renderContext);
+
 	renderContext.m_passInfo.GetIRenderView()->AddPermanentObject(
 		pRenderObject,
 		renderContext.m_passInfo);

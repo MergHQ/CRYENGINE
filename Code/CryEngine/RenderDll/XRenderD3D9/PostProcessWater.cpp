@@ -1,14 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   PostProcessWater : water related post processing
-
-   Revision history:
-* 23/02/2005: Re-factored/Converted to CryEngine 2.0 by Tiago Sousa
-* Created by Tiago Sousa
-
-   =============================================================================*/
-
 #include "StdAfx.h"
 #include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>

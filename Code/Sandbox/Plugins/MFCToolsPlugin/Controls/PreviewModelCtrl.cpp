@@ -441,10 +441,6 @@ bool CPreviewModelCtrl::Render()
 	m_pRenderer->SetRenderTile(m_tileX, m_tileY, m_tileSizeX, m_tileSizeY);
 	m_pRenderer->SetCamera(m_camera);
 
-	// Render grid. Explicitly clear color and depth buffer first
-	// (otherwise ->EndEf3D() will do that and thereby clear the grid).
-	m_pRenderer->ClearTargetsImmediately(FRT_CLEAR, m_clearColor);
-
 	DrawBackground();
 	if (m_bGrid || m_bAxis)
 		DrawGrid();
@@ -521,7 +517,7 @@ bool CPreviewModelCtrl::Render()
 		if (m_bShowObject)
 			RenderObject(pMaterial, passInfo);
 
-		m_pRenderer->EF_EndEf3D(SHDF_NOASYNC | SHDF_STREAM_SYNC, -1, -1, passInfo);
+		m_pRenderer->EF_EndEf3D(SHDF_NOASYNC | SHDF_STREAM_SYNC | SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
 	}
 
 	m_pRenderer->RenderDebug(false);
@@ -1195,29 +1191,79 @@ void CPreviewModelCtrl::DrawBackground()
 	if (!m_backgroundTextureId)
 		return;
 
-	CRect rc;
-	GetClientRect(rc);
+	SVF_P3F_C4B_T2F tempVertices[6];
+	SVF_P3F_C4B_T2F* pVertex = tempVertices;
 
-	int rcw = rc.right;
-	int rch = rc.bottom;
+	const float xpos = 0.0f;
+	const float ypos = 0.0f;
+	const float z = 0.0f;
+	const uint32 color = 0xFFFFFFFF;
+	const float w = 1.0f;
+	const float h = 1.0f;
+	const float s[4] = {0.0f, 1.0f, 1.0f, 0.0f};
+	const float t[4] = {1.0f, 1.0f, 0.0f, 0.0f};
 
-	m_pRenderer->Set2DMode(true, rcw, rch, 0, 1);
+	pVertex->xyz.x = xpos;
+	pVertex->xyz.y = ypos;
+	pVertex->xyz.z = z;
+	pVertex->st = Vec2(s[0], t[0]);
+	pVertex->color.dcolor = color;
 
-	m_pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
+	++pVertex;
 
-	float uvs[4], uvt[4];
-	uvs[0] = 0;
-	uvt[0] = 1;
-	uvs[1] = 1;
-	uvt[1] = 1;
-	uvs[2] = 1;
-	uvt[2] = 0;
-	uvs[3] = 0;
-	uvt[3] = 0;
-	float color[4] = { 1, 1, 1, 1 };
+	pVertex->xyz.x = xpos + w;
+	pVertex->xyz.y = ypos;
+	pVertex->xyz.z = z;
+	pVertex->st = Vec2(s[1], t[1]);
+	pVertex->color.dcolor = color;
 
-	m_pRenderer->DrawImageWithUV(0, 0, 0.5f, rcw, rch, m_backgroundTextureId, uvs, uvt, color[0], color[1], color[2], color[3]);
-	m_pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
+	++pVertex;
 
-	m_pRenderer->Set2DMode(false, rcw, rch);
+	pVertex->xyz.x = xpos;
+	pVertex->xyz.y = ypos + h;
+	pVertex->xyz.z = z;
+	pVertex->st = Vec2(s[3], t[3]);
+	pVertex->color.dcolor = color;
+
+	++pVertex;
+
+	pVertex->xyz.x = xpos;
+	pVertex->xyz.y = ypos + h;
+	pVertex->xyz.z = z;
+	pVertex->st = Vec2(s[3], t[3]);
+	pVertex->color.dcolor = color;
+
+	++pVertex;
+
+	pVertex->xyz.x = xpos + w;
+	pVertex->xyz.y = ypos;
+	pVertex->xyz.z = z;
+	pVertex->st = Vec2(s[1], t[1]);
+	pVertex->color.dcolor = color;
+
+	++pVertex;
+
+	pVertex->xyz.x = xpos + w;
+	pVertex->xyz.y = ypos + h;
+	pVertex->xyz.z = z;
+	pVertex->st = Vec2(s[2], t[2]);
+	pVertex->color.dcolor = color;
+
+	SAuxGeomRenderFlags renderFlags;
+	renderFlags.SetMode2D3DFlag(e_Mode2D);
+	renderFlags.SetAlphaBlendMode(e_AlphaNone);
+	renderFlags.SetDrawInFrontMode(e_DrawInFrontOff);
+	renderFlags.SetFillMode(e_FillModeSolid);
+	renderFlags.SetCullMode(e_CullModeNone);
+	renderFlags.SetDepthWriteFlag(e_DepthWriteOff);
+	renderFlags.SetDepthTestFlag(e_DepthTestOff);
+
+	const SAuxGeomRenderFlags prevRenderFlags = gEnv->pRenderer->GetIRenderAuxGeom()->GetRenderFlags();
+	gEnv->pRenderer->GetIRenderAuxGeom()->SetRenderFlags(renderFlags);
+	gEnv->pRenderer->GetIRenderAuxGeom()->SetTexture(m_backgroundTextureId);
+
+	gEnv->pRenderer->GetIRenderAuxGeom()->DrawBuffer(tempVertices, 6, true);
+
+	gEnv->pRenderer->GetIRenderAuxGeom()->SetTexture(-1);
+	gEnv->pRenderer->GetIRenderAuxGeom()->SetRenderFlags(prevRenderFlags);
 }

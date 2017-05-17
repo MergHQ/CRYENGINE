@@ -133,7 +133,7 @@ if(OPTION_STATIC_LINKING)
 	MESSAGE(STATUS "Use Static Linking (.lib/.a)" )
 	set(BUILD_SHARED_LIBS FALSE)
 else()
-	# Enable dynamic libraries
+	# Enable dynamic librariesboost
 	MESSAGE(STATUS "Use Dynamic Linking (.dll/.so)" )
 	set(BUILD_SHARED_LIBS TRUE)
 endif()

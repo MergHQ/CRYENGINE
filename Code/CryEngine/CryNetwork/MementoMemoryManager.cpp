@@ -6,7 +6,7 @@
 #include <CrySystem/ITextModeConsole.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
-#define PREVENT_ZERO_ALLOCS(x) x = MAX(x, 1)
+#define PREVENT_ZERO_ALLOCS(x) x = std::max((size_t)x, (size_t)1)
 
 #if MMM_USE_BUCKET_ALLOCATOR
 	#include <CryMemory/BucketAllocatorImpl.h>

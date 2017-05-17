@@ -552,7 +552,7 @@ IRenderMesh* CWaterWaveManager::CreateRenderMeshInstance(CWaterWaveRenderNode* p
 		// Finally, make render mesh
 		pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(&pWaveVertices[0],
 		                                                         pWaveVertices.size(),
-		                                                         eVF_P3F_C4B_T2F,
+		                                                         EDefaultInputLayouts::P3F_C4B_T2F,
 		                                                         &pWaveIndices[0],
 		                                                         pWaveIndices.size(),
 		                                                         prtTriangleStrip,

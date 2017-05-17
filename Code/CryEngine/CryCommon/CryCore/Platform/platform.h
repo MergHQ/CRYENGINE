@@ -100,12 +100,7 @@
 #endif
 
 #if CRY_PLATFORM_WINAPI
-	#define PRIX64 "I64X"
-	#define PRIx64 "I64x"
-	#define PRId64 "I64d"
-	#define PRIu64 "I64u"
-	#define PRIi64 "I64i"
-
+	#include <inttypes.h>
 	#define PLATFORM_I64(x) x ## i64
 #else
 	#define __STDC_FORMAT_MACROS
@@ -229,11 +224,15 @@ static inline void __dmb()
 
 // Define BIT macro for use in enums and bit masks.
 #if !defined(SWIG)
-#define BIT(x)   (1u << (x))
-#define BIT64(x) (1ull << (x))
+	#define BIT(x)    (1u << (x))
+	#define BIT64(x)  (1ull << (x))
+	#define MASK(x)   (BIT(x) - 1U)
+	#define MASK64(x) (BIT64(x) - 1ULL)
 #else
-#define BIT(x)   (1 << (x))
-#define BIT64(x)   (1 << (x))
+	#define BIT(x)    (1 << (x))
+	#define BIT64(x)  (1 << (x))
+	#define MASK(x)   (BIT(x) - 1)
+	#define MASK64(x) (BIT64(x) - 1)
 #endif
 
 //! ILINE always maps to CRY_FORCE_INLINE, which is the strongest possible inline preference.
@@ -268,8 +267,12 @@ static inline void __dmb()
 	#include <CryCore/Platform/Linux32Specific.h>
 #endif
 
-#if CRY_PLATFORM_ANDROID
-	#include <CryCore/Platform/AndroidSpecific.h>
+#if CRY_PLATFORM_ANDROID && CRY_PLATFORM_64BIT
+	#include <CryCore/Platform/Android64Specific.h>
+#endif
+
+#if CRY_PLATFORM_ANDROID && CRY_PLATFORM_32BIT
+	#include <CryCore/Platform/Android32Specific.h>
 #endif
 
 #if CRY_PLATFORM_DURANGO
@@ -293,20 +296,6 @@ static inline void __dmb()
 #endif
 
 #include "CryPlatform.h"
-
-#if CRY_PLATFORM_ARM
-// Define when platform has LL/SC rather than CAS atomics
-	#define CRY_HAS_LLSC
-	#define FORCED_MALLOC_NEW_ALIGNMENT 16
-	#define CRY_UNALIGNED_LOAD
-#else
-	#define FORCED_MALLOC_NEW_ALIGNMENT 0
-#endif
-
-// When >1 all allocations use memalign
-#if FORCED_MALLOC_NEW_ALIGNMENT > 1
-	#define CRY_FORCE_MALLOC_NEW_ALIGN
-#endif
 
 // Indicates potentially dangerous cast on 64bit machines
 typedef UINT_PTR TRUNCATE_PTR;

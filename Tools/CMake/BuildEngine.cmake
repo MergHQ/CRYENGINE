@@ -57,7 +57,7 @@ if(WIN32 OR WIN64)
 endif()
 
 #Renderer modules
-if(NOT (ORBIS OR ANDROID))
+if(NOT (ORBIS OR ANDROID OR LINUX))
 	OPTION(RENDERER_DX11 "Renderer for DirectX 11" ON)
 endif()
 
@@ -69,17 +69,18 @@ if (WIN32 OR WIN64)
 	endif()
 endif()
 
-if(LINUX OR ANDROID)
-	set(RENDERER_OPENGL ON)
-elseif (NOT (DURANGO OR ORBIS))
-	OPTION(RENDERER_OPENGL "Renderer for OpenGL" ON)
-endif()
+# Disable opengl renderer for now
+set(RENDERER_OPENGL OFF)
 
 if(ORBIS)
 	OPTION(RENDERER_GNM "Use GNM renderer for Orbis" ON)
 	if(NOT RENDERER_GNM)
 		SET(RENDERER_DX11 ON)
 	endif()
+endif()
+
+if(WIN64)
+  OPTION(RENDERER_VULKAN "Renderer for Vulkan API" ON)
 endif()
 
 #Audio modules

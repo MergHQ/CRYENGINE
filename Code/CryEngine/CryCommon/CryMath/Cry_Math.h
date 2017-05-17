@@ -19,6 +19,7 @@
 //========================================================================================
 
 #include <CryCore/Platform/platform.h>
+#include <cstdlib>
 #include <cfloat>
 #include <cmath>
 
@@ -53,14 +54,6 @@ const f64 sqrt3 = 1.7320508075688772935274463415059;
 
 #define DEG2RAD(a) ((a) * (gf_PI / 180.0f))
 #define RAD2DEG(a) ((a) * (180.0f / gf_PI))
-
-// MIN and MAX macros are sometimes needed for constant definitions
-#ifndef MAX
-	#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-#ifndef MIN
-	#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#endif
 
 // Define min and max as proper template
 #ifdef min

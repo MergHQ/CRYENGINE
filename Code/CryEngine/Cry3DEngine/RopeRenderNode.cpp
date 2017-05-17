@@ -1577,7 +1577,7 @@ void CRopeRenderNode::CreateRenderMesh()
 	// make new RenderMesh
 	//////////////////////////////////////////////////////////////////////////
 	m_pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-	  NULL, 3, eVF_P3F_C4B_T2F,
+	  NULL, 3, EDefaultInputLayouts::P3F_C4B_T2F,
 	  NULL, 3, prtTriangleList,
 	  "Rope", GetName(),
 	  eRMT_Dynamic, 1, 0, NULL, NULL, false, false);

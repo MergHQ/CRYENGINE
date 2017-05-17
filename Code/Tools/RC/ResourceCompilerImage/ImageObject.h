@@ -153,6 +153,8 @@ private:
 	ImageObject* m_pAttachedImage;        // alpha channel in the case it was lost through format conversion
 	uint32       m_imageFlags;            // combined from CImageExtensionHelper::EIF_Cubemap,...
 	uint32       m_numPersistentMips;
+	uint32       m_compressedBlockWidth;
+	uint32       m_compressedBlockHeight;
 
 private:
 	// Prevent copying
@@ -161,10 +163,10 @@ private:
 
 public:
 	// allocate an image with the given properties
-	ImageObject(const uint32 width, const uint32 height, const uint32 maxMipCount, const EPixelFormat pixelFormat, ECubemap eCubemap);
+	ImageObject(const uint32 width, const uint32 height, const uint32 maxMipCount, const EPixelFormat pixelFormat, ECubemap eCubemap, const int compressedBlockWidth = -1, const int compressedBlockHeight = -1);
 	~ImageObject();
 
-	void ResetImage(const uint32 width, const uint32 height, const uint32 maxMipCount, const EPixelFormat pixelFormat, ECubemap eCubemap);
+	void ResetImage(const uint32 width, const uint32 height, const uint32 maxMipCount, const EPixelFormat pixelFormat, ECubemap eCubemap, const int compressedBlockWidth = -1, const int compressedBlockHeight = -1);
 
 	// clone this image-object's contents, but not the properties
 	ImageObject* CopyImage() const;
@@ -181,7 +183,7 @@ public:
 	void ClearImageArea(int offsetx, int offsety, int width, int height);
 
 	// allocate an image with the same properties as the given image and the requested format, with dropping top-mips if requested
-	ImageObject* AllocateImage(const uint32 highestMip, const EPixelFormat pixelFormat) const;
+	ImageObject* AllocateImage(const uint32 highestMip, const EPixelFormat pixelFormat, const int compressedBlockWidth = -1, const int compressedBlockHeight = -1) const;
 	// allocate an image with the same properties as the given image, with dropping top-mips if requested
 	ImageObject* AllocateImage(const uint32 highestMip = 0) const;
 	// allocate an image with the same properties as the given image, with adding or dropping top-mips if requested
@@ -316,7 +318,7 @@ public:
 	{
 		assert((m_pixelFormat >= 0) && (m_pixelFormat < ePixelFormat_Count));
 		assert(!CPixelFormats::GetPixelFormatInfo(m_pixelFormat)->bCompressed);
-		assert(CPixelFormats::GetPixelFormatInfo(m_pixelFormat)->bitsPerPixel / 8 == sizeof(T));
+		assert(CPixelFormats::GetPixelFormatInfo(m_pixelFormat)->bytesPerBlock == sizeof(T));
 		assert(mip < (uint32)m_mips.size());
 		assert(m_mips[mip]);
 
@@ -328,7 +330,7 @@ public:
 	{
 		assert((m_pixelFormat >= 0) && (m_pixelFormat < ePixelFormat_Count));
 		assert(!CPixelFormats::GetPixelFormatInfo(m_pixelFormat)->bCompressed);
-		assert(CPixelFormats::GetPixelFormatInfo(m_pixelFormat)->bitsPerPixel / 8 == sizeof(T));
+		assert(CPixelFormats::GetPixelFormatInfo(m_pixelFormat)->bytesPerBlock == sizeof(T));
 		assert(mip < (uint32)m_mips.size());
 		assert(m_mips[mip]);
 		assert(x < m_mips[mip]->m_width);
@@ -417,6 +419,16 @@ public:
 	void SetNumPersistentMips(uint32 nMips)
 	{
 		m_numPersistentMips = nMips;
+	}
+
+	uint32 GetCompressedBlockWidth() const
+	{
+		return m_compressedBlockWidth;
+	}
+
+	uint32 GetCompressedBlockHeight() const
+	{
+		return m_compressedBlockHeight;
 	}
 
 	bool HasCubemapCompatibleSizes() const
@@ -715,6 +727,10 @@ private:
 
 	// Convert to/from POWERVR PVRTC (2bpp or 4bpp) format
 	EResult ConvertFormatWithPVRTCCompressor(const CImageProperties* pProps, EPixelFormat fmtDst, EQuality quality);
+
+	// Convert to/from ASTC format
+	EResult ConvertFormatWithASTCCompressor(const CImageProperties* pProps, EPixelFormat fmtDst, EQuality quality);
+
 
 public:
 	// ---------------------------------------------------------------------------------

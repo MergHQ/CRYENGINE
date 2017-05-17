@@ -141,7 +141,7 @@ private:
 	bool InitDialogSystem();
 	void ReleaseDialogSystem();
 
-	static uint32 _CalcTextureMemory(const EPixelFormat pixelFormat, const uint32 dwWidth, const uint32 dwHeight, const bool bCubemap, const bool bMips);
+	static uint32 _CalcTextureMemory(const EPixelFormat pixelFormat, const uint32 dwWidth, const uint32 dwHeight, const bool bCubemap, const bool bMips, const uint32 compressedBlockWidth, const uint32 compressedBlockHeight);
 
 public:  // ------------------------------------------------------------------
 	CImageProperties          m_Props;                          // user settings

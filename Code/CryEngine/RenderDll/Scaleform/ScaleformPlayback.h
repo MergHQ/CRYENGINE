@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "../XRenderD3D9/GraphicsPipeline/Common/PrimitiveRenderPass.h"
+#include "../XRenderD3D9/GraphicsPipeline/Common/UtilityPasses.h"
 
 #define ENABLE_FLASH_FILTERS
 
@@ -175,6 +176,7 @@ struct SSF_GlobalDrawParams
 
 		// Pass for GraphicsPipeline > 0
 		CPrimitiveRenderPass renderPass;
+		mutable CClearRegionPass clearPass;
 
 		// Handling clears
 		mutable bool bRenderTargetClear;

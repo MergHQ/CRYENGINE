@@ -27,9 +27,6 @@ SD3DPostEffectsUtils SD3DPostEffectsUtils::m_pInstance;
 
 SDepthTexture* SD3DPostEffectsUtils::GetDepthSurface(CTexture* pTex)
 {
-	if (pTex->GetFlags() & FT_USAGE_MSAA && gRenDev->m_RP.m_MSAAData.Type)
-		return &gcpRendD3D->m_DepthBufferOrigMSAA;
-
 	return &gcpRendD3D->m_DepthBufferOrig;
 }
 
@@ -45,39 +42,34 @@ void SD3DPostEffectsUtils::ResolveRT(CTexture*& pDst, const RECT* pSrcRect)
 	int iTempX, iTempY, iWidth, iHeight;
 	gcpRendD3D->GetViewport(&iTempX, &iTempY, &iWidth, &iHeight);
 
-	CDeviceTexture* pDstResource = pDst->GetDevTexture();
-
-	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstResource);
-
-	D3DSurface* pOrigRT = gcpRendD3D->m_pNewTarget[0]->m_pTarget;
-	if (pOrigRT && pDstResource)
+	CTexture* pSrc = gcpRendD3D->m_pNewTarget[0]->m_pTex;
+	if (pSrc)
 	{
-		D3D11_BOX box;
-		ZeroStruct(box);
-		if (pSrcRect)
-		{
-			box.left = pSrcRect->left;
-			box.right = pSrcRect->right;
-			box.top = pSrcRect->top;
-			box.bottom = pSrcRect->bottom;
-		}
-		else
-		{
-			box.right = min(pDst->GetWidth(), gcpRendD3D->m_pNewTarget[0]->m_Width);
-			box.bottom = min(pDst->GetHeight(), gcpRendD3D->m_pNewTarget[0]->m_Height);
-		}
-		box.back = 1;
+		assert(pSrc->GetDevTexture()->LookupRTV(EDefaultResourceViews::RenderTarget) == gcpRendD3D->m_pNewTarget[0]->m_pTarget);
 
-		D3DResource* pSrcResource;
-		pOrigRT->GetResource(&pSrcResource);
+		RECT defaultRect;
+		if (!pSrcRect)
+		{
+			defaultRect.left = 0;
+			defaultRect.top = 0;
+			defaultRect.right = min(pDst->GetWidth(), gcpRendD3D->m_pNewTarget[0]->m_Width);
+			defaultRect.bottom = min(pDst->GetHeight(), gcpRendD3D->m_pNewTarget[0]->m_Height);
+
+			pSrcRect = &defaultRect;
+		}
+
+		const SResourceRegionMapping region =
+		{
+			{ 0, 0, 0, 0 },
+			{ pSrcRect->left, pSrcRect->top, 0, 0 },
+			{ pSrcRect->right - pSrcRect->left, pSrcRect->bottom - pSrcRect->top, 1, 1 }
+		};
 
 		HRESULT hr = 0;
 		gcpRendD3D->m_RP.m_PS[gcpRendD3D->m_RP.m_nProcessThreadID].m_RTCopied++;
 		gcpRendD3D->m_RP.m_PS[gcpRendD3D->m_RP.m_nProcessThreadID].m_RTCopiedSize += pDst->GetDeviceDataSize();
 
-		gcpRendD3D->GetDeviceContext().CopySubresourceRegion(pDstResource->Get2DTexture(), 0, 0, 0, 0, pSrcResource, 0, &box);
-		//  gcpRendD3D->GetDeviceContext().CopyResource(pDstResource->Get2DTexture(), pSrcResource);
-		SAFE_RELEASE(pSrcResource);
+		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pSrc->GetDevTexture(), pDst->GetDevTexture(), region);
 	}
 }
 
@@ -124,11 +116,11 @@ void SD3DPostEffectsUtils::StretchRect(CTexture* pSrc, CTexture*& pDst, bool bCl
 		bResample = 1;
 	}
 
-	const D3DFormat dstFmt = CTexture::DeviceFormatFromTexFormat(pDst->GetDstFormat());
-	const D3DFormat srcFmt = CTexture::DeviceFormatFromTexFormat(pSrc->GetDstFormat());
+	const D3DFormat dstFmt = DeviceFormats::ConvertFromTexFormat(pDst->GetDstFormat());
+	const D3DFormat srcFmt = DeviceFormats::ConvertFromTexFormat(pSrc->GetDstFormat());
 	if (bResample == false && gRenDev->m_RP.m_FlagsShader_RT == 0 && dstFmt == srcFmt)
 	{
-		gcpRendD3D->GetDeviceContext().CopyResource(pDst->GetDevTexture()->GetBaseTexture(), pSrc->GetDevTexture()->GetBaseTexture());
+		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pSrc->GetDevTexture(), pDst->GetDevTexture());
 		gRenDev->m_RP.m_FlagsShader_RT = nSaveFlagsShader_RT;
 		return;
 	}
@@ -194,9 +186,7 @@ void SD3DPostEffectsUtils::StretchRect(CTexture* pSrc, CTexture*& pDst, bool bCl
 	CShaderMan::s_shPostEffects->FXSetPSFloat(pParam0Name, &pParams0, 1);
 	CShaderMan::s_shPostEffects->FXSetPSFloat(pParam1Name, &pParams1, 1);
 
-	int nFilter = bResample ? FILTER_LINEAR : FILTER_POINT;
-	pSrc->Apply(0, CTexture::GetTexState(STexState(nFilter, true)), EFTT_UNKNOWN, -1,
-	            (bBindMultisampled && gRenDev->m_RP.m_MSAAData.Type) ? SResourceView::DefaultViewMS : SResourceView::DefaultView); // bind as msaa target (if valid)
+	pSrc->Apply(0, bResample ? EDefaultSamplerStates::LinearClamp : EDefaultSamplerStates::PointClamp, EFTT_UNKNOWN, -1, EDefaultResourceViews::Default, !!gRenDev->m_RP.m_MSAAData.Type && bBindMultisampled); // bind as msaa target (if valid)
 
 	DrawFullScreenTri(pDst->GetWidth(), pDst->GetHeight(), 0, srcRegion);
 
@@ -227,7 +217,7 @@ void SD3DPostEffectsUtils::SwapRedBlue(CTexture* pSrc, CTexture* pDst)
 	ShBeginPass(CShaderMan::s_shPostEffects, pTechName, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
 
 	rd->FX_SetState(GS_NODEPTHTEST);
-	pSrc->Apply(0, CTexture::GetTexState(STexState(FILTER_POINT, true)), EFTT_UNKNOWN, -1, SResourceView::DefaultView);
+	pSrc->Apply(0, EDefaultSamplerStates::PointClamp, EFTT_UNKNOWN, -1, EDefaultResourceViews::Default);
 	DrawFullScreenTri(pDst->GetWidth(), pDst->GetHeight(), 0, NULL);
 
 	ShEndPass();
@@ -273,11 +263,11 @@ void SD3DPostEffectsUtils::DownsampleDepth(CTexture* pSrc, CTexture* pDst, bool 
 	int srcWidth = bUseDeviceDepth ? rd->GetWidth() : pSrc->GetWidth();
 	int srcHeight = bUseDeviceDepth ? rd->GetHeight() : pSrc->GetHeight();
 
-	D3DShaderResource* depthReadOnlySRV = rd->m_DepthBufferOrigMSAA.pTexture->GetDeviceDepthReadOnlySRV(0, -1, false);
+	D3DShaderResource* depthReadOnlySRV = rd->m_DepthBufferOrig.pTexture->GetDevTexture(/*bMSAA*/)->LookupSRV(EDefaultResourceViews::DepthOnly);
 	if (bUseDeviceDepth)
-		rd->m_DevMan.BindSRV(CDeviceManager::TYPE_PS, &depthReadOnlySRV, 0, 1);
+		rd->m_DevMan.BindSRV(CSubmissionQueue_DX11::TYPE_PS, &depthReadOnlySRV, 0, 1);
 	else
-		SetTexture(pSrc, 0, FILTER_POINT, 1);
+		SetTexture(pSrc, 0, FILTER_POINT, eSamplerAddressMode_Clamp);
 
 	// Handle uneven source size by dropping last row/column
 	static CCryNameR paramName("DownsampleDepth_Params");
@@ -295,7 +285,7 @@ void SD3DPostEffectsUtils::DownsampleDepth(CTexture* pSrc, CTexture* pDst, bool 
 	if (bUseDeviceDepth)
 	{
 		D3DShaderResource* pNullSRV[1] = { NULL };
-		rd->m_DevMan.BindSRV(CDeviceManager::TYPE_PS, pNullSRV, 0, 1);
+		rd->m_DevMan.BindSRV(CSubmissionQueue_DX11::TYPE_PS, pNullSRV, 0, 1);
 
 		rd->FX_Commit();
 	}
@@ -432,7 +422,7 @@ void SD3DPostEffectsUtils::DownsampleStable(CTexture* pSrcRT, CTexture* pDstRT, 
 	ShBeginPass(CShaderMan::s_shPostEffects, techName, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
 
 	gcpRendD3D->FX_SetState(GS_NODEPTHTEST);
-	pSrcRT->Apply(0, CTexture::GetTexState(STexState(FILTER_LINEAR, true)));
+	pSrcRT->Apply(0, EDefaultSamplerStates::LinearClamp);
 
 	DrawFullScreenTri(pDstRT->GetWidth(), pDstRT->GetHeight());
 
@@ -654,8 +644,8 @@ void SD3DPostEffectsUtils::TexBlurDirectional(CTexture* pTex, const Vec2& vDir, 
 
 		CShaderMan::s_shPostEffects->FXBeginPass(0);
 
-		SetTexture(pTex, 0, FILTER_LINEAR, TADDR_BORDER);
-		SetTexture(CTexture::s_ptexScreenNoiseMap, 1, FILTER_POINT, 0);
+		SetTexture(pTex, 0, FILTER_LINEAR, eSamplerAddressMode_Border);
+		SetTexture(CTexture::s_ptexScreenNoiseMap, 1, FILTER_POINT, eSamplerAddressMode_Wrap);
 
 		DrawFullScreenTri(pTex->GetWidth(), pTex->GetHeight());
 
@@ -695,8 +685,8 @@ void SD3DPostEffectsUtils::TexBlurDirectional(CTexture* pTex, const Vec2& vDir, 
 
 		CShaderMan::s_shPostEffects->FXBeginPass(0);
 
-		SetTexture(pTempRT, 0, FILTER_LINEAR, TADDR_BORDER);
-		SetTexture(CTexture::s_ptexScreenNoiseMap, 1, FILTER_POINT, 0);
+		SetTexture(pTempRT, 0, FILTER_LINEAR, eSamplerAddressMode_Border);
+		SetTexture(CTexture::s_ptexScreenNoiseMap, 1, FILTER_POINT, eSamplerAddressMode_Wrap);
 
 		DrawFullScreenTri(pTex->GetWidth(), pTex->GetHeight());
 
@@ -816,7 +806,6 @@ void SD3DPostEffectsUtils::TexBlurGaussian(CTexture* pTex, int nAmount, float fS
 		pVParams[s] = Vec4(0, t1 * fCurrOffset, 0, 0);
 	}
 
-	STexState sTexState = STexState(FILTER_LINEAR, true);
 	static CCryNameR clampTCName("clampTC");
 	static CCryNameR pParam0Name("psWeights");
 	static CCryNameR pParam1Name("PI_psOffsets");
@@ -842,9 +831,9 @@ void SD3DPostEffectsUtils::TexBlurGaussian(CTexture* pTex, int nAmount, float fS
 		CShaderMan::s_shPostEffects->FXSetPSFloat(clampTCName, &clampTC, 1);
 		CShaderMan::s_shPostEffects->FXSetPSFloat(pParam0Name, pWeightsPS, nHalfSamples);
 
-		pTex->Apply(0, CTexture::GetTexState(sTexState));
+		pTex->Apply(0, EDefaultSamplerStates::LinearClamp);
 		if (pMask)
-			pMask->Apply(1, CTexture::GetTexState(sTexState));
+			pMask->Apply(1, EDefaultSamplerStates::LinearClamp);
 		CShaderMan::s_shPostEffects->FXSetVSFloat(pParam1Name, pHParams, nHalfSamples);
 		DrawFullScreenTri(pTex->GetWidth(), pTex->GetHeight());
 
@@ -864,9 +853,9 @@ void SD3DPostEffectsUtils::TexBlurGaussian(CTexture* pTex, int nAmount, float fS
 		CShaderMan::s_shPostEffects->FXSetPSFloat(pParam0Name, pWeightsPS, nHalfSamples);
 
 		CShaderMan::s_shPostEffects->FXSetVSFloat(pParam1Name, pVParams, nHalfSamples);
-		pTempRT->Apply(0, CTexture::GetTexState(sTexState));
+		pTempRT->Apply(0, EDefaultSamplerStates::LinearClamp);
 		if (pMask)
-			pMask->Apply(1, CTexture::GetTexState(sTexState));
+			pMask->Apply(1, EDefaultSamplerStates::LinearClamp);
 		DrawFullScreenTri(pTex->GetWidth(), pTex->GetHeight());
 
 		CShaderMan::s_shPostEffects->FXEndPass();
@@ -991,7 +980,7 @@ void SD3DPostEffectsUtils::DrawQuadFS(CShader* pShader, bool bOutputCamVec, int 
 	}
 
 	gcpRendD3D->FX_Commit();
-	if (!FAILED(gcpRendD3D->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
+	if (!FAILED(gcpRendD3D->FX_SetVertexDeclaration(0, EDefaultInputLayouts::P3F_C4B_T2F)))
 	{
 		gcpRendD3D->FX_SetVStream(0, gcpRendD3D->m_pQuadVB, 0, sizeof(SVF_P3F_C4B_T2F));
 		gcpRendD3D->FX_DrawPrimitive(eptTriangleStrip, 0, gcpRendD3D->m_nQuadVBSize);

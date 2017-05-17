@@ -607,10 +607,12 @@ void CShaderMan::mfSetResourceTexState(SEfResTexture* Tex)
 {
 	if (Tex)
 	{
-		STexState ST;
+		SSamplerState ST;
+		
 		ST.SetFilterMode(Tex->m_Filter);
-		ST.SetClampMode(Tex->m_bUTile ? TADDR_WRAP : TADDR_CLAMP, Tex->m_bVTile ? TADDR_WRAP : TADDR_CLAMP, Tex->m_bUTile ? TADDR_WRAP : TADDR_CLAMP);
-		Tex->m_Sampler.m_nTexState = CTexture::GetTexState(ST);
+		ST.SetClampMode(Tex->m_bUTile ? eSamplerAddressMode_Wrap : eSamplerAddressMode_Clamp, Tex->m_bVTile ? eSamplerAddressMode_Wrap : eSamplerAddressMode_Clamp, Tex->m_bUTile ? eSamplerAddressMode_Wrap : eSamplerAddressMode_Clamp);
+
+		Tex->m_Sampler.m_nTexState = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(ST);
 	}
 }
 

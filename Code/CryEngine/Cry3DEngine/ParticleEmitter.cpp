@@ -491,6 +491,7 @@ void CParticleEmitter::RefreshEffect()
 
 	for (auto& c : m_Containers)
 	{
+		c.ResetRenderObjects();
 		m_nEnvFlags |= c.GetEnvironmentFlags();
 		m_nRenObjFlags |= c.GetParams().nRenObjFlags.On;
 		m_fMaxParticleSize = max(m_fMaxParticleSize, c.GetEffect()->GetMaxParticleSize() * c.GetParams().fViewDistanceAdjust);

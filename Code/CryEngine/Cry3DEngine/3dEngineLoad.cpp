@@ -559,6 +559,10 @@ void C3DEngine::UnloadLevel()
 	m_pObjectsTree.clear();
 	COctreeNode::StaticReset();
 
+	// Now that all meshes and objects are deleted we final release permanent renderobjects
+	// as they hold references to materials.
+	GetRenderer()->FreeResources(FRR_PERMANENT_RENDER_OBJECTS);
+
 	//////////////////////////////////////////////////////////////////////////
 	// Force delete all materials.
 	//////////////////////////////////////////////////////////////////////////

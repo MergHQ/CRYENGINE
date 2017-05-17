@@ -12,6 +12,7 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 	#include <CryRenderer/VertexFormats.h>
 	#include <CryMemory/CrySizer.h>
+	#include "TextMessages.h"
 
 class ICrySizer;
 class CAuxGeomCB;
@@ -25,6 +26,8 @@ public:
 	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false) = 0;
 
 	virtual void DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) = 0;
+
+	virtual void DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID) = 0;
 
 	virtual void FlushTextMessages(CTextMessages& tMessages, bool reset) = 0;
 };
@@ -71,6 +74,8 @@ public:
 
 	virtual void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text);
 	virtual void                DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
+
+	virtual void                DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID);
 
 	virtual int                 SetTexture(int texID);
 	virtual int                 PushMatrix(const Matrix34&  mat);
@@ -591,11 +596,13 @@ public:
 
 	virtual void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col)                                                                   {}
 
-	virtual void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text)                                                                      {}
+	virtual void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text)                                                          {}
 
-	virtual int                 PushMatrix(const Matrix34&  mat)                                                                                                      { return -1; }
+	virtual void                DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID)                   {}
+
+	virtual int                 PushMatrix(const Matrix34&  mat)                                                                                               { return -1; }
 	virtual Matrix34*           GetMatrix()                                                                                                                    { return nullptr; }
-	virtual void                SetMatrixIndex(int matID)                                                                                                    {}
+	virtual void                SetMatrixIndex(int matID)                                                                                                      {}
 
 	virtual void                Flush()                                                                                                                        {}
 	virtual void                Commit(uint frames = 0)                                                                                                        {}

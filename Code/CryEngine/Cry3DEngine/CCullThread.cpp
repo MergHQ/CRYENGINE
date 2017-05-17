@@ -5,7 +5,6 @@
 #include "ObjMan.h"
 #include "CCullRenderer.h"
 #include <CryThreading/IJobManager_JobDelegator.h>
-SHWOccZBuffer HWZBuffer;
 
 DECLARE_JOB("CheckOcclusion", TOcclusionCheckJob, NAsyncCull::CCullThread::CheckOcclusion);
 DECLARE_JOB("PrepareOcclusion", TOcclusionPrepareJob, NAsyncCull::CCullThread::PrepareOcclusion);
@@ -315,9 +314,6 @@ void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera)
 
 	m_Position = rCam.GetPosition();
 
-	HWZBuffer.ZBufferSizeX = CULL_SIZEX;
-	HWZBuffer.ZBufferSizeY = CULL_SIZEY;
-
 	GetObjManager()->BeginCulling();
 
 	m_nPrepareState = PREPARE_STARTED;
@@ -624,6 +620,8 @@ void CCullThread::PrepareOcclusion_ReprojectZBufferLine(int nStartLine, int nNum
 	uint32 nRemainingJobs = CryInterlockedDecrement((volatile int*)&m_nRunningReprojJobs);
 	if (nRemainingJobs == 0)
 	{
+		RASTERIZER.DetachHWDepthBuffer();
+
 		enum { nLinesPerJob = 8 };
 		for (int i = 0; i < tdCullRasterizer::RESOLUTION_Y; i += nLinesPerJob)
 		{
@@ -637,7 +635,7 @@ void CCullThread::PrepareOcclusion_ReprojectZBufferLine(int nStartLine, int nNum
 
 void CCullThread::PrepareOcclusion_ReprojectZBufferLineAfterMerge(int nStartLine, int nNumLines)
 {
-	// merge the reprojected buffer bevore new jobs are started on it
+	// merge the reprojected buffer before new jobs are started on it
 	RASTERIZER.MergeReprojectHWDepthBuffer(nStartLine, nNumLines);
 
 	if (!GetCVars()->e_CameraFreeze)
@@ -660,6 +658,8 @@ void CCullThread::PrepareOcclusion_ReprojectZBufferLineAfterMerge(int nStartLine
 
 void CCullThread::PrepareOcclusion_RasterizeZBuffer()
 {
+	RASTERIZER.DetachHWDepthBuffer();
+
 	m_Enabled = true;
 	if (!GetCVars()->e_CameraFreeze)
 	{

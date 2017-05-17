@@ -6,6 +6,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Compressors"
+		"Compressors/ASTC.cpp"
 		"Compressors/PVRTC.cpp"
 		"Compressors/CTSquisher.cpp"
 	SOURCE_GROUP "Compressors\\\\CryTextureSquisher"
@@ -223,6 +224,10 @@ if(OPTION_POWERVR)
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE "${LIBPATH_FLAG}${SDK_DIR}/POWERVR/PVRTexLib/Windows_x86_64 /DELAYLOAD:PVRTexLib.dll")
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG "${LIBPATH_FLAG}${SDK_DIR}/POWERVR/PVRTexLib/Windows_x86_64 /DELAYLOAD:PVRTexLib.dll")
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " /NODEFAULTLIB:libcmt.lib")  # PVR will reference this by default, this is fine in release, but not in debug
+endif()
+
+if(OPTION_ASTC)
+	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/astc-encoder)
 endif()
 
 set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/DEF:ImageExports.def")

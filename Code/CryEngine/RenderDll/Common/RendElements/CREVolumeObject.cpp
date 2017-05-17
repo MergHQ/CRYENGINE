@@ -55,11 +55,11 @@ bool CVolumeTexture::Create(unsigned int width, unsigned int height, unsigned in
 		cry_sprintf(name, "$VolObj_%d", gRenDev->m_TexGenID++);
 
 		int flags(FT_DONT_STREAM);
-		m_pTex = CTexture::Create3DTexture(name, width, height, depth, 1, flags, pData, eTF_A8, eTF_A8);
+		m_pTex = CTexture::GetOrCreate3DTexture(name, width, height, depth, 1, flags, pData, eTF_A8, eTF_A8);
 
-		m_width = width;
+		m_width  = width;
 		m_height = height;
-		m_depth = depth;
+		m_depth  = depth;
 	}
 	return m_pTex != 0;
 }
@@ -69,23 +69,22 @@ bool CVolumeTexture::Update(unsigned int width, unsigned int height, unsigned in
 	if (!CTexture::IsTextureExist(m_pTex))
 		return false;
 
-	unsigned int cpyWidth = min(width, m_width);
-	unsigned int cpyHeight = min(height, m_height);
-	unsigned int cpyDepth = min(depth, m_depth);
-
 	CDeviceTexture* pVolDevTex = m_pTex->GetDevTexture();
+
+	unsigned int cpyWidth  = min(width , m_width );
+	unsigned int cpyHeight = min(height, m_height);
+	unsigned int cpyDepth  = min(depth , m_depth );
+
+	// TODO: use CTexture's staging functions for this
+	const SResourceMemoryMapping mapping =
+	{
+		SResourceMemoryAlignment::Linear<unsigned char>(width, height, depth), // src alignment
+		{ 0, 0, 0, 0 },                                                        // dst position
+		{ cpyWidth, cpyHeight, cpyDepth, 1 }                                   // dst size
+	};
+
 	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pVolDevTex);
-
-	D3D11_BOX box;
-	box.left = 0;
-	box.right = cpyWidth;
-	box.top = 0;
-	box.bottom = cpyHeight;
-	box.front = 0;
-	box.back = cpyDepth;
-
-	D3DVolumeTexture* pVolTex = pVolDevTex->GetVolumeTexture();
-	gcpRendD3D->GetDeviceContext().UpdateSubresource(pVolTex, 0, &box, pData, width, height * width);
+	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pData, pVolDevTex, mapping);
 
 	return true;
 }
@@ -229,14 +228,14 @@ bool CREVolumeObject::mfDraw(CShader* ef, SShaderPass* sfm)
 	rd->FX_Commit();
 
 	// set vertex declaration and streams
-	if (!FAILED(rd->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
+	if (!FAILED(rd->FX_SetVertexDeclaration(0, EDefaultInputLayouts::P3F_C4B_T2F)))
 	{
 		CRenderMesh* pHullMesh = static_cast<CRenderMesh*>(m_pHullMesh.get());
 
 		// set vertex and index buffer
 		pHullMesh->CheckUpdate(pHullMesh->_GetVertexFormat(), 0);
-		size_t vbOffset(0);
-		size_t ibOffset(0);
+		buffer_size_t vbOffset(0);
+		buffer_size_t ibOffset(0);
 		D3DVertexBuffer* pVB = rd->m_DevBufMan.GetD3DVB(pHullMesh->_GetVBStream(VSF_GENERAL), &vbOffset);
 		D3DIndexBuffer* pIB = rd->m_DevBufMan.GetD3DIB(pHullMesh->_GetIBStream(), &ibOffset);
 		assert(pVB);

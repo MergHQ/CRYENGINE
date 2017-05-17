@@ -256,7 +256,7 @@ void CPlanningTextureStreamer::Job_UpdateMip(CTexture* pTexture, const float fMi
 
 		if (rRoundInfo.nRoundUpdateId != nUpdateId)
 		{
-			STATIC_CHECK(MAX_PREDICTION_ZONES == 2, THIS_CODE_IS_OPTIMISED_ASSUMING_THIS_EQUALS_2);
+			STATIC_CHECK(MAX_STREAM_PREDICTION_ZONES == 2, THIS_CODE_IS_OPTIMISED_ASSUMING_THIS_EQUALS_2);
 
 			// reset mip factor and save the accumulated value into history and compute final mip factor
 			float fFinalMipFactor = fMipFactor;

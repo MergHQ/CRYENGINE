@@ -145,7 +145,7 @@ CRenderElement::CRenderElement()
 }
 CRenderElement::~CRenderElement()
 {
-	assert(m_Type == eDATA_Unknown || m_Type == eDATA_Particle);
+	assert(m_Type == eDATA_Unknown || m_Type == eDATA_Particle || m_Type == eDATA_ClientPoly);
 
 	//@TODO: Fix later, prevent crash on exit in single executable
 	if (this == s_pRootRelease[0] || this == s_pRootRelease[1] || this == s_pRootRelease[2] || this == s_pRootRelease[3] || this == &s_RootGlobal)
@@ -176,8 +176,6 @@ const char*        CRenderElement::mfTypeString()
 	{
 	case eDATA_Sky:
 		return "Sky";
-	case eDATA_Beam:
-		return "Beam";
 	case eDATA_ClientPoly:
 		return "ClientPoly";
 	case eDATA_Flare:

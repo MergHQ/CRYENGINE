@@ -698,7 +698,7 @@ void CObjManager::MakeUnitCube()
 	m_pRMBox = GetRenderer()->CreateRenderMeshInitialized(
 	  arrVerts,
 	  CRY_ARRAY_COUNT(arrVerts),
-	  eVF_P3F_C4B_T2F,
+	  EDefaultInputLayouts::P3F_C4B_T2F,
 	  arrIndices,
 	  CRY_ARRAY_COUNT(arrIndices),
 	  prtTriangleList,
@@ -1283,7 +1283,7 @@ IRenderMesh* CObjManager::GetBillboardRenderMesh(IMaterial* pMaterial)
 		arrIndices.Add(2);
 
 		m_pBillboardMesh = Cry3DEngineBase::GetRenderer()->CreateRenderMeshInitialized(
-			arrVertices.GetElements(), arrVertices.Count(), eVF_P3F_C4B_T2F,
+			arrVertices.GetElements(), arrVertices.Count(), EDefaultInputLayouts::P3F_C4B_T2F,
 			arrIndices.GetElements(), arrIndices.Count(), prtTriangleList,
 			"Billboard", "Billboard", eRMT_Static, 1, 0, NULL, NULL, false, true,
 			arrTangents.GetElements());

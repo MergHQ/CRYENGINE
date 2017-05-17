@@ -2255,25 +2255,25 @@ struct I3DEngine : public IProcess
 		}
 
 		// SVO data pools
-		ITexture* pTexTree;
-		ITexture* pTexOpac;
+		_smart_ptr<ITexture> pTexTree;
+		_smart_ptr<ITexture> pTexOpac;
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-		ITexture* pTexTris;
-		ITexture* pTexRgb0;
-		ITexture* pTexRgb1;
-		ITexture* pTexDynl;
-		ITexture* pTexRgb2;
-		ITexture* pTexRgb3;
-		ITexture* pTexRgb4;
-		ITexture* pTexNorm;
-		ITexture* pTexAldi;
+		_smart_ptr<ITexture> pTexTris;
+		_smart_ptr<ITexture> pTexRgb0;
+		_smart_ptr<ITexture> pTexRgb1;
+		_smart_ptr<ITexture> pTexDynl;
+		_smart_ptr<ITexture> pTexRgb2;
+		_smart_ptr<ITexture> pTexRgb3;
+		_smart_ptr<ITexture> pTexRgb4;
+		_smart_ptr<ITexture> pTexNorm;
+		_smart_ptr<ITexture> pTexAldi;
 
 		// mesh tracing data atlases
-		ITexture* pTexTriA;
-		ITexture* pTexTexA;
-		ITexture* pTexIndA;
+		_smart_ptr<ITexture> pTexTriA;
+		_smart_ptr<ITexture> pTexTexA;
+		_smart_ptr<ITexture> pTexIndA;
 
-		ITexture* pGlobalSpecCM;
+		_smart_ptr<ITexture> pGlobalSpecCM;
 	#endif
 
 		float  fGlobalSpecCM_Mult;

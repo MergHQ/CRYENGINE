@@ -20,6 +20,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 int CRendererCVars::CV_r_GraphicsPipeline;
+int CRendererCVars::CV_r_GraphicsPipelineMobile;
+int CRendererCVars::CV_r_GraphicsPipelinePassScheduler;
 int CRendererCVars::CV_r_PostProcess_CB;
 int CRendererCVars::CV_r_PostProcess;
 AllocateConstIntCVar(CRendererCVars, CV_r_NightVision);
@@ -78,6 +80,10 @@ int CRendererCVars::CV_r_D3D12EarlyResourceBarriers;
 int CRendererCVars::CV_r_D3D12AsynchronousCompute;
 int CRendererCVars::CV_r_D3D12HardwareComputeQueue;
 int CRendererCVars::CV_r_D3D12HardwareCopyQueue;
+int CRendererCVars::CV_r_VkSubmissionThread;
+int CRendererCVars::CV_r_VkBatchResourceBarriers;
+int CRendererCVars::CV_r_VkHardwareComputeQueue;
+int CRendererCVars::CV_r_VkHardwareCopyQueue;
 int CRendererCVars::CV_r_ReprojectOnlyStaticObjects;
 int CRendererCVars::CV_r_ReadZBufferDirectlyFromVMEM;
 int CRendererCVars::CV_r_ReverseDepth;
@@ -215,7 +221,7 @@ float CRendererCVars::CV_r_ChromaticAberration;
 AllocateConstIntCVar(CRendererCVars, CV_r_geominstancing);
 AllocateConstIntCVar(CRendererCVars, CV_r_geominstancingdebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_materialsbatching);
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || defined(CRY_USE_GNM_RENDERER)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_RENDERER_GNM
 int CRendererCVars::CV_r_SilhouettePOM;
 #endif
 #ifdef WATER_TESSELLATION_RENDERER
@@ -227,8 +233,6 @@ float CRendererCVars::CV_r_displacementfactor;
 
 int CRendererCVars::CV_r_batchtype;
 int CRendererCVars::CV_r_geominstancingthreshold;
-
-int CRendererCVars::CV_r_beams;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_DebugLightVolumes);
 
@@ -335,6 +339,9 @@ int CRendererCVars::CV_r_AntialiasingTAAPattern;
 float CRendererCVars::CV_r_AntialiasingTAASharpening;
 float CRendererCVars::CV_r_AntialiasingTAAFalloffHiFreq;
 float CRendererCVars::CV_r_AntialiasingTAAFalloffLowFreq;
+float CRendererCVars::CV_r_AntialiasingTSAAMipBias;
+float CRendererCVars::CV_r_AntialiasingTSAASubpixelDetection;
+float CRendererCVars::CV_r_AntialiasingTSAASmoothness;
 AllocateConstIntCVar(CRendererCVars, CV_r_AntialiasingModeDebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_AntialiasingModeEditor);
 
@@ -638,8 +645,7 @@ Vec2 CRendererCVars::s_overscanBorders(0, 0);
 int CRendererCVars::CV_d3d11_CBUpdateStats;
 ICVar* CRendererCVars::CV_d3d11_forcedFeatureLevel;
 
-#if defined(SUPPORT_D3D_DEBUG_RUNTIME)
-int CRendererCVars::CV_d3d11_debugruntime;
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 ICVar* CRendererCVars::CV_d3d11_debugMuteSeverity;
 ICVar* CRendererCVars::CV_d3d11_debugMuteMsgID;
 ICVar* CRendererCVars::CV_d3d11_debugBreakOnMsgID;
@@ -664,7 +670,7 @@ char* resourceName[] = {
 	"Index Buffers"
 };
 
-#if defined(CRY_USE_DX12)
+#if (CRY_RENDERER_DIRECT3D >= 120)
 static void OnChange_CV_D3D12HardwareComputeQueue(ICVar* /*pCVar*/)
 {
 	gcpRendD3D->FlushRTCommands(true, true, true);
@@ -682,7 +688,7 @@ static void OnChange_CV_D3D12HardwareCopyQueue(ICVar* /*pCVar*/)
 }
 #endif
 
-#if defined(SUPPORT_D3D_DEBUG_RUNTIME)
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 static void OnChange_CV_d3d11_debugMuteMsgID(ICVar* /*pCVar*/)
 {
 	gcpRendD3D->m_bUpdateD3DDebug = true;
@@ -1118,18 +1124,27 @@ static void ShadersMerge(IConsoleCmdArgs* Cmd)
 //////////////////////////////////////////////////////////////////////////
 void CRendererCVars::InitCVars()
 {
-	REGISTER_CVAR3("r_GraphicsPipeline", CV_r_GraphicsPipeline, 2, VF_NULL,
+	REGISTER_CVAR3("r_GraphicsPipeline", CV_r_GraphicsPipeline, 3, VF_NULL,
 	               "Toggles new optimized graphics pipeline\n"
 	               "  0: Use legacy graphics pipeline\n"
 	               "  1: Use new graphics pipeline with objects compiled on the fly\n"
 	               "  2: Use new graphics pipeline with permanent render objects");
+
+	REGISTER_CVAR3("r_GraphicsPipelineMobile", CV_r_GraphicsPipelineMobile, 0, VF_NULL,
+	               "Run limited pipeline specifically optimized for mobile devices.\n"
+								 "  1: Using compressed micro GBuffer\n"
+								 "  2: Using standard GBuffer");
+
+	REGISTER_CVAR3("r_GraphicsPipelinePassScheduler", CV_r_GraphicsPipelinePassScheduler, 0, VF_NULL,
+	               "Toggles render pass scheduler that submits passes in a deferred way, allowing improved multithreading and barrier scheduling.");
 
 	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 3, VF_DUMPTODISK,
 	               "Toggles tile based shading.\n"
 	               "0 - Off"
 	               "1 - Tiled forward shading for transparent objects\n"
 	               "2 - Tiled deferred and forward shading\n"
-	               "3 - Tiled deferred and forward shading using volume rasterization for light list generation\n");
+	               "3 - Tiled deferred and forward shading using volume rasterization for light list generation\n"
+	               "4 - Tiled forward shading for opaque and transparent objects (using volume rasterization)\n");
 
 	REGISTER_CVAR3("r_DeferredShadingTiledDebug", CV_r_DeferredShadingTiledDebug, 0, VF_DUMPTODISK,
 	               "1 - Display debug info\n"
@@ -1308,10 +1323,11 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_HDRRangeAdaptLBufferMaxRange [Value]\n"
 	               "Default is 2.0f");
 
-	DefineConstIntCVar3("r_HDRTexFormat", CV_r_HDRTexFormat, 0, VF_DUMPTODISK,
-	                    "HDR texture format. \n"
-	                    "Usage: r_HDRTexFormat [Value] 0:(low precision - cheaper/faster), 1:(high precision)\n"
-	                    "Default is 0");
+	DefineConstIntCVar3("r_HDRTexFormat", CV_r_HDRTexFormat, 1, VF_DUMPTODISK,
+	                    "Sets HDR render target precision. Default is 1.\n"
+	                    "Usage: r_HDRTexFormat [Value]\n"
+											"  0: (lower precision)\n"
+											"  1: (standard precision)\n");
 
 	// Eye Adaptation
 	REGISTER_CVAR3("r_HDREyeAdaptationSpeed", CV_r_HDREyeAdaptationSpeed, 1.0f, VF_NULL,
@@ -1339,10 +1355,6 @@ void CRendererCVars::InitCVars()
 	               "Image sharpening amount\n"
 	               "Usage: r_Sharpening [Value]");
 
-	REGISTER_CVAR3("r_Beams", CV_r_beams, 1, VF_NULL,
-	               "Toggles volumetric light beams.\n"
-	               "Usage: r_Beams [0/1]\n");
-
 	REGISTER_CVAR3_CB("r_GeomInstancingThreshold", CV_r_geominstancingthreshold, -1, VF_NULL,
 	                  "If the instance count gets bigger than the specified value the instancing feature is used.\n"
 	                  "Usage: r_GeomInstancingThreshold [Num]\n"
@@ -1354,7 +1366,7 @@ void CRendererCVars::InitCVars()
 	               "1 - GPU friendly.\n"
 	               "2 - Automatic.\n");
 
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || defined(CRY_USE_GNM_RENDERER)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_RENDERER_GNM
 	REGISTER_CVAR3("r_SilhouettePOM", CV_r_SilhouettePOM, 0, VF_NULL,
 	               "Enables use of silhouette parallax occlusion mapping.\n"
 	               "Usage: r_SilhouettePOM [0/1]");
@@ -1517,7 +1529,10 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_AntialiasingTAAPattern", CV_r_AntialiasingTAAPattern, 1, VF_NULL,
 	               "Selects TAA sampling pattern.\n"
-	               "  0: no subsamples\n  1: 2x\n  2: 3x\n  3: 4x\n  4: 8x\n  5: sparse grid 8x8\n  6: random\n  7: Halton 8x\n  8: Halton random");
+	               "  0: no subsamples\n"
+	               "  1: optimal pattern for selected aa mode\n"
+	               "  2: 2x\n  3: 3x\n  4: regular 4x\n  5: rotated 4x\n  6: 8x\n  7: sparse grid 8x8\n  8: random\n  9: Halton 8x\n  10: Halton 16x\n  11: Halton random");
+
 
 	REGISTER_CVAR3("r_AntialiasingModeSCull", CV_r_AntialiasingModeSCull, 1, VF_NULL,
 	               "Enables post processed based aa modes stencil culling optimization\n");
@@ -1542,6 +1557,15 @@ void CRendererCVars::InitCVars()
 	               "Set TAA falloff for low frequencies (low contrast regions). Default 2.0\n"
 	               "Bigger value increases temporal stability but also overall image blurriness\n"
 	               "Smaller value decreases temporal stability but gives overall sharper image");
+
+	REGISTER_CVAR3("r_AntialiasingTSAAMipBias", CV_r_AntialiasingTSAAMipBias, -0.25f, VF_NULL,
+	               "Sets mimap lod bias for TSAA (negative values for sharpening).\n");
+
+	REGISTER_CVAR3("r_AntialiasingTSAASubpixelDetection", CV_r_AntialiasingTSAASubpixelDetection, 0.02f, VF_NULL,
+	               "Adjusts metric for detecting subpixel changes (higher: less flickering but more ghosting)\n");
+
+	REGISTER_CVAR3("r_AntialiasingTSAASmoothness", CV_r_AntialiasingTSAASmoothness, 40.0f, VF_NULL,
+	               "Adjusts smoothness of image under motion.\n");
 
 	DefineConstIntCVar3("r_AntialiasingModeEditor", CV_r_AntialiasingModeEditor, 1, VF_NULL,
 	                    "Sets antialiasing modes to editing mode (disables jitter on modes using camera jitter which can cause flickering of helper objects)\n"
@@ -1839,6 +1863,7 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ShadowCastingLightsMaxCount", CV_r_ShadowCastingLightsMaxCount, 12, VF_REQUIRE_APP_RESTART,
 	               "Maximum number of simultaneously visible shadow casting lights");
 
+#if !CRY_RENDERER_VULKAN
 	REGISTER_CVAR3_CB("r_HeightMapAO", CV_r_HeightMapAO, 1, VF_NULL,
 	                  "Large Scale Ambient Occlusion based on height map approximation of the scene\n"
 	                  "0=off, 1=quarter resolution, 2=half resolution, 3=full resolution",
@@ -1849,6 +1874,7 @@ void CRendererCVars::InitCVars()
 	                  "Texture resolution of the height map used for HeightMapAO", OnChange_CachedShadows);
 	REGISTER_CVAR3_CB("r_HeightMapAORange", CV_r_HeightMapAORange, 1000.f, VF_NULL,
 	                  "Range of height map AO around viewer in meters", OnChange_CachedShadows);
+#endif
 
 	REGISTER_CVAR3("r_RenderMeshHashGridUnitSize", CV_r_RenderMeshHashGridUnitSize, .5f, VF_NULL, "Controls density of render mesh triangle indexing structures");
 
@@ -2872,7 +2898,7 @@ void CRendererCVars::InitCVars()
 	               "2=Copy Queue\n"
 	               "Usage: r_D3D12HardwareCopyQueue [0-2]");
 
-#if defined(CRY_USE_DX12)
+#if (CRY_RENDERER_DIRECT3D >= 120)
 	gEnv->pConsole->GetCVar("r_D3D12HardwareComputeQueue")->SetOnChangeCallback(OnChange_CV_D3D12HardwareComputeQueue);
 	gEnv->pConsole->GetCVar("r_D3D12HardwareCopyQueue")->SetOnChangeCallback(OnChange_CV_D3D12HardwareCopyQueue);
 #endif
@@ -2975,19 +3001,6 @@ void CRendererCVars::InitCVars()
 	               "Additional adjustment to the graphics card gamma correction when Stereo is enabled.\n"
 	               "Usage: r_StereoGammaAdjustment [offset]"
 	               "0: off");
-
-#if CRY_PLATFORM_ORBIS
-	const int DEVICE_WIDTH = 1920;
-	const int DEVICE_HEIGHT = 1080;
-#else
-	const int DEVICE_WIDTH = 1152;
-	const int DEVICE_HEIGHT = 720;
-#endif
-
-	REGISTER_CVAR3("r_ConsoleBackbufferWidth", CV_r_ConsoleBackbufferWidth, DEVICE_WIDTH, VF_DUMPTODISK,
-	               "console specific backbuffer resolution - width");
-	REGISTER_CVAR3("r_ConsoleBackbufferHeight", CV_r_ConsoleBackbufferHeight, DEVICE_HEIGHT, VF_DUMPTODISK,
-	               "console specific backbuffer resolution - height");
 
 	REGISTER_CVAR3("r_ConditionalRendering", CV_r_ConditionalRendering, 0, VF_NULL, "Enables conditional rendering .");
 
@@ -3239,12 +3252,12 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR2("d3d11_CBUpdateStats", &CV_d3d11_CBUpdateStats, 0, 0, "Logs constant buffer updates statistics.");
 	CV_d3d11_forcedFeatureLevel = REGISTER_STRING("d3d11_forcedFeatureLevel", NULL, VF_DEV_ONLY | VF_REQUIRE_APP_RESTART,
 	                                              "Forces the Direct3D device to target a specific feature level - supported values are:\n"
-	                                              " 10.0\n"
-	                                              " 10.1\n"
-	                                              " 11.0");
+	                                              " 10_0\n"
+	                                              " 10_1\n"
+	                                              " 11_0\n"
+	                                              " 11_1");
 
-#if defined(SUPPORT_D3D_DEBUG_RUNTIME)
-	REGISTER_CVAR2("d3d11_debugruntime", &CV_d3d11_debugruntime, 0, 0, "Avoid D3D debug runtime errors for certain cases");
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 	CV_d3d11_debugMuteSeverity = REGISTER_INT("d3d11_debugMuteSeverity", 2, VF_NULL,
 	                                          "Mute whole group of messages of certain severity when D3D debug runtime enabled:\n"
 	                                          " 0 - no severity based mute\n"

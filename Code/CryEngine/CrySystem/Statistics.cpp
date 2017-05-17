@@ -83,6 +83,11 @@ const std::vector<const char*>& GetModuleNames()
 		moduleNames.push_back("Sandbox.exe");
 		moduleNames.push_back("CryRenderD3D9.dll");
 		moduleNames.push_back("CryRenderD3D10.dll");
+		moduleNames.push_back("CryRenderD3D11.dll");
+		moduleNames.push_back("CryRenderD3D12.dll");
+		moduleNames.push_back("CryRenderOpenGL.dll");
+		moduleNames.push_back("CryRenderOGES.dll");
+		moduleNames.push_back("CryRenderVulkan.dll");
 		moduleNames.push_back("CryRenderNULL.dll");
 		//TODO: launcher?
 #endif

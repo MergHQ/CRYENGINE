@@ -147,7 +147,7 @@ private:
 		const float maxSize = (float)(1 << 12);
 		const float minSize = rcp_fast(maxSize); // small enough and prevents SIMD exceptions
 		const floatv time = ToFloatv(fmodf(context.m_time * m_rate * minSize, 1.0f) * maxSize);
-		const floatv invSize = ToFloatv(rcp_fast(MAX(minSize, float(m_size))));
+		const floatv invSize = ToFloatv(rcp_fast(std::max(minSize, float(m_size))));
 		const floatv speed = ToFloatv(m_speed);
 		const floatv delta = ToFloatv(m_rate * context.m_deltaTime);
 		const uint octaves = m_octaves;

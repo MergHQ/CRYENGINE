@@ -282,7 +282,7 @@ void CRECloud::DisplayWithoutImpostor(const CRenderCamera& camera)
 	   // set depth texture for soft clipping of cloud particle against scene geometry
 	   if(0 != CTexture::s_ptexZTarget)
 	   {
-	    STexState depthTextState( FILTER_POINT, true );
+	    SSamplerState depthTextState( FILTER_POINT, true );
 	    CTexture::s_ptexZTarget->Apply( 1, CTexture::GetTexState(depthTextState) );
 	   }
 	 */
@@ -301,7 +301,7 @@ void CRECloud::DisplayWithoutImpostor(const CRenderCamera& camera)
 
 	rd->FX_Commit();
 
-	if (!FAILED(rd->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
+	if (!FAILED(rd->FX_SetVertexDeclaration(0, EDefaultInputLayouts::P3F_C4B_T2F)))
 	{
 		while (nStartPart < nParts)
 		{
@@ -635,8 +635,7 @@ bool CRECloud::mfDisplay(bool bDisplayFrontOfSplit)
 	// set depth texture for soft clipping of cloud against scene geometry
 	if (0 != CTexture::s_ptexZTarget)
 	{
-		STexState depthTextState(FILTER_POINT, true);
-		CTexture::s_ptexZTarget->Apply(1, CTexture::GetTexState(depthTextState));
+		CTexture::s_ptexZTarget->Apply(1, EDefaultSamplerStates::PointClamp);
 	}
 
 	int State = GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_ALPHATEST;
@@ -880,7 +879,7 @@ bool CRECloud::mfDisplay(bool bDisplayFrontOfSplit)
 
 			rd->m_RP.m_nCommitFlags |= FC_MATERIAL_PARAMS;
 			rd->FX_Commit();
-			if (!FAILED(rd->FX_SetVertexDeclaration(0, eVF_P3F_T2F_T3F)))
+			if (!FAILED(rd->FX_SetVertexDeclaration(0, EDefaultInputLayouts::P3F_T2F_T3F)))
 				rd->FX_DrawPrimitive(eptTriangleStrip, 0, 4);
 
 			vb.Release();

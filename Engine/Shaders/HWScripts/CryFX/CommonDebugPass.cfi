@@ -19,10 +19,6 @@ struct vert2fragDebug
 struct app2vertDebug
 {
   app2vertCommon vertCommon;
-
-  #if %_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST
-    float4 InstAmbientOp  : TEXCOORDN;
-  #endif
 };
 
 vert2fragDebug Common_DebugPassVS(app2vertDebug IN_common)

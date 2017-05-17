@@ -13,8 +13,6 @@
 			"D3DHDRRender.cpp",
 			"D3DHWShader.cpp",
 			"D3DHWShaderCompiling.cpp",
-			"D3DLog.cpp",
-			"D3DMemReplayDevice.cpp",
 			"D3DOcclQuery.cpp",
 			"D3DOculus.cpp",
 			"D3DOpenVR.cpp",
@@ -90,12 +88,11 @@
 		[
 			"ShadowTextureGroupManager.h",
 			"D3DTiledShading.h",
-			"D3DMemReplayDevice.h",
-			"DeviceManager/DeviceManagerInline.h",
+			"DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.inl",
 			"../Common/Textures/ITextureStreamer.h",
 			"../Common/Shaders/ShaderAllocator.h",
 			"../Common/CryNameR.h",
-			"../Common/CryDeviceWrapper.h",
+			"DeviceManager/D3D11/DeviceWrapper_D3D11.h",
 			"../Common/ISmartGlassContext.h",
 			"../Common/LightVolumeBuffer.h",
 			"../Common/ParticleBuffer.h",
@@ -191,7 +188,6 @@
     "Common/RendElements": [
       "../Common/RendElements/CREBreakableGlass.cpp",
       "CRELensOpticsD3D.cpp",
-      "../Common/RendElements/CREBeam.cpp",
       "../Common/RendElements/CREClientPoly.cpp",
       "../Common/RendElements/CRECloud.cpp",
       "../Common/RendElements/CREDeferredShading.cpp",
@@ -215,7 +211,6 @@
 			"../Common/RendElements/CREWaterVolume.cpp",
 			"../Common/RendElements/RendElement.cpp",
       "../Common/RendElements/CRELensOptics.h",
-			"../Common/RendElements/CREBeam.h",
 			"../Common/RendElements/CREClientPoly.h",
 			"../Common/RendElements/CRECloud.h",
 			"../Common/RendElements/CREDeferredShading.h",
@@ -299,7 +294,7 @@
 			"../Common/Textures/Image/JpgImage.cpp",
 			"../Common/Textures/Image/TgaImage.cpp",
 			"../Common/Textures/Image/PngImage.cpp",
-      "../Common/Textures/Image/CImage.h",
+      		"../Common/Textures/Image/CImage.h",
 			"../Common/Textures/Image/DDSImage.h"
 		]
 	},
@@ -354,24 +349,17 @@
 		[
 			"DevBuffer.cpp",
 			"../Common/DevBuffer.h",
-			"DeviceManager/DeviceManager.cpp",
-			"DeviceManager/DeviceManager.h",
-			"DeviceManager/D3D11/DeviceManager_D3D11.inl",
-			"DeviceManager/D3D11/DeviceManager_D3D11_NVAPI.h",
-			"DeviceManager/D3D11/DeviceManager_D3D11_NVAPI.inl",
-			"DeviceManager/D3D12/DeviceManager_D3D12.inl",
-			"DeviceManager/DeviceManagerInline.h",
 			"DeviceManager/TempDynBuffer.h",
 			"DeviceManager/DeviceObjects.h",
 			"DeviceManager/DeviceObjects.inl",
 			"DeviceManager/DeviceObjects.cpp",
-			"DeviceManager/D3D11/DeviceObjects_D3D11.inl",
-			"DeviceManager/D3D12/DeviceObjects_D3D12.inl",
-			"DeviceManager/D3D11/DeviceObjects_D3D11.cpp",
-			"DeviceManager/D3D12/DeviceObjects_D3D12.cpp",
-			"DeviceManager/DeviceCommandList.inl",
-			"DeviceManager/D3D11/DeviceCommandList_D3D11.h",
-			"DeviceManager/D3D12/DeviceCommandList_D3D12.h"
+			"DeviceManager/DeviceObjectHelpers.h",
+			"DeviceManager/DeviceObjectHelpers.cpp",
+			"DeviceManager/DeviceResources.h",
+			"DeviceManager/DeviceResources.cpp",
+			"DeviceManager/DeviceFormats.h",
+			"DeviceManager/DeviceFormats.cpp",
+			"DeviceManager/DeviceCommandList.inl"
 		]
 	},
 	"CryGpuParticles_uber.cpp":
@@ -402,8 +390,7 @@
 			"Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp",
 			"Gpu/Particles/GpuParticleFeatureRender.cpp",
 			"Gpu/Particles/GpuParticleFeatureSpawn.cpp",
-			"Gpu/Particles/GpuParticleFeatureVelocity.cpp",
-			"Gpu/Particles/CREGpuParticle.cpp"
+			"Gpu/Particles/GpuParticleFeatureVelocity.cpp"
 		],
 		"Header Files/Gpu/Particles":
 		[
@@ -421,8 +408,7 @@
 			"Gpu/Particles/GpuParticleFeatureFluidDynamics.h",
 			"Gpu/Particles/GpuParticleFeatureRender.h",
 			"Gpu/Particles/GpuParticleFeatureSpawn.h",
-			"Gpu/Particles/GpuParticleFeatureVelocity.h",
-			"Gpu/Particles/CREGpuParticle.h"
+			"Gpu/Particles/GpuParticleFeatureVelocity.h"
 		],
 		"Source Files/Gpu/Physics":
 		[
@@ -445,13 +431,15 @@
 			"GraphicsPipeline/Common/GraphicsPipelineStage.h",
 			"GraphicsPipeline/Common/GraphicsPipelineStateSet.h",
 			"GraphicsPipeline/Common/GraphicsPipelineStateSet.cpp",
+			"GraphicsPipeline/Common/RenderPassScheduler.h",
+			"GraphicsPipeline/Common/RenderPassScheduler.cpp",
 			"GraphicsPipeline/Common/PrimitiveRenderPass.h",
 			"GraphicsPipeline/Common/PrimitiveRenderPass.cpp",
+			"GraphicsPipeline/Common/RenderPassBase.h",
 			"GraphicsPipeline/Common/SceneRenderPass.h",
 			"GraphicsPipeline/Common/SceneRenderPass.cpp",
 			"GraphicsPipeline/Common/UtilityPasses.h",
-			"GraphicsPipeline/Common/UtilityPasses.cpp",
-			"GraphicsPipeline/Common/VolumeRenderPass.h"
+			"GraphicsPipeline/Common/UtilityPasses.cpp"
 		],
 		"GraphicsPipeline":
 		[
@@ -465,14 +453,20 @@
 			"GraphicsPipeline/ColorGrading.cpp",
 			"GraphicsPipeline/ComputeSkinning.h",
 			"GraphicsPipeline/ComputeSkinning.cpp",
+			"GraphicsPipeline/DepthReadback.h",
+			"GraphicsPipeline/DepthReadback.cpp",
 			"GraphicsPipeline/GpuParticles.h",
 			"GraphicsPipeline/GpuParticles.cpp",
+			"GraphicsPipeline/DeferredDecals.h",
+			"GraphicsPipeline/DeferredDecals.cpp",
 			"GraphicsPipeline/DepthOfField.h",
 			"GraphicsPipeline/DepthOfField.cpp",
 			"GraphicsPipeline/Fog.h",
 			"GraphicsPipeline/Fog.cpp",
 			"GraphicsPipeline/LensOptics.h",
 			"GraphicsPipeline/LensOptics.cpp",
+			"GraphicsPipeline/MobileComposition.h",
+			"GraphicsPipeline/MobileComposition.cpp",
 			"GraphicsPipeline/MotionBlur.h",
 			"GraphicsPipeline/MotionBlur.cpp",
 			"GraphicsPipeline/HeightMapAO.h",

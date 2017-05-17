@@ -2712,7 +2712,7 @@ class Graft : public Action
 public:
 	typedef Action BaseClass;
 
-	struct RuntimeData : public IGraftNode
+	struct RuntimeData final : public IGraftNode
 	{
 		virtual bool RunBehavior(EntityId entityId, const char* behaviorName, XmlNodeRef behaviorXmlNode) override
 		{

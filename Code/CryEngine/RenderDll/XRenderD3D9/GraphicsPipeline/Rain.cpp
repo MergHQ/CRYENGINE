@@ -94,9 +94,9 @@ void CRainStage::Prepare(CRenderView* pRenderView)
 
 		for (auto& prim : m_rainPrimitives)
 		{
-			prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
+			prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);
 			prim.SetCullMode(eCULL_None);
-			prim.SetCustomVertexStream(m_rainVertexBuffer, eVF_P3F_C4B_T2F, vertexStride);
+			prim.SetCustomVertexStream(m_rainVertexBuffer, EDefaultInputLayouts::P3F_C4B_T2F, vertexStride);
 			prim.SetCustomIndexStream(~0u, RenderIndexType(0));
 			prim.SetDrawInfo(eptTriangleStrip, 0, 0, totalVertexCount);
 			prim.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
@@ -247,7 +247,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 	SRainParams& rainVolParams = m_RainVolParams;
 
-	CTexture* pDepthStencilTex = rd->m_DepthBufferOrigMSAA.pTexture;
+	CTexture* pDepthStencilTex = rd->m_DepthBufferOrig.pTexture;
 	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion) ? CTexture::s_ptexRainOcclusion : CTexture::s_ptexBlack;
 
 	uint64 rtMask = 0;
@@ -283,17 +283,18 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 		pass.SetTexture(8, pOcclusionTex);
 
 		auto stencilOnlyView = SResourceView::ShaderResourceView(
-		  pDepthStencilTex->GetDstFormat(), 0, -1, 0, -1, false, false, SResourceView::eSRV_StencilOnly);
-		pass.SetTexture(9, pDepthStencilTex, stencilOnlyView.m_Desc.Key);
+			DeviceFormats::ConvertFromTexFormat(pDepthStencilTex->GetDstFormat()), 0, -1, 0, -1, false, false, SResourceView::eSRV_StencilOnly);
+		ResourceViewHandle srvHandle = pDepthStencilTex->GetDevTexture()->GetOrCreateResourceViewHandle(stencilOnlyView);
+		pass.SetTexture(9, pDepthStencilTex, srvHandle);
 
-		pass.SetSampler(0, rd->m_nPointWrapSampler);
-		pass.SetSampler(1, rd->m_nTrilinearWrapSampler);
-		pass.SetSampler(2, rd->m_nPointBorderWhiteSampler);
-		pass.SetSampler(3, rd->m_nBilinearWrapSampler);
+		pass.SetSampler(0, EDefaultSamplerStates::PointWrap);
+		pass.SetSampler(1, EDefaultSamplerStates::TrilinearWrap);
+		pass.SetSampler(2, EDefaultSamplerStates::PointBorder_White);
+		pass.SetSampler(3, EDefaultSamplerStates::BilinearWrap);
 
 		// Those texture and sampler are used in EncodeGBuffer().
 		pass.SetTexture(30, CTexture::s_ptexNormalsFitting);
-		pass.SetSampler(9, rd->m_nPointClampSampler);
+		pass.SetSampler(9, EDefaultSamplerStates::PointClamp);
 
 		pass.SetRequirePerViewConstantBuffer(true);
 	}
@@ -435,8 +436,8 @@ void CRainStage::Execute()
 				pass.SetTexture(1, CTexture::s_ptexRainOcclusion);
 				pass.SetTexture(2, m_pHighFreqNoiseTex);
 
-				pass.SetSampler(0, rd->m_nPointClampSampler);
-				pass.SetSampler(1, rd->m_nTrilinearWrapSampler);
+				pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
+				pass.SetSampler(1, EDefaultSamplerStates::TrilinearWrap);
 
 				pass.SetRequirePerViewConstantBuffer(true);
 			}
@@ -470,9 +471,9 @@ void CRainStage::Execute()
 	viewport.MaxDepth = 1.0f;
 
 	auto& pass = m_passRain;
-	pass.ClearPrimitives();
 	pass.SetRenderTarget(0, pRenderTarget);
 	pass.SetViewport(viewport);
+	pass.BeginAddingPrimitives();
 
 	static CCryNameTSCRC pSceneRainTechName("SceneRain");
 
@@ -488,8 +489,7 @@ void CRainStage::Execute()
 	uint64 rtMask = 0;
 	rtMask |= rainVolParams.bApplyOcclusion ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 
-	rd->GetGraphicsPipeline().UpdatePerViewConstantBuffer(&viewport);
-	auto pPerViewCB = rd->GetGraphicsPipeline().GetPerViewConstantBuffer();
+	auto pPerViewCB = rd->GetGraphicsPipeline().GetMainViewConstantBuffer();
 
 	for (int32 nCurLayer = 0; nCurLayer < nLayers; ++nCurLayer)
 	{
@@ -508,11 +508,12 @@ void CRainStage::Execute()
 		// Bind average luminance
 		prim.SetTexture(5, CTexture::s_ptexHDRToneMaps[0]);
 
-		prim.SetSampler(0, rd->m_nTrilinearWrapSampler);
-		prim.SetSampler(1, rd->m_nTrilinearClampSampler);
-		prim.SetSampler(2, rd->m_nPointClampSampler);
+		prim.SetSampler(0, EDefaultSamplerStates::TrilinearWrap);
+		prim.SetSampler(1, EDefaultSamplerStates::TrilinearClamp);
+		prim.SetSampler(2, EDefaultSamplerStates::PointClamp);
 
 		prim.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB.get(), EShaderStage_Vertex | EShaderStage_Pixel);
+		prim.Compile(pass);
 
 		// update constant buffer
 		{
@@ -562,8 +563,6 @@ void CRainStage::ExecuteRainOcclusionGen(CRenderView* pRenderView)
 	{
 		auto& pass = m_passRainOcclusionGen;
 
-		pass.ClearPrimitives();
-
 		D3DViewPort viewport;
 		viewport.TopLeftX = 0.0f;
 		viewport.TopLeftY = 0.0f;
@@ -573,8 +572,9 @@ void CRainStage::ExecuteRainOcclusionGen(CRenderView* pRenderView)
 		viewport.MaxDepth = 1.0f;
 
 		pass.SetRenderTarget(0, CTexture::s_ptexRainOcclusion);
-		pass.SetDepthTarget(pTmpDepthSurface);
+		pass.SetDepthTarget(pTmpDepthSurface->pTexture);
 		pass.SetViewport(viewport);
+		pass.BeginAddingPrimitives();
 
 		static const Matrix44 matSs2Ps(2.f, 0.f, 0.f, -1.f,
 		                               0.f, 2.f, 0.f, -1.f,
@@ -621,6 +621,7 @@ void CRainStage::ExecuteRainOcclusionGen(CRenderView* pRenderView)
 					prim.SetTechnique(CShaderMan::s_ShaderDeferredRain, techName, 0);
 					prim.SetCullMode(eCULL_None);
 					prim.SetRenderState(GS_DEPTHFUNC_LEQUAL | GS_DEPTHWRITE);
+					prim.Compile(pass);
 
 					// update constant buffer
 					{

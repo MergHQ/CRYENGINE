@@ -8177,10 +8177,10 @@ void CRecordingSystem::CameraCollisionAdjustment(const IEntity* target, Vec3& ca
 			float raiseDist = minHeightDiff - (cameraPos.z - targetWorldPos.z) - wallSafeDistance;
 			if(newHitDist != 0)
 			{
-				raiseDist = MIN(minHeightDiff, newHitDist);
+				raiseDist = std::min(minHeightDiff, newHitDist);
 			}
 
-			raiseDist = MAX(0.0f, raiseDist);
+			raiseDist = std::max(0.0f, raiseDist);
 
 			cameraPos.z += raiseDist;
 		}
