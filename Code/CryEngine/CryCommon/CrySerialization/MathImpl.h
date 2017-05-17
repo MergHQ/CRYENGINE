@@ -132,9 +132,9 @@ inline bool Serialize(Serialization::IArchive& ar, SRotation& value, const char*
 		if (ar.openBlock(name, label))
 		{
 			Vec3 v = Vec3(RAD2DEG(Ang3::GetAnglesXYZ(Matrix33(value.quat))));
-			ar(Serialization::Range(v.x, -FLT_MAX, FLT_MAX, 1.0f), "x", "^");
-			ar(Serialization::Range(v.y, -FLT_MAX, FLT_MAX, 1.0f), "y", "^");
-			ar(Serialization::Range(v.z, -FLT_MAX, FLT_MAX, 1.0f), "z", "^");
+			ar(Serialization::MinMaxRange(v.x, 1.0f), "x", "^");
+			ar(Serialization::MinMaxRange(v.y, 1.0f), "y", "^");
+			ar(Serialization::MinMaxRange(v.z, 1.0f), "z", "^");
 			if (ar.isInput())
 				value.quat = Quat(Ang3(DEG2RAD(v)));
 
@@ -170,9 +170,9 @@ inline bool Serialize(Serialization::IArchive& ar, SPosition& c, const char* nam
 	{
 		if (ar.openBlock(name, label))
 		{
-			ar(c.vec.x, "x", "^");
-			ar(c.vec.y, "y", "^");
-			ar(c.vec.z, "z", "^");
+			ar(Serialization::MinMaxRange(c.vec.x), "x", "^");
+			ar(Serialization::MinMaxRange(c.vec.y), "y", "^");
+			ar(Serialization::MinMaxRange(c.vec.z), "z", "^");
 			ar(Serialization::SGap(), "gap", "^");
 			ar.closeBlock();
 			return true;
@@ -211,9 +211,9 @@ inline bool Serialize(Serialization::IArchive& ar, SUniformScale& c, const char*
 			if (ar.isInput() && c.uniform)
 			{
 				Vec3 vec = c.vec;
-				ar(vec.x, "x", "^");
-				ar(vec.y, "y", "^");
-				ar(vec.z, "z", "^");
+				ar(Serialization::MinMaxRange(vec.x), "x", "^");
+				ar(Serialization::MinMaxRange(vec.y), "y", "^");
+				ar(Serialization::MinMaxRange(vec.z), "z", "^");
 				result = ar(Serialization::SStruct(c), "scale", "^");
 
 				if (!strcmp(ar.getModifiedRowName(), "x"))
@@ -231,9 +231,9 @@ inline bool Serialize(Serialization::IArchive& ar, SUniformScale& c, const char*
 			}
 			else
 			{
-				ar(c.vec.x, "x", "^");
-				ar(c.vec.y, "y", "^");
-				ar(c.vec.z, "z", "^");
+				ar(Serialization::MinMaxRange(c.vec.x), "x", "^");
+				ar(Serialization::MinMaxRange(c.vec.y), "y", "^");
+				ar(Serialization::MinMaxRange(c.vec.z), "z", "^");
 				result = ar(Serialization::SStruct(c), "scale", "^");
 			}
 			ar.closeBlock();
