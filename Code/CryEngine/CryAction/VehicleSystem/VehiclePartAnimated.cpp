@@ -1,16 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Implements a part for vehicles which uses animated characters
+// Implements a part for vehicles which uses animated characters
 
-   -------------------------------------------------------------------------
-   History:
-   - 24:08:2005: Created by Mathieu Pinard
-
-*************************************************************************/
 #include "StdAfx.h"
 
 #include <CryAnimation/ICryAnimation.h>
@@ -22,9 +13,8 @@
 #include "VehiclePartAnimated.h"
 #include "VehiclePartAnimatedJoint.h"
 #include "VehicleUtils.h"
+#include "VehicleComponent.h"
 
-//#pragma optimize("", off)
-//#pragma inline_depth(0)
 
 //------------------------------------------------------------------------
 CVehiclePartAnimated::CVehiclePartAnimated()
