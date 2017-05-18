@@ -28,7 +28,7 @@ void CTexture::InitStreamingDev()
 #if defined(TEXSTRM_DEFERRED_UPLOAD)
 	if (CRenderer::CV_r_texturesstreamingDeferred)
 	{
-		if (!s_pStreamDeferredCtx)
+		if (gcpRendD3D->GetDevice().IsValid() && !s_pStreamDeferredCtx)
 		{
 			gcpRendD3D->GetDevice().CreateDeferredContext(0, &s_pStreamDeferredCtx);
 		}

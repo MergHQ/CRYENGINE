@@ -702,7 +702,7 @@ void CD3D9Renderer::DestroyWindow(void)
 #elif defined(USE_SDL2_VIDEO) && (CRY_RENDERER_VULKAN)
 	VKDestroySDLWindow(m_hWnd);
 #elif CRY_PLATFORM_WINDOWS
-	if (gEnv && gEnv->pSystem)
+	if (gEnv && gEnv->pSystem && !m_bShaderCacheGen)
 	{
 		gEnv->pSystem->UnregisterWindowMessageHandler(this);
 	}

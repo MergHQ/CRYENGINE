@@ -219,7 +219,7 @@ CTexture* CTexture::s_ptexVolumetricClipVolumeStencil = NULL;
 CTexture* CTexture::s_ptexVolCloudShadow = NULL;
 
 #if defined(TEXSTRM_DEFERRED_UPLOAD)
-ID3D11DeviceContext* CTexture::s_pStreamDeferredCtx;
+ID3D11DeviceContext* CTexture::s_pStreamDeferredCtx = nullptr;
 #endif
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
