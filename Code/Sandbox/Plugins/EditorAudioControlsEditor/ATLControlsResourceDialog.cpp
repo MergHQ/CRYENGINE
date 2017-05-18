@@ -32,7 +32,7 @@ ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EItemType eType)
 	QLineEdit* pTextFilterLineEdit = new QLineEdit(this);
 	pTextFilterLineEdit->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignVCenter);
 	pTextFilterLineEdit->setPlaceholderText(QApplication::translate("AudioAssetsExplorer", "Search", 0));
-	connect(pTextFilterLineEdit, SIGNAL(textChanged(QString)), this, SLOT(SetTextFilter(QString)));
+	connect(pTextFilterLineEdit, &QLineEdit::textChanged, this, &ATLControlsDialog::SetTextFilter);
 	pLayout->addWidget(pTextFilterLineEdit, 0);
 
 	m_pControlTree = new QAudioControlsTreeView(this);
@@ -63,11 +63,11 @@ ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EItemType eType)
 
 	m_pDialogButtons = new QDialogButtonBox(this);
 	m_pDialogButtons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-	connect(m_pDialogButtons, SIGNAL(accepted()), this, SLOT(accept()));
-	connect(m_pDialogButtons, SIGNAL(rejected()), this, SLOT(reject()));
+	connect(m_pDialogButtons, &QDialogButtonBox::accepted, this, &ATLControlsDialog::accept);
+	connect(m_pDialogButtons, &QDialogButtonBox::rejected, this, &ATLControlsDialog::reject);
 	pLayout->addWidget(m_pDialogButtons, 0);
 
-	connect(m_pControlTree->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)), this, SLOT(UpdateSelectedControl()));
+	connect(m_pControlTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ATLControlsDialog::UpdateSelectedControl);
 	ApplyFilter();
 	UpdateSelectedControl();
 	m_pControlTree->setFocus();
@@ -75,8 +75,8 @@ ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EItemType eType)
 	m_pControlTree->installEventFilter(this);
 	m_pControlTree->viewport()->installEventFilter(this);
 
-	connect(m_pControlTree->selectionModel(), SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)), this, SLOT(StopTrigger()));
-	connect(m_pControlTree, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(ItemDoubleClicked(const QModelIndex &)));
+	connect(m_pControlTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &ATLControlsDialog::StopTrigger);
+	connect(m_pControlTree, &QAudioControlsTreeView::doubleClicked, this, &ATLControlsDialog::ItemDoubleClicked);
 
 	pTextFilterLineEdit->setFocus(Qt::FocusReason::PopupFocusReason);
 
@@ -316,4 +316,4 @@ void ATLControlsDialog::ItemDoubleClicked(const QModelIndex& modelIndex)
 		accept();
 	}
 }
-}
+} // namespace ACE
