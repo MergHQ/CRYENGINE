@@ -781,7 +781,7 @@ void CMementoMemoryManager::CMementoMemoryManagerAllocator::DebugDraw(int x, int
 
 	#if MMM_USE_BUCKET_ALLOCATOR
 	DrawDebugLine(x, y++, "Memento allocator memory");
-	DrawDebugLine(x, y++, "Bucket Allocator Requested %8 " PRISIZE_T " Allocated %8 " PRISIZE_T " Storage Size %8 " PRISIZE_T " Storage Capacity %8" PRISIZE_T " pages", m_bucketTotalRequested, m_bucketTotalAllocated, m_bucketAllocator.GetBucketStorageSize(), m_bucketAllocator.GetBucketStoragePages());
+	DrawDebugLine(x, y++, "Bucket Allocator Requested %8" PRISIZE_T " Allocated %8" PRISIZE_T " Storage Size %8" PRISIZE_T " Storage Capacity %8" PRISIZE_T " pages", m_bucketTotalRequested, m_bucketTotalAllocated, m_bucketAllocator.GetBucketStorageSize(), m_bucketAllocator.GetBucketStoragePages());
 	totalAllocated += m_bucketTotalAllocated;
 	#else
 	DrawDebugLine(x, y++, "Memento allocator memory");
