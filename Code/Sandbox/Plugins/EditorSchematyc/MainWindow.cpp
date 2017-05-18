@@ -275,6 +275,11 @@ bool CMainWindow::OnCloseAsset()
 		m_pModel->deleteLater();
 		m_pModel = nullptr;
 
+		if (m_pGraphView)
+		{
+			m_pGraphView->SetModel(nullptr);
+		}
+
 		stack_string dialogQuestion = "Asset '";
 		dialogQuestion.append(m_pAsset->GetName());
 		dialogQuestion.append("' has unsaved changes?");
