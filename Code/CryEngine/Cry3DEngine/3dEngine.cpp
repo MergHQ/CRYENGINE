@@ -48,7 +48,6 @@
 #include "WaterVolumeRenderNode.h"
 #include "WaterWaveRenderNode.h"
 #include "DistanceCloudRenderNode.h"
-#include "VolumeObjectRenderNode.h"
 #include "WaterWaveRenderNode.h"
 #include "RopeRenderNode.h"
 #include "RenderMeshMerger.h"
@@ -2957,11 +2956,6 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 	case eERType_Rope:
 		{
 			IRopeRenderNode* pRenderNode = new CRopeRenderNode();
-			return pRenderNode;
-		}
-	case eERType_VolumeObject:
-		{
-			IVolumeObjectRenderNode* pRenderNode = new CVolumeObjectRenderNode();
 			return pRenderNode;
 		}
 	case eERType_BreakableGlass:

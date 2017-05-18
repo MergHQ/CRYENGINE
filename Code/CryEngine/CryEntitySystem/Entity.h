@@ -296,8 +296,6 @@ public:
 	int                                LoadFogVolume(int nSlot, const SFogVolumeProperties& properties);
 
 	int                                FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity);
-	int                                LoadVolumeObject(int nSlot, const char* sFilename);
-	int                                SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
 
 	virtual void                       SetSubObjHideMask(int nSlot, hidemask nSubObjHideMask) final        { GetEntityRender()->SetSubObjHideMask(nSlot, nSubObjHideMask); };
 	virtual hidemask                   GetSubObjHideMask(int nSlot) const final                            { return GetEntityRender()->GetSubObjHideMask(nSlot); };

@@ -33,7 +33,6 @@ enum EDataType
 	eDATA_FogVolume,
 	eDATA_WaterVolume,
 	eDATA_WaterOcean,
-	eDATA_VolumeObject,
 	eDATA_DeferredShading,
 	eDATA_GameEffect,
 	eDATA_BreakableGlass,
@@ -275,7 +274,6 @@ public:
 #include "CREFogVolume.h"
 #include "CREWaterVolume.h"
 #include "CREWaterOcean.h"
-#include "CREVolumeObject.h"
 #include "CREGameEffect.h"
 #include "CREBreakableGlass.h"
 #include <Cry3DEngine/CREGeomCache.h>

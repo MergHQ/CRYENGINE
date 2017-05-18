@@ -206,7 +206,6 @@
 		[
 			"../Common/RendElements/CREParticle.cpp",
 			"../Common/RendElements/CRESky.cpp",
-			"../Common/RendElements/CREVolumeObject.cpp",
 			"../Common/RendElements/CREWaterOcean.cpp",
 			"../Common/RendElements/CREWaterVolume.cpp",
 			"../Common/RendElements/RendElement.cpp",

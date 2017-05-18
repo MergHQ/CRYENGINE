@@ -531,7 +531,6 @@
           "CryRenderer/RenderElements/CREOcclusionQuery.h",
           "CryRenderer/RenderElements/CREParticle.h",
           "CryRenderer/RenderElements/CRESky.h",
-          "CryRenderer/RenderElements/CREVolumeObject.h",
           "CryRenderer/RenderElements/CREWaterOcean.h",
           "CryRenderer/RenderElements/CREWaterVolume.h",
           "CryRenderer/RenderElements/RendElement.h"

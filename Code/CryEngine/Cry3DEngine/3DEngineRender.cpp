@@ -28,7 +28,6 @@
 #include "WaterWaveRenderNode.h"
 #include "CloudsManager.h"
 #include "MatMan.h"
-#include "VolumeObjectRenderNode.h"
 #include <CryString/CryPath.h>
 #include <CryMemory/ILocalMemoryUsage.h>
 #include <CryCore/BitFiddling.h>
@@ -1466,8 +1465,6 @@ void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo&
 	{
 		if (m_pCloudsManager)
 			m_pCloudsManager->MoveClouds();
-
-		CVolumeObjectRenderNode::MoveVolumeObjects();
 
 		// move procedural volumetric clouds with global wind.
 		{
@@ -3315,7 +3312,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_WaterWave);
 		DRAW_OBJ_STATS(eERType_Road);
 		DRAW_OBJ_STATS(eERType_DistanceCloud);
-		DRAW_OBJ_STATS(eERType_VolumeObject);
 		DRAW_OBJ_STATS(eERType_Rope);
 		DRAW_OBJ_STATS(eERType_MovableBrush);
 		DRAW_OBJ_STATS(eERType_GameEffect);

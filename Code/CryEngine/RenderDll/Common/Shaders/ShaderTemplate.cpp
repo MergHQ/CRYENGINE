@@ -310,10 +310,6 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = CTexture::s_ptexFromRE[6];
 	else if (!stricmp(mapname, "$FromRE7"))
 		TexPic = CTexture::s_ptexFromRE[7];
-	else if (!stricmp(mapname, "$VolObj_Density"))
-		TexPic = CTexture::s_ptexVolObj_Density;
-	else if (!stricmp(mapname, "$VolObj_Shadow"))
-		TexPic = CTexture::s_ptexVolObj_Shadow;
 	else if (!stricmp(mapname, "$ColorChart"))
 		TexPic = CTexture::s_ptexColorChart;
 	else if (!stricmp(mapname, "$FromObj"))

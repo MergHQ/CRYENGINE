@@ -102,8 +102,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_TEMPLFUNC(LoadCloudBlocker, "nSlot,tCloudBlockerProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadFogVolume, "nSlot,tFogVolumeDescription");
 	SCRIPT_REG_TEMPLFUNC(FadeGlobalDensity, "nSlot,fFadeTime,fNewGlobalDensity");
-	SCRIPT_REG_TEMPLFUNC(LoadVolumeObject, "nSlot,sFilename");
-	SCRIPT_REG_TEMPLFUNC(SetVolumeObjectMovementProperties, "nSlot,tVolumeObjectMovementProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadParticleEffect, "nSlot,sEffectName,bPrime,fPulsePeriod,fScale,fCountScale,sAttachType,sAttachForm");
 	SCRIPT_REG_TEMPLFUNC(PreLoadParticleEffect, "sEffectName");
 	SCRIPT_REG_TEMPLFUNC(IsSlotParticleEmitter, "slot");
@@ -1351,29 +1349,6 @@ int CScriptBind_Entity::FadeGlobalDensity(IFunctionHandler* pH, int nSlot, float
 {
 	GET_ENTITY;
 	nSlot = pEntity->FadeGlobalDensity(nSlot, fadeTime, newGlobalDensity);
-	return pH->EndFunction(nSlot);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::LoadVolumeObject(IFunctionHandler* pH, int nSlot, const char* sFilename)
-{
-	GET_ENTITY;
-	pEntity->LoadVolumeObject(nSlot, sFilename);
-	return pH->EndFunction(nSlot);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::SetVolumeObjectMovementProperties(IFunctionHandler* pH, int nSlot, SmartScriptTable table)
-{
-	GET_ENTITY;
-
-	SVolumeObjectMovementProperties properties;
-	if (ParseVolumeObjectMovementProperties(table, pEntity, properties))
-	{
-		nSlot = pEntity->SetVolumeObjectMovementProperties(nSlot, properties);
-		if (nSlot < 0)
-			return pH->EndFunction();
-	}
 	return pH->EndFunction(nSlot);
 }
 
@@ -7814,34 +7789,6 @@ bool CScriptBind_Entity::ParseFogVolumesParams(IScriptTable* pTable, IEntity* pE
 
 //////////////////////////////////////////////////////////////////////////
 bool CScriptBind_Entity::ParseCloudMovementProperties(IScriptTable* pTable, IEntity* pEntity, SCloudMovementProperties& properties)
-{
-	CScriptSetGetChain chain(pTable);
-
-	bool autoMove;
-	properties.m_autoMove = false;
-	if (chain.GetValue("bAutoMove", autoMove))
-		properties.m_autoMove = autoMove;
-
-	Vec3 speed;
-	properties.m_speed = Vec3(0, 0, 0);
-	if (chain.GetValue("vector_Speed", speed))
-		properties.m_speed = speed;
-
-	Vec3 spaceLoopBox;
-	properties.m_spaceLoopBox = Vec3(2000.0f, 2000.0f, 2000.0f);
-	if (chain.GetValue("vector_SpaceLoopBox", spaceLoopBox))
-		properties.m_spaceLoopBox = spaceLoopBox;
-
-	float fadeDistance;
-	properties.m_fadeDistance = 0;
-	if (chain.GetValue("fFadeDistance", fadeDistance))
-		properties.m_fadeDistance = fadeDistance;
-
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CScriptBind_Entity::ParseVolumeObjectMovementProperties(IScriptTable* pTable, IEntity* pEntity, SVolumeObjectMovementProperties& properties)
 {
 	CScriptSetGetChain chain(pTable);
 

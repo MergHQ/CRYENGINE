@@ -97,9 +97,6 @@ enum
 	TO_WATERVOLUMECAUSTICSMAP,
 	TO_WATERVOLUMECAUSTICSMAPTEMP,
 
-	TO_VOLOBJ_DENSITY,
-	TO_VOLOBJ_SHADOW,
-
 	TO_COLORCHART,
 
 	TO_ZTARGET_MS,
@@ -2035,9 +2032,6 @@ public:
 
 	static CTexture*           s_ptexSceneTargetScaled;
 	static CTexture*           s_ptexSceneTargetScaledBlurred;
-
-	static CTexture*           s_ptexVolObj_Density;
-	static CTexture*           s_ptexVolObj_Shadow;
 
 	static CTexture*           s_ptexColorChart;
 

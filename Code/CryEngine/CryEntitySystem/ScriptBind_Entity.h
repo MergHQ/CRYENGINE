@@ -149,18 +149,6 @@ protected:
 	//!		<param name="newGlobalDensity">.</param>
 	int FadeGlobalDensity(IFunctionHandler* pH, int nSlot, float fadeTime, float newGlobalDensity);
 
-	//! <code>Entity.LoadVolumeObject( nSlot, sFilename )</code>
-	//!		<param name="nSlot">Slot identifier.</param>
-	//!		<param name="sFilename">File name of the volume object.</param>
-	//! <description>Loads volume object.</description>
-	int LoadVolumeObject(IFunctionHandler* pH, int nSlot, const char* sFilename);
-
-	//! <code>Entity.SetVolumeObjectMovementProperties( nSlot, table )</code>
-	//!		<param name="nSlot">Slot identifier.</param>
-	//!		<param name="table">Table with volume object properties.</param>
-	//! <description>Sets the properties of the volume object movement.</description>
-	int SetVolumeObjectMovementProperties(IFunctionHandler* pH, int nSlot, SmartScriptTable table);
-
 	//! <code>Entity.LoadParticleEffect( nSlot, sEffectName, fPulsePeriod, bPrime, fScale )</code>
 	//! <description>Loads CGF geometry into the entity slot.</description>
 	//!		<param name="nSlot">Slot identifier.</param>
@@ -1445,7 +1433,6 @@ private: // --------------------------------------------------------------------
 	bool ParseLightParams(IScriptTable* pLightTable, CDLight& light);
 	bool ParseFogVolumesParams(IScriptTable* pTable, IEntity* pEntity, SFogVolumeProperties& properties);
 	bool ParseCloudMovementProperties(IScriptTable* pTable, IEntity* pEntity, SCloudMovementProperties& properties);
-	bool ParseVolumeObjectMovementProperties(IScriptTable* pTable, IEntity* pEntity, SVolumeObjectMovementProperties& properties);
 
 	// Parse script table to the entity physical params table.
 	bool ParsePhysicsParams(IScriptTable* pTable, SEntityPhysicalizeParams& params);

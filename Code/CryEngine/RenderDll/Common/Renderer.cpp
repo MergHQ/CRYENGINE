@@ -1458,9 +1458,6 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 	case eDATA_WaterOcean:
 		re = new CREWaterOcean;
 		break;
-	case eDATA_VolumeObject:
-		re = new CREVolumeObject;
-		break;
 
 	case eDATA_GameEffect:
 		re = new CREGameEffect;

@@ -191,8 +191,6 @@ CTexture* CTexture::s_ptexHDRMeasuredLuminanceDummy;
 CTexture* CTexture::s_ptexSkyDomeMie;
 CTexture* CTexture::s_ptexSkyDomeRayleigh;
 CTexture* CTexture::s_ptexSkyDomeMoon;
-CTexture* CTexture::s_ptexVolObj_Density;
-CTexture* CTexture::s_ptexVolObj_Shadow;
 CTexture* CTexture::s_ptexColorChart;
 CTexture* CTexture::s_ptexSceneTargetScaled;
 CTexture* CTexture::s_ptexSceneTargetScaledBlurred;
@@ -2800,9 +2798,6 @@ void CTexture::ReleaseSystemTextures(bool bFinalRelease)
 	SAFE_RELEASE_FORCE(s_ptexSvoNorm);
 	SAFE_RELEASE_FORCE(s_ptexSvoOpac);
 
-	SAFE_RELEASE_FORCE(s_ptexVolObj_Density);
-	SAFE_RELEASE_FORCE(s_ptexVolObj_Shadow);
-
 	SAFE_RELEASE_FORCE(s_ptexColorChart);
 
 	SAFE_RELEASE_FORCE(s_ptexWindGrid);
@@ -3079,9 +3074,6 @@ void CTexture::LoadDefaultSystemTextures()
 			if (!s_ptexFromRE_FromContainer[i])
 				s_ptexFromRE_FromContainer[i] = CTexture::GetOrCreateTextureObject(str, 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_FROMRE0_FROM_CONTAINER + i);
 		}
-
-		s_ptexVolObj_Density = CTexture::GetOrCreateTextureObject("$VolObj_Density", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_VOLOBJ_DENSITY);
-		s_ptexVolObj_Shadow = CTexture::GetOrCreateTextureObject("$VolObj_Shadow", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_VOLOBJ_SHADOW);
 
 		s_ptexColorChart = CTexture::GetOrCreateTextureObject("$ColorChart", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_COLORCHART);
 

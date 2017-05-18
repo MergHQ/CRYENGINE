@@ -92,9 +92,6 @@ public:
 	int  LoadGeomCache(int nSlot, const char* sFilename);
 #endif
 
-	int LoadVolumeObject(int nSlot, const char* sFilename);
-	int SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
-
 	//////////////////////////////////////////////////////////////////////////
 	// Slots.
 	//////////////////////////////////////////////////////////////////////////

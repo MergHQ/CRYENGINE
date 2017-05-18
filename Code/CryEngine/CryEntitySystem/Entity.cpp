@@ -2296,18 +2296,6 @@ int CEntity::FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CEntity::LoadVolumeObject(int nSlot, const char* sFilename)
-{
-	return m_render.LoadVolumeObject(nSlot, sFilename);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CEntity::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties)
-{
-	return m_render.SetVolumeObjectMovementProperties(nSlot, properties);
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CEntity::RegisterInAISystem(const AIObjectParams& params)
 {
 	m_flags &= ~ENTITY_FLAG_HAS_AI;

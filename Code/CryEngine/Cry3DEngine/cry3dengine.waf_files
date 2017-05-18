@@ -9,13 +9,6 @@
 	},
 	"Cry3DEngine_volume_water_uber.cpp":
 	{
-		"Effects/VolumeObject":
-		[
-			"VolumeObjectDataCreate.cpp",
-			"VolumeObjectRenderNode.cpp",
-			"VolumeObjectDataCreate.h",
-			"VolumeObjectRenderNode.h"
-		],
 		"Water":
 		[
 			"terrain_water.h",

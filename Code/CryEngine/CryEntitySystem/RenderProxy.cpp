@@ -1071,39 +1071,6 @@ int CEntityRender::LoadGeomCache(int nSlot, const char* sFilename)
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-int CEntityRender::LoadVolumeObject(int nSlot, const char* sFilename)
-{
-	CEntitySlot* pSlot = GetOrMakeSlot(nSlot);
-
-	IVolumeObjectRenderNode* pVolObj = (IVolumeObjectRenderNode*) GetI3DEngine()->CreateRenderNode(eERType_VolumeObject);
-
-	pSlot->SetRenderNode(pVolObj);
-	pSlot->SetRenderFlag(true);
-
-	pVolObj->LoadVolumeData(sFilename);
-
-	// Update slot position
-	pSlot->UpdateRenderNode();
-
-	ComputeLocalBounds(true);
-
-	return nSlot;
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CEntityRender::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties)
-{
-	CEntitySlot* pSlot = GetOrMakeSlot(nSlot);
-	IRenderNode* pRenderNode(pSlot->GetRenderNode());
-	if (pRenderNode && pRenderNode->GetRenderNodeType() == eERType_VolumeObject)
-	{
-		IVolumeObjectRenderNode* pVolObj((IVolumeObjectRenderNode*)pRenderNode);
-		pVolObj->SetMovementProperties(properties);
-	}
-	return nSlot;
-}
-
-//////////////////////////////////////////////////////////////////////////
 ICharacterInstance* CEntityRender::GetCharacter(int nSlot)
 {
 	nSlot = nSlot & (~ENTITY_SLOT_ACTUAL);

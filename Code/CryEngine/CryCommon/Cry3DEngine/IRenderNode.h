@@ -31,7 +31,7 @@ enum EERType
 	eERType_WaterWave,
 	eERType_Road,
 	eERType_DistanceCloud,
-	eERType_VolumeObject,
+	eERType_Dummy_4, // Used to be eERType_VolumeObject, preserve order for compatibility.
 	eERType_Dummy_0, //!< Used to be eERType_AutoCubeMap, preserve order for compatibility.
 	eERType_Rope,
 	eERType_Dummy_3, //!< Used to be  eERType_PrismObject, preserve order for compatibility.
@@ -915,28 +915,6 @@ struct SDistanceCloudProperties
 struct IDistanceCloudRenderNode : public IRenderNode
 {
 	virtual void SetProperties(const SDistanceCloudProperties& properties) = 0;
-};
-
-struct SVolumeObjectProperties
-{
-};
-
-struct SVolumeObjectMovementProperties
-{
-	bool  m_autoMove;
-	Vec3  m_speed;
-	Vec3  m_spaceLoopBox;
-	float m_fadeDistance;
-};
-
-//! Interface to the Volume Object Render Node object.
-struct IVolumeObjectRenderNode : public IRenderNode
-{
-	// <interfuscator:shuffle>
-	virtual void LoadVolumeData(const char* filePath) = 0;
-	virtual void SetProperties(const SVolumeObjectProperties& properties) = 0;
-	virtual void SetMovementProperties(const SVolumeObjectMovementProperties& properties) = 0;
-	// </interfuscator:shuffle>
 };
 
 //////////////////////////////////////////////////////////////////////////

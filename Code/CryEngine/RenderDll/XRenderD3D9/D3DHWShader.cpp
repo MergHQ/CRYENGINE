@@ -5079,44 +5079,6 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 					}
 					break;
 
-				case TO_VOLOBJ_DENSITY:
-				case TO_VOLOBJ_SHADOW:
-					{
-						bool texBound(false);
-						CRenderElement* pRE(rd->m_RP.m_pRE);
-						if (pRE && pRE->mfGetType() == eDATA_VolumeObject)
-						{
-							CREVolumeObject* pVolObj((CREVolumeObject*)pRE);
-							int texId(0);
-							if (pVolObj)
-							{
-								switch (nCustomID)
-								{
-								case TO_VOLOBJ_DENSITY:
-									if (pVolObj->m_pDensVol)
-										texId = pVolObj->m_pDensVol->GetTexID();
-									break;
-								case TO_VOLOBJ_SHADOW:
-									if (pVolObj->m_pShadVol)
-										texId = pVolObj->m_pShadVol->GetTexID();
-									break;
-								default:
-									assert(0);
-									break;
-								}
-							}
-							CTexture* pTex(texId > 0 ? CTexture::GetByID(texId) : 0);
-							if (pTex)
-							{
-								pTex->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-								texBound = true;
-							}
-						}
-						if (!texBound)
-							CTexture::s_ptexWhite->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-						break;
-					}
-
 				case TO_COLORCHART:
 					{
 						CColorGradingControllerD3D* pCtrl = gcpRendD3D->m_pColorGradingControllerD3D;
