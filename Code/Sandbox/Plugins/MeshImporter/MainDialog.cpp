@@ -2431,26 +2431,30 @@ bool CMainDialog::SaveCgf(const std::shared_ptr<QTemporaryDir>& pTempDir, const 
 	const QString absOriginalFilePath = GetSceneManager().GetImportFile()->GetOriginalFilePath();
 	ThreadingUtils::Async([saveState, pProxyTree, absOriginalFilePath, targetFilePath, pTempDir]()
 	{
+		std::unique_ptr<SProxyTree> proxyTree(pProxyTree);
+
 		// Asset relative path to directory. targetFilePath is absolute path.
 		const string dir = PathUtil::GetPathWithoutFilename(PathUtil::AbsolutePathToGamePath(targetFilePath));
 
 		const std::pair<bool, string> ret = CopySourceFileToDirectoryAsync(QtUtil::ToString(absOriginalFilePath), dir).get();
 		if (!ret.first)
-	{
+		{
 			const string& error = ret.second;
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Copying source file to '%s' failed: '%s'",
 				dir.c_str(), error.c_str());
 			return;
-	}
-
-		SaveRcObjectAsync(saveState, targetFilePath, [pProxyTree](bool bSuccess, const string& filePath)
-	{
-			std::unique_ptr<SProxyTree> proxyTree(pProxyTree);
-		if (bSuccess)
-		{
-				WriteAutoGenProxies(filePath, proxyTree.get());
 		}
-	});
+
+		// TODO: Use generalized lambda-capture to move unique_ptr.
+		proxyTree.release();
+		SaveRcObjectAsync(saveState, targetFilePath, [pProxyTree](bool bSuccess, const string& filePath)
+		{
+			std::unique_ptr<SProxyTree> proxyTree(pProxyTree);
+			if (bSuccess)
+			{
+				WriteAutoGenProxies(filePath, proxyTree.get());
+			}
+		});
 	});
 
 	return true;
