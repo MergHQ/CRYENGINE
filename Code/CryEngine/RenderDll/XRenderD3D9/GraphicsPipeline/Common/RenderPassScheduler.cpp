@@ -115,7 +115,10 @@ void CRenderPassScheduler::Execute()
 			if (pass.pPrimitivePass->GetLabel()[0] != '\0')
 			{
 				if (!prevLabel.empty())
+				{
 					PROFILE_LABEL_POP(prevLabel.c_str());
+				}
+
 				prevLabel = pass.pPrimitivePass->GetLabel();
 				PROFILE_LABEL_PUSH(prevLabel.c_str());
 			}
@@ -155,7 +158,9 @@ void CRenderPassScheduler::Execute()
 	}
 
 	if (!prevLabel.empty())
+	{
 		PROFILE_LABEL_POP(prevLabel.c_str());
+	}
 
 	m_renderPasses.resize(0);
 	m_resourceStates.clear();

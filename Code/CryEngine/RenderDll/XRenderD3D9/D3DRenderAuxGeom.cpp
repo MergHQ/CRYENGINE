@@ -578,7 +578,7 @@ void CRenderAuxGeomD3D::DrawBufferRT(const SAuxVertex* data, int numVertices, in
 {
 	if( !m_pAuxGeomShader )
 	{
-		CScopedAllowFileAccessFromThisThread ignoreInvalidFileAccess;
+		SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 		m_pAuxGeomShader = m_renderer.m_cEF.mfForName("AuxGeom", 0);
 	}
 
