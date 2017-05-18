@@ -416,7 +416,8 @@ void CParticleEmitter::AddEffect(CParticleContainer* pParentContainer, const CPa
 			{
 				if (!c.IsUsed())
 				{
-					if (c.GetEffect() == pEffect && c.IsIndirect() == !!pEffect->GetIndirectParent())
+					if (c.GetEffect() == pEffect && 
+						(c.GetParent() ? pEffect->GetIndirectParent() && c.GetParent()->IsUsed() : !pEffect->GetIndirectParent()))
 					{
 						pContainer = &c;
 						c.SetUsed(true);
