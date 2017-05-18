@@ -603,7 +603,14 @@ void CATLAudioObject::Update(
   float const distance,
   Vec3 const& audioListenerPosition)
 {
-	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
+	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition, m_flags);
+
+	if (m_propagationProcessor.HasNewOcclusionValues())
+	{
+		SATLSoundPropagationData propagationData;
+		m_propagationProcessor.GetPropagationData(propagationData);
+		m_pImplData->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
+	}
 
 	if (m_maxRadius > 0.0f)
 	{
@@ -666,12 +673,6 @@ void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType, Vec3
 {
 	CRY_ASSERT(calcType != EOcclusionType::None);
 	m_propagationProcessor.SetOcclusionType(calcType, audioListenerPosition);
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::GetPropagationData(SATLSoundPropagationData& propagationData) const
-{
-	m_propagationProcessor.GetPropagationData(propagationData);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -957,7 +958,7 @@ void CATLAudioObject::DrawDebugInfo(
   AudioPreloadRequestLookup const& preloadRequests,
   AudioEnvironmentLookup const& environments) const
 {
-	m_propagationProcessor.DrawObstructionRays(auxGeom);
+	m_propagationProcessor.DrawObstructionRays(auxGeom, m_flags);
 
 	if (g_cvars.m_drawAudioDebug > 0)
 	{

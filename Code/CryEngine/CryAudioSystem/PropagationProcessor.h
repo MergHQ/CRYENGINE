@@ -62,7 +62,11 @@ public:
 	// PhysicsSystem callback
 	static int OnObstructionTest(EventPhys const* pEvent);
 
-	void       Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
+	void       Update(
+		float const deltaTime,
+		float const distance,
+		Vec3 const& audioListenerPosition,
+		EObjectFlags const objectFlags);
 	void       SetOcclusionType(EOcclusionType const occlusionType, Vec3 const& audioListenerPosition);
 	bool       CanRunObstructionOcclusion() const;
 	void       GetPropagationData(SATLSoundPropagationData& propagationData) const;
@@ -123,7 +127,7 @@ public:
 	static size_t s_totalSyncPhysRays;
 	static size_t s_totalAsyncPhysRays;
 
-	void           DrawObstructionRays(IRenderAuxGeom& auxGeom) const;
+	void           DrawObstructionRays(IRenderAuxGeom& auxGeom, EObjectFlags const objectFlags) const;
 	void           DrawRay(IRenderAuxGeom& auxGeom, size_t const rayIndex) const;
 	EOcclusionType GetOcclusionType() const             { return m_occlusionType; }
 	EOcclusionType GetOcclusionTypeWhenAdaptive() const { return m_occlusionTypeWhenAdaptive; }

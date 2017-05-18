@@ -192,7 +192,8 @@ void CPropagationProcessor::Init(CATLAudioObject* const pAudioObject, Vec3 const
 void CPropagationProcessor::Update(
   float const deltaTime,
   float const distance,
-  Vec3 const& audioListenerPosition)
+  Vec3 const& audioListenerPosition,
+  EObjectFlags const objectFlags)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (g_cvars.m_audioObjectsRayType > 0)
@@ -207,7 +208,7 @@ void CPropagationProcessor::Update(
 
 	m_currentListenerDistance = distance;
 
-	if (CanRunObstructionOcclusion())
+	if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 	{
 		if (m_currentListenerDistance < g_cvars.m_occlusionHighDistance)
 		{
@@ -709,9 +710,9 @@ size_t CPropagationProcessor::s_totalSyncPhysRays = 0;
 size_t CPropagationProcessor::s_totalAsyncPhysRays = 0;
 
 ///////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::DrawObstructionRays(IRenderAuxGeom& auxGeom) const
+void CPropagationProcessor::DrawObstructionRays(IRenderAuxGeom& auxGeom, EObjectFlags const objectFlags) const
 {
-	if (CanRunObstructionOcclusion())
+	if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 	{
 		size_t const numConcurrentRays = GetNumConcurrentRays();
 		CRY_ASSERT(numConcurrentRays > 0);

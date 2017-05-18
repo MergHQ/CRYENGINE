@@ -117,14 +117,6 @@ void CAudioObjectManager::Update(float const deltaTime, Impl::SObject3DAttribute
 		{
 			pObject->Update(deltaTime, distance, listenerAttributes.transformation.GetPosition());
 
-			if (pObject->CanRunObstructionOcclusion() && pObject->HasNewOcclusionValues())
-			{
-				SATLSoundPropagationData propagationData;
-				pObject->GetPropagationData(propagationData);
-
-				pObject->GetImplDataPtr()->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
-			}
-
 			if (bUpdateControls)
 			{
 				pObject->UpdateControls(m_timeSinceLastControlsUpdate, listenerAttributes);

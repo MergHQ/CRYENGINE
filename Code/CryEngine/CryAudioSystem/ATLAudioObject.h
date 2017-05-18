@@ -125,10 +125,7 @@ public:
 
 	float                          GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
 	void                           SetObstructionOcclusion(float const obstruction, float const occlusion);
-	bool                           CanRunObstructionOcclusion() const  { return m_propagationProcessor.CanRunObstructionOcclusion() && (m_flags& EObjectFlags::Virtual) == 0; }
 	void                           ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
-	bool                           HasNewOcclusionValues()             { return m_propagationProcessor.HasNewOcclusionValues(); }
-	void                           GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void                           ReleasePendingRays();
 
 	ObjectStandaloneFileMap const& GetActiveStandaloneFiles() const               { return m_activeStandaloneFiles; }
