@@ -129,7 +129,7 @@ bool CMaterialFGManager::LoadFG(const string& filename, IFlowGraphPtr* pGraphRet
 	pFlowGraph->SetType(IFlowGraph::eFGT_MaterialFx);
 
 #ifndef _RELEASE
-	stack_string debugName = "MaterialFX ";
+	stack_string debugName = "[Material FX] ";
 	debugName.append(PathUtil::GetFileName(filename).c_str());
 	pFlowGraph->SetDebugName(debugName);
 #endif
