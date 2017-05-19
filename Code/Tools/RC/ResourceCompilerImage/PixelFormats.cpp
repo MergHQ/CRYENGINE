@@ -689,7 +689,11 @@ bool CPixelFormats::ParseSurfaceHeader(ImageObject* pImage, uint32& maxMipCount,
 			return false;
 	}
 
-	pImage->ResetImage(dwWidth, dwHeight, dwMips, eFormat, eCube, header.bCompressedBlockWidth, header.bCompressedBlockHeight);
+	// Force the pixel format defaults if the provided compressed block sizes are not valid.
+	const uint32 compressedBlockWidth = header.bCompressedBlockWidth > 0 ? header.bCompressedBlockWidth : -1;
+	const uint32 compressedBlockHeight = header.bCompressedBlockHeight > 0 ? header.bCompressedBlockHeight : -1;
+
+	pImage->ResetImage(dwWidth, dwHeight, dwMips, eFormat, eCube, compressedBlockWidth, compressedBlockHeight);
 
 	pImage->SetImageFlags(header.dwReserved1);
 	pImage->SetNumPersistentMips(header.bNumPersistentMips);
