@@ -88,6 +88,12 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 		psoDesc.m_CullMode = eCULL_None;
 		pSceneRenderPass = &m_debugViewPass;
 	}
+	else if (passID == ePass_DebugViewDrawModes)
+	{
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
+		psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL | GS_DEPTHWRITE;
+		pSceneRenderPass = &m_debugViewPass;
+	}
 	else if (passID == ePass_SelectionIDs)
 	{
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
@@ -136,6 +142,7 @@ bool CSceneCustomStage::CreatePipelineStates(DevicePipelineStatesArray* pStateAr
 	_stateDesc.technique = TTYPE_DEBUG;
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewSolid, stageStates[ePass_DebugViewSolid]);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewWireframe, stageStates[ePass_DebugViewWireframe]);
+	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewDrawModes, stageStates[ePass_DebugViewDrawModes]);
 	if (gcpRendD3D->IsEditorMode())
 		bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_SelectionIDs, stageStates[ePass_SelectionIDs]);
 
@@ -269,6 +276,7 @@ void CSceneCustomStage::Prepare(CRenderView* pRenderView)
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
+	bool bDebugDraw = CRenderer::CV_e_DebugDraw > 0;
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
 
@@ -276,7 +284,7 @@ void CSceneCustomStage::Prepare(CRenderView* pRenderView)
 
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
-	if (bViewTexelDensity || bViewWireframe)
+	if (bViewTexelDensity || bViewWireframe || bDebugDraw)
 		m_debugViewPass.PrepareRenderPassForUse(commandList);
 	else if (bSelectionIDPass)
 		m_selectionIDPass.PrepareRenderPassForUse(commandList);
@@ -287,6 +295,7 @@ void CSceneCustomStage::Execute_DebugModes()
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
+	bool bDebugDraw = CRenderer::CV_e_DebugDraw > 0;
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
 
@@ -306,12 +315,20 @@ void CSceneCustomStage::Execute_DebugModes()
 
 	const bool bReverseDepth = (pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 	pRenderer->FX_ClearTarget(pDepthRT->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
-	pRenderer->FX_ClearTarget(pRenderer->GetCurrentTargetOutput(), ColorF(0.2, 0.2, 0.2, 1));
 
-	if (!bViewWireframe)
-		m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewSolid, TTYPE_DEBUG, FB_GENERAL);
+	if (!bDebugDraw)
+	{
+		pRenderer->FX_ClearTarget(pRenderer->GetCurrentTargetOutput(), ColorF(0.2, 0.2, 0.2, 1));
+
+		if (!bViewWireframe)
+			m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewSolid, TTYPE_DEBUG, FB_GENERAL);
+		else
+			m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewWireframe, TTYPE_DEBUG, FB_GENERAL);
+	}
 	else
-		m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewWireframe, TTYPE_DEBUG, FB_GENERAL);
+	{
+		m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewDrawModes, TTYPE_DEBUG, FB_DEBUG);
+	}
 
 	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
 	m_debugViewPass.SetRenderTargets(gcpRendD3D->m_pZTexture, gcpRendD3D->GetCurrentTargetOutput());
@@ -442,15 +459,16 @@ void CSceneCustomStage::Execute()
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
+	bool bDebugDraw = CRenderer::CV_e_DebugDraw > 0;
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
 
-	if (!bViewTexelDensity && !bViewWireframe && !bSelectionIDPass)
+	if (!bViewTexelDensity && !bViewWireframe && !bSelectionIDPass && !bDebugDraw)
 		return;
 	
 	PROFILE_LABEL_SCOPE("CUSTOM_SCENE_PASSES");
 	
-	if (bViewTexelDensity || bViewWireframe)
+	if (bViewTexelDensity || bViewWireframe || bDebugDraw)
 	{
 		Execute_DebugModes();
 	}

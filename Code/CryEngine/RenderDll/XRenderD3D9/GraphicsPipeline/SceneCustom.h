@@ -31,6 +31,7 @@ public:
 	{
 		ePass_DebugViewSolid = 0,
 		ePass_DebugViewWireframe,
+		ePass_DebugViewDrawModes,
 		ePass_SelectionIDs, // draw highlighted objects from editor
 		ePass_Silhouette,
 	};

@@ -3186,64 +3186,6 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 	m_RP.m_pRE->m_CustomData = pCustomData;
 }
 
-void CD3D9Renderer::FX_DrawDebugPasses()
-{
-	if (!m_RP.m_pRootTechnique || m_RP.m_pRootTechnique->m_nTechnique[TTYPE_DEBUG] < 0)
-		return;
-
-	CShader* sh             = m_RP.m_pShader;
-	SShaderTechnique* pTech = m_RP.m_pShader->m_HWTechniques[m_RP.m_pRootTechnique->m_nTechnique[TTYPE_DEBUG]];
-
-	PROFILE_FRAME(DrawShader_DebugPasses);
-
-	PROFILE_LABEL_SCOPE("DEBUG_PASS");
-
-	int nLastRE = m_RP.m_nLastRE;
-	m_RP.m_nLastRE = 0;
-	for (int nRE = 0; nRE <= nLastRE; nRE++)
-	{
-		s_tempRIs.SetUse(0);
-
-		m_RP.m_pRE = m_RP.m_RIs[nRE][0]->pElem;
-
-		if (!m_RP.m_pRE)
-			continue;
-
-		for (uint32 i = 0; i < m_RP.m_RIs[nRE].Num(); i++)
-			s_tempRIs.AddElem(m_RP.m_RIs[nRE][i]);
-
-		if (!s_tempRIs.Num())
-			continue;
-
-		m_RP.m_pRE->mfPrepare(false);
-		uint32 nSaveMD = m_RP.m_FlagsShader_MD;
-
-		TArray<SRendItem*> saveArr;
-		saveArr.Assign(m_RP.m_RIs[0]);
-		m_RP.m_RIs[0].Assign(s_tempRIs);
-
-		CRenderObject* pSaveObject = m_RP.m_pCurObject;
-		m_RP.m_pCurObject      = m_RP.m_RIs[0][0]->pObj;
-		m_RP.m_FlagsShader_MD &= ~HWMD_TEXCOORD_FLAG_MASK;
-		int32 nMaterialStatePrevOr  = m_RP.m_MaterialStateOr;
-		int32 nMaterialStatePrevAnd = m_RP.m_MaterialStateAnd;
-		m_RP.m_MaterialStateAnd = GS_BLEND_MASK;
-		m_RP.m_MaterialStateOr  = GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
-
-		FX_DrawTechnique(sh, pTech);
-
-		m_RP.m_RIs[0].Assign(saveArr);
-		saveArr.ClearArr();
-
-		m_RP.m_pCurObject       = pSaveObject;
-		m_RP.m_pPrevObject      = NULL;
-		m_RP.m_FlagsShader_MD   = nSaveMD;
-		m_RP.m_MaterialStateOr  = nMaterialStatePrevOr;
-		m_RP.m_MaterialStateAnd = nMaterialStatePrevAnd;
-	}
-	m_RP.m_nLastRE = nLastRE;
-}
-
 // deprecated (cannot remove at this stage due to cloak effect) - maybe can batch into FX_DrawEffectLayerPasses (?)
 void CD3D9Renderer::FX_DrawMultiLayers()
 {
@@ -4054,7 +3996,7 @@ void CD3D9Renderer::FX_FlushShader_General()
 		}
 		rRP.m_pRootTechnique = pTech;
 
-		flags = (FB_MOTIONBLUR | FB_CUSTOM_RENDER | FB_SOFTALPHATEST | FB_DEBUG | FB_WATER_REFL | FB_WATER_CAUSTIC);
+		flags = (FB_MOTIONBLUR | FB_CUSTOM_RENDER | FB_SOFTALPHATEST | FB_WATER_REFL | FB_WATER_CAUSTIC);
 
 		if (rRP.m_nBatchFilter & flags)
 		{
@@ -4068,8 +4010,6 @@ void CD3D9Renderer::FX_FlushShader_General()
 				nTech = TTYPE_WATERREFLPASS;
 			else if (rRP.m_nBatchFilter & FB_WATER_CAUSTIC)
 				nTech = TTYPE_WATERCAUSTICPASS;
-			else if (rRP.m_nBatchFilter & FB_DEBUG)
-				nTech = TTYPE_DEBUG;
 
 			if (nTech >= 0 && pTech->m_nTechnique[nTech] > 0)
 			{
@@ -4167,16 +4107,13 @@ void CD3D9Renderer::FX_FlushShader_General()
 
 		rRP.m_pCurTechnique = pTech;
 
-		if ((rRP.m_nBatchFilter & (FB_MULTILAYERS | FB_LAYER_EFFECT | FB_DEBUG)) && !rRP.m_pReplacementShader)
+		if ((rRP.m_nBatchFilter & (FB_MULTILAYERS | FB_LAYER_EFFECT)) && !rRP.m_pReplacementShader)
 		{
 			if (rRP.m_nBatchFilter & FB_LAYER_EFFECT)
 				rd->FX_DrawEffectLayerPasses();
 
 			if (rRP.m_nBatchFilter & FB_MULTILAYERS)
 				rd->FX_DrawMultiLayers();
-
-			if (rRP.m_nBatchFilter & FB_DEBUG)
-				rd->FX_DrawDebugPasses();
 		}
 		else
 			rd->FX_DrawTechnique(ef, pTech);

@@ -957,7 +957,6 @@ public:
 	void FX_SetDeferredShadows();
 
   void FX_DrawEffectLayerPasses();
-  void FX_DrawDebugPasses();
 
   void FX_DrawMultiLayers( );  
 
