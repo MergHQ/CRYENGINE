@@ -696,8 +696,6 @@ static bool FindGPU(DXGI_ADAPTER_DESC1& adapterDesc, Win32SysInspect::DXFeatureL
 					ID3D11Device* pDevice11 = 0;
 					ID3D12Device* pDevice12 = 0;
 					D3D_FEATURE_LEVEL levels[] = {
-						D3D_FEATURE_LEVEL_12_1,
-						D3D_FEATURE_LEVEL_12_0,
 						D3D_FEATURE_LEVEL_11_1,
 						D3D_FEATURE_LEVEL_11_0,
 						D3D_FEATURE_LEVEL_10_1,
@@ -707,7 +705,8 @@ static bool FindGPU(DXGI_ADAPTER_DESC1& adapterDesc, Win32SysInspect::DXFeatureL
 						D3D_FEATURE_LEVEL_9_1 };
 					D3D_FEATURE_LEVEL deviceFeatureLevel = D3D_FEATURE_LEVEL_9_1;
 
-					if (SUCCEEDED(hr = pD3D12CD(pAdapter, deviceFeatureLevel, IID_PPV_ARGS(&pDevice12))) && pDevice12)
+					//DirectX 12
+ 					if (pD3D12CD && SUCCEEDED(hr = pD3D12CD(pAdapter, deviceFeatureLevel, IID_PPV_ARGS(&pDevice12))) && pDevice12)
 					{
 						D3D12_FEATURE_DATA_FEATURE_LEVELS Featurelevels = { 0 };
 						pDevice12->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &Featurelevels, sizeof(Featurelevels));
@@ -724,8 +723,24 @@ static bool FindGPU(DXGI_ADAPTER_DESC1& adapterDesc, Win32SysInspect::DXFeatureL
 
 						SAFE_RELEASE(pDevice12);
 					}
+					//DirectX 11.1
+					else if (pD3D11CD && SUCCEEDED(hr = pD3D11CD(pAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, 0, levels, CRY_ARRAY_COUNT(levels), D3D11_SDK_VERSION, &pDevice11, &deviceFeatureLevel, NULL)) && pDevice11)
+					{
+						const Win32SysInspect::DXFeatureLevel fl = GetFeatureLevel(pDevice11->GetFeatureLevel());
 
-					else if (SUCCEEDED(hr = pD3D11CD(pAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, 0, levels, CRY_ARRAY_COUNT(levels), D3D11_SDK_VERSION, &pDevice11, &deviceFeatureLevel, NULL)) && pDevice11)
+						if (logDeviceInfo)
+							LogDeviceInfo(nAdapter, ad, fl, displaysConnected);
+
+						if (featureLevel < fl && displaysConnected)
+						{
+							adapterDesc = ad;
+							featureLevel = fl;
+						}
+
+						SAFE_RELEASE(pDevice11);
+					}
+					//DirectX 11.0
+					else if (pD3D11CD && SUCCEEDED(hr = pD3D11CD(pAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, 0, NULL, 0, D3D11_SDK_VERSION, &pDevice11, &deviceFeatureLevel, NULL)) && pDevice11)
 					{
 						const Win32SysInspect::DXFeatureLevel fl = GetFeatureLevel(pDevice11->GetFeatureLevel());
 
