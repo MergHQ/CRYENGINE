@@ -1186,6 +1186,8 @@ public:
 	void                           UploadInitialImageData(STextureInfoData pSrcMips[], NCryVulkan::CImageResource* pDst, const VkImageCreateInfo& info);
 	void                           UpdateDeferredUploads();
 	static void                    SelectStagingLayout(const NCryVulkan::CImageResource* pImage, uint32 subResource, SResourceMemoryMapping& result);
+#elif CRY_RENDERER_GNM
+	sce::Gnm::OwnerHandle          GetResourceOwnerHandle() { return m_resourceOwnerHandle; }
 #endif
 
 	static bool CanUseCoreCommandList();
@@ -1216,6 +1218,8 @@ private:
 
 	std::vector<SDeferredUploadData> m_deferredUploads;
 	CryCriticalSectionNonRecursive   m_deferredUploadCS;
+#elif CRY_RENDERER_GNM 
+	sce::Gnm::OwnerHandle            m_resourceOwnerHandle;
 #endif
 
 	////////////////////////////////////////////////////////////////////////////

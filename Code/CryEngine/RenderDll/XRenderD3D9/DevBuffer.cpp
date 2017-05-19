@@ -4420,13 +4420,18 @@ void CGpuBuffer::OwnDevBuffer(CDeviceBuffer* pDeviceBuf)
 void CGpuBuffer::AddInvalidateCallback(void* listener, const SResourceBinding::InvalidateCallbackFunction& callback) const
 {
 	AUTO_LOCK_T(CryCriticalSectionNonRecursive, s_invalidationLock);
+
+#if !CRY_PLATFORM_ORBIS || defined(__GXX_RTTI)
 	CRY_ASSERT(callback.target<SResourceBinding::InvalidateCallbackSignature*>() != nullptr);
+#endif
 
 	auto insertResult = m_invalidateCallbacks.emplace(listener, callback);
 	++insertResult.first->second.refCount;
 
 	// We only allow one callback function per listener
+#if !CRY_PLATFORM_ORBIS || defined(__GXX_RTTI)
 	CRY_ASSERT(*callback.target<SResourceBinding::InvalidateCallbackSignature*>() == *insertResult.first->second.callback.target<SResourceBinding::InvalidateCallbackSignature*>());
+#endif
 }
 
 void CGpuBuffer::RemoveInvalidateCallbacks(void* listener) const

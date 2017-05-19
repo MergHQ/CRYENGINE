@@ -198,7 +198,7 @@ bool CTexture::CreateDeviceTexture(const void* pData[])
 	if (gRenDev->m_pRT->RC_CreateDeviceTexture(this, pData))
 	{
 		// Assign name to Texture for enhanced debugging
-#if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS) && !CRY_RENDERER_GNM
+#if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS)
 	#if CRY_RENDERER_VULKAN || CRY_PLATFORM_ORBIS
 		m_pDevTexture->GetBaseTexture()->DebugSetName(m_SrcName.c_str());
 	#else
