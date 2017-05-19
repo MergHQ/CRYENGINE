@@ -650,11 +650,11 @@ void RenderModuleDebugInfo()
 		static const float colorGreen[4] = { 0.3f, 1.0f, 0.8f, 1.0f };
 
 		const float col1 = 10;
-		const float col4 = col1 + 350;
-		const float col5 = col4 + 40;
+		const float col4 = col1 + 30;
+		const float col5 = col4 + 350;
 
-		DrawModuleTextLabel(col1, py, colorWhite, "Module");
-		DrawModuleTextLabel(col4, py, colorWhite, "Instances");
+		DrawModuleTextLabel(col1, py, colorWhite, "Instances");
+		DrawModuleTextLabel(col4 + 70, py, colorWhite, "Module");
 
 		py += dy + dy_space;
 
@@ -674,8 +674,8 @@ void RenderModuleDebugInfo()
 			// module details
 			const int runningInstances = pModule->GetRunningInstancesCount();
 
-			DrawModuleTextLabel(col1, py, runningInstances ? colorBlue : colorGray, "%s", pModule->GetName());
-			DrawModuleTextLabel(col4, py, runningInstances ? colorGreen : colorGray, "%d", runningInstances);
+			DrawModuleTextLabel(col1, py, runningInstances ? colorGreen : colorGray, "%d", runningInstances);
+			DrawModuleTextLabel(col4, py, runningInstances ? colorBlue : colorGray, "%s", pModule->GetName());
 
 			// instances' details
 			if (CFlowGraphModuleManager::CV_fg_debugmodules == 2 && runningInstances > 0)
