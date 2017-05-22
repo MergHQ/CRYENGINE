@@ -43,7 +43,7 @@ namespace EditorSubstance
 		virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
 
 		virtual bool OnCloseAsset() override;
-		virtual const char* GetEditorName() const override { return "Modify Default Graph Settings"; };
+		virtual const char* GetEditorName() const override { return "Substance Archive Graph Editor"; };
 
 	private:
 		OutputsWidgetsMap m_outputsWidgets;

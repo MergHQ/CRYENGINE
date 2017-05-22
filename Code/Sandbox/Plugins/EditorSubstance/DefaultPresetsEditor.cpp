@@ -17,7 +17,7 @@
 
 namespace EditorSubstance
 {
-	REGISTER_VIEWPANE_FACTORY_AND_MENU(CProjectDefaultsPresetsEditor, "Substance Graph Default Mapping", "Substance", true, "Substance")
+	REGISTER_VIEWPANE_FACTORY_AND_MENU(CProjectDefaultsPresetsEditor, "Substance Graph Default Mapping Editor", "Substance", true, "Substance")
 
 		CProjectDefaultsPresetsEditor::CProjectDefaultsPresetsEditor(QWidget* pParent/* = nullptr*/)
 		: CDockableEditor(pParent)
