@@ -11,6 +11,9 @@
 #include <CryRenderer/IStereoRenderer.h>
 #include "CryRenderer/IRenderAuxGeom.h"
 
+#include <d3d11.h>
+#include <d3d12.h>
+
 namespace
 {
 // Note: This symmetric fov is still used for frustum culling
@@ -647,7 +650,6 @@ void Device::DebugDraw(float& xPosLabel, float& yPosLabel) const
 // From SDK 0.6.0 we can only use Oculus SDK Rendering
 // Hence the code below
 // -------------------------------------------------------------------------
-#if (CRY_RENDERER_DIRECT3D >= 120)
 bool Device::CreateSwapTextureSetD3D12(IUnknown* d3d12CommandQueue, TextureDesc desc, STextureSwapChain* set)
 {
 	ovrTextureSwapChainDesc textureDesc = {};
@@ -740,7 +742,6 @@ bool Device::CreateMirrorTextureD3D12(IUnknown* d3d12CommandQueue, TextureDesc d
 }
 
 // -------------------------------------------------------------------------
-#elif (CRY_RENDERER_DIRECT3D >= 110)
 bool Device::CreateSwapTextureSetD3D11(IUnknown* d3d11Device, TextureDesc desc, STextureSwapChain* set)
 {
 	ovrTextureSwapChainDesc textureDesc = {};
@@ -831,7 +832,6 @@ bool Device::CreateMirrorTextureD3D11(IUnknown* d3d11Device, TextureDesc desc, S
 
 	return true;
 }
-#endif
 
 // -------------------------------------------------------------------------
 void Device::DestroySwapTextureSet(STextureSwapChain* set)
