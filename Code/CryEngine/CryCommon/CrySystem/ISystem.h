@@ -466,7 +466,10 @@ enum ESystemEvent
 	ESYSTEM_EVENT_REGISTER_FLOWNODES,
 
 	//! Sent if the CryAction module initialized successfully. (Remark: Sent after ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE and after (potential) game init was called)
-	ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE
+	ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE,
+
+	//! Sent if the CryAction module is about to shutdown
+	ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN
 };
 
 //! User defined callback, which can be passed to ISystem.

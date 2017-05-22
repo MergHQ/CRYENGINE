@@ -56,24 +56,8 @@ CSpeakerManager::CSpeakerManager() : m_listeners(2)
 //--------------------------------------------------------------------------------------------------
 CSpeakerManager::~CSpeakerManager()
 {
-	delete(m_pDefaultLipsyncProvider);
+	Shutdown();
 
-	gEnv->pAudioSystem->RemoveRequestListener(nullptr, this);  //remove all listener-callback-functions from this object
-
-	gEnv->pConsole->UnregisterVariable("drs_dialogSubtitles", true);
-	gEnv->pConsole->UnregisterVariable("drs_dialogAudio", true);
-	gEnv->pConsole->UnregisterVariable("drs_dialogsLinesWithSamePriorityCancel", true);
-
-	if (m_pDrsDialogDialogRunningEntityRtpcName)
-	{
-		m_pDrsDialogDialogRunningEntityRtpcName->Release();
-		m_pDrsDialogDialogRunningEntityRtpcName = nullptr;
-	}
-	if (m_pDrsDialogDialogRunningGlobalRtpcName)
-	{
-		m_pDrsDialogDialogRunningGlobalRtpcName->Release();
-		m_pDrsDialogDialogRunningGlobalRtpcName = nullptr;
-	}
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -856,7 +840,7 @@ bool CSpeakerManager::OnLineAboutToStart(const DRS::IResponseActor* pSpeaker, co
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CSpeakerManager::QueueLine(CResponseActor* pActor, const CHashedString& lineID, float maxQueueDuration, const int priority)
+void CSpeakerManager::QueueLine(CResponseActor* pActor, const CHashedString& lineID, float maxQueueDuration, const int priority)
 {
 	SWaitingInfo newWaitInfo;
 	newWaitInfo.pActor = pActor;
@@ -884,6 +868,34 @@ void CryDRS::CSpeakerManager::QueueLine(CResponseActor* pActor, const CHashedStr
 	});
 
 	InformListener(pActor, lineID, IListener::eLineEvent_Queued, nullptr);
+}
+
+//--------------------------------------------------------------------------------------------------
+void CSpeakerManager::Shutdown()
+{
+	if (m_pDefaultLipsyncProvider)
+	{
+		Reset();
+		delete(m_pDefaultLipsyncProvider);
+		m_pDefaultLipsyncProvider = nullptr;
+
+		gEnv->pAudioSystem->RemoveRequestListener(nullptr, this);  //remove all listener-callback-functions from this object
+
+		gEnv->pConsole->UnregisterVariable("drs_dialogSubtitles", true);
+		gEnv->pConsole->UnregisterVariable("drs_dialogAudio", true);
+		gEnv->pConsole->UnregisterVariable("drs_dialogsLinesWithSamePriorityCancel", true);
+
+		if (m_pDrsDialogDialogRunningEntityRtpcName)
+		{
+			m_pDrsDialogDialogRunningEntityRtpcName->Release();
+			m_pDrsDialogDialogRunningEntityRtpcName = nullptr;
+		}
+		if (m_pDrsDialogDialogRunningGlobalRtpcName)
+		{
+			m_pDrsDialogDialogRunningGlobalRtpcName->Release();
+			m_pDrsDialogDialogRunningGlobalRtpcName = nullptr;
+		}
+	}
 }
 
 //--------------------------------------------------------------------------------------------------

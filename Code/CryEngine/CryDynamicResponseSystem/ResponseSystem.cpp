@@ -375,6 +375,12 @@ void CResponseSystem::OnSystemEvent(ESystemEvent event, UINT_PTR pWparam, UINT_P
 			}
 			break;
 		}
+	case ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN:
+		{
+			m_pSpeakerManager->Shutdown();
+			m_pResponseManager->Reset(false, true);  //We have to release all mapped responses here, because they might contain game specific actions/conditions.
+		}
+		break;
 	}
 }
 
@@ -637,8 +643,8 @@ const CVariableCollection* CResponseActor::GetLocalVariables() const
 
 namespace DRS
 {
-SERIALIZATION_CLASS_NULL(IResponseAction, "DRS Action");
-SERIALIZATION_CLASS_NULL(IResponseCondition, "DRS Condition");
+SERIALIZATION_CLASS_NULL(IResponseAction, "");
+SERIALIZATION_CLASS_NULL(IResponseCondition, "");
 }
 
 REGISTER_DRS_ACTION(CActionCancelSignal, "CancelSignal", DEFAULT_DRS_ACTION_COLOR);

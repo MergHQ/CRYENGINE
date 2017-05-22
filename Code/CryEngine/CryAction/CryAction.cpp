@@ -2543,6 +2543,8 @@ bool CCryAction::ShutdownGame()
 //------------------------------------------------------------------------
 void CCryAction::ShutdownEngine()
 {
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN, 0, 0);
+
 	ShutdownGame();
 
 #ifndef _LIB

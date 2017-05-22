@@ -287,7 +287,7 @@ void CResponseManager::ReleaseInstance(CResponseInstance* pInstance, bool remove
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseManager::Reset(bool bResetExecutionCounter)
+void CResponseManager::Reset(bool bResetExecutionCounter, bool bClearAllResponseMappings /* = false */)
 {
 	m_currentlyQueuedSignals.clear();
 
@@ -296,6 +296,11 @@ void CResponseManager::Reset(bool bResetExecutionCounter)
 		pRunningResponse->Cancel();
 		pRunningResponse->Update();
 		ReleaseInstance(pRunningResponse, false);
+	}
+
+	if (bClearAllResponseMappings)
+	{
+		m_mappedSignals.clear();
 	}
 
 	if (bResetExecutionCounter)

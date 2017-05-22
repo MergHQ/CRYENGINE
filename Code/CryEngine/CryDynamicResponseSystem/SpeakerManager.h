@@ -41,7 +41,9 @@ public:
 	CSpeakerManager();
 	virtual ~CSpeakerManager() override;
 
+
 	void Init();
+	void Shutdown();
 	void Reset();
 	void Update();
 
