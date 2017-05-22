@@ -27,8 +27,8 @@ class CAudioControlsEditorWindow : public CDockableWindow, public IEditorNotifyL
 	Q_OBJECT
 public:
 	CAudioControlsEditorWindow();
-	~CAudioControlsEditorWindow();
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
+	virtual ~CAudioControlsEditorWindow() override;
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
 	//////////////////////////////////////////////////////////
 	// CDockableWindow implementation
@@ -43,10 +43,11 @@ private:
 	void Save();
 	void FilterControlType(EItemType type, bool bShow);
 	void Update();
+	void CheckErrorMask();
 
 protected:
-	void keyPressEvent(QKeyEvent* pEvent);
-	void closeEvent(QCloseEvent* pEvent);
+	virtual void keyPressEvent(QKeyEvent* pEvent) override;
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 
 private:
 	void UpdateAudioSystemData();
@@ -64,4 +65,4 @@ private:
 	QSplitter* m_pSplitter;
 
 };
-}
+} // namespace ACE

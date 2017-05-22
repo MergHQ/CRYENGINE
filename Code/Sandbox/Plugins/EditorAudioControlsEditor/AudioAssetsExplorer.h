@@ -26,13 +26,14 @@ class CAudioAssetsExplorerModel;
 class QControlsProxyFilter;
 class CAudioLibraryModel;
 
-class CAudioAssetsExplorer : public QFrame
+class CAudioAssetsExplorer final : public QFrame
 {
 	Q_OBJECT
 
 public:
+
 	CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager);
-	~CAudioAssetsExplorer();
+	virtual ~CAudioAssetsExplorer() override;
 
 	std::vector<CAudioControl*> GetSelectedControls();
 	void                        Reload();
@@ -50,7 +51,7 @@ private:
 	IAudioAsset*        GetSelectedAsset() const;
 
 	// ------------------ QWidget ----------------------------
-	bool eventFilter(QObject* pObject, QEvent* pEvent);
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// -------------------------------------------------------
 
 private slots:
@@ -63,10 +64,12 @@ private slots:
 	void StopControlExecution();
 
 signals:
+
 	void SelectedControlChanged();
 	void ControlTypeFiltered(EItemType type, bool bShow);
 
 private:
+
 	CAudioAssetsManager* const m_pAssetsManager;
 
 	// Context Menu
@@ -85,4 +88,4 @@ private:
 	std::vector<CAudioLibraryModel*> m_libraryModels;
 	bool                             m_reloading = false;
 };
-}
+} // namespace ACE

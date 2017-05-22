@@ -51,8 +51,9 @@ QConnectionModel::QConnectionModel()
 			endResetModel();
 	  });
 
-	const std::vector<dll_string>& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-	for (auto platform : platforms)
+	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
+
+	for (auto const& platform : platforms)
 	{
 		m_platformNames.push_back(QtUtil::ToQStringSafe(platform.c_str()));
 	}

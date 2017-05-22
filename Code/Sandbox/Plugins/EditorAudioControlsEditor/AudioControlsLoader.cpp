@@ -151,7 +151,7 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(const string& folderPath, co
 
 IAudioAsset* CAudioControlsLoader::AddUniqueFolderPath(IAudioAsset* pParent, const QString& path)
 {
-	QStringList folderNames = path.split(QRegExp("(\\\\|\\/)"), QString::SkipEmptyParts);
+	QStringList folderNames = path.split(QRegExp(R"((\\|\/))"), QString::SkipEmptyParts);
 	const int size = folderNames.length();
 	for (int i = 0; i < size; ++i)
 	{
@@ -514,14 +514,14 @@ void CAudioControlsLoader::CreateDefaultSwitch(IAudioAsset* pLibrary, const char
 
 void CAudioControlsLoader::LoadConnections(XmlNodeRef pRoot, CAudioControl* pControl)
 {
-	if (pControl)
+	if (pControl != nullptr)
 	{
 		// The radius might change because of the attenuation matching option
 		// so we check here to inform the user if their data is outdated.
 		float radius = pControl->GetRadius();
 
-		const int nSize = pRoot->getChildCount();
-		for (int i = 0; i < nSize; ++i)
+		const int numChildren = pRoot->getChildCount();
+		for (int i = 0; i < numChildren; ++i)
 		{
 			XmlNodeRef pNode = pRoot->getChild(i);
 			pControl->LoadConnectionFromXML(pNode);

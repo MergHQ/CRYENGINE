@@ -55,7 +55,7 @@ public:
 	CAudioControl* GetControlByID(CID id) const;
 	CAudioControl* FindControl(string const& controlName, EItemType const type, IAudioAsset* const pParent = nullptr) const;
 
-	typedef std::vector<CAudioControl*> Controls;
+	using Controls = std::vector<CAudioControl*>;
 	Controls const& GetControls() const { return m_controls; }
 
 	// Scope

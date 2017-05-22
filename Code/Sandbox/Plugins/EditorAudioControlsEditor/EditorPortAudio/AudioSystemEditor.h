@@ -39,9 +39,7 @@ public:
 		, bInfiniteLoop(false)
 	{}
 
-	virtual ~CConnection() {}
-
-	virtual bool HasProperties() { return true; }
+	virtual bool HasProperties() override { return true; }
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
@@ -73,7 +71,6 @@ public:
 					}
 					minAttenuation = minAtt;
 					maxAttenuation = maxAtt;
-					signalConnectionChanged();
 				}
 				else
 				{
@@ -103,6 +100,11 @@ public:
 				ar(loopCount, "loop_count", "Count");
 			}
 			ar.closeBlock();
+		}
+
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
 		}
 	}
 

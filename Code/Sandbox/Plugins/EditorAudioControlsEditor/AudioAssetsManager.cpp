@@ -14,7 +14,6 @@
 
 namespace ACE
 {
-
 uint ItemTypeToIndex(const EItemType type)
 {
 	switch (type)
@@ -40,6 +39,7 @@ CAudioAssetsManager::CAudioAssetsManager()
 {
 	ClearDirtyFlags();
 	m_scopeMap[Utils::GetGlobalScope()] = SScopeInfo("global", false);
+	m_controls.reserve(8192);
 }
 
 CAudioAssetsManager::~CAudioAssetsManager()
@@ -51,13 +51,14 @@ void CAudioAssetsManager::Initialize()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
+			m_bLoading = true;
 			ClearAllConnections();
 	  });
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
 			ReloadAllConnections();
-			ClearDirtyFlags();
+			m_bLoading = false;
 	  });
 
 	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
@@ -313,13 +314,14 @@ void CAudioAssetsManager::OnControlModified(CAudioControl* pControl)
 
 bool CAudioAssetsManager::IsDirty()
 {
-	for (int i = 0; i < m_bControlTypeModified.size(); ++i)
+	for (auto const i : m_bControlTypeModified)
 	{
-		if (m_bControlTypeModified[i])
+		if (i)
 		{
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -330,9 +332,9 @@ bool CAudioAssetsManager::IsTypeDirty(EItemType eType)
 
 void CAudioAssetsManager::ClearDirtyFlags()
 {
-	for (int i = 0; i < m_bControlTypeModified.size(); ++i)
+	for (auto& i : m_bControlTypeModified)
 	{
-		m_bControlTypeModified[i] = false;
+		i = false;
 	}
 }
 
@@ -385,21 +387,21 @@ void CAudioAssetsManager::ReloadAllConnections()
 		{
 			pControl->ClearConnections();
 			pControl->ReloadConnections();
-			pControl->SetModified(false, true);
 		}
 	}
 }
 
 void CAudioAssetsManager::MoveItems(IAudioAsset* pParent, const std::vector<IAudioAsset*>& items)
 {
-	if (pParent)
+	if (pParent != nullptr)
 	{
-		for (IAudioAsset* pItem : items)
+		for (auto const pItem : items)
 		{
-			if (pItem)
+			if (pItem != nullptr)
 			{
-				IAudioAsset* pPreviousParent = pItem->GetParent();
-				if (pPreviousParent)
+				IAudioAsset* const pPreviousParent = pItem->GetParent();
+
+				if (pPreviousParent != nullptr)
 				{
 					signalItemAboutToBeRemoved(pItem);
 					pPreviousParent->RemoveChild(pItem);

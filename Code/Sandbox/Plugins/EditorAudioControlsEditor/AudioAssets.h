@@ -11,7 +11,6 @@
 
 namespace ACE
 {
-
 class CAudioAssetsManager;
 class IAudioSystemItem;
 
@@ -25,7 +24,7 @@ struct SRawConnectionData
 	bool       bValid; // indicates if the connection is valid for the currently loaded middle-ware
 };
 
-typedef std::vector<SRawConnectionData> XMLNodeList;
+using XMLNodeList = std::vector<SRawConnectionData>;
 
 class IAudioAsset
 {
@@ -59,8 +58,8 @@ class CAudioLibrary : public IAudioAsset
 
 public:
 	CAudioLibrary(const string& name) : IAudioAsset(name) {}
-	virtual EItemType GetType() const override                                              { return eItemType_Library; }
-	bool              IsModified() const override                                           { return m_bModified; }
+	virtual EItemType GetType() const override    { return eItemType_Library; }
+	bool              IsModified() const override { return m_bModified; }
 	virtual void      SetModified(bool const bModified, bool const bForce = false) override;
 
 private:
@@ -101,7 +100,7 @@ public:
 	void          SetAutoLoad(bool bAutoLoad);
 
 	float         GetRadius() const { return m_radius; }
-	void          SetRadius(float radius);
+	void          SetRadius(float const radius) { m_radius = radius; }
 
 	float         GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
 	void          SetOcclusionFadeOutDistance(float fadeOutArea);
@@ -132,6 +131,7 @@ private:
 	void SignalControlModified();
 	void SignalConnectionAdded(IAudioSystemItem* pMiddlewareControl);
 	void SignalConnectionRemoved(IAudioSystemItem* pMiddlewareControl);
+	void SignalConnectionModified();
 
 	CID                        m_id = ACE_INVALID_ID;
 	EItemType                  m_type = eItemType_Trigger;
@@ -149,4 +149,4 @@ private:
 
 	bool                       m_modifiedSignalEnabled = true;
 };
-}
+} // namespace ACE

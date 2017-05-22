@@ -30,8 +30,9 @@ public:
 class IAudioSystemEditor
 {
 public:
-	IAudioSystemEditor() {}
-	virtual ~IAudioSystemEditor() {}
+
+	IAudioSystemEditor() = default;
+	virtual ~IAudioSystemEditor() = default;
 
 	// <title Reload>
 	// Description:

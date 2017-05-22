@@ -20,7 +20,7 @@ public:
 		m_configurationsMask = std::numeric_limits<uint>::max();
 	}
 
-	virtual ~IAudioConnection() {}
+	virtual ~IAudioConnection() = default;
 
 	CID          GetID() const                          { return m_id; }
 	virtual bool HasProperties()                        { return false; }
@@ -61,4 +61,4 @@ private:
 	CID  m_id;
 	uint m_configurationsMask;
 };
-}
+} // namespace ACE

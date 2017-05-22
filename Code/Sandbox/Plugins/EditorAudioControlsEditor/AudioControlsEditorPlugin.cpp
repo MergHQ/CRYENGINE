@@ -21,7 +21,7 @@
 #include <CryString/CryPath.h>
 #include "ImplementationManager.h"
 
-REGISTER_PLUGIN(CAudioControlsEditorPlugin);
+REGISTER_PLUGIN(ACE::CAudioControlsEditorPlugin);
 
 using namespace ACE;
 using namespace PathUtil;
@@ -30,7 +30,7 @@ CAudioAssetsManager CAudioControlsEditorPlugin::s_assetsManager;
 std::set<string> CAudioControlsEditorPlugin::s_currentFilenames;
 CryAudio::IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
-CImplementationManager CAudioControlsEditorPlugin::s_implementationManager;
+ACE::CImplementationManager CAudioControlsEditorPlugin::s_implementationManager;
 uint CAudioControlsEditorPlugin::s_loadingErrorMask;
 CCrySignal<void()> CAudioControlsEditorPlugin::signalAboutToLoad;
 CCrySignal<void()> CAudioControlsEditorPlugin::signalLoaded;
@@ -42,9 +42,13 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 	CryAudio::SCreateObjectData const objectData("Audio trigger preview", CryAudio::EOcclusionType::Ignore);
 	s_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 
-	s_implementationManager.LoadImplementation();
 	s_assetsManager.Initialize();
+	s_implementationManager.LoadImplementation();
+
+	signalAboutToLoad();
 	ReloadModels(false);
+	signalLoaded();
+
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorPlugin");
 }
 
@@ -70,11 +74,12 @@ void CAudioControlsEditorPlugin::SaveModels()
 
 void CAudioControlsEditorPlugin::ReloadModels(bool bReloadImplementation)
 {
-	signalAboutToLoad();
+	// Do not call signalAboutToLoad and signalLoaded in here!
 	GetIEditor()->GetIUndoManager()->Suspend();
 
-	ACE::IAudioSystemEditor* pImpl = s_implementationManager.GetImplementation();
-	if (pImpl)
+	ACE::IAudioSystemEditor * const pImpl = s_implementationManager.GetImplementation();
+
+	if (pImpl != nullptr)
 	{
 		s_assetsManager.Clear();
 
@@ -85,14 +90,12 @@ void CAudioControlsEditorPlugin::ReloadModels(bool bReloadImplementation)
 
 		CAudioControlsLoader loader(&s_assetsManager);
 		loader.LoadAll();
-		s_assetsManager.ClearDirtyFlags();
-		s_assetsManager.ReloadAllConnections();
+
 		s_currentFilenames = loader.GetLoadedFilenamesList();
 		s_loadingErrorMask = loader.GetErrorCodeMask();
 	}
 
 	GetIEditor()->GetIUndoManager()->Resume();
-	signalLoaded();
 }
 
 void CAudioControlsEditorPlugin::ReloadScopes()
@@ -143,9 +146,7 @@ void CAudioControlsEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 	switch (event)
 	{
 	case ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED:
-		GetIEditor()->GetIUndoManager()->Suspend();
 		s_implementationManager.LoadImplementation();
-		GetIEditor()->GetIUndoManager()->Resume();
 		break;
 	}
 }

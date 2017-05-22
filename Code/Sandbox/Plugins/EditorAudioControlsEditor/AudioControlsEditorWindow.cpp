@@ -35,7 +35,6 @@
 
 namespace ACE
 {
-
 class CAudioFileMonitor final : public FileSystem::ISubTreeMonitor
 {
 public:
@@ -96,7 +95,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 			m_pInspectorPanel->SetSelectedControls(m_pExplorer->GetSelectedControls());
 		});
 		connect(m_pExplorer, &CAudioAssetsExplorer::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
-		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Update);
+		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Reload);
 		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, this, &CAudioControlsEditorWindow::Update);
 
 		GetIEditor()->RegisterNotifyListener(this);
@@ -113,20 +112,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		setCentralWidget(m_pSplitter);
 	}
 
-	const uint errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
-	if (errorCodeMask & EErrorCode::eErrorCode_UnkownPlatform)
-	{
-		CQuestionDialog::SWarning(tr("Audio Controls Editor"), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
-	}
-	else if (errorCodeMask & EErrorCode::eErrorCode_NonMatchedActivityRadius)
-	{
-		IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-		if (pAudioSystemImpl)
-		{
-			QString middlewareName = pAudioSystemImpl->GetName();
-			CQuestionDialog::SWarning(tr("Audio Controls Editor"), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
-		}
-	}
+	CheckErrorMask();
 
 	// -------------- HACK -------------
 	// There's a bug with the mounting models when being reloaded so we are destroying
@@ -218,7 +204,7 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 	if (m_pAssetsManager && m_pAssetsManager->IsDirty())
 	{
 		CQuestionDialog messageBox;
-		messageBox.SetupQuestion("Audio Controls Editor", tr("There are unsaved changes.").append(QString(" ").append(tr("Do you want to save your changes?"))), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
+		messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("There are unsaved changes.").append(QString(" ").append(tr("Do you want to save your changes?"))), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
 		switch (messageBox.Execute())
 		{
 		case QDialogButtonBox::Save:
@@ -234,7 +220,10 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 				{
 					pAudioSystemEditorImpl->Reload(false);
 				}
+
+				CAudioControlsEditorPlugin::signalAboutToLoad();
 				CAudioControlsEditorPlugin::ReloadModels(false);
+				CAudioControlsEditorPlugin::signalLoaded();
 
 				pEvent->accept();
 			}
@@ -252,42 +241,83 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 
 void CAudioControlsEditorWindow::Reload()
 {
-	bool bReload = true;
-	if (m_pAssetsManager && m_pAssetsManager->IsDirty())
+	if (m_pAssetsManager != nullptr)
 	{
-		CQuestionDialog messageBox;
-		messageBox.SetupQuestion("Audio Controls Editor", tr("If you reload you will lose all your unsaved changes.").append(QString(" ").append(tr("Are you sure you want to reload?"))), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
-		bReload = (messageBox.Execute() == QDialogButtonBox::Yes);
-	}
+		bool bReload = true;
 
-	if (bReload)
-	{
-		CAudioControlsEditorPlugin::ReloadModels(true);
-		m_pInspectorPanel->Reload();
-		m_pAudioSystemPanel->Reset();
-		m_pAudioSystemPanel->ImplementationSettingsChanged();
-		Update();
+		if (m_pAssetsManager->IsDirty())
+		{
+			CQuestionDialog messageBox;
+			messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("If you reload you will lose all your unsaved changes.").append(QString(" ").append(tr("Are you sure you want to reload?"))), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
+			bReload = (messageBox.Execute() == QDialogButtonBox::Yes);
+		}
+
+		if (bReload)
+		{
+			if (m_pAssetsManager->IsLoading())
+			{
+				// The middleware is being swapped out therefore we must not
+				// reload it and must not call signalAboutToLoad and signalLoaded!
+				CAudioControlsEditorPlugin::ReloadModels(false);
+			}
+			else
+			{
+				CAudioControlsEditorPlugin::signalAboutToLoad();
+				CAudioControlsEditorPlugin::ReloadModels(true);
+				CAudioControlsEditorPlugin::signalLoaded();
+			}
+
+			m_pInspectorPanel->Reload();
+			m_pAudioSystemPanel->Reset();
+			Update();
+			CheckErrorMask();
+		}
 	}
 }
 
 void CAudioControlsEditorWindow::Update()
 {
-	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
-	if (pAudioSystemImpl)
+	IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
+	if (pAudioSystemImpl != nullptr)
 	{
-		IImplementationSettings* pSettings = pAudioSystemImpl->GetSettings();
-		if (pSettings)
+		IImplementationSettings const* const pSettings = pAudioSystemImpl->GetSettings();
+
+		if (pSettings != nullptr)
 		{
-			FileSystem::CEnumerator* pEnumerator = GetIEditor()->GetFileSystemEnumerator();
-			for (auto handle : m_watchingHandles)
+			FileSystem::CEnumerator* const pEnumerator = GetIEditor()->GetFileSystemEnumerator();
+
+			for (auto const handle : m_watchingHandles)
 			{
 				pEnumerator->StopSubTreeMonitor(handle);
 			}
+
 			m_watchingHandles.clear();
 			m_filter = FileSystem::SFileFilter();
 
 			StartWatchingFolder(QtUtil::ToQString(pSettings->GetProjectPath()));
 			StartWatchingFolder(QtUtil::ToQString(pSettings->GetSoundBanksPath()));
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsEditorWindow::CheckErrorMask()
+{
+	uint const errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
+
+	if ((errorCodeMask & EErrorCode::eErrorCode_UnkownPlatform) != 0)
+	{
+		CQuestionDialog::SWarning(tr("Audio Controls Editor"), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
+	}
+	else if ((errorCodeMask & EErrorCode::eErrorCode_NonMatchedActivityRadius) != 0)
+	{
+		IAudioSystemEditor const* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+
+		if (pAudioSystemImpl != nullptr)
+		{
+			QString const middlewareName = pAudioSystemImpl->GetName();
+			CQuestionDialog::SWarning(tr("Audio Controls Editor"), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
 		}
 	}
 }
@@ -303,8 +333,9 @@ void CAudioControlsEditorWindow::Save()
 	{
 		CQuestionDialog messageBox;
 
-		messageBox.SetupQuestion("Audio Controls Editor", tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
-		messageBox.setWindowTitle("Audio Controls Editor");
+		messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
+		messageBox.setWindowTitle(tr("Audio Controls Editor"));
+
 		if (messageBox.Execute() == QDialogButtonBox::Yes)
 		{
 			char const* szLevelName = GetIEditor()->GetLevelName();

@@ -20,7 +20,7 @@ public:
 	{
 	}
 
-	virtual ~IAudioSystemItem() {}
+	virtual ~IAudioSystemItem() = default;
 
 	// unique id for this control
 	CID              GetId() const          { return m_id; }
@@ -68,4 +68,4 @@ private:
 	IAudioSystemItem*              m_parent = nullptr;
 	float                          m_radius = 0.0f;
 };
-}
+} // namespace ACE

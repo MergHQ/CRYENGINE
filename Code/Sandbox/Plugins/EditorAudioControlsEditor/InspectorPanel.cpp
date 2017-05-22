@@ -84,19 +84,22 @@ void CInspectorPanel::Reload()
 	m_pConnectionList->Reload();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CInspectorPanel::SetSelectedControls(const std::vector<CAudioControl*>& selectedControls)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
 	Serialization::SStructs serializers;
-	for (CAudioControl* pAsset : selectedControls)
+
+	for (auto const pControl : selectedControls)
 	{
-		CRY_ASSERT(pAsset != nullptr);
-		serializers.emplace_back(*pAsset);
+		CRY_ASSERT(pControl != nullptr);
+		serializers.emplace_back(*pControl);
 	}
+
 	m_pPropertyTree->attach(serializers);
 
-	//Update connections
+	// Update connections
 	if (selectedControls.size() == 1)
 	{
 		CAudioControl* pControl = selectedControls[0];

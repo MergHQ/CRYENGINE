@@ -114,7 +114,7 @@ void QAudioControlsTreeView::SaveExpandedState(QModelIndex& index)
 {
 	if (isExpanded(index))
 	{
-		m_storedExpandedItems.push_back(QPersistentModelIndex(index));
+		m_storedExpandedItems.emplace_back(index);
 	}
 
 	int row = 0;
