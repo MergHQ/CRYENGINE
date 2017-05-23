@@ -32,6 +32,7 @@ QToolWindowArea::QToolWindowArea(QToolWindowManager* manager, QWidget *parent /*
 	setTabPosition((QTabWidget::TabPosition)m_manager->config().value(QTWM_AREA_TAB_POSITION, QTabWidget::North).toInt());
 
 	tabBar()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+	setFocusPolicy(Qt::StrongFocus);
 	bool areaUseImageHandle = m_manager->config().value(QTWM_AREA_IMAGE_HANDLE, false).toBool();
 	m_tabFrame = new QToolWindowSingleTabAreaFrame(manager, this);
 	m_tabFrame->hide();	
