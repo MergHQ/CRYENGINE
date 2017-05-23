@@ -272,7 +272,7 @@ bool CMainWindow::OnCloseAsset()
 	if (m_pScriptBrowser && m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
 	{
 		m_pScriptBrowser->SetModel(nullptr);
-		m_pModel->deleteLater();
+		delete m_pModel;
 		m_pModel = nullptr;
 
 		if (m_pGraphView)
