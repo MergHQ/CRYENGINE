@@ -6,7 +6,7 @@
 #include "Dialogs/QStringDialog.h"
 #include "Util/Clipboard.h"
 #include "FacialExpressionUtils.h"
-#include "Dialogs/NumberDlg.h"
+#include "Dialogs/QNumericBoxDialog.h"
 #include "Controls/QuestionDialog.h"
 #include "Controls/SharedFonts.h"
 #include <QDialogButtonBox>
@@ -1063,8 +1063,8 @@ void CFacialExpressionsDialog::OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult)
 		{
 			if (QDialogButtonBox::StandardButton::Yes == CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("This command will override all sub effectors of the selected expression")))
 			{
-				CNumberDlg dlg(this, 0.1f, "Minimum Effector Weight");
-				if (dlg.DoModal() != IDOK)
+				QNumericBoxDialog dlg(QObject::tr("Minimum Effector Weight"), 0.1f);
+				if (dlg.exec() != QDialog::Accepted)
 					return;
 				// minimum threshold for an effector to be included
 				float minimumWeight = dlg.GetValue();
