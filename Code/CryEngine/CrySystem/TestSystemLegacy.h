@@ -16,7 +16,7 @@ class CTestSystemLegacy : public ITestSystem
 public:
 
 	//! constructs test system that outputs to dedicated log
-	CTestSystemLegacy(std::unique_ptr<ILog> pLog);
+	CTestSystemLegacy(ISystem* pSystem);
 
 	//! initializes supported console commands. Must be called after the console is set up.
 	static void InitCommands();
@@ -26,7 +26,7 @@ public:
 	virtual void                           Update() override;
 	virtual void                           BeforeRender() override;
 	virtual void                           AfterRender()  override {}
-	virtual ILog*                          GetILog() override      { return m_pLog.get(); }
+	virtual ILog*                          GetILog() override      { return &m_log; }
 	virtual void                           Release() override      { delete this; }
 	virtual void                           SetTimeDemoInfo(STimeDemoInfo* pTimeDemoInfo) override;
 	virtual STimeDemoInfo*                 GetTimeDemoInfo() override;
@@ -47,7 +47,7 @@ private: // --------------------------------------------------------------
 private: // --------------------------------------------------------------
 	friend class CLevelListener;
 
-	std::unique_ptr<ILog>         m_pLog;
+	CLog                          m_log;
 	STimeDemoInfo                 m_timeDemoInfo;
 	CryUnitTest::CUnitTestManager m_unitTestManager;
 

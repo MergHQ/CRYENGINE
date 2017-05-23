@@ -45,7 +45,6 @@
 
 #include "CryPak.h"
 #include "XConsole.h"
-#include "Log.h"
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"
 #include "NotificationNetwork.h"
@@ -400,9 +399,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();
 
-	std::unique_ptr<ILog> testLogger = stl::make_unique<CLog>(this);
-	testLogger->SetFileName("%USER%/TestResults/TestLog.log");
-	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(std::move(testLogger));
+	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(this);
 
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
