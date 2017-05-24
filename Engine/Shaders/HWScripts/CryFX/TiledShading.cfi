@@ -1078,8 +1078,10 @@ cbuffer CBVolumeLightListGen : register(b0)
 	struct
 	{
 		float4x4 matViewProj;
-		float    NearFar0, NearFar1;
-		uint     lightIndexOffset, numVertices;
+		float    NearFar0;
+		float    NearFar1;
+		uint     lightIndexOffset;
+		uint     numVertices;
 		float4   screenScale;
 		float4   viewerPos;
 		float4   worldBasisX;

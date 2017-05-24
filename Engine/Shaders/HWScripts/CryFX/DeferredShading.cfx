@@ -294,7 +294,9 @@ Texture2D   Decal_Opacity      : register(t5);
 SamplerState  Decal_SamplerTrilinearWrap : register(s0);
 SamplerState  Decal_SamplerDiffuse       : register(s1);
 
+#if !ORBIS
 [earlydepthstencil]
+#endif
 poDecalsMRT DefDecalPassPS(fragInWPOS IN)
 {
 	poDecalsMRT OUT = (poDecalsMRT)0;
@@ -345,7 +347,7 @@ poDecalsMRT DefDecalPassPS(fragInWPOS IN)
 	half3 vNormal = half3(0, 0, 1);
 #if %_RT_SAMPLE1
 	vNormal = GetNormalMapLod(Decal_Normal, Decal_SamplerTrilinearWrap, float4(vProjTC.xy, 0, mipLevels.y));
-	vNormal = mul(vNormal, cbDecal.matDecalTS);
+	vNormal = mul(float4(vNormal,0), cbDecal.matDecalTS).xyz;
 #endif
 
 	MaterialAttribsCommon attribs = MaterialAttribsDefault();
