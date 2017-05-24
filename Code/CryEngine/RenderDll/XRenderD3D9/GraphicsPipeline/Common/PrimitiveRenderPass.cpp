@@ -235,7 +235,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPa
 				return (m_dirtyMask = dirtyMask);
 		}
 
-		if (dirtyMask & (eDirty_Technique | eDirty_RenderState | eDirty_ResourceLayout | eDirty_RenderPass))
+		if (dirtyMask & (eDirty_Technique | eDirty_RenderState | eDirty_ResourceLayout | eDirty_RenderPass | eDirty_Topology))
 		{
 			CDeviceGraphicsPSODesc psoDesc;
 
