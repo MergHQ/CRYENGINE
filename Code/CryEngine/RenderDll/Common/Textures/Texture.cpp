@@ -1618,15 +1618,19 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 			if (eTFDst != eTF_Unknown)
 			{
 	#if CRY_RENDERER_GNM
-				CGnmTexture::SDesc desc;
-				desc.width = nWidth;
-				desc.height = nHeight;
-				desc.depthOrSlices = nDepth * nSlices;
-				desc.mips = nMips ? nMips : 1; // Some clients call with nMips == 0 (DDS streamer)
-				desc.format = pPF->DeviceFormat;
-				desc.flags = (nDepth > 1 ? kGnmResourceFlagTexture3D : kGnmResourceFlagTexture2D) | kGnmResourceFlagOptimalTiled | kGnmResourceFlagShaderReadable;
-				// TODO: Account for other flags on the texture? Should this be moved into DeviceObjectFactory?
-				return CGnmTexture::GnmComputeSize(desc);
+				if (nMips != 0)
+				{
+					CGnmTexture::SDesc desc;
+					desc.width = nWidth;
+					desc.height = nHeight;
+					desc.depthOrSlices = nDepth * nSlices;
+					desc.mips = nMips;
+					desc.format = pPF->DeviceFormat;
+					desc.flags = (nDepth > 1 ? kGnmResourceFlagTexture3D : kGnmResourceFlagTexture2D) | kGnmResourceFlagOptimalTiled | kGnmResourceFlagShaderReadable;
+					// TODO: Account for other flags on the texture? Should this be moved into DeviceObjectFactory?
+					return CGnmTexture::GnmComputeSize(desc);
+				}
+				return 0;
 	#else
 				if (nDepth > 1)
 					ORBIS_TO_IMPLEMENT;
