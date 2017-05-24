@@ -2678,16 +2678,13 @@ void CCryAction::ShutdownEngine()
 	{
 		CryFreeLibrary(m_systemDll);
 		m_systemDll = nullptr;
+		// in dll config, gEnv is dead after this point. RIP gEnv.
 	}
 
 	SAFE_DELETE(m_nextFrameCommand);
 	SAFE_DELETE(m_pPhysicsQueues);
 
 	m_pThis = nullptr;
-	if (gEnv)
-	{
-		gEnv->pGameFramework = nullptr;
-	}
 }
 
 //------------------------------------------------------------------------

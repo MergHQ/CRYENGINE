@@ -704,6 +704,13 @@ bool CSystem::UnloadDynamicLibrary(const char* szDllName)
 
 		CryLog("%s", msg.c_str());
 
+		// CVars should be unregistered earlier than owning objects/modules are destroyed.
+		auto CleanupModuleCVars = (void (*)())CryGetProcAddress(hModule, "CleanupModuleCVars");
+		if (CleanupModuleCVars)
+		{
+			CleanupModuleCVars();
+		}
+
 		auto GetHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
 		SRegFactoryNode* pFactoryNode = GetHeadToRegFactories();
 
