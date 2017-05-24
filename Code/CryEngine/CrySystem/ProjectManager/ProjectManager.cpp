@@ -88,24 +88,25 @@ void SProject::Serialize(Serialization::IArchive& ar)
 void CProjectManager::ParseProjectFile()
 {
 	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
-	const char* szProjectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
-	
+	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
+	projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
+
 	char szEngineRootDirectoryBuffer[_MAX_PATH];
 	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDirectoryBuffer), szEngineRootDirectoryBuffer);
 
 #if CRY_PLATFORM_DURANGO
 	if(true)
 #elif CRY_PLATFORM_WINAPI
-	if (PathIsRelative(szProjectFile))
+	if (PathIsRelative(projectFile.c_str()))
 #elif CRY_PLATFORM_POSIX
-	if (szProjectFile[0] != '/')
+	if (projectFile[0] != '/')
 #endif
 	{
-		m_project.filePath = PathUtil::Make(szEngineRootDirectoryBuffer, szProjectFile);
+		m_project.filePath = PathUtil::Make(szEngineRootDirectoryBuffer, projectFile.c_str());
 	}
 	else
 	{
-		m_project.filePath = szProjectFile;
+		m_project.filePath = projectFile.c_str();
 	}
 
 	if (gEnv->pSystem->GetArchiveHost()->LoadJsonFile(Serialization::SStruct(m_project), m_project.filePath))
