@@ -32,35 +32,27 @@ CSnowStage::~CSnowStage()
 	{
 		gRenDev->m_DevBufMan.Destroy(m_snowFlakeVertexBuffer);
 	}
-
-	SAFE_RELEASE(m_pSnowFlakesTex);
-	SAFE_RELEASE(m_pSnowDerivativesTex);
-	SAFE_RELEASE(m_pSnowSpatterTex);
-	SAFE_RELEASE(m_pFrostBubblesBumpTex);
-	SAFE_RELEASE(m_pSnowFrostBumpTex);
-	SAFE_RELEASE(m_pVolumeNoiseTex);
-	SAFE_RELEASE(m_pSnowDisplacementTex);
 }
 
 void CSnowStage::Init()
 {
 	CRY_ASSERT(m_pSnowFlakesTex == nullptr);
-	m_pSnowFlakesTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/snowflakes.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowFlakesTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/snowflakes.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowDerivativesTex == nullptr);
-	m_pSnowDerivativesTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/perlinNoiseDerivatives.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowDerivativesTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/perlinNoiseDerivatives.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowSpatterTex == nullptr);
-	m_pSnowSpatterTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Frozen/snow_spatter.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowSpatterTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/Frozen/snow_spatter.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pFrostBubblesBumpTex == nullptr);
-	m_pFrostBubblesBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise4.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pFrostBubblesBumpTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise4.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowFrostBumpTex == nullptr);
-	m_pSnowFrostBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise3.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowFrostBumpTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise3.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pVolumeNoiseTex == nullptr);
-	m_pVolumeNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pVolumeNoiseTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowDisplacementTex == nullptr);
 	m_pSnowDisplacementTex = CTexture::GetOrCreateTextureObject("$SnowDisplacement", 0, 0, 0, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
@@ -153,6 +145,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 	                      m_pSnowDisplacementTex->GetID()))
 	{
 		static CCryNameTSCRC techName("Snow");
+		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, rtMask);
 
 		const int32 stencilState = STENC_FUNC(FSS_STENCFUNC_EQUAL) |
@@ -310,6 +303,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 		if (pass.InputChanged(m_pSnowDisplacementTex->GetID()))
 		{
 			static CCryNameTSCRC techName = "ParallaxMapPrepass";
+			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 			pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
 
 			pass.SetState(GS_NODEPTHTEST);
@@ -377,6 +371,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 			if (pass.InputChanged())
 			{
+				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
 
 				pass.SetState(GS_NODEPTHTEST);
@@ -408,6 +403,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 			if (pass.InputChanged())
 			{
+				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
 
 				pass.SetState(GS_NODEPTHTEST);
@@ -440,6 +436,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 			if (pass.InputChanged())
 			{
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
+				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, rtMask);
 
 				pass.SetState(GS_NODEPTHTEST);
@@ -728,7 +725,7 @@ void CSnowStage::RenderSnowClusters()
 	// Render to HDR and velocity.
 	pass.SetRenderTarget(0, pSceneSrc);
 	pass.SetRenderTarget(1, pVelocitySrc);
-	pass.SetDepthTarget(CRenderer::CV_r_snow_halfres ? NULL : PostProcessUtils().m_pCurDepthSurface->pTexture);
+	pass.SetDepthTarget(CRenderer::CV_r_snow_halfres ? nullptr : gcpRendD3D->m_pZTexture);
 	pass.SetViewport(viewport);
 	pass.BeginAddingPrimitives();
 
@@ -822,6 +819,7 @@ void CSnowStage::ExecuteHalfResComposite()
 	if (pass.InputChanged())
 	{
 		static CCryNameTSCRC techName = "SnowHalfResComposite";
+		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 		pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
 		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 
