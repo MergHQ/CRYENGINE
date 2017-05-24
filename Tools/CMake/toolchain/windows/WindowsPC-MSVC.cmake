@@ -28,6 +28,14 @@ else()
 	add_definitions(-D_WIN64)
 endif()
 
+if (NOT DEFINED CRYENGINE_DIR)
+	set (CRYENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+if (NOT DEFINED SDK_DIR)
+	set(SDK_DIR ${CRYENGINE_DIR}/Code/SDKs)
+endif()
+
 if (EXISTS "${SDK_DIR}/Microsoft Windows SDK/10")
 	set(WINDOWS_SDK "${SDK_DIR}/Microsoft Windows SDK/10")
 else()
