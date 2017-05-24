@@ -247,46 +247,7 @@ public:
         verticalLayout_11->addItem(verticalSpacer_3);
 
         LodGeneratorToolBox->addItem(MaterialTaskWidget, QStringLiteral("MaterialGenerationPanel"));
-        TestABF = new QWidget();
-        TestABF->setObjectName(QStringLiteral("TestABF"));
-        verticalLayout_13 = new QVBoxLayout(TestABF);
-        verticalLayout_13->setSpacing(6);
-        verticalLayout_13->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_13->setObjectName(QStringLiteral("verticalLayout_13"));
-        cABFWidget = new cABFPannel(TestABF);
-        cABFWidget->setObjectName(QStringLiteral("cABFWidget"));
-        verticalLayout_14 = new QVBoxLayout(cABFWidget);
-        verticalLayout_14->setSpacing(6);
-        verticalLayout_14->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_14->setObjectName(QStringLiteral("verticalLayout_14"));
-        verticalSpacer_4 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
-        verticalLayout_14->addItem(verticalSpacer_4);
-
-
-        verticalLayout_13->addWidget(cABFWidget);
-
-        LodGeneratorToolBox->addItem(TestABF, QStringLiteral("TestABF"));
-        TestABFNew = new QWidget();
-        TestABFNew->setObjectName(QStringLiteral("TestABFNew"));
-        verticalLayout_16 = new QVBoxLayout(TestABFNew);
-        verticalLayout_16->setSpacing(6);
-        verticalLayout_16->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_16->setObjectName(QStringLiteral("verticalLayout_16"));
-        cABFWidgetNew = new cABFPannelNew(TestABFNew);
-        cABFWidgetNew->setObjectName(QStringLiteral("cABFWidgetNew"));
-        verticalLayout_15 = new QVBoxLayout(cABFWidgetNew);
-        verticalLayout_15->setSpacing(6);
-        verticalLayout_15->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_15->setObjectName(QStringLiteral("verticalLayout_15"));
-        verticalSpacer_5 = new QSpacerItem(20, 318, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-        verticalLayout_15->addItem(verticalSpacer_5);
-
-
-        verticalLayout_16->addWidget(cABFWidgetNew);
-
-        LodGeneratorToolBox->addItem(TestABFNew, QStringLiteral("TestABFNew"));
         horizontalLayout_2->addWidget(LodGeneratorToolBox);
 
         scrollArea->setWidget(LodGeneratorToolContents);
@@ -312,8 +273,6 @@ public:
         LodGeneratorToolBox->setItemText(LodGeneratorToolBox->indexOf(GeometryGenerationPanelWidget), QApplication::translate("CLodGeneratorDialog", "GeometryGenerationPanel", 0));
         LodGeneratorToolBox->setItemText(LodGeneratorToolBox->indexOf(MaterialBakeOptionsWidget), QApplication::translate("CLodGeneratorDialog", "MaterialBakeOptions", 0));
         LodGeneratorToolBox->setItemText(LodGeneratorToolBox->indexOf(MaterialTaskWidget), QApplication::translate("CLodGeneratorDialog", "MaterialGenerationPanel", 0));
-        LodGeneratorToolBox->setItemText(LodGeneratorToolBox->indexOf(TestABF), QApplication::translate("CLodGeneratorDialog", "TestABF", 0));
-        LodGeneratorToolBox->setItemText(LodGeneratorToolBox->indexOf(TestABFNew), QApplication::translate("CLodGeneratorDialog", "TestABFNew", 0));
     } // retranslateUi
 
 };

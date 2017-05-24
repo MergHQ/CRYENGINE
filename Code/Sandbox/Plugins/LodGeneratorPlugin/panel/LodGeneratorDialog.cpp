@@ -28,10 +28,6 @@ CLodGeneratorDialog::CLodGeneratorDialog(QWidget *parent) :
 	connect(ui->centralWidget,SIGNAL(OnGenerateMaterial()),this,SLOT(OnGenerateMaterial()));
 
 	GetIEditor()->RegisterNotifyListener(this);
-
-	// test
-	connect(this,SIGNAL(UpdateObj_Signal(IStatObj*)),ui->cABFWidget,SLOT(UpdateObj(IStatObj*)));
-	connect(this,SIGNAL(UpdateObj_Signal(IStatObj*)),ui->cABFWidgetNew,SLOT(UpdateObj(IStatObj*)));
 }
 
 CLodGeneratorDialog::~CLodGeneratorDialog()
@@ -48,8 +44,6 @@ void CLodGeneratorDialog::OnEditorNotifyEvent( EEditorNotifyEvent event )
 	case eNotify_OnIdleUpdate:
 		{
 			ui->cGeometryGenerationPanelWidget->OnIdle();
-			ui->cABFWidget->OnIdle();
-			ui->cABFWidgetNew->OnIdle();
 			for (int  i =0;i<ui->m_vLodPanels.size();i++)
 			{
 				CMaterialLODGeneratorLodItemOptionsPanel* pPanel = ui->m_vLodPanels[i];
