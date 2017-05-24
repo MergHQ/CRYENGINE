@@ -171,7 +171,10 @@ void CTestSystemLegacy::Update()
 		m_fQuitInNSeconds -= gEnv->pTimer->GetFrameTime();
 
 		if (m_fQuitInNSeconds <= 0.0f)
+		{
+			gEnv->pConsole->ExecuteString("ExitOnQuit 1");
 			gEnv->pSystem->Quit();
+		}
 		else
 		{
 			if (iSec != (int)m_fQuitInNSeconds)

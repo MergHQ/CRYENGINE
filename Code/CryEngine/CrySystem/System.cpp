@@ -866,7 +866,7 @@ void CSystem::Quit()
 	if (GetIRenderer())
 		GetIRenderer()->RestoreGamma();
 
-	if ((m_pCVarQuit && m_pCVarQuit->GetIVal() != 0) || gEnv->bTesting)
+	if (m_pCVarQuit && m_pCVarQuit->GetIVal() != 0)
 	{
 		// Dispatch the fast-shutdown event so other systems can do any last minute processing.
 		if (m_pSystemEventDispatcher != NULL)
