@@ -788,6 +788,32 @@ template<typename F> struct Matrix34_tpl
 		return dst;
 	}
 
+	void Magnitude(const Matrix34_tpl<F>& m)
+	{
+		m00 = fabs_tpl(m.m00);
+		m01 = fabs_tpl(m.m01);
+		m02 = fabs_tpl(m.m02);
+		m03 = fabs_tpl(m.m03);
+		m10 = fabs_tpl(m.m10);
+		m11 = fabs_tpl(m.m11);
+		m12 = fabs_tpl(m.m12);
+		m13 = fabs_tpl(m.m13);
+		m20 = fabs_tpl(m.m20);
+		m21 = fabs_tpl(m.m21);
+		m22 = fabs_tpl(m.m22);
+		m23 = fabs_tpl(m.m23);
+	}
+	ILINE void Magnitude()
+	{
+		Magnitude(Matrix34_tpl(*this));
+	}
+	ILINE Matrix34_tpl<F> GetMagnitude() const
+	{
+		Matrix34_tpl<F> dst;
+		dst.Magnitude(*this);
+		return dst;
+	}
+
 	//! Reflect a rotation matrix with respect to a plane.
 	//! Example:
 	//!		Vec3 normal( 0.0f,-1.0f, 0.0f);

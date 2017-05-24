@@ -215,13 +215,12 @@ void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 			pArea->GetSolidBoundBox(boundbox);
 			Matrix34 tm;
 			pArea->GetMatrix(tm);
-			static const float sqrt2 = 1.42f;
 			float const greatestFadeDistance = pArea->GetGreatestFadeDistance();
-			Vec3 const boxMinWorld(tm.TransformPoint(boundbox.min));
-			Vec3 const boxMaxWorld(tm.TransformPoint(boundbox.max));
-			vBBExtent = Vec2(abs(boxMaxWorld.x - boxMinWorld.x), abs(boxMaxWorld.y - boxMinWorld.y)) * sqrt2 * 0.5f;
+
+			boundbox.SetTransformedAABB(tm, boundbox);
+			vBBExtent = Vec2(std::abs(boundbox.max.x - boundbox.min.x), std::abs(boundbox.max.y - boundbox.min.y)) * /*sqrt2 **/ 0.5f;
 			vBBExtent += Vec2(greatestFadeDistance, greatestFadeDistance);
-			vBBCentre = Vec2(boxMinWorld.x + boxMaxWorld.x, boxMinWorld.y + boxMaxWorld.y) * 0.5f;
+			vBBCentre = Vec2(boundbox.min.x + boundbox.max.x, boundbox.min.y + boundbox.max.y) * 0.5f;
 		}
 		break;
 	}
