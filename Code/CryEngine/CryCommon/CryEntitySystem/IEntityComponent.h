@@ -334,9 +334,6 @@ public:
 	ComponentEventPriority         GetEventPriority() const                  { return (ComponentEventPriority)GetProxyType(); }
 	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return (ComponentEventPriority)GetProxyType(); }
 
-
-	virtual struct IEntityPropertyGroup* GetPropertyGroup()                                                                   { return nullptr; }
-
 	//! \brief Network serialization. Override to provide a mask of active network aspects
 	//! used by this component. Called once during binding to network.
 	virtual NetworkAspectType GetNetSerializeAspectMask() const { return 0; }

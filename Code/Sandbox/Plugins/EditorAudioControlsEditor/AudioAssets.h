@@ -100,7 +100,7 @@ public:
 		void          SetAutoLoad(bool bAutoLoad);
 
 		float         GetRadius() const { return m_radius; }
-		void          SetRadius(float radius);
+		void          SetRadius(float const radius) { m_radius = radius; }
 
 		float         GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
 		void          SetOcclusionFadeOutDistance(float fadeOutArea);
@@ -131,6 +131,7 @@ public:
 		void SignalControlModified();
 		void SignalConnectionAdded(IAudioSystemItem* pMiddlewareControl);
 		void SignalConnectionRemoved(IAudioSystemItem* pMiddlewareControl);
+		void SignalConnectionModified();
 
 		CID                        m_id = ACE_INVALID_ID;
 		EItemType                  m_type = eItemType_Trigger;
