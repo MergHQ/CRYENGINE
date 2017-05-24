@@ -8,6 +8,8 @@
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
 
+#include <CryCore/StaticInstanceList.h>
+
 IEntityRegistrator* IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator* IEntityRegistrator::g_pLast = nullptr;
 
@@ -19,7 +21,7 @@ public:
 		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
+	void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
 	{
 		switch (event)
 		{
@@ -39,7 +41,7 @@ public:
 
 				// Register dummy entities
 				IEntityClassRegistry::SEntityClassDesc stdClass;
-				stdClass.flags |= ECLF_INVISIBLE | ECLF_DEFAULT;
+				stdClass.flags |= ECLF_INVISIBLE;
 
 				stdClass.sName = "AreaBox";
 				gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
@@ -55,6 +57,24 @@ public:
 
 				stdClass.sName = "AreaShape";
 				gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
+			}
+
+			{
+				auto staticAutoRegisterLambda = []( Schematyc::IEnvRegistrar& registrar )
+				{
+					// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
+					Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
+				};
+
+				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+					stl::make_unique<Schematyc::CEnvPackage>(
+						"{CB9E7C85-3289-41B6-983A-6A076ABA6351}"_cry_guid,
+						"EntityComponents",
+						"Crytek GmbH",
+						"CRYENGINE Default Entity Components",
+						staticAutoRegisterLambda
+						)
+				);
 			}
 			break;
 		}

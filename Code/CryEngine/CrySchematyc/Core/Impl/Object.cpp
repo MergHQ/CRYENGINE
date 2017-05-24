@@ -3,25 +3,28 @@
 #include "StdAfx.h"
 #include "Object.h"
 
-#include <Schematyc/Action.h>
-#include <Schematyc/Component.h>
-#include <Schematyc/IObjectProperties.h>
-#include <Schematyc/Env/IEnvRegistry.h>
-#include <Schematyc/Env/Elements/IEnvAction.h>
-#include <Schematyc/Env/Elements/IEnvComponent.h>
-#include <Schematyc/Reflection/ActionDesc.h>
-#include <Schematyc/Reflection/ComponentDesc.h>
-#include <Schematyc/Runtime/IRuntimeClass.h>
-#include <Schematyc/Runtime/RuntimeParamMap.h>
-#include <Schematyc/Runtime/RuntimeParams.h>
-#include <Schematyc/Services/IUpdateScheduler.h>
-#include <Schematyc/Utils/Assert.h>
-#include <Schematyc/Utils/STLUtils.h>
+#include <CrySchematyc/Action.h>
+
+#include <CrySchematyc/IObjectProperties.h>
+#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <CrySchematyc/Env/Elements/IEnvAction.h>
+#include <CrySchematyc/Env/Elements/IEnvComponent.h>
+#include <CrySchematyc/Reflection/ActionDesc.h>
+#include <CrySchematyc/Runtime/IRuntimeClass.h>
+#include <CrySchematyc/Runtime/RuntimeParamMap.h>
+#include <CrySchematyc/Runtime/RuntimeParams.h>
+#include <CrySchematyc/Services/IUpdateScheduler.h>
+#include <CrySchematyc/Utils/Assert.h>
+#include <CrySchematyc/Utils/STLUtils.h>
 
 #include "Core.h"
 #include "CVars.h"
 #include "CoreEnv/CoreEnvSignals.h"
 #include "Runtime/RuntimeRegistry.h"
+
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryEntitySystem/IEntity.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 namespace Schematyc
 {
@@ -30,22 +33,13 @@ CObject::SStateMachine::SStateMachine()
 	: stateIdx(InvalidIdx)
 {}
 
-CObject::SComponent::SComponent(const SGUID& _guid, const CComponentDesc& _desc, const CComponentPtr& _pComponent, const CTransform& _transform, IComponentPreviewer* _pPreviewer, uint32 _parentIdx)
-	: guid(_guid)
-	, desc(_desc)
-	, pComponent(_pComponent)
-	, transform(_transform)
-	, pPreviewer(_pPreviewer)
-	, parentIdx(_parentIdx)
-{}
-
 CObject::SAction::SAction(const CActionDesc& _desc, const SRuntimeActionDesc& _runtimeDesc, const CActionPtr& _ptr)
 	: desc(_desc)
 	, runtimeDesc(_runtimeDesc)
 	, ptr(_ptr)
 {}
 
-CObject::STimer::STimer(CObject* _pObject, const SGUID& _guid, TimerFlags _flags)
+CObject::STimer::STimer(CObject* _pObject, const CryGUID& _guid, TimerFlags _flags)
 	: pObject(_pObject)
 	, guid(_guid)
 	, flags(_flags)
@@ -68,15 +62,17 @@ CObject::CObject(ObjectId id)
 
 CObject::~CObject()
 {
-	Stop();
+	Stop(true);
 	DestroyTimers();
 	DestroyActions();
 	DestroyComponents();
 	DestroyStateMachines();
 }
 
-bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const IObjectPropertiesConstPtr& pProperties, ESimulationMode simulationMode)
+bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const IObjectPropertiesPtr& pProperties, ESimulationMode simulationMode,IEntity *pEntity)
 {
+	m_pEntity = pEntity;
+
 	if (!SetClass(pClass))
 	{
 		return false;
@@ -85,7 +81,7 @@ bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const
 	m_pCustomData = pCustomData;
 	m_pProperties = pProperties;
 
-	if (!Start(simulationMode))
+	if (!Start(simulationMode,true))
 	{
 		return false;
 	}
@@ -118,9 +114,9 @@ bool CObject::Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPoli
 {
 	if ((simulationMode != m_simulationMode) || (resetPolicy == EObjectResetPolicy::Always))
 	{
-		if (m_simulationMode != ESimulationMode::Idle)
+		//if (m_simulationMode != ESimulationMode::Idle)
 		{
-			Stop();
+			Stop(false);
 		}
 
 		if (simulationMode != ESimulationMode::Idle)
@@ -131,9 +127,9 @@ bool CObject::Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPoli
 				SetClass(pClass);
 			}
 
-			if (!Start(simulationMode))
+			if (!Start(simulationMode,false))
 			{
-				Stop();
+				Stop(false);
 				return false;
 			}
 		}
@@ -190,11 +186,13 @@ void CObject::StopAction(CAction& action)
 
 EVisitResult CObject::VisitComponents(const ObjectComponentConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const SComponent& component : m_components)
 		{
+			if (!component.pComponent)
+				continue;
 			const EVisitStatus status = visitor(*component.pComponent);
 			switch (status)
 			{
@@ -262,11 +260,6 @@ CScratchpad& CObject::GetScratchpad()
 	return m_scratchpad;
 }
 
-CComponent* CObject::GetComponent(uint32 componentIdx)
-{
-	return componentIdx < m_components.size() ? m_components[componentIdx].pComponent.get() : nullptr;
-}
-
 bool CObject::ExecuteFunction(uint32 functionIdx, CRuntimeParamMap& params)
 {
 	const RuntimeClassFunctions& classFunctions = m_pClass->GetFunctions();
@@ -305,6 +298,11 @@ bool CObject::StartAction(uint32 actionIdx, CRuntimeParamMap& params)
 	return false;
 }
 
+IEntityComponent* CObject::GetComponent(uint32 componentIdx)
+{
+	return componentIdx < m_components.size() ? m_components[componentIdx].pComponent.get() : nullptr;
+}
+
 bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 {
 	SCHEMATYC_CORE_ASSERT(pClass)
@@ -320,7 +318,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 
 	m_graphs.clear();
 	m_stateMachines.clear();
-	m_components.clear();
+
 	m_actions.clear();
 	m_timers.clear();
 
@@ -354,7 +352,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	return true;
 }
 
-bool CObject::Start(ESimulationMode simulationMode)
+bool CObject::Start(ESimulationMode simulationMode,bool bInitComponents)
 {
 	m_scratchpad = m_pClass->GetScratchpad();
 
@@ -365,9 +363,12 @@ bool CObject::Start(ESimulationMode simulationMode)
 		return false;
 	}
 
-	if (!InitComponents())
+	if (bInitComponents)
 	{
-		return false;
+		if (!InitComponents())
+		{
+			return false;
+		}
 	}
 
 	if (!InitActions())
@@ -375,8 +376,14 @@ bool CObject::Start(ESimulationMode simulationMode)
 		return false;
 	}
 
+	m_simulationMode = simulationMode;
+
 	ExecuteConstructors(simulationMode);
-	RunComponents(simulationMode);
+
+	if (bInitComponents)
+	{
+		RunComponents(simulationMode);
+	}
 
 	switch (simulationMode)
 	{
@@ -390,12 +397,11 @@ bool CObject::Start(ESimulationMode simulationMode)
 		}
 	}
 
-	m_simulationMode = simulationMode;
 
 	return true;
 }
 
-void CObject::Stop()
+void CObject::Stop(bool bShutDownComponents)
 {
 	StopTimers();
 	StopStateMachines();
@@ -410,7 +416,10 @@ void CObject::Stop()
 	}
 
 	ShutdownActions();
-	ShutdownComponents();
+	if (bShutDownComponents)
+	{
+		ShutdownComponents();
+	}
 
 	m_simulationMode = ESimulationMode::Idle;
 }
@@ -444,31 +453,24 @@ bool CObject::ReadProperties()
 	for (uint32 componentIdx = 0, componentCount = m_components.size(); componentIdx < componentCount; ++componentIdx)
 	{
 		SComponent& component = m_components[componentIdx];
-		classComponentInstances[componentIdx].properties.Apply(component.desc, component.pComponent.get());
+
+		bool bPublicPropertiesApplied = false;
+		if (m_pProperties && component.classComponentInstance.bPublic)
+		{
+			const CClassProperties* pCompProperties = m_pProperties->GetComponentProperties(component.classComponentInstance.guid);
+			if (pCompProperties)
+			{
+				bPublicPropertiesApplied  = pCompProperties->Apply(component.classDesc, component.pComponent.get());
+			}
+		}
+		if (!bPublicPropertiesApplied)
+		{
+			classComponentInstances[componentIdx].properties.Apply(component.classDesc, component.pComponent.get());
+		}
 	}
 
 	if (m_pProperties)
 	{
-		const RuntimeClassComponentInstances& classComponentInstances = m_pClass->GetComponentInstances();
-		for (uint32 componentIdx = 0, componentCount = m_components.size(); componentIdx < componentCount; ++componentIdx)
-		{
-			const SRuntimeClassComponentInstance& classComponentInstance = classComponentInstances[componentIdx];
-			SComponent& component = m_components[componentIdx];
-			if (classComponentInstance.bPublic)
-			{
-				const CClassProperties* pComponentProperties = m_pProperties->GetComponentProperties(classComponentInstance.guid);
-				if (pComponentProperties)
-				{
-					pComponentProperties->Apply(component.desc, component.pComponent.get());
-				}
-				else
-				{
-					SCHEMATYC_CORE_ERROR("Failed to initialize component properties: class = %s, component = %s", m_pClass->GetName(), classComponentInstance.name.c_str());
-					return false;
-				}
-			}
-		}
-
 		for (const SRuntimeClassVariable& variable : m_pClass->GetVariables())
 		{
 			if (variable.bPublic)
@@ -476,7 +478,8 @@ bool CObject::ReadProperties()
 				if (!m_pProperties->ReadVariable(*m_scratchpad.Get(variable.pos), variable.guid))
 				{
 					SCHEMATYC_CORE_ERROR("Failed to initialize variable: class = %s, variable = %s", m_pClass->GetName(), variable.name.c_str());
-					return false;
+					//return false;
+					m_pProperties->AddVariable(variable.guid,variable.name.c_str(),*m_scratchpad.Get(variable.pos));
 				}
 			}
 		}
@@ -578,37 +581,71 @@ bool CObject::CreateComponents()
 	for (const SRuntimeClassComponentInstance& classComponentInstance : classComponentInstances)
 	{
 		const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(classComponentInstance.componentTypeGUID);
-		if (!pEnvComponent)
+		if (pEnvComponent == nullptr)
 		{
 			return false;
 		}
 
-		CComponentPtr pComponent = pEnvComponent->CreateFromPool();
-		if (!pComponent)
+		m_components.emplace_back(classComponentInstance, pEnvComponent);
+
+		if (m_components.back().pComponent == nullptr)
 		{
+			assert(0 && "Component create from pool failed");
+			m_components.pop_back();
+
 			return false;
 		}
-
-		const CComponentDesc& componentDesc = pEnvComponent->GetDesc();
-		m_components.emplace_back(classComponentInstance.guid, componentDesc, pComponent, classComponentInstance.transform, componentDesc.GetPreviewer(), classComponentInstance.parentIdx);
 	}
+
+	// Add Created components to the Entity
+	if (IEntity* pEntity = GetEntity())
+	{
+		for (SComponent& component : m_components)
+		{
+			IEntityComponent* pParent = component.classComponentInstance.parentIdx != InvalidIdx ? m_components[component.classComponentInstance.parentIdx].pComponent.get() : nullptr;
+
+			const CEntityComponentClassDesc& classDesc = static_cast<const CEntityComponentClassDesc&>(component.classDesc);
+
+			EntityComponentFlags flags(EEntityComponentFlags::Schematyc);
+			if (component.classComponentInstance.bPublic)
+			{
+				flags.Add(EEntityComponentFlags::SchematycEditable);
+			}
+			CTransformPtr transform;
+			if (classDesc.GetComponentFlags().Check(IEntityComponent::EFlags::Transform))
+			{
+				flags.Add(EEntityComponentFlags::Transform);
+				transform = component.classComponentInstance.transform;
+			}
+
+			IEntityComponent::SInitParams initParams(
+				pEntity,
+				component.classComponentInstance.guid,
+				component.classComponentInstance.name,
+				&classDesc,
+				flags,
+				pParent,
+				transform
+			);
+			initParams.bNotInitialize = true;
+			GetEntity()->AddComponent(component.classDesc.GetGUID(), component.pComponent, true, &initParams);
+		}
+	}
+
 	return true;
 }
 
 bool CObject::InitComponents()
 {
+	IEntity* pEntity = GetEntity();
+	if (!pEntity)
+		return false;
+
 	for (SComponent& component : m_components)
 	{
-		SComponentParams componentParams(component.guid, *this, component.transform);
-		componentParams.pPreviewer = component.pPreviewer;
-		componentParams.pParent = component.parentIdx != InvalidIdx ? m_components[component.parentIdx].pComponent.get() : nullptr;
-		//componentParams.pNetworkSpawnParams = pNetworkSpawnParams ? pNetworkSpawnParams->GetComponentSpawnParams(componentInstanceIdx) : INetworkSpawnParamsPtr();
-		component.pComponent->PreInit(componentParams);
-		if (!component.pComponent->Init())
-		{
-			return false;
-		}
+		component.pComponent->Initialize();
 	}
+
 	return true;
 }
 
@@ -622,19 +659,19 @@ void CObject::RunComponents(ESimulationMode simulationMode)
 
 void CObject::ShutdownComponents()
 {
-	for (SComponent& component : stl::reverse(m_components))
+	if (GetEntity())
 	{
-		component.pComponent->Shutdown();
+		for (SComponent& component : m_components)
+		{
+			GetEntity()->RemoveComponent(component.pComponent.get());
+		}
 	}
 }
 
 void CObject::DestroyComponents()
 {
-	for (SComponent& component : stl::reverse(m_components))
-	{
-		component.pComponent.reset();
-	}
-	// #SchematycTODO : m_components.clear()?
+	ShutdownComponents();
+	m_components.clear();
 }
 
 bool CObject::CreateActions()

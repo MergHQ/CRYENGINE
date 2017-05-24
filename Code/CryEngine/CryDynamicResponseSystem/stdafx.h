@@ -32,7 +32,6 @@ struct IResponseCondition;
 
 //Schematyc includes
 #include <CrySchematyc/CoreAPI.h>
-#include <CrySchematyc/STDEnvAPI.h>
 
 #include <CryString/HashedString.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>

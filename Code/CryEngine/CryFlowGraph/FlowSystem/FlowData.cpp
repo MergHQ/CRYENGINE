@@ -115,6 +115,7 @@ CFlowData::CFlowData(const CFlowData& rhs)
 	m_failedGettingFlowgraphForwardingEntity = true;
 	m_getFlowgraphForwardingEntity = 0;
 	m_forwardingEntityID = 0;
+	m_entityGuid = rhs.m_entityGuid;
 }
 
 void CFlowData::DoGetConfiguration(SFlowNodeConfig& config) const
@@ -166,6 +167,7 @@ void CFlowData::Swap(CFlowData& rhs)
 
 	std::swap(m_forwardingEntityID, rhs.m_forwardingEntityID);
 	std::swap(m_getFlowgraphForwardingEntity, rhs.m_getFlowgraphForwardingEntity);
+	std::swap(m_entityGuid,rhs.m_entityGuid);
 }
 
 CFlowData& CFlowData::operator=(const CFlowData& rhs)
@@ -309,7 +311,6 @@ bool CFlowData::SerializeXML(IFlowNode::SActivationInfo* pActInfo, const XmlNode
 
 		if (config.nFlags & EFLN_TARGET_ENTITY)
 		{
-			EntityId entityId;
 			const char* sGraphEntity = node->getAttr("GraphEntity");
 			if (*sGraphEntity != 0)
 			{
@@ -327,38 +328,20 @@ bool CFlowData::SerializeXML(IFlowNode::SActivationInfo* pActInfo, const XmlNode
 			}
 			else
 			{
-				if (node->haveAttr("EntityGUID_64") || node->haveAttr("EntityGUID"))
+				if (node->haveAttr("EntityGUID"))
 				{
-					EntityGUID entGuid = 0;
-					node->getAttr("EntityGUID_64", entGuid);
-					entityId = gEnv->pEntitySystem->FindEntityByGuid(entGuid);
-
-					// Is this a runtime prefab?
-					if (!entityId && node->haveAttr("EntityGUID"))
-					{
-						const char* szEntGuid = node->getAttr("EntityGUID");
-						entityId = gEnv->pEntitySystem->FindEntityByEditorGuid(szEntGuid);
-					}
-
-					if (entityId)
-					{
-						if (SetEntityId(entityId))
-							pActInfo->pGraph->ActivateNode(pActInfo->myID);
-					}
-					else
-					{
-						const char* pClassName = node->getAttr("Class");
-						if (!pClassName)
-							pClassName = "[UNKNOWN]";
-						EntityId graphEntityId = pActInfo->pGraph->GetGraphEntity(0);
-						IEntity* pGraphEntity = gEnv->pEntitySystem->GetEntity(graphEntityId);
-#if defined(_MSC_VER)
-
-						GameWarning("Flow Graph Node targets unknown entity guid: %I64x  nodeclass: '%s'    graph entity id: %d name: '%s'", entGuid, pClassName, graphEntityId, pGraphEntity ? pGraphEntity->GetName() : "[NULL]");
-#else
-						GameWarning("Flow Graph Node targets unknown entity guid: %llx  nodeclass: '%s'     graph entity id: %d name '%s'", (long long)entGuid, pClassName, graphEntityId, pGraphEntity ? pGraphEntity->GetName() : "[NULL]");
-#endif
-					}
+					node->getAttr("EntityGUID", m_entityGuid);
+				}
+				else if (node->haveAttr("EntityGUID_64"))
+				{
+					node->getAttr("EntityGUID_64", m_entityGuid);
+				}
+				else
+				{
+					//int id;
+					//node->getAttr("Id",id);
+					//const char* nodeClass = node->getAttr("Class");
+					//GameWarning("FlowGraph Node entity target not specified name=%s nodeId=%d nodeClass=%s",m_name.c_str(),id,nodeClass );
 				}
 			}
 		}
@@ -418,6 +401,23 @@ void CFlowData::Serialize(IFlowNode::SActivationInfo* pActInfo, TSerialize ser)
 
 void CFlowData::PostSerialize(IFlowNode::SActivationInfo* pActInfo)
 {
+	if (!pActInfo->pEntity && !m_entityGuid.IsNull())
+	{
+		// Try to bind entity id.
+		EntityId entityId = gEnv->pEntitySystem->FindEntityByGuid(m_entityGuid);
+		if (entityId != INVALID_ENTITYID)
+		{
+			if (SetEntityId(entityId))
+				pActInfo->pGraph->ActivateNode(pActInfo->myID);
+		}
+		else
+		{
+			EntityId graphEntityId = pActInfo->pGraph->GetGraphEntity(0);
+			IEntity* pGraphEntity = gEnv->pEntitySystem->GetEntity(graphEntityId);
+			GameWarning("Flow Graph Node targets unknown entity guid: %s, graph entity id: %d name '%s'", m_entityGuid.ToDebugString(), graphEntityId, pGraphEntity ? pGraphEntity->GetName() : "[NULL]");
+		}
+	}
+
 	CompleteActivationInfo(pActInfo);
 	m_pImpl->PostSerialize(pActInfo);
 	if (m_forwardingEntityID != 0)

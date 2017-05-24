@@ -334,7 +334,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 {
 	const Skeleton::CPoseData& poseData = GetPoseData();
 	CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
-	partid0 = partid0 < 0 ? 0 : AllocPartIdRange(partid0, PARTID_MAX_SLOTS);
+	partid0 = partid0 < 0 ? 0 : EntityPhysicsUtils::AllocPartIdRange(partid0, EntityPhysicsUtils::PARTID_MAX_SLOTS);
 
 	float scaleOrg = mtxloc.GetColumn(0).GetLength();
 	float scale = scaleOrg / m_pInstance->m_location.s;

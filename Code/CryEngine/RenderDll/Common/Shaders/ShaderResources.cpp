@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ShaderResources.h"
 #include "GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
+#include "Common/Textures/TextureHelpers.h"
 
 #include "DriverD3D.h"
 

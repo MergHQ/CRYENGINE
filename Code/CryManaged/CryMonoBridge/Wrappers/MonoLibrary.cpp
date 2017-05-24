@@ -125,6 +125,20 @@ bool CMonoLibrary::Load()
 	string mdbPathSource = m_assemblyPath + ".mdb";
 	string mdbPathTarget = assemblyPath + ".mdb";
 
+	// It could be that old .dll and .mdb files are still in the temporary directory.
+	// This can cause unexpected behavior or out of sync debug-symbols, so delete the old files first.
+	if (FILE* handle = gEnv->pCryPak->FOpen(mdbPathTarget, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
+	{
+		gEnv->pCryPak->FClose(handle);
+		gEnv->pCryPak->RemoveFile(mdbPathTarget);
+	}
+
+	if (FILE* handle = gEnv->pCryPak->FOpen(assemblyPath, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
+	{
+		gEnv->pCryPak->FClose(handle);
+		gEnv->pCryPak->RemoveFile(assemblyPath);
+	}
+
 	// The path can be relative, so the default IsFileExist is not a sure way to check if the file exists.
 	// Instead we try opening the file and if it works the file exists.
 	if (auto handle = gEnv->pCryPak->FOpen(mdbPathSource, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))

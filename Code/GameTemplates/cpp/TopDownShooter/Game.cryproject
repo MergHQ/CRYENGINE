@@ -7,11 +7,9 @@
 		"code": [ "Code" ]
 	},
 	"require": {
-		"engine": "engine-5.3",
+		"engine": "engine-dev",
 		"plugins": [
 			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
-			{ "type": "EPluginType::Native", "path": "CrySchematycCore" },
-			{ "type": "EPluginType::Native", "path": "CrySchematycSTDEnv" },
 			{ "type": "EPluginType::Native", "path": "CrySensorSystem" },
 			{ "type": "EPluginType::Native", "path": "CryPerceptionSystem" },
 			{ "type": "EPluginType::Native", "path": "bin/win_x64/Game.dll" }

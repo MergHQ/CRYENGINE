@@ -27,10 +27,18 @@ struct FunctorActionButton : public IActionButton
 	Functor callback;
 	string  icon;
 
+	FunctorActionButton() {}
+
 	explicit FunctorActionButton(const Functor& callback, const char* icon = "")
 		: callback(callback)
 		, icon(icon)
 	{
+	}
+
+	inline bool operator==(const FunctorActionButton &rhs) const 
+	{
+		// No way to compare callback
+		return icon == rhs.icon;
 	}
 
 	// IActionButton

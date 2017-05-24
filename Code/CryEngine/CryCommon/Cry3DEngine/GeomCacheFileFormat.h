@@ -104,11 +104,17 @@ enum EMeshIFrameFlags
 
 struct SHeader
 {
-	SHeader() : m_signature(0), m_version(kCurrentVersion),
-		m_blockCompressionFormat(0), m_flags(0), m_numFrames(0) {}
+	SHeader()
+		: m_signature(0)
+		, m_versionGuidHipart(kCurrentVersion.hipart)
+		, m_versionGuidLopart(kCurrentVersion.lopart)
+		, m_blockCompressionFormat(0)
+		, m_flags(0)
+		, m_numFrames(0) {}
 
 	uint64  m_signature;
-	CryGUID m_version;
+	uint64 m_versionGuidHipart;
+	uint64 m_versionGuidLopart;
 	uint16  m_blockCompressionFormat;
 	uint32  m_flags;
 	uint32  m_numFrames;

@@ -983,10 +983,7 @@ template<typename F> struct QuatTS_tpl
 	explicit ILINE QuatTS_tpl(const Matrix34_tpl<F>& m)
 	{
 		t = m.GetTranslation();
-
-		// The determinant of a matrix is the volume spanned by its base vectors.
-		// We need an approximate length scale, so we calculate the cube root of the determinant.
-		s = pow(m.Determinant(), F(1.0 / 3.0));
+		s = m.GetUniformScale();
 
 		//! Orthonormalize using X and Z as anchors.
 		const Vec3_tpl<F>& r0 = m.GetRow(0);

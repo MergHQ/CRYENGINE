@@ -37,7 +37,7 @@ public:
 	virtual void    Serialize(Serialization::IArchive& archive) override;
 	// ~CAbstractVariableItem
 
-	Schematyc::SGUID GetGUID() const;
+	CryGUID GetGUID() const;
 
 private:
 	Schematyc::IScriptVariable& m_scriptVariable;

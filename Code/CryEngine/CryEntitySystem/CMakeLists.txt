@@ -56,6 +56,16 @@ add_sources("CryEntitySystem_component_uber.cpp"
 	SOURCE_GROUP "Components\\\\TriggerProxy"
 		"TriggerProxy.cpp"
 		"TriggerProxy.h"
+
+	SOURCE_GROUP "Schematyc"
+		"Schematyc/EntitySchematycActions.cpp"
+		"Schematyc/EntitySchematycUtilFunctions.cpp"
+		"Schematyc/EntityObjectDebugger.cpp"
+		"Schematyc/EntityObjectDebugger.h"
+
+	SOURCE_GROUP "EntityComponents"
+		"EntityComponents/EntityUtilsComponent.cpp"
+		"EntityComponents/EntityUtilsComponent.h"
 )
 
 add_sources("CryEntitySystem_uber_0.cpp"
@@ -95,6 +105,7 @@ add_sources("CryEntitySystem_uber_0.cpp"
 		"CharacterBoneAttachmentManager.cpp"
 		"GeomCacheAttachmentManager.h"
 		"GeomCacheAttachmentManager.cpp"
+		"EntityUnitTests.cpp"
 )
 
 add_sources("CryEntitySystem_uber_1.cpp"

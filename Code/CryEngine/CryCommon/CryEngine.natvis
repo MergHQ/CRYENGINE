@@ -551,9 +551,12 @@
     </Expand>
   </Type>
 
-
   <Type Name="SNetMessageDef">
     <DisplayString>{description,s} (SNetMessageDef)</DisplayString>
   </Type>
 
+  <Type Name="CryGUID">
+    <DisplayString>{*(GUID*)this}</DisplayString>
+  </Type>
+  
 </AutoVisualizer>

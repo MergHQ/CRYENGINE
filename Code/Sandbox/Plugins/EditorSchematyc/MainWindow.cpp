@@ -24,12 +24,12 @@
 #include <AssetSystem/AssetType.h>
 #include <IUndoManager.h>
 
-#include <Schematyc/Compiler/ICompiler.h>
-#include <Schematyc/SerializationUtils/SerializationToString.h>
-#include <Schematyc/Script/Elements/IScriptComponentInstance.h>
-#include <Schematyc/Script/IScript.h>
-#include <Schematyc/Script/Elements/IScriptClass.h>
-#include <Schematyc/Script/Elements/IScriptModule.h>
+#include <CrySchematyc/Compiler/ICompiler.h>
+#include <CrySchematyc/SerializationUtils/SerializationToString.h>
+#include <CrySchematyc/Script/Elements/IScriptComponentInstance.h>
+#include <CrySchematyc/Script/IScript.h>
+#include <CrySchematyc/Script/Elements/IScriptClass.h>
+#include <CrySchematyc/Script/Elements/IScriptModule.h>
 
 #include <CrySystem/File/ICryPak.h>
 #include <Serialization/Qt.h>
@@ -37,6 +37,7 @@
 #include <EditorFramework/Inspector.h>
 #include <Controls/QuestionDialog.h>
 
+#include <QCollapsibleFrame.h>
 #include <QAction>
 #include <QMenu>
 #include <QToolbar>
@@ -160,7 +161,7 @@ void CMainWindow::Serialize(Serialization::IArchive& archive)
 	//archive(*m_pPreview, "preview");
 }
 
-void CMainWindow::Show(const Schematyc::SGUID& elementGUID, const Schematyc::SGUID& detailGUID)
+void CMainWindow::Show(const CryGUID& elementGUID, const CryGUID& detailGUID)
 {
 	if (m_pScriptBrowser)
 	{
@@ -641,12 +642,14 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 			IDetailItem* pDetailItem = new CScriptElementDetailItem(selection.pScriptElement);
 			CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pDetailItem, this, m_pPreview);
 
-			auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
+			PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
 			{
-				return pPropertiesWidget;
-			};
-			PopulateInspectorEvent populateEvent(populateInspector, "Properties");
-			pBroadcastManager->Broadcast(populateEvent);
+				QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
+				pInspectorWidget->SetWidget(pPropertiesWidget);
+				inspector.AddWidget(pInspectorWidget);
+			});
+
+			pBroadcastManager->Broadcast(popEvent);
 		}
 
 		// Attach to preview.
@@ -714,12 +717,14 @@ void CMainWindow::ShowLogSettings()
 	{
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
-			auto populateInspector = [this](const PopulateInspectorEvent&)
+			PopulateInspectorEvent popEvent([this](CInspector& inspector)
 			{
-				return new Schematyc::CLogSettingsWidget(m_logSettings);
-			};
-			PopulateInspectorEvent populateEvent(populateInspector, "Log Settings");
-			pBroadcastManager->Broadcast(populateEvent);
+				QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Log Settings");
+				pInspectorWidget->SetWidget(new Schematyc::CLogSettingsWidget(m_logSettings));
+				inspector.AddWidget(pInspectorWidget);
+			});
+
+			pBroadcastManager->Broadcast(popEvent);
 		}
 	}
 }
@@ -730,12 +735,14 @@ void CMainWindow::ShowPreviewSettings()
 	{
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
-			auto populateInspector = [this](const PopulateInspectorEvent&)
+			PopulateInspectorEvent popEvent([this](CInspector& inspector)
 			{
-				return new Schematyc::CPreviewSettingsWidget(*m_pPreview);
-			};
-			PopulateInspectorEvent populateEvent(populateInspector, "Preview Settings");
-			pBroadcastManager->Broadcast(populateEvent);
+				QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Preview Settings");
+				pInspectorWidget->SetWidget(new Schematyc::CPreviewSettingsWidget(*m_pPreview));
+				inspector.AddWidget(pInspectorWidget);
+			});
+
+			pBroadcastManager->Broadcast(popEvent);
 		}
 	}
 }

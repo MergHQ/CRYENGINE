@@ -5,6 +5,7 @@
 #include "IAudioInterfacesCommonData.h"
 #include "../CryCore/CryCrc32.h"
 #include "../CrySystem/IEngineModule.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 // General macros.
 //#define ENABLE_AUDIO_PORT_MESSAGES
@@ -20,11 +21,6 @@
 	#define REINST_FULL(y)
 	#define REINST(y)
 #endif
-
-//! \note We need this explicitly here to prevent circular includes to IEntity.
-//! Unique identifier for each entity instance.
-using EntityId = unsigned int;
-#define INVALID_ENTITYID ((EntityId)(0))
 
 /**
  * @namespace CryAudio
@@ -156,12 +152,12 @@ struct SCreateObjectData
 	  char const* const szName_ = nullptr,
 	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
 	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
-	  EntityId const entityToIgnore_ = INVALID_ENTITYID,
+	  EntityId const entityId_ = INVALID_ENTITYID,
 	  bool const bSetCurrentEnvironments_ = false)
 		: szName(szName_)
 		, occlusionType(occlusionType_)
 		, transformation(transformation_)
-		, entityToIgnore(entityToIgnore_)
+		, entityId(entityId_)
 		, bSetCurrentEnvironments(bSetCurrentEnvironments_)
 	{}
 
@@ -176,7 +172,7 @@ struct SCreateObjectData
 	// as the temporary gets destroyed before this request gets passed to the AudioSystem where it gets ultimately copied for internal processing.
 	CObjectTransformation const transformation;
 
-	EntityId const              entityToIgnore;
+	EntityId const              entityId;
 	bool const                  bSetCurrentEnvironments;
 };
 

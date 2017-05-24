@@ -21,7 +21,7 @@ namespace CryGUIDHelper
 {
 static string PrintGuid(const CryGUID& val)
 {
-	char buf[37];   //!< sizeof("{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}")
+	char buf[37];   //!< sizeof("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")
 
 	static const char hex[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 	char* p = buf;

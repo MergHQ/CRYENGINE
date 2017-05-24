@@ -490,7 +490,7 @@ public:
 	{
 		CFlowEntityNodeBase::ProcessEvent(event, pActInfo);
 
-		IEntity* pEntity = GetEntity();
+		IEntity* pEntity = GetEntity(pActInfo);
 		if (!pEntity)
 			return;
 
@@ -1453,7 +1453,7 @@ public:
 
 	void SnapToTarget(SActivationInfo* pActInfo)
 	{
-		IEntity* pNodeEntity = GetEntity();
+		IEntity* pNodeEntity = GetEntity(pActInfo);
 		Matrix34 worldMat;
 
 		CalculateLookAtMatrix(pNodeEntity, worldMat);
@@ -1471,7 +1471,7 @@ public:
 		}
 		else
 		{
-			IEntity* pNodeEntity = GetEntity();
+			IEntity* pNodeEntity = GetEntity(pActInfo);
 			Matrix34 finalMat;
 			CalculateLookAtMatrix(pNodeEntity, finalMat);
 
@@ -1529,7 +1529,7 @@ public:
 	{
 		CFlowEntityNodeBase::ProcessEvent(event, pActInfo);
 
-		IEntity* pEntity = GetEntity();
+		IEntity* pEntity = GetEntity(pActInfo);
 		if (!pEntity)
 			return;
 
@@ -1962,7 +1962,7 @@ public:
 
 	void OnActivate(SActivationInfo* pActInfo)
 	{
-		IEntity* pEntity = GetEntity();
+		IEntity* pEntity = GetEntity(pActInfo);
 		if (!pEntity)
 			return;
 
@@ -2190,7 +2190,7 @@ public:
 	{
 		CFlowEntityNodeBase::ProcessEvent(event, pActInfo);
 
-		IEntity* pEntity = GetEntity();
+		IEntity* pEntity = GetEntity(pActInfo);
 		if (!pEntity)
 			return;
 
@@ -2661,7 +2661,7 @@ public:
 
 	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
-		IEntity* pEntity = GetEntity();
+		IEntity* pEntity = GetEntity(pActInfo);
 		if (!pEntity)
 			return;
 
@@ -2687,7 +2687,7 @@ public:
 			return;
 		}
 
-		IEntity* pEntity = GetEntity();
+		IEntity* pEntity = GetEntity(pActInfo);
 		if (!pEntity)
 		{
 			return;

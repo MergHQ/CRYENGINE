@@ -106,7 +106,7 @@ public:
 	ERequestStatus   HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
 	ERequestStatus   HandleStopFile(char const* const szFile);
 
-	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition);
+	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition, EntityId entityId);
 	void             Release();
 
 	// Callbacks
@@ -166,6 +166,7 @@ private:
 	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual EntityId GetEntityId() const override { return m_entityId; }
 	// ~CryAudio::IObject
 
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator& iter);
@@ -188,6 +189,7 @@ private:
 	CTimeValue                m_previousTime;
 	CPropagationProcessor     m_propagationProcessor;
 	float                     m_occlusionFadeOutDistance;
+	EntityId                  m_entityId;
 
 	static TriggerInstanceId  s_triggerInstanceIdCounter;
 

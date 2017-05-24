@@ -181,6 +181,8 @@ target_include_directories($${THIS_PROJECT}
 PRIVATE 
     $${CRYENGINE_DIR}/Code/CryEngine/CryCommon
     $${CRYENGINE_DIR}/Code/CryEngine/CryAction
+	$${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
+	$${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module
 )
 """
 

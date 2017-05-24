@@ -512,12 +512,6 @@ struct IEntitySystem
 	//! Finds entity by Entity GUID.
 	virtual EntityId FindEntityByGuid(const EntityGUID& guid) const = 0;
 
-	//! Finds entity by editor GUID.
-	//! This is a special case for runtime prefabs, since they use the editor guids.
-	//! It is only valid to call in between BeginCreateEntities and EndCreateEntities.
-	//! \param guid GUID string (ie {ABCD1234-...}) of the entity required.
-	virtual EntityId FindEntityByEditorGuid(const char* pGuid) const = 0;
-
 	//! Generates new entity id based on Entity GUID.
 	virtual EntityId GenerateEntityIdFromGuid(const EntityGUID& guid) = 0;
 
@@ -717,24 +711,39 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 #endif
 
 template<class T>
-static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const char* editorCategory = "", const char* editorIcon = "", bool bIconOnTop = false)
+inline IEntityClass* RegisterEntityClassWithDefaultComponent(
+	const char* name,
+	const CryGUID classGUID, // This is a guid for the Entity Class, not for component
+	const CryGUID componentUniqueGUID, // This is not a class type of component guid, but a unique guid of this unique component inside entity
+	bool bIconOnTop = false,
+	IFlowNodeFactory *pOptionalFlowNodeFactory = nullptr
+)
 {
+	const CEntityComponentClassDesc* pClassDesc = &Schematyc::GetTypeDesc<T>();
+
 	IEntityClassRegistry::SEntityClassDesc clsDesc;
 	clsDesc.sName = name;
 
-	clsDesc.editorClassInfo.sCategory = editorCategory;
-	clsDesc.editorClassInfo.sIcon = editorIcon;
+	clsDesc.editorClassInfo.sCategory = pClassDesc->GetEditorCategory();
+	clsDesc.editorClassInfo.sIcon = pClassDesc->GetIcon();
 	clsDesc.editorClassInfo.bIconOnTop = bIconOnTop;
-
-	struct CObjectCreator
+	clsDesc.pIFlowNodeFactory = pOptionalFlowNodeFactory;
+	
+	auto onSpawnLambda = [componentUniqueGUID, pClassDesc](IEntity& entity, SEntitySpawnParams& params) -> bool
 	{
-		static IEntityComponent* Create(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
-		{
-			return pEntity->CreateComponentClass<T>();
-		}
+		string componentName = pClassDesc->GetName().c_str();
+		IEntityComponent::SInitParams initParams(
+			&entity,
+			componentUniqueGUID,
+			componentName,
+			pClassDesc,
+			EEntityComponentFlags::None,
+			nullptr,
+			nullptr);
+		entity.AddComponent(pClassDesc->GetGUID(), nullptr, true, &initParams);
+		return true;
 	};
-
-	clsDesc.pUserProxyCreateFunc = &CObjectCreator::Create;
+	clsDesc.onSpawnCallback = onSpawnLambda;
 
 	return gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
 }

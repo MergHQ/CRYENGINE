@@ -1,6 +1,5 @@
 namespace CryEngine.Game
 {
-	[EntityClass("Player", "Game", null, IconType.User)]
 	public class Player : EntityComponent
 	{
 		public enum GeometrySlots

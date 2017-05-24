@@ -63,6 +63,9 @@ template<typename F> struct Vec3_tpl
 
 	ILINE operator const Vec2_tpl<F> &() const { return reinterpret_cast<const Vec2_tpl<F>&>(*this); }
 
+	ILINE bool operator==(const Vec3_tpl<F>& o) const  { return NV::IsEqual(o); }
+	ILINE bool operator!=(const Vec3_tpl<F>& o) const  { return !NV::IsEqual(o); }
+
 	//! Overloaded arithmetic operator.
 	//! Example:
 	//!   Vec3 v0=v1*4;

@@ -121,6 +121,12 @@ struct IObject
 	 * @return void
 	 */
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	* Gets the entityId linked with this object (or INVALID_ENTITYID if not linked to an entity)
+	* @return EntityId
+	*/
+	virtual EntityId GetEntityId() const = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

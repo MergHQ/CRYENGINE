@@ -56,7 +56,7 @@ public:
 
 	// IPhysRenderer
 	virtual void DrawFrame(const Vec3& pnt, const Vec3* axes, const float scale, const Vec3* limits, const int axes_locked);
-	virtual void DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, int idxColor = 0, int bSlowFadein = 0, const Vec3& sweepDir = Vec3(0));
+	virtual void DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, int idxColor = 0, int bSlowFadein = 0, const Vec3& sweepDir = Vec3(0), const ColorF& color = ColorF(1, 1, 1, 1));
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, int idxColor = 0, int bSlowFadein = 0);
 	virtual void DrawText(const Vec3& pt, const char* txt, int idxColor, float saturation = 0)
 	{

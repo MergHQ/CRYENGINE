@@ -160,6 +160,7 @@ void CPropertiesWidget::SetupTree()
 	m_pPropertyTree->setValueColumnWidth(0.6f);
 	m_pPropertyTree->setAggregateMouseEvents(false);
 	m_pPropertyTree->setFullRowContainers(true);
+	m_pPropertyTree->setSizeToContent(true);
 
 	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
 	treeStyle.propertySplitter = false;

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "MobileComposition.h"
+#include "GraphicsPipeline/ClipVolumes.h"
 #include "DriverD3D.h"
 
 void CMobileCompositionStage::Init()

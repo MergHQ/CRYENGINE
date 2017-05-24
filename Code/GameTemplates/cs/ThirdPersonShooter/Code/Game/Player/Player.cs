@@ -2,7 +2,6 @@
 
 namespace CryEngine.Game
 {
-	[EntityClass("Player", "Game", null, IconType.User)]
 	public class Player : EntityComponent
 	{
 		public enum GeometrySlots
@@ -194,7 +193,7 @@ namespace CryEngine.Game
 
 			if(!enterGame)
 			{
-				_playerView.Deinitialize();
+				_playerView?.Deinitialize();
 				_playerView = null;
 			}
 		}
@@ -358,9 +357,9 @@ namespace CryEngine.Game
 		{
 			base.OnUpdate(frameTime);
 
-			_playerView?.UpdateView(frameTime, _rotationMovement);
+			var cameraRotation = _playerView == null ? Camera.Rotation : _playerView.UpdateView(frameTime, _rotationMovement);
 			_rotationMovement = Vector2.Zero;
-			_animations?.UpdateAnimationState(frameTime);
+			_animations?.UpdateAnimationState(frameTime, cameraRotation);
 
 			UpdateMovement(frameTime);
 		}

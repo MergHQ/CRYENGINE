@@ -35,7 +35,7 @@ namespace CryEngine.Game
 			_walkTag = animator.FindTag(WalkTagName);
 		}
 
-		public void UpdateAnimationState(float frameTime)
+		public void UpdateAnimationState(float frameTime, Quaternion cameraRotation)
 		{
 			// Start updating the motion parameters used for blend spaces
 
@@ -45,12 +45,13 @@ namespace CryEngine.Game
 
 			if(physEntity == null)
 			{
+				Log.Warning<PlayerAnimations>("Entity is missing Physics!");
 				return;
 			}
 
 			// Update entity rotation as the player turns
 			// Start with getting the look orientation's yaw, pitch and roll
-			var flatOrientation = Camera.Rotation;
+			var flatOrientation = cameraRotation;
 			var ypr = flatOrientation.YawPitchRoll;
 
 			// We only want to affect Z-axis rotation, zero pitch and roll
@@ -79,11 +80,6 @@ namespace CryEngine.Game
 			// The calculated turnAngle is the angle difference of one frame, but we need it as an angle per second value.
 			// But if the frameTime is 0 (because the game is paused for example) we don't want to divide by zero.
 			turnAngle = frameTime > 0.0f ? turnAngle / frameTime : 0.0f;
-
-			/*if(Math.Abs(turnAngle) < 0.00001f)
-			{
-				turnAngle = 0;
-			}*/
 
 			// Set the travel speed based on the physics velocity magnitude
 			// Keep in mind that the maximum number for motion parameters is 10.

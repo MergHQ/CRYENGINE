@@ -5,10 +5,10 @@
 #include <QAbstractItemModel>
 #include <QWidget>
 #include <CrySerialization/Forward.h>
-#include <Schematyc/Script/IScriptRegistry.h>
-#include <Schematyc/Utils/EnumFlags.h>
-#include <Schematyc/Utils/ScopedConnection.h>
-#include <Schematyc/Utils/Signal.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Utils/EnumFlags.h>
+#include <CrySchematyc/Utils/ScopedConnection.h>
+#include <CrySchematyc/Utils/Signal.h>
 
 #include <ProxyModels/ItemModelAttribute.h>
 
@@ -151,7 +151,7 @@ class CScriptBrowserModel : public QAbstractItemModel
 {
 	Q_OBJECT
 
-	typedef std::unordered_map<SGUID, CScriptBrowserItem*> ItemsByGUID;
+	typedef std::unordered_map<CryGUID, CScriptBrowserItem*> ItemsByGUID;
 	typedef std::map<string, CScriptBrowserItem*>          ItemsByFileName;
 
 public:
@@ -191,7 +191,7 @@ public:
 	CScriptBrowserItem*        ItemFromIndex(const QModelIndex& index) const;
 
 	CScriptBrowserItem*        GetRootItem();
-	CScriptBrowserItem*        GetItemByGUID(const SGUID& guid);
+	CScriptBrowserItem*        GetItemByGUID(const CryGUID& guid);
 	CScriptBrowserItem*        GetItemByFileName(const char* szFileName);
 
 	Schematyc::IScriptElement* GetRootElement();
@@ -256,7 +256,7 @@ public:
 	~CScriptBrowserWidget();
 
 	void                                 InitLayout();
-	void                                 SelectItem(const SGUID& guid);
+	void                                 SelectItem(const CryGUID& guid);
 	CryGUID                              GetSelectedItemGUID() const;
 	bool                                 SetModel(CScriptBrowserModel* pModel);
 	void                                 Serialize(Serialization::IArchive& archive);

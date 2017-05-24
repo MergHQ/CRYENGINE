@@ -7,24 +7,12 @@ namespace CryEngine.Game
 	/// </summary>
 	public class MyPlugin : ICryEnginePlugin
 	{
-		public void Initialize()
+		public override void Initialize()
 		{
 			Game.Initialize();
 		}
 
-		public void OnLevelLoaded()
-		{			
-		}
-
-		public void OnGameStart()
-		{			
-		}
-
-		public void OnGameStop()
-		{
-		}
-
-		public void Shutdown()
+		public override void Shutdown()
 		{
 			Game.Shutdown();
 		}

@@ -3,30 +3,30 @@
 #include "StdAfx.h"
 #include "ScriptBrowserUtils.h"
 
-#include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/Env/Elements/IEnvAction.h>
-#include <Schematyc/Env/Elements/IEnvClass.h>
-#include <Schematyc/Env/Elements/IEnvComponent.h>
-#include <Schematyc/Env/Elements/IEnvDataType.h>
-#include <Schematyc/Env/Elements/IEnvSignal.h>
-#include <Schematyc/Script/IScript.h>
-#include <Schematyc/Script/IScriptRegistry.h>
-#include <Schematyc/Script/IScriptView.h>
-#include <Schematyc/Script/Elements/IScriptActionInstance.h>
-#include <Schematyc/Script/Elements/IScriptClass.h>
-#include <Schematyc/Script/Elements/IScriptEnum.h>
-#include <Schematyc/Script/Elements/IScriptInterface.h>
-#include <Schematyc/Script/Elements/IScriptInterfaceFunction.h>
-#include <Schematyc/Script/Elements/IScriptInterfaceImpl.h>
-#include <Schematyc/Script/Elements/IScriptInterfaceTask.h>
-#include <Schematyc/Script/Elements/IScriptModule.h>
-#include <Schematyc/Script/Elements/IScriptSignal.h>
-#include <Schematyc/Script/Elements/IScriptSignalReceiver.h>
-#include <Schematyc/Script/Elements/IScriptState.h>
-#include <Schematyc/Script/Elements/IScriptStateMachine.h>
-#include <Schematyc/Script/Elements/IScriptStruct.h>
-#include <Schematyc/Script/Elements/IScriptTimer.h>
-#include <Schematyc/Utils/StackString.h>
+#include <CrySchematyc/FundamentalTypes.h>
+#include <CrySchematyc/Env/Elements/IEnvAction.h>
+#include <CrySchematyc/Env/Elements/IEnvClass.h>
+#include <CrySchematyc/Env/Elements/IEnvComponent.h>
+#include <CrySchematyc/Env/Elements/IEnvDataType.h>
+#include <CrySchematyc/Env/Elements/IEnvSignal.h>
+#include <CrySchematyc/Script/IScript.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Script/IScriptView.h>
+#include <CrySchematyc/Script/Elements/IScriptActionInstance.h>
+#include <CrySchematyc/Script/Elements/IScriptClass.h>
+#include <CrySchematyc/Script/Elements/IScriptEnum.h>
+#include <CrySchematyc/Script/Elements/IScriptInterface.h>
+#include <CrySchematyc/Script/Elements/IScriptInterfaceFunction.h>
+#include <CrySchematyc/Script/Elements/IScriptInterfaceImpl.h>
+#include <CrySchematyc/Script/Elements/IScriptInterfaceTask.h>
+#include <CrySchematyc/Script/Elements/IScriptModule.h>
+#include <CrySchematyc/Script/Elements/IScriptSignal.h>
+#include <CrySchematyc/Script/Elements/IScriptSignalReceiver.h>
+#include <CrySchematyc/Script/Elements/IScriptState.h>
+#include <CrySchematyc/Script/Elements/IScriptStateMachine.h>
+#include <CrySchematyc/Script/Elements/IScriptStruct.h>
+#include <CrySchematyc/Script/Elements/IScriptTimer.h>
+#include <CrySchematyc/Utils/StackString.h>
 
 #include <Controls/QuestionDialog.h>
 #include "PluginUtils.h"
@@ -86,7 +86,7 @@ typedef std::vector<SBase> Bases;
 
 struct SSignalReceiver
 {
-	inline SSignalReceiver(EScriptSignalReceiverType _type, const SGUID& _guid, const char* _szLabel, const char* szDescription)
+	inline SSignalReceiver(EScriptSignalReceiverType _type, const CryGUID& _guid, const char* _szLabel, const char* szDescription)
 		: type(_type)
 		, guid(_guid)
 		, label(_szLabel)
@@ -94,7 +94,7 @@ struct SSignalReceiver
 	{}
 
 	EScriptSignalReceiverType type;
-	SGUID                     guid;
+	CryGUID                     guid;
 	string                    label;
 	string                    description;
 };
@@ -103,7 +103,7 @@ struct SInterface
 {
 	inline SInterface() {}
 
-	inline SInterface(EDomain _domain, const SGUID& _guid, const char* _szName, const char* _szFullName, const char* szDescription)
+	inline SInterface(EDomain _domain, const CryGUID& _guid, const char* _szName, const char* _szFullName, const char* szDescription)
 		: domain(_domain)
 		, guid(_guid)
 		, name(_szName)
@@ -112,7 +112,7 @@ struct SInterface
 	{}
 
 	EDomain domain;
-	SGUID   guid;
+	CryGUID   guid;
 	string  name;
 	string  fullName;
 	string  description;
@@ -122,14 +122,14 @@ struct SComponent
 {
 	inline SComponent() {}
 
-	inline SComponent(const SGUID& _typeGUID, const char* _szName, const char* _szFullName, const char* szDescription)
+	inline SComponent(const CryGUID& _typeGUID, const char* _szName, const char* _szFullName, const char* szDescription)
 		: typeGUID(_typeGUID)
 		, name(_szName)
 		, fullName(_szFullName)
 		, description(szDescription)
 	{}
 
-	SGUID  typeGUID;
+	CryGUID  typeGUID;
 	string name;
 	string fullName;
 	string description;
@@ -139,7 +139,7 @@ struct SAction
 {
 	inline SAction() {}
 
-	inline SAction(const SGUID& _guid, const SGUID& _componentInstanceGUID, const char* _szName, const char* _szFullName, const char* _szDescription)
+	inline SAction(const CryGUID& _guid, const CryGUID& _componentInstanceGUID, const char* _szName, const char* _szFullName, const char* _szDescription)
 		: guid(_guid)
 		, componentInstanceGUID(_componentInstanceGUID)
 		, name(_szName)
@@ -147,8 +147,8 @@ struct SAction
 		, description(_szDescription)
 	{}
 
-	SGUID  guid;
-	SGUID  componentInstanceGUID;
+	CryGUID  guid;
+	CryGUID  componentInstanceGUID;
 	string name;
 	string fullName;
 	string description;
@@ -518,7 +518,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 		}
 	case EScriptElementType::ComponentInstance:
 		{
-			const SGUID guid = DynamicCast<IScriptComponentInstance>(scriptElement).GetTypeGUID();
+			const CryGUID guid = DynamicCast<IScriptComponentInstance>(scriptElement).GetTypeGUID();
 			const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(guid);
 			if (pEnvComponent)
 			{
@@ -532,7 +532,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 		}
 	case EScriptElementType::ActionInstance:
 		{
-			const SGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
+			const CryGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
 			const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(guid);
 			if (pEnvAction)
 			{
@@ -578,12 +578,12 @@ void MakeScriptElementNameUnique(CStackString& name, IScriptElement* pScope)
 
 void FindReferences(const IScriptElement& element)
 {
-	const SGUID& guid = element.GetGUID();
+	const CryGUID& guid = element.GetGUID();
 	const IScriptElement* pCurrentScriptElement = nullptr;
 	std::vector<const IScriptElement*> references;
 	references.reserve(100);
 
-	auto enumerateDependencies = [&guid, &pCurrentScriptElement, &references](const SGUID& referenceGUID)
+	auto enumerateDependencies = [&guid, &pCurrentScriptElement, &references](const CryGUID& referenceGUID)
 	{
 		if (referenceGUID == guid)
 		{
@@ -594,11 +594,11 @@ void FindReferences(const IScriptElement& element)
 	auto visitScriptElement = [&pCurrentScriptElement, &enumerateDependencies](const IScriptElement& scriptElement) -> EVisitStatus
 	{
 		pCurrentScriptElement = &scriptElement;
-		scriptElement.EnumerateDependencies(ScriptDependencyEnumerator::FromLambda(enumerateDependencies), EScriptDependencyType::Reference);
+		scriptElement.EnumerateDependencies(enumerateDependencies, EScriptDependencyType::Reference);
 		return EVisitStatus::Recurse;
 	};
 
-	gEnv->pSchematyc->GetScriptRegistry().GetRootElement().VisitChildren(ScriptElementConstVisitor::FromLambda(visitScriptElement));
+	gEnv->pSchematyc->GetScriptRegistry().GetRootElement().VisitChildren(visitScriptElement);
 
 	IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(element.GetGUID());
 
@@ -673,7 +673,7 @@ IScriptStateMachine* AddScriptStateMachine(IScriptElement* pScope)
 {
 	CStackString name = "NewStateMachine";
 	MakeScriptElementNameUnique(name, pScope);
-	return gEnv->pSchematyc->GetScriptRegistry().AddStateMachine(name.c_str(), EScriptStateMachineLifetime::Persistent, SGUID(), SGUID(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddStateMachine(name.c_str(), EScriptStateMachineLifetime::Persistent, CryGUID(), CryGUID(), pScope);
 }
 
 IScriptState* AddScriptState(IScriptElement* pScope)
@@ -687,7 +687,7 @@ IScriptVariable* AddScriptVariable(IScriptElement* pScope)
 {
 	CStackString name = "NewVariable";
 	MakeScriptElementNameUnique(name, pScope);
-	return gEnv->pSchematyc->GetScriptRegistry().AddVariable(name.c_str(), SElementId(), SGUID(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddVariable(name.c_str(), SElementId(), CryGUID(), pScope);
 }
 
 IScriptTimer* AddScriptTimer(IScriptElement* pScope)
@@ -701,7 +701,7 @@ IScriptSignalReceiver* AddScriptSignalReceiver(IScriptElement* pScope)
 {
 	CStackString name = "NewSignalReceiver";
 	MakeScriptElementNameUnique(name, pScope);
-	return gEnv->pSchematyc->GetScriptRegistry().AddSignalReceiver(name.c_str(), EScriptSignalReceiverType::Universal, SGUID(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddSignalReceiver(name.c_str(), EScriptSignalReceiverType::Universal, CryGUID(), pScope);
 }
 
 IScriptInterfaceImpl* AddScriptInterfaceImpl(IScriptElement* pScope, const QPoint* pPosition)

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Schematyc/ICore.h"
-#include "Schematyc/Utils/Assert.h"
+#include "CrySchematyc/ICore.h"
+#include "CrySchematyc/Utils/Assert.h"
 #include "CrySystem/ISystem.h"
 
 namespace Schematyc
@@ -56,7 +56,7 @@ public:
 
 	// ICore
 	virtual void                     SetGUIDGenerator(const GUIDGenerator& guidGenerator) override;
-	virtual SGUID                    CreateGUID() const override;
+	virtual CryGUID                    CreateGUID() const override;
 
 	virtual const char*              GetRootFolder() const override;
 	virtual const char*              GetScriptsFolder() const override;
@@ -75,7 +75,7 @@ public:
 
 	virtual IValidatorArchivePtr     CreateValidatorArchive(const SValidatorArchiveParams& params) const override;
 	virtual ISerializationContextPtr CreateSerializationContext(const SSerializationContextParams& params) const override;
-	virtual IScriptViewPtr           CreateScriptView(const SGUID& scopeGUID) const override;
+	virtual IScriptViewPtr           CreateScriptView(const CryGUID& scopeGUID) const override;
 
 	virtual IObject*                 CreateObject(const SObjectParams& params) override;
 	virtual IObject*                 GetObject(ObjectId objectId) override;

@@ -7,19 +7,19 @@ namespace CryEngine.NativeInternals
     internal static class Entity
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        extern public static void RegisterComponent(Type type, ulong guidHipart, ulong guidLopart);
+        extern public static void RegisterComponent(Type type, ulong guidHipart, ulong guidLopart, string name, string category, string description, string icon);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern public static void RegisterEntityWithDefaultComponent(string name, string category, string helper, string icon, bool hide, Type type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        extern public static object GetComponent(IntPtr entityPtr, Type type);
+        extern public static object GetComponent(IntPtr entityPtr, ulong guidHipart, ulong guidLopart);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        extern public static object GetOrCreateComponent(IntPtr entityPtr, Type type);
+        extern public static object GetOrCreateComponent(IntPtr entityPtr, ulong guidHipart, ulong guidLopart);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
-        extern public static object AddComponent(IntPtr entityPtr, Type type);
+        extern public static object AddComponent(IntPtr entityPtr, ulong guidHipart, ulong guidLopart);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern public static void RegisterComponentProperty(Type type, PropertyInfo propertyInfo, string name, string label, string description, EntityPropertyType propertyType);

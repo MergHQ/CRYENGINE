@@ -22,31 +22,31 @@
 #include <QAdvancedTreeView.h>
 #include <AssetSystem/AssetEditor.h>
 
-#include <Schematyc/Compiler/ICompiler.h>
-#include <Schematyc/Env/IEnvRegistry.h>
-#include <Schematyc/Env/Elements/IEnvClass.h>
-#include <Schematyc/Script/IScript.h>
-#include <Schematyc/Script/IScriptRegistry.h>
-#include <Schematyc/Script/Elements/IScriptActionInstance.h>
-#include <Schematyc/Script/Elements/IScriptClass.h>
-#include <Schematyc/Script/Elements/IScriptComponentInstance.h>
-#include <Schematyc/Script/Elements/IScriptEnum.h>
-#include <Schematyc/Script/Elements/IScriptFunction.h>
-#include <Schematyc/Script/Elements/IScriptInterface.h>
-#include <Schematyc/Script/Elements/IScriptInterfaceFunction.h>
-#include <Schematyc/Script/Elements/IScriptInterfaceImpl.h>
-#include <Schematyc/Script/Elements/IScriptInterfaceTask.h>
-#include <Schematyc/Script/Elements/IScriptModule.h>
-#include <Schematyc/Script/Elements/IScriptSignal.h>
-#include <Schematyc/Script/Elements/IScriptSignalReceiver.h>
-#include <Schematyc/Script/Elements/IScriptState.h>
-#include <Schematyc/Script/Elements/IScriptStateMachine.h>
-#include <Schematyc/Script/Elements/IScriptStruct.h>
-#include <Schematyc/Script/Elements/IScriptTimer.h>
-#include <Schematyc/Script/Elements/IScriptVariable.h>
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
-#include <Schematyc/SerializationUtils/IValidatorArchive.h>
-#include <Schematyc/Utils/StackString.h>
+#include <CrySchematyc/Compiler/ICompiler.h>
+#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <CrySchematyc/Env/Elements/IEnvClass.h>
+#include <CrySchematyc/Script/IScript.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Script/Elements/IScriptActionInstance.h>
+#include <CrySchematyc/Script/Elements/IScriptClass.h>
+#include <CrySchematyc/Script/Elements/IScriptComponentInstance.h>
+#include <CrySchematyc/Script/Elements/IScriptEnum.h>
+#include <CrySchematyc/Script/Elements/IScriptFunction.h>
+#include <CrySchematyc/Script/Elements/IScriptInterface.h>
+#include <CrySchematyc/Script/Elements/IScriptInterfaceFunction.h>
+#include <CrySchematyc/Script/Elements/IScriptInterfaceImpl.h>
+#include <CrySchematyc/Script/Elements/IScriptInterfaceTask.h>
+#include <CrySchematyc/Script/Elements/IScriptModule.h>
+#include <CrySchematyc/Script/Elements/IScriptSignal.h>
+#include <CrySchematyc/Script/Elements/IScriptSignalReceiver.h>
+#include <CrySchematyc/Script/Elements/IScriptState.h>
+#include <CrySchematyc/Script/Elements/IScriptStateMachine.h>
+#include <CrySchematyc/Script/Elements/IScriptStruct.h>
+#include <CrySchematyc/Script/Elements/IScriptTimer.h>
+#include <CrySchematyc/Script/Elements/IScriptVariable.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/SerializationUtils/IValidatorArchive.h>
+#include <CrySchematyc/Utils/StackString.h>
 #include <Serialization/Qt.h>
 
 #include "PluginUtils.h"
@@ -384,7 +384,7 @@ void CScriptBrowserItem::Validate()
 					m_tooltip.append("\n");
 				}
 			};
-			pArchive->Validate(Validator::FromLambda(collectWarnings));
+			pArchive->Validate(collectWarnings);
 
 			flags.Add(EScriptBrowserItemFlags::ContainsWarnings);
 		}
@@ -404,7 +404,7 @@ void CScriptBrowserItem::Validate()
 					m_tooltip.append("\n");
 				}
 			};
-			pArchive->Validate(Validator::FromLambda(collectErrors));
+			pArchive->Validate(collectErrors);
 
 			flags.Add(EScriptBrowserItemFlags::ContainsErrors);
 		}
@@ -733,7 +733,7 @@ CScriptBrowserItem* CScriptBrowserModel::GetRootItem()
 	return m_pRootItem.get();
 }
 
-CScriptBrowserItem* CScriptBrowserModel::GetItemByGUID(const SGUID& guid)
+CScriptBrowserItem* CScriptBrowserModel::GetItemByGUID(const CryGUID& guid)
 {
 	ItemsByGUID::iterator itItem = m_itemsByGUID.find(guid);
 	return itItem != m_itemsByGUID.end() ? itItem->second : nullptr;
@@ -787,7 +787,7 @@ void CScriptBrowserModel::Populate()
 			}
 			return EVisitStatus::Recurse;
 		};
-		pScripElement->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
+		pScripElement->VisitChildren(visitScriptElement);
 
 		// Base
 		// TODO: Schematyc doesn't support to list components, variables etc. of derived classes yet.
@@ -804,7 +804,7 @@ void CScriptBrowserModel::Populate()
 
 		    return EVisitStatus::Recurse;
 		   };
-		   pItemBase->GetScriptElement()->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElementBase));
+		   pItemBase->GetScriptElement()->VisitChildren(visitScriptElementBase);
 		   }*/
 		// ~TODO
 	}
@@ -1246,7 +1246,7 @@ void CScriptBrowserWidget::InitLayout()
 	m_pMainLayout->addWidget(m_pTreeView, 1);
 }
 
-void CScriptBrowserWidget::SelectItem(const SGUID& guid)
+void CScriptBrowserWidget::SelectItem(const CryGUID& guid)
 {
 	if (m_pModel)
 	{

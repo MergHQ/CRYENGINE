@@ -13,11 +13,11 @@
 #include <CrySystem/ICryLink.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <QAdvancedPropertyTree.h>
-#include <Schematyc/Script/IScriptRegistry.h>
-#include <Schematyc/Services/ILog.h>
-#include <Schematyc/Services/ILogRecorder.h>
-#include <Schematyc/Services/LogStreamName.h>
-#include <Schematyc/Utils/StackString.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Services/ILog.h>
+#include <CrySchematyc/Services/ILogRecorder.h>
+#include <CrySchematyc/Services/LogStreamName.h>
+#include <CrySchematyc/Utils/StackString.h>
 
 #include "PluginUtils.h"
 

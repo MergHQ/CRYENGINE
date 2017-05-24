@@ -103,6 +103,10 @@ template<class F> struct Vec2_tpl
 	ILINE F operator*(const Vec2_tpl& v) const { return NV::Dot(v); }
 	using NV::operator*;
 
+	ILINE bool operator==(const Vec2_tpl<F>& o) const { return NV::IsEqual(o); }
+	ILINE bool operator!=(const Vec2_tpl<F>& o) const { return !NV::IsEqual(o); }
+
+
 	//! Linear-Interpolation between Vec3 (lerp).
 	//! Example:
 	//!   Vec3 r=Vec3::CreateLerp( p, q, 0.345f );

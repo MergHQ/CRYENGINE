@@ -28,6 +28,7 @@ public:
 	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                           {}
 	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                    {}
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                     {}
+	virtual EntityId GetEntityId() const override { return INVALID_ENTITYID; }
 };
 
 class CSystem final : public IAudioSystem

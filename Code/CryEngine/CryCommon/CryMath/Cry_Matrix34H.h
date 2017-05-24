@@ -99,6 +99,11 @@ template<typename F> struct Matrix34H
 		return mat().Determinant();
 	}
 
+	ILINE F GetUniformScale() const
+	{
+		return mat().GetUniformScale();
+	}
+
 	Matrix34H& Invert(const Matrix34H& m)
 	{
 		V tmp;

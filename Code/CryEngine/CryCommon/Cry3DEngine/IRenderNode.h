@@ -1001,9 +1001,6 @@ struct IRopeRenderNode : public IRenderNode
 	virtual void                                SetParams(const SRopeParams& params) = 0;
 	virtual const IRopeRenderNode::SRopeParams& GetParams() const = 0;
 
-	virtual void                                SetEntityOwner(uint32 nEntityId) = 0;
-	virtual uint32                              GetEntityOwner() const = 0;
-
 	virtual void                                SetPoints(const Vec3* pPoints, int nCount) = 0;
 	virtual int                                 GetPointsCount() const = 0;
 	virtual const Vec3*                         GetPoints() const = 0;

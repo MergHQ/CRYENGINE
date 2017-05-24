@@ -114,6 +114,7 @@ public:
 	virtual int      GetNumInputPorts() const           { return m_nInputs; }
 	virtual int      GetNumOutputPorts() const          { return m_nOutputs; }
 	virtual EntityId GetCurrentForwardingEntity() const { return m_forwardingEntityID; }
+	virtual TFlowInputData* GetInputData() const        { return m_pInputData.get(); };
 	//////////////////////////////////////////////////////////////////////////
 	// ~IFlowNodeData
 	//////////////////////////////////////////////////////////////////////////
@@ -162,6 +163,7 @@ private:
 	uint16 m_typeId : TYPE_BITS;
 	uint16 m_hasEntity : 1; // note: subsequent bitfields need to have the same variable type to be packed together in msvc (it's implementation defined ch.9.6)
 	uint16 m_failedGettingFlowgraphForwardingEntity : 1;
+	CryGUID m_entityGuid;
 
 	void              DoGetConfiguration(SFlowNodeConfig& config) const;
 	bool              ForwardingActivated(IFlowNode::SActivationInfo*, IFlowNode::EFlowEvent);

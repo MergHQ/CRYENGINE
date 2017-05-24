@@ -52,7 +52,5 @@ struct IMonoEngineModule : public Cry::IDefaultModule
 
 	virtual void						RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& managedInterface) = 0;
 
-	virtual void                        RegisterManagedActor(const char* className) = 0;
-
 	virtual void                        RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator) = 0;
 };

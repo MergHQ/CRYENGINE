@@ -5,7 +5,7 @@
 #include <NodeGraph/ICryGraphEditor.h>
 #include <Controls/DictionaryWidget.h>
 
-#include <Schematyc/Script/IScriptGraph.h>
+#include <CrySchematyc/Script/IScriptGraph.h>
 
 #include <ProxyModels/ItemModelAttribute.h>
 

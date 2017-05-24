@@ -2591,7 +2591,7 @@ ForceObjUpdate:
 			dcl.ownerInfo.pRenderNode = rec.itype == PHYS_FOREIGN_ID_ENTITY ?
 			                            (pEntityTrg->GetRenderInterface())->GetRenderNode() : pBrush;
 			dcl.ownerInfo.nRenderNodeSlotId = 0;
-			dcl.ownerInfo.nRenderNodeSlotSubObjectId = GetSlotIdx(epc.partid[1], 1);
+			dcl.ownerInfo.nRenderNodeSlotSubObjectId = EntityPhysicsUtils::GetSlotIdx(epc.partid[1], 1);
 			dcl.vPos = epc.pt;
 			dcl.vNormal = epc.n;
 			dcl.vHitDirection = epc.n; // epc.vloc[0].normalized();
@@ -4107,7 +4107,7 @@ int CActionGame::OnRemovePhysicalEntityPartsLogged(const EventPhys* pEvent)
 	if (pREvent->iForeignData == PHYS_FOREIGN_ID_ENTITY && (pEntity = (IEntity*)pREvent->pForeignData))
 	{
 		int idOffs = pREvent->idOffs;
-		if (pREvent->idOffs >= PARTID_LINKED)
+		if (pREvent->idOffs >= EntityPhysicsUtils::PARTID_LINKED)
 			pEntity = pEntity->UnmapAttachedChild(idOffs);
 		if (pEntity && (pStatObj = pEntity->GetStatObj(ENTITY_SLOT_ACTUAL)) && pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND)
 		{

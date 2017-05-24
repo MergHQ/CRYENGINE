@@ -6,9 +6,9 @@
 #include "ScriptBrowserUtils.h"
 #include "ObjectModel.h"
 
-#include <Schematyc/Script/Elements/IScriptStateMachine.h>
-#include <Schematyc/Script/Elements/IScriptState.h>
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/Script/Elements/IScriptStateMachine.h>
+#include <CrySchematyc/Script/Elements/IScriptState.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
 
 #include <StateItem.h>
 
@@ -134,7 +134,7 @@ bool CStateMachineItem::RemoveState()
 	return false;
 }
 
-Schematyc::SGUID CStateMachineItem::GetGUID() const
+CryGUID CStateMachineItem::GetGUID() const
 {
 	return m_scriptStateMachine.GetGUID();
 }

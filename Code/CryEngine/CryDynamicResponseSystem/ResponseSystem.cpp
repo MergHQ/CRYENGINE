@@ -367,7 +367,7 @@ void CResponseSystem::OnSystemEvent(ESystemEvent event, UINT_PTR pWparam, UINT_P
 
 			if (gEnv->pSchematyc)
 			{
-				const Schematyc::SGUID guid = "981168e2-f16d-46b7-bfaa-e11966204d47"_schematyc_guid;
+				const CryGUID guid = "981168e2-f16d-46b7-bfaa-e11966204d47"_cry_guid;
 				const char* szName = "DynamicResponseSystem";
 				const char* szDescription = "Dynamic response system";
 				Schematyc::EnvPackageCallback callback = SCHEMATYC_MEMBER_DELEGATE(&CResponseSystem::RegisterSchematycEnvPackage, *this);

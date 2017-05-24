@@ -83,7 +83,7 @@ void CSensorSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 	{
 	case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
 		{
-			const Schematyc::SGUID guid = "e5f633a6-472d-470c-a78d-86bd2383092d"_schematyc_guid;
+			const CryGUID guid = "e5f633a6-472d-470c-a78d-86bd2383092d"_cry_guid;
 			const char* szName = "SensorSystem";
 			const char* szDescription = "Sensor system";
 			Schematyc::EnvPackageCallback callback = SCHEMATYC_MEMBER_DELEGATE(&CSensorSystem::RegisterSchematycEnvPackage, *this);

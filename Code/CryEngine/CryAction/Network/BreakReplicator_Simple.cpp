@@ -881,7 +881,7 @@ void PlaneBreak::SerializeWith(CBitArray& array)
 
 	CBreakReplicator::SerialisePosition(array, m_be.pt, CNetworkCVars::Get().BreakMaxWorldSize, CBreakReplicator::m_accurateWorldPosNumBits);
 
-	m_be.partid[1] = GetSlotIdx(m_be.partid[1], 0) << 8 | GetSlotIdx(m_be.partid[1], 1);
+	m_be.partid[1] = EntityPhysicsUtils::GetSlotIdx(m_be.partid[1], 0) << 8 | EntityPhysicsUtils::GetSlotIdx(m_be.partid[1], 1);
 
 	SerializeDirHelper(array, m_be.n, 8, 8);
 	array.Serialize(m_be.idmat[0], -1, 254);
@@ -891,7 +891,7 @@ void PlaneBreak::SerializeWith(CBitArray& array)
 	array.Serialize(m_be.mass[0], 1.f, 1000.f, 8);
 	SerializeDirVector(array, m_be.vloc[0], 20.f, 8, 8, 8);
 
-	m_be.partid[1] = (m_be.partid[1] & 0xff) + (m_be.partid[1] >> 8) * PARTID_MAX_SLOTS;
+	m_be.partid[1] = (m_be.partid[1] & 0xff) + (m_be.partid[1] >> 8) * EntityPhysicsUtils::PARTID_MAX_SLOTS;
 
 	// Looks like we dont need these
 	m_be.partid[0] = 0;

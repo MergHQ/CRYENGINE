@@ -9,6 +9,8 @@
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 
+#include <CryEntitySystem/IEntitySystem.h>
+
 namespace CryAudio
 {
 ///////////////////////////////////////////////////////////////////////////
@@ -255,12 +257,16 @@ bool CSystem::Initialize()
 		m_bSystemInitialized = true;
 	}
 
+	AddRequestListener(&CSystem::OnCallback, nullptr, ESystemEvents::TriggerExecuted | ESystemEvents::TriggerFinished);
+
 	return m_bSystemInitialized;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CSystem::Release()
 {
+	RemoveRequestListener(&CSystem::OnCallback, nullptr);
+
 	SAudioManagerRequestData<EAudioManagerRequestType::ReleaseAudioImpl> releaseImplData;
 	CAudioRequest releaseImplRequest(&releaseImplData);
 	releaseImplRequest.flags = ERequestFlags::ExecuteBlocking;
@@ -849,6 +855,32 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 	return bSuccess;
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
+{
+	if (gEnv->mMainThreadId == CryGetCurrentThreadId())
+	{
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pRequestInfo->pAudioObject->GetEntityId());
+		if (pEntity)
+		{
+			SEntityEvent eventData;  //converting audio events to entityEvents
+			eventData.nParam[0] = reinterpret_cast<intptr_t>(pRequestInfo);
+			if (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerExecuted)
+			{
+				eventData.event = ENTITY_EVENT_AUDIO_TRIGGER_STARTED;
+				pEntity->SendEvent(eventData);
+			}
+
+			//if the trigger failed to start or has finished, we (also) send ENTITY_EVENT_AUDIO_TRIGGER_ENDED
+			if (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerFinished
+				|| (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerExecuted && pRequestInfo->requestResult != CryAudio::ERequestResult::Success))
+			{
+				eventData.event = ENTITY_EVENT_AUDIO_TRIGGER_ENDED;
+				pEntity->SendEvent(eventData);
+			}
+		}
+	}
+}
 //////////////////////////////////////////////////////////////////////////
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 void CSystem::DrawAudioDebugData()

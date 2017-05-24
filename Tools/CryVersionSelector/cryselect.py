@@ -132,7 +132,7 @@ def cmd_install (args):
 			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
 			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % ScriptPath),			
 			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
-			(True, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
+			(False, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
 		)
 	else:
 		ScriptPath= os.path.abspath (__file__)
@@ -148,7 +148,7 @@ def cmd_install (args):
 			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),		
 			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
-			(True, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
+			(False, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
 		)
 
 	#---

@@ -29,6 +29,7 @@ CATLAudioObject::CATLAudioObject()
 	, m_previousVelocity(0.0f)
 	, m_propagationProcessor(m_attributes.transformation)
 	, m_occlusionFadeOutDistance(0.0f)
+	, m_entityId(INVALID_ENTITYID)
 {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -787,12 +788,13 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition)
+void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition, EntityId entityId)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_name = szName;
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
+	m_entityId = entityId;
 	m_pImplData = pImplData;
 	m_propagationProcessor.Init(this, audioListenerPosition);
 }

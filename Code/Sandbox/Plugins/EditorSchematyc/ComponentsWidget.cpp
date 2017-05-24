@@ -13,11 +13,13 @@
 #include <QtUtil.h>
 #include <QFilteringPanel.h>
 #include <QAdvancedPropertyTree.h>
+#include <QCollapsibleFrame.h>
 #include <ProxyModels/AttributeFilterProxyModel.h>
 #include <Controls/QPopupWidget.h>
 #include <Controls/DictionaryWidget.h>
 #include <ICommandManager.h>
 #include <EditorFramework/BroadcastManager.h>
+#include <EditorFramework/Inspector.h>
 
 #include <QAbstractItemModel>
 #include <QStyledItemDelegate>
@@ -463,12 +465,14 @@ void CComponentsWidget::OnSelectionChanged(const QItemSelection& selected, const
 			{
 				CPropertiesWidget* pPropertiesWidget = nullptr /*new CPropertiesWidget(*pItem)*/;
 
-				auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
+				PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
 				{
-					return pPropertiesWidget;
-				};
-				PopulateInspectorEvent populateEvent(populateInspector, "Properties");
-				pBroadcastManager->Broadcast(populateEvent);
+					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
+					pInspectorWidget->SetWidget(pPropertiesWidget);
+					inspector.AddWidget(pInspectorWidget);
+				});
+
+				pBroadcastManager->Broadcast(popEvent);
 			}
 		}
 	}

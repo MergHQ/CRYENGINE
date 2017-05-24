@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 using CryEngine.Common;
 
 namespace CryEngine.Animations
@@ -10,17 +12,25 @@ namespace CryEngine.Animations
 	/// This interface contains methods for manipulating and querying an animated character
 	/// instance.
 	/// </summary>
-	public class Character
+	public sealed class Character
 	{
-		private readonly ICharacterInstance _nativeCharacter;
+		internal ICharacterInstance NativeHandle { get; private set; }
 
 		private IAttachmentManager _attachmentManager;
 
-		internal ICharacterInstance NativeHandle
+		/// <summary>
+		/// The scale at which animation play on this <see cref="Character"/> .
+		/// </summary>
+		/// <value>The playback scale.</value>
+		public float PlaybackScale
 		{
 			get
 			{
-				return _nativeCharacter;
+				return NativeHandle.GetPlaybackScale();
+			}
+			set
+			{
+				NativeHandle.SetPlaybackScale(value);
 			}
 		}
 
@@ -32,7 +42,7 @@ namespace CryEngine.Animations
 		{
 			get
 			{
-				return _nativeCharacter.HasVertexAnimation();
+				return NativeHandle.HasVertexAnimation();
 			}
 		}
 
@@ -44,7 +54,7 @@ namespace CryEngine.Animations
 		{
 			get
 			{
-				return _nativeCharacter.GetFilePath();
+				return NativeHandle.GetFilePath();
 			}
 		}
 
@@ -58,7 +68,7 @@ namespace CryEngine.Animations
 		{
 			get
 			{
-				return _nativeCharacter.GetISkeletonAnim();
+				return NativeHandle.GetISkeletonAnim();
 			}
 		}
 
@@ -72,7 +82,7 @@ namespace CryEngine.Animations
 		{
 			get
 			{
-				return _nativeCharacter.GetISkeletonPose();
+				return NativeHandle.GetISkeletonPose();
 			}
 		}
 
@@ -85,7 +95,7 @@ namespace CryEngine.Animations
 		{
 			get
 			{
-				return _nativeCharacter.GetFacialInstance();
+				return NativeHandle.GetFacialInstance();
 			}
 		}
 
@@ -95,14 +105,35 @@ namespace CryEngine.Animations
 			{
 				throw new ArgumentNullException(nameof(nativeCharacter));
 			}
-			_nativeCharacter = nativeCharacter;
+			NativeHandle = nativeCharacter;
 		}
 
+		/// <summary>
+		/// Set the <see cref="MotionParameterId"/> to the specified <paramref name="value"/>.
+		/// </summary>
+		/// <param name="id">The <see cref="MotionParameterId"/> that needs to be set.</param>
+		/// <param name="value">The value that will be set to the parameter.</param>
+		public void SetAnimationSkeletonParameter(MotionParameterId id, float value)
+		{
+			var skeleton = AnimationSkeleton;
+			if(skeleton == null)
+			{
+				throw new NullReferenceException(string.Format("The {0} of {1} is null!", nameof(AnimationSkeleton), nameof(Character)));
+			}
+
+			skeleton.SetDesiredMotionParam((EMotionParamID)id, value, 0);
+		}
+
+		/// <summary>
+		/// Get the <see cref="CharacterAttachment"/> with the specified <paramref name="name"/>
+		/// </summary>
+		/// <returns>The <see cref="CharacterAttachment"/> or null if no attachment was found.</returns>
+		/// <param name="name">Name of the required attachment.</param>
 		public CharacterAttachment GetAttachment(string name)
 		{
 			if(_attachmentManager == null)
 			{
-				_attachmentManager = _nativeCharacter.GetIAttachmentManager();
+				_attachmentManager = NativeHandle.GetIAttachmentManager();
 			}
 
 			var nativeAttachment = _attachmentManager.GetInterfaceByName(name);
@@ -111,6 +142,28 @@ namespace CryEngine.Animations
 				return null;
 			}
 			return new CharacterAttachment(nativeAttachment);
+		}
+
+		/// <summary>
+		/// Release this instance from both the managed and unmanaged side.
+		/// </summary>
+		public void Release()
+		{
+			var skeleton = NativeHandle.GetISkeletonAnim();
+			if(skeleton != null)
+			{
+				var values = Enum.GetValues(typeof(EMotionParamID)) as int[];
+				if(values != null)
+				{
+					foreach(var value in values)
+					{
+						skeleton.SetDesiredMotionParam((EMotionParamID)value, 0, 0);
+					}
+				}
+			}
+
+			NativeHandle?.Dispose();
+			// TODO Set self to disposed.
 		}
 	}
 }

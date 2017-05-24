@@ -1216,6 +1216,11 @@ bool CRenderer::EF_RenderEnvironmentCubeHDR (int size, Vec3& Pos, TArray<unsigne
 	return CTexture::RenderEnvironmentCMHDR(size, Pos, vecData);
 }
 
+bool CRenderer::WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName)
+{
+	return WriteTIF(pData, width, height, bytesPerChannel, numChannels, bFloat, szPreset, szFileName);
+}
+
 int CRenderer::EF_LoadLightmap (const char* name)
 {
 	CTexture* tp = (CTexture*)EF_LoadTexture(name, FT_DONT_STREAM | FT_STATE_CLAMP | FT_NOMIPS);
@@ -3766,10 +3771,10 @@ void S3DEngineCommon::UpdateRainOccInfo(int nThreadID)
 					IRenderNode* pRndNode = *it;
 					if (pRndNode)
 					{
-						const AABB& aabb                                 = pRndNode->GetBBox();
-						const Vec3  vDiag                                = aabb.max - aabb.min;
-						const float fSqrFlatRadius                       = Vec2(vDiag.x, vDiag.y).GetLength2();
-						const IRenderNode::RenderFlagsType nRndNodeFlags = pRndNode->GetRndFlags();
+						const AABB& aabb             = pRndNode->GetBBox();
+						const Vec3  vDiag            = aabb.max - aabb.min;
+						const float fSqrFlatRadius   = Vec2(vDiag.x, vDiag.y).GetLength2();
+						auto nRndNodeFlags = pRndNode->GetRndFlags();
 						// TODO: rainoccluder should be the only flag tested
 						// (ie. enabled ONLY for small subset of geometry assets - means going through all assets affected by rain)
 						if ((fSqrFlatRadius < CRenderer::CV_r_rainOccluderSizeTreshold)

@@ -42,8 +42,10 @@ namespace UQS
 		const Schematyc::IEnvDataType* CSchematycEnvDataTypeFinder::FindEnvDataTypeByTypeName(const Schematyc::CTypeName& typeNameToSearchFor)
 		{
 			CSchematycEnvDataTypeFinder finder(typeNameToSearchFor);
-			Schematyc::EnvDataTypeConstVisitor visitor = Schematyc::EnvDataTypeConstVisitor::FromMemberFunction<CSchematycEnvDataTypeFinder, &CSchematycEnvDataTypeFinder::OnVisitEnvDataType>(finder);
+			auto visitor = SCHEMATYC_MEMBER_DELEGATE(
+				&CSchematycEnvDataTypeFinder::OnVisitEnvDataType, finder);
 			gEnv->pSchematyc->GetEnvRegistry().VisitDataTypes(visitor);
+
 			return finder.m_pFoundDataType;
 		}
 
@@ -56,7 +58,7 @@ namespace UQS
 		std::vector<const Schematyc::IEnvDataType*> CSchematycEnvDataTypeCollector::CollectAllEnvDataTypes()
 		{
 			CSchematycEnvDataTypeCollector collector;
-			Schematyc::EnvDataTypeConstVisitor visitor = Schematyc::EnvDataTypeConstVisitor::FromMemberFunction<CSchematycEnvDataTypeCollector, &CSchematycEnvDataTypeCollector::OnVisitEnvDataType>(collector);
+			Schematyc::EnvDataTypeConstVisitor visitor = SCHEMATYC_MEMBER_DELEGATE(&CSchematycEnvDataTypeCollector::OnVisitEnvDataType,collector);
 			gEnv->pSchematyc->GetEnvRegistry().VisitDataTypes(visitor);
 			return std::move(collector.m_allEnvDataTypes);
 		}
@@ -359,7 +361,7 @@ namespace UQS
 			static const uint64 partialGUID = (uint64)0x1337babe1337babe;
 
 			SetName(stack_string().Format("AddParam [%s]", envDataType.GetName()));
-			SetGUID(Schematyc::SGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
+			SetGUID(CryGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
 
 			// inputs
 			AddInputParamByTypeDesc("Name", 'name', Schematyc::GetTypeDesc<Schematyc::CSharedString>());
@@ -421,7 +423,7 @@ namespace UQS
 			static const uint64 partialGUID = (uint64)0xb19b00b5b19b00b5;
 
 			SetName(stack_string().Format("GetResult [%s]", envDataType.GetName()));
-			SetGUID(Schematyc::SGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
+			SetGUID(CryGUID::Construct(envDataType.GetGUID().hipart, partialGUID));
 
 			// inputs
 			AddInputParamByTypeDesc("QueryID", 'quid', Schematyc::GetTypeDesc<CSchematycUqsComponent::SQueryIdWrapper>());
@@ -661,7 +663,7 @@ namespace UQS
 
 		void CSchematycUqsComponent::SQueryIdWrapper::ReflectType(Schematyc::CTypeDesc<SQueryIdWrapper>& desc)
 		{
-			desc.SetGUID("b0c4a5a2-8a6e-4a4f-b7c1-90bfb9d1898b"_schematyc_guid);
+			desc.SetGUID("b0c4a5a2-8a6e-4a4f-b7c1-90bfb9d1898b"_cry_guid);
 			desc.SetLabel("QueryID");
 			desc.SetDescription("Handle of a running query.");
 			desc.SetToStringOperator<&ToString>();
@@ -679,7 +681,7 @@ namespace UQS
 			scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(SQueryIdWrapper));
 
 			{
-				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&SchematycFunction_Equal, "ae7a5b0a-e3f4-4cd7-b01a-bbad7c7fe11e"_schematyc_guid, "Equal");
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&SchematycFunction_Equal, "ae7a5b0a-e3f4-4cd7-b01a-bbad7c7fe11e"_cry_guid, "Equal");
 				pFunction->BindOutput(0, 'resu', "Result");
 				pFunction->BindInput(1, 'qid1', "QueryID 1");
 				pFunction->BindInput(2, 'qid2', "QueryID 2");
@@ -714,7 +716,7 @@ namespace UQS
 
 		void CSchematycUqsComponent::SQueryFinishedSignal::ReflectType(Schematyc::CTypeDesc<SQueryFinishedSignal>& desc)
 		{
-			desc.SetGUID("babd0a8b-2f84-4019-b6f5-0758ac62ec56"_schematyc_guid);
+			desc.SetGUID("babd0a8b-2f84-4019-b6f5-0758ac62ec56"_cry_guid);
 			desc.SetLabel("QueryFinished");
 			desc.SetDescription("Sent when a query finishes without having run into an exception.");
 			desc.AddMember(&SQueryFinishedSignal::queryId, 'quid', "queryId", "QueryID", nullptr);
@@ -743,7 +745,7 @@ namespace UQS
 
 		void CSchematycUqsComponent::SQueryExceptionSignal::ReflectType(Schematyc::CTypeDesc<SQueryExceptionSignal>& desc)
 		{
-			desc.SetGUID("5d1ea803-63bb-436d-8044-252a150b916f"_schematyc_guid);
+			desc.SetGUID("5d1ea803-63bb-436d-8044-252a150b916f"_cry_guid);
 			desc.SetLabel("QueryException");
 			desc.SetDescription("Sent when a query runs into an excpetion before finishing.");
 			desc.AddMember(&SQueryExceptionSignal::queryId, 'quid', "queryId", "QueryID", nullptr);
@@ -794,7 +796,7 @@ namespace UQS
 			}
 		}
 
-		void CSchematycUqsComponent::Shutdown()
+		void CSchematycUqsComponent::OnShutDown()
 		{
 			CancelRunningQueriesAndClearFinishedOnes();
 		}
@@ -818,16 +820,16 @@ namespace UQS
 
 		void CSchematycUqsComponent::ReflectType(Schematyc::CTypeDesc<CSchematycUqsComponent>& desc)
 		{
-			desc.SetGUID("1d00010d-5b91-4b56-8cdd-52c8d966acb8"_schematyc_guid);
+			desc.SetGUID("1d00010d-5b91-4b56-8cdd-52c8d966acb8"_cry_guid);
 			desc.SetLabel("UQS");
 			desc.SetDescription("Universal Query System component");
 			//desc.SetIcon("icons:schematyc/entity_audio_component.ico");
-			desc.SetComponentFlags({ Schematyc::EComponentFlags::Singleton });
+			desc.SetComponentFlags({ EEntityComponentFlags::Singleton });
 		}
 
 		void CSchematycUqsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 		{
-			Schematyc::CEnvRegistrationScope entityScope = registrar.Scope(Schematyc::g_entityClassGUID);
+			Schematyc::CEnvRegistrationScope entityScope = registrar.Scope(IEntity::GetEntityScopeGUID());
 			{
 				Schematyc::CEnvRegistrationScope componentScope = entityScope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CSchematycUqsComponent));
 				{
@@ -855,7 +857,7 @@ namespace UQS
 						//
 
 						{
-							std::shared_ptr<Schematyc::CEnvFunction> pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycUqsComponent::SchematycFunction_BeginQuery, "5ebcdda0-31f5-4e2d-afef-63fc0368cf9c"_schematyc_guid, "BeginQuery");
+							std::shared_ptr<Schematyc::CEnvFunction> pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycUqsComponent::SchematycFunction_BeginQuery, "5ebcdda0-31f5-4e2d-afef-63fc0368cf9c"_cry_guid, "BeginQuery");
 							pFunction->SetDescription("Prepares for starting a query");
 							pFunction->BindInput(1, 'qbpn', "QueryBlueprint", "Name of the query blueprint that shall be started.");
 							pFunction->BindInput(2, 'qunm', "QuerierName", "For debugging purpose: name of the querier to identify more easily in the query history.");
@@ -867,7 +869,7 @@ namespace UQS
 						//
 
 						{
-							std::shared_ptr<Schematyc::CEnvFunction> pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycUqsComponent::SchematycFunction_StartQuery, "f7205181-41cb-478d-a773-0d33a3805a99"_schematyc_guid, "StartQuery");
+							std::shared_ptr<Schematyc::CEnvFunction> pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycUqsComponent::SchematycFunction_StartQuery, "f7205181-41cb-478d-a773-0d33a3805a99"_cry_guid, "StartQuery");
 							pFunction->SetDescription("Starts the query that was previously prepared");
 							pFunction->BindOutput(1, 'quid', "QueryID");
 							componentScope.Register(pFunction);
@@ -974,7 +976,8 @@ namespace UQS
 				const SQueryIdWrapper queryID(pair.first);
 				const int32 resultCount = (int32)pair.second.pQueryResultSet->GetResultCount();
 				const SQueryFinishedSignal signal(queryID, resultCount);
-				OutputSignal(signal);
+				if (GetEntity()->GetSchematycObject())
+					GetEntity()->GetSchematycObject()->ProcessSignal(signal);
 			}
 
 			// fire signals for all queries that finished with an exception
@@ -983,7 +986,8 @@ namespace UQS
 				const SQueryIdWrapper queryID(pair.first);
 				const Schematyc::CSharedString exceptionMessage(pair.second.c_str());
 				const SQueryExceptionSignal signal(queryID, exceptionMessage);
-				OutputSignal(signal);
+				if (GetEntity()->GetSchematycObject())
+					GetEntity()->GetSchematycObject()->ProcessSignal(signal);
 			}
 
 			m_succeededQueries.clear();

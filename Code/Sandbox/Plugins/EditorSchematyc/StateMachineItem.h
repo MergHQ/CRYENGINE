@@ -48,7 +48,7 @@ public:
 	CStateItem*      CreateState();
 	bool             RemoveState();
 
-	Schematyc::SGUID GetGUID() const;
+	CryGUID GetGUID() const;
 
 protected:
 	void LoadFromScriptElement();

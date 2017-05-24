@@ -4,31 +4,30 @@
 #include "EnvRegistry.h"
 
 #include <CrySerialization/IArchiveHost.h>
-#include <Schematyc/Env/Elements/IEnvAction.h>
-#include <Schematyc/Env/Elements/IEnvClass.h>
-#include <Schematyc/Env/Elements/IEnvComponent.h>
-#include <Schematyc/Env/Elements/IEnvDataType.h>
-#include <Schematyc/Env/Elements/IEnvInterface.h>
-#include <Schematyc/Env/Elements/IEnvFunction.h>
-#include <Schematyc/Env/Elements/IEnvModule.h>
-#include <Schematyc/Env/Elements/IEnvSignal.h>
-#include <Schematyc/Reflection/ComponentDesc.h>
-#include <Schematyc/Utils/Assert.h>
-#include <Schematyc/Utils/StackString.h>
+#include <CrySchematyc/Env/Elements/IEnvAction.h>
+#include <CrySchematyc/Env/Elements/IEnvClass.h>
+#include <CrySchematyc/Env/Elements/IEnvComponent.h>
+#include <CrySchematyc/Env/Elements/IEnvDataType.h>
+#include <CrySchematyc/Env/Elements/IEnvInterface.h>
+#include <CrySchematyc/Env/Elements/IEnvFunction.h>
+#include <CrySchematyc/Env/Elements/IEnvModule.h>
+#include <CrySchematyc/Env/Elements/IEnvSignal.h>
+#include <CrySchematyc/Utils/Assert.h>
+#include <CrySchematyc/Utils/StackString.h>
 
 namespace Schematyc
 {
 struct SEnvPackageElement
 {
-	inline SEnvPackageElement(const SGUID& _elementGUID, const IEnvElementPtr& _pElement, const SGUID& _scopeGUID)
+	inline SEnvPackageElement(const CryGUID& _elementGUID, const IEnvElementPtr& _pElement, const CryGUID& _scopeGUID)
 		: elementGUID(_elementGUID)
 		, pElement(_pElement)
 		, scopeGUID(_scopeGUID)
 	{}
 
-	SGUID          elementGUID;
+	CryGUID          elementGUID;
 	IEnvElementPtr pElement;
-	SGUID          scopeGUID;
+	CryGUID          scopeGUID;
 };
 
 class CEnvPackageElementRegistrar : public IEnvElementRegistrar, public IEnvRegistrar
@@ -41,7 +40,7 @@ public:
 
 	// IEnvElementRegistrar
 
-	virtual void Register(const IEnvElementPtr& pElement, const SGUID& scopeGUID) override
+	virtual void Register(const IEnvElementPtr& pElement, const CryGUID& scopeGUID) override
 	{
 		SCHEMATYC_CORE_ASSERT(pElement);
 		if (pElement)
@@ -56,10 +55,10 @@ public:
 
 	virtual CEnvRegistrationScope RootScope() override
 	{
-		return CEnvRegistrationScope(*this, SGUID());
+		return CEnvRegistrationScope(*this, CryGUID());
 	}
 
-	virtual CEnvRegistrationScope Scope(const SGUID& scopeGUID) override
+	virtual CEnvRegistrationScope Scope(const CryGUID& scopeGUID) override
 	{
 		return CEnvRegistrationScope(*this, scopeGUID);
 	}
@@ -72,7 +71,7 @@ private:
 };
 
 CEnvRoot::CEnvRoot()
-	: CEnvElementBase(SGUID(), "Root", SCHEMATYC_SOURCE_FILE_INFO)
+	: CEnvElementBase(CryGUID(), "Root", SCHEMATYC_SOURCE_FILE_INFO)
 {}
 
 bool CEnvRoot::IsValidScope(IEnvElement& scope) const
@@ -88,11 +87,11 @@ bool CEnvRegistry::RegisterPackage(IEnvPackagePtr&& pPackage)
 		return false;
 	}
 
-	const SGUID guid = pPackage->GetGUID();
+	const CryGUID guid = pPackage->GetGUID();
 	EnvPackageCallback callback = pPackage->GetCallback();
 
-	SCHEMATYC_CORE_ASSERT(!GUID::IsEmpty(guid) && !callback.IsEmpty());
-	if (GUID::IsEmpty(guid) || callback.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(!GUID::IsEmpty(guid) && callback);
+	if (GUID::IsEmpty(guid) || !callback)
 	{
 		return false;
 	}
@@ -125,7 +124,7 @@ bool CEnvRegistry::RegisterPackage(IEnvPackagePtr&& pPackage)
 	}
 }
 
-const IEnvPackage* CEnvRegistry::GetPackage(const SGUID& guid) const
+const IEnvPackage* CEnvRegistry::GetPackage(const CryGUID& guid) const
 {
 	Packages::const_iterator itPackage = m_packages.find(guid);
 	return itPackage != m_packages.end() ? itPackage->second.get() : nullptr;
@@ -133,8 +132,8 @@ const IEnvPackage* CEnvRegistry::GetPackage(const SGUID& guid) const
 
 void CEnvRegistry::VisitPackages(const EnvPackageConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Packages::value_type& package : m_packages)
 		{
@@ -151,13 +150,13 @@ const IEnvElement& CEnvRegistry::GetRoot() const
 	return m_root;
 }
 
-const IEnvElement* CEnvRegistry::GetElement(const SGUID& guid) const
+const IEnvElement* CEnvRegistry::GetElement(const CryGUID& guid) const
 {
 	Elements::const_iterator itElement = m_elements.find(guid);
 	return itElement != m_elements.end() ? itElement->second.get() : nullptr;
 }
 
-const IEnvModule* CEnvRegistry::GetModule(const SGUID& guid) const
+const IEnvModule* CEnvRegistry::GetModule(const CryGUID& guid) const
 {
 	Modules::const_iterator itModule = m_modules.find(guid);
 	return itModule != m_modules.end() ? itModule->second.get() : nullptr;
@@ -165,8 +164,8 @@ const IEnvModule* CEnvRegistry::GetModule(const SGUID& guid) const
 
 void CEnvRegistry::VisitModules(const EnvModuleConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Modules::value_type& module : m_modules)
 		{
@@ -178,7 +177,7 @@ void CEnvRegistry::VisitModules(const EnvModuleConstVisitor& visitor) const
 	}
 }
 
-const IEnvDataType* CEnvRegistry::GetDataType(const SGUID& guid) const
+const IEnvDataType* CEnvRegistry::GetDataType(const CryGUID& guid) const
 {
 	DataTypes::const_iterator itDataType = m_dataTypes.find(guid);
 	return itDataType != m_dataTypes.end() ? itDataType->second.get() : nullptr;
@@ -186,8 +185,8 @@ const IEnvDataType* CEnvRegistry::GetDataType(const SGUID& guid) const
 
 void CEnvRegistry::VisitDataTypes(const EnvDataTypeConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const DataTypes::value_type& dataType : m_dataTypes)
 		{
@@ -199,7 +198,7 @@ void CEnvRegistry::VisitDataTypes(const EnvDataTypeConstVisitor& visitor) const
 	}
 }
 
-const IEnvSignal* CEnvRegistry::GetSignal(const SGUID& guid) const
+const IEnvSignal* CEnvRegistry::GetSignal(const CryGUID& guid) const
 {
 	Signals::const_iterator itSignal = m_signals.find(guid);
 	return itSignal != m_signals.end() ? itSignal->second.get() : nullptr;
@@ -207,8 +206,8 @@ const IEnvSignal* CEnvRegistry::GetSignal(const SGUID& guid) const
 
 void CEnvRegistry::VisitSignals(const EnvSignalConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Signals::value_type& signal : m_signals)
 		{
@@ -220,7 +219,7 @@ void CEnvRegistry::VisitSignals(const EnvSignalConstVisitor& visitor) const
 	}
 }
 
-const IEnvFunction* CEnvRegistry::GetFunction(const SGUID& guid) const
+const IEnvFunction* CEnvRegistry::GetFunction(const CryGUID& guid) const
 {
 	Functions::const_iterator itFunction = m_functions.find(guid);
 	return itFunction != m_functions.end() ? itFunction->second.get() : nullptr;
@@ -228,8 +227,8 @@ const IEnvFunction* CEnvRegistry::GetFunction(const SGUID& guid) const
 
 void CEnvRegistry::VisitFunctions(const EnvFunctionConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Functions::value_type& function : m_functions)
 		{
@@ -241,7 +240,7 @@ void CEnvRegistry::VisitFunctions(const EnvFunctionConstVisitor& visitor) const
 	}
 }
 
-const IEnvClass* CEnvRegistry::GetClass(const SGUID& guid) const
+const IEnvClass* CEnvRegistry::GetClass(const CryGUID& guid) const
 {
 	Classes::const_iterator itClass = m_classes.find(guid);
 	return itClass != m_classes.end() ? itClass->second.get() : nullptr;
@@ -249,8 +248,8 @@ const IEnvClass* CEnvRegistry::GetClass(const SGUID& guid) const
 
 void CEnvRegistry::VisitClasses(const EnvClassConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Classes::value_type& _class : m_classes)
 		{
@@ -262,7 +261,7 @@ void CEnvRegistry::VisitClasses(const EnvClassConstVisitor& visitor) const
 	}
 }
 
-const IEnvInterface* CEnvRegistry::GetInterface(const SGUID& guid) const
+const IEnvInterface* CEnvRegistry::GetInterface(const CryGUID& guid) const
 {
 	Interfaces::const_iterator itInterface = m_interfaces.find(guid);
 	return itInterface != m_interfaces.end() ? itInterface->second.get() : nullptr;
@@ -270,8 +269,8 @@ const IEnvInterface* CEnvRegistry::GetInterface(const SGUID& guid) const
 
 void CEnvRegistry::VisitInterfaces(const EnvInterfaceConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Interfaces::value_type& envInterface : m_interfaces)
 		{
@@ -283,7 +282,7 @@ void CEnvRegistry::VisitInterfaces(const EnvInterfaceConstVisitor& visitor) cons
 	}
 }
 
-const IEnvInterfaceFunction* CEnvRegistry::GetInterfaceFunction(const SGUID& guid) const
+const IEnvInterfaceFunction* CEnvRegistry::GetInterfaceFunction(const CryGUID& guid) const
 {
 	InterfaceFunctions::const_iterator itFunction = m_interfaceFunctions.find(guid);
 	return itFunction != m_interfaceFunctions.end() ? itFunction->second.get() : nullptr;
@@ -291,8 +290,8 @@ const IEnvInterfaceFunction* CEnvRegistry::GetInterfaceFunction(const SGUID& gui
 
 void CEnvRegistry::VisitInterfaceFunctions(const EnvInterfaceFunctionConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const InterfaceFunctions::value_type& function : m_interfaceFunctions)
 		{
@@ -304,7 +303,7 @@ void CEnvRegistry::VisitInterfaceFunctions(const EnvInterfaceFunctionConstVisito
 	}
 }
 
-const IEnvComponent* CEnvRegistry::GetComponent(const SGUID& guid) const
+const IEnvComponent* CEnvRegistry::GetComponent(const CryGUID& guid) const
 {
 	Components::const_iterator itComponent = m_components.find(guid);
 	return itComponent != m_components.end() ? itComponent->second.get() : nullptr;
@@ -312,8 +311,8 @@ const IEnvComponent* CEnvRegistry::GetComponent(const SGUID& guid) const
 
 void CEnvRegistry::VisitComponents(const EnvComponentConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Components::value_type& component : m_components)
 		{
@@ -325,7 +324,7 @@ void CEnvRegistry::VisitComponents(const EnvComponentConstVisitor& visitor) cons
 	}
 }
 
-const IEnvAction* CEnvRegistry::GetAction(const SGUID& guid) const
+const IEnvAction* CEnvRegistry::GetAction(const CryGUID& guid) const
 {
 	Actions::const_iterator itAction = m_actions.find(guid);
 	return itAction != m_actions.end() ? itAction->second.get() : nullptr;
@@ -333,8 +332,8 @@ const IEnvAction* CEnvRegistry::GetAction(const SGUID& guid) const
 
 void CEnvRegistry::VisitActions(const EnvActionConstVisitor& visitor) const
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (!visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (visitor)
 	{
 		for (const Actions::value_type& action : m_actions)
 		{
@@ -346,12 +345,12 @@ void CEnvRegistry::VisitActions(const EnvActionConstVisitor& visitor) const
 	}
 }
 
-void CEnvRegistry::BlacklistElement(const SGUID& guid)
+void CEnvRegistry::BlacklistElement(const CryGUID& guid)
 {
 	m_blacklist.insert(guid);
 }
 
-bool CEnvRegistry::IsBlacklistedElement(const SGUID& guid) const
+bool CEnvRegistry::IsBlacklistedElement(const CryGUID& guid) const
 {
 	return m_blacklist.find(guid) != m_blacklist.end();
 }
@@ -463,7 +462,7 @@ bool CEnvRegistry::RegisterPackageElements(const EnvPackageElements& packageElem
 			{
 				return strcmp(childElement.GetName(), szElementName) ? EVisitStatus::Continue : EVisitStatus::Stop;
 			};
-			if (pScope->VisitChildren(EnvElementConstVisitor::FromLambda(matchElementName)) == EVisitStatus::Stop)
+			if (pScope->VisitChildren(matchElementName) == EVisitStatus::Stop)
 			{
 				SCHEMATYC_CORE_WARNING("Duplicate element name: element = %s, scope = %s", szElementName, pScope->GetName());
 			}
@@ -555,20 +554,24 @@ bool CEnvRegistry::ValidateComponentDependencies() const
 
 	for (const Components::value_type& component : m_components)
 	{
-		const CComponentDesc& componentDesc = component.second->GetDesc();
-		for (uint32 dependencyIdx = 0, dependencyCount = componentDesc.GetDependencyCount(); dependencyIdx < dependencyCount; ++dependencyIdx)
+		const CEntityComponentClassDesc& componentDesc = component.second->GetDesc();
+		for(const SEntityComponentRequirements& interaction : componentDesc.GetComponentInteractions())
 		{
-			const SGUID dependencyGUID = componentDesc.GetDependency(dependencyIdx)->guid;
-			const IEnvComponent* pDependencyComponent = GetComponent(dependencyGUID);
+			if (interaction.type != SEntityComponentRequirements::EType::SoftDependency && interaction.type != SEntityComponentRequirements::EType::HardDependency)
+			{
+				continue;
+			}
+
+			const IEnvComponent* pDependencyComponent = GetComponent(interaction.guid);
 			if (pDependencyComponent)
 			{
-				const CComponentDesc& dependencyComponentDesc = pDependencyComponent->GetDesc();
-				if (!dependencyComponentDesc.GetComponentFlags().Check(EComponentFlags::Singleton))
+				const CEntityComponentClassDesc& dependencyComponentDesc = pDependencyComponent->GetDesc();
+				if (!dependencyComponentDesc.GetComponentFlags().Check(IEntityComponent::EFlags::Singleton))
 				{
 					SCHEMATYC_CORE_CRITICAL_ERROR("Non-singleton component detected as dependency: component = %s, dependency = %s", component.second->GetName(), pDependencyComponent->GetName());
 					bError = true;
 				}
-				if (dependencyComponentDesc.IsDependency(component.first))
+				if (dependencyComponentDesc.DependsOn(component.first))
 				{
 					SCHEMATYC_CORE_CRITICAL_ERROR("Circular dependency detected between components: component = %s, dependency = %s", component.second->GetName(), pDependencyComponent->GetName());
 					bError = true;
@@ -577,7 +580,7 @@ bool CEnvRegistry::ValidateComponentDependencies() const
 			else
 			{
 				CStackString temp;
-				GUID::ToString(temp, dependencyGUID);
+				GUID::ToString(temp, interaction.guid);
 				SCHEMATYC_CORE_CRITICAL_ERROR("Unable to resolve component dependency: component = %s, dependency = %s", component.second->GetName(), temp.c_str());
 				bError = true;
 			}
@@ -587,7 +590,7 @@ bool CEnvRegistry::ValidateComponentDependencies() const
 	return !bError;
 }
 
-IEnvElement* CEnvRegistry::GetElement(const SGUID& guid)
+IEnvElement* CEnvRegistry::GetElement(const CryGUID& guid)
 {
 	Elements::iterator itElement = m_elements.find(guid);
 	return itElement != m_elements.end() ? itElement->second.get() : nullptr;

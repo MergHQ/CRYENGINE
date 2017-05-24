@@ -4,6 +4,7 @@
 
 #include <CryPhysics/IPhysics.h>
 #include <CryAudio/IAudioSystem.h>
+#include "ATLEntities.h"
 
 namespace CryAudio
 {

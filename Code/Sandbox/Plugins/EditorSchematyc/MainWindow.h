@@ -12,7 +12,7 @@
 
 #include <AssetSystem/AssetEditor.h>
 
-#include <Schematyc/Utils/ScopedConnection.h>
+#include <CrySchematyc/Utils/ScopedConnection.h>
 
 #include "ObjectModel.h"
 
@@ -69,7 +69,7 @@ public:
 	//~IEditorNotifyListener
 
 	void    Serialize(Serialization::IArchive& archive);
-	void    Show(const Schematyc::SGUID& elementGUID, const Schematyc::SGUID& detailGUID = Schematyc::SGUID());
+	void    Show(const CryGUID& elementGUID, const CryGUID& detailGUID = CryGUID());
 
 	bool    SaveUndo(XmlNodeRef& output) const;
 	bool    RestoreUndo(const XmlNodeRef& input);

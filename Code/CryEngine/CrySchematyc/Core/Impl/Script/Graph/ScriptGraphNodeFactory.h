@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Schematyc/Script/IScriptGraph.h>
+#include <CrySchematyc/Script/IScriptGraph.h>
 
 namespace Schematyc
 {
@@ -13,8 +13,8 @@ namespace Schematyc
 	{
 		virtual ~IScriptGraphNodeCreator() {}
 
-		virtual SGUID GetTypeGUID() const = 0;
-		virtual IScriptGraphNodePtr CreateNode(const SGUID& guid) = 0;
+		virtual CryGUID GetTypeGUID() const = 0;
+		virtual IScriptGraphNodePtr CreateNode(const CryGUID& guid) = 0;
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) = 0;
 	};
 
@@ -25,13 +25,13 @@ namespace Schematyc
 	public:
 
 		bool RegisterCreator(const IScriptGraphNodeCreatorPtr& pCreator);
-		IScriptGraphNodeCreator* GetCreator(const SGUID& typeGUID);
-		IScriptGraphNodePtr CreateNode(const SGUID& typeGUID, const SGUID& guid = SGUID());
+		IScriptGraphNodeCreator* GetCreator(const CryGUID& typeGUID);
+		IScriptGraphNodePtr CreateNode(const CryGUID& typeGUID, const CryGUID& guid = CryGUID());
 		void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph);
 
 	private:
 
-		typedef std::unordered_map<SGUID, IScriptGraphNodeCreatorPtr> Creators;
+		typedef std::unordered_map<CryGUID, IScriptGraphNodeCreatorPtr> Creators;
 
 		Creators m_creators;
 	};

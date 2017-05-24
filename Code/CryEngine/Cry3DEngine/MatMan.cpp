@@ -177,7 +177,9 @@ void CMatMan::DelayedMaterialDeletion()
 
 	while (!m_DelayedDeletionMtls[nID].empty())
 	{
-		Unregister(m_DelayedDeletionMtls[nID].back());
+		CMatInfo* ptr = m_DelayedDeletionMtls[nID].back();
+		ptr->ShutDown();
+		Unregister(ptr);
 		m_DelayedDeletionMtls[nID].pop_back();
 	}
 
@@ -202,7 +204,7 @@ void CMatMan::ForceDelayedMaterialDeletion()
 		const int nListIndex = (m_nDelayedDeleteID + 1 + i) % MATERIAL_DELETION_DELAY;
 		while (!m_DelayedDeletionMtls[nListIndex].empty())
 		{
-			CMatInfo* ptr = m_DelayedDeletionMtls[nListIndex].back().get();
+			CMatInfo* ptr = m_DelayedDeletionMtls[nListIndex].back();
 			ptr->ShutDown();
 			Unregister(ptr);
 			m_DelayedDeletionMtls[nListIndex].pop_back();

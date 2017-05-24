@@ -2149,7 +2149,7 @@ void CTimeDemoRecorder::OnEvent(IEntity* pEntity, SEntityEvent& event)
 	{
 		// Record entity event for this frame.
 		EntityGUID guid = pEntity->GetGuid();
-		if (!guid)
+		if (guid.IsNull())
 			return;
 
 		// Record entity event for this frame.
@@ -2247,7 +2247,7 @@ void CTimeDemoRecorder::SaveAllEntitiesState()
 	while (pEntity = pEntityIter->Next())
 	{
 		EntityGUID guid = pEntity->GetGuid();
-		if (guid)
+		if (!guid.IsNull())
 		{
 			EntityEventRecord rec;
 			memset(&rec, 0, sizeof(rec));

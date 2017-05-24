@@ -2718,7 +2718,7 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 					}
 				}
 
-				const ColorB color = pPipeUser->IsPaused() ? Col_Grey : white;
+				const ColorB color = pPipeUser->IsPaused() ? ColorB(Col_Grey) : white;
 
 				dc->Draw2dLabel(x, y, fontSize, color, false, "%s", text.c_str());
 				y += fontHeight;
@@ -2727,7 +2727,7 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 			// Goal Op
 			if (enabledStats & GoalOp)
 			{
-				const ColorB color = pPipeUser->IsPaused() ? Col_Grey : white;
+				const ColorB color = pPipeUser->IsPaused() ? ColorB(Col_Grey) : white;
 
 				if (pPipeUser->m_lastExecutedGoalop != eGO_LAST)
 					dc->Draw2dLabel(x, y, fontSize, color, false, "%s", pPipe->GetGoalOpName(pPipeUser->m_lastExecutedGoalop));

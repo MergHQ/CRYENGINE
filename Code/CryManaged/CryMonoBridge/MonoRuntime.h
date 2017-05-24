@@ -87,7 +87,7 @@ class CMonoRuntime final
 
 public:
 	CMonoRuntime();
-	virtual ~CMonoRuntime() {}
+	virtual ~CMonoRuntime();
 
 	// IMonoEngineModule
 	virtual const char* GetName() const override { return "CryMonoBridge"; }
@@ -111,8 +111,6 @@ public:
 	virtual CMonoLibrary*               GetCryCoreLibrary() const override;
 
 	virtual void						RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& interface) override;
-
-	virtual void                        RegisterManagedActor(const char* className) override;
 
 	virtual void                        RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator) override;
 	// ~IMonoEngineModule

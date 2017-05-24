@@ -4,8 +4,7 @@
 #include <CryCore/BaseTypes.h>
 #include <CryNetwork/SerializeFwd.h>
 
-// #include <CryEntitySystem/IEntity.h>
-typedef unsigned int EntityId; // Copied from IEntity.h
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 #define UNSAFE_NUM_ASPECTS         32         // 8,16 or 32
 #define NUM_ASPECTS                (UNSAFE_NUM_ASPECTS)

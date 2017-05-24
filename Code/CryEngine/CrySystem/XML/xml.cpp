@@ -14,6 +14,7 @@
 //#define _CRT_SECURE_NO_DEPRECATE 1
 //#define _CRT_NONSTDC_NO_DEPRECATE
 #include <stdlib.h>
+#include <cctype>
 
 #pragma warning(disable : 6031) // Return value ignored: 'sscanf'
 
@@ -381,10 +382,9 @@ bool CXmlNode::getAttr(const char* key, CryGUID& value) const
 		value = CryGUIDHelper::FromString(svalue);
 		if ((value.hipart >> 32) == 0)
 		{
-			memset(&value, 0, sizeof(value));
-			// If bad GUID, use old guid system.
-			// Not sure if this will apply well in CryGUID!
-			value.hipart = (uint64)atoi(svalue) << 32;
+			value = CryGUID::Null();
+			// If bad GUID, use old 64bit guid system.
+			value.hipart = static_cast<uint64>(std::stoull(svalue,0,16));
 		}
 		return true;
 	}
@@ -447,7 +447,24 @@ bool CXmlNode::getAttr(const char* key, bool& value) const
 	const char* svalue = GetValue(key);
 	if (svalue)
 	{
-		value = atoi(svalue) != 0;
+		if (*svalue != 0)
+		{
+			if (std::isalpha(*svalue))
+			{
+				if (0 == strcmp(svalue,"true"))
+					value = true;
+				else
+					value = false;
+			}
+			else
+			{
+				value = atoi(svalue) != 0;
+			}
+		}
+		else
+		{
+			value = false;
+		}
 		return true;
 	}
 	return false;

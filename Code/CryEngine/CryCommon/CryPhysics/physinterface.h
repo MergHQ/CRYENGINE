@@ -178,7 +178,8 @@ struct IPhysRenderer
 	virtual ~IPhysRenderer(){}
 
 	//! Draws helpers for the specified geometry (idxColor is in 0..7 range).
-	virtual void DrawGeometry(IGeometry* pGeom, struct geom_world_data* pgwd, int idxColor = 0, int bSlowFadein = 0, const Vec3& sweepDir = Vec3(0)) = 0;
+	//! \param color Used to specify an explicit color, only used if idxColor is negative.
+	virtual void DrawGeometry(IGeometry* pGeom, struct geom_world_data* pgwd, int idxColor = 0, int bSlowFadein = 0, const Vec3& sweepDir = Vec3(0), const ColorF& color = ColorF(1, 1, 1, 1)) = 0;
 
 	//! Draws a line for wireframe helpers.
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, int idxColor = 0, int bSlowFadein = 0) = 0;

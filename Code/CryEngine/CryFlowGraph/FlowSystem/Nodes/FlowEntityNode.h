@@ -75,18 +75,12 @@ public:
 		}
 	}
 
-	// Return entity of this node.
-	ILINE IEntity* GetEntity() const
-	{
-		return gEnv->pEntitySystem->GetEntity(m_entityId);
-	}
-
 	// Return entityId of this node
 	EntityId GetEntityId(SActivationInfo* pActInfo) const
 	{
 		assert(pActInfo);
 
-		EntityId entityId = 0;
+		EntityId entityId = m_entityId;
 
 		if (pActInfo->pEntity)
 		{
@@ -94,6 +88,17 @@ public:
 		}
 
 		return entityId;
+	}
+
+	inline IEntity* GetEntity(SActivationInfo* pActInfo)
+	{
+		if (pActInfo->pEntity)
+			return pActInfo->pEntity;
+		if (m_entityId != INVALID_ENTITYID)
+		{
+			return gEnv->pEntitySystem->GetEntity(m_entityId);
+		}
+		return nullptr;
 	}
 
 	void RegisterEvent(EEntityEvent event)

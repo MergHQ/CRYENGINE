@@ -5,20 +5,20 @@
 
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ITimer.h>
-#include <Schematyc/ICore.h>
-#include <Schematyc/Script/IScriptElement.h>
-#include <Schematyc/SerializationUtils/SerializationToString.h>
-#include <Schematyc/Utils/Assert.h>
-#include <Schematyc/Utils/StringUtils.h>
+#include <CrySchematyc/ICore.h>
+#include <CrySchematyc/Script/IScriptElement.h>
+#include <CrySchematyc/SerializationUtils/SerializationToString.h>
+#include <CrySchematyc/Utils/Assert.h>
+#include <CrySchematyc/Utils/StringUtils.h>
 
-#include <Schematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
 
 #include "Script/ScriptSerializers.h"
 #include "Script/ScriptRegistry.h"
 
 namespace Schematyc
 {
-CScript::CScript(const SGUID& guid, const char* szFilePath)
+CScript::CScript(const CryGUID& guid, const char* szFilePath)
 	: m_guid(guid)
 	, m_filePath(szFilePath)
 	, m_timeStamp(gEnv->pTimer->GetAsyncTime())
@@ -34,7 +34,7 @@ CScript::CScript(const char* szFilePath)
 
 }
 
-SGUID CScript::GetGUID() const
+CryGUID CScript::GetGUID() const
 {
 	return m_guid;
 }
@@ -94,8 +94,8 @@ IScriptElement* CScript::GetRoot()
 
 EVisitStatus CScript::VisitElements(const ScriptElementVisitor& visitor)
 {
-	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
-	if (m_pRoot && !visitor.IsEmpty())
+	SCHEMATYC_CORE_ASSERT(visitor);
+	if (m_pRoot && visitor)
 	{
 		return VisitElementsRecursive(visitor, *m_pRoot);
 	}

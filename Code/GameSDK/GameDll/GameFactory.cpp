@@ -356,7 +356,7 @@ void InitGameFactory(IGameFramework *pFramework)
 
 	HIDE_FROM_EDITOR("CTFFlag");
 	IEntityClassRegistry::SEntityClassDesc stdClass;
-	stdClass.flags |= ECLF_INVISIBLE|ECLF_DEFAULT;
+	stdClass.flags |= ECLF_INVISIBLE;
 	stdClass.sName = "Corpse";
 	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
 

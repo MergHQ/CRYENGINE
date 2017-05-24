@@ -692,6 +692,9 @@ extern "C" {
 // Include array.
 #include <CryCore/Containers/CryArray.h>
 
+// Include static auto registration function
+#include <CryCore/StaticInstanceList.h>
+
 #ifdef _WINDOWS_
 	#error windows.h should not be included through any headers within platform.h
 #endif

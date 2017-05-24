@@ -9,13 +9,13 @@
 #include "ObjectModel.h"
 #include "GraphViewModel.h"
 
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
 
-#include <Schematyc/Script/Elements/IScriptFunction.h>
-#include <Schematyc/Script/Elements/IScriptConstructor.h>
+#include <CrySchematyc/Script/Elements/IScriptFunction.h>
+#include <CrySchematyc/Script/Elements/IScriptConstructor.h>
 
-#include <Schematyc/Script/IScriptGraph.h>
-#include <Schematyc/Script/IScriptExtension.h>
+#include <CrySchematyc/Script/IScriptGraph.h>
+#include <CrySchematyc/Script/IScriptExtension.h>
 
 #include <CryIcon.h>
 #include <QtUtil.h>
@@ -128,7 +128,7 @@ bool CGraphItem::AllowsRenaming() const
 	return allowsRenaming;
 }
 
-Schematyc::SGUID CGraphItem::GetGUID() const
+CryGUID CGraphItem::GetGUID() const
 {
 	return m_pScriptElement->GetGUID();
 }

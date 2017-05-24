@@ -56,6 +56,8 @@
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryNetwork/IRemoteCommand.h>
 
+#include "Schematyc/EntityObjectDebugger.h"
+
 #pragma warning(disable: 6255)  // _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead. (Note: _malloca requires _freea.)
 
 stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 16>* g_Alloc_EntitySlot = 0;
@@ -229,6 +231,8 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	{
 		REGISTER_STRING_CB("es_removeEntity", "", VF_CHEAT, "Removes an entity", OnRemoveEntityCVarChange);
 	}
+
+	m_pEntityObjectDebugger.reset(new CEntityObjectDebugger);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -565,12 +569,9 @@ IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, EMemStatContextFlags::MSF_Instance, "SpawnEntity %s", params.pClass ? params.pClass->GetName() : "WITH NO CLASS");
 
-	assert(params.pClass != NULL);   // Class must always be specified
-
-	if (!params.pClass)
+	if (params.pClass == nullptr)
 	{
-		CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, "Trying to spawn entity %s with no entity class. Spawning refused.", params.sName);
-		return NULL;
+		params.pClass = m_pClassRegistry->GetDefaultClass();
 	}
 
 	if (m_bLocked)
@@ -597,7 +598,7 @@ IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 	{
 		// get entity id and mark it
 		params.id = GenerateEntityId(params.bStaticEntityId);
-
+		
 		if (!params.id)
 		{
 			EntityWarning("CEntitySystem::SpawnEntity Failed, Can't spawn entity %s. ID range is full (internal error)", (const char*)params.sName);
@@ -631,7 +632,7 @@ IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 		// put it into the entity map
 		m_EntityArray[IdToHandle(params.id).GetIndex()] = pEntity;
 
-		if (params.guid)
+		if (!params.guid.IsNull())
 			RegisterEntityGuid(params.guid, params.id);
 
 		if (bAutoInit)
@@ -721,7 +722,7 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 		m_EntityArray[IdToHandle(pEntity->GetId()).GetIndex()] = 0;
 		m_EntitySaltBuffer.Remove(IdToHandle(pEntity->GetId()));
 
-		if (pEntity->m_guid)
+		if (!pEntity->m_guid.IsNull())
 			UnregisterEntityGuid(pEntity->m_guid);
 
 		delete pEntity;
@@ -745,6 +746,8 @@ void CEntitySystem::ClearEntityArray()
 		CRY_ASSERT_TRACE(m_EntityArray[dwI] == NULL, ("About to \"leak\" entity id %d (%s)", dwI, m_EntityArray[dwI]->GetName()));
 		m_EntityArray[dwI] = 0;
 	}
+
+	m_bSupportLegacy64bitGuids = false;
 
 	CheckInternalConsistency();
 }
@@ -1073,6 +1076,8 @@ void CEntitySystem::Update()
 
 	if (CVar::es_LayerDebugInfo > 0)
 		DebugDrawLayerInfo();
+
+	m_pEntityObjectDebugger->Update();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2031,6 +2036,17 @@ bool CEntitySystem::OnLoadLevel(const char* szLevelPath)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnLevelLoadStart()
 {
+	m_bLoadingLevel = true;
+}
+
+void CEntitySystem::OnLevelLoadEnd()
+{
+	m_bLoadingLevel = false;
+}
+
+bool CEntitySystem::IsLoadingLevel() const
+{
+	return m_bLoadingLevel;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2240,6 +2256,16 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::RegisterEntityGuid(const EntityGUID& guid, EntityId id)
 {
+	if (CVar::es_DebugFindEntity != 0)
+	{
+		CryLog("RegisterEntityGuid: %s, [%d]",guid.ToDebugString(),id );
+	}
+
+	if (guid.lopart == 0)
+	{
+		m_bSupportLegacy64bitGuids = true;
+	}
+
 	m_guidMap.insert(EntityGuidMap::value_type(guid, id));
 	CEntity* pCEntity = (CEntity*)GetEntity(id);
 	if (pCEntity)
@@ -2249,6 +2275,11 @@ void CEntitySystem::RegisterEntityGuid(const EntityGUID& guid, EntityId id)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::UnregisterEntityGuid(const EntityGUID& guid)
 {
+	if (CVar::es_DebugFindEntity != 0)
+	{
+		CryLog("UnregisterEntityGuid: %s", guid.ToDebugString());
+	}
+
 	m_guidMap.erase(guid);
 }
 
@@ -2257,19 +2288,34 @@ EntityId CEntitySystem::FindEntityByGuid(const EntityGUID& guid) const
 {
 	if (CVar::es_DebugFindEntity != 0)
 	{
-#if defined(_MSC_VER)
-		CryLog("FindEntityByGuid: %I64X", guid);
-#else
-		CryLog("FindEntityByGuid: %llX", (long long)guid);
-#endif
+		CryLog("FindEntityByGuid: %s", guid.ToDebugString());
 	}
-	return stl::find_in_map(m_guidMap, guid, 0);
-}
+	EntityId result = stl::find_in_map(m_guidMap, guid, INVALID_ENTITYID);
 
-//////////////////////////////////////////////////////////////////////////
-EntityId CEntitySystem::FindEntityByEditorGuid(const char* pGuid) const
-{
-	return(m_pEntityLoadManager->FindEntityByEditorGuid(pGuid));
+	if (result == INVALID_ENTITYID)
+	{
+		if (guid.hipart != 0 && guid.lopart == 0)
+		{
+			// A special case of Legacy 64bit GUID
+			for (auto &item : m_guidMap)
+			{
+				if (item.first.hipart == guid.hipart)
+				{
+					// GUID found even when not a full match
+					result = item.second;
+					break;
+				}
+			}
+		}
+		else if (m_bSupportLegacy64bitGuids)
+		{
+			// A special case when loading old not-reexported maps where Entity GUIDs where 64bit
+			CryGUID shortGuid = guid;
+			shortGuid.lopart = 0;
+			result = stl::find_in_map(m_guidMap, shortGuid, INVALID_ENTITYID);
+		}
+	}
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2633,9 +2679,9 @@ void CEntitySystem::LoadInternalState(IDataReadStream& reader)
 			CEntity* pEntity = m_EntityArray[i];
 			if (NULL != pEntity)
 			{
-				gEnv->pLog->LogAlways("ExistingEntity: '%s' '%s' (ID=%d, GUID=%llu, Flags=0x%X) %i",
+				gEnv->pLog->LogAlways("ExistingEntity: '%s' '%s' (ID=%d, GUID=%s, Flags=0x%X) %i",
 				                      pEntity->GetName(), pEntity->GetClass()->GetName(),
-				                      pEntity->GetId(), pEntity->GetGuid(),
+				                      pEntity->GetId(), pEntity->GetGuid().ToDebugString(),
 				                      pEntity->GetFlags(), pEntity->IsLoadedFromLevelFile());
 
 				currentEntities.insert(pEntity->GetGuid());
@@ -2650,7 +2696,7 @@ void CEntitySystem::LoadInternalState(IDataReadStream& reader)
 		for (uint32 i = 0; i < numEntities; ++i)
 		{
 			// load entity ID
-			const EntityGUID entityGUID = reader.ReadUint64();
+			const EntityGUID entityGUID = CryGUID::FromString(reader.ReadString().c_str());
 
 			// get existing entity with that ID
 			TEntitySet::iterator it = currentEntities.find(entityGUID);
@@ -2668,9 +2714,9 @@ void CEntitySystem::LoadInternalState(IDataReadStream& reader)
 				if (!pEntity->IsLoadedFromLevelFile())
 				{
 					// entity sill there :)
-					gEnv->pLog->LogAlways("Could not override entity '%s' '%s' (ID=%d, GUID=%llu, Flags=0x%X). Original entity is non from Level.",
+					gEnv->pLog->LogAlways("Could not override entity '%s' '%s' (ID=%d, GUID=%s, Flags=0x%X). Original entity is non from Level.",
 					                      pEntity->GetName(), pEntity->GetClass()->GetName(),
-					                      pEntity->GetId(), pEntity->GetGuid(), pEntity->GetFlags());
+					                      pEntity->GetId(), pEntity->GetGuid().ToDebugString(), pEntity->GetFlags());
 
 					reader.SkipString();
 					continue;
@@ -2720,8 +2766,8 @@ void CEntitySystem::LoadInternalState(IDataReadStream& reader)
 						continue;
 					}
 
-					gEnv->pLog->LogAlways("Deleting entity: '%s' '%s' (ID=%d, GUID=%llu, Flags=0x%X", pEntity->GetName(), pEntity->GetClass()->GetName(),
-					                      pEntity->GetId(), pEntity->GetGuid(), pEntity->GetFlags());
+					gEnv->pLog->LogAlways("Deleting entity: '%s' '%s' (ID=%d, GUID=%s, Flags=0x%X", pEntity->GetName(), pEntity->GetClass()->GetName(),
+					                      pEntity->GetId(), pEntity->GetGuid().ToDebugString(), pEntity->GetFlags());
 
 					// Remove the entity
 					pEntity->ClearFlags(ENTITY_FLAG_UNREMOVABLE);

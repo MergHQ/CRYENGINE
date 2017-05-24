@@ -990,6 +990,13 @@ bool CSystem::InitEntitySystem()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
+	// First load CrySchematyc before entity system
+	if (!GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::Native, "CrySchematyc"))
+	{
+		CryFatalError("Error creating CrySchematyc module");
+		return false;
+	}
+
 	if (!InitializeEngineModule(DLL_ENTITYSYSTEM, cryiidof<IEntitySystemEngineModule>(), true))
 		return false;
 

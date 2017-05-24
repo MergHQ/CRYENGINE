@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Schematyc/Script/IScript.h>
-#include <Schematyc/Utils/StackString.h>
+#include <CrySchematyc/Script/IScript.h>
+#include <CrySchematyc/Utils/StackString.h>
 
 namespace Schematyc
 {
@@ -12,11 +12,11 @@ class CScript : public IScript
 	typedef std::vector<IScriptElement*> Elements;
 
 public:
-	CScript(const SGUID& guid, const char* szFilePath);
+	CScript(const CryGUID& guid, const char* szFilePath);
 	CScript(const char* szFilePath);
 
 	// IScript
-	virtual SGUID             GetGUID() const override;
+	virtual CryGUID           GetGUID() const override;
 
 	virtual const char*       SetFilePath(const char* szFilePath) override;
 	virtual const char*       GetFilePath() const override { return m_filePath.c_str(); }
@@ -33,7 +33,7 @@ private:
 	EVisitStatus VisitElementsRecursive(const ScriptElementVisitor& visitor, IScriptElement& element);
 	void         SetNameFromRootRecursive(CStackString& name, IScriptElement& element);
 
-	SGUID           m_guid;
+	CryGUID         m_guid;
 	string          m_filePath;
 	CTimeValue      m_timeStamp;
 	IScriptElement* m_pRoot;

@@ -54,7 +54,7 @@ public:
 
 	void                 SetParentItem(CAbstractObjectStructureModelItem* pParentItem) { m_pParentItem = pParentItem; }
 
-	Schematyc::SGUID     GetGUID() const;
+	CryGUID     GetGUID() const;
 	EGraphType           GetGraphType() const  { return m_graphType; }
 	CNodeGraphViewModel* GetGraphModel() const { return m_pGraphModel; }
 

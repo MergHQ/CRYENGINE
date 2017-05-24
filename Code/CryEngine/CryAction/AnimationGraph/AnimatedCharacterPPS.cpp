@@ -493,7 +493,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 
 	m_pPoseAligner->SetRootOffsetEnable(m_groundAlignmentParams.IsFlag(eGA_PoseAlignerUseRootOffset));
 	m_pPoseAligner->SetBlendWeight(poseBlendWeight);
-	m_pPoseAligner->Update(m_entLocation, (float)m_curFrameTime);
+	m_pPoseAligner->Update(m_pCharacter, m_entLocation, (float)m_curFrameTime);
 }
 
 //--------------------------------------------------------------------------------

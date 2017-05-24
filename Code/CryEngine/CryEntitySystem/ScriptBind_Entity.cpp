@@ -6652,7 +6652,7 @@ int CScriptBind_Entity::CreateLink(IFunctionHandler* pH, const char* name)
 		targetId = (EntityId)target.n;
 	}
 
-	pEntity->AddEntityLink(name, targetId);
+	pEntity->AddEntityLink(name, targetId, CryGUID::Null());
 
 	return pH->EndFunction();
 }

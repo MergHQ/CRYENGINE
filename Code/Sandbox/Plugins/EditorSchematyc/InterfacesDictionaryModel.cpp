@@ -5,15 +5,15 @@
 
 #include "ScriptBrowserUtils.h"
 
-#include <Schematyc/Reflection/TypeDesc.h>
+#include <CrySchematyc/Reflection/TypeDesc.h>
 
-#include <Schematyc/Script/IScriptView.h>
-#include <Schematyc/Script/IScriptRegistry.h>
-#include <Schematyc/Script/Elements/IScriptComponentInstance.h>
+#include <CrySchematyc/Script/IScriptView.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Script/Elements/IScriptComponentInstance.h>
 
-#include <Schematyc/Env/IEnvRegistry.h>
-#include <Schematyc/Env/IEnvElement.h>
-#include <Schematyc/Env/Elements/IEnvComponent.h>
+#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <CrySchematyc/Env/IEnvElement.h>
+#include <CrySchematyc/Env/Elements/IEnvComponent.h>
 #include "ComponentsDictionaryModel.h"
 
 namespace CrySchematycEditor {
@@ -68,7 +68,7 @@ CInterfacesDictionary::CInterfacesDictionary(const Schematyc::IScriptElement* pS
 			m_interfaces.emplace_back(entry);
 			return Schematyc::EVisitStatus::Continue;
 		};
-		pScriptView->VisitEnvInterfaces(Schematyc::EnvInterfaceConstVisitor::FromLambda(visitEnvInterface));
+		pScriptView->VisitEnvInterfaces(visitEnvInterface);
 	}
 }
 

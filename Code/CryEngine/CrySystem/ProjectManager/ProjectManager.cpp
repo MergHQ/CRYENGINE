@@ -338,8 +338,6 @@ void CProjectManager::OnLoadConfigurationEntry(const char* szKey, const char* sz
 void CProjectManager::AddDefaultPlugins()
 {
 	AddPlugin(ICryPluginManager::EPluginType::Native, "CryDefaultEntities");
-	AddPlugin(ICryPluginManager::EPluginType::Native, "CrySchematycCore");
-	AddPlugin(ICryPluginManager::EPluginType::Native, "CrySchematycSTDEnv");
 	AddPlugin(ICryPluginManager::EPluginType::Native, "CrySensorSystem");
 	AddPlugin(ICryPluginManager::EPluginType::Native, "CryPerceptionSystem");
 }

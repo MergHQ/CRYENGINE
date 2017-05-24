@@ -68,6 +68,7 @@ public:
 	const char*    Category()          { return "AI"; }
 	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CSmartObject); }
 	int            GameCreationOrder() { return 111; }
+	virtual bool   IsCreatable() const override { return CObjectClassDesc::IsEntityClassAvailable(); }
 };
 
 #endif // __smartobject_h__

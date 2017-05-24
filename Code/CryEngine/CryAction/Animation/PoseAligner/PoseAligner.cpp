@@ -523,25 +523,19 @@ void CPose::RemoveAllChains()
 
 //
 
-void CPose::Update(const QuatT& location, const float time)
+void CPose::Update(ICharacterInstance* pCharacter, const QuatT& location, const float time)
 {
 	CRY_ASSERT(m_pEntity);
 
 	if (!CVars::GetInstance().m_enable)
 		return;
 
-	ICharacterInstance* pCharacter = m_pEntity->GetCharacter(0);
-	if (!pCharacter)
-		return;
-
 	m_pSkeletonAnim = pCharacter->GetISkeletonAnim();
-	if (m_pSkeletonAnim == NULL)
-		return;
 	m_pSkeletonPose = pCharacter->GetISkeletonPose();
-	if (m_pSkeletonPose == NULL)
+	if (m_pSkeletonAnim == nullptr || m_pSkeletonPose == nullptr)
 		return;
-
-	if (!m_pSkeletonAnim->GetNumAnimsInFIFO(0))
+	
+	if (m_pSkeletonAnim->GetNumAnimsInFIFO(0) == 0)
 		return;
 
 	uint chainCount = uint(m_chains.size());

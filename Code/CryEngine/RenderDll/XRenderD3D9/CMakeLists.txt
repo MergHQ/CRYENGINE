@@ -793,6 +793,7 @@ add_sources("CryRenderer_textures_uber.cpp"
 		"../Common/Textures/Image/JpgImage.cpp"
 		"../Common/Textures/Image/TgaImage.cpp"
 		"../Common/Textures/Image/PngImage.cpp"
+		"../Common/Textures/Image/TifImage.cpp"
 		"../Common/Textures/Image/CImage.h"
 		"../Common/Textures/Image/DDSImage.h"
 )
@@ -1138,7 +1139,7 @@ if (RENDERER_DX11)
 	if (WIN32 OR WIN64)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_RENDERER_DIRECT3D=110 -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
-		target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32 png16)
+		target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32 png16 tiff)
 	elseif(DURANGO)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_RENDERER_DIRECT3D=111 -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3d11_x d3dcompiler dxguid xg_x uuid kernelx)
@@ -1161,7 +1162,7 @@ if (RENDERER_OPENGL)
 	if (WIN32 OR WIN64)
 		target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/squish-ccr ${CRYENGINE_DIR}/Code/Tools/LibTIFF ${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-		target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32 png16)
+		target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32 png16 tiff)
 		if(WIN64)
 			find_library(LIBHLSLCC libHLSLcc PATHS "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win64")
 		elseif(WIN32)
@@ -1208,7 +1209,7 @@ if (RENDERER_DX12)
 	
 	if (WIN32 OR WIN64)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 png16)
+		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 png16 tiff)
 	elseif(DURANGO)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3d12_x d3dcompiler dxguid xg_x uuid kernelx)
 	endif()
@@ -1226,7 +1227,7 @@ if (RENDERER_VULKAN)
 	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/VulkanSDK/Include)
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib spirv-cross)
 	if(WIN32 OR WIN64)
-		target_link_libraries(${THIS_PROJECT} PRIVATE Ole32 Gdi32 wininet Shell32 png16 dxguid vulkan-1)
+		target_link_libraries(${THIS_PROJECT} PRIVATE Ole32 Gdi32 wininet Shell32 png16 dxguid vulkan-1 tiff)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
 		set_libpath_flag()
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}${SDK_DIR}/VulkanSDK/Lib")

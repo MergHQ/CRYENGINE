@@ -54,7 +54,7 @@ public:
 	CPinItem*                    GetPinItemById(CPinId id) const;
 
 	Schematyc::IScriptGraphNode& GetScriptElement() const { return m_scriptNode; }
-	Schematyc::SGUID             GetGUID() const;
+	CryGUID             GetGUID() const;
 
 	void                         Refresh(bool forceRefresh = false);
 

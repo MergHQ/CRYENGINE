@@ -2074,6 +2074,7 @@ bool  WriteJPG(byte* dat, int wdt, int hgt, const char* name, int bpp, int nQual
 #if CRY_PLATFORM_WINDOWS
 byte* WriteDDS(byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory = false, int* nSize = NULL);
 #endif
+bool  WriteTIF(const void* dat, int wdth, int hgt, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName);
 
 //////////////////////////////////////////////////////////////////////////
 

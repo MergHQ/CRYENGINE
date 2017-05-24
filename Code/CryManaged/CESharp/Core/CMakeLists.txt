@@ -8,10 +8,16 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	set(AI_FILES AI/Attributes.cs AI/BehaviorTreeNode.cs AI/BehaviorTreeNodeFactory.cs AI/LastingMovementRequest.cs)
 	source_group("AI" FILES ${AI_FILES})
 
-	set(Animations_FILES Animations/Character.cs Animations/CharacterAttachment.cs Animations/MotionParameterID.cs)
+
+	set(Animations_FILES Animations/ActionController.cs Animations/AnimationContext.cs Animations/AnimationContextAction.cs Animations/AnimationDatabase.cs Animations/AnimationDatabaseManager.cs Animations/AnimationTag.cs Animations/Character.cs Animations/CharacterAttachment.cs Animations/ControllerDefinition.cs Animations/Mannequin.cs Animations/MotionParameterID.cs Animations/TagState.cs)
 	source_group("Animations" FILES ${Animations_FILES})
 
-	set(Audio_FILES Audio/AudioManager.cs Audio/Native/NativeAudioMethods.cs Audio/AudioObject.cs Audio/AudioFile.cs Audio/AudioRequestInfo.cs Audio/Audio.cs Audio/AudioListener.cs Audio/AudioObjectTransformation.cs)
+
+	set(Audio_Native_FILES Audio/Native/NativeAudioMethods.cs)
+	source_group("Audio\\Native" FILES ${Audio_Native_FILES})
+
+
+	set(Audio_FILES Audio/Audio.cs Audio/AudioFile.cs Audio/AudioListener.cs Audio/AudioManager.cs Audio/AudioObject.cs Audio/AudioObjectTransformation.cs Audio/AudioRequestInfo.cs)
 	source_group("Audio" FILES ${Audio_FILES})
 
 
@@ -31,24 +37,24 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Debugging" FILES ${Debugging_FILES})
 
 
-	set(EntityComponents_Animations_FILES EntityComponents/Animations/CharacterAnimator.cs)
-	source_group("EntityComponents\\Animations" FILES ${EntityComponents_Animations_FILES})
+	set(EntitySystem_Attributes_FILES EntitySystem/Attributes/EntityClassAttribute.cs EntitySystem/Attributes/EntityComponentAttribute.cs)
 
 
-	set(EntityComponents_Camera_FILES EntityComponents/Camera/ViewCamera.cs)
-	source_group("EntityComponents\\Camera" FILES ${EntityComponents_Camera_FILES})
+	set(EntitySystem_Attributes_FILES EntitySystem/Attributes/EntityClassAttribute.cs EntitySystem/Attributes/EntityComponentAttribute.cs)
+	source_group("EntitySystem\\Attributes" FILES ${EntitySystem_Attributes_FILES})
 
 
 	set(EntitySystem_Native_FILES EntitySystem/Native/NativeEntityMethods.cs)
 	source_group("EntitySystem\\Native" FILES ${EntitySystem_Native_FILES})
 
 
-	set(EntitySystem_FILES EntitySystem/Attributes.cs EntitySystem/Entity.cs EntitySystem/EntityComponent.cs EntitySystem/EntityId.cs EntitySystem/EntityProperty.cs EntitySystem/EntityStatics.cs EntitySystem/PhysicsEntity.cs)
+	set(EntitySystem_FILES EntitySystem/Entity.cs EntitySystem/EntityComponent.cs EntitySystem/EntityId.cs EntitySystem/EntityProperty.cs EntitySystem/EntityStatics.cs EntitySystem/PhysicsEntity.cs)
 	source_group("EntitySystem" FILES ${EntitySystem_FILES})
 
 
 	set(FileSystem_FILES FileSystem/CryPakFile.cs FileSystem/Directory.cs FileSystem/File.cs FileSystem/FileMode.cs FileSystem/Path.cs)
 	source_group("FileSystem" FILES ${FileSystem_FILES})
+
 
 	set(Input_Enums_FILES Input/Enums/InputDeviceType.cs Input/Enums/InputModifierFlags.cs Input/Enums/InputState.cs Input/Enums/KeyId.cs)
 	source_group("Input\\Enums" FILES ${Input_Enums_FILES})
@@ -90,15 +96,15 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Serialization" FILES ${Serialization_FILES})
 
 
-	set(Util_FILES Util/Attribute.cs Util/AutoPinner.cs Util/Event.cs Util/IconType.cs Util/ReflectionHelper.cs Util/Tools.cs)
+	set(Util_FILES Util/Attribute.cs Util/AutoPinner.cs Util/Event.cs Util/IconType.cs Util/ReflectionHelper.cs Util/Tools.cs Util/View.cs)
 	source_group("Util" FILES ${Util_FILES})
 
 
-	set(Core_FILES Attributes.cs Camera.cs Environment.cs Extensions.cs GameFramework.cs ICryEnginePlugin.cs LevelSystem.cs Random.cs SystemEventHandler.cs Timer.cs)
+	set(Core_FILES Attributes.cs Camera.cs Engine.cs Extensions.cs GameFramework.cs ICryEnginePlugin.cs LevelSystem.cs Random.cs SystemEventHandler.cs Timer.cs)
 	source_group("Core" FILES ${Core_FILES})
 
 
-	set(SOURCE ${AI_FILES} ${Animations_FILES} ${Audio_FILES} ${Compilation_FILES} ${Console_Native_FILES} ${Console_FILES} ${Debugging_FILES} ${EntityComponents_Animations_FILES} ${EntityComponents_Camera_FILES} ${EntitySystem_Native_FILES} ${EntitySystem_FILES} ${FileSystem_FILES} ${FlowSystem_FILES} ${Input_Enums_FILES} ${Input_FILES} ${Math_FILES} ${Physics_Enums_FILES} ${Physics_Parameters_FILES} ${Physics_PhysicalizeParameters_FILES} ${Physics_PhysicsStatus_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
+	set(SOURCE ${AI_FILES} ${Animations_FILES} ${Audio_Native_FILES} ${Audio_FILES} ${Compilation_FILES} ${Console_Native_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_Attributes_FILES} ${EntitySystem_Native_FILES} ${EntitySystem_FILES} ${FileSystem_FILES} ${Input_Enums_FILES} ${Input_FILES} ${Math_FILES} ${Physics_Enums_FILES} ${Physics_Parameters_FILES} ${Physics_PhysicalizeParameters_FILES} ${Physics_PhysicsStatus_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
 
 	add_custom_target(CryEngine.Core ALL
 		COMMAND ${MCS_PATH} -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml ${MONO_SWIG_OUTPUT_ASSEMBLY_REFERENCE} ${SOURCE} -out:${OUTPUT_DIRECTORY}/CryEngine.Core.dll -doc:${OUTPUT_DIRECTORY}/CryEngine.Core.xml

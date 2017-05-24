@@ -1690,7 +1690,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 	if (pCreateEvent->pEntity->GetType() == PE_ROPE && iForeignData == PHYS_FOREIGN_ID_ROPE && pForeignData)
 	{
 		IRopeRenderNode* pRope = (IRopeRenderNode*)pForeignData;
-		pSrcEntity = g_pIEntitySystem->GetEntityFromID(pRope->GetEntityOwner());
+		pSrcEntity = static_cast<CEntity*>(pRope->GetOwnerEntity());
 		SEntitySpawnParams params;
 		params.pClass = m_pEntitySystem->GetClassRegistry()->FindClass("RopeEntity");
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SPAWNED;
@@ -1746,16 +1746,16 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		pNewEntity = (CEntity*)pCreateEvent->pEntNew->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
 
 		int nLevels, nBits;
-		ParsePartId(pCreateEvent->partidSrc, nLevels, nBits);
+		EntityPhysicsUtils::ParsePartId(pCreateEvent->partidSrc, nLevels, nBits);
 		if (nLevels == 2)
-			if (ICharacterInstance* pCharInstance = pSrcEntity->GetCharacter(GetSlotIdx(pCreateEvent->partidSrc)))
+			if (ICharacterInstance* pCharInstance = pSrcEntity->GetCharacter(EntityPhysicsUtils::GetSlotIdx(pCreateEvent->partidSrc)))
 			{
 				if (ISkeletonPose* pSkelPose = pCharInstance->GetISkeletonPose())
-					pSkelPose->SetPhysEntOnJoint(GetSlotIdx(pCreateEvent->partidSrc, 1), pCreateEvent->pEntNew);
+					pSkelPose->SetPhysEntOnJoint(EntityPhysicsUtils::GetSlotIdx(pCreateEvent->partidSrc, 1), pCreateEvent->pEntNew);
 				return;
 			}
 
-		if (pCreateEvent->partidSrc >= PARTID_LINKED)
+		if (pCreateEvent->partidSrc >= EntityPhysicsUtils::PARTID_LINKED)
 			pSrcEntity = (CEntity*)pSrcEntity->UnmapAttachedChild(partidSrc);
 
 		//////////////////////////////////////////////////////////////////////////
@@ -2082,7 +2082,7 @@ void CBreakableManager::HandlePhysicsRevealSubPartEvent(const EventPhysRevealEnt
 	if (iForeignData == PHYS_FOREIGN_ID_ENTITY)
 	{
 		pEntity = (CEntity*)pForeignData;
-		if (pEntity && id >= PARTID_LINKED)
+		if (pEntity && id >= EntityPhysicsUtils::PARTID_LINKED)
 			pEntity = (CEntity*)pEntity->UnmapAttachedChild(id);
 		if (pEntity)
 		{
@@ -2177,7 +2177,7 @@ void CBreakableManager::HandlePhysicsRemoveSubPartsEvent(const EventPhysRemoveEn
 	{
 		//CryLogAlways( "* RemoveEvent Entity" );
 		pEntity = (CEntity*)pForeignData;
-		if (pEntity && pRemoveEvent->idOffs >= PARTID_LINKED)
+		if (pEntity && pRemoveEvent->idOffs >= EntityPhysicsUtils::PARTID_LINKED)
 			pEntity = (CEntity*)pEntity->UnmapAttachedChild(idOffs);
 		if (pEntity)
 			pStatObj = pEntity->GetStatObj(ENTITY_SLOT_ACTUAL);
@@ -2350,7 +2350,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		IRopeRenderNode::SRopeParams params = pRope->GetParams();
 		pe_params_rope pr;
 		pUpdateEvent->pEntity->GetParams(&pr);
-		IEntity* pSrcEntity = g_pIEntitySystem->GetEntityFromID(pRope->GetEntityOwner());
+		IEntity* pSrcEntity = pRope->GetOwnerEntity();
 		CEntityComponentRope* pRopeProxy = (CEntityComponentRope*)pSrcEntity->GetProxy(ENTITY_PROXY_ROPE);
 		pRopeProxy->PreserveParams();
 		params.nNumSegments = FtoI(pr.nSegments * params.nNumSegments / (float)params.nPhysSegments);

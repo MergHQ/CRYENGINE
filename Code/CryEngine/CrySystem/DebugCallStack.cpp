@@ -632,8 +632,6 @@ int DebugCallStack::updateCallStack(EXCEPTION_POINTERS* pex)
 //////////////////////////////////////////////////////////////////////////
 void DebugCallStack::FillStackTrace(int maxStackEntries, int skipNumFunctions, HANDLE hThread)
 {
-	HANDLE hProcess = GetCurrentProcess();
-
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
 
@@ -669,7 +667,7 @@ void DebugCallStack::FillStackTrace(int maxStackEntries, int skipNumFunctions, H
 	//While there are still functions on the stack..
 	for (count = 0; count < maxStackEntries && b_ret == TRUE; count++)
 	{
-		b_ret = StackWalk64(MachineType, hProcess, hThread, &stack_frame, &m_context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL);
+		b_ret = StackWalk64(MachineType, GetCurrentProcess(), hThread, &stack_frame, &m_context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL);
 
 		if (count < skipNumFunctions)
 			continue;
@@ -1687,7 +1685,6 @@ int __cdecl WalkStackFrames(CONTEXT& context, void** pCallstack, int maxStackEnt
 	BOOL b_ret = TRUE; //Setup stack frame
 
 	HANDLE hThread = GetCurrentThread();
-	HANDLE hProcess = GetCurrentProcess();
 
 	STACKFRAME64 stack_frame;
 
@@ -1715,7 +1712,7 @@ int __cdecl WalkStackFrames(CONTEXT& context, void** pCallstack, int maxStackEnt
 	//While there are still functions on the stack..
 	for (count = 0; count < maxStackEntries && b_ret == TRUE; count++)
 	{
-		b_ret = StackWalk64(MachineType, hProcess, hThread, &stack_frame, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL);
+		b_ret = StackWalk64(MachineType, GetCurrentProcess(), hThread, &stack_frame, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL);
 		pCallstack[count] = (void*)(stack_frame.AddrPC.Offset);
 	}
 	return count;
@@ -1731,8 +1728,6 @@ int DebugCallStack::CollectCallStackFrames(void** pCallstack, int maxStackEntrie
 	}
 
 	CONTEXT context = CaptureCurrentContext();
-
-	HANDLE hProcess = GetCurrentProcess();
 
 	int count = WalkStackFrames(context, pCallstack, maxStackEntries);
 	return count;

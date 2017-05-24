@@ -64,7 +64,7 @@ public:
 					return Schematyc::EVisitStatus::Stop;
 				};
 				Schematyc::IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(scriptRegistry.GetRootElement().GetGUID());
-				pScriptView->VisitEnvClasses(Schematyc::EnvClassConstVisitor::FromLambda(visitEnvClass));
+				pScriptView->VisitEnvClasses(visitEnvClass);
 
 				return baseClassId;
 			}
@@ -160,7 +160,8 @@ string CEntityAssetType::GetObjectFilePath(const CAsset* pAsset) const
 		{
 			string scriptName = PathUtil::RemoveExtension(PathUtil::RemoveExtension(pAsset->GetFile(0)));
 			scriptName.replace("/", "::");
-			return string().Format("Schematyc::%s", scriptName.c_str());
+			scriptName.MakeLower();
+			return string().Format("schematyc::%s", scriptName.c_str());
 		}
 	}
 	return string();

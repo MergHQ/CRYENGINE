@@ -331,7 +331,7 @@ namespace UQS
 		//
 		//===================================================================================
 
-		class CSchematycUqsComponent final : public Schematyc::CComponent
+		class CSchematycUqsComponent final : public IEntityComponent
 		{
 		public:
 
@@ -427,10 +427,10 @@ namespace UQS
 			explicit                                            CSchematycUqsComponent();
 			                                                    ~CSchematycUqsComponent();
 
-			// Schematyc::CComponent
+			// IEntityComponent
 			virtual void                                        Run(Schematyc::ESimulationMode simulationMode) override;
-			virtual void                                        Shutdown() override;
-			// ~Schematyc::CComponent
+			virtual void                                        OnShutDown() override;
+			// ~IEntityComponent
 
 			// these 3 are called by the generated "AddParam" and "GetItemFromResultSet" functions
 			Client::IItemFactory*                               GetItemFactoryOfRuntimeParam(const char* szRuntimeParamName) const;

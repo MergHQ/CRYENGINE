@@ -1884,4 +1884,23 @@ CRY_UNIT_TEST(CUT_Variant)
 	}
 }
 
+CRY_UNIT_TEST(CUT_CRYGUID)
+{
+	CryGUID guid;
+
+	// Test that CryGUID constructor initialize it to 0
+	CRY_UNIT_TEST_ASSERT(guid.lopart == 0 && guid.hipart == 0);
+
+	guid = "296708CE-F570-4263-B067-C6D8B15990BD"_cry_guid;
+
+	// Test that GUID specified in string with or without brackets work reliably
+	CRY_UNIT_TEST_ASSERT( guid == "{296708CE-F570-4263-B067-C6D8B15990BD}"_cry_guid);
+
+	char str[64];
+	guid.ToString(str);
+	// Test back conversion from GUID to string
+	CRY_UNIT_TEST_ASSERT( 0 == strcmp(str,"296708CE-F570-4263-B067-C6D8B15990BD"));
+
+}
+
 #endif //CRY_UNIT_TESTING

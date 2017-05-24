@@ -13,33 +13,131 @@
 #include <CrySerialization/Gap.h>
 #include <CrySerialization/Decorators/Range.h>
 
+namespace Serialization
+{
+	template<typename T>
+	struct SSerializeVec2
+	{
+		Vec2_tpl<T>& value;
+		SSerializeVec2(Vec2_tpl<T>& v) : value(v) {}
+		void Serialize(Serialization::IArchive& ar)
+		{
+			ar(value.x, "x", "x");
+			ar(value.y, "y", "y");
+		}
+	};
+	template<typename T>
+	struct SSerializeVec3
+	{
+		Vec3_tpl<T>& value;
+		SSerializeVec3(Vec3_tpl<T>& v) : value(v) {}
+		void Serialize(Serialization::IArchive& ar)
+		{
+			ar(value.x, "x", "x");
+			ar(value.y, "y", "y");
+			ar(value.z, "z", "z");
+		}
+	};
+	template<typename T>
+	struct SSerializeVec4
+	{
+		Vec4_tpl<T>& value;
+		SSerializeVec4(Vec4_tpl<T>& v) : value(v) {}
+		void Serialize(Serialization::IArchive& ar)
+		{
+			ar(value.x, "x", "x");
+			ar(value.y, "y", "y");
+			ar(value.z, "z", "z");
+			ar(value.w, "w", "w");
+		}
+	};
+
+#ifdef CRY_HARDWARE_VECTOR4
+	template<typename T>
+	struct SSerializeVec4H
+	{
+		Vec4H<T>& value;
+		SSerializeVec4H(Vec4H<T>& v) : value(v) {}
+		void Serialize(Serialization::IArchive& ar)
+		{
+			ar(value.x, "x", "x");
+			ar(value.y, "y", "y");
+			ar(value.z, "z", "z");
+			ar(value.w, "w", "w");
+		}
+	};
+#endif
+
+	template<typename T>
+	struct SSerializeQuat
+	{
+		Quat_tpl<T>& value;
+		SSerializeQuat(Quat_tpl<T>& v) : value(v) {}
+		void Serialize(Serialization::IArchive& ar)
+		{
+			ar(value.v.x, "x", "x");
+			ar(value.v.y, "y", "y");
+			ar(value.v.z, "z", "z");
+			ar(value.w, "w", "w");
+		}
+	};
+}
+
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, Vec2_tpl<T>& value, const char* name, const char* label)
 {
-	typedef T (& Array)[2];
-	return ar((Array)value, name, label);
+	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	{
+		return ar(Serialization::SStruct(Serialization::SSerializeVec2<T>(value)), name, label);
+	}
+	else
+	{
+		typedef T(&Array)[2];
+		return ar((Array)value, name, label);
+	}
 }
 
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, Vec3_tpl<T>& value, const char* name, const char* label)
 {
-	typedef T (& Array)[3];
-	return ar((Array)value, name, label);
+	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	{
+		return ar(Serialization::SStruct(Serialization::SSerializeVec3<T>(value)), name, label);
+	}
+	else
+	{
+		typedef T (& Array)[3];
+		return ar((Array)value, name, label);
+	}
 }
 
 template<typename T>
-inline bool Serialize(Serialization::IArchive& ar, Vec4_tpl<T>& v, const char* name, const char* label)
+inline bool Serialize(Serialization::IArchive& ar, struct Vec4_tpl<T>& value, const char* name, const char* label)
 {
-	typedef T (& Array)[4];
-	return ar((Array)v, name, label);
+	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	{
+		return ar(Serialization::SStruct(Serialization::SSerializeVec4<T>(value)), name, label);
+	}
+	else
+	{
+		typedef T (& Array)[4];
+		return ar((Array)value, name, label);
+	}
 }
 
 #ifdef CRY_TYPE_SIMD4
 template<typename T>
-inline bool Serialize(Serialization::IArchive& ar, Vec4H<T>& v, const char* name, const char* label)
+inline bool Serialize(Serialization::IArchive& ar, Vec4H<T>& value, const char* name, const char* label)
 {
-	typedef T (& Array)[4];
-	return ar((Array)v, name, label);
+	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	{
+		return ar(Serialization::SStruct(Serialization::SSerializeVec4H<T>(value)), name, label);
+	}
+	else
+	{
+		typedef T (& Array)[4];
+		return ar((Array)value, name, label);
+	}
 }
 #endif
 
@@ -54,6 +152,10 @@ bool Serialize(Serialization::IArchive& ar, Quat_tpl<T>& value, const char* name
 		if (ar.isInput())
 			value = Quat_tpl<T>(Ang3_tpl<T>(DEG2RAD(v)));
 		return result;
+	}
+	else if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	{
+		return ar(Serialization::SStruct(Serialization::SSerializeQuat<T>(value)), name, label);
 	}
 	else
 	{

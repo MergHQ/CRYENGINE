@@ -34,14 +34,14 @@ add_sources("CryMonoBridge_main_uber_2.cpp"
 		"Wrappers/MonoMethod.cpp"
 		"Wrappers/MonoString.h"
 		"Wrappers/MonoString.cpp"
+		"Wrappers/MonoProperty.h"
+		"Wrappers/MonoProperty.cpp"
 )
 
 add_sources("CryMonoBridge_main_uber_3.cpp"
 	SOURCE_GROUP "NativeComponents"
-		"NativeComponents/Actor.h"
-		"NativeComponents/Actor.cpp"
-		"NativeComponents/GameRules.h"
-		"NativeComponents/GameRules.cpp"
+		"NativeComponents/EntityComponentFactory.h"
+		"NativeComponents/EntityComponentFactory.cpp"
 		"NativeComponents/ManagedEntityComponent.h"
 		"NativeComponents/ManagedEntityComponent.cpp"
 )

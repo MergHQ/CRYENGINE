@@ -22,7 +22,7 @@ namespace CryEngine.Game
 			_camera = Entity.SpawnWithComponent<ViewCamera>("Player Camera", Vector3.Zero, Quaternion.Identity, Vector3.One);
 		}
 
-		public void UpdateView(float frameTime, Vector2 rotationDelta)
+		public Quaternion UpdateView(float frameTime, Vector2 rotationDelta)
 		{
 			_cameraPivot.Position = _player.Entity.Position;
 			Quaternion rotation = _cameraPivot.Rotation;
@@ -63,6 +63,7 @@ namespace CryEngine.Game
 
 			_camera.Entity.Position = position;
 			_camera.Entity.Rotation = rotation;
+			return rotation;
 		}
 
 		private void UpdateAimingPosition(float frameTime, out Vector3 aimOffset, out float viewDistance)

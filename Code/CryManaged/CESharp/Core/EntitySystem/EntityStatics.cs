@@ -54,106 +54,88 @@ namespace CryEngine
 
 			return null;
 		}
+        
+        /// <summary>
+        /// Spawns an empty without any components
+        /// </summary>
+        /// <param name="name">Name of the entity</param>
+        /// <param name="position">Initial position of the entity</param>
+        /// <param name="rotation">Initial rotation of the entity</param>
+        /// <param name="scale">Initial scale of the entity</param>
+        /// <returns></returns>
+        public static Entity Spawn(string name, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            var spawnParams = new SEntitySpawnParams();
 
-		/// <summary>
-		/// Spawns a new instance of a default Entity without any components.
-		/// </summary>
-		/// <returns>The empty Entity.</returns>
-		/// <param name="name">The name of the Entity in the level hierarchy.</param>
-		/// <param name="position">Position of the Entity.</param>
-		/// <param name="rotation">Rotation of the Entity.</param>
-		/// <param name="scale">Scale of the Entity.</param>
-		public static Entity Spawn(string name, Vector3 position, Quaternion rotation, Vector3 scale)
+            spawnParams.sName = name;
+            spawnParams.pClass = Global.gEnv.pEntitySystem.GetClassRegistry().GetDefaultClass();
+
+            spawnParams.vPosition = position;
+            spawnParams.qRotation = rotation;
+            spawnParams.vScale = scale;
+
+            var nativeEntity = Global.gEnv.pEntitySystem.SpawnEntity(spawnParams);
+            if (nativeEntity != null)
+            {
+                return new Entity(nativeEntity, nativeEntity.GetId());
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Spawn a new Entity with the specified EntityComponent.
+        /// </summary>
+        /// <returns>The component that's on the new Entity.</returns>
+        /// <param name="name">The name of the Entity in the level hierarchy.</param>
+        /// <param name="position">Position of the Entity.</param>
+        /// <param name="rotation">Rotation of the Entity.</param>
+        /// <param name="scale">Scale of the Entity.</param>
+        /// <typeparam name="T">The type of the EntityComponent.</typeparam>
+        public static T SpawnWithComponent<T>(string name, Vector3 position, Quaternion rotation, Vector3 scale) where T : EntityComponent, new()
 		{
-			var spawnParams = new SEntitySpawnParams();
+            var entity = Spawn(name, position, rotation, scale);
 
-			spawnParams.pClass = Global.gEnv.pEntitySystem.GetClassRegistry().GetDefaultClass();
-			spawnParams.sName = name;
-			spawnParams.vPosition = position;
-			spawnParams.qRotation = rotation;
-			spawnParams.vScale = scale;
+            if (entity != null)
+            {
+                return entity.GetOrCreateComponent<T>();
+            }
 
-			var nativeEntity = Global.gEnv.pEntitySystem.SpawnEntity(spawnParams);
-			return new Entity(nativeEntity, nativeEntity.GetId());
-		}
+            return null;
+        }
 
-		/// <summary>
-		/// Spawn a new Entity with the specified EntityComponent.
-		/// </summary>
-		/// <returns>The component that's on the new Entity.</returns>
-		/// <param name="position">Position of the Entity.</param>
-		/// <param name="rotation">Rotation of the Entity.</param>
-		/// <param name="scale">Scale of the Entity.</param>
-		/// <typeparam name="T">The type of the EntityComponent.</typeparam>
-		public static T SpawnWithComponent<T>(Vector3 position, Quaternion rotation, float scale = 1.0f) where T : EntityComponent, new()
-		{
-			return SpawnWithComponent<T>(null, position, rotation, Vector3.One * scale);
-		}
+        /// <summary>
+        /// Spawn a new Entity with the specified EntityComponent.
+        /// </summary>
+        /// <returns>The component that's on the new Entity.</returns>
+        /// <param name="position">Position of the Entity.</param>
+        /// <param name="rotation">Rotation of the Entity.</param>
+        /// <param name="scale">Scale of the Entity.</param>
+        /// <typeparam name="T">The type of the EntityComponent.</typeparam>
+        public static T SpawnWithComponent<T>(Vector3 position, Quaternion rotation, float scale = 1f) where T : EntityComponent, new()
+        {
+            return SpawnWithComponent<T>(typeof(T).Name, position, rotation, Vector3.One * scale);
+        }
+        
+        /// <summary>
+        /// Spawn a new Entity with the specified EntityComponent.
+        /// </summary>
+        /// <returns>The component that's on the new Entity.</returns>
+        /// <param name="name">The name of the Entity in the level hierarchy.</param>
+        /// <param name="position">Position of the Entity.</param>
+        /// <param name="rotation">Rotation of the Entity.</param>
+        /// <param name="scale">Scale of the Entity.</param>
+        /// <typeparam name="T">The type of the EntityComponent.</typeparam>
+        public static T SpawnWithComponent<T>(string name, Vector3 position, Quaternion rotation, float scale = 1.0f) where T : EntityComponent, new()
+        {
+            return SpawnWithComponent<T>(name, position, rotation, Vector3.One * scale);
+        }
 
-		/// <summary>
-		/// Spawn a new Entity with the specified EntityComponent.
-		/// </summary>
-		/// <returns>The component that's on the new Entity.</returns>
-		/// <param name="name">The name of the Entity in the level hierarchy.</param>
-		/// <param name="position">Position of the Entity.</param>
-		/// <param name="rotation">Rotation of the Entity.</param>
-		/// <param name="scale">Scale of the Entity.</param>
-		/// <typeparam name="T">The type of the EntityComponent.</typeparam>
-		public static T SpawnWithComponent<T>(string name, Vector3 position, Quaternion rotation, float scale = 1.0f) where T : EntityComponent, new()
-		{
-			return SpawnWithComponent<T>(name, position, rotation, Vector3.One * scale);
-		}
-
-		/// <summary>
-		/// Spawn a new Entity with the specified EntityComponent.
-		/// </summary>
-		/// <returns>The component that's on the new Entity.</returns>
-		/// <param name="name">The name of the Entity in the level hierarchy.</param>
-		/// <param name="position">Position of the Entity.</param>
-		/// <param name="rotation">Rotation of the Entity.</param>
-		/// <param name="scale">Scale of the Entity.</param>
-		/// <typeparam name="T">The type of the EntityComponent.</typeparam>
-		public static T SpawnWithComponent<T>(string name, Vector3 position, Quaternion rotation, Vector3 scale) where T : EntityComponent, new()
-		{
-			var spawnParams = new SEntitySpawnParams();
-
-			string className;
-
-			if(EntityComponent._componentClassMap.TryGetValue(typeof(T), out className))
-			{
-				spawnParams.pClass = Global.gEnv.pEntitySystem.GetClassRegistry().FindClass(className);
-			}
-
-			if(spawnParams.pClass == null)
-			{
-				spawnParams.pClass = Global.gEnv.pEntitySystem.GetClassRegistry().GetDefaultClass();
-			}
-
-			if(!string.IsNullOrWhiteSpace(name))
-			{
-				spawnParams.sName = name;
-			}
-
-			spawnParams.vPosition = position;
-			spawnParams.qRotation = rotation;
-			spawnParams.vScale = scale;
-
-			var nativeEntity = Global.gEnv.pEntitySystem.SpawnEntity(spawnParams);
-			var entity = new Entity(nativeEntity, nativeEntity.GetId());
-
-			if(entity != null)
-			{
-				return entity.GetOrCreateComponent<T>();
-			}
-
-			return null;
-		}
-
-		/// <summary>
-		/// Remove the entity with the specified id.
-		/// </summary>
-		/// <param name="id"></param>
-		public static void Remove(EntityId id)
+        /// <summary>
+        /// Remove the entity with the specified id.
+        /// </summary>
+        /// <param name="id"></param>
+        public static void Remove(EntityId id)
 		{
 			Global.gEnv.pEntitySystem.RemoveEntity(id);
 		}

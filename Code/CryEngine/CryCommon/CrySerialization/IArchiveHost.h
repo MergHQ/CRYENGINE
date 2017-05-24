@@ -41,9 +41,9 @@ struct IArchiveHost
 	//! Compares two instances in serialized form through binary archive
 	virtual bool       CompareBinary(const SStruct& lhs, const SStruct& rhs) = 0;
 
-	virtual bool       LoadXmlFile(const SStruct& outObj, const char* filename) = 0;
+	virtual bool       LoadXmlFile(const SStruct& outObj, const char* filename,int forceVersion=-1) = 0;
 	virtual bool       SaveXmlFile(const char* filename, const SStruct& obj, const char* rootNodeName) = 0;
-	virtual bool       LoadXmlNode(const SStruct& outObj, const XmlNodeRef& node) = 0;
+	virtual bool       LoadXmlNode(const SStruct& outObj, const XmlNodeRef& node,int forceVersion=-1) = 0;
 	virtual XmlNodeRef SaveXmlNode(const SStruct& obj, const char* nodeName) = 0;
 	virtual bool       SaveXmlNode(XmlNodeRef& node, const SStruct& obj) = 0;
 

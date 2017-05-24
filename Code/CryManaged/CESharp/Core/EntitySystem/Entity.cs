@@ -261,6 +261,15 @@ namespace CryEngine
 		#endregion
 
 		#region Constructors
+		internal Entity(IEntity handle)
+		{
+			NativeHandle = handle;
+			Id = NativeHandle.GetId();
+
+			// Access the raw pointer
+			NativeEntityPointer = IEntity.getCPtr(handle).Handle;
+		}
+
 		internal Entity(IEntity handle, EntityId id)
 		{
 			NativeHandle = handle;
@@ -312,7 +321,9 @@ namespace CryEngine
 		/// <returns></returns>
 		public T AddComponent<T>() where T : EntityComponent, new()
 		{
-			return NativeInternals.Entity.AddComponent(NativeEntityPointer, typeof(T)) as T;
+            var componentTypeInfo = EntityComponent._componentClassMap[typeof(T)];
+
+			return NativeInternals.Entity.AddComponent(NativeEntityPointer, componentTypeInfo.guid.hipart, componentTypeInfo.guid.lopart) as T;
 		}
 
 		/// <summary>
@@ -320,7 +331,9 @@ namespace CryEngine
 		/// </summary>
 		public T GetComponent<T>() where T : EntityComponent
 		{
-			return NativeInternals.Entity.GetComponent(NativeEntityPointer, typeof(T)) as T;
+            var componentTypeInfo = EntityComponent._componentClassMap[typeof(T)];
+
+            return NativeInternals.Entity.GetComponent(NativeEntityPointer, componentTypeInfo.guid.hipart, componentTypeInfo.guid.lopart) as T;
 		}
 
 		/// <summary>
@@ -330,7 +343,9 @@ namespace CryEngine
 		/// <returns></returns>
 		public T GetOrCreateComponent<T>() where T : EntityComponent, new()
 		{
-			return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, typeof(T)) as T;
+            var componentTypeInfo = EntityComponent._componentClassMap[typeof(T)];
+
+            return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, componentTypeInfo.guid.hipart, componentTypeInfo.guid.lopart) as T;
 		}
 
 		/// <summary>

@@ -2034,7 +2034,7 @@ int CStatObj::PhysicalizeSubobjects(IPhysicalEntity* pent, const Matrix34* pMtx,
 	for (i = j = 0; i < nObj; i++)
 		if (pSubObj = GetSubObject(i))
 			j += pSubObj->pStatObj && pSubObj->pStatObj->GetPhysGeom(0) != 0;
-	id0 = id0 < 0 ? 0 : AllocPartIdRange(id0, j);
+	id0 = id0 < 0 ? 0 : EntityPhysicsUtils::AllocPartIdRange(id0, j);
 
 	for (i = 0; i < nObj; i++)
 		if ((pSubObj = GetSubObject(i))->nType == STATIC_SUB_OBJECT_MESH && pSubObj->pStatObj && pSubObj->pStatObj->GetPhysGeom() &&

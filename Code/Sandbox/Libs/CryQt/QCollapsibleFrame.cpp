@@ -2,94 +2,46 @@
 #include <StdAfx.h>
 #include "QCollapsibleFrame.h"
 
-#include <QBoxLayout>
-#include <QPushButton>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QStyleOption>
-#include <QEvent>
-#include <QMouseEvent>
-#include <QMimeData>
-#include <QApplication>
-#include <QDrag>
-#include <QToolButton>
 #include <qtabbar.h>
 
-
-struct QCollapsibleFrame::SImplementation
-{
-	SImplementation(QCollapsibleFrame* pCollapsibleWidget, const QString& title);
-
-	void SetWidget(QWidget* pWidget);
-	void SetTitle(const QString& title);
-	void SetClosable(bool closable);
-	bool Closable() const;
-
-	QCollapsibleFrame*       m_pCollapsibleWidget;
-	QFrame*					 m_pContentsFrame;
-	CCollapsibleFrameHeader* m_pHeaderWidget;
-	QWidget*                 m_pWidget;
-};
-
-struct CCollapsibleFrameHeader::SImplementation
-{
-	SImplementation(CCollapsibleFrameHeader* pHeaderWidget, const QString& title, QCollapsibleFrame* pParentCollapsible);
-
-	QSize GetIconSize() const;
-
-	void  SetupCollapseButton();
-	void  SetTitle(const QString& title);
-	void  SetIconSize(const QSize& iconSize);
-	void  SetupMainLayout();
-	void  OnCollapseButtonClick();
-	void  SetClosable(bool closable);
-	bool  Closable() const;
-
-	CCollapsibleFrameHeader*     m_pHeader;
-	QCollapsibleFrame*           m_pParentCollapsible;
-	QLabel*                      m_pTitleLabel;
-	QLabel*                      m_pIconLabel;
-	QPushButton*                 m_pCollapseButton;
-	QToolButton*				 m_pCloseButton;
-	QSize						 m_iconSize;
-	QIcon						 m_collapsedIcon;
-	QIcon						 m_expandedIcon;
-	bool                         m_bCollapsed;
-	static const CryIconColorMap s_colorMap;
-};
-
 // removes dark tinting
-const CryIconColorMap CCollapsibleFrameHeader::SImplementation::s_colorMap = []
+const CryIconColorMap CCollapsibleFrameHeader::s_colorMap = []
 {
 	CryIconColorMap colorMap;
 	colorMap[QIcon::Mode::Normal] = QColor(255, 255, 255);
 	return colorMap;
 } ();
 
-QCollapsibleFrame::SImplementation::SImplementation(QCollapsibleFrame* pCollapsibleWidget, const QString& title)
-	: m_pCollapsibleWidget(pCollapsibleWidget)
+QCollapsibleFrame::QCollapsibleFrame(QWidget* pParent)
+	: QWidget(pParent)
 	, m_pWidget(nullptr)
+	, m_pHeaderWidget(nullptr)
+	, m_pContentsFrame(nullptr)
 {
-	m_pHeaderWidget = new CCollapsibleFrameHeader(title, m_pCollapsibleWidget);
 	auto pMainLayout = new QVBoxLayout;
 	pMainLayout->setSpacing(0);
 	pMainLayout->setContentsMargins(2, 2, 2, 2);
-	m_pCollapsibleWidget->setLayout(pMainLayout);
-
-	pMainLayout->addWidget(m_pHeaderWidget);
-
-	m_pContentsFrame = new QFrame(m_pCollapsibleWidget);
-	auto frameLayout = new QVBoxLayout();
-	frameLayout->setSpacing(0);
-	frameLayout->setContentsMargins(2, 2, 2, 2);
-	m_pContentsFrame->setLayout(frameLayout);
-	pMainLayout->addWidget(m_pContentsFrame);
-
-
+	setLayout(pMainLayout);
 }
 
-void QCollapsibleFrame::SImplementation::SetWidget(QWidget* pWidget)
+QCollapsibleFrame::QCollapsibleFrame(const QString& title, QWidget* pParent)
+	: QCollapsibleFrame(pParent)
 {
+	SetHeaderWidget(new CCollapsibleFrameHeader(title, this));
+}
+
+void QCollapsibleFrame::SetWidget(QWidget* pWidget)
+{
+	if (m_pContentsFrame == nullptr)
+	{
+		m_pContentsFrame = new QFrame(this);
+		auto frameLayout = new QVBoxLayout();
+		frameLayout->setSpacing(0);
+		frameLayout->setContentsMargins(2, 2, 2, 2);
+		m_pContentsFrame->setLayout(frameLayout);
+		layout()->addWidget(m_pContentsFrame);
+	}
+
 	auto pMainLayout = m_pContentsFrame->layout();
 
 	// remove old widget
@@ -102,30 +54,23 @@ void QCollapsibleFrame::SImplementation::SetWidget(QWidget* pWidget)
 	if (m_pWidget)
 	{
 		pMainLayout->addWidget(m_pWidget);
-		m_pWidget->setHidden(m_pHeaderWidget->m_pImpl->m_bCollapsed);
+		m_pWidget->setHidden(m_pHeaderWidget->m_bCollapsed);
 	}
 }
 
-void QCollapsibleFrame::SImplementation::SetTitle(const QString& title)
+void QCollapsibleFrame::SetTitle(const QString& title)
 {
-	m_pHeaderWidget->m_pImpl->SetTitle(title);
+	m_pHeaderWidget->SetTitle(title);
 }
 
-bool QCollapsibleFrame::SImplementation::Closable() const
+bool QCollapsibleFrame::Closable() const
 {
 	return m_pHeaderWidget->Closable();
 }
 
-void QCollapsibleFrame::SImplementation::SetClosable(bool closable)
+void QCollapsibleFrame::SetClosable(bool closable)
 {
 	m_pHeaderWidget->SetClosable(closable);
-}
-
-QCollapsibleFrame::QCollapsibleFrame(const QString& title, QWidget* pParent)
-	: QWidget(pParent)
-	, m_pImpl(new SImplementation(this, title))
-{
-	connect(m_pImpl->m_pHeaderWidget->m_pImpl->m_pCloseButton, SIGNAL(clicked()), this,  SLOT(OnCloseRequested()));
 }
 
 QCollapsibleFrame::~QCollapsibleFrame()
@@ -133,45 +78,27 @@ QCollapsibleFrame::~QCollapsibleFrame()
 
 QWidget* QCollapsibleFrame::GetWidget() const
 {
-	return m_pImpl->m_pWidget;
+	return m_pWidget;
 }
 
 QWidget * QCollapsibleFrame::GetDragHandler() const
 {
-	return m_pImpl->m_pHeaderWidget->m_pImpl->m_pCollapseButton;
-}
-
-void QCollapsibleFrame::SetWidget(QWidget* pWidget)
-{
-	m_pImpl->SetWidget(pWidget);
-}
-
-void QCollapsibleFrame::SetClosable(bool closable)
-{
-	m_pImpl->SetClosable(closable);
-}
-
-bool QCollapsibleFrame::Closable() const
-{
-	return m_pImpl->Closable();
-}
-
-void QCollapsibleFrame::SetTitle(const QString& title)
-{
-	m_pImpl->SetTitle(title);
-}
-
-void QCollapsibleFrame::SetCollapsed(bool collapsed)
-{
-	if (collapsed != m_pImpl->m_pHeaderWidget->m_pImpl->m_bCollapsed)
-	{
-		m_pImpl->m_pHeaderWidget->OnCollapseButtonClick();
-	}
+	return m_pHeaderWidget->m_pCollapseButton;
 }
 
 bool QCollapsibleFrame::Collapsed() const
 {
-	return m_pImpl->m_pHeaderWidget->m_pImpl->m_bCollapsed;
+	return m_pHeaderWidget->m_bCollapsed;
+}
+
+void QCollapsibleFrame::SetCollapsed(bool bCollapsed)
+{
+	m_pHeaderWidget->SetCollapsed(bCollapsed);
+}
+
+void QCollapsibleFrame::SetCollapsedStateChangeCallback(std::function<void(bool bCollapsed)> callback)
+{
+	m_pHeaderWidget->m_onCollapsedStateChanged = callback; 
 }
 
 void QCollapsibleFrame::paintEvent(QPaintEvent*)
@@ -182,19 +109,36 @@ void QCollapsibleFrame::paintEvent(QPaintEvent*)
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
 }
 
+void QCollapsibleFrame::SetHeaderWidget(CCollapsibleFrameHeader* pHeader)
+{
+	m_pHeaderWidget = pHeader;
+
+	layout()->addWidget(m_pHeaderWidget);
+
+	connect(m_pHeaderWidget->m_pCloseButton, SIGNAL(clicked()), this, SLOT(OnCloseRequested()));
+}
 
 void QCollapsibleFrame::OnCloseRequested()
 {
 	CloseRequested(this);
 }
 
-CCollapsibleFrameHeader::SImplementation::SImplementation(CCollapsibleFrameHeader* pHeaderWidget, const QString& title, QCollapsibleFrame* pParentCollapsible)
-	: m_pHeader(pHeaderWidget)
-	, m_iconSize(16, 16)
+CCollapsibleFrameHeader::CCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible, const QString& icon, bool bCollapsed)
+	: m_iconSize(16, 16)
 	, m_pParentCollapsible(pParentCollapsible)
 	, m_pTitleLabel(new QLabel(title))
 	, m_bCollapsed(false)
 {
+	if (icon.size() > 0)
+	{
+		m_pIconLabel = new QLabel();
+		m_pIconLabel->setPixmap(CryIcon(icon).pixmap(16, 16, QIcon::Normal, QIcon::On));
+	}
+	else
+	{
+		m_pIconLabel = nullptr;
+	}
+
 	QPixmap collapsedPixmap("icons:Window/Collapse_Arrow_Right_Tinted.ico");
 	if (collapsedPixmap.isNull())
 	{
@@ -215,14 +159,19 @@ CCollapsibleFrameHeader::SImplementation::SImplementation(CCollapsibleFrameHeade
 	}
 	SetupCollapseButton();
 	SetupMainLayout();
+
+	// do not install in SImplementation constructor because events may
+	// be fired and eventFilter needs m_pImpl to be fully constructed
+	m_pCollapseButton->installEventFilter(this);
+	connect(m_pCollapseButton, SIGNAL(clicked()), this, SLOT(OnCollapseButtonClick()));
 }
 
-QSize CCollapsibleFrameHeader::SImplementation::GetIconSize() const
+QSize CCollapsibleFrameHeader::GetIconSize() const
 {
 	return m_iconSize;
 }
 
-void CCollapsibleFrameHeader::SImplementation::SetupCollapseButton()
+void CCollapsibleFrameHeader::SetupCollapseButton()
 {
 	m_pCollapseButton = new QPushButton(m_pParentCollapsible);
 	m_pCollapseButton->setObjectName("CollapseButton");
@@ -231,8 +180,8 @@ void CCollapsibleFrameHeader::SImplementation::SetupCollapseButton()
 	layout->setContentsMargins(6, 2, 6, 2);
 	m_pCollapseButton->setLayout(layout);
 	
-	m_pIconLabel = new QLabel(m_pCollapseButton);
-	m_pIconLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+	m_pCollapseIconLabel = new QLabel(m_pCollapseButton);
+	m_pCollapseIconLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 	
 	m_pTitleLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 	
@@ -242,92 +191,80 @@ void CCollapsibleFrameHeader::SImplementation::SetupCollapseButton()
 	m_pCloseButton->setFixedWidth(16);
 
 	m_pCloseButton->setVisible(false);
-	m_pIconLabel->setPixmap(m_expandedIcon.pixmap(m_expandedIcon.actualSize(m_iconSize)));
+	m_pCollapseIconLabel->setPixmap(m_expandedIcon.pixmap(m_expandedIcon.actualSize(m_iconSize)));
 	
-	layout->addWidget(m_pIconLabel);
+	layout->addWidget(m_pCollapseIconLabel);
+
+	if (m_pIconLabel != nullptr)
+	{
+		layout->addWidget(m_pIconLabel);
+	}
+
 	layout->addWidget(m_pTitleLabel);
 	layout->addStretch();
 	layout->addWidget(m_pCloseButton);
 }
 
-void CCollapsibleFrameHeader::SImplementation::SetTitle(const QString& title)
+void CCollapsibleFrameHeader::SetTitle(const QString& title)
 {
 	m_pTitleLabel->setText(title);
 }
 
-void CCollapsibleFrameHeader::SImplementation::SetIconSize(const QSize& iconSize)
+void CCollapsibleFrameHeader::SetIconSize(const QSize& iconSize)
 {
 	m_iconSize = iconSize;
 }
 
-void CCollapsibleFrameHeader::SImplementation::SetupMainLayout()
+void CCollapsibleFrameHeader::SetupMainLayout()
 {
 	auto pTitleLayout = new QHBoxLayout;
 	pTitleLayout->setContentsMargins(0, 0, 0, 0);
 	pTitleLayout->setSpacing(0);
 	pTitleLayout->addWidget(m_pCollapseButton);
-	m_pHeader->setLayout(pTitleLayout);
+	setLayout(pTitleLayout);
 }
 
-void CCollapsibleFrameHeader::SImplementation::OnCollapseButtonClick()
+void CCollapsibleFrameHeader::SetCollapsed(bool collapsed)
 {
-	m_bCollapsed = !m_bCollapsed;
-
-	if (m_bCollapsed)
+	if (collapsed != m_bCollapsed)
 	{
-		m_pIconLabel->setPixmap(m_collapsedIcon.pixmap(m_collapsedIcon.actualSize(m_iconSize)));
+		m_bCollapsed = collapsed;
+
+		if (m_bCollapsed)
+		{
+			m_pCollapseIconLabel->setPixmap(m_collapsedIcon.pixmap(m_collapsedIcon.actualSize(m_iconSize)));
+		}
+		else
+		{
+			m_pCollapseIconLabel->setPixmap(m_expandedIcon.pixmap(m_expandedIcon.actualSize(m_iconSize)));
+		}
+
+		auto pWidget = m_pParentCollapsible->m_pWidget;
+		if (pWidget)
+		{
+			pWidget->setHidden(m_bCollapsed);
+		}
 	}
-	else
+}
+
+void CCollapsibleFrameHeader::OnCollapseButtonClick()
+{
+	SetCollapsed(!m_bCollapsed);
+
+	if (m_onCollapsedStateChanged)
 	{
-		m_pIconLabel->setPixmap(m_expandedIcon.pixmap(m_expandedIcon.actualSize(m_iconSize)));
+		m_onCollapsedStateChanged(m_bCollapsed);
 	}
-
-	auto pWidget = m_pParentCollapsible->m_pImpl->m_pWidget;
-	if (pWidget)
-	{
-		pWidget->setHidden(m_bCollapsed);
-	}
-
-}
-
-void CCollapsibleFrameHeader::SImplementation::SetClosable(bool closable)
-{
-	m_pCloseButton->setVisible(closable);
-}
-
-bool CCollapsibleFrameHeader::SImplementation::Closable() const
-{
-	return m_pCloseButton->isVisible();
-}
-
-CCollapsibleFrameHeader::CCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible)
-	: QWidget(pParentCollapsible)
-	, m_pImpl(new SImplementation(this, title, pParentCollapsible))
-{
-	// do not install in SImplementation constructor because events may
-	// be fired and eventFilter needs m_pImpl to be fully constructed
-	m_pImpl->m_pCollapseButton->installEventFilter(this);
-	connect(m_pImpl->m_pCollapseButton, SIGNAL(clicked()), this, SLOT(OnCollapseButtonClick()));
-}
-
-QSize CCollapsibleFrameHeader::GetIconSize() const
-{
-	return m_pImpl->GetIconSize();
-}
-
-void CCollapsibleFrameHeader::SetIconSize(const QSize& iconSize)
-{
-	m_pImpl->SetIconSize(iconSize);
 }
 
 void CCollapsibleFrameHeader::SetClosable(bool closable)
 {
-	m_pImpl->SetClosable(closable);
+	m_pCloseButton->setVisible(closable);
 }
 
 bool CCollapsibleFrameHeader::Closable() const
 {
-	return m_pImpl->Closable();
+	return m_pCloseButton->isVisible();
 }
 
 void CCollapsibleFrameHeader::paintEvent(QPaintEvent*)
@@ -340,18 +277,13 @@ void CCollapsibleFrameHeader::paintEvent(QPaintEvent*)
 
 bool CCollapsibleFrameHeader::eventFilter(QObject* pWatched, QEvent* pEvent)
 {
-	auto pCollapseButton = m_pImpl->m_pCollapseButton;
+	auto pCollapseButton = m_pCollapseButton;
 	// can only be disabled when parent is disabled. cannot be explicitly disabled from outside this
 	// class due to no public access.
 	if ((pEvent->type() != QEvent::MouseButtonRelease) || (pWatched != pCollapseButton) || isEnabled())
 	{
 		return QWidget::eventFilter(pWatched, pEvent);
 	}
-	m_pImpl->OnCollapseButtonClick();
+	OnCollapseButtonClick();
 	return true;
-}
-
-void CCollapsibleFrameHeader::OnCollapseButtonClick()
-{
-	m_pImpl->OnCollapseButtonClick();
 }

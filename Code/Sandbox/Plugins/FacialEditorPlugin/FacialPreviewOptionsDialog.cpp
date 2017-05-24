@@ -59,8 +59,8 @@ BOOL CFacialPreviewOptionsDialog::OnInitDialog()
 	m_hAccelerators = LoadAccelerators(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDR_FACED_MENU));
 
 	this->m_panel = new CPropertiesPanel(this);
-	this->m_panel->AddVars(m_pPreviewDialog->GetVarObject()->GetVarBlock());
-	//this->m_panel->AddVars( m_pModelViewportCE->GetVarObject()->GetVarBlock() );
+	this->m_panel->AddVars(m_pPreviewDialog->GetVarObject());
+	//this->m_panel->AddVars( m_pModelViewportCE->GetVarObject() );
 	this->m_panel->ShowWindow(SW_SHOWDEFAULT);
 
 	//this->ShowWindow(SW_SHOWDEFAULT);

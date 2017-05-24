@@ -9,8 +9,8 @@
 
 #include "VariableStorage/AbstractVariableTypesModel.h"
 
-#include <Schematyc/Script/IScriptGraph.h>
-#include <Schematyc/Reflection/TypeDesc.h>
+#include <CrySchematyc/Script/IScriptGraph.h>
+#include <CrySchematyc/Reflection/TypeDesc.h>
 
 #include <NodeGraph/PinWidget.h>
 #include <NodeGraph/NodeGraphViewStyle.h>
@@ -74,10 +74,10 @@ bool CPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) con
 			{
 				if (pOtherPin->IsInputPin())
 				{
-					const Schematyc::SGUID sourceGuid = m_nodeItem.GetGUID();
+					const CryGUID sourceGuid = m_nodeItem.GetGUID();
 					const Schematyc::CUniqueId sourceId = GetPortId();
 
-					const Schematyc::SGUID targetGuid = static_cast<CNodeItem&>(pOtherPin->GetNodeItem()).GetGUID();
+					const CryGUID targetGuid = static_cast<CNodeItem&>(pOtherPin->GetNodeItem()).GetGUID();
 					const Schematyc::CUniqueId targetId = static_cast<const CPinItem*>(pOtherPin)->GetPortId();
 
 					return scriptGraph.CanAddLink(sourceGuid, sourceId, targetGuid, targetId);
@@ -87,10 +87,10 @@ bool CPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) con
 			{
 				if (pOtherPin->IsOutputPin())
 				{
-					const Schematyc::SGUID sourceGuid = static_cast<CNodeItem&>(pOtherPin->GetNodeItem()).GetGUID();
+					const CryGUID sourceGuid = static_cast<CNodeItem&>(pOtherPin->GetNodeItem()).GetGUID();
 					const Schematyc::CUniqueId sourceId = static_cast<const CPinItem*>(pOtherPin)->GetPortId();
 
-					const Schematyc::SGUID targetGuid = m_nodeItem.GetGUID();
+					const CryGUID targetGuid = m_nodeItem.GetGUID();
 					const Schematyc::CUniqueId targetId = GetPortId();
 
 					return scriptGraph.CanAddLink(sourceGuid, sourceId, targetGuid, targetId);

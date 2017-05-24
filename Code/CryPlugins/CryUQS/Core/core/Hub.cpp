@@ -222,7 +222,7 @@ namespace UQS
 				//
 
 				{
-					const Schematyc::SGUID guid = "5ee1079d-1b49-41c0-856d-6521d8758bd6"_schematyc_guid;
+					const Schematyc::CryGUID guid = "5ee1079d-1b49-41c0-856d-6521d8758bd6"_cry_guid;
 					const char* szName = "UniversalQuerySystem";
 					const char* szDescription = "Universal Query System";
 					Schematyc::EnvPackageCallback callback = SCHEMATYC_DELEGATE(&CHub::OnRegisterSchematycEnvPackage);

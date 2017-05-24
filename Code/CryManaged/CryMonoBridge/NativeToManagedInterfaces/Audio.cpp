@@ -8,10 +8,6 @@
 #include "Wrappers/MonoDomain.h"
 #include "Wrappers/MonoClass.h"
 
-#include <mono/metadata/class.h>
-#include <mono/metadata/object.h>
-#include <mono/metadata/reflection.h>
-
 #include <CryAudio/IAudioSystem.h>
 #include <CryAudio/IObject.h>
 #include <CryAudio/IListener.h>

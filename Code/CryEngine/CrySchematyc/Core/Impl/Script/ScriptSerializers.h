@@ -4,9 +4,9 @@
 
 #include <CrySerialization/BlackBox.h>
 #include <CrySerialization/Forward.h>
-#include <Schematyc/Script/IScriptElement.h>
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
-#include <Schematyc/Utils/Delegate.h>
+#include <CrySchematyc/Script/IScriptElement.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/Utils/Delegate.h>
 
 #include "Script/Script.h"
 
@@ -20,7 +20,7 @@ class CScript;
 //////////////////////////////////////////////////////////////////////////
 // FILE FORMAT
 //////////////////////////////////////////////////////////////////////////
-// <schematyc>
+// <CrySchematyc>
 //  <version value="..."/>
 //  <guid value="..."/>
 //  <scope value="..."/>
@@ -48,8 +48,8 @@ class CScript;
 //  </root>
 // </schematyc>
 //////////////////////////////////////////////////////////////////////////
+typedef std::function<void (IScriptElement&)> ScriptElementSerializeCallback;
 
-typedef CDelegate<void (IScriptElement&)> ScriptElementSerializeCallback;
 
 class CScriptInputElementSerializer
 {
@@ -82,8 +82,8 @@ struct SScriptInputElement
 
 struct SScriptInputBlock
 {
-	SGUID               guid;
-	SGUID               scopeGUID;
+	CryGUID               guid;
+	CryGUID               scopeGUID;
 	SScriptInputElement rootElement;
 };
 typedef std::vector<SScriptInputBlock> ScriptInputBlocks;

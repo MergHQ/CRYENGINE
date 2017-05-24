@@ -2,44 +2,67 @@
 #include "Entity.h"
 
 #include "MonoRuntime.h"
+#include "ManagedPlugin.h"
 
 #include "NativeComponents/ManagedEntityComponent.h"
 
 #include "Wrappers/MonoDomain.h"
 #include "Wrappers/MonoClass.h"
 
-static std::unordered_map<MonoInternals::MonoReflectionType*, std::unique_ptr<SManagedEntityComponentFactory>> s_entityComponentFactoryMap;
+#include <CrySchematyc/CoreAPI.h>
 
-static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 guidHipart, uint64 guidLopart)
+static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 guidHipart, uint64 guidLopart, MonoInternals::MonoString* pName, MonoInternals::MonoString* pCategory, MonoInternals::MonoString* pDescription, MonoInternals::MonoString* pIcon)
 {
 	MonoInternals::MonoClass* pMonoClass = MonoInternals::mono_type_get_class(MonoInternals::mono_reflection_type_get_type(pType));
 	MonoInternals::MonoImage* pImage = MonoInternals::mono_class_get_image(pMonoClass);
 
 	CMonoDomain* pDomain = GetMonoRuntime()->FindDomainByHandle(MonoInternals::mono_object_get_domain((MonoInternals::MonoObject*)pType));
-
 	CMonoLibrary* pLibrary = pDomain->GetLibraryFromMonoAssembly(MonoInternals::mono_image_get_assembly(pImage));
 
 	CryGUID id = CryGUID::Construct(guidHipart, guidLopart);
+	Schematyc::SSourceFileInfo info("Unknown .NET source file", 0);
 
-	s_entityComponentFactoryMap.emplace(pType, stl::make_unique<SManagedEntityComponentFactory>(pLibrary->GetClassFromMonoClass(pMonoClass), id));
-	
-	ICryFactoryRegistryImpl* pFactoryRegistry = static_cast<ICryFactoryRegistryImpl*>(gEnv->pSystem->GetCryFactoryRegistry());
+	// Find source file and line number
+	// We can't get this for the class itself, but cheat and use the first exposed method
+	void* iter = nullptr;
+	if (MonoInternals::MonoMethod* pMethod = mono_class_get_methods(pMonoClass, &iter))
+	{
+		if (MonoInternals::MonoDebugMethodJitInfo* pMethodDebugInfo = mono_debug_find_method(pMethod, MonoInternals::mono_domain_get()))
+		{
+			// Hack since this isn't exposed to the Mono API
+			struct InternalMonoDebugLineNumberEntry 
+			{
+				uint32_t il_offset;
+				uint32_t native_offset;
+			};
 
-	SRegFactoryNode node;
-	node.m_pFactory = s_entityComponentFactoryMap[pType].get();
-	node.m_pNext = nullptr;
-	pFactoryRegistry->RegisterFactories(&node);
+			if (MonoInternals::MonoDebugSourceLocation* pSourceLocation = mono_debug_lookup_source_location(pMethod,
+				((InternalMonoDebugLineNumberEntry*)(void*)pMethodDebugInfo->line_numbers)[0].native_offset,
+				MonoInternals::mono_domain_get()))
+			{
+				info.szFileName = pSourceLocation->source_file;
+				info.lineNumber = pSourceLocation->row;
+			}
+		}
+	}
+
+	std::shared_ptr<CMonoString> pClassName = CMonoDomain::CreateString(pName);
+	std::shared_ptr<CMonoString> pClassCategory = CMonoDomain::CreateString(pCategory);
+	std::shared_ptr<CMonoString> pDesc = CMonoDomain::CreateString(pCategory);
+	std::shared_ptr<CMonoString> pClassIcon = CMonoDomain::CreateString(pIcon);
+
+	CManagedPlugin::s_pCurrentlyRegisteringFactory->emplace(pType, std::make_shared<CManagedEntityComponentFactory>(pLibrary->GetClassFromMonoClass(pMonoClass), id, info, pClassName->GetString(), pClassCategory->GetString(), pDesc->GetString(), pClassIcon->GetString()));
 }
 
 static IEntityComponent* CreateManagedComponent(IEntity *pEntity, SEntitySpawnParams& params, void* pUserData)
 {
-	return pEntity->AddComponent(*(const CryClassID*)pUserData, nullptr, true);
+	return pEntity->AddComponent(*(CryGUID*)pUserData, std::shared_ptr<IEntityComponent>(), true, nullptr);
 }
 
 static void RegisterManagedEntityWithDefaultComponent(MonoInternals::MonoString* pName, MonoInternals::MonoString* pEditorCategory, MonoInternals::MonoString* pEditorHelper, MonoInternals::MonoString* pEditorIcon, bool bHide, MonoInternals::MonoReflectionType* pComponentType)
 {
-	auto it = s_entityComponentFactoryMap.find(pComponentType);
-	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
+	auto it = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pComponentType);
+	CRY_ASSERT(it != CManagedPlugin::s_pCurrentlyRegisteringFactory->end());
 
 	std::shared_ptr<CMonoString> pClassName = CMonoDomain::CreateString(pName);
 	std::shared_ptr<CMonoString> pCategory = CMonoDomain::CreateString(pEditorCategory);
@@ -54,21 +77,14 @@ static void RegisterManagedEntityWithDefaultComponent(MonoInternals::MonoString*
 	clsDesc.editorClassInfo.sIcon = pIcon->GetString();
 
 	clsDesc.pUserProxyCreateFunc = &CreateManagedComponent;
-	clsDesc.pUserProxyData = (void*)&it->second->GetClassID();
+	clsDesc.pUserProxyData = (void*)&it->second->m_classDescription.GetGUID();
 
-	it->second->pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
+	it->second->m_pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
 }
 
-static MonoInternals::MonoObject* GetComponent(IEntity* pEntity, MonoInternals::MonoReflectionType* pType)
+static MonoInternals::MonoObject* GetComponent(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart)
 {
-	auto it = s_entityComponentFactoryMap.find(pType);
-
-	if (it == s_entityComponentFactoryMap.end())
-	{
-		return nullptr;
-	}
-
-	if (CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second->GetClassID())))
+	if (auto* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(CryGUID::Construct(guidHipart, guidLopart))))
 	{
 		return pComponent->GetObject()->GetManagedObject();
 	}
@@ -76,12 +92,11 @@ static MonoInternals::MonoObject* GetComponent(IEntity* pEntity, MonoInternals::
 	return nullptr;
 }
 
-static MonoInternals::MonoObject* AddComponent(IEntity* pEntity, MonoInternals::MonoReflectionType* pType)
+static MonoInternals::MonoObject* AddComponent(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart)
 {
-	auto it = s_entityComponentFactoryMap.find(pType);
-	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
+	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(CryGUID::Construct(guidHipart, guidLopart), std::shared_ptr<IEntityComponent>(), true, nullptr));
 
-	if (CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second->GetClassID(), nullptr, true)))
+	if (pComponent != nullptr)
 	{
 		return pComponent->GetObject()->GetManagedObject();
 	}
@@ -89,21 +104,14 @@ static MonoInternals::MonoObject* AddComponent(IEntity* pEntity, MonoInternals::
 	return nullptr;
 }
 
-static MonoInternals::MonoObject* GetOrCreateComponent(IEntity* pEntity, MonoInternals::MonoReflectionType* pType)
+static MonoInternals::MonoObject* GetOrCreateComponent(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart)
 {
-	auto it = s_entityComponentFactoryMap.find(pType);
-	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
+	CryGUID id = CryGUID::Construct(guidHipart, guidLopart);
 
-	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second->GetClassID()));
+	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(id));
 	if (pComponent == nullptr)
 	{
-		pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second->GetClassID(), nullptr, true));
-		if (pComponent == nullptr)
-		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to create component %s!", it->second->GetName());
-
-			return nullptr;
-		}
+		pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(id, std::shared_ptr<IEntityComponent>(), false, nullptr));
 	}
 
 	return pComponent->GetObject()->GetManagedObject();
@@ -111,14 +119,14 @@ static MonoInternals::MonoObject* GetOrCreateComponent(IEntity* pEntity, MonoInt
 
 static void RegisterComponentProperty(MonoInternals::MonoReflectionType* pComponentType, MonoInternals::MonoReflectionProperty* pProperty, MonoInternals::MonoString* pPropertyName, MonoInternals::MonoString* pPropertyLabel, MonoInternals::MonoString* pPropertyDescription, EEntityPropertyType type)
 {
-	auto it = s_entityComponentFactoryMap.find(pComponentType);
-	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
+	auto it = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pComponentType);
+	CRY_ASSERT(it != CManagedPlugin::s_pCurrentlyRegisteringFactory->end());
 
 	std::shared_ptr<CMonoString> pName = CMonoDomain::CreateString(pPropertyName);
 	std::shared_ptr<CMonoString> pLabel = CMonoDomain::CreateString(pPropertyLabel);
 	std::shared_ptr<CMonoString> pDescription = CMonoDomain::CreateString(pPropertyDescription);
 
-	it->second->AddProperty((MonoReflectionPropertyInternal*)pProperty, pName->GetString(), pLabel->GetString(), pDescription->GetString(), type);
+	it->second->AddProperty(pProperty, pName->GetString(), pLabel->GetString(), pDescription->GetString(), type);
 }
 
 void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* methodName)> func)

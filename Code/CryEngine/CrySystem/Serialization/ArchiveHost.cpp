@@ -12,6 +12,8 @@
 
 namespace Serialization
 {
+constexpr const char* kXmlVersionAttribute = "CryXmlVersion";
+constexpr int kXmlVersionCurrent = 2;
 
 bool LoadFile(std::vector<char>& content, const char* filename)
 {
@@ -142,20 +144,23 @@ public:
 		return node->saveToFile(filename);
 	}
 
-	bool LoadXmlFile(const SStruct& obj, const char* filename) override
+	bool LoadXmlFile(const SStruct& obj, const char* filename,int forceVersion=-1) override
 	{
 		XmlNodeRef node = gEnv->pSystem->LoadXmlFromFile(filename);
 		if (!node)
 			return false;
-		return LoadXmlNode(obj, node);
+		return LoadXmlNode(obj, node, forceVersion);
 	}
 
 	XmlNodeRef SaveXmlNode(const SStruct& obj, const char* nodeName) override
 	{
-		CXmlOArchive oa;
+		//CXmlOArchive oa;
+		CXmlOutputArchive oa;
 		XmlNodeRef node = gEnv->pSystem->CreateXmlNode(nodeName);
 		if (!node)
 			return XmlNodeRef();
+		//node->setAttr("CryXmlVersion",1); // for CXmlOArchive oa;
+		node->setAttr(kXmlVersionAttribute,kXmlVersionCurrent);
 		oa.SetXmlNode(node);
 		if (!obj(oa))
 			return XmlNodeRef();
@@ -166,17 +171,40 @@ public:
 	{
 		if (!node)
 			return false;
-		CXmlOArchive oa;
+		//CXmlOArchive oa;
+		CXmlOutputArchive oa;
+		//node->setAttr("CryXmlVersion",1); // for CXmlOArchive oa;
+		node->setAttr(kXmlVersionAttribute,kXmlVersionCurrent);
 		oa.SetXmlNode(node);
 		return obj(oa);
 	}
 
-	bool LoadXmlNode(const SStruct& obj, const XmlNodeRef& node) override
+	bool LoadXmlNode(const SStruct& obj, const XmlNodeRef& node,int forceVersion=-1) override
 	{
-		CXmlIArchive ia;
-		ia.SetXmlNode(node);
-		if (!obj(ia))
-			return false;
+		int version = 1; // Default to old version
+		if (forceVersion < 0)
+		{
+			node->getAttr(kXmlVersionAttribute,version);
+		}
+		else
+		{
+			version = forceVersion;
+		}
+		if (version == kXmlVersionCurrent)
+		{
+			CXmlInputArchive ia;
+			ia.SetXmlNode(node);
+			if (!obj(ia))
+				return false;
+		}
+		else
+		{
+			// Old version 1
+			CXmlIArchiveVer1 ia;
+			ia.SetXmlNode(node);
+			if (!obj(ia))
+				return false;
+		}
 		return true;
 	}
 
@@ -190,7 +218,7 @@ public:
 			}
 			else if (strcmp(box.format, "xml") == 0)
 			{
-				return LoadXmlNode(outObj, *static_cast<const XmlNodeRef*>(box.data));
+				return LoadXmlNode(outObj, *static_cast<const XmlNodeRef*>(box.data),box.xmlVersion);
 			}
 		}
 		return false;

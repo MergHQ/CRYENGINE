@@ -4031,7 +4031,7 @@ void CRecordingSystem::UpdateBulletPosition()
 	{
 		if (m_bulletEntityId == 0 && m_bulletTimePhase == eBTP_Approach)
 		{
-			IEntityClass *pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Default");
+			IEntityClass *pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 
 			SEntitySpawnParams params;
 			params.pClass = pEntityClass;

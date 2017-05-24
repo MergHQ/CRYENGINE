@@ -6,8 +6,8 @@
 #include "ObjectModel.h"
 #include "StateItem.h"
 
-#include <Schematyc/Script/Elements/IScriptVariable.h>
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/Script/Elements/IScriptVariable.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
 
 #include <QtUtil.h>
 #include <QObject>
@@ -63,7 +63,7 @@ void CVariableItem::Serialize(Serialization::IArchive& archive)
 	m_scriptVariable.Serialize(archive);
 }
 
-Schematyc::SGUID CVariableItem::GetGUID() const
+CryGUID CVariableItem::GetGUID() const
 {
 	return m_scriptVariable.GetGUID();
 }

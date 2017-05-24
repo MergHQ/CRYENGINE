@@ -132,7 +132,7 @@ private:
 
 	std::vector<_smart_ptr<CMatInfo>> m_nonRemovables;                //
 
-	std::vector<_smart_ptr<CMatInfo>> m_DelayedDeletionMtls[MATERIAL_DELETION_DELAY];
+	std::vector<CMatInfo*>            m_DelayedDeletionMtls[MATERIAL_DELETION_DELAY];
 
 	CSurfaceTypeManager*              m_pSurfaceTypeManager;          //
 

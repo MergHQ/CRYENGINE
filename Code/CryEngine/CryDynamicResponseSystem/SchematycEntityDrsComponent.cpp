@@ -11,58 +11,54 @@
 using Schematyc::CSharedString;
 using namespace DRS;
 
-bool CSchematycEntityDrsComponent::Init()
+void CSchematycEntityDrsComponent::Initialize()
 {
-	IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
+	IEntity& entity = *GetEntity();
 	m_pDrsEntityComp = entity.GetOrCreateComponent<IEntityDynamicResponseComponent>();
 	if (!m_nameOverride.empty() || !m_globalVariableCollectionToUse.empty())  //the default DrsComponent will create a non-global drs actor, named like the entity. if this is not what we want, we need to re-init.
 	{
 		m_pDrsEntityComp->ReInit((m_nameOverride.empty()) ? nullptr : m_nameOverride.c_str(), (m_globalVariableCollectionToUse.empty()) ? nullptr : m_globalVariableCollectionToUse.c_str());
 	}
-	return true;
 }
 
 void CSchematycEntityDrsComponent::Run(Schematyc::ESimulationMode simulationMode)
 {
 	if (simulationMode != Schematyc::ESimulationMode::Idle && simulationMode != Schematyc::ESimulationMode::Preview)
 	{
-		IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
 		gEnv->pDynamicResponseSystem->GetSpeakerManager()->AddListener(this);
 	}
 	else if (simulationMode == Schematyc::ESimulationMode::Preview)  //workaround to not keep a drs actor for the preview object...
 	{
-		IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
-		entity.RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
+		GetEntity()->RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
 		m_pDrsEntityComp = nullptr;
 	}
 }
 
-void CSchematycEntityDrsComponent::Shutdown()
+void CSchematycEntityDrsComponent::OnShutDown()
 {
 	gEnv->pDynamicResponseSystem->GetSpeakerManager()->RemoveListener(this);
 
 	if (m_pDrsEntityComp)
 	{
-		IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
-		entity.RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
+		GetEntity()->RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
 		m_pDrsEntityComp = nullptr;
 	}
 }
 
 void CSchematycEntityDrsComponent::ReflectType(Schematyc::CTypeDesc<CSchematycEntityDrsComponent>& desc)
 {
-	desc.SetGUID("25854445-cd59-4257-827d-aef984790598"_schematyc_guid);
+	desc.SetGUID("25854445-cd59-4257-827d-aef984790598"_cry_guid);
 	desc.SetLabel("DRS");
 	desc.SetDescription("Dynamic Response System component");
 	desc.SetIcon("icons:Dialogs/notification_text.ico");
-	desc.SetComponentFlags(Schematyc::EComponentFlags::Singleton);
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Singleton, IEntityComponent::EFlags::HideFromInspector });
 	desc.AddMember(&CSchematycEntityDrsComponent::m_nameOverride, 'name', "actorNameOverride", "ActorNameOverride", "Override for the DRS actor name. If empty, entity name will be used. Remark: This name has to be unique, therefore the DRS will alter it, if there is already an actor with that name.");
 	desc.AddMember(&CSchematycEntityDrsComponent::m_globalVariableCollectionToUse, 'glob', "globalCollectionToUse", "GlobalCollectionToUse", "Normally each actor has it`s own local variable collection, that is not accessible (via name) from the outside and is also not serialized .With this property you can change this behavior so that the actor instead uses a global collection.");
 }
 
 void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(Schematyc::g_entityClassGUID);
+	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{
 		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CSchematycEntityDrsComponent));
 		// Functions
@@ -73,7 +69,7 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 		//	Idea: SetVariable outputs the usedVariableCollection, so that it can be used as an input for SendSignal
 
 		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SendSignal, "3f00d849-3a9e-4fdf-b322-30ce546005ed"_schematyc_guid, "SendSignal");
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SendSignal, "3f00d849-3a9e-4fdf-b322-30ce546005ed"_cry_guid, "SendSignal");
 			pFunction->SetDescription("Sends a DRS signal");
 			pFunction->BindInput(1, 'sig', "SignalName");
 			pFunction->BindInput(2, 'cfn', "ContextFloatName", "(optional) The name of a float-variable that can be passed along with this signal");
@@ -84,7 +80,7 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 			componentScope.Register(pFunction);
 		}
 		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetFloatVariable, "322c7c23-f4bd-4582-a55b-7ccce84aa6c1"_schematyc_guid, "SetFloatVariable");
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetFloatVariable, "322c7c23-f4bd-4582-a55b-7ccce84aa6c1"_cry_guid, "SetFloatVariable");
 			pFunction->SetDescription("Sets a float variable in a variable collection");
 			pFunction->BindInput(1, 'col', "CollectionName");
 			pFunction->BindInput(2, 'var', "VariableName");
@@ -92,7 +88,7 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 			componentScope.Register(pFunction);
 		}
 		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetStringVariable, "47b46015-0bb9-4c15-bc40-50914746cfd3"_schematyc_guid, "SetStringVariable");
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetStringVariable, "47b46015-0bb9-4c15-bc40-50914746cfd3"_cry_guid, "SetStringVariable");
 			pFunction->SetDescription("Sets a string variable in a variable collection");
 			pFunction->BindInput(1, 'col', "CollectionName");
 			pFunction->BindInput(2, 'var', "VariableName");
@@ -100,7 +96,7 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 			componentScope.Register(pFunction);
 		}
 		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetIntVariable, "a0119cb0-f4c3-4c53-959b-4fe06f5d0691"_schematyc_guid, "SetIntVariable");
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetIntVariable, "a0119cb0-f4c3-4c53-959b-4fe06f5d0691"_cry_guid, "SetIntVariable");
 			pFunction->SetDescription("Sets a int variable in a variable collection");
 			pFunction->BindInput(1, 'col', "CollectionName");
 			pFunction->BindInput(2, 'var', "VariableName");
@@ -205,7 +201,7 @@ void CSchematycEntityDrsComponent::OnLineEvent(const IResponseActor* pSpeaker, c
 
 void CSchematycEntityDrsComponent::SResponseStartedSignal::ReflectType(Schematyc::CTypeDesc<SResponseStartedSignal>& desc)
 {
-	desc.SetGUID("f01fdb01-b03f-4eab-a0af-8d2359b4547b"_schematyc_guid);
+	desc.SetGUID("f01fdb01-b03f-4eab-a0af-8d2359b4547b"_cry_guid);
 	desc.SetLabel("ResponseStarted");
 	desc.SetDescription("Sent when a response is started.");
 	desc.AddMember(&SResponseStartedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr);  //actually ResponseInstanceId
@@ -213,7 +209,7 @@ void CSchematycEntityDrsComponent::SResponseStartedSignal::ReflectType(Schematyc
 
 void CSchematycEntityDrsComponent::SResponseFinishedSignal::ReflectType(Schematyc::CTypeDesc<SResponseFinishedSignal>& desc)
 {
-	desc.SetGUID("cece4601-9f11-4e7c-800c-222c601200fa"_schematyc_guid);
+	desc.SetGUID("cece4601-9f11-4e7c-800c-222c601200fa"_cry_guid);
 	desc.SetLabel("ResponseFinished");
 	desc.SetDescription("Sent when a response has finished (or was not even started/existing).");
 	desc.AddMember(&SResponseFinishedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr);  //actually ResponseInstanceId
@@ -222,7 +218,7 @@ void CSchematycEntityDrsComponent::SResponseFinishedSignal::ReflectType(Schematy
 
 void CSchematycEntityDrsComponent::SLineStartedSignal::ReflectType(Schematyc::CTypeDesc<SLineStartedSignal>& desc)
 {
-	desc.SetGUID("e397e62c-5c7f-4fab-9195-12032f670c9f"_schematyc_guid);
+	desc.SetGUID("e397e62c-5c7f-4fab-9195-12032f670c9f"_cry_guid);
 	desc.SetLabel("LineStarted");
 	desc.SetDescription("Sent when a dialog line is started.");
 	desc.AddMember(&SLineStartedSignal::m_text, 'text', "text", "Text", nullptr);
@@ -231,7 +227,7 @@ void CSchematycEntityDrsComponent::SLineStartedSignal::ReflectType(Schematyc::CT
 
 void CSchematycEntityDrsComponent::SLineEndedSignal::ReflectType(Schematyc::CTypeDesc<SLineEndedSignal>& desc)
 {
-	desc.SetGUID("75e5e2ac-377f-4992-84ad-42c551f96e46"_schematyc_guid);
+	desc.SetGUID("75e5e2ac-377f-4992-84ad-42c551f96e46"_cry_guid);
 	desc.SetLabel("LineEnded");
 	desc.SetDescription("Sent when a dialog line has finished/wasCanceled.");
 	desc.AddMember(&SLineEndedSignal::m_text, 'text', "text", "Text", nullptr);
