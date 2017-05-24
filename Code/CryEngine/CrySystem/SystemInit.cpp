@@ -5213,11 +5213,7 @@ void CSystem::CreateSystemVars()
 #endif
 
 #if !defined(_RELEASE)
-	#if defined(_DEBUG)
 	const bool defaultAsserts = 1;
-	#else
-	const bool defaultAsserts = 0;
-	#endif
 	REGISTER_CVAR2("sys_asserts", &g_cvars.sys_asserts, defaultAsserts, VF_CHEAT,
 	               "0 = Disable Asserts\n"
 	               "1 = Enable Asserts\n"
