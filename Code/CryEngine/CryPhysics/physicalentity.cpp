@@ -1248,8 +1248,8 @@ int CPhysicalEntity::Action(pe_action *_action, int bThreadSafe)
 		return 1;
 	}
 	if (_action->type==pe_action_remove_all_parts::type_id) {
-		for(int i=m_nParts-1;i>=0;i--)
-			RemoveGeometry(m_parts[i].id);
+		while(m_nParts)
+			RemoveGeometry(m_parts[m_nParts-1].id);
 		return 1;
 	}
 
@@ -1620,9 +1620,9 @@ void CPhysicalEntity::RemoveGeometry(int id, int bThreadSafe)
 	ChangeRequest<void> req(this,m_pWorld,0,bThreadSafe,0,id);
 	if (req.IsQueued())
 		return;
-	int i,j;
+	int i,j,n=0;
 
-	for(i=0;i<m_nParts;i++) if (m_parts[i].id==id) {
+	for(i=m_nParts-1;i>=0;i--) if (m_parts[i].id==id) {
 		if (m_nRefCount && m_iSimClass==0 && m_pWorld->m_vars.lastTimeStep>0.0f) {
 			CPhysicalEntity **pentlist;
 			Vec3 inflator = Vec3(10.0f)*m_pWorld->m_vars.maxContactGap;
@@ -1658,8 +1658,6 @@ void CPhysicalEntity::RemoveGeometry(int id, int bThreadSafe)
 			}
 		}
 		CPhysicalPlaceholder *ppc=0;
-		// keep the original bounding box while RepositionEntity emits the signal and substitute at the end
-		Vec3 newBBox[2];
 		{ WriteLockCond lock(m_lockUpdate,m_pWorld->m_vars.bLogStructureChanges);
 			if (m_parts[i].pMatMapping && m_parts[i].pMatMapping!=m_parts[i].pPhysGeom->pMatMapping) 
 				delete[] m_parts[i].pMatMapping;
@@ -1676,17 +1674,21 @@ void CPhysicalEntity::RemoveGeometry(int id, int bThreadSafe)
 			}
 			m_nParts--;
 			if (m_nPartsAlloc!=1) { MEMSTAT_USAGE(m_parts, sizeof(geom) * m_nParts); }
-			ComputeBBox(newBBox);
 			for(m_iLastIdx=i=0;i<m_nParts;i++)
 				m_iLastIdx = max(m_iLastIdx, m_parts[i].id+1);
 		}
 		if (ppc)
 			m_pWorld->DestroyPhysicalEntity(ppc,0,1);
+		n++;
+	}
+	if (n) {
+		// keep the original bounding box while RepositionEntity emits the signal and substitute at the end
+		Vec3 newBBox[2];
+		ComputeBBox(newBBox);
 		m_pWorld->RepositionEntity(this,1|8,newBBox);
 		m_BBox[0] = newBBox[0];
 		m_BBox[1] = newBBox[1];
 		RepositionParts();
-		return;
 	}
 }
 
