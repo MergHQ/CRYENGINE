@@ -46,6 +46,7 @@ namespace UQS
 
 #if UQS_SCHEMATYC_SUPPORT
 			static void                                                OnRegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar);  // gcc-4.9 requires this method to be public when registering as a callback
+			static CryGUID                                             GetSchematycPackageGUID() { return "5ee1079d-1b49-41c0-856d-6521d8758bd6"_cry_guid; }
 #endif
 
 		private:

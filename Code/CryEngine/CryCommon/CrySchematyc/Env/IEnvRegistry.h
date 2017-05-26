@@ -41,6 +41,7 @@ struct IEnvRegistry
 	virtual ~IEnvRegistry() {}
 
 	virtual bool                         RegisterPackage(IEnvPackagePtr&& pPackage) = 0;
+	virtual void                         DeregisterPackage(const CryGUID& guid) = 0;
 	virtual const IEnvPackage*           GetPackage(const CryGUID& guid) const = 0;
 	virtual void                         VisitPackages(const EnvPackageConstVisitor& visitor) const = 0;
 

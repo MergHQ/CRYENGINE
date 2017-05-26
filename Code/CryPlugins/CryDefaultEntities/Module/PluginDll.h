@@ -6,6 +6,7 @@
 
 class CPlugin_CryDefaultEntities
 	: public ICryPlugin
+	, public ISystemEventListener
 {
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(ICryPlugin)
@@ -16,19 +17,21 @@ class CPlugin_CryDefaultEntities
 	PLUGIN_FLOWNODE_REGISTER
 	PLUGIN_FLOWNODE_UNREGISTER
 
-	virtual ~CPlugin_CryDefaultEntities() {}
+	virtual ~CPlugin_CryDefaultEntities();
+
+	static CryGUID GetSchematycPackageGUID() { return "{CB9E7C85-3289-41B6-983A-6A076ABA6351}"_cry_guid; }
 
 public:
-	//! Retrieve name of plugin.
+	// ICryPlugin
 	virtual const char* GetName() const override { return "CryDefaultEntities"; }
-
-	//! Retrieve category for the plugin.
 	virtual const char* GetCategory() const override { return "Default"; }
-
-	//! This is called to initialize the new plugin.
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
-
 	virtual void OnPluginUpdate(EPluginUpdateType updateType) override {}
+	// ~ICryPlugin
+
+	// ISystemEventListener
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
+	// ~ISystemEventListener
 };
 
 struct IEntityRegistrator

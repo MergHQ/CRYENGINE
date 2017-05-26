@@ -986,16 +986,26 @@ bool CSystem::InitNetwork()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-bool CSystem::InitEntitySystem()
+bool CSystem::InitSchematyc()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	// First load CrySchematyc before entity system
-	if (!GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::Native, "CrySchematyc"))
+	if (!InitializeEngineModule("CrySchematyc", cryiidof<ICrySchematycCore>(), true))
+		return false;
+
+	if (!m_env.pSchematyc)
 	{
-		CryFatalError("Error creating CrySchematyc module");
+		CryFatalError("Error initializing Schematyc!");
 		return false;
 	}
+
+	return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+bool CSystem::InitEntitySystem()
+{
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
 	if (!InitializeEngineModule(DLL_ENTITYSYSTEM, cryiidof<IEntitySystemEngineModule>(), true))
 		return false;
@@ -3366,6 +3376,15 @@ bool CSystem::Init()
 		//////////////////////////////////////////////////////////////////////////
 		if (!m_startupParams.bPreview && !m_startupParams.bShaderCacheGen)
 		{
+			// Start with initializing Schematyc before the entity system
+			{
+				CryLogAlways("Schematyc initialization");
+				INDENT_LOG_DURING_SCOPE();
+
+				if (!InitSchematyc())
+					return false;
+			}
+
 			CryLogAlways("Entity system initialization");
 			INDENT_LOG_DURING_SCOPE();
 

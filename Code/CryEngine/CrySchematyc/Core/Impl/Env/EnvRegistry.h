@@ -20,8 +20,7 @@ struct IEnvInterface;
 struct IEnvInterfaceFunction;
 struct IEnvModule;
 struct IEnvSignal;
-// Forward declare structures.
-struct SEnvPackageElement;
+
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IEnvAction)
 DECLARE_SHARED_POINTERS(IEnvClass)
@@ -33,6 +32,19 @@ DECLARE_SHARED_POINTERS(IEnvInterface)
 DECLARE_SHARED_POINTERS(IEnvInterfaceFunction)
 DECLARE_SHARED_POINTERS(IEnvModule)
 DECLARE_SHARED_POINTERS(IEnvSignal)
+
+struct SEnvPackageElement
+{
+	inline SEnvPackageElement(const CryGUID& _elementGUID, const IEnvElementPtr& _pElement, const CryGUID& _scopeGUID)
+		: elementGUID(_elementGUID)
+		, pElement(_pElement)
+		, scopeGUID(_scopeGUID)
+	{}
+
+	CryGUID          elementGUID;
+	IEnvElementPtr pElement;
+	CryGUID          scopeGUID;
+};
 
 typedef std::vector<SEnvPackageElement> EnvPackageElements;
 
@@ -56,7 +68,13 @@ class CEnvRegistry : public IEnvRegistry
 {
 private:
 
-	typedef std::unordered_map<CryGUID, IEnvPackagePtr>                Packages;
+	struct SPackageInfo
+	{
+		IEnvPackagePtr pPackage;
+		EnvPackageElements elements;
+	};
+
+	typedef std::unordered_map<CryGUID, SPackageInfo>                  Packages;
 	typedef std::unordered_map<CryGUID, IEnvElementPtr>                Elements;
 	typedef std::unordered_map<CryGUID, IEnvModulePtr>                 Modules;
 	typedef std::unordered_map<CryGUID, IEnvDataTypePtr>               DataTypes;
@@ -74,6 +92,7 @@ public:
 	// IEnvRegistry
 
 	virtual bool                         RegisterPackage(IEnvPackagePtr&& pPackage) override;
+	virtual void                         DeregisterPackage(const CryGUID& guid) override;
 	virtual const IEnvPackage*           GetPackage(const CryGUID& guid) const override;
 	virtual void                         VisitPackages(const EnvPackageConstVisitor& visitor) const override;
 

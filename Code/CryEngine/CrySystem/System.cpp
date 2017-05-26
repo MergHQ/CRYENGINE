@@ -42,6 +42,7 @@
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryMono/IMonoRuntime.h>
+#include <CrySchematyc/ICore.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -714,6 +715,7 @@ void CSystem::ShutDown()
 	//	SAFE_RELEASE(m_env.pCharacterManager);
 	UnloadEngineModule("CryAnimation");
 	UnloadEngineModule("Cry3DEngine"); // depends on EntitySystem
+	UnloadEngineModule("CrySchematyc");
 	UnloadEngineModule("CryEntitySystem");
 
 	SAFE_DELETE(m_pPhysRenderer); // Must be destroyed before unloading CryPhysics as it holds memory that was allocated by that module
@@ -1454,6 +1456,11 @@ void CSystem::PrePhysicsUpdate()
 	//update entity system
 	if (m_env.pEntitySystem && g_cvars.sys_entitysystem)
 	{
+		if (gEnv->pSchematyc != nullptr)
+		{
+			gEnv->pSchematyc->PrePhysicsUpdate();
+		}
+
 		m_env.pEntitySystem->PrePhysicsUpdate();
 	}
 }
@@ -2103,6 +2110,11 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 #endif // #ifdef ENABLE_STATS_AGENT
 
 	m_pSystemEventDispatcher->Update();
+
+	if (gEnv->pSchematyc != nullptr)
+	{
+		gEnv->pSchematyc->Update();
+	}
 
 	if (m_pPluginManager)
 	{

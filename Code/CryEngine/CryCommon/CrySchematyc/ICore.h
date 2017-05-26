@@ -40,7 +40,7 @@ typedef std::function<CryGUID ()> GUIDGenerator;
 
 } // Schematyc
 
-struct ICrySchematycCore : public ICryPlugin
+struct ICrySchematycCore : public Cry::IDefaultModule
 {
 	CRYINTERFACE_DECLARE(ICrySchematycCore, 0x041b8bda35d74341, 0xbde7f0ca69be2595)
 
@@ -74,4 +74,7 @@ struct ICrySchematycCore : public ICryPlugin
 
 	virtual void                                RefreshLogFileSettings() = 0;
 	virtual void                                RefreshEnv() = 0;
+
+	virtual void                                PrePhysicsUpdate() = 0;
+	virtual void                                Update() = 0;
 };

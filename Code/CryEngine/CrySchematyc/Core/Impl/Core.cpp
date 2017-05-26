@@ -102,8 +102,6 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 
 	Schematyc::CVars::Register();
 
-	ICryPlugin::SetUpdateFlags(EUpdateType_PrePhysicsUpdate | EUpdateType_Update);
-
 	m_pLog->Init();
 	if (CVars::sc_LogToFile)
 	{
@@ -273,18 +271,6 @@ void CCore::SendSignal(ObjectId objectId, const SObjectSignal& signal)
 void CCore::BroadcastSignal(const SObjectSignal& signal)
 {
 	m_pObjectPool->BroadcastSignal(signal);
-}
-
-void CCore::OnPluginUpdate(EPluginUpdateType updateType)
-{
-	if (updateType == IPluginUpdateListener::EUpdateType_PrePhysicsUpdate)
-	{
-		PrePhysicsUpdate();
-	}
-	else if (updateType == IPluginUpdateListener::EUpdateType_Update)
-	{
-		Update();
-	}
 }
 
 void CCore::PrePhysicsUpdate()

@@ -546,6 +546,7 @@ private:
 	bool Init3DEngine();
 	bool InitAnimationSystem();
 	bool InitMovieSystem();
+	bool InitSchematyc();
 	bool InitEntitySystem();
 	bool InitDynamicResponseSystem();
 	bool InitLiveCreate();

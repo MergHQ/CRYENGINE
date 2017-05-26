@@ -17,19 +17,6 @@
 
 namespace Schematyc
 {
-struct SEnvPackageElement
-{
-	inline SEnvPackageElement(const CryGUID& _elementGUID, const IEnvElementPtr& _pElement, const CryGUID& _scopeGUID)
-		: elementGUID(_elementGUID)
-		, pElement(_pElement)
-		, scopeGUID(_scopeGUID)
-	{}
-
-	CryGUID          elementGUID;
-	IEnvElementPtr pElement;
-	CryGUID          scopeGUID;
-};
-
 class CEnvPackageElementRegistrar : public IEnvElementRegistrar, public IEnvRegistrar
 {
 public:
@@ -105,29 +92,41 @@ bool CEnvRegistry::RegisterPackage(IEnvPackagePtr&& pPackage)
 
 	SCHEMATYC_CORE_COMMENT("Registering package: name = %s", pPackage->GetName());
 
-	EnvPackageElements packageElements;
-	packageElements.reserve(100);
+	auto emplaceResult = m_packages.emplace((CryGUID)guid, SPackageInfo{ std::forward<IEnvPackagePtr>(pPackage) });
+	SPackageInfo& packageInfo = emplaceResult.first->second;
+	packageInfo.elements.reserve(100);
 
-	CEnvPackageElementRegistrar packageElementRegistrar(packageElements);
+	CEnvPackageElementRegistrar packageElementRegistrar(packageInfo.elements);
 	callback(packageElementRegistrar);
 
-	if (RegisterPackageElements(packageElements))
+	if (RegisterPackageElements(packageInfo.elements))
 	{
-		m_packages.insert(Packages::value_type(guid, std::forward<IEnvPackagePtr>(pPackage)));
 		return true;
 	}
 	else
 	{
-		ReleasePackageElements(packageElements);
+		ReleasePackageElements(packageInfo.elements);
+		m_packages.erase(emplaceResult.first);
+
 		SCHEMATYC_CORE_CRITICAL_ERROR("Failed to register package!");
 		return false;
+	}
+}
+
+void CEnvRegistry::DeregisterPackage(const CryGUID& guid)
+{
+	auto packageIt = m_packages.find(guid);
+	if (packageIt != m_packages.end())
+	{
+		ReleasePackageElements(packageIt->second.elements);
+		m_packages.erase(packageIt);
 	}
 }
 
 const IEnvPackage* CEnvRegistry::GetPackage(const CryGUID& guid) const
 {
 	Packages::const_iterator itPackage = m_packages.find(guid);
-	return itPackage != m_packages.end() ? itPackage->second.get() : nullptr;
+	return itPackage != m_packages.end() ? itPackage->second.pPackage.get() : nullptr;
 }
 
 void CEnvRegistry::VisitPackages(const EnvPackageConstVisitor& visitor) const
@@ -137,7 +136,7 @@ void CEnvRegistry::VisitPackages(const EnvPackageConstVisitor& visitor) const
 	{
 		for (const Packages::value_type& package : m_packages)
 		{
-			if (visitor(*package.second) == EVisitStatus::Stop)
+			if (visitor(*package.second.pPackage) == EVisitStatus::Stop)
 			{
 				break;
 			}

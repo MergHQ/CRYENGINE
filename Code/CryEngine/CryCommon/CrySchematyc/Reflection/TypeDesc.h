@@ -411,8 +411,6 @@ protected:
 		CCommonTypeDesc::m_operators.copyAssign = Adapters::SCopyAssign<TYPE>::Select();
 		CCommonTypeDesc::m_operators.equals = Adapters::SEquals<TYPE>::Select();
 		CCommonTypeDesc::m_operators.serialize = Adapters::SSerialize<TYPE>::Select();
-
-		CCommonTypeDesc::m_pDefaultValue = Utils::CDefaultValue<TYPE>::MakeUnique();
 	}
 
 private:
