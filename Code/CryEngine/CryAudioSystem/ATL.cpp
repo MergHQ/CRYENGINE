@@ -1048,7 +1048,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				}
 
 				result = pObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				pObject->RemoveFlag(EObjectFlags::DoNotRelease);
+				pObject->RemoveFlag(EObjectFlags::InUse);
 			}
 			else
 			{
@@ -1215,7 +1215,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		{
 			if (pObject != m_pGlobalAudioObject)
 			{
-				pObject->RemoveFlag(EObjectFlags::DoNotRelease);
+				pObject->RemoveFlag(EObjectFlags::InUse);
 				result = ERequestStatus::Success;
 			}
 			else

@@ -25,11 +25,12 @@ CAudioStandaloneFileManager* CryAudio::CATLAudioObject::s_pStandaloneFileManager
 CATLAudioObject::CATLAudioObject()
 	: m_pImplData(nullptr)
 	, m_maxRadius(0.0f)
-	, m_flags(EObjectFlags::DoNotRelease)
+	, m_flags(EObjectFlags::InUse)
 	, m_previousVelocity(0.0f)
 	, m_propagationProcessor(m_attributes.transformation)
 	, m_occlusionFadeOutDistance(0.0f)
 	, m_entityId(INVALID_ENTITYID)
+	, m_numPendingSyncCallbacks(0)
 {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -903,10 +904,11 @@ void CATLAudioObject::UpdateControls(float const deltaTime, Impl::SObject3DAttri
 ///////////////////////////////////////////////////////////////////////////
 bool CATLAudioObject::CanBeReleased() const
 {
-	return (m_flags& EObjectFlags::DoNotRelease) == 0 &&
+	return (m_flags & EObjectFlags::InUse) == 0 &&
 	       m_activeEvents.empty() &&
 	       m_activeStandaloneFiles.empty() &&
-	       !m_propagationProcessor.HasPendingRays();
+	       !m_propagationProcessor.HasPendingRays() &&
+		   m_numPendingSyncCallbacks == 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////

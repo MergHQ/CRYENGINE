@@ -147,6 +147,9 @@ public:
 	void         UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
 	bool         CanBeReleased() const;
 
+	void         IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
+	void         DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
+
 	static CSystem*                     s_pAudioSystem;
 	static CAudioEventManager*          s_pEventManager;
 	static CAudioStandaloneFileManager* s_pStandaloneFileManager;
@@ -190,6 +193,7 @@ private:
 	CPropagationProcessor     m_propagationProcessor;
 	float                     m_occlusionFadeOutDistance;
 	EntityId                  m_entityId;
+	volatile int              m_numPendingSyncCallbacks;
 
 	static TriggerInstanceId  s_triggerInstanceIdCounter;
 

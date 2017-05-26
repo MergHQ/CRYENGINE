@@ -105,11 +105,12 @@ void CSystem::ExternalUpdate()
 	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 
 	CAudioRequest request;
-
 	while (m_syncCallbacks.dequeue(request))
 	{
 		m_atl.NotifyListener(request);
-	}
+		request.pObject->DecrementSyncCallbackCounter();
+	}	
+
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	DrawAudioDebugData();
@@ -842,6 +843,7 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 				}
 				else
 				{
+					request.pObject->IncrementSyncCallbackCounter();
 					m_syncCallbacks.enqueue(request);
 				}
 			}
