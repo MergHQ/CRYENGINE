@@ -248,6 +248,15 @@ bool CMainWindow::OnOpenAsset(CAsset* pAsset)
 			m_pScriptBrowser->SetModel(m_pModel);
 		}
 
+		if (m_pPreview && m_pScript->GetRoot()->GetType() == Schematyc::EScriptElementType::Class)
+		{
+			m_pPreview->SetClass(static_cast<const Schematyc::IScriptClass*>(m_pScript->GetRoot()));
+		}
+		else
+		{
+			m_pPreview->SetComponentInstance(nullptr);
+		}
+
 		return true;
 	}
 
@@ -279,6 +288,11 @@ bool CMainWindow::OnCloseAsset()
 		if (m_pGraphView)
 		{
 			m_pGraphView->SetModel(nullptr);
+		}
+
+		if (m_pPreview)
+		{
+			m_pPreview->SetComponentInstance(nullptr);
 		}
 
 		stack_string dialogQuestion = "Asset '";
