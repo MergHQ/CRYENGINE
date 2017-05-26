@@ -1152,6 +1152,12 @@ void CStandardGraphicsPipeline::Execute()
 	// Generate cloud volume textures for shadow mapping.
 	m_pVolumetricCloudsStage->ExecuteShadowGen();
 
+	if (pRenderer->m_nGraphicsPipeline >= 2)
+	{
+		// Wait for Shadow Map draw jobs to finish (also required for HeightMap AO and SVOGI)
+		GetCurrentRenderView()->GetDrawer().WaitForDrawSubmission();
+	}
+
 	// SVOGI
 	{
 #if defined(FEATURE_SVO_GI)
@@ -1168,12 +1174,6 @@ void CStandardGraphicsPipeline::Execute()
 
 	// Screen Space Reflections
 	m_pScreenSpaceReflectionsStage->Execute();
-
-	if (pRenderer->m_nGraphicsPipeline >= 2)
-	{
-		// Wait for Shadow Map draw jobs to finish (also required for HeightMap AO)
-		GetCurrentRenderView()->GetDrawer().WaitForDrawSubmission();
-	}
 
 	// Height Map AO
 	ShadowMapFrustum* pHeightMapFrustum = nullptr;

@@ -1593,6 +1593,9 @@ inline UINT64 UpdateSubresources(
 		// If the size is specified manually we can't specify the sub-resource to calculate footprint
 		Desc.Width = pDstBox->right - pDstBox->left;
 		Desc.Height = pDstBox->bottom - pDstBox->top;
+		Desc.DepthOrArraySize = pDstBox->back - pDstBox->front;
+
+		assert((Desc.Width != 0) && (Desc.Height != 0) && (Desc.DepthOrArraySize != 0) && "Box-dimensions are 0 on at least one axis!");
 
 		FirstSubresourceBox = 0;
 	}
@@ -1630,6 +1633,9 @@ inline UINT64 UpdateSubresources(
 		// If the size is specified manually we can't specify the sub-resource to calculate footprint
 		Desc.Width = pDstBox->right - pDstBox->left;
 		Desc.Height = pDstBox->bottom - pDstBox->top;
+		Desc.DepthOrArraySize = pDstBox->back - pDstBox->front;
+
+		assert((Desc.Width != 0) && (Desc.Height != 0) && (Desc.DepthOrArraySize != 0) && "Box-dimensions are 0 on at least one axis!");
 
 		FirstSubresourceBox = 0;
 	}
