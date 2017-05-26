@@ -170,7 +170,7 @@ bool CAreaGrid::ResetArea(CArea* pArea)
 //////////////////////////////////////////////////////////////////////////
 void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 {
-	// Calculate a loose bounding box (ie one that covers all the region we will have to check this
+	// Calculate a loose bounding box (i.e. one that covers all the region we will have to check this
 	// shape for, including fade area).
 	Vec2 vBBCentre(0.0f, 0.0f);
 	Vec2 vBBExtent(0.0f, 0.0f);
@@ -218,14 +218,14 @@ void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 			float const greatestFadeDistance = pArea->GetGreatestFadeDistance();
 
 			boundbox.SetTransformedAABB(tm, boundbox);
-			vBBExtent = Vec2(std::abs(boundbox.max.x - boundbox.min.x), std::abs(boundbox.max.y - boundbox.min.y)) * /*sqrt2 **/ 0.5f;
+			vBBExtent = Vec2(std::abs(boundbox.max.x - boundbox.min.x), std::abs(boundbox.max.y - boundbox.min.y)) * 0.5f;
 			vBBExtent += Vec2(greatestFadeDistance, greatestFadeDistance);
 			vBBCentre = Vec2(boundbox.min.x + boundbox.max.x, boundbox.min.y + boundbox.max.y) * 0.5f;
 		}
 		break;
 	}
 
-	//Covert BB pos into grid coords
+	// Convert BB pos into grid coordinates
 	Vec2i start((int)((vBBCentre.x - vBBExtent.x) * GridCellSizeR), (int)((vBBCentre.y - vBBExtent.y) * GridCellSizeR));
 	Vec2i end((int)((vBBCentre.x + vBBExtent.x) * GridCellSizeR), (int)((vBBCentre.y + vBBExtent.y) * GridCellSizeR));
 
@@ -240,7 +240,7 @@ void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 	AddAreaBit(start, end, areaIndex);
 
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-	//query bb extents to see if they are correctly added to the grid
+	//query BB extents to see if they are correctly added to the grid
 	//Debug_CheckBB(vBBCentre, vBBExtent, pArea);
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 }
@@ -394,9 +394,9 @@ void CAreaGrid::Draw()
 					ColorB const colourB = colour;
 					Vec3 points[4] = { gridCenter + p1, gridCenter + p2, gridCenter + p3, gridCenter + p4 };
 
-					for (size_t i = 0; i < 4; ++i)
+					for (auto& point : points)
 					{
-						points[i].z = p3DEngine->GetTerrainElevation(points[i].x, points[i].y);
+						point.z = p3DEngine->GetTerrainElevation(point.x, point.y);
 					}
 
 					pRC->DrawTriangle(points[0], colourB, points[1], colourB, points[2], colourB);
