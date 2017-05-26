@@ -776,9 +776,6 @@ void CRenderer::FreeResources(int nFlags)
 {
 	iLog->Log("*** Start clearing render resources ***");
 
-	if (m_bEditor)
-		return;
-
 	// validate flag combinations
 	constexpr int requiredForSystem          = (FRR_SYSTEM | FRR_OBJECTS);
 	constexpr int requiredForSystemResources = (FRR_SYSTEM_RESOURCES | FRR_DELETED_MESHES | FRR_FLUSH_TEXTURESTREAMING | FRR_RP_BUFFERS | FRR_POST_EFFECTS | FRR_OBJECTS | FRR_PERMANENT_RENDER_OBJECTS | FRR_SVOGI);

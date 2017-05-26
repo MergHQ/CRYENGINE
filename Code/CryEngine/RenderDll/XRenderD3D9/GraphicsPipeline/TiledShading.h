@@ -41,6 +41,10 @@ private:
 
 private:
 	CGpuBuffer            m_lightVolumeInfoBuf;
+
+	_smart_ptr<CTexture>  m_pTexGiDiff;
+	_smart_ptr<CTexture>  m_pTexGiSpec;
+
 	SVolumeGeometry       m_volumeMeshes[eVolumeType_Count];
 
 	CConstantBufferPtr    m_pPerViewConstantBuffer = nullptr;

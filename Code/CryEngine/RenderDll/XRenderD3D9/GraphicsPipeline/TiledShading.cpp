@@ -511,6 +511,8 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetTexture(21, pTiledShading->m_spotTexAtlas.texArray);
 
 		s_prevTexAOColorBleed = pTexAOColorBleed->GetID();
+		m_pTexGiDiff = pTexGiDiff;
+		m_pTexGiSpec = pTexGiSpec;
 	}
 
 	D3DViewPort viewport = { 0.f, 0.f, float(screenWidth), float(screenHeight), 0.f, 1.f };

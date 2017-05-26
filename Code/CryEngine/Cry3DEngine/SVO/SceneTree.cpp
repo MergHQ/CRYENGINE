@@ -1243,6 +1243,11 @@ CSvoEnv::~CSvoEnv()
 			CVoxelSegment::m_arrLockedMaterials[i]->Release();
 		CVoxelSegment::m_arrLockedMaterials.Reset();
 	}
+
+	if (gEnv->pRenderer)
+	{
+		gEnv->pRenderer->FreeResources(FRR_SVOGI);
+	}
 }
 
 void CSvoNode::CheckAllocateSegment(int nLod)

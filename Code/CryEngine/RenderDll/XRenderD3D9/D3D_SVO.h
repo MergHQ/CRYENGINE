@@ -116,8 +116,6 @@ protected:
 	void VoxelizeRE();
 	bool VoxelizeMeshes(CShader* ef, SShaderPass* sfm);
 
-	SSvoTargetsSet m_tsDiff, m_tsSpec;
-
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	_smart_ptr<CTexture>
 		m_pRT_NID_0,
@@ -179,6 +177,8 @@ protected:
 	I3DEngine::SSvoStaticTexInfo      m_texInfo;
 	static CSvoRenderer*              s_pInstance;
 	PodArray<I3DEngine::SSvoNodeInfo> m_arrNodeInfo;
+
+	SSvoTargetsSet m_tsDiff, m_tsSpec;
 
 	// passes
 	CSvoComputePass    m_passClearBricks;
