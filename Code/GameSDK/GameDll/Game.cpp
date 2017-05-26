@@ -446,6 +446,7 @@ CGame::CGame()
 	m_pMatchMakingTelemetry(NULL),
 	m_pDataPatchDownloader(0),
 	m_pGameLocalizationManager(0),
+	m_pGameStateRecorder(0),
 #if USE_LAGOMETER
 	m_pLagOMeter(0),
 #endif
@@ -640,6 +641,7 @@ CGame::~CGame()
 	SAFE_DELETE(m_patchPakManager);
 	SAFE_DELETE(m_pDataPatchDownloader);
 	SAFE_DELETE(m_pGameLocalizationManager);
+	SAFE_RELEASE(m_pGameStateRecorder);
 	SAFE_DELETE(m_pGameTokenSignalCreator);
 #if USE_LAGOMETER
 	SAFE_DELETE(m_pLagOMeter);
@@ -4024,13 +4026,13 @@ void CGame::LoadMappedLevelNames(const char* xmlPath)
 
 IGameStateRecorder* CGame::CreateGameStateRecorder(IGameplayListener* pL)
 {
-	CGameStateRecorder* pGSP = new CGameStateRecorder();
-
-	if (pGSP)
-		pGSP->RegisterListener(pL);
-
-	return (IGameStateRecorder*)pGSP;
-
+	if (!m_pGameStateRecorder)
+	{
+		m_pGameStateRecorder = new CGameStateRecorder();
+		CRY_ASSERT(m_pGameStateRecorder);
+		m_pGameStateRecorder->RegisterListener(pL);
+	}
+	return m_pGameStateRecorder;
 }
 
 CInteractiveObjectRegistry& CGame::GetInteractiveObjectsRegistry() const
