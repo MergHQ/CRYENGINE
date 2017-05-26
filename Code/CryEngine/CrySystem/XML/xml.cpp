@@ -380,8 +380,13 @@ bool CXmlNode::getAttr(const char* key, CryGUID& value) const
 	{
 		const char* guidStr = getAttr(key);
 		value = CryGUIDHelper::FromString(svalue);
-		if ((value.hipart >> 32) == 0)
+		if (!value.IsNull() && (value.hipart >> 32) == 0)
 		{
+#ifndef RELEASE
+			string guidString = svalue;
+			CRY_ASSERT_MESSAGE(std::all_of(guidString.begin(), guidString.end(), ::isdigit), "Must never reach this point with a non-numeric string!");
+#endif
+
 			value = CryGUID::Null();
 			// If bad GUID, use old 64bit guid system.
 			value.hipart = static_cast<uint64>(std::stoull(svalue,0,16));
