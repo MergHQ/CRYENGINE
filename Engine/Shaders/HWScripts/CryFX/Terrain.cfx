@@ -323,11 +323,7 @@ void GatherMaterialAttribs(in half3x3 mTangentToWS, in float2 baseTC, in float2 
 		
 	#if %PARALLAX_OCCLUSION_MAPPING
 		float2 normalTexRes;
-		#if OPENGL
-			normalTexRes = 512;
-		#else
-			normalsTex.GetDimensions(normalTexRes.x, normalTexRes.y);	 // Doesn't compile in OpenGL
-		#endif
+		normalsTex.GetDimensions(normalTexRes.x, normalTexRes.y);
 		const float3 pomAdjustRayForNonSquareTexres = float3(rcp(normalTexRes.xy) * min(normalTexRes.x, normalTexRes.y), 1);
 	#else
 		const float3 pomAdjustRayForNonSquareTexres = 1;

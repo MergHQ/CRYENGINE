@@ -65,9 +65,7 @@ bool ParticlesDebugPixel(inout pixoutParticle OUT, OutputVS IN)
 	else if (CP_Custom_ViewMode.x == 1)  // Texel density
 	{
 		float2 diffuseTexRes = 0;
-#if !OPENGL
 		diffuseTex.GetDimensions(diffuseTexRes.x, diffuseTexRes.y);
-#endif
 
 		float3 ddx_P = ddx(IN.vWorldPos.xyz);
 		float3 ddy_P = ddy(IN.vWorldPos.xyz);

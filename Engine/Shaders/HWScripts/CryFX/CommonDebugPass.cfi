@@ -87,10 +87,8 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
 	else if (CP_Custom_ViewMode.x == 1)  // Texel density
 	{
 		float2 diffuseTexRes = 0;
-#if !OPENGL
-	diffuseTex.GetDimensions(diffuseTexRes.x, diffuseTexRes.y);
-#endif
-	
+		diffuseTex.GetDimensions(diffuseTexRes.x, diffuseTexRes.y);
+
 		float3 ddx_P = ddx(IN.vView.xyz);
 		float3 ddy_P = ddy(IN.vView.xyz);
 		float2 ddx_T = ddx(IN.baseTC.xy);

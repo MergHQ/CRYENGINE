@@ -378,9 +378,8 @@ pixout EyePS(vert2FragGeneral IN)
 	float3 viewVecTS = mul(matTangentToWS, -normalize(IN.vView.xyz)).xyz;
 	float irisDepth = GetHeightTex(heightTex, IN.baseTC.xy).x;
 	float2 normalTexRes = 512;
-#if !OPENGL
-    normalsTex.GetDimensions(normalTexRes.x, normalTexRes.y);
-#endif
+	normalsTex.GetDimensions(normalTexRes.x, normalTexRes.y);
+
 	const float lod = ComputeTextureLOD(IN.baseTC.xy, normalTexRes.xy);
 	float2 texOffset = ComputeEyeParallax(irisDepth, IN.baseTC, lod, viewVecTS, IrisDepth * 10.0f);
 	
