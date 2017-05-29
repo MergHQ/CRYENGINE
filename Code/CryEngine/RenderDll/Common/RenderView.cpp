@@ -890,21 +890,6 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 					if (bRequireCompiledRenderObject)
 					{
-						// Optimization code that try to share CompiledRenderObject with the one from the shadow pass.
-						// Same CompiledRenderObject can be used in general pass and in shadow gen pass when then both reference the same render element and material (shader item)
-						if (renderPassType == CPermanentRenderObject::eRenderPass_General && i < num_shadow_items)
-						{
-							auto& pri2 = shadow_items[i];
-							if (pri2.m_pCompiledObject && pri2.m_pRenderElement == pri.m_pRenderElement && pri2.m_sortValue == pri.m_sortValue)
-							{
-								pri.m_pCompiledObject = pri2.m_pCompiledObject;
-								// Mark this compiled object to be shared between general and shadow pass, to prevent double deletion
-								pri.m_pCompiledObject->m_bSharedWithShadow = true;
-								pRenderObject->m_bInstanceDataDirty = false; // In this case everything need to be recompiled, not only instance data.
-								bRecompile = true;
-							}
-						}
-
 						if (((volatile CCompiledRenderObject*) pri.m_pCompiledObject) == nullptr)
 						{
 							static CryCriticalSectionNonRecursive allocCS;

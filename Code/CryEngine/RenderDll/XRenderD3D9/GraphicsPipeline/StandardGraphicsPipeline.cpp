@@ -1069,6 +1069,12 @@ void CStandardGraphicsPipeline::Execute()
 	// Prepare tiled shading resources early to give DMA operations enough time to finish
 	m_pTiledShadingStage->PrepareResources();
 
+	if (!m_pCurrentRenderView->IsRecursive() && pRenderer->m_CurRenderEye != RIGHT_EYE)
+	{
+		// compile shadow renderitems. needs to happen before gbuffer pass accesses renderitems
+		m_pCurrentRenderView->PrepareShadowViews();
+	}
+
 	// GBuffer
 	m_pSceneGBufferStage->Execute();
 

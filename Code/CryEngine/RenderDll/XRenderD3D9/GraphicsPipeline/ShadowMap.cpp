@@ -313,9 +313,6 @@ void CShadowMapStage::Prepare(CRenderView* pRenderView)
 	if (pRenderView->IsRecursive() || gcpRendD3D->m_CurRenderEye == RIGHT_EYE)
 		return; // TODO: how will we handle recursion?
 
-	// Prepare all our frustums render views for reading.
-	pRenderView->PrepareShadowViews();
-
 	if (gcpRendD3D->m_nGraphicsPipeline == 0)
 		return;
 
