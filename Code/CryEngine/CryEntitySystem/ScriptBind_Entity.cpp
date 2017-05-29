@@ -71,7 +71,6 @@
 CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEntitySystem* pEntitySystem)
 	: m_pEntitySystem(pEntitySystem)
 	, m_pISystem(pSystem)
-	, m_bIsAudioEventListener(false)
 {
 	CScriptableBase::Init(pSS, pSystem, 1); // Use parameter offset 1 for self.
 	SetGlobalName("Entity");
@@ -567,12 +566,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 
 	pSS->SetGlobalValue("ATTACHMENT_KEEP_TRANSFORMATION", IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
 	pSS->SetGlobalValue("InvalidEnvironmentId", IntToHandle(CryAudio::InvalidEnvironmentId));
-}
-
-//////////////////////////////////////////////////////////////////////////
-CScriptBind_Entity::~CScriptBind_Entity()
-{
-	gEnv->pAudioSystem->RemoveRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4185,28 +4178,6 @@ int CScriptBind_Entity::AddConstraint(IFunctionHandler* pH)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptBind_Entity::OnAudioTriggerFinishedEvent(CryAudio::SRequestInfo const* const pAudioRequestInfo)
-{
-#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-	if (gEnv->mMainThreadId != CryGetCurrentThreadId())
-	{
-		CryFatalError("CScriptBind_Entity::OnAudioTriggerFinishedEvent was not called from main thread but instead from: %" PRI_THREADID, CryGetCurrentThreadId());
-	}
-#endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
-
-	EntityId const entityId = static_cast<EntityId>(reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserData));
-	IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
-
-	if (pIEntity != nullptr)
-	{
-		SEntityEvent event(ENTITY_EVENT_SOUND_DONE);
-		event.nParam[0] = reinterpret_cast<INT_PTR>(pAudioRequestInfo->pAudioObject);
-		event.nParam[1] = pAudioRequestInfo->audioControlId;
-		pIEntity->SendEvent(event);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::GetAllAuxAudioProxiesID(IFunctionHandler* pH)
 {
 	GET_ENTITY;
@@ -4277,16 +4248,11 @@ int CScriptBind_Entity::ExecuteAudioTrigger(IFunctionHandler* pH, ScriptHandle c
 
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
-	if (pIEntityAudioComponent)
-	{
-		// This is an optimizations as AddRequestListener is a blocking request.
-		if (!m_bIsAudioEventListener)
-		{
-			gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, CryAudio::ESystemEvents::TriggerFinished);
-			m_bIsAudioEventListener = true;
-		}
 
-		pIEntityAudioComponent->ExecuteTrigger(HandleToInt<CryAudio::ControlId>(hTriggerID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
+	if (pIEntityAudioComponent != nullptr)
+	{
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this);
+		pIEntityAudioComponent->ExecuteTrigger(HandleToInt<CryAudio::ControlId>(hTriggerID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID), userData);
 	}
 
 	return pH->EndFunction();

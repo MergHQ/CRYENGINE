@@ -1,18 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ScriptBind_Entity.h
-//  Version:     v1.00
-//  Created:     28/7/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __ScriptBind_Entity_h__
-#define __ScriptBind_Entity_h__
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
@@ -36,7 +23,6 @@ class CScriptBind_Entity : public CScriptableBase
 {
 public:
 	CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEntitySystem* pEntitySystem);
-	virtual ~CScriptBind_Entity();
 
 	void         DelegateCalls(IScriptTable* pInstanceTable);
 
@@ -1421,14 +1407,11 @@ private: // --------------------------------------------------------------------
 	// Helper function to get IEntity pointer from IFunctionHandler
 	IEntity* GetEntity(IFunctionHandler* pH);
 	Vec3     GetGlobalGravity() const { return Vec3(0, 0, -9.81f); }
-	int      SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEntity* pe, int type, IScriptTable* pTable, ICharacterInstance* pIChar = 0);
+	int      SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEntity* pe, int type, IScriptTable* pTable, ICharacterInstance* pIChar = nullptr);
 	EntityId GetEntityID(IScriptTable* pEntityTable);
 
 	IEntitySystem* m_pEntitySystem;
 	ISystem*       m_pISystem;
-
-	// copy of function from ScriptObjectParticle
-	bool ReadParticleTable(IScriptTable* pITable, struct ParticleParams& sParamOut);
 
 	bool ParseLightParams(IScriptTable* pLightTable, CDLight& light);
 	bool ParseFogVolumesParams(IScriptTable* pTable, IEntity* pEntity, SFogVolumeProperties& properties);
@@ -1450,7 +1433,6 @@ private: // --------------------------------------------------------------------
 	} SIntersectionResult;
 
 	static int __cdecl cmpIntersectionResult(const void* v1, const void* v2);
-	static void        OnAudioTriggerFinishedEvent(CryAudio::SRequestInfo const* const pAudioRequestInfo);
 	int                IStatObjRayIntersect(IStatObj* pStatObj, const Vec3& rayOrigin, const Vec3& rayDir, float maxDistance, SIntersectionResult* pOutResult, unsigned int maxResults);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1467,8 +1449,4 @@ private: // --------------------------------------------------------------------
 
 	//temp table used by GetPhysicalStats
 	SmartScriptTable m_pStats;
-
-	bool             m_bIsAudioEventListener;
 };
-
-#endif // __ScriptBind_Entity_h__

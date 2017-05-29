@@ -283,9 +283,6 @@ enum EEntityEvent
 	//! Sent when AI object of the entity finished executing current order/action.
 	ENTITY_EVENT_AI_DONE,
 
-	//! Sent when a sound finished or was stopped playing.
-	ENTITY_EVENT_SOUND_DONE,
-
 	//! Physical collision.
 	ENTITY_EVENT_COLLISION,
 

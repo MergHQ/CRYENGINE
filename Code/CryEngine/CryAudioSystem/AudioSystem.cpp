@@ -39,7 +39,7 @@ void CMainThread::Activate()
 {
 	if (!gEnv->pThreadManager->SpawnThread(this, "MainAudioThread"))
 	{
-		CryFatalError("Error spawning \"MainAudioThread\" thread.");
+		CryFatalError(R"(Error spawning "MainAudioThread" thread.)");
 	}
 
 	m_pSystem->m_mainAudioThreadId = CryGetCurrentThreadId();
@@ -883,6 +883,7 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 		}
 	}
 }
+
 //////////////////////////////////////////////////////////////////////////
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 void CSystem::DrawAudioDebugData()
