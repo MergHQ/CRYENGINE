@@ -36,6 +36,8 @@
 			"ActionSpeakLine.cpp",
 			"ActionWait.h",
 			"ActionWait.cpp",
+			"ActionCopyVariable.h",
+			"ActionCopyVariable.cpp",
 			"DelayActionAction.h",
 			"DelayActionAction.cpp"
 		],

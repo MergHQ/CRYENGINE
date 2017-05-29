@@ -13,7 +13,7 @@ namespace Schematyc
 		{
 			return false;
 		}
-		const SGUID& typeGUID = pCreator->GetTypeGUID();
+		const CryGUID& typeGUID = pCreator->GetTypeGUID();
 		if(GetCreator(typeGUID))
 		{
 			return false;
@@ -22,13 +22,13 @@ namespace Schematyc
 		return true;
 	}
 
-	IScriptGraphNodeCreator* CScriptGraphNodeFactory::GetCreator(const SGUID& typeGUID)
+	IScriptGraphNodeCreator* CScriptGraphNodeFactory::GetCreator(const CryGUID& typeGUID)
 	{
 		Creators::iterator itCreator = m_creators.find(typeGUID);
 		return itCreator != m_creators.end() ? itCreator->second.get() : nullptr;
 	}
 
-	IScriptGraphNodePtr CScriptGraphNodeFactory::CreateNode(const SGUID& typeGUID, const SGUID& guid)
+	IScriptGraphNodePtr CScriptGraphNodeFactory::CreateNode(const CryGUID& typeGUID, const CryGUID& guid)
 	{
 		IScriptGraphNodeCreator* pCreator = GetCreator(typeGUID);
 		return pCreator ? pCreator->CreateNode(guid) : IScriptGraphNodePtr();

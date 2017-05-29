@@ -5,6 +5,7 @@
 class CMonoLibrary;
 class CMonoObject;
 class CMonoMethod;
+class CMonoProperty;
 
 #ifndef HAVE_MONO_API
 namespace MonoInternals
@@ -47,6 +48,12 @@ public:
 	// Skips searching after encountering pBaseClass if present
 	std::shared_ptr<CMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc, CMonoClass* pBaseClass);
 	
+	std::shared_ptr<CMonoProperty> FindProperty(const char* szName);
+	std::shared_ptr<CMonoProperty> FindPropertyInInheritedClasses(const char* szName);
+
+	static std::shared_ptr<CMonoProperty> MakeProperty(MonoInternals::MonoProperty* pProperty);
+	static std::shared_ptr<CMonoProperty> MakeProperty(MonoInternals::MonoReflectionProperty* pProperty);
+
 protected:
 	MonoInternals::MonoClass* GetMonoClass() const { return m_pClass; }
 

@@ -197,7 +197,7 @@ public:
 
 	void         SetBlendWeight(float weight)                          { m_blendWeight = weight; }
 
-	void         Update(const QuatT& location, const float time);
+	void         Update(ICharacterInstance* pCharacter, const QuatT& location, const float time);
 
 private:
 	void SetupPoseModifiers(const QuatT& location);

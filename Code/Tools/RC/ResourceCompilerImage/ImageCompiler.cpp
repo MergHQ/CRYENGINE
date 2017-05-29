@@ -357,7 +357,7 @@ static void printColor(const char* msg, const float* c)
 }
 
 
-uint32 CImageCompiler::_CalcTextureMemory(const EPixelFormat pixelFormat, const uint32 dwWidth, const uint32 dwHeight, const bool bCubemap, const bool bMips)
+uint32 CImageCompiler::_CalcTextureMemory(const EPixelFormat pixelFormat, const uint32 dwWidth, const uint32 dwHeight, const bool bCubemap, const bool bMips, const uint32 compressedBlockWidth, const uint32 compressedBlockHeight)
 {
 	if (pixelFormat < 0)
 	{
@@ -380,14 +380,13 @@ uint32 CImageCompiler::_CalcTextureMemory(const EPixelFormat pixelFormat, const 
 
 		if (pFormatInfo->bCompressed)
 		{
-			const uint32 widthInBlocks = (w + (pFormatInfo->blockWidth - 1)) / pFormatInfo->blockWidth;
-			const uint32 heightInBlocks = (h + (pFormatInfo->blockHeight - 1)) / pFormatInfo->blockHeight;
-			static const uint32 pixelsPerBlock = pFormatInfo->blockWidth * pFormatInfo->blockHeight;
-			totalSize += (widthInBlocks * heightInBlocks * pixelsPerBlock * pFormatInfo->bitsPerPixel) / 8;
+			const uint32 widthInBlocks = (w + (compressedBlockWidth - 1)) / compressedBlockWidth;
+			const uint32 heightInBlocks = (h + (compressedBlockHeight - 1)) / compressedBlockHeight;
+			totalSize += widthInBlocks * heightInBlocks * pFormatInfo->bytesPerBlock;
 		}
 		else
 		{
-			totalSize += (w * h * pFormatInfo->bitsPerPixel) / 8;
+			totalSize += w * h * pFormatInfo->bytesPerBlock;
 		}
 	}
 
@@ -1893,7 +1892,7 @@ string CImageCompiler::GetInfoStringUI(const bool inbOrig) const
 		const PixelFormatInfo* const pFinalFormatInfo = CPixelFormats::GetPixelFormatInfo(finalFormat);
 		assert(pFinalFormatInfo);
 
-		uint32 dwMem = _CalcTextureMemory(finalFormat, dwFinalWidth, dwFinalHeight, bFinalCubemap, (dwFinalMipCount > 1));
+		uint32 dwMem = _CalcTextureMemory(finalFormat, dwFinalWidth, dwFinalHeight, bFinalCubemap, (dwFinalMipCount > 1), m_pInputImage->GetCompressedBlockWidth(), m_pInputImage->GetCompressedBlockHeight());
 
 		const char* szAlpha = pFinalFormatInfo->szAlpha;
 		const char* szAttachedStr = "";
@@ -1905,7 +1904,7 @@ string CImageCompiler::GetInfoStringUI(const bool inbOrig) const
 			assert(pAlphaFormatInfo);
 			szAlpha = pAlphaFormatInfo->szName;
 			szAttachedStr = "+";
-			dwMem += _CalcTextureMemory(alphaFormat, dwFinalWidth, dwFinalHeight, bFinalCubemap, (dwFinalMipCount > 1));
+			dwMem += _CalcTextureMemory(alphaFormat, dwFinalWidth, dwFinalHeight, bFinalCubemap, (dwFinalMipCount > 1), m_pInputImage->GetCompressedBlockWidth(), m_pInputImage->GetCompressedBlockHeight());
 		}
 
 		const uint32 dwFinalImageFlags = m_pFinalImage->GetImageFlags();
@@ -1981,7 +1980,7 @@ uint32 CImageCompiler::CalcTextureMemory(const ImageObject *pImage)
 	uint32 dwWidth, dwHeight, dwMips;
 	pImage->GetExtent(dwWidth, dwHeight, dwMips);
 
-	uint32 size = _CalcTextureMemory(pImage->GetPixelFormat(), dwWidth, dwHeight, pImage->HasCubemapCompatibleSizes(), (dwMips > 1));
+	uint32 size = _CalcTextureMemory(pImage->GetPixelFormat(), dwWidth, dwHeight, pImage->HasCubemapCompatibleSizes(), (dwMips > 1), pImage->GetCompressedBlockWidth(), pImage->GetCompressedBlockHeight());
 
 	if (pImage->GetAttachedImage())
 	{

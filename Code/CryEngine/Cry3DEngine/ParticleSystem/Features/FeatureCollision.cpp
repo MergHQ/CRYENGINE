@@ -165,7 +165,7 @@ struct QuadPathT
 	{
 		F vPar = vel0 | dir,
 		  aPar = acc | dir;
-		if (-vPar > aPar * kMinBounceTime && -vPar < aPar * (timeD - kMinBounceTime))
+		if (inrange(-vPar, aPar * kMinBounceTime, aPar * (timeD - kMinBounceTime)))
 		{
 			F tFlec = -vPar / aPar;
 			F dist = vPar * tFlec + aPar * sqr(tFlec) * F(0.5);
@@ -324,47 +324,61 @@ bool CFeatureCollision::DoCollision(SContactPoint& contact, QuadPath& path, int 
 
 	if (doSliding && contact.m_state.sliding)
 	{
-		Vec3 accPrev = path.acc;
-		path.acc -= contact.m_normal * (contact.m_normal | path.acc);
-
-		// Add sliding acceleration, opposite to current velocity,
-		// limited by maximum movement during frame
-		const float velSqr = path.vel0.len2();
-		if (velSqr * path.timeD * m_friction > FLT_EPSILON)
+		Vec3 accOrig = path.acc;
+		const float accNorm = path.acc | contact.m_normal;
+		if (accNorm > 0.0f)
 		{
-			const float rvel = rsqrt_fast(velSqr);
-			const float accNorm = accPrev | contact.m_normal;
-			const float accDrag = -accNorm * m_friction;
-			const float accMax = rcp_fast(rvel * path.timeD) + (accPrev | path.vel0) * rvel;
-			path.acc -= path.vel0 * (rvel * min(accDrag, accMax));
+			// No longer sliding
+			contact.m_state.sliding = 0;
 		}
-
-		path.SetEnds();
-
-		SContactPoint contactPrev = contact;
-		bool hit = DoCollision(contact, path, objectFilter, false);
-		path.acc = accPrev;
-
-		if (hit)
+		else
 		{
-			if (contact.m_state.collided && !contact.m_state.sliding)
+			path.acc -= contact.m_normal * accNorm;
+
+			// Add sliding acceleration, opposite to current velocity,
+			// limited by maximum movement during frame
+			const float velSqr = path.vel0.len2();
+			if (velSqr * path.timeD * m_friction > FLT_EPSILON)
 			{
-				// Determine whether still sliding on previous surface
-				float accNorm = path.acc | contactPrev.m_normal;
-				float velNorm = path.vel0 | contactPrev.m_normal;
-				if (!Bounces(accNorm, velNorm))
+				const float rvel = rsqrt(velSqr);
+				const Vec3 velDir = path.vel0 * rvel;
+				float accDrag = -accNorm * m_friction;
+				if (sqr(accDrag) >= path.acc.len2()) // Friction allows object to stop
 				{
-					contact.m_state.sliding = 1;
-					contact.m_normal = contactPrev.m_normal;
-					path.pos0 += contact.m_normal * kMinBounceDist;
+					const float accMax = rcp(rvel * path.timeD);
+					if (accDrag >= accMax) // Will stop this frame
+						accDrag = accMax;
 				}
+				path.acc -= velDir * accDrag;
 			}
-		}
 
-		if (!contact.m_state.sliding)
 			path.SetEnds();
 
-		return true;
+			SContactPoint contactPrev = contact;
+			bool hit = DoCollision(contact, path, objectFilter, false);
+			path.acc = accOrig;
+
+			if (hit)
+			{
+				if (contact.m_state.collided && !contact.m_state.sliding)
+				{
+					// Determine whether still sliding on previous surface
+					float accNorm = path.acc | contactPrev.m_normal;
+					float velNorm = path.vel0 | contactPrev.m_normal;
+					if (!Bounces(accNorm, velNorm))
+					{
+						contact.m_state.sliding = 1;
+						contact.m_normal = contactPrev.m_normal;
+						path.pos0 += contact.m_normal * kMinBounceDist;
+					}
+				}
+			}
+
+			if (!contact.m_state.sliding)
+				path.SetEnds();
+
+			return true;
+		}
 	}
 
 	contact.m_state.collided = 0;
@@ -447,7 +461,7 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 
 		float dT = DeltaTime(context.m_deltaTime, particleId, normAges, lifeTimes);
 		if (dT == 0.0f)
-			break;
+			continue;
 
 		Vec3 position0 = positionsPrev.Load(particleId);
 		Vec3 position1 = positions.Load(particleId);

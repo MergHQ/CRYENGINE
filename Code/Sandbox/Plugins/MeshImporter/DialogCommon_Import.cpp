@@ -48,11 +48,6 @@ uint64 GetTimestamp()
 	return ++clock;
 }
 
-void ShowCriticalError(const QString& title, const QString& message)
-{
-	CQuestionDialog::SCritical(title, message);
-}
-
 } // namespace Private_DialogCommon
 
 // ==================================================
@@ -202,13 +197,6 @@ void CSceneManager::OnSceneImported(CAsyncImportSceneTask* pTask)
 				callback(pPayload->pUserData.get());
 			}
 		}
-	}
-	else
-	{
-		const char* const szFileName = QtUtil::ToString(pTask->GetFilePath()).c_str();
-		const QString message = QObject::tr("The specified file could not be imported:\n%1\n\nThe file may be in use; of an unsupported format; or of an unsupported version.\nTry re-exporting the file with the latest FBX plug-in for your DCC package.").arg(QtUtil::ToQStringSafe(szFileName));
-		const QString title = QObject::tr("File import failed");
-		ShowCriticalError(title, message);
 	}
 }
 

@@ -162,7 +162,7 @@ void CREGeomCache::UpdateModified()
 	}
 }
 
-bool CREGeomCache::mfUpdate(EVertexFormat eVertFormat, int Flags, bool bTessellation)
+bool CREGeomCache::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation)
 {
 	const bool bRet = Update(Flags, bTessellation);
 
@@ -217,9 +217,9 @@ void CREGeomCache::DisplayFilledBuffer(const int threadId)
 	m_bUpdateFrame[threadId] = true;
 }
 
-EVertexFormat CREGeomCache::GetVertexFormat() const
+InputLayoutHandle CREGeomCache::GetVertexFormat() const
 {
-	return eVF_P3F_C4B_T2F;
+	return EDefaultInputLayouts::P3F_C4B_T2F;
 }
 
 bool CREGeomCache::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation)
@@ -328,11 +328,7 @@ bool CREGeomCache::mfDraw(CShader* ef, SShaderPass* sfm)
 					rRP.m_FirstIndex = chunk.nFirstIndexId;
 					rRP.m_RendNumIndices = chunk.nNumIndices;
 
-#if defined(HW_INSTANCING_ENABLED) && !CRY_PLATFORM_ORBIS
-					const bool bUseInstancing = (CRenderer::CV_r_geominstancing != 0) && (numInstances > CRenderer::CV_r_GeomCacheInstanceThreshold);
-#else
 					const bool bUseInstancing = false;
-#endif
 
 					TempDynInstVB instVB;
 					uint numInstancesToDraw = 0;
@@ -346,7 +342,7 @@ bool CREGeomCache::mfDraw(CShader* ef, SShaderPass* sfm)
 					// instancing. Need to clean this up later and ideally use constant based instancing.
 
 					const uint64 lastFlagsShader_RT = rRP.m_FlagsShader_RT;
-					rRP.m_FlagsShader_RT = flagsShader_RT | (bUseInstancing ? g_HWSR_MaskBit[HWSR_INSTANCING_ATTR] : 0);
+					rRP.m_FlagsShader_RT = flagsShader_RT; // | (bUseInstancing ? g_HWSR_MaskBit[HWSR_INSTANCING_ATTR] : 0);
 					if (lastFlagsShader_RT != rRP.m_FlagsShader_RT)
 					{
 						pCurVS->mfSet(bUseInstancing ? HWSF_INSTANCED : 0);

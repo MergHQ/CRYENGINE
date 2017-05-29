@@ -989,6 +989,9 @@ public:
 		stl::visit(visitor, m_variant);
 	}
 
+	TFlowInputDataVariant&       GetVariant() { return m_variant; }
+	const TFlowInputDataVariant& GetVariant() const { return m_variant; }
+
 	void GetMemoryStatistics(ICrySizer* pSizer) const
 	{
 		MemStatistics visitor(pSizer);
@@ -1286,6 +1289,8 @@ struct IFlowNode : public _i_reference_target_t
 {
 	struct SActivationInfo
 	{
+		typedef void (*ActivateOutputCallback)(SActivationInfo *actInfo,int nOutputPort, const TFlowInputData& value);
+
 		SActivationInfo(IFlowGraph* pGraph = 0, TFlowNodeId myID = 0, void* pUserData = 0, TFlowInputData* pInputPorts = 0)
 		{
 			this->pGraph = pGraph;
@@ -1301,6 +1306,10 @@ struct IFlowNode : public _i_reference_target_t
 		TFlowPortId     connectPort;
 		TFlowInputData* pInputPorts;
 		void*           m_pUserData;
+		
+		//! Optional override for output activation callback
+		ActivateOutputCallback activateOutputCallback = nullptr;
+		
 
 		//! Mono-specific Helper.
 		TFlowInputData* GetInputPort(int idx) { return &pInputPorts[idx]; }
@@ -1397,6 +1406,9 @@ struct IFlowNodeData
 	virtual int      GetNumOutputPorts() const = 0;
 
 	virtual EntityId GetCurrentForwardingEntity() const = 0;
+
+	//! Access internal array of the node input data.
+	virtual TFlowInputData* GetInputData() const = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -1936,6 +1948,9 @@ struct IFlowSystem
 	virtual IFlowSystemContainerPtr GetContainer(TFlowSystemContainerId id) = 0;
 
 	virtual void                    Serialize(TSerialize ser) = 0;
+
+	//! Creates an instance of IFlowNode by specified type.
+	virtual IFlowNodePtr            CreateNodeOfType(IFlowNode::SActivationInfo*, TFlowNodeTypeId typeId) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -2004,7 +2019,17 @@ template<class T>
 ILINE void ActivateOutput(IFlowNode::SActivationInfo* pActInfo, int nPort, const T& value)
 {
 	SFlowAddress addr(pActInfo->myID, nPort, true);
-	pActInfo->pGraph->ActivatePort(addr, value);
+	if (!pActInfo->activateOutputCallback)
+	{
+		pActInfo->pGraph->ActivatePort(addr, value);
+	}
+	else
+	{
+		TFlowInputData valueData;
+		valueData.SetUserFlag(true);
+		valueData.SetValueWithConversion(value);
+		pActInfo->activateOutputCallback(pActInfo,nPort,valueData);
+	}
 }
 
 ILINE bool IsOutputConnected(IFlowNode::SActivationInfo* pActInfo, int nPort)

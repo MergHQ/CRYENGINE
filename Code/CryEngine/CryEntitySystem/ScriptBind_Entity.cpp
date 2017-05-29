@@ -71,7 +71,6 @@
 CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEntitySystem* pEntitySystem)
 	: m_pEntitySystem(pEntitySystem)
 	, m_pISystem(pSystem)
-	, m_bIsAudioEventListener(false)
 {
 	CScriptableBase::Init(pSS, pSystem, 1); // Use parameter offset 1 for self.
 	SetGlobalName("Entity");
@@ -102,8 +101,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_TEMPLFUNC(LoadCloudBlocker, "nSlot,tCloudBlockerProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadFogVolume, "nSlot,tFogVolumeDescription");
 	SCRIPT_REG_TEMPLFUNC(FadeGlobalDensity, "nSlot,fFadeTime,fNewGlobalDensity");
-	SCRIPT_REG_TEMPLFUNC(LoadVolumeObject, "nSlot,sFilename");
-	SCRIPT_REG_TEMPLFUNC(SetVolumeObjectMovementProperties, "nSlot,tVolumeObjectMovementProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadParticleEffect, "nSlot,sEffectName,bPrime,fPulsePeriod,fScale,fCountScale,sAttachType,sAttachForm");
 	SCRIPT_REG_TEMPLFUNC(PreLoadParticleEffect, "sEffectName");
 	SCRIPT_REG_TEMPLFUNC(IsSlotParticleEmitter, "slot");
@@ -569,12 +566,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 
 	pSS->SetGlobalValue("ATTACHMENT_KEEP_TRANSFORMATION", IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
 	pSS->SetGlobalValue("InvalidEnvironmentId", IntToHandle(CryAudio::InvalidEnvironmentId));
-}
-
-//////////////////////////////////////////////////////////////////////////
-CScriptBind_Entity::~CScriptBind_Entity()
-{
-	gEnv->pAudioSystem->RemoveRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1351,29 +1342,6 @@ int CScriptBind_Entity::FadeGlobalDensity(IFunctionHandler* pH, int nSlot, float
 {
 	GET_ENTITY;
 	nSlot = pEntity->FadeGlobalDensity(nSlot, fadeTime, newGlobalDensity);
-	return pH->EndFunction(nSlot);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::LoadVolumeObject(IFunctionHandler* pH, int nSlot, const char* sFilename)
-{
-	GET_ENTITY;
-	pEntity->LoadVolumeObject(nSlot, sFilename);
-	return pH->EndFunction(nSlot);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::SetVolumeObjectMovementProperties(IFunctionHandler* pH, int nSlot, SmartScriptTable table)
-{
-	GET_ENTITY;
-
-	SVolumeObjectMovementProperties properties;
-	if (ParseVolumeObjectMovementProperties(table, pEntity, properties))
-	{
-		nSlot = pEntity->SetVolumeObjectMovementProperties(nSlot, properties);
-		if (nSlot < 0)
-			return pH->EndFunction();
-	}
 	return pH->EndFunction(nSlot);
 }
 
@@ -4210,28 +4178,6 @@ int CScriptBind_Entity::AddConstraint(IFunctionHandler* pH)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptBind_Entity::OnAudioTriggerFinishedEvent(CryAudio::SRequestInfo const* const pAudioRequestInfo)
-{
-#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-	if (gEnv->mMainThreadId != CryGetCurrentThreadId())
-	{
-		CryFatalError("CScriptBind_Entity::OnAudioTriggerFinishedEvent was not called from main thread but instead from: %" PRI_THREADID, CryGetCurrentThreadId());
-	}
-#endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
-
-	EntityId const entityId = static_cast<EntityId>(reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserData));
-	IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
-
-	if (pIEntity != nullptr)
-	{
-		SEntityEvent event(ENTITY_EVENT_SOUND_DONE);
-		event.nParam[0] = reinterpret_cast<INT_PTR>(pAudioRequestInfo->pAudioObject);
-		event.nParam[1] = pAudioRequestInfo->audioControlId;
-		pIEntity->SendEvent(event);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::GetAllAuxAudioProxiesID(IFunctionHandler* pH)
 {
 	GET_ENTITY;
@@ -4302,16 +4248,11 @@ int CScriptBind_Entity::ExecuteAudioTrigger(IFunctionHandler* pH, ScriptHandle c
 
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
-	if (pIEntityAudioComponent)
-	{
-		// This is an optimizations as AddRequestListener is a blocking request.
-		if (!m_bIsAudioEventListener)
-		{
-			gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, CryAudio::ESystemEvents::TriggerFinished);
-			m_bIsAudioEventListener = true;
-		}
 
-		pIEntityAudioComponent->ExecuteTrigger(HandleToInt<CryAudio::ControlId>(hTriggerID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
+	if (pIEntityAudioComponent != nullptr)
+	{
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this);
+		pIEntityAudioComponent->ExecuteTrigger(HandleToInt<CryAudio::ControlId>(hTriggerID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID), userData);
 	}
 
 	return pH->EndFunction();
@@ -6677,7 +6618,7 @@ int CScriptBind_Entity::CreateLink(IFunctionHandler* pH, const char* name)
 		targetId = (EntityId)target.n;
 	}
 
-	pEntity->AddEntityLink(name, targetId);
+	pEntity->AddEntityLink(name, targetId, CryGUID::Null());
 
 	return pH->EndFunction();
 }
@@ -7814,34 +7755,6 @@ bool CScriptBind_Entity::ParseFogVolumesParams(IScriptTable* pTable, IEntity* pE
 
 //////////////////////////////////////////////////////////////////////////
 bool CScriptBind_Entity::ParseCloudMovementProperties(IScriptTable* pTable, IEntity* pEntity, SCloudMovementProperties& properties)
-{
-	CScriptSetGetChain chain(pTable);
-
-	bool autoMove;
-	properties.m_autoMove = false;
-	if (chain.GetValue("bAutoMove", autoMove))
-		properties.m_autoMove = autoMove;
-
-	Vec3 speed;
-	properties.m_speed = Vec3(0, 0, 0);
-	if (chain.GetValue("vector_Speed", speed))
-		properties.m_speed = speed;
-
-	Vec3 spaceLoopBox;
-	properties.m_spaceLoopBox = Vec3(2000.0f, 2000.0f, 2000.0f);
-	if (chain.GetValue("vector_SpaceLoopBox", spaceLoopBox))
-		properties.m_spaceLoopBox = spaceLoopBox;
-
-	float fadeDistance;
-	properties.m_fadeDistance = 0;
-	if (chain.GetValue("fFadeDistance", fadeDistance))
-		properties.m_fadeDistance = fadeDistance;
-
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CScriptBind_Entity::ParseVolumeObjectMovementProperties(IScriptTable* pTable, IEntity* pEntity, SVolumeObjectMovementProperties& properties)
 {
 	CScriptSetGetChain chain(pTable);
 

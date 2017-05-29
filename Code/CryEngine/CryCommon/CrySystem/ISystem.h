@@ -466,7 +466,10 @@ enum ESystemEvent
 	ESYSTEM_EVENT_REGISTER_FLOWNODES,
 
 	//! Sent if the CryAction module initialized successfully. (Remark: Sent after ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE and after (potential) game init was called)
-	ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE
+	ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE,
+
+	//! Sent if the CryAction module is about to shutdown
+	ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN
 };
 
 //! User defined callback, which can be passed to ISystem.
@@ -1990,7 +1993,7 @@ struct SDummyCVar : ICVar
 	void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override       { (void)pChangeFunc; }
 	uint64          AddOnChangeFunctor(const SFunctor& /*changeFunctor*/) override { return 0;  }
 	uint64          GetNumberOfOnChangeFunctors() const override                   { return 0; }
-	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override        { InvalidAccess(); return *(const SFunctor*)NULL; }
+	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override        { InvalidAccess();  static SFunctor oDummy; return oDummy; }
 	bool            RemoveOnChangeFunctor(const uint64 nElement) override          { return true; }
 	ConsoleVarFunc  GetOnChangeCallback() const override                           { InvalidAccess(); return NULL; }
 	void            GetMemoryUsage(class ICrySizer* pSizer) const override         {}

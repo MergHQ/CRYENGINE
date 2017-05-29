@@ -3,7 +3,7 @@ if (NOT DEFINED PYSIDE_DIR)
 	set(PYSIDE_DIR "${PYSIDE_DIR}/PySide/PySide2/")
 endif()
 
-set(SHIBOKEN_EXE "${PYSIDE_DIR}/shiboken2.exe")
+set(SHIBOKEN_EXE "${PYSIDE_DIR}shiboken2.exe")
 
 if (NOT DEFINED QT_API)
 	set(QT_API "${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}")
@@ -34,7 +34,9 @@ SET(SHIBOKEN_ARGS
 	"${CMAKE_CURRENT_SOURCE_DIR}/typesystem_cryqt.xml"
 	"--api-version=5.6")
 
-execute_process ( COMMAND ${SHIBOKEN_EXE} ${SHIBOKEN_ARGS} OUTPUT_VARIABLE shiboken_output ERROR_VARIABLE shiboken_error)
+message( STATUS "Running PySide Shiboken ${SHIBOKEN_EXE}")
+execute_process ( COMMAND ${SHIBOKEN_EXE} ${SHIBOKEN_ARGS} WORKING_DIRECTORY "${QT_DIR}/bin" OUTPUT_VARIABLE shiboken_output ERROR_VARIABLE shiboken_error)
+message( STATUS "Done Running PySide Shiboken")
 
 if (DEFINED SHOW_SHIBOKEN_OUTPUT)
 	message("${shiboken_output}")

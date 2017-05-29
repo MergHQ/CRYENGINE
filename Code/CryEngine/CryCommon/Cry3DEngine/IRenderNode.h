@@ -31,7 +31,7 @@ enum EERType
 	eERType_WaterWave,
 	eERType_Road,
 	eERType_DistanceCloud,
-	eERType_VolumeObject,
+	eERType_Dummy_4, // Used to be eERType_VolumeObject, preserve order for compatibility.
 	eERType_Dummy_0, //!< Used to be eERType_AutoCubeMap, preserve order for compatibility.
 	eERType_Rope,
 	eERType_Dummy_3, //!< Used to be  eERType_PrismObject, preserve order for compatibility.
@@ -917,28 +917,6 @@ struct IDistanceCloudRenderNode : public IRenderNode
 	virtual void SetProperties(const SDistanceCloudProperties& properties) = 0;
 };
 
-struct SVolumeObjectProperties
-{
-};
-
-struct SVolumeObjectMovementProperties
-{
-	bool  m_autoMove;
-	Vec3  m_speed;
-	Vec3  m_spaceLoopBox;
-	float m_fadeDistance;
-};
-
-//! Interface to the Volume Object Render Node object.
-struct IVolumeObjectRenderNode : public IRenderNode
-{
-	// <interfuscator:shuffle>
-	virtual void LoadVolumeData(const char* filePath) = 0;
-	virtual void SetProperties(const SVolumeObjectProperties& properties) = 0;
-	virtual void SetMovementProperties(const SVolumeObjectMovementProperties& properties) = 0;
-	// </interfuscator:shuffle>
-};
-
 //////////////////////////////////////////////////////////////////////////
 struct IRopeRenderNode : public IRenderNode
 {
@@ -1022,9 +1000,6 @@ struct IRopeRenderNode : public IRenderNode
 
 	virtual void                                SetParams(const SRopeParams& params) = 0;
 	virtual const IRopeRenderNode::SRopeParams& GetParams() const = 0;
-
-	virtual void                                SetEntityOwner(uint32 nEntityId) = 0;
-	virtual uint32                              GetEntityOwner() const = 0;
 
 	virtual void                                SetPoints(const Vec3* pPoints, int nCount) = 0;
 	virtual int                                 GetPointsCount() const = 0;

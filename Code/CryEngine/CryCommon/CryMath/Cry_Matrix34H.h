@@ -99,6 +99,19 @@ template<typename F> struct Matrix34H
 		return mat().Determinant();
 	}
 
+	ILINE F GetUniformScale() const
+	{
+		return mat().GetUniformScale();
+	}
+
+	Matrix34H& Magnitude(const Matrix34H& m)
+	{
+		x = crymath::abs(m.x.v);
+		y = crymath::abs(m.y.v);
+		z = crymath::abs(m.z.v);
+		return *this;
+	}
+
 	Matrix34H& Invert(const Matrix34H& m)
 	{
 		V tmp;
@@ -189,6 +202,16 @@ template<typename F> struct Matrix34H
 	{
 		Matrix34H r = *this;
 		r.InvertFast();
+		return r;
+	}
+	ILINE void Magnitude()
+	{
+		Magnitude(*this);
+	}
+	ILINE Matrix34H GetMagnitude() const
+	{
+		Matrix34H r;
+		r.Magnitude(*this);
 		return r;
 	}
 

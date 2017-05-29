@@ -3,15 +3,15 @@ set(DEPLOY_FILES  CACHE INTERNAL "List of files to deploy before running")
 
 if (OPTION_ENGINE OR OPTION_SANDBOX OR OPTION_SHADERCACHEGEN)
 	set (BinaryFileList_Win64
-		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbghelp.dll"
-		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbgcore.dll"
-		"${SDK_DIR}/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
+		"${WINDOWS_SDK}/Debuggers/x64/srcsrv/dbghelp.dll"
+		"${WINDOWS_SDK}/Debuggers/x64/srcsrv/dbgcore.dll"
+		"${WINDOWS_SDK}/bin/x64/d3dcompiler_47.dll"
 		)
 
 	set (BinaryFileList_Win32
-		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbghelp.dll"
-		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbgcore.dll"
-		"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
+		"${WINDOWS_SDK}/Debuggers/x86/srcsrv/dbghelp.dll"
+		"${WINDOWS_SDK}/Debuggers/x86/srcsrv/dbgcore.dll"
+		"${WINDOWS_SDK}/bin/x86/d3dcompiler_47.dll"
 		)
 endif()
 

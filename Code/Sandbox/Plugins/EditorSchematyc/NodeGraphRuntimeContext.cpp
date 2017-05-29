@@ -7,7 +7,7 @@
 #include "GraphViewWidget.h"
 
 #include <NodeGraph/NodeGraphViewStyle.h>
-#include <Schematyc/Script/IScriptGraph.h>
+#include <CrySchematyc/Script/IScriptGraph.h>
 
 // TODO: Replace when CNodeStyle was moved into its own header.
 #include "GraphNodeItem.h"
@@ -340,6 +340,7 @@ CryGraphEditor::CNodeGraphViewStyle* CreateStyle()
 	AddNodeStyle(*pViewStyle, "Core::Data", "icons:schematyc/core_data.ico", QColor(156, 98, 193));
 	AddNodeStyle(*pViewStyle, "Core::Utility", "icons:schematyc/core_utility.ico", QColor(153, 153, 153));
 	AddNodeStyle(*pViewStyle, "Core::State", "icons:schematyc/core_state.ico", QColor(192, 193, 98));
+	AddNodeStyle(*pViewStyle, "Node::FlowGraph", "icons:schematyc/node_flow_graph.png", QColor(98, 98, 236));
 	// ~TODO
 
 	AddConnectionStyle(*pViewStyle, "Connection::Data", 2.0);

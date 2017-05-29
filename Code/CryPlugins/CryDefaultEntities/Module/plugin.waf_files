@@ -70,7 +70,9 @@
 		],
 		"Physics" :
 		[
-			"Physics/RopeEntity.cpp"
+			"Physics/RopeEntity.cpp",
+			"Physics/LocalGrid.cpp",
+			"Physics/LocalGrid.h"
 		],
 		"Triggers" :
 		[

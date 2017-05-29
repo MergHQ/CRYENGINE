@@ -398,6 +398,16 @@ public:
       return std::shared_ptr<implclassname>(*static_cast<std::shared_ptr<implclassname>*>(static_cast<void*>(&p))); \
     }
 
+#define _ENFORCE_CRYFACTORY_USAGE_GUID(implclassname, cname, guid)                                                  \
+  public:                                                                                                           \
+    static const char* GetCName() { return cname; }                                                                 \
+    static constexpr CryClassID GetCID() { return guid; }                                                           \
+    static std::shared_ptr<implclassname> CreateClassInstance()                                                     \
+    {                                                                                                               \
+      ICryUnknownPtr p = s_factory.CreateClassInstance();                                                           \
+      return std::shared_ptr<implclassname>(*static_cast<std::shared_ptr<implclassname>*>(static_cast<void*>(&p))); \
+    }
+
 #define _BEFRIEND_OPS()           \
   _BEFRIEND_CRYINTERFACE_CAST()   \
   _BEFRIEND_CRYCOMPOSITE_QUERY()
@@ -409,9 +419,21 @@ public:
   _IMPLEMENT_ICRYUNKNOWN()                                       \
   _ENFORCE_CRYFACTORY_USAGE(implclassname, cname, cidHigh, cidLow)
 
+#define CRYGENERATE_CLASS_GUID(implclassname, cname, classGuid)       \
+  friend struct CFactory<implclassname>::CustomDeleter;          \
+  _CRYFACTORY_DECLARE(implclassname)                             \
+  _BEFRIEND_OPS()                                                \
+  _IMPLEMENT_ICRYUNKNOWN()                                       \
+  _ENFORCE_CRYFACTORY_USAGE_GUID(implclassname, cname, classGuid)
+
+
 #define CRYGENERATE_CLASS_FROM_INTERFACE(implclassname, interfaceName, cname, cidHigh, cidLow) \
   CRYINTERFACE_SIMPLE(interfaceName)                                                           \
   CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow)
+
+#define CRYGENERATE_CLASS_FROM_INTERFACE_GUID(implclassname, interfaceName, cname, classGuid) \
+  CRYINTERFACE_SIMPLE(interfaceName)                                                           \
+  CRYGENERATE_CLASS_GUID(implclassname, cname, classGuid)
 
 #define CRYGENERATE_SINGLETONCLASS(implclassname, cname, cidHigh, cidLow) \
   friend struct CFactory<implclassname>::CustomDeleter;                   \

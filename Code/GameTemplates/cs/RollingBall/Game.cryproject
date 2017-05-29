@@ -56,14 +56,6 @@
                 "type": "EPluginType::Native"
             },
             {
-                "path": "CrySchematycCore",
-                "type": "EPluginType::Native"
-            },
-            {
-                "path": "CrySchematycSTDEnv",
-                "type": "EPluginType::Native"
-            },
-            {
                 "path": "CrySensorSystem",
                 "type": "EPluginType::Native"
             },

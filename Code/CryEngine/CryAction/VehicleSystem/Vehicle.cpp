@@ -5167,14 +5167,14 @@ int CVehicle::GetNextPhysicsSlot(bool high) const
 {
 	// use the last 9 partids of the current id range for parts without slot geometry
 	// their partid must not mix up with other entity slots
-	int idMax = (high) ? PARTID_MAX_SLOTS - 10 : -1;
+	int idMax = (high) ? EntityPhysicsUtils::PARTID_MAX_SLOTS - 10 : -1;
 
 	// get next physid not belonging to CGA range
 	for (TVehiclePartVector::const_iterator ite = m_parts.begin(); ite != m_parts.end(); ++ite)
 	{
 		int physId = ite->second->GetPhysId();
 
-		if (physId > idMax && physId < PARTID_MAX_SLOTS && physId > PARTID_MAX_SLOTS - 10)
+		if (physId > idMax && physId < EntityPhysicsUtils::PARTID_MAX_SLOTS && physId > EntityPhysicsUtils::PARTID_MAX_SLOTS - 10)
 			idMax = physId;
 	}
 

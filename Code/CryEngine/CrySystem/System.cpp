@@ -42,10 +42,10 @@
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryMono/IMonoRuntime.h>
+#include <CrySchematyc/ICore.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
-#include "Log.h"
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"
 #include "NotificationNetwork.h"
@@ -400,9 +400,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();
 
-	std::unique_ptr<ILog> testLogger = stl::make_unique<CLog>(this);
-	testLogger->SetFileName("%USER%/TestResults/TestLog.log");
-	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(std::move(testLogger));
+	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(this);
 
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
@@ -492,6 +490,8 @@ CSystem::~CSystem()
 	ShutDownThreadSystem();
 
 	SAFE_DELETE(g_pPakHeap);
+
+	m_pTestSystem.reset();
 
 	m_env.pSystem = 0;
 #if !defined(SYS_ENV_AS_STRUCT)
@@ -715,6 +715,7 @@ void CSystem::ShutDown()
 	//	SAFE_RELEASE(m_env.pCharacterManager);
 	UnloadEngineModule("CryAnimation");
 	UnloadEngineModule("Cry3DEngine"); // depends on EntitySystem
+	UnloadEngineModule("CrySchematyc");
 	UnloadEngineModule("CryEntitySystem");
 
 	SAFE_DELETE(m_pPhysRenderer); // Must be destroyed before unloading CryPhysics as it holds memory that was allocated by that module
@@ -727,17 +728,9 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_pIBudgetingSystem);
 
 	SAFE_RELEASE(m_env.pRenderer);
-#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
-	UnloadEngineModule("CryRenderD3D11");
-#else
+
 	auto r_driver = m_env.pConsole->GetCVar("r_driver")->GetString();
-	if (stricmp(r_driver, "DX11") == 0)
-		UnloadEngineModule("CryRenderD3D11");
-	else if (stricmp(r_driver, "DX12") == 0)
-		UnloadEngineModule("CryRenderD3D12");
-	else if (stricmp(r_driver, "GL") == 0)
-		UnloadEngineModule("CryRenderOpenGL");
-#endif
+	CloseRenderLibrary(r_driver);
 
 	SAFE_RELEASE(m_env.pCodeCheckpointMgr);
 
@@ -875,7 +868,7 @@ void CSystem::Quit()
 	if (GetIRenderer())
 		GetIRenderer()->RestoreGamma();
 
-	if ((m_pCVarQuit && m_pCVarQuit->GetIVal() != 0) || gEnv->bTesting)
+	if (m_pCVarQuit && m_pCVarQuit->GetIVal() != 0)
 	{
 		// Dispatch the fast-shutdown event so other systems can do any last minute processing.
 		if (m_pSystemEventDispatcher != NULL)
@@ -1463,6 +1456,11 @@ void CSystem::PrePhysicsUpdate()
 	//update entity system
 	if (m_env.pEntitySystem && g_cvars.sys_entitysystem)
 	{
+		if (gEnv->pSchematyc != nullptr)
+		{
+			gEnv->pSchematyc->PrePhysicsUpdate();
+		}
+
 		m_env.pEntitySystem->PrePhysicsUpdate();
 	}
 }
@@ -2112,6 +2110,11 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 #endif // #ifdef ENABLE_STATS_AGENT
 
 	m_pSystemEventDispatcher->Update();
+
+	if (gEnv->pSchematyc != nullptr)
+	{
+		gEnv->pSchematyc->Update();
+	}
 
 	if (m_pPluginManager)
 	{

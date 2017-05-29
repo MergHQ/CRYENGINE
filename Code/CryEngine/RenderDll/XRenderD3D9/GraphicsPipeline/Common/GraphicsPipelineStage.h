@@ -9,6 +9,7 @@ typedef std::shared_ptr<CGraphicsPipelineStateLocalCache> CGraphicsPipelineState
 class CGraphicsPipelineStage;
 class CSceneRenderPass;
 class CRenderView;
+class CCVarUpdateRecorder;
 
 struct SGraphicsPipelinePassContext
 {

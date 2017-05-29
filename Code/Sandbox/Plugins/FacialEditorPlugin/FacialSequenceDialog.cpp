@@ -9,7 +9,6 @@
 #include <CrySandbox/ScopedVariableSetter.h>
 #include "Controls/TreeCtrlUtils.h"
 #include "Controls/QuestionDialog.h"
-#include "Dialogs/NumberDlg.h"
 #include <CryCore/Containers/VectorSet.h>
 #include "FilePathUtil.h"
 #include "Util/MFCUtil.h"

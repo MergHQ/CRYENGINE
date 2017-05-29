@@ -54,10 +54,37 @@ void CGameObjectSystem::RegisterFactories(IGameFramework* pFrameWork)
 	REGISTER_FACTORY(pFrameWork, "WorldQuery", CWorldQuery, false);
 	REGISTER_FACTORY(pFrameWork, "Interactor", CInteractor, false);
 
-	REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "WaterVolume", GameVolume_Water, "Scripts/Entities/Environment/WaterVolume.lua");
-	RegisterEntityWithDefaultComponent<CMannequinObject>("MannequinEntity", "Animation", "User.bmp");
+	CCryFile file;
+	if (file.Open("Scripts/Entities/Environment/WaterVolume.lua", "r"))
+	{
+		file.Close();
+		REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "WaterVolume", GameVolume_Water, "Scripts/Entities/Environment/WaterVolume.lua");
 
-	HIDE_FROM_EDITOR("WaterVolume");
-	REGISTER_EDITOR_VOLUME_CLASS(pFrameWork, "WaterVolume");
-	REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "EntityContainerObject", EntityContainerObject, "Scripts/Entities/Containers/EntityContainerObject.lua");
+		HIDE_FROM_EDITOR("WaterVolume");
+		REGISTER_EDITOR_VOLUME_CLASS(pFrameWork, "WaterVolume");
+	}
+
+	IEntityClassRegistry::SEntityClassDesc clsDesc;
+	clsDesc.sName = "MannequinEntity";
+
+	clsDesc.editorClassInfo.sCategory = "Animation";
+	clsDesc.editorClassInfo.sIcon = "User.bmp";
+	clsDesc.editorClassInfo.bIconOnTop = true;
+
+	struct CObjectCreator
+	{
+		static IEntityComponent* Create(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
+		{
+			return pEntity->CreateComponentClass<CMannequinObject>();
+		}
+	};
+	clsDesc.pUserProxyCreateFunc = &CObjectCreator::Create;
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
+
+	// Special case since entity container is Hunt specific, skip entity registration if no script is available
+	if (file.Open("Scripts/Entities/Containers/EntityContainerObject.lua", "r"))
+	{
+		file.Close();
+		REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "EntityContainerObject", EntityContainerObject, "Scripts/Entities/Containers/EntityContainerObject.lua");
+	}
 }

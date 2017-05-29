@@ -6,6 +6,7 @@
 #include "MonoObject.h"
 #include "MonoMethod.h"
 #include "MonoRuntime.h"
+#include "MonoProperty.h"
 
 #include "RootMonoDomain.h"
 #include "AppDomain.h"
@@ -218,6 +219,16 @@ void CMonoClass::RegisterObject(std::weak_ptr<CMonoObject> pObject)
 	m_objects.push_back(pObject);
 }
 
+std::shared_ptr<CMonoProperty> CMonoClass::MakeProperty(MonoInternals::MonoProperty* pProperty)
+{
+	return std::make_shared<CMonoProperty>(pProperty);
+}
+
+std::shared_ptr<CMonoProperty> CMonoClass::MakeProperty(MonoInternals::MonoReflectionProperty* pProperty)
+{
+	return std::make_shared<CMonoProperty>(pProperty);
+}	
+
 std::shared_ptr<CMonoMethod> CMonoClass::FindMethod(const char* szName, int numParams)
 {
 	if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_class_get_method_from_name(m_pClass, szName, numParams))
@@ -250,7 +261,10 @@ std::shared_ptr<CMonoMethod> CMonoClass::FindMethodInInheritedClasses(const char
 
 std::shared_ptr<CMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethodDesc)
 {
-	MonoInternals::MonoMethodDesc* pMethodDesc = MonoInternals::mono_method_desc_new(szMethodDesc, true);
+	string sMethodDesc;
+	sMethodDesc.Format(":%s", szMethodDesc);
+
+	MonoInternals::MonoMethodDesc* pMethodDesc = MonoInternals::mono_method_desc_new(sMethodDesc, false);
 	if (pMethodDesc == nullptr)
 	{
 		return nullptr;
@@ -271,8 +285,6 @@ std::shared_ptr<CMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethod
 
 std::shared_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(const char* szMethodDesc, CMonoClass* pBaseClass)
 {
-	MonoInternals::MonoClass *pClass = m_pClass;
-
 	string sMethodDesc;
 	sMethodDesc.Format(":%s", szMethodDesc);
 
@@ -282,6 +294,7 @@ std::shared_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(co
 		return nullptr;
 	}
 
+	MonoInternals::MonoClass *pClass = m_pClass;
 	while (pClass != nullptr)
 	{
 		if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_method_desc_search_in_class(pDesiredDesc, pClass))
@@ -299,5 +312,33 @@ std::shared_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(co
 	}
 
 	MonoInternals::mono_method_desc_free(pDesiredDesc);
+	return nullptr;
+}
+
+std::shared_ptr<CMonoProperty> CMonoClass::FindProperty(const char* szName)
+{
+	if (MonoInternals::MonoProperty* pProperty = MonoInternals::mono_class_get_property_from_name(m_pClass, szName))
+	{
+		return CMonoClass::MakeProperty(pProperty);
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<CMonoProperty> CMonoClass::FindPropertyInInheritedClasses(const char* szName)
+{
+	MonoInternals::MonoClass *pClass = m_pClass;
+	while (pClass != nullptr)
+	{
+		if (MonoInternals::MonoProperty* pProperty = MonoInternals::mono_class_get_property_from_name(pClass, szName))
+		{
+			return CMonoClass::MakeProperty(pProperty);
+		}
+
+		pClass = MonoInternals::mono_class_get_parent(pClass);
+		if (pClass == MonoInternals::mono_get_object_class())
+			break;
+	}
+
 	return nullptr;
 }

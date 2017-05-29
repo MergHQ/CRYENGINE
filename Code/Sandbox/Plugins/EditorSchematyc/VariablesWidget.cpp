@@ -10,12 +10,14 @@
 #include <QtUtil.h>
 #include <QSearchBox.h>
 #include <QAdvancedPropertyTree.h>
+#include <QCollapsibleFrame.h>
 #include <ProxyModels/DeepFilterProxyModel.h>
 #include <Controls/QPopupWidget.h>
 #include <Controls/DictionaryWidget.h>
 #include <ICommandManager.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/Events.h>
+#include <EditorFramework/Inspector.h>
 
 #include <QAbstractItemModel>
 #include <QStyledItemDelegate>
@@ -420,12 +422,13 @@ void CVariablesWidget::OnSelectionChanged(const QItemSelection& selected, const 
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{
 				CrySchematycEditor::CPropertiesWidget* pPropertiesWidget = nullptr /*new CrySchematycEditor::CPropertiesWidget(*pItem)*/;
-				auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
+				PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
 				{
-					return pPropertiesWidget;
-				};
-				PopulateInspectorEvent populateEvent(populateInspector, "Properties");
-				pBroadcastManager->Broadcast(populateEvent);
+					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
+					pInspectorWidget->SetWidget(pPropertiesWidget);
+					inspector.AddWidget(pInspectorWidget);
+				});
+				pBroadcastManager->Broadcast(popEvent);
 			}
 
 			SignalEntrySelected(*pItem);

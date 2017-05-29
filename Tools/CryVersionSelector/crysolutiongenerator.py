@@ -181,6 +181,8 @@ target_include_directories($${THIS_PROJECT}
 PRIVATE 
     $${CRYENGINE_DIR}/Code/CryEngine/CryCommon
     $${CRYENGINE_DIR}/Code/CryEngine/CryAction
+	$${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
+	$${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module
 )
 """
 
@@ -301,7 +303,7 @@ def add_cpp_sources(directoryname, project_name, code_directory, skip_directorie
     sources += "\n)\n"
     
     for entry in os.scandir(directoryname):
-        if os.path.isdir(entry.path) and not os.path.basename(entry.path).startswith(".") and os.path.basename(entry.path) != 'CMakeFiles':
+        if os.path.isdir(entry.path) and not os.path.basename(entry.path).startswith(".") and not os.path.exists(os.path.join(entry.path, 'CMakeCache.txt')):
             if os.path.relpath(entry.path, code_directory) in skip_directories:
                 continue
         

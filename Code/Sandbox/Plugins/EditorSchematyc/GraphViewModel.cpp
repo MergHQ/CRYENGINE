@@ -10,12 +10,12 @@
 
 #include <NodeGraph/NodeGraphUndo.h>
 
-#include <Schematyc/Script/IScriptGraph.h>
-#include <Schematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Script/IScriptGraph.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
 
 namespace CrySchematycEditor {
 
-CNodeGraphViewModel::CNodeGraphViewModel(Schematyc::IScriptGraph& scriptGraph /*, CrySchematyc::CNodeGraphRuntimeContext& context*/)
+CNodeGraphViewModel::CNodeGraphViewModel(Schematyc::IScriptGraph& scriptGraph /*, Schematyc::CNodeGraphRuntimeContext& context*/)
 	: m_scriptGraph(scriptGraph)
 	, m_runtimeContext(scriptGraph)
 {
@@ -28,7 +28,7 @@ CNodeGraphViewModel::CNodeGraphViewModel(Schematyc::IScriptGraph& scriptGraph /*
 
 			return Schematyc::EVisitStatus::Continue;
 		};
-		scriptGraph.VisitNodes(Schematyc::ScriptGraphNodeVisitor::FromLambda(visitor));
+		scriptGraph.VisitNodes(visitor);
 	}
 
 	{
@@ -54,7 +54,7 @@ CNodeGraphViewModel::CNodeGraphViewModel(Schematyc::IScriptGraph& scriptGraph /*
 
 			return Schematyc::EVisitStatus::Continue;
 		};
-		scriptGraph.VisitLinks(Schematyc::ScriptGraphLinkVisitor::FromLambda(visitor));
+		scriptGraph.VisitLinks(visitor);
 	}
 }
 
@@ -87,7 +87,7 @@ CryGraphEditor::CAbstractNodeItem* CNodeGraphViewModel::GetNodeItemByIndex(uint3
 
 CryGraphEditor::CAbstractNodeItem* CNodeGraphViewModel::GetNodeItemById(QVariant id) const
 {
-	const Schematyc::SGUID guid = id.value<Schematyc::SGUID>();
+	const CryGUID guid = id.value<CryGUID>();
 	for (CNodeItem* pNodeItem : m_nodesByIndex)
 	{
 		if (pNodeItem->GetGUID() == guid)
@@ -126,7 +126,7 @@ CryGraphEditor::CAbstractNodeItem* CNodeGraphViewModel::CreateNode(QVariant type
 	}
 	else
 	{
-		CryGraphEditor::CAbstractNodeItem* pNodeItem = CreateNode(typeId.value<Schematyc::SGUID>());
+		CryGraphEditor::CAbstractNodeItem* pNodeItem = CreateNode(typeId.value<Schematyc::CryGUID>());
 		if (pNodeItem)
 		{
 			pNodeItem->SetPosition(position);
@@ -276,7 +276,7 @@ CryGraphEditor::CItemCollection* CNodeGraphViewModel::CreateClipboardItemsCollec
 	return new CNodeGraphClipboard(*this);
 }
 
-CNodeItem* CNodeGraphViewModel::CreateNode(Schematyc::SGUID typeGuid)
+CNodeItem* CNodeGraphViewModel::CreateNode(CryGUID typeGuid)
 {
 	Schematyc::IScriptGraphNodePtr pScriptNode = m_scriptGraph.AddNode(typeGuid);
 	if (pScriptNode)

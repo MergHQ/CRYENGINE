@@ -5,6 +5,7 @@
 #include "GraphicsPipelineStage.h"
 #include "GraphicsPipelineStateSet.h"
 #include "UtilityPasses.h"
+#include "RenderPassScheduler.h"
 
 class CGraphicsPipelineStage;
 
@@ -25,9 +26,10 @@ public:
 
 	virtual ~CGraphicsPipeline()
 	{
-		for (auto pStage : m_pipelineStages)
+		// destroy stages in reverse order to satisfy data dependencies
+		for (auto it = m_pipelineStages.rbegin(); it != m_pipelineStages.rend(); ++it)
 		{
-			SAFE_DELETE(pStage);
+			SAFE_DELETE(*it);
 		}
 	}
 
@@ -50,6 +52,11 @@ public:
 	std::map<struct IRenderMesh*, IRenderer::SDrawCallCountInfo>* GetDrawCallInfoPerMesh() { return &m_drawCallInfoPerMesh; }
 #endif
 
+	CRenderPassScheduler& GetRenderPassScheduler()
+	{
+		return m_renderPassScheduler;
+	}
+
 protected:
 	template<class T> void RegisterStage(T*& pPipelineStage, uint32 stageID)
 	{
@@ -57,7 +64,6 @@ protected:
 		assert(m_pipelineStages[stageID] == nullptr);
 		pPipelineStage = new T();
 		pPipelineStage->m_stageID = stageID;
-		pPipelineStage->Init();
 		m_pipelineStages[stageID] = pPipelineStage;
 	}
 
@@ -67,6 +73,17 @@ protected:
 	{
 		static_assert(stageID < MAX_PIPELINE_SCENE_STAGES, "Invalid ID for scene stage");
 		RegisterStage<T>(pPipelineStage, stageID);
+	}
+
+	void InitStages()
+	{
+		for (auto pStage : m_pipelineStages)
+		{
+			if (pStage)
+			{
+				pStage->Init();
+			}
+		}
 	}
 
 	template<class T> T* GetOrCreateUtilityPass()
@@ -89,7 +106,8 @@ protected:
 	}
 
 protected:
-	std::array<CGraphicsPipelineStage*, 32> m_pipelineStages;
+	std::array<CGraphicsPipelineStage*, 48> m_pipelineStages;
+	CRenderPassScheduler                    m_renderPassScheduler;
 
 #if !defined(_RELEASE)
 	std::map<struct IRenderNode*, IRenderer::SDrawCallCountInfo> m_drawCallInfoPerNode;

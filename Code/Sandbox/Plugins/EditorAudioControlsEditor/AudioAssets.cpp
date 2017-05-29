@@ -40,10 +40,9 @@ CAudioControl::CAudioControl(const string& controlName, CID id, EItemType type)
 	: IAudioAsset(controlName)
 	, m_id(id)
 	, m_type(type)
+	, m_modifiedSignalEnabled(true)
 {
-	m_modifiedSignalEnabled = false;
 	m_scope = Utils::GetGlobalScope();
-	m_modifiedSignalEnabled = true;
 }
 
 CAudioControl::~CAudioControl()
@@ -63,7 +62,6 @@ void CAudioControl::SetName(const string& name)
 		SignalControlAboutToBeModified();
 		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
 		SignalControlModified();
-		SetModified(true);
 	}
 }
 
@@ -79,7 +77,6 @@ void CAudioControl::SetScope(Scope scope)
 		SignalControlAboutToBeModified();
 		m_scope = scope;
 		SignalControlModified();
-		SetModified(true);
 	}
 }
 
@@ -95,7 +92,6 @@ void CAudioControl::SetAutoLoad(bool bAutoLoad)
 		SignalControlAboutToBeModified();
 		m_bAutoLoad = bAutoLoad;
 		SignalControlModified();
-		SetModified(true);
 	}
 }
 
@@ -115,18 +111,14 @@ ConnectionPtr CAudioControl::GetConnectionAt(int index)
 
 ConnectionPtr CAudioControl::GetConnection(CID id)
 {
-	if (id >= 0)
+	for (auto const pConnection : m_connectedControls)
 	{
-		const size_t size = m_connectedControls.size();
-		for (int i = 0; i < size; ++i)
+		if (pConnection != nullptr && pConnection->GetID() == id)
 		{
-			ConnectionPtr pConnection = m_connectedControls[i];
-			if (pConnection && pConnection->GetID() == id)
-			{
-				return pConnection;
-			}
+			return pConnection;
 		}
 	}
+
 	return nullptr;
 }
 
@@ -139,28 +131,28 @@ void CAudioControl::AddConnection(ConnectionPtr pConnection)
 {
 	if (pConnection)
 	{
-		m_connectedControls.push_back(pConnection);
+		IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
-		if (m_bMatchRadiusAndAttenuation)
+		if (pAudioSystemImpl != nullptr)
 		{
-			MatchRadiusToAttenuation();
-		}
+			IAudioSystemItem* const pAudioSystemControl = pAudioSystemImpl->GetControl(pConnection->GetID());
 
-		pConnection->signalConnectionChanged.Connect(this, &CAudioControl::SignalControlModified);
-
-		IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-		if (pAudioSystemImpl)
-		{
-			IAudioSystemItem* pAudioSystemControl = pAudioSystemImpl->GetControl(pConnection->GetID());
-			if (pAudioSystemControl)
+			if (pAudioSystemControl != nullptr)
 			{
 				pAudioSystemImpl->EnableConnection(pConnection);
+
+				pConnection->signalConnectionChanged.Connect(this, &CAudioControl::SignalConnectionModified);
+				m_connectedControls.push_back(pConnection);
+
+				if (m_bMatchRadiusAndAttenuation)
+				{
+					MatchRadiusToAttenuation();
+				}
+
 				SignalConnectionAdded(pAudioSystemControl);
+				SignalControlModified();
 			}
 		}
-
-		SignalControlModified();
-		SetModified(true);
 	}
 }
 
@@ -177,7 +169,6 @@ void CAudioControl::RemoveConnection(ConnectionPtr pConnection)
 				IAudioSystemItem* pAudioSystemControl = pAudioSystemImpl->GetControl(pConnection->GetID());
 				if (pAudioSystemControl)
 				{
-
 					pAudioSystemImpl->DisableConnection(pConnection);
 					m_connectedControls.erase(it);
 
@@ -188,7 +179,6 @@ void CAudioControl::RemoveConnection(ConnectionPtr pConnection)
 
 					SignalConnectionRemoved(pAudioSystemControl);
 					SignalControlModified();
-					SetModified(true);
 				}
 			}
 		}
@@ -219,7 +209,6 @@ void CAudioControl::ClearConnections()
 			MatchRadiusToAttenuation();
 		}
 		SignalControlModified();
-		SetModified(true);
 	}
 }
 
@@ -248,7 +237,6 @@ void CAudioControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 
 				SignalConnectionRemoved(pAudioSystemControl);
 				SignalControlModified();
-				SetModified(true);
 				break;
 			}
 		}
@@ -257,15 +245,17 @@ void CAudioControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 
 void CAudioControl::SignalControlModified()
 {
-	if (m_modifiedSignalEnabled)
+	if (m_modifiedSignalEnabled && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading()))
 	{
 		CAudioControlsEditorPlugin::GetAssetsManager()->OnControlModified(this);
 	}
+
+	SetModified(true);
 }
 
 void CAudioControl::SignalControlAboutToBeModified()
 {
-	if (m_modifiedSignalEnabled)
+	if (m_modifiedSignalEnabled && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading()))
 	{
 		CAudioControlsEditorPlugin::GetAssetsManager()->OnControlAboutToBeModified(this);
 	}
@@ -281,6 +271,17 @@ void CAudioControl::SignalConnectionRemoved(IAudioSystemItem* pMiddlewareControl
 	CAudioControlsEditorPlugin::GetAssetsManager()->OnConnectionRemoved(this, pMiddlewareControl);
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CAudioControl::SignalConnectionModified()
+{
+	if (m_bMatchRadiusAndAttenuation)
+	{
+		MatchRadiusToAttenuation();
+	}
+
+	SignalControlModified();
+}
+
 void CAudioControl::ReloadConnections()
 {
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
@@ -288,9 +289,10 @@ void CAudioControl::ReloadConnections()
 	{
 		std::map<int, XMLNodeList> connectionNodes;
 		std::swap(connectionNodes, m_connectionNodes);
-		for (auto& connectionPair : connectionNodes)
+
+		for (auto const& connectionPair : connectionNodes)
 		{
-			for (auto& connection : connectionPair.second)
+			for (auto const& connection : connectionPair.second)
 			{
 				LoadConnectionFromXML(connection.xmlNode, connectionPair.first);
 			}
@@ -361,10 +363,12 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 		Serialization::StringList scopeList;
 		ScopeInfoList scopeInfoList;
 		CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
-		for (auto& scope : scopeInfoList)
+		
+		for (auto const& scope : scopeInfoList)
 		{
 			scopeList.push_back(scope.name);
 		}
+
 		Serialization::StringListValue selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
 		Scope newScope = m_scope;
 		if (m_type != eItemType_State)
@@ -381,60 +385,60 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 		}
 
 		// Max Radius
-		float maxRadius = m_radius;
+		float radius = m_radius;
 		float fadeOutDistance = m_occlusionFadeOutDistance;
-		if (m_type == eItemType_Trigger)
+
+		if (m_type == eItemType_Trigger && ar.openBlock("activity_radius", "Activity Radius"))
 		{
+			bool hasPlaceholderConnections = false;
+			IAudioSystemEditor const* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
-			if (ar.openBlock("activity_radius", "Activity Radius"))
+			if (pAudioSystemImpl != nullptr)
 			{
-				bool hasPlaceholderConnections = false;
-				float attenuationRadius = 0.0f;
-				IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-				if (pAudioSystemImpl)
+				radius = 0.0f;
+				for (auto const pConnection : m_connectedControls)
 				{
-					float radius = 0.0f;
-					for (auto pConnection : m_connectedControls)
+					IAudioSystemItem const* const pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
+
+					if (pItem != nullptr && !pItem->IsPlaceholder())
 					{
-						IAudioSystemItem* pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
-						if (pItem && !pItem->IsPlaceholder())
-						{
-							attenuationRadius = std::max(attenuationRadius, pItem->GetRadius());
-						}
-						else
-						{
-							// If control has placeholder connection we cannot enforce the link between activity radius
-							// and attenuation as the user could be missing the middleware project
-							hasPlaceholderConnections = true;
-						}
+						radius = std::max(radius, pItem->GetRadius());
+					}
+					else
+					{
+						// If control has placeholder connection we cannot enforce the link between activity radius
+						// and attenuation as the user could be missing the middleware project
+						hasPlaceholderConnections = true;
 					}
 				}
-
-				if (m_bMatchRadiusAndAttenuation && !hasPlaceholderConnections)
-				{
-					ar(Serialization::Range<float>(maxRadius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "!^");
-				}
-				else
-				{
-					ar(Serialization::Range<float>(maxRadius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "^");
-				}
-
-				if (!hasPlaceholderConnections)
-				{
-					if (ar.openBlock("attenuation", "Attenuation"))
-					{
-						ar(attenuationRadius, "attenuation", "!^");
-						ar(Serialization::ToggleButton(m_bMatchRadiusAndAttenuation, "icons:Navigation/Tools_Link.ico", "icons:Navigation/Tools_Link_Unlink.ico"), "link", "^");
-						if (m_bMatchRadiusAndAttenuation)
-						{
-							maxRadius = attenuationRadius;
-						}
-
-						ar.closeBlock();
-					}
-				}
-				ar(Serialization::Range<float>(fadeOutDistance, 0.0f, maxRadius), "fadeOutDistance", "Occlusion Fade-Out Distance");
 			}
+
+			if (m_bMatchRadiusAndAttenuation && !hasPlaceholderConnections)
+			{
+				ar(Serialization::Range<float>(radius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "!^");
+			}
+			else
+			{
+				ar(Serialization::Range<float>(m_radius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "^");
+			}
+
+			if (!hasPlaceholderConnections)
+			{
+				if (ar.openBlock("attenuation", "Attenuation"))
+				{
+					ar(radius, "attenuation", "!^");
+					ar(Serialization::ToggleButton(m_bMatchRadiusAndAttenuation, "icons:Navigation/Tools_Link.ico", "icons:Navigation/Tools_Link_Unlink.ico"), "link", "^");
+
+					if (!m_bMatchRadiusAndAttenuation)
+					{
+						radius = m_radius;
+					}
+
+					ar.closeBlock();
+				}
+			}
+
+			ar(Serialization::Range<float>(fadeOutDistance, 0.0f, radius), "fadeOutDistance", "Occlusion Fade-Out Distance");
 		}
 
 		if (ar.isInput())
@@ -444,14 +448,12 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 			SetName(newName);
 			SetScope(newScope);
 			SetAutoLoad(bAutoLoad);
-			SetRadius(maxRadius);
+			SetRadius(radius);
 			SetOcclusionFadeOutDistance(fadeOutDistance);
 			m_modifiedSignalEnabled = true;
-			SetModified(true);
 			SignalControlModified();
 		}
 	}
-
 }
 
 bool CAudioControl::IsModified() const
@@ -471,16 +473,6 @@ void CAudioControl::SetModified(bool const bModified, bool const bForce /* = fal
 	}
 }
 
-void CAudioControl::SetRadius(float radius)
-{
-	if (radius != m_radius)
-	{
-		SignalControlAboutToBeModified();
-		m_radius = radius;
-		SignalControlModified();
-	}
-}
-
 void CAudioControl::SetOcclusionFadeOutDistance(float fadeOutDistance)
 {
 	if (fadeOutDistance != m_occlusionFadeOutDistance)
@@ -493,7 +485,7 @@ void CAudioControl::SetOcclusionFadeOutDistance(float fadeOutDistance)
 
 void CAudioControl::AddRawXMLConnection(XmlNodeRef xmlNode, bool bValid, int platformIndex /*= -1*/)
 {
-	m_connectionNodes[platformIndex].push_back(SRawConnectionData(xmlNode, bValid));
+	m_connectionNodes[platformIndex].emplace_back(xmlNode, bValid);
 }
 
 XMLNodeList& CAudioControl::GetRawXMLConnections(int platformIndex /*= -1*/)
@@ -503,14 +495,17 @@ XMLNodeList& CAudioControl::GetRawXMLConnections(int platformIndex /*= -1*/)
 
 void CAudioControl::MatchRadiusToAttenuation()
 {
-	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-	if (pAudioSystemImpl)
+	IAudioSystemEditor const* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+
+	if (pAudioSystemImpl != nullptr)
 	{
 		float radius = 0.0f;
-		for (auto pConnection : m_connectedControls)
+
+		for (auto const pConnection : m_connectedControls)
 		{
-			IAudioSystemItem* pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
-			if (pItem)
+			IAudioSystemItem const* const pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
+
+			if (pItem != nullptr)
 			{
 				if (pItem->IsPlaceholder())
 				{
@@ -556,5 +551,4 @@ void CAudioLibrary::SetModified(bool const bModified, bool const bForce /* = fal
 		m_bModified = bModified;
 	}
 }
-
-}
+} // namespace ACE

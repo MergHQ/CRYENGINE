@@ -1,13 +1,14 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CryAISystem/IAIAction.h>
-
 #include "FlowGraph.h"
-#include "FlowSystem.h"
+
 #include <CryString/StringUtils.h>
-#include <CryGame/IGameTokens.h>
+#include <CryAISystem/IAIAction.h>
 #include <CryAction/ICustomActions.h>
+#include <CryGame/IGameTokens.h>
+
+#include "FlowSystem.h"
 #include "Modules/ModuleManager.h"
 
 // Debug disabled edges in FlowGraphs
@@ -375,32 +376,33 @@ void CFlowGraphBase::CreateDebugName()
 	{
 	case eFGT_Default:
 		{
-			sType = "Entity";
+			sType = "Files";
 			IEntity *pEntity = gEnv->pEntitySystem->GetEntity(GetGraphEntity(0));
 			if (pEntity)
 			{
+				sType = "Entity";
 				sExtra.Format(" '%s'", pEntity->GetName());
 			}
 			break;
 		}
 	case eFGT_AIAction:
 		{
-			sType = "AIAction";
+			sType = "AI Action";
 			sExtra.Format(" '%s'", m_pAIAction->GetName());
 			break;
 		}
-	case eFGT_UIAction: sType = "UIAction"; break;
+	case eFGT_UIAction: sType = "UI Action"; break;
 	case eFGT_Module: sType = "Module"; break;
 	case eFGT_CustomAction:
 		{
-			sType = "CustomAction";
+			sType = "Custom Action";
 			sExtra.Format(" '%s'", m_pCustomAction->GetCustomActionGraphName());
 			break;
 		}
-	case eFGT_MaterialFx: sType = "MaterialFX"; break;
+	case eFGT_MaterialFx: sType = "Material FX"; break;
 	}
 
-	m_debugName.Format("FG-%s%s", sType, sExtra.c_str());
+	m_debugName.Format("[%s] %s", sType, sExtra.c_str());
 #endif
 }
 

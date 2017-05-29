@@ -56,7 +56,7 @@ public:
 	// CAbstractComponentsModel
 	virtual uint32                     GetComponentItemCount() const override { return m_components.size(); }
 	virtual CComponentItem*            GetComponentItemByIndex(uint32 index) const override;
-	virtual CComponentItem*            CreateComponent(Schematyc::SGUID typeId, const char* szName) override;
+	virtual CComponentItem*            CreateComponent(CryGUID typeId, const char* szName) override;
 	virtual bool                       RemoveComponent(CComponentItem& component) override;
 
 	virtual CAbstractDictionary*       GetAvailableComponentsDictionary() { return static_cast<CAbstractDictionary*>(&m_componentsDictionary); };

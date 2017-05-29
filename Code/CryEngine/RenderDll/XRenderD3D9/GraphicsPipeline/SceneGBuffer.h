@@ -20,6 +20,7 @@ class CSceneGBufferStage : public CGraphicsPipelineStage
 		ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting,
 		ePerPassTexture_DissolveNoise,
+		ePerPassTexture_SceneLinearDepth,
 
 		ePerPassTexture_Count
 	};
@@ -27,13 +28,17 @@ class CSceneGBufferStage : public CGraphicsPipelineStage
 	enum EPass
 	{
 		ePass_GBufferFill  = 0,
-		ePass_DepthPrepass = 1
+		ePass_DepthPrepass = 1,
+		ePass_MicroGBufferFill = 2,
 	};
 
 public:
+	CSceneGBufferStage();
+
 	virtual void Init() override;
 	virtual void Prepare(CRenderView* pRenderView) override;
 	void         Execute();
+	void         ExecuteMicroGBuffer();
 	void         ExecuteLinearizeDepth();
 
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
@@ -41,8 +46,7 @@ public:
 private:
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 
-	bool PreparePerPassResources(bool bOnInit);
-	bool PrepareResourceLayout();
+	bool SetAndBuildPerPassResources(bool bOnInit);
 
 	void OnResolutionChanged();
 	void RenderDepthPrepass();
@@ -50,13 +54,16 @@ private:
 	void RenderSceneOverlays();
 
 private:
-	CDeviceResourceSetPtr    m_pPerPassResources;
+	CDeviceResourceSetPtr    m_pPerPassResourceSet;
+	CDeviceResourceSetDesc   m_perPassResources;
 	CDeviceResourceLayoutPtr m_pResourceLayout;
 
 	CSceneRenderPass         m_depthPrepass;
 	CSceneRenderPass         m_opaquePass;
 	CSceneRenderPass         m_opaqueVelocityPass;
 	CSceneRenderPass         m_overlayPass;
+	CSceneRenderPass         m_microGBufferPass;
 
 	CFullscreenPass          m_passDepthLinearization;
+	CFullscreenPass          m_passBufferVisualization;
 };

@@ -81,6 +81,7 @@ void CEntitySlot::ReleaseObjects()
 
 	if (IParticleEmitter* pEmitter = GetParticleEmitter())
 	{
+		pEmitter->Kill();
 		pEmitter->Activate(false);
 		pEmitter->SetEntity(nullptr, 0);
 		pEmitter->Release();
@@ -367,13 +368,17 @@ bool CEntitySlot::IsRendered() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySlot::PreviewRender(IEntity::SPreviewRenderParams& params)
+void CEntitySlot::PreviewRender(SEntityPreviewContext& context)
 {
 	if (m_pRenderNode)
 	{
-		assert(params.pRenderParams);
-		assert(params.pPassInfo);
-		m_pRenderNode->Render(*params.pRenderParams, *params.pPassInfo);
+		if (!context.bNoRenderNodes)
+		{
+			assert(context.pRenderParams);
+			assert(context.pPassInfo);
+			m_pRenderNode->Render(*context.pRenderParams, *context.pPassInfo);
+		}
+		DebugDraw(context.debugDrawInfo);
 	}
 }
 
@@ -746,6 +751,8 @@ void CEntitySlot::SetRenderNode(IRenderNode* pRenderNode)
 
 	if (m_pRenderNode)
 	{
+		m_flags |= ENTITY_SLOT_RENDER;
+
 		m_renderNodeType = m_pRenderNode->GetRenderNodeType();
 
 		m_pRenderNode->SetOwnerEntity(m_pEntity);

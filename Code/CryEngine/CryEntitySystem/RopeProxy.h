@@ -62,10 +62,14 @@ public:
 		pSizer->AddObject(this, sizeof(*this));
 	}
 	void PreserveParams();
+
 protected:
 	IRopeRenderNode* m_pRopeRenderNode;
 	int              m_nSegmentsOrg;
 	float            m_texTileVOrg;
+
+	int              m_segmentsCount = 0;
+	float            m_texureTileV = 0;
 };
 
 #endif // __RopeProxy_h__

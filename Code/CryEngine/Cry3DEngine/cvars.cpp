@@ -85,7 +85,7 @@ void CVars::Init()
 	                   "Activates global height/distance based fog");
 	DefineConstIntCVar(e_FogVolumes, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	                   "Activates local height/distance based fog volumes");
-	REGISTER_CVAR(e_VolumetricFog, 0, VF_NULL,
+	REGISTER_CVAR(e_VolumetricFog, 0, VF_REQUIRE_APP_RESTART,
 	              "Activates volumetric fog");
 	REGISTER_CVAR(e_Entities, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	              "Activates drawing of entities and brushes");

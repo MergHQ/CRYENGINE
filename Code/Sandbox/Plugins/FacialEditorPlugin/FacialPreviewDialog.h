@@ -33,7 +33,7 @@ public:
 	void              RedrawPreview();
 
 	CModelViewport*   GetViewport();
-	const CVarObject* GetVarObject() const { return &m_vars; }
+	CVarObject* GetVarObject() { return &m_vars; }
 
 	void              SetForcedNeckRotation(const Quat& rotation);
 	void              SetForcedEyeRotation(const Quat& rotation, EyeType eye);

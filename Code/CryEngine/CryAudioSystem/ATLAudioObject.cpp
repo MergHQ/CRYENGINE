@@ -25,10 +25,12 @@ CAudioStandaloneFileManager* CryAudio::CATLAudioObject::s_pStandaloneFileManager
 CATLAudioObject::CATLAudioObject()
 	: m_pImplData(nullptr)
 	, m_maxRadius(0.0f)
-	, m_flags(EObjectFlags::DoNotRelease)
+	, m_flags(EObjectFlags::InUse)
 	, m_previousVelocity(0.0f)
 	, m_propagationProcessor(m_attributes.transformation)
 	, m_occlusionFadeOutDistance(0.0f)
+	, m_entityId(INVALID_ENTITYID)
+	, m_numPendingSyncCallbacks(0)
 {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -603,7 +605,14 @@ void CATLAudioObject::Update(
   float const distance,
   Vec3 const& audioListenerPosition)
 {
-	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
+	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition, m_flags);
+
+	if (m_propagationProcessor.HasNewOcclusionValues())
+	{
+		SATLSoundPropagationData propagationData;
+		m_propagationProcessor.GetPropagationData(propagationData);
+		m_pImplData->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
+	}
 
 	if (m_maxRadius > 0.0f)
 	{
@@ -666,12 +675,6 @@ void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType, Vec3
 {
 	CRY_ASSERT(calcType != EOcclusionType::None);
 	m_propagationProcessor.SetOcclusionType(calcType, audioListenerPosition);
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::GetPropagationData(SATLSoundPropagationData& propagationData) const
-{
-	m_propagationProcessor.GetPropagationData(propagationData);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -786,12 +789,13 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition)
+void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition, EntityId entityId)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_name = szName;
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
+	m_entityId = entityId;
 	m_pImplData = pImplData;
 	m_propagationProcessor.Init(this, audioListenerPosition);
 }
@@ -900,10 +904,11 @@ void CATLAudioObject::UpdateControls(float const deltaTime, Impl::SObject3DAttri
 ///////////////////////////////////////////////////////////////////////////
 bool CATLAudioObject::CanBeReleased() const
 {
-	return (m_flags& EObjectFlags::DoNotRelease) == 0 &&
+	return (m_flags & EObjectFlags::InUse) == 0 &&
 	       m_activeEvents.empty() &&
 	       m_activeStandaloneFiles.empty() &&
-	       !m_propagationProcessor.HasPendingRays();
+	       !m_propagationProcessor.HasPendingRays() &&
+		   m_numPendingSyncCallbacks == 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -957,7 +962,7 @@ void CATLAudioObject::DrawDebugInfo(
   AudioPreloadRequestLookup const& preloadRequests,
   AudioEnvironmentLookup const& environments) const
 {
-	m_propagationProcessor.DrawObstructionRays(auxGeom);
+	m_propagationProcessor.DrawObstructionRays(auxGeom, m_flags);
 
 	if (g_cvars.m_drawAudioDebug > 0)
 	{

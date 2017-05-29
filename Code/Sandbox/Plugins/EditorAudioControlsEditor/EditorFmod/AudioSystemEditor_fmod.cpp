@@ -120,8 +120,6 @@ class CParamConnection : public IAudioConnection
 public:
 	explicit CParamConnection(CID nID) : IAudioConnection(nID) {}
 
-	virtual ~CParamConnection() {}
-
 	virtual bool HasProperties() override { return true; }
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -142,8 +140,6 @@ class CParamToStateConnection : public IAudioConnection
 {
 public:
 	explicit CParamToStateConnection(CID id) : IAudioConnection(id) {}
-
-	virtual ~CParamToStateConnection() {}
 
 	virtual bool HasProperties() override
 	{

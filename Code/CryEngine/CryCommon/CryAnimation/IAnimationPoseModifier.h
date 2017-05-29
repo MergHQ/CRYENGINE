@@ -345,7 +345,7 @@ struct IAnimationPoseAligner :
 	virtual void SetRootOffsetEnable(bool bEnable) = 0;
 	virtual void SetBlendWeight(float weight) = 0;
 
-	virtual void Update(const QuatT& location, const float time) = 0;
+	virtual void Update(ICharacterInstance* pCharacter, const QuatT& location, const float time) = 0;
 	// </interfuscator:shuffle>
 };
 

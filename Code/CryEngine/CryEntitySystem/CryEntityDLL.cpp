@@ -11,7 +11,18 @@
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
 
+#include  <CrySchematyc/Env/IEnvRegistry.h>
+#include  <CrySchematyc/Env/Elements/EnvComponent.h>
+#include  <CrySchematyc/Env/EnvPackage.h>
+#include <CryCore/StaticInstanceList.h>
+
 CEntitySystem* g_pIEntitySystem = NULL;
+
+static void RegisterToSchematyc(Schematyc::IEnvRegistrar& registrar)
+{
+	// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
+	Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
+}
 
 struct CSystemEventListner_Entity : public ISystemEventListener
 {
@@ -20,6 +31,20 @@ public:
 	{
 		switch (event)
 		{
+		case ESYSTEM_EVENT_GAME_POST_INIT:
+			{
+				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+					stl::make_unique<Schematyc::CEnvPackage>(
+						"A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid,
+						"EntityComponents",
+						"Crytek GmbH",
+						"CRYENGINE Default Entity Components",
+						&RegisterToSchematyc
+						)
+				);
+			}
+			break;
+
 		case ESYSTEM_EVENT_LEVEL_LOAD_START:
 			if (g_pIEntitySystem)
 				g_pIEntitySystem->OnLevelLoadStart();
@@ -38,6 +63,7 @@ public:
 						SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
 						g_pIEntitySystem->SendEventToAll(loadingCompleteEvent);
 					}
+					g_pIEntitySystem->OnLevelLoadEnd();
 				}
 			}
 			break;

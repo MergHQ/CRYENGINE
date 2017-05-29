@@ -75,6 +75,7 @@ public:
 			}
 		}
 
+		ShutDownComponent(pTempComponent.get());
 		// Force release of the component
 		pTempComponent.reset();
 	}
@@ -96,12 +97,14 @@ public:
 				// User component must be deleted last after all other components are destroyed (Required by CGameObject)
 				pUserComponent = rec.pComponent;
 			}
-			rec.pComponent->OnShutDown();
+			ShutDownComponent(rec.pComponent.get());
 		});
 
 		// Remove all entity components in a temporary vector, in case any components try to modify components in their destructor.
 		auto tempComponents = std::move(m_vector);
 		tempComponents.clear();
+
+		ShutDownComponent(pUserComponent.get());
 
 		// User component must be the last of the components to be destroyed.
 		pUserComponent.reset();
@@ -186,4 +189,6 @@ private:
 			m_cleanupRequired = false;
 		}
 	}
+
+	static void ShutDownComponent(IEntityComponent *pComponent);
 };

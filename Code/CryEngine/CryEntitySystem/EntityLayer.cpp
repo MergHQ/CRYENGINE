@@ -69,26 +69,30 @@ bool CEntityLayer::IsSkippedBySpec() const
 	if (m_specs == eSpecType_All)
 		return false;
 
-	auto rt = gEnv->pRenderer ? gEnv->pRenderer->GetRenderType() : eRT_Null;
+	auto rt = gEnv->pRenderer ? gEnv->pRenderer->GetRenderType() : ERenderType::Undefined;
 	switch (rt)
 	{
-	case eRT_PS4:
+	case ERenderType::GNM:
 		if (m_specs & eSpecType_PS4)
 		{
 			return false;
 		}
 		break;
 
-	case eRT_XboxOne:
+#if CRY_PLATFORM_DURANGO
+	case ERenderType::Direct3D11:
+	case ERenderType::Direct3D12:
 		if (m_specs & eSpecType_XBoxOne)
 		{
 			return false;
 		}
 		break;
-
-	case eRT_OpenGL:
-	case eRT_DX11:
-	case eRT_DX12:
+#else
+	case ERenderType::Direct3D11:
+	case ERenderType::Direct3D12:
+#endif
+	case ERenderType::OpenGL:
+	case ERenderType::Vulkan:
 	default:
 		if (m_specs & eSpecType_PC)
 		{

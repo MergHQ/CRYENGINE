@@ -12,9 +12,6 @@
 
 #include "ManagedPlugin.h"
 
-#include "NativeComponents/Actor.h"
-#include "NativeComponents/GameRules.h"
-
 #include "NativeToManagedInterfaces/Entity.h"
 #include "NativeToManagedInterfaces/Console.h"
 #include "NativeToManagedInterfaces/Audio.h"
@@ -78,6 +75,14 @@ CMonoRuntime::CMonoRuntime()
 	, m_listeners(5)
 {
 	REGISTER_COMMAND("mono_reload", OnReloadRequested, VF_NULL, "Used to reload all mono plug-ins");
+}
+
+CMonoRuntime::~CMonoRuntime()
+{
+	if (gEnv && gEnv->pSystem)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	}
 }
 
 bool CMonoRuntime::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
@@ -262,35 +267,6 @@ CMonoLibrary* CMonoRuntime::GetCryCoreLibrary() const
 	return m_pLibCore; 
 }
 
-template<class T>
-struct CEntityComponentCreator : public IGameObjectExtensionCreatorBase
-{
-	IGameObjectExtension* Create(IEntity *pEntity)
-	{
-		return pEntity->CreateComponentClass<T>();
-	}
-
-	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)
-	{
-		*ppRMI = nullptr;
-		*nCount = 0;
-	}
-};
-
-void CMonoRuntime::RegisterManagedActor(const char* actorClassName)
-{
-	if (gEnv->pEntitySystem->GetClassRegistry()->FindClass(actorClassName) != nullptr)
-	{
-		//HandleException((MonoObject*)MonoInternals::mono_get_exception_argument("className", "Tried to register actor twice!"));
-		return;
-	}
-
-	static CEntityComponentCreator<CManagedActor> actorCreator;
-	IEntityClassRegistry::SEntityClassDesc clsDesc;
-	clsDesc.sName = actorClassName;
-	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(clsDesc.sName, &actorCreator, &clsDesc);
-}
-
 void CMonoRuntime::RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator)
 {
 	BehaviorTree::IBehaviorTreeManager& manager = *gEnv->pAISystem->GetIBehaviorTreeManager();
@@ -443,10 +419,16 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 			CAppDomain* pPluginDomain = LaunchPluginDomain();
 			CRY_ASSERT(pPluginDomain != nullptr);
 
+			// Temporary, remove scanning of the Core assembly when we use the unified components
+			static CManagedPlugin::TComponentFactoryMap coreLibraryFactoryMap;
+			CManagedPlugin::s_pCurrentlyRegisteringFactory = &coreLibraryFactoryMap;
+
 			//Scan the Core-assembly for entity components etc.
 			void* pRegisterArgs[1] = { m_pLibCore->GetManagedObject() };
 			std::shared_ptr<CMonoClass> pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
-			pEngineClass->FindMethodWithDesc(":ScanAssembly(System.Reflection.Assembly)")->InvokeStatic(pRegisterArgs);
+			pEngineClass->FindMethodWithDesc("ScanAssembly(Assembly)")->InvokeStatic(pRegisterArgs);
+
+			CManagedPlugin::s_pCurrentlyRegisteringFactory = nullptr;
 
 			CompileAssetSourceFiles();
 
@@ -470,6 +452,12 @@ void CMonoRuntime::CompileAssetSourceFiles()
 	if (szAssetDirectory == nullptr || strlen(szAssetDirectory) == 0)
 	{
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to locate asset directory");
+		return;
+	}
+
+	// Return early if there is no asset directory, otherwise this will scan the whole hard-drive for .cs files.
+	if (szAssetDirectory == nullptr || szAssetDirectory[0] == '\0')
+	{
 		return;
 	}
 

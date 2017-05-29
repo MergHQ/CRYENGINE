@@ -143,18 +143,22 @@ std::shared_ptr<const ICryUnknown> crycomposite_query(const std::shared_ptr<cons
 
 using CompositeQuerySemantics::crycomposite_query;
 
-#define _BEFRIEND_DELETER(iname) \
-  friend struct std::default_delete<iname>;
-
 #define CRYINTERFACE_DECLARE(iname, iidHigh, iidLow)                                         \
   _BEFRIEND_CRYIIDOF()                                                                       \
-  _BEFRIEND_DELETER(iname)                                                                   \
+  friend struct std::default_delete<iname>;                                                  \
 private:                                                                                     \
   static const CryInterfaceID& IID()                                                         \
   {                                                                                          \
     static constexpr CryInterfaceID iid = { (uint64) iidHigh ## LL, (uint64) iidLow ## LL }; \
     return iid;                                                                              \
   }                                                                                          \
+public:
+
+#define CRYINTERFACE_DECLARE_GUID(iname, guid)                                               \
+  _BEFRIEND_CRYIIDOF()                                                                       \
+  friend struct std::default_delete<iname>;                                                  \
+private:                                                                                     \
+  static const CryInterfaceID& IID() { static constexpr sguid = guid; return sguid; }        \
 public:
 
 struct ICryUnknown

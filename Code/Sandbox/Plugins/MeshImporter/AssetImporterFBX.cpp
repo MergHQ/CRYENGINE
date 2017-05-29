@@ -752,25 +752,13 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 
 	const string absOutputFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::ReplaceExtension(skeletonFilePath, "cdf"));
 
+	// Asset manager file monitor will create the corresponding cryasset.
+	// TODO: move the asset creation to the asset type.
 	if (!WriteToFile(QtUtil::ToQString(absOutputFilePath), cdf))
 	{
 		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_ERROR, string().Format("Writing character definition file '%s' failed."),
 			PathUtil::ToUnixPath(absOutputFilePath).c_str());
 		return;
-	}
-
-	// Write cryasset.
-	{
-		CRcCaller rcCaller;
-		rcCaller.SetEcho(false);
-		rcCaller.SetListener(&CRcListener::GetInstance());
-		rcCaller.OverwriteExtension("cryasset");
-		if (!rcCaller.Call(absOutputFilePath))
-		{
-			CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_ERROR, string().Format("Compiling file '%s' failed.",
-				PathUtil::ToUnixPath(absOutputFilePath).c_str()));
-			return;
-		}
 	}
 }
 

@@ -74,9 +74,6 @@ private:
 	int32               m_cleared;
 	int32               m_tick;
 
-	int32               m_samplerTrilinearClamp;
-	int32               m_samplerTrilinearWrap;
-
 	TArray<Vec4>        m_blockerPosArray;
 	TArray<Vec4>        m_blockerParamArray;
 	TArray<Vec4>        m_blockerSSPosArray;

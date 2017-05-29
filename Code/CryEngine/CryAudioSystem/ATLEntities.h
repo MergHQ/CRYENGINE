@@ -74,7 +74,7 @@ enum class EObjectFlags : EnumFlagsType
 	TrackVelocity                   = BIT(1),
 	NeedsDopplerUpdate              = BIT(2),
 	NeedsVelocityUpdate             = BIT(3),
-	DoNotRelease                    = BIT(4),
+	InUse                           = BIT(4),
 	Virtual                         = BIT(5),
 	WaitingForInitialTransformation = BIT(6),
 };

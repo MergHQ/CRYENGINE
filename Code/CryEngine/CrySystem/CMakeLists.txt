@@ -537,11 +537,15 @@ elseif(DURANGO)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
 elseif(ANDROID)
 	target_include_directories( ${THIS_PROJECT} PRIVATE ${SDK_DIR}/SDL2/include/linux ${SDK_DIR}/SDL2/include/SDL )
-	target_link_libraries( ${THIS_PROJECT} PRIVATE m CryAnimation)
 endif()
 
 if (OPTION_ENABLE_CRASHRPT)
 	add_subdirectory( ${CRY_LIBS_DIR}/crashrpt ${CMAKE_CURRENT_BINARY_DIR}/crashrpt)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE CRY_USE_CRASHRPT=1)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE crashrpt )
+endif()
+
+if (ANDROID)
+	#Force comping "CryDLMalloc.c" as C++
+	set_source_files_properties("CryDLMalloc.c" PROPERTIES LANGUAGE CXX)
 endif()

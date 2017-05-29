@@ -6,7 +6,6 @@
 
 #if UQS_SCHEMATYC_SUPPORT
 #include <CrySchematyc/CoreAPI.h>
-#include <CrySchematyc/STDEnvAPI.h>
 #endif
 
 #include "shared/TypeInfo.h"

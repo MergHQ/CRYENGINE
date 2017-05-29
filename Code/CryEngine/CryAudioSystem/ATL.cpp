@@ -1019,10 +1019,10 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				m_audioObjectMgr.RegisterObject(pObject);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
+				pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
 #else
-				pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+				pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 				result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 
@@ -1048,7 +1048,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				}
 
 				result = pObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				pObject->RemoveFlag(EObjectFlags::DoNotRelease);
+				pObject->RemoveFlag(EObjectFlags::InUse);
 			}
 			else
 			{
@@ -1177,10 +1177,10 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			  static_cast<SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> const*>(request.GetData());
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
+			pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
 #else
-			pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+			pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 			CRY_ASSERT(result == ERequestStatus::Success);
@@ -1215,7 +1215,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		{
 			if (pObject != m_pGlobalAudioObject)
 			{
-				pObject->RemoveFlag(EObjectFlags::DoNotRelease);
+				pObject->RemoveFlag(EObjectFlags::InUse);
 				result = ERequestStatus::Success;
 			}
 			else

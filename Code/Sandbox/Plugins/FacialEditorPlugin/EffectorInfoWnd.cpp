@@ -6,10 +6,10 @@
 #include "EffectorInfoWnd.h"
 #include "Controls/SplineCtrl.h"
 #include "Controls/SharedFonts.h"
-#include "Dialogs/NumberDlg.h"
 #include <CrySystem/ITimer.h>
 #include "Util/MFCUtil.h"
 #include "Resource.h"
+#include "Dialogs/QNumericBoxDialog.h"
 
 #define IDC_TASKPANEL                 1
 #define IDC_EXPRESSION_WEIGHT_SLIDER  2
@@ -574,8 +574,8 @@ void CEffectorInfoWnd::OnSplineRClick(UINT nID, NMHDR* pNMHDR, LRESULT* lpResult
 						break;
 					case MENU_WEIGHT:
 						{
-							CNumberDlg dlg(this, pCtrl->GetConstantWeight(), "Change Weight");
-							if (dlg.DoModal() == IDOK)
+							QNumericBoxDialog dlg(QObject::tr("Change Weight"), pCtrl->GetConstantWeight());
+							if (dlg.exec() == QDialog::Accepted)
 							{
 								float val = dlg.GetValue();
 								val = min(max(val, -1.0f), 1.0f);
@@ -586,9 +586,9 @@ void CEffectorInfoWnd::OnSplineRClick(UINT nID, NMHDR* pNMHDR, LRESULT* lpResult
 						break;
 					case MENU_SPLINE_HEIGHT:
 						{
-							CNumberDlg dlg(this, m_nSplineHeight, "Change Control Height");
-							dlg.SetInteger(true);
-							if (dlg.DoModal() == IDOK)
+							QNumericBoxDialog dlg(QObject::tr("Change Control Height"), m_nSplineHeight);
+							dlg.RestrictToInt();
+							if (dlg.exec() == QDialog::Accepted)
 							{
 								m_nSplineHeight = dlg.GetValue();
 								if (m_nSplineHeight < 10)
@@ -605,14 +605,6 @@ void CEffectorInfoWnd::OnSplineRClick(UINT nID, NMHDR* pNMHDR, LRESULT* lpResult
 					break;
 				}
 			}
-			/*
-			   CMenu menu;
-			   VERIFY( menu.CreatePopupMenu() );
-
-			   // create main menu items
-			   menu.AppendMenu( MF_STRING,MENU_SPLINE_1, _T("/") );
-			   menu.AppendMenu( MF_STRING,MENU_SPLINE_2, _T("\") );
-			 */
 		}
 	}
 }

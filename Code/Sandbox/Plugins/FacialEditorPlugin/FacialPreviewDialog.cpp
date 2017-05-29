@@ -156,9 +156,9 @@ BOOL CFacialPreviewDialog::OnInitDialog()
 	m_vars.AddVariable(m_fLookIKOffsetX, _T("Look IK Offset X"));
 	m_vars.AddVariable(m_fLookIKOffsetY, _T("Look IK Offset Y"));
 	m_vars.AddVariable(m_bProceduralAnimation, _T("Procedural Animation"));
-	for (int i = 0; i < m_pModelViewport->GetVarObject()->GetVarBlock()->GetNumVariables(); ++i)
+	for (int i = 0; i < m_pModelViewport->GetVarObject()->GetNumVariables(); ++i)
 	{
-		IVariable* var = m_pModelViewport->GetVarObject()->GetVarBlock()->GetVariable(i);
+		IVariable* var = m_pModelViewport->GetVarObject()->GetVariable(i);
 		IVariable* clone = var->Clone(true);
 		clone->Wire(var);
 		m_vars.AddVariable(*static_cast<CVariableBase*>(clone), clone->GetName());

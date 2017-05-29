@@ -2180,14 +2180,11 @@ void CLevelSystem::UnLoadLevel()
 		pRenderer->FlushRTCommands(true, true, true);
 
 		CryComment("Deleting Render meshes, render resources and flush texture streaming");
+		
 		// This may also release some of the materials.
-		int flags = FRR_DELETED_MESHES | FRR_FLUSH_TEXTURESTREAMING | FRR_OBJECTS | FRR_RENDERELEMENTS | FRR_RP_BUFFERS | FRR_POST_EFFECTS;
-
-		// Always keep the system resources around in the editor.
-		if (!gEnv->IsEditor())
-			flags |= FRR_SYSTEM_RESOURCES;
-
+		const int flags = gEnv->IsEditor() ? FRR_LEVEL_UNLOAD_SANDBOX : FRR_LEVEL_UNLOAD_LAUNCHER;
 		pRenderer->FreeResources(flags);
+
 		CryComment("done");
 	}
 

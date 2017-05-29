@@ -4,7 +4,6 @@
 #include "Util/Image.h"
 #include "FacialEditorDialog.h"
 #include "QtViewPane.h"
-#include "Dialogs/NumberDlg.h"
 #include "SelectAnimationDialog.h"
 #include <CrySystem/File/IAVI_Reader.h>
 #include <CryMovie/IMovieSystem.h>

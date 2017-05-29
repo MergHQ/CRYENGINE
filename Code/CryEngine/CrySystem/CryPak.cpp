@@ -1289,9 +1289,9 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		if (filehelpers::CheckPrefix(szNewSrc, "./") ||
 		    filehelpers::CheckPrefix(szNewSrc, ".\\"))
 		{
-			const int nLen = min(sizeof(szNewSrc), strlen(szNewSrc) - 2);
-			memmove(szNewSrc, szNewSrc + 2, nLen);
-			szNewSrc[nLen] = 0;
+			size_t len = std::min<size_t>(sizeof(szNewSrc), strlen(szNewSrc) - 2);
+			memmove(szNewSrc, szNewSrc + 2, len);
+			szNewSrc[len] = 0;
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
@@ -1324,9 +1324,9 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		}
 		else if (filehelpers::CheckPrefix(szNewSrc, "." CRY_NATIVE_PATH_SEPSTR))
 		{
-			const int nLen = min(sizeof(szNewSrc), strlen(szNewSrc) - 2);
-			memmove(szNewSrc, szNewSrc + 2, nLen);
-			szNewSrc[nLen] = 0;
+			size_t len = std::min<size_t>(sizeof(szNewSrc), strlen(szNewSrc) - 2);
+			memmove(szNewSrc, szNewSrc + 2, len);
+			szNewSrc[len] = 0;
 		}
 	}
 

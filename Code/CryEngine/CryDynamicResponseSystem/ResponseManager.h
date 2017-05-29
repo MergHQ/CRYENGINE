@@ -94,7 +94,7 @@ public:
 
 	CResponseInstance* CreateInstance(SSignal& signal, CResponse* pResponse);
 	void               ReleaseInstance(CResponseInstance* pInstance, bool removeFromRunningInstances = true);
-	void               Reset(bool bResetExecutionCounter);
+	void               Reset(bool bResetExecutionCounter, bool bClearAllResponseMappings = false);
 	void               Serialize(Serialization::IArchive& ar);
 
 private:

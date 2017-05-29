@@ -18,6 +18,7 @@
 #include <Controls/QPopupWidget.h>
 #include <Controls/DictionaryWidget.h>
 #include <EditorFramework/BroadcastManager.h>
+#include <EditorFramework/Inspector.h>
 #include <ICommandManager.h>
 
 #include <QAbstractItemModel>
@@ -34,6 +35,7 @@
 #include <QItemSelection>
 #include <QMenu>
 #include <QVariantMap>
+#include <QCollapsibleFrame.h>
 
 namespace CrySchematycEditor {
 
@@ -575,12 +577,14 @@ void CGraphsWidget::OnSelectionChanged(const QItemSelection& selected, const QIt
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{
 				CPropertiesWidget* pPropertiesWidget = nullptr /*new CPropertiesWidget(*pItem)*/;
-				auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
+				PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
 				{
-					return pPropertiesWidget;
-				};
-				PopulateInspectorEvent populateEvent(populateInspector, "Properties");
-				pBroadcastManager->Broadcast(populateEvent);
+					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
+					pInspectorWidget->SetWidget(pPropertiesWidget);
+					inspector.AddWidget(pInspectorWidget);
+				});
+
+				pBroadcastManager->Broadcast(popEvent);
 
 				if (pItem->GetType() == eObjectItemType_State)
 				{

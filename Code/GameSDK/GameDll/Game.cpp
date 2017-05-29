@@ -446,6 +446,7 @@ CGame::CGame()
 	m_pMatchMakingTelemetry(NULL),
 	m_pDataPatchDownloader(0),
 	m_pGameLocalizationManager(0),
+	m_pGameStateRecorder(0),
 #if USE_LAGOMETER
 	m_pLagOMeter(0),
 #endif
@@ -640,6 +641,7 @@ CGame::~CGame()
 	SAFE_DELETE(m_patchPakManager);
 	SAFE_DELETE(m_pDataPatchDownloader);
 	SAFE_DELETE(m_pGameLocalizationManager);
+	SAFE_RELEASE(m_pGameStateRecorder);
 	SAFE_DELETE(m_pGameTokenSignalCreator);
 #if USE_LAGOMETER
 	SAFE_DELETE(m_pLagOMeter);
@@ -2680,7 +2682,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 			if (timeRemaining > 0.f)
 			{
 				SHUDEvent resumingEvent(eHUDEvent_OnUpdateGameResumeMessage);
-				int time = MAX(int(floor(timeRemaining + 0.5f)), 0);
+				int time = std::max(int(floor(timeRemaining + 0.5f)), 0);
 				resumingEvent.AddData(time);
 				CHUDEventDispatcher::CallEvent(resumingEvent);
 			}
@@ -4024,13 +4026,13 @@ void CGame::LoadMappedLevelNames(const char* xmlPath)
 
 IGameStateRecorder* CGame::CreateGameStateRecorder(IGameplayListener* pL)
 {
-	CGameStateRecorder* pGSP = new CGameStateRecorder();
-
-	if (pGSP)
-		pGSP->RegisterListener(pL);
-
-	return (IGameStateRecorder*)pGSP;
-
+	if (!m_pGameStateRecorder)
+	{
+		m_pGameStateRecorder = new CGameStateRecorder();
+		CRY_ASSERT(m_pGameStateRecorder);
+		m_pGameStateRecorder->RegisterListener(pL);
+	}
+	return m_pGameStateRecorder;
 }
 
 CInteractiveObjectRegistry& CGame::GetInteractiveObjectsRegistry() const
@@ -4337,7 +4339,7 @@ float CGame::GetRemainingHostMigrationTimeoutTime() const
 {
 	const float timePassed = GetTimeSinceHostMigrationStateChanged();
 	const float timeRemaining = m_hostMigrationNetTimeoutLength - timePassed;
-	return MAX(timeRemaining, 0.f);
+	return std::max(timeRemaining, 0.f);
 }
 
 //------------------------------------------------------------------------
@@ -4352,7 +4354,7 @@ float CGame::GetHostMigrationTimeTillResume() const
 	{
 		const float curTime = gEnv->pTimer->GetAsyncCurTime();
 		const float timePassed = curTime - m_hostMigrationTimeStateChanged;
-		timeRemaining = MAX(g_pGameCVars->g_hostMigrationResumeTime - timePassed, 0.f);
+		timeRemaining = std::max(g_pGameCVars->g_hostMigrationResumeTime - timePassed, 0.f);
 	}
 	return timeRemaining;
 }

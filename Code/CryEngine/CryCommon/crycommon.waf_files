@@ -531,7 +531,6 @@
           "CryRenderer/RenderElements/CREOcclusionQuery.h",
           "CryRenderer/RenderElements/CREParticle.h",
           "CryRenderer/RenderElements/CRESky.h",
-          "CryRenderer/RenderElements/CREVolumeObject.h",
           "CryRenderer/RenderElements/CREWaterOcean.h",
           "CryRenderer/RenderElements/CREWaterVolume.h",
           "CryRenderer/RenderElements/RendElement.h"
@@ -627,7 +626,6 @@
     ],
     "CrySerialization":[
       "CrySerialization/BlackBox.h",
-      "CrySerialization/SharedPtr.h",
       "CrySerialization/CRCRef.h",
       "CrySerialization/CRCRefImpl.h",
       "CrySerialization/ClassFactory.h",
@@ -641,7 +639,7 @@
       "CrySerialization/CryStringsImpl.h",
       "CrySerialization/DynArray.h",
       "CrySerialization/Enum.h",
-		  "CrySerialization/Gap.h",
+      "CrySerialization/Gap.h",
       "CrySerialization/IArchive.h",
       "CrySerialization/IArchiveHost.h",
       "CrySerialization/IClassFactory.h",

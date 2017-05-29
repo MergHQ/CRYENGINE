@@ -106,7 +106,7 @@ public:
 	ERequestStatus   HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
 	ERequestStatus   HandleStopFile(char const* const szFile);
 
-	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition);
+	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition, EntityId entityId);
 	void             Release();
 
 	// Callbacks
@@ -125,10 +125,7 @@ public:
 
 	float                          GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
 	void                           SetObstructionOcclusion(float const obstruction, float const occlusion);
-	bool                           CanRunObstructionOcclusion() const  { return m_propagationProcessor.CanRunObstructionOcclusion() && (m_flags& EObjectFlags::Virtual) == 0; }
 	void                           ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
-	bool                           HasNewOcclusionValues()             { return m_propagationProcessor.HasNewOcclusionValues(); }
-	void                           GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void                           ReleasePendingRays();
 
 	ObjectStandaloneFileMap const& GetActiveStandaloneFiles() const               { return m_activeStandaloneFiles; }
@@ -150,6 +147,9 @@ public:
 	void         UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
 	bool         CanBeReleased() const;
 
+	void         IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
+	void         DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
+
 	static CSystem*                     s_pAudioSystem;
 	static CAudioEventManager*          s_pEventManager;
 	static CAudioStandaloneFileManager* s_pStandaloneFileManager;
@@ -169,6 +169,7 @@ private:
 	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual EntityId GetEntityId() const override { return m_entityId; }
 	// ~CryAudio::IObject
 
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator& iter);
@@ -191,6 +192,8 @@ private:
 	CTimeValue                m_previousTime;
 	CPropagationProcessor     m_propagationProcessor;
 	float                     m_occlusionFadeOutDistance;
+	EntityId                  m_entityId;
+	volatile int              m_numPendingSyncCallbacks;
 
 	static TriggerInstanceId  s_triggerInstanceIdCounter;
 

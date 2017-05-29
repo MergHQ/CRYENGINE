@@ -7,6 +7,8 @@
 #include "MatMan.h"
 #include <CryAudio/IObject.h>
 
+#include <CryEntitySystem/IEntity.h>
+
 #pragma warning(disable: 4244)
 
 class TubeSurface : public _i_reference_target_t
@@ -758,7 +760,6 @@ CRopeRenderNode::CRopeRenderNode()
 	m_WSBBox.max = Vec3(1, 1, 1);
 	m_bNeedToReRegister = true;
 	m_bStaticPhysics = false;
-	m_nEntityOwnerId = 0;
 
 	gEnv->pPhysicalWorld->AddEventClient(EventPhysStateChange::id, &CRopeRenderNode::OnPhysStateChange, 1);
 }
@@ -994,7 +995,7 @@ void CRopeRenderNode::Physicalize(bool bInstant)
 		if (m_pPhysicalEntity)
 			gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_pPhysicalEntity);
 		m_pPhysicalEntity = gEnv->pPhysicalWorld->CreatePhysicalEntity((m_bStaticPhysics) ? PE_STATIC : PE_ROPE,
-		                                                               NULL, (IRenderNode*)this, PHYS_FOREIGN_ID_ROPE, m_nEntityOwnerId ? (m_nEntityOwnerId & 0xFFFF) : -1);
+		                                                               NULL, (IRenderNode*)this, PHYS_FOREIGN_ID_ROPE, GetOwnerEntity() ? GetOwnerEntity()->GetId() : -1);
 		if (!m_pPhysicalEntity)
 			return;
 	}
@@ -1577,7 +1578,7 @@ void CRopeRenderNode::CreateRenderMesh()
 	// make new RenderMesh
 	//////////////////////////////////////////////////////////////////////////
 	m_pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-	  NULL, 3, eVF_P3F_C4B_T2F,
+	  NULL, 3, EDefaultInputLayouts::P3F_C4B_T2F,
 	  NULL, 3, prtTriangleList,
 	  "Rope", GetName(),
 	  eRMT_Dynamic, 1, 0, NULL, NULL, false, false);

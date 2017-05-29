@@ -21,8 +21,6 @@ public:
 		, shift(0.0f)
 	{}
 
-	virtual ~CRtpcConnection() {}
-
 	virtual bool HasProperties() override { return true; }
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -47,8 +45,6 @@ public:
 		: IAudioConnection(nID)
 		, value(0.0f)
 	{}
-
-	virtual ~CStateToRtpcConnection() {}
 
 	virtual bool HasProperties() override { return true; }
 

@@ -278,9 +278,9 @@ void CSmartObject::GetScriptProperties(XmlNodeRef xmlEntityNode)
 {
 	__super::GetScriptProperties(xmlEntityNode);
 
-	if (m_pProperties)
+	if (m_pLuaProperties)
 	{
-		m_pProperties->AddOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
+		m_pLuaProperties->AddOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
 	}
 }
 
@@ -288,9 +288,9 @@ void CSmartObject::GetScriptProperties(XmlNodeRef xmlEntityNode)
 //////////////////////////////////////////////////////////////////////////
 void CSmartObject::BeginEditParams(int flags)
 {
-	if (m_pProperties)
+	if (m_pLuaProperties)
 	{
-		m_pProperties->AddOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
+		m_pLuaProperties->AddOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
 	}
 	__super::BeginEditParams(flags);
 }
@@ -298,9 +298,9 @@ void CSmartObject::BeginEditParams(int flags)
 //////////////////////////////////////////////////////////////////////////
 void CSmartObject::EndEditParams()
 {
-	if (m_pProperties)
+	if (m_pLuaProperties)
 	{
-		m_pProperties->RemoveOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
+		m_pLuaProperties->RemoveOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
 	}
 	__super::EndEditParams();
 

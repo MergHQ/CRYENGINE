@@ -59,6 +59,13 @@ namespace UQS
 
 		CHub::~CHub()
 		{
+#if UQS_SCHEMATYC_SUPPORT
+			if (gEnv->pSchematyc != nullptr)
+			{
+				gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(GetSchematycPackageGUID());
+			}
+#endif
+
 			g_pHub = nullptr;
 			GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 			m_utils.UnsubscribeFromStuffInHub(*this);
@@ -222,11 +229,10 @@ namespace UQS
 				//
 
 				{
-					const Schematyc::SGUID guid = "5ee1079d-1b49-41c0-856d-6521d8758bd6"_schematyc_guid;
 					const char* szName = "UniversalQuerySystem";
 					const char* szDescription = "Universal Query System";
 					Schematyc::EnvPackageCallback callback = SCHEMATYC_DELEGATE(&CHub::OnRegisterSchematycEnvPackage);
-					gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, Schematyc::g_szCrytek, szDescription, callback));
+					gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(GetSchematycPackageGUID(), szName, Schematyc::g_szCrytek, szDescription, callback));
 				}
 #endif
 

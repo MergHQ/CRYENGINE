@@ -525,7 +525,7 @@ bool CItem::PlayFragment(IAction* pAction, float speedOverride, float timeOverri
 
 			if(duration > 0.f)
 			{
-				m_animationTime[eIGS_Owner] = (uint32) MAX((duration*1000.0f/speed) - 20, 0.0f);
+				m_animationTime[eIGS_Owner] = (uint32) std::max((duration*1000.0f/speed) - 20, 0.0f);
 			}
 
 			pAction->SetSpeedBias(speed);

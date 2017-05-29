@@ -52,6 +52,11 @@ CSensorSystem::CSensorSystem()
 
 CSensorSystem::~CSensorSystem()
 {
+	if (gEnv->pSchematyc != nullptr)
+	{
+		gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(GetSchematycPackageGUID());
+	}
+
 	if (gEnv->pConsole)
 	{
 		gEnv->pConsole->UnregisterVariable("sensor_Debug");
@@ -83,11 +88,10 @@ void CSensorSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 	{
 	case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
 		{
-			const Schematyc::SGUID guid = "e5f633a6-472d-470c-a78d-86bd2383092d"_schematyc_guid;
 			const char* szName = "SensorSystem";
 			const char* szDescription = "Sensor system";
 			Schematyc::EnvPackageCallback callback = SCHEMATYC_MEMBER_DELEGATE(&CSensorSystem::RegisterSchematycEnvPackage, *this);
-			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, Schematyc::g_szCrytek, szDescription, callback));
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(GetSchematycPackageGUID(), szName, Schematyc::g_szCrytek, szDescription, callback));
 			break;
 		}
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:

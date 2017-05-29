@@ -134,7 +134,6 @@ struct SRuntimeInitializationParameters
 	int            maxNewBorns;
 	EGpuSortMode   sortMode;
 	EGpuFacingMode facingMode;
-	float          axisScale;
 	bool           isSecondGen;
 	int            parentId;
 	int            version;

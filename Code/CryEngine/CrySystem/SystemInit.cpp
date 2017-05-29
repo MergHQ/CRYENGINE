@@ -160,11 +160,11 @@ extern AAssetManager* androidGetAssetManager();
 #define DLL_ANIMATION     "CryAnimation"
 #define DLL_FONT          "CryFont"
 #define DLL_3DENGINE      "Cry3DEngine"
-#define DLL_RENDERER_DX9  "CryRenderD3D9"
 #define DLL_RENDERER_DX11 "CryRenderD3D11"
 #define DLL_RENDERER_DX12 "CryRenderD3D12"
 #define DLL_RENDERER_GL   "CryRenderOpenGL"
-#define DLL_RENDERER_NULL "CryRenderNULL"
+#define DLL_RENDERER_VK	  "CryRenderVulkan"
+#define DLL_RENDERER_GNM  "CryRenderGNM"
 #define DLL_LIVECREATE    "CryLiveCreate"
 #define DLL_MONO_BRIDGE   "CryMonoBridge"
 #define DLL_SCALEFORM     "CryScaleformHelper"
@@ -704,6 +704,13 @@ bool CSystem::UnloadDynamicLibrary(const char* szDllName)
 
 		CryLog("%s", msg.c_str());
 
+		// CVars should be unregistered earlier than owning objects/modules are destroyed.
+		auto CleanupModuleCVars = (void (*)())CryGetProcAddress(hModule, "CleanupModuleCVars");
+		if (CleanupModuleCVars)
+		{
+			CleanupModuleCVars();
+		}
+
 		auto GetHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
 		SRegFactoryNode* pFactoryNode = GetHeadToRegFactories();
 
@@ -743,17 +750,19 @@ ICryFactory* CSystem::LoadModuleWithFactory(const char* dllName, const CryInterf
 		return nullptr;
 	}
 
-	auto getHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
-	SRegFactoryNode* pFactoryNode = getHeadToRegFactories();
-
-	while (pFactoryNode != nullptr)
+	if (auto getHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories"))
 	{
-		if (pFactoryNode->m_pFactory->ClassSupports(moduleInterfaceId))
-		{
-			return pFactoryNode->m_pFactory;
-		}
+		SRegFactoryNode* pFactoryNode = getHeadToRegFactories();
 
-		pFactoryNode = pFactoryNode->m_pNext;
+		while (pFactoryNode != nullptr)
+		{
+			if (pFactoryNode->m_pFactory->ClassSupports(moduleInterfaceId))
+			{
+				return pFactoryNode->m_pFactory;
+			}
+
+			pFactoryNode = pFactoryNode->m_pNext;
+		}
 	}
 
 	return nullptr;
@@ -810,23 +819,45 @@ bool CSystem::OpenRenderLibrary(const char* t_rend)
 	if (gEnv->IsDedicated())
 		return true;
 
-#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
-	return OpenRenderLibrary(R_DX11_RENDERER);
-#else
-	if (stricmp(t_rend, "DX9") == 0)
-		return OpenRenderLibrary(R_DX9_RENDERER);
-	else if (stricmp(t_rend, "DX11") == 0)
+	if (stricmp(t_rend, STR_DX11_RENDERER) == 0)
 		return OpenRenderLibrary(R_DX11_RENDERER);
-	else if (stricmp(t_rend, "DX12") == 0)
+	else if (stricmp(t_rend, STR_DX12_RENDERER) == 0)
 		return OpenRenderLibrary(R_DX12_RENDERER);
-	else if (stricmp(t_rend, "GL") == 0)
+	else if (stricmp(t_rend, STR_GL_RENDERER) == 0)
 		return OpenRenderLibrary(R_GL_RENDERER);
+	else if (stricmp(t_rend, STR_VK_RENDERER) == 0)
+		return OpenRenderLibrary(R_VK_RENDERER);
+	else if (stricmp(t_rend, STR_GNM_RENDERER) == 0)
+		return OpenRenderLibrary(R_GNM_RENDERER);
 
 	CryFatalError("Unknown renderer type: %s", t_rend);
 	return false;
-#endif
 }
 
+//////////////////////////////////////////////////////////////////////////
+bool CSystem::CloseRenderLibrary(const char* t_rend)
+{
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
+
+	if (gEnv->IsDedicated())
+		return true;
+
+	if (stricmp(t_rend, STR_DX11_RENDERER) == 0)
+		return UnloadEngineModule(DLL_RENDERER_DX11);
+	else if (stricmp(t_rend, STR_DX12_RENDERER) == 0)
+		return UnloadEngineModule(DLL_RENDERER_DX12);
+	else if (stricmp(t_rend, STR_GL_RENDERER) == 0)
+		return UnloadEngineModule(DLL_RENDERER_GL);
+	else if (stricmp(t_rend, STR_VK_RENDERER) == 0)
+		return UnloadEngineModule(DLL_RENDERER_VK);
+	else if (stricmp(t_rend, STR_GNM_RENDERER) == 0)
+		return UnloadEngineModule(DLL_RENDERER_GNM);
+
+	CryFatalError("Unknown renderer type: %s", t_rend);
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -907,36 +938,22 @@ bool CSystem::OpenRenderLibrary(int type)
 		#endif
 	#endif // !defined(DEDICATED_SERVER)
 
-#if CRY_PLATFORM_DURANGO
-	type = R_DX11_RENDERER;
-#endif
-
 	const char* libname = "";
-	if (type == R_DX9_RENDERER)
-		libname = DLL_RENDERER_DX9;
-	else if (type == R_DX11_RENDERER)
+	if (type == R_DX11_RENDERER)
 		libname = DLL_RENDERER_DX11;
 	else if (type == R_DX12_RENDERER)
 		libname = DLL_RENDERER_DX12;
 	else if (type == R_GL_RENDERER)
 		libname = DLL_RENDERER_GL;
+	else if (type == R_VK_RENDERER)
+		libname = DLL_RENDERER_VK;
+	else if (type == R_GNM_RENDERER)
+		libname = DLL_RENDERER_GNM;
 	else
 	{
 		CryFatalError("No renderer specified!");
 		return false;
 	}
-
-	//#if defined(_LIB) && CRY_PLATFORM_WINDOWS
-	//	if (type == R_DX9_RENDERER || type == R_DX11_RENDERER)
-	//	{
-	//		HMODULE handle = ::LoadLibrary(libname);
-	//
-	//		typedef void (*PtrFunc_ModuleInitISystem)(ISystem* pSystem, const char* moduleName);
-	//		PtrFunc_ModuleInitISystem pfnModuleInitISystem = (PtrFunc_ModuleInitISystem) CryGetProcAddress(handle, DLL_MODULE_INIT_ISYSTEM);
-	//		if (pfnModuleInitISystem)
-	//			pfnModuleInitISystem(this, libname);
-	//	}
-	//#endif
 
 	if (!InitializeEngineModule(libname, cryiidof<IRendererEngineModule>(), true))
 	{
@@ -965,6 +982,23 @@ bool CSystem::InitNetwork()
 		CryFatalError("Error creating Network System!");
 		return false;
 	}
+	return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+bool CSystem::InitSchematyc()
+{
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
+
+	if (!InitializeEngineModule("CrySchematyc", cryiidof<ICrySchematycCore>(), true))
+		return false;
+
+	if (!m_env.pSchematyc)
+	{
+		CryFatalError("Error initializing Schematyc!");
+		return false;
+	}
+
 	return true;
 }
 
@@ -2854,12 +2888,16 @@ bool CSystem::Init()
 		//		OnSysSpecChange( m_sys_spec );
 
 		{
-			if (m_pCmdLine->FindArg(eCLAT_Pre, "DX11"))
-				m_env.pConsole->LoadConfigVar("r_Driver", "DX11");
-			else if (m_pCmdLine->FindArg(eCLAT_Pre, "DX12"))
-				m_env.pConsole->LoadConfigVar("r_Driver", "DX12");
-			else if (m_pCmdLine->FindArg(eCLAT_Pre, "GL"))
-				m_env.pConsole->LoadConfigVar("r_Driver", "GL");
+			if (m_pCmdLine->FindArg(eCLAT_Pre, STR_DX11_RENDERER))
+				m_env.pConsole->LoadConfigVar("r_Driver", STR_DX11_RENDERER);
+			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_DX12_RENDERER))
+				m_env.pConsole->LoadConfigVar("r_Driver", STR_DX12_RENDERER);
+			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_GL_RENDERER))
+				m_env.pConsole->LoadConfigVar("r_Driver", STR_GL_RENDERER);
+			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_VK_RENDERER))
+				m_env.pConsole->LoadConfigVar("r_Driver", STR_VK_RENDERER);
+			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_GNM_RENDERER))
+				m_env.pConsole->LoadConfigVar("r_Driver", STR_GNM_RENDERER);
 		}
 
 		CryLogAlways("BuildTime: " __DATE__ " " __TIME__);
@@ -2893,18 +2931,19 @@ bool CSystem::Init()
 #if CRY_PLATFORM_WINDOWS
 		if (!m_startupParams.bSkipRenderer)
 		{
-			if (stricmp(m_rDriver->GetString(), "Auto") == 0)
+			if (stricmp(m_rDriver->GetString(), STR_AUTO_RENDERER) == 0)
 			{
-				m_rDriver->Set("DX11");
+				m_rDriver->Set(STR_DX11_RENDERER);
 			}
 		}
 
 		if (m_env.IsEditor())
 		{
-			if (stricmp(m_rDriver->GetString(), "DX11") != 0)
+			if (!(stricmp(m_rDriver->GetString(), STR_DX11_RENDERER) == 0 ||
+				  stricmp(m_rDriver->GetString(), STR_DX12_RENDERER) == 0))
 			{
-				m_env.pLog->LogWarning("Editor only supports DX11. Switching to DX11 Renderer.");
-				m_rDriver->Set("DX11");
+				m_env.pLog->LogWarning("Editor only supports DX11 & DX12. Switching to DX11 Renderer.");
+				m_rDriver->Set(STR_DX11_RENDERER);
 			}
 		}
 #endif
@@ -3337,6 +3376,15 @@ bool CSystem::Init()
 		//////////////////////////////////////////////////////////////////////////
 		if (!m_startupParams.bPreview && !m_startupParams.bShaderCacheGen)
 		{
+			// Start with initializing Schematyc before the entity system
+			{
+				CryLogAlways("Schematyc initialization");
+				INDENT_LOG_DURING_SCOPE();
+
+				if (!InitSchematyc())
+					return false;
+			}
+
 			CryLogAlways("Entity system initialization");
 			INDENT_LOG_DURING_SCOPE();
 
@@ -5198,11 +5246,7 @@ void CSystem::CreateSystemVars()
 #endif
 
 #if !defined(_RELEASE)
-	#if defined(_DEBUG)
 	const bool defaultAsserts = 1;
-	#else
-	const bool defaultAsserts = 0;
-	#endif
 	REGISTER_CVAR2("sys_asserts", &g_cvars.sys_asserts, defaultAsserts, VF_CHEAT,
 	               "0 = Disable Asserts\n"
 	               "1 = Enable Asserts\n"

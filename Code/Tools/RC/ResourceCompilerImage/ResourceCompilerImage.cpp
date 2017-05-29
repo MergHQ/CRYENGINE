@@ -226,6 +226,22 @@ void __stdcall RegisterConverters(IResourceCompiler* pRC)
 			"      fast		- fast mode with less quality\n"
 			"      normal	- default\n"
 			"      slow		- slow mode with superb quality");
+		pRC->RegisterKey("blocksize",
+			"[TIF] ASTC texture compression block size. Valid sizes:\n"
+			"      4x4   - 8    bit per pixel, 125% larger than next one (default)\n"
+			"      5x4   - 6.4  bit per pixel, 125% larger than next one \n"
+			"      5x5   - 5.12 bit per pixel, 120% larger than next one \n"
+			"      6x5   - 4.27 bit per pixel, 120% larger than next one \n"
+			"      6x6   - 3.56 bit per pixel, 114% larger than next one \n"
+			"      8x5   - 3.2  bit per pixel, 120% larger than next one \n"
+			"      8x6   - 2.67 bit per pixel, 105% larger than next one \n"
+			"      10x5  - 2.56 bit per pixel, 120% larger than next one \n"
+			"      10x6  - 2.13 bit per pixel, 107% larger than next one \n"
+			"      8x8   - 2    bit per pixel, 125% larger than next one \n"
+			"      10x8  - 1.6  bit per pixel, 125% larger than next one \n"
+			"      10x10 - 1.28 bit per pixel, 120% larger than next one \n"
+			"      12x10 - 1.07 bit per pixel, 120% larger than next one \n"
+			"      12x12 - 0.89 bit per pixel");
 	}
 
 	// Texture splitter

@@ -72,6 +72,7 @@ public:
 	virtual ~CResponseSystem() override;
 
 	static CResponseSystem* GetInstance() { return s_pInstance; }
+	static CryGUID GetSchematycPackageGUID() { return "981168e2-f16d-46b7-bfaa-e11966204d47"_cry_guid; }
 
 	//////////////////////////////////////////////////////////
 	// DRS::IDynamicResponseSystem implementation

@@ -2,11 +2,23 @@
 #pragma once
 
 #include <QWidget>
+#include <QToolButton>
+#include <QBoxLayout>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QStyleOption>
+#include <QEvent>
+#include <QMouseEvent>
+#include <QMimeData>
+#include <QApplication>
+#include <QDrag>
 
 #include "CryIcon.h"
 #include "CryQtAPI.h"
 #include "CryQtCompatibility.h"
 #include <memory>
+#include <functional>
 
 class QPushButton;
 class QLabel;
@@ -18,7 +30,9 @@ class CRYQT_API QCollapsibleFrame : public QWidget
 
 	friend class CCollapsibleFrameHeader;
 public:
-	explicit QCollapsibleFrame(const QString& title = QString(), QWidget* pParent = nullptr);
+	QCollapsibleFrame() {}
+	explicit QCollapsibleFrame(QWidget* pParent);
+	explicit QCollapsibleFrame(const QString& title, QWidget* pParent = nullptr);
 	virtual ~QCollapsibleFrame();
 
 	QWidget* GetWidget() const;
@@ -27,15 +41,19 @@ public:
 	void	 SetClosable(bool closable);
 	bool	 Closable() const;
 	void     SetTitle(const QString& title);
-	void	 SetCollapsed(bool collapsed);
 	bool	 Collapsed() const;
+	void     SetCollapsed(bool bCollapsed);
+
+	void SetCollapsedStateChangeCallback(std::function<void(bool bCollapsed)> callback);
 
 protected:
 	virtual void paintEvent(QPaintEvent*) override;
+	void SetHeaderWidget(CCollapsibleFrameHeader* pHeader);
 
-private:
-	struct SImplementation;
-	std::unique_ptr<SImplementation> m_pImpl;
+	QFrame*					 m_pContentsFrame;
+	CCollapsibleFrameHeader* m_pHeaderWidget;
+	QWidget*                 m_pWidget;
+
 protected slots:
 	void OnCloseRequested();
 
@@ -49,26 +67,45 @@ signals:
 // This class is not placed in the cpp file because then the moc
 // file would have to be included. It cannot be nested in QCollapsibleFrame
 // either because moc does not allow that
-class CCollapsibleFrameHeader : public QWidget
+class CRYQT_API CCollapsibleFrameHeader : public QWidget
 {
 	Q_OBJECT;
 
 	Q_PROPERTY(QSize iconSize READ GetIconSize WRITE SetIconSize)
 
 	friend class QCollapsibleFrame;
-private:
-	CCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible);
+public:
+	CCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible, const QString& icon = QString(), bool bCollapsed = false);
 
 	QSize GetIconSize() const;
 	void  SetIconSize(const QSize& iconSize);
 	void  SetClosable(bool closable);
 	bool  Closable() const;
+
+	void SetCollapsed(bool bCollapsed);
+
+	std::function<void(bool bCollapsed)> m_onCollapsedStateChanged;
+
 protected:
 	virtual void paintEvent(QPaintEvent*) override;
 	virtual bool eventFilter(QObject* pWatched, QEvent* pEvent) override;
+
+	void  SetupCollapseButton();
+	void  SetTitle(const QString& title);
+	void  SetupMainLayout();
+
+	QCollapsibleFrame*           m_pParentCollapsible;
+	QLabel*                      m_pTitleLabel;
+	QLabel*                      m_pIconLabel;
+	QLabel*                      m_pCollapseIconLabel;
+	QPushButton*                 m_pCollapseButton;
+	QToolButton*				 m_pCloseButton;
+	QSize						 m_iconSize;
+	QIcon						 m_collapsedIcon;
+	QIcon						 m_expandedIcon;
+	bool                         m_bCollapsed;
+	static const CryIconColorMap s_colorMap;
+
 protected Q_SLOTS:
 	void OnCollapseButtonClick();
-private:
-	struct SImplementation;
-	std::unique_ptr<SImplementation> m_pImpl;
 };

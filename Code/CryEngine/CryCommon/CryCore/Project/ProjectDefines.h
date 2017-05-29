@@ -311,10 +311,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define ENABLE_LOADING_PROFILER
 #endif
 
-#if CRY_PLATFORM_ORBIS && (!defined(_RELEASE) || defined(PERFORMANCE_BUILD))
-	#define SUPPORT_HW_MOUSE_CURSOR
-#endif
-
 #if !defined(_DEBUG) && CRY_PLATFORM_WINDOWS
 //# define CRY_PROFILE_MARKERS_USE_GPA
 //# define CRY_PROFILE_MARKERS_USE_NVTOOLSEXT

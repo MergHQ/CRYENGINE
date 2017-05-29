@@ -869,7 +869,6 @@ public:
 
 	float                 m_oceanWindDirection;
 	float                 m_oceanWindSpeed;
-	float                 m_oceanWavesSpeed;
 	float                 m_oceanWavesAmount;
 	float                 m_oceanWavesSize;
 

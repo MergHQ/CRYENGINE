@@ -1229,7 +1229,6 @@ CSvoEnv::~CSvoEnv()
 	GetCVars()->e_svoLoadTree = 0;
 	GetCVars()->e_svoEnabled = 0;
 	gSvoEnv = NULL;
-	GetRenderer()->GetISvoRenderer()->Release();
 
 	{
 		AUTO_MODIFYLOCK(CVoxelSegment::m_arrLockedTextures.m_Lock);
@@ -1243,6 +1242,11 @@ CSvoEnv::~CSvoEnv()
 		for (int i = 0; i < CVoxelSegment::m_arrLockedMaterials.Count(); i++)
 			CVoxelSegment::m_arrLockedMaterials[i]->Release();
 		CVoxelSegment::m_arrLockedMaterials.Reset();
+	}
+
+	if (gEnv->pRenderer)
+	{
+		gEnv->pRenderer->FreeResources(FRR_SVOGI);
 	}
 }
 

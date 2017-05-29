@@ -76,6 +76,7 @@ public:
 	IStatObj*             GetStatObj(int nSlot);
 	IParticleEmitter*     GetParticleEmitter(int nSlot);
 
+	int  SetSlotRenderNode(int nSlot, IRenderNode* pRenderNode);
 	int  SetSlotGeometry(int nSlot, IStatObj* pStatObj);
 	int  SetSlotCharacter(int nSlot, ICharacterInstance* pCharacter);
 	int  LoadGeometry(int nSlot, const char* sFilename, const char* sGeomName = NULL, int nLoadFlags = 0);
@@ -91,9 +92,6 @@ public:
 #if defined(USE_GEOM_CACHES)
 	int  LoadGeomCache(int nSlot, const char* sFilename);
 #endif
-
-	int LoadVolumeObject(int nSlot, const char* sFilename);
-	int SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Slots.
@@ -143,7 +141,7 @@ public:
 
 	// Check if any render nodes are rendered recently.
 	bool IsRendered() const;
-	void PreviewRender(IEntity::SPreviewRenderParams &params);
+	void PreviewRender(SEntityPreviewContext &context);
 
 private:
 	void ComputeLocalBounds( bool bForce=false );

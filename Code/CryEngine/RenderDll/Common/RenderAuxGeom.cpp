@@ -1971,6 +1971,11 @@ void CAuxGeomCB::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y
 	m_pRenderAuxGeom->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
 }
 
+void CAuxGeomCB::DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID)
+{
+	m_pRenderAuxGeom->DrawBufferRT(data, numVertices, blendMode, matViewProj, texID);
+}
+
 int32 CAuxGeomCB::PushMatrix(const Matrix34& mat)
 {
 	int curIndex = m_cbCurrent->m_curWorldMatIdx;

@@ -65,9 +65,6 @@ void CGameplayRecorder::Update(float frameTime)
 //------------------------------------------------------------------------
 void CGameplayRecorder::Release()
 {
-
-	SAFE_RELEASE(m_pGameStateRecorder);
-
 	delete this;
 }
 

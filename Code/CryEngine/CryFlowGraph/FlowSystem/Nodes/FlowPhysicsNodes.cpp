@@ -897,11 +897,11 @@ CreateCam:
 			SEntitySpawnParams esp;
 			esp.sName = "CameraProxy";
 			esp.nFlags = 0;
-			esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Default");
+			esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 			IEntity* pCam = gEnv->pEntitySystem->SpawnEntity(esp);
 			pCam->SetPos(cam.GetPosition());
 			pCam->SetRotation(qcam);
-			pHost->AddEntityLink("CameraProxy", pCam->GetId());
+			pHost->AddEntityLink("CameraProxy", pCam->GetId(),pCam->GetGuid());
 			SEntityPhysicalizeParams epp;
 			epp.type = PE_ARTICULATED;
 			pCam->Physicalize(epp);
@@ -1629,7 +1629,7 @@ public:
 						SEntitySpawnParams esp;
 						esp.sName = "SkeletonTmp";
 						esp.nFlags = ENTITY_FLAG_NO_SAVE | ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_PROCEDURAL | ENTITY_FLAG_SPAWNED;
-						esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Default");
+						esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 						esp.vPosition = sp.pos;
 						esp.qRotation = sp.q;
 						pSkel = gEnv->pEntitySystem->SpawnEntity(esp);
@@ -1786,7 +1786,7 @@ public:
 				SEntitySpawnParams esp;
 				esp.sName = "PhysParamsDummy";
 				esp.nFlags = 0;
-				esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Default");
+				esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 				g_dummyEnt = gEnv->pEntitySystem->SpawnEntity(esp);
 				SEntityPhysicalizeParams pp;
 				pp.type = PE_STATIC;

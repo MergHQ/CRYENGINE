@@ -195,7 +195,7 @@ void CUnitTestExcelReporter::OnSingleTestStart(const IUnitTest& test)
 	const SUnitTestInfo& testInfo = test.GetInfo();
 	string text;
 	text.Format("Test Started: [%s] %s:%s", testInfo.GetModule(), testInfo.suite, testInfo.name);
-	gEnv->pLog->UpdateLoadingScreen(text);
+	m_log.Log(text);
 }
 
 void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* failureDescription)
@@ -203,7 +203,7 @@ void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRu
 	const SUnitTestInfo& testInfo = test.GetInfo();
 	string text;
 	text.Format("Test Finished: [%s] %s:%s", testInfo.GetModule(), testInfo.suite, testInfo.name);
-	gEnv->pLog->UpdateLoadingScreen(text);
+	m_log.Log(text);
 
 	STestResult testResult
 	{
@@ -230,7 +230,7 @@ void CryUnitTest::CUnitTestExcelNotificationReporter::PostFinishTesting(const SU
 		//Open report file if any test failed. Since the notification is used for local testing only, we only need Windows
 		if (context.failedTestCount > 0)
 		{
-			CryLogAlways("%d Tests failed, opening report...", context.failedTestCount);
+			m_log.Log("%d Tests failed, opening report...", context.failedTestCount);
 			int nAdjustFlags = 0;
 			char path[_MAX_PATH];
 			const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(kOutputFileName, path, nAdjustFlags);
@@ -240,7 +240,7 @@ void CryUnitTest::CUnitTestExcelNotificationReporter::PostFinishTesting(const SU
 				int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
 				if (err <= 32)//returns a value greater than 32 if succeeds.
 				{
-					CryLogAlways("Failed to open report %s, error code: %d", szAdjustedPath, err);
+					m_log.Log("Failed to open report %s, error code: %d", szAdjustedPath, err);
 				}
 			}
 		}

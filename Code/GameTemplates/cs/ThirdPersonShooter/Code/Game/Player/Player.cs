@@ -1,8 +1,9 @@
-﻿using CryEngine.Game.Weapons;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using CryEngine.Game.Weapons;
 
 namespace CryEngine.Game
 {
-	[EntityClass("Player", "Game", null, IconType.User)]
 	public class Player : EntityComponent
 	{
 		public enum GeometrySlots
@@ -163,14 +164,14 @@ namespace CryEngine.Game
 			//By setting the model and physics here already, we can get a visual representation of the player in the sandbox outside of game-mode.
 			SetPlayerModel();
 			PrepareRigidbody();
-
-			//Add the required components first.
-			_animator = Entity.GetOrCreateComponent<CharacterAnimator>();
 		}
 
 		protected override void OnGameplayStart()
 		{
 			base.OnGameplayStart();
+
+			//Add the required components first.
+			_animator = Entity.GetOrCreateComponent<CharacterAnimator>();
 
 			//Prepare the visuals of the player
 			SetPlayerModel();
@@ -194,7 +195,7 @@ namespace CryEngine.Game
 
 			if(!enterGame)
 			{
-				_playerView.Deinitialize();
+				_playerView?.Deinitialize();
 				_playerView = null;
 			}
 		}
@@ -358,9 +359,9 @@ namespace CryEngine.Game
 		{
 			base.OnUpdate(frameTime);
 
-			_playerView?.UpdateView(frameTime, _rotationMovement);
+			var cameraRotation = _playerView == null ? Camera.Rotation : _playerView.UpdateView(frameTime, _rotationMovement);
 			_rotationMovement = Vector2.Zero;
-			_animations?.UpdateAnimationState(frameTime);
+			_animations?.UpdateAnimationState(frameTime, cameraRotation);
 
 			UpdateMovement(frameTime);
 		}

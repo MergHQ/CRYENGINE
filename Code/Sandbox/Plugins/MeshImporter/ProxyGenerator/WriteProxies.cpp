@@ -134,6 +134,11 @@ void WriteAutoGenProxies(const string& fname, const SProxyTree* pProxyTree)
 {	
 	using namespace Private_WriteProxies;
 
+	if (!pProxyTree->m_nodes.size())
+	{
+		return;
+	}
+
 	_smart_ptr<IStatObj> pStatObj = gEnv->p3DEngine->FindStatObjectByFilename(fname.c_str());
 	if (pStatObj)
 		pStatObj->Refresh(FRO_GEOMETRY);

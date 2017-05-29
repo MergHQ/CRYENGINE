@@ -5623,7 +5623,7 @@ bool CGameRules::OnCollision(const SGameCollision& event)
 		return true;
 
 	static IEntityClass* s_pBasicEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("BasicEntity");
-	static IEntityClass* s_pDefaultClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Default");
+	static IEntityClass* s_pDefaultClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 	bool srcClassFilter = false;
 	bool trgClassFilter = false;
 
@@ -8569,7 +8569,7 @@ void CGameRules::SPlayerEndGameStatsParams::SerializeWith( TSerialize ser )
 		if (pPlayerStatsModule)
 		{
 			int numPlayerStats = pPlayerStatsModule->GetNumPlayerStats();
-			numPlayerStats = MIN(numPlayerStats, k_maxPlayerStats);
+			numPlayerStats = std::min<int>(numPlayerStats, MAX_PLAYER_LIMIT);
 
 			m_numPlayerStats = numPlayerStats;
 			ser.Value("numStats", m_numPlayerStats, 'ui5');

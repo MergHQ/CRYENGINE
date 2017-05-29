@@ -84,7 +84,6 @@
 		<OceanAnimation>
 			<WindDirection type="Float" value="1.0"/>
 			<WindSpeed type="Float" value="4.0"/>
-			<WavesSpeed type="Float" value="1.0"/>
 			<WavesAmount type="Float" value="1.5"/>
 			<WavesSize type="Float" value="0.4"/>
 		</OceanAnimation>

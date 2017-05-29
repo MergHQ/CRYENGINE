@@ -5,7 +5,6 @@
 #include "FacialEditorDialog.h"
 #include "QtViewPane.h"
 #include "Dialogs/QStringDialog.h"
-#include "Dialogs/NumberDlg.h"
 #include "SelectAnimationDialog.h"
 #include <CrySystem/File/IAVI_Reader.h>
 #include <CryMovie/IMovieSystem.h>
@@ -19,6 +18,7 @@
 #include "Util/MFCUtil.h"
 #include "Util/FileUtil.h"
 #include "ModelViewport.h"
+#include "Dialogs/QNumericBoxDialog.h"
 
 #define FACEED_FILE_FILTER            ""
 
@@ -2733,12 +2733,12 @@ void CFacialEditorDialog::OnBatchProcess_ApplyExpression()
 		if (expression.IsEmpty())
 			return;
 
-		CNumberDlg numdlg(this, 1.0f, "Enter Expression Weight");
-		if (numdlg.DoModal() != IDOK)
+		QNumericBoxDialog numDlg(QObject::tr("Enter Expression Weight"), 1);
+		if (numDlg.exec() != QDialog::Accepted)
 		{
 			return;
 		}
-		float fExpressionWeight = numdlg.GetValue();
+		float fExpressionWeight = numDlg.GetValue();
 
 		int numFiles = (int)files.size();
 		for (int nFile = 0; nFile < numFiles; nFile++)

@@ -3336,8 +3336,8 @@ void CNetContextState::DrawDebugScreens()
 							textPos = aabbCenterPos + aabb.GetRadius() * dir;
 
 							char buff[160];
-							cry_sprintf(buff, "%s\n%s\nAct %d Hid %d Inv %d\nID %u\nNetID %s\nGUID %016" PRIx64,
-							           pEntity->GetName(), pEntity->GetClass()->GetName(), pEntity->IsActivatedForUpdates(), pEntity->IsHidden(), pEntity->IsInvisible(), pEntity->GetId(), netID.GetText(), pEntity->GetGuid());
+							cry_sprintf(buff, "%s\n%s\nAct %d Hid %d Inv %d\nID %u\nNetID %s\nGUID %s",
+							           pEntity->GetName(), pEntity->GetClass()->GetName(), pEntity->IsActivatedForUpdates(), pEntity->IsHidden(), pEntity->IsInvisible(), pEntity->GetId(), netID.GetText(), pEntity->GetGuid().ToDebugString());
 
 							IRenderAuxText::DrawText(textPos, textSize, color, eDrawText_DepthTest | eDrawText_FixedSize | eDrawText_Center | eDrawText_CenterV | eDrawText_800x600, buff);
 						}

@@ -14,7 +14,7 @@
 
 #pragma once
 
-typedef unsigned int EntityId;
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 struct IFlowSystem;
 struct IGameTokenSystem;

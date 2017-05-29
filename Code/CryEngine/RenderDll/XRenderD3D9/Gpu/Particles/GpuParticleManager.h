@@ -42,6 +42,7 @@ public:
 	  const pfx2::SRuntimeInitializationParameters& params) override;
 
 	void RenderThreadUpdate();
+	void RenderThreadPreUpdate();
 	void RenderThreadPostUpdate();
 
 	// gets initialized the first time it is called and will allocate buffers

@@ -55,6 +55,8 @@ public:
 	DeclareStaticConstIntCVar(CV_r_SyncToFrameFence, 1);
 
 	static int CV_r_GraphicsPipeline;
+	static int CV_r_GraphicsPipelineMobile;
+	static int CV_r_GraphicsPipelinePassScheduler;
 
 	static int CV_r_DeferredShadingTiled;
 	static int CV_r_DeferredShadingTiledDebug;
@@ -73,7 +75,7 @@ public:
 	static int   CV_r_DeferredShadingSortLights;
 	static int   CV_r_DeferredShadingAmbientSClear;
 	static int   CV_r_batchtype;
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || defined(CRY_USE_GNM_RENDERER)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_RENDERER_GNM
 	//HACK: make sure we can only use it for dx11
 	static int CV_r_SilhouettePOM;
 #else
@@ -144,7 +146,6 @@ public:
 	static int CV_r_msaa_quality;
 	static int CV_r_msaa_debug;
 	static int CV_r_impostersupdateperframe;
-	static int CV_r_beams;
 	static int CV_r_nodrawnear;
 	static int CV_r_DrawNearShadows;
 	static int CV_r_scissor;
@@ -186,6 +187,10 @@ public:
 	static int CV_r_D3D12AsynchronousCompute;
 	static int CV_r_D3D12HardwareComputeQueue;
 	static int CV_r_D3D12HardwareCopyQueue;
+	static int CV_r_VkSubmissionThread;
+	static int CV_r_VkBatchResourceBarriers;
+	static int CV_r_VkHardwareComputeQueue;
+	static int CV_r_VkHardwareCopyQueue;
 	static int CV_r_ReverseDepth;
 
 	// DX12 related cvars
@@ -233,7 +238,7 @@ public:
 	static int CV_r_HDRBloom;
 	static int CV_r_HDRBloomQuality;
 	DeclareStaticConstIntCVar(CV_r_HDRVignetting, 1);
-	DeclareStaticConstIntCVar(CV_r_HDRTexFormat, 0);
+	DeclareStaticConstIntCVar(CV_r_HDRTexFormat, 1);
 	DeclareStaticConstIntCVar(CV_r_HDRRangeAdapt, HDR_RANGE_ADAPT_DEFAULT_VAL);
 	static int CV_r_HDREyeAdaptationMode;
 	DeclareStaticConstIntCVar(CV_r_geominstancing, GEOM_INSTANCING_DEFAULT_VAL);
@@ -546,6 +551,9 @@ public:
 	static float CV_r_AntialiasingTAAFalloffHiFreq;
 	static float CV_r_AntialiasingTAAFalloffLowFreq;
 	static float CV_r_AntialiasingTAASharpening;
+	static float CV_r_AntialiasingTSAAMipBias;
+	static float CV_r_AntialiasingTSAASubpixelDetection;
+	static float CV_r_AntialiasingTSAASmoothness;
 
 	static float CV_r_FogDepthTest;
 #if defined(VOLUMETRIC_FOG_SHADOWS)
@@ -614,8 +622,7 @@ public:
 	static int    CV_d3d11_CBUpdateStats;
 	static ICVar* CV_d3d11_forcedFeatureLevel;
 
-#if defined(SUPPORT_D3D_DEBUG_RUNTIME)
-	static int    CV_d3d11_debugruntime;
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 	static ICVar* CV_d3d11_debugMuteSeverity;
 	static ICVar* CV_d3d11_debugMuteMsgID;
 	static ICVar* CV_d3d11_debugBreakOnMsgID;

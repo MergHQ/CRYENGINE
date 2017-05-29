@@ -12,8 +12,6 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-#define ATL_FLOAT_EPSILON 1.0e-6
-
 namespace CryAudio
 {
 static size_t s_numRaySamplePositionsLow = 0;
@@ -192,7 +190,8 @@ void CPropagationProcessor::Init(CATLAudioObject* const pAudioObject, Vec3 const
 void CPropagationProcessor::Update(
   float const deltaTime,
   float const distance,
-  Vec3 const& audioListenerPosition)
+  Vec3 const& audioListenerPosition,
+  EObjectFlags const objectFlags)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (g_cvars.m_audioObjectsRayType > 0)
@@ -207,7 +206,7 @@ void CPropagationProcessor::Update(
 
 	m_currentListenerDistance = distance;
 
-	if (CanRunObstructionOcclusion())
+	if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 	{
 		if (m_currentListenerDistance < g_cvars.m_occlusionHighDistance)
 		{
@@ -392,7 +391,8 @@ void CPropagationProcessor::ReleasePendingRays()
 bool CPropagationProcessor::HasNewOcclusionValues()
 {
 	bool bNewValues = false;
-	if (fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > ATL_FLOAT_EPSILON || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > ATL_FLOAT_EPSILON)
+
+	if (fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > FloatEpsilon || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > FloatEpsilon)
 	{
 		m_lastQuerriedObstruction = m_obstruction;
 		m_lastQuerriedOcclusion = m_occlusion;
@@ -413,28 +413,26 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 {
 	m_occlusion = 0.0f;
 	m_obstruction = 0.0f;
+	CRY_ASSERT_MESSAGE(m_currentListenerDistance > 0.0f, "Distance to Listener is 0!");
 
-	if (m_currentListenerDistance > ATL_FLOAT_EPSILON)
+	size_t const numSamplePositions = GetNumSamplePositions();
+	size_t const numConcurrentRays = GetNumConcurrentRays();
+
+	if (numSamplePositions > 0 && numConcurrentRays > 0)
 	{
-		size_t const numSamplePositions = GetNumSamplePositions();
-		size_t const numConcurrentRays = GetNumConcurrentRays();
-
-		if (numSamplePositions > 0 && numConcurrentRays > 0)
+		for (size_t i = 0; i < numConcurrentRays; ++i)
 		{
-			for (size_t i = 0; i < numConcurrentRays; ++i)
-			{
-				CAudioRayInfo const& rayInfo = m_raysInfo[i];
-				m_raysOcclusion[rayInfo.samplePosIndex] = rayInfo.totalSoundOcclusion;
-			}
-
-			// Calculate the new occlusion average.
-			for (size_t i = 0; i < numSamplePositions; ++i)
-			{
-				m_occlusion += m_raysOcclusion[i];
-			}
-
-			m_occlusion = (m_occlusion / numSamplePositions) * m_occlusionMultiplier;
+			CAudioRayInfo const& rayInfo = m_raysInfo[i];
+			m_raysOcclusion[rayInfo.samplePosIndex] = rayInfo.totalSoundOcclusion;
 		}
+
+		// Calculate the new occlusion average.
+		for (size_t i = 0; i < numSamplePositions; ++i)
+		{
+			m_occlusion += m_raysOcclusion[i];
+		}
+
+		m_occlusion = (m_occlusion / numSamplePositions) * m_occlusionMultiplier;
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -709,9 +707,9 @@ size_t CPropagationProcessor::s_totalSyncPhysRays = 0;
 size_t CPropagationProcessor::s_totalAsyncPhysRays = 0;
 
 ///////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::DrawObstructionRays(IRenderAuxGeom& auxGeom) const
+void CPropagationProcessor::DrawObstructionRays(IRenderAuxGeom& auxGeom, EObjectFlags const objectFlags) const
 {
-	if (CanRunObstructionOcclusion())
+	if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 	{
 		size_t const numConcurrentRays = GetNumConcurrentRays();
 		CRY_ASSERT(numConcurrentRays > 0);

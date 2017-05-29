@@ -34,6 +34,7 @@ const string g_userSettingsFile = "%USER%/audiocontrolseditor_sdlmixer.user";
 CAudioSystemEditor_sdlmixer::CAudioSystemEditor_sdlmixer()
 {
 	Serialization::LoadJsonFile(m_settings, g_userSettingsFile.c_str());
+	m_controlsCache.reserve(1024);
 }
 
 CAudioSystemEditor_sdlmixer::~CAudioSystemEditor_sdlmixer()
@@ -48,12 +49,13 @@ void CAudioSystemEditor_sdlmixer::Reload(bool bPreserveConnectionStatus)
 	CSdlMixerProjectLoader(m_settings.GetProjectPath(), m_root);
 	CreateControlCache(&m_root);
 
-	for (auto controlPair : m_connectionsByID)
+	for (auto const& controlPair : m_connectionsByID)
 	{
-		if (controlPair.second.size() > 0)
+		if (!controlPair.second.empty())
 		{
-			IAudioSystemItem* pControl = GetControl(controlPair.first);
-			if (pControl)
+			IAudioSystemItem* const pControl = GetControl(controlPair.first);
+
+			if (pControl != nullptr)
 			{
 				pControl->SetConnected(true);
 			}
@@ -64,10 +66,11 @@ void CAudioSystemEditor_sdlmixer::Reload(bool bPreserveConnectionStatus)
 void CAudioSystemEditor_sdlmixer::Clear()
 {
 	// Delete all the controls
-	for (IAudioSystemItem* pControl : m_controlsCache)
+	for (auto const pControl : m_controlsCache)
 	{
 		delete pControl;
 	}
+
 	m_controlsCache.clear();
 
 	// Clean up the root control
@@ -93,17 +96,14 @@ void CAudioSystemEditor_sdlmixer::CreateControlCache(IAudioSystemItem* pParent)
 
 IAudioSystemItem* CAudioSystemEditor_sdlmixer::GetControl(CID id) const
 {
-	if (id >= 0)
+	for (auto const pItem : m_controlsCache)
 	{
-		size_t size = m_controlsCache.size();
-		for (size_t i = 0; i < size; ++i)
+		if (pItem->GetId() == id)
 		{
-			if (m_controlsCache[i]->GetId() == id)
-			{
-				return m_controlsCache[i];
-			}
+			return pItem;
 		}
 	}
+
 	return nullptr;
 }
 
@@ -135,19 +135,20 @@ ConnectionPtr CAudioSystemEditor_sdlmixer::CreateConnectionFromXMLNode(XmlNodeRe
 				id = GetId(path + CRY_NATIVE_PATH_SEPSTR + name);
 			}
 
-			IAudioSystemItem* pControl = GetControl(id);
-			if (!pControl)
+			IAudioSystemItem* pItem = GetControl(id);
+
+			if (pItem == nullptr)
 			{
-				pControl = new IAudioSystemControl_sdlmixer(name, id, eSdlMixerTypes_Event);
-				pControl->SetPlaceholder(true);
-				m_controlsCache.push_back(pControl);
+				pItem = new IAudioSystemControl_sdlmixer(name, id, eSdlMixerTypes_Event);
+				pItem->SetPlaceholder(true);
+				m_controlsCache.push_back(pItem);
 			}
 
-			if (pControl)
+			if (pItem != nullptr)
 			{
-				SdlConnectionPtr pConnection = std::make_shared<CSdlMixerConnection>(pControl->GetId());
-				pControl->SetConnected(true);
-				m_connectionsByID[pControl->GetId()].push_back(pConnection);
+				SdlConnectionPtr pConnection = std::make_shared<CSdlMixerConnection>(pItem->GetId());
+				pItem->SetConnected(true);
+				m_connectionsByID[pItem->GetId()].push_back(pConnection);
 				const string connectionType = pNode->getAttr(s_connectionTypeTag);
 				pConnection->type = connectionType == "stop" ? eSdlMixerConnectionType_Stop : eSdlMixerConnectionType_Start;
 
@@ -232,6 +233,28 @@ XmlNodeRef CAudioSystemEditor_sdlmixer::CreateXMLNodeFromConnection(const Connec
 	return nullptr;
 }
 
+void CAudioSystemEditor_sdlmixer::EnableConnection(ConnectionPtr pConnection)
+{
+	IAudioSystemItem* const pItem = GetControl(pConnection->GetID());
+
+	if (pItem != nullptr)
+	{
+		CSdlMixerConnection const* const pConn = static_cast<CSdlMixerConnection*>(pConnection.get());
+		pItem->SetRadius(pConn->maxAttenuation);
+	}
+}
+
+void CAudioSystemEditor_sdlmixer::DisableConnection(ConnectionPtr pConnection)
+{
+	IAudioSystemItem* const pItem = GetControl(pConnection->GetID());
+
+	if (pItem != nullptr)
+	{
+		CSdlMixerConnection const* const pConn = static_cast<CSdlMixerConnection*>(pConnection.get());
+		pItem->SetRadius(0.0f);
+	}
+}
+
 ACE::CID CAudioSystemEditor_sdlmixer::GetId(const string& sName) const
 {
 	return CCrc32::ComputeLowercase(sName);
@@ -285,4 +308,78 @@ SERIALIZATION_ENUM(eSdlMixerConnectionType_Start, "start", "Start")
 SERIALIZATION_ENUM(eSdlMixerConnectionType_Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
 
+void CSdlMixerConnection::Serialize(Serialization::IArchive& ar)
+{
+	ar(type, "action", "Action");
+	ar(bPanningEnabled, "panning", "Enable Panning");
+
+	if (ar.openBlock("DistanceAttenuation", "+Distance Attenuation"))
+	{
+		ar(bAttenuationEnabled, "attenuation", "Enable");
+		if (bAttenuationEnabled)
+		{
+			if (ar.isInput())
+			{
+				float minAtt = minAttenuation;
+				float maxAtt = maxAttenuation;
+				ar(minAtt, "min_att", "Min Distance");
+				ar(maxAtt, "max_att", "Max Distance");
+
+				if (minAtt > maxAtt)
+				{
+					if (minAtt != minAttenuation)
+					{
+						maxAtt = minAtt;
+					}
+					else
+					{
+						minAtt = maxAtt;
+					}
+				}
+
+				minAttenuation = minAtt;
+				maxAttenuation = maxAtt;
+
+				IAudioSystemItem* const pItem = s_pSdlMixerInterface->GetControl(GetID());
+
+				if (pItem != nullptr)
+				{
+					pItem->SetRadius(maxAttenuation);
+				}
+			}
+			else
+			{
+				ar(minAttenuation, "min_att", "Min Distance");
+				ar(maxAttenuation, "max_att", "Max Distance");
+			}
+		}
+		else
+		{
+			ar(minAttenuation, "min_att", "!Min Distance");
+			ar(maxAttenuation, "max_att", "!Max Distance");
+		}
+		ar.closeBlock();
+	}
+
+	ar(Serialization::Range(volume, -96.0f, 0.0f), "vol", "Volume (dB)");
+
+	if (ar.openBlock("Looping", "+Looping"))
+	{
+		ar(bInfiniteLoop, "infinite", "Infinite");
+		if (bInfiniteLoop)
+		{
+			ar(loopCount, "loop_count", "!Count");
+		}
+		else
+		{
+			ar(loopCount, "loop_count", "Count");
+		}
+		ar.closeBlock();
+	}
+
+	if (ar.isInput())
+	{
+		signalConnectionChanged();
+	}
 }
+} // namespace ACE

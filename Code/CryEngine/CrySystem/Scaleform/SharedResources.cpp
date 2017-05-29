@@ -197,10 +197,11 @@ CSharedFlashPlayerResources::~CSharedFlashPlayerResources()
 	#endif
 
 	CFlashPlayer::DumpAndFixLeaks();
+	m_pRecorder->ReleaseResources();
+
 	SAFE_DELETE(m_pMeshCacheResetThread);
 	assert(!m_pLoader || m_pLoader->GetRefCount() == 1);
 	SAFE_RELEASE(m_pLoader);
-	m_pRecorder->ReleaseResources();
 	assert(!m_pRecorder || m_pRecorder->GetRefCount() == 1);
 	SAFE_RELEASE(m_pRecorder);
 	SAFE_DELETE(m_pGSystemInit);

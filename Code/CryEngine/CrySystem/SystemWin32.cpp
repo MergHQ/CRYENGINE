@@ -1130,6 +1130,14 @@ void CSystem::FatalError(const char* format, ...)
 	OutputDebugString(szBuffer);
 #if CRY_PLATFORM_WINDOWS
 	OnFatalError(szBuffer);
+
+	if (!g_cvars.sys_no_crash_dialog)
+	{
+#ifdef WIN32
+		::MessageBox(NULL,szBuffer,"CRYENGINE FATAL ERROR",MB_OK|MB_ICONERROR);
+#endif
+	}
+
 	//Triggers a fatal error, so the DebugCallstack can create the error.log and terminate the application
 	IDebugCallStack::instance()->FatalError(szBuffer);
 #endif

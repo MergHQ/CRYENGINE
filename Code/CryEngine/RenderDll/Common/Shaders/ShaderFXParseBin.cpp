@@ -1573,6 +1573,8 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 				}
 				else if (eT == eT_OceanShore)
 					ef->m_eSHDType = eSHDT_OceanShore;
+				else if (eT == eT_DebugHelper)
+					ef->m_eSHDType = eSHDT_DebugHelper;
 				else
 				{
 					Warning("Unknown shader draw type '%s'", Parser.GetString(eT));
@@ -1703,22 +1705,23 @@ bool CShaderManBin::ParseBinFX_Global(CParserBin& Parser, SParserFrame& Frame, b
 	return bRes;
 }
 
-static int sGetTAddress(uint32 nToken)
+static ESamplerAddressMode sGetTAddress(uint32 nToken)
 {
 	switch (nToken)
 	{
 	case eT_Clamp:
-		return TADDR_CLAMP;
+		return eSamplerAddressMode_Clamp;
 	case eT_Border:
-		return TADDR_BORDER;
+		return eSamplerAddressMode_Border;
 	case eT_Wrap:
-		return TADDR_WRAP;
+		return eSamplerAddressMode_Wrap;
 	case eT_Mirror:
-		return TADDR_MIRROR;
+		return eSamplerAddressMode_Mirror;
 	default:
 		assert(0);
 	}
-	return -1;
+
+	return eSamplerAddressMode_Clamp;
 }
 
 void STexSamplerFX::PostLoad()
@@ -2011,15 +2014,15 @@ bool CShaderManBin::ParseBinFX_Sampler(CParserBin& Parser, SParserFrame& Frame, 
 	FX_END_TOKENS
 
 	STexSamplerFX samp;
-	STexState ST;
+	SSamplerState ST;
 	DWORD dwBorderColor = 0;
 	uint32 nFilter = 0;
 	uint32 nFiltMin = 0;
 	uint32 nFiltMip = 0;
 	uint32 nFiltMag = 0;
-	uint32 nAddressU = 0;
-	uint32 nAddressV = 0;
-	uint32 nAddressW = 0;
+	ESamplerAddressMode nAddressU = eSamplerAddressMode_Wrap;
+	ESamplerAddressMode nAddressV = eSamplerAddressMode_Wrap;
+	ESamplerAddressMode nAddressW = eSamplerAddressMode_Wrap;
 	uint32 nAnisotropyLevel = 0;
 
 	int nIndex = -1;
@@ -2173,7 +2176,7 @@ bool CShaderManBin::ParseBinFX_Sampler(CParserBin& Parser, SParserFrame& Frame, 
 
 	if (!gcpRendD3D->IsShaderCacheGenMode())
 	{
-		samp.m_nTexState = CTexture::GetTexState(ST);
+		samp.m_nTexState = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(ST);
 	}
 	samp.m_nSlotId = m_pCEF->mfCheckTextureSlotName(samp.m_szTexture);
 
@@ -2242,15 +2245,15 @@ bool CShaderManBin::ParseBinFX_Sampler(CParserBin& Parser, SParserFrame& Frame, 
 	FX_TOKEN(Global)
 	FX_END_TOKENS
 
-	STexState ST;
+	SSamplerState ST;
 	DWORD dwBorderColor = 0;
 	uint32 nFilter = 0;
 	uint32 nFiltMin = 0;
 	uint32 nFiltMip = 0;
 	uint32 nFiltMag = 0;
-	uint32 nAddressU = 0;
-	uint32 nAddressV = 0;
-	uint32 nAddressW = 0;
+	ESamplerAddressMode nAddressU = eSamplerAddressMode_Wrap;
+	ESamplerAddressMode nAddressV = eSamplerAddressMode_Wrap;
+	ESamplerAddressMode nAddressW = eSamplerAddressMode_Wrap;
 	uint32 nAnisotropyLevel = 0;
 
 	int nIndex = -1;
@@ -2380,7 +2383,7 @@ bool CShaderManBin::ParseBinFX_Sampler(CParserBin& Parser, SParserFrame& Frame, 
 
 		if (!gcpRendD3D->IsShaderCacheGenMode())
 		{
-			Sampl.m_nTexState = CTexture::GetTexState(ST);
+			Sampl.m_nTexState = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(ST);
 		}
 	}
 
@@ -2513,7 +2516,7 @@ void CShaderManBin::AddAffectedParameter(CParserBin& Parser, std::vector<SFXPara
 		AffectedParams.push_back(*pParam);
 	else
 	{
-		if (CParserBin::m_nPlatform == SF_D3D11 || CParserBin::m_nPlatform == SF_DURANGO || CParserBin::m_nPlatform == SF_ORBIS || CParserBin::m_nPlatform == SF_GL4 || CParserBin::m_nPlatform == SF_GLES3)
+		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3 | SF_VULKAN))
 		{
 			assert(eSHClass < eHWSC_Num);
 			if (((nFlags & PF_TWEAKABLE_MASK) || pParam->m_Values.c_str()[0] == '(') && pParam->m_nRegister[eSHClass] >= 0 && pParam->m_nRegister[eSHClass] < 1000)
@@ -3429,7 +3432,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 			Parser.CopyTokens(cf, SHData, Replaces, NewTokens, h);
 			if (cf->m_eType == eFT_Sampler)
 			{
-				if (CParserBin::m_nPlatform == SF_D3D11 || CParserBin::m_nPlatform == SF_DURANGO || CParserBin::m_nPlatform == SF_GL4 || CParserBin::m_nPlatform == SF_GLES3)
+				if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
 				{
 					int nT = Parser.m_Tokens[cf->m_nLastToken - 1];
 					//assert(nT >= eT_s0 && nT <= eT_s15);
@@ -4117,16 +4120,6 @@ bool CShaderManBin::ParseBinFX_Technique_CustomRE(CParserBin& Parser, SParserFra
 		else
 			delete ps;
 	}
-	else if (nName == eT_Beam)
-	{
-		CREBeam* ps = new CREBeam;
-		if (ps->mfCompile(Parser, Frame))
-		{
-			pShTech->m_REs.AddElem(ps);
-		}
-		else
-			delete ps;
-	}
 	else if (nName == eT_Ocean)
 	{
 		assert(0);
@@ -4519,7 +4512,7 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 						else
 							Pr.m_nCB = CB_PER_BATCH;
 					}
-					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_GLES3))
+					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
 					{
 						uint32 nTokName = Parser.GetToken(Parser.m_Name);
 						if (nTokName == eT__g_SkinQuat)
@@ -4543,9 +4536,9 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 						assert(szReg[0] == 'c');
 						Pr.m_nRegister[eHWSC_Vertex] = atoi(&szReg[1]);
 						Pr.m_nRegister[eHWSC_Pixel] = Pr.m_nRegister[eHWSC_Vertex];
-						if (GEOMETRYSHADER_SUPPORT && (CParserBin::m_nPlatform == SF_D3D11 || CParserBin::m_nPlatform == SF_DURANGO || CParserBin::m_nPlatform == SF_ORBIS || CParserBin::m_nPlatform == SF_GL4))
+						if (GEOMETRYSHADER_SUPPORT && CParserBin::PlatformSupportsGeometryShaders())
 							Pr.m_nRegister[eHWSC_Geometry] = Pr.m_nRegister[eHWSC_Vertex];
-						if (CParserBin::m_nPlatform == SF_D3D11 || CParserBin::m_nPlatform == SF_DURANGO || CParserBin::m_nPlatform == SF_ORBIS || CParserBin::m_nPlatform == SF_GL4)
+						if (CParserBin::PlatformSupportsDomainShaders())
 							Pr.m_nRegister[eHWSC_Domain] = Pr.m_nRegister[eHWSC_Vertex];
 					}
 					uint32 prFlags = Pr.GetParamFlags();

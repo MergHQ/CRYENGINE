@@ -431,7 +431,7 @@ struct IScaleformPlayback
 			struct
 			{
 				IScaleformPlayback::VertexFormat VertexFormat;
-				EVertexFormat                    eVertexFormat;
+				InputLayoutHandle::ValueType    eVertexFormat;
 			};
 
 			struct

@@ -416,7 +416,8 @@ void CParticleEmitter::AddEffect(CParticleContainer* pParentContainer, const CPa
 			{
 				if (!c.IsUsed())
 				{
-					if (c.GetEffect() == pEffect && c.IsIndirect() == !!pEffect->GetIndirectParent())
+					if (c.GetEffect() == pEffect && 
+						(c.GetParent() ? pEffect->GetIndirectParent() && c.GetParent()->IsUsed() : !pEffect->GetIndirectParent()))
 					{
 						pContainer = &c;
 						c.SetUsed(true);
@@ -491,6 +492,7 @@ void CParticleEmitter::RefreshEffect()
 
 	for (auto& c : m_Containers)
 	{
+		c.ResetRenderObjects();
 		m_nEnvFlags |= c.GetEnvironmentFlags();
 		m_nRenObjFlags |= c.GetParams().nRenObjFlags.On;
 		m_fMaxParticleSize = max(m_fMaxParticleSize, c.GetEffect()->GetMaxParticleSize() * c.GetParams().fViewDistanceAdjust);

@@ -1,4 +1,4 @@
-set(CMAKE_SYSTEM_VERSION 10.0.10586.0)
+set(CMAKE_SYSTEM_VERSION 10.0.15063.0)
 set(CMAKE_CONFIGURATION_TYPES Debug Profile Release)
 set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "Reset the configurations to what we need" FORCE)
 
@@ -28,3 +28,16 @@ else()
 	add_definitions(-D_WIN64)
 endif()
 
+if (NOT DEFINED CRYENGINE_DIR)
+	set (CRYENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+if (NOT DEFINED SDK_DIR)
+	set(SDK_DIR ${CRYENGINE_DIR}/Code/SDKs)
+endif()
+
+if (EXISTS "${SDK_DIR}/Microsoft Windows SDK/10")
+	set(WINDOWS_SDK "${SDK_DIR}/Microsoft Windows SDK/10")
+else()
+	get_filename_component(WINDOWS_SDK  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots;KitsRoot10]" ABSOLUTE CACHE)
+endif()

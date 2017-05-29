@@ -117,8 +117,8 @@ private:
 
 	SViewportSettings                  m_viewportSettings;
 
-	SGUID                              m_classGUID;
-	SGUID                              m_componentInstanceGUID;
+	CryGUID                              m_classGUID;
+	CryGUID                              m_componentInstanceGUID;
 
 	IObjectPreviewer*                  m_pObjectPreviewer = nullptr;
 	ObjectId                           m_objectId = ObjectId::Invalid;

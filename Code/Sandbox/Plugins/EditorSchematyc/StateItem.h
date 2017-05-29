@@ -53,7 +53,7 @@ public:
 	//CSignalItem* CreateSignal();
 	//bool         RemoveState(CSignalItem& stateItem);
 
-	Schematyc::SGUID GetGUID() const;
+	CryGUID GetGUID() const;
 
 protected:
 	void LoadFromScriptElement();

@@ -75,6 +75,7 @@ public:
 private:
 	void              UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter);
 	void              TrimEmitters();
+	void              InvalidateCachedRenderObjects();
 	CParticleEffect*  CastEffect(const PParticleEffect& pEffect) const;
 	CParticleEmitter* CastEmitter(const PParticleEmitter& pEmitter) const;
 
@@ -93,6 +94,7 @@ private:
 	QuatT                      m_lastCameraPose = ZERO;
 	QuatT                      m_cameraMotion = ZERO;
 	uint                       m_nextEmitterId;
+	int32                      m_lastSysSpec;
 };
 
 std::vector<SParticleFeatureParams>& GetFeatureParams();

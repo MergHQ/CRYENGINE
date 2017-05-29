@@ -99,15 +99,19 @@ void CParticleJobManager::AddDeferredRender(CParticleComponentRuntime* pRuntime,
 	m_deferredRenders.push_back(render);
 }
 
-void CParticleJobManager::ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
+void CParticleJobManager::ScheduleComputeVertices(ICommonParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
 {
 	CParticleManager* pPartManager = static_cast<CParticleManager*>(gEnv->pParticleManager);
-	const SComponentParams& params = pComponentRuntime->GetComponentParams();
 
 	SAddParticlesToSceneJob& job = pPartManager->GetParticlesToSceneJob(renderContext.m_passInfo);
-	job.pPVC = pComponentRuntime;
+	auto pGpuRuntime = pComponentRuntime->GetGpuRuntime();
+	auto pCpuRuntime = pComponentRuntime->GetCpuRuntime();
+	if (pGpuRuntime)
+		job.pGpuRuntime = pGpuRuntime;
+	else if (pCpuRuntime)
+		job.pVertexCreator = pCpuRuntime;
 	job.pRenderObject = pRenderObject;
-	job.pShaderItem = &params.m_pMaterial->GetShaderItem();
+	job.pShaderItem = &pRenderObject->m_pCurrMaterial->GetShaderItem();
 	job.nCustomTexId = renderContext.m_renderParams.nTextureID;
 }
 

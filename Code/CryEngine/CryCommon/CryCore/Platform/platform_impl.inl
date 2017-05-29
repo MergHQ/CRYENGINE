@@ -32,6 +32,26 @@ struct SSystemGlobalEnvironment* gEnv = nullptr;
 struct SRegFactoryNode* g_pHeadToRegFactories = nullptr;
 std::vector<const char*> g_moduleCommands;
 std::vector<const char*> g_moduleCVars;
+
+extern "C" DLL_EXPORT void CleanupModuleCVars()
+{
+	if (auto pConsole = gEnv->pConsole)
+	{
+		// Unregister all commands that were registered from within the plugin/module
+		for (auto& it : g_moduleCommands)
+		{
+			pConsole->RemoveCommand(it);
+		}
+		g_moduleCommands.clear();
+
+		// Unregister all CVars that were registered from within the plugin/module
+		for (auto& it : g_moduleCVars)
+		{
+			pConsole->UnregisterVariable(it);
+		}
+		g_moduleCVars.clear();
+	}
+}
 #endif
 
 #if !defined(CRY_IS_MONOLITHIC_BUILD)  || defined(_LAUNCHER)
@@ -398,7 +418,7 @@ bool CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes)
 //////////////////////////////////////////////////////////////////////////
 void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
 {
-	char szEngineRootDir[_MAX_PATH];
+	char szEngineRootDir[_MAX_PATH] = "";
 	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
 
 #if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
@@ -415,7 +435,7 @@ void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRoot
 		#elif CRY_PLATFORM_POSIX
 	char osSeperator = '/';
 		#endif
-	char szExecFilePath[_MAX_PATH];
+	char szExecFilePath[_MAX_PATH] = "";
 	CryGetExecutableFolder(CRY_ARRAY_COUNT(szExecFilePath), szExecFilePath);
 
 	string strTempPath(szExecFilePath);

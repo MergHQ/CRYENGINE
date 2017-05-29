@@ -759,7 +759,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> final 
 		, name(data.szName)
 		, occlusionType(data.occlusionType)
 		, transformation(data.transformation)
-		, entityToIgnore(data.entityToIgnore)
+		, entityId(data.entityId)
 		, bSetCurrentEnvironments(data.bSetCurrentEnvironments)
 		, triggerId(data.triggerId)
 	{}
@@ -769,7 +769,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> final 
 		, name(pAORData->name)
 		, occlusionType(pAORData->occlusionType)
 		, transformation(pAORData->transformation)
-		, entityToIgnore(pAORData->entityToIgnore)
+		, entityId(pAORData->entityId)
 		, bSetCurrentEnvironments(pAORData->bSetCurrentEnvironments)
 		, triggerId(pAORData->triggerId)
 	{}
@@ -779,7 +779,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> final 
 	CryFixedStringT<MaxObjectNameLength> const name;
 	EOcclusionType const                       occlusionType;
 	CObjectTransformation const                transformation;
-	EntityId const                             entityToIgnore;
+	EntityId const                             entityId;
 	bool const bSetCurrentEnvironments;
 	ControlId const                            triggerId;
 };
@@ -919,7 +919,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> final : 
 		, name(data.szName)
 		, occlusionType(data.occlusionType)
 		, transformation(data.transformation)
-		, entityToIgnore(data.entityToIgnore)
+		, entityId(data.entityId)
 		, bSetCurrentEnvironments(data.bSetCurrentEnvironments)
 	{}
 
@@ -928,7 +928,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> final : 
 		, name(pAMRData->name)
 		, occlusionType(pAMRData->occlusionType)
 		, transformation(pAMRData->transformation)
-		, entityToIgnore(pAMRData->entityToIgnore)
+		, entityId(pAMRData->entityId)
 		, bSetCurrentEnvironments(pAMRData->bSetCurrentEnvironments)
 	{}
 
@@ -937,7 +937,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> final : 
 	CryFixedStringT<MaxObjectNameLength> const name;
 	EOcclusionType const                       occlusionType;
 	CObjectTransformation const                transformation;
-	EntityId const                             entityToIgnore;
+	EntityId const                             entityId;
 	bool const bSetCurrentEnvironments;
 };
 

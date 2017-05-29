@@ -7,11 +7,11 @@
 #include <CryExtension/ICryPluginManager.h>
 #include <CryGame/IGameFramework.h>
 
-#include <Schematyc/Env/EnvPackage.h>
-#include <Schematyc/Env/Elements/EnvDataType.h>
-#include <Schematyc/SerializationUtils/SerializationEnums.inl>
-#include <Schematyc/SerializationUtils/SerializationUtils.h>
-#include <Schematyc/Utils/StackString.h>
+#include <CrySchematyc/Env/EnvPackage.h>
+#include <CrySchematyc/Env/Elements/EnvDataType.h>
+#include <CrySchematyc/SerializationUtils/SerializationEnums.inl>
+#include <CrySchematyc/SerializationUtils/SerializationUtils.h>
+#include <CrySchematyc/Utils/StackString.h>
 
 #include "CVars.h"
 #include "ObjectPool.h"
@@ -57,7 +57,7 @@ inline bool WantUpdate()
 
 } // Anonymous
 
-static const char* g_szSettingsFolder = "SchematycSettings";
+static const char* g_szSettingsFolder = "CrySchematycSettings";
 
 CCore::CCore()
 	: m_pEnvRegistry(new CEnvRegistry())
@@ -85,7 +85,7 @@ CCore::~CCore()
 
 const char* CCore::GetName() const
 {
-	return "SchematycCore";
+	return "CrySchematycCore";
 }
 
 const char* CCore::GetCategory() const
@@ -102,8 +102,6 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 
 	Schematyc::CVars::Register();
 
-	ICryPlugin::SetUpdateFlags(EUpdateType_PrePhysicsUpdate | EUpdateType_Update);
-
 	m_pLog->Init();
 	if (CVars::sc_LogToFile)
 	{
@@ -111,11 +109,11 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 		const int applicationInstance = gEnv->pSystem->GetApplicationInstance();
 		if (applicationInstance)
 		{
-			logFileName.Format("schematyc(%d).log", applicationInstance);
+			logFileName.Format("CrySchematyc(%d).log", applicationInstance);
 		}
 		else
 		{
-			logFileName = "schematyc.log";
+			logFileName = "CrySchematyc.log";
 		}
 		m_pLogFileOutput = m_pLog->CreateFileOutput(logFileName.c_str());
 		SCHEMATYC_CORE_ASSERT(m_pLogFileOutput);
@@ -134,7 +132,7 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 
 	env.pSchematyc = this;
 
-	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", g_szCrytek, "Core Schematyc environment", SCHEMATYC_DELEGATE(&RegisterCoreEnvPackage))))
+	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_cry_guid, "CoreEnv", g_szCrytek, "Core Schematyc environment", SCHEMATYC_DELEGATE(&RegisterCoreEnvPackage))))
 	{
 		env.pSchematyc = nullptr;
 		return false;
@@ -156,10 +154,10 @@ void CCore::SetGUIDGenerator(const GUIDGenerator& guidGenerator)
 	m_guidGenerator = guidGenerator;
 }
 
-SGUID CCore::CreateGUID() const
+CryGUID CCore::CreateGUID() const
 {
-	SCHEMATYC_CORE_ASSERT(!m_guidGenerator.IsEmpty());
-	return !m_guidGenerator.IsEmpty() ? m_guidGenerator() : SGUID();
+	SCHEMATYC_CORE_ASSERT(m_guidGenerator);
+	return m_guidGenerator ? m_guidGenerator() : CryGUID();
 }
 
 const char* CCore::GetRootFolder() const
@@ -245,7 +243,7 @@ ISerializationContextPtr CCore::CreateSerializationContext(const SSerializationC
 	return std::make_shared<CSerializationContext>(params);
 }
 
-IScriptViewPtr CCore::CreateScriptView(const SGUID& scopeGUID) const
+IScriptViewPtr CCore::CreateScriptView(const CryGUID& scopeGUID) const
 {
 	return std::make_shared<CScriptView>(scopeGUID);
 }
@@ -273,18 +271,6 @@ void CCore::SendSignal(ObjectId objectId, const SObjectSignal& signal)
 void CCore::BroadcastSignal(const SObjectSignal& signal)
 {
 	m_pObjectPool->BroadcastSignal(signal);
-}
-
-void CCore::OnPluginUpdate(EPluginUpdateType updateType)
-{
-	if (updateType == IPluginUpdateListener::EUpdateType_PrePhysicsUpdate)
-	{
-		PrePhysicsUpdate();
-	}
-	else if (updateType == IPluginUpdateListener::EUpdateType_Update)
-	{
-		Update();
-	}
 }
 
 void CCore::PrePhysicsUpdate()

@@ -588,9 +588,6 @@ void CBrush::SetMaterial(IMaterial* pMat)
 
 	UpdatePhysicalMaterials();
 
-	// register and get brush material id
-	m_pMaterial = pMat;
-
 	InvalidatePermanentRenderObject();
 }
 

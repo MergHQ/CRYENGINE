@@ -26,7 +26,7 @@ namespace EditorSubstance
 
 		virtual bool OnCloseAsset() override;
 
-		virtual const char* GetEditorName() const override { return "Modify Substance Instance"; };
+		virtual const char* GetEditorName() const override { return "Substance Instance Editor"; };
 
 		virtual bool CanQuit(std::vector<string>& unsavedChanges) override;
 	protected:

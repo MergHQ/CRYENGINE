@@ -168,7 +168,7 @@ void CMFXAudioEffect::GetResources(SMFXResourceList& resourceList) const
 
 	pListNode->m_audioParams.triggerName = m_audioParams.trigger.GetTriggerName();
 
-	const size_t switchesCount = MIN(m_audioParams.triggerSwitches.size(), pListNode->m_audioParams.triggerSwitches.max_size());
+	const size_t switchesCount = std::min<size_t>(m_audioParams.triggerSwitches.size(), pListNode->m_audioParams.triggerSwitches.max_size());
 
 	for (size_t i = 0; i < switchesCount; ++i)
 	{

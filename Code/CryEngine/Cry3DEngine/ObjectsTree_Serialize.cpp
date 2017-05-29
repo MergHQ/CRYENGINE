@@ -1056,7 +1056,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		memcpy(&properties.m_explicitRightUpFront, &pChunk->m_explicitRightUpFront, sizeof(pChunk->m_explicitRightUpFront));
 		memcpy(&properties.m_radius, &pChunk->m_radius, sizeof(pChunk->m_radius));
 
-		uint8 depth = MIN(pChunk->m_depth, 254);
+		uint8 depth = std::min<size_t>(pChunk->m_depth, 254);
 		properties.m_depth = 1.f - 1.f / 255.f * depth;
 
 		IMaterial* pMaterial(CObjManager::GetItemPtr(pMatTable, pChunk->m_nMaterialId));

@@ -23,7 +23,7 @@ struct IPluginUpdateListener
 	virtual void OnPluginUpdate(EPluginUpdateType updateType) = 0;
 };
 
-struct ICryPlugin : public ICryUnknown, IPluginUpdateListener, IAutoCleanup
+struct ICryPlugin : public ICryUnknown, IPluginUpdateListener
 {
 	CRYINTERFACE_DECLARE(ICryPlugin, 0xF491A0DB38634FCA, 0xB6E6BCFE2D98EEA2);
 

@@ -97,7 +97,7 @@ const char* CPhysRenderer::GetPhysForeignName(void* pForeignData, int iForeignDa
 	if (iForeignData == PHYS_FOREIGN_ID_FOLIAGE)
 		return "**foliage rope**";
 	if (iForeignData == PHYS_FOREIGN_ID_ROPE)
-		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(((IRopeRenderNode*)pForeignData)->GetEntityOwner()))
+		if (IEntity* pEntity = (((IRopeRenderNode*)pForeignData)->GetOwnerEntity()))
 			return pEntity->GetName();
 		else
 			return "Rope";
@@ -109,13 +109,23 @@ const char* CPhysRenderer::GetPhysForeignName(void* pForeignData, int iForeignDa
 	return "[Static]";
 }
 
-void CPhysRenderer::DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, int idxColor, int bSlowFadein, const Vec3& sweepDir)
+void CPhysRenderer::DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, int idxColor, int bSlowFadein, const Vec3& sweepDir, const ColorF& color)
 {
 	WriteLock lock(m_lockDrawGeometry);
 	if (!bSlowFadein)
 	{
-		ColorB clr = g_colorTab[idxColor & 7];
-		clr.a >>= idxColor >> 8;
+		ColorB clr;
+
+		if (!isneg(idxColor))
+		{
+			clr = g_colorTab[idxColor & 7];
+			clr.a >>= idxColor >> 8;
+		}
+		else
+		{
+			clr = color;
+		}
+
 		DrawGeometry(pGeom, pgwd, clr);
 	}
 	else

@@ -332,7 +332,7 @@ namespace LODGenerator
 				}
 				else if (h<w)
 				{
-					h=MIN(h+128, w);
+					h=std::min(h+128, w);
 					bDone=false;
 					break;
 				}

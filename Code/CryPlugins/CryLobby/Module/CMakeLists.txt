@@ -42,43 +42,6 @@ add_sources("CryLobby_durango_live_uber.cpp"
 		"DurangoLive/platform.cpp"
 )
 
-# -- orbis_lobby.waf_files --
-sources_platform(ORBIS)
-add_sources("CryLobby_orbis_psn_uber.cpp"
-	PROJECTS CryLobby
-	SOURCE_GROUP "OrbisPSN"
-		"PSNOrbis/CryPSN2Lobby.cpp"
-		"PSNOrbis/CryPSN2MatchMaking.cpp"
-		"PSNOrbis/CryPSN2Response.cpp"
-		"PSNOrbis/CryPSN2Reward.cpp"
-		"PSNOrbis/CryPSN2Stats.cpp"
-		"PSNOrbis/CryPSN2Support.cpp"
-		"PSNOrbis/CryPSN2LobbyUI.cpp"
-		"PSNOrbis/CryPSN2WebApi.cpp"
-		"PSNOrbis/CryPSN2Friends.cpp"
-		"PSNOrbis/CryPSN2WebApi_Session.cpp"
-		"PSNOrbis/CryPSN2WebApi_Presence.cpp"
-		"PSNOrbis/CryPSN2WebApi_RecentPlayers.cpp"
-		"PSNOrbis/CryPSN2WebApi_ActivityFeed.cpp"
-		"PSNOrbis/CryPSN2WebApi_Store.cpp"
-		"PSNOrbis/CryPSN2WebApi_FriendsList.cpp"
-		"PSNOrbis/CryPSN2Lobby.h"
-		"PSNOrbis/CryPSN2LobbyUI.h"
-		"PSNOrbis/CryPSN2MatchMaking.h"
-		"PSNOrbis/CryPSN2Response.h"
-		"PSNOrbis/CryPSN2Reward.h"
-		"PSNOrbis/CryPSN2Stats.h"
-		"PSNOrbis/CryPSN2Support.h"
-		"PSNOrbis/CryPSN2WebApi.h"
-		"PSNOrbis/CryPSN2Friends.h"
-		"PSNOrbis/CryPSN2WebApi_Session.h"
-		"PSNOrbis/CryPSN2WebApi_Presence.h"
-		"PSNOrbis/CryPSN2WebApi_RecentPlayers.h"
-		"PSNOrbis/CryPSN2WebApi_ActivityFeed.h"
-		"PSNOrbis/CryPSN2WebApi_Store.h"
-		"PSNOrbis/CryPSN2WebApi_FriendsList.h"
-)
-
 # -- crylobby_core.waf_files --
 sources_platform(ALL)
 add_sources("CryLobby_uber_0.cpp"

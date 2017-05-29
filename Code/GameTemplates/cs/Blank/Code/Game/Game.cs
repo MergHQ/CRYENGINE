@@ -19,9 +19,16 @@ namespace CryEngine.Game
 
         private Game()
         {
+			// The server doesn't support rendering UI and receiving input, so initializing those system is not required.
+			if(Engine.IsDedicatedServer)
+			{
+				return;
+			}
+
 			CreateUI ();
 
 			GameFramework.RegisterForUpdate(this);
+
 			Input.OnKey += OnKey;
 		}
 
@@ -54,6 +61,11 @@ namespace CryEngine.Game
 
         public void Dispose()
         {
+			if(Engine.IsDedicatedServer)
+			{
+				return;
+			}
+
 			Input.OnKey -= OnKey;
             GameFramework.UnregisterFromUpdate(this);
         }

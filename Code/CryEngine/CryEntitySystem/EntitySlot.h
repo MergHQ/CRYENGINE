@@ -131,7 +131,7 @@ public:
 	bool IsRendered() const;
 
 	//! Render this slot fo previewing in Editor.
-	void PreviewRender(IEntity::SPreviewRenderParams &params);
+	void PreviewRender(SEntityPreviewContext &context);
 
 	void SetNeedSerialize( bool bNeedSerialize ) { m_bNeedSerialize = bNeedSerialize; };
 	bool NeedSerialize() const { return m_bNeedSerialize; }

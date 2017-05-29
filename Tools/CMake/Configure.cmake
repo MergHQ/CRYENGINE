@@ -59,6 +59,7 @@ endif()
 
 if(OUTPUT_DIRECTORY_NAME)
 	set(OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}/${OUTPUT_DIRECTORY_NAME}")
+	set(OUTPUT_DIRECTORY_NAME "")
 endif()
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -133,7 +134,7 @@ if(OPTION_STATIC_LINKING)
 	MESSAGE(STATUS "Use Static Linking (.lib/.a)" )
 	set(BUILD_SHARED_LIBS FALSE)
 else()
-	# Enable dynamic libraries
+	# Enable dynamic librariesboost
 	MESSAGE(STATUS "Use Dynamic Linking (.dll/.so)" )
 	set(BUILD_SHARED_LIBS TRUE)
 endif()

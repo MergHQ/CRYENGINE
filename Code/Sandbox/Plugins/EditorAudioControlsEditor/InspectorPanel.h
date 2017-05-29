@@ -15,7 +15,7 @@ class CAudioAssetsManager;
 class IAudioSystemItem;
 class CAudioControl;
 
-class CInspectorPanel : public QFrame
+class CInspectorPanel final : public QFrame
 {
 	Q_OBJECT
 public:

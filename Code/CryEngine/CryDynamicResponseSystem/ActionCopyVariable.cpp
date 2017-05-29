@@ -36,8 +36,18 @@ DRS::IResponseActionInstanceUniquePtr CActionCopyVariable::Execute(DRS::IRespons
 				{
 					pTargetCollection->SetVariableValue(pTargetVar, pTargetVar->m_value - pSourceVar->m_value, m_cooldown);
 				}
+				else if (m_changeOperation == eChangeOperation_Swap)
+				{
+					CVariableValue temp = pTargetVar->m_value;
+					pTargetCollection->SetVariableValue(pTargetVar, pSourceVar->m_value, m_cooldown);
+					pTargetCollection->SetVariableValue(pSourceVar, temp, m_cooldown);
+				}
 			}
 		}
+	}
+	else
+	{
+		DrsLogWarning(string().Format("Could not fetch source variable '%s::%s'", m_sourceVariable.m_collectionName.GetText().c_str(), m_sourceVariable.m_variableName.GetText().c_str()).c_str());
 	}
 	return nullptr;
 }
@@ -127,5 +137,6 @@ namespace DRS
 		SERIALIZATION_ENUM(CActionCopyVariable::eChangeOperation_Set, "Set", "Set")
 		SERIALIZATION_ENUM(CActionCopyVariable::eChangeOperation_Increment, "Increment", "Increment")
 		SERIALIZATION_ENUM(CActionCopyVariable::eChangeOperation_Decrement, "Decrement", "Decrement")
-	SERIALIZATION_ENUM_END()
+		SERIALIZATION_ENUM(CActionCopyVariable::eChangeOperation_Swap, "Swap", "Swap")
+		SERIALIZATION_ENUM_END()
 }

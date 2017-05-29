@@ -7,13 +7,12 @@
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/File/ICryPak.h>
-#include <Schematyc/Env/IEnvRegistry.h>
-#include <Schematyc/Env/Elements/IEnvComponent.h>
-#include <Schematyc/Reflection/ComponentDesc.h>
-#include <Schematyc/Services/ILog.h>
-#include <Schematyc/Utils/Assert.h>
-#include <Schematyc/Utils/StackString.h>
-#include <Schematyc/Utils/StringUtils.h>
+#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <CrySchematyc/Env/Elements/IEnvComponent.h>
+#include <CrySchematyc/Services/ILog.h>
+#include <CrySchematyc/Utils/Assert.h>
+#include <CrySchematyc/Utils/StackString.h>
+#include <CrySchematyc/Utils/StringUtils.h>
 
 #include "CVars.h"
 #include "Script/Script.h"
@@ -138,7 +137,7 @@ bool CScriptRegistry::Load()
 		}
 		// ~TODO
 	};
-	FileUtils::EnumFilesInFolder(szScriptFolder, "*.schematyc_*", FileUtils::FileEnumCallback::FromLambda(loadScript), fileEnumFlags);
+	FileUtils::EnumFilesInFolder(szScriptFolder, "*.schematyc_*", loadScript, fileEnumFlags);
 
 	ProcessInputBlocks(inputBlocks, *m_pRoot, EScriptEventId::FileLoad);
 	return true;
@@ -222,7 +221,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 
 					return EVisitStatus::Recurse;
 				};
-				pScope->VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
+				pScope->VisitChildren(visitScriptElement);
 				return !hasStateMachine;
 			}
 
@@ -265,7 +264,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 					const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
 					if (pEnvComponent)
 					{
-						if (pEnvComponent->GetDesc().GetComponentFlags().Check(EComponentFlags::Socket))
+						if (pEnvComponent->GetDesc().GetComponentFlags().Check(IEntityComponent::EFlags::Socket))
 						{
 							return true;
 						}
@@ -561,7 +560,7 @@ IScriptBase* CScriptRegistry::AddBase(const SElementId& baseId, IScriptElement* 
 	return nullptr;
 }
 
-IScriptStateMachine* CScriptRegistry::AddStateMachine(const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID, IScriptElement* pScope)
+IScriptStateMachine* CScriptRegistry::AddStateMachine(const char* szName, EScriptStateMachineLifetime lifetime, const CryGUID& contextGUID, const CryGUID& partnerGUID, IScriptElement* pScope)
 {
 	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor() && szName);
 	if (gEnv->IsEditor() && szName)
@@ -609,7 +608,7 @@ IScriptState* CScriptRegistry::AddState(const char* szName, IScriptElement* pSco
 	return nullptr;
 }
 
-IScriptVariable* CScriptRegistry::AddVariable(const char* szName, const SElementId& typeId, const SGUID& baseGUID, IScriptElement* pScope)
+IScriptVariable* CScriptRegistry::AddVariable(const char* szName, const SElementId& typeId, const CryGUID& baseGUID, IScriptElement* pScope)
 {
 	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor() && szName);
 	if (gEnv->IsEditor() && szName)
@@ -654,7 +653,7 @@ IScriptTimer* CScriptRegistry::AddTimer(const char* szName, IScriptElement* pSco
 	return nullptr;
 }
 
-IScriptSignalReceiver* CScriptRegistry::AddSignalReceiver(const char* szName, EScriptSignalReceiverType type, const SGUID& signalGUID, IScriptElement* pScope)
+IScriptSignalReceiver* CScriptRegistry::AddSignalReceiver(const char* szName, EScriptSignalReceiverType type, const CryGUID& signalGUID, IScriptElement* pScope)
 {
 	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor());
 	if (gEnv->IsEditor())
@@ -675,7 +674,7 @@ IScriptSignalReceiver* CScriptRegistry::AddSignalReceiver(const char* szName, ES
 	return nullptr;
 }
 
-IScriptInterfaceImpl* CScriptRegistry::AddInterfaceImpl(EDomain domain, const SGUID& refGUID, IScriptElement* pScope)
+IScriptInterfaceImpl* CScriptRegistry::AddInterfaceImpl(EDomain domain, const CryGUID& refGUID, IScriptElement* pScope)
 {
 	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor());
 	if (gEnv->IsEditor())
@@ -696,7 +695,7 @@ IScriptInterfaceImpl* CScriptRegistry::AddInterfaceImpl(EDomain domain, const SG
 	return nullptr;
 }
 
-IScriptComponentInstance* CScriptRegistry::AddComponentInstance(const char* szName, const SGUID& typeGUID, IScriptElement* pScope)
+IScriptComponentInstance* CScriptRegistry::AddComponentInstance(const char* szName, const CryGUID& typeGUID, IScriptElement* pScope)
 {
 	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor() && szName);
 	if (gEnv->IsEditor() && szName)
@@ -720,7 +719,7 @@ IScriptComponentInstance* CScriptRegistry::AddComponentInstance(const char* szNa
 	return nullptr;
 }
 
-IScriptActionInstance* CScriptRegistry::AddActionInstance(const char* szName, const SGUID& actionGUID, const SGUID& contextGUID, IScriptElement* pScope)
+IScriptActionInstance* CScriptRegistry::AddActionInstance(const char* szName, const CryGUID& actionGUID, const CryGUID& contextGUID, IScriptElement* pScope)
 {
 	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor() && szName);
 	if (gEnv->IsEditor() && szName)
@@ -744,7 +743,7 @@ IScriptActionInstance* CScriptRegistry::AddActionInstance(const char* szName, co
 	return nullptr;
 }
 
-void CScriptRegistry::RemoveElement(const SGUID& guid)
+void CScriptRegistry::RemoveElement(const CryGUID& guid)
 {
 	Elements::iterator itElement = m_elements.find(guid);
 	if (itElement != m_elements.end())
@@ -763,13 +762,13 @@ const IScriptElement& CScriptRegistry::GetRootElement() const
 	return *m_pRoot;
 }
 
-IScriptElement* CScriptRegistry::GetElement(const SGUID& guid)
+IScriptElement* CScriptRegistry::GetElement(const CryGUID& guid)
 {
 	Elements::iterator itElement = m_elements.find(guid);
 	return itElement != m_elements.end() ? itElement->second.get() : nullptr;
 }
 
-const IScriptElement* CScriptRegistry::GetElement(const SGUID& guid) const
+const IScriptElement* CScriptRegistry::GetElement(const CryGUID& guid) const
 {
 	Elements::const_iterator itElement = m_elements.find(guid);
 	return itElement != m_elements.end() ? itElement->second.get() : nullptr;
@@ -778,7 +777,7 @@ const IScriptElement* CScriptRegistry::GetElement(const SGUID& guid) const
 bool CScriptRegistry::CopyElementsToXml(XmlNodeRef& output, IScriptElement& scope) const
 {
 	// #SchematycTODO : Make sure elements don't have NotCopyable flag!!!
-	output = Serialization::SaveXmlNode(CScriptCopySerializer(scope), "schematycScript");
+	output = Serialization::SaveXmlNode(CScriptCopySerializer(scope), "CrySchematycScript");
 	return !!output;
 }
 
@@ -795,7 +794,7 @@ bool CScriptRegistry::PasteElementsFromXml(const XmlNodeRef& input, IScriptEleme
 
 bool CScriptRegistry::SaveUndo(XmlNodeRef& output, IScriptElement& scope) const
 {
-	output = Serialization::SaveXmlNode(CScriptSaveSerializer(static_cast<CScript&>(*scope.GetScript())), "schematycScript");
+	output = Serialization::SaveXmlNode(CScriptSaveSerializer(static_cast<CScript&>(*scope.GetScript())), "CrySchematycScript");
 	return !!output;
 }
 
@@ -877,7 +876,7 @@ ScriptRegistryChangeSignal::Slots& CScriptRegistry::GetChangeSignalSlots()
 	return m_signals.change.GetSlots();
 }
 
-IScript* CScriptRegistry::GetScriptByGuid(const SGUID& guid) const
+IScript* CScriptRegistry::GetScriptByGuid(const CryGUID& guid) const
 {
 	ScriptsByGuid::const_iterator itScript = m_scriptsByGuid.find(guid);
 	return itScript != m_scriptsByGuid.end() ? static_cast<IScript*>(itScript->second.get()) : nullptr;
@@ -961,7 +960,7 @@ CScript* CScriptRegistry::CreateScript(const char* szFilePath, const IScriptElem
 {
 	if (szFilePath)
 	{
-		const SGUID guid = gEnv->pSchematyc->CreateGUID();
+		const CryGUID guid = gEnv->pSchematyc->CreateGUID();
 		SCHEMATYC_CORE_ASSERT(!GUID::IsEmpty(guid));
 		if (!GUID::IsEmpty(guid))
 		{
@@ -980,7 +979,7 @@ CScript* CScriptRegistry::CreateScript(const char* szFilePath, const IScriptElem
 	return nullptr;
 }
 
-CScript* CScriptRegistry::GetScript(const SGUID& guid)
+CScript* CScriptRegistry::GetScript(const CryGUID& guid)
 {
 	ScriptsByGuid::iterator itScript = m_scriptsByGuid.find(guid);
 	return itScript != m_scriptsByGuid.end() ? itScript->second.get() : nullptr;
@@ -1132,7 +1131,7 @@ void CScriptRegistry::RemoveElement(IScriptElement& element)
 
 	CScript* pScript = static_cast<CScript*>(element.GetScript());
 
-	const SGUID guid = element.GetGUID();
+	const CryGUID guid = element.GetGUID();
 	m_elements.erase(guid);
 
 	if (pScript)
@@ -1161,7 +1160,7 @@ void CScriptRegistry::SaveScript(CScript& script)
 			scriptRegistry.ProcessChange(SScriptRegistryChange(EScriptRegistryChangeType::ElementSaved, element));
 		};
 
-		const bool bError = !Serialization::SaveXmlFile(fileName.c_str(), CScriptSaveSerializer(script, ScriptElementSerializeCallback::FromLambda(elementSerializeCallback)), "schematyc");
+		const bool bError = !Serialization::SaveXmlFile(fileName.c_str(), CScriptSaveSerializer(script, elementSerializeCallback), "CrySchematyc");
 		if (bError)
 		{
 			SCHEMATYC_CORE_ERROR("Failed to save file '%s'!", fileName.c_str());
@@ -1199,7 +1198,7 @@ void CScriptRegistry::ProcessChange(const SScriptRegistryChange& change)
 	}
 }
 
-void CScriptRegistry::ProcessChangeDependencies(EScriptRegistryChangeType changeType, const SGUID& elementGUID)
+void CScriptRegistry::ProcessChangeDependencies(EScriptRegistryChangeType changeType, const CryGUID& elementGUID)
 {
 	EScriptEventId dependencyEventId = EScriptEventId::Invalid;
 	EScriptRegistryChangeType dependencyChangeType = EScriptRegistryChangeType::Invalid;
@@ -1227,14 +1226,14 @@ void CScriptRegistry::ProcessChangeDependencies(EScriptRegistryChangeType change
 	for (Elements::value_type& dependencyElement : m_elements)
 	{
 		bool bIsDependency = false;
-		auto enumerateDependency = [&elementGUID, &bIsDependency](const SGUID& guid)
+		auto enumerateDependency = [&elementGUID, &bIsDependency](const CryGUID& guid)
 		{
 			if (guid == elementGUID)
 			{
 				bIsDependency = true;
 			}
 		};
-		dependencyElement.second->EnumerateDependencies(ScriptDependencyEnumerator::FromLambda(enumerateDependency), EScriptDependencyType::Event);   // #SchematycTODO : Can we cache dependencies after every change?
+		dependencyElement.second->EnumerateDependencies(enumerateDependency, EScriptDependencyType::Event);   // #SchematycTODO : Can we cache dependencies after every change?
 
 		if (bIsDependency)
 		{

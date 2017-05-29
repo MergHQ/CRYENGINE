@@ -6,12 +6,12 @@
 #include "ObjectModel.h"
 #include "ScriptBrowserUtils.h"
 
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
 
-#include <Schematyc/Script/Elements/IScriptComponentInstance.h>
-#include <Schematyc/Script/Elements/IScriptFunction.h>
-#include <Schematyc/Script/Elements/IScriptState.h>
-#include <Schematyc/Script/Elements/IScriptVariable.h>
+#include <CrySchematyc/Script/Elements/IScriptComponentInstance.h>
+#include <CrySchematyc/Script/Elements/IScriptFunction.h>
+#include <CrySchematyc/Script/Elements/IScriptState.h>
+#include <CrySchematyc/Script/Elements/IScriptVariable.h>
 
 #include <VariableItem.h>
 
@@ -206,7 +206,7 @@ bool CStateItem::RemoveState(CStateItem& stateItem)
 	return true;
 }
 
-Schematyc::SGUID CStateItem::GetGUID() const
+CryGUID CStateItem::GetGUID() const
 {
 	return m_scriptState.GetGUID();
 }

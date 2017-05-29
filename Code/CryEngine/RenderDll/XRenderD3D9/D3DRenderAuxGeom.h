@@ -3,7 +3,10 @@
 #ifndef D3D_RENDER_AUX_GEOM_H
 #define D3D_RENDER_AUX_GEOM_H
 
+#include "../Common/Renderer.h" // CRenderer
+#include "../Common/CommonRender.h" // gRenDev
 #include "../Common/RenderAuxGeom.h"
+#include "../Common/Shaders/Shader.h" // CShader
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 
@@ -17,6 +20,8 @@ public:
 	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false);
 
 	virtual void DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
+
+	virtual void DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID);
 
 	virtual void FlushTextMessages(CTextMessages& tMessages, bool reset);
 
@@ -39,8 +44,7 @@ public:
 	HRESULT     RestoreDeviceObjects();
 	void        SetOrthoMode(bool enable, Matrix44A* pMatrix = 0);
 	void        GetMemoryUsage(ICrySizer* pSizer) const;
-	void        ReleaseShader() { SAFE_RELEASE_FORCE(m_pAuxGeomShader); }
-
+	void        ReleaseResources();
 	void*       operator new(size_t s)
 	{
 		uint8* p = (uint8*) malloc(s + 16 + 8);
@@ -295,8 +299,11 @@ private:
 private:
 	CRenderAuxGeomD3D(CD3D9Renderer& renderer);
 
+	void FlushTextMessagesInternal(CTextMessages& tMessages, bool reset);
 
-	CRenderPrimitive& PreparePrimitive(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, EVertexFormat format, size_t stride, buffer_handle_t vb, buffer_handle_t ib, const Matrix44* mViewProj);
+	bool              PreparePass(CPrimitiveRenderPass& pass, SViewport* getViewport = nullptr);
+	CRenderPrimitive& PrepareTextPrimitive(int blendMode, SViewport* viewport, bool& depthreversed);
+	CRenderPrimitive& PrepareGeomPrimitive(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, InputLayoutHandle format, size_t stride, buffer_handle_t vb, buffer_handle_t ib);
 
 	void DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, int texID);
 	void DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj);
@@ -347,7 +354,9 @@ private:
 
 	CBufferManager                                   m_bufman;
 	CPrimitiveRenderPass                             m_geomPass;
+	CPrimitiveRenderPass                             m_textPass;
 	std::map<ERenderPrimitiveType, CRenderPrimitive> m_geomPrimitiveCache;
+	std::map<int,                  CRenderPrimitive> m_textPrimitiveCache;
 
 	uint32                                    m_wndXRes;
 	uint32                                    m_wndYRes;

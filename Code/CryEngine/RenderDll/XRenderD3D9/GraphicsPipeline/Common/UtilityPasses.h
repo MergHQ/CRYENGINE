@@ -143,7 +143,7 @@ public:
 	CClearRegionPass();
 	virtual ~CClearRegionPass();
 
-	void Execute(SDepthTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects);
+	void Execute(CTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects);
 	void Execute(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects);
 
 	static EPassId GetPassId() { return EPassId::ClearRegionPass; }

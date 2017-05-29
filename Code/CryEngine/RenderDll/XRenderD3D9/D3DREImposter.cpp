@@ -515,8 +515,6 @@ bool CREImposter::Display(bool bDisplayFrontOfSplit)
 	uint32 nPasses = 0;
 	pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
 
-	STexState sTexStatePoint = STexState(FILTER_POINT, true);
-	STexState sTexStateLinear = STexState(FILTER_LINEAR, true);
 	if (!m_pTexture || (bDisplayFrontOfSplit && !m_pFrontTexture))
 		Warning("WRANING: CREImposter::mfDisplay: missing texture!");
 	else
@@ -526,8 +524,8 @@ bool CREImposter::Display(bool bDisplayFrontOfSplit)
 			pDT = m_pFrontTexture;
 		else
 			pDT = m_pTexture;
-		pDT->Apply(0, CTexture::GetTexState(sTexStateLinear));
-		pDT->Apply(1, CTexture::GetTexState(sTexStatePoint));
+		pDT->Apply(0, EDefaultSamplerStates::LinearClamp);
+		pDT->Apply(1, EDefaultSamplerStates::PointClamp);
 
 		//pDT = m_pTextureDepth;
 		//pDT->Apply(1);

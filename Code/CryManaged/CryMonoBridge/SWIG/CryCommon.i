@@ -18,8 +18,6 @@
 
 %feature("nspace", 1);
 
-//%import "../../../CryEngine/CryCommon/IEntity.h"
-
 %rename(op_Equal) operator =;
 %rename(op_PlusEqual) operator +=;
 %rename(op_MinusEqual) operator -=;

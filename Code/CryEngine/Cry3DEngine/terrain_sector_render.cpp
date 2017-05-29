@@ -607,7 +607,7 @@ void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo, bool bUpdateVertice
 		gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
 
 		pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-		  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), eVF_P2S_N4B_C4B_T1F,
+		  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), EDefaultInputLayouts::P2S_N4B_C4B_T1F,
 		  pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(),
 		  prtTriangleList, "TerrainSector", "TerrainSector", eRMType, 1,
 		  m_nTexSet.nTex0, NULL, NULL, false, true, lstTangents.Count() ? lstTangents.GetElements() : NULL);
@@ -1349,11 +1349,12 @@ void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcR
 		bool bMultiGPU;
 		gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
 
-		if (bMultiGPU && gEnv->pRenderer->GetRenderType() != eRT_DX12)
+		if (bMultiGPU && (gEnv->pRenderer->GetRenderType() != ERenderType::Direct3D12)
+			          && (gEnv->pRenderer->GetRenderType() != ERenderType::Vulkan))
 			eRMType = eRMT_Dynamic;
 
 		pMatRM = GetRenderer()->CreateRenderMeshInitialized(
-		  NULL, 0, eVF_P2S_N4B_C4B_T1F, NULL, 0,
+		  NULL, 0, EDefaultInputLayouts::P2S_N4B_C4B_T1F, NULL, 0,
 		  prtTriangleList, szComment, szComment, eRMType, 1, 0, NULL, NULL, false, false);
 	}
 
@@ -1550,7 +1551,7 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 	m_pTerrain->m_pSharedRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
 		arrVertices.GetElements(),
 		arrVertices.Count(),
-		eVF_P2S_N4B_C4B_T1F,
+		EDefaultInputLayouts::P2S_N4B_C4B_T1F,
 		arrIndices.GetElements(),
 		arrIndices.Count(),
 		prtTriangleList,

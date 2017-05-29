@@ -136,7 +136,7 @@ struct IGame
 	//! \retval true, if the game handles the end level action and calls ScheduleEndLevel directly.
 	virtual bool GameEndLevel(const char* stringId) = 0;
 
-	//! Creates a GameStateRecorder instance in GameDll and passes its ownership to the caller (CryAction/GamePlayRecorder).
+	//! Creates a GameStateRecorder instance in GameDll and returns the non-owning pointer to the caller (CryAction/GamePlayRecorder).
 	virtual IGameStateRecorder* CreateGameStateRecorder(IGameplayListener* pL) = 0;
 
 	virtual void                FullSerialize(TSerialize ser) = 0;

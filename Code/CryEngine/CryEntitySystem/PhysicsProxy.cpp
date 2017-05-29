@@ -109,7 +109,7 @@ int CEntityPhysics::GetPartId0(int nSlot)
 {
 	int id = nSlot;
 	int nLevels, nBits;
-	ParsePartId(id, nLevels, nBits);
+	EntityPhysicsUtils::ParsePartId(id, nLevels, nBits);
 	if (m_pEntity->m_hierarchy.attachId >= 0)
 		id |= 1 << 30 | m_pEntity->m_hierarchy.attachId << nBits;
 	return id;
@@ -118,15 +118,15 @@ int CEntityPhysics::GetPartId0(int nSlot)
 int AttachPartId(int idPart, int* attachIdRemap)
 {
 	int nLevels, nBits;
-	ParsePartId(idPart, nLevels, nBits);
-	return 1 << 30 | (nLevels - 1) << 28 | idPart & (1 << nBits) - 1 | attachIdRemap[idPart & 1 << 30 ? idPart >> nBits & PARTID_MAX_ATTACHMENTS - 1 : PARTID_MAX_ATTACHMENTS] << nBits;
+	EntityPhysicsUtils::ParsePartId(idPart, nLevels, nBits);
+	return 1 << 30 | (nLevels - 1) << 28 | idPart & (1 << nBits) - 1 | attachIdRemap[idPart & 1 << 30 ? idPart >> nBits & EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS - 1 : EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS] << nBits;
 }
 
 int DetachPartId(int idPart, int* attachIdRemap)
 {
 	int nLevels, nBits;
-	ParsePartId(idPart, nLevels, nBits);
-	int idAttach = attachIdRemap[idPart >> nBits & PARTID_MAX_ATTACHMENTS - 1];
+	EntityPhysicsUtils::ParsePartId(idPart, nLevels, nBits);
+	int idAttach = attachIdRemap[idPart >> nBits & EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS - 1];
 	if (!(idPart & 1 << 30 && idAttach >= 0))
 		return -1;
 	return idAttach & 1 << 30 ^ 1 << 30 | (nLevels - 1) << 28 | idAttach << nBits | idPart & (1 << nBits) - 1;
@@ -135,7 +135,7 @@ int DetachPartId(int idPart, int* attachIdRemap)
 inline int AllocAttachId(attachMask& usedMask)
 {
 	attachMask mask1 = (usedMask ^ usedMask + 1) + 1;
-	int id = !!mask1 ? ilog2(mask1) - 1 : PARTID_MAX_ATTACHMENTS - 1;
+	int id = !!mask1 ? ilog2(mask1) - 1 : EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS - 1;
 	usedMask |= attachMask1 << id;
 	return id;
 }
@@ -246,14 +246,14 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 				for (sp.ipart = 0; pAdamProxy->m_pPhysicalEntity->GetStatus(&sp); sp.ipart++)
 				{
 					int nLevels, nBits;
-					ParsePartId(sp.partid, nLevels, nBits);
-					if (sp.partid & 1 << 30 && (sp.partid >> nBits & PARTID_MAX_ATTACHMENTS - 1) == m_pEntity->m_hierarchy.attachId)
+					EntityPhysicsUtils::ParsePartId(sp.partid, nLevels, nBits);
+					if (sp.partid & 1 << 30 && (sp.partid >> nBits & EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS - 1) == m_pEntity->m_hierarchy.attachId)
 					{
 						bbox.Add(sp.BBox[0] + sp.pos), bbox.Add(sp.BBox[1] + sp.pos);
 						if (!CheckFlags(FLAG_IGNORE_XFORM_EVENT) && !pAdamProxy->CheckFlags(FLAG_IGNORE_XFORM_EVENT))
 						{
 							pp.partid = sp.partid;
-							mtxPart = mtxLoc * m_pEntity->GetSlotLocalTM(sp.partid & PARTID_MAX_SLOTS - 1, true);
+							mtxPart = mtxLoc * m_pEntity->GetSlotLocalTM(sp.partid & EntityPhysicsUtils::PARTID_MAX_SLOTS - 1, true);
 							pAdamProxy->m_pPhysicalEntity->SetParams(&pp);
 						}
 					}
@@ -331,14 +331,14 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 				    (i = pAdamProxy->m_pPhysicalEntity->GetType()) <= PE_WHEELEDVEHICLE && i != PE_STATIC)
 				{
 					// Move pChild (and all of its children) to pAdam
-					int idmap[PARTID_MAX_ATTACHMENTS + 1];
+					int idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1];
 					memset(idmap, -1, sizeof(idmap));
-					pChild->m_hierarchy.attachId = idmap[PARTID_MAX_ATTACHMENTS] = AllocAttachId(pAdam->m_hierarchy.childrenAttachIds);
+					pChild->m_hierarchy.attachId = idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS] = AllocAttachId(pAdam->m_hierarchy.childrenAttachIds);
 					RemapChildAttachIds(pChild, pChild->m_hierarchy.childrenAttachIds, pAdam->m_hierarchy.childrenAttachIds, idmap);
 					amp.pTarget = pAdamProxy->m_pPhysicalEntity;
 					amp.MapPartId = AttachPartId;
 					amp.auxData = idmap;
-					amp.szAuxData = PARTID_MAX_ATTACHMENTS + 1;
+					amp.szAuxData = EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1;
 					pChildProxy->m_pPhysicalEntity->Action(&amp);
 				}
 			}
@@ -358,7 +358,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 					Matrix34 childWorldTM = pChild->GetWorldTM();
 					childWorldTM.OrthonormalizeFast();
 					pe_action_move_parts amp;
-					int idmap[PARTID_MAX_ATTACHMENTS + 1];
+					int idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1];
 					memset(idmap, -1, sizeof(idmap));
 					idmap[pChild->m_hierarchy.attachId] = 1 << 30;
 					RemapChildAttachIds(pChild, pAdam->m_hierarchy.childrenAttachIds, pChild->m_hierarchy.childrenAttachIds, idmap);
@@ -366,7 +366,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 					amp.pTarget = pChildProxy->m_pPhysicalEntity;
 					amp.MapPartId = DetachPartId;
 					amp.auxData = idmap;
-					amp.szAuxData = PARTID_MAX_ATTACHMENTS + 1;
+					amp.szAuxData = EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1;
 					pAdamProxy->m_pPhysicalEntity->Action(&amp);
 					pAdam->m_hierarchy.childrenAttachIds &= ~(attachMask1 << pChild->m_hierarchy.attachId);
 					pChild->m_hierarchy.attachId = -1;
@@ -377,7 +377,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 		if (event.nParam[1] == 1)
 		{
 			EventPhysCollision* pColl = (EventPhysCollision*)event.nParam[0];
-			int islot = GetSlotIdx(pColl->partid[1]);
+			int islot = EntityPhysicsUtils::GetSlotIdx(pColl->partid[1]);
 			pe_params_bbox pbb;
 			Vec3 sz;
 			float r, strength;
@@ -615,9 +615,12 @@ void CEntityPhysics::SerializeTyped(TSerialize ser, int type, int flags)
 
 void CEntityPhysics::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 {
-	XmlNodeRef physicsState = entityNode->findChild("PhysicsState");
-	if (physicsState)
-		m_pEntity->SetPhysicsState(physicsState);
+	if (bLoading)
+	{
+		XmlNodeRef physicsState = entityNode->findChild("PhysicsState");
+		if (physicsState)
+			m_pEntity->SetPhysicsState(physicsState);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -955,6 +958,9 @@ void CEntityPhysics::Physicalize(SEntityPhysicalizeParams& params)
 	{
 		TriggerEventIfStateChanged(m_pPhysicalEntity, prevStatus);
 	}
+
+	SEntityEvent event(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+	m_pEntity->SendEvent(event);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -143,7 +143,7 @@ bool CFlowGraphModule::LoadModuleGraph(const char* moduleName, const char* fileN
 		{
 			m_pRootGraph->SerializeXML(moduleRef, true);
 
-			stack_string sTemp = "FG-Module ";
+			stack_string sTemp = "[Module] ";
 			sTemp.append(moduleName);
 			m_pRootGraph->SetDebugName(sTemp);
 

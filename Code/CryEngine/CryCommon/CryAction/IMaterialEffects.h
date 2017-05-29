@@ -464,7 +464,7 @@ private:
 		m_flowGraphList = 0;
 		m_forceFeedbackList = 0;
 	}
-	~SMFXResourceList()
+	virtual ~SMFXResourceList()
 	{
 		while (m_particleList != 0)
 		{
@@ -575,7 +575,7 @@ struct IMaterialEffects
 	virtual void                CompleteInit() = 0;
 
 	virtual void                ReloadMatFXFlowGraphs() = 0;
-	virtual int                 GetMatFXFlowGraphCount() const = 0;
+	virtual size_t              GetMatFXFlowGraphCount() const = 0;
 	virtual IFlowGraphPtr       GetMatFXFlowGraph(int index, string* pFileName = NULL) const = 0;
 	virtual IFlowGraphPtr       LoadNewMatFXFlowGraph(const string& filename) = 0;
 

@@ -69,9 +69,6 @@ public:
 	virtual bool                                 HasParticles() = 0;
 
 	virtual void                                 SetEnvironmentParameters(const SEnvironmentParameters& params) = 0;
-
-	// called from 3dengine::Renderscene
-	virtual void Render(CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, const SRendParams& renderParams) = 0;
 };
 
 enum class ESpawnRateMode

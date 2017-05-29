@@ -29,7 +29,7 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 	float4    PerInstanceCustomData;       // [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 	float4    PerInstanceCustomData1;      // [xyzw=ShilouetteColor]
 	// TODO: Should be moved after all the data below
-	float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass,
+	float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass, y=AmbientColor, zw=Not used]
 
 #if %TEMP_TERRAIN || %TEMP_VEGETATION
 	float4    PerInstanceBlendTerrainColInfo;
@@ -184,16 +184,6 @@ int Get_PerInstanceTessellationPatchId()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// Shared instancing vertex attributes
-
-#define INST_STREAM_POS                                  \
-#if %_RT_INSTANCING_ATTR                                 \
-  float3x4 InstMatrix   : TEXCOORDN;                     \
-#endif                                                   \
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 // Common vertex attributes
 
 // Note: user should #NOT# use directly any app2vert structures for vertex data modifications and
@@ -235,22 +225,8 @@ struct app2vertCommon
   float4 Normal   : NORMAL;
 #endif
 
-	// Instancing stream
-
-  INST_STREAM_POS
-
 #if %_RT_ENVIRONMENT_CUBEMAP
   uint InstIndex : SV_InstanceID;
-#elif %_RT_INSTANCING_ATTR
- #if %_VT_BEND
-  float4 InstBendInfo : TEXCOORDN;
- #endif
-
- #if %TEMP_VEGETATION
-   #if %_RT_NOZPASS && %_RT_ALPHATEST
-    float4 InstAlphaTest   : TEXCOORDN;
-   #endif
- #endif
 #endif
 
 // Skinning stream related
@@ -271,8 +247,6 @@ struct app2vertCommon
 struct app2vertGeneral
 {  
 	app2vertCommon vertCommon;
-
-  INST_STREAM_CUSTOM
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -280,13 +254,6 @@ struct app2vertGeneral
 struct app2vertZGeneral
 {  
 	app2vertCommon vertCommon;
-
-#if %_RT_INSTANCING_ATTR
-	#if %_RT_ALPHATEST || %_RT_DISSOLVE
-		float4 InstAlphaTest : TEXCOORDN;							 
-	#endif   
-#endif
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -294,16 +261,6 @@ struct app2vertZGeneral
 struct app2vertGBuffer
 {  
 	app2vertCommon vertCommon;
-
-#if %_RT_INSTANCING_ATTR
-	#if %_RT_ALPHATEST || %_RT_DISSOLVE
-		float4 InstAlphaTest : TEXCOORDN;							 
-	#endif   
-
-	#if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
-	  float3x4 InstMotionBlurData   : TEXCOORDN;
-	#endif
-#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -318,11 +275,6 @@ struct app2vertSGGeneral
 struct app2vertMotionBlur
 {  
 	app2vertCommon vertCommon;
-
-#if %_RT_INSTANCING_ATTR
-  float3x4 InstMotionBlurData   : TEXCOORDN;
-  float4 InstAmbientOp  : TEXCOORDN;  
-#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -330,24 +282,13 @@ struct app2vertMotionBlur
 struct app2vertCustomViews
 { 
 	app2vertCommon vertCommon;
-
-  #if %_RT_INSTANCING_ATTR
-    float4 InstVisionParams : TEXCOORDN;
-  #endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct app2vertRainPass
 { 
-	app2vertCommon vertCommon;
-
-#if %_RT_INSTANCING_ATTR
-  float4 InstMaterialLayersParams : TEXCOORDN;
- #if %_RT_ALPHATEST || %_RT_DISSOLVE
-  float4 InstAlphaTest : TEXCOORDN;							 
- #endif   
-#endif    
+	app2vertCommon vertCommon; 
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -388,19 +329,6 @@ struct streamPos
   
 #if %_RT_ENVIRONMENT_CUBEMAP
   int nInstance;
-#elif %_RT_INSTANCING_ATTR
-  int nInstance;
-  float3x4 InInstMatrix;
-
-  float4 InstAlphaTest;
- 
- float3x4 InstMotionBlurData;
- float4 InstVisionParams;
- float4 InstMaterialLayersParams;
- 
- #if %_VT_BEND
-  float4 InstBendInfo;
- #endif
 #endif
 
 #if %_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR
@@ -529,22 +457,8 @@ void vtxStreamUnifyTangents( in app2vertCommon IN, inout streamPos OUT )
 
 void vtxStreamUnifyCommonInstancing( in app2vertCommon IN, inout streamPos OUT )
 {
-
 #if %_RT_ENVIRONMENT_CUBEMAP
   OUT.nInstance = IN.InstIndex;
-#elif %_RT_INSTANCING_ATTR
-
-	#fetchinst (OUT.InInstMatrix = IN.InstMatrix, OUT.nInstance);
-
-	#if %TEMP_VEGETATION
-		#if %_RT_NOZPASS && %_RT_ALPHATEST
-			#fetchinst (OUT.InstAlphaTest = IN.InstAlphaTest, OUT.nInstance);
-		#endif
-	#endif
-
-	#if %_VT_BEND
-		#fetchinst (OUT.InstBendInfo = IN.InstBendInfo, OUT.nInstance);
-	#endif
 #endif
 }
 
@@ -596,12 +510,6 @@ void streamPos_FromZ(in app2vertZGeneral IN, inout streamPos OUT)
 void streamPos_FromGBuffer(in app2vertGBuffer IN, inout streamPos OUT)
 {
 	vtxStreamUnifyCommon( IN.vertCommon, OUT );
-	
-#if %_RT_INSTANCING_ATTR
-	#if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
-		#fetchinst (OUT.InstMotionBlurData = IN.InstMotionBlurData, OUT.nInstance);
-	#endif
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -616,10 +524,6 @@ void streamPos_FromSG(in app2vertSGGeneral IN, inout streamPos OUT)
 void streamPos_FromMotionBlur(in app2vertMotionBlur IN, inout streamPos OUT)
 {
 	vtxStreamUnifyCommon( IN.vertCommon, OUT );
-
-#if %_RT_INSTANCING_ATTR
-  #fetchinst (OUT.InstMotionBlurData = IN.InstMotionBlurData, OUT.nInstance);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -634,10 +538,6 @@ void streamPos_FromCustomViews(in app2vertCustomViews IN, inout streamPos OUT)
 void streamPos_FromRainPass(in app2vertRainPass IN, inout streamPos OUT)
 {
 	vtxStreamUnifyCommon( IN.vertCommon, OUT );
-
-#if %_RT_INSTANCING_ATTR
-  #fetchinst (OUT.InstMaterialLayersParams = IN.InstMaterialLayersParams, OUT.nInstance);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1148,11 +1048,7 @@ void _VTModify(inout float4 inPos, float3 vNorm, float4x4 InstMatrix, streamPos 
 
     half4 vBendingInfo = 0;
  #if %_VT_BEND
-  #if %_RT_INSTANCING_ATTR
-    vBendingInfo = IN.InstBendInfo; 
-  #else
     vBendingInfo  = Get_SPI_BendInfo(nInstance, worldPos.xyz);
-  #endif
  #endif
 
  #if %_VT_DET_BEND
@@ -1473,13 +1369,6 @@ void Matrix_Inst_General(inout streamPos IN)
 #endif
 
   IN.InstMatrix = GetInstanceMatrix(nInstance);
-
-#if %_RT_INSTANCING_ATTR
-  // Rotated instances use a 3x4 matrix input
-  IN.InstMatrix[0] = IN.InInstMatrix[0]; 
-  IN.InstMatrix[1] = IN.InInstMatrix[1]; 
-  IN.InstMatrix[2] = IN.InInstMatrix[2]; 
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////.

@@ -215,7 +215,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	pAddButton->setMenu(&m_addItemMenu);
 
 	m_pControlsTree->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(m_pControlsTree, SIGNAL(customContextMenuRequested(const QPoint &)), SLOT(ShowControlsContextMenu(const QPoint &)));
+	connect(m_pControlsTree, &QAdvancedTreeView::customContextMenuRequested, this, &CAudioAssetsExplorer::ShowControlsContextMenu);
 	// *********************************
 
 	m_pAssetsManager->signalItemAdded.Connect([&](IAudioAsset* pItem)
@@ -243,8 +243,8 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	m_pProxyModel->setDynamicSortFilter(true);
 	m_pControlsTree->setModel(m_pProxyModel);
 
-	connect(m_pControlsTree->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)), this, SIGNAL(SelectedControlChanged()));
-	connect(m_pControlsTree->selectionModel(), SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)), this, SLOT(StopControlExecution()));
+	connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CAudioAssetsExplorer::SelectedControlChanged);
+	connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &CAudioAssetsExplorer::StopControlExecution);
 
 	m_pAssetsManager->signalLibraryAboutToBeRemoved.Connect([&](CAudioLibrary* pLibrary)
 		{
@@ -524,5 +524,4 @@ void CAudioAssetsExplorer::ResetFilters()
 	ShowControlType(eItemType_State, true);
 	m_pTextFilter->setText("");
 }
-
-}
+} // namespace ACE

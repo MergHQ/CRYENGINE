@@ -24,7 +24,6 @@
 
 namespace ACE
 {
-
 bool IsParentValid(const IAudioAsset& parent, const EItemType type)
 {
 	switch (parent.GetType())
@@ -228,7 +227,7 @@ Qt::ItemFlags CAudioAssetsExplorerModel::flags(const QModelIndex& index) const
 	{
 		return QAbstractItemModel::flags(index) | Qt::ItemIsDropEnabled | Qt::ItemIsEditable;
 	}
-	return 0;
+	return Qt::NoItemFlags;
 }
 
 QModelIndex CAudioAssetsExplorerModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
@@ -541,7 +540,7 @@ Qt::ItemFlags CAudioLibraryModel::flags(const QModelIndex& index) const
 	{
 		return QAbstractItemModel::flags(index) | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsEditable;
 	}
-	return 0;
+	return Qt::NoItemFlags;
 }
 
 QModelIndex CAudioLibraryModel::index(int row, int column, const QModelIndex& parent) const
@@ -742,6 +741,5 @@ IAudioAsset* GetAssetFromIndex(const QModelIndex& index)
 	}
 	return nullptr;
 }
-
-}
-}
+} // namespace AudioModelUtils
+} // namespace ACE

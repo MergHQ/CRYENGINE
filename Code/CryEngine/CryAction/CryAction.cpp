@@ -2543,6 +2543,8 @@ bool CCryAction::ShutdownGame()
 //------------------------------------------------------------------------
 void CCryAction::ShutdownEngine()
 {
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN, 0, 0);
+
 	ShutdownGame();
 
 #ifndef _LIB
@@ -2676,16 +2678,13 @@ void CCryAction::ShutdownEngine()
 	{
 		CryFreeLibrary(m_systemDll);
 		m_systemDll = nullptr;
+		// in dll config, gEnv is dead after this point. RIP gEnv.
 	}
 
 	SAFE_DELETE(m_nextFrameCommand);
 	SAFE_DELETE(m_pPhysicsQueues);
 
 	m_pThis = nullptr;
-	if (gEnv)
-	{
-		gEnv->pGameFramework = nullptr;
-	}
 }
 
 //------------------------------------------------------------------------

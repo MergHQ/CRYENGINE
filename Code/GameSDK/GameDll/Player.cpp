@@ -9196,19 +9196,19 @@ void SNetPlayerProgression::SyncOnLocalPlayer(const bool serialized/* = true*/)
 		bool  changeNetState = false;
 
 		newVal = pp->GetData(EPP_XP);
-		newVal = MIN(newVal, 0xffff);
+		newVal = std::min((int)newVal, (int)0xffff);
 		if (serialized && (m_serVals.xp != newVal))
 			changeNetState = true;
 		m_serVals.xp = newVal;
 
 		newVal = pp->GetData(EPP_Rank);
-		newVal = MIN(newVal, 0xff);
+		newVal = std::min((int)newVal, (int)0xff);
 		if (serialized && (m_serVals.rank != newVal))
 			changeNetState = true;
 		m_serVals.rank = newVal;
 
 		newVal = pp->GetData(EPP_Reincarnate);
-		newVal = MIN(newVal, 0xff);
+		newVal = std::min((int)newVal, (int)0xff);
 		if (serialized && (m_serVals.reincarnations != newVal))
 			changeNetState = true;
 		m_serVals.reincarnations = newVal;

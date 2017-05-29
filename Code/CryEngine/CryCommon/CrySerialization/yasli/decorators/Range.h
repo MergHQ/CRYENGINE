@@ -2,6 +2,8 @@
 
 #include <CrySerialization/yasli/Archive.h>
 
+#include <limits>
+
 namespace yasli
 {
 
@@ -34,6 +36,12 @@ RangeDecorator<T> Range(T& value, T hardMin, T hardMax, T singleStep = (T)Defaul
 	r.hardMax = hardMax;
 	r.singleStep = singleStep;
 	return r;
+}
+
+template<class T>
+RangeDecorator<T> MinMaxRange(T& value, T singleStep = (T)yasli::DefaultSinglestep<T>::value())
+{
+	return Range(value, std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max(), singleStep);
 }
 
 template<class T>

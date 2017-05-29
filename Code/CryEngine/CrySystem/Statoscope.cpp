@@ -1979,7 +1979,7 @@ void CStatoscope::SetCurrentProfilerRecords(const std::vector<CFrameProfiler*>* 
 		// even if numProfilers is quite large (in the thousands), it'll only be tens of KB
 		uint32 numProfilers = profilers->size();
 		m_perfStatDumpProfilers.clear();
-		m_perfStatDumpProfilers.reserve(MAX(numProfilers, m_perfStatDumpProfilers.size()));		
+		m_perfStatDumpProfilers.reserve(std::max((size_t)numProfilers, m_perfStatDumpProfilers.size()));		
 
 		float minFuncTime = m_pStatoscopeMinFuncLengthMsCVar->GetFVal();
 
@@ -2015,7 +2015,7 @@ void CStatoscope::SetCurrentProfilerRecords(const std::vector<CFrameProfiler*>* 
 		{
 			uint32 maxNumFuncs = (uint32)m_pStatoscopeMaxNumFuncsPerFrameCVar->GetIVal();
 			// limit the number being recorded
-			m_perfStatDumpProfilers.resize(MIN(m_perfStatDumpProfilers.size(), maxNumFuncs));
+			m_perfStatDumpProfilers.resize(std::min(m_perfStatDumpProfilers.size(), (size_t)maxNumFuncs));
 		}
 
 		uint32 numDumpProfilers = m_perfStatDumpProfilers.size();

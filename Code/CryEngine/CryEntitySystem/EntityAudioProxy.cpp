@@ -661,3 +661,16 @@ void CEntityComponentAudio::SetEnvironmentAmountInternal(IEntity const* const pI
 		}
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+CryAudio::AuxObjectId CEntityComponentAudio::GetAuxObjectIdFromAudioObject(CryAudio::IObject* pObject)
+{
+	for (auto& current : m_mapAuxAudioProxies)
+	{
+		if (current.second.pIObject == pObject)
+		{
+			return current.first;
+		}
+	}
+	return CryAudio::InvalidAuxObjectId;
+}

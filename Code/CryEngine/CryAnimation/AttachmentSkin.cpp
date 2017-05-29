@@ -394,7 +394,7 @@ _smart_ptr<IRenderMesh> CAttachmentSKIN::CreateVertexAnimationRenderMesh(uint lo
 	m_pRenderMeshsSW[id] = g_pIRenderer->CreateRenderMeshInitialized(
 		NULL
 		, pIStaticRenderMesh->GetVerticesCount()
-		, eVF_P3F_C4B_T2F
+		, EDefaultInputLayouts::P3F_C4B_T2F
 		, NULL
 		, pIStaticRenderMesh->GetIndicesCount()
 		, prtTriangleList

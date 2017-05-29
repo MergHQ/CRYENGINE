@@ -10,9 +10,7 @@
 #include <CryCore/Platform/CryWindows.h>
 #endif
 
-#if !defined(RESOURCE_COMPILER)
-	#include <CryCore/CryCrc32.h>
-#endif
+#include <CryCore/CryCrc32.h>
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#include <ctype.h>
@@ -170,8 +168,6 @@ inline bool MatchWildcardIgnoreCase(const char* szString, const char* szWildcard
 	return CryStringUtils_Internal::MatchesWildcards_Tpl<CryStringUtils_Internal::SCharComparatorCaseInsensitive>(szString, szWildcard);
 }
 
-#if !defined(RESOURCE_COMPILER)
-
 //! Calculates a hash value for a given string.
 inline uint32 CalculateHash(const char* str)
 {
@@ -233,7 +229,6 @@ inline uint32 HashStringLower(const char* string)
 {
 	return HashStringLowerSeed(string, CRY_DEFAULT_HASH_SEED);
 }
-#endif
 
 //! Converts all ASCII characters in a string to lower case - avoids memory allocation.
 //! This function is ASCII-only (Unicode remains unchanged) and uses the "C" locale for case conversion (A-Z only).

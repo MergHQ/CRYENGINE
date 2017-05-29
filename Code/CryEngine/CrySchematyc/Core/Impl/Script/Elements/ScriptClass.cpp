@@ -4,11 +4,11 @@
 #include "Script/Elements/ScriptClass.h"
 
 #include <CrySerialization/IArchiveHost.h>
-#include <Schematyc/Script/IScriptGraph.h>
-#include <Schematyc/Script/IScriptRegistry.h>
-#include <Schematyc/Script/Elements/IScriptSignalReceiver.h>
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
-#include <Schematyc/Utils/IGUIDRemapper.h>
+#include <CrySchematyc/Script/IScriptGraph.h>
+#include <CrySchematyc/Script/IScriptRegistry.h>
+#include <CrySchematyc/Script/Elements/IScriptSignalReceiver.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/Utils/IGUIDRemapper.h>
 
 #include "CVars.h"
 #include "CoreEnv/CoreEnvSignals.h"
@@ -21,7 +21,7 @@ CScriptClass::CScriptClass()
 	: CScriptElementBase(EScriptElementFlags::MustOwnScript)
 {}
 
-CScriptClass::CScriptClass(const SGUID& guid, const char* szName)
+CScriptClass::CScriptClass(const CryGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, EScriptElementFlags::MustOwnScript)
 {}
 
@@ -41,7 +41,7 @@ void CScriptClass::ProcessEvent(const SScriptEvent& event)
 			IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 			scriptRegistry.AddConstructor("ConstructionGraph", this);
 
-			IScriptSignalReceiver* pSignalReceiver = scriptRegistry.AddSignalReceiver("SignalGraph", EScriptSignalReceiverType::Universal, SGUID(), this);
+			IScriptSignalReceiver* pSignalReceiver = scriptRegistry.AddSignalReceiver("SignalGraph", EScriptSignalReceiverType::Universal, CryGUID(), this);
 			IScriptGraph* pGraph = static_cast<IScriptGraph*>(pSignalReceiver->GetExtensions().QueryExtension(EScriptExtensionType::Graph));
 			if (pGraph)
 			{

@@ -128,9 +128,6 @@ protected:
 	bool     m_bDynamics           : 1;
 	bool     m_bDynamicsInvert     : 1;
 
-	int      m_samplerBilinearClamp;
-	int      m_samplerBilinearBorderBlack;
-	
 #if defined(FLARES_SUPPORT_EDITING)
 	DynArray<FuncVariableGroup> paramGroups;
 #endif

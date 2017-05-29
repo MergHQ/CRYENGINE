@@ -57,8 +57,8 @@ void DebugDrawEffect(CParticleEffect* pEffect, size_t effectBarIdx)
 	{
 		AABB box;
 		box.min = pos;
-		box.max.x = box.min.x + MAX(emitterSz.x, pixSz.x);
-		box.max.y = box.min.y + MAX(emitterSz.y - pixSz.y, pixSz.y);
+		box.max.x = box.min.x + std::max(emitterSz.x, pixSz.x);
+		box.max.y = box.min.y + std::max(emitterSz.y - pixSz.y, pixSz.y);
 		ColorB color = pEffect->GetEmitter(i).m_active ? red : darkRed;
 		pRenderAux->DrawAABB(box, true, color, eBBD_Faceted);
 		pos.y += emitterSz.y;
@@ -105,8 +105,8 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		{
 			AABB box;
 			box.min = pos;
-			box.max.x = box.min.x + MAX(instSz.x, pixSz.x);
-			box.max.y = box.min.y + MAX(instSz.y - pixSz.y, pixSz.y);
+			box.max.x = box.min.x + std::max(instSz.x, pixSz.x);
+			box.max.y = box.min.y + std::max(instSz.y - pixSz.y, pixSz.y);
 			ColorF color = ColorF(0.0f, 0.5f, 1.0f);
 			pRenderAux->DrawAABB(box, true, ColorB(color), eBBD_Faceted);
 			pos.y += instSz.y;
@@ -121,8 +121,8 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		// box.min = pos;
 		box.min.x = contLoc.x;
 		box.min.y = contLoc.y + partSz.y * particleId;
-		box.max.x = box.min.x + MAX(partSz.x, pixSz.x);
-		box.max.y = box.min.y + MAX(partSz.y - pixSz.y, pixSz.y);
+		box.max.x = box.min.x + std::max(partSz.x, pixSz.x);
+		box.max.y = box.min.y + std::max(partSz.y - pixSz.y, pixSz.y);
 		ColorB color = black;
 		const uint8 state = states.Load(particleId);
 		const float age = normAges.Load(particleId);

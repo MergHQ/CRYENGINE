@@ -15,9 +15,11 @@
 
 extern int CryMemoryGetAllocatedSize();
 
-CTestSystemLegacy::CTestSystemLegacy(std::unique_ptr<ILog> pLog)
-	: m_pLog(std::move(pLog))
+CTestSystemLegacy::CTestSystemLegacy(ISystem* pSystem)
+	: m_log(pSystem)
+	, m_unitTestManager(m_log)
 {
+	m_log.SetFileName("%USER%/TestResults/TestLog.log");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -44,7 +46,7 @@ CTestSystemLegacy::CTestSystemLegacy(std::unique_ptr<ILog> pLog)
 void CTestSystemLegacy::QuitInNSeconds(const float fInNSeconds)
 {
 	if (fInNSeconds > 0)
-		m_pLog->Log("QuitInNSeconds() requests quit in %f sec", fInNSeconds);
+		m_log.Log("QuitInNSeconds() requests quit in %f sec", fInNSeconds);
 
 	m_fQuitInNSeconds = fInNSeconds;
 }
@@ -104,7 +106,7 @@ void CTestSystemLegacy::ApplicationTest(const char* szParam)
 
 	if (!szParam)
 	{
-		m_pLog->LogError("ApplicationTest() parameter missing");
+		m_log.LogError("ApplicationTest() parameter missing");
 		return;
 	}
 
@@ -126,7 +128,7 @@ void CTestSystemLegacy::ApplicationTest(const char* szParam)
 
 	m_bApplicationTest = true;
 
-	//	m_pLog->Log("ApplicationTest '%s'",szParam);
+	//	m_log.Log("ApplicationTest '%s'",szParam);
 }
 
 void CTestSystemLegacy::LogLevelStats()
@@ -136,7 +138,7 @@ void CTestSystemLegacy::LogLevelStats()
 	char sVersion[128];
 	ver.ToString(sVersion);
 
-	m_pLog->Log("   LevelStats Level='%s'   Ver=%s", gEnv->pGameFramework->GetLevelName(), sVersion);
+	m_log.Log("   LevelStats Level='%s'   Ver=%s", gEnv->pGameFramework->GetLevelName(), sVersion);
 
 	{
 		// copied from CBudgetingSystem::MonitorSystemMemory
@@ -153,7 +155,7 @@ void CTestSystemLegacy::LogLevelStats()
 		memUsageInMB_SysCopyMeshes = RoundToClosestMB(memUsageInMB_SysCopyMeshes);
 		memUsageInMB_SysCopyTextures = RoundToClosestMB(memUsageInMB_SysCopyTextures);
 
-		m_pLog->Log("   System memory: %d MB [%d MB (engine), %d MB (managed textures), %d MB (managed meshes)]",
+		m_log.Log("   System memory: %d MB [%d MB (engine), %d MB (managed textures), %d MB (managed meshes)]",
 		               memUsageInMB, memUsageInMB_Engine, memUsageInMB_SysCopyTextures, memUsageInMB_SysCopyMeshes);
 	}
 
@@ -169,7 +171,10 @@ void CTestSystemLegacy::Update()
 		m_fQuitInNSeconds -= gEnv->pTimer->GetFrameTime();
 
 		if (m_fQuitInNSeconds <= 0.0f)
+		{
+			gEnv->pConsole->ExecuteString("ExitOnQuit 1");
 			gEnv->pSystem->Quit();
+		}
 		else
 		{
 			if (iSec != (int)m_fQuitInNSeconds)
@@ -283,7 +288,7 @@ void CTestSystemLegacy::ScreenShot(const char* szDirectory, const char* szFilena
 	// directory is generated automatically
 	gEnv->pRenderer->ScreenShot(string(szDirectory) + "/" + szFilename);
 
-	m_pLog->Log("Generated screen shot '%s/%s'", szDirectory, szFilename);
+	m_log.Log("Generated screen shot '%s/%s'", szDirectory, szFilename);
 }
 
 //////////////////////////////////////////////////////////////////////////

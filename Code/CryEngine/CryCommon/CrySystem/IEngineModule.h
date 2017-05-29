@@ -3,7 +3,6 @@
 #pragma once
 
 #include <CryExtension/ICryUnknown.h>
-#include <CrySystem/ICryAutoCleanup.h>
 
 struct SSystemInitParams;
 struct SSystemGlobalEnvironment;
@@ -11,7 +10,7 @@ struct SSystemGlobalEnvironment;
 namespace Cry
 {
 	//! Base Interface for all engine module extensions.
-	struct IDefaultModule : public ICryUnknown, IAutoCleanup
+	struct IDefaultModule : public ICryUnknown
 	{
 		CRYINTERFACE_DECLARE(IDefaultModule, 0xf899cf661df04f61, 0xa341a8a7ffdf9de4);
 

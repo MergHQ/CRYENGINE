@@ -61,4 +61,3 @@ endif()
 #libs
 add_subdirectory ("Code/Libs/prt")
 add_subdirectory ("Code/Libs/python")
-add_subdirectory ("Code/Libs/tiff")

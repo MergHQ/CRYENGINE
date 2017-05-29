@@ -42,7 +42,8 @@ struct SAutoTestsContext
 
 //////////////////////////////////////////////////////////////////////////
 
-CUnitTestManager::CUnitTestManager()
+CUnitTestManager::CUnitTestManager(ILog& logToUse)
+	: m_log(logToUse)
 {
 	m_pAutoTestsContext = stl::make_unique<SAutoTestsContext>();
 	CRY_ASSERT(m_pAutoTestsContext != nullptr);
@@ -74,6 +75,7 @@ IUnitTest* CUnitTestManager::GetTestInstance(const SUnitTestInfo& info)
 
 int CUnitTestManager::RunAllTests(EReporterType reporterType)
 {
+	CryLogAlways("Running all unit tests...");//this gets output to main log. details are output to test log.
 	SUnitTestRunContext context;
 	StartTesting(context, reporterType);
 
@@ -83,6 +85,7 @@ int CUnitTestManager::RunAllTests(EReporterType reporterType)
 	}
 
 	EndTesting(context);
+	CryLogAlways("Running all unit tests done.");
 	return (context.failedTestCount == 0) ? 0 : 1; //non-zero for error exit code
 }
 
@@ -164,16 +167,16 @@ void CUnitTestManager::StartTesting(SUnitTestRunContext& context, EReporterType 
 	switch (reporterToUse)
 	{
 	case EReporterType::Excel:
-		context.pReporter = stl::make_unique<CUnitTestExcelReporter>();
+		context.pReporter = stl::make_unique<CUnitTestExcelReporter>(m_log);
 		break;
 	case EReporterType::ExcelWithNotification:
-		context.pReporter = stl::make_unique<CUnitTestExcelNotificationReporter>();
+		context.pReporter = stl::make_unique<CUnitTestExcelNotificationReporter>(m_log);
 		break;
 	case EReporterType::Minimal:
-		context.pReporter = stl::make_unique<CMinimalLogUnitTestReporter>();
+		context.pReporter = stl::make_unique<CMinimalLogUnitTestReporter>(m_log);
 		break;
 	case EReporterType::Regular:
-		context.pReporter = stl::make_unique<CLogUnitTestReporter>();
+		context.pReporter = stl::make_unique<CLogUnitTestReporter>(m_log);
 		break;
 	default:
 		CRY_ASSERT(false);
@@ -290,27 +293,27 @@ bool CUnitTestManager::IsTestMatch(const CUnitTest& test, const string& sSuiteNa
 
 void CryUnitTest::CLogUnitTestReporter::OnStartTesting(const SUnitTestRunContext& context)
 {
-	CryLog("UnitTesting Started");
+	m_log.Log("UnitTesting Started");
 }
 
 void CryUnitTest::CLogUnitTestReporter::OnFinishTesting(const SUnitTestRunContext& context)
 {
-	CryLog("UnitTesting Finished");
+	m_log.Log("UnitTesting Finished");
 }
 
 void CryUnitTest::CLogUnitTestReporter::OnSingleTestStart(const IUnitTest& test)
 {
 	auto& info = test.GetInfo();
-	CryLog("UnitTestStart:  [%s]%s:%s", info.GetModule(), info.suite, info.name);
+	m_log.Log("UnitTestStart:  [%s]%s:%s", info.GetModule(), info.suite, info.name);
 }
 
 void CryUnitTest::CLogUnitTestReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
 {
 	auto& info = test.GetInfo();
 	if (bSuccess)
-		CryLog("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.GetModule(), info.suite, info.name, fRunTimeInMs);
+		m_log.Log("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.GetModule(), info.suite, info.name, fRunTimeInMs);
 	else
-		CryLog("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.GetModule(), info.suite, info.name, szFailureDescription);
+		m_log.Log("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.GetModule(), info.suite, info.name, szFailureDescription);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -325,7 +328,7 @@ void CryUnitTest::CMinimalLogUnitTestReporter::OnStartTesting(const SUnitTestRun
 
 void CryUnitTest::CMinimalLogUnitTestReporter::OnFinishTesting(const SUnitTestRunContext& context)
 {
-	CryLog("UnitTesting Finished Tests: %d Succeeded: %d, Failed: %d, Time: %5.2f ms", m_nRunTests, m_nSucceededTests, m_nFailedTests, m_fTimeTaken);
+	m_log.Log("UnitTesting Finished Tests: %d Succeeded: %d, Failed: %d, Time: %5.2f ms", m_nRunTests, m_nSucceededTests, m_nFailedTests, m_fTimeTaken);
 }
 
 void CryUnitTest::CMinimalLogUnitTestReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
@@ -340,7 +343,7 @@ void CryUnitTest::CMinimalLogUnitTestReporter::OnSingleTestFinish(const IUnitTes
 	if (!bSuccess)
 	{
 		auto& info = test.GetInfo();
-		CryLog("-- FAIL (%s): [%s]%s:%s (%s:%d)", szFailureDescription, info.GetModule(), info.suite, info.name, info.filename, info.lineNumber);
+		m_log.Log("-- FAIL (%s): [%s]%s:%s (%s:%d)", szFailureDescription, info.GetModule(), info.suite, info.name, info.filename, info.lineNumber);
 	}
 }
 
@@ -372,6 +375,7 @@ CRY_UNIT_TEST_SUITE(BITFIDDLING)
 		}
 	}
 }
+
 CRY_UNIT_TEST_SUITE(Math)
 {
 	using namespace crymath;
@@ -1878,6 +1882,25 @@ CRY_UNIT_TEST(CUT_Variant)
 		CRY_UNIT_TEST_ASSERT(stl::get<int>(v1) == 10);
 		CRY_UNIT_TEST_ASSERT(stl::get<string>(v2) == "Hello World Hello World");
 	}
+}
+
+CRY_UNIT_TEST(CUT_CRYGUID)
+{
+	CryGUID guid;
+
+	// Test that CryGUID constructor initialize it to 0
+	CRY_UNIT_TEST_ASSERT(guid.lopart == 0 && guid.hipart == 0);
+
+	guid = "296708CE-F570-4263-B067-C6D8B15990BD"_cry_guid;
+
+	// Test that GUID specified in string with or without brackets work reliably
+	CRY_UNIT_TEST_ASSERT( guid == "{296708CE-F570-4263-B067-C6D8B15990BD}"_cry_guid);
+
+	char str[64];
+	guid.ToString(str);
+	// Test back conversion from GUID to string
+	CRY_UNIT_TEST_ASSERT( 0 == strcmp(str,"296708CE-F570-4263-B067-C6D8B15990BD"));
+
 }
 
 #endif //CRY_UNIT_TESTING

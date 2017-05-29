@@ -589,10 +589,24 @@ void SRenderThread::RC_ReleaseGraphicsPipeline()
 	if (IsRenderThread())
 	{
 		gRenDev->RT_GraphicsPipelineShutdown();
+		return;
 	}
 
 	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_ReleaseGraphicsPipeline, 0);
+	EndCommand(p);
+}
+
+void SRenderThread::RC_ResetDeviceObjectFactory()
+{
+	if (IsRenderThread())
+	{
+		gRenDev->RT_ResetDeviceObjectFactory();
+		return;
+	}
+
+	LOADINGLOCK_COMMANDQUEUE
+	byte* p = AddCommand(eRC_ResetDeviceObjectFactory, 0);
 	EndCommand(p);
 }
 
@@ -768,7 +782,7 @@ void SRenderThread::RC_TexBlurAnisotropicVertical(CTexture* Tex, float fAnisoSca
 	EndCommand(p);
 }
 
-bool SRenderThread::RC_CreateDeviceTexture(CTexture* pTex, byte* pData[6])
+bool SRenderThread::RC_CreateDeviceTexture(CTexture* pTex, const void* pData[])
 {
 #if !defined(MULTITHREADED_RESOURCE_CREATION)
 	if (IsRenderThread())
@@ -781,12 +795,36 @@ bool SRenderThread::RC_CreateDeviceTexture(CTexture* pTex, byte* pData[6])
 		return !IsFailed();
 
 	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_CreateDeviceTexture, 7 * sizeof(void*));
+	// double nullptr terminator
+	int len = 0; if (pData) while (pData[len] || pData[len + 1]) ++len;
+	byte* p = AddCommand(eRC_CreateDeviceTexture, 4 + (len + 1) * sizeof(void*));
 	AddPointer(p, pTex);
-	for (int i = 0; i < 6; i++)
+	AddDWORD(p, len);
+	while (--len >= 0)
+		AddPointer(p, pData[len]);
+	EndCommand(p);
+	FlushAndWait();
+
+	return !IsFailed();
+}
+
+bool SRenderThread::RC_CreateDeviceTexture(CTexture* pTex, D3DResource* pNatTex)
+{
+#if !defined(MULTITHREADED_RESOURCE_CREATION)
+	if (IsRenderThread())
+#endif
 	{
-		AddPointer(p, pData[i]);
+		return pTex->RT_CreateDeviceTexture(pNatTex);
 	}
+
+	if (pTex->IsAsyncDevTexCreation())
+		return !IsFailed();
+
+	LOADINGLOCK_COMMANDQUEUE
+	byte* p = AddCommand(eRC_CreateDeviceTexture, 4 + 2 * sizeof(void*));
+	AddPointer(p, pTex);
+	AddDWORD(p, 0xFFFFFFFFU);
+	AddPointer(p, pNatTex);
 	EndCommand(p);
 	FlushAndWait();
 
@@ -1132,7 +1170,7 @@ void SRenderThread::RC_UnlinkTexture(CTexture* pTex)
 	EndCommand(p);
 }
 
-bool SRenderThread::RC_CheckUpdate2(CRenderMesh* pMesh, CRenderMesh* pVContainer, EVertexFormat eVF, uint32 nStreamMask)
+bool SRenderThread::RC_CheckUpdate2(CRenderMesh* pMesh, CRenderMesh* pVContainer, InputLayoutHandle eVF, uint32 nStreamMask)
 {
 	if (IsRenderThread())
 	{
@@ -2097,7 +2135,7 @@ void SRenderThread::RC_SetTexture(int nTex, int nUnit)
 {
 	if (IsRenderThread())
 	{
-		CTexture::ApplyForID(nUnit, nTex, -1, -1);
+		CTexture::ApplyForID(nUnit, nTex, EDefaultSamplerStates::Unspecified, -1);
 		return;
 	}
 
@@ -2309,8 +2347,8 @@ void SRenderThread::ProcessCommands()
 	if (m_eVideoThreadMode == eVTM_Disabled)
 		gcpRendD3D->BindContextToThread(CryGetCurrentThreadId());
 
-	#if defined(OPENGL) && !DXGL_FULL_EMULATION
-		#if CRY_OPENGL_SINGLE_CONTEXT
+	#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
+		#if OGL_SINGLE_CONTEXT
 	if (m_eVideoThreadMode == eVTM_Disabled)
 		m_kDXGLDeviceContextHandle.Set(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());
 		#else
@@ -2319,7 +2357,7 @@ void SRenderThread::ProcessCommands()
 	if (m_eVideoThreadMode == eVTM_Disabled)
 		m_kDXGLDeviceContextHandle.Set(gcpRendD3D->GetDeviceContext().GetRealDeviceContext(), !CRenderer::CV_r_multithreaded);
 		#endif
-	#endif //defined(OPENGL) && !DXGL_FULL_EMULATION
+	#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 
 	#ifdef DO_RENDERSTATS
 	CTimeValue Time;
@@ -2373,6 +2411,9 @@ void SRenderThread::ProcessCommands()
 	#endif
 		case eRC_ReleaseGraphicsPipeline:
 			gRenDev->RT_GraphicsPipelineShutdown();
+			break;
+		case eRC_ResetDeviceObjectFactory:
+			gRenDev->RT_ResetDeviceObjectFactory();
 			break;
 		case eRC_ReleasePostEffects:
 			if (gRenDev->m_pPostProcessMgr)
@@ -2478,7 +2519,9 @@ void SRenderThread::ProcessCommands()
 						gRenDev->EF_ClearTargetsLater(nFlags, fDepth, 0);
 						break;
 					}
+					return;
 				}
+
 				switch (nType)
 				{
 				case 0:
@@ -2528,10 +2571,18 @@ void SRenderThread::ProcessCommands()
 			}
 			break;
 		case eRC_ReleaseDeviceTexture:
-			assert(m_eVideoThreadMode == eVTM_Disabled);
 			{
 				CTexture* pTexture = ReadCommand<CTexture*>(n);
-				pTexture->RT_ReleaseDevice();
+				if (m_eVideoThreadMode != eVTM_Disabled)
+				{
+					m_rdldLock.Lock();
+					pTexture->RT_ReleaseDevice();
+					m_rdldLock.Unlock();
+				}
+				else
+				{
+					pTexture->RT_ReleaseDevice();
+				}
 			}
 			break;
 		case eRC_AuxFlush:
@@ -2574,7 +2625,7 @@ void SRenderThread::ProcessCommands()
 			{
 				int nTex = ReadCommand<int>(n);
 				int nUnit = ReadCommand<int>(n);
-				CTexture::ApplyForID(nUnit, nTex, -1, -1);
+				CTexture::ApplyForID(nUnit, nTex, EDefaultSamplerStates::Unspecified, -1);
 			}
 			break;
 		case eRC_DrawLines:
@@ -2720,7 +2771,7 @@ void SRenderThread::ProcessCommands()
 			{
 				CRenderMesh* pMesh = ReadCommand<CRenderMesh*>(n);
 				CRenderMesh* pVContainer = ReadCommand<CRenderMesh*>(n);
-				EVertexFormat eVF = ReadCommand<EVertexFormat>(n);
+				InputLayoutHandle eVF = ReadCommand<InputLayoutHandle>(n);
 				uint32 nStreamMask = ReadCommand<uint32>(n);
 				pMesh->RT_CheckUpdate(pVContainer, eVF, nStreamMask);
 			}
@@ -2729,12 +2780,23 @@ void SRenderThread::ProcessCommands()
 			{
 				m_rdldLock.Lock();
 				CTexture* pTex = ReadCommand<CTexture*>(n);
-				byte* pData[6];
-				for (int i = 0; i < 6; i++)
+				unsigned int len = ReadCommand<unsigned int>(n);
+				if (len != 0xFFFFFFFFU)
 				{
-					pData[i] = ReadCommand<byte*>(n);
+					const void** pData = new const void*[len + 2];
+					// double nullptr terminator
+					pData[len + 0] = nullptr;
+					pData[len + 1] = nullptr;
+					while (len-- != 0)
+						pData[len] = ReadCommand<byte*>(n);
+					m_bSuccessful = pTex->RT_CreateDeviceTexture(pData);
+					delete[] pData;
 				}
-				m_bSuccessful = pTex->RT_CreateDeviceTexture(pData);
+				else
+				{
+					D3DResource* pNatTex = ReadCommand<D3DResource*>(n);
+					m_bSuccessful = pTex->RT_CreateDeviceTexture(pNatTex);
+				}
 				m_rdldLock.Unlock();
 			}
 			break;
@@ -3392,14 +3454,14 @@ void SRenderThread::Process()
 		const uint64 elapsed = CryGetTicks() - start;
 		gEnv->pSystem->GetCurrentUpdateTimeStats().RenderTime = elapsed;
 	}
-#if defined(OPENGL) && !DXGL_FULL_EMULATION
-	#if CRY_OPENGL_SINGLE_CONTEXT
+#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
+	#if OGL_SINGLE_CONTEXT
 	m_kDXGLDeviceContextHandle.Set(NULL);
 	#else
 	m_kDXGLDeviceContextHandle.Set(NULL, !CRenderer::CV_r_multithreaded);
 	m_kDXGLContextHandle.Set(NULL);
 	#endif
-#endif //defined(OPENGL) && !DXGL_FULL_EMULATION
+#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 }
 
 void SRenderThread::ProcessLoading()
@@ -3429,14 +3491,14 @@ void SRenderThread::ProcessLoading()
 			SwitchMode(false);
 		}
 	}
-#if defined(OPENGL) && !DXGL_FULL_EMULATION
-	#if CRY_OPENGL_SINGLE_CONTEXT
+#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
+	#if OGL_SINGLE_CONTEXT
 	m_kDXGLDeviceContextHandle.Set(NULL);
 	#else
 	m_kDXGLDeviceContextHandle.Set(NULL, !CRenderer::CV_r_multithreaded);
 	m_kDXGLContextHandle.Set(NULL);
 	#endif
-#endif //defined(OPENGL) && !DXGL_FULL_EMULATION
+#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 }
 
 #ifndef STRIP_RENDER_THREAD

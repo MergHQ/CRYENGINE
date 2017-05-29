@@ -19,6 +19,7 @@
 		"tiff",
 		"expat",
 		"alembic",
+		"astc",
 		"hdf5",
 		"szip",
 		"ilmbase",

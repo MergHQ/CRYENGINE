@@ -1,16 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ScriptProxy.cpp
-//  Version:     v1.00
-//  Created:     18/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "stdafx.h"
 #include "ScriptProxy.h"
 #include "EntityScript.h"
@@ -150,7 +139,7 @@ void CEntityComponentLuaScript::Update(SEntityUpdateContext& ctx)
 		if (m_fScriptUpdateTimer <= 0)
 		{
 			ENTITY_PROFILER
-				m_fScriptUpdateTimer = m_fScriptUpdateRate;
+			  m_fScriptUpdateTimer = m_fScriptUpdateRate;
 
 			//////////////////////////////////////////////////////////////////////////
 			// Script Update.
@@ -169,7 +158,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 			SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
 			Update(*pCtx);
 		}
-	break;
+		break;
 	case ENTITY_EVENT_ANIM_EVENT:
 		{
 			const AnimEventInstance* const pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
@@ -493,11 +482,12 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 			}
 		}
 		break;
-	case ENTITY_EVENT_SOUND_DONE:
+	case ENTITY_EVENT_AUDIO_TRIGGER_ENDED:
 		{
-			ScriptHandle oHandle;
-			oHandle.n = event.nParam[1];
-			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnSoundDone, oHandle);
+			CryAudio::SRequestInfo const* const pRequestInfo = reinterpret_cast<CryAudio::SRequestInfo const* const>(event.nParam[0]);
+			ScriptHandle handle;
+			handle.n = static_cast<UINT_PTR>(pRequestInfo->audioControlId);
+			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnSoundDone, handle);
 		}
 		break;
 	case ENTITY_EVENT_LEVEL_LOADED:
@@ -853,19 +843,17 @@ void CEntityComponentLuaScript::SetEventTargets(XmlNodeRef& eventTargetsNode)
 		m_pThis->SetValue("Events", pEventsTable);
 	}
 
-	for (std::set<string>::iterator it = sourceEvents.begin(); it != sourceEvents.end(); ++it)
+	for (auto const& sourceEvent : sourceEvents)
 	{
 		SmartScriptTable pTrgEvents(pSS);
-
-		string sourceEvent = *it;
 
 		pEventsTable->SetValue(sourceEvent.c_str(), pTrgEvents);
 
 		// Put target events to table.
 		int trgEventIndex = 1;
-		for (size_t i = 0; i < eventTargets.size(); i++)
+
+		for (auto const& et : eventTargets)
 		{
-			SEntityEventTarget& et = eventTargets[i];
 			if (et.sourceEvent == sourceEvent)
 			{
 				SmartScriptTable pTrgEvent(pSS);
@@ -910,7 +898,7 @@ void CEntityComponentLuaScript::CallEvent(const char* sEvent, EntityId nEntityId
 {
 	IScriptTable* pTable = nullptr;
 	IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(nEntityId);
-	
+
 	if (pIEntity != nullptr)
 	{
 		pTable = pIEntity->GetScriptTable();
@@ -1010,7 +998,7 @@ void CEntityComponentLuaScript::SendScriptEvent(int Event, IScriptTable* pParamt
 				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, pParamters, *pRet);
 			else
 				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, pParamters);
-			pRet = 0;
+			pRet = nullptr;
 		}
 	}
 }
@@ -1027,7 +1015,7 @@ void CEntityComponentLuaScript::SendScriptEvent(int Event, const char* str, bool
 				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, str, *pRet);
 			else
 				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, str);
-			pRet = 0;
+			pRet = nullptr;
 		}
 	}
 }
@@ -1044,7 +1032,7 @@ void CEntityComponentLuaScript::SendScriptEvent(int Event, int nParam, bool* pRe
 				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, nParam, *pRet);
 			else
 				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, nParam);
-			pRet = 0;
+			pRet = nullptr;
 		}
 	}
 }
@@ -1064,8 +1052,8 @@ void CEntityComponentLuaScript::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(this, sizeof(*this));
 }
 
-void CEntityComponentLuaScript::SetPhysParams(int type, IScriptTable *params) 
-{ 
-	if (IPhysicalEntity *phys = GetEntity()->GetPhysics())
+void CEntityComponentLuaScript::SetPhysParams(int type, IScriptTable* params)
+{
+	if (IPhysicalEntity* phys = GetEntity()->GetPhysics())
 		((CEntitySystem*)gEnv->pEntitySystem)->GetScriptBindEntity()->SetEntityPhysicParams(nullptr, phys, type, params);
 }

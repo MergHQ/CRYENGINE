@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Schematyc/Script/IScriptView.h>
-#include <Schematyc/Script/IScriptElement.h>
+#include <CrySchematyc/Script/IScriptView.h>
+#include <CrySchematyc/Script/IScriptElement.h>
 
 namespace Schematyc
 {
@@ -11,11 +11,11 @@ class CScriptView : public IScriptView
 {
 public:
 
-	CScriptView(const SGUID& scopeGUID);
+	CScriptView(const CryGUID& scopeGUID);
 
 	// IScriptView
 
-	virtual const SGUID&                    GetScopeGUID() const override;
+	virtual const CryGUID&                    GetScopeGUID() const override;
 	virtual const IEnvClass*                GetEnvClass() const override;
 	virtual const IScriptClass*             GetScriptClass() const override;
 
@@ -51,10 +51,10 @@ public:
 	virtual void                            VisitEnclosedTimers(const ScriptTimerConstVisitor& visitor) const override;
 	virtual void                            VisitAccesibleTimers(const ScriptTimerConstVisitor& visitor) const override;
 
-	virtual const IScriptStateMachine*      GetScriptStateMachine(const SGUID& guid) const override;
-	virtual const IScriptComponentInstance* GetScriptComponentInstance(const SGUID& guid) const override;
-	virtual const IScriptActionInstance*    GetScriptActionInstance(const SGUID& guid) const override;
-	virtual const IScriptElement*           GetScriptElement(const SGUID& guid) const override;
+	virtual const IScriptStateMachine*      GetScriptStateMachine(const CryGUID& guid) const override;
+	virtual const IScriptComponentInstance* GetScriptComponentInstance(const CryGUID& guid) const override;
+	virtual const IScriptActionInstance*    GetScriptActionInstance(const CryGUID& guid) const override;
+	virtual const IScriptElement*           GetScriptElement(const CryGUID& guid) const override;
 
 	virtual bool                            QualifyName(const IScriptComponentInstance& scriptComponentInstance, const IEnvFunction& envFunction, EDomainQualifier qualifier, IString& output) const override;
 	virtual bool                            QualifyName(const IEnvInterface& envInterface, IString& output) const override;
@@ -70,7 +70,7 @@ public:
 
 private:
 
-	SGUID m_scopeGUID;
+	CryGUID m_scopeGUID;
 };
 
 typedef std::vector<const IScriptElement*> ScriptAncestors;

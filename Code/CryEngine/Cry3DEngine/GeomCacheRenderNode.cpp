@@ -972,7 +972,7 @@ _smart_ptr<IRenderMesh> CGeomCacheRenderNode::SetupDynamicRenderMesh(SGeomCacheR
 	}
 
 	_smart_ptr<IRenderMesh> pRenderMesh = gEnv->pRenderer->CreateRenderMeshInitialized(NULL, meshData.m_numVertices,
-	                                                                                   eVF_P3F_C4B_T2F, NULL, numIndices, prtTriangleList,
+	                                                                                   EDefaultInputLayouts::P3F_C4B_T2F, NULL, numIndices, prtTriangleList,
 	                                                                                   "GeomCacheDynamicMesh", m_pGeomCache->GetFilePath(), eRMT_Dynamic);
 
 	pRenderMesh->LockForThreadAccess();

@@ -4,8 +4,8 @@
 
 #include <CryCore/Containers/VectorMap.h>
 
-#include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/IObject.h>
+#include <CrySchematyc/FundamentalTypes.h>
+#include <CrySchematyc/IObject.h>
 
 namespace Schematyc
 {

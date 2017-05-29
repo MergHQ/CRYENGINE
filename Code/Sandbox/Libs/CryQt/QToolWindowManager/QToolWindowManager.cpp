@@ -1147,7 +1147,7 @@ QString QToolWindowManager::textForPosition(QToolWindowAreaReference reference)
 		"Split vertically, place left",
 		"Split vertically, place right",
 		"Add to tab list",
-		"Create new window"
+		""
 	};
 	QString s;
 	return texts[reference];

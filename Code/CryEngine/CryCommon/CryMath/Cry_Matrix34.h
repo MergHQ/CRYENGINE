@@ -559,6 +559,9 @@ template<typename F> struct Matrix34_tpl
 		return m00 * (m11 * m22 - m12 * m21) + m01 * (m12 * m20 - m10 * m22) + m02 * (m10 * m21 - m11 * m20);
 	}
 
+	// Gets the transformation's scale if it is uniform
+	ILINE F GetUniformScale() const  { return GetColumn0().GetLength(); }
+
 	// helper functions to access matrix-members
 
 	F*                       GetData()                              { return &m00; }
@@ -782,6 +785,32 @@ template<typename F> struct Matrix34_tpl
 	{
 		Matrix34_tpl<F> dst;
 		dst.Invert(*this);
+		return dst;
+	}
+
+	void Magnitude(const Matrix34_tpl<F>& m)
+	{
+		m00 = fabs_tpl(m.m00);
+		m01 = fabs_tpl(m.m01);
+		m02 = fabs_tpl(m.m02);
+		m03 = fabs_tpl(m.m03);
+		m10 = fabs_tpl(m.m10);
+		m11 = fabs_tpl(m.m11);
+		m12 = fabs_tpl(m.m12);
+		m13 = fabs_tpl(m.m13);
+		m20 = fabs_tpl(m.m20);
+		m21 = fabs_tpl(m.m21);
+		m22 = fabs_tpl(m.m22);
+		m23 = fabs_tpl(m.m23);
+	}
+	ILINE void Magnitude()
+	{
+		Magnitude(Matrix34_tpl(*this));
+	}
+	ILINE Matrix34_tpl<F> GetMagnitude() const
+	{
+		Matrix34_tpl<F> dst;
+		dst.Magnitude(*this);
 		return dst;
 	}
 

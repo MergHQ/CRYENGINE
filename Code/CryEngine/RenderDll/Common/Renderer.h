@@ -5,13 +5,16 @@
 #include <CryMemory/CryPool/PoolAlloc.h>
 #include "TextMessages.h"                             // CTextMessages
 #include "RenderAuxGeom.h"
+#include "RenderPipeline.h"                           // SFogState, SViewport
+#include "RenderThread.h"                             // SRenderThread
 #include "../Scaleform/ScaleformRender.h"
+#include "../XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h" // CSubmissionQueue_DX11
 
 typedef void (PROCRENDEF)(SShaderPass* l, int nPrimType);
 
 #define USE_NATIVE_DEPTH 1
 
-#if (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS) && !defined(OPENGL)
+#if (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS) && !CRY_RENDERER_OPENGL
 	#define SUPPORTS_MSAA 1
 
 enum eMsaaParams
@@ -32,7 +35,7 @@ enum eAntialiasingType
 	eAT_SMAA_1X,
 	eAT_SMAA_1TX,
 	eAT_SMAA_2TX,
-	eAT_FXAA,
+	eAT_TSAA,
 	eAT_AAMODES_COUNT,
 
 	eAT_DEFAULT_AA                  = eAT_SMAA_1TX,
@@ -41,12 +44,12 @@ enum eAntialiasingType
 	eAT_SMAA_1X_MASK                = (1 << eAT_SMAA_1X),
 	eAT_SMAA_1TX_MASK               = (1 << eAT_SMAA_1TX),
 	eAT_SMAA_2TX_MASK               = (1 << eAT_SMAA_2TX),
-	eAT_FXAA_MASK                   = (1 << eAT_FXAA),
+	eAT_TSAA_MASK                   = (1 << eAT_TSAA),
 
 	eAT_SMAA_MASK                   = (eAT_SMAA_1X_MASK | eAT_SMAA_1TX_MASK | eAT_SMAA_2TX_MASK),
 
-	eAT_REQUIRES_PREVIOUSFRAME_MASK = (eAT_SMAA_1TX_MASK | eAT_SMAA_2TX_MASK),
-	eAT_REQUIRES_SUBPIXELSHIFT_MASK = (eAT_SMAA_2TX_MASK)
+	eAT_REQUIRES_PREVIOUSFRAME_MASK = (eAT_SMAA_1TX_MASK | eAT_SMAA_2TX_MASK | eAT_TSAA_MASK),
+	eAT_REQUIRES_SUBPIXELSHIFT_MASK = (eAT_SMAA_2TX_MASK | eAT_TSAA_MASK)
 };
 
 static const char* s_pszAAModes[eAT_AAMODES_COUNT] =
@@ -55,7 +58,7 @@ static const char* s_pszAAModes[eAT_AAMODES_COUNT] =
 	"SMAA 1X",
 	"SMAA 1TX",
 	"SMAA 2TX",
-	"FXAA 1X"
+	"TSAA"
 };
 
 struct ShadowMapFrustum;
@@ -68,6 +71,9 @@ class CIntroMovieRenderer;
 class IOpticsManager;
 struct SDynTexture2;
 class CDeviceResourceSet;
+class CVertexBuffer;
+class CIndexBuffer;
+struct SThreadInfo;
 
 namespace compute_skinning { struct IComputeSkinningStorage; }
 
@@ -79,9 +85,6 @@ typedef int (* pDrawModelFunc)(void);
   ((((int)((a) * 255)) << 24) | (((int)((r) * 255)) << 16) \
    | (((int)((g) * 255)) << 8) | (int)((b) * 255)          \
   )
-
-#define CONSOLES_BACKBUFFER_WIDTH  CRenderer::CV_r_ConsoleBackbufferWidth
-#define CONSOLES_BACKBUFFER_HEIGHT CRenderer::CV_r_ConsoleBackbufferHeight
 
 struct alloc_info_struct
 {
@@ -625,8 +628,6 @@ public:
 	virtual void FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback, bool doRealRender) = 0;
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) override;
 	virtual bool ForceFlushRTCommands();
-
-	virtual int  GetOcclusionBuffer(uint16* pOutOcclBuffer, int32 nSizeX, int32 nSizeY, Matrix44* pmViewProj, Matrix44* pmCamBuffer) override = 0;
 	virtual void WaitForParticleBuffer() = 0;
 
 	virtual void RequestFlushAllPendingTextureStreamingJobs(int nFrames) override { m_nFlushAllPendingTextureStreamingJobs = nFrames; }
@@ -645,6 +646,9 @@ public:
 	virtual void EF_ClearTargetsLater(uint32 nFlags, float fDepth, uint8 nStencil) = 0;
 
 	//===============================================================================
+
+	virtual float*      PinOcclusionBuffer(Matrix44A& camera) override = 0;
+	virtual void        UnpinOcclusionBuffer() override = 0;
 
 	virtual void        AddListener(IRendererEventListener* pRendererEventListener) override;
 	virtual void        RemoveListener(IRendererEventListener* pRendererEventListener) override;
@@ -770,13 +774,13 @@ public:
 
 	virtual void         PrintResourcesLeaks() = 0;
 
-	inline float         ScaleCoordXInternal(float value) const        { value *= float(m_CurViewport.nWidth) / 800.0f; return (value); }
-	inline float         ScaleCoordYInternal(float value) const        { value *= float(m_CurViewport.nHeight) / 600.0f; return (value); }
-	inline void          ScaleCoordInternal(float& x, float& y) const  { x = ScaleCoordXInternal(x); y = ScaleCoordYInternal(y); }
+	inline float         ScaleCoordXInternal(float value, const SViewport& vp) const        { value *= float(vp.nWidth) / 800.0f; return (value); }
+	inline float         ScaleCoordYInternal(float value, const SViewport& vp) const        { value *= float(vp.nHeight) / 600.0f; return (value); }
+	inline void          ScaleCoordInternal(float& x, float& y, const SViewport& vp) const  { x = ScaleCoordXInternal(x, vp); y = ScaleCoordYInternal(y, vp); }
 
-	virtual float        ScaleCoordX(float value) const override       { return ScaleCoordXInternal(value); }
-	virtual float        ScaleCoordY(float value) const override       { return ScaleCoordYInternal(value); }
-	virtual void         ScaleCoord(float& x, float& y) const override { ScaleCoordInternal(x, y); }
+	virtual float        ScaleCoordX(float value) const override       { return ScaleCoordXInternal(value, m_CurViewport); }
+	virtual float        ScaleCoordY(float value) const override       { return ScaleCoordYInternal(value, m_CurViewport); }
+	virtual void         ScaleCoord(float& x, float& y) const override { ScaleCoordInternal(x, y, m_CurViewport); }
 
 	void                 SetWidth(int nW)                              { m_width = nW; }
 	void                 SetHeight(int nH)                             { m_height = nH; }
@@ -788,9 +792,6 @@ public:
 
 	virtual int GetOverlayWidth() override { return IsStereoEnabled() ? m_width : m_nativeWidth; }
 	virtual int GetOverlayHeight() override { return IsStereoEnabled() ? m_height : m_nativeHeight; }
-
-	int                  GetBackbufferWidth()                          { return m_backbufferWidth; }
-	int                  GetBackbufferHeight()                         { return m_backbufferHeight; }
 
 	virtual bool         IsStereoEnabled() const override              { return false; }
 
@@ -873,11 +874,6 @@ public:
 	virtual void ClearTargetsImmediately(uint32 nFlags, const ColorF& Colors) override = 0;
 	virtual void ClearTargetsImmediately(uint32 nFlags, float fDepth) override = 0;
 
-	virtual void ClearTargetsLater(uint32 nFlags) override = 0;
-	virtual void ClearTargetsLater(uint32 nFlags, const ColorF& Colors, float fDepth) override = 0;
-	virtual void ClearTargetsLater(uint32 nFlags, const ColorF& Colors) override = 0;
-	virtual void ClearTargetsLater(uint32 nFlags, float fDepth) override = 0;
-
 	virtual void ReadFrameBuffer(unsigned char* pRGB, int nImageX, int nSizeX, int nSizeY, ERB_Type eRBType, bool bRGBA, int nScaledX = -1, int nScaledY = -1) override = 0;
 
 	//misc
@@ -925,6 +921,7 @@ public:
 	virtual float               EF_GetWaterZElevation(float fX, float fY) override;
 	virtual void                FX_PipelineShutdown(bool bFastShutdown = false) = 0;
 	virtual void                RT_GraphicsPipelineShutdown() = 0;
+	virtual void                RT_ResetDeviceObjectFactory() = 0;
 
 	virtual IOpticsElementBase* CreateOptics(EFlareType type) const override;
 	void                        ReleaseOptics(IOpticsElementBase* pOpticsElement) const override;
@@ -961,6 +958,7 @@ public:
 	virtual void                   EF_ReloadTextures() override;
 	virtual int                    EF_LoadLightmap(const char* nameTex) override;
 	virtual bool                   EF_RenderEnvironmentCubeHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData) override;
+	virtual bool                   WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) override;
 	virtual ITexture*              EF_GetTextureByID(int Id) override;
 	virtual ITexture*              EF_GetTextureByName(const char* name, uint32 flags = 0) override;
 	virtual ITexture*              EF_LoadTexture(const char* nameTex, const uint32 flags = 0) override;
@@ -1044,7 +1042,7 @@ public:
 	  ) override;
 
 	virtual _smart_ptr<IRenderMesh> CreateRenderMeshInitialized(
-	  const void* pVertBuffer, int nVertCount, EVertexFormat eVF,
+	  const void* pVertBuffer, int nVertCount, InputLayoutHandle eVF,
 	  const vtx_idx* pIndices, int nIndices,
 	  const PublicRenderPrimitiveType nPrimetiveType, const char* szType, const char* szSourceName, ERenderMeshType eBufType = eRMT_Static,
 	  int nMatInfoCount = 1, int nClientTextureBindID = 0,
@@ -1132,7 +1130,6 @@ public:
 
 	virtual const char*                               GetTextureFormatName(ETEX_Format eTF) override;
 	virtual int                                       GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) override;
-	virtual bool                                      IsTextureFormatSupported(ETEX_Format eTF) final { return CTexture::IsFormatSupported(eTF); }
 	virtual void                                      SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) override                          { m_pDefaultMaterial = pDefMat; m_pTerrainDefaultMaterial = pTerrainDefMat; }
 	virtual byte*                                     GetTextureSubImageData32(byte* pData, int nDataSize, int nX, int nY, int nW, int nH, CTexture* pTex) { return 0; }
 
@@ -1175,7 +1172,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	void   SyncMainWithRender();
 
-	void   UpdateConstParamsPF(const SRenderingPassInfo& passInfo);
+	void   UpdateConstParamsPF(const SRenderingPassInfo& passInfo, bool bSecondaryViewport);
 
 	void*  EF_GetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags);
 	uint32 GetActiveGPUCount() const override { return CV_r_multigpu > 0 ? m_nGPUs : 1; }
@@ -1241,7 +1238,7 @@ protected:
 	void EF_AddParticle(CREParticle* pParticle, SShaderItem& shaderItem, CRenderObject* pRO, const SRenderingPassInfo& passInfo);
 	void EF_RemoveParticlesFromScene();
 	void PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob> aJobs, int nREStart, SRenderingPassInfo passInfo);
-	bool EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList, SShaderItem& shaderItem, CRenderObject* pRO, const SRenderingPassInfo& passInfo);
+	void EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList, CRenderObject* pRenderObject, const SShaderItem& shaderItem, const SRenderingPassInfo& passInfo);
 
 	void FreePermanentRenderObjects(int bufferId);
 
@@ -1340,7 +1337,7 @@ public:
 
 	// Shaders pipeline states
 	//=============================================================================================================
-	CDeviceManager       m_DevMan;
+	CSubmissionQueue_DX11 m_DevMan;
 	CDeviceBufferManager m_DevBufMan;
 	SRenderPipeline      m_RP;
 	//=============================================================================================================
@@ -1426,6 +1423,7 @@ public:
 	uint32    m_nGPULimited;           // How many frames we are GPU limited
 	int8      m_nCurMinAniso;
 	int8      m_nCurMaxAniso;
+	float     m_fCurMipLodBias;
 
 	uint32    m_nShadowPoolHeight;
 	uint32    m_nShadowPoolWidth;
@@ -1565,7 +1563,6 @@ protected:
 
 	int                                        m_width, m_height, m_cbpp, m_zbpp, m_sbpp;
 	int                                        m_nativeWidth, m_nativeHeight;
-	int                                        m_backbufferWidth, m_backbufferHeight;
 	int                                        m_numSSAASamples;
 	int                                        m_wireframe_mode, m_wireframe_mode_prev;
 	uint32                                     m_nGPUs;                      // Use GetActiveGPUCount() to read

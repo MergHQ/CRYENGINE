@@ -751,6 +751,7 @@ struct SParticleShaderData
 		m_softnessMultiplier = 1;
 		m_sphericalApproximation = 0;
 		m_thickness = 0.0f;
+		m_axisScale = 0.0f;
 
 		m_diffuseLighting = 1.0f;
 		m_emissiveLighting = 0.0f;
@@ -798,6 +799,7 @@ struct SParticleShaderData
 			float m_softnessMultiplier;
 			float m_sphericalApproximation;
 			float m_thickness;
+			float m_axisScale;
 		};
 	};
 

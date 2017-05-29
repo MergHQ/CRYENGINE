@@ -109,7 +109,6 @@ void NotifyEntityScript(const IEntity* pEntity, const char* funcName, const char
 CAnimEntityNode::CAnimEntityNode(const int id) : CAnimNode(id)
 {
 	m_EntityId = 0;
-	m_entityGuid = 0;
 	m_target = NULL;
 	m_bWasTransRot = false;
 	m_bIsAnimDriven = false;
@@ -129,9 +128,7 @@ CAnimEntityNode::CAnimEntityNode(const int id) : CAnimNode(id)
 
 	m_proceduralFacialAnimationEnabledOld = true;
 
-	m_entityGuidTarget = 0;
 	m_EntityIdTarget = 0;
-	m_entityGuidSource = 0;
 	m_EntityIdSource = 0;
 
 	m_baseAnimState.m_layerPlaysAnimation[0] = m_baseAnimState.m_layerPlaysAnimation[1] = m_baseAnimState.m_layerPlaysAnimation[2] = false;
@@ -2633,12 +2630,12 @@ void CAnimEntityNode::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEm
 		// Save the latest object GUID obtained from the Entity System
 		xmlNode->setAttr("EntityGUID", m_entityGuid);
 
-		if (m_entityGuidTarget)
+		if (!m_entityGuidTarget.IsNull())
 		{
 			xmlNode->setAttr("EntityGUIDTarget", m_entityGuidTarget);
 		}
 
-		if (m_entityGuidSource)
+		if (!m_entityGuidSource.IsNull())
 		{
 			xmlNode->setAttr("EntityGUIDSource", m_entityGuidSource);
 		}
@@ -3031,7 +3028,7 @@ void CAnimEntityNode::UpdateTargetCamera(IEntity* pEntity, const Quat& rotation)
 	IEntity* pEntityCamera = NULL;
 	IEntity* pEntityTarget = NULL;
 
-	if (m_entityGuidTarget)
+	if (!m_entityGuidTarget.IsNull())
 	{
 		pEntityCamera = pEntity;
 
@@ -3045,7 +3042,7 @@ void CAnimEntityNode::UpdateTargetCamera(IEntity* pEntity, const Quat& rotation)
 			pEntityTarget = gEnv->pEntitySystem->GetEntity(m_EntityIdTarget);
 		}
 	}
-	else if (m_entityGuidSource)
+	else if (!m_entityGuidSource.IsNull())
 	{
 		pEntityTarget = pEntity;
 

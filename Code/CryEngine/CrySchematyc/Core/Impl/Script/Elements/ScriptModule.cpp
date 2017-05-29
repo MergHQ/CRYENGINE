@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "Script/Elements/ScriptModule.h"
 
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
-#include <Schematyc/Utils/IGUIDRemapper.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/Utils/IGUIDRemapper.h>
 
 namespace Schematyc {
 
@@ -12,7 +12,7 @@ CScriptModule::CScriptModule()
 	: CScriptElementBase(EScriptElementFlags::MustOwnScript)
 {}
 
-CScriptModule::CScriptModule(const SGUID& guid, const char* szName)
+CScriptModule::CScriptModule(const CryGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, EScriptElementFlags::MustOwnScript)
 {}
 

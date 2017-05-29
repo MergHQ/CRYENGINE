@@ -20,7 +20,8 @@ namespace CryDRS
 		{
 			eChangeOperation_Set = 0,
 			eChangeOperation_Increment = 1,
-			eChangeOperation_Decrement = 2
+			eChangeOperation_Decrement = 2,
+			eChangeOperation_Swap = 3,
 		};
 
 		//////////////////////////////////////////////////////////

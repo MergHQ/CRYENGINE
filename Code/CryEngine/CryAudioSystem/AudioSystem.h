@@ -121,6 +121,7 @@ private:
 	void UpdateTime();
 	bool ProcessRequests(AudioRequests& requestQueue);
 	void ProcessRequest(CAudioRequest& request);
+	static void OnCallback(SRequestInfo const* const pRequestInfo);
 
 	bool                               m_bSystemInitialized;
 	CTimeValue                         m_lastUpdateTime;

@@ -3,6 +3,7 @@
 	{
 		"Compressors":
 		[
+			"Compressors/ASTC.cpp",
 			"Compressors/PVRTC.cpp",
 			"Compressors/CTSquisher.cpp"
 		],

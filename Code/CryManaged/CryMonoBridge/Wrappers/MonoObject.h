@@ -16,6 +16,7 @@ class CMonoObject
 {
 	friend class CMonoClass;
 	friend class CMonoMethod;
+	friend class CMonoProperty;
 
 	// Begin public API
 public:
@@ -35,6 +36,15 @@ public:
 	MonoInternals::MonoObject* GetManagedObject() const { return m_pObject; }
 	// Gets the class of the object, queries if not already available
 	CMonoClass* GetClass();
+
+	void CopyFrom(CMonoObject& source);
+
+	void* UnboxObject();
+	template<typename T>
+	T* Unbox()
+	{
+		return static_cast<T*>(UnboxObject());
+	}
 
 protected:
 	void AssignObject(MonoInternals::MonoObject* pObject);

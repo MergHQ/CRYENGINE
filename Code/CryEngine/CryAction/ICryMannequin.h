@@ -495,9 +495,7 @@ struct SFragmentBlendUid
 private:
 	static uint32 GenerateUid()
 	{
-		static uint32 lastId = INVALID_UID;
-		static const uint32 bitsNeededToEncodeModule = CompileTimeIntegerLog2_RoundUp<eCryM_Num>::result;
-		return (((uint32)eCryModule) << (32 - bitsNeededToEncodeModule)) + ++lastId;
+		return gEnv->pSystem->GetRandomGenerator().GenerateUint32();
 	}
 
 private:

@@ -546,13 +546,14 @@ private:
 	bool Init3DEngine();
 	bool InitAnimationSystem();
 	bool InitMovieSystem();
+	bool InitSchematyc();
 	bool InitEntitySystem();
 	bool InitDynamicResponseSystem();
 	bool InitLiveCreate();
 	bool InitMonoBridge();
 	bool OpenRenderLibrary(int type);
 	bool OpenRenderLibrary(const char* t_rend);
-	bool CloseRenderLibrary();
+	bool CloseRenderLibrary(const char* t_rend);
 
 	//@}
 	void Strange();

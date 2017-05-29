@@ -87,3 +87,13 @@ CMonoClass* CMonoObject::GetClass()
 
 	return m_pClass.get();
 }
+
+void CMonoObject::CopyFrom(CMonoObject& source)
+{
+	MonoInternals::mono_gc_wbarrier_object_copy(m_pObject, source.GetManagedObject());
+}
+
+void* CMonoObject::UnboxObject()
+{
+	return mono_object_unbox(m_pObject);
+}

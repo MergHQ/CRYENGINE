@@ -1,9 +1,11 @@
-﻿namespace CryEngine.Animations
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+namespace CryEngine.Animations
 {
 	//Based on the EMotionParamID from c++.
 
 	/// <summary>
-	/// ID-enum for motion parameters. Used in the Animator.
+	/// ID-enum for motion parameters.
 	/// </summary>
 	public enum MotionParameterId
 	{

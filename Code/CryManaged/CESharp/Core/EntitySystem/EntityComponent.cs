@@ -4,29 +4,50 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using System.Text;
 using CryEngine.Common;
 using CryEngine.EntitySystem;
 
+
 namespace CryEngine
 {
+    /// <summary>
+    /// Represents a component that can be attached to an entity at runtime
+    /// Automatically exposes itself to Schematyc for usage by designers.
+    /// 
+    /// Systems reference entity components by GUID, for example when serializing to file to detect which type a component belongs to.
+    /// By default we generate a GUID automatically based on the EntityComponent implementation type, however this will result in serialization breaking if you rename it.
+    /// To circumvent this, use System.Runtime.Interopservices.GuidAttribute to explicitly specify your desired GUID:
+    /// 
+    /// [Guid("C47DF64B-E1F9-40D1-8063-2C533A1CE7D5")]
+    /// public class MyComponent : public EntityComponent {}
+    /// </summary>
 	public abstract class EntityComponent
 	{
-        internal static Dictionary<Type, string> _componentClassMap = new Dictionary<Type, string>();
+        internal struct GUID
+        {
+            public ulong lopart;
+            public ulong hipart;
+        }
+
+        internal class TypeInfo
+        {
+            public GUID guid;
+        }
+        
+        internal static Dictionary<Type, TypeInfo> _componentClassMap = new Dictionary<Type, TypeInfo>();
 
 		public Entity Entity { get; private set; }
 
         #region Functions
-        internal void Initialize(IntPtr entityHandle, uint id)
+        internal void SetEntity(IntPtr entityHandle, uint id)
         {
             Entity = new Entity(new IEntity(entityHandle, false), id); 
-
-			OnInitialize();
         }
         #endregion
 
         #region Entity Event Methods
-
 		protected virtual void OnTransformChanged() { }
 
 		protected virtual void OnInitialize() { }
@@ -93,47 +114,61 @@ namespace CryEngine
             if (!typeof(EntityComponent).IsAssignableFrom(entityComponentType) || entityComponentType.IsAbstract)
                 return;
 
-            var playerAttribute = (PlayerEntityAttribute)entityComponentType.GetCustomAttributes(typeof(PlayerEntityAttribute), true).FirstOrDefault();
-            if (playerAttribute != null)
+            var typeInfo = new TypeInfo();
+            _componentClassMap[entityComponentType] = typeInfo;
+            
+            var guidAttribute = (GuidAttribute)entityComponentType.GetCustomAttributes(typeof(GuidAttribute), false).FirstOrDefault();
+            if (guidAttribute != null)
             {
-                Global.gEnv.pMonoRuntime.RegisterManagedActor(entityComponentType.Name);
+                var guid = new Guid(guidAttribute.Value);
+
+                var guidArray = guid.ToByteArray();
+                typeInfo.guid.hipart = BitConverter.ToUInt64(guidArray, 0);
+                typeInfo.guid.lopart = BitConverter.ToUInt64(guidArray, 8);
+            }
+            else
+            {
+                // Fall back to generating GUID based on type
+                var guidString = Engine.TypeToHash(entityComponentType);
+                var half = (int)(guidString.Length / 2.0f);
+                if (!ulong.TryParse(guidString.Substring(0, half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out typeInfo.guid.hipart))
+                {
+                    Log.Error("Failed to parse {0} to UInt64", guidString.Substring(0, half));
+                }
+                if (!ulong.TryParse(guidString.Substring(half, guidString.Length - half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out typeInfo.guid.lopart))
+                {
+                    Log.Error("Failed to parse {0} to UInt64", guidString.Substring(half, guidString.Length - half));
+                }
             }
 
-            // Start with registering a component
-			var guidString = TypeToHash(entityComponentType);
-			var half = (int)(guidString.Length / 2.0f);
-			ulong hipart = 0;
-			ulong lopart = 0;
-			if(!ulong.TryParse(guidString.Substring(0, half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out hipart))
-			{
-				Log.Error("Failed to parse {0} to UInt64", guidString.Substring(0, half));
-			}
-			if(!ulong.TryParse(guidString.Substring(half, guidString.Length - half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out lopart))
-			{
-				Log.Error("Failed to parse {0} to UInt64", guidString.Substring(half, guidString.Length - half));
-			}
-            
-			NativeInternals.Entity.RegisterComponent(entityComponentType, hipart, lopart);
+            var componentAttribute = (EntityComponentAttribute)entityComponentType.GetCustomAttributes(typeof(EntityComponentAttribute), false).FirstOrDefault();
+            if (componentAttribute == null)
+            {
+                componentAttribute = new EntityComponentAttribute();
+            }
+
+            if(componentAttribute.Name.Length == 0)
+            {
+                componentAttribute.Name = entityComponentType.Name;
+            }
+
+			NativeInternals.Entity.RegisterComponent(entityComponentType, 
+			                                         typeInfo.guid.hipart, 
+			                                         typeInfo.guid.lopart, 
+			                                         componentAttribute.Name, 
+			                                         componentAttribute.Category, 
+			                                         componentAttribute.Description, 
+			                                         componentAttribute.Icon);
 
             // Register all properties
             var properties = entityComponentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
             foreach (PropertyInfo propertyInfo in properties)
             {
-                var attribute = (EntityPropertyAttribute)propertyInfo.GetCustomAttributes(typeof(EntityPropertyAttribute), true).FirstOrDefault();
+                var attribute = (EntityPropertyAttribute)propertyInfo.GetCustomAttributes(typeof(EntityPropertyAttribute), false).FirstOrDefault();
                 if (attribute == null)
                     continue;
 
                 NativeInternals.Entity.RegisterComponentProperty(entityComponentType, propertyInfo, propertyInfo.Name, propertyInfo.Name, attribute.Description, attribute.Type);
-            }
-
-            // Check if we should register an entity class
-            var entityClassAttribute = (EntityClassAttribute)entityComponentType.GetCustomAttributes(typeof(EntityClassAttribute), true).FirstOrDefault();
-            if (entityClassAttribute != null)
-            {
-                var className = entityClassAttribute.Name.Length > 0 ? entityClassAttribute.Name : entityComponentType.Name;
-                _componentClassMap[entityComponentType] = className;
-
-                NativeInternals.Entity.RegisterEntityWithDefaultComponent(className, entityClassAttribute.EditorPath, entityClassAttribute.Helper, entityClassAttribute.Icon, entityClassAttribute.Hide, entityComponentType);
             }
         }
         #endregion

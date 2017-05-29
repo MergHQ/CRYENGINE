@@ -644,13 +644,14 @@
     ],
     "EntityContainers":
     [
-      "EntityContainers/EntityContainer.cpp",
-      "EntityContainers/EntityContainer.h",
-      "EntityContainers/EntityContainerMgr.h",
-      "EntityContainers/EntityContainerMgr.cpp",
-      "EntityContainers/IEntityContainerListener.h",
-      "EntityContainers/EntityContainerObject.cpp",
-      "EntityContainers/EntityContainerObject.h"
+		"EntityContainers/EntityContainer.cpp",
+		"EntityContainers/EntityContainerMgr.cpp",
+		"EntityContainers/EntityContainerObject.cpp",
+		"EntityContainers/EntityContainer.h",
+		"EntityContainers/EntityContainerMgr.h",
+		"EntityContainers/EntityContainerObject.h",
+		"EntityContainers/IEntityContainerListener.h",
+		"EntityContainers/FlowEntityContainerNodes.cpp"
     ]
   },
   "CryAction_main_uber_1.cpp":{
@@ -665,6 +666,7 @@
       "AIFaceManager.cpp",
       "CallbackTimer.cpp",
       "CryAction.cpp",
+      "CryAction_RMI.cpp",
       "CryActionCVars.cpp",
       "DevMode.cpp",
       "Main.cpp",

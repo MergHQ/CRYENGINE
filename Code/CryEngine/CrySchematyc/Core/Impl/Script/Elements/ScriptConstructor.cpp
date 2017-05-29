@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "Script/Elements/ScriptConstructor.h"
 
-#include <Schematyc/SerializationUtils/ISerializationContext.h>
-#include <Schematyc/Utils/IGUIDRemapper.h>
+#include <CrySchematyc/SerializationUtils/ISerializationContext.h>
+#include <CrySchematyc/Utils/IGUIDRemapper.h>
 
 #include "Script/Graph/ScriptGraph.h"
 #include "Script/Graph/ScriptGraphNode.h"
@@ -18,7 +18,7 @@ CScriptConstructor::CScriptConstructor()
 	CreateGraph();
 }
 
-CScriptConstructor::CScriptConstructor(const SGUID& guid, const char* szName)
+CScriptConstructor::CScriptConstructor(const CryGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, { EScriptElementFlags::CanOwnScript, EScriptElementFlags::FixedName })
 {
 	CreateGraph();

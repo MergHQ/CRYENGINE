@@ -1,4 +1,6 @@
-﻿using CryEngine.Common;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using CryEngine.Common;
 
 namespace CryEngine.Animations
 {
@@ -6,29 +8,37 @@ namespace CryEngine.Animations
 	
 	public class CharacterAttachment
 	{
-		private readonly IAttachment _nativeAttachment;
-
+		/// <summary>
+		/// The position of the attachment in world-space.
+		/// </summary>
+		/// <value>The world position.</value>
 		public Vector3 WorldPosition
 		{
 			get
 			{
-				var worldTransform = _nativeAttachment.GetAttWorldAbsolute();
+				var worldTransform = NativeHandle.GetAttWorldAbsolute();
 				return worldTransform.t;
 			}
 		}
 
+		/// <summary>
+		/// The rotation of the attachment in world-space.
+		/// </summary>
+		/// <value>The world rotation.</value>
 		public Quaternion WorldRotation
 		{
 			get
 			{
-				var worldTransform = _nativeAttachment.GetAttWorldAbsolute();
+				var worldTransform = NativeHandle.GetAttWorldAbsolute();
 				return worldTransform.q;
 			}
 		}
 
+		internal IAttachment NativeHandle{ get; private set; }
+
 		internal CharacterAttachment(IAttachment nativeAttachment)
 		{
-			_nativeAttachment = nativeAttachment;
+			NativeHandle = nativeAttachment;
 		}
 	}
 }

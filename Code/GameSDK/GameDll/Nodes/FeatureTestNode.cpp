@@ -945,7 +945,7 @@ public:
 
 		Log("Class", pEntity->GetClass()->GetName(), depth);  // TODO: Expand
 		Log("ForwardDir", pEntity->GetForwardDir(), depth);
-		Log("Guid", pEntity->GetGuid(), depth);
+		Log("Guid", pEntity->GetGuid().ToDebugString(), depth);
 		Log("EntityID", pEntity->GetId(), depth);
 		Log("UpdatePolicy", pEntity->GetUpdatePolicy(), depth);
 		AABB worldBounds;
