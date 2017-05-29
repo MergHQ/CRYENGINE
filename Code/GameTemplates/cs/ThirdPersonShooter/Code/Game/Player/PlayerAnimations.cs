@@ -21,16 +21,6 @@ namespace CryEngine.Game
 			_player = player;
 			_animator = animator;
 
-			//TODO Remove this in release
-			_animator.CharacterSlot = 0;
-			_animator.ControllerDefinition = "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml";
-			_animator.AnimationDatabase = "Animations/Mannequin/ADB/FirstPerson.adb";
-			_animator.MannequinContext = "FirstPersonCharacter";
-			_animator.StartFragmentName = "Idle";
-			_animator.AnimationDrivenMotion = false;
-			_animator.CapFramerate = true;
-			_animator.MaxFramerate = 60;
-
 			_rotationTag = animator.FindTag(RotationTagName);
 			_walkTag = animator.FindTag(WalkTagName);
 		}

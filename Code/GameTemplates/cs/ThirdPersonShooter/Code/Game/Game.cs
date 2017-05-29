@@ -13,6 +13,12 @@ namespace CryEngine.Game
 
 		private Game()
 		{
+			// The server doesn't support Input and doesn't need to load a map, so return early.
+			if(Engine.IsDedicatedServer)
+			{
+				return;
+			}
+
 			Input.OnKey += OnKey;
 
 			//Only move to the map if we're not in the sandbox. The sandbox can open the map all by itself.
@@ -38,7 +44,10 @@ namespace CryEngine.Game
 
 		public void Dispose()
 		{
-			Input.OnKey -= OnKey;
+			if(!Engine.IsDedicatedServer)
+			{
+				Input.OnKey -= OnKey;
+			}
 		}
 
 		private void OnKey(InputEvent e)

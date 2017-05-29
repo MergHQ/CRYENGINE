@@ -1,15 +1,45 @@
 {
     "console_variables": [
-        { "name": "sys_target_platforms", "value": "pc,ps4,xboxone,linux" },
-		{ "name": "sys_spec", "value": "4" },
-		{ "name": "r_width", "value": "1920" },
-		{ "name": "r_height", "value": "1080" },
-		{ "name": "r_fullscreen", "value": "0" },
-		{ "name": "r_fullscreenWindow", "value": "1" },
-		{ "name": "r_displayinfo", "value": "0" },
-		{ "name": "e_waterocean", "value": "0" },
-		{ "name": "e_permanentrenderobjects", "value": "0" },
-		{ "name": "ca_useIMG_CAF", "value": "0" }
+        {
+            "name": "sys_target_platforms",
+            "value": "pc,ps4,xboxone,linux"
+        },
+        {
+            "name": "sys_spec",
+            "value": "4"
+        },
+        {
+            "name": "r_width",
+            "value": "1920"
+        },
+        {
+            "name": "r_height",
+            "value": "1080"
+        },
+        {
+            "name": "r_fullscreen",
+            "value": "0"
+        },
+        {
+            "name": "r_fullscreenWindow",
+            "value": "1"
+        },
+        {
+            "name": "r_displayinfo",
+            "value": "0"
+        },
+        {
+            "name": "e_waterocean",
+            "value": "0"
+        },
+        {
+            "name": "e_permanentrenderobjects",
+            "value": "0"
+        },
+        {
+            "name": "ca_useIMG_CAF",
+            "value": "0"
+        }
     ],
     "content": {
         "assets": [
@@ -23,18 +53,10 @@
         "name": "Third Person Shooter Game Template"
     },
     "require": {
-        "engine": "engine-5.3",
+        "engine": "engine-5.4",
         "plugins": [
             {
                 "path": "CryDefaultEntities",
-                "type": "EPluginType::Native"
-            },
-            {
-                "path": "CrySchematycCore",
-                "type": "EPluginType::Native"
-            },
-            {
-                "path": "CrySchematycSTDEnv",
                 "type": "EPluginType::Native"
             },
             {

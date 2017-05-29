@@ -1,4 +1,6 @@
-﻿using CryEngine.Game.Weapons;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using CryEngine.Game.Weapons;
 
 namespace CryEngine.Game
 {
@@ -162,14 +164,14 @@ namespace CryEngine.Game
 			//By setting the model and physics here already, we can get a visual representation of the player in the sandbox outside of game-mode.
 			SetPlayerModel();
 			PrepareRigidbody();
-
-			//Add the required components first.
-			_animator = Entity.GetOrCreateComponent<CharacterAnimator>();
 		}
 
 		protected override void OnGameplayStart()
 		{
 			base.OnGameplayStart();
+
+			//Add the required components first.
+			_animator = Entity.GetOrCreateComponent<CharacterAnimator>();
 
 			//Prepare the visuals of the player
 			SetPlayerModel();

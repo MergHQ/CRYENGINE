@@ -79,7 +79,10 @@ CMonoRuntime::CMonoRuntime()
 
 CMonoRuntime::~CMonoRuntime()
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	if (gEnv && gEnv->pSystem)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	}
 }
 
 bool CMonoRuntime::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
