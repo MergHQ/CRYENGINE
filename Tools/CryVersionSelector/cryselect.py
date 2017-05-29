@@ -23,6 +23,7 @@ def command_title (args):
 	'build': 'Build solution',
 	'edit': 'Launch editor',
 	'open': 'Launch game',
+	'package': 'Package for release',
 	'switch': 'Switch engine version',
 	'metagen': 'Generate/repair metadata'
 	}.get (args.command, '')
@@ -130,8 +131,9 @@ def cmd_install (args):
 			(False, 'open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
 			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
-			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % ScriptPath),			
+			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % ScriptPath),
 			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
+			(False, '_package', 'Package Build', '"%s" package "%%1"' % ScriptPath),
 			(False, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
 		)
 	else:
@@ -148,6 +150,7 @@ def cmd_install (args):
 			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),		
 			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
+			(False, '_package', 'Package Build', '"%s" package "%%1"' % (PythonPath, ScriptPath)),
 			(False, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
 		)
 
@@ -524,6 +527,11 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 #--- MAIN ---
 
 if __name__ == '__main__':
+	"""
+	Cryselect is distributed with the web launcher - there exists only one copy of the application on the system.
+	It is intended to called by the web launcher and Windows file extension integration.
+	Cryselect is responsible for maintaining the project registry, and forwarding engine commands to cryrun.
+	"""
 	parser= argparse.ArgumentParser()
 	parser.add_argument ('--pause', action='store_true')
 	parser.add_argument ('--silent', action='store_true')
@@ -553,7 +561,6 @@ if __name__ == '__main__':
 	parser_upgrade= subparsers.add_parser ('upgrade')
 	parser_upgrade.add_argument ('--engine_version', default='')
 	parser_upgrade.add_argument ('project_file')
-	#parser_upgrade.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_upgrade.set_defaults(func=cmd_upgrade)
 	
 	parser_projgen= subparsers.add_parser ('projgen')
@@ -582,6 +589,11 @@ if __name__ == '__main__':
 	parser_open.set_defaults(func=cmd_run)
 
 	parser_metagen= subparsers.add_parser ('metagen')
+	parser_metagen.add_argument ('project_file')
+	parser_metagen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_metagen.set_defaults(func=cmd_run)
+
+	parser_metagen= subparsers.add_parser ('package')
 	parser_metagen.add_argument ('project_file')
 	parser_metagen.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_metagen.set_defaults(func=cmd_run)

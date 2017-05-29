@@ -18,7 +18,7 @@ import win32file, win32api
 import admin
 import distutils.dir_util, distutils.file_util
 
-import cryproject, cryregistry, crysolutiongenerator
+import cryproject, cryregistry, crysolutiongenerator, release_project
 
 #--- errors
 	
@@ -198,8 +198,16 @@ def cmd_open (args):
 	print_subprocess (subcmd)
 	subprocess.Popen(subcmd)
 
-#--- EDIT ---
+#--- PACKAGE ---
 
+def cmd_package(argv):
+	if not os.path.isfile(args.project_file):
+		error_project_not_found(args.project_file)
+
+	release_project.run(args.project_file)
+
+
+#--- EDIT ---
 def cmd_edit(argv):
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)
@@ -293,7 +301,7 @@ def cmd_upgrade (args):
 		template_name= upgrade_identify51 (args.project_file)
 		
 	if template_name is None:
-		error_upgrade_template_unknown (arg.project_file)
+		error_upgrade_template_unknown (args.project_file)
 	
 	restore_path= os.path.abspath (os.path.join (get_tools_path(), 'upgrade', restore_version, *template_name) + '.zip')
 	if not os.path.isfile (restore_path):
@@ -484,6 +492,11 @@ if __name__ == '__main__':
 	parser_edit= subparsers.add_parser ('edit')
 	parser_edit.add_argument ('project_file')
 	parser_edit.set_defaults(func=cmd_edit)
+
+	parser_package= subparsers.add_parser ('package')
+	parser_package.add_argument ('project_file')
+	parser_package.set_defaults(func=cmd_package)
+
 
 	parser_edit= subparsers.add_parser ('metagen')
 	parser_edit.add_argument ('project_file')
