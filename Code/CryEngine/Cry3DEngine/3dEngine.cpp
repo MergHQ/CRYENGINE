@@ -292,7 +292,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 
 	m_oceanWindDirection = 1;
 	m_oceanWindSpeed = 4.0f;
-	m_oceanWavesSpeed = 5.0f;
 	m_oceanWavesAmount = 1.5f;
 	m_oceanWavesSize = 0.75f;
 
@@ -2784,7 +2783,7 @@ void C3DEngine::GetOceanAnimationParams(Vec4& pParams0, Vec4& pParams1) const
 	{
 		sincos_tpl(m_oceanWindDirection, &s_pParams1.y, &s_pParams1.z);
 
-		s_pParams0 = Vec4(m_oceanWindDirection, m_oceanWindSpeed, m_oceanWavesSpeed, m_oceanWavesAmount);
+		s_pParams0 = Vec4(m_oceanWindDirection, m_oceanWindSpeed, 0.0f, m_oceanWavesAmount);
 		s_pParams1.x = m_oceanWavesSize;
 		s_pParams1.w = m_pTerrain->GetWaterLevel();
 

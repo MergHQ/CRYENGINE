@@ -1245,7 +1245,7 @@ void CWaterStage::ExecuteWaterNormalGen()
 			{
 				pParams0 = pCurrParams0;
 				pParams1 = pCurrParams1;
-				WaterSimMgr()->Create(1.0, pParams0.x, pParams0.z, 1.0f, 1.0f);
+				WaterSimMgr()->Create(1.0, pParams0.x, 1.0f, 1.0f);
 			}
 
 			// Copy data..

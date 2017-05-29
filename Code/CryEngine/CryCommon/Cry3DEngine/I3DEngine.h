@@ -1521,9 +1521,8 @@ struct I3DEngine : public IProcess
 
 	//! Gets ocean animation parameters.
 	//! \return 2 Vec4s which constain:
-	//!         0: x = ocean wind direction, y = wind speed, z = waves speed, w = waves amount
+	//!         0: x = ocean wind direction, y = wind speed, z = free, w = waves amount
 	//!         1: x = waves size, y = free, z = free, w = free
-
 	virtual void GetOceanAnimationParams(Vec4& pParams0, Vec4& pParams1) const = 0;
 
 	//! Gets HDR setup parameters.

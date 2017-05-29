@@ -496,7 +496,7 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 
 	m_fRECustomData[0] = p3DEngine->m_oceanWindDirection;
 	m_fRECustomData[1] = p3DEngine->m_oceanWindSpeed;
-	m_fRECustomData[2] = p3DEngine->m_oceanWavesSpeed;
+	m_fRECustomData[2] = 0.0f; // used to be m_oceanWavesSpeed
 	m_fRECustomData[3] = p3DEngine->m_oceanWavesAmount;
 	m_fRECustomData[4] = p3DEngine->m_oceanWavesSize;
 
@@ -864,7 +864,7 @@ float COcean::GetWave(const Vec3& pPos, int32 nFrameID)
 	if (s_nFrameID != nFrameID)
 	{
 		sincos_tpl(p3DEngine->m_oceanWindDirection, &vFlowDir.y, &vFlowDir.x);
-		vFrequencies = Vec4(0.233f, 0.455f, 0.6135f, -0.1467f) * p3DEngine->m_oceanWavesSpeed * 5.0f;
+		vFrequencies = Vec4(0.233f, 0.455f, 0.6135f, -0.1467f) * 5.0f;
 		vPhases = Vec4(0.1f, 0.159f, 0.557f, 0.2199f) * p3DEngine->m_oceanWavesAmount;
 		vAmplitudes = Vec4(1.0f, 0.5f, 0.25f, 0.5f) * p3DEngine->m_oceanWavesSize;
 

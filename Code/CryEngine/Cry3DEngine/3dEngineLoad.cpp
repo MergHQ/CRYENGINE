@@ -1279,8 +1279,6 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 
 	m_oceanWindDirection = (float) atof(GetXMLAttribText(pInputNode, "OceanAnimation", "WindDirection", "1.0"));
 	m_oceanWindSpeed = (float) atof(GetXMLAttribText(pInputNode, "OceanAnimation", "WindSpeed", "4.0"));
-	m_oceanWavesSpeed = (float) atof(GetXMLAttribText(pInputNode, "OceanAnimation", "WavesSpeed", "1.0"));
-	m_oceanWavesSpeed = clamp_tpl<float>(m_oceanWavesSpeed, 0.0f, 1.0f);
 	m_oceanWavesAmount = (float) atof(GetXMLAttribText(pInputNode, "OceanAnimation", "WavesAmount", "1.5"));
 	m_oceanWavesAmount = clamp_tpl<float>(m_oceanWavesAmount, 0.4f, 3.0f);
 	m_oceanWavesSize = (float) atof(GetXMLAttribText(pInputNode, "OceanAnimation", "WavesSize", "0.75"));
@@ -1291,9 +1289,6 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	//m_oceanCausticHeight = (float) atof( GetXMLAttribText(pInputNode, "Ocean", "CausticHeight", "2.5"));
 	m_oceanCausticDepth = (float) atof(GetXMLAttribText(pInputNode, "Ocean", "CausticDepth", "8.0"));
 	m_oceanCausticIntensity = (float) atof(GetXMLAttribText(pInputNode, "Ocean", "CausticIntensity", "1.0"));
-
-	// re-scale speed based on size - the smaller the faster waves move
-	m_oceanWavesSpeed /= clamp_tpl<float>(m_oceanWavesSize, 0.45f, 1.0f);
 
 	// get wind
 	Vec3 vWindSpeed = StringToVector(GetXMLAttribText(pInputNode, "EnvState", "WindVector", "1,0,0"));
