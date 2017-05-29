@@ -47,6 +47,7 @@ struct STiledLightVolumeInfo
 	float4    volumeParams0;
 	float4    volumeParams1;
 	float4    volumeParams2;
+	float4    volumeParams3;
 };
 
 struct STiledLightShadeInfo
@@ -1078,8 +1079,6 @@ cbuffer CBVolumeLightListGen : register(b0)
 	struct
 	{
 		float4x4 matViewProj;
-		float    NearFar0;
-		float    NearFar1;
 		uint     lightIndexOffset;
 		uint     numVertices;
 		float4   screenScale;
@@ -1120,11 +1119,9 @@ void VolumeLightListGenPS(vtxOutVolumeLightListGen IN, bool bIsFrontFace : SV_Is
 	const uint lightIndex = IN.lightIndex;
 	const uint2 pixelPos = IN.WPos.xy;
 	
-	float linearDepth = cbVolumeLightListGen.NearFar1 / (IN.WPos.z - cbVolumeLightListGen.NearFar0);
 	float2 depthMaxMin = DepthTex.Load(int3(pixelPos.xy, 0)).xy;
-	
-	float3 positionMax = CalcHomogeneousPos(depthMaxMin.x, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
-	float3 positionMin = CalcHomogeneousPos(depthMaxMin.y, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+	float3 positionMax = CalcHomogeneousPos(1, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+	float3 positionMin = CalcHomogeneousPos(0, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
 		
 	STiledLightVolumeInfo volume = TiledLightsVolumeInfo[lightIndex];
 	uint volumeType = volume.volumeTypeInfo.x;
@@ -1135,6 +1132,7 @@ void VolumeLightListGenPS(vtxOutVolumeLightListGen IN, bool bIsFrontFace : SV_Is
 	uint bufferBaseIdx = tileIdx * 8;
 	
 	bool bInVolume = (volumeType == TILEDLIGHT_VOLUME_SUN) ? true : false;
+	bool bInTranspVolume = bInVolume;
 	
 	if (volumeType == TILEDLIGHT_VOLUME_OBB)
 	{
@@ -1145,27 +1143,35 @@ void VolumeLightListGenPS(vtxOutVolumeLightListGen IN, bool bIsFrontFace : SV_Is
 		
 		float3 rayOrig = posMinLS;
 		float3 rayDir = normalize(posMaxLS - posMinLS);
-		
-		// Origin inside AABB
-		bInVolume = max(max(abs(rayOrig.x), abs(rayOrig.y)), abs(rayOrig.z)) <= 1;
 			
 		// Intersect ray with AABB
 		float3 rcpDir = rcp(rayDir);
-		float3 tneg = (-float3(1, 1, 1) - rayOrig) * rcpDir;
-		float3 tpos = ( float3(1, 1, 1) - rayOrig) * rcpDir;
+		float3 tneg = (-volume.volumeParams3.xyz - rayOrig) * rcpDir;
+		float3 tpos = ( volume.volumeParams3.xyz - rayOrig) * rcpDir;
 		float3 tmin = min(tneg, tpos);
 		float3 tmax = max(tneg, tpos);
 		float t0 = max(max(tmin.x, tmin.y), tmin.z);
 		float t1 = min(min(tmax.x, tmax.y), tmax.z);
-		if (t0 <= t1 && t0 > 0)
+		if (t0 <= t1)
 		{
-			float3 isec = rayOrig + rayDir * t0;
-			if (length(isec - rayOrig) <= length(posMaxLS - rayOrig))
-				bInVolume = true;
+			positionMin = CalcHomogeneousPos(depthMaxMin.y, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+			positionMax = CalcHomogeneousPos(depthMaxMin.x, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+			posMinLS = mul(float3x3(volume.volumeParams0.xyz, volume.volumeParams1.xyz, volume.volumeParams2.xyz), volumePos - positionMin.xyz);
+			posMaxLS = mul(float3x3(volume.volumeParams0.xyz, volume.volumeParams1.xyz, volume.volumeParams2.xyz), volumePos - positionMax.xyz);
+			
+			if (t0 <= length(posMaxLS - rayOrig))
+			{
+				bInTranspVolume = true;
+				if (t1 >= length(posMinLS - rayOrig))
+					bInVolume = true;
+			}
 		}
 	}
 	else if (volumeType == TILEDLIGHT_VOLUME_CONE)
 	{
+		positionMin = CalcHomogeneousPos(depthMaxMin.y, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+		positionMax = CalcHomogeneousPos(depthMaxMin.x, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+		
 		float3 forwardVec = volume.volumeParams1.xyz;
 		float3 upVector = abs(forwardVec.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
 		float3 tangentX = normalize(cross(upVector, forwardVec));
@@ -1192,37 +1198,39 @@ void VolumeLightListGenPS(vtxOutVolumeLightListGen IN, bool bIsFrontFace : SV_Is
 		// Far plane
 		float3 P1 = P0 - volume.volumeParams1.xyz * volume.volumeParams0.w;
 		if (dot(volume.volumeParams1.xyz, positionMin - P1) < 0 && dot(volume.volumeParams1.xyz, positionMax - P1) < 0) bInVolume = false;
+		
+		// TODO: Implement culling for transparent case - this is very inefficient now
+		bInTranspVolume = true;
 	}
 	else if (volumeType == TILEDLIGHT_VOLUME_SPHERE)
 	{
 		float3 rayOrig = positionMin;
 		float3 rayDir = normalize(positionMax - positionMin);
 		
-		// Origin inside sphere
-		float3 volumePos = volume.volumeParams0.xyz - cbVolumeLightListGen.viewerPos;
-		bInVolume = length(rayOrig - volumePos) <= volume.volumeParams0.w;
-		
 		// Intersect ray with sphere
+		float3 volumePos = volume.volumeParams0.xyz - cbVolumeLightListGen.viewerPos;
 		float3 v = volumePos - rayOrig;
 		float b = dot(v, rayDir);
-		float d = b * b + volume.volumeParams0.w * volume.volumeParams0.w - dot(v, v);
-		if (d > 0 && b > 0)
+		float radius2 = volume.volumeParams0.w * volume.volumeParams0.w;
+		float d2 = radius2 - (dot(v, v) - b * b);
+		if (d2 >= 0)
 		{
-			float t = b - sqrt(d);
-			float3 isec = rayOrig + rayDir * t;	
-			if (length(isec - rayOrig) <= length(positionMax - rayOrig))
+			float t0 = b - sqrt(d2);
+			float t1 = b + sqrt(d2);
+			
+			positionMin = CalcHomogeneousPos(depthMaxMin.y, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+			
+			bInTranspVolume = true;
+			if (t1 >= length(positionMin - rayOrig))
 				bInVolume = true;
 		}
 	}
 	
-	[branch] if (bInVolume)
-	{
-		uint maskIndex = lightId / 32;
+	uint maskIndex = lightId / 32;
+	[branch] if (bInTranspVolume)
 		InterlockedOr(VolumeTranspLightMaskUAV[bufferBaseIdx + maskIndex], 1 << (lightId & 31));
-		
-		if (bIsFrontFace || linearDepth >= depthMaxMin.y)
-			InterlockedOr(VolumeOpaqueLightMaskUAV[bufferBaseIdx + maskIndex], 1 << (lightId & 31));
-	}
+	[branch] if (bInVolume)
+		InterlockedOr(VolumeOpaqueLightMaskUAV[bufferBaseIdx + maskIndex], 1 << (lightId & 31));
 }
 
 technique VolumeLightListGen

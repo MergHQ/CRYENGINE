@@ -26,12 +26,6 @@ void CScreenSpaceReflectionsStage::Execute()
 
 	Matrix44 mViewProj = rd->m_ViewMatrix * rd->m_ProjMatrix;
 
-	if (rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH)
-	{
-		mViewProj = ReverseDepthHelper::Convert(mViewProj);
-		rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags &= ~RBPF_REVERSE_DEPTH;
-	}
-
 	const int frameID = SPostEffectsUtils::m_iFrameCounter;
 	Matrix44 mViewport(0.5f, 0, 0, 0,
 	                   0, -0.5f, 0, 0,
@@ -64,11 +58,9 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passRaytracing.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		}
 
-		static CCryNameR viewProjName("g_mViewProj");
 		static CCryNameR viewProjprevName("g_mViewProjPrev");
 
 		m_passRaytracing.BeginConstantUpdate();
-		m_passRaytracing.SetConstantArray(viewProjName,     (Vec4*)mViewProj.GetData(),     4, eHWSC_Pixel);
 		m_passRaytracing.SetConstantArray(viewProjprevName, (Vec4*)mViewProjPrev.GetData(), 4, eHWSC_Pixel);
 		m_passRaytracing.Execute();
 	}

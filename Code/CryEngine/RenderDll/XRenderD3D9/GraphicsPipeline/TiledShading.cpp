@@ -15,12 +15,12 @@ struct STiledLightVolumeInfo
 	Vec4     volumeParams0;
 	Vec4     volumeParams1;
 	Vec4     volumeParams2;
+	Vec4     volumeParams3;
 };
 
 struct VolumeLightListGenConstants
 {
 	Matrix44 matViewProj;
-	float    NearFar0, NearFar1;
 	uint32   lightIndexOffset, numVertices;
 	Vec4     screenScale;
 	Vec4     viewerPos;
@@ -179,6 +179,7 @@ void CTiledShadingStage::PrepareLightVolumeInfo()
 			Vec4 volumeParams0(0, 0, 0, 0);
 			Vec4 volumeParams1(0, 0, 0, 0);
 			Vec4 volumeParams2(0, 0, 0, 0);
+			Vec4 volumeParams3(0, 0, 0, 0);
 
 			volumeInfo[curIndex].volumeTypeInfo = Vec4((float)lightInfo.volumeType, 0, 0, (float)volumeLightIndices[i][j]);
 
@@ -190,14 +191,15 @@ void CTiledShadingStage::PrepareLightVolumeInfo()
 				volumeParams0 = Vec4(Vec3(lightInfo.volumeParams0), lightInfo.volumeParams0.w * volumeScale);
 				volumeParams1 = Vec4(Vec3(lightInfo.volumeParams1), lightInfo.volumeParams1.w * volumeScale);
 				volumeParams2 = Vec4(Vec3(lightInfo.volumeParams2), lightInfo.volumeParams2.w * volumeScale);
+				volumeParams3 = Vec4(volumeParams0.w, volumeParams1.w, volumeParams2.w, 0);
 				
 				Matrix33 rotScaleMat(Vec3(volumeParams0) * volumeParams0.w, Vec3(volumeParams1) * volumeParams1.w, Vec3(volumeParams2) * volumeParams2.w);
 				Matrix34 unitVolumeToWorldMat = Matrix34::CreateTranslationMat(lightPos) * rotScaleMat;
 				worldMat = unitVolumeToWorldMat.GetTransposed();
 
-				volumeParams0 = Vec4(Vec3(volumeParams0) / volumeParams0.w, lightPos.x);
-				volumeParams1 = Vec4(Vec3(volumeParams1) / volumeParams1.w, lightPos.y);
-				volumeParams2 = Vec4(Vec3(volumeParams2) / volumeParams2.w, lightPos.z);
+				volumeParams0 = Vec4(Vec3(volumeParams0), lightPos.x);
+				volumeParams1 = Vec4(Vec3(volumeParams1), lightPos.y);
+				volumeParams2 = Vec4(Vec3(volumeParams2), lightPos.z);
 			}
 			else if (lightInfo.volumeType == CTiledShading::tlVolumeSun)
 			{
@@ -236,6 +238,7 @@ void CTiledShadingStage::PrepareLightVolumeInfo()
 			volumeInfo[curIndex].volumeParams0 = volumeParams0;
 			volumeInfo[curIndex].volumeParams1 = volumeParams1;
 			volumeInfo[curIndex].volumeParams2 = volumeParams2;
+			volumeInfo[curIndex].volumeParams3 = volumeParams3;
 			curIndex += 1;
 		}
 	}
@@ -353,11 +356,8 @@ bool CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 
 					constants->screenScale = Vec4((float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), 0, 0);
 
-					const bool bReverseDepth = (viewInfo[0].flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth) != 0;
 					float zn = viewInfo[0].pRenderCamera->fNear;
 					float zf = viewInfo[0].pRenderCamera->fFar;
-					constants->NearFar0 = bReverseDepth ? zn / (zn - zf) : zf / (zf - zn);
-					constants->NearFar1 = bReverseDepth ? zn / (zf - zn) : zn / (zn - zf);
 					constants->lightIndexOffset = curIndex;
 					constants->numVertices = numVertices;
 

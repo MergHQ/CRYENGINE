@@ -402,15 +402,32 @@ void GatherMaterialAttribs(in half3x3 mTangentToWS, in float2 baseTC, in float2 
 
 	attribs.Albedo *= MatDifColor.rgb;
 	
-	attribs.NormalWorld = normalize(mTangentToWS[2] + 1e-6);
+	half3 normalTS = half3(0, 0, 1);
 #if %NORMAL_MAP
-	attribs.NormalWorld = normalize(mul(GetNormalMap(normalsTex, baseTC.xy), mTangentToWS));
+	normalTS = GetNormalMap(normalsTex, baseTC.xy);
 #endif
+	
 	attribs.Smoothness = MatSpecColor.w * GetSmoothnessTex(smoothnessTex, baseTC.xy);
 	
 	attribs.Reflectance = MatSpecColor.rgb;
 #if %SPECULAR_MAP
 	attribs.Reflectance *= GetSpecularTex(specularTex, baseTC.xy).rgb;
+#endif
+
+	// Detail mapping
+#if %DETAIL_MAPPING
+	half3 detailScales = half3(DetailBumpScale, DetailDiffuseScale, DetailGlossScale);
+	half4 detailMap = GetDetailTex(detailTex, baseTC.xy * CM_DetailTilingAndAlphaRef.xy) * detailScales.xxyz;
+
+	normalTS.xy += detailMap.xy;
+	attribs.Smoothness += attribs.Smoothness * detailMap.w;
+	attribs.Albedo += attribs.Albedo * detailMap.z;
+#endif
+
+	// Compute world space normal
+	attribs.NormalWorld = normalize(mTangentToWS[2] + 1e-6);
+#if %NORMAL_MAP
+	attribs.NormalWorld = normalize(mul(normalTS, mTangentToWS));
 #endif
 
 	attribs.LightingModel = LIGHTINGMODEL_POM_SS;

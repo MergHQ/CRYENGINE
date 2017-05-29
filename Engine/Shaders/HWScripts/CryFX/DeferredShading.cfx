@@ -38,7 +38,6 @@ float4 g_ScreenScale < psregister = c15; >;
 //range c28 - c31 - can't be used
 
 float4x4 g_mDecalTS <  psregister = c25; > ;
-float4x4 g_mViewProj < vsregister = c14;> ;
 float4x4 g_mViewProjPrev;
 
 float4 g_TextureRect[2];	// x, y, w, h
@@ -1139,11 +1138,11 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 	float dirAtten = saturate( dot( viewVec, reflVec ) + 0.5);
 	if (dirAtten < 0.01 || fDepth == 1) return OUT;  // Ignore sky pixels as well
 	
-	float4 rayStart = mul( float4( vPositionWS, 1 ), g_mViewProj );
+	float4 rayStart = mul( CV_ViewProjMatr, float4( vPositionWS, 1 ) );
 	rayStart.z = fDepth;
 	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
 
-	float4 rayEnd = mul( float4( vPositionWS + reflVec, 1 ), g_mViewProj );
+	float4 rayEnd = mul( CV_ViewProjMatr, float4( vPositionWS + reflVec, 1 ) );
 	rayEnd.z = g_PS_ProjRatio.y / (rayEnd.z / rayEnd.w - g_PS_ProjRatio.x);
 	rayEnd.xy = GetScaledScreenTC( rayEnd.xy * float2(0.5, -0.5) + 0.5 * rayEnd.w );
 
