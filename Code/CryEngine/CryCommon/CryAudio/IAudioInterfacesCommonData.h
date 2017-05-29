@@ -39,6 +39,7 @@ static constexpr uint16 MaxFilePathLength = 256;
 static constexpr uint16 MaxObjectNameLength = 256;
 static constexpr uint16 MaxMiscStringLength = 512;
 static constexpr uint32 InvalidCRC32 = 0xFFFFffff;
+static constexpr float FloatEpsilon = 1.0e-3f;
 
 // Forward declarations.
 struct IObject;
