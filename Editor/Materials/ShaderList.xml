@@ -15,7 +15,6 @@
 	<Shader name="TemplBeamProc" />
 	<Shader name="Terrain.Layer" />
 	<Shader name="Vegetation" />
-	<Shader name="VolumeObject" />
 	<Shader name="Water" />
 	<Shader name="WaterVolume" />
 </ShaderList>
