@@ -80,7 +80,7 @@ private:
 	void PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRenderPrimitive& primStencil1, CRenderPrimitive& primSampling, int& firstUnusedStencilValue, const SCustomPrimitiveContext& context);
 	void PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, uint64 rtFlags);
 	void PrepareCloudShadowPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const;
-	bool PrepareDebugPrimitive(CRenderPrimitive& primitive, const ShadowMapFrustum* pFrustum, int stencilRef) const;
+	bool PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRenderPrimitive& primitive, const ShadowMapFrustum* pFrustum, int stencilRef) const;
 
 	void PrepareStencilPassConstants(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum) const;
 	void PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, ShadowMapFrustum* pVolumeProvider, bool bScaledVolume) const;
@@ -340,7 +340,7 @@ void CSunShadows::InitPrimitives()
 	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 	for (auto& prim : cachedStencilPrimitives)  prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
-	for (auto& prim : cachedDebugPrimitives)    prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);
+	for (auto& prim : cachedDebugPrimitives)    prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 
 	nearestShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 	cloudShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
@@ -530,7 +530,7 @@ void CSunShadows::PrepareCascadePrimitivesWithPrepass(CPrimitiveRenderPass& slic
 		if (pDebugCascadesPass)
 		{
 			CRenderPrimitive& primDebug = cachedDebugPrimitives[pFrustum->nShadowMapLod];
-			if (PrepareDebugPrimitive(primDebug, pFrustum, stencilRef))
+			if (PrepareDebugPrimitive(*pDebugCascadesPass, primDebug, pFrustum, stencilRef))
 			{
 				primDebug.Compile(*pDebugCascadesPass);
 				pDebugCascadesPass->AddPrimitive(&primDebug);
@@ -944,7 +944,7 @@ void CSunShadows::PrepareCloudShadowPrimitive(CRenderPrimitive& primitive, _smar
 	constantManager.EndTypedConstantUpdate(constants);
 }
 
-bool CSunShadows::PrepareDebugPrimitive(CRenderPrimitive& primitive, const ShadowMapFrustum* pFrustum, int stencilRef) const
+bool CSunShadows::PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRenderPrimitive& primitive, const ShadowMapFrustum* pFrustum, int stencilRef) const
 {
 	const uint32 StencilStateTest =
 	  STENC_FUNC(FSS_STENCFUNC_EQUAL) |
@@ -975,15 +975,18 @@ bool CSunShadows::PrepareDebugPrimitive(CRenderPrimitive& primitive, const Shado
 	primitive.SetStencilState(StencilStateTest, stencilRef);
 	primitive.SetDrawInfo(eptTriangleList, 0, 0, 3);
 
-	auto& constantManager = primitive.GetConstantManager();
-	if (constantManager.IsShaderReflectionValid())
+	if (primitive.Compile(debugPass) == CRenderPrimitive::eDirty_None)
 	{
+		auto& constantManager = primitive.GetConstantManager();
+		CRY_ASSERT(constantManager.IsShaderReflectionValid());
+
 		constantManager.BeginNamedConstantUpdate();
 		constantManager.SetNamedConstant(CascadeColorParam, cascadeColors[pFrustum->nShadowMapLod % cascadeColorCount], eHWSC_Pixel);
 		constantManager.EndNamedConstantUpdate();
 
 		return true;
 	}
+
 	return false;
 }
 
