@@ -95,7 +95,6 @@ CMainWindow::CMainWindow()
 	, m_pRefreshEnvironmentMenuAction(nullptr)
 	, m_pGraphView(nullptr)
 	, m_pLog(nullptr)
-	, m_pCompilerLog(nullptr)
 	, m_pPreview(nullptr)
 	, m_pInspector(nullptr)
 	, m_pScript(nullptr)
@@ -279,21 +278,21 @@ bool CMainWindow::OnSaveAsset(CEditableAsset& editAsset)
 
 bool CMainWindow::OnCloseAsset()
 {
+	if (m_pGraphView)
+	{
+		m_pGraphView->SetModel(nullptr);
+	}
+
+	if (m_pPreview)
+	{
+		m_pPreview->SetComponentInstance(nullptr);
+	}
+
 	if (m_pScriptBrowser && m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
 	{
 		m_pScriptBrowser->SetModel(nullptr);
 		delete m_pModel;
 		m_pModel = nullptr;
-
-		if (m_pGraphView)
-		{
-			m_pGraphView->SetModel(nullptr);
-		}
-
-		if (m_pPreview)
-		{
-			m_pPreview->SetComponentInstance(nullptr);
-		}
 
 		stack_string dialogQuestion = "Asset '";
 		dialogQuestion.append(m_pAsset->GetName());
@@ -591,9 +590,7 @@ void CMainWindow::ConfigureLogs()
 	m_logSettings.streams.push_back(log.GetStreamName(Schematyc::LogStreamId::Core));
 	m_logSettings.streams.push_back(log.GetStreamName(Schematyc::LogStreamId::Editor));
 	m_logSettings.streams.push_back(log.GetStreamName(Schematyc::LogStreamId::Env));
-
-	// Compiler Log
-	m_compilerLogSettings.streams.push_back(log.GetStreamName(Schematyc::LogStreamId::Compiler));
+	m_logSettings.streams.push_back(log.GetStreamName(Schematyc::LogStreamId::Compiler));
 }
 
 void CMainWindow::LoadSettings()
@@ -657,11 +654,11 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 			CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pDetailItem, this, m_pPreview);
 
 			PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
-			{
-				QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
-				pInspectorWidget->SetWidget(pPropertiesWidget);
-				inspector.AddWidget(pInspectorWidget);
-			});
+				{
+					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
+					pInspectorWidget->SetWidget(pPropertiesWidget);
+					inspector.AddWidget(pInspectorWidget);
+			  });
 
 			pBroadcastManager->Broadcast(popEvent);
 		}
@@ -717,14 +714,6 @@ void CMainWindow::ClearLog()
 	}
 }
 
-void CMainWindow::ClearCompilerLog()
-{
-	if (m_pCompilerLog)
-	{
-		m_pCompilerLog->Clear();
-	}
-}
-
 void CMainWindow::ShowLogSettings()
 {
 	if (m_pLog)
@@ -732,11 +721,11 @@ void CMainWindow::ShowLogSettings()
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
 			PopulateInspectorEvent popEvent([this](CInspector& inspector)
-			{
-				QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Log Settings");
-				pInspectorWidget->SetWidget(new Schematyc::CLogSettingsWidget(m_logSettings));
-				inspector.AddWidget(pInspectorWidget);
-			});
+				{
+					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Log Settings");
+					pInspectorWidget->SetWidget(new Schematyc::CLogSettingsWidget(m_logSettings));
+					inspector.AddWidget(pInspectorWidget);
+			  });
 
 			pBroadcastManager->Broadcast(popEvent);
 		}
@@ -750,11 +739,11 @@ void CMainWindow::ShowPreviewSettings()
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
 			PopulateInspectorEvent popEvent([this](CInspector& inspector)
-			{
-				QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Preview Settings");
-				pInspectorWidget->SetWidget(new Schematyc::CPreviewSettingsWidget(*m_pPreview));
-				inspector.AddWidget(pInspectorWidget);
-			});
+				{
+					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Preview Settings");
+					pInspectorWidget->SetWidget(new Schematyc::CPreviewSettingsWidget(*m_pPreview));
+					inspector.AddWidget(pInspectorWidget);
+			  });
 
 			pBroadcastManager->Broadcast(popEvent);
 		}
@@ -774,24 +763,8 @@ Schematyc::CLogWidget* CMainWindow::CreateLogWidget()
 		m_pLog = pLogWidget;
 	}
 
-	QObject::connect(pLogWidget, &QObject::destroyed, this, &CMainWindow::OnInspectorWidgetDestruction);
+	QObject::connect(pLogWidget, &QObject::destroyed, this, &CMainWindow::OnLogWidgetDestruction);
 	return pLogWidget;
-}
-
-Schematyc::CLogWidget* CMainWindow::CreateCompilerLogWidget()
-{
-	Schematyc::CLogWidget* pCompilerLogWidget = new Schematyc::CLogWidget(m_compilerLogSettings);
-	pCompilerLogWidget->InitLayout();
-
-	m_pClearCompilerLogToolbarAction->setEnabled(true);
-
-	if (m_pCompilerLog == nullptr)
-	{
-		m_pCompilerLog = pCompilerLogWidget;
-	}
-
-	QObject::connect(pCompilerLogWidget, &QObject::destroyed, this, &CMainWindow::OnInspectorWidgetDestruction);
-	return pCompilerLogWidget;
 }
 
 Schematyc::CPreviewWidget* CMainWindow::CreatePreviewWidget()
@@ -806,7 +779,7 @@ Schematyc::CPreviewWidget* CMainWindow::CreatePreviewWidget()
 		m_pPreview = pPreviewWidget;
 	}
 
-	QObject::connect(pPreviewWidget, &QObject::destroyed, this, &CMainWindow::OnInspectorWidgetDestruction);
+	QObject::connect(pPreviewWidget, &QObject::destroyed, this, &CMainWindow::OnPreviewWidgetDestruction);
 	return pPreviewWidget;
 }
 
@@ -830,7 +803,7 @@ CGraphViewWidget* CMainWindow::CreateGraphViewWidget()
 		m_pGraphView = pGraphViewWidget;
 	}
 
-	QObject::connect(pGraphViewWidget, &QObject::destroyed, this, &CMainWindow::OnInspectorWidgetDestruction);
+	QObject::connect(pGraphViewWidget, &QObject::destroyed, this, &CMainWindow::OnGraphViewWidgetDestruction);
 	return pGraphViewWidget;
 }
 
@@ -867,7 +840,7 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 		m_pScriptBrowser = pScriptBrowser;
 	}
 
-	QObject::connect(pScriptBrowser, &QObject::destroyed, this, &CMainWindow::OnInspectorWidgetDestruction);
+	QObject::connect(pScriptBrowser, &QObject::destroyed, this, &CMainWindow::OnScriptBrowserWidgetDestruction);
 	return pScriptBrowser;
 }
 
