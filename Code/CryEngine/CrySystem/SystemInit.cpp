@@ -5298,6 +5298,8 @@ void CSystem::CreateSystemVars()
 #endif
 
 	m_pUserAnalyticsSystem->RegisterCVars();
+
+	Serialization::RegisterArchiveHostCVars();
 }
 
 //////////////////////////////////////////////////////////////////////////
