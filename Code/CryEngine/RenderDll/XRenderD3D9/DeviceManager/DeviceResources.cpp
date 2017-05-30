@@ -559,17 +559,13 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const void
 		if (SUCCEEDED(hr) && (stagingFlags & CDeviceObjectFactory::USAGE_STAGE_ACCESS))
 		{
 			if (stagingFlags & CDeviceObjectFactory::USAGE_CPU_READ)
-			{
 				pDevTexture->m_pStagingResource[0] = GetDeviceObjectFactory().AllocateStagingResource(pDevTexture->m_pNativeResource, false, pDevTexture->m_pStagingMemory[0]);
-			}
 			if (stagingFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
-			{
 				pDevTexture->m_pStagingResource[1] = GetDeviceObjectFactory().AllocateStagingResource(pDevTexture->m_pNativeResource, true, pDevTexture->m_pStagingMemory[1]);
-			}
+
+			GetDeviceObjectFactory().CreateFence(pDevTexture->m_hStagingFence[0]);
+			GetDeviceObjectFactory().CreateFence(pDevTexture->m_hStagingFence[1]);
 		}
-	#if CRY_RENDERER_VULKAN >= 10
-		pDevTexture->m_stagingFence[0] = pDevTexture->m_stagingFence[1] = 0;
-	#endif
 #endif
 	}
 
@@ -737,16 +733,20 @@ int CDeviceTexture::Cleanup()
 	{
 #ifdef DEVRES_USE_STAGING_POOL
 		if (m_pStagingResource[0])
-		{
 			GetDeviceObjectFactory().ReleaseStagingResource(m_pStagingResource[0]);
-			m_pStagingResource[0] = nullptr;
-		}
-
 		if (m_pStagingResource[1])
-		{
 			GetDeviceObjectFactory().ReleaseStagingResource(m_pStagingResource[1]);
-			m_pStagingResource[1] = nullptr;
-		}
+
+		if (m_hStagingFence[0])
+			GetDeviceObjectFactory().ReleaseFence(m_hStagingFence[0]);
+		if (m_hStagingFence[1])
+			GetDeviceObjectFactory().ReleaseFence(m_hStagingFence[1]);
+
+		m_pStagingResource[0] = nullptr;
+		m_pStagingResource[1] = nullptr;
+
+		m_hStagingFence[0] = 0;
+		m_hStagingFence[1] = 0;
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && DEVRES_USE_PINNING

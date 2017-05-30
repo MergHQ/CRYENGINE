@@ -424,27 +424,25 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTra
 			{
 				VK_ASSERT(false && "Unable to map staging resource used for download");
 			}
+
+			pStaging->Release();
 		}
 		else
 		{
 			cbTransfer(m_pStagingMemory[0], mapping.MemoryLayout.rowStride, mapping.MemoryLayout.planeStride);
 		}
 	}
-
-	if (bCreateStaging)
-	{
-		pStaging->Release();
-	}
 	else
 	{
-		m_stagingFence[0] = pImage->GetDevice()->GetScheduler().InsertFence();
-		VK_ASSERT(m_stagingFence[0] && "Unexpected fence value");
+		HRESULT ret = GetDeviceObjectFactory().IssueFence(m_hStagingFence[0]);
+		VK_ASSERT(ret == S_OK && "Failed to issue fence");
 	}
 }
 
 void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes)
 {
 	VK_ASSERT(m_pStagingResource[0] && "Cannot issue non-callback download without a persistent staging buffer");
+
 	DownloadToStagingResource(nSubRes, nullptr);
 }
 
@@ -468,14 +466,6 @@ void CDeviceTexture::UploadFromStagingResource(uint32 nSubRes, StagingHook cbTra
 
 	if (cbTransfer)
 	{
-		if (!bCreateStaging && m_stagingFence[1])
-		{
-			// We are re-using the staging buffer, which may still be pending on the GPU from a previous staging operation
-			// Therefore, we should wait for the previous read from the staging buffer to complete on the GPU.
-			pImage->GetDevice()->GetScheduler().FlushToFence(m_stagingFence[1]);
-			pImage->GetDevice()->GetScheduler().WaitForFence(m_stagingFence[1]);
-		}
-
 		if (bCreateStaging)
 		{
 			void* const pMappedMemory = pStaging->Map();
@@ -491,26 +481,30 @@ void CDeviceTexture::UploadFromStagingResource(uint32 nSubRes, StagingHook cbTra
 		}
 		else
 		{
+			// We have to wait for a previous UploadFromStaging/DownloadToStaging to have finished on the GPU, before we can access the staging resource again on CPU.
+			GetDeviceObjectFactory().SyncFence(m_hStagingFence[1], true, true);
+
 			cbTransfer(m_pStagingMemory[1], mapping.MemoryLayout.rowStride, mapping.MemoryLayout.planeStride);
 		}
 	}
 
 	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->UploadImage(pStaging, pImage, mapping);
 
-	if (bCreateStaging)
+	if (cbTransfer && bCreateStaging)
 	{
 		pStaging->Release();
 	}
 	else
 	{
-		m_stagingFence[1] = pImage->GetDevice()->GetScheduler().InsertFence();
-		VK_ASSERT(m_stagingFence[1] && "Unexpected fence value");
+		HRESULT ret = GetDeviceObjectFactory().IssueFence(m_hStagingFence[1]);
+		VK_ASSERT(ret == S_OK && "Failed to issue fence");
 	}
 }
 
 void CDeviceTexture::UploadFromStagingResource(uint32 nSubRes)
 {
 	VK_ASSERT(m_pStagingResource[1] && "Cannot issue non-callback upload without a persistent staging buffer");
+
 	UploadFromStagingResource(nSubRes, nullptr);
 }
 
@@ -519,18 +513,17 @@ void CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload, S
 	NCryVulkan::CImageResource* const pImage = Get2DTexture(); // On Vulkan, also safe if 1D or 3D
 	VK_ASSERT(pImage && m_pStagingResource[forUpload] && m_pStagingMemory[forUpload] && "No persistent staging buffer associated");
 
-	if (m_stagingFence[forUpload])
-	{
-		// We have to wait for a previous UploadFromStaging/DownloadToStaging to have finished on the GPU, before we can access the staging resource again on CPU.
-		auto& scheduler = pImage->GetDevice()->GetScheduler();
-		scheduler.FlushToFence(m_stagingFence[forUpload]);
-		scheduler.WaitForFence(m_stagingFence[forUpload]);
-		m_stagingFence[forUpload] = 0;
-	}
+	// We have to wait for a previous UploadFromStaging/DownloadToStaging to have finished on the GPU, before we can access the staging resource again on CPU.
+	GetDeviceObjectFactory().SyncFence(m_hStagingFence[forUpload], true, true);
 
 	SResourceMemoryMapping mapping;
 	CDeviceObjectFactory::SelectStagingLayout(pImage, nSubRes, mapping);
 	cbTransfer(m_pStagingMemory[forUpload], mapping.MemoryLayout.rowStride, mapping.MemoryLayout.planeStride);
+}
+
+bool CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload)
+{
+	return GetDeviceObjectFactory().SyncFence(m_hStagingFence[forUpload], false, false) == S_OK;
 }
 
 #endif

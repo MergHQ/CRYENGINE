@@ -386,13 +386,9 @@ class CDeviceTexture : public CDeviceResource
 	bool   m_bCube;
 
 #ifdef DEVRES_USE_STAGING_POOL
-	D3DResource* m_pStagingResource[2];
-	void*        m_pStagingMemory[2];
-
-	#if CRY_RENDERER_VULKAN >= 10
-	UINT64 m_stagingFence[2];
-	#endif
-
+	D3DResource*      m_pStagingResource[2];
+	void*             m_pStagingMemory[2];
+	DeviceFenceHandle m_hStagingFence[2];
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(USE_NV_API)
@@ -481,6 +477,7 @@ public:
 	void   UploadFromStagingResource(uint32 nSubRes, StagingHook cbTransfer);
 	void   UploadFromStagingResource(uint32 nSubRes);
 	void   AccessCurrStagingResource(uint32 nSubRes, bool forUpload, StagingHook cbTransfer);
+	bool   AccessCurrStagingResource(uint32 nSubRes, bool forUpload);
 
 	size_t GetDeviceSize() const
 	{
@@ -601,7 +598,8 @@ private:
 	{
 #ifdef DEVRES_USE_STAGING_POOL
 		m_pStagingResource[0] = m_pStagingResource[1] = nullptr;
-		m_pStagingMemory[0] = m_pStagingMemory[1] = nullptr;
+		m_pStagingMemory  [0] = m_pStagingMemory  [1] = nullptr;
+		m_hStagingFence   [0] = m_hStagingFence   [1] = 0;
 #endif
 	}
 

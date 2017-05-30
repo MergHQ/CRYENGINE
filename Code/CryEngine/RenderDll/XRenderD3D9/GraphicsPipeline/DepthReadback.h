@@ -54,7 +54,7 @@ public:
 	}
 
 private:
-	enum EConfigurationFlags
+	enum EConfigurationFlags : uint8
 	{
 		kNone         = 0,
 		kMultiRes     = BIT(0),
@@ -65,14 +65,15 @@ private:
 
 	struct SReadback
 	{
-		DeviceFenceHandle   fence = 0;
-		bool                bIssued;
-		bool                bCompleted;
-		EConfigurationFlags flags;
+		Matrix44A           camera;
+		CFullscreenPass     pass;
 		float               zNear;
 		float               zFar;
-		CFullscreenPass     pass;
-		Matrix44A           camera;
+		EConfigurationFlags flags;
+
+		bool                bIssued    : 1;
+		bool                bCompleted : 1;
+		bool                bReceived  : 1;
 	};
 
 	struct SResult

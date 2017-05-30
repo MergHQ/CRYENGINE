@@ -742,6 +742,8 @@ void CDeviceTexture::Unbind()
 	}
 }
 
+#ifdef DEVRES_USE_STAGING_POOL
+
 void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTransfer)
 {
 	D3D11_RESOURCE_DIMENSION eResourceDimension;
@@ -838,6 +840,13 @@ void CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload, S
 
 	gcpRendD3D->GetDeviceContext_Unsynchronized().UnmapStagingResource(m_pStagingResource[forUpload], forUpload);
 }
+
+bool CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload)
+{
+	return gcpRendD3D->GetDeviceContext_Unsynchronized().TestStagingResource(m_pStagingResource[forUpload]) == S_OK;
+}
+
+#endif
 
 //=============================================================================
 
