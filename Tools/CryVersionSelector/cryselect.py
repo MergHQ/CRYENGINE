@@ -124,14 +124,14 @@ def cmd_install (args):
 		)
 
 		# --- extended, action, title, command
-		# The first collumn difines extended action. The associated commands will be displayed only when the user right-clicks an object while also pressing the SHIFT key.
+		# The first collumn defines extended action. The associated commands will be displayed only when the user right-clicks an object while also pressing the SHIFT key.
 		# https://msdn.microsoft.com/en-us/library/cc144171(VS.85).aspx
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
 			(False, 'open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
-			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
-			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % ScriptPath),
+			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),
+			(False, '_cmake-gui', 'Open CMake GUI', 'cmake-gui "%%1"'),
 			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
 			(False, '_package', 'Package Build', '"%s" package "%%1"' % ScriptPath),
 			(False, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
@@ -148,9 +148,9 @@ def cmd_install (args):
 			(False, 'open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),		
-			(False, '_cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % (PythonPath, ScriptPath)),
+			(False, '_cmake-gui', 'Open CMake GUI', 'cmake-gui "%%1"'),
 			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
-			(False, '_package', 'Package Build', '"%s" package "%%1"' % (PythonPath, ScriptPath)),
+			(False, '_package', 'Package Build', '"%s" "%s" package "%%1"' % (PythonPath, ScriptPath)),
 			(False, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
 		)
 
@@ -511,11 +511,12 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 	subcmd.extend (sys_argv)
 
 	print_subprocess (subcmd)
-	returncode= subprocess.call(subcmd)
-	
+	p = subprocess.Popen(subcmd, stderr=subprocess.PIPE)
+	returncode = p.wait()
+
 	if not args.silent and returncode != 0:
 		title= command_title (args)
-		text= p.stderr.read().strip()
+		text= p.stderr.read().strip().decode()
 		if not text:
 			text= SUBPROCESS_NO_STDERR
 		result= MessageBox (None, text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
