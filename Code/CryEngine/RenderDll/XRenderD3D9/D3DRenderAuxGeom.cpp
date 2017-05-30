@@ -18,9 +18,7 @@ enum EAuxGeomBufferSizes
 
 struct SAuxObjVertex
 {
-	SAuxObjVertex()
-	{
-	}
+	SAuxObjVertex() = default;
 
 	SAuxObjVertex(const Vec3& pos, const Vec3& normal)
 		: m_pos(pos)
@@ -32,8 +30,8 @@ struct SAuxObjVertex
 	Vec3 m_normal;
 };
 
-typedef std::vector<SAuxObjVertex> AuxObjVertexBuffer;
-typedef std::vector<vtx_idx>       AuxObjIndexBuffer;
+using AuxObjVertexBuffer = std::vector<SAuxObjVertex>;
+using AuxObjIndexBuffer = std::vector<vtx_idx>;
 
 CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 	: m_renderer(renderer)
@@ -48,10 +46,10 @@ CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 	, m_curPointSize(1)
 	, m_curTransMatrixIdx(-1)
 	, m_curWorldMatrixIdx(-1)
-	, m_pAuxGeomShader(0)
+	, m_pAuxGeomShader(nullptr)
 	, m_curDrawInFrontMode(e_DrawInFrontOff)
 	, m_auxSortedPushBuffer()
-	, m_pCurCBRawData(0)
+	, m_pCurCBRawData(nullptr)
 	, m_auxGeomCBCol()
 	, CV_r_auxGeom(1)
 {
@@ -120,7 +118,7 @@ static void CreateSphere(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float ra
 	ib.reserve(numIndices);
 
 	// 1st pole vertex
-	vb.push_back(SAuxObjVertex(Vec3(0.0f, 0.0f, radius), Vec3(0.0f, 0.0f, 1.0f)));
+	vb.emplace_back(Vec3(0.0f, 0.0f, radius), Vec3(0.0f, 0.0f, 1.0f));
 
 	// calculate "inner" vertices
 	float sectionSlice(DEG2RAD(360.0f / (float) sections));
@@ -135,12 +133,12 @@ static void CreateSphere(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float ra
 			v.x = radius * cosf(i * sectionSlice) * w;
 			v.y = radius * sinf(i * sectionSlice) * w;
 			v.z = radius * cosf(a * ringSlice);
-			vb.push_back(SAuxObjVertex(v, v.GetNormalized()));
+			vb.emplace_back(v, v.GetNormalized());
 		}
 	}
 
 	// 2nd vertex of pole (for end cap)
-	vb.push_back(SAuxObjVertex(Vec3(0.0f, 0.0f, -radius), Vec3(0.0f, 0.0f, 1.0f)));
+	vb.emplace_back(Vec3(0.0f, 0.0f, -radius), Vec3(0.0f, 0.0f, 1.0f));
 
 	// build "inner" faces
 	for (uint32 a(0); a < rings - 2; ++a)
@@ -189,7 +187,7 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	ib.reserve(numIndices);
 
 	// center vertex
-	vb.push_back(SAuxObjVertex(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)));
+	vb.emplace_back(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f));
 
 	// create circle around it
 	float sectionSlice(DEG2RAD(360.0f / (float) sections));
@@ -199,7 +197,7 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 		v.x = radius * cosf(i * sectionSlice);
 		v.y = 0.0f;
 		v.z = radius * sinf(i * sectionSlice);
-		vb.push_back(SAuxObjVertex(v, Vec3(0.0f, -1.0f, 0.0f)));
+		vb.emplace_back(v, Vec3(0.0f, -1.0f, 0.0f));
 	}
 
 	// build faces for end cap
@@ -211,7 +209,7 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	}
 
 	// top
-	vb.push_back(SAuxObjVertex(Vec3(0.0f, height, 0.0f), Vec3(0.0f, 1.0f, 0.0f)));
+	vb.emplace_back(Vec3(0.0f, height, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
 
 	for (uint32 i(0); i <= sections; ++i)
 	{
@@ -229,7 +227,7 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 		Vec3 d1(Vec3(0.0, height, 0.0f) - v);
 
 		Vec3 n((d1.Cross(d)).normalized());
-		vb.push_back(SAuxObjVertex(v, n));
+		vb.emplace_back(v, n);
 	}
 
 	// build faces
@@ -261,7 +259,7 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 	// bottom cap
 	{
 		// center bottom vertex
-		vb.push_back(SAuxObjVertex(Vec3(0.0f, -0.5f * height, 0.0f), Vec3(0.0f, -1.0f, 0.0f)));
+		vb.emplace_back(Vec3(0.0f, -0.5f * height, 0.0f), Vec3(0.0f, -1.0f, 0.0f));
 
 		// create circle around it
 		for (uint32 i(0); i <= sections; ++i)
@@ -270,7 +268,7 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 			v.x = radius * cosf(i * sectionSlice);
 			v.y = -0.5f * height;
 			v.z = radius * sinf(i * sectionSlice);
-			vb.push_back(SAuxObjVertex(v, Vec3(0.0f, -1.0f, 0.0f)));
+			vb.emplace_back(v, Vec3(0.0f, -1.0f, 0.0f));
 		}
 
 		// build faces
@@ -294,8 +292,8 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 			v.z = radius * sinf(i * sectionSlice);
 
 			Vec3 n(v.normalized());
-			vb.push_back(SAuxObjVertex(v, n));
-			vb.push_back(SAuxObjVertex(Vec3(v.x, -v.y, v.z), n));
+			vb.emplace_back(v, n);
+			vb.emplace_back(Vec3(v.x, -v.y, v.z), n);
 		}
 
 		// build faces
@@ -314,10 +312,10 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 
 	// top cap
 	{
-		int vIdx(vb.size());
+		size_t vIdx(vb.size());
 
 		// center top vertex
-		vb.push_back(SAuxObjVertex(Vec3(0.0f, 0.5f * height, 0.0f), Vec3(0.0f, 1.0f, 0.0f)));
+		vb.emplace_back(Vec3(0.0f, 0.5f * height, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
 
 		// create circle around it
 		for (uint32 i(0); i <= sections; ++i)
@@ -326,7 +324,7 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 			v.x = radius * cosf(i * sectionSlice);
 			v.y = 0.5f * height;
 			v.z = radius * sinf(i * sectionSlice);
-			vb.push_back(SAuxObjVertex(v, Vec3(0.0f, 1.0f, 0.0f)));
+			vb.emplace_back(v, Vec3(0.0f, 1.0f, 0.0f));
 		}
 
 		// build faces
@@ -697,7 +695,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const
 	else if( primType == CAuxGeomCB::e_PtList   ) topology = eptPointList;
 	else
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return;
 	}
 
@@ -763,7 +761,7 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 	else if( primType == CAuxGeomCB::e_TriListInd  ) topology = eptTriangleList;
 	else
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return;
 	}
 
@@ -815,14 +813,14 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 		// get current push buffer entry
 		const CAuxGeomCB::SAuxPushBufferEntry* obj(*it);
 
-		// assert than all objects in this batch are of same type
-		assert(CAuxGeomCB::GetAuxObjType(obj->m_renderFlags) == objType);
+		// CRY_ASSERT than all objects in this batch are of same type
+		CRY_ASSERT(CAuxGeomCB::GetAuxObjType(obj->m_renderFlags) == objType);
 
 		uint32 drawParamOffs;
 
 		if( !obj->GetDrawParamOffs(drawParamOffs) )
 		{
-			assert(false);
+			CRY_ASSERT(false);
 			continue;
 		}
 
@@ -843,7 +841,7 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 		Vec4 v1 = Vec4(objOuterRightWorld, 1) * *m_matrices.m_pCurTransMat;
 
 		float scale;
-		assert(fabs(v0.w - v0.w) < 1e-4);
+		CRY_ASSERT(fabs(v0.w - v0.w) < 1e-4);
 		if( fabs(v0.w) < 1e-2 )
 		{
 			scale = 0.5f;
@@ -861,9 +859,9 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 		}
 
 		// get appropriate mesh
-		assert(lodLevel >= 0 && lodLevel < e_auxObjNumLOD);
+		CRY_ASSERT(lodLevel >= 0 && lodLevel < e_auxObjNumLOD);
 
-		SDrawObjMesh* pMesh = 0;
+		SDrawObjMesh* pMesh = nullptr;
 		switch( objType )
 		{
 			case CAuxGeomCB::eDOT_Cylinder: pMesh = m_cylinderObj;  break;
@@ -873,7 +871,7 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 			case CAuxGeomCB::eDOT_Sphere:   pMesh = m_sphereObj;
 		}
 
-		assert(0 != pMesh);
+		CRY_ASSERT(pMesh != nullptr);
 
 		pMesh = &pMesh[lodLevel];
 
@@ -1041,9 +1039,9 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 	PROFILE_LABEL_SCOPE("AuxGeom_Flush");
 
 	// should only be called from render thread
-	assert(m_renderer.m_pRT->IsRenderThread());
+	CRY_ASSERT(m_renderer.m_pRT->IsRenderThread());
 
-	assert(data.m_pData);
+	CRY_ASSERT(data.m_pData);
 
 	Matrix44 mViewProj;
 
@@ -1112,7 +1110,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 					SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 					m_pAuxGeomShader = m_renderer.m_cEF.mfForName("AuxGeom", 0);
-					assert(0 != m_pAuxGeomShader);
+					CRY_ASSERT(m_pAuxGeomShader != nullptr);
 				}
 
 				CD3DStereoRenderer& stereoRenderer = gcpRendD3D->GetS3DRend();
@@ -1197,7 +1195,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 		m_renderer.m_RP.m_TI[m_renderer.m_RP.m_nProcessThreadID].m_matView->Pop();
 		m_renderer.EF_DirtyMatrix();
 
-		m_pCurCBRawData = 0;
+		m_pCurCBRawData = nullptr;
 		m_curTransMatrixIdx = -1;
 		m_curWorldMatrixIdx = -1;
 	}
@@ -1260,7 +1258,7 @@ void CRenderAuxGeomD3D::FlushTextMessagesInternal(CTextMessages& messages, bool 
 
 		Vec3 vPos(0, 0, 0);
 		int  nDrawFlags = 0;
-		const char* szText = 0;
+		const char* szText = nullptr;
 		Vec4  vColor(1, 1, 1, 1);
 		Vec2 fSize;
 		bool bDraw = true;
@@ -1462,7 +1460,7 @@ void CRenderAuxGeomD3D::SMatrices::UpdateMatrices(CD3D9Renderer& renderer)
 	m_matViewInv = m_matView.GetInverted();
 	m_matTrans3D = m_matView * m_matProj;
 
-	m_pCurTransMat = 0;
+	m_pCurTransMat = nullptr;
 }
 
 void CRenderAuxGeomD3D::FreeMemory()
@@ -1484,31 +1482,31 @@ CAuxGeomCB* CRenderAuxGeomD3D::GetRenderAuxGeom(void* jobID)
 
 inline const CAuxGeomCB::AuxVertexBuffer& CRenderAuxGeomD3D::GetAuxVertexBuffer() const
 {
-	assert(m_pCurCBRawData);
+	CRY_ASSERT(m_pCurCBRawData);
 	return m_pCurCBRawData->m_auxVertexBuffer;
 }
 
 inline const CAuxGeomCB::AuxIndexBuffer& CRenderAuxGeomD3D::GetAuxIndexBuffer() const
 {
-	assert(m_pCurCBRawData);
+	CRY_ASSERT(m_pCurCBRawData);
 	return m_pCurCBRawData->m_auxIndexBuffer;
 }
 
 inline const CAuxGeomCB::AuxDrawObjParamBuffer& CRenderAuxGeomD3D::GetAuxDrawObjParamBuffer() const
 {
-	assert(m_pCurCBRawData);
+	CRY_ASSERT(m_pCurCBRawData);
 	return m_pCurCBRawData->m_auxDrawObjParamBuffer;
 }
 
 inline const Matrix44A& CRenderAuxGeomD3D::GetAuxOrthoMatrix(int idx) const
 {
-	assert(m_pCurCBRawData && idx >= 0 && idx < (int)m_pCurCBRawData->m_auxOrthoMatrices.size());
+	CRY_ASSERT(m_pCurCBRawData && idx >= 0 && idx < (int)m_pCurCBRawData->m_auxOrthoMatrices.size());
 	return m_pCurCBRawData->m_auxOrthoMatrices[idx];
 }
 
 inline const Matrix34A& CRenderAuxGeomD3D::GetAuxWorldMatrix(int idx) const
 {
-	assert(m_pCurCBRawData && idx >= 0 && idx < (int)m_pCurCBRawData->m_auxWorldMatrices.size());
+	CRY_ASSERT(m_pCurCBRawData && idx >= 0 && idx < (int)m_pCurCBRawData->m_auxWorldMatrices.size());
 	return m_pCurCBRawData->m_auxWorldMatrices[idx];
 }
 
