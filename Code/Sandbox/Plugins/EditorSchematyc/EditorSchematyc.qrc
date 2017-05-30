@@ -46,5 +46,7 @@
       <file alias="schematyc/element_timer.ico">icons/element_timer.ico</file>
       <file alias="schematyc/element_signalreceiver.ico">icons/element_signalreceiver.ico</file>
       <file alias="schematyc/element_componentinstance.ico">icons/element_componentinstance.ico</file>
+      <file alias="schematyc/assettype_library.ico">icons/assettype_library.ico</file>
+      <file alias="schematyc/assettype_entity.ico">icons/assettype_entity.ico</file>
     </qresource>
 </RCC>
