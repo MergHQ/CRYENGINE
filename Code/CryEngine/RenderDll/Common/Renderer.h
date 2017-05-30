@@ -537,6 +537,13 @@ struct SRenderTileInfo
 	f32 nPosX, nPosY, nGridSizeX, nGridSizeY;
 };
 
+struct SVolumetricCloudTexInfo
+{
+	int32 cloudTexId;
+	int32 cloudNoiseTexId;
+	int32 edgeNoiseTexId;
+};
+
 //////////////////////////////////////////////////////////////////////
 class CRenderer : public IRenderer, public CRendererCVars
 {
@@ -1104,16 +1111,9 @@ public:
 	int            GetCloudShadowTextureId() const { return m_cloudShadowTexId; }
 	bool GetCloudShadowsEnabled() const;
 
-	virtual void   SetVolumetricCloudParams(int nTexID) override
-	{
-		ITexture* tex = EF_GetTextureByID(m_volumetricCloudTexId);
-		if (tex)
-		{
-			tex->Release();
-		}
-		m_volumetricCloudTexId = nTexID;
-	}
-	int                                               GetVolumetricCloudTextureId() const                                                           { return m_volumetricCloudTexId; }
+	virtual void                                      SetVolumetricCloudParams(int nTexID) override;
+	virtual void                                      SetVolumetricCloudNoiseTex(int cloudNoiseTexId, int edgeNoiseTexId) override;
+	void                                              GetVolumetricCloudTextureInfo(SVolumetricCloudTexInfo& info) const;
 
 	virtual ShadowFrustumMGPUCache*                   GetShadowFrustumMGPUCache() override                                                          { return &m_ShadowFrustumMGPUCache; }
 
@@ -1581,6 +1581,8 @@ protected:
 	bool                                       m_cloudShadowInvert;
 	float                                      m_cloudShadowBrightness;
 	int                                        m_volumetricCloudTexId;
+	int                                        m_volumetricCloudNoiseTexId;
+	int                                        m_volumetricCloudEdgeNoiseTexId;
 
 	// Shaders/Shaders support
 	// RE - RenderElement

@@ -2274,6 +2274,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void                                      SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness) = 0;
 	virtual void                                      SetVolumetricCloudParams(int nTexID) = 0;
+	virtual void                                      SetVolumetricCloudNoiseTex(int cloudNoiseTexId, int edgeNoiseTexId) = 0;
 	virtual uint16                                    PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) = 0;
 
 	virtual int                                       GetMaxTextureSize() = 0;

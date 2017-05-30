@@ -55,7 +55,9 @@
 			<ShadingLOD type="Float" value="0.7"/>
 			<ShadowTilingSize type="Float" value="16000"/>
 			<MaxGlobalCloudDensity type="Float" value="0.04"/>
+			<GlobalCloudNoiseVolumeTexture type="Texture" value=""/>
 			<GlobalCloudNoiseScale type="Vector" value="3,3,5"/>
+			<EdgeTurbulenceNoiseVolumeTexture type="Texture" value=""/>
 			<EdgeTurbulenceNoiseScale type="Vector" value="1,1,1"/>
 			<EdgeTurbulenceNoiseErode type="BOOL" value="1"/>
 			<EdgeTurbulenceNoiseAbsolute type="BOOL" value="1"/>
