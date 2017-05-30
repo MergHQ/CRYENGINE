@@ -5,7 +5,6 @@ import os.path
 import uuid
 import glob
 
-from sys import argv
 from string import Template
 
 def generate_solution (project_file, code_directory, engine_root_directory):
@@ -231,7 +230,6 @@ endif()\n'''
                     break
                 
                 add_subdirectory_index += len("add_subdirectory")
-                num_open_parantheses = 0
 
                 add_subdirectory_index = custom_block_contents.find('(', add_subdirectory_index) + 1
                 close_scope_index = custom_block_contents.find(')', add_subdirectory_index)
@@ -294,11 +292,11 @@ def add_cpp_sources(directoryname, project_name, code_directory, skip_directorie
         
     for filename in glob.iglob(directoryname + "/*.cpp", recursive=False):
         source_count += 1
-        sources += '\n\t\t"' + os.path.relpath(filename, code_directory).replace('\\', '/') + '"';
+        sources += '\n\t\t"' + os.path.relpath(filename, code_directory).replace('\\', '/') + '"'
         
     for filename in glob.iglob(directoryname + "/*.h", recursive=False):
         source_count += 1
-        sources += '\n\t\t"' + os.path.relpath(filename, code_directory).replace('\\', '/') + '"';
+        sources += '\n\t\t"' + os.path.relpath(filename, code_directory).replace('\\', '/') + '"'
             
     sources += "\n)\n"
     
@@ -314,6 +312,6 @@ def add_cpp_sources(directoryname, project_name, code_directory, skip_directorie
                 sources += directory_sources
         
     if source_count > 0:
-        return sources;
+        return sources
         
-    return "";
+    return ""

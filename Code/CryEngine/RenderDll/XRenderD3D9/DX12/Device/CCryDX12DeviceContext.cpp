@@ -3465,8 +3465,10 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::TestStagingResource(
 
 	return
 	  TestForFence(rResource.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_ANY)) &&
-	  TestForFence(rResource.GetFenceValue(CMDQUEUE_COMPUTE, CMDTYPE_ANY)) &&
-	  TestForFence(rResource.GetFenceValue(CMDQUEUE_COPY, CMDTYPE_ANY));
+	  TestForFence(rResource.GetFenceValue(CMDQUEUE_COMPUTE , CMDTYPE_ANY)) &&
+	  TestForFence(rResource.GetFenceValue(CMDQUEUE_COPY    , CMDTYPE_ANY))
+		
+	? S_OK : S_FALSE;
 }
 
 HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::WaitStagingResource(
@@ -3478,8 +3480,8 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::WaitStagingResource(
 	NCryDX12::CResource& rResource = dx12Resource->GetDX12Resource();
 
 	rResource.WaitForUnused<true>(m_Scheduler.GetCommandListPool(CMDQUEUE_GRAPHICS), CMDTYPE_ANY);
-	rResource.WaitForUnused<true>(m_Scheduler.GetCommandListPool(CMDQUEUE_COMPUTE), CMDTYPE_ANY);
-	rResource.WaitForUnused<true>(m_Scheduler.GetCommandListPool(CMDQUEUE_COPY), CMDTYPE_ANY);
+	rResource.WaitForUnused<true>(m_Scheduler.GetCommandListPool(CMDQUEUE_COMPUTE ), CMDTYPE_ANY);
+	rResource.WaitForUnused<true>(m_Scheduler.GetCommandListPool(CMDQUEUE_COPY    ), CMDTYPE_ANY);
 
 	return S_OK;
 }

@@ -28,7 +28,6 @@ std::vector<std::pair<string, SSubstanceOutput::ESubstanceOutputResolution>> res
 void InitCrySubstanceLib(IFileManipulator* fileManip)
 {
 	g_fileManipulator = fileManip;
-	//CSubstanceManager::Instance()->LoadTexturePresets(configPath);
 }
 
 namespace SubstanceSerialization {
@@ -50,9 +49,7 @@ namespace SubstanceSerialization {
 	bool SaveJsonFile(const string& filename, const T& instance)
 	{
 		Serialization::SStruct obj(instance);
-		//char buffer[ICryPak::g_nMaxPath];
-	//	const char* absfilename = gEnv->pCryPak->AdjustFileName(filename, buffer, ICryPak::FLAGS_FOR_WRITING);
-		const char* absfilename = g_fileManipulator->GetAbsolutePath(filename);
+		string absfilename = g_fileManipulator->GetAbsolutePath(filename);
 		yasli::JSONOArchive oa;
 		if (!oa(obj))
 			return false;

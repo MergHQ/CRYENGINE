@@ -187,12 +187,12 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 
 	for (auto& readback : m_readback)
 	{
-		if (!readback.fence && !bFailed)
+		if (!bFailed)
 		{
 			CRY_ASSERT(!readback.bIssued);
-			bFailed |= FAILED(GetDeviceObjectFactory().CreateFence(readback.fence));
-			readback.bIssued = false;
+			readback.bIssued    = false;
 			readback.bCompleted = false;
+			readback.bReceived  = false;
 		}
 	}
 
@@ -222,14 +222,9 @@ void CDepthReadbackStage::ReleaseResources()
 
 		for (auto& readback : m_readback)
 		{
-			if (readback.fence)
-			{
-				GetDeviceObjectFactory().ReleaseFence(readback.fence);
-			}
-
-			readback.bIssued = false;
+			readback.bIssued    = false;
 			readback.bCompleted = false;
-			readback.fence = 0;
+			readback.bReceived  = false;
 		}
 
 		m_resourceWidth = 0;
@@ -349,13 +344,14 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 	// Issue readback
 	const uint32 readbackIndex = m_readbackIndex % kMaxReadbackPasses;
 	++m_readbackIndex;
+	CTexture* const pTarget = CTexture::s_ptexZTargetReadBack[readbackIndex];
 	SReadback& readback = m_readback[readbackIndex];
 	CFullscreenPass& pass = readback.pass;
-	CTexture* const pTarget = CTexture::s_ptexZTargetReadBack[readbackIndex];
 	executePass(pass, bInitial, sourceWidth, sourceHeight);
-	pTarget->GetDevTexture()->DownloadToStagingResource(0);
-	readback.bIssued = SUCCEEDED(GetDeviceObjectFactory().IssueFence(readback.fence));
-	readback.bCompleted = false;
+
+	readback.bIssued = true; pTarget->GetDevTexture()->DownloadToStagingResource(0);
+	readback.bCompleted =    pTarget->GetDevTexture()->AccessCurrStagingResource(0, false);
+	readback.bReceived = false;
 	
 	// Associate the information of this frame with the readback.
 	Matrix44 modelView, proj;
@@ -376,32 +372,30 @@ void CDepthReadbackStage::ReadbackLatestData()
 {
 	// Determine the last completed readback.
 	const uint32 oldestReadback = m_readbackIndex % kMaxReadbackPasses;
-	uint32 lastFinishedIndex = kMaxReadbackPasses;
+	uint32 receivableIndex = kMaxReadbackPasses;
 	for (uint32 i = 0; i < kMaxReadbackPasses; ++i)
 	{
 		const uint32 readbackIndex = (oldestReadback - i - 1) % kMaxReadbackPasses;
+		const bool bOldest = oldestReadback == readbackIndex;
+		CTexture* const pTarget = CTexture::s_ptexZTargetReadBack[readbackIndex];
 		SReadback& readback = m_readback[readbackIndex];
-		if (readback.bCompleted)
+
+		if (readback.bIssued && !readback.bCompleted)
 		{
-			// We already have the latest available data read back
-			return;
+			readback.bCompleted = pTarget->GetDevTexture()->AccessCurrStagingResource(0, false);
 		}
-		if (readback.bIssued)
+		if ((readback.bCompleted || (readback.bIssued && bOldest)) && !readback.bReceived)
 		{
-			// Block only on the oldest readback.
-			const bool bBlock = oldestReadback == readbackIndex;
-			if (GetDeviceObjectFactory().SyncFence(readback.fence, bBlock, bBlock) == S_OK)
-			{
-				lastFinishedIndex = readbackIndex;
-				readback.bIssued = false;
-				readback.bCompleted = true;
-				break;
-			}
+			receivableIndex = readbackIndex; break;
+		}
+		if (readback.bReceived)
+		{
+			return; // We now have the latest available data read back
 		}
 	}
 
 	TAutoLock lock(m_lock);
-	if (lastFinishedIndex == kMaxReadbackPasses)
+	if (receivableIndex == kMaxReadbackPasses)
 	{
 		// No readback has finished yet, and there are at least some slots not queued into.
 		// This can happen for the first N frames after CreateResources(), where N < kMaxReadbackPasses.
@@ -425,10 +419,10 @@ void CDepthReadbackStage::ReadbackLatestData()
 	CRY_ASSERT(reservedIndex < kMaxResults && reservedIndex != m_lastPinned && (kMaxResults == 3 ? reservedIndex != m_lastResult : true));
 
 	SResult& result = m_result[reservedIndex];
-	const SReadback& readback = m_readback[lastFinishedIndex];
-	CDeviceTexture* const pReadback = CTexture::s_ptexZTargetReadBack[lastFinishedIndex]->GetDevTexture();
+	SReadback& readback = m_readback[receivableIndex];
+	CDeviceTexture* const pReadback = CTexture::s_ptexZTargetReadBack[receivableIndex]->GetDevTexture();
+	CRY_ASSERT(readback.bIssued == true);
 
-	result.camera = readback.camera;
 	const auto readbackData = [&readback, &result](void* pData, uint32 rowPitch, uint32 slicePitch) -> bool
 	{
 		CRY_ASSERT(rowPitch == CULL_SIZEX * sizeof(float) && slicePitch >= CULL_SIZEX * CULL_SIZEY * sizeof(float));
@@ -452,8 +446,12 @@ void CDepthReadbackStage::ReadbackLatestData()
 			}
 		}
 
+		result.camera = readback.camera;
+		readback.bCompleted = true;
+		readback.bReceived = true;
 		return true;
 	};
+
 	pReadback->AccessCurrStagingResource(0, false, readbackData);
 
 	m_lastResult = reservedIndex;

@@ -504,6 +504,7 @@ void C3DEngine::UnloadLevel()
 		if (GetRenderer())
 		{
 			GetRenderer()->SetVolumetricCloudParams(0);
+			GetRenderer()->SetVolumetricCloudNoiseTex(0, 0);
 		}
 	}
 
@@ -1470,11 +1471,25 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 		{
 			char cloudVolumeTexture[256];
 			cry_strcpy(cloudVolumeTexture, GetXMLAttribText(pInputNode, "VolumetricCloud", "CloudVolumeTexture", ""));
-			ITexture* pTex = 0;
+			ITexture* pTex = nullptr;
 			if (cloudVolumeTexture[0] != '\0')
 				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture);
 			int volCloudTexId = pTex ? pTex->GetTextureID() : 0;
 			GetRenderer()->SetVolumetricCloudParams(volCloudTexId);
+
+			cry_strcpy(cloudVolumeTexture, GetXMLAttribText(pInputNode, "VolumetricCloud", "GlobalCloudNoiseVolumeTexture", ""));
+			pTex = nullptr;
+			if (cloudVolumeTexture[0] != '\0')
+				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture);
+			int volCloudNoiseTexId = pTex ? pTex->GetTextureID() : 0;
+
+			cry_strcpy(cloudVolumeTexture, GetXMLAttribText(pInputNode, "VolumetricCloud", "EdgeTurbulenceNoiseVolumeTexture", ""));
+			pTex = nullptr;
+			if (cloudVolumeTexture[0] != '\0')
+				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture);
+			int volCloudEdgeNoiseTexId = pTex ? pTex->GetTextureID() : 0;
+
+			GetRenderer()->SetVolumetricCloudNoiseTex(volCloudNoiseTexId, volCloudEdgeNoiseTexId);
 		}
 	}
 

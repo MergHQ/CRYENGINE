@@ -127,15 +127,12 @@ private:
 	void                             OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelection& selection);
 
 	void                             ClearLog();
-	void                             ClearCompilerLog();
 
 	void                             ShowLogSettings();
 	void                             ShowPreviewSettings();
 
 	Schematyc::CLogWidget*           CreateLogWidget();
-	Schematyc::CLogWidget*           CreateCompilerLogWidget();
 	Schematyc::CPreviewWidget*       CreatePreviewWidget();
-
 	Schematyc::CScriptBrowserWidget* CreateScriptBrowserWidget();
 	CInspector*                      CreateInspectorWidget();
 	CGraphViewWidget*                CreateGraphViewWidget();
@@ -149,8 +146,6 @@ private:
 
 	Schematyc::CLogWidget*           m_pLog;
 	Schematyc::SLogSettings          m_logSettings;
-	Schematyc::CLogWidget*           m_pCompilerLog;
-	Schematyc::SLogSettings          m_compilerLogSettings;
 
 	Schematyc::CPreviewWidget*       m_pPreview;
 	Schematyc::CConnectionScope      m_connectionScope;
@@ -159,7 +154,6 @@ private:
 	QAction*                         m_pRefreshEnvironmentMenuAction;
 
 	QAction*                         m_pClearLogToolbarAction;
-	QAction*                         m_pClearCompilerLogToolbarAction;
 	QAction*                         m_pShowLogSettingsToolbarAction;
 	QAction*                         m_pShowPreviewSettingsToolbarAction;
 

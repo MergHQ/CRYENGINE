@@ -597,8 +597,6 @@ void CD3D9Renderer::FX_ScreenStretchRect(CTexture* pDst, CTexture* pHDRSrc)
 			CTexture*    pSrc            = m_pNewTarget[0]->m_pTex;    // = GetCurrentTargetOutput();
 			D3DSurface*  pOrigRT         = m_pNewTarget[0]->m_pTarget; // = pSrc->GetDevTexture()->LookupRTV(EDefaultResourceViews::RenderTarget);
 
-			GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstResource);
-
 			// This is a subrect to subrect copy with no resolving or stretching
 			SResourceRegionMapping region =
 			{

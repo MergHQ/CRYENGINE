@@ -2489,8 +2489,23 @@ bool CSystem::Init()
 
 	m_env.bIsOutOfMemory = false;
 
-	if (m_bEditor)
-		m_bInDevMode = true;
+	{
+		bool devModeEnable = true;
+
+#if defined(_RELEASE)
+		// disable devmode by default in release builds outside the editor
+		devModeEnable = m_bEditor;
+#endif
+
+		// disable devmode in launcher if someone really wants to (even in non release builds)
+		if (!m_bEditor && m_pCmdLine->FindArg(eCLAT_Pre, "nodevmode"))
+		{
+			devModeEnable = false;
+		}
+
+		SetDevMode(devModeEnable);
+	}
+
 
 #if !defined(DEDICATED_SERVER)
 	const ICmdLineArg* crashdialog = m_pCmdLine->FindArg(eCLAT_Post, "sys_no_crash_dialog");
@@ -2747,20 +2762,6 @@ bool CSystem::Init()
 		m_env.pCodeCheckpointMgr = NULL;
 #endif
 
-		bool devModeEnable = true;
-
-#if defined(_RELEASE)
-		// disable devmode by default in release builds outside the editor
-		devModeEnable = m_bEditor;
-#endif
-
-		// disable devmode in launcher if someone really wants to (even in non release builds)
-		if (!m_bEditor && m_pCmdLine->FindArg(eCLAT_Pre, "nodevmode"))
-		{
-			devModeEnable = false;
-		}
-
-		SetDevMode(devModeEnable);
 
 		//////////////////////////////////////////////////////////////////////////
 		// CREATE NOTIFICATION NETWORK
@@ -5298,6 +5299,8 @@ void CSystem::CreateSystemVars()
 #endif
 
 	m_pUserAnalyticsSystem->RegisterCVars();
+
+	Serialization::RegisterArchiveHostCVars();
 }
 
 //////////////////////////////////////////////////////////////////////////

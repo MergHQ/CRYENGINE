@@ -18,6 +18,8 @@ struct VCCloudRenderContext
 	CTexture* scaledTarget;
 	CTexture* scaledZTarget;
 	int32     cloudVolumeTexId;
+	int32     cloudNoiseTexId;
+	int32     edgeNoiseTexId;
 	int32     fullscreenWidth;
 	int32     fullscreenHeight;
 	int32     screenWidth;
@@ -381,30 +383,12 @@ CVolumetricCloudsStage::CVolumetricCloudsStage()
 
 CVolumetricCloudsStage::~CVolumetricCloudsStage()
 {
-	for (int32 e = 0; e < MaxEyeNum; ++e)
-	{
-		for (int32 i = 0; i < 2; ++i)
-		{
-			SAFE_RELEASE(m_pDownscaledMaxTex[e][i]);
-			SAFE_RELEASE(m_pDownscaledMinTex[e][i]);
-		}
-		SAFE_RELEASE(m_pScaledPrevDepthTex[e]);
-	}
-	SAFE_RELEASE(m_pCloudDepthTex);
-	SAFE_RELEASE(m_pDownscaledMaxTempTex);
-	SAFE_RELEASE(m_pDownscaledMinTempTex);
-	SAFE_RELEASE(m_pDownscaledLeftEyeTex);
-	SAFE_RELEASE(m_pCloudDensityTex);
-	SAFE_RELEASE(m_pCloudShadowTex);
-
-	SAFE_RELEASE(m_pCloudMiePhaseFuncTex);
-	SAFE_RELEASE(m_pNoiseTex);
 }
 
 void CVolumetricCloudsStage::Init()
 {
-	m_pCloudMiePhaseFuncTex = CTexture::ForName("%ENGINE%/EngineAssets/Shading/cloud_mie_phase_function.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
-	m_pNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
+	m_pCloudMiePhaseFuncTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Shading/cloud_mie_phase_function.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
+	m_pNoiseTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
 
 	const char* tname[MaxEyeNum][2] =
 	{
@@ -754,6 +738,7 @@ void CVolumetricCloudsStage::Execute()
 				rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
 
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
+				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
 				pass.SetRenderTarget(0, currMaxTex);
@@ -798,6 +783,7 @@ void CVolumetricCloudsStage::Execute()
 				rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
 
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
+				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
 				pass.SetRenderTarget(0, currMinTex);
@@ -856,6 +842,7 @@ void CVolumetricCloudsStage::Execute()
 				rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
 
 				static CCryNameTSCRC shaderName = "CloudsBlend";
+				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
 				pass.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
@@ -907,7 +894,8 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	const int32 cloudVolumeTexId = rd->GetVolumetricCloudTextureId();
+	SVolumetricCloudTexInfo texInfo;
+	rd->GetVolumetricCloudTextureInfo(texInfo);
 
 	CShader* pShader = CShaderMan::s_ShaderClouds;
 	auto& pass = m_passGenerateCloudShadow;
@@ -918,22 +906,42 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 	const int32 depthVolShadowTex = CTexture::s_ptexVolCloudShadow->GetDepth();
 
 	CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
-	if (cloudVolumeTexId > 0)
+	if (texInfo.cloudTexId > 0)
 	{
-		CTexture* pTex = CTexture::GetByID(cloudVolumeTexId);
+		CTexture* pTex = CTexture::GetByID(texInfo.cloudTexId);
 		if (pTex)
 		{
 			cloudVolumeTex = pTex;
 		}
 	}
-	const bool bCloudVolTex = (cloudVolumeTexId > 0);
+	const bool bCloudVolTex = (texInfo.cloudTexId > 0);
 	const bool bCloudBlocker = (m_blockerPosArray.Num() > 0);
+
+	CTexture* cloudNoiseTex = m_pNoiseTex;
+	if (texInfo.cloudNoiseTexId > 0)
+	{
+		CTexture* pTex = CTexture::GetByID(texInfo.cloudNoiseTexId);
+		if (pTex)
+		{
+			cloudNoiseTex = pTex;
+		}
+	}
+
+	CTexture* cloudEdgeNoiseTex = m_pNoiseTex;
+	if (texInfo.edgeNoiseTexId > 0)
+	{
+		CTexture* pTex = CTexture::GetByID(texInfo.edgeNoiseTexId);
+		if (pTex)
+		{
+			cloudEdgeNoiseTex = pTex;
+		}
+	}
 
 	int32 inputFlag = 0;
 	inputFlag |= bCloudVolTex ? BIT(0) : 0;
 	inputFlag |= bCloudBlocker ? BIT(1) : 0;
 
-	if (pass.InputChanged(inputFlag, cloudVolumeTex->GetID()))
+	if (pass.InputChanged(inputFlag, cloudVolumeTex->GetID(), cloudNoiseTex->GetID(), cloudEdgeNoiseTex->GetID()))
 	{
 		uint64 rtMask = 0;
 		rtMask |= bCloudVolTex ? g_HWSR_MaskBit[HWSR_SAMPLE3] : 0;
@@ -947,7 +955,8 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 
 		pass.SetOutputUAV(0, CTexture::s_ptexVolCloudShadow);
 
-		pass.SetTexture(0, m_pNoiseTex);
+		pass.SetTexture(0, cloudNoiseTex);
+		pass.SetTexture(1, cloudEdgeNoiseTex);
 
 		pass.SetSampler(0, EDefaultSamplerStates::TrilinearWrap);
 
@@ -1113,10 +1122,9 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			pass.SetTexture(0, context.scaledZTarget);
 
 			const bool bLtoR = context.bReprojectionFromLeftToRight;
-			pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE] : CTexture::s_ptexBlack);
+			pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CTexture::s_ptexBlack);
 
 			pass.SetTexture(5, CTexture::s_ptexVolCloudShadow);
-			pass.SetTexture(6, m_pNoiseTex);
 
 			pass.SetSampler(0, EDefaultSamplerStates::BilinearBorder_Black);
 			pass.SetSampler(1, EDefaultSamplerStates::TrilinearWrap);
@@ -1124,6 +1132,28 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 
 			pass.SetTexture(15, cloudVolumeTex);
 		}
+
+		// set cloud noise texture.
+		CTexture* cloudNoiseTex = m_pNoiseTex;
+		if (context.cloudNoiseTexId > 0)
+		{
+			CTexture* pTex = CTexture::GetByID(context.cloudNoiseTexId);
+			if (pTex)
+			{
+				cloudNoiseTex = pTex;
+			}
+		}
+		CTexture* cloudEdgeNoiseTex = m_pNoiseTex;
+		if (context.edgeNoiseTexId > 0)
+		{
+			CTexture* pTex = CTexture::GetByID(context.edgeNoiseTexId);
+			if (pTex)
+			{
+				cloudEdgeNoiseTex = pTex;
+			}
+		}
+		pass.SetTexture(6, cloudNoiseTex);
+		pass.SetTexture(7, cloudEdgeNoiseTex);
 
 		pass.SetInlineConstantBuffer(3, m_pRenderCloudConstantBuffer);
 
@@ -1215,15 +1245,14 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		pass.SetTexture(0, context.scaledZTarget);
 
 		const bool bLtoR = context.bReprojectionFromLeftToRight;
-		pass.SetTexture(1, bLtoR ? m_pDownscaledLeftEyeTex : CTexture::s_ptexBlack);
-		pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE] : CTexture::s_ptexBlack);
+		pass.SetTexture(1, bLtoR ? m_pDownscaledLeftEyeTex.get() : CTexture::s_ptexBlack);
+		pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CTexture::s_ptexBlack);
 
-		pass.SetTexture(3, bMono ? CTexture::s_ptexBlack : m_pCloudDensityTex);
-		pass.SetTexture(4, bMono ? CTexture::s_ptexBlack : m_pCloudShadowTex);
+		pass.SetTexture(3, bMono ? CTexture::s_ptexBlack : m_pCloudDensityTex.get());
+		pass.SetTexture(4, bMono ? CTexture::s_ptexBlack : m_pCloudShadowTex.get());
 
 		pass.SetTexture(5, CTexture::s_ptexVolCloudShadow);
-		pass.SetTexture(6, m_pNoiseTex);
-		pass.SetTexture(7, m_pCloudMiePhaseFuncTex);
+		pass.SetTexture(12, m_pCloudMiePhaseFuncTex);
 
 		pass.SetSampler(0, EDefaultSamplerStates::BilinearBorder_Black);
 		pass.SetSampler(1, EDefaultSamplerStates::TrilinearWrap);
@@ -1243,6 +1272,28 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 
 		pass.SetTexture(15, cloudVolumeTex);
 	}
+
+	// set cloud noise texture.
+	CTexture* cloudNoiseTex = m_pNoiseTex;
+	if (context.cloudNoiseTexId > 0)
+	{
+		CTexture* pTex = CTexture::GetByID(context.cloudNoiseTexId);
+		if (pTex)
+		{
+			cloudNoiseTex = pTex;
+		}
+	}
+	CTexture* cloudEdgeNoiseTex = m_pNoiseTex;
+	if (context.edgeNoiseTexId > 0)
+	{
+		CTexture* pTex = CTexture::GetByID(context.edgeNoiseTexId);
+		if (pTex)
+		{
+			cloudEdgeNoiseTex = pTex;
+		}
+	}
+	pass.SetTexture(6, cloudNoiseTex);
+	pass.SetTexture(7, cloudEdgeNoiseTex);
 
 	pass.SetInlineConstantBuffer(3, m_pRenderCloudConstantBuffer);
 
@@ -1281,6 +1332,11 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 			pass.Execute(computeCommandList, EShaderStage_Compute);
 		}
 	}
+
+	// keep texture's ref-counter more than zero until the render-passes which use the texture are destructed.
+	m_pVolCloudTex = cloudVolumeTex;
+	m_pVolCloudNoiseTex = cloudNoiseTex;
+	m_pVolCloudEdgeNoiseTex = cloudEdgeNoiseTex;
 }
 
 void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& context)
@@ -1306,7 +1362,12 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 	const int32 curEye = rd->m_CurRenderEye;
 	const int32 gpuCount = rd->GetActiveGPUCount();
 
-	context.cloudVolumeTexId = rd->GetVolumetricCloudTextureId();
+	SVolumetricCloudTexInfo texInfo;
+	rd->GetVolumetricCloudTextureInfo(texInfo);
+
+	context.cloudVolumeTexId = texInfo.cloudTexId;
+	context.cloudNoiseTexId = texInfo.cloudNoiseTexId;
+	context.edgeNoiseTexId = texInfo.edgeNoiseTexId;
 	context.bRightEye = (curEye == StereoEye::RIGHT_EYE);
 	context.bFog = (ti.m_FS.m_bEnable && !(rp.m_PersFlags2 & RBPF2_NOSHADERFOG));
 #if defined(VOLUMETRIC_FOG_SHADOWS)

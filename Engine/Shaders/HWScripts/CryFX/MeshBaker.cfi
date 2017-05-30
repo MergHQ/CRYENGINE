@@ -90,7 +90,7 @@ pixout_mb MeshBakerComplex_PS(v2f IN)
   float alongEdge=saturate(dot(TRI_POS[2]-TRI_POS[1], onEdge-TRI_POS[1])*IN.edgeLength.y);
   
   // Run through shader
-  float2 realCoord=lerp(TRI_UV[0], lerp(TRI_UV[1], TRI_UV[2], alongEdge), alongFace);
+  float4 realCoord=float4(lerp(TRI_UV[0], lerp(TRI_UV[1], TRI_UV[2], alongEdge), alongFace), 0, 0);
   float4 biNorm=lerp(TRI_BINORM[0], lerp(TRI_BINORM[1], TRI_BINORM[2], alongEdge), alongFace);
   float4 tangent=lerp(TRI_TANGENT[0], lerp(TRI_TANGENT[1], TRI_TANGENT[2], alongEdge), alongFace);
   biNorm.xyz=normalize(biNorm.xyz);
@@ -98,10 +98,10 @@ pixout_mb MeshBakerComplex_PS(v2f IN)
 	
 	// Gather surface material attributes
 	MaterialAttribsCommon commonAttribs;
-	half3x3 mTangentToWS = half3x3(tangent.xyz, binormal.xyz, cross(tangent.xyz, binormal.xyz) * tangent.w);
+	half3x3 mTangentToWS = half3x3(tangent.xyz, biNorm.xyz, cross(tangent.xyz, biNorm.xyz) * tangent.w);
 	half4 vertexColor = 0;
 #if %VERTCOLORS || %BLENDLAYER || %DIRTLAYER
-	vertexColor = Ilerp(TRI_COLOR[0], lerp(TRI_COLOR[1], TRI_COLOR[2], alongEdge), alongFace);
+	vertexColor = lerp(TRI_COLOR[0], lerp(TRI_COLOR[1], TRI_COLOR[2], alongEdge), alongFace);
 #endif
 	GatherMaterialAttribs(mTangentToWS, realCoord, vertexColor, commonAttribs);
 	

@@ -228,6 +228,8 @@ void CRenderer::InitRenderer()
 	m_cloudShadowBrightness = 1;
 
 	m_volumetricCloudTexId = 0;
+	m_volumetricCloudNoiseTexId = 0;
+	m_volumetricCloudEdgeNoiseTexId = 0;
 
 	m_nGPUs = 1;
 
@@ -4533,6 +4535,40 @@ void CRenderer::SetCloudShadowsParams(int nTexID, const Vec3& speed, float tilin
 bool CRenderer::GetCloudShadowsEnabled() const
 {
 	return m_bCloudShadowsEnabled && (m_cloudShadowTexId > 0);
+}
+
+void CRenderer::SetVolumetricCloudParams(int nTexID)
+{
+	ITexture* tex = EF_GetTextureByID(m_volumetricCloudTexId);
+	if (tex)
+	{
+		tex->Release();
+	}
+	m_volumetricCloudTexId = nTexID;
+}
+
+void CRenderer::SetVolumetricCloudNoiseTex(int cloudNoiseTexId, int edgeNoiseTexId)
+{
+	ITexture* tex = EF_GetTextureByID(m_volumetricCloudNoiseTexId);
+	if (tex)
+	{
+		tex->Release();
+	}
+	m_volumetricCloudNoiseTexId = cloudNoiseTexId;
+
+	tex = EF_GetTextureByID(m_volumetricCloudEdgeNoiseTexId);
+	if (tex)
+	{
+		tex->Release();
+	}
+	m_volumetricCloudEdgeNoiseTexId = edgeNoiseTexId;
+}
+
+void CRenderer::GetVolumetricCloudTextureInfo(SVolumetricCloudTexInfo& info) const
+{
+	info.cloudTexId = m_volumetricCloudTexId;
+	info.cloudNoiseTexId = m_volumetricCloudNoiseTexId;
+	info.edgeNoiseTexId = m_volumetricCloudEdgeNoiseTexId;
 }
 
 void CRenderer::UpdateCachedShadowsLodCount(int nGsmLods) const

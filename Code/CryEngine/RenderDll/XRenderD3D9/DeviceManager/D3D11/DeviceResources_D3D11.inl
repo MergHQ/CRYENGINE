@@ -741,6 +741,8 @@ void CDeviceTexture::Unbind()
 	}
 }
 
+#ifdef DEVRES_USE_STAGING_POOL
+
 void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTransfer)
 {
 	D3DResource* pStagingResource;
@@ -757,6 +759,9 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTra
 #else
 	gcpRendD3D->GetDeviceContext().CopySubresourceRegion(pStagingResource, nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL);
 #endif
+
+	// Although CopySubresourceRegion() is asynchronous, the following Map() will synchronize under D3D11
+	// And without Map() there is no access to the contents, which means synchronization is automatic.
 
 	D3D11_MAPPED_SUBRESOURCE lrct;
 	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_READ, 0, &lrct);
@@ -782,6 +787,8 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes)
 #else
 	gcpRendD3D->GetDeviceContext().CopySubresourceRegion(m_pStagingResource[0], nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL);
 #endif
+
+	GetDeviceObjectFactory().IssueFence(m_hStagingFence[0]);
 }
 
 void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes, StagingHook cbTransfer)
@@ -791,6 +798,11 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes, StagingHook
 	if (!(pStagingResource = m_pStagingResource[1]))
 	{
 		pStagingResource = GetDeviceObjectFactory().AllocateStagingResource(m_pNativeResource, TRUE, pStagingMemory);
+	}
+	else
+	{
+		// We have to wait for a previous UploadFromStaging/DownloadToStaging to have finished on the GPU, before we can access the staging resource again on CPU.
+		GetDeviceObjectFactory().SyncFence(m_hStagingFence[1], true, true);
 	}
 
 	assert(pStagingResource);
@@ -827,10 +839,15 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes)
 #else
 	gcpRendD3D->GetDeviceContext().CopySubresourceRegion(m_pNativeResource, nSubRes, 0, 0, 0, m_pStagingResource[1], nSubRes, NULL);
 #endif
+
+	GetDeviceObjectFactory().IssueFence(m_hStagingFence[1]);
 }
 
 void CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload, StagingHook cbTransfer)
 {
+	// We have to wait for a previous UploadFromStaging/DownloadToStaging to have finished on the GPU, before we can access the staging resource again on CPU.
+	GetDeviceObjectFactory().SyncFence(m_hStagingFence[forUpload], true, true);
+
 	D3D11_MAPPED_SUBRESOURCE lrct;
 	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(m_pStagingResource[forUpload], nSubRes, forUpload ? D3D11_MAP_WRITE : D3D11_MAP_READ, 0, &lrct);
 
@@ -840,6 +857,13 @@ void CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload, S
 		gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Unmap(m_pStagingResource[forUpload], nSubRes);
 	}
 }
+
+bool CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload)
+{
+	return GetDeviceObjectFactory().SyncFence(m_hStagingFence[forUpload], false, false) == S_OK;
+}
+
+#endif
 
 //=============================================================================
 
