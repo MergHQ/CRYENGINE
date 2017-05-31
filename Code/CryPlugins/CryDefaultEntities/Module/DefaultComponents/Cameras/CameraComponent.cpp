@@ -78,8 +78,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterCameraComponent)
-
 		void CCameraComponent::ReflectType(Schematyc::CTypeDesc<CCameraComponent>& desc)
 		{
 			desc.SetGUID(CCameraComponent::IID());

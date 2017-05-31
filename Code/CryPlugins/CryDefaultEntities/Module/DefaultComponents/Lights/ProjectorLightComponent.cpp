@@ -26,8 +26,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterProjectorLightComponent)
-
 		void CProjectorLightComponent::ReflectType(Schematyc::CTypeDesc<CProjectorLightComponent>& desc)
 		{
 			desc.SetGUID(CProjectorLightComponent::IID());

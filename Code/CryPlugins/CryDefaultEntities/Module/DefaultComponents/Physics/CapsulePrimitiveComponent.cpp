@@ -16,8 +16,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterCapsulePrimitiveComponent)
-
 		void ReflectType(Schematyc::CTypeDesc<CCapsulePrimitiveComponent>& desc)
 		{
 			desc.SetGUID(CCapsulePrimitiveComponent::IID());

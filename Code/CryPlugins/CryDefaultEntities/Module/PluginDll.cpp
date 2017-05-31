@@ -73,6 +73,31 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 		{
 			// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
 			Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
+
+			Cry::DefaultComponents::RegisterAudioSpotComponent(registrar);
+			Cry::DefaultComponents::RegisterPathfindingComponent(registrar);
+			Cry::DefaultComponents::RegisterCameraComponent(registrar);
+			Cry::DefaultComponents::RegisterLineConstraintComponent(registrar);
+			Cry::DefaultComponents::RegisterPlaneConstraintComponent(registrar);
+			Cry::DefaultComponents::RegisterPointConstraintComponent(registrar);
+			Cry::DefaultComponents::RegisterDebugDrawComponent(registrar);
+			Cry::DefaultComponents::RegisterDecalComponent(registrar);
+			Cry::DefaultComponents::RegisterFogComponent(registrar);
+			Cry::DefaultComponents::RegisterParticleComponent(registrar);
+			Cry::DefaultComponents::RegisterAdvancedAnimationComponent(registrar);
+			Cry::DefaultComponents::RegisterAlembicComponent(registrar);
+			Cry::DefaultComponents::RegisterAnimatedMeshComponent(registrar);
+			Cry::DefaultComponents::RegisterStaticMeshComponent(registrar);
+			Cry::DefaultComponents::RegisterInputComponent(registrar);
+			Cry::DefaultComponents::RegisterEnvironmentProbeComponent(registrar);
+			Cry::DefaultComponents::RegisterPointLightComponent(registrar);
+			Cry::DefaultComponents::RegisterProjectorLightComponent(registrar);
+			Cry::DefaultComponents::RegisterBoxPrimitiveComponent(registrar);
+			Cry::DefaultComponents::RegisterCapsulePrimitiveComponent(registrar);
+			Cry::DefaultComponents::RegisterCharacterControllerComponent(registrar);
+			Cry::DefaultComponents::RegisterCylinderPrimitiveComponent(registrar);
+			Cry::DefaultComponents::RegisterStaticPhysicsComponent(registrar);
+			Cry::DefaultComponents::RegisterSpherePrimitiveComponent(registrar);
 		};
 
 		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(

@@ -16,8 +16,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterBoxPrimitiveComponent)
-
 		void ReflectType(Schematyc::CTypeDesc<CBoxPrimitiveComponent>& desc)
 		{
 			desc.SetGUID(CBoxPrimitiveComponent::IID());

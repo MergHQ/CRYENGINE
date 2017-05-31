@@ -16,8 +16,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterSpherePrimitiveComponent)
-
 		void ReflectType(Schematyc::CTypeDesc<CSpherePrimitiveComponent>& desc)
 		{
 			desc.SetGUID(CSpherePrimitiveComponent::IID());

@@ -36,8 +36,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterParticleComponent)
-
 		void CParticleComponent::ReflectType(Schematyc::CTypeDesc<CParticleComponent>& desc)
 		{
 			desc.SetGUID(CParticleComponent::IID());

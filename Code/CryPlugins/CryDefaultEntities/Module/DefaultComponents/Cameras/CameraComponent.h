@@ -141,8 +141,8 @@ namespace Cry
 			void EnableAutomaticActivation(bool bActivate) { m_bActivateOnCreate = bActivate; }
 			bool IsAutomaticallyActivated() const { return m_bActivateOnCreate; }
 
-			void SetNearPlane(Schematyc::PositiveFloat nearPlane) { m_nearPlane = nearPlane; }
-			Schematyc::PositiveFloat GetNearPlane() const { return m_nearPlane; }
+			void SetNearPlane(float nearPlane) { m_nearPlane = nearPlane; }
+			float GetNearPlane() const { return m_nearPlane; }
 
 			void SetFieldOfView(CryTransform::CAngle angle) { m_fieldOfView = angle; }
 			CryTransform::CAngle GetFieldOfView() const { return m_fieldOfView; }
@@ -155,7 +155,7 @@ namespace Cry
 
 		protected:
 			bool m_bActivateOnCreate = true;
-			Schematyc::PositiveFloat m_nearPlane = 0.25f;
+			Schematyc::Range<0, 32768> m_nearPlane = 0.25f;
 			CryTransform::CClampedAngle<20, 360> m_fieldOfView = 75.0_degrees;
 
 			bool m_bAutomaticAudioListenerPosition = true;

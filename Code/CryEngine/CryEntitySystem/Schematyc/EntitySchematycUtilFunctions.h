@@ -1,7 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include "stdafx.h"
-
 #include <CryEntitySystem/IEntity.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySerialization/Forward.h>
@@ -48,5 +46,3 @@ static void RegisterUtilFunctions(IEnvRegistrar& registrar)
 }
 } // Entity
 } // Schematyc
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&Schematyc::Entity::RegisterUtilFunctions)

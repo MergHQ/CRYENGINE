@@ -39,8 +39,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterDecalComponent)
-
 		void CDecalComponent::ReflectType(Schematyc::CTypeDesc<CDecalComponent>& desc)
 		{
 			desc.SetGUID(CDecalComponent::IID());

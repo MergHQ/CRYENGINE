@@ -120,5 +120,3 @@ namespace Schematyc
 	}
 
 } // Schematyc
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&Schematyc::CEntityUtilsComponent::Register)

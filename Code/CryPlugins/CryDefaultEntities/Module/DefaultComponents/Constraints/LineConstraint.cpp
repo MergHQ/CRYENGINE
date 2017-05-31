@@ -36,8 +36,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterLineConstraintComponent)
-
 		void CLineConstraintComponent::ReflectType(Schematyc::CTypeDesc<CLineConstraintComponent>& desc)
 		{
 			desc.SetGUID(CLineConstraintComponent::IID());

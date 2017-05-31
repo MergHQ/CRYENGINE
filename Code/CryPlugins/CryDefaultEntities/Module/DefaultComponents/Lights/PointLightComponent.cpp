@@ -19,8 +19,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterPointLightComponent)
-
 		void CPointLightComponent::ReflectType(Schematyc::CTypeDesc<CPointLightComponent>& desc)
 		{
 			desc.SetGUID(CPointLightComponent::IID());

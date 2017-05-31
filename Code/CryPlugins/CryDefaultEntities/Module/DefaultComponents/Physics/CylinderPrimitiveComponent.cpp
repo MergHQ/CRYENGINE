@@ -16,8 +16,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterCylinderPrimitiveComponent)
-
 		void ReflectType(Schematyc::CTypeDesc<CCylinderPrimitiveComponent>& desc)
 		{
 			desc.SetGUID(CCylinderPrimitiveComponent::IID());

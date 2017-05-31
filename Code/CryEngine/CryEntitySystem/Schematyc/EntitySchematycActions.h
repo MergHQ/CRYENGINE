@@ -2,8 +2,6 @@
 
 // #SchematycTODO : These actions are for test purposes only and should either be removed or polished up and moved to separate files.
 
-#include "stdafx.h"
-
 #include <CryRenderer/IRenderAuxGeom.h>
 
 #include  <CrySchematyc/Utils/SharedString.h>
@@ -206,6 +204,3 @@ private:
 };
 
 } // Schematyc
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&Schematyc::CEntityTimerAction::Register)
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&Schematyc::CEntityDebugTextAction::Register)
