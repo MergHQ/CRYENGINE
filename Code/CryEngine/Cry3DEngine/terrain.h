@@ -506,7 +506,7 @@ public:
 	void CheckNodesGeomUnload(int nSID, const SRenderingPassInfo& passInfo);
 	void GetStreamingStatus(int& nLoadedSectors, int& nTotalSectors);
 	void InitTerrainWater(IMaterial* pTerrainWaterMat, int nWaterBottomTexId);
-	void ResetTerrainVertBuffers(const AABB* pBox, int nSID);
+	void ResetTerrainVertBuffers(const AABB* pBox, int nSID = GetDefSID());
 	void SetTerrainSectorTexture(int nTexSectorX, int nTexSectorY, unsigned int textureId, bool bMergeNotAllowed, int nSID = GetDefSID());
 	void SetDetailLayerProperties(int nId, float fScaleX, float fScaleY, uint8 ucProjAxis, const char* szSurfName, const PodArray<int>& lstnVegetationGroups, IMaterial* pMat, int nSID);
 	bool IsOceanVisible() { return m_bOceanIsVisible != 0; }

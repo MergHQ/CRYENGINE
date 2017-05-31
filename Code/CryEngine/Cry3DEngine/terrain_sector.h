@@ -390,7 +390,6 @@ public:
 	void					UpdateNodeNormalMapFromEditorData();
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
-	IRenderMesh*  MakeSubAreaRenderMesh(const Vec3& vPos, float fRadius, IRenderMesh* pPrevRenderMesh, IMaterial* pMaterial, bool bRecalIRenderMeshconst, const char* szLSourceName);
 	void          SetChildsLod(int nNewGeomLOD, const SRenderingPassInfo& passInfo);
 	int           GetAreaLOD(const SRenderingPassInfo& passInfo);
 	bool          RenderNodeHeightmap(const SRenderingPassInfo& passInfo);
@@ -432,6 +431,9 @@ public:
 
 	void                UpdateRenderMesh(struct CStripsInfo* pArrayInfo, bool bUpdateVertices);
 	void                BuildVertices(int step, bool bSafetyBorder);
+	void                SetVertexSurfaceType(int x, int y, int nStep, CTerrain* pTerrain, const int nSID, SVF_P2S_N4B_C4B_T1F &vert);
+	void                SetVertexNormal(int x, int y, const int iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, const int nSID, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm = nullptr);
+	void                AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const int nSID, const int nStep, const int nTerrainSize);
 
 	int                 GetMML(int dist, int mmMin, int mmMax);
 

@@ -847,6 +847,7 @@ public:
 	float                 m_skyboxMultiplier;
 	float                 m_dayNightIndicator;
 	bool                  m_bHeightMapAoEnabled;
+	bool                  m_bIntegrateObjectsIntoTerrain;
 
 	Vec3                  m_fogColor2;
 	Vec3                  m_fogColorRadial;
@@ -942,6 +943,7 @@ private:
 	void  LoadTimeOfDaySettingsFromXML(XmlNodeRef node);
 	char* GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, const char* szDefaultValue);
 	char* GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, const char* szLevel3, const char* szDefaultValue);
+	bool  GetXMLAttribBool(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, bool bDefaultValue);
 
 	// without calling high level functions like panorama screenshot
 	void RenderInternal(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName);

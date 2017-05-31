@@ -1190,6 +1190,19 @@ char* C3DEngine::GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, c
 	return szResText;
 }
 
+bool C3DEngine::GetXMLAttribBool(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, bool bDefaultValue)
+{
+	bool bResult = bDefaultValue;
+
+	XmlNodeRef nodeLevel = pInputNode->findChild(szLevel1);
+	if (nodeLevel && nodeLevel->haveAttr(szLevel2))
+	{
+		nodeLevel->getAttr(szLevel2, bResult);
+	}
+
+	return bResult;
+}
+
 void C3DEngine::UpdateMoonDirection()
 {
 	float moonLati(-gf_PI + gf_PI * m_moonRotationLatitude / 180.0f);
@@ -1300,8 +1313,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	{
 		m_pBreezeGenerator->Shutdown();
 
-		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "BreezeGeneration", "false");
-		m_pBreezeGenerator->m_enabled = !strcmp(pText, "true") || !strcmp(pText, "1");
+		m_pBreezeGenerator->m_enabled = GetXMLAttribBool(pInputNode, "EnvState", "BreezeGeneration", false);
 		m_pBreezeGenerator->m_strength = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeStrength", "1.f"));
 		m_pBreezeGenerator->m_variance = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeVariation", "1.f"));
 		m_pBreezeGenerator->m_lifetime = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeLifeTime", "15.f"));
@@ -1326,8 +1338,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	{
 		CTimeOfDay::SEnvironmentInfo envTODInfo;
 		{
-			const char* pText = GetXMLAttribText(pInputNode, "EnvState", "SunLinkedToTOD", "true");
-			envTODInfo.bSunLinkedToTOD = !strcmp(pText, "true") || !strcmp(pText, "1");
+			envTODInfo.bSunLinkedToTOD = GetXMLAttribBool(pInputNode, "EnvState", "SunLinkedToTOD", true);
 		}
 		// get rotation of sun around z axis (needed to define an arbitrary path over zenit for day/night cycle position calculations)
 		envTODInfo.sunRotationLatitude = (float) atof(GetXMLAttribText(pInputNode, "Lighting", "SunRotation", "240"));
@@ -1337,8 +1348,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	}
 
 	{
-		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "ShowTerrainSurface", "true");
-		m_bShowTerrainSurface = !strcmp(pText, "true") || !strcmp(pText, "1");
+		m_bShowTerrainSurface = GetXMLAttribBool(pInputNode, "EnvState", "ShowTerrainSurface", true);
 	}
 
 	{
@@ -1367,8 +1377,17 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	}
 
 	{
-		const char* pText = GetXMLAttribText(pInputNode, "Terrain", "HeightMapAO", "false");
-		m_bHeightMapAoEnabled = !strcmp(pText, "true") || !strcmp(pText, "1");
+		m_bHeightMapAoEnabled = GetXMLAttribBool(pInputNode, "Terrain", "HeightMapAO", false);
+	}
+
+	{
+		bool bIntegrateObjectsIntoTerrain = GetCVars()->e_TerrainIntegrateObjectsMaxVertices && GetXMLAttribBool(pInputNode, "Terrain", "IntegrateObjects", false);
+
+		if (bIntegrateObjectsIntoTerrain != m_bIntegrateObjectsIntoTerrain && GetTerrain())
+		{
+			GetTerrain()->ResetTerrainVertBuffers(NULL, nSID);
+			m_bIntegrateObjectsIntoTerrain = bIntegrateObjectsIntoTerrain;
+		}
 	}
 
 	{
@@ -1386,13 +1405,11 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	}
 
 	{
-		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "SunShadowsFromTerrain", "false");
-		m_bSunShadowsFromTerrain = (!strcmp(pText, "true") || !strcmp(pText, "1")) && GetCVars()->e_GsmCastFromTerrain;
+		m_bSunShadowsFromTerrain = GetXMLAttribBool(pInputNode, "EnvState", "SunShadowsFromTerrain", false) && GetCVars()->e_GsmCastFromTerrain;
 	}
 
 	{
-		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "UseLayersActivation", "false");
-		Get3DEngine()->m_bAreaActivationInUse = !strcmp(pText, "true") || !strcmp(pText, "1");
+		Get3DEngine()->m_bAreaActivationInUse = GetXMLAttribBool(pInputNode, "EnvState", "UseLayersActivation", false);
 	}
 
 	// load cloud shadow parameters
@@ -1412,8 +1429,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 		const float cloudShadowTiling = (float)atof(GetXMLAttribText(pInputNode, "CloudShadows", "CloudShadowTiling", "1.0"));
 		const float cloudShadowBrightness = (float)atof(GetXMLAttribText(pInputNode, "CloudShadows", "CloudShadowBrightness", "1.0"));
 
-		const char* pText = GetXMLAttribText(pInputNode, "CloudShadows", "CloudShadowInvert", "false");
-		const bool cloudShadowInvert = !strcmp(pText, "true") || !strcmp(pText, "1");
+		const bool cloudShadowInvert = GetXMLAttribBool(pInputNode, "CloudShadows", "CloudShadowInvert", false);
 
 		if (GetRenderer())
 		{
@@ -1424,8 +1440,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	// load volumetric cloud parameters
 	{
 #if 0 //disable spherical cloud layer until it works correctly.
-		const char* pText = GetXMLAttribText(pInputNode, "VolumetricCloud", "SphericalCloud", "false");
-		const bool sphericalCloud = !strcmp(pText, "true") || !strcmp(pText, "1");
+		const bool sphericalCloud = GetXMLAttribBool(pInputNode, "VolumetricCloud", "SphericalCloud", false);
 		const float volCloudEarthRadius = max(0.0f, (float)atof(GetXMLAttribText(pInputNode, "VolumetricCloud", "EarthRadius", "6360000.0")));
 #else
 		const bool sphericalCloud = false;
@@ -1451,10 +1466,8 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 		const Vec3 edgeTurbulenceNoiseScale = StringToVector(GetXMLAttribText(pInputNode, "VolumetricCloud", "EdgeTurbulenceNoiseScale", "1,1,1"));
 		SetGlobalParameter(E3DPARAM_VOLCLOUD_TURBULENCE_NOISE_SCALE, edgeTurbulenceNoiseScale);
 
-		const char* pTextEdgeErode = GetXMLAttribText(pInputNode, "VolumetricCloud", "EdgeTurbulenceNoiseErode", "true");
-		const float edgeTurbulenceNoiseErode = (!strcmp(pTextEdgeErode, "true") || !strcmp(pTextEdgeErode, "1")) ? 1.0f : 0.0f;
-		const char* pTextEdgeAbs = GetXMLAttribText(pInputNode, "VolumetricCloud", "EdgeTurbulenceNoiseAbsolute", "true");
-		const float edgeTurbulenceNoiseAbsolute = (!strcmp(pTextEdgeAbs, "true") || !strcmp(pTextEdgeAbs, "1")) ? 1.0f : 0.0f;
+		const float edgeTurbulenceNoiseErode = GetXMLAttribBool(pInputNode, "VolumetricCloud", "EdgeTurbulenceNoiseErode", true) ? 1.0f : 0.0f;
+		const float edgeTurbulenceNoiseAbsolute = GetXMLAttribBool(pInputNode, "VolumetricCloud", "EdgeTurbulenceNoiseAbsolute", true) ? 1.0f : 0.0f;
 		SetGlobalParameter(E3DPARAM_VOLCLOUD_TURBULENCE_NOISE_PARAMS, Vec3(edgeTurbulenceNoiseErode, edgeTurbulenceNoiseAbsolute, 0.0f));
 
 		const float maxGlobalCloudDensity = min(1.0f, max(0.0f, (float)atof(GetXMLAttribText(pInputNode, "VolumetricCloud", "MaxGlobalCloudDensity", "0.04"))));
@@ -1494,11 +1507,8 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	}
 
 	{
-		const char* pText = GetXMLAttribText(pInputNode, "VolFogShadows", "Enable", "false");
-		const bool enable = !strcmp(pText, "true") || !strcmp(pText, "1");
-
-		pText = GetXMLAttribText(pInputNode, "VolFogShadows", "EnableForClouds", "false");
-		const bool enableForClouds = !strcmp(pText, "true") || !strcmp(pText, "1");
+		const bool enable = GetXMLAttribBool(pInputNode, "VolFogShadows", "Enable", false);
+		const bool enableForClouds = GetXMLAttribBool(pInputNode, "VolFogShadows", "EnableForClouds", false);
 
 		SetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_ENABLE, Vec3(enable ? 1.0f : 0.0f, enableForClouds ? 1.0f : 0.0f, 0.0f));
 	}

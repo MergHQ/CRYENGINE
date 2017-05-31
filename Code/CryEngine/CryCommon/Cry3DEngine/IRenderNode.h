@@ -353,6 +353,7 @@ public:
 		eGM_AnalyticalProxy_Soft,    //!< Analytical proxy (with shadow fading)
 		eGM_AnalyticalProxy_Hard,    //!< Analytical proxy (no shadow fading)
 		eGM_AnalytPostOccluder,      //!< Analytical occluder (used with average light direction)
+		eGM_IntegrateIntoTerrain,    //!< Copy object mesh into terrain mesh and render using usual terrain materials
 	};
 
 	//! Retrieves the way object is used by GI system.

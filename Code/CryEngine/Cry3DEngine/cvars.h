@@ -233,6 +233,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_Fog, 1);
 	float e_TimeOfDay;
 	int   e_Terrain;
+	int   e_TerrainIntegrateObjectsMaxVertices;
 	DeclareConstIntCVar(e_SkyBox, 1);
 	float e_CoverageBufferAABBExpand;
 	int   e_CoverageBufferEarlyOut;
