@@ -18,7 +18,6 @@
 #include <IActorSystem.h>
 #include <IAnimatedCharacter.h>
 #include <CryAudio/Dialog/IDialogSystem.h>
-#include <CryFlowGraph/IFlowSystem.h>
 #include <CryAction/IMaterialEffects.h>
 #include <IEffectSystem.h>
 
@@ -44,7 +43,6 @@
 #include <IPlayerProfiles.h>
 #include <ISubtitleManager.h>
 #include <IForceFeedbackSystem.h>
-#include <CryFlowGraph/IFlowGraphModuleManager.h>
 #include <IGameplayRecorder.h>
 #include <IGameSessionHandler.h>
 #include <TestSystem/IGameStateRecorder.h>
@@ -54,9 +52,6 @@
 #include <IWorldQuery.h>
 #include <CryAction/ILipSyncProvider.h>
 %}
-
-%ignore IFlowSystemEngineModule;
-%ignore operator==(const SFlowSystemVoid& a, const SFlowSystemVoid& b);
 
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"
 
@@ -110,31 +105,6 @@
 %csconstvalue("5") eFDT_String;
 %csconstvalue("6") eFDT_Bool;
 
-SMART_PTR_TEMPLATE(IFlowEdgeIterator)
-SMART_PTR_TEMPLATE(IFlowGraph)
-SMART_PTR_TEMPLATE(IFlowGraphHook)
-%template(IFilterPtr) _smart_ptr<IFlowGraphInspector::IFilter>;
-SMART_PTR_TEMPLATE(IFlowGraphInspector)
-SMART_PTR_TEMPLATE(IFlowGraphModuleInstanceIterator)
-SMART_PTR_TEMPLATE(IFlowGraphModuleIterator)
-SMART_PTR_TEMPLATE(IFlowNode)
-SMART_PTR_TEMPLATE(IFlowNodeFactory)
-SMART_PTR_TEMPLATE(IFlowNodeIterator)
-SMART_PTR_TEMPLATE(IFlowNodeTypeIterator)
-
-%feature("director") IFlowNode;
-%feature("director") IFlowNodeFactory;
-
-%include "../../../../CryEngine/CryCommon/CryFlowGraph/IFlowSystem.h"
-
-
-%template(WrapperVoid) NFlowSystemUtils::Wrapper<SFlowSystemVoid>;
-%template(WrapperInt) NFlowSystemUtils::Wrapper<int>;
-%template(WrapperFloat) NFlowSystemUtils::Wrapper<float>;
-%template(WrapperEntityId) NFlowSystemUtils::Wrapper<EntityId>;
-%template(WrapperVec3) NFlowSystemUtils::Wrapper<Vec3>;
-%template(WrapperString) NFlowSystemUtils::Wrapper<string>;
-%template(WrapperBool) NFlowSystemUtils::Wrapper<bool>;
 %ignore SMFXParticleListNode::Create;
 %ignore SMFXParticleListNode::Destroy;
 %ignore SMFXParticleListNode::FreePool;
@@ -193,7 +163,6 @@ SMART_PTR_TEMPLATE(IFlowNodeTypeIterator)
 %include "../../../CryEngine/CryAction/IPlayerProfiles.h"
 %include "../../../CryEngine/CryAction/ISubtitleManager.h"
 %include "../../../CryEngine/CryAction/IForceFeedbackSystem.h"
-%include "../../../../CryEngine/CryCommon/CryFlowGraph/IFlowGraphModuleManager.h"
 %include "../../../CryEngine/CryAction/IGameplayRecorder.h"
 %include "../../../CryEngine/CryAction/IGameSessionHandler.h"
 %include "../../../CryEngine/CryAction/TestSystem/IGameStateRecorder.h"
