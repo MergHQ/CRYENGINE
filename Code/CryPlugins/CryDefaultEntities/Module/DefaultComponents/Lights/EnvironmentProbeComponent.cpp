@@ -46,7 +46,7 @@ namespace Cry
 			desc.SetEditorCategory("Lights");
 			desc.SetLabel("Environment Probe");
 			desc.SetDescription("Captures an image of its full surroundings and used to light nearby objects with reflective materials");
-			desc.SetIcon("icons:designer/Designer_Box.ico");
+			desc.SetIcon("icons:Designer/Designer_Box.ico");
 			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 			desc.AddMember(&CEnvironmentProbeComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the environment probe is enabled", true);

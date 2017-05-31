@@ -228,6 +228,7 @@ void CEntityClassRegistry::InitializeDefaultClasses()
 
 	SEntityClassDesc stdClass;
 	stdClass.sName = "Entity";
+	stdClass.flags |= ECLF_INVISIBLE;
 	m_pDefaultClass = RegisterStdClass(stdClass);
 
 	// Same as empty entity above, kept for legacy reasons

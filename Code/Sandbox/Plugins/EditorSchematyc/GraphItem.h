@@ -62,11 +62,6 @@ protected:
 	void LoadFromScriptElement();
 
 private:
-	static CryIcon s_iconFunction;
-	static CryIcon s_iconConstructor;
-	static CryIcon s_iconDestructor;
-	static CryIcon s_iconSignalReceivers;
-
 	CAbstractObjectStructureModelItem* m_pParentItem;
 	CNodeGraphViewModel*               m_pGraphModel;
 

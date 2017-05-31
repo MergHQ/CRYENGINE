@@ -22,11 +22,6 @@
 
 namespace CrySchematycEditor 
 {
-	CryIcon CGraphItem::s_iconFunction = CryIcon("icons:schematyc/script_function.png");
-	CryIcon CGraphItem::s_iconConstructor = CryIcon("icons:schematyc/script_constructor.png");
-	CryIcon CGraphItem::s_iconDestructor = CryIcon("icons:schematyc/script_destructor.png");
-	CryIcon CGraphItem::s_iconSignalReceivers = CryIcon("icons:schematyc/script_signal_receiver.png");
-
 CGraphItem::CGraphItem(Schematyc::IScriptFunction& scriptFunction, CAbstractObjectStructureModel& model)
 	: CAbstractObjectStructureModelItem(model)
 	, m_pScriptFunction(&scriptFunction)
@@ -79,13 +74,41 @@ const CryIcon* CGraphItem::GetIcon() const
 	switch (m_graphType)
 	{
 	case eGraphType_Construction:
-		return &s_iconConstructor;
+	{
+		static std::unique_ptr<CryIcon> pIconConstructor;
+		if (pIconConstructor.get() == nullptr)
+		{
+			pIconConstructor = stl::make_unique<CryIcon>("icons:schematyc/script_constructor.png");
+		}
+		return pIconConstructor.get();
+	}
 	case eGraphType_Destruction:
-		return &s_iconDestructor;
+	{
+		static std::unique_ptr<CryIcon> pIconDestructor;
+		if (pIconDestructor.get() == nullptr)
+		{
+			pIconDestructor = stl::make_unique<CryIcon>("icons:schematyc/script_destructor.png");
+		}
+		return pIconDestructor.get();
+	}
 	case eGraphType_Function:
-		return &s_iconFunction;
+	{
+		static std::unique_ptr<CryIcon> pIconFunction;
+		if (pIconFunction.get() == nullptr)
+		{
+			pIconFunction = stl::make_unique<CryIcon>("icons:schematyc/script_function.png");
+		}
+		return pIconFunction.get();
+	}
 	case eGraphType_SignalReceiver:
-		return &s_iconSignalReceivers;
+	{
+		static std::unique_ptr<CryIcon> pIconSignalReceivers;
+		if (pIconSignalReceivers.get() == nullptr)
+		{
+			pIconSignalReceivers = stl::make_unique<CryIcon>("icons:schematyc/script_signal_receiver.png");
+		}
+		return pIconSignalReceivers.get();
+	}
 	default:
 		break;
 	}

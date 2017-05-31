@@ -18,6 +18,10 @@ class QWindow;
 #include <QWindow>
 #endif
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 // This class is a modified version of QPixmapIconEngine from the Qt source code.
 
 CryPixmapIconEngine::CryPixmapIconEngine(CryIconColorMap colorMap) : m_colormap(colorMap)
@@ -359,7 +363,16 @@ void CryPixmapIconEngine::addFile(const QString& fileName, const QSize& size, QI
 	ImageReader imageReader(abs);
 	const QByteArray format = imageReader.format();
 	if (format.isEmpty()) // Device failed to open or unsupported format.
+	{
+#ifdef WIN32
+		// Always notify programmer directly if we're trying to load an invalid file
+		if (IsDebuggerPresent())
+		{
+			__debugbreak();
+		}
+#endif
 		return;
+	}
 	QImage image;
 	if (format != "ico")
 	{
