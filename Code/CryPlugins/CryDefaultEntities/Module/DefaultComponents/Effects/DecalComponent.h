@@ -45,10 +45,10 @@ namespace Cry
 
 			void Spawn()
 			{
-				if (m_materialFileName.value.size() > 0)
+				if (m_materialFileName.value.size() > 0 && gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialFileName.value) != nullptr)
 				{
 					IDecalRenderNode* pRenderNode = static_cast<IDecalRenderNode*>(m_pEntity->GetSlotRenderNode(GetEntitySlotId()));
-
+					
 					// Make sure that the component has a slot so the transform can be modified by designers
 					if (pRenderNode == nullptr)
 					{
@@ -72,7 +72,7 @@ namespace Cry
 					}
 
 					pRenderNode->SetRndFlags(renderFlags);
-
+						
 					SDecalProperties decalProperties;
 					decalProperties.m_projectionType = m_projectionType;
 
