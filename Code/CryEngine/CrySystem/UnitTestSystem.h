@@ -16,26 +16,26 @@ namespace CryUnitTest
 class CUnitTest final : public IUnitTest
 {
 public:
-	CUnitTest(SUnitTestInfo info) : m_info(std::move(info)) {}
-	virtual const SUnitTestInfo& GetInfo() const override { return m_info; };
+	CUnitTest(CUnitTestInfo info) : m_info(std::move(info)) {}
+	virtual const CUnitTestInfo& GetInfo() const override { return m_info; };
 	virtual const SAutoTestInfo& GetAutoTestInfo() const override
 	{
-		return m_info.test.m_autoTestInfo;
+		return m_info.GetTest().m_autoTestInfo;
 	}
 	virtual void Init() override
 	{
-		m_info.test.Init();
+		m_info.GetTest().Init();
 	};
 	virtual void Run() override
 	{
-		m_info.test.Run();
+		m_info.GetTest().Run();
 	};
 	virtual void Done() override
 	{
-		m_info.test.Done();
+		m_info.GetTest().Done();
 	};
 
-	SUnitTestInfo m_info;
+	CUnitTestInfo m_info;
 };
 
 class CLogUnitTestReporter : public IUnitTestReporter
@@ -76,7 +76,7 @@ public:
 	virtual ~CUnitTestManager();
 
 public:
-	virtual IUnitTest* GetTestInstance(const SUnitTestInfo& info) override;
+	virtual IUnitTest* GetTestInstance(const CUnitTestInfo& info) override;
 	virtual int        RunAllTests(EReporterType reporterType) override;
 	virtual void       RunAutoTests(const char* szSuiteName, const char* szTestName) override; //!< Currently not in use
 	virtual void       Update() override;                                                      //!< Currently not in use

@@ -49,6 +49,7 @@ struct ITestSystem
 
 	virtual void  BeforeRender() = 0;
 	virtual void  AfterRender() = 0;
+	virtual void  InitLog() = 0;
 	virtual ILog* GetILog() = 0;
 
 	//! To free the system (not reference counted).

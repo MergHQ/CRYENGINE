@@ -57,7 +57,7 @@ CUnitTestManager::~CUnitTestManager()
 {
 }
 
-IUnitTest* CUnitTestManager::GetTestInstance(const SUnitTestInfo& info)
+IUnitTest* CUnitTestManager::GetTestInstance(const CUnitTestInfo& info)
 {
 	for (auto& pt : m_tests)
 	{
@@ -230,9 +230,8 @@ void CUnitTestManager::RunTest(CUnitTest& test, SUnitTestRunContext& context)
 
 		// copy filename and line number of unit test assert
 		// will be used later for test reporting
-		test.m_info.sFilename = e.m_filename;
-		test.m_info.filename = test.m_info.sFilename.c_str();
-		test.m_info.lineNumber = e.m_lineNumber;
+		test.m_info.SetFileName(e.m_filename);
+		test.m_info.SetLineNumber(e.m_lineNumber);
 	}
 	catch (std::exception const& e)
 	{
@@ -280,11 +279,11 @@ bool CUnitTestManager::IsTestMatch(const CUnitTest& test, const string& sSuiteNa
 
 	if (sSuiteName != "" && sSuiteName != "*")
 	{
-		isMatch &= (sSuiteName == test.GetInfo().suite);
+		isMatch &= (sSuiteName == test.GetInfo().GetSuite());
 	}
 	if (sTestName != "" && sTestName != "*")
 	{
-		isMatch &= (sTestName == test.GetInfo().name);
+		isMatch &= (sTestName == test.GetInfo().GetName());
 	}
 	return isMatch;
 }
@@ -304,16 +303,16 @@ void CryUnitTest::CLogUnitTestReporter::OnFinishTesting(const SUnitTestRunContex
 void CryUnitTest::CLogUnitTestReporter::OnSingleTestStart(const IUnitTest& test)
 {
 	auto& info = test.GetInfo();
-	m_log.Log("UnitTestStart:  [%s]%s:%s", info.GetModule(), info.suite, info.name);
+	m_log.Log("UnitTestStart:  [%s]%s:%s", info.GetModule(), info.GetSuite(), info.GetName());
 }
 
 void CryUnitTest::CLogUnitTestReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
 {
 	auto& info = test.GetInfo();
 	if (bSuccess)
-		m_log.Log("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.GetModule(), info.suite, info.name, fRunTimeInMs);
+		m_log.Log("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.GetModule(), info.GetSuite(), info.GetName(), fRunTimeInMs);
 	else
-		m_log.Log("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.GetModule(), info.suite, info.name, szFailureDescription);
+		m_log.Log("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.GetModule(), info.GetSuite(), info.GetName(), szFailureDescription);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -343,7 +342,7 @@ void CryUnitTest::CMinimalLogUnitTestReporter::OnSingleTestFinish(const IUnitTes
 	if (!bSuccess)
 	{
 		auto& info = test.GetInfo();
-		m_log.Log("-- FAIL (%s): [%s]%s:%s (%s:%d)", szFailureDescription, info.GetModule(), info.suite, info.name, info.filename, info.lineNumber);
+		m_log.Log("-- FAIL (%s): [%s]%s:%s (%s:%d)", szFailureDescription, info.GetModule(), info.GetSuite(), info.GetName(), info.GetFileName(), info.GetLineNumber());
 	}
 }
 
@@ -1894,12 +1893,12 @@ CRY_UNIT_TEST(CUT_CRYGUID)
 	guid = "296708CE-F570-4263-B067-C6D8B15990BD"_cry_guid;
 
 	// Test that GUID specified in string with or without brackets work reliably
-	CRY_UNIT_TEST_ASSERT( guid == "{296708CE-F570-4263-B067-C6D8B15990BD}"_cry_guid);
+	CRY_UNIT_TEST_CHECK_EQUAL(guid, "{296708CE-F570-4263-B067-C6D8B15990BD}"_cry_guid);
 
 	char str[64];
 	guid.ToString(str);
 	// Test back conversion from GUID to string
-	CRY_UNIT_TEST_ASSERT( 0 == strcmp(str,"296708CE-F570-4263-B067-C6D8B15990BD"));
+	CRY_UNIT_TEST_CHECK_EQUAL(CryStringUtils::toUpper(str), "296708CE-F570-4263-B067-C6D8B15990BD");
 
 }
 

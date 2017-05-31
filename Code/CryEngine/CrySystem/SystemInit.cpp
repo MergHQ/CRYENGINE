@@ -2680,6 +2680,12 @@ bool CSystem::Init()
 
 		//here we should be good to ask Crypak to do something
 
+		//notify test system to init logs (since file system is setup).
+		if (m_pTestSystem)
+		{
+			m_pTestSystem->InitLog();
+		}
+
 		//#define GEN_PAK_CDR_CRC
 #ifdef GEN_PAK_CDR_CRC
 

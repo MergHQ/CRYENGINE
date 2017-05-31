@@ -26,6 +26,7 @@ public:
 	virtual void                           Update() override;
 	virtual void                           BeforeRender() override;
 	virtual void                           AfterRender()  override {}
+	virtual void                           InitLog() override;
 	virtual ILog*                          GetILog() override      { return &m_log; }
 	virtual void                           Release() override      { delete this; }
 	virtual void                           SetTimeDemoInfo(STimeDemoInfo* pTimeDemoInfo) override;

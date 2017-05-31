@@ -57,13 +57,19 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	AddCell("Failed Tests", CELL_BOLD);
 	AddCell(context.failedTestCount);
 	if (context.failedTestCount != 0)
+	{
 		SetCellFlags(m_CurrCell, CELL_BOLD | CELL_CENTERED);
+	}
 	AddRow();
 	AddCell("Success Ratio %", CELL_BOLD);
 	if (context.testCount > 0)
+	{
 		AddCell(100 * context.succedTestCount / context.testCount);
+	}
 	else
+	{
 		AddCell(0);
+	}
 
 	AddRow();
 	AddRow();
@@ -82,19 +88,25 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	for (const STestResult& res : m_results)
 	{
 		if (res.bSuccess)
+		{
 			continue;
+		}
 
 		AddRow();
 		if (res.autoTestInfo.szTaskName != 0)
-			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name, res.autoTestInfo.szTaskName);
+		{
+			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName(), res.autoTestInfo.szTaskName);
+		}
 		else
-			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name);
+		{
+			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName());
+		}
 		AddCell(name);
 		AddCell("FAIL", CELL_CENTERED);
 		AddCell((int)res.fRunTimeInMs);
 		AddCell(res.failureDescription, CELL_CENTERED);
-		AddCell(res.testInfo.filename);
-		AddCell(res.testInfo.lineNumber);
+		AddCell(res.testInfo.GetFileName());
+		AddCell(res.testInfo.GetLineNumber());
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -126,18 +138,26 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	{
 		AddRow();
 		if (res.autoTestInfo.szTaskName != 0)
-			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name, res.autoTestInfo.szTaskName);
+		{
+			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName(), res.autoTestInfo.szTaskName);
+		}
 		else
-			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.suite, res.testInfo.name);
+		{
+			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName());
+		}
 		AddCell(name);
 		if (res.bSuccess)
+		{
 			AddCell("OK", CELL_CENTERED);
+		}
 		else
+		{
 			AddCell("FAIL", CELL_CENTERED);
+		}
 		AddCell((int)res.fRunTimeInMs);
 		AddCell(res.failureDescription, CELL_CENTERED);
-		AddCell(res.testInfo.filename);
-		AddCell(res.testInfo.lineNumber);
+		AddCell(res.testInfo.GetFileName());
+		AddCell(res.testInfo.GetLineNumber());
 	}
 
 	bool bSaveSucceed = SaveToFile(kOutputFileName);
@@ -173,7 +193,7 @@ bool CUnitTestExcelReporter::SaveJUnitCompatableXml()
 	{
 		XmlNodeRef testNode = suiteNode->newChild("testcase");
 		testNode->setAttr("time", res.fRunTimeInMs);
-		testNode->setAttr("name", res.testInfo.name);
+		testNode->setAttr("name", res.testInfo.GetName());
 		//<testcase time="0.146" name="TestPropertyValue"	classname="UnitTests.MainClassTest"/>
 
 		if (!res.bSuccess)
@@ -182,7 +202,7 @@ bool CUnitTestExcelReporter::SaveJUnitCompatableXml()
 			failNode->setAttr("type", res.testInfo.GetModule());
 			failNode->setAttr("message", res.failureDescription);
 			string err;
-			err.Format("%s at line %d", res.testInfo.filename, res.testInfo.lineNumber);
+			err.Format("%s at line %d", res.testInfo.GetFileName(), res.testInfo.GetLineNumber());
 			failNode->setContent(err);
 		}
 	}
@@ -192,26 +212,31 @@ bool CUnitTestExcelReporter::SaveJUnitCompatableXml()
 
 void CUnitTestExcelReporter::OnSingleTestStart(const IUnitTest& test)
 {
-	const SUnitTestInfo& testInfo = test.GetInfo();
+	const CUnitTestInfo& testInfo = test.GetInfo();
 	string text;
-	text.Format("Test Started: [%s] %s:%s", testInfo.GetModule(), testInfo.suite, testInfo.name);
+	text.Format("Test Started: [%s] %s:%s", testInfo.GetModule(), testInfo.GetSuite(), testInfo.GetName());
 	m_log.Log(text);
 }
 
-void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* failureDescription)
+void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
 {
-	const SUnitTestInfo& testInfo = test.GetInfo();
-	string text;
-	text.Format("Test Finished: [%s] %s:%s", testInfo.GetModule(), testInfo.suite, testInfo.name);
-	m_log.Log(text);
+	const CUnitTestInfo& info = test.GetInfo();
+	if (bSuccess)
+	{
+		m_log.Log("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.GetModule(), info.GetSuite(), info.GetName(), fRunTimeInMs);
+	}
+	else
+	{
+		m_log.Log("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.GetModule(), info.GetSuite(), info.GetName(), szFailureDescription);
+	}
 
 	STestResult testResult
 	{
-		testInfo,
+		info,
 		test.GetAutoTestInfo(),
 		fRunTimeInMs,
 		bSuccess,
-		failureDescription
+		szFailureDescription
 	};
 	m_results.push_back(testResult);
 }
