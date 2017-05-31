@@ -106,8 +106,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterAudioSpotComponent)
-
 		void CEntityAudioSpotComponent::ReflectType(Schematyc::CTypeDesc<CEntityAudioSpotComponent>& desc)
 		{
 			desc.SetGUID(CEntityAudioSpotComponent::IID());

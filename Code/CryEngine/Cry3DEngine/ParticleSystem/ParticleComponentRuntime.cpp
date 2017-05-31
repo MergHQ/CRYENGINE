@@ -64,7 +64,7 @@ void CParticleComponentRuntime::Reset()
 	m_subInstances.clear();
 	m_subInstances.shrink_to_fit();
 	m_subInstanceData.clear();
-	m_subInstanceData.shrink_to_fit();
+	DebugStabilityCheck();
 }
 
 void CParticleComponentRuntime::SetActive(bool active)
@@ -149,6 +149,7 @@ void CParticleComponentRuntime::AddSubInstances(TConstArray<SInstance> instances
 void CParticleComponentRuntime::RemoveAllSubInstances()
 {
 	m_subInstances.clear();
+	m_subInstanceData.clear();
 	AlignInstances();
 	DebugStabilityCheck();
 	OrphanAllParticles();

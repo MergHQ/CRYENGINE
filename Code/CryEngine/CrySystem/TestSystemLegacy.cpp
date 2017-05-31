@@ -19,7 +19,6 @@ CTestSystemLegacy::CTestSystemLegacy(ISystem* pSystem)
 	: m_log(pSystem)
 	, m_unitTestManager(m_log)
 {
-	m_log.SetFileName("%USER%/TestResults/TestLog.log");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -49,6 +48,12 @@ void CTestSystemLegacy::QuitInNSeconds(const float fInNSeconds)
 		m_log.Log("QuitInNSeconds() requests quit in %f sec", fInNSeconds);
 
 	m_fQuitInNSeconds = fInNSeconds;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTestSystemLegacy::InitLog()
+{
+	m_log.SetFileName("%USER%/TestResults/TestLog.log");
 }
 
 class CLevelListener : public ILevelSystemListener

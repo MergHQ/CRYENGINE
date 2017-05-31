@@ -139,8 +139,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterCharacterControllerComponent)
-
 		void CCharacterControllerComponent::ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent>& desc)
 		{
 			desc.SetGUID(CCharacterControllerComponent::IID());

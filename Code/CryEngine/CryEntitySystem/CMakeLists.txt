@@ -58,14 +58,12 @@ add_sources("CryEntitySystem_component_uber.cpp"
 		"TriggerProxy.h"
 
 	SOURCE_GROUP "Schematyc"
-		"Schematyc/EntitySchematycActions.cpp"
-		"Schematyc/EntitySchematycUtilFunctions.cpp"
+		"Schematyc/EntitySchematycActions.h"
+		"Schematyc/EntitySchematycUtilFunctions.h"
 		"Schematyc/EntityObjectDebugger.cpp"
 		"Schematyc/EntityObjectDebugger.h"
-
-	SOURCE_GROUP "EntityComponents"
-		"EntityComponents/EntityUtilsComponent.cpp"
-		"EntityComponents/EntityUtilsComponent.h"
+		"Schematyc/EntityUtilsComponent.cpp"
+		"Schematyc/EntityUtilsComponent.h"
 )
 
 add_sources("CryEntitySystem_uber_0.cpp"

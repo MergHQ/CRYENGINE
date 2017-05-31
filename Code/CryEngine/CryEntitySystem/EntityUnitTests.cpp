@@ -21,8 +21,8 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		EntityId id = pEntity->GetId();
 		CRY_UNIT_TEST_ASSERT(pEntity != NULL);
 
-		CRY_UNIT_TEST_ASSERT(id == gEnv->pEntitySystem->FindEntityByGuid(pEntity->GetGuid()));
-		CRY_UNIT_TEST_ASSERT(pEntity == gEnv->pEntitySystem->FindEntityByName(params.sName));
+		CRY_UNIT_TEST_CHECK_EQUAL(id, gEnv->pEntitySystem->FindEntityByGuid(pEntity->GetGuid()));
+		CRY_UNIT_TEST_CHECK_EQUAL(pEntity, gEnv->pEntitySystem->FindEntityByName(params.sName));
 
 		// Test Entity components
 		IEntitySubstitutionComponent *pComponent = pEntity->GetOrCreateComponent<IEntitySubstitutionComponent>();

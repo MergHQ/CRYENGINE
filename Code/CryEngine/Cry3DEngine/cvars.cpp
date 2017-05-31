@@ -455,6 +455,9 @@ void CVars::Init()
 
 	REGISTER_CVAR(e_Terrain, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	              "Activates drawing of terrain ground");
+	REGISTER_CVAR(e_TerrainIntegrateObjectsMaxVertices, 30000, VF_NULL,
+	              "Preallocate specified number of vertices to be used for objects integration into terrain (per terrain sector)\n"
+	              "0 - disable the feature completelly");
 	DefineConstIntCVar(e_TerrainDeformations, 0, VF_CHEAT,
 	                   "Allows in-game terrain surface deformations");
 	DefineConstIntCVar(e_AutoPrecacheCameraJumpDist, 16, VF_CHEAT,
@@ -1134,6 +1137,7 @@ void CVars::Init()
 	REGISTER_CVAR(e_MergedMeshesBulletScale, 35.f, VF_NULL, "MergedMesh Bullet approximations size scale");
 	REGISTER_CVAR(e_MergedMeshesBulletLifetime, 0.15f, VF_NULL, "MergedMesh Bullet approximations lifetime");
 	REGISTER_CVAR(e_MergedMeshesOutdoorOnly, 0, VF_NULL, "MergedMeshes will recieve ERF_OUTDOORONLY by default");
+	REGISTER_CVAR(e_MergedMeshesMaxTriangles, 256, VF_NULL, "Do not merge meshes containing too many triangles. It's more efficient to render them without merging");
 	REGISTER_CVAR(e_CheckOctreeObjectsBoxSize, 1, VF_NULL, "CryWarning for crazy sized COctreeNode m_objectsBoxes");
 	REGISTER_CVAR(e_DebugGeomPrep, 0, VF_NULL, "enable logging of Geom preparation");
 	DefineConstIntCVar(e_GeomCaches, 1, VF_NULL, "Activates drawing of geometry caches");

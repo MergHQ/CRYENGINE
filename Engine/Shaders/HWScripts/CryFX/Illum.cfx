@@ -373,6 +373,18 @@ half DecalDiffuseOpacity
   float UIMax = 1;
   float UIStep = 0.01;
 > = 1;
+
+half DecalAngleBasedFading
+<
+  register = REG_PM_PARAM_7.y;
+  string UIHelp = "Controls fading of decal based on surface normal";
+  string UIName = "Decal Angle Based Fading";
+  string UIWidget = "slider";
+  float UIMin = 0;
+  float UIMax = 10;
+  float UIStep = 0.01;
+> = 1;
+
 #endif
 
 //=========================================================================

@@ -936,8 +936,6 @@ bool CVolumetricFogStage::IsTexturesValid() const
 
 void CVolumetricFogStage::ResetFrame()
 {
-	m_globalEnvProveTex0 = nullptr;
-	m_globalEnvProveTex1 = nullptr;
 	m_globalEnvProbeParam0 = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	m_globalEnvProbeParam1 = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
 }

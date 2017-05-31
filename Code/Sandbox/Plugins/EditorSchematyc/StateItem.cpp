@@ -23,8 +23,6 @@
 
 namespace CrySchematycEditor {
 
-CryIcon CStateItem::s_icon = CryIcon("icons:schematyc/script_state.png");
-
 CStateItem::CStateItem(Schematyc::IScriptState& scriptState, CAbstractObjectStructureModel& model)
 	: CAbstractObjectStructureModelItem(model)
 	, m_scriptState(scriptState)
@@ -49,6 +47,17 @@ void CStateItem::SetName(QString name)
 
 	m_scriptState.SetName(uniqueName);
 	m_name = m_scriptState.GetName();
+}
+
+const CryIcon*  CStateItem::GetIcon() const
+{
+	std::unique_ptr<CryIcon> pIcon;
+	if (pIcon.get() == nullptr)
+	{
+		pIcon = stl::make_unique<CryIcon>("icons:schematyc/script_state.png");
+	}
+
+	return pIcon.get();
 }
 
 uint32 CStateItem::GetNumChildItems() const

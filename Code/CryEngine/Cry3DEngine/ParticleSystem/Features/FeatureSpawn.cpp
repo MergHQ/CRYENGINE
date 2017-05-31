@@ -149,7 +149,7 @@ protected:
 				return;
 		}
 		else if (m_useRestart)
-			StartInstances(context, 0, numInstances + 1, false);
+			StartInstances(context, 0, numInstances, false);
 
 		const float countScale = runtime.GetEmitter()->GetSpawnParams().fCountScale;
 		const float dT = context.m_deltaTime;
@@ -408,10 +408,9 @@ public:
 		SUpdateContext context(pComponentRuntime, SUpdateRange(0, lastInstance - firstInstance));
 		for (size_t inst = firstInstance; inst < lastInstance; ++inst)
 		{
-			auto& instance = pComponentRuntime->GetInstance(inst);
-			const TParticleId parentId = instance.m_parentId;
+			const TParticleId parentId = pComponentRuntime->GetParentId(inst);
 			Vec3* pEmitPos = EmitPositionData(context.m_runtime, inst);
-			*pEmitPos = EmitPosition(context, instance.m_parentId);
+			*pEmitPos = EmitPosition(context, parentId);
 		}
 	}
 

@@ -120,7 +120,7 @@ void CFeatureFieldColor::AddToInitParticles(IColorModifier* pMod)
 
 void CFeatureFieldColor::AddToUpdate(IColorModifier* pMod)
 {
-	if (std::find(m_modInit.begin(), m_modInit.end(), pMod) == m_modInit.end())
+	if (std::find(m_modUpdate.begin(), m_modUpdate.end(), pMod) == m_modUpdate.end())
 		m_modUpdate.push_back(pMod);
 }
 

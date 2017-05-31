@@ -34,8 +34,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterPointConstraintComponent)
-
 		void CPointConstraintComponent::ReflectType(Schematyc::CTypeDesc<CPointConstraintComponent>& desc)
 		{
 			desc.SetGUID(CPointConstraintComponent::IID());

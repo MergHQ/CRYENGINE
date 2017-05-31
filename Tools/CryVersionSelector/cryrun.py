@@ -197,6 +197,31 @@ def cmd_open (args):
 	
 	print_subprocess (subcmd)
 	subprocess.Popen(subcmd)
+	
+#--- DEDICATED SERVER ---
+
+def cmd_launch_dedicated_server (args):
+	if not os.path.isfile (args.project_file):
+		error_project_not_found (args.project_file)
+	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	
+	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'Game_Server.exe')
+	if not os.path.isfile (tool_path):
+		error_engine_tool_not_found (tool_path)
+		
+	#---
+	
+	subcmd= (
+		tool_path,
+		'-project',
+		os.path.abspath (args.project_file)
+	)
+	
+	print_subprocess (subcmd)
+	subprocess.Popen(subcmd)
 
 #--- PACKAGE ---
 
@@ -488,6 +513,10 @@ if __name__ == '__main__':
 	parser_open= subparsers.add_parser ('open')
 	parser_open.add_argument ('project_file')
 	parser_open.set_defaults(func=cmd_open)
+	
+	parser_server= subparsers.add_parser ('server')
+	parser_server.add_argument ('project_file')
+	parser_server.set_defaults(func=cmd_launch_dedicated_server)
 	
 	parser_edit= subparsers.add_parser ('edit')
 	parser_edit.add_argument ('project_file')

@@ -28,7 +28,7 @@ protected:
 	virtual void OnStartTesting(const SUnitTestRunContext& context) override {}
 	virtual void OnFinishTesting(const SUnitTestRunContext& context) override;
 	virtual void OnSingleTestStart(const IUnitTest& test) override;
-	virtual void OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* failureDescription) override;
+	virtual void OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription) override;
 
 	virtual void PostFinishTesting(const SUnitTestRunContext& context, bool bSavedReports) const {}
 
@@ -38,7 +38,7 @@ protected:
 
 	struct STestResult
 	{
-		SUnitTestInfo testInfo;
+		CUnitTestInfo testInfo;
 		SAutoTestInfo autoTestInfo;
 		float         fRunTimeInMs;
 		bool          bSuccess;

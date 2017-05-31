@@ -63,7 +63,7 @@ public:
 	size_t                    GetNumInstances() const       { return m_subInstances.size(); }
 	const SInstance&          GetInstance(size_t idx) const { return m_subInstances[idx]; }
 	SInstance&                GetInstance(size_t idx)       { return m_subInstances[idx]; }
-	IPidStream                GetInstanceParentIds() const  { return IPidStream(&(m_subInstances.data())->m_parentId, gInvalidId); }
+	TParticleId               GetParentId(size_t idx) const { return GetInstance(idx).m_parentId; }
 	template<typename T> T*   GetSubInstanceData(size_t instanceId, TInstanceDataOffset offset);
 	void                      SpawnParticles(CParticleContainer::SSpawnEntry const& entry);
 	void                      GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents);

@@ -814,6 +814,14 @@ int CEntityRender::LoadGeometry(int nSlot, const char* szFilename, const char* s
 	}
 	else
 	{
+		IRenderNode::EGIMode usageMode = (IRenderNode::EGIMode)((m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) >> ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET);
+
+		if (usageMode == IRenderNode::eGM_IntegrateIntoTerrain)
+		{
+			// disable asynchronous mesh streaming because this mesh could be required immediately
+			nLoadFlags |= IEntity::EF_NO_STREAMING;
+		}
+
 		pStatObj = GetI3DEngine()->LoadStatObj(szFilename, nullptr, nullptr, (nLoadFlags& IEntity::EF_NO_STREAMING) == 0);
 	}
 

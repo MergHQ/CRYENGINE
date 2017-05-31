@@ -45,8 +45,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterAnimatedMeshComponent)
-
 		void CAnimatedMeshComponent::ReflectType(Schematyc::CTypeDesc<CAnimatedMeshComponent>& desc)
 		{
 			desc.SetGUID(CAnimatedMeshComponent::IID());

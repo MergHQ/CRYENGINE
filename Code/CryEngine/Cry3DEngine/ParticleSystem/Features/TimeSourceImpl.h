@@ -93,7 +93,7 @@ class CParentSpeedSampler
 public:
 	CParentSpeedSampler(const SUpdateContext& context, EModDomain domain)
 		: parentVelocities(context.m_parentContainer.GetIVec3Stream(EPVF_Velocity))
-		, parentIds(domain == EMD_PerInstance ? context.m_runtime.GetInstanceParentIds() : context.m_container.GetIPidStream(EPDT_ParentId))
+		, parentIds(domain == EMD_PerInstance ? context.m_parentContainer.GetIPidStream(EPDT_ParentId) : context.m_container.GetIPidStream(EPDT_ParentId))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{

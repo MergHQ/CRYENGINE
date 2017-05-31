@@ -117,8 +117,8 @@ namespace Cry
 				inline bool operator==(const SColor &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
 				ColorF m_color = ColorF(1.f);
-				Schematyc::PositiveFloat m_diffuseMultiplier = 1.f;
-				Schematyc::PositiveFloat m_specularMultiplier = 1.f;
+				Schematyc::Range<0, 10000> m_diffuseMultiplier = 1.f;
+				Schematyc::Range<0, 10000> m_specularMultiplier = 1.f;
 			};
 
 			struct SShadows
@@ -153,7 +153,7 @@ namespace Cry
 
 		protected:
 			bool m_bActive = true;
-			Schematyc::PositiveFloat m_radius = 10.f;
+			Schematyc::Range<0, 32768> m_radius = 10.f;
 
 			SOptions m_options;
 			SColor m_color;

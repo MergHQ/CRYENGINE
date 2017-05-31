@@ -23,6 +23,7 @@ def command_title (args):
 	'build': 'Build solution',
 	'edit': 'Launch editor',
 	'open': 'Launch game',
+	'server': 'Launch server',
 	'package': 'Package for release',
 	'switch': 'Switch engine version',
 	'metagen': 'Generate/repair metadata'
@@ -129,6 +130,7 @@ def cmd_install (args):
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
 			(False, 'open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
+			(False, 'dedicated', 'Launch dedicated server', '"%s" server "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
 			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),
 			(False, '_cmake-gui', 'Open CMake GUI', 'cmake-gui "%%1"'),
@@ -145,6 +147,7 @@ def cmd_install (args):
 		
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
+			(False, 'dedicated', 'Launch dedicated server', '"%s" "%s" server "%%1"' % (PythonPath, ScriptPath)),
 			(False, 'open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),		
@@ -588,6 +591,11 @@ if __name__ == '__main__':
 	parser_open.add_argument ('project_file')
 	parser_open.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_open.set_defaults(func=cmd_run)
+	
+	parser_server= subparsers.add_parser ('server')
+	parser_server.add_argument ('project_file')
+	parser_server.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_server.set_defaults(func=cmd_run)
 
 	parser_metagen= subparsers.add_parser ('metagen')
 	parser_metagen.add_argument ('project_file')

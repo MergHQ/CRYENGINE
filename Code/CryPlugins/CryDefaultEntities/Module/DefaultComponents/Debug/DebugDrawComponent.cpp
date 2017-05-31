@@ -128,8 +128,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterDebugDrawComponent)
-
 		void CDebugDrawComponent::ReflectType(Schematyc::CTypeDesc<CDebugDrawComponent>& desc)
 		{
 			desc.SetGUID(CDebugDrawComponent::IID());

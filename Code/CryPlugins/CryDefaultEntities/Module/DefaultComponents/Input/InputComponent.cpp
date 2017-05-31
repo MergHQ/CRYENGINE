@@ -294,8 +294,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterInputComponent)
-
 		void CInputComponent::ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc)
 		{
 			desc.SetGUID(CInputComponent::IID());

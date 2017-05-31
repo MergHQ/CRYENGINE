@@ -29,7 +29,7 @@ public:
 	// CAbstractObjectStructureModelItem
 	virtual void                               SetName(QString name) override;
 	virtual int32                              GetType() const override       { return eObjectItemType_State; }
-	virtual const CryIcon*                     GetIcon() const override       { return &s_icon; }
+	virtual const CryIcon*                     GetIcon() const override;
 	virtual CAbstractObjectStructureModelItem* GetParentItem() const override { return m_pParentItem; }
 
 	virtual uint32                             GetNumChildItems() const override;
@@ -59,8 +59,6 @@ protected:
 	void LoadFromScriptElement();
 
 private:
-	static CryIcon                     s_icon;
-
 	CAbstractObjectStructureModelItem* m_pParentItem;
 	Schematyc::IScriptState&           m_scriptState;
 

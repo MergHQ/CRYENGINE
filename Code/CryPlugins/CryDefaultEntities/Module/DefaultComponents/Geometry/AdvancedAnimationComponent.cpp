@@ -47,8 +47,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterAdvancedAnimationComponent)
-
 		void CAdvancedAnimationComponent::ReflectType(Schematyc::CTypeDesc<CAdvancedAnimationComponent>& desc)
 		{
 			desc.SetGUID(CAdvancedAnimationComponent::IID());

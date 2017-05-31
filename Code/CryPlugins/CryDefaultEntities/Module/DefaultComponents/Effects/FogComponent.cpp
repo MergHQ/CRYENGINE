@@ -23,8 +23,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterFogComponent)
-
 		void CFogComponent::ReflectType(Schematyc::CTypeDesc<CFogComponent>& desc)
 		{
 			desc.SetGUID(CFogComponent::IID());

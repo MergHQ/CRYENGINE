@@ -16,8 +16,6 @@ static void RegisterStaticMeshComponent(Schematyc::IEnvRegistrar& registrar)
 	}
 }
 
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterStaticMeshComponent)
-
 void CStaticMeshComponent::ReflectType(Schematyc::CTypeDesc<CStaticMeshComponent>& desc)
 {
 	desc.SetGUID(CStaticMeshComponent::IID());

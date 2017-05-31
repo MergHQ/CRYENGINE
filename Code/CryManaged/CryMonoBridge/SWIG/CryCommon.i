@@ -6,7 +6,6 @@
 #include <CryExtension/ICryFactoryRegistry.h>
 #include <CryAnimation/IAttachment.h>
 #include <CryAudio/Dialog/IDialogSystem.h>
-#include <CryFlowGraph/IFlowGraphModuleManager.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
 #include <CrySystem/Scaleform/IFlashUI.h>
 #include <CryAISystem/IPathfinder.h>

@@ -146,7 +146,7 @@ bool CCryFactoryRegistryImpl::GetInsertionPos(ICryFactory* pFactory, FactoriesBy
 	FactoryByCID searchByCID(pFactory);
 	FactoriesByCIDIt itForCID = std::lower_bound(m_byCID.begin(), m_byCID.end(), searchByCID);
 	if (itForCID != m_byCID.end() && !(searchByCID < *itForCID))
-		FatalError::Report((*itForCName).m_ptr, pFactory);
+		FatalError::Report((*itForCID).m_ptr, pFactory);
 
 	itPosForCName = itForCName;
 	itPosForCID = itForCID;

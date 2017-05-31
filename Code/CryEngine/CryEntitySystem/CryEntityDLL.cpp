@@ -4,6 +4,11 @@
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include "EntitySystem.h"
+
+#include "Schematyc/EntitySchematycActions.h"
+#include "Schematyc/EntitySchematycUtilFunctions.h"
+#include "Schematyc/EntityUtilsComponent.h"
+
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
 
@@ -18,13 +23,7 @@
 
 CEntitySystem* g_pIEntitySystem = NULL;
 
-static void RegisterToSchematyc(Schematyc::IEnvRegistrar& registrar)
-{
-	// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
-	Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
-}
-
-struct CSystemEventListner_Entity : public ISystemEventListener
+struct CSystemEventListener_Entity : public ISystemEventListener
 {
 public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
@@ -33,13 +32,21 @@ public:
 		{
 		case ESYSTEM_EVENT_GAME_POST_INIT:
 			{
+				auto entitySchematycRegistration = [](Schematyc::IEnvRegistrar& registrar)
+				{
+					Schematyc::CEntityTimerAction::Register(registrar);
+					Schematyc::CEntityDebugTextAction::Register(registrar);
+					Schematyc::Entity::RegisterUtilFunctions(registrar);
+					Schematyc::CEntityUtilsComponent::Register(registrar);
+				};
+
 				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 					stl::make_unique<Schematyc::CEnvPackage>(
 						"A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid,
 						"EntityComponents",
 						"Crytek GmbH",
 						"CRYENGINE Default Entity Components",
-						&RegisterToSchematyc
+						entitySchematycRegistration
 						)
 				);
 			}
@@ -76,7 +83,7 @@ public:
 		}
 	}
 };
-static CSystemEventListner_Entity g_system_event_listener_entity;
+static CSystemEventListener_Entity g_system_event_listener_entity;
 
 //////////////////////////////////////////////////////////////////////////
 class CEngineModule_EntitySystem : public IEntitySystemEngineModule

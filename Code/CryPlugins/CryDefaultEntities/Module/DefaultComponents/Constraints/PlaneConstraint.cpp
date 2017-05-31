@@ -36,7 +36,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterPlaneConstraintComponent)
 
 		void CPlaneConstraintComponent::ReflectType(Schematyc::CTypeDesc<CPlaneConstraintComponent>& desc)
 		{

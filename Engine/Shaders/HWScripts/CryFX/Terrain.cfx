@@ -192,13 +192,24 @@ half SoftDepthTestDistRatio
 > = 0.15;
 #endif
 
+half NormalMapBumpiness
+<
+	register = REG_PM_PARAM_3.z;
+  string UIHelp = "Controls the the contrast of bumpmapping";
+  string UIName = "Normal Map Bumpiness";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 2.0;
+  float UIStep = 0.01;
+> = 1.0;
+
 //==========================================================================
 
 struct vert2fragTerrain
 {
 	OUT_HPOS_IN_WPOS
 	float4 basesectorTC  : TEXCOORDN;
-	float3 normal        : TEXCOORDN;
+	float4 normal        : TEXCOORDN;
 
 	float4 worldPos      : TEXCOORDN;
 
@@ -237,7 +248,9 @@ vert2fragTerrain TerrainVS(app2vertGeneral IN_common)
 	vertPassPos.Position.xyz -= normalize(WorldPos) * SoftDepthTestRange * (1 + length(WorldPos) * SoftDepthTestDistRatio);
 #endif
 
-	OUT.HPosition = Pos_VS_Terrain(0.0005f, g_VS_ViewProjZeroMatr, vertPassPos); 
+	// normally in the distance we move terrain down in order to avoid covering small objects on terrain
+	// but for object meshes integrated into terrain we use oposite logic in order to avoid z-fighitng between terrain detail layers and object itself
+	OUT.HPosition = Pos_VS_Terrain(vertPassPos.Normal.w ? 0.0005f : -0.005f, g_VS_ViewProjZeroMatr, vertPassPos);
 
 #if %SOFT_DEPTH_TEST
 	// output HPosition and restore the positions to normal un-shifted values
@@ -256,7 +269,7 @@ vert2fragTerrain TerrainVS(app2vertGeneral IN_common)
 	if (blendColInfo.w >= 0)
 		OUT.basesectorTC.z = saturate(length(GetWorldViewPos().xyz - vertPassPos.WorldPos.xyz) / 1024.0 - 1.0);
 
-	OUT.normal = vertPassPos.Normal.xyz;
+	OUT.normal = vertPassPos.Normal;
 
 //#if %_RT_FOG
 	OUT.screenProj = HPosToScreenTC(OUT.HPosition);
@@ -309,7 +322,7 @@ vert2fragTerrain TerrainVS(app2vertGeneral IN_common)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void GatherMaterialAttribs(in half3x3 mTangentToWS, in float2 baseTC, in float2 basesectorTC,
-                           in float3 worldPos, in float weight, inout MaterialAttribsCommon attribs)
+                           in float3 worldPos, in float weight, in bool bAllowPomModel, inout MaterialAttribsCommon attribs)
 {
 	attribs = MaterialAttribsDefault();
 	
@@ -427,14 +440,18 @@ void GatherMaterialAttribs(in half3x3 mTangentToWS, in float2 baseTC, in float2 
 	// Compute world space normal
 	attribs.NormalWorld = normalize(mTangentToWS[2] + 1e-6);
 #if %NORMAL_MAP
+	normalTS = lerp(float3(0, 0, 1), normalTS, NormalMapBumpiness);
 	attribs.NormalWorld = normalize(mul(normalTS, mTangentToWS));
 #endif
 
 	attribs.LightingModel = LIGHTINGMODEL_POM_SS;
 
+// Force standard model for compatibility of overlay passes with opaque geometry passes (but this disables POM self-shadowing)
 #if %SOFT_DEPTH_TEST			
-	// Force standard model for compatibility of overlay passes with opaque geometry models (but this disables POM self-shadowing)
 	attribs.LightingModel = LIGHTINGMODEL_STANDARD;
+#else
+	if (!bAllowPomModel) // force standard model for terrain layers on the top of normal objects (integrated into terrain)
+		attribs.LightingModel = LIGHTINGMODEL_STANDARD;
 #endif
 }
 
@@ -451,7 +468,7 @@ half GatherAlpha(in float2 baseTC, in half4 vertexColorG, vert2fragTerrain IN)
 	float fSceneDepth = linearDepthTex.Load(int3(IN.WPos.xy, 0));
 	float fSDTRangeM = SoftDepthTestRange * (CV_NearFarClipDist.w + fSceneDepth * SoftDepthTestDistRatio);
 	float fGeomDepth = (IN.WPos.w * CV_NearFarClipDist.w + fSDTRangeM);
-	alpha *= saturate(1.f - (fGeomDepth - fSceneDepth) / (fSDTRangeM + 0.000001));
+	alpha *= saturate(1.f - (fGeomDepth - fSceneDepth) / (fSDTRangeM + 0.0000001));
 #endif
 
 	return alpha;
@@ -508,7 +525,7 @@ pixout TerrainLayerPS(vert2fragTerrain IN)
 	// Gather surface material attributes
 	MaterialAttribsCommon commonAttribs;
 	half3x3 mTangentToWS = half3x3(IN.tangent.xyz, IN.bitangent.xyz, IN.normal.xyz);
-	GatherMaterialAttribs(mTangentToWS, IN.baseTC.xy, IN.basesectorTC.xy, IN.worldPos.xyz, IN.bitangent.w, commonAttribs);
+	GatherMaterialAttribs(mTangentToWS, IN.baseTC.xy, IN.basesectorTC.xy, IN.worldPos.xyz, IN.bitangent.w, IN.normal.w, commonAttribs);
 #endif
 
 	ForwardShadingAttribs fwdAttribs;
@@ -606,7 +623,7 @@ pixout_gbuffer TerrainGBufferPS(vert2fragTerrain IN)
 	// Detail layer
 #else
 	half3x3 mTangentToWS = half3x3(IN.tangent.xyz, IN.bitangent.xyz, IN.normal.xyz);
-	GatherMaterialAttribs(mTangentToWS, IN.baseTC.xy, IN.basesectorTC.xy, IN.worldPos, IN.bitangent.w, commonAttribs);
+	GatherMaterialAttribs(mTangentToWS, IN.baseTC.xy, IN.basesectorTC.xy, IN.worldPos, IN.bitangent.w, IN.normal.w, commonAttribs);
 #endif
 	
 	// Output to GBuffer

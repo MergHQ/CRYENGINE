@@ -428,6 +428,7 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_fShadowsSlopeBias = 0.0f;
 	m_nCustomShadowFrustumCount = 0;
 	m_bHeightMapAoEnabled = false;
+	m_bIntegrateObjectsIntoTerrain = false;
 
 	m_nCurrentWindAreaList = 0;
 	m_pLevelStatObjTable = NULL;
@@ -6431,8 +6432,6 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	const char* szName = pEnt->GetName();
 	if (!szName[0] && !szClass[0])
 		Warning("I3DEngine::RegisterEntity: Entity undefined"); // do not register undefined objects
-	                                                          //  if(strstr(szName,"Dude"))
-	                                                          //  int y=0;
 #endif
 
 	IF (bUnRegisterOnly, 0)
@@ -6454,6 +6453,13 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	UpdateObjectsLayerAABB(pEnt);
 
 	auto dwRndFlags = pEnt->GetRndFlags();
+
+	if (m_bIntegrateObjectsIntoTerrain && eERType == eERType_MovableBrush && pEnt->GetGIMode() == IRenderNode::eGM_IntegrateIntoTerrain)
+	{
+		// update meshes integrated into terrain 
+		AABB nodeBox = pEnt->GetBBox();
+		GetTerrain()->ResetTerrainVertBuffers(&nodeBox);
+	}
 
 	if (!(dwRndFlags & ERF_RENDER_ALWAYS) && !(dwRndFlags & ERF_CASTSHADOWMAPS))
 		if (GetCVars()->e_ObjFastRegister && pEnt->m_pOcNode && ((COctreeNode*)pEnt->m_pOcNode)->IsRightNode(aabb, fObjRadiusSqr, pEnt->m_fWSMaxViewDist))
@@ -6508,7 +6514,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 		if (fObjRadiusSqr > sqr(MAX_VALID_OBJECT_VOLUME) || !_finite(fObjRadiusSqr))
 		{
 			Warning("I3DEngine::RegisterEntity: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f",
-			        pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
+				pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
 			return; // skip invalid objects - usually only objects with invalid very big scale will reach this point
 		}
 
@@ -6688,6 +6694,13 @@ bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
 	if (CClipVolumeManager* pClipVolumeManager = GetClipVolumeManager())
 	{
 		pClipVolumeManager->UnregisterRenderNode(pEnt);
+	}
+
+	if (m_bIntegrateObjectsIntoTerrain && eRenderNodeType == eERType_MovableBrush && pEnt->GetGIMode() == IRenderNode::eGM_IntegrateIntoTerrain)
+	{
+		// update meshes integrated into terrain 
+		AABB nodeBox = pEnt->GetBBox();
+		GetTerrain()->ResetTerrainVertBuffers(&nodeBox);
 	}
 
 	return bFound;

@@ -78,8 +78,6 @@ namespace Cry
 			}
 		}
 
-		CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterStaticPhysicsComponent)
-
 		void ReflectType(Schematyc::CTypeDesc<CSimplePhysicsComponent>& desc)
 		{
 			desc.SetGUID(CSimplePhysicsComponent::IID());
