@@ -21,9 +21,30 @@ inline bool Serialize(Serialization::IArchive& archive, SSensorTagName& value, c
 	return static_cast<CSensorTagLibrary&>(CSensorSystem::GetInstance().GetTagLibrary()).SerializeTagName(archive, static_cast<string&>(value), szName, szLabel); // #TODO : Find a nicer way to access CSensorTagLibrary!!!
 }
 
+static void ReflectType(Schematyc::CTypeDesc<SSensorTagName>& desc)
+{
+	desc.SetGUID("{351924F1-EF4F-47E6-8E2E-05F0643F6A1A}"_cry_guid);
+	desc.SetLabel("Tag Name");
+}
+
+static void ReflectType(Schematyc::CTypeDesc<CSchematycEntitySensorVolumeComponent::EVolumeShape>& desc)
+{
+	desc.SetGUID("{0C6ACF7E-9123-4DFE-AFA9-9FCE8AFBDA03}"_cry_guid);
+	desc.SetLabel("Volume Shape");
+	desc.SetDescription("Determines the type of a shape.");
+	desc.SetDefaultValue(CSchematycEntitySensorVolumeComponent::EVolumeShape::Box);
+	desc.AddConstant(CSchematycEntitySensorVolumeComponent::EVolumeShape::Box, "Box", "Box");
+	desc.AddConstant(CSchematycEntitySensorVolumeComponent::EVolumeShape::Sphere, "Sphere", "Sphere");
+}
+
 void CSchematycEntitySensorVolumeComponent::SDimensions::ReflectType(Schematyc::CTypeDesc<CSchematycEntitySensorVolumeComponent::SDimensions>& desc)
 {
 	desc.SetGUID("ed2add7d-d063-4371-9a91-b6c13e0c2751"_cry_guid);
+	desc.SetLabel("Dimension");
+	desc.SetDescription("Determines shape and dimension of the volume.");
+	desc.AddMember(&CSchematycEntitySensorVolumeComponent::SDimensions::shape, 'shap', "Shape", "Shape", "Shape of the volume.", EVolumeShape::Box);
+	desc.AddMember(&CSchematycEntitySensorVolumeComponent::SDimensions::size, 'size', "Size", "Size", "Determines the size of the box.", Vec3(1.f));
+	desc.AddMember(&CSchematycEntitySensorVolumeComponent::SDimensions::radius, 'rad', "Radius", "Radius", "Radius of the sphere.", 1.f);
 }
 
 // N.B. Non-intrusive serialization is used here only to ensure backward compatibility.
@@ -52,6 +73,9 @@ inline bool Serialize(Serialization::IArchive& archive, CSchematycEntitySensorVo
 void CSchematycEntitySensorVolumeComponent::STags::ReflectType(Schematyc::CTypeDesc<CSchematycEntitySensorVolumeComponent::STags>& desc)
 {
 	desc.SetGUID("6f03eddc-71ff-467e-9d8d-ad7e57438aad"_cry_guid);
+	desc.SetLabel("Tags");
+	desc.AddMember(&CSchematycEntitySensorVolumeComponent::STags::attributeTags, 'atT', "Attribute", "Attribute", "Tags describing this volume.", SensorTagNames());
+	desc.AddMember(&CSchematycEntitySensorVolumeComponent::STags::listenerTags, 'liT', "Listener", "Listener", "Listen for collision with volumes that have one or more of these tags set.", SensorTagNames());
 }
 
 // N.B. Non-intrusive serialization is used here only to ensure backward compatibility.
@@ -170,9 +194,9 @@ void CSchematycEntitySensorVolumeComponent::ReflectType(Schematyc::CTypeDesc<CSc
 	desc.SetLabel("SensorVolume");
 	desc.SetDescription("Entity sensor volume component");
 	desc.SetIcon("icons:schematyc/entity_sensor_volume_component.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach, EFlags::HideFromInspector });
-	desc.AddMember(&CSchematycEntitySensorVolumeComponent::m_dimensions, 'dims', "dimensions", "Dimensions", nullptr);
-	desc.AddMember(&CSchematycEntitySensorVolumeComponent::m_tags, 'tags', "tags", "Tags", nullptr);
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach });
+	desc.AddMember(&CSchematycEntitySensorVolumeComponent::m_dimensions, 'dims', "dimensions", "Dimensions", "Determines the dimension of the volume.", CSchematycEntitySensorVolumeComponent::SDimensions());
+	desc.AddMember(&CSchematycEntitySensorVolumeComponent::m_tags, 'tags', "tags", "Tags", "Tags the volume will listen to.", CSchematycEntitySensorVolumeComponent::STags());
 }
 
 void CSchematycEntitySensorVolumeComponent::Register(Schematyc::IEnvRegistrar& registrar)
@@ -266,14 +290,14 @@ CSensorBounds CSchematycEntitySensorVolumeComponent::CreateBounds(const Matrix34
 			if (transform)
 				return CreateOBBBounds(worldTM, transform->GetTranslation(), m_dimensions.size, transform->GetRotation().ToMatrix33());
 			else
-				return CreateOBBBounds(worldTM, Vec3(0,0,0), m_dimensions.size, Matrix33(IDENTITY));
+				return CreateOBBBounds(worldTM, Vec3(0, 0, 0), m_dimensions.size, Matrix33(IDENTITY));
 		}
 	case EVolumeShape::Sphere:
 		{
-			Vec3 pos(0,0,0);
+			Vec3 pos(0, 0, 0);
 			if (transform)
 				pos = transform->GetTranslation();
-				
+
 			return CreateSphereBounds(worldTM, pos, m_dimensions.radius);
 		}
 	}
@@ -295,9 +319,9 @@ SensorTags CSchematycEntitySensorVolumeComponent::GetTags(const SensorTagNames& 
 {
 	ISensorTagLibrary& sensorTagLibrary = CSensorSystem::GetInstance().GetTagLibrary();
 	SensorTags tags;
-	for (const SSensorTagName& tagName : tagNames)
+	for (uint32 i = 0; i < tagNames.Size(); ++i)
 	{
-		tags.Add(sensorTagLibrary.GetTag(tagName.c_str()));
+		tags.Add(sensorTagLibrary.GetTag(tagNames.At(i).c_str()));
 	}
 	return tags;
 }
@@ -323,7 +347,7 @@ public:
 	{
 		archive(*this, "properties", "Sensor Component");
 	}
-	virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const override
+	virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const override
 	{
 		const CSchematycEntitySensorVolumeComponent& sensorComponent = static_cast<const CSchematycEntitySensorVolumeComponent&>(component);
 		if (m_bShowVolumes)
@@ -334,7 +358,7 @@ public:
 	// ~IComponentPreviewer
 };
 
-IEntityComponentPreviewer* CSchematycEntitySensorVolumeComponent::GetPreviewer() 
+IEntityComponentPreviewer* CSchematycEntitySensorVolumeComponent::GetPreviewer()
 {
 	static CSensorVolumeComponentPreviewer previewer;
 	return &previewer;

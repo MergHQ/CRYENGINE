@@ -14,7 +14,7 @@ struct SSensorTagName : public string // #TODO : Move to separate header?
 
 bool Serialize(Serialization::IArchive& archive, SSensorTagName& value, const char* szName, const char* szLabel);
 
-typedef std::vector<SSensorTagName> SensorTagNames;
+typedef Schematyc::CArray<SSensorTagName> SensorTagNames;
 
 class CSchematycEntitySensorVolumeComponent final : public IEntityComponent
 {
@@ -28,25 +28,25 @@ public:
 
 	struct SDimensions
 	{
-		inline bool operator==( const SDimensions &rhs ) const { return 0 == memcmp(this,&rhs,sizeof(rhs)); }
+		inline bool operator==(const SDimensions& rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
 		static void ReflectType(Schematyc::CTypeDesc<SDimensions>& desc);
 
-		EVolumeShape   shape = EVolumeShape::Box;
-		Vec3           size = Vec3(1.0f);
-		float          radius = 1.0f;
+		EVolumeShape shape = EVolumeShape::Box;
+		Vec3         size = Vec3(1.0f);
+		float        radius = 1.0f;
 	};
 
 	struct STags
 	{
 		static void ReflectType(Schematyc::CTypeDesc<STags>& desc);
 
-		inline bool operator==( const STags &rhs ) const
+		inline bool operator==(const STags& rhs) const
 		{
 			if (shape == rhs.shape &&
-					attributeTags == rhs.attributeTags &&
-					listenerTags == rhs.listenerTags
-				)
+			    attributeTags == rhs.attributeTags &&
+			    listenerTags == rhs.listenerTags
+			    )
 				return true;
 			return false;
 		}
@@ -90,11 +90,11 @@ private:
 public:
 
 	// IEntityComponent
-	virtual void Initialize() override;
-	virtual uint64 GetEventMask() const override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
-	virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-	virtual void OnShutDown() override;
+	virtual void                       Initialize() override;
+	virtual uint64                     GetEventMask() const override;
+	virtual void                       ProcessEvent(SEntityEvent& event) override;
+	virtual void                       Run(Schematyc::ESimulationMode simulationMode) override;
+	virtual void                       OnShutDown() override;
 	virtual IEntityComponentPreviewer* GetPreviewer() override;
 	// ~IEntityComponent
 

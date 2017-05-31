@@ -63,6 +63,20 @@ public:
 		return archive(*value.m_pArray, szName, szLabel);
 	}
 
+	bool operator==(const CArray& other) const
+	{
+		if (Size() == other.Size())
+		{
+			for (uint32 i = 0, e = Size(); i < e; ++i)
+			{
+				if (At(i) != other.At(i))
+					return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
 private:
 
 	inline void CopyOnWrite()
