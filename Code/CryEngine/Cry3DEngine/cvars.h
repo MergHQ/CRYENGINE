@@ -519,6 +519,7 @@ struct CVars : public Cry3DEngineBase
 	float  e_MergedMeshesBulletScale;
 	float  e_MergedMeshesBulletLifetime;
 	int    e_MergedMeshesOutdoorOnly;
+	int    e_MergedMeshesMaxTriangles;
 	int    e_CheckOctreeObjectsBoxSize;
 	DeclareConstIntCVar(e_GeomCaches, 1);
 	int    e_GeomCacheBufferSize;
