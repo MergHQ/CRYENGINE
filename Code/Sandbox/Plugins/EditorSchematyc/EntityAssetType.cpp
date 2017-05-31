@@ -169,7 +169,7 @@ string CEntityAssetType::GetObjectFilePath(const CAsset* pAsset) const
 
 CryIcon CEntityAssetType::GetIconInternal() const
 {
-	return CryIcon();
+	return CryIcon("icons:schematyc/assettype_entity.ico");
 }
 
 Schematyc::IScript* CEntityAssetType::GetScript(const CAsset& asset) const

@@ -84,7 +84,7 @@ bool CLibraryAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSource
 
 CryIcon CLibraryAssetType::GetIconInternal() const
 {
-	return CryIcon();
+	return CryIcon("icons:schematyc/assettype_library.ico");
 }
 
 Schematyc::IScript* CLibraryAssetType::GetScript(const CAsset& asset) const
