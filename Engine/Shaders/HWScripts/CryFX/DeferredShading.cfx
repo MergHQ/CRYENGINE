@@ -318,7 +318,11 @@ poDecalsMRT DefDecalPassPS(fragInWPOS IN)
 
 	// Angle based fading
 	half3 surfNormal = DecodeGBufferNormal(Decal_SceneNormals.Load(int3(IN.WPos.xy, 0)));
-	float fadeout = saturate(1 - dot(surfNormal.xyz, cbDecal.matDecalTS[2].xyz));
+	float fMult = 1.f;
+#if !%_RT_SAMPLE0  
+	fMult = cbDecal.generalParams.w; // w is used for angle based fading if alpha grow feature is off
+#endif
+	float fadeout = saturate(fMult * (1 - dot(surfNormal.xyz, cbDecal.matDecalTS[2].xyz)));
 	fAtten *= 1 - fadeout * fadeout;
 
 	vProjTC.zw = vProjTC.xy;

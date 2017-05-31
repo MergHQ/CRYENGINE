@@ -183,6 +183,8 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 				decalParams.y = shaderParams[i].m_Value.m_Float;
 			else if (strcmp(name, "DecalDiffuseOpacity") == 0)
 				decalParams.z = shaderParams[i].m_Value.m_Float;
+			else if (strcmp(name, "DecalAngleBasedFading") == 0 && !decal.fGrowAlphaRef)
+				decalParams.w = shaderParams[i].m_Value.m_Float;
 		}
 		constants->generalParams = decalParams;
 
