@@ -826,8 +826,8 @@ private: // --------------------------------------------------------------------
 	//   pObj - 0 is ignored
 	//   pMat - 0 if IStatObjet Material should be used
 	void AddResource_StatObjWithLODs(IStatObj* pObj, CrySizerImpl& statObjTextureSizer, IMaterial* pMat = 0);
-	//
-	void AddResource_SingleStatObj(IStatObj& rData);
+	// If the object was not previously registered, returns true. If the object was already registered, returns false.
+	bool AddResource_SingleStatObj(IStatObj& rData);
 	//
 	void AddResource_CharInstance(ICharacterInstance& rData);
 	//
@@ -882,10 +882,10 @@ inline bool CompareRenderMeshByTypeName(IRenderMesh* pRM1, IRenderMesh* pRM2)
 	return strcmp(pRM1->GetTypeName(), pRM2->GetTypeName()) < 0;
 }
 
-void CEngineStats::AddResource_SingleStatObj(IStatObj& rData)
+bool CEngineStats::AddResource_SingleStatObj(IStatObj& rData)
 {
 	if (!m_ResourceCollector.AddResource(rData.GetFilePath()))
-		return;   // was already registered
+		return false;   // was already registered
 
 	// dependencies
 
@@ -897,6 +897,7 @@ void CEngineStats::AddResource_SingleStatObj(IStatObj& rData)
 
 		m_ResourceCollector.CloseDependencies();
 	}
+	return true;
 }
 
 void CEngineStats::AddResource_CharInstance(ICharacterInstance& rData)
@@ -1014,14 +1015,15 @@ void CEngineStats::AddResource_StatObjWithLODs(IStatObj* pObj, CrySizerImpl& sta
 	if (!pObj)
 		return;
 
+	// Make sure we have not already registered this object
+	if (!AddResource_SingleStatObj(*pObj))
+		return;
+
 	SCryEngineStats::StatObjInfo si;
 
 	si.pStatObj = pObj;
 
 	memset(si.nIndicesPerLod, 0, sizeof(si.nIndicesPerLod));
-
-	// dependencies
-	AddResource_SingleStatObj(*si.pStatObj);
 
 	CrySizerImpl localTextureSizer;
 
@@ -1144,7 +1146,8 @@ void CEngineStats::CollectGeometry()
 	   si.nPhysProxySize = 0;
 	   si.nPhysPrimitives = 0;
 	 */
-	// iterate through all IStatObj
+
+	 // iterate through all IStatObj
 	{
 		int nObjCount = 0;
 
@@ -1182,6 +1185,7 @@ void CEngineStats::CollectGeometry()
 
 			if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj())
 			{
+				AddResource_StatObjWithLODs(pEntObject, statObjTextureSizer, 0); // Ensure object is registered
 				m_ResourceCollector.AddInstance(pEntObject->GetFilePath(), pRenderNode);
 
 				if (IMaterial* pMat = pRenderNode->GetMaterial())    // if this rendernode overwrites the IStatObj material
@@ -1194,6 +1198,7 @@ void CEngineStats::CollectGeometry()
 
 			if (ICharacterInstance* pCharInst = pRenderNode->GetEntityCharacter(0))
 			{
+				AddResource_CharInstance(*pCharInst);
 				m_ResourceCollector.AddInstance(pCharInst->GetFilePath(), pRenderNode);
 			}
 		}
