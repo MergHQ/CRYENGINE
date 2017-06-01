@@ -67,6 +67,23 @@ namespace Cry
 				m_movementAbility.b3DMove = true;
 			}
 
+			virtual void ProcessEvent(SEntityEvent& event) override
+			{
+				switch (event.event)
+				{
+				case ENTITY_EVENT_START_GAME:
+				{
+					Initialize();
+				}
+				break;
+				}
+			}
+
+			virtual uint64 GetEventMask() const override
+			{ 
+				return BIT64(ENTITY_EVENT_START_GAME);
+			}
+
 			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
 			// ~IEntityComponent
 
