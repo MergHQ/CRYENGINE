@@ -848,7 +848,7 @@ typedef struct ID3DXConstTable* LPD3DXCONSTANTTABLE;
 
 #endif
 
-const int32 g_nD3D10MaxSupportedSubres = (6 * 15);
+const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 //////////////////////////////////////////////////////////////////////////
 
 #define USAGE_WRITEONLY 8
