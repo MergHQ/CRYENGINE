@@ -96,8 +96,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_TEMPLFUNC(SetLightColorParams, "nSlot,vDir,nSpecularMultiplier");
 	SCRIPT_REG_TEMPLFUNC(UpdateLightClipBounds, "nSlot");
 	SCRIPT_REG_TEMPLFUNC(SetSelfAsLightCasterException, "nLightSlot");
-	SCRIPT_REG_TEMPLFUNC(LoadCloud, "nSlot,sCloudFilename");
-	SCRIPT_REG_TEMPLFUNC(SetCloudMovementProperties, "nSlot,tCloudMovementProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadCloudBlocker, "nSlot,tCloudBlockerProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadFogVolume, "nSlot,tFogVolumeDescription");
 	SCRIPT_REG_TEMPLFUNC(FadeGlobalDensity, "nSlot,fFadeTime,fNewGlobalDensity");
@@ -1267,31 +1265,6 @@ int CScriptBind_Entity::SetSelfAsLightCasterException(IFunctionHandler* pH, int 
 	}
 
 	return pH->EndFunction();
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::LoadCloud(IFunctionHandler* pH, int nSlot, const char* sFilename)
-{
-	GET_ENTITY;
-
-	pEntity->LoadCloud(nSlot, sFilename);
-
-	return pH->EndFunction(nSlot);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::SetCloudMovementProperties(IFunctionHandler* pH, int nSlot, SmartScriptTable table)
-{
-	GET_ENTITY;
-
-	SCloudMovementProperties properties;
-	if (ParseCloudMovementProperties(table, pEntity, properties))
-	{
-		nSlot = pEntity->SetCloudMovementProperties(nSlot, properties);
-		if (nSlot < 0)
-			return pH->EndFunction();
-	}
-	return pH->EndFunction(nSlot);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -7751,34 +7724,6 @@ bool CScriptBind_Entity::ParseFogVolumesParams(IScriptTable* pTable, IEntity* pE
 	}
 
 	return(true);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CScriptBind_Entity::ParseCloudMovementProperties(IScriptTable* pTable, IEntity* pEntity, SCloudMovementProperties& properties)
-{
-	CScriptSetGetChain chain(pTable);
-
-	bool autoMove;
-	properties.m_autoMove = false;
-	if (chain.GetValue("bAutoMove", autoMove))
-		properties.m_autoMove = autoMove;
-
-	Vec3 speed;
-	properties.m_speed = Vec3(0, 0, 0);
-	if (chain.GetValue("vector_Speed", speed))
-		properties.m_speed = speed;
-
-	Vec3 spaceLoopBox;
-	properties.m_spaceLoopBox = Vec3(2000.0f, 2000.0f, 2000.0f);
-	if (chain.GetValue("vector_SpaceLoopBox", spaceLoopBox))
-		properties.m_spaceLoopBox = spaceLoopBox;
-
-	float fadeDistance;
-	properties.m_fadeDistance = 0;
-	if (chain.GetValue("fFadeDistance", fadeDistance))
-		properties.m_fadeDistance = fadeDistance;
-
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

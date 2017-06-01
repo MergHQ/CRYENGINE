@@ -43,12 +43,11 @@ public:
 	// ~IEntityComponent
 
 	void Revive();
+	void SpawnAtSpawnPoint();
 
 protected:
 	void UpdateMovementRequest(float frameTime);
 	void UpdateCamera(float frameTime);
-
-	void SelectSpawnPoint();
 
 	void HandleInputFlagChange(TInputFlags flags, int activationMode, EInputFlagType type = EInputFlagType::Hold);
 

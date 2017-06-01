@@ -1336,9 +1336,6 @@ public:
 	//! \return Slot id where the light source was loaded, or -1 if loading failed.
 	virtual int LoadLight(int nSlot, CDLight* pLight) = 0;
 
-	virtual int LoadCloud(int nSlot, const char* sFilename) = 0;
-	virtual int SetCloudMovementProperties(int nSlot, const struct SCloudMovementProperties& properties) = 0;
-
 	//! Loads a fog volume to the specified slot, or to the next available slot.
 	//! \return Slot id where the fog volume was loaded, or -1 if loading failed.
 	virtual int LoadFogVolume(int nSlot, const SFogVolumeProperties& properties) = 0;

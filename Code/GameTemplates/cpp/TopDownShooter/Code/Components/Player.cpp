@@ -2,6 +2,7 @@
 #include "Player.h"
 
 #include "Bullet.h"
+#include "SpawnPoint.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryInput/IHardwareMouse.h>
@@ -12,10 +13,10 @@ void CPlayerComponent::Initialize()
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCameraComponent>();
 	// The character controller is responsible for maintaining player physics and animations
 	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
-	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
+	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are m_pEntity
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
 
-	// Register an action, and the callback that will be sent when it's triggered
+	// Register an action, and the callback that will be sent when it's m_pEntity
 	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveLeft, activationMode);  });
 	// Bind the 'A' key the "moveleft" action
 	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse,	EKeyId::eKI_A);
@@ -176,7 +177,7 @@ void CPlayerComponent::UpdateMovementRequest(float frameTime)
 		velocity.y -= moveSpeed * frameTime;
 	}
 
-	m_pCharacterController->AddVelocity(GetEntity()->GetWorldRotation() * velocity);
+	m_pCharacterController->AddVelocity(velocity);
 }
 
 void CPlayerComponent::UpdateAnimation(float frameTime)
@@ -187,21 +188,29 @@ void CPlayerComponent::UpdateAnimation(float frameTime)
 	m_pCharacterController->SetTagWithId(m_rotateTagId, m_pCharacterController->IsTurning());
 	m_pCharacterController->SetTagWithId(m_walkTagId, m_pCharacterController->IsWalking());
 
+	Vec3 dir = m_pCursorEntity->GetWorldPos() - m_pEntity->GetWorldPos();
+	dir = dir.Normalize();
+
+	Quat newRotation = Quat::CreateRotationVDir(dir);
+
+	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(newRotation));
+
+	// We only want to affect Z-axis rotation, zero pitch and roll
+	ypr.y = 0;
+	ypr.z = 0;
+
+	// Re-calculate the quaternion based on the corrected yaw
+	newRotation = Quat(CCamera::CreateOrientationYPR(ypr));
+
 	if (m_pCharacterController->IsWalking())
 	{
-		Quat newRotation = Quat::CreateRotationVDir(m_pCharacterController->GetMoveDirection());
-
-		Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(newRotation));
-
-		// We only want to affect Z-axis rotation, zero pitch and roll
-		ypr.y = 0;
-		ypr.z = 0;
-
-		// Re-calculate the quaternion based on the corrected yaw
-		newRotation = Quat(CCamera::CreateOrientationYPR(ypr));
-
 		// Send updated transform to the entity, only orientation changes
 		m_pEntity->SetPosRotScale(m_pEntity->GetWorldPos(), newRotation, Vec3(1, 1, 1));
+	}
+	else
+	{
+		// Update only the player rotation
+		m_pEntity->SetRotation(newRotation);
 	}
 }
 
@@ -209,7 +218,7 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 {
 	// Start with rotating the camera to face downwards
 	Matrix34 localTransform = IDENTITY;
-	localTransform.SetRotation33(Matrix33::CreateRotationX(DEG2RAD(-90)));
+	localTransform.SetRotation33(Matrix33(m_pEntity->GetWorldRotation().GetInverted()) * Matrix33::CreateRotationX(DEG2RAD(-90)));
 
 	const float viewDistanceFromPlayer = 10.f;
 
@@ -258,7 +267,7 @@ void CPlayerComponent::UpdateCursor(float frameTime)
 void CPlayerComponent::Revive()
 {
 	// Find a spawn point and move the entity there
-	SelectSpawnPoint();
+	SpawnAtSpawnPoint();
 
 	// Unhide the entity in case hidden by the Editor
 	GetEntity()->Hide(false);
@@ -291,29 +300,21 @@ void CPlayerComponent::Revive()
 	m_cursorPositionInWorld = ZERO;
 }
 
-void CPlayerComponent::SelectSpawnPoint()
+void CPlayerComponent::SpawnAtSpawnPoint()
 {
-	// We only handle default spawning below for the Launcher
-	// Editor has special logic in CEditorGame
-	if (gEnv->IsEditor())
-		return;
-
 	// Spawn at first default spawner
 	auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
 	pEntityIterator->MoveFirst();
 
-	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
-	
 	while (!pEntityIterator->IsEnd())
 	{
 		IEntity *pEntity = pEntityIterator->Next();
 
-		if (pEntity->GetClass() != pSpawnerClass)
-			continue;
-
-		// Move our entity to this position
-		m_pEntity->SetWorldTM(pEntity->GetWorldTM());
-		break;
+		if (auto* pSpawner = pEntity->GetComponent<CSpawnPointComponent>())
+		{
+			pSpawner->SpawnEntity(m_pEntity);
+			break;
+		}
 	}
 }
 

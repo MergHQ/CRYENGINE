@@ -719,8 +719,8 @@ namespace UQS
 			desc.SetGUID("babd0a8b-2f84-4019-b6f5-0758ac62ec56"_cry_guid);
 			desc.SetLabel("QueryFinished");
 			desc.SetDescription("Sent when a query finishes without having run into an exception.");
-			desc.AddMember(&SQueryFinishedSignal::queryId, 'quid', "queryId", "QueryID", nullptr);
-			desc.AddMember(&SQueryFinishedSignal::resultCount, 'resc', "resultCount", "ResultCount", nullptr);
+			desc.AddMember(&SQueryFinishedSignal::queryId, 'quid', "queryId", "QueryID", nullptr, SQueryIdWrapper());
+			desc.AddMember(&SQueryFinishedSignal::resultCount, 'resc', "resultCount", "ResultCount", 0);
 		}
 
 		//===================================================================================
@@ -748,8 +748,8 @@ namespace UQS
 			desc.SetGUID("5d1ea803-63bb-436d-8044-252a150b916f"_cry_guid);
 			desc.SetLabel("QueryException");
 			desc.SetDescription("Sent when a query runs into an excpetion before finishing.");
-			desc.AddMember(&SQueryExceptionSignal::queryId, 'quid', "queryId", "QueryID", nullptr);
-			desc.AddMember(&SQueryExceptionSignal::exceptionMessage, 'exms', "exceptionMessage", "ExceptionMessage", nullptr);
+			desc.AddMember(&SQueryExceptionSignal::queryId, 'quid', "queryId", "QueryID", nullptr, SQueryIdWrapper());
+			desc.AddMember(&SQueryExceptionSignal::exceptionMessage, 'exms', "exceptionMessage", "ExceptionMessage", nullptr, "");
 		}
 
 		//===================================================================================

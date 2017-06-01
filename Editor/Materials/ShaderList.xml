@@ -1,5 +1,4 @@
 <ShaderList>
-	<Shader name="Common.Cloud" />
 	<Shader name="DistanceClouds" />
 	<Shader name="Eye" />
 	<Shader name="Glass" />

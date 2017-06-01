@@ -69,11 +69,8 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
 
 		// Now register the new Schematyc components
-		auto staticAutoRegisterLambda = [](Schematyc::IEnvRegistrar& registrar)
+		auto registerDefaultComponentsLambda = [](Schematyc::IEnvRegistrar& registrar)
 		{
-			// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
-			Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
-
 			Cry::DefaultComponents::RegisterAudioSpotComponent(registrar);
 			Cry::DefaultComponents::RegisterPathfindingComponent(registrar);
 			Cry::DefaultComponents::RegisterCameraComponent(registrar);
@@ -106,7 +103,7 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 				"EntityComponents",
 				"Crytek GmbH",
 				"CRYENGINE Default Entity Components",
-				staticAutoRegisterLambda
+				registerDefaultComponentsLambda
 				)
 		);
 	}

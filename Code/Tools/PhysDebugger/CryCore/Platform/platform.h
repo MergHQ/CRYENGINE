@@ -22,6 +22,7 @@ typedef UINT_PTR TRUNCATE_PTR,EXPAND_PTR;
 #define CRY_ARRAY_COUNT(A) (sizeof(A)/sizeof((A)[0]))
 template<class T>	inline void ZeroArray(T& t)	{	memset(&t, 0, sizeof(t[0]) * CRY_ARRAY_COUNT(t));	}
 template<class T> inline void ZeroStruct(T& t) { memset(&t, 0, sizeof(T)); }
+#define ColorF Vec4
 
 #ifdef _DEBUG
 	#define IF_DEBUG(expr) (expr)

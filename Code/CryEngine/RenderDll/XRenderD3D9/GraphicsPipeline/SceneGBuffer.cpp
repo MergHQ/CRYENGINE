@@ -295,7 +295,6 @@ void CSceneGBufferStage::Prepare(CRenderView* pRenderView)
 	m_depthPrepass.PrepareRenderPassForUse(commandList);
 	m_opaquePass.PrepareRenderPassForUse(commandList);
 	m_opaqueVelocityPass.PrepareRenderPassForUse(commandList);
-	m_overlayPass.PrepareRenderPassForUse(commandList);
 	m_microGBufferPass.PrepareRenderPassForUse(commandList);
 }
 
@@ -367,6 +366,8 @@ void CSceneGBufferStage::RenderSceneOpaque()
 
 void CSceneGBufferStage::RenderSceneOverlays()
 {
+	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	m_overlayPass.PrepareRenderPassForUse(commandList);
 	m_overlayPass.BeginExecution();
 	m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_TERRAINLAYER);
 	m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_DECAL);

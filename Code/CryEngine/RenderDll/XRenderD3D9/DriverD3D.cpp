@@ -1265,11 +1265,6 @@ void CD3D9Renderer::BeginFrame()
 	CRenderElement::Tick();
 	CFlashTextureSourceSharedRT::Tick();
 
-	CREImposter::m_PrevMemPostponed = CREImposter::m_MemPostponed;
-	CREImposter::m_PrevMemUpdated = CREImposter::m_MemUpdated;
-	CREImposter::m_MemPostponed = 0;
-	CREImposter::m_MemUpdated = 0;
-
 	m_RP.m_TI[m_RP.m_nFillThreadID].m_nFrameID++;
 	m_RP.m_TI[m_RP.m_nFillThreadID].m_nFrameUpdateID++;
 	m_RP.m_TI[m_RP.m_nFillThreadID].m_RealTime = iTimer->GetCurrTime();
@@ -2171,7 +2166,6 @@ void CD3D9Renderer::DebugDrawStats1()
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Managed streamed textures: Sys=%.3f Mb, Vid:=%.3f", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamVidSize));
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "RT textures: Used: %.3f Mb, Updated: %.3f Mb, Cleared: %.3f Mb, Copied: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynTexturesSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCopiedSize));
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Meshes updated: Static: %.3f Mb, Dynamic: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_MeshUpdateBytes), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynMeshUpdateBytes));
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Cloud textures updated: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_CloudImpostersSizeUpdate));
 
 	int nYBars = nY;
 

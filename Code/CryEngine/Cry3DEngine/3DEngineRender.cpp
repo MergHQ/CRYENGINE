@@ -26,7 +26,6 @@
 #include "FogVolumeRenderNode.h"
 #include "ObjectsTree.h"
 #include "WaterWaveRenderNode.h"
-#include "CloudsManager.h"
 #include "MatMan.h"
 #include <CryString/CryPath.h>
 #include <CryMemory/ILocalMemoryUsage.h>
@@ -1463,9 +1462,6 @@ void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo&
 
 	if (passInfo.IsGeneralPass() && passInfo.RenderClouds())
 	{
-		if (m_pCloudsManager)
-			m_pCloudsManager->MoveClouds();
-
 		// move procedural volumetric clouds with global wind.
 		{
 			Vec3 cloudParams(0, 0, 0);
@@ -3304,7 +3300,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_Brush);
 		DRAW_OBJ_STATS(eERType_Vegetation);
 		DRAW_OBJ_STATS(eERType_Light);
-		DRAW_OBJ_STATS(eERType_Cloud);
 		DRAW_OBJ_STATS(eERType_FogVolume);
 		DRAW_OBJ_STATS(eERType_Decal);
 		DRAW_OBJ_STATS(eERType_ParticleEmitter);

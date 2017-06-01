@@ -322,9 +322,6 @@ struct CRY_ALIGN(128) SPipeStat
 	float m_fEnvCMapUpdateTime;
 	float m_fEnvTextUpdateTime;
 
-	int m_ImpostersSizeUpdate;
-	int m_CloudImpostersSizeUpdate;
-
 #if REFRACTION_PARTIAL_RESOLVE_STATS
 	float m_fRefractionPartialResolveEstimatedCost;
 	int m_refractionPartialResolveCount;

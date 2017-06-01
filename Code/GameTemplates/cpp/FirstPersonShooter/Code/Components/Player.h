@@ -49,7 +49,7 @@ protected:
 	void UpdateAnimation(float frameTime);
 	void UpdateCamera(float frameTime);
 
-	void SelectSpawnPoint();
+	void SpawnAtSpawnPoint();
 
 	void CreateWeapon(const char *name);
 

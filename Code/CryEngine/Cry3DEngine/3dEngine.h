@@ -1099,7 +1099,6 @@ public:
 	virtual int                      SaveStatObj(IStatObj* pStatObj, TSerialize ser);
 	virtual IStatObj*                LoadStatObj(TSerialize ser);
 
-	virtual bool                     CheckIntersectClouds(const Vec3& p1, const Vec3& p2);
 	virtual void                     OnRenderMeshDeleted(IRenderMesh* pRenderMesh);
 	virtual bool                     RenderMeshRayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo& hitInfo, IMaterial* pCustomMtl = 0);
 	virtual void                     OnEntityDeleted(struct IEntity* pEntity);

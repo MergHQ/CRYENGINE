@@ -379,7 +379,7 @@ gotcontacts:
 				iSolidNode = pcontacts[j].iNode[0];
 			}
 			
-			phits[ihit].dist = pcontacts[j].t;
+			phits[ihit].dist = max(1e-8f,(float)pcontacts[j].t);
 			phits[ihit].pCollider = pentLog; 
 			phits[ihit].ipart = i+(pcontacts[j].iNode[0]-i & -bCallbackUsed);
 			phits[ihit].partid = pcontacts[j].iPrim[0];
@@ -411,7 +411,7 @@ void CPhysicalWorld::RayHeightfield(const Vec3 &org,Vec3 &dir, ray_hit *hits, in
 		hfGeom->m_hf.fpGetSurfTypeCallback = getSurfTypeNoHoles;
 	if (hfGeom->CHeightfield::Intersect(&aray, &gwd, (geom_world_data*)0, &ip, pcontacts)) {
 		dir = pcontacts->pt-org;
-		hits[0].dist = pcontacts->t;
+		hits[0].dist = max(1e-8f,(float)pcontacts->t);
 		hits[0].pCollider = m_pHeightfield[iCaller]; 
 		hits[0].partid = hits[0].ipart = 0;
 		hits[0].surface_idx = m_pHeightfield[iCaller]->GetMatId(pcontacts->id[0],0);

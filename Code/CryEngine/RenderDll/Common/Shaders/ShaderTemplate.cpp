@@ -125,8 +125,6 @@ uint32 SShaderItem::PostLoad()
 
 	if (pSH->m_Flags2 & EF2_PREPR_GENSPRITES)
 		nPreprocessFlags |= FSPR_GENSPRITES | FB_PREPROCESS;
-	if (pSH->m_Flags2 & EF2_PREPR_GENCLOUDS)
-		nPreprocessFlags |= FSPR_GENCLOUDS;
 	if (pSH->m_Flags2 & EF2_PREPR_SCANWATER)
 		nPreprocessFlags |= FSPR_SCANTEXWATER | FB_PREPROCESS;
 

@@ -19,7 +19,6 @@
 			"D3DREBreakableGlass.cpp",
 			"D3DREBreakableGlassBuffer.cpp",
 			"D3D_SVO.cpp",
-			"D3DRECloud.cpp",
 			"D3DMultiResRendering.cpp",
 			"D3DOsvr.cpp"
 		],
@@ -33,7 +32,6 @@
 	{
 		"Source Files":
 		[
-			"D3DREImposter.cpp",
 			"D3DRenderAuxGeom.cpp",
 			"D3DRenderThread.cpp",
 			"D3DRendPipeline.cpp",
@@ -189,12 +187,10 @@
       "../Common/RendElements/CREBreakableGlass.cpp",
       "CRELensOpticsD3D.cpp",
       "../Common/RendElements/CREClientPoly.cpp",
-      "../Common/RendElements/CRECloud.cpp",
       "../Common/RendElements/CREDeferredShading.cpp",
       "../Common/RendElements/CREFarTreeSprites.cpp",
       "../Common/RendElements/CREFogVolume.cpp",
       "../Common/RendElements/CREGameEffect.cpp",
-      "../Common/RendElements/CREImposter.cpp",
       "../Common/RendElements/CREMesh.cpp",
       "../Common/RendElements/CREOclusionQuery.cpp",
       "../Common/RendElements/CREGeomCache.cpp"
@@ -211,7 +207,6 @@
 			"../Common/RendElements/RendElement.cpp",
       "../Common/RendElements/CRELensOptics.h",
 			"../Common/RendElements/CREClientPoly.h",
-			"../Common/RendElements/CRECloud.h",
 			"../Common/RendElements/CREDeferredShading.h",
 			"../Common/RendElements/Stars.h",
 			"../Common/RendElements/CREMeshImpl.h"

@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "Player.h"
+#include "SpawnPoint.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryInput/IHardwareMouse.h>
@@ -10,7 +11,7 @@ void CPlayerComponent::Initialize()
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCameraComponent>();
 	// The character controller is responsible for maintaining player physics and animations
 	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
-	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
+	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are m_pEntity
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
 	// Get and initialize the pathfinding component
 	m_pPathfindingComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CPathfindingComponent>();
@@ -187,7 +188,7 @@ void CPlayerComponent::UpdateCursor(float frameTime)
 void CPlayerComponent::Revive()
 {
 	// Find a spawn point and move the entity there
-	SelectSpawnPoint();
+	SpawnAtSpawnPoint();
 
 	// Unhide the entity in case hidden by the Editor
 	GetEntity()->Hide(false);
@@ -215,28 +216,20 @@ void CPlayerComponent::Revive()
 	m_walkTagId = m_pCharacterController->GetTagId("Walk");
 }
 
-void CPlayerComponent::SelectSpawnPoint()
+void CPlayerComponent::SpawnAtSpawnPoint()
 {
-	// We only handle default spawning below for the Launcher
-	// Editor has special logic in CEditorGame
-	if (gEnv->IsEditor())
-		return;
-
 	// Spawn at first default spawner
 	auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
 	pEntityIterator->MoveFirst();
 
-	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
-	
 	while (!pEntityIterator->IsEnd())
 	{
 		IEntity *pEntity = pEntityIterator->Next();
 
-		if (pEntity->GetClass() != pSpawnerClass)
-			continue;
-
-		// Move our entity to this position
-		m_pEntity->SetWorldTM(pEntity->GetWorldTM());
-		break;
+		if (auto* pSpawner = pEntity->GetComponent<CSpawnPointComponent>())
+		{
+			pSpawner->SpawnEntity(m_pEntity);
+			break;
+		}
 	}
 }

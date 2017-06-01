@@ -384,7 +384,6 @@ void COctreeNode::CompileObjects()
 			{
 				pObj->m_nInternalFlags &= ~(IRenderNode::REQUIRES_FORWARD_RENDERING | IRenderNode::REQUIRES_NEAREST_CUBEMAP);
 				if (eRType != eERType_Light &&
-				    eRType != eERType_Cloud &&
 				    eRType != eERType_FogVolume &&
 				    eRType != eERType_Decal &&
 				    eRType != eERType_Road &&
@@ -3113,7 +3112,7 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	const float fNewMaxViewDist = pObj->GetMaxViewDist();
 	pObj->m_fWSMaxViewDist = fNewMaxViewDist;
 
-	if (eRType != eERType_Light && eRType != eERType_Cloud && eRType != eERType_FogVolume && eRType != eERType_Decal && eRType != eERType_Road && eRType != eERType_DistanceCloud && eRType != eERType_CloudBlocker)
+	if (eRType != eERType_Light && eRType != eERType_FogVolume && eRType != eERType_Decal && eRType != eERType_Road && eRType != eERType_DistanceCloud && eRType != eERType_CloudBlocker)
 	{
 		if (eRType == eERType_ParticleEmitter)
 		{
@@ -3728,8 +3727,4 @@ bool CObjManager::IsBoxOccluded(const AABB& objBox,
 
 	return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-#include "CloudRenderNode.h"
 

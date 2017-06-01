@@ -84,8 +84,6 @@ public:
 	int  LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params = NULL, bool bPrime = false, bool bSerialize = false);
 	int  SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize = false);
 	int  LoadLight(int nSlot, CDLight* pLight, uint16 layerId);
-	int  LoadCloud(int nSlot, const char* sFilename);
-	int  SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties);
 	int  LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties);
 	int  LoadFogVolume(int nSlot, const SFogVolumeProperties& properties);
 	int  FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity);

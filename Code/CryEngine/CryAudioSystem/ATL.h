@@ -63,6 +63,9 @@ public:
 
 	void           NotifyListener(CAudioRequest const& request);
 
+	void           IncrementGlobalObjectSyncCallbackCounter();
+	void           DecrementGlobalObjectSyncCallbackCounter();
+
 private:
 
 	ERequestStatus ProcessAudioManagerRequest(CAudioRequest const& request);

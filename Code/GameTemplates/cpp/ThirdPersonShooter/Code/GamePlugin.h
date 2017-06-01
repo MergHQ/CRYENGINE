@@ -18,6 +18,7 @@ class CGamePlugin
 public:
 	CRYINTERFACE_SIMPLE(ICryPlugin)
 	CRYGENERATE_SINGLETONCLASS(CGamePlugin, "Game_Blank", 0xF01244B0A4E74DC6, 0x91E10ED18906FE7C)
+	static CryGUID GetSchematycPackageGUID() { return "{0900F201-49F3-4B3C-81D1-0C91CF3C8FDA}"_cry_guid; }
 
 	virtual ~CGamePlugin();
 	

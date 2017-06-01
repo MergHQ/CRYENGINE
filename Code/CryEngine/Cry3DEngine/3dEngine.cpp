@@ -35,8 +35,6 @@
 #include "CGF/ChunkFileWriters.h"
 #include "CGF/ReadOnlyChunkFile.h"
 
-#include "CloudRenderNode.h"
-#include "CloudsManager.h"
 #include "SkyLightManager.h"
 #include "FogVolumeRenderNode.h"
 #include "RoadRenderNode.h"
@@ -93,7 +91,6 @@ std::shared_ptr<pfx2::IParticleSystem> Cry3DEngineBase::m_pParticleSystem;
 IOpticsManager* Cry3DEngineBase::m_pOpticsManager = 0;
 CDecalManager* Cry3DEngineBase::m_pDecalManager = 0;
 CSkyLightManager* Cry3DEngineBase::m_pSkyLightManager = 0;
-CCloudsManager* Cry3DEngineBase::m_pCloudsManager = 0;
 CVisAreaManager* Cry3DEngineBase::m_pVisAreaManager = 0;
 CClipVolumeManager* Cry3DEngineBase::m_pClipVolumeManager = 0;
 CWaterWaveManager* Cry3DEngineBase::m_pWaterWaveManager = 0;
@@ -205,7 +202,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pObjManager = CryAlignedNew<CObjManager>();
 
 	m_pDecalManager = 0;    //new CDecalManager   (m_pSystem, this);
-	m_pCloudsManager = new CCloudsManager;
 	m_pPartManager = 0;
 	m_pOpticsManager = 0;
 	m_pVisAreaManager = 0;
@@ -466,7 +462,6 @@ C3DEngine::~C3DEngine()
 	delete m_pRenderMeshMerger;
 	delete m_pMatMan;
 	m_pMatMan = 0;
-	delete m_pCloudsManager;
 
 	delete m_pCVars;
 
@@ -2918,11 +2913,6 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 			CVegetation* pVeget = new CVegetation();
 			return pVeget;
 		}
-	case eERType_Cloud:
-		{
-			CCloudRenderNode* pCloud = new CCloudRenderNode();
-			return pCloud;
-		}
 	case eERType_FogVolume:
 		{
 			CFogVolumeRenderNode* pFogVolume = new CFogVolumeRenderNode();
@@ -4755,12 +4745,6 @@ int C3DEngine::GetShadowsCascadeCount(const CDLight* pLight) const
 {
 	int nCascadeCount = m_eShadowMode == ESM_HIGHQUALITY ? MAX_GSM_LODS_NUM : GetCVars()->e_GsmLodsNum;
 	return clamp_tpl(nCascadeCount, 0, MAX_GSM_LODS_NUM);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool C3DEngine::CheckIntersectClouds(const Vec3& p1, const Vec3& p2)
-{
-	return m_pCloudsManager->CheckIntersectClouds(p1, p2);
 }
 
 void C3DEngine::OnRenderMeshDeleted(IRenderMesh* pRenderMesh)

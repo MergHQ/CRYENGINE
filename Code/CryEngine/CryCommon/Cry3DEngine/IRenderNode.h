@@ -22,7 +22,7 @@ enum EERType
 	eERType_Brush,
 	eERType_Vegetation,
 	eERType_Light,
-	eERType_Cloud,
+	eERType_Dummy_5, //!< Used to be eERType_Cloud, preserve order for compatibility.
 	eERType_Dummy_1, //!< Used to be eERType_VoxelObject, preserve order for compatibility.
 	eERType_FogVolume,
 	eERType_Decal,
@@ -638,25 +638,6 @@ struct ILightSource : public IRenderNode
 	virtual struct ShadowMapFrustum* GetShadowFrustum(int nId = 0) = 0;
 	virtual bool                     IsLightAreasVisible() = 0;
 	virtual void                     SetCastingException(IRenderNode* pNotCaster) = 0;
-	// </interfuscator:shuffle>
-};
-
-struct SCloudMovementProperties
-{
-	Vec3  m_speed = Vec3(ZERO);
-	Vec3  m_spaceLoopBox = Vec3(2000.0f, 2000.0f, 2000.0f);
-	float m_fadeDistance = 0.0f;
-	bool  m_autoMove = false;
-};
-
-//! Interface to the Cloud Render Node object.
-struct ICloudRenderNode : public IRenderNode
-{
-	// <interfuscator:shuffle>
-	//! Loads a cloud from a cloud description XML file.
-	virtual bool LoadCloud(const char* sCloudFilename) = 0;
-	virtual bool LoadCloudFromXml(XmlNodeRef cloudNode) = 0;
-	virtual void SetMovementProperties(const SCloudMovementProperties& properties) = 0;
 	// </interfuscator:shuffle>
 };
 

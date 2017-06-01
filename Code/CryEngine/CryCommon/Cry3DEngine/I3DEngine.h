@@ -2110,9 +2110,6 @@ struct I3DEngine : public IProcess
 	//! Loads statobj from a stream
 	virtual IStatObj* LoadStatObj(TSerialize ser) = 0;
 
-	//! \return true if input line segment intersect clouds sprites.
-	virtual bool CheckIntersectClouds(const Vec3& p1, const Vec3& p2) = 0;
-
 	//! Removes references to RenderMesh
 	virtual void OnRenderMeshDeleted(IRenderMesh* pRenderMesh) = 0;
 

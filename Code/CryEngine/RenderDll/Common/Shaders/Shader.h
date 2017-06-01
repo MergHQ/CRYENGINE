@@ -1022,7 +1022,6 @@ private:
 #define FHF_PUBLIC              0x400
 #define FHF_NOLIGHTS            0x800
 #define FHF_POSITION_INVARIANT  0x1000
-#define FHF_RE_CLOUD            0x20000
 #define FHF_TRANSPARENT         0x40000
 #define FHF_WASZWRITE           0x80000
 #define FHF_USE_GEOMETRY_SHADER 0x100000

@@ -2753,18 +2753,6 @@ bool CEntity::UpdateLightClipBounds(CDLight& light)
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CEntity::LoadCloud(int nSlot, const char* sFilename)
-{
-	return m_render.LoadCloud(nSlot, sFilename);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CEntity::SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties)
-{
-	return m_render.SetCloudMovementProperties(nSlot, properties);
-}
-
-//////////////////////////////////////////////////////////////////////////
 int CEntity::LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties)
 {
 	return m_render.LoadCloudBlocker(nSlot, properties);

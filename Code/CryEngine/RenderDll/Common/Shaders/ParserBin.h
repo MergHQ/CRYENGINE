@@ -837,7 +837,6 @@ class CParserBin
 	friend struct SFXParam;
 	friend struct SFXSampler;
 	friend struct SFXTexture;
-	friend class CRECloud;
 
 	//bool m_bEmbeddedSearchInfo;
 	struct SShaderBin* m_pCurBinShader;

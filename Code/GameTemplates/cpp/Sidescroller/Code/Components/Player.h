@@ -47,7 +47,7 @@ protected:
 	void UpdateAnimation(float frameTime);
 	void UpdateCamera(float frameTime);
 
-	void SelectSpawnPoint();
+	void SpawnAtSpawnPoint();
 
 	void HandleInputFlagChange(TInputFlags flags, int activationMode, EInputFlagType type = EInputFlagType::Hold);
 

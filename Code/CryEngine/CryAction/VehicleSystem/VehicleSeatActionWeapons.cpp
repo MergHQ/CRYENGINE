@@ -55,10 +55,13 @@ CVehicleSeatActionWeapons::~CVehicleSeatActionWeapons()
 			pWeapon->RemoveEventListener(this);
 		}
 
-		if (static_cast<CVehicle*>(m_pVehicle)->SpawnAndDeleteEntities())
-			pEntitySystem->RemoveEntity(ite->weaponEntityId, true);
+		if (ite->weaponEntityId != INVALID_ENTITYID)
+		{
+			if (static_cast<CVehicle*>(m_pVehicle)->SpawnAndDeleteEntities())
+				pEntitySystem->RemoveEntity(ite->weaponEntityId, true);
 
-		(*ite).weaponEntityId = 0;
+			(*ite).weaponEntityId = INVALID_ENTITYID;
+		}
 	}
 
 	m_pVehicle->SetObjectUpdate(this, IVehicle::eVOU_NoUpdate);

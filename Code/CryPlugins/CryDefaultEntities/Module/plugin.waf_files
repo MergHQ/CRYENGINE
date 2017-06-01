@@ -53,11 +53,6 @@
 			"Particles/ParticleEntity.cpp",
 			"Particles/ParticleEntity.h"
 		],
-		"Clouds" :
-		[
-			"Clouds/CloudEntity.cpp",
-			"Clouds/CloudEntity.h"
-		],
 		"Geometry" :
 		[
 			"Geometry/GeomEntity.cpp",

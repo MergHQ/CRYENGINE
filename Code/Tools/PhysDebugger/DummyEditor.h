@@ -23,6 +23,7 @@ inline struct {
 enum EMouseEvent { eMouseLDown, eMouseLUp, eMouseMove };
 
 typedef Vec2i CPoint;
+#undef ColorF
 typedef Vec3 ColorF;
 
 struct CCamera {

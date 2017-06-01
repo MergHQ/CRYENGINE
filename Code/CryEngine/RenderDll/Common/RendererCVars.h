@@ -145,7 +145,6 @@ public:
 	static int CV_r_msaa_samples;
 	static int CV_r_msaa_quality;
 	static int CV_r_msaa_debug;
-	static int CV_r_impostersupdateperframe;
 	static int CV_r_nodrawnear;
 	static int CV_r_DrawNearShadows;
 	static int CV_r_scissor;
@@ -285,8 +284,6 @@ public:
 	static int CV_r_colorgrading;
 	DeclareStaticConstIntCVar(CV_r_colorgrading_levels, 1);
 	DeclareStaticConstIntCVar(CV_r_colorgrading_filters, 1);
-	DeclareStaticConstIntCVar(CV_r_cloudsupdatealways, 0);
-	DeclareStaticConstIntCVar(CV_r_cloudsdebug, 0);
 	DeclareStaticConstIntCVar(CV_r_showdyntextures, 0);
 	DeclareStaticConstIntCVar(CV_r_shownormals, 0);
 	DeclareStaticConstIntCVar(CV_r_showlines, 0);
@@ -356,7 +353,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_debugrefraction, 0);
 	DeclareStaticConstIntCVar(CV_r_meshprecache, 1);
 	DeclareStaticConstIntCVar(CV_r_validateDraw, 0);
-	DeclareStaticConstIntCVar(CV_r_impostersdraw, 1);
 	static int CV_r_flares;
 	DeclareStaticConstIntCVar(CV_r_flareHqShafts, FLARES_HQSHAFTS_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_ZPassDepthSorting, ZPASS_DEPTH_SORT_DEFAULT_VAL);
@@ -503,7 +499,6 @@ public:
 	static float CV_r_detaildistance;
 	static float CV_r_DrawNearZRange;
 	static float CV_r_DrawNearFarPlane;
-	static float CV_r_imposterratio;
 	static float CV_r_rainamount;
 	static float CV_r_MotionBlurShutterSpeed;
 	static float CV_r_MotionBlurCameraMotionScale;

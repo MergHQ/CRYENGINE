@@ -13,6 +13,7 @@
 #include <CrySystem/CryVersion.h>
 #include "CmdLine.h"
 #include <CryString/CryName.h>
+#include <CryMath/Cry_Camera.h>
 
 #include "FrameProfileSystem.h"
 #include "MTSafeAllocator.h"

@@ -186,8 +186,6 @@ const char*        CRenderElement::mfTypeString()
 		return "SkyZone";
 	case eDATA_Mesh:
 		return "Mesh";
-	case eDATA_Imposter:
-		return "Imposter";
 	case eDATA_LensOptics:
 		return "LensOptics";
 	case eDATA_FarTreeSprites:
@@ -196,8 +194,6 @@ const char*        CRenderElement::mfTypeString()
 		return "OcclusionQuery";
 	case eDATA_Particle:
 		return "Particle";
-	case eDATA_Cloud:
-		return "Cloud";
 	case eDATA_HDRSky:
 		return "HDRSky";
 	case eDATA_FogVolume:

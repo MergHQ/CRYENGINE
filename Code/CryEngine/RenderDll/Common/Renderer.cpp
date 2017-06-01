@@ -1417,9 +1417,6 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 	case eDATA_Mesh:
 		re = new CREMeshImpl;
 		break;
-	case eDATA_Imposter:
-		re = new CREImposter;
-		break;
 
 	case eDATA_DeferredShading:
 		re = new CREDeferredShading;
@@ -1436,9 +1433,7 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 	case eDATA_LensOptics:
 		re = new CRELensOptics;
 		break;
-	case eDATA_Cloud:
-		re = new CRECloud;
-		break;
+
 	case eDATA_Sky:
 		re = new CRESky;
 		break;

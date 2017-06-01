@@ -114,7 +114,6 @@ enum ERenderCommand
 	eRC_DrawImageWithUV,
 
 	eRC_PreprGenerateFarTrees,
-	eRC_PreprGenerateCloud,
 	eRC_DynTexUpdate,
 	eRC_PushFog,
 	eRC_PopFog,
@@ -620,7 +619,6 @@ struct CRY_ALIGN(128) SRenderThread
 	bool RC_OC_ReadResult_Try(uint32 nDefaultNumSamples, CREOcclusionQuery * pRE);
 
 	void RC_PreprGenerateFarTrees(CREFarTreeSprites * pRE, const SRenderingPassInfo &passInfo);
-	void RC_PreprGenerateCloud(CRenderElement * pRE, CShader * pShader, CShaderResources * pRes, CRenderObject * pObject);
 	void RC_SetViewport(int x, int y, int width, int height, int id = 0);
 
 	void RC_ReleaseVBStream(void* pVB, int nStream);

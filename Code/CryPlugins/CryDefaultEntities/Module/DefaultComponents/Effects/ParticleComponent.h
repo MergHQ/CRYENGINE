@@ -25,7 +25,19 @@ namespace Cry
 				{
 					if (IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(m_effectName.value, "CParticleComponent"))
 					{
-						m_pEntity->LoadParticleEmitter(GetOrMakeEntitySlotId(), pEffect, &m_spawnParams.m_spawnParams);
+						if (IParticleEmitter* pEmitter = m_pEntity->GetParticleEmitter(GetEntitySlotId()))
+						{
+							if (pEmitter->GetEffect() != pEffect)
+							{
+								FreeEntitySlot();
+								m_bCurrentlyActive = false;
+							}
+						}
+
+						if(!m_bCurrentlyActive)
+						{
+							m_pEntity->LoadParticleEmitter(GetOrMakeEntitySlotId(), pEffect, &m_spawnParams.m_spawnParams);
+						}
 
 						if (IParticleEmitter* pEmitter = m_pEntity->GetParticleEmitter(GetEntitySlotId()))
 						{
