@@ -2,9 +2,13 @@
 #include "GamePlugin.h"
 
 #include "Components/Player.h"
-
+#include <CryEntitySystem/IEntityClass.h>
 #include <IGameObjectSystem.h>
 #include <IGameObject.h>
+
+#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <CrySchematyc/Env/EnvPackage.h>
+#include <CrySchematyc/Utils/SharedString.h>
 
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
@@ -23,6 +27,14 @@ bool CGamePlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPar
 	// Listen for client connection events, in order to create the local player
 	gEnv->pGameFramework->AddNetworkedClientListener(*this);
 
+
+	// Now register the new Schematyc components
+	auto staticAutoRegisterLambda = [](Schematyc::IEnvRegistrar& registrar)
+	{
+		// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
+		Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
+	};
+
 	return true;
 }
 
@@ -30,6 +42,25 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 {
 	switch (event)
 	{
+	case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
+	{
+		// Register all components that belong to this plug-in
+		auto staticAutoRegisterLambda = [](Schematyc::IEnvRegistrar& registrar)
+		{
+			// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
+			Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
+		};
+
+		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+			stl::make_unique<Schematyc::CEnvPackage>(
+				GetSchematycPackageGUID(),
+				"EntityComponents",
+				"Crytek GmbH",
+				"Components",
+				staticAutoRegisterLambda
+				)
+		);
+	}break;
 		// Called when the game framework has initialized and we are ready for game logic to start
 	case ESYSTEM_EVENT_GAME_POST_INIT:
 	{

@@ -50,7 +50,7 @@ protected:
 	void UpdateCamera(float frameTime);
 	void UpdateCursor(float frameTime);
 
-	void SelectSpawnPoint();
+	void SpawnAtSpawnPoint();
 
 	void SpawnCursorEntity();
 

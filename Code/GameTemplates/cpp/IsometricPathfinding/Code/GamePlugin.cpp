@@ -3,6 +3,10 @@
 
 #include "Components/Player.h"
 
+#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <CrySchematyc/Env/EnvPackage.h>
+#include <CrySchematyc/Utils/SharedString.h>
+
 #include <IGameObjectSystem.h>
 #include <IGameObject.h>
 
@@ -30,6 +34,25 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 {
 	switch (event)
 	{
+	case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
+	{
+		// Register all components that belong to this plug-in
+		auto staticAutoRegisterLambda = [](Schematyc::IEnvRegistrar& registrar)
+		{
+			// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
+			Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
+		};
+
+		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+			stl::make_unique<Schematyc::CEnvPackage>(
+				GetSchematycPackageGUID(),
+				"EntityComponents",
+				"Crytek GmbH",
+				"Components",
+				staticAutoRegisterLambda
+				)
+		);
+	}break;
 		// Called when the game framework has initialized and we are ready for game logic to start
 	case ESYSTEM_EVENT_GAME_POST_INIT:
 	{
