@@ -15,7 +15,7 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-#if !defined(RELEASE) && defined(WIN32)
+#if !defined(RELEASE) && defined(WIN32) && !defined(CRY_PLATFORM_CONSOLE)
 #define SUPPORT_ENVIRONMENT_PROBE_GENERATION
 #endif
 
