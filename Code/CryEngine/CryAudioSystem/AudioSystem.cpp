@@ -108,7 +108,14 @@ void CSystem::ExternalUpdate()
 	while (m_syncCallbacks.dequeue(request))
 	{
 		m_atl.NotifyListener(request);
-		request.pObject->DecrementSyncCallbackCounter();
+		if (request.pObject == nullptr)
+		{
+			m_atl.DecrementGlobalObjectSyncCallbackCounter();
+		}
+		else
+		{
+			request.pObject->DecrementSyncCallbackCounter();
+		}
 	}	
 
 
@@ -843,7 +850,14 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 				}
 				else
 				{
-					request.pObject->IncrementSyncCallbackCounter();
+					if (request.pObject == nullptr)
+					{
+						m_atl.IncrementGlobalObjectSyncCallbackCounter();
+					}
+					else
+					{
+						request.pObject->IncrementSyncCallbackCounter();
+					}
 					m_syncCallbacks.enqueue(request);
 				}
 			}
@@ -860,7 +874,7 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 {
-	if (gEnv->mMainThreadId == CryGetCurrentThreadId())
+	if (gEnv->mMainThreadId == CryGetCurrentThreadId() && pRequestInfo->pAudioObject != nullptr)
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pRequestInfo->pAudioObject->GetEntityId());
 		if (pEntity)

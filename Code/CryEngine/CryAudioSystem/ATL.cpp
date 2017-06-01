@@ -357,6 +357,18 @@ ERequestStatus CAudioTranslationLayer::ClearPreloadsData(EDataScope const dataSc
 	return ERequestStatus::Success;
 }
 
+///////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::IncrementGlobalObjectSyncCallbackCounter()
+{
+	m_pGlobalAudioObject->IncrementSyncCallbackCounter();
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::DecrementGlobalObjectSyncCallbackCounter()
+{
+	m_pGlobalAudioObject->DecrementSyncCallbackCounter();
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::NotifyListener(CAudioRequest const& request)
 {
@@ -903,12 +915,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest const& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	CATLAudioObject* pObject = m_pGlobalAudioObject;
-
-	if (request.pObject != nullptr)
-	{
-		pObject = request.pObject;
-	}
+	CATLAudioObject* const pObject = (request.pObject != nullptr) ? request.pObject : m_pGlobalAudioObject;
 
 	SAudioObjectRequestDataBase const* const pBaseRequestData =
 	  static_cast<SAudioObjectRequestDataBase const* const>(request.GetData());
