@@ -9,6 +9,8 @@
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+
 namespace Cry
 {
 	namespace DefaultComponents
@@ -181,7 +183,11 @@ namespace Cry
 
 					gEnv->pRenderer->WriteTIFToDisk(downsampledImageData.Data(), (int)m_generation.m_resolution * 6, (int)m_generation.m_resolution, 2, 4, true, "HDRCubemap_highQ", outputPath);
 
-					LoadFromDisk(cubemapFileName);
+					CResourceCompilerHelper::ERcCallResult result = CResourceCompilerHelper::CallResourceCompiler(outputPath, nullptr, nullptr, false, CResourceCompilerHelper::eRcExePath_editor, true, true);
+					if (result == CResourceCompilerHelper::eRcCallResult_success)
+					{
+						LoadFromDisk(cubemapFileName);
+					}
 				}
 				else
 				{

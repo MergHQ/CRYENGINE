@@ -60,6 +60,12 @@ public:
 		{
 			value.CopyOnWrite();
 		}
+		else if (value.m_pArray == nullptr)
+		{
+			Array emptyArray;
+			return archive(emptyArray, szName, szLabel);
+		}
+
 		return archive(*value.m_pArray, szName, szLabel);
 	}
 

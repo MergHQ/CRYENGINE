@@ -2,6 +2,9 @@
 #include "EnvironmentProbeComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.inl>
+#include <CryCore/ToolsHelpers/EngineSettingsManager.inl>
+#include <CryCore/ToolsHelpers/SettingsManagerHelpers.inl>
 
 namespace Cry
 {
