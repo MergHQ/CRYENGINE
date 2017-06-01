@@ -82,7 +82,7 @@ public:
 	void DrawGeomBuffers(float dt);
 	void DrawTextBuffers(HDC hDC);
 
-	virtual void DrawGeometry(IGeometry *pGeom, geom_world_data *pgwd, int idxColor=0, int bSlowFadein=0, const Vec3 &sweepDir=Vec3(0));
+	virtual void DrawGeometry(IGeometry *pGeom, geom_world_data *pgwd, int idxColor=0, int bSlowFadein=0, const Vec3 &sweepDir=Vec3(0), const Vec4& clr=Vec4());
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, int idxColor=0, int bSlowFadein=0);
 	virtual void DrawText(const Vec3 &pt, const char *txt, int idxColor, float saturation=0) {
 		uchar clr[4] = { min((int)(saturation*512),255), 0,0, 255u };
@@ -791,7 +791,7 @@ CPhysRenderer::~CPhysRenderer()
 }
 
 
-void CPhysRenderer::DrawGeometry(IGeometry *pGeom, geom_world_data *pgwd, int idxColor, int bSlowFadein, const Vec3 &sweepDir)
+void CPhysRenderer::DrawGeometry(IGeometry *pGeom, geom_world_data *pgwd, int idxColor, int bSlowFadein, const Vec3 &sweepDir, const Vec4&)
 {
 	if (m_blockMask & 1)
 		return;
