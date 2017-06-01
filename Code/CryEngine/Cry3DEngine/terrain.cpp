@@ -564,12 +564,6 @@ void CTerrain::SetHeightMapMaxHeight(float fMaxHeight)
 		if (Get3DEngine()->IsSegmentSafeToUse(nSID) && m_pParentNodes[nSID])
 			InitHeightfieldPhysics(nSID);
 }
-/*
-   void CTerrain::RenaderImposterContent(class CREImposter * pImposter, const CCamera & cam)
-   {
-   pImposter->GetTerrainNode()->RenderImposterContent(pImposter, cam);
-   }
- */
 
 void SetTerrain(CTerrain& rTerrain);
 

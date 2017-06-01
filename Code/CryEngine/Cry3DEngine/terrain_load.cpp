@@ -86,8 +86,6 @@ CTerrain::CTerrain(const STerrainInfo& TerrainInfo)
 		m_pTerrainEf = MakeSystemMaterialFromShader("Terrain", pIsr);
 	}
 
-	m_pImposterEf = MakeSystemMaterialFromShader("Common.Imposter");
-
 	//	memset(m_arrImposters,0,sizeof(m_arrImposters));
 	//	memset(m_arrImpostersTopBottom,0,sizeof(m_arrImpostersTopBottom));
 

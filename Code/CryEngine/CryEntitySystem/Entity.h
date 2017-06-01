@@ -306,8 +306,6 @@ public:
 	int                                LoadLightImpl(int nSlot, CDLight* pLight);
 
 	virtual bool                       UpdateLightClipBounds(CDLight& light);
-	virtual int                        LoadCloud(int nSlot, const char* sFilename) override;
-	virtual int                        SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties) override;
 	int                                LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties);
 	virtual int                        LoadFogVolume(int nSlot, const SFogVolumeProperties& properties) override;
 

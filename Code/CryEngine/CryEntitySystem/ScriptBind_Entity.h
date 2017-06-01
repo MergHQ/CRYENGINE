@@ -104,18 +104,6 @@ protected:
 	//!		<param name="nLightSlot">Slot where our light is loaded.</param>
 	int SetSelfAsLightCasterException(IFunctionHandler* pH, int nLightSlot);
 
-	//! <code>Entity.LoadCloud( nSlot, sFilename )</code>
-	//! <description>Loads the cloud XML file into the entity slot.</description>
-	//!		<param name="nSlot">Slot identifier.</param>
-	//!		<param name="sFilename">Filename.</param>
-	int LoadCloud(IFunctionHandler* pH, int nSlot, const char* sFilename);
-
-	//! <code>Entity.SetCloudMovementProperties( nSlot, table )</code>
-	//! <description>Sets the cloud movement properties.</description>
-	//!		<param name="nSlot">Slot identifier.</param>
-	//!		<param name="table">Table property for the cloud movement.</param>
-	int SetCloudMovementProperties(IFunctionHandler* pH, int nSlot, SmartScriptTable table);
-
 	//! <code>Entity.LoadCloudBlocker( nSlot, table )</code>
 	//! <description>Loads the properties of cloud blocker into the entity slot.</description>
 	//!		<param name="nSlot">Slot identifier.</param>
@@ -1415,7 +1403,6 @@ private: // --------------------------------------------------------------------
 
 	bool ParseLightParams(IScriptTable* pLightTable, CDLight& light);
 	bool ParseFogVolumesParams(IScriptTable* pTable, IEntity* pEntity, SFogVolumeProperties& properties);
-	bool ParseCloudMovementProperties(IScriptTable* pTable, IEntity* pEntity, SCloudMovementProperties& properties);
 
 	// Parse script table to the entity physical params table.
 	bool ParsePhysicsParams(IScriptTable* pTable, SEntityPhysicalizeParams& params);

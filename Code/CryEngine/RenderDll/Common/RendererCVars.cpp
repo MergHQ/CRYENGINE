@@ -279,9 +279,6 @@ float CRendererCVars::CV_r_RenderMeshHashGridUnitSize;
 AllocateConstIntCVar(CRendererCVars, CV_r_debuglights);
 AllocateConstIntCVar(CRendererCVars, CV_r_lightssinglepass);
 
-AllocateConstIntCVar(CRendererCVars, CV_r_impostersdraw);
-float CRendererCVars::CV_r_imposterratio;
-int CRendererCVars::CV_r_impostersupdateperframe;
 AllocateConstIntCVar(CRendererCVars, CV_r_shaderslazyunload);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersdebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileStrict);
@@ -450,9 +447,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_colorgrading_levels);
 AllocateConstIntCVar(CRendererCVars, CV_r_colorgrading_filters);
 int CRendererCVars::CV_r_colorgrading_charts;
 int CRendererCVars::CV_r_ColorgradingChartsCache;
-
-AllocateConstIntCVar(CRendererCVars, CV_r_cloudsupdatealways);
-AllocateConstIntCVar(CRendererCVars, CV_r_cloudsdebug);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_showdyntextures);
 int CRendererCVars::CV_r_ShowDynTexturesMaxCount;
@@ -1402,20 +1396,6 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_MaterialsBatching [0/1]\n"
 	                    "Default is 1 (on). Set to 0 to disable.");
 
-	DefineConstIntCVar3("r_ImpostersDraw", CV_r_impostersdraw, 1, VF_NULL,
-	                    "Toggles imposters drawing.\n"
-	                    "Usage: r_ImpostersDraw [0/1]\n"
-	                    "Default is 1 (on). Set to 0 to disable imposters.");
-	REGISTER_CVAR3("r_ImposterRatio", CV_r_imposterratio, 1, VF_NULL,
-	               "Allows to scale the texture resolution of imposters (clouds)\n"
-	               "Usage: r_ImposterRatio [1..]\n"
-	               "Default is 1 (1:1 normal). Bigger values can help to save texture space\n"
-	               "(e.g. value 2 results in 1/4 texture memory usage)");
-	REGISTER_CVAR3("r_ImpostersUpdatePerFrame", CV_r_impostersupdateperframe, 6000, VF_NULL,
-	               "How many kilobytes to update per-frame.\n"
-	               "Usage: r_ImpostersUpdatePerFrame [1000-30000]\n"
-	               "Default is 6000 (6 megabytes)");
-
 	DefineConstIntCVar3("r_ZPassDepthSorting", CV_r_ZPassDepthSorting, ZPASS_DEPTH_SORT_DEFAULT_VAL, VF_NULL,
 	                    "Toggles Z pass depth sorting.\n"
 	                    "Usage: r_ZPassDepthSorting [0/1/2]\n"
@@ -2122,17 +2102,6 @@ void CRendererCVars::InitCVars()
 	               "Enables color grading charts update caching.\n"
 	               "Usage: r_ColorGradingCharts [0/1/2/etc]\n"
 	               "Default is 4 (update every 4 frames), 0 - always update, 1- update every other frame");
-
-	DefineConstIntCVar3("r_CloudsUpdateAlways", CV_r_cloudsupdatealways, 0, VF_NULL,
-	                    "Toggles updating of clouds each frame.\n"
-	                    "Usage: r_CloudsUpdateAlways [0/1]\n"
-	                    "Default is 0 (off)");
-	DefineConstIntCVar3("r_CloudsDebug", CV_r_cloudsdebug, 0, VF_NULL,
-	                    "Toggles debugging mode for clouds."
-	                    "Usage: r_CloudsDebug [0/1/2]\n"
-	                    "Usage: r_CloudsDebug = 1: render just screen imposters\n"
-	                    "Usage: r_CloudsDebug = 2: render just non-screen imposters\n"
-	                    "Default is 0 (off)");
 
 	REGISTER_CVAR3("r_DynTexMaxSize", CV_r_dyntexmaxsize, 48, VF_NULL, ""); // 48 Mb
 	DefineConstIntCVar3("r_TexPreallocateAtlases", CV_r_texpreallocateatlases, TEXPREALLOCATLAS_DEFAULT_VAL, VF_NULL, "");

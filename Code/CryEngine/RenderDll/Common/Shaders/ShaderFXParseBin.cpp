@@ -1633,8 +1633,6 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 				eT = Parser.GetToken(Parser.m_Data);
 				if (eT == eT_GenerateSprites)
 					ef->m_Flags2 |= EF2_PREPR_GENSPRITES;
-				else if (eT == eT_GenerateClouds)
-					ef->m_Flags2 |= EF2_PREPR_GENCLOUDS;
 				else if (eT == eT_ScanWater)
 					ef->m_Flags2 |= EF2_PREPR_SCANWATER;
 				else
@@ -4103,18 +4101,6 @@ bool CShaderManBin::ParseBinFX_Technique_CustomRE(CParserBin& Parser, SParserFra
 		{
 			pShTech->m_REs.AddElem(ps);
 			pShTech->m_Flags |= FHF_RE_LENSOPTICS;
-			return true;
-		}
-		else
-			delete ps;
-	}
-	else if (nName == eT_Cloud)
-	{
-		CRECloud* ps = new CRECloud;
-		if (ps->mfCompile(Parser, Frame))
-		{
-			pShTech->m_REs.AddElem(ps);
-			pShTech->m_Flags |= FHF_RE_CLOUD;
 			return true;
 		}
 		else

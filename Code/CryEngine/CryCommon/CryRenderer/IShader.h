@@ -1873,8 +1873,6 @@ enum ERenderListID
 #define  FSPR_GENSPRITES     (1 << SPRID_GENSPRITES)
 #define  SPRID_CUSTOMTEXTURE 30
 #define  FSPR_CUSTOMTEXTURE  (1 << SPRID_CUSTOMTEXTURE)
-#define  SPRID_GENCLOUDS     31
-#define  FSPR_GENCLOUDS      (1 << SPRID_GENCLOUDS)
 
 #define  FSPR_MASK           0xfff00000
 #define  FSPR_MAX            (1 << 31)
@@ -1925,7 +1923,6 @@ enum ERenderListID
 // Additional Different useful flags
 
 #define EF2_PREPR_GENSPRITES     0x1
-#define EF2_PREPR_GENCLOUDS      0x2
 #define EF2_PREPR_SCANWATER      0x4
 #define EF2_NOCASTSHADOWS        0x8
 #define EF2_NODRAW               0x10

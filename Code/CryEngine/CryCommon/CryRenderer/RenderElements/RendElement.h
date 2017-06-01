@@ -23,12 +23,10 @@ enum EDataType
 	eDATA_Terrain,
 	eDATA_SkyZone,
 	eDATA_Mesh,
-	eDATA_Imposter,
 	eDATA_LensOptics,
 	eDATA_FarTreeSprites,
 	eDATA_OcclusionQuery,
 	eDATA_Particle,
-	eDATA_Cloud,
 	eDATA_HDRSky,
 	eDATA_FogVolume,
 	eDATA_WaterVolume,
@@ -269,8 +267,6 @@ public:
 #include "CRESky.h"
 #include "CREFarTreeSprites.h"
 #include "CREOcclusionQuery.h"
-#include "CREImposter.h"
-#include "CREBaseCloud.h"
 #include "CREFogVolume.h"
 #include "CREWaterVolume.h"
 #include "CREWaterOcean.h"

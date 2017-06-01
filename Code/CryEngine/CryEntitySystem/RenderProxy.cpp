@@ -973,46 +973,6 @@ int CEntityRender::LoadLight(int nSlot, CDLight* pLight, uint16 layerId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CEntityRender::LoadCloud(int nSlot, const char* sFilename)
-{
-	CEntitySlot* pSlot = GetOrMakeSlot(nSlot);
-
-	ICloudRenderNode* pCloud = (ICloudRenderNode*)GetI3DEngine()->CreateRenderNode(eERType_Cloud);
-
-	pSlot->SetRenderNode(pCloud);
-	pSlot->SetRenderFlag(true);
-
-	pCloud->LoadCloud(sFilename);
-
-	pSlot->UpdateRenderNode();
-
-	ComputeLocalBounds(true);
-
-	SEntityEvent event(ENTITY_EVENT_SLOT_CHANGED);
-	event.nParam[0] = nSlot;
-	m_pEntity->SendEvent(event);
-
-	return nSlot;
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CEntityRender::SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties)
-{
-	CEntitySlot* pSlot = GetOrMakeSlot(nSlot);
-	IRenderNode* pRenderNode(pSlot->GetRenderNode());
-	if (pRenderNode && pRenderNode->GetRenderNodeType() == eERType_Cloud)
-	{
-		ICloudRenderNode* pCloud((ICloudRenderNode*)pRenderNode);
-		pCloud->SetMovementProperties(properties);
-
-		SEntityEvent event(ENTITY_EVENT_SLOT_CHANGED);
-		event.nParam[0] = nSlot;
-		m_pEntity->SendEvent(event);
-	}
-	return nSlot;
-}
-
-//////////////////////////////////////////////////////////////////////////
 int CEntityRender::LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties)
 {
 	CEntitySlot* pSlot = GetOrMakeSlot(nSlot);

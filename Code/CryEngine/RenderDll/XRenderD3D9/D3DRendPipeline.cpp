@@ -1898,8 +1898,6 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, Render
 				}
 			}
 			break;
-		case SPRID_GENCLOUDS:
-			break;
 
 		default:
 			assert(0);

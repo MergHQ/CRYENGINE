@@ -704,7 +704,6 @@ protected: // ------------------------------------------------------------------
 	PodArray<SBaseTexInfo>           m_arrBaseTexInfos;
 
 	_smart_ptr<IMaterial>            m_pTerrainEf;
-	_smart_ptr<IMaterial>            m_pImposterEf;
 
 	float                            m_fOceanWaterLevel;
 

@@ -203,7 +203,6 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 	case eERType_Road:
 		if (!passInfo.RenderRoads()) return;
 		break;
-	case eERType_Cloud:
 	case eERType_DistanceCloud:
 	case eERType_CloudBlocker:
 		if (!passInfo.RenderClouds()) return;

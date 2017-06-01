@@ -2160,23 +2160,6 @@ void SRenderThread::RC_PreprGenerateFarTrees(CREFarTreeSprites* pRE, const SRend
 	AddRenderingPassInfo(p, const_cast<SRenderingPassInfo*>(&passInfo));
 	EndCommand(p);
 }
-void SRenderThread::RC_PreprGenerateCloud(CRenderElement* pRE, CShader* pShader, CShaderResources* pRes, CRenderObject* pObject)
-{
-	if (IsRenderThread())
-	{
-		CRECloud* pREC = (CRECloud*)pRE;
-		pREC->GenerateCloudImposter(pShader, pRes, pObject);
-		return;
-	}
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_PreprGenerateCloud, 4 * sizeof(void*));
-	AddPointer(p, pRE);
-	AddPointer(p, pShader);
-	AddPointer(p, pRes);
-	AddPointer(p, pObject);
-	EndCommand(p);
-}
 
 bool SRenderThread::RC_OC_ReadResult_Try(uint32 nDefaultNumSamples, CREOcclusionQuery* pRE)
 {
@@ -3046,16 +3029,6 @@ void SRenderThread::ProcessCommands()
 					int nR = passInfo.GetRecursiveLevel();
 					gRenDev->GenerateObjSprites(pRE->m_arrVegetationSprites[nThreadID][nR], passInfo);
 				}
-			}
-			break;
-		case eRC_PreprGenerateCloud:
-			assert(m_eVideoThreadMode == eVTM_Disabled);
-			{
-				CRECloud* pRE = ReadCommand<CRECloud*>(n);
-				CShader* pShader = ReadCommand<CShader*>(n);
-				CShaderResources* pRes = ReadCommand<CShaderResources*>(n);
-				CRenderObject* pObject = ReadCommand<CRenderObject*>(n);
-				pRE->GenerateCloudImposter(pShader, pRes, pObject);
 			}
 			break;
 		case eRC_DynTexUpdate:
