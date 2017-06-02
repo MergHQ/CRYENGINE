@@ -45,7 +45,7 @@ namespace Cry
 
 			void Spawn()
 			{
-				if (m_materialFileName.value.size() > 0 && gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialFileName.value) != nullptr)
+				if (m_materialFileName.value.size() > 0 && gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialFileName.value) != nullptr)
 				{
 					IDecalRenderNode* pRenderNode = static_cast<IDecalRenderNode*>(m_pEntity->GetSlotRenderNode(GetEntitySlotId()));
 					

@@ -488,17 +488,20 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 		if (entityNode)
 		{
 			// Create needed proxies
-			if (entityNode->findChild("Area"))
+			if (XmlNodeRef componentNode = entityNode->findChild("Area"))
 			{
-				pSpawnedEntity->GetOrCreateComponent<IEntityAreaComponent>();
+				IEntityComponent* pComponent = pSpawnedEntity->GetOrCreateComponent<IEntityAreaComponent>();
+				pComponent->LegacySerializeXML(entityNode, componentNode, true);
 			}
-			if (entityNode->findChild("Rope"))
+			if (XmlNodeRef componentNode = entityNode->findChild("Rope"))
 			{
-				pSpawnedEntity->GetOrCreateComponent<IEntityRopeComponent>();
+				IEntityComponent* pComponent = pSpawnedEntity->GetOrCreateComponent<IEntityRopeComponent>();
+				pComponent->LegacySerializeXML(entityNode, componentNode, true);
 			}
-			if (entityNode->findChild("ClipVolume"))
+			if (XmlNodeRef componentNode = entityNode->findChild("ClipVolume"))
 			{
-				pSpawnedEntity->GetOrCreateComponent<IClipVolumeComponent>();
+				IEntityComponent* pComponent = pSpawnedEntity->GetOrCreateComponent<IClipVolumeComponent>();
+				pComponent->LegacySerializeXML(entityNode, componentNode, true);
 			}
 
 			// Load RenderNodeParams

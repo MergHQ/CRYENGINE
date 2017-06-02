@@ -32,6 +32,13 @@ namespace Cry
 			// IEntityComponent
 			virtual void Initialize() final
 			{
+				// Force create a dummy entity slot to allow designer transformation change
+				SEntitySlotInfo slotInfo;
+				if (!m_pEntity->GetSlotInfo(GetOrMakeEntitySlotId(), slotInfo))
+				{
+					m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), nullptr);
+				}
+
 				AddPrimitive();
 			}
 
@@ -127,13 +134,6 @@ namespace Cry
 							{
 								CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Invalid surface type %s specified on primitive component in entity %s!", m_surfaceTypeName.value.c_str(), m_pEntity->GetName());
 							}
-						}
-
-						// Force create a dummy entity slot to allow designer transformation change
-						SEntitySlotInfo slotInfo;
-						if (!m_pEntity->GetSlotInfo(GetOrMakeEntitySlotId(), slotInfo))
-						{
-							m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), nullptr);
 						}
 
 						Matrix34 slotTransform = m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false);

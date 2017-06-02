@@ -311,13 +311,6 @@ bool CEntitySlot::GetLocalBounds(AABB& bounds)
 	}
 	else if (m_pRenderNode)
 	{
-		if (m_renderNodeType == eERType_Light)
-		{
-			// Special case for Lights preserver old behavior of using very small bounding box around light source
-			bounds.Add(Vec3Constants<float>::fVec3_Zero, 0.1f);
-			return true;
-		}
-
 		m_pRenderNode->GetLocalBounds(bounds);
 		return true;
 	}
