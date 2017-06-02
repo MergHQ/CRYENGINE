@@ -21,7 +21,7 @@ namespace CryEngine
 		public static IConsole Console { get { return Global.gEnv.pConsole; } }
 		public static ICryFont Font { get { return Global.gEnv.pCryFont; } }
 		public static ISystem System { get { return Global.gEnv.pSystem; } }
-		public static IParticleManager ParticleManager { get { return Global.gEnv.pParticleManager; } }
+		public static ParticleManager ParticleManager { get { return ParticleManager.Instance; } }
 		public static I3DEngine Engine3D { get { return Global.gEnv.p3DEngine; } }
 		public static IGameFramework GameFramework { get { return Global.gEnv.pGameFramework; } }
 		public static ITimer Timer { get { return Global.gEnv.pTimer; } }

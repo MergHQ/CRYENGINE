@@ -96,9 +96,6 @@
 			<DependentUpon>ExceptionMessage.cs</DependentUpon>
 		</Compile>
 		<Compile Include="Debugging\Log.cs" />
-		<Compile Include="EntityComponents\Animations\CharacterAnimator.cs" />
-		<Compile Include="EntityComponents\Camera\ViewCamera.cs" />
-		<Compile Include="EntitySystem\Attributes.cs" />
 		<Compile Include="EntitySystem\Entity.cs" />
 		<Compile Include="EntitySystem\EntityComponent.cs" />
 		<Compile Include="EntitySystem\EntityId.cs" />
@@ -160,7 +157,6 @@
 		<Compile Include="Util\Tools.cs" />
 		<Compile Include="Attributes.cs" />
 		<Compile Include="Camera.cs" />
-		<Compile Include="Environment.cs" />
 		<Compile Include="Extensions.cs" />
 		<Compile Include="GameFramework.cs" />
 		<Compile Include="ICryEnginePlugin.cs" />
@@ -179,11 +175,38 @@
 		<Compile Include="FileSystem\Path.cs" />
 		<Compile Include="FileSystem\CryPakFile.cs" />
 		<Compile Include="FileSystem\FileMode.cs" />
+		<Compile Include="Engine.cs" />
+		<Compile Include="EntitySystem\Attributes\EntityClassAttribute.cs" />
+		<Compile Include="EntitySystem\Attributes\EntityComponentAttribute.cs" />
+		<Compile Include="Particles\ParticleManager.cs" />
+		<Compile Include="Particles\ParticleEffectListener.cs" />
+		<Compile Include="Particles\ParticleEffect.cs" />
+		<Compile Include="Particles\ParticleEmitter.cs" />
+		<Compile Include="Particles\ParticleLocation.cs" />
+		<Compile Include="Particles\SpawnParameters.cs" />
+		<Compile Include="Particles\ParticleAttributes.cs" />
+		<Compile Include="Lights\DynamicLight.cs" />
+		<Compile Include="Lights\RenderLight.cs" />
+		<Compile Include="EntitySystem\EntitySlotFlags.cs" />
+		<Compile Include="Animations\ActionController.cs" />
+		<Compile Include="Animations\AnimationContext.cs" />
+		<Compile Include="Animations\AnimationContextAction.cs" />
+		<Compile Include="Animations\AnimationDatabase.cs" />
+		<Compile Include="Animations\AnimationDatabaseManager.cs" />
+		<Compile Include="Animations\AnimationTag.cs" />
+		<Compile Include="Animations\ControllerDefinition.cs" />
+		<Compile Include="Animations\Mannequin.cs" />
+		<Compile Include="Animations\TagState.cs" />
+		<Compile Include="Util\View.cs" />
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource Include="Debugging\ExceptionMessage.resx">
 			<DependentUpon>ExceptionMessage.cs</DependentUpon>
 		</EmbeddedResource>
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Particles\" />
+	  <Folder Include="Lights\" />
 	</ItemGroup>
 	<Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

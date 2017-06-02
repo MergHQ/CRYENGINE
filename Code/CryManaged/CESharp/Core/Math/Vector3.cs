@@ -95,6 +95,26 @@ namespace CryEngine
 
 			return new Vector3(nativeVector.x, nativeVector.y, nativeVector.z);
 		}
+
+		public static explicit operator Vector3(Vector2 vector)
+		{
+			return new Vector3
+			{
+				X = vector.X,
+				Y = vector.Y,
+				Z = 0.0f
+			};
+		}
+
+		public static explicit operator Vector3(Vector4 vector)
+		{
+			return new Vector3
+			{
+				X = vector.X,
+				Y = vector.Y,
+				Z = vector.Z
+			};
+		}
 		#endregion
 
 		#region Operators

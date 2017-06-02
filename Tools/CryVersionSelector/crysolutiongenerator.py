@@ -130,6 +130,10 @@ def generate_csharp_project (project_file, code_directory, cs_source_directory, 
     engine_bin_directory = os.path.join(engine_root_directory, 'bin', 'win_x64')
 
     references = Template('''<Reference Include="System" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="CryEngine.Common">
       <HintPath>$engine_bin_directory\CryEngine.Common.dll</HintPath>
       <Private>False</Private>
