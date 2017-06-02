@@ -71,7 +71,8 @@ public:
 	//////////////////////////////////////////////////////////
 
 public slots:
-
+	void                OnExportAnimationLayers();
+	void                OnImportAnimationLayers();
 	void                OnFileSaveAll();
 	void                OnFileRecent();
 	void                OnFileRecentAboutToShow(QMenu* menu);

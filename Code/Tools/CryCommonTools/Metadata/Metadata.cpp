@@ -2,24 +2,18 @@
 
 #include "StdAfx.h"
 #include "Metadata.h"
-#include "IConvertor.h"
+#include "IConverter.h"
 #include "CryExtension\CryGUIDHelper.h"
 
-namespace Metadata_Private
-{
-
-static const char* GetMetadataTag() { return "AssetMetadata"; }
-
-}
 
 namespace AssetManager
 {
 
-bool WriteMetadata(XmlNodeRef& asset, const SAssetMetadata& metadata)
-{
-	using namespace Metadata_Private;
+const char* GetMetadataTag() { return "AssetMetadata"; }
 
-	XmlNodeRef pMetadataNode = asset->findChild(GetMetadataTag());
+bool WriteMetadata(const XmlNodeRef& asset, const SAssetMetadata& metadata)
+{
+	XmlNodeRef pMetadataNode = GetMetadataNode(asset);
 	if (!pMetadataNode)
 	{
 		pMetadataNode = asset->createNode(GetMetadataTag());
@@ -75,13 +69,11 @@ bool WriteMetadata(XmlNodeRef& asset, const SAssetMetadata& metadata)
 	return true;
 }
 
-bool ReadMetadata(XmlNodeRef& asset, SAssetMetadata& metadata)
+bool ReadMetadata(const XmlNodeRef& asset, SAssetMetadata& metadata)
 {
-	using namespace Metadata_Private;
+	XmlNodeRef pMetadataNode = GetMetadataNode(asset);
 
-	XmlNodeRef pMetadataNode = asset->findChild(GetMetadataTag());
-
-	if (!pMetadataNode || !pMetadataNode->getAttr("version", metadata.version) || (metadata.version != SAssetMetadata::eVersion_Actual))
+	if (!pMetadataNode || !pMetadataNode->getAttr("version", metadata.version) || (metadata.version > SAssetMetadata::eVersion_Actual))
 	{
 		return false;
 	}
@@ -123,12 +115,68 @@ bool ReadMetadata(XmlNodeRef& asset, SAssetMetadata& metadata)
 	return true;
 }
 
-bool DeleteMetadata(XmlNodeRef& asset)
+const XmlNodeRef GetMetadataNode(const XmlNodeRef& asset)
 {
-	using namespace Metadata_Private;
-
-	asset->removeChild(asset->findChild(GetMetadataTag()));
-	return true;
+	return asset->isTag(GetMetadataTag()) ? asset : asset->findChild(GetMetadataTag());
 }
+
+void AddDetails(XmlNodeRef& xml, const std::vector<std::pair<string, string>>& details)
+{
+	if (details.empty())
+	{
+		return;
+	}
+
+	XmlNodeRef pDetails = xml->findChild("Details");
+	if (pDetails)
+	{
+		pDetails->removeAllChilds();
+	}
+	else
+	{
+		pDetails = xml->newChild("Details");
+	}
+
+	for (const auto& detail : details)
+	{
+		XmlNodeRef pDetail = pDetails->newChild("Detail");
+		pDetail->setAttr("name", detail.first);
+		pDetail->setContent(detail.second);
+	}
+}
+
+void AddDependencies(XmlNodeRef & xml, const std::vector<string>& dependencies)
+{
+	if (dependencies.empty())
+	{
+		return;
+	}
+
+	XmlNodeRef pDependencies = xml->findChild("Dependencies");
+	if (pDependencies)
+	{
+		pDependencies->removeAllChilds();
+	}
+	else
+	{
+		pDependencies = xml->newChild("Dependencies");
+	}
+
+	for (const auto& detail : dependencies)
+	{
+		XmlNodeRef pPath = pDependencies->newChild("Path");
+
+		// There is an agreement in the sandbox dependency tracking system that local paths have to start with "./"
+		if (detail.FindOneOf("/\\") != string::npos)
+		{
+			pPath->setContent(detail);
+		}
+		else // Folow the engine rules: if no slashes in the name assume it is in same folder as the cryasset.
+		{
+			pPath->setContent(string().Format("./%s", detail.c_str()));
+		}
+	}
+}
+
 
 }

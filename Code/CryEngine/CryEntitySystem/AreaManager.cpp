@@ -6,16 +6,18 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
-CAreaManager::CAreaManager(CEntitySystem* pEntitySystem)  // : CSoundAreaManager(pEntitySystem)
+CAreaManager::CAreaManager(CEntitySystem* pEntitySystem)
 	: m_pEntitySystem(pEntitySystem)
 	, m_bAreasDirty(true)
 {
 	// Minimize run-time allocations.
 	m_mapEntitiesToUpdate.reserve(32);
+	m_areasAtPos[Threads::Audio].reserve(16);
+	m_areasAtPos[Threads::Main].reserve(16);
 
 	if (ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher())
 	{
-		pSystemEventDispatcher->RegisterListener(this);
+		pSystemEventDispatcher->RegisterListener(this, "CAreaManager");
 	}
 }
 
@@ -33,18 +35,19 @@ CAreaManager::~CAreaManager()
 //////////////////////////////////////////////////////////////////////////
 CArea* CAreaManager::CreateArea()
 {
-	CArea* pArea = new CArea(this);
-
+	CryAutoCriticalSectionNoRecursive lock(m_accessAreas);
+	CArea* const pArea = new CArea(this);
 	m_areas.push_back(pArea);
-
+	m_areaGrid.Reset();
 	m_bAreasDirty = true;
-
 	return pArea;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::Unregister(CArea const* const pArea)
 {
+	CryAutoCriticalSectionNoRecursive lock(m_accessAreas);
+
 	// Remove the area reference from the entity's area cache.
 	m_mapAreaCache.erase_if(SRemoveIfNoAreasLeft(pArea, m_areas, m_areas.size()));
 
@@ -57,7 +60,6 @@ void CAreaManager::Unregister(CArea const* const pArea)
 		if (pArea == (*IterAreas))
 		{
 			m_areas.erase(IterAreas);
-
 			break;
 		}
 	}
@@ -67,6 +69,7 @@ void CAreaManager::Unregister(CArea const* const pArea)
 		stl::free_container(m_areas);
 	}
 
+	m_areaGrid.Reset();
 	m_bAreasDirty = true;
 }
 
@@ -301,28 +304,33 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 			pArea->CalcPosType(entityId, position);
 		}
 
-		TAreaPointers const& areasAtPos(m_areaGrid.GetAreas(position));
+		CRY_ASSERT(m_areasAtPos[Threads::Main].empty());
 
-		for (CArea* const pArea : areasAtPos)
+		if (m_areaGrid.GetAreas(position, m_areasAtPos[Threads::Main]))
 		{
-			// Mark cache entries as if they are in the grid.
-			SAreaCacheEntry* pAreaCacheEntry = nullptr;
+			for (CArea* const pArea : m_areasAtPos[Threads::Main])
+			{
+				// Mark cache entries as if they are in the grid.
+				SAreaCacheEntry* pAreaCacheEntry = nullptr;
 
-			if (pAreaCache->GetCacheEntry(pArea, &pAreaCacheEntry))
-			{
-				// cppcheck-suppress nullPointer
-				pAreaCacheEntry->bInGrid = true;
-			}
-			else
-			{
-				// if they are not yet in the cache, add them
-				pAreaCache->entries.push_back(SAreaCacheEntry(pArea, false, false));
-				pArea->OnAddedToAreaCache(entityId);
-			}
+				if (pAreaCache->GetCacheEntry(pArea, &pAreaCacheEntry))
+				{
+					// cppcheck-suppress nullPointer
+					pAreaCacheEntry->bInGrid = true;
+				}
+				else
+				{
+					// if they are not yet in the cache, add them
+					pAreaCache->entries.push_back(SAreaCacheEntry(pArea, false, false));
+					pArea->OnAddedToAreaCache(entityId);
+				}
 
 #if defined(DEBUG_AREAMANAGER)
-			CheckArea(pArea);
-#endif // DEBUG_AREAMANAGER
+				CheckArea(pArea);
+#endif  // DEBUG_AREAMANAGER
+			}
+
+			m_areasAtPos[Threads::Main].clear();
 		}
 
 		AreaEnvironments areaEnvironments;
@@ -384,7 +392,7 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 		{
 			for (auto const& areaEnvironment : areaEnvironments)
 			{
-				pIEntityAudioComponent->SetEnvironmentAmount(areaEnvironment.audioEnvironmentId, areaEnvironment.amount, INVALID_AUDIO_PROXY_ID);
+				pIEntityAudioComponent->SetEnvironmentAmount(areaEnvironment.audioEnvironmentId, areaEnvironment.amount, CryAudio::InvalidAuxObjectId);
 			}
 		}
 
@@ -404,65 +412,69 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 //////////////////////////////////////////////////////////////////////////
 bool CAreaManager::QueryAudioAreas(Vec3 const& pos, SAudioAreaInfo* const pResults, size_t const numMaxResults, size_t& outNumResults)
 {
+	CryAutoCriticalSectionNoRecursive lock(m_accessAreas);
+
 	outNumResults = 0;
 
 	if (pResults != nullptr && numMaxResults > 0)
 	{
-		// Make sure the area grid is recompiled, if needed, before accessing it
-		UpdateDirtyAreas();
-
 		// Add a Z offset of at least 0.11 to be slightly above the offset of 0.1 set through "CShapeObject::GetShapeZOffset".
 		Vec3 const position(pos + Vec3(0.0f, 0.0f, 0.11f));
 
 		uint32 numAreas = 0;
-		TAreaPointers const& areasAtPos(m_areaGrid.GetAreas(position));
-		SAreasCache areaCache;
+		CRY_ASSERT(m_areasAtPos[Threads::Audio].empty());
 
-		for (CArea* const pArea : areasAtPos)
+		if (m_areaGrid.GetAreas(position, m_areasAtPos[Threads::Audio]))
 		{
-#if defined(DEBUG_AREAMANAGER)
-			CheckArea(pArea);
-#endif // DEBUG_AREAMANAGER
+			SAreasCache areaCache;
 
-			SAreaCacheEntry areaCacheEntry(pArea, false, false);
-			areaCache.entries.push_back(areaCacheEntry);
-		}
-
-		AreaEnvironments areaEnvironments;
-
-		for (SAreaCacheEntry& areaCacheEntry : areaCache.entries)
-		{
-			CArea* const pArea = areaCacheEntry.pArea;
-			IEntity const* const pAreaEntity = m_pEntitySystem->GetEntity(pArea->GetEntityID());
-
-			if (pAreaEntity && !pAreaEntity->IsHidden())
+			for (CArea* const pArea : m_areasAtPos[Threads::Audio])
 			{
-				size_t const attachedEntities = pArea->GetEntityAmount();
+#if defined(DEBUG_AREAMANAGER)
+				CheckArea(pArea);
+#endif  // DEBUG_AREAMANAGER
 
-				if (attachedEntities > 0)
+				SAreaCacheEntry areaCacheEntry(pArea, false, false);
+				areaCache.entries.push_back(areaCacheEntry);
+			}
+
+			AreaEnvironments areaEnvironments;
+
+			for (SAreaCacheEntry& areaCacheEntry : areaCache.entries)
+			{
+				CArea* const pArea = areaCacheEntry.pArea;
+				IEntity const* const pAreaEntity = m_pEntitySystem->GetEntity(pArea->GetEntityID());
+
+				if (pAreaEntity && !pAreaEntity->IsHidden())
 				{
-					for (size_t i = 0; i < attachedEntities; ++i)
-					{
-						IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(pArea->GetEntityByIdx(i));
+					size_t const attachedEntities = pArea->GetEntityAmount();
 
-						if (pIEntity != nullptr)
+					if (attachedEntities > 0)
+					{
+						for (size_t i = 0; i < attachedEntities; ++i)
 						{
-							GetEnvFadeValue(areaCache, areaCacheEntry, position, pIEntity->GetId(), areaEnvironments);
+							IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(pArea->GetEntityByIdx(i));
+
+							if (pIEntity != nullptr)
+							{
+								GetEnvFadeValue(areaCache, areaCacheEntry, position, pIEntity->GetId(), areaEnvironments);
+							}
 						}
 					}
 				}
 			}
-		}
 
-		for (auto const& areaEnvironment : areaEnvironments)
-		{
-			pResults[outNumResults].amount = areaEnvironment.amount;
-			pResults[outNumResults].audioEnvironmentId = areaEnvironment.audioEnvironmentId;
-			pResults[outNumResults].envProvidingEntityId = areaEnvironment.envProvidingEntityId;
-			++outNumResults;
-		}
+			for (auto const& areaEnvironment : areaEnvironments)
+			{
+				pResults[outNumResults].amount = areaEnvironment.amount;
+				pResults[outNumResults].audioEnvironmentId = areaEnvironment.audioEnvironmentId;
+				pResults[outNumResults].envProvidingEntityId = areaEnvironment.envProvidingEntityId;
+				++outNumResults;
+			}
 
-		CRY_ASSERT(outNumResults == areaEnvironments.size());
+			CRY_ASSERT(outNumResults == areaEnvironments.size());
+			m_areasAtPos[Threads::Audio].clear();
+		}
 	}
 
 	return outNumResults > 0;
@@ -578,7 +590,7 @@ void CAreaManager::ProcessArea(
 //////////////////////////////////////////////////////////////////////////
 bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
   SAreasCache* const pAreaCache,
-	EntityId const entityId,
+  EntityId const entityId,
   Vec3 const& entityPos,
   CArea* const pArea,
   Vec3 const& onLowerHull,
@@ -721,9 +733,9 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::NotifyAreas(
-	CArea* const __restrict pArea,
-	SAreasCache const* const pAreaCache,
-	EntityId const entityId)
+  CArea* const __restrict pArea,
+  SAreasCache const* const pAreaCache,
+  EntityId const entityId)
 {
 	int const currentGroupId = pArea->GetGroup();
 
@@ -999,9 +1011,9 @@ bool CAreaManager::RetrieveEnvironmentAmount(
 
 				if (pIEntityAudioComponent != nullptr)
 				{
-					AudioEnvironmentId const audioEnvironmentId = pIEntityAudioComponent->GetEnvironmentId();
+					CryAudio::EnvironmentId const audioEnvironmentId = pIEntityAudioComponent->GetEnvironmentId();
 
-					if (audioEnvironmentId != INVALID_AUDIO_ENVIRONMENT_ID)
+					if (audioEnvironmentId != CryAudio::InvalidEnvironmentId)
 					{
 						float finalAmount = amount;
 
@@ -1282,7 +1294,7 @@ void CAreaManager::UpdateDirtyAreas()
 {
 	if (m_bAreasDirty)
 	{
-		m_areaGrid.Compile(m_pEntitySystem, m_areas);
+		m_areaGrid.Compile(m_areas);
 		m_bAreasDirty = false;
 	}
 }
@@ -1420,6 +1432,7 @@ void CAreaManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 		// This seems to be enabled by Segmented World, which is turned of in ProjectDefines.h
 		// if(GetEntitySystem()->EntitiesUseGUIDs())
 		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("CAreaManager::OnSystemEvent ESYSTEM_EVENT_LEVEL_LOAD_END");
 			for (auto const pArea : m_areas)
 			{
 				pArea->ResolveEntityIds();

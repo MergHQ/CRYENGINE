@@ -94,6 +94,15 @@ struct SStrobosopeResult
 	typedef std::vector<SThreadInfo> TThreadInfo;
 	typedef std::map<int, float>     TFrameTime;
 
+	SStrobosopeResult()
+		: Valid(false)
+		, Duration(0.0f)
+		, Samples(0)
+		, TotalCounts(0.0f)
+		, StartFrame(0)
+		, EndFrame(0)
+	{}
+
 	bool           Valid;
 	float          Duration;
 	string         File;

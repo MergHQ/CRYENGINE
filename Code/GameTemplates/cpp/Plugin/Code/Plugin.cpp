@@ -21,7 +21,7 @@ CPlugin::~CPlugin()
 
 bool CPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CPlugin");
 
 	return true;
 }

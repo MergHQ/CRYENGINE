@@ -88,17 +88,17 @@ void CTextureCompiler::GetInputFilename(
 //////////////////////////////////////////////////////////////////////////
 // choose a specialized imposter, because otherwise file-format
 // constraints for specific texture-types may be violated
-	#define COMPILE_DELAYED_REGULAR "EngineAssets/TextureMsg/TextureCompiling.dds"
-	#define COMPILE_DELAYED_CUBEMAP "EngineAssets/TextureMsg/TextureCompiling_cm.dds"
-	#define COMPILE_DELAYED_CUBEDIF "EngineAssets/TextureMsg/TextureCompiling_cm_diff.dds"
-	#define COMPILE_DELAYED_NORMAL  "EngineAssets/TextureMsg/TextureCompiling_ddn.dds"
-	#define COMPILE_DELAYED_NORMALA "EngineAssets/TextureMsg/TextureCompiling_ddna.dds"
+	#define COMPILE_DELAYED_REGULAR "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling.dds"
+	#define COMPILE_DELAYED_CUBEMAP "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_cm.dds"
+	#define COMPILE_DELAYED_CUBEDIF "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_cm_diff.dds"
+	#define COMPILE_DELAYED_NORMAL  "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_ddn.dds"
+	#define COMPILE_DELAYED_NORMALA "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_ddna.dds"
 
-	#define COMPILE_FAILED_REGULAR  "EngineAssets/TextureMsg/RCError.dds"
-	#define COMPILE_FAILED_CUBEMAP  "EngineAssets/TextureMsg/RCError_cm.dds"
-	#define COMPILE_FAILED_CUBEDIF  "EngineAssets/TextureMsg/RCError_cm_diff.dds"
-	#define COMPILE_FAILED_NORMAL   "EngineAssets/TextureMsg/RCError_ddn.dds"
-	#define COMPILE_FAILED_NORMALA  "EngineAssets/TextureMsg/RCError_ddna.dds"
+	#define COMPILE_FAILED_REGULAR  "%ENGINE%/EngineAssets/TextureMsg/RCError.dds"
+	#define COMPILE_FAILED_CUBEMAP  "%ENGINE%/EngineAssets/TextureMsg/RCError_cm.dds"
+	#define COMPILE_FAILED_CUBEDIF  "%ENGINE%/EngineAssets/TextureMsg/RCError_cm_diff.dds"
+	#define COMPILE_FAILED_NORMAL   "%ENGINE%/EngineAssets/TextureMsg/RCError_ddn.dds"
+	#define COMPILE_FAILED_NORMALA  "%ENGINE%/EngineAssets/TextureMsg/RCError_ddna.dds"
 
 static const char* GetDelayedTexture(const char* szFile)
 {
@@ -230,8 +230,14 @@ static bool CopyResult(const char* szSrcFile, const char* szDstFile)
 	{
 		success = true;
 
-		if (GetFileAttributes(szDstFile) != INVALID_FILE_ATTRIBUTES)
+		const auto attributes = GetFileAttributes(szDstFile);
+		if (attributes != INVALID_FILE_ATTRIBUTES)
 		{
+			if ((attributes & FILE_ATTRIBUTE_READONLY) != 0)
+			{
+				iLog->LogError("Can't write to read-only file: \"%s\"\n", szDstFile);
+				return false;
+			}
 			success = success && (DeleteFile(szDstFile) != FALSE);
 		}
 
@@ -263,15 +269,20 @@ static bool CopyResult(const char* szSrcFile, const char* szDstFile)
 
 			if (!success)
 			{
-	#if defined(DEBUG) && defined(_DEBUG)
-				iLog->Log("Debug: RN: from \"%s\", to \"%s\"\n", szSrcFile, szDstFile);
-	#endif
+				iLog->LogError("Can't copy from \"%s\" to \"%s\"\n", szSrcFile, szDstFile);
 			}
 		}
 	}
 
 	return success;
 }
+
+static bool IsFileReadOnly(const char* szPath)
+{
+	const auto attributes = GetFileAttributes(szPath);
+	return (attributes != INVALID_FILE_ATTRIBUTES) && ((attributes & FILE_ATTRIBUTE_READONLY) != 0);
+}
+
 
 // RAII handler of temporary asset data.
 class CTemporaryAsset
@@ -393,7 +404,9 @@ private:
 		}
 
 		std::vector<string> files;
-		const XmlNodeRef pMetadata = pXml->findChild("AssetMetadata");
+
+		// Find "AssetMetadata" node. It may be either the root node or a child of the root.
+		const XmlNodeRef pMetadata = pXml->isTag("AssetMetadata") ? pXml : pXml->findChild("AssetMetadata");
 		if (pMetadata)
 		{
 			const XmlNodeRef pFiles = pMetadata->findChild("Files");
@@ -706,10 +719,13 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 		// compare date of destination and source , recompile if needed
 		// load dds header, check hash-value of the compile settings in the dds file, recompile if needed (not done yet)
 
-		CDebugAllowFileAccess dafa;
-		FILE* pDestFile = gEnv->pCryPak->FOpen(sDestFile, "rb");
-		FILE* pSrcFile = gEnv->pCryPak->FOpen(sSrcFile, "rb");
-		dafa.End();
+		FILE* pDestFile = nullptr;
+		FILE* pSrcFile = nullptr;
+		{
+			SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
+			pDestFile = gEnv->pCryPak->FOpen(sDestFile, "rb");
+			pSrcFile = gEnv->pCryPak->FOpen(sSrcFile, "rb");
+		}
 
 		// files from the pak file do not count as date comparison do not seem to work there
 		if (pDestFile)
@@ -739,7 +755,7 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 		}
 
 		// if both files exist, is the source file newer?
-		if (pSrcFile && pDestFile)
+		if (pSrcFile && pDestFile && !IsFileReadOnly(sFullDestFilename))
 		{
 			ICryPak::FileTime timeSrc = gEnv->pCryPak->GetModificationTime(pSrcFile);
 			ICryPak::FileTime timeDest = gEnv->pCryPak->GetModificationTime(pDestFile);

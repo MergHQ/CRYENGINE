@@ -22,11 +22,13 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QTreeView>
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include "QViewport.h"
-#include "../EditorCommon/DockTitleBarWidget.h"
-#include "../EditorCommon/UnsavedChangesDialog.h"
-#include "../EditorCommon/FileDialogs/EngineFileDialog.h"
+#include "DockTitleBarWidget.h"
+#include "UnsavedChangesDialog.h"
+#include "FileDialogs/EngineFileDialog.h"
+#include "FileDialogs/SystemFileDialog.h"
+#include "FilePathUtil.h"
 #include "SplitViewport.h"
 #include "CharacterDocument.h"
 #include "AnimationList.h"
@@ -39,8 +41,8 @@
 
 #include "Expected.h"
 #include "Serialization.h"
-#include <yasli/JSONOArchive.h>
-#include <yasli/JSONIArchive.h>
+#include <CrySerialization/yasli/JSONOArchive.h>
+#include <CrySerialization/yasli/JSONIArchive.h>
 
 #include "CleanCompiledAnimationsTool.h"
 #include "ResaveAnimSettingsTool.h"
@@ -226,6 +228,7 @@ void CharacterToolForm::UpdateLayoutMenu()
 
 void CharacterToolForm::Initialize()
 {
+	LOADING_TIME_PROFILE_SECTION;
 	m_private.reset(new SPrivate(this, m_system->document.get()));
 
 	m_modeCharacter.reset(new ModeCharacter());
@@ -307,6 +310,9 @@ void CharacterToolForm::Initialize()
 	QMenu* menuFileRecent = fileMenu->addMenu("&Recent Characters");
 	QObject::connect(menuFileRecent, &QMenu::aboutToShow, this, [=]() { OnFileRecentAboutToShow(menuFileRecent); });
 	EXPECTED(connect(fileMenu->addAction("&Save All"), SIGNAL(triggered()), this, SLOT(OnFileSaveAll())));
+	fileMenu->addSeparator();
+	EXPECTED(connect(fileMenu->addAction("Import Animation Layers"), &QAction::triggered, this, &CharacterToolForm::OnImportAnimationLayers));
+	EXPECTED(connect(fileMenu->addAction("Export Animation Layers"), &QAction::triggered, this, &CharacterToolForm::OnExportAnimationLayers));
 	fileMenu->addSeparator();
 	EXPECTED(connect(fileMenu->addAction("&Clean Compiled Animations..."), SIGNAL(triggered()), this, SLOT(OnFileCleanAnimations())));
 	EXPECTED(connect(fileMenu->addAction("Resave &AnimSettings..."), SIGNAL(triggered()), this, SLOT(OnFileResaveAnimSettings())));
@@ -505,6 +511,60 @@ void CharacterToolForm::OnIdleUpdate()
 
 	if (m_blendSpacePreview && m_blendSpacePreview->isVisible())
 		m_blendSpacePreview->IdleUpdate();
+}
+
+static QString GetDirectoryFromPath(const QString& path)
+{
+	string driveLetter;
+	string directory;
+	string originalFilename;
+	string extension;
+	PathUtil::SplitPath(path.toStdString().c_str(), driveLetter, directory, originalFilename, extension);
+	return (driveLetter + directory).c_str();
+}
+
+void CharacterToolForm::OnExportAnimationLayers()
+{
+	static QString prevDir;
+
+	CSystemFileDialog::RunParams runParams;
+	runParams.title = QObject::tr("Export Animation Layers Setup");
+	runParams.initialDir = prevDir;
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files (xml)"), "xml");
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("All files (*.*)"), "*");
+	const QString fileName(CSystemFileDialog::RunExportFile(runParams, this));
+	if (!fileName.isNull())
+	{
+		prevDir = GetDirectoryFromPath(fileName);
+		GetIEditor()->GetSystem()->GetArchiveHost()->SaveXmlFile(
+			fileName.toStdString().c_str(),
+			Serialization::SStruct(m_system->scene->layers),
+			"AnimationLayers");
+	}
+}
+
+void CharacterToolForm::OnImportAnimationLayers()
+{
+	static QString prevDir;
+
+	CSystemFileDialog::RunParams runParams;
+	runParams.title = QObject::tr("Import Animation Layers Setup");
+	runParams.initialDir = prevDir;
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files (xml)"), "xml");
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("All files (*.*)"), "*");
+	const QString fileName(CSystemFileDialog::RunImportFile(runParams, this));
+	if (!fileName.isNull())
+	{
+		prevDir = GetDirectoryFromPath(fileName);
+		GetIEditor()->GetSystem()->GetArchiveHost()->LoadXmlFile(
+			Serialization::SStruct(m_system->scene->layers),
+			fileName.toStdString().c_str());
+		m_system->scene->PlaybackLayersChanged(false);
+		m_system->scene->SignalChanged(false);
+		// fire the signal twice, because CharacterDocument::OnScenePlaybackLayersChanged
+		// first selects an animation in the explorer ...
+		m_system->scene->PlaybackLayersChanged(false);
+	}
 }
 
 void CharacterToolForm::OnFileSaveAll()

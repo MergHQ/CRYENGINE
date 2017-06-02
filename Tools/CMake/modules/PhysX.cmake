@@ -24,7 +24,9 @@ endfunction()
 
 add_library(PHYSX SHARED IMPORTED GLOBAL)
 
-if (MSVC_VERSION EQUAL 1900)     # Visual Studio 2015
+if (MSVC_VERSION GREATER 1900)     # Visual Studio > 2015
+	set(PHYSX_VS_VERSION vc14win64)
+elseif (MSVC_VERSION EQUAL 1900)     # Visual Studio 2015
 	set(PHYSX_VS_VERSION vc14win64)
 elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
 	set(PHYSX_VS_VERSION vc12win64)

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <yasli/Config.h>
+#include <CrySerialization/yasli/Config.h>
 #include <CrySerialization/Forward.h>
 
 namespace Serialization

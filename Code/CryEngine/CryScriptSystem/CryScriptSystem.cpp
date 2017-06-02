@@ -11,16 +11,23 @@
 #include <CryExtension/ClassWeaver.h>
 
 //////////////////////////////////////////////////////////////////////////
-class CEngineModule_CryScriptSystem : public IEngineModule
+class CEngineModule_CryScriptSystem : public IScriptSystemEngineModule
 {
-	CRYINTERFACE_SIMPLE(IEngineModule)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(Cry::IDefaultModule)
+		CRYINTERFACE_ADD(IScriptSystemEngineModule)
+	CRYINTERFACE_END()
+
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryScriptSystem, "EngineModule_CryScriptSystem", 0xd032b16449784f82, 0xa99e7dc6b6338c5c)
 
-	virtual ~CEngineModule_CryScriptSystem() {}
+	virtual ~CEngineModule_CryScriptSystem()
+	{
+		SAFE_DELETE(gEnv->pScriptSystem);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() override { return "CryScriptSystem"; };
-	virtual const char* GetCategory() override { return "CryEngine"; };
+	virtual const char* GetName() const override { return "CryScriptSystem"; };
+	virtual const char* GetCategory() const override { return "CryEngine"; };
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override

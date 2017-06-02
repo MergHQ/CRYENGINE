@@ -126,6 +126,7 @@ struct IImportFile
 	// When the source file selected by the user is located inside the game directory, 'filePath'
 	// and 'originalFilePath' are the same. Otherwise, 'originalFilePath' is the file selected by
 	// the user, and 'filePath' is the copy in the game directory we actually imported.
+	// Both GetFilePath and GetOriginalFilePath return an absolute path.
 	virtual QString GetFilePath() const = 0;
 	virtual QString GetOriginalFilePath() const = 0;
 
@@ -256,8 +257,6 @@ public:
 	// \p filePath Asset-relative file path to either chunk-file that stores meta data (e.g., .cgf), or asset meta-data (.cryasset).
 	bool Open(const string& filePath);
 
-	bool CanQuit(std::vector<string>& unsavedChanges);
-
 	virtual void        CreateMenu(IDialogHost* pDialogHost);
 
 	virtual const char* GetDialogName() const = 0;
@@ -268,6 +267,9 @@ public:
 	virtual void           OnEditorNotifyEvent(EEditorNotifyEvent evt) override;
 
 	virtual int GetToolButtons() const { return 0; }  // See EToolButtonFlags.
+
+	// Implement this in derived dialogs.
+	virtual bool MayUnloadScene() = 0;
 
 protected:
 	const FbxTool::CScene* GetScene() const;
@@ -287,8 +289,9 @@ protected:
 	virtual void           AssignScene(const SImportScenePayload* pUserData) {}
 	virtual void           UnloadScene() {}
 
+	string GetTargetFilePath() const;
+
 	// Implement this in derived dialogs.
-	virtual bool MayUnloadScene() = 0;
 	virtual void ReimportFile() {}
 
 	//! Returns a game relative path. If path refers to a directory, it must end with /. An empty string aborts saving.
@@ -315,7 +318,6 @@ protected:
 	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
 	virtual void dropEvent(QDropEvent* pEvent) override;
 
-	virtual void closeEvent(QCloseEvent* pEvent) override;
 private:
 	struct SSceneData;
 

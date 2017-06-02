@@ -10,13 +10,13 @@
 
 class CQueryListProvider;
 
-namespace uqs
+namespace UQS
 {
-namespace core
+namespace Core
 {
 struct ITextualQueryBlueprint;
-} // namespace core
-} // namespace uqs
+} // namespace Core
+} // namespace UQS
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +31,9 @@ public:
 
 	const Serialization::StringList& GetEvaluatorNamesList() const;
 
-	SItemTypeName                    GetItemTypeNameFromType(const uqs::shared::CTypeInfo& typeInfo) const;
+	const Serialization::StringList& GetScoreTransformNamesList() const;
+
+	SItemTypeName                    GetItemTypeNameFromType(const UQS::Shared::CTypeInfo& typeInfo) const;
 
 private:
 	template<typename TFactoryDb>
@@ -53,11 +55,12 @@ private:
 	Serialization::StringList                       m_instantEvaluatorNamesList;
 	Serialization::StringList                       m_deferredEvaluatorNamesList;
 	Serialization::StringList                       m_evaluatorNamesList;
+	Serialization::StringList                       m_scoreTransformNamesList;
 
 	Serialization::StringList                       m_filteredFunctionNamesList;
 	SItemTypeName                                   m_lastTypeToFilterFunctionNames;
 
-	std::map<uqs::shared::CTypeInfo, SItemTypeName> m_typeInfoToName;
+	std::map<UQS::Shared::CTypeInfo, SItemTypeName> m_typeInfoToName;
 };
 
 //////////////////////////////////////////////////////////////////////////

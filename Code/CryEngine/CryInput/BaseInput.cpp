@@ -48,7 +48,7 @@ CBaseInput::CBaseInput()
 	, m_pNaturalPointInput(0)
 	, m_touchListeners(1)
 {
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CBaseInput");
 
 	g_pInputCVars = m_pCVars;
 

@@ -7,13 +7,6 @@
 
 #include <QLabel>
 
-#if (defined(_WIN32) || defined(_WIN64))
-#include <windows.h>
-#include <dwmapi.h>
-#pragma warning(disable: 4264)
-#pragma warning(disable: 4266)
-#endif
-
 class QToolWindowManager;
 class QPushButton;
 class QToolButton;
@@ -41,12 +34,10 @@ public:
 
 	static QToolWindowCustomWrapper* wrapWidget(QWidget* w, QVariantMap config = QVariantMap());
 
-	QWidget* getWidget() Q_DECL_OVERRIDE { return this; }
-	virtual QWidget* getContents() { return m_contents; }
-	virtual void setContents(QWidget* widget) Q_DECL_OVERRIDE { QCustomWindowFrame::setContents(widget,false); }
+	virtual QWidget* getWidget() Q_DECL_OVERRIDE { return this; }
+	virtual QWidget* getContents() Q_DECL_OVERRIDE { return m_contents; }
+	virtual void setContents(QWidget* widget) Q_DECL_OVERRIDE { internalSetContents(widget,false); }
 	virtual void startDrag() Q_DECL_OVERRIDE;
-
-	QRect getWrapperFrameSize();
 
 private:
 	virtual bool event(QEvent *)Q_DECL_OVERRIDE;
@@ -61,7 +52,7 @@ protected:
 	virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
 #endif
 #if (defined(_WIN32) || defined(_WIN64))
-	bool winEvent(MSG *msg, long *result);
+	virtual bool winEvent(MSG *msg, long *result);
 #endif
 
 protected:

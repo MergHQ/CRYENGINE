@@ -9,6 +9,7 @@
 #include <Cry3DEngine/CGF/CGFContent.h>
 
 #include "IRCLog.h"
+#include "IAssetManager.h"
 #include "FileUtil.h"
 #include "Export/MeshUtils.h"
 #include "StringHelpers.h"
@@ -36,7 +37,6 @@
 #include "Scene.h"
 #include "ImportRequest.h"
 #include "LodGenerator/AutoGenerator.h"
-#include "Metadata/MetadataHelpers.h"
 #include "Decompose.h"
 
 namespace FbxConverter_Private
@@ -612,6 +612,51 @@ protected:
 		// _EM_INVALID is used to avoid Floating Point Exception inside CryPhysics
 		MathHelpers::AutoFloatingPointExceptions autoFpe(~(_EM_INEXACT | _EM_UNDERFLOW | _EM_INVALID));
 
+		// set bWantF32Vertices
+		{
+			const char* const optionName = "vertexPositionFormat";
+			const string s = m_pContext->config->GetAsString(optionName, "f32", "f32");
+
+			if (StringHelpers::EqualsIgnoreCase(s, "f32"))
+			{
+				cgf.GetExportInfo()->bWantF32Vertices = true;
+			}
+			else if (StringHelpers::EqualsIgnoreCase(s, "f16"))
+			{
+				cgf.GetExportInfo()->bWantF32Vertices = false;
+			}
+			else if (StringHelpers::EqualsIgnoreCase(s, "exporter"))
+			{
+				// Do nothing;
+			}
+			else
+			{
+				RCLogError("Unknown value of '%s': '%s'. Valid values are: 'f32', 'f16', 'exporter'.", optionName, s.c_str());
+				return false;
+			}
+		}
+		bool bStorePositionsAsF16 = !cgf.GetExportInfo()->bWantF32Vertices;
+
+		bool bStoreIndicesAsU16 = false;
+		{
+			const char* const optionName = "vertexIndexFormat";
+			const string s = m_pContext->config->GetAsString(optionName, "u32", "u32");
+
+			if (StringHelpers::EqualsIgnoreCase(s, "u32"))
+			{
+				bStoreIndicesAsU16 = false;
+			}
+			else if (StringHelpers::EqualsIgnoreCase(s, "u16"))
+			{
+				bStoreIndicesAsU16 = true;
+			}
+			else
+			{
+				RCLogError("Unknown value of '%s': '%s'. Valid values are: 'u32', 'u16'.", optionName, s.c_str());
+				return false;
+			}
+		}
+
 		LogNodes("Input cgf:", cgf, m_pRc);
 
 		CPhysicsInterface physicsInterface;
@@ -630,9 +675,8 @@ protected:
 		CSaverCGF cgfSaver(chunkFile);
 
 		const bool bNeedEndianSwap = false;
-		const bool bUseQtangents = false;
-		const bool bStorePositionsAsF16 = false;
-		const bool bStoreIndicesAsU16 = false;
+		const bool bUseQtangents = m_pContext->config->GetAsBool("qtangents", false, true);
+
 		cgfSaver.SaveContent(pCompiledCGF, bNeedEndianSwap, bStorePositionsAsF16, bUseQtangents, bStoreIndicesAsU16);
 
 		chunkFile.AddChunk(ChunkType_ImportSettings, 0, eEndianness_Native, ir.jsonData.data(), (int)ir.jsonData.size());
@@ -2700,7 +2744,7 @@ bool CFbxConverter::Process()
 
 	if (StringHelpers::EndsWithIgnoreCase(inputFilepath.c_str(), ".fbx"))
 	{
-		RCLogError("FbxConvertor expected .json or .cgf file, but has received .fbx file '%s'", inputFilepath.c_str());
+		RCLogError("FbxConverter expected .json or .cgf file, but has received .fbx file '%s'", inputFilepath.c_str());
 		return false;
 	}
 
@@ -2762,8 +2806,7 @@ bool CFbxConverter::Process()
 	}
 
 	m_CC.pRC->AddInputOutputFilePair(inputFilepath, outputFilename);
-
-	return AssetManager::SaveAsset(m_CC.pRC, m_CC.config, sourceSceneFilename, { outputFilename });
+	return m_CC.pRC->GetAssetManager()->SaveCryasset(m_CC.config, sourceSceneFilename, { outputFilename });
 }
 
 CFbxConverter::CFbxConverter()

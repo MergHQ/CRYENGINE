@@ -43,7 +43,7 @@ const Serialization::StringList& CUqsDatabaseSerializationCache::GetQueryFactory
 {
 	if (m_queryFactoryNamesList.empty())
 	{
-		const auto& db = uqs::core::IHubPlugin::GetHub().GetQueryFactoryDatabase();
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetQueryFactoryDatabase();
 		// TODO pavloi 2015.12.08: fix const_cast inside lazy getter
 		BuildNameStringList(db, const_cast<Serialization::StringList&>(m_queryFactoryNamesList));
 	}
@@ -55,7 +55,7 @@ const Serialization::StringList& CUqsDatabaseSerializationCache::GetItemTypeName
 {
 	if (m_itemTypeNamesList.empty())
 	{
-		const auto& db = uqs::core::IHubPlugin::GetHub().GetItemFactoryDatabase();
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetItemFactoryDatabase();
 		// TODO pavloi 2015.12.08: fix const_cast inside lazy getter
 		BuildNameStringList(db, const_cast<Serialization::StringList&>(m_itemTypeNamesList));
 	}
@@ -67,7 +67,7 @@ const Serialization::StringList& CUqsDatabaseSerializationCache::GetGeneratorNam
 {
 	if (m_generatorNamesList.empty())
 	{
-		const auto& db = uqs::core::IHubPlugin::GetHub().GetGeneratorFactoryDatabase();
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetGeneratorFactoryDatabase();
 		// TODO pavloi 2015.12.08: fix const_cast inside lazy getter
 		BuildNameStringList(db, const_cast<Serialization::StringList&>(m_generatorNamesList));
 	}
@@ -79,7 +79,7 @@ const Serialization::StringList& CUqsDatabaseSerializationCache::GetFunctionName
 {
 	if (m_functionNamesList.empty())
 	{
-		const auto& db = uqs::core::IHubPlugin::GetHub().GetFunctionFactoryDatabase();
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetFunctionFactoryDatabase();
 		// TODO pavloi 2015.12.08: fix const_cast inside lazy getter
 		BuildNameStringList(db, const_cast<Serialization::StringList&>(m_functionNamesList));
 	}
@@ -114,7 +114,19 @@ const Serialization::StringList& CUqsDatabaseSerializationCache::GetEvaluatorNam
 	return m_evaluatorNamesList;
 }
 
-SItemTypeName CUqsDatabaseSerializationCache::GetItemTypeNameFromType(const uqs::shared::CTypeInfo& typeInfo) const
+const Serialization::StringList& CUqsDatabaseSerializationCache::GetScoreTransformNamesList() const
+{
+	if (m_scoreTransformNamesList.empty())
+	{
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetScoreTransformFactoryDatabase();
+		// TODO christianw 2017.03.29: fix const_cast inside lazy getter
+		BuildNameStringList(db, const_cast<Serialization::StringList&>(m_scoreTransformNamesList));
+	}
+
+	return m_scoreTransformNamesList;
+}
+
+SItemTypeName CUqsDatabaseSerializationCache::GetItemTypeNameFromType(const UQS::Shared::CTypeInfo& typeInfo) const
 {
 	if (m_typeInfoToName.empty())
 	{
@@ -139,11 +151,11 @@ void CUqsDatabaseSerializationCache::BuildEvaluatorNamesList()
 	m_deferredEvaluatorNamesList.clear();
 
 	{
-		const auto& db = uqs::core::IHubPlugin::GetHub().GetInstantEvaluatorFactoryDatabase();
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetInstantEvaluatorFactoryDatabase();
 		BuildNameStringList(db, m_instantEvaluatorNamesList);
 	}
 	{
-		const auto& db = uqs::core::IHubPlugin::GetHub().GetDeferredEvaluatorFactoryDatabase();
+		const auto& db = UQS::Core::IHubPlugin::GetHub().GetDeferredEvaluatorFactoryDatabase();
 		BuildNameStringList(db, m_deferredEvaluatorNamesList);
 	}
 
@@ -156,10 +168,10 @@ void CUqsDatabaseSerializationCache::BuildEvaluatorNamesList()
 
 void CUqsDatabaseSerializationCache::BuildFilteredFunctionNamesList(const SItemTypeName& typeToFilter)
 {
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetFunctionFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetFunctionFactoryDatabase();
 
 	// TODO pavloi 2015.12.14: save filtered lists for different types
-	auto filter = [this, &typeToFilter](const uqs::client::IFunctionFactory& factory)
+	auto filter = [this, &typeToFilter](const UQS::Client::IFunctionFactory& factory)
 	{
 		return (GetItemTypeNameFromType(factory.GetReturnType()) == typeToFilter);
 	};
@@ -172,12 +184,12 @@ void CUqsDatabaseSerializationCache::BuildTypeInfoToNameMap()
 {
 	m_typeInfoToName.clear();
 
-	const auto& db = uqs::core::IHubPlugin::GetHub().GetItemFactoryDatabase();
+	const auto& db = UQS::Core::IHubPlugin::GetHub().GetItemFactoryDatabase();
 	const size_t itemFactoryCount = db.GetFactoryCount();
 	for (size_t i = 0; i < itemFactoryCount; ++i)
 	{
 		const auto& factory = db.GetFactory(i);
-		const uqs::shared::CTypeInfo& typeInfo = factory.GetItemType();
+		const UQS::Shared::CTypeInfo& typeInfo = factory.GetItemType();
 
 		m_typeInfoToName[typeInfo] = SItemTypeName(factory.GetName());
 	}

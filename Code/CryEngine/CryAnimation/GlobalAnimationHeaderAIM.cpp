@@ -1792,9 +1792,9 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	weight[0] = w0;
 	f64 maxstep = 0.250f;
 
-	f64 angle0 = MAX(acos_tpl(tq1 | tq2), 0.01);
+	f64 angle0 = std::max(acos_tpl(tq1 | tq2), 0.01);
 	assert(angle0 >= 0.009);
-	f64 step0 = MIN((1.0 / (angle0 * angle0 * 30.0)), maxstep);
+	f64 step0 = std::min((1.0 / (angle0 * angle0 * 30.0)), maxstep);
 	for (f64 i = step0; i < 3.0; i += step0)
 	{
 		c++;
@@ -1808,9 +1808,9 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 		if (t == 1.0) break;
 	}
 
-	f64 angle1 = MAX(acos_tpl(tq1 | tq2), 0.01f);
+	f64 angle1 = std::max(acos_tpl(tq1 | tq2), 0.01);
 	assert(angle1 >= 0.009);
-	f64 step1 = MIN((1.0 / (angle1 * angle1 * 30.0)), maxstep);
+	f64 step1 = std::min((1.0 / (angle1 * angle1 * 30.0)), maxstep);
 	for (f64 i = step1; i < 3.0; i += step1)
 	{
 		c++;
@@ -1824,9 +1824,9 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 		if (t == 1.0) break;
 	}
 
-	f64 angle2 = MAX(acos_tpl(tq2 | tq3), 0.01);
+	f64 angle2 = std::max(acos_tpl(tq2 | tq3), 0.01);
 	assert(angle2 >= 0.009);
-	f64 step2 = MIN((1.0 / (angle2 * angle2 * 30.0)), maxstep);
+	f64 step2 = std::min((1.0 / (angle2 * angle2 * 30.0)), maxstep);
 	for (f64 i = step2; i < 3.0; i += step2)
 	{
 		c++;
@@ -1840,9 +1840,9 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 		if (t == 1.0) break;
 	}
 
-	f64 angle3 = MAX(acos_tpl(tq3 | tq0), 0.01);
+	f64 angle3 = std::max(acos_tpl(tq3 | tq0), 0.01);
 	assert(angle3 >= 0.009);
-	f64 step3 = MIN((1.0 / (angle3 * angle3 * 30.0)), maxstep);
+	f64 step3 = std::min((1.0 / (angle3 * angle3 * 30.0)), maxstep);
 	for (f64 i = step3; i < 3.0; i += step3)
 	{
 		c++;

@@ -23,6 +23,7 @@ def is_valid (self):
 
 def engine_id(self):
 	return self.get ('require', {}).get ('engine')
+
 	
 def shared_dir(self, platform, config):
 	lib= self['content'].get ('libs', [None])[0]
@@ -39,5 +40,4 @@ def cmakelists_dir(self):
 
 def require_list(self):
 	return self.get ('require', [])
-		
-		
+

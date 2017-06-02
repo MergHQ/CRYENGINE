@@ -12,7 +12,6 @@ class CActionSetGameToken final : public DRS::IResponseAction
 public:
 	CActionSetGameToken() : m_bCreateTokenIfNotExisting(false) {}
 	CActionSetGameToken(const string& tokenName, const string& stringValue, bool bCreate) : m_tokenName(tokenName), m_bCreateTokenIfNotExisting(bCreate) {}
-	virtual ~CActionSetGameToken() {}
 
 	//////////////////////////////////////////////////////////
 	// IResponseAction implementation

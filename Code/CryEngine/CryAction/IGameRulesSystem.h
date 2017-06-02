@@ -527,7 +527,6 @@ struct IGameRules : public IGameObjectExtension
 	virtual XmlNodeRef FindPrecachedXmlFile(const char* sFilename) = 0;
 
 	// client notification
-	virtual void OnConnect(struct INetChannel* pNetChannel) = 0;
 	virtual void OnDisconnect(EDisconnectionCause cause, const char* desc) = 0; // notification to the client that he has been disconnected
 
 	// Summary

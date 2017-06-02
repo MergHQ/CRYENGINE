@@ -108,7 +108,7 @@ void CResponseInstance::ExecuteSegment(CResponseSegment* pSegment)
 	if (pSegment)
 	{
 #if !defined(_RELEASE)
-		const string currentName = string("Response for '") + GetSignalName().GetText() + "', Segment: " + pSegment->GetName() + " CurrentActor:" + (GetCurrentActor() ? GetCurrentActor()->GetName().GetText() : "None");
+		const string currentName = string("Response for '") + GetSignalName().GetText() + "', Segment: '" + pSegment->GetName() + "' CurrentActor: " + (GetCurrentActor() ? GetCurrentActor()->GetName() : "None");
 #endif
 		for (CResponseSegment::ActionsInfo& actionInfo : pSegment->GetActions())
 		{

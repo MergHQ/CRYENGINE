@@ -148,6 +148,19 @@ public:
 				gEnv->pSystem->SetThreadState(ESubsys_Physics, true);
 				break;
 			}
+		case ESYSTEM_EVENT_FULL_SHUTDOWN:
+		case ESYSTEM_EVENT_FAST_SHUTDOWN:
+			{
+				if (gEnv && gEnv->pSystem)
+				{
+					ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher();
+					if (pSystemEventDispatcher)
+					{
+						pSystemEventDispatcher->RemoveListener(this);
+					}
+				} 
+			}
+			break;
 		}
 	}
 };
@@ -161,6 +174,7 @@ extern "C"
 		CSystem* pSystem = NULL;
 
 		pSystem = new CSystem(startupParams);
+		LOADING_TIME_PROFILE_SECTION_NAMED("CreateSystemInterface");
 		ModuleInitISystem(pSystem, "CrySystem");
 #if CRY_PLATFORM_DURANGO
 	#if !defined(_LIB)
@@ -192,7 +206,7 @@ extern "C"
 		}
 
 		pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE, 0, 0);
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_system);
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_system,"CSystemEventListner_System");
 
 		return pSystem;
 	}

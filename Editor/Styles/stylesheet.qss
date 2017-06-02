@@ -44,7 +44,7 @@ QComboBox {
 
 QComboBox::item {
 	color:rgb(166,166,166);
-	background-color:red; /* for debugging purposes - old value (rgb(50,50,50);*/
+	background-color:rgb(50,50,50);
 }
 
 QComboBox::item:selected {
@@ -1142,6 +1142,12 @@ QCustomTitleBar #closeButton {
 	qproperty-iconSize: 16px;
 }
 
+QCustomTitleBar #minimizeButton::hover, QCustomTitleBar #maximizeButton::hover, QCustomTitleBar #restoreButton::hover, QCustomTitleBar #closeButton::hover {
+	background: qlineargradient(y1:1,
+				stop:1 rgba(255,255,255,20), 
+				stop:0.7 rgba(255,255,255,15)); 
+}
+
 QCustomTitleBar #sysMenu {
 	background-color: rgb(35,35,35);
 	color:rgb(50,50,50);
@@ -1300,7 +1306,7 @@ QLineEdit:disabled {
 
 QComboBox:disabled {
 	color:rgb(120,120,120);
-	background-color:red; /* for debugging purposes - old value (rgb(58,58,58);*/
+	background-color:rgb(58,58,58);
 }
 
 QComboBox::drop-down:disabled {
@@ -1420,8 +1426,12 @@ EditorStyleHelper {
 	qproperty-highlightedTextColor: rgb(255, 255, 255);
 	qproperty-linkColor: rgb(0, 0, 255);
 	qproperty-linkVisitedColor: rgb(255, 0, 255);
-	qproperty-toolTipBaseColor: rgb(255, 255, 200);
-	qproperty-toolTipTextColor: rgb(0, 0, 0);
+	qproperty-toolTipBaseColor: rgb(35, 35, 35);
+	qproperty-toolTipTextColor: rgb(192, 192, 192);
+	qproperty-toolTipMarginTop: 4;
+	qproperty-toolTipMarginLeft: 4;
+	qproperty-toolTipMarginRight: 4;
+	qproperty-toolTipMarginBottom: 4;
 	qproperty-alternateBaseColor: rgb(128, 128, 128);
 	qproperty-disabledWindowTextColor: rgb(192, 192, 192);	
 	qproperty-disabledButtonColor: rgb(66, 66, 66);

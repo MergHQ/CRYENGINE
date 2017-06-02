@@ -22,15 +22,6 @@ void CHmdManager::RegisterDevice(const char* name, IHmdDevice& device)
 {
 	// Reference counting will be handled inside the vector
 	m_availableDeviceMap.insert(TDeviceMap::value_type(name, &device));
-
-	if (gEnv->pConsole)
-	{
-		ICVar* const pVrSupportVar = gEnv->pConsole->GetCVar("sys_vr_support");
-		if (pVrSupportVar)
-		{
-			pVrSupportVar->Set(1);
-		}
-	}
 }
 
 // ------------------------------------------------------------------------

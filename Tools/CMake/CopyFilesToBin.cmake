@@ -1,58 +1,88 @@
 # Copy required additional files from 3rdparty to the binary folder
 set(DEPLOY_FILES  CACHE INTERNAL "List of files to deploy before running")
 
-set (BinaryFileList_Win64
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbghelp.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbgcore.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
+if (OPTION_ENGINE OR OPTION_SANDBOX OR OPTION_SHADERCACHEGEN)
+	set (BinaryFileList_Win64
+		"${WINDOWS_SDK}/Debuggers/x64/srcsrv/dbghelp.dll"
+		"${WINDOWS_SDK}/Debuggers/x64/srcsrv/dbgcore.dll"
+		"${WINDOWS_SDK}/bin/x64/d3dcompiler_47.dll"
+		)
+
+	set (BinaryFileList_Win32
+		"${WINDOWS_SDK}/Debuggers/x86/srcsrv/dbghelp.dll"
+		"${WINDOWS_SDK}/Debuggers/x86/srcsrv/dbgcore.dll"
+		"${WINDOWS_SDK}/bin/x86/d3dcompiler_47.dll"
+		)
+endif()
+
+file(TO_CMAKE_PATH "${DURANGO_SDK}" DURANGO_SDK_CMAKE)
+set (BinaryFileList_Durango
+	"${DURANGO_SDK_CMAKE}/xdk/symbols/d3dcompiler_47.dll"
 	)
 
-set (BinaryFileList_Win32
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbghelp.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbgcore.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
-	)
 
 set (BinaryFileList_LINUX64
 	${SDK_DIR}/ncurses/lib/libncursesw.so.6
 	)
 
+	
+macro(add_optional_runtime_files)
 
-if (OPTION_ENABLE_BROFILER)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Brofiler/ProfilerCore64.dll)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Brofiler/ProfilerCore32.dll)
-endif()
-if(OPTION_ENABLE_CRASHRPT)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/crashrpt_lang.ini)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/CrashSender1403.exe)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/crashrpt_lang.ini)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/CrashSender1403.exe)
-endif()
-if (OPTION_CRYMONO)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Mono/bin/x64/mono-2.0.dll)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Mono/bin/x86/mono-2.0.dll)
-endif()
-if (PLUGIN_VR_OCULUS)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/audio/oculus/wwise/bin/plugins/OculusSpatializer.dll)
-endif()
-if (PLUGIN_VR_OPENVR)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OpenVR/bin/win64/*.*)
-endif()
-if (PLUGIN_VR_OSVR)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OSVR/dll/*.dll)
-endif()
-if (OPTION_SANDBOX)
-	set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
-		${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[^Dd].dll
-	)
-	set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
-		${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll
-		${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb
-	)
-endif()
+	if (OPTION_ENABLE_BROFILER)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Brofiler/ProfilerCore64.dll)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Brofiler/ProfilerCore32.dll)
+	endif()
+	
+	if(OPTION_ENABLE_CRASHRPT)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/crashrpt_lang.ini)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/CrashSender1403.exe)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/crashrpt_lang.ini)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/CrashSender1403.exe)
+	endif()
+	
+	if (OPTION_CRYMONO)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Mono/bin/x64/mono-2.0.dll)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Mono/bin/x86/mono-2.0.dll)
+	endif()
+
+	if (PLUGIN_VR_OCULUS OR AUDIO_HRTF)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/audio/oculus/wwise/x64/bin/plugins/OculusSpatializerWwise.dll)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/audio/oculus/wwise/Win32/bin/plugins/OculusSpatializerWwise.dll)
+	endif()
+	
+	if (PLUGIN_VR_OPENVR)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OpenVR/bin/win64/*.*)
+	endif()
+	
+	if (PLUGIN_VR_OSVR)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OSVR/dll/*.dll)
+	endif()
+	
+	if (OPTION_SANDBOX)
+		if (CMAKE_BUILD_TYPE)
+			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll
+			)
+			set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
+				${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll
+			)
+			set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
+				${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll
+				${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb
+			)
+		else()
+			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+				${SDK_DIR}/XT_13_4/bin_vc14/*.dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*.dll
+				${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb
+			)
+		endif()
+	endif()
+endmacro()
 
 macro(deploy_runtime_file source destination)
 	if(USE_CONFIG)
@@ -130,11 +160,15 @@ macro(deploy_pyside)
 	set(PYSIDE_SOURCE ${PYSIDE_SDK_SOURCE}PySide2/)
 
 	# Only copy debug DLLs and .pyd's if we are building in debug mode, otherwise take only the release versions.
-	set(USE_CONFIG Debug)
+	if(CMAKE_BUILD_TYPE)
+		set(USE_CONFIG Debug)
+	endif()		
 	set(PYSIDE_DLLS "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
 	file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*_d.pyd)
 	deploy_pyside_files()
-	set(USE_CONFIG Profile)
+	if(CMAKE_BUILD_TYPE)
+		set(USE_CONFIG Profile)
+	endif()
 	set(PYSIDE_DLLS "pyside2-python2.7.dll" "shiboken2-python2.7.dll")
 	file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*[^_][^d].pyd)
 	deploy_pyside_files()	
@@ -148,8 +182,15 @@ macro(deploy_pyside)
 endmacro()
 
 macro(copy_binary_files_to_target)
-  message( STATUS "copy_binary_files_to_target start ${BUILD_PLATFORM}" )
-  
+	if (DEFINED PROJECT_BUILD_CRYENGINE AND NOT PROJECT_BUILD_CRYENGINE)
+		# When engine is not to be Build do not deploy anything either
+		return()
+	endif()
+
+	message( STATUS "copy_binary_files_to_target start ${BUILD_PLATFORM}" )
+	
+	add_optional_runtime_files()
+
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
 	deploy_runtime_files("${BINARY_FILE_LIST}")
@@ -166,20 +207,28 @@ macro(copy_binary_files_to_target)
 		deploy_runtime_files(${SDK_DIR}/Orbis/target/sce_module/*.prx app/sce_module)
 	endif()
 
-	if (WIN64) 
-		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+	if (WIN64)
+		if (OPTION_ENGINE)
+			deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+		endif()
 		if (OPTION_SANDBOX)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll platforms)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
-			set(USE_CONFIG Debug)
-			deploy_runtime_files(${SDK_DIR}/Python27/*_d.zip)
-			set(USE_CONFIG Profile)
-			deploy_runtime_files(${SDK_DIR}/Python27/*[^_][^d].zip)
-			set(USE_CONFIG)
+			if (CMAKE_BUILD_TYPE)
+				set(USE_CONFIG Debug)
+				deploy_runtime_files(${SDK_DIR}/Python27/*_d.zip)
+				set(USE_CONFIG Profile)
+				deploy_runtime_files(${SDK_DIR}/Python27/*[^_][^d].zip)
+				set(USE_CONFIG)
+			else()
+				deploy_runtime_files(${SDK_DIR}/Python27/*.zip)
+			endif()
 			deploy_pyside()
 		endif()
 	elseif(WIN32)
-		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
+		if (OPTION_ENGINE)
+			deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
+		endif()
 	endif ()
 
 	if(DEPLOY_FILES)
@@ -193,16 +242,25 @@ macro(copy_binary_files_to_target)
 			list(GET DEPLOY_FILES ${idx} source)
 			list(GET DEPLOY_FILES ${idxIncr} source_file)
 			list(GET DEPLOY_FILES ${idxIncr2} destination)
-      
-			add_custom_command(OUTPUT ${destination} 
-				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CRYENGINE_DIR}/Tools/CMake/deploy_runtime_files.cmake
-				COMMENT "Deploying ${source_file}"
-				DEPENDS ${source_file})
 
-			list(APPEND DEPLOY_DESTINATIONS ${destination})
+			if(source MATCHES "<") # Source contains generator expression; deploy at build time
+				add_custom_command(OUTPUT ${destination} 
+					COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${TOOLS_CMAKE_DIR}/deploy_runtime_files.cmake
+					COMMENT "Deploying ${source_file}"
+					DEPENDS ${source})				
+				list(APPEND DEPLOY_DESTINATIONS ${destination})				
+			else()
+				message(STATUS "Deploying ${source_file}")
+				get_filename_component(DEST_DIR ${destination} DIRECTORY)
+				file(COPY ${source} DESTINATION ${DEST_DIR} NO_SOURCE_PERMISSIONS)
+			endif()
+
 		endforeach(idx)
 
-		add_custom_target(deployrt ALL DEPENDS ${DEPLOY_DESTINATIONS})
+		if (DEPLOY_DESTINATIONS)
+			add_custom_target(deployrt ALL DEPENDS ${DEPLOY_DESTINATIONS})
+			set_solution_folder("Deploy" deployrt)
+		endif()
 	endif()
   message( STATUS "copy_binary_files_to_target end" )
 endmacro()

@@ -13,7 +13,7 @@
 #include "CharacterDocument.h"
 #include "Expected.h"
 #include <CryIcon.h>
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include "../EditorCommon/QPropertyTree/ContextList.h"
 #include "Explorer/ExplorerFileList.h"
 #include <CryAnimation/ICryAnimation.h>

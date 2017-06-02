@@ -469,7 +469,7 @@ Vec3 ConvertIlluminanceToLightColor(float illuminance, Vec3 colorRGB)
 
 //////////////////////////////////////////////////////////////////////////
 CTimeOfDay::CTimeOfDay()
-	: m_timeOfDayRtpcId(INVALID_AUDIO_CONTROL_ID)
+	: m_timeOfDayRtpcId(CryAudio::InvalidControlId)
 {
 	m_pTimer = 0;
 	SetTimer(gEnv->pTimer);
@@ -518,7 +518,7 @@ CTimeOfDay::CTimeOfDay()
 
 	m_pCurrentPreset = NULL;
 
-	gEnv->pAudioSystem->GetAudioRtpcId("time_of_day", m_timeOfDayRtpcId);
+	gEnv->pAudioSystem->GetParameterId("time_of_day", m_timeOfDayRtpcId);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -793,7 +793,7 @@ void CTimeOfDay::ResetVariables()
 		return;
 
 	m_pCurrentPreset->ResetVariables();
-	
+
 	for (int i = 0; i < PARAM_TOTAL; ++i)
 	{
 		const CTimeOfDayVariable* presetVar = m_pCurrentPreset->GetVar((ETimeOfDayParamID)i);
@@ -881,16 +881,9 @@ void CTimeOfDay::SetTime(float fHour, bool bForceUpdate)
 	Update(true, bForceUpdate);
 
 	// Inform audio of this change.
-	if (m_timeOfDayRtpcId != INVALID_AUDIO_CONTROL_ID)
+	if (m_timeOfDayRtpcId != CryAudio::InvalidControlId)
 	{
-		const bool isMainThread = (gEnv->mMainThreadId == CryGetCurrentThreadId());
-		SAudioRequest request;
-		request.flags = isMainThread ? eAudioRequestFlags_None : eAudioRequestFlags_ThreadSafePush;
-		SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData;
-		requestData.audioRtpcId = m_timeOfDayRtpcId;
-		requestData.value = m_fTime;
-		request.pData = &requestData;
-		gEnv->pAudioSystem->PushRequest(request);
+		gEnv->pAudioSystem->SetParameter(m_timeOfDayRtpcId, m_fTime);
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TIME_OF_DAY_SET, 0, 0);

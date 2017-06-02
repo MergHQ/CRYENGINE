@@ -110,7 +110,9 @@ CUserAnalytics::CUserAnalytics()
 	, m_curlHeaderList(nullptr)
 	, m_pUserAnalyticsSendThread(nullptr)
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CUserAnalytics");
+
+	TriggerEvent("UserAnalyticsSessionStart"); // note: this will not show up in log
 }
 
 ///////////////////////////////////////////////////////////////////////////

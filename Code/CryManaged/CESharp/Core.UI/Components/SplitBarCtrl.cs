@@ -1,22 +1,24 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System.Runtime.Serialization;
+using System;
 
 namespace CryEngine.UI.Components
 {
 	/// <summary>
 	/// Input control for SplitBar.
 	/// </summary>
-	[DataContract]
 	public class SplitBarCtrl : UIComponent
 	{
-		public event EventHandler<int, int> Pulling; ///< Raised if mouse is pulling the SplitBar. Coordinates define mouse delta since pull start.
+		/// <summary>
+		/// Raised if mouse is pulling the SplitBar. Coordinates define mouse delta since pull start.
+		/// </summary>
+		public event Action<int, int> Pulling;
 
 		bool _drag = false;
 		Point _startPos;
-		[DataMember]
 
-		public float TargetAlpha { get; private set; } ///< Defines the color alpha which the SplitBar should have.
+		///Defines the color alpha which the SplitBar should have.
+		public float TargetAlpha { get; private set; }
 
 		/// <summary>
 		/// Initialized by SplitBar.

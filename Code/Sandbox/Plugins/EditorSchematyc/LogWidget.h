@@ -10,9 +10,9 @@
 
 #include <QTextBrowser>
 #include <QWidget>
-#include <Schematyc/Services/LogStreamName.h>
-#include <Schematyc/SerializationUtils/SerializationUtils.h>
-#include <Schematyc/Utils/ScopedConnection.h>
+#include <CrySchematyc/Services/LogStreamName.h>
+#include <CrySchematyc/SerializationUtils/SerializationUtils.h>
+#include <CrySchematyc/Utils/ScopedConnection.h>
 
 class QBoxLayout;
 class QLineEdit;

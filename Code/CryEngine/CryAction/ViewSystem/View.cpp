@@ -32,6 +32,7 @@ static ICVar* pHmdTrackingOrigin = 0;
 CView::CView(ISystem* const pSystem)
 	: m_pSystem(pSystem)
 	, m_linkedTo(0)
+	, m_linkedEntityCallback(nullptr)
 	, m_frameAdditiveAngles(0.0f, 0.0f, 0.0f)
 	, m_scale(1.0f)
 	, m_zoomedScale(1.0f)
@@ -92,9 +93,13 @@ void CView::Update(float frameTime, bool isActive)
 
 		m_viewParams.frameTime = frameTime;
 		//update view position/rotation
-		if (pLinkedTo)
+		if (pLinkedTo || m_linkedEntityCallback)
 		{
-			pLinkedTo->UpdateView(m_viewParams);
+			if (pLinkedTo)
+				pLinkedTo->UpdateView(m_viewParams);
+			else
+				m_linkedEntityCallback->UpdateView(m_viewParams);
+
 			if (!m_viewParams.position.IsValid())
 			{
 				m_viewParams.position = m_viewParams.GetPositionLast();
@@ -734,11 +739,12 @@ void CView::LinkTo(IGameObject* follow)
 }
 
 //------------------------------------------------------------------------
-void CView::LinkTo(IEntity* follow)
+void CView::LinkTo(IEntity* follow, IGameObjectView* callback)
 {
 	CRY_ASSERT(follow);
 	m_linkedTo = follow->GetId();
 	m_viewParams.targetPos = follow->GetWorldPos();
+	m_linkedEntityCallback = callback;
 }
 
 //------------------------------------------------------------------------

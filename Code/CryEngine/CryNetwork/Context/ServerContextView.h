@@ -77,16 +77,6 @@ public:
 		}
 	};
 
-#if ENABLE_ASPECT_HASHING
-	template<int AspectNum>
-	struct msgHashAspect {
-		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
-			TrampolineAspect<AspectNum, CContextView, &CServerContextView::HashAspect>,
-			"CServerContextView:HashAspect", AspectNum, eMPF_BlocksStateChange);
-		}
-	};
-#endif
-
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(AuthenticateResponse, CWhirlpoolHash);
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(ChangeState, SChangeStateMessage);
 	NET_DECLARE_IMMEDIATE_MESSAGE(FinishState);

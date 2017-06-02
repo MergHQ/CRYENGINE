@@ -87,6 +87,11 @@ struct XmlAttribute
 	const char* key;
 	const char* value;
 
+	XmlAttribute()
+		: key(nullptr)
+		, value(nullptr)
+	{}
+
 	void GetMemoryUsage(ICrySizer* pSizer) const    {}
 
 	bool operator<(const XmlAttribute& attr) const  { return g_pXmlStrCmp(key, attr.key) < 0; }

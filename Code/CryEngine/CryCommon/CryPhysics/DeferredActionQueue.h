@@ -5,9 +5,10 @@
 
 #pragma once
 
-#include <CryCore/StlUtils.h>
-
 #include "AgePriorityQueue.h"
+
+#include <CryCore/StlUtils.h>
+#include <CryCore/functor.h>
 #include <CryMemory/STLPoolAllocator.h>
 #include <CryMemory/STLPoolAllocator_ManyElems.h>
 

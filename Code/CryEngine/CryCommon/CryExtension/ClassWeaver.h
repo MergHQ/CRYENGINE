@@ -271,7 +271,8 @@ public:
 
 	virtual const CryClassID& GetClassID() const
 	{
-		return T::GetCID();
+		static constexpr CryClassID cid = T::GetCID();
+		return cid;
 	}
 
 	virtual bool ClassSupports(const CryInterfaceID& iid) const
@@ -288,11 +289,6 @@ public:
 	{
 		pIIDs = m_pIIDs;
 		numIIDs = m_numIIDs;
-	}
-
-	virtual const SRegFactoryNode* GetRegFactoryNode() const
-	{
-		return &m_regFactory;
 	}
 
 public:
@@ -391,11 +387,21 @@ public:
     {                                                                                                               \
       return cname;                                                                                                 \
     }                                                                                                               \
-    static const CryClassID& GetCID()                                                                               \
+                                                                                                                    \
+    static constexpr CryClassID GetCID()                                                                            \
     {                                                                                                               \
-      static const CryClassID cid = { (uint64) cidHigh ## LL, (uint64) cidLow ## LL };                              \
-      return cid;                                                                                                   \
+         return CryClassID::Construct( (uint64) cidHigh ## LL, (uint64) cidLow ## LL );                             \
     }                                                                                                               \
+    static std::shared_ptr<implclassname> CreateClassInstance()                                                     \
+    {                                                                                                               \
+      ICryUnknownPtr p = s_factory.CreateClassInstance();                                                           \
+      return std::shared_ptr<implclassname>(*static_cast<std::shared_ptr<implclassname>*>(static_cast<void*>(&p))); \
+    }
+
+#define _ENFORCE_CRYFACTORY_USAGE_GUID(implclassname, cname, guid)                                                  \
+  public:                                                                                                           \
+    static const char* GetCName() { return cname; }                                                                 \
+    static constexpr CryClassID GetCID() { return guid; }                                                           \
     static std::shared_ptr<implclassname> CreateClassInstance()                                                     \
     {                                                                                                               \
       ICryUnknownPtr p = s_factory.CreateClassInstance();                                                           \
@@ -413,9 +419,21 @@ public:
   _IMPLEMENT_ICRYUNKNOWN()                                       \
   _ENFORCE_CRYFACTORY_USAGE(implclassname, cname, cidHigh, cidLow)
 
+#define CRYGENERATE_CLASS_GUID(implclassname, cname, classGuid)       \
+  friend struct CFactory<implclassname>::CustomDeleter;          \
+  _CRYFACTORY_DECLARE(implclassname)                             \
+  _BEFRIEND_OPS()                                                \
+  _IMPLEMENT_ICRYUNKNOWN()                                       \
+  _ENFORCE_CRYFACTORY_USAGE_GUID(implclassname, cname, classGuid)
+
+
 #define CRYGENERATE_CLASS_FROM_INTERFACE(implclassname, interfaceName, cname, cidHigh, cidLow) \
   CRYINTERFACE_SIMPLE(interfaceName)                                                           \
   CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow)
+
+#define CRYGENERATE_CLASS_FROM_INTERFACE_GUID(implclassname, interfaceName, cname, classGuid) \
+  CRYINTERFACE_SIMPLE(interfaceName)                                                           \
+  CRYGENERATE_CLASS_GUID(implclassname, cname, classGuid)
 
 #define CRYGENERATE_SINGLETONCLASS(implclassname, cname, cidHigh, cidLow) \
   friend struct CFactory<implclassname>::CustomDeleter;                   \

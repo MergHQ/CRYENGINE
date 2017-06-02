@@ -40,16 +40,17 @@ bool CVehicleMovementTank::Init(IVehicle* pVehicle, const CVehicleParams& table)
 		return false;
 	}
 
-	const IAudioSystem* const pAudioSystem = gEnv->pAudioSystem;
-	if (pAudioSystem)
-	{
-		pAudioSystem->GetAudioTriggerId("Play_abrams_cannon_turn", m_audioControlIDs[eSID_TankTurnTurret]);
-		pAudioSystem->GetAudioRtpcId("vehicle_rotation_speed", m_turretTurnRtpcId);
+	CryAudio::IAudioSystem const* const pIAudioSystem = gEnv->pAudioSystem;
 
-		pAudioSystem->GetAudioTriggerId("Play_w_tank_cannon_fire", m_audioControlIDs[eSID_VehiclePrimaryWeapon]);
-		pAudioSystem->GetAudioTriggerId("do_nothing", m_audioControlIDs[eSID_VehicleStopPrimaryWeapon]);
-		pAudioSystem->GetAudioTriggerId("Play_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleSecondaryWeapon]);
-		pAudioSystem->GetAudioTriggerId("Stop_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleStopSecondaryWeapon]);
+	if (pIAudioSystem != nullptr)
+	{
+		pIAudioSystem->GetTriggerId("Play_abrams_cannon_turn", m_audioControlIDs[eSID_TankTurnTurret]);
+		pIAudioSystem->GetParameterId("vehicle_rotation_speed", m_turretTurnRtpcId);
+
+		pIAudioSystem->GetTriggerId("Play_w_tank_cannon_fire", m_audioControlIDs[eSID_VehiclePrimaryWeapon]);
+		m_audioControlIDs[eSID_VehicleStopPrimaryWeapon] = CryAudio::DoNothingTriggerId;
+		pIAudioSystem->GetTriggerId("Play_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleSecondaryWeapon]);
+		pIAudioSystem->GetTriggerId("Stop_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleStopSecondaryWeapon]);
 	}
 
 	return true;
@@ -325,7 +326,7 @@ void CVehicleMovementTank::Update(const float deltaTime)
 {
 	inherited::Update(deltaTime); 
 
-	AudioControlId id = m_audioControlIDs[eSID_TankTurnTurret];
+	CryAudio::ControlId id = m_audioControlIDs[eSID_TankTurnTurret];
 	if (m_bOnTurnTurret && !m_bTurretTurning)
 	{
 		auto pIEntityAudioComponent = GetAudioProxy();
@@ -349,7 +350,7 @@ void CVehicleMovementTank::Update(const float deltaTime)
 
 		auto pIEntityAudioComponent = GetAudioProxy();
 		if (pIEntityAudioComponent)
-			pIEntityAudioComponent->SetRtpcValue(m_turretTurnRtpcId, min(m_turretTurnSpeed / maxSpeedForSound, 1.0f));
+			pIEntityAudioComponent->SetParameter(m_turretTurnRtpcId, min(m_turretTurnSpeed / maxSpeedForSound, 1.0f));
 	}
 
 	m_bOnTurnTurret = false;

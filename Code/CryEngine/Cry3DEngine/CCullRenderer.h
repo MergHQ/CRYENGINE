@@ -76,7 +76,8 @@ private:
 	uint32    m_SizeX4;
 	Matrix44A m_Reproject;
 	uint32    m_nNumWorker;
-	tdZexel*  m_ZBuffer;
+	tdZexel*  m_ZInput;
+	tdZexel*  m_ZOutput;
 
 	tdZexel** m_ZBufferSwap;
 
@@ -284,7 +285,7 @@ private:
 			vec4 Py = Madd(X20, dy4, Y2x);
 			vec4 Pz = Sub(Sub(Vec4One(), Py), Px);
 
-			vec4* pDstZ = reinterpret_cast<vec4*>(&m_ZBuffer[MinX + y * (uint16)SIZEX]);
+			vec4* pDstZ = reinterpret_cast<vec4*>(&m_ZOutput[MinX + y * (uint16)SIZEX]);
 			y++;
 			uint16 x = MinX;
 			do
@@ -400,7 +401,7 @@ private:
 			vec4 P3x = Sub(Y13x, Mul(X13, dy4));
 			vec4 P3y = Sub(Mul(X23, dy4), Y23x);
 			uint16 x = MinX;
-			vec4* pDstZ = reinterpret_cast<vec4*>(&m_ZBuffer[MinX + y * (uint16)SIZEX]);
+			vec4* pDstZ = reinterpret_cast<vec4*>(&m_ZOutput[MinX + y * (uint16)SIZEX]);
 			do
 			{
 				Prefetch<ECL_LVL1>(pDstZ);
@@ -436,7 +437,8 @@ public:
 	// cppcheck-suppress uninitMemberVar
 	inline CCullRenderer()
 	{
-		m_ZBuffer = m_ZBufferMainMemory;
+		m_ZInput = m_ZBufferMainMemory;
+		m_ZOutput = m_ZBufferMainMemory;
 		m_DebugRender = 0;
 		m_nNumWorker = 0;
 		m_ZBufferSwap = NULL;
@@ -471,7 +473,7 @@ public:
 		m_VMaxXY = NVMath::int32Tofloat(NVMath::Vec4(SIZEX, SIZEY, SIZEX, SIZEY));
 		for (uint32 a = 0, S = SIZEX * SIZEY; a < S; a++)
 		{
-			m_ZBuffer[a] = 9999999999.f;
+			m_ZOutput[a] = 9999999999.f;
 		}
 		m_DrawCall = 0;
 		m_PolyCount = 0;
@@ -479,16 +481,16 @@ public:
 
 	bool DownLoadHWDepthBuffer(float nearPlane, float farPlane, float nearestMax, float Bias)
 	{
-		Matrix44A& Reproject = m_Reproject;
-
 		m_VMaxXY = NVMath::int32Tofloat(NVMath::Vec4(SIZEX, SIZEY, SIZEX, SIZEY));
 
-		Matrix44 Dummy;
-		if (!gEnv->pRenderer->GetOcclusionBuffer((uint16*)&m_ZBuffer[0], SizeX(), SizeY(), &Dummy, reinterpret_cast<Matrix44*>(&Reproject)))
+		tdZexel* pPinned = gEnv->pRenderer->PinOcclusionBuffer(m_Reproject);
+		if (!pPinned)
 		{
+			m_ZInput = m_ZBufferMainMemory;
 			return false;
 		}
 
+		m_ZInput = pPinned;
 		for (uint32 i = 0; i < m_nNumWorker; ++i)
 		{
 			memset(m_ZBufferSwap[i], 0, SIZEX * SIZEY * sizeof(float));
@@ -496,6 +498,15 @@ public:
 		memset(m_ZBufferSwapMerged, 0, SIZEX * SIZEY * sizeof(float));
 
 		return true;
+	}
+
+	void DetachHWDepthBuffer()
+	{
+		if (m_ZInput != m_ZBufferMainMemory)
+		{
+			gEnv->pRenderer->UnpinOcclusionBuffer();
+			m_ZInput = m_ZBufferMainMemory;
+		}
 	}
 
 	void ReprojectHWDepthBuffer(const Matrix44A& rCurrent, float nearPlane, float farPlane, float nearestMax, float Bias, int nStartLine, int nNumLines)
@@ -560,7 +571,7 @@ public:
 			const vec4 vfOne = NVMath::Vec4One();
 			const vec4 vZero = NVMath::Vec4Zero();
 
-			vec4* pSrcZ = reinterpret_cast<vec4*>(&m_ZBuffer[nStartLine * sizeX]);
+			vec4* pSrcZ = reinterpret_cast<vec4*>(&m_ZInput[nStartLine * sizeX]);
 
 			for (y = nStartLine, fY = static_cast<float>(nStartLine); y < nStartLine + nNumLines; y++, fY += 1.0f)
 			{
@@ -685,7 +696,7 @@ public:
 
 		float* pZBufferSwap = m_ZBufferSwapMerged;
 		vec4* pSwap = reinterpret_cast<vec4*>(&pZBufferSwap[0]);
-		vec4* pDst = reinterpret_cast<vec4*>(&m_ZBuffer[nStartLine * sizeX]);
+		vec4* pDst = reinterpret_cast<vec4*>(&m_ZOutput[nStartLine * sizeX]);
 
 		const vec4 vBiasAdd = NVMath::Vec4(Bias < 0.f ? -Bias : 0.f);
 		const vec4 vBiasMul = NVMath::Vec4(Bias > 0.f ? Bias : 0.f);
@@ -821,7 +832,7 @@ public:
 		//	m_ZBuffer[a+12],m_ZBuffer[a+13],m_ZBuffer[a+14],m_ZBuffer[a+15]);
 
 #ifdef CULL_RENDERER_REPROJ_DEBUG
-		memcpy(&pZBufferSwap[nStartLine * sizeX], &m_ZBuffer[nStartLine * sizeX], sizeX * nNumLines * sizeof(float));
+		memcpy(&pZBufferSwap[nStartLine * sizeX], &m_ZOutput[nStartLine * sizeX], sizeX * nNumLines * sizeof(float));
 #endif
 
 #ifdef SCALE_DEPTH
@@ -1502,7 +1513,7 @@ public:
 		fTopOffSet += 200.0f;
 		for (uint32 y = 0; y < SIZEY; y += 1)
 		{
-			const float* __restrict pVMemZ = alias_cast<float*>(&m_ZBuffer[y * SIZEX]);
+			const float* __restrict pVMemZ = &m_ZOutput[y * SIZEX];
 			float fY = fTopOffSet + (y * 3);
 			for (uint32 x = 0; x < SIZEX; x += 4)
 			{

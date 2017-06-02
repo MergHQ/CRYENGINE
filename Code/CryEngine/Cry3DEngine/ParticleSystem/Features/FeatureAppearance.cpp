@@ -36,7 +36,7 @@ public:
 
 	uint VariantCount() const
 	{
-		return m_tileCount / m_anim.m_frameCount;
+		return m_tileCount / max(1u, uint(m_anim.m_frameCount));
 	}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
@@ -55,7 +55,6 @@ public:
 			pComponent->AddParticleData(EPDT_Tile);
 			if (m_variantMode == EVariantMode::Ordered)
 				pComponent->AddParticleData(EPDT_SpawnId);
-			pComponent->AddParticleData(EPDT_Tile);
 			pComponent->AddToUpdateList(EUL_InitUpdate, this);
 		}
 	}
@@ -140,6 +139,17 @@ public:
 		CParticleFeature::Serialize(ar);
 		ar(MaterialPicker(m_materialName), "Material", "Material");
 		ar(TextureFilename(m_textureName), "Texture", "Texture");
+	}
+
+	virtual uint GetNumResources() const override 
+	{ 
+		return !m_materialName.empty() || !m_textureName.empty() ? 1 : 0; 
+	}
+
+	virtual const char* GetResourceName(uint resourceId) const override
+	{ 
+		// Material has priority over the texture.
+		return !m_materialName.empty() ? m_materialName.c_str() : m_textureName.c_str();
 	}
 
 private:
@@ -299,7 +309,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pParams->m_visibility = static_cast<const SVisibilityParams&>(*this);
+		pParams->m_visibility.Combine(*this);
 		if (m_drawNear)
 			pParams->m_renderObjectFlags |= FOB_NEAREST;
 		if (m_drawOnTop)

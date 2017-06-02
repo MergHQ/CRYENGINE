@@ -875,6 +875,11 @@ struct IVisAreaCallback
 	// </interfuscator:shuffle>
 };
 
+struct IVisAreaTestCallback
+{
+	virtual bool TestVisArea(IVisArea* pVisArea) const = 0;
+};
+
 struct IVisAreaManager
 {
 	// <interfuscator:shuffle>
@@ -1137,7 +1142,7 @@ struct SDebugFPSInfo
 };
 
 //! Common scene rain parameters shared across engine and editor.
-struct SRainParams
+struct CRY_ALIGN(16) SRainParams
 {
 	SRainParams()
 		: fAmount(0.f), fCurrentAmount(0.f), fRadius(0.f), nUpdateFrameID(-1), bIgnoreVisareas(false), bDisableOcclusion(false)
@@ -1234,6 +1239,13 @@ protected:
 	virtual ~IStreamedObjectListener() {}
 };
 
+struct IRenderNodeStatusListener
+{
+	virtual void OnEntityDeleted(IRenderNode* pRenderNode) = 0;
+protected:
+	virtual ~IRenderNodeStatusListener() {}
+};
+
 #pragma pack(push, 16)
 
 //     Light volumes data
@@ -1271,6 +1283,11 @@ struct SLightVolume
 };
 
 #pragma pack(pop)
+
+struct I3DEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(I3DEngineModule, 0x31BD20FF13474F02, 0xB923C3F83BA73D84);
+};
 
 //! Interface to the 3d Engine.
 struct I3DEngine : public IProcess
@@ -1504,9 +1521,8 @@ struct I3DEngine : public IProcess
 
 	//! Gets ocean animation parameters.
 	//! \return 2 Vec4s which constain:
-	//!         0: x = ocean wind direction, y = wind speed, z = waves speed, w = waves amount
+	//!         0: x = ocean wind direction, y = wind speed, z = free, w = waves amount
 	//!         1: x = waves size, y = free, z = free, w = free
-
 	virtual void GetOceanAnimationParams(Vec4& pParams0, Vec4& pParams1) const = 0;
 
 	//! Gets HDR setup parameters.
@@ -1828,6 +1844,7 @@ struct I3DEngine : public IProcess
 	//! \param bActivate Set to true in order to enable the portal, or to false to disable
 	//! \param szEntityName
 	virtual void ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName) = 0;
+	virtual void ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate) = 0;
 
 	//! \internal
 	//! Counts memory usage
@@ -2093,11 +2110,11 @@ struct I3DEngine : public IProcess
 	//! Loads statobj from a stream
 	virtual IStatObj* LoadStatObj(TSerialize ser) = 0;
 
-	//! \return true if input line segment intersect clouds sprites.
-	virtual bool CheckIntersectClouds(const Vec3& p1, const Vec3& p2) = 0;
-
 	//! Removes references to RenderMesh
 	virtual void OnRenderMeshDeleted(IRenderMesh* pRenderMesh) = 0;
+
+	//! Removes references to IEntity
+	virtual void OnEntityDeleted(struct IEntity* pEntity) = 0;
 
 	//! Used to highlight an object under the reticule.
 	virtual void DebugDraw_UpdateDebugNode() = 0;
@@ -2120,12 +2137,9 @@ struct I3DEngine : public IProcess
 	//! \param pObjects 0 if only the count is required
 	//! \return Count returned.
 	virtual uint32 GetObjectsByType(EERType objType, IRenderNode** pObjects = 0) = 0;
-	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects = 0) = 0;
+	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects = 0, uint64 dwFlags = ~0) = 0;
 	virtual uint32 GetObjectsInBox(const AABB& bbox, IRenderNode** pObjects = 0) = 0;
 	virtual uint32 GetObjectsByFlags(uint dwFlag, IRenderNode** pObjects = 0) = 0;
-
-	//! Variant which takes a POD array which is resized in the function itself.
-	virtual void GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects) = 0;
 
 	//! Called from editor whenever an object is modified by the user.
 	virtual void        OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags) = 0;
@@ -2154,6 +2168,10 @@ struct I3DEngine : public IProcess
 
 	//! Set Callback for Editor to store additional information in Minimap tool.
 	virtual void SetScreenshotCallback(IScreenshotCallback* pCallback) = 0;
+
+	//! Register or unregister a call back for render node status updates
+	virtual void RegisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType) = 0;
+	virtual void UnregisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType) = 0;
 
 	//! Show/Hide objects by layer (useful for streaming and performance).
 	virtual void ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, bool bObjects, bool bStaticLights, const char* pLayerName, IGeneralMemoryHeap* pHeap = NULL, bool bCheckLayerActivation = true) = 0;
@@ -2233,25 +2251,25 @@ struct I3DEngine : public IProcess
 		}
 
 		// SVO data pools
-		ITexture* pTexTree;
-		ITexture* pTexOpac;
+		_smart_ptr<ITexture> pTexTree;
+		_smart_ptr<ITexture> pTexOpac;
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-		ITexture* pTexTris;
-		ITexture* pTexRgb0;
-		ITexture* pTexRgb1;
-		ITexture* pTexDynl;
-		ITexture* pTexRgb2;
-		ITexture* pTexRgb3;
-		ITexture* pTexRgb4;
-		ITexture* pTexNorm;
-		ITexture* pTexAldi;
+		_smart_ptr<ITexture> pTexTris;
+		_smart_ptr<ITexture> pTexRgb0;
+		_smart_ptr<ITexture> pTexRgb1;
+		_smart_ptr<ITexture> pTexDynl;
+		_smart_ptr<ITexture> pTexRgb2;
+		_smart_ptr<ITexture> pTexRgb3;
+		_smart_ptr<ITexture> pTexRgb4;
+		_smart_ptr<ITexture> pTexNorm;
+		_smart_ptr<ITexture> pTexAldi;
 
 		// mesh tracing data atlases
-		ITexture* pTexTriA;
-		ITexture* pTexTexA;
-		ITexture* pTexIndA;
+		_smart_ptr<ITexture> pTexTriA;
+		_smart_ptr<ITexture> pTexTexA;
+		_smart_ptr<ITexture> pTexIndA;
 
-		ITexture* pGlobalSpecCM;
+		_smart_ptr<ITexture> pGlobalSpecCM;
 	#endif
 
 		float  fGlobalSpecCM_Mult;
@@ -2485,6 +2503,7 @@ struct SRenderingPassInfo
 	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false);
 	static SRenderingPassInfo CreateRecursivePassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_RECURSIVE_FLAGS);
 	static SRenderingPassInfo CreateShadowPassRenderingInfo(CRenderView* pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
+	static SRenderingPassInfo CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS);
 	static SRenderingPassInfo CreateTempRenderingInfo(const CCamera& rCamera, const SRenderingPassInfo& rPassInfo);
 	static SRenderingPassInfo CreateTempRenderingInfo(uint32 nRenderingFlags, const SRenderingPassInfo& rPassInfo);
 
@@ -2926,6 +2945,23 @@ inline void SRenderingPassInfo::SetRenderView(CRenderView* pRenderView)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+inline SRenderingPassInfo SRenderingPassInfo::CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags)
+{
+	const CCamera& rCameraToSet = rCamera;
+
+	SRenderingPassInfo passInfo;
+	passInfo.SetCamera(rCameraToSet);
+	passInfo.InitRenderingFlags(nRenderingFlags);
+	passInfo.m_bAuxWindow = false;
+
+	passInfo.m_renderItemSorter.nValue = 0;
+
+	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_BillboardGen));
+
+	return passInfo;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow)
 {
 	static ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
@@ -2960,7 +2996,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(con
 
 	passInfo.m_renderItemSorter.nValue = 0;
 
-	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), false));
+	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_Default));
 
 	return passInfo;
 }
@@ -2979,7 +3015,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateRecursivePassRenderingInfo(c
 
 	passInfo.InitRenderingFlags(nRenderingFlags);
 
-	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), true));
+	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_Recursive));
 
 	passInfo.m_renderItemSorter.nValue = SRendItemSorter::eRecursivePassMask;
 

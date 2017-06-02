@@ -3,13 +3,13 @@
 #pragma once
 
 #include <CrySerialization/Forward.h>
-#include <yasli/Serializer.h>
-#include <yasli/KeyValue.h>
+#include <CrySerialization/yasli/Serializer.h>
+#include <CrySerialization/yasli/KeyValue.h>
 
 #if defined(__GNUC__)
 // Reinforce GCC's linker to properly export missing symbols (yasli::Serialize etc.)
 // into CrySystem library:
-	#include <yasli/ClassFactory.h>
+	#include <CrySerialization/yasli/ClassFactory.h>
 #endif
 
 namespace Serialization

@@ -198,8 +198,14 @@ void CComputeSkinningStage::Prepare(CRenderView* pRenderView)
 
 void CComputeSkinningStage::Execute(CRenderView* pRenderView)
 {
-	if (pRenderView->IsRecursive())
+	int32 CurrentFrameID = gcpRendD3D.GetFrameID(false);
+
+	if (CurrentFrameID == m_oldFrameIdExecute)
+	{
 		return;
+	}
+
+	m_oldFrameIdExecute = CurrentFrameID;
 
 	PROFILE_LABEL_SCOPE("CHARACTER_DEFORMATION");
 

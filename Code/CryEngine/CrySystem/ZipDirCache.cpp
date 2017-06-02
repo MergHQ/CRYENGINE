@@ -128,9 +128,11 @@ ZipDir::FileEntry* ZipDir::Cache::FindFile(const char* szPath, bool bRefresh)
 	ZipDir::FindFile fd(this);
 	if (!fd.FindExact(szPath))
 	{
+		// cppcheck-suppress assertWithSideEffect
 		assert(!fd.GetFileEntry());
 		return NULL;
 	}
+	// cppcheck-suppress assertWithSideEffect
 	assert(fd.GetFileEntry());
 	return fd.GetFileEntry();
 

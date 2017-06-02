@@ -347,7 +347,7 @@ unsigned long GetCPUFeatureSet()
 		if (CPUInfo[2] & (1 << 29))
 			features |= CPUF_FP16;
 	}
-	if (nIds >= 7 )
+	if (nIds >= 7)
 	{
 		__cpuid(CPUInfo, 0x00000007);
 		if (CPUInfo[1] & (1 << 5))
@@ -1508,6 +1508,8 @@ void CCpuFeatures::Detect(void)
 		}
 		m_NumLogicalProcessors = m_NumAvailProcessors = nCpu + 1;
 		m_NumSystemProcessors = nCores;
+
+		fclose(cpu_info);
 	}
 
 #elif CRY_PLATFORM_APPLE

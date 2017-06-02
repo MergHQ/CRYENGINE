@@ -105,8 +105,6 @@ History:
 #include "Melee.h"
 #include "FireMode.h"
 
-#include "AI/GameAIEnv.h"
-
 #include "ActorImpulseHandler.h"
 #include "EquipmentLoadout.h"
 
@@ -143,6 +141,8 @@ History:
 
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
+
+#include <IPerceptionManager.h>
 
 DEFINE_STATE_MACHINE( CPlayer, Movement ); 
 
@@ -531,11 +531,11 @@ CPlayer::CPlayer()
 , m_isInWater(false)
 , m_isHeadUnderWater(false)
 , m_fOxygenLevel(1.0f)
-, m_waterEnter(INVALID_AUDIO_CONTROL_ID)
-, m_waterExit(INVALID_AUDIO_CONTROL_ID)
-, m_waterDiveIn(INVALID_AUDIO_CONTROL_ID)
-, m_waterDiveOut(INVALID_AUDIO_CONTROL_ID)
-, m_waterInOutSpeed(INVALID_AUDIO_CONTROL_ID)
+, m_waterEnter(CryAudio::InvalidControlId)
+, m_waterExit(CryAudio::InvalidControlId)
+, m_waterDiveIn(CryAudio::InvalidControlId)
+, m_waterDiveOut(CryAudio::InvalidControlId)
+, m_waterInOutSpeed(CryAudio::InvalidControlId)
 {
 	m_pPlayerRotation = new CPlayerRotation(*this);
 	CRY_ASSERT( m_pPlayerRotation );
@@ -662,11 +662,11 @@ CPlayer::CPlayer()
 
 	CALL_PLAYER_EVENT_LISTENERS(OnToggleThirdPerson(this,m_stats.isThirdPerson));
 
-	gEnv->pAudioSystem->GetAudioTriggerId("water_enter", m_waterEnter);
-	gEnv->pAudioSystem->GetAudioTriggerId("water_exit", m_waterExit);
-	gEnv->pAudioSystem->GetAudioTriggerId("water_dive_in", m_waterDiveIn);
-	gEnv->pAudioSystem->GetAudioTriggerId("water_dive_out", m_waterDiveOut);
-	gEnv->pAudioSystem->GetAudioRtpcId("water_in_out_speed", m_waterInOutSpeed);
+	gEnv->pAudioSystem->GetTriggerId("water_enter", m_waterEnter);
+	gEnv->pAudioSystem->GetTriggerId("water_exit", m_waterExit);
+	gEnv->pAudioSystem->GetTriggerId("water_dive_in", m_waterDiveIn);
+	gEnv->pAudioSystem->GetTriggerId("water_dive_out", m_waterDiveOut);
+	gEnv->pAudioSystem->GetParameterId("water_in_out_speed", m_waterInOutSpeed);
 }
 
 CPlayer::~CPlayer()
@@ -1137,21 +1137,10 @@ void CPlayer::InitLocalPlayer()
 		m_pIEntityAudioComponent = GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 		//m_pIEntityAudioComponent->SetFlags(m_pIEntityAudioComponent->GetFlags()|IEntityAudioComponent::FLAG_DELEGATE_SOUND_ANIM_EVENTS);
 
-		if (m_pIEntityAudioComponent != NULL)
+		if (m_pIEntityAudioComponent != nullptr)
 		{
-			AudioControlId nObjectSpeedSwitchID = INVALID_AUDIO_CONTROL_ID;
-			AudioSwitchStateId nObjectSpeedTrackingOnStateID = INVALID_AUDIO_SWITCH_STATE_ID;
-
-			gEnv->pAudioSystem->GetAudioSwitchId("object_velocity_tracking", nObjectSpeedSwitchID);
-			if (nObjectSpeedSwitchID != INVALID_AUDIO_CONTROL_ID)
-			{
-				gEnv->pAudioSystem->GetAudioSwitchStateId(nObjectSpeedSwitchID, "on", nObjectSpeedTrackingOnStateID);
-				if(nObjectSpeedTrackingOnStateID != INVALID_AUDIO_SWITCH_STATE_ID)
-				{
-					// This enables automatic updates of the object_speed ATLRtpc on the Player Character.
-					m_pIEntityAudioComponent->SetSwitchState(nObjectSpeedSwitchID, nObjectSpeedTrackingOnStateID);
-				}
-			}
+			// This enables automatic updates of the "absolute_velocity" audio parameter on the Player Character.
+			m_pIEntityAudioComponent->SetSwitchState(CryAudio::AbsoluteVelocityTrackingSwitchId, CryAudio::OnStateId);
 		}
 
 		m_netPlayerProgression.OwnClientConnected();
@@ -1523,6 +1512,23 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			}
 		}
 		break;
+	case ENTITY_EVENT_SET_AUTHORITY:
+		{
+			const bool auth = event.nParam[0] ? true : false;
+			// we've been given authority of this entity, mark the physics as changed
+			// so that we send a current position, failure to do this can result in server/client
+			// disagreeing on where the entity is. most likely to happen on restart
+			if (auth)
+			{
+				CHANGED_NETWORK_STATE(this, eEA_Physics | ASPECT_RANK_CLIENT);
+
+				if (g_pGame->IsGameSessionHostMigrating())
+				{
+					// If we're migrating, we've probably set our selected item before we were allowed to, resend it here
+					CHANGED_NETWORK_STATE(this, ASPECT_CURRENT_ITEM);
+				}
+			}
+		}
 	}
 }
 
@@ -2309,7 +2315,11 @@ void CPlayer::SetIK( const SActorFrameMovementParams& frameMovementParams )
 	{
 		if (IsThirdPerson()) 
 		{
-			const Vec3 cameraPosition = GetViewMatrix().GetTranslation();
+			Vec3 cameraPosition;
+			if (IsClient())
+				cameraPosition = GetViewMatrix().GetTranslation();
+			else
+				cameraPosition = curMovementState.eyePosition;
 
 			const Vec3 down = Vec3(0, 0, -1);
 			const float dotProd = curMovementState.aimDirection.dot(down);
@@ -4686,23 +4696,6 @@ void CPlayer::UpdateHealthRegeneration(float fHealth, float frameTime)
 	}
 }
 
-void CPlayer::SetAuthority( bool auth )
-{
-	// we've been given authority of this entity, mark the physics as changed
-	// so that we send a current position, failure to do this can result in server/client
-	// disagreeing on where the entity is. most likely to happen on restart
-	if(auth)
-	{
-		CHANGED_NETWORK_STATE(this, eEA_Physics|ASPECT_RANK_CLIENT);
-
-		if (g_pGame->IsGameSessionHostMigrating())
-		{
-			// If we're migrating, we've probably set our selected item before we were allowed to, resend it here
-			CHANGED_NETWORK_STATE(this, ASPECT_CURRENT_ITEM);
-		}
-	}
-}
-
 //------------------------------------------------------------------------
 
 void CPlayer::SetAngles(const Ang3 &angles) 
@@ -6471,7 +6464,7 @@ bool CPlayer::MustBreakGlass() const
 //////////////////////////////////////////////////////////////////////////
 void CPlayer::ExecuteFootStepsAIStimulus(const float relativeSpeed, const float noiseSupression)
 {
-	if (gEnv->pAISystem)
+	if (IPerceptionManager::GetInstance())
 	{
 		//handle AI sound recognition *************************************************
 		float fStandingRadius = g_pGameCVars->ai_perception.movement_standingRadiusDefault;
@@ -6515,7 +6508,7 @@ void CPlayer::ExecuteFootStepsAIStimulus(const float relativeSpeed, const float 
 			{
 				SAIStimulus stim(AISTIM_SOUND, AISOUND_MOVEMENT, GetEntityId(), 0,
 					GetEntity()->GetWorldPos() + GetEyeOffset(), ZERO, fFootstepRadius);
-				gEnv->pAISystem->RegisterStimulus(stim);
+				IPerceptionManager::GetInstance()->RegisterStimulus(stim);
 			}
 		}
 	}
@@ -7031,11 +7024,11 @@ void CPlayer::PlaySound(EPlayerSounds soundID, bool play, const char* paramName,
 		case CPlayer::ESound_DiveIn:
 			if (m_pIEntityAudioComponent)
 			{
-				if (m_waterDiveIn != INVALID_AUDIO_CONTROL_ID)
+				if (m_waterDiveIn != CryAudio::InvalidControlId)
 				{
-					if (m_waterInOutSpeed != INVALID_AUDIO_CONTROL_ID)
+					if (m_waterInOutSpeed != CryAudio::InvalidControlId)
 					{
-						m_pIEntityAudioComponent->SetRtpcValue(m_waterInOutSpeed, paramValue);
+						m_pIEntityAudioComponent->SetParameter(m_waterInOutSpeed, paramValue);
 					}
 
 					m_pIEntityAudioComponent->ExecuteTrigger(m_waterDiveIn);
@@ -7045,11 +7038,11 @@ void CPlayer::PlaySound(EPlayerSounds soundID, bool play, const char* paramName,
 		case CPlayer::ESound_DiveOut:
 			if (m_pIEntityAudioComponent)
 			{
-				if (m_waterDiveOut != INVALID_AUDIO_CONTROL_ID)
+				if (m_waterDiveOut != CryAudio::InvalidControlId)
 				{
-					if (m_waterInOutSpeed != INVALID_AUDIO_CONTROL_ID)
+					if (m_waterInOutSpeed != CryAudio::InvalidControlId)
 					{
-						m_pIEntityAudioComponent->SetRtpcValue(m_waterInOutSpeed, paramValue);
+						m_pIEntityAudioComponent->SetParameter(m_waterInOutSpeed, paramValue);
 					}
 
 					m_pIEntityAudioComponent->ExecuteTrigger(m_waterDiveOut);
@@ -7057,13 +7050,13 @@ void CPlayer::PlaySound(EPlayerSounds soundID, bool play, const char* paramName,
 			}
 			break;
 		case CPlayer::ESound_WaterEnter:
-			if (m_pIEntityAudioComponent && m_waterEnter != INVALID_AUDIO_CONTROL_ID)
+			if (m_pIEntityAudioComponent && m_waterEnter != CryAudio::InvalidControlId)
 			{
 				m_pIEntityAudioComponent->ExecuteTrigger(m_waterEnter);
 			}
 			break;
 		case CPlayer::ESound_WaterExit:
-			if (m_pIEntityAudioComponent && m_waterExit != INVALID_AUDIO_CONTROL_ID)
+			if (m_pIEntityAudioComponent && m_waterExit != CryAudio::InvalidControlId)
 			{
 				m_pIEntityAudioComponent->ExecuteTrigger(m_waterExit);
 			}
@@ -7416,7 +7409,7 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 			//Only client ones (the rest are processed in AudioProxy)
 			if (isClient && m_pIEntityAudioComponent)
 			{
-				AudioProxyId nAudioProxyID = INVALID_AUDIO_PROXY_ID;
+				CryAudio::AuxObjectId auxObjectId = CryAudio::InvalidAuxObjectId;
 
 				if (event.m_BonePathName && event.m_BonePathName[0] && pCharacter)
 				{
@@ -7425,22 +7418,22 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 					int nJointID = rIDefaultSkeleton.GetJointIDByName(event.m_BonePathName);
 					if (nJointID >= 0)
 					{
-						nAudioProxyID = stl::find_in_map(m_cJointAudioProxies, nJointID, INVALID_AUDIO_PROXY_ID);
-						if (nAudioProxyID == INVALID_AUDIO_PROXY_ID)
+						auxObjectId = stl::find_in_map(m_cJointAudioProxies, nJointID, CryAudio::InvalidAuxObjectId);
+						if (auxObjectId == CryAudio::InvalidAuxObjectId)
 						{
-							nAudioProxyID = m_pIEntityAudioComponent->CreateAuxAudioProxy();
-							m_cJointAudioProxies[nJointID] = nAudioProxyID;
+							auxObjectId = m_pIEntityAudioComponent->CreateAudioAuxObject();
+							m_cJointAudioProxies[nJointID] = auxObjectId;
 						}
 
-						m_pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), nAudioProxyID);
+						m_pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), auxObjectId);
 					}
 				}
-				AudioControlId nTriggerID = INVALID_AUDIO_CONTROL_ID;
-				gEnv->pAudioSystem->GetAudioTriggerId(event.m_CustomParameter, nTriggerID);
+				CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
+				gEnv->pAudioSystem->GetTriggerId(event.m_CustomParameter, triggerId);
 
-				if (nTriggerID != INVALID_AUDIO_CONTROL_ID)
+				if (triggerId != CryAudio::InvalidControlId)
 				{
-					m_pIEntityAudioComponent->ExecuteTrigger(nTriggerID, nAudioProxyID);
+					m_pIEntityAudioComponent->ExecuteTrigger(triggerId, auxObjectId);
 				}
 
 				REINST("needs verification!");
@@ -9203,19 +9196,19 @@ void SNetPlayerProgression::SyncOnLocalPlayer(const bool serialized/* = true*/)
 		bool  changeNetState = false;
 
 		newVal = pp->GetData(EPP_XP);
-		newVal = MIN(newVal, 0xffff);
+		newVal = std::min((int)newVal, (int)0xffff);
 		if (serialized && (m_serVals.xp != newVal))
 			changeNetState = true;
 		m_serVals.xp = newVal;
 
 		newVal = pp->GetData(EPP_Rank);
-		newVal = MIN(newVal, 0xff);
+		newVal = std::min((int)newVal, (int)0xff);
 		if (serialized && (m_serVals.rank != newVal))
 			changeNetState = true;
 		m_serVals.rank = newVal;
 
 		newVal = pp->GetData(EPP_Reincarnate);
-		newVal = MIN(newVal, 0xff);
+		newVal = std::min((int)newVal, (int)0xff);
 		if (serialized && (m_serVals.reincarnations != newVal))
 			changeNetState = true;
 		m_serVals.reincarnations = newVal;

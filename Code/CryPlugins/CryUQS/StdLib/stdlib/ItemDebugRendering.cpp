@@ -5,12 +5,12 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace uqs
+namespace UQS
 {
-	namespace stdlib
+	namespace StdLib
 	{
 
-		void EntityId_AddToDebugRenderWorld(const EntityIdWrapper& item, core::IDebugRenderWorld& debugRW)
+		void EntityId_AddToDebugRenderWorld(const EntityIdWrapper& item, Core::IDebugRenderWorldPersistent& debugRW)
 		{
 			if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(item.value))
 			{
@@ -38,6 +38,11 @@ namespace uqs
 				static_assert(std::is_same<unsigned int, EntityId>::value, "Update printf format for entity id");
 				debugRW.AddText(top, 1.5f, Col_BlueViolet, "%u: %s", item.value, pEntity->GetName());
 			}
+		}
+
+		void Pos3_AddToDebugRenderWorld(const Pos3& item, Core::IDebugRenderWorldPersistent& debugRW)
+		{
+			debugRW.AddSphere(item.value, 0.2f, Col_White);
 		}
 
 	}

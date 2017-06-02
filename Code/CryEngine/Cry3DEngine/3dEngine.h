@@ -19,6 +19,7 @@
 #endif
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
+#include <CryCore/Containers/CryListenerSet.h>
 #include "VisibleRenderNodeManager.h"
 #include "LightVolumeManager.h"
 
@@ -514,6 +515,7 @@ public:
 	virtual bool                      SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup, int nSID);
 	virtual bool                      GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup, int nSID);
 	virtual void                      ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName);
+	virtual void                      ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate);
 	virtual void                      GetMemoryUsage(ICrySizer* pSizer) const;
 	virtual void                      GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
 	virtual IVisArea*                 CreateVisArea(uint64 visGUID);
@@ -528,11 +530,13 @@ public:
 	virtual void                      DeleteRenderNode(IRenderNode* pRenderNode);
 	virtual void                      SetWind(const Vec3& vWind);
 	virtual Vec3                      GetWind(const AABB& box, bool bIndoors) const;
+	virtual void                      AddForcedWindArea(const Vec3& vPos, float fAmountOfForce, float fRadius);
 
 	void                              StartWindGridJob(const Vec3& vPos);
 	void                              FinishWindGridJob();
 	void                              UpdateWindGridJobEntry(Vec3 vPos);
 	void                              UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoorWindArea& windArea, const AABB& windBox);
+	void                              RasterWindAreas(std::vector<SOptimizedOutdoorWindArea> *pWindAreas, const Vec3& vGlobalWind);
 
 	virtual Vec3                      GetGlobalWind(bool bIndoors) const;
 	virtual bool                      SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
@@ -612,9 +616,8 @@ public:
 	int            GetShadowsCascadeCount(const CDLight* pLight) const;
 
 	virtual uint32 GetObjectsByType(EERType objType, IRenderNode** pObjects);
-	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects);
+	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects, uint64 dwFlags = ~0);
 	virtual uint32 GetObjectsInBox(const AABB& bbox, IRenderNode** pObjects = 0);
-	virtual void   GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects);
 	virtual uint32 GetObjectsByFlags(uint dwFlags, IRenderNode** pObjects = 0);
 	virtual void   OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags);
 
@@ -844,6 +847,7 @@ public:
 	float                 m_skyboxMultiplier;
 	float                 m_dayNightIndicator;
 	bool                  m_bHeightMapAoEnabled;
+	bool                  m_bIntegrateObjectsIntoTerrain;
 
 	Vec3                  m_fogColor2;
 	Vec3                  m_fogColorRadial;
@@ -866,7 +870,6 @@ public:
 
 	float                 m_oceanWindDirection;
 	float                 m_oceanWindSpeed;
-	float                 m_oceanWavesSpeed;
 	float                 m_oceanWavesAmount;
 	float                 m_oceanWavesSize;
 
@@ -940,6 +943,7 @@ private:
 	void  LoadTimeOfDaySettingsFromXML(XmlNodeRef node);
 	char* GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, const char* szDefaultValue);
 	char* GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, const char* szLevel3, const char* szDefaultValue);
+	bool  GetXMLAttribBool(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, bool bDefaultValue);
 
 	// without calling high level functions like panorama screenshot
 	void RenderInternal(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName);
@@ -966,7 +970,7 @@ private:
 	void UpdateMoonDirection();
 
 	// Copy objects from tree
-	void CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plistObjects);
+	void CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plistObjects, uint64 dwFlags = ~0);
 	void CopyObjects(const AABB* pBox, PodArray<IRenderNode*>* plistObjects);
 
 	void CleanUpOldDecals();
@@ -1095,10 +1099,9 @@ public:
 	virtual int                      SaveStatObj(IStatObj* pStatObj, TSerialize ser);
 	virtual IStatObj*                LoadStatObj(TSerialize ser);
 
-	virtual bool                     CheckIntersectClouds(const Vec3& p1, const Vec3& p2);
 	virtual void                     OnRenderMeshDeleted(IRenderMesh* pRenderMesh);
 	virtual bool                     RenderMeshRayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo& hitInfo, IMaterial* pCustomMtl = 0);
-
+	virtual void                     OnEntityDeleted(struct IEntity* pEntity);
 	virtual const char*              GetVoxelEditOperationName(EVoxelEditOperation eOperation);
 
 	virtual void                     SetGetLayerIdAtCallback(IGetLayerIdAtCallback* pCallBack) { m_pGetLayerIdAtCallback = pCallBack; }
@@ -1168,6 +1171,9 @@ public:
 	virtual void                          SyncProcessStreamingUpdate();
 
 	virtual void                          SetScreenshotCallback(IScreenshotCallback* pCallback);
+
+	virtual void                          RegisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType);
+	virtual void                          UnregisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType);
 
 	virtual IDeferredPhysicsEventManager* GetDeferredPhysicsEventManager() { return m_pDeferredPhysicsEventManager; }
 
@@ -1298,6 +1304,11 @@ private:
 	std::map<string, SImageSubInfo*>       m_imageInfos;
 	byte**         AllocateMips(byte* pImage, int nDim, byte** pImageMips);
 	IScreenshotCallback*                   m_pScreenshotCallback;
+
+	typedef CListenerSet<IRenderNodeStatusListener*> TRenderNodeStatusListeners;
+	typedef std::vector<TRenderNodeStatusListeners> TRenderNodeStatusListenersArray;
+	TRenderNodeStatusListenersArray        m_renderNodeStatusListenersArray;
+
 	OcclusionTestClient                    m_OceanOcclTestVar;
 
 	IDeferredPhysicsEventManager*          m_pDeferredPhysicsEventManager;
@@ -1311,6 +1322,7 @@ private:
 	int                                    m_nCurrentWindAreaList;
 	std::vector<SOptimizedOutdoorWindArea> m_outdoorWindAreas[2];
 	std::vector<SOptimizedOutdoorWindArea> m_indoorWindAreas[2];
+	std::vector<SOptimizedOutdoorWindArea> m_forcedWindAreas;
 
 	CLightVolumesMgr                       m_LightVolumesMgr;
 

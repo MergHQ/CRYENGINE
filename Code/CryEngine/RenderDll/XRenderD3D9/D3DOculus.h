@@ -72,7 +72,7 @@ private:
 
 	static RenderLayer::EQuadLayers CalculateQuadLayerId(ESwapChainArray swapChainIndex);
 
-	#if defined(CRY_USE_DX12) && defined(CRY_USE_DX12_MULTIADAPTER)
+	#if (CRY_RENDERER_DIRECT3D >= 120) && defined(DX12_LINKEDADAPTER)
 	void                            CopyMultiGPUFrameData();
 	void CopyMultiGPUMirrorData(CTexture* pBackbufferTexture);
 	#endif

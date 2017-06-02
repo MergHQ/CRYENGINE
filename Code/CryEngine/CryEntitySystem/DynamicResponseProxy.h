@@ -26,8 +26,6 @@ public:
 	virtual void         ProcessEvent(SEntityEvent& event) override;
 	virtual uint64       GetEventMask() const override;
 	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_DYNAMICRESPONSE; }
-	virtual bool         NeedGameSerialize() override;
-	virtual void         GameSerialize(TSerialize ser) override;
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));
@@ -37,6 +35,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityDynamicResponseComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
+	virtual void ReInit(const char* szName = nullptr, const char* szGlobalVariableCollectionToUse = nullptr) override;
 	virtual DRS::IVariableCollection* GetLocalVariableCollection() const override;
 	virtual DRS::IResponseActor*      GetResponseActor() const override;
 	//////////////////////////////////////////////////////////////////////////

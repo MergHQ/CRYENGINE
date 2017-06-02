@@ -19,6 +19,7 @@ SERIALIZATION_ENUM_DECLARE(ETimeSource, ,
                            Attribute,
                            LevelTime,
                            ViewAngle,
+	                       CameraDistance,
                            Random,
 
                            // old version

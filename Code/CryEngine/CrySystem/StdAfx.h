@@ -54,6 +54,7 @@
 /////////////////////////////////////////////////////////////////////////////
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Camera.h>
+#include <CryMath/Random.h>
 #include <CryCore/smartptr.h>
 #include <CryMath/Range.h>
 #include <CryMemory/CrySizer.h>
@@ -105,7 +106,6 @@ struct ICryPak;
 struct ICryFont;
 struct I3DEngine;
 struct IMovieSystem;
-struct IAudioSystem;
 struct IPhysicalWorld;
 
 /////////////////////////////////////////////////////////////////////////////

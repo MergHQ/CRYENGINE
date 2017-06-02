@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include "Expected.h"
 #include "Serialization.h"
 #include "DisplayParametersPanel.h"

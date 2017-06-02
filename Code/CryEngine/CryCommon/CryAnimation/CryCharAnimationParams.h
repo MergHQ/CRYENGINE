@@ -18,7 +18,7 @@
 // #define USE_PROTOTYPE_ABS_BLENDING (1)
 
 //! The flags used in the nFlags member.
-enum CA_AssetFlags
+enum CA_AssetFlags : uint32
 {
 	//! This flags in used in RC as well
 	//! If this is true, then this asset is an additive animation.

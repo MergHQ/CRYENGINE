@@ -7,58 +7,12 @@
 #include <CryCore/Platform/platform.h>
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
-
-#include <SoundAllocator.h>
-
-#if !defined(_RELEASE)
-// Define this to enable logging via CAudioLogger.
-// We disable logging for Release builds
-	#define ENABLE_AUDIO_LOGGING
-#endif // _RELEASE
-
+#include <CrySystem/ISystem.h>
 #include <AudioLogger.h>
 
-extern CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
-extern CAudioLogger g_audioImplLogger;
-
-#define AUDIO_ALLOCATOR_MEMORY_POOL g_audioImplMemoryPool
-#include <STLSoundAllocator.h>
+extern CryAudio::CLogger g_implLogger;
 
 #if !defined(_RELEASE)
 	#define INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-#endif
-
-// Windows (32 or 64)
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS
-#endif
-
-// Windows32
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-#endif
-
-// Windows64
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-#endif
-
-// Mac
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_MAC
-#endif
-
-// Android
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_ANDROID
-#endif
-
-// iOS
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_IOS
-#endif
-
-// Linux
-//////////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_LINUX
+	#define ENABLE_AUDIO_LOGGING
 #endif

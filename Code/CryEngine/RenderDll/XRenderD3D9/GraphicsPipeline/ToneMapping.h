@@ -10,10 +10,10 @@ class CToneMappingStage : public CGraphicsPipelineStage
 public:
 	void Init();
 	void Execute();
+	void ExecuteFixedExposure();
 
 private:
-	CFullscreenPass m_passToneMapping;
-
-	int             m_samplerPoint;
-	int             m_samplerLinear;
+	_smart_ptr<CTexture> m_pColorChartTex;
+	CFullscreenPass      m_passToneMapping;
+	CFullscreenPass      m_passFixedExposureToneMapping;
 };

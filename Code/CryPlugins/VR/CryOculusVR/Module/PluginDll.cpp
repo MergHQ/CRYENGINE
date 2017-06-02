@@ -42,7 +42,7 @@ CPlugin_OculusVR::~CPlugin_OculusVR()
 
 bool CPlugin_OculusVR::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 {
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CPlugin_OculusVR");
 
 	REGISTER_CVAR2("hmd_low_persistence", &s_hmd_low_persistence, s_hmd_low_persistence,
 		VF_NULL, "Enables low persistence mode.");

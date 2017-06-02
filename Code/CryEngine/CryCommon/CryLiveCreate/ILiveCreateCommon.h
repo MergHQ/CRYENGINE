@@ -3,6 +3,8 @@
 #ifndef _H_ILIVECREATECOMMON_H_
 #define _H_ILIVECREATECOMMON_H_
 
+#include <CrySystem/IEngineModule.h>
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
@@ -14,6 +16,11 @@
 		#define LIVECREATE_FOR_PC
 	#endif
 #endif
+
+struct ILiveCreateEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(ILiveCreateEngineModule, 0xB93B314C06B24660, 0xADF0C6A1CB3EAF26);
+};
 
 namespace LiveCreate
 {

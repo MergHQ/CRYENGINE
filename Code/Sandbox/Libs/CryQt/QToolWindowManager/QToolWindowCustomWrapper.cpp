@@ -22,6 +22,7 @@
 #include <windowsx.h>
 #include <dwmapi.h>
 
+
 #ifdef UNICODE
 #define _UNICODE
 #endif
@@ -188,14 +189,6 @@ bool QToolWindowCustomWrapper::winEvent(MSG *msg, long *result)
 #endif
 }
 #endif
-
-QRect QToolWindowCustomWrapper::getWrapperFrameSize()
-{
-	QRect wrapperSize;
-	wrapperSize.setTopLeft(-(m_contents->mapToGlobal(QPoint(0, 0)) - mapToGlobal(QPoint(0, 0))));
-	wrapperSize.setBottomRight(rect().bottomRight() - m_contents->rect().bottomRight() + wrapperSize.topLeft());
-	return wrapperSize;
-}
 
 void QToolWindowCustomWrapper::startDrag()
 {

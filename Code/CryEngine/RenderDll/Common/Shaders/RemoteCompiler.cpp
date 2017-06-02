@@ -142,6 +142,8 @@ const char* CShaderSrv::GetPlatform() const
 		szTarget = "GL4";
 	else if (CParserBin::m_nPlatform == SF_GLES3)
 		szTarget = "GLES3";
+	else if (CParserBin::m_nPlatform == SF_VULKAN)
+		szTarget = "VULKAN";
 
 	return szTarget;
 }

@@ -123,6 +123,9 @@ public:
 	{ return m_nEntitySlot; }
 	virtual IParticleAttributes& GetAttributes();
 
+	virtual void   SetOwnerEntity(IEntity* pEntity) final { m_pOwnerEntity = pEntity; }
+	virtual IEntity* GetOwnerEntity() const final         { return m_pOwnerEntity; }
+
 	//////////////////////////////////////////////////////////////////////////
 	// Other methods.
 	//////////////////////////////////////////////////////////////////////////
@@ -196,7 +199,6 @@ public:
 		}
 	}
 	void     RenderDebugInfo();
-	IEntity* GetEntity() const;
 	void     UpdateFromEntity();
 	bool     IsIndependent() const
 	{
@@ -238,9 +240,9 @@ public:
 #if CRY_PLATFORM_DESKTOP
 		if (gEnv->IsEditing())
 		{
-			if (IEntity* pEntity = GetEntity())
+			if (m_pOwnerEntity)
 			{
-				if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
+				if (IEntityRender* pIEntityRender = m_pOwnerEntity->GetRenderInterface())
 				{
 					if (IRenderNode* pRenderNode = pIEntityRender->GetRenderNode())
 						return (pRenderNode->GetRndFlags() & ERF_SELECTED) != 0;
@@ -317,7 +319,7 @@ private:
 
 	// Entity connection params.
 	int          m_nEntitySlot;
-
+	IEntity*     m_pOwnerEntity = 0;
 	uint32       m_nEmitterFlags;
 
 	SPhysEnviron m_PhysEnviron;                       // Common physical environment (uniform forces only) for emitter.

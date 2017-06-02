@@ -29,6 +29,7 @@ CParticleEffect::CParticleEffect()
 	, m_dirty(true)
 	, m_numRenderObjects(0)
 {
+	m_pAttributes = TAttributeTablePtr(new CAttributeTable);
 }
 
 cstr CParticleEffect::GetName() const
@@ -44,7 +45,7 @@ void CParticleEffect::Compile()
 		return;
 
 	m_numRenderObjects = 0;
-	m_attributeInstance.Reset(&m_attributes, EAttributeScope::PerEffect);
+	m_attributeInstance.Reset(m_pAttributes, EAttributeScope::PerEffect);
 	for (size_t i = 0; i < m_components.size(); ++i)
 	{
 		m_components[i]->m_pEffect = this;
@@ -107,6 +108,35 @@ uint CParticleEffect::GetNumRenderObjectIds() const
 	return m_numRenderObjects;
 }
 
+float CParticleEffect::GetEquilibriumTime() const
+{
+	float maxEqTime = 0.0f;
+	for (auto comp : m_components)
+	{
+		// Iterate top-level components
+		auto const& params = comp->GetComponentParams();
+		if (comp->IsEnabled() && !params.IsSecondGen() && params.IsImmortal())
+		{
+			float eqTime = comp->GetEquilibriumTime(Range(params.m_emitterLifeTime.start));
+			maxEqTime = max(maxEqTime, eqTime);
+		}
+	}
+	return maxEqTime;
+}
+
+int CParticleEffect::GetEditVersion() const
+{
+	int version = m_editVersion + m_components.size();
+	for (auto pComponent : m_components)
+	{
+		const SComponentParams& params = pComponent->GetComponentParams();
+		const CMatInfo* pMatInfo = (CMatInfo*)params.m_pMaterial.get();
+		if (pMatInfo)
+			version += pMatInfo->GetModificationId();
+	}
+	return version;
+}
+
 void CParticleEffect::SetName(cstr name)
 {
 	m_name = name;
@@ -121,7 +151,7 @@ void CParticleEffect::Serialize(Serialization::IArchive& ar)
 	SSerializationContext documentContext(documentVersion);
 	Serialization::SContext context(ar, &documentContext);
 
-	ar(m_attributes, "Attributes");
+	ar(*m_pAttributes, "Attributes");
 
 	if (ar.isInput() && documentVersion < 3)
 	{
@@ -184,7 +214,7 @@ void CParticleEffect::SetChanged()
 
 Serialization::SStruct CParticleEffect::GetEffectOptionsSerializer() const
 {
-	return Serialization::SStruct(m_attributes);
+	return Serialization::SStruct(*m_pAttributes);
 }
 
 const ParticleParams& CParticleEffect::GetDefaultParams() const

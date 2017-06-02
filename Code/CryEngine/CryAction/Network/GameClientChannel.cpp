@@ -208,9 +208,10 @@ void CGameClientChannel::OnDisconnect(EDisconnectionCause cause, const char* des
 	//CryLogAlways("CGameClientChannel::OnDisconnect(%d, %s)", cause, description?description:"");
 	CCryAction::GetCryAction()->OnActionEvent(SActionEvent(eAE_disconnected, int(cause), description));
 
-	IGameRules* pGameRules = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
-	if (pGameRules)
-		pGameRules->OnDisconnect(cause, description);
+	for (INetworkedClientListener* pListener : CCryAction::GetCryAction()->GetNetworkClientListeners())
+	{
+		pListener->OnLocalClientDisconnected(cause, description);
+	}
 
 	if (IInput* pInput = gEnv->pInput)
 	{
@@ -227,6 +228,7 @@ void CGameClientChannel::DefineProtocol(IProtocolBuilder* pBuilder)
 		cca->GetIGameObjectSystem()->DefineProtocol(false, pBuilder);
 	if (cca->GetGameContext())
 		cca->GetGameContext()->DefineContextProtocols(pBuilder, false);
+	cca->DefineProtocolRMI(pBuilder);
 }
 
 // message implementation
@@ -334,7 +336,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	IGameObjectSystem::SEntitySpawnParamsForGameObjectWithPreactivatedExtension userData;
 	userData.hookFunction = HookCreateActor;
 	userData.pUserData = &channelId;
-	userData.pSpawnSerializer = &ser;
 
 	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 	SEntitySpawnParams esp;
@@ -355,19 +356,27 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	if (IEntity* pEntity = pEntitySystem->SpawnEntity(esp, false))
 	{
 		const EntityId entityId = pEntity->GetId();
+
+		CCryAction::GetCryAction()->GetIGameObjectSystem()->SetSpawnSerializerForEntity(entityId, &ser);
 		if (!pEntitySystem->InitEntity(pEntity, esp))
 		{
+			CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
 			return false;
 		}
 
-		CGameObject* pGameObject = (CGameObject*)CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity(pEntity->GetId());
-		CRY_ASSERT(pGameObject);
 		if (param.bClientActor)
 		{
 			SetPlayerId(entityId);
 		}
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
-		pGameObject->PostRemoteSpawn();
+		CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
+
+		CGameObject* pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
+		if (pGameObject)
+		{
+			pGameObject->PostRemoteSpawn();
+		}
+
 		return true;
 	}
 
@@ -461,6 +470,9 @@ void CGameClientChannel::CallOnSetPlayerId()
 
 	if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(GetPlayerId()))
 		pActor->InitLocalPlayer();
+
+	SEntityEvent becomeLocalPlayer(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER);
+	pPlayer->SendEvent(becomeLocalPlayer);
 
 #ifndef OLD_VOICE_SYSTEM_DEPRECATED
 	if (m_pVoiceController)

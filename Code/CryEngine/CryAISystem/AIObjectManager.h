@@ -7,8 +7,9 @@
 	#pragma once
 #endif
 
-#include <CryAISystem/IAIObjectManager.h>
+#include "AIObject.h"
 
+#include <CryAISystem/IAIObjectManager.h>
 #include <CryMemory/PoolAllocator.h>
 
 typedef std::multimap<short, CCountedRef<CAIObject>> AIObjectOwners;

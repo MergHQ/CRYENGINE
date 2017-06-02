@@ -26,12 +26,16 @@ History:
 
 #include "FileUtil.h"
 #include "IRCLog.h"
+#include "IAssetManager.h"
 #include "IResCompiler.h"
 #include "StringHelpers.h"
 #include "UpToDateFileHelpers.h"
 #include "Util.h"
-#include "Metadata/MetadataHelpers.h"
 
+#include "Formats/DDS.h"
+#include "Formats/TIFF.h"
+#include "ImageObject.h"
+#include "ImageProperties.h"
 
 //#define DEBUG_DISABLE_TEXTURE_SPLITTING
 //#define DEBUG_FILE_SIZE_LIMIT 140000
@@ -90,6 +94,56 @@ namespace TextureHelper
 	}
 };
 
+class CTextureDecompressor : public ICompiler
+{
+public:
+	virtual void Release() override
+	{
+		
+	}
+
+	virtual void BeginProcessing(const IConfig* config) override
+	{
+
+	}
+
+	virtual void EndProcessing() override
+	{
+	
+	}
+
+	virtual IConvertContext* GetConvertContext() override
+	{
+		return &m_CC;
+	}
+
+	string GetOutputFileNameOnly() const
+	{
+		const string sourceFileFinal = m_CC.config->GetAsString("overwritefilename", m_CC.sourceFileNameOnly.c_str(), m_CC.sourceFileNameOnly.c_str());
+		return PathHelpers::ReplaceExtension(sourceFileFinal, "tif");
+	}
+
+	string GetOutputPath() const
+	{
+		return PathHelpers::Join(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
+	}
+
+	virtual bool Process() override
+	{
+		const string sInputFile = m_CC.GetSourcePath();
+		const string sDestFileName = PathHelpers::GetFilename(MakeFileName(PathHelpers::GetFilename(GetOutputPath()), 0, 0));
+		const string sFullDestFileName = PathHelpers::Join(m_CC.config->GetAsString("targetroot", m_CC.GetOutputFolder(), m_CC.GetOutputFolder()), sDestFileName);
+		string dummy;
+		std::unique_ptr<ImageObject> image(ImageDDS::LoadByUsingDDSLoader(sInputFile, nullptr, dummy));
+		CImageProperties props = CImageProperties();
+		props.SetPropsCC(&m_CC, true);
+		ImageTIFF::SaveByUsingTIFFSaver(sFullDestFileName, &props, image.get());
+		return true;
+	}
+private:
+	ConvertContext m_CC;
+
+};
 
 static void FindUnusedResources(std::vector<string>* filenames, const std::vector<string>& usedFilenames, const string& baseOutputPath, bool bCheckOnDisk)
 {
@@ -199,7 +253,8 @@ CTextureSplitter::CTextureSplitter( ) :
 		m_currentEndian(eLittleEndian),
 		m_targetType(eTT_None),
 		m_bTile(false),
-		m_attachedAlphaOffset(0)
+		m_attachedAlphaOffset(0),
+		m_compilerType(TextureSplitter)
 {
 }
 
@@ -677,7 +732,7 @@ bool CTextureSplitter::AddResourceToAdditionalList( const char* fileName, const 
 		return false;
 	}
 
-	if (!AssetManager::SaveAsset(m_CC.pRC, m_CC.config, fileName, { sFullDestFileName }))
+	if (!m_CC.pRC->GetAssetManager()->SaveCryasset(m_CC.config, fileName, { sFullDestFileName }))
 	{
 		return false;
 	}
@@ -775,7 +830,7 @@ bool CTextureSplitter::Process()
 			RCLog("Added file '%s'\n", sInputFile.c_str());
 		}
 
-		if (!AssetManager::SaveAsset(m_CC.pRC, m_CC.config, sInputFile, savedFiles))
+		if (!m_CC.pRC->GetAssetManager()->SaveCryasset(m_CC.config, sInputFile, savedFiles))
 		{
 			return false;
 		}
@@ -826,6 +881,11 @@ const char* CTextureSplitter::GetExt( int index ) const
 
 ICompiler* CTextureSplitter::CreateCompiler()
 {
+	if (m_compilerType == Decompressor)
+	{
+		return new CTextureDecompressor();
+	}
+
 	if (m_refCount == 1)
 	{
 		++m_refCount;
@@ -1042,4 +1102,12 @@ void CTextureSplitter::SetOverrideSourceFileName(const string &srcFilename)
 string CTextureSplitter::GetSourceFilename()
 {
 	return m_sOverrideSourceFile.empty() ? m_CC.GetSourcePath() : m_sOverrideSourceFile;
+}
+
+void CTextureSplitter::Init(const ConverterInitContext& context)
+{
+	if (context.config->GetAsBool("decompress", false, true))
+	{
+		m_compilerType = Decompressor;
+	}
 }

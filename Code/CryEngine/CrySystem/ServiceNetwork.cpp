@@ -1546,11 +1546,11 @@ CServiceNetwork::CServiceNetwork()
 	, m_bufferID(1)
 {
 	// Create the CVAR
-	m_pVerboseLevel = gEnv->pConsole->RegisterInt("net_debugVerboseLevel", 0, VF_DEV_ONLY);
+	m_pVerboseLevel = REGISTER_INT("net_debugVerboseLevel", 0, VF_DEV_ONLY, "");
 
 	// Send/receive Queue size limits
-	m_pReceiveDataQueueLimit = gEnv->pConsole->RegisterInt("net_receiveQueueSize", 20 << 20, VF_DEV_ONLY);
-	m_pSendDataQueueLimit = gEnv->pConsole->RegisterInt("net_sendQueueSize", 5 << 20, VF_DEV_ONLY);
+	m_pReceiveDataQueueLimit = REGISTER_INT("net_receiveQueueSize", 20 << 20, VF_DEV_ONLY, "");
+	m_pSendDataQueueLimit = REGISTER_INT("net_sendQueueSize", 5 << 20, VF_DEV_ONLY, "");
 
 	// Reinitialize the random number generator with independent seed value
 	m_guidGenerator.Seed((uint32)GetNetworkTime());

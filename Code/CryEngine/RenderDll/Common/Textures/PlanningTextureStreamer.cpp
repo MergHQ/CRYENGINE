@@ -204,6 +204,8 @@ void CPlanningTextureStreamer::ApplySchedule(EApplyScheduleFlags asf)
 		int nNumSubmittedLoad = CTexture::s_nMipsSubmittedToStreaming;
 		size_t nAmtSubmittedLoad = CTexture::s_nBytesSubmittedToStreaming;
 
+		CTexture::s_nNumStreamingRequests = requested.size();
+
 		if (!requested.empty())
 		{
 			size_t nMaxRequestedBytes = CTexture::s_bPrestreamPhase
@@ -250,7 +252,7 @@ void CPlanningTextureStreamer::ApplySchedule(EApplyScheduleFlags asf)
 				int nTexAvailMip = pTex->m_nMinMipVidUploaded;
 
 				STexMipHeader* pMH = pTex->m_pFileTexMips->m_pMipHeader;
-				int nSides = (pTex->m_nFlags & FT_REPLICATE_TO_ALL_SIDES) ? 1 : pTex->m_CacheFileHeader.m_nSides;
+				int nSides = (pTex->m_eFlags & FT_REPLICATE_TO_ALL_SIDES) ? 1 : pTex->m_CacheFileHeader.m_nSides;
 
 				if (!bPreStreamPhase)
 				{
@@ -521,8 +523,8 @@ bool CPlanningTextureStreamer::TryBegin_Composite(CTexture* pTex, uint32 nTexPer
 
 				CTexture::CopySliceChain(
 				  pNewPoolItem->m_pDevTexture, pNewPoolItem->m_pOwner->m_nMips, tc.nDstSlice, 0,
-				  pSrcDevTex, tc.nSrcSlice, nTexWantedMip - (pTex->m_nMips - nSrcDevMips), nSrcDevMips,
-				  pTex->m_nMips - nTexWantedMip);
+				  pSrcDevTex, nSrcDevMips, tc.nSrcSlice, nTexWantedMip - (pTex->m_nMips - nSrcDevMips),
+				  1, pTex->m_nMips - nTexWantedMip);
 			}
 
 			// Commit!
@@ -577,7 +579,7 @@ void CPlanningTextureStreamer::Precache(CTexture* pTexture)
 {
 	if (pTexture->IsForceStreamHighRes())
 	{
-		for (int i = 0; i < MAX_PREDICTION_ZONES; ++i)
+		for (int i = 0; i < MAX_STREAM_PREDICTION_ZONES; ++i)
 		{
 			pTexture->m_streamRounds[i].nRoundUpdateId = (1 << 29) - 1;
 			pTexture->m_pFileTexMips->m_arrSPInfo[i].fMinMipFactor = 0;
@@ -679,10 +681,22 @@ SPlanningMemoryState CPlanningTextureStreamer::GetMemoryState()
 
 	ms.nMemStreamed = CTexture::s_nStatsStreamPoolInUseMem;
 
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+	ms.nPhysicalLimit = GetDeviceObjectFactory().m_texturePool.GetPoolSize();
+	ms.nTargetPhysicalLimit = (ptrdiff_t)(static_cast<int64>(ms.nPhysicalLimit - 30 * 1024 * 1024) * 96 / 100);
+	ms.nTargetPhysicalLimit = max((ptrdiff_t)0, ms.nTargetPhysicalLimit);
+
+	ms.nStaticTexUsage = 0;//CTexture::s_nStatsCurManagedNonStreamedTexMem;
+	ms.nUnknownPoolUsage = GetDeviceObjectFactory().m_texturePool.GetPoolAllocated() - (CTexture::s_pPoolMgr->GetReservedSize() /*ms.nMemStreamed*/ + ms.nStaticTexUsage);
+
+	ms.nMemLimit = ms.nTargetPhysicalLimit - (ms.nStaticTexUsage + ms.nUnknownPoolUsage);
+	ms.nMemFreeSlack = (ptrdiff_t)((int64)ms.nPhysicalLimit * 4 / 100);
+#else
 	ms.nPhysicalLimit = (ptrdiff_t)CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024;
 
 	ms.nMemLimit = (ptrdiff_t)((int64)ms.nPhysicalLimit * 95 / 100);
 	ms.nMemFreeSlack = (ptrdiff_t)((int64)ms.nPhysicalLimit * 5 / 100);
+#endif
 
 	ms.nMemBoundStreamed = CTexture::s_nStatsStreamPoolBoundMem;
 	ms.nMemTemp = ms.nMemStreamed - ms.nMemBoundStreamed;

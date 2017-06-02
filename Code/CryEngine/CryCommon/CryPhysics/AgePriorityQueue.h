@@ -193,21 +193,21 @@ public:
 	struct QueueCompare
 	{
 		QueueCompare(const Slots& _slots, ElementCompare& _compare)
-			: slots(_slots)
-			, compare(_compare)
+			: m_slots(_slots)
+			, m_compare(_compare)
 		{
 		}
 
 		bool operator()(const id_type& left, const id_type& right) const
 		{
-			const container_type& leftSlot = slots[type::_slot(left)];
-			const container_type& rightSlot = slots[type::_slot(right)];
+			const container_type& leftSlot = m_slots[type::_slot(left)];
+			const container_type& rightSlot = m_slots[type::_slot(right)];
 
-			return compare(left, leftSlot.priority, right, rightSlot.priority);
+			return m_compare(left, leftSlot.priority, right, rightSlot.priority);
 		}
 
-		const Slots&    slots;
-		ElementCompare& compare;
+		const Slots&    m_slots;
+		ElementCompare& m_compare;
 	};
 
 	template<typename Update, typename Compare>

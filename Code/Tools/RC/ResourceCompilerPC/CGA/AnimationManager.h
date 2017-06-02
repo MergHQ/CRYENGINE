@@ -1,4 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+
 #ifndef _ANIMATION_MANAGER
 #define _ANIMATION_MANAGER
 #pragma once

@@ -780,7 +780,7 @@ void CharacterDocument::LoadCharacter(const char* filename)
 
 		if (!m_groundAlignment)
 		{
-			::CryCreateClassInstance<IAnimationGroundAlignment>("AnimationPoseModifier_GroundAlignment", m_groundAlignment);
+			::CryCreateClassInstanceForInterface<IAnimationGroundAlignment>(cryiidof<IAnimationGroundAlignment>(), m_groundAlignment);
 		}
 
 		CreateShaderParamCallbacks();
@@ -1572,7 +1572,7 @@ void CharacterDocument::PreRender(const SRenderContext& context)
 		pInstanceBase->GetISkeletonPose()->SetForceSkeletonUpdate(1);
 
 		uint32 flags = m_compressedCharacter->GetCharEditMode() & ~CA_DrawSocketLocation;
-		if (m_displayOptions->attachmentAndPoseModifierGizmos)
+		if (m_displayOptions->attachmentGizmos || m_displayOptions->poseModifierGizmos)
 			flags |= CA_DrawSocketLocation;
 		m_compressedCharacter->SetCharEditMode(flags);
 

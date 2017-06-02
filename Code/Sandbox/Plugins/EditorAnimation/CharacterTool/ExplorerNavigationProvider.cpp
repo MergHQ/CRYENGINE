@@ -225,8 +225,7 @@ static dll_string AnimationResourceSelector(const SResourceSelectorContext& x, c
 	const auto assetTypes = ExplorerNavigationProvider::GetAssetTypesForType(x.typeName);
 	if (GetIEditor()->GetSystem()->GetIConsole()->GetCVar("ed_enableAssetPickers")->GetIVal() && !assetTypes.empty())
 	{
-		CAsset* const pAsset = CAssetBrowserDialog::OpenSingleAssetForTypes(assetTypes);
-		return pAsset ? pAsset->GetFile(0) : previousValue;
+		return x.SelectFromAsset(assetTypes, previousValue);
 	}
 	else
 	{

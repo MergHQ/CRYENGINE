@@ -251,11 +251,8 @@ macro(set_rc_flags)
 	target_include_directories( ${THIS_PROJECT} PRIVATE 
 		${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CryCommon 
 		${SDK_DIR}/boost
-		${SDK_DIR}/yasli
-		${CRY_LIBS_DIR}/yasli
 		${CRYENGINE_SOURCE_DIR}/Code/Sandbox/Plugins/EditorCommon 
 	)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli )
 endmacro()
 
 function(CryResourceCompiler target)
@@ -268,6 +265,17 @@ function(CryResourceCompiler target)
 	#set_property(TARGET ${THIS_PROJECT} PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 	set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "rc")
 	apply_compile_settings()	
+endfunction()
+
+function(CommonLib target)
+	prepare_project(${ARGN})
+	add_library(${THIS_PROJECT} STATIC ${${THIS_PROJECT}_SOURCES})
+	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
+	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
+	#set_property(TARGET ${THIS_PROJECT} PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
+	apply_compile_settings()	
+    
+    set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY AUTOMOC_MOC_OPTIONS -b ${PCH_H})
 endfunction()
 
 function(CryResourceCompilerModule target)
@@ -311,5 +319,26 @@ macro(use_fbx_sdk)
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG "${LIBPATH_FLAG}${FBX_PATH}/debug")
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE "${LIBPATH_FLAG}${FBX_PATH}/release")
 	target_link_libraries(${THIS_PROJECT} PRIVATE libfbxsdk-mt)		
+endmacro()
+
+macro(use_substance)
+if(WIN64)
+   SET(LIB_DIR ${SDK_DIR}/SubstanceEngines/lib/win32-msvc2015-64)
+   SET(DLL_DIR ${SDK_DIR}/SubstanceEngines/bin/win32-msvc2015-64)
+   SET(TINYXML_LIB_DIR ${SDK_DIR}/SubstanceEngines/3rdparty/tinyxml/lib/win32-msvc2015-64)
+  
+    target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/SubstanceEngines/include ${SDK_DIR}/SubstanceEngines/3rdparty/tinyxml)
+    set_libpath_flag()
+    set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG "${LIBPATH_FLAG}${LIB_DIR}/debug_mt")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG "${LIBPATH_FLAG}${TINYXML_LIB_DIR}/debug_mt")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE "${LIBPATH_FLAG}${LIB_DIR}/release_mt")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE "${LIBPATH_FLAG}${TINYXML_LIB_DIR}/release_mt")
+	target_link_libraries(${THIS_PROJECT} PRIVATE substance_framework substance_linker substance_sse2_blend tinyxml)		
+    file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
+    file(TO_NATIVE_PATH "${DLL_DIR}" NATIVE_DLLDIR)
+    add_custom_command(TARGET ${THIS_PROJECT} PRE_BUILD
+    COMMAND copy /Y ${NATIVE_DLLDIR}\\$<$<NOT:$<CONFIG:Debug>>:release_mt>$<$<CONFIG:Debug>:debug_mt>\\substance_sse2_blend.dll ${NATIVE_OUTDIR}
+    COMMAND copy /Y ${NATIVE_DLLDIR}\\$<$<NOT:$<CONFIG:Debug>>:release_mt>$<$<CONFIG:Debug>:debug_mt>\\substance_linker.dll ${NATIVE_OUTDIR})
+	endif()
 endmacro()
 

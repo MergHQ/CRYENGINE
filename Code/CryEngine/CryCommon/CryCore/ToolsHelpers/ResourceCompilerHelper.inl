@@ -20,6 +20,8 @@
 	#include <shellapi.h> // ShellExecuteW()
 	#include <CryCore/Assert/CryAssert.h>
 
+	#include <stdio.h>
+
 // pseudo-variable that represents the DOS header of the module
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
@@ -167,6 +169,7 @@ static void CryFindEngineToolsFolder(unsigned int nEngineToolsPathSize, wchar_t*
 	szEngineToolsPath[0] = L'\0';
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 namespace
 {
@@ -274,6 +277,57 @@ private:
 	IResourceCompilerListener* m_listener;
 };
 }
+
+//////////////////////////////////////////////////////////////////////////
+int CResourceCompilerHelper::GetResourceCompilerConfigPath(char* outBuffer, size_t outBufferCount, CResourceCompilerHelper::ERcExePath rcExePath)
+{
+	bool dirFound = true;
+	CSettingsManagerTools smTools = CSettingsManagerTools();
+	SettingsManagerHelpers::CFixedString<wchar_t, MAX_PATH * 3> rcIniPath;
+	{
+		wchar_t pathBuffer[512];
+		switch (rcExePath)
+		{
+		case eRcExePath_registry:
+			smTools.GetRootPathUtf16(true, SettingsManagerHelpers::CWCharBuffer(pathBuffer, sizeof(pathBuffer)));
+			if (!pathBuffer[0])
+			{
+				dirFound = false;
+			} else {
+				rcIniPath.append(&pathBuffer[0]);
+				rcIniPath.append(L"/Tools/rc");
+			}
+			
+			break;
+		case eRcExePath_editor:
+			CryFindEngineToolsFolder(CRY_ARRAY_COUNT(pathBuffer), pathBuffer);
+			if (!pathBuffer[0])
+			{
+				dirFound = false;
+			}
+			else {
+				rcIniPath.append(&pathBuffer[0]);
+				rcIniPath.append(L"/rc");
+			}
+			
+			break;
+		default:
+			dirFound = false;
+		}
+	}
+	if (!dirFound)
+	{
+		return snprintf(outBuffer, outBufferCount, "");
+	}
+	rcIniPath.appendAscii("/");
+	rcIniPath.appendAscii("rc.ini");
+	char buffer[MAX_PATH];
+
+	SettingsManagerHelpers::GetAsciiFilename(rcIniPath.c_str(), SettingsManagerHelpers::CCharBuffer(buffer, sizeof(buffer)));
+
+	return snprintf(outBuffer, outBufferCount, "%s", buffer);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 CResourceCompilerHelper::ERcCallResult CResourceCompilerHelper::CallResourceCompiler(

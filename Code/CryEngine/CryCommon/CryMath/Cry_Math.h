@@ -19,7 +19,7 @@
 //========================================================================================
 
 #include <CryCore/Platform/platform.h>
-#include "Cry_ValidNumber.h"
+#include <cstdlib>
 #include <cfloat>
 #include <cmath>
 
@@ -54,14 +54,6 @@ const f64 sqrt3 = 1.7320508075688772935274463415059;
 
 #define DEG2RAD(a) ((a) * (gf_PI / 180.0f))
 #define RAD2DEG(a) ((a) * (180.0f / gf_PI))
-
-// MIN and MAX macros are sometimes needed for constant definitions
-#ifndef MAX
-	#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-#ifndef MIN
-	#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#endif
 
 // Define min and max as proper template
 #ifdef min
@@ -269,6 +261,11 @@ ILINE f32   sign(f32 op)
 }
 ILINE f64 sign(f64 op) { return if_else_zero(op, signnz(op)); }
 
+// Horizontal operating functions; can be specialized for SIMD types
+template<typename T> ILINE T hsum(T v) { return v; }
+template<typename T> ILINE T hmin(T v) { return v; }
+template<typename T> ILINE T hmax(T v) { return v; }
+
 } // namespace crymath
 
 template<typename F> ILINE F sqr(const F& op)         { return op * op; }
@@ -276,6 +273,7 @@ template<typename F> ILINE F square(const F& op)      { return op * op; }  //!< 
 template<typename F> ILINE F sqr_signed(const F& op)  { return op * crymath::abs(op); }
 template<typename F> ILINE F cube(const F& op)        { return op * op * op; }
 
+#include "Cry_ValidNumber.h"
 #include "Cry_Math_SSE.h"
 
 namespace crymath
@@ -299,7 +297,7 @@ template<typename T> ILINE T wrap(T f, T lo, T hi)
 }
 
 template<typename T>
-int solve_quadratic(T a, T b, T c, T x[2])
+ILINE int solve_quadratic(T a, T b, T c, T x[2])
 {
 	if (!a)
 	{
@@ -308,32 +306,47 @@ int solve_quadratic(T a, T b, T c, T x[2])
 			x[0] = -c / b;
 			return 1;
 		}
-		if (c)
-			return 0;
-		return -1;
+		if (!c)
+		{
+			x[0] = T(0);
+			return 1;
+		}
 	}
 	else
 	{
-		b *= T(-0.5);
-		T d = b * b - a * c;
+		T bh = b * T(-0.5);
+		T d = bh * bh - a * c;
 
 		if (d > T(0))
 		{
-			T s = sqrt(d);
-			T ia = T(1) / a;
+			T s = bh + signnz(bh) * sqrt(d);
 
-			x[0] = (b + s) * ia;
-			x[1] = (b - s) * ia;
+			x[0] = c / s;
+			x[1] = s / a;
 			return 2;
 		}
 		if (!d)
 		{
-			x[0] = b / a;
+			x[0] = bh / a;
 			return 1;
 		}
-		return 0;
 	}
+	return 0;
 }
+
+template<typename T>
+float solve_quadratic_in_range(T a, T b, T c, T lo, T hi)
+{
+	T t[2];
+	for (int n = solve_quadratic(a, b, c, t); --n >= 0; )
+	{
+		if (t[n] >= lo && t[n] <= hi)
+			hi = t[n];
+	}
+	return hi;
+}
+
+
 
 } // namespace crymath
 
@@ -488,7 +501,8 @@ ILINE int64 iszero(int64_t x) { return -(x >> 63 ^ (x - 1) >> 63); }
 ILINE int64 iszero(long int x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
 
-template<typename F> ILINE int32 inrange(F x, F end1, F end2) { return isneg(abs(end1 + end2 - x * (F)2) - abs(end1 - end2)); }
+//! Check if x is within an open interval
+template<typename F> ILINE int32 inrange(F x, F end1, F end2) { return isneg(abs(end1 + end2 - x - x) - abs(end1 - end2)); }
 
 template<typename F> ILINE int32 idxmax3(const F* pdata)
 {
@@ -652,12 +666,6 @@ inline f32 SmoothBlendValue(const f32 fBlend)
 	return __fsel(-fBlend, 0.f, __fsel(fBlend - 1.f, 1.f, 0.5f - 2.f * (fBlendAdj * fBlendAdj * fBlendAdj) + 1.5f * fBlendAdj));
 }
 
-// Default approximate comparison function
-template<typename F> ILINE bool IsEquivalent(const F& a, const F& b, float epsilon = FLT_EPSILON)
-{
-	return sqr(a - b) <= sqr(epsilon);
-}
-
 // Legacy math function names
 #define clamp_tpl      crymath::clamp
 
@@ -708,6 +716,7 @@ enum type_min { VMIN };
 enum type_max { VMAX };
 enum type_identity { IDENTITY };
 
+#include "NumberVector.h"
 #include "Cry_Vector2.h"
 #include "Cry_Vector3.h"
 #include "Cry_Vector4.h"

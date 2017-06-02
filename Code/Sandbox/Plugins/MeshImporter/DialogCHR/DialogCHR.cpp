@@ -5,6 +5,7 @@
 #include "DialogCHR_SceneUserData.h"
 #include "SceneModelSkeleton.h"
 #include "SceneView.h"
+#include "SceneContextMenu.h"
 #include "Viewport.h"
 #include "AsyncHelper.h"
 #include "AnimationHelpers/AnimationHelpers.h"
@@ -14,6 +15,7 @@
 #include "Scene/SceneElementSourceNode.h"
 #include "Scene/SceneElementTypes.h"
 #include "Scene/Scene.h"
+#include "Scene/SourceSceneHelper.h"
 #include "QtCommon.h"
 #include "MaterialGenerator/MaterialGenerator.h"
 #include "MaterialHelpers.h"
@@ -22,6 +24,8 @@
 #include "SaveRcObject.h"
 #include "DisplayOptions.h"
 #include "Serialization/Serialization.h"
+#include "SkeletonHelpers/SkeletonHelpers.h"
+#include "ImporterUtil.h"
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
@@ -39,7 +43,7 @@
 #include <Controls/QMenuComboBox.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 
 #include <QTemporaryFile>
 #include <QTemporaryDir>
@@ -115,11 +119,13 @@ struct SViewSettings
 	bool m_bShowSkin;
 	bool m_bShowPhysicalProxies;
 	bool m_bShowJointLimits;
+	bool m_bShowJointNames;
 
 	SViewSettings()
 		: m_bShowSkin(true)
 		, m_bShowPhysicalProxies(false)
 		, m_bShowJointLimits(true)
+		, m_bShowJointNames(false)
 	{
 	}
 
@@ -128,6 +134,7 @@ struct SViewSettings
 		ar(m_bShowSkin, "showSkin", "Show Skin");
 		ar(m_bShowPhysicalProxies, "showPhysicalProxies", "Physical Proxies");
 		ar(m_bShowJointLimits, "showRagdollJointLimits", "Ragdoll Joint Limits");
+		ar(m_bShowJointNames, "showJointNames", "Show joint names");
 	}
 };
 
@@ -447,11 +454,16 @@ void CDialogCHR::UpdateCharacter()
 	m_pCharacter->m_pPoseModifier = CSkeletonPoseModifier::CreateClassInstance();
 
 	Physicalize();
+
+	// Initialize bones.
+	const uint32 jointCount = m_pCharacter->m_pCharInstance->GetIDefaultSkeleton().GetJointCount();
+	m_jointHeat.resize(jointCount, 0.0f);
 }
 
 CDialogCHR::CDialogCHR(QWidget* pParent)
 	: CBaseDialog(pParent)
 	, m_pCharacter(new SCharacter())
+	, m_hitJointId(kInvalidJointId)
 {
 	using namespace Private_DialogCHR;
 
@@ -523,10 +535,13 @@ CDialogCHR::CDialogCHR(QWidget* pParent)
 
 void CDialogCHR::SetupUI()
 {
-	CSceneViewCommon* const pSceneView = new CSceneViewCommon();
-	CSceneViewContainer* const pSceneViewContainer = new CSceneViewContainer(m_pSceneModel.get(), pSceneView, nullptr);
+	m_pSceneView = new CSceneViewCommon();
+	CSceneViewContainer* const pSceneViewContainer = new CSceneViewContainer(m_pSceneModel.get(), m_pSceneView, nullptr);
 
-	m_pModelProperties->ConnectViewToPropertyObject(pSceneView);
+	m_pSceneContextMenu.reset(new CSceneContextMenuCommon(m_pSceneView));
+	m_pSceneContextMenu->Attach();
+
+	m_pModelProperties->ConnectViewToPropertyObject(m_pSceneView);
 
 	QSplitter* const pCenterSplitter = new QSplitter(Qt::Horizontal);
 
@@ -616,8 +631,6 @@ bool CDialogCHR::SaveAs(SSaveContext& ctx)
 
 	std::shared_ptr<QTemporaryDir> pTempDir(std::move(ctx.pTempDir));
 
-	SaveRcObject(pTempDir, metaData, QtUtil::ToString(targetFilePath));
-
 	// Write material.
 	const QString targetFileDir = QFileInfo(targetFilePath).dir().path();
 	const QString materialFilePath = targetFileDir + "/" + QFileInfo(targetFilePath).baseName() + "_hitmaterial.mtl";
@@ -625,6 +638,27 @@ bool CDialogCHR::SaveAs(SSaveContext& ctx)
 
 	m_material.pTempDir.release();
 	m_material.materialName = pMaterial->GetName();
+
+	SRcObjectSaveState saveState;
+	CaptureRcObjectSaveState(pTempDir, metaData, saveState);
+
+	const QString absOriginalFilePath = GetSceneManager().GetImportFile()->GetOriginalFilePath();
+	ThreadingUtils::Async([this, saveState, absOriginalFilePath, targetFilePath, pTempDir]()
+	{
+		// Asset relative path to directory. targetFilePath is absolute path.
+		const string dir = PathUtil::GetPathWithoutFilename(PathUtil::AbsolutePathToGamePath(QtUtil::ToString(targetFilePath)));
+
+		const std::pair<bool, string> ret = CopySourceFileToDirectoryAsync(QtUtil::ToString(absOriginalFilePath), dir).get();
+		if (!ret.first)
+		{
+			const string& error = ret.second;
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Copying source file to '%s' failed: '%s'",
+				dir.c_str(), error.c_str());
+			return;
+		}
+
+		SaveRcObjectAsync(saveState, QtUtil::ToString(targetFilePath));
+	});
 
 	return true;
 }
@@ -1029,17 +1063,30 @@ void CDialogCHR::RenderJoints(const SRenderContext& rc, ICharacterInstance* pCha
 	DrawSkeleton(pAuxGeom, &pCharInstance->GetIDefaultSkeleton(), pCharInstance->GetISkeletonPose(),
 	             QuatT(IDENTITY), "", rc.viewport->GetState().cameraTarget);
 
-	// draw joint names
 	const ISkeletonPose& skeletonPose = *pCharInstance->GetISkeletonPose();
 	IDefaultSkeleton& defaultSkeleton = pCharInstance->GetIDefaultSkeleton();
-	uint32 numJoints = defaultSkeleton.GetJointCount();
 
-	for( int j = 0; j < numJoints; j++ )
+	DrawHighlightedJoints(*pCharInstance, m_jointHeat, rc.viewport->Camera()->GetPosition());
+	DrawJoints(*pCharInstance);
+
+	if (m_pViewSettings->m_bShowJointNames)
 	{
-		const char* pJointName = defaultSkeleton.GetJointNameByID(j);
+		// Draw all joint names
+		uint32 numJoints = defaultSkeleton.GetJointCount();
 
-		QuatT jointTM = QuatT(skeletonPose.GetAbsJointByID(j));
-		IRenderAuxText::DrawLabel(jointTM.t, 2, pJointName);
+		for (int j = 0; j < numJoints; j++)
+		{
+			const char* pJointName = defaultSkeleton.GetJointNameByID(j);
+
+			QuatT jointTM = QuatT(skeletonPose.GetAbsJointByID(j));
+			IRenderAuxText::DrawLabel(jointTM.t, 2, pJointName);
+		}
+	}
+	else if (m_hitJointId != kInvalidJointId)
+	{
+		const QViewport* const vp = m_pViewportContainer->GetSplitViewport()->GetPrimaryViewport();
+		const char* const jointName = defaultSkeleton.GetJointNameByID(m_hitJointId);
+		ShowLabelNextToCursor(vp, jointName);
 	}
 }
 
@@ -1053,6 +1100,14 @@ void CDialogCHR::RenderCgf(const SRenderContext& rc)
 	Matrix34 identity(IDENTITY);
 	rc.renderParams->pMatrix = &identity;
 	m_pStatObj->Render(*rc.renderParams, *rc.passInfo);
+}
+
+static void CoolDown(std::vector<float>& heat)
+{
+	for (float& h : heat)
+	{
+		h = std::max(0.0f, h - kSelectionCooldownPerSec * gEnv->pSystem->GetITimer()->GetFrameTime());
+	}
 }
 
 void CDialogCHR::OnViewportRender(const SRenderContext& rc)
@@ -1084,6 +1139,64 @@ void CDialogCHR::OnViewportRender(const SRenderContext& rc)
 	}
 
 	RenderJoints(rc, m_pCharacter->m_pCharInstance);
+
+	// Joint cool-down.
+	if (m_hitJointId != kInvalidJointId)
+	{
+		const float oldHeat = m_jointHeat[m_hitJointId];
+		CoolDown(m_jointHeat);
+		m_jointHeat[m_hitJointId] = oldHeat;
+	}
+	else
+	{
+		CoolDown(m_jointHeat);
+	}
+}
+
+void CDialogCHR::PickJoint(QViewport& viewport, float x, float y)
+{
+	m_hitJointId = ::PickJoint(*m_pCharacter->m_pCharInstance, viewport, x, y);
+
+	if (m_hitJointId == -1)
+	{
+		return;
+	}
+
+	m_jointHeat[m_hitJointId] = 1.0f;
+}
+
+void CDialogCHR::SelectJoint(int32 jointId)
+{
+	const char* jointName = m_pCharacter->m_pCharInstance->GetIDefaultSkeleton().GetJointNameByID(jointId);
+	const FbxTool::SNode* pHitNode = nullptr;
+	const FbxTool::CScene* const pScene = GetScene();
+	for (size_t i = 0, N = pScene->GetNodeCount(); i < N; ++i)
+	{
+		const FbxTool::SNode* const pNode = pScene->GetNodeByIndex(i);
+		if (!strcmp(pNode->szName, jointName))
+		{
+			pHitNode = pNode;
+		}
+	}
+	if (pHitNode)
+	{
+		SelectSceneElementWithNode(m_pSceneModel.get(), m_pSceneView, pHitNode);
+	}
+}
+
+void CDialogCHR::OnViewportMouse(const SMouseEvent& ev)
+{
+	using namespace Private_DialogCHR;
+
+	if (m_pPreviewModeWidget->GetPreviewMode() == CPreviewModeWidget::ePreviewMode_Character && m_pCharacter->m_pCharInstance)
+	{
+		PickJoint(*ev.viewport, ev.x, ev.y);
+
+		if (SMouseEvent::BUTTON_LEFT == ev.button && m_hitJointId != -1)
+		{
+			SelectJoint(m_hitJointId);
+		}
+	}
 }
 
 } // namespace MeshImporter

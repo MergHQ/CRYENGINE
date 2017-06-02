@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <yasli/ClassFactoryBase.h>
+#include <CrySerialization/yasli/ClassFactory.h>
 
 namespace Serialization
 {

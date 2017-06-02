@@ -26,7 +26,7 @@ void CryAssertTrace(const char* szFormat, ...)
 
 	if (!gEnv->bIgnoreAllAsserts || gEnv->bTesting)
 	{
-		if (szFormat == NULL)
+		if (szFormat == NULL || szFormat[0] == '\0')
 		{
 			gs_szMessage[0] = '\0';
 		}

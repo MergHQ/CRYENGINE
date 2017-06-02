@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -85,47 +85,47 @@ namespace CryEngine.Serialization
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.Int16)
 			{
 				Writer.Write((byte)SerializedObjectType.Int16);
-				Writer.Write((Int16)obj);
+				Writer.Write((short)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.UInt16)
 			{
 				Writer.Write((byte)SerializedObjectType.UInt16);
-				Writer.Write((UInt16)obj);
+				Writer.Write((ushort)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.Int32)
 			{
 				Writer.Write((byte)SerializedObjectType.Int32);
-				Writer.Write((Int32)obj);
+				Writer.Write((int)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.UInt32)
 			{
 				Writer.Write((byte)SerializedObjectType.UInt32);
-				Writer.Write((UInt32)obj);
+				Writer.Write((uint)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.Int64)
 			{
 				Writer.Write((byte)SerializedObjectType.Int64);
-				Writer.Write((Int64)obj);
+				Writer.Write((long)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.UInt64)
 			{
 				Writer.Write((byte)SerializedObjectType.UInt64);
-				Writer.Write((UInt64)obj);
+				Writer.Write((ulong)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.Single)
 			{
 				Writer.Write((byte)SerializedObjectType.Single);
-				Writer.Write((Single)obj);
+				Writer.Write((float)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.Double)
 			{
 				Writer.Write((byte)SerializedObjectType.Double);
-				Writer.Write((Double)obj);
+				Writer.Write((double)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.Decimal)
 			{
 				Writer.Write((byte)SerializedObjectType.Decimal);
-				Writer.Write((Decimal)obj);
+				Writer.Write((decimal)obj);
 			}
 			else if (cachedTypeInfo._serializedType == SerializedObjectType.IntPtr)
 			{
@@ -181,7 +181,7 @@ namespace CryEngine.Serialization
 							break;
 						case SerializedObjectType.MemberInfo:
 							{
-								WriteMemberInfo(obj, cachedTypeInfo._type);
+								WriteMemberInfo(obj);
 							}
 							break;
 						case SerializedObjectType.ISerializable:
@@ -303,7 +303,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		void WriteMemberInfo(object obj, Type type)
+		void WriteMemberInfo(object obj)
 		{
 			var memberInfo = obj as MemberInfo;
 

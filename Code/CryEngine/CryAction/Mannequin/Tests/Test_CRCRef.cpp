@@ -6,6 +6,7 @@
 #include <CrySerialization/IClassFactory.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/CRCRef.h>
+#include <CrySystem/CryUnitTest.h>
 
 namespace mannequin
 {
@@ -115,8 +116,8 @@ CRY_UNIT_TEST(SCRCRef_Serialization_NotStoreString_Empty)
 	const bool serializationSuccess = Serialization::LoadXmlNode(dst, xmlSrc);
 	CRY_UNIT_TEST_ASSERT(serializationSuccess);
 
-	CRY_UNIT_TEST_ASSERT(src.wrapped.crc == dst.wrapped.crc);
-	CRY_UNIT_TEST_ASSERT(dst.wrapped.crc == SCRCRef<0>::INVALID);
+	CRY_UNIT_TEST_CHECK_EQUAL(src.wrapped.crc, dst.wrapped.crc);
+	CRY_UNIT_TEST_CHECK_EQUAL(dst.wrapped.crc, static_cast<uint32_t>(SCRCRef<0>::INVALID));//cast to suppress orbis-clang from wrongly choosing overload for static const
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace CryEngine.UI
@@ -55,8 +55,10 @@ namespace CryEngine.UI
 			_items.ForEach(x => x.ActiveChanged -= OnItemActiveChanged);
 			_items.Clear();
 
-			if (updateLayout)
+			if(updateLayout)
+			{
 				UpdateLayout();
+			}
 		}
 
 		public override void OnDestroy()

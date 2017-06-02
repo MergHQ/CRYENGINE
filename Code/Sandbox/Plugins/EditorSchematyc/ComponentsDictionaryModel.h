@@ -34,14 +34,13 @@ public:
 	// ~CAbstractDictionaryEntry
 
 	QString          GetName() const { return m_name; }
-	Schematyc::SGUID GetTypeGUID()   { return m_identifier; }
+	CryGUID GetTypeGUID()   { return m_identifier; }
 
 private:
-	Schematyc::SGUID m_identifier;
+	CryGUID m_identifier;
 	QString          m_name;
 	QString          m_fullName;
 	QString          m_description;
-	QString          m_wikiLink;
 	QIcon            m_icon;
 };
 

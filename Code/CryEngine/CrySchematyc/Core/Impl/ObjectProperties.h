@@ -2,16 +2,17 @@
 
 #pragma once
 
-#include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/IObjectProperties.h>
-#include <Schematyc/Runtime/IRuntimeClass.h>
-#include <Schematyc/Services/ITimerSystem.h>
-#include <Schematyc/Utils/GUID.h>
-#include <Schematyc/Utils/IProperties.h>
-#include <Schematyc/Utils/Scratchpad.h>
+#include <CrySchematyc/FundamentalTypes.h>
+#include <CrySchematyc/IObjectProperties.h>
+#include <CrySchematyc/Runtime/IRuntimeClass.h>
+#include <CrySchematyc/Services/ITimerSystem.h>
+#include <CrySchematyc/Utils/ClassProperties.h>
+#include <CrySchematyc/Utils/GUID.h>
+#include <CrySchematyc/Utils/Scratchpad.h>
 
 namespace Schematyc
 {
+
 // Forward declare classes.
 class CAnyConstRef;
 class CAnyRef;
@@ -26,7 +27,7 @@ private:
 	struct SComponent
 	{
 		SComponent();
-		SComponent(const char* _szName, const IPropertiesPtr& _pProperties, EOverridePolicy _overridePolicy);
+		SComponent(const char* _szName, const CClassProperties& _properties, EOverridePolicy _overridePolicy);
 		SComponent(const SComponent& rhs);
 
 		void Serialize(Serialization::IArchive& archive);
@@ -34,12 +35,11 @@ private:
 		void Edit();
 		void Revert();
 
-		string          name;
-		IPropertiesPtr  pProperties;
-		EOverridePolicy overridePolicy = EOverridePolicy::Default;
+		string           name;
+		CClassProperties properties;
 	};
 
-	typedef std::map<SGUID, SComponent>                                        Components;
+	typedef std::map<CryGUID, SComponent>                                        Components;
 	typedef std::map<const char*, SComponent&, stl::less_stricmp<const char*>> ComponentsByName;
 
 	struct SVariable
@@ -58,7 +58,7 @@ private:
 		EOverridePolicy overridePolicy = EOverridePolicy::Default;
 	};
 
-	typedef std::map<SGUID, SVariable>                                        Variables;
+	typedef std::map<CryGUID, SVariable>                                        Variables;
 	typedef std::map<const char*, SVariable&, stl::less_stricmp<const char*>> VariablesByName;
 
 public:
@@ -67,18 +67,21 @@ public:
 	CObjectProperties(const CObjectProperties& rhs);
 
 	// IObjectProperties
-	virtual IObjectPropertiesPtr Clone() const override;
-	virtual void                 Serialize(Serialization::IArchive& archive) override;
-	virtual const IProperties*   GetComponentProperties(const SGUID& guid) const override;
-	virtual bool                 ReadVariable(const CAnyRef& value, const SGUID& guid) const override;
-	// ~IObjectProperties
+	virtual IObjectPropertiesPtr    Clone() const override;
+	virtual void                    Serialize(Serialization::IArchive& archive) override;
+	virtual void                    SerializeVariables(Serialization::IArchive& archive) override;
+	virtual const CClassProperties* GetComponentProperties(const CryGUID& guid) const override;
+	virtual CClassProperties*       GetComponentProperties(const CryGUID& guid) override;
+	virtual bool                    ReadVariable(const CAnyRef& value, const CryGUID& guid) const override;
 
-	void AddComponent(const SGUID& guid, const char* szName, const IProperties& properties);
-	void AddVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value);
+	virtual void AddComponent(const CryGUID& guid, const char* szName, const CClassProperties& properties) override;
+	virtual void AddVariable(const CryGUID& guid, const char* szName, const CAnyConstRef& value) override;
+	// ~IObjectProperties
 
 private:
 
 	Components m_components;
 	Variables  m_variables;
 };
+
 } // Schematyc

@@ -9,7 +9,7 @@
 
 struct SValidatorKey;
 
-namespace uqseditor
+namespace UQSEditor
 {
 //////////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@ public:
 	CItemUniquePtr(CItemUniquePtr&& other);
 	CItemUniquePtr& operator=(CItemUniquePtr&& other);
 
-	explicit CItemUniquePtr(uqs::client::IItemFactory* pItemFactory);
+	explicit CItemUniquePtr(UQS::Client::IItemFactory* pItemFactory);
 
 	bool IsExist() const { return m_pItem != nullptr; }
 	bool IsSerializable() const;
@@ -43,7 +43,7 @@ private:
 	friend bool Serialize(Serialization::IArchive& archive, CItemUniquePtr& value, const char* szName, const char* szLabel);
 
 	void* m_pItem;
-	uqs::client::IItemFactory* m_pItemFactory;
+	UQS::Client::IItemFactory* m_pItemFactory;
 };
 
 bool Serialize(Serialization::IArchive& archive, CItemUniquePtr& value, const char* szName, const char* szLabel);
@@ -85,8 +85,8 @@ public:
 	{
 		string                                           internalName;
 		string                                           prettyName;
-		uqs::client::IFunctionFactory::ELeafFunctionKind leafFunctionKind;
-		uqs::client::IFunctionFactory*                   pFactory;
+		UQS::Client::IFunctionFactory::ELeafFunctionKind leafFunctionKind;
+		UQS::Client::IFunctionFactory*                   pFactory;
 		string                                           param;
 		SItemTypeName                                    returnType;
 	};
@@ -119,8 +119,8 @@ private:
 public:
 
 	CFunctionSerializationHelper();
-	CFunctionSerializationHelper(const char* szFunctionName, const char* szParamOrReturnValue);
-	CFunctionSerializationHelper(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	CFunctionSerializationHelper(const char* szFunctionName, const char* szParamOrReturnValue, bool bAddReturnValueToDebugRenderWorldUponExecution);
+	CFunctionSerializationHelper(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
 	void Reset(const SItemTypeName& typeName, const CUqsDocSerializationContext& context);
 	void ReserializeFunctionLiteralFromParam();
@@ -135,12 +135,17 @@ public:
 		Serialization::IArchive& archive,
 		const CUqsDocSerializationContext& context);
 
+	void SerializeAddReturnValueToDebugRenderWorldUponExecution(
+		Serialization::IArchive& archive);
+
 	const string&                  GetFunctionInternalName() const;
 	const string&                  GetFunctionParamOrReturnValue() const;
-	uqs::client::IFunctionFactory* GetFunctionFactory() const;
+	UQS::Client::IFunctionFactory* GetFunctionFactory() const;
 	const SFunction*               GetSelectedFunction() const;
 
 	const SItemTypeName&           GetExpectedType() const { return m_typeName; }
+
+	bool                           GetAddReturnValueToDebugRenderWorldUponExecution() const { return m_bAddReturnValueToDebugRenderWorldUponExecution; }
 
 private:
 
@@ -155,6 +160,8 @@ private:
 	string           m_funcParam;
 	CItemLiteral     m_itemLiteral;
 	mutable string   m_itemCachedLiteral;
+
+	bool             m_bAddReturnValueToDebugRenderWorldUponExecution;
 
 	CFunctionList    m_functionsList;
 	int              m_selectedFunctionIdx;
@@ -249,7 +256,7 @@ public:
 private:
 
 	std::vector<string>                            m_messages;
-	uqs::datasource::SyntaxErrorCollectorUniquePtr m_pExternalCollector;
+	UQS::DataSource::SyntaxErrorCollectorUniquePtr m_pExternalCollector;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -258,26 +265,29 @@ class CInputBlueprint
 {
 public:
 	const char*            GetParamName() const;
+	const UQS::Client::CInputParameterID& GetParamID() const;
 	const char*            GetFuncName() const;
+	const CryGUID&         GetFuncGUID() const;
 	const char*            GetFuncReturnValueLiteral() const;
-	const char*            GetAddReturnValueToDebugRenderWorldUponExecution() const;
-	CInputBlueprint&       AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, const char* szAddReturnValueToDebugRenderWorldUponExecution);
+	bool                   GetAddReturnValueToDebugRenderWorldUponExecution() const;
+	CInputBlueprint&       AddChild(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 	size_t                 GetChildCount() const;
 	const CInputBlueprint& GetChild(size_t index) const;
-	const CInputBlueprint* FindChildByParamName(const char* szParamName) const;
+	CInputBlueprint*       FindChildByParamName(const char* szParamName);
+	const CInputBlueprint* FindChildByParamNameConst(const char* szParamName) const;
 
 	CInputBlueprint();
-	CInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, const char* szAddReturnValueToDebugRenderWorldUponExecution);
+	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szParamDescription, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 
-	CInputBlueprint(const char* szParamName);
+	CInputBlueprint(const char* szParamName, const UQS::Client::CInputParameterID& paramID, const char* szParamDescription);
 
-	CInputBlueprint(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	CInputBlueprint(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
 	CInputBlueprint(CInputBlueprint&& other);
 	CInputBlueprint&                        operator=(CInputBlueprint&& other);
 
-	void                                    ResetChildrenFromFactory(const uqs::client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context);
-	void                                    ResetChildrenFromFactory(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	void                                    ResetChildrenFromFactory(const UQS::Client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context);
+	void                                    ResetChildrenFromFactory(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 	void                                    ResetChildrenFromFactory(const CEvaluatorFactoryHelper& evaluatorFactory, const CUqsDocSerializationContext& context);
 
 	void                                    Serialize(Serialization::IArchive& archive);
@@ -285,12 +295,16 @@ public:
 
 	const std::vector<CInputBlueprint>&     GetChildren() const { return m_children; }
 
-	void                                    PrepareHelpers(const uqs::client::IGeneratorFactory* pGeneratorFactory, const CUqsDocSerializationContext& context);
-	void                                    PrepareHelpers(const uqs::client::IFunctionFactory* pFunctionFactory, const CUqsDocSerializationContext& context);
+	void                                    PrepareHelpers(const UQS::Client::IGeneratorFactory* pGeneratorFactory, const CUqsDocSerializationContext& context);
+	void                                    PrepareHelpers(const UQS::Client::IFunctionFactory* pFunctionFactory, const CUqsDocSerializationContext& context);
 	void                                    PrepareHelpers(const CEvaluatorFactoryHelper* pEvaluatorFactory, const CUqsDocSerializationContext& context);
 	void                                    ClearErrors();
 
 	const std::shared_ptr<CErrorCollector>& GetErrorCollectorSharedPtr() const { return m_pErrorCollector; }
+
+	void                                    EnsureChildrenFromFactory(const UQS::Client::IGeneratorFactory& generatorFactory, const CUqsDocSerializationContext& context);
+	void                                    EnsureChildrenFromFactory(const UQS::Client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
+	void                                    EnsureChildrenFromFactory(const CEvaluatorFactoryHelper& evaluatorFactory, const CUqsDocSerializationContext& context);
 
 private:
 
@@ -303,7 +317,7 @@ private:
 	void PrepareHelpersRoot(const CUqsDocSerializationContext& context);
 	void PrepareHelpersChild(const CUqsDocSerializationContext& context);
 
-	void SetAdditionalParamInfo(const uqs::client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context);
+	void SetAdditionalParamInfo(const UQS::Client::IInputParameterRegistry::SParameterInfo& paramInfo, const CUqsDocSerializationContext& context);
 
 	void SerializeFunction(Serialization::IArchive& archive, const CUqsDocSerializationContext& context, const char* szParamLabel);
 	void SerializeChildren(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context);
@@ -311,7 +325,9 @@ private:
 private:
 
 	string                                   m_paramName;
-	string                                   m_addReturnValueToDebugRenderWorldUponExecution;
+	UQS::Client::CInputParameterID           m_paramID;
+	string                                   m_paramDescription;
+	bool                                     m_bAddReturnValueToDebugRenderWorldUponExecution;
 
 	CFunctionSerializationHelper             m_functionHelper;
 
@@ -327,9 +343,9 @@ private:
 class CConstParamBlueprint
 {
 public:
-	void   AddParameter(const char* szName, const char* szType, CItemLiteral&& value);
+	void   AddParameter(const char* szName, const char* szType, CItemLiteral&& value, bool bAddToDebugRenderWorld);
 	size_t GetParameterCount() const;
-	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, string& szValue, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
+	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, CryGUID& typeGUID, string& szValue, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
 
 	void   Serialize(Serialization::IArchive& archive);
 	void   PrepareHelpers(CUqsDocSerializationContext& context);
@@ -342,7 +358,7 @@ private:
 	struct SConstParam
 	{
 		SConstParam();
-		SConstParam(const char* szName, const char* szType, CItemLiteral&& value);
+		SConstParam(const char* szName, const char* szType, CItemLiteral&& value, bool _bAddToDebugRenderWorld);
 		SConstParam(SConstParam&& other);
 		SConstParam& operator=(SConstParam&& other);
 
@@ -356,6 +372,7 @@ private:
 		string                                   name;
 		SItemTypeName                            type;
 		CItemLiteral                             value;
+		bool                                     bAddToDebugRenderWorld;
 		mutable std::shared_ptr<CErrorCollector> pErrorCollector;
 	};
 
@@ -365,9 +382,9 @@ private:
 class CRuntimeParamBlueprint
 {
 public:
-	void   AddParameter(const char* szName, const char* szType);
+	void   AddParameter(const char* szName, const char* szType, bool bAddToDebugRenderWorld);
 	size_t GetParameterCount() const;
-	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
+	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, CryGUID& typeGUID, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
 
 	void   Serialize(Serialization::IArchive& archive);
 	void   PrepareHelpers(CUqsDocSerializationContext& context);
@@ -380,7 +397,7 @@ private:
 	struct SRuntimeParam
 	{
 		SRuntimeParam();
-		SRuntimeParam(const char* szName, const char* szType);
+		SRuntimeParam(const char* szName, const char* szType, bool _bAddToDebugRenderWorld);
 		SRuntimeParam(SRuntimeParam&& other);
 		SRuntimeParam& operator=(SRuntimeParam&& other);
 
@@ -393,6 +410,7 @@ private:
 
 		string                                   name;
 		SItemTypeName                            type;
+		bool                                     bAddToDebugRenderWorld;
 		mutable std::shared_ptr<CErrorCollector> pErrorCollector;
 	};
 
@@ -403,12 +421,13 @@ class CGeneratorBlueprint
 {
 public:
 	CGeneratorBlueprint();
-	explicit CGeneratorBlueprint(const uqs::client::IGeneratorFactory& factory, const CUqsDocSerializationContext& context);
+	explicit CGeneratorBlueprint(const UQS::Client::IGeneratorFactory& factory, const CUqsDocSerializationContext& context);
 
 	void                                    SetGeneratorName(const char* szGeneratorName);
 	CInputBlueprint&                        GetInputRoot();
 	const CInputBlueprint&                  GetInputRoot() const;
 	const char*                             GetGeneratorName() const;
+	const CryGUID&                          GetGeneratorGUID() const;
 
 	bool                                    IsSet() const { return !m_name.empty(); }
 
@@ -455,11 +474,17 @@ class CInstantEvaluatorBlueprint
 {
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
-	void                   SetWeight(const char* szWeight);
-	const char*            GetWeight() const;
+	void                   SetWeight(float weight);
+	void                   SetScoreTransformName(const char* szScoreTransformName);
+	void                   SetNegateDiscard(bool bNegateDiscard);
+	float                  GetWeight() const;
+	const char*            GetScoreTransformName() const;
+	const CryGUID&         GetScoreTransformGUID() const;
+	bool                   GetNegateDiscard() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
+	const CryGUID&         GetEvaluatorGUID() const;
 
 	CInstantEvaluatorBlueprint(CEvaluator& owner)
 		: SEvaluatorBlueprintAdapter(owner)
@@ -471,11 +496,17 @@ class CDeferredEvaluatorBlueprint
 {
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
-	void                   SetWeight(const char* szWeight);
-	const char*            GetWeight() const;
+	void                   SetWeight(float weight);
+	void                   SetScoreTransformName(const char* szScoreTransformName);
+	void                   SetNegateDiscard(bool bNegateDiscard);
+	float                  GetWeight() const;
+	const char*            GetScoreTransformName() const;
+	const CryGUID&         GetScoreTransformGUID() const;
+	bool                   GetNegateDiscard() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
+	const CryGUID&         GetEvaluatorGUID() const;
 
 	CDeferredEvaluatorBlueprint(CEvaluator& owner)
 		: SEvaluatorBlueprintAdapter(owner)
@@ -497,11 +528,17 @@ public:
 	static CEvaluator            CreateDeferred();
 
 	void                         SetEvaluatorName(const char* szEvaluatorName);
-	void                         SetWeight(const char* szWeight);
-	const char*                  GetWeight() const;
+	void                         SetWeight(float weight);
+	void                         SetScoreTransformName(const char* szScoreTransformName);
+	void                         SetNegateDiscard(bool bNegateDiscard);
+	float                        GetWeight() const;
+	const char*                  GetScoreTransformName() const;
+	const CryGUID&               GetScoreTransformGUID() const;
+	bool                         GetNegateDiscard() const;
 	CInputBlueprint&             GetInputRoot();
 	const CInputBlueprint&       GetInputRoot() const;
 	const char*                  GetEvaluatorName() const;
+	const CryGUID&               GetEvaluatorGUID() const;
 
 	CInstantEvaluatorBlueprint&  AsInstant();
 	CDeferredEvaluatorBlueprint& AsDeferred();
@@ -528,6 +565,7 @@ private:
 	CEvaluator& operator=(const CEvaluator&);
 
 	bool        SerializeName(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context);
+	void        SerializeScoreTransform(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext& context);
 
 	void        SetType(EEvaluatorType type);
 
@@ -535,7 +573,8 @@ private:
 
 	string                                      m_name;
 	float                                       m_weight;
-	mutable string                              m_weightString;
+	string                                      m_scoreTransformName;
+	bool                                        m_bNegateDiscard;
 	CInputBlueprint                             m_inputs;
 	mutable std::shared_ptr<CErrorCollector>    m_pErrorCollector;
 
@@ -588,7 +627,7 @@ struct SQueryFactoryType
 	{
 	public:
 		CTraits();
-		CTraits(const uqs::core::IQueryFactory& queryFactory);
+		CTraits(const UQS::Core::IQueryFactory& queryFactory);
 
 		bool   operator==(const CTraits& other) const;
 		bool   operator!=(const CTraits& other) const { return !(*this == other); }
@@ -604,7 +643,7 @@ struct SQueryFactoryType
 		bool   CanHaveChildren() const;
 
 	private:
-		const uqs::core::IQueryFactory* m_pQueryFactory;
+		const UQS::Core::IQueryFactory* m_pQueryFactory;
 	};
 
 	static const char* GetQueryFactoryNameByType(const EType queryFactoryType);
@@ -615,7 +654,7 @@ struct SQueryFactoryType
 
 	bool                            Serialize(Serialization::IArchive& archive, const char* szName, const char* szLabel, const CUqsDocSerializationContext* pContext);
 
-	const uqs::core::IQueryFactory* GetFactory(const CUqsDocSerializationContext* pContext) const;
+	const UQS::Core::IQueryFactory* GetFactory(const CUqsDocSerializationContext* pContext) const;
 	const CTraits&                  GetTraits() const { return queryTraits; }
 
 	void                            UpdateTraits(const CUqsDocSerializationContext* pContext);
@@ -638,8 +677,8 @@ public:
 
 	const string& GetName() const { return m_name; }
 
-	void          BuildSelfFromITextualQueryBlueprint(const uqs::core::ITextualQueryBlueprint& source, CUqsDocSerializationContext& context);
-	void          BuildITextualQueryBlueprintFromSelf(uqs::core::ITextualQueryBlueprint& target) const;
+	void          BuildSelfFromITextualQueryBlueprint(const UQS::Core::ITextualQueryBlueprint& source, CUqsDocSerializationContext& context);
+	void          BuildITextualQueryBlueprintFromSelf(UQS::Core::ITextualQueryBlueprint& target) const;
 
 	void          Serialize(Serialization::IArchive& archive);
 
@@ -650,8 +689,8 @@ private:
 
 	void        CheckQueryTraitsChange(const SQueryFactoryType::CTraits& queryTraits, const SQueryFactoryType::CTraits& oldTraits, CParametersListContext& paramListContext);
 
-	static void HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(CInputBlueprint& targetRoot, const uqs::core::ITextualInputBlueprint& sourceRoot);
-	static void HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(uqs::core::ITextualInputBlueprint& targetRoot, const CInputBlueprint& sourceRoot);
+	static void HelpBuildCInputBlueprintHierarchyFromITextualInputBlueprint(CInputBlueprint& targetRoot, const UQS::Core::ITextualInputBlueprint& sourceRoot);
+	static void HelpBuildITextualInputBlueprintHierarchyFromCInputBlueprint(UQS::Core::ITextualInputBlueprint& targetRoot, const CInputBlueprint& sourceRoot);
 
 private:
 
@@ -665,7 +704,6 @@ private:
 	CGeneratorBlueprint                      m_generator;
 	CEvaluators                              m_evaluators;
 	QueryBlueprintChildren                   m_queryChildren;
-	SItemTypeName                            m_expectedShuttledType;
 	mutable std::shared_ptr<CErrorCollector> m_pErrorCollector;
 };
-} // uqseditor
+} // UQSEditor

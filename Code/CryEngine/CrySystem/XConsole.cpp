@@ -261,6 +261,7 @@ int CXConsole::con_restricted = 0;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CXConsole::CXConsole()
+	: m_managedConsoleCommandListeners(1)
 {
 	m_fRepeatTimer = 0;
 	m_pSysDeactivateConsole = 0;
@@ -422,7 +423,15 @@ void CXConsole::Init(CSystem* pSystem)
 		m_pInput->AddConsoleEventListener(this);
 	}
 
-	m_pSysDeactivateConsole = REGISTER_INT("sys_DeactivateConsole", 0, 0,
+#if !defined(_RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
+	const int disableConsoleDefault = 0;
+	const int disableConsoleFlags = 0;
+#else
+	const int disableConsoleDefault = 1;
+	const int disableConsoleFlags = VF_CONST_CVAR | VF_READONLY;
+#endif
+
+	m_pSysDeactivateConsole = REGISTER_INT("sys_DeactivateConsole", disableConsoleDefault, disableConsoleFlags,
 	                                       "0: normal console behavior\n"
 	                                       "1: hide the console");
 
@@ -437,22 +446,33 @@ void CXConsole::Init(CSystem* pSystem)
 		con_restricted = 0;
 
 	// test cases -----------------------------------------------
+
+	// cppcheck-suppress assertWithSideEffect
 	assert(GetCVar("con_debug") != 0);                    // should be registered a few lines above
+	// cppcheck-suppress assertWithSideEffect
 	assert(GetCVar("Con_Debug") == GetCVar("con_debug")); // different case
 
 	// editor
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("con_"), "con_debug") == 0);
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("CON_"), "con_debug") == 0);
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("con_debug"), "con_display_last_messages") == 0);   // actually we should reconsider this behavior
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("Con_Debug"), "con_display_last_messages") == 0);   // actually we should reconsider this behavior
 
 	// game
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("con_"), "con_debug ") == 0);
 	ResetAutoCompletion();
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("CON_"), "con_debug ") == 0);
 	ResetAutoCompletion();
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("con_debug"), "con_debug ") == 0);
 	ResetAutoCompletion();
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("Con_Debug"), "con_debug ") == 0);
 	ResetAutoCompletion();
 	m_sInputBuffer = "";
@@ -466,7 +486,7 @@ void CXConsole::Init(CSystem* pSystem)
 		ITexture* pTex = 0;
 
 		// This texture is already loaded by the renderer. It's ref counted so there is no wasted space.
-		pTex = pSystem->GetIRenderer()->EF_LoadTexture("EngineAssets/Textures/White.dds", FT_DONT_STREAM | FT_DONT_RELEASE);
+		pTex = pSystem->GetIRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Textures/White.dds", FT_DONT_STREAM | FT_DONT_RELEASE);
 		if (pTex)
 			m_nWhiteTexID = pTex->GetTextureID();
 	}
@@ -600,7 +620,6 @@ void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 	ConsoleVariablesMapItor::value_type value = ConsoleVariablesMapItor::value_type(pCVar->GetName(), pCVar);
 
 	m_mapVariables.insert(value);
-	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CVAR_REGISTERED, reinterpret_cast<UINT_PTR>(pCVar), 0);
 
 	int flags = pCVar->GetFlags();
 
@@ -1034,9 +1053,7 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 		return;
 
 	ICVar* pCVar = itor->second;
-
-	int32 flags = pCVar->GetFlags();
-
+	const int32 flags = pCVar->GetFlags();
 	if (flags & VF_CHEAT_ALWAYS_CHECK)
 	{
 		RemoveCheckedCVar(m_alwaysCheckedVariables, *itor);
@@ -1045,11 +1062,16 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 	{
 		RemoveCheckedCVar(m_randomCheckedVariables, *itor);
 	}
+	m_mapVariables.erase(itor);
 
-	m_mapVariables.erase(sVarName);
-	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CVAR_UNREGISTERED, reinterpret_cast<UINT_PTR>(pCVar), 0);
+	for (auto& it : m_consoleVarSinks)
+	{
+		it->OnVarUnregister(pCVar);
+	}
 
 	delete pCVar;
+
+	UnRegisterAutoComplete(sVarName);
 }
 
 void CXConsole::RemoveCheckedCVar(ConsoleVariablesVector& vector, const ConsoleVariablesVector::value_type& value)
@@ -1561,6 +1583,16 @@ void CXConsole::OnConsoleCommand(const char* cmd)
 	ExecuteString(cmd, false);
 }
 
+void CXConsole::RegisterListener(IManagedConsoleCommandListener* pListener, const char* name)
+{
+	m_managedConsoleCommandListeners.Add(pListener, name);
+}
+
+void CXConsole::UnregisterListener(IManagedConsoleCommandListener* pListener)
+{
+	m_managedConsoleCommandListeners.Remove(pListener);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const char* CXConsole::GetHistoryElement(const bool bUpOrDown)
 {
@@ -1811,7 +1843,7 @@ void CXConsole::ScrollConsole()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags, const char* sHelp)
+void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags, const char* sHelp, bool bIsManagedExternally)
 {
 	AssertName(sCommand);
 
@@ -1820,6 +1852,7 @@ void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nF
 		CConsoleCommand cmd;
 		cmd.m_sName = sCommand;
 		cmd.m_func = func;
+		cmd.m_isManagedExternally = bIsManagedExternally;
 		if (sHelp)
 		{
 			cmd.m_sHelp = sHelp;
@@ -1868,6 +1901,8 @@ void CXConsole::RemoveCommand(const char* sName)
 	ConsoleCommandsMap::iterator ite = m_mapCommands.find(sName);
 	if (ite != m_mapCommands.end())
 		m_mapCommands.erase(ite);
+
+	UnRegisterAutoComplete(sName);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2502,7 +2537,18 @@ void CXConsole::ExecuteCommand(CConsoleCommand& cmd, string& str, bool bIgnoreDe
 	{
 		// This is function command, execute it with a list of parameters.
 		CConsoleCommandArgs cmdArgs(str, args);
-		cmd.m_func(&cmdArgs);
+		if (!cmd.m_isManagedExternally)
+		{
+			cmd.m_func(&cmdArgs);
+		}
+		else
+		{
+			for (TManagedConsoleCommandListener::Notifier notifier(m_managedConsoleCommandListeners); notifier.IsValid(); notifier.Next())
+			{
+				notifier->OnManagedConsoleCommandEvent(cmd.m_sName.c_str(), &cmdArgs);
+			}
+		}
+
 		return;
 	}
 
@@ -2746,7 +2792,20 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 		{
 			ICVar* pVar = itrVars->second;
 
+#ifdef _RELEASE
+			if (!gEnv->IsEditor())
+			{
+				const bool isCheat = (pVar->GetFlags() & (VF_CHEAT | VF_CHEAT_NOCHECK | VF_CHEAT_ALWAYS_CHECK)) != 0;
+				if (isCheat)
+				{
+					++itrVars;
+					continue;
+				}
+			}
+#endif // _RELEASE
+
 			if ((pVar->GetFlags() & VF_RESTRICTEDMODE) || !con_restricted)     // in restricted mode we allow only VF_RESTRICTEDMODE CVars&CCmd
+			{
 				//if(itrVars->first.compare(0,m_sPrevTab.length(),m_sPrevTab)==0)
 				if (strnicmp(m_sPrevTab.c_str(), itrVars->first, m_sPrevTab.length()) == 0)
 				{
@@ -2758,6 +2817,7 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 						matches.push_back((char* const)itrVars->first);
 					}
 				}
+			}
 			++itrVars;
 		}
 	}
@@ -3234,9 +3294,9 @@ void CXConsole::Paste()
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CXConsole::GetNumVars(bool bIncludeCommands)
+size_t CXConsole::GetNumVars(bool bIncludeCommands) const
 {
-	return (int)m_mapVariables.size() + (bIncludeCommands ? (int)m_mapCommands.size() : 0);
+	return m_mapVariables.size() + (bIncludeCommands ? m_mapCommands.size() : 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3449,59 +3509,59 @@ char* CXConsole::GetCheatVarAt(uint32 nOffset)
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix)
+size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix, int nListTypes) const
 {
-	size_t i = 0;
+	CRY_ASSERT(pszArray != nullptr);
+	if (pszArray == nullptr)
+		return 0;
+
+	size_t itemAdded = 0;
 	size_t iPrefixLen = szPrefix ? strlen(szPrefix) : 0;
 
 	// variables
+	if (nListTypes == 0 || nListTypes == 1)
 	{
-		ConsoleVariablesMap::const_iterator it, end = m_mapVariables.end();
-		for (it = m_mapVariables.begin(); it != end; ++it)
+		for (auto& it : m_mapVariables)
 		{
-			if (pszArray && i >= numItems)
+			if (itemAdded >= numItems)
 				break;
 
-			if (szPrefix)
-				if (strnicmp(it->first, szPrefix, iPrefixLen) != 0)
-					continue;
-
-			if (it->second->GetFlags() & VF_INVISIBLE)
+			if (szPrefix && strnicmp(it.first, szPrefix, iPrefixLen) != 0)
 				continue;
 
-			if (pszArray)
-				pszArray[i] = it->first;
+			if (it.second->GetFlags() & VF_INVISIBLE)
+				continue;
 
-			i++;
+			pszArray[itemAdded] = it.first;
+
+			itemAdded++;
 		}
 	}
 
 	// commands
+	if (nListTypes == 0 || nListTypes == 2)
 	{
-		ConsoleCommandsMap::iterator it, end = m_mapCommands.end();
-		for (it = m_mapCommands.begin(); it != end; ++it)
+		for (auto& it : m_mapCommands)
 		{
-			if (pszArray && i >= numItems)
+			if (itemAdded >= numItems)
 				break;
 
-			if (szPrefix)
-				if (strnicmp(it->first.c_str(), szPrefix, iPrefixLen) != 0)
-					continue;
-
-			if (it->second.m_nFlags & VF_INVISIBLE)
+			if (szPrefix && strnicmp(it.first.c_str(), szPrefix, iPrefixLen) != 0)
 				continue;
 
-			if (pszArray)
-				pszArray[i] = it->first.c_str();
+			if (it.second.m_nFlags & VF_INVISIBLE)
+				continue;
 
-			i++;
+			pszArray[itemAdded] = it.first.c_str();
+
+			itemAdded++;
 		}
 	}
 
-	if (i != 0 && pszArray)
-		std::sort(pszArray, pszArray + i, less_CVar);
+	if (itemAdded != 0)
+		std::sort(pszArray, pszArray + itemAdded, less_CVar);
 
-	return i;
+	return itemAdded;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3518,6 +3578,15 @@ void CXConsole::FindVar(const char* substr)
 			ICVar* pCvar = gEnv->pConsole->GetCVar(cmds[i]);
 			if (pCvar)
 			{
+#ifdef _RELEASE
+				if (!gEnv->IsEditor())
+				{
+					const bool isCheat = (pCvar->GetFlags() & (VF_CHEAT | VF_CHEAT_NOCHECK | VF_CHEAT_ALWAYS_CHECK)) != 0;
+					if (isCheat)
+						continue;
+				}
+#endif  // _RELEASE
+
 				DisplayVarValue(pCvar);
 			}
 			else

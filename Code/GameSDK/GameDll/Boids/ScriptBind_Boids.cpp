@@ -360,9 +360,9 @@ bool CScriptBind_Boids::ReadParamsTable(IScriptTable* pTable, struct SBoidContex
 			str = "";
 			if (audio->GetAt(i, str))
 			{
-				AudioControlId audioControlID = INVALID_AUDIO_CONTROL_ID;
-				gEnv->pAudioSystem->GetAudioTriggerId(str, audioControlID);
-				bc.audio.push_back(audioControlID);
+				CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
+				gEnv->pAudioSystem->GetTriggerId(str, triggerId);
+				bc.audio.push_back(triggerId);
 			}
 		}
 	}

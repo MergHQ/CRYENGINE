@@ -1,4 +1,4 @@
-using CryEngine.UI.Components;
+﻿using CryEngine.UI.Components;
 using System.Collections.Generic;
 
 namespace CryEngine.UI

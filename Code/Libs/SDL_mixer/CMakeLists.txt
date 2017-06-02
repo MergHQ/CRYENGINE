@@ -96,7 +96,8 @@ add_sources("NoUberFile"
 
 end_sources()
 
-
+# A hack for Nsight Tegra to prevent c files compiling with -std-c++11 flag
+unset (CMAKE_CXX_STANDARD )
 
 ################# sdl_mixer_static ##################
 CryEngineStaticModule(sdl_mixer_static SOLUTION_FOLDER "Libs/Audio")

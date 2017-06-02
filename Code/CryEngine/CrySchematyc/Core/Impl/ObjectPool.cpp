@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "ObjectPool.h"
 
-#include <Schematyc/Runtime/IRuntimeClass.h>
+#include <CrySchematyc/Runtime/IRuntimeClass.h>
 
 #include "Core.h"
 #include "Object.h"
@@ -23,7 +23,7 @@ IObject* CObjectPool::CreateObject(const SObjectParams& params)
 
 		SSlot& slot = m_slots[m_freeSlots.back()];
 		CObjectPtr pObject = std::make_shared<CObject>(slot.objectId);
-		if (pObject->Init(pClass, params.pCustomData, params.pProperties, params.simulationMode))
+		if (pObject->Init(pClass, params.pCustomData, params.pProperties, params.simulationMode, params.pEntity))
 		{
 			m_freeSlots.pop_back();
 			slot.pObject = pObject;
@@ -57,22 +57,22 @@ void CObjectPool::DestroyObject(ObjectId objectId)
 	}
 }
 
-void CObjectPool::SendSignal(ObjectId objectId, const SGUID& signalGUID, CRuntimeParams& params)
+void CObjectPool::SendSignal(ObjectId objectId, const SObjectSignal& signal)
 {
 	IObject* pObject = GetObject(objectId);
 	if (pObject)
 	{
-		pObject->ProcessSignal(signalGUID, params);
+		pObject->ProcessSignal(signal);
 	}
 }
 
-void CObjectPool::BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params)
+void CObjectPool::BroadcastSignal(const SObjectSignal& signal)
 {
 	for (SSlot& slot : m_slots)
 	{
 		if (slot.pObject)
 		{
-			slot.pObject->ProcessSignal(signalGUID, params);
+			slot.pObject->ProcessSignal(signal);
 		}
 	}
 }

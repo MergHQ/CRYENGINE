@@ -8,6 +8,9 @@
 #pragma once
 
 #include <CryCore/CryCrc32.h>
+#include <CrySerialization/Forward.h>
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/STL.h>
 
 #if !defined(_RELEASE)
 	#define HASHEDSTRING_STORES_SOURCE_STRING      //!< For debug purposes, it is often interesting to see from which string the hash was created.

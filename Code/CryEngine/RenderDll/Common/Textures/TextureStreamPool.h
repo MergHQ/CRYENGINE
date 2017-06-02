@@ -162,7 +162,7 @@ public:
 
 	STexPool*     GetPool(int nWidth, int nHeight, int nMips, int nArraySize, ETEX_Format eTF, bool bIsSRGB, ETEX_Type eTT);
 
-	STexPoolItem* GetPoolItem(int nWidth, int nHeight, int nMips, int nArraySize, ETEX_Format eTF, bool bIsSRGB, ETEX_Type eTT, bool bShouldBeCreated, const char* sName, STextureInfo* pTI = NULL, bool bCanCreate = true, bool bWaitForIdle = true);
+	STexPoolItem* GetPoolItem(int nWidth, int nHeight, int nMips, int nArraySize, ETEX_Format eTF, bool bIsSRGB, ETEX_Type eTT, bool bShouldBeCreated, const char* sName, const void** pData = nullptr, bool bCanCreate = true, bool bWaitForIdle = true);
 	void          ReleaseItem(STexPoolItem* pItem);
 	void          GarbageCollect(size_t* nCurTexPoolSize, size_t nLowerPoolLimit, int nMaxItemsToFree);
 

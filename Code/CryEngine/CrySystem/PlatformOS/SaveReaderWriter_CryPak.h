@@ -39,7 +39,7 @@ protected:
 	NO_INLINE_WEAK static size_t FSeek(FILE* fp, long offset, int mode);
 
 private:
-	CDebugAllowFileAccess m_allowFileAccess;
+	CScopedAllowFileAccessFromThisThread m_allowFileAccess;
 };
 
 class CSaveReader_CryPak : public IPlatformOS::ISaveReader, public CCryPakFile

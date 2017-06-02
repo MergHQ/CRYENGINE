@@ -113,7 +113,7 @@ Vec3 CLeader::GetPreferedPos() const
 
 //
 //----------------------------------------------------------------------------------------------------
-void CLeader::Update(EObjectUpdate type)
+void CLeader::Update(EUpdateType type)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 

@@ -63,6 +63,7 @@ enum CHRLOADINGFLAGS
 	CA_SkipSkelRecreation       = BIT(4),
 	CA_DisableLogWarnings       = BIT(5),
 	CA_SkipBoneRemapping        = BIT(6),
+	CA_ImmediateMode            = BIT(7)
 };
 
 enum EReloadCAFResult
@@ -141,6 +142,11 @@ struct IAnimationSerializable :
 };
 
 DECLARE_SHARED_POINTERS(IAnimationSerializable);
+
+struct IAnimationEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE(IAnimationEngineModule, 0xEA8FAA6F4EC948FB, 0x935DB54C09823B86);
+};
 
 //! This class is the main access point for any character animation required for a program which uses CRYENGINE.
 struct ICharacterManager
@@ -298,6 +304,9 @@ struct ICharacterManager
 	virtual void                     PostInit() = 0;
 
 	virtual const IAttachmentMerger& GetIAttachmentMerger() const = 0;
+	
+	//! Extends the default skeleton of a character instance with skin attachments
+	virtual void ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pCharInstance, const char* szFilepathSKEL, const char** szSkinAttachments, const uint32 skinCount, const uint32 nLoadingFlags) = 0;
 	// </interfuscator:shuffle>
 
 #if BLENDSPACE_VISUALIZATION

@@ -32,11 +32,13 @@ CGameRulesSystem::CGameRulesSystem(ISystem* pSystem, IGameFramework* pGameFW)
 	m_pGameRules(0),
 	m_currentGameRules(0)
 {
+	pGameFW->AddNetworkedClientListener(*this);
 }
 
 //------------------------------------------------------------------------
 CGameRulesSystem::~CGameRulesSystem()
 {
+	m_pGameFW->RemoveNetworkedClientListener(*this);
 }
 
 //------------------------------------------------------------------------
@@ -91,7 +93,9 @@ bool CGameRulesSystem::CreateGameRules(const char* rulesName)
 	if (pEntity == NULL)
 		return false;
 
-	pEntity->Activate(true);
+	// Make sure game rules is activated
+	IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(pEntity->GetId());
+	pGameObject->ForceUpdate(true);
 
 	if (pEntity->GetScriptTable())
 	{
@@ -250,4 +254,50 @@ void CGameRulesSystem::GetMemoryStatistics(ICrySizer* s)
 {
 	s->Add(*this);
 	s->AddContainer(m_GameRules);
+}
+
+void CGameRulesSystem::OnLocalClientDisconnected(EDisconnectionCause cause, const char* description)
+{
+	if (m_pGameRules != nullptr)
+	{
+		m_pGameRules->OnDisconnect(cause, description);
+	}
+}
+
+bool CGameRulesSystem::OnClientConnectionReceived(int channelId, bool bIsReset)
+{
+	if (m_pGameRules != nullptr)
+	{
+		m_pGameRules->OnClientConnect(channelId, bIsReset);
+	}
+
+	return true;
+}
+
+bool CGameRulesSystem::OnClientReadyForGameplay(int channelId, bool bIsReset)
+{
+	if (m_pGameRules != nullptr)
+	{
+		m_pGameRules->OnClientEnteredGame(channelId, bIsReset);
+	}
+
+	return true;
+}
+
+void CGameRulesSystem::OnClientDisconnected(int channelId, EDisconnectionCause cause, const char* description, bool bKeepClient)
+{
+	if (m_pGameRules != nullptr)
+	{
+		m_pGameRules->OnClientDisconnect(channelId, cause, description, bKeepClient);
+	}
+}
+
+bool CGameRulesSystem::OnClientTimingOut(int channelId, EDisconnectionCause cause, const char* description)
+{
+	if (m_pGameRules != nullptr && m_pGameRules->ShouldKeepClient(channelId, cause, description))
+	{
+		return false;
+	}
+
+	return true;
 }

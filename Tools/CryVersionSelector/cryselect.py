@@ -19,10 +19,12 @@ def command_title (args):
 	return {
 	'upgrade': 'Upgrade project',
 	'projgen': 'Generate solution',
+	'cmake-gui': 'Open CMake GUI',
 	'build': 'Build solution',
 	'edit': 'Launch editor',
 	'open': 'Launch game',
-	'monodev': 'Edit code',
+	'server': 'Launch server',
+	'package': 'Package for release',
 	'switch': 'Switch engine version',
 	'metagen': 'Generate/repair metadata'
 	}.get (args.command, '')
@@ -123,16 +125,18 @@ def cmd_install (args):
 		)
 
 		# --- extended, action, title, command
-		# The first collumn difines extended action. The associated commands will be displayed only when the user right-clicks an object while also pressing the SHIFT key.
+		# The first collumn defines extended action. The associated commands will be displayed only when the user right-clicks an object while also pressing the SHIFT key.
 		# https://msdn.microsoft.com/en-us/library/cc144171(VS.85).aspx
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
 			(False, 'open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
-			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
+			(False, 'dedicated', 'Launch dedicated server', '"%s" server "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
-			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
+			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),
+			(False, '_cmake-gui', 'Open CMake GUI', 'cmake-gui "%%1"'),
 			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
-			(True, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
+			(False, '_package', 'Package Build', '"%s" package "%%1"' % ScriptPath),
+			(False, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
 		)
 	else:
 		ScriptPath= os.path.abspath (__file__)
@@ -143,12 +147,14 @@ def cmd_install (args):
 		
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
+			(False, 'dedicated', 'Launch dedicated server', '"%s" "%s" server "%%1"' % (PythonPath, ScriptPath)),
 			(False, 'open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
-			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
-			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),			
+			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),		
+			(False, '_cmake-gui', 'Open CMake GUI', 'cmake-gui "%%1"'),
 			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
-			(True, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
+			(False, '_package', 'Package Build', '"%s" "%s" package "%%1"' % (PythonPath, ScriptPath)),
+			(False, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
 		)
 
 	#---
@@ -477,10 +483,17 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 		error_project_json_decode (args)
 	
 	engine_id= cryproject.engine_id(project)	
-	engine_registry= cryregistry.load_engines()
-	engine_path= cryregistry.engine_path (engine_registry, engine_id)
-	if engine_path is None:
-		error_engine_path_not_found (args, engine_id)
+	engine_path = ""
+	
+	# Start by checking for the ability to specifying use of the local engine
+	if engine_id is '.':
+		engine_path = os.path.dirname(args.project_file)
+	else:
+		# Now check the registry
+		engine_registry= cryregistry.load_engines()
+		engine_path= cryregistry.engine_path (engine_registry, engine_id)
+		if engine_path is None:
+			error_engine_path_not_found (args, engine_id)
 		
 	#---
 
@@ -500,33 +513,29 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 	sys_argv= [x for x in sys_argv if x not in ('--silent', )]
 	subcmd.extend (sys_argv)
 
-	(temp_fd, temp_path)= tempfile.mkstemp(suffix='.out', prefix=args.command + '_', text=True)
-	temp_file= os.fdopen(temp_fd, 'w')
-
 	print_subprocess (subcmd)
-	p= subprocess.Popen(subcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-	for line in p.stdout:
-		temp_file.write (line)
-		sys.stdout.write (line)
-	
-	returncode= p.wait()
-	temp_file.close()
-	
+	p = subprocess.Popen(subcmd, stderr=subprocess.PIPE)
+	returncode = p.wait()
+
 	if not args.silent and returncode != 0:
 		title= command_title (args)
-		text= p.stderr.read().strip()
+		text= p.stderr.read().strip().decode()
 		if not text:
 			text= SUBPROCESS_NO_STDERR
 		result= MessageBox (None, text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
 		if result == win32con.IDOK:
-			subprocess.call(('notepad.exe', temp_path))
-				
-	os.remove (temp_path)
+			input() # Keeps the window from closing
+
 	sys.exit (returncode)
 
 #--- MAIN ---
 
 if __name__ == '__main__':
+	"""
+	Cryselect is distributed with the web launcher - there exists only one copy of the application on the system.
+	It is intended to called by the web launcher and Windows file extension integration.
+	Cryselect is responsible for maintaining the project registry, and forwarding engine commands to cryrun.
+	"""
 	parser= argparse.ArgumentParser()
 	parser.add_argument ('--pause', action='store_true')
 	parser.add_argument ('--silent', action='store_true')
@@ -556,10 +565,14 @@ if __name__ == '__main__':
 	parser_upgrade= subparsers.add_parser ('upgrade')
 	parser_upgrade.add_argument ('--engine_version', default='')
 	parser_upgrade.add_argument ('project_file')
-	#parser_upgrade.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_upgrade.set_defaults(func=cmd_upgrade)
 	
 	parser_projgen= subparsers.add_parser ('projgen')
+	parser_projgen.add_argument ('project_file')
+	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_projgen.set_defaults(func=cmd_run)
+
+	parser_projgen= subparsers.add_parser ('cmake-gui')
 	parser_projgen.add_argument ('project_file')
 	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_projgen.set_defaults(func=cmd_run)
@@ -578,16 +591,21 @@ if __name__ == '__main__':
 	parser_open.add_argument ('project_file')
 	parser_open.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_open.set_defaults(func=cmd_run)
-
-	parser_monodev= subparsers.add_parser ('monodev')
-	parser_monodev.add_argument ('project_file')
-	parser_monodev.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_monodev.set_defaults(func=cmd_run)
 	
-	parser_projgen= subparsers.add_parser ('metagen')
-	parser_projgen.add_argument ('project_file')
-	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_projgen.set_defaults(func=cmd_run)
+	parser_server= subparsers.add_parser ('server')
+	parser_server.add_argument ('project_file')
+	parser_server.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_server.set_defaults(func=cmd_run)
+
+	parser_metagen= subparsers.add_parser ('metagen')
+	parser_metagen.add_argument ('project_file')
+	parser_metagen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_metagen.set_defaults(func=cmd_run)
+
+	parser_metagen= subparsers.add_parser ('package')
+	parser_metagen.add_argument ('project_file')
+	parser_metagen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_metagen.set_defaults(func=cmd_run)
 
 	#---
 		

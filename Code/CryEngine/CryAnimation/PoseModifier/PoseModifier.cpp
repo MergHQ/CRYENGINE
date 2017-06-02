@@ -2004,8 +2004,8 @@ void CPoseModifierStack::Synchronize()
 
 bool Serialize(Serialization::IArchive& ar, IAnimationPoseModifierPtr& pointer, const char* name, const char* label)
 {
-	Serialization::CryExtensionSharedPtr<IAnimationPoseModifier, IAnimationSerializable> serializer(pointer);
-	return ar(static_cast<Serialization::IPointer&>(serializer), name, label);
+	Serialization::CryExtensionPointer<IAnimationPoseModifier, IAnimationSerializable> serializer(pointer);
+	return ar(serializer, name, label);
 }
 
 void CPoseModifierSetup::Entry::Serialize(Serialization::IArchive& ar)
@@ -2014,7 +2014,7 @@ void CPoseModifierSetup::Entry::Serialize(Serialization::IArchive& ar)
 	if (!ar(instance, "instance", "^"))
 	{
 		// load old GUID-based name
-		CryClassID classId = { 0, 0 };
+		CryClassID classId = CryClassID::Null();
 		ar(classId.hipart, "guidHiPart");
 		ar(classId.lopart, "guidLoPart");
 		if (classId.hipart != 0 || classId.lopart != 0)

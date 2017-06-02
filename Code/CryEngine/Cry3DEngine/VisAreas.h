@@ -275,6 +275,7 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	void                 CheckVis(const SRenderingPassInfo& passInfo);
 	void                 DrawVisibleSectors(const SRenderingPassInfo& passInfo);
 	void                 ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName);
+	void                 ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate);
 	void                 UpdateVisArea(CVisArea* pArea, const Vec3* pPoints, int nCount, const char* szName, const SVisAreaInfo& info);
 	virtual void         UpdateConnections();
 	void                 MoveObjectsIntoList(PodArray<SRNInfo>* plstVisAreasEntities, const AABB& boxArea, bool bRemoveObjects = false);

@@ -128,10 +128,6 @@ add_sources("NoUberFile"
 		"../../CryCommonTools/XMLWriter.h"
 		"../../CryCommonTools/Metadata/Metadata.cpp"
 		"../../CryCommonTools/Metadata/Metadata.h"
-		"../../CryCommonTools/Metadata/MetadataHelpers.cpp"
-		"../../CryCommonTools/Metadata/MetadataHelpers.h"
-		"../../CryCommonTools/CryGUIDHelper.cpp"
-		"../../CryCommonTools/CryGUIDHelper.h"
 	SOURCE_GROUP "MeshCompiler (Cry3DEngine)"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.cpp"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.cpp"
@@ -212,5 +208,5 @@ if (OPTION_FBX_SDK)
 	use_fbx_sdk()
 endif()
 target_link_libraries(${THIS_PROJECT} PRIVATE Gdi32 Shell32 Ole32 dbghelp Wininet)
-target_link_libraries(${THIS_PROJECT} PRIVATE yasli lua vco)
+target_link_libraries(${THIS_PROJECT} PRIVATE lua vco)
 set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/DEF:ResourceCompilerPlugin.def")

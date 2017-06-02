@@ -19,6 +19,7 @@ add_sources("CryAudioImpl_uber_0.cpp"
 		"Common.cpp"
 		"CryAudioImpl.cpp"
 		"FileIOHandler.cpp"
+		"ATLEntities.cpp"
 )
 
 add_sources("NoUberFile"
@@ -30,8 +31,12 @@ end_sources()
 #END-FILE-LIST
 
 if (AUDIO_WWISE)
-	CryEngineModule(CryAudioImplWwise PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
+	CryEngineModule(CryAudioImplWwise FORCE_SHARED PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 	target_include_directories(${THIS_PROJECT} PRIVATE ../../Common ${SDK_DIR}/Audio/oculus/wwise/Include ${SDK_DIR}/Audio/wwise/SDK/include )
+	
+	if(AUDIO_HRTF)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE -DWWISE_USE_OCULUS)
+	endif()
 
 	if(WIN64)
 		set( WWISE_PLATFORM_PATH x64 )
