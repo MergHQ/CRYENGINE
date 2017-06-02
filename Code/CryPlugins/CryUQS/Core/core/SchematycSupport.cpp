@@ -720,7 +720,7 @@ namespace UQS
 			desc.SetLabel("QueryFinished");
 			desc.SetDescription("Sent when a query finishes without having run into an exception.");
 			desc.AddMember(&SQueryFinishedSignal::queryId, 'quid', "queryId", "QueryID", nullptr, SQueryIdWrapper());
-			desc.AddMember(&SQueryFinishedSignal::resultCount, 'resc', "resultCount", "ResultCount", 0);
+			desc.AddMember(&SQueryFinishedSignal::resultCount, 'resc', "resultCount", "ResultCount", nullptr, 0);
 		}
 
 		//===================================================================================

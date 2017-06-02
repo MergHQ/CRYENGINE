@@ -106,7 +106,7 @@ void CSchematycEntitySensorVolumeComponent::SEnteringSignal::ReflectType(Schemat
 	desc.SetGUID("19cb7f01-1921-441c-b90e-64f940f38e80"_cry_guid);
 	desc.SetLabel("Entering");
 	desc.SetDescription("Sent when an entity enters the sensor volume.");
-	desc.AddMember(&SEnteringSignal::entityId, 'ent', "entityId", "EntityId", "Id of entity entering sensor volume");
+	desc.AddMember(&SEnteringSignal::entityId, 'ent', "entityId", "EntityId", "Id of entity entering sensor volume", INVALID_ENTITYID);
 }
 
 CSchematycEntitySensorVolumeComponent::SLeavingSignal::SLeavingSignal() {}
@@ -120,7 +120,7 @@ void CSchematycEntitySensorVolumeComponent::SLeavingSignal::ReflectType(Schematy
 	desc.SetGUID("474cc5fe-d7f0-4606-a06c-72cc0b3080cb"_cry_guid);
 	desc.SetLabel("Leaving");
 	desc.SetDescription("Sent when an entity leaves the sensor volume.");
-	desc.AddMember(&SLeavingSignal::entityId, 'ent', "entityId", "EntityId", "Id of entity leaving sensor volume");
+	desc.AddMember(&SLeavingSignal::entityId, 'ent', "entityId", "EntityId", "Id of entity leaving sensor volume", INVALID_ENTITYID);
 }
 
 void CSchematycEntitySensorVolumeComponent::Initialize()
