@@ -1,4 +1,4 @@
-﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System.Collections.Generic;
 using CryEngine.Common;
@@ -173,13 +173,14 @@ namespace CryEngine
 		/// <returns></returns>
 		public static bool Raycast(Vector3 origin, Vector3 direction, float maxDistance, EntityRaycastFlags entityFlags, params IPhysicalEntity[] skipList)
 		{
-			var rayParams = new IPhysicalWorld.SRWIParams();
-			rayParams.org = origin;
 			var magnitude = direction.Dot(direction);
 			if(magnitude > 1.0f || magnitude < 1.0f)
 			{
 				direction = direction.Normalized;
 			}
+
+			var rayParams = new IPhysicalWorld.SRWIParams();
+			rayParams.org = origin;
 			rayParams.dir = direction * maxDistance;
 			rayParams.objtypes = (int)entityFlags;
 			rayParams.flags = DefaultRaycastFlags;
@@ -260,19 +261,22 @@ namespace CryEngine
 		public static bool Raycast(Vector3 origin, Vector3 direction, float maxDistance, EntityRaycastFlags entityFlags, out RaycastHit raycastHit, params PhysicsEntity[] skipList)
 		{
 			raycastHit = default(RaycastHit);
-			var rayParams = new IPhysicalWorld.SRWIParams();
+
 			var magnitude = direction.Dot(direction);
 			if(magnitude > 1.0f || magnitude < 1.0f)
 			{
 				direction = direction.Normalized;
 			}
+
+			var rayParams = new IPhysicalWorld.SRWIParams();
+			rayParams.org = origin;
 			rayParams.dir = direction * maxDistance;
 			rayParams.objtypes = (int)entityFlags;
 			rayParams.flags = DefaultRaycastFlags;
 			rayParams.nMaxHits = 1;
 			rayParams.hits = new ray_hit();
 
-			if(skipList != null)
+			if(skipList != null && skipList.Length > 0)
 			{
 				rayParams.AllocateSkipEnts(skipList.Length);
 

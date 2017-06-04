@@ -41,6 +41,16 @@ namespace CryEngine
 			return new ColorF(value.R, value.G, value.B, value.A);
 		}
 
+		public static implicit operator Color(ColorF value)
+		{
+			if(value == null)
+			{
+				return new Color();
+			}
+
+			return new Color(value.r, value.g, value.b, value.a);
+		}
+
 		/// <summary>
 		/// Creates a Color from given components.
 		/// </summary>

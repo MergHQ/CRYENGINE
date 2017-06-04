@@ -38,9 +38,6 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 
 
 	set(EntitySystem_Attributes_FILES EntitySystem/Attributes/EntityClassAttribute.cs EntitySystem/Attributes/EntityComponentAttribute.cs)
-
-
-	set(EntitySystem_Attributes_FILES EntitySystem/Attributes/EntityClassAttribute.cs EntitySystem/Attributes/EntityComponentAttribute.cs)
 	source_group("EntitySystem\\Attributes" FILES ${EntitySystem_Attributes_FILES})
 
 
@@ -48,7 +45,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("EntitySystem\\Native" FILES ${EntitySystem_Native_FILES})
 
 
-	set(EntitySystem_FILES EntitySystem/Entity.cs EntitySystem/EntityComponent.cs EntitySystem/EntityId.cs EntitySystem/EntityProperty.cs EntitySystem/EntityStatics.cs EntitySystem/PhysicsEntity.cs)
+	set(EntitySystem_FILES EntitySystem/Entity.cs EntitySystem/EntityComponent.cs EntitySystem/EntityId.cs EntitySystem/EntityProperty.cs EntitySystem/EntitySlotFlags.cs EntitySystem/EntityStatics.cs EntitySystem/PhysicsEntity.cs)
 	source_group("EntitySystem" FILES ${EntitySystem_FILES})
 
 
@@ -64,8 +61,16 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Input" FILES ${Input_FILES})
 
 
+	set(Lights_FILES Lights/DynamicLight.cs Lights/RenderLight.cs)
+	source_group("Lights" FILES ${Lights_FILES})
+
+
 	set(Math_FILES Math/Angles3.cs Math/Color.cs Math/MathHelpers.cs Math/Matrix3x3.cs Math/Matrix3x4.cs Math/Matrix4x4.cs Math/Primitives.cs Math/Quaternion.cs Math/Vector2.cs Math/Vector3.cs Math/Vector4.cs)
 	source_group("Math" FILES ${Math_FILES})
+
+
+	set(Particles_FILES Particles/ParticleAttributes.cs Particles/ParticleEffect.cs Particles/ParticleEffectListener.cs Particles/ParticleEmitter.cs Particles/ParticleLocation.cs Particles/ParticleManager.cs Particles/SpawnParameters.cs)
+	source_group("Particles" FILES ${Particles_FILES})
 
 
 	set(Physics_Enums_FILES Physics/Enums/AreaType.cs Physics/Enums/EntityRaycastFlags.cs Physics/Enums/PhysicalizationType.cs Physics/Enums/PhysicsEntityFlags.cs)
@@ -104,7 +109,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Core" FILES ${Core_FILES})
 
 
-	set(SOURCE ${AI_FILES} ${Animations_FILES} ${Audio_Native_FILES} ${Audio_FILES} ${Compilation_FILES} ${Console_Native_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_Attributes_FILES} ${EntitySystem_Native_FILES} ${EntitySystem_FILES} ${FileSystem_FILES} ${Input_Enums_FILES} ${Input_FILES} ${Math_FILES} ${Physics_Enums_FILES} ${Physics_Parameters_FILES} ${Physics_PhysicalizeParameters_FILES} ${Physics_PhysicsStatus_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
+	set(SOURCE ${AI_FILES} ${Animations_FILES} ${Audio_Native_FILES} ${Audio_FILES} ${Compilation_FILES} ${Console_Native_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_Attributes_FILES} ${EntitySystem_Native_FILES} ${EntitySystem_FILES} ${FileSystem_FILES} ${Input_Enums_FILES} ${Input_FILES} ${Lights_FILES} ${Math_FILES} ${Particles_FILES} ${Physics_Enums_FILES} ${Physics_Parameters_FILES} ${Physics_PhysicalizeParameters_FILES} ${Physics_PhysicsStatus_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
 
 	add_custom_target(CryEngine.Core ALL
 		COMMAND ${MCS_PATH} -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml ${MONO_SWIG_OUTPUT_ASSEMBLY_REFERENCE} ${SOURCE} -out:${OUTPUT_DIRECTORY}/CryEngine.Core.dll -doc:${OUTPUT_DIRECTORY}/CryEngine.Core.xml

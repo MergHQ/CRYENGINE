@@ -317,13 +317,14 @@ namespace Cry
 				light.m_Flags = DLF_POINT | DLF_DEFERRED_CUBEMAPS;
 				light.m_LensOpticsFrustumAngle = 255;
 
-				light.m_ProbeExtents = m_extents;
+				// Extents is radius
+				light.m_ProbeExtents = m_extents * 0.5f;
 
-				light.m_fBoxWidth = light.m_ProbeExtents.x;
-				light.m_fBoxLength = light.m_ProbeExtents.y;
-				light.m_fBoxHeight = light.m_ProbeExtents.z;
+				light.m_fBoxWidth = m_extents.x;
+				light.m_fBoxLength = m_extents.y;
+				light.m_fBoxHeight = m_extents.z;
 
-				light.m_fRadius = pow(light.m_ProbeExtents.GetLengthSquared(), 0.5f);
+				light.m_fRadius = light.m_ProbeExtents.GetLength();
 
 				light.SetLightColor(m_color.m_color * m_color.m_diffuseMultiplier);
 				light.SetSpecularMult(m_color.m_specularMultiplier);

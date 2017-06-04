@@ -244,6 +244,34 @@ class CTypeDesc<TYPE, typename std::enable_if<std::is_convertible<TYPE, IEntityC
 //////////////////////////////////////////////////////////////////////////
 struct IEntityComponent : public ICryUnknown
 {
+	// Helper to serialize both legacy and Schematyc properties of an entity
+	struct SPropertySerializer
+	{
+		void Serialize(Serialization::IArchive& archive)
+		{
+			// Start with the legacy properties
+			if (IEntityPropertyGroup* pPropertyGroup = pComponent->GetPropertyGroup())
+			{
+				struct SSerializeWrapper
+				{
+					void Serialize(Serialization::IArchive& archive)
+					{
+						pGroup->SerializeProperties(archive);
+					}
+
+					IEntityPropertyGroup* pGroup;
+				};
+
+				archive(SSerializeWrapper{ pPropertyGroup }, "legacy", "legacy");
+			}
+
+			// Serialize Schematyc properties
+			Schematyc::Utils::SerializeClass(archive, pComponent->GetClassDesc(), pComponent, "schematyc", "schematyc");
+		}
+
+		IEntityComponent* pComponent;
+	};
+
 public:
 	CRY_ENTITY_COMPONENT_INTERFACE(IEntityComponent, 0x6A6FFE9AA3D44CD6, 0x9EF1FC42EE649776)
 

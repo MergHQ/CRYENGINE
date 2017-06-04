@@ -220,151 +220,151 @@ SERIALIZATION_ENUM_END()
 
 namespace Cry
 {
-	namespace DefaultComponents
+namespace DefaultComponents
+{
+struct SActionPressedSignal
+{
+	SActionPressedSignal() {}
+	SActionPressedSignal(Schematyc::CSharedString actionName, float value)
+		: m_actionName(actionName)
+		, m_value(value) {}
+
+	Schematyc::CSharedString m_actionName;
+	float                    m_value;
+};
+
+struct SActionReleasedSignal
+{
+	SActionReleasedSignal() {}
+	SActionReleasedSignal(Schematyc::CSharedString actionName, float value)
+		: m_actionName(actionName)
+		, m_value(value) {}
+
+	Schematyc::CSharedString m_actionName;
+	float                    m_value;
+};
+
+struct SActionChangedSignal
+{
+	SActionChangedSignal() {}
+	SActionChangedSignal(Schematyc::CSharedString actionName, float value)
+		: m_actionName(actionName)
+		, m_value(value) {}
+
+	Schematyc::CSharedString m_actionName;
+	float                    m_value;
+};
+
+void RegisterInputComponent(Schematyc::IEnvRegistrar& registrar)
+{
+	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{
-		struct SActionPressedSignal
+		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CInputComponent));
+		// Functions
 		{
-			SActionPressedSignal() {}
-			SActionPressedSignal(Schematyc::CSharedString actionName, float value)
-				: m_actionName(actionName)
-				, m_value(value) {}
-
-			Schematyc::CSharedString m_actionName;
-			float m_value;
-		};
-
-		struct SActionReleasedSignal
-		{
-			SActionReleasedSignal() {}
-			SActionReleasedSignal(Schematyc::CSharedString actionName, float value)
-				: m_actionName(actionName)
-				, m_value(value) {}
-
-			Schematyc::CSharedString m_actionName;
-			float m_value;
-		};
-
-		struct SActionChangedSignal
-		{
-			SActionChangedSignal() {}
-			SActionChangedSignal(Schematyc::CSharedString actionName, float value)
-				: m_actionName(actionName)
-				, m_value(value) {}
-
-			Schematyc::CSharedString m_actionName;
-			float m_value;
-		};
-
-		void RegisterInputComponent(Schematyc::IEnvRegistrar& registrar)
-		{
-			Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-			{
-				Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CInputComponent));
-				// Functions
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::RegisterSchematycAction, "{1AC261E2-D7E0-4F80-99D1-73D34D670F0C}"_cry_guid, "RegisterAction");
-					pFunction->SetDescription("Registers an action that results in OnAction signal being sent when the input is modified, requires BindInput to connect to keys");
-					pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
-					pFunction->BindInput(1, 'grou', "Group Name");
-					pFunction->BindInput(2, 'name', "Name");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindAction, "{0F22767B-6AA6-4EDF-92F0-7BCD10CAB00E}"_cry_guid, "BindAction");
-					pFunction->SetDescription("Binds an input to an action registered with RegisterAction");
-					pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
-					pFunction->BindInput(1, 'grou', "Group Name");
-					pFunction->BindInput(2, 'name', "Name");
-					pFunction->BindInput(3, 'inpd', "Input Device");
-					pFunction->BindInput(4, 'keyn', "Input Id");
-					pFunction->BindInput(5, 'pres', "Receive Press Events");
-					pFunction->BindInput(6, 'rele', "Receive Release Events");
-					componentScope.Register(pFunction);
-				}
-				// Signals
-				{
-					componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionPressedSignal));
-				}
-				{
-					componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionReleasedSignal));
-				}
-				{
-					componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionChangedSignal));
-				}
-			}
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::RegisterSchematycAction, "{1AC261E2-D7E0-4F80-99D1-73D34D670F0C}"_cry_guid, "RegisterAction");
+			pFunction->SetDescription("Registers an action that results in OnAction signal being sent when the input is modified, requires BindInput to connect to keys");
+			pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+			pFunction->BindInput(1, 'grou', "Group Name");
+			pFunction->BindInput(2, 'name', "Name");
+			componentScope.Register(pFunction);
 		}
-
-		void CInputComponent::ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc)
 		{
-			desc.SetGUID(CInputComponent::IID());
-			desc.SetEditorCategory("Input");
-			desc.SetLabel("Input");
-			desc.SetDescription("Exposes support for inputs and action maps");
-			//desc.SetIcon("icons:ObjectTypes/object.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::HideFromInspector });
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindAction, "{0F22767B-6AA6-4EDF-92F0-7BCD10CAB00E}"_cry_guid, "BindAction");
+			pFunction->SetDescription("Binds an input to an action registered with RegisterAction");
+			pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+			pFunction->BindInput(1, 'grou', "Group Name");
+			pFunction->BindInput(2, 'name', "Name");
+			pFunction->BindInput(3, 'inpd', "Input Device");
+			pFunction->BindInput(4, 'keyn', "Input Id");
+			pFunction->BindInput(5, 'pres', "Receive Press Events");
+			pFunction->BindInput(6, 'rele', "Receive Release Events");
+			componentScope.Register(pFunction);
 		}
-
-		static void ReflectType(Schematyc::CTypeDesc<SActionPressedSignal>& desc)
+		// Signals
 		{
-			desc.SetGUID("{603771B5-6321-4113-82FB-B839F1BE7F64}"_cry_guid);
-			desc.SetLabel("On Action Pressed");
-			desc.AddMember(&SActionPressedSignal::m_actionName, 'actn', "Action", "Action Name", "Name of the triggered action");
-			desc.AddMember(&SActionPressedSignal::m_value, 'valu', "value", "Value", "Value, if any, for example the joystick analog value");
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionPressedSignal));
 		}
-
-		static void ReflectType(Schematyc::CTypeDesc<SActionReleasedSignal>& desc)
 		{
-			desc.SetGUID("{CB22A659-40AD-4CF0-AD07-42DCCEA24F44}"_cry_guid);
-			desc.SetLabel("On Action Released");
-			desc.AddMember(&SActionReleasedSignal::m_actionName, 'actn', "Action", "Action Name", "Name of the triggered action");
-			desc.AddMember(&SActionReleasedSignal::m_value, 'valu', "value", "Value", "Value, if any, for example the joystick analog value");
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionReleasedSignal));
 		}
-
-		static void ReflectType(Schematyc::CTypeDesc<SActionChangedSignal>& desc)
 		{
-			desc.SetGUID("{ECDF0D8F-7E4B-4FA1-AEFA-51DAFD382CE9}"_cry_guid);
-			desc.SetLabel("On Action Changed");
-			desc.AddMember(&SActionChangedSignal::m_actionName, 'actn', "Action", "Action Name", "Name of the triggered action");
-			desc.AddMember(&SActionChangedSignal::m_value, 'valu', "value", "Value", "Value, if any, for example the joystick analog value");
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionChangedSignal));
 		}
+	}
+}
 
-		CInputComponent::CInputComponent()
+void CInputComponent::ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc)
+{
+	desc.SetGUID(CInputComponent::IID());
+	desc.SetEditorCategory("Input");
+	desc.SetLabel("Input");
+	desc.SetDescription("Exposes support for inputs and action maps");
+	//desc.SetIcon("icons:ObjectTypes/object.ico");
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::HideFromInspector });
+}
+
+static void ReflectType(Schematyc::CTypeDesc<SActionPressedSignal>& desc)
+{
+	desc.SetGUID("{603771B5-6321-4113-82FB-B839F1BE7F64}"_cry_guid);
+	desc.SetLabel("On Action Pressed");
+	desc.AddMember(&SActionPressedSignal::m_actionName, 'actn', "Action", "Action Name", "Name of the triggered action", "");
+	desc.AddMember(&SActionPressedSignal::m_value, 'valu', "value", "Value", "Value, if any, for example the joystick analog value", 0.0f);
+}
+
+static void ReflectType(Schematyc::CTypeDesc<SActionReleasedSignal>& desc)
+{
+	desc.SetGUID("{CB22A659-40AD-4CF0-AD07-42DCCEA24F44}"_cry_guid);
+	desc.SetLabel("On Action Released");
+	desc.AddMember(&SActionReleasedSignal::m_actionName, 'actn', "Action", "Action Name", "Name of the triggered action", "");
+	desc.AddMember(&SActionReleasedSignal::m_value, 'valu', "value", "Value", "Value, if any, for example the joystick analog value", 0.0f);
+}
+
+static void ReflectType(Schematyc::CTypeDesc<SActionChangedSignal>& desc)
+{
+	desc.SetGUID("{ECDF0D8F-7E4B-4FA1-AEFA-51DAFD382CE9}"_cry_guid);
+	desc.SetLabel("On Action Changed");
+	desc.AddMember(&SActionChangedSignal::m_actionName, 'actn', "Action", "Action Name", "Name of the triggered action", "");
+	desc.AddMember(&SActionChangedSignal::m_value, 'valu', "value", "Value", "Value, if any, for example the joystick analog value", 0.0f);
+}
+
+CInputComponent::CInputComponent()
+{
+	class CImplementation final : public IImplementation
+	{
+		virtual const char* GetKeyId(EKeyId id) override
 		{
-			class CImplementation final : public IImplementation
-			{
-				virtual const char* GetKeyId(EKeyId id) override
-				{
-					return Serialization::getEnumName<EKeyId>(id);
-				}
-			};
-
-			m_pImplementation = stl::make_unique<CImplementation>();
+			return Serialization::getEnumName<EKeyId>(id);
 		}
+	};
 
-		void CInputComponent::Run(Schematyc::ESimulationMode simulationMode)
-		{
-			Initialize();
-		}
+	m_pImplementation = stl::make_unique<CImplementation>();
+}
 
-		void CInputComponent::RegisterSchematycAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name)
-		{
-			CRY_ASSERT(m_pEntity->GetSchematycObject() != nullptr);
+void CInputComponent::Run(Schematyc::ESimulationMode simulationMode)
+{
+	Initialize();
+}
 
-			RegisterAction(groupName.c_str(), name.c_str(), [this, name](int activationMode, float value)
+void CInputComponent::RegisterSchematycAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name)
+{
+	CRY_ASSERT(m_pEntity->GetSchematycObject() != nullptr);
+
+	RegisterAction(groupName.c_str(), name.c_str(), [this, name](int activationMode, float value)
 			{
 				if ((activationMode & eAAM_OnPress) != 0)
 				{
-					m_pEntity->GetSchematycObject()->ProcessSignal(SActionPressedSignal(name, value), GetGUID());
+				  m_pEntity->GetSchematycObject()->ProcessSignal(SActionPressedSignal(name, value), GetGUID());
 				}
 				if ((activationMode & eAAM_OnRelease) != 0)
 				{
-					m_pEntity->GetSchematycObject()->ProcessSignal(SActionReleasedSignal(name, value), GetGUID());
+				  m_pEntity->GetSchematycObject()->ProcessSignal(SActionReleasedSignal(name, value), GetGUID());
 				}
 				if ((activationMode & eAAM_OnHold) != 0 || (activationMode & eAAM_Always) != 0)
 				{
-					m_pEntity->GetSchematycObject()->ProcessSignal(SActionChangedSignal(name, value), GetGUID());
+				  m_pEntity->GetSchematycObject()->ProcessSignal(SActionChangedSignal(name, value), GetGUID());
 				}
-			});
-		}
-	}
+	    });
+}
+}
 }

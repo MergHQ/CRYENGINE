@@ -1321,12 +1321,6 @@ string CEntity::GetEntityTextDescription() const
 	return m_szName + " (" + m_pClass->GetName() + ")";
 }
 
-static bool SerializePropertiesWrapper(void* rawPointer, yasli::Archive& ar)
-{
-	static_cast<IEntityPropertyGroup*>(rawPointer)->SerializeProperties(ar);
-	return true;
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CEntity::LoadComponent(Serialization::IArchive& archive)
 {
@@ -1503,6 +1497,12 @@ struct SEntityComponentSerializationHelper
 			entity.SaveComponent(archive, *pComponent);
 	}
 };
+
+static bool SerializePropertiesWrapper(void* rawPointer, yasli::Archive& ar)
+{
+	static_cast<IEntityPropertyGroup*>(rawPointer)->SerializeProperties(ar);
+	return true;
+}
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentNode)
@@ -1870,21 +1870,22 @@ void CEntity::CloneComponentsFrom(IEntity& otherEntity)
 {
 	static_cast<CEntity&>(otherEntity).m_components.ForEach([this](const SEntityComponentRecord& componentRecord)
 	{
-		IEntityComponent* pComponent = GetComponentByTypeId(componentRecord.typeId);
-		if (pComponent == nullptr)
+		IEntityComponent* pSourceComponent = componentRecord.pComponent.get();
+		// Check if the component already exists in the target entity
+		IEntityComponent* pNewComponent = GetComponentByTypeId(componentRecord.typeId);
+		if (pNewComponent == nullptr)
 		{
-		  IEntityComponent& srcComponent = *componentRecord.pComponent.get();
-		  IEntityComponent::SInitParams initParams(this, CryGUID::Create(), srcComponent.GetName(), &srcComponent.GetClassDesc(), srcComponent.GetComponentFlags(), srcComponent.GetParent(), srcComponent.GetTransform());
-		  pComponent = AddComponent(componentRecord.typeId, std::shared_ptr<IEntityComponent>(), false, &initParams);
+			// Create a new component
+			IEntityComponent::SInitParams initParams(this, CryGUID::Create(), pSourceComponent->GetName(), &pSourceComponent->GetClassDesc(), pSourceComponent->GetComponentFlags(), pSourceComponent->GetParent(), pSourceComponent->GetTransform());
+			pNewComponent = AddComponent(componentRecord.typeId, std::shared_ptr<IEntityComponent>(), false, &initParams);
 		}
 
-		if (auto* pOtherProperties = componentRecord.pComponent->GetPropertyGroup())
-		{
-		  DynArray<char> propertyBuffer;
-		  gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(propertyBuffer, Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), pOtherProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper));
+		DynArray<char> propertyBuffer;
+		// Save properties from the source to buffer
+		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(propertyBuffer, Serialization::SStruct(IEntityComponent::SPropertySerializer{ pSourceComponent }));
 
-		  gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), pComponent->GetPropertyGroup(), sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper), propertyBuffer.data(), propertyBuffer.size());
-		}
+		// Deserialize to the target
+		gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(IEntityComponent::SPropertySerializer{ pNewComponent }), propertyBuffer.data(), propertyBuffer.size());
 	});
 }
 
@@ -1913,8 +1914,7 @@ void CEntity::VisitComponents(const ComponentsVisitor& visitor)
 	{
 		// Call visitor callback on every component
 		visitor(componentRecord.pComponent.get());
-	}
-	                     );
+	});
 }
 
 void CEntity::SendEventToComponent(IEntityComponent* pComponent, SEntityEvent& event)

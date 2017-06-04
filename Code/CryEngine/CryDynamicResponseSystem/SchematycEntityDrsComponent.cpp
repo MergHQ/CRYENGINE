@@ -52,8 +52,8 @@ void CSchematycEntityDrsComponent::ReflectType(Schematyc::CTypeDesc<CSchematycEn
 	desc.SetDescription("Dynamic Response System component");
 	desc.SetIcon("icons:Dialogs/notification_text.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Singleton, IEntityComponent::EFlags::HideFromInspector });
-	desc.AddMember(&CSchematycEntityDrsComponent::m_nameOverride, 'name', "actorNameOverride", "ActorNameOverride", "Override for the DRS actor name. If empty, entity name will be used. Remark: This name has to be unique, therefore the DRS will alter it, if there is already an actor with that name.");
-	desc.AddMember(&CSchematycEntityDrsComponent::m_globalVariableCollectionToUse, 'glob', "globalCollectionToUse", "GlobalCollectionToUse", "Normally each actor has it`s own local variable collection, that is not accessible (via name) from the outside and is also not serialized .With this property you can change this behavior so that the actor instead uses a global collection.");
+	desc.AddMember(&CSchematycEntityDrsComponent::m_nameOverride, 'name', "actorNameOverride", "ActorNameOverride", "Override for the DRS actor name. If empty, entity name will be used. Remark: This name has to be unique, therefore the DRS will alter it, if there is already an actor with that name.", "");
+	desc.AddMember(&CSchematycEntityDrsComponent::m_globalVariableCollectionToUse, 'glob', "globalCollectionToUse", "GlobalCollectionToUse", "Normally each actor has it`s own local variable collection, that is not accessible (via name) from the outside and is also not serialized .With this property you can change this behavior so that the actor instead uses a global collection.", "");
 }
 
 void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
@@ -62,7 +62,7 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 	{
 		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CSchematycEntityDrsComponent));
 		// Functions
-		
+
 		//TODO: Send Signal (With context variables) (for now just hardcoded string/hash/float/int)
 		//	  SetVariable (Global/Local, CreateIfNotExisting)
 		//	  Idea: CreateContextVariableCollection -> SetVariable -> SendSignal (Send signal frees the collection)
@@ -135,7 +135,7 @@ void CSchematycEntityDrsComponent::SendSignal(const CSharedString& signalName, c
 void CSchematycEntityDrsComponent::SetFloatVariable(const CSharedString& collectionName, const CSharedString& variableName, float value)
 {
 	IVariableCollection* pCollection = GetVariableCollection(collectionName);
-	
+
 	if (pCollection)
 	{
 		pCollection->SetVariableValue(variableName.c_str(), value);
@@ -170,12 +170,12 @@ IVariableCollection* CSchematycEntityDrsComponent::GetVariableCollection(const C
 
 void CSchematycEntityDrsComponent::OnSignalProcessingStarted(SSignalInfos& signal, IResponseInstance* pStartedResponse)
 {
-	OutputSignal(SResponseStartedSignal{(int)signal.id});
+	OutputSignal(SResponseStartedSignal { (int)signal.id });
 }
 
 void CSchematycEntityDrsComponent::OnSignalProcessingFinished(SSignalInfos& signal, IResponseInstance* pFinishedResponse, eProcessingResult outcome)
-{	
-	OutputSignal(SResponseFinishedSignal{ signal.id, outcome });
+{
+	OutputSignal(SResponseFinishedSignal { signal.id, outcome });
 }
 
 void CSchematycEntityDrsComponent::OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine)
@@ -186,16 +186,18 @@ void CSchematycEntityDrsComponent::OnLineEvent(const IResponseActor* pSpeaker, c
 
 	if (lineEvent == ISpeakerManager::IListener::eLineEvent_HasEndedInAnyWay)
 	{
-		OutputSignal(SLineEndedSignal{
+		OutputSignal(SLineEndedSignal {
 			text,
 			speakerName,
-			(lineEvent == ISpeakerManager::IListener::eLineEvent_Canceled) });
+			(lineEvent == ISpeakerManager::IListener::eLineEvent_Canceled)
+		});
 	}
 	else if (lineEvent == ISpeakerManager::IListener::eLineEvent_Started)
 	{
-		OutputSignal(SLineStartedSignal{
+		OutputSignal(SLineStartedSignal {
 			text,
-			speakerName });
+			speakerName
+		});
 	}
 }
 
@@ -204,7 +206,7 @@ void CSchematycEntityDrsComponent::SResponseStartedSignal::ReflectType(Schematyc
 	desc.SetGUID("f01fdb01-b03f-4eab-a0af-8d2359b4547b"_cry_guid);
 	desc.SetLabel("ResponseStarted");
 	desc.SetDescription("Sent when a response is started.");
-	desc.AddMember(&SResponseStartedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr);  //actually ResponseInstanceId
+	desc.AddMember(&SResponseStartedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr, 0);  //actually ResponseInstanceId
 }
 
 void CSchematycEntityDrsComponent::SResponseFinishedSignal::ReflectType(Schematyc::CTypeDesc<SResponseFinishedSignal>& desc)
@@ -212,8 +214,8 @@ void CSchematycEntityDrsComponent::SResponseFinishedSignal::ReflectType(Schematy
 	desc.SetGUID("cece4601-9f11-4e7c-800c-222c601200fa"_cry_guid);
 	desc.SetLabel("ResponseFinished");
 	desc.SetDescription("Sent when a response has finished (or was not even started/existing).");
-	desc.AddMember(&SResponseFinishedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr);  //actually ResponseInstanceId
-	desc.AddMember(&SResponseFinishedSignal::m_result, 'res', "result", "Result", nullptr);
+	desc.AddMember(&SResponseFinishedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr, 0);  //actually ResponseInstanceId
+	desc.AddMember(&SResponseFinishedSignal::m_result, 'res', "result", "Result", nullptr, 0);
 }
 
 void CSchematycEntityDrsComponent::SLineStartedSignal::ReflectType(Schematyc::CTypeDesc<SLineStartedSignal>& desc)
@@ -221,8 +223,8 @@ void CSchematycEntityDrsComponent::SLineStartedSignal::ReflectType(Schematyc::CT
 	desc.SetGUID("e397e62c-5c7f-4fab-9195-12032f670c9f"_cry_guid);
 	desc.SetLabel("LineStarted");
 	desc.SetDescription("Sent when a dialog line is started.");
-	desc.AddMember(&SLineStartedSignal::m_text, 'text', "text", "Text", nullptr);
-	desc.AddMember(&SLineStartedSignal::m_speakerName, 'act', "speaker", "Speaker", nullptr);
+	desc.AddMember(&SLineStartedSignal::m_text, 'text', "text", "Text", nullptr, "");
+	desc.AddMember(&SLineStartedSignal::m_speakerName, 'act', "speaker", "Speaker", nullptr, "");
 }
 
 void CSchematycEntityDrsComponent::SLineEndedSignal::ReflectType(Schematyc::CTypeDesc<SLineEndedSignal>& desc)
@@ -230,7 +232,7 @@ void CSchematycEntityDrsComponent::SLineEndedSignal::ReflectType(Schematyc::CTyp
 	desc.SetGUID("75e5e2ac-377f-4992-84ad-42c551f96e46"_cry_guid);
 	desc.SetLabel("LineEnded");
 	desc.SetDescription("Sent when a dialog line has finished/wasCanceled.");
-	desc.AddMember(&SLineEndedSignal::m_text, 'text', "text", "Text", nullptr);
-	desc.AddMember(&SLineEndedSignal::m_speakerName, 'act', "speaker", "Speaker", nullptr);
-	desc.AddMember(&SLineEndedSignal::m_bWasCanceled, 'id', "wasCanceled", "WasCanceled", nullptr);
+	desc.AddMember(&SLineEndedSignal::m_text, 'text', "text", "Text", nullptr, "");
+	desc.AddMember(&SLineEndedSignal::m_speakerName, 'act', "speaker", "Speaker", nullptr, "");
+	desc.AddMember(&SLineEndedSignal::m_bWasCanceled, 'id', "wasCanceled", "WasCanceled", nullptr, true);
 }

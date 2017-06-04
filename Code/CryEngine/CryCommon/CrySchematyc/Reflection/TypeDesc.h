@@ -209,18 +209,18 @@ public:
 	bool                  operator==(const CCommonTypeDesc& rhs) const;
 	bool                  operator!=(const CCommonTypeDesc& rhs) const;
 
-	void                   SetIcon(const char* szIcon) { m_icon = szIcon; }
-	const char*            GetIcon() const             { return m_icon.c_str(); }
+	void                  SetIcon(const char* szIcon)               { m_icon = szIcon; }
+	const char*           GetIcon() const                           { return m_icon.c_str(); }
 
-	void                   SetEditorCategory(const char* szCategory) { m_szEditorCategory = szCategory; }
-	const char*            GetEditorCategory() const { return m_szEditorCategory; }
+	void                  SetEditorCategory(const char* szCategory) { m_szEditorCategory = szCategory; }
+	const char*           GetEditorCategory() const                 { return m_szEditorCategory; }
 
 protected:
 
 	ETypeCategory           m_category = ETypeCategory::Unknown;
 	CTypeName               m_name;
 	size_t                  m_size = 0;
-	CryGUID                   m_guid;
+	CryGUID                 m_guid;
 	const char*             m_szLabel = nullptr;
 	const char*             m_szDescription = nullptr;
 	const char*             m_szEditorCategory = nullptr;
@@ -314,12 +314,12 @@ public:
 	const void*            GetDefaultValue() const;
 
 	//! Assign default value to the member
-	CClassMemberDesc& SetDefaultValue( Utils::IDefaultValuePtr&& pDefaultValue )     { m_pDefaultValue = std::forward<Utils::IDefaultValuePtr>(pDefaultValue); return *this; }
+	CClassMemberDesc& SetDefaultValue(Utils::IDefaultValuePtr&& pDefaultValue) { m_pDefaultValue = std::forward<Utils::IDefaultValuePtr>(pDefaultValue); return *this; }
 
 	//! Assign icon to be used in Sandbox
-	CClassMemberDesc& SetIcon( const char *icon ) { m_szIcon = icon; return *this; };
+	CClassMemberDesc& SetIcon(const char* icon)                                               { m_szIcon = icon; return *this; };
 
-	CClassMemberDesc& SetCustomSerializer( const STypeOperators::Serialize &serializeFunction ) { m_serialize = serializeFunction; return *this; };
+	CClassMemberDesc& SetCustomSerializer(const STypeOperators::Serialize& serializeFunction) { m_serialize = serializeFunction; return *this; };
 
 private:
 
@@ -345,21 +345,21 @@ public:
 	CClassDesc();
 
 	const CClassBaseDescArray&   GetBases() const;
-	const CClassBaseDesc*   FindBaseByTypeDesc(const CCommonTypeDesc& typeDesc) const;
+	const CClassBaseDesc*        FindBaseByTypeDesc(const CCommonTypeDesc& typeDesc) const;
 
 	const CClassMemberDescArray& GetMembers() const;
-	const CClassMemberDesc* FindMemberByOffset(ptrdiff_t offset) const;
-	const CClassMemberDesc* FindMemberById(uint32 id) const;
-	const CClassMemberDesc* FindMemberByName(const char* szName) const;
+	const CClassMemberDesc*      FindMemberByOffset(ptrdiff_t offset) const;
+	const CClassMemberDesc*      FindMemberById(uint32 id) const;
+	const CClassMemberDesc*      FindMemberByName(const char* szName) const;
 
 	// Find index of the member in the members array from the member Id.
-	inline uint32           FindMemberIndexById(uint32 id) const;
+	inline uint32 FindMemberIndexById(uint32 id) const;
 
 protected:
 
 	CClassDesc(ETypeCategory category);
 
-	bool AddBase(const CCommonTypeDesc& typeDesc, ptrdiff_t offset);
+	bool              AddBase(const CCommonTypeDesc& typeDesc, ptrdiff_t offset);
 	CClassMemberDesc& AddMember(const CCommonTypeDesc& typeDesc, ptrdiff_t offset, uint32 id, const char* szName, const char* szLabel, const char* szDescription, Utils::IDefaultValuePtr&& pDefaultValue);
 
 private:
@@ -386,7 +386,7 @@ public:
 	CCommonTypeDescInterface(const CCommonTypeDescInterface&) = delete;
 	CCommonTypeDescInterface& operator=(const CCommonTypeDescInterface&) = delete;
 
-	inline void SetDefaultValue(const TYPE& defaultValue)
+	inline void               SetDefaultValue(const TYPE& defaultValue)
 	{
 		CCommonTypeDesc::m_operators.defaultConstruct = &CCommonTypeDescInterface::ConstructFromDefaultValue;
 
@@ -554,16 +554,6 @@ public:
 		SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(BASE_TYPE);
 
 		return CClassDesc::AddBase(GetTypeDesc<BASE_TYPE>(), GetBaseOffset<TYPE, BASE_TYPE>());
-	}
-
-	template<typename MEMBER_TYPE, typename MEMBER_TYPE_PARENT = TYPE>
-	inline CClassMemberDesc& AddMember(MEMBER_TYPE MEMBER_TYPE_PARENT::* pMember, uint32 id, const char* szName, const char* szLabel, const char* szDescription)
-	{
-		SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(MEMBER_TYPE);
-		static_assert(HasOperator::SEquals<MEMBER_TYPE>::value, "Type must be provide equality compare operator");
-		static_assert(std::is_base_of<MEMBER_TYPE_PARENT, TYPE>::value, "Member must implement or equal the described type");
-
-		return CClassDesc::AddMember(GetTypeDesc<MEMBER_TYPE>(), GetMemberOffset(pMember), id, szName, szLabel, szDescription, Utils::IDefaultValuePtr());
 	}
 
 	template<typename MEMBER_TYPE, typename MEMBER_DEFAULT_VALUE_TYPE, typename MEMBER_TYPE_PARENT = TYPE>

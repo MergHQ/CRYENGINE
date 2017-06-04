@@ -1,4 +1,4 @@
-﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using CryEngine.Common;
@@ -21,7 +21,13 @@ namespace CryEngine.EntitySystem
 		internal virtual IPhysicalEntity NativeHandle { get; private set; }
 
 		/// <summary>
-		/// Gets the Entity that this PhysicsObject belongs to.
+		/// The physicalized type of this <see cref="PhysicsObject"/>. If the <see cref="PhysicsObject"/> is not physicalized this will be <c>PhysicalizationType.None</c>.
+		/// </summary>
+		/// <value>The physicalized type of the <see cref="PhysicsObject"/>.</value>
+		public PhysicalizationType PhysicsType{ get; set;} = PhysicalizationType.None;
+
+		/// <summary>
+		/// Gets the Entity that this <see cref="PhysicsObject"/> belongs to.
 		/// </summary>
 		public virtual Entity OwnerEntity
 		{
@@ -48,7 +54,7 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Get or set the velocity of this Entity.
+		/// Get or set the velocity of this <see cref="PhysicsObject"/>.
 		/// </summary>
 		public Vector3 Velocity
 		{
@@ -67,7 +73,55 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Adds an impulse to this Entity.
+		/// Get or set the angular velocity of this <see cref="PhysicsObject"/>.
+		/// </summary>
+		/// <value>The angular velocity.</value>
+		public Vector3 AngularVelocity
+		{
+			get
+			{
+				var status = new pe_status_dynamics();
+				NativeHandle.GetStatus(status);
+				return status.w;
+			}
+			set
+			{
+				var action = new pe_action_set_velocity();
+				action.w = value;
+				NativeHandle.Action(action);
+			}
+		}
+
+		/// <summary>
+		/// The acceleration that is currently being applied to this <see cref="PhysicsObject"/>.
+		/// </summary>
+		/// <value>The linear acceleration.</value>
+		public Vector3 LinearAcceleration
+		{
+			get
+			{
+				var status = new pe_status_dynamics();
+				NativeHandle.GetStatus(status);
+				return status.a;
+			}
+		}
+
+		/// <summary>
+		/// The angular acceleration that is currently being applied to this <see cref="PhysicsObject"/>.
+		/// </summary>
+		/// <value>The angular acceleration.</value>
+		public Vector3 AngularAcceleration
+		{
+			get
+			{
+				var status = new pe_status_dynamics();
+				NativeHandle.GetStatus(status);
+				return status.wa;
+			}
+		}
+
+		/// <summary>
+		/// Adds an impulse to this <see cref="PhysicsObject"/>.
 		/// </summary>
 		[Obsolete("Impulse is obsolete, use AddImpulse instead.")]
 		public Vector3 Impulse
@@ -81,7 +135,7 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Set the velocity of this PhysicsObject.
+		/// Set the velocity of this <see cref="PhysicsObject"/>.
 		/// </summary>
 		/// <param name="velocity"></param>
 		public void SetVelocity(Vector3 velocity)
@@ -92,7 +146,7 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Adds an impulse to this PhysicsObject.
+		/// Adds an impulse to this <see cref="PhysicsObject"/>.
 		/// </summary>
 		/// <param name="impulse">Direction and length of the impulse.</param>
 		public void AddImpulse(Vector3 impulse)
@@ -103,7 +157,7 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Adds an impulse to this PhysicsObject. The impulse will be applied to the point in world-space.
+		/// Adds an impulse to this <see cref="PhysicsObject"/>. The impulse will be applied to the point in world-space.
 		/// </summary>
 		/// <param name="impulse">Direction and length of the impulse.</param>
 		/// <param name="point">Point of application, in world-space.</param>
@@ -117,7 +171,7 @@ namespace CryEngine.EntitySystem
 
 
 		/// <summary>
-		/// Move this PhysicsObject in a direction.
+		/// Move this <see cref="PhysicsObject"/> in a direction.
 		/// </summary>
 		/// <param name="direction"></param>
 		public void Move(Vector3 direction)
@@ -132,7 +186,7 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Move this PhysicsObject in a direction, but apply the velocity instantly.
+		/// Move this <see cref="PhysicsObject"/> in a direction, but apply the velocity instantly.
 		/// </summary>
 		/// <param name="direction"></param>
 		public void Jump(Vector3 direction)
@@ -166,6 +220,47 @@ namespace CryEngine.EntitySystem
 			status.NativeToManaged(nativeStatus);
 			return status;
 		}
+
+		protected void SetType(pe_type nativeType)
+		{
+			switch(nativeType)
+			{
+			case pe_type.PE_NONE:
+				PhysicsType = PhysicalizationType.None;
+				break;
+			case pe_type.PE_STATIC:
+				PhysicsType = PhysicalizationType.Static;
+				break;
+			case pe_type.PE_RIGID:
+				PhysicsType = PhysicalizationType.Rigid;
+				break;
+			case pe_type.PE_WHEELEDVEHICLE:
+				PhysicsType = PhysicalizationType.WheeledVehicle;
+				break;
+			case pe_type.PE_LIVING:
+				PhysicsType = PhysicalizationType.Living;
+				break;
+			case pe_type.PE_PARTICLE:
+				PhysicsType = PhysicalizationType.Particle;
+				break;
+			case pe_type.PE_ARTICULATED:
+				PhysicsType = PhysicalizationType.Articulated;
+				break;
+			case pe_type.PE_ROPE:
+				PhysicsType = PhysicalizationType.Rope;
+				break;
+			case pe_type.PE_SOFT:
+				PhysicsType = PhysicalizationType.Soft;
+				break;
+			case pe_type.PE_AREA:
+				PhysicsType = PhysicalizationType.Area;
+				break;
+			case pe_type.PE_GRID:
+				throw new NotImplementedException();
+			default:
+				throw new ArgumentOutOfRangeException();
+			}
+		}
 	}
 
 	/// <summary>
@@ -174,7 +269,7 @@ namespace CryEngine.EntitySystem
 	public sealed class PhysicsEntity : PhysicsObject
 	{
 		/// <summary>
-		/// Gets the Entity that this PhysicsEntity belongs to.
+		/// Gets the Entity that this <see cref="PhysicsEntity"/> belongs to.
 		/// </summary>
 		public override Entity OwnerEntity { get { return _entity; } }
 
@@ -192,7 +287,7 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Physicalize an entity with the specified mass and of the specified type.
+		/// Physicalize the <see cref="PhysicsEntity"/> with the specified mass and of the specified type.
 		/// </summary>
 		/// <param name="mass"></param>
 		/// <param name="type"></param>
@@ -200,7 +295,7 @@ namespace CryEngine.EntitySystem
 		{
 			if(type == PhysicalizationType.None)
 			{
-				Log.Error("Can't Physicalize and entity with PhysicalizationType.None!");
+				Log.Error<PhysicsEntity>("Can't Physicalize an entity with PhysicalizationType.None!");
 				return;
 			}
 
@@ -211,7 +306,7 @@ namespace CryEngine.EntitySystem
 		}
 
 		/// <summary>
-		/// Physicalize entity by creating based on the specified physical parameters.
+		/// Physicalize the <see cref="PhysicsEntity"/> with the specified Physicalize parameters.
 		/// </summary>
 		/// <param name="mass">Mass of the entity in Kilograms.</param>
 		/// <param name="type"></param>
@@ -219,10 +314,11 @@ namespace CryEngine.EntitySystem
 		public void Physicalize(float mass, EPhysicalizationType type)
 		{
 			Physicalize(mass, -1, type);
+			SetType((pe_type)type);
 		}
 
 		/// <summary>
-		/// Physicalize entity by creating based on the specified physical parameters.
+		/// Physicalize the <see cref="PhysicsEntity"/> with the specified Physicalize parameters.
 		/// </summary>
 		/// <param name="mass">Mass of the entity in Kilograms.</param>
 		/// <param name="density"></param>
@@ -236,28 +332,31 @@ namespace CryEngine.EntitySystem
 			physParams.type = (int)type;
 
 			OwnerEntity.NativeHandle.Physicalize(physParams);
+			SetType((pe_type)type);
 		}
 
 		/// <summary>
-		/// Physicalize entity by creating based on the specified physical parameters.
+		/// Physicalize the <see cref="PhysicsEntity"/> with the specified Physicalize parameters.
 		/// </summary>
 		/// <param name="phys"></param>
 		[Obsolete("Using SEntityPhysicalizeParams is obsolete. Use EntityPhysicalizeParams instead.")]
 		public void Physicalize(SEntityPhysicalizeParams phys)
 		{
 			OwnerEntity.NativeHandle.Physicalize(phys);
+			SetType((pe_type)phys.type);
 		}
 
 		/// <summary>
-		/// Physicalize the Entity as a rigid-entity using default values.
+		/// Physicalize the <see cref="PhysicsEntity"/> as a rigid-entity using default values.
 		/// </summary>
 		public void Physicalize()
 		{
 			Physicalize(-1, PhysicalizationType.Rigid);
+			PhysicsType = PhysicalizationType.Rigid;
 		}
 
 		/// <summary>
-		/// Physicalize the entity based on Physicalize parameters.
+		/// Physicalize the <see cref="PhysicsEntity"/> with the specified Physicalize parameters.
 		/// </summary>
 		/// <param name="parameters"></param>
 		public void Physicalize(EntityPhysicalizeParams parameters)
@@ -270,6 +369,7 @@ namespace CryEngine.EntitySystem
 			//We could do a using here, but this could result in strange behaviour if these parameters are re-used to physicalize another entity.
 			var nativeParameters = parameters.ToNativeParams();
 			OwnerEntity.NativeHandle.Physicalize(nativeParameters);
+			SetType(parameters.Type);
 		}
 	}
 }

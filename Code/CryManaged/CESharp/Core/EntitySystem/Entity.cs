@@ -149,6 +149,22 @@ namespace CryEngine
 		}
 
 		/// <summary>
+		/// Hide or unhide this <see cref="T:CryEngine.Entity"/>.
+		/// </summary>
+		/// <value><c>true</c> if hidden; otherwise, <c>false</c>.</value>
+		public bool Hidden
+		{
+			get
+			{
+				return NativeHandle.IsHidden();
+			}
+			set
+			{
+				NativeHandle.Hide(value);
+			}
+		}
+
+		/// <summary>
 		/// Get a list of all the child Entities of this Entity.
 		/// </summary>
 		public List<Entity> Children
@@ -410,15 +426,15 @@ namespace CryEngine
 		}
 
 		/// <summary>
-		/// Attaches a particle emitter object to a specific entity slot.
+		/// Attaches a particle emitter object to a specific entity slot and loads it with <paramref name="particleEffect"/>.
 		/// </summary>
-		/// <param name="slot">Slot.</param>
-		/// <param name="emitter">Emitter.</param>
-		/// <param name="scale">Scale.</param>
-		public void LoadParticleEmitter(int slot, IParticleEffect emitter, float scale = 1.0f)
+		/// <param name="slot">The slot to load the particle in.</param>
+		/// <param name="particleEffect">Particle effect to load.</param>
+		/// <param name="scale">Scale of the emitter.</param>
+		public void LoadParticleEmitter(int slot, ParticleEffect particleEffect, float scale = 1.0f)
 		{
 			var sp = new SpawnParams { fSizeScale = scale };
-			NativeHandle.LoadParticleEmitter(slot, emitter, sp, false, false);
+			NativeHandle.LoadParticleEmitter(slot, particleEffect.NativeHandle, sp, false, false);
 		}
 
 		/// <summary>
@@ -496,7 +512,7 @@ namespace CryEngine
 			return new Character(nativeCharacter);
 		}
 
-		public void SetSlotFlag(int slot, EEntitySlotFlags flags)
+		public void SetSlotFlag(int slot, EntitySlotFlags flags)
 		{
 			NativeHandle.SetSlotFlags(slot, (uint)flags);
 		}
@@ -506,9 +522,10 @@ namespace CryEngine
 		/// </summary>
 		/// <returns>The particle emitter.</returns>
 		/// <param name="slot">Slot.</param>
-		public IParticleEmitter GetParticleEmitter(int slot)
+		public ParticleEmitter GetParticleEmitter(int slot)
 		{
-			return NativeHandle.GetParticleEmitter(slot);
+			var nativeEmitter = NativeHandle.GetParticleEmitter(slot);
+			return nativeEmitter == null ? null : new ParticleEmitter(nativeEmitter);
 		}
 
 		/// <summary>
@@ -516,9 +533,9 @@ namespace CryEngine
 		/// </summary>
 		/// <param name="slot">Slot.</param>
 		/// <param name="light">Light.</param>
-		public void LoadLight(int slot, CDLight light)
+		public void LoadLight(int slot, DynamicLight light)
 		{
-			NativeHandle.LoadLight(slot, light);
+			NativeHandle.LoadLight(slot, light.NativeHandle);
 		}
 
 		/// <summary>
