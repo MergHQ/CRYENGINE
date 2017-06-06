@@ -125,8 +125,7 @@ void CEntityAudioSpotComponent::ReflectType(Schematyc::CTypeDesc<CEntityAudioSpo
 
 void CEntityAudioSpotComponent::Initialize()
 {
-	IEntity& entity = *GetEntity();
-	m_pAudioComp = entity.GetOrCreateComponent<IEntityAudioComponent>();
+	m_pAudioComp = m_pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 	CRY_ASSERT(m_pAudioComp);
 
 	if (m_auxAudioObjectId != CryAudio::InvalidAuxObjectId && m_auxAudioObjectId != CryAudio::DefaultAuxObjectId)
@@ -152,20 +151,20 @@ void CEntityAudioSpotComponent::OnShutDown()
 
 uint64 CEntityAudioSpotComponent::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_TIMER) | ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_ENDED);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) | ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_TIMER) | ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_ENDED);
 }
 
 void CEntityAudioSpotComponent::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
+	case ENTITY_EVENT_START_GAME:
+	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		m_bActive = true;
+		ExecuteDefaultTrigger();
+		break;
 	case ENTITY_EVENT_RESET:
-		if (event.nParam[0] == 1)     //entering game
-		{
-			m_bActive = true;
-			ExecuteDefaultTrigger();
-		}
-		else
+		if (event.nParam[0] == 0)     //leaving game
 		{
 			m_bActive = false;
 			GetEntity()->KillTimer('ats');

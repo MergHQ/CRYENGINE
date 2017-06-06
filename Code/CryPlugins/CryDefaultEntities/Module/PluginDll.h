@@ -4,7 +4,7 @@
 
 #include <CrySystem/ICryPlugin.h>
 
-class CPlugin_CryDefaultEntities
+class CPlugin_CryDefaultEntities final
 	: public ICryPlugin
 	, public ISystemEventListener
 {

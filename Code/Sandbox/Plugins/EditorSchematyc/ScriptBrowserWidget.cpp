@@ -1198,7 +1198,7 @@ CScriptBrowserWidget::CScriptBrowserWidget(CrySchematycEditor::CMainWindow& edit
 {
 	m_pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom);
 	m_pHeaderLayout = new QBoxLayout(QBoxLayout::LeftToRight);
-	m_pAddButton = new QPushButton(CryIcon(g_szAddIcon), "Add", this);
+	m_pAddButton = new QPushButton("Add", this);
 	m_pAddMenu = new QMenu("Add", this);
 
 	const uint32 behaviorFlags = QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset | QAdvancedTreeView::UseItemModelAttribute;

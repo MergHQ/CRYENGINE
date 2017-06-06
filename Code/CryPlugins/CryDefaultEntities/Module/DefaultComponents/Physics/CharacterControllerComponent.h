@@ -14,6 +14,25 @@ namespace Cry
 			, public IEntityComponentPreviewer
 #endif
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+
+#ifndef RELEASE
+			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
+#endif
+			// ~IEntityComponent
+
+#ifndef RELEASE
+			// IEntityComponentPreviewer
+			virtual void SerializeProperties(Serialization::IArchive& archive) final {}
+
+			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
+			// ~IEntityComponentPreviewer
+#endif
+
 		public:
 			struct SCollisionSignal
 			{
@@ -25,62 +44,7 @@ namespace Cry
 			};
 
 			CCharacterControllerComponent() = default;
-
-			virtual ~CCharacterControllerComponent()
-			{
-				SEntityPhysicalizeParams physParams;
-				physParams.type = PE_NONE;
-				m_pEntity->Physicalize(physParams);
-			}
-
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				CAdvancedAnimationComponent::Initialize();
-
-				PhysicalizeCharacter();
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-
-			virtual void ProcessEvent(SEntityEvent& event) override;
-			virtual uint64 GetEventMask() const override;
-
-#ifndef RELEASE
-			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
-#endif
-			// ~IEntityComponent
-
-#ifndef RELEASE
-			// IEntityComponentPreviewer
-			virtual void SerializeProperties(Serialization::IArchive& archive) override {}
-
-			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const override
-			{
-				if (context.bSelected)
-				{
-					if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
-					{
-						pe_params_part partParams;
-
-						// The living entity main part (cylinder / capsule) is always at index 0
-						partParams.ipart = 0;
-						if (pPhysicalEntity->GetParams(&partParams))
-						{
-							Matrix34 entityTransform = m_pEntity->GetWorldTM();
-
-							geom_world_data geomWorldData;
-							geomWorldData.R = Matrix33(Quat(entityTransform) * partParams.q);
-							geomWorldData.scale = entityTransform.GetUniformScale() * partParams.scale;
-							geomWorldData.offset = entityTransform.GetTranslation() + entityTransform.TransformVector(partParams.pos);
-
-							gEnv->pSystem->GetIPhysRenderer()->DrawGeometry(partParams.pPhysGeom->pGeom, &geomWorldData, -1, 0, ZERO, context.debugDrawInfo.color);
-						}
-					}
-				}
-			}
-			// ~IEntityComponentPreviewer
-#endif
+			virtual ~CCharacterControllerComponent();
 
 			static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent>& desc);
 
@@ -90,10 +54,19 @@ namespace Cry
 				return id;
 			}
 
+			// CAdvancedAnimationComponent
+			virtual void ResetCharacter() final
+			{
+				CAdvancedAnimationComponent::ResetCharacter();
+
+				PhysicalizeCharacter();
+			}
+			// ~CAdvancedAnimationComponent
+
 			bool IsOnGround() const { return m_bOnGround; }
 			const Schematyc::UnitLength<Vec3>& GetGroundNormal() const { return m_groundNormal; }
 
-			void AddVelocity(const Vec3& velocity)
+			virtual void AddVelocity(const Vec3& velocity)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
 				{
@@ -108,7 +81,7 @@ namespace Cry
 				}
 			}
 
-			void SetVelocity(const Vec3& velocity)
+			virtual void SetVelocity(const Vec3& velocity)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
 				{
@@ -129,25 +102,10 @@ namespace Cry
 			bool IsWalking() const { return m_velocity.GetLength2D() > 0.2f && m_bOnGround; }
 			bool IsTurning() const { return abs(m_turnAngle) > 0.05f; }
 
-			void Ragdollize()
+			virtual void PhysicalizeCharacter()
 			{
-				if (ICharacterInstance* pCharacter = m_pEntity->GetCharacter(GetEntitySlotId()))
-				{
-					SEntityPhysicalizeParams physParams;
-					physParams.type = PE_ARTICULATED;
-
-					physParams.mass = m_physics.m_mass;
-					physParams.nSlot = GetEntitySlotId();
-
-					physParams.bCopyJointVelocities = true;
-
-					m_pEntity->Physicalize(physParams);
-				}
-			}
-
-			void PhysicalizeCharacter()
-			{
-				if (ICharacterInstance* pCharacter = m_pEntity->GetCharacter(GetEntitySlotId()))
+				// Physicalize the character
+				if (m_pCachedCharacter != nullptr)
 				{
 					// Physicalize the player as type Living.
 					// This physical entity type is specifically implemented for players
@@ -207,35 +165,40 @@ namespace Cry
 				}
 			}
 
-			void ActivateContext(const Schematyc::CSharedString& contextName)
+			virtual void Ragdollize()
+			{
+				if (m_pCachedCharacter != nullptr)
+				{
+					SEntityPhysicalizeParams physParams;
+					physParams.type = PE_ARTICULATED;
+
+					physParams.mass = m_physics.m_mass;
+					physParams.nSlot = GetEntitySlotId();
+
+					physParams.bCopyJointVelocities = true;
+
+					m_pEntity->Physicalize(physParams);
+				}
+			}
+
+			virtual void ActivateContext(const Schematyc::CSharedString& contextName)
 			{
 				CAdvancedAnimationComponent::ActivateContext(contextName);
 			}
 
-			void QueueFragment(const Schematyc::CSharedString& fragmentName)
+			virtual void QueueFragment(const Schematyc::CSharedString& fragmentName)
 			{
 				CAdvancedAnimationComponent::QueueFragment(fragmentName);
 			}
 
-			void SetTag(const Schematyc::CSharedString& tagName, bool bSet)
+			virtual void SetTag(const Schematyc::CSharedString& tagName, bool bSet)
 			{
 				CAdvancedAnimationComponent::SetTag(tagName, bSet);
 			}
 
-			void SetMotionParameter(EMotionParamID motionParam, float value)
+			virtual void SetMotionParameter(EMotionParamID motionParam, float value)
 			{
 				CAdvancedAnimationComponent::SetMotionParameter(motionParam, value);
-			}
-
-			CryTransform::CTransform GetWorldTransform() const { return CryTransform::CTransform(m_pEntity->GetSlotWorldTM(GetEntitySlotId())); }
-			CryTransform::CTransform GetLocalTransform() const { return CryTransform::CTransform(m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false)); }
-			
-			CryTransform::CRotation GetLocalRotation() const { return CryTransform::CRotation(Matrix33(m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false))); }
-			void SetLocalRotation(const CryTransform::CRotation& rotation)
-			{
-				Matrix34 localTransform = m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false);
-				localTransform.SetRotation33(rotation.ToMatrix33());
-				m_pEntity->SetSlotLocalTM(GetEntitySlotId(), localTransform);
 			}
 
 			struct SPhysics
@@ -266,13 +229,13 @@ namespace Cry
 				Schematyc::Range<0, 10000> m_maxGroundVelocity = 16.f;
 			};
 
-			SPhysics& GetPhysicsParameters() { return m_physics; }
+			virtual SPhysics& GetPhysicsParameters() { return m_physics; }
 			const SPhysics& GetPhysicsParameters() const { return m_physics; }
 
-			SMovement& GetMovementParameters() { return m_movement; }
+			virtual SMovement& GetMovementParameters() { return m_movement; }
 			const SMovement& GetMovementParameters() const { return m_movement; }
 
-			void EnableGroundAlignment(bool bEnable) { m_bGroundAlignment = bEnable; }
+			virtual void EnableGroundAlignment(bool bEnable) { m_bGroundAlignment = bEnable; }
 			bool IsGroundAlignmentEnabled() const { return m_bGroundAlignment; }
 
 		protected:

@@ -113,11 +113,28 @@ static void ReflectType(Schematyc::CTypeDesc<CSimplePhysicsComponent::SCollision
 	desc.AddMember(&CSimplePhysicsComponent::SCollisionSignal::surfaceType, 'srf', "SurfaceType", "SurfaceType", "Material Surface Type at the collision point", "");
 }
 
-void CSimplePhysicsComponent::Run(Schematyc::ESimulationMode simulationMode)
+CSimplePhysicsComponent::~CSimplePhysicsComponent()
 {
-	m_pEntity->UpdateComponentEventMask(this);
+	SEntityPhysicalizeParams physParams;
+	physParams.type = PE_NONE;
+	m_pEntity->Physicalize(physParams);
+}
 
-	Initialize();
+void CSimplePhysicsComponent::Initialize()
+{
+	Physicalize();
+}
+
+void CSimplePhysicsComponent::Physicalize()
+{
+	SEntityPhysicalizeParams physParams;
+	physParams.type = (int)m_type;
+
+	// Don't physicalize a slot by default
+	physParams.nSlot = std::numeric_limits<int>::max();
+	m_pEntity->Physicalize(physParams);
+
+	Enable(m_bEnabledByDefault);
 }
 
 void CSimplePhysicsComponent::ProcessEvent(SEntityEvent& event)
@@ -147,11 +164,20 @@ void CSimplePhysicsComponent::ProcessEvent(SEntityEvent& event)
 			pSchematycObject->ProcessSignal(SCollisionSignal(otherEntityId, Schematyc::SurfaceTypeName(surfaceTypeName)), GetGUID());
 		}
 	}
+	else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+	{
+		m_pEntity->UpdateComponentEventMask(this);
+
+		Physicalize();
+	}
 }
 
 uint64 CSimplePhysicsComponent::GetEventMask() const
 {
-	return m_bSendCollisionSignal ? BIT64(ENTITY_EVENT_COLLISION) : 0;
+	uint64 bitFlags = m_bSendCollisionSignal ? BIT64(ENTITY_EVENT_COLLISION) : 0;;
+	bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+
+	return bitFlags;
 }
 }
 }

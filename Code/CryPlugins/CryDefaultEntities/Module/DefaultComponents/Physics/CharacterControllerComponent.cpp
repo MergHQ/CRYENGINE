@@ -102,34 +102,6 @@ void RegisterCharacterControllerComponent(Schematyc::IEnvRegistrar& registrar)
 			pFunction->BindInput(2, 'val', "Value");
 			componentScope.Register(pFunction);
 		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetWorldTransform, "{EF15FE71-816A-4ABB-BCB1-6ED3EB541204}"_cry_guid, "GetWorldTransform");
-			pFunction->SetDescription("Gets the transformation of this component in world space");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindOutput(0, 'tran', "World Transform");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetLocalTransform, "{00B3294C-3590-4BF3-A06F-1C37B74E7B78}"_cry_guid, "GetLocalTransform");
-			pFunction->SetDescription("Gets the transformation of this component in local space");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindOutput(0, 'tran', "Local Transform");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetLocalRotation, "{3BC56A26-9DD1-4BCA-BB27-F92495E30078}"_cry_guid, "GetLocalRotation");
-			pFunction->SetDescription("Gets the local rotation of this component");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindOutput(0, 'tran', "Local Rotation");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetLocalRotation, "{06140663-1E8C-4A73-A954-0DBE1456007D}"_cry_guid, "SetLocalRotation");
-			pFunction->SetDescription("Sets the local rotation of this component");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'tran', "Local Rotation");
-			componentScope.Register(pFunction);
-		}
 		// Signals
 		{
 			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(CCharacterControllerComponent::SCollisionSignal);
@@ -191,18 +163,18 @@ static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent::SCol
 	desc.AddMember(&CCharacterControllerComponent::SCollisionSignal::surfaceType, 'srf', "SurfaceType", "SurfaceType", "Material Surface Type at the collision point", "");
 }
 
-void CCharacterControllerComponent::Run(Schematyc::ESimulationMode simulationMode)
+CCharacterControllerComponent::~CCharacterControllerComponent()
 {
-	Initialize();
+	SEntityPhysicalizeParams physParams;
+	physParams.type = PE_NONE;
+	m_pEntity->Physicalize(physParams);
+}
 
-	// Start validating inputs
-#ifndef RELEASE
-	// Slide value will have no effect if larger than the fall angle, since we'll fall instead
-	if (m_movement.m_minSlideAngle > m_movement.m_minFallAngle)
-	{
-		m_movement.m_minSlideAngle = m_movement.m_minFallAngle;
-	}
-#endif
+void CCharacterControllerComponent::Initialize()
+{
+	CAdvancedAnimationComponent::Initialize();
+
+	PhysicalizeCharacter();
 }
 
 void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
@@ -226,7 +198,7 @@ void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
 		}
 
 		ICharacterInstance* pCharacter = GetCharacter();
-		Matrix34 characterTransform = m_pEntity->GetSlotWorldTM(GetEntitySlotId());
+		Matrix34 characterTransform = GetWorldTransformMatrix();
 
 		// Get the player's velocity from physics
 		pe_status_dynamics playerDynamics;
@@ -294,6 +266,17 @@ void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
 			pSchematycObject->ProcessSignal(SCollisionSignal(otherEntityId, Schematyc::SurfaceTypeName(surfaceTypeName)), GetGUID());
 		}
 	}
+	else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+	{
+		// Start validating inputs
+#ifndef RELEASE
+		// Slide value will have no effect if larger than the fall angle, since we'll fall instead
+		if (m_movement.m_minSlideAngle > m_movement.m_minFallAngle)
+		{
+			m_movement.m_minSlideAngle = m_movement.m_minFallAngle;
+		}
+#endif
+	}
 
 	CAdvancedAnimationComponent::ProcessEvent(event);
 }
@@ -315,5 +298,32 @@ uint64 CCharacterControllerComponent::GetEventMask() const
 
 	return eventMask;
 }
+
+#ifndef RELEASE
+void CCharacterControllerComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
+{
+	if (context.bSelected)
+	{
+		if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
+		{
+			pe_params_part partParams;
+
+			// The living entity main part (cylinder / capsule) is always at index 0
+			partParams.ipart = 0;
+			if (pPhysicalEntity->GetParams(&partParams))
+			{
+				Matrix34 entityTransform = m_pEntity->GetWorldTM();
+
+				geom_world_data geomWorldData;
+				geomWorldData.R = Matrix33(Quat(entityTransform) * partParams.q);
+				geomWorldData.scale = entityTransform.GetUniformScale() * partParams.scale;
+				geomWorldData.offset = entityTransform.GetTranslation() + entityTransform.TransformVector(partParams.pos);
+
+				gEnv->pSystem->GetIPhysRenderer()->DrawGeometry(partParams.pPhysGeom->pGeom, &geomWorldData, -1, 0, ZERO, context.debugDrawInfo.color);
+			}
+		}
+	}
+}
+#endif
 }
 }

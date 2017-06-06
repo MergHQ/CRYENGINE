@@ -238,6 +238,7 @@ namespace Math.Tests
 				// rotate forward around x-y plane, z=0
 				// i) 20 values for x-y plane
 				// ii) 20 values for y-z plane
+
 				Vec3[] testVectors = new Vec3[40];
 				for (uint i = 0; i < 20; ++i)
 				{
@@ -268,6 +269,21 @@ namespace Math.Tests
 					float diffFromManaged = (float)(System.Math.Acos(dtPrdt2) * (180f / System.Math.PI));
 					float absoluteDiff = System.Math.Abs(diffFromManaged - diffFromNative);
 					Assert.IsTrue(absoluteDiff <= test_margin_error, "SetLookOrientation failed at loop index " + i + ".Absolute Difference:" + absoluteDiff + " Expected (Native) :" + diffFromNative + ", Actual (Managed) :" + diffFromManaged + ", Forward : " + NativeExtensions.PrintString(forward5c) + ", Up :" + upManaged.ToString());
+				}
+				{
+					//boundary case where axis are flipped when comparing native to managed
+					Quaternion quatManaged = Quaternion.Identity;
+					Vector3 upManaged = Vector3.Up;
+					Vector3 forwardManaged = new Vector3(-8.126793f, 3.401123f, -1.644333f);
+					forwardManaged = forwardManaged.Normalized;
+					quatManaged.SetLookOrientation(forwardManaged, upManaged);
+
+					Quat quatNative = Quat.CreateIdentity();
+					Vec3 forwardNative = new Vec3(-8.126793f, 3.401123f, -1.644333f);
+					forwardNative = forwardNative.normalized();
+					quatNative.SetRotationVDir(forwardNative);
+					bool isEqui1 = Quat.IsEquivalent(quatManaged, quatNative, 0.00999999776f);
+					Assert.IsTrue(isEqui1, String.Format("Native Quaternion {0} and Managed Quaternion {1} are not equivalent", ((Quaternion)quatNative).ToString(), quatManaged));
 				}
 			}
 

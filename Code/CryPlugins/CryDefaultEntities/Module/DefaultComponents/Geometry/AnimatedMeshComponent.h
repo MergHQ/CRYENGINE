@@ -13,26 +13,16 @@ namespace Cry
 		class CAnimatedMeshComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void   Initialize() final;
+
+			virtual void   ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			CAnimatedMeshComponent() {}
 			virtual ~CAnimatedMeshComponent() {}
-
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				if (m_filePath.value.size() > 0)
-				{
-					m_pEntity->LoadCharacter(GetOrMakeEntitySlotId(), m_filePath.value);
-
-					if (m_defaultAnimation.value.size() > 0)
-					{
-						PlayAnimation(m_defaultAnimation, m_bLoopDefaultAnimation);
-					}
-				}
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CAnimatedMeshComponent>& desc);
 
@@ -42,7 +32,7 @@ namespace Cry
 				return id;
 			}
 
-			void PlayAnimation(Schematyc::LowLevelAnimationName name, bool bLoop = false)
+			virtual void PlayAnimation(Schematyc::LowLevelAnimationName name, bool bLoop = false)
 			{
 				if (ICharacterInstance* pCharacter = m_pEntity->GetCharacter(GetEntitySlotId()))
 				{
@@ -61,17 +51,22 @@ namespace Cry
 				}
 			}
 
-			void SetPlaybackSpeed(float multiplier) { m_animationParams.m_fPlaybackSpeed = multiplier; }
-			void SetPlaybackWeight(float weight) { m_animationParams.m_fPlaybackWeight = weight; }
-			void SetLayer(int layer) { m_animationParams.m_nLayerID = layer; }
+			virtual void SetPlaybackSpeed(float multiplier) { m_animationParams.m_fPlaybackSpeed = multiplier; }
+			virtual void SetPlaybackWeight(float weight) { m_animationParams.m_fPlaybackWeight = weight; }
+			virtual void SetLayer(int layer) { m_animationParams.m_nLayerID = layer; }
 
 			virtual void SetCharacterFile(const char* szPath);
 			const char* SetCharacterFile() const { return m_filePath.value.c_str(); }
 
 			virtual void SetDefaultAnimationName(const char* szPath);
 			const char* GetDefaultAnimationName() const { return m_defaultAnimation.value.c_str(); }
-			void SetDefaultAnimationLooped(bool bLooped) { m_bLoopDefaultAnimation = bLooped; }
+			virtual void SetDefaultAnimationLooped(bool bLooped) { m_bLoopDefaultAnimation = bLooped; }
 			bool IsDefaultAnimationLooped() const { return m_bLoopDefaultAnimation; }
+
+			// Loads character and mannequin data from disk
+			virtual void LoadFromDisk();
+
+			virtual void PlayDefaultAnimation();
 
 		protected:
 			CryCharAnimationParams m_animationParams;
@@ -80,6 +75,8 @@ namespace Cry
 
 			Schematyc::LowLevelAnimationName m_defaultAnimation;
 			bool m_bLoopDefaultAnimation = false;
+
+			ICharacterInstance* m_pCachedCharacter = nullptr;
 		};
 	}
 }

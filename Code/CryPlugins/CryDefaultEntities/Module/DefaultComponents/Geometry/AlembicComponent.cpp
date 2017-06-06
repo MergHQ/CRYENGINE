@@ -63,12 +63,25 @@ namespace Cry
 			desc.AddMember(&CAlembicComponent::m_filePath, 'file', "FilePath", "File", "Determines the geom cache file (abc / cbc) to load", "%ENGINE%/EngineAssets/GeomCaches/default.cbc");
 		}
 
-		void CAlembicComponent::Run(Schematyc::ESimulationMode simulationMode)
+		void CAlembicComponent::Initialize()
 		{
 			if (m_filePath.value.size() > 0)
 			{
 				m_pEntity->LoadGeomCache(GetOrMakeEntitySlotId(), m_filePath.value);
 			}
+		}
+
+		void CAlembicComponent::ProcessEvent(SEntityEvent& event)
+		{
+			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			{
+				Initialize();
+			}
+		}
+
+		uint64 CAlembicComponent::GetEventMask() const
+		{
+			return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 		}
 
 		void CAlembicComponent::Enable(bool bEnable)

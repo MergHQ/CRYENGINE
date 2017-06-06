@@ -41,9 +41,54 @@ struct SMFXAudioEffectRtpc
 };
 
 //////////////////////////////////////////////////////////////////////////
+struct SMFXEmitterParameter
+{
+	typedef CryVariant<bool, int, float, ColorF> TValue;
+
+	SMFXEmitterParameter()
+		: type(IParticleAttributes::ET_Count)
+	{}
+
+	SMFXEmitterParameter(const char* szName, bool value)
+		: name(szName)
+		, type(IParticleAttributes::ET_Boolean)
+		, value(value)
+	{}
+
+	SMFXEmitterParameter(const char* szName, int value)
+		: name(szName)
+		, type(IParticleAttributes::ET_Integer)
+		, value(value)
+	{}
+
+	SMFXEmitterParameter(const char* szName, float value)
+		: name(szName)
+		, type(IParticleAttributes::ET_Float)
+		, value(value)
+	{}
+
+	SMFXEmitterParameter(const char* szName, ColorF value)
+		: name(szName)
+		, type(IParticleAttributes::ET_Color)
+		, value(value)
+	{}
+
+	bool operator==(const SMFXEmitterParameter& rhs) const
+	{
+		return name == rhs.name && type == rhs.type;
+	}
+
+	CryFixedStringT<32> name;
+	IParticleAttributes::EType type;
+	TValue value;
+};
+typedef std::vector<SMFXEmitterParameter> TMFXEmitterParameters;
+
+//////////////////////////////////////////////////////////////////////////
 struct SMFXRunTimeEffectParams
 {
 	static const int MAX_AUDIO_RTPCS = 4;
+	static const int MAX_PARTICLE_PARAMS = 4;
 
 	SMFXRunTimeEffectParams()
 		: playSoundFP(false)
@@ -65,6 +110,7 @@ struct SMFXRunTimeEffectParams
 		, audioProxyId(CryAudio::DefaultAuxObjectId)
 		, audioProxyOffset(ZERO)
 		, numAudioRtpcs(0)
+		, numParticleParams(0)
 		, fDecalPlacementTestMaxSize(1000.f)
 	{
 		dir[0].Set(0.0f, 0.0f, -1.0f);
@@ -86,6 +132,22 @@ struct SMFXRunTimeEffectParams
 	void ResetAudioRtpcs()
 	{
 		numAudioRtpcs = 0;
+	}
+
+	bool AddParticleParams(const SMFXEmitterParameter& param)
+	{
+		if (numParticleParams < MAX_PARTICLE_PARAMS)
+		{
+			particleParams[numParticleParams] = param;
+			++numParticleParams;
+			return true;
+		}
+		return false;
+	}
+
+	void ResetParticleParams()
+	{
+		numParticleParams = 0;
 	}
 
 public:
@@ -116,6 +178,9 @@ public:
 
 	SMFXAudioEffectRtpc   audioRtpcs[MAX_AUDIO_RTPCS];
 	uint32                numAudioRtpcs;
+
+	SMFXEmitterParameter  particleParams[MAX_PARTICLE_PARAMS];
+	uint32                numParticleParams;
 };
 
 struct SMFXBreakageParams

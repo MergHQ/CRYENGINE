@@ -13,6 +13,13 @@ namespace DefaultComponents
 class CStaticMeshComponent
 	: public IEntityComponent
 {
+	// IEntityComponent
+	virtual void   Initialize() final;
+
+	virtual void   ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final;
+	// ~IEntityComponent
+
 public:
 	enum class EType : uint32
 	{
@@ -24,16 +31,6 @@ public:
 
 	CStaticMeshComponent() {}
 	virtual ~CStaticMeshComponent() {}
-
-	// IEntityComponent
-	virtual void   Initialize() override;
-
-	virtual void   Run(Schematyc::ESimulationMode simulationMode) override;
-
-	virtual void   ProcessEvent(SEntityEvent& event) final;
-
-	virtual uint64 GetEventMask() const final;
-	// ~IEntityComponent
 
 	static void     ReflectType(Schematyc::CTypeDesc<CStaticMeshComponent>& desc);
 
@@ -57,20 +54,25 @@ public:
 #endif
 	};
 
-	void            SetType(EType type) { m_type = type; }
+	virtual void            SetType(EType type) { m_type = type; }
 	EType           GetType() const     { return m_type; }
 
 	virtual void    SetFilePath(const char* szPath);
 	const char*     GetFilePath() const          { return m_filePath.value.c_str(); }
 
-	SPhysics&       GetPhysicsParameters()       { return m_physics; }
+	virtual SPhysics&       GetPhysicsParameters()       { return m_physics; }
 	const SPhysics& GetPhysicsParameters() const { return m_physics; }
+
+	virtual void LoadFromDisk();
+	virtual void ResetObject();
 
 protected:
 	Schematyc::GeomFileName m_filePath = "%ENGINE%/EngineAssets/Objects/Default.cgf";
 	SPhysics                m_physics;
 
 	EType                   m_type = EType::RenderAndCollider;
+
+	IStatObj*               m_pCachedStatObj = nullptr;
 };
 }
 }

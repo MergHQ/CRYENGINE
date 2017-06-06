@@ -5287,6 +5287,8 @@ void CSystem::CreateSystemVars()
 	REGISTER_INT("sys_max_stdio", 2048, 0, "Sets a maximum for the number of simultaneously open files at the stdio level");
 #endif
 
+	REGISTER_INT("sys_system_timer_resolution", 1, VF_NULL, "(Windows only) Value of the system timer resolution in milliseconds (ms)");
+
 #if defined(MAP_LOADING_SLICING)
 	CreateSystemScheduler(this);
 #endif // defined(MAP_LOADING_SLICING)

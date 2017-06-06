@@ -15,77 +15,34 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		class CPathfindingComponent final
+		class CPathfindingComponent
 			: public IEntityComponent
 			, private IMovementActorAdapter
 			, private IAIPathAgent
 		{
 			// Dummy implementation so we can use IAISystem::CreateAndReturnNewDefaultPathFollower
-			class CPathObstacles
+			class CPathObstacles final
 				: public IPathObstacles
 			{
 				// IPathObstacles
-				virtual bool IsPathIntersectingObstacles(const NavigationMeshID meshID, const Vec3& start, const Vec3& end, float radius) const override { return false; }
-				virtual bool IsPointInsideObstacles(const Vec3& position) const override { return false; }
-				virtual bool IsLineSegmentIntersectingObstaclesOrCloseToThem(const Lineseg& linesegToTest, float maxDistanceToConsiderClose) const override { return false; }
+				virtual bool IsPathIntersectingObstacles(const NavigationMeshID meshID, const Vec3& start, const Vec3& end, float radius) const final { return false; }
+				virtual bool IsPointInsideObstacles(const Vec3& position) const final { return false; }
+				virtual bool IsLineSegmentIntersectingObstaclesOrCloseToThem(const Lineseg& linesegToTest, float maxDistanceToConsiderClose) const final { return false; }
 				// ~IPathObstacles
 			};
+
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
 
 		public:
 			virtual ~CPathfindingComponent() 
 			{
 				Reset();
 			}
-
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				Reset();
-
-				m_navigationAgentTypeId = gEnv->pAISystem->GetNavigationSystem()->GetAgentTypeID("MediumSizedCharacters");
-
-				m_callbacks.queuePathRequestFunction = functor(*this, &CPathfindingComponent::RequestPathTo);
-				m_callbacks.checkOnPathfinderStateFunction = functor(*this, &CPathfindingComponent::GetPathfinderState);
-				m_callbacks.getPathFollowerFunction = functor(*this, &CPathfindingComponent::GetPathFollower);
-				m_callbacks.getPathFunction = functor(*this, &CPathfindingComponent::GetINavPath);
-
-				gEnv->pAISystem->GetMovementSystem()->RegisterEntity(GetEntityId(), m_callbacks, *this);
-
-				if (m_pPathFollower == nullptr)
-				{
-					PathFollowerParams params;
-					params.maxAccel = m_maxAcceleration;
-					params.maxSpeed = params.maxAccel;
-					params.minSpeed = 0.f;
-					params.normalSpeed = params.maxSpeed;
-
-					params.use2D = false;
-
-					m_pPathFollower = gEnv->pAISystem->CreateAndReturnNewDefaultPathFollower(params, m_pathObstacles);
-				}
-
-				m_movementAbility.b3DMove = true;
-			}
-
-			virtual void ProcessEvent(SEntityEvent& event) override
-			{
-				switch (event.event)
-				{
-				case ENTITY_EVENT_START_GAME:
-				{
-					Initialize();
-				}
-				break;
-				}
-			}
-
-			virtual uint64 GetEventMask() const override
-			{ 
-				return BIT64(ENTITY_EVENT_START_GAME);
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CPathfindingComponent>& desc);
 
@@ -95,7 +52,7 @@ namespace Cry
 				return id;
 			}
 
-			void RequestMoveTo(const Vec3 &position)
+			virtual void RequestMoveTo(const Vec3 &position)
 			{
 				CRY_ASSERT_MESSAGE(m_movementRequestId.id == 0, "RequestMoveTo can not be called while another request is being handled!");
 
@@ -112,7 +69,7 @@ namespace Cry
 				m_movementRequestId = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 			}
 
-			void CancelCurrentRequest()
+			virtual void CancelCurrentRequest()
 			{
 				CRY_ASSERT(m_movementRequestId.id != 0);
 
@@ -129,18 +86,18 @@ namespace Cry
 
 			bool IsProcessingRequest() const { return m_movementRequestId != 0; }
 
-			void SetMaxAcceleration(float maxAcceleration) { m_maxAcceleration = maxAcceleration; }
+			virtual void SetMaxAcceleration(float maxAcceleration) { m_maxAcceleration = maxAcceleration; }
 			float GetMaxAcceleration() const { return m_maxAcceleration; }
 
-			void SetMovementRecommendationCallback(std::function<void(const Vec3& recommendedVelocity)> callback) { m_movementRecommendationCallback = callback; }
+			virtual void SetMovementRecommendationCallback(std::function<void(const Vec3& recommendedVelocity)> callback) { m_movementRecommendationCallback = callback; }
 
 		protected:
 			// IMovementActorAdapter
-			virtual void                  OnMovementPlanProduced() override {}
+			virtual void                  OnMovementPlanProduced() final {}
 
-			virtual NavigationAgentTypeID GetNavigationAgentTypeID() const override { return m_navigationAgentTypeId; }
-			virtual Vec3                  GetPhysicsPosition() const override { return GetEntity()->GetWorldPos(); }
-			virtual Vec3                  GetVelocity() const override
+			virtual NavigationAgentTypeID GetNavigationAgentTypeID() const final { return m_navigationAgentTypeId; }
+			virtual Vec3                  GetPhysicsPosition() const final { return GetEntity()->GetWorldPos(); }
+			virtual Vec3                  GetVelocity() const final
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
 				{
@@ -154,78 +111,78 @@ namespace Cry
 				return ZERO;
 			}
 
-			virtual Vec3                  GetMoveDirection() const override { return GetVelocity().GetNormalized(); }
-			virtual Vec3                  GetAnimationBodyDirection() const override { return m_requestedTargetBodyDirection; }
-			virtual EActorTargetPhase     GetActorPhase() const override { return eATP_None; }
-			virtual void                  SetMovementOutputValue(const PathFollowResult& result) override;
-			virtual void                  SetBodyTargetDirection(const Vec3& direction) override { m_requestedTargetBodyDirection = direction; }
-			virtual void                  ResetMovementContext() override {}
-			virtual void                  ClearMovementState() override;
-			virtual void                  ResetBodyTarget() override {}
-			virtual void                  ResetActorTargetRequest() override {}
-			virtual bool                  IsMoving() const override { return !GetVelocity().IsZero(0.01f); }
+			virtual Vec3                  GetMoveDirection() const final { return GetVelocity().GetNormalized(); }
+			virtual Vec3                  GetAnimationBodyDirection() const final { return m_requestedTargetBodyDirection; }
+			virtual EActorTargetPhase     GetActorPhase() const final { return eATP_None; }
+			virtual void                  SetMovementOutputValue(const PathFollowResult& result) final;
+			virtual void                  SetBodyTargetDirection(const Vec3& direction) final { m_requestedTargetBodyDirection = direction; }
+			virtual void                  ResetMovementContext() final {}
+			virtual void                  ClearMovementState() final;
+			virtual void                  ResetBodyTarget() final {}
+			virtual void                  ResetActorTargetRequest() final {}
+			virtual bool                  IsMoving() const final { return !GetVelocity().IsZero(0.01f); }
 
-			virtual void                  RequestExactPosition(const SAIActorTargetRequest* request, const bool lowerPrecision) override {}
+			virtual void                  RequestExactPosition(const SAIActorTargetRequest* request, const bool lowerPrecision) final {}
 
-			virtual bool                  IsClosestToUseTheSmartObject(const OffMeshLink_SmartObject& smartObjectLink) const override { return false; }
-			virtual bool                  PrepareNavigateSmartObject(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) override { return false; }
-			virtual void                  InvalidateSmartObjectLink(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) override {}
+			virtual bool                  IsClosestToUseTheSmartObject(const OffMeshLink_SmartObject& smartObjectLink) const final { return false; }
+			virtual bool                  PrepareNavigateSmartObject(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) final { return false; }
+			virtual void                  InvalidateSmartObjectLink(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) final {}
 
-			virtual void                  SetInCover(const bool inCover) override {}
-			virtual void                  UpdateCoverLocations() override {}
-			virtual void                  InstallInLowCover(const bool inCover) override {}
-			virtual void                  SetupCoverInformation() override {}
-			virtual bool                  IsInCover() const override { return false; }
+			virtual void                  SetInCover(const bool inCover) final {}
+			virtual void                  UpdateCoverLocations() final {}
+			virtual void                  InstallInLowCover(const bool inCover) final {}
+			virtual void                  SetupCoverInformation() final {}
+			virtual bool                  IsInCover() const final { return false; }
 
-			virtual bool                  GetDesignedPath(SShape& pathShape) const override { return false; }
-			virtual void                  CancelRequestedPath() override {}
-			virtual void                  ConfigurePathfollower(const MovementStyle& style) override {}
+			virtual bool                  GetDesignedPath(SShape& pathShape) const final { return false; }
+			virtual void                  CancelRequestedPath() final {}
+			virtual void                  ConfigurePathfollower(const MovementStyle& style) final {}
 
-			virtual void                  SetActorPath(const MovementStyle& style, const INavPath& navPath) override {}
-			virtual void                  SetActorStyle(const MovementStyle& style, const INavPath& navPath) override {}
-			virtual void                  SetStance(const MovementStyle::Stance stance) override {}
+			virtual void                  SetActorPath(const MovementStyle& style, const INavPath& navPath) final {}
+			virtual void                  SetActorStyle(const MovementStyle& style, const INavPath& navPath) final {}
+			virtual void                  SetStance(const MovementStyle::Stance stance) final {}
 
-			virtual std::shared_ptr<Vec3> CreateLookTarget() override { return nullptr; }
-			virtual void                  SetLookTimeOffset(float lookTimeOffset) override {}
-			virtual void UpdateLooking(float updateTime, std::shared_ptr<Vec3> lookTarget, const bool targetReachable, const float pathDistanceToEnd, const Vec3& followTargetPosition, const MovementStyle& style) override {}
+			virtual std::shared_ptr<Vec3> CreateLookTarget() final { return nullptr; }
+			virtual void                  SetLookTimeOffset(float lookTimeOffset) final {}
+			virtual void UpdateLooking(float updateTime, std::shared_ptr<Vec3> lookTarget, const bool targetReachable, const float pathDistanceToEnd, const Vec3& followTargetPosition, const MovementStyle& style) final {}
 			// ~IMovementActorAdapter
 
 			// IAIPathAgent
-			virtual IEntity *GetPathAgentEntity() const override { return GetEntity(); }
-			virtual const char *GetPathAgentName() const override { return GetEntity()->GetClass()->GetName(); }
+			virtual IEntity *GetPathAgentEntity() const final { return GetEntity(); }
+			virtual const char *GetPathAgentName() const final { return GetEntity()->GetClass()->GetName(); }
 
-			virtual unsigned short GetPathAgentType() const override { return AIOBJECT_ACTOR; }
+			virtual unsigned short GetPathAgentType() const final { return AIOBJECT_ACTOR; }
 
-			virtual float GetPathAgentPassRadius() const override { return 1.f; }
-			virtual Vec3 GetPathAgentPos() const override { return GetPathAgentEntity()->GetWorldPos(); }
-			virtual Vec3 GetPathAgentVelocity() const override { return GetVelocity(); }
+			virtual float GetPathAgentPassRadius() const final { return 1.f; }
+			virtual Vec3 GetPathAgentPos() const final { return GetPathAgentEntity()->GetWorldPos(); }
+			virtual Vec3 GetPathAgentVelocity() const final { return GetVelocity(); }
 
-			virtual const AgentMovementAbility& GetPathAgentMovementAbility() const override { return m_movementAbility; }
+			virtual const AgentMovementAbility& GetPathAgentMovementAbility() const final { return m_movementAbility; }
 
-			virtual void GetPathAgentNavigationBlockers(NavigationBlockers& blockers, const PathfindRequest* pRequest) override {}
+			virtual void GetPathAgentNavigationBlockers(NavigationBlockers& blockers, const PathfindRequest* pRequest) final {}
 
-			virtual unsigned int GetPathAgentLastNavNode() const override { return 0; }
-			virtual void SetPathAgentLastNavNode(unsigned int lastNavNode) override {}
+			virtual unsigned int GetPathAgentLastNavNode() const final { return 0; }
+			virtual void SetPathAgentLastNavNode(unsigned int lastNavNode) final {}
 
-			virtual void SetPathToFollow(const char* pathName) override {}
-			virtual void         SetPathAttributeToFollow(bool bSpline) override {}
+			virtual void SetPathToFollow(const char* pathName) final {}
+			virtual void         SetPathAttributeToFollow(bool bSpline) final {}
 
-			virtual void SetPFBlockerRadius(int blockerType, float radius) override {}
+			virtual void SetPFBlockerRadius(int blockerType, float radius) final {}
 
-			virtual ETriState CanTargetPointBeReached(CTargetPointRequest& request) override
+			virtual ETriState CanTargetPointBeReached(CTargetPointRequest& request) final
 			{
 				request.SetResult(eTS_false);
 				return eTS_false;
 			}
 
-			virtual bool UseTargetPointRequest(const CTargetPointRequest& request) override { return false; }
+			virtual bool UseTargetPointRequest(const CTargetPointRequest& request) final { return false; }
 
-			virtual bool GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const override { return false; }
-			virtual bool GetTeleportPosition(Vec3& teleportPos) const override { return false; }
+			virtual bool GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const final { return false; }
+			virtual bool GetTeleportPosition(Vec3& teleportPos) const final { return false; }
 
-			virtual IPathFollower *GetPathFollower() const override { return m_pPathFollower.get(); }
+			virtual IPathFollower *GetPathFollower() const final { return m_pPathFollower.get(); }
 
-			virtual bool IsPointValidForAgent(const Vec3& pos, uint32 flags) const override { return true; }
+			virtual bool IsPointValidForAgent(const Vec3& pos, uint32 flags) const final { return true; }
 			// ~IAIPathAgent
 
 			void Reset()

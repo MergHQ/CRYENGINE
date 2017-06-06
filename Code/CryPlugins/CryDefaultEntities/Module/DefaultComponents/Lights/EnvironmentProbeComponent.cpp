@@ -43,14 +43,14 @@ static void RegisterEnvironmentProbeComponent(Schematyc::IEnvRegistrar& registra
 	}
 }
 
-		void CEnvironmentProbeComponent::ReflectType(Schematyc::CTypeDesc<CEnvironmentProbeComponent>& desc)
-		{
-			desc.SetGUID(CEnvironmentProbeComponent::IID());
-			desc.SetEditorCategory("Lights");
-			desc.SetLabel("Environment Probe");
-			desc.SetDescription("Captures an image of its full surroundings and used to light nearby objects with reflective materials");
-			desc.SetIcon("icons:Designer/Designer_Box.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+void CEnvironmentProbeComponent::ReflectType(Schematyc::CTypeDesc<CEnvironmentProbeComponent>& desc)
+{
+	desc.SetGUID(CEnvironmentProbeComponent::IID());
+	desc.SetEditorCategory("Lights");
+	desc.SetLabel("Environment Probe");
+	desc.SetDescription("Captures an image of its full surroundings and used to light nearby objects with reflective materials");
+	desc.SetIcon("icons:Designer/Designer_Box.ico");
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 	desc.AddMember(&CEnvironmentProbeComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the environment probe is enabled", true);
 	desc.AddMember(&CEnvironmentProbeComponent::m_extents, 'exts', "BoxSize", "Box Size", "Size of the area the probe affects.", Vec3(10.f));
@@ -105,9 +105,29 @@ static void ReflectType(Schematyc::CTypeDesc<CEnvironmentProbeComponent::SGenera
 #endif
 }
 
-void CEnvironmentProbeComponent::Run(Schematyc::ESimulationMode simulationMode)
+void CEnvironmentProbeComponent::Initialize()
 {
-	Initialize();
+	if (m_generation.m_bAutoLoad && m_generation.m_generatedCubemapPath.value.size() > 0)
+	{
+		LoadFromDisk(m_generation.m_generatedCubemapPath);
+	}
+	else
+	{
+		FreeEntitySlot();
+	}
+}
+
+void CEnvironmentProbeComponent::ProcessEvent(SEntityEvent& event)
+{
+	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+	{
+		Initialize();
+	}
+}
+
+uint64 CEnvironmentProbeComponent::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 }
 
 void CEnvironmentProbeComponent::SetOutputCubemapPath(const char* szPath)

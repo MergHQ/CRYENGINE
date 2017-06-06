@@ -59,10 +59,13 @@ namespace Cry
 			Remove();
 		}
 
-		void CPointConstraintComponent::Run(Schematyc::ESimulationMode simulationMode)
+		void CPointConstraintComponent::Initialize()
 		{
-			m_pEntity->UpdateComponentEventMask(this);
+			Reset();
+		}
 
+		void CPointConstraintComponent::Reset()
+		{
 			if (m_bActive)
 			{
 				ConstrainToPoint();
@@ -77,21 +80,22 @@ namespace Cry
 		{
 			if (event.event == ENTITY_EVENT_START_GAME)
 			{
-				if (m_bActive)
-				{
-					ConstrainToPoint();
-				}
-				else
-				{
-					Remove();
-				}
+				Reset();
+			}
+			else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			{
+				m_pEntity->UpdateComponentEventMask(this);
+
+				Reset();
 			}
 		}
 
 		uint64 CPointConstraintComponent::GetEventMask() const
 		{
-			return m_bActive ? BIT64(ENTITY_EVENT_START_GAME) : 0;
-		}
+			uint64 bitFlags = m_bActive ? BIT64(ENTITY_EVENT_START_GAME) : 0;
+			bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 
+			return bitFlags;
+		}
 	}
 }

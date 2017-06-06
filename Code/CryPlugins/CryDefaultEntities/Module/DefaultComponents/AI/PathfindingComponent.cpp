@@ -21,7 +21,7 @@ void CPathfindingComponent::ReflectType(Schematyc::CTypeDesc<CPathfindingCompone
 	desc.SetLabel("Pathfinder");
 	desc.SetDescription("Exposes the ability to get path finding callbacks");
 	//desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 	desc.AddMember(&CPathfindingComponent::m_maxAcceleration, 'maxa', "MaxAcceleration", "Maximum Acceleration", "Maximum possible physical acceleration", 10.f);
 }
@@ -42,9 +42,51 @@ static void ReflectType(Schematyc::CTypeDesc<SOnMovementRecommendation>& desc)
 	desc.AddMember(&SOnMovementRecommendation::m_velocity, 'vel', "Velocity", "Velocity", "The velocity proposed by the path finding solver", Vec3(0.0f));
 }
 
-void CPathfindingComponent::Run(Schematyc::ESimulationMode simulationMode)
+void CPathfindingComponent::Initialize()
 {
-	Initialize();
+	Reset();
+
+	m_navigationAgentTypeId = gEnv->pAISystem->GetNavigationSystem()->GetAgentTypeID("MediumSizedCharacters");
+
+	m_callbacks.queuePathRequestFunction = functor(*this, &CPathfindingComponent::RequestPathTo);
+	m_callbacks.checkOnPathfinderStateFunction = functor(*this, &CPathfindingComponent::GetPathfinderState);
+	m_callbacks.getPathFollowerFunction = functor(*this, &CPathfindingComponent::GetPathFollower);
+	m_callbacks.getPathFunction = functor(*this, &CPathfindingComponent::GetINavPath);
+
+	gEnv->pAISystem->GetMovementSystem()->RegisterEntity(GetEntityId(), m_callbacks, *this);
+
+	if (m_pPathFollower == nullptr)
+	{
+		PathFollowerParams params;
+		params.maxAccel = m_maxAcceleration;
+		params.maxSpeed = params.maxAccel;
+		params.minSpeed = 0.f;
+		params.normalSpeed = params.maxSpeed;
+
+		params.use2D = false;
+
+		m_pPathFollower = gEnv->pAISystem->CreateAndReturnNewDefaultPathFollower(params, m_pathObstacles);
+	}
+
+	m_movementAbility.b3DMove = true;
+}
+
+void CPathfindingComponent::ProcessEvent(SEntityEvent& event)
+{
+	switch (event.event)
+	{
+		case ENTITY_EVENT_START_GAME:
+		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		{
+			Initialize();
+		}
+		break;
+	}
+}
+
+uint64 CPathfindingComponent::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 }
 
 void CPathfindingComponent::SetMovementOutputValue(const PathFollowResult& result)

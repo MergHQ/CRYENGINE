@@ -39,6 +39,13 @@ namespace Cry
 
 		class CEntityAudioSpotComponent : public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+			virtual void OnShutDown() final;
+			virtual uint64 GetEventMask() const final;
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			// ~IEntityComponent
+
 		public:
 
 			enum class EPlayMode
@@ -59,13 +66,6 @@ namespace Cry
 				bool        m_bSuccess = false;
 			};
 
-			// IEntityComponent
-			virtual void Initialize() override;
-			virtual void OnShutDown() override;
-			virtual uint64 GetEventMask() const override;
-			virtual void ProcessEvent(SEntityEvent& event) override;
-			// ~IEntityComponent
-
 			static void ReflectType(Schematyc::CTypeDesc<CEntityAudioSpotComponent>& desc);
 
 			static CryGUID& IID()
@@ -74,7 +74,7 @@ namespace Cry
 				return id;
 			}
 
-			void ExecuteTrigger(const SAudioTriggerSerializeHelper& trigger, uint32& _instanceId, uint32& _triggerId)
+			virtual void ExecuteTrigger(const SAudioTriggerSerializeHelper& trigger, uint32& _instanceId, uint32& _triggerId)
 			{
 				if (m_pAudioComp && trigger.m_triggerId != CryAudio::InvalidControlId)
 				{
@@ -92,7 +92,7 @@ namespace Cry
 				}
 			}
 
-			void StopTrigger(const SAudioTriggerSerializeHelper& trigger)
+			virtual void StopTrigger(const SAudioTriggerSerializeHelper& trigger)
 			{
 				if (m_pAudioComp && trigger.m_triggerId != CryAudio::InvalidControlId)
 				{
@@ -100,7 +100,7 @@ namespace Cry
 				}
 			}
 
-			void SetParameter(const SAudioParameterSerializeHelper& parameter, float value)
+			virtual void SetParameter(const SAudioParameterSerializeHelper& parameter, float value)
 			{
 				if (m_pAudioComp && parameter.m_parameterId != CryAudio::InvalidControlId)
 				{
@@ -108,7 +108,7 @@ namespace Cry
 				}
 			}
 
-			void SetSwitchState(const SAudioSwitchWithStateSerializeHelper& switchAndState)
+			virtual void SetSwitchState(const SAudioSwitchWithStateSerializeHelper& switchAndState)
 			{
 				if (m_pAudioComp && switchAndState.m_switchId != CryAudio::InvalidControlId && switchAndState.m_switchStateId != CryAudio::InvalidControlId)
 				{
@@ -116,7 +116,7 @@ namespace Cry
 				}
 			}
 			
-			void Enable(bool bEnabled)
+			virtual void Enable(bool bEnabled)
 			{ 
 				m_bEnabled = bEnabled;
 				if (!bEnabled)
@@ -135,15 +135,15 @@ namespace Cry
 			virtual void SetDefaultTrigger(const char* szName);
 			const char*  GetDefaultTrigger() const { return m_defaultTrigger.m_triggerName;}
 
-			void SetPlayMode(EPlayMode mode) { m_playMode = mode; }
+			virtual void SetPlayMode(EPlayMode mode) { m_playMode = mode; }
 			EPlayMode GetPlayMode() const { return m_playMode; }
 
-			void SetMinimumDelay(float delay) { m_minDelay = delay; }
+			virtual void SetMinimumDelay(float delay) { m_minDelay = delay; }
 			float GetMinimumDelay() const { return m_minDelay; }
-			void SetMaximumDelay(float delay) { m_maxDelay = delay; }
+			virtual void SetMaximumDelay(float delay) { m_maxDelay = delay; }
 			float GetMaximumDelay() const { return m_maxDelay; }
 
-			void SetOcclusionType(CryAudio::EOcclusionType type) { m_occlusionType = type; }
+			virtual void SetOcclusionType(CryAudio::EOcclusionType type) { m_occlusionType = type; }
 			CryAudio::EOcclusionType GetOcclusionType() const { return m_occlusionType; }
 
 			//audio callback

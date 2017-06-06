@@ -20,76 +20,19 @@ namespace Cry
 			VeryHigh
 		};
 
-		class CPointLightComponent final
+		class CPointLightComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void   ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			CPointLightComponent() {}
 			virtual ~CPointLightComponent() {}
-
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				if (!m_bActive)
-				{
-					FreeEntitySlot();
-
-					return;
-				}
-
-				CDLight light;
-
-				light.m_nLightStyle = m_animations.m_style;
-				light.SetAnimSpeed(m_animations.m_speed);
-
-				light.SetPosition(ZERO);
-				light.m_Flags = DLF_DEFERRED_LIGHT | DLF_POINT;
-
-				light.m_fRadius = m_radius;
-
-				light.SetLightColor(m_color.m_color * m_color.m_diffuseMultiplier);
-				light.SetSpecularMult(m_color.m_specularMultiplier);
-
-				light.m_fHDRDynamic = 0.f;
-
-				if (m_options.m_bAffectsOnlyThisArea)
-					light.m_Flags |= DLF_THIS_AREA_ONLY;
-
-				if (m_options.m_bIgnoreVisAreas)
-					light.m_Flags |= DLF_IGNORES_VISAREAS;
-
-				if (m_options.m_bVolumetricFogOnly)
-					light.m_Flags |= DLF_VOLUMETRIC_FOG_ONLY;
-
-				if (m_options.m_bAffectsVolumetricFog)
-					light.m_Flags |= DLF_VOLUMETRIC_FOG;
-
-				if (m_options.m_bAmbient)
-					light.m_Flags |= DLF_AMBIENT;
-
-				if (m_shadows.m_castShadowSpec != EMiniumSystemSpec::Disabled && (int)gEnv->pSystem->GetConfigSpec() >= (int)m_shadows.m_castShadowSpec)
-				{
-					light.m_Flags |= DLF_CASTSHADOW_MAPS;
-
-					light.SetShadowBiasParams(1.f, 1.f);
-					light.m_fShadowUpdateMinRadius = light.m_fRadius;
-
-					float shadowUpdateRatio = 1.f;
-					light.m_nShadowUpdateRatio = max((uint16)1, (uint16)(shadowUpdateRatio * (1 << DL_SHADOW_UPDATE_SHIFT)));
-				}
-				else
-					light.m_Flags &= ~DLF_CASTSHADOW_MAPS;
-
-				light.m_fAttenuationBulbSize = m_options.m_attenuationBulbSize;
-
-				light.m_fFogRadialLobe = m_options.m_fogRadialLobe;
-
-				// Load the light source into the entity
-				m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CPointLightComponent>& desc);
 
@@ -117,7 +60,7 @@ namespace Cry
 				inline bool operator==(const SColor &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
 				ColorF m_color = ColorF(1.f);
-				Schematyc::Range<0, 10000> m_diffuseMultiplier = 1.f;
+				Schematyc::Range<0, 10000, 0, 100> m_diffuseMultiplier = 1.f;
 				Schematyc::Range<0, 10000> m_specularMultiplier = 1.f;
 			};
 
@@ -136,19 +79,19 @@ namespace Cry
 				float m_speed = 1.f;
 			};
 
-			void Enable(bool bEnable) { m_bActive = bEnable; }
+			virtual void Enable(bool bEnable) { m_bActive = bEnable; }
 			bool IsEnabled() const { return m_bActive; }
 
-			SOptions& GetOptions() { return m_options; }
+			virtual SOptions& GetOptions() { return m_options; }
 			const SOptions& GetOptions() const { return m_options; }
 
-			SColor& GetColorParameters() { return m_color; }
+			virtual SColor& GetColorParameters() { return m_color; }
 			const SColor& GetColorParameters() const { return m_color; }
 
-			SShadows& GetShadowParameters() { return m_shadows; }
+			virtual SShadows& GetShadowParameters() { return m_shadows; }
 			const SShadows& GetShadowParameters() const { return m_shadows; }
 
-			SAnimations& GetAnimationParameters() { return m_animations; }
+			virtual SAnimations& GetAnimationParameters() { return m_animations; }
 			const SAnimations& GetAnimationParameters() const { return m_animations; }
 
 		protected:

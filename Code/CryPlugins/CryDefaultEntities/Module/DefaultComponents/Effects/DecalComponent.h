@@ -13,27 +13,15 @@ namespace Cry
 		class CDecalComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			virtual ~CDecalComponent() {}
-
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				if (m_bAutoSpawn)
-				{
-					Spawn();
-				}
-				else
-				{
-					Remove();
-				}
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-
-			virtual void ProcessEvent(SEntityEvent& event) override;
-			virtual uint64 GetEventMask() const override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CDecalComponent>& desc);
 
@@ -43,19 +31,12 @@ namespace Cry
 				return id;
 			}
 
-			void Spawn()
+			virtual void Spawn()
 			{
 				if (m_materialFileName.value.size() > 0 && gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialFileName.value) != nullptr)
 				{
 					IDecalRenderNode* pRenderNode = static_cast<IDecalRenderNode*>(m_pEntity->GetSlotRenderNode(GetEntitySlotId()));
 					
-					// Make sure that the component has a slot so the transform can be modified by designers
-					if (pRenderNode == nullptr)
-					{
-						pRenderNode = static_cast<IDecalRenderNode*>(gEnv->p3DEngine->CreateRenderNode(eERType_Decal));
-						m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), pRenderNode);
-					}
-
 					bool bSelected, bHighlighted;
 					m_pEntity->GetEditorObjectInfo(bSelected, bHighlighted);
 
@@ -109,7 +90,7 @@ namespace Cry
 				}
 			}
 
-			void Remove()
+			virtual void Remove()
 			{
 				FreeEntitySlot();
 
@@ -118,19 +99,19 @@ namespace Cry
 				m_pEntity->UpdateComponentEventMask(this);
 			}
 
-			void EnableAutomaticSpawn(bool bEnable) { m_bAutoSpawn = bEnable; }
+			virtual void EnableAutomaticSpawn(bool bEnable) { m_bAutoSpawn = bEnable; }
 			bool IsAutomaticSpawnEnabled() const { return m_bAutoSpawn; }
 
-			void EnableAutomaticMove(bool bEnable) { m_bAutoSpawn = bEnable; }
+			virtual void EnableAutomaticMove(bool bEnable) { m_bAutoSpawn = bEnable; }
 			bool IsAutomaticMoveEnabled() const { return m_bAutoSpawn; }
 
-			void SetProjectionType(SDecalProperties::EProjectionType type) { m_projectionType = type; }
+			virtual void SetProjectionType(SDecalProperties::EProjectionType type) { m_projectionType = type; }
 			SDecalProperties::EProjectionType GetProjectionType() const { return m_projectionType; }
 
-			void SetSortPriority(uint8 priority) { m_sortPriority = (int)priority; }
+			virtual void SetSortPriority(uint8 priority) { m_sortPriority = (int)priority; }
 			uint8 GetSortPriority() const { return m_sortPriority; }
 
-			void SetDepth(float depth) { m_depth = depth; }
+			virtual void SetDepth(float depth) { m_depth = depth; }
 			float GetDepth() const { return m_depth; }
 
 			virtual void SetMaterialFileName(const char* szPath);
@@ -141,7 +122,7 @@ namespace Cry
 			bool m_bFollowEntityAfterSpawn = true;
 			
 			SDecalProperties::EProjectionType m_projectionType = SDecalProperties::ePlanar;
-			Schematyc::Range<0, 255, int> m_sortPriority = 16;
+			Schematyc::Range<0, 255, 0, 255, int> m_sortPriority = 16;
 			Schematyc::Range<0, 10> m_depth = 1.f;
 
 			bool m_bSpawned = false;
