@@ -13,7 +13,7 @@ void CPlayerComponent::Initialize()
 	// Register an action, and the callback that will be sent when it's triggered
 	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveLeft, activationMode);  });
 	// Bind the 'A' key the "moveleft" action
-	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse,	EKeyId::eKI_A);
+	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse, EKeyId::eKI_A);
 
 	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveRight, activationMode);  });
 	m_pInputComponent->BindAction("player", "moveright", eAID_KeyboardMouse, EKeyId::eKI_D);
@@ -29,6 +29,8 @@ void CPlayerComponent::Initialize()
 
 	m_pInputComponent->RegisterAction("player", "mouse_rotatepitch", [this](int activationMode, float value) { m_mouseDeltaRotation.y -= value; });
 	m_pInputComponent->BindAction("player", "mouse_rotatepitch", eAID_KeyboardMouse, EKeyId::eKI_MouseY);
+
+	Revive();
 }
 
 uint64 CPlayerComponent::GetEventMask() const
@@ -106,8 +108,10 @@ void CPlayerComponent::Revive()
 		Quat playerRotation = IDENTITY;
 
 		// Position the player in the center of the map
+		const float heightOffset = 20.f;
 		float terrainCenter = gEnv->p3DEngine->GetTerrainSize() / 2.f;
-		Vec3 playerPosition = Vec3(terrainCenter, terrainCenter, 256);
+		float height = gEnv->p3DEngine->GetTerrainZ(static_cast<int>(terrainCenter), static_cast<int>(terrainCenter));
+		Vec3 playerPosition = Vec3(terrainCenter, terrainCenter, height + heightOffset);
 
 		m_pEntity->SetWorldTM(Matrix34::Create(playerScale, playerRotation, playerPosition));
 	}
