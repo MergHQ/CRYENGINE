@@ -92,10 +92,18 @@ std::vector<CAsset*> CAssetImporterImage::ImportAssets(const std::vector<string>
 		return {};
 	}
 
-	const string absOutputSourceFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), ctx.GetOutputSourceFilePath());
-	if (!CFileImporter().Import(ctx.GetInputFilePath(), absOutputSourceFilePath))
+	CFileImporter fileImporter;
+
+	// We have already got the user confirmation. see CAssetImporter::Import() 
+	fileImporter.SetMayOverwriteFunc([](auto)
 	{
-		return {};
+		return true;
+	});
+
+	const string absOutputSourceFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), ctx.GetOutputSourceFilePath());
+	if (!fileImporter.Import(ctx.GetInputFilePath(), absOutputSourceFilePath))
+	{
+		return{};
 	}
 
 	// If the source file is a TIF, we make it writable, as we might call the RC and store settings
