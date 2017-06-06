@@ -15,59 +15,15 @@ namespace Cry
 		class CParticleComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			virtual ~CParticleComponent() {}
-
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				if (m_effectName.value.size() > 0 && m_bEnabledByDefault)
-				{
-					if (IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(m_effectName.value, "CParticleComponent"))
-					{
-						if (IParticleEmitter* pEmitter = m_pEntity->GetParticleEmitter(GetEntitySlotId()))
-						{
-							if (pEmitter->GetEffect() != pEffect)
-							{
-								FreeEntitySlot();
-								m_bCurrentlyActive = false;
-							}
-						}
-
-						if(!m_bCurrentlyActive)
-						{
-							m_pEntity->LoadParticleEmitter(GetOrMakeEntitySlotId(), pEffect, &m_spawnParams.m_spawnParams);
-						}
-
-						if (IParticleEmitter* pEmitter = m_pEntity->GetParticleEmitter(GetEntitySlotId()))
-						{
-							m_bCurrentlyActive = true;
-
-							pEmitter->GetAttributes().Reset(m_attributes.m_pAttributes.get());
-
-							if (m_emitterGeomFileName.value.size() > 0)
-							{
-								if (IStatObj* pObject = gEnv->p3DEngine->LoadStatObj(m_emitterGeomFileName.value))
-								{
-									m_emitterGeomReference.Set(pObject);
-									pEmitter->SetEmitGeom(m_emitterGeomReference);
-								}
-							}
-						}
-					}
-					else
-					{
-						FreeEntitySlot();
-					}
-				}
-				else
-				{
-					FreeEntitySlot();
-				}
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CParticleComponent>& desc);
 
@@ -77,7 +33,37 @@ namespace Cry
 				return id;
 			}
 
-			void Activate(bool bActive)
+			virtual void LoadEffect(bool bActivate)
+			{
+				if (IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(m_effectName.value, "CParticleComponent"))
+				{
+					if (IParticleEmitter* pEmitter = m_pEntity->GetParticleEmitter(GetEntitySlotId()))
+					{
+						if (pEmitter->GetEffect() != pEffect)
+						{
+							FreeEntitySlot();
+							m_bCurrentlyActive = false;
+						}
+					}
+
+					if (!m_bCurrentlyActive)
+					{
+						m_pEntity->LoadParticleEmitter(GetOrMakeEntitySlotId(), pEffect, &m_spawnParams.m_spawnParams);
+					}
+
+					if (IParticleEmitter* pEmitter = m_pEntity->GetParticleEmitter(GetEntitySlotId()))
+					{
+						pEmitter->GetAttributes().Reset(m_attributes.m_pAttributes.get());
+						pEmitter->Activate(bActivate);
+					}
+				}
+				else
+				{
+					FreeEntitySlot();
+				}
+			}
+
+			virtual void Activate(bool bActive)
 			{
 				if (m_bCurrentlyActive == bActive)
 				{
@@ -100,19 +86,7 @@ namespace Cry
 			}
 
 			bool IsActive() const { return m_bCurrentlyActive; }
-			void SetSpawnGeometry(const Schematyc::GeomFileName& geomName)
-			{
-				if (IStatObj* pObject = gEnv->p3DEngine->LoadStatObj(geomName.value.c_str()))
-				{
-					m_emitterGeomReference.Set(pObject);
-
-					if (IParticleEmitter* pEmitter = GetEntity()->GetParticleEmitter(GetEntitySlotId()))
-					{
-						pEmitter->SetEmitGeom(m_emitterGeomReference);
-					}
-				}
-			}
-
+			
 			struct SAttributes
 			{
 				SAttributes()
@@ -128,35 +102,27 @@ namespace Cry
 			struct SSpawnParameters
 			{
 				inline bool operator==(const SSpawnParameters &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
-				
+
 				SpawnParams m_spawnParams;
 			};
 
-			void EnableAutomaticActivation(bool bEnable) { m_bEnabledByDefault = bEnable; }
-			bool IsAutomaticActivationEnabled() const { return m_bEnabledByDefault; }
-
-			SSpawnParameters& GetSpawnParameters() { return m_spawnParams; }
+			virtual SSpawnParameters& GetSpawnParameters() { return m_spawnParams; }
 			const SSpawnParameters& GetSpawnParameters() const { return m_spawnParams; }
 
-			SAttributes& GetAttributes() { return m_attributes; }
+			virtual SAttributes& GetAttributes() { return m_attributes; }
 			const SAttributes& GetAttributes() const { return m_attributes; }
 
 			virtual void SetEffectName(const char* szPath);
 			const char* GetEffectName() const { return m_effectName.value.c_str(); }
-			virtual void SetEmitterGeomFileName(const char* szPath);
-			const char* GetEmitterGeomFileName() const { return m_emitterGeomFileName.value.c_str(); }
-
+			
 		protected:
-			bool m_bEnabledByDefault = true;
+			bool m_bEnabled = true;
+			bool m_bCurrentlyActive = false;
 			
 			SSpawnParameters m_spawnParams;
 			SAttributes m_attributes;
 
-			GeomRef m_emitterGeomReference;
-			bool m_bCurrentlyActive = false;
-
 			Schematyc::ParticleEffectName m_effectName;
-			Schematyc::GeomFileName m_emitterGeomFileName;
 		};
 	}
 }

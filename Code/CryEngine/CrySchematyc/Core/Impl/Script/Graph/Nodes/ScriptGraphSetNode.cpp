@@ -352,7 +352,7 @@ SRuntimeResult CScriptGraphSetNode::ExecuteSetComponentProperty(SRuntimeContext&
 				event.nParam[1] = member.GetId();
 				//@TODO Decide later, if this event should be sent to whole entity or just this component
 				//pComponent->GetEntity()->SendEvent(event);
-				pComponent->ProcessEvent(event);
+				pComponent->SendEvent(event);
 			}
 		}
 	}

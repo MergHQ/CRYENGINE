@@ -13,10 +13,6 @@ namespace Cry
 			CBoxPrimitiveComponent() {}
 			virtual ~CBoxPrimitiveComponent() {}
 
-			// IEntityComponent
-			virtual void Run(Schematyc::ESimulationMode simulationMode) final;
-			// ~IEntityComponent
-
 			virtual IGeometry* CreateGeometry() const final
 			{
 				primitives::box primitive;

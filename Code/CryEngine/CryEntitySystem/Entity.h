@@ -175,7 +175,6 @@ public:
 	virtual void Serialize(TSerialize ser, int nFlags) final;
 
 	virtual bool SendEvent(SEntityEvent& event) final;
-	virtual void SendEventToComponent(SEntityEvent& event, IEntityComponent* pComponent) final;
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -222,8 +221,7 @@ public:
 	virtual void              GetComponents( DynArray<IEntityComponent*> &components ) const final;
 	virtual uint32            GetComponentsCount() const final;
 	virtual void              VisitComponents(const ComponentsVisitor &visitor) final;
-	virtual void              SendEventToComponent(IEntityComponent* pComponent, SEntityEvent& event) final;
-
+	
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
 	//////////////////////////////////////////////////////////////////////////
@@ -421,6 +419,8 @@ public:
 
 	virtual EEntitySimulationMode GetSimulationMode() const final { return m_simulationMode; };
 	//~IEntity
+
+	void ShutDownComponent(IEntityComponent* pComponent);
 
 protected:
 	//////////////////////////////////////////////////////////////////////////

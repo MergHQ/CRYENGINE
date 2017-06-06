@@ -5588,7 +5588,7 @@ void CActor::SetGrabbedByPlayer( IEntity* pPlayerEntity, bool grabbed )
 			SEntityEvent xFormEvent;
 			xFormEvent.event = ENTITY_EVENT_XFORM;
 			xFormEvent.nParam[0] = ENTITY_XFORM_ROT|ENTITY_XFORM_POS;
-			m_pAnimatedCharacter->ProcessEvent(xFormEvent);
+			m_pAnimatedCharacter->SendEvent(xFormEvent);
 
 			m_pAnimatedCharacter->SetInGrabbedState(false);
 		}

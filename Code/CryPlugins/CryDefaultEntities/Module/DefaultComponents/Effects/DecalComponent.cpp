@@ -55,9 +55,16 @@ void CDecalComponent::ReflectType(Schematyc::CTypeDesc<CDecalComponent>& desc)
 	desc.AddMember(&CDecalComponent::m_sortPriority, 'sort', "SortPriority", "Sort Priority", "Sorting priority, used to resolve depth issues with other decals", 16);
 }
 
-void CDecalComponent::Run(Schematyc::ESimulationMode simulationMode)
+void CDecalComponent::Initialize()
 {
-	Initialize();
+	if (m_bAutoSpawn)
+	{
+		Spawn();
+	}
+	else
+	{
+		Remove();
+	}
 }
 
 void CDecalComponent::ProcessEvent(SEntityEvent& event)
@@ -69,17 +76,26 @@ void CDecalComponent::ProcessEvent(SEntityEvent& event)
 			Spawn();
 		}
 		break;
+	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		{
+			if(m_bSpawned)
+			{
+				Spawn();
+			}
+		}
+		break;
 	}
 }
 
 uint64 CDecalComponent::GetEventMask() const
 {
-	if (m_bFollowEntityAfterSpawn && m_bSpawned)
+	uint64 bitFlags = (m_bFollowEntityAfterSpawn && m_bSpawned) ? BIT64(ENTITY_EVENT_XFORM) : 0;
+	if (m_bSpawned)
 	{
-		return BIT64(ENTITY_EVENT_XFORM);
+		bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 	}
 
-	return 0;
+	return bitFlags;
 }
 
 void CDecalComponent::SetMaterialFileName(const char* szPath)

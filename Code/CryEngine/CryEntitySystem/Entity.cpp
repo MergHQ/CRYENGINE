@@ -387,17 +387,8 @@ bool CEntity::SendEvent(SEntityEvent& event)
 
 	return false;
 }
-//////////////////////////////////////////////////////////////////////////
 
-void CEntity::SendEventToComponent(SEntityEvent& event, IEntityComponent* pComponent)
-{
-	if ((pComponent->GetEventMask() & BIT64(event.event)) != 0)
-	{
-		pComponent->ProcessEvent(event);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 bool CEntity::Init(SEntitySpawnParams& params)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Init: %s", params.sName ? params.sName : "(noname)");
@@ -1329,7 +1320,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 	CryGUID componentGUID;
 	CryGUID parentGUID;
 	EntityComponentFlags componentFlags;
-	CryTransform::CTransformPtr pTransform;
 
 	// Load class GUID
 	archive(typeGUID, "TypeGUID", "TypeGUID");
@@ -1364,6 +1354,7 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 	archive(name, "Name", "Name");
 
 	// Load component transform
+	CryTransform::CTransformPtr pTransform;
 	CryTransform::CTransform transform;
 	if (archive(transform, "Transform", "Transform"))
 	{
@@ -1423,7 +1414,10 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 			return;
 		}
 		pComponent->m_name = name;
-		pComponent->SetTransform(pTransform);
+		if (pTransform != nullptr)
+		{
+			pComponent->SetTransformMatrix(transform.ToMatrix34());
+		}
 		pComponent->SetComponentFlags(componentFlags);
 
 		// Apply loaded properties values on the members of the component
@@ -1795,6 +1789,12 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
 
+	// Automatically assign transformation if necessary
+	if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::Transform) && pComponent->GetTransform() == nullptr)
+	{
+		pComponent->SetTransformMatrix(IDENTITY);
+	}
+
 	OnComponentMaskChanged(*pComponent, componentRecord.registeredEventsMask);
 
 	// Proxy component must be last in the order of the event processing
@@ -1914,20 +1914,6 @@ void CEntity::VisitComponents(const ComponentsVisitor& visitor)
 	{
 		// Call visitor callback on every component
 		visitor(componentRecord.pComponent.get());
-	});
-}
-
-void CEntity::SendEventToComponent(IEntityComponent* pComponent, SEntityEvent& event)
-{
-	m_components.ForEach([&](const SEntityComponentRecord& componentRecord)
-	{
-		if (componentRecord.pComponent.get() == pComponent)
-		{
-		  if (componentRecord.registeredEventsMask & BIT64(event.event))
-		  {
-		    componentRecord.pComponent->ProcessEvent(event);
-		  }
-		}
 	});
 }
 
@@ -2450,8 +2436,9 @@ void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent)
 	{
 		slotId = AllocateSlot();
 		pComponent->SetEntitySlotId(slotId);
+
 	}
-	if (pComponent->GetParent())
+	if (pComponent->GetParent() != nullptr)
 	{
 		if (pComponent->GetParent()->GetEntitySlotId() == IEntityComponent::EmptySlotId)
 		{
@@ -2459,14 +2446,17 @@ void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent)
 		}
 		m_render.SetParentSlot(pComponent->GetParent()->GetEntitySlotId(), pComponent->GetEntitySlotId());
 	}
-	if (pComponent->GetTransform())
+	if (pComponent->GetTransform() != nullptr)
 	{
 		m_render.SetSlotLocalTM(slotId, pComponent->GetTransform()->ToMatrix34());
 	}
 	else
 	{
 		m_render.SetSlotLocalTM(slotId, Matrix34::CreateIdentity());
+		pComponent->SetTransformMatrix(IDENTITY);
 	}
+
+	pComponent->OnTransformChanged();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3307,7 +3297,7 @@ void CEntity::SetEditorObjectInfo(bool bSelected, bool bHighlighted)
 	}
 }
 
-void CEntityComponentsVector::ShutDownComponent(IEntityComponent* pComponent)
+void CEntity::ShutDownComponent(IEntityComponent* pComponent)
 {
 	if (pComponent)
 	{
@@ -3319,4 +3309,9 @@ void CEntityComponentsVector::ShutDownComponent(IEntityComponent* pComponent)
 			pComponent->SetEntitySlotId(IEntityComponent::EmptySlotId);
 		}
 	}
+}
+
+void CEntityComponentsVector::ShutDownComponent(IEntityComponent* pComponent)
+{
+	static_cast<CEntity*>(pComponent->GetEntity())->ShutDownComponent(pComponent);
 }

@@ -41,6 +41,14 @@ namespace DefaultComponents
 class CAdvancedAnimationComponent
 	: public IEntityComponent
 {
+protected:
+	// IEntityComponent
+	virtual void   Initialize() override;
+
+	virtual void   ProcessEvent(SEntityEvent& event) override;
+	virtual uint64 GetEventMask() const override;
+	// ~IEntityComponent
+
 public:
 	struct SDefaultScopeSettings
 	{
@@ -60,81 +68,6 @@ public:
 	CAdvancedAnimationComponent() = default;
 	virtual ~CAdvancedAnimationComponent();
 
-	// IEntityComponent
-	virtual void Initialize() override
-	{
-		// Release previous controller and context
-		SAFE_RELEASE(m_pActionController);
-		m_pAnimationContext.reset();
-
-		// Start by loading the character, return if it failed
-		if (m_characterFile.value.size() > 0)
-		{
-			m_pEntity->LoadCharacter(GetOrMakeEntitySlotId(), m_characterFile.value);
-			ICharacterInstance* pCharacter = m_pEntity->GetCharacter(GetEntitySlotId());
-			if (pCharacter == nullptr)
-			{
-				return;
-			}
-
-			SetAnimationDrivenMotion(m_bAnimationDrivenMotion);
-		}
-		else
-		{
-			return;
-		}
-
-		if (m_defaultScopeSettings.m_controllerDefinitionPath.size() > 0 && m_databasePath.value.size() > 0)
-		{
-			// Now start loading the Mannequin data
-			IMannequin& mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
-			IAnimationDatabaseManager& animationDatabaseManager = mannequinInterface.GetAnimationDatabaseManager();
-
-			// Load the Mannequin controller definition.
-			// This is owned by the animation database manager
-			const SControllerDef* pControllerDefinition = animationDatabaseManager.LoadControllerDef(m_defaultScopeSettings.m_controllerDefinitionPath);
-			if (pControllerDefinition == nullptr)
-			{
-				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load controller definition %s!", m_defaultScopeSettings.m_controllerDefinitionPath.c_str());
-				return;
-			}
-
-			// Load the animation database
-			m_pDatabase = animationDatabaseManager.Load(m_databasePath.value);
-			if (m_pDatabase == nullptr)
-			{
-				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load animation database %s!", m_databasePath.value.c_str());
-				return;
-			}
-
-			// Create a new animation context for the controller definition we loaded above
-			m_pAnimationContext = stl::make_unique<SAnimationContext>(*pControllerDefinition);
-
-			// Now create the controller that will be handling animation playback
-			m_pActionController = mannequinInterface.CreateActionController(GetEntity(), *m_pAnimationContext);
-			CRY_ASSERT(m_pActionController != nullptr);
-
-			if (m_defaultScopeSettings.m_contextName.size() > 0)
-			{
-				ActivateContext(m_defaultScopeSettings.m_contextName);
-			}
-
-			if (m_defaultScopeSettings.m_fragmentName.size() > 0)
-			{
-				QueueFragment(m_defaultScopeSettings.m_fragmentName);
-			}
-
-			// Trigger call to GetEventMask
-			m_pEntity->UpdateComponentEventMask(this);
-		}
-	}
-
-	virtual void   Run(Schematyc::ESimulationMode simulationMode) override;
-
-	virtual void   ProcessEvent(SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
-	// ~IEntityComponent
-
 	static void ReflectType(Schematyc::CTypeDesc<CAdvancedAnimationComponent>& desc);
 
 	template<typename T>
@@ -152,13 +85,10 @@ public:
 		return id;
 	}
 
-	void ActivateContext(const Schematyc::CSharedString& contextName)
+	virtual void ActivateContext(const Schematyc::CSharedString& contextName)
 	{
-		ICharacterInstance* pCharacterInstance = m_pEntity->GetCharacter(GetEntitySlotId());
-		CRY_ASSERT(pCharacterInstance != nullptr);
-		if (pCharacterInstance == nullptr)
+		if (m_pCachedCharacter == nullptr)
 		{
-			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to activate animation context, character did not exist in entity %s", m_pEntity->GetName());
 			return;
 		}
 
@@ -171,12 +101,17 @@ public:
 
 		// Setting Scope contexts can happen at any time, and what entity or character instance we have bound to a particular scope context
 		// can change during the lifetime of an action controller.
-		m_pActionController->SetScopeContext(scopeContextId, *m_pEntity, pCharacterInstance, m_pDatabase);
+		m_pActionController->SetScopeContext(scopeContextId, *m_pEntity, m_pCachedCharacter, m_pDatabase);
 	}
 
 	// TODO: Expose resource selector for fragments
-	void QueueFragment(const Schematyc::CSharedString& fragmentName)
+	virtual void QueueFragment(const Schematyc::CSharedString& fragmentName)
 	{
+		if (m_pAnimationContext == nullptr)
+		{
+			return;
+		}
+
 		TagID fragmentId = m_pAnimationContext->controllerDef.m_fragmentIDs.Find(fragmentName.c_str());
 		if (fragmentId == TAG_ID_INVALID)
 		{
@@ -192,43 +127,130 @@ public:
 	}
 
 	// TODO: Expose resource selector for tags
-	void SetTag(const Schematyc::CSharedString& tagName, bool bSet)
+	virtual void SetTag(const Schematyc::CSharedString& tagName, bool bSet)
 	{
 		SetTagWithId(GetTagId(tagName.c_str()), bSet);
 	}
 
-	void SetMotionParameter(EMotionParamID motionParam, float value)
+	virtual void SetMotionParameter(EMotionParamID motionParam, float value)
 	{
-		ICharacterInstance* pCharacterInstance = GetCharacter();
-		CRY_ASSERT(pCharacterInstance != nullptr);
-		if (pCharacterInstance != nullptr)
+		CRY_ASSERT(m_pCachedCharacter != nullptr);
+		if (m_pCachedCharacter != nullptr)
 		{
-			pCharacterInstance->GetISkeletonAnim()->SetDesiredMotionParam(motionParam, value, 0.f);
+			m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(motionParam, value, 0.f);
 		}
 	}
 
 	TagID GetTagId(const char* szTagName)
 	{
-		return m_pAnimationContext->state.GetDef().Find(szTagName);
+		return m_pControllerDefinition->m_tags.Find(szTagName);
 	}
 
-	void SetTagWithId(TagID id, bool bSet)
+	virtual void SetTagWithId(TagID id, bool bSet)
 	{
 		m_pAnimationContext->state.Set(id, bSet);
 	}
 
-	ICharacterInstance* GetCharacter() const { return m_pEntity->GetCharacter(GetEntitySlotId()); }
+	ICharacterInstance* GetCharacter() const { return m_pCachedCharacter; }
+
+	// Loads character and mannequin data from disk
+	virtual void LoadFromDisk()
+	{
+		if (m_characterFile.value.size() > 0)
+		{
+			m_pCachedCharacter = gEnv->pCharacterManager->CreateInstance(m_characterFile.value);
+			if (m_pCachedCharacter == nullptr)
+			{
+				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load character %s!", m_characterFile.value.c_str());
+				return;
+			}
+		}
+		else
+		{
+			m_pCachedCharacter = nullptr;
+		}
+
+		if (m_defaultScopeSettings.m_controllerDefinitionPath.size() > 0 && m_databasePath.value.size() > 0)
+		{
+			// Now start loading the Mannequin data
+			IMannequin& mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
+			IAnimationDatabaseManager& animationDatabaseManager = mannequinInterface.GetAnimationDatabaseManager();
+
+			// Load the Mannequin controller definition.
+			// This is owned by the animation database manager
+			m_pControllerDefinition = animationDatabaseManager.LoadControllerDef(m_defaultScopeSettings.m_controllerDefinitionPath);
+			if (m_pControllerDefinition == nullptr)
+			{
+				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load controller definition %s!", m_defaultScopeSettings.m_controllerDefinitionPath.c_str());
+				return;
+			}
+
+			// Load the animation database
+			m_pDatabase = animationDatabaseManager.Load(m_databasePath.value);
+			if (m_pDatabase == nullptr)
+			{
+				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load animation database %s!", m_databasePath.value.c_str());
+				return;
+			}
+		}
+	}
+
+	// Resets the character and Mannequin
+	virtual void ResetCharacter()
+	{
+		// Release previous controller and context
+		SAFE_RELEASE(m_pActionController);
+		m_pAnimationContext.reset();
+
+		// Start by loading the character, return if it failed
+		if (m_pCachedCharacter != nullptr)
+		{
+			m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId());
+
+			SetAnimationDrivenMotion(m_bAnimationDrivenMotion);
+		}
+		else
+		{
+			return;
+		}
+
+		if (m_pControllerDefinition != nullptr)
+		{
+			// Create a new animation context for the controller definition we loaded above
+			m_pAnimationContext = stl::make_unique<SAnimationContext>(*m_pControllerDefinition);
+
+			// Now create the controller that will be handling animation playback
+			IMannequin& mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
+			m_pActionController = mannequinInterface.CreateActionController(GetEntity(), *m_pAnimationContext);
+			CRY_ASSERT(m_pActionController != nullptr);
+
+			if (m_defaultScopeSettings.m_contextName.size() > 0)
+			{
+				ActivateContext(m_defaultScopeSettings.m_contextName);
+			}
+
+			if (m_defaultScopeSettings.m_fragmentName.size() > 0)
+			{
+				QueueFragment(m_defaultScopeSettings.m_fragmentName);
+			}
+		}
+
+		// Trigger call to GetEventMask
+		m_pEntity->UpdateComponentEventMask(this);
+	}
 
 	// Enable / disable motion on entity being applied from animation on the root node
-	void SetAnimationDrivenMotion(bool bSet)
+	virtual void SetAnimationDrivenMotion(bool bSet)
 	{
 		m_bAnimationDrivenMotion = bSet;
 
-		if (ICharacterInstance* pCharacterInstance = GetCharacter())
+		if (m_pCachedCharacter == nullptr)
 		{
-			// Disable animation driven motion, note that the function takes the inverted parameter of what you would expect.
-			pCharacterInstance->GetISkeletonAnim()->SetAnimationDrivenMotion(m_bAnimationDrivenMotion ? 0 : 1);
+			return;
 		}
+
+		// Disable animation driven motion, note that the function takes the inverted parameter of what you would expect.
+		m_pCachedCharacter->GetISkeletonAnim()->SetAnimationDrivenMotion(m_bAnimationDrivenMotion ? 0 : 1);
 	}
 	bool         IsAnimationDrivenMotionEnabled() const { return m_bAnimationDrivenMotion; }
 
@@ -259,6 +281,9 @@ protected:
 	const IAnimationDatabase*          m_pDatabase = nullptr;
 
 	DynArray<_smart_ptr<IAction>>      m_fragments;
+
+	const SControllerDef*              m_pControllerDefinition = nullptr;
+	ICharacterInstance*                m_pCachedCharacter = nullptr;
 };
 }
 }

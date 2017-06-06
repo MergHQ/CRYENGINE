@@ -13,9 +13,6 @@ namespace Cry
 			CSpherePrimitiveComponent() {}
 			virtual ~CSpherePrimitiveComponent() {}
 
-			virtual void Run(Schematyc::ESimulationMode simulationMode) final;
-			// ~IEntityComponent
-
 			virtual IGeometry* CreateGeometry() const final
 			{
 				primitives::sphere primitive;

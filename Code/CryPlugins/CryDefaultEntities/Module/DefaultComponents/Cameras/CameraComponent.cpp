@@ -33,48 +33,6 @@ namespace Cry
 					pFunction->BindInput(1, 'tran', "Transform");
 					componentScope.Register(pFunction);
 				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::GetWorldTransform, "{9FEE258F-3E79-4AB5-8025-D543EE595650}"_cry_guid, "GetWorldTransform");
-					pFunction->SetDescription("Gets the transformation of this component in world space");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindOutput(0, 'tran', "World Transform");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::GetLocalTransform, "{C399CED8-CC64-4CED-B8F1-EAE57FF7579A}"_cry_guid, "GetLocalTransform");
-					pFunction->SetDescription("Gets the transformation of this component in local space");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindOutput(0, 'tran', "Local Transform");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::SetLocalTransform, "{98F3CD38-6ECF-40F6-8398-8332A259B232}"_cry_guid, "SetLocalTransform");
-					pFunction->SetDescription("Sets the local-space transformation of this component");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'tran', "Local Transform");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::SetWorldTransform, "{FDC59554-1807-4B49-A2B1-8F47BBA8D09D}"_cry_guid, "SetWorldTransform");
-					pFunction->SetDescription("Sets the world-space transformation of this component");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'tran', "World Transform");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::GetLocalRotation, "{1BEF2E8C-3C49-4A58-A568-B5F89CF81087}"_cry_guid, "GetLocalRotation");
-					pFunction->SetDescription("Gets the local rotation of this component");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindOutput(0, 'tran', "Local Rotation");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::SetLocalRotation, "{FB201EC2-997D-4A8B-9CDB-D7344BBDC865}"_cry_guid, "SetLocalRotation");
-					pFunction->SetDescription("Sets the local rotation of this component");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'tran', "Local Rotation");
-					componentScope.Register(pFunction);
-				}
 			}
 		}
 
@@ -114,9 +72,12 @@ namespace Cry
 			}
 		}
 
-		void CCameraComponent::Run(Schematyc::ESimulationMode simulationMode)
+		void CCameraComponent::Initialize()
 		{
-			Initialize();
+			if (m_bActivateOnCreate)
+			{
+				Activate();
+			}
 		}
 
 		void CCameraComponent::ProcessEvent(SEntityEvent& event)
@@ -128,7 +89,7 @@ namespace Cry
 				const float farPlane = gEnv->p3DEngine->GetMaxViewDistance();
 
 				m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), m_fieldOfView.ToRadians(), m_nearPlane, farPlane, systemCamera.GetPixelAspectRatio());
-				m_camera.SetMatrix(m_pEntity->GetSlotWorldTM(GetEntitySlotId()));
+				m_camera.SetMatrix(GetWorldTransformMatrix());
 
 				gEnv->pSystem->SetViewCamera(m_camera);
 
@@ -138,16 +99,26 @@ namespace Cry
 					m_pAudioListener->SetWorldTM(m_camera.GetMatrix());
 				}
 			}
+			else if (event.event == ENTITY_EVENT_START_GAME || event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			{
+				if (m_bActivateOnCreate && !IsActive())
+				{
+					Activate();
+				}
+			}
 		}
 
 		uint64 CCameraComponent::GetEventMask() const
 		{
-			return IsActive() ? BIT64(ENTITY_EVENT_UPDATE) : 0;
+			uint64 bitFlags = IsActive() ? BIT64(ENTITY_EVENT_UPDATE) : 0;
+			bitFlags |= BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+
+			return bitFlags;
 		}
 
 		bool CCameraComponent::OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context)
 		{
-			context.outputCameraMatrix = m_pEntity->GetSlotWorldTM(GetEntitySlotId());
+			context.outputCameraMatrix = GetWorldTransformMatrix();
 
 			Matrix33 orientation = Matrix33(context.outputCameraMatrix);
 			Vec3 position = context.outputCameraMatrix.GetTranslation();

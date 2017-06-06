@@ -22,6 +22,10 @@ struct RangeDecorator
 	T* value;
 	T hardMin;
 	T hardMax;
+	// Limit for UI elements such as sliders
+	T softMin;
+	// Limit for UI elements such as sliders
+	T softMax;
 	T singleStep;
 
 	void YASLI_SERIALIZE_METHOD(Archive& ar) {}
@@ -32,8 +36,21 @@ RangeDecorator<T> Range(T& value, T hardMin, T hardMax, T singleStep = (T)Defaul
 {
 	RangeDecorator<T> r;
 	r.value = &value;
+	r.softMin = r.hardMin = hardMin;
+	r.softMax = r.hardMax = hardMax;
+	r.singleStep = singleStep;
+	return r;
+}
+
+template<class T>
+RangeDecorator<T> Range(T& value, T hardMin, T hardMax, T softMin, T softMax, T singleStep = (T)DefaultSinglestep<T>::value())
+{
+	RangeDecorator<T> r;
+	r.value = &value;
 	r.hardMin = hardMin;
 	r.hardMax = hardMax;
+	r.softMin = softMin;
+	r.softMax = softMax;
 	r.singleStep = singleStep;
 	return r;
 }

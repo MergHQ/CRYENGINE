@@ -58,9 +58,40 @@ void CAnimatedMeshComponent::ReflectType(Schematyc::CTypeDesc<CAnimatedMeshCompo
 	desc.AddMember(&CAnimatedMeshComponent::m_bLoopDefaultAnimation, 'loop', "Loop", "Loop Default", "Whether or not to loop the default animation", false);
 }
 
-void CAnimatedMeshComponent::Run(Schematyc::ESimulationMode simulationMode)
+void CAnimatedMeshComponent::Initialize()
 {
-	Initialize();
+	LoadFromDisk();
+	PlayDefaultAnimation();
+}
+
+void CAnimatedMeshComponent::LoadFromDisk()
+{
+	if (m_filePath.value.size() > 0)
+	{
+		m_pCachedCharacter = gEnv->pCharacterManager->CreateInstance(m_filePath.value);
+	}
+}
+
+void CAnimatedMeshComponent::PlayDefaultAnimation()
+{
+	if (m_defaultAnimation.value.size() > 0)
+	{
+		PlayAnimation(m_defaultAnimation, m_bLoopDefaultAnimation);
+	}
+}
+
+void CAnimatedMeshComponent::ProcessEvent(SEntityEvent& event)
+{
+	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+	{
+		LoadFromDisk();
+		PlayDefaultAnimation();
+	}
+}
+
+uint64 CAnimatedMeshComponent::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 }
 
 void CAnimatedMeshComponent::SetCharacterFile(const char* szPath)

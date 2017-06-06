@@ -26,13 +26,6 @@ void RegisterParticleComponent(Schematyc::IEnvRegistrar& registrar)
 			pFunction->BindOutput(0, 'actv', "Active");
 			componentScope.Register(pFunction);
 		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CParticleComponent::SetSpawnGeometry, "{7C3E62F0-73B9-45B6-B7E1-1EFAEB5C5D3E}"_cry_guid, "SetSpawnGeometry");
-			pFunction->SetDescription("Sets the geometry to be used for emitters that spawn from geometry");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'geom', "Geometry", "Geometry");
-			componentScope.Register(pFunction);
-		}
 	}
 }
 
@@ -45,9 +38,8 @@ void CParticleComponent::ReflectType(Schematyc::CTypeDesc<CParticleComponent>& d
 	desc.SetIcon("icons:schematyc/entity_particle_emitter_component.png");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
-	desc.AddMember(&CParticleComponent::m_bEnabledByDefault, 'actv', "Enabled", "Enabled", "Whether or not the particle should emit by default", true);
+	desc.AddMember(&CParticleComponent::m_bEnabled, 'actv', "Enabled", "Enabled", "Whether or not the particle should emit by default", true);
 	desc.AddMember(&CParticleComponent::m_effectName, 'file', "FilePath", "Effect", "Determines the particle effect to load", "");
-	desc.AddMember(&CParticleComponent::m_emitterGeomFileName, 'emge', "EmitterGeo", "Emitter Geometry", "Sets specific geometry used to spawn particles", "");
 
 	desc.AddMember(&CParticleComponent::m_spawnParams, 'spaw', "SpawnParams", "Spawn Parameters", nullptr, CParticleComponent::SSpawnParameters());
 }
@@ -64,19 +56,38 @@ static void ReflectType(Schematyc::CTypeDesc<CParticleComponent::SSpawnParameter
 	desc.SetLabel("Particle Spawn Parameters");
 }
 
-void CParticleComponent::Run(Schematyc::ESimulationMode simulationMode)
+void CParticleComponent::Initialize()
 {
-	Initialize();
+	if (m_effectName.value.size() > 0)
+	{
+		LoadEffect(m_bEnabled);
+	}
+	else
+	{
+		FreeEntitySlot();
+	}
+}
+
+void CParticleComponent::ProcessEvent(SEntityEvent& event)
+{
+	switch (event.event)
+	{
+	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+	{
+		LoadEffect(m_bEnabled);
+	}
+	break;
+	}
+}
+
+uint64 CParticleComponent::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 }
 
 void CParticleComponent::SetEffectName(const char* szPath)
 {
 	m_effectName = szPath;
-}
-
-void CParticleComponent::SetEmitterGeomFileName(const char* szPath)
-{
-	m_emitterGeomFileName = szPath;
 }
 
 bool Serialize(Serialization::IArchive& archive, CParticleComponent::SAttributes& value, const char* szName, const char* szLabel)

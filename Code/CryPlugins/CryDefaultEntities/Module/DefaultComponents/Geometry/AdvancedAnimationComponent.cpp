@@ -92,9 +92,11 @@ namespace Cry
 			SAFE_RELEASE(m_pActionController);
 		}
 
-		void CAdvancedAnimationComponent::Run(Schematyc::ESimulationMode simulationMode)
+		void CAdvancedAnimationComponent::Initialize()
 		{
-			Initialize();
+			LoadFromDisk();
+
+			ResetCharacter();
 		}
 
 		void CAdvancedAnimationComponent::ProcessEvent(SEntityEvent& event)
@@ -118,16 +120,24 @@ namespace Cry
 					m_pActionController->OnAnimationEvent(pCharacter, *pAnimEvent);
 				}
 			}
+			else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			{
+				LoadFromDisk();
+
+				ResetCharacter();
+			}
 		}
 
 		uint64 CAdvancedAnimationComponent::GetEventMask() const
 		{
+			uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+
 			if (m_pActionController != nullptr)
 			{
-				return BIT64(ENTITY_EVENT_UPDATE) | BIT64(ENTITY_EVENT_ANIM_EVENT);
+				bitFlags |= BIT64(ENTITY_EVENT_UPDATE) | BIT64(ENTITY_EVENT_ANIM_EVENT);
 			}
 
-			return 0;
+			return bitFlags;
 		}
 
 		void CAdvancedAnimationComponent::SetCharacterFile(const char* szPath)

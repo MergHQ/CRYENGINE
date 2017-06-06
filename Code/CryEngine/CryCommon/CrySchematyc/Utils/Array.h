@@ -35,6 +35,18 @@ public:
 		m_pArray->push_back(value);
 	}
 
+	inline void EmplaceBack(TYPE&& value)
+	{
+		CopyOnWrite();
+		m_pArray->emplace_back(std::forward<TYPE>(value));
+	}
+
+	inline void Insert(uint32 pos, TYPE&& value)
+	{
+		CopyOnWrite();
+		m_pArray->insert(m_pArray->begin() + pos, std::forward<TYPE>(value));
+	}
+
 	inline void PopBack()
 	{
 		CRY_ASSERT(m_pArray);
