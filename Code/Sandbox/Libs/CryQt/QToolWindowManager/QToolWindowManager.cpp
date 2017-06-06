@@ -744,10 +744,12 @@ void QToolWindowManager::finishWrapperDrag()
 		{
 			toolWindowVisibilityChanged(w, true);
 		}
-		if (target.reference != QToolWindowAreaReference::Floating)
-		{
-			notifyLayoutChange();
-		}
+	}
+	if (target.reference != QToolWindowAreaReference::Floating)
+	{
+		qApp->processEvents();
+		QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+		notifyLayoutChange();
 	}
 	updateTrackingTooltip("", QPoint());
 }
@@ -769,6 +771,7 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 				}
 				areasToRemove.append(area);
 				area->deleteLater();
+				madeChanges = true;
 			}
 			continue;
 		}
@@ -842,6 +845,8 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 	}
 	foreach(IToolWindowArea* area, areasToRemove)
 	{
+		area->hide();
+		area->setParent(nullptr);
 		m_areas.removeOne(area);
 	}
 	foreach(IToolWindowWrapper* wrapper, m_wrappers)
@@ -877,7 +882,11 @@ QVariant QToolWindowManager::saveState()
 	foreach(IToolWindowWrapper* wrapper, m_wrappers)
 	{
 		if (!wrapper->getWidget()->isWindow()) { continue; }
-		floatingWindowsData << saveWrapperState(wrapper);
+		QVariantMap m = saveWrapperState(wrapper);
+		if (!m.isEmpty())
+		{
+			floatingWindowsData << m;
+		}
 	}
 	result["floatingWindows"] = floatingWindowsData;
 	return result;
@@ -1007,6 +1016,8 @@ IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap &d
 		}
 	}
 
+	wrapper->setContents(newContents);
+
 	switch (stateFormat)
 	{
 	case 1:
@@ -1031,8 +1042,6 @@ IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap &d
 		qWarning("Unknown state format");
 		break;
 	}
-
-	wrapper->setContents(newContents);
 
 	if (data.contains("geometry"))
 	{
@@ -1079,6 +1088,7 @@ QSplitter *QToolWindowManager::restoreSplitterState(const QVariantMap &data, int
 {
 	if (data["items"].toList().count() < 2) {
 		qWarning("Invalid splitter encountered");
+		return nullptr;
 	}
 	QSplitter* splitter = createSplitter();
 
