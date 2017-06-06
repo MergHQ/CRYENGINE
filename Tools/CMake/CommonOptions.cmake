@@ -22,3 +22,6 @@ if(OPTION_UQS_SCHEMATYC_SUPPORT)
 else()
 	list(APPEND global_defines UQS_SCHEMATYC_SUPPORT=0)
 endif()
+
+option(OPTION_STEAM "Enable Steam" OFF)
+
