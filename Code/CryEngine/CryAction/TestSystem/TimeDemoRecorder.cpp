@@ -365,7 +365,7 @@ void CTimeDemoRecorder::cmd_Play(IConsoleCmdArgs* pArgs)
 		{
 			s_timedemo_file->Set(pArgs->GetArg(1));
 		}
-		s_pTimeDemoRecorder->StartDemoDelayed(2);
+		s_pTimeDemoRecorder->StartDemoDelayed(20);
 	}
 }
 
@@ -542,7 +542,7 @@ const char* CTimeDemoRecorder::GetCurrentLevelPath()
 {
 	static char buf[_MAX_PATH];
 	gEnv->pGameFramework->GetAbsLevelPath(buf, sizeof(buf));
-	return &buf[0];
+	return buf;
 	/*
 	   ILevel *pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 	   if (!pLevel)
@@ -640,7 +640,7 @@ void CTimeDemoRecorder::Play(bool bEnable)
 
 		// Put it back later!
 		Load(filename);
-
+		
 		if (m_records.empty())
 		{
 			m_bDemoFinished = true;
