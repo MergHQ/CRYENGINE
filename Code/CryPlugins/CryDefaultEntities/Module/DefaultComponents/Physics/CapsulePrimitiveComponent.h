@@ -13,9 +13,6 @@ namespace Cry
 			CCapsulePrimitiveComponent() {}
 			virtual ~CCapsulePrimitiveComponent() {}
 
-			virtual void Run(Schematyc::ESimulationMode simulationMode) final;
-			// ~IEntityComponent
-
 			virtual IGeometry* CreateGeometry() const final
 			{
 				primitives::capsule primitive;

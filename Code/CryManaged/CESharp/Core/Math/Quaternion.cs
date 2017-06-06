@@ -382,7 +382,7 @@ namespace CryEngine
 				upVector = new Vector3(-yAxis.z, 0f, 0f);
 			}
 
-			xAxis = (upVector.Cross(yAxis)).Normalized;
+			xAxis = (yAxis.Cross(upVector)).Normalized;
 			zAxis = (xAxis.Cross(yAxis)).Normalized;
 
 			var matrix = new Matrix3x3(xAxis, yAxis, zAxis);

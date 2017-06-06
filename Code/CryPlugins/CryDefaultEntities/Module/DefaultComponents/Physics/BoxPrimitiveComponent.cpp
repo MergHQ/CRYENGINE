@@ -32,12 +32,5 @@ void ReflectType(Schematyc::CTypeDesc<CBoxPrimitiveComponent>& desc)
 
 	desc.AddMember(&CBoxPrimitiveComponent::m_surfaceTypeName, 'surf', "Surface", "Surface Type", "Surface type assigned to this object, determines its physical properties", "");
 }
-
-void CBoxPrimitiveComponent::Run(Schematyc::ESimulationMode simulationMode)
-{
-	m_pEntity->UpdateComponentEventMask(this);
-
-	Initialize();
-}
 }
 }

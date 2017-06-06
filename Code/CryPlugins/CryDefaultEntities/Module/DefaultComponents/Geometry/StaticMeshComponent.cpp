@@ -52,9 +52,23 @@ static void ReflectType(Schematyc::CTypeDesc<CStaticMeshComponent::EType>& desc)
 
 void CStaticMeshComponent::Initialize()
 {
+	LoadFromDisk();
+	ResetObject();
+}
+
+void CStaticMeshComponent::LoadFromDisk()
+{
 	if (m_filePath.value.size() > 0)
 	{
-		m_pEntity->LoadGeometry(GetOrMakeEntitySlotId(), m_filePath.value);
+		m_pCachedStatObj = gEnv->p3DEngine->LoadStatObj(m_filePath.value);
+	}
+}
+
+void CStaticMeshComponent::ResetObject()
+{
+	if (m_pCachedStatObj != nullptr)
+	{
+		m_pEntity->SetStatObj(m_pCachedStatObj, GetOrMakeEntitySlotId(), false);
 
 		if (((uint32)m_type & (uint32)EType::Render) != 0)
 		{
@@ -104,28 +118,6 @@ void CStaticMeshComponent::Initialize()
 	}
 }
 
-void CStaticMeshComponent::Run(Schematyc::ESimulationMode simulationMode)
-{
-#ifndef RELEASE
-	// Reset mass or density to 0 in the UI if the other is changed to be positive.
-	// It is not possible to use both at the same time, this makes that clearer for the designer.
-	if (m_physics.m_mass != m_physics.m_prevMass && m_physics.m_mass >= 0)
-	{
-		m_physics.m_density = m_physics.m_prevDensity = 0;
-		m_physics.m_prevMass = m_physics.m_mass;
-	}
-	if (m_physics.m_density != m_physics.m_prevDensity && m_physics.m_density >= 0)
-	{
-		m_physics.m_mass = m_physics.m_prevMass = 0;
-		m_physics.m_prevDensity = m_physics.m_density;
-	}
-#endif
-
-	m_pEntity->UpdateComponentEventMask(this);
-
-	Initialize();
-}
-
 void CStaticMeshComponent::ProcessEvent(SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
@@ -165,16 +157,40 @@ void CStaticMeshComponent::ProcessEvent(SEntityEvent& event)
 			m_pEntity->PhysicalizeSlot(GetEntitySlotId(), physParams);
 		}
 	}
+	else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+	{
+#ifndef RELEASE
+		// Reset mass or density to 0 in the UI if the other is changed to be positive.
+		// It is not possible to use both at the same time, this makes that clearer for the designer.
+		if (m_physics.m_mass != m_physics.m_prevMass && m_physics.m_mass >= 0)
+		{
+			m_physics.m_density = m_physics.m_prevDensity = 0;
+			m_physics.m_prevMass = m_physics.m_mass;
+		}
+		if (m_physics.m_density != m_physics.m_prevDensity && m_physics.m_density >= 0)
+		{
+			m_physics.m_mass = m_physics.m_prevMass = 0;
+			m_physics.m_prevDensity = m_physics.m_density;
+		}
+#endif
+
+		m_pEntity->UpdateComponentEventMask(this);
+
+		LoadFromDisk();
+		ResetObject();
+	}
 }
 
 uint64 CStaticMeshComponent::GetEventMask() const
 {
+	uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+
 	if (((uint32)m_type & (uint32)EType::Collider) != 0)
 	{
-		return BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+		bitFlags |= BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
 	}
 
-	return 0;
+	return bitFlags;
 }
 
 void CStaticMeshComponent::SetFilePath(const char* szPath)

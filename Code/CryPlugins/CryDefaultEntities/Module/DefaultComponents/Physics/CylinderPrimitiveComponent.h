@@ -13,9 +13,6 @@ namespace Cry
 			CCylinderPrimitiveComponent() {}
 			virtual ~CCylinderPrimitiveComponent() {}
 
-			virtual void Run(Schematyc::ESimulationMode simulationMode) final;
-			// ~IEntityComponent
-
 			virtual IGeometry* CreateGeometry() const final
 			{
 				primitives::cylinder primitive;

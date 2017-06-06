@@ -13,6 +13,13 @@ namespace Cry
 		class CSimplePhysicsComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			struct SCollisionSignal
 			{
@@ -30,33 +37,9 @@ namespace Cry
 			};
 
 			CSimplePhysicsComponent() {}
-			virtual ~CSimplePhysicsComponent()
-			{
-				SEntityPhysicalizeParams physParams;
-				physParams.type = PE_NONE;
-				m_pEntity->Physicalize(physParams);
-			}
+			virtual ~CSimplePhysicsComponent();
 
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				SEntityPhysicalizeParams physParams;
-				physParams.type = (int)m_type;
-
-				// Don't physicalize a slot by default
-				physParams.nSlot = std::numeric_limits<int>::max();
-				m_pEntity->Physicalize(physParams);
-
-				Enable(m_bEnabledByDefault);
-			}
-
-			virtual void ProcessEvent(SEntityEvent& event) override;
-			virtual uint64 GetEventMask() const override;
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
-
-			void SetVelocity(const Vec3& velocity)
+			virtual void SetVelocity(const Vec3& velocity)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysics())
 				{
@@ -80,7 +63,7 @@ namespace Cry
 				return ZERO;
 			}
 
-			void SetAngularVelocity(const Vec3& angularVelocity)
+			virtual void SetAngularVelocity(const Vec3& angularVelocity)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysics())
 				{
@@ -104,7 +87,7 @@ namespace Cry
 				return ZERO;
 			}
 
-			void Enable(bool bEnable)
+			virtual void Enable(bool bEnable)
 			{
 				m_pEntity->EnablePhysics(bEnable);
 			}
@@ -114,7 +97,7 @@ namespace Cry
 				return m_pEntity->IsPhysicsEnabled();
 			}
 
-			void ApplyImpulse(const Vec3& force)
+			virtual void ApplyImpulse(const Vec3& force)
 			{
 				// Only dispatch the impulse to physics if one was provided
 				if (!force.IsZero())
@@ -129,7 +112,7 @@ namespace Cry
 				}
 			}
 
-			void ApplyAngularImpulse(const Vec3& force)
+			virtual void ApplyAngularImpulse(const Vec3& force)
 			{
 				// Only dispatch the impulse to physics if one was provided
 				if (!force.IsZero())
@@ -149,6 +132,11 @@ namespace Cry
 				static CryGUID id = "{912C6CE8-56F7-4FFA-9134-F98D4E307BD6}"_cry_guid;
 				return id;
 			}
+
+		protected:
+			void Physicalize();
+
+		public:
 
 			bool m_bEnabledByDefault = true;
 			EPhysicalType m_type = EPhysicalType::Rigid;

@@ -13,13 +13,16 @@ namespace Cry
 		class CAlembicComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void   Initialize() final;
+
+			virtual void   ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			CAlembicComponent() {}
 			virtual ~CAlembicComponent() {}
-
-			// IEntityComponent
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CAlembicComponent>& desc);
 
@@ -29,12 +32,12 @@ namespace Cry
 				return id;
 			}
 
-			void Enable(bool bEnable);
-			void SetLooping(bool bLooping);
-			bool IsLooping() const;
+			virtual void Enable(bool bEnable);
+			virtual void SetLooping(bool bLooping);
+			virtual bool IsLooping() const;
 
-			void SetPlaybackTime(float time);
-			float GetPlaybackTime() const;
+			virtual void SetPlaybackTime(float time);
+			virtual float GetPlaybackTime() const;
 
 			virtual void SetFilePath(const char* szFilePath);
 			const char* GetFilePath() const { return m_filePath.value.c_str(); }

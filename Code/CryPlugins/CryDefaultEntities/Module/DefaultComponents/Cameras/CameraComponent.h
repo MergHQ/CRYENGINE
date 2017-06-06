@@ -15,38 +15,23 @@ namespace Cry
 			, public IHmdDevice::IAsyncCameraCallback
 			, public IEntityEventListener
 		{
-		public:
-			virtual ~CCameraComponent();
-
 			// IEntityComponent
-			virtual void Initialize() override
-			{
-				// Force create a dummy entity slot to allow designer transformation change
-				SEntitySlotInfo slotInfo;
-				if (!m_pEntity->GetSlotInfo(GetOrMakeEntitySlotId(), slotInfo))
-				{
-					m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), nullptr);
-				}
+			virtual void Initialize() final;
 
-				if (m_bActivateOnCreate)
-				{
-					Activate();
-				}
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-
-			virtual void ProcessEvent(SEntityEvent& event) override;
-			virtual uint64 GetEventMask() const override;
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
 			// ~IEntityComponent
 
 			// IAsyncCameraCallback
-			virtual bool OnAsyncCameraCallback(const HmdTrackingState& state, IHmdDevice::AsyncCameraContext& context) override;
+			virtual bool OnAsyncCameraCallback(const HmdTrackingState& state, IHmdDevice::AsyncCameraContext& context) final;
 			// ~IAsyncCameraCallback
 
 			// IEntityEventListener
-			virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) override;
+			virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) final;
 			// ~IEntityEventListener
+
+		public:
+			virtual ~CCameraComponent();
 
 			static void ReflectType(Schematyc::CTypeDesc<CCameraComponent>& desc);
 
@@ -56,26 +41,7 @@ namespace Cry
 				return id;
 			}
 
-			CryTransform::CTransform GetWorldTransform() const { return CryTransform::CTransform(m_pEntity->GetSlotWorldTM(GetEntitySlotId())); }
-			CryTransform::CTransform GetLocalTransform() const { return CryTransform::CTransform(m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false)); }
-			void SetLocalTransform(const CryTransform::CTransform& tm) { m_pEntity->SetSlotLocalTM(GetEntitySlotId(), tm.ToMatrix34()); }
-			void SetWorldTransform(const CryTransform::CTransform& tm)
-			{
-				CryTransform::CTransform worldTransform = CryTransform::CTransform(m_pEntity->GetWorldTM().GetInverted() * tm.ToMatrix34());
-
-				m_pEntity->SetSlotLocalTM(GetEntitySlotId(), worldTransform.ToMatrix34());
-			}
-
-			CryTransform::CRotation GetLocalRotation() const { return CryTransform::CRotation(Matrix33(m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false))); }
-			void SetLocalRotation(const CryTransform::CRotation& rotation)
-			{
-				Matrix34 localTransform = m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false);
-				localTransform.SetRotation33(rotation.ToMatrix33());
-
-				m_pEntity->SetSlotLocalTM(GetEntitySlotId(), localTransform);
-			}
-
-			void Activate()
+			virtual void Activate()
 			{
 				if (s_pActiveCamera != nullptr)
 				{
@@ -129,7 +95,7 @@ namespace Cry
 				}
 			}
 
-			void OverrideAudioListenerTransform(const CryTransform::CTransform& transform)
+			virtual void OverrideAudioListenerTransform(const CryTransform::CTransform& transform)
 			{
 				m_pAudioListener->SetWorldTM(transform.ToMatrix34());
 
@@ -138,19 +104,19 @@ namespace Cry
 
 			bool IsActive() const { return s_pActiveCamera == this; }
 
-			void EnableAutomaticActivation(bool bActivate) { m_bActivateOnCreate = bActivate; }
+			virtual void EnableAutomaticActivation(bool bActivate) { m_bActivateOnCreate = bActivate; }
 			bool IsAutomaticallyActivated() const { return m_bActivateOnCreate; }
 
-			void SetNearPlane(float nearPlane) { m_nearPlane = nearPlane; }
+			virtual void SetNearPlane(float nearPlane) { m_nearPlane = nearPlane; }
 			float GetNearPlane() const { return m_nearPlane; }
 
-			void SetFieldOfView(CryTransform::CAngle angle) { m_fieldOfView = angle; }
+			virtual void SetFieldOfView(CryTransform::CAngle angle) { m_fieldOfView = angle; }
 			CryTransform::CAngle GetFieldOfView() const { return m_fieldOfView; }
 
-			void EnableAutomaticAudioListener(bool bEnable) { m_bAutomaticAudioListenerPosition = bEnable; }
+			virtual void EnableAutomaticAudioListener(bool bEnable) { m_bAutomaticAudioListenerPosition = bEnable; }
 			bool HasAutomaticAudioListener() const { return m_bAutomaticAudioListenerPosition; }
 
-			CCamera& GetCamera() { return m_camera; }
+			virtual CCamera& GetCamera() { return m_camera; }
 			const CCamera& GetCamera() const { return m_camera; }
 
 		protected:

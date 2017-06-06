@@ -12,33 +12,20 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		class CInputComponent final
+		class CInputComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+			// ~IEntityComponent
+
 		public:
 			CInputComponent();
 			virtual ~CInputComponent() {}
 
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
-
-				pActionMapManager->AddInputDeviceMapping(eAID_KeyboardMouse, "keyboard");
-				pActionMapManager->AddInputDeviceMapping(eAID_XboxPad, "xboxpad");
-				pActionMapManager->AddInputDeviceMapping(eAID_PS4Pad, "ps4pad");
-				pActionMapManager->AddInputDeviceMapping(eAID_OculusTouch, "oculustouch");
-
-				pActionMapManager->SetVersion(0);
-				pActionMapManager->Enable(true);
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
-
 			typedef std::function<void(int activationMode, float value)> TActionCallback;
 
-			void RegisterAction(const char* szGroupName, const char* szName, TActionCallback callback)
+			virtual void RegisterAction(const char* szGroupName, const char* szName, TActionCallback callback)
 			{
 				IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 				IActionMap* pActionMap = pActionMapManager->GetActionMap(szGroupName);
@@ -84,7 +71,7 @@ namespace Cry
 				}
 			}
 
-			void BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice inputDevice, EKeyId keyId, bool bOnPress = true, bool bOnRelease = true)
+			virtual void BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice inputDevice, EKeyId keyId, bool bOnPress = true, bool bOnRelease = true)
 			{
 				IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 				IActionMap* pActionMap = pActionMapManager->GetActionMap(groupName.c_str());
@@ -132,7 +119,7 @@ namespace Cry
 				return id;
 			}
 
-			void RegisterSchematycAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name);
+			virtual void RegisterSchematycAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name);
 
 		protected:
 			struct IImplementation

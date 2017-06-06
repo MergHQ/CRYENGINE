@@ -7,18 +7,18 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		class CPlaneConstraintComponent final
+		class CPlaneConstraintComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			virtual ~CPlaneConstraintComponent();
-
-			// IEntityComponent
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-
-			virtual void ProcessEvent(SEntityEvent& event) override;
-			virtual uint64 GetEventMask() const override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CPlaneConstraintComponent>& desc);
 
@@ -28,7 +28,7 @@ namespace Cry
 				return id;
 			}
 
-			void ConstrainToEntity(Schematyc::ExplicitEntityId targetEntityId, bool bDisableCollisionsWith, bool bAllowRotation)
+			virtual void ConstrainToEntity(Schematyc::ExplicitEntityId targetEntityId, bool bDisableCollisionsWith, bool bAllowRotation)
 			{
 				if ((EntityId)targetEntityId != INVALID_ENTITYID)
 				{
@@ -42,25 +42,18 @@ namespace Cry
 				}
 			}
 
-			void ConstrainToPoint(bool bAllowRotation)
+			virtual void ConstrainToPoint(bool bAllowRotation)
 			{
 				ConstrainTo(WORLD_ENTITY, false, bAllowRotation);
 			}
 
-			void ConstrainTo(IPhysicalEntity* pEntity, bool bDisableCollisionsWith = false, bool bAllowRotation = true)
+			virtual void ConstrainTo(IPhysicalEntity* pEntity, bool bDisableCollisionsWith = false, bool bAllowRotation = true)
 			{
 				Remove();
 
-				// Force create a dummy entity slot to allow designer transformation change
-				SEntitySlotInfo slotInfo;
-				if (!m_pEntity->GetSlotInfo(GetOrMakeEntitySlotId(), slotInfo))
-				{
-					m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), nullptr);
-				}
-
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
 				{
-					const Matrix34& slotTransform = m_pEntity->GetSlotWorldTM(GetEntitySlotId());
+					Matrix34 slotTransform = GetWorldTransformMatrix();
 
 					pe_action_add_constraint constraint;
 					constraint.flags = world_frames | constraint_no_tears | constraint_plane;
@@ -93,7 +86,7 @@ namespace Cry
 				}
 			}
 
-			void Remove()
+			virtual void Remove()
 			{
 				for (int constraintId : m_constraintIds)
 				{
@@ -109,7 +102,7 @@ namespace Cry
 				m_constraintIds.clear();
 			}
 
-			void Activate(bool bActivate)
+			virtual void Activate(bool bActivate)
 			{
 				m_bActive = bActivate;
 
@@ -117,16 +110,19 @@ namespace Cry
 			}
 			bool IsActive() const { return m_bActive; }
 
-			void SetLimitsX(float minLimit, float maxLimit) { m_limitMin = minLimit; m_limitMax = maxLimit; }
+			virtual void SetLimitsX(float minLimit, float maxLimit) { m_limitMin = minLimit; m_limitMax = maxLimit; }
 			float GetMinimumLimitX() const { return m_limitMin; }
 			float GetMaximumLimitX() const { return m_limitMax; }
 
-			void SetLimitsy(float minLimit, float maxLimit) { m_limitMinY = minLimit; m_limitMaxY = maxLimit; }
+			virtual void SetLimitsY(float minLimit, float maxLimit) { m_limitMinY = minLimit; m_limitMaxY = maxLimit; }
 			float GetMinimumLimitY() const { return m_limitMinY; }
 			float GetMaximumLimitY() const { return m_limitMaxY; }
 
-			void SetDamping(float damping) { m_damping = damping; }
+			virtual void SetDamping(float damping) { m_damping = damping; }
 			float GetDamping() const { return m_damping; }
+
+		protected:
+			void Reset();
 
 		protected:
 			bool m_bActive = true;

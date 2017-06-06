@@ -10,8 +10,29 @@ void CPlayerComponent::Initialize()
 {
 	// Create the camera component, will automatically update the viewport every frame
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCameraComponent>();
+
 	// The character controller is responsible for maintaining player physics and animations
 	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
+
+	// Set the player geometry, this also triggers physics proxy creation
+	m_pCharacterController->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
+	m_pCharacterController->SetCharacterFile("Objects/Characters/SampleCharacter/firstperson.cdf");
+
+	m_pCharacterController->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
+	m_pCharacterController->SetDefaultScopeContextName("FirstPersonCharacter");
+	// Queue the idle fragment to start playing immediately on next update
+	m_pCharacterController->SetDefaultFragmentName("Idle");
+
+	// Disable movement coming from the animation (root joint offset), we control this entirely via physics
+	m_pCharacterController->SetAnimationDrivenMotion(false);
+
+	// Load the character and Mannequin data from file
+	m_pCharacterController->LoadFromDisk();
+
+	// Acquire tag identifiers to avoid doing so each update
+	m_rotateTagId = m_pCharacterController->GetTagId("Rotate");
+	m_walkTagId = m_pCharacterController->GetTagId("Walk");
+
 	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are m_pEntity
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
 
@@ -193,7 +214,7 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 		localTransform.SetTranslation(cameraOrientation.t + Vec3(0, viewOffsetForward, viewOffsetUp));
 	}
 
-	m_pCameraComponent->SetLocalTransform(CryTransform::CTransform(localTransform));
+	m_pCameraComponent->SetTransformMatrix(localTransform);
 }
 
 void CPlayerComponent::Revive()
@@ -207,25 +228,8 @@ void CPlayerComponent::Revive()
 	// Make sure that the player spawns upright
 	GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), IDENTITY, GetEntity()->GetWorldPos()));
 
-	// Set the player geometry, this also triggers physics proxy creation
-	m_pCharacterController->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
-	m_pCharacterController->SetCharacterFile("Objects/Characters/SampleCharacter/firstperson.cdf");
-
-	m_pCharacterController->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
-
-	// Disable movement coming from the animation (root joint offset), we control this entirely via physics
-	m_pCharacterController->SetAnimationDrivenMotion(false);
-
-	m_pCharacterController->Initialize();
-
-	m_pCharacterController->ActivateContext("FirstPersonCharacter");
-
-	// Queue the idle fragment to start playing immediately on next update
-	m_pCharacterController->QueueFragment("Idle");
-
-	// Acquire tag identifiers to avoid doing so each update
-	m_rotateTagId = m_pCharacterController->GetTagId("Rotate");
-	m_walkTagId = m_pCharacterController->GetTagId("Walk");
+	// Apply the character to the entity and queue animations
+	m_pCharacterController->ResetCharacter();
 
 	// Reset input now that the player respawned
 	m_inputFlags = 0;

@@ -301,7 +301,7 @@ void CInputComponent::ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc)
 	desc.SetLabel("Input");
 	desc.SetDescription("Exposes support for inputs and action maps");
 	//desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::HideFromInspector });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::HideFromInspector });
 }
 
 static void ReflectType(Schematyc::CTypeDesc<SActionPressedSignal>& desc)
@@ -341,9 +341,17 @@ CInputComponent::CInputComponent()
 	m_pImplementation = stl::make_unique<CImplementation>();
 }
 
-void CInputComponent::Run(Schematyc::ESimulationMode simulationMode)
+void CInputComponent::Initialize()
 {
-	Initialize();
+	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
+
+	pActionMapManager->AddInputDeviceMapping(eAID_KeyboardMouse, "keyboard");
+	pActionMapManager->AddInputDeviceMapping(eAID_XboxPad, "xboxpad");
+	pActionMapManager->AddInputDeviceMapping(eAID_PS4Pad, "ps4pad");
+	pActionMapManager->AddInputDeviceMapping(eAID_OculusTouch, "oculustouch");
+
+	pActionMapManager->SetVersion(0);
+	pActionMapManager->Enable(true);
 }
 
 void CInputComponent::RegisterSchematycAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name)

@@ -22,27 +22,18 @@ namespace Cry
 		class CEnvironmentProbeComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void Initialize() final;
+
+			virtual void   ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			CEnvironmentProbeComponent()
 				: m_generation(*this) {}
 
 			virtual ~CEnvironmentProbeComponent() {}
-
-			// IEntityComponent
-			virtual void Initialize() override
-			{
-				if (m_generation.m_bAutoLoad && m_generation.m_generatedCubemapPath.value.size() > 0)
-				{
-					LoadFromDisk(m_generation.m_generatedCubemapPath);
-				}
-				else
-				{
-					FreeEntitySlot();
-				}
-			}
-
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CEnvironmentProbeComponent>& desc);
 
@@ -107,7 +98,7 @@ namespace Cry
 			};
 
 #ifdef SUPPORT_ENVIRONMENT_PROBE_GENERATION
-			void Generate(const Schematyc::TextureFileName& cubemapFileName)
+			virtual void Generate(const Schematyc::TextureFileName& cubemapFileName)
 			{
 				IRenderNode* pProbeRenderNode = m_pEntity->GetRenderNode(GetEntitySlotId());
 
@@ -201,7 +192,7 @@ namespace Cry
 				}
 			}
 
-			void GenerateToDefaultPath()
+			virtual void GenerateToDefaultPath()
 			{
 				// Set the output path if nothing was specified by the user
 				if (!HasOutputCubemapPath())
@@ -225,7 +216,7 @@ namespace Cry
 			}
 #endif
 
-			void LoadFromDisk(const Schematyc::TextureFileName& cubemapFileName)
+			virtual void LoadFromDisk(const Schematyc::TextureFileName& cubemapFileName)
 			{
 				ITexture* pSpecularTexture, *pDiffuseTexture;
 				if (GetCubemapTextures(cubemapFileName.value, &pSpecularTexture, &pDiffuseTexture))
@@ -238,7 +229,7 @@ namespace Cry
 				}
 			}
 
-			void SetCubemap(const Schematyc::ExplicitTextureId specularTextureId, const Schematyc::ExplicitTextureId diffuseTextureId)
+			virtual void SetCubemap(const Schematyc::ExplicitTextureId specularTextureId, const Schematyc::ExplicitTextureId diffuseTextureId)
 			{
 				ITexture* pSpecularTexture = gEnv->pRenderer->EF_GetTextureByID((int)specularTextureId);
 				ITexture *pDiffuseTexture = gEnv->pRenderer->EF_GetTextureByID((int)diffuseTextureId);
@@ -262,7 +253,7 @@ namespace Cry
 				}
 			}
 
-			bool GetCubemapTextures(const char* path, ITexture** pSpecular, ITexture** pDiffuse) const
+			virtual bool GetCubemapTextures(const char* path, ITexture** pSpecular, ITexture** pDiffuse) const
 			{
 				stack_string specularCubemap = path;
 
@@ -300,7 +291,7 @@ namespace Cry
 				return true;
 			}
 
-			void Load(ITexture* pSpecular, ITexture* pDiffuse)
+			virtual void Load(ITexture* pSpecular, ITexture* pDiffuse)
 			{
 				if (!m_bActive)
 				{
@@ -317,13 +308,14 @@ namespace Cry
 				light.m_Flags = DLF_POINT | DLF_DEFERRED_CUBEMAPS;
 				light.m_LensOpticsFrustumAngle = 255;
 
-				light.m_ProbeExtents = m_extents;
+				// Extents is radius
+				light.m_ProbeExtents = m_extents * 0.5f;
 
-				light.m_fBoxWidth = light.m_ProbeExtents.x;
-				light.m_fBoxLength = light.m_ProbeExtents.y;
-				light.m_fBoxHeight = light.m_ProbeExtents.z;
+				light.m_fBoxWidth = m_extents.x;
+				light.m_fBoxLength = m_extents.y;
+				light.m_fBoxHeight = m_extents.z;
 
-				light.m_fRadius = pow(light.m_ProbeExtents.GetLengthSquared(), 0.5f);
+				light.m_fRadius = light.m_ProbeExtents.GetLength();
 
 				light.SetLightColor(m_color.m_color * m_color.m_diffuseMultiplier);
 				light.SetSpecularMult(m_color.m_specularMultiplier);
@@ -363,19 +355,19 @@ namespace Cry
 				m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
 			}
 
-			void Enable(bool bEnable) { m_bActive = bEnable; }
+			virtual void Enable(bool bEnable) { m_bActive = bEnable; }
 			bool IsEnabled() const { return m_bActive; }
 
-			void EnableAutomaticLoad(bool bEnable) { m_generation.m_bAutoLoad = bEnable; }
+			virtual void EnableAutomaticLoad(bool bEnable) { m_generation.m_bAutoLoad = bEnable; }
 			bool IsAutomaticLoadEnabled() const { return m_generation.m_bAutoLoad; }
 
-			void SetExtents(const Vec3& extents) { m_extents = extents; }
+			virtual void SetExtents(const Vec3& extents) { m_extents = extents; }
 			const Vec3& GetExtents() const { return m_extents; }
 
-			SOptions& GetOptions() { return m_options; }
+			virtual SOptions& GetOptions() { return m_options; }
 			const SOptions& GetOptions() const { return m_options; }
 
-			SColor& GetColorParameters() { return m_color; }
+			virtual SColor& GetColorParameters() { return m_color; }
 			const SColor& GetColorParameters() const { return m_color; }
 
 			virtual void SetOutputCubemapPath(const char* szPath);

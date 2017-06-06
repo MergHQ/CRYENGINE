@@ -13,7 +13,7 @@
 
 namespace Schematyc
 {
-	template<int TMin, int TMax, typename TType = float>
+	template<int TMin, int TMax, int TSoftMin = 0, int TSoftMax = 100, typename TType = float>
 	struct Range
 	{
 		Range() : value(0) {}
@@ -26,22 +26,22 @@ namespace Schematyc
 
 		TType value;
 	};
-	template<int TMin, int TMax>
-	inline void ReflectType(CTypeDesc<Range<TMin, TMax, float>>& desc)
+	template<int TMin, int TMax, int TSoftMin, int TSoftMax>
+	inline void ReflectType(CTypeDesc<Range<TMin, TMax, TSoftMin, TSoftMax, float>>& desc)
 	{
 		desc.SetGUID("{A3A15703-B420-42F0-97B7-4957B20CE376}"_cry_guid);
 		desc.SetLabel("Range");
 	}
-	template<int TMin, int TMax>
-	inline void ReflectType(CTypeDesc<Range<TMin, TMax, int>>& desc)
+	template<int TMin, int TMax, int TSoftMin, int TSoftMax>
+	inline void ReflectType(CTypeDesc<Range<TMin, TMax, TSoftMin, TSoftMax, int>>& desc)
 	{
 		desc.SetGUID("{D6B663CD-94BD-4B26-B2DF-0AF244FD437C}"_cry_guid);
 		desc.SetLabel("Range");
 	}
-	template<int TMin, int TMax, typename TType>
-	inline bool Serialize(Serialization::IArchive& archive, Range<TMin, TMax, TType>& value, const char* szName, const char* szLabel)
+	template<int TMin, int TMax, int TSoftMin, int TSoftMax, typename TType>
+	inline bool Serialize(Serialization::IArchive& archive, Range<TMin, TMax, TSoftMin, TSoftMax, TType>& value, const char* szName, const char* szLabel)
 	{
-		return archive(Serialization::Range(value.value, (TType)TMin, (TType)TMax), szName, szLabel);
+		return archive(Serialization::Range(value.value, (TType)TMin, (TType)TMax, (TType)TSoftMin, (TType)TSoftMax), szName, szLabel);
 	}
 
 	typedef Range<0, std::numeric_limits<int>::max()> PositiveFloat;

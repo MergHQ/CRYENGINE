@@ -246,23 +246,26 @@ static dll_string MannequinScopeContextName(const SResourceSelectorContext& cont
 {
 	if (std::shared_ptr<Serialization::SMannequinControllerDefResourceParams> pParams = std::static_pointer_cast<Serialization::SMannequinControllerDefResourceParams>(context.pCustomParams))
 	{
-		Serialization::StringListStatic names;
-
-		for (int i = 0, n = pParams->pControllerDef->m_scopeContexts.GetNum(); i < n; ++i)
+		if (pParams->pControllerDef != nullptr)
 		{
-			names.push_back(pParams->pControllerDef->m_scopeContexts.GetTagName(i));
-		}
+			Serialization::StringListStatic names;
 
-		CrySchematycEditor::CStringListDictionary dict(names);
-		QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Mannequin Scope Context", dict);
+			for (int i = 0, n = pParams->pControllerDef->m_scopeContexts.GetNum(); i < n; ++i)
+			{
+				names.push_back(pParams->pControllerDef->m_scopeContexts.GetTagName(i));
+			}
 
-		const QPoint pos = QCursor::pos();
-		pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+			CrySchematycEditor::CStringListDictionary dict(names);
+			QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Mannequin Scope Context", dict);
 
-		CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
-		if (pEntry)
-		{
-			return QtUtil::ToString(pEntry->GetName()).c_str();
+			const QPoint pos = QCursor::pos();
+			pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+
+			CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
+			if (pEntry)
+			{
+				return QtUtil::ToString(pEntry->GetName()).c_str();
+			}
 		}
 	}
 
@@ -273,23 +276,26 @@ static dll_string MannequinFragmentName(const SResourceSelectorContext& context,
 {
 	if (std::shared_ptr<Serialization::SMannequinControllerDefResourceParams> pParams = std::static_pointer_cast<Serialization::SMannequinControllerDefResourceParams>(context.pCustomParams))
 	{
-		Serialization::StringListStatic names;
-
-		for (int i = 0, n = pParams->pControllerDef->m_fragmentIDs.GetNum(); i < n; ++i)
+		if (pParams->pControllerDef != nullptr)
 		{
-			names.push_back(pParams->pControllerDef->m_fragmentIDs.GetTagName(i));
-		}
+			Serialization::StringListStatic names;
 
-		CrySchematycEditor::CStringListDictionary dict(names);
-		QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Mannequin Fragment", dict);
+			for (int i = 0, n = pParams->pControllerDef->m_fragmentIDs.GetNum(); i < n; ++i)
+			{
+				names.push_back(pParams->pControllerDef->m_fragmentIDs.GetTagName(i));
+			}
 
-		const QPoint pos = QCursor::pos();
-		pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+			CrySchematycEditor::CStringListDictionary dict(names);
+			QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Mannequin Fragment", dict);
 
-		CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
-		if (pEntry)
-		{
-			return QtUtil::ToString(pEntry->GetName()).c_str();
+			const QPoint pos = QCursor::pos();
+			pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+
+			CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
+			if (pEntry)
+			{
+				return QtUtil::ToString(pEntry->GetName()).c_str();
+			}
 		}
 	}
 

@@ -13,15 +13,13 @@ namespace Cry
 		class CDebugDrawComponent
 			: public IEntityComponent
 		{
+			// IEntityComponent
+			virtual void ProcessEvent(SEntityEvent& event) final;
+			virtual uint64 GetEventMask() const final;
+			// ~IEntityComponent
+
 		public:
 			virtual ~CDebugDrawComponent() {}
-
-			// IEntityComponent
-			virtual void Run(Schematyc::ESimulationMode simulationMode) override;
-
-			virtual void ProcessEvent(SEntityEvent& event) override;
-			virtual uint64 GetEventMask() const override;
-			// ~IEntityComponent
 
 			static void ReflectType(Schematyc::CTypeDesc<CDebugDrawComponent>& desc);
 
@@ -31,36 +29,27 @@ namespace Cry
 				return id;
 			}
 
-			void DrawSphere(const Vec3& pos, float radius, const ColorF& color, float duration);
-
-			void DrawDirection(const Vec3& pos, float radius, const Vec3& dir, const ColorF& color, float duration);
-
-			void DrawLine(const Vec3& posStart, const Vec3& posEnd, const ColorF& color, float duration);
-
-			void DrawPlanarDisc(const Vec3& pos, float innerRadius, float outerRadius, const ColorF& color, float duration);
-
-			void DrawCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, const ColorF& color, float duration);
-
-			void DrawCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorF& color, float duration);
-
-			void Draw2DText(Schematyc::CSharedString text, float size, const ColorF& color, float duration);
-
-			void DrawText(Schematyc::CSharedString text, float x, float y, float size, const ColorF& color, float duration);
-
-			void DrawText3D(Schematyc::CSharedString text, const Vec3& pos, float size, const ColorF& color, float duration);
-
-			void Draw2DLine(float x1, float y1, float x2, float y2, const ColorF& color, float duration);
+			virtual void DrawSphere(const Vec3& pos, float radius, const ColorF& color, float duration);
+			virtual void DrawDirection(const Vec3& pos, float radius, const Vec3& dir, const ColorF& color, float duration);
+			virtual void DrawLine(const Vec3& posStart, const Vec3& posEnd, const ColorF& color, float duration);
+			virtual void DrawPlanarDisc(const Vec3& pos, float innerRadius, float outerRadius, const ColorF& color, float duration);
+			virtual void DrawCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, const ColorF& color, float duration);
+			virtual void DrawCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorF& color, float duration);
+			virtual void Draw2DText(Schematyc::CSharedString text, float size, const ColorF& color, float duration);
+			virtual void DrawText(Schematyc::CSharedString text, float x, float y, float size, const ColorF& color, float duration);
+			virtual void DrawText3D(Schematyc::CSharedString text, const Vec3& pos, float size, const ColorF& color, float duration);
+			virtual void Draw2DLine(float x1, float y1, float x2, float y2, const ColorF& color, float duration);
 
 			bool IsPersistentTextEnabled() const { return m_bDrawPersistent; }
-			void EnablePersistentText(bool bEnable) { m_bDrawPersistent = bEnable; }
+			virtual void EnablePersistentText(bool bEnable) { m_bDrawPersistent = bEnable; }
 
-			void SetPersistentTextColor(const ColorF& color) { m_persistentTextColor = color; }
+			virtual void SetPersistentTextColor(const ColorF& color) { m_persistentTextColor = color; }
 			const ColorF& GetPersistentTextColor() const { return m_persistentTextColor; }
 
-			void SetPersistentTextViewDistance(float viewDistance) { m_persistentViewDistance = viewDistance; }
+			virtual void SetPersistentTextViewDistance(float viewDistance) { m_persistentViewDistance = viewDistance; }
 			float GetPersistentTextViewDistance() const { return m_persistentViewDistance; }
 
-			void SetPersistentTextFontSize(float fontSize) { m_persistentFontSize = fontSize; }
+			virtual void SetPersistentTextFontSize(float fontSize) { m_persistentFontSize = fontSize; }
 			float GetPersistentTextFontSize() const { return m_persistentFontSize; }
 
 			virtual void SetPersistentText(const char* szText);

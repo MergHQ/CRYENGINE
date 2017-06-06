@@ -185,18 +185,13 @@ void CDebugDrawComponent::Draw2DText(Schematyc::CSharedString text, float size, 
 	gEnv->pGameFramework->GetIPersistantDebug()->Add2DText(text.c_str(), size, color, duration);
 }
 
-void CDebugDrawComponent::Run(Schematyc::ESimulationMode simulationMode)
-{
-	m_pEntity->UpdateComponentEventMask(this);
-}
-
 void CDebugDrawComponent::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
 	case ENTITY_EVENT_UPDATE:
 		{
-			Vec3 textPosition = m_pEntity->GetWorldPos();
+			Vec3 textPosition = GetWorldTransformMatrix().GetTranslation();
 			float cameraDistance = (textPosition - gEnv->pSystem->GetViewCamera().GetPosition()).GetLength();
 
 			float alpha;
@@ -223,12 +218,20 @@ void CDebugDrawComponent::ProcessEvent(SEntityEvent& event)
 			IRenderAuxText::DrawLabelEx(textPosition, m_persistentFontSize, color, true, true, m_persistentText.c_str());
 		}
 		break;
+	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		{
+			m_pEntity->UpdateComponentEventMask(this);
+		}
+		break;
 	}
 }
 
 uint64 CDebugDrawComponent::GetEventMask() const
 {
-	return m_bDrawPersistent ? BIT64(ENTITY_EVENT_UPDATE) : 0;
+	uint64 bitFlags = m_bDrawPersistent ? BIT64(ENTITY_EVENT_UPDATE) : 0;
+	bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+
+	return bitFlags;
 }
 
 void CDebugDrawComponent::SetPersistentText(const char* szText)

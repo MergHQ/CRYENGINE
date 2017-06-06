@@ -16,19 +16,6 @@ namespace Cry
 			, public IEntityComponentPreviewer
 #endif
 		{
-		public:
-			CPhysicsPrimitiveComponent() {}
-			virtual ~CPhysicsPrimitiveComponent()
-			{
-				if (m_physicsSlotId != -1)
-				{
-					if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
-					{
-						pPhysicalEntity->RemoveGeometry(m_physicsSlotId);
-					}
-				}
-			}
-			
 			// IEntityComponent
 			virtual void Initialize() final
 			{
@@ -37,13 +24,53 @@ namespace Cry
 
 			virtual void ProcessEvent(SEntityEvent& event) final
 			{
-				if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
+				if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+				{
+					// Validate designer inputs
+#ifndef RELEASE
+					// Reset mass or density to 0 in the UI if the other is changed to be positive.
+					// It is not possible to use both at the same time, this makes that clearer for the designer.
+					if (m_mass != m_prevMass && m_mass > 0)
+					{
+						m_density = m_prevDensity = 0;
+						m_prevMass = m_mass;
+					}
+					if (m_density != m_prevDensity && m_density > 0)
+					{
+						m_mass = m_prevMass = 0;
+						m_prevDensity = m_density;
+					}
+#endif
+
+					m_pEntity->UpdateComponentEventMask(this);
+
+					AddPrimitive();
+				}
+				else if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
 				{
 					AddPrimitive();
 				}
 			}
 
-			virtual uint64 GetEventMask() const final { return (m_mass > 0 || m_density > 0) ? BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED) : 0; }
+			virtual uint64 GetEventMask() const final
+			{
+				uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+
+				if (m_mass > 0 || m_density > 0)
+				{
+					bitFlags |= BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+				}
+
+				return bitFlags;
+			}
+
+			virtual void OnTransformChanged() final
+			{
+				if (m_physicsSlotId != -1)
+				{
+					AddPrimitive();
+				}
+			}
 
 #ifndef RELEASE
 			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
@@ -52,13 +79,13 @@ namespace Cry
 
 #ifndef RELEASE
 			// IEntityComponentPreviewer
-			virtual void SerializeProperties(Serialization::IArchive& archive) override {}
+			virtual void SerializeProperties(Serialization::IArchive& archive) final {}
 
-			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const override
+			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final
 			{
 				if (context.bSelected)
 				{
-					Matrix34 slotTransform = entity.GetSlotWorldTM(GetEntitySlotId());
+					Matrix34 slotTransform = GetWorldTransformMatrix();
 
 					IGeometry* pPrimGeom = CreateGeometry();
 
@@ -75,14 +102,24 @@ namespace Cry
 			// ~IEntityComponentPreviewer
 #endif
 
+		public:
+			CPhysicsPrimitiveComponent() {}
+			virtual ~CPhysicsPrimitiveComponent()
+			{
+				if (m_physicsSlotId != -1)
+				{
+					if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
+					{
+						pPhysicalEntity->RemoveGeometry(m_physicsSlotId);
+					}
+				}
+			}
+			
+			virtual std::unique_ptr<pe_geomparams> GetGeomParams() const { return stl::make_unique<pe_geomparams>(); }
 			virtual IGeometry* CreateGeometry() const = 0;
 
 			void AddPrimitive()
 			{
-#ifndef RELEASE
-				Validate();
-#endif
-
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
 				{
 					if (m_physicsSlotId != -1)
@@ -95,24 +132,24 @@ namespace Cry
 						IGeometry* pPrimGeom = CreateGeometry();
 						phys_geometry* pPhysGeom = gEnv->pPhysicalWorld->GetGeomManager()->RegisterGeometry(pPrimGeom, 0);
 
-						pe_geomparams geomParams;
+						std::unique_ptr<pe_geomparams> pGeomParams = GetGeomParams();
 
 						if (m_mass > 0)
 						{
-							geomParams.mass = m_mass;
+							pGeomParams->mass = m_mass;
 						}
 						else
 						{
-							geomParams.mass = -1.f;
+							pGeomParams->mass = -1.f;
 						}
 
 						if (m_density > 0)
 						{
-							geomParams.density = m_density;
+							pGeomParams->density = m_density;
 						}
 						else
 						{
-							geomParams.density = -1.f;
+							pGeomParams->density = -1.f;
 						}
 
 						if (m_surfaceTypeName.value.size() > 0)
@@ -121,7 +158,7 @@ namespace Cry
 
 							if (ISurfaceType* pSurfaceType = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeByName(surfaceType))
 							{
-								geomParams.surface_idx = pSurfaceType->GetId();
+								pGeomParams->surface_idx = pSurfaceType->GetId();
 							}
 							else
 							{
@@ -129,39 +166,15 @@ namespace Cry
 							}
 						}
 
-						// Force create a dummy entity slot to allow designer transformation change
-						SEntitySlotInfo slotInfo;
-						if (!m_pEntity->GetSlotInfo(GetOrMakeEntitySlotId(), slotInfo))
-						{
-							m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), nullptr);
-						}
+						Matrix34 slotTransform = m_pTransform->ToMatrix34();
+						pGeomParams->pos = slotTransform.GetTranslation();
+						pGeomParams->q = Quat(slotTransform);
+						pGeomParams->scale = slotTransform.GetUniformScale();
 
-						Matrix34 slotTransform = m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false);
-						geomParams.pMtx3x4 = &slotTransform;
-
-						m_physicsSlotId = pPhysicalEntity->AddGeometry(pPhysGeom, &geomParams);
+						m_physicsSlotId = pPhysicalEntity->AddGeometry(pPhysGeom, pGeomParams.get());
 					}
 				}
 			}
-
-		protected:
-#ifndef RELEASE
-			void Validate()
-			{
-				// Reset mass or density to 0 in the UI if the other is changed to be positive.
-				// It is not possible to use both at the same time, this makes that clearer for the designer.
-				if (m_mass != m_prevMass && m_mass > 0)
-				{
-					m_density = m_prevDensity = 0;
-					m_prevMass = m_mass;
-				}
-				if (m_density != m_prevDensity && m_density > 0)
-				{
-					m_mass = m_prevMass = 0;
-					m_prevDensity = m_density;
-				}
-			}
-#endif
 
 		public:
 			Schematyc::PositiveFloat m_mass = 10.f;

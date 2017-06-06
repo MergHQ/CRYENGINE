@@ -88,7 +88,7 @@ void CPlayerComponent::UpdateMovementRequest(float frameTime)
 
 		const float moveImpulseStrength = 800.f;
 
-		Matrix34 cameraTransformation = m_pCameraComponent->GetWorldTransform().ToMatrix34();
+		Matrix34 cameraTransformation = m_pCameraComponent->GetTransformMatrix();
 
 		// Update movement
 		pe_action_impulse impulseAction;
@@ -152,7 +152,7 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 	// Also offset upwards
 	localTransform.SetTranslation(-localTransform.GetColumn1() * viewDistance);
 
-	m_pCameraComponent->SetLocalTransform(CryTransform::CTransform(localTransform));
+	m_pCameraComponent->SetTransformMatrix(localTransform);
 }
 
 void CPlayerComponent::SpawnAtSpawnPoint()

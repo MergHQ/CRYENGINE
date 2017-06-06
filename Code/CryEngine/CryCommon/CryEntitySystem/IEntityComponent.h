@@ -44,6 +44,14 @@ struct INetworkSpawnParams;
 struct IEntityScript;
 struct SEntityPreviewContext;
 
+namespace Schematyc
+{
+	class CObject;
+}
+
+// Forward declaration of Sandbox's entity object, should be removed when IEntityComponent::Run is gone
+class CEntityObject;
+
 //! Derive from this interface to expose custom entity properties in the editor using the serialization framework.
 //! Each entity component can contain one property group, each component will be separated by label in the entity property view
 struct IEntityPropertyGroup
@@ -316,11 +324,11 @@ public:
 
 public:
 	//~ICryUnknown
-	virtual ICryFactory* GetFactory() const { return 0; };
+	virtual ICryFactory* GetFactory() const { return nullptr; };
 
 protected:
-	virtual void* QueryInterface(const CryInterfaceID& iid) const { return 0; };
-	virtual void* QueryComposite(const char* name) const          { return 0; };
+	virtual void* QueryInterface(const CryInterfaceID& iid) const { return nullptr; };
+	virtual void* QueryComposite(const char* name) const          { return nullptr; };
 	//~ICryUnknown
 
 public:
@@ -343,17 +351,31 @@ public:
 	// Derived classes mostly interested in overriding these virtual methods
 	//////////////////////////////////////////////////////////////////////////
 
+protected:
+	//! Only called by system classes to initalize component.
+	//! Users must not call this method directly
+	virtual void PreInit(const SInitParams& params);
+
 	//! Called at the very first initialization of the component, at component creation time.
 	virtual void Initialize() {}
 
 	//! Called on all Entity components right before all of the Entity Components are destructed.
 	virtual void OnShutDown() {};
 
+	//! Called when the transformation of the component is changed
+	virtual void OnTransformChanged() {}
+
 	//! By overriding this function component will be able to handle events sent from the host Entity.
 	//! Requires returning the desired event flag in GetEventMask.
 	//! \param event Event structure, contains event id and parameters.
 	virtual void ProcessEvent(SEntityEvent& event) {}
 
+	//////////////////////////////////////////////////////////////////////////
+	// REMOVE LATER!!! From Schematyc old components
+	virtual void Run(Schematyc::ESimulationMode simulationMode) {}
+	//////////////////////////////////////////////////////////////////////////
+
+public:
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent
 	//! (ex: BIT64(ENTITY_EVENT_HIDE)|BIT64(ENTITY_EVENT_UNHIDE))
 	//! Only events matching the returned bit mask will be sent to the ProcessEvent method
@@ -387,16 +409,7 @@ public:
 	//! END IEntityComponent virtual interface
 	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
-	// REMOVE LATER!!! From Schematyc old components
-	virtual void Run(Schematyc::ESimulationMode simulationMode) {}
-	//////////////////////////////////////////////////////////////////////////
-
 public:
-	//! Only called by system classes to initalize component.
-	//! Users must not call this method directly
-	virtual void PreInit(const SInitParams& params);
-
 	//! Set flags for this component
 	void SetComponentFlags(ComponentFlags flags) { m_componentFlags = flags; };
 
@@ -414,11 +427,12 @@ public:
 	//! Initialized by the PreInit call
 	IEntityComponent* GetParent() const { return m_pParent; };
 
-	//! Return Transformation of the entity component relative to the component (or entity)
+	//! Return Transformation of the entity component relative to the owning entity or parent component
 	const CryTransform::CTransformPtr& GetTransform() const;
+	void SetTransformMatrix(const Matrix34& transform);
 
-	//! Assign a new optional transform pointer to the component
-	void SetTransform(const CryTransform::CTransformPtr& transform);
+	//! Return Transformation of the entity component relative to the world
+	Matrix34 GetWorldTransformMatrix() const;
 
 	//! Return Calculated Transformation Matrix for current component transform
 	Matrix34 GetTransformMatrix() const;
@@ -450,6 +464,17 @@ public:
 
 	//! Return Current simulation mode of the host Entity
 	EEntitySimulationMode GetEntitySimulationMode() const;
+
+	//! Send event to this specific component, first checking if the component is interested in the event
+	//! \param event description
+	//! \param receiving component 
+	inline void SendEvent(SEntityEvent& event)
+	{
+		if ((GetEventMask() & BIT64(event.event)) != 0)
+		{
+			ProcessEvent(event);
+		}
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// SCHEMATYC SIGNALS HELPERS
@@ -484,6 +509,12 @@ public:
 
 protected:
 	friend class CEntity;
+	// Needs access to Initialize and Run, remove when these depenencies are gone
+	friend class Schematyc::CObject;
+	// Needs access to OnShutDown to maintain legacy game object extension shutdown behavior
+	friend class CGameObject;
+	// Needs access to Run, remove when the function is gone
+	friend class CEntityObject;
 
 	// Host Entity pointer
 	IEntity*       m_pEntity = nullptr;
@@ -546,8 +577,7 @@ inline Matrix34 IEntityComponent::GetTransformMatrix() const
 	{
 		return m_pTransform->ToMatrix34();
 	}
-	static Matrix34 ident(IDENTITY);
-	return ident;
+	return IDENTITY;
 }
 
 //////////////////////////////////////////////////////////////////////////
