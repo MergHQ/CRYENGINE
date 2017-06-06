@@ -15,12 +15,9 @@ void CPlayerComponent::Initialize()
 	// The character controller is responsible for maintaining player physics and animations
 	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
 
-	// The character controller is responsible for maintaining player physics and animations
-	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
-
 	// Set the player geometry, this also triggers physics proxy creation
 	m_pCharacterController->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
-	m_pCharacterController->SetCharacterFile("Objects/Characters/SampleCharacter/firstperson.cdf");
+	m_pCharacterController->SetCharacterFile("Objects/Characters/SampleCharacter/thirdperson.cdf");
 
 	m_pCharacterController->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
 	m_pCharacterController->SetDefaultScopeContextName("FirstPersonCharacter");
@@ -37,10 +34,10 @@ void CPlayerComponent::Initialize()
 	m_rotateTagId = m_pCharacterController->GetTagId("Rotate");
 	m_walkTagId = m_pCharacterController->GetTagId("Walk");
 	
-	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are m_pEntity
+	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
 
-	// Register an action, and the callback that will be sent when it's m_pEntity
+	// Register an action, and the callback that will be sent when it's triggered
 	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveLeft, activationMode);  });
 	// Bind the 'A' key the "moveleft" action
 	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse,	EKeyId::eKI_A);
@@ -99,6 +96,8 @@ void CPlayerComponent::Initialize()
 
 	// Spawn the cursor
 	SpawnCursorEntity();
+
+	Revive();
 }
 
 uint64 CPlayerComponent::GetEventMask() const
