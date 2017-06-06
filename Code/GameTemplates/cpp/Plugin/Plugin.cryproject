@@ -1,11 +1,15 @@
 {
-	"version": 1,
-	"type": "",
-	"info": { "name": "Plugin Template" },
-	"content": {
-		"code": [ "Code" ]
-	},
-	"require": {
-		"engine": "engine-dev"
-	}
+    "version": 1,
+    "type": "",
+    "info": {
+        "name": "Plugin Template"
+    },
+    "content": {
+        "code": [
+            "Code"
+        ]
+    },
+    "require": {
+        "engine": "engine-5.4"
+    }
 }
