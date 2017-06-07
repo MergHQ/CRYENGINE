@@ -307,6 +307,9 @@ CTexture* SSF_ResourcesD3D::GetColorSurface(CD3D9Renderer* pRenderer, int nWidth
 		int texID = pRenderer->CreateRenderTarget(nWidth, nHeight, Clr_Transparent, eFormat);
 		pTex = static_cast<CTexture*>(pRenderer->EF_GetTextureByID(texID));
 
+		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		commandList.GetGraphicsInterface()->ClearSurface(pTex->GetDevTexture()->LookupRTV(EDefaultResourceViews::RasterizerTarget), Clr_Transparent);
+
 		m_renderTargets.push_back(pTex);
 	}
 
@@ -1213,30 +1216,30 @@ void CD3D9Renderer::SF_Flush()
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderer::SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags)
+int CRenderer::SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eSrcFormat, int flags)
 {
 	char name[128];
 	cry_sprintf(name, "$SF_%d", m_TexGenID++);
 
 	flags |= !numMips ? FT_FORCE_MIPS : 0;
 
-	CTexture* pTexture(CTexture::GetOrCreate2DTexture(name, width, height, numMips, flags, (byte*)pData, eTF, eTF));
+	CTexture* pTexture(CTexture::GetOrCreate2DTexture(name, width, height, numMips, flags, (byte*)pData, eSrcFormat));
 
 	int texId = (pTexture != 0) ? pTexture->GetID() : -1;
 	return texId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF)
+bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pSrcData, size_t rowPitch, size_t size, ETEX_Format eSrcFormat)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
-	assert(texId > 0 && numRects > 0 && pRects != 0 && pData != 0 && pitch > 0);
+	assert(texId > 0 && numRects > 0 && pRects != 0 && pSrcData != 0 && rowPitch > 0);
 
 	CTexture* pTexture(CTexture::GetByID(texId));
 	assert(pTexture);
 
-	if (pTexture->GetTextureType() != eTT_2D || pTexture->GetDstFormat() != eTF)
+	if (pTexture->GetTextureType() != eTT_2D || pTexture->GetDstFormat() != eSrcFormat)
 	{
 		assert(0);
 		return false;
@@ -1249,14 +1252,14 @@ bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, cons
 	GPUPIN_DEVICE_TEXTURE(GetPerformanceDeviceContext(), pDevTex);
 	for (int i = 0; i < numRects; ++i)
 	{
-		int sizePixel(CTexture::BytesPerPixel(eTF));
-		const unsigned char* pSrc(&pData[pRects[i].srcY * pitch + sizePixel * pRects[i].srcX]);
+		int sizePixel(CTexture::BytesPerPixel(eSrcFormat));
+		const unsigned char* pSrc(&pSrcData[pRects[i].srcY * rowPitch + sizePixel * pRects[i].srcX]);
 
 		// TODO: batch upload (instead of loop)
-		const size_t planePitch = pitch * pRects[i].height;
+		const size_t planePitch = rowPitch * pRects[i].height;
 		const SResourceMemoryMapping mapping =
 		{
-			{ sizePixel, pitch, planePitch, planePitch }, // src alignment
+			{ sizePixel, rowPitch, planePitch, planePitch }, // src alignment
 			{ pRects[i].dstX, pRects[i].dstY, 0, 0 },     // dst position
 			{ pRects[i].width, pRects[i].height, 1, 1 }   // dst size
 		};

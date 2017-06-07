@@ -98,7 +98,7 @@ CImageView::CImageView(CImageResource* pImage, VkFormat format, VkImageViewType 
 			break;
 		case VK_IMAGE_TYPE_2D:
 			viewType = pImage->GetFlag(kImageFlagCube)
-				? (actualNumSlices == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+				? (actualNumSlices <= 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 				: (actualNumSlices == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 			break;
 		case VK_IMAGE_TYPE_3D:

@@ -76,7 +76,7 @@ void CWaterRipplesStage::Prepare(CRenderView* pRenderView)
 		const int32 height = 256;
 		const int32 flags = FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS;
 		const ETEX_Format format = eTF_R8G8B8A8;
-		if (!m_pTexWaterRipplesDDN->Create2DTexture(width, height, 0, flags, nullptr, format, format))
+		if (!m_pTexWaterRipplesDDN->Create2DTexture(width, height, 0, flags, nullptr, format))
 		{
 			CryFatalError("Couldn't allocate texture.");
 		}
@@ -93,7 +93,7 @@ void CWaterRipplesStage::Prepare(CRenderView* pRenderView)
 		    && (!CTexture::IsTextureExist(m_pTempTexture)
 		        || m_pTempTexture->Invalidate(width, height, format)))
 		{
-			if (!m_pTempTexture->Create2DTexture(width, height, 0, flags, nullptr, format, format))
+			if (!m_pTempTexture->Create2DTexture(width, height, 0, flags, nullptr, format))
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}

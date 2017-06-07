@@ -2222,7 +2222,7 @@ void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStagingTex)
 
 //=============================================================================
 
-HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI, int32 nESRAMOffset)
+HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI, int32 nESRAMOffset)
 {
 	D3D11_TEXTURE2D_DESC Desc;
 	ZeroStruct(Desc);
@@ -2230,8 +2230,8 @@ HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uin
 	Desc.Width = nWidth;
 	Desc.Height = nHeight;
 	Desc.MipLevels = nMips;
-	Desc.SampleDesc.Count = pTI ? pTI->m_nMSAASamples : 1;
-	Desc.SampleDesc.Quality = pTI ? pTI->m_nMSAAQuality : 0;
+	Desc.SampleDesc.Count = pTI ? pTI->m_nDstMSAASamples : 1;
+	Desc.SampleDesc.Quality = pTI ? pTI->m_nDstMSAAQuality : 0;
 	Desc.Format = (nUsage & USAGE_UAV_READWRITE) ? DeviceFormats::ConvertToTypeless(Format) : Format;
 	Desc.ArraySize = nArraySize;
 	Desc.BindFlags = ConvertToDX11BindFlags(nUsage);
@@ -2239,10 +2239,10 @@ HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uin
 	Desc.Usage = ConvertToDX11Usage(nUsage);
 	Desc.MiscFlags = ConvertToDX11MiscFlags(nUsage);
 
-	return Create2DTexture(Desc, cClearValue, ppDevTexture, pTI);
+	return Create2DTexture(Desc, nUsage, cClearValue, ppDevTexture, pTI);
 }
 
-HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI)
+HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI)
 {
 	D3D11_TEXTURE2D_DESC Desc;
 	ZeroStruct(Desc);
@@ -2253,16 +2253,16 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint
 	Desc.SampleDesc.Count = 1;
 	Desc.SampleDesc.Quality = 0;
 	Desc.Format = (nUsage & USAGE_UAV_READWRITE) ? DeviceFormats::ConvertToTypeless(Format) : Format;
-	Desc.ArraySize = nArraySize * 6;
+	Desc.ArraySize = nArraySize; assert(!(nArraySize % 6));
 	Desc.BindFlags = ConvertToDX11BindFlags(nUsage);
 	Desc.CPUAccessFlags = ConvertToDX11CPUAccessFlags(nUsage);
 	Desc.Usage = ConvertToDX11Usage(nUsage);
 	Desc.MiscFlags = ConvertToDX11MiscFlags(nUsage) | D3D11_RESOURCE_MISC_TEXTURECUBE;
 
-	return CreateCubeTexture(Desc, cClearValue, ppDevTexture, pTI);
+	return CreateCubeTexture(Desc, nUsage, cClearValue, ppDevTexture, pTI);
 }
 
-HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI)
+HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI)
 {
 	D3D11_TEXTURE3D_DESC Desc;
 	ZeroStruct(Desc);
@@ -2277,73 +2277,15 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight,
 	Desc.Usage = ConvertToDX11Usage(nUsage);
 	Desc.MiscFlags = ConvertToDX11MiscFlags(nUsage);
 
-	return CreateVolumeTexture(Desc, cClearValue, ppDevTexture, pTI);
+	return CreateVolumeTexture(Desc, nUsage, cClearValue, ppDevTexture, pTI);
 }
 
-HRESULT CDeviceObjectFactory::Create2DTexture(const D3D11_TEXTURE2D_DESC& Desc, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI)
+HRESULT CDeviceObjectFactory::Create2DTexture(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pPayload)
 {
-	D3DTexture* pD3DTex = NULL;
-	HRESULT hr = S_OK;
-
-	D3D11_SUBRESOURCE_DATA* pSRD = NULL;
-	D3D11_SUBRESOURCE_DATA SRD[20];
-	if (pTI && pTI->m_pData)
-	{
-		pSRD = &SRD[0];
-		for (UINT i = 0; i < Desc.MipLevels; i++)
-		{
-			SRD[i].pSysMem = pTI->m_pData[i].pSysMem;
-			SRD[i].SysMemPitch = pTI->m_pData[i].SysMemPitch;
-			SRD[i].SysMemSlicePitch = pTI->m_pData[i].SysMemSlicePitch;
-		}
-	}
-
-	if (Desc.BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS))
-	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTarget2D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
-	}
-	else
-	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTexture2D(&Desc, pSRD, &pD3DTex);
-	}
-
-	if (SUCCEEDED(hr) && pD3DTex)
-	{
-		CDeviceTexture* pDeviceTexture = new CDeviceTexture();
-
-		pDeviceTexture->m_pNativeResource = pD3DTex;
-		if (!pDeviceTexture->m_nBaseAllocatedSize)
-		{
-			pDeviceTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(Desc.Width, Desc.Height, 1, Desc.MipLevels, Desc.ArraySize, DeviceFormats::ConvertToTexFormat(Desc.Format));
-		}
-
-		*ppDevTexture = pDeviceTexture;
-	}
-
-	return hr;
-}
-
-HRESULT CDeviceObjectFactory::CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI)
-{
-	D3DCubeTexture* pD3DTex = NULL;
-	HRESULT hr = S_OK;
-
-	D3D11_SUBRESOURCE_DATA* pSRD = NULL;
 	D3D11_SUBRESOURCE_DATA SRD[g_nD3D10MaxSupportedSubres];
-	if (pTI && pTI->m_pData)
-	{
-		pSRD = &SRD[0];
-		for (int j = 0; j < 6; j++)
-		{
-			for (int i = 0; i < Desc.MipLevels; i++)
-			{
-				int nSubresInd = j * Desc.MipLevels + i;
-				SRD[nSubresInd].pSysMem = pTI->m_pData[nSubresInd].pSysMem;
-				SRD[nSubresInd].SysMemPitch = pTI->m_pData[nSubresInd].SysMemPitch;
-				SRD[nSubresInd].SysMemSlicePitch = pTI->m_pData[nSubresInd].SysMemSlicePitch;
-			}
-		}
-	}
+	D3DTexture* pD3DTex = NULL; assert(!pPayload || (((Desc.MipLevels * Desc.ArraySize) <= g_nD3D10MaxSupportedSubres)));
+	D3D11_SUBRESOURCE_DATA* pSRD = ConvertToDX11Data(Desc.MipLevels * Desc.ArraySize, pPayload, SRD);
+	HRESULT hr = S_OK;
 
 	if (Desc.BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS))
 	{
@@ -2361,7 +2303,7 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc
 		pDeviceTexture->m_pNativeResource = pD3DTex;
 		if (!pDeviceTexture->m_nBaseAllocatedSize)
 		{
-			pDeviceTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(Desc.Width, Desc.Height, 1, Desc.MipLevels, Desc.ArraySize, DeviceFormats::ConvertToTexFormat(Desc.Format));
+			pDeviceTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(Desc.Width, Desc.Height, 1, Desc.MipLevels, Desc.ArraySize, DeviceFormats::ConvertToTexFormat(Desc.Format), eTM_Optimal, eFlags);
 		}
 
 		*ppDevTexture = pDeviceTexture;
@@ -2370,23 +2312,44 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc
 	return hr;
 }
 
-HRESULT CDeviceObjectFactory::CreateVolumeTexture(const D3D11_TEXTURE3D_DESC& Desc, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI)
+HRESULT CDeviceObjectFactory::CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pPayload)
 {
+	D3D11_SUBRESOURCE_DATA SRD[g_nD3D10MaxSupportedSubres];
+	D3DCubeTexture* pD3DTex = NULL; assert(!pPayload || (((Desc.MipLevels * Desc.ArraySize) <= g_nD3D10MaxSupportedSubres) && !(Desc.ArraySize % 6)));
+	D3D11_SUBRESOURCE_DATA* pSRD = ConvertToDX11Data(Desc.MipLevels * Desc.ArraySize, pPayload, SRD);
+	HRESULT hr = S_OK;
+
+	if (Desc.BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS))
+	{
+		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTarget2D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
+	}
+	else
+	{
+		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTexture2D(&Desc, pSRD, &pD3DTex);
+	}
+
+	if (SUCCEEDED(hr) && pD3DTex)
+	{
+		CDeviceTexture* pDeviceTexture = new CDeviceTexture();
+
+		pDeviceTexture->m_pNativeResource = pD3DTex;
+		if (!pDeviceTexture->m_nBaseAllocatedSize)
+		{
+			pDeviceTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(Desc.Width, Desc.Height, 1, Desc.MipLevels, Desc.ArraySize, DeviceFormats::ConvertToTexFormat(Desc.Format), eTM_Optimal, eFlags);
+		}
+
+		*ppDevTexture = pDeviceTexture;
+	}
+
+	return hr;
+}
+
+HRESULT CDeviceObjectFactory::CreateVolumeTexture(const D3D11_TEXTURE3D_DESC& Desc, uint32 eFlags, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pPayload)
+{
+	D3D11_SUBRESOURCE_DATA SRD[g_nD3D10MaxSupportedSubres];
+	D3D11_SUBRESOURCE_DATA* pSRD = ConvertToDX11Data(Desc.MipLevels, pPayload, SRD);
 	D3DVolumeTexture* pD3DTex = NULL;
 	HRESULT hr = S_OK;
-
-	D3D11_SUBRESOURCE_DATA* pSRD = NULL;
-	D3D11_SUBRESOURCE_DATA SRD[20] = { D3D11_SUBRESOURCE_DATA() };
-	if (pTI && pTI->m_pData)
-	{
-		pSRD = &SRD[0];
-		for (int i = 0; i < Desc.MipLevels; i++)
-		{
-			SRD[i].pSysMem = pTI->m_pData[i].pSysMem;
-			SRD[i].SysMemPitch = pTI->m_pData[i].SysMemPitch;
-			SRD[i].SysMemSlicePitch = pTI->m_pData[i].SysMemSlicePitch;
-		}
-	}
 
 	if (Desc.BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS))
 	{
@@ -2404,7 +2367,7 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(const D3D11_TEXTURE3D_DESC& De
 		pDeviceTexture->m_pNativeResource = pD3DTex;
 		if (!pDeviceTexture->m_nBaseAllocatedSize)
 		{
-			pDeviceTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(Desc.Width, Desc.Height, Desc.Depth, Desc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(Desc.Format));
+			pDeviceTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(Desc.Width, Desc.Height, Desc.Depth, Desc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(Desc.Format), eTM_Optimal, eFlags);
 		}
 
 		*ppDevTexture = pDeviceTexture;

@@ -49,6 +49,9 @@ private:
 	string GetOutputFileNameOnly() const;
 	string GetOutputPath() const;
 
+public:
+	struct STexture;
+
 protected:
 
 	enum CompilerType
@@ -57,8 +60,6 @@ protected:
 		Decompressor,
 	};
 
-	struct STexture;
-	
 	friend string MakeFileName( const string& filePath, const uint32 nChunk, const uint32 nFlags );
 
 	// textures work
@@ -173,6 +174,7 @@ protected:
 	};
 #endif
 
+public:
 	// structure to store mapping information about interleaved resource 
 	struct STexture
 	{

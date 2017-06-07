@@ -808,7 +808,7 @@ private:
 struct STexStreamInMipState
 {
 	uint32 m_nSideDelta     : 28;
-	bool   m_bStreamInPlace : 1;
+	bool   m_bStreamInPlace : 1; // If true, the i/o reads the DDS contents directly into the texture surface and subsequent operations are conducted in-place
 	bool   m_bExpanded      : 1;
 	bool   m_bUploaded      : 1;
 
@@ -1115,7 +1115,7 @@ private:
 	uint16              m_nWidth;
 	uint16              m_nHeight;
 	uint16              m_nDepth;
-	ETEX_Format         m_eTFDst;
+	ETEX_Format         m_eDstFormat;
 	ETEX_TileMode       m_eSrcTileMode;
 
 	uint32              m_eFlags;     // e.g. FT_USAGE_DYNAMIC
@@ -1149,11 +1149,11 @@ private:
 	uint8               m_nStreamFormatCode;
 	int8                m_nCustomID;
 
-	uint8               m_nArraySize;
+	uint16              m_nArraySize;
 	int8                m_nMips;
 	ETEX_Type           m_eTT;
 
-	ETEX_Format         m_eTFSrc;
+	ETEX_Format         m_eSrcFormat;
 	int8                m_nStreamingPriority;
 	int8                m_nMinMipVidUploaded;
 	int8                m_nMinMipVidActive;
@@ -1164,7 +1164,7 @@ private:
 	STexCacheFileHeader m_CacheFileHeader;
 	SamplerStateHandle  m_nDefState;
 
-	int32               m_nActualSize;
+	int32               m_nDevTextureSize;
 	int32               m_nPersistentSize;
 
 	int                 m_nAccessFrameID; // last read access, compare with GetFrameID(false)
@@ -1232,7 +1232,7 @@ private:
 	static CCryNameTSCRC GenName(const char* name, uint32 nFlags = 0);
 	static CTexture*     FindOrRegisterTextureObject(const char* name, uint32 nFlags, ETEX_Format eTFDst, bool& bFound); // NOTE: increases refcount
 
-	ETEX_Format          FormatFixup(ETEX_Format src);
+	ETEX_Format          FormatFixup(ETEX_Format eFormat);
 	bool                 FormatFixup(STexData& td);
 	bool                 ImagePreprocessing(STexData& td);
 
@@ -1278,12 +1278,12 @@ public:
 
 	inline STextureLayout GetLayout() const
 	{
+		assert((m_eTT != eTT_Cube && m_eTT != eTT_CubeArray) || !(m_nArraySize % 6));
 		const STextureLayout Layout =
 		{
 			m_pPixelFormat,
 			m_nWidth, m_nHeight, m_nDepth, m_nArraySize, m_nMips,
-			m_eTFSrc, m_eTFDst,
-			m_eSrcTileMode, m_eTT,
+			m_eSrcFormat, m_eDstFormat, m_eTT,
 			/* TODO: change FT_... to CDeviceObjectFactory::... */
 			m_eFlags, m_bIsSRGB,
 			m_cClearColor,
@@ -1325,12 +1325,12 @@ public:
 	virtual const bool IsTextureLoaded() const { return IsLoaded(); }
 	virtual void       PrecacheAsynchronously(float fMipFactor, int nFlags, int nUpdateId, int nCounter = 1);
 	virtual byte*      GetData32(int nSide = 0, int nLevel = 0, byte* pDst = NULL, ETEX_Format eDstFormat = eTF_R8G8B8A8);
-	virtual const int  GetDeviceDataSize() const { return m_nActualSize; }
+	virtual const int  GetDeviceDataSize() const { return m_nDevTextureSize; }
 	virtual const int  GetDataSize() const
 	{
 		if (IsStreamed())
-			return StreamComputeDevDataSize(0);
-		return m_nActualSize;
+			return StreamComputeSysDataSize(0);
+		return m_nDevTextureSize;
 	}
 	// TODO: deprecate global state based sampler state configuration
 	virtual bool          SetFilter(int nFilter) { return SSamplerState::SetDefaultFilterMode(nFilter); }
@@ -1361,32 +1361,40 @@ public:
 		return CBaseResource::GetRefCounter() > 1;
 	}
 
-	virtual const ETEX_Format GetTextureDstFormat() const { return m_eTFDst; }
-	virtual const ETEX_Format GetTextureSrcFormat() const { return m_eTFSrc; }
+	virtual const ETEX_Format GetTextureDstFormat() const { return m_eDstFormat; }
+	virtual const ETEX_Format GetTextureSrcFormat() const { return m_eSrcFormat; }
 
 	virtual const bool        IsParticularMipStreamed(float fMipFactor) const;
 
 	// Internal functions
-	const ETEX_Format GetDstFormat() const { return m_eTFDst; }
-	const ETEX_Format GetSrcFormat() const { return m_eTFSrc; }
+	const ETEX_Format GetDstFormat() const { return m_eDstFormat; }
+	const ETEX_Format GetSrcFormat() const { return m_eSrcFormat; }
 	const ETEX_Type   GetTexType() const   { return m_eTT; }
 	const uint32      StreamGetNumSlices() const
 	{
+#if !defined(_RELEASE)
 		switch (m_eTT)
 		{
+		case eTT_1D:
 		case eTT_2D:
+		case eTT_2DMS:
+		case eTT_3D:
+			assert((m_nArraySize == 1));
 		case eTT_2DArray:
-			return m_nArraySize;
+			break;
 
 		case eTT_Cube:
-			return 6 * m_nArraySize;
+			assert((m_nArraySize == 6));
+		case eTT_CubeArray:
+			assert(!(m_nArraySize % 6));
+			break;
 
 		default:
-#ifndef _RELEASE
 			__debugbreak();
-#endif
-			return 1;
 		}
+#endif
+
+		return m_nArraySize;
 	}
 
 	void               RT_ReleaseDevice();
@@ -1443,7 +1451,7 @@ public:
 	void                             SetWidth(int16 width)                       { m_nWidth = std::max<int16>(width, 1); m_nMips = 1; }
 	void                             SetHeight(int16 height)                     { m_nHeight = std::max<int16>(height, 1); m_nMips = 1; }
 	int                              GetUpdateFrameID() const                    { return m_nUpdateFrameID; }
-	ILINE const int32                GetActualSize() const                       { return m_nActualSize; }
+	ILINE const int32                GetActualSize() const                       { return m_nDevTextureSize; }
 	ILINE const int32                GetPersistentSize() const                   { return m_nPersistentSize; }
 
 	ILINE void                       PrefetchStreamingInfo() const               { PrefetchLine(m_pFileTexMips, 0); }
@@ -1472,7 +1480,7 @@ public:
 	bool         IsHighQualityFiltered() const               { return m_bHighQualityFiltering; }
 	virtual void SetHighQualityFiltering(bool bState = true) { m_bHighQualityFiltering = bState; }
 
-	bool            IsFPFormat() const    { return CImageExtensionHelper::IsRangeless(m_eTFDst); };
+	bool            IsFPFormat() const    { return CImageExtensionHelper::IsRangeless(m_eDstFormat); };
 
 	CDeviceTexture* GetDevTexture(bool bMultisampled = false) const { return (!bMultisampled ? m_pDevTexture : m_pDevTexture->GetMSAATexture()); }
 	void            SetDevTexture(CDeviceTexture* pDeviceTex);
@@ -1621,36 +1629,25 @@ public:
 	static void StreamUpdateStats();
 #endif
 
-#if defined(TEXSTRM_STORE_DEVSIZES)
-	int StreamComputeDevDataSize(int nFromMip) const
+	int StreamComputeSysDataSize(int nFromMip) const
 	{
+#if defined(TEXSTRM_STORE_DEVSIZES)
 		if (m_pFileTexMips)
 		{
 			return m_pFileTexMips->m_pMipHeader[nFromMip].m_DevSideSizeWithMips;
 		}
-		else
-		{
-			return CDeviceTexture::TextureDataSize(
-			  max(1, m_nWidth >> nFromMip),
-			  max(1, m_nHeight >> nFromMip),
-			  max(1, m_nDepth >> nFromMip),
-			  m_nMips - nFromMip,
-			  StreamGetNumSlices(),
-			  m_eTFDst);
-		}
-	}
-#else
-	int StreamComputeDevDataSize(int nFromMip) const
-	{
-		return CDeviceTexture::TextureDataSize(
-		  max(1, m_nWidth >> nFromMip),
-		  max(1, m_nHeight >> nFromMip),
-		  max(1, m_nDepth >> nFromMip),
-		  m_nMips - nFromMip,
-		  StreamGetNumSlices(),
-		  m_eTFDst);
-	}
 #endif
+
+		return CTexture::TextureDataSize(
+			max(1, m_nWidth  >> nFromMip),
+			max(1, m_nHeight >> nFromMip),
+			max(1, m_nDepth  >> nFromMip),
+			m_nMips - nFromMip,
+			StreamGetNumSlices(),
+			m_eSrcFormat,
+			m_eSrcTileMode
+		);
+	}
 
 	void StreamUploadMip(IReadStream* pStream, int nMip, int nBaseMipOffset, STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState);
 	void StreamUploadMipSide(
@@ -1756,8 +1753,8 @@ public:
 	static CTexture*             GetByID(int nID);
 	static CTexture*             GetByName(const char* szName, uint32 flags = 0);
 	static CTexture*             GetByNameCRC(CCryNameTSCRC Name);
-	static CTexture*             ForName(const char* name, uint32 nFlags, ETEX_Format eTFDst);
-	static _smart_ptr<CTexture>  ForNamePtr(const char* name, uint32 nFlags, ETEX_Format eTFDst);
+	static CTexture*             ForName(const char* name, uint32 nFlags, ETEX_Format eFormat);
+	static _smart_ptr<CTexture>  ForNamePtr(const char* name, uint32 nFlags, ETEX_Format eFormat);
 
 	static void                 InitStreaming();
 	static void                 InitStreamingDev();
@@ -1781,9 +1778,9 @@ public:
 	static void                 RLT_LoadingUpdate();
 
 	// Loading/creating functions
-	bool  Load(ETEX_Format eTFDst);
+	bool  Load(ETEX_Format eFormat);
 	bool  Load(CImageFile* pImage);
-	bool  LoadFromImage(const char* name, ETEX_Format eTFDst = eTF_Unknown);
+	bool  LoadFromImage(const char* name, ETEX_Format eFormat = eTF_Unknown);
 	bool  Reload();
 	bool  ToggleStreaming(const bool bEnable);
 	virtual void UpdateData(STexData &td, int flags);
@@ -1799,25 +1796,25 @@ public:
 	void               ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload = false);
 
 	// Low-level functions calling CreateDeviceTexture()
-	bool               CreateRenderTarget(ETEX_Format eTF, const ColorF& cClear);
-	bool               CreateDepthStencil(ETEX_Format eTF, const ColorF& cClear);
+	bool               CreateRenderTarget(ETEX_Format eFormat, const ColorF& cClear);
+	bool               CreateDepthStencil(ETEX_Format eFormat, const ColorF& cClear);
 	bool               CreateShaderResource(STexData& td);
 
 	// Mid-level functions calling Create...()
-	bool               Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst);
-	bool               Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst);
+	bool               Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eSrcFormat);
+	bool               Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc);
 
 	// High-level functions calling Create...()
-	static CTexture*              GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID = -1);
-	static _smart_ptr<CTexture>   GetOrCreateTextureObjectPtr(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID = -1);
-	static CTexture*              GetOrCreateTextureArray(const char* name, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, ETEX_Type eType, uint32 nFlags, ETEX_Format eTF, int nCustomID = -1);
+	static CTexture*              GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
+	static _smart_ptr<CTexture>   GetOrCreateTextureObjectPtr(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
+	static CTexture*              GetOrCreateTextureArray(const char* name, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, ETEX_Type eType, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
 
 	// High-level functions calling GetOrCreate...() and Create...()
-	static CTexture*   GetOrCreateRenderTarget(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID = -1);
-	static CTexture*   GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID = -1);
-	static CTexture*   GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst, bool bAsyncDevTexCreation = false);
-	static CTexture*   GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst);
-	static CTexture*   GetOrCreate2DCompositeTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, ETEX_Format eTFDst, const STexComposition* pCompositions, size_t nCompositions);
+	static CTexture*   GetOrCreateRenderTarget(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eSrcFormat, int nCustomID = -1);
+	static CTexture*   GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eSrcFormat, int nCustomID = -1);
+	static CTexture*   GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation = false);
+	static CTexture*   GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eSrcFormat);
+	static CTexture*   GetOrCreate2DCompositeTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, ETEX_Format eSrcFormat, const STexComposition* pCompositions, size_t nCompositions);
 	//=======================================================
 
 	// API depended functions
@@ -1829,8 +1826,8 @@ public:
 	void               ApplyTexture(int nTUnit, EHWShaderClass eHWSC = eHWSC_Pixel, ResourceViewHandle hView = EDefaultResourceViews::Default, bool bMSAA = false);
 	void               SetTexStates();
 	void               UpdateTexStates();
-	void               UpdateTextureRegion(byte* data, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eTFSrc);
-	void               RT_UpdateTextureRegion(byte* data, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eTFSrc);
+	void               UpdateTextureRegion(byte* pSrcData, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat);
+	void               RT_UpdateTextureRegion(byte* pSrcData, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat);
 	bool               SetNoTexture(CTexture* pDefaultTexture = s_ptexNoTexture);
 
 	static void        SetSampler(SamplerStateHandle nTS, int nSSlot, EHWShaderClass eHWSC = eHWSC_Pixel);
@@ -1849,12 +1846,12 @@ public:
 	static void DestroyNearestShadowMap();
 
 #if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
-	static byte*        Convert(byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nOutMips, int& nOutSize, bool bLinear);
+	static byte*        Convert(byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eSrcFormat, ETEX_Format eDstFormat, int nOutMips, int& nOutSize, bool bLinear);
 #endif
 	static int          CalcNumMips(int nWidth, int nHeight);
 	// upload mip data from file regarding to platform specifics
 	static bool         IsInPlaceFormat(const ETEX_Format fmt);
-	static void         ExpandMipFromFile(byte* dest, const int destSize, const byte* src, const int srcSize, const ETEX_Format fmt);
+	static void         ExpandMipFromFile(byte* dest, const int destSize, const byte* src, const int srcSize, const ETEX_Format srcFmt, const ETEX_Format dstFmt);
 	static uint32       TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM = eTM_None);
 
 	static ETEX_Format  GetClosestFormatSupported(ETEX_Format eTFDst, const SPixFormat*& pPF);
@@ -1892,9 +1889,9 @@ public:
 	static CTexture* s_ptexBlackAlpha;
 	static CTexture* s_ptexBlackCM;
 	static CTexture* s_ptexDefaultProbeCM;
+	static CTexture* s_ptexDefaultMergedDetail;
 	static CTexture* s_ptexFlatBump;
 #if !defined(_RELEASE)
-	static CTexture* s_ptexDefaultMergedDetail;
 	static CTexture* s_ptexMipMapDebug;
 	static CTexture* s_ptexColorBlue;
 	static CTexture* s_ptexColorCyan;

@@ -198,7 +198,7 @@ void CTexture::GenerateHDRMaps()
 	for (i = 0; i < MAX_GPU_NUM; ++i)
 	{
 		cry_sprintf(szName, "$HDRMeasuredLum_%d", i);
-		s_ptexHDRMeasuredLuminance[i] = CTexture::GetOrCreate2DTexture(szName, 1, 1, 0, FT_DONT_RELEASE | FT_DONT_STREAM, NULL, eTF_R16G16F, eTF_R16G16F);
+		s_ptexHDRMeasuredLuminance[i] = CTexture::GetOrCreate2DTexture(szName, 1, 1, 0, FT_DONT_RELEASE | FT_DONT_STREAM, NULL, eTF_R16G16F);
 	}
 
 	pHDRPostProcess->CreateRenderTargetList();

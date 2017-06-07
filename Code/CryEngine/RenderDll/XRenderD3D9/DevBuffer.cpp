@@ -4409,8 +4409,8 @@ void CGpuBuffer::OwnDevBuffer(CDeviceBuffer* pDeviceBuf)
 		m_eFlags       = Layput.m_eFlags;
 		m_eFormat      = Layput.m_eFormat;
 
-		m_nActualSize = m_nPersistentSize = m_pDevBuffer->GetDeviceSize();
-//		CryInterlockedAdd(&CGpuBuffer::s_nStatsCurManagedNonStreamedBufMem, m_nActualSize);
+		m_nPersistentSize = m_pDevBuffer->GetDeviceSize();
+//		CryInterlockedAdd(&CGpuBuffer::s_nStatsCurManagedNonStreamedBufMem, m_nBaseSize);
 	}
 
 	InvalidateDeviceResource(eDeviceResourceDirty);

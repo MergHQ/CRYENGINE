@@ -19,19 +19,20 @@ class CTexture;
 
 enum ETEX_Type : uint8
 {
+	// regular hardware supported/native types
 	eTT_1D = 0,
 	eTT_2D,
+	eTT_2DArray,
+	eTT_2DMS,
 	eTT_3D,
 	eTT_Cube,
 	eTT_CubeArray,
+
+	// custom types
 	eTT_Dyn2D,
-	eTT_User,
-	eTT_NearestCube,
-
-	eTT_2DArray,
-	eTT_2DMS,
-
 	eTT_Auto2D,
+	eTT_NearestCube,
+	eTT_User,
 
 	eTT_MaxTexType,   //!< Not used.
 };
@@ -88,10 +89,10 @@ enum ETEX_Format : uint8
 
 	//! Only available as hardware format under DX11.1 with DXGI 1.2.
 	eTF_B5G6R5,
-	eTF_B5G5R5,
+	eTF_B5G5R5A1,
 	eTF_B4G4R4A4,
 
-	//! Only available as hardware format under Vulkan.
+	//! Only available as hardware format under Vulkan or XBO.
 	eTF_R4G4,
 	eTF_R4G4B4A4,
 
@@ -125,6 +126,7 @@ enum ETEX_TileMode : uint8
 	eTM_None = 0,
 	eTM_LinearPadded,
 	eTM_Optimal,
+	eTM_Unspecified = 0xFF
 };
 
 //! T = applies to texture objects read from disk.
@@ -262,7 +264,7 @@ struct STexData
 protected:
 	uint8       m_reallocated;
 public:
-	ETEX_Format m_eTF;
+	ETEX_Format m_eFormat;
 	uint8       m_nMips;
 	int         m_nFlags;
 	float       m_fAvgBrightness;
@@ -277,7 +279,7 @@ public:
 		m_nHeight = 0;
 		m_nDepth = 1;
 		m_reallocated = 0;
-		m_eTF = eTF_Unknown;
+		m_eFormat = eTF_Unknown;
 		m_nMips = 0;
 		m_nFlags = 0;
 		m_fAvgBrightness = 1.0f;

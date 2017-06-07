@@ -2715,7 +2715,7 @@ void CDeferredShading::CreateDeferredMaps()
 		if (!CTexture::IsTextureExist(CTexture::s_ptexShadowMask))
 		{
 			const int nArraySize = gcpRendD3D->CV_r_ShadowCastingLightsMaxCount;
-			CTexture::s_ptexShadowMask = CTexture::GetOrCreateTextureArray("$ShadowMask", gcpRendD3D->GetWidth(), gcpRendD3D->GetHeight(), nArraySize, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8, TO_SHADOWMASK);
+			CTexture::s_ptexShadowMask = CTexture::GetOrCreateTextureArray("$ShadowMask", gcpRendD3D->GetWidth(), gcpRendD3D->GetHeight(), nArraySize, 1, eTT_2DArray, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8, TO_SHADOWMASK);
 		}
 	}
 

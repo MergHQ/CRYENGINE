@@ -2950,7 +2950,7 @@ static EHeapType ConfigureUsage(VkBufferCreateInfo& info, uint32 nUsage)
 	return SuggestVKHeapType(nUsage);
 }
 
-void CDeviceObjectFactory::UploadInitialImageData(STextureInfoData pSrcMips[], CImageResource* pDst, const VkImageCreateInfo& info)
+void CDeviceObjectFactory::UploadInitialImageData(SSubresourcePayload pSrcMips[], CImageResource* pDst, const VkImageCreateInfo& info)
 {
 	CRY_ASSERT(!(info.arrayLayers > 1 && info.extent.depth > 1)); // arrays of volumes not supported
 
@@ -2964,7 +2964,7 @@ void CDeviceObjectFactory::UploadInitialImageData(STextureInfoData pSrcMips[], C
 	const bool bIsBlocks = GetBlockSize(info.format, blockWidth, blockHeight, blockBytes);
 	if (!bIsBlocks)
 	{
-		blockBytes = pSrcMips[0].SysMemPitch / width;
+		blockBytes = pSrcMips[0].m_sSysMemAlignment.rowStride / width;
 	}
 
 	SResourceMemoryMapping imageMapping;
@@ -2981,13 +2981,12 @@ void CDeviceObjectFactory::UploadInitialImageData(STextureInfoData pSrcMips[], C
 
 	for (uint32_t mip = 0; mip < info.mipLevels; ++mip)
 	{
-		const STextureInfoData* const pData = pSrcMips + mip;
-		VK_ASSERT(pData->SysMemTileMode == eTM_None && "Tiled upload not supported");
+		const SSubresourcePayload* const pData = pSrcMips + mip;
 
 		// Image mapping for all slices.
-		imageMapping.MemoryLayout.rowStride    = pData->SysMemPitch;
-		imageMapping.MemoryLayout.planeStride  = pData->SysMemSlicePitch;
-		imageMapping.MemoryLayout.volumeStride = pData->SysMemSlicePitch * info.arrayLayers * depth;
+		imageMapping.MemoryLayout.rowStride    = pData->m_sSysMemAlignment.rowStride;
+		imageMapping.MemoryLayout.planeStride  = pData->m_sSysMemAlignment.planeStride;
+		imageMapping.MemoryLayout.volumeStride = pData->m_sSysMemAlignment.planeStride * info.arrayLayers * depth;
 		imageMapping.ResourceOffset.Subresource = mip; // Select given mip on first array slice
 		imageMapping.Extent.Width  = width;
 		imageMapping.Extent.Height = height;
@@ -2996,7 +2995,7 @@ void CDeviceObjectFactory::UploadInitialImageData(STextureInfoData pSrcMips[], C
 		// Buffer mapping for one slice.
 		bufferMapping.ResourceOffset.Left = 0;
 		bufferMapping.MemoryLayout = imageMapping.MemoryLayout;
-		bufferMapping.Extent.Width = bufferMapping.MemoryLayout.volumeStride = pData->SysMemSlicePitch * depth;
+		bufferMapping.Extent.Width = bufferMapping.MemoryLayout.volumeStride = pData->m_sSysMemAlignment.planeStride * depth;
 
 		// Create buffer for all slices.
 		CBufferResource* pStagingRaw = nullptr;
@@ -3009,18 +3008,18 @@ void CDeviceObjectFactory::UploadInitialImageData(STextureInfoData pSrcMips[], C
 		pStaging.Assign_NoAddRef(pStagingRaw);
 
 		// Fill first slice of the array.
-		bool bFilled = CDeviceCopyCommandInterface::FillBuffer(pData->pSysMem, pStaging, bufferMapping);
+		bool bFilled = CDeviceCopyCommandInterface::FillBuffer(pData->m_pSysMem, pStaging, bufferMapping);
 
 		// Fill additional slices of the array (if needed).
 		// The slices must have identical layout as the first slice.
-		const STextureInfoData* pSlice = pData;
+		const SSubresourcePayload* pSlice = pData;
 		for (uint32_t slice = 1; slice < info.arrayLayers; ++slice)
 		{
 			pSlice += info.mipLevels;
-			bufferMapping.ResourceOffset.Left += pData->SysMemSlicePitch;
+			bufferMapping.ResourceOffset.Left += pData->m_sSysMemAlignment.planeStride;
 			
-			VK_ASSERT(pSlice->SysMemTileMode == pData->SysMemTileMode && pSlice->SysMemPitch == pData->SysMemPitch && pSlice->SysMemSlicePitch == pData->SysMemSlicePitch && "Slice data not compatible");
-			bFilled &= CDeviceCopyCommandInterface::FillBuffer(pSlice->pSysMem, pStaging, bufferMapping);
+			VK_ASSERT(pSlice->m_sSysMemAlignment.rowStride == pData->m_sSysMemAlignment.rowStride && pSlice->m_sSysMemAlignment.planeStride == pData->m_sSysMemAlignment.planeStride && "Slice data not compatible");
+			bFilled &= CDeviceCopyCommandInterface::FillBuffer(pSlice->m_pSysMem, pStaging, bufferMapping);
 		}
 
 		if (bFilled)
@@ -3083,7 +3082,7 @@ void CDeviceObjectFactory::SelectStagingLayout(const NCryVulkan::CImageResource*
 	result.Flags = 0;
 }
 
-HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI, int32 nESRAMOffset)
+HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI, int32 nESRAMOffset)
 {
 	VkImageCreateInfo info;
 
@@ -3107,7 +3106,7 @@ HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uin
 
 	if (pTI)
 	{
-		info.samples = (VkSampleCountFlagBits)pTI->m_nMSAASamples;
+		info.samples = (VkSampleCountFlagBits)pTI->m_nDstMSAASamples;
 	}
 
 	if (info.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -3145,19 +3144,19 @@ HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uin
 	}
 
 	CDeviceTexture* const pWrapper = (*ppDevTexture = new CDeviceTexture());
-	if (pTI && pTI->m_pData)
+	if (pTI && pTI->m_pSysMemSubresourceData)
 	{
-		UploadInitialImageData(pTI->m_pData, pResult, info);
+		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None && "Tiled upload not supported");
+		UploadInitialImageData(pTI->m_pSysMemSubresourceData, pResult, info);
 	}
 
 	pWrapper->m_pNativeResource = pResult;
-	pWrapper->m_nActualSize = (int32)pResult->GetSize();
 	pWrapper->m_nBaseAllocatedSize = (size_t)pResult->GetSize();
 
 	return S_OK;
 }
 
-HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI)
+HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI)
 {
 	VkImageCreateInfo info;
 
@@ -3170,7 +3169,7 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint
 	info.extent.height = nSize;
 	info.extent.depth = 1;
 	info.mipLevels = nMips;
-	info.arrayLayers = nArraySize * 6;
+	info.arrayLayers = nArraySize; assert(!(nArraySize % 6));
 	info.samples = VK_SAMPLE_COUNT_1_BIT;
 	info.tiling = VK_IMAGE_TILING_OPTIMAL;
 	info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -3181,7 +3180,7 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint
 
 	if (pTI)
 	{
-		info.samples = (VkSampleCountFlagBits)pTI->m_nMSAASamples;
+		info.samples = (VkSampleCountFlagBits)pTI->m_nDstMSAASamples;
 	}
 
 	VK_ASSERT(nSize * nSize * nArraySize * nMips != 0);
@@ -3198,19 +3197,19 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint
 	}
 
 	CDeviceTexture* const pWrapper = (*ppDevTexture = new CDeviceTexture());
-	if (pTI && pTI->m_pData)
+	if (pTI && pTI->m_pSysMemSubresourceData)
 	{
-		UploadInitialImageData(pTI->m_pData, pResult, info);
+		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None && "Tiled upload not supported");
+		UploadInitialImageData(pTI->m_pSysMemSubresourceData, pResult, info);
 	}
 
 	pWrapper->m_pNativeResource = pResult;
-	pWrapper->m_nActualSize = (int32)pResult->GetSize();
 	pWrapper->m_nBaseAllocatedSize = (size_t)pResult->GetSize();
 
 	return S_OK;
 }
 
-HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI)
+HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI)
 {
 	VkImageCreateInfo info;
 
@@ -3234,7 +3233,7 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight,
 
 	if (pTI)
 	{
-		VK_ASSERT(pTI->m_nMSAASamples == 1 && "MSAA samples not supported on 3D textures");
+		VK_ASSERT(pTI->m_nDstMSAASamples == 1 && "MSAA samples not supported on 3D textures");
 	}
 
 	VK_ASSERT(nWidth * nHeight * nDepth * nMips != 0);
@@ -3251,13 +3250,13 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight,
 	}
 
 	CDeviceTexture* const pWrapper = (*ppDevTexture = new CDeviceTexture());
-	if (pTI && pTI->m_pData)
+	if (pTI && pTI->m_pSysMemSubresourceData)
 	{
-		UploadInitialImageData(pTI->m_pData, pResult, info);
+		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None && "Tiled upload not supported");
+		UploadInitialImageData(pTI->m_pSysMemSubresourceData, pResult, info);
 	}
 
 	pWrapper->m_pNativeResource = pResult;
-	pWrapper->m_nActualSize = (int32)pResult->GetSize();
 	pWrapper->m_nBaseAllocatedSize = (size_t)pResult->GetSize();
 
 	return S_OK;

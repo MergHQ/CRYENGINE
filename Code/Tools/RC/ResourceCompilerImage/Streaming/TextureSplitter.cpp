@@ -265,6 +265,7 @@ CTextureSplitter::~CTextureSplitter( )
 bool CTextureSplitter::BuildDDSChunks(const char* fileName, STexture& resource)
 {
 	CImageExtensionHelper::DDS_HEADER& header = resource.m_ddsHeader;
+	CImageExtensionHelper::DDS_HEADER_DXT10& exthead = resource.m_ddsHeaderExtension;
 
 	if (!header.IsValid())
 	{
@@ -273,11 +274,17 @@ bool CTextureSplitter::BuildDDSChunks(const char* fileName, STexture& resource)
 	}
 
 	// get number of real MIPs
-	const uint32 nNumMips = header.GetMipCount();
-
 	// get number of sides
-	const bool bIsCubemap = (header.dwSurfaceFlags & DDS_SURFACE_FLAGS_CUBEMAP) != 0 && (header.dwCubemapFlags & DDS_CUBEMAP_ALLFACES) != 0;
-	const uint32 nSides = bIsCubemap ? 6 : 1;
+	uint32 nNumMips = header.GetMipCount();
+	uint32 nSides = 1U;
+	if (header.IsDX10Ext())
+	{
+		nSides = (header.dwReserved1 & CImageExtensionHelper::EIF_Cubemap) ? exthead.arraySize : exthead.arraySize;
+	}
+	else
+	{
+		nSides = (header.dwReserved1 & CImageExtensionHelper::EIF_Cubemap) || ((header.dwSurfaceFlags & DDS_SURFACE_FLAGS_CUBEMAP) != 0 && (header.dwCubemapFlags & DDS_CUBEMAP_ALLFACES) != 0) ? 6 : 1;
+	}
 
 	// Compute output side size
 	for (DWORD dwMip = 0; dwMip < nNumMips;)
@@ -292,7 +299,7 @@ bool CTextureSplitter::BuildDDSChunks(const char* fileName, STexture& resource)
 	int nLastMips = Util::getMax((int)ehiNumLastMips, (int)header.bNumPersistentMips);
 
 	// header file
-	for(int currentPhase = 0;nEstimatedMips > 0;++currentPhase)
+	for (int currentPhase = 0; nEstimatedMips > 0; ++currentPhase)
 	{
 		STexture::SChunkDesc chunkDesc;
 		chunkDesc.m_nChunkNumber = (uint8)currentPhase;
@@ -300,7 +307,7 @@ bool CTextureSplitter::BuildDDSChunks(const char* fileName, STexture& resource)
 		// calculate mips to save
 		uint32 nStartMip;
 		uint32 nEndMip;
-		if(currentPhase == 0)
+		if (currentPhase == 0)
 		{
 			nStartMip = Util::getMax(0, (int)nNumMips - nLastMips);
 			nEndMip = nNumMips;
@@ -311,7 +318,7 @@ bool CTextureSplitter::BuildDDSChunks(const char* fileName, STexture& resource)
 			nEndMip = Util::getMin(nNumMips, nStartMip + 1);
 		}
 
-		for(int iSide = 0;iSide < nSides;++iSide)
+		for (int iSide = 0; iSide < nSides; ++iSide)
 		{
 			for (int iMip = nStartMip; iMip < nEndMip;)
 			{
@@ -467,9 +474,9 @@ bool CTextureSplitter::LoadTexture( const char* fileName, std::vector<uint8>& fi
 	if (pFileDesc->dwMagic != CRY_MAKEFOURCC('D','D','S',' ') || 
 		pFileDesc->header.dwSize != sizeof(pFileDesc->header) ||
 		pFileDesc->header.ddspf.dwSize != sizeof(pFileDesc->header.ddspf) || 
-		pFileDesc->header.dwDepth > 8192 || 
-		pFileDesc->header.dwHeight > 8192 ||
-		pFileDesc->header.dwWidth > 8192)
+		pFileDesc->header.dwDepth > 16384 || 
+		pFileDesc->header.dwHeight > 16384 ||
+		pFileDesc->header.dwWidth > 16384)
 	{
 		RCLogError("Error: Cannot load texture header: '%s'\n", fileName);
 		fclose(file);
@@ -517,6 +524,7 @@ void CTextureSplitter::ParseDDSTexture( const char* fileName, std::vector<STextu
 
 	// load header
 	CImageExtensionHelper::DDS_HEADER* pDDSHeader = (CImageExtensionHelper::DDS_HEADER*)(&fileContent[0] + sizeof(DWORD));
+	CImageExtensionHelper::DDS_HEADER_DXT10* pDDSHeaderExt = (CImageExtensionHelper::DDS_HEADER_DXT10*)(&fileContent[0] + sizeof(DWORD) + sizeof(CImageExtensionHelper::DDS_FILE_DESC));
 
 	const size_t fileContentSize = fileContent.size() - sizeof(DWORD);
 
@@ -526,20 +534,29 @@ void CTextureSplitter::ParseDDSTexture( const char* fileName, std::vector<STextu
 	if (resources.empty())
 		return;
 
-
-	// we need to skip 3D textures 
-	if ((resources[0].m_ddsHeader.dwDepth > 1) || m_CC.config->GetAsBool("dont_split", false, true))
+	if (m_CC.config->GetAsBool("dont_split", false, true))
 	{
 		STexture& tex = resources[0];
 		STexture::SChunkDesc chunk;
 		chunk.m_nChunkNumber = 0;
 
-		const bool cubemap = (tex.m_ddsHeader.dwSurfaceFlags & DDS_SURFACE_FLAGS_CUBEMAP) != 0 && (tex.m_ddsHeader.dwCubemapFlags & DDS_CUBEMAP_ALLFACES) != 0;
-		DWORD dwSides = cubemap ? 6 : 1;
+		DWORD dwMips  = pDDSHeader->GetMipCount();
+		DWORD dwSides = 1;
+		DWORD dwDepth = 1;
+		if (pDDSHeader->IsDX10Ext())
+		{
+			dwSides = (pDDSHeader->dwReserved1 & CImageExtensionHelper::EIF_Cubemap) ? pDDSHeaderExt->arraySize : pDDSHeaderExt->arraySize;
+			dwDepth = (pDDSHeader->dwReserved1 & CImageExtensionHelper::EIF_Volumetexture) || ((pDDSHeaderExt->resourceDimension == 4 /*D3D10_RESOURCE_DIMENSION_TEXTURE3D*/) && (pDDSHeader->dwHeaderFlags & DDS_HEADER_FLAGS_VOLUME)) ? Util::getMax(1ul, pDDSHeader->dwDepth) : 1;
+		}
+		else
+		{
+			dwSides = (pDDSHeader->dwReserved1 & CImageExtensionHelper::EIF_Cubemap) || ((pDDSHeader->dwSurfaceFlags & DDS_SURFACE_FLAGS_CUBEMAP) != 0 && (pDDSHeader->dwCubemapFlags & DDS_CUBEMAP_ALLFACES) != 0) ? 6 : 1;
+			dwDepth = (pDDSHeader->dwReserved1 & CImageExtensionHelper::EIF_Volumetexture) || (pDDSHeader->dwHeaderFlags & DDS_HEADER_FLAGS_VOLUME) ? Util::getMax(1ul, pDDSHeader->dwDepth) : 1;
+		}
 
 		for (DWORD dwSide = 0; dwSide < dwSides; ++ dwSide)
 		{
-			for (DWORD dwMip = 0, dwMips = std::max<DWORD>(1, tex.m_ddsHeader.dwMipMapCount); dwMip < dwMips; ++ dwMip)
+			for (DWORD dwMip = 0; dwMip < dwMips; ++ dwMip)
 			{
 				STexture::SSurface* pSurf = tex.TryGetSurface(dwSide, dwMip);
 				STexture::SBlock block;
@@ -922,20 +939,33 @@ void CTextureSplitter::ProcessPlatformSpecificConversions(std::vector<STexture>&
 	const size_t nHeaderSize = header.GetFullHeaderSize();
 	byte* pDataHead = fileContent + nHeaderSize;
 
+	DWORD& imageFlags = header.dwReserved1;
+
 	// get dimensions
 	uint32 dwWidth,dwHeight,dwDepth,dwSides,dwMips;
 	dwWidth = header.dwWidth;
 	dwHeight = header.dwHeight;
-	dwDepth = Util::getMax(1ul, header.dwDepth);
-	dwMips = header.GetMipCount();
-	const bool cubemap = (header.dwSurfaceFlags & DDS_SURFACE_FLAGS_CUBEMAP) != 0 && (header.dwCubemapFlags & DDS_CUBEMAP_ALLFACES) != 0;
-	dwSides = cubemap ? 6 : 1;
+	dwMips  = header.GetMipCount();
+	dwSides = 1;
+	dwDepth = 1;
+	if (header.IsDX10Ext())
+	{
+		dwSides = (header.dwReserved1 & CImageExtensionHelper::EIF_Cubemap) ? exthead.arraySize : exthead.arraySize;
+		dwDepth = (header.dwReserved1 & CImageExtensionHelper::EIF_Volumetexture) || ((exthead.resourceDimension == 4 /*D3D10_RESOURCE_DIMENSION_TEXTURE3D*/) && (header.dwHeaderFlags & DDS_HEADER_FLAGS_VOLUME)) ? Util::getMax(1ul, header.dwDepth) : 1;
+	}
+	else
+	{
+		dwSides = (header.dwReserved1 & CImageExtensionHelper::EIF_Cubemap) || ((header.dwSurfaceFlags & DDS_SURFACE_FLAGS_CUBEMAP) != 0 && (header.dwCubemapFlags & DDS_CUBEMAP_ALLFACES) != 0) ? 6 : 1;
+		dwDepth = (header.dwReserved1 & CImageExtensionHelper::EIF_Volumetexture) || (header.dwHeaderFlags & DDS_HEADER_FLAGS_VOLUME) ? Util::getMax(1ul, header.dwDepth) : 1;
+	}
+
 	const ETEX_Format format = DDSFormats::GetFormatByDesc(header.ddspf, exthead.dxgiFormat);
 	if (format == eTF_Unknown)
 	{
 		RCLogError("Unknown DDS format: flags %d (0x%x), fourcc 0x%x", header.ddspf.dwFlags, header.ddspf.dwFlags, header.ddspf.dwFourCC);
 		return;
 	}
+
 	const bool bBlockCompressed = TextureHelper::IsBlockCompressed(format);
 	const uint32 nBitsPerPixel = bBlockCompressed ? (TextureHelper::BytesPerBlock(format) / 2) : (TextureHelper::BytesPerPixel(format) * 8);
 	// all formats that don't need endian swapping/byte rearrangement should be here
@@ -970,8 +1000,6 @@ void CTextureSplitter::ProcessPlatformSpecificConversions(std::vector<STexture>&
 	}
 
 	EEndian currentEndian = eLittleEndian;
-
-	DWORD& imageFlags = header.dwReserved1;
 
 	bool bNeedsProcess = false;
 

@@ -481,6 +481,14 @@ void CClearRegionPass::Execute(CTexture* pDepthTex, const int nFlags, const floa
 
 	commandList.GetGraphicsInterface()->ClearSurface(pDsv, nFlags, cDepth, cStencil, numRects, pRects);
 #else
+	if (!numRects || (numRects == 1 && pRects->left <= 0 && pRects->top <= 0 && pRects->right >= pDepthTex->GetWidthNonVirtual() && pRects->bottom >= pDepthTex->GetHeightNonVirtual()))
+	{
+		// Full screen clear, no need to do custom pass
+		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		commandList.GetGraphicsInterface()->ClearSurface(pDepthTex->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), nFlags, cDepth, cStencil);
+		return;
+	}
+
 	D3DViewPort viewport;
 	viewport.TopLeftX = viewport.TopLeftY = 0.0f;
 	viewport.Width  = (float)pDepthTex->GetWidthNonVirtual();
@@ -517,11 +525,11 @@ void CClearRegionPass::Execute(CTexture* pDepthTex, const int nFlags, const floa
 
 void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects)
 {
-#if (CRY_RENDERER_DIRECT3D >= 120)
+#if (CRY_RENDERER_DIRECT3D >= 111)
 	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-	commandList.GetGraphicsInterface()->ClearSurface(pTex->GetSurface(0, 0), cClear, numRects, pRects);
+	commandList.GetGraphicsInterface()->ClearSurface(pTex->GetDevTexture()->LookupRTV(EDefaultResourceViews::RenderTarget), cClear, numRects, pRects);
 #else
-	if (numRects == 1 && pRects->left == 0 && pRects->top == 0 && pRects->right == pTex->GetWidthNonVirtual() && pRects->bottom == pTex->GetHeightNonVirtual())
+	if (!numRects || (numRects == 1 && pRects->left <= 0 && pRects->top <= 0 && pRects->right >= pTex->GetWidthNonVirtual() && pRects->bottom >= pTex->GetHeightNonVirtual()))
 	{
 		// Full screen clear, no need to do custom pass
 		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
