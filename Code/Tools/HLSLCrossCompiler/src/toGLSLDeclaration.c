@@ -478,9 +478,9 @@ static void PreDeclareStructType(HLSLCrossCompilerContext* psContext, const char
 					if ((implicitOffset + 4 - 1) / 4 < psVar->Offset / 4)
 					{
 						// if we'd use arrays we'd fall into the std140 alignment trap again, thus we use individual floats
-						uint32_t uNumPaddingFloats = psVar->Offset / 4 - (implicitOffset + 4 - 1) / 4;
-						while (--uNumPaddingFloats >= 0)
-							bformata(glsl, "\tfloat padding_%s_%d_%d;\n", RName, psVar->Offset, uNumPaddingFloats);
+						int32_t  nNumPaddingFloats = psVar->Offset / 4 - (implicitOffset + 4 - 1) / 4;
+						while (--nNumPaddingFloats >= 0)
+							bformata(glsl, "\tfloat padding_%s_%d_%d;\n", RName, psVar->Offset, nNumPaddingFloats);
 
 						implicitOffset = psVar->Offset - psVar->Offset % 4;
 					}
@@ -1958,9 +1958,9 @@ static void DeclareUBOConstants(HLSLCrossCompilerContext* psContext, const uint3
 				if ((implicitOffset + 4 - 1) / 4 < psVar->ui32StartOffset / 4)
 				{
 					// if we'd use arrays we'd fall into the std140 alignment trap again, thus we use individual floats
-					uint32_t uNumPaddingFloats = psVar->ui32StartOffset / 4 - (implicitOffset + 4 - 1) / 4;
-					while (--uNumPaddingFloats >= 0)
-						bformata(glsl, "\tfloat padding_%s_%d_%d;\n", Name, psVar->ui32StartOffset, uNumPaddingFloats);
+					int32_t  nNumPaddingFloats = psVar->ui32StartOffset / 4 - (implicitOffset + 4 - 1) / 4;
+					while (--nNumPaddingFloats >= 0)
+						bformata(glsl, "\tfloat padding_%s_%d_%d;\n", Name, psVar->ui32StartOffset, nNumPaddingFloats);
 
 					implicitOffset = psVar->ui32StartOffset - psVar->ui32StartOffset % 4;
 				}

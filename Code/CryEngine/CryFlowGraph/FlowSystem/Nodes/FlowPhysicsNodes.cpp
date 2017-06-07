@@ -1781,18 +1781,14 @@ public:
 		int type = GetType();
 		if (m_inputs.empty())
 		{
-			if (!g_dummyEnt)
+			// Horrible workaround for existing code relying on calling code in init that depends on an entity existing.
+			static std::shared_ptr<IEntityScriptComponent> pScriptComponentDummy;
+			if (pScriptComponentDummy == nullptr)
 			{
-				SEntitySpawnParams esp;
-				esp.sName = "PhysParamsDummy";
-				esp.nFlags = 0;
-				esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
-				g_dummyEnt = gEnv->pEntitySystem->SpawnEntity(esp);
-				SEntityPhysicalizeParams pp;
-				pp.type = PE_STATIC;
-				g_dummyEnt->Physicalize(pp);
+				CryCreateClassInstanceForInterface(cryiidof<IEntityScriptComponent>(), pScriptComponentDummy);
 			}
-			g_dummyEnt->GetOrCreateComponent<IEntityScriptComponent>()->SetPhysParams(type+1, &m_table);
+
+			pScriptComponentDummy->SetPhysParams(type+1, &m_table);
 
 			m_inputs.push_back(InputPortConfig_Void("Set"));
 			for(const auto& str : m_table.m_fields)
@@ -1833,22 +1829,13 @@ public:
 			m_inputs.push_back(SInputPortConfig({ nullptr }));
 		}
 
-		if (g_dummyEnt && type == CRY_ARRAY_COUNT(s_PhysParamNames)-1)
-		{
-			gEnv->pEntitySystem->RemoveEntity(g_dummyEnt->GetId(), true);
-			g_dummyEnt = nullptr;
-		}
-
 		return new CFlowNode_PhysParams2(GetType(), pActInfo, m_inputs.data(), m_table.m_fields.data()); 
 	}
 
 	STableLogger                  m_table;
 	std::vector<SInputPortConfig> m_inputs;
 	std::vector<string>           m_inputNames;
-
-	static IEntity* g_dummyEnt;
 };
-IEntity *CAutoRegParamsNode::g_dummyEnt = nullptr;
 
 CAutoRegParamsNode CAutoRegParamsNode::s_Params[CRY_ARRAY_COUNT(s_PhysParamNames)];
 

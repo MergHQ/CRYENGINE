@@ -1,5 +1,7 @@
 #include "StdAfx.h"
 #include "Player.h"
+
+#include "Bullet.h"
 #include "SpawnPoint.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
@@ -13,12 +15,9 @@ void CPlayerComponent::Initialize()
 	// The character controller is responsible for maintaining player physics and animations
 	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
 
-	// The character controller is responsible for maintaining player physics and animations
-	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
-
 	// Set the player geometry, this also triggers physics proxy creation
 	m_pCharacterController->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
-	m_pCharacterController->SetCharacterFile("Objects/Characters/SampleCharacter/firstperson.cdf");
+	m_pCharacterController->SetCharacterFile("Objects/Characters/SampleCharacter/thirdperson.cdf");
 
 	m_pCharacterController->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
 	m_pCharacterController->SetDefaultScopeContextName("FirstPersonCharacter");
@@ -35,7 +34,7 @@ void CPlayerComponent::Initialize()
 	m_rotateTagId = m_pCharacterController->GetTagId("Rotate");
 	m_walkTagId = m_pCharacterController->GetTagId("Walk");
 
-	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are m_pEntity
+	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
 	// Get and initialize the pathfinding component
 	m_pPathfindingComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CPathfindingComponent>();
@@ -45,7 +44,7 @@ void CPlayerComponent::Initialize()
 		m_pCharacterController->SetVelocity(recommendedVelocity);
 	});
 
-	// Register the shoot action
+	// Register the walk action
 	m_pInputComponent->RegisterAction("player", "walkto", [this](int activationMode, float value)
 	{
 		if (m_pCursorEntity != nullptr && activationMode == eAAM_OnPress)
@@ -59,11 +58,49 @@ void CPlayerComponent::Initialize()
 		}
 	});
 
+	// Register the shoot action
+	m_pInputComponent->RegisterAction("player", "shoot", [this](int activationMode, float value)
+	{
+		// Only fire on press, not release
+		if (activationMode == eIS_Pressed)
+		{
+			if (ICharacterInstance *pCharacter = m_pCharacterController->GetCharacter())
+			{
+				auto *pBarrelOutAttachment = pCharacter->GetIAttachmentManager()->GetInterfaceByName("barrel_out");
+
+				if (pBarrelOutAttachment != nullptr)
+				{
+					QuatTS bulletOrigin = pBarrelOutAttachment->GetAttWorldAbsolute();
+
+					SEntitySpawnParams spawnParams;
+					spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
+
+					spawnParams.vPosition = bulletOrigin.t;
+					spawnParams.qRotation = bulletOrigin.q;
+
+					const float bulletScale = 0.05f;
+					spawnParams.vScale = Vec3(bulletScale);
+
+					// Spawn the entity
+					if (IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams))
+					{
+						// See Bullet.cpp, bullet is propelled in  the rotation and position the entity was spawned with
+						pEntity->CreateComponentClass<CBulletComponent>();
+					}
+				}
+			}
+		}
+	});
+
 	// Bind the walkto action to left mouse click
 	m_pInputComponent->BindAction("player", "walkto", eAID_KeyboardMouse, EKeyId::eKI_Mouse1);
+	// Bind the shoot action to the space bar
+	m_pInputComponent->BindAction("player", "shoot", eAID_KeyboardMouse, EKeyId::eKI_Space);
 
 	// Spawn the cursor
 	SpawnCursorEntity();
+
+	Revive();
 }
 
 uint64 CPlayerComponent::GetEventMask() const

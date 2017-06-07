@@ -138,10 +138,10 @@ namespace Cry
 					playerDynamics.kInertia = m_movement.m_inertia;
 					playerDynamics.kInertiaAccel = m_movement.m_inertiaAcceleration;
 
-					playerDynamics.maxClimbAngle = m_movement.m_maxClimbAngle.ToRadians();
-					playerDynamics.maxJumpAngle = m_movement.m_maxJumpAngle.ToRadians();
-					playerDynamics.minFallAngle = m_movement.m_minFallAngle.ToRadians();
-					playerDynamics.minSlideAngle = m_movement.m_minSlideAngle.ToRadians();
+					playerDynamics.maxClimbAngle = m_movement.m_maxClimbAngle.ToDegrees();
+					playerDynamics.maxJumpAngle = m_movement.m_maxJumpAngle.ToDegrees();
+					playerDynamics.minFallAngle = m_movement.m_minFallAngle.ToDegrees();
+					playerDynamics.minSlideAngle = m_movement.m_minSlideAngle.ToDegrees();
 
 					playerDynamics.maxVelGround = m_movement.m_maxGroundVelocity;
 
