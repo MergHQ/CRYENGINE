@@ -10393,7 +10393,7 @@ int CScriptBind_AI::CreateQueryFromTacticalSpec(SmartScriptTable specTable)
 	IScriptTable::Iterator itO;
 	for (itO = specTable->BeginIteration(); specTable->MoveNext(itO); option++)
 	{
-		if (itO.value.type == ANY_TSTRING) continue;  // Skip the name field
+		if (itO.value.GetType() == EScriptAnyType::String) continue;  // Skip the name field
 
 		SmartScriptTable optionTable;
 		if (!itO.value.CopyTo(optionTable)) return false; // Scream and shout!
@@ -10406,14 +10406,14 @@ int CScriptBind_AI::CreateQueryFromTacticalSpec(SmartScriptTable specTable)
 			for (itS = subTable->BeginIteration(); subTable->MoveNext(itS); )
 			{
 				const char* querySpec = itS.sKey;
-				if (itS.value.type == ANY_TNUMBER)
+				if (itS.value.GetType() == EScriptAnyType::Number)
 				{
-					float fVal = itS.value.number;
+					float fVal = itS.value.GetNumber();
 					bOk &= pTPS->AddToParameters(queryID, querySpec, fVal, option);
 				}
-				else if (itS.value.type == ANY_TSTRING)
+				else if (itS.value.GetType() == EScriptAnyType::String)
 				{
-					const char* sVal = itS.value.str;
+					const char* sVal = itS.value.GetString();
 					bOk &= pTPS->AddToParameters(queryID, querySpec, sVal, option);
 				}
 				else
@@ -10433,14 +10433,14 @@ int CScriptBind_AI::CreateQueryFromTacticalSpec(SmartScriptTable specTable)
 			{
 				bAtLeastOneGenerationProvided = true;
 				const char* querySpec = itS.sKey;
-				if (itS.value.type == ANY_TNUMBER)
+				if (itS.value.GetType() == EScriptAnyType::Number)
 				{
-					float fVal = itS.value.number;
+					float fVal = itS.value.GetNumber();
 					bOk &= pTPS->AddToGeneration(queryID, querySpec, fVal, option);
 				}
-				else if (itS.value.type == ANY_TSTRING)
+				else if (itS.value.GetType() == EScriptAnyType::String)
 				{
-					const char* sVal = itS.value.str;
+					const char* sVal = itS.value.GetString();
 					bOk &= pTPS->AddToGeneration(queryID, querySpec, sVal, option);
 				}
 				else
@@ -10456,14 +10456,14 @@ int CScriptBind_AI::CreateQueryFromTacticalSpec(SmartScriptTable specTable)
 			for (itS = subTable->BeginIteration(); subTable->MoveNext(itS); )
 			{
 				const char* querySpec = itS.sKey;
-				if (itS.value.type == ANY_TNUMBER)
+				if (itS.value.GetType() == EScriptAnyType::Number)
 				{
-					float fVal = itS.value.number;
+					float fVal = itS.value.GetNumber();
 					bOk &= pTPS->AddToConditions(queryID, querySpec, fVal, option);
 				}
-				else if (itS.value.type == ANY_TBOOLEAN)
+				else if (itS.value.GetType() == EScriptAnyType::Boolean)
 				{
-					bool bVal = itS.value.b;
+					bool bVal = itS.value.GetBool();
 					bOk &= pTPS->AddToConditions(queryID, querySpec, bVal, option);
 				}
 				else
@@ -10481,9 +10481,9 @@ int CScriptBind_AI::CreateQueryFromTacticalSpec(SmartScriptTable specTable)
 			{
 				bAtLeastOneWeightProvided = true;
 				const char* querySpec = itS.sKey;
-				if (itS.value.type == ANY_TNUMBER)
+				if (itS.value.GetType() == EScriptAnyType::Number)
 				{
-					float fVal = itS.value.number;
+					float fVal = itS.value.GetNumber();
 					bOk &= pTPS->AddToWeights(queryID, querySpec, fVal, option);
 				}
 				else
@@ -11004,14 +11004,14 @@ struct BehaviorExplorer
 
 			while (globalBehaviors->MoveNext(it))
 			{
-				if (it.key.type != ANY_TSTRING)
+				if (it.key.GetType() != EScriptAnyType::String)
 					continue;
 
 				const char* behaviorName = 0;
 				it.key.CopyTo(behaviorName);
 
 				const char* baseName = 0;
-				if (it.value.type == ANY_TSTRING)
+				if (it.value.GetType() == EScriptAnyType::String)
 					it.value.CopyTo(baseName);
 
 				std::pair<Behaviors::iterator, bool> iresult = behaviors.insert(

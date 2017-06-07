@@ -327,11 +327,11 @@ void CAnimEntityNode::FindScriptTableForParameterRec(IScriptTable* pScriptTable,
 
 	ScriptAnyValue value;
 	pScriptTable->GetValueAny(tableName.c_str(), value);
-	assert(value.type == ANY_TTABLE);
+	assert(value.GetType() == EScriptAnyType::Table);
 
-	if (value.type == ANY_TTABLE)
+	if (value.GetType() == EScriptAnyType::Table)
 	{
-		FindScriptTableForParameterRec(value.table, pathLeft, propertyName, propertyScriptTable);
+		FindScriptTableForParameterRec(value.GetScriptTable(), pathLeft, propertyName, propertyScriptTable);
 	}
 }
 
@@ -378,9 +378,9 @@ bool CAnimEntityNode::ObtainPropertyTypeInfo(const char* pKey, IScriptTable* pSc
 	paramInfo.animNodeParamInfo.valueType = eAnimValue_Unknown;
 	bool isUnknownTable = false;
 
-	switch (value.type)
+	switch (value.GetType())
 	{
-	case ANY_TNUMBER:
+	case EScriptAnyType::Number:
 		{
 			const bool hasBoolPrefix = (strlen(pKey) > 1) && (pKey[0] == 'b')
 			                           && (pKey[1] != tolower(pKey[1]));
@@ -388,22 +388,22 @@ bool CAnimEntityNode::ObtainPropertyTypeInfo(const char* pKey, IScriptTable* pSc
 		}
 		break;
 
-	case ANY_TVECTOR:
+	case EScriptAnyType::Vector:
 		paramInfo.animNodeParamInfo.valueType = eAnimValue_Vector;
 		break;
 
-	case ANY_TBOOLEAN:
+	case EScriptAnyType::Boolean:
 		paramInfo.animNodeParamInfo.valueType = eAnimValue_Bool;
 		break;
 
-	case ANY_TTABLE:
+	case EScriptAnyType::Table:
 		// Threat table as vector if it contains x, y & z
-		paramInfo.scriptTable = value.table;
+		paramInfo.scriptTable = value.GetScriptTable();
 
-		if (value.table->HaveValue("x") && value.table->HaveValue("y") && value.table->HaveValue("z"))
+		if (value.GetScriptTable()->HaveValue("x") && value.GetScriptTable()->HaveValue("y") && value.GetScriptTable()->HaveValue("z"))
 		{
 			paramInfo.animNodeParamInfo.valueType = eAnimValue_Vector;
-			paramInfo.scriptTable = value.table;
+			paramInfo.scriptTable = value.GetScriptTable();
 			paramInfo.isVectorTable = true;
 		}
 		else

@@ -8033,9 +8033,9 @@ bool CScriptBind_Entity::ParsePhysicsParams(IScriptTable* pTable, SEntityPhysica
 							}
 						}
 
-						if (iter.value.type == ANY_TVECTOR)
+						if (iter.value.GetType() == EScriptAnyType::Vector)
 						{
-							Vec3 v = Vec3(iter.value.vec3.x, iter.value.vec3.y, iter.value.vec3.z);
+							Vec3 v = iter.value.GetVector();
 							m_areaPoints.push_back(v);
 							if (v.z < minz)
 								minz = v.z;
