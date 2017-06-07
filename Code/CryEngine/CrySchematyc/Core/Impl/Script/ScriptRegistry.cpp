@@ -13,6 +13,7 @@
 #include <CrySchematyc/Utils/Assert.h>
 #include <CrySchematyc/Utils/StackString.h>
 #include <CrySchematyc/Utils/StringUtils.h>
+#include <CrySchematyc/Compiler/ICompiler.h>
 
 #include "CVars.h"
 #include "Script/Script.h"
@@ -867,6 +868,8 @@ void CScriptRegistry::MakeElementNameUnique(IString& name, IScriptElement* pScop
 
 void CScriptRegistry::ElementModified(IScriptElement& element)
 {
+	gEnv->pSchematyc->GetCompiler().CompileDependencies(element.GetGUID());
+
 	ProcessChange(SScriptRegistryChange(EScriptRegistryChangeType::ElementModified, element));
 	ProcessChangeDependencies(EScriptRegistryChangeType::ElementModified, element.GetGUID());
 }

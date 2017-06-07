@@ -69,7 +69,7 @@ CObject::~CObject()
 	DestroyStateMachines();
 }
 
-bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const IObjectPropertiesPtr& pProperties, ESimulationMode simulationMode,IEntity *pEntity)
+bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const IObjectPropertiesPtr& pProperties, ESimulationMode simulationMode, IEntity* pEntity)
 {
 	m_pEntity = pEntity;
 
@@ -81,7 +81,7 @@ bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const
 	m_pCustomData = pCustomData;
 	m_pProperties = pProperties;
 
-	if (!Start(simulationMode,true))
+	if (!Start(simulationMode, true))
 	{
 		return false;
 	}
@@ -127,7 +127,7 @@ bool CObject::Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPoli
 				SetClass(pClass);
 			}
 
-			if (!Start(simulationMode,false))
+			if (!Start(simulationMode, true))
 			{
 				Stop(false);
 				return false;
@@ -352,7 +352,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	return true;
 }
 
-bool CObject::Start(ESimulationMode simulationMode,bool bInitComponents)
+bool CObject::Start(ESimulationMode simulationMode, bool bInitComponents)
 {
 	m_scratchpad = m_pClass->GetScratchpad();
 
@@ -396,7 +396,6 @@ bool CObject::Start(ESimulationMode simulationMode,bool bInitComponents)
 			break;
 		}
 	}
-
 
 	return true;
 }
@@ -460,7 +459,7 @@ bool CObject::ReadProperties()
 			const CClassProperties* pCompProperties = m_pProperties->GetComponentProperties(component.classComponentInstance.guid);
 			if (pCompProperties)
 			{
-				bPublicPropertiesApplied  = pCompProperties->Apply(component.classDesc, component.pComponent.get());
+				bPublicPropertiesApplied = pCompProperties->Apply(component.classDesc, component.pComponent.get());
 			}
 		}
 		if (!bPublicPropertiesApplied)
@@ -479,7 +478,7 @@ bool CObject::ReadProperties()
 				{
 					SCHEMATYC_CORE_ERROR("Failed to initialize variable: class = %s, variable = %s", m_pClass->GetName(), variable.name.c_str());
 					//return false;
-					m_pProperties->AddVariable(variable.guid,variable.name.c_str(),*m_scratchpad.Get(variable.pos));
+					m_pProperties->AddVariable(variable.guid, variable.name.c_str(), *m_scratchpad.Get(variable.pos));
 				}
 			}
 		}
@@ -619,14 +618,14 @@ bool CObject::CreateComponents()
 			}
 
 			IEntityComponent::SInitParams initParams(
-				pEntity,
-				component.classComponentInstance.guid,
-				component.classComponentInstance.name,
-				&classDesc,
-				flags,
-				pParent,
-				transform
-			);
+			  pEntity,
+			  component.classComponentInstance.guid,
+			  component.classComponentInstance.name,
+			  &classDesc,
+			  flags,
+			  pParent,
+			  transform
+			  );
 			initParams.bNotInitialize = true;
 			GetEntity()->AddComponent(component.classDesc.GetGUID(), component.pComponent, true, &initParams);
 		}
@@ -813,7 +812,7 @@ void CObject::ExecuteSignalReceivers(const SObjectSignal& signal)
 			{
 				bExecute = true;
 			}
-			else if(classSignalReceiver.senderGUID == signal.senderGUID)
+			else if (classSignalReceiver.senderGUID == signal.senderGUID)
 			{
 				bExecute = true;
 			}
@@ -822,7 +821,7 @@ void CObject::ExecuteSignalReceivers(const SObjectSignal& signal)
 				SCHEMATYC_CORE_CRITICAL_ERROR("Signal sender guid expected!");
 			}
 		}
-		
+
 		if (bExecute)
 		{
 			StackRuntimeParamMap params(signal.params); // #SchematycTODO : How can we avoid copying signal parameters?
