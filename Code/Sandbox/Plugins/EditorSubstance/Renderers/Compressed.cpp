@@ -200,7 +200,7 @@ namespace EditorSubstance
 			sd.m_nWidth = texture.level0Width;
 			sd.m_nMips = texture.mipmapCount;
 			sd.m_pFilePath = textureName;
-			sd.m_eTF = resultFormat;
+			sd.m_eFormat = resultFormat;
 			sd.m_nFlags = FIM_textureFlags;
 			sd.m_pData[0] = (byte*)texture.buffer;
 			uint32 targetFlags = targetTexture->GetFlags();
@@ -214,10 +214,10 @@ namespace EditorSubstance
 
 			if (sd.m_nFlags & FIM_NORMALMAP)
 			{
-				if (sd.m_eTF == eTF_BC5U)
+				if (sd.m_eFormat == eTF_BC5U)
 				{
 					unsigned char *blocks = sd.m_pData[0];
-					unsigned char *end = sd.m_pData[0] + TextureDataSize(sd.m_nWidth, sd.m_nHeight, sd.m_nDepth, sd.m_nMips, sd.m_eTF);
+					unsigned char *end = sd.m_pData[0] + TextureDataSize(sd.m_nWidth, sd.m_nHeight, sd.m_nDepth, sd.m_nMips, sd.m_eFormat);
 					while (blocks < end)
 					{
 						// Cheapest transform, always rounds towards negative infinity (because the input is entirely positive)
@@ -228,7 +228,7 @@ namespace EditorSubstance
 
 						blocks += 4;
 					}
-					sd.m_eTF = eTF_BC5S;
+					sd.m_eFormat = eTF_BC5S;
 				}
 
 

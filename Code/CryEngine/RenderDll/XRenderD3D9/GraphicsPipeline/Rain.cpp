@@ -183,9 +183,7 @@ void CRainStage::ExecuteRainPreprocess()
 	// NOTE: this texture is created in SPostEffectsUtils::Create() in regular cases.
 	if (!CTexture::IsTextureExist(CTexture::s_ptexRainOcclusion))
 	{
-		if (!CTexture::s_ptexRainOcclusion->Create2DTexture(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1,
-		                                                    FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET,
-		                                                    0, eTF_R8G8B8A8, eTF_R8G8B8A8))
+		if (!CTexture::s_ptexRainOcclusion->Create2DTexture(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R8G8B8A8))
 		{
 			return;
 		}

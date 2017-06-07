@@ -290,13 +290,6 @@ struct CRY_ALIGN(16) SStateDepth
 #define MAXFRAMECAPTURECALLBACK 1
 
 //======================================================================
-// Options for clearing
-
-#define CLEAR_ZBUFFER           0x00000001l  /* Clear target z buffer, equals D3D11_CLEAR_DEPTH */
-#define CLEAR_STENCIL           0x00000002l  /* Clear stencil planes, equals D3D11_CLEAR_STENCIL */
-#define CLEAR_RTARGET           0x00000004l  /* Clear target surface */
-
-//======================================================================
 /// Forward declared classes
 
 struct IStatoscopeDataGroup;

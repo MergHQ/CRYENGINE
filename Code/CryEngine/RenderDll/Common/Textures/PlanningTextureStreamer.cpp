@@ -6,7 +6,7 @@
 #include "TextureStreamPool.h"
 
 #if !defined(CHK_RENDTH)
-	#define CHK_RENDTH assert(gRenDev->m_pRT->IsRenderThread())
+	#define CHK_RENDTH assert(gRenDev->m_pRT->IsRenderThread(true))
 #endif
 
 CPlanningTextureStreamer::CPlanningTextureStreamer()
@@ -355,7 +355,7 @@ bool CPlanningTextureStreamer::TryBegin_FromDisk(CTexture* pTex, uint32 nTexPers
 	uint32 nAvailWidth = max(1, pTex->m_nWidth >> nTexAvailMip);
 	uint32 nAvailHeight = max(1, pTex->m_nHeight >> nTexAvailMip);
 
-	ptrdiff_t nRequired = pTex->StreamComputeDevDataSize(nTexWantedMip) - pTex->StreamComputeDevDataSize(nTexAvailMip);
+	ptrdiff_t nRequired = pTex->StreamComputeSysDataSize(nTexWantedMip) - pTex->StreamComputeSysDataSize(nTexAvailMip);
 
 	STexPoolItem* pNewPoolItem = NULL;
 
@@ -452,7 +452,7 @@ bool CPlanningTextureStreamer::TryBegin_Composite(CTexture* pTex, uint32 nTexPer
 	uint32 nAvailWidth = max(1, pTex->m_nWidth >> nTexAvailMip);
 	uint32 nAvailHeight = max(1, pTex->m_nHeight >> nTexAvailMip);
 
-	ptrdiff_t nRequired = pTex->StreamComputeDevDataSize(nTexWantedMip) - pTex->StreamComputeDevDataSize(nTexAvailMip);
+	ptrdiff_t nRequired = pTex->StreamComputeSysDataSize(nTexWantedMip) - pTex->StreamComputeSysDataSize(nTexAvailMip);
 
 	// Test source textures, to ensure they're all ready.
 
@@ -809,7 +809,7 @@ ptrdiff_t CPlanningTextureStreamer::TrimTextures(ptrdiff_t nRequired, int nBias,
 			int nPersMip = pTrimTex->m_bForceStreamHighRes ? 0 : pTrimTex->m_nMips - pTrimTex->m_CacheFileHeader.m_nMipsPersistent;
 			int nTrimMip = pTrimTex->m_nMinMipVidUploaded;
 			int nTrimTargetMip = max(0, min((int)(pTrimTex->m_fpMinMipCur + nBias) >> 8, nPersMip));
-			ptrdiff_t nProfit = pTrimTex->StreamComputeDevDataSize(nTrimMip) - pTrimTex->StreamComputeDevDataSize(nTrimTargetMip);
+			ptrdiff_t nProfit = pTrimTex->StreamComputeSysDataSize(nTrimMip) - pTrimTex->StreamComputeSysDataSize(nTrimTargetMip);
 
 			if (pTrimTex->StreamTrim(nTrimTargetMip))
 				nTrimmed += nProfit;
@@ -847,10 +847,10 @@ ptrdiff_t CPlanningTextureStreamer::KickTextures(CTexture** pTextures, ptrdiff_t
 				uint32 nKillWidth = pKillTex->m_nWidth >> nKillMip;
 				uint32 nKillHeight = pKillTex->m_nHeight >> nKillMip;
 				int nKillMips = nKillPersMip - nKillMip;
-				ETEX_Format nKillFormat = pKillTex->m_eTFSrc;
+				ETEX_Format nKillFormat = pKillTex->m_eSrcFormat;
 
 				// How much is available?
-				ptrdiff_t nProfit = pKillTex->StreamComputeDevDataSize(nKillMip) - pKillTex->StreamComputeDevDataSize(nKillPersMip);
+				ptrdiff_t nProfit = pKillTex->StreamComputeSysDataSize(nKillMip) - pKillTex->StreamComputeSysDataSize(nKillPersMip);
 
 				// Begin freeing.
 				pKillTex->StreamTrim(nKillPersMip);

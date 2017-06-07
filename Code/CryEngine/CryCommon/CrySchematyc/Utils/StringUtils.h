@@ -26,7 +26,7 @@ inline bool CharIsAlphanumeric(char x)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 inline bool ContainsNonAlphaNumericChars(const char* szInput, const char* szExceptions = nullptr)
 {
-	if (szInput && (szInput[0] != '\0'))
+	if (szInput)
 	{
 		for (const char* szPos = szInput; *szPos != '\0'; ++szPos)
 		{
@@ -41,9 +41,9 @@ inline bool ContainsNonAlphaNumericChars(const char* szInput, const char* szExce
 
 // Check to see if string contains at least on alphanumeric character.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-inline bool ContainsAlphaNumericChars(const char* szInput, const char* szExceptions = nullptr)
+inline bool ContainsAlphaNumericChars(const char* szInput)
 {
-	if (szInput && (szInput[0] != '\0'))
+	if (szInput)
 	{
 		for (const char* szPos = szInput; *szPos != '\0'; ++szPos)
 		{

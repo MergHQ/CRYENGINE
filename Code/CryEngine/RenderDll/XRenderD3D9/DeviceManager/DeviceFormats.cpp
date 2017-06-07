@@ -232,6 +232,11 @@ ETEX_Format SPixFormatSupport::GetClosestFormatSupported(ETEX_Format eTFDst, con
 			pPF = &m_FormatR4G4;
 			return eTF_R4G4;
 		}
+		if (m_FormatR8G8.IsValid())
+		{
+			pPF = &m_FormatR8G8;
+			return eTF_R8G8;
+		}
 	case eTF_R4G4B4A4:
 		if (m_FormatR4G4B4A4.IsValid())
 		{
@@ -246,26 +251,38 @@ ETEX_Format SPixFormatSupport::GetClosestFormatSupported(ETEX_Format eTFDst, con
 		return eTF_Unknown;
 #endif
 
-	case eTF_B5G5R5:
-		if (m_FormatB5G5R5.IsValid())
-		{
-			pPF = &m_FormatB5G5R5;
-			return eTF_B5G5R5;
-		}
 	case eTF_B5G6R5:
 		if (m_FormatB5G6R5.IsValid())
 		{
 			pPF = &m_FormatB5G6R5;
 			return eTF_B5G6R5;
 		}
-
 	case eTF_B8G8R8X8:
 		if (m_FormatB8G8R8X8.IsValid())
 		{
 			pPF = &m_FormatB8G8R8X8;
 			return eTF_B8G8R8X8;
 		}
+		if (m_FormatB8G8R8A8.IsValid())
+		{
+			pPF = &m_FormatB8G8R8A8;
+			return eTF_B8G8R8A8;
+		}
 		return eTF_Unknown;
+
+	case eTF_B5G5R5A1:
+		if (m_FormatB5G5R5.IsValid())
+		{
+			pPF = &m_FormatB5G5R5;
+			return eTF_B5G5R5A1;
+		}
+		if (m_FormatB8G8R8A8.IsValid())
+		{
+			pPF = &m_FormatB8G8R8A8;
+			return eTF_B8G8R8A8;
+		}
+		return eTF_Unknown;
+
 	case eTF_B4G4R4A4:
 		if (m_FormatB4G4R4A4.IsValid())
 		{
@@ -981,7 +998,7 @@ D3DFormat DeviceFormats::ConvertFromTexFormat(ETEX_Format eTF)
 		// only available as hardware format under DX11.1 with DXGI 1.2
 	case eTF_B5G6R5:
 		return DXGI_FORMAT_B5G6R5_UNORM;
-	case eTF_B5G5R5:
+	case eTF_B5G5R5A1:
 		return DXGI_FORMAT_B5G5R5A1_UNORM;
 	case eTF_B4G4R4A4:
 		return DXGI_FORMAT_B4G4R4A4_UNORM;
@@ -1112,7 +1129,7 @@ uint32 DeviceFormats::GetWriteMask(ETEX_Format eTF)
 		// only available as hardware format under DX11.1 with DXGI 1.2
 	case eTF_B5G6R5:
 		return D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN | D3D11_COLOR_WRITE_ENABLE_BLUE;
-	case eTF_B5G5R5:
+	case eTF_B5G5R5A1:
 		return D3D11_COLOR_WRITE_ENABLE_ALL;
 	case eTF_B4G4R4A4:
 		return D3D11_COLOR_WRITE_ENABLE_ALL;
@@ -1321,7 +1338,7 @@ ETEX_Format DeviceFormats::ConvertToTexFormat(D3DFormat nFormat)
 	case DXGI_FORMAT_B5G6R5_UNORM:
 		return eTF_B5G6R5;
 	case DXGI_FORMAT_B5G5R5A1_UNORM:
-		return eTF_B5G5R5;
+		return eTF_B5G5R5A1;
 	case DXGI_FORMAT_B4G4R4A4_UNORM:
 		return eTF_B4G4R4A4;
 
@@ -1358,15 +1375,11 @@ ETEX_Format DeviceFormats::ConvertToTexFormat(D3DFormat nFormat)
 
 		// only available as hardware format under DX9
 	case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-		return eTF_B8G8R8A8;
 	case DXGI_FORMAT_B8G8R8A8_UNORM:
-		return eTF_B8G8R8A8;
 	case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
 		return eTF_B8G8R8A8;
 	case DXGI_FORMAT_B8G8R8X8_TYPELESS:
-		return eTF_B8G8R8X8;
 	case DXGI_FORMAT_B8G8R8X8_UNORM:
-		return eTF_B8G8R8X8;
 	case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
 		return eTF_B8G8R8X8;
 
@@ -1525,10 +1538,8 @@ D3DFormat DeviceFormats::ConvertToSRGB(D3DFormat nFormat)
 	case DXGI_FORMAT_R8G8B8A8_UNORM:
 		return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	case DXGI_FORMAT_B8G8R8A8_UNORM:
-		return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
 	case DXGI_FORMAT_B8G8R8X8_UNORM:
-	case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-		return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
 
 	case DXGI_FORMAT_BC1_UNORM:
 		return DXGI_FORMAT_BC1_UNORM_SRGB;

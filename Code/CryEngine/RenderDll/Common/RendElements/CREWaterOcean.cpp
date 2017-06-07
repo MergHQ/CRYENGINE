@@ -387,9 +387,7 @@ void CREWaterOcean::FrameUpdate()
 	// Update Vertex Texture
 	if (!CTexture::IsTextureExist(CTexture::s_ptexWaterOcean))
 	{
-		CTexture::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1,
-		                                            FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
-		                                            0, eTF_R32G32B32A32F, eTF_R32G32B32A32F);
+		CTexture::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD, 0, eTF_R32G32B32A32F);
 	}
 
 	CTexture* pTexture = CTexture::s_ptexWaterOcean;

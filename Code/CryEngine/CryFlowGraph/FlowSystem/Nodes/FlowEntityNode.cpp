@@ -1891,16 +1891,16 @@ public:
 		string nextToken = key.Tokenize(".", pos);
 		while (nextToken.empty() == false)
 		{
-			if (value.type != ANY_TTABLE)
+			if (value.GetType() != EScriptAnyType::Table)
 				return 0;
 			ScriptAnyValue temp;
-			value.table->GetValueAny(token, temp);
+			value.GetScriptTable()->GetValueAny(token, temp);
 			value = temp;
 			token = nextToken;
 			nextToken = token.Tokenize(".", pos);
 		}
 		outKey = token;
-		return value.table;
+		return value.GetScriptTable();
 	}
 
 	SmartScriptTable ResolveScriptTable(IScriptTable* pTable, const char* sKey, bool bPerArchetype, string& outKey)
@@ -2108,9 +2108,10 @@ public:
 		{
 			if (smartScriptTable->GetValueAny(propertyName.c_str(), outAnyValue))
 			{
-				if (outAnyValue.CopyFromTableToXYZ(outAnyValue.vec3.x, outAnyValue.vec3.y, outAnyValue.vec3.z))
+				Vec3 temp;
+				if (outAnyValue.CopyFromTableToXYZ(temp.x, temp.y, temp.z))
 				{
-					outAnyValue.type = ANY_TVECTOR;
+					outAnyValue.SetVector(temp);
 					return true;
 				}
 			}
@@ -2309,15 +2310,15 @@ public:
 		int pos = 0;
 		string key = pKey;
 		string nextToken = key.Tokenize(".", pos);
-		while (!nextToken.empty() && value.type == ANY_TTABLE)
+		while (!nextToken.empty() && value.GetType() == EScriptAnyType::Table)
 		{
 			ScriptAnyValue temp;
-			value.table->GetValueAny(nextToken, temp);
+			value.GetScriptTable()->GetValueAny(nextToken, temp);
 			value = temp;
 			nextToken = key.Tokenize(".", pos);
 		}
 
-		return nextToken.empty() && (value.type == ANY_TNUMBER || value.type == ANY_TBOOLEAN || value.type == ANY_TSTRING);
+		return nextToken.empty() && (value.GetType() == EScriptAnyType::Number || value.GetType() == EScriptAnyType::Boolean || value.GetType() == EScriptAnyType::String);
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const

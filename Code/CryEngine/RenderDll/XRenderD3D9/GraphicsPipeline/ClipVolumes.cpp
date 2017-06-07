@@ -616,7 +616,7 @@ void CClipVolumesStage::PrepareVolumetricFog()
 				for (uint32 i = 0; i < depth; ++i)
 				{
 					CTexture* pTex = new CTexture(dsFlags);
-					if (!(pTex->Create2DTexture(w, h, 1, dsFlags, nullptr, depthFormat, depthFormat)))
+					if (!(pTex->Create2DTexture(w, h, 1, dsFlags, nullptr, depthFormat)))
 					{
 						CryFatalError("Couldn't allocate texture.");
 					}

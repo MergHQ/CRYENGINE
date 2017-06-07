@@ -1850,19 +1850,14 @@ private:
 
 			for (int frame = 0; frame < frameCount; ++frame)
 			{
-				Matrix34 nodeTransform(IDENTITY);
-				Matrix34 parentTransform(IDENTITY);
+				const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(node.sourceSceneNode, startFrame + frame);
+				Matrix34 nodeTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
 
+				Matrix34 parentTransform(IDENTITY);
 				if (node.parentNode != -1)
 				{
-					const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(node.sourceSceneNode, startFrame + frame);
-					nodeTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
-
-					if (m_nodes[node.parentNode].parentNode != -1)
-					{
-						const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(m_nodes[node.parentNode].sourceSceneNode, startFrame + frame);
-						parentTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
-					}
+					const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(m_nodes[node.parentNode].sourceSceneNode, startFrame + frame);
+					parentTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
 				}
 
 				nodeTransform = parentTransform.GetInverted() * nodeTransform;

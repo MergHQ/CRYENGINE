@@ -159,7 +159,7 @@ public:
 
 	virtual void TrimLeft(const char* szChars) override
 	{
-		if(m_pString)
+		if (m_pString)
 		{
 			if (!m_pString.unique())
 			{
@@ -221,12 +221,22 @@ public:
 
 	inline bool operator==(const CSharedString& rhs) const
 	{
-		return (m_pString == rhs.m_pString) || (*m_pString == *rhs.m_pString);
+		if (m_pString && rhs.m_pString)
+		{
+			return (m_pString == rhs.m_pString) || (*m_pString == *rhs.m_pString);
+		}
+
+		return m_pString == nullptr && rhs.m_pString == nullptr;
 	}
 
 	inline bool operator!=(const CSharedString& rhs) const
 	{
-		return (m_pString != rhs.m_pString) && (*m_pString != *rhs.m_pString);
+		if (m_pString && rhs.m_pString)
+		{
+			return (m_pString != rhs.m_pString) && (*m_pString != *rhs.m_pString);
+		}
+
+		return m_pString || rhs.m_pString;
 	}
 
 	static inline void ReflectType(CTypeDesc<CSharedString>& desc)
@@ -235,8 +245,8 @@ public:
 		desc.SetLabel("String");
 		desc.SetDescription("String");
 		desc.SetFlags(ETypeFlags::Switchable);
-		desc.SetToStringOperator<&CSharedString::ToString>();
-		desc.SetStringGetCharsOperator<&CSharedString::c_str>();
+		desc.SetToStringOperator<& CSharedString::ToString>();
+		desc.SetStringGetCharsOperator<& CSharedString::c_str>();
 	}
 
 private:

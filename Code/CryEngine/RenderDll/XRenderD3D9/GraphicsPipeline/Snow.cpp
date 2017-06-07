@@ -74,7 +74,7 @@ void CSnowStage::Prepare(CRenderView* pRenderView)
 
 	if (bSnowDisplacement && !CTexture::IsTextureExist(m_pSnowDisplacementTex))
 	{
-		m_pSnowDisplacementTex->Create2DTexture(screenWidth, screenHeight, 1, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R8G8B8A8, eTF_R8G8B8A8);
+		m_pSnowDisplacementTex->Create2DTexture(screenWidth, screenHeight, 1, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R8G8B8A8);
 	}
 }
 

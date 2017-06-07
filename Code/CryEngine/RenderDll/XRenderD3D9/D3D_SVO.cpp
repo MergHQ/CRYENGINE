@@ -18,8 +18,6 @@
 	#include "D3DTiledShading.h"
 	#include "Common/RenderView.h"
 
-//#pragma optimize("",off)
-
 _smart_ptr<CTexture> CSvoRenderer::m_pRsmColorMap;
 _smart_ptr<CTexture> CSvoRenderer::m_pRsmNormlMap;
 _smart_ptr<CTexture> CSvoRenderer::m_pRsmPoolCol;

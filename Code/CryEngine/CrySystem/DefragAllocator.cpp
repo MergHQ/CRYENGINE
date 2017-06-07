@@ -4,7 +4,7 @@
 #include "DefragAllocator.h"
 
 #ifdef CDBA_MORE_DEBUG
-#pragma optimize("",off)
+	#pragma optimize("",off)
 #endif
 
 CDefragAllocatorWalker::CDefragAllocatorWalker(CDefragAllocator& alloc)

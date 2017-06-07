@@ -267,7 +267,7 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 					if (m_pNewTarget[i]->m_pTex)
 					{
 						Logv(" '%s'", m_pNewTarget[i]->m_pTex->GetName());
-						Logv(" Format:%s", CTexture::NameForTextureFormat(m_pNewTarget[i]->m_pTex->m_eTFDst));
+						Logv(" Format:%s", CTexture::NameForTextureFormat(m_pNewTarget[i]->m_pTex->m_eDstFormat));
 						Logv(" Type:%s", CTexture::NameForTextureType(m_pNewTarget[i]->m_pTex->m_eTT));
 						Logv(" W/H:%d:%d\n", m_pNewTarget[i]->m_pTex->GetWidth(), m_pNewTarget[i]->m_pTex->GetHeight());
 
@@ -387,9 +387,7 @@ void CD3D9Renderer::FX_ClearTarget(D3DSurface* pView, const ColorF& cClear, cons
 #if !defined(EXCLUDE_RARELY_USED_R_STATS) && defined(ENABLE_PROFILING_CODE)
 	{
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-#ifndef CRY_PLATFORM_DURANGO
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(pView, numRects, pRects);
-#endif
 	}
 #endif
 
@@ -489,9 +487,7 @@ void CD3D9Renderer::FX_ClearTarget(D3DDepthSurface* pView, const int nFlags, con
 	if (nFlags)
 	{
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-#ifndef CRY_PLATFORM_DURANGO   // TODO: XBOX One hack - remove when fixed
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(pView, numRects, pRects);
-#endif
 	}
 #endif
 
@@ -663,9 +659,7 @@ void CD3D9Renderer::FX_ClearTargets()
 				assert(m_pNewTarget[1]->m_pTarget == nullptr);
 
 				m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-#ifndef CRY_PLATFORM_DURANGO
 				m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(GetCurrentTargetOutput()->GetDevTexture()->LookupRTV(EDefaultResourceViews::RenderTarget));
-#endif
 			}
 			else
 			{
@@ -676,9 +670,7 @@ void CD3D9Renderer::FX_ClearTargets()
 						if (m_pNewTarget[i]->m_pTarget)
 						{
 							m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-#ifndef CRY_PLATFORM_DURANGO
 							m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(m_pNewTarget[i]->m_pTarget);
-#endif
 						}
 					}
 				}
@@ -687,9 +679,7 @@ void CD3D9Renderer::FX_ClearTargets()
 			if (m_pNewTarget[0]->m_ClearFlags & (~CLEAR_RTARGET))
 			{
 				m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-#ifndef CRY_PLATFORM_DURANGO
 				m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(m_pNewTarget[0]->m_pSurfDepth->pSurface);
-#endif
 			}
 		}
 #endif
@@ -1874,7 +1864,7 @@ SDepthTexture* CD3D9Renderer::FX_CreateDepthSurface(int nWidth, int nHeight, boo
 	{
 		nullptr,
 		nWidth, nHeight, 1, 1, 1,
-		m_preferredDepthFormat, m_preferredDepthFormat, eTM_None, eTT_2D,
+		m_preferredDepthFormat, m_preferredDepthFormat, eTT_2D,
 
 		/* TODO: change FT_... to CDeviceObjectFactory::... */
 		FT_USAGE_DEPTHSTENCIL /* CDeviceObjectFactory::BIND_DEPTH_STENCIL | CDeviceObjectFactory::HEAP_DEFAULT */, false,
@@ -1884,7 +1874,7 @@ SDepthTexture* CD3D9Renderer::FX_CreateDepthSurface(int nWidth, int nHeight, boo
 #endif
 	};
 
-	Layout.m_eTFDst = CTexture::GetClosestFormatSupported(Layout.m_eTFDst, Layout.m_pPixelFormat);
+	Layout.m_eDstFormat = CTexture::GetClosestFormatSupported(Layout.m_eDstFormat, Layout.m_pPixelFormat);
 	pZTexture = CDeviceTexture::Create(Layout, nullptr);
 	if (!pZTexture)
 		return nullptr;

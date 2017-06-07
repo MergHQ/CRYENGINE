@@ -294,9 +294,7 @@ void CWaterStage::Prepare(CRenderView* pRenderView)
 	// then they will not make it into the first draw of the shader, and are 0 instead
 	if (!isEmpty && !CTexture::IsTextureExist(CTexture::s_ptexWaterOcean))
 	{
-		CTexture::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1,
-		                                            FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
-		                                            0, eTF_R32G32B32A32F, eTF_R32G32B32A32F);
+		CTexture::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD, nullptr, eTF_R32G32B32A32F);
 	}
 
 	{
@@ -322,7 +320,7 @@ void CWaterStage::Prepare(CRenderView* pRenderView)
 		    && m_pOceanMaskTex
 		    && (!CTexture::IsTextureExist(m_pOceanMaskTex) || m_pOceanMaskTex->Invalidate(screenWidth, screenHeight, format)))
 		{
-			m_pOceanMaskTex->Create2DTexture(screenWidth, screenHeight, 1, flags, nullptr, format, format);
+			m_pOceanMaskTex->Create2DTexture(screenWidth, screenHeight, 1, flags, nullptr, format);
 		}
 	}
 
@@ -1219,9 +1217,7 @@ void CWaterStage::ExecuteWaterNormalGen()
 	CTexture* pTexture = CTexture::s_ptexWaterVolumeTemp[frameID];
 	if (!CTexture::IsTextureExist(pTexture))
 	{
-		if (!pTexture->Create2DTexture(nGridSize, nGridSize, 1,
-		                               FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
-		                               0, eTF_R32G32B32A32F, eTF_R32G32B32A32F))
+		if (!pTexture->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD, nullptr, eTF_R32G32B32A32F))
 		{
 			return;
 		}

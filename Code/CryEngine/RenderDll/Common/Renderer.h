@@ -1061,9 +1061,9 @@ public:
 
 	//////////////////////////////////////////////////////////////////////
 	// Replacement functions for the Font engine ( vlad: for font can be used old functions )
-	virtual bool FontUploadTexture(class CFBitmap*, ETEX_Format eTF = eTF_R8G8B8A8) override = 0;
-	virtual int  FontCreateTexture(int Width, int Height, byte* pData, ETEX_Format eTF = eTF_R8G8B8A8, bool genMips = false) override = 0;
-	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, byte* pData) override = 0;
+	virtual bool FontUploadTexture(class CFBitmap*, ETEX_Format eSrcFormat = eTF_R8G8B8A8) override = 0;
+	virtual int  FontCreateTexture(int Width, int Height, byte* pSrcData, ETEX_Format eSrcFormat = eTF_R8G8B8A8, bool genMips = false) override = 0;
+	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, byte* pSrcData) override = 0;
 	virtual void FontReleaseTexture(class CFBitmap* pBmp) override = 0;
 	virtual void FontSetTexture(class CFBitmap*, int nFilterMode) override = 0;
 	virtual void FontSetTexture(int nTexId, int nFilterMode) override = 0;
@@ -1081,7 +1081,7 @@ public:
 
 #if RENDERER_SUPPORT_SCALEFORM
 	void SF_ConfigMask(int st, uint32 ref);
-	virtual int SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) override;
+	virtual int SF_CreateTexture(int width, int height, int numMips, const unsigned char* pSrcData, ETEX_Format eSrcFormat, int flags) override;
 	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const override;
 
 	virtual IScaleformPlayback* SF_CreatePlayback() const override;
@@ -1089,15 +1089,15 @@ public:
 	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override;
 #else // #if RENDERER_SUPPORT_SCALEFORM
 	// These dummy functions are required when the feature is disabled, do not remove without testing the RENDERER_SUPPORT_SCALEFORM=0 case!
-	virtual int SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) override { return 0; }
+	virtual int SF_CreateTexture(int width, int height, int numMips, const unsigned char* pSrcData, ETEX_Format eSrcFormat, int flags) override { return 0; }
 	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const override { numVertices = 0; numIndices = 0; }
 	virtual IScaleformPlayback* SF_CreatePlayback() const override;
 	virtual void SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const override {}
 	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override {}
 #endif // #if RENDERER_SUPPORT_SCALEFORM
 
-	virtual ITexture* CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override;
-	virtual ITexture* CreateTextureArray(const char* name, ETEX_Type eType, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, uint32 nFlags, ETEX_Format eTF, int nCustomID) override;
+	virtual ITexture* CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pSrcData, ETEX_Format eSrcFormat, int flags) override;
+	virtual ITexture* CreateTextureArray(const char* name, ETEX_Type eType, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, uint32 nFlags, ETEX_Format eSrcFormat, int nCustomID) override;
 
 	enum ESPM {ESPM_PUSH = 0, ESPM_POP = 1};
 	virtual void   SetProfileMarker(const char* label, ESPM mode) const                              {};

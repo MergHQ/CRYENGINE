@@ -27,6 +27,69 @@
 
 //===============================================================================
 
+static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ETEX_TileMode eSrcTileMode, const void* pData[], STexturePayload& pPayload)
+{
+	assert(!pPayload.m_pSysMemSubresourceData);
+	if (!pData || !pData[0])
+	{
+		pPayload.m_pSysMemSubresourceData = nullptr;
+		pPayload.m_eSysMemTileMode = eTM_Unspecified;
+
+		return false;
+	}
+
+	const int nSlices = pLayout.m_nArraySize;
+	const int nMips = pLayout.m_nMips;
+
+	SSubresourcePayload* InitData = new SSubresourcePayload[nMips * nSlices];
+
+	// Contrary to hardware here the sub-resources are sorted by mips, then by slices.
+	// In hardware it's sorted by slices, then by mips (so same mips are consecutive).
+	const byte* pAutoData;
+	const void** pDataCursor = pData;
+
+	for (int nSlice = 0, nSubresource = 0; (nSlice < nSlices); ++nSlice)
+	{
+		int w = pLayout.m_nWidth;
+		int h = pLayout.m_nHeight;
+		int d = pLayout.m_nDepth;
+
+		for (int nMip = 0; (nMip < nMips) && (w | h | d); ++nMip, ++nSubresource)
+		{
+			if (!w) w = 1;
+			if (!h) h = 1;
+			if (!d) d = 1;
+
+			if (*pDataCursor)
+				pAutoData = reinterpret_cast<const byte*>(*pDataCursor++);
+			else
+				pAutoData = pAutoData + InitData[nSubresource - 1].m_sSysMemAlignment.volumeStride;
+
+			InitData[nSubresource].m_pSysMem = pAutoData;
+			InitData[nSubresource].m_sSysMemAlignment.typeStride   = CTexture::TextureDataSize(1, 1, 1, 1, 1, pLayout.m_eSrcFormat, eSrcTileMode);
+			InitData[nSubresource].m_sSysMemAlignment.rowStride    = CTexture::TextureDataSize(w, 1, 1, 1, 1, pLayout.m_eSrcFormat, eSrcTileMode);
+			InitData[nSubresource].m_sSysMemAlignment.planeStride  = CTexture::TextureDataSize(w, h, 1, 1, 1, pLayout.m_eSrcFormat, eSrcTileMode);
+			InitData[nSubresource].m_sSysMemAlignment.volumeStride = CTexture::TextureDataSize(w, h, d, 1, 1, pLayout.m_eSrcFormat, eSrcTileMode);
+
+			w >>= 1;
+			h >>= 1;
+			d >>= 1;
+		}
+
+		// reset to face 0
+		if (pLayout.m_eFlags & FT_REPLICATE_TO_ALL_SIDES)
+			pDataCursor = pData;
+		// each face is nullptr-terminated
+		else if (!*pDataCursor)
+			pDataCursor++;
+	}
+
+	pPayload.m_pSysMemSubresourceData = InitData;
+	pPayload.m_eSysMemTileMode = eSrcTileMode;
+
+	return true;
+}
+
 #if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
 byte* CTexture::Convert(byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nOutMips, int& nOutSize, bool bLinear)
 {
@@ -137,10 +200,10 @@ D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel)
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "Create Render Target: %s", GetSourceName());
 
 	const int nMipLevel = (m_eFlags & FT_FORCE_MIPS) ? min((int)(m_nMips - 1), nLevel) : 0;
-	const int nSlice = (m_eTT == eTT_Cube ? nCMSide : 0);
-	const int nSliceCount = (m_eTT == eTT_Cube ? 1 : -1);
+	const int nSlice = (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray ? nCMSide : 0);
+	const int nSliceCount = (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray ? 1 : -1);
 
-	return (D3DSurface*)GetResourceView(SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_eTFDst), nSlice, nSliceCount, nMipLevel, IsMSAA()));
+	return (D3DSurface*)GetResourceView(SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_eDstFormat), nSlice, nSliceCount, nMipLevel, IsMSAA()));
 }
 
 D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel) const
@@ -159,10 +222,10 @@ D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel) const
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "Create Render Target: %s", GetSourceName());
 
 	const int nMipLevel = (m_eFlags & FT_FORCE_MIPS) ? min((int)(m_nMips - 1), nLevel) : 0;
-	const int nSlice = (m_eTT == eTT_Cube ? nCMSide : 0);
-	const int nSliceCount = (m_eTT == eTT_Cube ? 1 : -1);
+	const int nSlice = (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray ? nCMSide : 0);
+	const int nSliceCount = (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray ? 1 : -1);
 
-	return (D3DSurface*)GetResourceView(SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_eTFDst), nSlice, nSliceCount, nMipLevel, IsMSAA()));
+	return (D3DSurface*)GetResourceView(SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_eDstFormat), nSlice, nSliceCount, nMipLevel, IsMSAA()));
 }
 
 //===============================================================================
@@ -192,8 +255,9 @@ bool CTexture::Resolve(int nTarget, bool bUseViewportSize)
 
 bool CTexture::CreateDeviceTexture(const void* pData[])
 {
-	assert(m_pPixelFormat);
-	assert(m_eTFDst != eTF_Unknown);
+	CRY_ASSERT(m_pPixelFormat);
+	CRY_ASSERT(m_eDstFormat != eTF_Unknown);
+	CRY_ASSERT(!pData || !*pData || m_eSrcTileMode != eTM_Unspecified);
 
 	if (gRenDev->m_pRT->RC_CreateDeviceTexture(this, pData))
 	{
@@ -214,8 +278,8 @@ bool CTexture::CreateDeviceTexture(const void* pData[])
 
 bool CTexture::CreateDeviceTexture(D3DResource* pTex)
 {
-	assert(m_pPixelFormat);
-	assert(m_eTFDst != eTF_Unknown);
+	CRY_ASSERT(m_pPixelFormat);
+	CRY_ASSERT(m_eDstFormat != eTF_Unknown);
 
 	if (gRenDev->m_pRT->RC_CreateDeviceTexture(this, pTex))
 	{
@@ -257,7 +321,13 @@ bool CTexture::RT_CreateDeviceTexture(const void* pData[])
 		ReleaseDeviceTexture(false);
 	}
 
-	if (!(m_pDevTexture = CDeviceTexture::Create(GetLayout(), pData)))
+	// The payload can only be passed untiled currently
+	STextureLayout TL = GetLayout();
+	STexturePayload TI;
+
+	CRY_ASSERT(!pData || !*pData || m_eSrcTileMode != eTM_Unspecified);
+	bool bHasPayload = DecompressSubresourcePayload(TL, m_eSrcTileMode, pData, TI);
+	if (!(m_pDevTexture = CDeviceTexture::Create(TL, bHasPayload ? &TI : nullptr)))
 		return false;
 
 	SetTexStates();
@@ -265,13 +335,13 @@ bool CTexture::RT_CreateDeviceTexture(const void* pData[])
 	assert(!IsStreamed());
 
 	{
-		m_nActualSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
+		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
 
 		volatile size_t* pTexMem = &CTexture::s_nStatsCurManagedNonStreamedTexMem;
 		if (IsDynamic())
 			pTexMem = &CTexture::s_nStatsCurDynamicTexMem;
 		
-		CryInterlockedAdd(pTexMem, m_nActualSize);
+		CryInterlockedAdd(pTexMem, m_nDevTextureSize);
 	}
 
 	// Notify that resource is dirty
@@ -316,13 +386,13 @@ bool CTexture::RT_CreateDeviceTexture(D3DResource* pNatTex)
 		m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
 #endif
 
-		m_nActualSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
+		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
 
 		volatile size_t* pTexMem = &CTexture::s_nStatsCurManagedNonStreamedTexMem;
 		if (IsDynamic())
 			pTexMem = &CTexture::s_nStatsCurDynamicTexMem;
 
-		CryInterlockedAdd(pTexMem, m_nActualSize);
+		CryInterlockedAdd(pTexMem, m_nDevTextureSize);
 	}
 
 	// Notify that resource is dirty
@@ -382,8 +452,8 @@ void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload)
 				if (IsDynamic())
 					pTexMem = &CTexture::s_nStatsCurDynamicTexMem;
 
-				assert(*pTexMem >= m_nActualSize);
-				CryInterlockedAdd(pTexMem, -m_nActualSize);
+				assert(*pTexMem >= m_nDevTextureSize);
+				CryInterlockedAdd(pTexMem, -m_nDevTextureSize);
 			}
 		}
 
@@ -415,7 +485,7 @@ void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload)
 			}
 		}
 
-		m_nActualSize = 0;
+		m_nDevTextureSize = 0;
 		m_nPersistentSize = 0;
 	}
 
@@ -430,10 +500,10 @@ ETEX_Format CTexture::GetClosestFormatSupported(ETEX_Format eTFDst, const SPixFo
 
 ETEX_Format CTexture::SetClosestFormatSupported()
 {
-	if (m_eTFSrc != eTF_Unknown)
-		return m_eTFDst = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(m_eTFSrc, m_pPixelFormat);
+	if (m_eSrcFormat != eTF_Unknown)
+		return m_eDstFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(m_eSrcFormat, m_pPixelFormat);
 	else
-		return m_eTFDst = eTF_Unknown;
+		return m_eDstFormat = eTF_Unknown;
 }
 
 void CTexture::SetTexStates()
@@ -814,7 +884,7 @@ void CTexture::ApplyTexture(int nTUnit, EHWShaderClass eHWSC /*= eHWSC_Pixel*/, 
 				if (bIsUnloaded)
 					StreamLoadFromCache(0);
 				else
-					Load(m_eTFDst);
+					Load(m_eDstFormat);
 			}
 		}
 	}
@@ -847,19 +917,19 @@ void CTexture::ApplyTexture(int nTUnit, EHWShaderClass eHWSC /*= eHWSC_Pixel*/, 
 		rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_NumTextures++;
 		if (m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DYNAMIC))
 		{
-			rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_DynTexturesSize += m_nActualSize;
+			rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_DynTexturesSize += m_nDevTextureSize;
 		}
 		else
 		{
 			if (bStreamed)
 			{
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamVidSize += m_nActualSize;
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize += StreamComputeDevDataSize(0);
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamVidSize += m_nDevTextureSize;
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize += StreamComputeSysDataSize(0);
 			}
 			else
 			{
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize += m_nActualSize;
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesVidMemSize += m_nActualSize;
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesVidMemSize += m_nDevTextureSize;
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize += m_nDevTextureSize;
 			}
 		}
 #endif
@@ -1008,7 +1078,7 @@ void CTexture::Apply(int nTUnit, SamplerStateHandle nState /*= EDefaultSamplerSt
 				if (bIsUnloaded)
 					StreamLoadFromCache(0);
 				else
-					Load(m_eTFDst);
+					Load(m_eDstFormat);
 			}
 		}
 
@@ -1044,19 +1114,19 @@ void CTexture::Apply(int nTUnit, SamplerStateHandle nState /*= EDefaultSamplerSt
 		rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_NumTextures++;
 		if (m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DYNAMIC))
 		{
-			rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_DynTexturesSize += m_nActualSize;
+			rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_DynTexturesSize += m_nDevTextureSize;
 		}
 		else
 		{
 			if (bStreamed)
 			{
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamVidSize += m_nActualSize;
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize += StreamComputeDevDataSize(0);
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamVidSize += m_nDevTextureSize;
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize += StreamComputeSysDataSize(0);
 			}
 			else
 			{
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize += m_nActualSize;
-				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesVidMemSize += m_nActualSize;
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize += m_nDevTextureSize;
+				rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_ManagedTexturesVidMemSize += m_nDevTextureSize;
 			}
 		}
 #endif
@@ -1199,17 +1269,16 @@ void CTexture::Apply(int nTUnit, SamplerStateHandle nState /*= EDefaultSamplerSt
 	}
 }
 
-void CTexture::UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eTFSrc)
+void CTexture::UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
-	gRenDev->m_pRT->RC_UpdateTextureRegion(this, data, nX, nY, nZ, USize, VSize, ZSize, eTFSrc);
+	gRenDev->m_pRT->RC_UpdateTextureRegion(this, pSrcData, nX, nY, nZ, USize, VSize, ZSize, eSrcFormat);
 }
 
-//void CTexture::RT_UpdateTextureRegion(byte *data, int nX, int nY, int USize, int VSize, ETEX_Format eTFSrc)
-void CTexture::RT_UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eTFSrc)
+void CTexture::RT_UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
 	PROFILE_FRAME(UpdateTextureRegion);
 
-	if (m_eTT != eTT_2D && m_eTT != eTT_3D)
+	if (m_eTT != eTT_1D && m_eTT != eTT_2D && m_eTT != eTT_3D)
 	{
 		CRY_ASSERT(0);
 		return;
@@ -1223,10 +1292,10 @@ void CTexture::RT_UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int US
 
 	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDevTex);
 
-	if (eTFSrc != m_eTFDst)
+	if (eSrcFormat != m_eDstFormat)
 	{
-		D3DFormat frmtSrc = DeviceFormats::ConvertFromTexFormat(eTFSrc);
-		D3DFormat frmtDst = DeviceFormats::ConvertFromTexFormat(m_eTFDst);
+		D3DFormat frmtSrc = DeviceFormats::ConvertFromTexFormat(eSrcFormat);
+		D3DFormat frmtDst = DeviceFormats::ConvertFromTexFormat(m_eDstFormat);
 		frmtSrc = DeviceFormats::ConvertToTypeless(frmtSrc);
 		frmtDst = DeviceFormats::ConvertToTypeless(frmtDst);
 		if (frmtSrc != frmtDst)
@@ -1236,6 +1305,7 @@ void CTexture::RT_UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int US
 		}
 	}
 
+	CRY_ASSERT(m_eSrcTileMode == eTM_None || m_eSrcTileMode == eTM_Unspecified);
 	CRY_ASSERT(m_nArraySize == 1);
 	for (int i = 0; i < m_nMips; i++)
 	{
@@ -1248,19 +1318,19 @@ void CTexture::RT_UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int US
 
 		const SResourceMemoryMapping mapping =
 		{
-			{                                                    // src alignment == hardware alignment
-				CTexture::TextureDataSize(1    , 1    , 1    , 1, 1, m_eTFDst, eTM_None),
-				CTexture::TextureDataSize(USize, 1    , 1    , 1, 1, m_eTFDst, eTM_None),
-				CTexture::TextureDataSize(USize, VSize, 1    , 1, 1, m_eTFDst, eTM_None),
-				CTexture::TextureDataSize(USize, VSize, ZSize, 1, 1, m_eTFDst, eTM_None),
+			{                                                    // src alignment == plain software alignment
+				CTexture::TextureDataSize(1    , 1    , 1    , 1, 1, m_eDstFormat, eTM_None),
+				CTexture::TextureDataSize(USize, 1    , 1    , 1, 1, m_eDstFormat, eTM_None),
+				CTexture::TextureDataSize(USize, VSize, 1    , 1, 1, m_eDstFormat, eTM_None),
+				CTexture::TextureDataSize(USize, VSize, ZSize, 1, 1, m_eDstFormat, eTM_None),
 			},
 			{ nX, nY, nZ, D3D11CalcSubresource(i, 0, m_nMips) }, // dst position
 			{ USize, VSize, ZSize, 1 }                           // dst size
 		};
 
-		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(data, pDevTex, mapping);
+		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pSrcData, pDevTex, mapping);
 
-		data += mapping.MemoryLayout.volumeStride;
+		pSrcData += mapping.MemoryLayout.volumeStride;
 
 		USize >>= 1;
 		VSize >>= 1;
@@ -1340,7 +1410,7 @@ bool CTexture::RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short
 
 	int nPFlags = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_PersFlags;
 
-	CTexture* ptexGenEnvironmentCM = CTexture::GetOrCreate2DTexture("$GenEnvironmentCM", size, size, 1, FT_DONT_STREAM, 0, eTF_R16G16B16A16F, eTF_R16G16B16A16F);
+	CTexture* ptexGenEnvironmentCM = CTexture::GetOrCreate2DTexture("$GenEnvironmentCM", size, size, 1, FT_DONT_STREAM, nullptr, eTF_R16G16B16A16F);
 	if (!ptexGenEnvironmentCM || !ptexGenEnvironmentCM->GetDevTexture())
 	{
 		iLog->Log("Failed generating a cubemap: out of video memory");
@@ -2276,7 +2346,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int nDstNumMips,
 	{
 	}
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)  && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-	else if (!gcpRendD3D->m_pRT->IsRenderThread())
+	else if (!gcpRendD3D->m_pRT->IsRenderThread(true))
 	{
 		// We can use the move engine!
 

@@ -73,7 +73,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 		uint32_t firstMip = pView.m_Desc.nMostDetailedMip;
 		uint32_t numMips = bAllMips ? pImage->GetMipCount() - firstMip : static_cast<uint32_t>(pView.m_Desc.nMipCount);
 		uint32_t firstSlice = pView.m_Desc.nFirstSlice;
-		uint32_t numSlices = bAllSlices ? pImage->GetSliceCount() - firstSlice : static_cast<uint32_t>(pView.m_Desc.nSliceCount) * (m_eTT == eTT_Cube ? 6U : 1U);
+		uint32_t numSlices = bAllSlices ? pImage->GetSliceCount() - firstSlice : static_cast<uint32_t>(pView.m_Desc.nSliceCount);
 
 		if (pImage->GetFlag(NCryVulkan::kResourceFlagNull))
 		{
@@ -84,14 +84,16 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 			firstMip = 0U;
 			numMips = 1U;
 			firstSlice = 0U;
-			numSlices = m_eTT == eTT_Cube ? 6U : 1U;
+			numSlices = m_eTT == eTT_Cube || eTT_CubeArray ? 6U : 1U;
 		}
 
 		const VkImageViewType viewType =
-		  m_eTT == eTT_1D ? (numSlices == 1 ? VK_IMAGE_VIEW_TYPE_1D : VK_IMAGE_VIEW_TYPE_1D_ARRAY) :
-		  m_eTT == eTT_2D ? (numSlices == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY) :
-		  m_eTT == eTT_Cube ? (numSlices == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_CUBE_ARRAY) :
-		  VK_IMAGE_VIEW_TYPE_3D;
+			m_eTT == eTT_1D        ? (numSlices == 1 ? VK_IMAGE_VIEW_TYPE_1D   : VK_IMAGE_VIEW_TYPE_1D_ARRAY  ) :
+			m_eTT == eTT_2D        ? (numSlices == 1 ? VK_IMAGE_VIEW_TYPE_2D   : VK_IMAGE_VIEW_TYPE_2D_ARRAY  ) :
+			m_eTT == eTT_2DArray   ? (numSlices == 1 ? VK_IMAGE_VIEW_TYPE_2D   : VK_IMAGE_VIEW_TYPE_2D_ARRAY  ) :
+			m_eTT == eTT_Cube      ? (numSlices <= 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_CUBE_ARRAY) :
+			m_eTT == eTT_CubeArray ? (numSlices <= 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_CUBE_ARRAY) :
+			                                           VK_IMAGE_VIEW_TYPE_3D;
 
 		NCryVulkan::EImageSwizzle swizzle = NCryVulkan::kImageSwizzleRGBA;
 		switch (dxgiFormat)
@@ -286,8 +288,7 @@ SResourceDimension CDeviceBuffer::GetDimension() const
 STextureLayout CDeviceTexture::GetLayout() const
 {
 	STextureLayout result;
-	result.m_eTFDst = result.m_eTFSrc = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(DeviceFormats::ConvertToTexFormat(m_eNativeFormat), result.m_pPixelFormat);
-	result.m_eSrcTileMode = eTM_None;
+	result.m_eDstFormat = result.m_eSrcFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(DeviceFormats::ConvertToTexFormat(m_eNativeFormat), result.m_pPixelFormat);
 	result.m_eTT = m_eTT;
 	result.m_eFlags = m_eFlags;
 	result.m_bIsSRGB = m_bIsSrgb;
@@ -295,21 +296,17 @@ STextureLayout CDeviceTexture::GetLayout() const
 	NCryVulkan::CImageResource* const pImage = m_pNativeResource ? m_pNativeResource->AsImage() : nullptr;
 	if (pImage)
 	{
-		result.m_eSrcTileMode = eTM_None;// pImage->GetFlag(NCryVulkan::kImageFlagLinear) ? eTM_None : eTM_Optimal;
 		result.m_nWidth = static_cast<uint16>(pImage->GetWidth());
 		result.m_nHeight = static_cast<uint16>(pImage->GetHeight());
 		result.m_nDepth = static_cast<uint16>(pImage->GetDepth());
 		result.m_nArraySize = static_cast<uint8>(pImage->GetSliceCount());
 		result.m_nMips = static_cast<int8>(pImage->GetMipCount());
-		result.m_eTT = pImage->GetFlag(NCryVulkan::kImageFlag1D) ? eTT_1D :
-		               pImage->GetFlag(NCryVulkan::kImageFlag2D) ? eTT_2D :
-		               eTT_3D;
 		result.m_eFlags |= MapResourceFlags(pImage);
 	}
 	return result;
 }
 
-STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
+STextureLayout CDeviceTexture::GetLayout(D3DBaseView* pView)
 {
 	STextureLayout Layout = {};
 	NCryVulkan::CImageResource* const pImage = pView->GetResource()->AsImage();
@@ -326,15 +323,22 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 
 		DXGI_FORMAT format = NCryVulkan::ConvertFormat(pImage->GetFormat());
 		ETEX_Format eTF = DeviceFormats::ConvertToTexFormat(format);
-		ETEX_Type eTT = pImage->GetFlag(NCryVulkan::kImageFlag1D) ? eTT_1D : pImage->GetFlag(NCryVulkan::kImageFlag2D) ? eTT_2D : eTT_3D;
+		ETEX_Type eTT = eTT_MaxTexType;
 
-		nWidth = std::max(nWidth >> nFirstMip, 1U);
+		if (pImage->GetFlag(NCryVulkan::kImageFlagCube))
+			eTT = (nSlices <= 6 ? eTT_Cube : eTT_CubeArray);
+		else if (pImage->GetFlag(NCryVulkan::kImageFlag2D))
+			eTT = (nSlices <= 1 ? eTT_2D : eTT_2DArray);
+		else if (pImage->GetFlag(NCryVulkan::kImageFlag3D))
+			eTT = eTT_3D;
+		assert(eTT != eTT_MaxTexType);
+
+		nWidth  = std::max(nWidth  >> nFirstMip, 1U);
 		nHeight = std::max(nHeight >> nFirstMip, 1U);
-		nDepth = std::max(nDepth >> nFirstMip, 1U);
+		nDepth  = std::max(nDepth  >> nFirstMip, 1U);
 
 		STextureLayout Layout = {};
-		Layout.m_eTFDst = Layout.m_eTFSrc = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(eTF, Layout.m_pPixelFormat);
-		Layout.m_eSrcTileMode = eTM_None;// pImage->GetFlag(NCryVulkan::kImageFlagLinear) ? eTM_None : eTM_Optimal;
+		Layout.m_eDstFormat = Layout.m_eSrcFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(eTF, Layout.m_pPixelFormat);
 		Layout.m_eTT = eTT;
 		Layout.m_eFlags = nFlags;
 		Layout.m_nWidth = nWidth;
@@ -351,14 +355,14 @@ SResourceMemoryAlignment CDeviceTexture::GetAlignment(uint8 mip /*= 0*/, uint8 s
 	SResourceMemoryAlignment Alignment = { 0 };
 	STextureLayout Layout = GetLayout();
 
-	if (!(Layout.m_nWidth = Layout.m_nWidth >> mip)) Layout.m_nWidth = 1;
+	if (!(Layout.m_nWidth  = Layout.m_nWidth  >> mip)) Layout.m_nWidth  = 1;
 	if (!(Layout.m_nHeight = Layout.m_nHeight >> mip)) Layout.m_nHeight = 1;
-	if (!(Layout.m_nDepth = Layout.m_nDepth >> mip)) Layout.m_nDepth = 1;
+	if (!(Layout.m_nDepth  = Layout.m_nDepth  >> mip)) Layout.m_nDepth  = 1;
 
-	Alignment.typeStride = CTexture::TextureDataSize(1, 1, 1, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
-	Alignment.rowStride = CTexture::TextureDataSize(Layout.m_nWidth, 1, 1, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
-	Alignment.planeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, 1, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
-	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
+	Alignment.typeStride   = CTexture::TextureDataSize(              1,                1,               1, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.rowStride    = CTexture::TextureDataSize(Layout.m_nWidth,                1,               1, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.planeStride  = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight,               1, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
 
 	return Alignment;
 }
@@ -368,13 +372,13 @@ SResourceDimension CDeviceTexture::GetDimension(uint8 mip /*= 0*/, uint8 slices 
 	SResourceDimension Dimension = { 0 };
 	STextureLayout Layout = GetLayout();
 
-	if (!(Layout.m_nWidth = Layout.m_nWidth >> mip)) Layout.m_nWidth = 1;
+	if (!(Layout.m_nWidth  = Layout.m_nWidth  >> mip)) Layout.m_nWidth  = 1;
 	if (!(Layout.m_nHeight = Layout.m_nHeight >> mip)) Layout.m_nHeight = 1;
-	if (!(Layout.m_nDepth = Layout.m_nDepth >> mip)) Layout.m_nDepth = 1;
+	if (!(Layout.m_nDepth  = Layout.m_nDepth  >> mip)) Layout.m_nDepth  = 1;
 
-	Dimension.Width = Layout.m_nWidth;
+	Dimension.Width  = Layout.m_nWidth;
 	Dimension.Height = Layout.m_nHeight;
-	Dimension.Depth = Layout.m_nDepth;
+	Dimension.Depth  = Layout.m_nDepth;
 	Dimension.Subresources = (slices ? slices : Layout.m_nArraySize) * (Layout.m_nMips - mip);
 
 	return Dimension;

@@ -142,14 +142,47 @@ struct SRmi<CryRmi::RmiCallback<User, Param>, fn>
 			INetEntity::SRmiHandler{ Decoder, reliability, attach });
 	}
 
+protected:
 	static void Invoke(User *this_user, Param &&p, int where, int channel = -1, const EntityId dependentId = 0)
 	{
 		INetEntity::SRmiHandler *handler = nullptr;
 		INetEntity::SRmiIndex idx = this_user->GetEntity()->GetNetEntity()->RmiByDecoder(
 			Decoder, &handler);
 		gEnv->pGameFramework->DoInvokeRMI(CryRmi::CeRMIBody<Param>::Create(
-				*handler, idx, this_user->GetEntityId(), p, 0, 0, dependentId),
-			where, channel, false);
+			*handler, idx, this_user->GetEntityId(), p, 0, 0, dependentId),
+		where, channel, false);
+	}
+
+public:
+	static inline void InvokeOnRemoteClients(User *this_user, Param&& p, const EntityId dependentId = 0)
+	{
+		CRY_ASSERT(gEnv->bServer);
+
+		Invoke(this_user, std::forward<Param>(p), eRMI_ToRemoteClients, -1, dependentId);
+	}
+
+	static inline void InvokeOnClient(User *this_user, Param&& p, int targetClientChannelId, const EntityId dependentId = 0)
+	{
+		CRY_ASSERT(gEnv->bServer);
+
+		Invoke(this_user, std::forward<Param>(p), eRMI_ToClientChannel, targetClientChannelId, dependentId);
+	}
+
+	static inline void InvokeOnOtherClients(User *this_user, Param&& p, const EntityId dependentId = 0)
+	{
+		Invoke(this_user, std::forward<Param>(p), eRMI_ToOtherClients, -1, dependentId);
+	}
+
+	static inline void InvokeOnAllClients(User *this_user, Param&& p, const EntityId dependentId = 0)
+	{
+		CRY_ASSERT(gEnv->bServer);
+
+		Invoke(this_user, std::forward<Param>(p), eRMI_ToAllClients, -1, dependentId);
+	}
+
+	static inline void InvokeOnServer(User *this_user, Param&& p, const EntityId dependentId = 0)
+	{
+		Invoke(this_user, std::forward<Param>(p), eRMI_ToServer, -1, dependentId);
 	}
 };
 

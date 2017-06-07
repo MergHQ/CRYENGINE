@@ -120,7 +120,6 @@ CTexture* CD3D9Renderer::GetLastBackBuffer(SDisplayContext* pContext)
 
 void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 {
-
 	unsigned indices = 1;
 #if (CRY_RENDERER_DIRECT3D >= 120) || (CRY_RENDERER_VULKAN >= 10)
 	DXGI_SWAP_CHAIN_DESC scDesc;
@@ -147,7 +146,7 @@ void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 			char str[40]; sprintf(str, "$SwapChainBackBuffer %d:%d", id, i);
 
 			pContext->m_pBackBuffers[i] = CTexture::GetOrCreateTextureObject(str, width, height, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, format);
-			pContext->m_pBackBuffers[i]->SRGBRead(DeviceFormats::ConvertToSRGB(m_d3dsdBackBuffer.Format) == m_d3dsdBackBuffer.Format);
+			pContext->m_pBackBuffers[i]->SRGBRead(DeviceFormats::ConvertToSRGB(DeviceFormats::ConvertFromTexFormat(format)) == m_d3dsdBackBuffer.Format);
 		}
 
 #if CRY_RENDERER_GNM
@@ -174,6 +173,12 @@ void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 		pContext->m_pBackBuffers[i]->SetWidth(width);
 		pContext->m_pBackBuffers[i]->SetHeight(height);
 		pContext->m_pBackBuffers[i]->SetDevTexture(CDeviceTexture::Associate(pContext->m_pBackBuffers[i]->GetLayout(), pBackBuffer));
+
+#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
+		// Guarantee that the back-buffers are cleared on first use (e.g. Flash alpha-blends onto the back-buffer)
+		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		commandList.GetGraphicsInterface()->ClearSurface(pContext->m_pBackBuffers[i]->GetDevTexture()->LookupRTV(EDefaultResourceViews::RasterizerTarget), Clr_Transparent);
+#endif
 	}
 }
 
@@ -1744,7 +1749,7 @@ bool CD3D9Renderer::CaptureFrameBufferToFile(const char* pFilePath, CTexture* pR
 			const int nResolvedWidth = m_width / numSSSamplesX;
 			const int nResolvedHeight = m_height / numSSSamplesY;
 
-			pTempCopyTex = CTexture::GetOrCreate2DTexture("$TempCopyTex", region.Extent.Width, region.Extent.Height, 1, 0, nullptr, eTF_R8G8B8A8, eTF_R8G8B8A8);
+			pTempCopyTex = CTexture::GetOrCreate2DTexture("$TempCopyTex", region.Extent.Width, region.Extent.Height, 1, 0, nullptr, eTF_R8G8B8A8);
 
 			const SResourceRegionMapping region =
 			{
@@ -1759,7 +1764,7 @@ bool CD3D9Renderer::CaptureFrameBufferToFile(const char* pFilePath, CTexture* pR
 			pBackBufferTex = pTempCopyTex;
 		}
 
-		CTexture* pTmpTexture = CTexture::GetOrCreate2DTexture("$TmpTexture", region.Extent.Width, region.Extent.Height, 1, FT_STAGE_READBACK, nullptr, eTF_R8G8B8A8, eTF_R8G8B8A8);
+		CTexture* pTmpTexture = CTexture::GetOrCreate2DTexture("$TmpTexture", region.Extent.Width, region.Extent.Height, 1, FT_STAGE_READBACK, nullptr, eTF_R8G8B8A8);
 
 		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pBackBufferTex->GetDevTexture(), pTmpTexture->GetDevTexture(), region);
 
@@ -4913,8 +4918,8 @@ bool CD3D9Renderer::InitCaptureFrameBufferFast(uint32 bufferWidth, uint32 buffer
 		bufferHeight = GetActiveDisplayContext()->m_Height;
 	}
 
-	m_pSaveTexture[0] = CTexture::GetOrCreate2DTexture("$SaveTexture0", bufferWidth, bufferHeight, 1, FT_STAGE_READBACK, nullptr, eTF_R8G8B8A8, eTF_R8G8B8A8);
-	m_pSaveTexture[1] = CTexture::GetOrCreate2DTexture("$SaveTexture1", bufferWidth, bufferHeight, 1, FT_STAGE_READBACK, nullptr, eTF_R8G8B8A8, eTF_R8G8B8A8);
+	m_pSaveTexture[0] = CTexture::GetOrCreate2DTexture("$SaveTexture0", bufferWidth, bufferHeight, 1, FT_STAGE_READBACK, nullptr, eTF_R8G8B8A8);
+	m_pSaveTexture[1] = CTexture::GetOrCreate2DTexture("$SaveTexture1", bufferWidth, bufferHeight, 1, FT_STAGE_READBACK, nullptr, eTF_R8G8B8A8);
 
 	// Initialize one of the buffers by capturing the current backbuffer
 	// If we allow this call on the MT we cannot interact with the device
@@ -6763,7 +6768,7 @@ void CD3D9Renderer::ReleaseResourceAsync(SResourceAsync* pResource)
 	m_pRT->RC_ReleaseResource(pResource);
 }
 
-unsigned int CD3D9Renderer::DownLoadToVideoMemory(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, ETEX_Type eTT, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
+unsigned int CD3D9Renderer::DownLoadToVideoMemory(unsigned char* pSrcData, int w, int h, int d, ETEX_Format eSrcFormat, ETEX_Format eTFDst, int nummipmap, ETEX_Type eTT, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
 
@@ -6792,9 +6797,9 @@ unsigned int CD3D9Renderer::DownLoadToVideoMemory(unsigned char* data, int w, in
 		if (pTex)
 		{
 			if (pRegion)
-				pTex->UpdateTextureRegion(data, pRegion->x, pRegion->y, 0, pRegion->w, pRegion->h, 1, eTFSrc);
+				pTex->UpdateTextureRegion(pSrcData, pRegion->x, pRegion->y, 0, pRegion->w, pRegion->h, 1, eSrcFormat);
 			else
-				pTex->UpdateTextureRegion(data, 0, 0, 0, w, h, 1, eTFSrc);
+				pTex->UpdateTextureRegion(pSrcData, 0, 0, 0, w, h, 1, eSrcFormat);
 
 			return Id;
 		}
@@ -6811,9 +6816,9 @@ unsigned int CD3D9Renderer::DownLoadToVideoMemory(unsigned char* data, int w, in
 		{
 			// make texture without device texture and request it async creation
 			SResourceAsync* pInfo = new SResourceAsync();
-			int nImgSize = CTexture::TextureDataSize(w, h, 1, nummipmap, 1, eTFSrc);
+			int nImgSize = CTexture::TextureDataSize(w, h, 1, nummipmap, 1, eSrcFormat);
 			pInfo->pData = new byte[nImgSize];
-			memcpy(pInfo->pData, data, nImgSize);
+			memcpy(pInfo->pData, pSrcData, nImgSize);
 			pInfo->eClassName = eRCN_Texture;
 			pInfo->nWidth = w;
 			pInfo->nHeight = h;
@@ -6823,18 +6828,22 @@ unsigned int CD3D9Renderer::DownLoadToVideoMemory(unsigned char* data, int w, in
 
 			tp = CTexture::GetOrCreateTextureObject(name, w, h, 1, eTT_2D, flags, eTFDst);
 			tp->m_bAsyncDevTexCreation = bAsyncDevTexCreation;
-			tp->m_eTFSrc = eTFSrc;
+			tp->m_eSrcFormat = eSrcFormat;
 			tp->m_nMips = nummipmap;
 
 			pInfo->nTexId = tp->GetID();
 			gRenDev->CreateResourceAsync(pInfo);
 		}
-		else if (eTT == eTT_Cube)
-			assert(!"Not supported");   // tp = CTexture::CreateCubeTexture(name, w, h, nummipmap, flags, data, eTFSrc, eTFDst);
 		else if (eTT == eTT_3D)
-			tp = CTexture::GetOrCreate3DTexture(name, w, h, d, nummipmap, flags, data, eTFSrc, eTFDst);
-		else
-			tp = CTexture::GetOrCreate2DTexture(name, w, h, nummipmap, flags, data, eTFSrc, eTFDst);
+			tp = CTexture::GetOrCreate3DTexture(name, w, h, d, nummipmap, flags, pSrcData, eSrcFormat);
+		else if (eTT == eTT_2D)
+			tp = CTexture::GetOrCreate2DTexture(name, w, h, nummipmap, flags, pSrcData, eSrcFormat);
+		else if (eTT == eTT_2DArray)
+			assert(!"Not supported");
+		else if (eTT == eTT_Cube)
+			assert(!"Not supported");
+		else if (eTT == eTT_CubeArray)
+			assert(!"Not supported");   // tp = CTexture::CreateCubeTexture(name, w, h, nummipmap, flags, data, eTFSrc);
 
 		return tp->GetID();
 	}

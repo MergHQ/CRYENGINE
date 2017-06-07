@@ -286,9 +286,7 @@ bool SDynTexture::RT_Update(int nNewWidth, int nNewHeight)
 
 	if (!m_pTexture)
 	{
-		int nNeedSpace = CTexture::TextureDataSize(m_nWidth, m_nHeight, 1, 1, 1, m_eTF);
-		if (m_eTT == eTT_Cube)
-			nNeedSpace *= 6;
+		int nNeedSpace = CTexture::TextureDataSize(m_nWidth, m_nHeight, 1, 1, m_eTT == eTT_Cube ? 6 : 1, m_eTF);
 		SDynTexture* pTX = SDynTexture::s_Root.m_Prev;
 		if (nNeedSpace + s_nMemoryOccupied > (int)SDynTexture::s_CurDynTexMaxSize * 1024 * 1024)
 		{
@@ -790,9 +788,19 @@ CTexture* SDynTexture::CreateDynamicRT()
 
 	CTexture* pNewTexture = nullptr;
 	if (m_nTexFlags & FT_USAGE_DEPTHSTENCIL)
+	{
 		pNewTexture = CTexture::GetOrCreateDepthStencil(name, m_nWidth, m_nHeight, Clr_Unknown, m_eTT, m_nTexFlags, m_eTF);
+
+		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		commandList.GetGraphicsInterface()->ClearSurface(pNewTexture->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 1);
+	}
 	else
+	{
 		pNewTexture = CTexture::GetOrCreateRenderTarget(name, m_nWidth, m_nHeight, Clr_Unknown, m_eTT, m_nTexFlags, m_eTF);
+
+		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		commandList.GetGraphicsInterface()->ClearSurface(pNewTexture->GetDevTexture()->LookupRTV(EDefaultResourceViews::RasterizerTarget), Clr_Transparent);
+	}
 
 	TextureSetItor subset = pSet->find(m_nWidth);
 	if (subset == pSet->end())
