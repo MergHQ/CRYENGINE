@@ -44,9 +44,9 @@ struct SSchematycEntityClassProperties
 	}
 
 	// class properties members
-	string      icon;
-	bool        bHideInEditor;
-	bool        bTriggerAreas;
+	string icon;
+	bool   bHideInEditor;
+	bool   bTriggerAreas;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -80,7 +80,7 @@ bool CEntityClassRegistry::RegisterEntityClass(IEntityClass* pClass)
 		newClass = true;
 	}
 	m_mapClassName[pClass->GetName()] = pClass;
-	
+
 	CryGUID guid = pClass->GetGUID();
 	if (!guid.IsNull())
 	{
@@ -171,7 +171,7 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityClassRegistry::UnregisterStdClass(const CryGUID &classGUID)
+bool CEntityClassRegistry::UnregisterStdClass(const CryGUID& classGUID)
 {
 	IEntityClass* pClass = FindClassByGUID(classGUID);
 	if (pClass)
@@ -414,9 +414,9 @@ public:
 	CSchematycEntityClassPreviewer()
 	{
 	}
-	
+
 	//~IObjectPreviewer
-	virtual void     SerializeProperties(Serialization::IArchive& archive) override
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
 	{
 		Schematyc::IObject* pObject = gEnv->pSchematyc->GetObject(m_objectId);
 		if (pObject && pObject->GetEntity())
@@ -431,9 +431,10 @@ public:
 			pObject->GetEntity()->VisitComponents(visitor);
 		}
 	};
+
 	virtual Schematyc::ObjectId CreateObject(const CryGUID& classGUID) const override
 	{
-		IEntityClass *pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClassByGUID(classGUID);
+		IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClassByGUID(classGUID);
 		if (pEntityClass)
 		{
 			// Spawn entity for preview
@@ -441,7 +442,7 @@ public:
 			params.pClass = pEntityClass;
 			params.sName = "Schematyc Preview Entity";
 			params.nFlagsExtended |= ENTITY_FLAG_EXTENDED_PREVIEW;
-			IEntity *pEntity = gEnv->pEntitySystem->SpawnEntity(params);
+			IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(params);
 			if (pEntity && pEntity->GetSchematycObject())
 			{
 				m_objectId = pEntity->GetSchematycObject()->GetId();
@@ -449,8 +450,23 @@ public:
 		}
 		return m_objectId;
 	};
-	virtual Schematyc::ObjectId ResetObject(Schematyc::ObjectId objectId) const override { return objectId; };
-	virtual void     DestroyObject(Schematyc::ObjectId objectId) const override 
+
+	virtual Schematyc::ObjectId ResetObject(Schematyc::ObjectId objectId) const override
+	{
+		Schematyc::IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
+		if (pObject)
+		{
+			if (!pObject->Reset(Schematyc::ESimulationMode::Preview, Schematyc::EObjectResetPolicy::Always))
+			{
+				CRY_ASSERT_MESSAGE(0, "Failed to reset Schematyc Preview.");
+				DestroyObject(m_objectId);
+			}
+		}
+
+		return m_objectId;
+	}
+
+	virtual void DestroyObject(Schematyc::ObjectId objectId) const override
 	{
 		Schematyc::IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 		if (!pObject)
@@ -461,7 +477,8 @@ public:
 		}
 		m_objectId = Schematyc::ObjectId::Invalid;
 	};
-	virtual Sphere   GetObjectBounds(Schematyc::ObjectId objectId) const override
+
+	virtual Sphere GetObjectBounds(Schematyc::ObjectId objectId) const override
 	{
 		Schematyc::IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 		if (pObject && pObject->GetEntity())
@@ -472,7 +489,8 @@ public:
 		}
 		return Sphere(Vec3(0, 0, 0), 1.f);
 	};
-	virtual void     RenderObject(const Schematyc::IObject& object, const SRendParams& params, const SRenderingPassInfo& passInfo) const override
+
+	virtual void RenderObject(const Schematyc::IObject& object, const SRendParams& params, const SRenderingPassInfo& passInfo) const override
 	{
 		IEntity* pEntity = object.GetEntity();
 		if (pEntity)
@@ -515,19 +533,19 @@ void CEntityClassRegistry::RegisterSchematycEntityClass()
 	};
 
 	gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
-		stl::make_unique<Schematyc::CEnvPackage>(
-			"{FAA7837E-1310-454D-808B-99BDDC6954A7}"_cry_guid,
-			"EntitySystem",
-			"Crytek GmbH",
-			"CRYENGINE EntitySystem Package",
-			staticAutoRegisterLambda
-			)
-	);
+	  stl::make_unique<Schematyc::CEnvPackage>(
+	    "{FAA7837E-1310-454D-808B-99BDDC6954A7}"_cry_guid,
+	    "EntitySystem",
+	    "Crytek GmbH",
+	    "CRYENGINE EntitySystem Package",
+	    staticAutoRegisterLambda
+	    )
+	  );
 
 	// TODO : Can we filter by class guid?
 	gEnv->pSchematyc->GetCompiler().GetClassCompilationSignalSlots().Connect(
-		[this](const Schematyc::IRuntimeClass& runtimeClass) { this->OnSchematycClassCompilation(runtimeClass); },
-		m_connectionScope);
+	  [this](const Schematyc::IRuntimeClass& runtimeClass) { this->OnSchematycClassCompilation(runtimeClass); },
+	  m_connectionScope);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -543,7 +561,7 @@ void CEntityClassRegistry::OnSchematycClassCompilation(const Schematyc::IRuntime
 
 		bool bModifyExisting = false;
 
-		IEntityClass *pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(className);
+		IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(className);
 		if (pEntityClass)
 		{
 			if (pEntityClass->GetGUID() != runtimeClass.GetGUID())
@@ -552,7 +570,6 @@ void CEntityClassRegistry::OnSchematycClassCompilation(const Schematyc::IRuntime
 				return;
 			}
 		}
-
 
 		Schematyc::CAnyConstPtr pEnvClassProperties = runtimeClass.GetEnvClassProperties();
 		SCHEMATYC_ENV_ASSERT(pEnvClassProperties);

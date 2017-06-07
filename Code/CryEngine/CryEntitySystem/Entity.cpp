@@ -3313,5 +3313,9 @@ void CEntity::ShutDownComponent(IEntityComponent* pComponent)
 
 void CEntityComponentsVector::ShutDownComponent(IEntityComponent* pComponent)
 {
-	static_cast<CEntity*>(pComponent->GetEntity())->ShutDownComponent(pComponent);
+	CRY_ASSERT_MESSAGE(pComponent, "Invalid component pointer.");
+	if (pComponent)
+	{
+		static_cast<CEntity*>(pComponent->GetEntity())->ShutDownComponent(pComponent);
+	}
 }
