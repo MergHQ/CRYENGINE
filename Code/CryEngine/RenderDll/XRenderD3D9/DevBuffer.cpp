@@ -4330,59 +4330,6 @@ SResourceView SResourceView::UnorderedAccessRawView(DXGI_FORMAT nFormat, int nFi
 }
 
 //============================================================
-
-CGpuBuffer::STrackedGpuBuffer::STrackedGpuBuffer(CGpuBuffer* pGpuBuffer, const void* pInitialData)
-	: SUsageTrackedItem(0)
-	, m_BufferPersistentMapMode(D3D11_MAP(0))
-{
-	const SBufferLayout Layout =
-	{
-		pGpuBuffer->m_eFormat,
-		pGpuBuffer->m_elementCount,
-		pGpuBuffer->m_elementSize,
-		pGpuBuffer->m_eFlags
-	};
-
-	m_pDevBuffer = CDeviceBuffer::Create(Layout, pInitialData);
-	if (m_pDevBuffer && (pGpuBuffer->m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE))
-	{
-		m_BufferPersistentMapMode = pGpuBuffer->m_eMapMode;
-		EnablePersistentMap(true);
-	}
-}
-
-CGpuBuffer::STrackedGpuBuffer::~STrackedGpuBuffer()
-{
-	EnablePersistentMap(false);
-}
-
-void CGpuBuffer::STrackedGpuBuffer::EnablePersistentMap(bool bEnable)
-{
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	uint8* base_ptr;
-	if (!m_pDevBuffer || !m_BufferPersistentMapMode)
-		return;
-
-	if (bEnable)
-	{
-		CDeviceObjectFactory::ExtractBasePointer(m_pDevBuffer->GetBuffer(), m_BufferPersistentMapMode, base_ptr);
-	}
-	else
-	{
-		CDeviceObjectFactory::ReleaseBasePointer(m_pDevBuffer->GetBuffer());
-	}
-#endif
-}
-
-bool CGpuBuffer::operator==(const CGpuBuffer& other) const
-{
-	return
-		m_pBufferSet == other.m_pBufferSet &&
-		m_elementSize == other.m_elementSize &&
-		m_elementCount == other.m_elementCount &&
-		m_eFlags == other.m_eFlags;
-}
-
 void CGpuBuffer::OwnDevBuffer(CDeviceBuffer* pDeviceBuf)
 {
 	// TODO: not sure how to handle this
@@ -4471,7 +4418,16 @@ void CGpuBuffer::Release()
 {
 	MEMORY_SCOPE_CHECK_HEAP();
 
-	m_pBufferSet.reset();
+	if (m_pDeviceBuffer)
+	{
+		ReleaseDeviceBuffer(m_pDeviceBuffer);
+		while (!m_deviceBufferPool.empty())
+		{
+			ReleaseDeviceBuffer(m_deviceBufferPool.front().pDeviceBuffer);
+			m_deviceBufferPool.pop();
+		}
+	}
+
 	m_elementCount = 0;
 	m_eFlags = 0;
 	m_bLocked = false;
@@ -4497,74 +4453,110 @@ void CGpuBuffer::Create(uint32 elementCount, uint32 elementSize, DXGI_FORMAT ele
 	m_eFlags       = eFlags;
 	m_eFormat      = elementFormat;
 
-	m_pBufferSet = std::make_shared<STrackedGpuBufferSet>();
-	m_pBufferSet->pCurrentBuffer = m_pBufferSet->allocator.Allocate(this, pData);
-
-	InvalidateDeviceResource(eDeviceResourceDirty);
+	m_pDeviceBuffer = AllocateDeviceBuffer(pData);
 }
 
-void CGpuBuffer::PrepareFreeBuffer()
+CDeviceBuffer* CGpuBuffer::AllocateDeviceBuffer(const void* pInitialData) const
 {
-	if (STrackedGpuBuffer*& pCurrentBuffer = m_pBufferSet->pCurrentBuffer)
+	const SBufferLayout Layout =
 	{
-		if (pCurrentBuffer->IsInUse())
-		{
-			m_pBufferSet->allocator.Release(pCurrentBuffer);
-			pCurrentBuffer = m_pBufferSet->allocator.Allocate(this, nullptr);
+		m_eFormat,
+		m_elementCount,
+		m_elementSize,
+		m_eFlags
+	};
 
-			InvalidateDeviceResource(eDeviceResourceDirty);
+	CDeviceBuffer* pResult = CDeviceBuffer::Create(Layout, pInitialData);
 
-			CRY_ASSERT(m_MaxBufferCopies < 0 || m_pBufferSet->allocator.GetItemCount() <= m_MaxBufferCopies);
-		}
+	// persistent map on dx12
+#if (CRY_RENDERER_DIRECT3D >= 120)
+
+	if (m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
+	{
+		uint8* base_ptr;
+		CDeviceObjectFactory::ExtractBasePointer(pResult->GetBuffer(), m_eMapMode, base_ptr);
 	}
+#endif
+
+	return  pResult;
+}
+
+void CGpuBuffer::ReleaseDeviceBuffer(CDeviceBuffer*& pDeviceBuffer) const
+{
+	// persistent map on dx12
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	if (m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
+	{
+		CDeviceObjectFactory::ReleaseBasePointer(pDeviceBuffer->GetBuffer());
+	}
+#endif
+
+	SAFE_RELEASE(pDeviceBuffer);
+}
+
+void CGpuBuffer::PrepareUnusedBuffer()
+{
+	CRY_ASSERT(m_pDeviceBuffer);
+
+	m_deviceBufferPool.emplace(m_pDeviceBuffer);
+
+	if (!m_deviceBufferPool.front().IsInUse())
+	{
+		m_pDeviceBuffer = m_deviceBufferPool.front().pDeviceBuffer;
+		m_deviceBufferPool.pop();
+	}
+	else
+	{
+		m_pDeviceBuffer = AllocateDeviceBuffer(nullptr);
+	}
+
+	InvalidateDeviceResource(eDeviceResourceDirty);
+
+	CRY_ASSERT(m_MaxBufferCopies < 0 || m_deviceBufferPool.size() <= m_MaxBufferCopies);
 }
 
 void CGpuBuffer::UpdateBufferContent(const void* pData, uint32 nSize)
 {
-	CRY_ASSERT(GetCurrentBuffer());
 	CRY_ASSERT(!m_bLocked);
 
-	PrepareFreeBuffer();
+	PrepareUnusedBuffer();
 
-	CDeviceBuffer* pDevBuffer = GetDevBuffer();
 	if (nSize)
 	{
 		if (m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
 		{
 			// Transfer sub-set of GPU resource to CPU, also allows graphics debugger and multi-gpu broadcaster to do the right thing
-			CDeviceObjectFactory::UploadContents<false>(pDevBuffer->GetBuffer(), 0, 0, nSize, D3D11_MAP(m_eMapMode), pData);
+			CDeviceObjectFactory::UploadContents<false>(m_pDeviceBuffer->GetBuffer(), 0, 0, nSize, D3D11_MAP(m_eMapMode), pData);
 		}
 		else
 		{
 			// Asynchronous
 			const SResourceMemoryAlignment& layout = { m_elementSize, nSize, 0, 0 };
-			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pData, pDevBuffer, layout);
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pData, m_pDeviceBuffer, layout);
 		}
 	}
 }
 
 void* CGpuBuffer::Lock()
 {
-	CRY_ASSERT(GetCurrentBuffer());
 	CRY_ASSERT(m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE);
 	CRY_ASSERT(!m_bLocked);
 
-	PrepareFreeBuffer();
+	PrepareUnusedBuffer();
 
 	m_bLocked = true;
 
-	return CDeviceObjectFactory::Map(GetCurrentBuffer()->m_pDevBuffer->GetBuffer(), 0, 0, 0, D3D11_MAP(m_eMapMode));
+	return CDeviceObjectFactory::Map(m_pDeviceBuffer->GetBuffer(), 0, 0, 0, D3D11_MAP(m_eMapMode));
 }
 
 void CGpuBuffer::Unlock(buffer_size_t nSize)
 {
-	CRY_ASSERT(GetCurrentBuffer());
 	CRY_ASSERT(m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE);
 	CRY_ASSERT(m_bLocked);
 
 	m_bLocked = false;
 
-	CDeviceObjectFactory::Unmap(GetCurrentBuffer()->m_pDevBuffer->GetBuffer(), 0, 0, nSize, D3D11_MAP(m_eMapMode));
+	CDeviceObjectFactory::Unmap(m_pDeviceBuffer->GetBuffer(), 0, 0, nSize, D3D11_MAP(m_eMapMode));
 }
 
 //////////////////////////////////////////////////////////////////////////

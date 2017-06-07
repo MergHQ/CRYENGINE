@@ -443,7 +443,7 @@ void CVolumetricFogStage::Prepare(CRenderView* pRenderView)
 
 		bool bCreate = false;
 
-		if (num != buffer.m_elementCount
+		if (num != buffer.GetElementCount()
 		    || buffer.GetDevBuffer() == nullptr)
 		{
 			const uint32 stride = sizeof(int8);

@@ -502,31 +502,17 @@ public:
 	}
 };
 
-class CGpuBuffer
+class CGpuBuffer : NoCopy
 {
 private:
-	struct STrackedGpuBuffer : public SUsageTrackedItem<DEVRES_TRACK_LATENCY>
+	struct STrackedDeviceBuffer : public SUsageTrackedItem<DEVRES_TRACK_LATENCY>
 	{
-		STrackedGpuBuffer() : SUsageTrackedItem(0), m_BufferPersistentMapMode(D3D11_MAP(0)) {}
-		STrackedGpuBuffer(CGpuBuffer* pGpuBuffer, const void* pInitialData);
+		STrackedDeviceBuffer(CDeviceBuffer* pBuffer) 
+			: pDeviceBuffer(pBuffer)
+		{}
 
-		~STrackedGpuBuffer();
-
-		void EnablePersistentMap(bool bEnable);
-
-		D3D11_MAP      m_BufferPersistentMapMode;
-		CDeviceBuffer* m_pDevBuffer;
+		CDeviceBuffer* pDeviceBuffer;
 	};
-
-	struct STrackedGpuBufferSet
-	{
-		STrackedGpuBufferSet() : pCurrentBuffer(nullptr) {}
-
-		CTrackedItemAllocator<STrackedGpuBuffer> allocator;
-		STrackedGpuBuffer*                       pCurrentBuffer;
-	};
-
-
 	struct SInvalidateCallback
 	{
 		int refCount;
@@ -543,7 +529,8 @@ private:
 
 public:
 	CGpuBuffer(int maxBufferCopies = -1, CDeviceBuffer* devBufToOwn = nullptr)
-		: m_elementCount(0)
+		: m_pDeviceBuffer(nullptr)
+		, m_elementCount(0)
 		, m_elementSize(0)
 		, m_eFlags(0)
 		, m_eMapMode(D3D11_MAP(0))
@@ -558,8 +545,6 @@ public:
 
 	virtual ~CGpuBuffer();
 
-	bool           operator==(const CGpuBuffer& other) const;
-
 	void           Create(buffer_size_t numElements, buffer_size_t elementSize, DXGI_FORMAT elementFormat, uint32 flags, const void* pData);
 	void           Release();
 
@@ -568,10 +553,11 @@ public:
 	void*          Lock();
 	void           Unlock(buffer_size_t nSize);
 
-	bool           IsNullBuffer() const { return m_elementCount == 0; }
-	bool           IsAvailable () const { return !!m_pBufferSet;  }
-	CDeviceBuffer* GetDevBuffer() const { return GetCurrentBuffer() ? GetCurrentBuffer()->m_pDevBuffer : nullptr; }
-	uint32         GetFlags()     const { return m_eFlags; }
+	bool           IsNullBuffer()    const { return m_elementCount == 0; }
+	bool           IsAvailable ()    const { return m_pDeviceBuffer != nullptr;  }
+	CDeviceBuffer* GetDevBuffer()    const { return m_pDeviceBuffer; }
+	uint32         GetFlags()        const { return m_eFlags; }
+	buffer_size_t  GetElementCount() const { return m_elementCount; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Will notify resource's user that some data of the the resource was invalidated.
@@ -587,27 +573,27 @@ public:
 	void AddInvalidateCallback(void* listener, const SResourceBinding::InvalidateCallbackFunction& callback) const;
 	void RemoveInvalidateCallbacks(void* listener) const;
 	void InvalidateDeviceResource(uint32 dirtyFlags);
-
 	//////////////////////////////////////////////////////////////////////////
 
-	buffer_size_t              m_elementCount;
-	buffer_size_t              m_elementSize;
-	uint32                     m_eFlags;
-
-	int32                      m_actualSize;
-	int32                      m_persistentSize;
-
 private:
-	void               PrepareFreeBuffer();
-	STrackedGpuBuffer* GetCurrentBuffer() const { return m_pBufferSet ? m_pBufferSet->pCurrentBuffer : nullptr; }
+	CDeviceBuffer*     AllocateDeviceBuffer(const void* pInitialData) const;
+	void               ReleaseDeviceBuffer(CDeviceBuffer*& pDeviceBuffer) const;
 
-	std::shared_ptr<STrackedGpuBufferSet> m_pBufferSet;
+	void               PrepareUnusedBuffer();
 
-	bool                             m_bLocked;
-	int                              m_MaxBufferCopies;
+	std::queue<STrackedDeviceBuffer> m_deviceBufferPool;
+	CDeviceBuffer*                   m_pDeviceBuffer;
+
+	buffer_size_t                    m_elementCount;
+	buffer_size_t                    m_elementSize;
+	uint32                           m_eFlags;
 
 	D3D11_MAP                        m_eMapMode;
 	DXGI_FORMAT                      m_eFormat;
+	
+	bool                             m_bLocked;
+	int                              m_MaxBufferCopies;
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
