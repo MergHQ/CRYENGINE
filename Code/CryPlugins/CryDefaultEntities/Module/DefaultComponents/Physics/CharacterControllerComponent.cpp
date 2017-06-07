@@ -136,7 +136,7 @@ static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent::SPhy
 	desc.SetGUID("{3341F1DC-0753-466E-BC7A-FA77A49D3CB4}"_cry_guid);
 	desc.AddMember(&CCharacterControllerComponent::SPhysics::m_mass, 'mass', "Mass", "Mass", "Mass of the character in kg", 80.f);
 	desc.AddMember(&CCharacterControllerComponent::SPhysics::m_colliderSize, 'size', "Size", "Collider Size", "Dimensions of the capsule or cylinder", Vec3(0.45f, 0.45f, 0.935f * 0.5f));
-	desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bCapsule, 'caps', "Capsule", "Use Capsule", "Whether or not to use a capsule as the main collider, otherwise cylinder", false);
+	desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bCapsule, 'caps', "Capsule", "Use Capsule", "Whether or not to use a capsule as the main collider, otherwise cylinder", true);
 
 	desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
 }
