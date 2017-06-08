@@ -1,4 +1,8 @@
-option(OPTION_ENGINE "Build CRYENGINE" ON)
+if (NOT PROJECT_BUILD)
+	option(OPTION_ENGINE "Build CRYENGINE" ON)
+else()
+	option(OPTION_ENGINE "Build CRYENGINE" OFF)
+endif()
 
 option(OPTION_PROFILE "Enable Profiling" ON)
 option(OPTION_UNITY_BUILD "Enable Unity Build" ON)
