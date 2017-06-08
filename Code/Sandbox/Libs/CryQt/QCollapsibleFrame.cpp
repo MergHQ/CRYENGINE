@@ -54,7 +54,7 @@ void QCollapsibleFrame::SetWidget(QWidget* pWidget)
 	if (m_pWidget)
 	{
 		pMainLayout->addWidget(m_pWidget);
-		m_pWidget->setHidden(m_pHeaderWidget->m_bCollapsed);
+		m_pContentsFrame->setHidden(m_pHeaderWidget->m_bCollapsed);
 	}
 }
 
@@ -239,10 +239,9 @@ void CCollapsibleFrameHeader::SetCollapsed(bool collapsed)
 			m_pCollapseIconLabel->setPixmap(m_expandedIcon.pixmap(m_expandedIcon.actualSize(m_iconSize)));
 		}
 
-		auto pWidget = m_pParentCollapsible->m_pWidget;
-		if (pWidget)
+		if (m_pParentCollapsible->m_pContentsFrame)
 		{
-			pWidget->setHidden(m_bCollapsed);
+			m_pParentCollapsible->m_pContentsFrame->setHidden(m_bCollapsed);
 		}
 	}
 }
