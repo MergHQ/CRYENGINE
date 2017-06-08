@@ -11,6 +11,8 @@
 #define CRYPHYSICS_API DLL_IMPORT
 #endif
 
+struct IPhysicalWorld;
+
 #if !defined (_LIB)
 extern "C" 
 #endif
