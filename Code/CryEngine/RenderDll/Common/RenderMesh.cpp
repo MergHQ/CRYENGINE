@@ -1431,7 +1431,7 @@ void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMe
 
 	std::vector<SVF_W4B_I4S> pExtraBones;
 
-	if (pExtraBoneMapping && m_extraBonesBuffer.m_elementCount == 0 && m_nVerts)
+	if (pExtraBoneMapping && m_extraBonesBuffer.IsNullBuffer() && m_nVerts)
 	{
 		pExtraBones.resize(m_nVerts);
 		for (uint32 i=0; i<m_nVerts; i++)
@@ -2578,8 +2578,8 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 
 #ifdef MESH_TESSELLATION_RENDERER
 	// Build UV adjacency
-	if ((bTessellation && m_adjBuffer.m_elementCount == 0)       // if needed and not built already
-		|| (bIndUpdateNeeded && m_adjBuffer.m_elementCount > 0)) // if already built but needs update
+	if ((bTessellation && m_adjBuffer.GetElementCount() == 0)       // if needed and not built already
+		|| (bIndUpdateNeeded && m_adjBuffer.GetElementCount() > 0)) // if already built but needs update
 	{
 		if (!(pVContainer->m_IBStream.m_nLockFlags & FSL_WRITE)
 			&& (pVContainer->_HasVBStream(VSF_NORMALS)))
@@ -3010,10 +3010,7 @@ template<class VertexFormat, class VecPos, class VecUV> bool CRenderMesh::Update
 
 				for (int iChunk = 0; iChunk < m_Chunks.size(); ++iChunk)
 				{
-					int myBuffer[4];
-					myBuffer[0] = m_Chunks[iChunk].nFirstIndexId / 3;
-					((CREMeshImpl*) m_Chunks[iChunk].pRE)->m_tessCB.Create(4, sizeof(int), DXGI_FORMAT_R32_SINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE, &myBuffer[0]);
-					((CREMeshImpl*) m_Chunks[iChunk].pRE)->m_nPatchIDOffset = myBuffer[0];
+					((CREMeshImpl*) m_Chunks[iChunk].pRE)->m_nPatchIDOffset = m_Chunks[iChunk].nFirstIndexId / 3;
 				}
 			}
 

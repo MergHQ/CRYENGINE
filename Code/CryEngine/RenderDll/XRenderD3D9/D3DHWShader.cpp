@@ -3917,7 +3917,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 			case ECGP_PB_SkinningExtraWeights:
 				{
-					if (rRP.m_pRE->mfGetType() == eDATA_Mesh && ((CREMeshImpl*)rRP.m_pRE)->m_pRenderMesh->m_extraBonesBuffer.m_elementCount > 0)
+					if (rRP.m_pRE->mfGetType() == eDATA_Mesh && !((CREMeshImpl*)rRP.m_pRE)->m_pRenderMesh->m_extraBonesBuffer.IsNullBuffer())
 					{
 						sData[0].f[0] = 1.0f;
 						sData[0].f[1] = 1.0f;

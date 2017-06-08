@@ -568,6 +568,8 @@ void CSystem::ShutDown()
 	CLoadingProfilerSystem::ShutDown();
 #endif
 
+	m_pPlatformOS.reset();
+
 	if (m_pSystemEventDispatcher)
 	{
 		m_pSystemEventDispatcher->RemoveListener(this);

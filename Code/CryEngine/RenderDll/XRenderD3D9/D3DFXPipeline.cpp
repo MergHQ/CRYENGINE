@@ -2040,7 +2040,6 @@ void CD3D9Renderer::FX_DrawIndexedMesh (const ERenderPrimitiveType nPrimType)
 #ifdef TESSELLATION_RENDERER
 		if (CHWShader_D3D::s_pCurInstHS)
 		{
-			FX_SetAdjacencyOffsetBuffer();
 			eType = ept3ControlPointPatchList;
 		}
 #endif
@@ -2071,7 +2070,6 @@ void CD3D9Renderer::FX_DrawIndexedMesh (const ERenderPrimitiveType nPrimType)
 #ifdef TESSELLATION_RENDERER
 			if (CHWShader_D3D::s_pCurInstHS)
 			{
-				FX_SetAdjacencyOffsetBuffer();
 				eType = ept3ControlPointPatchList;
 			}
 #endif
@@ -2141,7 +2139,6 @@ void CD3D9Renderer::FX_DrawInstances(CShader* ef, SShaderPass* slw, int nRE, uin
 #ifdef TESSELLATION_RENDERER
 		if (CHWShader_D3D::s_pCurInstHS)
 		{
-			FX_SetAdjacencyOffsetBuffer();
 			eTopology = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
 		}
 #endif
@@ -2764,32 +2761,6 @@ bool CD3D9Renderer::FX_SetTessellationShaders(CHWShader_D3D*& pCurHS, CHWShader_
 
 	return false;
 }
-
-#ifdef TESSELLATION_RENDERER
-
-void CD3D9Renderer::FX_SetAdjacencyOffsetBuffer()
-{
-#ifdef MESH_TESSELLATION_RENDERER
-	if (m_RP.m_pRE && m_RP.m_pRE->mfGetType() == eDATA_Mesh)
-	{
-		CREMeshImpl* pMesh = (CREMeshImpl*) m_RP.m_pRE;
-
-		// this buffer contains offset HS has to apply to SV_PrimitiveID it gets from HW. we need this because
-		// sometimes we do not start rendering from the beginning of index buffer
-		// AI AndreyK: probably texture buffer has to be replayed by per-instance constant
-		if (CDeviceBuffer* pDevBuf = pMesh->m_tessCB.GetDevBuffer())
-			m_DevMan.BindSRV(CSubmissionQueue_DX11::TYPE_HS, pDevBuf->LookupSRV(EDefaultResourceViews::Default), 15);
-		else
-			m_DevMan.BindSRV(CSubmissionQueue_DX11::TYPE_HS, NULL, 15);
-	}
-	else
-	{
-		m_DevMan.BindSRV(CSubmissionQueue_DX11::TYPE_HS, NULL, 15);
-	}
-#endif
-}
-
-#endif //#ifdef TESSELLATION_RENDERER
 
 void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 {

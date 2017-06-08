@@ -1134,9 +1134,6 @@ private:
 
 	// Get pointers to current D3D11 shaders, set tessellation related RT flags and return true if tessellation is enabled for current object
 	bool FX_SetTessellationShaders(CHWShader_D3D*& pCurHS, CHWShader_D3D*& pCurDS, const SShaderPass* pPass);
-#ifdef TESSELLATION_RENDERER
-	inline void FX_SetAdjacencyOffsetBuffer();
-#endif
 
 public:
   static void FX_DrawWire();

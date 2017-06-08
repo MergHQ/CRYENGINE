@@ -207,7 +207,7 @@ namespace Cry
 
 				Schematyc::PositiveFloat m_mass = 80.f;
 				Vec3 m_colliderSize = Vec3(0.45f, 0.45f, 0.935f * 0.5f);
-				bool m_bCapsule = false;
+				bool m_bCapsule = true;
 
 				bool m_bSendCollisionSignal = false;
 			};
@@ -216,7 +216,7 @@ namespace Cry
 			{
 				inline bool operator==(const SMovement &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
-				Schematyc::Range<0, 1> m_airControlRatio = 1.f;
+				Schematyc::Range<0, 1> m_airControlRatio = 0.f;
 				Schematyc::Range<0, 10000> m_airResistance = 0.2f;
 				Schematyc::Range<0, 10000> m_inertia = 8.f;
 				Schematyc::Range<0, 10000> m_inertiaAcceleration = 8.f;

@@ -1193,7 +1193,7 @@ namespace LODGenerator
 		inParams.bDoDilationPass=bDilationPass;
 		inParams.bSaveSpecular = bSaveSpec;
 		inParams.dilateMagicColour=ColorF(-16.0f, -16.0f, -16.0f, -16.0f); // Use the fact it's a floating point target to use a colour that'll never occur
-		inParams.defaultBackgroundColour = ColorF(nBackgroundColour.x, nBackgroundColour.y, nBackgroundColour.z, 1.0f);
+		inParams.defaultBackgroundColour = ColorF(nBackgroundColour.x, nBackgroundColour.y, nBackgroundColour.z, 0.0f);
 		inParams.bSmoothNormals=bSmoothCage;
 		inParams.pMaterial=pMat->GetMatInfo();
 
