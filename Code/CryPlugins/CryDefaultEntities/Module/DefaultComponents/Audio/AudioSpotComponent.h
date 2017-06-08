@@ -122,7 +122,10 @@ namespace Cry
 				if (!bEnabled)
 				{
 					GetEntity()->KillTimer('ats');
-					m_pAudioComp->StopTrigger(m_defaultTrigger.m_triggerId, m_auxAudioObjectId);
+					if (m_pAudioComp)
+					{
+						m_pAudioComp->StopTrigger(m_defaultTrigger.m_triggerId, m_auxAudioObjectId);
+					}
 				}
 				else
 				{

@@ -141,8 +141,7 @@ void CEntityAudioSpotComponent::Initialize()
 
 void CEntityAudioSpotComponent::OnShutDown()
 {
-	CRY_ASSERT_MESSAGE(m_pAudioComp, "Audio proxy was not created");
-	if (m_auxAudioObjectId != CryAudio::InvalidAuxObjectId && m_auxAudioObjectId != CryAudio::DefaultAuxObjectId)
+	if (m_pAudioComp && m_auxAudioObjectId != CryAudio::InvalidAuxObjectId && m_auxAudioObjectId != CryAudio::DefaultAuxObjectId)
 	{
 		m_pAudioComp->RemoveAudioAuxObject(m_auxAudioObjectId);
 	}
@@ -156,6 +155,9 @@ uint64 CEntityAudioSpotComponent::GetEventMask() const
 
 void CEntityAudioSpotComponent::ProcessEvent(SEntityEvent& event)
 {
+	if (!m_pAudioComp)      //otherwise initialize has not been called yet
+		return;
+
 	switch (event.event)
 	{
 	case ENTITY_EVENT_START_GAME:
