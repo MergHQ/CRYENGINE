@@ -1566,7 +1566,10 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 void CEntity::SaveComponentLegacy(CryGUID typeId, XmlNodeRef& entityNode, XmlNodeRef& componentNode, IEntityComponent& component, bool bIncludeScriptProxy)
 {
 	componentNode->setAttr("typeId", typeId);
-	componentNode->setAttr("guid", component.GetGUID());
+	if (!component.GetGUID().IsNull())
+	{
+		componentNode->setAttr("guid", component.GetGUID());
+	}
 
 	const char* szComponentName = component.GetName();
 
@@ -1644,7 +1647,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 			    XmlNodeRef componentNode = componentsNode->newChild("Component");
 			    Serialization::SaveXmlNode(componentNode, Serialization::SStruct(SEntityComponentSerializationHelper(*this, &component)));
 			  }
-			  else if (component.GetPropertyGroup())
+			  else //if (component.GetPropertyGroup())
 			  {
 			    if (!componentsNode)
 			    {
