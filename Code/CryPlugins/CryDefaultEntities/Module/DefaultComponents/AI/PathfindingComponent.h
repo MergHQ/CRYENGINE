@@ -245,7 +245,7 @@ namespace Cry
 
 			Vec3 m_requestedTargetBodyDirection;
 
-			Schematyc::Range<0, 10000> m_maxAcceleration = 10.f;
+			Schematyc::Range<0, 10000> m_maxAcceleration = 6.0f;
 			std::function<void(const Vec3& recommendedVelocity)> m_movementRecommendationCallback;
 		};
 	}
