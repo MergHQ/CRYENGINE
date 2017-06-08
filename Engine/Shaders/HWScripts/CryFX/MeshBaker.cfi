@@ -106,7 +106,7 @@ pixout_mb MeshBakerComplex_PS(v2f IN)
 	GatherMaterialAttribs(mTangentToWS, realCoord, vertexColor, commonAttribs);
 	
 	OUT.Color.xyz = LinearToSRGB(commonAttribs.Albedo);
-	OUT.Color.w = GatherAlpha(realCoord, vertexColor.w);
+	OUT.Color.w = GatherAlpha(realCoord, 1.0f);
 
   if (ZOFFSET.z>1.0f)
   {
