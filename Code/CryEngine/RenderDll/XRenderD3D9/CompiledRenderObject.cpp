@@ -270,7 +270,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		if (m_pRenderElement->mfGetType() == eDATA_Mesh)
 		{
 			// Skinning extra weights
-			cb->SkinningInfo[3] = ((CREMeshImpl*)m_pRenderElement)->m_pRenderMesh->m_extraBonesBuffer.m_elementCount > 0 ? 1.0f : 0.0f;
+			cb->SkinningInfo[3] = ((CREMeshImpl*)m_pRenderElement)->m_pRenderMesh->m_extraBonesBuffer.IsNullBuffer() ? 0.0f : 1.0f;
 		}
 
 		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
@@ -387,7 +387,7 @@ void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRen
 				perInstanceExtraResources.SetConstantBuffer(eConstantBufferShaderSlot_SkinQuatPrev, pPrevSkinningData->boneTransformsBuffer, shaderStages);
 			}
 
-			if (m_pExtraSkinWeights && (m_pExtraSkinWeights->m_eFlags & CDeviceObjectFactory::BIND_SHADER_RESOURCE) != 0) // TODO: m_pExtraSkinWeights is passed a pointer-to-default-constructed-buffer when it should be passed nullptr. Need to check for BIND_SRV flag to check that Create() was called on the buffer.
+			if (m_pExtraSkinWeights && !m_pExtraSkinWeights->IsNullBuffer())
 			{
 				perInstanceExtraResources.SetBuffer(EReservedTextureSlot_SkinExtraWeights, m_pExtraSkinWeights, EDefaultResourceViews::Default, shaderStages);
 			}

@@ -122,6 +122,10 @@ void CPlayerComponent::ProcessEvent(SEntityEvent& event)
 
 void CPlayerComponent::UpdateMovementRequest(float frameTime)
 {
+	// Don't handle input if we are in air
+	if (!m_pCharacterController->IsOnGround())
+		return;
+
 	Vec3 velocity = ZERO;
 
 	const float moveSpeed = 20.5f;

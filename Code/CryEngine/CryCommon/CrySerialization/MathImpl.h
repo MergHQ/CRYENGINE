@@ -305,49 +305,41 @@ struct SUniformScale
 
 inline bool Serialize(Serialization::IArchive& ar, SUniformScale& c, const char* name, const char* label)
 {
-	if (ar.isEdit())
+	if (ar.openBlock(name, label))
 	{
-		if (ar.openBlock(name, label))
+		bool result = true;
+		if (ar.isInput() && c.uniform)
 		{
-			bool result = true;
-			if (ar.isInput() && c.uniform)
-			{
-				Vec3 vec = c.vec;
-				ar(Serialization::MinMaxRange(vec.x), "x", "^");
-				ar(Serialization::MinMaxRange(vec.y), "y", "^");
-				ar(Serialization::MinMaxRange(vec.z), "z", "^");
-				result = ar(Serialization::SStruct(c), "scale", "^");
+			Vec3 vec = c.vec;
+			ar(Serialization::MinMaxRange(vec.x), "x", "^");
+			ar(Serialization::MinMaxRange(vec.y), "y", "^");
+			ar(Serialization::MinMaxRange(vec.z), "z", "^");
+			result = ar(Serialization::SStruct(c), "scale", "^");
 
-				if (!strcmp(ar.getModifiedRowName(), "x"))
-				{
-					c.vec.x = c.vec.y = c.vec.z = vec.x;
-				}
-				else if (!strcmp(ar.getModifiedRowName(), "y"))
-				{
-					c.vec.x = c.vec.y = c.vec.z = vec.y;
-				}
-				else if (!strcmp(ar.getModifiedRowName(), "z"))
-				{
-					c.vec.x = c.vec.y = c.vec.z = vec.z;
-				}
-			}
-			else
+			if (!strcmp(ar.getModifiedRowName(), "x"))
 			{
-				ar(Serialization::MinMaxRange(c.vec.x), "x", "^");
-				ar(Serialization::MinMaxRange(c.vec.y), "y", "^");
-				ar(Serialization::MinMaxRange(c.vec.z), "z", "^");
-				result = ar(Serialization::SStruct(c), "scale", "^");
+				c.vec.x = c.vec.y = c.vec.z = vec.x;
 			}
-			ar.closeBlock();
-			return result;
+			else if (!strcmp(ar.getModifiedRowName(), "y"))
+			{
+				c.vec.x = c.vec.y = c.vec.z = vec.y;
+			}
+			else if (!strcmp(ar.getModifiedRowName(), "z"))
+			{
+				c.vec.x = c.vec.y = c.vec.z = vec.z;
+			}
 		}
-		return false;
+		else
+		{
+			ar(Serialization::MinMaxRange(c.vec.x), "x", "^");
+			ar(Serialization::MinMaxRange(c.vec.y), "y", "^");
+			ar(Serialization::MinMaxRange(c.vec.z), "z", "^");
+			result = ar(Serialization::SStruct(c), "scale", "^");
+		}
+		ar.closeBlock();
+		return result;
 	}
-	else
-	{
-		typedef float (* Array)[3];
-		return ar(*((Array) & c.vec.x), name, label);
-	}
+	return false;
 }
 
 template<class T>

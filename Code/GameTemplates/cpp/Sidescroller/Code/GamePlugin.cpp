@@ -18,6 +18,11 @@ CGamePlugin::~CGamePlugin()
 	// Remove any registered listeners before 'this' becomes invalid
 	gEnv->pGameFramework->RemoveNetworkedClientListener(*this);
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	
+	if (gEnv->pSchematyc)
+	{
+		gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(GetSchematycPackageGUID());
+	}
 }
 
 bool CGamePlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
@@ -43,15 +48,18 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 			Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
 		};
 
-		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
-			stl::make_unique<Schematyc::CEnvPackage>(
-				GetSchematycPackageGUID(),
-				"EntityComponents",
-				"Crytek GmbH",
-				"Components",
-				staticAutoRegisterLambda
-				)
-		);
+		if (gEnv->pSchematyc)
+		{
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+				stl::make_unique<Schematyc::CEnvPackage>(
+					GetSchematycPackageGUID(),
+					"EntityComponents",
+					"Crytek GmbH",
+					"Components",
+					staticAutoRegisterLambda
+					)
+			);
+		}
 	}break;
 		// Called when the game framework has initialized and we are ready for game logic to start
 	case ESYSTEM_EVENT_GAME_POST_INIT:

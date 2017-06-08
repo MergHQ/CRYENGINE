@@ -1416,8 +1416,7 @@ bool CD3D9Renderer::FX_HDRScene(bool bEnableHDR, int32 shaderRenderingFlags, boo
 					|| CTexture::s_ptexHDRTarget->GetHeight() != GetHeight())))
 			CTexture::GenerateHDRMaps();
 
-		const bool bIsRightEye = (shaderRenderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == SHDF_STEREO_RIGHT_EYE;
-		if (!bDeferredShading || bIsRightEye || CV_r_measureoverdraw || (shaderRenderingFlags & SHDF_BILLBOARDS))
+		if (!bDeferredShading || CV_r_measureoverdraw || (shaderRenderingFlags & SHDF_BILLBOARDS))
 		{
 			// HDR post process isn't used.
 			return false;
@@ -1429,8 +1428,10 @@ bool CD3D9Renderer::FX_HDRScene(bool bEnableHDR, int32 shaderRenderingFlags, boo
 			FX_ClearTarget(&m_DepthBufferOrig);
 		}
 
+#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
 		if ((shaderRenderingFlags & SHDF_ALLOWHDR) && (shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS))
 			FX_PushRenderTarget(0, CTexture::s_ptexHDRTarget, &m_DepthBufferOrig, -1, true);
+#endif
 
 		pShaderThreadInfo->m_PersFlags |= RBPF_HDR;
 	}

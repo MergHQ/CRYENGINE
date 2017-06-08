@@ -624,11 +624,8 @@ void CSceneForwardStage::Execute_Transparent(bool bBelowWater)
 
 	if (!SRendItem::IsListEmpty(EFSLIST_TRANSP) && ((SRendItem::BatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER) || !bBelowWater))
 	{
-#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
-		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
-		pRenderer->FX_ScreenStretchRect(CTexture::s_ptexCurrSceneTarget);
-		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
-#endif
+		CStretchRectPass& copyPass = bBelowWater ? m_copySceneTargetBWPass : m_copySceneTargetAWPass;
+		copyPass.Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexCurrSceneTarget);
 	}
 
 	if (pRenderer->m_nGraphicsPipeline >= 3)

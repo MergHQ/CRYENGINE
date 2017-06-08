@@ -6,8 +6,6 @@ class CREMeshImpl : public CREMesh
 {
 public:
 
-	// Constant buffer used for tessellation. It has just one constant which tells the hull shader how it needs to offset iPrimitiveID that comes from HW.
-	CGpuBuffer m_tessCB;        // TODO: remove this buffer once everything works with new pipeline
 	uint       m_nPatchIDOffset;
 
 	CREMeshImpl()

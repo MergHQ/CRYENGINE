@@ -6,6 +6,7 @@
 #include "Common/GraphicsPipelineStateSet.h"
 #include "Common/SceneRenderPass.h"
 #include "Common/FullscreenPass.h"
+#include "Common/UtilityPasses.h"
 
 class CRESky;
 class CREHDRSky;
@@ -86,6 +87,9 @@ private:
 	CSceneRenderPass         m_forwardOpaqueRecursivePass;
 	CSceneRenderPass         m_forwardOverlayRecursivePass;
 	CSceneRenderPass         m_forwardTransparentRecursivePass;
+
+	CStretchRectPass         m_copySceneTargetBWPass;
+	CStretchRectPass         m_copySceneTargetAWPass;
 
 	CFullscreenPass          m_skyPass;
 	CRenderPrimitive         m_starsPrimitive;

@@ -1066,6 +1066,12 @@ void CStandardGraphicsPipeline::Execute()
 
 	gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(m_pCurrentRenderView);
 
+	// new graphics pipeline doesn't need clearing stereo render targets.
+	if (pRenderer->m_nGraphicsPipeline > 0)
+	{
+		gcpRendD3D->GetS3DRend().SkipEyeTargetClears();
+	}
+
 	// Prepare tiled shading resources early to give DMA operations enough time to finish
 	m_pTiledShadingStage->PrepareResources();
 
@@ -1308,6 +1314,7 @@ void CStandardGraphicsPipeline::Execute()
 
 	m_pSnowStage->ExecuteDeferredSnowDisplacement();
 
+#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
 	// Pop HDR target from RT stack
 	{
 		assert(pRenderer->m_RTStack[0][pRenderer->m_nRTStackLevel[0]].m_pTex == CTexture::s_ptexHDRTarget);
@@ -1316,6 +1323,7 @@ void CStandardGraphicsPipeline::Execute()
 		pRenderer->FX_PopRenderTarget(0);
 		//pRenderer->EF_ClearTargetsLater(0);
 	}
+#endif
 
 	if (pRenderer->m_CurRenderEye == RIGHT_EYE || !pRenderer->GetS3DRend().IsStereoEnabled() || !pRenderer->GetS3DRend().RequiresSequentialSubmission())
 	{

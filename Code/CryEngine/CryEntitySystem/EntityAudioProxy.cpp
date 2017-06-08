@@ -331,13 +331,6 @@ bool CEntityComponentAudio::ExecuteTrigger(
 {
 	if (m_pEntity != nullptr)
 	{
-#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-		if (m_pEntity->GetWorldTM().GetTranslation() == Vec3Constants<float>::fVec3_Zero)
-		{
-			gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "<Audio> Trying to execute an audio trigger at (0,0,0) position in the entity %s. Entity may not be initialized correctly!", m_pEntity->GetEntityTextDescription().c_str());
-		}
-#endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
-
 		if ((m_pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_DISABLED) == 0)
 		{
 			if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
