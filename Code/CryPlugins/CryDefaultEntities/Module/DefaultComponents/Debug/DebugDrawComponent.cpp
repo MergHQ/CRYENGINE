@@ -9,122 +9,118 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-void RegisterDebugDrawComponent(Schematyc::IEnvRegistrar& registrar)
+void CDebugDrawComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CDebugDrawComponent));
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawSphere, "{96281FF5-B032-409C-8128-D02800D6876E}"_cry_guid, "DrawSphere");
-			pFunction->SetDescription("Draws a sphere in the world");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'pos', "Position");
-			pFunction->BindInput(2, 'rad', "Radius");
-			pFunction->BindInput(3, 'col', "Color");
-			pFunction->BindInput(4, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawDirection, "{8ED2D2BD-BD20-4A28-AE8B-9948EFE45E12}"_cry_guid, "DrawDirection");
-			pFunction->SetDescription("Draws a direction in the world");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'pos', "Position");
-			pFunction->BindInput(2, 'rad', "Radius");
-			pFunction->BindInput(3, 'dir', "Direction");
-			pFunction->BindInput(4, 'col', "Color");
-			pFunction->BindInput(5, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawLine, "{ECBDFE43-7518-43CA-9C81-227BC3BB849D}"_cry_guid, "DrawLine");
-			pFunction->SetDescription("Draws a line in the world");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'pos1', "Start Position");
-			pFunction->BindInput(2, 'pos2', "End Position");
-			pFunction->BindInput(3, 'col', "Color");
-			pFunction->BindInput(4, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawPlanarDisc, "{34F062B4-018B-4CE1-84ED-92005C042C3D}"_cry_guid, "DrawPlanarDisc");
-			pFunction->SetDescription("Draws a planar disc in the world");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'pos', "Position");
-			pFunction->BindInput(2, 'inra', "Inner Radius");
-			pFunction->BindInput(3, 'oura', "Outer Radius");
-			pFunction->BindInput(4, 'col', "Color");
-			pFunction->BindInput(5, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawCone, "{7E4FAF6E-A664-49B9-909F-90B91AEEEBE9}"_cry_guid, "DrawCone");
-			pFunction->SetDescription("Draws a cone in the world");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'pos', "Position");
-			pFunction->BindInput(2, 'dir', "Direction");
-			pFunction->BindInput(3, 'bara', "Base Radius");
-			pFunction->BindInput(4, 'hei', "Height");
-			pFunction->BindInput(5, 'col', "Color");
-			pFunction->BindInput(6, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawCylinder, "{0C851E60-9798-4DF5-BE36-7F671D685D83}"_cry_guid, "DrawCylinder");
-			pFunction->SetDescription("Draws a cylinder in the world");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'pos', "Position");
-			pFunction->BindInput(2, 'dir', "Direction");
-			pFunction->BindInput(3, 'rad', "Radius");
-			pFunction->BindInput(4, 'hei', "Height");
-			pFunction->BindInput(5, 'col', "Color");
-			pFunction->BindInput(6, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::Draw2DText, "{6E62F8B7-E52A-47F5-BD08-3B78E9EEE634}"_cry_guid, "Draw2DText");
-			pFunction->SetDescription("Draws 2D text onto the screen");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'text', "Text");
-			pFunction->BindInput(2, 'size', "Size");
-			pFunction->BindInput(3, 'col', "Color");
-			pFunction->BindInput(4, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawText, "{DCC8C877-5970-4D29-B8D7-3C01A2DA8ECA}"_cry_guid, "DrawText");
-			pFunction->SetDescription("Draws 2D text onto a specific part of the screen");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'text', "Text");
-			pFunction->BindInput(2, 'x', "X");
-			pFunction->BindInput(3, 'y', "Y");
-			pFunction->BindInput(4, 'size', "Size");
-			pFunction->BindInput(5, 'col', "Color");
-			pFunction->BindInput(6, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawText3D, "{A462ACC5-0BB0-45A4-8FC0-3EC14778934B}"_cry_guid, "DrawText3D");
-			pFunction->SetDescription("Draws text in the world");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'text', "Text");
-			pFunction->BindInput(2, 'pos', "Position");
-			pFunction->BindInput(3, 'size', "Size");
-			pFunction->BindInput(4, 'col', "Color");
-			pFunction->BindInput(5, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::Draw2DLine, "{1DB96257-4C86-4A52-84A1-81F5FF9505B5}"_cry_guid, "Draw2DLine");
-			pFunction->SetDescription("Draws a 2D line on the screen");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'x1', "Start X");
-			pFunction->BindInput(2, 'y1', "Start Y");
-			pFunction->BindInput(3, 'x2', "End X");
-			pFunction->BindInput(4, 'y2', "End Y");
-			pFunction->BindInput(5, 'col', "Color");
-			pFunction->BindInput(6, 'dur', "Duration");
-			componentScope.Register(pFunction);
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawSphere, "{96281FF5-B032-409C-8128-D02800D6876E}"_cry_guid, "DrawSphere");
+		pFunction->SetDescription("Draws a sphere in the world");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'pos', "Position");
+		pFunction->BindInput(2, 'rad', "Radius");
+		pFunction->BindInput(3, 'col', "Color");
+		pFunction->BindInput(4, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawDirection, "{8ED2D2BD-BD20-4A28-AE8B-9948EFE45E12}"_cry_guid, "DrawDirection");
+		pFunction->SetDescription("Draws a direction in the world");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'pos', "Position");
+		pFunction->BindInput(2, 'rad', "Radius");
+		pFunction->BindInput(3, 'dir', "Direction");
+		pFunction->BindInput(4, 'col', "Color");
+		pFunction->BindInput(5, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawLine, "{ECBDFE43-7518-43CA-9C81-227BC3BB849D}"_cry_guid, "DrawLine");
+		pFunction->SetDescription("Draws a line in the world");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'pos1', "Start Position");
+		pFunction->BindInput(2, 'pos2', "End Position");
+		pFunction->BindInput(3, 'col', "Color");
+		pFunction->BindInput(4, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawPlanarDisc, "{34F062B4-018B-4CE1-84ED-92005C042C3D}"_cry_guid, "DrawPlanarDisc");
+		pFunction->SetDescription("Draws a planar disc in the world");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'pos', "Position");
+		pFunction->BindInput(2, 'inra', "Inner Radius");
+		pFunction->BindInput(3, 'oura', "Outer Radius");
+		pFunction->BindInput(4, 'col', "Color");
+		pFunction->BindInput(5, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawCone, "{7E4FAF6E-A664-49B9-909F-90B91AEEEBE9}"_cry_guid, "DrawCone");
+		pFunction->SetDescription("Draws a cone in the world");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'pos', "Position");
+		pFunction->BindInput(2, 'dir', "Direction");
+		pFunction->BindInput(3, 'bara', "Base Radius");
+		pFunction->BindInput(4, 'hei', "Height");
+		pFunction->BindInput(5, 'col', "Color");
+		pFunction->BindInput(6, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawCylinder, "{0C851E60-9798-4DF5-BE36-7F671D685D83}"_cry_guid, "DrawCylinder");
+		pFunction->SetDescription("Draws a cylinder in the world");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'pos', "Position");
+		pFunction->BindInput(2, 'dir', "Direction");
+		pFunction->BindInput(3, 'rad', "Radius");
+		pFunction->BindInput(4, 'hei', "Height");
+		pFunction->BindInput(5, 'col', "Color");
+		pFunction->BindInput(6, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::Draw2DText, "{6E62F8B7-E52A-47F5-BD08-3B78E9EEE634}"_cry_guid, "Draw2DText");
+		pFunction->SetDescription("Draws 2D text onto the screen");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'text', "Text");
+		pFunction->BindInput(2, 'size', "Size");
+		pFunction->BindInput(3, 'col', "Color");
+		pFunction->BindInput(4, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawText, "{DCC8C877-5970-4D29-B8D7-3C01A2DA8ECA}"_cry_guid, "DrawText");
+		pFunction->SetDescription("Draws 2D text onto a specific part of the screen");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'text', "Text");
+		pFunction->BindInput(2, 'x', "X");
+		pFunction->BindInput(3, 'y', "Y");
+		pFunction->BindInput(4, 'size', "Size");
+		pFunction->BindInput(5, 'col', "Color");
+		pFunction->BindInput(6, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::DrawText3D, "{A462ACC5-0BB0-45A4-8FC0-3EC14778934B}"_cry_guid, "DrawText3D");
+		pFunction->SetDescription("Draws text in the world");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'text', "Text");
+		pFunction->BindInput(2, 'pos', "Position");
+		pFunction->BindInput(3, 'size', "Size");
+		pFunction->BindInput(4, 'col', "Color");
+		pFunction->BindInput(5, 'dur', "Duration");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDebugDrawComponent::Draw2DLine, "{1DB96257-4C86-4A52-84A1-81F5FF9505B5}"_cry_guid, "Draw2DLine");
+		pFunction->SetDescription("Draws a 2D line on the screen");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'x1', "Start X");
+		pFunction->BindInput(2, 'y1', "Start Y");
+		pFunction->BindInput(3, 'x2', "End X");
+		pFunction->BindInput(4, 'y2', "End Y");
+		pFunction->BindInput(5, 'col', "Color");
+		pFunction->BindInput(6, 'dur', "Duration");
+		componentScope.Register(pFunction);
 	}
 }
 

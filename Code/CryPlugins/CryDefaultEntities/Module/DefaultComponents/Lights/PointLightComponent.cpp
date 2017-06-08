@@ -10,13 +10,8 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		void RegisterPointLightComponent(Schematyc::IEnvRegistrar& registrar)
+		void CPointLightComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		{
-			Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-			{
-				Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CPointLightComponent));
-				// Functions
-			}
 		}
 
 		void CPointLightComponent::ReflectType(Schematyc::CTypeDesc<CPointLightComponent>& desc)

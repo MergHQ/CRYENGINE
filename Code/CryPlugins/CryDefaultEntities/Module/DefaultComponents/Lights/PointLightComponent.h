@@ -5,6 +5,9 @@
 
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
+
+class CPlugin_CryDefaultEntities;
 
 namespace Cry
 {
@@ -23,6 +26,10 @@ namespace Cry
 		class CPointLightComponent
 			: public IEntityComponent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// IEntityComponent
 			virtual void Initialize() final;
 

@@ -9,76 +9,72 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-static void RegisterStaticPhysicsComponent(Schematyc::IEnvRegistrar& registrar)
+void CSimplePhysicsComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+	// Functions
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CSimplePhysicsComponent));
-		// Functions
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::Enable, "{4F1AB9D4-8FB9-4488-9D9A-26B3DDE50C35}"_cry_guid, "Enable");
-			pFunction->SetDescription("Enables the physical collider");
-			pFunction->BindInput(1, 'enab', "enable");
-			componentScope.Register(pFunction);
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::Enable, "{4F1AB9D4-8FB9-4488-9D9A-26B3DDE50C35}"_cry_guid, "Enable");
+		pFunction->SetDescription("Enables the physical collider");
+		pFunction->BindInput(1, 'enab', "enable");
+		componentScope.Register(pFunction);
+	}
 
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::IsEnabled, "{CAC21F92-74BE-4F29-9337-96C80B88F1AC}"_cry_guid, "IsEnabled");
-			pFunction->SetDescription("Checks if the physical collider is enabled");
-			pFunction->BindOutput(0, 'enab', "enabled");
-			componentScope.Register(pFunction);
-		}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::IsEnabled, "{CAC21F92-74BE-4F29-9337-96C80B88F1AC}"_cry_guid, "IsEnabled");
+		pFunction->SetDescription("Checks if the physical collider is enabled");
+		pFunction->BindOutput(0, 'enab', "enabled");
+		componentScope.Register(pFunction);
+	}
 
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::SetVelocity, "{FC7012F5-2FD2-4E06-BFA2-30A3C44C2AAB}"_cry_guid, "SetVelocity");
-			pFunction->SetDescription("Set Entity Velocity");
-			pFunction->BindInput(1, 'vel', "velocity");
-			componentScope.Register(pFunction);
-		}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::SetVelocity, "{FC7012F5-2FD2-4E06-BFA2-30A3C44C2AAB}"_cry_guid, "SetVelocity");
+		pFunction->SetDescription("Set Entity Velocity");
+		pFunction->BindInput(1, 'vel', "velocity");
+		componentScope.Register(pFunction);
+	}
 
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::GetVelocity, "{1E8C3D8F-404E-452D-B6BE-C5B8EF996FFC}"_cry_guid, "GetVelocity");
-			pFunction->SetDescription("Get Entity Velocity");
-			pFunction->BindOutput(0, 'vel', "velocity");
-			componentScope.Register(pFunction);
-		}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::GetVelocity, "{1E8C3D8F-404E-452D-B6BE-C5B8EF996FFC}"_cry_guid, "GetVelocity");
+		pFunction->SetDescription("Get Entity Velocity");
+		pFunction->BindOutput(0, 'vel', "velocity");
+		componentScope.Register(pFunction);
+	}
 
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::SetAngularVelocity, "{33590792-AD99-4C20-B4D9-DA7C4E40B255}"_cry_guid, "SetAngularVelocity");
-			pFunction->SetDescription("Set Entity Angular Velocity");
-			pFunction->BindInput(1, 'vel', "angular velocity");
-			componentScope.Register(pFunction);
-		}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::SetAngularVelocity, "{33590792-AD99-4C20-B4D9-DA7C4E40B255}"_cry_guid, "SetAngularVelocity");
+		pFunction->SetDescription("Set Entity Angular Velocity");
+		pFunction->BindInput(1, 'vel', "angular velocity");
+		componentScope.Register(pFunction);
+	}
 
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::GetAngularVelocity, "{AEEF2373-B1E3-4334-9D39-CB3376C3C6B3}"_cry_guid, "GetAngularVelocity");
-			pFunction->SetDescription("Get Entity Angular Velocity");
-			pFunction->BindOutput(0, 'vel', "angular velocity");
-			componentScope.Register(pFunction);
-		}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::GetAngularVelocity, "{AEEF2373-B1E3-4334-9D39-CB3376C3C6B3}"_cry_guid, "GetAngularVelocity");
+		pFunction->SetDescription("Get Entity Angular Velocity");
+		pFunction->BindOutput(0, 'vel', "angular velocity");
+		componentScope.Register(pFunction);
+	}
 
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::ApplyImpulse, "FB7197A9-9545-46BD-8748-1B5829CA3AFA"_cry_guid, "ApplyImpulse");
-			pFunction->SetDescription("Applies an impulse to the physics object");
-			pFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::ApplyAngularImpulse, "22926748-513F-4566-AE40-455A51600A3D"_cry_guid, "ApplyAngularImpulse");
-			pFunction->SetDescription("Applies an angular impulse to the physics object");
-			pFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
-			componentScope.Register(pFunction);
-		}
-		// Signals
-		{
-			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(CSimplePhysicsComponent::SCollisionSignal);
-			pSignal->SetDescription("Sent when the entity collided with another object");
-			componentScope.Register(pSignal);
-		}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::ApplyImpulse, "FB7197A9-9545-46BD-8748-1B5829CA3AFA"_cry_guid, "ApplyImpulse");
+		pFunction->SetDescription("Applies an impulse to the physics object");
+		pFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSimplePhysicsComponent::ApplyAngularImpulse, "22926748-513F-4566-AE40-455A51600A3D"_cry_guid, "ApplyAngularImpulse");
+		pFunction->SetDescription("Applies an angular impulse to the physics object");
+		pFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
+		componentScope.Register(pFunction);
+	}
+	// Signals
+	{
+		auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(CSimplePhysicsComponent::SCollisionSignal);
+		pSignal->SetDescription("Sent when the entity collided with another object");
+		componentScope.Register(pSignal);
 	}
 }
 
-void ReflectType(Schematyc::CTypeDesc<CSimplePhysicsComponent>& desc)
+void CSimplePhysicsComponent::ReflectType(Schematyc::CTypeDesc<CSimplePhysicsComponent>& desc)
 {
 	desc.SetGUID(CSimplePhysicsComponent::IID());
 	desc.SetEditorCategory("Physics");

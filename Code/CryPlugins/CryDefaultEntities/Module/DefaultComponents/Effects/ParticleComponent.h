@@ -5,8 +5,11 @@
 
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
 
 #include <CryParticleSystem/IParticlesPfx2.h>
+
+class CPlugin_CryDefaultEntities;
 
 namespace Cry
 {
@@ -15,6 +18,10 @@ namespace Cry
 		class CParticleComponent
 			: public IEntityComponent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// IEntityComponent
 			virtual void Initialize() final;
 

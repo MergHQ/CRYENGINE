@@ -3,6 +3,32 @@
 #include "StdAfx.h"
 #include "PluginDll.h"
 
+#include "DefaultComponents/AI/PathfindingComponent.h"
+#include "DefaultComponents/Audio/AudioSpotComponent.h"
+#include "DefaultComponents/Cameras/CameraComponent.h"
+#include "DefaultComponents/Constraints/LineConstraint.h"
+#include "DefaultComponents/Constraints/PlaneConstraint.h"
+#include "DefaultComponents/Constraints/PointConstraint.h"
+#include "DefaultComponents/Debug/DebugDrawComponent.h"
+#include "DefaultComponents/Effects/DecalComponent.h"
+#include "DefaultComponents/Effects/FogComponent.h"
+#include "DefaultComponents/Effects/ParticleComponent.h"
+#include "DefaultComponents/Geometry/AdvancedAnimationComponent.h"
+#include "DefaultComponents/Geometry/AlembicComponent.h"
+#include "DefaultComponents/Geometry/AnimatedMeshComponent.h"
+#include "DefaultComponents/Geometry/StaticMeshComponent.h"
+#include "DefaultComponents/Input/InputComponent.h"
+#include "DefaultComponents/Lights/EnvironmentProbeComponent.h"
+#include "DefaultComponents/Lights/PointLightComponent.h"
+#include "DefaultComponents/Lights/ProjectorLightComponent.h"
+#include "DefaultComponents/Physics/BoxPrimitiveComponent.h"
+#include "DefaultComponents/Physics/CapsulePrimitiveComponent.h"
+#include "DefaultComponents/Physics/CharacterControllerComponent.h"
+#include "DefaultComponents/Physics/CylinderPrimitiveComponent.h"
+#include "DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
+#include "DefaultComponents/Physics/SimplePhysicsComponent.h"
+#include "DefaultComponents/Physics/SpherePrimitiveComponent.h"
+
 #include <CryEntitySystem/IEntityClass.h>
 
 // Included only once per DLL module.
@@ -30,6 +56,109 @@ bool CPlugin_CryDefaultEntities::Initialize(SSystemGlobalEnvironment& env, const
 	env.pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CCryPluginManager");
 
 	return true;
+}
+
+void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& registrar)
+{
+	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+	{
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPathfindingComponent));
+			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CEntityAudioSpotComponent));
+			Cry::DefaultComponents::CEntityAudioSpotComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCameraComponent));
+			Cry::DefaultComponents::CCameraComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CLineConstraintComponent));
+			Cry::DefaultComponents::CLineConstraintComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPlaneConstraintComponent));
+			Cry::DefaultComponents::CPlaneConstraintComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPointConstraintComponent));
+			Cry::DefaultComponents::CPointConstraintComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CDebugDrawComponent));
+			Cry::DefaultComponents::CDebugDrawComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CDecalComponent));
+			Cry::DefaultComponents::CDecalComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CFogComponent));
+			Cry::DefaultComponents::CFogComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CParticleComponent));
+			Cry::DefaultComponents::CParticleComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CAdvancedAnimationComponent));
+			Cry::DefaultComponents::CAdvancedAnimationComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CAlembicComponent));
+			Cry::DefaultComponents::CAlembicComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CAnimatedMeshComponent));
+			Cry::DefaultComponents::CAnimatedMeshComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CStaticMeshComponent));
+			Cry::DefaultComponents::CStaticMeshComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CInputComponent));
+			Cry::DefaultComponents::CInputComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CEnvironmentProbeComponent));
+			Cry::DefaultComponents::CEnvironmentProbeComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPointLightComponent));
+			Cry::DefaultComponents::CPointLightComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CProjectorLightComponent));
+			Cry::DefaultComponents::CProjectorLightComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CBoxPrimitiveComponent));
+			Cry::DefaultComponents::CBoxPrimitiveComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCapsulePrimitiveComponent));
+			Cry::DefaultComponents::CCapsulePrimitiveComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCharacterControllerComponent));
+			Cry::DefaultComponents::CCharacterControllerComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCylinderPrimitiveComponent));
+			Cry::DefaultComponents::CCylinderPrimitiveComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSimplePhysicsComponent));
+			Cry::DefaultComponents::CSimplePhysicsComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSpherePrimitiveComponent));
+			Cry::DefaultComponents::CSpherePrimitiveComponent::Register(componentScope);
+		}
+	}
 }
 
 void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
@@ -68,42 +197,13 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 		stdClass.sName = "AreaShape";
 		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
 
-		// Now register the new Schematyc components
-		auto registerDefaultComponentsLambda = [](Schematyc::IEnvRegistrar& registrar)
-		{
-			Cry::DefaultComponents::RegisterAudioSpotComponent(registrar);
-			Cry::DefaultComponents::RegisterPathfindingComponent(registrar);
-			Cry::DefaultComponents::RegisterCameraComponent(registrar);
-			Cry::DefaultComponents::RegisterLineConstraintComponent(registrar);
-			Cry::DefaultComponents::RegisterPlaneConstraintComponent(registrar);
-			Cry::DefaultComponents::RegisterPointConstraintComponent(registrar);
-			Cry::DefaultComponents::RegisterDebugDrawComponent(registrar);
-			Cry::DefaultComponents::RegisterDecalComponent(registrar);
-			Cry::DefaultComponents::RegisterFogComponent(registrar);
-			Cry::DefaultComponents::RegisterParticleComponent(registrar);
-			Cry::DefaultComponents::RegisterAdvancedAnimationComponent(registrar);
-			Cry::DefaultComponents::RegisterAlembicComponent(registrar);
-			Cry::DefaultComponents::RegisterAnimatedMeshComponent(registrar);
-			Cry::DefaultComponents::RegisterStaticMeshComponent(registrar);
-			Cry::DefaultComponents::RegisterInputComponent(registrar);
-			Cry::DefaultComponents::RegisterEnvironmentProbeComponent(registrar);
-			Cry::DefaultComponents::RegisterPointLightComponent(registrar);
-			Cry::DefaultComponents::RegisterProjectorLightComponent(registrar);
-			Cry::DefaultComponents::RegisterBoxPrimitiveComponent(registrar);
-			Cry::DefaultComponents::RegisterCapsulePrimitiveComponent(registrar);
-			Cry::DefaultComponents::RegisterCharacterControllerComponent(registrar);
-			Cry::DefaultComponents::RegisterCylinderPrimitiveComponent(registrar);
-			Cry::DefaultComponents::RegisterStaticPhysicsComponent(registrar);
-			Cry::DefaultComponents::RegisterSpherePrimitiveComponent(registrar);
-		};
-
 		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 			stl::make_unique<Schematyc::CEnvPackage>(
 				GetSchematycPackageGUID(),
 				"EntityComponents",
 				"Crytek GmbH",
 				"CRYENGINE Default Entity Components",
-				registerDefaultComponentsLambda
+				[this](Schematyc::IEnvRegistrar& registrar) { RegisterComponents(registrar); }
 				)
 		);
 	}

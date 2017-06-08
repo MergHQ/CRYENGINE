@@ -4,9 +4,12 @@
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/IObject.h>
 #include <CrySchematyc/Utils/SharedString.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
 
 #include <CryGame/IGameFramework.h>
 #include <IActionMapManager.h>
+
+class CPlugin_CryDefaultEntities;
 
 namespace Cry
 {
@@ -15,6 +18,10 @@ namespace Cry
 		class CInputComponent
 			: public IEntityComponent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// IEntityComponent
 			virtual void Initialize() final;
 			// ~IEntityComponent

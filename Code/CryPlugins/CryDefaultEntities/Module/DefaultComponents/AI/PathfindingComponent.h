@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CrySchematyc/Env/IEnvRegistrar.h>
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/IObject.h>
@@ -11,6 +12,8 @@
 
 #include <CryAISystem/MovementRequest.h>
 
+class CPlugin_CryDefaultEntities;
+
 namespace Cry
 {
 	namespace DefaultComponents
@@ -20,6 +23,10 @@ namespace Cry
 			, private IMovementActorAdapter
 			, private IAIPathAgent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// Dummy implementation so we can use IAISystem::CreateAndReturnNewDefaultPathFollower
 			class CPathObstacles final
 				: public IPathObstacles

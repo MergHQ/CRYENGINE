@@ -4,6 +4,9 @@
 
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
+
+class CPlugin_CryDefaultEntities;
 
 namespace Cry
 {
@@ -39,6 +42,10 @@ namespace Cry
 
 		class CEntityAudioSpotComponent : public IEntityComponent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// IEntityComponent
 			virtual void Initialize() final;
 			virtual void OnShutDown() final;

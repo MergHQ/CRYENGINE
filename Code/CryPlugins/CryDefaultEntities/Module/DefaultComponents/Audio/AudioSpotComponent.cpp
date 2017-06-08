@@ -55,55 +55,49 @@ static void ReflectType(Schematyc::CTypeDesc<CEntityAudioSpotComponent::SAudioTr
 	desc.AddMember(&CEntityAudioSpotComponent::SAudioTriggerFinishedSignal::m_bSuccess, 'res', "bSuccess", "Result", "Result", false);
 }
 
-static void RegisterAudioSpotComponent(Schematyc::IEnvRegistrar& registrar)
-{
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+void CEntityAudioSpotComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
+{		
+	// Functions
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityAudioSpotComponent));
-		// Functions
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::ExecuteTrigger, "0D58AF22-775A-4FBE-BC5C-3A7CE250EF98"_cry_guid, "ExecuteTrigger");
-			pFunction->SetDescription("Executes a trigger");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'sta', "StartTrigger");
-			pFunction->BindOutput(2, 'inst', "InstanceId");
-			pFunction->BindOutput(3, 'id', "TriggerId");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::StopTrigger, "E4016C26-87E9-4880-8BAE-D8D39E974AFC"_cry_guid, "StopTrigger");
-			pFunction->SetDescription("Stops a trigger");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'sto', "StopTrigger");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::SetParameter, "FBE1DD7C-57C1-46CE-89A1-3612CFD017E4"_cry_guid, "SetParameter");
-			pFunction->SetDescription("Sets a parameter to a specific value");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'par', "Parameter");
-			pFunction->BindInput(2, 'val', "Value");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::SetSwitchState, "7ABA1505-527C-4882-9399-716C0E43FFCD"_cry_guid, "SetSwitch");
-			pFunction->SetDescription("Sets a switch to a specific state");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'swi', "SwitchAndState");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::Enable, "8a59ffd5-23e2-4959-9468-6d87c44ed0f5"_cry_guid, "Enable");
-			pFunction->SetDescription("Enables/Disables the looping of the default Trigger");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'val', "Value");
-			componentScope.Register(pFunction);
-		}
-		// Signals
-		{
-			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(CEntityAudioSpotComponent::SAudioTriggerFinishedSignal));
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::ExecuteTrigger, "0D58AF22-775A-4FBE-BC5C-3A7CE250EF98"_cry_guid, "ExecuteTrigger");
+		pFunction->SetDescription("Executes a trigger");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'sta', "StartTrigger");
+		pFunction->BindOutput(2, 'inst', "InstanceId");
+		pFunction->BindOutput(3, 'id', "TriggerId");
+		componentScope.Register(pFunction);
 	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::StopTrigger, "E4016C26-87E9-4880-8BAE-D8D39E974AFC"_cry_guid, "StopTrigger");
+		pFunction->SetDescription("Stops a trigger");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'sto', "StopTrigger");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::SetParameter, "FBE1DD7C-57C1-46CE-89A1-3612CFD017E4"_cry_guid, "SetParameter");
+		pFunction->SetDescription("Sets a parameter to a specific value");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'par', "Parameter");
+		pFunction->BindInput(2, 'val', "Value");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::SetSwitchState, "7ABA1505-527C-4882-9399-716C0E43FFCD"_cry_guid, "SetSwitch");
+		pFunction->SetDescription("Sets a switch to a specific state");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'swi', "SwitchAndState");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioSpotComponent::Enable, "8a59ffd5-23e2-4959-9468-6d87c44ed0f5"_cry_guid, "Enable");
+		pFunction->SetDescription("Enables/Disables the looping of the default Trigger");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'val', "Value");
+		componentScope.Register(pFunction);
+	}
+	// Signals
+	componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(CEntityAudioSpotComponent::SAudioTriggerFinishedSignal));
 }
 
 void CEntityAudioSpotComponent::ReflectType(Schematyc::CTypeDesc<CEntityAudioSpotComponent>& desc)

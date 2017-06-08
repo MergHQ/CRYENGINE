@@ -15,12 +15,8 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		static void RegisterFogComponent(Schematyc::IEnvRegistrar& registrar)
+		void CFogComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		{
-			Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-			{
-				Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CFogComponent));
-			}
 		}
 
 		void CFogComponent::ReflectType(Schematyc::CTypeDesc<CFogComponent>& desc)
