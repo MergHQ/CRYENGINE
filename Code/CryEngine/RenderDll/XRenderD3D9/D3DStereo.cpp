@@ -309,6 +309,8 @@ void CD3DStereoRenderer::CreateIntermediateBuffers()
 
 void CD3DStereoRenderer::Shutdown()
 {
+	SAFE_DELETE(m_pHmdRenderer);
+
 	ReleaseResources();
 
 	OnHmdDeviceChanged(nullptr);
@@ -1235,7 +1237,7 @@ void CD3DStereoRenderer::TryInjectHmdCameraAsync(CRenderView* pRenderView)
 CTexture* CD3DStereoRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, DXGI_FORMAT format, const char* name, bool shaderResourceView)
 {
 	ETEX_Format texFormat = DeviceFormats::ConvertToTexFormat(format);
-	CTexture* texture = CTexture::GetOrCreateTextureObject(name, width, height, 1, eTT_2D, FT_DONT_READ | FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, texFormat);
+	CTexture* texture = CTexture::GetOrCreateTextureObject(name, width, height, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, texFormat);
 	if (texture == nullptr)
 	{
 		gEnv->pLog->Log("[HMD][Oculus] Unable to create texture object!");

@@ -595,7 +595,7 @@ void CD3DOculusRenderer::RenderSocialScreen()
 						else
 						#endif
 						{
-							GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_mirrorData.pMirrorTexture->GetDevTexture(), pBackbufferTexture->GetDevTexture());
+							m_StretchRectPass.Execute(m_mirrorData.pMirrorTexture, pBackbufferTexture);
 						}
 					}
 				}

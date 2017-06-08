@@ -24,8 +24,6 @@ namespace Oculus {
 
 CPlugin_OculusVR::~CPlugin_OculusVR()
 {
-	CryVR::Oculus::Resources::Shutdown();
-
 	if (IConsole* const pConsole = gEnv->pConsole)
 	{
 		pConsole->UnregisterVariable("hmd_low_persistence");
@@ -98,6 +96,14 @@ void CPlugin_OculusVR::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_P
 			{
 				gEnv->pSystem->GetHmdManager()->RegisterDevice(GetName(), *pDevice);
 			}
+		}
+		break;
+	case ESYSTEM_EVENT_FAST_SHUTDOWN:
+	case ESYSTEM_EVENT_FULL_SHUTDOWN:
+		{
+			gEnv->pSystem->GetHmdManager()->UnregisterDevice(GetName());
+
+			CryVR::Oculus::Resources::Shutdown();
 		}
 		break;
 	}

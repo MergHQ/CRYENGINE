@@ -108,6 +108,8 @@ private:
 	CryVR::Oculus::IOculusDevice* m_pOculusDevice;
 	CD3D9Renderer*                m_pRenderer;
 	CD3DStereoRenderer*           m_pStereoRenderer;
+	
+	CStretchRectPass             m_StretchRectPass;
 };
 
 #endif //defined(INCLUDE_VR_RENDERING)
