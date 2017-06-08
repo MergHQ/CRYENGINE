@@ -7,8 +7,9 @@
 #include "PreviewWidget.h"
 
 #include <NodeGraph/ICryGraphEditor.h>
-#include <QScrollableBox.h>
 #include <CrySerialization/IArchive.h>
+
+#include <QWidget>
 
 class QAdvancedPropertyTree;
 
@@ -19,7 +20,7 @@ class CAbstractObjectStructureModelItem;
 class CAbstractVariablesModelItem;
 class CMainWindow;
 
-class CPropertiesWidget : public QScrollableBox
+class CPropertiesWidget : public QWidget
 {
 	Q_OBJECT
 
