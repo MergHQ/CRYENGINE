@@ -20,6 +20,7 @@
 #include "D3DPostProcess.h"
 #include "StatoscopeRenderStats.h"
 #include "GraphicsPipeline/VolumetricFog.h"
+#include "GraphicsPipeline/Common/UtilityPasses.h"
 
 #include <CryMovie/AnimKey.h>
 #include <CryAISystem/IAISystem.h>
@@ -1127,12 +1128,7 @@ void CD3D9Renderer::RT_SwitchToNativeResolutionBackbuffer(bool resolveBackBuffer
 	}
 	else if (resolveBackBuffer)
 	{
-		// Custom upscaling from internal to native resolution
-		CPostEffect* pPostAA = PostEffectMgr()->GetEffect(ePFX_PostAA);
-		if (pPostAA)
-		{
-			((CPostAA*)pPostAA)->UpscaleImage();
-		}
+		gcpRendD3D->GetGraphicsPipeline().m_UpscalePass->Execute(CTexture::s_ptexSceneSpecular, GetCurrentTargetOutput());
 	}
 }
 
@@ -1895,31 +1891,35 @@ void CD3D9Renderer::ResolveSupersampledBackbuffer()
 
 	PROFILE_LABEL_SCOPE("RESOLVE_SUPERSAMPLED");
 
-	SD3DPostEffectsUtils::EFilterType eFilter = SD3DPostEffectsUtils::FilterType_Box;
+	CDownsamplePass::EFilterType eFilter = CDownsamplePass::FilterType_Box;
 	if (CV_r_SupersamplingFilter == 1)
-		eFilter = SD3DPostEffectsUtils::FilterType_Tent;
+		eFilter = CDownsamplePass::FilterType_Tent;
 	else if (CV_r_SupersamplingFilter == 2)
-		eFilter = SD3DPostEffectsUtils::FilterType_Gauss;
+		eFilter = CDownsamplePass::FilterType_Gauss;
 	else if (CV_r_SupersamplingFilter == 3)
-		eFilter = SD3DPostEffectsUtils::FilterType_Lanczos;
+		eFilter = CDownsamplePass::FilterType_Lanczos;
 
 	const SDisplayContext* pDC = GetActiveDisplayContext();
 	if (IsEditorMode())
 	{
 		RT_SetViewport(0, 0, m_width, m_height);
 
+		// New pipeline, wrong namespace
 		PostProcessUtils().CopyScreenToTexture(CTexture::s_ptexBackBuffer);
-		PostProcessUtils().Downsample(CTexture::s_ptexBackBuffer, NULL,
-		                              m_width, m_height,
-		                              m_width / m_pActiveContext->m_nSSSamplesX, m_height / m_pActiveContext->m_nSSSamplesY,
-		                              eFilter, false);
+
+		gcpRendD3D->GetGraphicsPipeline().m_DownscalePass->Execute(
+			CTexture::s_ptexBackBuffer, GetCurrentTargetOutput(),
+			m_width, m_height,
+			m_width / m_pActiveContext->m_nSSSamplesX, m_height / m_pActiveContext->m_nSSSamplesY,
+			eFilter);
 	}
 	else
 	{
-		PostProcessUtils().Downsample(CTexture::s_ptexSceneSpecular, NULL,
-		                              m_width, m_height,
-		                              pDC->m_Width, pDC->m_Height,
-		                              eFilter, false);
+		gcpRendD3D->GetGraphicsPipeline().m_DownscalePass->Execute(
+			CTexture::s_ptexSceneSpecular, GetCurrentTargetOutput(),
+			m_width, m_height,
+			pDC->m_Width, pDC->m_Height,
+			eFilter);
 	}
 }
 

@@ -39,9 +39,6 @@ void SD3DPostEffectsUtils::ResolveRT(CTexture*& pDst, const RECT* pSrcRect)
 	if (!pDst)
 		return;
 
-	int iTempX, iTempY, iWidth, iHeight;
-	gcpRendD3D->GetViewport(&iTempX, &iTempY, &iWidth, &iHeight);
-
 	CTexture* pSrc = gcpRendD3D->m_pNewTarget[0]->m_pTex;
 	if (pSrc)
 	{
@@ -85,9 +82,6 @@ void SD3DPostEffectsUtils::CopyTextureToScreen(CTexture*& pSrc, const RECT* pSrc
 
 void SD3DPostEffectsUtils::CopyScreenToTexture(CTexture*& pDst, const RECT* pSrcRegion)
 {
-	int iTempX, iTempY, iWidth, iHeight;
-	gcpRendD3D->GetViewport(&iTempX, &iTempY, &iWidth, &iHeight);
-
 	ResolveRT(pDst, pSrcRegion);
 }
 
