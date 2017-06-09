@@ -893,30 +893,6 @@ struct IFireCommandHandler
 	// </interfuscator:shuffle>
 };
 
-//! Memento used in CanTargetPointBeReached etc.
-class CTargetPointRequest
-{
-public:
-	CTargetPointRequest()  {}
-	CTargetPointRequest(const Vec3& targetPoint, bool continueMovingAtEnd = true)
-		: targetPoint(targetPoint), pathID(-1), continueMovingAtEnd(continueMovingAtEnd), splitPoint(ZERO) {}
-	ETriState   GetResult() const        { return result; }
-	const Vec3& GetPosition() const      { return targetPoint; }
-	void        SetResult(ETriState res) { result = res; }
-private:
-	// Data is internal to AI (CNavPath)!
-	friend class CNavPath;
-	Vec3 targetPoint;
-	Vec3 splitPoint;
-	int  itIndex;
-	int  itBeforeIndex;
-
-	//! Used to identify the path this was valid for.
-	int       pathID;
-	bool      continueMovingAtEnd;
-	ETriState result;
-};
-
 struct SAIEVENT
 {
 	bool     bFuzzySight;

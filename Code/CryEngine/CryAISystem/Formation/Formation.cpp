@@ -13,6 +13,7 @@
 #include "StdAfx.h"
 #include "Formation.h"
 #include "PipeUser.h"
+#include "Formation/AIFormationDescriptor.h"
 
 #include <CryEntitySystem/IEntity.h>
 #include "AIObject.h"

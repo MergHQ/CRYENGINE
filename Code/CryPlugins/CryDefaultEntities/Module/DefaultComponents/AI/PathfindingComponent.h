@@ -166,23 +166,8 @@ namespace Cry
 
 			virtual const AgentMovementAbility& GetPathAgentMovementAbility() const final { return m_movementAbility; }
 
-			virtual void GetPathAgentNavigationBlockers(NavigationBlockers& blockers, const PathfindRequest* pRequest) final {}
-
-			virtual unsigned int GetPathAgentLastNavNode() const final { return 0; }
-			virtual void SetPathAgentLastNavNode(unsigned int lastNavNode) final {}
-
 			virtual void SetPathToFollow(const char* pathName) final {}
 			virtual void         SetPathAttributeToFollow(bool bSpline) final {}
-
-			virtual void SetPFBlockerRadius(int blockerType, float radius) final {}
-
-			virtual ETriState CanTargetPointBeReached(CTargetPointRequest& request) final
-			{
-				request.SetResult(eTS_false);
-				return eTS_false;
-			}
-
-			virtual bool UseTargetPointRequest(const CTargetPointRequest& request) final { return false; }
 
 			virtual bool GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const final { return false; }
 			virtual bool GetTeleportPosition(Vec3& teleportPos) const final { return false; }
@@ -210,7 +195,7 @@ namespace Cry
 				request.resultCallback = functor(*this, &CPathfindingComponent::OnMNMPathResult);
 				request.agentTypeID = m_navigationAgentTypeId;
 
-				m_pathFinderRequestId = gEnv->pAISystem->GetMNMPathfinder()->RequestPathTo(this, request);
+				m_pathFinderRequestId = gEnv->pAISystem->GetMNMPathfinder()->RequestPathTo(GetEntityId(), request);
 			}
 
 			void OnMNMPathResult(const MNM::QueuedPathID& requestId, MNMPathRequestResult& result)

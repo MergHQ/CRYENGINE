@@ -22,7 +22,6 @@
 #include "DebugDrawContext.h"
 #include "AILog.h"
 
-#include "Graph.h"
 #include "Puppet.h"
 #include "AIVehicle.h"
 #include "GoalPipe.h"
@@ -30,11 +29,9 @@
 #include "AIPlayer.h"
 #include "PipeUser.h"
 #include "Leader.h"
-#include "NavRegion.h"
 #include "SmartObjects.h"
 #include "PathFollower.h"
 #include "Shape.h"
-#include "CodeCoverageGUI.h"
 #include "StatsManager.h"
 #include "FireCommand.h"
 
@@ -49,6 +46,7 @@
 #include "CentralInterestManager.h"
 #include "PersonalInterestManager.h"
 #include "BehaviorTree/BehaviorTreeManager.h"
+#include "Formation/FormationManager.h"
 
 #include <CryAISystem/IAIBubblesSystem.h>
 #include <CryAISystem/IAISystemComponent.h>
@@ -957,36 +955,11 @@ void CAISystem::DebugDrawDebugAgent()
 	}
 }
 
-void CAISystem::DebugDrawCodeCoverage() const
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-
-	gAIEnv.pCodeCoverageGUI->DebugDraw(gAIEnv.CVars.CodeCoverage);
-}
-
 void CAISystem::DebugDrawNavigation() const
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
 
 	m_pNavigation->DebugDraw();
-}
-
-void CAISystem::DebugDrawGraph(int debugDrawValue) const
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-
-	CDebugDrawContext dc;
-
-	if (debugDrawValue == 72)
-		DebugDrawGraphErrors(m_pGraph);
-	else if (debugDrawValue == 74)
-		DebugDrawGraph(m_pGraph);
-	else if (debugDrawValue == 79 || debugDrawValue == 179 || debugDrawValue == 279)
-	{
-		std::vector<Vec3> pos;
-		pos.push_back(dc->GetCameraPos());
-		DebugDrawGraph(m_pGraph, &pos, 15);
-	}
 }
 
 void CAISystem::DebugDrawLightManager()
@@ -1099,41 +1072,6 @@ void CAISystem::DebugDrawCheckRay() const
 
 		CDebugDrawContext dc;
 		dc->DrawLine(posFrom, color, posTo, color);
-	}
-}
-
-void CAISystem::DebugDrawCheckWalkabilityTime() const
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-
-	IEntity* entFrom = gEnv->pEntitySystem->FindEntityByName("CheckWalkabilityTimeFrom");
-	IEntity* entTo = gEnv->pEntitySystem->FindEntityByName("CheckWalkabilityTimeTo");
-	if (entFrom && entTo)
-	{
-		const Vec3& posFrom = entFrom->GetPos();
-		const Vec3& posTo = entTo->GetPos();
-		const float radius = 0.3f;
-		bool result;
-		const int num = 100;
-		CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
-		for (int i = 0; i < num; ++i)
-			result = CheckWalkability(posFrom, posTo, 0.35f, ListPositions());
-		CTimeValue endTime = gEnv->pTimer->GetAsyncTime();
-		ColorB color;
-		if (result)
-			color.set(0, 255, 0, 255);
-		else
-			color.set(255, 0, 0, 255);
-		CDebugDrawContext dc;
-		dc->DrawSphere(posFrom, radius, color);
-		dc->DrawSphere(posTo, radius, color);
-		float time = (endTime - startTime).GetSeconds();
-
-		const int column = 5;
-		const int row = 50;
-		char buff[256];
-		cry_sprintf(buff, "%d walkability calls in %5.2f sec", num, time);
-		dc->Draw2dLabel(column, row, buff, ColorB(255, 0, 255));
 	}
 }
 
@@ -1847,96 +1785,6 @@ void CAISystem::DebugDrawVegetationCollision()
 	}
 }
 
-struct SHidePos
-{
-	SHidePos(const Vec3& pos = ZERO, const Vec3& dir = Vec3Constants<float>::fVec3_Zero) : pos(pos), dir(dir) {}
-	Vec3 pos;
-	Vec3 dir;
-};
-
-struct SVolumeFunctor
-{
-	SVolumeFunctor(std::vector<SHidePos>& hidePositions) : hidePositions(hidePositions) {}
-	void operator()(SVolumeHideSpot& hs, float) { hidePositions.push_back(SHidePos(hs.pos, hs.dir)); }
-	std::vector<SHidePos>& hidePositions;
-};
-
-//====================================================================
-// DebugDrawHideSpots
-// need to evaluate all navigation/hide types
-//====================================================================
-void CAISystem::DebugDrawHideSpots()
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-
-	float range = gAIEnv.CVars.DebugDrawHideSpotRange;
-	if (range < 0.1f)
-		return;
-
-	CDebugDrawContext dc;
-
-	Vec3 playerPos = dc->GetCameraPos();
-
-	Vec3 groundPos = playerPos;
-	I3DEngine* pEngine = gEnv->p3DEngine;
-	groundPos.z = pEngine->GetTerrainElevation(groundPos.x, groundPos.y);
-	dc->DrawSphere(groundPos, 0.01f * (playerPos.z - groundPos.z), ColorB(255, 0, 0));
-
-	MultimapRangeHideSpots hidespots;
-	MapConstNodesDistance traversedNodes;
-	// can't get SO since we have no entity...
-	GetHideSpotsInRange(hidespots, traversedNodes, playerPos, range,
-	                    IAISystem::NAV_TRIANGULAR | IAISystem::NAV_WAYPOINT_HUMAN | IAISystem::NAV_WAYPOINT_3DSURFACE |
-	                    IAISystem::NAV_VOLUME | IAISystem::NAV_SMARTOBJECT, 0.0f, false, 0);
-
-	/// for profiling (without draw overhead)
-	const bool skipDrawing = false;
-	if (skipDrawing)
-		return;
-
-	for (MultimapRangeHideSpots::const_iterator it = hidespots.begin(); it != hidespots.end(); ++it)
-	{
-		float distance = it->first;
-		const SHideSpot& hs = it->second;
-
-		const Vec3& pos = hs.info.pos;
-		Vec3 dir = hs.info.dir;
-
-		const float radius = 0.3f;
-		const float height = 0.3f;
-		const float triHeight = 5.0f;
-		int alpha = 255;
-		if (hs.pObstacle && !hs.pObstacle->IsCollidable())
-		{
-			alpha = 128;
-		}
-		else if (hs.pAnchorObject && hs.pAnchorObject->GetType() == AIANCHOR_COMBAT_HIDESPOT_SECONDARY)
-		{
-			alpha = 128;
-			dir.zero();
-		}
-		dc->DrawSphere(pos, 0.2f * radius, ColorB(0, 255, 0, alpha));
-		if (dir.IsZero())
-			dc->DrawCone(pos + Vec3(0, 0, triHeight), Vec3(0, 0, -1), radius, triHeight, ColorB(0, 255, 0, alpha));
-		else
-			dc->DrawCone(pos + height * dir, -dir, radius, height, ColorB(0, 255, 0, alpha));
-
-	}
-
-	// INTEGRATION : (MATT) These yellow cones kindof get in the way in G04 but handy for Crysis I believe {2007/05/31:17:29:30}
-	ColorB color(255, 255, 0);
-	for (MapConstNodesDistance::const_iterator it = traversedNodes.begin(); it != traversedNodes.end(); ++it)
-	{
-		const GraphNode* pNode = it->first;
-		float dist = it->second;
-		Vec3 pos = pNode->GetPos();
-		float radius = 0.3f;
-		float coneHeight = 1.0f;
-		dc->DrawCone(pos + Vec3(0, 0, coneHeight), Vec3(0, 0, -1), radius, coneHeight, ColorB(255, 255, 0, 100));
-		dc->Draw3dLabelEx(pos + Vec3(0, 0, 0.3f), 1.0f, color, true, false, false, false, "%5.2f", dist);
-	}
-}
-
 //====================================================================
 // DebugDrawDynamicHideObjects
 //====================================================================
@@ -1975,50 +1823,6 @@ void CAISystem::DebugDrawDynamicHideObjects()
 }
 
 //====================================================================
-// DebugDrawGraphErrors
-//====================================================================
-void CAISystem::DebugDrawGraphErrors(CGraph* pGraph) const
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-
-	CDebugDrawContext dc;
-
-	unsigned int numErrors = pGraph->mBadGraphData.size();
-
-	std::vector<Vec3> positions;
-	const float minRadius = 0.1f;
-	const float maxRadius = 2.0f;
-	const int numCircles = 2;
-	for (unsigned int iError = 0; iError < numErrors; ++iError)
-	{
-		const CGraph::SBadGraphData& error = pGraph->mBadGraphData[iError];
-		Vec3 errorPos1 = error.mPos1;
-		errorPos1.z = dc->GetDebugDrawZ(errorPos1, true);
-		Vec3 errorPos2 = error.mPos2;
-		errorPos2.z = dc->GetDebugDrawZ(errorPos2, true);
-
-		positions.push_back(errorPos1);
-
-		switch (error.mType)
-		{
-		case CGraph::SBadGraphData::BAD_PASSABLE:
-			dc->DrawCircles(errorPos1, minRadius, maxRadius, numCircles, Vec3(1, 0, 0), Vec3(1, 1, 0));
-			dc->DrawCircles(errorPos2, minRadius, maxRadius, numCircles, Vec3(1, 0, 0), Vec3(1, 1, 0));
-			dc->DrawLine(errorPos1, ColorB(255, 255, 0), errorPos2, ColorB(255, 255, 0));
-			break;
-		case CGraph::SBadGraphData::BAD_IMPASSABLE:
-			dc->DrawCircles(errorPos1, minRadius, maxRadius, numCircles, Vec3(0, 1, 0), Vec3(1, 1, 0));
-			dc->DrawCircles(errorPos2, minRadius, maxRadius, numCircles, Vec3(0, 1, 0), Vec3(1, 1, 0));
-			dc->DrawLine(errorPos1, ColorB(255, 255, 0), errorPos2, ColorB(255, 255, 0));
-			break;
-		}
-	}
-	const float errorRadius = 10.0f;
-	// draw the basic graph just in this region
-	DebugDrawGraph(m_pGraph, &positions, errorRadius);
-}
-
-//====================================================================
 // CheckDistance
 //====================================================================
 static inline bool CheckDistance(const Vec3 pos1, const std::vector<Vec3>* focusPositions, float radius)
@@ -2035,140 +1839,6 @@ static inline bool CheckDistance(const Vec3 pos1, const std::vector<Vec3>* focus
 			return true;
 	}
 	return false;
-}
-
-// A bit ugly, but make this global - it caches the debug graph that needs to be drawn.
-// If it's empty then DebugDrawGraph tries to fill it. Otherwise we just draw it
-// It will get zeroed when the graph is regenerated.
-std::vector<const GraphNode*> g_DebugGraphNodesToDraw;
-static CGraph* lastDrawnGraph = 0; // detects swapping between hide and nav
-
-//====================================================================
-// DebugDrawGraph
-//====================================================================
-void CAISystem::DebugDrawGraph(CGraph* pGraph, const std::vector<Vec3>* focusPositions, float focusRadius) const
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-
-	//	if (pGraph != lastDrawnGraph)
-	{
-		lastDrawnGraph = pGraph;
-		g_DebugGraphNodesToDraw.clear();
-	}
-
-	if (g_DebugGraphNodesToDraw.empty())
-	{
-		CAllNodesContainer& allNodes = pGraph->GetAllNodes();
-		CAllNodesContainer::Iterator it(allNodes, NAV_TRIANGULAR | NAV_WAYPOINT_HUMAN | NAV_WAYPOINT_3DSURFACE | NAV_VOLUME | NAV_ROAD | NAV_SMARTOBJECT | NAV_CUSTOM_NAVIGATION);
-		while (unsigned currentNodeIndex = it.Increment())
-		{
-			GraphNode* pCurrent = pGraph->GetNodeManager().GetNode(currentNodeIndex);
-
-			g_DebugGraphNodesToDraw.push_back(pCurrent);
-		}
-	}
-	// now just render
-	const bool renderPassRadii = false;
-	const float ballRad = 0.04f;
-
-	CDebugDrawContext dc;
-
-	unsigned int nNodes = g_DebugGraphNodesToDraw.size();
-	for (unsigned int iNode = 0; iNode < nNodes; ++iNode)
-	{
-		const GraphNode* node = g_DebugGraphNodesToDraw[iNode];
-		AIAssert(node);
-
-		ColorB color(0, 0, 0);
-		Vec3 pos = node->GetPos();
-		pos.z = dc->GetDebugDrawZ(pos, node->navType == IAISystem::NAV_TRIANGULAR);
-
-		switch (node->navType)
-		{
-		case IAISystem::NAV_TRIANGULAR:
-			{
-				// NAV_TRIANGULAR is not supported anymore, it's replaced by MNM.
-				assert(false);
-			}
-			break;
-
-		case IAISystem::NAV_ROAD:
-			{
-				color.set(255, 255, 255, 255);
-				dc->DrawSphere(pos, ballRad * 3, color);
-			}
-			break;
-
-		case IAISystem::NAV_CUSTOM_NAVIGATION:
-			{
-				color.set(255, 255, 255, 255);
-				dc->DrawSphere(pos + Vec3(0.0f, 0.0f, 0.5f), ballRad * 3.0f, color);
-			}
-			break;
-
-		// Cover all other cases to provide a real view of the graph
-		default:
-			{
-				color.set(255, 0, 255, 255);
-				dc->Draw3dLabelEx(pos + Vec3(0.0f, 0.0f, 0.7f), 2.0f, ColorB(255, 255, 0), true, false, false, false, "T:%x", node->navType);
-				dc->DrawSphere(pos + Vec3(0.0f, 0.0f, 0.5f), ballRad * 4.0f, color);
-			}
-			break;
-		}
-
-		for (unsigned link = node->firstLinkIndex; link; link = pGraph->GetLinkManager().GetNextLink(link))
-		{
-			unsigned int nextIndex = pGraph->GetLinkManager().GetNextNode(link);
-			const GraphNode* next = pGraph->GetNodeManager().GetNode(nextIndex);
-			AIAssert(next);
-
-			ColorB endColor;
-			if (pGraph->GetLinkManager().GetRadius(link) > 0.0f)
-				endColor = ColorB(255, 255, 255);
-			else
-				endColor = ColorB(0, 0, 0);
-
-			if (CheckDistance(pos, focusPositions, focusRadius))
-			{
-				Vec3 v0 = node->GetPos();
-				Vec3 v1 = next->GetPos();
-				v0.z = dc->GetDebugDrawZ(v0, node->navType == IAISystem::NAV_TRIANGULAR);
-				v1.z = dc->GetDebugDrawZ(v1, node->navType == IAISystem::NAV_TRIANGULAR);
-				if (pGraph->GetLinkManager().GetStartIndex(link) != pGraph->GetLinkManager().GetEndIndex(link))
-				{
-					Vec3 mid = pGraph->GetLinkManager().GetEdgeCenter(link);
-					mid.z = dc->GetDebugDrawZ(mid, node->navType == IAISystem::NAV_TRIANGULAR);
-					dc->DrawLine(v0, endColor, mid, ColorB(0, 255, 255));
-					if (renderPassRadii)
-						dc->Draw3dLabel(mid, 1, "%.2f", pGraph->GetLinkManager().GetRadius(link));
-
-					int debugDrawVal = gAIEnv.CVars.DebugDraw;
-					if (debugDrawVal == 179)
-						dc->Draw3dLabel(mid, 2, "%x", link);
-					else if (debugDrawVal == 279)
-					{
-						float waterDepth = pGraph->GetLinkManager().GetMaxWaterDepth(link);
-						if (waterDepth > 0.6f)
-						{
-							dc->Draw3dLabelEx(mid, 1, ColorB(255, 0, 0), true, false, false, false, "%.2f", waterDepth);
-						}
-						else
-						{
-							dc->Draw3dLabelEx(mid, 1, ColorB(255, 255, 255), true, false, false, false, "%.2f", waterDepth);
-						}
-					}
-				}
-				else
-				{
-					dc->DrawLine(v0 + Vec3(0, 0, 0.5), endColor, v1 + Vec3(0, 0, 0.5), endColor);
-					if (renderPassRadii)
-					{
-						dc->Draw3dLabel(0.5f * (v0 + v1), 1, "%.2f", pGraph->GetLinkManager().GetRadius(link));
-					}
-				}
-			} // range check
-		}
-	}
 }
 
 //
@@ -3304,26 +2974,6 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 					dc->Draw3dLabel(pos2 + Vec3(0, 0, 0.5f), 1.5f, "%s Seat:%d", pReq->vehicleName.c_str(), pReq->vehicleSeat);
 			}
 
-	#ifdef _DEBUG
-			const Vec3 size(0.1f, 0.1f, 0.1f);
-			if (!pPipeUser->m_DEBUGCanTargetPointBeReached.empty())
-			{
-				for (ListPositions::iterator it = pPipeUser->m_DEBUGCanTargetPointBeReached.begin(); it != pPipeUser->m_DEBUGCanTargetPointBeReached.end(); ++it)
-				{
-					const ColorB color(255, 0, 0, 128);
-					const Vec3 pos2 = *it;
-					dc->DrawAABB(AABB(pos2 - size, pos2 + size), true, color, eBBD_Faceted);
-					dc->DrawLine(pos2, color, pos2 - Vec3(0, 0, 1.0f), color);
-				}
-			}
-			if (!pPipeUser->m_DEBUGUseTargetPointRequest.IsZero())
-			{
-				const Vec3 pos2 = pPipeUser->m_DEBUGUseTargetPointRequest + Vec3(0, 0, 0.4f);
-				dc->DrawAABB(AABB(pos2 - size, pos2 + size), true, blue, eBBD_Faceted);
-				dc->DrawLine(pos2, blue, pos2 - Vec3(0, 0, 1.0f), blue);
-			}
-	#endif
-
 			// Actor target phase.
 			const SAIActorTargetRequest& actorTargetReq = state.actorTargetReq;
 			if (actorTargetReq.id != 0)
@@ -3363,10 +3013,7 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 
 				const char* szType = "<INVALID!>";
 
-				PathPointDescriptor::SmartObjectNavDataPtr pSmartObjectNavData = pPipeUser->m_Path.GetLastPathPointAnimNavSOData();
-				if (pSmartObjectNavData)
-					szType = "NAV_SO";
-				else if (pPipeUser->GetActiveActorTargetRequest())
+				if (pPipeUser->GetActiveActorTargetRequest())
 					szType = "ACTOR_TGT";
 
 				dc->Draw3dLabel(pos2 + Vec3(0, 0, 1.0f), 1, "%s\nPhase:%s ID:%d", szType, szPhase, actorTargetReq.id);
@@ -3894,17 +3541,6 @@ void CAISystem::DebugDrawStatsTarget(const char* pName)
 			                 szOwner, szType, ed.threatTimeout, ed.threatTime, ed.exposure, ed.soundThreatLevel, ed.visualThreatLevel, szVisType);
 		}
 	}
-}
-
-//
-//-----------------------------------------------------------------------------------------------------------
-void CAISystem::DebugDrawFormations() const
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-
-	for (FormationMap::const_iterator itForm = m_mapActiveFormations.begin(); itForm != m_mapActiveFormations.end(); ++itForm)
-		if (itForm->second)
-			(itForm->second)->Draw();
 }
 
 //
@@ -5212,7 +4848,6 @@ void CAISystem::DebugDraw()
 	if (gAIEnv.CVars.DrawPerceptionModifiers > 0)
 		DebugDrawPerceptionModifiers();
 
-	DebugDrawCodeCoverage();
 	DebugDrawTargetTracks();
 	DebugDrawDebugAgent();
 
@@ -5224,14 +4859,7 @@ void CAISystem::DebugDraw()
 
 	DebugDrawRecorderRange();
 
-	//------------------------------------------------------------------------------------
-	// Check for graph and return on fail - note that graph is assumed by most of system
-	//------------------------------------------------------------------------------------
-	if (!m_pGraph)
-		return;
-
 	DebugDrawNavigation();
-	DebugDrawGraph(debugDrawValue);
 
 	if (gAIEnv.CVars.DebugDrawDamageControl > 1)
 		DebugDrawDamageControlGraph();
@@ -5251,7 +4879,7 @@ void CAISystem::DebugDraw()
 	DebugDrawStatsTarget(gAIEnv.CVars.StatsTarget);
 
 	if (gAIEnv.CVars.DrawFormations)
-		DebugDrawFormations();
+		gAIEnv.pFormationManager->DebugDraw();
 
 	DebugDrawType();
 	DebugDrawLocate();
@@ -5263,7 +4891,6 @@ void CAISystem::DebugDraw()
 		DebugDrawStatsList();
 
 	DebugDrawGroups();
-	DebugDrawHideSpots();
 
 	if (gAIEnv.CVars.DrawHideSpots)
 		DebugDrawSelectedHideSpots();
@@ -5280,7 +4907,6 @@ void CAISystem::DebugDraw()
 	DebugDrawCheckCapsules();
 	DebugDrawCheckRay();
 	m_pSmartObjectManager->DebugDrawValidateSmartObjectArea();
-	DebugDrawCheckWalkabilityTime();
 	DebugDrawCheckFloorPos();
 	DebugDrawCheckGravity();
 	//DebugDrawPaths();

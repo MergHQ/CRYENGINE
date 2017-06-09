@@ -910,7 +910,7 @@ void CAIPlayer::Event(unsigned short eType, SAIEVENT* pEvent)
 		m_bEnabled = false;
 		GetAISystem()->RemoveFromGroup(GetGroupId(), this);
 
-		GetAISystem()->ReleaseFormationPoint(this);
+		gAIEnv.pFormationManager->ReleaseFormationPoint(this);
 		ReleaseFormation();
 
 		m_State.ClearSignals();

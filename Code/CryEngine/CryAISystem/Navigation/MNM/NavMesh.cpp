@@ -26,9 +26,9 @@ namespace MNM
 {
 bool CNavMesh::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
 {
-	if (m_pRequester)
+	if (m_requesterEntityId)
 	{
-		if (IEntity* pEntity = m_pRequester->GetPathAgentEntity())
+		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_requesterEntityId))
 		{
 			if (const OffMeshLink* pOffMeshLink = m_offMeshNavigationManager.GetOffMeshLink(linkID))
 			{
@@ -36,17 +36,18 @@ bool CNavMesh::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, fl
 			}
 		}
 	}
-
 	return true;    // Always allow by default
 }
 
 bool CNavMesh::WayQueryRequest::IsPointValidForAgent(const Vec3& pos, uint32 flags) const
 {
-	if (m_pRequester)
+	// TODO: Do we need replacement for this function before introducing new 'QueryFilter'? 
+	// All known implementations of m_pRequester (IAIPathAgent) were returning true in IsPointValidForAgent method.
+	/*if (m_pRequester)
 	{
 		return m_pRequester->IsPointValidForAgent(pos, flags);
 	}
-
+	*/
 	return true;    // Always allow by default
 }
 

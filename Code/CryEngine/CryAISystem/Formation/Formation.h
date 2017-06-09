@@ -1,36 +1,17 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:
-   $Id$
-   Description:
+#pragma once
 
-   -------------------------------------------------------------------------
-   History:
-   created by Petar
-   - 9:2:2005   Kirill  - moved FormationNode to <AIFormationDescriptor.h>
-   - 1:6:2005   Kirill  - serialization support added; clean-up: introduced CFormationPoint vector, instead of many separate vectors
-   - 2 Mar 2009: Evgeny Adamenkov: Removed IRenderer
- *********************************************************************/
-
-#ifndef _FORMATION_
-#define _FORMATION_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-#include <CryAISystem/AIFormationDescriptor.h>
 #include "PathMarker.h"
 #include <CrySystem/TimeValue.h>
 #include <vector>
 
+struct FormationNode;
+class CFormationDescriptor;
+
 class CAIObject;
 class CAIActor;
 class CAISystem;
-
-#include "ObjectContainer.h"
 
 struct CFormationPoint
 {
@@ -191,4 +172,3 @@ private:
 	void AddPoint(FormationNode& desc);
 };
 
-#endif

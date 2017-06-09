@@ -166,7 +166,7 @@ public:
 
 	struct WayQueryRequest
 	{
-		WayQueryRequest(const IAIPathAgent* pRequester, TriangleID _from, const vector3_t& _fromLocation, TriangleID _to,
+		WayQueryRequest(EntityId _requesterEntityId, TriangleID _from, const vector3_t& _fromLocation, TriangleID _to,
 		                const vector3_t& _toLocation, const OffMeshNavigation& _offMeshNavigation, const OffMeshNavigationManager& _offMeshNavigationManager,
 		                const DangerousAreasList& dangerousAreas)
 			: m_from(_from)
@@ -176,7 +176,7 @@ public:
 			, m_offMeshNavigation(_offMeshNavigation)
 			, m_offMeshNavigationManager(_offMeshNavigationManager)
 			, m_dangerousAreas(dangerousAreas)
-			, m_pRequester(pRequester)
+			, m_requesterEntityId(_requesterEntityId)
 		{}
 
 		virtual ~WayQueryRequest(){}
@@ -200,7 +200,7 @@ public:
 		const OffMeshNavigationManager& m_offMeshNavigationManager;
 		DangerousAreasList              m_dangerousAreas;
 	protected:
-		const IAIPathAgent*             m_pRequester;
+		const EntityId                  m_requesterEntityId;
 	};
 
 	struct WayQueryWorkingSet

@@ -58,7 +58,7 @@ public:
 public:
 	CFormationDescriptor() {};
 	void AddNode(const FormationNode& nodeDescriptor);
-	int  GetNodeClass(int i)
+	int  GetNodeClass(int i) const
 	{
 		if (i < (int)m_Nodes.size() && i >= 0)
 			return m_Nodes[i].eClass;

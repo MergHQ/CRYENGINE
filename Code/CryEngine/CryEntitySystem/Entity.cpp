@@ -3099,7 +3099,7 @@ void CEntity::LogEvent(SEntityEvent& event, CTimeValue dt)
 	CryLogAlways("<Frame:%d><EntityEvent> [%s](%X)\t[%.2fms]\t%s", nFrameId, sName, (int)event.nParam[0], fTimeMs, GetEntityTextDescription().c_str());
 }
 
-IAIObject* CEntity::GetAIObject()
+IAIObject* CEntity::GetAIObject() const
 {
 	if (gEnv->pAISystem == nullptr)
 		return nullptr;
