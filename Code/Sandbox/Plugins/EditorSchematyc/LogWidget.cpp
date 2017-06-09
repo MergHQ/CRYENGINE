@@ -172,6 +172,8 @@ void SLogSettings::Serialize(Serialization::IArchive& archive)
 CLogSettingsWidget::CLogSettingsWidget(SLogSettings& settings)
 	: m_settings(settings)
 {
+	QVBoxLayout* pLayout = new QVBoxLayout(this);
+
 	m_pPropertyTree = new QAdvancedPropertyTree("LogSettings");
 	m_pPropertyTree->setSizeHint(QSize(250, 250));
 	m_pPropertyTree->setExpandLevels(1);
@@ -179,12 +181,12 @@ CLogSettingsWidget::CLogSettingsWidget(SLogSettings& settings)
 	m_pPropertyTree->setValueColumnWidth(0.6f);
 	m_pPropertyTree->attach(Serialization::SStruct(m_settings));
 
-	addWidget(m_pPropertyTree);
+	pLayout->addWidget(m_pPropertyTree);
 }
 
 void CLogSettingsWidget::showEvent(QShowEvent* pEvent)
 {
-	QScrollableBox::showEvent(pEvent);
+	QWidget::showEvent(pEvent);
 
 	if (m_pPropertyTree)
 		m_pPropertyTree->setSizeToContent(true);

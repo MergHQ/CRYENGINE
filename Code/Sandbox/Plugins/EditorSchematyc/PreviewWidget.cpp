@@ -4,6 +4,7 @@
 #include "PreviewWidget.h"
 
 #include <QBoxLayout>
+#include <QVBoxLayout>
 #include <QParentWndWidget.h>
 #include <QPushButton>
 #include <QSplitter>
@@ -23,6 +24,8 @@ namespace Schematyc {
 
 CPreviewSettingsWidget::CPreviewSettingsWidget(CPreviewWidget& previewWidget)
 {
+	QVBoxLayout* pLayout = new QVBoxLayout(this);
+
 	m_pPropertyTree = new QAdvancedPropertyTree("Preview Settings");
 	m_pPropertyTree->setExpandLevels(4);
 	m_pPropertyTree->setValueColumnWidth(0.6f);
@@ -32,12 +35,12 @@ CPreviewSettingsWidget::CPreviewSettingsWidget(CPreviewWidget& previewWidget)
 
 	m_pPropertyTree->attach(Serialization::SStruct(previewWidget));
 
-	addWidget(m_pPropertyTree);
+	pLayout->addWidget(m_pPropertyTree);
 }
 
 void CPreviewSettingsWidget::showEvent(QShowEvent* pEvent)
 {
-	QScrollableBox::showEvent(pEvent);
+	QWidget::showEvent(pEvent);
 
 	if (m_pPropertyTree)
 	{
