@@ -107,7 +107,10 @@ void CCharacterRenderNode::SetMatrix(const Matrix34& transform)
 
 	if (!IsMatrixValid(transform))
 	{
-		Warning("Error: IRenderNode::SetMatrix: Invalid matrix ignored");
+		const Vec3 pos = transform.GetTranslation();
+		stack_string message;
+		message.Format("Error: IRenderNode::SetMatrix: Invalid matrix ignored (name=\"%s\", position=[%.2f,%.2f,%.2f])", GetName(), pos.x, pos.y, pos.z);
+		Warning(message.c_str());
 		return;
 	}
 
