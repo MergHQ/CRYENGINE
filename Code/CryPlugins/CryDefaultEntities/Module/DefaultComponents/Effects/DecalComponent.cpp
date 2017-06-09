@@ -19,23 +19,19 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-static void RegisterDecalComponent(Schematyc::IEnvRegistrar& registrar)
+void CDecalComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CDecalComponent));
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDecalComponent::Spawn, "{39ED7682-5C39-47EE-BEFF-0A39EB801EC2}"_cry_guid, "Spawn");
-			pFunction->SetDescription("Spaws the decal");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDecalComponent::Remove, "{7A31C5D3-51E2-4091-9A4D-A2459D37F67A}"_cry_guid, "Remove");
-			pFunction->SetDescription("Removes the spawned decal, if any");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			componentScope.Register(pFunction);
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDecalComponent::Spawn, "{39ED7682-5C39-47EE-BEFF-0A39EB801EC2}"_cry_guid, "Spawn");
+		pFunction->SetDescription("Spaws the decal");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CDecalComponent::Remove, "{7A31C5D3-51E2-4091-9A4D-A2459D37F67A}"_cry_guid, "Remove");
+		pFunction->SetDescription("Removes the spawned decal, if any");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		componentScope.Register(pFunction);
 	}
 }
 

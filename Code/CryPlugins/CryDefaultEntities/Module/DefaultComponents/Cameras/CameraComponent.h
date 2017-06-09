@@ -2,9 +2,12 @@
 
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
 
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
+
+class CPlugin_CryDefaultEntities;
 
 namespace Cry
 {
@@ -15,6 +18,10 @@ namespace Cry
 			, public IHmdDevice::IAsyncCameraCallback
 			, public IEntityEventListener
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// IEntityComponent
 			virtual void Initialize() final;
 

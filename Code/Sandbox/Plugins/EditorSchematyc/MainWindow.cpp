@@ -652,10 +652,11 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 		{
 			IDetailItem* pDetailItem = new CScriptElementDetailItem(selection.pScriptElement);
 			CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pDetailItem, this, m_pPreview);
+			Schematyc::IScriptElement* pScriptElement = selection.pScriptElement;
 
-			PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
+			PopulateInspectorEvent popEvent([pPropertiesWidget, pScriptElement](CInspector& inspector)
 				{
-					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
+					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame(pScriptElement->GetName());
 					pInspectorWidget->SetWidget(pPropertiesWidget);
 					inspector.AddWidget(pInspectorWidget);
 			  });

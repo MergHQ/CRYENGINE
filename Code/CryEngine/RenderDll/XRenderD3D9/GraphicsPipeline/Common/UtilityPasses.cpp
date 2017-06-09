@@ -24,6 +24,10 @@ ResourceViewHandle s_RTVDefaults[] =
 
 void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 {
+	//Check if the required shader is loaded
+	if (CShaderMan::s_shPostEffects == nullptr)
+		return;
+
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	if (pSrcRT == NULL || pDestRT == NULL)

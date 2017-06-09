@@ -101,6 +101,10 @@
 
 #include "HMDManager.h"
 
+#include "Serialization/ArchiveHost.h"
+
+#include "CrySchematyc/ICore.h"
+
 #if USE_STEAM
 	#include "Steamworks/public/steam/steam_api.h"
 	#include "Steamworks/public/steam/isteamremotestorage.h"

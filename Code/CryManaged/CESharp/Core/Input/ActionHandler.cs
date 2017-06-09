@@ -57,8 +57,8 @@ namespace CryEngine
 		public override void Dispose()
 		{
 			_handlers.Clear();
-			
-			Global.gEnv.pGameFramework.GetIActionMapManager().RemoveExtraActionListener(this, _actionMapName);
+			var actionMapManager = Global.gEnv.pGameFramework.GetIActionMapManager();
+			actionMapManager?.RemoveExtraActionListener(this, _actionMapName);
 			base.Dispose();
 		}
 

@@ -7,16 +7,11 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-static void RegisterCapsulePrimitiveComponent(Schematyc::IEnvRegistrar& registrar)
+void CCapsulePrimitiveComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CCapsulePrimitiveComponent));
-		// Functions
-	}
 }
 
-void ReflectType(Schematyc::CTypeDesc<CCapsulePrimitiveComponent>& desc)
+void CCapsulePrimitiveComponent::ReflectType(Schematyc::CTypeDesc<CCapsulePrimitiveComponent>& desc)
 {
 	desc.SetGUID(CCapsulePrimitiveComponent::IID());
 	desc.SetEditorCategory("Physics");

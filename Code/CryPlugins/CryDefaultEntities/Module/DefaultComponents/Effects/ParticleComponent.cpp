@@ -7,25 +7,21 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-void RegisterParticleComponent(Schematyc::IEnvRegistrar& registrar)
+void CParticleComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CParticleComponent));
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CParticleComponent::Activate, "{14F978C0-2C56-40C9-95FB-6967936DBFF9}"_cry_guid, "Activate");
-			pFunction->SetDescription("Enables / disables particle emitter");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'actv', "Active");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CParticleComponent::IsActive, "{6B376186-B2AB-46FD-86C9-9ED772159590}"_cry_guid, "IsActive");
-			pFunction->SetDescription("Is particle emitter enabled?");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindOutput(0, 'actv', "Active");
-			componentScope.Register(pFunction);
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CParticleComponent::Activate, "{14F978C0-2C56-40C9-95FB-6967936DBFF9}"_cry_guid, "Activate");
+		pFunction->SetDescription("Enables / disables particle emitter");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'actv', "Active");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CParticleComponent::IsActive, "{6B376186-B2AB-46FD-86C9-9ED772159590}"_cry_guid, "IsActive");
+		pFunction->SetDescription("Is particle emitter enabled?");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindOutput(0, 'actv', "Active");
+		componentScope.Register(pFunction);
 	}
 }
 

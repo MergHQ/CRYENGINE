@@ -2,6 +2,8 @@
 
 #include "PhysicsPrimitiveComponent.h"
 
+class CPlugin_CryDefaultEntities;
+
 namespace Cry
 {
 	namespace DefaultComponents
@@ -9,7 +11,13 @@ namespace Cry
 		class CCylinderPrimitiveComponent
 			: public CPhysicsPrimitiveComponent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 		public:
+			static void ReflectType(Schematyc::CTypeDesc<CCylinderPrimitiveComponent>& desc);
+
 			CCylinderPrimitiveComponent() {}
 			virtual ~CCylinderPrimitiveComponent() {}
 

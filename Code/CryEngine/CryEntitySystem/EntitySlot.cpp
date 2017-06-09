@@ -246,7 +246,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			m_pRenderNode->SetRndFlags(ERF_RAYCAST_PROXY, (pMaterial->GetFlags() & MTL_FLAG_RAYCAST_PROXY) != 0);
 		}
 
-		if (renderNodeType == eERType_Brush)
+		if (renderNodeType == eERType_MovableBrush || renderNodeType == eERType_Brush)
 		{
 			static_cast<IBrush*>(m_pRenderNode)->SetSubObjectHideMask(m_nSubObjHideMask);
 		}

@@ -5,32 +5,28 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		void RegisterPointConstraintComponent(Schematyc::IEnvRegistrar& registrar)
+		void CPointConstraintComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		{
-			Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+			// Functions
 			{
-				Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CPointConstraintComponent));
-				// Functions
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointConstraintComponent::ConstrainToEntity, "{7310C27B-1B70-4274-80EE-2DBF46085DC8}"_cry_guid, "ConstrainToEntity");
-					pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the specified entity");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'enti', "Target Entity", "Defines the entity we want to be constrained to, or the point itself if id is 0", INVALID_ENTITYID);
-					pFunction->BindInput(2, 'igno', "Ignore Collisions With", "Whether or not to ignore collisions between this entity and the target", false);
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointConstraintComponent::ConstrainToPoint, "{97A9A9D5-6821-4914-87FB-0990534E8409}"_cry_guid, "ConstrainToPoint");
-					pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the point");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointConstraintComponent::Remove, "{DD75FE1D-7147-4609-974E-EE6F051ADCC1}"_cry_guid, "Remove");
-					pFunction->SetDescription("Removes the constraint");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					componentScope.Register(pFunction);
-				}
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointConstraintComponent::ConstrainToEntity, "{7310C27B-1B70-4274-80EE-2DBF46085DC8}"_cry_guid, "ConstrainToEntity");
+				pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the specified entity");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				pFunction->BindInput(1, 'enti', "Target Entity", "Defines the entity we want to be constrained to, or the point itself if id is 0", INVALID_ENTITYID);
+				pFunction->BindInput(2, 'igno', "Ignore Collisions With", "Whether or not to ignore collisions between this entity and the target", false);
+				componentScope.Register(pFunction);
+			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointConstraintComponent::ConstrainToPoint, "{97A9A9D5-6821-4914-87FB-0990534E8409}"_cry_guid, "ConstrainToPoint");
+				pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the point");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				componentScope.Register(pFunction);
+			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointConstraintComponent::Remove, "{DD75FE1D-7147-4609-974E-EE6F051ADCC1}"_cry_guid, "Remove");
+				pFunction->SetDescription("Removes the constraint");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				componentScope.Register(pFunction);
 			}
 		}
 

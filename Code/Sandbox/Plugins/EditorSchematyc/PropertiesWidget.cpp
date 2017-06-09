@@ -15,6 +15,7 @@
 
 #include <QAdvancedPropertyTree.h>
 #include <QPropertyTree/ContextList.h>
+#include <QVBoxLayout>
 
 // TEMP
 #include "DetailWidget.h"
@@ -34,8 +35,6 @@ CPropertiesWidget::CPropertiesWidget(CComponentItem& item, CMainWindow* pEditor)
 
 	m_pContextList = new Serialization::CContextList();
 	m_pPropertyTree->setArchiveContext(m_pContextList->Tail());
-
-	addWidget(m_pPropertyTree);
 }
 
 CPropertiesWidget::CPropertiesWidget(CAbstractObjectStructureModelItem& item, CMainWindow* pEditor)
@@ -50,8 +49,6 @@ CPropertiesWidget::CPropertiesWidget(CAbstractObjectStructureModelItem& item, CM
 
 	m_pContextList = new Serialization::CContextList();
 	m_pPropertyTree->setArchiveContext(m_pContextList->Tail());
-
-	addWidget(m_pPropertyTree);
 }
 
 CPropertiesWidget::CPropertiesWidget(CAbstractVariablesModelItem& item, CMainWindow* pEditor)
@@ -66,8 +63,6 @@ CPropertiesWidget::CPropertiesWidget(CAbstractVariablesModelItem& item, CMainWin
 
 	m_pContextList = new Serialization::CContextList();
 	m_pPropertyTree->setArchiveContext(m_pContextList->Tail());
-
-	addWidget(m_pPropertyTree);
 }
 
 CPropertiesWidget::CPropertiesWidget(CryGraphEditor::GraphItemSet& items, CMainWindow* pEditor)
@@ -86,8 +81,6 @@ CPropertiesWidget::CPropertiesWidget(CryGraphEditor::GraphItemSet& items, CMainW
 
 	m_pContextList = new Serialization::CContextList();
 	m_pPropertyTree->setArchiveContext(m_pContextList->Tail());
-
-	addWidget(m_pPropertyTree);
 }
 
 void CPropertiesWidget::OnContentDeleted(CryGraphEditor::CAbstractNodeGraphViewModelItem* pDeletedItem)
@@ -133,8 +126,6 @@ CPropertiesWidget::CPropertiesWidget(IDetailItem& item, CMainWindow* pEditor, Sc
 	{
 		QObject::connect(m_pPreview, &Schematyc::CPreviewWidget::signalChanged, this, &CPropertiesWidget::OnPreviewChanged);
 	}
-
-	addWidget(m_pPropertyTree);
 }
 
 CPropertiesWidget::~CPropertiesWidget()
@@ -155,6 +146,8 @@ CPropertiesWidget::~CPropertiesWidget()
 
 void CPropertiesWidget::SetupTree()
 {
+	QVBoxLayout* pLayout = new QVBoxLayout(this);
+
 	m_pPropertyTree = new QAdvancedPropertyTree("Component Properties");
 	m_pPropertyTree->setExpandLevels(2);
 	m_pPropertyTree->setValueColumnWidth(0.6f);
@@ -168,6 +161,8 @@ void CPropertiesWidget::SetupTree()
 
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalPushUndo, this, &CPropertiesWidget::OnPushUndo);
 	QObject::connect(m_pPropertyTree, &QAdvancedPropertyTree::signalChanged, this, &CPropertiesWidget::OnPropertiesChanged);
+
+	pLayout->addWidget(m_pPropertyTree);
 }
 
 void CPropertiesWidget::OnPropertiesChanged()
@@ -202,7 +197,7 @@ void CPropertiesWidget::OnPushUndo()
 
 void CPropertiesWidget::showEvent(QShowEvent* pEvent)
 {
-	QScrollableBox::showEvent(pEvent);
+	QWidget::showEvent(pEvent);
 
 	if (m_pPropertyTree)
 		m_pPropertyTree->setSizeToContent(true);

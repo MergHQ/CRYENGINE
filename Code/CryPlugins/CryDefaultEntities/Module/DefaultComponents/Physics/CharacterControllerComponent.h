@@ -4,6 +4,8 @@
 
 #include <Animation/PoseAligner/PoseAligner.h>
 
+class CPlugin_CryDefaultEntities;
+
 namespace Cry
 {
 	namespace DefaultComponents
@@ -14,6 +16,10 @@ namespace Cry
 			, public IEntityComponentPreviewer
 #endif
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// IEntityComponent
 			virtual void Initialize() final;
 
@@ -34,19 +40,10 @@ namespace Cry
 #endif
 
 		public:
-			struct SCollisionSignal
-			{
-				EntityId otherEntity = INVALID_ENTITYID;
-				Schematyc::SurfaceTypeName surfaceType;
-
-				SCollisionSignal() {};
-				SCollisionSignal(EntityId id, const Schematyc::SurfaceTypeName &srfType) : otherEntity(id), surfaceType(srfType) {}
-			};
+			static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent>& desc);
 
 			CCharacterControllerComponent() = default;
 			virtual ~CCharacterControllerComponent();
-
-			static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent>& desc);
 
 			static CryGUID& IID()
 			{

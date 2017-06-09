@@ -255,42 +255,38 @@ struct SActionChangedSignal
 	float                    m_value;
 };
 
-void RegisterInputComponent(Schematyc::IEnvRegistrar& registrar)
+void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+	// Functions
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CInputComponent));
-		// Functions
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::RegisterSchematycAction, "{1AC261E2-D7E0-4F80-99D1-73D34D670F0C}"_cry_guid, "RegisterAction");
-			pFunction->SetDescription("Registers an action that results in OnAction signal being sent when the input is modified, requires BindInput to connect to keys");
-			pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
-			pFunction->BindInput(1, 'grou', "Group Name");
-			pFunction->BindInput(2, 'name', "Name");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindAction, "{0F22767B-6AA6-4EDF-92F0-7BCD10CAB00E}"_cry_guid, "BindAction");
-			pFunction->SetDescription("Binds an input to an action registered with RegisterAction");
-			pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
-			pFunction->BindInput(1, 'grou', "Group Name");
-			pFunction->BindInput(2, 'name', "Name");
-			pFunction->BindInput(3, 'inpd', "Input Device");
-			pFunction->BindInput(4, 'keyn', "Input Id");
-			pFunction->BindInput(5, 'pres', "Receive Press Events");
-			pFunction->BindInput(6, 'rele', "Receive Release Events");
-			componentScope.Register(pFunction);
-		}
-		// Signals
-		{
-			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionPressedSignal));
-		}
-		{
-			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionReleasedSignal));
-		}
-		{
-			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionChangedSignal));
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::RegisterSchematycAction, "{1AC261E2-D7E0-4F80-99D1-73D34D670F0C}"_cry_guid, "RegisterAction");
+		pFunction->SetDescription("Registers an action that results in OnAction signal being sent when the input is modified, requires BindInput to connect to keys");
+		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+		pFunction->BindInput(1, 'grou', "Group Name");
+		pFunction->BindInput(2, 'name', "Name");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindAction, "{0F22767B-6AA6-4EDF-92F0-7BCD10CAB00E}"_cry_guid, "BindAction");
+		pFunction->SetDescription("Binds an input to an action registered with RegisterAction");
+		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+		pFunction->BindInput(1, 'grou', "Group Name");
+		pFunction->BindInput(2, 'name', "Name");
+		pFunction->BindInput(3, 'inpd', "Input Device");
+		pFunction->BindInput(4, 'keyn', "Input Id");
+		pFunction->BindInput(5, 'pres', "Receive Press Events");
+		pFunction->BindInput(6, 'rele', "Receive Release Events");
+		componentScope.Register(pFunction);
+	}
+	// Signals
+	{
+		componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionPressedSignal));
+	}
+	{
+		componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionReleasedSignal));
+	}
+	{
+		componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionChangedSignal));
 	}
 }
 

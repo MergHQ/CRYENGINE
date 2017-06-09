@@ -7,41 +7,37 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-static void RegisterAnimatedMeshComponent(Schematyc::IEnvRegistrar& registrar)
+void CAnimatedMeshComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+	// Functions
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CAnimatedMeshComponent));
-		// Functions
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::PlayAnimation, "{DCEBBA52-CECE-4823-AC35-1A590A944F99}"_cry_guid, "PlayAnimation");
-			pFunction->SetDescription("Plays a low-level animation on the animated mesh");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::None);
-			pFunction->BindInput(1, 'name', "Name");
-			pFunction->BindInput(2, 'loop', "Looped");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::SetPlaybackSpeed, "{DDF693D5-100C-43C2-8351-46FD6D382425}"_cry_guid, "SetPlaybackSpeed");
-			pFunction->SetDescription("Sets the speed at which animations are played");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'sped', "Speed");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::SetPlaybackWeight, "{79D18B21-F255-43C5-98F8-42E131FB2915}"_cry_guid, "SetPlaybackWeight");
-			pFunction->SetDescription("Sets the weight at which animations are played");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'weig', "Weight");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::SetLayer, "{3CF9CE51-5520-4D6D-8077-8112DA4A48B6}"_cry_guid, "SetLayer");
-			pFunction->SetDescription("Sets the layer at which animations are played");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'layr', "Layer");
-			componentScope.Register(pFunction);
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::PlayAnimation, "{DCEBBA52-CECE-4823-AC35-1A590A944F99}"_cry_guid, "PlayAnimation");
+		pFunction->SetDescription("Plays a low-level animation on the animated mesh");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::None);
+		pFunction->BindInput(1, 'name', "Name");
+		pFunction->BindInput(2, 'loop', "Looped");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::SetPlaybackSpeed, "{DDF693D5-100C-43C2-8351-46FD6D382425}"_cry_guid, "SetPlaybackSpeed");
+		pFunction->SetDescription("Sets the speed at which animations are played");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'sped', "Speed");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::SetPlaybackWeight, "{79D18B21-F255-43C5-98F8-42E131FB2915}"_cry_guid, "SetPlaybackWeight");
+		pFunction->SetDescription("Sets the weight at which animations are played");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'weig', "Weight");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::SetLayer, "{3CF9CE51-5520-4D6D-8077-8112DA4A48B6}"_cry_guid, "SetLayer");
+		pFunction->SetDescription("Sets the layer at which animations are played");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'layr', "Layer");
+		componentScope.Register(pFunction);
 	}
 }
 
