@@ -169,7 +169,9 @@ set(PROJECT_DIR "$project_path")
 
 include($${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
 
-add_subdirectory($${CRYENGINE_DIR} $${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE)"""
+add_subdirectory($${CRYENGINE_DIR} $${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE)
+
+include($${TOOLS_CMAKE_DIR}/Configure.cmake)"""
     
     cmakelists_template.template += """\nstart_sources()
 
