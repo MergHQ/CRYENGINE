@@ -708,6 +708,7 @@ public:
 	virtual bool IsInvisible() const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
+	virtual const IAIObject*  GetAI() const = 0;
 	virtual IAIObject*  GetAI() = 0;
 	virtual bool        HasAI() const = 0;
 	virtual tAIObjectID GetAIObjectID() const = 0;

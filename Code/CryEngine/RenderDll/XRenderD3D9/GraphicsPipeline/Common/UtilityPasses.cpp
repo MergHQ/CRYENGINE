@@ -24,6 +24,10 @@ ResourceViewHandle s_RTVDefaults[] =
 
 void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 {
+	//Check if the required shader is loaded
+	if (CShaderMan::s_shPostEffects == nullptr)
+		return;
+
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	if (pSrcRT == NULL || pDestRT == NULL)
@@ -216,6 +220,156 @@ void CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, const RECT& rc
 	constantManager.SetNamedConstant(paramTCName, ParamsTC, eHWSC_Vertex);
 
 	constantManager.EndNamedConstantUpdate();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CSharpeningUpsamplePass
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CSharpeningUpsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
+{
+	PROFILE_LABEL_SCOPE("UPSAMPLE_SHARP");
+
+	if (!pSrcRT || !pDestRT)
+		return;
+
+	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	{
+		m_pass.Execute();
+		return;
+	}
+
+	static CCryNameTSCRC techName("UpscaleImage");
+	static CCryNameR param0Name("vParams");
+
+	Vec4 params0;
+	params0.x = (float)pSrcRT->GetWidth();
+	params0.y = (float)pSrcRT->GetHeight();
+
+	m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	m_pass.SetRenderTarget(0, pDestRT);
+	m_pass.SetTechnique(CShaderMan::s_shPostAA, techName, 0);
+	m_pass.SetState(GS_NODEPTHTEST);
+	m_pass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::LinearClamp);
+	m_pass.BeginConstantUpdate();
+	m_pass.SetConstant(param0Name, params0, eHWSC_Pixel);
+	m_pass.Execute();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CDownsamplePass
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, int nSrcW, int nSrcH, int nDstW, int nDstH, EFilterType eFilter)
+{
+	PROFILE_LABEL_SCOPE("DOWNSAMPLE");
+
+	if (!pSrcRT || !pDestRT)
+		return;
+
+	// squeeze all the parameters in two integers, limit is 2^15 bit dimension and 2^4 filters
+	union
+	{
+		struct
+		{
+			int sW : 15;
+			int sH : 15;
+
+			int dW : 15;
+			int dH : 15;
+
+			int fF : 4;
+		};
+
+		struct
+		{
+			int hi;
+			int lo;
+		};
+	} match;
+
+	match.sW = nSrcW;
+	match.sH = nSrcH;
+	match.dW = nDstW;
+	match.dH = nDstH;
+	match.fF = 0;
+
+	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), match.hi, match.lo))
+	{
+		m_pass.Execute();
+		return;
+	}
+
+	static CCryNameTSCRC techName("TextureToTextureResampleFilter");
+	static CCryNameR param0Name("texToTexParams0");
+	static CCryNameR param1Name("texToTexParams1");
+	static CCryNameR param2Name("texToTexParams2");
+
+	// Currently only exact multiples supported
+	Vec2 vSamples(float(nSrcW) / nDstW, float(nSrcH) / nDstH);
+	const Vec2 vSampleSize(1.f / nSrcW, 1.f / nSrcH);
+	const Vec2 vPixelSize(1.f / nDstW, 1.f / nDstH);
+	// Adjust UV space if source rect smaller than texture
+	const float fClippedRatioX = float(nSrcW) / pSrcRT->GetWidth();
+	const float fClippedRatioY = float(nSrcH) / pSrcRT->GetHeight();
+
+	// Base kernel size in pixels
+	float fBaseKernelSize = 1.f;
+	// How many lines of border samples to skip
+	float fBorderSamplesToSkip = 0.f;
+
+	UINT64 FlagsShader_RT = 0;
+	switch (eFilter)
+	{
+	default:
+	case FilterType_Box:
+		fBaseKernelSize = 1.f;
+		fBorderSamplesToSkip = 0.f;
+		break;
+	case FilterType_Tent:
+		fBaseKernelSize = 2.f;
+		fBorderSamplesToSkip = 0.f;
+		FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
+		break;
+	case FilterType_Gauss:
+		// The base kernel for Gaussian filter is 3x3 pixels [-1.5 .. 1.5]
+		// Samples on the borders are ignored due to small contribution
+		// so the actual kernel size is N*3 - 2 where N is number of samples per pixel
+		fBaseKernelSize = 3.f;
+		fBorderSamplesToSkip = 1.f;
+		FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
+		break;
+	case FilterType_Lanczos:
+		fBaseKernelSize = 3.f;
+		fBorderSamplesToSkip = 0.f;
+		FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
+		break;
+	}
+
+	// Kernel position step
+	const Vec2 vSampleStep(1.f / vSamples.x, 1.f / vSamples.y);
+	// The actual kernel radius in pixels
+	const Vec2 vKernelRadius = 0.5f * Vec2(fBaseKernelSize, fBaseKernelSize) - fBorderSamplesToSkip * vSampleStep;
+
+	// UV offset from pixel center to first (top-left) sample
+	const Vec2 vFirstSampleOffset(0.5f * vSampleSize.x - vKernelRadius.x * vPixelSize.x, 0.5f * vSampleSize.y - vKernelRadius.y * vPixelSize.y);
+	// Kernel position of first (top-left) sample
+	const Vec2 vFirstSamplePos = -vKernelRadius + 0.5f * vSampleStep;
+
+	const Vec4 params0(vKernelRadius.x, vKernelRadius.y, fClippedRatioX, fClippedRatioY);
+	const Vec4 params1(vSampleSize.x, vSampleSize.y, vFirstSampleOffset.x, vFirstSampleOffset.y);
+	const Vec4 params2(vSampleStep.x, vSampleStep.y, vFirstSamplePos.x, vFirstSamplePos.y);
+
+	m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	m_pass.SetRenderTarget(0, pDestRT);
+	m_pass.SetTechnique(CShaderMan::s_shPostAA, techName, FlagsShader_RT);
+	m_pass.SetState(GS_NODEPTHTEST);
+	m_pass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::LinearClamp);
+	m_pass.BeginConstantUpdate();
+	m_pass.SetConstant(param0Name, params0, eHWSC_Pixel);
+	m_pass.SetConstant(param1Name, params1, eHWSC_Pixel);
+	m_pass.SetConstant(param2Name, params2, eHWSC_Pixel);
+	m_pass.Execute();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

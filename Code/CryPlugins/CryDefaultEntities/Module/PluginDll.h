@@ -21,6 +21,8 @@ class CPlugin_CryDefaultEntities final
 
 	static CryGUID GetSchematycPackageGUID() { return "{CB9E7C85-3289-41B6-983A-6A076ABA6351}"_cry_guid; }
 
+	void RegisterComponents(Schematyc::IEnvRegistrar& registrar);
+
 public:
 	// ICryPlugin
 	virtual const char* GetName() const override { return "CryDefaultEntities"; }

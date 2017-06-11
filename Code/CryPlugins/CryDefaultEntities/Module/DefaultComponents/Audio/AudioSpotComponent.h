@@ -4,6 +4,9 @@
 
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
+
+class CPlugin_CryDefaultEntities;
 
 namespace Cry
 {
@@ -39,6 +42,10 @@ namespace Cry
 
 		class CEntityAudioSpotComponent : public IEntityComponent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// IEntityComponent
 			virtual void Initialize() final;
 			virtual void OnShutDown() final;
@@ -122,7 +129,10 @@ namespace Cry
 				if (!bEnabled)
 				{
 					GetEntity()->KillTimer('ats');
-					m_pAudioComp->StopTrigger(m_defaultTrigger.m_triggerId, m_auxAudioObjectId);
+					if (m_pAudioComp)
+					{
+						m_pAudioComp->StopTrigger(m_defaultTrigger.m_triggerId, m_auxAudioObjectId);
+					}
 				}
 				else
 				{

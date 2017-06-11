@@ -18,10 +18,16 @@ CHmdManager::~CHmdManager()
 }
 
 // ------------------------------------------------------------------------
-void CHmdManager::RegisterDevice(const char* name, IHmdDevice& device)
+void CHmdManager::RegisterDevice(const char* szDeviceName, IHmdDevice& device)
 {
 	// Reference counting will be handled inside the vector
-	m_availableDeviceMap.insert(TDeviceMap::value_type(name, &device));
+	m_availableDeviceMap.insert(TDeviceMap::value_type(szDeviceName, &device));
+}
+
+// ------------------------------------------------------------------------
+void CHmdManager::UnregisterDevice(const char* szDeviceName)
+{
+	m_availableDeviceMap.erase(szDeviceName);
 }
 
 // ------------------------------------------------------------------------

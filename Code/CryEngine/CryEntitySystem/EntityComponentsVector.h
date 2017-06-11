@@ -75,9 +75,12 @@ public:
 			}
 		}
 
-		ShutDownComponent(pTempComponent.get());
-		// Force release of the component
-		pTempComponent.reset();
+		if (pTempComponent != nullptr)
+		{
+			ShutDownComponent(pTempComponent.get());
+			// Force release of the component
+			pTempComponent.reset();
+		}
 	}
 
 	//! Removes all components from the collection
@@ -104,10 +107,13 @@ public:
 		auto tempComponents = std::move(m_vector);
 		tempComponents.clear();
 
-		ShutDownComponent(pUserComponent.get());
+		if (pUserComponent != nullptr)
+		{
+			ShutDownComponent(pUserComponent.get());
 
-		// User component must be the last of the components to be destroyed.
-		pUserComponent.reset();
+			// User component must be the last of the components to be destroyed.
+			pUserComponent.reset();
+		}
 		//////////////////////////////////////////////////////////////////////////
 	}
 

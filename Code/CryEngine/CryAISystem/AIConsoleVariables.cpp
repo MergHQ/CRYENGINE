@@ -22,9 +22,6 @@ void AIConsoleVars::Init()
 	               "Usage: ai_DebugDrawAStarOpenList [AI agent name]\n"
 	               "Default is 0, which disables the debug draw. Requires ai_DebugPathfinding=1 to be activated.");
 
-	REGISTER_CVAR2("ai_DebugCheckWalkabilityRadius", &DebugCheckWalkabilityRadius, 0.5f, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "Radius to use for the per-frame debug CheckWalkability test.");
-
 	REGISTER_CVAR2("ai_DebugDrawAStarOpenListTime", &DebugDrawAStarOpenListTime, 10.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "The amount of time to draw the A* open list.");
 
@@ -76,8 +73,6 @@ void AIConsoleVars::Init()
 	DefineConstIntCVarName("ai_IntersectionTesterQuota", IntersectionTesterQuota, 12, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Amount of deferred intersection tests allowed to be cast per frame!");
 
-	REGISTER_CVAR2("ai_DebugHideSpotName", &DebugHideSpotName, "0", VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "Debug HideSpot Name!");
 	REGISTER_CVAR2("ai_DrawShooting", &DrawShooting, "none", VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Name of puppet to show fire stats");
 	REGISTER_CVAR2("ai_DrawAgentStats", &DrawAgentStats, "NkcBbtGgSfdDL", VF_NULL,
@@ -323,10 +318,6 @@ void AIConsoleVars::Init()
 	                       "-n draws all voxels with original value =  n");
 	DefineConstIntCVarName("ai_DebugPathfinding", DebugPathFinding, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Toggles output of pathfinding information [default 0 is off]");
-	DefineConstIntCVarName("ai_DebugCheckWalkability", DebugCheckWalkability, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Toggles output of check walkability information, as well as allowing the use of tagpoints named CheckWalkabilityTestStart/End to trigger a test each update. [default 0 is off]");
-	DefineConstIntCVarName("ai_DebugWalkabilityCache", DebugWalkabilityCache, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Toggles allowing the use of tagpoints named WalkabilityCacheOrigin to cache walkability. [default 0 is off]");
 	DefineConstIntCVarName("ai_DebugDrawBannedNavsos", DebugDrawBannedNavsos, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Toggles drawing banned navsos [default 0 is off]");
 	DefineConstIntCVarName("ai_DebugDrawGroups", DebugDrawGroups, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
@@ -767,9 +758,6 @@ void AIConsoleVars::Init()
 	               "Obstacle size in meters that differentiates small obstacles from big ones so that vehicles can ignore the small ones");
 	REGISTER_CVAR2("ai_DrawGetEnclosingFailures", &DrawGetEnclosingFailures, 0.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Set to the number of seconds you want GetEnclosing() failures visualized.  Set to 0 to turn visualization off.");
-
-	DefineConstIntCVarName("ai_CodeCoverageMode", CodeCoverage, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Set current mode of Code Coverage system.\n0 = off, 1 = smart, 2 = silent, 3 = force");
 
 	DefineConstIntCVarName("ai_EnablePerceptionStanceVisibleRange", EnablePerceptionStanceVisibleRange, 0, VF_CHEAT | VF_CHEAT_NOCHECK, "Turn on use of max perception range for AI based on player's stance");
 	REGISTER_CVAR2("ai_CrouchVisibleRange", &CrouchVisibleRange, 15.0f, VF_CHEAT | VF_CHEAT_NOCHECK, "Max perception range for AI when player is crouching");

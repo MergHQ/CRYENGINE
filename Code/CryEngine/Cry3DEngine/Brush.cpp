@@ -151,6 +151,7 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	rParms.dwFObjFlags |= FOB_TRANS_MASK;
 
 	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
+	rParms.nSubObjHideMask = m_nSubObjHideMask;
 
 	m_pStatObj->Render(rParms, passInfo);
 }

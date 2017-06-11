@@ -461,7 +461,7 @@ bool SPostEffectsUtils::GetOrCreateRenderTarget(const char* szTexName, CTexture*
 	if (!CTexture::IsTextureExist(pTex))
 	{
 		pTex = CTexture::GetOrCreateRenderTarget(szTexName, nWidth, nHeight, cClear, eTT_2D, flags, eTF, nCustomID);
-		if (pTex && !(pTex->GetFlags() | FT_FAILED))
+		if (pTex && !(pTex->GetFlags() & FT_FAILED))
 		{
 			// Clear render target surface before using it
 			pTex->Clear();
@@ -495,7 +495,7 @@ bool SPostEffectsUtils::GetOrCreateDepthStencil(const char* szTexName, CTexture*
 	if (!CTexture::IsTextureExist(pTex))
 	{
 		pTex = CTexture::GetOrCreateDepthStencil(szTexName, nWidth, nHeight, cClear, eTT_2D, flags, eTF, nCustomID);
-		if (pTex && !(pTex->GetFlags() | FT_FAILED))
+		if (pTex && !(pTex->GetFlags() & FT_FAILED))
 		{
 			// Clear render target surface before using it
 			pTex->Clear();

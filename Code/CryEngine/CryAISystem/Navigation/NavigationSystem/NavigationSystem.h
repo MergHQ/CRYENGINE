@@ -642,7 +642,7 @@ private:
 
 #if MNM_USE_EXPORT_INFORMATION
 	void ClearAllAccessibility(uint8 resetValue);
-	void ComputeAccessibility(IAIObject* pIAIObject, NavigationAgentTypeID agentTypeId = NavigationAgentTypeID(0));
+	void ComputeAccessibility(const Vec3& debugLocation, NavigationAgentTypeID agentTypeId = NavigationAgentTypeID(0));
 #endif
 
 	void GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const;

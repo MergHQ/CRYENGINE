@@ -18,8 +18,6 @@
 #include <CryAISystem/VisionMapTypes.h>
 #include <limits>
 
-#define GET_READY_TO_CHANGE_BEHAVIOR_SIGNAL "OnBehaviorChangeRequest"
-
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
 
@@ -910,7 +908,7 @@ void CAIActor::Event(unsigned short eType, SAIEVENT* pEvent)
 
 			pAISystem->RemoveFromGroup(GetGroupId(), this);
 
-			pAISystem->ReleaseFormationPoint(this);
+			gAIEnv.pFormationManager->ReleaseFormationPoint(this);
 			CancelRequestedPath(false);
 			ReleaseFormation();
 
@@ -1569,34 +1567,9 @@ Vec3 CAIActor::GetPathAgentVelocity() const
 	return GetVelocity();
 }
 
-void CAIActor::GetPathAgentNavigationBlockers(NavigationBlockers& navigationBlockers, const struct PathfindRequest* pRequest)
-{
-
-}
-
-size_t CAIActor::GetNavNodeIndex() const
-{
-	if (m_lastNavNodeIndex)
-		return (m_lastNavNodeIndex < ~0ul) ? m_lastNavNodeIndex : 0;
-
-	m_lastNavNodeIndex = ~0ul;
-
-	return 0;
-}
-
 const AgentMovementAbility& CAIActor::GetPathAgentMovementAbility() const
 {
 	return m_movementAbility;
-}
-
-unsigned int CAIActor::GetPathAgentLastNavNode() const
-{
-	return GetNavNodeIndex();
-}
-
-void CAIActor::SetPathAgentLastNavNode(unsigned int lastNavNode)
-{
-	m_lastNavNodeIndex = lastNavNode;
 }
 
 void CAIActor::SetPathToFollow(const char* pathName)
@@ -1607,22 +1580,6 @@ void CAIActor::SetPathToFollow(const char* pathName)
 void CAIActor::SetPathAttributeToFollow(bool bSpline)
 {
 
-}
-
-void CAIActor::SetPFBlockerRadius(int blockerType, float radius)
-{
-
-}
-
-ETriState CAIActor::CanTargetPointBeReached(CTargetPointRequest& request)
-{
-	request.SetResult(eTS_false);
-	return eTS_false;
-}
-
-bool CAIActor::UseTargetPointRequest(const CTargetPointRequest& request)
-{
-	return false;
 }
 
 IPathFollower* CAIActor::GetPathFollower() const

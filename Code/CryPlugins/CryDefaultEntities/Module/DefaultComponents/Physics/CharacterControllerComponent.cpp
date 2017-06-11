@@ -7,107 +7,109 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-void RegisterCharacterControllerComponent(Schematyc::IEnvRegistrar& registrar)
+struct SCollisionSignal
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+	EntityId otherEntityId;
+	Schematyc::SurfaceTypeName surfaceType;
+};
+
+void CCharacterControllerComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
+{
+	// Functions
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CCharacterControllerComponent));
-		// Functions
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::IsOnGround, "{C41A9117-0292-4FF6-978A-F433345841B3}"_cry_guid, "IsOnGround");
-			pFunction->SetDescription("Checks whether or not the character is on ground");
-			pFunction->BindOutput(0, 'ongr', "OnGround");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetGroundNormal, "{72858886-D2D8-4FDD-A8C3-30A6AA85E7FD}"_cry_guid, "GetGroundNormal");
-			pFunction->SetDescription("Gets the latest ground normal, returns last ground normal if in air");
-			pFunction->BindOutput(0, 'norm', "Normal");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::IsWalking, "{80796905-AC9E-4C0F-A1F1-4CBE0B0807C3}"_cry_guid, "IsWalking");
-			pFunction->SetDescription("Checks whether or not the player is moving on ground");
-			pFunction->BindOutput(0, 'walk', "Walking");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::IsTurning, "{85280172-CA25-4436-B2BD-3DF2C5A19B40}"_cry_guid, "IsTurning");
-			pFunction->SetDescription("Checks whether or not the player is turning around its Z-axis");
-			pFunction->BindOutput(0, 'turn', "Turning");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::AddVelocity, "{B9D4C79B-1BDF-4A5C-969D-3456036C9CD4}"_cry_guid, "AddVelocity");
-			pFunction->SetDescription("Adds velocity to that of the character");
-			pFunction->BindInput(1, 'vel', "Velocity");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetVelocity, "{32A91404-8E63-4D59-8330-ADF5F2AB71DE}"_cry_guid, "SetVelocity");
-			pFunction->SetDescription("Overrides the character's velocity");
-			pFunction->BindInput(1, 'vel', "Velocity");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetMoveDirection, "{7D21BDFC-FE14-4020-A685-6F7917AC759C}"_cry_guid, "GetMovementDirection");
-			pFunction->SetDescription("Gets the direction the character is moving in");
-			pFunction->BindOutput(0, 'dir', "Direction");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetVelocity, "{BF80D631-05D3-4571-A51D-E0AF6A252F91}"_cry_guid, "GetVelocity");
-			pFunction->SetDescription("Gets the character's velocity");
-			pFunction->BindOutput(0, 'vel', "Velocity");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::Ragdollize, "{1927B2CC-9CC0-4872-93C1-33A4BFC86145}"_cry_guid, "ActivateRagdoll");
-			pFunction->SetDescription("Turns the character into a ragdoll, and disables controlled movement");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::PhysicalizeCharacter, "{FA4C7D76-61BF-41DF-B14D-F72D161496EB}"_cry_guid, "DeactivateRagdoll");
-			pFunction->SetDescription("Disables ragdoll and allows the player to control movement again");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::ActivateContext, "{22B083CA-9E9E-40CF-A506-D794B9FBFACF}"_cry_guid, "ActivateContext");
-			pFunction->SetDescription("Activates a Mannequin context");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'cont', "Context Name");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::QueueFragment, "{BE05E85C-9AFD-4193-96B3-91A4B5BC3602}"_cry_guid, "QueueFragment");
-			pFunction->SetDescription("Queues a Mannequin fragment for playback");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'frag', "Fragment Name");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetTag, "{216C303C-ED8F-4E3D-9762-4E33F69BF045}"_cry_guid, "SetTag");
-			pFunction->SetDescription("Sets a Mannequin tag's state to true or false");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'tagn', "Tag Name");
-			pFunction->BindInput(2, 'set', "Set");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetMotionParameter, "{471E9B94-0F64-4C39-9AB7-D882D8634B93}"_cry_guid, "SetMotionParameter");
-			pFunction->SetDescription("Sets a motion parameter to affect a blend space");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'mtnp', "Motion Parameter");
-			pFunction->BindInput(2, 'val', "Value");
-			componentScope.Register(pFunction);
-		}
-		// Signals
-		{
-			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(CCharacterControllerComponent::SCollisionSignal);
-			pSignal->SetDescription("Sent when the entity collided with another object");
-			componentScope.Register(pSignal);
-		}
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::IsOnGround, "{C41A9117-0292-4FF6-978A-F433345841B3}"_cry_guid, "IsOnGround");
+		pFunction->SetDescription("Checks whether or not the character is on ground");
+		pFunction->BindOutput(0, 'ongr', "OnGround");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetGroundNormal, "{72858886-D2D8-4FDD-A8C3-30A6AA85E7FD}"_cry_guid, "GetGroundNormal");
+		pFunction->SetDescription("Gets the latest ground normal, returns last ground normal if in air");
+		pFunction->BindOutput(0, 'norm', "Normal");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::IsWalking, "{80796905-AC9E-4C0F-A1F1-4CBE0B0807C3}"_cry_guid, "IsWalking");
+		pFunction->SetDescription("Checks whether or not the player is moving on ground");
+		pFunction->BindOutput(0, 'walk', "Walking");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::IsTurning, "{85280172-CA25-4436-B2BD-3DF2C5A19B40}"_cry_guid, "IsTurning");
+		pFunction->SetDescription("Checks whether or not the player is turning around its Z-axis");
+		pFunction->BindOutput(0, 'turn', "Turning");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::AddVelocity, "{B9D4C79B-1BDF-4A5C-969D-3456036C9CD4}"_cry_guid, "AddVelocity");
+		pFunction->SetDescription("Adds velocity to that of the character");
+		pFunction->BindInput(1, 'vel', "Velocity");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetVelocity, "{32A91404-8E63-4D59-8330-ADF5F2AB71DE}"_cry_guid, "SetVelocity");
+		pFunction->SetDescription("Overrides the character's velocity");
+		pFunction->BindInput(1, 'vel', "Velocity");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetMoveDirection, "{7D21BDFC-FE14-4020-A685-6F7917AC759C}"_cry_guid, "GetMovementDirection");
+		pFunction->SetDescription("Gets the direction the character is moving in");
+		pFunction->BindOutput(0, 'dir', "Direction");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetVelocity, "{BF80D631-05D3-4571-A51D-E0AF6A252F91}"_cry_guid, "GetVelocity");
+		pFunction->SetDescription("Gets the character's velocity");
+		pFunction->BindOutput(0, 'vel', "Velocity");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::Ragdollize, "{1927B2CC-9CC0-4872-93C1-33A4BFC86145}"_cry_guid, "ActivateRagdoll");
+		pFunction->SetDescription("Turns the character into a ragdoll, and disables controlled movement");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::PhysicalizeCharacter, "{FA4C7D76-61BF-41DF-B14D-F72D161496EB}"_cry_guid, "DeactivateRagdoll");
+		pFunction->SetDescription("Disables ragdoll and allows the player to control movement again");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::ActivateContext, "{22B083CA-9E9E-40CF-A506-D794B9FBFACF}"_cry_guid, "ActivateContext");
+		pFunction->SetDescription("Activates a Mannequin context");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'cont', "Context Name");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::QueueFragment, "{BE05E85C-9AFD-4193-96B3-91A4B5BC3602}"_cry_guid, "QueueFragment");
+		pFunction->SetDescription("Queues a Mannequin fragment for playback");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'frag', "Fragment Name");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetTag, "{216C303C-ED8F-4E3D-9762-4E33F69BF045}"_cry_guid, "SetTag");
+		pFunction->SetDescription("Sets a Mannequin tag's state to true or false");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'tagn', "Tag Name");
+		pFunction->BindInput(2, 'set', "Set");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetMotionParameter, "{471E9B94-0F64-4C39-9AB7-D882D8634B93}"_cry_guid, "SetMotionParameter");
+		pFunction->SetDescription("Sets a motion parameter to affect a blend space");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'mtnp', "Motion Parameter");
+		pFunction->BindInput(2, 'val', "Value");
+		componentScope.Register(pFunction);
+	}
+	// Signals
+	{
+		auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(SCollisionSignal);
+		pSignal->SetDescription("Sent when the entity collided with another object");
+		componentScope.Register(pSignal);
 	}
 }
 
@@ -155,12 +157,12 @@ static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent::SMov
 	desc.AddMember(&CCharacterControllerComponent::SMovement::m_maxGroundVelocity, 'maxg', "MaxGroundVelocity", "Maximum Surface Velocity", "Maximum velocity of the surface the character is on before they are considered airborne and slide off", DEG2RAD(50.f));
 }
 
-static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent::SCollisionSignal>& desc)
+static void ReflectType(Schematyc::CTypeDesc<SCollisionSignal>& desc)
 {
 	desc.SetGUID("{24C421C5-3E60-42C2-B0D0-6BA3DFC7CF7C}"_cry_guid);
 	desc.SetLabel("On Collision");
-	desc.AddMember(&CCharacterControllerComponent::SCollisionSignal::otherEntity, 'ent', "OtherEntityId", "OtherEntityId", "Other Colliding Entity Id", INVALID_ENTITYID);
-	desc.AddMember(&CCharacterControllerComponent::SCollisionSignal::surfaceType, 'srf', "SurfaceType", "SurfaceType", "Material Surface Type at the collision point", "");
+	desc.AddMember(&SCollisionSignal::otherEntityId, 'ent', "OtherEntityId", "OtherEntityId", "Other Colliding Entity Id", INVALID_ENTITYID);
+	desc.AddMember(&SCollisionSignal::surfaceType, 'srf', "SurfaceType", "SurfaceType", "Material Surface Type at the collision point", "");
 }
 
 CCharacterControllerComponent::~CCharacterControllerComponent()
@@ -263,7 +265,7 @@ void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
 		// Send OnCollision signal
 		if (Schematyc::IObject* pSchematycObject = m_pEntity->GetSchematycObject())
 		{
-			pSchematycObject->ProcessSignal(SCollisionSignal(otherEntityId, Schematyc::SurfaceTypeName(surfaceTypeName)), GetGUID());
+			pSchematycObject->ProcessSignal(SCollisionSignal{ otherEntityId, Schematyc::SurfaceTypeName(surfaceTypeName) }, GetGUID());
 		}
 	}
 	else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)

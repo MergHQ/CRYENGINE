@@ -190,7 +190,8 @@ public:
 	virtual bool IsInvisible() const final { return m_bInvisible; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IAIObject*  GetAI() final                       { return (m_aiObjectID ? GetAIObject() : NULL); }
+	virtual const IAIObject* GetAI() const final            { return m_aiObjectID ? GetAIObject() : nullptr; }
+	virtual IAIObject*  GetAI() final                       { return m_aiObjectID ? GetAIObject() : nullptr; }
 	virtual bool        HasAI() const final                 { return m_aiObjectID != 0; }
 	virtual tAIObjectID GetAIObjectID() const final         { return m_aiObjectID; }
 	virtual void        SetAIObjectID(tAIObjectID id) final { m_aiObjectID = id; }
@@ -437,7 +438,7 @@ private:
 		return (fabsf(m_vScale.x - 1.0f) + fabsf(m_vScale.y - 1.0f) + fabsf(m_vScale.z - 1.0f)) >= threshold;
 	}
 	// Fetch the IA object from the AIObjectID, if any
-	IAIObject* GetAIObject();
+	IAIObject* GetAIObject() const;
 
 	void CreateSchematycObject(const SEntitySpawnParams& params);
 

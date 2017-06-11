@@ -164,9 +164,10 @@ def generate_cpp_cmakelists (project_name, project_file, code_directory, engine_
          cmakelists_template.template += """set(CRYENGINE_DIR $engine_root_directory)
 set(TOOLS_CMAKE_DIR $${CRYENGINE_DIR}/Tools/CMake)
 
-include($${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
-set(OPTION_ENGINE 0)
+set(PROJECT_BUILD 1)
 set(PROJECT_DIR "$project_path")
+
+include($${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
 
 add_subdirectory($${CRYENGINE_DIR} $${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE)
 

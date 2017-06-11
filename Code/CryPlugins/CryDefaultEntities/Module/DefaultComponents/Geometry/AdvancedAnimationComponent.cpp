@@ -8,42 +8,38 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		static void RegisterAdvancedAnimationComponent(Schematyc::IEnvRegistrar& registrar)
+		void CAdvancedAnimationComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		{
-			Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+			// Functions
 			{
-				Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CAdvancedAnimationComponent));
-				// Functions
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::ActivateContext, "{2DA18E2A-75F6-4EEE-9C7C-60ABF275555E}"_cry_guid, "ActivateContext");
-					pFunction->SetDescription("Activates a Mannequin context");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'cont', "Context Name");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::QueueFragment, "{6F5AA73B-B8F9-4392-9651-468DEB342D91}"_cry_guid, "QueueFragment");
-					pFunction->SetDescription("Queues a Mannequin fragment for playback");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'frag', "Fragment Name");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::SetTag, "{04768686-96DF-4F82-8CC8-109522A9F2E0}"_cry_guid, "SetTag");
-					pFunction->SetDescription("Sets a Mannequin tag's state to true or false");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'tagn', "Tag Name");
-					pFunction->BindInput(2, 'set', "Set");
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::SetMotionParameter, "{67B8D89B-D56B-443E-B88B-BFEBEE52AFB7}"_cry_guid, "SetMotionParameter");
-					pFunction->SetDescription("Sets a motion parameter to affect a blend space");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'mtnp', "Motion Parameter");
-					pFunction->BindInput(2, 'val', "Value");
-					componentScope.Register(pFunction);
-				}
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::ActivateContext, "{2DA18E2A-75F6-4EEE-9C7C-60ABF275555E}"_cry_guid, "ActivateContext");
+				pFunction->SetDescription("Activates a Mannequin context");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				pFunction->BindInput(1, 'cont', "Context Name");
+				componentScope.Register(pFunction);
+			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::QueueFragment, "{6F5AA73B-B8F9-4392-9651-468DEB342D91}"_cry_guid, "QueueFragment");
+				pFunction->SetDescription("Queues a Mannequin fragment for playback");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				pFunction->BindInput(1, 'frag', "Fragment Name");
+				componentScope.Register(pFunction);
+			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::SetTag, "{04768686-96DF-4F82-8CC8-109522A9F2E0}"_cry_guid, "SetTag");
+				pFunction->SetDescription("Sets a Mannequin tag's state to true or false");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				pFunction->BindInput(1, 'tagn', "Tag Name");
+				pFunction->BindInput(2, 'set', "Set");
+				componentScope.Register(pFunction);
+			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::SetMotionParameter, "{67B8D89B-D56B-443E-B88B-BFEBEE52AFB7}"_cry_guid, "SetMotionParameter");
+				pFunction->SetDescription("Sets a motion parameter to affect a blend space");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				pFunction->BindInput(1, 'mtnp', "Motion Parameter");
+				pFunction->BindInput(2, 'val', "Value");
+				componentScope.Register(pFunction);
 			}
 		}
 

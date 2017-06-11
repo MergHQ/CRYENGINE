@@ -106,11 +106,6 @@ template<class Value> void SerializeWeakRefMap(TSerialize& ser, const char* sNam
 	ser.EndGroup();
 }
 
-std::vector<CAIActor*> CPuppet::s_enemies;
-std::vector<SSortedHideSpot> CPuppet::s_sortedHideSpots;
-MultimapRangeHideSpots CPuppet::s_hidespots;
-MapConstNodesDistance CPuppet::s_traversedNodes;
-
 SSoundPerceptionDescriptor CPuppet::s_DefaultSoundPerceptionDescriptor[AISOUND_LAST] =
 {
 	SSoundPerceptionDescriptor(0.0f, 1.0f, 2.0f, PERCEPTION_INTERESTING_THR, 1.0f, 0.25f),
@@ -243,10 +238,6 @@ CPuppet::~CPuppet()
 void CPuppet::ClearStaticData()
 {
 	stl::free_container(s_weights);
-	stl::free_container(s_sortedHideSpots);
-	stl::free_container(s_enemies);
-	stl::free_container(s_traversedNodes);
-	s_hidespots.clear();
 }
 
 //===================================================================
@@ -1255,7 +1246,7 @@ void CPuppet::Event(unsigned short eType, SAIEVENT* pEvent)
 
 			ClearActiveGoals();
 			m_bLooseAttention = false;
-			pAISystem->FreeFormationPoint(GetWeakRef(this));
+			gAIEnv.pFormationManager->FreeFormationPoint(GetWeakRef(this));
 			SetAttentionTarget(NILREF);
 			m_bBlocked = false;
 			m_bCanReceiveSignals = true;
@@ -1346,7 +1337,7 @@ void CPuppet::Event(unsigned short eType, SAIEVENT* pEvent)
 
 			pAISystem->RemoveFromGroup(GetGroupId(), this);
 
-			pAISystem->ReleaseFormationPoint(this);
+			gAIEnv.pFormationManager->ReleaseFormationPoint(this);
 			CancelRequestedPath(false);
 			ReleaseFormation();
 
@@ -2348,8 +2339,8 @@ bool CPuppet::SteerAroundPuppet(const Vec3& targetPos, const CAIObject* object, 
 	Vec3 steerOffset(ZERO);
 
 	bool outside = true;
-	if (m_lastNavNodeIndex && (gAIEnv.pGraph->GetNodeManager().GetNode(m_lastNavNodeIndex)->navType & (IAISystem::NAV_TRIANGULAR | IAISystem::NAV_ROAD)) == 0)
-		outside = false;
+	//if (m_lastNavNodeIndex && (gAIEnv.pGraph->GetNodeManager().GetNode(m_lastNavNodeIndex)->navType & (IAISystem::NAV_TRIANGULAR | IAISystem::NAV_ROAD)) == 0)
+	//	outside = false;
 
 	Vec3 delta = objectPos - myPos;
 	// skip if we're not close
@@ -2515,7 +2506,7 @@ bool CPuppet::SteerAroundVehicle(const Vec3& targetPos, const CAIObject* object,
 	// if vehicle is in the same formation (convoy) - don't steer around it, otherwise can't stay in formation
 	if (const CAIVehicle* pVehicle = object->CastToCAIVehicle())
 	{
-		if (GetAISystem()->SameFormation(this, pVehicle))
+		if (gAIEnv.pFormationManager->SameFormation(this, pVehicle))
 			return false;
 	}
 	// currently puppet algorithm seems to work ok.
@@ -2605,8 +2596,6 @@ void CPuppet::Reset(EObjectResetType type)
 		m_pFireCmdHandler->Reset();
 	if (m_pFireCmdGrenade)
 		m_pFireCmdGrenade->Reset();
-
-	m_PFBlockers.clear();
 
 	m_CurrentHideObject.Set(0, Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_Zero);
 	m_InitialPath.clear();
@@ -4521,156 +4510,6 @@ void CPuppet::ResetSpeedControl()
 	m_chaseSpeedRate = 0.0f;
 	m_lastChaseUrgencyDist = -1;
 	m_lastChaseUrgencySpeed = -1;
-}
-
-//===================================================================
-// GetPathAgentNavigationBlockers
-//===================================================================
-// (MATT) This method is very nearly const - just the GetRefPoint call prevents that {2009/04/02}
-void CPuppet::GetPathAgentNavigationBlockers(NavigationBlockers& navigationBlockers, const struct PathfindRequest* pRequest)
-{
-	CCCPOINT(CPuppet_AddNavigationBlockers);
-	CAIObject* pAttentionTarget = m_refAttentionTarget.GetAIObject();
-
-	static float cost = 5.0f; //1000.0f;
-	static bool radialDecay = true;
-	static bool directional = true;
-
-	TMapBlockers::const_iterator itr(m_PFBlockers.find(PFB_ATT_TARGET));
-	float curRadius(itr != m_PFBlockers.end() ? (*itr).second : 0.f);
-	float sign(1.0f);
-	if (curRadius < 0.0f) { sign = -1.0f; curRadius = -curRadius; }
-	// see if attention target needs to be avoided
-	if (curRadius > 0.f &&
-	    pAttentionTarget && IsHostile(pAttentionTarget))
-	{
-		float r(curRadius);
-		if (pRequest)
-		{
-			static float extra = 1.5f;
-			float d1 = extra * Distance::Point_Point(pAttentionTarget->GetPos(), pRequest->startPos);
-			float d2 = extra * Distance::Point_Point(pAttentionTarget->GetPos(), pRequest->endPos);
-			r = min(min(d1, d2), curRadius);
-		}
-		NavigationBlocker enemyBlocker(pAttentionTarget->GetPos(), r * sign, 0.f, cost, radialDecay, directional);
-		navigationBlockers.push_back(enemyBlocker);
-	}
-
-	// avoid player
-	itr = m_PFBlockers.find(PFB_PLAYER);
-	curRadius = itr != m_PFBlockers.end() ? (*itr).second : 0.f;
-	sign = 1.0f;
-	if (curRadius < 0.0f) { sign = -1.0f; curRadius = -curRadius; }
-	if (curRadius > 0.0f)
-	{
-		CAIPlayer* pPlayer = CastToCAIPlayerSafe(GetAISystem()->GetPlayer());
-		if (pPlayer)
-		{
-			NavigationBlocker blocker(pPlayer->GetPos() + pPlayer->GetEntityDir() * curRadius / 2, curRadius * sign, 0.f, cost, radialDecay, directional);
-			navigationBlockers.push_back(blocker);
-		}
-	}
-
-	// avoid player
-	itr = m_PFBlockers.find(PFB_BETWEEN_NAV_TARGET);
-	curRadius = itr != m_PFBlockers.end() ? (*itr).second : 0.f;
-	sign = 1.0f;
-	if (curRadius < 0.0f) { sign = -1.0f; curRadius = -curRadius; }
-	if (curRadius > 0.0f)
-	{
-		float biasTowardsTarget = 0.7f;
-		Vec3 mid = pRequest->endPos * biasTowardsTarget + GetPos() * (1 - biasTowardsTarget);
-		curRadius = min(curRadius, Distance::Point_Point(pRequest->endPos, GetPos()) * 0.8f);
-		NavigationBlocker blocker(mid, curRadius * sign, 0.f, cost, radialDecay, directional);
-		navigationBlockers.push_back(blocker);
-	}
-
-	// see if ref point needs to be avoided
-	itr = m_PFBlockers.find(PFB_REF_POINT);
-	curRadius = itr != m_PFBlockers.end() ? (*itr).second : 0.f;
-	sign = 1.0f;
-	if (curRadius < 0.0f) { sign = -1.0f; curRadius = -curRadius; }
-	if (curRadius > 0.f)
-	{
-		Vec3 vRefPointPos = GetRefPoint()->GetPos();
-		float r(curRadius);
-		if (pRequest)
-		{
-			static float extra = 1.5f;
-			float d1 = extra * Distance::Point_Point(vRefPointPos, pRequest->startPos);
-			float d2 = extra * Distance::Point_Point(vRefPointPos, pRequest->endPos);
-			r = min(min(d1, d2), curRadius);
-		}
-		NavigationBlocker enemyBlocker(vRefPointPos, r, 0.f, cost * sign, radialDecay, directional);
-		navigationBlockers.push_back(enemyBlocker);
-	}
-
-	itr = m_PFBlockers.find(PFB_BEACON);
-	curRadius = itr != m_PFBlockers.end() ? (*itr).second : 0.f;
-	sign = 1.0f;
-	if (curRadius < 0.0f) { sign = -1.0f; curRadius = -curRadius; }
-	IAIObject* pBeacon;
-	if (curRadius > 0.f && (pBeacon = GetAISystem()->GetBeacon(GetGroupId())))
-	{
-		float r(curRadius);
-		if (pRequest)
-		{
-			static float extra = 1.5f;
-			float d1 = extra * Distance::Point_Point(pBeacon->GetPos(), pRequest->startPos);
-			float d2 = extra * Distance::Point_Point(pBeacon->GetPos(), pRequest->endPos);
-			r = min(min(d1, d2), curRadius);
-
-		}
-		NavigationBlocker enemyBlocker(pBeacon->GetPos(), r, 0.f, cost * sign, radialDecay, directional);
-		navigationBlockers.push_back(enemyBlocker);
-	}
-
-	// Avoid dead bodies
-	float deadRadius = 0.0f;
-	const int ignoreDeadBodies = false;
-	if (!ignoreDeadBodies)
-	{
-		itr = m_PFBlockers.find(PFB_DEAD_BODIES);
-		deadRadius = itr != m_PFBlockers.end() ? (*itr).second : 0.f;
-	}
-
-	itr = m_PFBlockers.find(PFB_EXPLOSIVES);
-	float explosiveRadius = itr != m_PFBlockers.end() ? (*itr).second : 0.f;
-
-	if (fabsf(deadRadius) > 0.01f || fabsf(explosiveRadius) > 0.01f)
-	{
-		const unsigned int maxn = 3;
-		Vec3 positions[maxn];
-		unsigned int types[maxn];
-		unsigned int n = GetAISystem()->GetDangerSpots(static_cast<const IAIObject*>(this), 40.0f, positions, types, maxn, CAISystem::DANGER_ALL);
-		for (unsigned i = 0; i < n; i++)
-		{
-			float r = explosiveRadius;
-			if (types[i] == CAISystem::DANGER_DEADBODY)
-			{
-				if (ignoreDeadBodies)
-					continue;
-
-				r = deadRadius;
-			}
-
-			// Skip completely blocking blocking blockers which are too close.
-			if (r < 0.0f && Distance::Point_PointSq(GetPos(), positions[i]) < sqr(fabsf(r) + 2.0f))
-				continue;
-			sign = 1.0f;
-			if (r < 0.0f) { sign = -1.0f; r = -r; }
-			NavigationBlocker enemyBlocker(positions[i], r, 0.f, cost * sign, radialDecay, directional);
-			navigationBlockers.push_back(enemyBlocker);
-		}
-	}
-}
-
-//===================================================================
-// SetPFBlockerRadius
-//===================================================================
-void CPuppet::SetPFBlockerRadius(int blockerType, float radius)
-{
-	m_PFBlockers[blockerType] = radius;
 }
 
 //===================================================================

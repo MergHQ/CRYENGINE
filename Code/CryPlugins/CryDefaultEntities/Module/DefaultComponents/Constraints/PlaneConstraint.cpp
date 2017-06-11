@@ -5,34 +5,30 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		static void RegisterPlaneConstraintComponent(Schematyc::IEnvRegistrar& registrar)
+		void CPlaneConstraintComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		{
-			Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+			// Functions
 			{
-				Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CPlaneConstraintComponent));
-				// Functions
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPlaneConstraintComponent::ConstrainToEntity, "{761D04E2-672B-4EAD-885E-B7B056001DFA}"_cry_guid, "ConstrainToEntity");
-					pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the specified entity");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'enti', "Target Entity", "Defines the entity we want to be constrained to, or the point itself if id is 0", INVALID_ENTITYID);
-					pFunction->BindInput(2, 'igno', "Ignore Collisions With", "Whether or not to ignore collisions between this entity and the target", false);
-					pFunction->BindInput(3, 'arot', "Allow Rotation", "Whether or not to allow rotations when the constraint is active", true);
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPlaneConstraintComponent::ConstrainToPoint, "{2A1E5BF3-C98F-40B3-86C6-FF21CB35F4A9}"_cry_guid, "ConstrainToPoint");
-					pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the point");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					pFunction->BindInput(1, 'arot', "Allow Rotation", "Whether or not to allow rotations when the constraint is active", true);
-					componentScope.Register(pFunction);
-				}
-				{
-					auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPlaneConstraintComponent::Remove, "{F3E7141F-508F-479D-AD72-2BD838C09905}"_cry_guid, "Remove");
-					pFunction->SetDescription("Removes the constraint");
-					pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-					componentScope.Register(pFunction);
-				}
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPlaneConstraintComponent::ConstrainToEntity, "{761D04E2-672B-4EAD-885E-B7B056001DFA}"_cry_guid, "ConstrainToEntity");
+				pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the specified entity");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				pFunction->BindInput(1, 'enti', "Target Entity", "Defines the entity we want to be constrained to, or the point itself if id is 0", INVALID_ENTITYID);
+				pFunction->BindInput(2, 'igno', "Ignore Collisions With", "Whether or not to ignore collisions between this entity and the target", false);
+				pFunction->BindInput(3, 'arot', "Allow Rotation", "Whether or not to allow rotations when the constraint is active", true);
+				componentScope.Register(pFunction);
+			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPlaneConstraintComponent::ConstrainToPoint, "{2A1E5BF3-C98F-40B3-86C6-FF21CB35F4A9}"_cry_guid, "ConstrainToPoint");
+				pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the point");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				pFunction->BindInput(1, 'arot', "Allow Rotation", "Whether or not to allow rotations when the constraint is active", true);
+				componentScope.Register(pFunction);
+			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPlaneConstraintComponent::Remove, "{F3E7141F-508F-479D-AD72-2BD838C09905}"_cry_guid, "Remove");
+				pFunction->SetDescription("Removes the constraint");
+				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+				componentScope.Register(pFunction);
 			}
 		}
 

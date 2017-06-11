@@ -10,37 +10,33 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-static void RegisterEnvironmentProbeComponent(Schematyc::IEnvRegistrar& registrar)
+void CEnvironmentProbeComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
+	// Functions
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEnvironmentProbeComponent));
-		// Functions
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEnvironmentProbeComponent::LoadFromDisk, "122049AA-015F-4F30-933D-BF2E7C6BA0BC"_cry_guid, "LoadFromDisk");
-			pFunction->SetDescription("Loads a cube map texture from disk and applies it");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'path', "Cube map Texture Path");
-			componentScope.Register(pFunction);
-		}
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEnvironmentProbeComponent::SetCubemap, "F305D0C4-6AD2-4FD8-93A9-330A91206360"_cry_guid, "SetCubemap");
-			pFunction->SetDescription("Sets the cube map from already loaded textures");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'spec', "Specular cube map texture id");
-			pFunction->BindInput(2, 'diff', "Diffuse cube map texture id");
-			componentScope.Register(pFunction);
-		}
-#ifdef SUPPORT_ENVIRONMENT_PROBE_GENERATION
-		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEnvironmentProbeComponent::Generate, "024A11F7-8C74-493A-A0A7-3D613281BEDE"_cry_guid, "Generate");
-			pFunction->SetDescription("Generates the cubemap to the specified path");
-			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-			pFunction->BindInput(1, 'path', "Output Texture Path");
-			componentScope.Register(pFunction);
-		}
-#endif
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEnvironmentProbeComponent::LoadFromDisk, "122049AA-015F-4F30-933D-BF2E7C6BA0BC"_cry_guid, "LoadFromDisk");
+		pFunction->SetDescription("Loads a cube map texture from disk and applies it");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'path', "Cube map Texture Path");
+		componentScope.Register(pFunction);
 	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEnvironmentProbeComponent::SetCubemap, "F305D0C4-6AD2-4FD8-93A9-330A91206360"_cry_guid, "SetCubemap");
+		pFunction->SetDescription("Sets the cube map from already loaded textures");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'spec', "Specular cube map texture id");
+		pFunction->BindInput(2, 'diff', "Diffuse cube map texture id");
+		componentScope.Register(pFunction);
+	}
+#ifdef SUPPORT_ENVIRONMENT_PROBE_GENERATION
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEnvironmentProbeComponent::Generate, "024A11F7-8C74-493A-A0A7-3D613281BEDE"_cry_guid, "Generate");
+		pFunction->SetDescription("Generates the cubemap to the specified path");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
+		pFunction->BindInput(1, 'path', "Output Texture Path");
+		componentScope.Register(pFunction);
+	}
+#endif
 }
 
 void CEnvironmentProbeComponent::ReflectType(Schematyc::CTypeDesc<CEnvironmentProbeComponent>& desc)

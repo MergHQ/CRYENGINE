@@ -457,15 +457,6 @@
 			"ClusterRequest.cpp",
 			"ClusterDetector.h"
 		],
-		"Walkability":
-		[
-			"Walkability/FloorHeightCache.h",
-			"Walkability/FloorHeightCache.cpp",
-			"Walkability/WalkabilityCache.h",
-			"Walkability/WalkabilityCache.cpp",
-			"Walkability/WalkabilityCacheManager.h",
-			"Walkability/WalkabilityCacheManager.cpp"
-		],
 		"Goals":
 		[
 			"GoalOp.h",

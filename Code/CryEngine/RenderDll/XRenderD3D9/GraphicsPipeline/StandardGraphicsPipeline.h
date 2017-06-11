@@ -237,6 +237,10 @@ private:
 
 	CCVarUpdateRecorder           m_changedCVars;
 
+public:
+	std::unique_ptr<CDownsamplePass        > m_DownscalePass;
+	std::unique_ptr<CSharpeningUpsamplePass> m_UpscalePass;
+
 private:
 	void ExecuteHDRPostProcessing();
 	void ExecuteMobilePipeline();

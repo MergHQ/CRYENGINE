@@ -42,8 +42,19 @@ set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "/debug" CACHE STRING "Release link flags"
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "/debug" CACHE STRING "Release link flags" FORCE)
 set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "/debug /INCREMENTAL" CACHE STRING "Release link flags" FORCE)
 
-function (wrap_whole_archive target source)
-	# no-op for MSVC (for now)
+function (wrap_whole_archive project target source)
 	set(${target} "${${source}}" PARENT_SCOPE)
+	set( whole_archive_link_flags "")
+	foreach(module ${${source}})
+		# Get Type of module target, (STATIC_LIBRARY,SHARED_LIBRARY,EXECUTABLE)
+		get_target_property(ModuleProjectType ${module} TYPE)
+		if (ModuleProjectType STREQUAL "STATIC_LIBRARY")
+			# Only Static library needs a /WHOLEARCHIVE linker switch to prevent linker from optimizing static factories
+			list( APPEND whole_archive_link_flags "/WHOLEARCHIVE:${module}")
+		endif()
+	endforeach()
+	string (REPLACE ";" " " whole_archive_link_flags "${whole_archive_link_flags}")
+	#message(STATUS "${whole_archive_link_flags}")
+	set_target_properties(${project} PROPERTIES LINK_FLAGS ${whole_archive_link_flags})
 endfunction()
 

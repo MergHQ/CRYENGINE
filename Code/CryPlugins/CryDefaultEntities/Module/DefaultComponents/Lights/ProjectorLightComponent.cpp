@@ -10,20 +10,8 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-static void RegisterProjectorLightComponent(Schematyc::IEnvRegistrar& registrar)
+void CProjectorLightComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CProjectorLightComponent));
-		// Functions
-		/*{
-		   auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEnvironmentProbeComponent::LoadFromDisk, "122049AA-015F-4F30-933D-BF2E7C6BA0BC"_cry_guid, "LoadFromDisk");
-		   pFunction->SetDescription("Loads a cube map texture from disk and applies it");
-		   pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-		   pFunction->BindInput(1, 'path', "Cube map Texture Path");
-		   componentScope.Register(pFunction);
-		   }*/
-	}
 }
 
 void CProjectorLightComponent::ReflectType(Schematyc::CTypeDesc<CProjectorLightComponent>& desc)

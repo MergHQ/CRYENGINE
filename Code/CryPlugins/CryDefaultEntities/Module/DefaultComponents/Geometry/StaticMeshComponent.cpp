@@ -7,13 +7,8 @@ namespace Cry
 {
 namespace DefaultComponents
 {
-static void RegisterStaticMeshComponent(Schematyc::IEnvRegistrar& registrar)
+void CStaticMeshComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
-	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CStaticMeshComponent));
-		// Functions
-	}
 }
 
 void CStaticMeshComponent::ReflectType(Schematyc::CTypeDesc<CStaticMeshComponent>& desc)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CrySchematyc/Env/IEnvRegistrar.h>
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/IObject.h>
@@ -11,6 +12,8 @@
 
 #include <CryAISystem/MovementRequest.h>
 
+class CPlugin_CryDefaultEntities;
+
 namespace Cry
 {
 	namespace DefaultComponents
@@ -20,6 +23,10 @@ namespace Cry
 			, private IMovementActorAdapter
 			, private IAIPathAgent
 		{
+		protected:
+			friend CPlugin_CryDefaultEntities;
+			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 			// Dummy implementation so we can use IAISystem::CreateAndReturnNewDefaultPathFollower
 			class CPathObstacles final
 				: public IPathObstacles
@@ -159,23 +166,8 @@ namespace Cry
 
 			virtual const AgentMovementAbility& GetPathAgentMovementAbility() const final { return m_movementAbility; }
 
-			virtual void GetPathAgentNavigationBlockers(NavigationBlockers& blockers, const PathfindRequest* pRequest) final {}
-
-			virtual unsigned int GetPathAgentLastNavNode() const final { return 0; }
-			virtual void SetPathAgentLastNavNode(unsigned int lastNavNode) final {}
-
 			virtual void SetPathToFollow(const char* pathName) final {}
 			virtual void         SetPathAttributeToFollow(bool bSpline) final {}
-
-			virtual void SetPFBlockerRadius(int blockerType, float radius) final {}
-
-			virtual ETriState CanTargetPointBeReached(CTargetPointRequest& request) final
-			{
-				request.SetResult(eTS_false);
-				return eTS_false;
-			}
-
-			virtual bool UseTargetPointRequest(const CTargetPointRequest& request) final { return false; }
 
 			virtual bool GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const final { return false; }
 			virtual bool GetTeleportPosition(Vec3& teleportPos) const final { return false; }
@@ -203,7 +195,7 @@ namespace Cry
 				request.resultCallback = functor(*this, &CPathfindingComponent::OnMNMPathResult);
 				request.agentTypeID = m_navigationAgentTypeId;
 
-				m_pathFinderRequestId = gEnv->pAISystem->GetMNMPathfinder()->RequestPathTo(this, request);
+				m_pathFinderRequestId = gEnv->pAISystem->GetMNMPathfinder()->RequestPathTo(GetEntityId(), request);
 			}
 
 			void OnMNMPathResult(const MNM::QueuedPathID& requestId, MNMPathRequestResult& result)
@@ -245,7 +237,7 @@ namespace Cry
 
 			Vec3 m_requestedTargetBodyDirection;
 
-			Schematyc::Range<0, 10000> m_maxAcceleration = 10.f;
+			Schematyc::Range<0, 10000> m_maxAcceleration = 6.0f;
 			std::function<void(const Vec3& recommendedVelocity)> m_movementRecommendationCallback;
 		};
 	}

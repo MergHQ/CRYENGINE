@@ -6,10 +6,13 @@
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Utils/SharedString.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
 
 #include <CryEntitySystem/IEntityComponent.h>
 
 #include <CryCore/Containers/CryArray.h>
+
+class CPlugin_CryDefaultEntities;
 
 static void ReflectType(Schematyc::CTypeDesc<EMotionParamID>& desc)
 {
@@ -42,6 +45,9 @@ class CAdvancedAnimationComponent
 	: public IEntityComponent
 {
 protected:
+	friend CPlugin_CryDefaultEntities;
+	static void Register(Schematyc::CEnvRegistrationScope& componentScope);
+
 	// IEntityComponent
 	virtual void   Initialize() override;
 

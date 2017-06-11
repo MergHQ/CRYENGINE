@@ -3265,7 +3265,7 @@ protected:
 				                             functor(runtimeData, &RuntimeData::PathfinderCallback),
 				                             pipeUser.GetNavigationTypeID(), eMNMDangers_None);
 
-				runtimeData.queuedPathID = gAIEnv.pMNMPathfinder->RequestPathTo(&pipeUser, request);
+				runtimeData.queuedPathID = gAIEnv.pMNMPathfinder->RequestPathTo(pipeUser.GetEntityID(), request);
 
 				if (runtimeData.queuedPathID)
 					runtimeData.pendingStatus = Running;
