@@ -865,6 +865,7 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 			// be careful: first parameter of parameter widget should not be within an 'openBlock()', otherwise following attachments would not be shown in the GUI
 			if (ar.openBlock("animation", "+Animation Control"))
 			{
+				ar(m_vclothParams.hide, "hide", "Hide");
 				ar(m_vclothParams.forceSkinning, "forceSkinning", "Force Skinning");
 				ar.doc("If enabled, simulation is skipped and skinning is always enforced.");
 				ar(Serialization::Range(m_vclothParams.forceSkinningFpsThreshold, 5.0f, std::numeric_limits<float>::max()), "forceSkinningFpsThreshold", "Force Skinning FPS Thresh");
@@ -1346,6 +1347,7 @@ bool CharacterDefinition::LoadFromXml(const XmlNodeRef& root)
 				if (Type == "CA_VCLOTH")
 				{
 					// Animation Control
+					nodeAttach->getAttr("hide", attach.m_vclothParams.hide);
 					nodeAttach->getAttr("forceSkinning", attach.m_vclothParams.forceSkinning);
 					nodeAttach->getAttr("forceSkinningFpsThreshold", attach.m_vclothParams.forceSkinningFpsThreshold);
 					nodeAttach->getAttr("forceSkinningTranslateThreshold", attach.m_vclothParams.forceSkinningTranslateThreshold);
@@ -1403,13 +1405,12 @@ bool CharacterDefinition::LoadFromXml(const XmlNodeRef& root)
 					nodeAttach->getAttr("debugDrawCloth", attach.m_vclothParams.debugDrawCloth);
 					nodeAttach->getAttr("debugDrawLRA", attach.m_vclothParams.debugDrawLRA);
 					nodeAttach->getAttr("debugPrint", attach.m_vclothParams.debugPrint);
-
-					nodeAttach->getAttr("hide", attach.m_vclothParams.hide);
 				}
 
 				uint32 flags;
 				if (nodeAttach->getAttr("Flags", flags))
 					attach.m_nFlags = flags;
+
 				nodeAttach->getAttr("ViewDistRatio", attach.m_viewDistanceMultiplier);
 
 				attach.m_jointPhysics.LoadFromXml(nodeAttach);
@@ -1813,6 +1814,7 @@ void CharacterDefinition::ExportVClothAttachment(const CharacterAttachment& atta
 		nodeAttach->setAttr("AName", attach.m_strSocketName);
 
 	// Animation Control
+	nodeAttach->setAttr("hide", attach.m_vclothParams.hide);
 	nodeAttach->setAttr("forceSkinning", attach.m_vclothParams.forceSkinning);
 	nodeAttach->setAttr("forceSkinningFpsThreshold", attach.m_vclothParams.forceSkinningFpsThreshold);
 	nodeAttach->setAttr("forceSkinningTranslateThreshold", attach.m_vclothParams.forceSkinningTranslateThreshold);
@@ -1870,8 +1872,6 @@ void CharacterDefinition::ExportVClothAttachment(const CharacterAttachment& atta
 	nodeAttach->setAttr("debugDrawCloth", attach.m_vclothParams.debugDrawCloth);
 	nodeAttach->setAttr("debugDrawLRA", attach.m_vclothParams.debugDrawLRA);
 	nodeAttach->setAttr("debugPrint", attach.m_vclothParams.debugPrint);
-
-	nodeAttach->setAttr("hide", attach.m_vclothParams.hide);
 }
 
 void CharacterDefinition::ExportSimulation(const CharacterAttachment& attach, XmlNodeRef nodeAttach)

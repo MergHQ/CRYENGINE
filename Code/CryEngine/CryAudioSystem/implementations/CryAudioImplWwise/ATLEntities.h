@@ -40,8 +40,8 @@ public:
 	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
 	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
 	virtual ERequestStatus StopAllTriggers() override;
-	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Success; }
-	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Success; }
+	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Failure; }
+	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Failure; }
 	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~CryAudio::Impl::IObject
 

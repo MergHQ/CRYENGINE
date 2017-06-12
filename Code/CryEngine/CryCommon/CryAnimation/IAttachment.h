@@ -130,7 +130,8 @@ public:
 	SVClothParams() :
 
 		// Animation Control
-		forceSkinning(false)
+		hide(false)
+		, forceSkinning(false)
 		, forceSkinningFpsThreshold(25.0f)
 		, forceSkinningTranslateThreshold(1.0f)
 		, checkAnimationRewind(true)
@@ -189,7 +190,6 @@ public:
 		, debugPrint(0)
 
 		, weights(nullptr)
-		, hide(false)
 		, disableSimulation(false)
 	{}
 };

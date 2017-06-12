@@ -277,6 +277,7 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 		if (attach.m_Type == CA_VCLOTH)
 		{
 			// Animation Control
+			nodeAttach->getAttr("hide", attach.clothParams.hide);
 			nodeAttach->getAttr("forceSkinning", attach.clothParams.forceSkinning);
 			nodeAttach->getAttr("forceSkinningFpsThreshold", attach.clothParams.forceSkinningFpsThreshold);
 			nodeAttach->getAttr("forceSkinningTranslateThreshold", attach.clothParams.forceSkinningTranslateThreshold);
@@ -338,8 +339,6 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 			nodeAttach->getAttr("debugPrint", attach.clothParams.debugPrint);
 			// overwrite debug settings
 			attach.clothParams.debugPrint = 0;
-
-			nodeAttach->getAttr("hide", attach.clothParams.hide);
 		}
 
 		if (attach.m_Type == CA_PROW)
