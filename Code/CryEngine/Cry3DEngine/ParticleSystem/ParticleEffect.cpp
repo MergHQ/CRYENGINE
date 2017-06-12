@@ -83,19 +83,24 @@ string CParticleEffect::MakeUniqueName(TComponentId forComponentId, const char* 
 	if (foundId == forComponentId || foundId == gInvalidId)
 		return string(name);
 
-	CryStackStringT<char, 256> newName(name);
-	const uint sz = strlen(name);
-	if (isdigit(name[sz - 2]) && isdigit(name[sz - 1]))
+	string newName = name;
+	int pos = newName.length() - 1;
+
+	do
 	{
-		const uint newIdent = (name[sz - 2] - '0') * 10 + (name[sz - 1] - '0') + 1;
-		newName.replace(sz - 2, 1, 1, (newIdent / 10) % 10 + '0');
-		newName.replace(sz - 1, 1, 1, newIdent % 10 + '0');
+		while (pos >= 0 && newName[pos] == '9')
+		{
+			newName.replace(pos, 1, 1, '0');
+			pos--;
+		}
+		if (pos < 0 || !isdigit(newName[pos]))
+			newName.insert(++pos, '1');
+		else
+			newName.replace(pos, 1, 1, newName[pos] + 1);
 	}
-	else
-	{
-		newName.append("01");
-	}
-	return MakeUniqueName(forComponentId, newName);
+	while (FindComponentIdByName(newName) != gInvalidId);
+
+	return newName;
 }
 
 uint CParticleEffect::AddRenderObjectId()
