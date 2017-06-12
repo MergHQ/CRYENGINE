@@ -5,6 +5,7 @@
 
 #include "DefaultComponents/AI/PathfindingComponent.h"
 #include "DefaultComponents/Audio/AudioSpotComponent.h"
+#include "DefaultComponents/Audio/AudioAreaComponent.h"
 #include "DefaultComponents/Cameras/CameraComponent.h"
 #include "DefaultComponents/Constraints/LineConstraint.h"
 #include "DefaultComponents/Constraints/PlaneConstraint.h"
@@ -69,6 +70,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CEntityAudioSpotComponent));
 			Cry::DefaultComponents::CEntityAudioSpotComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CEntityAudioAreaComponent));
+			Cry::DefaultComponents::CEntityAudioAreaComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCameraComponent));

@@ -25,6 +25,7 @@ namespace Cry
 		struct SAudioParameterSerializeHelper
 		{
 			void        Serialize(Serialization::IArchive& archive);
+			bool operator == (const SAudioParameterSerializeHelper & other) const { return m_parameterName == other.m_parameterName; }
 
 			CryAudio::ControlId m_parameterId = CryAudio::InvalidControlId;
 			string              m_parameterName;
@@ -33,6 +34,7 @@ namespace Cry
 		struct SAudioSwitchWithStateSerializeHelper
 		{
 			void        Serialize(Serialization::IArchive& archive);
+			bool operator == (const SAudioSwitchWithStateSerializeHelper & other) const { return m_switchName == other.m_switchName && m_switchStateName == other.m_switchStateName; }
 
 			CryAudio::ControlId     m_switchId = CryAudio::InvalidControlId;
 			string                  m_switchName;
