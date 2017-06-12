@@ -446,7 +446,7 @@ inline int BitsPerPixel(ETEX_Format eTF)
 
 	case eTF_B5G6R5:
 		return 16;
-	case eTF_B5G5R5:
+	case eTF_B5G5R5A1:
 		return 16;
 	case eTF_B4G4R4A4:
 		return 16;
@@ -532,7 +532,7 @@ static bool IsQuantized(ETEX_Format eTF)
 {
 	return (eTF == eTF_B4G4R4A4 ||
 	        eTF == eTF_B5G6R5 ||
-	        eTF == eTF_B5G5R5 ||
+	        eTF == eTF_B5G5R5A1 ||
 	        eTF == eTF_BC1 ||
 	        eTF == eTF_BC2 ||
 	        eTF == eTF_BC3 ||
@@ -648,9 +648,9 @@ inline const char* NameForTextureFormat(ETEX_Format ETF)
 		return "D32FS8";
 
 	case eTF_B5G6R5:
-		return "R5G5B5";
-	case eTF_B5G5R5:
 		return "R5G6B5";
+	case eTF_B5G5R5A1:
+		return "R5G5B5A1";
 	case eTF_B4G4R4A4:
 		return "B4G4R4A4";
 
@@ -747,8 +747,8 @@ inline ETEX_Format TextureFormatForName(const char* sETF)
 	if (!stricmp(sETF, "D32F"))            return eTF_D32F;
 	if (!stricmp(sETF, "D32FS8"))          return eTF_D32FS8;
 
-	if (!stricmp(sETF, "R5G5B5"))          return eTF_B5G6R5;
-	if (!stricmp(sETF, "R5G6B5"))          return eTF_B5G5R5;
+	if (!stricmp(sETF, "R5G6B5"))          return eTF_B5G6R5;
+	if (!stricmp(sETF, "R5G5B5A1"))        return eTF_B5G5R5A1;
 	if (!stricmp(sETF, "B4G4R4A4"))        return eTF_B4G4R4A4;
 
 	if (!stricmp(sETF, "R4G4"))            return eTF_R4G4;
@@ -770,6 +770,7 @@ inline ETEX_Format TextureFormatForName(const char* sETF)
 	if (!stricmp(sETF, "B8G8R8X8"))        return eTF_B8G8R8X8;
 	if (!stricmp(sETF, "B8G8R8A8"))        return eTF_B8G8R8A8;
 
+	// Legacy strings
 	if (!stricmp(sETF, "V8U8"))            return eTF_R8G8S;
 	if (!stricmp(sETF, "V16U16"))          return eTF_R16G16S;
 
@@ -834,10 +835,14 @@ inline ETEX_Type TextureTypeForName(const char* sETT)
 		return eTT_1D;
 	if (!stricmp(sETT, "2D"))
 		return eTT_2D;
+	if (!stricmp(sETT, "2DArray"))
+		return eTT_2DArray;
 	if (!stricmp(sETT, "3D"))
 		return eTT_3D;
 	if (!stricmp(sETT, "Cube"))
 		return eTT_Cube;
+	if (!stricmp(sETT, "CubeArray"))
+		return eTT_CubeArray;
 	if (!stricmp(sETT, "Auto2D"))
 		return eTT_Auto2D;
 	if (!stricmp(sETT, "Dyn2D"))
@@ -870,6 +875,7 @@ inline bool HasAlphaForName(const char* sETF)
 
 	if (!stricmp(sETF, "A8L8"))          return true;
 	if (!stricmp(sETF, "B8G8R8A8"))      return true;
+	if (!stricmp(sETF, "B5G5R5A1"))      return true;
 
 	if (!stricmp(sETF, "DXT3"))          return true;
 	if (!stricmp(sETF, "DXT5"))          return true;
@@ -899,8 +905,18 @@ inline bool HasAlphaForTextureFormat(ETEX_Format ETF)
 
 	if (ETF == eTF_A8L8)                 return true;
 	if (ETF == eTF_B8G8R8A8)             return true;
+	if (ETF == eTF_B5G5R5A1)             return true;
 
 	return false;
+}
+
+static bool IsDynamicRange(ETEX_Format eTF)
+{
+	return
+		// datatype has range outside [0,1]
+		IsRangeless(eTF) &&
+		// range is encoded in alpha-channel of min/max color range if the format itself has no alpha channel
+		!HasAlphaForTextureFormat(eTF);
 }
 
 inline const char* NameForDesc(const DDS_PIXELFORMAT& ddspf, DWORD /*DXGI_FORMAT*/ dxgif);
@@ -1217,7 +1233,7 @@ inline ETEX_Format GetFormatByDesc(const CImageExtensionHelper::DDS_PIXELFORMAT&
 		case DXGI_FORMAT_B5G6R5_UNORM:
 			return eTF_B5G6R5;
 		case DXGI_FORMAT_B5G5R5A1_UNORM:
-			return eTF_B5G5R5;
+			return eTF_B5G5R5A1;
 		case DXGI_FORMAT_B4G4R4A4_UNORM:
 			return eTF_B4G4R4A4;
 

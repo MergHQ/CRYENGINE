@@ -59,10 +59,12 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 		{
 			// *INDENT-OFF*
 			srvDesc.ViewDimension =
-				 m_eTT == eTT_1D   ? (nSliceAvailable  > 1 ? D3D11_SRV_DIMENSION_TEXTURE1DARRAY   : D3D11_SRV_DIMENSION_TEXTURE1D)
-			:	(m_eTT == eTT_2D   ? (nSliceAvailable  > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DARRAY   : D3D11_SRV_DIMENSION_TEXTURE2D)
-			:	(m_eTT == eTT_Cube ? (nSliceAvailable  > 1 ? D3D11_SRV_DIMENSION_TEXTURECUBEARRAY : D3D11_SRV_DIMENSION_TEXTURECUBE)
-			:	(m_eTT == eTT_3D  &&  nSliceAvailable <= 1 ? D3D11_SRV_DIMENSION_TEXTURE3D        : D3D11_SRV_DIMENSION_UNKNOWN)));
+				 m_eTT == eTT_1D        ? (nSliceAvailable  > 1 ? D3D11_SRV_DIMENSION_TEXTURE1DARRAY   : D3D11_SRV_DIMENSION_TEXTURE1D)
+			:	(m_eTT == eTT_2D        ? (nSliceAvailable  > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DARRAY   : D3D11_SRV_DIMENSION_TEXTURE2D)
+			:	(m_eTT == eTT_Cube      ? (nSliceAvailable  > 6 ? D3D11_SRV_DIMENSION_TEXTURECUBEARRAY : D3D11_SRV_DIMENSION_TEXTURECUBE)
+			:	(m_eTT == eTT_3D        ? (nSliceAvailable  > 1 ? D3D11_SRV_DIMENSION_UNKNOWN          : D3D11_SRV_DIMENSION_TEXTURE3D)
+			:	(m_eTT == eTT_2DArray   ?                         D3D11_SRV_DIMENSION_TEXTURE2DARRAY
+			:	(m_eTT == eTT_CubeArray ?                         D3D11_SRV_DIMENSION_TEXTURECUBEARRAY : D3D11_SRV_DIMENSION_UNKNOWN)))));
 			// *INDENT-ON*
 
 			// D3D11_TEX1D_SRV, D3D11_TEX2D_SRV, D3D11_TEX3D_SRV, D3D11_TEXCUBE_SRV and array versions can be aliased here
@@ -118,15 +120,17 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 		{
 			// *INDENT-OFF*
 			rtvDesc.ViewDimension =
-				 m_eTT == eTT_1D   ? (nSliceAvailable  > 1 ? D3D11_RTV_DIMENSION_TEXTURE1DARRAY : D3D11_RTV_DIMENSION_TEXTURE1D)
-			:	(m_eTT == eTT_2D   ? (nSliceAvailable  > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2D)
-			:	(m_eTT == eTT_Cube ?                         D3D11_RTV_DIMENSION_TEXTURE2DARRAY
-			:	(m_eTT == eTT_3D  &&  nSliceAvailable <= 1 ? D3D11_RTV_DIMENSION_TEXTURE3D      : D3D11_RTV_DIMENSION_UNKNOWN)));
+				 m_eTT == eTT_1D        ? (nSliceAvailable  > 1 ? D3D11_RTV_DIMENSION_TEXTURE1DARRAY : D3D11_RTV_DIMENSION_TEXTURE1D)
+			:	(m_eTT == eTT_2D        ? (nSliceAvailable  > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2D)
+			:	(m_eTT == eTT_Cube      ?                         D3D11_RTV_DIMENSION_TEXTURE2DARRAY
+			:	(m_eTT == eTT_3D        ? (nSliceAvailable  > 1 ? D3D11_RTV_DIMENSION_UNKNOWN        : D3D11_RTV_DIMENSION_TEXTURE3D)
+			:	(m_eTT == eTT_2DArray   ?                         D3D11_RTV_DIMENSION_TEXTURE2DARRAY
+			:	(m_eTT == eTT_CubeArray ?                         D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_UNKNOWN)))));
 			// *INDENT-ON*
 
 			rtvDesc.Texture1D.MipSlice = pView.m_Desc.nMostDetailedMip;
 
-			if (nSliceAvailable > 1 || m_eTT == eTT_3D || m_eTT == eTT_Cube)
+			if (nSliceAvailable > 1 || m_eTT == eTT_3D || m_eTT == eTT_Cube || m_eTT == eTT_CubeArray)
 			{
 				rtvDesc.Texture1DArray.FirstArraySlice = pView.m_Desc.nFirstSlice;
 				rtvDesc.Texture1DArray.ArraySize = nSliceCount;
@@ -359,8 +363,7 @@ STextureLayout CDeviceTexture::GetLayout() const
 {
 	STextureLayout Layout = {};
 
-	Layout.m_eTFDst = Layout.m_eTFSrc = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_pPixelFormat);
-	Layout.m_eSrcTileMode = eTM_None;
+	Layout.m_eDstFormat = Layout.m_eSrcFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_pPixelFormat);
 	Layout.m_eTT = m_eTT;
 	Layout.m_eFlags = m_eFlags;
 	Layout.m_bIsSRGB = m_bIsSrgb;
@@ -421,7 +424,7 @@ STextureLayout CDeviceTexture::GetLayout() const
 	return Layout;
 }
 
-STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
+STextureLayout CDeviceTexture::GetLayout(D3DBaseView* pView)
 {
 	D3DResource* pResource = nullptr;
 	pView->GetResource(&pResource);
@@ -446,6 +449,7 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 		nWidth = sDesc.ByteWidth;
 		nHeight = 1;
 		nDepth = 1;
+		nSlices = 1;
 		eTF = eTF_R8;
 		nFlags = ConvertFromDX11Flags(sDesc);
 	}
@@ -456,6 +460,7 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 		nWidth = sDesc.Width;
 		nHeight = 1;
 		nDepth = 1;
+		nSlices = sDesc.ArraySize;
 		eTF = DeviceFormats::ConvertToTexFormat(sDesc.Format);
 		nFlags = ConvertFromDX11Flags(sDesc);
 	}
@@ -466,6 +471,7 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 		nWidth = sDesc.Width;
 		nHeight = sDesc.Height;
 		nDepth = 1;
+		nSlices = sDesc.ArraySize;
 		eTF = DeviceFormats::ConvertToTexFormat(sDesc.Format);
 		nFlags = ConvertFromDX11Flags(sDesc);
 	}
@@ -476,6 +482,7 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 		nWidth = sDesc.Width;
 		nHeight = sDesc.Height;
 		nDepth = sDesc.Depth;
+		nSlices = 1;
 		eTF = DeviceFormats::ConvertToTexFormat(sDesc.Format);
 		nFlags = ConvertFromDX11Flags(sDesc);
 	}
@@ -483,14 +490,19 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 	D3DUAV* pUAV = nullptr;
 	D3DShaderResource* pSRV = nullptr;
 	D3DDepthSurface* pDSV = nullptr;
-	D3DSurface* pRSV = nullptr;
+	D3DSurface* pRTV = nullptr;
 
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES
+#if CRY_PLATFORM_DURANGO
+	/**/ if (pView->m_Type == 0) { pRTV = static_cast<D3DSurface*>(pView); }
+	else if (pView->m_Type == 1) { pDSV = static_cast<D3DDepthSurface*>(pView); }
+	else if (pView->m_Type == 2) { pSRV = static_cast<D3DShaderResource*>(pView); }
+	else if (pView->m_Type == 3) { pUAV = static_cast<D3DUAV*>(pView); }
+#elif !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES
 	// TODO for GL
 	pView->QueryInterface(__uuidof(ID3D11UnorderedAccessView), (void**)&pUAV);
 	pView->QueryInterface(__uuidof(ID3D11ShaderResourceView), (void**)&pSRV);
 	pView->QueryInterface(__uuidof(ID3D11DepthStencilView), (void**)&pDSV);
-	pView->QueryInterface(__uuidof(ID3D11RenderTargetView), (void**)&pRSV);
+	pView->QueryInterface(__uuidof(ID3D11RenderTargetView), (void**)&pRTV);
 #endif
 
 	if (pUAV)
@@ -625,10 +637,10 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 		}
 	}
 
-	if (pRSV)
+	if (pRTV)
 	{
 		D3D11_RENDER_TARGET_VIEW_DESC sRSVDesc;
-		pRSV->GetDesc(&sRSVDesc);
+		pRTV->GetDesc(&sRSVDesc);
 		if (sRSVDesc.ViewDimension == D3D11_RTV_DIMENSION_TEXTURE1D)
 		{
 			nFirstMip = sRSVDesc.Texture1D.MipSlice;
@@ -667,18 +679,21 @@ STextureLayout CDeviceTexture::GetViewLayout(D3DBaseView* pView)
 		}
 	}
 
+#if !CRY_PLATFORM_DURANGO
 	SAFE_RELEASE(pUAV);
 	SAFE_RELEASE(pSRV);
 	SAFE_RELEASE(pDSV);
-	SAFE_RELEASE(pRSV);
+	SAFE_RELEASE(pRTV);
+#endif
 
 	nWidth  = std::max(nWidth  >> nFirstMip, 1U);
 	nHeight = std::max(nHeight >> nFirstMip, 1U);
 	nDepth  = std::max(nDepth  >> nFirstMip, 1U);
 
 	STextureLayout Layout = {};
-	Layout.m_eTFDst       = Layout.m_eTFSrc = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(eTF, Layout.m_pPixelFormat);
-	Layout.m_eSrcTileMode = eTM_None;
+
+	Layout.m_eDstFormat       = 
+	Layout.m_eSrcFormat       = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(eTF, Layout.m_pPixelFormat);
 	Layout.m_eTT          = eTT;
 	Layout.m_eFlags       = nFlags;
 	Layout.m_nWidth       = nWidth;
@@ -702,10 +717,10 @@ SResourceMemoryAlignment CDeviceTexture::GetAlignment(uint8 mip /*= 0*/, uint8 s
 	if (!(Layout.m_nHeight = Layout.m_nHeight >> mip)) Layout.m_nHeight = 1;
 	if (!(Layout.m_nDepth  = Layout.m_nDepth  >> mip)) Layout.m_nDepth  = 1;
 
-	Alignment.typeStride   = CTexture::TextureDataSize(1              , 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
-	Alignment.rowStride    = CTexture::TextureDataSize(Layout.m_nWidth, 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
-	Alignment.planeStride  = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
-	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_eSrcTileMode);
+	Alignment.typeStride   = CTexture::TextureDataSize(1              , 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
+	Alignment.rowStride    = CTexture::TextureDataSize(Layout.m_nWidth, 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
+	Alignment.planeStride  = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
+	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
 
 	return Alignment;
 }

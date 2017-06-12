@@ -57,9 +57,9 @@ CTexture* CTexture::s_ptexBlack;
 CTexture* CTexture::s_ptexBlackAlpha;
 CTexture* CTexture::s_ptexBlackCM;
 CTexture* CTexture::s_ptexDefaultProbeCM;
+CTexture* CTexture::s_ptexDefaultMergedDetail;
 CTexture* CTexture::s_ptexFlatBump;
 #if !defined(_RELEASE)
-CTexture* CTexture::s_ptexDefaultMergedDetail;
 CTexture* CTexture::s_ptexMipMapDebug;
 CTexture* CTexture::s_ptexColorBlue;
 CTexture* CTexture::s_ptexColorCyan;
@@ -350,15 +350,15 @@ static inline ETextureFlags ConvertToTextureFlags(uint32 eFlags)
 CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_Empty)*/, CDeviceTexture* devTexToOwn /*= nullptr*/)
 {
 	m_eFlags = nFlags;
-	m_eTFDst = eTF_Unknown;
-	m_eTFSrc = eTF_Unknown;
+	m_eDstFormat = eTF_Unknown;
+	m_eSrcFormat = eTF_Unknown;
 	m_nMips = 1;
 	m_nWidth = 0;
 	m_nHeight = 0;
 	m_eTT = eTT_2D;
 	m_nDepth = 1;
 	m_nArraySize = 1;
-	m_nActualSize = 0;
+	m_nDevTextureSize = 0;
 	m_fAvgBrightness = 1.0f;
 	m_cMinColor = 0.0f;
 	m_cMaxColor = 1.0f;
@@ -388,7 +388,7 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_bUseMultisampledRTV = true;
 	m_bHighQualityFiltering = false;
 	m_bCustomFormat = false;
-	m_eSrcTileMode = eTM_None;
+	m_eSrcTileMode = eTM_Unspecified;
 
 	m_bPostponed = false;
 	m_bForceStreamHighRes = false;
@@ -546,7 +546,7 @@ CTexture* CTexture::FindOrRegisterTextureObject(const char* name, uint32 nFlags,
 		pTex = new CTexture(nFlags);
 		pTex->Register(mfGetClassName(), Name);
 		pTex->m_eFlags = nFlags;
-		pTex->m_eTFDst = eTFDst;
+		pTex->m_eDstFormat = eTFDst;
 		pTex->m_SrcName = name;
 		bFound = false;
 	}
@@ -590,15 +590,15 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 		m_nDepth       = Layput.m_nDepth;
 		m_nArraySize   = Layput.m_nArraySize;
 		m_nMips        = Layput.m_nMips;
-		m_eTFSrc       = Layput.m_eTFSrc;
-		m_eTFDst       = Layput.m_eTFDst;
+		m_eSrcFormat   = Layput.m_eSrcFormat;
+		m_eDstFormat   = Layput.m_eDstFormat;
 		m_pPixelFormat = Layput.m_pPixelFormat;
 		m_eTT          = Layput.m_eTT;
 		m_eFlags       = Layput.m_eFlags; /* TODO: change FT_... to CDeviceObjectFactory::... */
 		m_bIsSRGB      = Layput.m_bIsSRGB;
 
-		m_nActualSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
-		CryInterlockedAdd(&CTexture::s_nStatsCurManagedNonStreamedTexMem, m_nActualSize);
+		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
+		CryInterlockedAdd(&CTexture::s_nStatsCurManagedNonStreamedTexMem, m_nDevTextureSize);
 	}
 
 	InvalidateDeviceResource(eDeviceResourceDirty);
@@ -628,11 +628,11 @@ void CTexture::GetMemoryUsage(ICrySizer* pSizer) const
 //=======================================================
 // Low-level functions calling CreateDeviceTexture()
 
-bool CTexture::CreateRenderTarget(ETEX_Format eTF, const ColorF& cClear)
+bool CTexture::CreateRenderTarget(ETEX_Format eFormat, const ColorF& cClear)
 {
-	if (m_eTFSrc == eTF_Unknown)
-		m_eTFSrc = eTF;
-	if (m_eTFSrc == eTF_Unknown)
+	if (m_eSrcFormat == eTF_Unknown)
+		m_eSrcFormat = eFormat;
+	if (m_eSrcFormat == eTF_Unknown)
 		return false;
 	const void** pData = nullptr;
 
@@ -646,11 +646,11 @@ bool CTexture::CreateRenderTarget(ETEX_Format eTF, const ColorF& cClear)
 	return bRes;
 }
 
-bool CTexture::CreateDepthStencil(ETEX_Format eTF, const ColorF& cClear)
+bool CTexture::CreateDepthStencil(ETEX_Format eFormat, const ColorF& cClear)
 {
-	if (m_eTFSrc == eTF_Unknown)
-		m_eTFSrc = eTF;
-	if (m_eTFSrc == eTF_Unknown)
+	if (m_eSrcFormat == eTF_Unknown)
+		m_eSrcFormat = eFormat;
+	if (m_eSrcFormat == eTF_Unknown)
 		return false;
 	const void** pData = nullptr;
 
@@ -669,7 +669,7 @@ bool CTexture::CreateShaderResource(STexData& td)
 	m_nWidth = td.m_nWidth;
 	m_nHeight = td.m_nHeight;
 	m_nDepth = td.m_nDepth;
-	m_eTFSrc = td.m_eTF;
+	m_eSrcFormat = td.m_eFormat;
 	m_nMips = td.m_nMips;
 	m_fAvgBrightness = td.m_fAvgBrightness;
 	m_cMinColor = td.m_cMinColor;
@@ -678,14 +678,11 @@ bool CTexture::CreateShaderResource(STexData& td)
 	m_bUseDecalBorderCol = (td.m_nFlags & FIM_DECAL) != 0;
 	m_bIsSRGB = (td.m_nFlags & FIM_SRGB_READ) != 0;
 
+	assert((m_nDepth == 1) || (m_eTT == eTT_3D));
+	assert((m_nArraySize == 1) || (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray || m_eTT == eTT_2DArray));
+	assert((m_nArraySize % 6) || (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray));
+	assert(!td.m_pData[1] || !(m_eFlags & FT_REPLICATE_TO_ALL_SIDES) || (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray));
 	assert(m_nWidth && m_nHeight && m_nMips);
-
-	if (td.m_pData[1] || (m_eFlags & FT_REPLICATE_TO_ALL_SIDES))
-		m_eTT = eTT_Cube;
-	else if (m_nDepth > 1 || m_eTT == eTT_3D)
-		m_eTT = eTT_3D;
-	else
-		m_eTT = eTT_2D;
 
 	SetClosestFormatSupported();
 	if (!ImagePreprocessing(td))
@@ -716,20 +713,21 @@ bool CTexture::CreateShaderResource(STexData& td)
 //=======================================================
 // Mid-level functions calling Create...()
 
-bool CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst)
+bool CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat)
 {
 	if (nMips <= 0)
 		nMips = CTexture::CalcNumMips(nWidth, nHeight);
-	m_eTFSrc = eTFSrc;
+	m_eSrcTileMode = pSrcData ? eTM_None : eTM_Unspecified;
+	m_eSrcFormat = eSrcFormat;
 	m_nMips = nMips;
 
 	STexData td;
-	td.m_eTF = eTFSrc;
+	td.m_eFormat = eSrcFormat;
 	td.m_nWidth = nWidth;
 	td.m_nHeight = nHeight;
 	td.m_nDepth = 1;
 	td.m_nMips = nMips;
-	td.m_pData[0] = pData;
+	td.m_pData[0] = pSrcData;
 
 	bool bRes = CreateShaderResource(td);
 	if (!bRes)
@@ -740,20 +738,21 @@ bool CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, b
 	return bRes;
 }
 
-bool CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst)
+bool CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat)
 {
 	//if (nMips <= 0)
 	//  nMips = CTexture::CalcNumMips(nWidth, nHeight);
-	m_eTFSrc = eTFSrc;
+	m_eSrcTileMode = pSrcData ? eTM_None : eTM_Unspecified;
+	m_eSrcFormat = eSrcFormat;
 	m_nMips = nMips;
 
 	STexData td;
-	td.m_eTF = eTFSrc;
+	td.m_eFormat = eSrcFormat;
 	td.m_nWidth = nWidth;
 	td.m_nHeight = nHeight;
 	td.m_nDepth = nDepth;
 	td.m_nMips = nMips;
-	td.m_pData[0] = pData;
+	td.m_pData[0] = pSrcData;
 
 	bool bRes = CreateShaderResource(td);
 	if (!bRes)
@@ -767,7 +766,7 @@ bool CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, i
 //=======================================================
 // High-level functions calling Create...()
 
-CTexture* CTexture::GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID)
+CTexture* CTexture::GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
 {
 	SYNCHRONOUS_LOADING_TICK();
 
@@ -775,7 +774,7 @@ CTexture* CTexture::GetOrCreateTextureObject(const char* name, uint32 nWidth, ui
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "%s", name);
 
-	CTexture* pTex = FindOrRegisterTextureObject(name, nFlags, eTF, bFound);
+	CTexture* pTex = FindOrRegisterTextureObject(name, nFlags, eFormat, bFound);
 	if (bFound)
 	{
 		if (pTex->m_nWidth == 0)
@@ -794,7 +793,7 @@ CTexture* CTexture::GetOrCreateTextureObject(const char* name, uint32 nWidth, ui
 	pTex->SetHeight(nHeight);
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
 	pTex->m_eTT = eTT;
-	pTex->m_eTFSrc = eTF;
+	pTex->m_eSrcFormat = eFormat;
 	pTex->m_nCustomID = nCustomID;
 	pTex->m_SrcName = name;
 	pTex->SetClosestFormatSupported();
@@ -802,21 +801,20 @@ CTexture* CTexture::GetOrCreateTextureObject(const char* name, uint32 nWidth, ui
 	return pTex;
 }
 
-_smart_ptr<CTexture> CTexture::GetOrCreateTextureObjectPtr(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID)
+_smart_ptr<CTexture> CTexture::GetOrCreateTextureObjectPtr(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
 {
-	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, nDepth, eTT, nFlags, eTF, nCustomID);
+	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, nDepth, eTT, nFlags, eFormat, nCustomID);
 	_smart_ptr<CTexture> result;
 	result.Assign_NoAddRef(pTex);
 
 	return result;
 }
 
-
-CTexture* CTexture::GetOrCreateTextureArray(const char* name, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, ETEX_Type eType, uint32 nFlags, ETEX_Format eTF, int nCustomID)
+CTexture* CTexture::GetOrCreateTextureArray(const char* name, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, ETEX_Type eType, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
 {
-	assert(eType == eTT_2D || eType == eTT_Cube);
+	assert(eType == eTT_2DArray || eType == eTT_CubeArray);
 
-	if (nArraySize > 255)
+	if (nArraySize > 2048 /*D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION*/)
 	{
 		assert(0);
 		return NULL;
@@ -828,28 +826,27 @@ CTexture* CTexture::GetOrCreateTextureArray(const char* name, uint32 nWidth, uin
 	bool sRGB = (nFlags & FT_USAGE_ALLOWREADSRGB) != 0;
 	nFlags &= ~FT_USAGE_ALLOWREADSRGB;
 
-	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eType, nFlags, eTF, nCustomID);
+	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eType, nFlags, eFormat, nCustomID);
 	pTex->SetWidth(nWidth);
 	pTex->SetHeight(nHeight);
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
-	pTex->m_nArraySize = nArraySize;
-	pTex->m_eFlags |= eType == eTT_Cube ? FT_REPLICATE_TO_ALL_SIDES : 0;
+	pTex->m_nArraySize = nArraySize; assert((eType != eTT_CubeArray) || !(nArraySize % 6));
 	pTex->m_nDepth = 1;
 
 	bool bRes;
 	if (nFlags & FT_USAGE_RENDERTARGET)
 	{
-		bRes = pTex->CreateRenderTarget(eTF, Clr_Unknown);
+		bRes = pTex->CreateRenderTarget(eFormat, Clr_Unknown);
 	}
 	else if (nFlags & FT_USAGE_DEPTHSTENCIL)
 	{
-		bRes = pTex->CreateDepthStencil(eTF, Clr_Unknown);
+		bRes = pTex->CreateDepthStencil(eFormat, Clr_Unknown);
 	}
 	else
 	{
 		STexData td;
 
-		td.m_eTF = eTF;
+		td.m_eFormat = eFormat;
 		td.m_nDepth = 1;
 		td.m_nWidth = nWidth;
 		td.m_nHeight = nHeight;
@@ -863,20 +860,18 @@ CTexture* CTexture::GetOrCreateTextureArray(const char* name, uint32 nWidth, uin
 		pTex->m_eFlags |= FT_FAILED;
 	pTex->PostCreate();
 
-	pTex->m_eFlags &= ~FT_REPLICATE_TO_ALL_SIDES;
-
 	return pTex;
 }
 
-CTexture* CTexture::GetOrCreateRenderTarget(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID)
+CTexture* CTexture::GetOrCreateRenderTarget(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
 {
-	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eTT, nFlags | FT_USAGE_RENDERTARGET, eTF, nCustomID);
+	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eTT, nFlags | FT_USAGE_RENDERTARGET, eFormat, nCustomID);
 	pTex->SetWidth(nWidth);
 	pTex->SetHeight(nHeight);
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
 	pTex->m_eFlags |= nFlags;
 
-	bool bRes = pTex->CreateRenderTarget(eTF, cClear);
+	bool bRes = pTex->CreateRenderTarget(eFormat, cClear);
 	if (!bRes)
 		pTex->m_eFlags |= FT_FAILED;
 	pTex->PostCreate();
@@ -884,15 +879,15 @@ CTexture* CTexture::GetOrCreateRenderTarget(const char* name, uint32 nWidth, uin
 	return pTex;
 }
 
-CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eTF, int nCustomID)
+CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
 {
-	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eTT, nFlags | FT_USAGE_DEPTHSTENCIL, eTF, nCustomID);
+	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eTT, nFlags | FT_USAGE_DEPTHSTENCIL, eFormat, nCustomID);
 	pTex->SetWidth(nWidth);
 	pTex->SetHeight(nHeight);
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
 	pTex->m_eFlags |= nFlags;
 
-	bool bRes = pTex->CreateDepthStencil(eTF, cClear);
+	bool bRes = pTex->CreateDepthStencil(eFormat, cClear);
 	if (!bRes)
 		pTex->m_eFlags |= FT_FAILED;
 	pTex->PostCreate();
@@ -900,30 +895,30 @@ CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uin
 	return pTex;
 }
 
-CTexture* CTexture::GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst, bool bAsyncDevTexCreation)
+CTexture* CTexture::GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
 
-	CTexture* pTex = GetOrCreateTextureObject(szName, nWidth, nHeight, 1, eTT_2D, nFlags, eTFDst, -1);
+	CTexture* pTex = GetOrCreateTextureObject(szName, nWidth, nHeight, 1, eTT_2D, nFlags, eSrcFormat, -1);
 	pTex->m_bAsyncDevTexCreation = bAsyncDevTexCreation;
 	bool bFound = false;
 
-	pTex->Create2DTexture(nWidth, nHeight, nMips, nFlags, pData, eTFSrc, eTFDst);
+	pTex->Create2DTexture(nWidth, nHeight, nMips, nFlags, pSrcData, eSrcFormat);
 
 	return pTex;
 }
 
-CTexture* CTexture::GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc, ETEX_Format eTFDst)
+CTexture* CTexture::GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat)
 {
-	CTexture* pTex = GetOrCreateTextureObject(szName, nWidth, nHeight, nDepth, eTT_3D, nFlags, eTFDst, -1);
+	CTexture* pTex = GetOrCreateTextureObject(szName, nWidth, nHeight, nDepth, eTT_3D, nFlags, eSrcFormat, -1);
 	bool bFound = false;
 
-	pTex->Create3DTexture(nWidth, nHeight, nDepth, nMips, nFlags, pData, eTFSrc, eTFDst);
+	pTex->Create3DTexture(nWidth, nHeight, nDepth, nMips, nFlags, pSrcData, eSrcFormat);
 
 	return pTex;
 }
 
-CTexture* CTexture::GetOrCreate2DCompositeTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, ETEX_Format eTFDst, const STexComposition* pCompositions, size_t nCompositions)
+CTexture* CTexture::GetOrCreate2DCompositeTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, ETEX_Format eFormat, const STexComposition* pCompositions, size_t nCompositions)
 {
 	nFlags |= FT_COMPOSITE;
 	nFlags &= ~FT_DONT_STREAM;
@@ -932,7 +927,7 @@ CTexture* CTexture::GetOrCreate2DCompositeTexture(const char* szName, int nWidth
 		nMips = CTexture::CalcNumMips(nWidth, nHeight);
 
 	bool bFound = false;
-	CTexture* pTex = FindOrRegisterTextureObject(szName, nFlags, eTFDst, bFound);
+	CTexture* pTex = FindOrRegisterTextureObject(szName, nFlags, eFormat, bFound);
 	if (!bFound)
 	{
 		pTex->SetWidth(nWidth);
@@ -1006,7 +1001,7 @@ bool CTexture::Reload()
 	return bOK;
 }
 
-CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eTFDst)
+CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eFormat)
 {
 	SLICE_AND_SLEEP();
 
@@ -1017,7 +1012,7 @@ CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eTFDst)
 
 	CRY_DEFINE_ASSET_SCOPE("Texture", name);
 
-	CTexture* pTex = FindOrRegisterTextureObject(name, nFlags, eTFDst, bFound);
+	CTexture* pTex = FindOrRegisterTextureObject(name, nFlags, eFormat, bFound);
 	if (bFound || name[0] == '$')
 	{
 		if (!bFound)
@@ -1051,21 +1046,21 @@ CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eTFDst)
 		if (/*(nFlags & FT_TEX_NORMAL_MAP) &&*/ TextureHelpers::VerifyTexSuffix(EFTT_NORMALS, name) && TextureHelpers::VerifyTexSuffix(EFTT_SMOOTHNESS, name))
 			nFlags |= FT_HAS_ATTACHED_ALPHA;
 
-		pTex->m_eTFDst = eTFDst;
+		pTex->m_eDstFormat = eFormat;
 		pTex->m_eFlags = nFlags;
 		pTex->m_bPostponed = true;
 		pTex->m_bWasUnloaded = true;
 	}
 
 	if (!CTexture::s_bPrecachePhase)
-		pTex->Load(eTFDst);
+		pTex->Load(eFormat);
 
 	return pTex;
 }
 
-_smart_ptr<CTexture> CTexture::ForNamePtr(const char* name, uint32 nFlags, ETEX_Format eTFDst)
+_smart_ptr<CTexture> CTexture::ForNamePtr(const char* name, uint32 nFlags, ETEX_Format eFormat)
 {
-	CTexture* pTex = ForName(name, nFlags, eTFDst);
+	CTexture* pTex = ForName(name, nFlags, eFormat);
 	_smart_ptr<CTexture> result;
 	result.Assign_NoAddRef(pTex);
 
@@ -1171,7 +1166,7 @@ void CTexture::RT_Precache()
 			if (!CRenderer::CV_r_texturesstreaming || !tp->m_bStreamPrepared)
 			{
 				tp->m_bPostponed = false;
-				tp->Load(tp->m_eTFDst);
+				tp->Load(tp->m_eDstFormat);
 			}
 			int progress = (i * 10) / numTextures;
 			if (progress != prevProgress)
@@ -1258,13 +1253,13 @@ void CTexture::RT_Precache()
 	}
 }
 
-bool CTexture::Load(ETEX_Format eTFDst)
+bool CTexture::Load(ETEX_Format eFormat)
 {
 	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(ETEX_Format eTFDst)", m_SrcName);
 	m_bWasUnloaded = false;
 	m_bStreamed = false;
 
-	bool bFound = LoadFromImage(m_SrcName.c_str(), eTFDst);   // false=not reloading
+	bool bFound = LoadFromImage(m_SrcName.c_str(), eFormat);   // false=not reloading
 
 	if (!bFound)
 		SetNoTexture(m_eTT == eTT_Cube ? s_ptexNoTextureCM : s_ptexNoTexture);
@@ -1302,7 +1297,7 @@ bool CTexture::ToggleStreaming(const bool bEnable)
 	return Reload();
 }
 
-bool CTexture::LoadFromImage(const char* name, ETEX_Format eTFDst)
+bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(name);
 
@@ -1315,7 +1310,7 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eTFDst)
 	string sFileName(name);
 	sFileName.MakeLower();
 
-	m_eTFDst = eTFDst;
+	m_eDstFormat = eFormat;
 
 	// try to stream-in the texture
 	if (CRenderer::CV_r_texturesstreaming && !(m_eFlags & FT_DONT_STREAM) && (m_eTT == eTT_2D || m_eTT == eTT_Cube))
@@ -1362,7 +1357,6 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eTFDst)
 
 bool CTexture::Load(CImageFile* pImage)
 {
-
 	if (!pImage || pImage->mfGetFormat() == eTF_Unknown)
 		return false;
 
@@ -1406,6 +1400,13 @@ bool CTexture::Load(CImageFile* pImage)
 		m_eFlags |= FT_HAS_ATTACHED_ALPHA;      // if the image has alpha attached we store this in the CTexture
 
 	m_eSrcTileMode = pImage->mfGetTileMode();
+	m_nArraySize = pImage->mfGet_NumSides();
+	m_eTT =
+		 (pImage->mfGet_depth   () >  1) ? eTT_3D :
+		 (pImage->mfGet_NumSides() == 6) ? eTT_Cube :
+		!(pImage->mfGet_NumSides() %  6) ? eTT_CubeArray :
+		 (pImage->mfGet_NumSides() == 1) ? eTT_2D :
+		                                   eTT_2DArray;
 
 	STexData td;
 	td.m_nFlags = pImage->mfGet_Flags();
@@ -1413,7 +1414,7 @@ bool CTexture::Load(CImageFile* pImage)
 	td.m_nWidth = pImage->mfGet_width();
 	td.m_nHeight = pImage->mfGet_height();
 	td.m_nDepth = pImage->mfGet_depth();
-	td.m_eTF = pImage->mfGetFormat();
+	td.m_eFormat = pImage->mfGetFormat();
 	td.m_nMips = pImage->mfGet_numMips();
 	td.m_fAvgBrightness = pImage->mfGet_avgBrightness();
 	td.m_cMinColor = pImage->mfGet_minColor();
@@ -1423,7 +1424,7 @@ bool CTexture::Load(CImageFile* pImage)
 	td.m_pFilePath = pImage->mfGet_filename();
 
 	// base range after normalization, fe. [0,1] for 8bit images, or [0,2^15] for RGBE/HDR data
-	if ((td.m_eTF == eTF_R9G9B9E5) || (td.m_eTF == eTF_BC6UH) || (td.m_eTF == eTF_BC6UH))
+	if (CImageExtensionHelper::IsDynamicRange(td.m_eFormat))
 	{
 		td.m_cMinColor /= td.m_cMaxColor.a;
 		td.m_cMaxColor /= td.m_cMaxColor.a;
@@ -1455,63 +1456,68 @@ bool CTexture::Load(CImageFile* pImage)
 void CTexture::UpdateData(STexData &td, int flags)
 {
 	m_eFlags = flags;
-	m_eTFDst = td.m_eTF;
+	m_eDstFormat = td.m_eFormat;
 	CreateShaderResource(td);
 }
 
-ETEX_Format CTexture::FormatFixup(ETEX_Format src)
+ETEX_Format CTexture::FormatFixup(ETEX_Format eFormat)
 {
-	switch (src)
+	switch (eFormat)
 	{
 	case eTF_L8V8U8X8:
-		return eTF_R8G8B8A8S;
-	case eTF_B8G8R8:
-		return eTF_R8G8B8A8;
 	case eTF_L8V8U8:
 		return eTF_R8G8B8A8S;
+	case eTF_B8G8R8:
+	case eTF_A8L8:
 	case eTF_L8:
 		return eTF_R8G8B8A8;
-	case eTF_A8L8:
-		return eTF_R8G8B8A8;
 
-	case eTF_B5G5R5:
-		return eTF_R8G8B8A8;
+	// only available as hardware format under DX11.1 with DXGI 1.2
+	case eTF_B5G5R5A1:
 	case eTF_B5G6R5:
-		return eTF_R8G8B8A8;
 	case eTF_B4G4R4A4:
-		return eTF_R8G8B8A8;
+
+	//! Only available as hardware format under Vulkan or XBO.
+	case eTF_R4G4:
+	case eTF_R4G4B4A4:
+	{
+		const SPixFormat* pPF;
+		return GetClosestFormatSupported(eFormat, pPF);
+	}
 
 	default:
-		return src;
+		return eFormat;
 	}
 }
 
 bool CTexture::FormatFixup(STexData& td)
 {
-	const ETEX_Format targetFmt = FormatFixup(td.m_eTF);
+	const ETEX_Format eSrcFormat = td.m_eFormat;
+	const ETEX_Format eDstFormat = FormatFixup(td.m_eFormat);
+	CRY_ASSERT(eDstFormat != eTF_Unknown);
 
 	if (m_eSrcTileMode == eTM_None)
 	{
 		// Try and expand
-		int nSourceSize = CTexture::TextureDataSize(td.m_nWidth, td.m_nHeight, td.m_nDepth, td.m_nMips, 1, td.m_eTF);
-		int nTargetSize = CTexture::TextureDataSize(td.m_nWidth, td.m_nHeight, td.m_nDepth, td.m_nMips, 1, targetFmt);
+		int nSourceSize = CTexture::TextureDataSize(td.m_nWidth, td.m_nHeight, td.m_nDepth, td.m_nMips, 1, eSrcFormat);
+		int nTargetSize = CTexture::TextureDataSize(td.m_nWidth, td.m_nHeight, td.m_nDepth, td.m_nMips, 1, eDstFormat);
 
 		for (int nImage = 0; nImage < sizeof(td.m_pData) / sizeof(td.m_pData[0]); ++nImage)
 		{
 			if (td.m_pData[nImage])
 			{
 				byte* pNewImage = new byte[nTargetSize];
-				CTexture::ExpandMipFromFile(pNewImage, nTargetSize, td.m_pData[nImage], nSourceSize, td.m_eTF);
+				CTexture::ExpandMipFromFile(pNewImage, nTargetSize, td.m_pData[nImage], nSourceSize, eSrcFormat, eDstFormat);
 				td.AssignData(nImage, pNewImage);
 			}
 		}
 
-		td.m_eTF = targetFmt;
+		td.m_eFormat = eDstFormat;
 	}
 	else
 	{
 #ifndef _RELEASE
-		if (targetFmt != td.m_eTF)
+		if (eDstFormat != eSrcFormat)
 			__debugbreak();
 #endif
 	}
@@ -1525,19 +1531,19 @@ bool CTexture::ImagePreprocessing(STexData& td)
 
 	const char* pTexFileName = td.m_pFilePath ? td.m_pFilePath : "$Unknown";
 
-	if (m_eTFDst == eTF_Unknown)
+	if (m_eDstFormat == eTF_Unknown)
 	{
 		td.m_pData[0] = td.m_pData[1] = td.m_pData[2] = td.m_pData[3] = td.m_pData[4] = td.m_pData[5] = 0;
 		m_nWidth = m_nHeight = m_nDepth = m_nMips = 0;
 
 #if !defined(_RELEASE)
-		TextureError(pTexFileName, "Trying to create a texture with unsupported target format %s!", NameForTextureFormat(m_eTFSrc));
+		TextureError(pTexFileName, "Trying to create a texture with unsupported target format %s!", NameForTextureFormat(m_eSrcFormat));
 #endif
 		return false;
 	}
 
-	const ETEX_Format eTF = td.m_eTF;
-	const bool fmtConversionNeeded = eTF != m_eTFDst;
+	const ETEX_Format eSrcFormat = td.m_eFormat;
+	const bool fmtConversionNeeded = eSrcFormat != m_eDstFormat;
 
 #if !CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
 	if (fmtConversionNeeded)
@@ -1546,7 +1552,7 @@ bool CTexture::ImagePreprocessing(STexData& td)
 		m_nWidth = m_nHeight = m_nDepth = m_nMips = 0;
 
 	#if !defined(_RELEASE)
-		TextureError(pTexFileName, "Trying an image format conversion from %s to %s. This is not supported on this platform!", NameForTextureFormat(eTF), NameForTextureFormat(m_eTFDst));
+		TextureError(pTexFileName, "Trying an image format conversion from %s to %s. This is not supported on this platform!", NameForTextureFormat(eSrcFormat), NameForTextureFormat(m_eDstFormat));
 	#endif
 		return false;
 	}
@@ -1560,11 +1566,11 @@ bool CTexture::ImagePreprocessing(STexData& td)
 
 		for (int i = 0; i < 6; i++)
 		{
-			byte* pTexData = td.m_pData[i];
-			if (pTexData)
+			byte* pSrcData = td.m_pData[i];
+			if (pSrcData)
 			{
 				int nOutSize = 0;
-				byte* pNewData = Convert(pTexData, nSrcWidth, nSrcHeight, td.m_nMips, eTF, m_eTFDst, td.m_nMips, nOutSize, true);
+				byte* pNewData = Convert(pSrcData, nSrcWidth, nSrcHeight, td.m_nMips, eSrcFormat, m_eDstFormat, td.m_nMips, nOutSize, true);
 				if (pNewData)
 					td.AssignData(i, pNewData);
 			}
@@ -1585,9 +1591,9 @@ int CTexture::CalcNumMips(int nWidth, int nHeight)
 	int nMips = 0;
 	while (nWidth || nHeight)
 	{
-		if (!nWidth)   nWidth = 1;
-		if (!nHeight)  nHeight = 1;
-		nWidth >>= 1;
+		if (!nWidth ) nWidth  = 1;
+		if (!nHeight) nHeight = 1;
+		nWidth  >>= 1;
 		nHeight >>= 1;
 		nMips++;
 	}
@@ -1596,54 +1602,36 @@ int CTexture::CalcNumMips(int nWidth, int nHeight)
 
 uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM)
 {
-	if (eTF == eTF_Unknown)
+	FUNCTION_PROFILER_RENDERER;
+
+	// Don't allow 0 dimensions, it's clearly wrong to reflect on "unspecified-yet" textures.
+	CRY_ASSERT(eTF != eTF_Unknown && nWidth && nHeight && nDepth);
+	// Allow 0 mips and 0 slices to generate offsets with this function.
+	if (!nMips || !nSlices)
 		return 0;
+
+	const bool bIsBlockCompressed = IsBlockCompressed(eTF);
+	nWidth  = max(1U, nWidth );
+	nHeight = max(1U, nHeight);
+	nDepth  = max(1U, nDepth );
 
 	if (eTM != eTM_None)
 	{
-		const bool bIsBlockCompressed = IsBlockCompressed(eTF);
-		nWidth = max(1U, nWidth);
-		nHeight = max(1U, nHeight);
-		if (bIsBlockCompressed)
-		{
-			nWidth = ((nWidth + 3) & (-4));
-			nHeight = ((nHeight + 3) & (-4));
-		}
+		// NOTE: Using this function to acquire strides of elements or rows (and even slices in arrays),
+		//       is not yielding any usable information. In the moment the clients need to be aware that
+		//       the internal layout for tiled modes can't be interpreted and stay away from it.
+		// TODO: Create separate interfaces for sub-resource size queries and for layout-stride queries
 
 #if CRY_PLATFORM_ORBIS
-		if (eTM == eTM_Optimal)
+		if (bIsBlockCompressed)
 		{
-			const SPixFormat* pPF;
-			ETEX_Format eTFDst = GetClosestFormatSupported(eTF, pPF);
-			if (eTFDst != eTF_Unknown)
-			{
-	#if CRY_RENDERER_GNM
-				if (nMips != 0)
-				{
-					CGnmTexture::SDesc desc;
-					desc.width = nWidth;
-					desc.height = nHeight;
-					desc.depthOrSlices = nDepth * nSlices;
-					desc.mips = nMips;
-					desc.format = pPF->DeviceFormat;
-					desc.flags = (nDepth > 1 ? kGnmResourceFlagTexture3D : kGnmResourceFlagTexture2D) | kGnmResourceFlagOptimalTiled | kGnmResourceFlagShaderReadable;
-					// TODO: Account for other flags on the texture? Should this be moved into DeviceObjectFactory?
-					return CGnmTexture::GnmComputeSize(desc);
-				}
-				return 0;
-	#else
-				if (nDepth > 1)
-					ORBIS_TO_IMPLEMENT;
-
-				return CCryDXOrbisTexture::TiledDataSize(nWidth, nHeight, nMips, nSlices, pPF->DeviceFormat);
-	#endif
-			}
-	
+			nWidth  = ((nWidth  + 3) & (-4));
+			nHeight = ((nHeight + 3) & (-4));
 		}
 #endif
 
-#if CRY_PLATFORM_DURANGO
-		return CDeviceTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM);
+#if CRY_PLATFORM_CONSOLE
+		return CDeviceTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM, CDeviceObjectFactory::BIND_SHADER_RESOURCE);
 #endif
 
 		__debugbreak();
@@ -1651,28 +1639,32 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 	}
 	else
 	{
-		const bool bIsBlockCompressed = IsBlockCompressed(eTF);
-		const uint32 nBytesPerBlock = bIsBlockCompressed ? BytesPerBlock(eTF) : BytesPerPixel(eTF);
-		uint32 nSize = 0;
-		if (bIsBlockCompressed)
-		{
-			nWidth = max(1U, nWidth);
-			nHeight = max(1U, nHeight);
-			nWidth = ((nWidth + 3) / 4);
-			nHeight = ((nHeight + 3) / 4);
-		}
+		const uint32 nBytesPerElement = bIsBlockCompressed ? BytesPerBlock(eTF) : BytesPerPixel(eTF);
 
+		uint32 nSize = 0;
 		while ((nWidth || nHeight || nDepth) && nMips)
 		{
-			nWidth = max(1U, nWidth);
+			nWidth  = max(1U, nWidth );
 			nHeight = max(1U, nHeight);
-			nDepth = max(1U, nDepth);
+			nDepth  = max(1U, nDepth );
 
-			nSize += nWidth * nHeight * nDepth * nBytesPerBlock;
+			uint32 nU = nWidth;
+			uint32 nV = nHeight;
+			uint32 nW = nDepth;
 
-			nWidth >>= 1;
+			if (bIsBlockCompressed)
+			{
+				// depth is not 4x4x4 compressed, but 4x4x1
+				nU = ((nWidth  + 3) / (4));
+				nV = ((nHeight + 3) / (4));
+			}
+
+			nSize += nU * nV * nW * nBytesPerElement;
+
+			nWidth  >>= 1;
 			nHeight >>= 1;
-			nDepth >>= 1;
+			nDepth  >>= 1;
+
 			--nMips;
 		}
 
@@ -1738,81 +1730,157 @@ bool CTexture::IsInPlaceFormat(const ETEX_Format fmt)
 	}
 }
 
-void CTexture::ExpandMipFromFile(byte* dest, const int destSize, const byte* src, const int srcSize, const ETEX_Format fmt)
+void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* src, const int srcSize, const ETEX_Format eSrcFormat, const ETEX_Format eDstFormat)
 {
-	if (IsInPlaceFormat(fmt))
+	if (IsInPlaceFormat(eSrcFormat))
 	{
-		assert(destSize == srcSize);
-		if (dest != src)
+		assert(dstSize == srcSize);
+		if (pSrcData != src)
 		{
-			cryMemcpy(dest, src, srcSize);
+			cryMemcpy(pSrcData, src, srcSize);
 		}
 
 		return;
 	}
 
 	// upload mip from file with conversions depending on format and platform specifics
-	switch (fmt)
+	switch (eSrcFormat)
 	{
-	case eTF_B8G8R8:
-		for (int i = srcSize / 3 - 1; i >= 0; --i)
+	case eTF_B8G8R8: // -> eTF_R8G8B8A8
+		assert(eDstFormat == eTF_R8G8B8A8);
 		{
-			dest[i * 4 + 0] = src[i * 3 + 2];
-			dest[i * 4 + 1] = src[i * 3 + 1];
-			dest[i * 4 + 2] = src[i * 3 + 0];
-			dest[i * 4 + 3] = 255;
+			for (int i = srcSize / 3 - 1; i >= 0; --i)
+			{
+				pSrcData[i * 4 + 0] = src[i * 3 + 2];
+				pSrcData[i * 4 + 1] = src[i * 3 + 1];
+				pSrcData[i * 4 + 2] = src[i * 3 + 0];
+				pSrcData[i * 4 + 3] = 255;
+			}
 		}
 		break;
-	case eTF_L8V8U8X8:
-		assert(destSize == srcSize);
-		if (dest != src) cryMemcpy(dest, src, srcSize);
-		for (int i = srcSize / 4 - 1; i >= 0; --i)
+	case eTF_L8V8U8X8: // -> eTF_R8G8B8A8S
+		assert(eDstFormat == eTF_R8G8B8A8S);
 		{
-			dest[i * 4 + 0] = src[i * 3 + 0];
-			dest[i * 4 + 1] = src[i * 3 + 1];
-			dest[i * 4 + 2] = src[i * 3 + 2];
-			dest[i * 4 + 3] = src[i * 3 + 3];
+			for (int i = srcSize / 4 - 1; i >= 0; --i)
+			{
+				pSrcData[i * 4 + 0] = src[i * 3 + 0];
+				pSrcData[i * 4 + 1] = src[i * 3 + 1];
+				pSrcData[i * 4 + 2] = src[i * 3 + 2];
+				pSrcData[i * 4 + 3] = src[i * 3 + 3];
+			}
 		}
 		break;
-	case eTF_L8V8U8:
-		for (int i = srcSize / 3 - 1; i >= 0; --i)
+	case eTF_L8V8U8: // -> eTF_R8G8B8A8S
+		assert(eDstFormat == eTF_R8G8B8A8S);
 		{
-			dest[i * 4 + 0] = src[i * 3 + 0];
-			dest[i * 4 + 1] = src[i * 3 + 1];
-			dest[i * 4 + 2] = src[i * 3 + 2];
-			dest[i * 4 + 3] = 255;
+			for (int i = srcSize / 3 - 1; i >= 0; --i)
+			{
+				pSrcData[i * 4 + 0] = src[i * 3 + 0];
+				pSrcData[i * 4 + 1] = src[i * 3 + 1];
+				pSrcData[i * 4 + 2] = src[i * 3 + 2];
+				pSrcData[i * 4 + 3] = 255;
+			}
 		}
 		break;
-	case eTF_L8:
-		for (int i = srcSize - 1; i >= 0; --i)
+	case eTF_L8: // -> eTF_R8G8B8A8
+		assert(eDstFormat == eTF_R8G8B8A8);
 		{
-			const byte bSrc = src[i];
-			dest[i * 4 + 0] = bSrc;
-			dest[i * 4 + 1] = bSrc;
-			dest[i * 4 + 2] = bSrc;
-			dest[i * 4 + 3] = 255;
+			for (int i = srcSize - 1; i >= 0; --i)
+			{
+				const byte bSrc = src[i];
+				pSrcData[i * 4 + 0] = bSrc;
+				pSrcData[i * 4 + 1] = bSrc;
+				pSrcData[i * 4 + 2] = bSrc;
+				pSrcData[i * 4 + 3] = 255;
+			}
 		}
 		break;
-	case eTF_A8L8:
-		for (int i = srcSize - 1; i >= 0; i -= 2)
+	case eTF_A8L8: // -> eTF_R8G8B8A8
+		assert(eDstFormat == eTF_R8G8B8A8);
 		{
-			const byte bSrcL = src[i - 1];
-			const byte bSrcA = src[i - 0];
-			dest[i * 4 + 0] = bSrcL;
-			dest[i * 4 + 1] = bSrcL;
-			dest[i * 4 + 2] = bSrcL;
-			dest[i * 4 + 3] = bSrcA;
+			for (int i = srcSize - 1; i >= 0; i -= 2)
+			{
+				const byte bSrcL = src[i - 1];
+				const byte bSrcA = src[i - 0];
+				pSrcData[i * 4 + 0] = bSrcL;
+				pSrcData[i * 4 + 1] = bSrcL;
+				pSrcData[i * 4 + 2] = bSrcL;
+				pSrcData[i * 4 + 3] = bSrcA;
+			}
 		}
 		break;
-	case eTF_B5G5R5:
-	case eTF_B5G6R5:
-	case eTF_B4G4R4A4:
+
+	case eTF_B5G5R5A1: // -> eTF_B8G8R8A8
+		assert(eDstFormat == eTF_B8G8R8A8);
+		{
+			for (int i = srcSize / 2 - 1; i >= 0; --i)
+			{
+				const uint16 rgb5551 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
+				pSrcData[i * 4 + 0] = ((rgb5551 >>  0) * 33) >> 2;
+				pSrcData[i * 4 + 1] = ((rgb5551 >>  5) * 33) >> 2;
+				pSrcData[i * 4 + 2] = ((rgb5551 >> 10) * 33) >> 2;
+				pSrcData[i * 4 + 3] = ((rgb5551 >> 15) ? 255 : 0);
+			}
+		}
+		break;
+	case eTF_B5G6R5: // -> eTF_B8G8R8X8
+		assert(eDstFormat == eTF_B8G8R8X8);
+		{
+			for (int i = srcSize / 2 - 1; i >= 0; --i)
+			{
+				const uint16 rgb565 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
+				pSrcData[i * 4 + 0] = ((rgb565 >>  0) * 33) >> 2;
+				pSrcData[i * 4 + 1] = ((rgb565 >>  5) * 65) >> 4;
+				pSrcData[i * 4 + 2] = ((rgb565 >> 11) * 33) >> 2;
+				pSrcData[i * 4 + 3] = 255;
+			}
+		}
+		break;
+	case eTF_B4G4R4A4: // -> eTF_B8G8R8A8
+	case eTF_R4G4B4A4: // -> eTF_R8G8B8A8
+		assert((eSrcFormat == eTF_B4G4R4A4 && eDstFormat == eTF_B8G8R8A8) ||
+		       (eSrcFormat == eTF_R4G4B4A4 && eDstFormat == eTF_R8G8B8A8));
+		{
+			for (int i = srcSize / 2 - 1; i >= 0; --i)
+			{
+				const uint16 rgb4444 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
+				pSrcData[i * 4 + 0] = (rgb4444 >> 0) * 17;
+				pSrcData[i * 4 + 1] = (rgb4444 >> 4) * 17;
+				pSrcData[i * 4 + 2] = (rgb4444 >> 8) * 17;
+				pSrcData[i * 4 + 3] = (rgb4444 >> 12) * 17;
+			}
+		}
+		break;
+	case eTF_R4G4: // -> eTF_R8G8|eTF_R8G8B8A8
+		assert(eDstFormat == eTF_R8G8 || eDstFormat == eTF_R8G8B8A8);
+		if (eDstFormat == eTF_R8G8)
+		{
+			for (int i = srcSize / 1 - 1; i >= 0; --i)
+			{
+				const uint8 rgb44 = uint8(src[i * 1 + 0]);
+				pSrcData[i * 2 + 0] = (rgb44 >> 0) * 17;
+				pSrcData[i * 2 + 1] = (rgb44 >> 4) * 17;
+			}
+		}
+		else
+		{
+			for (int i = srcSize / 1 - 1; i >= 0; --i)
+			{
+				const uint8 rgb44 = uint8(src[i * 1 + 0]);
+				pSrcData[i * 4 + 0] = (rgb44 >> 0) * 17;
+				pSrcData[i * 4 + 1] = (rgb44 >> 4) * 17;
+				pSrcData[i * 4 + 2] = 0;
+				pSrcData[i * 4 + 3] = 255;
+			}
+		}
+		break;
+
 	default:
 		assert(0);
 	}
 }
 
-bool CTexture::Invalidate(int nNewWidth, int nNewHeight, ETEX_Format eTF)
+bool CTexture::Invalidate(int nNewWidth, int nNewHeight, ETEX_Format eNewFormat)
 {
 	bool bRelease = false;
 	if (nNewWidth > 0 && nNewWidth != m_nWidth)
@@ -1825,9 +1893,9 @@ bool CTexture::Invalidate(int nNewWidth, int nNewHeight, ETEX_Format eTF)
 		m_nHeight = nNewHeight;
 		bRelease = true;
 	}
-	if (eTF != eTF_Unknown && eTF != m_eTFSrc)
+	if (eNewFormat != eTF_Unknown && eNewFormat != m_eSrcFormat)
 	{
-		m_eTFSrc = eTF;
+		m_eSrcFormat = eNewFormat;
 		SetClosestFormatSupported();
 
 		bRelease = true;
@@ -1901,40 +1969,40 @@ void CTexture::SetDefaultShaderResourceView(D3DBaseView* pDeviceShaderResource, 
 	}
 }
 
-byte* CTexture::GetData32(int nSide, int nLevel, byte* pDst, ETEX_Format eDstFormat)
+byte* CTexture::GetData32(int nSide, int nLevel, byte* pDstData, ETEX_Format eDstFormat)
 {
 #if CRY_PLATFORM_WINDOWS
 	// NOTE: the function will not maintain any dirty state and always download the data, don't use it in the render-loop
 	CDeviceTexture* pDevTexture = GetDevTexture();
 	pDevTexture->DownloadToStagingResource(D3D11CalcSubresource(nLevel, nSide, m_nMips), [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
-		if (m_eTFDst != eTF_R8G8B8A8)
+		if (m_eDstFormat != eTF_R8G8B8A8)
 		{
 		  int nOutSize = 0;
 
-		  if (m_eTFSrc == eDstFormat && pDst)
+		  if (m_eSrcFormat == eDstFormat && pDstData)
 		  {
-		    memcpy(pDst, pData, GetDeviceDataSize());
+		    memcpy(pDstData, pData, GetDeviceDataSize());
 		  }
 		  else
 		  {
-		    pDst = Convert((byte*)pData, m_nWidth, m_nHeight, 1, m_eTFSrc, eDstFormat, 1, nOutSize, true);
+		    pDstData = Convert((byte*)pData, m_nWidth, m_nHeight, 1, m_eSrcFormat, eDstFormat, 1, nOutSize, true);
 		  }
 		}
 		else
 		{
-		  if (!pDst)
+		  if (!pDstData)
 		  {
-		    pDst = new byte[m_nWidth * m_nHeight * 4];
+		    pDstData = new byte[m_nWidth * m_nHeight * 4];
 		  }
 
-		  memcpy(pDst, pData, m_nWidth * m_nHeight * 4);
+		  memcpy(pDstData, pData, m_nWidth * m_nHeight * 4);
 		}
 
 		return true;
 	});
 
-	return pDst;
+	return pDstData;
 #else
 	return 0;
 #endif
@@ -2682,8 +2750,8 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 	if (pDefaultTexture)
 	{
 		m_pDevTexture = pDefaultTexture->m_pDevTexture;
-		m_eTFSrc = pDefaultTexture->GetSrcFormat();
-		m_eTFDst = pDefaultTexture->GetDstFormat();
+		m_eSrcFormat = pDefaultTexture->GetSrcFormat();
+		m_eDstFormat = pDefaultTexture->GetDstFormat();
 		m_nMips = pDefaultTexture->GetNumMips();
 		m_nWidth = pDefaultTexture->GetWidth();
 		m_nHeight = pDefaultTexture->GetHeight();
@@ -2711,7 +2779,7 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 		m_bStreamed = false;
 		m_bPostponed = false;
 		m_eFlags |= FT_FAILED;
-		m_nActualSize = 0;
+		m_nDevTextureSize = 0;
 		m_nPersistentSize = 0;
 		return true;
 	}
@@ -2866,12 +2934,12 @@ void CTexture::LoadDefaultSystemTextures()
 		}
 		texturesFromFile[] =
 		{
-			{ s_ptexNoTextureCM,                 "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeCM.tif",                 FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexWhite,                       "%ENGINE%/EngineAssets/Textures/White.dds",                         FT_DONT_RELEASE | FT_DONT_STREAM                     },
-			{ s_ptexGray,                        "%ENGINE%/EngineAssets/Textures/Grey.dds",                          FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexBlack,                       "%ENGINE%/EngineAssets/Textures/Black.dds",                         FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexBlackAlpha,                  "%ENGINE%/EngineAssets/Textures/BlackAlpha.dds",                    FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexBlackCM,                     "%ENGINE%/EngineAssets/Textures/BlackCM.dds",                       FT_DONT_RELEASE | FT_DONT_STREAM                     },
+			{ s_ptexGray,                        "%ENGINE%/EngineAssets/Textures/Grey.dds",                          FT_DONT_RELEASE | FT_DONT_STREAM                     },
+			{ s_ptexDefaultMergedDetail,         "%ENGINE%/EngineAssets/Textures/GreyAlpha.dds",                     FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexDefaultProbeCM,              "%ENGINE%/EngineAssets/Shading/defaultProbe_cm.tif",                FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexFlatBump,                    "%ENGINE%/EngineAssets/Textures/White_ddn.dds",                     FT_DONT_RELEASE | FT_DONT_STREAM | FT_TEX_NORMAL_MAP },
 			{ s_ptexPaletteDebug,                "%ENGINE%/EngineAssets/Textures/palletteInst.dds",                  FT_DONT_RELEASE | FT_DONT_STREAM                     },
@@ -2895,7 +2963,7 @@ void CTexture::LoadDefaultSystemTextures()
 
 #if !defined(_RELEASE)
 			{ s_ptexNoTexture,                   "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif",                   FT_DONT_RELEASE | FT_DONT_STREAM                     },
-			{ s_ptexDefaultMergedDetail,         "%ENGINE%/EngineAssets/Textures/GreyAlpha.dds",                     FT_DONT_RELEASE | FT_DONT_STREAM                     },
+			{ s_ptexNoTextureCM,                 "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeCM.tif",                 FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexMipMapDebug,                 "%ENGINE%/EngineAssets/TextureMsg/MipMapDebug.dds",                 FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexColorBlue,                   "%ENGINE%/EngineAssets/TextureMsg/color_Blue.dds",                  FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexColorCyan,                   "%ENGINE%/EngineAssets/TextureMsg/color_Cyan.dds",                  FT_DONT_RELEASE | FT_DONT_STREAM                     },
@@ -2907,7 +2975,8 @@ void CTexture::LoadDefaultSystemTextures()
 			{ s_ptexColorOrange,                 "%ENGINE%/EngineAssets/TextureMsg/color_Orange.dds",                FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexColorMagenta,                "%ENGINE%/EngineAssets/TextureMsg/color_Magenta.dds",               FT_DONT_RELEASE | FT_DONT_STREAM                     },
 #else
-			{ s_ptexNoTexture,                   "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeRelease.tif",            FT_DONT_RELEASE | FT_DONT_STREAM                     },
+			{ s_ptexNoTexture,                   "%ENGINE%/EngineAssets/Textures/Grey.dds",                          FT_DONT_RELEASE | FT_DONT_STREAM                     },
+			{ s_ptexNoTextureCM,                 "%ENGINE%/EngineAssets/Shading/defaultProbe_cm.tif",                FT_DONT_RELEASE | FT_DONT_STREAM                     },
 #endif
 		};
 
@@ -2945,9 +3014,7 @@ void CTexture::LoadDefaultSystemTextures()
 		s_ptexWindGrid = CTexture::GetOrCreateTextureObject("WindGrid", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD, eTF_Unknown, TO_WINDGRID);
 		if (!CTexture::IsTextureExist(CTexture::s_ptexWindGrid))
 		{
-			CTexture::s_ptexWindGrid->Create2DTexture(256, 256, 1,
-			                                          FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD,
-			                                          0, eTF_R16G16F, eTF_R16G16F);
+			CTexture::s_ptexWindGrid->Create2DTexture(256, 256, 1, FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD, nullptr, eTF_R16G16F);
 		}
 
 		s_ptexZTargetReadBack[0] = CTexture::GetOrCreateTextureObject("$ZTargetReadBack0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
@@ -3017,7 +3084,7 @@ void CTexture::LoadDefaultSystemTextures()
 #endif
 			s_ptexSceneDiffuseAccMap = CTexture::GetOrCreateTextureObject("$SceneDiffuseAcc", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_DIFFUSE_ACC);
 			s_ptexSceneSpecularAccMap = CTexture::GetOrCreateTextureObject("$SceneSpecularAcc", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_SPECULAR_ACC);
-			s_ptexShadowMask = CTexture::GetOrCreateTextureObject("$ShadowMask", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8, TO_SHADOWMASK);
+			s_ptexShadowMask = CTexture::GetOrCreateTextureObject("$ShadowMask", 0, 0, 1, eTT_2DArray, nRTFlags, eTF_R8, TO_SHADOWMASK);
 
 			s_ptexFlaresGather = CTexture::GetOrCreateTextureObject("$FlaresGather", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
 			for (i = 0; i < MAX_OCCLUSION_READBACK_TEXTURES; i++)
@@ -4354,7 +4421,7 @@ void CTexture::PrepareLowResSystemCopy(byte* pTexData, bool bTexDataHasAllMips)
 		return;
 
 	// this function handles only compressed textures for now
-	if (m_eTFDst != eTF_BC3 && m_eTFDst != eTF_BC1 && m_eTFDst != eTF_BC2 && m_eTFDst != eTF_BC7)
+	if (m_eDstFormat != eTF_BC3 && m_eDstFormat != eTF_BC1 && m_eDstFormat != eTF_BC2 && m_eDstFormat != eTF_BC7)
 		return;
 
 	// make sure we skip non diffuse textures
@@ -4381,19 +4448,19 @@ void CTexture::PrepareLowResSystemCopy(byte* pTexData, bool bTexDataHasAllMips)
 
 		while ((rSysCopy.m_nLowResCopyWidth > 16 || rSysCopy.m_nLowResCopyHeight > 16 || nMipId < 2) && (rSysCopy.m_nLowResCopyWidth >= 8 && rSysCopy.m_nLowResCopyHeight >= 8))
 		{
-			nSrcOffset += TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eTFDst);
+			nSrcOffset += TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat);
 			rSysCopy.m_nLowResCopyWidth /= 2;
 			rSysCopy.m_nLowResCopyHeight /= 2;
 			nMipId++;
 		}
 
-		int nSizeDxtMip = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eTFDst);
+		int nSizeDxtMip = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat);
 		int nSizeRgbaMip = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, eTF_R8G8B8A8);
 
 		rSysCopy.m_lowResSystemCopy.CheckAllocated(nSizeRgbaMip / sizeof(ColorB));
 
 		gRenDev->DXTDecompress(pTexData + (bTexDataHasAllMips ? nSrcOffset : 0), nSizeDxtMip,
-		                       (byte*)rSysCopy.m_lowResSystemCopy.GetElements(), rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, m_eTFDst, false, 4);
+		                       (byte*)rSysCopy.m_lowResSystemCopy.GetElements(), rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, m_eDstFormat, false, 4);
 	}
 }
 

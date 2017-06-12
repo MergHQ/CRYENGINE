@@ -106,6 +106,30 @@ static inline D3D11_USAGE ConvertToDX11Usage(const T& desc)
 	// *INDENT-ON*
 }
 
+static inline D3D11_SUBRESOURCE_DATA* ConvertToDX11Data(uint32 numSubs, const STexturePayload* pSrc, D3D11_SUBRESOURCE_DATA* pDst)
+{
+	if (!pSrc || !pSrc->m_pSysMemSubresourceData)
+		return nullptr;
+
+	for (uint32 i = 0; i < numSubs; ++i)
+	{
+		pDst[i].pSysMem = pSrc->m_pSysMemSubresourceData[i].m_pSysMem;
+		pDst[i].SysMemPitch = pSrc->m_pSysMemSubresourceData[i].m_sSysMemAlignment.rowStride;
+		pDst[i].SysMemSlicePitch = pSrc->m_pSysMemSubresourceData[i].m_sSysMemAlignment.planeStride;
+
+#if CRY_PLATFORM_ORBIS
+		pDst[i].SysMemTileMode = (D3D11_TEXTURE_TILE_MODE)pSrc.m_eSysMemTileMode;
+#endif
+	}
+
+	// Terminator
+	pDst[numSubs].pSysMem = nullptr;
+	pDst[numSubs].SysMemPitch = 0;
+	pDst[numSubs].SysMemSlicePitch = 0;
+
+	return pDst;
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // Low-level resource management API (TODO: remove D3D-dependency by abstraction)
 

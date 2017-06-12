@@ -581,7 +581,7 @@ bool CImage_DXTC::Load(const char* filename, CImageEx& outImage, bool* pQualityL
 
 		// base range after normalization, fe. [0,1] for 8bit images, or [0,2^15] for RGBE/HDR data
 		float cUprValue = 1.0f;
-		if ((eFormat == eTF_R9G9B9E5) || (eFormat == eTF_BC6UH) || (eFormat == eTF_BC6SH))
+		if (CImageExtensionHelper::IsDynamicRange(eFormat))
 			cUprValue = cMaxColor.a / HDR_UPPERNORM;
 
 		// original range before normalization, fe. [0,1.83567]
@@ -607,7 +607,7 @@ bool CImage_DXTC::Load(const char* filename, CImageEx& outImage, bool* pQualityL
 
 				// base range after normalization, fe. [0,1] for 8bit images, or [0,2^15] for RGBE/HDR data
 				float cUprValue = 1.0f;
-				if ((eFormat == eTF_R9G9B9E5) || (eFormat == eTF_BC6UH) || (eFormat == eTF_BC6SH))
+				if (CImageExtensionHelper::IsDynamicRange(eFormat))
 					cUprValue = cMaxColor.a / HDR_UPPERNORM;
 
 				// original range before normalization, fe. [0,1.83567]
@@ -621,7 +621,7 @@ bool CImage_DXTC::Load(const char* filename, CImageEx& outImage, bool* pQualityL
 	if (cScaleR != 1.0f || cScaleG != 1.0f || cScaleB != 1.0f || cScaleA != 1.0f ||
 	    cLowR != 0.0f || cLowG != 0.0f || cLowB != 0.0f || cLowA != 0.0f)
 	{
-		if ((eFormat == eTF_R9G9B9E5) || (eFormat == eTF_BC6UH) || (eFormat == eTF_BC6SH))
+		if (CImageExtensionHelper::IsDynamicRange(eFormat))
 			imageFlags &= ~FIM_SRGB_READ;
 
 		if (imageFlags & FIM_SRGB_READ)

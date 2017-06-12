@@ -504,7 +504,7 @@ void CD3D9Renderer::RT_CreateResource(SResourceAsync* pRes)
 				cry_sprintf(szName, "$AutoDownloadAsync_%d", m_TexGenID++);
 				pName = szName;
 			}
-			pTex = CTexture::GetOrCreate2DTexture(pName, pRes->nWidth, pRes->nHeight, pRes->nMips, pRes->nTexFlags, pRes->pData, (ETEX_Format)pRes->nFormat, (ETEX_Format)pRes->nFormat);
+			pTex = CTexture::GetOrCreate2DTexture(pName, pRes->nWidth, pRes->nHeight, pRes->nMips, pRes->nTexFlags, pRes->pData, (ETEX_Format)pRes->nFormat);
 		}
 
 		SAFE_DELETE_ARRAY(pRes->pData);
@@ -822,9 +822,7 @@ void CRenderer::RT_SubmitWind(const SWindGrid* pWind)
 	m_pCurWindGrid = pWind;
 	if (!CTexture::IsTextureExist(CTexture::s_ptexWindGrid))
 	{
-		CTexture::s_ptexWindGrid->Create2DTexture(pWind->m_nWidth, pWind->m_nHeight, 1,
-		                                          FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD,
-		                                          0, eTF_R16G16F, eTF_R16G16F);
+		CTexture::s_ptexWindGrid->Create2DTexture(pWind->m_nWidth, pWind->m_nHeight, 1, FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD, nullptr, eTF_R16G16F);
 	}
 	CDeviceTexture* pDevTex = CTexture::s_ptexWindGrid->GetDevTexture();
 	int nThreadID = m_pRT->m_nCurThreadProcess;

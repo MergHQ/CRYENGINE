@@ -135,7 +135,7 @@ void CTiledShading::CreateResources()
 
 	if (!m_specularProbeAtlas.texArray)
 	{
-		m_specularProbeAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledSpecProbeTexArr", SpecProbeSize, SpecProbeSize, AtlasArrayDim, IntegerLog2(SpecProbeSize) - 1, eTT_Cube, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
+		m_specularProbeAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledSpecProbeTexArr", SpecProbeSize, SpecProbeSize, AtlasArrayDim * 6, IntegerLog2(SpecProbeSize) - 1, eTT_CubeArray, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
 		m_specularProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_specularProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -149,7 +149,7 @@ void CTiledShading::CreateResources()
 
 	if (!m_diffuseProbeAtlas.texArray)
 	{
-		m_diffuseProbeAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledDiffuseProbeTexArr", DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim, 1, eTT_Cube, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
+		m_diffuseProbeAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledDiffuseProbeTexArr", DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim * 6, 1, eTT_CubeArray, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
 		m_diffuseProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_diffuseProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -164,7 +164,7 @@ void CTiledShading::CreateResources()
 	if (!m_spotTexAtlas.texArray)
 	{
 		// Note: BC4 has 4x4 as lowest mipmap
-		m_spotTexAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledSpotTexArr", SpotTexSize, SpotTexSize, AtlasArrayDim, IntegerLog2(SpotTexSize) - 1, eTT_2D, FT_DONT_STREAM, textureAtlasFormatSpot);
+		m_spotTexAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledSpotTexArr", SpotTexSize, SpotTexSize, AtlasArrayDim * 1, IntegerLog2(SpotTexSize) - 1, eTT_2DArray, FT_DONT_STREAM, textureAtlasFormatSpot);
 		m_spotTexAtlas.items.resize(AtlasArrayDim);
 
 		if (m_spotTexAtlas.texArray->GetFlags() & FT_FAILED)
@@ -307,7 +307,7 @@ int CTiledShading::InsertTexture(CTexture* pTexInput, TextureAtlas& atlas, int a
 	uint32 numSrcMips = (uint32)pTexInput->GetNumMipsNonVirtual();
 	uint32 numDstMips = (uint32)atlas.texArray->GetNumMipsNonVirtual();
 	uint32 firstSrcMip = IntegerLog2((uint32)pTexInput->GetWidthNonVirtual() / atlas.texArray->GetWidthNonVirtual());
-	uint32 numFaces = atlas.texArray->GetTexType() == eTT_Cube ? 6 : 1;
+	uint32 numFaces = atlas.texArray->GetTexType() == eTT_CubeArray ? 6 : 1;
 
 	CDeviceTexture* pTexInputDevTex = pTexInput->GetDevTexture();
 	CDeviceTexture* pTexArrayDevTex = atlas.texArray->GetDevTexture();

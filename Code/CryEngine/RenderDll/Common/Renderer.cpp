@@ -2408,7 +2408,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 						int nMips = tp->GetNumMipsNonVirtual();
 						nCurMip = min(nCurMip, nPersMip);
 
-						int nTexSize = tp->StreamComputeDevDataSize(nCurMip);
+						int nTexSize = tp->StreamComputeSysDataSize(nCurMip);
 
 						stats->nRequiredStreamedTexturesSize += nTexSize;
 						++stats->nRequiredStreamedTexturesCount;
@@ -3335,7 +3335,7 @@ ITexture* CRenderer::CreateTexture(const char* name, int width, int height, int 
 {
 	char uniqueName[128];
 	cry_sprintf(uniqueName, "%s%d", name, m_TexGenID++);
-	return CTexture::GetOrCreate2DTexture(uniqueName, width, height, numMips, flags, pData, eTF, eTF);
+	return CTexture::GetOrCreate2DTexture(uniqueName, width, height, numMips, flags, pData, eTF);
 }
 
 //////////////////////////////////////////////////////////////////////////

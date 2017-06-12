@@ -206,6 +206,37 @@ struct SResourceRegionMapping
 	UINT /*D3D11_COPY_FLAGS*/ Flags; // TODO: abstract flags
 };
 
+// -------------------------------------------------------------------------
+
+struct SSubresourcePayload
+{
+	SResourceMemoryAlignment m_sSysMemAlignment;
+	const void*              m_pSysMem;
+};
+
+struct STexturePayload
+{
+	SSubresourcePayload* m_pSysMemSubresourceData;
+	ETEX_TileMode        m_eSysMemTileMode;
+	uint8                m_nDstMSAASamples;
+	uint8                m_nDstMSAAQuality;
+
+	STexturePayload()
+	{
+		m_pSysMemSubresourceData = nullptr;
+		m_eSysMemTileMode = eTM_None;
+		m_nDstMSAASamples = 1;
+		m_nDstMSAAQuality = 0;
+	}
+
+	~STexturePayload()
+	{
+		SAFE_DELETE_ARRAY(m_pSysMemSubresourceData);
+	}
+};
+
+////////////////////////////////////////////////////////////////////////////
+
 class CConstantBuffer;
 class CGpuBuffer;
 class CTexture;
@@ -745,6 +776,10 @@ public:
 	void Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
 	void DrawIndexed(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
 
+#define CLEAR_ZBUFFER           0x00000001l  /* Clear target z buffer, equals D3D11_CLEAR_DEPTH */
+#define CLEAR_STENCIL           0x00000002l  /* Clear stencil planes, equals D3D11_CLEAR_STENCIL */
+#define CLEAR_RTARGET           0x00000004l  /* Clear target surface */
+
 	void ClearSurface(D3DSurface* pView, const ColorF& color, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 	void ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth = 0, uint8 stencil = 0, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 
@@ -1118,9 +1153,9 @@ public:
 #endif
 
 #define SKIP_ESRAM	-1
-	HRESULT        Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI = nullptr, int32 nESRAMOffset = SKIP_ESRAM);
-	HRESULT        CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI = nullptr);
-	HRESULT        CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI = nullptr);
+	HRESULT        Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr, int32 nESRAMOffset = SKIP_ESRAM);
+	HRESULT        CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
+	HRESULT        CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 	HRESULT        CreateBuffer(buffer_size_t nSize, buffer_size_t elemSize, uint32 nUsage, uint32 nBindFlags, D3DBuffer** ppBuff, const void* pData = nullptr);
 
 	static HRESULT InvalidateGpuCache(D3DBuffer* buffer, void* base_ptr, buffer_size_t size, buffer_size_t offset);
@@ -1183,7 +1218,7 @@ public:
 	NCryVulkan::CDevice*           GetVKDevice   () const { return m_pVKDevice; }
 	NCryVulkan::CCommandScheduler* GetVKScheduler() const { return m_pVKScheduler; }
 
-	void                           UploadInitialImageData(STextureInfoData pSrcMips[], NCryVulkan::CImageResource* pDst, const VkImageCreateInfo& info);
+	void                           UploadInitialImageData(SSubresourcePayload pSrcMips[], NCryVulkan::CImageResource* pDst, const VkImageCreateInfo& info);
 	void                           UpdateDeferredUploads();
 	static void                    SelectStagingLayout(const NCryVulkan::CImageResource* pImage, uint32 subResource, SResourceMemoryMapping& result);
 #elif CRY_RENDERER_GNM
@@ -1362,9 +1397,9 @@ private:
 #endif
 
 #if !CRY_RENDERER_GNM
-	HRESULT        Create2DTexture(const D3D11_TEXTURE2D_DESC& Desc, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI = nullptr);
-	HRESULT        CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI = nullptr);
-	HRESULT        CreateVolumeTexture(const D3D11_TEXTURE3D_DESC& Desc, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STextureInfo* pTI = nullptr);
+	HRESULT        Create2DTexture(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
+	HRESULT        CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
+	HRESULT        CreateVolumeTexture(const D3D11_TEXTURE3D_DESC& Desc, uint32 eFlags, const ColorF& cClearValue, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 #endif
 
 	////////////////////////////////////////////////////////////////////////////
@@ -1408,7 +1443,7 @@ public:
 
 		const void* pLinSurfaceSrc;
 		int         nDstSubResource;
-		bool        bSrcInGPUMemory;
+		bool        bSrcInGPUMemory; // Operation has to be conducted in-place
 	};
 
 	HRESULT BeginTileFromLinear2D(CDeviceTexture* pDst, const STileRequest* pSubresources, size_t nSubresources, UINT64& fenceOut);
@@ -1416,9 +1451,9 @@ public:
 //private:
 	typedef std::map<SMinimisedTexture2DDesc, SDeviceTextureDesc, std::less<SMinimisedTexture2DDesc>, stl::STLGlobalAllocator<std::pair<SMinimisedTexture2DDesc, SDeviceTextureDesc>>> TLayoutTableMap;
 
-	static bool               InPlaceConstructable(const D3D11_TEXTURE2D_DESC& Desc);
-	HRESULT                   CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC& D3DDesc, const STextureInfoData* pSRD, CDeviceTexture*& pDevTexOut, bool bDeferD3DConstruction);
-	const SDeviceTextureDesc* Find2DResourceLayout(const D3D11_TEXTURE2D_DESC& desc, ETEX_TileMode tileMode);
+	static bool               InPlaceConstructable(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags);
+	HRESULT                   CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const STexturePayload* pTI, CDeviceTexture*& pDevTexOut);
+	const SDeviceTextureDesc* Find2DResourceLayout(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, ETEX_TileMode tileMode);
 
 	CDurangoGPUMemoryManager       m_texturePool;
 	CDurangoGPURingMemAllocator    m_textureStagingRing;
@@ -1439,9 +1474,15 @@ static ILINE CDeviceObjectFactory& GetDeviceObjectFactory() { return CDeviceObje
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	#include "D3D11/DeviceObjects_D3D11.inl"
+	#if CRY_PLATFORM_DURANGO
+		#include "D3D11/DeviceObjects_D3D11_Durango.inl"
+	#endif
 #endif
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	#include "D3D12/DeviceObjects_D3D12.inl"
+	#if CRY_PLATFORM_DURANGO
+		#include "D3D12/DeviceObjects_D3D12_Durango.inl"
+	#endif
 #endif
 #if CRY_PLATFORM_ORBIS
 	#include "GNM/DeviceObjects_GNM.inl"

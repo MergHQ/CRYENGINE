@@ -299,6 +299,10 @@ void CStandardGraphicsPipeline::Init()
 
 	// Now init stages
 	InitStages();
+
+	// Out-of-pipeline passes for display
+	m_DownscalePass.reset(new CDownsamplePass);
+	m_UpscalePass  .reset(new CSharpeningUpsamplePass);
 }
 
 void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)

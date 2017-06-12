@@ -216,7 +216,7 @@ CDeviceBuffer::~CDeviceBuffer()
 
 ////////////////////////////////////////////////////////////////////////////
 
-CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const void* pData[])
+CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STexturePayload* pPayload)
 {
 	CDeviceTexture* pDevTexture = nullptr;
 	RenderTargetData* pRenderTargetData = nullptr;
@@ -274,6 +274,23 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const void
 	}
 	else
 	{
+		if (pLayout.m_eFlags & FT_USAGE_UNORDERED_ACCESS
+#if defined(SUPPORT_DEVICE_INFO)
+			&& r->DevInfo().FeatureLevel() >= D3D_FEATURE_LEVEL_11_0
+#endif //defined(SUPPORT_DEVICE_INFO)
+			)
+			eFlags |= CDeviceObjectFactory::BIND_UNORDERED_ACCESS;
+		if (pLayout.m_eFlags & FT_USAGE_UAV_RWTEXTURE)
+			eFlags |= CDeviceObjectFactory::USAGE_UAV_READWRITE;
+
+		if (pLayout.m_eFlags & FT_FORCE_MIPS)
+		{
+			eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
+			if (nMips <= 1)
+				nMips = max(1, CTexture::CalcNumMips(nWdt, nHgt) - 2);
+			CRY_ASSERT(!pPayload); // Not allowed as this is not what the outside expects
+		}
+
 		if (pLayout.m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 		{
 			pRenderTargetData = new RenderTargetData();
@@ -300,82 +317,31 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const void
 #endif
 		}
 
-		STextureInfo TI;
-
-		if (pLayout.m_eTT == eTT_2D)
+		if (pLayout.m_eTT == eTT_2D || pLayout.m_eTT == eTT_2DArray)
 		{
-			if (pLayout.m_eFlags & FT_USAGE_UNORDERED_ACCESS
-#if defined(SUPPORT_DEVICE_INFO)
-				&& r->DevInfo().FeatureLevel() >= D3D_FEATURE_LEVEL_11_0
-#endif //defined(SUPPORT_DEVICE_INFO)
-				)
-				eFlags |= CDeviceObjectFactory::BIND_UNORDERED_ACCESS;
-			if (pLayout.m_eFlags & FT_USAGE_UAV_RWTEXTURE)
-				eFlags |= CDeviceObjectFactory::USAGE_UAV_READWRITE;
-
-			if (pLayout.m_eFlags & FT_FORCE_MIPS)
-			{
-				eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
-				if (nMips <= 1)
-					nMips = max(1, CTexture::CalcNumMips(nWdt, nHgt) - 2);
-			}
-
 			if (pLayout.m_eFlags & FT_USAGE_MSAA)
 			{
+				STexturePayload TI;
+
 				pRenderTargetData->m_nMSAASamples = (uint8)r->m_RP.m_MSAAData.Type;
 				pRenderTargetData->m_nMSAAQuality = (uint8)r->m_RP.m_MSAAData.Quality;
 
-				TI.m_nMSAASamples = pRenderTargetData->m_nMSAASamples;
-				TI.m_nMSAAQuality = pRenderTargetData->m_nMSAAQuality;
+				TI.m_nDstMSAASamples = pRenderTargetData->m_nMSAASamples;
+				TI.m_nDstMSAAQuality = pRenderTargetData->m_nMSAAQuality;
 
 				hr = GetDeviceObjectFactory().Create2DTexture(nWdt, nHgt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pRenderTargetData->m_pDeviceTextureMSAA, &TI);
 
 				assert(SUCCEEDED(hr));
 
-				TI = STextureInfo();
-			}
-
-			TI.m_pData = nullptr;
-			if (pData && pData[0])
-			{
-				int w = nWdt;
-				int h = nHgt;
-				const byte* pAutoData;
-				const void** pDataCursor = pData;
-				assert(pLayout.m_nArraySize == 1); //there is no implementation for tex array data
-				STextureInfoData* InitData = new STextureInfoData[nMips];
-
-				for (int i = 0; (i < nMips) && (w | h); i++)
-				{
-					if (!w) w = 1;
-					if (!h) h = 1;
-
-					// TODO: support arrays
-					if (*pDataCursor)
-						pAutoData = reinterpret_cast<const byte*>(*pDataCursor++);
-					else
-						pAutoData = pAutoData + InitData[i - 1].SysMemSlicePitch;
-
-					InitData[i].pSysMem = pAutoData;
-
-					InitData[i].SysMemPitch = CTexture::TextureDataSize(w, 1, 1, 1, 1, pLayout.m_eTFSrc, pLayout.m_eSrcTileMode);
-					InitData[i].SysMemSlicePitch = CTexture::TextureDataSize(w, h, 1, 1, 1, pLayout.m_eTFSrc, pLayout.m_eSrcTileMode);
-					InitData[i].SysMemTileMode = pLayout.m_eSrcTileMode;
-
-					w >>= 1;
-					h >>= 1;
-				}
-
-				TI.m_pData = InitData;
+				TI = STexturePayload();
 			}
 
 			{
-				hr = GetDeviceObjectFactory().Create2DTexture(nWdt, nHgt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, &TI, nESRAMOffset);
+				hr = GetDeviceObjectFactory().Create2DTexture(nWdt, nHgt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload, nESRAMOffset);
 				if (!FAILED(hr) && pDevTexture)
 					pDevTexture->SetNoDelete(!!(pLayout.m_eFlags & FT_DONT_RELEASE));
 			}
 
-			delete[] TI.m_pData;
 			if (FAILED(hr))
 			{
 				assert(0);
@@ -386,84 +352,31 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const void
 			if (pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB)
 				D3DFmt = nFormatOrig;
 		}
-		else if (pLayout.m_eTT == eTT_Cube)
+		else if (pLayout.m_eTT == eTT_Cube || pLayout.m_eTT == eTT_CubeArray)
 		{
-			if (pLayout.m_eFlags & FT_FORCE_MIPS)
-			{
-				eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
-				if (nMips <= 1)
-					nMips = max(1, CTexture::CalcNumMips(nWdt, nHgt) - 2);
-			}
-
 			if (pLayout.m_eFlags & FT_USAGE_MSAA)
 			{
+				STexturePayload TI;
+
 				pRenderTargetData->m_nMSAASamples = (uint8)r->m_RP.m_MSAAData.Type;
 				pRenderTargetData->m_nMSAAQuality = (uint8)r->m_RP.m_MSAAData.Quality;
 
-				TI.m_nMSAASamples = pRenderTargetData->m_nMSAASamples;
-				TI.m_nMSAAQuality = pRenderTargetData->m_nMSAAQuality;
+				TI.m_nDstMSAASamples = pRenderTargetData->m_nMSAASamples;
+				TI.m_nDstMSAAQuality = pRenderTargetData->m_nMSAAQuality;
 
 				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, pLayout.m_nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pRenderTargetData->m_pDeviceTextureMSAA, &TI);
 
 				assert(SUCCEEDED(hr));
 
-				TI = STextureInfo();
-			}
-
-			TI.m_pData = nullptr;
-			if (pData && pData[0])
-			{
-				assert(pLayout.m_nArraySize == 1); //there is no implementation for tex array data
-				STextureInfoData* InitData = new STextureInfoData[6 * nMips];
-
-				const byte* pAutoData;
-				const void** pDataCursor = pData;
-				for (int nSide = 0; nSide < 6; nSide++)
-				{
-					int w = nWdt;
-					int h = nHgt;
-
-					for (int i = 0; (i < nMips) && (w | h); i++)
-					{
-						if (!w) w = 1;
-						if (!h) h = 1;
-
-						int nSubresInd = nSide * nMips + i;
-
-						// TODO: support arrays
-						if (*pDataCursor)
-							pAutoData = reinterpret_cast<const byte*>(*pDataCursor++);
-						else
-							pAutoData = pAutoData + InitData[nSubresInd - 1].SysMemSlicePitch;
-
-						InitData[nSubresInd].pSysMem = pAutoData;
-
-						InitData[nSubresInd].SysMemPitch = CTexture::TextureDataSize(w, 1, 1, 1, 1, pLayout.m_eTFSrc, pLayout.m_eSrcTileMode);
-						InitData[nSubresInd].SysMemSlicePitch = CTexture::TextureDataSize(w, h, 1, 1, 1, pLayout.m_eTFSrc, pLayout.m_eSrcTileMode);
-						InitData[nSubresInd].SysMemTileMode = pLayout.m_eSrcTileMode;
-
-						w >>= 1;
-						h >>= 1;
-					}
-
-					// reset to face 0
-					if (pLayout.m_eFlags & FT_REPLICATE_TO_ALL_SIDES)
-						pDataCursor = pData;
-					// each face is nullptr-terminated
-					else if (!*pDataCursor)
-						pDataCursor++;
-				}
-
-				TI.m_pData = InitData;
+				TI = STexturePayload();
 			}
 
 			{
-				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, pLayout.m_nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, &TI);
+				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, pLayout.m_nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
 				if (!FAILED(hr) && pDevTexture)
 					pDevTexture->SetNoDelete(!!(pLayout.m_eFlags & FT_DONT_RELEASE));
 			}
 
-			delete[] TI.m_pData;
 			if (FAILED(hr))
 			{
 				assert(0);
@@ -475,74 +388,29 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const void
 		}
 		else if (pLayout.m_eTT == eTT_3D)
 		{
-			if (pLayout.m_eFlags & FT_USAGE_UNORDERED_ACCESS
-#if defined(SUPPORT_DEVICE_INFO)
-				&& r->DevInfo().FeatureLevel() >= D3D_FEATURE_LEVEL_11_0
-#endif //defined(SUPPORT_DEVICE_INFO)
-				)
-				eFlags |= CDeviceObjectFactory::BIND_UNORDERED_ACCESS;
-			if (pLayout.m_eFlags & FT_USAGE_UAV_RWTEXTURE)
-				eFlags |= CDeviceObjectFactory::USAGE_UAV_READWRITE;
-
 			if (pLayout.m_eFlags & FT_USAGE_MSAA)
 			{
+				STexturePayload TI;
+
 				pRenderTargetData->m_nMSAASamples = (uint8)r->m_RP.m_MSAAData.Type;
 				pRenderTargetData->m_nMSAAQuality = (uint8)r->m_RP.m_MSAAData.Quality;
 
-				TI.m_nMSAASamples = pRenderTargetData->m_nMSAASamples;
-				TI.m_nMSAAQuality = pRenderTargetData->m_nMSAAQuality;
+				TI.m_nDstMSAASamples = pRenderTargetData->m_nMSAASamples;
+				TI.m_nDstMSAAQuality = pRenderTargetData->m_nMSAAQuality;
 
 				hr = GetDeviceObjectFactory().CreateVolumeTexture(nWdt, nHgt, pLayout.m_nDepth, nMips, eFlags, pLayout.m_cClearColor, D3DFmt, &pRenderTargetData->m_pDeviceTextureMSAA, &TI);
 
 				assert(SUCCEEDED(hr));
 
-				TI = STextureInfo();
-			}
-
-			TI.m_pData = nullptr;
-			if (pData && pData[0])
-			{
-				int w = nWdt;
-				int h = nHgt;
-				int d = nDepth;
-				int nOffset = 0;
-				const byte* pAutoData;
-				const void** pDataCursor = pData;
-				STextureInfoData* InitData = new STextureInfoData[nMips];
-
-				for (int i = 0; (i < nMips) && (w | h | d); i++)
-				{
-					if (!w) w = 1;
-					if (!h) h = 1;
-					if (!d) d = 1;
-
-					// TODO: support arrays
-					if (*pDataCursor)
-						pAutoData = reinterpret_cast<const byte*>(*pDataCursor++);
-					else
-						pAutoData = pAutoData + InitData[i - 1].SysMemSlicePitch;
-
-					InitData[i].pSysMem = pAutoData;
-
-					InitData[i].SysMemPitch = CTexture::TextureDataSize(w, 1, 1, 1, 1, pLayout.m_eTFSrc, pLayout.m_eSrcTileMode);
-					InitData[i].SysMemSlicePitch = CTexture::TextureDataSize(w, h, 1, 1, 1, pLayout.m_eTFSrc, pLayout.m_eSrcTileMode);
-					InitData[i].SysMemTileMode = pLayout.m_eSrcTileMode;
-
-					w >>= 1;
-					h >>= 1;
-					d >>= 1;
-				}
-
-				TI.m_pData = InitData;
+				TI = STexturePayload();
 			}
 
 			{
-				hr = GetDeviceObjectFactory().CreateVolumeTexture(nWdt, nHgt, nDepth, nMips, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, &TI);
+				hr = GetDeviceObjectFactory().CreateVolumeTexture(nWdt, nHgt, nDepth, nMips, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
 				if (!FAILED(hr) && pDevTexture)
 					pDevTexture->SetNoDelete(!!(pLayout.m_eFlags & FT_DONT_RELEASE));
 			}
 
-			delete[] TI.m_pData;
 			if (FAILED(hr))
 			{
 				assert(0);
@@ -652,6 +520,20 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 	}
 	else
 	{
+
+		if (pLayout.m_eFlags & FT_USAGE_UNORDERED_ACCESS
+#if defined(SUPPORT_DEVICE_INFO)
+			&& r->DevInfo().FeatureLevel() >= D3D_FEATURE_LEVEL_11_0
+#endif //defined(SUPPORT_DEVICE_INFO)
+			)
+			eFlags |= CDeviceObjectFactory::BIND_UNORDERED_ACCESS;
+		if (pLayout.m_eFlags & FT_USAGE_UAV_RWTEXTURE)
+			eFlags |= CDeviceObjectFactory::USAGE_UAV_READWRITE;
+		if (pLayout.m_eFlags & FT_FORCE_MIPS)
+			eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
+		if (pLayout.m_eFlags & FT_USAGE_MSAA)
+			__debugbreak(); // TODO: one texture given, two textures needed
+
 		if (pLayout.m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 		{
 			pRenderTargetData = new RenderTargetData();
@@ -667,26 +549,9 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 			pDevTexture->m_bCube = (pLayout.m_eTT == eTT_Cube) | (pLayout.m_eTT == eTT_CubeArray);
 			if (!pDevTexture->m_nBaseAllocatedSize)
 			{
-#if CRY_PLATFORM_CONSOLE
-				pDevTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, DeviceFormats::ConvertToTexFormat(D3DFmt), eTM_Optimal);
-#else
-				pDevTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, DeviceFormats::ConvertToTexFormat(D3DFmt));
-#endif
+				pDevTexture->m_nBaseAllocatedSize = CDeviceTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, DeviceFormats::ConvertToTexFormat(D3DFmt), eTM_Optimal, eFlags);
 			}
 		}
-
-		if (pLayout.m_eFlags & FT_USAGE_UNORDERED_ACCESS
-#if defined(SUPPORT_DEVICE_INFO)
-			&& r->DevInfo().FeatureLevel() >= D3D_FEATURE_LEVEL_11_0
-#endif //defined(SUPPORT_DEVICE_INFO)
-			)
-			eFlags |= CDeviceObjectFactory::BIND_UNORDERED_ACCESS;
-		if (pLayout.m_eFlags & FT_USAGE_UAV_RWTEXTURE)
-			eFlags |= CDeviceObjectFactory::USAGE_UAV_READWRITE;
-		if (pLayout.m_eFlags & FT_FORCE_MIPS)
-			eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
-		if (pLayout.m_eFlags & FT_USAGE_MSAA)
-			__debugbreak(); // TODO: one texture given, two textures needed
 	}
 
 	pDevTexture->m_pRenderTargetData = pRenderTargetData;
@@ -706,7 +571,7 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 	{
 		pRenderTargetData->m_pDeviceTextureMSAA->m_pRenderTargetData = nullptr;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eNativeFormat = D3DFmt;
-		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8) * pRenderTargetData->m_nMSAASamples;
+		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = pDevTexture->m_resourceElements * pRenderTargetData->m_nMSAASamples;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Mips] = nMips;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Slices] = nArraySize;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eTT = pLayout.m_eTT;
@@ -799,24 +664,21 @@ void CDeviceTexture::AddDirtRect(RECT& rcSrc, uint32 dstX, uint32 dstY)
 	m_pRenderTargetData->m_DirtyRects.push_back(dirtyRect);
 }
 
-#if !CRY_PLATFORM_DURANGO
-uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM)
-{
-	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM);
-}
-#endif
-
 uint32 CDeviceTexture::TextureDataSize(D3DBaseView* pView)
 {
 	if (pView)
 	{
-		STextureLayout layout = GetViewLayout(pView);
+		STextureLayout layout = GetLayout(pView);
 
-#if CRY_PLATFORM_CONSOLE
-		return CDeviceTexture::TextureDataSize(layout.m_nWidth, layout.m_nHeight, layout.m_nDepth, layout.m_nMips, layout.m_nArraySize, layout.m_eTFSrc, layout.m_eSrcTileMode);
-#else
-		return CDeviceTexture::TextureDataSize(layout.m_nWidth, layout.m_nHeight, layout.m_nDepth, layout.m_nMips, layout.m_nArraySize, layout.m_eTFSrc);
-#endif
+		return CDeviceTexture::TextureDataSize(
+			layout.m_nWidth,
+			layout.m_nHeight,
+			layout.m_nDepth,
+			layout.m_nMips,
+			layout.m_nArraySize,
+			layout.m_eDstFormat,
+			eTM_Optimal,
+			layout.m_eFlags);
 	}
 
 	return 0;
@@ -826,30 +688,34 @@ uint32 CDeviceTexture::TextureDataSize(D3DBaseView* pView, const uint numRects, 
 {
 	if (pView)
 	{
-		STextureLayout layout = GetViewLayout(pView);
+		STextureLayout layout = GetLayout(pView);
 
-#if CRY_PLATFORM_CONSOLE
-		uint32 fullSize = CDeviceTexture::TextureDataSize(layout.m_nWidth, layout.m_nHeight, layout.m_nDepth, layout.m_nMips, layout.m_nArraySize, layout.m_eTFSrc, layout.m_eSrcTileMode);
-#else
-		uint32 fullSize = CDeviceTexture::TextureDataSize(layout.m_nWidth, layout.m_nHeight, layout.m_nDepth, layout.m_nMips, layout.m_nArraySize, layout.m_eTFSrc);
-#endif
-	
+		uint32 fullSize = CDeviceTexture::TextureDataSize(
+			layout.m_nWidth,
+			layout.m_nHeight,
+			layout.m_nDepth,
+			layout.m_nMips,
+			layout.m_nArraySize,
+			layout.m_eDstFormat,
+			eTM_Optimal,
+			layout.m_eFlags);
+
 		if (!numRects)
 		{
 			return fullSize;
 		}
 
-		uint32 nWidth = layout.m_nWidth;
+		uint32 nWidth  = layout.m_nWidth;
 		uint32 nHeight = layout.m_nHeight;
 
 		// If overlapping rectangles are cleared multiple times is ambiguous
-		uint32 fullDim = nWidth * nHeight;
+		uint32 fullDim  = nWidth * nHeight;
 		uint32 rectSize = 0;
 
 		for (uint i = 0; i < numRects; ++i)
 		{
-			uint32 nW = max(0, int32(min(uint32(pRects->right), nWidth)) - int32(max(0U, uint32(pRects->left))));
-			uint32 nH = max(0, int32(min(uint32(pRects->bottom), nHeight)) - int32(max(0U, uint32(pRects->top))));
+			uint32 nW = max(0, int32(min(uint32(pRects->right ), nWidth )) - int32(max(0U, uint32(pRects->left))));
+			uint32 nH = max(0, int32(min(uint32(pRects->bottom), nHeight)) - int32(max(0U, uint32(pRects->top ))));
 
 			uint32 rectDim = nW * nH;
 
@@ -861,3 +727,10 @@ uint32 CDeviceTexture::TextureDataSize(D3DBaseView* pView, const uint numRects, 
 
 	return 0;
 }
+
+#if !CRY_PLATFORM_CONSOLE
+uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
+{
+	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM_None);
+}
+#endif

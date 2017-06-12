@@ -69,31 +69,7 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////
-
-struct STextureInfoData
-{
-	const void*   pSysMem;
-	uint32        SysMemPitch;
-	uint32        SysMemSlicePitch;
-	ETEX_TileMode SysMemTileMode;
-};
-
-struct STextureInfo
-{
-	uint8             m_nMSAASamples;
-	uint8             m_nMSAAQuality;
-	STextureInfoData* m_pData;
-
-	STextureInfo()
-	{
-		m_nMSAASamples = 1;
-		m_nMSAAQuality = 0;
-		m_pData = NULL;
-	}
-};
-
-////////////////////////////////////////////////////////////////////////////
-#include "DeviceObjects.h" // CComposedDeviceObjectStorage
+#include "DeviceObjects.h" // CComposedDeviceObjectStorage,STexturePayload
 ////////////////////////////////////////////////////////////////////////////
 
 struct SResourceLayout
@@ -348,19 +324,16 @@ struct STextureLayout
 	uint16            m_nWidth;
 	uint16            m_nHeight;
 	uint16            m_nDepth;
-	uint8             m_nArraySize;
+	uint16            m_nArraySize;
 	int8              m_nMips;
 
 	// 32bits, [96,128)
-	ETEX_Format       m_eTFSrc;
-	ETEX_Format       m_eTFDst;
-//#if CRY_PLATFORM_CONSOLE
-	ETEX_TileMode     m_eSrcTileMode;
-//#endif
+	ETEX_Format       m_eSrcFormat;   // TODO: remove
+	ETEX_Format       m_eDstFormat;
 	ETEX_Type         m_eTT;
 	
 	// 32bits, [128,160)
-	uint32            m_eFlags;       // e.g. FT_USAGE_DYNAMIC, needs to be mapped to e.g. CDeviceObjectFactory::BIND_RENDER_TARGET
+	uint32            m_eFlags;       // CDeviceObjectFactory::BIND_RENDER_TARGET etc.
 	// 96bits, [160,256)
 	bool              m_bIsSRGB;
 
@@ -379,8 +352,6 @@ class CDeviceTexture : public CDeviceResource
 
 	// for native hand-made textures
 	size_t m_nBaseAllocatedSize;
-	int32  m_nActualSize;
-	int32  m_nPersistentSize;
 
 	bool   m_bNoDelete;
 	bool   m_bCube;
@@ -409,11 +380,11 @@ class CDeviceTexture : public CDeviceResource
 	RenderTargetData*         m_pRenderTargetData;
 
 public:
-	static CDeviceTexture*   Create(const STextureLayout& pLayout, const void* pData[]);
+	static CDeviceTexture*   Create(const STextureLayout& pLayout, const STexturePayload* pPayload);
 	static CDeviceTexture*   Associate(const STextureLayout& pLayout, D3DResource* pTex);
 
 	STextureLayout           GetLayout() const;
-	static STextureLayout    GetViewLayout(D3DBaseView* pView); // Layout object adjusted to include only the sub-resources in the view.
+	static STextureLayout    GetLayout(D3DBaseView* pView); // Layout object adjusted to include only the sub-resources in the view.
 
 	// This calculates the hardware alignments of a texture resource, respecting block-compression and tiling mode (typeStride will round up if a fraction)
 	SResourceMemoryAlignment GetAlignment(uint8 mip = 0, uint8 slices = 0) const;
@@ -486,7 +457,7 @@ public:
 
 	static uint32 TextureDataSize(D3DBaseView* pView);
 	static uint32 TextureDataSize(D3DBaseView* pView, const uint numRects, const RECT* pRects);
-	static uint32 TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM = eTM_None);
+	static uint32 TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags);
 
 #if DEVRES_USE_PINNING
 	void* WeakPin();
@@ -581,10 +552,10 @@ public:
 
 private:
 	CDeviceTexture() 
-		: m_nBaseAllocatedSize(0),
-		m_bNoDelete(false),
-		m_bCube(false),
-		m_pRenderTargetData(nullptr)
+		: m_nBaseAllocatedSize(0)
+		, m_bNoDelete(false)
+		, m_bCube(false)
+		, m_pRenderTargetData(nullptr)
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(USE_NV_API)
 		, m_handleMGPU(NULL)
 #endif

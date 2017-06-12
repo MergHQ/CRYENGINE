@@ -1648,7 +1648,7 @@ void CRenderOutput::BeginRendering()
 		    || m_pHDRTargetTexture->Invalidate(m_width, m_height, texFormat))
 		{
 			const uint32 flags = m_pHDRTargetTexture->GetFlags();
-			m_pHDRTargetTexture->Create2DTexture(m_width, m_height, 1, flags, nullptr, texFormat, texFormat);
+			m_pHDRTargetTexture->Create2DTexture(m_width, m_height, 1, flags, nullptr, texFormat);
 		}
 	}
 	CRY_ASSERT(m_pHDRTargetTexture && CTexture::IsTextureExist(m_pHDRTargetTexture));

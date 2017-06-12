@@ -54,7 +54,7 @@ HRESULT CDeviceObjectFactory::CreateFence(DeviceFenceHandle& query)
 	hr = query ? S_OK : S_FALSE;
 	if (!FAILED(hr))
 	{
-		IssueFence(query);
+		hr = IssueFence(query);
 	}
 	return hr;
 }
@@ -75,6 +75,7 @@ HRESULT CDeviceObjectFactory::IssueFence(DeviceFenceHandle query)
 	{
 		*handle = gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
 		gcpRendD3D->GetDeviceContext().Flush();
+		hr = S_OK;
 	}
 	return hr;
 }
@@ -1234,7 +1235,7 @@ IDefragAllocatorStats CDeviceObjectFactory::GetTexturePoolStats()
 
 //=============================================================================
 
-bool CDeviceObjectFactory::InPlaceConstructable(const D3D11_TEXTURE2D_DESC& Desc)
+bool CDeviceObjectFactory::InPlaceConstructable(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags)
 {
 	return
 		(Desc.Usage == D3D11_USAGE_DEFAULT) &&
@@ -1243,8 +1244,7 @@ bool CDeviceObjectFactory::InPlaceConstructable(const D3D11_TEXTURE2D_DESC& Desc
 		!(Desc.MiscFlags & D3D11X_RESOURCE_MISC_ESRAM_RESIDENT);
 }
 
-HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(
-	CDeviceTexture* pDst, const STileRequest* pSubresources, size_t nSubresources, UINT64& fenceOut)
+HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(CDeviceTexture* pDst, const STileRequest* pSubresources, size_t nSubresources, UINT64& fenceOut)
 {
 	if (!pDst->IsInPool())
 	{
@@ -1299,7 +1299,7 @@ HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(
 		subResDesc.SampleDesc.Quality = dstDesc.SampleDesc.Quality;
 		subResDesc.Usage = D3D11_USAGE_DEFAULT;
 
-		const SDeviceTextureDesc* pDTD = Find2DResourceLayout(subResDesc, eTM_LinearPadded);
+		const SDeviceTextureDesc* pDTD = Find2DResourceLayout(subResDesc, 0, eTM_LinearPadded);
 		const XG_RESOURCE_LAYOUT* pLyt = &pDTD->layout;
 
 		// If the src data aliases the destination, or is only in cpu addressable memory, we need
@@ -1403,16 +1403,15 @@ HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(
 	return S_OK;
 }
 
-#pragma optimize("", off)
-HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC& D3DDesc, const STextureInfoData* pSRD, CDeviceTexture*& pDevTexOut, bool bDeferD3DConstruction)
+HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const STexturePayload* pPayload, CDeviceTexture*& pDevTexOut)
 {
 	FUNCTION_PROFILER_RENDERER;
+	bool bDeferD3DConstruction = (eFlags & USAGE_STREAMING) && !(pPayload && pPayload->m_pSysMemSubresourceData);
 
 	// Determine optimal layout, and size/alignment for texture
-
-	const SDeviceTextureDesc* pDTD = Find2DResourceLayout(D3DDesc, eTM_Optimal);
+	const SDeviceTextureDesc* pDTD = Find2DResourceLayout(Desc, eFlags, eTM_Optimal);
 	const XG_RESOURCE_LAYOUT* pLayout = &pDTD->layout;
-	XG_TILE_MODE tileMode = pLayout->Plane[0].MipLayout[0].TileMode;
+	XG_TILE_MODE dstNativeTileMode = pLayout->Plane[0].MipLayout[0].TileMode;
 
 #ifndef _RELEASE
 	if (pLayout->Planes != 1)
@@ -1432,12 +1431,12 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 	HRESULT hr = S_OK;
 
 	SGPUMemHdl texHdl = ar.hdl;
-	void* pBaseAddress = ar.baseAddress;
+	void* pDstBaseAddress = ar.baseAddress;
 
 	ID3D11Texture2D* pD3DTex = NULL;
 	if (!bDeferD3DConstruction)
 	{
-		hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&D3DDesc, tileMode, 0, pBaseAddress, &pD3DTex);
+		hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&Desc, dstNativeTileMode, 0, pDstBaseAddress, &pD3DTex);
 		if (FAILED(hr))
 		{
 			m_texturePool.FreeUnused(texHdl);
@@ -1454,30 +1453,22 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 
 	m_texturePool.BindContext(ar.hdl, pDeviceTexture);
 
-	if (pSRD)
+	const SSubresourcePayload* pTIDs;
+	if (pPayload && (pTIDs = pPayload->m_pSysMemSubresourceData))
 	{
-		// If any of the sub resources are in a linear general format, we'll need a computer to tile on the CPU.
+		ETEX_TileMode srcTileMode = pPayload->m_eSysMemTileMode;
+		bool isBlockCompressed = IsBlockCompressed(Desc.Format);
 
-		bool bNeedsComputer = false;
-		for (int nMip = 0; !bNeedsComputer && nMip < D3DDesc.MipLevels; ++nMip)
-		{
-			for (int nSlice = 0; !bNeedsComputer && nSlice < D3DDesc.ArraySize; ++nSlice)
-			{
-				int nSubResIdx = nMip + D3DDesc.MipLevels * nSlice;
-				if (pSRD[nSubResIdx].SysMemTileMode == eTM_None)
-				{
-					bNeedsComputer = true;
-				}
-			}
-		}
+		// If any of the sub resources are in a linear general format, we'll need a computer to tile on the CPU.
+		bool bNeedsComputer = (srcTileMode == eTM_None) || (srcTileMode == eTM_LinearPadded && isBlockCompressed);
 
 		XGTextureAddressComputer* pComputerRaw = NULL;
 		if (bNeedsComputer)
 		{
 			XG_TEXTURE2D_DESC xgDesc;
-			memcpy(&xgDesc, &D3DDesc, sizeof(D3DDesc));
+			memcpy(&xgDesc, &Desc, sizeof(Desc));
 			xgDesc.Pitch = 0;
-			xgDesc.TileMode = tileMode;
+			xgDesc.TileMode = dstNativeTileMode;
 
 			hr = XGCreateTexture2DComputer(&xgDesc, &pComputerRaw);
 			if (FAILED(hr))
@@ -1497,17 +1488,24 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 			pComputer->Release();
 		}
 
-		bool isBlockCompressed = IsBlockCompressed(D3DDesc.Format);
-
-		for (int nSlice = 0; nSlice < D3DDesc.ArraySize; ++nSlice)
+		for (int nSlice = 0; nSlice < Desc.ArraySize; ++nSlice)
 		{
-			for (int nMip = 0; nMip < D3DDesc.MipLevels; ++nMip)
+			for (int nMip = 0; nMip < Desc.MipLevels; ++nMip)
 			{
-				int nSubResIdx = nMip + D3DDesc.MipLevels * nSlice;
-				const void* pSRSrc = pSRD[nSubResIdx].pSysMem;
+				int nDstSubResIdx = D3D11CalcSubresource(nMip, nSlice, Desc.MipLevels);
+				const void* pSrcDataAddress = pTIDs[nDstSubResIdx].m_pSysMem;
+				const UINT nSubResourceSize = pTIDs[nDstSubResIdx].m_sSysMemAlignment.planeStride;
 
-				ETEX_TileMode srcTileMode = pSRD[nSubResIdx].SysMemTileMode;
-				if (srcTileMode == eTM_LinearPadded)
+				if (srcTileMode == eTM_Optimal)
+				{
+					CRY_ASSERT(nSubResourceSize == pLayout->Plane[0].MipLayout[nMip].Slice2DSizeBytes);
+					UINT64 nSubResourceLocation = 
+						pLayout->Plane[0].MipLayout[nMip].OffsetBytes +
+						pLayout->Plane[0].MipLayout[nMip].Slice2DSizeBytes * nSlice;
+
+					memcpy(reinterpret_cast<byte*>(pDstBaseAddress) + nSubResourceLocation, pSrcDataAddress, nSubResourceSize);
+				}
+				else if (srcTileMode == eTM_LinearPadded && !isBlockCompressed)
 				{
 					// Data is in a format that the move engine can tile, wrap it in a placement texture
 					// and move it.
@@ -1515,8 +1513,8 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 					// OF FIXME - test to see if pSRSrc is in gpu memory
 
 					STileRequest req;
-					req.nDstSubResource = D3D11CalcSubresource(nMip, nSlice, D3DDesc.MipLevels);
-					req.pLinSurfaceSrc = pSRSrc;
+					req.nDstSubResource = nDstSubResIdx;
+					req.pLinSurfaceSrc = pSrcDataAddress;
 					req.bSrcInGPUMemory = false;
 
 					UINT64 fence = 0;
@@ -1528,17 +1526,34 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 						}
 					}
 				}
+				else if (srcTileMode == eTM_LinearPadded && isBlockCompressed)
+				{
+					// BlockCompressed - can't use the move engine, so tile on the CPU :(.
+					// Layout-info is invalid in this case (see CTexture::TextureDataSize)
+
+					const SDeviceTextureDesc* pDTD_Pad = Find2DResourceLayout(Desc, eFlags, eTM_LinearPadded);
+					const XG_RESOURCE_LAYOUT* pLayout_Pad = &pDTD_Pad->layout;
+
+					pComputer->CopyIntoSubresource(
+						pDstBaseAddress,
+						0,
+						nDstSubResIdx,
+						pSrcDataAddress,
+						UINT32(pLayout_Pad->Plane[0].MipLayout[nMip].PitchBytes),
+						UINT32(pLayout_Pad->Plane[0].MipLayout[nMip].Slice2DSizeBytes));
+				}
 				else if (srcTileMode == eTM_None)
 				{
 					// Linear general - can't use the move engine, so tile on the CPU :(.
+					// Layout-info is valid in this case (see CTexture::TextureDataSize)
 
 					pComputer->CopyIntoSubresource(
-						pBaseAddress,
+						pDstBaseAddress,
 						0,
-						nSubResIdx,
-						pSRSrc,
-						pSRD[nSubResIdx].SysMemPitch,
-						pSRD[nSubResIdx].SysMemSlicePitch);
+						nDstSubResIdx,
+						pSrcDataAddress,
+						pTIDs[nDstSubResIdx].m_sSysMemAlignment.rowStride,
+						pTIDs[nDstSubResIdx].m_sSysMemAlignment.planeStride);
 				}
 				else
 				{
@@ -1556,17 +1571,17 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 	return S_OK;
 }
 
-const SDeviceTextureDesc* CDeviceObjectFactory::Find2DResourceLayout(const D3D11_TEXTURE2D_DESC& desc, ETEX_TileMode tileMode)
+const SDeviceTextureDesc* CDeviceObjectFactory::Find2DResourceLayout(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, ETEX_TileMode tileMode)
 {
 	FUNCTION_PROFILER_RENDERER;
 
 	SMinimisedTexture2DDesc minDesc;
-	minDesc.width = desc.Width;
-	minDesc.height = desc.Height;
-	minDesc.mips = desc.MipLevels;
-	minDesc.arraySize = desc.ArraySize;
-	minDesc.format = (uint8)desc.Format;
-	minDesc.isCube = (desc.MiscFlags & D3D11_RESOURCE_MISC_TEXTURECUBE) != 0;
+	minDesc.width = Desc.Width;
+	minDesc.height = Desc.Height;
+	minDesc.mips = Desc.MipLevels;
+	minDesc.arraySize = Desc.ArraySize;
+	minDesc.format = (uint8)Desc.Format;
+	minDesc.isCube = (Desc.MiscFlags & D3D11_RESOURCE_MISC_TEXTURECUBE) != 0;
 	minDesc.tileMode = (uint8)tileMode;
 
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_layoutTableLock);
@@ -1576,34 +1591,37 @@ const SDeviceTextureDesc* CDeviceObjectFactory::Find2DResourceLayout(const D3D11
 		return &it->second;
 	}
 
+	XG_BIND_FLAG xgFlags = ConvertToXGBindFlags(eFlags);
 	XG_TEXTURE2D_DESC xgDesc;
-	memcpy(&xgDesc, &desc, sizeof(desc));
+	memcpy(&xgDesc, &Desc, sizeof(Desc));
 	xgDesc.Pitch = 0;
 
 	switch (tileMode)
 	{
 	case eTM_None:
-	case eTM_Optimal:
-		xgDesc.TileMode = XGComputeOptimalTileMode(
-			XG_RESOURCE_DIMENSION_TEXTURE2D,
-			(XG_FORMAT)desc.Format,
-			desc.Width,
-			desc.Height,
-			desc.ArraySize,
-			1,
-			XG_BIND_SHADER_RESOURCE);
+		xgDesc.TileMode = XG_TILE_MODE_LINEAR_GENERAL;
+		xgDesc.Usage = XG_USAGE_STAGING;
 		break;
-
 	case eTM_LinearPadded:
 		xgDesc.TileMode = XG_TILE_MODE_LINEAR;
 		xgDesc.Usage = XG_USAGE_STAGING;
+		break;
+	case eTM_Optimal:
+		xgDesc.TileMode = XGComputeOptimalTileMode(
+			XG_RESOURCE_DIMENSION_TEXTURE2D,
+			(XG_FORMAT)Desc.Format,
+			Desc.Width,
+			Desc.Height,
+			Desc.ArraySize,
+			1,
+			xgFlags);
 		break;
 	}
 
 	SDeviceTextureDesc ddesc;
 	XGComputeTexture2DLayout(&xgDesc, &ddesc.layout);
 	ddesc.xgTileMode = xgDesc.TileMode;
-	ddesc.d3dDesc = desc;
+	ddesc.d3dDesc = Desc;
 
 	it = m_layoutTable.insert(std::make_pair(minDesc, ddesc)).first;
 	return &it->second;

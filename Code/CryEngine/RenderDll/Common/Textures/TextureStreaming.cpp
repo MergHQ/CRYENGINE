@@ -25,13 +25,13 @@
 
 // checks for MT-safety of called functions
 #if !defined(CHK_RENDTH)
-	#define CHK_RENDTH assert(gRenDev->m_pRT->IsRenderThread())
+	#define CHK_RENDTH assert(gRenDev->m_pRT->IsRenderThread(true))
 #endif
 #if !defined(CHK_MAINTH)
-	#define CHK_MAINTH assert(gRenDev->m_pRT->IsMainThread())
+	#define CHK_MAINTH assert(gRenDev->m_pRT->IsMainThread(true))
 #endif
 #if !defined(CHK_MAINORRENDTH)
-	#define CHK_MAINORRENDTH assert(gRenDev->m_pRT->IsMainThread() || gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread())
+	#define CHK_MAINORRENDTH assert(gRenDev->m_pRT->IsMainThread(true) || gRenDev->m_pRT->IsRenderThread(true) || gRenDev->m_pRT->IsLevelLoadingThread(true))
 #endif
 
 bool CTexture::s_bStreamingFromHDD = true;
@@ -100,7 +100,7 @@ void STexStreamInState::CopyMips()
 			{
 			}
 	#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-			else if (!gRenDev->m_pRT->IsRenderThread())
+			else if (!gRenDev->m_pRT->IsRenderThread(true))
 			{
 				m_copyMipsFence = CTexture::StreamCopyMipsTexToTex_MoveEngine(tp->m_pFileTexMips->m_pPoolItem, 0, m_pNewPoolItem, 0 + nNewMipOffset, nNumMips);
 			}
@@ -241,10 +241,9 @@ void STexStreamInState::StreamAsyncOnComplete(IReadStream* pStream, unsigned nEr
 		// If we've deferred the D3D texture initialisation, construct it now
 		m_pNewPoolItem->m_pDevTexture->InitD3DTexture();
 
-		if (tp->m_eSrcTileMode == eTM_None && !CTexture::IsInPlaceFormat(tp->m_eTFSrc))
+		if (tp->m_eSrcTileMode == eTM_None && !CTexture::IsInPlaceFormat(tp->m_eSrcFormat))
 		{
 			// Untiled, non-native, expand into mip headers
-
 			tp->StreamExpandMip(pTextureData, nMip, m_nHigherUploadedMip, mipState.m_nSideDelta);
 			mipState.m_bExpanded = true;
 
@@ -254,7 +253,6 @@ void STexStreamInState::StreamAsyncOnComplete(IReadStream* pStream, unsigned nEr
 		if (!mipState.m_bStreamInPlace)
 		{
 			// Not in place, prepare for upload
-
 			tp->StreamUploadMip_Durango(pTextureData, nMip, m_nHigherUploadedMip, m_pNewPoolItem, mipState);
 		}
 #else
@@ -688,7 +686,7 @@ bool CTexture::StreamPrepareComposition()
 	int nWidth = m_nWidth;
 	int nHeight = m_nHeight;
 	int nMips = m_nMips;
-	ETEX_Format eTF = m_eTFDst;
+	ETEX_Format eTF = m_eDstFormat;
 	const STexComposition* pCompositions = &m_composition[0];
 	size_t nCompositions = m_composition.size();
 
@@ -734,8 +732,8 @@ bool CTexture::StreamPrepareComposition()
 	m_nMips = nMips;
 	m_eTT = eTT;
 	fh.m_nSides = nSides;
-	m_eTFSrc = eTFSrc;
-	m_eTFDst = eTFDst;
+	m_eSrcFormat = eTFSrc;
+	m_eDstFormat = eTFDst;
 	m_bIsSRGB = !!(pPF->Options & FMTSUPPORT_SRGB); // OF FIXME: Probably ought to be supplied, and checked against the PF, rather than taken from the PF
 	assert(!m_pFileTexMips);
 	m_pFileTexMips = StreamState_AllocateInfo(m_nMips);
@@ -755,34 +753,29 @@ bool CTexture::StreamPrepareComposition()
 
 	for (int iSide = 0; iSide < fh.m_nSides; ++iSide)
 	{
-		int nTopMipWidth = m_nWidth;
-		int nTopMipHeight = m_nHeight;
-
-		if (CTexture::IsBlockCompressed(m_eTFSrc))
-		{
-			nTopMipWidth = Align(nTopMipWidth, 4);
-			nTopMipHeight = Align(nTopMipHeight, 4);
-		}
-
 		for (int iMip = 0; iMip < m_nMips; ++iMip)
 		{
 			m_pFileTexMips->m_pMipHeader[iMip].m_SideSize = CTexture::TextureDataSize(
-			  max(1, nTopMipWidth >> iMip),
-			  max(1, nTopMipHeight >> iMip),
-			  1, 1, 1, m_eTFDst, eTileMode);
+				max(1, m_nWidth  >> iMip),
+				max(1, m_nHeight >> iMip),
+				max(1, m_nDepth  >> iMip),
+				1, 1,
+				m_eDstFormat,
+				eTileMode);
 		}
 	}
 
 #if defined(TEXSTRM_STORE_DEVSIZES)
 	for (int iMip = 0; iMip < m_nMips; ++iMip)
 	{
-		m_pFileTexMips->m_pMipHeader[iMip].m_DevSideSizeWithMips = CDeviceTexture::TextureDataSize(
-		  max(1, m_nWidth >> iMip),
-		  max(1, m_nHeight >> iMip),
-		  max(1, m_nDepth >> iMip),
-		  m_nMips - iMip,
-		  StreamGetNumSlices(),
-		  m_eTFDst);
+		m_pFileTexMips->m_pMipHeader[iMip].m_DevSideSizeWithMips = CTexture::TextureDataSize(
+			max(1, m_nWidth  >> iMip),
+			max(1, m_nHeight >> iMip),
+			max(1, m_nDepth  >> iMip),
+			m_nMips - iMip,
+			StreamGetNumSlices(),
+			m_eDstFormat,
+			eTileMode);
 	}
 #endif
 
@@ -797,9 +790,9 @@ bool CTexture::StreamPrepareComposition()
 	fh.m_nMipsPersistent = nMipsPersistent;
 
 	m_pFileTexMips->m_fMinMipFactor = StreamCalculateMipFactor((m_nMips - m_CacheFileHeader.m_nMipsPersistent) << 8);
-	m_nStreamFormatCode = StreamComputeFormatCode(m_nWidth, m_nHeight, m_nMips, m_eTFDst);
+	m_nStreamFormatCode = StreamComputeFormatCode(m_nWidth, m_nHeight, m_nMips, m_eDstFormat);
 
-	assert(m_eTFDst != eTF_Unknown);
+	assert(m_eDstFormat != eTF_Unknown);
 
 	StreamPrepare_Platform();
 
@@ -828,9 +821,9 @@ bool CTexture::StreamPrepareComposition()
 				uint32 nSrcDevMips = p->GetNumMipsNonVirtual() - p->StreamGetLoadedMip();
 
 				CTexture::CopySliceChain(
-				  pNewPoolItem->m_pDevTexture, pNewPoolItem->m_pOwner->m_nMips, tc.nDstSlice, 0,
-				  pSrcDevTex, nSrcDevMips, tc.nSrcSlice, nTexWantedMip - (m_nMips - nSrcDevMips),
-				  1, m_nMips - nTexWantedMip);
+					pNewPoolItem->m_pDevTexture, pNewPoolItem->m_pOwner->m_nMips, tc.nDstSlice, 0,
+					pSrcDevTex, nSrcDevMips, tc.nSrcSlice, nTexWantedMip - (m_nMips - nSrcDevMips),
+					1, m_nMips - nTexWantedMip);
 			}
 
 			// upload mips to texture
@@ -848,34 +841,35 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 	if (!pIM)
 		return false;
 
+	// TODO: support eTT_2DArray and eTT_CubeArray
 	int nWidth = pIM->mfGet_width();
 	int nHeight = pIM->mfGet_height();
 	int nDepth = pIM->mfGet_depth();
 	int nMips = pIM->mfGet_numMips();
 	ETEX_Type eTT = pIM->mfGet_NumSides() == 1 ? eTT_2D : eTT_Cube;
 	int nSides = eTT != eTT_Cube ? 1 : 6;
-	ETEX_Format eTFSrc = pIM->mfGetFormat();
-	ETEX_Format eTFDst = FormatFixup(eTFSrc);
+	ETEX_Format eSrcFormat = pIM->mfGetFormat();
+	ETEX_Format eDstFormat = FormatFixup(eSrcFormat);
 	const ColorF& cMinColor = pIM->mfGet_minColor();
 	const ColorF& cMaxColor = pIM->mfGet_maxColor();
-	ETEX_TileMode eTileMode = pIM->mfGetTileMode();
+	ETEX_TileMode eSrcTileMode = pIM->mfGetTileMode();
 
 #ifndef _RELEASE
-	if (eTileMode != eTM_None)
+	if (eSrcTileMode != eTM_None)
 	{
-		if (eTFSrc != eTFDst)
+		if (eSrcFormat != eDstFormat)
 			__debugbreak();
 	}
 #endif
 
-	int nMipsPersistent = max(pIM->mfGet_numPersistantMips(), DDSSplitted::GetNumLastMips(nWidth, nHeight, nMips, nSides, eTFSrc, (m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0));
+	int nMipsPersistent = max(pIM->mfGet_numPersistantMips(), DDSSplitted::GetNumLastMips(nWidth, nHeight, nMips, nSides, eSrcFormat, (m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0));
 
 	bool bStreamable = true;
 
 	m_eFlags &= ~(FT_SPLITTED | FT_TEX_WAS_NOT_PRE_TILED | FT_HAS_ATTACHED_ALPHA | FT_DONT_STREAM | FT_FROMIMAGE);
 
 	// Can't stream volume textures and textures without mips
-	if (eTFDst == eTF_Unknown || nDepth > 1 || nMips < 2)
+	if (eDstFormat == eTF_Unknown || nDepth > 1 || nMips < 2)
 		bStreamable = false;
 
 	if ((nWidth <= DDSSplitted::etexLowerMipMaxSize || nHeight <= DDSSplitted::etexLowerMipMaxSize) || nMips <= nMipsPersistent || nMipsPersistent == 0)
@@ -883,12 +877,12 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 
 	const SPixFormat* pPF = NULL;
 
-	GetClosestFormatSupported(eTFDst, pPF);
+	GetClosestFormatSupported(eDstFormat, pPF);
 
-	if (!pPF && !DDSFormats::IsNormalMap(eTFDst)) // special case for 3DC and CTX1
+	if (!pPF && !DDSFormats::IsNormalMap(eDstFormat)) // special case for 3DC and CTX1
 	{
 		assert(0);
-		gEnv->pLog->LogError("Failed to load texture %s': format '%s' is not supported", NameForTextureFormat(m_eTFDst), m_SrcName.c_str());
+		gEnv->pLog->LogError("Failed to load texture %s': format '%s' is not supported", NameForTextureFormat(m_eDstFormat), m_SrcName.c_str());
 		bStreamable = false;
 	}
 
@@ -926,9 +920,9 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 	m_nDepth = nDepth;
 	m_nMips = nMips;
 	m_eTT = eTT;
-	fh.m_nSides = nSides;
-	m_eTFSrc = eTFSrc;
-	m_eTFDst = eTFDst;
+	m_nArraySize = nSides;
+	m_eSrcFormat = eSrcFormat;
+	m_eDstFormat = eDstFormat;
 	m_eFlags |= FT_FROMIMAGE;
 	m_bUseDecalBorderCol = (pIM->mfGet_Flags() & FIM_DECAL) != 0;
 	m_bIsSRGB = (pIM->mfGet_Flags() & FIM_SRGB_READ) != 0;
@@ -942,54 +936,50 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 	m_cMinColor = cMinColor;
 	m_cMaxColor = cMaxColor;
 	m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
-	m_eSrcTileMode = eTileMode;
+	m_eSrcTileMode = eSrcTileMode;
 	m_bStreamed = true;
 
 	// base range after normalization, fe. [0,1] for 8bit images, or [0,2^15] for RGBE/HDR data
-	if ((m_eTFSrc == eTF_R9G9B9E5) || (m_eTFSrc == eTF_BC6UH) || (m_eTFSrc == eTF_BC6UH))
+	if (CImageExtensionHelper::IsDynamicRange(m_eSrcFormat))
 	{
 		m_cMinColor /= m_cMaxColor.a;
 		m_cMaxColor /= m_cMaxColor.a;
 	}
 
 	// allocate and fill up streaming auxiliary structures
+	fh.m_nSides = nSides;
 	for (int iMip = 0; iMip < m_nMips; ++iMip)
 	{
-		m_pFileTexMips->m_pMipHeader[iMip].m_Mips = new SMipData[m_CacheFileHeader.m_nSides];
+		m_pFileTexMips->m_pMipHeader[iMip].m_Mips = new SMipData[fh.m_nSides];
 	}
 
 	m_pFileTexMips->m_desc = pIM->mfGet_DDSDesc();
 
-	for (int iSide = 0; iSide < fh.m_nSides; ++iSide)
+	for (int iSide = 0; iSide < nSides; ++iSide)
 	{
-		int nTopMipWidth = m_nWidth;
-		int nTopMipHeight = m_nHeight;
-
-		if (CTexture::IsBlockCompressed(m_eTFSrc))
-		{
-			nTopMipWidth = Align(nTopMipWidth, 4);
-			nTopMipHeight = Align(nTopMipHeight, 4);
-		}
-
 		for (int iMip = 0; iMip < m_nMips; ++iMip)
 		{
 			m_pFileTexMips->m_pMipHeader[iMip].m_SideSize = CTexture::TextureDataSize(
-			  max(1, nTopMipWidth >> iMip),
-			  max(1, nTopMipHeight >> iMip),
-			  1, 1, 1, m_eTFDst, eTileMode);
+				max(1, m_nWidth  >> iMip),
+				max(1, m_nHeight >> iMip),
+				max(1, m_nDepth  >> iMip),
+				1, 1,
+				m_eDstFormat,
+				eSrcTileMode);
 		}
 	}
 
 #if defined(TEXSTRM_STORE_DEVSIZES)
 	for (int iMip = 0; iMip < m_nMips; ++iMip)
 	{
-		m_pFileTexMips->m_pMipHeader[iMip].m_DevSideSizeWithMips = CDeviceTexture::TextureDataSize(
-		  max(1, m_nWidth >> iMip),
-		  max(1, m_nHeight >> iMip),
-		  max(1, m_nDepth >> iMip),
-		  m_nMips - iMip,
-		  StreamGetNumSlices(),
-		  m_eTFDst);
+		m_pFileTexMips->m_pMipHeader[iMip].m_DevSideSizeWithMips = CTexture::TextureDataSize(
+			max(1, m_nWidth  >> iMip),
+			max(1, m_nHeight >> iMip),
+			max(1, m_nDepth  >> iMip),
+			m_nMips - iMip,
+			StreamGetNumSlices(),
+			m_eDstFormat,
+			eSrcTileMode);
 	}
 #endif
 
@@ -1011,7 +1001,7 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 
 	fh.m_nMipsPersistent = nMipsPersistent;
 
-	assert(m_eTFDst != eTF_Unknown);
+	assert(m_eDstFormat != eTF_Unknown);
 
 	StreamPrepare_Platform();
 
@@ -1034,10 +1024,10 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 		int nOffs = 0;
 		assert(nSyncStartMip <= nSyncEndMip);
 
-		const bool bIsDXT = CTexture::IsBlockCompressed(eTFDst);
+		const bool bIsDXT = CTexture::IsBlockCompressed(eDstFormat);
 		const int nMipAlign = bIsDXT ? 4 : 1;
 
-		for (int iSide = 0; iSide < m_CacheFileHeader.m_nSides; iSide++)
+		for (int iSide = 0; iSide < nSides; iSide++)
 		{
 			nOffs = 0;
 			for (int iMip = nSyncStartMip, nMipW = max(1, m_nWidth >> iMip), nMipH = max(1, m_nHeight >> iMip);
@@ -1049,14 +1039,16 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 				if (!mp->DataArray)
 					mp->Init(mh.m_SideSize, Align(nMipW, nMipAlign), Align(nMipH, nMipAlign));
 
-				if (eTileMode != eTM_None)
+				if (eSrcTileMode != eTM_None)
 					mp->m_bNative = 1;
 
-				int nSrcSideSize = TextureDataSize(
-				  max(1, m_nWidth >> iMip),
-				  max(1, m_nHeight >> iMip),
-				  max(1, m_nDepth >> iMip),
-				  1, 1, m_eTFSrc, eTileMode);
+				int nSrcSideSize = CTexture::TextureDataSize(
+					max(1, m_nWidth  >> iMip),
+					max(1, m_nHeight >> iMip),
+					max(1, m_nDepth  >> iMip),
+					1, 1,
+					m_eSrcFormat,
+					eSrcTileMode);
 
 				CTexture::s_nTexturesDataBytesLoaded += nSrcSideSize;
 				if (iSide == 0 || (m_eFlags & FT_REPLICATE_TO_ALL_SIDES) == 0)
@@ -1095,7 +1087,7 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 	}
 
 	m_pFileTexMips->m_fMinMipFactor = StreamCalculateMipFactor((m_nMips - m_CacheFileHeader.m_nMipsPersistent) << 8);
-	m_nStreamFormatCode = StreamComputeFormatCode(m_nWidth, m_nHeight, m_nMips, m_eTFDst);
+	m_nStreamFormatCode = StreamComputeFormatCode(m_nWidth, m_nHeight, m_nMips, m_eDstFormat);
 
 	Relink();
 
@@ -1123,8 +1115,13 @@ bool CTexture::StreamPrepare_Finalise(bool bFromLoad)
 			// If native, assume we're tiled and prepped for the device - we shouldn't need to expand.
 			if (!mp->m_bNative)
 			{
-				int nSrcSideSize = TextureDataSize(max(1, m_nWidth >> iMip), max(1, m_nHeight >> iMip), max(1, m_nDepth >> iMip), 1, 1, m_eTFSrc);
-				ExpandMipFromFile(mp->DataArray, mh.m_SideSize, mp->DataArray, nSrcSideSize, m_eTFSrc);
+				int nSrcSideSize = CTexture::TextureDataSize(
+					max(1, m_nWidth  >> iMip),
+					max(1, m_nHeight >> iMip),
+					max(1, m_nDepth  >> iMip),
+					1, 1, m_eSrcFormat);
+
+				ExpandMipFromFile(mp->DataArray, mh.m_SideSize, mp->DataArray, nSrcSideSize, m_eSrcFormat, m_eDstFormat);
 			}
 		}
 	}
@@ -1246,7 +1243,7 @@ uint8 CTexture::StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nM
 		return 0;
 
 	// Must be PoT
-	if (nWidth & (nWidth - 1))
+	if (nWidth  & (nWidth  - 1))
 		return 0;
 	if (nHeight & (nHeight - 1))
 		return 0;
@@ -1260,7 +1257,7 @@ uint8 CTexture::StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nM
 	// Shift upto find aspect
 	while ((nWidth != nMaxDim) && (nHeight != nMaxDim))
 	{
-		nWidth <<= 1;
+		nWidth  <<= 1;
 		nHeight <<= 1;
 	}
 
@@ -1277,7 +1274,7 @@ uint8 CTexture::StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nM
 		memset(&code, 0, sizeof(code));
 		for (uint32 nMip = nTailMips, nMipWidth = nWidth, nMipHeight = nHeight; nMip < SStreamFormatCode::MaxMips; ++nMip, nMipWidth = max(1u, nMipWidth >> 1), nMipHeight = max(1u, nMipHeight >> 1))
 		{
-			uint32 nMip1Size = CDeviceTexture::TextureDataSize(nMipWidth, nMipHeight, 1, SStreamFormatCode::MaxMips - nMip, 1, fmt);
+			uint32 nMip1Size = CTexture::TextureDataSize(nMipWidth, nMipHeight, 1, SStreamFormatCode::MaxMips - nMip, 1, fmt);
 
 			bool bAppearsLinear = true;
 			bool bAppearsPoT = true;
@@ -1285,7 +1282,7 @@ uint8 CTexture::StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nM
 			// Determine how the size function varies with slices. Currently only supports linear, or aligning slices to next pot
 			for (uint32 nSlices = 1; nSlices <= 32; ++nSlices)
 			{
-				uint32 nMipSize = CDeviceTexture::TextureDataSize(nMipWidth, nMipHeight, 1, SStreamFormatCode::MaxMips - nMip, nSlices, fmt);
+				uint32 nMipSize = CTexture::TextureDataSize(nMipWidth, nMipHeight, 1, SStreamFormatCode::MaxMips - nMip, nSlices, fmt);
 
 				uint32 nExpectedLinearSize = nMip1Size * nSlices;
 				uint32 nAlignedSlices = 1u << (32 - (nSlices > 1 ? countLeadingZeros32(nSlices - 1) : 32));
@@ -1373,15 +1370,12 @@ bool CTexture::CanStreamInPlace(int nMip, STexPoolItem* pNewPoolItem)
 #if defined(SUPPORTS_INPLACE_TEXTURE_STREAMING)
 	if (CRendererCVars::CV_r_texturesstreamingInPlace)
 	{
-	#if !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_DURANGO
+	#if !CRY_PLATFORM_CONSOLE
 		if (m_eTT != eTT_2D)
 			return false;
-	#endif
 
-	#if !CRY_PLATFORM_DURANGO && !CRY_PLATFORM_ORBIS
 		bool bFormatCompatible = false;
-
-		switch (m_eTFSrc)
+		switch (m_eSrcFormat)
 		{
 		case eTF_DXT1:
 		case eTF_DXT3:
@@ -1431,7 +1425,7 @@ bool CTexture::CanStreamInPlace(int nMip, STexPoolItem* pNewPoolItem)
 
 	#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		CDeviceTexture* pDevTex = pNewPoolItem->m_pDevTexture;
-		if (m_eSrcTileMode != eTM_LinearPadded || !pDevTex->IsInPool() || !m_pFileTexMips->m_pMipHeader[nMip].m_InPlaceStreamable)
+		if (!pDevTex->IsInPool() || !m_pFileTexMips->m_pMipHeader[nMip].m_InPlaceStreamable)
 			return false;
 	#endif
 
@@ -1463,6 +1457,7 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 		if (pTex->IsStreaming())
 			__debugbreak();
 
+		// TODO: support eTT_2DArray and eTT_CubeArray
 		if (pTex->m_eTT != eTT_2D && pTex->m_eTT != eTT_Cube)
 			__debugbreak();
 
@@ -1528,10 +1523,13 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 				baseParams.nPerceptualImportance = nEndMip - nStartMip;
 				baseParams.eMediaType = (EStreamSourceMediaType)pTex->m_pFileTexMips->m_pMipHeader[nChunkMip].m_eMediaType;
 
+				streamRequests[nStreamRequests].params = baseParams;
+				streamRequests[nStreamRequests].pCallback = pStreamState;
+				streamRequests[nStreamRequests].szFile = chunk.fileName.c_str();
+				streamRequests[nStreamRequests].tSource = eStreamTaskTypeTexture;
+
 				if (pTex->CanStreamInPlace(nChunkMip, pNewPoolItem))
 				{
-					streamRequests[nStreamRequests].params = baseParams;
-
 					byte* pBaseAddress = NULL;
 
 #if CRY_PLATFORM_ORBIS
@@ -1565,22 +1563,10 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 						streamRequests[nStreamRequests].params.pBuffer = pBaseAddress;
 						mipState.m_bStreamInPlace = true;
 					}
+				}
 
-					streamRequests[nStreamRequests].pCallback = pStreamState;
-					streamRequests[nStreamRequests].szFile = chunk.fileName.c_str();
-					streamRequests[nStreamRequests].tSource = eStreamTaskTypeTexture;
-					++nStreamRequests;
-					++pStreamState->m_nAsyncRefCount;
-				}
-				else
-				{
-					streamRequests[nStreamRequests].params = baseParams;
-					streamRequests[nStreamRequests].pCallback = pStreamState;
-					streamRequests[nStreamRequests].szFile = chunk.fileName.c_str();
-					streamRequests[nStreamRequests].tSource = eStreamTaskTypeTexture;
-					++nStreamRequests;
-					++pStreamState->m_nAsyncRefCount;
-				}
+				++nStreamRequests;
+				++pStreamState->m_nAsyncRefCount;
 
 				nSizeToSubmit += pTex->m_pFileTexMips->m_pMipHeader[nChunkMip].m_SideSize * nSides;
 			}
