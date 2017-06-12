@@ -1,9 +1,9 @@
 {
 	"version": 1,
 	"type": "CRYENGINE Project",
-	"info": { "name": "CRYENGINE" },
+	"info": { "name": "CRYENGINE SDK" },
 	"content": {
-		"assets": [ "gamesdk" ],
+		"assets": [ "Assets" ],
 		"code": [ "" ],
 		"libs": [
 			{
