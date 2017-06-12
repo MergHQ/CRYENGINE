@@ -254,7 +254,6 @@ uint64 GetRTMask(const VCCloudRenderContext& context)
 	rtMask |= context.renderFogShadow ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 #if 0 // temporarily disabled until these features are implemented.
 	rtMask |= context.bUseLightning ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
-	rtMask |= context.sphericalCloudLayer ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 #endif
 	rtMask |= context.bReprojectionFromLeftToRight ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
 	rtMask |= context.bCloudVolTex ? g_HWSR_MaskBit[HWSR_SAMPLE3] : 0;

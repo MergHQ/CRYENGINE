@@ -26,7 +26,7 @@ public:
 	// ~CNativeEntityBase
 
 	// IEntityPropertyGroup
-	virtual const char* GetLabel() const override { return "AudioAreaAmbience Properties"; }
+	virtual const char* GetLabel() const override { return "AudioAreaRandom Properties"; }
 
 	virtual void        SerializeProperties(Serialization::IArchive& archive) override;
 	// ~IEntityPropertyGroup

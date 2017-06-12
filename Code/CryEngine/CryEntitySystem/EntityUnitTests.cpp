@@ -13,6 +13,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 	CRY_UNIT_TEST(SpawnTest)
 	{
 		SEntitySpawnParams params;
+		params.guid = CryGUID::Create();
 		params.sName = "TestEntity";
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY;
 		params.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
@@ -20,6 +21,8 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		IEntity *pEntity = gEnv->pEntitySystem->SpawnEntity(params);
 		EntityId id = pEntity->GetId();
 		CRY_UNIT_TEST_ASSERT(pEntity != NULL);
+
+		CRY_UNIT_TEST_ASSERT( pEntity->GetGuid() != CryGUID::Null() );
 
 		CRY_UNIT_TEST_CHECK_EQUAL(id, gEnv->pEntitySystem->FindEntityByGuid(pEntity->GetGuid()));
 		CRY_UNIT_TEST_CHECK_EQUAL(pEntity, gEnv->pEntitySystem->FindEntityByName(params.sName));
