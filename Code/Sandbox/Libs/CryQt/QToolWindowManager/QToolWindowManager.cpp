@@ -747,8 +747,6 @@ void QToolWindowManager::finishWrapperDrag()
 	}
 	if (target.reference != QToolWindowAreaReference::Floating)
 	{
-		qApp->processEvents();
-		QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 		notifyLayoutChange();
 	}
 	updateTrackingTooltip("", QPoint());
@@ -1098,7 +1096,11 @@ QSplitter *QToolWindowManager::restoreSplitterState(const QVariantMap &data, int
 		QString itemType = itemValue["type"].toString();
 		if (itemType == "splitter")
 		{
-			splitter->addWidget(restoreSplitterState(itemValue, stateFormat));
+			QWidget* w = restoreSplitterState(itemValue, stateFormat);
+			if (w)
+			{
+				splitter->addWidget(w);
+			}
 		}
 		else if (itemType == "area")
 		{
