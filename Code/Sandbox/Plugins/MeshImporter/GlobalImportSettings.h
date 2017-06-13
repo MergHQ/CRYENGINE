@@ -26,6 +26,7 @@ private:
 	{
 		bool                bMergeAllNodes;
 		bool                bSceneOrigin;
+		bool                bComputeNormals;
 
 		SStaticMeshSettings();
 
@@ -71,6 +72,7 @@ public:
 	FbxTool::Axes::EAxis             GetForwardAxis();
 	bool                             IsMergeAllNodes() const;
 	bool                             IsSceneOrigin() const;
+	bool                             IsComputeNormals() const;
 
 	void                             SetInputFilePath(const string& path);
 	void                             SetOutputFilePath(const string& path);
@@ -83,6 +85,7 @@ public:
 	void                             SetUpAxis(FbxTool::Axes::EAxis axis);
 	void                             SetMergeAllNodes(bool bMergeAllNodes);
 	void                             SetSceneOrigin(bool bSceneOrigin);
+	void                             SetComputeNormals(bool bComputeNormals);
 
 	bool                             IsVertexPositionFormatF32() const;
 	void                             SetVertexPositionFormatF32(bool bIs32Bit);

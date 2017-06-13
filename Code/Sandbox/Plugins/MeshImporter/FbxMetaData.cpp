@@ -144,11 +144,9 @@ static void Serialize(yasli::Archive& ar, SMetaData& value)
 	ar(value.scale, "scale", "Scale (size multiplier).");
 	ar(value.forwardUpAxes, "forward_up_axes", "World axes");
 
-	if (ar.isOutput())
-	{
-		ar(value.bMergeAllNodes, "merge_all_nodes", "Merge all nodes");
-		ar(value.bSceneOrigin, "scene_origin", "true - use scene's origin, false - use origins of root nodes");
-	}
+	ar(value.bMergeAllNodes, "merge_all_nodes", "Merge all nodes");
+	ar(value.bSceneOrigin, "scene_origin", "true - use scene's origin, false - use origins of root nodes");
+	ar(value.bComputeNormals, "ignore_custom_normals", "true - use computed normal, false - use fbx normals");
 
 	ar(value.materialData, "materials", "Materials");
 	ar(value.nodeData, "nodes");
@@ -236,6 +234,7 @@ SMetaData::SMetaData()
 	, bSceneOrigin(false)
 	, pAutoLodSettings(new CAutoLodSettings())
 	, bVertexPositionFormatF32(false)
+	, bComputeNormals(false)
 {}
 
 SMetaData::SMetaData(const SMetaData& other)
@@ -246,15 +245,16 @@ SMetaData::SMetaData(const SMetaData& other)
 	, materialFilename(other.materialFilename)
 	, unit(other.unit)
 	, scale(other.scale)
+	, forwardUpAxes(other.forwardUpAxes)
 	, bMergeAllNodes(other.bMergeAllNodes)
 	, bSceneOrigin(other.bSceneOrigin)
-	, forwardUpAxes(other.forwardUpAxes)
+	, bVertexPositionFormatF32(other.bVertexPositionFormatF32)
+	, bComputeNormals(other.bComputeNormals)
 	, materialData(other.materialData)
 	, nodeData(other.nodeData)
 	, animationClip(other.animationClip)
 	, jointPhysicsData(other.jointPhysicsData)
 	, pAutoLodSettings(other.pAutoLodSettings)
-	, bVertexPositionFormatF32(other.bVertexPositionFormatF32)
 {
 	if (other.pEditorMetaData)
 	{
@@ -277,11 +277,12 @@ SMetaData& SMetaData::operator=(const SMetaData& other)
 
 	unit = other.unit;
 	scale = other.scale;
+	forwardUpAxes = other.forwardUpAxes;
 
 	bMergeAllNodes = other.bMergeAllNodes;
 	bSceneOrigin = other.bSceneOrigin;
-
-	forwardUpAxes = other.forwardUpAxes;
+	bVertexPositionFormatF32 = other.bVertexPositionFormatF32;
+	bComputeNormals = other.bComputeNormals;
 
 	materialData = other.materialData;
 	nodeData = other.nodeData;
@@ -296,8 +297,6 @@ SMetaData& SMetaData::operator=(const SMetaData& other)
 	}
 
 	pAutoLodSettings = other.pAutoLodSettings;
-
-	bVertexPositionFormatF32 = other.bVertexPositionFormatF32;
 
 	return *this;
 }

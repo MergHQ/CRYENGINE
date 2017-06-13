@@ -187,6 +187,8 @@ struct SMetaData
 
 	bool bMergeAllNodes;
 	bool bSceneOrigin;
+	bool bComputeNormals;
+	bool bVertexPositionFormatF32;
 
 	// Format is "<signOfForwardAxis><forwardAxis><signOfUpAxis><upAxis>".
 	// Example: "-Y+Z".
@@ -202,9 +204,7 @@ struct SMetaData
 	// Editor state.
 	std::unique_ptr<IEditorMetaData> pEditorMetaData;  //!< Used to restore state of editor. Ignored by RC.
 
-	std::shared_ptr<CAutoLodSettings>         pAutoLodSettings;
-
-	bool bVertexPositionFormatF32;
+	std::shared_ptr<CAutoLodSettings> pAutoLodSettings;
 
 	SMetaData();
 	SMetaData(const SMetaData& other);

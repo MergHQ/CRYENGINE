@@ -2883,6 +2883,10 @@ bool CMainDialog::CreateMetaData(FbxMetaData::SMetaData& metaData, const QString
 	// Write node meta data.
 	WriteNodeMetaData(metaData, pScene);
 
+	metaData.bMergeAllNodes = m_pGlobalImportSettings->IsMergeAllNodes();
+	metaData.bSceneOrigin = m_pGlobalImportSettings->IsSceneOrigin();
+	metaData.bComputeNormals = m_pGlobalImportSettings->IsComputeNormals();
+
 	// Output settings
 	metaData.bVertexPositionFormatF32 = m_pGlobalImportSettings->IsVertexPositionFormatF32();
 
@@ -3055,10 +3059,10 @@ void CMainDialog::ApplyMetaDataCommon(const FbxMetaData::SMetaData& metaData)
 
 	assert(m_pGlobalImportSettings);
 
-	// Restore settings not passed to RC
 	m_pGlobalImportSettings->SetMergeAllNodes(metaData.bMergeAllNodes);
 	m_pGlobalImportSettings->SetSceneOrigin(metaData.bSceneOrigin);
 	m_pGlobalImportSettings->SetVertexPositionFormatF32(metaData.bVertexPositionFormatF32);
+	m_pGlobalImportSettings->SetComputeNormals(metaData.bComputeNormals);
 
 	m_pGlobalImportSettingsTree->revert();
 
