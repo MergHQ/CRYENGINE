@@ -111,6 +111,12 @@ bool CHDRPostProcess::CreateRenderTargetList()
 		pTex->SetWidth(drt.nWidth);
 		pTex->SetHeight(drt.nHeight);
 		pTex->CreateRenderTarget(drt.Format, drt.cClearColor);
+
+		if (!(pTex->GetFlags() & FT_FAILED))
+		{
+			// Clear render target surface before using it
+			pTex->Clear();
+		}
 	}
 
 	m_pRenderTargets.clear();
