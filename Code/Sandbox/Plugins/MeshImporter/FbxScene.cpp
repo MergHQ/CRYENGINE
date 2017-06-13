@@ -1528,6 +1528,10 @@ static const SNode* FindChildNode(
 
 const SNode* FindChildNode(const SNode* pParent, const std::vector<string>& path)
 {
+	if (path.empty())
+	{
+		return nullptr;
+	}
 	return FindChildNode(pParent, path.cbegin(), path.cend());
 }
 

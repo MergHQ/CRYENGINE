@@ -160,6 +160,7 @@ namespace Serialization
 		ar(value.bMergeAllNodes, "merge_all_nodes", "Merge all nodes");
 		ar(value.bSceneOrigin, "scene_origin", "true - use scene's origin, false - use origins of root nodes");
 		ar(value.bIgnoreCustomNormals, "ignore_custom_normals", "Ignore Custom Normals");
+		ar(value.bIgnoreTextureCoordinates, "ignore_uv", "Ignore Texture Coordinates");
 
 		ar(value.materials, "materials", "Materials");
 

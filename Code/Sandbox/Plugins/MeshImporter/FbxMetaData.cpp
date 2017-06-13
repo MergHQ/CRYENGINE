@@ -147,6 +147,7 @@ static void Serialize(yasli::Archive& ar, SMetaData& value)
 	ar(value.bMergeAllNodes, "merge_all_nodes", "Merge all nodes");
 	ar(value.bSceneOrigin, "scene_origin", "true - use scene's origin, false - use origins of root nodes");
 	ar(value.bComputeNormals, "ignore_custom_normals", "true - use computed normal, false - use fbx normals");
+	ar(value.bComputeUv, "ignore_uv", "true - use computed texture coordinates, false - use fbx texture coordinates");
 
 	ar(value.materialData, "materials", "Materials");
 	ar(value.nodeData, "nodes");
@@ -235,6 +236,7 @@ SMetaData::SMetaData()
 	, pAutoLodSettings(new CAutoLodSettings())
 	, bVertexPositionFormatF32(false)
 	, bComputeNormals(false)
+	, bComputeUv(false)
 {}
 
 SMetaData::SMetaData(const SMetaData& other)
@@ -250,6 +252,7 @@ SMetaData::SMetaData(const SMetaData& other)
 	, bSceneOrigin(other.bSceneOrigin)
 	, bVertexPositionFormatF32(other.bVertexPositionFormatF32)
 	, bComputeNormals(other.bComputeNormals)
+	, bComputeUv(other.bComputeUv)
 	, materialData(other.materialData)
 	, nodeData(other.nodeData)
 	, animationClip(other.animationClip)
@@ -283,6 +286,7 @@ SMetaData& SMetaData::operator=(const SMetaData& other)
 	bSceneOrigin = other.bSceneOrigin;
 	bVertexPositionFormatF32 = other.bVertexPositionFormatF32;
 	bComputeNormals = other.bComputeNormals;
+	bComputeUv = other.bComputeUv;
 
 	materialData = other.materialData;
 	nodeData = other.nodeData;

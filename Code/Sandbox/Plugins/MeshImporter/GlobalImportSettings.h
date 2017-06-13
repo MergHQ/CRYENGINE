@@ -27,6 +27,7 @@ private:
 		bool                bMergeAllNodes;
 		bool                bSceneOrigin;
 		bool                bComputeNormals;
+		bool                bComputeUv;
 
 		SStaticMeshSettings();
 
@@ -73,6 +74,7 @@ public:
 	bool                             IsMergeAllNodes() const;
 	bool                             IsSceneOrigin() const;
 	bool                             IsComputeNormals() const;
+	bool                             IsComputeUv() const;
 
 	void                             SetInputFilePath(const string& path);
 	void                             SetOutputFilePath(const string& path);
@@ -86,6 +88,7 @@ public:
 	void                             SetMergeAllNodes(bool bMergeAllNodes);
 	void                             SetSceneOrigin(bool bSceneOrigin);
 	void                             SetComputeNormals(bool bComputeNormals);
+	void                             SetComputeUv(bool bComputeUv);
 
 	bool                             IsVertexPositionFormatF32() const;
 	void                             SetVertexPositionFormatF32(bool bIs32Bit);

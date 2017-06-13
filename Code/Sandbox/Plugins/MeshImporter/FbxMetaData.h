@@ -188,6 +188,7 @@ struct SMetaData
 	bool bMergeAllNodes;
 	bool bSceneOrigin;
 	bool bComputeNormals;
+	bool bComputeUv;
 	bool bVertexPositionFormatF32;
 
 	// Format is "<signOfForwardAxis><forwardAxis><signOfUpAxis><upAxis>".

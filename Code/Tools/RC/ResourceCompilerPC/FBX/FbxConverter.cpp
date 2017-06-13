@@ -1112,8 +1112,8 @@ private:
 	// Stores indices of a joint and proxy node for node paths of a SJointPhysicsData object.
 	struct SProxyBinding
 	{
-		const int jointNode;
-		const int proxyNode;
+		const int jointNode; // index in [0, m_pScene->GetNodeCount()).
+		const int proxyNode; // index in [0, m_pScene->GetNodeCount()).
 		const CImportRequest::SJointPhysicsData jpd;
 
 		SProxyBinding(int jointNode, int proxyNode, const CImportRequest::SJointPhysicsData& jpd)
@@ -1143,8 +1143,11 @@ private:
 	void GetJointBindings(
 		const std::vector<CImportRequest::SJointPhysicsData>& jointPhysicsData,
 		std::vector<SProxyBinding>& pb,
-		std::vector<SJointLimitBinding>& jlb) const
+		std::vector<SJointLimitBinding>& jlb,
+		std::vector<int>& mapNodeToProxyBinding) const
 	{
+		assert(mapNodeToProxyBinding.size() == m_pScene->GetNodeCount());
+
 		pb.clear();
 		pb.reserve(jointPhysicsData.size());
 
@@ -1157,13 +1160,14 @@ private:
 
 			const int jointNode = FindMatchingNodeInScene(jpd.jointNodePath);
 			if (jointNode == -1)
-	{
+			{
 				continue;
 			}
 
 			const int proxyNode = FindMatchingNodeInScene(jpd.proxyNodePath);
 			if (proxyNode > 0)
 			{
+				mapNodeToProxyBinding[jointNode] = pb.size();
 				pb.emplace_back(jointNode, proxyNode, jpd);
 			}
 
@@ -1177,82 +1181,8 @@ private:
 		}
 	}
 
-	// Parameter "nodes" is a vector of indices of m_pScene->m_nodes.
-	// Let v be the vector returned by this function, and i some node index in [0, m_pScene->GetNodeCount()).
-	// Then v[i] = true, if there exists some node j in parameter "nodes", such that i lies on a path from the root to j.
-	std::vector<bool> MarkNodePaths(const std::vector<int>& nodes) const
+	static void BuildPhysicalProxyFromMesh(PhysicalProxy& pp, const MeshUtils::Mesh& mesh)
 	{
-		std::vector<bool> v(m_pScene->GetNodeCount(), false);
-		for (int node : nodes)
-		{
-			while (node > 0 && !v[node])
-			{
-				v[node] = true;
-				node = m_pScene->GetNode(node)->parent;
-			}
-		}
-		return v;
-	}
-
-	void ComputeNodeInfos(std::vector<NodeInfo>& nodeInfos, const std::vector<bool>& markedNodes, std::vector<int>& remap) const
-	{
-		nodeInfos.reserve(markedNodes.size());
-		remap.resize(m_pScene->GetNodeCount(), -1);
-		for (int i = 0, N = m_pScene->GetNodeCount(); i < N; ++i)
-		{
-			if (!markedNodes[i])
-			{
-				continue;
-			}
-
-			const Scene::SNode* const pNode = m_pScene->GetNode(i);
-			assert(pNode);
-
-			remap[i] = (int)nodeInfos.size();
-			nodeInfos.emplace_back();
-
-			NodeInfo& ni = nodeInfos.back();
-			ni.parentNode = remap[pNode->parent];
-			ni.sourceSceneNode = i;
-
-			ni.worldOriginal = m_sceneWorldToCryWorldTM * pNode->worldTransform;
-			ni.worldOriginal.SetTranslation(ni.worldOriginal.GetTranslation() * m_scale);
-
-			ni.geometryOffset = pNode->geometryOffset;
-			ni.geometryOffset.SetTranslation(ni.geometryOffset.GetTranslation() * m_scale);
-
-			ni.world = Matrix34(IDENTITY);
-		}
-	}
-
-	void StoreOriginalWorldTransforms(std::vector<NodeInfo>& nodeInfos) const
-	{
-		for (size_t i = 0, N = (int)nodeInfos.size(); i < N; ++i)
-		{
-			NodeInfo& ni = nodeInfos[i];
-			ni.world = TransformHelpers::ComputeOrthonormalMatrix(ni.worldOriginal);
-		}
-	}
-
-	void ComputeProxyTransforms(std::vector<NodeInfo>& nodeInfos, const std::vector<int>& remap, const std::vector<SProxyBinding>& proxyBindings) const
-	{
-		for (int i = 0, N = (int)proxyBindings.size(); i < N; ++i)
-		{
-			const auto& pb = proxyBindings[i];
-			NodeInfo& ni = nodeInfos[remap[pb.proxyNode]];
-			ni.world = nodeInfos[remap[pb.jointNode]].world;
-
-			if (pb.jpd.bSnapToJoint)
-			{
-				ni.worldOriginal = nodeInfos[remap[pb.jointNode]].worldOriginal;
-			}
-		}
-	}
-
-	static PhysicalProxy CreatePhysicalProxyFromMesh(const MeshUtils::Mesh& mesh)
-	{
-		PhysicalProxy pp;
-
 		pp.ChunkID = -1;
 
 		pp.m_arrPoints.reserve(mesh.m_positions.size());
@@ -1275,63 +1205,45 @@ private:
 			// pp.m_arrMaterials.push_back(id);
 			pp.m_arrMaterials.push_back(0);
 		}
-
-		return pp;
 	}
 
-	void WriteBoneMesh(
-		std::vector<int>& nodeBoneMeshes,  // Maps scene nodes to bone meshes.
-		DynArray<PhysicalProxy>& boneMeshes,
-		const std::vector<SProxyBinding>& proxyBindings,
-		const std::vector<bool>& isBone,
+	bool BuildPhysicalProxy(
+		PhysicalProxy& boneMesh, // out 
+		const NodeInfo& boneNodeInfo,
+		const Matrix34& boneWorldTransform,
+		const SProxyBinding& proxyBinding,
 		CExportMaterial& exportMaterial,
 		const std::vector<int>& mapSceneNodesToBoneId) const
 	{
-		boneMeshes.clear();
+		const int jointIndex = proxyBinding.jointNode;
+		assert(mapSceneNodesToBoneId[jointIndex] != -1);
 
-		nodeBoneMeshes.resize(m_pScene->GetNodeCount(), -1);
+		const Scene::SNode* const pProxyNode = m_pScene->GetNode(proxyBinding.proxyNode);
+		assert(pProxyNode);
 
-		std::vector<int> needTransform;
-		needTransform.reserve(2 * proxyBindings.size());
-		for (const auto& pb : proxyBindings)
+		NodeInfo proxyNodeInfo;
+		proxyNodeInfo.sourceSceneNode = proxyBinding.proxyNode;
+		proxyNodeInfo.worldOriginal = m_sceneWorldToCryWorldTM * pProxyNode->worldTransform;
+		proxyNodeInfo.worldOriginal.SetTranslation(proxyNodeInfo.worldOriginal.GetTranslation() * m_scale);
+		proxyNodeInfo.geometryOffset = pProxyNode->geometryOffset;
+		proxyNodeInfo.geometryOffset.SetTranslation(proxyNodeInfo.geometryOffset.GetTranslation() * m_scale);
+		proxyNodeInfo.world = boneWorldTransform;
+		if (proxyBinding.jpd.bSnapToJoint)
 		{
-			needTransform.push_back(pb.proxyNode);
-			needTransform.push_back(pb.jointNode);
+			proxyNodeInfo.worldOriginal = boneNodeInfo.worldOriginal;
 		}
 
-		const std::vector<bool> computeMask = MarkNodePaths(needTransform);
-
-		std::vector<int> remap;
-
-		std::vector<NodeInfo> nodeInfos;
-		ComputeNodeInfos(nodeInfos, computeMask, remap);
-		StoreOriginalWorldTransforms(nodeInfos);
-		ComputeProxyTransforms(nodeInfos, remap, proxyBindings);
-
-		for (const auto& p : proxyBindings)
+		MeshUtils::Mesh m;
+		if (!BuildMesh(m, proxyNodeInfo, m_pScene, exportMaterial.m_pCgfMaterial, exportMaterial.m_matIds, mapSceneNodesToBoneId))
 		{
-			const int jointIndex = p.jointNode;
-
-			if (!isBone[jointIndex])
-			{
-				continue;
-			}
-
-			MeshUtils::Mesh m;
-			if (!BuildMesh(m, nodeInfos[remap[p.proxyNode]], m_pScene, exportMaterial.m_pCgfMaterial, exportMaterial.m_matIds, mapSceneNodesToBoneId))
-			{
-				RCLogWarning("Failed to compose proxy mesh for joint '%s' with proxy '%s'",
-					m_pScene->GetNode(jointIndex)->name,
-					m_pScene->GetNode(p.proxyNode)->name);
-				continue;
-			}
-
-			PhysicalProxy physicalProxy = CreatePhysicalProxyFromMesh(m);
-
-			nodeBoneMeshes[jointIndex] = boneMeshes.size();
-
-			boneMeshes.push_back(physicalProxy);
+			RCLogWarning("Failed to compose proxy mesh for joint '%s' with proxy '%s'",
+				m_pScene->GetNode(jointIndex)->name,
+				m_pScene->GetNode(proxyBinding.proxyNode)->name);
+			return false;
 		}
+
+		BuildPhysicalProxyFromMesh(boneMesh, m);
+		return true;
 	}
 
 	static void WriteBoneDefaults(BONE_ENTITY& e)
@@ -1426,14 +1338,13 @@ private:
 		CSkinningInfo* const pSkinningInfo = cgf.GetSkinningInfo();
 		pSkinningInfo->m_arrBoneEntities.resize(boneCount);
 		pSkinningInfo->m_arrBonesDesc.resize(boneCount);
+		pSkinningInfo->m_arrPhyBoneMeshes.clear();
 
 		std::vector<SProxyBinding> proxyBindings;
 		std::vector<SJointLimitBinding> limitBindings;
-		GetJointBindings(jointPhysicsData, proxyBindings, limitBindings);
-
-		std::vector<int> ids;
-
-		WriteBoneMesh(ids, pSkinningInfo->m_arrPhyBoneMeshes, proxyBindings, isBone, exportMaterial, mapNodeToBoneId);
+		std::vector<int> mapNodeToProxyBinding;
+		mapNodeToProxyBinding.resize(sceneNodeCount, -1);
+		GetJointBindings(jointPhysicsData, proxyBindings, limitBindings, mapNodeToProxyBinding);
 
 		for (const auto& node : m_nodes)
 		{
@@ -1452,7 +1363,7 @@ private:
 			boneEntity.ControllerID = SkeletonHelpers::ComputeControllerId(node.pName->c_str());
 			boneEntity.prop[0] = 0;
 			WriteBoneDefaults(boneEntity);
-			boneEntity.phys.nPhysGeom = ids[node.sourceSceneNode];
+			boneEntity.phys.nPhysGeom = -1;
 
 			CryBoneDescData& boneDesc = pSkinningInfo->m_arrBonesDesc[boneID];
 			memset(&boneDesc, 0, sizeof(boneDesc));
@@ -1485,6 +1396,18 @@ private:
 			}
 
 			boneDesc.m_DefaultW2B = boneDesc.m_DefaultB2W.GetInverted();
+
+			// if the bone has physical proxy.
+			int proxyBindingId = mapNodeToProxyBinding[node.sourceSceneNode];
+			if (proxyBindingId != -1)
+			{
+				PhysicalProxy proxy;
+				if (BuildPhysicalProxy(proxy, node, boneDesc.m_DefaultB2W, proxyBindings[proxyBindingId], exportMaterial, mapNodeToBoneId))
+				{
+					boneEntity.phys.nPhysGeom = pSkinningInfo->m_arrPhyBoneMeshes.size();
+					pSkinningInfo->m_arrPhyBoneMeshes.push_back(proxy);
+				}
+			}
 		}
 
 		WriteJointLimits(pSkinningInfo->m_arrBoneEntities, limitBindings, mapNodeToBoneId);
@@ -1838,6 +1761,45 @@ private:
 		CSaverAnim::SaveTiming(&chunkFile, startFrame, endFrame);
 
 		std::vector<CryKeyPQS> frames(frameCount);
+
+		// If the root bone has translation or scale or it is not ortonormal. 
+		const bool bNontrivialRoot = std::any_of(m_nodes.begin(), m_nodes.end(), [&mapSceneNodesToBoneId](const auto& node)
+		{
+			if (node.parentNode != -1)
+			{
+				return false;
+			}
+
+			// bones only.
+			const int boneId = mapSceneNodesToBoneId[node.sourceSceneNode];
+			if (boneId == -1)
+			{
+				return false;
+			}
+
+			Vec3 t;
+			Quat r;
+			Vec3 s;
+			GetDecomposedTransform(node.worldOriginal, t, r, s);
+
+			if (!IsEquivalent(s, Vec3(1)))
+			{
+				return true;
+			}
+
+			if (!IsEquivalent(t, Vec3(0)))
+			{
+				return true;
+			}
+
+			if (!node.worldOriginal.IsOrthonormal())
+			{
+				return true;
+			}
+
+			return false;
+		});
+
 		for (const auto& node : m_nodes)
 		{
 			const int boneId = mapSceneNodesToBoneId[node.sourceSceneNode];
@@ -1850,14 +1812,34 @@ private:
 
 			for (int frame = 0; frame < frameCount; ++frame)
 			{
-				const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(node.sourceSceneNode, startFrame + frame);
-				Matrix34 nodeTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
-
+				Matrix34 nodeTransform(IDENTITY);
 				Matrix34 parentTransform(IDENTITY);
-				if (node.parentNode != -1)
+
+				if (bNontrivialRoot)
 				{
-					const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(m_nodes[node.parentNode].sourceSceneNode, startFrame + frame);
-					parentTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
+					// Move root animation to child node.
+					if (node.parentNode != -1)
+					{
+						const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(node.sourceSceneNode, startFrame + frame);
+						nodeTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
+
+						if (m_nodes[node.parentNode].parentNode != -1)
+						{
+							const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(m_nodes[node.parentNode].sourceSceneNode, startFrame + frame);
+							parentTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
+						}
+					}
+				}
+				else
+				{
+					const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(node.sourceSceneNode, startFrame + frame);
+					nodeTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
+
+					if (node.parentNode != -1)
+					{
+						const Scene::STrs trs = m_pScene->EvaluateNodeGlobalTransform(m_nodes[node.parentNode].sourceSceneNode, startFrame + frame);
+						parentTransform = m_sceneWorldToCryWorldTM * Matrix34::Create(trs.scale, trs.rotation, trs.translation);
+					}
 				}
 
 				nodeTransform = parentTransform.GetInverted() * nodeTransform;
@@ -2727,7 +2709,7 @@ bool CFbxConverter::Process()
 
 			CryFbxScene scene;
 
-			scene.LoadScene(inputFilepath, m_CC.pRC->GetVerbosityLevel() > 0, false);
+			scene.LoadScene(inputFilepath, m_CC.pRC->GetVerbosityLevel() > 0, false, false);
 
 			return ValidateSceneAndCreateManifestFile(&scene, inputFilepath, sManifestFile);
 		}
@@ -2785,12 +2767,13 @@ bool CFbxConverter::Process()
 	const string outputFilename = PathHelpers::ReplaceExtension(inputFilepath, ir.outputFilenameExt).c_str();
 	const bool bVerboseLog = m_CC.pRC->GetVerbosityLevel() > 0;
 	const bool bCollectSkinningInfo = ir.outputFilenameExt != "cgf";
+	const bool bGenerateTextureCoordinates = ir.bIgnoreTextureCoordinates;
 
 	RCLog("Importing scene from file '%s' to '%s'", sourceSceneFilename.c_str(), outputFilename.c_str());
 
 	CryFbxScene scene;
 
-	if (!scene.LoadScene(sourceSceneFilename.c_str(), bVerboseLog, bCollectSkinningInfo))
+	if (!scene.LoadScene(sourceSceneFilename.c_str(), bVerboseLog, bCollectSkinningInfo, bGenerateTextureCoordinates))
 	{
 		return false;
 	}
