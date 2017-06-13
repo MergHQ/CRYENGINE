@@ -1581,6 +1581,12 @@ struct IRendererEngineModule : public Cry::IDefaultModule
 //////////////////////////////////////////////////////////////////////
 struct IRenderer//: public IRendererCallbackServer
 {
+	enum EViewportType
+	{
+		eViewportType_Default,
+		eViewportType_Secondary,
+	};
+
 	virtual ~IRenderer(){}
 	virtual void        AddListener(IRendererEventListener* pRendererEventListener) = 0;
 	virtual void        RemoveListener(IRendererEventListener* pRendererEventListener) = 0;
@@ -2111,7 +2117,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//////////////////////////////////////////////////////////////////////
 	//! Interface for auxiliary geometry (for debugging, editor purposes, etc.)
-	virtual IRenderAuxGeom* GetIRenderAuxGeom(void* jobID = 0) = 0;
+	virtual IRenderAuxGeom* GetIRenderAuxGeom(EViewportType viewport = eViewportType_Default) = 0;
 	//////////////////////////////////////////////////////////////////////
 
 	//! Interface for renderer side SVO.

@@ -6536,7 +6536,7 @@ void CD3D9Renderer::Set2DMode(bool enable, int ortox, int ortoy, float znear, fl
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 		if (m_pRenderAuxGeomD3D)
-			m_pRenderAuxGeomD3D->SetOrthoMode(true, m);
+			m_pRenderAuxGeomD3D->GetRenderAuxGeom()->SetOrthoMode(true, m);
 #endif
 		EF_PushMatrix();
 		m_RP.m_TI[nThreadID].m_matView->LoadIdentity();
@@ -6551,7 +6551,7 @@ void CD3D9Renderer::Set2DMode(bool enable, int ortox, int ortoy, float znear, fl
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 		if (m_pRenderAuxGeomD3D)
-			m_pRenderAuxGeomD3D->SetOrthoMode(false);
+			m_pRenderAuxGeomD3D->GetRenderAuxGeom()->SetOrthoMode(false);
 #endif
 		m_RP.m_TI[nThreadID].m_matProj->Pop();
 		EF_PopMatrix();
@@ -7050,11 +7050,20 @@ void CD3D9Renderer::SetMouseCursorIconCVar(ICVar* pVar)
 	gEnv->pHardwareMouse->SetCursor(pVar->GetString());
 }
 
-IRenderAuxGeom* CD3D9Renderer::GetIRenderAuxGeom(void* jobID /*= 0*/)
+IRenderAuxGeom* CD3D9Renderer::GetIRenderAuxGeom(EViewportType viewport)
 {
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	if (m_pRenderAuxGeomD3D)
-		return m_pRenderAuxGeomD3D->GetRenderAuxGeom(jobID);
+	{
+		if (viewport == eViewportType_Default)
+		{
+			return m_pRenderAuxGeomD3D->GetRenderAuxGeom();
+		}
+		else if (viewport == eViewportType_Secondary)
+		{
+			return m_pRenderAuxGeomD3D->GetRenderAuxGeom((void*)eViewportType_Secondary);
+		}
+	}
 #endif
 	return &m_renderAuxGeomNull;
 }

@@ -1218,7 +1218,7 @@ public:
 	virtual ISvoRenderer* GetISvoRenderer() override;
 #endif
 
-	virtual IRenderAuxGeom* GetIRenderAuxGeom(void* jobID = 0) override;
+	virtual IRenderAuxGeom* GetIRenderAuxGeom(EViewportType viewport = eViewportType_Default) override;
 
 	virtual IColorGradingController* GetIColorGradingController() override;
 
