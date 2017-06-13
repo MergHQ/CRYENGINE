@@ -2451,7 +2451,7 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 			i=m_nQueueSlotsAlloc; m_nQueueSlotsAlloc=m_nQueueSlotsAllocAux; m_nQueueSlotsAllocAux=i;
 			i=m_nQueueSlotSize; m_nQueueSlotSize=m_nQueueSlotSizeAux; m_nQueueSlotSizeAux=i;
 		}
-		if (time_interval>0)
+		if (time_interval>0 && !(flags & ent_flagged_only))
 			MarkAsPhysThread();
 		phys_geometry *pgeom;
 		for(i=0; i<nQueueSlots; i++) for(j=0; (iter=*(int*)(pQueueSlots[i]+j))!=-1; j+=*(int*)(pQueueSlots[i]+j+sizeof(int))) {
