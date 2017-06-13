@@ -20,6 +20,7 @@ CEntityComponentAudio::CEntityComponentAudio()
 	, m_fadeDistance(0.0f)
 	, m_environmentFadeDistance(0.0f)
 {
+	m_componentFlags.Add(EEntityComponentFlags::NoSave);
 }
 
 //////////////////////////////////////////////////////////////////////////

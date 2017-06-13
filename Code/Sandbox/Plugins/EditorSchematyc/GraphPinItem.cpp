@@ -102,7 +102,7 @@ bool CPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) con
 	{
 		if (m_pinType == EPinType::Data || !IsConnected())
 		{
-			return (pOtherPin != this);
+			return true;
 		}
 	}
 

@@ -610,39 +610,45 @@ void CParticleSubEmitter::UpdateAudio()
 				m_pIAudioObject->ExecuteTrigger(m_startAudioTriggerId);
 			}
 		}
-		else
+		else if (m_bExecuteAudioTrigger)
 		{
-			if (!params.sStartTrigger.empty())
+			float fAge = GetAge();
+			float fAge0 = m_fStartAge;
+			float fAge1 = m_fStartAge + GetParticleTimer()->GetFrameTime();
+			if (fAge >= fAge0 && fAge <= fAge1)
 			{
-				gEnv->pAudioSystem->GetTriggerId(params.sStartTrigger.c_str(), m_startAudioTriggerId);
-			}
-
-			if (!params.sStopTrigger.empty())
-			{
-				gEnv->pAudioSystem->GetTriggerId(params.sStopTrigger.c_str(), m_stopAudioTriggerId);
-			}
-
-			if (m_startAudioTriggerId != CryAudio::InvalidControlId || m_stopAudioTriggerId != CryAudio::InvalidControlId)
-			{
-				CryAudio::SCreateObjectData const objectData("ParticleSubEmitter", spawnParams.occlusionType, GetEmitTM(), INVALID_ENTITYID, true);
-				m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
-				m_currentAudioOcclusionType = spawnParams.occlusionType;
-
-				if (!spawnParams.audioRtpc.empty())
+				if (!params.sStartTrigger.empty())
 				{
-					gEnv->pAudioSystem->GetParameterId(spawnParams.audioRtpc.c_str(), m_audioParameterId);
-
-					if (m_audioParameterId != CryAudio::InvalidControlId)
-					{
-						float const value = params.fSoundFXParam(m_ChaosKey, GetStrength(0.0f, params.eSoundControlTime));
-						m_pIAudioObject->SetParameter(m_audioParameterId, value);
-					}
+					gEnv->pAudioSystem->GetTriggerId(params.sStartTrigger.c_str(), m_startAudioTriggerId);
 				}
 
-				// Execute start trigger immediately.
-				if (m_startAudioTriggerId != CryAudio::InvalidControlId)
+				if (!params.sStopTrigger.empty())
 				{
-					m_pIAudioObject->ExecuteTrigger(m_startAudioTriggerId);
+					gEnv->pAudioSystem->GetTriggerId(params.sStopTrigger.c_str(), m_stopAudioTriggerId);
+				}
+
+				if (m_startAudioTriggerId != CryAudio::InvalidControlId || m_stopAudioTriggerId != CryAudio::InvalidControlId)
+				{
+					CryAudio::SCreateObjectData const objectData("ParticleSubEmitter", spawnParams.occlusionType, GetEmitTM(), INVALID_ENTITYID, true);
+					m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
+					m_currentAudioOcclusionType = spawnParams.occlusionType;
+
+					if (!spawnParams.audioRtpc.empty())
+					{
+						gEnv->pAudioSystem->GetParameterId(spawnParams.audioRtpc.c_str(), m_audioParameterId);
+
+						if (m_audioParameterId != CryAudio::InvalidControlId)
+						{
+							float const value = params.fSoundFXParam(m_ChaosKey, GetStrength(0.0f, params.eSoundControlTime));
+							m_pIAudioObject->SetParameter(m_audioParameterId, value);
+						}
+					}
+
+					// Execute start trigger immediately.
+					if (m_startAudioTriggerId != CryAudio::InvalidControlId)
+					{
+						m_pIAudioObject->ExecuteTrigger(m_startAudioTriggerId);
+					}
 				}
 			}
 		}

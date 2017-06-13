@@ -24,6 +24,7 @@ class CEntityComponentTrackViewNode :
 public:
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CEntityComponentTrackViewNode,"CEntityComponentTrackViewNode",0x60F18291C2A146F7,0xBA7F02F390C85BB2);
 	
+	CEntityComponentTrackViewNode();
 	virtual ~CEntityComponentTrackViewNode() {}
 
 	//////////////////////////////////////////////////////////////////////////

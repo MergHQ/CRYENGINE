@@ -28,6 +28,7 @@ class CEntityComponentCamera : public IEntityCameraComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentCamera,IEntityCameraComponent,"CEntityComponentCamera",0x0F8EEE88F3AA49B2,0xA20D2747B5E33DF9);
 
+	CEntityComponentCamera();
 	virtual ~CEntityComponentCamera() {}
 
 public:

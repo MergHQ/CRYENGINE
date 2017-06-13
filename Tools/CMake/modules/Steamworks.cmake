@@ -4,7 +4,7 @@ if(WIN64)
 	set_target_properties(Steamworks PROPERTIES IMPORTED_IMPLIB "${SDK_DIR}/Steamworks/redistributable_bin/win64/steam_api64.lib")
 	set_target_properties(Steamworks PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/Steamworks/public/steam")
 
-	deploy_runtime_files(${SDK_DIR}/Steamworks/redistributable_bin/win64/steam_api.dll)
+	deploy_runtime_files(${SDK_DIR}/Steamworks/redistributable_bin/win64/steam_api64.dll)
 elseif(WIN32)
 	add_library(Steamworks SHARED IMPORTED GLOBAL)
 	set_target_properties(Steamworks PROPERTIES IMPORTED_LOCATION "${SDK_DIR}/Steamworks/redistributable_bin/steam_api.dll")
