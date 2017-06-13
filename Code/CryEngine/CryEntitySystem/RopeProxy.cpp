@@ -19,6 +19,7 @@ CEntityComponentRope::CEntityComponentRope()
 	, m_nSegmentsOrg(0)
 	, m_texTileVOrg(0.0f)
 {
+	m_componentFlags.Add(EEntityComponentFlags::NoSave);
 }
 
 //////////////////////////////////////////////////////////////////////////

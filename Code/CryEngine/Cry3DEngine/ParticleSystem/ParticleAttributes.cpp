@@ -11,9 +11,6 @@ CRY_PFX2_DBG
 namespace pfx2
 {
 
-SERIALIZATION_ENUM_IMPLEMENT(EAttributeType);
-SERIALIZATION_ENUM_IMPLEMENT(EAttributeScope);
-
 
 
 struct SAttributeType

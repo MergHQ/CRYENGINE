@@ -28,6 +28,7 @@ CEntityComponentArea::CEntityComponentArea()
 	, m_bIsEnableInternal(false)
 	, m_lastFrameTime(0.0f)
 {
+	m_componentFlags.Add(EEntityComponentFlags::Legacy);
 }
 
 //////////////////////////////////////////////////////////////////////////
