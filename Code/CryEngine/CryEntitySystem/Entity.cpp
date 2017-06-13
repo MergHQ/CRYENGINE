@@ -1635,28 +1635,28 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 
 			// Skip all components created by Schematyc
 			if (!component.GetComponentFlags().Check(EEntityComponentFlags::Schematyc) &&
-			    !component.GetComponentFlags().Check(EEntityComponentFlags::NoSave))
+					!component.GetComponentFlags().Check(EEntityComponentFlags::NoSave))
 			{
-			  if (!component.GetClassDesc().GetName().IsEmpty())
-			  {
-			    if (!componentsNode)
-			    {
-			      // Create sub-node on first access
-			      componentsNode = node->newChild("Components");
-			    }
-			    XmlNodeRef componentNode = componentsNode->newChild("Component");
-			    Serialization::SaveXmlNode(componentNode, Serialization::SStruct(SEntityComponentSerializationHelper(*this, &component)));
-			  }
-			  else //if (component.GetPropertyGroup())
-			  {
-			    if (!componentsNode)
-			    {
-			      // Create sub-node on first access
-			      componentsNode = node->newChild("Components");
-			    }
-			    XmlNodeRef componentNode = componentsNode->newChild("Component");
-			    SaveComponentLegacy(record.typeId, node, componentNode, component, bIncludeScriptProxy);
-			  }
+				if (!component.GetClassDesc().GetName().IsEmpty())
+				{
+					if (!componentsNode)
+					{
+						// Create sub-node on first access
+						componentsNode = node->newChild("Components");
+					}
+					XmlNodeRef componentNode = componentsNode->newChild("Component");
+					Serialization::SaveXmlNode(componentNode, Serialization::SStruct(SEntityComponentSerializationHelper(*this, &component)));
+				}
+				else if (component.GetPropertyGroup() || component.GetComponentFlags().Check(EEntityComponentFlags::Legacy))
+				{
+					if (!componentsNode)
+					{
+						// Create sub-node on first access
+						componentsNode = node->newChild("Components");
+					}
+					XmlNodeRef componentNode = componentsNode->newChild("Component");
+					SaveComponentLegacy(record.typeId, node, componentNode, component, bIncludeScriptProxy);
+				}
 			}
 		});
 

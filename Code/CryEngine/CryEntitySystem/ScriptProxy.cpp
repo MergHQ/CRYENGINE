@@ -26,7 +26,10 @@ CEntityComponentLuaScript::CEntityComponentLuaScript()
 	, m_bUpdateFuncImplemented(false)
 	, m_bUpdateEnabledOverride(false)
 	, m_bEnableSoundAreaEvents(false)
-{}
+{
+	m_componentFlags.Add(EEntityComponentFlags::Legacy);
+	m_componentFlags.Add(EEntityComponentFlags::NoSave);
+}
 
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentLuaScript::~CEntityComponentLuaScript()

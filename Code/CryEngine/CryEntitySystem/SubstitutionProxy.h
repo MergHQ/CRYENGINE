@@ -23,6 +23,7 @@ struct CEntityComponentSubstitution : IEntitySubstitutionComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentSubstitution,IEntitySubstitutionComponent,"CEntityComponentSubstitution",0xF60DBB948860494A,0x93586DE8C953B324);
 
+	CEntityComponentSubstitution();
 	virtual ~CEntityComponentSubstitution();
 
 public:

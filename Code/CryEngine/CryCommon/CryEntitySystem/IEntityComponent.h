@@ -106,7 +106,7 @@ enum class EEntityComponentFlags : uint32
 {
 	None              = 0,
 	Singleton         = BIT(0),  //!< Allow only of one instance of this component per class/object.
-	Legacy            = BIT(1),  //!< Legacy component, only for backward computability should not be accessible for creation in the UI.
+	Legacy            = BIT(1),  //!< Legacy component, only for backward computability should not be accessible for creation in the UI. (Will also enable saving with LegacySerializeXML)
 	Transform         = BIT(2),  //!< Component has transform.
 	Socket            = BIT(3),  //!< Other components can be attached to socket of this component.
 	Attach            = BIT(4),  //!< This component can be attached to socket of other components.
