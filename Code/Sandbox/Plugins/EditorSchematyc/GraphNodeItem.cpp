@@ -272,7 +272,6 @@ void CNodeItem::LoadFromScriptElement()
 void CNodeItem::RefreshName()
 {
 	m_shortName = m_scriptNode.GetName();
-	m_fullQualifiedName = QString("<b>FQNN: </b>%1").arg(m_shortName);
 
 	CNodeItem::SignalNameChanged();
 }
