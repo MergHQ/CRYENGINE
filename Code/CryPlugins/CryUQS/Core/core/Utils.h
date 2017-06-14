@@ -22,6 +22,7 @@ namespace UQS
 		public:
 			// IUtils
 			virtual Client::IItemFactory*                           FindItemFactoryByType(const Shared::CTypeInfo& type) const override;
+			virtual const IQueryFactory&                            GetDefaultQueryFactory() const override;
 			// ~IUtils
 
 			// IFactoryDatabaseListener<Client::IItemFactory>
