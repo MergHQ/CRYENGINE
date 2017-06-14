@@ -306,22 +306,10 @@ struct AgentType
 	{
 		Settings()
 			: voxelSize(Vec3Constants<float>::fVec3_Zero)
-			, radiusVoxelCount(0)
-			, climbableVoxelCount(0)
-			, climbableInclineGradient(0.0f)
-			, climbableStepRatio(0.0f)
-			, heightVoxelCount(0)
-			, maxWaterDepthVoxelCount(0)
 		{}
 
 		Vec3   voxelSize;
-
-		uint16 radiusVoxelCount;
-		uint16 climbableVoxelCount;
-		float  climbableInclineGradient;
-		float  climbableStepRatio;
-		uint16 heightVoxelCount;
-		uint16 maxWaterDepthVoxelCount;
+		MNM::CTileGenerator::SAgentSettings agent;
 	};
 
 	struct MeshInfo

@@ -308,8 +308,8 @@ CMNMUpdatesManager::MeshUpdateBoundaries CMNMUpdatesManager::ComputeMeshUpdateBo
 	const AABB& boundary = m_pNavigationSystem->m_volumes[mesh.boundary].aabb;
 	const AgentType& agentType = m_pNavigationSystem->m_agentTypes[mesh.agentTypeID - 1];
 
-	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * (agentType.settings.radiusVoxelCount + 1);
-	const float extraV = paramsGrid.voxelSize.z * (agentType.settings.heightVoxelCount + 1);
+	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * agentType.settings.agent.GetPossibleAffectedSizeH();
+	const float extraV = paramsGrid.voxelSize.z * agentType.settings.agent.GetPossibleAffectedSizeV();
 	const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
 
 	Vec3 bmin(std::max(0.0f, std::max(boundary.min.x, aabb.min.x - extraH) - paramsGrid.origin.x),
@@ -347,8 +347,8 @@ CMNMUpdatesManager::MeshUpdateBoundaries CMNMUpdatesManager::ComputeMeshUpdateDi
 
 	const AgentType& agentType = m_pNavigationSystem->m_agentTypes[mesh.agentTypeID - 1];
 
-	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * (agentType.settings.radiusVoxelCount + 1);
-	const float extraV = paramsGrid.voxelSize.z * (agentType.settings.heightVoxelCount + 1);
+	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * agentType.settings.agent.GetPossibleAffectedSizeH();
+	const float extraV = paramsGrid.voxelSize.z * agentType.settings.agent.GetPossibleAffectedSizeV();
 	const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
 
 	Vec3 bmin(std::max(0.0f, (aabb.min.x - extraH) - paramsGrid.origin.x),
