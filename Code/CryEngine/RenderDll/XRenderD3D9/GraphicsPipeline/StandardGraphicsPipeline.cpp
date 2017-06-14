@@ -1376,6 +1376,11 @@ void CStandardGraphicsPipeline::Execute()
 
 		m_pSceneCustomStage->Execute();
 
+		if (CRenderer::CV_r_HDRDebug && (pRenderer->m_RP.m_nRendFlags & SHDF_ALLOWPOSTPROCESS))
+		{
+			m_pToneMappingStage->DisplayDebugInfo();
+		}
+
 		if (CRenderer::CV_r_DeferredShadingDebug)
 		{
 #if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
