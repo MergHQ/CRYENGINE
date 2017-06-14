@@ -2076,8 +2076,7 @@ bool CD3D9Renderer::SetBaseResolution()
 	swapChainDesc.SampleDesc.Quality = 0;
 	swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-	swapChainDesc.Flags = 0;
-	swapChainDesc.Flags |= DXGIX_SWAP_CHAIN_FLAG_QUANTIZATION_RGB_FULL;
+	swapChainDesc.Flags = DXGIX_SWAP_CHAIN_MATCH_XBOX360_AND_PC;
 	pDC->m_Width = swapChainDesc.Width;
 	pDC->m_Height = swapChainDesc.Height;
 
