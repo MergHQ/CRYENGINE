@@ -211,9 +211,9 @@ bool CBaseDialog::SaveAs(const QString& targetFilePath)
 	// Copy asset meta-data (.cryasset) to temporary save directory, if present, so that the RC takes the old data into account.
 	if (!QFile::copy(QtUtil::ToQString(absMetaSrcPath), ctx.pTempDir->path() + QtUtil::ToQString(tail)) && m_sceneData->pAsset)
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "%s: Opened asset '%s', but asset meta-data '%s' is missing.",
-			__FUNCTION__, m_sceneData->pAsset->GetName(), m_sceneData->pAsset->GetMetadataFile());
-		return false;
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, 
+			"Asset meta-data '%s' is missing. A new one will be created.", 
+			m_sceneData->pAsset->GetMetadataFile());
 	}
 
 	return SaveAs(ctx);

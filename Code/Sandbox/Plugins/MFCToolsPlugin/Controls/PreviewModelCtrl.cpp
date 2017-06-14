@@ -1258,12 +1258,13 @@ void CPreviewModelCtrl::DrawBackground()
 	renderFlags.SetDepthWriteFlag(e_DepthWriteOff);
 	renderFlags.SetDepthTestFlag(e_DepthTestOff);
 
-	const SAuxGeomRenderFlags prevRenderFlags = gEnv->pRenderer->GetIRenderAuxGeom()->GetRenderFlags();
-	gEnv->pRenderer->GetIRenderAuxGeom()->SetRenderFlags(renderFlags);
-	gEnv->pRenderer->GetIRenderAuxGeom()->SetTexture(m_backgroundTextureId);
+	IRenderAuxGeom* aux = gEnv->pRenderer->GetIRenderAuxGeom(IRenderer::eViewportType_Secondary);
+	const SAuxGeomRenderFlags prevRenderFlags = aux->GetRenderFlags();
+	aux->SetRenderFlags(renderFlags);
+	aux->SetTexture(m_backgroundTextureId);
 
-	gEnv->pRenderer->GetIRenderAuxGeom()->DrawBuffer(tempVertices, 6, true);
+	aux->DrawBuffer(tempVertices, 6, true);
 
-	gEnv->pRenderer->GetIRenderAuxGeom()->SetTexture(-1);
-	gEnv->pRenderer->GetIRenderAuxGeom()->SetRenderFlags(prevRenderFlags);
+	aux->SetTexture(-1);
+	aux->SetRenderFlags(prevRenderFlags);
 }

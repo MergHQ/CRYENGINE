@@ -516,7 +516,7 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, MNM::P
 	AgentType agentTypeProperties;
 	const bool arePropertiesValid = gAIEnv.pNavigationSystem->GetAgentTypeProperties(request.agentTypeID, agentTypeProperties);
 	assert(arePropertiesValid);
-	const uint16 zOffsetMultiplier = min(uint16(2), agentTypeProperties.settings.heightVoxelCount);
+	const uint16 zOffsetMultiplier = min(uint16(2), (uint16)agentTypeProperties.settings.agent.height);
 	const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.0f);
 
 	Vec3 safeStartLocation(request.requestParams.startLocation);

@@ -368,6 +368,7 @@ void CTerrainNode::Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bo
 	//m_nNodeRenderLastFrameId=0;
 	m_nNodeTextureLastUsedSec4 = (~0);
 	m_boxHeigtmapLocal.Reset();
+	m_fBBoxExtentionByObjectsIntegration = 0;
 	m_pParent = NULL;
 	//m_nSetupTexGensFrameId=0;
 

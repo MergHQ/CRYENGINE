@@ -11,6 +11,7 @@ public:
 	void Init();
 	void Execute();
 	void ExecuteFixedExposure();
+	void DisplayDebugInfo();
 
 private:
 	_smart_ptr<CTexture> m_pColorChartTex;

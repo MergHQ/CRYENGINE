@@ -2005,7 +2005,7 @@ void CAuxGeomCB::SetMatrixIndex(int matID)
 
 void CAuxGeomCB::Flush()
 {
-	Flush(false);
+	Flush(true);
 }
 
 void CAuxGeomCB::Flush(bool reset)

@@ -217,13 +217,13 @@ NavigationAgentTypeID NavigationSystem::CreateAgentType(const char* name, const 
 
 	agentType.name = name;
 	agentType.settings.voxelSize = params.voxelSize;
-	agentType.settings.radiusVoxelCount = params.radiusVoxelCount;
-	agentType.settings.climbableVoxelCount = params.climbableVoxelCount;
-	agentType.settings.climbableInclineGradient = params.climbableInclineGradient;
-	agentType.settings.climbableStepRatio = params.climbableStepRatio;
+	agentType.settings.agent.radius = params.radiusVoxelCount;
+	agentType.settings.agent.climbableHeight = params.climbableVoxelCount;
+	agentType.settings.agent.climbableInclineGradient = params.climbableInclineGradient;
+	agentType.settings.agent.climbableStepRatio = params.climbableStepRatio;
+	agentType.settings.agent.height = params.heightVoxelCount;
+	agentType.settings.agent.maxWaterDepth = params.maxWaterDepthVoxelCount;
 	agentType.meshEntityCallback = functor(ShouldBeConsideredByVoxelizer);
-	agentType.settings.heightVoxelCount = params.heightVoxelCount;
-	agentType.settings.maxWaterDepthVoxelCount = params.maxWaterDepthVoxelCount;
 
 	return NavigationAgentTypeID(m_agentTypes.size());
 }
@@ -1110,13 +1110,8 @@ void NavigationSystem::SetupGenerator(NavigationMeshID meshID, const MNM::CNavMe
 
 	const AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
 
-	params.agent.radius = agentType.settings.radiusVoxelCount;
-	params.agent.height = agentType.settings.heightVoxelCount;
-	params.agent.climbableHeight = agentType.settings.climbableVoxelCount;
-	params.agent.maxWaterDepth = agentType.settings.maxWaterDepthVoxelCount;
-	params.climbableInclineGradient = agentType.settings.climbableInclineGradient;
-	params.climbableStepRatio = agentType.settings.climbableStepRatio;
-	params.agent.callback = agentType.meshEntityCallback;
+	params.agent = agentType.settings.agent;
+	params.callback = agentType.meshEntityCallback;
 
 	if (MNM::TileID tileID = mesh.navMesh.GetTileID(x, y, z))
 		params.hashValue = mesh.navMesh.GetTile(tileID).GetHashValue();
@@ -1649,7 +1644,7 @@ void NavigationSystem::ComputeAccessibility(const Vec3& debugLocation, Navigatio
 		const bool arePropertiesValid = GetAgentTypeProperties(agentTypeId, agentTypeProperties);
 		assert(arePropertiesValid);
 		const uint16 minZOffsetMultiplier(2);
-		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, agentTypeProperties.settings.heightVoxelCount);
+		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 		const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
 		MNM::TriangleID seedTriangleID = mesh.navMesh.GetTriangleAt(seedLocation - origin, verticalDownwardRange, verticalUpwardRange);
@@ -1890,9 +1885,8 @@ uint16 NavigationSystem::GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentT
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
-		return m_agentTypes[agentTypeID - 1].settings.radiusVoxelCount;
+		return m_agentTypes[agentTypeID - 1].settings.agent.radius;
 	}
-
 	return 0;
 }
 
@@ -1900,9 +1894,8 @@ uint16 NavigationSystem::GetAgentHeightInVoxelUnits(NavigationAgentTypeID agentT
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
-		return m_agentTypes[agentTypeID - 1].settings.heightVoxelCount;
+		return m_agentTypes[agentTypeID - 1].settings.agent.height;
 	}
-
 	return 0;
 }
 
@@ -2471,7 +2464,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 		const bool arePropertiesValid = GetAgentTypeProperties(agentID, agentTypeProperties);
 		assert(arePropertiesValid);
 		const uint16 minZOffsetMultiplier(2);
-		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, agentTypeProperties.settings.heightVoxelCount);
+		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 		const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
 		return mesh.navMesh.GetTriangleAt(location - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange);
