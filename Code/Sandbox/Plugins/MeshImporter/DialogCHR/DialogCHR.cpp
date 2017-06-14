@@ -1004,11 +1004,11 @@ void CDialogCHR::RenderCharacter(const SRenderContext& rc, ICharacterInstance* p
 	assert(rp.pMatrix);
 	assert(rp.pPrevMatrix);
 
-	Matrix34 m_LocalEntityMat(IDENTITY);
-	rp.pMatrix = &m_LocalEntityMat;
+	Matrix34 localEntityMat(IDENTITY);
+	rp.pMatrix = &localEntityMat;
 
 	const SRenderingPassInfo& passInfo = *rc.passInfo;
-	gEnv->p3DEngine->PrecacheCharacter(NULL, 1.f, pCharInstance, pCharInstance->GetIMaterial(), m_LocalEntityMat, 0, 1.f, 4, true, passInfo);
+	gEnv->p3DEngine->PrecacheCharacter(NULL, 1.f, pCharInstance, pCharInstance->GetIMaterial(), localEntityMat, 0, 1.f, 4, true, passInfo);
 	pCharInstance->SetViewdir(rc.camera->GetViewdir());
 	pCharInstance->Render(rp, QuatTS(IDENTITY), passInfo);
 }
@@ -1024,11 +1024,11 @@ void CDialogCHR::RenderPhysics(const SRenderContext& rc, ICharacterInstance* pCh
 	}
 
 	IRenderer* const renderer = gEnv->pRenderer;
-	IRenderAuxGeom* pAuxGeom = renderer->GetIRenderAuxGeom();
-	pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
-
+	IRenderAuxGeom* const pAuxGeom = renderer->GetIRenderAuxGeom();
+	const SAuxGeomRenderFlags savedFlags = pAuxGeom->GetRenderFlags();
 	pAuxGeom->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeNone | e_DepthWriteOff | e_DepthTestOn);
-	IPhysicsDebugRenderer* pPhysRender = GetIEditor()->GetSystem()->GetIPhysicsDebugRenderer();
+
+	IPhysicsDebugRenderer* const pPhysRender = GetIEditor()->GetSystem()->GetIPhysicsDebugRenderer();
 	pPhysRender->UpdateCamera(*rc.camera);
 	int drawHelpers = 0;
 	if (bShowProxies)
@@ -1041,13 +1041,15 @@ void CDialogCHR::RenderPhysics(const SRenderContext& rc, ICharacterInstance* pCh
 	}
 
 	ISkeletonPose& skeletonPose = *pCharacter->GetISkeletonPose();
-	IPhysicalEntity* pBaseEntity = skeletonPose.GetCharacterPhysics();
+	IPhysicalEntity* const pBaseEntity = skeletonPose.GetCharacterPhysics();
 	if (pBaseEntity)
+	{
 		pPhysRender->DrawEntityHelpers(pBaseEntity, drawHelpers);
+	}
 
-	f32 frameTime = GetIEditor()->GetSystem()->GetITimer()->GetFrameTime();
+	const f32 frameTime = GetIEditor()->GetSystem()->GetITimer()->GetFrameTime();
 	pPhysRender->Flush(frameTime);
-	pAuxGeom->Flush();
+	pAuxGeom->SetRenderFlags(savedFlags);
 }
 
 void CDialogCHR::RenderJoints(const SRenderContext& rc, ICharacterInstance* pCharInstance)
@@ -1058,6 +1060,7 @@ void CDialogCHR::RenderJoints(const SRenderContext& rc, ICharacterInstance* pCha
 	}
 
 	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	const SAuxGeomRenderFlags savedFlags = pAuxGeom->GetRenderFlags();
 	pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
 
 	DrawSkeleton(pAuxGeom, &pCharInstance->GetIDefaultSkeleton(), pCharInstance->GetISkeletonPose(),
@@ -1088,6 +1091,7 @@ void CDialogCHR::RenderJoints(const SRenderContext& rc, ICharacterInstance* pCha
 		const char* const jointName = defaultSkeleton.GetJointNameByID(m_hitJointId);
 		ShowLabelNextToCursor(vp, jointName);
 	}
+	pAuxGeom->SetRenderFlags(savedFlags);
 }
 
 void CDialogCHR::RenderCgf(const SRenderContext& rc)
