@@ -19,7 +19,6 @@ namespace CryDRS
 class CVariableCollection;
 class CResponseInstance;
 
-//one concrete running instance of the actions. (There might be actions that dont need instances, because their action is instantaneously.
 class CVariable final : public DRS::IVariable
 {
 public:
@@ -64,6 +63,7 @@ public:
 
 //--------------------------------------------------------------------------------------------------
 
+//one concrete running instance of the actions. (There might be actions that dont need instances, because their action is instantaneously.
 class CResponseInstance;
 
 // a basis class for every condition and action that requires a variable as an input

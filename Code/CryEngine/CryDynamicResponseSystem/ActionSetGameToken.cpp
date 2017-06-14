@@ -68,23 +68,52 @@ void CActionSetGameToken::Serialize(Serialization::IArchive& ar)
 		}
 		if (IGameToken* pToken = gEnv->pGameFramework->GetIGameTokenSystem()->FindToken(m_tokenName.c_str()))
 		{
-			if (pToken->GetType() == eFDT_Float && (m_typeToSet != CActionSetGameToken::EValueToSet::FloatVariableValue || m_typeToSet != CActionSetGameToken::EValueToSet::FloatValue))
+			if (pToken->GetType() == eFDT_Float && (m_typeToSet != CActionSetGameToken::EValueToSet::FloatVariableValue && m_typeToSet != CActionSetGameToken::EValueToSet::FloatValue))
 			{
 				ar.warning(m_tokenName, "GameToken is of type float, but the value to set is not.");
 			}
-			else if (pToken->GetType() == eFDT_Int && (m_typeToSet != CActionSetGameToken::EValueToSet::IntVariableValue || m_typeToSet != CActionSetGameToken::EValueToSet::IntValue))
+			else if (pToken->GetType() == eFDT_Int && (m_typeToSet != CActionSetGameToken::EValueToSet::IntVariableValue && m_typeToSet != CActionSetGameToken::EValueToSet::IntValue))
 			{
 				ar.warning(m_tokenName, "GameToken is of type integer, but the value to set is not.");
 			}
-			else if (pToken->GetType() == eFDT_Bool && (m_typeToSet != CActionSetGameToken::EValueToSet::BoolVariableValue || m_typeToSet != CActionSetGameToken::EValueToSet::BoolValue))
+			else if (pToken->GetType() == eFDT_Bool && (m_typeToSet != CActionSetGameToken::EValueToSet::BoolVariableValue && m_typeToSet != CActionSetGameToken::EValueToSet::BoolValue))
 			{
 				ar.warning(m_tokenName, "GameToken is of type boolean, but the value to set is not.");
 			}
-			else if (pToken->GetType() == eFDT_String && m_typeToSet != CActionSetGameToken::EValueToSet::StringValue)
+			else if (pToken->GetType() == eFDT_String && (m_typeToSet != CActionSetGameToken::EValueToSet::CurrentActorName && m_typeToSet != CActionSetGameToken::EValueToSet::StringValue))
 			{
 				ar.warning(m_tokenName, "GameToken is of type string, but the value to set is not.");
 			}
 		}
+
+		if (m_typeToSet == CActionSetGameToken::EValueToSet::IntVariableValue || m_typeToSet == CActionSetGameToken::EValueToSet::FloatVariableValue || m_typeToSet == CActionSetGameToken::EValueToSet::BoolVariableValue)
+		{
+			CVariableCollection* pCollection = CResponseSystem::GetInstance()->GetVariableCollectionManager()->GetCollection(m_collectionName);
+			if (pCollection)
+			{
+				CryDRS::CVariable* pVariable = pCollection->GetVariable(m_variableName);
+				if (pVariable)
+				{
+					if (pVariable->m_value.GetType() == eDRVT_Float && m_typeToSet != CActionSetGameToken::EValueToSet::FloatVariableValue)
+					{
+						ar.warning(m_tokenName, "DRS variable is of type float, but the value to set is not.");
+					}
+					else if (pVariable->m_value.GetType() == eDRVT_Int && m_typeToSet != CActionSetGameToken::EValueToSet::IntVariableValue)
+					{
+						ar.warning(m_tokenName, "DRS variable is of type integer, but the value to set is not.");
+					}
+					else if (pVariable->m_value.GetType() == eDRVT_Boolean && m_typeToSet != CActionSetGameToken::EValueToSet::BoolVariableValue)
+					{
+						ar.warning(m_tokenName, "DRS variable is of type boolean, but the value to set is not.");
+					}
+					else if (pVariable->m_value.GetType() == eDRVT_String && m_typeToSet != CActionSetGameToken::EValueToSet::StringValue)
+					{
+						ar.warning(m_tokenName, "DRS variable is of type string, but the value to set is not.");
+					}
+				}
+			}
+		}
+
 	}
 #endif
 }
@@ -112,7 +141,7 @@ DRS::IResponseActionInstanceUniquePtr CActionSetGameToken::Execute(DRS::IRespons
 				{
 					if (m_typeToSet == CActionSetGameToken::EValueToSet::IntVariableValue)
 						dataToSet.Set(pVariable->GetValueAsInt());
-					if (m_typeToSet == CActionSetGameToken::EValueToSet::BoolVariableValue)
+					else if (m_typeToSet == CActionSetGameToken::EValueToSet::BoolVariableValue)
 						dataToSet.Set(pVariable->GetValueAsBool());
 					else
 						dataToSet.Set(pVariable->GetValueAsFloat());
