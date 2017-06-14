@@ -956,7 +956,7 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 	{
 		if (!bRecursive && pOutput && bSecondaryViewport)
 		{
-			gRenDev->GetIRenderAuxGeom()->Flush();
+			gRenDev->GetIRenderAuxGeom(IRenderer::eViewportType_Secondary)->Flush();
 		}
 	}
 

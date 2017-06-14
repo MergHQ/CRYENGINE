@@ -1412,11 +1412,6 @@ void CRenderAuxGeomD3D::FlushTextMessagesInternal(CTextMessages& messages, bool 
 	messages.Clear(!reset);
 }
 
-void CRenderAuxGeomD3D::SetOrthoMode(bool enable, Matrix44A* pMatrix)
-{
-	GetRenderAuxGeom()->SetOrthoMode(enable, pMatrix);
-}
-
 const Matrix44A& CRenderAuxGeomD3D::GetCurrentView() const
 {
 	return IsOrthoMode() ? gRenDev->m_IdentityMatrix : m_matrices.m_matView;

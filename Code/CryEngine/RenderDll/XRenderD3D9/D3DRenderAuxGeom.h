@@ -41,7 +41,6 @@ public:
 	int         GetDeviceDataSize();
 	void        ReleaseDeviceObjects();
 	HRESULT     RestoreDeviceObjects();
-	void        SetOrthoMode(bool enable, Matrix44A* pMatrix = nullptr);
 	void        GetMemoryUsage(ICrySizer* pSizer) const;
 	void        ReleaseResources();
 	void*       operator new(size_t s)

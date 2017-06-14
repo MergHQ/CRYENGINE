@@ -17,24 +17,25 @@
 
 class CTexture;
 
+//! Texture types. Stored in files, can't change numeric value!
 enum ETEX_Type : uint8
 {
 	// regular hardware supported/native types
-	eTT_1D = 0,
-	eTT_2D,
-	eTT_2DArray,
-	eTT_2DMS,
-	eTT_3D,
-	eTT_Cube,
-	eTT_CubeArray,
+	eTT_1D          = 0,
+	eTT_2D          = 1,
+	eTT_2DArray     = 8,
+	eTT_2DMS        = 9,
+	eTT_3D          = 2,
+	eTT_Cube        = 3,
+	eTT_CubeArray   = 4,
 
 	// custom types
-	eTT_Dyn2D,
-	eTT_Auto2D,
-	eTT_NearestCube,
-	eTT_User,
+	eTT_Dyn2D       = 5,
+	eTT_Auto2D      = 10,
+	eTT_User        = 6,
+	eTT_NearestCube = 7,
 
-	eTT_MaxTexType,   //!< Not used.
+	eTT_MaxTexType  = 11,   //!< Not used.
 };
 
 //! Texture formats.

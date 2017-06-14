@@ -121,6 +121,8 @@ CGlobalImportSettings::SGeneralSettings::SGeneralSettings()
 CGlobalImportSettings::SStaticMeshSettings::SStaticMeshSettings()
 	: bMergeAllNodes(false)
 	, bSceneOrigin(false)
+	, bComputeNormals(false)
+	, bComputeUv(false)
 {}
 
 CGlobalImportSettings::CGlobalImportSettings()
@@ -157,6 +159,16 @@ bool CGlobalImportSettings::IsMergeAllNodes() const
 bool CGlobalImportSettings::IsSceneOrigin() const
 {
 	return m_staticMeshSettings.bSceneOrigin;
+}
+
+bool CGlobalImportSettings::IsComputeNormals() const
+{
+	return m_staticMeshSettings.bComputeNormals;
+}
+
+bool CGlobalImportSettings::IsComputeUv() const
+{
+	return m_staticMeshSettings.bComputeUv;
 }
 
 void CGlobalImportSettings::SetInputFilePath(const string& filePath)
@@ -214,6 +226,16 @@ void CGlobalImportSettings::SetSceneOrigin(bool bSceneOrigin)
 	m_staticMeshSettings.bSceneOrigin = bSceneOrigin;
 }
 
+void CGlobalImportSettings::SetComputeNormals(bool bComputeNormals)
+{
+	m_staticMeshSettings.bComputeNormals = bComputeNormals;
+}
+
+void CGlobalImportSettings::SetComputeUv(bool bComputeUv)
+{
+	m_staticMeshSettings.bComputeUv = bComputeUv;
+}
+
 bool CGlobalImportSettings::IsVertexPositionFormatF32() const
 {
 	return m_outputSettings.bVertexPositionFormatF32;
@@ -237,6 +259,14 @@ void CGlobalImportSettings::SStaticMeshSettings::Serialize(yasli::Archive& ar)
 {
 	ar(bMergeAllNodes, "merge_all_nodes", "Merge all nodes");
 	ar(bSceneOrigin, "scene_origin", "Scene origin");
+	ar(bComputeNormals, "compute_normals", "Compute normals");
+	ar.doc("If true the importer computes normals,\n"
+		"otherwise the normals are imported from the file.\n"
+		"Tangents are computed in any case.");
+	ar(bComputeUv, "compute_uv", "Compute UV's");
+	ar.doc("If true the importer generates an automatic UV mapping,\n"
+		"otherwise the UV's are imported from the file.\n"
+		"Useful for correct calculation of tangents, if the source model does not use textured materials.");
 }
 
 void CGlobalImportSettings::Serialize(yasli::Archive& ar)
