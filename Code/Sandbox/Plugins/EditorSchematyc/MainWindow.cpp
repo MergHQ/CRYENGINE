@@ -296,7 +296,7 @@ bool CMainWindow::OnCloseAsset()
 
 		stack_string dialogQuestion = "Asset '";
 		dialogQuestion.append(m_pAsset->GetName());
-		dialogQuestion.append("' has unsaved changes?");
+		dialogQuestion.append("' has unsaved changes.");
 
 		ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
 		Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
