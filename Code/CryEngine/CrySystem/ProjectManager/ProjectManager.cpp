@@ -337,9 +337,10 @@ void CProjectManager::OnLoadConfigurationEntry(const char* szKey, const char* sz
 
 void CProjectManager::AddDefaultPlugins()
 {
-	AddPlugin(ICryPluginManager::EPluginType::Native, "CryDefaultEntities");
-	AddPlugin(ICryPluginManager::EPluginType::Native, "CrySensorSystem");
-	AddPlugin(ICryPluginManager::EPluginType::Native, "CryPerceptionSystem");
+	for (const char* szDefaultPlugin : CCryPluginManager::GetDefaultPlugins())
+	{
+		AddPlugin(ICryPluginManager::EPluginType::Native, szDefaultPlugin);
+	}
 }
 
 void CProjectManager::AddPlugin(ICryPluginManager::EPluginType type, const char* szFileName)

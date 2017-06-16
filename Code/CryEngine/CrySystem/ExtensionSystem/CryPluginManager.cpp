@@ -44,14 +44,20 @@ struct SNativePluginModule
 
 				pFactoryNode = pFactoryNode->m_pNext;
 			}
-		}
 
-		if (m_pFactory == nullptr)
+			if (m_pFactory == nullptr)
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - valid ICryPlugin implementation was not found in plugin %s!", path);
+
+				MarkUnloaded();
+				return;
+			}
+		}
+		else
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - valid ICryPlugin implementation was not found in plugin %s!", path);
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed, could not find dynamic library %s!", path);
 
 			MarkUnloaded();
-			return;
 		}
 	}
 
@@ -241,15 +247,38 @@ void CCryPluginManager::LoadProjectPlugins()
 
 	for (const SPluginDefinition& pluginDefinition : pluginDefinitions)
 	{
+#if defined(CRY_IS_MONOLITHIC_BUILD)
+		// Don't attempt to load plug-ins that were statically linked in
+		string pluginName = PathUtil::GetFileName(pluginDefinition.path);
+		auto defaultPluginsArray = GetDefaultPlugins();
+		bool bValid = true;
+
+		for (const char* szPluginName : defaultPluginsArray)
+		{
+			if (!strcmp(szPluginName, pluginName.c_str()))
+			{
+				bValid = false;
+				break;
+			}
+		}
+
+		if (!bValid)
+		{
+			continue;
+		}
+#endif
+
 		LoadPluginFromDisk(pluginDefinition.type, pluginDefinition.path);
 	}
 
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
 	// Always load the CryUserAnalytics plugin
 	SPluginDefinition userAnalyticsPlugin(EPluginType::Native, "CryUserAnalytics");
 	if (std::find(std::begin(pluginDefinitions), std::end(pluginDefinitions), userAnalyticsPlugin) == std::end(pluginDefinitions))
 	{
 		LoadPluginFromDisk(userAnalyticsPlugin.type, userAnalyticsPlugin.path);
 	}
+#endif
 }
 
 bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path)
