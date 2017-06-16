@@ -108,9 +108,8 @@ struct CStripsInfo
 {
 	CTerrainTempDataStorage<vtx_idx> idx_array;
 	int                              nNonBorderIndicesCount;
-	int                              nNonObjectIndicesCount;
 
-	inline void Clear() { idx_array.Clear(); nNonObjectIndicesCount = nNonBorderIndicesCount = 0; }
+	inline void Clear() { idx_array.Clear(); nNonBorderIndicesCount = 0; }
 
 	inline void AddIndex(int _x, int _y, int _step, int nSectorSize)
 	{
@@ -246,6 +245,7 @@ bool CTerrainUpdateDispatcher::AddJob(CTerrainNode* pNode, bool executeAsJob, co
 		// dont run async in case of editor or if we render into shadowmap
 		executeAsJob &= !gEnv->IsEditor();
 		executeAsJob &= !passInfo.IsShadowPass();
+		executeAsJob &= !Get3DEngine()->m_bIntegrateObjectsIntoTerrain; // TODO: support jobs for this mode as well
 
 		if (executeAsJob)
 		{
@@ -631,7 +631,7 @@ void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo, bool bUpdateVertice
 	if (!bIndicesUpdated)
 		pRenderMesh->UpdateIndices(pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(), 0, 0u);
 
-	pRenderMesh->SetChunk(GetTerrain()->m_pTerrainEf, 0, pRenderMesh->GetVerticesCount(), 0, min(m_pUpdateTerrainTempData->m_StripsInfo.nNonObjectIndicesCount, pArrayInfo->idx_array.Count()), 1.0f, 0);
+	pRenderMesh->SetChunk(GetTerrain()->m_pTerrainEf, 0, pRenderMesh->GetVerticesCount(), 0, min(m_pUpdateTerrainTempData->m_StripsInfo.nNonBorderIndicesCount, pArrayInfo->idx_array.Count()), 1.0f, 0);
 
 	if (pRenderMesh->GetChunks().size() && pRenderMesh->GetChunks()[0].pRE)
 		pRenderMesh->GetChunks()[0].pRE->m_CustomData = GetLeafData()->m_arrTexGen[0];
@@ -729,7 +729,7 @@ void CTerrainNode::BuildVertices(int nStep, bool bSafetyBorder)
 		}
 	}
 
-	m_pUpdateTerrainTempData->m_StripsInfo.nNonObjectIndicesCount = m_pUpdateTerrainTempData->m_StripsInfo.idx_array.Count();
+	m_fBBoxExtentionByObjectsIntegration = 0;
 
 	if (!m_nTreeLevel && Get3DEngine()->m_bIntegrateObjectsIntoTerrain)
 	{
@@ -1564,10 +1564,9 @@ uint32 CTerrainNode::GetMaterialsModificationId()
 // add triangles (from marked objects) intersecting terrain
 void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const int nSID, const int nStep, const int nTerrainSize)
 {
-	const float fElevationRange = 16.f;
-
 	AABB aabbTNode = GetBBox();
-	aabbTNode.max.z += fElevationRange;
+	float fHeightMapMax = aabbTNode.max.z;
+	aabbTNode.max.z += GetCVars()->e_TerrainIntegrateObjectsMaxHeight;
 
 	PodArray<IRenderNode*> lstObjects;
 	Get3DEngine()->GetObjectsByTypeGlobal(lstObjects, eERType_MovableBrush, &aabbTNode);
@@ -1662,8 +1661,10 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 								fElevMax = max(fElevMax, fElev[v]);
 							}
 
-							if (triBox.max.z > fElevMin && triBox.min.z < fElevMax + fElevationRange && Overlap::AABB_AABB2D(triBox, aabbTNode))
+							if (triBox.max.z > fElevMin && triBox.min.z < fElevMax + GetCVars()->e_TerrainIntegrateObjectsMaxHeight && Overlap::AABB_AABB2D(triBox, aabbTNode))
 							{
+								m_fBBoxExtentionByObjectsIntegration = max(m_fBBoxExtentionByObjectsIntegration, triBox.max.z - fHeightMapMax);
+
 								for (int v = 0; v < 3; v++)
 								{
 									SVF_P2S_N4B_C4B_T1F vert;

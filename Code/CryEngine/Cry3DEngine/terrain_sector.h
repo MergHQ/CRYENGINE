@@ -522,6 +522,7 @@ public:
 	uint16                     m_nSID;
 
 	AABB                       m_boxHeigtmapLocal;
+	float                      m_fBBoxExtentionByObjectsIntegration;
 	struct CTerrainNode*       m_pParent;
 	int                        m_nGSMFrameId;
 
@@ -590,7 +591,7 @@ struct STerrainNodeChunk
 inline const AABB CTerrainNode::GetBBox() const
 {
 	const Vec3& vOrigin = GetTerrain()->m_arrSegmentOrigns[m_nSID];
-	return AABB(m_boxHeigtmapLocal.min + vOrigin, m_boxHeigtmapLocal.max + vOrigin);
+	return AABB(m_boxHeigtmapLocal.min + vOrigin, m_boxHeigtmapLocal.max + vOrigin + Vec3(0, 0, m_fBBoxExtentionByObjectsIntegration));
 }
 
 #endif
