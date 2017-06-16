@@ -165,7 +165,7 @@ public:
 	virtual const Vec3& GetForwardDir() const final { ComputeForwardDir(); return m_vForwardDir; }
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void UpdateComponentEventMask(IEntityComponent* pComponent) final;
+	virtual void UpdateComponentEventMask(const IEntityComponent* pComponent) final;
 	virtual bool IsActivatedForUpdates() const final { return m_bInActiveList; }
 
 	virtual void PrePhysicsActivate(bool bActive) final;
@@ -416,6 +416,7 @@ public:
 
 	void SetInHiddenLayer(bool bHiddenLayer);
 	virtual	Schematyc::IObject* GetSchematycObject() const final { return m_pSchematycObject; };
+	virtual void OnSchematycObjectDestroyed() final { m_pSchematycObject = nullptr; }
 
 	virtual EEntitySimulationMode GetSimulationMode() const final { return m_simulationMode; };
 	//~IEntity

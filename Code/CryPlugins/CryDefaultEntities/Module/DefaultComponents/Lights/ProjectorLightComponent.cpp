@@ -214,5 +214,12 @@ void CProjectorLightComponent::SFlare::SetTexturePath(const char* szPath)
 {
 	m_texturePath = szPath;
 }
+
+void CProjectorLightComponent::Enable(bool bEnable) 
+{
+	m_bActive = bEnable; 
+
+	Initialize();
+}
 }
 }

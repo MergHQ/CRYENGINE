@@ -86,7 +86,7 @@ namespace Cry
 				float m_speed = 1.f;
 			};
 
-			virtual void Enable(bool bEnable) { m_bActive = bEnable; }
+			virtual void Enable(bool bEnable);
 			bool IsEnabled() const { return m_bActive; }
 
 			virtual SOptions& GetOptions() { return m_options; }

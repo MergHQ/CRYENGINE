@@ -12,7 +12,7 @@ namespace Cry
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointConstraintComponent::ConstrainToEntity, "{7310C27B-1B70-4274-80EE-2DBF46085DC8}"_cry_guid, "ConstrainToEntity");
 				pFunction->SetDescription("Adds a constraint, tying this component's physical entity to the specified entity");
 				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-				pFunction->BindInput(1, 'enti', "Target Entity", "Defines the entity we want to be constrained to, or the point itself if id is 0", INVALID_ENTITYID);
+				pFunction->BindInput(1, 'enti', "Target Entity", "Defines the entity we want to be constrained to, or the point itself if id is 0", Schematyc::ExplicitEntityId());
 				pFunction->BindInput(2, 'igno', "Ignore Collisions With", "Whether or not to ignore collisions between this entity and the target", false);
 				componentScope.Register(pFunction);
 			}
@@ -40,7 +40,7 @@ namespace Cry
 			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 			desc.AddMember(&CPointConstraintComponent::m_bActive, 'actv', "Active", "Active", "Whether or not the constraint should be added on component reset", true);
-			desc.AddMember(&CPointConstraintComponent::m_axis, 'axis', "Axis", "Axis", "Axis around which the physical entity is constrained", Vec3(0.f, 1.f, 1.f));
+			desc.AddMember(&CPointConstraintComponent::m_axis, 'axis', "Axis", "Axis", "Axis around which the physical entity is constrained", Vec3(0.f, 0.f, 1.f));
 
 			desc.AddMember(&CPointConstraintComponent::m_rotationLimitsX0, 'rlx0', "RotationLimitsX0", "Minimum X Angle", nullptr, 0.0_degrees);
 			desc.AddMember(&CPointConstraintComponent::m_rotationLimitsX1, 'rlx1', "RotationLimitsX1", "Minimum X Angle", nullptr, 360.0_degrees);

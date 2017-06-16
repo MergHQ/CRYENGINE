@@ -101,64 +101,60 @@ namespace Cry
 
 			virtual void PhysicalizeCharacter()
 			{
-				// Physicalize the character
-				if (m_pCachedCharacter != nullptr)
+				// Physicalize the player as type Living.
+				// This physical entity type is specifically implemented for players
+				SEntityPhysicalizeParams physParams;
+				physParams.type = PE_LIVING;
+				physParams.nSlot = GetEntitySlotId();
+
+				physParams.mass = m_physics.m_mass;
+
+				pe_player_dimensions playerDimensions;
+
+				// Prefer usage of a cylinder
+				playerDimensions.bUseCapsule = m_physics.m_bCapsule ? 1 : 0;
+
+				// Specify the size of our capsule
+				playerDimensions.sizeCollider = m_physics.m_colliderSize;
+
+				// Keep pivot at the player's feet (defined in player geometry) 
+				playerDimensions.heightPivot = 0.f;
+				// Offset collider upwards
+				playerDimensions.heightCollider = 1.f;
+				playerDimensions.groundContactEps = 0.004f;
+
+				physParams.pPlayerDimensions = &playerDimensions;
+
+				pe_player_dynamics playerDynamics;
+				playerDynamics.mass = physParams.mass;
+				playerDynamics.kAirControl = m_movement.m_airControlRatio;
+				playerDynamics.kAirResistance = m_movement.m_airResistance;
+				playerDynamics.kInertia = m_movement.m_inertia;
+				playerDynamics.kInertiaAccel = m_movement.m_inertiaAcceleration;
+
+				playerDynamics.maxClimbAngle = m_movement.m_maxClimbAngle.ToDegrees();
+				playerDynamics.maxJumpAngle = m_movement.m_maxJumpAngle.ToDegrees();
+				playerDynamics.minFallAngle = m_movement.m_minFallAngle.ToDegrees();
+				playerDynamics.minSlideAngle = m_movement.m_minSlideAngle.ToDegrees();
+
+				playerDynamics.maxVelGround = m_movement.m_maxGroundVelocity;
+
+				physParams.pPlayerDynamics = &playerDynamics;
+
+				m_pEntity->Physicalize(physParams);
+
+				if (m_bGroundAlignment && m_pCachedCharacter != nullptr)
 				{
-					// Physicalize the player as type Living.
-					// This physical entity type is specifically implemented for players
-					SEntityPhysicalizeParams physParams;
-					physParams.type = PE_LIVING;
-					physParams.nSlot = GetEntitySlotId();
-
-					physParams.mass = m_physics.m_mass;
-
-					pe_player_dimensions playerDimensions;
-
-					// Prefer usage of a cylinder
-					playerDimensions.bUseCapsule = m_physics.m_bCapsule ? 1 : 0;
-
-					// Specify the size of our capsule
-					playerDimensions.sizeCollider = m_physics.m_colliderSize;
-
-					// Keep pivot at the player's feet (defined in player geometry) 
-					playerDimensions.heightPivot = 0.f;
-					// Offset collider upwards
-					playerDimensions.heightCollider = 1.f;
-					playerDimensions.groundContactEps = 0.004f;
-
-					physParams.pPlayerDimensions = &playerDimensions;
-
-					pe_player_dynamics playerDynamics;
-					playerDynamics.mass = physParams.mass;
-					playerDynamics.kAirControl = m_movement.m_airControlRatio;
-					playerDynamics.kAirResistance = m_movement.m_airResistance;
-					playerDynamics.kInertia = m_movement.m_inertia;
-					playerDynamics.kInertiaAccel = m_movement.m_inertiaAcceleration;
-
-					playerDynamics.maxClimbAngle = m_movement.m_maxClimbAngle.ToDegrees();
-					playerDynamics.maxJumpAngle = m_movement.m_maxJumpAngle.ToDegrees();
-					playerDynamics.minFallAngle = m_movement.m_minFallAngle.ToDegrees();
-					playerDynamics.minSlideAngle = m_movement.m_minSlideAngle.ToDegrees();
-
-					playerDynamics.maxVelGround = m_movement.m_maxGroundVelocity;
-
-					physParams.pPlayerDynamics = &playerDynamics;
-
-					m_pEntity->Physicalize(physParams);
-
-					if (m_bGroundAlignment)
+					if (m_pPoseAligner == nullptr)
 					{
-						if (m_pPoseAligner == nullptr)
-						{
-							CryCreateClassInstance(CPoseAlignerC3::GetCID(), m_pPoseAligner);
-						}
+						CryCreateClassInstance(CPoseAlignerC3::GetCID(), m_pPoseAligner);
+					}
 
-						m_pPoseAligner->Clear();
-					}
-					else
-					{
-						m_pPoseAligner = nullptr;
-					}
+					m_pPoseAligner->Clear();
+				}
+				else
+				{
+					m_pPoseAligner.reset();
 				}
 			}
 

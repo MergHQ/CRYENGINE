@@ -68,14 +68,41 @@ void CPathfindingComponent::Initialize()
 	m_movementAbility.b3DMove = true;
 }
 
+void CPathfindingComponent::SetMaxAcceleration(float maxAcceleration) 
+{
+	m_maxAcceleration = maxAcceleration; 
+
+	PathFollowerParams params;
+	params.maxAccel = m_maxAcceleration;
+	params.maxSpeed = params.maxAccel;
+	params.minSpeed = 0.f;
+	params.normalSpeed = params.maxSpeed;
+
+	params.use2D = false;
+
+	m_pPathFollower->SetParams(params);
+}
+
 void CPathfindingComponent::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
 		case ENTITY_EVENT_START_GAME:
-		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
 		{
 			Initialize();
+		}
+		break;
+		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		{
+			PathFollowerParams params;
+			params.maxAccel = m_maxAcceleration;
+			params.maxSpeed = params.maxAccel;
+			params.minSpeed = 0.f;
+			params.normalSpeed = params.maxSpeed;
+
+			params.use2D = false;
+
+			m_pPathFollower->SetParams(params);
 		}
 		break;
 	}

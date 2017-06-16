@@ -20,7 +20,7 @@ class CAnyValue;
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(CAnyValue)
 
-class CObjectProperties : public IObjectProperties
+class CObjectProperties final : public IObjectProperties
 {
 private:
 
@@ -76,6 +76,8 @@ public:
 
 	virtual void AddComponent(const CryGUID& guid, const char* szName, const CClassProperties& properties) override;
 	virtual void AddVariable(const CryGUID& guid, const char* szName, const CAnyConstRef& value) override;
+
+	virtual bool                    HasVariables() const override { return m_variables.size() > 0; }
 	// ~IObjectProperties
 
 private:

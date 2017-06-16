@@ -59,6 +59,20 @@ void CStaticMeshComponent::LoadFromDisk()
 	}
 }
 
+void CStaticMeshComponent::SetObject(IStatObj* pObject, bool bSetDefaultMass)
+{
+	m_pCachedStatObj = pObject;
+	m_filePath.value = m_pCachedStatObj->GetFilePath();
+
+	if (bSetDefaultMass)
+	{
+		if (!m_pCachedStatObj->GetPhysicalProperties(m_physics.m_mass, m_physics.m_density))
+		{
+			m_physics.m_mass = 10;
+		}
+	}
+}
+
 void CStaticMeshComponent::ResetObject()
 {
 	if (m_pCachedStatObj != nullptr)
