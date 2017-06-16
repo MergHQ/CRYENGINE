@@ -136,7 +136,7 @@ float GetShadowOccl(float3 worldPos)
 	samplingContext.pointSamplerClamp = ssPointClamp;
 	samplingContext.bilinearSamplerWrap = ssForwardBilinearWrap;
 
-	return ShadowDepthTest(cbShadowSampling, shadowCascades, samplingContext, worldPos, true, true);
+	return ShadowDepthTest((SShadowSamplingParams)cbShadowSampling, shadowCascades, samplingContext, worldPos, true, true);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -354,9 +354,9 @@ OutputVS PulledParticleVS(uint vertID: SV_VertexID)
 
 #else
 	const uint vertexId = (vertID>>1) + particleInstance.vertexOffset;
-	const uint isDegen = (colorSTsSRV[vertexId].baseTC >> 16) & 1;
-	const uint isPositive = (vertID & 1);
-	const uint offset = isDegen & isPositive;
+	const bool isDegen  = colorSTsSRV[vertexId].baseTC & 0x10000;
+	const bool isOdd    = vertID & 1;
+	const uint offset   = (isDegen && isOdd) ? 1 : 0;
 
 	float4 Position = float4(positionsSRV[vertexId+offset].position, 1.0);
 	app2vertParticleGeneral IN = (app2vertParticleGeneral)0;
@@ -367,7 +367,7 @@ OutputVS PulledParticleVS(uint vertID: SV_VertexID)
 
 	ParticleSpriteCommon(Position, IN);
 
-	IN.baseTC.x = isPositive ^ isDegen;
+	IN.baseTC.x = isDegen != isOdd ? 1 : 0;
 
 	const float4 debugColor = isDegen ? float4(1.0, 0.0, 0.0, 1.0) : float4(0.6, 1.0, 0.2, 1.0);
 
@@ -406,7 +406,7 @@ OutputVS GpuParticleVS(uint vertID : SV_VertexID)
 
 	ParticleSpriteCommon(Position, IN);
 
-	const uint spriteIndices[] = {0, 1, 2, 2, 1, 3};
+	const uint spriteIndices[6] = {0, 1, 2, 2, 1, 3};
 	const uint indexId = spriteIndices[vertID % 6];
 	IN.baseTC.x = indexId & 1;
 	IN.baseTC.y = indexId & 2 ? 1 : 0;
@@ -819,7 +819,9 @@ float4 GetScreenCoords( float4 WPos )
 	return tcScreen;
 }
 
+#if !ORBIS
 [earlydepthstencil]
+#endif
 pixoutParticle ParticlePS(OutputVS IN)
 {
 	pixoutParticle OUT = (pixoutParticle) 0;
@@ -914,7 +916,7 @@ pixoutParticle ParticlePS(OutputVS IN)
 				sunIntensity *= IN.blendTC.w;
 			#endif
 			
-			cSpecularAcc.rgb += BlinnBRDF(vNormal, vView, CV_SunLightDir, fGloss) * saturate(dot(vNormal, CV_SunLightDir)) * sunIntensity;
+			cSpecularAcc.rgb += BlinnBRDF(vNormal, vView, CV_SunLightDir, fGloss) * saturate(dot(vNormal, CV_SunLightDir.xyz)) * sunIntensity;
 			cSpecularAcc *= MatSpecColor.rgb;
 
 			// combine with diffuse, but make sure we stay energy conservant

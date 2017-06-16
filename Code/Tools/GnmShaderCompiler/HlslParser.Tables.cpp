@@ -287,7 +287,8 @@ void HlslParser::SParserState::InitTables(EShaderType shaderType)
 	else if (shaderType == kShaderTypeHull)
 	{
 		object2Types.add
-		  ("InputPatch", kBaseTypeInputPatch);
+		  ("InputPatch", kBaseTypeInputPatch)
+		  ("OutputPatch", kBaseTypeOutputPatch);
 	}
 	else if (shaderType == kShaderTypeDomain)
 	{

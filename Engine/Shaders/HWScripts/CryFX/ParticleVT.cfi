@@ -16,7 +16,7 @@ cbuffer ParticleInstance : register(b12)
 		uint   lightVolumeId;
 		uint   envCubemapIndex;
 	} particleInstance;
-}
+};
 
 cbuffer ParticleParamsCB : register (b9)
 {
@@ -41,9 +41,8 @@ cbuffer ParticleParamsCB : register (b9)
 		float diffuseLighting;
 		float emissiveLighting;
 		float backLighting;
-		float __;
 	} particleParams;
-}
+};
 
 struct SParticleAxes
 {
