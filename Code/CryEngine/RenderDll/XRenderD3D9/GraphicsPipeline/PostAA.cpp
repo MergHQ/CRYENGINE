@@ -138,7 +138,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 	CTexture* pDestRT = GetUtils().GetTaaRT(true);
 	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetUtils().GetTaaRT(false) : pCurrRT;
 
-	assert((pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB) && (pPrevRT->GetFlags() & FT_USAGE_ALLOWREADSRGB));
+	assert((pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB));
 
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_1TX_MASK))
@@ -161,7 +161,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetTextureSamplerPair(2, CTexture::s_ptexZTarget, EDefaultSamplerStates::PointClamp);
 		m_passTemporalAA.SetTextureSamplerPair(3, GetUtils().GetVelocityObjectRT(), EDefaultSamplerStates::PointClamp);
 		m_passTemporalAA.SetTextureSamplerPair(4, pCurrRT, EDefaultSamplerStates::LinearClamp, EDefaultResourceViews::sRGB);
-		m_passTemporalAA.SetTextureSamplerPair(5, pPrevRT, EDefaultSamplerStates::LinearClamp, EDefaultResourceViews::sRGB);
+		m_passTemporalAA.SetTextureSamplerPair(5, pPrevRT, EDefaultSamplerStates::LinearClamp);
 		m_passTemporalAA.SetTexture(16, pRenderer->m_DepthBufferOrig.pTexture);
 	}
 
