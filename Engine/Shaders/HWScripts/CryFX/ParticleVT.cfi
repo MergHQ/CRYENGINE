@@ -12,16 +12,11 @@ cbuffer ParticleInstance : register(b12)
 	{
 		float4 avgFogVolumeContrib;
 		float4 glowParams;
-		uint4  miscData; // .x vertexOffset, .y lightVolumeId, .z envCubemapIndex
+		uint   vertexOffset;
+		uint   lightVolumeId;
+		uint   envCubemapIndex;
 	} particleInstance;
 }
-
-// Workaround for hlslcc issues with single uint values in cbuffers
-#define particleInstance_avgFogVolumeContrib particleInstance.avgFogVolumeContrib
-#define particleInstance_glowParams          particleInstance.glowParams
-#define particleInstance_vertexOffset        particleInstance.miscData.x
-#define particleInstance_lightVolumeId       particleInstance.miscData.y
-#define particleInstance_envCubemapIndex     particleInstance.miscData.z
 
 cbuffer ParticleParamsCB : register (b9)
 {

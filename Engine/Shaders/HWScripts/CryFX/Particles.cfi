@@ -335,7 +335,7 @@ float4 UintToFloat4(uint v)
 OutputVS PulledParticleVS(uint vertID: SV_VertexID)
 {
 #if %_RT_SPRITE
-	const uint particleId = (vertID>>2) + particleInstance_vertexOffset;
+	const uint particleId = (vertID>>2) + particleInstance.vertexOffset;
 
 	float4 Position = float4(positionsSRV[particleId].position, 1.0);
 
@@ -353,7 +353,7 @@ OutputVS PulledParticleVS(uint vertID: SV_VertexID)
 	const float4 debugColor = float4(0.8, 1.0, 0.0, 1.0);
 
 #else
-	const uint vertexId = (vertID>>1) + particleInstance_vertexOffset;
+	const uint vertexId = (vertID>>1) + particleInstance.vertexOffset;
 	const uint isDegen = (colorSTsSRV[vertexId].baseTC >> 16) & 1;
 	const uint isPositive = (vertID & 1);
 	const uint offset = isDegen & isPositive;
@@ -867,8 +867,8 @@ pixoutParticle ParticlePS(OutputVS IN)
 		particleParams.diffuseLighting, particleParams.emissiveLighting, particleParams.backLighting);
 
 #if %_RT_ENVIRONMENT_CUBEMAP
-	const uint envMapIndex = Fwd_TiledLightsShadeInfo[particleInstance_envCubemapIndex].resIndex;
-	const float4 envMapColor = Fwd_TiledLightsShadeInfo[particleInstance_envCubemapIndex].color;
+	const uint envMapIndex = Fwd_TiledLightsShadeInfo[particleInstance.envCubemapIndex].resIndex;
+	const float4 envMapColor = Fwd_TiledLightsShadeInfo[particleInstance.envCubemapIndex].color;
 	float3 envDiffuseColor = Fwd_DiffuseCubeArray.SampleLevel(
 		TrilinearClampSamplerState,
 		float4(vNormal.xyz, envMapIndex), 0.0).rgb;
@@ -925,7 +925,7 @@ pixoutParticle ParticlePS(OutputVS IN)
 #endif
 
 	// Add particle glow 
-	cFinal.rgb += cDiffuseMap.a * cDiffuseMap.rgb * cGlowMap.rgb * particleInstance_glowParams.rgb;
+	cFinal.rgb += cDiffuseMap.a * cDiffuseMap.rgb * cGlowMap.rgb * particleInstance.glowParams.rgb;
 
 	// add particle color
 	cFinal.rgb *= IN.cColor.rgb;
@@ -940,7 +940,7 @@ pixoutParticle ParticlePS(OutputVS IN)
 #endif
 
 #if %_RT_FOG && !%REFRACTION
-	ApplyFog(cFinal, particleInstance_avgFogVolumeContrib, IN);
+	ApplyFog(cFinal, particleInstance.avgFogVolumeContrib, IN);
 #endif
 
 #if !%REFRACTION
