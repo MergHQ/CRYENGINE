@@ -42,8 +42,6 @@ private:
 	template<typename TFactoryDb, typename TFilterFunc>
 	static void BuildNameStringListWithFilter(const TFactoryDb& factoryDb, TFilterFunc filterFunc, Serialization::StringList& outNamesList);
 
-	void        BuildEvaluatorNamesList();
-	void        BuildFilteredFunctionNamesList(const SItemTypeName& typeToFilter);
 	void        BuildTypeInfoToNameMap();
 
 private:

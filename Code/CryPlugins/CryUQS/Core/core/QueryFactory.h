@@ -54,6 +54,7 @@ namespace UQS
 			const Shared::CTypeInfo*            GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const;
 
 			static void                         InstantiateFactories();
+			static const CQueryFactoryBase&     GetDefaultQueryFactory();  // this may only be called after InstantiateFactories(); will assert() and crash otherwise
 
 		private:
 			virtual const Shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const = 0;
@@ -68,6 +69,7 @@ namespace UQS
 			bool                                m_bSupportsEvaluators;
 			size_t                              m_minRequiredChildren;
 			size_t                              m_maxAllowedChildren;
+			static const CQueryFactoryBase*     s_pDefaultQueryFactory;   // will be set by InstantiateFactories()
 		};
 
 		//===================================================================================

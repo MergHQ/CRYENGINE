@@ -340,6 +340,8 @@ CInputComponent::CInputComponent()
 void CInputComponent::Initialize()
 {
 	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
+	
+	pActionMapManager->ClearInputDevicesMappings();
 
 	pActionMapManager->AddInputDeviceMapping(eAID_KeyboardMouse, "keyboard");
 	pActionMapManager->AddInputDeviceMapping(eAID_XboxPad, "xboxpad");

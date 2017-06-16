@@ -170,6 +170,8 @@ namespace UQS
 		//
 		//===================================================================================
 
+		const CQueryFactoryBase* CQueryFactoryBase::s_pDefaultQueryFactory;
+
 		CQueryFactoryBase::CQueryFactoryBase(const char* szName, const CryGUID& guid, const char* szDescription, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
 			: CFactoryBase(szName, guid)
 			, m_description(szDescription)
@@ -259,6 +261,14 @@ namespace UQS
 			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", "166b3a88-3cf3-45ea-bb4c-3eb6cb11d6de"_uqs_guid, szDescription_regular, true, true, true, 0, 0);
 			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", "89b926fb-a825-4de0-8817-ecef882efc0d"_uqs_guid, szDescription_chained, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
 			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", "a5ac314b-29a0-4bd0-82b6-c8ae3752371b"_uqs_guid, szDescription_fallbacks, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+
+			s_pDefaultQueryFactory = &queryFactory_regular;
+		}
+
+		const CQueryFactoryBase& CQueryFactoryBase::GetDefaultQueryFactory()
+		{
+			assert(s_pDefaultQueryFactory);  // InstantiateFactories() should have been called beforehand
+			return *s_pDefaultQueryFactory;
 		}
 
 	}

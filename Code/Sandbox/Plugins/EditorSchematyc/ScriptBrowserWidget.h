@@ -152,7 +152,7 @@ class CScriptBrowserModel : public QAbstractItemModel
 	Q_OBJECT
 
 	typedef std::unordered_map<CryGUID, CScriptBrowserItem*> ItemsByGUID;
-	typedef std::map<string, CScriptBrowserItem*>          ItemsByFileName;
+	typedef std::map<string, CScriptBrowserItem*>            ItemsByFileName;
 
 public:
 	enum ERole : int32
@@ -269,8 +269,6 @@ public slots:
 	void OnTreeViewClicked(const QModelIndex& index);
 	void OnTreeViewCustomContextMenuRequested(const QPoint& position);
 	void OnTreeViewKeyPress(QKeyEvent* pKeyEvent, bool& bEventHandled);
-	void OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-	void OnScopeToThis();
 	void OnFindReferences();
 	void OnAddItem(IScriptElement* pScriptElement, EScriptElementType elementType);
 	void OnCopyItem();

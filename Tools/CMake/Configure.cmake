@@ -121,13 +121,13 @@ set(WINSDK_SDK_DIR "${SDK_DIR}/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
 
-# Must be included after SDK_DIR definition
-include(${TOOLS_CMAKE_DIR}/CopyFilesToBin.cmake)
-
 # custom defines
 list(APPEND global_defines "CRYENGINE_DEFINE")
 
 include(${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
+
+# Must be included after SDK_DIR definition
+include(${TOOLS_CMAKE_DIR}/CopyFilesToBin.cmake)
 
 if(OPTION_STATIC_LINKING)
 	# Enable static libraries

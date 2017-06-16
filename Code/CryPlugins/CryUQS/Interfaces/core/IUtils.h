@@ -19,6 +19,7 @@ namespace UQS
 		{
 			virtual                          ~IUtils() {}
 			virtual Client::IItemFactory*    FindItemFactoryByType(const Shared::CTypeInfo& type) const = 0;
+			virtual const IQueryFactory&     GetDefaultQueryFactory() const = 0;
 		};
 
 	}

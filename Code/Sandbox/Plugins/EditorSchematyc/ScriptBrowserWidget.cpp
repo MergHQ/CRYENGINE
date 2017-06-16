@@ -1305,8 +1305,6 @@ bool CScriptBrowserWidget::SetModel(CScriptBrowserModel* pModel)
 				m_pTreeView->setModel(m_pFilterProxy);
 				m_pTreeView->expandToDepth(0);
 
-				QObject::connect(m_pTreeView->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)), this, SLOT(OnSelectionChanged(const QItemSelection &, const QItemSelection &)));
-
 				m_pAddMenu->clear();
 				PopulateAddMenu(m_pAddMenu, m_pModel->GetRootElement());
 				m_pAddButton->setEnabled(!m_pAddMenu->isEmpty());
@@ -1443,23 +1441,6 @@ void CScriptBrowserWidget::OnTreeViewCustomContextMenuRequested(const QPoint& po
 void CScriptBrowserWidget::OnTreeViewKeyPress(QKeyEvent* pKeyEvent, bool& bEventHandled)
 {
 	bEventHandled = HandleKeyPress(pKeyEvent);
-}
-
-void CScriptBrowserWidget::OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
-{
-	if (m_pModel)
-	{
-		CScriptBrowserItem* pItem = m_pModel->ItemFromIndex(TreeViewToModelIndex(GetTreeViewSelection()));
-		if (pItem)
-		{
-			m_signals.selection.Send(SScriptBrowserSelection(pItem ? pItem->GetScriptElement() : nullptr));
-		}
-	}
-}
-
-void CScriptBrowserWidget::OnScopeToThis()
-{
-	//SetScope(TreeViewToModelIndex(GetTreeViewSelection()));
 }
 
 void CScriptBrowserWidget::OnFindReferences()
