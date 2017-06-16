@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QGridLayout>
+#include <QPointer>
 
 #include "QToolWindowManagerCommon.h"
 #include "QToolWindowTabBar.h"
@@ -104,7 +105,7 @@ private:
 	QPushButton* createCloseButton();
 	bool shouldShowSingleTabFrame();
 	virtual void mouseReleaseEvent(QMouseEvent * e);
-	QToolWindowManager* m_manager;
+	QPointer<QToolWindowManager> m_manager;
 	bool m_tabDragCanStart;
 	bool m_areaDragCanStart;
 	QToolWindowSingleTabAreaFrame* m_tabFrame;

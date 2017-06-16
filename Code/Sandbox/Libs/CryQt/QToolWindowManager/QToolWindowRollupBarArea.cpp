@@ -93,7 +93,11 @@ QToolWindowRollupBarArea::QToolWindowRollupBarArea(QToolWindowManager* manager, 
 
 QToolWindowRollupBarArea::~QToolWindowRollupBarArea()
 {
-	m_manager->removeArea(this);
+	if (m_manager)
+	{
+		m_manager->removeArea(this);
+		m_manager = nullptr;
+	}
 }
 
 void QToolWindowRollupBarArea::addToolWindow(QWidget* toolWindow, int index /*= -1*/)

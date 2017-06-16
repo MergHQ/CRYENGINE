@@ -6,6 +6,7 @@
 #include "IToolWindowWrapper.h"
 
 #include <QLabel>
+#include <QPointer>
 
 class QToolWindowManager;
 class QPushButton;
@@ -56,7 +57,7 @@ protected:
 #endif
 
 protected:
-	QToolWindowManager* m_manager;
+	QPointer<QToolWindowManager> m_manager;
 
 	friend class QToolWindowCustomTitleBar;
 };
