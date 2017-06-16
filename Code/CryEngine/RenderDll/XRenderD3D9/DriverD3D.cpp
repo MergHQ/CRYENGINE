@@ -175,8 +175,10 @@ void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 		pContext->m_pBackBuffers[i]->SetHeight(height);
 		pContext->m_pBackBuffers[i]->SetDevTexture(CDeviceTexture::Associate(pContext->m_pBackBuffers[i]->GetLayout(), pBackBuffer));
 
-#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
 		// Guarantee that the back-buffers are cleared on first use (e.g. Flash alpha-blends onto the back-buffer)
+		// NOTE: GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
+		// NOTE: Can only access current backbuffer on DX12
+#if !(CRY_RENDERER_GNM || CRY_RENDERER_DIRECT3D >= 120)
 		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
 		commandList.GetGraphicsInterface()->ClearSurface(pContext->m_pBackBuffers[i]->GetDevTexture()->LookupRTV(EDefaultResourceViews::RasterizerTarget), Clr_Transparent);
 #endif
