@@ -284,29 +284,6 @@ void CSmartObject::GetScriptProperties(XmlNodeRef xmlEntityNode)
 	}
 }
 
-/*
-//////////////////////////////////////////////////////////////////////////
-void CSmartObject::BeginEditParams(int flags)
-{
-	if (m_pLuaProperties)
-	{
-		m_pLuaProperties->AddOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
-	}
-	__super::BeginEditParams(flags);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSmartObject::EndEditParams()
-{
-	if (m_pLuaProperties)
-	{
-		m_pLuaProperties->RemoveOnSetCallback(functor(*this, &CSmartObject::OnPropertyChange));
-	}
-	__super::EndEditParams();
-
-	Reload(true);
-}*/
-
 void CSmartObject::OnEvent(ObjectEvent eventID)
 {
 	CBaseObject::OnEvent(eventID);
