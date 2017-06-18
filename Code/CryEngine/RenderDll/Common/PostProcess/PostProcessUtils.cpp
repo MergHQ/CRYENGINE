@@ -78,12 +78,12 @@ bool SPostEffectsUtils::Create()
 
 		if (CRenderer::CV_r_AntialiasingMode)
 		{
-			GetOrCreateRenderTarget("$PrevBackBuffer0", CTexture::s_ptexPrevBackBuffer[0][0], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, TO_PREVBACKBUFFERMAP0, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);
-			GetOrCreateRenderTarget("$PrevBackBuffer1", CTexture::s_ptexPrevBackBuffer[1][0], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, TO_PREVBACKBUFFERMAP1, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);
+			GetOrCreateRenderTarget("$PrevBackBuffer0", CTexture::s_ptexPrevBackBuffer[0][0], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, TO_PREVBACKBUFFERMAP0, FT_DONT_RELEASE);
+			GetOrCreateRenderTarget("$PrevBackBuffer1", CTexture::s_ptexPrevBackBuffer[1][0], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, TO_PREVBACKBUFFERMAP1, FT_DONT_RELEASE);
 			if (gRenDev->IsStereoEnabled())
 			{
-				GetOrCreateRenderTarget("$PrevBackBuffer0_R", CTexture::s_ptexPrevBackBuffer[0][1], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);
-				GetOrCreateRenderTarget("$PrevBackBuffer1_R", CTexture::s_ptexPrevBackBuffer[1][1], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);
+				GetOrCreateRenderTarget("$PrevBackBuffer0_R", CTexture::s_ptexPrevBackBuffer[0][1], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, -1, FT_DONT_RELEASE);
+				GetOrCreateRenderTarget("$PrevBackBuffer1_R", CTexture::s_ptexPrevBackBuffer[1][1], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, -1, FT_DONT_RELEASE);
 			}
 		}
 		else

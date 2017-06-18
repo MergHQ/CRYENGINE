@@ -147,7 +147,7 @@ pixout PostAA_PS(vtxOutAA IN)
 	#else
 		float depth = PostAA_DepthTex.Load(int3(IN.WPos.xy, 0));
 		
-		#if %_RT_SAMPLE3
+		#if %_RT_SAMPLE3 || !%_RT_SAMPLE2
 			// Dilate depth to improve moving silhouette edges
 			float depth1 = PostAA_DepthTex.Load(int3(IN.WPos.xy + int2(-1, -1), 0));
 			float depth2 = PostAA_DepthTex.Load(int3(IN.WPos.xy + int2( 1, -1), 0));
@@ -238,9 +238,6 @@ pixout PostAA_PS(vtxOutAA IN)
 	OUT.Color.rgb = cCenter * weight + cHistory.rgb * (1 - weight);
 	OUT.Color.a = currBlend;
 	
-	// Reencode in sRGB
-	OUT.Color.xyz = (OUT.Color.xyz < 0.0031308) ? 12.92 * OUT.Color.xyz : 1.055 * pow(OUT.Color.xyz, 1.0 / 2.4) - float3(0.055, 0.055, 0.055);	
-	
 #elif %_RT_SAMPLE2
 	// SMAA 1TX Mode
 	float fMaxFramesL = cbPostAA.params.z;		// Frames to keep in history (low freq). Higher = less aliasing, but blurier result. Lower = sharper result, but more aliasing.
@@ -308,9 +305,6 @@ pixout PostAA_PS(vtxOutAA IN)
 	// Exponential moving average of current frame and history
 	const float MaxFramesL = 2.5, MaxFramesH = 5;  // If too high, 8 bit sRGB precision not enough to converge
 	OUT.Color.rgb = lerp( cHistory, cM, saturate(rcp(lerp(MaxFramesL, MaxFramesH, blendAmount))) );
-	
-	// Reencode in sRGB
-	OUT.Color.xyz = (OUT.Color.xyz < 0.0031308) ? 12.92 * OUT.Color.xyz : 1.055 * pow(OUT.Color.xyz, 1.0 / 2.4) - float3(0.055, 0.055, 0.055);
 #endif
 
   return OUT;
@@ -920,6 +914,10 @@ pixout PostAAComposites_PS(vtxOut IN)
 	half3 cFiltered = (cTL + cTR + cBL + cBR) * 0.25h;
 	OUT.Color.rgb = sqrt( saturate(lerp( cFiltered, OUT.Color.rgb * OUT.Color.rgb, vParams.x )) );
 #endif
+
+#if %_RT_SAMPLE2	
+	OUT.Color.rgb = LinearToSRGB(OUT.Color.rgb);
+#endif
 	
 	ApplyFilmGrain(OUT.Color, OUT.Color, IN.baseTC);
 
@@ -1000,8 +998,7 @@ pixout UpscaleImagePS(vtxOut IN)
 	// Read linearized texture
 	OUT.Color = tex2D(_tex0, texCoords);
 	
-	// Reencode color in sRGB space
-	OUT.Color.xyz = (OUT.Color.xyz < 0.0031308) ? 12.92 * OUT.Color.xyz : 1.055 * pow(OUT.Color.xyz, 1.0 / 2.4) - float3(0.055, 0.055, 0.055);
+	OUT.Color.rgb = LinearToSRGB(OUT.Color.rgb);
 	
   return OUT;
 }

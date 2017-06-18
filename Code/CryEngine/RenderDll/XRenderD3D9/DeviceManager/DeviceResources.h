@@ -141,7 +141,7 @@ protected:
 	D3DFormat     m_eNativeFormat;
 	uint32        m_eFlags;
 	buffer_size_t m_resourceElements; // For buffers: in bytes; for textures: in texels
-	uint8         m_subResources[eSubResource_Num];
+	uint16        m_subResources[eSubResource_Num];
 	ETEX_Type     m_eTT;
 	bool          m_bFilterable : 1;
 	bool          m_bIsSrgb     : 1;

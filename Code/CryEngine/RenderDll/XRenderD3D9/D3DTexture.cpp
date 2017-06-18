@@ -2375,19 +2375,24 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int nDstNumMips,
 	{
 		assert(nSrcMipOffset >= 0 && nDstMipOffset >= 0);
 
-		const SResourceRegionMapping mapping =
+		for (int nMip = 0; nMip < nNumMips; ++nMip)
 		{
-			{ 0, 0, 0, D3D11CalcSubresource(nSrcMipOffset, nSrcSliceOffset, nSrcNumMips) }, // src position
-			{ 0, 0, 0, D3D11CalcSubresource(nDstMipOffset, nDstSliceOffset, nDstNumMips) }, // dst position
-			pSrcDevTex->GetDimension(nSrcMipOffset, nNumSlices), // size
-			D3D11_COPY_NO_OVERWRITE_REVERT | D3D11_COPY_NO_OVERWRITE_PXLSRV
-		};
+			SResourceRegionMapping mapping =
+			{
+				{ 0, 0, 0, D3D11CalcSubresource(nSrcMipOffset + nMip, nSrcSliceOffset, nSrcNumMips) }, // src position
+				{ 0, 0, 0, D3D11CalcSubresource(nDstMipOffset + nMip, nDstSliceOffset, nDstNumMips) }, // dst position
+				pSrcDevTex->GetDimension(nSrcMipOffset + nMip, nNumSlices), // size
+				D3D11_COPY_NO_OVERWRITE_REVERT | D3D11_COPY_NO_OVERWRITE_PXLSRV
+			};
 
-		CRY_ASSERT(mapping.Extent.Subresources == nNumSlices * nNumMips);
-		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
-			pSrcDevTex,
-			pDstDevTex,
-			mapping);
+			// "TODO: allow multiple slices being uploaded with the same command"
+			mapping.Extent.Subresources = 1;
+
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
+				pSrcDevTex,
+				pDstDevTex,
+				mapping);
+		}
 	}
 }
 

@@ -15,6 +15,11 @@ namespace UQS
 			return (it == m_type2itemFactory.cend()) ? nullptr : it->second;
 		}
 
+		const IQueryFactory& CUtils::GetDefaultQueryFactory() const
+		{
+			return CQueryFactoryBase::GetDefaultQueryFactory();
+		}
+
 		void CUtils::OnFactoryRegistered(Client::IItemFactory* pFreshlyRegisteredFactory)
 		{
 			m_type2itemFactory[pFreshlyRegisteredFactory->GetItemType()] = pFreshlyRegisteredFactory;
