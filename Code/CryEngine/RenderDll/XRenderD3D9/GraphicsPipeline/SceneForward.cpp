@@ -1020,7 +1020,10 @@ void CSceneForwardStage::Execute_SkyPass()
 		{
 			pSkyDomeTextureMie = m_pHDRSkyRE->m_pSkyDomeTextureMie;
 			pSkyDomeTextureRayleigh = m_pHDRSkyRE->m_pSkyDomeTextureRayleigh;
-			pSkyMoonTex = m_pHDRSkyRE->m_moonTexId > 0 ? CTexture::GetByID(m_pHDRSkyRE->m_moonTexId) : m_pSkyMoonTex.get();
+			if (m_pHDRSkyRE->m_moonTexId > 0)
+			{
+				pSkyMoonTex = CTexture::GetByID(m_pHDRSkyRE->m_moonTexId);
+			}
 		}
 
 		m_skyPass.SetTextureSamplerPair(1, pSkyDomeTextureMie, samplerStateLinearWrapU);
@@ -1029,7 +1032,6 @@ void CSceneForwardStage::Execute_SkyPass()
 
 		m_pSkyDomeTextureMie = pSkyDomeTextureMie;
 		m_pSkyDomeTextureRayleigh = pSkyDomeTextureRayleigh;
-		m_pSkyMoonTex = pSkyMoonTex;
 	}
 
 	m_skyPass.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pPerPassCB, EShaderStage_AllWithoutCompute);

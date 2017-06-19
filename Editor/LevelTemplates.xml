@@ -71,14 +71,14 @@
 		</VolumetricCloud>
 
 		<SkyBox>
-			<Material type="Material" value="EngineAssets/Materials/Sky/Sky"/>
-			<MaterialLowSpec type="Material" value="EngineAssets/Materials/Sky/Sky"/>
+			<Material type="Material" value="%ENGINE%/EngineAssets/Materials/Sky/Sky"/>
+			<MaterialLowSpec type="Material" value="%ENGINE%/EngineAssets/Materials/Sky/Sky"/>
 			<Angle type="Float" value="0"/>
 			<Stretching type="Float" value="0.5"/>
 		</SkyBox>
 
 		<Ocean>
-			<Material type="Material" value="EngineAssets/Materials/Water/Ocean_default" />
+			<Material type="Material" value="%ENGINE%/EngineAssets/Materials/Water/Ocean_default" />
 			<CausticDepth type="Float" value="8.0"/>
 			<CausticIntensity type="Float" value="1.0"/>
 			<CausticsTilling type="Float" value ="1.0"/>
@@ -95,7 +95,7 @@
 			<Latitude type="Float" value="240.0"/>
 			<Longitude type="Float" value="45.0"/>
 			<Size type="Float" value="0.5"/>
-			<Texture type="Texture" value="EngineAssets/Textures/Skys/Night/half_moon.dds"/>
+			<Texture type="Texture" value="%ENGINE%/EngineAssets/Textures/Skys/Night/half_moon.dds"/>
 		</Moon>
 
 		<DynTexSource>

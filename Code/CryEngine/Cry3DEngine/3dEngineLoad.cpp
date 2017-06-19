@@ -1269,8 +1269,8 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	m_fTerrainDetailMaterialsViewDistRatio = fTerrainDetailMaterialsViewDistRatio;
 
 	// SkyBox
-	m_skyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "Materials/Sky/Sky");
-	m_skyLowSpecMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "Materials/Sky/Sky");
+	m_skyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "%ENGINE%/EngineAssets/Materials/sky/Sky");
+	m_skyLowSpecMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "%ENGINE%/EngineAssets/Materials/sky/Sky");
 
 	// Forces the engine to reload the material of the skybox in the next time it renders it.
 	m_pSkyMat = NULL;
