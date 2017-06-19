@@ -250,7 +250,7 @@ void CSharpeningUpsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	m_pass.SetRenderTarget(0, pDestRT);
 	m_pass.SetTechnique(CShaderMan::s_shPostAA, techName, 0);
 	m_pass.SetState(GS_NODEPTHTEST);
-	m_pass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::LinearClamp);
+	m_pass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::LinearClamp, EDefaultResourceViews::sRGB);
 	m_pass.BeginConstantUpdate();
 	m_pass.SetConstant(param0Name, params0, eHWSC_Pixel);
 	m_pass.Execute();
