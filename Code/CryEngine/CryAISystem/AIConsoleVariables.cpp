@@ -806,7 +806,7 @@ void AIConsoleVars::Init()
 	DefineConstIntCVarName("ai_MNMPathfinderConcurrentRequests", MNMPathfinderConcurrentRequests, 4, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Defines the amount of concurrent pathfinder requests that can be served at the same time.");
 
-	DefineConstIntCVarName("ai_MNMRaycastImplementation", MNMRaycastImplementation, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
+	DefineConstIntCVarName("ai_MNMRaycastImplementation", MNMRaycastImplementation, 2, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Defines which type of raycast implementation to use on the MNM meshes."
 	                       "0 - Version 1. This version will be deprecated as it sometimes does not handle correctly the cases where the ray coincides with triangle egdes, which has been fixed in the new version.\n"
 	                       "1 - Version 2. This version also fails in some cases when the ray goes exactly through triangle corners and then hitting the wall. \n"
