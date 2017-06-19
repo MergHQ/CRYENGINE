@@ -43,11 +43,17 @@ namespace Cry
 				if (m_materialFileName.value.size() > 0 && gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialFileName.value) != nullptr)
 				{
 					IDecalRenderNode* pRenderNode = static_cast<IDecalRenderNode*>(m_pEntity->GetSlotRenderNode(GetEntitySlotId()));
-					
+					if (pRenderNode == nullptr)
+					{
+						pRenderNode = static_cast<IDecalRenderNode*>(gEnv->p3DEngine->CreateRenderNode(eERType_Decal));
+						
+						m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), pRenderNode);
+					}
+
 					bool bSelected, bHighlighted;
 					m_pEntity->GetEditorObjectInfo(bSelected, bHighlighted);
 
-					uint64 renderFlags = 0;
+					uint64 renderFlags = ERF_PROCEDURAL;
 
 					if (bSelected)
 					{
@@ -77,7 +83,10 @@ namespace Cry
 
 					decalProperties.m_pos = slotTransform.TransformPoint(Vec3(0, 0, 0));
 					decalProperties.m_normal = slotTransform.TransformVector(Vec3(0, 0, 1));
+
+					PathUtil::RemoveExtension(m_materialFileName.value);
 					decalProperties.m_pMaterialName = m_materialFileName.value.c_str();
+
 					decalProperties.m_radius = m_projectionType != SDecalProperties::ePlanar ? decalProperties.m_normal.GetLength() : 1;
 					decalProperties.m_explicitRightUpFront = rotation;
 					decalProperties.m_sortPrio = m_sortPriority;
@@ -87,14 +96,14 @@ namespace Cry
 
 					pRenderNode->SetMatrix(slotTransform);
 
-					m_bSpawned = true;
-
 					m_pEntity->UpdateComponentEventMask(this);
 				}
 				else
 				{
 					Remove();
 				}
+
+				m_bSpawned = true;
 			}
 
 			virtual void Remove()

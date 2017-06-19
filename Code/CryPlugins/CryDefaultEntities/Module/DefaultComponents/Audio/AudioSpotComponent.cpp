@@ -155,10 +155,12 @@ void CEntityAudioSpotComponent::ProcessEvent(SEntityEvent& event)
 	switch (event.event)
 	{
 	case ENTITY_EVENT_START_GAME:
-	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
 		m_bActive = true;
 		ExecuteDefaultTrigger();
 		break;
+	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		m_pAudioComp->SetObstructionCalcType(m_occlusionType, m_auxAudioObjectId);
+		ExecuteDefaultTrigger();
 	case ENTITY_EVENT_RESET:
 		if (event.nParam[0] == 0)     //leaving game
 		{

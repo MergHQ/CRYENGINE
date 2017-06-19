@@ -64,7 +64,11 @@ QToolWindowCustomWrapper::QToolWindowCustomWrapper(QToolWindowManager* manager, 
 
 QToolWindowCustomWrapper::~QToolWindowCustomWrapper()
 {
-	m_manager->removeWrapper(this);
+	if (m_manager)
+	{
+		m_manager->removeWrapper(this);
+		m_manager = nullptr;
+	}
 }
 
 bool QToolWindowCustomWrapper::event(QEvent* e)

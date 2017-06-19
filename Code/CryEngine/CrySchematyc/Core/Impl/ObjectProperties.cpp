@@ -70,6 +70,7 @@ void CObjectProperties::SVariable::Serialize(Serialization::IArchive& archive)
 		if (overridePolicy == EOverridePolicy::Default)
 		{
 			archive(Serialization::ActionButton(functor(*this, &CObjectProperties::SVariable::Edit)), "edit", "^Edit");
+			archive(*pValue, "value", "!^Value");
 		}
 		else
 		{

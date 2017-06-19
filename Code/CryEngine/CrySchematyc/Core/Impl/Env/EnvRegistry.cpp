@@ -382,11 +382,11 @@ bool CEnvRegistry::RegisterPackageElements(const EnvPackageElements& packageElem
 
 	for (const SEnvPackageElement& packageElement : packageElements)
 	{
-		if (GetElement(packageElement.elementGUID))
+		if (IEnvElement* pExistingElement = GetElement(packageElement.elementGUID))
 		{
 			CStackString temp;
 			GUID::ToString(temp, packageElement.elementGUID);
-			SCHEMATYC_CORE_CRITICAL_ERROR("Duplicate element guid: element = %s, guid = %s", packageElement.pElement->GetName(), temp.c_str());
+			SCHEMATYC_CORE_CRITICAL_ERROR("Duplicate element guid: element = %s, guid = %s - Conflicted with existing element = %s!", packageElement.pElement->GetName(), temp.c_str(), pExistingElement->GetName());
 			bError = true;
 		}
 

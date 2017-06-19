@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QPointer>
 #include "QRollupBar.h"
 #include "IToolWindowArea.h"
 
@@ -63,7 +64,7 @@ protected Q_SLOTS:
 	void swapToRollup();
 private:
 	void setDraggable(bool draggable);
-	QToolWindowManager* m_manager;
+	QPointer<QToolWindowManager> m_manager;
 	QLabel* m_pTopWidget;
 	QPoint m_areaDragStart;
 	bool m_areaDraggable;

@@ -71,6 +71,7 @@ public:
 	const SPhysics& GetPhysicsParameters() const { return m_physics; }
 
 	virtual void LoadFromDisk();
+	virtual void SetObject(IStatObj* pObject, bool bSetDefaultMass = false);
 	virtual void ResetObject();
 
 protected:

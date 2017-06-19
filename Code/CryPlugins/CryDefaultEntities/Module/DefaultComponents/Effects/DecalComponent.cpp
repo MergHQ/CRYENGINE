@@ -74,10 +74,7 @@ void CDecalComponent::ProcessEvent(SEntityEvent& event)
 		break;
 	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
 		{
-			if(m_bSpawned)
-			{
-				Spawn();
-			}
+			Spawn();
 		}
 		break;
 	}

@@ -67,6 +67,11 @@ CObject::~CObject()
 	DestroyActions();
 	DestroyComponents();
 	DestroyStateMachines();
+
+	if (m_pEntity != nullptr)
+	{
+		m_pEntity->OnSchematycObjectDestroyed();
+	}
 }
 
 bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const IObjectPropertiesPtr& pProperties, ESimulationMode simulationMode, IEntity* pEntity)

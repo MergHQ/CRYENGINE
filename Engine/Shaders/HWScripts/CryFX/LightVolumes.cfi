@@ -77,7 +77,7 @@ void ProjectLightVolume(in float3 vWorldPos, in half sunShadow, in half backLigh
 	half4 vDirectional = half4(0,0,0,0.00001);
 
 #if %_RT_LIGHTVOLUME0
-	SLightVolumeRange range = lightVolumeRanges[particleInstance_lightVolumeId];
+	SLightVolumeRange range = lightVolumeRanges[particleInstance.lightVolumeId];
 	[loop] for (uint i = range.begin; i < range.end; ++i)
 	{
 		SLightVolumeInfo lightVol = lightVolumeInfos[i];

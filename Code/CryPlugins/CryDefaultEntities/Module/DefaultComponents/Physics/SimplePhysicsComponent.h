@@ -32,11 +32,11 @@ namespace Cry
 
 			struct SCollisionSignal
 			{
-				EntityId otherEntity = INVALID_ENTITYID;
+				Schematyc::ExplicitEntityId otherEntity;
 				Schematyc::SurfaceTypeName surfaceType;
 
 				SCollisionSignal() {};
-				SCollisionSignal(EntityId id, const Schematyc::SurfaceTypeName &srfType) : otherEntity(id), surfaceType(srfType) {}
+				SCollisionSignal(EntityId id, const Schematyc::SurfaceTypeName &srfType) : otherEntity(Schematyc::ExplicitEntityId(id)), surfaceType(srfType) {}
 			};
 
 			enum class EPhysicalType

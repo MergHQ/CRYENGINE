@@ -632,16 +632,19 @@ float4 DownsampleDepth_Params;
 pixout DownsampleDepthPS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
-
+	
+	uint2 WPos = (uint2)IN.WPos.xy;
 	float2 scaledTC = (IN.WPos.xy * 2.0) * DownsampleDepth_Params.xy;
 	
 	float4 vMaxDepths = DownsampleDepth_DepthTex.GatherRed(SampStatePoint, float3(scaledTC, 0));
 	float4 vMinDepths = DownsampleDepth_DepthTex.GatherGreen(SampStatePoint, float3(scaledTC, 0));
+	float  vPrvDepth  = DownsampleDepth_DepthTex.Load(int3(2 * WPos.x + ((WPos.y & 1) ^ 1), 2 * WPos.y + ((WPos.x & 1) ^ 1), 0));
 	
 	// Linearize depth
 #if %_RT_SAMPLE0
 	vMinDepths = CV_ProjRatio.y / (vMinDepths - CV_ProjRatio.x);
 	vMaxDepths = CV_ProjRatio.y / (vMaxDepths - CV_ProjRatio.x);
+	vPrvDepth  = CV_ProjRatio.y / (vPrvDepth  - CV_ProjRatio.x);
 #endif
 
 #if %_RT_SAMPLE1
@@ -650,9 +653,8 @@ pixout DownsampleDepthPS(vtxOut IN)
 
 	OUT.Color.x = max(max(vMaxDepths.x, vMaxDepths.y), max(vMaxDepths.z, vMaxDepths.w));
 	OUT.Color.y = min(min(vMinDepths.x, vMinDepths.y), min(vMinDepths.z, vMinDepths.w));
-	OUT.Color.z = (vMinDepths.x + vMinDepths.y + vMinDepths.z + vMinDepths.w) * 0.25;
-	uint2 WPos = (uint2)IN.WPos.xy;
-	OUT.Color.w = DownsampleDepth_DepthTex.Load(int3(2 * WPos.x + ((WPos.y & 1) ^ 1), 2 * WPos.y + ((WPos.x & 1) ^ 1), 0));
+	OUT.Color.z = (vMinDepths.x + vMinDepths.y + vMinDepths.z + vMinDepths.w) * 0.25; // Average
+	OUT.Color.w = vPrvDepth; // Rotated Grid Subsample
 
 	return OUT;
 }

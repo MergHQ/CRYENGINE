@@ -371,7 +371,11 @@ void CEntitySlot::PreviewRender(SEntityPreviewContext& context)
 			assert(context.pPassInfo);
 			m_pRenderNode->Render(*context.pRenderParams, *context.pPassInfo);
 		}
-		DebugDraw(context.debugDrawInfo);
+
+		if (context.debugDrawInfo.bDrawInFront)
+		{
+			DebugDraw(context.debugDrawInfo);
+		}
 	}
 }
 

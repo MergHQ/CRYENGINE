@@ -337,7 +337,6 @@ STextureLayout CDeviceTexture::GetLayout(D3DBaseView* pView)
 		nHeight = std::max(nHeight >> nFirstMip, 1U);
 		nDepth  = std::max(nDepth  >> nFirstMip, 1U);
 
-		STextureLayout Layout = {};
 		Layout.m_eDstFormat = Layout.m_eSrcFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(eTF, Layout.m_pPixelFormat);
 		Layout.m_eTT = eTT;
 		Layout.m_eFlags = nFlags;

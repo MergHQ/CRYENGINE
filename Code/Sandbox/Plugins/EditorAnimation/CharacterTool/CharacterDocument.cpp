@@ -1241,10 +1241,14 @@ void CharacterDocument::TriggerAnimationPreview(int previewFlags)
 		m_NormalizedTimeRate = 0.0f;
 		m_NormalizedTimeSmooth = 0.0f;
 		SignalPlaybackTimeChanged();
+		PreviewAnimationEntry(forceRecompile);
+		IdleUpdate();
 		Play();
 	}
-
-	PreviewAnimationEntry(forceRecompile);
+	else
+	{
+		PreviewAnimationEntry(forceRecompile);
+	}
 }
 
 void CharacterDocument::SetSelectedExplorerEntries(const ExplorerEntries& entries, int selectOptions)
@@ -1355,7 +1359,9 @@ void CharacterDocument::IdleUpdate()
 	{
 		PlaybackState playbackState;
 		if (!m_compressionMachine->IsPlaying() || m_bindPoseEnabled)
+		{
 			playbackState = PLAYBACK_UNAVAILABLE;
+		}
 		else
 		{
 			if (m_bPaused)
@@ -1375,7 +1381,9 @@ void CharacterDocument::IdleUpdate()
 					m_playbackBlockReason = "Playback Unavailable";
 			}
 			else
+			{
 				m_playbackBlockReason = "";
+			}
 			SignalPlaybackStateChanged();
 		}
 	}

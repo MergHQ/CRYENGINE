@@ -29,6 +29,8 @@ struct IObjectProperties
 
 	virtual void                    AddComponent(const CryGUID& guid, const char* szName, const CClassProperties& properties) = 0;
 	virtual void                    AddVariable(const CryGUID& guid, const char* szName, const CAnyConstRef& value) = 0;
+
+	virtual bool                    HasVariables() const = 0;
 };
 
 } // Schematyc

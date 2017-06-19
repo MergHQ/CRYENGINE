@@ -117,7 +117,8 @@ inline bool Serialize(Serialization::IArchive& archive, CRotation& value, const 
 {
 	CAngles3 angles = archive.isOutput() ? value.ToAngles() : CAngles3();
 
-	if (archive(angles, szName, szLabel))
+	typedef float(&Array)[3];
+	if ((archive.isEdit() && archive((Array)angles, szName, szLabel)) || archive(angles, szName, szLabel))
 	{
 		if (archive.isInput())
 		{

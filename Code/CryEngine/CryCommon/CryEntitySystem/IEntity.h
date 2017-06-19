@@ -649,7 +649,7 @@ public:
 
 	//! Used to update the stored mask for a certain component, from IEntityComponent::GetEventMask
 	//! For example, changing IEntityComponent::GetEventMask to return ENTITY_EVENT_UPDATE and then calling GetEventMask will result in the component and its entity being updated the next frame.
-	virtual void UpdateComponentEventMask(IEntityComponent* pComponent) = 0;
+	virtual void UpdateComponentEventMask(const IEntityComponent* pComponent) = 0;
 
 	//! Checks whether the entity is set to be updated this / next frame.
 	virtual bool IsActivatedForUpdates() const = 0;
@@ -1130,6 +1130,7 @@ public:
 
 	//! Schematyc Object associated with this entity
 	virtual	Schematyc::IObject* GetSchematycObject() const = 0;
+	virtual void OnSchematycObjectDestroyed() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Helper methods
