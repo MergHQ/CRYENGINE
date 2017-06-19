@@ -9,7 +9,7 @@ namespace DefaultComponents
 {
 struct SCollisionSignal
 {
-	EntityId otherEntityId;
+	Schematyc::ExplicitEntityId otherEntityId;
 	Schematyc::SurfaceTypeName surfaceType;
 };
 
@@ -161,7 +161,7 @@ static void ReflectType(Schematyc::CTypeDesc<SCollisionSignal>& desc)
 {
 	desc.SetGUID("{24C421C5-3E60-42C2-B0D0-6BA3DFC7CF7C}"_cry_guid);
 	desc.SetLabel("On Collision");
-	desc.AddMember(&SCollisionSignal::otherEntityId, 'ent', "OtherEntityId", "OtherEntityId", "Other Colliding Entity Id", INVALID_ENTITYID);
+	desc.AddMember(&SCollisionSignal::otherEntityId, 'ent', "OtherEntityId", "OtherEntityId", "Other Colliding Entity Id", Schematyc::ExplicitEntityId());
 	desc.AddMember(&SCollisionSignal::surfaceType, 'srf', "SurfaceType", "SurfaceType", "Material Surface Type at the collision point", "");
 }
 
@@ -265,7 +265,7 @@ void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
 		// Send OnCollision signal
 		if (Schematyc::IObject* pSchematycObject = m_pEntity->GetSchematycObject())
 		{
-			pSchematycObject->ProcessSignal(SCollisionSignal{ otherEntityId, Schematyc::SurfaceTypeName(surfaceTypeName) }, GetGUID());
+			pSchematycObject->ProcessSignal(SCollisionSignal{ Schematyc::ExplicitEntityId(otherEntityId), Schematyc::SurfaceTypeName(surfaceTypeName) }, GetGUID());
 		}
 	}
 	else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)

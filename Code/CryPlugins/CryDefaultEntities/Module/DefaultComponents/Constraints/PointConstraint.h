@@ -54,12 +54,39 @@ namespace Cry
 				ConstrainTo(WORLD_ENTITY);
 			}
 
-			virtual void ConstrainTo(IPhysicalEntity* pEntity, bool bDisableCollisionsWith = false)
+			virtual void ConstrainTo(IPhysicalEntity* pOtherEntity, bool bDisableCollisionsWith = false)
 			{
-				Remove();
-
-				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
+				if (m_constraintIds.size() > 0)
 				{
+					Remove();
+				}
+
+				if (IPhysicalEntity* pConstraintOwner = m_pEntity->GetPhysicalEntity())
+				{
+					// Constraints can only be added to rigid-based entities
+					if (pConstraintOwner->GetType() != PE_RIGID && pConstraintOwner->GetType() != PE_WHEELEDVEHICLE)
+					{
+						if (pOtherEntity == WORLD_ENTITY)
+						{
+							CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Tried to add point constraint to non-rigid or vehicle entity!");
+							return;
+						}
+
+						// Swap the pointers around
+						IPhysicalEntity* pTemp = pConstraintOwner;
+						pConstraintOwner = pOtherEntity;
+						pOtherEntity = pTemp;
+
+#ifndef RELEASE
+						// Validate the same check again
+						if (pConstraintOwner->GetType() != PE_RIGID && pConstraintOwner->GetType() != PE_WHEELEDVEHICLE)
+						{
+							CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Tried to add point constraint to non-rigid or vehicle entities!");
+							return;
+						}
+#endif
+					}
+
 					Matrix34 slotTransform = GetWorldTransformMatrix();
 
 					pe_action_add_constraint constraint;
@@ -72,30 +99,32 @@ namespace Cry
 					constraint.yzlimits[1] = m_rotationLimitsYZ1.ToRadians();
 					constraint.damping = m_damping;
 
-					if (bDisableCollisionsWith && pEntity != WORLD_ENTITY && pEntity != pPhysicalEntity)
+					if (bDisableCollisionsWith && pOtherEntity != WORLD_ENTITY && pOtherEntity != pConstraintOwner)
 					{
 						constraint.flags |= constraint_ignore_buddy | constraint_inactive;
 
-						constraint.pBuddy = pPhysicalEntity;
-						pEntity->Action(&constraint);
+						constraint.pBuddy = pConstraintOwner;
+						pOtherEntity->Action(&constraint);
+						m_constraintIds.emplace_back(gEnv->pPhysicalWorld->GetPhysicalEntityId(pOtherEntity), pConstraintOwner->Action(&constraint));
 
 						constraint.flags &= ~constraint_inactive;
 					}
 
-					constraint.pBuddy = pEntity;
+					constraint.pBuddy = pOtherEntity;
 
-					m_constraintIds.emplace_back(pPhysicalEntity->Action(&constraint));
+					int ownerId = gEnv->pPhysicalWorld->GetPhysicalEntityId(pConstraintOwner);
+					m_constraintIds.emplace_back(ownerId, pConstraintOwner->Action(&constraint));
 				}
 			}
 
 			virtual void Remove()
 			{
-				for (int constraintId : m_constraintIds)
+				for (std::pair<int, int> constraintIdPair : m_constraintIds)
 				{
-					if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
+					if (IPhysicalEntity* pPhysicalEntity = gEnv->pPhysicalWorld->GetPhysicalEntityById(constraintIdPair.first))
 					{
 						pe_action_update_constraint constraint;
-						constraint.idConstraint = constraintId;
+						constraint.idConstraint = constraintIdPair.second;
 						constraint.bRemove = 1;
 						pPhysicalEntity->Action(&constraint);
 					}
@@ -141,7 +170,7 @@ namespace Cry
 
 			Schematyc::Range<-10000, 10000> m_damping = 0.f;
 
-			std::vector<int> m_constraintIds;
+			std::vector<std::pair<int, int>> m_constraintIds;
 		};
 
 	}

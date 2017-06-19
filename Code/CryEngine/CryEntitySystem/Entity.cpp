@@ -1164,7 +1164,7 @@ bool CEntity::ShouldActivate()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::UpdateComponentEventMask(IEntityComponent* pComponent)
+void CEntity::UpdateComponentEventMask(const IEntityComponent* pComponent)
 {
 	m_components.ForEach([this, pComponent](SEntityComponentRecord& record)
 	{
@@ -1341,6 +1341,11 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 				break;
 			}
 		}
+	}
+	else
+	{
+		// We might parse components with no GUID, however this should not occur so we create one here.
+		componentGUID = CryGUID::Create();
 	}
 
 	// Try to find parent component
@@ -1729,24 +1734,15 @@ IEntityComponent* CEntity::CreateProxy(EEntityProxy proxy)
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent, bool bAllowDuplicate, IEntityComponent::SInitParams* pInitParams)
 {
+	const CEntityComponentClassDesc* pClassDescription = nullptr;
+
 	if (!pComponent)
 	{
 		const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeId);
 		if (pEnvComponent)
 		{
 			pComponent = pEnvComponent->CreateFromPool();
-
-			if (!pInitParams)
-			{
-				// Legacy adding of the component
-				CryTransform::CTransformPtr transform;
-				IEntityComponent::SInitParams params(this, CryGUID(), "", &pEnvComponent->GetDesc(), EEntityComponentFlags::None, nullptr, transform);
-				pComponent->PreInit(params);
-			}
-			else
-			{
-				pInitParams->classDesc = &pEnvComponent->GetDesc();
-			}
+			pClassDescription = &pEnvComponent->GetDesc();
 		}
 		if (!pComponent)
 		{
@@ -1761,10 +1757,18 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 			}
 		}
 	}
-	if (pInitParams)
+	
+	IEntityComponent::SInitParams tempInitParams(this, CryGUID::Create(), "", pClassDescription != nullptr ? pClassDescription : &pComponent->GetClassDesc(), EEntityComponentFlags::None, nullptr, nullptr);
+	if (pInitParams == nullptr)
 	{
-		pComponent->PreInit(*pInitParams);
+		pInitParams = &tempInitParams;
 	}
+	else if(pInitParams->classDesc == nullptr)
+	{
+		pInitParams->classDesc = &pComponent->GetClassDesc();
+	}
+	
+	pComponent->PreInit(*pInitParams);
 
 	bool bExist = false;
 	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())

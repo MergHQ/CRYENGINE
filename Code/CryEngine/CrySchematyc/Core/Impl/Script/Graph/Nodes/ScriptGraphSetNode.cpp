@@ -357,7 +357,7 @@ SRuntimeResult CScriptGraphSetNode::ExecuteSetComponentProperty(SRuntimeContext&
 		}
 	}
 
-	return SRuntimeResult(ERuntimeStatus::Continue);
+	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
 
 const CryGUID CScriptGraphSetNode::ms_typeGUID = "23145b7a-4ce3-45b8-a34b-1c997ea6448f"_cry_guid;

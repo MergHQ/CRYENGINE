@@ -93,7 +93,7 @@ namespace Cry
 
 			bool IsProcessingRequest() const { return m_movementRequestId != 0; }
 
-			virtual void SetMaxAcceleration(float maxAcceleration) { m_maxAcceleration = maxAcceleration; }
+			virtual void SetMaxAcceleration(float maxAcceleration);
 			float GetMaxAcceleration() const { return m_maxAcceleration; }
 
 			virtual void SetMovementRecommendationCallback(std::function<void(const Vec3& recommendedVelocity)> callback) { m_movementRecommendationCallback = callback; }

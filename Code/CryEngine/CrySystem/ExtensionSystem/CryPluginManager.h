@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryExtension/ICryPluginManager.h>
+#include <array>
 
 struct SPluginContainer;
 
@@ -37,6 +38,10 @@ public:
 	void Update(IPluginUpdateListener::EPluginUpdateType updateFlags);
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
+
+	// Gets the default plug-ins that are always loaded into fresh projects
+	// These are also built with the engine, thus will be statically linked in for monolithic builds.
+	static constexpr std::array<const char*, 3> GetDefaultPlugins() { return{ { "CryDefaultEntities", "CrySensorSystem", "CryPerceptionSystem" } }; }
 
 protected:
 	virtual bool                        LoadPluginFromDisk(EPluginType type, const char* path) override;

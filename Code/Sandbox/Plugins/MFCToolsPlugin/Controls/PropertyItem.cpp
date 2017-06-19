@@ -2803,22 +2803,31 @@ void CPropertyItem::OnFileBrowseButton()
 
 	m_propertyCtrl->HideBitmapTooltip();
 
-	ECustomFileType ftype = EFILE_TYPE_ANY;
 	if (m_type == ePropertyTexture)
 	{
 		// Filters for texture.
-		ftype = EFILE_TYPE_TEXTURE;
+		SResourceSelectorContext context;
+		context.typeName = "Texture";
+
+		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(context, tempValue);
+		SetValue(newValue.c_str(), true, false);
 	}
 	else if (m_type == ePropertyGeomCache)
 	{
 		// Filters for geom caches.
-		ftype = EFILE_TYPE_GEOMCACHE;
+		SResourceSelectorContext context;
+		context.typeName = "GeomCache";
+
+		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(context, tempValue);
+		SetValue(newValue.c_str(), true, true);
 	}
-	CString relativeFilename = tempValue;
-	if (CFileUtil::SelectSingleFile(ftype, relativeFilename, "", startPath))
+	else
 	{
-		const bool bForceModified = (ftype == EFILE_TYPE_GEOMCACHE);
-		SetValue(relativeFilename, true, bForceModified);
+		CString relativeFilename = tempValue;
+		if (CFileUtil::SelectSingleFile(EFILE_TYPE_ANY, relativeFilename, "", startPath))
+		{
+			SetValue(relativeFilename, true, false);
+		}
 	}
 }
 

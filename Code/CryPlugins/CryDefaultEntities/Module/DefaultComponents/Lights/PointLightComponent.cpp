@@ -104,5 +104,12 @@ namespace Cry
 		{
 			return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 		}
+
+		void CPointLightComponent::Enable(bool bEnable)
+		{
+			m_bActive = bEnable; 
+
+			Initialize();
+		}
 	}
 }

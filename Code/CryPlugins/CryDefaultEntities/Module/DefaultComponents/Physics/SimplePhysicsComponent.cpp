@@ -105,7 +105,7 @@ static void ReflectType(Schematyc::CTypeDesc<CSimplePhysicsComponent::SCollision
 {
 	desc.SetGUID("{3E2E1015-0B63-44EC-9993-21E568295CB4}"_cry_guid);
 	desc.SetLabel("On Collision");
-	desc.AddMember(&CSimplePhysicsComponent::SCollisionSignal::otherEntity, 'ent', "OtherEntityId", "OtherEntityId", "Other Colliding Entity Id", INVALID_ENTITYID);
+	desc.AddMember(&CSimplePhysicsComponent::SCollisionSignal::otherEntity, 'ent', "OtherEntityId", "OtherEntityId", "Other Colliding Entity Id", Schematyc::ExplicitEntityId());
 	desc.AddMember(&CSimplePhysicsComponent::SCollisionSignal::surfaceType, 'srf', "SurfaceType", "SurfaceType", "Material Surface Type at the collision point", "");
 }
 

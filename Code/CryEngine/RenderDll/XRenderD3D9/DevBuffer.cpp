@@ -534,15 +534,15 @@ public:
 	bool  CreateResources()                                         { return true;  }
 	bool  FreeResources()                                           { return true;  }
 
-	void* BeginRead(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset)    { return nullptr; }
-	void* BeginWrite(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset)   { return nullptr; }
-	void  EndReadWrite(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset) {}
+	void* BeginRead(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset)    { CryFatalError("Attempting to use unimplemented CDefaultUpdater"); return nullptr; }
+	void* BeginWrite(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset)   { CryFatalError("Attempting to use unimplemented CDefaultUpdater"); return nullptr; }
+	void  EndReadWrite(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset) { CryFatalError("Attempting to use unimplemented CDefaultUpdater"); }
 
 	void  RegisterBank(SBufferPoolBank* bank)                       {}
 	void  UnregisterBank(SBufferPoolBank* bank)                     {}
 
-	void  Read (CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset, void* dst) {}
-	void  Write(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset, const void* src) {}
+	void  Read (CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset, void* dst)       { CryFatalError("Attempting to use unimplemented CDefaultUpdater"); }
+	void  Write(CDeviceBuffer* buffer, buffer_size_t size, buffer_size_t offset, const void* src) { CryFatalError("Attempting to use unimplemented CDefaultUpdater"); }
 
 	void  Move(
 		CDeviceBuffer* dst_buffer
@@ -1145,7 +1145,7 @@ public:
 
 	bool CreateResources()
 	{
-#if !(CRY_RENDERER_DIRECT3D >= 111)
+#if !(CRY_RENDERER_DIRECT3D >= 111) && BUFFER_USE_STAGED_UPDATES
 		const SBufferLayout LayoutR =
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
@@ -1165,7 +1165,7 @@ public:
 
 	bool FreeResources()
 	{
-#if !(CRY_RENDERER_DIRECT3D >= 111)
+#if !(CRY_RENDERER_DIRECT3D >= 111) && BUFFER_USE_STAGED_UPDATES
 		SAFE_RELEASE(m_resources.m_staging_buffers[SStagingResources::READ]);
 #endif
 		return true;
@@ -2648,11 +2648,7 @@ typedef CBufferPoolImpl<
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_CPU_COHERENT
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_GPU_COHERENT
     , CDynamicDefragAllocator
-#if BUFFER_USE_STAGED_UPDATES
     , CDynamicBufferUpdater
-#else
-    , CDirectBufferUpdater
-#endif
     > SDynamicBufferPoolVB;
 typedef CBufferPoolImpl<
     CDeviceObjectFactory::BIND_INDEX_BUFFER
@@ -2660,11 +2656,7 @@ typedef CBufferPoolImpl<
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_CPU_COHERENT
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_GPU_COHERENT
     , CDynamicDefragAllocator
-#if BUFFER_USE_STAGED_UPDATES
     , CDynamicBufferUpdater
-#else
-    , CDirectBufferUpdater
-#endif
     > SDynamicBufferPoolIB;
 
 #if BUFFER_SUPPORT_TRANSIENT_POOLS
@@ -3017,11 +3009,7 @@ typedef CFreeBufferPoolImpl<
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_CPU_COHERENT
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_GPU_COHERENT
     , CDynamicDefragAllocator
-#if BUFFER_USE_STAGED_UPDATES
     , CDynamicBufferUpdater
-#else
-    , CDirectBufferUpdater
-#endif
     > SDynamicFreeBufferVB;
 typedef CFreeBufferPoolImpl<
     CDeviceObjectFactory::BIND_INDEX_BUFFER
@@ -3029,11 +3017,7 @@ typedef CFreeBufferPoolImpl<
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_CPU_COHERENT
     | CDeviceObjectFactory::USAGE_DIRECT_ACCESS_GPU_COHERENT
     , CDynamicDefragAllocator
-#if BUFFER_USE_STAGED_UPDATES
     , CDynamicBufferUpdater
-#else
-    , CDirectBufferUpdater
-#endif
     > SDynamicFreeBufferIB;
 
 //===============================================================================

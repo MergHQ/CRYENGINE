@@ -3,6 +3,7 @@
 #pragma once
 #include <QWidget>
 #include <QVariantMap>
+#include <QPointer>
 
 #include "QToolWindowManagerCommon.h"
 #include "IToolWindowWrapper.h"
@@ -35,6 +36,6 @@ protected:
 #endif
 
 private:
-	QToolWindowManager* m_manager;
+	QPointer<QToolWindowManager> m_manager;
 	QWidget* m_contents;
 };

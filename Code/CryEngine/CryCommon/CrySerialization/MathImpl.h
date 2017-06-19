@@ -86,7 +86,7 @@ namespace Serialization
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, Vec2_tpl<T>& value, const char* name, const char* label)
 {
-	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	if (!ar.isEdit() && !ar.caps(Serialization::IArchive::XML_VERSION_1))
 	{
 		return ar(Serialization::SStruct(Serialization::SSerializeVec2<T>(value)), name, label);
 	}
@@ -100,7 +100,7 @@ bool Serialize(Serialization::IArchive& ar, Vec2_tpl<T>& value, const char* name
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, Vec3_tpl<T>& value, const char* name, const char* label)
 {
-	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	if (!ar.isEdit() && !ar.caps(Serialization::IArchive::XML_VERSION_1))
 	{
 		return ar(Serialization::SStruct(Serialization::SSerializeVec3<T>(value)), name, label);
 	}
@@ -114,7 +114,7 @@ bool Serialize(Serialization::IArchive& ar, Vec3_tpl<T>& value, const char* name
 template<typename T>
 inline bool Serialize(Serialization::IArchive& ar, struct Vec4_tpl<T>& value, const char* name, const char* label)
 {
-	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	if (!ar.isEdit() && !ar.caps(Serialization::IArchive::XML_VERSION_1))
 	{
 		return ar(Serialization::SStruct(Serialization::SSerializeVec4<T>(value)), name, label);
 	}
@@ -129,7 +129,7 @@ inline bool Serialize(Serialization::IArchive& ar, struct Vec4_tpl<T>& value, co
 template<typename T>
 inline bool Serialize(Serialization::IArchive& ar, Vec4H<T>& value, const char* name, const char* label)
 {
-	if (!ar.caps(Serialization::IArchive::XML_VERSION_1))
+	if (!ar.isEdit() && !ar.caps(Serialization::IArchive::XML_VERSION_1))
 	{
 		return ar(Serialization::SStruct(Serialization::SSerializeVec4H<T>(value)), name, label);
 	}

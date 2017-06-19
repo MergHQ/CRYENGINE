@@ -22,10 +22,11 @@ IObject* CObjectPool::CreateObject(const SObjectParams& params)
 		}
 
 		SSlot& slot = m_slots[m_freeSlots.back()];
+		m_freeSlots.pop_back();
+
 		CObjectPtr pObject = std::make_shared<CObject>(slot.objectId);
 		if (pObject->Init(pClass, params.pCustomData, params.pProperties, params.simulationMode, params.pEntity))
 		{
-			m_freeSlots.pop_back();
 			slot.pObject = pObject;
 			return pObject.get();
 		}

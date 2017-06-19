@@ -49,7 +49,11 @@ QToolWindowWrapper::QToolWindowWrapper(QToolWindowManager* manager, Qt::WindowFl
 
 QToolWindowWrapper::~QToolWindowWrapper()
 {
-	m_manager->removeWrapper(this);
+	if (m_manager)
+	{
+		m_manager->removeWrapper(this);
+		m_manager = nullptr;
+	}
 }
 
 void QToolWindowWrapper::closeEvent(QCloseEvent* event)
