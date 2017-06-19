@@ -1486,7 +1486,6 @@ retry:
 
 			uint8* base_ptr;
 			CDeviceObjectFactory::ExtractBasePointer(buffer->GetBuffer(), D3D11_MAP_WRITE_NO_OVERWRITE, base_ptr);
-			CRY_ASSERT(base_ptr); if (!base_ptr) __debugbreak();
 
 			m_page_buckets[bucket].push_back(new CPartitionAllocator(buffer, base_ptr, s_PoolConfig.m_cb_bank_size, nsize));
 			failed = true;
@@ -1737,7 +1736,6 @@ struct CBufferPoolImpl final
 		bank->m_free_space = s_PoolConfig.m_pool_bank_size;
 #if !BUFFER_USE_STAGED_UPDATES
 		CDeviceObjectFactory::ExtractBasePointer(buffer->GetBuffer(), D3D11_MAP_WRITE_NO_OVERWRITE, bank->m_base_ptr);
-		CRY_ASSERT(bank->m_base_ptr); if (!bank->m_base_ptr) __debugbreak();
 #endif
 		m_banks.push_back(bank_index);
 		return bank;
@@ -1788,7 +1786,6 @@ struct CBufferPoolImpl final
 		}
 #if !BUFFER_USE_STAGED_UPDATES
 		CDeviceObjectFactory::ExtractBasePointer(bank->m_buffer->GetBuffer(), D3D11_MAP_WRITE_NO_OVERWRITE, bank->m_base_ptr);
-		CRY_ASSERT(bank->m_base_ptr); if (!bank->m_base_ptr) __debugbreak();
 #endif
 		return true;
 	}
@@ -2033,7 +2030,6 @@ freestanding:
 			item->m_defrag_handle = IDefragAllocator::InvalidHdl;
 #if !BUFFER_USE_STAGED_UPDATES
 			CDeviceObjectFactory::ExtractBasePointer(buffer->GetBuffer(), D3D11_MAP_WRITE_NO_OVERWRITE, item->m_base_ptr);
-			CRY_ASSERT(item->m_base_ptr); if (!item->m_base_ptr) __debugbreak();
 #endif
 			return handle;
 		}
@@ -2620,7 +2616,6 @@ public:
 				m_map_type = BINDFLAGS_to_NOOVERWRITE(BIND_FLAGS);
 
 			CDeviceObjectFactory::ExtractBasePointer(m_backing_buffer.m_buffer->GetBuffer(), m_map_type, m_backing_buffer.m_base_ptr);
-			CRY_ASSERT(m_backing_buffer.m_base_ptr); if (!m_backing_buffer.m_base_ptr) __debugbreak();
 		}
 
 		SBufferPoolItem* item = &m_item_table[m_item_table.Allocate()];
@@ -2666,7 +2661,6 @@ public:
 		m_backing_buffer.m_handle = ~0u;
 
 		CDeviceObjectFactory::ExtractBasePointer(m_backing_buffer.m_buffer->GetBuffer(), m_map_type, m_backing_buffer.m_base_ptr);
-		CRY_ASSERT(m_backing_buffer.m_base_ptr); if (!m_backing_buffer.m_base_ptr) __debugbreak();
 
 		return true;
 	}
@@ -2710,7 +2704,6 @@ public:
 				m_map_type = BINDFLAGS_to_NOOVERWRITE(BIND_FLAGS);
 
 			CDeviceObjectFactory::ExtractBasePointer(m_backing_buffer.m_buffer->GetBuffer(), m_map_type, m_backing_buffer.m_base_ptr);
-			CRY_ASSERT(m_backing_buffer.m_base_ptr); if (!m_backing_buffer.m_base_ptr) __debugbreak();
 		}
 	}
 	void  ReleaseEmptyBanks() final              {}
@@ -2816,7 +2809,6 @@ public:
 		item->m_defrag_handle = IDefragAllocator::InvalidHdl;
 
 		CDeviceObjectFactory::ExtractBasePointer(m_backing_buffer.m_buffer->GetBuffer(), D3D11_MAP_WRITE_NO_OVERWRITE, item->m_base_ptr);
-		CRY_ASSERT(item->m_base_ptr); if (!item->m_base_ptr) __debugbreak();
 
 		m_backing_buffer.m_free_space += size;
 		return (m_item_handle = item->m_handle);
@@ -2851,7 +2843,6 @@ public:
 		m_backing_buffer.m_handle = ~0u;
 
 		CDeviceObjectFactory::ExtractBasePointer(m_backing_buffer.m_buffer->GetBuffer(), D3D11_MAP_WRITE_NO_OVERWRITE, m_backing_buffer.m_base_ptr);
-		CRY_ASSERT(m_backing_buffer.m_base_ptr); if (!m_backing_buffer.m_base_ptr) __debugbreak();
 
 		return true;
 	}
