@@ -1873,6 +1873,52 @@ IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEntity::QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const
+{
+	for (const SEntityComponentRecord& record : m_components.GetVector())
+	{
+		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
+		{
+			components.push_back(record.pComponent.get());
+			continue;
+		}
+
+		// Check legacy components
+		if(ICryFactory* pFactory = record.pComponent->GetFactory())
+		{
+			if (pFactory->ClassSupports(interfaceID))
+			{
+				components.push_back(record.pComponent.get());
+				continue;
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntityComponent* CEntity::QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const
+{
+	for (const SEntityComponentRecord& record : m_components.GetVector())
+	{
+		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
+		{
+			return record.pComponent.get();
+		}
+
+		// Check legacy components
+		if (ICryFactory* pFactory = record.pComponent->GetFactory())
+		{
+			if (pFactory->ClassSupports(interfaceID))
+			{
+				return record.pComponent.get();
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntity::CloneComponentsFrom(IEntity& otherEntity)
 {
 	static_cast<CEntity&>(otherEntity).m_components.ForEach([this](const SEntityComponentRecord& componentRecord)
