@@ -38,11 +38,10 @@ public:
 	ILINE void QueueRotation(const Quat& rotation) { m_queuedRotation = rotation; m_hasQueuedRotation = true; }
 	ILINE void ClearQueuedRotation()               { m_hasQueuedRotation = false; }
 
-protected:
-
-	virtual IEntityComponent::ComponentEventPriority GetEventPriority(const int eventID) const override;
-
 private:
+
+	virtual IEntityComponent::ComponentEventPriority GetEventPriority() const override;
+
 	Quat m_queuedRotation;
 	bool m_hasQueuedRotation;
 	virtual void OnPrePhysicsUpdate(float elapsedTime) override;
@@ -53,8 +52,8 @@ class CAnimatedCharacterComponent_StartAnimProc : public CAnimatedCharacterCompo
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAnimatedCharacterComponent_StartAnimProc,
 		"CAnimatedCharacterComponent_StartAnimProc", 0xAA2D677D23A048D5, 0xAA47116B97DD6216)
 
-protected:
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const override;
+private:
+	virtual IEntityComponent::ComponentEventPriority GetEventPriority() const override;
 	virtual void                   OnPrePhysicsUpdate(float elapsedTime) override;
 };
 
@@ -63,9 +62,9 @@ class CAnimatedCharacterComponent_GenerateMoveRequest : public CAnimatedCharacte
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAnimatedCharacterComponent_GenerateMoveRequest,
 		"CAnimatedCharacterComponent_GenerateMoveRequest", 0x0CC3EE7E1ACE4BCD, 0x9AEAE391B81B8E78)
 
-protected:
+private:
 
-	virtual IEntityComponent::ComponentEventPriority GetEventPriority(const int eventID) const override;
+	virtual IEntityComponent::ComponentEventPriority GetEventPriority() const override;
 	virtual void                               OnPrePhysicsUpdate(float elapsedTime) override;
 };
 

@@ -751,6 +751,11 @@ uint64 CGameObject::GetEventMask() const
 	return eventMask;
 }
 
+IEntityComponent::ComponentEventPriority CGameObject::GetEventPriority() const
+{
+	return ENTITY_PROXY_USER + EEntityEventPriority_GameObject;
+}
+
 //------------------------------------------------------------------------
 IGameObjectExtension* CGameObject::GetExtensionWithRMIBase(const void* pBase)
 {

@@ -5897,14 +5897,9 @@ const char* CVehicle::GetModification() const
 	return m_modifications.c_str();
 }
 
-IEntityComponent::ComponentEventPriority CVehicle::GetEventPriority(const int eventID) const
+IEntityComponent::ComponentEventPriority CVehicle::GetEventPriority() const
 {
-	switch (eventID)
-	{
-	case ENTITY_EVENT_PREPHYSICSUPDATE:
-		return ENTITY_PROXY_USER + EEntityEventPriority_Vehicle;
-	}
-	return IGameObjectExtension::GetEventPriority(eventID);
+	return ENTITY_PROXY_USER + EEntityEventPriority_Vehicle;
 }
 
 #if ENABLE_VEHICLE_DEBUG

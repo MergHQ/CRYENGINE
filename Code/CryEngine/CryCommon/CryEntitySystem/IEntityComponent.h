@@ -381,8 +381,7 @@ public:
 	//! Only events matching the returned bit mask will be sent to the ProcessEvent method
 	virtual uint64                 GetEventMask() const                      { return 0; }
 
-	ComponentEventPriority         GetEventPriority() const                  { return (ComponentEventPriority)GetProxyType(); }
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return (ComponentEventPriority)GetProxyType(); }
+	virtual ComponentEventPriority GetEventPriority() const                  { return (ComponentEventPriority)GetProxyType(); }
 
 	//! \brief Network serialization. Override to provide a mask of active network aspects
 	//! used by this component. Called once during binding to network.
