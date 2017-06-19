@@ -753,6 +753,20 @@ ScriptGraphLinkRemovedSignal::Slots& CScriptGraph::GetLinkRemovedSignalSlots()
 	return m_signals.linkRemoved.GetSlots();
 }
 
+void CScriptGraph::FixMapping(IScriptGraphNode& node)
+{
+	for (auto itr = m_nodes.begin(); itr != m_nodes.end(); ++itr)
+	{
+		if (itr->second.get() == &node)
+		{
+			IScriptGraphNodePtr pNode = itr->second;
+			m_nodes.erase(itr);
+			m_nodes.emplace(node.GetGUID(), pNode);
+			return;
+		}
+	}
+}
+
 void CScriptGraph::PatchLinks()
 {
 	for (CScriptGraphLinkPtr& pLink : m_links)

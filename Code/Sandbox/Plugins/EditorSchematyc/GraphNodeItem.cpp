@@ -58,7 +58,7 @@ void CNodeItem::Serialize(Serialization::IArchive& archive)
 	m_scriptNode.Serialize(archive);
 	if (archive.isInput())
 	{
-		m_isDirty = true;
+		Refresh(true);
 
 		// TODO: This should happen in Serialize(...) function not here.
 		gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptNode.GetGraph().GetElement());
@@ -148,12 +148,16 @@ const char* CNodeItem::GetStyleId() const
 
 void CNodeItem::Refresh(bool forceRefresh)
 {
+	// TODO: This is a workaround for broken mappings after undo.
+	m_scriptNode.GetGraph().FixMapping(m_scriptNode);
+	// ~TODO
+
 	if (m_isDirty || forceRefresh)
 	{
 		m_isDirty = false;
 
-		// TODO: Just call RefreshLayout(...) here?!
-		m_scriptNode.ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorRefresh));
+		// TODO: We shouldn't have to do this here but it's the only way to refresh the whole node for now!
+		m_scriptNode.ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorPaste));
 		// ~TODO
 
 		RefreshName();
