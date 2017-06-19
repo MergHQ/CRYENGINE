@@ -1808,6 +1808,14 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 
 		const CryPathString engineDir = PathUtil::Make(CryPathString(engineRootDir.c_str()), CryPathString(CRYENGINE_ENGINE_FOLDER));
 		m_env.pCryPak->SetAlias("%ENGINE%", engineDir.c_str(), true);
+
+#ifndef RELEASE
+		if (m_bEditor)
+		{
+			const CryPathString editorDir = PathUtil::Make(CryPathString(engineRootDir.c_str()), CryPathString("Editor"));
+			m_env.pCryPak->SetAlias("%EDITOR%", editorDir.c_str(), true);
+		}
+#endif
 	}
 
 	// Now set up the log
@@ -1840,13 +1848,6 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 		if (pakalias && strlen(pakalias->GetValue()) > 0)
 			m_env.pCryPak->ParseAliases(pakalias->GetValue());
 	}
-
-	// FIXME: Added for initial support of Game Project Creation.
-	// Avoids fixing paths for all Sandbox resources.
-	// Causes the undesired behavior that %ENGINEROOT% files are preferred to game project resources
-	// Avoid game folder being located twice by FileUtil::ScanDirectory() if not using Game Project Creation.
-	if (m_pCmdLine->FindArg(eCLAT_Pre, "project"))
-		pCryPak->AddMod("%ENGINEROOT%");
 
 	// Create Engine folder mod mapping only for Engine assets
 	pCryPak->AddMod("%ENGINEROOT%/" CRYENGINE_ENGINE_FOLDER);
