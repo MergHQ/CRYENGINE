@@ -1,6 +1,8 @@
 // CRYENGINE Source Code File
 // Copyright 2001-2015 Crytek GmbH. All rights reserved.
 
+SCENE_DEPTH_MAP
+
 struct vert2fragDebug
 {
 #if %_DS || %_PS || %_GS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
@@ -65,8 +67,6 @@ vert2fragDebug Common_DebugPassVS(app2vertDebug IN_common)
 	return OUT;            
 }
 
-Texture2D<float4> SceneDepthTex : register(t32);
-
 pixout Common_DebugPassPS(vert2fragDebug IN)
 {
 	pixout OUT = (pixout)0;
@@ -121,11 +121,10 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
   uint selectionID = asuint(PerInstanceCustomData2.x);
 
   // now we need to compare the scene's depth to the fragment's depth. We do that here instead of after rendering, so precision is maintained better
-  float fragmentDepth = IN.WPos.z;
-  int3 vPixCoord = int3(IN.WPos.xy, 0);
-  float sceneDepth = SceneDepthTex.Load(vPixCoord);
+  float fGeomDepth = IN.WPos.w * CV_NearFarClipDist.w;
+  float fSceneDepth = GetLinearDepth(linearDepthTex, int2(IN.WPos.xy));
 
-  if (fragmentDepth < 0.999 * sceneDepth)
+  if (fGeomDepth > fSceneDepth)
   {
     // set the fragment as occluded in regular scene
     selectionID |= HIDDEN_FLAG;

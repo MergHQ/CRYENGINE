@@ -357,7 +357,8 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 			dirtyFlags |= pResources->SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(32, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			dirtyFlags |= pResources->SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+
 			dirtyFlags |= pResources->SetTexture(38, pShadowMask, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(39, CTexture::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(40, CTexture::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);

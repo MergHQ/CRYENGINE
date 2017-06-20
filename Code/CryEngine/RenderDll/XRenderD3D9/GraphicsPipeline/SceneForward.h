@@ -22,6 +22,7 @@ class CSceneForwardStage : public CGraphicsPipelineStage
 		ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting,
 		ePerPassTexture_DissolveNoise,
+		ePerPassTexture_SceneLinearDepth,
 
 		ePerPassTexture_Count
 	};
