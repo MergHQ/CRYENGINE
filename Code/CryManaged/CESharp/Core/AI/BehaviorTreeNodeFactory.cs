@@ -42,11 +42,6 @@ namespace CryEngine
 
 		public static void TryRegister(Type type)
 		{
-			if(!typeof(BehaviorTreeNodeBase).IsAssignableFrom(type) || type.IsAbstract)
-			{
-				return;
-			}
-
 			string name = type.Name;
 			var behaviorNodeAttribute = (BehaviorTreeNodeAttribute)type.GetCustomAttributes(typeof(BehaviorTreeNodeAttribute), true).FirstOrDefault();
 			if(behaviorNodeAttribute != null)

@@ -1,6 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -92,6 +93,9 @@ namespace CryEngine
 		{
 			// Make sure we unify shutdown behavior with unload
 			OnUnloadStart();
+
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
 		}
 
 		/// <summary>
@@ -116,11 +120,57 @@ namespace CryEngine
 
 		internal static void ScanAssembly(Assembly assembly)
 		{
+			var registeredTypes = new List<Type>();
 			foreach(Type t in assembly.GetTypes())
 			{
-				EntityComponent.TryRegister(t);
-				BehaviorTreeNodeFactory.TryRegister(t);
+				if (typeof(EntityComponent).IsAssignableFrom(t) && t != typeof(object))
+				{
+					if(registeredTypes.Contains(t))
+					{
+						continue;
+					}
+
+					RegisterComponent(t, ref registeredTypes);
+				}
+
+				if(typeof(BehaviorTreeNodeBase).IsAssignableFrom(t) || t.IsAbstract)
+				{
+					BehaviorTreeNodeFactory.TryRegister(t);
+				}
+
 			}
+		}
+
+		private static void RegisterComponent(Type component, ref List<Type> registeredTypes)
+		{
+			// Get the base class so those can be registered first.
+			var baseType = component.BaseType;
+			if(baseType != null && baseType != typeof(object))
+			{
+				var registerQueue = new List<Type>();
+				registerQueue.Add(baseType);
+
+				while(baseType.BaseType != null && baseType != typeof(EntityComponent))
+				{
+					baseType = baseType.BaseType;
+					registerQueue.Add(baseType);
+				}
+
+				for(int i = registerQueue.Count - 1; i > -1; i--)
+				{
+					var type = registerQueue[i];
+					if(registeredTypes.Contains(type))
+					{
+						continue;
+					}
+
+					registeredTypes.Add(type);
+					EntityComponent.TryRegister(type);
+				}
+			}
+
+			registeredTypes.Add(component);
+			EntityComponent.TryRegister(component);
 		}
 
 		/// <summary>
