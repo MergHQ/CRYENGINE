@@ -181,6 +181,7 @@ private:
 	ConstantManager          m_constantManager;
 
 	bool                     m_bPendingConstantUpdate;
+	bool                     m_bCompiled;
 
 	SProfilingStats          m_profilingStats;
 };

@@ -21,6 +21,7 @@ CComputeRenderPass::CComputeRenderPass(EPassFlags flags)
 	, m_dispatchSizeZ(1)
 	, m_currentPsoUpdateCount(0)
 	, m_bPendingConstantUpdate(false)
+	, m_bCompiled(false)
 	, m_resourceDesc(this, OnResourceInvalidated)
 {
 	m_inputVars[0] = m_inputVars[1] = m_inputVars[2] = m_inputVars[3] = 0;
@@ -37,6 +38,7 @@ uint CComputeRenderPass::Compile()
 	dirtyMask |= m_bResourcesInvalidated ? eDirty_Resources : eDirty_None;
 
 	m_bResourcesInvalidated = false;
+	m_bCompiled = false;
 
 	if (dirtyMask & eDirty_Resources)
 	{
@@ -83,6 +85,7 @@ uint CComputeRenderPass::Compile()
 	}
 
 	dirtyMask = eDirty_None;
+	m_bCompiled = true;
 	return dirtyMask;
 }
 
@@ -106,7 +109,10 @@ void CComputeRenderPass::PrepareResourcesForUse(CDeviceCommandListRef RESTRICT_R
 
 	if (m_bPendingConstantUpdate)
 	{
-		CRY_ASSERT(!IsDirty()); // compute pass modified AFTER call to BeginConstantUpdate
+		if (m_bCompiled)
+		{
+			CRY_ASSERT(!IsDirty()); // compute pass modified AFTER call to BeginConstantUpdate
+		}
 
 		// Unmap constant buffers and mark as bound
 		m_constantManager.EndNamedConstantUpdate();
@@ -192,6 +198,7 @@ void CComputeRenderPass::Reset()
 	ZeroArray(m_inputVars);
 	m_bResourcesInvalidated = true;
 	m_bPendingConstantUpdate = true;
+	m_bCompiled = false;
 
 	m_pShader = nullptr;
 	m_techniqueName.reset();
