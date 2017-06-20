@@ -994,7 +994,7 @@ CScriptBrowserItem* CScriptBrowserModel::CreateScriptElementItem(IScriptElement&
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(pParentItem, "Error adding script element to model because of a missing parent element.");
+	CRY_ASSERT_MESSAGE(scriptElement.GetType() == Schematyc::EScriptElementType::Class || scriptElement.GetType() == Schematyc::EScriptElementType::Module || pParentItem, "Error adding script element to model because of a missing parent element.");
 	if (pParentItem)
 	{
 		// Create item.
@@ -1255,6 +1255,7 @@ void CScriptBrowserWidget::SelectItem(const CryGUID& guid)
 		{
 			const QModelIndex itemIndex = TreeViewFromModelIndex(m_pModel->ItemToIndex(pItem));
 			m_pTreeView->selectionModel()->setCurrentIndex(itemIndex, QItemSelectionModel::ClearAndSelect);
+			m_signals.selection.Send(SScriptBrowserSelection(pItem ? pItem->GetScriptElement() : nullptr));
 		}
 	}
 }
