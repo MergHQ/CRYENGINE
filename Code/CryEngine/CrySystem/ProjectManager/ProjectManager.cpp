@@ -191,9 +191,8 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 		m_project.version = LatestProjectFileVersion;
 		m_project.type = "CRYENGINE Project";
 		m_project.name = m_sys_game_name->GetString();
-
-		// TODO: Detect latest using CrySelect?
-		m_project.engineVersionId = "engine-5.4";
+		// Specify that cryproject file is in engine root
+		m_project.engineVersionId = ".";
 
 		char buffer[MAX_PATH];
 		CryGetCurrentDirectory(MAX_PATH, buffer);

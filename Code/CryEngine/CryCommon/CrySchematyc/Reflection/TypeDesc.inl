@@ -355,6 +355,18 @@ inline const CClassBaseDesc* CClassDesc::FindBaseByTypeDesc(const CCommonTypeDes
 	return nullptr;
 }
 
+inline const CClassBaseDesc* CClassDesc::FindBaseByTypeID(const CryGUID& typeId) const
+{
+	for (const CClassBaseDesc& base : m_bases)
+	{
+		if (base.GetTypeDesc().GetGUID() == typeId)
+		{
+			return &base;
+		}
+	}
+	return nullptr;
+}
+
 inline const CClassMemberDescArray& CClassDesc::GetMembers() const
 {
 	return m_members;

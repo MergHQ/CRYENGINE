@@ -141,7 +141,7 @@ struct AIConsoleVars
 
 	DeclareConstIntCVar(MNMPathfinderMT, 1);
 	DeclareConstIntCVar(MNMPathfinderConcurrentRequests, 4);
-	DeclareConstIntCVar(MNMRaycastImplementation, 1);
+	DeclareConstIntCVar(MNMRaycastImplementation, 2);
 
 	DeclareConstIntCVar(LogConsoleVerbosity, 0);
 	DeclareConstIntCVar(LogFileVerbosity, 0);

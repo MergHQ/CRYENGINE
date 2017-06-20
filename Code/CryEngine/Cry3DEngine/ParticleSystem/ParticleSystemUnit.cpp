@@ -29,7 +29,6 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 #define arraysize(array) (sizeof(array) / sizeof(array[0]))
 
 #define CRY_PFX2_UNIT_TEST_ASSERT(cond) \
-  CRY_PFX2_ASSERT(cond)                 \
   CRY_UNIT_TEST_ASSERT(cond)
 
 	CRY_UNIT_TEST_FIXTURE(CParticleContainerRemoveTests)
@@ -337,8 +336,8 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		effect.AddComponent(2);
 		effect.GetComponent(2)->SetName("Test");
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Test") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Test01") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Test02") == 0);
+		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Test1") == 0);
+		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Test2") == 0);
 	}
 
 	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_UniqueLoadedName, CParticleEffectTests)
@@ -351,8 +350,8 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		effect.AddComponent(2);
 		LoadDefaultComponent(2);
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Default") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Default01") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Default02") == 0);
+		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Default1") == 0);
+		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Default2") == 0);
 	}
 
 #endif

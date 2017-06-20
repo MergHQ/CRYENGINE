@@ -749,6 +749,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Register or unregisters a component with the entity.
+	//! \param typeId The GUID of the component we want to add, can not be an interface ID!
 	//! \param pComponent The target component.
 	//! \param flags IEntityComponent.h contains the relevent flags to control registration behaviour.
 	//! \param eventMask is a bit mask of the EEntityEvents flags.
@@ -762,13 +763,18 @@ public:
 	//! Removes and shut downs all components that entity contains.
 	virtual void RemoveAllComponents() = 0;
 
-	//! Return first component of the entity with the specified interface ID.
-	//! \param interfaceID Identifier for the component interface.
+	//! Return first component of the entity with the specified class ID.
+	//! \param interfaceID Identifier for the component implementation.
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const = 0;
 	
 	//! Return component with the unique GUID.
 	//! \param guid Identifier for the component.
 	virtual IEntityComponent* GetComponentByGUID(const CryGUID& guid) const = 0;
+
+	//! Queries an array of entity components implementing the specified component interface
+	virtual void QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const = 0;
+	//! Queries an entity component implementing the specified component interface
+	virtual IEntityComponent* QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const = 0;
 
 	//! Get existing or Create a new initialized component inside the entity.
 	template<typename ComponentType>
@@ -789,7 +795,7 @@ public:
 	template<typename ComponentClass>
 	ComponentClass* CreateComponentClass(bool bAllowDuplicate = false);
 
-	//! Helper template function to simplify querying components
+	//! Helper template function to simplify finding components with a specified implementation
 	//! ex: auto pScriptProxy = pEntity->GetComponent<IEntityScriptComponent>();
 	template<typename ComponentType>
 	ComponentType* GetComponent() const
@@ -797,6 +803,22 @@ public:
 		//static_assert(IEntityComponent::IsDeclared<ComponentType>::Check, "Tried to query component  that was not declared with CRY_ENTITY_COMPONENT_INTERFACE, CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS or CRY_ENTITY_COMPONENT_CLASS!");
 
 		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>()));
+	}
+
+	//! Helper template to simplify querying components based on interface. Searches each component's hierarchy and returns the first instance that implements ComponentType.
+	template<typename ComponentType>
+	ComponentType* QueryComponentByInterface()
+	{
+		return static_cast<ComponentType*>(QueryComponentByInterfaceID(cryiidof<ComponentType>()));
+	}
+
+	//! Helper template to simplify querying components based on interface. Searches each component's hierarchy and returns all instances that implements ComponentType.
+	template<typename ComponentType>
+	void QueryComponentsByInterface(DynArray<ComponentType>& components)
+	{
+		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
+		DynArray<IEntityComponent>& rawComponents = *(DynArray<IEntityComponent>*)(void*)components;
+		QueryComponentsByInterfaceID(cryiidof<ComponentType>()), rawComponents;
 	}
 
 	//! Creates instances of the components contained in the other entity

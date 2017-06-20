@@ -74,13 +74,15 @@ CMonoRuntime::CMonoRuntime()
 	, m_pPluginDomain(nullptr)
 	, m_listeners(5)
 {
-	REGISTER_COMMAND("mono_reload", OnReloadRequested, VF_NULL, "Used to reload all mono plug-ins");
 }
 
 CMonoRuntime::~CMonoRuntime()
 {
-	if (gEnv && gEnv->pSystem)
+	if (gEnv)
 	{
+		gEnv->pMonoRuntime = nullptr;
+
+		gEnv->pConsole->UnregisterListener(this);
 		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 }
@@ -150,15 +152,14 @@ bool CMonoRuntime::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPa
 
 	gEnv->pConsole->RegisterListener(this, "MonoRuntime::ManagedConsoleCommandListener");
 
+	REGISTER_COMMAND("mono_reload", OnReloadRequested, VF_NULL, "Used to reload all mono plug-ins");
+
 	CryLog("[Mono] Initialization done.");
 	return true;
 }
 
 void CMonoRuntime::Shutdown()
 {
-	gEnv->pConsole->UnregisterListener(this);
-	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
-
 	if (m_pLibCore != nullptr)
 	{
 		// Get the equivalent of gEnv
@@ -174,8 +175,6 @@ void CMonoRuntime::Shutdown()
 	m_pRootDomain.reset();
 
 	m_nodeCreators.clear();
-
-	gEnv->pMonoRuntime = nullptr;
 }
 
 std::shared_ptr<ICryPlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)

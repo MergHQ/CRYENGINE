@@ -2106,8 +2106,23 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 
 		if (!hGameDll)
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName);
-			return false;
+			// workaround to make the legacy game work with the new project system where the dll is in a separate folder
+			char executableFolder[MAX_PATH];
+			char engineRootFolder[MAX_PATH];
+			CryGetExecutableFolder(MAX_PATH, executableFolder);
+			CryFindEngineRootFolder(MAX_PATH, engineRootFolder);
+
+			string newGameDLLPath = string(executableFolder).erase(0, strlen(engineRootFolder));
+
+			newGameDLLPath += gameDLLName;
+
+			hGameDll = CryLoadLibrary(newGameDLLPath.c_str());
+
+			if (!hGameDll)
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName);
+				return false;
+			}
 		}
 
 		IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(hGameDll, "CreateGameStartup");

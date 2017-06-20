@@ -884,7 +884,7 @@ void AnimSearchHelper::AddAnimation(const string& path, uint32 gahIndex)
 	{
 		for (int32 lastSlashPos = pathDir.rfind('/'); lastSlashPos >= 0; lastSlashPos = pathDir.rfind('/', lastSlashPos - 1))
 		{
-			uint32 parentDirCRC = CCrc32::ComputeLowercase(pathDir, lastSlashPos + 1);
+			uint32 parentDirCRC = CCrc32::ComputeLowercase(pathDir, size_t(lastSlashPos + 1), 0);
 			TSubFolderCrCVector* pSubFolderVec = NULL;
 			TSubFoldersMap::iterator parentFolderIter = m_SubFoldersMap.find(parentDirCRC);
 			if (parentFolderIter == m_SubFoldersMap.end())

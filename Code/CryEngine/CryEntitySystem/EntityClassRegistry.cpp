@@ -23,7 +23,7 @@
 struct SSchematycEntityClassProperties
 {
 	SSchematycEntityClassProperties()
-		: icon("editor/objecticons/schematyc.bmp")
+		: icon("%EDITOR%/objecticons/schematyc.bmp")
 		, bHideInEditor(false)
 		, bTriggerAreas(true)
 	{}

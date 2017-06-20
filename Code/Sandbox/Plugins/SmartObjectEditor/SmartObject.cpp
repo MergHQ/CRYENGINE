@@ -237,7 +237,7 @@ IStatObj* CSmartObject::GetIStatObj()
 
 	if (m_pClassTemplate && !m_pClassTemplate->model.empty())
 	{
-		m_pStatObj = GetIEditor()->Get3DEngine()->LoadStatObj("Editor/Objects/" + m_pClassTemplate->model, NULL, NULL, false);
+		m_pStatObj = GetIEditor()->Get3DEngine()->LoadStatObj("%EDITOR%/Objects/" + m_pClassTemplate->model, NULL, NULL, false);
 		if (!m_pStatObj)
 		{
 			CryLog("Error: Load Failed: %s", (const char*) m_pClassTemplate->model);
@@ -251,7 +251,7 @@ IStatObj* CSmartObject::GetIStatObj()
 	return m_pStatObj;
 }
 
-#define HELPER_MATERIAL "Editor/Objects/Helper"
+#define HELPER_MATERIAL "%EDITOR%/Objects/Helper"
 
 //////////////////////////////////////////////////////////////////////////
 IMaterial* CSmartObject::GetHelperMaterial()

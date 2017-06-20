@@ -54,6 +54,27 @@ static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 g
 	CManagedPlugin::s_pCurrentlyRegisteringFactory->emplace(pType, std::make_shared<CManagedEntityComponentFactory>(pLibrary->GetClassFromMonoClass(pMonoClass), id, info, pClassName->GetString(), pClassCategory->GetString(), pDesc->GetString(), pClassIcon->GetString()));
 }
 
+static void AddComponentBase(MonoInternals::MonoReflectionType* pType, MonoInternals::MonoReflectionType* pBaseType)
+{
+	auto componentFactoryIt = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pType);
+	if (componentFactoryIt == CManagedPlugin::s_pCurrentlyRegisteringFactory->end())
+	{
+		CRY_ASSERT(false);
+		gEnv->pLog->LogWarning("Tried to add component base before component itself was registered!");
+		return;
+	}
+
+	auto baseComponentFactoryIt = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pBaseType);
+	if (componentFactoryIt == CManagedPlugin::s_pCurrentlyRegisteringFactory->end())
+	{
+		CRY_ASSERT(false);
+		gEnv->pLog->LogWarning("Tried to add component base before base was registered!");
+		return;
+	}
+
+	componentFactoryIt->second->m_classDescription.AddBase(baseComponentFactoryIt->second->GetDesc());
+}
+
 static IEntityComponent* CreateManagedComponent(IEntity *pEntity, SEntitySpawnParams& params, void* pUserData)
 {
 	return pEntity->AddComponent(*(CryGUID*)pUserData, std::shared_ptr<IEntityComponent>(), true, nullptr);
@@ -132,6 +153,7 @@ static void RegisterComponentProperty(MonoInternals::MonoReflectionType* pCompon
 void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* methodName)> func)
 {
 	func(RegisterComponent, "RegisterComponent");
+	func(AddComponentBase, "AddComponentBase");
 	func(RegisterManagedEntityWithDefaultComponent, "RegisterEntityWithDefaultComponent");
 	func(GetComponent, "GetComponent");
 	func(GetOrCreateComponent, "GetOrCreateComponent");

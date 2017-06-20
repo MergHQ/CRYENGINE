@@ -218,6 +218,8 @@ public:
 	virtual void              RemoveAllComponents() final;
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const final;
 	virtual IEntityComponent* GetComponentByGUID(const CryGUID& guid) const final;
+	virtual void              QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const final;
+	virtual IEntityComponent* QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const final;
 	virtual void              CloneComponentsFrom(IEntity& otherEntity) final;
 	virtual void              GetComponents( DynArray<IEntityComponent*> &components ) const final;
 	virtual uint32            GetComponentsCount() const final;

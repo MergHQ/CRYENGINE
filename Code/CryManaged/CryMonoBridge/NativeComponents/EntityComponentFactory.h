@@ -87,6 +87,11 @@ public:
 		{
 			return CEntityComponentClassDesc::AddMember(typeDesc, offset, id, szName, szLabel, szDescription, Schematyc::Utils::IDefaultValuePtr());
 		}
+
+		bool AddBase(const Schematyc::CCommonTypeDesc& typeDesc)
+		{
+			return CEntityComponentClassDesc::AddBase(typeDesc, GetBases().size());
+		}
 	};
 
 	CManagedComponentClassDescription m_classDescription;

@@ -160,6 +160,16 @@ namespace CryEngine
 			                                         componentAttribute.Description, 
 			                                         componentAttribute.Icon);
 
+            // Register all bases, note that the base has to have been registered before the component we're registering right now!
+            var baseType = entityComponentType.BaseType;
+            do
+            {
+                NativeInternals.Entity.AddComponentBase(entityComponentType, baseType);
+
+                baseType = baseType.BaseType;
+            }
+            while (baseType != typeof(EntityComponent));
+
             // Register all properties
             var properties = entityComponentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
             foreach (PropertyInfo propertyInfo in properties)

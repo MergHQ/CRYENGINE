@@ -10,6 +10,9 @@ namespace CryEngine.NativeInternals
         extern public static void RegisterComponent(Type type, ulong guidHipart, ulong guidLopart, string name, string category, string description, string icon);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        extern public static void AddComponentBase(Type type, Type baseType);
+        
+        [MethodImpl(MethodImplOptions.InternalCall)]
         extern public static void RegisterEntityWithDefaultComponent(string name, string category, string helper, string icon, bool hide, Type type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

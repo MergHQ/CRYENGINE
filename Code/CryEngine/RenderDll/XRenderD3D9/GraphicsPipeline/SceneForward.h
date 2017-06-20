@@ -64,7 +64,6 @@ private:
 private:
 	_smart_ptr<CTexture> m_pSkyDomeTextureMie;
 	_smart_ptr<CTexture> m_pSkyDomeTextureRayleigh;
-	_smart_ptr<CTexture> m_pSkyMoonTex;
 
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayout;
 	CDeviceResourceLayoutPtr m_pTransparentResourceLayout;
