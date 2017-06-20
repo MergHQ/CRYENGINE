@@ -11,7 +11,6 @@ public:
 	CSpawnPointComponent() = default;
 	virtual ~CSpawnPointComponent() {}
 
-
 	static void ReflectType(Schematyc::CTypeDesc<CSpawnPointComponent>& desc);
 
 	static CryGUID& IID()
@@ -20,6 +19,20 @@ public:
 		return id;
 	}
 
-public:
-	void SpawnEntity(IEntity* otherEntity);
+	static Vec3 GetFirstSpawnPointPos()
+	{
+		auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
+		pEntityIterator->MoveFirst();
+
+		while (!pEntityIterator->IsEnd())
+		{
+			IEntity *pEntity = pEntityIterator->Next();
+
+			if (IEntityComponent* pSpawner = pEntity->GetComponent<CSpawnPointComponent>())
+			{
+				return pSpawner->GetEntity()->GetPos();
+			}
+		}
+		return Vec3(ZERO);
+	}
 };

@@ -195,7 +195,9 @@ if ((WIN32 OR WIN64) AND OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
 endif()
 
 if (OPTION_ENGINE)
-	include(${TOOLS_CMAKE_DIR}/modules/SDL2.cmake)
+	if(NOT TARGET SDL2)
+		include(${TOOLS_CMAKE_DIR}/modules/SDL2.cmake)
+	endif()
 endif()
 include(${TOOLS_CMAKE_DIR}/modules/Boost.cmake)
 include(${TOOLS_CMAKE_DIR}/modules/ncurses.cmake)
@@ -203,6 +205,11 @@ include(${TOOLS_CMAKE_DIR}/modules/ncurses.cmake)
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY COMPILE_DEFINITIONS ${global_defines})
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY INCLUDE_DIRECTORIES ${global_includes})
 set_property(DIRECTORY ${CRYENGINE_DIR} PROPERTY LINK_DIRECTORIES ${global_links})
+
+# Used by game project when they share the solution with the engine.
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS ${global_defines})
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES ${global_includes})
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY LINK_DIRECTORIES ${global_links}) 
 
 if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
 	set(MSVC_LIB_PREFIX vc140)

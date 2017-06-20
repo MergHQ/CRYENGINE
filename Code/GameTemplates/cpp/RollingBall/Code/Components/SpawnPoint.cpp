@@ -33,8 +33,3 @@ void CSpawnPointComponent::ReflectType(Schematyc::CTypeDesc<CSpawnPointComponent
 	desc.SetDescription("This spawn point can be used to spawn entities");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 }
-
-void CSpawnPointComponent::SpawnEntity(IEntity* otherEntity)
-{
-	otherEntity->SetWorldTM(m_pEntity->GetWorldTM());
-}

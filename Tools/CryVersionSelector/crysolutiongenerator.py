@@ -195,7 +195,7 @@ PRIVATE
 set_solution_startup_target($${THIS_PROJECT})
 
 if (WIN32)
-    set_visual_studio_debugger_command( $${THIS_PROJECT} "$engine_root_directory/bin/win_x64/GameLauncher.exe" "-project \\"$projectfile\\"" )
+    set_visual_studio_debugger_command( $${THIS_PROJECT} "$output_path/GameLauncher.exe" "-project \\"$projectfile\\"" )
 endif()\n'''
 
     cmakelists_path = os.path.join(code_directory, 'CMakeLists.txt')
@@ -270,8 +270,16 @@ endif()\n'''
     
     if source_count == 0:
         return
-        
-    cmakelists_contents = cmakelists_template.substitute({'sources' : cmakelists_sources, 'engine_root_directory': engine_root_directory.replace('\\', '/'), 'project_name': project_name, 'projectfile': project_file.replace('\\', '/'), 'project_path': os.path.abspath(os.path.dirname(project_file)).replace('\\', '/')})
+
+    output_path = os.path.abspath(os.path.join(code_directory, os.pardir, "bin", "win_x64"))
+
+    cmakelists_contents = cmakelists_template.substitute({
+        'sources' : cmakelists_sources,
+        'engine_root_directory': engine_root_directory.replace('\\', '/'),
+        'project_name': project_name,
+        'projectfile': project_file.replace('\\', '/'),
+        'project_path': os.path.abspath(os.path.dirname(project_file)).replace('\\', '/'),
+		'output_path': output_path.replace('\\', '/') })
     cmakelists_contents += custom_contents
         
     cmakelists_file = open(cmakelists_path, 'w')
