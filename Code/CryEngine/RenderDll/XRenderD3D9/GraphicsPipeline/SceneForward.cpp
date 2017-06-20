@@ -1032,6 +1032,7 @@ void CSceneForwardStage::Execute_SkyPass()
 
 		m_pSkyDomeTextureMie = pSkyDomeTextureMie;
 		m_pSkyDomeTextureRayleigh = pSkyDomeTextureRayleigh;
+		m_pSkyMoonTex = pSkyMoonTex;
 	}
 
 	m_skyPass.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pPerPassCB, EShaderStage_AllWithoutCompute);
