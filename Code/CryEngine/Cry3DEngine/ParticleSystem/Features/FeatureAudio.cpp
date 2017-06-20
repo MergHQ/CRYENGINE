@@ -79,7 +79,7 @@ public:
 
 	uint GetNumResources() const override
 	{
-		return m_playTrigger + m_stopTrigger;
+		return !!m_playTrigger + !!m_stopTrigger;
 	}
 
 	cstr GetResourceName(uint resourceId) const override

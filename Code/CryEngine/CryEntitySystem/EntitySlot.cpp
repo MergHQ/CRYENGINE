@@ -81,9 +81,8 @@ void CEntitySlot::ReleaseObjects()
 
 	if (IParticleEmitter* pEmitter = GetParticleEmitter())
 	{
-		pEmitter->Kill();
-		pEmitter->Activate(false);
 		pEmitter->SetEntity(nullptr, 0);
+		pEmitter->Activate(false);
 		pEmitter->Release();
 		m_pRenderNode = nullptr;
 	}
