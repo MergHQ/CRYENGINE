@@ -465,7 +465,7 @@ half GatherAlpha(in float2 baseTC, in half4 vertexColorG, vert2fragTerrain IN)
 	
 #if %SOFT_DEPTH_TEST			
 	// soft compare of geometry depth and scene depth buffer depth
-	float fSceneDepth = linearDepthTex.Load(int3(IN.WPos.xy, 0));
+	float fSceneDepth = GetLinearDepth(linearDepthTex, int2(IN.WPos.xy));
 	float fSDTRangeM = SoftDepthTestRange * (CV_NearFarClipDist.w + fSceneDepth * SoftDepthTestDistRatio);
 	float fGeomDepth = (IN.WPos.w * CV_NearFarClipDist.w + fSDTRangeM);
 	alpha *= saturate(1.f - (fGeomDepth - fSceneDepth) / (fSDTRangeM + 0.0000001));

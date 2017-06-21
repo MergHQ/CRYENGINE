@@ -187,12 +187,6 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 		if (gEnv->p3DEngine && gEnv->p3DEngine->GetITerrain())
 			gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
 
-		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_Pixel);
-
-		// bind the scene depth buffer before the regular scene shader texture IDs.
-		// TODO: This is fragile though and there should be a way to allocate unused IDs for this
-		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_SceneDepthBuffer, pRenderer->m_DepthBufferOrig.pTexture, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_PerlinNoiseMap, CTexture::s_ptexPerlinNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
@@ -200,6 +194,7 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexPaletteTexelsPerMeter, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_Pixel);
 	}
 
 	// particle resources
@@ -408,6 +403,7 @@ void CSceneCustomStage::Execute_SelectionID()
 		m_selectionIDPass.BeginExecution();
 		m_selectionIDPass.DrawRenderItems(pRenderView, EFSLIST_HIGHLIGHT, startSelected, numItems);
 		m_selectionIDPass.EndExecution();
+
 		pRenderView->GetDrawer().JobifyDrawSubmission();
 		pRenderView->GetDrawer().WaitForDrawSubmission();
 	}
@@ -442,14 +438,6 @@ void CSceneCustomStage::Execute_SelectionID()
 	m_highlightPass.SetConstant(outlineName, Vec4(pRenderer->GetHighlightParams().x), eHWSC_Vertex);
 
 	m_highlightPass.Execute();
-
-	// reset the depth target
-	m_selectionIDPass.SetRenderTargets(
-		// Depth
-		0,
-		// Color 0
-		CTexture::s_ptexSceneSelectionIDs
-	);
 }
 
 void CSceneCustomStage::Execute()

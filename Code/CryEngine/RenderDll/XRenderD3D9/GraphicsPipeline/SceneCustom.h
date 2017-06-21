@@ -13,15 +13,14 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 {
 	enum EPerPassTexture
 	{
-		ePerPassTexture_SceneLinearDepth = 24,
-		ePerPassTexture_PerlinNoiseMap,
+		ePerPassTexture_PerlinNoiseMap = 25,
 		ePerPassTexture_TerrainElevMap,
 		ePerPassTexture_WindGrid,
 		ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting,
 		ePerPassTexture_DissolveNoise,
-		ePerPassTexture_SceneDepthBuffer,
+		ePerPassTexture_SceneLinearDepth,
 
 		ePerPassTexture_Count
 	};
