@@ -105,8 +105,7 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 		// support only the mode of CRenderer::CV_r_customvisions=3.
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 
-		// support only no-depth-test mode, not support COB_HUD_REQUIRE_DEPTHTEST of render object custom flag.
-		psoDesc.m_RenderState = GS_NODEPTHTEST;
+		psoDesc.m_RenderState = (desc.objectFlags & FOB_HUD_REQUIRE_DEPTHTEST) ? GS_DEPTHFUNC_LEQUAL : GS_NODEPTHTEST;
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5]; //Ignore depth threshold in SilhoueteVisionOptimised
 
 		pSceneRenderPass = &m_silhouetteMaskPass;
