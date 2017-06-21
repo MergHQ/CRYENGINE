@@ -113,22 +113,22 @@ end_sources()
 CryEngineModule(CryLobby PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 target_include_directories(${THIS_PROJECT}
 PUBLIC
-	$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryPlugins/CryLobby/Interface> $<INSTALL_INTERFACE:include/CryLobby>
-	$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryLobby> $<INSTALL_INTERFACE:include/CryCommon/CryLobby>
+	"$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryPlugins/CryLobby/Interface>" "$<INSTALL_INTERFACE:include/CryLobby>"
+	"$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryLobby>" "$<INSTALL_INTERFACE:include/CryCommon/CryLobby>"
 PRIVATE
-	${CRYENGINE_DIR}/Code/CryEngine/CryNetwork
-	${SDK_DIR}/speex-1.0.5/include
+	"${CRYENGINE_DIR}/Code/CryEngine/CryNetwork"
+	"${SDK_DIR}/speex-1.0.5/include"
 )
 
 if(WIN64)
-	find_library(SPEEX libspeex-1.0.5 PATHS ${SDK_DIR}/speex-1.0.5/lib/x64 )
+	find_library(SPEEX libspeex-1.0.5 PATHS "${SDK_DIR}/speex-1.0.5/lib/x64" )
 elseif(WIN32)
-	find_library(SPEEX libspeex-1.0.5 PATHS ${SDK_DIR}/speex-1.0.5/lib/win32 )
+	find_library(SPEEX libspeex-1.0.5 PATHS "${SDK_DIR}/speex-1.0.5/lib/win32" )
 endif()
 mark_as_advanced(FORCE SPEEX)
 
 if (WIN32 OR WIN64)
-	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 Mswsock ${SPEEX})
+	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 Mswsock "${SPEEX}")
 elseif(DURANGO)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 uuid)
 	set_property( TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY VS_CONFIG_PROPERTY_GROUP_ReferencePath "${CMAKE_CURRENT_SOURCE_DIR}/DurangoLive/DurangoChat/Microsoft.Xbox.GameChat;${DURANGO_SDK}/ExtensionSDKs/xbox services api/8.0/references/commonconfiguration/neutral")		

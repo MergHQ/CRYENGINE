@@ -194,14 +194,14 @@ end_sources()
 
 CryResourceCompilerModule(ResourceCompilerPC PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
 target_include_directories(${THIS_PROJECT} PRIVATE 
-	${CMAKE_SOURCE_DIR}/ResourceCompiler
-	${CRYENGINE_SOURCE_DIR}/Code/Tools
-	${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools 
-	${CRYENGINE_SOURCE_DIR}/Code/CryEngine/Cry3DEngine 
-	${CRYENGINE_SOURCE_DIR}/Code/Sandbox 
-	${SDK_DIR}
-	${SDK_DIR}/Alembic/alembic-1.1.0/include 
-	${SDK_DIR}/Alembic/ilmbase-1.0.2/include)
+	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools"
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools" 
+	"${CRYENGINE_SOURCE_DIR}/Code/CryEngine/Cry3DEngine" 
+	"${CRYENGINE_SOURCE_DIR}/Code/Sandbox" 
+	"${SDK_DIR}"
+	"${SDK_DIR}/Alembic/alembic-1.1.0/include" 
+	"${SDK_DIR}/Alembic/ilmbase-1.0.2/include")
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRYTOOLS -DRESOURCECOMPILERPC_EXPORTS -DOFFLINE_COMPUTATION)
 if (OPTION_FBX_SDK)

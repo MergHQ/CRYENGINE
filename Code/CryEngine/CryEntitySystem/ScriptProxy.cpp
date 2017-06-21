@@ -507,7 +507,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 		// Kill all timers.
 		{
 			// If state changed kill all old timers.
-			m_pEntity->KillTimer(-1);
+			m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
 			m_nCurrStateId = 0;
 		}
 		break;
@@ -573,7 +573,7 @@ bool CEntityComponentLuaScript::GotoState(int nState)
 	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEndState);
 
 	// If state changed kill all old timers.
-	m_pEntity->KillTimer(-1);
+	m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
 
 	SEntityEvent levent;
 	levent.event = ENTITY_EVENT_LEAVE_SCRIPT_STATE;
@@ -698,7 +698,7 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 				if (m_nCurrStateId != currStateId)
 				{
 					// If state changed kill all old timers.
-					m_pEntity->KillTimer(-1);
+					m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
 					m_nCurrStateId = currStateId;
 				}
 				if (ser.IsReading())

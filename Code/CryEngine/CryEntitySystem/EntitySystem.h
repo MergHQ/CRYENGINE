@@ -364,6 +364,7 @@ public:
 	// Called from CEntity implementation.
 	//////////////////////////////////////////////////////////////////////////
 	void RemoveTimerEvent(EntityId id, int nTimerId);
+	bool HasTimerEvent(EntityId id, int nTimerId);
 
 	// Puts entity into active list.
 	void ActivateEntity(CEntity* pEntity, bool bActivate);

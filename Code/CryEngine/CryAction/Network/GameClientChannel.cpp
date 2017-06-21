@@ -256,7 +256,10 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 	string rulesClass;
 	string levelName = param.levelName;
 	if (!GetGameContext()->ClassNameFromId(rulesClass, param.rulesClass))
-		return false;
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "No GameRules");
+	}
+
 	bool ok = true;
 	if (!GetGameContext()->SetImmersive(param.immersive))
 		return false;
@@ -358,6 +361,12 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		const EntityId entityId = pEntity->GetId();
 
 		CCryAction::GetCryAction()->GetIGameObjectSystem()->SetSpawnSerializerForEntity(entityId, &ser);
+
+		if (!param.baseComponent.IsNull())
+		{
+			pEntity->AddComponent(param.baseComponent, nullptr, false, nullptr);
+		}
+
 		if (!pEntitySystem->InitEntity(pEntity, esp))
 		{
 			CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);

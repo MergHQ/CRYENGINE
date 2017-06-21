@@ -1849,6 +1849,19 @@ void CEntitySystem::RemoveTimerEvent(EntityId id, int nTimerId)
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CEntitySystem::HasTimerEvent(EntityId id, int nTimerId)
+{
+	for (const auto& current : m_timersMap)
+	{
+		if (id == current.second.entityId && nTimerId == current.second.nTimerId)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntitySystem::PauseTimers(bool bPause, bool bResume)
 {
 	m_bTimersPause = bPause;
@@ -1906,8 +1919,7 @@ void CEntitySystem::UpdateTimers()
 	if (last != first)
 	{
 		// Make a separate list, because OnTrigger call can modify original timers map.
-		m_currentTimers.resize(0);
-		m_currentTimers.reserve(10);
+		m_currentTimers.clear();
 
 		for (EntityTimersMap::iterator it = first; it != last; ++it)
 			m_currentTimers.push_back(it->second);

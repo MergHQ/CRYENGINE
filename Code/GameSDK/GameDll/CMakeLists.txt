@@ -1363,7 +1363,7 @@ add_subdirectory(${CRYENGINE_DIR}/Code/CryPlugins/CryPerceptionSystem/Module "${
 
 CryGameModule(CryGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameSDK")
 
-target_include_directories( ${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction )
+target_include_directories( ${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAction" )
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryPerceptionSystem )

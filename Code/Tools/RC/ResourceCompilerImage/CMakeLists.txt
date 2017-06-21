@@ -203,9 +203,9 @@ endif()
 
 set_libpath_flag()
 target_include_directories( ${THIS_PROJECT} PRIVATE 
-	${CMAKE_SOURCE_DIR}/ResourceCompiler 
-	${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools
-	${SDK_DIR}/squish-ccr)
+	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools"
+	"${SDK_DIR}/squish-ccr")
 
 if(COMMAND use_orbis_sdk)
 	use_orbis_sdk()
@@ -220,14 +220,14 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE -DRESOURCECOMPILERIMAGE_EXPOR
 target_link_libraries(${THIS_PROJECT} PRIVATE delayimp tiff zlib)
 
 if(OPTION_POWERVR)
-	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/POWERVR/PVRTexLib/Include)
-	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE "${LIBPATH_FLAG}${SDK_DIR}/POWERVR/PVRTexLib/Windows_x86_64 /DELAYLOAD:PVRTexLib.dll")
-	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG "${LIBPATH_FLAG}${SDK_DIR}/POWERVR/PVRTexLib/Windows_x86_64 /DELAYLOAD:PVRTexLib.dll")
+	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/POWERVR/PVRTexLib/Include")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}\"${SDK_DIR}/POWERVR/PVRTexLib/Windows_x86_64\" /DELAYLOAD:PVRTexLib.dll")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${LIBPATH_FLAG}\"${SDK_DIR}/POWERVR/PVRTexLib/Windows_x86_64\" /DELAYLOAD:PVRTexLib.dll")
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " /NODEFAULTLIB:libcmt.lib")  # PVR will reference this by default, this is fine in release, but not in debug
 endif()
 
 if(OPTION_ASTC)
-	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/astc-encoder)
+	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/astc-encoder")
 endif()
 
 set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/DEF:ImageExports.def")

@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.6.2)
 
-set(TOOLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(TOOLS_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
-include(${TOOLS_CMAKE_DIR}/Configure.cmake)
+include("${TOOLS_CMAKE_DIR}/Configure.cmake")
 
 if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX OR OPTION_PAKTOOLS)
 	# Add custom project with just listing of cmake files
-	add_subdirectory(${TOOLS_CMAKE_DIR})
+	add_subdirectory("${TOOLS_CMAKE_DIR}")
 
 	# Order currently matters for Engine, Games and Launchers
 	# 1. CryEngine
@@ -16,20 +16,20 @@ endif()
 if (OPTION_SANDBOX AND WIN64)
 	# Find Qt before including any plugin subdirectories
 	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2015_64/Qt)
+		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2015_64/Qt")
 	elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2015_64/Qt)
+		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2015_64/Qt")
 	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2013_64)
+		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2013_64")
 	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-		set(QT_DIR ${SDK_DIR}/Qt/5.6/msvc2012_64)
+		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2012_64")
 	endif()
-	set(Qt5_DIR ${QT_DIR})
+	set(Qt5_DIR "${QT_DIR}")
 
 	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
 
-	set(QT_DIR ${QT_DIR} CACHE INTERNAL "QT directory" FORCE)
-	set(Qt5_DIR ${Qt5_DIR} CACHE INTERNAL "QT directory" FORCE)
+	set(QT_DIR "${QT_DIR}" CACHE INTERNAL "QT directory" FORCE)
+	set(Qt5_DIR "${Qt5_DIR}" CACHE INTERNAL "QT directory" FORCE)
 
 	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "${VS_FOLDER_PREFIX}/Sandbox/AUTOGEN")
 endif()
@@ -151,7 +151,7 @@ endif()
 
 
 set(CMAKE_INSTALL_MESSAGE LAZY)
-install(FILES ${TOOLS_CMAKE_DIR}/modules/CryCommonConfig.cmake DESTINATION share/cmake)
-install(FILES ${TOOLS_CMAKE_DIR}/modules/CryActionConfig.cmake DESTINATION share/cmake)
+install(FILES "${TOOLS_CMAKE_DIR}/modules/CryCommonConfig.cmake" DESTINATION share/cmake)
+install(FILES "${TOOLS_CMAKE_DIR}/modules/CryActionConfig.cmake" DESTINATION share/cmake)
 
 copy_binary_files_to_target()

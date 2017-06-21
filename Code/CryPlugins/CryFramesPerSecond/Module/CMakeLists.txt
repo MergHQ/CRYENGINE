@@ -28,7 +28,7 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineStaticModule(CryFramesPerSecond PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon PUBLIC ../Interface)
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryCommon" PUBLIC ../Interface)
 if(LINUX)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -fPIC)
 endif()

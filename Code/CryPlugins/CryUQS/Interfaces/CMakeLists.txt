@@ -84,8 +84,8 @@ CryFileContainer(CryUQS_Interfaces SOLUTION_FOLDER "CryPlugins/CryUQS")
 
 if(OPTION_UQS_SCHEMATYC_SUPPORT)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-		INTERFACE ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
-		INTERFACE ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
+		INTERFACE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+		INTERFACE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
 	)
 endif()
 

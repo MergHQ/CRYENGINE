@@ -182,6 +182,11 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 		m_pScriptBrowser->SetModel(nullptr);
 	}
 
+	if (m_pPreview)
+	{
+		m_pPreview->SetClass(nullptr);
+	}
+
 	QPoint graphPos;
 	CryGraphEditor::GraphItemIds selectedItemIds;
 	if (m_pGraphView)
@@ -195,7 +200,7 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 		m_pGraphView->SetModel(nullptr);
 	}
 
-	Schematyc::IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().RestoreUndo(input, m_pModel->GetRootElement());
+	gEnv->pSchematyc->GetScriptRegistry().RestoreUndo(input, m_pModel->GetRootElement());
 	m_pModel = new Schematyc::CScriptBrowserModel(*this, *m_pAsset, m_pScript->GetRoot()->GetGUID());
 	if (m_pScriptBrowser)
 	{
@@ -208,6 +213,11 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 	{
 		m_pGraphView->SetPosition(graphPos);
 		m_pGraphView->SelectItems(selectedItemIds);
+	}
+
+	if (m_pPreview)
+	{
+		m_pPreview->SetClass(static_cast<const Schematyc::IScriptClass*>(m_pScript->GetRoot()));
 	}
 
 	return true;

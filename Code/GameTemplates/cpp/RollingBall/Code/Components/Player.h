@@ -8,6 +8,17 @@
 #include <DefaultComponents/Cameras/CameraComponent.h>
 #include <DefaultComponents/Input/InputComponent.h>
 
+#include <CrySchematyc/CoreAPI.h>
+
+struct MovementParams
+{
+	Vec3 pos;
+	void SerializeWith(TSerialize ser)
+	{
+		ser.Value("pos", pos, 'wrld');
+	}
+};
+
 ////////////////////////////////////////////////////////
 // Represents a player participating in gameplay
 ////////////////////////////////////////////////////////
@@ -31,9 +42,22 @@ class CPlayerComponent final : public IEntityComponent
 		Jump = 1 << 4
 	};
 
+	const EEntityAspects kInputAspect = eEA_GameClientD;
+
 public:
 	CPlayerComponent() = default;
 	virtual ~CPlayerComponent() {}
+
+	static CryGUID& IID()
+	{
+		static CryGUID id = "B08F2F41-F02E-48B5-921A-3FF857F19ED6"_cry_guid;
+		return id;
+	}
+
+	static void ReflectType(Schematyc::CTypeDesc<CPlayerComponent>& desc)
+	{
+		desc.SetGUID(CPlayerComponent::IID());
+	}
 
 	// IEntityComponent
 	virtual void Initialize() override;
@@ -43,7 +67,14 @@ public:
 	// ~IEntityComponent
 
 	void Revive();
-	void SpawnAtSpawnPoint();
+
+	// Additional initialization called only for the entity representing the current player.
+	void LocalPlayerInitialize();
+
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
+	virtual NetworkAspectType GetNetSerializeAspectMask() const { return kInputAspect; };
+
+	bool SvJump(MovementParams&& p, INetChannel *);
 
 protected:
 	void UpdateMovementRequest(float frameTime);
@@ -55,10 +86,8 @@ protected:
 	Cry::DefaultComponents::CCameraComponent* m_pCameraComponent = nullptr;
 	Cry::DefaultComponents::CInputComponent* m_pInputComponent = nullptr;
 
-	TInputFlags m_inputFlags;
-
-	Vec2 m_mouseDeltaRotation;
-
+	TInputFlags m_inputFlags = 0;
+	Vec2 m_mouseDeltaRotation = ZERO;
 	// Should translate to head orientation in the future
-	Quat m_lookOrientation;
+	Quat m_lookOrientation = IDENTITY;
 };

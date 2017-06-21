@@ -2,6 +2,7 @@
 #include "GamePlugin.h"
 
 #include "Components/Player.h"
+#include "Components/SpawnPoint.h"
 #include <CryEntitySystem/IEntityClass.h>
 #include <IGameObjectSystem.h>
 #include <IGameObject.h>
@@ -31,14 +32,6 @@ bool CGamePlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPar
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CGamePlugin");
 	// Listen for client connection events, in order to create the local player
 	gEnv->pGameFramework->AddNetworkedClientListener(*this);
-
-
-	// Now register the new Schematyc components
-	auto staticAutoRegisterLambda = [](Schematyc::IEnvRegistrar& registrar)
-	{
-		// Call all static callback registered with the CRY_STATIC_AUTO_REGISTER_WITH_PARAM
-		Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
-	};
 
 	return true;
 }
@@ -75,7 +68,7 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 		// Don't need to load the map in editor
 		if (!gEnv->IsEditor())
 		{
-			gEnv->pConsole->ExecuteString("map example", false, true);
+			gEnv->pConsole->ExecuteString("map example s", false, true);
 		}
 	}
 	break;
@@ -87,9 +80,11 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 	// Connection received from a client, create a player entity and component
 	SEntitySpawnParams spawnParams;
 	spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
-	spawnParams.sName = "Player";
+	string player_name = string().Format("Player%" PRISIZE_T, m_players.size());
+	spawnParams.sName = player_name;
 	spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
-	
+	spawnParams.vPosition = CSpawnPointComponent::GetFirstSpawnPointPos();
+
 	// Set local player details
 	if (m_players.size() == 0 && !gEnv->IsDedicated())
 	{
@@ -100,12 +95,12 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 	// Spawn the player entity
 	if (IEntity* pPlayerEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams))
 	{
+		// Create the player component instance
+		CPlayerComponent* pPlayer = pPlayerEntity->GetOrCreateComponent<CPlayerComponent>();
+
 		// Set the local player entity channel id, and bind it to the network so that it can support Multiplayer contexts
 		pPlayerEntity->GetNetEntity()->SetChannelId(channelId);
 		pPlayerEntity->GetNetEntity()->BindToNetwork();
-
-		// Create the player component instance
-		CPlayerComponent* pPlayer = pPlayerEntity->GetOrCreateComponentClass<CPlayerComponent>();
 
 		// Push the component into our map, with the channel id as the key
 		m_players.emplace(std::make_pair(channelId, pPlayerEntity->GetId()));

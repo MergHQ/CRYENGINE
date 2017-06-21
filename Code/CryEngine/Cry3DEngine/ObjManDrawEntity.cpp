@@ -321,6 +321,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 	if (pEnt->GetRndFlags() & ERF_HUD_REQUIRE_DEPTHTEST)
 	{
 		DrawParams.nCustomFlags |= COB_HUD_REQUIRE_DEPTHTEST;
+		DrawParams.dwFObjFlags  |= FOB_HUD_REQUIRE_DEPTHTEST;
 	}
 	if (pEnt->GetRndFlags() & ERF_DISABLE_MOTION_BLUR)
 	{

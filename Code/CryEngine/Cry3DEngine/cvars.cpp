@@ -47,7 +47,10 @@ void OnPerCharacterShadowsChange(ICVar* pArgs)
 
 void OnGsmLodsNumChange(ICVar* pArgs)
 {
-	Cry3DEngineBase::GetRenderer()->UpdateCachedShadowsLodCount(pArgs->GetIVal());
+	if (Cry3DEngineBase::GetRenderer())
+	{
+		Cry3DEngineBase::GetRenderer()->UpdateCachedShadowsLodCount(pArgs->GetIVal());
+	}
 }
 
 void OnDynamicDistanceShadowsVarChange(ICVar* pArgs)

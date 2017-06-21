@@ -130,10 +130,10 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE -DSCHEMATYC_PLUGIN_EXPORTS)
 target_include_directories(${THIS_PROJECT}
 PRIVATE
 	GeneratedFiles
-	${CRYENGINE_DIR}/Code/CryEngine/CryAction
-	${CRYENGINE_DIR}/Code/CryExtensions/CryLink/Interface
-	${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
-	${CRYENGINE_DIR}/Code/Sandbox/EditorQt/Include
-	${CRYENGINE_DIR}/Code/Sandbox/EditorQt
+	"${CRYENGINE_DIR}/Code/CryEngine/CryAction"
+	"${CRYENGINE_DIR}/Code/CryExtensions/CryLink/Interface"
+	"${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+	"${CRYENGINE_DIR}/Code/Sandbox/EditorQt/Include"
+	"${CRYENGINE_DIR}/Code/Sandbox/EditorQt"
 )
 use_xt()
