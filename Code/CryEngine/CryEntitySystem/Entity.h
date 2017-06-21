@@ -178,7 +178,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void SetTimer(int nTimerId, int nMilliSeconds) final;
+	virtual int SetTimer(int nTimerId, int nMilliSeconds) final;
 	virtual void KillTimer(int nTimerId) final;
 
 	virtual void Hide(bool bHide, EEntityHideFlags hideFlags = ENTITY_HIDE_NO_FLAG) final;

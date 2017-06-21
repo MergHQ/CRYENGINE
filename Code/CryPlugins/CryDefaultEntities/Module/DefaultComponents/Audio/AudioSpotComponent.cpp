@@ -115,6 +115,7 @@ void CEntityAudioSpotComponent::ReflectType(Schematyc::CTypeDesc<CEntityAudioSpo
 	desc.AddMember(&CEntityAudioSpotComponent::m_minDelay, 'min', "minDelay", "Min Delay", "Depending on the PlayMode: The min time between triggering or the min delay of re-triggering, after the trigger has finished", 1.0f);
 	desc.AddMember(&CEntityAudioSpotComponent::m_maxDelay, 'max', "maxDelay", "Max Delay", "Depending on the PlayMode: The max time between triggering or the max delay of re-triggering, after the trigger has finished", 2.0f);
 	desc.AddMember(&CEntityAudioSpotComponent::m_bEnabled, 'ena', "enabled", "Enabled", "Enables/Disables the looping of the default Trigger", true);
+	desc.AddMember(&CEntityAudioSpotComponent::m_randomOffset, 'rand', "randomOffset", "Random Offset", "Randomized offset that is added to the proxy position on each triggering", Vec3(0.f));
 }
 
 void CEntityAudioSpotComponent::Initialize()
@@ -165,13 +166,15 @@ void CEntityAudioSpotComponent::ProcessEvent(SEntityEvent& event)
 		if (event.nParam[0] == 0)     //leaving game
 		{
 			m_bActive = false;
-			GetEntity()->KillTimer('ats');
+			GetEntity()->KillTimer(m_timerId);
 			m_pAudioComp->StopTrigger(m_defaultTrigger.m_triggerId, m_auxAudioObjectId);     //we will still receive a finished callback for this trigger, therefore we have to store (in m_bActive) that we dont want to re-trigger
 		}
 		break;
 	case ENTITY_EVENT_TIMER:
-		if (event.nParam[0] == 'ats')
+		if (event.nParam[0] == m_timerId)
+		{
 			ExecuteDefaultTrigger();
+		}
 		break;
 	case ENTITY_EVENT_AUDIO_TRIGGER_ENDED:
 		if (m_bActive && m_bEnabled)
@@ -188,7 +191,7 @@ void CEntityAudioSpotComponent::ProcessEvent(SEntityEvent& event)
 				}
 				if (instanceId == 0 && pAudioCallbackData->audioControlId == m_defaultTrigger.m_triggerId && m_playMode == EPlayMode::ReTriggerWhenDone)
 				{
-					GetEntity()->SetTimer('ats', (int)(1000.0f * cry_random(m_minDelay, m_maxDelay)));
+					m_timerId = GetEntity()->SetTimer(m_timerId, (int)(1000.0f * cry_random(m_minDelay, m_maxDelay)));
 				}
 			}
 		}
@@ -200,12 +203,18 @@ bool CEntityAudioSpotComponent::ExecuteDefaultTrigger()
 {
 	if (m_bActive && m_bEnabled && m_playMode != EPlayMode::None && m_pAudioComp && m_defaultTrigger.m_triggerId != CryAudio::InvalidControlId)
 	{
+		if (!m_randomOffset.IsZero())
+		{
+			Vec3 randomOffset = cry_random(-m_randomOffset, m_randomOffset);
+			m_pAudioComp->SetAudioAuxObjectOffset(Matrix34(IDENTITY, randomOffset), m_auxAudioObjectId); //Remark: won't work for 'overlapping' sounds
+		}
+
 		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this);
 		if (m_pAudioComp->ExecuteTrigger(m_defaultTrigger.m_triggerId, m_auxAudioObjectId, userData))
 		{
 			if (m_playMode == EPlayMode::ReTriggerConstantly)
 			{
-				GetEntity()->SetTimer('ats', (int)(1000.0f * cry_random(m_minDelay, m_maxDelay)));
+				m_timerId = GetEntity()->SetTimer(m_timerId, (int)(1000.0f * cry_random(m_minDelay, m_maxDelay)));
 			}
 			return true;
 		}

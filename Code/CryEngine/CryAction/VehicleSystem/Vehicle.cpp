@@ -1407,7 +1407,7 @@ void CVehicle::KillTimers()
 {
 	KillAbandonedTimer();
 
-	GetEntity()->KillTimer(-1);
+	GetEntity()->KillTimer(IEntity::KILL_ALL_TIMER);
 	m_timers.clear();
 }
 

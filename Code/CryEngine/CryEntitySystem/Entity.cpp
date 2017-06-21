@@ -1221,20 +1221,33 @@ void CEntity::PrePhysicsActivate(bool bActive)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SetTimer(int nTimerId, int nMilliSeconds)
+int CEntity::SetTimer(int nTimerId, int nMilliSeconds)
 {
+	if (nTimerId == IEntity::CREATE_NEW_UNIQUE_TIMER_ID)  // generate a new entity-unique timerId
+	{
+		static uint16 uniqueTimerId = 0;
+		while (g_pIEntitySystem->HasTimerEvent(m_nID, uniqueTimerId))
+			++uniqueTimerId;
+		nTimerId = uniqueTimerId;
+	}
+
 	KillTimer(nTimerId);
 	SEntityTimerEvent timeEvent;
 	timeEvent.entityId = m_nID;
 	timeEvent.nTimerId = nTimerId;
 	timeEvent.nMilliSeconds = nMilliSeconds;
 	g_pIEntitySystem->AddTimerEvent(timeEvent);
+
+	return timeEvent.nTimerId;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::KillTimer(int nTimerId)
 {
-	g_pIEntitySystem->RemoveTimerEvent(m_nID, nTimerId);
+	if (nTimerId != IEntity::CREATE_NEW_UNIQUE_TIMER_ID)
+	{
+		g_pIEntitySystem->RemoveTimerEvent(m_nID, nTimerId);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

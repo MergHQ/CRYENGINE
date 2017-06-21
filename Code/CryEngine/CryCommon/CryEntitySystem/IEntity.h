@@ -430,6 +430,9 @@ struct IEntity
 		ATTACHMENT_SUPPRESS_UPDATE     = BIT(4),    //!< Suppresses attachment event and matrix update
 	};
 
+	static constexpr int CREATE_NEW_UNIQUE_TIMER_ID = -666;
+	static constexpr int KILL_ALL_TIMER = -1;
+
 #ifdef SEG_WORLD
 	enum ESWObjFlag
 	{
@@ -682,12 +685,13 @@ public:
 	//! Multiple timers can be started simultaneously with different timer ids.
 	//! If some timer is not yet finished and another timer with the same timerID is set, the new one
 	//! will override old timer, and old timer will not send finish event.
-	//! \param nTimerId Timer ID, multiple timers with different IDs are possible.
+	//! \param nTimerId Timer ID, multiple timers with different IDs are possible. (specify IEntity::CREATE_NEW_UNIQUE_TIMER_ID to let the system generate a new and unique Id)
 	//! \param nMilliSeconds Timer timeout time in milliseconds.
-	virtual void SetTimer(int nTimerId, int nMilliSeconds) = 0;
+	//! \return the (generated) timerId 
+	virtual int SetTimer(int nTimerId, int nMilliSeconds) = 0;
 
 	//! Stops already started entity timer with this id.
-	//! \param nTimerId Timer ID of the timer started for this entity.
+	//! \param nTimerId Timer ID of the timer started for this entity. (specify IEntity::KILL_ALL_TIMER to stop all timer on this entity)
 	virtual void KillTimer(int nTimerId) = 0;
 
 	//! Hides this entity, makes it invisible and disable its physics.

@@ -168,6 +168,7 @@ namespace Cry
 			CryAudio::AuxObjectId        m_auxAudioObjectId = CryAudio::InvalidAuxObjectId;
 			IEntityAudioComponent*       m_pAudioComp = nullptr;
 			bool                         m_bActive = false;
+			int                          m_timerId = IEntity::CREATE_NEW_UNIQUE_TIMER_ID;
 
 			//Properties exposed to UI
 			SAudioTriggerSerializeHelper m_defaultTrigger;
@@ -176,6 +177,7 @@ namespace Cry
 			Schematyc::Range<0, 10000>   m_maxDelay = 2.0f;
 			CryAudio::EOcclusionType     m_occlusionType = CryAudio::EOcclusionType::Ignore;
 			bool                         m_bEnabled = true;
+			Vec3						 m_randomOffset;
 		};
 	} // DefaultComponents
 }  //Cry
