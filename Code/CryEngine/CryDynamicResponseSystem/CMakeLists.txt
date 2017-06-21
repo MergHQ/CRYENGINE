@@ -81,7 +81,7 @@ CryEngineModule(CryDynamicResponseSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEn
 
 target_include_directories(${THIS_PROJECT}
 PRIVATE 
-	${CRYENGINE_DIR}/Code/CryEngine/CryCommon
-	${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
-	${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
+	"${CRYENGINE_DIR}/Code/CryEngine/CryCommon"
+	"${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+	"${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
 )

@@ -33,7 +33,7 @@ CryEngineModule(CryPerceptionSystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins
 
 target_include_directories(${THIS_PROJECT}
 PRIVATE 
-	${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+	"${CRYENGINE_DIR}/Code/CryEngine/CryCommon"
 PUBLIC
 	../Interface
 )

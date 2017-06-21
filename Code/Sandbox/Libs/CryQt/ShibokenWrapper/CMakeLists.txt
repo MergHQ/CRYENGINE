@@ -14,9 +14,9 @@ set(SHIBOKEN_INCLUDE_PATH "${PYSIDE_DIR}include/shiboken2/")
 set(QT_INCLUDE_PATH "${QT_DIR}/include/")
 
 SET (WRAPPER_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/Generated/")
-FILE (REMOVE_RECURSE ${WRAPPER_OUTPUT_DIR})
+FILE (REMOVE_RECURSE "${WRAPPER_OUTPUT_DIR}")
 
-get_filename_component (PARENT_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+get_filename_component (PARENT_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
 
 set (TYPESYSTEM_PATHS "${PYSIDE_DIR}typesystems\;${PYSIDE_INCLUDE_PATH}")
 set(ENV{PATH} "${QT_DIR}/bin;$ENV{PATH}")
@@ -35,7 +35,7 @@ SET(SHIBOKEN_ARGS
 	"--api-version=5.6")
 
 message( STATUS "Running PySide Shiboken ${SHIBOKEN_EXE}")
-execute_process ( COMMAND ${SHIBOKEN_EXE} ${SHIBOKEN_ARGS} WORKING_DIRECTORY "${QT_DIR}/bin" OUTPUT_VARIABLE shiboken_output ERROR_VARIABLE shiboken_error)
+execute_process ( COMMAND "${SHIBOKEN_EXE}" ${SHIBOKEN_ARGS} WORKING_DIRECTORY "${QT_DIR}/bin" OUTPUT_VARIABLE shiboken_output ERROR_VARIABLE shiboken_error)
 message( STATUS "Done Running PySide Shiboken")
 
 if (DEFINED SHOW_SHIBOKEN_OUTPUT)
@@ -44,6 +44,7 @@ if (DEFINED SHOW_SHIBOKEN_OUTPUT)
 endif()
 
 FILE(GLOB shiboken_generated_sources "${WRAPPER_OUTPUT_DIR}/_CryQt/*.*")
+
 start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
@@ -54,7 +55,7 @@ end_sources()
 
 CreateDynamicModule(CryQtShibokenWrapper SOLUTION_FOLDER "Sandbox/Libs")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DWIN32)
-target_include_directories(${THIS_PROJECT} PRIVATE ${SHIBOKEN_INCLUDE_PATH} ${PYSIDE_INCLUDE_PATH} ${PYSIDE_INCLUDE_PATH}/QtGui ${PYSIDE_INCLUDE_PATH}/QtCore ${PYSIDE_INCLUDE_PATH}/QtWidgets ${QT_INCLUDE_PATH}/QtANGLE)
+target_include_directories(${THIS_PROJECT} PRIVATE "${SHIBOKEN_INCLUDE_PATH}" "${PYSIDE_INCLUDE_PATH}" "${PYSIDE_INCLUDE_PATH}/QtGui" "${PYSIDE_INCLUDE_PATH}/QtCore" "${PYSIDE_INCLUDE_PATH}/QtWidgets" "${QT_INCLUDE_PATH}/QtANGLE")
 target_link_libraries(${THIS_PROJECT} PRIVATE dwmapi gdi32 Ole32 qtmain$<$<CONFIG:Debug>:d>)
 target_link_libraries(${THIS_PROJECT} PRIVATE CryQt)
 
@@ -64,17 +65,17 @@ target_link_libraries(${THIS_PROJECT} PRIVATE python27)
 FILE(GLOB_RECURSE all_headers "${PARENT_SOURCE_DIRECTORY}/*.h")
 
 FOREACH(header ${all_headers})
-        GET_FILENAME_COMPONENT(dir_path ${header} DIRECTORY)
-        SET(dir_list ${dir_list} ${dir_path})
+        GET_FILENAME_COMPONENT(dir_path "${header}" DIRECTORY)
+        SET(dir_list ${dir_list} "${dir_path}")
 ENDFOREACH()
 LIST(REMOVE_DUPLICATES dir_list)
 
 target_include_directories(${THIS_PROJECT} PRIVATE ${dir_list})
 
 set_libpath_flag()
-set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${LIBPATH_FLAG}${PYSIDE_DIR}")
-set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}${PYSIDE_DIR}")
-set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}${PYSIDE_DIR}")
+set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${LIBPATH_FLAG}\"${PYSIDE_DIR}\"")
+set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}\"${PYSIDE_DIR}\"")
+set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}\"${PYSIDE_DIR}\"")
 
 if (NOT DEFINED PYSIDE_LIB)
 	set(PYSIDE_LIB pyside2-python2.7$<$<CONFIG:Debug>:-dbg>)
@@ -84,7 +85,7 @@ if (NOT DEFINED SHIBOKEN_LIB)
 	set(SHIBOKEN_LIB shiboken2-python2.7$<$<CONFIG:Debug>:-dbg>)
 endif()
 
-target_link_libraries(${THIS_PROJECT} PRIVATE ${PYSIDE_LIB} ${SHIBOKEN_LIB})
+target_link_libraries(${THIS_PROJECT} PRIVATE "${PYSIDE_LIB}" "${SHIBOKEN_LIB}")
 
 use_qt()
 
@@ -103,4 +104,4 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 
-add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/CryQt.py $<TARGET_FILE_DIR:${THIS_PROJECT}>)
+add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD COMMAND "${CMAKE_COMMAND}" -E copy "\"${CMAKE_CURRENT_SOURCE_DIR}/CryQt.py\"" "\"$<TARGET_FILE_DIR:${THIS_PROJECT}>\"")

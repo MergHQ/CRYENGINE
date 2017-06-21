@@ -117,9 +117,9 @@ end_sources()
 CryResourceCompiler(ResourceCompiler PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
 
 target_include_directories(${THIS_PROJECT} PRIVATE
-	${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools 
-	${CRYENGINE_SOURCE_DIR}/Code/Tools/CryXML 
-	${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CrySystem/XML)
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools" 
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryXML" 
+	"${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CrySystem/XML")
 target_link_libraries(${THIS_PROJECT} PRIVATE zlib md5 psapi)
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc)
 
@@ -130,8 +130,8 @@ else()
 endif() 
 
 file(GLOB FILES_TO_COPY ${BINARY_FILE_LIST})
-set (RC_BINATY_DIR ${CRYENGINE_SOURCE_DIR}/Tools/rc) 
+set (RC_BINATY_DIR "${CRYENGINE_SOURCE_DIR}/Tools/rc") 
 foreach(FILENAME ${FILES_TO_COPY})
 	MESSAGE("Copy Binary ${FILENAME} to ${RC_BINATY_DIR}")
-	file(COPY ${FILENAME} DESTINATION ${RC_BINATY_DIR})
+	file(COPY "${FILENAME}" DESTINATION "${RC_BINATY_DIR}")
 endforeach()

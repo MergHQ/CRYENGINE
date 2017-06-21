@@ -30,7 +30,7 @@ target_include_directories(${THIS_PROJECT}
 
 if(OPTION_UQS_SCHEMATYC_SUPPORT)
 	target_include_directories(${THIS_PROJECT}
-		PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
-		PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
+		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
 	)
 endif()

@@ -35,7 +35,7 @@ CryEditorPlugin(DialogEditorPlugin PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plu
 use_xt()
 
 #necessary for ICryMannequin.h
-target_include_directories(${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction)	
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAction")	
 
 #Sandbox does not seem to be necessary, do not include it until necessary
 #target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt)	

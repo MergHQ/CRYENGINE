@@ -161,17 +161,17 @@ def generate_cpp_cmakelists (project_name, project_file, code_directory, engine_
     cmakelists_template = Template("cmake_minimum_required (VERSION 3.6.2)\n")
 
     if is_default_project:
-         cmakelists_template.template += """set(CRYENGINE_DIR $engine_root_directory)
-set(TOOLS_CMAKE_DIR $${CRYENGINE_DIR}/Tools/CMake)
+         cmakelists_template.template += """set(CRYENGINE_DIR "$engine_root_directory")
+set(TOOLS_CMAKE_DIR "$${CRYENGINE_DIR}/Tools/CMake")
 
 set(PROJECT_BUILD 1)
 set(PROJECT_DIR "$project_path")
 
-include($${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
+include("$${TOOLS_CMAKE_DIR}/CommonOptions.cmake")
 
-add_subdirectory($${CRYENGINE_DIR} $${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE)
+add_subdirectory("$${CRYENGINE_DIR}" "$${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE")
 
-include($${TOOLS_CMAKE_DIR}/Configure.cmake)"""
+include("$${TOOLS_CMAKE_DIR}/Configure.cmake")"""
     
     cmakelists_template.template += """\nstart_sources()
 
@@ -183,10 +183,10 @@ CryEngineModule($project_name PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
 
 target_include_directories($${THIS_PROJECT}
 PRIVATE 
-    $${CRYENGINE_DIR}/Code/CryEngine/CryCommon
-    $${CRYENGINE_DIR}/Code/CryEngine/CryAction
-	$${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
-	$${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module
+    "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon"
+    "$${CRYENGINE_DIR}/Code/CryEngine/CryAction"
+	"$${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+	"$${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module"
 )
 """
 

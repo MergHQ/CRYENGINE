@@ -40,7 +40,7 @@ if(ANDROID)
 	)
 
 	set_source_files_properties(${SOURCE_FILES_SDLEXT} PROPERTIES HEADER_FILE_ONLY true)
-	target_include_directories(CFilesForAndroidLauncher PRIVATE ${SDK_DIR}/SDL2/include/android-${CMAKE_ANDROID_ARCH} ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/include)
+	target_include_directories(CFilesForAndroidLauncher PRIVATE "${SDK_DIR}/SDL2/include/android-${CMAKE_ANDROID_ARCH}" "${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/include")
 	target_compile_definitions(CFilesForAndroidLauncher PRIVATE USE_SDL2)
 	
 	#CryLauncher(AndroidLauncher SOLUTION_FOLDER Launcher)

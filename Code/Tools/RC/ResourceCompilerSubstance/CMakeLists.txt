@@ -38,11 +38,11 @@ CryResourceCompilerModule(ResourceCompilerSubstance PCH "StdAfx.cpp" SOLUTION_FO
 
 set_libpath_flag()
 target_include_directories( ${THIS_PROJECT} PRIVATE 
-	${CMAKE_SOURCE_DIR}/ResourceCompiler 
-	${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools
-	${SDK_DIR}/squish-ccr
-    ${SDK_DIR}/SubstanceEngines/include
-    ${CRYENGINE_SOURCE_DIR}/Code/Sandbox/Libs/CrySubstance)
+	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools"
+	"${SDK_DIR}/squish-ccr"
+    "${SDK_DIR}/SubstanceEngines/include"
+    "${CRYENGINE_SOURCE_DIR}/Code/Sandbox/Libs/CrySubstance")
 target_link_libraries(${THIS_PROJECT} PRIVATE CrySubstance tiff)
 use_substance()
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR)

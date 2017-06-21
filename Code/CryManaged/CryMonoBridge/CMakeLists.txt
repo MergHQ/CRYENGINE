@@ -95,7 +95,7 @@ end_sources()
 
 CryEngineModule(CryMonoBridge FORCE_SHARED PCH "StdAfx.cpp" SOLUTION_FOLDER "CryMono")
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /bigobj)
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAction" )
 
 # c# assembly generation should be uniform across all projects for 32 bit and 64 bit. 
 # Currently there are 4 other assemblies being generated 
@@ -111,12 +111,12 @@ if (OPTION_CRYMONO_SWIG)
 endif()
 	
 if(WIN32)
-	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/Mono/include/mono-2.0)
+	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/Mono/include/mono-2.0")
 	set_libpath_flag()
 	if (WIN64)
-		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}${SDK_DIR}/Mono/lib/x64")
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/Mono/lib/x64\"")
 	else()
-		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}${SDK_DIR}/Mono/lib/x86")
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/Mono/lib/x86\"")
 	endif()		
 	
 	target_link_libraries(${THIS_PROJECT} PRIVATE Shell32)

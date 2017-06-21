@@ -14,7 +14,7 @@ add_sources("NoUberFile"
 )
 
 # -- Manifests --
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DPIAware.xml ${CMAKE_CURRENT_BINARY_DIR}/DPIAware.xml.manifest COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/DPIAware.xml" "${CMAKE_CURRENT_BINARY_DIR}/DPIAware.xml.manifest" COPYONLY)
 add_sources("NoUberFile" SOURCE_GROUP "Manifest"
 	"DPIAware.xml" "${CMAKE_CURRENT_BINARY_DIR}/DPIAware.xml.manifest"
 )
@@ -23,7 +23,7 @@ end_sources()
 #END-FILE-LIST
 
 # Rename the manifest so cmake will use it as such
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DPIAware.xml ${CMAKE_CURRENT_BINARY_DIR}/DPIAware.manifest COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/DPIAware.xml" "${CMAKE_CURRENT_BINARY_DIR}/DPIAware.manifest" COPYONLY)
 
 add_sources("NoUberFile" SOURCE_GROUP "Manifest" "${CMAKE_CURRENT_BINARY_DIR}/DPIAware.manifest")
 if(WIN32)
