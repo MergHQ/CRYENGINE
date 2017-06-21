@@ -174,6 +174,7 @@ private:
 
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator& iter);
 	void PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData);
+	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 
 	ObjectStandaloneFileMap   m_activeStandaloneFiles;
 	ObjectEventSet            m_activeEvents;
