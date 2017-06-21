@@ -172,13 +172,14 @@ public:
 	typedef DynArray<TParticleId, uint> TInstances;
 
 	CParticleComponentRuntime(
+	  IParticleEmitter* pEmitter,
 	  pfx2::IParticleComponent* pComponent,
 	  const pfx2::SRuntimeInitializationParameters& params);
 
 	virtual ~CParticleComponentRuntime()
 	{
 	}
-	virtual void        SetEmitterData(::IParticleEmitter* pEmitter) override;
+	virtual void        UpdateEmitterData() override;
 	virtual EState      GetState() const override       { return m_state; };
 	virtual bool        IsActive() const override       { return m_active; }
 	virtual void        SetActive(bool active) override { m_active = active; }

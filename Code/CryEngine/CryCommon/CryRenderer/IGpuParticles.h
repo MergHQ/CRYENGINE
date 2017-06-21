@@ -63,7 +63,7 @@ public:
 	};
 
 	virtual gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() override { return this; }
-	virtual void                                 SetEmitterData(::IParticleEmitter* pEmitter) = 0;
+	virtual void                                 UpdateEmitterData() = 0;
 
 	virtual EState                               GetState() const = 0;
 	virtual bool                                 HasParticles() = 0;
@@ -269,8 +269,9 @@ public:
 
 	virtual _smart_ptr<IParticleComponentRuntime>
 	CreateParticleComponentRuntime(
-	  pfx2::IParticleComponent* pComponent,
-	  const pfx2::SRuntimeInitializationParameters& params) = 0;
+		IParticleEmitter* pEmitter,
+		pfx2::IParticleComponent* pComponent,
+		const pfx2::SRuntimeInitializationParameters& params) = 0;
 
 	virtual _smart_ptr<IParticleFeatureGpuInterface>
 	CreateParticleFeatureGpuInterface(EGpuFeatureType) = 0;

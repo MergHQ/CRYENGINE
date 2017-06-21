@@ -36,13 +36,14 @@ void CManager::BeginFrame()
 
 _smart_ptr<IParticleComponentRuntime>
 CManager::CreateParticleComponentRuntime(
-  pfx2::IParticleComponent* pComponent,
-  const pfx2::SRuntimeInitializationParameters& params)
+	IParticleEmitter* pEmitter,
+	pfx2::IParticleComponent* pComponent,
+	const pfx2::SRuntimeInitializationParameters& params)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 	CryAutoLock<CryCriticalSection> lock(m_cs);
 
-	CParticleComponentRuntime* pRuntime = new CParticleComponentRuntime(pComponent, params);
+	CParticleComponentRuntime* pRuntime = new CParticleComponentRuntime(pEmitter, pComponent, params);
 	_smart_ptr<IParticleComponentRuntime> result(pRuntime);
 	GetWriteRuntimes().push_back(pRuntime);
 	return result;

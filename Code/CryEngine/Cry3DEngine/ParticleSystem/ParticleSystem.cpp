@@ -308,7 +308,7 @@ void CParticleSystem::UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter)
 			params.physAccel = pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
 			params.physWind = pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
 			pGpuRuntime->SetEnvironmentParameters(params);
-			pGpuRuntime->SetEmitterData(pEmitter);
+			pGpuRuntime->UpdateEmitterData();
 		}
 	}
 }
