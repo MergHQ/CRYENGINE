@@ -61,6 +61,15 @@ void CSceneRenderPass::SetRenderTargets(CTexture* pDepthTarget, CTexture* pColor
 	m_bOutputsDirty |= m_renderPassDesc.SetRenderTarget(2, pColorTarget2);
 	m_bOutputsDirty |= m_renderPassDesc.SetRenderTarget(3, pColorTarget3);
 
+	CRY_ASSERT_MESSAGE(
+		(!pColorTarget0 || !pColorTarget1 || pColorTarget0->GetWidth() == pColorTarget1->GetWidth()) &&
+		(!pColorTarget1 || !pColorTarget2 || pColorTarget1->GetWidth() == pColorTarget2->GetWidth()) &&
+		(!pColorTarget2 || !pColorTarget3 || pColorTarget2->GetWidth() == pColorTarget3->GetWidth()),
+		"Color targets are of different size!");
+	CRY_ASSERT_MESSAGE(
+		(!pDepthTarget  || !pColorTarget0 || pDepthTarget ->GetWidth() >= pColorTarget0->GetWidth()),
+		"Depth target is smaller than the color target(s)!");
+
 	// TODO: refactor, shouldn't need to update the renderpass here but PSOs are compiled before CSceneRenderPass::Prepare is called
 	if (m_bOutputsDirty)
 	{

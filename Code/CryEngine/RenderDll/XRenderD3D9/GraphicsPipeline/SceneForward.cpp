@@ -95,7 +95,7 @@ void CSceneForwardStage::Init()
 	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 	m_forwardLDRPass.SetRenderTargets(
 		// Depth
-		gcpRendD3D->m_pZTexture,
+		gcpRendD3D->GetCurrentDepthOutput(),
 		// Color 0
 		gcpRendD3D->GetCurrentTargetOutput()
 	);

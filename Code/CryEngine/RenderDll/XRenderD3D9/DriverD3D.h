@@ -412,6 +412,7 @@ public:
 	SDisplayContext* GetActiveDisplayContext() { return m_pActiveContext ? m_pActiveContext : &m_BaseContext; }
 	SDisplayContext* GetBaseDisplayContext() { return &m_BaseContext; }
 	CTexture*        GetCurrentTargetOutput();
+	CTexture*        GetCurrentDepthOutput();
 
 	uint32        GetOrCreateBlendState(const D3D11_BLEND_DESC& desc);
 	bool          SetBlendState(const SStateBlend* pNewState);
@@ -1326,6 +1327,7 @@ public:
 	SDepthTexture m_DepthBufferOrig;
 	SDepthTexture m_DepthBufferNative;
 	CTexture*     m_pZTexture;
+	CTexture*     m_pNativeZTexture;
 
 	// x = average luminance, y = max luminance, z = min luminance,
 	Vec4 m_vSceneLuminanceInfo;
@@ -1434,7 +1436,6 @@ private:
 	CD3DStereoRenderer* m_pStereoRenderer;
 
 	SDisplayContext m_BaseContext;
-	CTexture*       m_pNativeZTexture;
 
 	volatile int m_lockCharCB;
 	util::list<SCharacterInstanceCB> m_CharCBFreeList;

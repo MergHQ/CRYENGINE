@@ -35,7 +35,7 @@ void CSceneCustomStage::Init()
 	m_debugViewPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
 	m_debugViewPass.SetRenderTargets(
 		// Depth
-		gcpRendD3D->m_pZTexture,
+		gcpRendD3D->GetCurrentDepthOutput(),
 		// Color 0
 		gcpRendD3D->GetCurrentTargetOutput()
 	);
@@ -311,10 +311,8 @@ void CSceneCustomStage::Execute_DebugModes()
 
 	SetAndBuildPerPassResources(false);
 
-	CTexture* pDepthRT = gcpRendD3D->m_pZTexture;
-
 	const bool bReverseDepth = (pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-	pRenderer->FX_ClearTarget(pDepthRT->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+	pRenderer->FX_ClearTarget(gcpRendD3D->GetCurrentDepthOutput()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
 
 	if (!bDebugDraw)
 	{
@@ -331,7 +329,7 @@ void CSceneCustomStage::Execute_DebugModes()
 	}
 
 	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
-	m_debugViewPass.SetRenderTargets(gcpRendD3D->m_pZTexture, gcpRendD3D->GetCurrentTargetOutput());
+	m_debugViewPass.SetRenderTargets(gcpRendD3D->GetCurrentDepthOutput(), gcpRendD3D->GetCurrentTargetOutput());
 
 	// NOTE: no more external state changes in here, everything should have been setup
 	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
@@ -542,21 +540,21 @@ void CSceneCustomStage::ExecuteHelperPass()
 		cb.CopyToDevice();
 	}
 
-	CTexture* pTargetTexture = gcpRendD3D->GetCurrentTargetOutput();
-	CTexture* pDepthTextre = gcpRendD3D->m_pZTexture;
+	CTexture* pTargetTex = gcpRendD3D->GetCurrentTargetOutput();
+	CTexture* pDepthTex = gcpRendD3D->GetCurrentDepthOutput();
 
 	if (pRenderView)
 	{
 		const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
 		if (pRenderOutput)
 		{
-			pDepthTextre = pRenderOutput->GetDepthTexture();
-			CRY_ASSERT(pDepthTextre);
+			pDepthTex = pRenderOutput->GetDepthTexture();
+			CRY_ASSERT(pDepthTex);
 		}
 	}
 
-	m_debugViewPass.ExchangeRenderTarget(0, pTargetTexture);
-	m_debugViewPass.ExchangeDepthTarget(pDepthTextre);
+	m_debugViewPass.ExchangeRenderTarget(0, pTargetTex);
+	m_debugViewPass.ExchangeDepthTarget(pDepthTex);
 
 	SetAndBuildPerPassResources(false);
 

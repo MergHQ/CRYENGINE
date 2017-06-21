@@ -214,6 +214,17 @@ CTexture* CD3D9Renderer::GetCurrentTargetOutput()
 	}
 }
 
+CTexture* CD3D9Renderer::GetCurrentDepthOutput()
+{
+	if (m_pActiveContext || !GetS3DRend().IsStereoEnabled() || !(m_RP.m_nRendFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)))
+	{
+		return m_DepthBufferNative.pTexture;
+	}
+	{
+		return m_DepthBufferOrig.pTexture;
+	}
+}
+
 uint32 CD3D9Renderer::GetOrCreateBlendState(const D3D11_BLEND_DESC& desc)
 {
 	uint32 i;
