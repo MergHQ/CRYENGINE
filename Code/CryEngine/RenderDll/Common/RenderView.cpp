@@ -1611,7 +1611,8 @@ CRenderOutput::CRenderOutput(CTexture* pHDRTargetTex, int32 width, int32 height,
 	CRY_ASSERT(pHDRTargetTex);
 	m_pHDRTargetTexture = pHDRTargetTex;
 
-	m_bUseTempDepthBuffer = false;
+	// Secondary viewports have to have their own depth/stencil buffers
+	m_bUseTempDepthBuffer = true;
 
 	m_width = width;
 	m_height = height;
