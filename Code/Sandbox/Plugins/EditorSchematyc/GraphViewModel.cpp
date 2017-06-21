@@ -140,6 +140,9 @@ CryGraphEditor::CAbstractNodeItem* CNodeGraphViewModel::CreateNode(QVariant type
 bool CNodeGraphViewModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 {
 	CNodeItem* pNodeItem = static_cast<CNodeItem*>(&node);
+	if (!pNodeItem->IsRemovable())
+		return false;
+
 	for (CryGraphEditor::CAbstractPinItem* pPin : pNodeItem->GetPinItems())
 	{
 		for (CryGraphEditor::CAbstractConnectionItem* pConnection : pPin->GetConnectionItems())

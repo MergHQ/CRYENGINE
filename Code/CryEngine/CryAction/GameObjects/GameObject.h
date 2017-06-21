@@ -20,6 +20,7 @@ struct SBasicSpawnParams : public ISerializable
 	bool   bClientActor;
 	uint16 nChannelId;
 	uint32 flags;
+	CryGUID baseComponent;
 
 	virtual void SerializeWith(TSerialize ser)
 	{
@@ -53,6 +54,8 @@ struct SBasicSpawnParams : public ISerializable
 			ser.Value("bClientActor", bClientActor, 'bool');
 			ser.Value("nChannelId", nChannelId, 'schl');
 			ser.Value("flags", flags, 'ui32');
+			ser.Value("guid_hi", baseComponent.hipart);
+			ser.Value("guid_lo", baseComponent.lopart);
 		}
 		else
 		{

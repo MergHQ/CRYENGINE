@@ -927,7 +927,18 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 	}
 	else
 	{
-		ClassIdFromName(params.classId, pEntity->GetClass()->GetName());
+		auto pEntityClass = pEntity->GetClass();
+		ClassIdFromName(params.classId, pEntityClass->GetName());
+
+		if (pEntityClass == gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass()
+			&& pEntity->GetComponentsCount())
+		{
+			// For entities of the default class, we serialize the first component GUID only,
+			// assuming the first component will take care of adding other components remotely.
+			DynArray<IEntityComponent *> comps;
+			pEntity->GetComponents(comps);
+			params.baseComponent = comps[0]->GetClassDesc().GetGUID();
+		}
 	}
 	params.pos = pEntity->GetPos();
 	params.scale = pEntity->GetScale();

@@ -124,7 +124,7 @@ target_include_directories(${THIS_PROJECT}
 
 if(OPTION_UQS_SCHEMATYC_SUPPORT)
 	target_include_directories(${THIS_PROJECT}
-		PUBLIC ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
-		PUBLIC ${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
+		PUBLIC "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+		PUBLIC "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
 	)
 endif()

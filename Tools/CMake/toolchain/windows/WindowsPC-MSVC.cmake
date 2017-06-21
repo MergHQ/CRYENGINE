@@ -33,7 +33,7 @@ if (NOT DEFINED CRYENGINE_DIR)
 endif()
 
 if (NOT DEFINED SDK_DIR)
-	set(SDK_DIR ${CRYENGINE_DIR}/Code/SDKs)
+	set(SDK_DIR "${CRYENGINE_DIR}/Code/SDKs")
 endif()
 
 if (EXISTS "${SDK_DIR}/Microsoft Windows SDK/10")

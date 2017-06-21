@@ -65,7 +65,7 @@ static void AddComponentBase(MonoInternals::MonoReflectionType* pType, MonoInter
 	}
 
 	auto baseComponentFactoryIt = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pBaseType);
-	if (componentFactoryIt == CManagedPlugin::s_pCurrentlyRegisteringFactory->end())
+	if (baseComponentFactoryIt == CManagedPlugin::s_pCurrentlyRegisteringFactory->end())
 	{
 		CRY_ASSERT(false);
 		gEnv->pLog->LogWarning("Tried to add component base before base was registered!");
@@ -106,6 +106,12 @@ static void RegisterManagedEntityWithDefaultComponent(MonoInternals::MonoString*
 static MonoInternals::MonoObject* GetComponent(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart)
 {
 	if (auto* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(CryGUID::Construct(guidHipart, guidLopart))))
+	{
+		return pComponent->GetObject()->GetManagedObject();
+	}
+
+	// If the implementation wasn't found, automatically search for a baseclass/interface instead.
+	if (auto* pComponent = static_cast<CManagedEntityComponent*>(pEntity->QueryComponentByInterfaceID(CryGUID::Construct(guidHipart, guidLopart))))
 	{
 		return pComponent->GetObject()->GetManagedObject();
 	}

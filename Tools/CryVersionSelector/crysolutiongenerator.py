@@ -161,17 +161,17 @@ def generate_cpp_cmakelists (project_name, project_file, code_directory, engine_
     cmakelists_template = Template("cmake_minimum_required (VERSION 3.6.2)\n")
 
     if is_default_project:
-         cmakelists_template.template += """set(CRYENGINE_DIR $engine_root_directory)
-set(TOOLS_CMAKE_DIR $${CRYENGINE_DIR}/Tools/CMake)
+         cmakelists_template.template += """set(CRYENGINE_DIR "$engine_root_directory")
+set(TOOLS_CMAKE_DIR "$${CRYENGINE_DIR}/Tools/CMake")
 
 set(PROJECT_BUILD 1)
 set(PROJECT_DIR "$project_path")
 
-include($${TOOLS_CMAKE_DIR}/CommonOptions.cmake)
+include("$${TOOLS_CMAKE_DIR}/CommonOptions.cmake")
 
-add_subdirectory($${CRYENGINE_DIR} $${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE)
+add_subdirectory("$${CRYENGINE_DIR}" "$${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE")
 
-include($${TOOLS_CMAKE_DIR}/Configure.cmake)"""
+include("$${TOOLS_CMAKE_DIR}/Configure.cmake")"""
     
     cmakelists_template.template += """\nstart_sources()
 
@@ -183,10 +183,10 @@ CryEngineModule($project_name PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
 
 target_include_directories($${THIS_PROJECT}
 PRIVATE 
-    $${CRYENGINE_DIR}/Code/CryEngine/CryCommon
-    $${CRYENGINE_DIR}/Code/CryEngine/CryAction
-	$${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
-	$${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module
+    "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon"
+    "$${CRYENGINE_DIR}/Code/CryEngine/CryAction"
+	"$${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+	"$${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module"
 )
 """
 
@@ -195,7 +195,7 @@ PRIVATE
 set_solution_startup_target($${THIS_PROJECT})
 
 if (WIN32)
-    set_visual_studio_debugger_command( $${THIS_PROJECT} "$engine_root_directory/bin/win_x64/GameLauncher.exe" "-project \\"$projectfile\\"" )
+    set_visual_studio_debugger_command( $${THIS_PROJECT} "$output_path/GameLauncher.exe" "-project \\"$projectfile\\"" )
 endif()\n'''
 
     cmakelists_path = os.path.join(code_directory, 'CMakeLists.txt')
@@ -270,8 +270,16 @@ endif()\n'''
     
     if source_count == 0:
         return
-        
-    cmakelists_contents = cmakelists_template.substitute({'sources' : cmakelists_sources, 'engine_root_directory': engine_root_directory.replace('\\', '/'), 'project_name': project_name, 'projectfile': project_file.replace('\\', '/'), 'project_path': os.path.abspath(os.path.dirname(project_file)).replace('\\', '/')})
+
+    output_path = os.path.abspath(os.path.join(code_directory, os.pardir, "bin", "win_x64"))
+
+    cmakelists_contents = cmakelists_template.substitute({
+        'sources' : cmakelists_sources,
+        'engine_root_directory': engine_root_directory.replace('\\', '/'),
+        'project_name': project_name,
+        'projectfile': project_file.replace('\\', '/'),
+        'project_path': os.path.abspath(os.path.dirname(project_file)).replace('\\', '/'),
+		'output_path': output_path.replace('\\', '/') })
     cmakelists_contents += custom_contents
         
     cmakelists_file = open(cmakelists_path, 'w')

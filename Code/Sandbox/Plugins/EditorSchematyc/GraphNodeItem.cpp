@@ -146,6 +146,11 @@ const char* CNodeItem::GetStyleId() const
 	return m_scriptNode.GetStyleId();
 }
 
+bool CNodeItem::IsRemovable() const
+{
+	return !m_scriptNode.GetFlags().Check(Schematyc::EScriptGraphNodeFlags::NotRemovable);
+}
+
 void CNodeItem::Refresh(bool forceRefresh)
 {
 	// TODO: This is a workaround for broken mappings after undo.

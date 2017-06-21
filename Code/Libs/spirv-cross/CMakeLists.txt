@@ -18,7 +18,7 @@ end_sources()
 
 CryEngineStaticModule(spirv-cross SOLUTION_FOLDER "Libs")
 
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/spirv-cross)
+target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/spirv-cross")
 
 if (WIN32 OR WIN64)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -D_CRT_SECURE_NO_WARNINGS)

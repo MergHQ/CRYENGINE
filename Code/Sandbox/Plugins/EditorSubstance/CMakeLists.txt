@@ -80,7 +80,7 @@ CryEditorPlugin(EditorSubstance PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugin
 target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt)	
 target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt/Include)
 target_include_directories(${THIS_PROJECT} PRIVATE ../MFCToolsPlugin)	
-target_include_directories(${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/Sandbox/Libs/CrySubstance)
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Sandbox/Libs/CrySubstance")
 
 target_link_libraries(${THIS_PROJECT} PRIVATE Sandbox Substance MFCToolsPlugin CrySubstance)
 

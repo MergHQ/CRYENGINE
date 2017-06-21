@@ -42,9 +42,9 @@ end_sources()
 
 CryResourceCompilerModule(ResourceCompilerABC PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
 target_include_directories(${THIS_PROJECT} PRIVATE 
-	${CMAKE_SOURCE_DIR}/ResourceCompiler
-	${CRYENGINE_SOURCE_DIR}/Code/Tools 
-	${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools)
+	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools" 
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools")
 target_link_libraries(${THIS_PROJECT} PRIVATE zlib lz4 alembic ilmbase)
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR)
 set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/DEF:ResourceCompilerPlugin.def")
