@@ -297,10 +297,16 @@ bool CScriptGraph::AddNode(const IScriptGraphNodePtr& pNode)
 
 IScriptGraphNodePtr CScriptGraph::AddNode(const CryGUID& typeGUID)
 {
-	IScriptGraphNodePtr pNode = g_scriptGraphNodeFactory.CreateNode(typeGUID, gEnv->pSchematyc->CreateGUID());
-	if (AddNode(pNode))
+	const IScriptElement& element = CScriptGraph::GetElement();
+	CScriptView scriptView(element.GetGUID());
+
+	if (g_scriptGraphNodeFactory.CanCreateNode(typeGUID, scriptView, *this))
 	{
-		return pNode;
+		IScriptGraphNodePtr pNode = g_scriptGraphNodeFactory.CreateNode(typeGUID, gEnv->pSchematyc->CreateGUID());
+		if (AddNode(pNode))
+		{
+			return pNode;
+		}
 	}
 	return IScriptGraphNodePtr();
 }
