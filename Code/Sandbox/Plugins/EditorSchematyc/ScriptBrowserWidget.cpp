@@ -1674,13 +1674,13 @@ void CScriptBrowserWidget::OnAddItem(IScriptElement* pScriptElement, EScriptElem
 
 		if (pScriptElement)
 		{
-			CScriptBrowserItem* pItem = m_pModel->GetItemByGUID(pScriptElement->GetGUID());
-			if (pItem)
+			SelectItem(pScriptElement->GetGUID());
+			if (bRenameElement)
 			{
-				const QModelIndex itemIndex = TreeViewFromModelIndex(m_pModel->ItemToIndex(pItem));
-				m_pTreeView->selectionModel()->setCurrentIndex(itemIndex, QItemSelectionModel::ClearAndSelect);
-				if (bRenameElement)
+				CScriptBrowserItem* pItem = m_pModel->GetItemByGUID(pScriptElement->GetGUID());
+				if (pItem)
 				{
+					const QModelIndex itemIndex = TreeViewFromModelIndex(m_pModel->ItemToIndex(pItem));
 					m_pTreeView->edit(itemIndex);
 				}
 			}
