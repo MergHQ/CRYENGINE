@@ -116,7 +116,6 @@ void CSceneGBufferStage::OnResolutionChanged()
 	    || CTexture::s_ptexZTarget->GetWidth() != width
 	    || CTexture::s_ptexZTarget->GetHeight() != height)
 	{
-		rd->FX_Commit(); // Flush to unset the Z target before regenerating
 		CTexture::GenerateZMaps();
 		CDeferredShading::Instance().CreateDeferredMaps();
 	}

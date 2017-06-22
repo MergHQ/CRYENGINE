@@ -360,7 +360,7 @@ void CParticleEmitter::Kill()
 {
 	Activate(false);
 	for (auto pRuntime : m_cpuComponentRuntimes)
-		pRuntime->Reset();	
+		pRuntime->Reset();
 }
 
 bool CParticleEmitter::IsActive() const
@@ -807,7 +807,7 @@ void CParticleEmitter::AddDrawCallCounts(uint numRendererdParticles, uint numCli
 CParticleEmitter::SRuntimeRef::SRuntimeRef(CParticleEffect* effect, CParticleEmitter* emitter, CParticleComponent* component, const SRuntimeInitializationParameters& params)
 {
 	if (params.usesGpuImplementation)
-		pRuntime = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleComponentRuntime(component, params);
+		pRuntime = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleComponentRuntime(emitter, component, params);
 	else
 		pRuntime = new CParticleComponentRuntime(effect, emitter, component);
 

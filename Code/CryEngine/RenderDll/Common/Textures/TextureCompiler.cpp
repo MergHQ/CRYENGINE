@@ -222,21 +222,28 @@ static bool CopyDummy(const char* szImposter, const char* szSrcFile, const char*
 	return success;
 }
 
-static bool CopyResult(const char* szSrcFile, const char* szDstFile)
+static bool MoveAssetFile(const char* szSrcFile, const char* szDstFile)
 {
 	bool success = true;
 
 	if (strcmp(szSrcFile, szDstFile))
 	{
-		success = true;
-
 		const auto attributes = GetFileAttributes(szDstFile);
 		if (attributes != INVALID_FILE_ATTRIBUTES)
 		{
 			if ((attributes & FILE_ATTRIBUTE_READONLY) != 0)
 			{
-				iLog->LogError("Can't write to read-only file: \"%s\"\n", szDstFile);
-				return false;
+				// CE-12815. Should be able to compile tiff to dds if .cryasset file is write protected.
+				if (stricmp(PathUtil::GetExt(szDstFile), "cryasset") == 0)
+				{
+					DeleteFile(szSrcFile);
+					return true;
+				}
+				else
+				{
+					iLog->LogError("Can't write to read-only file: \"%s\"\n", szDstFile);
+					return false;
+				}
 			}
 			success = success && (DeleteFile(szDstFile) != FALSE);
 		}
@@ -445,7 +452,7 @@ private:
 		{
 			const string srcFile = srcPath + file;
 			const string dstFile = dstPath + file;
-			if (!CopyResult(srcFile.c_str(), dstFile.c_str()))
+			if (!MoveAssetFile(srcFile.c_str(), dstFile.c_str()))
 			{
 				return false;
 			}

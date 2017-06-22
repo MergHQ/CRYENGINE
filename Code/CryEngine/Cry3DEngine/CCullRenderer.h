@@ -19,7 +19,7 @@ namespace NAsyncCull
 namespace Debug
 {
 
-inline void Draw2DBox(float fX, float fY, float fHeigth, float fWidth, const ColorB& rColor, float fScreenHeigth, float fScreenWidth, IRenderAuxGeom* pAuxRenderer)
+inline SAuxVertex* Generate2DBox(SAuxVertex* pVertices, float fX, float fY, float fHeigth, float fWidth, const ColorB& rColor, float fScreenHeigth, float fScreenWidth)
 {
 	float fPosition[4][2] =
 	{
@@ -38,13 +38,27 @@ inline void Draw2DBox(float fX, float fY, float fHeigth, float fWidth, const Col
 		Vec3(fPosition[3][0] / fScreenWidth, fPosition[3][1] / fScreenHeigth, 0.0f)
 	};
 
-	vtx_idx const anTriangleIndices[6] =
-	{
-		0, 1, 2,
-		0, 2, 3
-	};
+	SAuxVertex v = { { 0, 0, 0}, {{ rColor.pack_argb8888() }}, { 0, 0 } };
 
-	pAuxRenderer->DrawTriangles(vPosition, 4, anTriangleIndices, 6, rColor);
+	pVertices[0] = v;
+	pVertices[0].xyz = vPosition[0];
+
+	pVertices[1] = v;
+	pVertices[1].xyz = vPosition[1];
+
+	pVertices[2] = v;
+	pVertices[2].xyz = vPosition[2];
+
+	pVertices[3] = v;
+	pVertices[3].xyz = vPosition[0];
+
+	pVertices[4] = v;
+	pVertices[4].xyz = vPosition[2];
+
+	pVertices[5] = v;
+	pVertices[5].xyz = vPosition[3];
+
+	return pVertices + 6;
 }
 
 } // namesapce Debug
@@ -1509,6 +1523,11 @@ public:
 		float fTopOffSet = 35.0f;
 		float fSideOffSet = 35.0f;
 
+		std::vector<SAuxVertex> vertices;
+		vertices.resize(SIZEX*SIZEY * 6);
+		
+		 SAuxVertex* __restrict pVertices = vertices.data();
+
 		// draw z-buffer after reprojection (unknown parts are red)
 		fTopOffSet += 200.0f;
 		for (uint32 y = 0; y < SIZEY; y += 1)
@@ -1522,20 +1541,6 @@ public:
 				float fX2 = fSideOffSet + ((x + 2) * 3);
 				float fX3 = fSideOffSet + ((x + 3) * 3);
 
-				//ColorB ValueColor0  = ((ColorB*)pVMemZ)[x+0];
-				//ColorB ValueColor1  = ((ColorB*)pVMemZ)[x+1];
-				//ColorB ValueColor2  = ((ColorB*)pVMemZ)[x+2];
-				//ColorB ValueColor3  = ((ColorB*)pVMemZ)[x+3];
-				////ColorB color0=ColorB(ValueColor0,ValueColor0,ValueColor0,222);
-				////ColorB color1=ColorB(ValueColor1,ValueColor1,ValueColor1,222);
-				////ColorB color2=ColorB(ValueColor2,ValueColor2,ValueColor2,222);
-				////ColorB color3=ColorB(ValueColor3,ValueColor3,ValueColor3,222);
-				//
-				//NAsyncCull::Debug::Draw2DBox(fX0,fY,3.0f,3.0f,ValueColor0, fScreenHeight,fScreenWidth,pRenderer->GetIRenderAuxGeom());
-				//NAsyncCull::Debug::Draw2DBox(fX1,fY,3.0f,3.0f,ValueColor1, fScreenHeight,fScreenWidth,pRenderer->GetIRenderAuxGeom());
-				//NAsyncCull::Debug::Draw2DBox(fX2,fY,3.0f,3.0f,ValueColor2, fScreenHeight,fScreenWidth,pRenderer->GetIRenderAuxGeom());
-				//NAsyncCull::Debug::Draw2DBox(fX3,fY,3.0f,3.0f,ValueColor3, fScreenHeight,fScreenWidth,pRenderer->GetIRenderAuxGeom());
-
 				uint32 ValueColor0 = (uint32)(pVMemZ[x + 0]);
 				uint32 ValueColor1 = (uint32)(pVMemZ[x + 1]);
 				uint32 ValueColor2 = (uint32)(pVMemZ[x + 2]);
@@ -1545,12 +1550,15 @@ public:
 				ColorB Color2(ValueColor2, ValueColor2 * 16, ValueColor2 * 256, 222);
 				ColorB Color3(ValueColor3, ValueColor3 * 16, ValueColor3 * 256, 222);
 
-				NAsyncCull::Debug::Draw2DBox(fX0, fY, 3.0f, 3.0f, Color0, fScreenHeight, fScreenWidth, pRenderer->GetIRenderAuxGeom());
-				NAsyncCull::Debug::Draw2DBox(fX1, fY, 3.0f, 3.0f, Color1, fScreenHeight, fScreenWidth, pRenderer->GetIRenderAuxGeom());
-				NAsyncCull::Debug::Draw2DBox(fX2, fY, 3.0f, 3.0f, Color2, fScreenHeight, fScreenWidth, pRenderer->GetIRenderAuxGeom());
-				NAsyncCull::Debug::Draw2DBox(fX3, fY, 3.0f, 3.0f, Color3, fScreenHeight, fScreenWidth, pRenderer->GetIRenderAuxGeom());
+				pVertices = NAsyncCull::Debug::Generate2DBox(pVertices, fX0, fY, 3.0f, 3.0f, Color0, fScreenHeight, fScreenWidth);
+				pVertices = NAsyncCull::Debug::Generate2DBox(pVertices, fX1, fY, 3.0f, 3.0f, Color1, fScreenHeight, fScreenWidth);
+				pVertices = NAsyncCull::Debug::Generate2DBox(pVertices, fX2, fY, 3.0f, 3.0f, Color2, fScreenHeight, fScreenWidth);
+				pVertices = NAsyncCull::Debug::Generate2DBox(pVertices, fX3, fY, 3.0f, 3.0f, Color3, fScreenHeight, fScreenWidth);
+
+				CRY_ASSERT(pVertices <= vertices.data() + vertices.size());
 			}
 		}
+		pRenderer->GetIRenderAuxGeom()->DrawBuffer(vertices.data(), vertices.size(), false);
 #endif
 	}
 

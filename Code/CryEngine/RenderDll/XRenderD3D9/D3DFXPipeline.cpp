@@ -309,9 +309,10 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 		}
 
 		const uint32 nMaxRT2Commit = max(m_nMaxRT2Commit + 1, 0);
-
-		D3DSurface* pRTV[RT_STACK_WIDTH] = { NULL };
+		
 		uint32 nNumViews                 = 0;
+		D3DSurface* pRTV[RT_STACK_WIDTH] = { NULL };
+		D3DDepthSurface* pDSV            = NULL;
 
 		for (uint32 v = 0; v < nMaxRT2Commit; ++v)
 		{
@@ -331,11 +332,10 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 			assert(nNumViews == 1);
 			// Get the current output, can be swap-chain, can also be left/right etc.
 			pRTV[0] = GetCurrentTargetOutput()->GetDevTexture()->LookupRTV(EDefaultResourceViews::RenderTarget);
-			// Depth needs to be larger than color
-			const bool bDepth = m_pNewTarget[0]->m_pSurfDepth && (m_pNewTarget[0]->m_pSurfDepth->nWidth >= GetCurrentTargetOutput()->GetWidthNonVirtual());
+			pDSV    = GetCurrentDepthOutput()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
 
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-			GetDeviceContext().OMSetRenderTargets(1, pRTV, bDepth ? m_pNewTarget[0]->m_pDepth : nullptr);
+			GetDeviceContext().OMSetRenderTargets(1, pRTV, pDSV);
 #endif
 		}
 		else

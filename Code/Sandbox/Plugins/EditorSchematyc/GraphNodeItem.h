@@ -57,6 +57,8 @@ public:
 	CryGUID                      GetGUID() const;
 
 	bool                         IsRemovable() const;
+	bool                         IsCopyAllowed() const { return true; }
+	bool                         IsPasteAllowed() const;
 
 	void                         Refresh(bool forceRefresh = false);
 
