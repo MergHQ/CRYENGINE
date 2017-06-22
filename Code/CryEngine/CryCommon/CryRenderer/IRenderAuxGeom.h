@@ -119,7 +119,7 @@ struct IRenderAuxGeom
 	virtual void DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) = 0;
 	//! ##@}
 
-	virtual void DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) {}
+	virtual void DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) = 0;
 
 	//! Draw a Axis-aligned Bounding Boxes (AABB).
 	//! ##@{
