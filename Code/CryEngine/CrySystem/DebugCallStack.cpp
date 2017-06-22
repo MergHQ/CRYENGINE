@@ -1279,6 +1279,8 @@ void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointe
 	if (!gEnv || !gEnv->pLog)
 		return;
 
+	int prev_sys_no_crash_dialog = g_cvars.sys_no_crash_dialog;
+
 	gEnv->bIgnoreAllAsserts = true;
 	g_cvars.sys_no_crash_dialog = 1;
 	g_cvars.sys_asserts = 0;
@@ -1330,6 +1332,25 @@ void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointe
 		doneSymbols();
 	}
 	CaptureScreenshot();
+
+	g_cvars.sys_no_crash_dialog = prev_sys_no_crash_dialog;
+	const bool bQuitting = !gEnv || !gEnv->pSystem || gEnv->pSystem->IsQuitting();
+	if (g_cvars.sys_no_crash_dialog == 0 && g_bUserDialog && gEnv->IsEditor() && !bQuitting && exception_pointer)
+	{
+		EQuestionResult res = CryMessageBox("WARNING!\n\nThe engine / game / editor crashed and is now unstable.\r\nSaving may cause level corruption or further crashes.\r\n\r\nProceed with Save ? ", "Crash", eMB_YesCancel);
+		if (res == eQR_Yes)
+		{
+			// Make one additional backup.
+			if (BackupCurrentLevel())
+			{
+				CryMessageBox("Level has been successfully saved!\r\nPress Ok to terminate Editor.", "Save");
+			}
+			else
+			{
+				CryMessageBox("Error saving level.\r\nPress Ok to terminate Editor.", "Save", eMB_Error);
+			}
+		}
+	}
 
 	CrySpinLock(&s_exception_handler_lock, 1, 0);
 }

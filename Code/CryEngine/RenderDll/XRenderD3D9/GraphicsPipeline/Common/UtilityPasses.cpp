@@ -362,9 +362,9 @@ void CDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, int nSrcW, in
 
 	m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 	m_pass.SetRenderTarget(0, pDestRT);
-	m_pass.SetTechnique(CShaderMan::s_shPostAA, techName, FlagsShader_RT);
+	m_pass.SetTechnique(CShaderMan::s_shPostEffects, techName, FlagsShader_RT);
 	m_pass.SetState(GS_NODEPTHTEST);
-	m_pass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::LinearClamp);
+	m_pass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::LinearClamp/*, EDefaultResourceViews::sRGB*/);
 	m_pass.BeginConstantUpdate();
 	m_pass.SetConstant(param0Name, params0, eHWSC_Pixel);
 	m_pass.SetConstant(param1Name, params1, eHWSC_Pixel);

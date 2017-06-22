@@ -2014,6 +2014,11 @@ QCollapsibleFrame:hover {
     border-color: rgb(140,140,140);
 }
 
+CEntityComponentCollapsibleFrameHeader {
+    margin: 0px;
+    padding: 0px;
+}
+
 CEntityComponentCollapsibleFrameHeader QToolButton {
     icon-size:16px;
 }

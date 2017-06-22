@@ -38,8 +38,9 @@ public:
 
 	virtual _smart_ptr<IParticleComponentRuntime>
 	CreateParticleComponentRuntime(
-	  pfx2::IParticleComponent* pComponent,
-	  const pfx2::SRuntimeInitializationParameters& params) override;
+		IParticleEmitter* pEmitter,
+		pfx2::IParticleComponent* pComponent,
+		const pfx2::SRuntimeInitializationParameters& params) override;
 
 	void RenderThreadUpdate();
 	void RenderThreadPreUpdate();

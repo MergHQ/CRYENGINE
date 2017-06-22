@@ -391,7 +391,7 @@ void CParticleComponentRuntime::SetInitializationFlags(uint64 flags)
 	m_initializationShaderFlags |= flags;
 }
 
-CParticleComponentRuntime::CParticleComponentRuntime(pfx2::IParticleComponent* pComponent, const pfx2::SRuntimeInitializationParameters& params)
+CParticleComponentRuntime::CParticleComponentRuntime(IParticleEmitter* pEmitter, pfx2::IParticleComponent* pComponent, const pfx2::SRuntimeInitializationParameters& params)
 	: m_bounds(AABB::RESET)
 	, m_active(true)
 	, m_state(IParticleComponentRuntime::EState::Uninitialized)
@@ -412,8 +412,9 @@ CParticleComponentRuntime::CParticleComponentRuntime(pfx2::IParticleComponent* p
 	, m_parentId(params.parentId)
 	, m_isSecondGen(params.isSecondGen)
 	, m_version(params.version)
-	, m_pEmitter(nullptr)
+	, m_pEmitter(pEmitter)
 {
+	assert(m_pEmitter);
 	for (int i = 0; i < eGpuUpdateList_COUNT; ++i)
 	{
 		int size;
@@ -429,18 +430,17 @@ CParticleComponentRuntime::CParticleComponentRuntime(pfx2::IParticleComponent* p
 	memset(m_initializationSrvSlots, 0, sizeof(m_initializationSrvSlots));
 }
 
-void CParticleComponentRuntime::SetEmitterData(::IParticleEmitter* pEmitter)
+void CParticleComponentRuntime::UpdateEmitterData()
 {
+	assert(m_pEmitter);
 	CryAutoLock<CryCriticalSection> lock(m_cs);
-	m_parameters->emitterPosition = pEmitter->GetLocation().t;
-	m_parameters->emitterOrientation = pEmitter->GetLocation().q;
+	m_parameters->emitterPosition = m_pEmitter->GetLocation().t;
+	m_parameters->emitterOrientation = m_pEmitter->GetLocation().q;
 	m_parentData.resize(m_subInstances.size());
 	if (m_subInstances.size())
 	{
-		pEmitter->GetParentData(m_parentId, &m_subInstances[0], m_parentData.size(),
-		                        &m_parentData[0]);
+		m_pEmitter->GetParentData(m_parentId, &m_subInstances[0], m_parentData.size(), &m_parentData[0]);
 	}
-	m_pEmitter = pEmitter;
 }
 
 void CParticleComponentRuntime::AddSubInstances(TConstArray<SInstance> instances)

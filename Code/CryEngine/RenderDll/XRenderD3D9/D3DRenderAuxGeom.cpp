@@ -522,7 +522,7 @@ bool CRenderAuxGeomD3D::PreparePass(CPrimitiveRenderPass& pass, SViewport* getVi
 	D3DViewPort viewport = { float(vp.nX), float(vp.nY), float(vp.nX) + vp.nWidth, float(vp.nY) + vp.nHeight, vp.fMinZ, vp.fMaxZ };
 
 	CTexture* pTargetTexture = renderer->GetCurrentTargetOutput();
-	CTexture* pDepthTextre = gcpRendD3D->m_pZTexture;
+	CTexture* pDepthTexture = renderer->GetCurrentDepthOutput();
 
 	CRenderView* pRenderView = renderer->GetGraphicsPipeline().GetCurrentRenderView();
 	if (pRenderView)
@@ -534,13 +534,13 @@ bool CRenderAuxGeomD3D::PreparePass(CPrimitiveRenderPass& pass, SViewport* getVi
 			if (pHDRTargetTexture)
 			{
 				pTargetTexture = pHDRTargetTexture;
-				pDepthTextre = pRenderOutput->GetDepthTexture();
+				pDepthTexture = pRenderOutput->GetDepthTexture();
 			}
 		}
 	}
 
 	pass.SetRenderTarget(0, pTargetTexture);
-	pass.SetDepthTarget(pDepthTextre);
+	pass.SetDepthTarget(pDepthTexture);
 	pass.SetViewport(viewport);
 
 	//pass.ClearPrimitives();

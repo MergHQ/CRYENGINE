@@ -153,6 +153,12 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
 	rParms.nSubObjHideMask = m_nSubObjHideMask;
 
+	if ((m_dwRndFlags & (ERF_NO_DECALNODE_DECALS | ERF_MOVES_EVERY_FRAME)) ||
+	    (gEnv->nMainFrameID - m_lastMoveFrameId < 3))
+	{
+		rParms.dwFObjFlags |= FOB_DYNAMIC_OBJECT;
+	}
+
 	m_pStatObj->Render(rParms, passInfo);
 }
 
@@ -923,8 +929,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		pObj->m_ObjFlags |= FOB_AFTER_WATER;
 	else
 		pObj->m_ObjFlags &= ~FOB_AFTER_WATER;
-	
-	if(GetRndFlags() & ERF_RECVWIND)
+
+	if (GetRndFlags() & ERF_RECVWIND)
 	{
 		if (GetCVars()->e_VegetationBending)
 		{
@@ -979,7 +985,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		}
 
 		pObj->m_data.m_nHUDSilhouetteParams = m_nHUDSilhouettesParam;
-		
+
 		m_pStatObj->RenderInternal(pObj, m_nSubObjHideMask, lodValue, passInfo);
 	}
 }

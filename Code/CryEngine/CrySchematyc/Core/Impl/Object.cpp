@@ -430,7 +430,13 @@ void CObject::Stop(bool bShutDownComponents)
 
 void CObject::Update(const SUpdateContext& updateContext)
 {
-	ProcessSignal(SObjectSignal::FromSignalClass(SUpdateSignal(updateContext.frameTime)));
+	// TODO: Update should actually never get called for preview objects when we are in game mode.
+	const bool isInGame = gEnv->IsEditorGameMode();
+	if (!isInGame || (isInGame && m_simulationMode != ESimulationMode::Preview))
+	{
+		ProcessSignal(SObjectSignal::FromSignalClass(SUpdateSignal(updateContext.frameTime)));
+	}
+	// ~TODO
 }
 
 void CObject::CreateGraphs()

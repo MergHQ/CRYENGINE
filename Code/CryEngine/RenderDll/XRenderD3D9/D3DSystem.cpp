@@ -2544,8 +2544,8 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	const uint clearStencil = 1;
 	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
-	int nDepthBufferWidth = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Width : rd->GetOverlayWidth();
-	int nDepthBufferHeight = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Height : rd->GetOverlayHeight();
+	int nDepthBufferWidth = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Width : rd->GetWidth();
+	int nDepthBufferHeight = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Height : rd->GetHeight();
 	rd->m_preferredDepthFormat = rd->m_zbpp == 32 ? eTF_D32FS8 : rd->m_zbpp == 24 ? eTF_D24S8 : (rd->m_zbpp == 8 ? eTF_D16S8 : eTF_D16);
 
 	rd->m_pZTexture = CTexture::GetOrCreateDepthStencil("$DeviceDepthScene", nDepthBufferWidth, nDepthBufferHeight,
@@ -2597,6 +2597,11 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	{
 		rd->m_RTStack[0][0].m_pDepth = rd->m_DepthBufferNative.pSurface;
 		rd->m_RTStack[0][0].m_pSurfDepth = &rd->m_DepthBufferNative;
+	}
+	else if (rd->m_d3dsdBackBuffer.Width == rd->GetWidth() && rd->m_d3dsdBackBuffer.Height == rd->GetHeight())
+	{
+		rd->m_RTStack[0][0].m_pDepth = rd->m_DepthBufferOrig.pSurface;
+		rd->m_RTStack[0][0].m_pSurfDepth = &rd->m_DepthBufferOrig;
 	}
 	else
 	{
