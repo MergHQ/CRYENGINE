@@ -208,7 +208,7 @@ macro(copy_binary_files_to_target)
 	endforeach()
   
 	if (ORBIS)
-		deploy_runtime_files("${SDK_DIR}/Orbis/target/sce_module/*.prx app/sce_module")
+		deploy_runtime_files("${SDK_DIR}/Orbis/target/sce_module/*.prx" "app/sce_module")
 	endif()
 
 	if (WIN64)
