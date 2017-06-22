@@ -313,8 +313,9 @@ public:
 	{
 		CRY_ASSERT(m_pins[ePin_In] == &m_In && m_pins[ePin_Out] == &m_Out);
 
-		SetAcceptsDeleting(false);
-		SetAcceptsCopyPaste(false);
+		SetAcceptsDeletion(false);
+		SetAcceptsCopy(false);
+		SetAcceptsPaste(false);
 		SetAcceptsDeactivation(false);
 	}
 	virtual ~CAssetNode()
@@ -357,7 +358,7 @@ public:
 		{
 			return QtUtil::ToQString(m_path);
 		}
-		
+
 		return QString("%1%2").arg(QObject::tr("Asset not found:\n"), QtUtil::ToQString(m_path));
 	}
 
@@ -384,8 +385,9 @@ public:
 		m_sourcePin.AddConnection(*this);
 		m_targetPin.AddConnection(*this);
 
-		SetAcceptsDeleting(false);
-		SetAcceptsCopyPaste(false);
+		SetAcceptsDeletion(false);
+		SetAcceptsCopy(false);
+		SetAcceptsPaste(false);
 		SetAcceptsDeactivation(false);
 	}
 	virtual ~CConnectionItem()

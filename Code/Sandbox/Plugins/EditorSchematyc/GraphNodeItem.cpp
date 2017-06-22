@@ -151,6 +151,11 @@ bool CNodeItem::IsRemovable() const
 	return !m_scriptNode.GetFlags().Check(Schematyc::EScriptGraphNodeFlags::NotRemovable);
 }
 
+bool CNodeItem::IsPasteAllowed() const
+{
+	return !m_scriptNode.GetFlags().Check(Schematyc::EScriptGraphNodeFlags::NotCopyable);
+}
+
 void CNodeItem::Refresh(bool forceRefresh)
 {
 	// TODO: This is a workaround for broken mappings after undo.
@@ -274,6 +279,10 @@ void CNodeItem::LoadFromScriptElement()
 		CryGraphEditor::CAbstractPinItem* pPinItem = new CPinItem(i, EPinFlag::Output, *this, GetViewModel());
 		m_pins.push_back(pPinItem);
 	}
+
+	SetAcceptsDeletion(IsRemovable());
+	SetAcceptsCopy(IsCopyAllowed());
+	SetAcceptsPaste(IsPasteAllowed());
 
 	Validate();
 }
