@@ -127,6 +127,10 @@ elseif(WIN32)
 endif()
 mark_as_advanced(FORCE SPEEX)
 
+if (OPTION_STEAM)
+	target_link_libraries(${THIS_PROJECT} PRIVATE Steamworks)
+endif()
+
 if (WIN32 OR WIN64)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 Mswsock "${SPEEX}")
 elseif(DURANGO)
