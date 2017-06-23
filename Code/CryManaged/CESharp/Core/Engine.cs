@@ -133,7 +133,7 @@ namespace CryEngine
 					RegisterComponent(t, ref registeredTypes);
 				}
 
-				if(typeof(BehaviorTreeNodeBase).IsAssignableFrom(t) || t.IsAbstract)
+				if(typeof(BehaviorTreeNodeBase).IsAssignableFrom(t) && !t.IsAbstract)
 				{
 					BehaviorTreeNodeFactory.TryRegister(t);
 				}

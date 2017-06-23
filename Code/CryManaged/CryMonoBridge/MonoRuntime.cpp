@@ -81,9 +81,17 @@ CMonoRuntime::~CMonoRuntime()
 	if (gEnv)
 	{
 		gEnv->pMonoRuntime = nullptr;
+		
+		if (gEnv->pConsole)
+		{
+			gEnv->pConsole->UnregisterListener(this);
+		}
 
-		gEnv->pConsole->UnregisterListener(this);
-		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+		if (gEnv->pSystem)
+		{
+			gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+		}
+
 	}
 }
 
