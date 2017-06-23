@@ -987,7 +987,7 @@ public:
 	//! \param nSlot		Index of a slot, or -1 if a new slot need to be allocated.
 	//! \param pCharacter	A pointer to character instance.
 	//! \return An integer which refers to the slot index which used.
-	virtual int SetCharacter(ICharacterInstance* pCharacter, int nSlot) = 0;
+	virtual int SetCharacter(ICharacterInstance* pCharacter, int nSlot, bool bUpdatePhysics = true) = 0;
 
 	//! Fast method to get the static object at the specified slot.
 	//! \param nSlot Index of the slot; | with ENTITY_SLOT_ACTUAL to disable compound statobj handling.

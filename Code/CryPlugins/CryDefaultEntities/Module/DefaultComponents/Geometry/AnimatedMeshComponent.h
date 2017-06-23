@@ -1,11 +1,6 @@
 #pragma once
 
-#include <CryRenderer/IRenderer.h>
-#include <CryRenderer/IShader.h>
-
-#include <CrySchematyc/ResourceTypes.h>
-#include <CrySchematyc/MathTypes.h>
-#include <CrySchematyc/Env/IEnvRegistrar.h>
+#include "BaseMeshComponent.h"
 
 class CPlugin_CryDefaultEntities;
 
@@ -14,7 +9,7 @@ namespace Cry
 	namespace DefaultComponents
 	{
 		class CAnimatedMeshComponent
-			: public IEntityComponent
+			: public CBaseMeshComponent
 		{
 		protected:
 			friend CPlugin_CryDefaultEntities;
@@ -24,7 +19,6 @@ namespace Cry
 			virtual void   Initialize() final;
 
 			virtual void   ProcessEvent(SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
 			// ~IEntityComponent
 
 		public:
@@ -72,8 +66,8 @@ namespace Cry
 
 			// Loads character and mannequin data from disk
 			virtual void LoadFromDisk();
-
-			virtual void PlayDefaultAnimation();
+			// Applies the character to the entity
+			virtual void ResetObject();
 
 		protected:
 			CryCharAnimationParams m_animationParams;
@@ -83,7 +77,7 @@ namespace Cry
 			Schematyc::LowLevelAnimationName m_defaultAnimation;
 			bool m_bLoopDefaultAnimation = false;
 
-			ICharacterInstance* m_pCachedCharacter = nullptr;
+			_smart_ptr<ICharacterInstance> m_pCachedCharacter = nullptr;
 		};
 	}
 }

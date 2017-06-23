@@ -13,7 +13,8 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		class CSimplePhysicsComponent
+		// Interface for physicalizing as static or rigid
+		class CRigidBodyComponent
 			: public IEntityComponent
 		{
 		protected:
@@ -28,7 +29,7 @@ namespace Cry
 			// ~IEntityComponent
 
 		public:
-			static void ReflectType(Schematyc::CTypeDesc<CSimplePhysicsComponent>& desc);
+			static void ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent>& desc);
 
 			struct SCollisionSignal
 			{
@@ -45,8 +46,8 @@ namespace Cry
 				Rigid = PE_RIGID
 			};
 
-			CSimplePhysicsComponent() {}
-			virtual ~CSimplePhysicsComponent();
+			CRigidBodyComponent() {}
+			virtual ~CRigidBodyComponent();
 
 			virtual void SetVelocity(const Vec3& velocity)
 			{

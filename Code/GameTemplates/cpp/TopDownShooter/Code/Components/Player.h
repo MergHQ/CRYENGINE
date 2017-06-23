@@ -7,6 +7,7 @@
 
 #include <DefaultComponents/Cameras/CameraComponent.h>
 #include <DefaultComponents/Physics/CharacterControllerComponent.h>
+#include <DefaultComponents/Geometry/AdvancedAnimationComponent.h>
 #include <DefaultComponents/Input/InputComponent.h>
 
 ////////////////////////////////////////////////////////
@@ -59,6 +60,7 @@ protected:
 protected:
 	Cry::DefaultComponents::CCameraComponent* m_pCameraComponent = nullptr;
 	Cry::DefaultComponents::CCharacterControllerComponent* m_pCharacterController = nullptr;
+	Cry::DefaultComponents::CAdvancedAnimationComponent* m_pAnimationComponent = nullptr;
 	Cry::DefaultComponents::CInputComponent* m_pInputComponent = nullptr;
 
 	TagID m_rotateTagId;

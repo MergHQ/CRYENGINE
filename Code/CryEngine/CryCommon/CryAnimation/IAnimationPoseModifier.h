@@ -339,7 +339,7 @@ struct IAnimationPoseAligner :
 	CRYINTERFACE_DECLARE(IAnimationPoseAligner, 0x5c852e726d447cb0, 0x9f7f5c80c41b429a);
 
 	// <interfuscator:shuffle>
-	virtual bool Initialize(IEntity& entity) = 0;
+	virtual bool Initialize(IEntity& entity, ICharacterInstance* pCharacter) = 0;
 	virtual void Clear() = 0;
 
 	virtual void SetRootOffsetEnable(bool bEnable) = 0;

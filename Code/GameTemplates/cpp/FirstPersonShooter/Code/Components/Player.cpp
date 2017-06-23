@@ -11,27 +11,30 @@ void CPlayerComponent::Initialize()
 	// Create the camera component, will automatically update the viewport every frame
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCameraComponent>();
 
-	// The character controller is responsible for maintaining player physics and animations
+	// The character controller is responsible for maintaining player physics
 	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
 
-	// Set the player geometry, this also triggers physics proxy creation
-	m_pCharacterController->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
-	m_pCharacterController->SetCharacterFile("Objects/Characters/SampleCharacter/firstperson.cdf");
+	// Create the advanced animation component, responsible for updating Mannequin and animating the player
+	m_pAnimationComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CAdvancedAnimationComponent>();
 
-	m_pCharacterController->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
-	m_pCharacterController->SetDefaultScopeContextName("FirstPersonCharacter");
+	// Set the player geometry, this also triggers physics proxy creation
+	m_pAnimationComponent->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
+	m_pAnimationComponent->SetCharacterFile("Objects/Characters/SampleCharacter/firstperson.cdf");
+
+	m_pAnimationComponent->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
+	m_pAnimationComponent->SetDefaultScopeContextName("FirstPersonCharacter");
 	// Queue the idle fragment to start playing immediately on next update
-	m_pCharacterController->SetDefaultFragmentName("Idle");
+	m_pAnimationComponent->SetDefaultFragmentName("Idle");
 
 	// Disable movement coming from the animation (root joint offset), we control this entirely via physics
-	m_pCharacterController->SetAnimationDrivenMotion(false);
+	m_pAnimationComponent->SetAnimationDrivenMotion(false);
 
 	// Load the character and Mannequin data from file
-	m_pCharacterController->LoadFromDisk();
+	m_pAnimationComponent->LoadFromDisk();
 
 	// Acquire tag identifiers to avoid doing so each update
-	m_rotateTagId = m_pCharacterController->GetTagId("Rotate");
-	m_walkTagId = m_pCharacterController->GetTagId("Walk");
+	m_rotateTagId = m_pAnimationComponent->GetTagId("Rotate");
+	m_walkTagId = m_pAnimationComponent->GetTagId("Walk");
 
 	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
@@ -62,7 +65,7 @@ void CPlayerComponent::Initialize()
 		// Only fire on press, not release
 		if (activationMode == eIS_Pressed)
 		{
-			if (ICharacterInstance *pCharacter = m_pCharacterController->GetCharacter())
+			if (ICharacterInstance *pCharacter = m_pAnimationComponent->GetCharacter())
 			{
 				auto *pBarrelOutAttachment = pCharacter->GetIAttachmentManager()->GetInterfaceByName("barrel_out");
 
@@ -170,11 +173,11 @@ void CPlayerComponent::UpdateAnimation(float frameTime)
 	// Re-calculate the quaternion based on the corrected look orientation
 	Quat correctedOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
 
-	ICharacterInstance *pCharacter = m_pCharacterController->GetCharacter();
+	ICharacterInstance *pCharacter = m_pAnimationComponent->GetCharacter();
 
 	// Update the Mannequin tags
-	m_pCharacterController->SetTagWithId(m_rotateTagId, m_pCharacterController->IsTurning());
-	m_pCharacterController->SetTagWithId(m_walkTagId, m_pCharacterController->IsWalking());
+	m_pAnimationComponent->SetTagWithId(m_rotateTagId, m_pAnimationComponent->IsTurning());
+	m_pAnimationComponent->SetTagWithId(m_walkTagId, m_pCharacterController->IsWalking());
 
 	// Send updated transform to the entity, only orientation changes
 	GetEntity()->SetPosRotScale(GetEntity()->GetWorldPos(), correctedOrientation, Vec3(1, 1, 1));
@@ -212,7 +215,7 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 	const float viewOffsetForward = 0.01f;
 	const float viewOffsetUp = 0.26f;
 
-	if (ICharacterInstance *pCharacter = m_pCharacterController->GetCharacter())
+	if (ICharacterInstance *pCharacter = m_pAnimationComponent->GetCharacter())
 	{
 		// Get the local space orientation of the camera joint
 		const QuatT &cameraOrientation = pCharacter->GetISkeletonPose()->GetAbsJointByID(m_cameraJointId);
@@ -235,14 +238,15 @@ void CPlayerComponent::Revive()
 	GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), IDENTITY, GetEntity()->GetWorldPos()));
 
 	// Apply the character to the entity and queue animations
-	m_pCharacterController->ResetCharacter();
+	m_pAnimationComponent->ResetCharacter();
+	m_pCharacterController->Physicalize();
 
 	// Reset input now that the player respawned
 	m_inputFlags = 0;
 	m_mouseDeltaRotation = ZERO;
 	m_lookOrientation = IDENTITY;
 
-	if (ICharacterInstance *pCharacter = m_pCharacterController->GetCharacter())
+	if (ICharacterInstance *pCharacter = m_pAnimationComponent->GetCharacter())
 	{
 		// Cache the camera joint id so that we don't need to look it up every frame in UpdateView
 		m_cameraJointId = pCharacter->GetIDefaultSkeleton().GetJointIDByName("head");
