@@ -49,10 +49,6 @@ enum EEntityEvent
 	//! Sent before entity is removed.
 	ENTITY_EVENT_DONE,
 
-	//! Sent when the entity becomes visible or invisible.
-	//! nParam[0] is 1 if the entity becomes visible or 0 if the entity becomes invisible.
-	ENTITY_EVENT_VISIBLITY,
-
 	//! Sent to reset the state of the entity (used from Editor).
 	//! nParam[0] is 1 if entering gamemode, 0 if exiting
 	ENTITY_EVENT_RESET,
@@ -139,15 +135,8 @@ enum EEntityEvent
 	//! Sent when triggering entity enters or leaves an area so all active areas of same group get notified. This event is sent to all target entities of the area.
 	ENTITY_EVENT_CROSS_AREA,
 
-	//! Sent when an entity with pef_monitor_poststep receives a poststep notification (the hamdler should be thread safe!)
-	//! fParam[0] = time interval
-	ENTITY_EVENT_PHYS_POSTSTEP,
-
 	//! Sent when Breakable object is broken in physics.
 	ENTITY_EVENT_PHYS_BREAK,
-
-	//! Sent when AI object of the entity finished executing current order/action.
-	ENTITY_EVENT_AI_DONE,
 
 	//! Physical collision.
 	ENTITY_EVENT_COLLISION,
@@ -252,15 +241,15 @@ enum EEntityEvent
 	ENTITY_EVENT_AUDIO_TRIGGER_STARTED,
 	ENTITY_EVENT_AUDIO_TRIGGER_ENDED,   //Remark: Will also be sent, if the trigger failed to start
 
-										//! Sent when an entity slot changes, i.e. geometry was added
-										//! nParam[0] stores the slot index
-										ENTITY_EVENT_SLOT_CHANGED,
+	//! Sent when an entity slot changes, i.e. geometry was added
+	//! nParam[0] stores the slot index
+	ENTITY_EVENT_SLOT_CHANGED,
 
-										//! Sent when the physical type of an entity changed, i.e. physicalized or dephysicalized.
-										ENTITY_EVENT_PHYSICAL_TYPE_CHANGED,
+	//! Sent when the physical type of an entity changed, i.e. physicalized or dephysicalized.
+	ENTITY_EVENT_PHYSICAL_TYPE_CHANGED,
 
-										//! Last entity event in list.
-										ENTITY_EVENT_LAST,
+	//! Last entity event in list.
+	ENTITY_EVENT_LAST,
 };
 
 #define ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK (BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) | BIT64(ENTITY_EVENT_PREPHYSICSUPDATE) | BIT64(ENTITY_EVENT_UPDATE))
