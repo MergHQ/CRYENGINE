@@ -43,6 +43,9 @@
 #include <shellapi.h>
 #undef IEntity
 
+namespace Private_CharacterDocument
+{
+
 static void DrawSkeletonBoundingBox(IRenderAuxGeom* pAuxGeom, const ICharacterInstance* pCharacter, const QuatT& location)
 {
 	if (!pCharacter)
@@ -304,6 +307,8 @@ static void DrawSkeleton(IRenderAuxGeom* pAuxGeom, IDefaultSkeleton* pDefaultSke
 	}
 }
 
+}
+
 namespace CharacterTool {
 
 ViewportOptions::ViewportOptions()
@@ -386,6 +391,17 @@ static MotionParameters QueryMotionParametersFromCharacterInstance(const ICharac
 	}
 
 	return motionParameters;
+}
+
+void TransferMotionParametersValues(const MotionParameters& from, MotionParameters& to)
+{
+	for (size_t i = 0; i < eMotionParamID_COUNT; ++i)
+	{
+		if (to.enabled[i])
+		{
+			to.values[i] = clamp_tpl(from.values[i], to.rangeMin[i], to.rangeMax[i]);
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -1130,7 +1146,12 @@ void CharacterDocument::OnExplorerEntryModified(ExplorerEntryModifyEvent& ev)
 		animation->content.ApplyToCharacter(&triggerPreview, m_compressedCharacter, animationPathConsideringCompression, false);
 
 		if (triggerPreview)
+		{
+			// these 2 lines are necessary for Scene Parameters panel to updated view immediately after a change
+			m_system->scene->PlaybackLayersChanged(false);
+			m_system->scene->SignalChanged(false);
 			TriggerAnimationPreview(0);
+		}
 	}
 	if (m_system->skeletonList->OwnsAssetEntry(ev.entry))
 	{
@@ -1913,6 +1934,7 @@ void CharacterDocument::RenderOriginal(const SRenderContext& context)
 
 void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const SRenderContext& context)
 {
+	using namespace Private_CharacterDocument;
 	FUNCTION_PROFILER(GetIEditor()->GetSystem(), PROFILE_EDITOR);
 
 	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -2336,7 +2358,7 @@ void CharacterDocument::EnableMotionParameters()
 	const int numLayers = m_system->scene->layers.layers.size();
 	for (int layer = 0; layer < numLayers; ++layer)
 	{
-		const MotionParameters& currentMotionParameters = QueryMotionParametersFromCharacterInstance(CompressedCharacter(), layer);
+		MotionParameters currentMotionParameters = QueryMotionParametersFromCharacterInstance(CompressedCharacter(), layer);
 		MotionParameters& storedMotionParameters = m_system->scene->layers.layers[layer].motionParameters;
 
 		for (size_t i = 0; i < eMotionParamID_COUNT; ++i)
@@ -2345,6 +2367,7 @@ void CharacterDocument::EnableMotionParameters()
 			    || currentMotionParameters.rangeMin[i] != storedMotionParameters.rangeMin[i]
 			    || currentMotionParameters.rangeMax[i] != storedMotionParameters.rangeMax[i])
 			{
+				TransferMotionParametersValues(storedMotionParameters, currentMotionParameters);
 				storedMotionParameters = currentMotionParameters;
 				playbackLayersChanged = true;
 				break;
