@@ -1,11 +1,16 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 //! Defines interfaces and macros for Cry Unit Tests.
-//! CRY_UNIT_TEST_SUITE: Specify a suit name to group tests locally together.
-//! CRY_UNIT_TEST: Specify a new test which is automatically registered.
-//! CRY_UNIT_TEST_ASSERT: Fails and reports if the specified expression evaluates to false.
-//! CRY_UNIT_TEST_CHECK_CLOSE: Fails and reports if the specified floating pointer values are not equal with respect to epsilon.
-//! CRY_UNIT_TEST_CHECK_EQUAL: Fails and reports if the specified values are not equal.
+//! CRY_UNIT_TEST_SUITE:           A suite name to group tests locally together.
+//! CRY_UNIT_TEST_FIXTURE:         A fixture (intermediate base class) as the container of variables and methods shared by tests.
+//! CRY_UNIT_TEST:                 A standard unit test block.
+//! CRY_UNIT_TEST_WITH_FIXTURE:    A unit test with a fixture as the base class.
+//! CRY_UNIT_TEST_ASSERT:          Fails and reports if the specified expression evaluates to false.
+//! CRY_UNIT_TEST_CHECK_CLOSE:     Fails and reports if the specified floating point values are not equal with respect to epsilon.
+//! CRY_UNIT_TEST_CHECK_EQUAL:     Fails and reports if the specified values are not equal.
+//! CRY_UNIT_TEST_CHECK_DIFFERENT: Fails and reports if the specified values are not different.
+//!
+//! Usage of comparison checks should be favored over the generic CRY_UNIT_TEST_ASSERT because of detailed output in the report.
 
 #pragma once
 
@@ -265,30 +270,31 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
 
 }
 
+//! Specifies a new test.
+#define CRY_UNIT_TEST(ClassName)                                                                                                                                           \
+  class ClassName : public CryUnitTest::STest                                                                                                                              \
+  {                                                                                                                                                                        \
+    virtual void Run();                                                                                                                                                    \
+  };                                                                                                                                                                       \
+  ClassName auto_unittest_instance_ ## ClassName;                                                                                                                          \
+  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), # ClassName, __FILE__, __LINE__); \
+  void ClassName::Run()
+
+//! Defines a fixture (intermediate base class) as the container of variables and methods shared by tests.
 #define CRY_UNIT_TEST_FIXTURE(FixureName) \
   struct FixureName : public CryUnitTest::STest
 
-#define CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, TestName, Fixture)                                                                                                   \
-  class ClassName : public Fixture                                                                                                                                      \
-  {                                                                                                                                                                     \
-    virtual void Run();                                                                                                                                                 \
-  };                                                                                                                                                                    \
-  ClassName auto_unittest_instance_ ## ClassName;                                                                                                                       \
-  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), TestName, __FILE__, __LINE__); \
+//! Specifies a new test with a fixture as the base class.
+#define CRY_UNIT_TEST_WITH_FIXTURE(ClassName, FixtureName)                                                                                                                 \
+  class ClassName : public FixtureName                                                                                                                                     \
+  {                                                                                                                                                                        \
+    virtual void Run();                                                                                                                                                    \
+  };                                                                                                                                                                       \
+  ClassName auto_unittest_instance_ ## ClassName;                                                                                                                          \
+  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), # ClassName, __FILE__, __LINE__); \
   void ClassName::Run()
 
-#define CRY_UNIT_TEST_NAME(ClassName, TestName)            CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, TestName, CryUnitTest::STest)
-#define CRY_UNIT_TEST(ClassName)                           CRY_UNIT_TEST_NAME(ClassName, # ClassName)
-#define CRY_UNIT_TEST_WITH_FIXTURE(ClassName, FixtureName) CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, # ClassName, FixtureName)
-
-#define CRY_UNIT_TEST_REGISTER(ClassName)         \
-  ClassName auto_unittest_instance_ ## ClassName; \
-  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), # ClassName, __FILE__, __LINE__);
-
-#define CRY_UNIT_TEST_REGISTER_NAME(ClassName, TestName) \
-  ClassName auto_unittest_instance_ ## ClassName;        \
-  CryUnitTest::SUnitTestRegistrar autoreg_unittest_ ## ClassName(auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), TestName, __FILE__, __LINE__);
-
+//! Specifies a suite name to group tests locally together.
 #define CRY_UNIT_TEST_SUITE(SuiteName)                      \
   namespace SuiteName {                                     \
   namespace CryUnitTestSuite {                              \
@@ -297,6 +303,7 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
   }                                                         \
   namespace SuiteName
 
+//! Fails and reports if the specified expression evaluates to false.
 #define CRY_UNIT_TEST_ASSERT(condition)                                                                          \
   do                                                                                                             \
   {                                                                                                              \
@@ -306,15 +313,20 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
   }                                                                                                              \
   } while (0)
 
-#define CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon)                                                                      \
-  do                                                                                                                            \
-  {                                                                                                                             \
-    if (!(IsEquivalent(valueA, valueB, epsilon)))                                                                               \
-    {                                                                                                                           \
-      gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause( # valueA " != " # valueB, __FILE__, __LINE__); \
-    }                                                                                                                           \
+//! Fails and reports if the specified floating point values are not equal with respect to epsilon.
+#define CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon)                                                            \
+  do                                                                                                                  \
+  {                                                                                                                   \
+    if (!(IsEquivalent(valueA, valueB, epsilon)))                                                                     \
+    {                                                                                                                 \
+      string message = # valueA " != " # valueB " with epsilon " # epsilon " [";                                      \
+      message.append(CryUnitTestImpl::FormatVar(valueA).c_str()).append(" != ");                                      \
+      message.append(CryUnitTestImpl::FormatVar(valueB).c_str()).append("]");                                         \
+      gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(message.c_str(), __FILE__, __LINE__); \
+    }                                                                                                                 \
   } while (0)
 
+//! Fails and reports if the specified values are not equal.
 #define CRY_UNIT_TEST_CHECK_EQUAL(valueA, valueB)                                                                     \
   do                                                                                                                  \
   {                                                                                                                   \
@@ -327,6 +339,7 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
     }                                                                                                                 \
   } while (0)
 
+//! Fails and reports if the specified values are not different.
 #define CRY_UNIT_TEST_CHECK_DIFFERENT(valueA, valueB)                                                                 \
   do                                                                                                                  \
   {                                                                                                                   \
