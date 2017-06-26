@@ -318,15 +318,24 @@ inline bool Serialize(Serialization::IArchive& ar, SUniformScale& c, const char*
 
 			if (!strcmp(ar.getModifiedRowName(), "x"))
 			{
-				c.vec.x = c.vec.y = c.vec.z = vec.x;
+				float multiplier = c.vec.x != 0 ? vec.x / c.vec.x : 0;
+				c.vec.x = vec.x;
+				c.vec.y *= multiplier;
+				c.vec.z *= multiplier;
 			}
 			else if (!strcmp(ar.getModifiedRowName(), "y"))
 			{
-				c.vec.x = c.vec.y = c.vec.z = vec.y;
+				float multiplier = c.vec.y != 0 ? vec.y / c.vec.y : 0;
+				c.vec.x *= multiplier;
+				c.vec.y = vec.y;
+				c.vec.z *= multiplier;
 			}
 			else if (!strcmp(ar.getModifiedRowName(), "z"))
 			{
-				c.vec.x = c.vec.y = c.vec.z = vec.z;
+				float multiplier = c.vec.z != 0 ? vec.z / c.vec.z : 0;
+				c.vec.x *= multiplier;
+				c.vec.y *= multiplier;
+				c.vec.z = vec.z;
 			}
 		}
 		else

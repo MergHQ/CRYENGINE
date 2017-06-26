@@ -1757,6 +1757,22 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 			}
 		}
 	}
+
+	bool bExist = false;
+	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
+	{
+		if (componentRecord.pComponent == pComponent)
+		{
+			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same pointer");
+			return nullptr;
+		}
+		if (!bAllowDuplicate && componentRecord.typeId == typeId && typeId != cryiidof<ICryUnknown>() && typeId != cryiidof<IEntityComponent>()
+			&& componentRecord.pComponent.get() != nullptr) //checks if the component was just removed
+		{
+			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same interface type");
+			return nullptr;
+		}
+	}
 	
 	IEntityComponent::SInitParams tempInitParams(this, CryGUID::Create(), "", pClassDescription != nullptr ? pClassDescription : &pComponent->GetClassDesc(), EEntityComponentFlags::None, nullptr, nullptr);
 	if (pInitParams == nullptr)
@@ -1769,22 +1785,6 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	}
 	
 	pComponent->PreInit(*pInitParams);
-
-	bool bExist = false;
-	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
-	{
-		if (componentRecord.pComponent == pComponent)
-		{
-			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same pointer");
-			return nullptr;
-		}
-		if (!bAllowDuplicate && componentRecord.typeId == typeId && typeId != cryiidof<ICryUnknown>() && typeId != cryiidof<IEntityComponent>()
-		    && componentRecord.pComponent.get() != nullptr) //checks if the component was just removed
-		{
-			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same interface type");
-			return nullptr;
-		}
-	}
 
 	// Initialize component entity pointer
 	pComponent->m_pEntity = this;
@@ -1849,6 +1849,8 @@ void CEntity::RemoveAllComponents()
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& interfaceID) const
 {
+	CRY_ASSERT(!interfaceID.IsNull());
+
 	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
 		if (componentRecord.typeId == interfaceID)
@@ -1860,8 +1862,24 @@ IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& interfaceI
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEntity::GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const
+{
+	CRY_ASSERT(!interfaceID.IsNull());
+
+	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
+	{
+		if (componentRecord.typeId == interfaceID)
+		{
+			components.push_back(componentRecord.pComponent.get());
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 {
+	CRY_ASSERT(!guid.IsNull());
+
 	for (auto& record : m_components.GetVector())
 	{
 		if (record.pComponent->GetGUID() == guid)
@@ -1875,6 +1893,8 @@ IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 //////////////////////////////////////////////////////////////////////////
 void CEntity::QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const
 {
+	CRY_ASSERT(!interfaceID.IsNull());
+
 	for (const SEntityComponentRecord& record : m_components.GetVector())
 	{
 		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
@@ -1898,6 +1918,8 @@ void CEntity::QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, Dy
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const
 {
+	CRY_ASSERT(!interfaceID.IsNull());
+
 	for (const SEntityComponentRecord& record : m_components.GetVector())
 	{
 		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
@@ -1924,14 +1946,10 @@ void CEntity::CloneComponentsFrom(IEntity& otherEntity)
 	static_cast<CEntity&>(otherEntity).m_components.ForEach([this](const SEntityComponentRecord& componentRecord)
 	{
 		IEntityComponent* pSourceComponent = componentRecord.pComponent.get();
-		// Check if the component already exists in the target entity
-		IEntityComponent* pNewComponent = GetComponentByTypeId(componentRecord.typeId);
-		if (pNewComponent == nullptr)
-		{
-			// Create a new component
-			IEntityComponent::SInitParams initParams(this, CryGUID::Create(), pSourceComponent->GetName(), &pSourceComponent->GetClassDesc(), pSourceComponent->GetComponentFlags(), pSourceComponent->GetParent(), pSourceComponent->GetTransform());
-			pNewComponent = AddComponent(componentRecord.typeId, std::shared_ptr<IEntityComponent>(), false, &initParams);
-		}
+
+		// Create a new component
+		IEntityComponent::SInitParams initParams(this, CryGUID::Create(), pSourceComponent->GetName(), &pSourceComponent->GetClassDesc(), pSourceComponent->GetComponentFlags(), pSourceComponent->GetParent(), pSourceComponent->GetTransform());
+		IEntityComponent* pNewComponent = AddComponent(componentRecord.typeId, std::shared_ptr<IEntityComponent>(), true, &initParams);
 
 		DynArray<char> propertyBuffer;
 		// Save properties from the source to buffer
