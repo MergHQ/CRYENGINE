@@ -814,7 +814,7 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 					{
 						oldSum += i;
 					}
-					for(int i = oldSizes.count() - 1; i >= 0; i++)
+					for(int i = oldSizes.count() - 1; i >= 0; i--)
 					{
 						sp_s->insertWidget(index, s->widget(i));
 						newSizes.insert(index, (float)oldSizes[i] / oldSum * newSum);
