@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "CharacterControllerComponent.h"
 
-#include "SimplePhysicsComponent.h"
+#include "RigidBodyComponent.h"
 
 namespace Cry
 {
@@ -35,12 +35,6 @@ void CCharacterControllerComponent::Register(Schematyc::CEnvRegistrationScope& c
 		componentScope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::IsTurning, "{85280172-CA25-4436-B2BD-3DF2C5A19B40}"_cry_guid, "IsTurning");
-		pFunction->SetDescription("Checks whether or not the player is turning around its Z-axis");
-		pFunction->BindOutput(0, 'turn', "Turning");
-		componentScope.Register(pFunction);
-	}
-	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::AddVelocity, "{B9D4C79B-1BDF-4A5C-969D-3456036C9CD4}"_cry_guid, "AddVelocity");
 		pFunction->SetDescription("Adds velocity to that of the character");
 		pFunction->BindInput(1, 'vel', "Velocity");
@@ -71,38 +65,8 @@ void CCharacterControllerComponent::Register(Schematyc::CEnvRegistrationScope& c
 		componentScope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::PhysicalizeCharacter, "{FA4C7D76-61BF-41DF-B14D-F72D161496EB}"_cry_guid, "DeactivateRagdoll");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::Physicalize, "{FA4C7D76-61BF-41DF-B14D-F72D161496EB}"_cry_guid, "DeactivateRagdoll");
 		pFunction->SetDescription("Disables ragdoll and allows the player to control movement again");
-		componentScope.Register(pFunction);
-	}
-	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::ActivateContext, "{22B083CA-9E9E-40CF-A506-D794B9FBFACF}"_cry_guid, "ActivateContext");
-		pFunction->SetDescription("Activates a Mannequin context");
-		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-		pFunction->BindInput(1, 'cont', "Context Name");
-		componentScope.Register(pFunction);
-	}
-	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::QueueFragment, "{BE05E85C-9AFD-4193-96B3-91A4B5BC3602}"_cry_guid, "QueueFragment");
-		pFunction->SetDescription("Queues a Mannequin fragment for playback");
-		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-		pFunction->BindInput(1, 'frag', "Fragment Name");
-		componentScope.Register(pFunction);
-	}
-	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetTag, "{216C303C-ED8F-4E3D-9762-4E33F69BF045}"_cry_guid, "SetTag");
-		pFunction->SetDescription("Sets a Mannequin tag's state to true or false");
-		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-		pFunction->BindInput(1, 'tagn', "Tag Name");
-		pFunction->BindInput(2, 'set', "Set");
-		componentScope.Register(pFunction);
-	}
-	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::SetMotionParameter, "{471E9B94-0F64-4C39-9AB7-D882D8634B93}"_cry_guid, "SetMotionParameter");
-		pFunction->SetDescription("Sets a motion parameter to affect a blend space");
-		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-		pFunction->BindInput(1, 'mtnp', "Motion Parameter");
-		pFunction->BindInput(2, 'val', "Value");
 		componentScope.Register(pFunction);
 	}
 	// Signals
@@ -120,17 +84,13 @@ void CCharacterControllerComponent::ReflectType(Schematyc::CTypeDesc<CCharacterC
 	desc.SetLabel("Character Controller");
 	desc.SetDescription("Functionality for a standard FPS / TPS style walking character");
 	//desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::Singleton });
 
 	// Entities can only have one physical entity type, thus these are incompatible
-	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CSimplePhysicsComponent>());
-
-	CAdvancedAnimationComponent::ReflectMembers(desc);
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CRigidBodyComponent>());
 
 	desc.AddMember(&CCharacterControllerComponent::m_physics, 'phys', "Physics", "Physics", "Physical properties for the character", CCharacterControllerComponent::SPhysics());
 	desc.AddMember(&CCharacterControllerComponent::m_movement, 'move', "Movement", "Movement", "Movement properties for the character", CCharacterControllerComponent::SMovement());
-
-	desc.AddMember(&CCharacterControllerComponent::m_bGroundAlignment, 'grou', "GroundAlign", "Use Ground Alignment", "Enables adjustment of leg positions to align to the ground surface", false);
 }
 
 static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent::SPhysics>& desc)
@@ -174,9 +134,7 @@ CCharacterControllerComponent::~CCharacterControllerComponent()
 
 void CCharacterControllerComponent::Initialize()
 {
-	CAdvancedAnimationComponent::Initialize();
-
-	PhysicalizeCharacter();
+	Physicalize();
 }
 
 void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
@@ -199,48 +157,11 @@ void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
 			m_groundNormal = livingStatus.groundSlope;
 		}
 
-		ICharacterInstance* pCharacter = GetCharacter();
-		Matrix34 characterTransform = GetWorldTransformMatrix();
-
 		// Get the player's velocity from physics
 		pe_status_dynamics playerDynamics;
-		if (pPhysicalEntity->GetStatus(&playerDynamics) != 0 && pCharacter != nullptr)
+		if (pPhysicalEntity->GetStatus(&playerDynamics) != 0)
 		{
-			// Set turn rate as the difference between previous and new entity rotation
-			m_turnAngle = Ang3::CreateRadZ(characterTransform.GetColumn1(), m_prevForwardDir) / pCtx->fFrameTime;
-			m_prevForwardDir = characterTransform.GetColumn1();
 			m_velocity = playerDynamics.v;
-
-			float travelAngle = Ang3::CreateRadZ(characterTransform.GetColumn1(), playerDynamics.v.GetNormalized());
-			float travelSpeed = playerDynamics.v.GetLength2D();
-
-			// Set the travel speed based on the physics velocity magnitude
-			// Keep in mind that the maximum number for motion parameters is 10.
-			// If your velocity can reach a magnitude higher than this, divide by the maximum theoretical account and work with a 0 - 1 ratio.
-			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSpeed, travelSpeed, 0.f);
-
-			// Update the turn speed in CryAnimation, note that the maximum motion parameter (10) applies here too.
-			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TurnAngle, m_turnAngle, 0.f);
-			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelAngle, travelAngle, 0.f);
-
-			if (IsOnGround())
-			{
-				// Calculate slope value
-				Vec3 groundNormal = GetGroundNormal().value * Quat(characterTransform);
-				groundNormal.x = 0.0f;
-				float cosine = Vec3Constants<float>::fVec3_OneZ | groundNormal;
-				Vec3 sine = Vec3Constants<float>::fVec3_OneZ % groundNormal;
-
-				float travelSlope = atan2f(sgn(sine.x) * sine.GetLength(), cosine);
-
-				pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSlope, travelSlope, 0.f);
-			}
-
-			if (m_pPoseAligner != nullptr && m_pPoseAligner->Initialize(*m_pEntity))
-			{
-				m_pPoseAligner->SetBlendWeight(1.f);
-				m_pPoseAligner->Update(pCharacter, QuatT(characterTransform), pCtx->fFrameTime);
-			}
 		}
 	}
 	else if (event.event == ENTITY_EVENT_COLLISION)
@@ -278,14 +199,16 @@ void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
 			m_movement.m_minSlideAngle = m_movement.m_minFallAngle;
 		}
 #endif
-	}
 
-	CAdvancedAnimationComponent::ProcessEvent(event);
+		m_pEntity->UpdateComponentEventMask(this);
+
+		Physicalize();
+	}
 }
 
 uint64 CCharacterControllerComponent::GetEventMask() const
 {
-	uint64 eventMask = CAdvancedAnimationComponent::GetEventMask();
+	uint64 eventMask = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 
 	// Only update when we have a physical entity
 	if (m_pEntity->GetPhysicalEntity() != nullptr)

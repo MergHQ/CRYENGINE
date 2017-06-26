@@ -9,8 +9,7 @@
 namespace CryAudio
 {
 	SERIALIZATION_ENUM_IMPLEMENT(EOcclusionType,
-		None,
-		Ignore,
+		Ignore = 1,
 		Adaptive,
 		Low,
 		Medium,
@@ -38,7 +37,10 @@ public:
 			pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
 			pComponent->AddParticleData(EPVF_Position);
 			if (m_followParticle || m_autoStop)
+			{
 				pComponent->AddParticleData(EPDT_AudioObject);
+				pComponent->AddToUpdateList(EUL_InitUpdate, this);
+			}
 		}
 	}
 
@@ -62,6 +64,17 @@ public:
 
 		if (ar.isInput())
 			VersionFix(ar);
+	}
+
+	virtual void InitParticles(const SUpdateContext& context) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		IOAudioObjects audioObjects = context.m_container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
+
+		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+			audioObjects.Store(particleId, nullptr);
+		CRY_PFX2_FOR_END;
 	}
 
 	void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
@@ -214,7 +227,7 @@ private:
 	SAudioTrigger            m_playTrigger;
 	SAudioTrigger            m_stopTrigger;
 	bool                     m_followParticle = true;
-	bool                     m_autoStop = true;
+	bool                     m_autoStop       = true;
 	CryAudio::EOcclusionType m_occlusionType  = CryAudio::EOcclusionType::Ignore;
 };
 

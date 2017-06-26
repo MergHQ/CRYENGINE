@@ -17,9 +17,11 @@ namespace CryEngine.UI
 		UIComponent _cmpUnderMouse;
 		UIComponent _currentFocus;
 		DateTime _mouseMovePickTime = DateTime.MinValue;
-		UITexture _targetTexture;
+		Graphic _targetTexture;
 		Entity _targetEntity;
 		bool _targetInFocus;
+		IMaterial _targetMaterial;
+		IMaterial _originalMaterial;
 
 		/// <summary>
 		/// True if the entity which is currently in focus is targetet by the mouse cursor.
@@ -27,18 +29,20 @@ namespace CryEngine.UI
 		/// <value><c>true</c> if target in focus; otherwise, <c>false</c>.</value>
 		public bool TargetInFocus
 		{
+			get
+			{
+				return _targetInFocus;
+			}
 			private set
 			{
 				if(_targetInFocus != value)
 				{
 					if(!value)
+					{
 						OnWindowLeave(-1, -1);
+					}
 				}
 				_targetInFocus = value;
-			}
-			get
-			{
-				return _targetInFocus;
 			}
 		}
 
@@ -54,6 +58,10 @@ namespace CryEngine.UI
 		/// <value>The current focus.</value>
 		public UIComponent CurrentFocus
 		{
+			get
+			{
+				return _currentFocus;
+			}
 			set
 			{
 				if(_currentFocus == value)
@@ -61,21 +69,9 @@ namespace CryEngine.UI
 					return;
 				}
 
-				if(_currentFocus != null)
-				{
-					_currentFocus.InvokeOnLeaveFocus();
-				}
-
+				_currentFocus?.InvokeOnLeaveFocus();
 				_currentFocus = value;
-				if(_currentFocus != null)
-				{
-					_currentFocus.InvokeOnEnterFocus();
-				}
-			}
-
-			get
-			{
-				return _currentFocus;
+				_currentFocus?.InvokeOnEnterFocus();
 			}
 		}
 
@@ -83,14 +79,13 @@ namespace CryEngine.UI
 		/// Texture for all child elements to be drawn to. elements are drawn to screen otherwise.
 		/// </summary>
 		/// <value>The target texture.</value>
-		public UITexture TargetTexture
+		public Graphic TargetTexture
 		{
 			get
 			{
 				return _targetTexture;
 			}
-
-			set
+			private set
 			{
 				_targetTexture = value;
 				if(value != null)
@@ -107,13 +102,13 @@ namespace CryEngine.UI
 		/// <value>The target entity.</value>
 		public Entity TargetEntity
 		{
-			set
-			{
-				_targetEntity = value;
-			}
 			get
 			{
 				return _targetEntity;
+			}
+			private set
+			{
+				_targetEntity = value;
 			}
 		}
 
@@ -180,17 +175,97 @@ namespace CryEngine.UI
 		}
 
 		/// <summary>
-		/// Expects an existing entity to be placed upon in 3D.
+		/// Set this Canvas up to draw the UI onto another Entity.
 		/// </summary>
+		/// <returns><c>true</c>, if target entity was setup correctly, <c>false</c> otherwise.</returns>
+		/// <param name="target">Target.</param>
+		/// <param name="targetTexture">Target texture.</param>
+		internal bool SetupTargetEntity(Entity target, Graphic targetTexture)
+		{
+			if(target == null || targetTexture == null)
+			{
+				return false;
+			}
+
+			if(TargetTexture != null)
+			{
+				TargetTexture.Destroy();
+			}
+
+			TargetTexture = targetTexture;
+
+			return SetupRenderMaterial(target);
+		}
+
+		/// <summary>
+		/// Set this Canvas up to draw the UI onto another Entity.
+		/// </summary>
+		/// <returns><c>true</c>, if target entity was setup correctly, <c>false</c> otherwise.</returns>
 		/// <param name="target">Target Entity.</param>
 		/// <param name="resolution">Resolution of UI texture in 3D space.</param>
 		public bool SetupTargetEntity(Entity target, int resolution = 768)
 		{
+			if(target == null)
+			{
+				return false;
+			}
+
 			byte[] data = new byte[resolution * resolution * 4];
-			TargetTexture = new UITexture(resolution, resolution, data, true, false, true);
-			target.Material.SetTexture(TargetTexture.ID);
+
+			if(TargetTexture != null)
+			{
+				TargetTexture.UpdateData(resolution, resolution, data);
+			}
+			else
+			{
+				TargetTexture = new Graphic(resolution, resolution, data, true, false, true);
+			}
+
+			return SetupRenderMaterial(target);
+		}
+
+		private bool SetupRenderMaterial(Entity target)
+		{
+			// If this Canvas was already rendering to an Entity previously, 
+			// remove the material from that entity and apply the original material to it again.
+			if(_targetMaterial != null)
+			{
+				if(TargetEntity != null && _originalMaterial != null)
+				{
+					TargetEntity.Material = _originalMaterial;
+				}
+
+				_targetMaterial.Release();
+				_targetMaterial.Dispose();
+			}
+
+			// In case the material is used on multiple entities it is duplicated here.
+			// This prevents conflicts with entities with the same materials and/or textures.
+			_originalMaterial = target.Material;
+			var material = CopyMaterial(_originalMaterial);
+			_targetMaterial = material;
+
+			material.SetTexture(TargetTexture.ID);
+			target.Material = material;
+
 			TargetEntity = target;
 			return true;
+		}
+
+		private IMaterial CopyMaterial(IMaterial source)
+		{
+			var materialManager = Global.gEnv.p3DEngine.GetMaterialManager();
+
+			//Assign a material first, and use clone to get a new instance. Also set a new name to prevent problems in the lookup.
+			var target = materialManager.CloneMaterial(source);
+			target.SetName(string.Format("{0}_copy", source.GetName()));
+
+			//Copy the values over to the destination material. This prevents the shader-resources error.
+			materialManager.CopyMaterial(source, target, EMaterialCopyFlags.MTL_COPY_DEFAULT);
+
+			target.AddRef();
+
+			return target;
 		}
 
 		void TryAdaptMouseInput(ref int x, ref int y)
@@ -393,6 +468,17 @@ namespace CryEngine.UI
 			Mouse.OnWindowLeave -= OnWindowLeave;
 			Mouse.OnMove -= OnMouseMove;
 			Input.OnKey -= OnKey;
+
+			if(_targetMaterial != null)
+			{
+				if(TargetEntity != null && TargetEntity.Exists && _originalMaterial != null)
+				{
+					TargetEntity.Material = _originalMaterial;
+				}
+
+				_targetMaterial.Release();
+				_targetMaterial.Dispose();
+			}
 		}
 	}
 }

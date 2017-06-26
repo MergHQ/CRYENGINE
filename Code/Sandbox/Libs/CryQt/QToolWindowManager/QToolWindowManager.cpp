@@ -755,118 +755,110 @@ void QToolWindowManager::finishWrapperDrag()
 void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 {
 	suspendLayoutNotifications();
-	bool madeChanges = false;
-	QList<IToolWindowArea*> areasToRemove;
-	foreach(IToolWindowArea* area, m_areas)
+	bool madeChanges; // Some layout changes may require multiple iterations to fully simplify.
+	do 
 	{
-		if (area->parentWidget() == nullptr)
+		madeChanges = false;
+		QList<IToolWindowArea*> areasToRemove;
+		foreach(IToolWindowArea* area, m_areas)
 		{
-			if (area->count() == 0)
+			//remove empty areas (if this is only area in main wrapper, only remove it when we explicitly ask for that)
+			if (area->count() == 0 && (clearMain || qobject_cast<IToolWindowWrapper*>(area->parent()) != m_mainWrapper))
 			{
-				if (area == m_lastArea)
-				{
-					m_lastArea = nullptr;
-				}
 				areasToRemove.append(area);
-				area->deleteLater();
 				madeChanges = true;
 			}
-			continue;
-		}
-		QSplitter* splitter = qobject_cast<QSplitter*>(area->parentWidget());
-		QSplitter* validSplitter = nullptr; // least top level splitter that should remain
-		QSplitter* invalidSplitter = nullptr; // most top level splitter that should be deleted
-		while(splitter)
-		{
-			if (splitter->count() > 1)
+
+			QSplitter* s = qobject_cast<QSplitter*>(area->parentWidget());
+			while (s && s->parentWidget())
 			{
-				validSplitter = splitter;
-				break;
-			}
-			else
-			{
-				invalidSplitter = splitter;
-				splitter = qobject_cast<QSplitter*>(splitter->parentWidget());
-			}
-		}
-		if (!validSplitter)
-		{
-			IToolWindowWrapper* wrapper = findClosestParent<IToolWindowWrapper*>(area->getWidget());
-			if (!wrapper)
-			{
-				qWarning("can't find wrapper");
-				return;
-			}
-			if (area->count() == 0 && wrapper->getWidget()->isWindow())
-			{
-				wrapper->getWidget()->hide();
-				wrapper->getWidget()->deleteLater();
-				madeChanges = true;
-			}
-			else if (qobject_cast<QSplitter*>(area->parent()))
-			{
-				wrapper->setContents(area->getWidget());
-				madeChanges = true;
-			}
-		}
-		else
-		{
-			if (area->count() > 0)
-			{
-				if (validSplitter && area->parent() != validSplitter)
+				QSplitter* sp_s = qobject_cast<QSplitter*>(s->parentWidget());
+				IToolWindowWrapper* sp_w = qobject_cast<IToolWindowWrapper*>(s->parentWidget());
+				IToolWindowWrapper* sw = findClosestParent<IToolWindowWrapper*>(s);
+
+				//If splitter only contains one object, replace the splitter with the contained object
+				if (s->count() == 1) 
+				{					
+					if (sp_s)
+					{
+						int index = sp_s->indexOf(s);
+						QList<int> sizes = sp_s->sizes();
+						sp_s->insertWidget(index, s->widget(0));
+						s->hide();
+						s->setParent(nullptr);
+						s->deleteLater();
+						sp_s->setSizes(sizes);
+						madeChanges = true;
+					}
+					else if (sp_w)
+					{
+						sp_w->setContents(s->widget(0));
+						s->setParent(nullptr);
+						s->deleteLater();
+						madeChanges = true;
+					}
+					else
+					{
+						qWarning("Unexpected splitter parent");
+					}
+				}
+				//If splitter's parent is also a splitter, and both have same orientation, replace splitter with contents
+				else if (sp_s && s->orientation() == sp_s->orientation())
 				{
-					int index = validSplitter->indexOf(invalidSplitter);
-					QList<int> sizes = validSplitter->sizes();
-					validSplitter->insertWidget(index, area->getWidget());
-					invalidSplitter->hide();
-					invalidSplitter->setParent(nullptr);
-					validSplitter->setSizes(sizes);
+					int index = sp_s->indexOf(s);
+					QList<int> newSizes = sp_s->sizes();
+					QList<int> oldSizes = s->sizes();
+					int newSum = newSizes[index];
+					int oldSum = 0;
+					foreach(int i, oldSizes)
+					{
+						oldSum += i;
+					}
+					for(int i = oldSizes.count() - 1; i >= 0; i--)
+					{
+						sp_s->insertWidget(index, s->widget(i));
+						newSizes.insert(index, (float)oldSizes[i] / oldSum * newSum);
+					}
+					s->hide();
+					s->setParent(nullptr);
+					s->deleteLater();
+					sp_s->setSizes(newSizes);
 					madeChanges = true;
 				}
+				s = sp_s;
 			}
 		}
-		if (invalidSplitter)
-		{
-			invalidSplitter->hide();
-			invalidSplitter->setParent(nullptr);
-			invalidSplitter->deleteLater();
-			madeChanges = true;
-		}
-		if (area->count() == 0 && (clearMain || qobject_cast<QSplitter*>(area->parent()) || findClosestParent<IToolWindowWrapper*>(area->getWidget()) != m_mainWrapper))
+
+		foreach(IToolWindowArea* area, areasToRemove)
 		{
 			area->hide();
+			IToolWindowWrapper* aw = qobject_cast<IToolWindowWrapper*>(area->parentWidget());
+			if (aw)
+			{
+				aw->setContents(nullptr);
+			}
 			area->setParent(nullptr);
-			if (area == m_lastArea) { m_lastArea = nullptr; }
+			m_areas.removeOne(area);
 			area->deleteLater();
-			madeChanges = true;
 		}
-	}
-	foreach(IToolWindowArea* area, areasToRemove)
-	{
-		area->hide();
-		area->setParent(nullptr);
-		m_areas.removeOne(area);
-	}
+	} while (madeChanges);
+
+	QList<IToolWindowWrapper*> wrappersToRemove;
+	//Remove empty wrappers
 	foreach(IToolWindowWrapper* wrapper, m_wrappers)
 	{
 		if (wrapper->getWidget()->isWindow() && !wrapper->getContents())
 		{
-			wrapper->getWidget()->deleteLater();
+			wrappersToRemove.append(wrapper);
 		}
 	}
 
-	if (madeChanges)
+	foreach(IToolWindowWrapper* wrapper, wrappersToRemove)
 	{
-		// Repeat the process after everything is processed in case further simplification is possible
-		simplifyLayout(clearMain);
+		m_wrappers.removeOne(wrapper);
+		wrapper->getWidget()->deleteLater();
 	}
-	else
-	{
-		foreach(IToolWindowArea* area, m_areas)
-		{
-			area->adjustDragVisuals();
-		}
-	}
+	
 	resumeLayoutNotifications();
 	notifyLayoutChange();
 }
@@ -875,15 +867,20 @@ QVariant QToolWindowManager::saveState()
 {
 	QVariantMap result;
 	result["toolWindowManagerStateFormat"] = 2;
-	result["mainWrapper"] = saveWrapperState(m_mainWrapper);
+	if (m_mainWrapper->getContents() && m_mainWrapper->getContents()->metaObject())
+	{
+		result["mainWrapper"] = saveWrapperState(m_mainWrapper);
+	}
 	QVariantList floatingWindowsData;
 	foreach(IToolWindowWrapper* wrapper, m_wrappers)
 	{
-		if (!wrapper->getWidget()->isWindow()) { continue; }
-		QVariantMap m = saveWrapperState(wrapper);
-		if (!m.isEmpty())
+		if (wrapper->getWidget()->isWindow() && wrapper->getContents() && wrapper->getContents()->metaObject())
 		{
-			floatingWindowsData << m;
+			QVariantMap m = saveWrapperState(wrapper);
+			if (!m.isEmpty())
+			{
+				floatingWindowsData << m;
+			}
 		}
 	}
 	result["floatingWindows"] = floatingWindowsData;
@@ -908,6 +905,7 @@ void QToolWindowManager::restoreState(const QVariant &data)
 	}
 	moveToolWindows(m_toolWindows, 0, QToolWindowAreaReference::Hidden);
 	simplifyLayout(true);
+	m_mainWrapper->setContents(nullptr);
 	restoreWrapperState(dataMap["mainWrapper"].toMap(), stateFormat, m_mainWrapper);
 	foreach(QVariant windowData, dataMap["floatingWindows"].toList())
 	{
@@ -1086,7 +1084,10 @@ QSplitter *QToolWindowManager::restoreSplitterState(const QVariantMap &data, int
 {
 	if (data["items"].toList().count() < 2) {
 		qWarning("Invalid splitter encountered");
-		return nullptr;
+		if (data["items"].toList().count() == 0)
+		{
+			return nullptr;
+		}
 	}
 	QSplitter* splitter = createSplitter();
 

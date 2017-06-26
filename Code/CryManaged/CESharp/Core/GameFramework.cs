@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+using System;
+using System.Collections.Generic;
 using CryEngine.Common;
 
 namespace CryEngine
@@ -20,8 +22,9 @@ namespace CryEngine
 	public class GameFramework : IGameFrameworkListener
 	{
 		internal static GameFramework Instance { get; set; }
-		static List<IGameUpdateReceiver> _updateReceivers = new List<IGameUpdateReceiver>();
-		static List<IGameRenderReceiver> _renderReceivers = new List<IGameRenderReceiver>();
+		private static List<Action> _destroyActions = new List<Action>();
+		private static List<IGameUpdateReceiver> _updateReceivers = new List<IGameUpdateReceiver>();
+		private static List<IGameRenderReceiver> _renderReceivers = new List<IGameRenderReceiver>();
 
 		public override void OnSaveGame(ISaveGame pSaveGame)
 		{
@@ -80,6 +83,11 @@ namespace CryEngine
 			_renderReceivers.Remove(obj);
 		}
 
+		internal static void AddDestroyAction(Action destroyAction)
+		{
+			_destroyActions.Add(destroyAction);
+		}
+
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
@@ -95,9 +103,21 @@ namespace CryEngine
 			// Calculate time used to render last frame.
 			FrameTime.Delta = fDeltaTime;
 
+			if(_destroyActions.Count > 0)
+			{
+				var destroyActions = new List<Action>(_destroyActions);
+				_destroyActions.Clear();
+				foreach(var action in destroyActions)
+				{
+					action?.Invoke();
+				}
+			}
+
 			var updateReceivers = new List<IGameUpdateReceiver>(_updateReceivers);
 			foreach (IGameUpdateReceiver obj in updateReceivers)
+			{
 				obj.OnUpdate();
+			}
 		}
 
 		/// <summary>
@@ -107,7 +127,9 @@ namespace CryEngine
 		{
 			var renderReceivers = new List<IGameRenderReceiver>(_renderReceivers);
 			foreach (IGameRenderReceiver obj in renderReceivers)
+			{
 				obj.OnRender();
+			}
 		}
 
 		internal GameFramework()

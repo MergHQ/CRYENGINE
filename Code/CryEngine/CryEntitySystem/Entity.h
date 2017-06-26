@@ -285,7 +285,7 @@ public:
 	virtual void                       UpdateSlotForComponent(IEntityComponent *pComponent) final;
 	virtual bool                       ShouldUpdateCharacter(int nSlot) const final;
 	virtual ICharacterInstance*        GetCharacter(int nSlot) final;
-	virtual int                        SetCharacter(ICharacterInstance* pCharacter, int nSlot) final;
+	virtual int                        SetCharacter(ICharacterInstance* pCharacter, int nSlot, bool bUpdatePhysics) final;
 	virtual IStatObj*                  GetStatObj(int nSlot) final;
 	virtual int                        SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, float mass = -1.0f) final;
 	virtual IParticleEmitter*          GetParticleEmitter(int nSlot) final;

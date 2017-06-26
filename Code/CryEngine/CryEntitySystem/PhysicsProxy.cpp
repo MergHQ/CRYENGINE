@@ -1235,7 +1235,7 @@ void CEntityPhysics::UpdateSlotGeometry(int nSlot, IStatObj* pStatObjNew, float 
 		UpdateParamsFromRenderMaterial(nSlot, m_pPhysicalEntity);
 	}
 	else
-		m_pPhysicalEntity->RemoveGeometry(nSlot);
+		m_pPhysicalEntity->RemoveGeometry(GetPartId0(nSlot));
 }
 
 //////////////////////////////////////////////////////////////////////////

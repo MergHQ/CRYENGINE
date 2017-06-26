@@ -482,17 +482,13 @@ void CPose::Clear()
 	m_bInitialized = false;
 }
 
-bool CPose::Initialize(IEntity& entity, int rootJointIndex)
+bool CPose::Initialize(IEntity& entity, ICharacterInstance* pCharacter, int rootJointIndex)
 {
 	Clear();
 
 	if (!m_operatorQueue)
 		return false;
 	if (rootJointIndex < 0)
-		return false;
-
-	ICharacterInstance* pCharacter = entity.GetCharacter(0);
-	if (!pCharacter)
 		return false;
 
 	m_pEntity = &entity;

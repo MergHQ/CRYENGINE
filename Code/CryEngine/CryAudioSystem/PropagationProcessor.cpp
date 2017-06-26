@@ -93,7 +93,7 @@ CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transf
 	, m_currentListenerDistance(0.0f)
 	, m_occlusionType(EOcclusionType::None)
 	, m_originalOcclusionType(EOcclusionType::None)
-	, m_occlusionTypeWhenAdaptive(EOcclusionType::None)
+	, m_occlusionTypeWhenAdaptive(EOcclusionType::Low) //will be updated in the first Update
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	, m_rayDebugInfos(s_numConcurrentRaysHigh)
 	, m_timeSinceLastUpdateMS(0.0f)
@@ -543,7 +543,7 @@ void CPropagationProcessor::RunObstructionQuery(Vec3 const& audioListenerPositio
 					ProcessHigh(audioListenerPosition, up, side, bSynch);
 					break;
 				default:
-					CRY_ASSERT(false);
+					CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid");
 					break;
 				}
 			}
@@ -642,7 +642,7 @@ size_t CPropagationProcessor::GetNumConcurrentRays() const
 				numConcurrentRays = s_numConcurrentRaysHigh;
 				break;
 			default:
-				CRY_ASSERT(false);
+				CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid");
 				break;
 			}
 		}
@@ -682,7 +682,7 @@ size_t CPropagationProcessor::GetNumSamplePositions() const
 				numSamplePositions = s_numRaySamplePositionsHigh;
 				break;
 			default:
-				CRY_ASSERT(false);
+				CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid");
 				break;
 			}
 		}

@@ -1,40 +1,15 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System.Runtime.Serialization;
-using CryEngine.Common;
-using CryEngine.UI;
+using CryEngine.Resources;
 
-namespace CryEngine.Resources
+namespace CryEngine.UI
 {
 	/// <summary>
-	/// Defines how a texture is supposed draw itself. Options are draw in one piece (None), or draw equally sized slices in horizontal and/or vertical directrion.
+	/// A Graphic is a Texture that can be drawn by the Core.UI. It is heavily used in the UI for both images and text.
 	/// </summary>
-	public enum SliceType
-	{
-		None,
-		ThreeHorizontal,
-		ThreeVertical,
-		Nine
-	}
-
-	/// <summary>
-	/// Wrapper for CryEngine ITexture. Holds, creates and updates an ITexture instance.
-	/// </summary>
-	public class UITexture
+	public class Graphic : Texture
 	{
 		public Canvas TargetCanvas { get; set; }
-
-		ITexture _ceTex;
-		[DataMember]
-		bool _isFiltered;
-		int _texId;
-		bool _isRendertarget;
-
-		/// <summary>
-		/// Indicates whether draw location is rounded up.
-		/// </summary>
-		/// <value><c>true</c> if round location; otherwise, <c>false</c>.</value>
-		public bool RoundLocation { get; set; }
 
 		/// <summary>
 		/// Color to multiply the texture with on draw.
@@ -43,16 +18,10 @@ namespace CryEngine.Resources
 		public Color Color { get; set; }
 
 		/// <summary>
-		/// Texture Width.
+		/// Indicates whether draw location is rounded up.
 		/// </summary>
-		/// <value>The width.</value>
-		public int Width { get; private set; }
-
-		/// <summary>
-		/// Texture Height.
-		/// </summary>
-		/// <value>The height.</value>
-		public int Height { get; private set; }
+		/// <value><c>true</c> if round location; otherwise, <c>false</c>.</value>
+		public bool RoundLocation { get; set; }
 
 		/// <summary>
 		/// Rotation angle of the texture.
@@ -63,22 +32,10 @@ namespace CryEngine.Resources
 		/// <summary>
 		/// Determines which area the texture can be drawn in. Texture will be clamped outside the edges of this area if not null.
 		/// </summary>
-		public Rect ClampRect = null;
+		public Rect ClampRect { get; set; }
 
 		/// <summary>
-		/// Describing name for the dexture. Set to filename if loaded from file.
-		/// </summary>
-		/// <value>The name.</value>
-		public string Name { get { return _ceTex.GetName(); } }
-
-		/// <summary>
-		/// ID retrieved from CryEngine on texture creation.
-		/// </summary>
-		/// <value>The identifier.</value>
-		public int ID { get { return _texId; } }
-
-		/// <summary>
-		/// Creates a texture with image data and sets some default properties.
+		/// Creates a graphic with image data and sets some default properties.
 		/// </summary>
 		/// <param name="width">Intended Texture Width.</param>
 		/// <param name="height">Intended Texture Height.</param>
@@ -86,57 +43,14 @@ namespace CryEngine.Resources
 		/// <param name="isFiltered">If set to <c>true</c> texture is filtered.</param>
 		/// <param name="roundLocation">If set to <c>true</c> texture start location is rounded up on draw.</param>
 		/// <param name="isRendertarget">If set to <c>true</c> Texture can be rendered to.</param>
-		public UITexture(int width, int height, byte[] data, bool isFiltered = true, bool roundLocation = false, bool isRendertarget = false)
+		public Graphic(int width, int height, byte[] data, bool isFiltered = true, bool roundLocation = false, bool isRendertarget = false)
+			: base(width, height, data, isFiltered, isRendertarget)
 		{
 			Color = Color.White;
 			RoundLocation = roundLocation;
-			_isFiltered = isFiltered;
-			_isRendertarget = isRendertarget;
-			CreateTexture(width, height, data);
 		}
 
-		/// <summary>
-		/// Pushes new image data into video memory for the allocated texture object. May reinstantiate the texture object, e.g. if size changed.
-		/// </summary>
-		/// <param name="width">Target Width.</param>
-		/// <param name="height">Target Height.</param>
-		/// <param name="data">Image data for the texture to be filled with.</param>
-		public void UpdateData(int width, int height, byte[] data)
-		{
-			/*if (width == Width && height == Height)
-			{
-				Global.gEnv.pRenderer.UpdateTextureInVideoMemory ((uint)_ceTex.GetTextureID (), data, 0, 0, Width, Height);
-			}
-			else*/
-			{
-				Destroy();
-				CreateTexture(width, height, data);
-			}
-		}
-
-		/// <summary>
-		/// Creates a new texture object and fills it with given image data.
-		/// </summary>
-		/// <param name="width">Target Width.</param>
-		/// <param name="height">Target Height.</param>
-		/// <param name="data">Image data for the texture to be filled with.</param>
-		void CreateTexture(int width, int height, byte[] data)
-		{
-			Width = width;
-			Height = height;
-			var flags = (int)ETextureFlags.FT_NOMIPS;
-			if(_isRendertarget)
-			{
-				flags = (int)ETextureFlags.FT_DONT_STREAM | (int)ETextureFlags.FT_DONT_RELEASE | (int)ETextureFlags.FT_USAGE_RENDERTARGET;
-			}
-			_ceTex = Global.gEnv.pRenderer.CreateTexture("MF", Width, Height, 1, data, (byte)ETEX_Format.eTF_R8G8B8A8, flags);
-			_ceTex.SetClamp(false);
-			_ceTex.SetHighQualityFiltering(_isFiltered);
-
-			_texId = _ceTex.GetTextureID();
-		}
-
-		void DrawSection(float x, float y, float w, float h, float u0, float v0, float u1, float v1)
+		private void DrawSection(float x, float y, float w, float h, float u0, float v0, float u1, float v1)
 		{
 			float crx = x, cry = y, crw = w, crh = h;
 			if(ClampRect != null)
@@ -230,21 +144,6 @@ namespace CryEngine.Resources
 				DrawSection(x, y + h - sy, w, sy, 0, 0.333f, 1, 0);
 				break;
 			}
-		}
-
-		/// <summary>
-		/// Destroy this texture instance.
-		/// </summary>
-		public void Destroy()
-		{
-			/*if(_ceTex != null)
-			{
-				Global.gEnv.pRenderer.RemoveTexture ((uint)_ceTex.GetTextureID ());
-				_ceTex.Dispose ();
-			}
-			*/
-
-			_ceTex = null;
 		}
 	}
 }

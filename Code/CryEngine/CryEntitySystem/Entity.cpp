@@ -2381,6 +2381,9 @@ int CEntity::AllocateSlot()
 //////////////////////////////////////////////////////////////////////////
 void CEntity::FreeSlot(int nSlot)
 {
+	// Free any physical slot geometry that was added first, just in case
+	m_physics.RemoveSlotGeometry(nSlot);
+	// Now remove the render slot
 	m_render.FreeSlot(nSlot);
 }
 
@@ -2538,12 +2541,15 @@ ICharacterInstance* CEntity::GetCharacter(int nSlot)
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CEntity::SetCharacter(ICharacterInstance* pCharacter, int nSlot)
+int CEntity::SetCharacter(ICharacterInstance* pCharacter, int nSlot, bool bUpdatePhysics)
 {
 	int nUsedSlot = -1;
 
 	nUsedSlot = m_render.SetSlotCharacter(nSlot, pCharacter);
-	m_physics.UpdateSlotGeometry(nUsedSlot);
+	if (bUpdatePhysics)
+	{
+		m_physics.UpdateSlotGeometry(nUsedSlot);
+	}
 
 	return nUsedSlot;
 }

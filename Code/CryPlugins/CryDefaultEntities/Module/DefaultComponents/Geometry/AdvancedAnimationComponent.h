@@ -1,16 +1,13 @@
 #pragma once
 
+#include "BaseMeshComponent.h"
+
 #include <CryGame/IGameFramework.h>
 #include <ICryMannequin.h>
-
-#include <CrySchematyc/ResourceTypes.h>
-#include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Utils/SharedString.h>
-#include <CrySchematyc/Env/IEnvRegistrar.h>
-
-#include <CryEntitySystem/IEntityComponent.h>
-
 #include <CryCore/Containers/CryArray.h>
+
+#include <Animation/PoseAligner/PoseAligner.h>
 
 class CPlugin_CryDefaultEntities;
 
@@ -42,7 +39,7 @@ namespace Cry
 namespace DefaultComponents
 {
 class CAdvancedAnimationComponent
-	: public IEntityComponent
+	: public CBaseMeshComponent
 {
 protected:
 	friend CPlugin_CryDefaultEntities;
@@ -75,15 +72,6 @@ public:
 	virtual ~CAdvancedAnimationComponent();
 
 	static void ReflectType(Schematyc::CTypeDesc<CAdvancedAnimationComponent>& desc);
-
-	template<typename T>
-	static void ReflectMembers(Schematyc::CTypeDesc<T>& desc)
-	{
-		desc.AddMember(&CAdvancedAnimationComponent::m_characterFile, 'file', "Character", "Character", "Determines the character to load", "");
-		desc.AddMember(&CAdvancedAnimationComponent::m_databasePath, 'dbpa', "DatabasePath", "Animation Database", "Path to the Mannequin .adb file", "");
-		desc.AddMember(&CAdvancedAnimationComponent::m_defaultScopeSettings, 'defs', "DefaultScope", "Default Scope Context Name", "Default Mannequin scope settings", CAdvancedAnimationComponent::SDefaultScopeSettings());
-		desc.AddMember(&CAdvancedAnimationComponent::m_bAnimationDrivenMotion, 'andr', "AnimDriven", "Animation Driven Motion", "Whether or not to use root motion in the animations", true);
-	}
 
 	static CryGUID& IID()
 	{
@@ -170,6 +158,20 @@ public:
 				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load character %s!", m_characterFile.value.c_str());
 				return;
 			}
+
+			if (m_bGroundAlignment && m_pCachedCharacter != nullptr)
+			{
+				if (m_pPoseAligner == nullptr)
+				{
+					CryCreateClassInstance(CPoseAlignerC3::GetCID(), m_pPoseAligner);
+				}
+
+				m_pPoseAligner->Clear();
+			}
+			else
+			{
+				m_pPoseAligner.reset();
+			}
 		}
 		else
 		{
@@ -208,17 +210,13 @@ public:
 		SAFE_RELEASE(m_pActionController);
 		m_pAnimationContext.reset();
 
-		// Start by loading the character, return if it failed
-		if (m_pCachedCharacter != nullptr)
-		{
-			m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId());
-
-			SetAnimationDrivenMotion(m_bAnimationDrivenMotion);
-		}
-		else
+		if (m_pCachedCharacter == nullptr)
 		{
 			return;
 		}
+
+		m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId(), false);
+		SetAnimationDrivenMotion(m_bAnimationDrivenMotion);
 
 		if (m_pControllerDefinition != nullptr)
 		{
@@ -239,10 +237,11 @@ public:
 			{
 				QueueFragment(m_defaultScopeSettings.m_fragmentName);
 			}
+
+			m_pEntity->UpdateComponentEventMask(this);
 		}
 
-		// Trigger call to GetEventMask
-		m_pEntity->UpdateComponentEventMask(this);
+		Physicalize();
 	}
 
 	// Enable / disable motion on entity being applied from animation on the root node
@@ -273,6 +272,11 @@ public:
 	virtual void SetDefaultFragmentName(const char* szName);
 	const char*  GetDefaultFragmentName() const     { return m_defaultScopeSettings.m_fragmentName.c_str(); }
 
+	virtual void EnableGroundAlignment(bool bEnable) { m_bGroundAlignment = bEnable; }
+	bool IsGroundAlignmentEnabled() const { return m_bGroundAlignment; }
+
+	virtual bool IsTurning() const { return fabsf(m_turnAngle) > 0; }
+
 protected:
 	bool                                      m_bAnimationDrivenMotion = true;
 
@@ -289,7 +293,13 @@ protected:
 	DynArray<_smart_ptr<IAction>>      m_fragments;
 
 	const SControllerDef*              m_pControllerDefinition = nullptr;
-	ICharacterInstance*                m_pCachedCharacter = nullptr;
+	_smart_ptr<ICharacterInstance>     m_pCachedCharacter = nullptr;
+
+	IAnimationPoseAlignerPtr m_pPoseAligner;
+	Vec3 m_prevForwardDir = ZERO;
+	float m_turnAngle = 0.f;
+
+	bool m_bGroundAlignment = false;
 };
 }
 }
