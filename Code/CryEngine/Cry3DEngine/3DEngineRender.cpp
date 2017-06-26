@@ -1769,7 +1769,14 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			assert(fEntDistance >= 0 && _finite(fEntDistance));
 			if (fEntDistance < pObj->m_fWSMaxViewDist)
 			{
-				GetObjManager()->RenderObject(pObj, NULL, GetSkyColor(), objBox, fEntDistance, false, pObj->GetRenderNodeType(), passInfo);
+				if (pObj->GetRenderNodeType() == eERType_Brush || pObj->GetRenderNodeType() == eERType_MovableBrush)
+				{
+					GetObjManager()->RenderBrush((CBrush*)pObj, NULL, NULL, objBox, fEntDistance, false, (CVisArea*)pObj->GetEntityVisArea(), false, passInfo);
+				}
+				else
+				{
+					GetObjManager()->RenderObject(pObj, NULL, GetSkyColor(), objBox, fEntDistance, false, pObj->GetRenderNodeType(), passInfo);
+				}
 			}
 		}
 	}

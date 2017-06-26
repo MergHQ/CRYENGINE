@@ -49,15 +49,18 @@ void CAnimatedMeshComponent::ReflectType(Schematyc::CTypeDesc<CAnimatedMeshCompo
 	desc.SetDescription("A component containing a simple mesh that can be animated");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
+	desc.AddMember(&CAnimatedMeshComponent::m_type, 'type', "Type", "Type", "Determines the behavior of the static mesh", EMeshType::RenderAndCollider);
+
 	desc.AddMember(&CAnimatedMeshComponent::m_filePath, 'file', "FilePath", "File", "Determines the animated mesh to load", "");
 	desc.AddMember(&CAnimatedMeshComponent::m_defaultAnimation, 'anim', "Animation", "Default Animation", "Specifies the animation we want to play by default", "");
 	desc.AddMember(&CAnimatedMeshComponent::m_bLoopDefaultAnimation, 'loop', "Loop", "Loop Default", "Whether or not to loop the default animation", false);
+	desc.AddMember(&CAnimatedMeshComponent::m_physics, 'phys', "Physics", "Physics", "Physical properties for the object, only used if a simple physics or character controller is applied to the entity.", SPhysicsParameters());
 }
 
 void CAnimatedMeshComponent::Initialize()
 {
 	LoadFromDisk();
-	PlayDefaultAnimation();
+	ResetObject();
 }
 
 void CAnimatedMeshComponent::LoadFromDisk()
@@ -66,28 +69,41 @@ void CAnimatedMeshComponent::LoadFromDisk()
 	{
 		m_pCachedCharacter = gEnv->pCharacterManager->CreateInstance(m_filePath.value);
 	}
+	else
+	{
+		m_pCachedCharacter = nullptr;
+	}
 }
 
-void CAnimatedMeshComponent::PlayDefaultAnimation()
+void CAnimatedMeshComponent::ResetObject()
 {
+	if (m_pCachedCharacter == nullptr)
+	{
+		FreeEntitySlot();
+		return;
+	}
+
+	m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId(), false);
+
 	if (m_defaultAnimation.value.size() > 0)
 	{
 		PlayAnimation(m_defaultAnimation, m_bLoopDefaultAnimation);
 	}
+
+	Physicalize();
 }
 
 void CAnimatedMeshComponent::ProcessEvent(SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 	{
-		LoadFromDisk();
-		PlayDefaultAnimation();
-	}
-}
+		m_pEntity->UpdateComponentEventMask(this);
 
-uint64 CAnimatedMeshComponent::GetEventMask() const
-{
-	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+		LoadFromDisk();
+		ResetObject();
+	}
+
+	CBaseMeshComponent::ProcessEvent(event);
 }
 
 void CAnimatedMeshComponent::SetCharacterFile(const char* szPath)

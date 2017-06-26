@@ -388,7 +388,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 
 	if (!m_pPoseAligner)
 		return;
-	if (!m_pPoseAligner->Initialize(*pEntity))
+	if (!m_pPoseAligner->Initialize(*pEntity, m_pCharacter))
 		return;
 
 	float poseBlendWeight = clamp_tpl(1.0f - m_fJumpSmooth, 0.0f, 1.0f);

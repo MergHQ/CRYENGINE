@@ -27,7 +27,7 @@ namespace CryEngine.UI.Components
 		private Alignment _alignment = Alignment.Left;
 		private Point _offset = new Point(0, 0);
 		private bool _requiresUpdate = true;
-		private UITexture _texture = null;
+		private Graphic _texture = null;
 		private Color _color = Color.White;
 		private readonly Point _alignedOffset = new Point();
 		private readonly Point _alignedSize = new Point();
@@ -344,19 +344,21 @@ namespace CryEngine.UI.Components
 
 			var font = new Font(FontName, GetSizeForHeight(Height), _fontStyle);
 			var bmp = new Bitmap(ax, ay, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-			var g = Graphics.FromImage(bmp);
-			g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-			if(DropsShadow)
+			using(var g = Graphics.FromImage(bmp))
 			{
-				g.DrawString(_content, font, Brushes.Black, 1, 1);
-			}
+				g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+				if(DropsShadow)
+				{
+					g.DrawString(_content, font, Brushes.Black, 1, 1);
+				}
 
-			g.DrawString(_content, font, Brushes.White, 0, 0);
+				g.DrawString(_content, font, Brushes.White, 0, 0);
+			}
 			var data = bmp.GetPixels();
 
 			if(_texture == null)
 			{
-				_texture = new UITexture(ax, ay, data, false, true);
+				_texture = new Graphic(ax, ay, data, false, true);
 			}
 			else
 			{

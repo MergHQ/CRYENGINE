@@ -577,9 +577,10 @@ bool SRemoteClient::SendPackage(const char* buffer, size_t size)
 void SRemoteClient::FillAutoCompleteList(std::vector<string>& list)
 {
 	std::vector<const char*> cmds;
-	size_t count = gEnv->pConsole->GetSortedVars(nullptr, 0);
+	size_t count = gEnv->pConsole->GetNumVars();
 	cmds.resize(count);
 	count = gEnv->pConsole->GetSortedVars(&cmds[0], count);
+	cmds.resize(count); // We might have less CVars than we were expecting (invisible ones, etc.)
 	for (size_t i = 0; i < count; ++i)
 	{
 		list.push_back(cmds[i]);

@@ -137,7 +137,6 @@ namespace CryEngine
 				{
 					BehaviorTreeNodeFactory.TryRegister(t);
 				}
-
 			}
 		}
 
@@ -179,6 +178,7 @@ namespace CryEngine
 		public static void Shutdown()
 		{
 			OnUnloadStart();
+
 			if(!IsSandbox)
 			{
 				Console.ExecuteString("quit", false, true);

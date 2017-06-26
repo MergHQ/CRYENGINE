@@ -17,7 +17,7 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public event Action OnSourceChanged;
 
-		private UITexture _texture = null;
+		private Graphic _texture = null;
 		[DataMember]
         private ImageSource _source = null;
 		[DataMember]

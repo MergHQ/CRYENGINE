@@ -4,6 +4,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.Serialization;
+using CryEngine.UI;
 
 namespace CryEngine.Resources
 {
@@ -22,7 +23,7 @@ namespace CryEngine.Resources
 		/// The underlying Texture object.
 		/// </summary>
 		/// <value>The texture.</value>
-		public UITexture Texture { get; private set; }
+		public Graphic Texture { get; private set; }
 
 		/// <summary>
 		/// Height of the raw image.
@@ -62,7 +63,7 @@ namespace CryEngine.Resources
 		{
 			_path = "[Blank]";
 			_rawImage = bmp;
-			Texture = new UITexture(Width, Height, bmp.GetPixels());
+			Texture = new Graphic(Width, Height, bmp.GetPixels());
 		}
 
 		/// <summary>
@@ -83,7 +84,7 @@ namespace CryEngine.Resources
 				_rawImage = new Bitmap(path);
 
 				Log.Info("Loaded '" + path + "' (" + Width + "x" + Height + ")");
-				Texture = new UITexture(Width, Height, _rawImage.GetPixels(), filtered);
+				Texture = new Graphic(Width, Height, _rawImage.GetPixels(), filtered);
 			}
 			catch (Exception ex)
 			{

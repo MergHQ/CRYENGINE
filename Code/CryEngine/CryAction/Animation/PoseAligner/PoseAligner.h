@@ -180,8 +180,8 @@ public:
 	virtual ~CPose();
 
 public:
-	bool         Initialize(IEntity& entity, int rootJointIndex);
-	virtual bool Initialize(IEntity& entity) { return false; }
+	bool         Initialize(IEntity& entity, ICharacterInstance* pCharacter, int rootJointIndex);
+	virtual bool Initialize(IEntity& entity, ICharacterInstance* pCharacter) { return false; }
 	void         Reset();
 	void         Clear();
 
@@ -239,7 +239,7 @@ class CPoseAlignerC3 :
 		virtual ~CPoseAlignerC3() {}
 
 public:
-	virtual bool Initialize(IEntity& entity) override;
+	virtual bool Initialize(IEntity& entity, ICharacterInstance* pCharacter) override;
 };
 
 #endif // Animation_PoseAligner_h

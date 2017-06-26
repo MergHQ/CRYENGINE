@@ -1159,6 +1159,8 @@ void CStandardGraphicsPipeline::Execute()
 			pRenderer->GetGraphicsPipeline().GetDeferredDecalsStage()->Execute();
 	}
 
+	m_pSceneGBufferStage->ExecuteGBufferVisualization();
+
 	// GBuffer modifiers
 	{
 		m_pRainStage->ExecuteDeferredRainGBuffer();

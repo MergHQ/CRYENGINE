@@ -3,7 +3,6 @@
 
 #include <Cry3DEngine/IRenderNode.h>
 
-
 namespace Cry
 {
 	namespace DefaultComponents
@@ -52,7 +51,15 @@ namespace Cry
 			desc.SetIcon("icons:General/Mannequin.ico");
 			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
-			CAdvancedAnimationComponent::ReflectMembers(desc);
+			desc.AddMember(&CAdvancedAnimationComponent::m_type, 'type', "Type", "Type", "Determines the behavior of the static mesh", EMeshType::RenderAndCollider);
+
+			desc.AddMember(&CAdvancedAnimationComponent::m_characterFile, 'file', "Character", "Character", "Determines the character to load", "");
+			desc.AddMember(&CAdvancedAnimationComponent::m_databasePath, 'dbpa', "DatabasePath", "Animation Database", "Path to the Mannequin .adb file", "");
+			desc.AddMember(&CAdvancedAnimationComponent::m_defaultScopeSettings, 'defs', "DefaultScope", "Default Scope Context Name", "Default Mannequin scope settings", CAdvancedAnimationComponent::SDefaultScopeSettings());
+			desc.AddMember(&CAdvancedAnimationComponent::m_bAnimationDrivenMotion, 'andr', "AnimDriven", "Animation Driven Motion", "Whether or not to use root motion in the animations", true);
+			desc.AddMember(&CAdvancedAnimationComponent::m_bGroundAlignment, 'grou', "GroundAlign", "Use Ground Alignment", "Enables adjustment of leg positions to align to the ground surface", false);
+
+			desc.AddMember(&CAdvancedAnimationComponent::m_physics, 'phys', "Physics", "Physics", "Physical properties for the object, only used if a simple physics or character controller is applied to the entity.", SPhysicsParameters());
 		}
 
 		inline bool Serialize(Serialization::IArchive& archive, CAdvancedAnimationComponent::SDefaultScopeSettings& defaultSettings, const char* szName, const char* szLabel)
@@ -105,6 +112,53 @@ namespace Cry
 				{
 					m_pActionController->Update(pCtx->fFrameTime);
 				}
+
+				Matrix34 characterTransform = GetWorldTransformMatrix();
+
+				// Set turn rate as the difference between previous and new entity rotation
+				m_turnAngle = Ang3::CreateRadZ(characterTransform.GetColumn1(), m_prevForwardDir) / pCtx->fFrameTime;
+				m_prevForwardDir = characterTransform.GetColumn1();
+
+				if (m_pCachedCharacter != nullptr)
+				{
+					if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
+					{
+						pe_status_dynamics dynStatus;
+						if (pPhysicalEntity->GetStatus(&dynStatus))
+						{
+							float travelAngle = Ang3::CreateRadZ(characterTransform.GetColumn1(), dynStatus.v.GetNormalized());
+							float travelSpeed = dynStatus.v.GetLength2D();
+
+							// Set the travel speed based on the physics velocity magnitude
+							// Keep in mind that the maximum number for motion parameters is 10.
+							// If your velocity can reach a magnitude higher than this, divide by the maximum theoretical account and work with a 0 - 1 ratio.
+							m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSpeed, travelSpeed, 0.f);
+
+							// Update the turn speed in CryAnimation, note that the maximum motion parameter (10) applies here too.
+							m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TurnAngle, m_turnAngle, 0.f);
+							m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelAngle, travelAngle, 0.f);
+
+							/*if (IsOnGround())
+							{
+								// Calculate slope value
+								Vec3 groundNormal = GetGroundNormal().value * Quat(characterTransform);
+								groundNormal.x = 0.0f;
+								float cosine = Vec3Constants<float>::fVec3_OneZ | groundNormal;
+								Vec3 sine = Vec3Constants<float>::fVec3_OneZ % groundNormal;
+
+								float travelSlope = atan2f(sgn(sine.x) * sine.GetLength(), cosine);
+
+								m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSlope, travelSlope, 0.f);
+							}*/
+						}
+					}
+
+					if (m_pPoseAligner != nullptr && m_pPoseAligner->Initialize(*m_pEntity, m_pCachedCharacter))
+					{
+						m_pPoseAligner->SetBlendWeight(1.f);
+						m_pPoseAligner->Update(m_pCachedCharacter, QuatT(characterTransform), pCtx->fFrameTime);
+					}
+				}
 			}
 			else if (event.event == ENTITY_EVENT_ANIM_EVENT)
 			{
@@ -119,14 +173,20 @@ namespace Cry
 			else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{
 				LoadFromDisk();
-
 				ResetCharacter();
 			}
+
+			CBaseMeshComponent::ProcessEvent(event);
 		}
 
 		uint64 CAdvancedAnimationComponent::GetEventMask() const
 		{
-			uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			uint64 bitFlags = CBaseMeshComponent::GetEventMask() | BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+
+			if (m_pPoseAligner != nullptr)
+			{
+				bitFlags |= BIT64(ENTITY_EVENT_UPDATE);
+			}
 
 			if (m_pActionController != nullptr)
 			{

@@ -785,6 +785,10 @@ void CHWShader_D3D::mfConstructFX(FXShaderToken* Table, TArray<uint32>* pSHData)
 
 bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes)
 {
+#if CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
+	return false;
+#endif
+
 	assert(gRenDev->m_pRT->IsRenderThread());
 
 	bool bRes = true;

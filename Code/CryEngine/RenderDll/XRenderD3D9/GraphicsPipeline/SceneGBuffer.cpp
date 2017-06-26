@@ -415,6 +415,30 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 	m_passDepthLinearization.Execute();
 }
 
+void CSceneGBufferStage::ExecuteGBufferVisualization()
+{
+	// GBuffer Debug Visualization
+	if (CRenderer::CV_r_DeferredShadingDebugGBuffer)
+	{
+		PROFILE_LABEL_SCOPE("BUFFER_VISUALIZATION");
+		static CCryNameTSCRC tech("DebugGBuffer");
+		m_passBufferVisualization.SetTechnique(CShaderMan::s_shDeferredShading, tech, 0);
+		m_passBufferVisualization.SetRenderTarget(0, CTexture::s_ptexStereoR);
+		m_passBufferVisualization.SetState(GS_NODEPTHTEST);
+
+		m_passBufferVisualization.SetTextureSamplerPair(0, CTexture::s_ptexZTarget, EDefaultSamplerStates::PointClamp);
+		m_passBufferVisualization.SetTextureSamplerPair(1, CTexture::s_ptexSceneNormalsMap, EDefaultSamplerStates::PointClamp);
+		m_passBufferVisualization.SetTextureSamplerPair(2, CTexture::s_ptexSceneDiffuse, EDefaultSamplerStates::PointClamp);
+		m_passBufferVisualization.SetTextureSamplerPair(3, CTexture::s_ptexSceneSpecular, EDefaultSamplerStates::PointClamp);
+
+		m_passBufferVisualization.BeginConstantUpdate();
+		static CCryNameR paramName("DebugViewMode");
+		m_passBufferVisualization.SetConstant(paramName, Vec4((float)CRenderer::CV_r_DeferredShadingDebugGBuffer, 0, 0, 0), eHWSC_Pixel);
+			
+		m_passBufferVisualization.Execute();
+	}
+}
+
 void CSceneGBufferStage::ExecuteMicroGBuffer()
 {
 	PROFILE_LABEL_SCOPE("GBUFFER");
@@ -539,26 +563,5 @@ void CSceneGBufferStage::Execute()
 		{
 			pRenderView->GetDrawer().JobifyDrawSubmission();
 		}
-	}
-
-	// GBuffer Debug Visualization
-	if (CRenderer::CV_r_DeferredShadingDebugGBuffer)
-	{
-		PROFILE_LABEL_SCOPE("BUFFER_VISUALIZATION");
-		static CCryNameTSCRC tech("DebugGBuffer");
-		m_passBufferVisualization.SetTechnique(CShaderMan::s_shDeferredShading, tech, 0);
-		m_passBufferVisualization.SetRenderTarget(0, CTexture::s_ptexStereoR);
-		m_passBufferVisualization.SetState(GS_NODEPTHTEST);
-
-		m_passBufferVisualization.SetTextureSamplerPair(0, CTexture::s_ptexZTarget, EDefaultSamplerStates::PointClamp);
-		m_passBufferVisualization.SetTextureSamplerPair(1, CTexture::s_ptexSceneNormalsMap, EDefaultSamplerStates::PointClamp);
-		m_passBufferVisualization.SetTextureSamplerPair(2, CTexture::s_ptexSceneDiffuse, EDefaultSamplerStates::PointClamp);
-		m_passBufferVisualization.SetTextureSamplerPair(3, CTexture::s_ptexSceneSpecular, EDefaultSamplerStates::PointClamp);
-
-		m_passBufferVisualization.BeginConstantUpdate();
-		static CCryNameR paramName("DebugViewMode");
-		m_passBufferVisualization.SetConstant(paramName, Vec4((float)CRenderer::CV_r_DeferredShadingDebugGBuffer, 0, 0, 0), eHWSC_Pixel);
-			
-		m_passBufferVisualization.Execute();
 	}
 }

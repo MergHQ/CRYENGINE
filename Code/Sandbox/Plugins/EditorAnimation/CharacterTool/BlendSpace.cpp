@@ -862,12 +862,37 @@ void BlendSpace::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isEdit() && ar.isInput())
 	{
+		// Validate annotations.
+
+		// TODO: Create a parametric space triangulator to calculate reasonable defaults and validate annotations.
+		// TODO: Provide a graphics tool to edit the annotations.
 		int maxExampleIndex = int(m_examples.size() + m_pseudoExamples.size()) - 1;
-		for (size_t i = 0; i < m_annotations.size(); ++i)
+		for (BlendSpaceAnnotation& annotation : m_annotations)
 		{
-			BlendSpaceAnnotation& annotation = m_annotations[i];
-			for (size_t j = 0; j < annotation.indices.size(); ++j)
-				annotation.indices[j] = clamp_tpl<int>(annotation.indices[j], 0, maxExampleIndex);
+			if (annotation.indices.empty())
+			{
+				annotation.indices.resize(m_dimensions.size() + 1);
+			}
+
+			for (size_t i = 0, n = annotation.indices.size(); i < n; ++i)
+			{
+				annotation.indices[i] = clamp_tpl<int>(annotation.indices[i], 0, maxExampleIndex);
+
+				// Fix duplicate indices, if any
+				for (size_t j = 0, k = 0; (j < i) && (k <= maxExampleIndex); )
+				{
+					if (annotation.indices[i] != annotation.indices[j])
+					{
+						++j;
+					}
+					else
+					{
+						annotation.indices[i] = ++annotation.indices[i] % (maxExampleIndex + 1);
+						j = 0;        // Re-check from the beginning.
+						++k;          // Number of attempts.
+					}
+				}
+			}
 		}
 	}
 

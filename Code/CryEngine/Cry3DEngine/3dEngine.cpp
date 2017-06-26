@@ -768,6 +768,7 @@ void C3DEngine::ProcessCVarsChange()
 	  GetCVars()->e_ViewDistMin +
 	  GetCVars()->e_ViewDistRatioDetail +
 	  GetCVars()->e_ViewDistRatioVegetation +
+	  GetCVars()->e_ViewDistRatioLights +
 	  GetCVars()->e_DefaultMaterial +
 	  GetCVars()->e_VegetationSpritesDistanceRatio +
 	  GetCVars()->e_VegetationSpritesDistanceCustomRatioMin +
@@ -6359,7 +6360,8 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 		}
 		break;
 	case eERType_Brush:
-		{
+	case eERType_MovableBrush:
+	{
 			CBrush* pBrush = static_cast<CBrush*>(pRenderNode);
 			const CLodValue lodValue = pBrush->ComputeLod(wantedLod, passInfo);
 			pBrush->Render(lodValue, passInfo, NULL, NULL);

@@ -234,7 +234,7 @@ namespace CryEngine
 		{
 			get
 			{
-				return NativeHandle != null;
+				return NativeHandle != null && Global.gEnv.pEntitySystem.GetEntity(Id) != null;
 			}
 		}
 

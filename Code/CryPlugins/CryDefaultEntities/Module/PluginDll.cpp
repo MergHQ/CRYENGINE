@@ -27,7 +27,7 @@
 #include "DefaultComponents/Physics/CharacterControllerComponent.h"
 #include "DefaultComponents/Physics/CylinderPrimitiveComponent.h"
 #include "DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
-#include "DefaultComponents/Physics/SimplePhysicsComponent.h"
+#include "DefaultComponents/Physics/RigidBodyComponent.h"
 #include "DefaultComponents/Physics/SpherePrimitiveComponent.h"
 
 #include <CryEntitySystem/IEntityClass.h>
@@ -156,8 +156,8 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 			Cry::DefaultComponents::CCylinderPrimitiveComponent::Register(componentScope);
 		}
 		{
-			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSimplePhysicsComponent));
-			Cry::DefaultComponents::CSimplePhysicsComponent::Register(componentScope);
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CRigidBodyComponent));
+			Cry::DefaultComponents::CRigidBodyComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSpherePrimitiveComponent));

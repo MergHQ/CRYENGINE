@@ -2,8 +2,6 @@
 
 #include "DefaultComponents/Geometry/AdvancedAnimationComponent.h"
 
-#include <Animation/PoseAligner/PoseAligner.h>
-
 class CPlugin_CryDefaultEntities;
 
 namespace Cry
@@ -11,7 +9,7 @@ namespace Cry
 	namespace DefaultComponents
 	{
 		class CCharacterControllerComponent
-			: public CAdvancedAnimationComponent
+			: public IEntityComponent
 #ifndef RELEASE
 			, public IEntityComponentPreviewer
 #endif
@@ -51,15 +49,6 @@ namespace Cry
 				return id;
 			}
 
-			// CAdvancedAnimationComponent
-			virtual void ResetCharacter() final
-			{
-				CAdvancedAnimationComponent::ResetCharacter();
-
-				PhysicalizeCharacter();
-			}
-			// ~CAdvancedAnimationComponent
-
 			bool IsOnGround() const { return m_bOnGround; }
 			const Schematyc::UnitLength<Vec3>& GetGroundNormal() const { return m_groundNormal; }
 
@@ -97,15 +86,14 @@ namespace Cry
 			Vec3 GetMoveDirection() const { return m_velocity.GetNormalized(); }
 
 			bool IsWalking() const { return m_velocity.GetLength2D() > 0.2f && m_bOnGround; }
-			bool IsTurning() const { return abs(m_turnAngle) > 0.05f; }
-
-			virtual void PhysicalizeCharacter()
+			
+			virtual void Physicalize()
 			{
 				// Physicalize the player as type Living.
 				// This physical entity type is specifically implemented for players
 				SEntityPhysicalizeParams physParams;
 				physParams.type = PE_LIVING;
-				physParams.nSlot = GetEntitySlotId();
+				physParams.nSlot = GetOrMakeEntitySlotId();
 
 				physParams.mass = m_physics.m_mass;
 
@@ -143,55 +131,20 @@ namespace Cry
 
 				m_pEntity->Physicalize(physParams);
 
-				if (m_bGroundAlignment && m_pCachedCharacter != nullptr)
-				{
-					if (m_pPoseAligner == nullptr)
-					{
-						CryCreateClassInstance(CPoseAlignerC3::GetCID(), m_pPoseAligner);
-					}
-
-					m_pPoseAligner->Clear();
-				}
-				else
-				{
-					m_pPoseAligner.reset();
-				}
+				m_pEntity->UpdateComponentEventMask(this);
 			}
 
 			virtual void Ragdollize()
 			{
-				if (m_pCachedCharacter != nullptr)
-				{
-					SEntityPhysicalizeParams physParams;
-					physParams.type = PE_ARTICULATED;
+				SEntityPhysicalizeParams physParams;
+				physParams.type = PE_ARTICULATED;
 
-					physParams.mass = m_physics.m_mass;
-					physParams.nSlot = GetEntitySlotId();
+				physParams.mass = m_physics.m_mass;
+				physParams.nSlot = GetEntitySlotId();
 
-					physParams.bCopyJointVelocities = true;
+				physParams.bCopyJointVelocities = true;
 
-					m_pEntity->Physicalize(physParams);
-				}
-			}
-
-			virtual void ActivateContext(const Schematyc::CSharedString& contextName)
-			{
-				CAdvancedAnimationComponent::ActivateContext(contextName);
-			}
-
-			virtual void QueueFragment(const Schematyc::CSharedString& fragmentName)
-			{
-				CAdvancedAnimationComponent::QueueFragment(fragmentName);
-			}
-
-			virtual void SetTag(const Schematyc::CSharedString& tagName, bool bSet)
-			{
-				CAdvancedAnimationComponent::SetTag(tagName, bSet);
-			}
-
-			virtual void SetMotionParameter(EMotionParamID motionParam, float value)
-			{
-				CAdvancedAnimationComponent::SetMotionParameter(motionParam, value);
+				m_pEntity->Physicalize(physParams);
 			}
 
 			struct SPhysics
@@ -228,23 +181,14 @@ namespace Cry
 			virtual SMovement& GetMovementParameters() { return m_movement; }
 			const SMovement& GetMovementParameters() const { return m_movement; }
 
-			virtual void EnableGroundAlignment(bool bEnable) { m_bGroundAlignment = bEnable; }
-			bool IsGroundAlignmentEnabled() const { return m_bGroundAlignment; }
-
 		protected:
 			SPhysics m_physics;
 			SMovement m_movement;
 
-			bool m_bGroundAlignment = false;
-
 			bool m_bOnGround = false;
 			Schematyc::UnitLength<Vec3> m_groundNormal = Vec3(0, 0, 1);
 
-			Vec3 m_prevForwardDir = ZERO;
-			float m_turnAngle = 0.f;
 			Vec3 m_velocity = ZERO;
-
-			IAnimationPoseAlignerPtr m_pPoseAligner;
 		};
 	}
 }

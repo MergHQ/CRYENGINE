@@ -2825,7 +2825,14 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 					{
 						if (pObj->CanExecuteRenderAsJob())
 						{
-							GetObjManager()->RenderObject(pObj, pAffectingLights, vAmbColor, objBox, fEntDistance, bSunOnly, rnType, passInfo);
+							if (rnType == eERType_MovableBrush)
+							{
+								GetObjManager()->RenderBrush((CBrush*)pObj, pAffectingLights, pTerrainTexInfo, objBox, fEntDistance, bSunOnly, m_pVisArea, true, passInfo);
+							}
+							else
+							{
+								GetObjManager()->RenderObject(pObj, pAffectingLights, vAmbColor, objBox, fEntDistance, bSunOnly, rnType, passInfo);
+							}
 						}
 						else
 						{
