@@ -40,6 +40,7 @@ public:
 	void         Execute();
 	void         ExecuteMicroGBuffer();
 	void         ExecuteLinearizeDepth();
+	void         ExecuteGBufferVisualization();
 
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 
