@@ -1,0 +1,10 @@
+{
+	"Name": "Component",
+	"Features": [
+		{ "SpawnRate": { "Amount": { "value": 1.0 } } },
+		{ "LifeTime": { "LifeTime": { "value": 1.0 } } },
+		{ "RenderSprites": { } },
+		{ "FieldSize": { "value": { "value": 1.0 } } },
+		{ "MotionPhysics": {} }
+	]
+}
