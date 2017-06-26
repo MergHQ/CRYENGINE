@@ -6359,7 +6359,8 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 		}
 		break;
 	case eERType_Brush:
-		{
+	case eERType_MovableBrush:
+	{
 			CBrush* pBrush = static_cast<CBrush*>(pRenderNode);
 			const CLodValue lodValue = pBrush->ComputeLod(wantedLod, passInfo);
 			pBrush->Render(lodValue, passInfo, NULL, NULL);
