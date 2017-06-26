@@ -309,6 +309,9 @@ void CD3DStereoRenderer::CreateIntermediateBuffers()
 
 void CD3DStereoRenderer::Shutdown()
 {
+	if(m_pHmdRenderer)
+		m_pHmdRenderer->ReleaseBuffers();
+
 	SAFE_DELETE(m_pHmdRenderer);
 
 	ReleaseResources();

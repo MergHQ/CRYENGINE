@@ -337,6 +337,9 @@ void CD3D9Renderer::RT_GraphicsPipelineShutdown()
 
 	CStretchRegionPass::Shutdown();
 
+	if(m_pStereoRenderer)
+		m_pStereoRenderer->ReleaseBuffers();
+
 	if (m_pRenderAuxGeomD3D)
 		m_pRenderAuxGeomD3D->ReleaseResources();
 

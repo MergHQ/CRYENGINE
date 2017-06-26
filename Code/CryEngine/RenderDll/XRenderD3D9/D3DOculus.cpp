@@ -138,6 +138,7 @@ CD3DOculusRenderer::CD3DOculusRenderer(CryVR::Oculus::IOculusDevice* oculusDevic
 	, m_pStereoRenderer(stereoRenderer)
 	, m_eyeWidth(~0L)
 	, m_eyeHeight(~0L)
+	, m_pStrechRectPass(nullptr)
 {
 }
 
@@ -317,7 +318,7 @@ void CD3DOculusRenderer::Shutdown()
 void CD3DOculusRenderer::OnResolutionChanged()
 {
 	if (m_eyeWidth != m_pRenderer->GetWidth() ||
-	    m_eyeHeight != m_pRenderer->GetHeight())
+		m_eyeHeight != m_pRenderer->GetHeight())
 	{
 		Shutdown();
 		Initialize();
@@ -326,6 +327,7 @@ void CD3DOculusRenderer::OnResolutionChanged()
 
 void CD3DOculusRenderer::ReleaseBuffers()
 {
+	SAFE_DELETE(m_pStrechRectPass);
 }
 
 void CD3DOculusRenderer::PrepareFrame()
@@ -367,6 +369,12 @@ void CD3DOculusRenderer::PrepareFrame()
 			const int idx = m_pOculusDevice->GetCurrentSwapChainIndex(m_quadLayerRenderData[i].vrTextureSet.pDeviceTextureSwapChain);
 			m_pStereoRenderer->SetVrQuadLayerTexture(static_cast<RenderLayer::EQuadLayers>(i), m_quadLayerRenderData[i].textures[idx]);
 		}
+	}
+
+	// Check if we have to create a new RectPass
+	if (m_pStrechRectPass == nullptr)
+	{
+		m_pStrechRectPass = new CStretchRectPass();
 	}
 
 	// DARIO (TODO): could we disable scene3d layer ? (Quad layers are activated on-demand)
@@ -595,7 +603,11 @@ void CD3DOculusRenderer::RenderSocialScreen()
 						else
 						#endif
 						{
-							m_StretchRectPass.Execute(m_mirrorData.pMirrorTexture, pBackbufferTexture);
+							if (m_pStrechRectPass != nullptr)
+							{
+								m_pStrechRectPass->Execute(m_mirrorData.pMirrorTexture, pBackbufferTexture);
+							}
+						
 						}
 					}
 				}
