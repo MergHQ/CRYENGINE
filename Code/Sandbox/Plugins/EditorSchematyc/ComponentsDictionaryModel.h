@@ -66,6 +66,7 @@ public:
 	virtual QString                         GetColumnName(int32 index) const override;
 
 	virtual int32                           GetDefaultFilterColumn() const override { return Column_Name; }
+	virtual int32                           GetDefaultSortColumn() const override { return Column_Name; }
 	// ~CryGraphEditor::CAbstractDictionary
 
 	void Load(const Schematyc::IScriptElement* pScriptScope);
