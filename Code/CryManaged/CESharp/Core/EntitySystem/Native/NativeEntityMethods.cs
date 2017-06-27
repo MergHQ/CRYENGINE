@@ -18,6 +18,9 @@ namespace CryEngine.NativeInternals
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern public static object GetComponent(IntPtr entityPtr, ulong guidHipart, ulong guidLopart);
 
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		extern public static void GetComponents(IntPtr entityPtr, ulong guidHipart, ulong guidLopart, out EntityComponent[] componentsPtr);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern public static object GetOrCreateComponent(IntPtr entityPtr, ulong guidHipart, ulong guidLopart);
 

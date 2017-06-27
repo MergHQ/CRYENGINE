@@ -119,6 +119,36 @@ static MonoInternals::MonoObject* GetComponent(IEntity* pEntity, uint64 guidHipa
 	return nullptr;
 }
 
+static void GetComponents(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart, MonoInternals::MonoObject** pArrayOut)
+{
+	DynArray<IEntityComponent*> foundComponents;
+
+	// Get the specific components first
+	pEntity->GetComponentsByTypeId(CryGUID::Construct(guidHipart, guidLopart), foundComponents);
+	
+	// Search for base components next
+	pEntity->QueryComponentsByInterfaceID(CryGUID::Construct(guidHipart, guidLopart), foundComponents);
+	
+	// Remove duplicate components
+	foundComponents.erase(std::unique(foundComponents.begin(), foundComponents.end()), foundComponents.end());
+
+	if (foundComponents.size() == 0)
+	{
+		pArrayOut = nullptr;
+		return;
+	}
+
+	CMonoClass* pEntityComponentClass = GetMonoRuntime()->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
+
+	MonoInternals::MonoArray* pArray = MonoInternals::mono_array_new(GetMonoRuntime()->GetActiveDomain()->GetHandle(), pEntityComponentClass->GetMonoClass(), foundComponents.size());
+	for(int i = 0; i < foundComponents.size(); ++i)
+	{
+		*(MonoInternals::MonoObject **)mono_array_addr((pArray), MonoInternals::MonoObject*, i) = static_cast<CManagedEntityComponent*>(foundComponents[i])->GetObject()->GetManagedObject();
+	}
+
+	*pArrayOut = (MonoInternals::MonoObject*)pArray;
+}
+
 static MonoInternals::MonoObject* AddComponent(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart)
 {
 	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(CryGUID::Construct(guidHipart, guidLopart), std::shared_ptr<IEntityComponent>(), true, nullptr));
@@ -162,6 +192,7 @@ void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* p
 	func(AddComponentBase, "AddComponentBase");
 	func(RegisterManagedEntityWithDefaultComponent, "RegisterEntityWithDefaultComponent");
 	func(GetComponent, "GetComponent");
+	func(GetComponents, "GetComponents");
 	func(GetOrCreateComponent, "GetOrCreateComponent");
 	func(AddComponent, "AddComponent");
 	func(RegisterComponentProperty, "RegisterComponentProperty");
