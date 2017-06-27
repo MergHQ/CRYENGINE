@@ -185,6 +185,10 @@ void CProjectorLightComponent::Initialize()
 	// Fix light orientation to point along the forward axis
 	// This has to be done since lights in the engine currently emit from the right axis for some reason.
 	m_pEntity->SetSlotLocalTM(GetEntitySlotId(), Matrix34::Create(Vec3(1.f), Quat::CreateRotationZ(gf_PI * 0.5f), ZERO));
+
+	uint32 slotFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
+	UpdateGIModeEntitySlotFlags((uint8)m_options.m_giMode, slotFlags);
+	m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
 }
 
 void CProjectorLightComponent::ProcessEvent(SEntityEvent& event)

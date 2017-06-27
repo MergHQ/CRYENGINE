@@ -726,6 +726,11 @@ enum EEntitySlotFlags
 	ENTITY_SLOT_BREAK_AS_ENTITY             = BIT(4),
 	ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING = BIT(5),
 	ENTITY_SLOT_BREAK_AS_ENTITY_MP          = BIT(6), //!< In MP this an entity that shouldn't fade or participate in network breakage.
+	ENTITY_SLOT_CAST_SHADOW                 = BIT(7),
+	ENTITY_SLOT_IGNORE_VISAREAS             = BIT(8),
+	ENTITY_SLOT_GI_MODE_BIT0                = BIT(9),
+	ENTITY_SLOT_GI_MODE_BIT1                = BIT(10),
+	ENTITY_SLOT_GI_MODE_BIT2                = BIT(11),
 };
 
 //! Type of an area managed by IEntityAreaComponent.
