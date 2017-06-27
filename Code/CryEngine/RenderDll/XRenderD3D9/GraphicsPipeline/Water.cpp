@@ -880,6 +880,9 @@ bool CWaterStage::CreatePipelineState(
 		{
 			psoDesc.m_pRenderPass = m_passWaterReflectionGen.GetRenderPass();
 
+			if (CRenderer::CV_r_DeferredShadingTiled > 0)
+				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
+
 			bWaterRipples = true;
 		}
 		break;
@@ -1079,6 +1082,12 @@ bool CWaterStage::SetAndBuildPerPassResources(CRenderView* RESTRICT_POINTER pRen
 			dirtyFlags |= resources.SetTexture(ePerPassTexture_Refraction, CTexture::s_ptexSceneTarget, EDefaultResourceViews::Default, EShaderStage_Pixel);
 			dirtyFlags |= resources.SetTexture(ePerPassTexture_Reflection, pCurrWaterVolRefl, EDefaultResourceViews::Default, EShaderStage_Pixel);
 		}
+
+		// Tiled shading resources
+		CTiledShading& tiledShading = pRenderer->GetTiledShading();
+		dirtyFlags |= resources.SetBuffer(32,  &tiledShading.m_tileTranspLightMaskBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		dirtyFlags |= resources.SetBuffer(33,  &tiledShading.m_lightShadeInfoBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		dirtyFlags |= resources.SetTexture(34, tiledShading.m_specularProbeAtlas.texArray, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 	}
 
 	// Constant buffers

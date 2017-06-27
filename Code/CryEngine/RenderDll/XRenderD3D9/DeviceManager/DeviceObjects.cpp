@@ -1221,7 +1221,7 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 		static char buffer[64];
 		char slotPrefix[] = { 'b', 't', 'u', 's' };
 
-		cry_sprintf(buffer, "%s%d", slotPrefix[min((size_t)bindPoint.slotType, CRY_ARRAY_COUNT(slotPrefix)-1)], bindPoint.slotNumber);
+		cry_sprintf(buffer, "%c%d", slotPrefix[min((size_t)bindPoint.slotType, CRY_ARRAY_COUNT(slotPrefix)-1)], bindPoint.slotNumber);
 
 		return buffer;
 	};

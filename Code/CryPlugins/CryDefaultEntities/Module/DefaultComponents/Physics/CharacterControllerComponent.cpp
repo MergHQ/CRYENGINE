@@ -89,6 +89,7 @@ void CCharacterControllerComponent::ReflectType(Schematyc::CTypeDesc<CCharacterC
 	// Entities can only have one physical entity type, thus these are incompatible
 	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CRigidBodyComponent>());
 
+	desc.AddMember(&CCharacterControllerComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
 	desc.AddMember(&CCharacterControllerComponent::m_physics, 'phys', "Physics", "Physics", "Physical properties for the character", CCharacterControllerComponent::SPhysics());
 	desc.AddMember(&CCharacterControllerComponent::m_movement, 'move', "Movement", "Movement", "Movement properties for the character", CCharacterControllerComponent::SMovement());
 }
@@ -135,6 +136,11 @@ CCharacterControllerComponent::~CCharacterControllerComponent()
 void CCharacterControllerComponent::Initialize()
 {
 	Physicalize();
+
+	if (m_bNetworked)
+	{
+		m_pEntity->GetNetEntity()->BindToNetwork();
+	}
 }
 
 void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)

@@ -626,6 +626,7 @@ Property
 	Precache = VegetationPS
 	Precache = SkinPS
 	Precache = TerrainPS
+	Precache = WaterSurfacePS
 }
 
 Property

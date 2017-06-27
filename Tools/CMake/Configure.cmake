@@ -160,6 +160,8 @@ endif()
 include("${TOOLS_CMAKE_DIR}/ConfigureChecks.cmake")
 include("${TOOLS_CMAKE_DIR}/CommonMacros.cmake")
 
+include("${TOOLS_CMAKE_DIR}/Recode.cmake")
+
 if(WIN32)
 	# Common Libriries linked to all targets
 	set(COMMON_LIBS Ntdll User32 Advapi32 Ntdll Ws2_32)
