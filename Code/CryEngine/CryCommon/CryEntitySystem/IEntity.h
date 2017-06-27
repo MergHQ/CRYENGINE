@@ -770,6 +770,9 @@ public:
 	//! Return first component of the entity with the specified class ID.
 	//! \param interfaceID Identifier for the component implementation.
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const = 0;
+	//! Return all components with the specified class ID contained in the entity.
+	//! \param interfaceID Identifier for the component implementation.
+	virtual void GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const = 0;
 	
 	//! Return component with the unique GUID.
 	//! \param guid Identifier for the component.
@@ -799,7 +802,7 @@ public:
 	template<typename ComponentClass>
 	ComponentClass* CreateComponentClass(bool bAllowDuplicate = false);
 
-	//! Helper template function to simplify finding components with a specified implementation
+	//! Helper template function to simplify finding the first component with a specified implementation
 	//! ex: auto pScriptProxy = pEntity->GetComponent<IEntityScriptComponent>();
 	template<typename ComponentType>
 	ComponentType* GetComponent() const
@@ -809,20 +812,31 @@ public:
 		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>()));
 	}
 
+	//! Helper template function to simplify finding components with a specified implementation
+	template<typename ComponentType>
+	void GetComponents(DynArray<ComponentType>& components) const
+	{
+		//static_assert(IEntityComponent::IsDeclared<ComponentType>::Check, "Tried to query component  that was not declared with CRY_ENTITY_COMPONENT_INTERFACE, CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS or CRY_ENTITY_COMPONENT_CLASS!");
+
+		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
+		DynArray<IEntityComponent>* pRawComponents = (DynArray<IEntityComponent>*)(void*)components;
+		GetComponentsByTypeId(cryiidof<ComponentType>(), *pRawComponents);
+	}
+
 	//! Helper template to simplify querying components based on interface. Searches each component's hierarchy and returns the first instance that implements ComponentType.
 	template<typename ComponentType>
-	ComponentType* QueryComponentByInterface()
+	ComponentType* QueryComponentByInterface() const
 	{
 		return static_cast<ComponentType*>(QueryComponentByInterfaceID(cryiidof<ComponentType>()));
 	}
 
 	//! Helper template to simplify querying components based on interface. Searches each component's hierarchy and returns all instances that implements ComponentType.
 	template<typename ComponentType>
-	void QueryComponentsByInterface(DynArray<ComponentType>& components)
+	void QueryComponentsByInterface(DynArray<ComponentType>& components) const
 	{
 		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
-		DynArray<IEntityComponent>& rawComponents = *(DynArray<IEntityComponent>*)(void*)components;
-		QueryComponentsByInterfaceID(cryiidof<ComponentType>()), rawComponents;
+		DynArray<IEntityComponent>* pRawComponents = (DynArray<IEntityComponent>*)(void*)components;
+		QueryComponentsByInterfaceID(cryiidof<ComponentType>(), *pRawComponents);
 	}
 
 	//! Creates instances of the components contained in the other entity

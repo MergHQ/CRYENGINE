@@ -149,6 +149,13 @@ namespace CryEngine
 				componentAttribute.Name = entityComponentType.Name;
 			}
 
+			if(entityComponentType.IsAbstract || entityComponentType.IsInterface)
+			{
+				// By passing an empty string as the name the component will still be registered, 
+				// but the Sandbox will not show it in the AddComponent menu.
+				componentAttribute.Name = string.Empty;
+			}
+
 			NativeInternals.Entity.RegisterComponent(entityComponentType,
 													 typeInfo.guid.hipart,
 													 typeInfo.guid.lopart,

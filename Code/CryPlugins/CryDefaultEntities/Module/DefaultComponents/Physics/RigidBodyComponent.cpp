@@ -86,6 +86,8 @@ void CRigidBodyComponent::ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent>&
 	// Entities can only have one physical entity type, thus these are incompatible
 	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CCharacterControllerComponent>());
 
+	desc.AddMember(&CRigidBodyComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
+
 	desc.AddMember(&CRigidBodyComponent::m_bEnabledByDefault, 'enab', "EnabledByDefault", "Enabled by Default", "Whether the component is enabled by default", true);
 	desc.AddMember(&CRigidBodyComponent::m_type, 'type', "Type", "Type", "Type of physicalized object to create", CRigidBodyComponent::EPhysicalType::Rigid);
 	desc.AddMember(&CRigidBodyComponent::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
@@ -119,6 +121,11 @@ CRigidBodyComponent::~CRigidBodyComponent()
 void CRigidBodyComponent::Initialize()
 {
 	Physicalize();
+
+	if (m_bNetworked)
+	{
+		m_pEntity->GetNetEntity()->BindToNetwork();
+	}
 }
 
 void CRigidBodyComponent::Physicalize()

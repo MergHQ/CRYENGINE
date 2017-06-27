@@ -217,6 +217,7 @@ public:
 	virtual void              RemoveComponent(IEntityComponent* pComponent) final;
 	virtual void              RemoveAllComponents() final;
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const final;
+	virtual void              GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const final;
 	virtual IEntityComponent* GetComponentByGUID(const CryGUID& guid) const final;
 	virtual void              QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const final;
 	virtual IEntityComponent* QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const final;

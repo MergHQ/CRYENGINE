@@ -147,6 +147,7 @@ namespace Cry
 			void Physicalize();
 
 		public:
+			bool m_bNetworked = false;
 
 			bool m_bEnabledByDefault = true;
 			EPhysicalType m_type = EPhysicalType::Rigid;

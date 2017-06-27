@@ -182,6 +182,8 @@ namespace Cry
 			const SMovement& GetMovementParameters() const { return m_movement; }
 
 		protected:
+			bool m_bNetworked = false;
+			
 			SPhysics m_physics;
 			SMovement m_movement;
 
