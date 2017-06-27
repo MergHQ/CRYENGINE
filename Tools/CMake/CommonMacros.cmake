@@ -149,12 +149,69 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 			set_target_properties(${TargetProject} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${runout})
 		endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 	endif()
+
+	# Patch linker flags for recode, setup environment path for executables
+	if (OPTION_RECODE AND EXISTS RECODE_INSTALL_PATH)
+		patch_recode_linker_property(${TargetProject} LINK_FLAGS)
+		foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+			string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+			patch_recode_linker_property(${TargetProject} LINK_FLAGS_${OUTPUTCONFIG})
+		endforeach()
+		get_target_property(type ${TargetProject} TYPE)
+		if (type STREQUAL "EXECUTABLE")
+			if (WIN64)
+				set(platform x64)
+			elseif(WIN32)
+				set(platform Win32)
+			endif()
+			file( WRITE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}.vcxproj.user" 
+  "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+  <Project ToolsVersion=\"14.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
+		<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|${platform}'\">
+			<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+			<LocalDebuggerEnvironment>PATH=$(Path);${RECODE_INSTALL_PATH}
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+		</PropertyGroup>
+		<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|${platform}'\">
+			<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+			<LocalDebuggerEnvironment>PATH=$(Path);${RECODE_INSTALL_PATH}
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+		</PropertyGroup>		
+		<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|${platform}'\">
+			<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+			<LocalDebuggerEnvironment>PATH=$(Path);${RECODE_INSTALL_PATH}
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+		</PropertyGroup>
+	</Project>")		
+		endif()
+	endif()
+
 ENDMACRO(SET_PLATFORM_TARGET_PROPERTIES)
 
 function(JOIN VALUES GLUE OUTPUT)
 	string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
 	set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
 endfunction()
+
+macro(patch_recode_linker_flags var)
+	if (OPTION_RECODE)
+		set(temp ${${var}})
+		string(REGEX REPLACE "/INCREMENTAL[^\\s]*(\\s|$)" "" temp "${temp}")
+		string(REGEX REPLACE "/DEBUG[^\\s]*(\\s|$)" "" temp "${temp}")
+		string(REGEX REPLACE "/OPT:REF[^\\s]*(\\s|$)" "" temp "${temp}")
+		string(REGEX REPLACE "/OPT:ICF[^\\s]*(\\s|$)" "" temp "${temp}")
+		string(REGEX REPLACE "/LTCG[^\\s]*(\\s|$)" "" temp "${temp}")
+		set(${var} "${temp} /DEBUG /INCREMENTAL")
+	endif()
+endmacro()
+
+macro(patch_recode_linker_property TargetProject propname)
+	get_target_property(flags ${TargetProject} ${propname})
+	if(flags)
+		patch_recode_linker_flags(flags)
+		set_target_properties(${TargetProject} PROPERTIES ${propname} ${flags})
+	endif()
+endmacro()
 
 # Writes an uber file to disk
 # If uber file already exist it's contents are compared and the file only is overridden if it changed, to allow incremental compilations.
