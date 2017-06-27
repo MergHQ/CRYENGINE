@@ -267,12 +267,12 @@ void CSchematycEntitySensorVolumeComponent::OnSensorEvent(const SSensorEvent& ev
 	{
 	case ESensorEventType::Entering:
 		{
-			GetEntity()->GetSchematycObject()->ProcessSignal(SEnteringSignal(otherVolumeParams.entityId));
+			GetEntity()->GetSchematycObject()->ProcessSignal(SEnteringSignal(otherVolumeParams.entityId), GetGUID());
 			break;
 		}
 	case ESensorEventType::Leaving:
 		{
-			GetEntity()->GetSchematycObject()->ProcessSignal(SLeavingSignal(otherVolumeParams.entityId));
+			GetEntity()->GetSchematycObject()->ProcessSignal(SLeavingSignal(otherVolumeParams.entityId), GetGUID());
 			break;
 		}
 	}
