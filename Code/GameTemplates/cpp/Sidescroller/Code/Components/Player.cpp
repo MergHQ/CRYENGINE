@@ -47,7 +47,12 @@ void CPlayerComponent::Initialize()
 	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveRight, activationMode);  });
 	m_pInputComponent->BindAction("player", "moveright", eAID_KeyboardMouse, EKeyId::eKI_D);
 
-	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value) { m_pCharacterController->AddVelocity(Vec3(0, 0, 3.f));  });
+	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value)
+	{
+		if(m_pCharacterController->IsOnGround())
+			m_pCharacterController->AddVelocity(Vec3(0, 0, 5.f));
+	});
+
 	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, EKeyId::eKI_Space);
 
 	// Register the shoot action
