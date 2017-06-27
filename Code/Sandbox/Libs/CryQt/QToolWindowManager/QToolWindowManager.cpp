@@ -858,6 +858,12 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 		m_wrappers.removeOne(wrapper);
 		wrapper->getWidget()->deleteLater();
 	}
+
+	//Update area visuals
+	foreach(IToolWindowArea* area, m_areas)
+	{
+		area->adjustDragVisuals();
+	}
 	
 	resumeLayoutNotifications();
 	notifyLayoutChange();
