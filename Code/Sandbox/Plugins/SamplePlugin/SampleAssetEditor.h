@@ -18,7 +18,7 @@ public:
 
 	virtual bool OnOpenAsset(CAsset* pAsset) override;
 	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
-	virtual bool OnCloseAsset() override;
+	virtual void OnCloseAsset() override;
 
 private:
 	QLineEdit* m_pLineEdit;

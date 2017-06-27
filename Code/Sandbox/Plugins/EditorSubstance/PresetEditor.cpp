@@ -236,11 +236,10 @@ bool CSubstancePresetEditor::OnSaveAsset(CEditableAsset& editAsset)
 	return true;
 }
 
-bool CSubstancePresetEditor::OnCloseAsset()
+void CSubstancePresetEditor::OnCloseAsset()
 {
 	CManager::Instance()->PresetEditEnded(m_pPreset);
 	m_pResolutionWidget->hide();
-	return true;
 }
 
 

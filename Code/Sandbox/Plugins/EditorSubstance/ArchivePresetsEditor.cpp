@@ -152,9 +152,8 @@ namespace EditorSubstance
 		return true;
 	}
 
-	bool CArchivePresetsEditor::OnCloseAsset()
+	void CArchivePresetsEditor::OnCloseAsset()
 	{
-		return true;
 	}
 
 	bool CArchivePresetsEditor::eventFilter(QObject *obj, QEvent *event)

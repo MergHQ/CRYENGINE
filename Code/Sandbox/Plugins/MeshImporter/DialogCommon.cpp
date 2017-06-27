@@ -608,6 +608,11 @@ void CBaseDialog::OnSave()
 	}
 }
 
+void CBaseDialog::OnCloseAsset()
+{
+	GetSceneManager().UnloadScene();
+}
+
 std::unique_ptr<CTempRcObject> CBaseDialog::CreateTempRcObject()
 {
 	return std::unique_ptr<CTempRcObject>(new CTempRcObject(GetTaskHost(), &m_sceneManager));
