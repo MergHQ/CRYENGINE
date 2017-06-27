@@ -64,6 +64,7 @@ protected:
 	friend class CTiledShadingStage;
 	friend class CSceneForwardStage;
 	friend class CMobileCompositionStage;
+	friend class CWaterStage;
 
 	struct AtlasItem
 	{

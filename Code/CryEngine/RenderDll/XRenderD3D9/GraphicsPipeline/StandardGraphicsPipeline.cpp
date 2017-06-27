@@ -275,7 +275,6 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CFogStage>(m_pFogStage, eStage_Fog);
 	RegisterStage<CVolumetricCloudsStage>(m_pVolumetricCloudsStage, eStage_VolumetricClouds);
 	RegisterStage<CWaterRipplesStage>(m_pWaterRipplesStage, eStage_WaterRipples);
-	RegisterStage<CWaterStage>(m_pWaterStage, eStage_Water);
 	RegisterStage<CMotionBlurStage>(m_pMotionBlurStage, eStage_MotionBlur);
 	RegisterStage<CDepthOfFieldStage>(m_pDepthOfFieldStage, eStage_DepthOfField);
 	RegisterStage<CAutoExposureStage>(m_pAutoExposureStage, eStage_AutoExposure);
@@ -290,6 +289,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CClipVolumesStage>(m_pClipVolumesStage, eStage_ClipVolumes);
 	RegisterStage<CShadowMaskStage>(m_pShadowMaskStage, eStage_ShadowMask);
 	RegisterStage<CTiledShadingStage>(m_pTiledShadingStage, eStage_TiledShading);
+	RegisterStage<CWaterStage>(m_pWaterStage, eStage_Water);
 	RegisterStage<CLensOpticsStage>(m_pLensOpticsStage, eStage_LensOptics);
 	RegisterStage<CPostEffectStage>(m_pPostEffectStage, eStage_PostEffet);
 	RegisterStage<CRainStage>(m_pRainStage, eStage_Rain);
