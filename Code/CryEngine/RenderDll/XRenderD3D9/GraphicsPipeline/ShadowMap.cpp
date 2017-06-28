@@ -560,6 +560,7 @@ void CShadowMapStage::UpdateShadowFrustumFromPass(const CShadowMapPass& sourcePa
 		targetFrustum.fDepthConstBias = pSrcFrustum->fDepthConstBias;
 		targetFrustum.fDepthTestBias = pSrcFrustum->fDepthTestBias;
 		targetFrustum.fDepthSlopeBias = pSrcFrustum->fDepthSlopeBias;
+		targetFrustum.fDepthBiasClamp = pSrcFrustum->fDepthBiasClamp;
 	}
 }
 
@@ -613,7 +614,7 @@ void CShadowMapStage::PrepareShadowPassForFrustum(const SShadowFrustumToRender& 
 	Vec4 frustumInfo = Vec4(
 	  (gcpRendD3D->CV_r_ShadowGenDepthClip == 0 && frustum.fRendNear > 0.0f) ? frustum.fRendNear : frustum.fNearDist,
 	  (frustum.m_eFrustumType == ShadowMapFrustum::e_HeightMapAO) ? 1.0f : frustum.fFarDist,
-	  (frustum.m_eFrustumType == ShadowMapFrustum::e_Nearest) ? 7 * frustum.fDepthSlopeBias : frustum.fDepthSlopeBias,
+	  frustum.fDepthSlopeBias,
 	  frustum.fDepthTestBias
 	  );
 
@@ -644,7 +645,7 @@ void CShadowMapStage::PrepareShadowPassForFrustum(const SShadowFrustumToRender& 
 		targetPass.m_ViewProjMatrix = viewProj;
 		targetPass.m_ViewProjMatrixOrig = viewProjOrig;
 		targetPass.m_FrustumInfo = frustumInfo;
-		targetPass.SetDepthBias(0.0f, frustumInfo.z, 0.001f);
+		targetPass.SetDepthBias(0.0f, frustumInfo.z, frustum.fDepthBiasClamp);
 	}
 	else
 	{
@@ -883,6 +884,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 	pDst->fDepthConstBias = pSrc->fDepthConstBias;
 	pDst->fDepthTestBias = pSrc->fDepthTestBias;
 	pDst->fDepthSlopeBias = pSrc->fDepthSlopeBias;
+	pDst->fDepthBiasClamp = pSrc->fDepthBiasClamp;
 }
 
 void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)

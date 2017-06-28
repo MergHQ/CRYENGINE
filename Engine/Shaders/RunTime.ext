@@ -1325,6 +1325,8 @@ Property
 	Precache = FogPassVolShadowsInterleavePassPS
 	Precache = CloudShadowGenCS
 	Precache = VolumetricCloudsPS
+	
+	Precache = ShadowMaskGenPS
 }
 
 Property

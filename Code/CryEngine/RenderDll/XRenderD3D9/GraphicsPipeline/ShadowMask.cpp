@@ -28,6 +28,7 @@ class CSunShadows
 		Vec4     shadowFadingDist;
 		Matrix44 blendTexGen;
 		Vec4     blendInfo;
+		Vec4     lightPos;
 	};
 
 	struct SCloudShadowConstants
@@ -38,15 +39,17 @@ class CSunShadows
 
 	struct SCascadePrimitiveContext
 	{
-		SCascadePrimitiveContext(CRenderView* pRenderView, bool renderScreenspaceShadows, uint64 shaderRtFlags)
+		SCascadePrimitiveContext(CRenderView* pRenderView, bool renderScreenspaceShadows, bool texelRelativeBias, uint64 shaderRtFlags)
 			: frustums(pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic))
-			, bRenderScreenspaceShadows(renderScreenspaceShadows)
 			, rtFlags(shaderRtFlags)
+			, bRenderScreenspaceShadows(renderScreenspaceShadows)
+			, bTexelRelativeBias(texelRelativeBias)
 		{}
 
 		CRenderView::ShadowFrustumsPtr& frustums;
-		bool                            bRenderScreenspaceShadows;
 		uint64                          rtFlags;
+		bool                            bRenderScreenspaceShadows;
+		bool                            bTexelRelativeBias;
 	};
 
 	struct SCustomPrimitiveContext
@@ -68,7 +71,8 @@ public:
 
 	void InitPrimitives();
 	void ResetPrimitives();
-	int  PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags);
+	int  PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows,
+	                       bool bTexelRelativeBias, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags);
 
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater);
 
@@ -186,9 +190,11 @@ void CShadowMaskStage::Prepare(CRenderView* pRenderView)
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	static ICVar* pDebugCascadesCVar = gEnv->pConsole->GetCVar("e_ShadowsCascadesDebug");
+	static ICVar* pAutoBiasCVar = gEnv->pConsole->GetCVar("e_ShadowsAutoBias");
 	const bool bDebugCascades = pDebugCascadesCVar && pDebugCascadesCVar->GetIVal() > 0;
 	const bool bCloudShadows = rd->GetCloudShadowsEnabled() || rd->m_bVolumetricCloudsEnabled;
 	const bool bScreenSpaceShadows = rd->CV_r_ShadowsScreenSpace != 0;
+	const bool bTexelRelativeBias = pAutoBiasCVar && pAutoBiasCVar->GetFVal() > 0;
 
 	// get rendertarget and initialize passes
 	{
@@ -255,6 +261,7 @@ void CShadowMaskStage::Prepare(CRenderView* pRenderView)
 		  firstUnusedStencilValue,
 		  bCloudShadows,
 		  bScreenSpaceShadows,
+		  bTexelRelativeBias,
 		  bDebugCascades ? &m_debugCascadesPass : nullptr,
 		  pRenderView,
 		  rtFlagsByQuality[shaderQuality]);
@@ -371,7 +378,8 @@ CSunShadows::~CSunShadows()
 	gcpRendD3D->m_DevBufMan.Destroy(m_nearestFullscreenTri);
 }
 
-int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags)
+int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows,
+                                   bool bTexelRelativeBias, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags)
 {
 	const bool bPrepareCascadePrimitives = !pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic).empty();
 	const bool bPrepareCustomPrimitives = !pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_Custom).empty();
@@ -383,7 +391,7 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 
 	if (bPrepareCascadePrimitives)
 	{
-		SCascadePrimitiveContext context(pRenderView, bScreenSpaceShadows, rtFlags);
+		SCascadePrimitiveContext context(pRenderView, bScreenSpaceShadows, bTexelRelativeBias, rtFlags);
 		ShadowMapFrustum* pFirstFrustum = !context.frustums.empty() ? context.frustums.front()->pFrustum : nullptr;
 		const bool bCascadeBlending = pFirstFrustum && pFirstFrustum->bBlendFrustum && !pDebugCascadesPass;
 		const bool bStencilPrepass = gcpRendD3D->CV_r_ShadowMaskStencilPrepass != 0 || pDebugCascadesPass;
@@ -499,6 +507,7 @@ void CSunShadows::PrepareCascadePrimitivesWithPrepass(CPrimitiveRenderPass& slic
 
 		uint64 rtFlags = context.rtFlags;
 		rtFlags |= (bScreenspaceShadows) ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+		rtFlags |= (context.bTexelRelativeBias) ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
 
 		CRenderPrimitive& primSampling = cachedSamplingPrimitives[pFrustum->nShadowMapLod];
 		primSampling.SetTechnique(pShader, techSampling, rtFlags);
@@ -560,6 +569,7 @@ void CSunShadows::PrepareCascadePrimitivesNoBlending(CPrimitiveRenderPass& slice
 
 		uint64 rtFlags = context.rtFlags;
 		rtFlags |= (bScreenspaceShadows) ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+		rtFlags |= (context.bTexelRelativeBias) ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
 
 		CRenderPrimitive& primSampling = cachedSamplingPrimitives[pFrustum->nShadowMapLod];
 		primSampling.SetTechnique(pShader, techSampling, rtFlags);
@@ -611,6 +621,7 @@ void CSunShadows::PrepareCascadePrimitivesWithBlending(CPrimitiveRenderPass& sli
 
 		uint64 rtFlags = context.rtFlags;
 		rtFlags |= (bScreenspaceShadows) ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+		rtFlags |= (context.bTexelRelativeBias) ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
 
 		// inner region (no blending)
 		{
@@ -875,6 +886,7 @@ void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapF
 		constants->shadowFadingDist = Vec4(shadowSamplingInfo.shadowFadingDist);
 		constants->blendTexGen.SetZero();
 		constants->blendInfo = Vec4(ZERO);
+		constants->lightPos = Vec4(pFrustum->vLightSrcRelPos + pFrustum->vProjTranslation, 0);
 
 		if (pVolumeProvider)
 		{
