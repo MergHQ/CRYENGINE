@@ -429,6 +429,11 @@ void CVars::Init()
 	              "Shadows slope bias for shadowgen");
 	REGISTER_CVAR(e_ShadowsConstBiasHQ, 0.05f, VF_NULL,
 	              "Shadows slope bias for shadowgen (high quality mode)");
+	REGISTER_CVAR(e_ShadowsAutoBias, 0.0f, VF_NULL,
+	              "Attempts to compute an optimal shadow bias, ignoring all other bias settings (Experimental)\n"
+								"  0: Deactivated\n"
+								"  1.0: Good default value\n"
+								"  Other values scale bias relative to default\n");
 
 	DefineConstIntCVar(e_ShadowsMasksLimit, 0, VF_NULL,
 	                   "Maximum amount of allocated shadow mask textures\n"

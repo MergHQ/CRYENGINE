@@ -701,6 +701,8 @@ void CLightEntity::CalculateShadowBias(ShadowMapFrustum* pFr, int nLod, float fG
 
 	assert(nLod >= 0 && nLod < 8);
 
+	pFr->fDepthBiasClamp = 0.001f;
+
 	if (m_light.m_Flags & DLF_SUN)
 	{
 		float fVladRatio = min(fGSMBoxSize / 2.f, 1.f);
@@ -711,9 +713,20 @@ void CLightEntity::CalculateShadowBias(ShadowMapFrustum* pFr, int nLod, float fG
 		pFr->fDepthTestBias = fVladRatio * (pFr->fFarDist - pFr->fNearDist) * (fGSMBoxSize * 0.5f * 0.5f + 0.5f) * 0.0000005f;
 		pFr->fDepthSlopeBias = fSlopeBiasRatio * (fGSMBoxSize / max(0.00001f, Get3DEngine()->m_fGsmRange)) * 0.1f;
 
+		pFr->fDepthSlopeBias *= (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest) ? 7.0f : 1.0f;
+
 		if (pFr->IsCached())
 		{
 			pFr->fDepthConstBias = min(pFr->fDepthConstBias, 0.005f); // clamp bias as for cached frustums distance between near and far can be massive
+		}
+
+		if (GetCVars()->e_ShadowsAutoBias > 0)
+		{
+			const float biasAmount = 0.6f;
+			float texelSizeScale = tan_tpl(DEG2RAD(pFr->fFOV) * 0.5f) / (float)(std::max(pFr->nTextureWidth, pFr->nTextureHeight) / 2);  // Multiplied with distance in shader
+			pFr->fDepthConstBias = biasAmount * texelSizeScale / (pFr->fFarDist - pFr->fNearDist);
+			pFr->fDepthSlopeBias = 2.5f * GetCVars()->e_ShadowsAutoBias;
+			pFr->fDepthBiasClamp = 1000.0f;
 		}
 	}
 	else

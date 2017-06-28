@@ -54,9 +54,9 @@ public:
 	static std::shared_ptr<CMonoProperty> MakeProperty(MonoInternals::MonoProperty* pProperty);
 	static std::shared_ptr<CMonoProperty> MakeProperty(MonoInternals::MonoReflectionProperty* pProperty);
 
-protected:
 	MonoInternals::MonoClass* GetMonoClass() const { return m_pClass; }
 
+protected:
 	void Serialize(CMonoObject* pSerializer);
 	void Deserialize(CMonoObject* pSerializer);
 

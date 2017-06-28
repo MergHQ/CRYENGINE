@@ -20,13 +20,11 @@ namespace EditorSubstance
 	public:
 		CSubstancePresetEditor(QWidget* pParent = nullptr);
 
-		virtual bool OnOpenAsset(CAsset* pAsset) override;
-
-		virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
-
-		virtual bool OnCloseAsset() override;
-
 		virtual const char* GetEditorName() const override { return "Substance Instance Editor"; };
+
+		virtual bool OnOpenAsset(CAsset* pAsset) override;
+		virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
+		virtual void OnCloseAsset() override;
 
 		virtual bool CanQuit(std::vector<string>& unsavedChanges) override;
 	protected:

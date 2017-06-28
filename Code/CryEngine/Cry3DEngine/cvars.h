@@ -342,6 +342,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstFloatCVar(e_StreamPredictionAheadDebug);
 	float e_ShadowsSlopeBias;
 	float e_ShadowsSlopeBiasHQ;
+	float e_ShadowsAutoBias;
 	DeclareConstIntCVar(e_GsmDepthBoundsDebug, 0);
 	DeclareConstIntCVar(e_TimeOfDayDebug, 0);
 	int e_WaterTessellationAmount;

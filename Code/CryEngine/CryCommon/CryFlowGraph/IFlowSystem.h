@@ -1687,6 +1687,8 @@ struct IFlowGraph : public NFlowSystemUtils::IFlowSystemTyped
 	//! Checks if the flow graph is suspended.
 	virtual bool IsSuspended() const = 0;
 
+	virtual bool IsInInitializationPhase() const = 0;
+
 	// AI action related.
 
 	//! Sets an AI Action

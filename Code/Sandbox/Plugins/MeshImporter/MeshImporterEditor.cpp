@@ -234,11 +234,7 @@ bool CEditorAdapter::OnSaveAs()
 	return true;
 }
 
-bool CEditorAdapter::OnCloseAsset()
+void CEditorAdapter::OnCloseAsset()
 {
-	if (GetAssetBeingEdited())
-	{
-		signalAssetClosed(GetAssetBeingEdited());
-	}
-	return true;
+	m_pDialog->OnCloseAsset();
 }

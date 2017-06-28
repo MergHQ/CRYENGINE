@@ -108,6 +108,7 @@ namespace FlowGraph
 		virtual bool GetActivationInfo(const char* nodeName, IFlowNode::SActivationInfo& actInfo) final { return false; };
 		virtual void SetSuspended(bool suspend = true) final {};
 		virtual bool IsSuspended() const final { return false; };
+		virtual bool IsInInitializationPhase() const final { return false; };
 		virtual void SetAIAction(IAIAction* pAIAction) final {};
 		virtual IAIAction* GetAIAction() const final { return nullptr; };
 		virtual void SetCustomAction(ICustomAction* pCustomAction) final {};

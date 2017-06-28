@@ -43,6 +43,8 @@ public:
 	CMonoLibrary* LoadLibrary(const char* szPath);
 	CMonoLibrary* GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly);
 
+	MonoInternals::MonoDomain* GetHandle() const { return m_pDomain; }
+
 protected:
 	void Unload();
 

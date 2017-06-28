@@ -68,11 +68,13 @@ struct DisplaySkeletonOptions
 	string jointFilter;
 	bool   showJoints;
 	bool   showJointNames;
+	float  showJointNamesFontSize;
 	bool   showSkeletonBoundingBox;
 
 	DisplaySkeletonOptions()
 		: showJoints(false)
 		, showJointNames(false)
+		, showJointNamesFontSize(1.0f)
 		, showSkeletonBoundingBox(false)
 	{
 	}

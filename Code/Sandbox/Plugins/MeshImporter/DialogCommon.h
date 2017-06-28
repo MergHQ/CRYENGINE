@@ -190,6 +190,7 @@ public:
 	}
 
 	void                            ImportFile(const QString& filePath, const SImportScenePayload* pUserData, ITaskHost* pTaskHost);
+	void							UnloadScene();
 
 	const FbxTool::CScene*          GetScene() const;
 	FbxTool::CScene*                GetScene();
@@ -209,7 +210,6 @@ public:
 	}
 private:
 	void OnSceneImported(CAsyncImportSceneTask* pTask);
-	void UnloadScene();
 
 	std::shared_ptr<SDisplayScene>   m_pDisplayScene;
 	std::vector<AssignSceneCallback> m_assignSceneCallbacks;
@@ -252,6 +252,7 @@ public:
 	void        OnOpen();
 	void                OnSaveAs();
 	void                OnSave();
+	void				OnCloseAsset();
 
 	// Tries to opens a file for editing.
 	// \p filePath Asset-relative file path to either chunk-file that stores meta data (e.g., .cgf), or asset meta-data (.cryasset).

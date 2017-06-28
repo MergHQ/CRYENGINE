@@ -60,6 +60,7 @@ void DisplaySkeletonOptions::Serialize(Serialization::IArchive& ar)
 	ar(jointFilter, "jointFilter", "<Joint Filter");
 	ar(showJoints, "showJoints", "Joints");
 	ar(showJointNames, "showJointNames", "Joint Names");
+	ar(yasli::Range(showJointNamesFontSize, 1.0f, 3.0f), "showJointNamesFontSize", "Joint Names Font Size");
 	ar(showSkeletonBoundingBox, "showSkeletonBoundingBox", "Bounding Box");
 }
 

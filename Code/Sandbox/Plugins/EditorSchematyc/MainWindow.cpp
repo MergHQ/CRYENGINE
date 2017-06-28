@@ -286,7 +286,18 @@ bool CMainWindow::OnSaveAsset(CEditableAsset& editAsset)
 	return false;
 }
 
-bool CMainWindow::OnCloseAsset()
+bool CMainWindow::OnAboutToCloseAsset(string& reason) const
+{
+	if (m_pScriptBrowser && m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
+	{
+		CRY_ASSERT(GetAssetBeingEdited());
+		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName()));
+		return false;
+	}
+	return true;
+}
+
+void CMainWindow::OnCloseAsset()
 {
 	if (m_pGraphView)
 	{
@@ -298,53 +309,31 @@ bool CMainWindow::OnCloseAsset()
 		m_pPreview->SetComponentInstance(nullptr);
 	}
 
-	if (m_pScriptBrowser && m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
+	if (m_pScriptBrowser)
 	{
 		m_pScriptBrowser->SetModel(nullptr);
-		delete m_pModel;
-		m_pModel = nullptr;
 
-		stack_string dialogQuestion = "Asset '";
-		dialogQuestion.append(m_pAsset->GetName());
-		dialogQuestion.append("' has unsaved changes.");
-
-		ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
-		Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
-
-		const QDialogButtonBox::StandardButton result = CQuestionDialog::SSave("Schematyc Editor", dialogQuestion.c_str());
-		switch (result)
+		// Revert changes.
+		if (m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
 		{
-		case QDialogButtonBox::Save:
-			{
-				scriptRegistry.SaveScript(*m_pScript);
-				break;
-			}
-		case QDialogButtonBox::Discard:
-			{
-				const stack_string scriptFile = m_pScript->GetFilePath();
-				if (Schematyc::IScript* pReloadedScript = scriptRegistry.LoadScript(scriptFile.c_str()))
-				{
-					// TODO: Recompilation should not happen in editor code t all!
-					gEnv->pSchematyc->GetCompiler().CompileDependencies(pReloadedScript->GetRoot()->GetGUID());
-					gEnv->pSchematyc->GetCompiler().CompileAll();
-					// ~TODO
-				}
+			ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
+			Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
 
-				break;
-			}
-		case QDialogButtonBox::Cancel:
+			const stack_string scriptFile = m_pScript->GetFilePath();
+			if (Schematyc::IScript* pReloadedScript = scriptRegistry.LoadScript(scriptFile.c_str()))
 			{
-				return false;
+				// TODO: Recompilation should not happen in editor code t all!
+				gEnv->pSchematyc->GetCompiler().CompileDependencies(pReloadedScript->GetRoot()->GetGUID());
+				gEnv->pSchematyc->GetCompiler().CompileAll();
+				// ~TODO
 			}
-		default:
-			break;
 		}
-
-		m_pAsset = nullptr;
-		return true;
 	}
 
-	return true;
+	delete m_pModel;
+	m_pModel = nullptr;
+
+	m_pAsset = nullptr;
 }
 
 void CMainWindow::closeEvent(QCloseEvent* pEvent)
