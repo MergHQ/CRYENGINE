@@ -110,10 +110,8 @@ bool CSampleAssetEditor::OnSaveAsset(CEditableAsset& editAsset)
 	return true;
 }
 
-bool CSampleAssetEditor::OnCloseAsset()
+void CSampleAssetEditor::OnCloseAsset()
 {
 	m_pLineEdit->clear();
 	m_pLineEdit->setEnabled(false);
-
-	return true;
 }

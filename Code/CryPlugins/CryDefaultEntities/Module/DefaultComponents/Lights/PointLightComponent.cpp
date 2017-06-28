@@ -90,6 +90,10 @@ namespace Cry
 
 			// Load the light source into the entity
 			m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
+
+			uint32 slotFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
+			UpdateGIModeEntitySlotFlags((uint8)m_options.m_giMode, slotFlags);
+			m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
 		}
 
 		void CPointLightComponent::ProcessEvent(SEntityEvent& event)

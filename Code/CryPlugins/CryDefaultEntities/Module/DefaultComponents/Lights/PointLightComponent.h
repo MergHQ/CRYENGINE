@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DefaultComponents/Geometry/BaseMeshComponent.h"
+
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IShader.h>
 
@@ -14,14 +16,24 @@ namespace Cry
 	namespace DefaultComponents
 	{
 		// Used to indicate the minimum graphical setting for an effect
-		enum class EMiniumSystemSpec
+		enum class ELightGIMode
 		{
-			Disabled = 0,
-			Low,
-			Medium,
-			High,
-			VeryHigh
+			Disabled = IRenderNode::EGIMode::eGM_None,
+			StaticLight = IRenderNode::EGIMode::eGM_StaticVoxelization,
+			DynamicLight = IRenderNode::EGIMode::eGM_DynamicVoxelization,
+			ExcludeForGI = IRenderNode::EGIMode::eGM_HideIfGiIsActive,
 		};
+
+		static void ReflectType(Schematyc::CTypeDesc<ELightGIMode>& desc)
+		{
+			desc.SetGUID("{2DC20597-A17E-4306-A023-B73A6FBDBB3D}"_cry_guid);
+			desc.SetLabel("Global Illumination Mode");
+			desc.SetDefaultValue(ELightGIMode::Disabled);
+			desc.AddConstant(ELightGIMode::Disabled, "None", "Disabled");
+			desc.AddConstant(ELightGIMode::StaticLight, "StaticLight", "Static");
+			desc.AddConstant(ELightGIMode::DynamicLight, "DynamicLight", "Dynamic");
+			desc.AddConstant(ELightGIMode::ExcludeForGI, "ExcludeForGI", "Hide if GI is Active");
+		}
 
 		class CPointLightComponent
 			: public IEntityComponent
@@ -60,6 +72,8 @@ namespace Cry
 				bool m_bAffectsOnlyThisArea = true;
 				bool m_bAmbient = false;
 				Schematyc::Range<0, 10000> m_fogRadialLobe = CDLight().m_fFogRadialLobe;
+
+				ELightGIMode m_giMode = ELightGIMode::Disabled;
 			};
 
 			struct SColor
@@ -111,19 +125,6 @@ namespace Cry
 			SAnimations m_animations;
 		};
 
-		static void ReflectType(Schematyc::CTypeDesc<EMiniumSystemSpec>& desc)
-		{
-			desc.SetGUID("{9DDF8F33-CB8C-4BEE-A539-01BC8DAFED2E}"_cry_guid);
-			desc.SetLabel("Minimum Graphical Setting");
-			desc.SetDescription("Minimum graphical setting to enable an effect");
-			desc.SetDefaultValue(EMiniumSystemSpec::Disabled);
-			desc.AddConstant(EMiniumSystemSpec::Disabled, "None", "None");
-			desc.AddConstant(EMiniumSystemSpec::Low, "Low", "Low");
-			desc.AddConstant(EMiniumSystemSpec::Medium, "Medium", "Medium");
-			desc.AddConstant(EMiniumSystemSpec::High, "High", "High");
-			desc.AddConstant(EMiniumSystemSpec::VeryHigh, "VeryHigh", "VeryHigh");
-		}
-
 		static void ReflectType(Schematyc::CTypeDesc<CPointLightComponent::SOptions>& desc)
 		{
 			desc.SetGUID("{DB10AB64-7A5B-4B91-BC90-6D692D1D1222}"_cry_guid);
@@ -134,6 +135,7 @@ namespace Cry
 			desc.AddMember(&CPointLightComponent::SOptions::m_bAffectsOnlyThisArea, 'area', "OnlyAffectThisArea", "Only Affect This Area", nullptr, true);
 			desc.AddMember(&CPointLightComponent::SOptions::m_bAmbient, 'ambi', "Ambient", "Ambient", nullptr, false);
 			desc.AddMember(&CPointLightComponent::SOptions::m_fogRadialLobe, 'fogr', "FogRadialLobe", "Fog Radial Lobe", nullptr, CDLight().m_fFogRadialLobe);
+			desc.AddMember(&CPointLightComponent::SOptions::m_giMode, 'gimo', "GIMode", "Global Illumination", nullptr, ELightGIMode::Disabled);
 		}
 
 		static 	void ReflectType(Schematyc::CTypeDesc<CPointLightComponent::SColor>& desc)

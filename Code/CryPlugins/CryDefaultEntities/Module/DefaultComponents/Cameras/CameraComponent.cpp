@@ -36,7 +36,7 @@ namespace Cry
 		{
 			desc.SetGUID(CCameraComponent::IID());
 			desc.SetEditorCategory("Cameras");
-			desc.SetLabel("Simple Camera");
+			desc.SetLabel("Camera");
 			desc.SetDescription("Represents a camera that can be activated to render to screen");
 			desc.SetIcon("icons:General/Camera.ico");
 			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });

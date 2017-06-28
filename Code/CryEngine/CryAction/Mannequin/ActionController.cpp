@@ -963,9 +963,9 @@ void CActionController::ValidateActions()
 void CActionController::ResolveActionStates()
 {
 	m_scopeFlushMask &= m_activeScopes;
-	ActionScopes scopeFlag=1;
-	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
+	for (uint32 i = 0; i < m_scopeCount; ++i)
 	{
+		const auto scopeFlag = ActionScopes(1) << i;
 		if (scopeFlag & m_scopeFlushMask)
 		{
 			CActionScope& scope = m_scopeArray[i];
@@ -974,6 +974,17 @@ void CActionController::ResolveActionStates()
 		}
 	}
 	m_scopeFlushMask = 0;
+
+	// Release dangling references.
+	for (uint32 i = 0; i < m_scopeCount; ++i)
+	{
+		const auto scopeFlag = ActionScopes(1) << i;
+		CActionScope& scope = m_scopeArray[i];
+		if (scope.m_pAction && !(scope.m_pAction->m_installedScopeMask & scopeFlag))
+		{
+			scope.m_pAction.reset();
+		}
+	}
 
 	//--- Now delete dead actions
 	for (uint32 i = 0; i < m_endedActions.size(); i++)

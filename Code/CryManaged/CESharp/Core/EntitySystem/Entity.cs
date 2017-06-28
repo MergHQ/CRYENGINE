@@ -2,9 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using CryEngine.Animations;
 using CryEngine.Common;
 using CryEngine.EntitySystem;
-using CryEngine.Animations;
 
 namespace CryEngine
 {
@@ -343,13 +343,117 @@ namespace CryEngine
 		}
 
 		/// <summary>
-		/// Returns the first EntityComponent that matches the specified type. If nothing is found, returns null.
+		/// Returns the first <see cref="EntityComponent"/> that matches the specified type. Returns null if nothing is found.
 		/// </summary>
 		public T GetComponent<T>() where T : EntityComponent
 		{
             var componentTypeInfo = EntityComponent._componentClassMap[typeof(T)];
 
             return NativeInternals.Entity.GetComponent(NativeEntityPointer, componentTypeInfo.guid.hipart, componentTypeInfo.guid.lopart) as T;
+		}
+
+		private EntityComponent[] GetComponents(Type type)
+		{
+			var componentTypeInfo = EntityComponent._componentClassMap[type];
+			var guid = componentTypeInfo.guid;
+
+			EntityComponent[] baseComponents;
+
+			NativeInternals.Entity.GetComponents(NativeEntityPointer, guid.hipart, guid.lopart, out baseComponents);
+
+			return baseComponents;
+		}
+
+		/// <summary>
+		/// Get all components that match the specified type. Returns null if nothing is found.
+		/// </summary>
+		/// <returns>Every <see cref="EntityComponent"/> that matches the type <typeparamref name="T"/>.</returns>
+		/// <typeparam name="T">The type the components have to match.</typeparam>
+		public List<T> GetComponents<T>() where T: EntityComponent
+		{
+			var baseComponents = GetComponents(typeof(T));
+
+			if(baseComponents == null || baseComponents.Length == 0)
+			{
+				return null;
+			}
+
+			var components = new List<T>(baseComponents.Length);
+			foreach(var baseComponent in baseComponents)
+			{
+				var component = baseComponent as T;
+				if(component != null)
+				{
+					components.Add(component);
+				}
+			}
+
+			return components;
+		}
+
+		/// <summary>
+		/// Gets the first <see cref="EntityComponent"/> that implements the specified interface. Returns null if nothing was found.
+		/// </summary>
+		/// <returns>The component with interface.</returns>
+		/// <typeparam name="T">The type of interface that has to be implemented.</typeparam>
+		public T GetComponentWithInterface<T>() where T : class
+		{
+			// Check if the type is an interface here, since generic constraints don't have an option for interfaces.
+			if(!typeof(T).IsInterface)
+			{
+				throw new ArgumentException(string.Format("Class {0} is not an interface! Use GetComponent() for normal classes instead.", typeof(T).Name));
+			}
+
+			var baseComponents = GetComponents(typeof(EntityComponent));
+
+			if(baseComponents == null || baseComponents.Length == 0)
+			{
+				return null;
+			}
+
+			foreach(var baseComponent in baseComponents)
+			{
+				var component = baseComponent as T;
+				if(component != null)
+				{
+					return component;
+				}
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Gets all components that implement the specified interface. Returns null if nothing was found.
+		/// </summary>
+		/// <returns>The components that implement the interface.</returns>
+		/// <typeparam name="T">The type of interface that has to be implemented.</typeparam>
+		public List<T> GetComponentsWithInterface<T>() where T : class
+		{
+			// Check if the type is an interface here, since generic constraints don't have an option for interfaces.
+			if(!typeof(T).IsInterface)
+			{
+				throw new ArgumentException(string.Format("Class {0} is not an interface! Use GetComponents() for normal classes instead.", typeof(T).Name));
+			}
+
+			var baseComponents = GetComponents(typeof(EntityComponent));
+
+			if(baseComponents == null || baseComponents.Length == 0)
+			{
+				return null;
+			}
+
+			var components = new List<T>(baseComponents.Length);
+			foreach(var baseComponent in baseComponents)
+			{
+				var component = baseComponent as T;
+				if(component != null)
+				{
+					components.Add(component);
+				}
+			}
+
+			return components.Count > 0 ? components : null;
 		}
 
 		/// <summary>

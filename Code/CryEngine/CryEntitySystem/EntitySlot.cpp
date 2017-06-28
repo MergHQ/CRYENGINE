@@ -183,9 +183,9 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			uint32 entityFlags = m_pEntity->GetFlags();
 			SetRenderNodeFlags(renderNodeFlags, ERF_DYNAMIC_DISTANCESHADOWS, 0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS));
 
-			SetRenderNodeFlags(renderNodeFlags, ERF_CASTSHADOWMAPS, 0 != (entityFlags & ENTITY_FLAG_CASTSHADOW));
+			SetRenderNodeFlags(renderNodeFlags, ERF_CASTSHADOWMAPS, (0 != (entityFlags & ENTITY_FLAG_CASTSHADOW)) || (0 != (GetFlags() & ENTITY_SLOT_CAST_SHADOW)));
 			SetRenderNodeFlags(renderNodeFlags, ERF_GOOD_OCCLUDER, 0 != (entityFlags & ENTITY_FLAG_GOOD_OCCLUDER));
-			SetRenderNodeFlags(renderNodeFlags, ERF_OUTDOORONLY, 0 != (entityFlags & ENTITY_FLAG_OUTDOORONLY));
+			SetRenderNodeFlags(renderNodeFlags, ERF_OUTDOORONLY, (0 != (entityFlags & ENTITY_FLAG_OUTDOORONLY)) || (0 != (GetFlags() & ENTITY_SLOT_IGNORE_VISAREAS)));
 			SetRenderNodeFlags(renderNodeFlags, ERF_RECVWIND, 0 != (entityFlags & ENTITY_FLAG_RECVWIND));
 			SetRenderNodeFlags(renderNodeFlags, ERF_NO_DECALNODE_DECALS, 0 != (entityFlags & ENTITY_FLAG_NO_DECALNODE_DECALS));
 			SetRenderNodeFlags(renderNodeFlags, ERF_ENABLE_ENTITY_RENDER_CALLBACK, 0 != (entityFlags & ENTITY_FLAG_SEND_RENDER_EVENT));
@@ -194,9 +194,9 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_RENDER_AFTER_POSTPROCESSING, 0 != (GetFlags() & ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING));
 			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_NEAREST, 0 != (GetFlags() & ENTITY_SLOT_RENDER_NEAREST));
 
-			SetRenderNodeFlags(renderNodeFlags, ERF_GI_MODE_BIT0, 0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_GI_MODE_BIT0));
-			SetRenderNodeFlags(renderNodeFlags, ERF_GI_MODE_BIT1, 0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_GI_MODE_BIT1));
-			SetRenderNodeFlags(renderNodeFlags, ERF_GI_MODE_BIT2, 0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_GI_MODE_BIT2));
+			SetRenderNodeFlags(renderNodeFlags, ERF_GI_MODE_BIT0, (0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_GI_MODE_BIT0)) || (0 != (GetFlags() & ENTITY_SLOT_GI_MODE_BIT0)));
+			SetRenderNodeFlags(renderNodeFlags, ERF_GI_MODE_BIT1, (0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_GI_MODE_BIT1)) || (0 != (GetFlags() & ENTITY_SLOT_GI_MODE_BIT1)));
+			SetRenderNodeFlags(renderNodeFlags, ERF_GI_MODE_BIT2, (0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_GI_MODE_BIT2)) || (0 != (GetFlags() & ENTITY_SLOT_GI_MODE_BIT2)));
 
 			if (renderNodeFlags & ERF_CASTSHADOWMAPS)
 				renderNodeFlags |= ERF_HAS_CASTSHADOWMAPS;
@@ -261,11 +261,16 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		m_pRenderNode->Hide(!bSlotShouldRender);
 
-		if (GetFlags() & ENTITY_SLOT_RENDER_NEAREST)
-			m_pRenderNode->SetLodRatio(0); // Use LOD 0 on nearest objects
-		else
-			m_pRenderNode->SetLodRatio(renderNodeParams.lodRatio);
-		m_pRenderNode->SetViewDistRatio(renderNodeParams.viewDistRatio);
+		if ((m_pEntity->GetFlags() & ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO) == 0)
+		{
+			if (GetFlags() & ENTITY_SLOT_RENDER_NEAREST)
+				m_pRenderNode->SetLodRatio(0); // Use LOD 0 on nearest objects
+			else
+				m_pRenderNode->SetLodRatio(renderNodeParams.lodRatio);
+
+			m_pRenderNode->SetViewDistRatio(renderNodeParams.viewDistRatio);
+		}
+
 		m_pRenderNode->SetMinSpec(renderNodeParams.minSpec);
 	}
 }

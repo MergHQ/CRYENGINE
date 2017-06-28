@@ -316,45 +316,45 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 			}
 		}
 
-		// Get flags.
-		bool bGoodOccluder = false; // false by default (do not change, it must be coordinated with editor export)
-		bool bOutdoorOnly = false;
-		bool bNoDecals = false;
-		bool bDynamicDistanceShadows = false;
 		int castShadowMinSpec = CONFIG_LOW_SPEC;
-		int giMode = 0;
-
-		entityNode->getAttr("CastShadowMinSpec", castShadowMinSpec);
-		entityNode->getAttr("GIMode", giMode);
-		entityNode->getAttr("DynamicDistanceShadows", bDynamicDistanceShadows);
-		entityNode->getAttr("GoodOccluder", bGoodOccluder);
-		entityNode->getAttr("OutdoorOnly", bOutdoorOnly);
-		entityNode->getAttr("NoDecals", bNoDecals);
-
-		static const ICVar* const pObjShadowCastSpec = gEnv->pConsole->GetCVar("e_ObjShadowCastSpec");
-		if (castShadowMinSpec <= pObjShadowCastSpec->GetIVal())
+		if (entityNode->getAttr("CastShadowMinSpec", castShadowMinSpec))
 		{
-			spawnParams.nFlags |= ENTITY_FLAG_CASTSHADOW;
+			static const ICVar* const pObjShadowCastSpec = gEnv->pConsole->GetCVar("e_ObjShadowCastSpec");
+			if (castShadowMinSpec <= pObjShadowCastSpec->GetIVal())
+			{
+				spawnParams.nFlags |= ENTITY_FLAG_CASTSHADOW;
+			}
 		}
 
-		if (bDynamicDistanceShadows)
+		int giMode = 0;
+		if (entityNode->getAttr("GIMode", giMode))
+		{
+			spawnParams.nFlagsExtended = (spawnParams.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((giMode << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
+		}
+
+		bool bDynamicDistanceShadows = false;
+		if (entityNode->getAttr("DynamicDistanceShadows", bDynamicDistanceShadows) && bDynamicDistanceShadows)
 		{
 			spawnParams.nFlagsExtended |= ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS;
 		}
-		if (bGoodOccluder)
+
+		bool bGoodOccluder = false; // false by default (do not change, it must be coordinated with editor export)
+		if (entityNode->getAttr("GoodOccluder", bGoodOccluder) && bGoodOccluder)
 		{
 			spawnParams.nFlags |= ENTITY_FLAG_GOOD_OCCLUDER;
 		}
-		if (bOutdoorOnly)
+
+		bool bOutdoorOnly = false;
+		if (entityNode->getAttr("OutdoorOnly", bOutdoorOnly) && bOutdoorOnly)
 		{
 			spawnParams.nFlags |= ENTITY_FLAG_OUTDOORONLY;
 		}
-		if (bNoDecals)
+
+		bool bNoDecals = false;
+		if (entityNode->getAttr("NoDecals", bNoDecals) && bNoDecals)
 		{
 			spawnParams.nFlags |= ENTITY_FLAG_NO_DECALNODE_DECALS;
 		}
-
-		spawnParams.nFlagsExtended = (spawnParams.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((giMode << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
 
 		const char* szArchetypeName = entityNode->getAttr("Archetype");
 		if (szArchetypeName && szArchetypeName[0])
