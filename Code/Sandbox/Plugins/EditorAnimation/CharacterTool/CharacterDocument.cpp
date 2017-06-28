@@ -1959,7 +1959,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 				continue;
 
 			QuatT jointTM = QuatT(m_PhysicalLocation * skeletonPose.GetAbsJointByID(j));
-			IRenderAuxText::DrawLabel(jointTM.t, 1, pJointName);
+			IRenderAuxText::DrawLabel(jointTM.t, m_displayOptions->skeleton.showJointNamesFontSize, pJointName);
 		}
 	}
 
