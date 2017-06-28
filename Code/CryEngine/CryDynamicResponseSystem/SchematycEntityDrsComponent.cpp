@@ -19,19 +19,8 @@ void CSchematycEntityDrsComponent::Initialize()
 	{
 		m_pDrsEntityComp->ReInit((m_nameOverride.empty()) ? nullptr : m_nameOverride.c_str(), (m_globalVariableCollectionToUse.empty()) ? nullptr : m_globalVariableCollectionToUse.c_str());
 	}
-}
 
-void CSchematycEntityDrsComponent::Run(Schematyc::ESimulationMode simulationMode)
-{
-	if (simulationMode != Schematyc::ESimulationMode::Idle && simulationMode != Schematyc::ESimulationMode::Preview)
-	{
-		gEnv->pDynamicResponseSystem->GetSpeakerManager()->AddListener(this);
-	}
-	else if (simulationMode == Schematyc::ESimulationMode::Preview)  //workaround to not keep a drs actor for the preview object...
-	{
-		GetEntity()->RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
-		m_pDrsEntityComp = nullptr;
-	}
+	gEnv->pDynamicResponseSystem->GetSpeakerManager()->AddListener(this);
 }
 
 void CSchematycEntityDrsComponent::OnShutDown()

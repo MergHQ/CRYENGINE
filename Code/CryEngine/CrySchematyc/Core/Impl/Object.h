@@ -165,7 +165,7 @@ private:
 
 	bool SetClass(const CRuntimeClassConstPtr& pClass);
 
-	bool Start(ESimulationMode simulationMode,bool bInitComponents);
+	bool Start(ESimulationMode simulationMode);
 	void Stop(bool bShutDownComponents);
 	void Update(const SUpdateContext& updateContext);
 
@@ -182,8 +182,6 @@ private:
 	void DestroyStateMachines();
 
 	bool CreateComponents();
-	bool InitComponents();
-	void RunComponents(ESimulationMode simulationMode);
 	void ShutdownComponents();
 	void DestroyComponents();
 

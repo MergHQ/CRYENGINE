@@ -93,7 +93,6 @@ public:
 	virtual void                       Initialize() override;
 	virtual uint64                     GetEventMask() const override;
 	virtual void                       ProcessEvent(SEntityEvent& event) override;
-	virtual void                       Run(Schematyc::ESimulationMode simulationMode) override;
 	virtual void                       OnShutDown() override;
 	virtual IEntityComponentPreviewer* GetPreviewer() override;
 	// ~IEntityComponent

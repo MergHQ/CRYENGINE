@@ -43,11 +43,10 @@ public:
 	CSchematycEntityDrsComponent() = default;
 	virtual ~CSchematycEntityDrsComponent() = default;
 
-	// Schematyc::CComponent
+	//IEntityComponent
 	virtual void Initialize() override;
-	virtual void Run(Schematyc::ESimulationMode simulationMode) override;
 	virtual void OnShutDown() override;
-	// ~Schematyc::CComponent
+	// ~IEntityComponent
 
 	// DRS::IResponseManager::IListener
 	virtual void OnSignalProcessingStarted(SSignalInfos& signal, DRS::IResponseInstance* pStartedResponse) override;

@@ -319,7 +319,6 @@ public:
 		IEntityComponent*                  pParent = nullptr;
 		INetworkSpawnParams*               pNetworkSpawnParams = nullptr;
 		EntityComponentFlags               flags;
-		bool                               bNotInitialize = false;
 	};
 
 public:
@@ -369,11 +368,6 @@ protected:
 	//! Requires returning the desired event flag in GetEventMask.
 	//! \param event Event structure, contains event id and parameters.
 	virtual void ProcessEvent(SEntityEvent& event) {}
-
-	//////////////////////////////////////////////////////////////////////////
-	// REMOVE LATER!!! From Schematyc old components
-	virtual void Run(Schematyc::ESimulationMode simulationMode) {}
-	//////////////////////////////////////////////////////////////////////////
 
 public:
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent
@@ -508,8 +502,6 @@ public:
 
 protected:
 	friend class CEntity;
-	// Needs access to Initialize and Run, remove when these depenencies are gone
-	friend class Schematyc::CObject;
 	// Needs access to OnShutDown to maintain legacy game object extension shutdown behavior
 	friend class CGameObject;
 	// Needs access to Run, remove when the function is gone

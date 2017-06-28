@@ -781,19 +781,12 @@ namespace UQS
 			CancelRunningQueriesAndClearFinishedOnes();
 		}
 
-		void CSchematycUqsComponent::Run(Schematyc::ESimulationMode simulationMode)
+		void CSchematycUqsComponent::Initialize()
 		{
 			CancelRunningQueriesAndClearFinishedOnes();
 
-			switch (simulationMode)
-			{
-			case Schematyc::ESimulationMode::Game:
-				{
-					Schematyc::SUpdateParams updateParams(SCHEMATYC_MEMBER_DELEGATE(&CSchematycUqsComponent::Update, *this), m_connectionScope);
-					gEnv->pSchematyc->GetUpdateScheduler().Connect(updateParams);
-					break;
-				}
-			}
+			Schematyc::SUpdateParams updateParams(SCHEMATYC_MEMBER_DELEGATE(&CSchematycUqsComponent::Update, *this), m_connectionScope);
+			gEnv->pSchematyc->GetUpdateScheduler().Connect(updateParams);
 		}
 
 		void CSchematycUqsComponent::OnShutDown()

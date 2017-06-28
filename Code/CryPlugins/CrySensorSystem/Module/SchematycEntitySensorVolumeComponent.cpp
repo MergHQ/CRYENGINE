@@ -133,10 +133,7 @@ void CSchematycEntitySensorVolumeComponent::Initialize()
 	volumeParams.eventListener = SCHEMATYC_MEMBER_DELEGATE(&CSchematycEntitySensorVolumeComponent::OnSensorEvent, *this);
 
 	m_volumeId = CSensorSystem::GetInstance().GetMap().CreateVolume(volumeParams);
-}
 
-void CSchematycEntitySensorVolumeComponent::Run(Schematyc::ESimulationMode simulationMode)
-{
 	// #TODO : Implement enable/disable functionality!!!
 	//if (m_properties.bEnabled)
 	//{

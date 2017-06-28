@@ -797,41 +797,39 @@ public:
 	template<typename ComponentClass>
 	ComponentClass* CreateComponentClass(bool bAllowDuplicate = false);
 
-	//! Helper template function to simplify finding the first component with a specified implementation
+	//! Helper template function to simplify finding the first component implementing the specified component type
+	//! This will traverse the inheritance tree, and is therefore slower than GetComponentByImplementation which simply does an equality check.
 	//! ex: auto pScriptProxy = pEntity->GetComponent<IEntityScriptComponent>();
 	template<typename ComponentType>
 	ComponentType* GetComponent() const
 	{
-		//static_assert(IEntityComponent::IsDeclared<ComponentType>::Check, "Tried to query component  that was not declared with CRY_ENTITY_COMPONENT_INTERFACE, CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS or CRY_ENTITY_COMPONENT_CLASS!");
-
-		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>()));
-	}
-
-	//! Helper template function to simplify finding components with a specified implementation
-	template<typename ComponentType>
-	void GetComponents(DynArray<ComponentType>& components) const
-	{
-		//static_assert(IEntityComponent::IsDeclared<ComponentType>::Check, "Tried to query component  that was not declared with CRY_ENTITY_COMPONENT_INTERFACE, CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS or CRY_ENTITY_COMPONENT_CLASS!");
-
-		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
-		DynArray<IEntityComponent>* pRawComponents = (DynArray<IEntityComponent>*)(void*)components;
-		GetComponentsByTypeId(cryiidof<ComponentType>(), *pRawComponents);
-	}
-
-	//! Helper template to simplify querying components based on interface. Searches each component's hierarchy and returns the first instance that implements ComponentType.
-	template<typename ComponentType>
-	ComponentType* QueryComponentByInterface() const
-	{
 		return static_cast<ComponentType*>(QueryComponentByInterfaceID(cryiidof<ComponentType>()));
 	}
 
-	//! Helper template to simplify querying components based on interface. Searches each component's hierarchy and returns all instances that implements ComponentType.
+	//! Helper template function to simplify finding all components implementing the specified component type
+	//! This will traverse the inheritance tree, and is therefore slower than GetComponentsByImplementation which simply does an equality check.
 	template<typename ComponentType>
-	void QueryComponentsByInterface(DynArray<ComponentType>& components) const
+	void GetComponents(DynArray<ComponentType>& components) const
 	{
 		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
 		DynArray<IEntityComponent>* pRawComponents = (DynArray<IEntityComponent>*)(void*)components;
 		QueryComponentsByInterfaceID(cryiidof<ComponentType>(), *pRawComponents);
+	}
+
+	//! Helper template function to simplify finding the first component of the specified component type, ignores inherited interfaces and classes!
+	template<typename ComponentType>
+	ComponentType* GetComponentByImplementation() const
+	{
+		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>()));
+	}
+
+	//! Helper template function to simplify finding all components of the specified component type, ignores inherited interfaces and classes!
+	template<typename ComponentType>
+	void GetComponentsByImplementation(DynArray<ComponentType>& components) const
+	{
+		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
+		DynArray<IEntityComponent>* pRawComponents = (DynArray<IEntityComponent>*)(void*)components;
+		GetComponentsByTypeId(cryiidof<ComponentType>(), *pRawComponents);
 	}
 
 	//! Creates instances of the components contained in the other entity
