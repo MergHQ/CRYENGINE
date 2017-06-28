@@ -1764,10 +1764,12 @@ void CharacterManager::Update(bool bPaused)
 		g_pAuxGeom->Draw2dLabel(1, g_YLine, 1.3f, fColor, false, "SkeletonUpdates: %d", g_SkeletonUpdates);
 		g_YLine += 16.0f;
 
-		uint32 numFSU = m_arrSkeletonUpdates.size();
+		size_t numFSU = std::count_if(begin(m_arrForceSkeletonUpdates), end(m_arrForceSkeletonUpdates), [](int i) {return i > 0; });
 		g_pAuxGeom->Draw2dLabel(1, g_YLine, 1.3f, fColor, false, "Instances with 'Force Skeleton Update': %d", numFSU);
+
 		g_YLine += 16.0f;
-		for (uint32 i = 0; i < numFSU; i++)
+		const uint32 numInstances = m_arrForceSkeletonUpdates.size();
+		for (uint32 i = 0; i < numInstances; i++)
 		{
 			g_pAuxGeom->Draw2dLabel(1, g_YLine, 1.2f, fColor, false, "Anim:(%d)  Force:(%d)  Visible:(%d)  ModelPath: %s", m_arrAnimPlaying[i], m_arrForceSkeletonUpdates[i], m_arrVisible[i], m_arrSkeletonUpdates[i].c_str());
 			g_YLine += 14.0f;
