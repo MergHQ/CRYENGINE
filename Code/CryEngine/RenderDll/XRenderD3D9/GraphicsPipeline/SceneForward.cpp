@@ -237,8 +237,26 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		}
 		else if (bHair)
 		{
+			psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_TILED_SHADING] |g_HWSR_MaskBit[HWSR_QUALITY1]);
+			if (CRenderer::CV_r_DeferredShadingTiled && CRenderer::CV_r_DeferredShadingTiledHairQuality > 0)
+			{
+				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
+
+				if (CRenderer::CV_r_DeferredShadingTiledHairQuality > 1)
+					psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_QUALITY1];
+			}
+			
 			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-			psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
+			if (shaderFlags2 & EF2_DEPTH_FIXUP)  // Thin hair feature enabled
+			{
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL;
+				psoDesc.m_RenderState |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA | GS_BLALPHA_MIN;
+			}
+			else
+			{
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
+			}
+			
 			pSceneRenderPass = &m_forwardTransparentBWPass;
 		}
 		else if (bAlphaBlended || bOverlay || bEmissive)
