@@ -864,10 +864,10 @@ void CPropertyCtrl::DrawItem(CPropertyItem* item, CDC& dc, CRect& itemRect)
 			pPrevFont = dc.SelectObject(m_pBoldFont);
 		}
 
-		// Indicate that the item is dirty by making the text orange
+		// Indicate that the item is dirty by making the text light grey
 		if (item->IsModified())
 		{
-			dc.SetTextColor(RGB(192, 100, 0));
+			dc.SetTextColor(RGB(192, 192, 192));
 		}
 
 		// Draw text label.
