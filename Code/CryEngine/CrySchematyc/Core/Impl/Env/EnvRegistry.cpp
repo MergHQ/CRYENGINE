@@ -556,7 +556,7 @@ bool CEnvRegistry::ValidateComponentDependencies() const
 		const CEntityComponentClassDesc& componentDesc = component.second->GetDesc();
 		for(const SEntityComponentRequirements& interaction : componentDesc.GetComponentInteractions())
 		{
-			if (interaction.type != SEntityComponentRequirements::EType::SoftDependency && interaction.type != SEntityComponentRequirements::EType::HardDependency)
+			if (interaction.type != SEntityComponentRequirements::EType::HardDependency)
 			{
 				continue;
 			}
