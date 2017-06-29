@@ -16,6 +16,7 @@ namespace EditorSubstance
 		COriginalOutputNode::COriginalOutputNode(const SSubstanceOutput& output, CryGraphEditor::CNodeGraphViewModel& viewModel)
 			: CSubstanceOutputNodeBase(output, viewModel)
 		{
+			SetAcceptsRenaming(true);
 			m_outputType = CSubstanceNodeContentWidget::Standard;
 			for each (auto var in pinNameMap)
 			{

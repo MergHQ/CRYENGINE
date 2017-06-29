@@ -112,5 +112,33 @@ namespace EditorSubstance
 			return nodeType == ESubstanceGraphNodeType::eInput ? "_input" : "_output";
 		}
 
+		void CSubstanceOutputNodeBase::SetName(const QString& name)
+		{
+
+			if (m_name != name)
+			{
+				// naive but working solution to create unique node names if there is a conflict
+				CGraphViewModel& model = static_cast<CGraphViewModel&>(GetViewModel());
+				string baseName(name.toStdString().c_str());
+				string newName = baseName;
+				int startIndex(1);
+				while (!model.IsNameUnique(newName, GetNodeType()))
+				{
+					newName = string().Format("%s_%02d", baseName, startIndex++);
+
+					if (startIndex == 100)
+					{
+						startIndex = 1;
+						baseName += "_";
+					}
+				}
+				
+				model.UpdateNodeCrc(m_name.toStdString().c_str(), newName, GetNodeType());
+				m_name = newName;
+				m_pOutput.name = newName;
+				SignalNameChanged();
+			}
+			
+		}
 	}
 }

@@ -51,6 +51,7 @@ namespace EditorSubstance
 			void                             UpdateNodeCrc(const char* szOldName, const char* szNewName, const ESubstanceGraphNodeType& nodeType);
 			std::vector<SSubstanceOutput*> GetOutputs() const;
 			bool GetShowPreviews() { return m_showPreviews; }
+			bool IsNameUnique(const string& name, const ESubstanceGraphNodeType& nodeType);
 		Q_SIGNALS:
 			void SignalOutputsChanged();
 
