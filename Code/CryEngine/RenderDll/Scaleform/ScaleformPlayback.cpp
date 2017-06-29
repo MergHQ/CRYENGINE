@@ -822,7 +822,7 @@ void CScaleformPlayback::PopExternalRenderTarget()
 
 	pCurOutput->pRenderTarget->Release();
 	if (pCurOutput->pStencilTarget)
-		pCurOutput->pStencilTarget->pTexture->Release();
+		pCurOutput->pStencilTarget->Release();
 
 	m_renderTargetStack.pop_back();
 
@@ -844,19 +844,21 @@ void CScaleformPlayback::PushExternalRenderTarget()
 	sNewOutput.oldViewportHeight = 0;
 	sNewOutput.oldViewportWidth = 0;
 
-	sNewOutput.pRenderTarget = pCur->m_pTex;
-	sNewOutput.pStencilTarget = pCur->m_pSurfDepth;
-
 	// NOTE: this is a hacky workaround for all render-target stack pushed that specify no CTexture
-	if (!pCur->m_pTex && (nStackLevel == 0))
+	if (nStackLevel == 0)
 	{
 		sNewOutput.pRenderTarget = m_pRenderer->GetCurrentTargetOutput();
-//		newElem.pST = m_pRenderer->m_pZTexture;
+		sNewOutput.pStencilTarget = m_pRenderer->GetCurrentDepthOutput();
+	}
+	else
+	{
+		sNewOutput.pRenderTarget = pCur->m_pTex;
+		sNewOutput.pStencilTarget = pCur->m_pSurfDepth ? pCur->m_pSurfDepth->pTexture : nullptr;
 	}
 
 	sNewOutput.pRenderTarget->AddRef();
 	if (sNewOutput.pStencilTarget)
-		sNewOutput.pStencilTarget->pTexture->AddRef();
+		sNewOutput.pStencilTarget->AddRef();
 
 	// Graphics pipeline >= 1
 	{
@@ -868,7 +870,7 @@ void CScaleformPlayback::PushExternalRenderTarget()
 		sNewOutput.bStencilTargetClear = sNewOutput.pStencilTarget && false;
 
 		sNewOutput.renderPass.SetRenderTarget(0, sNewOutput.pRenderTarget);
-		sNewOutput.renderPass.SetDepthTarget(sNewOutput.pStencilTarget ? sNewOutput.pStencilTarget->pTexture : nullptr);
+		sNewOutput.renderPass.SetDepthTarget(sNewOutput.pStencilTarget);
 		sNewOutput.renderPass.SetScissor(params.scissorEnabled, params.scissor);
 		sNewOutput.renderPass.SetViewport(params.viewport);
 		sNewOutput.renderPass.BeginAddingPrimitives();
@@ -914,7 +916,7 @@ void CScaleformPlayback::PopRenderTarget()
 
 	pCurOutput->pRenderTarget->Release();
 	if (pCurOutput->pStencilTarget)
-		pCurOutput->pStencilTarget->pTexture->Release();
+		pCurOutput->pStencilTarget->Release();
 
 	//clear texture slot, may not be required
 	ApplyTextureInfo(0);
@@ -981,7 +983,7 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 	sNewOutput.oldViewportHeight = height;
 	sNewOutput.oldViewportWidth = width;
 	sNewOutput.pRenderTarget = pNewTempRT;
-	sNewOutput.pStencilTarget = pNewTempST;
+	sNewOutput.pStencilTarget = pNewTempST ? pNewTempST->pTexture : nullptr;
 	sNewOutput.bRenderTargetClear = pNewTempRT && wantClear;
 	sNewOutput.bStencilTargetClear = pNewTempST && false;
 
@@ -1003,7 +1005,7 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 		params.viewport = SSF_GlobalDrawParams::_D3DViewPort(0.f, 0.f, float(targetW), float(targetH));
 
 		sNewOutput.renderPass.SetRenderTarget(0, sNewOutput.pRenderTarget);
-		sNewOutput.renderPass.SetDepthTarget(sNewOutput.pStencilTarget ? sNewOutput.pStencilTarget->pTexture : nullptr);
+		sNewOutput.renderPass.SetDepthTarget(sNewOutput.pStencilTarget);
 		sNewOutput.renderPass.SetScissor(params.scissorEnabled, params.scissor);
 		sNewOutput.renderPass.SetViewport(params.viewport);
 		sNewOutput.renderPass.BeginAddingPrimitives();

@@ -318,7 +318,7 @@ void CharacterToolForm::Initialize()
 	EXPECTED(connect(fileMenu->addAction("Resave &AnimSettings..."), SIGNAL(triggered()), this, SLOT(OnFileResaveAnimSettings())));
 
 	QMenu* const importMenu = fileMenu->addMenu(tr("Import FBX"));
-	EXPECTED(connect(importMenu->addAction("Skin"), &QAction::triggered, []() { GetIEditor()->OpenView("Skin"); }));
+	EXPECTED(connect(importMenu->addAction("Skin"), &QAction::triggered, []() { GetIEditor()->OpenView("Mesh"); }));
 	EXPECTED(connect(importMenu->addAction("Animation"), &QAction::triggered, []() { GetIEditor()->OpenView("Animation"); }));
 	EXPECTED(connect(importMenu->addAction("Skeleton"), &QAction::triggered, []() { GetIEditor()->OpenView("Skeleton"); }));
 

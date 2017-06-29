@@ -2595,18 +2595,18 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	rd->m_nRTStackLevel[0] = 0;
 	if (rd->m_d3dsdBackBuffer.Width == rd->m_nativeWidth && rd->m_d3dsdBackBuffer.Height == rd->m_nativeHeight)
 	{
-		rd->m_RTStack[0][0].m_pDepth = rd->m_DepthBufferNative.pSurface;
-		rd->m_RTStack[0][0].m_pSurfDepth = &rd->m_DepthBufferNative;
+		rd->m_RTStack[0][0].m_pDepth = (D3DDepthSurface*)0xDEADBEEF; // rd->m_DepthBufferNative.pSurface;
+		rd->m_RTStack[0][0].m_pSurfDepth = (SDepthTexture*)0xDEADBEEF; // &rd->m_DepthBufferNative;
 	}
 	else if (rd->m_d3dsdBackBuffer.Width == rd->GetWidth() && rd->m_d3dsdBackBuffer.Height == rd->GetHeight())
 	{
-		rd->m_RTStack[0][0].m_pDepth = rd->m_DepthBufferOrig.pSurface;
-		rd->m_RTStack[0][0].m_pSurfDepth = &rd->m_DepthBufferOrig;
+		rd->m_RTStack[0][0].m_pDepth = (D3DDepthSurface*)0xDEADBEEF; // rd->m_DepthBufferOrig.pSurface;
+		rd->m_RTStack[0][0].m_pSurfDepth = (SDepthTexture*)0xDEADBEEF; // &rd->m_DepthBufferOrig;
 	}
 	else
 	{
-		rd->m_RTStack[0][0].m_pDepth = NULL;
-		rd->m_RTStack[0][0].m_pSurfDepth = NULL;
+		rd->m_RTStack[0][0].m_pDepth = (D3DDepthSurface*)0xDEADBEEF; // NULL;
+		rd->m_RTStack[0][0].m_pSurfDepth = (SDepthTexture*)0xDEADBEEF; // NULL;
 	}
 	rd->m_RTStack[0][0].m_pTarget = (D3DSurface*)0xDEADBEEF; // rd->m_pBackBuffer;
 	rd->m_RTStack[0][0].m_Width = rd->m_d3dsdBackBuffer.Width;

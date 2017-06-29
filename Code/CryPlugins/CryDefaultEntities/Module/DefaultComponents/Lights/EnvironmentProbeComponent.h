@@ -260,16 +260,14 @@ namespace Cry
 				}
 			}
 
-			virtual bool GetCubemapTextures(const char* path, ITexture** pSpecular, ITexture** pDiffuse) const
+			virtual bool GetCubemapTextures(const char* path, ITexture** pSpecular, ITexture** pDiffuse, bool bLoadFromDisk = true) const
 			{
-				stack_string specularCubemap = path;
+				stack_string specularCubemap = PathUtil::ReplaceExtension(path, ".dds");
 
-				stack_string sSpecularName(specularCubemap);
-				int strIndex = sSpecularName.find("_diff");
+				int strIndex = specularCubemap.find("_diff");
 				if (strIndex >= 0)
 				{
-					sSpecularName = sSpecularName.substr(0, strIndex) + sSpecularName.substr(strIndex + 5, sSpecularName.length());
-					specularCubemap = sSpecularName.c_str();
+					specularCubemap = specularCubemap.substr(0, strIndex) + specularCubemap.substr(strIndex + 5, specularCubemap.length());
 				}
 
 				char diffuseCubemap[ICryPak::g_nMaxPath];
@@ -280,16 +278,30 @@ namespace Cry
 				stack_string specularCubemapUnix = PathUtil::ToUnixPath(specularCubemap.c_str());
 				stack_string diffuseCubemapUnix = PathUtil::ToUnixPath(diffuseCubemap);
 
-				*pSpecular = gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix, FT_DONT_STREAM);
-				*pDiffuse = gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix, FT_DONT_STREAM);
+				if (bLoadFromDisk)
+				{
+					if (!gEnv->pCryPak->IsFileExist(specularCubemapUnix) || !gEnv->pCryPak->IsFileExist(diffuseCubemapUnix))
+					{
+						CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load cube map for environment probe component attached to entity %s!", m_pEntity->GetName());
+						return false;
+					}
 
-				if (*pSpecular == nullptr)
+					*pSpecular = gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix, FT_DONT_STREAM);
+					*pDiffuse = gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix, FT_DONT_STREAM);
+				}
+				else
+				{
+					*pSpecular = gEnv->pRenderer->EF_GetTextureByName(specularCubemapUnix, FT_DONT_STREAM);
+					*pDiffuse = gEnv->pRenderer->EF_GetTextureByName(diffuseCubemapUnix, FT_DONT_STREAM);
+				}
+				
+				if (*pSpecular == nullptr || !(*pSpecular)->IsTextureLoaded())
 				{
 					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load specular cube map for environment probe component attached to entity %s!", m_pEntity->GetName());
 					return false;
 				}
 
-				if (*pDiffuse == nullptr)
+				if (*pDiffuse == nullptr || !(*pDiffuse)->IsTextureLoaded())
 				{
 					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to load diffuse cube map for environment probe component attached to entity %s!", m_pEntity->GetName());
 					return false;
@@ -350,10 +362,6 @@ namespace Cry
 
 				light.SetAnimSpeed(0.f);
 				light.m_fProjectorNearPlane = 0.f;
-
-				// When the textures remains the same, reference count of their resources should be bigger than 1 now,
-				// so light resources can be dropped without releasing textures
-				light.DropResources();
 
 				light.SetSpecularCubemap(pSpecular);
 				light.SetDiffuseCubemap(pDiffuse);

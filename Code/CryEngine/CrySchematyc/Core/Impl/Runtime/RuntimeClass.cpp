@@ -509,7 +509,8 @@ void CRuntimeClass::FinalizeComponentInstances()
 						m_componentInstances[otherComponentInstanceIdx].componentTypeGUID == componentInteraction.guid)
 					{
 						componentInstanceSortRef.dependencies.push_back(otherComponentInstanceIdx);
-						break;
+						if (componentInteraction.type == SEntityComponentRequirements::EType::HardDependency)
+							break;
 					}
 				}
 			}

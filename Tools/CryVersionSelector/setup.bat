@@ -7,9 +7,9 @@ REM  c:\Python35\Scripts\pip.exe install PyInstaller
 
 
 REM Build CrySelect
-c:\Python35\Scripts\PyInstaller.exe cryselect.py --onefile --icon editor_icon16.ico
+c:\Python35\Scripts\PyInstaller.exe cryselect.py --onefile --icon editor_icon16.ico --clean
 copy /Y dist\cryselect.exe cryselect.exe
 
 REM Build CryRun
-c:\Python35\Scripts\PyInstaller.exe cryrun.py crysolutiongenerator.py --onefile --icon editor_icon16.ico
+c:\Python35\Scripts\PyInstaller.exe cryrun.py --onefile --icon editor_icon16.ico --clean
 copy /Y dist\cryrun.exe cryrun.exe

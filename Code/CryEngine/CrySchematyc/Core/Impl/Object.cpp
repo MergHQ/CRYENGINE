@@ -86,7 +86,7 @@ bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const
 	m_pCustomData = pCustomData;
 	m_pProperties = pProperties;
 
-	if (!Start(simulationMode, true))
+	if (!Start(simulationMode))
 	{
 		return false;
 	}
@@ -132,7 +132,7 @@ bool CObject::Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPoli
 				SetClass(pClass);
 			}
 
-			if (!Start(simulationMode, true))
+			if (!Start(simulationMode))
 			{
 				Stop(false);
 				return false;
@@ -357,7 +357,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	return true;
 }
 
-bool CObject::Start(ESimulationMode simulationMode, bool bInitComponents)
+bool CObject::Start(ESimulationMode simulationMode)
 {
 	m_scratchpad = m_pClass->GetScratchpad();
 
@@ -368,14 +368,6 @@ bool CObject::Start(ESimulationMode simulationMode, bool bInitComponents)
 		return false;
 	}
 
-	if (bInitComponents)
-	{
-		if (!InitComponents())
-		{
-			return false;
-		}
-	}
-
 	if (!InitActions())
 	{
 		return false;
@@ -384,11 +376,6 @@ bool CObject::Start(ESimulationMode simulationMode, bool bInitComponents)
 	m_simulationMode = simulationMode;
 
 	ExecuteConstructors(simulationMode);
-
-	if (bInitComponents)
-	{
-		RunComponents(simulationMode);
-	}
 
 	switch (simulationMode)
 	{
@@ -459,26 +446,6 @@ void CObject::ResetGraphs()
 
 bool CObject::ReadProperties()
 {
-	const RuntimeClassComponentInstances& classComponentInstances = m_pClass->GetComponentInstances();
-	for (uint32 componentIdx = 0, componentCount = m_components.size(); componentIdx < componentCount; ++componentIdx)
-	{
-		SComponent& component = m_components[componentIdx];
-
-		bool bPublicPropertiesApplied = false;
-		if (m_pProperties && component.classComponentInstance.bPublic)
-		{
-			const CClassProperties* pCompProperties = m_pProperties->GetComponentProperties(component.classComponentInstance.guid);
-			if (pCompProperties)
-			{
-				bPublicPropertiesApplied = pCompProperties->Apply(component.classDesc, component.pComponent.get());
-			}
-		}
-		if (!bPublicPropertiesApplied)
-		{
-			classComponentInstances[componentIdx].properties.Apply(component.classDesc, component.pComponent.get());
-		}
-	}
-
 	if (m_pProperties)
 	{
 		for (const SRuntimeClassVariable& variable : m_pClass->GetVariables())
@@ -610,8 +577,9 @@ bool CObject::CreateComponents()
 	// Add Created components to the Entity
 	if (IEntity* pEntity = GetEntity())
 	{
-		for (SComponent& component : m_components)
+		for (auto componentIt = m_components.begin(), end = m_components.end(); componentIt != end; ++componentIt)
 		{
+			SComponent& component = *componentIt;
 			IEntityComponent* pParent = component.classComponentInstance.parentIdx != InvalidIdx ? m_components[component.classComponentInstance.parentIdx].pComponent.get() : nullptr;
 
 			const CEntityComponentClassDesc& classDesc = static_cast<const CEntityComponentClassDesc&>(component.classDesc);
@@ -628,6 +596,23 @@ bool CObject::CreateComponents()
 				transform = component.classComponentInstance.transform;
 			}
 
+			// Read properties
+			bool bPublicPropertiesApplied = false;
+			if (m_pProperties && component.classComponentInstance.bPublic)
+			{
+				const CClassProperties* pCompProperties = m_pProperties->GetComponentProperties(component.classComponentInstance.guid);
+				if (pCompProperties)
+				{
+					bPublicPropertiesApplied = pCompProperties->Apply(component.classDesc, component.pComponent.get());
+				}
+			}
+			if (!bPublicPropertiesApplied)
+			{
+				size_t componentIdx = std::distance(m_components.begin(), componentIt);
+				classComponentInstances[componentIdx].properties.Apply(component.classDesc, component.pComponent.get());
+			}
+
+			// Add the component
 			IEntityComponent::SInitParams initParams(
 			  pEntity,
 			  component.classComponentInstance.guid,
@@ -637,34 +622,12 @@ bool CObject::CreateComponents()
 			  pParent,
 			  transform
 			  );
-			initParams.bNotInitialize = true;
-			GetEntity()->AddComponent(component.classDesc.GetGUID(), component.pComponent, true, &initParams);
+
+			pEntity->AddComponent(component.classDesc.GetGUID(), component.pComponent, true, &initParams);
 		}
 	}
 
 	return true;
-}
-
-bool CObject::InitComponents()
-{
-	IEntity* pEntity = GetEntity();
-	if (!pEntity)
-		return false;
-
-	for (SComponent& component : m_components)
-	{
-		component.pComponent->Initialize();
-	}
-
-	return true;
-}
-
-void CObject::RunComponents(ESimulationMode simulationMode)
-{
-	for (SComponent& component : m_components)
-	{
-		component.pComponent->Run(simulationMode);
-	}
 }
 
 void CObject::ShutdownComponents()
