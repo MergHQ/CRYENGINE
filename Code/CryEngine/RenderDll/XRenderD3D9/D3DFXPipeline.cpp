@@ -1551,7 +1551,7 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDe
 	// NOTE: bottom of the stack is always the active swap-chain back-buffer
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
+		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pCur->m_pDepth == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
 	}
 #endif
 
@@ -1653,7 +1653,7 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, CTexture* pTarget, SDepthTex
 	// NOTE: bottom of the stack is always the active swap-chain back-buffer
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
+		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pCur->m_pDepth == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
 	}
 #endif
 
@@ -1722,7 +1722,7 @@ bool CD3D9Renderer::FX_RestoreRenderTarget(int nTarget)
 #ifdef _DEBUG
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
+		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pCur->m_pDepth == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
 	}
 #endif
 
