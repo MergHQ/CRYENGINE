@@ -1180,7 +1180,6 @@ void CEntity::UpdateComponentEventMask(const IEntityComponent* pComponent)
 		    if (componentRecord.pComponent && (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0)
 		    {
 		      m_bRequiresComponentUpdate = 1;
-		      ActivateEntityIfNecessary();
 		      break;
 		    }
 		  }
@@ -1209,9 +1208,8 @@ void CEntity::OnComponentMaskChanged(const IEntityComponent& component, uint64 n
 	if (m_bRequiresComponentUpdate == 0 && newMask & BIT64(ENTITY_EVENT_UPDATE))
 	{
 		m_bRequiresComponentUpdate = 1;
-
-		ActivateEntityIfNecessary();
 	}
+	ActivateEntityIfNecessary();
 }
 
 //////////////////////////////////////////////////////////////////////////

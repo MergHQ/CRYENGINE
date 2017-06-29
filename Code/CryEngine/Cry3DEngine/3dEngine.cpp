@@ -768,6 +768,7 @@ void C3DEngine::ProcessCVarsChange()
 	  GetCVars()->e_ViewDistMin +
 	  GetCVars()->e_ViewDistRatioDetail +
 	  GetCVars()->e_ViewDistRatioVegetation +
+	  GetCVars()->e_ViewDistRatioLights +
 	  GetCVars()->e_DefaultMaterial +
 	  GetCVars()->e_VegetationSpritesDistanceRatio +
 	  GetCVars()->e_VegetationSpritesDistanceCustomRatioMin +

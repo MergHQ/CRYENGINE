@@ -135,8 +135,8 @@ struct SRenderParameters
 
 	EMiniumSystemSpec m_castShadowSpec = EMiniumSystemSpec::Always;
 	bool m_bIgnoreVisAreas = false;
-	Schematyc::Range<0, 100, 0, 100, int> m_viewDistanceRatio = 0;
-	Schematyc::Range<0, 100, 0, 100, int> m_lodDistance = 0;
+	Schematyc::Range<0, 100, 0, 100, int> m_viewDistanceRatio = 100;
+	Schematyc::Range<0, 100, 0, 100, int> m_lodDistance = 100;
 	EMeshGIMode m_giMode = EMeshGIMode::Disabled;
 };
 
@@ -145,8 +145,8 @@ static void ReflectType(Schematyc::CTypeDesc<SRenderParameters>& desc)
 	desc.SetGUID("{291C60F6-A493-41B3-AC63-B9E0187DC074}"_cry_guid);
 	desc.AddMember(&SRenderParameters::m_castShadowSpec, 'shad', "ShadowSpec", "Minimum Shadow Graphics", "Minimum graphical setting to cast shadows from this light", EMiniumSystemSpec::Always);
 	desc.AddMember(&SRenderParameters::m_bIgnoreVisAreas, 'visa', "IgnoreVisArea", "Ignore Visareas", "Whether this component will ignore vis areas", false);
-	desc.AddMember(&SRenderParameters::m_viewDistanceRatio, 'view', "ViewDistRatio", "View Distance", "View distance from 0 to 100, 100 being always visible", 0);
-	desc.AddMember(&SRenderParameters::m_lodDistance, 'lodd', "LODDistance", "LOD Distance", "Level of Detail distance from 0 to 100, 100 being always best LOD", 0);
+	desc.AddMember(&SRenderParameters::m_viewDistanceRatio, 'view', "ViewDistRatio", "View Distance", "View distance from 0 to 100, 100 being always visible", 100);
+	desc.AddMember(&SRenderParameters::m_lodDistance, 'lodd', "LODDistance", "LOD Distance", "Level of Detail distance from 0 to 100, 100 being always best LOD", 100);
 	desc.AddMember(&SRenderParameters::m_giMode, 'gimo', "GIMode", "Global Illumination", "Type of SVOGI to use", EMeshGIMode::Disabled);
 }
 
