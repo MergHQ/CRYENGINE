@@ -327,6 +327,7 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 		if (m_nRTStackLevel[0] == 0)
 		{
 			assert(m_pNewTarget[0]->m_pTarget == (D3DSurface*)0xDEADBEEF);
+			assert(m_pNewTarget[0]->m_pDepth  == (D3DDepthSurface*)0xDEADBEEF);
 			assert(m_pNewTarget[1]->m_pTarget == nullptr);
 
 			assert(nNumViews == 1);
@@ -335,7 +336,7 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 			pDSV    = GetCurrentDepthOutput()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
 
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-			GetDeviceContext().OMSetRenderTargets(1, pRTV, pDSV);
+			GetDeviceContext().OMSetRenderTargets(1, pRTV, !m_pActiveContext || m_pActiveContext->m_bMainViewport ? pDSV : nullptr);
 #endif
 		}
 		else
@@ -606,15 +607,26 @@ void CD3D9Renderer::FX_ClearTargets()
 			const float fClearDepth   = (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) ? 1.0f - m_pNewTarget[0]->m_fReqDepth : m_pNewTarget[0]->m_fReqDepth;
 			const uint8 nClearStencil = m_pNewTarget[0]->m_nReqStencil;
 			const int nFlags          = m_pNewTarget[0]->m_ClearFlags & ~CLEAR_RTARGET;
+			
+			assert((
+				  (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
+				  (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
+				  ) == nFlags);
 
 			// NOTE: bottom of the stack is always the active swap-chain back-buffer
 			if (m_nRTStackLevel[0] == 0)
 			{
 				assert(m_pNewTarget[0]->m_pTarget == (D3DSurface*)0xDEADBEEF);
+				assert(m_pNewTarget[0]->m_pDepth  == (D3DDepthSurface*)0xDEADBEEF);
 				assert(m_pNewTarget[1]->m_pTarget == nullptr);
 
 				// NOTE: optimal value is "black"
 				commandList.GetGraphicsInterface()->ClearSurface(GetCurrentTargetOutput()->GetDevTexture()->LookupRTV(EDefaultResourceViews::RenderTarget), m_pNewTarget[0]->m_ReqColor);
+
+				if (nFlags)
+				{
+					commandList.GetGraphicsInterface()->ClearSurface(GetCurrentDepthOutput()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), nFlags, fClearDepth, nClearStencil);
+				}
 			}
 			else
 			{
@@ -630,17 +642,11 @@ void CD3D9Renderer::FX_ClearTargets()
 						}
 					}
 				}
-			}
 
-			assert((
-				  (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
-				  (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
-				  ) == nFlags);
-
-			if (nFlags)
-			{
-				assert(m_pNewTarget[0]->m_pDepth);
-				commandList.GetGraphicsInterface()->ClearSurface(m_pNewTarget[0]->m_pDepth, nFlags, fClearDepth, nClearStencil);
+				if ((m_pNewTarget[0]->m_pDepth != NULL) && (nFlags))
+				{
+					commandList.GetGraphicsInterface()->ClearSurface(m_pNewTarget[0]->m_pDepth, nFlags, fClearDepth, nClearStencil);
+				}
 			}
 		}
 
@@ -656,6 +662,7 @@ void CD3D9Renderer::FX_ClearTargets()
 			if (m_nRTStackLevel[0] == 0)
 			{
 				assert(m_pNewTarget[0]->m_pTarget == (D3DSurface*)0xDEADBEEF);
+				assert(m_pNewTarget[0]->m_pDepth  == (D3DDepthSurface*)0xDEADBEEF);
 				assert(m_pNewTarget[1]->m_pTarget == nullptr);
 
 				m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
@@ -1528,7 +1535,7 @@ bool CD3D9Renderer::FX_GetTargetSurfaces(CTexture* pTarget, D3DSurface*& pTargSu
 
 bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDepthTexture* pDepthTarget, uint32 nTileCount)
 {
-	assert(!nTarget || pTargetSurf == (D3DSurface*)0xDEADBEEF);
+	assert(!nTarget || (pTargetSurf == (D3DSurface*)0xDEADBEEF && pDepthTarget == (SDepthTexture*)0xDEADBEEF));
 	if (nTarget >= RT_STACK_WIDTH || m_nRTStackLevel[nTarget] >= MAX_RT_STACK)
 		return false;
 
@@ -1538,13 +1545,13 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDe
 	pCur->m_pTarget    = pTargetSurf;
 	pCur->m_pTex       = nullptr;
 	pCur->m_pSurfDepth = pDepthTarget;
-	pCur->m_pDepth     = pDepthTarget ? pDepthTarget->pSurface : nullptr;
+	pCur->m_pDepth     = pDepthTarget ? (pDepthTarget == (SDepthTexture*)0xDEADBEEF ? (D3DDepthSurface*)0xDEADBEEF : pDepthTarget->pSurface) : nullptr;
 
 #ifdef _DEBUG
 	// NOTE: bottom of the stack is always the active swap-chain back-buffer
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == nullptr || pCur->m_pDepth == m_DepthBufferNative.pSurface));
+		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
 	}
 #endif
 
@@ -1565,7 +1572,7 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDe
 bool CD3D9Renderer::FX_PushRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDepthTexture* pDepthTarget, uint32 nTileCount)
 {
 	assert(m_pRT->IsRenderThread());
-	assert(!nTarget || pTargetSurf == (D3DSurface*)0xDEADBEEF);
+	assert(!nTarget || (pTargetSurf == (D3DSurface*)0xDEADBEEF && pDepthTarget == (SDepthTexture*)0xDEADBEEF));
 	if (nTarget >= RT_STACK_WIDTH || m_nRTStackLevel[nTarget] >= MAX_RT_STACK)
 		return false;
 
@@ -1640,13 +1647,13 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, CTexture* pTarget, SDepthTex
 	pCur->m_pTarget        = pTargSurf;
 	pCur->m_pTex           = nullptr;
 	pCur->m_pSurfDepth     = pDepthTarget;
-	pCur->m_pDepth         = pDepthTarget ? pDepthTarget->pSurface : NULL;
+	pCur->m_pDepth         = pDepthTarget ? (pDepthTarget == (SDepthTexture*)0xDEADBEEF ? (D3DDepthSurface*)0xDEADBEEF : pDepthTarget->pSurface) : nullptr;
 
 #ifdef _DEBUG
 	// NOTE: bottom of the stack is always the active swap-chain back-buffer
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == nullptr || pCur->m_pDepth == m_DepthBufferNative.pSurface));
+		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
 	}
 #endif
 
@@ -1715,7 +1722,7 @@ bool CD3D9Renderer::FX_RestoreRenderTarget(int nTarget)
 #ifdef _DEBUG
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pCur->m_pDepth == nullptr || pCur->m_pDepth == m_DepthBufferNative.pSurface));
+		assert((pCur->m_pTarget == (D3DSurface*)0xDEADBEEF /*|| pCur->m_pTarget == m_pBackBuffer*/) && (pDepthTarget == (SDepthTexture*)0xDEADBEEF /*|| pCur->m_pDepth == m_DepthBufferNative.pSurface*/));
 	}
 #endif
 

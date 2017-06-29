@@ -1195,11 +1195,14 @@ void CTexture::Apply(int nTUnit, SamplerStateHandle nState /*= EDefaultSamplerSt
 		if (rd->m_nRTStackLevel[0] == 0)
 		{
 			assert(rd->m_pNewTarget[0]->m_pTarget == (D3DSurface*)0xDEADBEEF);
+			assert(rd->m_pNewTarget[0]->m_pDepth  == (D3DDepthSurface*)0xDEADBEEF);
 			assert(rd->m_pNewTarget[1]->m_pTarget == nullptr);
 			
 			D3DSurface* pRTV = rd->GetCurrentTargetOutput()->GetDevTexture()->LookupRTV(EDefaultResourceViews::RenderTarget);
+			D3DDepthSurface* pDSV = rd->GetCurrentDepthOutput()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
+
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-			rd->GetDeviceContext().OMSetRenderTargets(1, &pRTV, rd->m_pNewTarget[0]->m_pDepth);
+			rd->GetDeviceContext().OMSetRenderTargets(1, &pRTV, !rd->m_pActiveContext || rd->m_pActiveContext->m_bMainViewport ? pDSV : nullptr);
 #endif
 		}
 		else
