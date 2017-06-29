@@ -912,8 +912,6 @@ void C3DEngine::ShutDown()
 	{
 		CryFatalError("C3DEngine::Shutdown() could not shutdown temporary pool");
 	}
-
-	COctreeNode::DeallocateRenderContentQueue();
 }
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
