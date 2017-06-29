@@ -55,14 +55,29 @@ void CNodeItem::Serialize(Serialization::IArchive& archive)
 	Schematyc::SSerializationContextParams serializationContextParams(archive, serPass);
 	Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serializationContextParams);
 
-	m_scriptNode.Serialize(archive);
-	if (archive.isInput())
+	if (archive.isOutput() && archive.isEdit())
 	{
 		Refresh(true);
 
 		// TODO: This should happen in Serialize(...) function not here.
 		gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptNode.GetGraph().GetElement());
 		// ~TODO
+	}
+
+	m_scriptNode.Serialize(archive);
+	
+	if (archive.isInput())
+	{
+		// We only want to do an immediate refresh if the change doesn't come from
+		// the editor. Otherwise we wait for the output serialization pass.
+		if (!archive.isEdit())
+		{
+			Refresh(true);
+
+			// TODO: This should happen in Serialize(...) function not here.
+			gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptNode.GetGraph().GetElement());
+			// ~TODO
+		}
 
 		Validate();
 	}

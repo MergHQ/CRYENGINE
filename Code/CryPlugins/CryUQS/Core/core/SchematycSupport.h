@@ -428,7 +428,7 @@ namespace UQS
 			                                                    ~CSchematycUqsComponent();
 
 			// IEntityComponent
-			virtual void                                        Run(Schematyc::ESimulationMode simulationMode) override;
+			virtual void                                        Initialize() override;
 			virtual void                                        OnShutDown() override;
 			// ~IEntityComponent
 

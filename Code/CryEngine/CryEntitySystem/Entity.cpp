@@ -1556,7 +1556,7 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 		{
 			// Only user created components, should create components, otherwise component should be created by entity class or Schematyc objects
 			IEntityComponent::SInitParams initParams(this, CryGUID(), "", nullptr, EEntityComponentFlags::None, nullptr, nullptr);
-			pComponent = AddComponent(componentTypeId, std::shared_ptr<IEntityComponent>(), false, &initParams);
+			pComponent = AddComponent(componentTypeId, std::shared_ptr<IEntityComponent>(), true, &initParams);
 		}
 	}
 
@@ -1769,6 +1769,18 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 		}
 	}
 
+	// Assign type GUID, since the function could've been called with an interface identifier
+	// First check if the new unified class GUID is present
+	if (pInitParams != nullptr && pInitParams->classDesc != nullptr && !pInitParams->classDesc->GetGUID().IsNull())
+	{
+		typeId = pInitParams->classDesc->GetGUID();
+	}
+	// Fall back to checking if the legacy factory is present
+	else if (ICryFactory* pFactory = pComponent->GetFactory())
+	{
+		typeId = pFactory->GetClassID();
+	}
+
 	bool bExist = false;
 	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
@@ -1823,10 +1835,7 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	m_components.Add(componentRecord);
 
 	// Call initialization of the component
-	if (!pInitParams || !pInitParams->bNotInitialize)
-	{
-		pComponent->Initialize();
-	}
+	pComponent->Initialize();
 
 	return pComponent.get();
 }

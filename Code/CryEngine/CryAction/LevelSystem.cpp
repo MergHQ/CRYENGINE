@@ -1732,9 +1732,6 @@ void CLevelSystem::OnLoadingComplete(ILevelInfo* pLevelInfo)
 		{
 			(*it)->OnLoadingComplete(pLevelInfo);
 		}
-
-		SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
-		gEnv->pEntitySystem->SendEventToAll(loadingCompleteEvent);
 	}
 }
 
