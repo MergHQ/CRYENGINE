@@ -169,7 +169,7 @@ struct SSF_GlobalDrawParams
 
 		// Backups for GraphicsPipeline = 0
 		CTexture* pRenderTarget;
-		SDepthTexture* pStencilTarget;
+		CTexture* pStencilTarget;
 		Matrix44 oldViewMat;
 		int oldViewportWidth;
 		int oldViewportHeight;
