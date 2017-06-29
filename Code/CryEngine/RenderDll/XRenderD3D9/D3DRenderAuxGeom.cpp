@@ -1033,6 +1033,8 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 {
 	if (!CV_r_auxGeom)
 		return;
+	if ((begin == end) && data.m_pData->m_TextMessages.empty())
+		return;
 
 	CStandardGraphicsPipeline::SwitchFromLegacyPipeline();
 
@@ -1236,6 +1238,9 @@ void CRenderAuxGeomD3D::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, 
 
 void CRenderAuxGeomD3D::FlushTextMessages(CTextMessages& messages, bool reset)
 {
+	if (messages.empty())
+		return;
+
 	CStandardGraphicsPipeline::SwitchFromLegacyPipeline();
 
 	FlushTextMessagesInternal(messages, reset);
