@@ -231,10 +231,12 @@ vert2FragHair HairVS(app2vertGeneral IN)
  
   OUT.Common.vBinormal.w = 1.0 / 0.5;// AlphaTest.w;
 
-#if !%_RT_PER_INSTANCE_CB_TEMP
 #if %THIN_HAIR && THIN_HAIR_SHADOWS && THIN_HAIR_VS_SHADOWS
-	OUT.SunShadow = 1-ShadowDepthTest(vertPassPos.WorldPos);
-#endif
+	#if !%_RT_PER_INSTANCE_CB_TEMP
+		OUT.SunShadow = 1 - ShadowDepthTest(vertPassPos.WorldPos);
+	#else
+		OUT.SunShadow = 1 - Fwd_SampleSunShadowMaps(vertPassPos.WorldPos);
+	#endif
 #endif
 
   return OUT;
@@ -356,13 +358,18 @@ float4 HairShading(vert2FragHair IN, bool bOpaquePass)
 	attribs.custom.tangentSec = ShiftVector(hairDir.xyz, attribs.normal.xyz * IN.Common.vTangent.w, shiftAmount + SecondaryHighlightShiftAmount);
 	
 	// Soft intersection
-#if !%_RT_PER_INSTANCE_CB_TEMP
 	if (SoftIntersection > 0)
 	{
-		float depthDiff = abs(IN.Common.screenProj.w - GetLinearDepthScaledProj(sceneLinearDepthTex, IN.Common.screenProj));
+#if !%_RT_PER_INSTANCE_CB_TEMP
+		float fDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.Common.screenProj);
+#else
+		float2 tcProj = (IN.Common.screenProj.xy / IN.Common.screenProj.w);
+		int3 vPixCoord = int3(max(min(tcProj * CV_ScreenSize.xy, CV_ScreenSize.xy - float2(1.0f, 1.0f)), float2(0.0f, 0.0f)), 0);
+		float fDepth = Fwd_SceneDepth.Load(vPixCoord).x * CV_NearFarClipDist.y;
+#endif
+		float depthDiff = abs(IN.Common.screenProj.w - fDepth);
 		fAlpha *= saturate(lerp(1, saturate(depthDiff * 100), SoftIntersection));
 	}
-#endif
 	
 	half3 diffuseAcc = 0;
 	half3 specularAcc = 0;
@@ -388,6 +395,25 @@ float4 HairShading(vert2FragHair IN, bool bOpaquePass)
 		else
 		{
 			shadowOccl = 1 - ShadowDepthTest(IN.Common.vView.xyz + GetWorldViewPos());
+		}
+	#endif
+#else
+	#if %THIN_HAIR && THIN_HAIR_SHADOWS
+		#if THIN_HAIR_VS_SHADOWS
+			if (!bOpaquePass)
+				shadowOccl = IN.SunShadow;
+		#else
+			shadowOccl = Fwd_SampleSunShadowMaps(IN.Common.vView.xyz + GetWorldViewPos());
+		#endif
+	#else
+		if (bOpaquePass)
+		{
+			int4 vPixCoord = int4(attribs.screenUV * CV_ScreenSize.xy, 0, 0);
+			shadowOccl = Fwd_SunShadowMask.Load(vPixCoord).r;
+		}
+		else
+		{
+			shadowOccl = Fwd_SampleSunShadowMaps(IN.Common.vView.xyz + GetWorldViewPos());
 		}
 	#endif
 #endif

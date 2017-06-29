@@ -124,7 +124,7 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
   float fGeomDepth = IN.WPos.w * CV_NearFarClipDist.w;
   float fSceneDepth = GetLinearDepth(linearDepthTex, int2(IN.WPos.xy));
 
-  if (fGeomDepth > fSceneDepth)
+  if (fGeomDepth > fSceneDepth * 1.001)
   {
     // set the fragment as occluded in regular scene
     selectionID |= HIDDEN_FLAG;
