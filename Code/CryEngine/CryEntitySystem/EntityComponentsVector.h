@@ -15,6 +15,18 @@ struct SEntityComponentRecord
 	uint64                            registeredEventsMask; //!< Bitmask of the EEntityEvent values
 	CryInterfaceID                    typeId;               //!< Interface IDD for the registered component.
 	std::shared_ptr<IEntityComponent> pComponent;           //!< Pointer to the owned component, Only the entity owns the component life time
+
+	// Mark the component was removed
+	// This is done since we are not always able to remove the record from storage immediately
+	void Invalidate()
+	{
+		pComponent.reset();
+		// Clear the event mask, to avoid any events being sent to the component
+		registeredEventsMask = 0;
+	}
+
+	// Check whether the component has been removed
+	bool IsValid() const { return pComponent != nullptr; }
 };
 
 //! Main listener collection class used in conjunction with CEntityComponentsIterator.
@@ -67,7 +79,7 @@ public:
 				{
 					m_sortingValid = false;
 					// Mark for cleanup
-					iter->pComponent.reset();
+					iter->Invalidate();
 					m_cleanupRequired = true;
 				}
 
