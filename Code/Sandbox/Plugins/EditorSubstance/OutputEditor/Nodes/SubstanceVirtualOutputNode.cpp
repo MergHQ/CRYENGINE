@@ -193,14 +193,5 @@ namespace EditorSubstance
 				}
 			}
 		}
-
-		void CVirtualOutputNode::SetName(const QString& name)
-		{
-			static_cast<CGraphViewModel&>(GetViewModel()).UpdateNodeCrc(m_name.toStdString().c_str(), name.toStdString().c_str(), GetNodeType());
-			m_name = name;
-			m_pOutput.name = string(name.toStdString().c_str());
-			SignalNameChanged();
-		}
-
 	}
 }

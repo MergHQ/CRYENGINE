@@ -21,8 +21,15 @@ namespace CryEngine
 	/// </summary>
 	public class GameFramework : IGameFrameworkListener
 	{
+		private class DestroyAction
+		{
+			public bool UpdateDone { get; set; }
+			public bool RenderDone { get; set; }
+			public Action Action { get; set; }
+		}
+
 		internal static GameFramework Instance { get; set; }
-		private static List<Action> _destroyActions = new List<Action>();
+		private static List<DestroyAction> _destroyActions = new List<DestroyAction>();
 		private static List<IGameUpdateReceiver> _updateReceivers = new List<IGameUpdateReceiver>();
 		private static List<IGameRenderReceiver> _renderReceivers = new List<IGameRenderReceiver>();
 
@@ -85,7 +92,11 @@ namespace CryEngine
 
 		internal static void AddDestroyAction(Action destroyAction)
 		{
-			_destroyActions.Add(destroyAction);
+			var action = new DestroyAction
+			{
+				Action = destroyAction
+			};
+			_destroyActions.Add(action);
 		}
 
 		/// <summary>
@@ -105,11 +116,17 @@ namespace CryEngine
 
 			if(_destroyActions.Count > 0)
 			{
-				var destroyActions = new List<Action>(_destroyActions);
-				_destroyActions.Clear();
-				foreach(var action in destroyActions)
+				var count = _destroyActions.Count;
+				for(int i = count - 1; i >= 0; i--)
 				{
-					action?.Invoke();
+					var action = _destroyActions[i];
+					if(action.RenderDone && action.UpdateDone)
+					{
+						action.Action?.Invoke();
+						_destroyActions.RemoveAt(i);
+					}
+
+					action.UpdateDone = true;
 				}
 			}
 
@@ -125,6 +142,16 @@ namespace CryEngine
 		/// </summary>
 		public override void OnPreRender()
 		{
+			if(_destroyActions.Count > 0)
+			{
+				var count = _destroyActions.Count;
+				for(int i = count - 1; i >= 0; i--)
+				{
+					var action = _destroyActions[i];
+					action.RenderDone = true;
+				}
+			}
+			
 			var renderReceivers = new List<IGameRenderReceiver>(_renderReceivers);
 			foreach (IGameRenderReceiver obj in renderReceivers)
 			{

@@ -78,7 +78,7 @@ IRenderNode* CTerrain::AddVegetationInstance(int nStaticGroupIndex, const Vec3& 
 			static int nLastFrameId = 0;
 			if (nLastFrameId != gEnv->pRenderer->GetFrameID()) // log spam prevention
 			{
-				Warning("%s: Vegetation object is not suitable for merging because of too many polygons: %s", __FUNCTION__, group.GetStatObj()->GetFilePath());				
+				Warning("%s: Vegetation object is not suitable for merging because of too many polygons: %s (%d triangles)", __FUNCTION__, group.GetStatObj()->GetFilePath(), group.GetStatObj()->GetRenderTrisCount());
 				nLastFrameId = gEnv->pRenderer->GetFrameID();
 			}
 		}

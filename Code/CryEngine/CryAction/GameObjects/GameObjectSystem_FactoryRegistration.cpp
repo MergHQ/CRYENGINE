@@ -71,6 +71,10 @@ void CGameObjectSystem::RegisterFactories(IGameFramework* pFrameWork)
 	clsDesc.editorClassInfo.sIcon = "User.bmp";
 	clsDesc.editorClassInfo.bIconOnTop = true;
 
+	// If we load a legacy project we still want to expose the legacy entity.
+	if(gEnv->pGameFramework->GetIGame() == nullptr)
+		clsDesc.flags |= ECLF_INVISIBLE;
+
 	struct CObjectCreator
 	{
 		static IEntityComponent* Create(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)

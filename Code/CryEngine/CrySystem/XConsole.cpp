@@ -23,11 +23,6 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "ConsoleHelpGen.h"     // CConsoleHelpGen
 
-// EvenBalance - M. Quinn
-#ifdef __WITH_PB__
-	#include <PunkBuster/pbcommon.h>
-#endif
-
 //#define DEFENCE_CVAR_HASH_LOGGING
 
 static inline void AssertName(const char* szName)
@@ -2253,6 +2248,7 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 	assert(command);
 	assert(command[0] != '\\');     // caller should remove leading "\\"
 
+#if !defined(RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
 	///////////////////////////
 	//Execute as string
 	if (command[0] == '#' || command[0] == '@')
@@ -2275,6 +2271,7 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 			return;
 		}
 	}
+#endif
 
 	ConsoleCommandsMapItor itrCmd;
 	ConsoleVariablesMapItor itrVar;
@@ -2293,13 +2290,6 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 		sCommand = lineCommands.front();
 		sLineCommand = sCommand;
 		lineCommands.pop_front();
-
-#ifdef __WITH_PB__
-		// If this is a PB command, PbConsoleCommand will return true
-		if (m_pNetwork)
-			if (m_pNetwork->PbConsoleCommand(sCommand.c_str(), sTemp.length()))
-				return;
-#endif
 
 		if (!bSilentMode)
 			if (GetStatus())
@@ -2821,30 +2811,6 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 			++itrVars;
 		}
 	}
-
-#ifdef __WITH_PB__
-	// Check to see if this is a PB command
-	char pbCompleteBuf[PB_Q_MAXRESULTLEN];
-
-	cry_strcpy(pbCompleteBuf, szInputBuffer);
-
-	if (!strncmp(szInputBuffer, "pb_", 3))
-	{
-		if (!strncmp(szInputBuffer, "pb_sv", 5))
-		{
-			if (m_pNetwork)
-				m_pNetwork->PbServerAutoComplete(pbCompleteBuf, PB_Q_MAXRESULTLEN);
-		}
-		else
-		{
-			if (m_pNetwork)
-				m_pNetwork->PbClientAutoComplete(pbCompleteBuf, PB_Q_MAXRESULTLEN);
-		}
-
-		if (0 != strcmp(szInputBuffer, pbCompleteBuf))
-			matches.push_back((char* const)pbCompleteBuf);
-	}
-#endif
 
 	if (!matches.empty())
 		std::sort(matches.begin(), matches.end(), less_CVar);   // to sort commands with variables

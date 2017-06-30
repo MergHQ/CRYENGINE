@@ -1,5 +1,7 @@
 # CryExtensions
-add_subdirectory(Code/CryExtensions)
+if (EXISTS Code/CryExtensions)
+	add_subdirectory(Code/CryExtensions)
+endif()
 
 # Mandatory plugin, contains entities required by the engine
 if (OPTION_ENGINE)

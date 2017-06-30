@@ -31,6 +31,7 @@ static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const 
 	};
 
 	clsDesc.pUserProxyCreateFunc = &CObjectCreator::Create;
+	clsDesc.flags |= ECLF_INVISIBLE;
 
 	return gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
 }

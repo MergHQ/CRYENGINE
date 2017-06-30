@@ -899,7 +899,7 @@ void CEntity::PreviewRender(SEntityPreviewContext& context)
 		IEntityComponentPreviewer* pPreviewer = rec.pComponent->GetPreviewer();
 		if (pPreviewer)
 		{
-		  pPreviewer->Render(*this, *rec.pComponent.get(), context);
+			pPreviewer->Render(*this, *rec.pComponent.get(), context);
 		}
 	});
 }
@@ -1346,7 +1346,7 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		// Find component in the list of the existing entity components
 		for (auto& record : m_components.GetVector())
 		{
-			if (record.pComponent->GetGUID() == componentGUID)
+			if (record.pComponent != nullptr && record.pComponent->GetGUID() == componentGUID)
 			{
 				pComponent = record.pComponent;
 				break;
@@ -1531,7 +1531,7 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 	{
 		for (const SEntityComponentRecord& record : m_components.GetVector())
 		{
-			if (record.pComponent->GetClassDesc().GetGUID() == componentTypeId)
+			if (record.pComponent != nullptr && record.pComponent->GetClassDesc().GetGUID() == componentTypeId)
 			{
 				pComponent = record.pComponent.get();
 				break;
@@ -1790,7 +1790,7 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 			return nullptr;
 		}
 		if (!bAllowDuplicate && componentRecord.typeId == typeId && typeId != cryiidof<ICryUnknown>() && typeId != cryiidof<IEntityComponent>()
-			&& componentRecord.pComponent.get() != nullptr) //checks if the component was just removed
+			&& componentRecord.IsValid()) //checks if the component was just removed
 		{
 			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same interface type");
 			return nullptr;
@@ -1850,7 +1850,7 @@ void CEntity::RemoveComponent(IEntityComponent* pComponent)
 
 	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
-		if (componentRecord.pComponent && componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE))
+		if (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE))
 		{
 			m_bRequiresComponentUpdate = 1;
 
@@ -1902,7 +1902,7 @@ IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 
 	for (auto& record : m_components.GetVector())
 	{
-		if (record.pComponent->GetGUID() == guid)
+		if (record.pComponent != nullptr && record.pComponent->GetGUID() == guid)
 		{
 			return record.pComponent.get();
 		}
@@ -1917,6 +1917,9 @@ void CEntity::QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, Dy
 
 	for (const SEntityComponentRecord& record : m_components.GetVector())
 	{
+		if (record.pComponent == nullptr)
+			continue;
+
 		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
 		{
 			components.push_back(record.pComponent.get());
@@ -1942,6 +1945,9 @@ IEntityComponent* CEntity::QueryComponentByInterfaceID(const CryInterfaceID& int
 
 	for (const SEntityComponentRecord& record : m_components.GetVector())
 	{
+		if (record.pComponent == nullptr)
+			continue;
+
 		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
 		{
 			return record.pComponent.get();
@@ -1988,7 +1994,10 @@ void CEntity::GetComponents(DynArray<IEntityComponent*>& components) const
 	components.reserve(vec.size());
 	for (const SEntityComponentRecord& rec : vec)
 	{
-		components.push_back(rec.pComponent.get());
+		if (rec.pComponent != nullptr)
+		{
+			components.push_back(rec.pComponent.get());
+		}
 	}
 }
 
@@ -3100,7 +3109,10 @@ void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 	m_physics.GetMemoryUsage(pSizer);
 	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
-		componentRecord.pComponent->GetMemoryUsage(pSizer);
+		if (componentRecord.pComponent != nullptr)
+		{
+			componentRecord.pComponent->GetMemoryUsage(pSizer);
+		}
 	}
 }
 
