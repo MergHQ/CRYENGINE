@@ -309,6 +309,7 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
   {                                                                                                              \
   if (!(condition))                                                                                              \
   {                                                                                                              \
+    CryDebugBreak();                                                                                             \
     gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause( # condition, __FILE__, __LINE__); \
   }                                                                                                              \
   } while (0)
@@ -319,6 +320,7 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
   {                                                                                                                   \
     if (!(IsEquivalent(valueA, valueB, epsilon)))                                                                     \
     {                                                                                                                 \
+      CryDebugBreak();                                                                                                \
       string message = # valueA " != " # valueB " with epsilon " # epsilon " [";                                      \
       message.append(CryUnitTestImpl::FormatVar(valueA).c_str()).append(" != ");                                      \
       message.append(CryUnitTestImpl::FormatVar(valueB).c_str()).append("]");                                         \
@@ -332,6 +334,7 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
   {                                                                                                                   \
     if (!CryUnitTestImpl::AreEqual(valueA, valueB))                                                                   \
     {                                                                                                                 \
+      CryDebugBreak();                                                                                                \
       string message = # valueA " != " # valueB " [";                                                                 \
       message.append(CryUnitTestImpl::FormatVar(valueA).c_str()).append(" != ");                                      \
       message.append(CryUnitTestImpl::FormatVar(valueB).c_str()).append("]");                                         \
@@ -345,6 +348,7 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
   {                                                                                                                   \
     if (!CryUnitTestImpl::AreInequal(valueA, valueB))                                                                 \
     {                                                                                                                 \
+      CryDebugBreak();                                                                                                \
       string message = # valueA " == " # valueB " [";                                                                 \
       message.append(CryUnitTestImpl::FormatVar(valueA).c_str()).append(" != ");                                      \
       message.append(CryUnitTestImpl::FormatVar(valueB).c_str()).append("]");                                         \
