@@ -1156,7 +1156,7 @@ void CStandardGraphicsPipeline::Execute()
 	else
 #endif
 	{
-			pRenderer->GetGraphicsPipeline().GetDeferredDecalsStage()->Execute();
+		m_pDeferredDecalsStage->Execute();
 	}
 
 	m_pSceneGBufferStage->ExecuteGBufferVisualization();
@@ -1235,7 +1235,7 @@ void CStandardGraphicsPipeline::Execute()
 			
 			uint32 numVolumes;
 			const Vec4* pVolumeParams;
-			pRenderer->GetGraphicsPipeline().GetClipVolumesStage()->GetClipVolumeShaderParams(pVolumeParams, numVolumes);
+			m_pClipVolumesStage->GetClipVolumeShaderParams(pVolumeParams, numVolumes);
 			pRenderer->GetTiledShading().Render(m_pCurrentRenderView, (Vec4*)pVolumeParams);
 
 			if (CRenderer::CV_r_DeferredShadingSSS)
@@ -1297,14 +1297,12 @@ void CStandardGraphicsPipeline::Execute()
 	// Transparent (above water)
 	m_pSceneForwardStage->Execute_TransparentAboveWater();
 
-#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
 	if (CRenderer::CV_r_TranspDepthFixup)
 	{
-		SwitchToLegacyPipeline();
-		pRenderer->FX_DepthFixupMerge();
-		SwitchFromLegacyPipeline();
+		m_pSceneForwardStage->Execute_TransparentDepthFixup();
 	}
 
+#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
 	// Half-res particles
 	{
 		SwitchToLegacyPipeline();

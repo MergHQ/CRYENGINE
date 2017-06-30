@@ -707,6 +707,33 @@ void CSceneForwardStage::Execute_TransparentAboveWater()
 	Execute_Transparent(false);
 }
 
+void CSceneForwardStage::Execute_TransparentDepthFixup()
+{
+	PROFILE_LABEL_SCOPE("MERGE_DEPTH");
+
+	CTexture* pSrcRT = CTexture::s_ptexHDRTarget;
+	CTexture* pDestRT =  CTexture::s_ptexZTarget;
+
+	if (!m_depthFixupPass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	{
+		m_depthFixupPass.Execute();
+		return;
+	}
+
+	static CCryNameTSCRC techName("TranspDepthFixupMerge");
+
+	uint64 rtMask = 0;
+
+	m_depthFixupPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	m_depthFixupPass.SetRenderTarget(0, pDestRT);
+	m_depthFixupPass.SetTechnique(CShaderMan::s_shPostEffects, techName, rtMask);
+	m_depthFixupPass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MIN);
+	m_depthFixupPass.SetRequirePerViewConstantBuffer(true);
+	m_depthFixupPass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::PointClamp);
+	m_depthFixupPass.BeginConstantUpdate();
+	m_depthFixupPass.Execute();
+}
+
 void CSceneForwardStage::Execute_AfterPostProcess()
 {
 	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();

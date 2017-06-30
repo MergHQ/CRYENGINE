@@ -48,6 +48,7 @@ public:
 	void         Execute_Opaque();
 	void         Execute_TransparentBelowWater();
 	void         Execute_TransparentAboveWater();
+	void         Execute_TransparentDepthFixup();
 	void         Execute_AfterPostProcess();
 	void         Execute_Minimum();
 
@@ -92,6 +93,7 @@ private:
 	CStretchRectPass         m_copySceneTargetBWPass;
 	CStretchRectPass         m_copySceneTargetAWPass;
 
+	CFullscreenPass          m_depthFixupPass;
 	CFullscreenPass          m_skyPass;
 	CRenderPrimitive         m_starsPrimitive;
 	CPrimitiveRenderPass     m_starsPass;
