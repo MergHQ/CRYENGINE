@@ -23,35 +23,17 @@ namespace Schematyc
 {
 
 // Forward declare interfaces.
-struct IObjectProperties;
 struct IRuntimeClass;
 // Forward declare structures.
-
 struct STimerDuration;
 // Forward declare classes.
 class CAction;
 
-// Forward declare shared pointers.
-DECLARE_SHARED_POINTERS(IObjectProperties)
-
-struct SObjectParams
+enum class EObjectSimulationUpdatePolicy
 {
-	inline SObjectParams(const CryGUID& _classGUID)
-		: classGUID(_classGUID)
-		, simulationMode(ESimulationMode::Idle)
-	{}
-
-	CryGUID                   classGUID;
-	void*                     pCustomData = nullptr;
-	IObjectPropertiesPtr      pProperties;
-	ESimulationMode           simulationMode;
-	IEntity*                  pEntity = nullptr;
-};
-
-enum class EObjectResetPolicy
-{
-	OnChange, // Only reset simulation if mode changes.
-	Always    // Always reset simulation.
+	None = 0,
+	OnChangeOnly, // Only set simulation if mode changes.
+	Always,       // Always reset simulation.
 };
 
 struct SObjectSignal
@@ -71,14 +53,14 @@ public:
 		, params(rhs.params)
 	{}
 
-	template <typename SIGNAL> static inline SObjectSignal FromSignalClass(const SIGNAL& _signal, const CryGUID& _senderGUID = CryGUID())
+	template<typename SIGNAL> static inline SObjectSignal FromSignalClass(const SIGNAL& _signal, const CryGUID& _senderGUID = CryGUID())
 	{
 		return SObjectSignal(_signal, GetTypeDesc<SIGNAL>().GetGUID(), _senderGUID);
 	}
 
 private:
 
-	template <typename SIGNAL> inline SObjectSignal(const SIGNAL& _signal, const CryGUID& _typeGUID, const CryGUID& _senderGUID)
+	template<typename SIGNAL> inline SObjectSignal(const SIGNAL& _signal, const CryGUID& _typeGUID, const CryGUID& _senderGUID)
 		: typeGUID(_typeGUID)
 		, senderGUID(_senderGUID)
 	{
@@ -87,8 +69,8 @@ private:
 
 public:
 
-	CryGUID                typeGUID;
-	CryGUID                senderGUID;
+	CryGUID              typeGUID;
+	CryGUID              senderGUID;
 	StackRuntimeParamMap params;
 };
 
@@ -114,7 +96,7 @@ struct IObjectDump
 			: szName(nullptr)
 		{}
 
-		CryGUID       guid;
+		CryGUID     guid;
 		const char* szName;
 	};
 
@@ -125,7 +107,7 @@ struct IObjectDump
 			, szName(_szName)
 		{}
 
-		CryGUID       guid;
+		CryGUID     guid;
 		const char* szName;
 		SState      state;
 	};
@@ -138,7 +120,7 @@ struct IObjectDump
 			, value(_value)
 		{}
 
-		CryGUID        guid;
+		CryGUID      guid;
 		const char*  szName;
 		CAnyConstRef value;
 	};
@@ -151,7 +133,7 @@ struct IObjectDump
 			, timeRemaining(_timeRemaining)
 		{}
 
-		CryGUID                 guid;
+		CryGUID               guid;
 		const char*           szName;
 		const STimerDuration& timeRemaining;
 	};
@@ -172,7 +154,7 @@ struct IObject
 	virtual void*                         GetCustomData() const = 0;
 	virtual ESimulationMode               GetSimulationMode() const = 0;
 
-	virtual bool                          Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPolicy) = 0;
+	virtual bool                          SetSimulationMode(ESimulationMode simulationMode, EObjectSimulationUpdatePolicy updatePolicy, bool bStartSimulation) = 0;
 	virtual void                          ProcessSignal(const SObjectSignal& signal) = 0;
 	virtual void                          StopAction(CAction& action) = 0; // #SchematycTODO : We need a better way for actions to signal that they're done! Perhaps it would be best to pass a callback?
 

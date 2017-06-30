@@ -22,7 +22,6 @@ struct SUpdateContext;
 class CAction;
 class CActionDesc;
 
-
 class CRuntimeParamMap;
 class CScratchpad;
 // Forward declare shared pointers.
@@ -83,14 +82,14 @@ private:
 
 	struct SComponent
 	{
-		SComponent(const SRuntimeClassComponentInstance& inst,const IEnvComponent* pEnvComponent)
+		SComponent(const SRuntimeClassComponentInstance& inst, const IEnvComponent* pEnvComponent)
 			: classComponentInstance(inst)
 			, classDesc(pEnvComponent->GetDesc())
 			, pComponent(pEnvComponent->CreateFromPool())
 		{};
 		const SRuntimeClassComponentInstance& classComponentInstance;
-		const CClassDesc& classDesc;
-		std::shared_ptr<IEntityComponent>  pComponent;
+		const CClassDesc&                     classDesc;
+		std::shared_ptr<IEntityComponent>     pComponent;
 	};
 	typedef std::vector<SComponent> Components;
 
@@ -113,7 +112,7 @@ private:
 		void Activate();
 
 		CObject*   pObject;
-		CryGUID      guid;
+		CryGUID    guid;
 		TimerFlags flags;
 		TimerId    id;
 	};
@@ -128,45 +127,40 @@ private:
 	typedef std::vector<SState> States;
 
 public:
-
-	CObject(ObjectId id);
-
+	CObject(IEntity& entity, ObjectId id, void* pCustomData);
 	~CObject();
 
-	bool Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const IObjectPropertiesPtr& pProperties, ESimulationMode simulationMode, IEntity *pEntity);
+	bool Init(CryGUID classGUID, const IObjectPropertiesPtr& pProperties);
 
 	// IObject
-
 	virtual ObjectId             GetId() const override;
 	virtual const IRuntimeClass& GetClass() const override;
 	virtual void*                GetCustomData() const override;
 	virtual ESimulationMode      GetSimulationMode() const override;
 
-	virtual bool                 Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPolicy) override;
+	virtual bool                 SetSimulationMode(ESimulationMode simulationMode, EObjectSimulationUpdatePolicy updatePolicy, bool bStartSimulation) override;
 	virtual void                 ProcessSignal(const SObjectSignal& signal) override;
 	virtual void                 StopAction(CAction& action) override;
 
 	virtual EVisitResult         VisitComponents(const ObjectComponentConstVisitor& visitor) const override;
 	virtual void                 Dump(IObjectDump& dump, const ObjectDumpFlags& flags = EObjectDumpFlags::All) const override;
 
-	virtual IEntity*             GetEntity() const final { return m_pEntity; };
-	
+	virtual IEntity*             GetEntity() const final           { return m_pEntity; };
+
 	virtual IObjectPropertiesPtr GetObjectProperties() const final { return m_pProperties; };
 	// ~IObject
 
-	CScratchpad& GetScratchpad();
+	CScratchpad&      GetScratchpad();
 
-	bool         ExecuteFunction(uint32 functionIdx, CRuntimeParamMap& params);
-	bool         StartAction(uint32 actionIdx, CRuntimeParamMap& params);
+	bool              ExecuteFunction(uint32 functionIdx, CRuntimeParamMap& params);
+	bool              StartAction(uint32 actionIdx, CRuntimeParamMap& params);
 
-	IEntityComponent* GetComponent( uint32 componentId );
+	IEntityComponent* GetComponent(uint32 componentId);
 
 private:
+	bool InitClass();
 
-	bool SetClass(const CRuntimeClassConstPtr& pClass);
-
-	bool Start(ESimulationMode simulationMode);
-	void Stop(bool bShutDownComponents);
+	void StopSimulation();
 	void Update(const SUpdateContext& updateContext);
 
 	void CreateGraphs();
@@ -210,32 +204,31 @@ private:
 	void ProcessSignalQueue();
 
 private:
+	ObjectId              m_id;
 
-	ObjectId                  m_id;
+	CRuntimeClassConstPtr m_pClass;
+	void*                 m_pCustomData;
+	IObjectPropertiesPtr  m_pProperties;
+	ESimulationMode       m_simulationMode;
 
-	CRuntimeClassConstPtr     m_pClass;
-	void*                     m_pCustomData;
-	IObjectPropertiesPtr      m_pProperties;
-	ESimulationMode           m_simulationMode;
+	HeapScratchpad        m_scratchpad;
+	Graphs                m_graphs;
 
-	HeapScratchpad            m_scratchpad;
-	Graphs                    m_graphs;
+	StateMachines         m_stateMachines;
 
-	StateMachines             m_stateMachines;
+	Actions               m_actions;
+	Timers                m_timers;
+	States                m_states;
 
-	Actions                   m_actions;
-	Timers                    m_timers;
-	States                    m_states;
+	bool                  m_bQueueSignals;
+	ObjectSignalQueue     m_signalQueue;
 
-	bool                      m_bQueueSignals;
-	ObjectSignalQueue         m_signalQueue;
-
-	CConnectionScope          m_connectionScope;
+	CConnectionScope      m_connectionScope;
 
 	// Components created by Schematyc object
-	Components                m_components;
+	Components m_components;
 
-	IEntity*                  m_pEntity = nullptr;
+	IEntity*   m_pEntity;
 };
 
 } // Schematyc

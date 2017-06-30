@@ -29,7 +29,7 @@ private:
 
 public:
 
-	IObject* CreateObject(const SObjectParams& params);
+	bool     CreateObject(const Schematyc::SObjectParams& params, IObject*& pObjectOut);
 	IObject* GetObject(ObjectId objectId);
 	void     DestroyObject(ObjectId objectId);
 
