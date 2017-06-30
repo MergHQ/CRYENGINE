@@ -134,7 +134,7 @@ CEntity::CEntity(SEntitySpawnParams& params)
 		CEntityScript* pCEntityScript = static_cast<CEntityScript*>(pEntityScript);
 		if (pCEntityScript->LoadScript())
 		{
-			auto pScriptProxy = CreateComponent<IEntityScriptComponent>();
+			auto pScriptProxy = GetOrCreateComponent<IEntityScriptComponent>();
 			pScriptProxy->ChangeScript(pEntityScript, &params);
 		}
 	}
@@ -1416,8 +1416,8 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		//classProperties.Apply(componentClassDesc, pComponent.get());
 		Schematyc::Utils::SerializeClass(archive, componentClassDesc, pComponent.get(), "properties", "properties");
 
-		// Finally Add and Initialize the component
-		AddComponent(typeGUID, pComponent, true, &initParams);
+		// Finally Create and Initialize the component
+		AddComponentInternal(pComponent, typeGUID, &initParams, &componentClassDesc);
 	}
 	else
 	{
@@ -1556,7 +1556,7 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 		{
 			// Only user created components, should create components, otherwise component should be created by entity class or Schematyc objects
 			IEntityComponent::SInitParams initParams(this, CryGUID(), "", nullptr, EEntityComponentFlags::None, nullptr, nullptr);
-			pComponent = AddComponent(componentTypeId, std::shared_ptr<IEntityComponent>(), true, &initParams);
+			pComponent = CreateComponentByInterfaceID(componentTypeId, &initParams);
 		}
 	}
 
@@ -1743,78 +1743,86 @@ IEntityComponent* CEntity::CreateProxy(EEntityProxy proxy)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent, bool bAllowDuplicate, IEntityComponent::SInitParams* pInitParams)
+IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& interfaceId, IEntityComponent::SInitParams *pInitParams)
 {
 	const CEntityComponentClassDesc* pClassDescription = nullptr;
+	CryGUID componentTypeID;
 
-	if (!pComponent)
+	// First look for a unified Schematyc / Entity component type
+	// TODO: Search hierarchy
+	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(interfaceId);
+	ICryFactory* pLegacyComponentFactory = nullptr;
+	if (pEnvComponent != nullptr)
 	{
-		const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeId);
-		if (pEnvComponent)
+		// Resolve to implementation ID
+		componentTypeID = pEnvComponent->GetGUID();
+		pClassDescription = &pEnvComponent->GetDesc();
+	}
+	else
+	{
+		// Fall back to legacy 5.3 creation
+		if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
 		{
-			pComponent = pEnvComponent->CreateFromPool();
-			pClassDescription = &pEnvComponent->GetDesc();
-		}
-		if (!pComponent)
-		{
-			// Deprecated, Pre Schematyc creation.
-			if (!CryCreateClassInstanceForInterface(typeId, pComponent))
+			size_t numFactories = 1;
+			pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
+			if (numFactories == 0 || pLegacyComponentFactory == nullptr)
 			{
-				if (!CryCreateClassInstance(typeId, pComponent))
-				{
-					CRY_ASSERT_MESSAGE(0, "No component implementation class registered for the given component interface");
-					return nullptr;
-				}
+				// Nothing found by interface, check by implementation id
+				pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
 			}
+
+			if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
+			{
+				CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
+				return nullptr;
+			}
+
+			// Resolve to implementation id, since we may have queried by interface
+			componentTypeID = pLegacyComponentFactory->GetClassID();
 		}
 	}
 
-	// Assign type GUID, since the function could've been called with an interface identifier
-	// First check if the new unified class GUID is present
-	if (pInitParams != nullptr && pInitParams->classDesc != nullptr && !pInitParams->classDesc->GetGUID().IsNull())
+	// All pre-checks successful, we can now create the component
+	// There can never be any failures after this point, we must always add the component to storage
+	std::shared_ptr<IEntityComponent> pComponent = pEnvComponent != nullptr ? pEnvComponent->CreateFromPool() : cryinterface_cast<IEntityComponent>(pLegacyComponentFactory->CreateClassInstance());
+	CRY_ASSERT(pComponent != nullptr);
+
+	AddComponentInternal(pComponent, componentTypeID, pInitParams, pClassDescription);
+
+	return pComponent.get();
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CEntity::AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntityComponent::SInitParams *pInitParams)
+{
+	const CEntityComponentClassDesc* pClassDescription = pInitParams != nullptr ? pInitParams->classDesc : nullptr;
+	if (pClassDescription != nullptr)
 	{
-		typeId = pInitParams->classDesc->GetGUID();
+		AddComponentInternal(pComponent, pClassDescription->GetGUID(), pInitParams, pClassDescription);
+		return true;
 	}
-	// Fall back to checking if the legacy factory is present
-	else if (ICryFactory* pFactory = pComponent->GetFactory())
+	else if(ICryFactory* pFactory = pComponent->GetFactory())
 	{
-		typeId = pFactory->GetClassID();
+		AddComponentInternal(pComponent, pFactory->GetClassID(), pInitParams, nullptr);
+		return true;
 	}
 
-	bool bExist = false;
-	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
-	{
-		if (componentRecord.pComponent == pComponent)
-		{
-			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same pointer");
-			return nullptr;
-		}
-		if (!bAllowDuplicate && componentRecord.typeId == typeId && typeId != cryiidof<ICryUnknown>() && typeId != cryiidof<IEntityComponent>()
-			&& componentRecord.IsValid()) //checks if the component was just removed
-		{
-			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same interface type");
-			return nullptr;
-		}
-	}
-	
-	IEntityComponent::SInitParams tempInitParams(this, CryGUID::Create(), "", pClassDescription != nullptr ? pClassDescription : &pComponent->GetClassDesc(), EEntityComponentFlags::None, nullptr, nullptr);
-	if (pInitParams == nullptr)
-	{
-		pInitParams = &tempInitParams;
-	}
-	else if(pInitParams->classDesc == nullptr)
-	{
-		pInitParams->classDesc = &pComponent->GetClassDesc();
-	}
-	
-	pComponent->PreInit(*pInitParams);
+	AddComponentInternal(pComponent, CryGUID::Null(), pInitParams, nullptr);
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent, const CryGUID& componentTypeID, IEntityComponent::SInitParams *pInitParams, const CEntityComponentClassDesc* pClassDescription)
+{
+	// Initialize common component members
+	pComponent->PreInit(pInitParams != nullptr ? *pInitParams : IEntityComponent::SInitParams(this, CryGUID::Create(), "", pClassDescription, EEntityComponentFlags::None, nullptr, nullptr));
 
 	// Initialize component entity pointer
 	pComponent->m_pEntity = this;
 
 	SEntityComponentRecord componentRecord;
 	componentRecord.pComponent = pComponent;
-	componentRecord.typeId = typeId;
+	componentRecord.typeId = componentTypeID;
 	componentRecord.registeredEventsMask = pComponent->GetEventMask();
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
@@ -1836,8 +1844,6 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 
 	// Call initialization of the component
 	pComponent->Initialize();
-
-	return pComponent.get();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1867,13 +1873,11 @@ void CEntity::RemoveAllComponents()
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& interfaceID) const
+IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& typeId) const
 {
-	CRY_ASSERT(!interfaceID.IsNull());
-
 	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
-		if (componentRecord.typeId == interfaceID)
+		if (componentRecord.typeId == typeId)
 		{
 			return componentRecord.pComponent.get();
 		}
@@ -1882,13 +1886,11 @@ IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& interfaceI
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const
+void CEntity::GetComponentsByTypeId(const CryInterfaceID& typeId, DynArray<IEntityComponent*>& components) const
 {
-	CRY_ASSERT(!interfaceID.IsNull());
-
 	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
 	{
-		if (componentRecord.typeId == interfaceID)
+		if (componentRecord.typeId == typeId)
 		{
 			components.push_back(componentRecord.pComponent.get());
 		}
@@ -1898,8 +1900,6 @@ void CEntity::GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 {
-	CRY_ASSERT(!guid.IsNull());
-
 	for (auto& record : m_components.GetVector())
 	{
 		if (record.pComponent != nullptr && record.pComponent->GetGUID() == guid)
@@ -1914,22 +1914,25 @@ IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 void CEntity::QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const
 {
 	CRY_ASSERT(!interfaceID.IsNull());
+	CRY_ASSERT(interfaceID != cryiidof<ICryUnknown>());
+	CRY_ASSERT(interfaceID != cryiidof<IEntityComponent>());
 
 	for (const SEntityComponentRecord& record : m_components.GetVector())
 	{
 		if (record.pComponent == nullptr)
 			continue;
 
-		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
+		// Check unified Schematyc / Entity class hierarchy
+		if (record.pComponent->GetClassDesc().GetGUID() == interfaceID || record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
 		{
 			components.push_back(record.pComponent.get());
 			continue;
 		}
 
-		// Check legacy components
+		// Check legacy component class hierarchy
 		if(ICryFactory* pFactory = record.pComponent->GetFactory())
 		{
-			if (pFactory->ClassSupports(interfaceID))
+			if (pFactory->GetClassID() == interfaceID || pFactory->ClassSupports(interfaceID))
 			{
 				components.push_back(record.pComponent.get());
 				continue;
@@ -1943,20 +1946,26 @@ IEntityComponent* CEntity::QueryComponentByInterfaceID(const CryInterfaceID& int
 {
 	CRY_ASSERT(!interfaceID.IsNull());
 
+	if (interfaceID == cryiidof<ICryUnknown>() || interfaceID == cryiidof<IEntityComponent>())
+	{
+		return nullptr;
+	}
+
 	for (const SEntityComponentRecord& record : m_components.GetVector())
 	{
 		if (record.pComponent == nullptr)
 			continue;
 
-		if (record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
+		// Check unified Schematyc / Entity class hierarchy
+		if (record.pComponent->GetClassDesc().GetGUID() == interfaceID || record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
 		{
 			return record.pComponent.get();
 		}
 
-		// Check legacy components
+		// Check legacy component class hierarchy
 		if (ICryFactory* pFactory = record.pComponent->GetFactory())
 		{
-			if (pFactory->ClassSupports(interfaceID))
+			if (pFactory->GetClassID() == interfaceID || pFactory->ClassSupports(interfaceID))
 			{
 				return record.pComponent.get();
 			}
@@ -1975,7 +1984,7 @@ void CEntity::CloneComponentsFrom(IEntity& otherEntity)
 
 		// Create a new component
 		IEntityComponent::SInitParams initParams(this, CryGUID::Create(), pSourceComponent->GetName(), &pSourceComponent->GetClassDesc(), pSourceComponent->GetComponentFlags(), pSourceComponent->GetParent(), pSourceComponent->GetTransform());
-		IEntityComponent* pNewComponent = AddComponent(componentRecord.typeId, std::shared_ptr<IEntityComponent>(), true, &initParams);
+		IEntityComponent* pNewComponent = CreateComponentByInterfaceID(componentRecord.typeId, &initParams);
 
 		DynArray<char> propertyBuffer;
 		// Save properties from the source to buffer

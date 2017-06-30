@@ -87,12 +87,23 @@ void SProject::Serialize(Serialization::IArchive& ar)
 
 void CProjectManager::ParseProjectFile()
 {
-	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
-	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
-	projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
-
 	char szEngineRootDirectoryBuffer[_MAX_PATH];
 	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDirectoryBuffer), szEngineRootDirectoryBuffer);
+
+	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
+	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
+	if (projectFile.size() == 0)
+	{
+		CryLogAlways("\nRunning CRYENGINE without a project!");
+		CryLogAlways("	Using Engine Folder %s", szEngineRootDirectoryBuffer);
+
+		m_sys_game_name->Set("CRYENGINE - No Project");
+		// Specify an assets directory despite having no project, this is to prevent CryPak scanning engine root
+		m_sys_game_folder->Set("Assets");
+		return;
+	}
+
+	projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
 
 #if CRY_PLATFORM_DURANGO
 	if(true)
@@ -223,7 +234,8 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 
 void CProjectManager::RegisterCVars()
 {
-	m_sys_project = REGISTER_STRING("sys_project", "game.cryproject", VF_NULL, "Specifies which project to load.\nLoads from the engine root if relative path, otherwise full paths are allowed to allow out-of-engine projects\nHas no effect if -project switch is used!");
+	// Default to no project when unit testing, indicating that we are testing pure engine
+	m_sys_project = REGISTER_STRING("sys_project", gEnv->bTesting ? "" : "game.cryproject", VF_NULL, "Specifies which project to load.\nLoads from the engine root if relative path, otherwise full paths are allowed to allow out-of-engine projects\nHas no effect if -project switch is used!");
 
 	// Legacy
 	m_sys_game_name = REGISTER_STRING("sys_game_name", "CRYENGINE", VF_DUMPTODISK, "Specifies the name to be displayed in the Launcher window title bar");

@@ -660,7 +660,7 @@ bool CFlock::CreateEntities()
 		boid->m_noentity = false;
 		boid->m_entity = pBoidEntity->GetId();
 
-		auto pBoidObjectProxy = pBoidEntity->CreateComponent<CBoidObjectProxy>();
+		auto pBoidObjectProxy = pBoidEntity->GetOrCreateComponent<CBoidObjectProxy>();
 		pBoidObjectProxy->SetBoid(boid);
 
 		// check if character.

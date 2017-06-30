@@ -90,9 +90,9 @@ struct IGameObjectExtensionCreatorBase
   template<class T>                                                                     \
   struct C ## name ## Creator : public I ## name ## Creator                             \
   {                                                                                     \
-    IGameObjectExtension* Create(IEntity *pEntity) override                           \
+    IGameObjectExtension* Create(IEntity *pEntity) override                             \
     {                                                                                   \
-      return pEntity->CreateComponentClass<T>();                                        \
+      return pEntity->GetOrCreateComponentClass<T>();                                   \
     }                                                                                   \
     void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount) override          \
     {                                                                                   \

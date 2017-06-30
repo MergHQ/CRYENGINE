@@ -77,7 +77,7 @@ static void AddComponentBase(MonoInternals::MonoReflectionType* pType, MonoInter
 
 static IEntityComponent* CreateManagedComponent(IEntity *pEntity, SEntitySpawnParams& params, void* pUserData)
 {
-	return pEntity->AddComponent(*(CryGUID*)pUserData, std::shared_ptr<IEntityComponent>(), true, nullptr);
+	return pEntity->CreateComponentByInterfaceID(*(CryGUID*)pUserData);
 }
 
 static void RegisterManagedEntityWithDefaultComponent(MonoInternals::MonoString* pName, MonoInternals::MonoString* pEditorCategory, MonoInternals::MonoString* pEditorHelper, MonoInternals::MonoString* pEditorIcon, bool bHide, MonoInternals::MonoReflectionType* pComponentType)
@@ -151,7 +151,7 @@ static void GetComponents(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart
 
 static MonoInternals::MonoObject* AddComponent(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart)
 {
-	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(CryGUID::Construct(guidHipart, guidLopart), std::shared_ptr<IEntityComponent>(), true, nullptr));
+	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->CreateComponentByInterfaceID(CryGUID::Construct(guidHipart, guidLopart)));
 
 	if (pComponent != nullptr)
 	{
@@ -168,7 +168,7 @@ static MonoInternals::MonoObject* GetOrCreateComponent(IEntity* pEntity, uint64 
 	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(id));
 	if (pComponent == nullptr)
 	{
-		pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(id, std::shared_ptr<IEntityComponent>(), false, nullptr));
+		pComponent = static_cast<CManagedEntityComponent*>(pEntity->CreateComponentByInterfaceID(id, false));
 	}
 
 	return pComponent->GetObject()->GetManagedObject();

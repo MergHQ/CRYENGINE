@@ -213,7 +213,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IEntityComponent* AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent,bool bAllowDuplicate,IEntityComponent::SInitParams *pInitParams) final;
+	virtual IEntityComponent* CreateComponentByInterfaceID(const CryInterfaceID& interfaceId, IEntityComponent::SInitParams *pInitParams) final;
+	virtual bool              AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntityComponent::SInitParams *pInitParams) final;
 	virtual void              RemoveComponent(IEntityComponent* pComponent) final;
 	virtual void              RemoveAllComponents() final;
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const final;
@@ -445,6 +446,8 @@ private:
 	IAIObject* GetAIObject() const;
 
 	void CreateSchematycObject(const SEntitySpawnParams& params);
+
+	void AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent, const CryGUID& componentTypeID, IEntityComponent::SInitParams *pInitParams, const CEntityComponentClassDesc* pClassDescription);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Component Save/Load

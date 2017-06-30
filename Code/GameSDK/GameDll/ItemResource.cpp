@@ -783,7 +783,7 @@ IEntityAudioComponent *CItem::GetAudioProxy(bool create)
 	IEntityAudioComponent *pIEntityAudioComponent = GetEntity()->GetComponent<IEntityAudioComponent>();
 
 	if (!pIEntityAudioComponent && create)
-		pIEntityAudioComponent = GetEntity()->CreateComponent<IEntityAudioComponent>();
+		pIEntityAudioComponent = GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 
 	return pIEntityAudioComponent;
 }
