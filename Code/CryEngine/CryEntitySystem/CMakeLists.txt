@@ -104,6 +104,7 @@ add_sources("CryEntitySystem_uber_0.cpp"
 		"GeomCacheAttachmentManager.h"
 		"GeomCacheAttachmentManager.cpp"
 		"EntityUnitTests.cpp"
+		"EntityUnitTests.h"
 )
 
 add_sources("CryEntitySystem_uber_1.cpp"

@@ -41,6 +41,9 @@ namespace EditorSubstance
 			void ResetPreviewImage();
 			const QImage& GetPreviewImage() const;
 			static const string GetIdSuffix(const ESubstanceGraphNodeType& nodeType);
+
+			virtual void SetName(const QString& name) override;
+
 		protected:
 
 		protected:

@@ -740,7 +740,7 @@ inline IEntityClass* RegisterEntityClassWithDefaultComponent(
 			EEntityComponentFlags::None,
 			nullptr,
 			nullptr);
-		entity.AddComponent(pClassDesc->GetGUID(), nullptr, true, &initParams);
+		entity.CreateComponentByInterfaceID(pClassDesc->GetGUID(), &initParams);
 		return true;
 	};
 	clsDesc.onSpawnCallback = onSpawnLambda;

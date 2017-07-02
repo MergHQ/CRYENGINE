@@ -23,7 +23,7 @@
     {                                                                                             \
       IGameObjectExtension* Create(IEntity *pEntity)                                            \
       {                                                                                           \
-        return pEntity->CreateComponentClass<C ## extensionClassName>();                          \
+        return pEntity->GetOrCreateComponentClass<C ## extensionClassName>();                          \
       }                                                                                           \
       void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount)                           \
       {                                                                                           \
@@ -71,11 +71,15 @@ void CGameObjectSystem::RegisterFactories(IGameFramework* pFrameWork)
 	clsDesc.editorClassInfo.sIcon = "User.bmp";
 	clsDesc.editorClassInfo.bIconOnTop = true;
 
+	// If we load a legacy project we still want to expose the legacy entity.
+	if(gEnv->pGameFramework->GetIGame() == nullptr)
+		clsDesc.flags |= ECLF_INVISIBLE;
+
 	struct CObjectCreator
 	{
 		static IEntityComponent* Create(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
 		{
-			return pEntity->CreateComponentClass<CMannequinObject>();
+			return pEntity->GetOrCreateComponentClass<CMannequinObject>();
 		}
 	};
 	clsDesc.pUserProxyCreateFunc = &CObjectCreator::Create;

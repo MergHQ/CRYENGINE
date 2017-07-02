@@ -33,7 +33,6 @@ namespace EditorSubstance
 			virtual void UpdatePinState();
 			virtual void PropagateNetworkToOutput();
 
-			virtual void SetName(const QString& name) override;
 			virtual ESubstanceGraphNodeType GetNodeType() const override { return eInput; }
 		protected:
 			virtual ConnectionInfo GetPinConnectionInfo(int index);

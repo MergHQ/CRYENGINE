@@ -623,7 +623,7 @@ bool CObject::CreateComponents()
 			  transform
 			  );
 
-			pEntity->AddComponent(component.classDesc.GetGUID(), component.pComponent, true, &initParams);
+			pEntity->AddComponent(component.pComponent, &initParams);
 		}
 	}
 

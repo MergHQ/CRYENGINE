@@ -1661,7 +1661,7 @@ void SetEntityLifetime(IEntity* pEntity, const char* props, bool visible)
 	}
 	if (timeout > 0 || timeoutInvis >= 0)
 	{
-		auto pTimeout = pEntity->CreateComponent<CTimeoutKillComponent>();
+		auto pTimeout = pEntity->GetOrCreateComponent<CTimeoutKillComponent>();
 		pTimeout->SetTimeout( static_cast<int>(1000*std::max(timeout,timeoutInvis)) );
 	}
 }

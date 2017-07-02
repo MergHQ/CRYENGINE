@@ -12,7 +12,7 @@ namespace EditorSubstance
 		{
 		public:
 			COriginalOutputNode(const SSubstanceOutput& output, CryGraphEditor::CNodeGraphViewModel& viewModel);
-			virtual bool CanDelete() const override { return false; }
+			virtual bool CanDelete() const override { return true; }
 
 			virtual const char* GetStyleId() const override
 			{

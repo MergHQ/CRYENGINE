@@ -2491,7 +2491,9 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 		}
 		m_grpProfileData[14].nTicksLast = CryGetTicks()-timer;
 	}
-	{ WriteLock lock(m_lockStep);
+	{ 
+	WriteLockCond lock1(m_lockCaller[MAX_PHYS_THREADS], flags & ent_flagged_only);
+	WriteLock lock(m_lockStep);
 	if (time_interval>0 && !(flags & ent_flagged_only))
 		MarkAsPhysThread();
 	volatile int64 timer=CryGetTicks();

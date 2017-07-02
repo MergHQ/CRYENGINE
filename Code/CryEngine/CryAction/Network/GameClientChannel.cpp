@@ -364,7 +364,10 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 
 		if (!param.baseComponent.IsNull())
 		{
-			pEntity->AddComponent(param.baseComponent, nullptr, false, nullptr);
+			if (pEntity->QueryComponentByInterfaceID(param.baseComponent) == nullptr)
+			{
+				pEntity->CreateComponentByInterfaceID(param.baseComponent, nullptr);
+			}
 		}
 
 		if (!pEntitySystem->InitEntity(pEntity, esp))

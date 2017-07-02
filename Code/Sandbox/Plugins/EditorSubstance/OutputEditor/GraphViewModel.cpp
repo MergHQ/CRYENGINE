@@ -227,60 +227,45 @@ namespace EditorSubstance
 
 		CSubstanceOutputNodeBase* CGraphViewModel::CreateNode(ESubstanceGraphNodeType nodeType, const QPointF& position)
 		{
-			QString dialogTitle;
-			if (nodeType == ESubstanceGraphNodeType::eInput)
-			{
-				dialogTitle = "Set Substance Graph Output Name";
-			}
-			else {
-				dialogTitle = "Set New Texture Suffix";
-			}
-			QStringDialog dlg(dialogTitle, nullptr, true);
-
-			dlg.SetCheckCallback([=](const string& newNodeName) -> bool
-			{
-				if (newNodeName.IsEmpty())
-				{
-					CQuestionDialog::SCritical("Wrong Name", "Name can't be empty!");
-					return false;
-				}
-
-				if (m_nodeItemByNameCrc.count(GetNodeCRC(newNodeName, nodeType)))
-				{
-					CQuestionDialog::SCritical("Wrong Name", "Node withe the same name already exists!");
-					return false;
-				}
-
-				return true;
-			});
 			CSubstanceOutputNodeBase* pNodeItem = nullptr;
-			if (dlg.exec() == QDialog::Accepted)
+
+			SSubstanceOutput newOutput;
+			string baseName(nodeType == eInput ? "graph_output" : "texture");
+			
+			int startIndex(1);
+			newOutput.name = baseName;
+			while (m_nodeItemByNameCrc.count(GetNodeCRC(newOutput.name, nodeType)) != 0)
 			{
-				switch (nodeType)
+				newOutput.name = string().Format("%s_%02d", baseName, startIndex++);
+				
+				if (startIndex == 100)
 				{
-
-				case eInput:
-				{
-					SSubstanceOutput newOutput;
-					newOutput.name = dlg.GetString();
-					newOutput.preset = *CManager::Instance()->GetTexturePresetsForFile(newOutput.name).begin();
-					pNodeItem = new CVirtualOutputNode(newOutput, *this);
+					startIndex = 1;
+					baseName += "_";
 				}
-				break;
-				default:
-					SSubstanceOutput newOutput;
-					newOutput.name = dlg.GetString();
-					pNodeItem = new COriginalOutputNode(newOutput, *this);
-					break;
-				}
-
-				const uint32 crc = GetNodeCRC(pNodeItem->NameAsString(), pNodeItem->GetNodeType());
-				m_nodes.push_back(pNodeItem);
-				m_nodeItemByNameCrc.emplace(crc, pNodeItem);
-				pNodeItem->SetPosition(position);
-				SignalCreateNode(*pNodeItem);
-				SignalOutputsChanged();
 			}
+			switch (nodeType)
+			{
+
+			case eInput:
+			{				
+				newOutput.preset = *CManager::Instance()->GetTexturePresetsForFile(newOutput.name).begin();
+				pNodeItem = new CVirtualOutputNode(newOutput, *this);
+			}
+			break;
+			default:
+				pNodeItem = new COriginalOutputNode(newOutput, *this);
+				break;
+			}
+
+			
+			const uint32 crc = GetNodeCRC(pNodeItem->NameAsString(), pNodeItem->GetNodeType());
+			m_nodes.push_back(pNodeItem);
+			m_nodeItemByNameCrc.emplace(crc, pNodeItem);
+			pNodeItem->SetPosition(position);
+			SignalCreateNode(*pNodeItem);
+			SignalOutputsChanged();
+	
 
 
 
@@ -379,6 +364,11 @@ namespace EditorSubstance
 			nameLow.MakeLower();
 			const uint32 crc = CCrc32::Compute(nameLow);
 			return crc;
+		}
+
+		bool CGraphViewModel::IsNameUnique(const string& name, const ESubstanceGraphNodeType& nodeType)
+		{
+			return m_nodeItemByNameCrc.count(GetNodeCRC(name, nodeType)) == 0;
 		}
 
 	}
