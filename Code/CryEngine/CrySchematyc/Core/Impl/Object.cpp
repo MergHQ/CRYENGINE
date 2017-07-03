@@ -54,15 +54,20 @@ void CObject::STimer::Activate()
 	}
 }
 
-CObject::CObject(ObjectId id)
+CObject::CObject(IEntity& entity, ObjectId id, void* pCustomData)
 	: m_id(id)
 	, m_simulationMode(ESimulationMode::Idle)
 	, m_bQueueSignals(false)
-{}
+	, m_pEntity(&entity)
+	, m_pCustomData(pCustomData)
+{
+
+}
 
 CObject::~CObject()
 {
-	Stop(true);
+	StopSimulation();
+	ShutdownComponents();
 	DestroyTimers();
 	DestroyActions();
 	DestroyComponents();
@@ -74,24 +79,20 @@ CObject::~CObject()
 	}
 }
 
-bool CObject::Init(const CRuntimeClassConstPtr& pClass, void* pCustomData, const IObjectPropertiesPtr& pProperties, ESimulationMode simulationMode, IEntity* pEntity)
+bool CObject::Init(CryGUID classGUID, const IObjectPropertiesPtr& pProperties)
 {
-	m_pEntity = pEntity;
-
-	if (!SetClass(pClass))
-	{
-		return false;
-	}
-
-	m_pCustomData = pCustomData;
 	m_pProperties = pProperties;
 
-	if (!Start(simulationMode))
+	CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(classGUID);
+	CRY_ASSERT_MESSAGE(pClass, "Schematyc class '%s' couldn't be found in class registry.");
+	if (!pClass)
 	{
 		return false;
 	}
 
-	return true;
+	m_pClass = pClass;
+
+	return InitClass();
 }
 
 ObjectId CObject::GetId() const
@@ -101,7 +102,7 @@ ObjectId CObject::GetId() const
 
 const IRuntimeClass& CObject::GetClass() const
 {
-	SCHEMATYC_CORE_ASSERT(m_pClass);
+	CRY_ASSERT_MESSAGE(m_pClass, "Runtime class of Schematyc Object must be not null.");
 	return *m_pClass;
 }
 
@@ -115,30 +116,59 @@ ESimulationMode CObject::GetSimulationMode() const
 	return m_simulationMode;
 }
 
-bool CObject::Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPolicy)
+bool CObject::SetSimulationMode(ESimulationMode simulationMode, EObjectSimulationUpdatePolicy updatePolicy, bool bStartSimulation)
 {
-	if ((simulationMode != m_simulationMode) || (resetPolicy == EObjectResetPolicy::Always))
+	if (simulationMode != m_simulationMode || updatePolicy == EObjectSimulationUpdatePolicy::Always)
 	{
-		//if (m_simulationMode != ESimulationMode::Idle)
-		{
-			Stop(false);
-		}
+		StopSimulation();
 
 		if (simulationMode != ESimulationMode::Idle)
 		{
-			CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(m_pClass->GetGUID());
-			if (pClass->GetTimeStamp() > m_pClass->GetTimeStamp())
+			CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(GetClass().GetGUID());
+			CRY_ASSERT_MESSAGE(pClass, "Schematyc class '%s' couldn't be found in class registry.");
+			if (pClass)
 			{
-				SetClass(pClass);
+				if (m_pClass->GetTimeStamp() < pClass->GetTimeStamp())
+				{
+					m_pClass = pClass;
+					InitClass();
+				}
 			}
-
-			if (!Start(simulationMode))
+			else
 			{
-				Stop(false);
 				return false;
 			}
+
+			//m_scratchpad = m_pClass->GetScratchpad();
+			ResetGraphs();
+			m_simulationMode = simulationMode;
+
+			if (!ReadProperties())
+			{
+				return false;
+			}
+
+			ExecuteConstructors(simulationMode);
 		}
 	}
+
+	if (bStartSimulation)
+	{
+		switch (simulationMode)
+		{
+		case ESimulationMode::Game:
+			{
+				ExecuteSignalReceivers(SObjectSignal::FromSignalClass(SStartSignal()));
+
+				StartStateMachines(simulationMode);
+				StartTimers(simulationMode);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
 	return true;
 }
 
@@ -308,10 +338,9 @@ IEntityComponent* CObject::GetComponent(uint32 componentIdx)
 	return componentIdx < m_components.size() ? m_components[componentIdx].pComponent.get() : nullptr;
 }
 
-bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
+bool CObject::InitClass()
 {
-	SCHEMATYC_CORE_ASSERT(pClass)
-	if (!pClass)
+	if (!m_pClass)
 	{
 		return false;
 	}
@@ -327,8 +356,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	m_actions.clear();
 	m_timers.clear();
 
-	m_pClass = pClass;
-	m_scratchpad = pClass->GetScratchpad(); // #SchematycTODO : Do we still need to do this here? We also reset the scratchpad in the start function.
+	m_scratchpad = m_pClass->GetScratchpad();
 
 	CreateGraphs();
 
@@ -357,42 +385,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	return true;
 }
 
-bool CObject::Start(ESimulationMode simulationMode)
-{
-	m_scratchpad = m_pClass->GetScratchpad();
-
-	ResetGraphs();
-
-	if (!ReadProperties())
-	{
-		return false;
-	}
-
-	if (!InitActions())
-	{
-		return false;
-	}
-
-	m_simulationMode = simulationMode;
-
-	ExecuteConstructors(simulationMode);
-
-	switch (simulationMode)
-	{
-	case ESimulationMode::Game:
-		{
-			ExecuteSignalReceivers(SObjectSignal::FromSignalClass(SStartSignal()));
-
-			StartStateMachines(simulationMode);
-			StartTimers(simulationMode);
-			break;
-		}
-	}
-
-	return true;
-}
-
-void CObject::Stop(bool bShutDownComponents)
+void CObject::StopSimulation()
 {
 	StopTimers();
 	StopStateMachines();
@@ -404,12 +397,6 @@ void CObject::Stop(bool bShutDownComponents)
 			ExecuteSignalReceivers(SObjectSignal::FromSignalClass(SStopSignal()));
 			break;
 		}
-	}
-
-	ShutdownActions();
-	if (bShutDownComponents)
-	{
-		ShutdownComponents();
 	}
 
 	m_simulationMode = ESimulationMode::Idle;

@@ -182,7 +182,7 @@ public:
 
 	void SetOwner(CQueryBlueprint* pOwner) { m_pOwner = pOwner; }
 
-	void SetParamsChanged(bool value)      { m_bParamsChanged = value; }
+	void SetParamsChanged();
 	bool GetParamsChanged() const          { return m_bParamsChanged; }
 
 	void BuildFunctionListForAvailableParameters(
@@ -671,6 +671,11 @@ public:
 
 	void          PrepareHelpers(CUqsDocSerializationContext& context);
 	void          ClearErrors();
+
+	const CRuntimeParamBlueprint& GetRuntimeParamsBlueprint() const { return m_runtimeParams; }
+
+	size_t                 GetChildCount() const { return m_queryChildren.size(); }
+	const CQueryBlueprint& GetChild(size_t index) const { return m_queryChildren[index]; }
 
 private:
 

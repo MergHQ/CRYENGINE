@@ -248,9 +248,9 @@ IScriptViewPtr CCore::CreateScriptView(const CryGUID& scopeGUID) const
 	return std::make_shared<CScriptView>(scopeGUID);
 }
 
-IObject* CCore::CreateObject(const SObjectParams& params)
+bool CCore::CreateObject(const Schematyc::SObjectParams& params, IObject*& pObjectOut)
 {
-	return m_pObjectPool->CreateObject(params);
+	return m_pObjectPool->CreateObject(params, pObjectOut);
 }
 
 IObject* CCore::GetObject(ObjectId objectId)

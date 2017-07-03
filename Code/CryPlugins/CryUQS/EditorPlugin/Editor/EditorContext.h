@@ -9,6 +9,7 @@
 #include "ItemTypeName.h"
 
 class CQueryListProvider;
+class CQueryBlueprint;
 
 namespace UQS
 {
