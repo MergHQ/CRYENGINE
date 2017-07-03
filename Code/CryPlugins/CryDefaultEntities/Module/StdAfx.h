@@ -26,7 +26,7 @@ static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const 
 	{
 		static IEntityComponent* Create(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
 		{
-			return pEntity->CreateComponentClass<T>();
+			return pEntity->GetOrCreateComponentClass<T>();
 		}
 	};
 

@@ -5,6 +5,8 @@
 #include <CryEntitySystem/IEntityBasicTypes.h>
 #include <CryEntitySystem/IEntityComponent.h>
 
+#include <type_traits>
+
 // Forward declarations.
 struct IPhysicalEntity;
 struct IEntityClass;
@@ -747,13 +749,17 @@ public:
 	// EntityComponents
 	//////////////////////////////////////////////////////////////////////////
 
-	//! Register or unregisters a component with the entity.
-	//! \param typeId The GUID of the component we want to add, can not be an interface ID!
-	//! \param pComponent The target component.
-	//! \param flags IEntityComponent.h contains the relevent flags to control registration behaviour.
-	//! \param eventMask is a bit mask of the EEntityEvents flags.
-	//! \return if input param pComponent is null AddComponent will try to create a component for the provided interface id.
-	virtual IEntityComponent* AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent,bool bAllowDuplicate,IEntityComponent::SInitParams *pInitParams) = 0;
+	//! Queries an entity component type by interface, and then creates the component inside this entity
+	//! \param interfaceId The GUID of the component we want to add
+	//! \param pInitParams Optional initialization parameters to determine the initial state of the component
+	//! \return The newly created entity component pointer (owned by the entity), or null if creation failed.
+	virtual IEntityComponent* CreateComponentByInterfaceID(const CryInterfaceID& interfaceId, IEntityComponent::SInitParams *pInitParams = nullptr) = 0;
+
+	//! Adds an already created component to the entity
+	//! \param pComponent A shared pointer to the component we want to add, can not be null!
+	//! \param pInitParams Optional initialization parameters to determine the initial state of the component
+	//! \return True if the component was added, otherwise false.
+	virtual bool AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntityComponent::SInitParams *pInitParams = nullptr) = 0;
 
 	//! Remove previously created component from the Entity
 	//! \param pComponent Component pointer to remove from the Entity
@@ -778,30 +784,62 @@ public:
 	//! Queries an entity component implementing the specified component interface
 	virtual IEntityComponent* QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const = 0;
 
-	//! Get existing or Create a new initialized component inside the entity.
-	template<typename ComponentType>
-	ComponentType* GetOrCreateComponent();
-
-	//! Get existing or Create a new initialized component using the new operator of the class type, typeid of the component is null guid.
-	template<typename ComponentType>
-	ComponentType* GetOrCreateComponentClass();
-
 	//! Create a new initialized component using interface type id to create a class using factory component class creation.
 	//! ComponentType must be a valid interface that can be queried with cryidof<ComponentType>()
 	//! Instance of the component is created by the lookup in the class registry for the first class that implements ComponentType interface,
 	//! If such class is not previously registered the assert will be raised and method will fail.
 	template<typename ComponentType>
-	ComponentType* CreateComponent(bool bAllowDuplicate = false);
+	typename std::enable_if<std::is_convertible<ComponentType, IEntityComponent>::value, ComponentType*>::type CreateComponent()
+	{
+		CRY_ASSERT_MESSAGE(cryiidof<ComponentType>() != cryiidof<IEntityComponent>(), "Component must implement an IID function returning CryGUID!");
 
-	//! Create a new initialized component using a new operator of the class type, typeid of the component is null guid.
-	template<typename ComponentClass>
-	ComponentClass* CreateComponentClass(bool bAllowDuplicate = false);
+		ComponentType* pReturn = static_cast<ComponentType*>(CreateComponentByInterfaceID(cryiidof<ComponentType>()));
+		assert(pReturn != nullptr); // Must return a valid component interface
+		return pReturn;
+	}
+
+	//! Get existing or Create a new initialized component inside the entity.
+	template<typename ComponentType>
+	typename std::enable_if<std::is_convertible<ComponentType, IEntityComponent>::value, ComponentType*>::type GetOrCreateComponent()
+	{
+		auto component = GetComponent<ComponentType>();
+		if (component)
+			return component;
+		else
+			return CreateComponent<ComponentType>();
+	}
+
+	//! Create a new initialized component using a new operator of the class type
+	template<class ComponentType>
+	typename std::enable_if<!Schematyc::IsReflectedType<ComponentType>() && std::is_convertible<ComponentType, IEntityComponent>::value, ComponentType*>::type CreateComponentClass()
+	{
+		std::shared_ptr<ComponentType> pComponent = std::make_shared<ComponentType>();
+		CRY_ASSERT(pComponent->GetFactory() != nullptr);
+		if (AddComponent(pComponent))
+		{
+			return pComponent.get();
+		}
+
+		return nullptr;		
+	}
+
+	//! Get existing or Create a new initialized component using the new operator of the class type, typeid of the component is null guid.
+	template<class ComponentType>
+	typename std::enable_if<!Schematyc::IsReflectedType<ComponentType>() && std::is_convertible<ComponentType, IEntityComponent>::value, ComponentType*>::type GetOrCreateComponentClass()
+	{
+		ComponentType* pComponent = GetComponent<ComponentType>();
+		if (pComponent)
+			return pComponent;
+		else
+			return CreateComponentClass<ComponentType>();
+	}
+
 
 	//! Helper template function to simplify finding the first component implementing the specified component type
 	//! This will traverse the inheritance tree, and is therefore slower than GetComponentByImplementation which simply does an equality check.
 	//! ex: auto pScriptProxy = pEntity->GetComponent<IEntityScriptComponent>();
 	template<typename ComponentType>
-	ComponentType* GetComponent() const
+	typename std::enable_if<std::is_convertible<ComponentType, IEntityComponent>::value, ComponentType*>::type GetComponent() const
 	{
 		return static_cast<ComponentType*>(QueryComponentByInterfaceID(cryiidof<ComponentType>()));
 	}
@@ -809,27 +847,37 @@ public:
 	//! Helper template function to simplify finding all components implementing the specified component type
 	//! This will traverse the inheritance tree, and is therefore slower than GetComponentsByImplementation which simply does an equality check.
 	template<typename ComponentType>
-	void GetComponents(DynArray<ComponentType>& components) const
+	typename std::enable_if<std::is_convertible<ComponentType, IEntityComponent>::value, void>::type GetComponents(DynArray<ComponentType*>& components) const
 	{
 		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
-		DynArray<IEntityComponent>* pRawComponents = (DynArray<IEntityComponent>*)(void*)components;
+		DynArray<IEntityComponent*>* pRawComponents = (DynArray<IEntityComponent*>*)(void*)&components;
 		QueryComponentsByInterfaceID(cryiidof<ComponentType>(), *pRawComponents);
+		// Static cast all types from IEntityComponent* to ComponentType*
+		for (auto it = pRawComponents->begin(); it != pRawComponents->end(); ++it)
+		{
+			*it = static_cast<ComponentType*>((IEntityComponent*)(void*)*it);
+		}
 	}
 
 	//! Helper template function to simplify finding the first component of the specified component type, ignores inherited interfaces and classes!
 	template<typename ComponentType>
-	ComponentType* GetComponentByImplementation() const
+	typename std::enable_if<std::is_convertible<ComponentType, IEntityComponent>::value, ComponentType*>::type GetComponentByImplementation() const
 	{
 		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>()));
 	}
 
 	//! Helper template function to simplify finding all components of the specified component type, ignores inherited interfaces and classes!
 	template<typename ComponentType>
-	void GetComponentsByImplementation(DynArray<ComponentType>& components) const
+	typename std::enable_if<std::is_convertible<ComponentType, IEntityComponent>::value, void>::type GetComponentsByImplementation(DynArray<ComponentType*>& components) const
 	{
 		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
-		DynArray<IEntityComponent>* pRawComponents = (DynArray<IEntityComponent>*)(void*)components;
+		DynArray<IEntityComponent*>* pRawComponents = (DynArray<IEntityComponent*>*)(void*)&components;
 		GetComponentsByTypeId(cryiidof<ComponentType>(), *pRawComponents);
+		// Static cast all types from IEntityComponent* to ComponentType*
+		for (auto it = pRawComponents->begin(); it != pRawComponents->end(); ++it)
+		{
+			*it = static_cast<ComponentType*>((IEntityComponent*)(void*)*it);
+		}
 	}
 
 	//! Creates instances of the components contained in the other entity
@@ -1182,45 +1230,6 @@ typedef IEntity IEntityPhysicalProxy;
 
 template<typename DST, typename SRC>
 DST crycomponent_cast(SRC pComponent) { return static_cast<DST>(pComponent); }
-
-template<typename ComponentType>
-inline ComponentType* IEntity::CreateComponentClass(bool bAllowDuplicate)
-{
-	return static_cast<ComponentType*>(AddComponent(cryiidof<ComponentType>(), std::make_shared<ComponentType>(), bAllowDuplicate,nullptr));
-}
-
-template<typename ComponentInterfaceType>
-inline ComponentInterfaceType* IEntity::CreateComponent(bool bAllowDuplicate)
-{
-	//static_assert(InterfaceCastSemantics::cryhasiid<ComponentInterfaceType>::Check, "Tried to create component class that was not declared with CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS, CRY_ENTITY_COMPONENT_CLASS or CRY_ENTITY_COMPONENT_INTERFACE in a public scope!");
-
-	ComponentInterfaceType* pReturn = static_cast<ComponentInterfaceType*>(AddComponent(cryiidof<ComponentInterfaceType>(), nullptr, bAllowDuplicate,nullptr));
-	assert(pReturn); // Must return a valid component interface
-
-	return pReturn;
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<typename ComponentType>
-inline ComponentType* IEntity::GetOrCreateComponent()
-{
-	auto component = GetComponent<ComponentType>();
-	if (component)
-		return component;
-	else
-		return CreateComponent<ComponentType>();
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<typename ComponentType>
-inline ComponentType* IEntity::GetOrCreateComponentClass()
-{
-	auto component = GetComponent<ComponentType>();
-	if (component)
-		return component;
-	else
-		return CreateComponentClass<ComponentType>();
-}
 
 // Helper methods
 //! Set the viewDistRatio on the render node.

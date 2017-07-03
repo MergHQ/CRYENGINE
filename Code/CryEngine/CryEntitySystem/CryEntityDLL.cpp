@@ -4,6 +4,7 @@
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include "EntitySystem.h"
+#include "EntityUnitTests.h"
 
 #include "Schematyc/EntitySchematycActions.h"
 #include "Schematyc/EntitySchematycUtilFunctions.h"
@@ -30,7 +31,7 @@ public:
 	{
 		switch (event)
 		{
-		case ESYSTEM_EVENT_GAME_POST_INIT:
+		case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
 			{
 				auto entitySchematycRegistration = [](Schematyc::IEnvRegistrar& registrar)
 				{
@@ -38,6 +39,11 @@ public:
 					Schematyc::CEntityDebugTextAction::Register(registrar);
 					Schematyc::Entity::RegisterUtilFunctions(registrar);
 					Schematyc::CEntityUtilsComponent::Register(registrar);
+
+					if (gEnv->bTesting)
+					{
+						RegisterUnitTestComponents(registrar);
+					}
 				};
 
 				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(

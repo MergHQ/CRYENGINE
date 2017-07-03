@@ -9,14 +9,34 @@ struct ICryUnknown;
 
 namespace InterfaceCastSemantics
 {
+#if !defined(SWIG)
+template<class T>
+struct has_cryiidof
+{
+	typedef char(&yes)[1];
+	typedef char(&no)[2];
+
+	template <typename C> static yes check(decltype(&C::IID));
+	template <typename> static no check(...);
+
+	static constexpr bool value = sizeof(check<T>(0)) == sizeof(yes);
+};
+#endif
+
 template<class T>
 const CryInterfaceID& cryiidof()
 {
 	return T::IID();
 }
 
+#if !defined(SWIG)
+#define _BEFRIEND_CRYIIDOF() \
+  template<class T> friend const CryInterfaceID &InterfaceCastSemantics::cryiidof(); \
+  template<class T> friend struct InterfaceCastSemantics::has_cryiidof;
+#else
 #define _BEFRIEND_CRYIIDOF() \
   template<class T> friend const CryInterfaceID &InterfaceCastSemantics::cryiidof();
+#endif
 
 template<class Dst, class Src>
 Dst* cryinterface_cast(Src* p)

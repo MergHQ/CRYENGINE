@@ -236,7 +236,7 @@ IEntityComponent* CGameRulesSystem::CreateGameObject(IEntity* pEntity, SEntitySp
 	TGameRulesMap::iterator it = pThis->m_GameRules.find(params.pClass->GetName());
 	CRY_ASSERT(it != pThis->m_GameRules.end());
 
-	auto pGameObject = pEntity->CreateComponentClass<CGameObject>();
+	auto pGameObject = pEntity->GetOrCreateComponentClass<CGameObject>();
 
 	if (!it->second.extension.empty())
 	{

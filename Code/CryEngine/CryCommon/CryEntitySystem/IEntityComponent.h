@@ -280,7 +280,6 @@ struct IEntityComponent : public ICryUnknown
 		IEntityComponent* pComponent;
 	};
 
-public:
 	CRY_ENTITY_COMPONENT_INTERFACE(IEntityComponent, 0x6A6FFE9AA3D44CD6, 0x9EF1FC42EE649776)
 
 	typedef int                   ComponentEventPriority;
