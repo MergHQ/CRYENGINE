@@ -5,6 +5,7 @@
 #include "Blueprints.h"
 #include "DocSerializationContext.h"
 #include "Settings.h"
+#include "CentralEventManager.h"
 
 #include <CrySerialization/CryStrings.h>
 #include <CrySerialization/Enum.h>
@@ -1393,7 +1394,7 @@ void CConstParamBlueprint::SConstParam::Serialize(Serialization::IArchive& archi
 			{
 				if ((name != oldName) || (type != oldType))
 				{
-					pParamsContext->SetParamsChanged(true);
+					pParamsContext->SetParamsChanged();
 				}
 			}
 		}
@@ -1489,7 +1490,7 @@ void CConstParamBlueprint::Serialize(Serialization::IArchive& archive)
 		{
 			if (CParametersListContext* pParamsContext = pContext->GetParametersListContext())
 			{
-				pParamsContext->SetParamsChanged(true);
+				pParamsContext->SetParamsChanged();
 			}
 		}
 	}
@@ -1558,7 +1559,7 @@ void CRuntimeParamBlueprint::SRuntimeParam::Serialize(Serialization::IArchive& a
 			{
 				if ((name != oldName) || (type != oldType))
 				{
-					pParamsContext->SetParamsChanged(true);
+					pParamsContext->SetParamsChanged();
 				}
 			}
 		}
@@ -1639,7 +1640,7 @@ void CRuntimeParamBlueprint::Serialize(Serialization::IArchive& archive)
 		{
 			if (CParametersListContext* pParamsContext = pContext->GetParametersListContext())
 			{
-				pParamsContext->SetParamsChanged(true);
+				pParamsContext->SetParamsChanged();
 			}
 		}
 	}
@@ -2854,7 +2855,7 @@ void CQueryBlueprint::CheckQueryTraitsChange(const SQueryFactoryType::CTraits& q
 	{
 		if (oldTraits.SupportsParameters() != queryTraits.SupportsParameters())
 		{
-			paramListContext.SetParamsChanged(true);
+			paramListContext.SetParamsChanged();
 			if (!queryTraits.SupportsParameters())
 			{
 				m_constParams = CConstParamBlueprint();
@@ -3021,6 +3022,12 @@ CParametersListContext::~CParametersListContext()
 	{
 		m_pSerializationContext->PopParametersListContext(this);
 	}
+}
+
+void CParametersListContext::SetParamsChanged()
+{
+	m_bParamsChanged = true;
+	CCentralEventManager::QueryBlueprintRuntimeParamsChanged(CCentralEventManager::SQueryBlueprintRuntimeParamsChangedEventArgs(*m_pOwner));
 }
 
 void CParametersListContext::BuildFunctionListForAvailableParameters(

@@ -70,7 +70,8 @@ namespace UQS
 
 			// - actually starts the query that has been prepared so far
 			// - cancels a possibly running query
-			void                            StartQuery();
+			// - the returned query ID may be invalid (which happens when the query couldn't even be started, e. g. due to missing runtime-parameters) (in this case, the callback will be triggered as well)
+			Core::CQueryID                  StartQuery();
 
 			// - prematurely cancels the possibly running query
 			// - will *not* trigger the potential callback previously set via SetCallback()

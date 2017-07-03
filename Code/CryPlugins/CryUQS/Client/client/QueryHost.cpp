@@ -82,7 +82,7 @@ namespace UQS
 			return m_runtimeParams;
 		}
 
-		void CQueryHost::StartQuery()
+		Core::CQueryID CQueryHost::StartQuery()
 		{
 			HelpStartQuery();
 
@@ -94,6 +94,8 @@ namespace UQS
 					m_pCallback(m_pCallbackUserData);
 				}
 			}
+
+			return m_queryID;
 		}
 
 		void CQueryHost::CancelQuery()

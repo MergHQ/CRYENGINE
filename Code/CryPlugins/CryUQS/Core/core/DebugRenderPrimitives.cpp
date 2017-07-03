@@ -218,7 +218,8 @@ namespace UQS
 			{
 				pAux->SetRenderFlags(GetFlags3D());
 				pAux->DrawLine(from, color, to, color, SCvars::debugDrawLineThickness);
-				pAux->DrawCone(to, (to - from).GetNormalizedSafe(), coneRadius, coneHeight, color);
+				Vec3 dir = (to - from).GetNormalizedSafe();
+				pAux->DrawCone(to - dir * coneHeight, dir, coneRadius, coneHeight, color);
 			}
 		}
 
