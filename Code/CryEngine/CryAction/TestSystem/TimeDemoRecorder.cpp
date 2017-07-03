@@ -365,7 +365,7 @@ void CTimeDemoRecorder::cmd_Play(IConsoleCmdArgs* pArgs)
 		{
 			s_timedemo_file->Set(pArgs->GetArg(1));
 		}
-		s_pTimeDemoRecorder->StartDemoDelayed(20);
+		s_pTimeDemoRecorder->StartDemoDelayed();
 	}
 }
 
@@ -455,7 +455,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 	, m_pTimeDemoInfo(nullptr)
 	, m_numLoops(0)
 	, m_bAIEnabled(false)
-	, m_countDownPlay(0)
+	, m_bDelayedPlayFlag(false)
 	, m_prevGodMode(0)
 	, m_nCurrentDemoLevel(0)
 	, m_lastChainDemoTime(0.0f)
@@ -633,7 +633,7 @@ void CTimeDemoRecorder::Play(bool bEnable)
 
 	if (bEnable)
 	{
-		CRY_ASSERT(*GetCurrentLevelPath() != 0);
+		CRY_ASSERT(strlen(GetCurrentLevelPath()));
 
 		// Try to load demo file.
 		string filename = PathUtil::Make(GetCurrentLevelPath(), s_timedemo_file->GetString(), "tmd");
@@ -1419,7 +1419,7 @@ void CTimeDemoRecorder::PostUpdate()
 		return;
 	}
 
-	if (!m_countDownPlay && !m_bPlaying && m_bDemoFinished)
+	if (!m_bDelayedPlayFlag && !m_bPlaying && m_bDemoFinished)
 	{
 		if (!m_demoLevels.empty())
 		{
@@ -1445,12 +1445,14 @@ void CTimeDemoRecorder::PostUpdate()
 		}
 	}
 
-	if (m_countDownPlay)
+	if (m_bDelayedPlayFlag)
 	{
 		// to avoid playing demo before game is initialized (when running autotest)
-		m_countDownPlay--;
-		if (m_countDownPlay == 0)
+		if (strlen(GetCurrentLevelPath()))
+		{
+			m_bDelayedPlayFlag = false;
 			Play(true);
+		}
 	}
 
 	ProcessKeysInput();
@@ -2455,7 +2457,7 @@ void CTimeDemoRecorder::StartNextChainedLevel()
 			CryStackStringT<char, 256> mapCmd("map ");
 			mapCmd += m_demoLevels[m_nCurrentDemoLevel].level;
 			gEnv->pConsole->ExecuteString(mapCmd);
-			StartDemoDelayed(50);
+			StartDemoDelayed();
 			m_nCurrentDemoLevel++;
 			return;
 		}
@@ -2654,10 +2656,11 @@ void CTimeDemoRecorder::ReplayGameState(FrameRecord& rec)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTimeDemoRecorder::StartDemoDelayed(int nFrames)
+void CTimeDemoRecorder::StartDemoDelayed()
 {
+	CRY_ASSERT(!m_bDelayedPlayFlag);
 	EraseLogFile();
-	m_countDownPlay = nFrames;
+	m_bDelayedPlayFlag = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
