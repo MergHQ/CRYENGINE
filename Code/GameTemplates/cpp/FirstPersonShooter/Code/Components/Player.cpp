@@ -188,15 +188,15 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 	// Start with updating look orientation from the latest input
 	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_lookOrientation));
 
-	const float rotationSpeed = 0.05f;
+	const float rotationSpeed = 0.002f;
 
-	ypr.x += m_mouseDeltaRotation.x * rotationSpeed * frameTime;
+	ypr.x += m_mouseDeltaRotation.x * rotationSpeed;
 
 	const float rotationLimitsMinPitch = -0.84f;
 	const float rotationLimitsMaxPitch = 1.5f;
 
 	// TODO: Perform soft clamp here instead of hard wall, should reduce rot speed in this direction when close to limit.
-	ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * rotationSpeed * frameTime, rotationLimitsMinPitch, rotationLimitsMaxPitch);
+	ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * rotationSpeed, rotationLimitsMinPitch, rotationLimitsMaxPitch);
 	// Skip roll
 	ypr.z = 0;
 

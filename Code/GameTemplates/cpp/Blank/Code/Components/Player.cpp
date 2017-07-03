@@ -80,9 +80,9 @@ void CPlayerComponent::ProcessEvent(SEntityEvent& event)
 		// Update entity rotation based on latest input
 		Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(transformation));
 
-		const float rotationSpeed = 0.05f;
-		ypr.x += m_mouseDeltaRotation.x * rotationSpeed * pCtx->fFrameTime;
-		ypr.y += m_mouseDeltaRotation.y * rotationSpeed * pCtx->fFrameTime;
+		const float rotationSpeed = 0.002f;
+		ypr.x += m_mouseDeltaRotation.x * rotationSpeed;
+		ypr.y += m_mouseDeltaRotation.y * rotationSpeed;
 
 		// Disable roll
 		ypr.z = 0;
