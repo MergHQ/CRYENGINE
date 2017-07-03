@@ -456,7 +456,7 @@ public:
 		Schematyc::IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 		if (pObject)
 		{
-			if (!pObject->Reset(Schematyc::ESimulationMode::Preview, Schematyc::EObjectResetPolicy::Always))
+			if (!pObject->SetSimulationMode(Schematyc::ESimulationMode::Preview, Schematyc::EObjectSimulationUpdatePolicy::Always, false))
 			{
 				CRY_ASSERT_MESSAGE(0, "Failed to reset Schematyc Preview.");
 				DestroyObject(m_objectId);

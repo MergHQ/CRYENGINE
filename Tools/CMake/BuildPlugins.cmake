@@ -1,5 +1,5 @@
 # CryExtensions
-if (EXISTS Code/CryExtensions)
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Code/CryExtensions")
 	add_subdirectory(Code/CryExtensions)
 endif()
 

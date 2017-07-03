@@ -195,7 +195,7 @@ PRIVATE
 set_solution_startup_target($${THIS_PROJECT})
 
 if (WIN32)
-    set_visual_studio_debugger_command( $${THIS_PROJECT} "$output_path/GameLauncher.exe" "-project \\"$projectfile\\"" )
+    set_visual_studio_debugger_command( $${THIS_PROJECT} "$${CRYENGINE_DIR}/bin/win_x64/GameLauncher.exe" "-project \\"$projectfile\\"" )
 endif()\n'''
 
     cmakelists_path = os.path.join(code_directory, 'CMakeLists.txt')

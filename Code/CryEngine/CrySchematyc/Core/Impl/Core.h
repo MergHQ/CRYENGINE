@@ -28,8 +28,8 @@ DECLARE_SHARED_POINTERS(ILogOutput)
 class CCore : public ICrySchematycCore, public ISystemEventListener
 {
 	CRYINTERFACE_BEGIN()
-		CRYINTERFACE_ADD(Cry::IDefaultModule)
-		CRYINTERFACE_ADD(ICrySchematycCore)
+	CRYINTERFACE_ADD(Cry::IDefaultModule)
+	CRYINTERFACE_ADD(ICrySchematycCore)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_SINGLETONCLASS(CCore, "EngineModule_SchematycCore", 0x96d98d9835aa4fb6, 0x830b53dbfe71908d)
@@ -52,7 +52,7 @@ public:
 
 	// ICrySchematycCore
 	virtual void                     SetGUIDGenerator(const GUIDGenerator& guidGenerator) override;
-	virtual CryGUID                    CreateGUID() const override;
+	virtual CryGUID                  CreateGUID() const override;
 
 	virtual const char*              GetRootFolder() const override;
 	virtual const char*              GetScriptsFolder() const override;
@@ -73,7 +73,7 @@ public:
 	virtual ISerializationContextPtr CreateSerializationContext(const SSerializationContextParams& params) const override;
 	virtual IScriptViewPtr           CreateScriptView(const CryGUID& scopeGUID) const override;
 
-	virtual IObject*                 CreateObject(const SObjectParams& params) override;
+	virtual bool                     CreateObject(const Schematyc::SObjectParams& params, IObject*& pObjectOut) override;
 	virtual IObject*                 GetObject(ObjectId objectId) override;
 	virtual void                     DestroyObject(ObjectId objectId) override;
 	virtual void                     SendSignal(ObjectId objectId, const SObjectSignal& signal) override;

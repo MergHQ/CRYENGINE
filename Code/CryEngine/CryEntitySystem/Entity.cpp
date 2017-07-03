@@ -282,9 +282,11 @@ bool CEntity::SendEvent(SEntityEvent& event)
 				if (pCharacterInstance)
 					pCharacterInstance->SetPlaybackScale(1.0f);
 			}
-			if (m_pSchematycObject)
+
+			// We only want to reset when we return from game mode to editor mode.
+			if (m_pSchematycObject && gEnv->IsEditor() && !gEnv->IsEditorGameMode())
 			{
-				m_pSchematycObject->Reset(m_simulationMode, Schematyc::EObjectResetPolicy::Always);
+				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
 			}
 			break;
 		}
@@ -328,11 +330,26 @@ bool CEntity::SendEvent(SEntityEvent& event)
 			return true;
 		break;
 
-	case ENTITY_EVENT_START_LEVEL:
-		if (m_pSchematycObject && !gEnv->IsEditor())
+	case ENTITY_EVENT_LEVEL_LOADED:
 		{
-			m_simulationMode = EEntitySimulationMode::Game;
-			m_pSchematycObject->Reset(m_simulationMode, Schematyc::EObjectResetPolicy::OnChange);
+			// After level load we set the simulation mode but don't start simulation yet. Mean we
+			// fully prepare the object for the simulation to start. Simulation will be started with
+			// the ENTITY_EVENT_START_GAME event.
+			if (m_pSchematycObject)
+			{
+				m_simulationMode = !gEnv->IsEditing() ? EEntitySimulationMode::Game : EEntitySimulationMode::Editor;
+				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
+			}
+		}
+		break;
+
+	case ENTITY_EVENT_START_GAME:
+		{
+			// Set simulation mode and finally start simulation.
+			if (m_pSchematycObject)
+			{
+				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, true);
+			}
 		}
 		break;
 	}
@@ -3227,7 +3244,6 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 	Schematyc::IRuntimeClassConstPtr pRuntimeClass = pClass->GetSchematycRuntimeClass();
 	if (pRuntimeClass)
 	{
-		Schematyc::SObjectParams objectParams(pRuntimeClass->GetGUID());
 		if (!m_pSchematycProperties)
 		{
 			m_pSchematycProperties = pRuntimeClass->GetDefaultProperties().Clone();
@@ -3241,11 +3257,19 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 				Serialization::LoadXmlNode(*m_pSchematycProperties.get(), schematycPropsNode);
 			}
 		}
+
+		Schematyc::SObjectParams objectParams;
+		objectParams.classGUID = pRuntimeClass->GetGUID();
 		objectParams.pProperties = m_pSchematycProperties;
-		objectParams.simulationMode = m_simulationMode;
 		objectParams.pEntity = this;
 
-		m_pSchematycObject = gEnv->pSchematyc->CreateObject(objectParams);
+		if (gEnv->pSchematyc->CreateObject(objectParams, m_pSchematycObject))
+		{
+			if (m_simulationMode != EEntitySimulationMode::Idle)
+			{
+				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
+			}
+		}
 	}
 }
 
