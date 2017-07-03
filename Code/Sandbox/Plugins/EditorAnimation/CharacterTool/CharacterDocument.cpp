@@ -373,19 +373,23 @@ static MotionParameters QueryMotionParametersFromCharacterInstance(const ICharac
 
 	MotionParameters motionParameters;
 
-	const CAnimation& animation = character->GetISkeletonAnim()->GetAnimFromFIFO(layer, 0);
-	const SParametricSampler* sampler = animation.GetParametricSampler();
-	if (sampler)
+	const auto animationsCount = character->GetISkeletonAnim()->GetNumAnimsInFIFO(layer);
+	if (animationsCount > 0)
 	{
-		for (size_t i = 0; i < sampler->m_numDimensions; ++i)
+		const CAnimation& animation = character->GetISkeletonAnim()->GetAnimFromFIFO(layer, animationsCount - 1);
+		const SParametricSampler* sampler = animation.GetParametricSampler();
+		if (sampler)
 		{
-			const auto parameterId = sampler->m_MotionParameterID[i];
-			if (parameterId < eMotionParamID_COUNT)
+			for (size_t i = 0; i < sampler->m_numDimensions; ++i)
 			{
-				motionParameters.enabled[parameterId] = true;
-				motionParameters.rangeMin[parameterId] = 0.0f;
-				motionParameters.rangeMax[parameterId] = 1.0f;
-				character->GetIAnimationSet()->GetMotionParameterRange(animation.GetAnimationId(), EMotionParamID(parameterId), motionParameters.rangeMin[parameterId], motionParameters.rangeMax[parameterId]);
+				const auto parameterId = sampler->m_MotionParameterID[i];
+				if (parameterId < eMotionParamID_COUNT)
+				{
+					motionParameters.enabled[parameterId] = true;
+					motionParameters.rangeMin[parameterId] = 0.0f;
+					motionParameters.rangeMax[parameterId] = 1.0f;
+					character->GetIAnimationSet()->GetMotionParameterRange(animation.GetAnimationId(), EMotionParamID(parameterId), motionParameters.rangeMin[parameterId], motionParameters.rangeMax[parameterId]);
+				}
 			}
 		}
 	}
