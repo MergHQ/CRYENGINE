@@ -98,6 +98,11 @@ void CCVars::RegisterVariables()
 	#error "Undefined platform."
 #endif
 
+	REGISTER_CVAR2("s_DebugDistance", &m_debugDistance, m_debugDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Limits drawing of audio object debug info to the specified distance around the active listeners. Setting this cvar to 0 disables the limiting.\n"
+	               "Usage: s_DebugDistance [0/...]\n"
+	               "Default: 0 m (infinite)\n");
+
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Occlusion is not calculated for audio objects, whose distance to the listener is greater than this value. Setting this value to 0 disables obstruction/occlusion calculations.\n"
 	               "Usage: s_OcclusionMaxDistance [0/...]\n"
@@ -237,6 +242,8 @@ void CCVars::RegisterVariables()
 	               "f: Show Environment amounts for active audio objects.\n"
 	               "g: Draw occlusion rays.\n"
 	               "h: Show occlusion ray labels.\n"
+	               "i: Show object standalone files.\n"
+	               "u: List standalone files.\n"
 	               "v: List active Events.\n"
 	               "w: List active Audio Objects.\n"
 	               "x: Show FileCache Manager debug info.\n"
@@ -277,15 +284,10 @@ void CCVars::RegisterVariables()
 	               "Usage: s_AudioObjectsRayType [0/1/2/3/4/5]\n"
 	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
 
-	m_pAudioTriggersDebugFilter = REGISTER_STRING("s_AudioTriggersDebugFilter", "", 0,
-	                                              "Allows for filtered display of audio triggers by a search string.\n"
-	                                              "Usage: s_AudioTriggersDebugFilter laser\n"
-	                                              "Default: " " (all)\n");
-
-	m_pAudioObjectsDebugFilter = REGISTER_STRING("s_AudioObjectsDebugFilter", "", 0,
-	                                             "Allows for filtered display of audio objects by a search string.\n"
-	                                             "Usage: s_AudioObjectsDebugFilter spaceship.\n"
-	                                             "Default: " " (all)\n");
+	m_pDebugFilter = REGISTER_STRING("s_DebugFilter", "", 0,
+	                                 "Allows for filtered display of audio debug info by a search string.\n"
+	                                 "Usage: s_DebugFilter spaceship\n"
+	                                 "Default: " " (all)\n");
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }

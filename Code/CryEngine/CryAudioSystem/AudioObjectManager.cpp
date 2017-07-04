@@ -303,7 +303,7 @@ void CAudioObjectManager::DrawPerObjectDebugInfo(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
+void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
 {
 	static float const headerColor[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
 	static float const itemActiveColor[4] = { 0.1f, 0.6f, 0.1f, 0.9f };
@@ -315,28 +315,35 @@ void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, flo
 	posX += 20.0f;
 	posY += 17.0f;
 
-	for (auto pAudioObject : m_constructedAudioObjects)
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+	lowerCaseSearchString.MakeLower();
+
+	for (auto const pAudioObject : m_constructedAudioObjects)
 	{
-		char const* const szOriginalName = pAudioObject->m_name.c_str();
-		CryFixedStringT<MaxControlNameLength> lowerCaseAudioObjectName(szOriginalName);
-		lowerCaseAudioObjectName.MakeLower();
-		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pAudioObjectsDebugFilter->GetString());
-		lowerCaseSearchString.MakeLower();
-		bool const bHasActiveData = HasActiveData(pAudioObject);
-		bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) > 0;
-		bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseAudioObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-		bool const bDraw = bStringFound && ((g_cvars.m_showActiveAudioObjectsOnly == 0) || (g_cvars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
+		Vec3 const& position = pAudioObject->GetTransformation().GetPosition();
+		float const distance = position.GetDistance(listenerPosition);
 
-		if (bDraw)
+		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{
-			auxGeom.Draw2dLabel(posX, posY, 1.2f,
-			                    bIsVirtual ? itemVirtualColor : (bHasActiveData ? itemActiveColor : itemInactiveColor),
-			                    false,
-			                    "%s : %.2f",
-			                    szOriginalName, pAudioObject->GetMaxRadius());
+			char const* const szObjectName = pAudioObject->m_name.c_str();
+			CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
+			lowerCaseObjectName.MakeLower();
+			bool const bHasActiveData = HasActiveData(pAudioObject);
+			bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) > 0;
+			bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+			bool const bDraw = bStringFound && ((g_cvars.m_showActiveAudioObjectsOnly == 0) || (g_cvars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
 
-			posY += 10.0f;
-			++numAudioObjects;
+			if (bDraw)
+			{
+				auxGeom.Draw2dLabel(posX, posY, 1.2f,
+					bIsVirtual ? itemVirtualColor : (bHasActiveData ? itemActiveColor : itemInactiveColor),
+					false,
+					"%s : %.2f",
+					szObjectName, pAudioObject->GetMaxRadius());
+
+				posY += 10.0f;
+				++numAudioObjects;
+			}
 		}
 	}
 

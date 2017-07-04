@@ -1009,212 +1009,277 @@ void CATLAudioObject::DrawDebugInfo(
 		{
 			float const distance = position.GetDistance(listenerPosition);
 
-			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawSpheres) > 0)
+			if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 			{
-				SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-				SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-				newRenderFlags.SetCullMode(e_CullModeNone);
-				auxGeom.SetRenderFlags(newRenderFlags);
-				float const radius = 0.15f;
-				auxGeom.DrawSphere(position, radius, ColorB(255, 1, 1, 255));
-				auxGeom.SetRenderFlags(previousRenderFlags);
-			}
-			float const fontSize = 1.3f;
-			float const lineHeight = 12.0f;
-
-			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectStates) > 0 && !m_switchStates.empty())
-			{
-				Vec3 switchPos(screenPos);
-
-				for (auto const& switchStatePair : m_switchStates)
+				if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawSpheres) > 0)
 				{
+					SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+					SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+					newRenderFlags.SetCullMode(e_CullModeNone);
+					auxGeom.SetRenderFlags(newRenderFlags);
+					float const radius = 0.15f;
+					auxGeom.DrawSphere(position, radius, ColorB(255, 1, 1, 255));
+					auxGeom.SetRenderFlags(previousRenderFlags);
+				}
 
-					CATLSwitch const* const pSwitch = stl::find_in_map(switches, switchStatePair.first, nullptr);
+				float const fontSize = 1.3f;
+				float const lineHeight = 12.0f;
 
-					if (pSwitch != nullptr)
+				CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+				lowerCaseSearchString.MakeLower();
+
+				if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectStates) > 0 && !m_switchStates.empty())
+				{
+					Vec3 switchPos(screenPos);
+
+					for (auto const& switchStatePair : m_switchStates)
 					{
-						CATLSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->audioSwitchStates, switchStatePair.second, nullptr);
+						CATLSwitch const* const pSwitch = stl::find_in_map(switches, switchStatePair.first, nullptr);
 
-						if (pSwitchState != nullptr)
+						if (pSwitch != nullptr)
 						{
-							if (!pSwitch->m_name.empty() && !pSwitchState->m_name.empty())
-							{
-								CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
-								drawData.Update(pSwitchState->GetId());
-								float const switchTextColor[4] = { 0.8f, 0.8f, 0.8f, drawData.m_currentAlpha };
+							CATLSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->audioSwitchStates, switchStatePair.second, nullptr);
 
-								switchPos.y -= lineHeight;
-								auxGeom.Draw2dLabel(
-								  switchPos.x,
-								  switchPos.y,
-								  fontSize,
-								  switchTextColor,
-								  false,
-								  "%s: %s\n",
-								  pSwitch->m_name.c_str(),
-								  pSwitchState->m_name.c_str());
+							if (pSwitchState != nullptr)
+							{
+								if (!pSwitch->m_name.empty() && !pSwitchState->m_name.empty())
+								{
+									char const* const szSwitchName = pSwitch->m_name.c_str();
+									CryFixedStringT<MaxControlNameLength> lowerCaseSwitchName(szSwitchName);
+									lowerCaseSwitchName.MakeLower();
+									char const* const szStateName = pSwitchState->m_name.c_str();
+									CryFixedStringT<MaxControlNameLength> lowerCaseStateName(szStateName);
+									lowerCaseStateName.MakeLower();
+									bool const bDraw = (lowerCaseSearchString.empty() ||
+										(lowerCaseSearchString == "0")) ||
+										(lowerCaseSwitchName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
+										(lowerCaseStateName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+
+									if (bDraw)
+									{
+										CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
+										drawData.Update(pSwitchState->GetId());
+										float const switchTextColor[4] = { 0.8f, 0.8f, 0.8f, drawData.m_currentAlpha };
+
+										switchPos.y -= lineHeight;
+										auxGeom.Draw2dLabel(
+											switchPos.x,
+											switchPos.y,
+											fontSize,
+											switchTextColor,
+											false,
+											"%s: %s\n",
+											pSwitch->m_name.c_str(),
+											pSwitchState->m_name.c_str());
+									}
+								}
 							}
 						}
 					}
 				}
-			}
 
-			CryFixedStringT<MaxMiscStringLength> temp;
+				CryFixedStringT<MaxMiscStringLength> temp;
 
-			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectLabel) > 0)
-			{
-				static float const objectTextColor[4] = { 0.90f, 0.90f, 0.90f, 1.0f };
-				static float const objectGrayTextColor[4] = { 0.50f, 0.50f, 0.50f, 1.0f };
-
-				EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
-				SATLSoundPropagationData propagationData;
-				m_propagationProcessor.GetPropagationData(propagationData);
-
-				CATLAudioObject* const pAudioObject = const_cast<CATLAudioObject*>(this);
-
-				char const* const szOriginalName = pAudioObject->m_name.c_str();
-				CryFixedStringT<MaxControlNameLength> lowerCaseAudioObjectName(szOriginalName);
-				lowerCaseAudioObjectName.MakeLower();
-				CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pAudioObjectsDebugFilter->GetString());
-				lowerCaseSearchString.MakeLower();
-				bool const bHasActiveData = HasActiveData(pAudioObject);
-				bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) > 0;
-				bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseAudioObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-				bool const bDraw = bStringFound && ((g_cvars.m_showActiveAudioObjectsOnly == 0) || (g_cvars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
-
-				if (bDraw)
+				if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectLabel) > 0)
 				{
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y,
-						fontSize,
-						objectTextColor,
-						false,
-						"%s Dist:%4.1fm",
-						pAudioObject->m_name.c_str(),
-						distance);
+					static float const objectTextColor[4] = { 0.90f, 0.90f, 0.90f, 1.0f };
+					static float const objectGrayTextColor[4] = { 0.50f, 0.50f, 0.50f, 1.0f };
 
-					if (distance < g_cvars.m_occlusionMaxDistance)
+					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
+					SATLSoundPropagationData propagationData;
+					m_propagationProcessor.GetPropagationData(propagationData);
+
+					CATLAudioObject* const pAudioObject = const_cast<CATLAudioObject*>(this);
+
+					char const* const szObjectName = pAudioObject->m_name.c_str();
+					CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
+					lowerCaseObjectName.MakeLower();
+					bool const bHasActiveData = HasActiveData(pAudioObject);
+					bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) > 0;
+					bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+					bool const bDraw = bStringFound && ((g_cvars.m_showActiveAudioObjectsOnly == 0) || (g_cvars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
+
+					if (bDraw)
 					{
-						if (occlusionType == EOcclusionType::Adaptive)
-						{
-							temp.Format(
-								"%s(%s)",
-								s_szOcclusionTypes[IntegralValue(occlusionType)],
-								s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
-						}
-						else
-						{
-							temp.Format("%s", s_szOcclusionTypes[IntegralValue(occlusionType)]);
-						}
-					}
-					else
-					{
-						temp.Format("Ignore (exceeded activity range)");
-					}
-
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y + lineHeight,
-						fontSize,
-						(occlusionType != EOcclusionType::None && occlusionType != EOcclusionType::Ignore) ? objectTextColor : objectGrayTextColor,
-						false,
-						"Obst: %3.2f Occl: %3.2f Type: %s",
-						propagationData.obstruction,
-						propagationData.occlusion,
-						temp.c_str());
-				}
-
-				
-			}
-
-			float const textColor[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
-
-			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectParameters) > 0 && !m_parameters.empty())
-			{
-				Vec3 parameterPos(screenPos);
-
-				for (auto const& parameterPair : m_parameters)
-				{
-					CParameter const* const pParameter = stl::find_in_map(parameters, parameterPair.first, nullptr);
-
-					if (pParameter != nullptr)
-					{
-						float const offsetOnX = (static_cast<float>(pParameter->m_name.size()) + 5.6f) * 5.4f * fontSize;
-						parameterPos.y -= lineHeight;
 						auxGeom.Draw2dLabel(
-						  parameterPos.x - offsetOnX,
-						  parameterPos.y,
-						  fontSize,
-						  textColor, false,
-						  "%s: %2.2f\n",
-						  pParameter->m_name.c_str(), parameterPair.second);
-					}
-				}
-			}
+							screenPos.x,
+							screenPos.y,
+							fontSize,
+							objectTextColor,
+							false,
+							"%s Dist:%4.1fm",
+							pAudioObject->m_name.c_str(),
+							distance);
 
-			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectEnvironments) > 0 && !m_environments.empty())
-			{
-				Vec3 envPos(screenPos);
-
-				for (auto const& environmentPair : m_environments)
-				{
-					CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(environments, environmentPair.first, nullptr);
-
-					if (pEnvironment != nullptr)
-					{
-						float const offsetOnX = (static_cast<float>(pEnvironment->m_name.size()) + 5.1f) * 5.4f * fontSize;
-
-						envPos.y += lineHeight;
-						auxGeom.Draw2dLabel(
-						  envPos.x - offsetOnX,
-						  envPos.y,
-						  fontSize,
-						  textColor,
-						  false,
-						  "%s: %.2f\n",
-						  pEnvironment->m_name.c_str(),
-						  environmentPair.second);
-					}
-				}
-			}
-
-			CryFixedStringT<MaxMiscStringLength> controls;
-
-			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectTriggers) > 0 && !m_triggerStates.empty())
-			{
-				TriggerCountMap triggerCounts;
-
-				for (auto const& triggerStatesPair : m_triggerStates)
-				{
-					++(triggerCounts[triggerStatesPair.second.audioTriggerId]);
-				}
-
-				for (auto const& triggerCountsPair : triggerCounts)
-				{
-					CATLTrigger const* const pTrigger = stl::find_in_map(triggers, triggerCountsPair.first, nullptr);
-
-					if (pTrigger != nullptr)
-					{
-
-						char const* const szOriginalName = pTrigger->m_name.c_str();
-						CryFixedStringT<MaxControlNameLength> lowerCaseAudioTriggerName(szOriginalName);
-						lowerCaseAudioTriggerName.MakeLower();
-						CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pAudioTriggersDebugFilter->GetString());
-						lowerCaseSearchString.MakeLower();
-						bool const bDraw = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseAudioTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-
-						if (bDraw)
+						if (distance < g_cvars.m_occlusionMaxDistance)
 						{
-							size_t const numInstances = triggerCountsPair.second;
-
-							if (numInstances == 1)
+							if (occlusionType == EOcclusionType::Adaptive)
 							{
-								temp.Format("%s\n", pTrigger->m_name.c_str());
+								temp.Format(
+									"%s(%s)",
+									s_szOcclusionTypes[IntegralValue(occlusionType)],
+									s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
 							}
 							else
 							{
-								temp.Format("%s: %" PRISIZE_T "\n", pTrigger->m_name.c_str(), numInstances);
+								temp.Format("%s", s_szOcclusionTypes[IntegralValue(occlusionType)]);
+							}
+						}
+						else
+						{
+							temp.Format("Ignore (exceeded activity range)");
+						}
+
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y + lineHeight,
+							fontSize,
+							(occlusionType != EOcclusionType::None && occlusionType != EOcclusionType::Ignore) ? objectTextColor : objectGrayTextColor,
+							false,
+							"Obst: %3.2f Occl: %3.2f Type: %s",
+							propagationData.obstruction,
+							propagationData.occlusion,
+							temp.c_str());
+					}
+
+
+				}
+
+				float const textColor[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+
+				if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectParameters) > 0 && !m_parameters.empty())
+				{
+					Vec3 parameterPos(screenPos);
+
+					for (auto const& parameterPair : m_parameters)
+					{
+						CParameter const* const pParameter = stl::find_in_map(parameters, parameterPair.first, nullptr);
+
+						if (pParameter != nullptr)
+						{
+							char const* const szParameterName = pParameter->m_name.c_str();
+							CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(szParameterName);
+							lowerCaseParameterName.MakeLower();
+							bool const bDraw = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseParameterName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+
+							if (bDraw)
+							{
+								float const offsetOnX = (static_cast<float>(pParameter->m_name.size()) + 5.6f) * 5.4f * fontSize;
+								parameterPos.y -= lineHeight;
+								auxGeom.Draw2dLabel(
+									parameterPos.x - offsetOnX,
+									parameterPos.y,
+									fontSize,
+									textColor, false,
+									"%s: %2.2f\n",
+									pParameter->m_name.c_str(), parameterPair.second);
+							}
+						}
+					}
+				}
+
+				if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectEnvironments) > 0 && !m_environments.empty())
+				{
+					Vec3 envPos(screenPos);
+
+					for (auto const& environmentPair : m_environments)
+					{
+						CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(environments, environmentPair.first, nullptr);
+
+						if (pEnvironment != nullptr)
+						{
+							char const* const szEnvironmentName = pEnvironment->m_name.c_str();
+							CryFixedStringT<MaxControlNameLength> lowerCaseEnvironmentName(szEnvironmentName);
+							lowerCaseEnvironmentName.MakeLower();
+							bool const bDraw = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+
+							if (bDraw)
+							{
+								float const offsetOnX = (static_cast<float>(pEnvironment->m_name.size()) + 5.1f) * 5.4f * fontSize;
+
+								envPos.y += lineHeight;
+								auxGeom.Draw2dLabel(
+									envPos.x - offsetOnX,
+									envPos.y,
+									fontSize,
+									textColor,
+									false,
+									"%s: %.2f\n",
+									pEnvironment->m_name.c_str(),
+									environmentPair.second);
+							}
+						}
+					}
+				}
+
+				CryFixedStringT<MaxMiscStringLength> controls;
+
+				if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectTriggers) > 0 && !m_triggerStates.empty())
+				{
+					TriggerCountMap triggerCounts;
+
+					for (auto const& triggerStatesPair : m_triggerStates)
+					{
+						++(triggerCounts[triggerStatesPair.second.audioTriggerId]);
+					}
+
+					for (auto const& triggerCountsPair : triggerCounts)
+					{
+						CATLTrigger const* const pTrigger = stl::find_in_map(triggers, triggerCountsPair.first, nullptr);
+
+						if (pTrigger != nullptr)
+						{
+							char const* const szTriggerName = pTrigger->m_name.c_str();
+							CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+							lowerCaseTriggerName.MakeLower();
+							bool const bDraw = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+
+							if (bDraw)
+							{
+								size_t const numInstances = triggerCountsPair.second;
+
+								if (numInstances == 1)
+								{
+									temp.Format("%s\n", pTrigger->m_name.c_str());
+								}
+								else
+								{
+									temp.Format("%s: %" PRISIZE_T "\n", pTrigger->m_name.c_str(), numInstances);
+								}
+
+								controls += temp;
+								temp.clear();
+							}
+						}
+					}
+				}
+
+				if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawObjectStandaloneFiles) > 0 && !m_activeStandaloneFiles.empty())
+				{
+					std::map<CHashedString, size_t> numStandaloneFiles;
+					for (auto const& standaloneFilePair : m_activeStandaloneFiles)
+					{
+						++(numStandaloneFiles[standaloneFilePair.first->m_hashedFilename]);
+					}
+
+					for (auto const& numInstancesPair : numStandaloneFiles)
+					{
+						char const* const szStandaloneFileName = numInstancesPair.first.GetText().c_str();
+						CryFixedStringT<MaxControlNameLength> lowerCaseStandaloneFileName(szStandaloneFileName);
+						lowerCaseStandaloneFileName.MakeLower();
+						bool const bDraw = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+
+						if (bDraw)
+						{
+							size_t const numInstances = numInstancesPair.second;
+
+							if (numInstances == 1)
+							{
+								temp.Format("%s\n", numInstancesPair.first.GetText().c_str());
+							}
+							else
+							{
+								temp.Format("%s: %" PRISIZE_T "\n", numInstancesPair.first.GetText().c_str(), numInstances);
 							}
 
 							controls += temp;
@@ -1222,43 +1287,17 @@ void CATLAudioObject::DrawDebugInfo(
 						}
 					}
 				}
-			}
 
-			if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawObjectStandaloneFiles) > 0 && !m_activeStandaloneFiles.empty())
-			{
-				std::map<CHashedString, size_t> numStandaloneFiles;
-				for (auto const& standaloneFilePair : m_activeStandaloneFiles)
+				if (!controls.empty())
 				{
-					++(numStandaloneFiles[standaloneFilePair.first->m_hashedFilename]);
+					auxGeom.Draw2dLabel(
+						screenPos.x,
+						screenPos.y + 2.0f * lineHeight,
+						fontSize, textColor,
+						false,
+						"%s",
+						controls.c_str());
 				}
-
-				for (auto const& numInstancesPair : numStandaloneFiles)
-				{
-					size_t const numInstances = numInstancesPair.second;
-
-					if (numInstances == 1)
-					{
-						temp.Format("%s\n", numInstancesPair.first.GetText().c_str());
-					}
-					else
-					{
-						temp.Format("%s: %" PRISIZE_T "\n", numInstancesPair.first.GetText().c_str(), numInstances);
-					}
-
-					controls += temp;
-					temp.clear();
-				}
-			}
-
-			if (!controls.empty())
-			{
-				auxGeom.Draw2dLabel(
-				  screenPos.x,
-				  screenPos.y + 2.0f * lineHeight,
-				  fontSize, textColor,
-				  false,
-				  "%s",
-				  controls.c_str());
 			}
 		}
 	}

@@ -82,7 +82,7 @@ size_t CAudioEventManager::GetNumConstructed() const
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
+void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
 {
 	static float const headerColor[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
 	static float const itemPlayingColor[4] = { 0.1f, 0.6f, 0.1f, 0.9f };
@@ -94,37 +94,44 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 	posX += 20.0f;
 	posY += 17.0f;
 
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+	lowerCaseSearchString.MakeLower();
+
 	for (auto const pEvent : m_constructedAudioEvents)
 	{
 		if (pEvent->m_pTrigger != nullptr)
 		{
-			char const* const szOriginalName = pEvent->m_pTrigger->m_name.c_str();
-			CryFixedStringT<MaxControlNameLength> lowerCaseAudioTriggerName(szOriginalName);
-			lowerCaseAudioTriggerName.MakeLower();
-			CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pAudioTriggersDebugFilter->GetString());
-			lowerCaseSearchString.MakeLower();
-			bool const bDraw = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseAudioTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+			Vec3 const& position = pEvent->m_pAudioObject->GetTransformation().GetPosition();
+			float const distance = position.GetDistance(listenerPosition);
 
-			if (bDraw)
+			if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 			{
-				float const* pColor = itemOtherColor;
+				char const* const szTriggerName = pEvent->m_pTrigger->m_name.c_str();
+				CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+				lowerCaseTriggerName.MakeLower();
+				bool const bDraw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
 
-				if (pEvent->IsPlaying())
+				if (bDraw)
 				{
-					pColor = itemPlayingColor;
-				}
-				else if (pEvent->m_state == EEventState::Loading)
-				{
-					pColor = itemLoadingColor;
-				}
-				else if (pEvent->m_state == EEventState::Virtual)
-				{
-					pColor = itemVirtualColor;
-				}
+					float const* pColor = itemOtherColor;
 
-				auxGeom.Draw2dLabel(posX, posY, 1.2f, pColor, false, "%s on %s", szOriginalName, pEvent->m_pAudioObject->m_name.c_str());
+					if (pEvent->IsPlaying())
+					{
+						pColor = itemPlayingColor;
+					}
+					else if (pEvent->m_state == EEventState::Loading)
+					{
+						pColor = itemLoadingColor;
+					}
+					else if (pEvent->m_state == EEventState::Virtual)
+					{
+						pColor = itemVirtualColor;
+					}
 
-				posY += 10.0f;
+					auxGeom.Draw2dLabel(posX, posY, 1.2f, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());
+
+					posY += 10.0f;
+				}
 			}
 		}
 	}

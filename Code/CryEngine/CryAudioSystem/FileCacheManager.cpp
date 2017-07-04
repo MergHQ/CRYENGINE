@@ -328,20 +328,6 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 {
 	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowFileCacheManagerInfo) > 0)
 	{
-		EDataScope dataScope = EDataScope::All;
-
-		if ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::All) == 0)
-		{
-			if ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0)
-			{
-				dataScope = EDataScope::Global;
-			}
-			else if ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0)
-			{
-				dataScope = EDataScope::LevelSpecific;
-			}
-		}
-
 		CTimeValue const frameTime = gEnv->pTimer->GetAsyncTime();
 
 		CryFixedStringT<MaxMiscStringLength> tempString;
@@ -366,147 +352,114 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 		auxGeom.Draw2dLabel(posX, positionY, 1.6f, orange, false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_audioFileEntries.size()));
 		positionY += 15.0f;
 
-		for (auto const& audioFileEntryPair : m_audioFileEntries)
+		if (!m_audioFileEntries.empty())
 		{
-			CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
+			CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+			lowerCaseSearchString.MakeLower();
 
-			if (pAudioFileEntry->m_dataScope == EDataScope::Global &&
-			    ((g_cvars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
-			     (g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0 ||
-			     ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
-			      (pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0)))
+			bool const bDrawAll = (g_cvars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All);
+			bool const bDrawUseCounted = ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0);
+			bool const bDrawGlobals = (g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::Globals) > 0;
+			bool const bDrawLevelSpecifics = (g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0;
+
+			std::vector<CryFixedStringT<MaxFilePathLength>> soundBanksSorted; // Create list to sort soundbanks alphabetically.
+			soundBanksSorted.reserve(m_audioFileEntries.size());
+
+			for (auto const& soundBank : m_audioFileEntries)
 			{
-				if ((pAudioFileEntry->m_flags & EFileFlags::Loading) > 0)
-				{
-					pColor = red;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::MemAllocFail) > 0)
-				{
-					pColor = blue;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::Removable) > 0)
-				{
-					pColor = green;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::NotCached) > 0)
-				{
-					pColor = white;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::NotFound) > 0)
-				{
-					pColor = redish;
-				}
-				else
-				{
-					pColor = cyan;
-				}
-
-				time = (frameTime - pAudioFileEntry->m_timeCached).GetSeconds();
-				ratio = time / 5.0f;
-				originalAlpha = pColor[3];
-				pColor[3] *= clamp_tpl(ratio, 0.2f, 1.0f);
-
-				tempString.clear();
-
-				if ((pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0)
-				{
-					if (pAudioFileEntry->m_size < 1024)
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " Byte) [%" PRISIZE_T "]", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size, pAudioFileEntry->m_useCount);
-					}
-					else
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " KiB) [%" PRISIZE_T "]", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size >> 10, pAudioFileEntry->m_useCount);
-					}
-				}
-				else
-				{
-					if (pAudioFileEntry->m_size < 1024)
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " Byte)", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size);
-					}
-					else
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " KiB)", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size >> 10);
-					}
-				}
-
-				auxGeom.Draw2dLabel(positionX, positionY, entryDrawSize, pColor, false, "%s", tempString.c_str());
-				pColor[3] = originalAlpha;
-				positionY += entryStepSize;
-			}
-		}
-
-		for (auto const& audioFileEntryPair : m_audioFileEntries)
-		{
-			CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
-
-			if (pAudioFileEntry->m_dataScope == EDataScope::LevelSpecific &&
-			    ((g_cvars.m_fileCacheManagerDebugFilter == EAudioFileCacheManagerDebugFilter::All) ||
-			     (g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::LevelSpecifics) > 0 ||
-			     ((g_cvars.m_fileCacheManagerDebugFilter & EAudioFileCacheManagerDebugFilter::UseCounted) > 0 &&
-			      (pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0)))
-			{
-				if ((pAudioFileEntry->m_flags & EFileFlags::Loading) > 0)
-				{
-					pColor = red;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::MemAllocFail) > 0)
-				{
-					pColor = blue;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::Removable) > 0)
-				{
-					pColor = green;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::NotCached) > 0)
-				{
-					pColor = white;
-				}
-				else if ((pAudioFileEntry->m_flags & EFileFlags::NotFound) > 0)
-				{
-					pColor = redish;
-				}
-				else
-				{
-					pColor = yellow;
-				}
-
-				time = (frameTime - pAudioFileEntry->m_timeCached).GetSeconds();
-				ratio = time / 5.0f;
-				originalAlpha = pColor[3];
-				pColor[3] *= clamp_tpl(ratio, 0.2f, 1.0f);
-
-				tempString.clear();
-
-				if ((pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0)
-				{
-					if (pAudioFileEntry->m_size < 1024)
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " Byte) [%" PRISIZE_T "]", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size, pAudioFileEntry->m_useCount);
-					}
-					else
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " KiB) [%" PRISIZE_T "]", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size >> 10, pAudioFileEntry->m_useCount);
-					}
-				}
-				else
-				{
-					if (pAudioFileEntry->m_size < 1024)
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " Byte)", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size);
-					}
-					else
-					{
-						tempString.Format(tempString + "%s (%" PRISIZE_T " KiB)", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size >> 10);
-					}
-				}
-
-				auxGeom.Draw2dLabel(positionX, positionY, entryDrawSize, pColor, false, "%s", tempString.c_str());
-				pColor[3] = originalAlpha;
-				positionY += entryStepSize;
+				soundBanksSorted.emplace_back(soundBank.second->m_path.c_str());
 			}
 
+			std::sort(soundBanksSorted.begin(), soundBanksSorted.end());
+
+			for (auto const szSoundBankName : soundBanksSorted)
+			{
+				for (auto const& audioFileEntryPair : m_audioFileEntries)
+				{
+					if (audioFileEntryPair.second->m_path.c_str() == szSoundBankName)
+					{
+						CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
+
+						char const* const szSoundBankFileName = PathUtil::GetFileName(pAudioFileEntry->m_path);
+						CryFixedStringT<MaxControlNameLength> lowerCaseSoundBankFileName(szSoundBankFileName);
+						lowerCaseSoundBankFileName.MakeLower();
+
+						if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseSoundBankFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+						{
+							bool bDraw = false;
+
+							if (pAudioFileEntry->m_dataScope == EDataScope::Global)
+							{
+								bDraw = (bDrawAll || bDrawGlobals) || (bDrawUseCounted && ((pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0));
+								pColor = cyan;
+							}
+							else if (pAudioFileEntry->m_dataScope == EDataScope::LevelSpecific)
+							{
+								bDraw = (bDrawAll || bDrawLevelSpecifics) || (bDrawUseCounted && (pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0);
+								pColor = yellow;
+							}
+
+							if (bDraw)
+							{
+								if ((pAudioFileEntry->m_flags & EFileFlags::Loading) > 0)
+								{
+									pColor = red;
+								}
+								else if ((pAudioFileEntry->m_flags & EFileFlags::MemAllocFail) > 0)
+								{
+									pColor = blue;
+								}
+								else if ((pAudioFileEntry->m_flags & EFileFlags::Removable) > 0)
+								{
+									pColor = green;
+								}
+								else if ((pAudioFileEntry->m_flags & EFileFlags::NotCached) > 0)
+								{
+									pColor = white;
+								}
+								else if ((pAudioFileEntry->m_flags & EFileFlags::NotFound) > 0)
+								{
+									pColor = redish;
+								}
+
+								time = (frameTime - pAudioFileEntry->m_timeCached).GetSeconds();
+								ratio = time / 5.0f;
+								originalAlpha = pColor[3];
+								pColor[3] *= clamp_tpl(ratio, 0.2f, 1.0f);
+
+								tempString.clear();
+
+								if ((pAudioFileEntry->m_flags & EFileFlags::UseCounted) > 0)
+								{
+									if (pAudioFileEntry->m_size < 1024)
+									{
+										tempString.Format(tempString + "%s (%" PRISIZE_T " Byte) [%" PRISIZE_T "]", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size, pAudioFileEntry->m_useCount);
+									}
+									else
+									{
+										tempString.Format(tempString + "%s (%" PRISIZE_T " KiB) [%" PRISIZE_T "]", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size >> 10, pAudioFileEntry->m_useCount);
+									}
+								}
+								else
+								{
+									if (pAudioFileEntry->m_size < 1024)
+									{
+										tempString.Format(tempString + "%s (%" PRISIZE_T " Byte)", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size);
+									}
+									else
+									{
+										tempString.Format(tempString + "%s (%" PRISIZE_T " KiB)", pAudioFileEntry->m_path.c_str(), pAudioFileEntry->m_size >> 10);
+									}
+								}
+
+								auxGeom.Draw2dLabel(positionX, positionY, entryDrawSize, pColor, false, "%s", tempString.c_str());
+								pColor[3] = originalAlpha;
+								positionY += entryStepSize;
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }

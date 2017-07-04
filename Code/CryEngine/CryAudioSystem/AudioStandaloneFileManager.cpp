@@ -74,7 +74,7 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
+void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
 {
 	static float const headerColor[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
 	static float const itemPlayingColor[4] = { 0.1f, 0.6f, 0.1f, 0.9f };
@@ -86,40 +86,65 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float p
 	posX += 20.0f;
 	posY += 17.0f;
 
-	for (auto pStandaloneFile : m_constructedStandaloneFiles)
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+	lowerCaseSearchString.MakeLower();
+
+	bool const bIsFilterNotSet = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0"));
+
+	for (auto const pStandaloneFile : m_constructedStandaloneFiles)
 	{
-		float const* pColor = itemOtherColor;
+		Vec3 const& position = pStandaloneFile->m_pAudioObject->GetTransformation().GetPosition();
+		float const distance = position.GetDistance(listenerPosition);
 
-		switch (pStandaloneFile->m_state)
+		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{
-		case EAudioStandaloneFileState::Playing:
-			{
-				pColor = itemPlayingColor;
+			char const* const szStandaloneFileName = pStandaloneFile->m_hashedFilename.GetText().c_str();
+			CryFixedStringT<MaxControlNameLength> lowerCaseStandaloneFileName(szStandaloneFileName);
+			lowerCaseStandaloneFileName.MakeLower();
+			char const* const szObjectName = pStandaloneFile->m_pAudioObject->m_name.c_str();
+			CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
+			lowerCaseObjectName.MakeLower();
 
-				break;
-			}
-		case EAudioStandaloneFileState::Loading:
-			{
-				pColor = itemLoadingColor;
+			bool const bDraw = bIsFilterNotSet ||
+				(lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
+				(lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 
-				break;
-			}
-		case EAudioStandaloneFileState::Stopping:
+			if (bDraw)
 			{
-				pColor = itemStoppingColor;
+				float const* pColor = itemOtherColor;
 
-				break;
+				switch (pStandaloneFile->m_state)
+				{
+				case EAudioStandaloneFileState::Playing:
+				{
+					pColor = itemPlayingColor;
+
+					break;
+				}
+				case EAudioStandaloneFileState::Loading:
+				{
+					pColor = itemLoadingColor;
+
+					break;
+				}
+				case EAudioStandaloneFileState::Stopping:
+				{
+					pColor = itemStoppingColor;
+
+					break;
+				}
+				}
+
+				auxGeom.Draw2dLabel(posX, posY, 1.2f,
+					pColor,
+					false,
+					"%s on %s",
+					szStandaloneFileName,
+					szObjectName);
+
+				posY += 10.0f;
 			}
 		}
-
-		auxGeom.Draw2dLabel(posX, posY, 1.2f,
-		                    pColor,
-		                    false,
-		                    "%s on %s",
-		                    pStandaloneFile->m_hashedFilename.GetText().c_str(),
-		                    pStandaloneFile->m_pAudioObject->m_name.c_str());
-
-		posY += 10.0f;
 	}
 }
 
