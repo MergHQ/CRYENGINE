@@ -20,5 +20,5 @@ c:\Python35\Scripts\PyInstaller.exe --clean --onefile --icon editor_icon16.ico c
 copy /Y dist\cryselect.exe cryselect.exe
 
 REM Build CryRun
-c:\Python35\Scripts\PyInstaller.exe --clean --onefile --icon editor_icon16.ico --hiddenimport=winshell cryrun.py 
+c:\Python35\Scripts\PyInstaller.exe --clean --onefile --icon editor_icon16.ico cryrun.py
 copy /Y dist\cryrun.exe cryrun.exe
