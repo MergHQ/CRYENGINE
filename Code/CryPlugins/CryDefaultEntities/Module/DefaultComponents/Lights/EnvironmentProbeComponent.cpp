@@ -46,7 +46,7 @@ void CEnvironmentProbeComponent::ReflectType(Schematyc::CTypeDesc<CEnvironmentPr
 	desc.SetLabel("Environment Probe");
 	desc.SetDescription("Captures an image of its full surroundings and used to light nearby objects with reflective materials");
 	desc.SetIcon("icons:Designer/Designer_Box.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 	desc.AddMember(&CEnvironmentProbeComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the environment probe is enabled", true);
 	desc.AddMember(&CEnvironmentProbeComponent::m_extents, 'exts', "BoxSize", "Box Size", "Size of the area the probe affects.", Vec3(10.f));

@@ -36,7 +36,6 @@ public:
 	virtual void                       ReparentParticles(TConstArray<TParticleId> swapIds) override;
 	void                               OrphanAllParticles();
 	virtual bool                       IsValidRuntimeForInitializationParameters(const SRuntimeInitializationParameters& parameters) override;
-	virtual void                       AccumCounts(SParticleCounts& counts) override {}
 	virtual void                       AddSubInstances(TConstArray<SInstance> instances) override;
 	virtual void                       RemoveAllSubInstances() override;
 	virtual void                       ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;

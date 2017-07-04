@@ -114,10 +114,10 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 		if (passInfo.GetCamera().IsAABBVisible_E(ref.pRuntime->GetBounds()))
 		{
 			ref.pComponent->Render(this, ref.pRuntime, renderContext);
-			m_emitterStats.m_runtimesRendered++;
+			m_emitterStats.components.rendered++;
 		}
 	}
-	m_emitterStats.m_rendered = true;
+	m_emitterStats.emitters.rendered++;
 }
 
 void CParticleEmitter::Update()
@@ -144,6 +144,7 @@ void CParticleEmitter::Update()
 		pRuntime->MainPreUpdate();
 
 	UpdateBoundingBox(m_deltaTime);
+	m_emitterStats.emitters.updated++;
 }
 
 void CParticleEmitter::UpdateBoundingBox(const float frameTime)
@@ -372,8 +373,15 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 {
 	const Vec3 prevPos = m_location.t;
 	const Quat prevQuat = m_location.q;
-	const Vec3 newPos = loc.t;
-	const Quat newQuat = loc.q;
+
+	m_location = loc;
+	if (m_spawnParams.bPlaced && m_pEffect->IsSubstitutedPfx1())
+	{
+		ParticleLoc::RotateYtoZ(m_location.q);
+	}
+
+	const Vec3 newPos = m_location.t;
+	const Quat newQuat = m_location.q;
 	m_parentContainer.GetIOVec3Stream(EPVF_Position).Store(0, newPos);
 	m_parentContainer.GetIOQuatStream(EPQF_Orientation).Store(0, newQuat);
 
@@ -394,8 +402,6 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 		m_parentContainer.GetIOVec3Stream(EPVF_Velocity).Store(0, velocity1);
 		m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Store(0, angularVelocity1);
 	}
-
-	m_location = loc;
 }
 
 void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
@@ -557,7 +563,7 @@ void CParticleEmitter::UpdateRuntimeRefs()
 			const CParticleComponent* pComponent = m_componentRuntimes[thisComponentId].pComponent;
 			const SComponentParams& params = pComponent->GetComponentParams();
 
-			if (!(params.IsValid() && pComponent->IsEnabled() && pComponent->CanMakeRuntime(this)))
+			if (!(pComponent->IsEnabled() && pComponent->CanMakeRuntime(this)))
 			{
 				isActive = false;
 				break;
@@ -768,39 +774,35 @@ uint CParticleEmitter::GetParticleSpec() const
 	return uint(configSpec);
 }
 
-void CParticleEmitter::AccumStats(SParticleStats& stats)
+void CParticleEmitter::AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 		
 	const uint numRuntimes = m_cpuComponentRuntimes.size();
-	stats.m_runtimesAlive += numRuntimes;
+	statsCPU.components.alive += numRuntimes;
 	for (auto pRuntime : m_cpuComponentRuntimes)
-		pRuntime->AccumStatsNonVirtual(stats);
-	stats.m_emittersUpdated += m_emitterStats.m_updated ? 1 : 0;
-	stats.m_emittersRendererd += m_emitterStats.m_rendered ? 1 : 0;
-	stats.m_runtimesUpdated += m_emitterStats.m_runtimesUpdated;
-	stats.m_runtimesRendered += m_emitterStats.m_runtimesRendered;
-	stats.m_particlesRendered += m_emitterStats.m_particlesRendered;
-	stats.m_particlesUpdated += m_emitterStats.m_particlesUpdated;
-	stats.m_particlesClipped += m_emitterStats.m_particlesClipped;
+		pRuntime->AccumStatsNonVirtual(statsCPU);
+	statsCPU += m_emitterStats;
 
-	m_emitterStats = SEmitterStats();
+	for (auto pRuntime : m_gpuComponentRuntimes)
+		pRuntime->AccumStats(statsGPU);
+
+	m_emitterStats = {};
 }
 
 void CParticleEmitter::AddUpdatedParticles(uint updatedParticles)
 {
 	m_statsMutex.Lock();
-	m_emitterStats.m_updated = true;
-	m_emitterStats.m_runtimesUpdated++;
-	m_emitterStats.m_particlesUpdated += updatedParticles;
+	m_emitterStats.components.updated++;
+	m_emitterStats.particles.updated += updatedParticles;
 	m_statsMutex.Unlock();
 }
 
 void CParticleEmitter::AddDrawCallCounts(uint numRendererdParticles, uint numClippedParticles)
 {
 	m_statsMutex.Lock();
-	m_emitterStats.m_particlesRendered += numRendererdParticles;
-	m_emitterStats.m_particlesClipped += numClippedParticles;
+	m_emitterStats.particles.rendered += numRendererdParticles;
+	m_emitterStats.particles.clipped += numClippedParticles;
 	m_statsMutex.Unlock();
 }
 

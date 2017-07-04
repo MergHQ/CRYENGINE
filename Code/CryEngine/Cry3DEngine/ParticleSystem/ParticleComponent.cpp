@@ -121,7 +121,6 @@ void SComponentParams::Reset()
 	m_renderStateFlags = OS_ALPHA_BLEND;
 	m_maxParticleSize = 0.0f;
 	m_meshCentered = false;
-	m_isValid = false;
 	m_parentId = gInvalidId;
 	m_diffuseMap = "%ENGINE%/EngineAssets/Textures/white.dds";
 	m_pMaterial = 0;
@@ -129,30 +128,6 @@ void SComponentParams::Reset()
 	m_renderObjectSortBias = 0.0f;
 
 	m_subComponentIds.clear();
-}
-
-void SComponentParams::Validate(CParticleComponent* pComponent, Serialization::IArchive* ar)
-{
-	bool output = pComponent && ar;
-	bool isValid = true;
-#define CRY_PFX2_CHECK(cond, msg) if (!(cond)) { if (output) ar->warning(*pComponent, msg); isValid = false; } \
-  else
-
-	CRY_PFX2_CHECK(pComponent->GetNumFeatures(EFT_Spawn) != 0, "At least one spawn feature required");
-	CRY_PFX2_CHECK(pComponent->GetNumFeatures(EFT_Size) != 0, "At least one size feature required")
-	{
-		CRY_PFX2_CHECK(m_maxParticleSize > 0.0f, "Particles size are set to 0");
-	}
-	CRY_PFX2_CHECK(pComponent->GetNumFeatures(EFT_Life) != 0, "At least one life time feature required");
-	CRY_PFX2_CHECK(pComponent->GetNumFeatures(EFT_Render) < 2, "Too many render features.");
-	CRY_PFX2_CHECK(pComponent->GetNumFeatures(EFT_Motion) < 2, "Too many motion features.");
-
-	if (!isValid && output)
-		ar->error(*pComponent, "This component is invalid and will not render");
-
-	m_isValid = isValid;
-
-#undef CRY_PFX2_CHECK
 }
 
 void SComponentParams::MakeMaterial(CParticleComponent* pComponent)
@@ -260,18 +235,8 @@ uint CParticleComponent::GetNumFeatures(EFeatureType type) const
 {
 	size_t count = 0;
 	for (auto& it : m_features)
-		count += (it->IsEnabled() && (it->GetFeatureType() & type) != 0) ? 1 : 0;
+		count += it->IsEnabled() && (it->GetFeatureType() & type);
 	return count;
-}
-
-CParticleFeature* CParticleComponent::GetCFeatureByType(const SParticleFeatureParams* pSearchParams) const
-{
-	for (auto& pFeature : m_features)
-	{
-		if (pFeature->IsEnabled() && &pFeature->GetFeatureParams() == pSearchParams)
-			return pFeature.get();
-	}
-	return nullptr;
 }
 
 void CParticleComponent::AddToUpdateList(EUpdateList list, CParticleFeature* pFeature)
@@ -422,6 +387,12 @@ void CParticleComponent::PreCompile()
 	for (size_t i = 0; i < EUL_Count; ++i)
 		m_gpuUpdateLists[i].clear();
 
+	for (auto& it : m_features)
+	{
+		if (it && !it->VersionValidate(this))
+			it = nullptr;
+	}
+
 	// eliminates features that point to null
 	auto it = std::remove_if(
 	  m_features.begin(), m_features.end(),
@@ -440,10 +411,6 @@ void CParticleComponent::PreCompile()
 	AddParticleData(EPDT_InvLifeTime);
 	AddParticleData(EPDT_LifeTime);
 	AddParticleData(EPDT_State);
-
-	// add default motion feature
-	const bool hasMotion = GetNumFeatures(EFT_Motion) != 0;
-	m_defaultMotionFeature.reset(hasMotion ? nullptr : new CFeatureMotionPhysics());
 }
 
 void CParticleComponent::ResolveDependencies()
@@ -465,25 +432,36 @@ void CParticleComponent::Compile()
 	if (!m_dirty)
 		return;
 
+	uint featureMask = 0;
 	for (auto& it : m_features)
 	{
 		if (it->IsEnabled())
 		{
+			// Validate feature requirements and exclusivity.
+			EFeatureType type = it->GetFeatureType();
+			if (type & (EFT_Life | EFT_Motion | EFT_Render))
+				if (featureMask & type)
+				{
+					it->SetEnabled(false);
+					continue;
+				}
+			featureMask |= type;
 			it->SetGpuInterfaceNeeded(m_runtimeInitializationParameters.usesGpuImplementation);
 			it->AddToComponent(this, &m_componentParams);
 		}
 	}
-	if (m_defaultMotionFeature)
-		m_defaultMotionFeature->AddToComponent(this, &m_componentParams);
+
+	// add default features
+	for (uint b = 1; b < EFT_END; b <<= 1)
+		if (!(featureMask & b))
+			if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
+				if (auto* feature = params->m_pFactory())
+					static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_componentParams);
 }
 
 void CParticleComponent::FinalizeCompile()
 {
-	SComponentParams& params = m_componentParams;
-
-	params.MakeMaterial(this);
-	params.Validate(this);
-
+	m_componentParams.MakeMaterial(this);
 	m_dirty = false;
 }
 
@@ -519,7 +497,6 @@ void CParticleComponent::SetName(const char* name)
 
 	m_name = m_pEffect->MakeUniqueName(m_componentId, name);
 
-	// #PFX2_TODO - not the best solution but needed for 5.3. Deprecate after SecondGen is reimplemented using UIDs
 	if (oldName != m_name)
 	{
 		const uint numComponents = m_pEffect->GetNumComponents();
@@ -535,10 +512,10 @@ void CParticleComponent::SetName(const char* name)
 				const uint numConnectors = pFeature->GetNumConnectors();
 				for (uint connectorIdx = 0; connectorIdx < numConnectors; ++connectorIdx)
 				{
-					if (strcmp(pFeature->GetConnectorName(connectorIdx), oldName.c_str()) == 0)
+					if (oldName == pFeature->GetConnectorName(connectorIdx))
 					{
 						pFeature->DisconnectFrom(oldName);
-						pFeature->ConnectTo(m_name.c_str());
+						pFeature->ConnectTo(m_name);
 					}
 				}
 			}

@@ -117,7 +117,7 @@ public:
 		uint pieceCount = m_aSubObjects.size();
 		Vec3 center = m_pStaticObject->GetAABB().GetCenter();
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			uint piece;
 			if (m_piecesMode == EPiecesMode::RandomPiece)
@@ -161,7 +161,6 @@ public:
 				orientations.Store(particleId, orientation);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
@@ -193,7 +192,7 @@ public:
 
 		renderParams.dwFObjFlags |= FOB_TRANS_MASK;
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const Vec3 position = positions.Load(particleId);
 			const Quat orientation = orientations.Load(particleId);
@@ -224,7 +223,6 @@ public:
 			renderParams.pInstance = &non_const(*this);
 			pMeshObj->Render(renderParams, passInfo);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	virtual uint GetNumResources() const override

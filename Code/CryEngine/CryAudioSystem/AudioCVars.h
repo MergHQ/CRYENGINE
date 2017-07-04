@@ -26,6 +26,7 @@ public:
 	int   m_audioProxiesInitType = 0;
 	int   m_tickWithMainThread = 0;
 
+	float m_debugDistance = 0.0f;
 	float m_occlusionMaxDistance = 500.0f;
 	float m_occlusionMinDistance = 0.1f;
 	float m_occlusionMaxSyncDistance = 0.0f;
@@ -43,8 +44,7 @@ public:
 	int    m_audioLoggingOptions = 0;
 	int    m_showActiveAudioObjectsOnly = 0;
 	int    m_audioObjectsRayType = 0;
-	ICVar* m_pAudioTriggersDebugFilter = nullptr;
-	ICVar* m_pAudioObjectsDebugFilter = nullptr;
+	ICVar* m_pDebugFilter = nullptr;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:

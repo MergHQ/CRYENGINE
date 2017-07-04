@@ -46,20 +46,16 @@ ILINE TParticleId CParticleContainer::GetRealId(TParticleId pId) const
 }
 
 template<typename T>
-ILINE void CParticleContainer::FillData(EParticleDataType type, const T& data, SUpdateRange range)
+ILINE void CParticleContainer::FillData(EParticleDataType type, const T& data, SUpdateRange range, bool allDims)
 {
-	// PFX2_TODO : the way it is, this function cannot be vectorized
 	CRY_PFX2_ASSERT(type.info().isType<T>());
 	if (HasData(type))
 	{
-		uint dim = type.info().dimension;
-		for (uint i = 0; i < dim; ++i)
+		uint dims = allDims ? type.info().dimension : 1;
+		for (uint i = 0; i < dims; ++i)
 		{
-			T* pBuffer = GetData<T>(type + i);
-			for (auto particleId : range)
-			{
-				pBuffer[particleId] = data;
-			}
+			TIOStream<T> stream = GetTIOStream<T>(type + i);
+			stream.Fill(range, data);
 		}
 	}
 }

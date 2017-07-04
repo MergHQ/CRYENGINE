@@ -372,8 +372,7 @@ class CATLStandaloneFile final : public CPoolObject<CATLStandaloneFile, stl::PSy
 {
 public:
 
-	explicit CATLStandaloneFile()
-	{}
+	explicit CATLStandaloneFile() = default;
 
 	bool IsPlaying() const { return (m_state == EAudioStandaloneFileState::Playing) || (m_state == EAudioStandaloneFileState::Stopping); }
 
@@ -396,6 +395,7 @@ public:
 class CATLEvent final : public CPoolObject<CATLEvent, stl::PSyncNone>
 {
 public:
+
 	ERequestStatus Reset();
 	ERequestStatus Stop();
 	void           SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
@@ -455,7 +455,8 @@ public:
 class CATLPreloadRequest final : public CATLEntity<PreloadRequestId>
 {
 public:
-	typedef std::vector<FileEntryId> FileEntryIds;
+
+	using FileEntryIds = std::vector<FileEntryId>;
 
 	explicit CATLPreloadRequest(
 	  PreloadRequestId const audioPreloadRequestId,

@@ -44,26 +44,6 @@ struct SUpdateContext
 	SGroupRange GetSpawnedGroupRange() const { return SGroupRange(m_container.GetSpawnedRange()); }
 };
 
-#define CRY_PFX2_FOR_RANGE_PARTICLES(updateRange) \
-  for (auto particleId : updateRange) {
-
-#define CRY_PFX2_FOR_RANGE_PARTICLESGROUP(updateRange) \
-  for (auto particleGroupId : SGroupRange(updateRange)) {
-
-#define CRY_PFX2_FOR_ACTIVE_PARTICLES(updateContext) \
-  for (auto particleId : (updateContext).GetUpdateRange()) {
-
-#define CRY_PFX2_FOR_ACTIVE_PARTICLESGROUP(updateContext) \
-  for (auto particleGroupId : (updateContext).GetUpdateGroupRange()) {
-
-#define CRY_PFX2_FOR_SPAWNED_PARTICLES(updateContext) \
-  for (auto particleId : (updateContext).GetSpawnedRange()) {
-
-#define CRY_PFX2_FOR_SPAWNED_PARTICLEGROUP(updateContext) \
-  for (auto particleGroupId : (updateContext).GetSpawnedGroupRange()) {
-
-#define CRY_PFX2_FOR_END }
-
 
 }
 

@@ -213,23 +213,28 @@ public:
 		return GetAge() - m_fAgeLastRendered;
 	}
 
-	void GetCounts(SParticleCounts& counts) const
+	void GetCounts(SParticleCounts& counts, bool bClear = false) const
 	{
+		FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+
+		counts.emitters.alive += 1.f;
+		if (IsActive())
+			counts.emitters.updated += 1.f;
+		if (TimeNotRendered() == 0.f)
+			counts.emitters.rendered += 1.f;
+
 		for (const auto& c : m_Containers)
 		{
 			c.GetCounts(counts);
+			if (bClear)
+				non_const(c).ClearCounts();
 		}
 	}
 	void GetAndClearCounts(SParticleCounts& counts)
 	{
-		FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
-		for (auto& c : m_Containers)
-		{
-			c.GetCounts(counts);
-			c.ClearCounts();
-		}
+		GetCounts(counts, true);
 	}
-
+	
 	ParticleList<CParticleContainer> const& GetContainers() const
 	{
 		return m_Containers;

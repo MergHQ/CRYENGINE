@@ -297,7 +297,7 @@ void CParticleSubEmitter::EmitParticles(SParticleUpdateContext& context)
 
 							if (!EmitParticle(context, data, fPast))
 							{
-								GetContainer().GetCounts().ParticlesReject += (fPast - fMinPast) / fAgeIncrement;
+								GetContainer().GetCounts().particles.reject += (fPast - fMinPast) / fAgeIncrement;
 								break;
 							}
 						}
@@ -310,7 +310,7 @@ void CParticleSubEmitter::EmitParticles(SParticleUpdateContext& context)
 						{
 							if (!EmitParticle(context, data, fAge - m_fStartAge))
 							{
-								GetContainer().GetCounts().ParticlesReject += nEmit;
+								GetContainer().GetCounts().particles.reject += nEmit;
 								break;
 							}
 						}

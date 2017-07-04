@@ -1552,38 +1552,45 @@ void CParticleEffect::PropagateParticleParams(const ParticleParams& params)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CParticleEffect::IsActive(bool bAll) const
+bool CParticleEffect::IsEnabled(uint options) const
 {
-	// Make sure effect and all indirect parents are active in current render context.
-	for (const CParticleEffect* pEffect = this;; pEffect = pEffect->m_parent)
+	bool bEnabled = m_pParticleParams && m_pParticleParams->bEnabled;
+
+	if (bEnabled && (options & eCheckFeatures))
 	{
-		if (!(pEffect && pEffect->m_pParticleParams && pEffect->m_pParticleParams->IsActive()))
-			return false;
-		if (!pEffect->m_pParticleParams->eSpawnIndirection)
-			break;
+		// Check whether effect does anything.
+		if (!(m_pParticleParams->nEnvFlags & (REN_ANY | EFF_ANY)))
+			bEnabled = false;
 	}
 
-	if (m_pParticleParams->nEnvFlags & (REN_ANY | EFF_ANY))
-		// Has visible or other effects.
-		return true;
-
-	for (auto& child : m_children)
-		if (bAll || child.GetIndirectParent())
-			if (child.IsActive(true))
-				return true;
-	return false;
-}
-
-uint32 CParticleEffect::GetEnvironFlags(bool bAll) const
-{
-	uint32 nFlags = m_pParticleParams ? m_pParticleParams->nEnvFlags : 0;
-	if (bAll)
+	if (bEnabled && (options & eCheckConfig))
 	{
+		// Make sure effect and all indirect parents are active in current render context.
+		for (const CParticleEffect* pEffect = this;; pEffect = pEffect->m_parent)
+		{
+			if (!(pEffect && pEffect->m_pParticleParams && pEffect->m_pParticleParams->IsActive()))
+			{
+				bEnabled = false;
+				break;
+			}
+			if (!pEffect->m_pParticleParams->eSpawnIndirection)
+				break;
+		}
+	}
+
+	if (!bEnabled && (options & eCheckChildren))
+	{
+		// Check actual child effects.
 		for (auto& child : m_children)
-			if (child.IsActive())
-				nFlags |= child.GetEnvironFlags(true);
+			if (child.GetIndirectParent())
+				if (child.IsEnabled(options))
+				{
+					bEnabled = true;
+					break;
+				}
 	}
-	return nFlags;
+
+	return bEnabled;
 }
 
 void CParticleEffect::SetParticleParams(const ParticleParams& params)
@@ -1903,7 +1910,7 @@ float CParticleEffect::GetEquilibriumAge(bool bAll) const
 	if (bAll)
 	{
 		for (auto& child : m_children)
-			if (child.IsEnabled() && !child.GetParams().eSpawnIndirection)
+			if (child.IsEnabled(eCheckFeatures) && !child.GetParams().eSpawnIndirection)
 				fEquilibriumAge = max(fEquilibriumAge, child.GetEquilibriumAge(true));
 	}
 

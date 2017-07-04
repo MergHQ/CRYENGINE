@@ -130,7 +130,7 @@ void CDebugDrawComponent::ReflectType(Schematyc::CTypeDesc<CDebugDrawComponent>&
 	desc.SetEditorCategory("Debug");
 	desc.SetLabel("Debug Draw");
 	desc.SetDescription("Allows drawing debug information to the screen");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 	desc.AddMember(&CDebugDrawComponent::m_bDrawPersistent, 'draw', "DrawPersistent", "Draw Persistent Text", "Whether or not to draw the persistent text to screen", false);
 	desc.AddMember(&CDebugDrawComponent::m_persistentText, 'text', "PersistentText", "Persistent Text", "Persistent text to draw to screen", "");

@@ -100,7 +100,7 @@ public:
 	virtual void Update(const SUpdateContext& context) override;
 
 private:
-	typedef TValue<float, USoftLimit<10>, ConvertScale<1000, 1>> UDensity;
+	typedef TValue<float, ConvertScale<1000, 1, THardMin<0>>> UDensity;
 
 	EPhysicsType m_physicsType;
 	ESurfaceType m_surfaceType;

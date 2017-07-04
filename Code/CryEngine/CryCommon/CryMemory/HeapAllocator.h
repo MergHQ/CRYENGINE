@@ -366,6 +366,7 @@ public:
 			align = max(align, (size_t)nALIGN);
 			if (new_size)
 			{
+				new_size = Align(new_size, align);
 				if (a.size)
 				{
 					if (new_size != a.size)

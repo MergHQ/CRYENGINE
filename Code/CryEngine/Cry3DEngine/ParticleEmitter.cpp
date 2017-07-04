@@ -393,7 +393,7 @@ string CParticleEmitter::GetDebugString(char type) const
 	{
 		SParticleCounts counts;
 		GetCounts(counts);
-		s += string().Format(" E=%.0f P=%.0f R=%0.f", counts.EmittersActive, counts.ParticlesActive, counts.ParticlesRendered);
+		s += string().Format(" E=%.0f P=%.0f R=%0.f", counts.components.updated, counts.particles.updated, counts.particles.rendered);
 	}
 
 	s += string().Format(" age=%.3f", GetAge());
@@ -1115,7 +1115,7 @@ void CParticleEmitter::RenderDebugInfo()
 				float fCoverage = (aiOut[2] - aiOut[0]) * (aiOut[3] - aiOut[1]) * fPixToScreen;
 
 				// And by pixel and particle counts.
-				float fWeight = sqrt_fast_tpl(fCoverage * counts.ParticlesRendered * counts.PixelsRendered * fPixToScreen);
+				float fWeight = sqrt_fast_tpl(fCoverage * counts.particles.rendered * counts.pixels.rendered * fPixToScreen);
 
 				color.a = clamp_tpl(fWeight, 0.2f, 1.f);
 			}
@@ -1125,21 +1125,21 @@ void CParticleEmitter::RenderDebugInfo()
 
 			stack_string sLabel = GetName();
 			sLabel += stack_string().Format(" P=%.0f F=%.3f S/D=",
-			                                counts.ParticlesRendered,
-			                                counts.PixelsRendered * fPixToScreen);
-			if (counts.DynamicBoundsVolume > 0.f)
+			                                counts.particles.rendered,
+			                                counts.pixels.rendered * fPixToScreen);
+			if (counts.volume.dyn > 0.f)
 			{
-				sLabel += stack_string().Format("%.2f", counts.StaticBoundsVolume / counts.DynamicBoundsVolume);
-				if (counts.ErrorBoundsVolume > 0.f)
-					sLabel += stack_string().Format(" E/D=%3f", counts.ErrorBoundsVolume / counts.DynamicBoundsVolume);
+				sLabel += stack_string().Format("%.2f", counts.volume.stat / counts.volume.dyn);
+				if (counts.volume.error > 0.f)
+					sLabel += stack_string().Format(" E/D=%3f", counts.volume.error / counts.volume.dyn);
 			}
 			else
 				sLabel += "~0";
 
-			if (counts.ParticlesCollideTest)
-				sLabel += stack_string().Format(" Col=%.0f/%.0f", counts.ParticlesCollideHit, counts.ParticlesCollideTest);
-			if (counts.ParticlesClip)
-				sLabel += stack_string().Format(" Clip=%.0f", counts.ParticlesClip);
+			if (counts.particles.collideTest)
+				sLabel += stack_string().Format(" Col=%.0f/%.0f", counts.particles.collideHit, counts.particles.collideTest);
+			if (counts.particles.clip)
+				sLabel += stack_string().Format(" Clip=%.0f", counts.particles.clip);
 
 			ColorF colLabel = color;
 			if (!bb.ContainsBox(bbDyn))

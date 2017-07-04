@@ -136,7 +136,7 @@ void CFeatureRenderDecals::Render(CParticleEmitter* pEmitter, ICommonParticleCom
 	decal.nSortOrder = clamp_tpl(int(m_sortBias * 100.f), 0, 255);
 	decal.nFlags = 0;
 
-	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+	for (auto particleId : context.GetUpdateRange())
 	{
 		const uint8 state = states.Load(particleId);
 		if (!(state & ESB_Alive))
@@ -172,7 +172,6 @@ void CFeatureRenderDecals::Render(CParticleEmitter* pEmitter, ICommonParticleCom
 			pRenderer->EF_AddDeferredDecal(decal, passInfo);
 		}
 	}
-	CRY_PFX2_FOR_END;
 }
 
 }

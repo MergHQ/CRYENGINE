@@ -203,12 +203,11 @@ public:
 
 		IFStream normAges = container.GetIFStream(EPDT_NormalAge);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			const float delay = (1.0f + normAges.Load(particleId)) * context.m_deltaTime;
 			triggers.emplace_back(particleId, delay);
 		}
-		CRY_PFX2_FOR_END;
 
 		TriggerParticles(context, triggers);
 	}
@@ -282,13 +281,12 @@ public:
 		TInstanceArray triggers(*context.m_pMemHeap);
 		triggers.reserve(container.GetLastParticleId());
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const SContactPoint contact = contactPoints.Load(particleId);
 			if (contact.m_state.collided)
 				triggers.emplace_back(particleId, contact.m_time);
 		}
-		CRY_PFX2_FOR_END;
 
 		TriggerParticles(context, triggers);
 	}

@@ -136,6 +136,20 @@ int CPhysicsEventListener::OnPostStep(const EventPhys* pEvent)
 	return 1;
 }
 
+//////////////////////////////////////////////////////////////////////////
+int CPhysicsEventListener::OnPostStepImmediate(const EventPhys* pEvent)
+{
+	EventPhysPostStep* pPostStep = (EventPhysPostStep*)pEvent;
+	if (CEntity* pEntity = GetEntity(pPostStep->pForeignData, pPostStep->iForeignData))
+	{
+		SEntityEvent event(ENTITY_EVENT_PHYS_POSTSTEP);
+		event.fParam[0] = pPostStep->dt;
+		pEntity->SendEvent(event);
+	}
+
+	return 1;
+}
+
 int CPhysicsEventListener::OnPostPump(const EventPhys* pEvent)
 {
 	if (gEnv->p3DEngine->GetWaterLevel() != WATER_LEVEL_UNKNOWN)
@@ -625,6 +639,7 @@ void CPhysicsEventListener::RegisterPhysicCallbacks()
 		m_pPhysics->AddEventClient(EventPhysStateChange::id, OnStateChange, 1);
 		m_pPhysics->AddEventClient(EventPhysBBoxOverlap::id, OnBBoxOverlap, 1);
 		m_pPhysics->AddEventClient(EventPhysPostStep::id, OnPostStep, 1);
+		m_pPhysics->AddEventClient(EventPhysPostStep::id, OnPostStepImmediate, 0);
 		m_pPhysics->AddEventClient(EventPhysUpdateMesh::id, OnUpdateMesh, 1);
 		m_pPhysics->AddEventClient(EventPhysUpdateMesh::id, OnUpdateMesh, 0);
 		m_pPhysics->AddEventClient(EventPhysCreateEntityPart::id, OnCreatePhysEntityPart, 1);
@@ -644,6 +659,7 @@ void CPhysicsEventListener::UnregisterPhysicCallbacks()
 		m_pPhysics->RemoveEventClient(EventPhysStateChange::id, OnStateChange, 1);
 		m_pPhysics->RemoveEventClient(EventPhysBBoxOverlap::id, OnBBoxOverlap, 1);
 		m_pPhysics->RemoveEventClient(EventPhysPostStep::id, OnPostStep, 1);
+		m_pPhysics->RemoveEventClient(EventPhysPostStep::id, OnPostStepImmediate, 0);
 		m_pPhysics->RemoveEventClient(EventPhysUpdateMesh::id, OnUpdateMesh, 1);
 		m_pPhysics->RemoveEventClient(EventPhysUpdateMesh::id, OnUpdateMesh, 0);
 		m_pPhysics->RemoveEventClient(EventPhysCreateEntityPart::id, OnCreatePhysEntityPart, 1);

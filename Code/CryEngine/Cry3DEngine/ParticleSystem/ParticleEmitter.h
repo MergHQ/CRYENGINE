@@ -19,17 +19,6 @@
 namespace pfx2
 {
 
-struct SEmitterStats
-{
-	bool m_updated = false;
-	bool m_rendered = false;
-	uint m_runtimesUpdated = 0;
-	uint m_runtimesRendered = 0;
-	uint m_particlesRendered = 0;
-	uint m_particlesUpdated = 0;
-	uint m_particlesClipped = 0;
-};
-
 class CParticleEmitter : public IParticleEmitter, public Cry3DEngineBase
 {
 private:
@@ -140,7 +129,7 @@ public:
 	bool                      HasParticles() const;
 	bool                      WasRenderedLastFrame() const { return (m_lastTimeRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 
-	void                      AccumStats(SParticleStats& stats);
+	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
 	void                      AddUpdatedParticles(uint updatedParticles);
 	void                      AddDrawCallCounts(uint numRendererdParticles, uint numClippedParticles);
 
@@ -166,7 +155,7 @@ private:
 	TCPUComponentRuntimes       m_cpuComponentRuntimes;
 	TGPUComponentRuntimes       m_gpuComponentRuntimes;
 	CParticleEffect*            m_pEffect;
-	SEmitterStats               m_emitterStats;
+	SParticleStats              m_emitterStats;
 	CryMutex                    m_statsMutex;
 	QuatTS                      m_location;
 	IEntity*                    m_entityOwner;

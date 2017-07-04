@@ -24,22 +24,22 @@ struct IParticleEffectPfx2;
 typedef _smart_ptr<IParticleEffectPfx2> PParticleEffect;
 typedef _smart_ptr<IParticleEmitter>    PParticleEmitter;
 
-struct SParticleStats
+template<typename F>
+struct TParticleStats
+	: INumberVector<F, 11, TParticleStats<F>>
 {
-	uint m_emittersAlive = 0;
-	uint m_emittersUpdated = 0;
-	uint m_emittersRendererd = 0;
+	TElementCounts<F> emitters;
+	TElementCounts<F> components;
 
-	uint m_runtimesAlive = 0;
-	uint m_runtimesUpdated = 0;
-	uint m_runtimesRendered = 0;
+	struct ParticleStats : TElementCounts<F>
+	{
+		F allocated, clipped;
+	} particles;
 
-	uint m_particlesAllocated = 0;
-	uint m_particlesAlive = 0;
-	uint m_particlesUpdated = 0;
-	uint m_particlesRendered = 0;
-	uint m_particlesClipped = 0;
+	TParticleStats() { this->SetZero(); }
 };
+
+typedef TParticleStats<uint> SParticleStats;
 
 struct SParticleFeatureParams
 {
@@ -48,6 +48,7 @@ struct SParticleFeatureParams
 	ColorB            m_color;
 	IParticleFeature* (* m_pFactory)();
 	bool              m_hasComponentConnector;
+	uint              m_defaultForType;
 };
 
 typedef uint32 TComponentId;
@@ -161,9 +162,6 @@ public:
 	virtual void        SetActive(bool active) = 0;
 	virtual bool        IsSecondGen() const = 0;
 	virtual const AABB& GetBounds() const = 0;
-
-	virtual void        AccumCounts(SParticleCounts& counts) = 0;
-
 	virtual void        AddSubInstances(Array<const SInstance, uint> instances) = 0;
 	virtual void        RemoveAllSubInstances() = 0;
 	virtual void        ReparentParticles(Array<const TParticleId, uint> swapIds) = 0;
@@ -177,6 +175,8 @@ struct IParticleEffectPfx2 : public IParticleEffect
 	virtual void                   AddComponent(uint componentIdx) = 0;
 	virtual void                   RemoveComponent(uint componentIdx) = 0;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const = 0;
+	virtual bool                   IsSubstitutedPfx1() const = 0;
+	virtual void                   SetSubstitutedPfx1(bool b) = 0;
 };
 
 struct IParticleSystem : public ICryUnknown
@@ -186,7 +186,7 @@ struct IParticleSystem : public ICryUnknown
 	virtual PParticleEffect         CreateEffect() = 0;
 	virtual PParticleEffect         ConvertEffect(const IParticleEffect* pOldEffect, bool bReplace = false) = 0;
 	virtual void                    RenameEffect(PParticleEffect pEffect, cstr name) = 0;
-	virtual PParticleEffect         FindEffect(cstr name) = 0;
+	virtual PParticleEffect         FindEffect(cstr name, bool bAllowLoad = true) = 0;
 	virtual PParticleEmitter        CreateEmitter(PParticleEffect pEffect) = 0;
 	virtual uint                    GetNumFeatureParams() const = 0;
 	virtual SParticleFeatureParams& GetFeatureParam(uint featureIdx) const = 0;

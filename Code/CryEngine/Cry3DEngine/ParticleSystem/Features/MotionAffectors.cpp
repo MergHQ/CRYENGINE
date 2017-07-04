@@ -124,7 +124,7 @@ private:
 		const float time = max(1.0f / 1024.0f, context.m_deltaTime);
 		const floatv speed = ToFloatv(m_speed * isqrt_tpl(time));
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLESGROUP(context)
+		for (auto particleGroupId : context.GetUpdateGroupRange())
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v accel0 = localAccelerations.Load(particleGroupId);
@@ -134,7 +134,6 @@ private:
 			const Vec3v accel1 = MAdd(Vec3v(keyX, keyY, keyZ), speed, accel0);
 			localAccelerations.Store(particleGroupId, accel1);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	template<typename FieldFn>
@@ -154,7 +153,7 @@ private:
 		const Vec3v scale = ToVec3v(m_scale);
 		const IFStream ages = container.GetIFStream(EPDT_NormalAge);
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLESGROUP(context)
+		for (auto particleGroupId : context.GetUpdateGroupRange())
 		{
 			const floatv age = ages.Load(particleGroupId);
 			const Vec3v position = positions.Load(particleGroupId);
@@ -173,7 +172,6 @@ private:
 			const Vec3v velocity1 = MAdd(fieldSample, speed, velocity0);
 			localVelocities.Store(particleGroupId, velocity1);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	ILINE static Vec3v Potential(const Vec4v sample)
@@ -319,7 +317,7 @@ private:
 		// m_decay is actually the distance at which gravity is halved.
 		const float decay = rcp_fast(m_decay * m_decay);
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			if (parentId != gInvalidId)
@@ -346,7 +344,6 @@ private:
 				localAccelerations.Store(particleId, accel1);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	CTargetSource m_targetSource;
@@ -420,7 +417,7 @@ public:
 		const float decay = rcp_fast(m_decay * m_decay);
 		const float speed = m_speed * (m_direction == EVortexDirection::ClockWise ? -1.0f : 1.0f);
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			if (parentId != gInvalidId)
@@ -438,7 +435,6 @@ public:
 				localVelocities.Store(particleId, velocity1);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:
@@ -485,7 +481,7 @@ public:
 		const float speed = m_speed.Get();
 		const float size = m_size;
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const Vec3 velocity = velocities.Load(particleId);
 			const float age = normAges.Load(particleId) * lifeTimes.Load(particleId);
@@ -498,7 +494,6 @@ public:
 			const Vec3 move = xAxis * rotateCos + yAxis * rotateSin;
 			localMoves.Store(particleId, move);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:

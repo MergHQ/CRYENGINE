@@ -17,8 +17,6 @@ CRY_PFX2_DBG
 namespace pfx2
 {
 
-typedef TValue<float, USoftLimit<15000>> UFloatCount;
-
 struct CRY_ALIGN(CRY_PFX2_PARTICLES_ALIGNMENT) SSpawnData
 {
 	float m_amount;
@@ -33,19 +31,9 @@ struct CRY_ALIGN(CRY_PFX2_PARTICLES_ALIGNMENT) SSpawnData
 
 class CParticleFeatureSpawnBase : public CParticleFeature
 {
-protected:
-	typedef CParamMod<SModInstanceCounter, UFloatCount> TCountParam;
-	typedef CParamMod<SModInstanceTimer, UFloat10>      TTimeParams;
-
 public:
 	CParticleFeatureSpawnBase(gpu_pfx2::EGpuFeatureType gpuType)
-		: m_amount(1.0f)
-		, m_delay(0.0)
-		, m_duration(0.0f)
-		, m_restart(1.0f)
-		, m_useDuration(false)
-		, m_useRestart(false)
-		, CParticleFeature(gpuType) {}
+		: CParticleFeature(gpuType) {}
 
 	virtual EFeatureType GetFeatureType() override
 	{
@@ -63,10 +51,7 @@ public:
 		m_restart.AddToComponent(pComponent, this);
 
 		pParams->m_emitterLifeTime.start += m_delay.GetValueRange().start;
-		if (m_useDuration)
-			pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
-		else
-			pParams->m_emitterLifeTime.end = gInfinity;
+		pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
 
 		auto pGpuInterface = GetGpuInterface();
 		if (pGpuInterface)
@@ -77,8 +62,8 @@ public:
 			gpuSpawnParams.duration = m_duration.GetBaseValue();
 			gpuSpawnParams.restart = m_restart.GetBaseValue();
 			gpuSpawnParams.useDelay = m_delay.GetBaseValue() > 0.0f;
-			gpuSpawnParams.useDuration = m_useDuration;
-			gpuSpawnParams.useRestart = m_useRestart;
+			gpuSpawnParams.useDuration = m_duration.IsEnabled();
+			gpuSpawnParams.useRestart = m_restart.IsEnabled();
 			pGpuInterface->SetParameters(gpuSpawnParams);
 		}
 	}
@@ -92,45 +77,51 @@ public:
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
-		struct SEnabledValue
-		{
-			SEnabledValue(TTimeParams& value, bool& state)
-				: m_value(value), m_state(state) {}
-			TTimeParams& m_value;
-			bool&        m_state;
-			void         Serialize(Serialization::IArchive& ar)
-			{
-				ar(m_state, "State", "^");
-				if (m_state)
-					ar(m_value, "Value", "^");
-				else
-					ar(m_value, "Value", "!^");
-			}
-		};
-
 		CParticleFeature::Serialize(ar);
 		ar(m_amount, "Amount", "Amount");
 
-		if (ar.isInput() && GetVersion(ar) < 9)
-		{
-			bool useDelay = false;
-			ar(SEnabledValue(m_delay, useDelay), "Delay", "Delay");
-			if (!useDelay)
-				m_delay = TTimeParams(0.0f);
-		}
-		else
-		{
-			ar(m_delay, "Delay", "Delay");
-		}
-		ar(SEnabledValue(m_duration, m_useDuration), "Duration", "Duration");
-		if (m_useDuration)
-			ar(SEnabledValue(m_restart, m_useRestart), "Restart", "Restart");
+		SerializeEnabled(ar, m_delay, "Delay", 9);
+		SerializeEnabled(ar, m_duration, "Duration", 11);
+		if (m_duration.IsEnabled())
+			SerializeEnabled(ar, m_restart, "Restart", 11);
 	}
 
 	void UpdateAmounts(const SUpdateContext& context, TVarArray<float> amounts) const {}
 
 protected:
-	void SetUseDuration(bool value) { m_useDuration = value; }
+
+	void SetDuration(float value) { m_duration = value; }
+
+	template<typename TParam>
+	void SerializeEnabled(Serialization::IArchive& ar, TParam& param, cstr name, uint newVersion)
+	{
+		struct SEnabledValue
+		{
+			SEnabledValue(TParam& value)
+				: m_value(value) {}
+			TParam& m_value;
+			
+			void Serialize(Serialization::IArchive& ar)
+			{
+				typedef CParamMod<SModInstanceTimer, UFloat> TTimeParam;
+
+				bool state = m_value.GetBaseValue() < TParam::TValue::HardMax();
+				ar(state, "State", "^");
+				if (state)
+					ar(reinterpret_cast<TTimeParam&>(m_value), "Value", "^");
+ 				else
+				{
+					ar(reinterpret_cast<TTimeParam&>(m_value), "Value", "!^");
+					m_value = TParam::TValue::Default();
+				}
+			}
+		};
+
+		if (ar.isInput() && GetVersion(ar) < newVersion)
+			ar(SEnabledValue(param), name, name);
+		else
+			ar(param, name, name);
+	}
 
 	template<typename Impl>
 	void SpawnParticlesT(Impl& impl, const SUpdateContext& context)
@@ -148,7 +139,7 @@ protected:
 			if (!context.m_params.IsSecondGen() && context.m_params.IsImmortal())
 				return;
 		}
-		else if (m_useRestart)
+		else if (m_restart.IsEnabled())
 			StartInstances(context, 0, numInstances, false);
 
 		const float countScale = runtime.GetEmitter()->GetSpawnParams().fCountScale;
@@ -177,10 +168,8 @@ protected:
 
 			if (spawnTime >= 0.0f && amount > 0.0f)
 			{
-				auto& instance = runtime.GetInstance(i);
-
 				CParticleContainer::SSpawnEntry entry = {};
-				entry.m_parentId = instance.m_parentId;
+				entry.m_parentId = runtime.GetParentId(i);
 				entry.m_ageBegin = (startTime - pSpawn->m_timer - dT) * invDT;
 
 				const float spawnedBefore = pSpawn->m_spawned;
@@ -237,9 +226,9 @@ protected:
 		TFloatArray starts(*context.m_pMemHeap, numStarts);
 		m_amount.ModifyInit(context, amounts.data(), startRange);
 		m_delay.ModifyInit(context, delays.data(), startRange);
-		if (m_useDuration)
+		if (m_duration.IsEnabled())
 			m_duration.ModifyInit(context, durations.data(), startRange);
-		if (m_useRestart)
+		if (m_restart.IsEnabled())
 			m_restart.ModifyInit(context, starts.data(), startRange);
 
 		for (size_t i = 0; i < numStarts; ++i)
@@ -250,22 +239,20 @@ protected:
 			pSpawn->m_spawned = 0.0f;
 			pSpawn->m_amount = amounts[i];
 			pSpawn->m_delay = delays[i] + runtime.GetInstance(idx).m_startDelay;
-			pSpawn->m_duration = m_useDuration ? durations[i] : gInfinity;
-			pSpawn->m_restart = m_useRestart ? starts[i] : gInfinity;
+			pSpawn->m_duration = m_duration.IsEnabled() ? durations[i] : gInfinity;
+			pSpawn->m_restart = m_restart.IsEnabled() ? max(starts[i], pSpawn->m_delay + pSpawn->m_duration) : gInfinity;
 		}
 	}
 
 private:
 	SSpawnData* GetSpawnData(CParticleComponentRuntime& runtime, size_t idx) { return runtime.GetSubInstanceData<SSpawnData>(idx, m_spawnDataOff); }
 
-private:
-	TCountParam         m_amount;
-	TTimeParams         m_delay;
-	TTimeParams         m_duration;
-	TTimeParams         m_restart;
+	CParamMod<SModInstanceCounter, UFloat>  m_amount   = 1;
+	CParamMod<SModInstanceTimer, UFloat>    m_delay    = 0;
+	CParamMod<SModInstanceTimer, UInfFloat> m_duration = gInfinity;
+	CParamMod<SModInstanceTimer, PInfFloat> m_restart  = gInfinity;
+
 	TInstanceDataOffset m_spawnDataOff;
-	bool                m_useDuration;
-	bool                m_useRestart;
 };
 
 class CFeatureSpawnCount : public CParticleFeatureSpawnBase
@@ -277,7 +264,7 @@ public:
 		: CParticleFeatureSpawnBase(gpu_pfx2::eGpuFeatureType_SpawnCount)
 	{
 		// Default duration = 0 for SpawnCount
-		SetUseDuration(true);
+		SetDuration(0);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -286,7 +273,7 @@ public:
 		if (GetVersion(ar) < 9)
 		{
 			// Infinite lifetime was impossible. Default disabled behavior was lifetime = 0.
-			SetUseDuration(true);
+			SetDuration(0);
 		}
 	}
 
@@ -371,7 +358,7 @@ private:
 	ESpawnRateMode m_mode;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", colorSpawn);
+CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", colorSpawn, EFT_Spawn);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -457,11 +444,6 @@ class CFeatureSpawnDensity : public CFeatureSpawnCount
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
-	CFeatureSpawnDensity()
-	{
-		SetUseDuration(false);
-	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
