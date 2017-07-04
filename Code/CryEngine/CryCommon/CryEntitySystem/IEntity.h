@@ -519,6 +519,10 @@ public:
 	//! \return True if entity marked for deletion, false otherwise.
 	virtual bool IsGarbage() const = 0;
 
+	//! Returns a number which is incremeting every time the entity components get changed
+	//! Can be checked with an older one to determine if the entity components have changed
+	virtual uint8 GetComponentChangeState() const = 0;
+
 	//! Changes the entity name.
 	//! Entity name does not have to be unique, but for the sake of easier finding entities by name it is better to not
 	//! assign the same name to different entities.

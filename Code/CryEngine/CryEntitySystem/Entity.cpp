@@ -1848,6 +1848,10 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 
 	// Call initialization of the component
 	pComponent->Initialize();
+
+	// Entity has changed so make the state dirty
+	m_componentChangeState++;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1869,11 +1873,17 @@ void CEntity::RemoveComponent(IEntityComponent* pComponent)
 	}
 
 	ActivateEntityIfNecessary();
+
+	// Entity has changed so make the state dirty
+	m_componentChangeState++;
 }
 
 void CEntity::RemoveAllComponents()
 {
 	m_components.Clear();
+
+	// Entity has changed so make the state dirty
+	m_componentChangeState++;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2018,6 +2028,11 @@ void CEntity::GetComponents(DynArray<IEntityComponent*>& components) const
 uint32 CEntity::GetComponentsCount() const
 {
 	return m_components.Size();
+}
+
+uint8 CEntity::GetComponentChangeState() const
+{
+	return m_componentChangeState;
 }
 
 //////////////////////////////////////////////////////////////////////////
