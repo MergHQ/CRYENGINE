@@ -154,6 +154,8 @@ void CPropertiesWidget::SetupTree()
 	m_pPropertyTree->setAggregateMouseEvents(false);
 	m_pPropertyTree->setFullRowContainers(true);
 	m_pPropertyTree->setSizeToContent(true);
+	// Disable use of actions / buttons on preview entity
+	m_pPropertyTree->setActionsEnabled(false);
 
 	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
 	treeStyle.propertySplitter = false;
