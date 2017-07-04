@@ -41,16 +41,22 @@ template<typename D> ILINE D             convert()      { return D(0); }
 template<typename D, typename S> ILINE D convert(S val) { return D(val); }
 
 // Definitions
-const f32 gf_PI = f32(3.14159265358979323846264338327950288419716939937510);
-const f64 g_PI = 3.14159265358979323846264338327950288419716939937510;       //!< pi
+constexpr f32 gf_PI = f32(3.14159265358979323846264338327950288419716939937510);
+constexpr f64 g_PI = 3.14159265358979323846264338327950288419716939937510;       //!< pi
 
-const f32 gf_PI2 = f32(3.14159265358979323846264338327950288419716939937510 * 2.0);
-const f64 g_PI2 = 3.14159265358979323846264338327950288419716939937510 * 2.0; //!< 2*pi
+// Workaround for MSVC 140 bug where constexpr expression did not evaluate
+#if !defined(_MSC_VER) || _MSC_VER >= 1910
+constexpr f32 gf_PI2 = gf_PI * 2.f;
+constexpr f64 g_PI2 = g_PI * 2.0; //!< 2*pi
+#else
+constexpr f32 gf_PI2 = f32(6.2831853071795864769252867665590057683943387987502); 
+constexpr f64 g_PI2 = 6.2831853071795864769252867665590057683943387987502; //!< 2*pi
+#endif
 
-const f32 gf_ln2 = 0.69314718055994530941723212145818f;       //!< ln(2)
+constexpr f32 gf_ln2 = 0.69314718055994530941723212145818f;       //!< ln(2)
 
-const f64 sqrt2 = 1.4142135623730950488016887242097;
-const f64 sqrt3 = 1.7320508075688772935274463415059;
+constexpr f64 sqrt2 = 1.4142135623730950488016887242097;
+constexpr f64 sqrt3 = 1.7320508075688772935274463415059;
 
 #define DEG2RAD(a) ((a) * (gf_PI / 180.0f))
 #define RAD2DEG(a) ((a) * (180.0f / gf_PI))

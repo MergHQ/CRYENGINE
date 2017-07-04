@@ -1345,14 +1345,34 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 {
 	// Load component Type GUID
 	CryGUID typeGUID;
-	CryGUID componentGUID;
-	CryGUID parentGUID;
-	EntityComponentFlags componentFlags;
 
 	// Load class GUID
 	archive(typeGUID, "TypeGUID", "TypeGUID");
 
+	// Load component name attribute
+	string name;
+	archive(name, "Name", "Name");
+
+	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeGUID);
+	if (!pEnvComponent)
+	{
+		char guidStr[128];
+		typeGUID.ToString(guidStr);
+		// Unknown Entity Component
+		EntityWarning("Attempting to load unknown Entity Component: %s {%s}", name.c_str(), guidStr);
+		return;
+	}
+
+	const CEntityComponentClassDesc& componentClassDesc = pEnvComponent->GetDesc();
+	EntityComponentFlags componentFlags = componentClassDesc.GetComponentFlags();
+	if ((componentFlags.Check(EEntityComponentFlags::ServerOnly) && !gEnv->bServer)
+		|| (componentFlags.Check(EEntityComponentFlags::ClientOnly) && !gEnv->IsClient()))
+	{
+		return;
+	}
+
 	// Load component unique GUID
+	CryGUID componentGUID;
 	archive(componentGUID, "GUID", "GUID");
 
 	std::shared_ptr<IEntityComponent> pComponent;
@@ -1377,14 +1397,11 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 	}
 
 	// Try to find parent component
+	CryGUID parentGUID;
 	if (archive(parentGUID, "ParentGUID", "ParentGUID") && !parentGUID.IsNull())
 	{
 		pParentComponent = GetComponentByGUID(parentGUID);
 	}
-
-	// Load component name attribute
-	string name;
-	archive(name, "Name", "Name");
 
 	// Load component transform
 	CryTransform::CTransformPtr pTransform;
@@ -1394,19 +1411,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		pTransform = std::make_shared<CryTransform::CTransform>(transform);
 	}
 
-	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeGUID);
-	if (!pEnvComponent)
-	{
-		char guidStr[128];
-		typeGUID.ToString(guidStr);
-		// Unknown Entity Component
-		EntityWarning("Attempting to load unknown Entity Component: %s {%s}", name.c_str(), guidStr);
-		return;
-	}
-
-	const CEntityComponentClassDesc& componentClassDesc = pEnvComponent->GetDesc();
-
-	componentFlags = componentClassDesc.GetComponentFlags();
 	// Load user attribute
 	bool bUserAdded = false;
 	if (archive(bUserAdded, "UserAdded", "UserAdded"))
@@ -1831,6 +1835,9 @@ bool CEntity::AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntity
 //////////////////////////////////////////////////////////////////////////
 void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent, const CryGUID& componentTypeID, IEntityComponent::SInitParams *pInitParams, const CEntityComponentClassDesc* pClassDescription)
 {
+	CRY_ASSERT_MESSAGE(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ClientOnly) && !gEnv->IsClient()), "Trying to add a client-only component on the server!");
+	CRY_ASSERT_MESSAGE(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ServerOnly) && !gEnv->bServer), "Trying to add a server-only component on the client!");
+
 	// Initialize common component members
 	pComponent->PreInit(pInitParams != nullptr ? *pInitParams : IEntityComponent::SInitParams(this, CryGUID::Create(), "", pClassDescription, EEntityComponentFlags::None, nullptr, nullptr));
 
@@ -1861,6 +1868,10 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 
 	// Call initialization of the component
 	pComponent->Initialize();
+
+	// Entity has changed so make the state dirty
+	m_componentChangeState++;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1882,11 +1893,17 @@ void CEntity::RemoveComponent(IEntityComponent* pComponent)
 	}
 
 	ActivateEntityIfNecessary();
+
+	// Entity has changed so make the state dirty
+	m_componentChangeState++;
 }
 
 void CEntity::RemoveAllComponents()
 {
 	m_components.Clear();
+
+	// Entity has changed so make the state dirty
+	m_componentChangeState++;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2031,6 +2048,11 @@ void CEntity::GetComponents(DynArray<IEntityComponent*>& components) const
 uint32 CEntity::GetComponentsCount() const
 {
 	return m_components.Size();
+}
+
+uint8 CEntity::GetComponentChangeState() const
+{
+	return m_componentChangeState;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3173,6 +3195,7 @@ struct SEventName
 	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MOVEINSIDEAREA),
 	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MOVENEARAREA),
 	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYS_BREAK),
+	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYS_POSTSTEP),
 	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_AUDIO_TRIGGER_STARTED),
 	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_AUDIO_TRIGGER_ENDED),
 	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_COLLISION),

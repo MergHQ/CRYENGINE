@@ -84,32 +84,6 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		CRY_UNIT_TEST_ASSERT( 1 == pEntity->GetComponentsCount() );
 	}
 
-	// Entity component type that is not registered with Schematyc OR the legacy factory registry
-	class CUnregisteredEntityComponent : public IEntityComponent
-	{
-	public:
-		static CryGUID& IID()
-		{
-			static CryGUID id = "{C653E9E0-6B94-4006-8A2E-C6B9AC8D37CA}"_cry_guid;
-			return id;
-		}
-	};	
-
-	CRY_UNIT_TEST(CreateUnregisteredComponent)
-	{
-		IEntity *pEntity = SpawnTestEntity("ComponentTestEntity");
-
-		// Try creating our unregistered component, this should fail since it is not registered
-		CUnregisteredEntityComponent *pComponent = pEntity->GetOrCreateComponent<CUnregisteredEntityComponent>();
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetComponentsCount(), 0);
-
-		// Now try creating the instance by first creating a shared pointer and adding to the entity directly
-		pComponent = pEntity->GetOrCreateComponentClass<CUnregisteredEntityComponent>();
-		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetComponentsCount(), 1);
-	}
-
 	class CLegacyEntityComponent : public IEntityComponent
 	{
 	public:
@@ -257,7 +231,6 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetComponentsCount(), 2);
 		// Querying the lowest level GUIDs is disallowed
 		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetComponent<IEntityComponent>(), nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetComponent<ICryUnknown>(), nullptr);
 	}
 }
 

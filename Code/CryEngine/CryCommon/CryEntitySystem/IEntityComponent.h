@@ -115,8 +115,10 @@ enum class EEntityComponentFlags : uint32
 	SchematycModified = BIT(7),  //!< Only in combination with the SchematycEditable component to indicate that some parameters where modified from Schematyc defaults by the user.
 	UserAdded         = BIT(8),  //!< This component was added in the Editor by the user
 	NoSave            = BIT(9),  //!< Not save this component under entity components list when saving/loading
-	NetNotReplicate   = BIT(10),  //!< This component should be not be network replicated.
-	HideFromInspector = BIT(11) //!< This component can not be added from the Inspector, instead requiring use in Schematyc or C++.
+	NetNotReplicate   = BIT(10), //!< This component should be not be network replicated.
+	HideFromInspector = BIT(11), //!< This component can not be added from the Inspector, instead requiring use in Schematyc or C++.
+	ServerOnly        = BIT(12), //!< This component can only be loaded when we are running as local or dedicated server
+	ClientOnly        = BIT(13), //!< This component can only be loaded when we are running as a client, never on a dedicated server
 };
 typedef CEnumFlags<EEntityComponentFlags> EntityComponentFlags;
 
@@ -280,7 +282,6 @@ struct IEntityComponent : public ICryUnknown
 		IEntityComponent* pComponent;
 	};
 
-public:
 	CRY_ENTITY_COMPONENT_INTERFACE(IEntityComponent, 0x6A6FFE9AA3D44CD6, 0x9EF1FC42EE649776)
 
 	typedef int                   ComponentEventPriority;

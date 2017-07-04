@@ -41,7 +41,7 @@ void CDecalComponent::ReflectType(Schematyc::CTypeDesc<CDecalComponent>& desc)
 	desc.SetEditorCategory("Effects");
 	desc.SetLabel("Decal");
 	desc.SetDescription("Exposes support for spawning decals");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 	desc.AddMember(&CDecalComponent::m_bAutoSpawn, 'auto', "AutoSpawn", "Default Spawn", "Whether or not to automatically spawn the decal", true);
 	desc.AddMember(&CDecalComponent::m_materialFileName, 'matf', "Material", "Material", "The material we want to use on decals", "");

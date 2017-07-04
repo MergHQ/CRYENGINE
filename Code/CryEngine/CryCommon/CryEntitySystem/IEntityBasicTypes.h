@@ -135,6 +135,10 @@ enum EEntityEvent
 	//! Sent when triggering entity enters or leaves an area so all active areas of same group get notified. This event is sent to all target entities of the area.
 	ENTITY_EVENT_CROSS_AREA,
 
+	//! Sent when an entity with pef_monitor_poststep receives a poststep notification (the hamdler should be thread safe!)
+	//! fParam[0] = time interval
+	ENTITY_EVENT_PHYS_POSTSTEP,
+
 	//! Sent when Breakable object is broken in physics.
 	ENTITY_EVENT_PHYS_BREAK,
 
@@ -159,7 +163,7 @@ enum EEntityEvent
 
 	//! Called when the game is started (games may start multiple times).
 	ENTITY_EVENT_START_GAME,
-
+		 
 	//! Called when the entity enters a script state.
 	ENTITY_EVENT_ENTER_SCRIPT_STATE,
 

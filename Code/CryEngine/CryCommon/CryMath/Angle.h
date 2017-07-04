@@ -29,17 +29,32 @@ public:
 	constexpr static CAngle FromDegrees(float value) { return CAngle(DEG2RAD(value)); }
 	constexpr static CAngle FromRadians(float value) { return CAngle(value); }
 
-	float ToDegrees() const { return RAD2DEG(m_value); }
-	float ToRadians() const { return m_value; }
-	float& ToRadians() { return m_value; }
+	float& GetUnderlyingValueAsRadians() { return m_value; }
 
-	bool   operator==(CAngle rhs) const { return m_value == rhs.m_value; }
-	CAngle operator-(CAngle rhs) const { return CAngle(m_value - rhs.m_value); }
-	CAngle operator+(CAngle rhs) const { return CAngle(m_value + rhs.m_value); }
-	void   operator-=(CAngle rhs) { m_value -= rhs.m_value; }
-	void   operator+=(CAngle rhs) { m_value += rhs.m_value; }
-	CAngle operator*(CAngle rhs) const { return CAngle(m_value * rhs.m_value); }
-	CAngle operator/(CAngle rhs) const { return CAngle(m_value / rhs.m_value); }
+	constexpr float ToDegrees() const { return RAD2DEG(m_value); }
+	constexpr float ToRadians() const { return m_value; }
+	constexpr CAngle Absolute() const { return CAngle(m_value < 0 ? -m_value : m_value); }
+
+	constexpr bool   operator<(CAngle rhs) const { return m_value < rhs.m_value; }
+	constexpr bool   operator>(CAngle rhs) const { return m_value > rhs.m_value; }
+	constexpr bool   operator<=(CAngle rhs) const { return m_value <= rhs.m_value; }
+	constexpr bool   operator>=(CAngle rhs) const { return m_value >= rhs.m_value; }
+	constexpr bool   operator==(CAngle rhs) const { return m_value == rhs.m_value; }
+	constexpr CAngle operator-(CAngle rhs) const { return CAngle(m_value - rhs.m_value); }
+	constexpr CAngle operator+(CAngle rhs) const { return CAngle(m_value + rhs.m_value); }
+	constexpr CAngle operator*(CAngle rhs) const { return CAngle(m_value * rhs.m_value); }
+	constexpr CAngle operator/(CAngle rhs) const { return CAngle(m_value / rhs.m_value); }
+	constexpr CAngle operator*(float rhs) const { return CAngle(m_value * rhs); }
+	constexpr CAngle operator/(float rhs) const { return CAngle(m_value / rhs); }
+	constexpr CAngle operator-() const { return CAngle(-m_value); }
+
+	// These should be constexpr when we migrate to C++14
+	CAngle operator-=(const CAngle rhs) { *this = *this - rhs; return *this; }
+	CAngle operator+=(const CAngle rhs) { *this = *this + rhs; return *this; }
+	CAngle operator*=(const CAngle rhs) { *this = *this * rhs; return *this; }
+	CAngle operator/=(const CAngle rhs) { *this = *this / rhs; return *this; }
+	CAngle operator*=(const float rhs)  { *this = *this * rhs; return *this; }
+	CAngle operator/=(const float rhs)  { *this = *this / rhs; return *this; }
 
 	static void ReflectType(Schematyc::CTypeDesc<CAngle>& desc)
 	{
@@ -56,7 +71,7 @@ protected:
 
 inline bool Serialize(Serialization::IArchive& archive, CAngle& value, const char* szName, const char* szLabel)
 {
-	return archive(Serialization::RadiansAsDeg(value.ToRadians()), szName, szLabel);
+	return archive(Serialization::RadiansAsDeg(value.GetUnderlyingValueAsRadians()), szName, szLabel);
 }
 
 constexpr CAngle operator"" _radians(unsigned long long int value)
@@ -79,7 +94,29 @@ public:
 		, y(_y)
 		, z(_z) {}
 
+	CAngles3(Quat current, Quat previous)
+	{
+		Quat delta = current / previous;
+		Ang3 angles = Ang3(delta);
+
+		x = CAngle::FromRadians(angles.x);
+		y = CAngle::FromRadians(angles.y);
+		z = CAngle::FromRadians(angles.z);
+	}
+
+	void Multiply(Vec3 vec)
+	{
+		x *= vec.x;
+		y *= vec.y;
+		z *= vec.z;
+	}
+
 	inline bool operator==(const CAngles3 &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
+
+	constexpr CAngles3 operator*(float rhs) const { return CAngles3(x * rhs, y * rhs, z * rhs); }
+	constexpr CAngles3 operator-() const { return CAngles3(-x, -y, -z); }
+
+	CAngles3 operator*=(float rhs) { *this = *this * rhs; return *this; }
 
 	Ang3 ToAng3() const { return Ang3(x.ToRadians(), y.ToRadians(), z.ToRadians()); }
 
@@ -142,7 +179,7 @@ inline void ReflectType(Schematyc::CTypeDesc<CClampedAngle<TMinDegrees, TMaxDegr
 template<int TMinDegrees, int TMaxDegrees>
 inline bool Serialize(Serialization::IArchive& archive, CClampedAngle<TMinDegrees, TMaxDegrees>& value, const char* szName, const char* szLabel)
 {
-	if (archive(Serialization::RadiansWithRangeAsDeg(value.ToRadians(), DEG2RAD((float)TMinDegrees), DEG2RAD((float)TMaxDegrees)), szName, szLabel))
+	if (archive(Serialization::RadiansWithRangeAsDeg(value.GetUnderlyingValueAsRadians(), DEG2RAD((float)TMinDegrees), DEG2RAD((float)TMaxDegrees)), szName, szLabel))
 	{
 		return true;
 	}

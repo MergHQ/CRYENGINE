@@ -31,9 +31,9 @@ namespace CryEngine.Game
 
 			var ypr = rotation.YawPitchRoll;
 
-			ypr.X += mouseDelta.x * yawSpeed * frameTime;
+			ypr.X += mouseDelta.x * yawSpeed;
 
-			float pitchDelta = mouseDelta.Y * pitchSpeed * frameTime;
+			float pitchDelta = mouseDelta.Y * pitchSpeed;
 			ypr.Y = MathHelpers.Clamp(ypr.Y + pitchDelta, pitchMin, pitchMax);
 
 			ypr.Z = 0;

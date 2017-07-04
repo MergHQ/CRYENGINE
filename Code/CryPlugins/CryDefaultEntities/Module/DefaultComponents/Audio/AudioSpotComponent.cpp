@@ -107,7 +107,7 @@ void CEntityAudioSpotComponent::ReflectType(Schematyc::CTypeDesc<CEntityAudioSpo
 	desc.SetLabel("Audio Spot");
 	desc.SetDescription("Entity audio spot component");
 	desc.SetIcon("icons:schematyc/entity_audio_component.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 	desc.AddMember(&CEntityAudioSpotComponent::m_occlusionType, 'occ', "occlusionType", "Occlusion Type", "Specifies the occlusion type for all sounds played via this component.", CryAudio::EOcclusionType::Ignore);
 	desc.AddMember(&CEntityAudioSpotComponent::m_defaultTrigger, 'tri', "defaultTrigger", "Default Trigger", "The default trigger that should be used.", SAudioTriggerSerializeHelper());

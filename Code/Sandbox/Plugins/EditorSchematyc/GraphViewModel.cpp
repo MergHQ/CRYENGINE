@@ -167,10 +167,12 @@ bool CNodeGraphViewModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 
 		delete pNodeItem;
 
+		gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptGraph.GetElement());
 		return true;
 	}
 
 	m_scriptGraph.RemoveNode(pNodeItem->GetGUID());
+	gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptGraph.GetElement());
 	return false;
 }
 
@@ -265,10 +267,12 @@ bool CNodeGraphViewModel::RemoveConnection(CryGraphEditor::CAbstractConnectionIt
 
 			delete pConnectionItem;
 
+			gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptGraph.GetElement());
 			return true;
 		}
 
 		m_scriptGraph.RemoveLink(linkIndex);
+		gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptGraph.GetElement());
 	}
 
 	return false;

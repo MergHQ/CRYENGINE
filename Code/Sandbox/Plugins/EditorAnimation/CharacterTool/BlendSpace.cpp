@@ -87,7 +87,6 @@ bool SerializeParameterName(string* str, IArchive& ar, const char* name, const c
 	static Serialization::StringList parameters;
 	if (parameters.empty())
 	{
-		parameters.push_back("");
 		for (int i = 0; i < eMotionParamID_COUNT; ++i)
 		{
 			SMotionParameterDetails details;

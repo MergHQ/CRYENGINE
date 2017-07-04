@@ -13,9 +13,28 @@
 #include "NodeGraph/NodeHeaderWidgetStyle.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/DependencyTracker.h"
+#include "Notifications/NotificationCenter.h"
 #include <IEditor.h>
 
 class CGraphViewModel;
+
+namespace Private_GraphViewModel
+{
+
+struct SAssetData
+{
+	SAssetData(CAsset* pAsset, const string& assetPath, size_t depth) : p(pAsset), path(assetPath), depth(depth)
+	{
+	}
+
+	CAsset* p = nullptr;
+	string  path;
+	size_t  depth = 0;
+	bool    bSelected = false;
+	size_t  node = 0;
+};
+
+}
 
 class CNodeEntry : public CAbstractDictionaryEntry
 {
@@ -485,6 +504,8 @@ void CGraphViewModel::OnBeginModelChange()
 
 void CGraphViewModel::OnEndModelChange()
 {
+	using namespace Private_GraphViewModel;
+
 	CRY_ASSERT(m_pModel);
 
 	if (!m_pModel->GetAsset())
@@ -492,76 +513,105 @@ void CGraphViewModel::OnEndModelChange()
 		return;
 	}
 
-	std::unordered_map<string, size_t, stl::hash_strcmp<string>> map;
-	std::vector<CAssetNode*> stack;
-	std::vector<size_t> nodesDepth;
+	std::vector<SAssetData> assets;
+	std::vector<std::pair<size_t, size_t>> connections;
 
-	m_pModel->ForAllDependencies(m_pModel->GetAsset(), [this, &stack, &nodesDepth, &map](CAsset* pAsset, const string& assetPath, size_t depth)
+	std::unordered_map<string, size_t, stl::hash_strcmp<string>> map(1000);
+	std::vector<size_t> stack(8, 0);
+	
+	assets.reserve(1000);
+	connections.reserve(4000);
+
+	m_pModel->ForAllDependencies(m_pModel->GetAsset(), [this, &stack, &map, &assets, &connections](CAsset* pAsset, const string& assetPath, size_t depth)
 	{
 		// Ignore dependencies on the engine assets.
-		static const char* s_szEngineAlias = "%engine%";
-		if (strnicmp(assetPath, s_szEngineAlias, strlen(s_szEngineAlias)) == 0)
+		if (assetPath[0] == '%')
 		{
-		  return;
+			return;
 		}
 
 		if (stack.size() <= depth)
 		{
-		  stack.resize(depth + 1, nullptr);
+			stack.resize(depth + 1, 0);
 		}
 
 		CAssetNode* pNode = nullptr;
-		const auto it = map.find(assetPath);
+		const string assetKey = string(assetPath).MakeLower();
+		const auto it = map.find(assetKey);
 		if (it == map.end())
 		{
-		  map.insert(std::make_pair(assetPath, m_nodes.size()));
+			map.insert(std::make_pair(assetKey, assets.size()));
+			stack[depth] = assets.size();
+			assets.emplace_back(pAsset, assetPath, depth);
 
-		  const CAssetType* pAssetType = pAsset ? pAsset->GetType() : m_pModel->FindAssetTypeByFile(assetPath);
-
-		  pNode = new CAssetNode(*this, pAsset, pAssetType, assetPath);
-		  pNode->SetAcceptsRenaming(true);
-		  pNode->SetName(QtUtil::ToQString(PathUtil::GetFileName(assetPath)));
-		  pNode->SetAcceptsRenaming(false);
-		  m_nodes.emplace_back(pNode);
-		  nodesDepth.push_back(depth);
+			if (!pAsset)
+			{
+				// Mark parent assets.
+				for (size_t i = 0; i <= depth; ++i)
+				{
+					assets[stack[i]].bSelected = true;
+				}
+			}
 		}
 		else
 		{
-		  pNode = static_cast<CAssetNode*>(m_nodes[it->second].get());
-		  nodesDepth[it->second] = std::max(nodesDepth[it->second], depth);
-		}
-
-		stack[depth] = pNode;
-
-		if (pAsset)
-		{
-		  // TODO : list of resourses, pop-up thumbnail preview window on mouse over.
+			assets[it->second].depth = std::max(assets[it->second].depth, depth);
+			stack[depth] = it->second;
 		}
 
 		if (depth)
 		{
-		  CryGraphEditor::CAbstractPinItem* pSrcPinItem = stack[depth - 1]->GetPinItemByIndex(CAssetNode::ePin_Out);
-		  CryGraphEditor::CAbstractPinItem* pDstPinItem = pNode->GetPinItemByIndex(CAssetNode::ePin_In);
-		  m_connections.emplace_back(new CConnectionItem(*pSrcPinItem, *pDstPinItem, *this));
+			connections.emplace_back(stack[depth - 1], stack[depth]);
 		}
 	});
+
+	static const size_t maximumNumberOfNodes = 100;
+	const bool bAllNodes = assets.size() <= maximumNumberOfNodes;
+	if (!bAllNodes)
+	{
+		GetIEditor()->GetNotificationCenter()->ShowWarning(tr("Dependency Graph"), tr("\"%1\" has too many dependencies to display the whole graph."
+			"\nOnly the graph of missing assets will be displayed.").arg(QtUtil::ToQString(m_pModel->GetAsset()->GetName())));
+	}
 
 	// Create a simple table layout.
 	// Having pre-order depth-first traversing of the nodes, we move to the next table row If we do not go to the next depth level.
 	size_t row = 0;
 	size_t column = 0;
-	for (size_t i = 0, N = m_nodes.size(); i < N; ++i)
+	for (SAssetData& asset : assets)
 	{
-		if (nodesDepth[i] && column >= nodesDepth[i])
+		if (!asset.bSelected && !bAllNodes)
+		{
+			continue;
+		}
+
+		if (asset.depth && column >= asset.depth)
 		{
 			++row;
 		}
-		column = nodesDepth[i];
+		column = asset.depth;
 
-		CAssetNode* pNode = static_cast<CAssetNode*>(m_nodes[i].get());
+		const CAssetType* pAssetType = asset.p ? asset.p->GetType() : m_pModel->FindAssetTypeByFile(asset.path);
+		CAssetNode* pNode = new CAssetNode(*this, asset.p, pAssetType, asset.path);
+		pNode->SetAcceptsRenaming(true);
+		pNode->SetName(QtUtil::ToQString(PathUtil::GetFileName(asset.path)));
+		pNode->SetAcceptsRenaming(false);
+
 		size_t x = column * 500;
 		size_t y = row * 100;
 		pNode->SetPosition(QPointF(x, y));
+
+		asset.node = m_nodes.size();
+		m_nodes.emplace_back(pNode);
+	}
+
+	for (const auto c : connections)
+	{
+		if (bAllNodes || (assets[c.first].bSelected && assets[c.second].bSelected))
+		{
+			CryGraphEditor::CAbstractPinItem* pSrcPinItem = m_nodes[assets[c.first].node]->GetPinItemByIndex(CAssetNode::ePin_Out);
+			CryGraphEditor::CAbstractPinItem* pDstPinItem = m_nodes[assets[c.second].node]->GetPinItemByIndex(CAssetNode::ePin_In);
+			m_connections.emplace_back(new CConnectionItem(*pSrcPinItem, *pDstPinItem, *this));
+		}
 	}
 
 	SignalInvalidated();

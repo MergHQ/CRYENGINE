@@ -189,6 +189,8 @@ public:
 	virtual void Invisible(bool bInvisible) final;
 	virtual bool IsInvisible() const final { return m_bInvisible; }
 
+	virtual uint8 GetComponentChangeState() const final;
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const IAIObject* GetAI() const final            { return m_aiObjectID ? GetAIObject() : nullptr; }
 	virtual IAIObject*  GetAI() final                       { return m_aiObjectID ? GetAIObject() : nullptr; }
@@ -540,6 +542,8 @@ private:
 	unsigned int m_eSwObjDebugFlag      : 2;
 	unsigned int m_bLocalSeg            : 1;
 	#endif //SEG_WORLD
+
+	uint8 m_componentChangeState;
 
 	// Name of the entity.
 	string m_szName;

@@ -42,14 +42,14 @@ namespace CryEngine.Game
 		/// </summary>
 		/// <value>The rotation speed yaw.</value>
 		[EntityProperty(0, "Speed at which the player rotates entity yaw")]
-		public float RotationSpeedYaw{ get; set; } = 0.05f;
+		public float RotationSpeedYaw{ get; set; } = 0.002f;
 
 		/// <summary>
 		/// Speed at which the player rotates entity pitch
 		/// </summary>
 		/// <value>The rotation speed pitch.</value>
 		[EntityProperty(0, "Speed at which the player rotates entity pitch")]
-		public float RotationSpeedPitch{ get; set; } = 0.05f;
+		public float RotationSpeedPitch{ get; set; } = 0.002f;
 
 		/// <summary>
 		/// Minimum entity pitch limit

@@ -178,15 +178,15 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 
 	if (!m_mouseDeltaRotation.IsZero())
 	{
-		const float rotationSpeed = 0.05f;
+		const float rotationSpeed = 0.002f;
 
-		ypr.x += m_mouseDeltaRotation.x * rotationSpeed * frameTime;
+		ypr.x += m_mouseDeltaRotation.x * rotationSpeed;
 
 		const float rotationLimitsMinPitch = -0.84f;
 		const float rotationLimitsMaxPitch = 1.5f;
 
 		// TODO: Perform soft clamp here instead of hard wall, should reduce rot speed in this direction when close to limit.
-		ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * rotationSpeed * frameTime, rotationLimitsMinPitch, rotationLimitsMaxPitch);
+		ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * rotationSpeed, rotationLimitsMinPitch, rotationLimitsMaxPitch);
 
 		// Look direction needs to be synced to server to calculate the movement in
 		// the right direction.

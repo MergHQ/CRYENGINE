@@ -32,7 +32,7 @@ void CParticleComponent::ReflectType(Schematyc::CTypeDesc<CParticleComponent>& d
 	desc.SetLabel("Particle Emitter");
 	desc.SetDescription("Emits a particle effect");
 	desc.SetIcon("icons:schematyc/entity_particle_emitter_component.png");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 	desc.AddMember(&CParticleComponent::m_bEnabled, 'actv', "Enabled", "Enabled", "Whether or not the particle should emit by default", true);
 	desc.AddMember(&CParticleComponent::m_effectName, 'file', "FilePath", "Effect", "Determines the particle effect to load", "");
