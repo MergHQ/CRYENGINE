@@ -247,7 +247,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 	auto& spriteAlphas = pSpritesContext->m_spriteAlphas;
 
 	// camera culling
-	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+	for (auto particleId : context.GetUpdateRange())
 	{
 		const uint8 state = states.Load(particleId);
 		if (!(state & ESB_Alive))
@@ -292,7 +292,6 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 			spriteAlphas[particleId] = alpha;
 		}
 	}
-	CRY_PFX2_FOR_END;
 
 	if ((GetCVars()->e_ParticlesDebug & AlphaBit('c')) == 0)
 	{

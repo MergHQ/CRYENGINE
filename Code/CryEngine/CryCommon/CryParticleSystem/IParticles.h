@@ -41,6 +41,7 @@ struct SpawnParams
 	bool                     bPrime;          //!< Advance emitter age to its equilibrium state.
 	bool                     bRegisterByBBox; //!< Use the Bounding Box instead of Position to Register in VisArea.
 	bool                     bNowhere;        //!< Exists outside of level.
+	bool                     bPlaced;         //!< Loaded from placed entity.
 	float                    fCountScale;     //!< Multiple for particle count (on top of bCountPerUnit if set).
 	float                    fSizeScale;      //!< Multiple for all effect sizes.
 	float                    fSpeedScale;     //!< Multiple for particle emission speed.
@@ -63,6 +64,7 @@ struct SpawnParams
 		bPrime = false;
 		bRegisterByBBox = false;
 		bNowhere = false;
+		bPlaced = false;
 		fCountScale = 1;
 		fSizeScale = 1;
 		fSpeedScale = 1;
@@ -138,19 +140,33 @@ struct ParticleLoc : QuatTS
 	ParticleLoc(const Vec3& pos, const Vec3& dir = Vec3(0, 0, 1), float scale = 1.f)
 		: QuatTS(IDENTITY, pos, scale)
 	{
-		if (!dir.IsZero())
-		{
-			// Rotate in 2 stages to avoid roll.
-			Vec3 dirxy = Vec3(dir.x, dir.y, 0.f);
-			if (!dirxy.IsZero(1e-10f))
-			{
-				dirxy.Normalize();
-				q = Quat::CreateRotationV0V1(dirxy, dir.GetNormalized())
-				    * Quat::CreateRotationV0V1(Vec3(0, 1, 0), dirxy);
-			}
-			else
-				q = Quat::CreateRotationV0V1(Vec3(0, 1, 0), dir.GetNormalized());
-		}
+		// ParticleLoc currently uses pfx1 behavior
+		SetYToDir(q, dir);
+	}
+
+	static void SetZToDir(Quat& q, const Vec3& dir)
+	{
+		// pfx2 orientation system: Z is focus.
+		if (dir.IsZero())
+			q.SetIdentity();
+		else
+			q.SetRotationV0V1(Vec3(0, 0, 1), dir);
+	}
+
+	static void SetYToDir(Quat& q, const Vec3& dir)
+	{
+		// pfx1 orientation system: Y is focus.
+		q.SetRotationVDir(dir);
+	}
+
+	static void RotateZtoY(Quat& q)
+	{
+		SetYToDir(q, q.GetColumn2());
+	}
+
+	static void RotateYtoZ(Quat& q)
+	{
+		SetZToDir(q, q.GetColumn1());
 	}
 };
 
@@ -244,15 +260,14 @@ struct IParticleEffect : public _i_reference_target_t
 	//! \param bEnabled Set to true to enable the effect or to false to disable it.
 	virtual void SetEnabled(bool bEnabled) = 0;
 
-	//! Determines if the effect is already enabled.
-	//! \return A boolean value which indicate the status of the effect; true if enabled or false if disabled.
-	virtual bool IsEnabled() const = 0;
+	//! Determines if the effect is enabled.
+	enum ECheckOptions { eCheckChildren = 1, eCheckConfig = 2, eCheckFeatures = 4 };
+	virtual bool IsEnabled(uint options = 0) const = 0;
 
 	//! Returns true if this is a run-time only unsaved effect.
 	virtual bool IsTemporary() const = 0;
 
 	//! Sets the particle parameters.
-	//! \return An object of the type ParticleParams which contains several parameters.
 	virtual void SetParticleParams(const ParticleParams& params) = 0;
 
 	//! Gets the particle parameters.
@@ -316,7 +331,7 @@ struct IParticleEffect : public _i_reference_target_t
 
 	// Summary:
 	// Arguments:
-	virtual const IParticleAttributes& GetAttributes() = 0;
+	virtual IParticleAttributes& GetAttributes() = 0;
 
 	// </interfuscator:shuffle>
 };
@@ -450,7 +465,7 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 struct IParticleEffectListener
 {
 	// <interfuscator:shuffle>
-	virtual ~IParticleEffectListener(){}
+	virtual ~IParticleEffectListener() {}
 	//! This callback is called when a new particle emitter is created.
 	//! \param pEmitter Created Emitter.
 	//! \param bIndependent
@@ -465,74 +480,58 @@ struct IParticleEffectListener
 };
 
 //////////////////////////////////////////////////////////////////////////
-struct SContainerCounts
-{
-	float EmittersRendered, ParticlesRendered;
-	float PixelsProcessed, PixelsRendered;
-	float ParticlesReiterate, ParticlesReject, ParticlesClip;
-	float ParticlesCollideTest, ParticlesCollideHit;
 
-	SContainerCounts()
-	{ memset(this, 0, sizeof(*this)); }
+// General particle stats
+template<typename F>
+struct TElementCounts
+	: INumberVector<F, 3, TElementCounts<F>>
+{
+	F alive, updated, rendered;
 };
 
-struct SParticleCounts : SContainerCounts
+// pfx1 particle stats
+template<typename F>
+struct TContainerCountsBase
 {
-	float EmittersAlloc;
-	float EmittersActive;
-	float ParticlesAlloc;
-	float ParticlesActive;
-	float SubEmittersActive;
-	int   nCollidingEmitters;
-	int   nCollidingParticles;
-
-	float StaticBoundsVolume;
-	float DynamicBoundsVolume;
-	float ErrorBoundsVolume;
-
-	SParticleCounts()
-	{ memset(this, 0, sizeof(*this)); }
-};
-
-struct SSumParticleCounts : SParticleCounts
-{
-	float SumParticlesAlloc, SumEmittersAlloc;
-
-	SSumParticleCounts()
-		: SumParticlesAlloc(0.f), SumEmittersAlloc(0.f)
-	{}
-
-	void GetMemoryUsage(ICrySizer* pSizer) const
+	TElementCounts<F> components;
+	struct SubEmitterCounts
 	{
-		pSizer->AddObject(this, sizeof(*this));
-	}
+		F updated;
+	} subemitters;
+	struct ParticleCounts : TElementCounts<F>
+	{
+		F reiterate, reject, clip, collideTest, collideHit;
+	} particles;
+	struct PixelCounts
+	{
+		F updated, rendered;
+	} pixels;
 };
 
-struct SEffectCounts
+template<typename F>
+struct TContainerCounts
+	: INumberVector<float, 14, TContainerCounts<F>>
+	, TContainerCountsBase<F>
 {
-	int nLoaded, nUsed, nEnabled, nActive;
-
-	SEffectCounts()
-	{ memset(this, 0, sizeof(*this)); }
+	TContainerCounts() { this->SetZero(); }
 };
 
-template<class T>
-Array<float> FloatArray(T& obj)
+template<typename F>
+struct TParticleCounts
+	: INumberVector<float, 20, TParticleCounts<F>>
+	, TContainerCountsBase<F>
 {
-	return Array<float>((float*)&obj, (float*)(&obj + 1));
-}
+	TElementCounts<F> emitters;
+	struct VolumeStats
+	{
+		F stat, dyn, error;
+	} volume;
 
-inline void AddArray(Array<float> dst, Array<const float> src)
-{
-	for (int i = min(dst.size(), src.size()) - 1; i >= 0; --i)
-		dst[i] += src[i];
-}
+	TParticleCounts()  { this->SetZero(); }
+};
 
-inline void BlendArray(Array<float> dst, float fDst, Array<const float> src, float fSrc)
-{
-	for (int i = min(dst.size(), src.size()) - 1; i >= 0; --i)
-		dst[i] = dst[i] * fDst + src[i] * fSrc;
-}
+typedef TContainerCounts<float> SContainerCounts;
+typedef TParticleCounts<float> SParticleCounts;
 
 //////////////////////////////////////////////////////////////////////////
 struct IParticleEffectIterator
@@ -553,7 +552,7 @@ typedef IParticleEffectIterator_AutoPtr IParticleEffectIteratorPtr;
 struct IParticleManager
 {
 	// <interfuscator:shuffle>
-	virtual ~IParticleManager(){}
+	virtual ~IParticleManager() {}
 	//////////////////////////////////////////////////////////////////////////
 	// ParticleEffects
 	//////////////////////////////////////////////////////////////////////////

@@ -70,11 +70,7 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		IOAudioObjects audioObjects = context.m_container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
-
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
-			audioObjects.Store(particleId, nullptr);
-		CRY_PFX2_FOR_END;
+		context.m_container.FillData(EPDT_AudioObject, nullptr, context.GetSpawnedRange());
 	}
 
 	void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
@@ -133,7 +129,7 @@ private:
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const auto states = container.GetTIStream<uint8>(EPDT_State);
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const uint8 state = states.Load(particleId);
 			if (m_playTrigger && state == ES_NewBorn)
@@ -145,7 +141,6 @@ private:
 				Trigger(m_stopTrigger, proxyName, positions.Load(particleId));
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	void TriggerFollowAudioEvents(CParticleComponentRuntime* pComponentRuntime, cstr proxyName)
@@ -158,7 +153,7 @@ private:
 		const auto states = container.GetTIStream<uint8>(EPDT_State);
 		IOAudioObjects audioObjects = container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			CryAudio::IObject* pIObject = audioObjects.Load(particleId);
 			const uint8 state = states.Load(particleId);
@@ -190,7 +185,6 @@ private:
 				}
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	void Trigger(CryAudio::ControlId id, cstr proxyName, const Vec3& position)
@@ -267,10 +261,10 @@ public:
 			return;
 		IOAudioObjects audioObjects = container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
 
-		STempModBuffer values(context, m_value);
+		STempModBuffer<float> values(context, m_value);
 		values.ModifyUpdate(context, m_value, container.GetFullRange());
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const float value = values.m_stream.Load(particleId);
 			CryAudio::IObject* const pIObject = audioObjects.Load(particleId);
@@ -279,7 +273,6 @@ public:
 				pIObject->SetParameter(m_parameterId, value);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:

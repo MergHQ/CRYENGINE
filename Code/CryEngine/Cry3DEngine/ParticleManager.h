@@ -177,7 +177,7 @@ public:
 	void PrintParticleMemory();
 
 	typedef VectorMap<const IParticleEffect*, SParticleCounts> TEffectStats;
-	void CollectEffectStats(TEffectStats& mapEffectStats, float SParticleCounts::* pSortField) const;
+	void CollectEffectStats(TEffectStats& mapEffectStats, size_t iSortField) const;
 
 	//PerfHUD
 	virtual void CreatePerfHUDWidget();

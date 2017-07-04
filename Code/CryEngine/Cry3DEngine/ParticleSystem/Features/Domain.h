@@ -11,15 +11,15 @@
 namespace pfx2
 {
 
-SERIALIZATION_ENUM_DECLARE(ETimeSource, ,
+SERIALIZATION_ENUM_DECLARE(EDomain, ,
                            Age,
                            SpawnFraction,
                            Speed,
                            Field,
-                           Attribute,
-                           LevelTime,
+                           Attribute,                           
                            ViewAngle,
 	                       CameraDistance,
+	                       Global,
                            Random,
 
                            // old version
@@ -29,23 +29,30 @@ SERIALIZATION_ENUM_DECLARE(ETimeSource, ,
                            _ParentField,
 
                            _SelfTime = Age,
-                           _SelfSpeed = Speed
+                           _SelfSpeed = Speed,
+	                       _LevelTime = Global
                            )
 
-SERIALIZATION_ENUM_DECLARE(ETimeSourceOwner, ,
+SERIALIZATION_ENUM_DECLARE(EDomainOwner, ,
                            _None,
                            Self,
                            Parent
                            )
 
-typedef DynamicEnum<struct STimeSourceField> ETimeSourceField;
-bool Serialize(Serialization::IArchive& ar, ETimeSourceField& value, cstr name, cstr label);
+SERIALIZATION_ENUM_DECLARE(EDomainGlobal, ,
+                           LevelTime,
+	                       TimeOfDay,
+	                       ExposureValue
+                           )
+
+typedef DynamicEnum<struct SDomainField> EDomainField;
+bool Serialize(Serialization::IArchive& ar, EDomainField& value, cstr name, cstr label);
 
 
-class CTimeSource
+class CDomain
 {
 public:
-	CTimeSource();
+	CDomain();
 
 	template<typename TParam, typename TMod>
 	void              AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier);
@@ -55,23 +62,26 @@ public:
 	EModDomain        GetDomain() const;
 	EParticleDataType GetDataType() const;
 	string            GetSourceDescription() const;
-	float             Adjust(float sample) const { return sample * m_timeScale + m_timeBias; }
+	float             Adjust(float sample) const { return sample * m_domainScale + m_domainBias; }
 	void              SerializeInplace(Serialization::IArchive& ar);
 
 protected:
-	float m_timeScale;
-	float m_timeBias;
+	float m_domainScale;
+	float m_domainBias;
 
 private:
+	float             GetGlobalValue(EDomainGlobal source) const;
 	IParamModContext& GetContext(Serialization::IArchive& ar) const;
 
-	string           m_attributeName;
-	ETimeSource      m_timeSource;
-	ETimeSourceField m_fieldSource;
-	ETimeSourceOwner m_sourceOwner;
-	bool             m_spawnOnly;
+private:
+	string        m_attributeName;
+	EDomain       m_domain;
+	EDomainField  m_fieldSource;
+	EDomainOwner  m_sourceOwner;
+	EDomainGlobal m_sourceGlobal;
+	bool          m_spawnOnly;
 };
 
 }
 
-#include "TimeSourceImpl.h"
+#include "DomainImpl.h"

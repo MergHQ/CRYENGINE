@@ -23,11 +23,11 @@ namespace pfx2
 
 class CParticleContainer;
 
-typedef TIStream<UCol, UColv>               IColorStream;
-typedef TIStream<uint32, uint32v>           IUintStream;
-typedef TIOStream<uint32>                   IOUintStream;
-typedef TIStream<TParticleId, TParticleIdv> IPidStream;
-typedef TIOStream<TParticleId>              IOPidStream;
+typedef TIStream<UCol>         IColorStream;
+typedef TIStream<uint32>       IUintStream;
+typedef TIOStream<uint32>      IOUintStream;
+typedef TIStream<TParticleId>  IPidStream;
+typedef TIOStream<TParticleId> IOPidStream;
 
 class CParticleContainer
 {
@@ -60,7 +60,7 @@ public:
 
 	template<typename T> T*           GetData(EParticleDataType type);
 	template<typename T> const T*     GetData(EParticleDataType type) const;
-	template<typename T> void         FillData(EParticleDataType type, const T& data, SUpdateRange range);
+	template<typename T> void         FillData(EParticleDataType type, const T& data, SUpdateRange range, bool allDims = true);
 	void                              CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range);
 
 	IFStream                          GetIFStream(EParticleDataType type, float defaultVal = 0.0f) const;

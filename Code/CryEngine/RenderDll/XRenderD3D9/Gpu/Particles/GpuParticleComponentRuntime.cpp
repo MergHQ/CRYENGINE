@@ -617,15 +617,13 @@ void CParticleComponentRuntime::PrepareRelease()
 	}
 }
 
-void CParticleComponentRuntime::AccumCounts(SParticleCounts& counts)
+void CParticleComponentRuntime::AccumStats(pfx2::SParticleStats& stats)
 {
-	// PFx2_TODO : create a dedicated GPU particles profiler
-	/*
-	counts.EmittersAlloc += 1.0f;
-	counts.ParticlesAlloc += m_parameters->numParticles;
-	counts.EmittersActive += 1.0f;
-	counts.SubEmittersActive += 1.0f;
-	counts.ParticlesActive += m_parameters->numParticles;
-	*/
+	stats.components.alive++;
+	stats.components.updated++;
+	stats.components.rendered++;
+	stats.particles.rendered += m_parameters->numParticles;
+	stats.particles.updated += m_parameters->numParticles;
+	stats.particles.alive += m_parameters->numParticles;
 }
 }

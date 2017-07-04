@@ -818,4 +818,6 @@ void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraph
 	{
 		commandInterface.DrawIndexed(numIndices, 1, m_nFirstIndex, m_nFirstVertex, 0);
 	}
+
+	gRenDev->m_FillRateManager.AddPixelCount(m_RenderVerts.fPixels);
 }

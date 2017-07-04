@@ -63,7 +63,7 @@ public:
 		if (!m_scale.HasModifiers())
 			return;
 
-		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetLastParticleId());
+		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles());
 		auto modRange = m_scale.GetValues(context, sizes, EMD_PerInstance, true);
 
 		const size_t numInstances = context.m_runtime.GetNumInstances();
@@ -96,11 +96,10 @@ public:
 		IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		STempModBuffer scales(context, m_scale);
-		scales.ModifyInit(context, m_scale, container.GetSpawnedRange());
+		STempInitBuffer<float> scales(context, m_scale);
 
 		Vec3 oOffset = m_offset;
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const float scale = scales.m_stream.SafeLoad(particleId);
@@ -110,7 +109,6 @@ public:
 			const Vec3 wPosition1 = wPosition0 + wOffset * scale;
 			positions.Store(particleId, wPosition1);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:
@@ -157,7 +155,7 @@ public:
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		size_t numInstances = context.m_runtime.GetNumInstances();
-		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetLastParticleId());
+		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles());
 		auto modRange = m_scale.GetValues(context, sizes, EMD_PerInstance, true);
 		float avg = (modRange.start + modRange.end) * 0.5f;
 
@@ -180,10 +178,9 @@ public:
 		IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		STempModBuffer scales(context, m_scale);
-		scales.ModifyInit(context, m_scale, container.GetSpawnedRange());
+		STempInitBuffer<float> scales(context, m_scale);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const float scale = scales.m_stream.SafeLoad(particleId);
@@ -197,7 +194,6 @@ public:
 			const Vec3 wPosition1 = wPosition0 + wOffset * scale;
 			positions.Store(particleId, wPosition1);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:
@@ -265,7 +261,7 @@ public:
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		size_t numInstances = context.m_runtime.GetNumInstances();
-		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetLastParticleId());
+		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles());
 		auto modRange = m_radius.GetValues(context, sizes, EMD_PerInstance, true);
 
 		for (size_t i = 0; i < numInstances; ++i)
@@ -289,12 +285,10 @@ private:
 		const float baseRadius = m_radius.GetBaseValue();
 		const float invBaseRadius = __fres(baseRadius);
 
-		STempModBuffer radii(context, m_radius);
-		STempModBuffer velocityMults(context, m_velocity);
-		radii.ModifyInit(context, m_radius, container.GetSpawnedRange());
-		velocityMults.ModifyInit(context, m_velocity, container.GetSpawnedRange());
+		STempInitBuffer<float> radii(context, m_radius);
+		STempInitBuffer<float> velocityMults(context, m_velocity);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			const Vec3 sphere = context.m_spawnRng.RandSphere();
 			const Vec3 sphereDist = sphere.CompMul(m_axisScale);
@@ -316,7 +310,6 @@ private:
 				velocities.Store(particleId, wVelocity1);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	CParamMod<SModParticleSpawnInit, UFloat10> m_radius;
@@ -386,7 +379,7 @@ public:
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
 		const size_t numInstances = context.m_runtime.GetNumInstances();
-		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetLastParticleId());
+		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles()); 
 		auto modRange = m_radius.GetValues(context, sizes, EMD_PerInstance, true);
 
 		for (size_t i = 0; i < numInstances; ++i)
@@ -414,12 +407,10 @@ private:
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
-		STempModBuffer radii(context, m_radius);
-		STempModBuffer velocityMults(context, m_velocity);
-		radii.ModifyInit(context, m_radius, container.GetSpawnedRange());
-		velocityMults.ModifyInit(context, m_velocity, container.GetSpawnedRange());
+		STempInitBuffer<float> radii(context, m_radius);
+		STempInitBuffer<float> velocityMults(context, m_velocity);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			TParticleId parentId = parentIds.Load(particleId);
 			const float radiusMult = abs(radii.m_stream.SafeLoad(particleId));
@@ -445,7 +436,6 @@ private:
 				velocities.Store(particleId, wVelocity1);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:
@@ -619,12 +609,10 @@ private:
 		IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
 		const bool hasParentParticles = context.m_params.m_parentId != gInvalidId;
 
-		STempModBuffer offsets(context, m_offset);
-		STempModBuffer velocityMults(context, m_velocity);
-		offsets.ModifyInit(context, m_offset, container.GetSpawnedRange());
-		velocityMults.ModifyInit(context, m_velocity, container.GetSpawnedRange());
+		STempInitBuffer<float> offsets(context, m_offset);
+		STempInitBuffer<float> velocityMults(context, m_velocity);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			GeomRef particleGeometry = emitterGeometry;
 			if (hasParentParticles)
@@ -668,7 +656,6 @@ private:
 				orientations.Store(particleId, wOrient1);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	CParamMod<SModParticleSpawnInit, SFloat10> m_offset;
@@ -735,10 +722,9 @@ public:
 		const IFStream ages = container.GetIFStream(EPDT_NormalAge);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 
-		STempModBuffer sizes(context, m_amplitude);
-		sizes.ModifyInit(context, m_amplitude, container.GetSpawnedRange());
+		STempInitBuffer<float> sizes(context, m_amplitude);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			const float amplitude = sizes.m_stream.SafeLoad(particleId);
 			const Vec3 wPosition0 = positions.Load(particleId);
@@ -752,7 +738,6 @@ public:
 			const Vec3 wPosition1 = potential * amplitude + wPosition0;
 			positions.Store(particleId, wPosition1);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:
@@ -842,7 +827,7 @@ public:
 		const IFStream fractions = container.GetIFStream(EPDT_SpawnFraction);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			const Vec3 wSource = m_source.GetTarget(context, particleId);
 			const Vec3 wDestination = m_destination.GetTarget(context, particleId);
@@ -850,7 +835,6 @@ public:
 			const Vec3 wPosition = wSource + (wDestination - wSource) * fraction;
 			positions.Store(particleId, wPosition);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
@@ -911,7 +895,7 @@ public:
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Vec3 wParentPosition = parentPositions.Load(parentId);
@@ -926,7 +910,6 @@ public:
 			const Vec3 wVelocity1 = wCameraPose.q * (worldToParent.q * wVelocity0);
 			velocities.Store(particleId, wVelocity1);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	virtual void PreUpdate(const SUpdateContext& context) override
@@ -946,7 +929,7 @@ public:
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const uint8 state = states.Load(particleId);
 			if (state == ES_NewBorn)
@@ -961,7 +944,6 @@ public:
 			const Vec3 wVelocity1 = cameraMotion.q * wVelocity0;
 			velocities.Store(particleId, wVelocity1);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 private:
@@ -1191,7 +1173,7 @@ public:
 
 		UpdateCameraData(context);
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			// Overwrite position
 			Vec3 pos;
@@ -1207,7 +1189,6 @@ public:
 			pos = m_camData.toWorld * pos;
 			positions.Store(particleId, pos);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	virtual void Update(const SUpdateContext& context) override
@@ -1227,7 +1208,7 @@ public:
 		// Wrap positions
 		if (m_wrapSector)
 		{
-			CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+			for (auto particleId : context.GetUpdateRange())
 			{
 				Vec3 pos = positions.Load(particleId);
 				Vec3 posCam = m_camData.fromWorld * pos;
@@ -1253,11 +1234,10 @@ public:
 				}
 				auxPositions.Store(particleId, posCam);
 			}
-			CRY_PFX2_FOR_END;
 		}
 		else
 		{
-			CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+			for (auto particleId : context.GetUpdateRange())
 			{
 				Vec3 pos = positions.Load(particleId);
 				Vec3 posCam = m_camData.fromWorld * pos;
@@ -1268,7 +1248,6 @@ public:
 					positions.Store(particleId, pos);
 				}
 			}
-			CRY_PFX2_FOR_END;
 		}
 	}
 

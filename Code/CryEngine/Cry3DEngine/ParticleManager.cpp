@@ -153,28 +153,8 @@ CParticleManager::~CParticleManager()
 	}
 }
 
-struct SortEffectStats
+void CParticleManager::CollectEffectStats(TEffectStats& mapEffectStats, size_t iSortField) const
 {
-	typedef CParticleManager::TEffectStats::value_type SEffectStatEntry;
-
-	float SParticleCounts::* _pSortField;
-
-	SortEffectStats(float SParticleCounts::* pSortField)
-		: _pSortField(pSortField) {}
-
-	bool operator()(const SEffectStatEntry& a, const SEffectStatEntry& b) const
-	{
-		return a.second.*_pSortField > b.second.*_pSortField;
-	}
-};
-
-void CParticleManager::CollectEffectStats(TEffectStats& mapEffectStats, float SParticleCounts::* pSortField) const
-{
-	CRY_ASSERT_MESSAGE(false, "CParticleManager::CollectEffectStats is deprecated");
-
-	/* Disabled as sorting a std::sort on a map is not allowed
-	//
-
 	SParticleCounts countsTotal;
 	for (const auto& e : m_Emitters)
 	{
@@ -183,19 +163,24 @@ void CParticleManager::CollectEffectStats(TEffectStats& mapEffectStats, float SP
 			SParticleCounts countsEmitter;
 			c.GetCounts(countsEmitter);
 			SParticleCounts& countsEffect = mapEffectStats[c.GetEffect()];
-			AddArray(FloatArray(countsEffect), FloatArray(countsEmitter));
-			AddArray(FloatArray(countsTotal), FloatArray(countsEmitter));
+			countsEffect += countsEmitter;
+			countsTotal += countsEmitter;
 		}
 	}
 
 	// Add total to list.
 	mapEffectStats[NULL] = countsTotal;
 
-	
 	// Re-sort by selected stat.
-	std::sort(mapEffectStats.begin(), mapEffectStats.end(), SortEffectStats(pSortField));
-	*/
+	auto compare = [iSortField](const TEffectStats::value_type& a, const TEffectStats::value_type& b)
+	{
+		return a.second[iSortField] >= b.second[iSortField];
+	};
+	std::sort(mapEffectStats.begin(), mapEffectStats.end(), compare);
 }
+
+#define VectorIndexOf(Vector, field) (&(*(Vector*)0).field - ((Vector*)0)->begin())
+
 
 void CParticleManager::GetCounts(SParticleCounts& counts)
 {
@@ -461,14 +446,19 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 	assert(pEffect);
 	if (pEffect->IsEnabled() || pEffect->GetChildCount())
 	{
-		if (GetCVars()->e_ParticlesConvertPfx1)
-		{
-			auto pEffectPfx2 = m_pParticleSystem->ConvertEffect(pEffect, !!(GetCVars()->e_ParticlesConvertPfx1 & 2));
-			if (GetCVars()->e_ParticlesConvertPfx1 & 4)
-				return pEffectPfx2;
-		}
 		if (bLoad)
 			pEffect->LoadResources(true, sSource);
+		if (GetCVars()->e_ParticlesConvertPfx1)
+		{
+			bool bForce = !!(GetCVars()->e_ParticlesConvertPfx1 & 2);
+			bool bSubstitute = !!(GetCVars()->e_ParticlesConvertPfx1 & 4);
+			auto pEffectPfx2 = m_pParticleSystem->ConvertEffect(pEffect, bForce);
+			if (bSubstitute)
+			{
+				pEffectPfx2->SetSubstitutedPfx1(true);
+				return pEffectPfx2;
+			}
+		}
 
 		return pEffect;
 	}
@@ -718,17 +708,16 @@ CParticleEmitter* CParticleManager::CreateEmitter(const ParticleLoc& loc, const 
 	if (!pEffect)
 		return NULL;
 
-	void* pAlloc;
-	if (static_cast<const CParticleEffect*>(pEffect)->GetEnvironFlags(true) & EFF_FORCE)
-		// Place emitters that create forces first in the list, so they are updated first.
-		pAlloc = m_Emitters.push_front_new();
-	else
-		pAlloc = m_Emitters.push_back_new();
+	void* pAlloc = m_Emitters.push_back_new();
 	if (!pAlloc)
 		return NULL;
 
 	CParticleEmitter* pEmitter = new(pAlloc) CParticleEmitter(pEffect, loc, pSpawnParams);
 	pEmitter->IParticleEmitter::AddRef();
+
+	if (pEmitter->GetEnvFlags() & EFF_FORCE)
+		// Move emitters that create forces to the front, so they are updated first.
+		m_Emitters.move(m_Emitters.begin(), pEmitter);
 
 	for (auto& pListener : m_ListenersList)
 	{
@@ -1369,7 +1358,7 @@ void CParticleManager::ListEffects()
 {
 	// Collect all container stats, sum into effects map.
 	TEffectStats mapEffectStats;
-	CollectEffectStats(mapEffectStats, &SParticleCounts::ParticlesActive);
+	CollectEffectStats(mapEffectStats, VectorIndexOf(SParticleCounts, particles.updated));
 
 	// Header for CSV-formatted effect list.
 	CryLogAlways(
@@ -1395,12 +1384,12 @@ void CParticleManager::ListEffects()
 		  "%.2f, %.2f, %.2f, "
 		  "%.0f, %.2f",
 		  me.first ? me.first->GetFullName().c_str() : "TOTAL",
-		  counts.EmittersRendered, counts.EmittersActive, counts.EmittersAlloc,
-		  counts.ParticlesRendered, counts.ParticlesActive, counts.ParticlesAlloc,
-		  counts.PixelsRendered * fPixToScreen, counts.PixelsProcessed * fPixToScreen,
-		  counts.StaticBoundsVolume, counts.DynamicBoundsVolume, counts.ErrorBoundsVolume,
-		  counts.ParticlesCollideTest, counts.ParticlesCollideHit, counts.ParticlesClip,
-		  counts.ParticlesReiterate, counts.ParticlesReject
+		  counts.components.rendered, counts.components.updated, counts.components.alive,
+		  counts.particles.rendered, counts.particles.updated, counts.particles.alive,
+		  counts.pixels.rendered * fPixToScreen, counts.pixels.updated * fPixToScreen,
+		  counts.volume.stat, counts.volume.dyn, counts.volume.error,
+		  counts.particles.collideTest, counts.particles.collideHit, counts.particles.clip,
+		  counts.particles.reiterate, counts.particles.reject
 		  );
 	}
 }
@@ -1498,10 +1487,10 @@ void CParticleManager::DumpAndResetVertexIndexPoolUsage()
 		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "\tLimit    %3d", (int)GetCVars()->e_ParticlesMaxScreenFill);
 		fTopOffset += 18.0f;
 
-		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "\tProcessed %3d", (int)(CurCounts.PixelsProcessed / fScreenPix));
+		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "\tProcessed %3d", (int)(CurCounts.pixels.updated / fScreenPix));
 		fTopOffset += 18.0f;
 
-		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "\tRendered  %3d", (int)(CurCounts.PixelsRendered / fScreenPix));
+		IRenderAuxText::Draw2dLabel(fTextSideOffset, fTopOffset, fTextSize, pColor, false, "\tRendered  %3d", (int)(CurCounts.pixels.rendered / fScreenPix));
 		fTopOffset += 18.0f;
 		fTopOffset += 18.0f;
 
@@ -1598,19 +1587,19 @@ void CParticleWidget::Update()
 	switch (m_displayMode)
 	{
 	case PARTICLE_DISP_MODE_PARTICLE:
-		m_pPartMgr->CollectEffectStats(mapEffectStats, &SParticleCounts::ParticlesRendered);
+		m_pPartMgr->CollectEffectStats(mapEffectStats, VectorIndexOf(SParticleCounts, particles.rendered));
 		break;
 
 	case PARTICLE_DISP_MODE_FILL:
-		m_pPartMgr->CollectEffectStats(mapEffectStats, &SParticleCounts::PixelsRendered);
+		m_pPartMgr->CollectEffectStats(mapEffectStats, VectorIndexOf(SParticleCounts, pixels.rendered));
 		break;
 
 	case PARTICLE_DISP_MODE_EMITTER:
-		m_pPartMgr->CollectEffectStats(mapEffectStats, &SParticleCounts::EmittersRendered);
+		m_pPartMgr->CollectEffectStats(mapEffectStats, VectorIndexOf(SParticleCounts, components.rendered));
 		break;
 	}
 
-	if (mapEffectStats[NULL].ParticlesAlloc)
+	if (mapEffectStats[NULL].components.alive)
 	{
 		float fPixToScreen = 1.f / (gEnv->pRenderer->GetWidth() * gEnv->pRenderer->GetHeight());
 		for (auto& me : mapEffectStats)
@@ -1620,16 +1609,16 @@ void CParticleWidget::Update()
 			SParticleCounts const& counts = me.second;
 			if (m_displayMode == PARTICLE_DISP_MODE_EMITTER)
 			{
-				m_pTable->AddData(1, col, "%d", (int)counts.EmittersRendered);
-				m_pTable->AddData(2, col, "%d", (int)counts.EmittersActive);
-				m_pTable->AddData(3, col, "%d", (int)counts.EmittersAlloc);
+				m_pTable->AddData(1, col, "%d", (int)counts.components.rendered);
+				m_pTable->AddData(2, col, "%d", (int)counts.components.updated);
+				m_pTable->AddData(3, col, "%d", (int)counts.components.alive);
 			}
 			else
 			{
-				m_pTable->AddData(1, col, "%d", (int)counts.ParticlesRendered);
-				m_pTable->AddData(2, col, "%d", (int)counts.ParticlesActive);
-				m_pTable->AddData(3, col, "%d", (int)counts.ParticlesAlloc);
-				m_pTable->AddData(4, col, "%.2f", counts.PixelsRendered * fPixToScreen);
+				m_pTable->AddData(1, col, "%d", (int)counts.particles.rendered);
+				m_pTable->AddData(2, col, "%d", (int)counts.particles.updated);
+				m_pTable->AddData(3, col, "%d", (int)counts.particles.alive);
+				m_pTable->AddData(4, col, "%.2f", counts.pixels.rendered * fPixToScreen);
 			}
 		}
 	}

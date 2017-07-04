@@ -27,6 +27,7 @@ namespace pfx2
 CParticleEffect::CParticleEffect()
 	: m_editVersion(0)
 	, m_dirty(true)
+	, m_substitutedPfx1(false)
 	, m_numRenderObjects(0)
 {
 	m_pAttributes = TAttributeTablePtr(new CAttributeTable);
@@ -46,13 +47,14 @@ void CParticleEffect::Compile()
 
 	m_numRenderObjects = 0;
 	m_attributeInstance.Reset(m_pAttributes, EAttributeScope::PerEffect);
-	for (size_t i = 0; i < m_components.size(); ++i)
+	TComponentId id = 0;
+	for (auto& component : m_components)
 	{
-		m_components[i]->m_pEffect = this;
-		m_components[i]->m_componentId = i;
-		m_components[i]->SetChanged();
-		m_components[i]->m_componentParams.Reset();
-		m_components[i]->PreCompile();
+		component->m_pEffect = this;
+		component->m_componentId = id++;
+		component->SetChanged();
+		component->m_componentParams.Reset();
+		component->PreCompile();
 	}
 	for (auto& component : m_components)
 		component->ResolveDependencies();

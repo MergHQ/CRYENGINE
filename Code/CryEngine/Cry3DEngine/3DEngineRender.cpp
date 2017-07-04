@@ -3170,11 +3170,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		float fMax = (int(GetCurTimeSec() * 2) & 1) ? 999.f : 888.f;
 		if (bEnhanced)
 		{
-			/*			DrawTextRightAligned( fTextPosX, fTextPosY+=fTextStepY, "%6.2f ~%6.2f ms (%6.2f..%6.2f) CPU",
-			   GetTimer()->GetFrameTime()*1000.0f, 1000.0f/max(0.0001f,fFrameRate),
-			   1000.0f/max(0.0001f,fMinFPS),
-			   1000.0f/max(0.0001f,fMaxFPS));
-			 */
 			const RPProfilerStats* pFrameRPPStats = GetRenderer()->GetRPPStats(eRPPSTATS_OverallFrame);
 			float gpuTime = pFrameRPPStats ? pFrameRPPStats->gpuTime : 0.0f;
 			static float sGPUTime = 0.f;
@@ -3200,38 +3195,39 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			m_pPartManager->GetCounts(CurCounts);
 
 		// Blend stats.
-		for (float* pd = (float*)&Counts, * ps = (float*)&CurCounts; pd < (float*)(&Counts + 1); pd++, ps++)
-			Blend(*pd, *ps, fBlendCur);
-
-		float fScreenPix = (float)(GetRenderer()->GetWidth() * GetRenderer()->GetHeight());
-
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-		                     "(Rendered/Active/Alloc): Particles %5.0f/%5.0f/%5.0f, Emitters %3.0f/%3.0f/%3.0f, SubEmitter: %3.0f, Fill %5.2f/%5.2f",
-		                     Counts.ParticlesRendered, Counts.ParticlesActive, Counts.ParticlesAlloc,
-		                     Counts.EmittersRendered, Counts.EmittersActive, Counts.EmittersAlloc, Counts.SubEmittersActive,
-		                     Counts.PixelsRendered / fScreenPix, Counts.PixelsProcessed / fScreenPix);
-		fTextPosY += fTextStepY;
+		Counts = Lerp(Counts, CurCounts, fBlendCur);
 
 		if (m_pParticleSystem)
 		{
-			const Vec2 location = Vec2(fTextPosX, fTextPosY);
+			const Vec2 location = Vec2(fTextPosX, fTextPosY += fTextStepY);
 			pfx2::CParticleSystem* pPSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
 			fTextPosY = pPSystem->DisplayDebugStats(location, fTextStepY);
+		}
+		else
+		{
+			float fScreenPix = (float)(GetRenderer()->GetWidth() * GetRenderer()->GetHeight());
+
+			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
+								 "(Rendered/Active/Alloc): Particles %5.0f/%5.0f/%5.0f, Emitters %3.0f/%3.0f/%3.0f, SubEmitter: %3.0f, Fill %5.2f/%5.2f",
+								 Counts.particles.rendered, Counts.particles.updated, Counts.particles.alive,
+								 Counts.components.rendered, Counts.components.updated, Counts.components.alive, Counts.subemitters.updated,
+								 Counts.pixels.rendered / fScreenPix, Counts.pixels.updated / fScreenPix);
+			fTextPosY += fTextStepY;
 		}
 
 		if (GetCVars()->e_ParticlesDebug & AlphaBit('r'))
 		{
 			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
 			                     "Reiter %4.0f, Reject %4.0f, Clip %4.1f, Coll %4.1f / %4.1f",
-			                     Counts.ParticlesReiterate, Counts.ParticlesReject, Counts.ParticlesClip,
-			                     Counts.ParticlesCollideHit, Counts.ParticlesCollideTest);
+			                     Counts.particles.reiterate, Counts.particles.reject, Counts.particles.clip,
+			                     Counts.particles.collideHit, Counts.particles.collideTest);
 		}
 		if (GetCVars()->e_ParticlesDebug & AlphaBits('bx'))
 		{
-			float fDiv = 1.f / (Counts.DynamicBoundsVolume + FLT_MIN);
+			float fDiv = 1.f / (Counts.volume.dyn + FLT_MIN);
 			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
 			                     "Particle BB vol: Stat %.3g, Stat/Dyn %.2f, Err/Dyn %.3g",
-			                     Counts.StaticBoundsVolume, Counts.StaticBoundsVolume * fDiv, Counts.ErrorBoundsVolume * fDiv);
+			                     Counts.volume.stat, Counts.volume.stat * fDiv, Counts.volume.error * fDiv);
 		}
 	}
 

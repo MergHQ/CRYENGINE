@@ -189,7 +189,7 @@ public:
 	virtual void        SetEnvironmentParameters(const SEnvironmentParameters& params) override { m_envParams = params; }
 
 	virtual const AABB& GetBounds() const override;
-	virtual void        AccumCounts(SParticleCounts& counts) override;
+	virtual void        AccumStats(pfx2::SParticleStats& stats) override;
 	virtual bool        HasParticles() override { return m_parameters->numParticles != 0; }
 
 	virtual void        AddSubInstances(TConstArray<SInstance> instances) override;

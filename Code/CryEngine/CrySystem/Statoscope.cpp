@@ -933,23 +933,14 @@ struct SParticlesDG : public IStatoscopeDataGroup
 
 	virtual void Write(IStatoscopeFrameRecord& fr)
 	{
-		SParticleCounts particleCounts;
-		gEnv->pParticleManager->GetCounts(particleCounts);
+		SParticleCounts stats;
+		gEnv->pParticleManager->GetCounts(stats);
 
 		float fScreenPix = (float)(gEnv->pRenderer->GetWidth() * gEnv->pRenderer->GetHeight());
-		fr.AddValue(particleCounts.ParticlesRendered);
-		fr.AddValue(particleCounts.ParticlesActive);
-		fr.AddValue(particleCounts.ParticlesAlloc);
-		fr.AddValue(particleCounts.PixelsRendered / fScreenPix);
-		fr.AddValue(particleCounts.PixelsProcessed / fScreenPix);
-		fr.AddValue(particleCounts.EmittersRendered);
-		fr.AddValue(particleCounts.EmittersActive);
-		fr.AddValue(particleCounts.EmittersAlloc);
-		fr.AddValue(particleCounts.ParticlesReiterate);
-		fr.AddValue(particleCounts.ParticlesReject);
-		fr.AddValue(particleCounts.ParticlesCollideTest);
-		fr.AddValue(particleCounts.ParticlesCollideHit);
-		fr.AddValue(particleCounts.ParticlesClip);
+		stats.pixels.updated /= fScreenPix;
+		stats.pixels.rendered /= fScreenPix;
+		for (auto stat: stats)
+			fr.AddValue(int(stat));
 	}
 };
 
@@ -960,7 +951,7 @@ struct SWavicleDG : public IStatoscopeDataGroup
 		return SDescription(
 			'P', "Wavicle", "['/Wavicle/'"
 			"(int emittersAlive)(int emittersUpdated)(int emittersRendererd)"
-			"(int componentAlive)(int componentUpdated)(int componentRendered)"
+			"(int componentsAlive)(int componentsUpdated)(int componentsRendered)"
 			"(int particlesAllocated)(int particlesAlive)(int particlesUpdated)(int particlesRendered)(int particlesClipped)"
 			"]");
 	}
@@ -972,17 +963,8 @@ struct SWavicleDG : public IStatoscopeDataGroup
 		SParticleStats stats;
 		GetIParticleSystem()->GetStats(stats);
 		
-		fr.AddValue(int(stats.m_emittersAlive));
-		fr.AddValue(int(stats.m_emittersUpdated));
-		fr.AddValue(int(stats.m_emittersRendererd));
-		fr.AddValue(int(stats.m_runtimesAlive));
-		fr.AddValue(int(stats.m_runtimesUpdated));
-		fr.AddValue(int(stats.m_runtimesRendered));
-		fr.AddValue(int(stats.m_particlesAllocated));
-		fr.AddValue(int(stats.m_particlesAlive));
-		fr.AddValue(int(stats.m_particlesUpdated));
-		fr.AddValue(int(stats.m_particlesRendered));
-		fr.AddValue(int(stats.m_particlesClipped));
+		for (auto stat: stats)
+			fr.AddValue(int(stat));
 	}
 };
 

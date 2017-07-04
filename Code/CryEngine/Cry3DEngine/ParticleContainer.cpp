@@ -567,7 +567,7 @@ void CParticleContainer::UpdateParticleStates(SParticleUpdateContext& context)
 			else
 			{
 				part.Hide();
-				m_Counts.ParticlesReject++;
+				m_Counts.particles.reject++;
 			}
 		}
 		else
@@ -1022,33 +1022,27 @@ void CParticleContainer::Reset()
 // Stat functions.
 void CParticleContainer::GetCounts(SParticleCounts& counts) const
 {
-	counts.EmittersAlloc += 1.f;
-	counts.ParticlesAlloc += m_Particles.size();
+	counts.components.alive += 1.f;
+	counts.particles.alive += m_Particles.size();
 
 	if (GetTimeToUpdate() == 0.f)
 	{
 		// Was updated this frame.
-		AddArray(FloatArray(counts), FloatArray(m_Counts));
-		counts.EmittersActive += 1.f;
-		counts.ParticlesActive += m_Particles.size();
-		counts.SubEmittersActive += m_Emitters.size();
-
-		if (m_Counts.ParticlesCollideTest)
-		{
-			counts.nCollidingEmitters += 1;
-			counts.nCollidingParticles += (int)m_Counts.ParticlesCollideTest;
-		}
+		reinterpret_cast<SContainerCounts&>(counts) += m_Counts;
+		counts.components.updated += 1.f;
+		counts.particles.updated += m_Particles.size();
+		counts.subemitters.updated += m_Emitters.size();
 
 		if ((m_nEnvFlags & REN_ANY) && !m_bbWorldDyn.IsReset())
 		{
-			counts.DynamicBoundsVolume += m_bbWorldDyn.GetVolume();
-			counts.StaticBoundsVolume += m_bbWorld.GetVolume();
+			counts.volume.dyn += m_bbWorldDyn.GetVolume();
+			counts.volume.stat += m_bbWorld.GetVolume();
 			if (!m_bbWorld.ContainsBox(m_bbWorldDyn))
 			{
 				AABB bbDynClip = m_bbWorldDyn;
 				bbDynClip.ClipToBox(m_bbWorld);
 				float fErrorVol = m_bbWorldDyn.GetVolume() - bbDynClip.GetVolume();
-				counts.ErrorBoundsVolume += fErrorVol;
+				counts.volume.error += fErrorVol;
 			}
 		}
 	}

@@ -38,10 +38,10 @@ public:
 	PParticleEffect         CreateEffect() override;
 	PParticleEffect         ConvertEffect(const ::IParticleEffect* pOldEffect, bool bReplace) override;
 	void                    RenameEffect(PParticleEffect pEffect, cstr name) override;
-	PParticleEffect         FindEffect(cstr name) override;
+	PParticleEffect         FindEffect(cstr name, bool bAllowLoad = true) override;
 	PParticleEmitter        CreateEmitter(PParticleEffect pEffect) override;
-	uint                    GetNumFeatureParams() const override;
-	SParticleFeatureParams& GetFeatureParam(uint featureIdx) const override;
+	uint                    GetNumFeatureParams() const override { return uint(GetFeatureParams().size()); }
+	SParticleFeatureParams& GetFeatureParam(uint featureIdx) const override { return GetFeatureParams()[featureIdx]; }
 	TParticleAttributesPtr  CreateParticleAttributes() const override;
 
 	void                    OnFrameStart() override;
@@ -64,15 +64,18 @@ public:
 
 	void                 ClearRenderResources();
 
-	static float         GetMaxAngularDensity(const CCamera& camera)
-	{
-		return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
-	}
+	static float         GetMaxAngularDensity(const CCamera& camera);
 	QuatT                GetLastCameraPose() const { return m_lastCameraPose; }
 	QuatT                GetCameraMotion() const { return m_cameraMotion; }
 	TParticleEmitters    GetActiveEmitters() const { return m_emitters; }
+	IMaterial*           GetFlareMaterial();
+
+	static std::vector<SParticleFeatureParams>& GetFeatureParams() { static std::vector<SParticleFeatureParams> params; return params; }
+	static bool RegisterFeature(const SParticleFeatureParams& params) { GetFeatureParams().push_back(params); return true; }
+	static const SParticleFeatureParams* GetDefaultFeatureParam(EFeatureType);
 
 private:
+	float             DisplayDebugStats(Vec2 displayLocation, float lineHeight, const char* name, const SParticleStats& stats);
 	void              UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter);
 	void              TrimEmitters();
 	void              InvalidateCachedRenderObjects();
@@ -84,20 +87,20 @@ private:
 	// ~PFX1 to PFX2
 
 private:
-	SParticleStats             m_stats;
+	SParticleStats             m_statsCPU;
+	SParticleStats             m_statsGPU;
 	CParticleJobManager        m_jobManager;
 	CParticleProfiler          m_profiler;
 	TEffectNameMap             m_effects;
 	TParticleEmitters          m_emitters;
 	TParticleEmitters          m_newEmitters;
 	std::vector<TParticleHeap> m_memHeap;
+	_smart_ptr<IMaterial>      m_pFlareMaterial;
 	QuatT                      m_lastCameraPose = ZERO;
 	QuatT                      m_cameraMotion = ZERO;
 	uint                       m_nextEmitterId;
 	int32                      m_lastSysSpec;
 };
-
-std::vector<SParticleFeatureParams>& GetFeatureParams();
 
 ILINE CParticleSystem*               GetPSystem()
 {

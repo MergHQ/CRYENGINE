@@ -61,14 +61,12 @@ public:
 		Uninitialized,
 		Ready
 	};
-
 	virtual gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() override { return this; }
 	virtual void                                 UpdateEmitterData() = 0;
-
 	virtual EState                               GetState() const = 0;
 	virtual bool                                 HasParticles() = 0;
-
 	virtual void                                 SetEnvironmentParameters(const SEnvironmentParameters& params) = 0;
+	virtual void                                 AccumStats(pfx2::SParticleStats& stats) = 0;
 };
 
 enum class ESpawnRateMode

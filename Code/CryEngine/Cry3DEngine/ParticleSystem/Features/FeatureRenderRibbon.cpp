@@ -134,13 +134,12 @@ void CFeatureRenderRibbon::InitParticles(const SUpdateContext& context)
 	IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 	IUintStream parentSpawnIds = parentContainer.GetIUintStream(EPDT_SpawnId, 0);
 
-	CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+	for (auto particleId : context.GetSpawnedRange())
 	{
 		const TParticleId parentId = parentIds.Load(particleId);
 		const uint32 parentSpawnId = parentSpawnIds.SafeLoad(parentId);
 		ribbonIds.Store(particleId, parentSpawnId);
 	}
-	CRY_PFX2_FOR_END;
 }
 
 void CFeatureRenderRibbon::ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
@@ -186,7 +185,7 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 	{
 		const uint64 noKey = uint64(-1);
 		THeapArray<uint64> sortEntries(memHep, lastParticleId);
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId ribbonId = ribbonIds.Load(particleId);
 			const uint32 spawnId = spawnIds.Load(particleId);
@@ -196,7 +195,6 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 			numValidParticles += uint(valid);
 			sortEntries[particleId] = valid ? key : noKey;
 		}
-		CRY_PFX2_FOR_END;
 		RadixSort(
 		  pSortEntries->begin(), pSortEntries->end(),
 		  sortEntries.begin(), sortEntries.end(), memHep);

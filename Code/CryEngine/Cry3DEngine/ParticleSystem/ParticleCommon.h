@@ -68,7 +68,7 @@ namespace pfx2
 {
 
 const uint gMinimumVersion = 1;
-const uint gCurrentVersion = 9;
+const uint gCurrentVersion = 11;
 
 class CParticleSystem;
 class CParticleEffect;
@@ -152,6 +152,8 @@ struct SRenderContext
 template<typename TIndex, int nStride = 1>
 struct TIndexRange
 {
+	using TInt = decltype(+TIndex());
+
 	struct iterator
 	{
 		TIndex i;
@@ -165,7 +167,7 @@ struct TIndexRange
 
 	iterator begin() const { return iterator(m_begin); }
 	iterator end() const   { return iterator(m_end); }
-	TIndex size() const    { return m_end - m_begin; }
+	TInt size() const      { return +m_end - +m_begin; }
 
 	explicit TIndexRange(TIndex b = 0, TIndex e = 0)
 		: m_begin(+b & ~(nStride - 1))
@@ -174,7 +176,7 @@ struct TIndexRange
 
 	template<typename TIndex2, int nStride2>
 	TIndexRange(TIndexRange<TIndex2, nStride2> range)
-		: TIndexRange(range.m_begin, range.m_end) {}
+		: TIndexRange(+range.m_begin, +range.m_end) {}
 };
 
 typedef TIndexRange<TParticleId> SUpdateRange;
@@ -187,7 +189,9 @@ enum EFeatureType
 	EFT_Size    = BIT(2),     // this feature changes particles sizes. At least one is required per component.
 	EFT_Life    = BIT(3),     // this feature changes particles life time. At least one is required per component.
 	EFT_Render  = BIT(4),     // this feature renders particles. Each component can only have either none or just one of this.
-	EFT_Motion  = BIT(5),     // this feature moved particles around. Each component can only have either none or just one of this.
+	EFT_Motion  = BIT(5),     // this feature moves particles around. Each component can only have either none or just one of this.
+
+	EFT_END     = BIT(6)
 };
 
 }

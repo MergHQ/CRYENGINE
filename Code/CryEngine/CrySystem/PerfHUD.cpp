@@ -1675,18 +1675,18 @@ void CRenderStatsWidget::Update()
 		SParticleCounts particleCounts;
 		pParticleMgr->GetCounts(particleCounts);
 
-		m_runtimeData.nParticles = (uint32)particleCounts.ParticlesRendered;
+		m_runtimeData.nParticles = (uint32)particleCounts.particles.rendered;
 
-		cry_sprintf(entryBuffer, "Num Particles Rendered: %d (%u)", (int)particleCounts.ParticlesRendered, m_particlesBudget);
+		cry_sprintf(entryBuffer, "Num Particles Rendered: %d (%u)", (int)particleCounts.particles.rendered, m_particlesBudget);
 
-		if (particleCounts.ParticlesRendered <= m_particlesBudget)
+		if (particleCounts.particles.rendered <= m_particlesBudget)
 		{
 			m_pInfoBox->AddEntry(entryBuffer, CPerfHUD::COL_NORM, CPerfHUD::TEXT_SIZE_NORM);
 		}
 		else
 		{
 			m_pInfoBox->AddEntry(entryBuffer, CPerfHUD::COL_ERROR, CPerfHUD::TEXT_SIZE_NORM);
-			CryPerfHUDWarning(1.f, "Too Many Particles: %d", (int)particleCounts.ParticlesRendered);
+			CryPerfHUDWarning(1.f, "Too Many Particles: %d", (int)particleCounts.particles.rendered);
 		}
 	}
 
@@ -2322,7 +2322,7 @@ void CRenderBatchWidget::Update_ModeBatchStats()
 
 		s_particlesBatch.Reset();
 		s_particlesBatch.name = s_strParticles;
-		s_particlesBatch.nBatches = (uint16)CurCounts.EmittersRendered;
+		s_particlesBatch.nBatches = (uint16)CurCounts.emitters.rendered;
 		s_particlesBatch.nInstances = 1;
 		s_particlesBatch.col.set(255, 255, 0, 255);
 

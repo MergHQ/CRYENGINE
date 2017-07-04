@@ -42,8 +42,8 @@ public:
 	{
 		const TParticleIdv parentId = parentIds.Load(particleId);
 		const floatv selfAge = selfAges.Load(particleId);
-		const floatv parentData = parentSourceStream.Load(parentId);
-		const floatv parentInvLifeTime = parentInvLifeTimes.Load(parentId);
+		const floatv parentData = parentSourceStream.SafeLoad(parentId);
+		const floatv parentInvLifeTime = parentInvLifeTimes.SafeLoad(parentId);
 		return AntiAliasParentAge(deltaTime, selfAge, parentInvLifeTime, parentData);
 	}
 private:
@@ -98,7 +98,7 @@ public:
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
 		const uint32v parentId = parentIds.Load(particleId);
-		const Vec3v velocity = parentVelocities.Load(parentId);
+		const Vec3v velocity = parentVelocities.SafeLoad(parentId);
 		const floatv speed = velocity.GetLength();
 		const floatv sample = if_else_zero(parentId != ToUint32v(gInvalidId), speed);
 		return sample;
@@ -123,6 +123,19 @@ public:
 	}
 private:
 	floatv m_attributeValue;
+};
+
+class CConstSampler
+{
+public:
+	CConstSampler(float value)
+		: m_value(ToFloatv(value)) {}
+	ILINE floatv Sample(TParticleGroupId particleId) const
+	{
+		return m_value;
+	}
+private:
+	floatv m_value;
 };
 
 class CChaosSampler
@@ -196,59 +209,60 @@ private:
 
 }
 
-ILINE CTimeSource::CTimeSource()
-	: m_timeSource(ETimeSource::Age)
-	, m_fieldSource(ETimeSourceField(EPDT_LifeTime))
-	, m_sourceOwner(ETimeSourceOwner::Self)
-	, m_timeScale(1.0f)
-	, m_timeBias(0.0f)
+ILINE CDomain::CDomain()
+	: m_domain(EDomain::Age)
+	, m_fieldSource(EDomainField(EPDT_LifeTime))
+	, m_sourceOwner(EDomainOwner::Self)
+	, m_sourceGlobal(EDomainGlobal::LevelTime)
+	, m_domainScale(1.0f)
+	, m_domainBias(0.0f)
 	, m_spawnOnly(true)
 {
 }
 
 template<typename TParam, typename TMod>
-ILINE void CTimeSource::AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier)
+ILINE void CDomain::AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier)
 {
 	if (m_spawnOnly)
 		pParam->AddToInitParticles(pModifier);
 	else
 		pParam->AddToUpdate(pModifier);
 
-	CParticleComponent* pSourceComponent = m_sourceOwner == ETimeSourceOwner::Parent ? pComponent->GetParentComponent() : pComponent;
+	CParticleComponent* pSourceComponent = m_sourceOwner == EDomainOwner::Parent ? pComponent->GetParentComponent() : pComponent;
 	if (pSourceComponent)
 	{
-		if (m_timeSource == ETimeSource::SpawnFraction)
+		if (m_domain == EDomain::SpawnFraction)
 			pSourceComponent->AddParticleData(EPDT_SpawnFraction);
-		else if (m_timeSource == ETimeSource::Speed)
+		else if (m_domain == EDomain::Speed)
 			pSourceComponent->AddParticleData(EPVF_Velocity);
-		else if (m_timeSource == ETimeSource::Field)
+		else if (m_domain == EDomain::Field)
 			pSourceComponent->AddParticleData((EParticleDataType)m_fieldSource);
-		else if (m_timeSource == ETimeSource::ViewAngle)
+		else if (m_domain == EDomain::ViewAngle)
 			pSourceComponent->AddParticleData(EPQF_Orientation);
 	}
 }
 
-ILINE EModDomain CTimeSource::GetDomain() const
+ILINE EModDomain CDomain::GetDomain() const
 {
 	switch (m_sourceOwner)
 	{
-	case ETimeSourceOwner::Self:
+	case EDomainOwner::Self:
 		return EMD_PerParticle;
-	case ETimeSourceOwner::Parent:
+	case EDomainOwner::Parent:
 		return EMD_PerInstance;
 	default:
 		return EMD_PerEffect;
 	}
 }
-ILINE EParticleDataType CTimeSource::GetDataType() const
+ILINE EParticleDataType CDomain::GetDataType() const
 {
-	switch (m_timeSource)
+	switch (m_domain)
 	{
-	case ETimeSource::Age:
+	case EDomain::Age:
 		return EPDT_NormalAge;
-	case ETimeSource::SpawnFraction:
+	case EDomain::SpawnFraction:
 		return EPDT_SpawnFraction;
-	case ETimeSource::Field:
+	case EDomain::Field:
 		return EParticleDataType(m_fieldSource);
 	default:
 		return EParticleDataType::size();
@@ -256,38 +270,43 @@ ILINE EParticleDataType CTimeSource::GetDataType() const
 }
 
 template<typename TBase, typename TStream>
-ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRange& range, TStream stream, EModDomain domain) const
+ILINE void CDomain::Dispatch(const SUpdateContext& context, const SUpdateRange& range, TStream stream, EModDomain domain) const
 {
-	switch (m_timeSource)
+	switch (m_domain)
 	{
-	case ETimeSource::LevelTime:
-		((TBase*)this)->DoModify(
-		  context, range, stream,
-		  detail::CLevelTimeSampler(context));
+	case EDomain::Global:
+		if (m_sourceGlobal == EDomainGlobal::LevelTime)
+			((TBase*)this)->DoModify(
+				context, range, stream,
+				detail::CLevelTimeSampler(context));
+		else
+			((TBase*)this)->DoModify(
+				context, range, stream,
+				detail::CConstSampler(GetGlobalValue(m_sourceGlobal)));			
 		break;
-	case ETimeSource::Attribute:
+	case EDomain::Attribute:
 		((TBase*)this)->DoModify(
 		  context, range, stream,
 		  detail::CAttributeSampler(context, m_attributeName));
 		break;
-	case ETimeSource::Random:
+	case EDomain::Random:
 		((TBase*)this)->DoModify(
 		  context, range, stream,
 		  detail::CChaosSampler(context));
 		break;
-	case ETimeSource::ViewAngle:
+	case EDomain::ViewAngle:
 		((TBase*)this)->DoModify(
 			context, range, stream,
 			detail::CViewAngleSampler(context));
 		break;
-	case ETimeSource::CameraDistance:
+	case EDomain::CameraDistance:
 		((TBase*)this)->DoModify(
 			context, range, stream,
 			detail::CCameraDistanceSampler(context));
 		break;
 
-	case ETimeSource::Speed:
-		if (m_sourceOwner == ETimeSourceOwner::Self)
+	case EDomain::Speed:
+		if (m_sourceOwner == EDomainOwner::Self)
 			((TBase*)this)->DoModify(
 			  context, range, stream,
 			  detail::CSelfSpeedSampler(context));
@@ -303,7 +322,7 @@ ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRan
 	default:
 		{
 			auto dataType = GetDataType();
-			if (m_sourceOwner == ETimeSourceOwner::Self)
+			if (m_sourceOwner == EDomainOwner::Self)
 				((TBase*)this)->DoModify(
 				  context, range, stream,
 				  detail::CSelfStreamSampler(context, dataType));
@@ -321,7 +340,7 @@ ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRan
 	}
 }
 
-ILINE IParamModContext& CTimeSource::GetContext(Serialization::IArchive& ar) const
+ILINE IParamModContext& CDomain::GetContext(Serialization::IArchive& ar) const
 {
 	IParamModContext* pContext = ar.context<IParamModContext>();
 	CRY_PFX2_ASSERT(pContext != nullptr);

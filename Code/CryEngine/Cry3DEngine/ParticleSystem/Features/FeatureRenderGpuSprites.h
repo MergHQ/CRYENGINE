@@ -38,11 +38,10 @@ class CFeatureRenderGpuSprites : public CParticleRenderBase
 public:
 	struct ConvertNextPowerOfTwo
 	{
-		typedef uint TType;
-		static TType From(TType val) { return NextPower2(val); }
-		static TType To(TType val)   { return NextPower2(val); }
+		template<typename T> static T From(T val) { return NextPower2(val); }
+		template<typename T> static T To(T val)   { return NextPower2(val); }
 	};
-	typedef TValue<uint, THardLimits<1024, 1024*1024>, ConvertNextPowerOfTwo> UIntNextPowerOfTwo;
+	typedef TValue<uint, THardLimits<1024, 1024*1024, ConvertNextPowerOfTwo>> UIntNextPowerOfTwo;
 
 	CRY_PFX2_DECLARE_FEATURE
 

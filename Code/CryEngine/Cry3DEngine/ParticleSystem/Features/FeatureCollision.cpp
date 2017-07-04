@@ -453,7 +453,7 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 	IOFStream collideSpeeds = container.GetIOFStream(EPDT_CollideSpeed);
 	TIOStream<SContactPoint> contactPoints = container.GetTIOStream<SContactPoint>(EPDT_ContactPoint);
 
-	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+	for (auto particleId : context.GetUpdateRange())
 	{
 		SContactPoint contact = contactPoints.Load(particleId);
 		if (contact.m_state.ignore)
@@ -507,7 +507,6 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 
 		contactPoints.Store(particleId, contact);
 	}
-	CRY_PFX2_FOR_END;
 }
 
 void CFeatureCollision::PostUpdate(const SUpdateContext& context)
@@ -537,13 +536,12 @@ void CFeatureCollision::UpdateCollisionLimit(const SUpdateContext& context) cons
 	TCollisionLimit limiter(container);
 	const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
 
-	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+	for (auto particleId : context.GetUpdateRange())
 	{
 		const SContactPoint contact = contactPoints.Load(particleId);
 		if (contact.m_totalCollisions >= m_maxCollisions)
 			limiter.CollisionLimit(particleId);
 	}
-	CRY_PFX2_FOR_END;
 }
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureCollision, "Motion", "Collisions", colorMotion);

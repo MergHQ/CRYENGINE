@@ -1351,6 +1351,8 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 		chain.GetValue("bRegisterByBBox", params.bRegisterByBBox);
 		chain.GetValue("iSeed", params.nSeed);
 
+		params.bPlaced = true;
+
 		SmartScriptTable audio;
 
 		if (table->GetValueChain("Audio", audio))

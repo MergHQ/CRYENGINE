@@ -115,7 +115,7 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 
 	// particle bars
 	pos = contLoc;
-	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+	for (auto particleId : context.GetUpdateRange())
 	{
 		AABB box;
 		// box.min = pos;
@@ -130,7 +130,6 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 			color = ColorB(ColorF(age, 1.0f - age, 0.0f));
 		pRenderAux->DrawAABB(box, true, color, eBBD_Faceted);
 	}
-	CRY_PFX2_FOR_END;
 
 	if (params.IsSecondGen())
 	{
@@ -139,7 +138,7 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		const Vec2 parentContLoc = Vec2((emitterBarIdx + params.m_parentId) * barGap + barSz * 3.0f + startPos, startPos);
 
 		// parenting lines
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			if (parentId == gInvalidId)
@@ -148,7 +147,6 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 			Vec2 to = parentContLoc + parentPartSz * 0.5f + Vec2(off, parentPartSz.y * parentId);
 			pRenderAux->DrawLine(from, lightOrange, to, black, 1.0f);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	IRenderAuxText::Draw2dLabel(
@@ -176,7 +174,7 @@ void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
 		return;
 	const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
 
-	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+	for (auto particleId : context.GetUpdateRange())
 	{
 		SContactPoint contact = contactPoints.Load(particleId);
 
@@ -196,7 +194,6 @@ void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
 			contact.m_point, color,
 			contact.m_point + contact.m_normal*0.25f, color);
 	}
-	CRY_PFX2_FOR_END;
 
 	pRenderAux->SetRenderFlags(prevFlags);
 }
