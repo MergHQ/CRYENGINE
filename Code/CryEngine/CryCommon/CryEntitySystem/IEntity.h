@@ -818,7 +818,6 @@ public:
 	typename std::enable_if<!Schematyc::IsReflectedType<ComponentType>() && std::is_convertible<ComponentType, IEntityComponent>::value, ComponentType*>::type CreateComponentClass()
 	{
 		std::shared_ptr<ComponentType> pComponent = std::make_shared<ComponentType>();
-		CRY_ASSERT(pComponent->GetFactory() != nullptr);
 		if (AddComponent(pComponent))
 		{
 			return pComponent.get();

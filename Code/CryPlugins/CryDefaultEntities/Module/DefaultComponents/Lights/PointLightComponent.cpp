@@ -21,7 +21,7 @@ namespace Cry
 			desc.SetLabel("Point Light");
 			desc.SetDescription("Emits light from its origin into all directions");
 			desc.SetIcon("icons:ObjectTypes/light.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 			desc.AddMember(&CPointLightComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the light is enabled", true);
 			desc.AddMember(&CPointLightComponent::m_radius, 'radi', "Radius", "Radius", "Determines whether the range of the point light", 10.f);
