@@ -88,6 +88,21 @@ QVariant CNodesDictionaryNodeEntry::GetIdentifier() const
 	// ~TODO
 }
 
+CNodesDictionaryCategoryEntry::~CNodesDictionaryCategoryEntry()
+{
+	for (CNodesDictionaryCategoryEntry* pCategoryEntry : m_categories)
+	{
+		delete pCategoryEntry;
+	}
+	m_categories.clear();
+
+	for (CNodesDictionaryNodeEntry* pNodeEntry : m_nodes)
+	{
+		delete pNodeEntry;
+	}
+	m_nodes.clear();
+}
+
 QVariant CNodesDictionaryCategoryEntry::GetColumnValue(int32 columnIndex) const
 {
 	switch (columnIndex)
@@ -135,7 +150,7 @@ CNodesDictionary::CNodesDictionary()
 
 CNodesDictionary::~CNodesDictionary()
 {
-
+	Clear();
 }
 
 const CAbstractDictionaryEntry* CNodesDictionary::GetEntry(int32 index) const
@@ -275,6 +290,21 @@ void CNodesDictionary::LoadLoadsFromScriptGraph(Schematyc::IScriptGraph& scriptG
 	scriptGraph.PopulateNodeCreationMenu(creator);
 }
 
+void CNodesDictionary::Clear()
+{
+	for (CNodesDictionaryCategoryEntry* pCategoryEntry : m_categories)
+	{
+		delete pCategoryEntry;
+	}
+	m_categories.clear();
+
+	for (CNodesDictionaryNodeEntry* pNodeEntry : m_nodes)
+	{
+		delete pNodeEntry;
+	}
+	m_nodes.clear();
+}
+
 void AddNodeStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* szStyleId, const char* szIcon, QColor color, bool coloredHeaderIconText = true)
 {
 	CryGraphEditor::CNodeWidgetStyle* pStyle = new CryGraphEditor::CNodeWidgetStyle(szStyleId, viewStyle);
@@ -370,15 +400,22 @@ CryGraphEditor::CNodeGraphViewStyle* CreateStyle()
 }
 
 CNodeGraphRuntimeContext::CNodeGraphRuntimeContext(Schematyc::IScriptGraph& scriptGraph)
+	: m_scriptGraph(scriptGraph)
 {
 	m_pStyle = CreateStyle();
 	m_nodesDictionary.SetStyle(m_pStyle);
-	m_nodesDictionary.LoadLoadsFromScriptGraph(scriptGraph);
 }
 
 CNodeGraphRuntimeContext::~CNodeGraphRuntimeContext()
 {
 	m_pStyle->deleteLater();
+}
+
+CAbstractDictionary* CNodeGraphRuntimeContext::GetAvailableNodesDictionary()
+{
+	m_nodesDictionary.Clear();
+	m_nodesDictionary.LoadLoadsFromScriptGraph(m_scriptGraph);
+	return &m_nodesDictionary;
 }
 
 }

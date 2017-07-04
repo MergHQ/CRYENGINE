@@ -18,6 +18,7 @@
 #include <CrySchematyc/Utils/SharedString.h>
 
 #include "Object.h"
+#include "CVars.h"
 #include "Runtime/RuntimeClass.h"
 #include "Script/ScriptView.h"
 #include "Script/Graph/ScriptGraphNode.h"
@@ -26,13 +27,12 @@
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-namespace Schematyc
-{
-	const CryGUID CScriptGraphFlowGraphNode::ms_typeGUID = "7067329D-AFED-4321-9D18-D4B1CA433B3A"_cry_guid;
+namespace Schematyc {
+	
+const CryGUID CScriptGraphFlowGraphNode::ms_typeGUID = "7067329D-AFED-4321-9D18-D4B1CA433B3A"_cry_guid;
 
+namespace FlowGraph {
 
-namespace FlowGraph
-{
 	struct CFlowGraphDummyClass : public IFlowGraph
 	{
 		EntityId m_entityId;
@@ -506,18 +506,21 @@ void CScriptGraphFlowGraphNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			CryGUID objectGUID = CryGUID::Null();
-
-			IFlowNodeTypeIteratorPtr pTypeIterator = gEnv->pFlowSystem->CreateNodeTypeIterator();
-			IFlowNodeTypeIterator::SNodeType nodeType;
-			while (pTypeIterator->Next(nodeType))
+			if(CVars::sc_allowFlowGraphNodes)
 			{
-				string nodeTypeName = nodeType.typeName;
-				stack_string nodeName = "FlowGraph::";
-				nodeName += nodeTypeName;
-				SEnvFlowGraphRuntimeData data(nodeType.typeId);
+				CryGUID objectGUID = CryGUID::Null();
 
-				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(nodeName.c_str(), data.m_pNode->config.sDescription, nodeTypeName, objectGUID));
+				IFlowNodeTypeIteratorPtr pTypeIterator = gEnv->pFlowSystem->CreateNodeTypeIterator();
+				IFlowNodeTypeIterator::SNodeType nodeType;
+				while (pTypeIterator->Next(nodeType))
+				{
+					string nodeTypeName = nodeType.typeName;
+					stack_string nodeName = "FlowGraph::";
+					nodeName += nodeTypeName;
+					SEnvFlowGraphRuntimeData data(nodeType.typeId);
+
+					nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(nodeName.c_str(), data.m_pNode->config.sDescription, nodeTypeName, objectGUID));
+				}
 			}
 		}
 

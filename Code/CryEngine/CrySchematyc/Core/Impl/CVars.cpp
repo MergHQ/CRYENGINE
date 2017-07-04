@@ -5,7 +5,8 @@
 
 namespace Schematyc
 {
-	ICVar* CVars::sc_RootFolder               = nullptr;
+
+ICVar* CVars::sc_RootFolder = nullptr;
 int CVars::sc_IgnorePAKFiles = 0;
 int CVars::sc_IgnoreUnderscoredFolders = 1;
 int CVars::sc_EnableScriptPartitioning = 0;
@@ -21,10 +22,11 @@ int CVars::sc_DisplayCriticalErrors = 1;
 #endif
 
 int CVars::sc_RunUnitTests = 0;
-	ICVar* CVars::sc_ExperimentalFeatures     = nullptr;
-	
-	void CVars::Register()
-	{
+ICVar* CVars::sc_ExperimentalFeatures = nullptr;
+int CVars::sc_allowFlowGraphNodes = 0;
+
+void CVars::Register()
+{
 	sc_RootFolder = REGISTER_STRING("sc_RootFolder", "libs/schematyc", VF_READONLY, "CrySchematyc - Root folder for files");
 	REGISTER_CVAR(sc_IgnorePAKFiles, sc_IgnorePAKFiles, VF_READONLY, "CrySchematyc - Ignore PAK files");
 	REGISTER_CVAR(sc_IgnoreUnderscoredFolders, sc_IgnoreUnderscoredFolders, VF_READONLY, "CrySchematyc - Ignore folders whose names begin with an underscore");
@@ -37,11 +39,13 @@ int CVars::sc_RunUnitTests = 0;
 
 	REGISTER_CVAR(sc_RunUnitTests, sc_RunUnitTests, VF_READONLY, "CrySchematyc - Enable/disable unit tests on startup");
 	sc_ExperimentalFeatures = REGISTER_STRING("sc_ExperimentalFeatures", "", VF_NULL, "CrySchematyc - Enable one or more experimental features");
-	}
+
+	REGISTER_CVAR(sc_allowFlowGraphNodes, sc_allowFlowGraphNodes, VF_EXPERIMENTAL, "CrySchematyc - Allows wrapped FlowGraph nodes in Schematyc.");
+}
 
 void CVars::Unregister()
 {
-	if(gEnv && gEnv->pConsole)
+	if (gEnv && gEnv->pConsole)
 	{
 		gEnv->pConsole->UnregisterVariable("sc_RootFolder");
 		gEnv->pConsole->UnregisterVariable("sc_IgnorePAKFiles");
@@ -53,6 +57,7 @@ void CVars::Unregister()
 		gEnv->pConsole->UnregisterVariable("sc_DisplayCriticalErrors");
 		gEnv->pConsole->UnregisterVariable("sc_RunUnitTests");
 		gEnv->pConsole->UnregisterVariable("sc_ExperimentalFeatures");
+		gEnv->pConsole->UnregisterVariable("sc_allowFlowGraphNodes");
 	}
 }
 } // Schematyc
