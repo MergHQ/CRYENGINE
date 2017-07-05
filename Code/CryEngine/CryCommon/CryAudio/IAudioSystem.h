@@ -5,7 +5,7 @@
 #include "IAudioInterfacesCommonData.h"
 #include "../CryCore/CryCrc32.h"
 #include "../CrySystem/IEngineModule.h"
-#include <CryEntitySystem/IEntityBasicTypes.h>
+#include "../CryEntitySystem/IEntityBasicTypes.h"
 
 // General macros.
 //#define ENABLE_AUDIO_PORT_MESSAGES
