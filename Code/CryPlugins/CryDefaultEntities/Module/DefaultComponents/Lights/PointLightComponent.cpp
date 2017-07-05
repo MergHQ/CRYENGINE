@@ -109,6 +109,64 @@ namespace Cry
 			return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 		}
 
+#ifndef RELEASE
+		void CPointLightComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
+		{
+			if (context.bSelected)
+			{
+				Matrix34 slotTransform = GetWorldTransformMatrix();
+
+				Vec3 p0, p1;
+				float step = 10.0f / 180 * gf_PI;
+				float angle;
+
+				Vec3 pos = slotTransform.GetTranslation();
+
+				// Z Axis
+				p0 = pos;
+				p1 = pos;
+				p0.x += m_radius * sin(0.0f);
+				p0.y += m_radius * cos(0.0f);
+				for (angle = step; angle < 360.0f / 180 * gf_PI + step; angle += step)
+				{
+					p1.x = pos.x + m_radius * sin(angle);
+					p1.y = pos.y + m_radius * cos(angle);
+					p1.z = pos.z;
+					gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(p0, context.debugDrawInfo.color, p1, context.debugDrawInfo.color);
+					p0 = p1;
+				}
+
+				// X Axis
+				p0 = pos;
+				p1 = pos;
+				p0.y += m_radius * sin(0.0f);
+				p0.z += m_radius * cos(0.0f);
+				for (angle = step; angle < 360.0f / 180 * gf_PI + step; angle += step)
+				{
+					p1.x = pos.x;
+					p1.y = pos.y + m_radius * sin(angle);
+					p1.z = pos.z + m_radius * cos(angle);
+					gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(p0, context.debugDrawInfo.color, p1, context.debugDrawInfo.color);
+					p0 = p1;
+				}
+
+				// Y Axis
+				p0 = pos;
+				p1 = pos;
+				p0.x += m_radius * sin(0.0f);
+				p0.z += m_radius * cos(0.0f);
+				for (angle = step; angle < 360.0f / 180 * gf_PI + step; angle += step)
+				{
+					p1.x = pos.x + m_radius * sin(angle);
+					p1.y = pos.y;
+					p1.z = pos.z + m_radius * cos(angle);
+					gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(p0, context.debugDrawInfo.color, p1, context.debugDrawInfo.color);
+					p0 = p1;
+				}
+			}
+		}
+#endif
+
 		void CPointLightComponent::Enable(bool bEnable)
 		{
 			m_bActive = bEnable; 

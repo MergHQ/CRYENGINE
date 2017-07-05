@@ -103,6 +103,17 @@ static void ReflectType(Schematyc::CTypeDesc<CEnvironmentProbeComponent::SGenera
 
 void CEnvironmentProbeComponent::Initialize()
 {
+#ifndef RELEASE
+#ifdef SUPPORT_ENVIRONMENT_PROBE_GENERATION
+	m_generation.m_generateButton = Serialization::ActionButton(std::function<void()>([this]() { GenerateToDefaultPath(); }));
+#endif
+
+	if (gEnv->IsEditor())
+	{
+		m_generation.pSelectionObject = gEnv->p3DEngine->LoadStatObj("%EDITOR%/Objects/envcube.cgf", nullptr, nullptr, false);
+	}
+#endif
+
 	if (m_generation.m_bAutoLoad && m_generation.m_generatedCubemapPath.value.size() > 0)
 	{
 		LoadFromDisk(m_generation.m_generatedCubemapPath);
@@ -125,6 +136,25 @@ uint64 CEnvironmentProbeComponent::GetEventMask() const
 {
 	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 }
+
+#ifndef RELEASE
+void CEnvironmentProbeComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
+{
+	if (context.bSelected && m_generation.pSelectionObject != nullptr)
+	{
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera());
+
+		SRendParams rp;
+		rp.AmbientColor = ColorF(0.0f, 0.0f, 0.0f, 1);
+		rp.dwFObjFlags |= FOB_TRANS_MASK;
+		rp.fAlpha = 1;
+		Matrix34 slotTransform = GetWorldTransformMatrix();
+		rp.pMatrix = &slotTransform;
+		rp.pMaterial = m_generation.pSelectionObject->GetMaterial();
+		m_generation.pSelectionObject->Render(rp, passInfo);
+	}
+}
+#endif
 
 void CEnvironmentProbeComponent::SetOutputCubemapPath(const char* szPath)
 {

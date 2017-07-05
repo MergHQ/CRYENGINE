@@ -24,6 +24,9 @@ namespace Cry
 
 		class CEnvironmentProbeComponent
 			: public IEntityComponent
+#ifndef RELEASE
+			, public IEntityComponentPreviewer
+#endif
 		{
 		protected:
 			friend CPlugin_CryDefaultEntities;
@@ -34,12 +37,22 @@ namespace Cry
 
 			virtual void   ProcessEvent(SEntityEvent& event) final;
 			virtual uint64 GetEventMask() const final;
+
+#ifndef RELEASE
+			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
+#endif
 			// ~IEntityComponent
 
-		public:
-			CEnvironmentProbeComponent()
-				: m_generation(*this) {}
+#ifndef RELEASE
+			// IEntityComponentPreviewer
+			virtual void SerializeProperties(Serialization::IArchive& archive) final {}
 
+			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
+			// ~IEntityComponentPreviewer
+#endif
+
+		public:
+			CEnvironmentProbeComponent() = default;
 			virtual ~CEnvironmentProbeComponent() {}
 
 			static void ReflectType(Schematyc::CTypeDesc<CEnvironmentProbeComponent>& desc);
@@ -85,20 +98,15 @@ namespace Cry
 				};
 #endif
 
-				SGeneration() {}
-
-				SGeneration(CEnvironmentProbeComponent& component)
-#ifdef SUPPORT_ENVIRONMENT_PROBE_GENERATION
-					: m_generateButton(Serialization::ActionButton(std::function<void()>([&component]() { component.GenerateToDefaultPath(); })))
-#endif
-				{
-				}
-
 				bool m_bAutoLoad = true;
 
 #ifdef SUPPORT_ENVIRONMENT_PROBE_GENERATION
 				Serialization::FunctorActionButton<std::function<void()>> m_generateButton;
 				EResolution m_resolution = EResolution::x256;
+#endif
+
+#ifndef RELEASE
+				_smart_ptr<IStatObj> pSelectionObject;
 #endif
 
 				Schematyc::TextureFileName m_generatedCubemapPath;
@@ -229,6 +237,27 @@ namespace Cry
 				if (GetCubemapTextures(cubemapFileName.value, &pSpecularTexture, &pDiffuseTexture))
 				{
 					Load(pSpecularTexture, pDiffuseTexture);
+
+#ifndef RELEASE
+					if (gEnv->IsEditor())
+					{
+						IMaterialManager* pMaterialManager = gEnv->p3DEngine->GetMaterialManager();
+						if (IMaterial* pSourceMaterial = pMaterialManager->LoadMaterial("%EDITOR%/Objects/envcube", false, true))
+						{
+							IMaterial* pMaterial = pMaterialManager->CreateMaterial(cubemapFileName.value, pSourceMaterial->GetFlags() | MTL_FLAG_NON_REMOVABLE);
+							if (pMaterial)
+							{
+								SShaderItem& si = pSourceMaterial->GetShaderItem();
+								SInputShaderResourcesPtr isr = gEnv->pRenderer->EF_CreateInputShaderResource(si.m_pShaderResources);
+								isr->m_Textures[EFTT_ENV].m_Name = cubemapFileName.value;
+								SShaderItem siDst = gEnv->pRenderer->EF_LoadShaderItem(si.m_pShader->GetName(), true, 0, isr, si.m_pShader->GetGenerationMask());
+								pMaterial->AssignShaderItem(siDst);
+
+								m_generation.pSelectionObject->SetMaterial(pMaterial);
+							}
+						}
+					}
+#endif
 				}
 				else
 				{
