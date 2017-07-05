@@ -13,6 +13,7 @@ int g_ConsoleInstanceCount;
 Console::Console()
 	: ca_CharEditModel(nullptr)
 	, ca_FilterJoints(nullptr)
+	, ca_DebugCommandBufferFilter(nullptr)
 {
 	if (g_ConsoleInstanceCount++)
 		abort();
@@ -120,6 +121,7 @@ void Console::Init()
 	REGISTER_STRING("ca_CharEditModel", ca_CharEditModel, VF_NULL, "");
 	REGISTER_STRING("ca_FilterJoints", ca_FilterJoints, VF_NULL, "");
 	REGISTER_STRING("ca_DrawPose", NULL, VF_NULL, "");
+	REGISTER_CVAR2("ca_DebugCommandBufferFilter", &ca_DebugCommandBufferFilter, "", VF_NULL, "Limits the command buffer debug output to a cdf containing the given string.");
 	assert(this);
 
 	DefineConstIntCVar(ca_DrawAllSimulatedSockets, 0, VF_CHEAT, "if set to 1, the own bounding box of the character is drawn");

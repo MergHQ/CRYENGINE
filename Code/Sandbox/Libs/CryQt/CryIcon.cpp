@@ -12,6 +12,7 @@
 #include <QStringBuilder>
 #include <QStyle>
 #include <QStyleOption>
+#include "QBitmap"
 
 class QWindow;
 #if QT_VERSION >= 0x050000
@@ -169,7 +170,24 @@ QPixmap CryPixmapIconEngine::pixmap(const QSize& size, QIcon::Mode mode, QIcon::
 	QPainter p(&normal);
 	p.drawPixmap(QPoint(0, 0), pm);
 
-	// Tint image
+
+	//Go through pixels and change alpha channel to 0 if RGB values are equal --> colors from white over gray to black
+	QImage imageColorOnly = pm.toImage();
+	for (int i = 0; i < imageColorOnly.width(); i++)
+	{
+		for (int j = 0; j < imageColorOnly.height(); j++)
+		{
+			QRgb pixel = imageColorOnly.pixel(i, j);
+			if (qRed(pixel) == qGreen(pixel) && qRed(pixel) == qBlue(pixel))
+			{
+				imageColorOnly.setPixelColor(i, j, QColor(255, 255, 255, 0));
+			}
+		}
+	}
+	//This pixelmap now only contains the colored part of the image
+	QPixmap pmColor = pmColor.fromImage(imageColorOnly);
+
+	// Tint full image
 	p.setCompositionMode(QPainter::CompositionMode_Multiply);
 	QIcon::Mode brushMode = mode;
 	if (state == QIcon::On && mode != QIcon::Disabled)
@@ -177,6 +195,10 @@ QPixmap CryPixmapIconEngine::pixmap(const QSize& size, QIcon::Mode mode, QIcon::
 		brushMode = QIcon::Selected;
 	}
 	p.fillRect(normal.rect(), getBrush(brushMode));
+
+	//After tinting, overdraw with colored part of the image
+	p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+	p.drawPixmap(QPoint(0, 0), pmColor);
 
 	// Use original alpha channel to crop image
 	p.setCompositionMode(QPainter::CompositionMode_DestinationIn);

@@ -3686,39 +3686,9 @@ void CD3D9Renderer::EF_Scene3D(SViewport& VP, int nFlags, const SRenderingPassIn
 	const bool bSecondaryViewport = (nFlags & SHDF_SECONDARY_VIEWPORT) != 0;
 	UpdateConstParamsPF(passInfo, bSecondaryViewport);
 
-	// EF_RenderScene leaves no active render-output set
 	EF_RenderScene(nFlags, VP, passInfo);
 
-	if (!passInfo.IsRecursivePass())
-	{
-		// AuxGeom needs to flush pending draws to the current render-output (or else it will flush into the main viewport)
-		CRenderView* pRenderView = passInfo.GetRenderView();
-
-		// Allocate actual HDR target texture for secondary viewport.
-		const SDisplayContext* pDisplayContext = GetActiveDisplayContext();
-		const bool bSecondaryViewport = (nFlags & SHDF_SECONDARY_VIEWPORT) != 0;
-		if (pDisplayContext
-			&& pDisplayContext->m_pHDRTargetTex
-			&& bSecondaryViewport)
-		{
-			CRY_ASSERT(pRenderView->GetRenderOutput() == nullptr);
-			CRY_ASSERT(nFlags & SHDF_ALLOWHDR);
-
-			// Clear color is in sRGB color space so it needs to be converted to linear color space to clear HDR render target.
-			// NOTE: Secondary viewport used to be rendered in LDR and sRGB color space.
-			ColorF clearColor = m_cClearColor;
-			clearColor.srgb2rgb();
-
-			CRenderOutput renderOutput(pDisplayContext->m_pHDRTargetTex, pDisplayContext->m_Width, pDisplayContext->m_Height, true, clearColor);
-			pRenderView->SetRenderOutput(&renderOutput);
-		}
-
-		GetGraphicsPipeline().Prepare(pRenderView, EShaderRenderingFlags(nFlags));
-
-		gRenDev->GetIRenderAuxGeom()->Flush();
-
-		pRenderView->SetRenderOutput(nullptr);
-	}
+	if (!passInfo.IsRecursivePass()) gRenDev->GetIRenderAuxGeom()->Flush();
 }
 
 bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture *pDataD, ITexture *pDataN)

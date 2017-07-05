@@ -61,21 +61,21 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	if (g_cvars.m_audioObjectPoolSize < 1)
 	{
 		g_cvars.m_audioObjectPoolSize = 1;
-		g_logger.Log(ELogType::Warning, "Audio Object pool size should be greater than zero. Forcing the cvar \"s_AudioObjectPoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, R"(Audio Object pool size should be greater than zero. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
 	}
 	CATLAudioObject::CreateAllocator(g_cvars.m_audioObjectPoolSize);
 
 	if (g_cvars.m_audioEventPoolSize < 1)
 	{
 		g_cvars.m_audioEventPoolSize = 1;
-		g_logger.Log(ELogType::Warning, "Audio Event pool size should be greater than zero. Forcing the cvar \"s_AudioEventPoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, R"(Audio Event pool size should be greater than zero. Forcing the cvar "s_AudioEventPoolSize" to 1!)");
 	}
 	CATLEvent::CreateAllocator(g_cvars.m_audioEventPoolSize);
 
 	if (g_cvars.m_audioStandaloneFilePoolSize < 1)
 	{
 		g_cvars.m_audioStandaloneFilePoolSize = 1;
-		g_logger.Log(ELogType::Warning, "Audio Standalone File pool size should be greater than zero. Forcing the cvar \"s_AudioStandaloneFilePoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, R"(Audio Standalone File pool size should be greater than zero. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
 	}
 	CATLStandaloneFile::CreateAllocator(g_cvars.m_audioStandaloneFilePoolSize);
 
@@ -1029,7 +1029,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
 #else
 				pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 
 				result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 
