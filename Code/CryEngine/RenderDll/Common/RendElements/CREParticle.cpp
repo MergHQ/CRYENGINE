@@ -594,18 +594,23 @@ bool CREParticle::Compile(CRenderObject* pRenderObject)
 		psoDesc.m_CullMode = eCULL_None;
 		psoDesc.m_bAllowTesselation = true;
 
+		const bool bDepthFixup = (((CShader*)desc.shaderItem.m_pShader)->GetFlags2() & EF2_DEPTH_FIXUP) != 0;
+
 		switch (desc.renderState & OS_TRANSPARENT)
 		{
 		case OS_ALPHA_BLEND:
-			psoDesc.m_RenderState |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
+			if (bDepthFixup)
+				psoDesc.m_RenderState |= GS_BLALPHA_MIN | GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA;
+			else
+				psoDesc.m_RenderState |= GS_BLALPHA_MIN | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
 			break;
 		case OS_ADD_BLEND:
-			psoDesc.m_RenderState |= GS_BLSRC_ONE | GS_BLDST_ONE;
+			psoDesc.m_RenderState |= GS_BLALPHA_MIN | GS_BLSRC_ONE | GS_BLDST_ONE;
 			break;
 		case OS_MULTIPLY_BLEND:
-			psoDesc.m_RenderState |= GS_BLSRC_DSTCOL | GS_BLDST_SRCCOL;
+			psoDesc.m_RenderState |= GS_BLALPHA_MIN | GS_BLSRC_DSTCOL | GS_BLDST_SRCCOL;
 			break;
-		}
+		}		
 	};
 	
 	bool bCompiled = true;
