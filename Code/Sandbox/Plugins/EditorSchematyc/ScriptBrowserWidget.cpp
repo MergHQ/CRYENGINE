@@ -839,7 +839,7 @@ void CScriptBrowserModel::OnScriptRegistryChange(const SScriptRegistryChange& ch
 		case EScriptRegistryChangeType::ElementAdded:
 			{
 				OnScriptElementAdded(change.element);
-				bRecompile = true;
+				bRecompile = false; // Happens in backend.
 				break;
 			}
 		case EScriptRegistryChangeType::ElementModified:
@@ -851,7 +851,7 @@ void CScriptBrowserModel::OnScriptRegistryChange(const SScriptRegistryChange& ch
 		case EScriptRegistryChangeType::ElementRemoved:
 			{
 				OnScriptElementRemoved(change.element);
-				bRecompile = true;
+				bRecompile = false; // Happens in backend.
 				break;
 			}
 		case EScriptRegistryChangeType::ElementSaved:
