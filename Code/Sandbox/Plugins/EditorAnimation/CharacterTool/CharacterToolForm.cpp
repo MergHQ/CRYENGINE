@@ -1029,29 +1029,29 @@ void CharacterToolForm::closeEvent(QCloseEvent* ev)
 
 	if (!GetIEditor()->IsMainFrameClosing() && !unsavedEntries.empty())
 	{
-		DynArray<string> filenames;
-		for (UnsavedFilenameToEntries::iterator it = unsavedFilenameToEntries.begin(); it != unsavedFilenameToEntries.end(); ++it)
-			filenames.push_back(it->first);
-
 		DynArray<string> filenamesToSave;
-		if (!UnsavedChangesDialog(this, &filenamesToSave, filenames))
 		{
-			ev->ignore();
-			return;
+			DynArray<string> filenames;
+			filenames.reserve(unsavedFilenameToEntries.size());
+			std::transform(unsavedFilenameToEntries.begin(), unsavedFilenameToEntries.end(), std::back_inserter(filenames), [](const auto& it) { return it.first; });
+			if (!UnsavedChangesDialog(this, &filenamesToSave, filenames))
+			{
+				ev->ignore();
+				return;
+			}
 		}
 
 		ActionOutput saveOutput;
-
-		for (size_t i = 0; i < filenamesToSave.size(); ++i)
+		for (const auto& it : unsavedFilenameToEntries)
 		{
-			UnsavedFilenameToEntries::iterator it = unsavedFilenameToEntries.find(filenamesToSave[i]);
-			if (it == unsavedFilenameToEntries.end())
-				continue;
-			for (size_t j = 0; j < it->second.size(); ++j)
-			{
-				ExplorerEntry* entry = it->second[j];
-				m_system->explorerData->SaveEntry(&saveOutput, entry);
-			}
+			const auto& filename = it.first;
+			const auto& entries = it.second;
+
+			const auto& handler = std::find(filenamesToSave.begin(), filenamesToSave.end(), filename) != filenamesToSave.end()
+				? std::function<void(ExplorerEntry*)>([&](ExplorerEntry* entry) { m_system->explorerData->SaveEntry(&saveOutput, entry); })
+				: std::function<void(ExplorerEntry*)>([&](ExplorerEntry* entry) { m_system->explorerData->Revert(entry); });
+
+			std::for_each(entries.begin(), entries.end(), handler);
 		}
 
 		if (saveOutput.errorCount > 0)
