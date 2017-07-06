@@ -200,21 +200,20 @@ void CParticleProfiler::Display()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
 	const int anyProfilerFlags = 3 | AlphaBits('f');
-	if (pCVars->e_ParticlesProfiler & anyProfilerFlags)
+	if (GetCVars()->e_ParticlesProfiler & anyProfilerFlags)
 	{
 		SortEntries();
 
 		if (!m_entries[0].empty())
 		{
 #ifndef _RELEASE
-			if (pCVars->e_ParticlesProfiler & AlphaBit('f'))
+			if (GetCVars()->e_ParticlesProfiler & AlphaBit('f'))
 				SaveToFile();
 #endif
-			if (pCVars->e_ParticlesProfiler & 1)
+			if (GetCVars()->e_ParticlesProfiler & 1)
 				DrawPerfomanceStats();
-			else if (pCVars->e_ParticlesProfiler & 2)
+			else if (GetCVars()->e_ParticlesProfiler & 2)
 				DrawMemoryStats();
 		}
 	}
@@ -224,10 +223,9 @@ void CParticleProfiler::Display()
 
 void CParticleProfiler::SaveToFile()
 {
-	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
 	string genName;
-	string folderName = pCVars->e_ParticlesProfilerOutputFolder->GetString();
-	string fileName = pCVars->e_ParticlesProfilerOutputName->GetString();
+	string folderName = GetCVars()->e_ParticlesProfilerOutputFolder->GetString();
+	string fileName = GetCVars()->e_ParticlesProfilerOutputName->GetString();
 	if (folderName.empty() || fileName.empty())
 		return;
 	if (folderName[folderName.size() - 1] != '\\' || folderName[folderName.size() - 1] != '/')
@@ -289,9 +287,8 @@ void CParticleProfiler::WriteEntries(CCSVFileOutput& output) const
 
 void CParticleProfiler::DrawPerfomanceStats()
 {
-	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	const uint countsBudget = pCVars->e_ParticlesProfilerCountBudget;
-	const uint timingBudget = pCVars->e_ParticlesProfilerTimingBudget;
+	const uint countsBudget = GetCVars()->e_ParticlesProfilerCountBudget;
+	const uint timingBudget = GetCVars()->e_ParticlesProfilerTimingBudget;
 
 	const SStatDisplay statisticsDisplay[] =
 	{
@@ -450,10 +447,9 @@ void CParticleProfiler::DrawMemoryStats()
 	for (CParticleEmitter* pEmitter : GetPSystem()->GetActiveEmitters())
 	{
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
-		TComponentId lastComponentIt = pEffect->GetNumComponents();
-		for (TComponentId componentId = 0; componentId < lastComponentIt; ++componentId)
+		for (auto ref : pEmitter->GetRuntimes())
 		{
-			const CParticleComponentRuntime* pRuntime = pEmitter->GetRuntimes()[componentId].pRuntime->GetCpuRuntime();
+			const CParticleComponentRuntime* pRuntime = ref.pRuntime->GetCpuRuntime();
 			if (!pRuntime)
 				continue;
 			const CParticleContainer& container = pRuntime->GetContainer();
@@ -479,10 +475,9 @@ void CParticleProfiler::DrawMemoryStats()
 	for (CParticleEmitter* pEmitter : GetPSystem()->GetActiveEmitters())
 	{
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
-		TComponentId lastComponentIt = pEffect->GetNumComponents();
-		for (TComponentId componentId = 0; componentId < lastComponentIt; ++componentId)
+		for (auto ref : pEmitter->GetRuntimes())
 		{
-			const CParticleComponentRuntime* pRuntime = pEmitter->GetRuntimes()[componentId].pRuntime->GetCpuRuntime();
+			const CParticleComponentRuntime* pRuntime = ref.pRuntime->GetCpuRuntime();
 			if (!pRuntime)
 				continue;
 

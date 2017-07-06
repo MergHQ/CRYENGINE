@@ -11,8 +11,10 @@ namespace gpu_pfx2
 {
 struct SUpdateContext;
 struct IParticleFeatureGpuInterface;
-struct SComponentParams;
+typedef Array<IParticleFeatureGpuInterface* const, uint> TFeatures;
 class IParticleComponentRuntime;
+struct SComponentParams;
+struct SInitialData;
 }
 
 namespace pfx2
@@ -46,12 +48,11 @@ struct SParticleFeatureParams
 	const char*       m_groupName;
 	const char*       m_featureName;
 	ColorB            m_color;
-	IParticleFeature* (* m_pFactory)();
+	IParticleFeature* (*m_pFactory)();
 	bool              m_hasComponentConnector;
 	uint              m_defaultForType;
 };
 
-typedef uint32 TComponentId;
 typedef uint32 TParticleId;
 
 struct IParticleFeature
@@ -91,56 +92,28 @@ enum EUpdateList
 
 struct IParticleComponent : public _i_reference_target_t
 {
-	virtual void                                     SetChanged() = 0;
-	virtual bool                                     IsEnabled() const = 0;
-	virtual void                                     SetEnabled(bool enabled) = 0;
-	virtual bool                                     IsVisible() const = 0;
-	virtual void                                     SetVisible(bool visible) = 0;
-	virtual void                                     Serialize(Serialization::IArchive& ar) = 0;
-	virtual void                                     SetName(const char* name) = 0;
-	virtual const char*                              GetName() const = 0;
-	virtual uint                                     GetNumFeatures() const = 0;
-	virtual IParticleFeature*                        GetFeature(uint featureIdx) const = 0;
-	virtual void                                     AddFeature(uint placeIdx, const SParticleFeatureParams& featureParams) = 0;
-	virtual void                                     RemoveFeature(uint featureIdx) = 0;
-	virtual void                                     SwapFeatures(const uint* swapIds, uint numSwapIds) = 0;
-	virtual Vec2                                     GetNodePosition() const = 0;
-	virtual void                                     SetNodePosition(Vec2 position) = 0;
+	virtual void                SetChanged() = 0;
+	virtual bool                IsEnabled() const = 0;
+	virtual void                SetEnabled(bool enabled) = 0;
+	virtual bool                IsVisible() const = 0;
+	virtual void                SetVisible(bool visible) = 0;
+	virtual void                Serialize(Serialization::IArchive& ar) = 0;
+	virtual void                SetName(const char* name) = 0;
+	virtual const char*         GetName() const = 0;
+	virtual uint                GetNumFeatures() const = 0;
+	virtual IParticleFeature*   GetFeature(uint featureIdx) const = 0;
+	virtual void                AddFeature(uint placeIdx, const SParticleFeatureParams& featureParams) = 0;
+	virtual void                RemoveFeature(uint featureIdx) = 0;
+	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) = 0;
+	virtual Vec2                GetNodePosition() const = 0;
+	virtual void                SetNodePosition(Vec2 position) = 0;
+	virtual IParticleComponent* GetParent() const = 0;
 
-	virtual gpu_pfx2::IParticleFeatureGpuInterface** GetGpuUpdateList(EUpdateList list, int& size) const = 0;
+	virtual gpu_pfx2::TFeatures GetGpuUpdateList(EUpdateList list) const = 0;
+	virtual void                GetParentData(IParticleEmitter* pEmitter, Array<TParticleId, uint> parentParticleIds, gpu_pfx2::SInitialData data[]) const = 0;
 };
 
-enum EGpuSortMode
-{
-	eGpuSortMode_None = 0,
-	eGpuSortMode_BackToFront,
-	eGpuSortMode_FrontToBack,
-	eGpuSortMode_OldToNew,
-	eGpuSortMode_NewToOld
-};
-
-enum EGpuFacingMode
-{
-	eGpuFacingMode_Screen = 0,
-	eGpuFacingMode_Velocity
-};
-
-struct SRuntimeInitializationParameters
-{
-
-	SRuntimeInitializationParameters() : usesGpuImplementation(false), maxParticles(0), maxNewBorns(0), sortMode(eGpuSortMode_None), isSecondGen(false), parentId(0), version(0) {}
-	bool           usesGpuImplementation;
-	// the following parameters are only used by the GPU particle runtime
-	int            maxParticles;
-	int            maxNewBorns;
-	EGpuSortMode   sortMode;
-	EGpuFacingMode facingMode;
-	bool           isSecondGen;
-	int            parentId;
-	int            version;
-};
-
-class ICommonParticleComponentRuntime : public _i_reference_target_t
+class IParticleComponentRuntime : public _i_reference_target_t
 {
 public:
 	struct SInstance
@@ -151,16 +124,17 @@ public:
 		TParticleId m_parentId;
 		float m_startDelay;
 	};
-	virtual ~ICommonParticleComponentRuntime() {}
+	virtual ~IParticleComponentRuntime() {}
 
-	virtual bool                                 IsValidRuntimeForInitializationParameters(const SRuntimeInitializationParameters& parameters) = 0;
+	virtual bool                                 IsValidForParams(const gpu_pfx2::SComponentParams& parameters) = 0;
 
 	virtual gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() { return nullptr; }
 	virtual pfx2::CParticleComponentRuntime*     GetCpuRuntime() { return nullptr; }
+	virtual const IParticleComponent*            GetComponent() const = 0;
 
 	virtual bool        IsActive() const = 0;
 	virtual void        SetActive(bool active) = 0;
-	virtual bool        IsSecondGen() const = 0;
+	virtual bool        IsChild() const { return GetComponent()->GetParent() != nullptr; }
 	virtual const AABB& GetBounds() const = 0;
 	virtual void        AddSubInstances(Array<const SInstance, uint> instances) = 0;
 	virtual void        RemoveAllSubInstances() = 0;
@@ -172,7 +146,7 @@ struct IParticleEffectPfx2 : public IParticleEffect
 	virtual void                   SetChanged() = 0;
 	virtual uint                   GetNumComponents() const = 0;
 	virtual IParticleComponent*    GetComponent(uint componentIdx) const = 0;
-	virtual void                   AddComponent(uint componentIdx) = 0;
+	virtual IParticleComponent*    AddComponent() = 0;
 	virtual void                   RemoveComponent(uint componentIdx) = 0;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const = 0;
 	virtual bool                   IsSubstitutedPfx1() const = 0;

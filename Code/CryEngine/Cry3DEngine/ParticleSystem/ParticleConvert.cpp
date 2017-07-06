@@ -370,8 +370,7 @@ static const Vec2 NodePositionIncrement(256, 0);
 IParticleComponent* AddComponent(IParticleEffectPfx2& effect, cstr name)
 {
 	uint index = effect.GetNumComponents();
-	effect.AddComponent(index);
-	IParticleComponent* component = effect.GetComponent(index);
+	IParticleComponent* component = effect.AddComponent();
 	component->SetName(name);
 	component->SetNodePosition(NodePositionIncrement * (float)index);
 	return component;

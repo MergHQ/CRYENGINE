@@ -26,21 +26,21 @@ struct SReadbackData
 
 struct SParticleParameters
 {
-	Matrix44           viewProjection;
-	Quat               emitterOrientation;
-	Vec3               emitterPosition;
-	f32                deltaTime;
-	Vec3               physAccel;
-	f32                currentTime;
-	Vec3               physWind;
-	float              farToNearDistance;
-	Vec3               cameraPosition;
-	float              lifeTime;
-	int32              numParticles;
-	int32              numNewBorns;
-	int32              numKilled;
-	pfx2::EGpuSortMode sortMode;
-	int32              managerSlot;
+	Matrix44  viewProjection;
+	Quat      emitterOrientation;
+	Vec3      emitterPosition;
+	f32       deltaTime;
+	Vec3      physAccel;
+	f32       currentTime;
+	Vec3      physWind;
+	float     farToNearDistance;
+	Vec3      cameraPosition;
+	float     lifeTime;
+	int32     numParticles;
+	int32     numNewBorns;
+	int32     numKilled;
+	ESortMode sortMode;
+	int32     managerSlot;
 };
 
 struct SSpawnData
@@ -169,12 +169,13 @@ public:
 
 	std::vector<_smart_ptr<gpu_pfx2::CFeature>> m_gpuUpdateLists[eGpuUpdateList_COUNT];
 
+	typedef pfx2::TParticleId TParticleId;
 	typedef DynArray<TParticleId, uint> TInstances;
 
 	CParticleComponentRuntime(
 	  IParticleEmitter* pEmitter,
 	  pfx2::IParticleComponent* pComponent,
-	  const pfx2::SRuntimeInitializationParameters& params);
+	  const SComponentParams& params);
 
 	virtual ~CParticleComponentRuntime()
 	{
@@ -183,9 +184,11 @@ public:
 	virtual EState      GetState() const override       { return m_state; };
 	virtual bool        IsActive() const override       { return m_active; }
 	virtual void        SetActive(bool active) override { m_active = active; }
-	virtual bool        IsSecondGen() const override    { return m_isSecondGen; }
+	virtual const pfx2::IParticleComponent* 
+		                GetComponent() const override   { return m_pComponent; }
+	virtual bool        IsChild() const override        { return m_pComponent->GetParent() != nullptr; }
 
-	virtual bool        IsValidRuntimeForInitializationParameters(const pfx2::SRuntimeInitializationParameters& parameters) override;
+	virtual bool        IsValidForParams(const SComponentParams& parameters) override;
 	virtual void        SetEnvironmentParameters(const SEnvironmentParameters& params) override { m_envParams = params; }
 
 	virtual const AABB& GetBounds() const override;
@@ -257,6 +260,7 @@ private:
 	// update passes with varying material flags
 	void UpdatePasses();
 
+	_smart_ptr<pfx2::IParticleComponent>                m_pComponent;
 	IParticleEmitter*                                   m_pEmitter;
 	gpu::CTypedConstantBuffer<SParticleParameters>      m_parameters;
 
@@ -265,9 +269,6 @@ private:
 	gpu::CTypedResource<int, gpu::BufferFlagsReadWrite> m_blockSums;
 	gpu::CTypedResource<int, gpu::BufferFlagsReadWrite> m_killList;
 	gpu::CTypedResource<uint, gpu::BufferFlagsDynamic>  m_newBornIndices;
-
-	int32 m_parentId;
-	int   m_version;
 
 	// the subinstances are double buffered, so the render thread can work
 	// with a different set while the main thread (or any other thread, there is a lock)
@@ -279,13 +280,14 @@ private:
 	// in m_parentDataRenderThread corresponds to subInstances in m_subInstancesRenderThread
 	stl::aligned_vector<SInitialData, CRY_PLATFORM_ALIGNMENT>  m_parentData;
 	gpu::CTypedResource<SInitialData, gpu::BufferFlagsDynamic> m_parentDataRenderThread;
-	int                       m_parentDataSizeRenderThread;
+	int                                                        m_parentDataSizeRenderThread;
+
+	SComponentParams          m_params;
 
 	std::vector<SSpawnData>   m_spawnData;
 	std::vector<SSpawnEntry>  m_spawnEntries;
 	AABB                      m_bounds;
 	bool                      m_active;
-	bool                      m_isSecondGen;
 
 	// Compute Passes
 	_smart_ptr<CShader> m_pShader;
@@ -320,11 +322,5 @@ private:
 
 	std::unique_ptr<gpu_physics::CParticleFluidSimulation> m_pFluidSimulation;
 	std::unique_ptr<gpu::CMergeSort>                       m_pMergeSort;
-
-	// set only during initialization
-	const int                m_maxParticles;
-	const int                m_maxNewBorns;
-	const pfx2::EGpuSortMode m_sortMode;
-	const uint32             m_facingMode;
 };
 }

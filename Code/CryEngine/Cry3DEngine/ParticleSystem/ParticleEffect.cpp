@@ -47,42 +47,70 @@ void CParticleEffect::Compile()
 
 	m_numRenderObjects = 0;
 	m_attributeInstance.Reset(m_pAttributes, EAttributeScope::PerEffect);
-	TComponentId id = 0;
 	for (auto& component : m_components)
 	{
 		component->m_pEffect = this;
-		component->m_componentId = id++;
 		component->SetChanged();
 		component->m_componentParams.Reset();
 		component->PreCompile();
 	}
 	for (auto& component : m_components)
 		component->ResolveDependencies();
+
+	Sort();
+
+	uint id = 0;
 	for (auto& component : m_components)
+	{
 		component->Compile();
+		component->m_componentId = id++;
+	}
 	for (auto& component : m_components)
 		component->FinalizeCompile();
 
 	m_dirty = false;
 }
 
-TComponentId CParticleEffect::FindComponentIdByName(const char* name) const
+void CParticleEffect::Sort()
 {
-	const auto it = std::find_if(m_components.begin(), m_components.end(), [name](TComponentPtr pComponent)
+	struct SortedComponents: TComponents
 	{
-		if (!pComponent)
-			return false;
-		return strcmp(pComponent->GetName(), name) == 0;
-	});
-	if (it == m_components.end())
-		return gInvalidId;
-	return TComponentId(it - m_components.begin());
+		SortedComponents(const TComponents& src)
+		{
+			for (auto pComp : src)
+			{
+				if (!pComp->GetParentComponent())
+					AddTree(pComp);
+			}
+			assert(size() == src.size());
+		}
+
+		void AddTree(CParticleComponent* pComp)
+		{
+			push_back(pComp);
+			for (auto pChild : pComp->GetChildComponents())
+				AddTree(pChild);
+		}
+	};
+
+	SortedComponents sortedComponents(m_components);
+	m_components = sortedComponents;
 }
 
-string CParticleEffect::MakeUniqueName(TComponentId forComponentId, const char* name)
+CParticleComponent* CParticleEffect::FindComponentByName(const char* name) const
 {
-	TComponentId foundId = FindComponentIdByName(name);
-	if (foundId == forComponentId || foundId == gInvalidId)
+	for (auto pComponent : m_components)
+	{
+		if (pComponent->m_name == name)
+			return pComponent;
+	}
+	return nullptr;
+}
+
+string CParticleEffect::MakeUniqueName(const CParticleComponent* forComponent, const char* name)
+{
+	CParticleComponent* found = FindComponentByName(name);
+	if (!found || found == forComponent)
 		return string(name);
 
 	string newName = name;
@@ -100,7 +128,7 @@ string CParticleEffect::MakeUniqueName(TComponentId forComponentId, const char* 
 		else
 			newName.replace(pos, 1, 1, newName[pos] + 1);
 	}
-	while (FindComponentIdByName(newName) != gInvalidId);
+	while (FindComponentByName(newName));
 
 	return newName;
 }
@@ -118,13 +146,13 @@ uint CParticleEffect::GetNumRenderObjectIds() const
 float CParticleEffect::GetEquilibriumTime() const
 {
 	float maxEqTime = 0.0f;
-	for (auto comp : m_components)
+	for (auto pComponent : m_components)
 	{
 		// Iterate top-level components
-		auto const& params = comp->GetComponentParams();
-		if (comp->IsEnabled() && !params.IsSecondGen() && params.IsImmortal())
+		auto const& params = pComponent->GetComponentParams();
+		if (pComponent->IsEnabled() && !pComponent->GetParentComponent() && params.IsImmortal())
 		{
-			float eqTime = comp->GetEquilibriumTime(Range(params.m_emitterLifeTime.start));
+			float eqTime = pComponent->GetEquilibriumTime(Range(params.m_emitterLifeTime.start));
 			maxEqTime = max(maxEqTime, eqTime);
 		}
 	}
@@ -169,7 +197,11 @@ void CParticleEffect::Serialize(Serialization::IArchive& ar)
 			m_components.push_back(new CParticleComponent(oldComponent));
 	}
 	else
+	{
+		if (ar.isInput() && !ar.isEdit())
+			m_components.clear();
 		ar(m_components, "Components", "+Components");
+	}
 
 	if (ar.isInput())
 	{
@@ -195,15 +227,15 @@ IParticleEmitter* CParticleEffect::Spawn(const ParticleLoc& loc, const SpawnPara
 	return pEmitter;
 }
 
-void CParticleEffect::AddComponent(uint componentIdx)
+IParticleComponent* CParticleEffect::AddComponent()
 {
-	uint idx = m_components.size();
 	CParticleComponent* pNewComponent = new CParticleComponent();
 	pNewComponent->m_pEffect = this;
-	pNewComponent->m_componentId = componentIdx;
+	pNewComponent->m_componentId = m_components.size();
 	pNewComponent->SetName("Component01");
-	m_components.insert(m_components.begin() + componentIdx, pNewComponent);
+	m_components.push_back(pNewComponent);
 	SetChanged();
+	return pNewComponent;
 }
 
 void CParticleEffect::RemoveComponent(uint componentIdx)

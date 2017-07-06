@@ -136,7 +136,7 @@ protected:
 		const CParticleEmitter* pEmitter = context.m_runtime.GetEmitter();
 		if (pEmitter->IsIndependent())
 		{
-			if (!context.m_params.IsSecondGen() && context.m_params.IsImmortal())
+			if (!runtime.IsChild() && context.m_params.IsImmortal())
 				return;
 		}
 		else if (m_restart.IsEnabled())

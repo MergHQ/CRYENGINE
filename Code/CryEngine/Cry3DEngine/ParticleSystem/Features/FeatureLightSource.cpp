@@ -50,7 +50,7 @@ public:
 		ar(m_flareName, "Flare", "Flare");
 	}
 
-	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	virtual void Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 

@@ -534,12 +534,13 @@ public:
 		if (CParticleEmitter* pEmitter = context.m_runtime.GetEmitter())
 		{
 			GeomRef emitterGeometry = pEmitter->GetEmitterGeometry();
+			bool hasParentParticles = false;
 			if (CParticleComponent* pParentComponent = context.m_runtime.GetComponent()->GetParentComponent())
 			{
+				hasParentParticles = true;
 				if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
 					emitterGeometry.Set(pMesh);
 			}
-			const bool hasParentParticles = context.m_params.m_parentId != gInvalidId;
 			const TIStream<IMeshObj*> parentMeshes = context.m_parentContainer.GetTIStream<IMeshObj*>(EPDT_MeshGeometry, emitterGeometry.m_pMeshObj);
 			const TIStream<IPhysicalEntity*> parentPhysics = context.m_parentContainer.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
 
@@ -607,7 +608,6 @@ private:
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 		IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
-		const bool hasParentParticles = context.m_params.m_parentId != gInvalidId;
 
 		STempInitBuffer<float> offsets(context, m_offset);
 		STempInitBuffer<float> velocityMults(context, m_velocity);
@@ -615,7 +615,7 @@ private:
 		for (auto particleId : context.GetSpawnedRange())
 		{
 			GeomRef particleGeometry = emitterGeometry;
-			if (hasParentParticles)
+			if (pParentComponent)
 			{
 				TParticleId parentId = parentIds.Load(particleId);
 				geomLocation.t = parentPositions.SafeLoad(parentId);

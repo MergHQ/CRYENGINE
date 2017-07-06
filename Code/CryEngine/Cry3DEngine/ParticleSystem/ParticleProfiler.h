@@ -67,6 +67,7 @@ public:
 	void AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, uint value = 1);
 
 private:
+	static CVars* GetCVars() { return Cry3DEngineBase::GetCVars(); }
 	void SortEntries();
 	void WriteEntries(CCSVFileOutput& output) const;
 

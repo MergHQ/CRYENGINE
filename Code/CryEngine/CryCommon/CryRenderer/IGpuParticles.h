@@ -9,8 +9,6 @@ namespace gpu_pfx2
 {
 
 class IParticleComponentRuntime;
-typedef uint32 TParticleId;
-typedef uint32 TComponentId;
 
 #define LIST_OF_FEATURE_TYPES \
   X(Dummy)                    \
@@ -44,6 +42,39 @@ enum EGpuFeatureType
 	eGpuFeatureType_COUNT
 };
 
+enum class ESortMode
+{
+    None,
+    BackToFront,
+    FrontToBack,
+    OldToNew,
+    NewToOld
+};
+
+enum class EFacingMode
+{
+	Screen,
+	Velocity
+};
+
+struct SComponentParams
+{
+	SComponentParams()
+		: usesGpuImplementation(false), maxParticles(0), maxNewBorns(0), sortMode(ESortMode::None), version(0) {}
+	bool           usesGpuImplementation;
+	int            maxParticles;
+	int            maxNewBorns;
+	ESortMode      sortMode;
+	EFacingMode    facingMode;
+	int            version;
+};
+
+struct SInitialData
+{
+	Vec3 position;
+	Vec3 velocity;
+};
+
 static const int kNumModifierSamples = 16;
 
 struct SEnvironmentParameters
@@ -53,7 +84,7 @@ struct SEnvironmentParameters
 	Vec3 physWind;
 };
 
-class IParticleComponentRuntime : public ::pfx2::ICommonParticleComponentRuntime
+class IParticleComponentRuntime : public ::pfx2::IParticleComponentRuntime
 {
 public:
 	enum class EState
@@ -269,7 +300,7 @@ public:
 	CreateParticleComponentRuntime(
 		IParticleEmitter* pEmitter,
 		pfx2::IParticleComponent* pComponent,
-		const pfx2::SRuntimeInitializationParameters& params) = 0;
+		const SComponentParams& params) = 0;
 
 	virtual _smart_ptr<IParticleFeatureGpuInterface>
 	CreateParticleFeatureGpuInterface(EGpuFeatureType) = 0;

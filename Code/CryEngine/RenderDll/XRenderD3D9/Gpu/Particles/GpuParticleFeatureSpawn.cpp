@@ -27,9 +27,9 @@ bool CFeatureSpawnBase::CanSpawnParticles(CParticleComponentRuntime* pRuntime) c
 	const auto& params = GetParameters();
 	const IParticleEmitter* pEmitter = pRuntime->GetEmitter();
 	const bool isEmitterIndependent = pEmitter->Unique();
-	const bool isSecondGen = pRuntime->IsSecondGen();
+	const bool isChild = pRuntime->IsChild();
 	const bool isContinuous = !params.useDuration || params.useRestart;
-	if (isContinuous && isEmitterIndependent && !isSecondGen)
+	if (isContinuous && isEmitterIndependent && !isChild)
 		return false;
 
 	return true;

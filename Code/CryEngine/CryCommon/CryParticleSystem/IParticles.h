@@ -336,12 +336,6 @@ struct IParticleEffect : public _i_reference_target_t
 	// </interfuscator:shuffle>
 };
 
-struct SInitialData
-{
-	Vec3 position;
-	Vec3 velocity;
-};
-
 //! Interface to a particle effect emitter.
 //! An IParticleEmitter should usually be created by I3DEngine::CreateParticleEmitter.
 //! Deleting the emitter should be done using I3DEngine::DeleteParticleEmitter.
@@ -452,10 +446,6 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 	// Summary:
 	//		 Get Particle Attributes
 	virtual IParticleAttributes& GetAttributes() = 0;
-
-	// Summary:
-	//		 Get Parent particle data to initialize GPU particles
-	virtual void GetParentData(const int parentComponentId, const uint* parentParticleIds, const int numParentParticleIds, SInitialData* data) const {};
 
 	// </interfuscator:shuffle>
 };

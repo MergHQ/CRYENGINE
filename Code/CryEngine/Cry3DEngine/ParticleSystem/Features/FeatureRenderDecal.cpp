@@ -24,7 +24,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
+	virtual void Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
 
 private:
 	SFloat m_thickness;
@@ -105,7 +105,7 @@ struct SDecalTiler
 	const bool hasAnimation;
 };
 
-void CFeatureRenderDecals::Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
+void CFeatureRenderDecals::Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 

@@ -131,11 +131,11 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		pRenderAux->DrawAABB(box, true, color, eBBD_Faceted);
 	}
 
-	if (params.IsSecondGen())
+	if (pRuntime->IsChild())
 	{
 		const CParticleContainer& parentContainer = pRuntime->GetParentContainer();
 		const Vec2 parentPartSz = Vec2(barSz, 0.9f / parentContainer.GetMaxParticles());
-		const Vec2 parentContLoc = Vec2((emitterBarIdx + params.m_parentId) * barGap + barSz * 3.0f + startPos, startPos);
+		const Vec2 parentContLoc = Vec2((emitterBarIdx /*+ params.m_parentId*/) * barGap + barSz * 3.0f + startPos, startPos);
 
 		// parenting lines
 		for (auto particleId : context.GetUpdateRange())
@@ -306,11 +306,10 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 	DebugOptSpline();
 
 	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	const bool internalDebug = (pCVars->e_ParticlesDebug & AlphaBit('t')) != 0;
-	static volatile uint debugContainers = 0;
-	static volatile uint debugCollisions = 1;
+	const bool debugContainers = (pCVars->e_ParticlesDebug & AlphaBit('t')) != 0;
+	const bool debugCollisions = (pCVars->e_ParticlesDebug & AlphaBit('u')) != 0;
 
-	if (internalDebug)
+	if (debugContainers || debugCollisions)
 	{
 		IRenderer* pRender = gEnv->pRenderer;
 		IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -320,10 +319,9 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 		for (CParticleEmitter* pEmitter : activeEmitters)
 		{
 			CParticleEffect* pEffect = pEmitter->GetCEffect();
-			TComponentId lastComponentIt = pEffect->GetNumComponents();
-			for (TComponentId componentId = 0; componentId < lastComponentIt; ++componentId)
+			for (auto ref : pEmitter->GetRuntimes())
 			{
-				auto pComponentRuntime = pEmitter->GetRuntimes()[componentId].pRuntime->GetCpuRuntime();
+				auto pComponentRuntime = ref.pRuntime->GetCpuRuntime();
 				if (!pComponentRuntime)
 					continue;
 				if (!pComponentRuntime->GetComponent()->IsEnabled())

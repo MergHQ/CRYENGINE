@@ -252,13 +252,11 @@ float CParticleEmitter::GetMaxViewDist()
 		* m_viewDistRatio;
 
 	float maxViewDist = 0.0f;
-	size_t compCount = m_pEffect->GetNumComponents();
-	for (size_t i = 0; i < compCount; ++i)
+	for (auto pComponent : m_pEffect->GetComponents())
 	{
-		auto comp = m_pEffect->GetCComponent(i);
-		if (comp->IsEnabled())
+		if (pComponent->IsEnabled())
 		{
-			const auto& params = comp->GetComponentParams();
+			const auto& params = pComponent->GetComponentParams();
 			const float sizeDist = params.m_maxParticleSize * angularDensity * params.m_visibility.m_viewDistanceMultiple;
 			const float dist = min(sizeDist, +params.m_visibility.m_maxCameraDistance);
 			maxViewDist = max(maxViewDist, dist);
@@ -343,7 +341,7 @@ void CParticleEmitter::Activate(bool activate)
 	{
 		for (auto ref : m_componentRuntimes)
 		{
-			if (ref.pRuntime->GetGpuRuntime() || !ref.pRuntime->IsSecondGen())
+			if (ref.pRuntime->GetGpuRuntime() || !ref.pRuntime->IsChild())
 				ref.pRuntime->RemoveAllSubInstances();
 		}
 	}
@@ -410,7 +408,7 @@ void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 	CParticleContainer::SSpawnEntry spawn = {1, m_parentContainer.GetLastParticleId()};
 	for (auto pRuntime: m_cpuComponentRuntimes)
 	{
-		if (pRuntime->IsActive() && !pRuntime->IsSecondGen())
+		if (pRuntime->IsActive() && !pRuntime->IsChild())
 		{
 			pRuntime->SpawnParticles(spawn);
 		}
@@ -439,10 +437,8 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	const TComponentId numComponents = m_pEffect->GetNumComponents();
-	for (TComponentId componentId = 0; componentId < numComponents; ++componentId)
+	for (auto pComponent : m_pEffect->GetComponents())
 	{
-		CParticleComponent* pComponent = m_pEffect->GetCComponent(componentId);
 		const SComponentParams& params = pComponent->GetComponentParams();
 
 		IMaterial* pMaterial = params.m_pMaterial;
@@ -511,12 +507,8 @@ void CParticleEmitter::UpdateRuntimeRefs()
 
 	TComponentRuntimes newRuntimes;
 
-	TComponentId lastComponentId = m_pEffect->GetNumComponents();
-
-	for (TComponentId componentId = 0; componentId < lastComponentId; ++componentId)
+	for (auto pComponent : m_pEffect->GetComponents())
 	{
-		CParticleComponent* pComponent = m_pEffect->GetCComponent(componentId);
-
 		auto it = std::find_if(m_componentRuntimes.begin(), m_componentRuntimes.end(),
 		                       [=](const SRuntimeRef& ref)
 			{
@@ -524,20 +516,21 @@ void CParticleEmitter::UpdateRuntimeRefs()
 		  });
 
 		SRuntimeRef runtimeRef;
-		const SRuntimeInitializationParameters& params = pComponent->GetRuntimeInitializationParameters();
+		const gpu_pfx2::SComponentParams& params = pComponent->GetGPUComponentParams();
 
 		bool createNew = false;
 		if (it == m_componentRuntimes.end())
 			createNew = true;
+		else if (!pComponent->UsesGPU())
+			createNew = !it->pRuntime->GetCpuRuntime();
 		else
 		{
-			// exists, but wrong runtime type
-			// (can mean wrong cpu/gpu type, or wrong maximum number of particles, etc)
-			createNew = !it->pRuntime->IsValidRuntimeForInitializationParameters(params);
+			createNew = !it->pRuntime->GetGpuRuntime()
+				|| !it->pRuntime->IsValidForParams(params);
 		}
 
 		if (createNew)
-			runtimeRef = SRuntimeRef(m_pEffect, this, pComponent, params);
+			runtimeRef = SRuntimeRef(this, pComponent, params);
 		else
 			runtimeRef = *it;
 
@@ -548,9 +541,9 @@ void CParticleEmitter::UpdateRuntimeRefs()
 	m_cpuComponentRuntimes.clear();
 	m_gpuComponentRuntimes.clear();
 
-	for (TComponentId componentId = 0; componentId < lastComponentId; ++componentId)
+	for (auto& ref : m_componentRuntimes)
 	{
-		ICommonParticleComponentRuntime* pRuntime = m_componentRuntimes[componentId].pRuntime;
+		IParticleComponentRuntime* pRuntime = ref.pRuntime;
 
 		if (auto gpuRuntime = pRuntime->GetGpuRuntime())
 			m_gpuComponentRuntimes.push_back(gpuRuntime);
@@ -558,28 +551,24 @@ void CParticleEmitter::UpdateRuntimeRefs()
 			m_cpuComponentRuntimes.push_back(cpuRuntime);		
 
 		bool isActive = true;
-		for (TComponentId thisComponentId = componentId; thisComponentId != gInvalidId; )
+		for (const CParticleComponent* pComponent = ref.pComponent; pComponent; )
 		{
-			const CParticleComponent* pComponent = m_componentRuntimes[thisComponentId].pComponent;
-			const SComponentParams& params = pComponent->GetComponentParams();
-
 			if (!(pComponent->IsEnabled() && pComponent->CanMakeRuntime(this)))
 			{
 				isActive = false;
 				break;
 			}
-			thisComponentId = params.m_parentId;
+			pComponent = pComponent->GetParentComponent();
 		}
 
 		pRuntime->RemoveAllSubInstances();
 		pRuntime->SetActive(isActive);
-		CParticleComponent* pComponent = m_componentRuntimes[componentId].pComponent;
-		if (isActive && !pComponent->GetComponentParams().IsSecondGen())
+		if (isActive && !ref.pComponent->GetParentComponent())
 		{
 			CParticleComponentRuntime::SInstance instance;
 			pRuntime->AddSubInstances({&instance, 1});
 		}
-		pComponent->PrepareRenderObjects(this);
+		ref.pComponent->PrepareRenderObjects(this);
 	}
 	
 	m_editVersion = m_pEffect->GetEditVersion();
@@ -594,10 +583,8 @@ void CParticleEmitter::ResetRenderObjects()
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
 		m_pRenderObjects[threadId].resize(numROs, nullptr);
 
-	const TComponentId lastComponentId = m_pEffect->GetNumComponents();
-	for (TComponentId componentId = 0; componentId < lastComponentId; ++componentId)
+	for (auto pComponent : m_pEffect->GetComponents())
 	{
-		CParticleComponent* pComponent = m_pEffect->GetCComponent(componentId);
 		pComponent->ResetRenderObjects(this);
 	}
 }
@@ -610,7 +597,7 @@ void CParticleEmitter::AddInstance()
 
 	for (auto ref : m_componentRuntimes)
 	{
-		if (ref.pRuntime->IsActive() && !ref.pRuntime->IsSecondGen())
+		if (ref.pRuntime->IsActive() && !ref.pRuntime->IsChild())
 			ref.pRuntime->AddSubInstances({&instance, 1});
 	}
 }
@@ -693,22 +680,6 @@ void CParticleEmitter::UpdateTargetFromEntity(IEntity* pEntity)
 		}
 	}
 	m_target = target;
-}
-
-void CParticleEmitter::GetParentData(const int parentComponentId, const uint* parentParticleIds, const int numParentParticleIds, SInitialData* data) const
-{
-	const CParticleContainer& container = (parentComponentId < 0)
-	                                      ? m_parentContainer
-	                                      : GetRuntimes()[parentComponentId].pRuntime->GetCpuRuntime()->GetContainer();
-
-	IVec3Stream parentPositions = container.GetIVec3Stream(EPVF_Position);
-	IVec3Stream parentVelocities = container.GetIVec3Stream(EPVF_Velocity);
-
-	for (int i = 0; i < numParentParticleIds; ++i)
-	{
-		data[i].position = parentPositions.Load(parentParticleIds[i]);
-		data[i].velocity = parentVelocities.Load(parentParticleIds[i]);
-	}
 }
 
 void CParticleEmitter::SetCEffect(CParticleEffect* pEffect)
@@ -806,12 +777,12 @@ void CParticleEmitter::AddDrawCallCounts(uint numRendererdParticles, uint numCli
 	m_statsMutex.Unlock();
 }
 
-CParticleEmitter::SRuntimeRef::SRuntimeRef(CParticleEffect* effect, CParticleEmitter* emitter, CParticleComponent* component, const SRuntimeInitializationParameters& params)
+CParticleEmitter::SRuntimeRef::SRuntimeRef(CParticleEmitter* emitter, CParticleComponent* component, const gpu_pfx2::SComponentParams& params)
 {
-	if (params.usesGpuImplementation)
+	if (component->UsesGPU())
 		pRuntime = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleComponentRuntime(emitter, component, params);
 	else
-		pRuntime = new CParticleComponentRuntime(effect, emitter, component);
+		pRuntime = new CParticleComponentRuntime(emitter, component);
 
 	pComponent = component;
 }

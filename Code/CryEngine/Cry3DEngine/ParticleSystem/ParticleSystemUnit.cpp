@@ -290,7 +290,7 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			Serialization::LoadJsonBuffer(GetEffect(), jsonCode, strlen(jsonCode));
 		}
 
-		void LoadDefaultComponent(TComponentId componentId)
+		void LoadDefaultComponent(uint componentId)
 		{
 			const char* jsonCode =
 			  "{ \"Name\": \"Default\", \"Features\": [\n"
@@ -320,8 +320,8 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_UniqueAutoName, CParticleEffectTests)
 	{
 		pfx2::CParticleEffect& effect = GetEffect();
-		effect.AddComponent(0);
-		effect.AddComponent(1);
+		effect.AddComponent();
+		effect.AddComponent();
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Component01") == 0);
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Component02") == 0);
 	}
@@ -329,11 +329,11 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_UniqueCustomName, CParticleEffectTests)
 	{
 		pfx2::CParticleEffect& effect = GetEffect();
-		effect.AddComponent(0);
+		effect.AddComponent();
 		effect.GetComponent(0)->SetName("Test");
-		effect.AddComponent(1);
+		effect.AddComponent();
 		effect.GetComponent(1)->SetName("Test");
-		effect.AddComponent(2);
+		effect.AddComponent();
 		effect.GetComponent(2)->SetName("Test");
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Test") == 0);
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Test1") == 0);
@@ -343,11 +343,11 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_UniqueLoadedName, CParticleEffectTests)
 	{
 		pfx2::CParticleEffect& effect = GetEffect();
-		effect.AddComponent(0);
+		effect.AddComponent();
 		LoadDefaultComponent(0);
-		effect.AddComponent(1);
+		effect.AddComponent();
 		LoadDefaultComponent(1);
-		effect.AddComponent(2);
+		effect.AddComponent();
 		LoadDefaultComponent(2);
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Default") == 0);
 		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Default1") == 0);

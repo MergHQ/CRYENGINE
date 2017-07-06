@@ -321,11 +321,9 @@ PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 	if (gEnv->pCryPak->IsFileExist(effectName))
 	{
 		PParticleEffect pEffect = CreateEffect();
+		RenameEffect(pEffect, effectName);
 		if (Serialization::LoadJsonFile(*CastEffect(pEffect), effectName))
-		{
-			RenameEffect(pEffect, effectName);
 			return pEffect;
-		}
 	}
 
 	m_effects[effectName] = _smart_ptr<CParticleEffect>();
@@ -344,11 +342,9 @@ void CParticleSystem::UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter)
 {
 	FUNCTION_PROFILER_3DENGINE
 
-	const auto& runtimeRefs = pEmitter->GetRuntimes();
-
-	for (uint i = 0; i < runtimeRefs.size(); ++i)
+	for (auto ref : pEmitter->GetRuntimes())
 	{
-		auto pGpuRuntime = runtimeRefs[i].pRuntime->GetGpuRuntime();
+		auto pGpuRuntime = ref.pRuntime->GetGpuRuntime();
 		if (!pGpuRuntime)
 			continue;
 		const bool isActive = pGpuRuntime->IsActive();

@@ -15,6 +15,7 @@
 #include "ParticleCommon.h"
 #include "ParticleContainer.h"
 #include "Features/ParamTraits.h"
+#include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
 {
@@ -125,8 +126,6 @@ struct SComponentParams
 	void  Serialize(Serialization::IArchive& ar);
 
 	void  Reset();
-	bool  HasChildren() const { return !m_subComponentIds.empty(); }
-	bool  IsSecondGen() const { return m_parentId != gInvalidId; }
 	bool  IsImmortal() const  { return !std::isfinite(m_emitterLifeTime.end + m_maxParticleLifeTime); }
 	void  MakeMaterial(CParticleComponent* pComponent);
 
@@ -147,8 +146,6 @@ struct SComponentParams
 	SVisibilityParams         m_visibility;
 	size_t                    m_particleRange;
 	int                       m_renderStateFlags;
-	std::vector<TComponentId> m_subComponentIds;
-	TComponentId              m_parentId;
 	uint8                     m_particleObjFlags;
 	bool                      m_meshCentered;
 };
@@ -156,28 +153,31 @@ struct SComponentParams
 class CParticleComponent : public IParticleComponent
 {
 public:
+	typedef _smart_ptr<CParticleComponent> TComponentPtr;
+	typedef std::vector<TComponentPtr>     TComponents;
+
 	CParticleComponent();
 
 	// IParticleComponent
-	virtual void                                     SetChanged() override;
-	virtual void                                     SetEnabled(bool enabled) override { SetChanged(); m_enabled.Set(enabled); }
-	virtual bool                                     IsEnabled() const override        { return m_enabled; }
-	virtual bool                                     IsVisible() const override        { return m_visible; }
-	virtual void                                     SetVisible(bool visible) override { m_visible.Set(visible); }
-	virtual void                                     Serialize(Serialization::IArchive& ar) override;
-	virtual void                                     SetName(cstr name) override;
-	virtual cstr                                     GetName() const override        { return m_name; }
-	virtual uint                                     GetNumFeatures() const override { return m_features.size(); }
-	virtual IParticleFeature*                        GetFeature(uint featureIdx) const override;
-	virtual void                                     AddFeature(uint placeIdx, const SParticleFeatureParams& featureParams) override;
-	virtual void                                     RemoveFeature(uint featureIdx) override;
-	virtual void                                     SwapFeatures(const uint* swapIds, uint numSwapIds) override;
-	virtual Vec2                                     GetNodePosition() const override;
-	virtual void                                     SetNodePosition(Vec2 position) override;
+	virtual void                       SetChanged() override;
+	virtual void                       SetEnabled(bool enabled) override                         { SetChanged(); m_enabled.Set(enabled); }
+	virtual bool                       IsEnabled() const override                                { return m_enabled; }
+	virtual bool                       IsVisible() const override                                { return m_visible; }
+	virtual void                       SetVisible(bool visible) override                         { m_visible.Set(visible); }
+	virtual void                       Serialize(Serialization::IArchive& ar) override;
+	virtual void                       SetName(cstr name) override;
+	virtual cstr                       GetName() const override                                  { return m_name; }
+	virtual uint                       GetNumFeatures() const override                           { return m_features.size(); }
+	virtual IParticleFeature*          GetFeature(uint featureIdx) const override;
+	virtual void                       AddFeature(uint placeIdx, const SParticleFeatureParams& featureParams) override;
+	virtual void                       RemoveFeature(uint featureIdx) override;
+	virtual void                       SwapFeatures(const uint* swapIds, uint numSwapIds) override;
+	virtual Vec2                       GetNodePosition() const override;
+	virtual void                       SetNodePosition(Vec2 position) override;
+	virtual IParticleComponent*        GetParent() const override                                { return GetParentComponent(); }
 
-	const SRuntimeInitializationParameters&          GetRuntimeInitializationParameters() const                                   { return m_runtimeInitializationParameters; };
-	void                                             SetRuntimeInitializationParameters(SRuntimeInitializationParameters& params) { m_runtimeInitializationParameters = params; }
-	virtual gpu_pfx2::IParticleFeatureGpuInterface** GetGpuUpdateList(EUpdateList list, int& size) const override;
+	virtual gpu_pfx2::TFeatures        GetGpuUpdateList(EUpdateList list) const override;
+	virtual void                       GetParentData(IParticleEmitter* pEmitter, Array<TParticleId, uint> parentParticleIds, gpu_pfx2::SInitialData data[]) const override;
 	// ~IParticleComponent
 
 	void                                  PreCompile();
@@ -185,34 +185,41 @@ public:
 	void                                  Compile();
 	void                                  FinalizeCompile();
 
-	TComponentId                          GetComponentId() const        { return m_componentId; }
-	CParticleEffect*                      GetEffect() const             { return m_pEffect; }
-	uint                                  GetNumFeatures(EFeatureType type) const;
+	uint                                  GetComponentId() const                { return m_componentId; }
+	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
 
 	void                                  AddToUpdateList(EUpdateList list, CParticleFeature* pFeature);
 	TInstanceDataOffset                   AddInstanceData(size_t size);
 	void                                  AddParticleData(EParticleDataType type);
 	const std::vector<CParticleFeature*>& GetUpdateList(EUpdateList list) const { return m_updateLists[list]; }
 
-	const SComponentParams& GetComponentParams() const                    { return m_componentParams; }
-	bool                    UseParticleData(EParticleDataType type) const { return m_useParticleData[type]; }
+	bool                                  UsesGPU() const                                           { return m_GPUComponentParams.usesGpuImplementation; }
+	const gpu_pfx2::SComponentParams&     GetGPUComponentParams() const                             { return m_GPUComponentParams; };
+	void                                  SetGPUComponentParams(gpu_pfx2::SComponentParams& params) { m_GPUComponentParams = params; }
+	
+	const SComponentParams& GetComponentParams() const                          { return m_componentParams; }
+	bool                    UseParticleData(EParticleDataType type) const       { return m_useParticleData[type]; }
 
-	bool                    SetSecondGeneration(CParticleComponent* pParentComponent, bool delayed);
-	CParticleComponent*     GetParentComponent() const;
+	bool                    SetParentComponent(CParticleComponent* pParentComponent, bool delayed);
+	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
+	const TComponents&      GetChildComponents() const                          { return m_children; }
+
 	float                   GetEquilibriumTime(Range parentLife = Range()) const;
 
 	void                    PrepareRenderObjects(CParticleEmitter* pEmitter);
 	void                    ResetRenderObjects(CParticleEmitter* pEmitter);
-	void                    Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
-	void                    RenderDeferred(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
+	void                    Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
+	void                    RenderDeferred(CParticleEmitter* pEmitter, IParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 
 private:
 	friend class CParticleEffect;
-	Vec2                                                 m_nodePosition;
-	CParticleEffect*                                     m_pEffect;
-	TComponentId                                         m_componentId;
 	string                                               m_name;
+	CParticleEffect*                                     m_pEffect;
+	uint                                                 m_componentId;
+	TComponentPtr                                        m_parent;
+	TComponents                                          m_children;
+	Vec2                                                 m_nodePosition;
 	SComponentParams                                     m_componentParams;
 	std::vector<TParticleFeaturePtr>                     m_features;
 	std::vector<CParticleFeature*>                       m_updateLists[EUL_Count];
@@ -222,8 +229,11 @@ private:
 	SEnable                                              m_visible;
 	bool                                                 m_dirty;
 
-	SRuntimeInitializationParameters                     m_runtimeInitializationParameters;
+	gpu_pfx2::SComponentParams                           m_GPUComponentParams;
 };
+
+typedef _smart_ptr<CParticleComponent> TComponentPtr;
+typedef std::vector<TComponentPtr>     TComponents;
 
 }
 
