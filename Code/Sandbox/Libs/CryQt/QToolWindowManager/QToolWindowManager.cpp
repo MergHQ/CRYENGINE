@@ -42,6 +42,7 @@ QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config,
 	layout()->addWidget(m_mainWrapper->getWidget());
 	m_lastArea = createArea();
 	m_draggedWrapper = nullptr;
+	m_resizedWrapper = nullptr;
 	m_mainWrapper->setContents(m_lastArea->getWidget());
 
 	m_dragHandler = createDragHandler();
@@ -189,6 +190,11 @@ void QToolWindowManager::startDrag(IToolWindowWrapper* wrapper)
 	m_draggedWrapper = wrapper;
 	m_lastArea = nullptr;
 	updateDragPosition();
+}
+
+void QToolWindowManager::startResize(IToolWindowWrapper* wrapper)
+{
+	m_resizedWrapper = wrapper;
 }
 
 void QToolWindowManager::addToolWindow(QWidget* toolWindow, IToolWindowArea* area, QToolWindowAreaReference::eType reference /*= Combine*/, int index /*= -1*/, QRect geometry /*= QRect()*/)
@@ -750,6 +756,33 @@ void QToolWindowManager::finishWrapperDrag()
 		notifyLayoutChange();
 	}
 	updateTrackingTooltip("", QPoint());
+}
+
+void QToolWindowManager::finishWrapperResize()
+{
+	QList<QWidget*> toolWindows;
+	{
+		QWidget* const contents = m_resizedWrapper->getContents();
+		QList<QWidget*> contentsWidgets = contents->findChildren<QWidget*>();
+		contentsWidgets << contents;
+
+		foreach(QWidget* w, contentsWidgets)
+		{
+			IToolWindowArea* area = qobject_cast<IToolWindowArea*>(w);
+			if (area && ownsArea(area))
+			{
+				toolWindows << area->toolWindows();
+			}
+		}
+	}
+
+	// Inform about the resize of all tools in the dragged wrapper and make sure the layout is saved
+	foreach(QWidget* w, toolWindows)
+	{
+		toolWindowVisibilityChanged(w, true);
+	}
+
+	m_resizedWrapper = nullptr;
 }
 
 void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)

@@ -962,22 +962,15 @@ void CharacterDocument::OnSceneNewLayerActivated()
 
 void CharacterDocument::Serialize(IArchive& ar)
 {
-	if (ar.filter(SERIALIZE_STATE))
-	{
-		// Disable loading of the last character for now as it
-		// significantly increases time to open CharacterTool
-		//if (!ar.Filter(SERIALIZE_LAYOUT))
-		//	ar(m_currentCharacter, "currentCharacter");
-		ar(m_playbackOptions, "playbackOptions");
-		ar(*m_displayOptions, "displayOptions");
-		ar(m_playbackTime, "playbackTime");
+	ar(m_playbackOptions, "playbackOptions");
+	ar(*m_displayOptions, "displayOptions");
+	ar(m_playbackTime, "playbackTime");
 
-		if (ar.isInput())
-		{
-			SignalPlaybackOptionsChanged();
-			SignalDisplayOptionsChanged(*m_displayOptions);
-			UpdateBlendShapeParameterList();
-		}
+	if (ar.isInput())
+	{
+		SignalPlaybackOptionsChanged();
+		SignalDisplayOptionsChanged(*m_displayOptions);
+		UpdateBlendShapeParameterList();
 	}
 }
 
