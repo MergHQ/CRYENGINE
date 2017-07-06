@@ -82,20 +82,19 @@ size_t CAudioEventManager::GetNumConstructed() const
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
+void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
 {
-	static float const headerColor[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
-	static float const itemPlayingColor[4] = { 0.1f, 0.6f, 0.1f, 0.9f };
+	static float const headerColor[4] = { 1.0f, 0.5f, 0.0f, 0.7f };
+	static float const itemPlayingColor[4] = { 0.1f, 0.7f, 0.1f, 0.9f };
 	static float const itemLoadingColor[4] = { 0.9f, 0.2f, 0.2f, 0.9f };
 	static float const itemVirtualColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
 	static float const itemOtherColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
 
-	auxGeom.Draw2dLabel(posX, posY, 1.6f, headerColor, false, "Audio Events [%" PRISIZE_T "]", m_constructedAudioEvents.size());
-	posX += 20.0f;
-	posY += 17.0f;
-
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
+
+	auxGeom.Draw2dLabel(posX, posY, 1.5f, headerColor, false, "Audio Events [%" PRISIZE_T "]", m_constructedAudioEvents.size());
+	posY += 16.0f;
 
 	for (auto const pEvent : m_constructedAudioEvents)
 	{
@@ -128,9 +127,9 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& list
 						pColor = itemVirtualColor;
 					}
 
-					auxGeom.Draw2dLabel(posX, posY, 1.2f, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());
+					auxGeom.Draw2dLabel(posX, posY, 1.25f, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());
 
-					posY += 10.0f;
+					posY += 11.0f;
 				}
 			}
 		}

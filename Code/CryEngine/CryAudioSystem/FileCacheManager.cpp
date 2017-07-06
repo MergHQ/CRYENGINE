@@ -324,17 +324,13 @@ void CFileCacheManager::StreamAsyncOnComplete(IReadStream* pStream, unsigned int
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float const posY)
+void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
 	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowFileCacheManagerInfo) > 0)
 	{
 		CTimeValue const frameTime = gEnv->pTimer->GetAsyncTime();
 
 		CryFixedStringT<MaxMiscStringLength> tempString;
-		float const entryDrawSize = 1.1f;
-		float const entryStepSize = 12.0f;
-		float positionY = posY + 20.0f;
-		float positionX = posX + 20.0f;
 		float time = 0.0f;
 		float ratio = 0.0f;
 		float originalAlpha = 0.7f;
@@ -349,8 +345,8 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 		float blue[4] = { 0.1f, 0.2f, 0.8f, originalAlpha };
 		float yellow[4] = { 1.0f, 1.0f, 0.0f, originalAlpha };
 
-		auxGeom.Draw2dLabel(posX, positionY, 1.6f, orange, false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_audioFileEntries.size()));
-		positionY += 15.0f;
+		auxGeom.Draw2dLabel(posX, posY, 1.5f, orange, false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_audioFileEntries.size()));
+		posY += 16.0f;
 
 		if (!m_audioFileEntries.empty())
 		{
@@ -452,9 +448,9 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 									}
 								}
 
-								auxGeom.Draw2dLabel(positionX, positionY, entryDrawSize, pColor, false, "%s", tempString.c_str());
+								auxGeom.Draw2dLabel(posX, posY, 1.25f, pColor, false, "%s", tempString.c_str());
 								pColor[3] = originalAlpha;
-								positionY += entryStepSize;
+								posY += 11.0f;
 							}
 						}
 					}

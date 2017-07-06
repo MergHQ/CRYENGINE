@@ -76,15 +76,14 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 //////////////////////////////////////////////////////////////////////////
 void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
 {
-	static float const headerColor[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
-	static float const itemPlayingColor[4] = { 0.1f, 0.6f, 0.1f, 0.9f };
+	static float const headerColor[4] = { 1.0f, 0.5f, 0.0f, 0.7f };
+	static float const itemPlayingColor[4] = { 0.1f, 0.7f, 0.1f, 0.9f };
 	static float const itemStoppingColor[4] = { 0.8f, 0.7f, 0.1f, 0.9f };
 	static float const itemLoadingColor[4] = { 0.9f, 0.2f, 0.2f, 0.9f };
 	static float const itemOtherColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
 
-	auxGeom.Draw2dLabel(posX, posY, 1.6f, headerColor, false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
-	posX += 20.0f;
-	posY += 17.0f;
+	auxGeom.Draw2dLabel(posX, posY, 1.5f, headerColor, false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
+	posY += 16.0f;
 
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
@@ -142,7 +141,7 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 co
 					szStandaloneFileName,
 					szObjectName);
 
-				posY += 10.0f;
+				posY += 11.0f;
 			}
 		}
 	}

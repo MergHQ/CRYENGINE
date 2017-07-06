@@ -724,23 +724,21 @@ void CPropagationProcessor::DrawObstructionRays(IRenderAuxGeom& auxGeom, EObject
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayIndex) const
 {
-	static ColorB const obstructedRayColor(200, 20, 1, 255);
-	static ColorB const freeRayColor(20, 200, 1, 255);
-	static ColorB const intersectionSphereColor(250, 200, 1, 240);
-	static float const obstructedRayLabelColor[4] = { 1.0f, 0.0f, 0.02f, 0.9f };
-	static float const freeRayLabelColor[4] = { 0.0f, 1.0f, 0.02f, 0.9f };
-	static float const collisionPtSphereRadius = 0.01f;
-	SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-	SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-	newRenderFlags.SetCullMode(e_CullModeNone);
-
-	bool const bRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
-	Vec3 const rayEnd = bRayObstructed ?
-	                    m_rayDebugInfos[rayIndex].begin + (m_rayDebugInfos[rayIndex].end - m_rayDebugInfos[rayIndex].begin).GetNormalized() * m_rayDebugInfos[rayIndex].distanceToNearestObstacle :
-	                    m_rayDebugInfos[rayIndex].end; // only draw the ray to the first collision point
-
 	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawOcclusionRays) > 0)
 	{
+		static ColorB const obstructedRayColor(200, 20, 1, 255);
+		static ColorB const freeRayColor(20, 200, 1, 255);
+		static ColorB const intersectionSphereColor(250, 200, 1, 240);
+		static float const collisionPtSphereRadius = 0.01f;
+		SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+		SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+		newRenderFlags.SetCullMode(e_CullModeNone);
+
+		bool const bRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
+		Vec3 const rayEnd = bRayObstructed ?
+			m_rayDebugInfos[rayIndex].begin + (m_rayDebugInfos[rayIndex].end - m_rayDebugInfos[rayIndex].begin).GetNormalized() * m_rayDebugInfos[rayIndex].distanceToNearestObstacle :
+			m_rayDebugInfos[rayIndex].end; // only draw the ray to the first collision point
+
 		ColorB const& rayColor = bRayObstructed ? obstructedRayColor : freeRayColor;
 
 		auxGeom.SetRenderFlags(newRenderFlags);
@@ -753,35 +751,6 @@ void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayInd
 
 		auxGeom.DrawLine(m_rayDebugInfos[rayIndex].begin, rayColor, rayEnd, rayColor, 1.0f);
 		auxGeom.SetRenderFlags(previousRenderFlags);
-	}
-
-	if (IRenderer* const pRenderer = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowOcclusionRayLabels) > 0 ? gEnv->pRenderer : nullptr)
-	{
-		Vec3 screenPos(ZERO);
-		pRenderer->ProjectToScreen(m_rayDebugInfos[rayIndex].stableEnd.x, m_rayDebugInfos[rayIndex].stableEnd.y, m_rayDebugInfos[rayIndex].stableEnd.z, &screenPos.x, &screenPos.y, &screenPos.z);
-
-		screenPos.x = screenPos.x * 0.01f * pRenderer->GetWidth();
-		screenPos.y = screenPos.y * 0.01f * pRenderer->GetHeight();
-
-		if ((0.0f <= screenPos.z) && (screenPos.z <= 1.0f))
-		{
-			float const labelColor[4] =
-			{
-				obstructedRayLabelColor[0] * m_occlusion + freeRayLabelColor[0] * (1.0f - m_occlusion),
-				obstructedRayLabelColor[1] * m_occlusion + freeRayLabelColor[1] * (1.0f - m_occlusion),
-				obstructedRayLabelColor[2] * m_occlusion + freeRayLabelColor[2] * (1.0f - m_occlusion),
-				obstructedRayLabelColor[3] * m_occlusion + freeRayLabelColor[3] * (1.0f - m_occlusion)
-			};
-
-			auxGeom.Draw2dLabel(
-			  screenPos.x,
-			  screenPos.y - 12.0f,
-			  1.2f,
-			  labelColor,
-			  true,
-			  "Occl:%3.2f",
-			  m_occlusion);
-		}
 	}
 }
 

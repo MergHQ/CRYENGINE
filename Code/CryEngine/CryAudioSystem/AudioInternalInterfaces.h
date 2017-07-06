@@ -1110,8 +1110,8 @@ enum class EAudioDebugDrawFilter : EnumFlagsType
 	ShowObjectStates          = BIT(9),  // d
 	ShowObjectParameters      = BIT(10), // e
 	ShowObjectEnvironments    = BIT(11), // f
-	DrawOcclusionRays         = BIT(12), // g
-	ShowOcclusionRayLabels    = BIT(13), // h
+	ShowOcclusionRayLabels    = BIT(12), // g
+	DrawOcclusionRays         = BIT(13), // h
 	DrawObjectStandaloneFiles = BIT(14), // i
 
 	ShowStandaloneFiles       = BIT(26), // u
