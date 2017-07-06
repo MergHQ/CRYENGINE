@@ -96,7 +96,7 @@ public:
 	// EUL_Render
 	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                            {}
 	virtual void ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                              {}
-	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
+	virtual void Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)          {}
 
 protected:
@@ -126,7 +126,7 @@ static const ColorB colorMotion     = HexToColor(0xfb9563);
 static const ColorB colorLight      = HexToColor(0xfffdd0);
 static const ColorB colorAudio      = HexToColor(0xd671f7);
 static const ColorB colorGeneral    = HexToColor(0xececec);
-static const ColorB colorSecondGen  = HexToColor(0xc0c0c0);
+static const ColorB colorChild      = HexToColor(0xc0c0c0);
 static const ColorB colorProject    = HexToColor(0xc0c0c0);
 static const ColorB colorGPU        = HexToColor(0x00e87e);
 static const ColorB colorComponent  = HexToColor(0x000000);

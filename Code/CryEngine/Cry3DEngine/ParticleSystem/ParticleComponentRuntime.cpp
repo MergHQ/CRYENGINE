@@ -18,9 +18,8 @@ namespace pfx2
 extern EParticleDataType EPVF_Acceleration, EPVF_VelocityField;
 
 
-CParticleComponentRuntime::CParticleComponentRuntime(CParticleEffect* pEffect, CParticleEmitter* pEmitter, CParticleComponent* pComponent)
-	: m_pEffect(pEffect)
-	, m_pEmitter(pEmitter)
+CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
+	: m_pEmitter(pEmitter)
 	, m_pComponent(pComponent)
 	, m_bounds(AABB::RESET)
 	, m_active(false)
@@ -29,20 +28,18 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEffect* pEffect, C
 
 CParticleContainer& CParticleComponentRuntime::GetParentContainer()
 {
-	const SComponentParams& params = GetComponentParams();
-	if (!params.IsSecondGen())
-		return GetEmitter()->GetParentContainer();
+	if (CParticleComponent* pParent = m_pComponent->GetParentComponent())
+		return GetEmitter()->GetRuntimeFor(pParent)->GetCpuRuntime()->GetContainer();
 	else
-		return GetEmitter()->GetRuntimes()[params.m_parentId].pRuntime->GetCpuRuntime()->GetContainer();
+		return GetEmitter()->GetParentContainer();
 }
 
 const CParticleContainer& CParticleComponentRuntime::GetParentContainer() const
 {
-	const SComponentParams& params = GetComponentParams();
-	if (!params.IsSecondGen())
-		return GetEmitter()->GetParentContainer();
+	if (CParticleComponent* pParent = m_pComponent->GetParentComponent())
+		return GetEmitter()->GetRuntimeFor(pParent)->GetCpuRuntime()->GetContainer();
 	else
-		return GetEmitter()->GetRuntimes()[params.m_parentId].pRuntime->GetCpuRuntime()->GetContainer();
+		return GetEmitter()->GetParentContainer();
 }
 
 void CParticleComponentRuntime::Initialize()
@@ -191,11 +188,6 @@ void CParticleComponentRuntime::OrphanAllParticles()
 	m_container.FillData(EPDT_ParentId, gInvalidId, m_container.GetFullRange());
 }
 
-bool CParticleComponentRuntime::IsValidRuntimeForInitializationParameters(const SRuntimeInitializationParameters& parameters)
-{
-	return parameters.usesGpuImplementation == false;
-}
-
 void CParticleComponentRuntime::MainPreUpdate()
 {
 	for (auto& it : GetComponent()->GetUpdateList(EUL_MainPreUpdate))
@@ -222,8 +214,6 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 	CParticleEffect* pEffect = GetEffect();
 	CParticleEmitter* pEmitter = GetEmitter();
-	const SComponentParams& params = GetComponentParams();
-	const bool hasChildren = params.HasChildren();
 	const bool hasKillFeatures = !GetComponent()->GetUpdateList(EUL_KillUpdate).empty();
 	const size_t maxParticles = m_container.GetMaxParticles();
 	const uint32 numParticles = m_container.GetNumParticles();
@@ -266,6 +256,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 	if (!m_spawnEntries.empty() || !particleIds.empty())
 	{
+		const bool hasChildren = !m_pComponent->GetChildComponents().empty();
 		const bool hasSwapIds = (hasChildren && !particleIds.empty());
 		TParticleIdArray swapIds(*context.m_pMemHeap);
 		swapIds.resize(hasSwapIds ? numParticles : 0);
@@ -274,9 +265,9 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 		if (hasSwapIds)
 		{
-			for (auto& subComponentId : params.m_subComponentIds)
+			for (auto pChild : m_pComponent->GetChildComponents())
 			{
-				ICommonParticleComponentRuntime* pSubRuntime = pEmitter->GetRuntimes()[subComponentId].pRuntime;
+				IParticleComponentRuntime* pSubRuntime = pEmitter->GetRuntimeFor(pChild);
 				if (pSubRuntime->IsActive())
 					pSubRuntime->ReparentParticles(swapIds);
 			}
@@ -294,7 +285,6 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 		return;
 
 	const floatv deltaTime = ToFloatv(context.m_deltaTime);
-	const SComponentParams& params = GetComponentParams();
 	CParticleContainer& parentContainer = GetParentContainer();
 
 	// interpolate position and normAge over time and velocity
@@ -307,7 +297,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	IOVec3Stream positions = m_container.GetIOVec3Stream(EPVF_Position);
 	IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
 
-	const bool checkParentLife = context.m_params.IsSecondGen();
+	const bool checkParentLife = IsChild();
 
 	for (auto particleGroupId : context.GetSpawnedGroupRange())
 	{

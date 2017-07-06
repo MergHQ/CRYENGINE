@@ -40,19 +40,16 @@ public:
 
 		CParticleEffect* pEffect = pComponent->GetEffect();
 
-		m_componentIds.clear();
+		m_components.clear();
 		for (auto& componentName : m_componentNames)
 		{
-			TComponentId componentId = ResolveIdForName(pComponent, componentName);
-			const bool isvalid = componentId != gInvalidId;
-			if (isvalid)
+			if (auto pSubComp = pEffect->FindComponentByName(componentName))
 			{
-				const bool isUnique = std::find(m_componentIds.begin(), m_componentIds.end(), componentId) == m_componentIds.end();
+				const bool isUnique = std::find(m_components.begin(), m_components.end(), pSubComp) == m_components.end();
 				if (isUnique)
 				{
-					CParticleComponent* pSubComp = pEffect->GetCComponent(componentId);
-					if (pSubComp->SetSecondGeneration(pComponent, IsDelayed()))
-						m_componentIds.push_back(componentId);
+					if (pSubComp->SetParentComponent(pComponent, IsDelayed()))
+						m_components.push_back(pSubComp);
 				}
 			}
 		}
@@ -104,12 +101,10 @@ protected:
 		TInstanceArray newInstances(*context.m_pMemHeap);
 		newInstances.reserve(triggers.size());
 
-		const uint numEntries = m_componentIds.size();
+		const uint numEntries = m_components.size();
 		for (uint i = 0; i < numEntries; ++i)
 		{
-			const TComponentId componentId = m_componentIds[i];
-			ICommonParticleComponentRuntime* pChildComponentRuntime =
-			  context.m_runtime.GetEmitter()->GetRuntimes()[componentId].pRuntime;
+			IParticleComponentRuntime* pChildComponentRuntime = context.m_runtime.GetEmitter()->GetRuntimeFor(m_components[i]);
 			SChaosKey chaosKey = context.m_spawnRng;
 
 			for (const auto& trigger : triggers)
@@ -137,28 +132,6 @@ private:
 		return it;
 	}
 
-	TComponentId ResolveIdForName(CParticleComponent* pComponent, const string& componentName)
-	{
-		TComponentId compId = pComponent->GetComponentId();
-		CParticleEffect* pEffect = pComponent->GetEffect();
-		TComponentId subComponentId = gInvalidId;
-
-		if (componentName == pComponent->GetName())
-		{}  // TODO - user error - user set this component as sub component for itself.
-		for (TComponentId i = 0; i < pEffect->GetNumComponents(); ++i)
-		{
-			CParticleComponent* pSubComp = pEffect->GetCComponent(i);
-			if (pSubComp->GetName() == componentName)
-			{
-				subComponentId = i;
-				break;
-			}
-		}
-		if (subComponentId == gInvalidId)
-		{}      // TODO - user error - sub component name was not found
-		return subComponentId;
-	}
-
 	void VersionFix(Serialization::IArchive& ar)
 	{
 		switch (GetVersion(ar))
@@ -173,10 +146,10 @@ private:
 		}
 	}
 
-	std::vector<string>       m_componentNames;
-	std::vector<TComponentId> m_componentIds;
-	SUnitFloat                m_probability;
-	ESecondGenMode            m_mode;
+	std::vector<string> m_componentNames;
+	TComponents         m_components;
+	SUnitFloat          m_probability;
+	ESecondGenMode      m_mode;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -213,7 +186,7 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn", colorSecondGen);
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn", colorChild);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -253,7 +226,7 @@ public:
 	virtual bool IsDelayed() const override { return true; }
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnDeath, "SecondGen", "OnDeath", colorSecondGen);
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnDeath, "SecondGen", "OnDeath", colorChild);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -294,6 +267,6 @@ public:
 	virtual bool IsDelayed() const override { return true; }
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnCollide, "SecondGen", "OnCollide", colorSecondGen);
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnCollide, "SecondGen", "OnCollide", colorChild);
 
 }

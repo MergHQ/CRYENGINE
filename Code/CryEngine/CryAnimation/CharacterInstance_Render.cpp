@@ -323,7 +323,7 @@ void CCharInstance::RenderCHR(const SRendParams& RendParams, const Matrix34& rRe
 #ifndef _RELEASE
 				static ICVar* p_e_debug_draw = gEnv->pConsole->GetCVar("e_DebugDraw");
 				if (p_e_debug_draw && p_e_debug_draw->GetIVal() != 0)
-					pModelMesh->DrawDebugInfo(this->m_pDefaultSkeleton, 0, rRenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_SkeletonPose.GetAABB());
+					pModelMesh->DrawDebugInfo(this->m_pDefaultSkeleton, m_nAnimationLOD, rRenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_SkeletonPose.GetAABB());
 #endif
 				//	float fColor[4] = {1,0,1,1};
 				//	extern f32 g_YLine;

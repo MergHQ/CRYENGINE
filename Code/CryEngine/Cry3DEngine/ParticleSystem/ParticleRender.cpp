@@ -67,7 +67,7 @@ void CParticleRenderBase::ResetRenderObjects(CParticleEmitter* pEmitter, CPartic
 	}
 }
 
-void CParticleRenderBase::Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
+void CParticleRenderBase::Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 
@@ -132,7 +132,7 @@ void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticl
 	pEmitter->SetRenderObject(nullptr, threadId, renderObjectId);
 }
 
-void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
+void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
 {
 	const SComponentParams& params = pComponent->GetComponentParams();
 	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);

@@ -1751,7 +1751,13 @@ public:
 							case eFDT_Bool   : params->SetValue(m_params[i-1], GetPortBool(pActInfo, i)); break;
 							case eFDT_String : params->SetValue(m_params[i-1], GetPortString(pActInfo, i).c_str()); break;
 						}
-				pActInfo->pEntity->GetComponent<IEntityScriptComponent>()->SetPhysParams(m_type+1, params);
+				IEntityScriptComponent *pScript0 = pActInfo->pEntity->GetComponent<IEntityScriptComponent>(), *pScript = pScript0;
+				if (!pScript)
+					pScript = pActInfo->pEntity->CreateComponent<IEntityScriptComponent>();
+				pScript->SetPhysParams(m_type+1, params);
+				if (!pScript0)
+					pActInfo->pEntity->RemoveComponent(pScript);
+
 				ActivateOutput(pActInfo, 0, 0);
 			}
 		}

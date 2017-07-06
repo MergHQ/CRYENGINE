@@ -38,7 +38,7 @@ _smart_ptr<IParticleComponentRuntime>
 CManager::CreateParticleComponentRuntime(
 	IParticleEmitter* pEmitter,
 	pfx2::IParticleComponent* pComponent,
-	const pfx2::SRuntimeInitializationParameters& params)
+	const SComponentParams& params)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 	CryAutoLock<CryCriticalSection> lock(m_cs);

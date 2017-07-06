@@ -28,10 +28,6 @@ struct SSerializationContext
 
 class CParticleEffect : public IParticleEffectPfx2
 {
-private:
-	typedef _smart_ptr<CParticleComponent> TComponentPtr;
-	typedef std::vector<TComponentPtr>     TComponents;
-
 public:
 	CParticleEffect();
 
@@ -41,7 +37,7 @@ public:
 	virtual IParticleEmitter*      Spawn(const ParticleLoc& loc, const SpawnParams* pSpawnParams = NULL) override;
 	virtual uint                   GetNumComponents() const override              { return m_components.size(); }
 	virtual IParticleComponent*    GetComponent(uint componentIdx) const override { return m_components[componentIdx]; }
-	virtual void                   AddComponent(uint componentIdx) override;
+	virtual IParticleComponent*    AddComponent() override;
 	virtual void                   RemoveComponent(uint componentIdx) override;
 	virtual void                   SetChanged() override;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const override;
@@ -75,25 +71,27 @@ public:
 	// ~pfx1 IParticleEmitter
 
 	void                      Compile();
-	CParticleComponent*       GetCComponent(TComponentId componentIdx)       { return m_components[componentIdx]; }
-	const CParticleComponent* GetCComponent(TComponentId componentIdx) const { return m_components[componentIdx]; }
-	TComponentId              FindComponentIdByName(const char* name) const;
-	TAttributeTablePtr        GetAttributeTable() const                      { return m_pAttributes; }
-	string                    MakeUniqueName(TComponentId forComponentId, const char* name);
+	TComponents&              GetComponents()                                               { return m_components; }
+	const TComponents&        GetComponents() const                                         { return m_components; }
+	CParticleComponent*       FindComponentByName(const char* name) const;
+	TAttributeTablePtr        GetAttributeTable() const                                     { return m_pAttributes; }
+	string                    MakeUniqueName(const CParticleComponent* forComponent, const char* name);
 	uint                      AddRenderObjectId();
 	uint                      GetNumRenderObjectIds() const;
 	float                     GetEquilibriumTime() const;
 	int                       GetEditVersion() const;
 
 private:
+	string             m_name;
 	TAttributeTablePtr m_pAttributes;
 	CAttributeInstance m_attributeInstance;
 	TComponents        m_components;
-	string             m_name;
 	uint               m_numRenderObjects;
 	int                m_editVersion;
 	bool               m_dirty;
 	bool               m_substitutedPfx1;
+
+	void               Sort();
 };
 
 }

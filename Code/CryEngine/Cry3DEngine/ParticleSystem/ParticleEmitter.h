@@ -24,10 +24,11 @@ class CParticleEmitter : public IParticleEmitter, public Cry3DEngineBase
 private:
 	struct SRuntimeRef
 	{
-		SRuntimeRef(CParticleEffect* effect, CParticleEmitter* emitter, CParticleComponent* component, const SRuntimeInitializationParameters& params);
 		SRuntimeRef() : pRuntime(nullptr), pComponent(nullptr) {}
-		_smart_ptr<ICommonParticleComponentRuntime> pRuntime;
-		CParticleComponent*                         pComponent;
+		SRuntimeRef(CParticleEmitter* emitter, CParticleComponent* component, const gpu_pfx2::SComponentParams& params);
+
+		_smart_ptr<IParticleComponentRuntime> pRuntime;
+		CParticleComponent*                   pComponent;
 	};
 
 	typedef std::vector<SRuntimeRef>                          TComponentRuntimes;
@@ -98,8 +99,8 @@ public:
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
-	virtual void              GetParentData(const int parentComponentId, const uint* parentParticleIds, const int numParentParticleIds, SInitialData* data) const override;
 	const TComponentRuntimes& GetRuntimes() const          { return m_componentRuntimes; }
+	IParticleComponentRuntime* GetRuntimeFor(CParticleComponent* pComponent) { return m_componentRuntimes[pComponent->GetComponentId()].pRuntime; }
 	void                      SetCEffect(CParticleEffect* pEffect);
 	const CParticleEffect*    GetCEffect() const           { return m_pEffect; }
 	CParticleEffect*          GetCEffect()                 { return m_pEffect; }
@@ -143,6 +144,7 @@ private:
 	void     ResetRenderObjects();
 
 private:
+	CParticleEffect*            m_pEffect;
 	std::vector<CRenderObject*> m_pRenderObjects[RT_COMMAND_BUF_COUNT];
 	SVisEnviron                 m_visEnviron;
 	SPhysEnviron                m_physEnviron;
@@ -154,7 +156,6 @@ private:
 	TComponentRuntimes          m_componentRuntimes;
 	TCPUComponentRuntimes       m_cpuComponentRuntimes;
 	TGPUComponentRuntimes       m_gpuComponentRuntimes;
-	CParticleEffect*            m_pEffect;
 	SParticleStats              m_emitterStats;
 	CryMutex                    m_statsMutex;
 	QuatTS                      m_location;

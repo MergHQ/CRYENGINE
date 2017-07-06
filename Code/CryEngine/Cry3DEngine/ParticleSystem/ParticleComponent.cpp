@@ -121,13 +121,10 @@ void SComponentParams::Reset()
 	m_renderStateFlags = OS_ALPHA_BLEND;
 	m_maxParticleSize = 0.0f;
 	m_meshCentered = false;
-	m_parentId = gInvalidId;
 	m_diffuseMap = "%ENGINE%/EngineAssets/Textures/white.dds";
 	m_pMaterial = 0;
 	m_particleObjFlags = 0;
 	m_renderObjectSortBias = 0.0f;
-
-	m_subComponentIds.clear();
 }
 
 void SComponentParams::MakeMaterial(CParticleComponent* pComponent)
@@ -141,7 +138,7 @@ void SComponentParams::MakeMaterial(CParticleComponent* pComponent)
 	if (m_pMaterial)
 		return;
 		
-	const SRuntimeInitializationParameters& params = pComponent->GetRuntimeInitializationParameters();
+	const gpu_pfx2::SComponentParams& params = pComponent->GetGPUComponentParams();
 	const char* shaderName = params.usesGpuImplementation ? "Particles.ParticlesGpu" : "Particles";
 	string materialName = string(pComponent->GetEffect()->GetName()) + pComponent->GetName();
 	m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->CreateMaterial(materialName);
@@ -155,7 +152,7 @@ void SComponentParams::MakeMaterial(CParticleComponent* pComponent)
 		SInputShaderResourcesPtr pResources = gEnv->pRenderer->EF_CreateInputShaderResource();
 		pResources->m_Textures[EFTT_DIFFUSE].m_Name = m_diffuseMap;
 		uint32 mask = eGpuParticlesVertexShaderFlags_None;
-		if (params.facingMode == 1)
+		if (params.facingMode == gpu_pfx2::EFacingMode::Velocity)
 			mask |= eGpuParticlesVertexShaderFlags_FacingVelocity;
 		SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, 0, pResources, mask);
 		m_pMaterial->AssignShaderItem(shaderItem);
@@ -231,14 +228,6 @@ void CParticleComponent::SetNodePosition(Vec2 position)
 	m_nodePosition = position;
 }
 
-uint CParticleComponent::GetNumFeatures(EFeatureType type) const
-{
-	size_t count = 0;
-	for (auto& it : m_features)
-		count += it->IsEnabled() && (it->GetFeatureType() & type);
-	return count;
-}
-
 void CParticleComponent::AddToUpdateList(EUpdateList list, CParticleFeature* pFeature)
 {
 	if (std::find(m_updateLists[list].begin(), m_updateLists[list].end(), pFeature) != m_updateLists[list].end())
@@ -270,27 +259,18 @@ void CParticleComponent::AddParticleData(EParticleDataType type)
 		m_useParticleData[i] = true;
 }
 
-bool CParticleComponent::SetSecondGeneration(CParticleComponent* pParentComponent, bool delayed)
+bool CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent, bool delayed)
 {
-	if (m_componentParams.m_parentId != gInvalidId)
-		return false;   // PFX2_TODO - user error - a component can only have one parent component at a time
-	m_componentParams.m_parentId = pParentComponent->GetComponentId();
+	if (m_parent)
+		return false;
+	m_parent = pParentComponent;
 	if (delayed)
 		m_componentParams.m_emitterLifeTime.end = gInfinity;
-	m_runtimeInitializationParameters.parentId = m_componentParams.m_parentId;
-	m_runtimeInitializationParameters.isSecondGen = m_componentParams.IsSecondGen();
-	auto& subIds = pParentComponent->m_componentParams.m_subComponentIds;
-	auto it = std::find(subIds.begin(), subIds.end(), m_componentId);
-	if (it == subIds.end())
-		subIds.push_back(m_componentId);
+	auto& children = pParentComponent->m_children;
+	auto it = std::find(children.begin(), children.end(), this);
+	if (it == children.end())
+		children.push_back(this);
 	return true;
-}
-
-CParticleComponent* CParticleComponent::GetParentComponent() const
-{
-	if (m_componentParams.m_parentId != gInvalidId)
-		return m_pEffect->GetCComponent(m_componentParams.m_parentId);
-	return 0;
 }
 
 float CParticleComponent::GetEquilibriumTime(Range parentLife) const
@@ -301,9 +281,8 @@ float CParticleComponent::GetEquilibriumTime(Range parentLife) const
 	float eqTime = std::isfinite(compLife.end) ? 
 		compLife.end : 
 		compLife.start + (std::isfinite(m_componentParams.m_maxParticleLifeTime) ? m_componentParams.m_maxParticleLifeTime : 0.0f);
-	for (auto childId : m_componentParams.m_subComponentIds)
+	for (auto child : m_children)
 	{
-		const CParticleComponent* child = m_pEffect->GetCComponent(childId);
 		if (child->IsEnabled())
 		{
 			float childEqTime = child->GetEquilibriumTime(compLife);
@@ -330,7 +309,7 @@ void CParticleComponent::ResetRenderObjects(CParticleEmitter* pEmitter)
 		it->ResetRenderObjects(pEmitter, this);
 }
 
-void CParticleComponent::Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
+void CParticleComponent::Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
 {
 	if (IsVisible())
 	{
@@ -350,7 +329,7 @@ void CParticleComponent::Render(CParticleEmitter* pEmitter, ICommonParticleCompo
 	}
 }
 
-void CParticleComponent::RenderDeferred(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
+void CParticleComponent::RenderDeferred(CParticleEmitter* pEmitter, IParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
@@ -368,19 +347,39 @@ bool CParticleComponent::CanMakeRuntime(CParticleEmitter* pEmitter) const
 	return true;
 }
 
-gpu_pfx2::IParticleFeatureGpuInterface** CParticleComponent::GetGpuUpdateList(EUpdateList list, int& size) const
+gpu_pfx2::TFeatures CParticleComponent::GetGpuUpdateList(EUpdateList list) const
 {
-	size = m_gpuUpdateLists[list].size();
-	if (size)
-		return (gpu_pfx2::IParticleFeatureGpuInterface**)&m_gpuUpdateLists[list][0];
-	else
-		return nullptr;
+	return gpu_pfx2::TFeatures(&m_gpuUpdateLists[list][0], (uint)m_gpuUpdateLists[list].size());
 }
+
+void CParticleComponent::GetParentData(IParticleEmitter* pEmitter, Array<TParticleId, uint> parentParticleIds, gpu_pfx2::SInitialData data[]) const
+{
+	CParticleEmitter* pCEmitter = static_cast<CParticleEmitter*>(pEmitter);
+
+	const CParticleContainer& parentContainer = GetParentComponent() ?
+		pCEmitter->GetRuntimes()[GetParentComponent()->GetComponentId()].pRuntime->GetCpuRuntime()->GetContainer()
+	    : pCEmitter->GetParentContainer();
+
+	IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
+	IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
+
+	for (uint i = 0; i < parentParticleIds.size(); ++i)
+	{
+		data[i].position = parentPositions.Load(parentParticleIds[i]);
+		data[i].velocity = parentVelocities.Load(parentParticleIds[i]);
+	}
+}
+
 
 void CParticleComponent::PreCompile()
 {
 	if (!m_dirty)
 		return;
+
+	m_componentParams.Reset();
+
+	m_parent = nullptr;
+	m_children.clear();
 
 	for (size_t i = 0; i < EUL_Count; ++i)
 		m_updateLists[i].clear();
@@ -418,7 +417,7 @@ void CParticleComponent::ResolveDependencies()
 	if (!m_dirty)
 		return;
 
-	m_runtimeInitializationParameters = SRuntimeInitializationParameters();
+	m_GPUComponentParams = gpu_pfx2::SComponentParams();
 
 	for (auto& it : m_features)
 	{
@@ -446,7 +445,7 @@ void CParticleComponent::Compile()
 					continue;
 				}
 			featureMask |= type;
-			it->SetGpuInterfaceNeeded(m_runtimeInitializationParameters.usesGpuImplementation);
+			it->SetGpuInterfaceNeeded(m_GPUComponentParams.usesGpuImplementation);
 			it->AddToComponent(this, &m_componentParams);
 		}
 	}
@@ -495,7 +494,7 @@ void CParticleComponent::SetName(const char* name)
 
 	string oldName = m_name;
 
-	m_name = m_pEffect->MakeUniqueName(m_componentId, name);
+	m_name = m_pEffect->MakeUniqueName(this, name);
 
 	if (oldName != m_name)
 	{

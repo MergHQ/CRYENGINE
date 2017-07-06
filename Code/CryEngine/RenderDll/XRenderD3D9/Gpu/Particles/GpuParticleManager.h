@@ -40,7 +40,7 @@ public:
 	CreateParticleComponentRuntime(
 		IParticleEmitter* pEmitter,
 		pfx2::IParticleComponent* pComponent,
-		const pfx2::SRuntimeInitializationParameters& params) override;
+		const SComponentParams& params) override;
 
 	void RenderThreadUpdate();
 	void RenderThreadPreUpdate();

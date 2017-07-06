@@ -136,6 +136,7 @@ void CVars::Init()
 	                   "21: Display animated object distance to camera\n"
 	                   "22: Display object's current LOD vertex count\n"
 	                   "23: Display shadow casters in red\n"
+					   "24: Show LOD info for characters\n"
 	                   "----------------debug draw list values. Any of them enable 2d on-screen listing type info debug. Specific values define the list sorting-----------\n"
 	                   " 100: tri count\n"
 	                   " 101: verts count\n"

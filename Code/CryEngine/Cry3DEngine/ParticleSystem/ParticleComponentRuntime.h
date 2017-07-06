@@ -18,24 +18,24 @@
 namespace pfx2
 {
 
-class CParticleComponentRuntime : public ICommonParticleComponentRuntime, public IParticleVertexCreator
+class CParticleComponentRuntime : public IParticleComponentRuntime, public IParticleVertexCreator
 {
 public:
 	typedef std::vector<SInstance, stl::aligned_alloc<SInstance, CRY_PFX2_PARTICLES_ALIGNMENT>> TInstances;
 
 public:
-	CParticleComponentRuntime(CParticleEffect* pEffect, CParticleEmitter* pEmitter, CParticleComponent* pComponent);
+	CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponent* pComponent);
 
 	// ICommonParticleComponentRuntime
 	// PFX2_TODO : Figure out a way to do static dispatches
-	virtual const AABB&                GetBounds() const override   { return m_bounds; }
-	virtual CParticleComponentRuntime* GetCpuRuntime() override     { return this; }
-	virtual bool                       IsSecondGen() const override { return GetComponentParams().IsSecondGen(); }
-	virtual bool                       IsActive() const override    { return m_active; }
+	virtual CParticleComponent*        GetComponent() const override { return m_pComponent; }
+	virtual const AABB&                GetBounds() const override    { return m_bounds; }
+	virtual CParticleComponentRuntime* GetCpuRuntime() override      { return this; }
+	virtual bool                       IsChild() const override      { return m_pComponent->GetParentComponent() != nullptr; }
+	virtual bool                       IsActive() const override     { return m_active; }
 	virtual void                       SetActive(bool active) override;
 	virtual void                       ReparentParticles(TConstArray<TParticleId> swapIds) override;
-	void                               OrphanAllParticles();
-	virtual bool                       IsValidRuntimeForInitializationParameters(const SRuntimeInitializationParameters& parameters) override;
+	virtual bool                       IsValidForParams(const gpu_pfx2::SComponentParams& parameters) override { return true; }
 	virtual void                       AddSubInstances(TConstArray<SInstance> instances) override;
 	virtual void                       RemoveAllSubInstances() override;
 	virtual void                       ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
@@ -43,9 +43,8 @@ public:
 
 	void                      Initialize();
 	void                      Reset();
-	CParticleEffect*          GetEffect() const          { return m_pEffect; }
+	CParticleEffect*          GetEffect() const          { return m_pComponent->GetEffect(); }
 	CParticleEmitter*         GetEmitter() const         { return m_pEmitter; }
-	CParticleComponent*       GetComponent() const       { return m_pComponent; }
 	const SComponentParams&   GetComponentParams() const { return m_pComponent->GetComponentParams(); }
 
 	CParticleContainer&       GetParentContainer();
@@ -57,6 +56,7 @@ public:
 	void                      UpdateAll(const SUpdateContext& context);
 	void                      AddRemoveNewBornsParticles(const SUpdateContext& context);
 	void                      UpdateParticles(const SUpdateContext& context);
+	void                      OrphanAllParticles();
 	void                      CalculateBounds();
 
 	size_t                    GetNumInstances() const       { return m_subInstances.size(); }
@@ -81,13 +81,12 @@ private:
 
 	void DebugStabilityCheck();
 
+	CParticleComponent*                          m_pComponent;
+	CParticleEmitter*                            m_pEmitter;
 	CParticleContainer                           m_container;
 	TInstances                                   m_subInstances;
 	TDynArray<byte>                              m_subInstanceData;
 	TDynArray<CParticleContainer::SSpawnEntry>   m_spawnEntries;
-	CParticleEffect*                             m_pEffect;
-	CParticleEmitter*                            m_pEmitter;
-	CParticleComponent*                          m_pComponent;
 	AABB                                         m_bounds;
 	bool                                         m_active;
 };

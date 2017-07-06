@@ -1595,26 +1595,28 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		DrawAudioObjectDebugInfo(*pAuxGeom); // needs to be called first so that the rest of the labels are printed
 		// on top (Draw2dLabel doesn't provide a way set which labels are printed on top)
 
-		float posX = 0.0f;
+		float posX = 8.0f;
 		float posY = 4.0f;
-		float const lineHeight = 17.0f;
-		float const indentation = 20.0f;
+		float const lineHeight = 16.0f;
+		float const lineHeightClause = 20.0f;
+		float const indentation = 24.0f;
+		float const textSize = 1.35f;
 
 		static float const s_colorWhite[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
 		static float const s_colorRed[4] = { 1.0f, 0.0f, 0.0f, 0.7f };
-		static float const s_colorGreen[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
+		static float const s_colorGreen[4] = { 0.0f, 0.8f, 0.0f, 0.7f };
 		static float const s_colorBlue[4] = { 0.4f, 0.4f, 1.0f, 1.0f };
+		static float const s_colorGrey[4] = { 0.9f, 0.9f, 0.9f, 0.9f };
 
-		pAuxGeom->Draw2dLabel(posX, posY, 1.6f, s_colorBlue, false, "AudioTranslationLayer with %s", m_pProfileData->GetImplName());
-		posX += indentation;
-		posY += lineHeight;
+		pAuxGeom->Draw2dLabel(posX, posY, 1.5f, s_colorBlue, false, m_pProfileData->GetImplName());
 
 		CryModuleMemoryInfo memInfo;
 		ZeroStruct(memInfo);
 		CryGetMemoryInfoForModule(&memInfo);
 
-		pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false,
-		                      "[ATL] Total Memory Used: %uKiB",
+		posY += lineHeightClause;
+		pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorWhite, false,
+		                      "[Audio System] Total Memory Used: %uKiB",
 		                      static_cast<uint32>((memInfo.allocated - memInfo.freed) / 1024));
 
 		posX += indentation;
@@ -1623,7 +1625,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			posY += lineHeight;
 			auto mem = allocator.GetTotalMemory();
 			auto pool = allocator.GetCounts();
-			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[%s] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", "Objects", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorGrey, false, "[Objects] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
 		}
 
 		{
@@ -1631,7 +1633,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			posY += lineHeight;
 			auto mem = allocator.GetTotalMemory();
 			auto pool = allocator.GetCounts();
-			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[%s] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", "Events", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorGrey, false, "[Events] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
 		}
 
 		{
@@ -1639,7 +1641,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			posY += lineHeight;
 			auto mem = allocator.GetTotalMemory();
 			auto pool = allocator.GetCounts();
-			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[%s] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", "Files", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorGrey, false, "[Files] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
 		}
 		posX -= indentation;
 
@@ -1648,8 +1650,8 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			Impl::SMemoryInfo memoryInfo;
 			m_pIImpl->GetMemoryInfo(memoryInfo);
 
-			posY += lineHeight;
-			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[Impl] Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
+			posY += lineHeightClause;
+			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorWhite, false, "[Impl] Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
 			                      static_cast<uint32>(memoryInfo.totalMemory / 1024),
 			                      (memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
 			                      (memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
@@ -1657,45 +1659,12 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 			posX += indentation;
 			posY += lineHeight;
-			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[Impl Object Pool] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
+			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorGrey, false, "[Impl Object Pool] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
 			                      memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
 			posX -= indentation;
 		}
 
-		posY += lineHeight;
-		static float const SMOOTHING_ALPHA = 0.2f;
-		static float syncRays = 0;
-		static float asyncRays = 0;
-
-		Vec3 const& listenerPosition = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition();
-		Vec3 const& listenerDirection = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetForward();
-		float const listenerVelocity = m_audioListenerMgr.GetActiveListenerAttributes().velocity.GetLength();
-		size_t const numObjects = m_audioObjectMgr.GetNumAudioObjects();
-		size_t const numActiveObjects = m_audioObjectMgr.GetNumActiveAudioObjects();
-		size_t const numEvents = m_audioEventMgr.GetNumConstructed();
-		size_t const numListeners = m_audioListenerMgr.GetNumActiveListeners();
-		size_t const numEventListeners = m_audioEventListenerMgr.GetNumEventListeners();
-		syncRays += (CPropagationProcessor::s_totalSyncPhysRays - syncRays) * SMOOTHING_ALPHA;
-		asyncRays += (CPropagationProcessor::s_totalAsyncPhysRays - asyncRays) * SMOOTHING_ALPHA * 0.1f;
-
-		bool const bActive = true;
-		float const colorListener[4] =
-		{
-			bActive ? s_colorGreen[0] : s_colorRed[0],
-			bActive ? s_colorGreen[1] : s_colorRed[1],
-			bActive ? s_colorGreen[2] : s_colorRed[2],
-			1.0f
-		};
-
-		float const* colorNumbers = s_colorBlue;
-
-		posY += lineHeight;
-		pAuxGeom->Draw2dLabel(posX, posY, 1.35f, colorListener, false, "Listener <%d> PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", 0, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
-
-		posY += lineHeight;
-		pAuxGeom->Draw2dLabel(posX, posY, 1.35f, colorNumbers, false,
-		                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | Events: %3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f | AsyncRays: %3.1f",
-		                      numActiveObjects, numObjects, numEvents, numEventListeners, numListeners, syncRays, asyncRays);
+		posY += lineHeightClause;
 
 		string debugFilter = g_cvars.m_pDebugFilter->GetString();
 
@@ -1718,19 +1687,14 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			debugDraw += "Spheres, ";
 		}
 
-		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectTriggers) > 0)
-		{
-			debugDraw += "Triggers, ";
-		}
-
 		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectLabel) > 0)
 		{
 			debugDraw += "Labels, ";
 		}
 
-		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectParameters) > 0)
+		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectTriggers) > 0)
 		{
-			debugDraw += "Parameters, ";
+			debugDraw += "Triggers, ";
 		}
 
 		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectStates) > 0)
@@ -1738,19 +1702,24 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			debugDraw += "States, ";
 		}
 
+		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectParameters) > 0)
+		{
+			debugDraw += "Parameters, ";
+		}
+
 		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectEnvironments) > 0)
 		{
 			debugDraw += "Environments, ";
 		}
 
-		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawOcclusionRays) > 0)
-		{
-			debugDraw += "Occlusion Rays, ";
-		}
-
 		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowOcclusionRayLabels) > 0)
 		{
 			debugDraw += "Occlusion Ray Labels, ";
+		}
+
+		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawOcclusionRays) > 0)
+		{
+			debugDraw += "Occlusion Rays, ";
 		}
 
 		if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawObjectStandaloneFiles) > 0)
@@ -1781,12 +1750,35 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		if (!debugDraw.IsEmpty())
 		{
 			debugDraw.erase(debugDraw.length() - 2, 2);
-
+			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorWhite, false, "Debug Filter: %s | Debug Distance: %s | Debug Draw: %s", debugFilter.c_str(), debugDistance.c_str(), debugDraw.c_str());
 			posY += lineHeight;
-			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "Debug Filter: %s | Debug Distance: %s | Debug Draw: %s", debugFilter.c_str(), debugDistance.c_str(), debugDraw.c_str());
 		}
 
+		static float const SMOOTHING_ALPHA = 0.2f;
+		static float syncRays = 0;
+		static float asyncRays = 0;
+		Vec3 const& listenerPosition = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition();
+		Vec3 const& listenerDirection = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetForward();
+		float const listenerVelocity = m_audioListenerMgr.GetActiveListenerAttributes().velocity.GetLength();
+		size_t const numObjects = m_audioObjectMgr.GetNumAudioObjects();
+		size_t const numActiveObjects = m_audioObjectMgr.GetNumActiveAudioObjects();
+		size_t const numEvents = m_audioEventMgr.GetNumConstructed();
+		size_t const numListeners = m_audioListenerMgr.GetNumActiveListeners();
+		size_t const numEventListeners = m_audioEventListenerMgr.GetNumEventListeners();
+		syncRays += (CPropagationProcessor::s_totalSyncPhysRays - syncRays) * SMOOTHING_ALPHA;
+		asyncRays += (CPropagationProcessor::s_totalAsyncPhysRays - asyncRays) * SMOOTHING_ALPHA * 0.1f;
+
+		bool const bActive = true;
+		float const* colorListener = bActive ? s_colorGreen : s_colorRed;
+
+		pAuxGeom->Draw2dLabel(posX, posY, textSize, colorListener, false, "Listener <%d> PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", 0, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+
 		posY += lineHeight;
+		pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorBlue, false,
+		                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | Events: %3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f | AsyncRays: %3.1f",
+		                      numActiveObjects, numObjects, numEvents, numEventListeners, numListeners, syncRays, asyncRays);
+
+		posY += lineHeightClause;
 		DrawATLComponentDebugInfo(*pAuxGeom, posX, posY);
 
 		pAuxGeom->Commit(7);

@@ -56,7 +56,7 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 	m_parameters->physAccel = m_envParams.physAccel;
 	m_parameters->physWind = m_envParams.physWind;
 	m_parameters->viewProjection = gcpRendD3D->m_CameraProjMatrix;
-	m_parameters->sortMode = m_sortMode;
+	m_parameters->sortMode = m_params.sortMode;
 
 	const CCamera& cam = gEnv->p3DEngine->GetRenderingCamera();
 	float zn = cam.GetNearPlane();
@@ -65,7 +65,7 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 	m_parameters->cameraPosition = cam.GetPosition();
 	m_parameters.CopyToDevice();
 
-	if (m_sortMode != pfx2::eGpuSortMode_None)
+	if (m_params.sortMode != ESortMode::None)
 		Sort(context, commandList);
 
 	UpdateFeatures(context, commandList);
@@ -188,10 +188,10 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 	// cap because of size of newborn array
 	m_parameters->numNewBorns =
-	  min(m_maxNewBorns, m_parameters->numNewBorns);
+	  min(m_params.maxNewBorns, m_parameters->numNewBorns);
 	// cap global
 	m_parameters->numNewBorns =
-	  min(m_maxParticles - m_parameters->numParticles, m_parameters->numNewBorns);
+	  min(m_params.maxParticles - m_parameters->numParticles, m_parameters->numNewBorns);
 
 	m_parameters->numParticles += m_parameters->numNewBorns;
 
@@ -360,18 +360,16 @@ void CParticleComponentRuntime::UpdatePasses()
 	}
 }
 
-bool CParticleComponentRuntime::IsValidRuntimeForInitializationParameters(const pfx2::SRuntimeInitializationParameters& parameters)
+bool CParticleComponentRuntime::IsValidForParams(const SComponentParams& parameters)
 {
 	if (
-	  parameters.maxNewBorns == m_maxNewBorns &&
-	  parameters.maxParticles == m_maxParticles &&
 	  parameters.usesGpuImplementation &&
-	  parameters.sortMode == m_sortMode &&
-	  parameters.facingMode == m_facingMode &&
-	  parameters.isSecondGen == m_isSecondGen &&
-	  parameters.parentId == m_parentId &&
-	  parameters.version == m_version
-	  )
+	  parameters.maxNewBorns == m_params.maxNewBorns &&
+	  parameters.maxParticles == m_params.maxParticles &&
+	  parameters.sortMode == m_params.sortMode &&
+	  parameters.facingMode == m_params.facingMode &&
+	  parameters.version == m_params.version
+	)
 		return true;
 	return false;
 }
@@ -391,7 +389,7 @@ void CParticleComponentRuntime::SetInitializationFlags(uint64 flags)
 	m_initializationShaderFlags |= flags;
 }
 
-CParticleComponentRuntime::CParticleComponentRuntime(IParticleEmitter* pEmitter, pfx2::IParticleComponent* pComponent, const pfx2::SRuntimeInitializationParameters& params)
+CParticleComponentRuntime::CParticleComponentRuntime(IParticleEmitter* pEmitter, pfx2::IParticleComponent* pComponent, const SComponentParams& params)
 	: m_bounds(AABB::RESET)
 	, m_active(true)
 	, m_state(IParticleComponentRuntime::EState::Uninitialized)
@@ -400,28 +398,22 @@ CParticleComponentRuntime::CParticleComponentRuntime(IParticleEmitter* pEmitter,
 	, m_newBornIndices(params.maxNewBorns)
 	, m_parentDataRenderThread(params.maxNewBorns)
 	, m_parentDataSizeRenderThread(0)
-	, m_maxParticles(params.maxParticles)
-	, m_maxNewBorns(params.maxNewBorns)
+	, m_pComponent(pComponent)
+	, m_params(params)
 	, m_container(params.maxParticles)
-	, m_sortMode(params.sortMode)
-	, m_facingMode(params.facingMode)
 	, m_updateShaderFlags(0)
 	, m_previousUpdateShaderShaderFlags(std::numeric_limits<uint64>::max())
 	, m_initializationShaderFlags(0)
 	, m_previousInitializationShaderFlags(std::numeric_limits<uint64>::max())
-	, m_parentId(params.parentId)
-	, m_isSecondGen(params.isSecondGen)
-	, m_version(params.version)
 	, m_pEmitter(pEmitter)
 {
 	assert(m_pEmitter);
 	for (int i = 0; i < eGpuUpdateList_COUNT; ++i)
 	{
-		int size;
 		m_gpuUpdateLists[i].resize(0);
-		CFeature** list = reinterpret_cast<CFeature**>(pComponent->GetGpuUpdateList(s_updateListmapping[i], size));
-		for (int j = 0; j < size; ++j)
-			m_gpuUpdateLists[i].push_back(list[j]);
+		auto list = pComponent->GetGpuUpdateList(s_updateListmapping[i]);
+		for (auto feature: list)
+			m_gpuUpdateLists[i].push_back(static_cast<CFeature*>(feature));
 	}
 
 	memset(m_updateSrvSlots, 0, sizeof(m_updateSrvSlots));
@@ -439,14 +431,14 @@ void CParticleComponentRuntime::UpdateEmitterData()
 	m_parentData.resize(m_subInstances.size());
 	if (m_subInstances.size())
 	{
-		m_pEmitter->GetParentData(m_parentId, &m_subInstances[0], m_parentData.size(), &m_parentData[0]);
+		m_pComponent->GetParentData(m_pEmitter, m_subInstances, &m_parentData[0]);
 	}
 }
 
 void CParticleComponentRuntime::AddSubInstances(TConstArray<SInstance> instances)
 {
 	CryAutoLock<CryCriticalSection> lock(m_cs);
-	uint count = min(m_maxNewBorns - m_subInstances.size(), instances.size());
+	uint count = min(m_params.maxNewBorns - m_subInstances.size(), instances.size());
 	for (int i = 0; i < count; ++i)
 	{
 		m_subInstances.push_back(instances[i].m_parentId);
@@ -575,10 +567,10 @@ void CParticleComponentRuntime::Initialize()
 
 	m_parameters.CopyToDevice();
 
-	bool sorting = m_sortMode != pfx2::eGpuSortMode_None;
+	bool sorting = m_params.sortMode != ESortMode::None;
 	m_container.Initialize(sorting);
 	if (sorting)
-		m_pMergeSort = std::unique_ptr<gpu::CMergeSort>(new gpu::CMergeSort(m_maxParticles));
+		m_pMergeSort = std::unique_ptr<gpu::CMergeSort>(new gpu::CMergeSort(m_params.maxParticles));
 
 	// Alloc GPU resources
 	m_blockSums.CreateDeviceBuffer();

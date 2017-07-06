@@ -47,7 +47,7 @@ public:
 	ERequestStatus UnloadDataByScope(EDataScope const dataScope);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float const posY);
+	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
