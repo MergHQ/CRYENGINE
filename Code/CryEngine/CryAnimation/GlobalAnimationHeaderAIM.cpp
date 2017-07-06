@@ -1720,9 +1720,6 @@ void VExampleInit::RecursiveTest(const Vec2d& ControlPoint, GlobalAnimationHeade
 				break;
 		}
 
-		uint32 sum = o0 + o1 + o2 + o3;
-		assert(sum);
-
 		m_nIterations++;
 		if (m_nIterations > 50)
 			return;
