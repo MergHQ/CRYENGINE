@@ -52,6 +52,14 @@ void CNodeItem::Serialize(Serialization::IArchive& archive)
 		serPass = archive.isInput() ? Schematyc::ESerializationPass::Load : Schematyc::ESerializationPass::Save;
 	}
 
+	if (serPass == Schematyc::ESerializationPass::Load)
+	{
+		Schematyc::SSerializationContextParams serializationContextParams(archive, Schematyc::ESerializationPass::LoadDependencies);
+		Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serializationContextParams);
+
+		m_scriptNode.Serialize(archive);
+	}
+
 	Schematyc::SSerializationContextParams serializationContextParams(archive, serPass);
 	Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serializationContextParams);
 
@@ -65,7 +73,7 @@ void CNodeItem::Serialize(Serialization::IArchive& archive)
 	}
 
 	m_scriptNode.Serialize(archive);
-	
+
 	if (archive.isInput())
 	{
 		// We only want to do an immediate refresh if the change doesn't come from
@@ -95,7 +103,7 @@ void CNodeItem::SetPosition(QPointF position)
 	m_scriptNode.SetPos(pos);
 
 	CAbstractNodeItem::SetPosition(position);
-	if (GetRecordUndo())
+	if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 	{
 		CryGraphEditor::CUndoNodeMove* pUndoObject = new CryGraphEditor::CUndoNodeMove(*this);
 		CUndo::Record(pUndoObject);

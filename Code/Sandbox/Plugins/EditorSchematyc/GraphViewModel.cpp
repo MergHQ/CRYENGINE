@@ -145,8 +145,10 @@ bool CNodeGraphViewModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 
 	for (CryGraphEditor::CAbstractPinItem* pPin : pNodeItem->GetPinItems())
 	{
-		for (CryGraphEditor::CAbstractConnectionItem* pConnection : pPin->GetConnectionItems())
+		const CryGraphEditor::ConnectionItemSet& connections = pPin->GetConnectionItems();
+		for (auto itr = connections.begin(); itr != connections.end(); itr = connections.begin())
 		{
+			CryGraphEditor::CAbstractConnectionItem* pConnection = *itr;
 			RemoveConnection(*pConnection);
 		}
 	}

@@ -949,6 +949,12 @@ void CScriptBrowserModel::OnScriptElementSaved(IScriptElement& scriptElement)
 		QModelIndex index = ItemToIndex(pItem);
 		QAbstractItemModel::dataChanged(index, index);
 	}
+	else if (m_pRootItem->GetScriptElement()->GetGUID() == scriptElement.GetGUID())
+	{
+		ScriptBrowserItemFlags itemFlags = m_pRootItem->GetFlags();
+		itemFlags.Remove(EScriptBrowserItemFlags::Modified);
+		m_pRootItem->SetFlags(itemFlags);
+	}
 }
 
 CScriptBrowserItem* CScriptBrowserModel::CreateScriptElementItem(IScriptElement& scriptElement, const ScriptBrowserItemFlags& flags, CScriptBrowserItem* pParentItem)
