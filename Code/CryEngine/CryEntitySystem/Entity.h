@@ -517,7 +517,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	unsigned int         m_bInActiveList  : 1;      // Added to entity system active list.
 	unsigned int         m_bRequiresComponentUpdate  : 1; // Whether or not any components require update callbacks
-	mutable unsigned int m_bBoundsValid   : 1;      // Set when the entity bounding box is valid.
 	unsigned int         m_bInitialized   : 1;      // Set if this entity already Initialized.
 	unsigned int         m_bHidden        : 1;      // Set if this entity is hidden.
 	unsigned int         m_bIsInHiddenLayer : 1;    // Set if this entity is in a hidden layer.
