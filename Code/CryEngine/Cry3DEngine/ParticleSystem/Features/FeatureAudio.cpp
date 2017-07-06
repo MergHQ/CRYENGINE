@@ -36,7 +36,7 @@ public:
 		{
 			pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
 			pComponent->AddParticleData(EPVF_Position);
-			if (m_followParticle || m_autoStop)
+			if (m_followParticle || m_stopOnDeath)
 			{
 				pComponent->AddParticleData(EPDT_AudioObject);
 				pComponent->AddToUpdateList(EUL_InitUpdate, this);
@@ -50,20 +50,21 @@ public:
 		m_playTrigger.Serialize(ar, "PlayTrigger", "Play Trigger");
 		m_stopTrigger.Serialize(ar, "StopTrigger", "Stop Trigger");
 
-		if (m_playTrigger.HasName())
-			ar(m_followParticle, "FollowParticle", "Follow Particle");
-		else
-			m_followParticle = m_autoStop = false;
-
-		if (m_playTrigger.HasName() && !m_stopTrigger.HasName())
-			ar(m_autoStop, "AutoStop", "Auto Stop");
-		else
-			m_autoStop = false;
-
-		ar(m_occlusionType, "Occlusion", "Occlusion");
-
 		if (ar.isInput())
 			VersionFix(ar);
+
+		if (m_playTrigger.HasName())
+		{
+			ar(m_followParticle, "FollowParticle", "Follow Particle");
+			if (m_stopTrigger.HasName())
+				m_stopOnDeath = true;
+			else
+				ar(m_stopOnDeath, "StopOnDeath", "Stop on Death");
+		}
+		else
+			m_followParticle = m_stopOnDeath = false;
+
+		ar(m_occlusionType, "Occlusion", "Occlusion");
 	}
 
 	virtual void InitParticles(const SUpdateContext& context) override
@@ -80,7 +81,7 @@ public:
 		proxyName.append(" : ");
 		proxyName.append(pComponentRuntime->GetComponent()->GetName());
 
-		if (m_followParticle || m_autoStop)
+		if (m_followParticle || m_stopOnDeath)
 			TriggerFollowAudioEvents(pComponentRuntime, proxyName);
 		else
 			TriggerSingleAudioEvents(pComponentRuntime, proxyName);
@@ -116,7 +117,6 @@ private:
 		else if (triggerType == "OnDeath")
 		{
 			m_stopTrigger.Serialize(ar, "Name", "Name");
-			m_followParticle = false;
 		}
 	}
 
@@ -178,7 +178,7 @@ private:
 			case ES_Dead:
 				if (pIObject)
 				{
-					if (m_autoStop)
+					if (m_stopOnDeath)
 						pIObject->StopTrigger(m_playTrigger);
 					gEnv->pAudioSystem->ReleaseObject(pIObject);
 					audioObjects.Store(particleId, nullptr);
@@ -221,7 +221,7 @@ private:
 	SAudioTrigger            m_playTrigger;
 	SAudioTrigger            m_stopTrigger;
 	bool                     m_followParticle = true;
-	bool                     m_autoStop       = true;
+	bool                     m_stopOnDeath    = true;
 	CryAudio::EOcclusionType m_occlusionType  = CryAudio::EOcclusionType::Ignore;
 };
 
