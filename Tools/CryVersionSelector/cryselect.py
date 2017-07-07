@@ -378,10 +378,10 @@ class CrySwitch(tk.Frame):
                 engine_id = engine['info']['id']
 
             add_engines (engine_path)
-        
-        switch_engine(self.project_file, engine_id)
 
         self.close()
+        
+        return switch_engine(self.project_file, engine_id)
 
     def command_browse (self):
         #http://tkinter.unpythonic.net/wiki/tkFileDialog
@@ -403,8 +403,7 @@ def cmd_switch (args):
     #--- If the engine version is already specified than set it and return early.
     if args.engine_version != None:
         target_version = args.engine_version
-        switch_engine(args.project_file, target_version)
-        return
+        sys.exit(switch_engine(args.project_file, target_version))
 
     #---
 
@@ -448,12 +447,17 @@ def cmd_switch (args):
 def switch_engine(project_file, engine_id):
     project = cryproject.load (project_file)
     if cryproject.engine_id (project) != engine_id:
+        message = 'Changing the version of the engine can cause the project to become unstable. Make sure to make a backup of your project before changing the version!'
+        if MessageBox (None, message, 'Rebuild required', win32con.MB_OKCANCEL | win32con.MB_ICONWARNING) == win32con.IDCANCEL:
+            return 1 # Return 1 to indicate that changing the engine is canceled by the user.
+        
         project['require']['engine'] = engine_id
         cryproject.save (project, project_file)
-        cmd_run (args, ('projgen', project_file))
-
-        message = 'The engine version has changed and this has caused the code to become incompatible. Please fix any errors in the code and rebuild the project before launching it.'
+        
+        message = 'The engine version has changed and this has caused the code to become incompatible. Please generate the solution, fix any errors in the code and rebuild the project before launching it.'
         MessageBox (None, message, 'Rebuild required', win32con.MB_OK | win32con.MB_ICONWARNING)
+    
+    return 0
 
 #--- UPGRADE ---
 
@@ -535,7 +539,7 @@ def cmd_run (args, sys_argv=sys.argv[1:]):
         result = MessageBox (None, text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
         if result == win32con.IDOK:
             input() # Keeps the window from closing
-    
+
     if returncode != 0:
         sys.exit (returncode)
 
