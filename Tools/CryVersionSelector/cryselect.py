@@ -448,12 +448,21 @@ def switch_engine(project_file, engine_id):
     project = cryproject.load (project_file)
     if cryproject.engine_id (project) != engine_id:
         message = 'Changing the version of the engine can cause the project to become unstable. Make sure to make a backup of your project before changing the version!'
-        if MessageBox (None, message, 'Rebuild required', win32con.MB_OKCANCEL | win32con.MB_ICONWARNING) == win32con.IDCANCEL:
+        if MessageBox (None, message, 'Changing engine version', win32con.MB_OKCANCEL | win32con.MB_ICONWARNING) == win32con.IDCANCEL:
             return 1 # Return 1 to indicate that changing the engine is canceled by the user.
         
-        project['require']['engine'] = engine_id
-        cryproject.save (project, project_file)
-        
+        try:
+            project['require']['engine'] = engine_id
+            cryproject.save (project, project_file)
+        except:
+            # Catch every exception and print it to the console.
+            # This way the command can be debugged in the console but the normal user will not be overwhelmed with technical stuff.
+            e = sys.exc_info()[0]
+            print(repr(e))
+            message = 'An error occurred while changing the engine version. Is the project file read-only?'
+            MessageBox (None, message, 'An error occurred', win32con.MB_OK | win32con.MB_ICONERROR)
+            return 1
+            
         message = 'The engine version has changed and this has caused the code to become incompatible. Please generate the solution, fix any errors in the code and rebuild the project before launching it.'
         MessageBox (None, message, 'Rebuild required', win32con.MB_OK | win32con.MB_ICONWARNING)
     
