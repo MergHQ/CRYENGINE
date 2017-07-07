@@ -234,7 +234,8 @@ bool CPostAA::Preprocess()
 
 	if (m_bInit)
 	{
-		GetUtils().CopyScreenToTexture(pPrevRT);
+		CTexture* pScreenTex = gcpRendD3D->m_pNewTarget[0]->m_pTex;
+		m_pResolvePass->Execute(pScreenTex, pPrevRT);
 		m_bInit = false;
 	}
 
