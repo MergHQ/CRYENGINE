@@ -606,7 +606,7 @@ struct IGameObjectExtension : public IEntityComponent
 	IGameObjectExtension() : m_pGameObject(0) {}
 
 	// IEntityComponent
-	virtual uint64 GetEventMask() const { return ~(BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)|BIT64(ENTITY_EVENT_UPDATE)); } // All events except update and pre-physics update are subscribed to
+	virtual uint64 GetEventMask() const { return ~(BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)|BIT64(ENTITY_EVENT_UPDATE)|BIT64(ENTITY_EVENT_PHYS_POSTSTEP)); } // All events except expensive ones such as update are subscribed to
 	virtual void Initialize() {};
 	// ~IEntityComponent
 

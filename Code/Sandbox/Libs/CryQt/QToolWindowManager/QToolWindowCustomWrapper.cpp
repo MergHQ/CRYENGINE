@@ -180,11 +180,30 @@ bool QToolWindowCustomWrapper::winEvent(MSG *msg, long *result)
 		}
 		return false;
 		break;
-	case WM_EXITSIZEMOVE:
-		if (m_manager && m_manager->draggedWrapper() == this)
+
+	case WM_SIZING:
+		if (m_manager)
 		{
-			m_manager->finishWrapperDrag();
+			if (m_manager->resizedWrapper() != this)
+			{
+				m_manager->startResize(this);
+			}
 		}
+		break;
+
+	case WM_EXITSIZEMOVE:
+		if (m_manager)
+		{
+			if (m_manager->draggedWrapper() == this)
+			{
+				m_manager->finishWrapperDrag();
+			}
+			if (m_manager->resizedWrapper() == this)
+			{
+				m_manager->finishWrapperResize();
+			}
+		}
+		break;
 	}
 #if QT_VERSION < 0x050000
 	return QCustomWindowFrame::winEvent(msg, result);

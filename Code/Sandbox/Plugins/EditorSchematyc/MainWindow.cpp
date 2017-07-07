@@ -306,13 +306,11 @@ void CMainWindow::OnCloseAsset()
 
 	if (m_pPreview)
 	{
-		m_pPreview->SetComponentInstance(nullptr);
+		m_pPreview->SetClass(nullptr);
 	}
 
 	if (m_pScriptBrowser)
 	{
-		m_pScriptBrowser->SetModel(nullptr);
-
 		// Revert changes.
 		if (m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
 		{
@@ -328,6 +326,8 @@ void CMainWindow::OnCloseAsset()
 				// ~TODO
 			}
 		}
+
+		m_pScriptBrowser->SetModel(nullptr);
 	}
 
 	delete m_pModel;

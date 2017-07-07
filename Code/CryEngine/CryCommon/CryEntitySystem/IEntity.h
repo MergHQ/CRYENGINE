@@ -803,7 +803,7 @@ public:
 		CRY_ASSERT_MESSAGE(cryiidof<ComponentType>() != cryiidof<IEntityComponent>(), "Component must implement an IID function returning CryGUID!");
 
 		ComponentType* pReturn = static_cast<ComponentType*>(CreateComponentByInterfaceID(cryiidof<ComponentType>()));
-		assert(pReturn != nullptr); // Must return a valid component interface
+		CRY_ASSERT(pReturn != nullptr); // Must return a valid component interface
 		return pReturn;
 	}
 
@@ -813,9 +813,13 @@ public:
 	{
 		auto component = GetComponent<ComponentType>();
 		if (component)
+		{
 			return component;
+		}
 		else
+		{
 			return CreateComponent<ComponentType>();
+		}
 	}
 
 	//! Create a new initialized component using a new operator of the class type
@@ -837,9 +841,13 @@ public:
 	{
 		ComponentType* pComponent = GetComponent<ComponentType>();
 		if (pComponent)
+		{
 			return pComponent;
+		}
 		else
+		{
 			return CreateComponentClass<ComponentType>();
+		}
 	}
 
 

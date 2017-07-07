@@ -80,7 +80,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_bRequiresComponentUpdate = 0;
 	m_bInActiveList = 0;
 
-	m_bBoundsValid = 0;
 	m_bInitialized = 0;
 	m_bHidden = 0;
 	m_bIsInHiddenLayer = 0;
