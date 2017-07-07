@@ -139,7 +139,7 @@ bool CObject::SetSimulationMode(ESimulationMode simulationMode, EObjectSimulatio
 				return false;
 			}
 
-			//m_scratchpad = m_pClass->GetScratchpad();
+			m_scratchpad = m_pClass->GetScratchpad();
 			ResetGraphs();
 			m_simulationMode = simulationMode;
 

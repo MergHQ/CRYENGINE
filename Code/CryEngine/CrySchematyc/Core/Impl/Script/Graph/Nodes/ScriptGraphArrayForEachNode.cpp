@@ -190,16 +190,18 @@ SRuntimeResult CScriptGraphArrayForEachNode::Execute(SRuntimeContext& context, c
 		data.pos = 0;
 	}
 
-	CAnyArrayPtr pArray = DynamicCast<CAnyArrayPtr>(*context.node.GetInputData(EInputIdx::Array));
-	if (data.pos < pArray->GetSize())
+	CAnyConstPtr pAny = context.node.GetInputData(EInputIdx::Array);
+	if (pAny)
 	{
-		Any::CopyAssign(*context.node.GetOutputData(EOutputIdx::Value), (*pArray)[data.pos++]);
-		return SRuntimeResult(ERuntimeStatus::ContinueAndRepeat, EOutputIdx::Loop);
+		CAnyArrayPtr pArray = DynamicCast<CAnyArrayPtr>(*pAny);
+		if (data.pos < pArray->GetSize())
+		{
+			Any::CopyAssign(*context.node.GetOutputData(EOutputIdx::Value), (*pArray)[data.pos++]);
+			return SRuntimeResult(ERuntimeStatus::ContinueAndRepeat, EOutputIdx::Loop);
+		}
 	}
-	else
-	{
-		return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
-	}
+
+	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
 
 const CryGUID CScriptGraphArrayForEachNode::ms_typeGUID = "67348889-afb6-4926-9275-9cb95e507787"_cry_guid;

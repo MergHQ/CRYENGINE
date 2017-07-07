@@ -92,12 +92,12 @@ struct ERuntimeGraphPortFlags // #SchematycTODO : Consider using CEnumFlags if i
 {
 	enum : uint8
 	{
-		Unused  = BIT(0),
-		Signal  = BIT(1),
-		Flow    = BIT(2),
-		Data    = BIT(3),
-		Pull    = BIT(4),
-		Linked  = BIT(5),
+		Unused = BIT(0),
+		Signal = BIT(1),
+		Flow = BIT(2),
+		Data = BIT(3),
+		Pull = BIT(4),
+		Linked = BIT(5),
 	};
 };
 
@@ -232,16 +232,16 @@ public:
 			output.dataPos = dataPos;
 		}
 
-		if(linkNodeIdx != InvalidRuntimeGraphNodeIdx)
+		if (linkNodeIdx != InvalidRuntimeGraphNodeIdx)
 		{
 			output.linkNodeIdx = linkNodeIdx;
 		}
-		
-		if(linkPortIdx != InvalidRuntimeGraphPortIdx)
+
+		if (linkPortIdx != InvalidRuntimeGraphPortIdx)
 		{
 			output.linkPortIdx = linkPortIdx;
 		}
-		
+
 		output.flags = (output.flags & ~ERuntimeGraphPortFlags::Unused) | flags;
 
 		return true;
@@ -259,7 +259,7 @@ public:
 
 private:
 
-	CryGUID                       m_guid;
+	CryGUID                     m_guid;
 	string                      m_name;
 	RuntimeGraphNodeCallbackPtr m_pCallback;
 	uint32                      m_dataPos;
@@ -322,7 +322,7 @@ public:
 	inline CAnyConstPtr GetInputData(RuntimeGraphPortIdx inputIdx) const
 	{
 		const SRuntimeGraphPort& input = GetInput(inputIdx);
-		return m_scratchpad.Get(input.dataPos);
+		return static_cast<const CScratchpad&>(m_scratchpad).Get(input.dataPos);
 	}
 
 	inline RuntimeGraphPortIdx GetOutputCount() const
@@ -356,14 +356,14 @@ public:
 	inline void BindParams(CRuntimeParamMap& params) const
 	{
 		// #SchematycTODO : Rather than populating the runtime parameter map every time we reference a node it might make more sense to pre-allocate node instances every time we instantiate a graph.
-		for (const SRuntimeGraphPort* pInput = m_node.GetInputs(), *pEndInput = pInput + m_node.GetInputCount(); pInput != pEndInput; ++pInput)
+		for (const SRuntimeGraphPort* pInput = m_node.GetInputs(), * pEndInput = pInput + m_node.GetInputCount(); pInput != pEndInput; ++pInput)
 		{
 			if (pInput->flags & ERuntimeGraphPortFlags::Data)
 			{
-				params.BindInput(pInput->id, m_scratchpad.Get(pInput->dataPos));
+				params.BindInput(pInput->id, static_cast<const CScratchpad&>(m_scratchpad).Get(pInput->dataPos));
 			}
 		}
-		for (const SRuntimeGraphPort* pOutput = m_node.GetOutputs(), *pEndOutput = pOutput + m_node.GetOutputCount(); pOutput != pEndOutput; ++pOutput)
+		for (const SRuntimeGraphPort* pOutput = m_node.GetOutputs(), * pEndOutput = pOutput + m_node.GetOutputCount(); pOutput != pEndOutput; ++pOutput)
 		{
 			if (pOutput->flags & ERuntimeGraphPortFlags::Data)
 			{
@@ -580,7 +580,7 @@ public:
 
 private:
 
-	CryGUID       m_guid;
+	CryGUID     m_guid;
 	string      m_name;
 	Nodes       m_nodes;
 	NodeLookup  m_nodeLookup;
