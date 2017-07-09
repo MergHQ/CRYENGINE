@@ -41,6 +41,7 @@
 #include "SerializationUtils/SerializationContext.h"
 #include "Utils/FileUtils.h"
 #include "Utils/GUIDRemapper.h"
+#include "Core.h"
 
 namespace Schematyc
 {
@@ -1121,6 +1122,8 @@ void CScriptRegistry::AddElement(const IScriptElementPtr& pElement, IScriptEleme
 	pElement->ProcessEvent(SScriptEvent(EScriptEventId::EditorAdd));
 
 	EndChange();
+
+	CCore::GetInstance().GetCompiler().CompileDependencies(scope.GetGUID());
 }
 
 void CScriptRegistry::RemoveElement(IScriptElement& element)
@@ -1134,6 +1137,7 @@ void CScriptRegistry::RemoveElement(IScriptElement& element)
 
 	CScript* pScript = static_cast<CScript*>(element.GetScript());
 
+	const CryGUID parentGuid = element.GetParent() ? element.GetParent()->GetGUID() : m_pRoot->GetGUID();
 	const CryGUID guid = element.GetGUID();
 	m_elements.erase(guid);
 
@@ -1145,6 +1149,8 @@ void CScriptRegistry::RemoveElement(IScriptElement& element)
 	}
 
 	ProcessChangeDependencies(EScriptRegistryChangeType::ElementRemoved, guid);
+
+	CCore::GetInstance().GetCompiler().CompileDependencies(parentGuid);
 }
 
 void CScriptRegistry::SaveScript(CScript& script)

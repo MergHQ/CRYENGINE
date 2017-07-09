@@ -5738,6 +5738,11 @@ void CPlayer::PostSerialize()
 {
 	CActor::PostSerialize();
 
+	if (IScriptTable* pScriptTable = GetEntity()->GetScriptTable())
+	{
+		Script::CallMethod(pScriptTable, "OnPlayerPostSerialize");
+	}
+
 	StateMachineHandleEventMovement( SStateEvent( STATE_EVENT_POST_SERIALIZE ) );
 
 	if( m_desiredStance == STANCE_CROUCH )

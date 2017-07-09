@@ -27,7 +27,12 @@ namespace Cry
 			// ~IEntityComponent
 
 		public:
-			CInputComponent();
+			enum class EKeyboardInputId {};
+			enum class EMouseInputId {};
+			enum class EXboxInputId {};
+			enum class EPS4InputId {};
+
+			CInputComponent() = default;
 			virtual ~CInputComponent() {}
 
 			typedef std::function<void(int activationMode, float value)> TActionCallback;
@@ -78,45 +83,11 @@ namespace Cry
 				}
 			}
 
-			virtual void BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice inputDevice, EKeyId keyId, bool bOnPress = true, bool bOnRelease = true)
-			{
-				IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
-				IActionMap* pActionMap = pActionMapManager->GetActionMap(groupName.c_str());
-				if (pActionMap == nullptr)
-				{
-					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Tried to bind input component action %s in group %s without registering it first!", name.c_str(), groupName.c_str());
-					return;
-				}
-
-				IActionMapAction* pAction = pActionMap->GetAction(ActionId(name.c_str()));
-				if (pAction == nullptr)
-				{
-					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Tried to bind input component action %s in group %s without registering it first!", name.c_str(), groupName.c_str());
-					return;
-				}
-
-				SActionInput input;
-				input.input = input.defaultInput = m_pImplementation->GetKeyId(keyId);
-				input.inputDevice = inputDevice;
-
-				if (bOnPress)
-				{
-					input.activationMode |= eAAM_OnPress;
-				}
-				if (bOnRelease)
-				{
-					input.activationMode |= eAAM_OnRelease;
-				}
-
-				pActionMap->AddAndBindActionInput(ActionId(name.c_str()), input);
-
-				pActionMapManager->EnableActionMap(groupName.c_str(), true);
-
-				if (IActionMap *pActionMap = pActionMapManager->GetActionMap(groupName.c_str()))
-				{
-					pActionMap->SetActionListener(GetEntityId());
-				}
-			}
+			virtual void BindKeyboardAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EKeyboardInputId keyId, bool bOnPress = true, bool bOnRelease = true);
+			virtual void BindMouseAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EMouseInputId keyId, bool bOnPress = true, bool bOnRelease = true);
+			virtual void BindXboxAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EXboxInputId keyId, bool bOnPress = true, bool bOnRelease = true);
+			virtual void BindPS4Action(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EPS4InputId keyId, bool bOnPress = true, bool bOnRelease = true);
+			virtual void BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice device, EKeyId keyId, bool bOnPress = true, bool bOnRelease = true);
 
 			static void ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc);
 
@@ -129,11 +100,6 @@ namespace Cry
 			virtual void RegisterSchematycAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name);
 
 		protected:
-			struct IImplementation
-			{
-				virtual const char* GetKeyId(EKeyId id) = 0;
-			};
-
 			struct SGroup final : public IActionListener
 			{
 				struct SAction
@@ -172,7 +138,6 @@ namespace Cry
 			};
 
 			DynArray<SGroup> m_groups;
-			std::unique_ptr<IImplementation> m_pImplementation;
 		};
 	}
 }

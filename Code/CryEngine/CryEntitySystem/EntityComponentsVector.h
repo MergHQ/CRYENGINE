@@ -37,6 +37,7 @@ private:
 	int m_activeScopes    : 29;                   //!< Counts current iteration scopes (cleanup cannot occur unless this is 0).
 	int m_cleanupRequired : 1;                    //!< Indicates NULL elements in listener.
 	int m_sortingValid  : 1;                      //!< Indicates that sorting order of the elements maybe not be valid.
+	CryCriticalSection m_lock;
 
 public:
 	//! \note No default constructor in favor of forcing users to provide an expectedCapacity.
@@ -52,6 +53,9 @@ public:
 	//! Appends a component to the end of the collection.
 	void Add(const SEntityComponentRecord& rec)
 	{
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+		CryAutoCriticalSection lock(m_lock);
+
 		m_vector.push_back(rec);
 		m_sortingValid = false;
 	}
@@ -59,6 +63,9 @@ public:
 	//! Removes a component from the collection.
 	void Remove(IEntityComponent* pComponent)
 	{
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+		CryAutoCriticalSection lock(m_lock);
+
 		std::shared_ptr<IEntityComponent> pTempComponent;
 
 		auto endIter = m_vector.end();
@@ -68,6 +75,7 @@ public:
 			if (iter->pComponent.get() == pComponent)
 			{
 				pTempComponent = iter->pComponent;
+
 				// If no iteration in progress
 				if (m_activeScopes == 0)
 				{
@@ -98,20 +106,23 @@ public:
 	//! Removes all components from the collection
 	void Clear()
 	{
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 		CRY_ASSERT(m_activeScopes == 0);
 		CRY_ASSERT(!m_cleanupRequired);
+		CryAutoCriticalSection lock(m_lock);
 
 		//////////////////////////////////////////////////////////////////////////
 		// ShutDown all components.
 		std::shared_ptr<IEntityComponent> pUserComponent;
 
-		ForEach([&pUserComponent](const SEntityComponentRecord& rec)
+		ForEach([this, &pUserComponent](const SEntityComponentRecord& rec)
 		{
 			if (rec.proxyType == ENTITY_PROXY_USER)
 			{
 				// User component must be deleted last after all other components are destroyed (Required by CGameObject)
 				pUserComponent = rec.pComponent;
 			}
+
 			ShutDownComponent(rec.pComponent.get());
 		});
 
@@ -132,6 +143,8 @@ public:
 	//! Reserves space to help avoid runtime reallocation.
 	void Reserve(size_t capacity)
 	{
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+		CryAutoCriticalSection lock(m_lock);
 		m_vector.reserve(capacity);
 	}
 
@@ -144,7 +157,9 @@ public:
 	template<typename LambdaFunction>
 	void ForEach(LambdaFunction f)
 	{
-		StartForEachScope();
+		CryAutoCriticalSection lock(m_lock);
+		++m_activeScopes;
+
 		// Iterate only until current count, ignore new elements added during the loop
 		for (size_t index = 0; index < m_vector.size(); ++index)
 		{
@@ -154,7 +169,24 @@ public:
 				f(rec);
 			}
 		}
-		EndForEachScope();
+
+		// End the scope
+		// Ensure at least one notification scope was started
+		CRY_ASSERT(m_activeScopes > 0);
+
+		// If this is the last notification, remove null elements
+		if (--m_activeScopes == 0 && m_cleanupRequired)
+		{
+			// Shuffles all elements != value to the front and returns the start of the removed elements.
+			auto newEndIter = std::remove_if(m_vector.begin(), m_vector.end(),
+				[](const SEntityComponentRecord& rec) { return rec.pComponent.get() == nullptr; }
+			);
+			// Delete the removed range at the back of the container (low-cost for vector).
+			m_vector.erase(newEndIter, m_vector.end());
+
+			m_sortingValid = false;
+			m_cleanupRequired = false;
+		}
 	}
 
 	//! Invokes the provided function f once with each component after sorting.
@@ -163,6 +195,8 @@ public:
 	{
 		if (!m_sortingValid && m_activeScopes == 0)
 		{
+			CryAutoCriticalSection lock(m_lock);
+
 			// Requires resorting of the components
 			// Elements are sorted by the event priority
 			std::sort(m_vector.begin(), m_vector.end(), [](const SEntityComponentRecord& a, const SEntityComponentRecord& b) -> bool { return a.eventPriority < b.eventPriority; });
@@ -172,41 +206,5 @@ public:
 	}
 
 private:
-	void StartForEachScope()
-	{
-		++m_activeScopes;
-	}
-
-	inline void EndForEachScope()
-	{
-		// Ensure at least one notification scope was started
-		CRY_ASSERT(m_activeScopes > 0);
-
-		// If this is the last notification
-		if (--m_activeScopes == 0)
-		{
-			EraseNullElements();
-		}
-	}
-
-	void EraseNullElements()
-	{
-		// Ensure no modification while notification(s) are ongoing
-		CRY_ASSERT(m_activeScopes == 0);
-
-		if (m_cleanupRequired)
-		{
-			// Shuffles all elements != value to the front and returns the start of the removed elements.
-			auto newEndIter = std::remove_if(m_vector.begin(), m_vector.end(),
-			                                 [](const SEntityComponentRecord& rec) { return rec.pComponent.get() == nullptr; }
-			                                 );
-			// Delete the removed range at the back of the container (low-cost for vector).
-			m_vector.erase(newEndIter, m_vector.end());
-
-			m_sortingValid = false;
-			m_cleanupRequired = false;
-		}
-	}
-
 	static void ShutDownComponent(IEntityComponent *pComponent);
 };

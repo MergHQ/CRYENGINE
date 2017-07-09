@@ -51,10 +51,7 @@ DisplayParametersPanel::~DisplayParametersPanel()
 
 void DisplayParametersPanel::Serialize(Serialization::IArchive& ar)
 {
-	if (ar.filter(SERIALIZE_STATE))
-	{
-		ar(*m_propertyTree, "propertyTree");
-	}
+	ar(*m_propertyTree, "propertyTree");
 }
 
 void DisplayParametersPanel::OnDisplayOptionsUpdated()

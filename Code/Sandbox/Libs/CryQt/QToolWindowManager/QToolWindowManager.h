@@ -106,10 +106,14 @@ public:
 
 	IToolWindowWrapper* draggedWrapper() { return m_draggedWrapper; }
 
+	IToolWindowWrapper* resizedWrapper() { return m_resizedWrapper; }
+
 	const QVariantMap& config() const { return m_config; }
 
 	void startDrag(const QList<QWidget*> &toolWindows, IToolWindowArea* area);
 	void startDrag(IToolWindowWrapper* wrapper);
+
+	void startResize(IToolWindowWrapper* wrapper);
 
 	void addToolWindow(QWidget* toolWindow, const QToolWindowAreaTarget& target, const QTWMToolType toolType=ttStandard);
 	void addToolWindow(QWidget* toolWindow, IToolWindowArea* area = nullptr, QToolWindowAreaReference::eType reference = QToolWindowAreaReference::Combine, int index = -1, QRect geometry = QRect());
@@ -154,6 +158,8 @@ public:
 	bool isAnyWindowActive();
 	void updateDragPosition();
 	void finishWrapperDrag();
+
+	void finishWrapperResize();
 
 	QVariantMap saveWrapperState(IToolWindowWrapper* wrapper);
 	IToolWindowWrapper* restoreWrapperState(const QVariantMap& data, int stateFormat, IToolWindowWrapper* wrapper = nullptr);
@@ -217,6 +223,7 @@ protected:
 	QToolWindowManagerClassFactory* m_factory;
 	QTimer* m_raiseTimer;
 	IToolWindowWrapper* m_draggedWrapper;
+	IToolWindowWrapper* m_resizedWrapper;
 	int m_layoutChangeNotifyLocks;
 	
 	QSplitter *createSplitter();
