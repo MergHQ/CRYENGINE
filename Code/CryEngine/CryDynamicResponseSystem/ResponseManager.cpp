@@ -761,6 +761,23 @@ void CryDRS::CResponseManager::OnActorRemoved(const CResponseActor* pActor)
 			++it;
 		}
 	}
+
+	auto newEndIter = std::remove_if(m_currentlyQueuedSignals.begin(), m_currentlyQueuedSignals.end(),
+		[pActor](const SSignal& signal) { return signal.m_pSender == pActor; });
+
+	if (newEndIter != m_currentlyQueuedSignals.end())
+	{
+		// move signals away to temporary list and report their removal, as it may trigger callbacks and change m_currentlyQueuedSignals
+		SignalList tempSignalsToRemove;
+		tempSignalsToRemove.reserve(std::distance(newEndIter, m_currentlyQueuedSignals.end()));
+		std::move(newEndIter, m_currentlyQueuedSignals.end(), std::back_inserter(tempSignalsToRemove));
+		m_currentlyQueuedSignals.erase(newEndIter, m_currentlyQueuedSignals.end());
+
+		for (const auto& signal : tempSignalsToRemove)
+		{
+			InformListenerAboutSignalProcessingFinished(signal.m_signalName, signal.m_pSender, signal.m_pSignalContext, signal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_Canceled);
+		}
+	}
 }
 
 //--------------------------------------------------------------------------------------------------

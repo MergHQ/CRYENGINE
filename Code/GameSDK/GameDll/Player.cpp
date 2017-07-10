@@ -5740,7 +5740,10 @@ void CPlayer::PostSerialize()
 
 	if (IScriptTable* pScriptTable = GetEntity()->GetScriptTable())
 	{
-		Script::CallMethod(pScriptTable, "OnPlayerPostSerialize");
+		if (pScriptTable->HaveValue("OnPlayerPostSerialize"))
+		{
+			Script::CallMethod(pScriptTable, "OnPlayerPostSerialize");
+		}
 	}
 
 	StateMachineHandleEventMovement( SStateEvent( STATE_EVENT_POST_SERIALIZE ) );

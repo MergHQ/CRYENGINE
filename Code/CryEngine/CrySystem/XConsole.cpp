@@ -21,6 +21,7 @@
 #include <CryInput/IHardwareMouse.h>
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryString/StringUtils.h>
 #include "ConsoleHelpGen.h"     // CConsoleHelpGen
 
 //#define DEFENCE_CVAR_HASH_LOGGING
@@ -3201,19 +3202,27 @@ void CXConsole::Copy()
 		return;
 
 	size_t cbLength = m_sInputBuffer.length();
+	wstring textW = CryStringUtils::UTF8ToWStr(m_sInputBuffer);
+	
+	HGLOBAL hGlobalA, hGlobalW;
+	LPVOID pGlobalA, pGlobalW;
 
-	HGLOBAL hGlobal;
-	LPVOID pGlobal;
+	int lengthA = WideCharToMultiByte(CP_ACP, 0, textW.c_str(), -1, NULL, 0, NULL, NULL); //includes null terminator
 
-	hGlobal = GlobalAlloc(GHND, cbLength + 1);
-	pGlobal = GlobalLock(hGlobal);
+	hGlobalW = GlobalAlloc(GHND, (textW.length() + 1) * sizeof(wchar_t));
+	hGlobalA = GlobalAlloc(GHND, lengthA);
+	pGlobalW = GlobalLock(hGlobalW);
+	pGlobalA = GlobalLock(hGlobalA);
 
-	strcpy((char*)pGlobal, m_sInputBuffer.c_str());
+	wcscpy((wchar_t*)pGlobalW, textW.c_str());
+	WideCharToMultiByte(CP_ACP, 0, textW.c_str(), -1, (LPSTR)pGlobalA, lengthA, NULL, NULL);
 
-	GlobalUnlock(hGlobal);
+	GlobalUnlock(hGlobalW);
+	GlobalUnlock(hGlobalA);
 
 	EmptyClipboard();
-	SetClipboardData(CF_TEXT, hGlobal);
+	SetClipboardData(CF_UNICODETEXT, hGlobalW);
+	SetClipboardData(CF_TEXT, hGlobalA);
 	CloseClipboard();
 
 	return;
@@ -3226,12 +3235,15 @@ void CXConsole::Paste()
 #if CRY_PLATFORM_WINDOWS
 	//TRACE("Paste\n");
 
-	if (!IsClipboardFormatAvailable(CF_TEXT))
+	const BOOL hasANSI = IsClipboardFormatAvailable(CF_TEXT);
+	const BOOL hasUnicode = IsClipboardFormatAvailable(CF_UNICODETEXT);
+
+	if (!(hasANSI || hasUnicode))
 		return;
 	if (!OpenClipboard(NULL))
 		return;
 
-	HGLOBAL const hGlobal = GetClipboardData(CF_TEXT);
+	HGLOBAL const hGlobal = GetClipboardData(hasUnicode ? CF_UNICODETEXT : CF_TEXT);
 	if (!hGlobal)
 	{
 		CloseClipboard();
@@ -3244,18 +3256,24 @@ void CXConsole::Paste()
 		CloseClipboard();
 		return;
 	}
-
-	char sTemp[255];
-	const size_t srcLength = strlen((const char*)pGlobal);
-	const size_t finalLength = (std::min)(sizeof(sTemp), srcLength);
-	memcpy(sTemp, pGlobal, finalLength);
+	
+	string temp;
+	if (hasUnicode)
+	{
+		temp = CryStringUtils::WStrToUTF8((const wchar_t*)pGlobal);
+	}
+	else
+	{
+		temp = CryStringUtils::ANSIToUTF8((const char*)pGlobal);
+	}
 
 	GlobalUnlock(hGlobal);
 
 	CloseClipboard();
 
-	m_sInputBuffer.insert(m_nCursorPos, sTemp, finalLength);
-	m_nCursorPos += (int)finalLength;
+	size_t length = temp.length();
+	m_sInputBuffer.insert(m_nCursorPos, temp.begin(), length);
+	m_nCursorPos += length;
 #endif
 }
 

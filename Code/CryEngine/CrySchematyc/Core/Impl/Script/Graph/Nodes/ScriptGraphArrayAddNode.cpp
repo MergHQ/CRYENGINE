@@ -172,10 +172,14 @@ void CScriptGraphArrayAddNode::Register(CScriptGraphNodeFactory& factory)
 
 SRuntimeResult CScriptGraphArrayAddNode::Execute(SRuntimeContext& context, const SRuntimeActivationParams& activationParams)
 {
-	CAnyArrayPtr pArray = DynamicCast<CAnyArrayPtr>(*context.node.GetInputData(EInputIdx::Array));
-	CAnyConstRef value = *context.node.GetInputData(EInputIdx::Value);
+	CAnyConstPtr pAny = context.node.GetInputData(EInputIdx::Array);
+	if (pAny)
+	{
+		CAnyArrayPtr pArray = DynamicCast<CAnyArrayPtr>(*pAny);
+		CAnyConstRef value = *context.node.GetInputData(EInputIdx::Value);
 
-	pArray->PushBack(value);
+		pArray->PushBack(value);
+	}
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
