@@ -43,14 +43,17 @@ using XMLNodeList = std::vector<SRawConnectionData>;
 		string            GetName() const { return m_name; }
 		virtual void      SetName(const string& name) { m_name = name; }
 
-	virtual bool      IsModified() const = 0;
-	virtual void      SetModified(bool const bModified, bool const bForce = false) = 0;
+		virtual bool      IsModified() const = 0;
+		virtual void      SetModified(bool const bModified, bool const bForce = false) = 0;
+
+		void              SetPlaceholderConnection(bool const bIsPlaceholder) { m_bHasPlaceholderConnection = bIsPlaceholder; }
+		bool              HasPlaceholderConnection() const { return m_bHasPlaceholderConnection; }
 
 	protected:
 		IAudioAsset*              m_pParent = nullptr;
 		std::vector<IAudioAsset*> m_children;
 		string                    m_name;
-
+		bool                      m_bHasPlaceholderConnection = false;
 	};
 
 	class CAudioLibrary : public IAudioAsset
@@ -122,8 +125,8 @@ public:
 
 		void          Serialize(Serialization::IArchive& ar);
 
-	virtual bool  IsModified() const override;
-	virtual void  SetModified(bool const bModified, bool const bForce = false) override;
+		virtual bool  IsModified() const override;
+		virtual void  SetModified(bool const bModified, bool const bForce = false) override;
 
 	private:
 

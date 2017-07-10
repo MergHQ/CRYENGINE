@@ -160,6 +160,13 @@ QVariant CAudioAssetsExplorerModel::data(const QModelIndex& index, int role) con
 		case Qt::EditRole:
 			return QtUtil::ToQStringSafe(pLibrary->GetName());
 
+		case Qt::ForegroundRole:
+			if (pLibrary->HasPlaceholderConnection())
+			{
+				return QColor(200, 100, 100);
+			}
+			break;
+
 		case Qt::DecorationRole:
 			return GetItemTypeIcon(EItemType::eItemType_Library);
 
@@ -203,7 +210,7 @@ bool CAudioAssetsExplorerModel::setData(const QModelIndex& index, const QVariant
 					}
 				}
 			default:
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] The role \'%d\' is not handled!", role);
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] The role '%d' is not handled!)", role);
 				break;
 			}
 		}
@@ -453,6 +460,13 @@ QVariant CAudioLibraryModel::data(const QModelIndex& index, int role) const
 		case Qt::EditRole:
 			return QtUtil::ToQStringSafe(pItem->GetName());
 
+		case Qt::ForegroundRole:
+			if (pItem->HasPlaceholderConnection())
+			{
+				return QColor(200, 100, 100);
+			}
+			break;
+
 		case Qt::DecorationRole:
 			return GetItemTypeIcon(itemType);
 
@@ -506,7 +520,7 @@ bool CAudioLibraryModel::setData(const QModelIndex& index, const QVariant& value
 								pItem->SetModified(true);
 								break;
 							default:
-								CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] The item type \'%d\' is not handled!", itemType);
+								CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] The item type '%d' is not handled!)", itemType);
 								break;
 							}
 						}
@@ -515,7 +529,7 @@ bool CAudioLibraryModel::setData(const QModelIndex& index, const QVariant& value
 					}
 				}
 			default:
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] The role \'%d\' is not handled!", role);
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] The role '%d' is not handled!)", role);
 				break;
 			}
 		}

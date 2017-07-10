@@ -21,7 +21,7 @@ namespace AudioModelUtils
 {
 void         GetAssetsFromIndices(const QModelIndexList& list, std::vector<CAudioLibrary*>& outLibraries, std::vector<CAudioFolder*>& outFolders, std::vector<CAudioControl*>& outControls);
 IAudioAsset* GetAssetFromIndex(const QModelIndex& index);
-}
+} // namespace AudioModelUtils
 
 class CAudioAssetsExplorerModel : public QAbstractItemModel
 {
@@ -42,7 +42,7 @@ protected:
 	virtual bool            canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
 	virtual bool            dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
 	virtual Qt::DropActions supportedDropActions() const override;
-	QStringList             mimeTypes() const;
+	virtual QStringList     mimeTypes() const override;
 	// -------------------------------------------------------
 
 private:
@@ -85,9 +85,9 @@ protected:
 	virtual QModelIndex     parent(const QModelIndex& index) const override;
 	virtual bool            canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
 	virtual bool            dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
-	virtual QMimeData*      mimeData(const QModelIndexList& indexes) const;
+	virtual QMimeData*      mimeData(const QModelIndexList& indexes) const override;
 	virtual Qt::DropActions supportedDropActions() const override;
-	QStringList             mimeTypes() const;
+	virtual QStringList     mimeTypes() const override;
 	// -------------------------------------------------------
 
 private:
@@ -96,5 +96,4 @@ private:
 	CAudioAssetsManager* m_pAssetsManager = nullptr;
 	CAudioLibrary*       m_pLibrary = nullptr;
 };
-
-}
+} // namespace ACE
