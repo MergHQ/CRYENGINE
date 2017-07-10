@@ -156,7 +156,29 @@ SLogSettings::SLogSettings()
 	, bShowErrors(true)
 	, bShowEntity(false)
 	, bShowOrigin(false)
-{}
+{
+	ILog& log = gEnv->pSchematyc->GetLog();
+
+	const char* szStreamName = log.GetStreamName(LogStreamId::Default);
+	if (szStreamName && szStreamName != "")
+		streams.emplace_back(SLogStreamName(szStreamName));
+
+	szStreamName = log.GetStreamName(LogStreamId::Core);
+	if (szStreamName && szStreamName != "")
+		streams.emplace_back(SLogStreamName(szStreamName));
+
+	szStreamName = log.GetStreamName(LogStreamId::Compiler);
+	if (szStreamName && szStreamName != "")
+		streams.emplace_back(SLogStreamName(szStreamName));
+
+	szStreamName = log.GetStreamName(LogStreamId::Editor);
+	if (szStreamName && szStreamName != "")
+		streams.emplace_back(SLogStreamName(szStreamName));
+
+	szStreamName = log.GetStreamName(LogStreamId::Env);
+	if (szStreamName && szStreamName != "")
+		streams.emplace_back(SLogStreamName(szStreamName));
+}
 
 void SLogSettings::Serialize(Serialization::IArchive& archive)
 {
