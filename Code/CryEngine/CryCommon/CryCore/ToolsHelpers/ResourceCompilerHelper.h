@@ -4,6 +4,8 @@
 
 #include "SettingsManagerHelpers.h"
 
+class LineStreamBuffer;
+
 enum ERcExitCode
 {
 	eRcExitCode_Success    = 0, //!< Must be 0.
@@ -79,6 +81,14 @@ public:
 	  const bool bUserDialog,
 	  const bool bRefresh);
 	static const char* GetCallResultDescription(ERcCallResult result);
+
+	static bool CallProcess(
+		const wchar_t* szStartingDirectory, 
+		const wchar_t* szCommandLine, 
+		bool bShowWindow, 
+		LineStreamBuffer* pListener, 
+		int& exitCode, 
+		void* pEnvironment);
 
 #endif // CRY_ENABLE_RC_HELPER
 

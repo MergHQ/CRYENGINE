@@ -48,7 +48,9 @@ void CMonoClass::Serialize(CMonoObject* pSerializer)
 
 	for (auto it = m_methods.begin(); it != m_methods.end();)
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = it->lock())
+		std::shared_ptr<CMonoMethod> pMethod = it->lock();
+
+		if (pMethod && pMethod->GetHandle() != nullptr)
 		{
 			pMethod->PrepareForSerialization();
 
@@ -108,7 +110,14 @@ void CMonoClass::Deserialize(CMonoObject* pSerializer)
 
 void CMonoClass::ReloadClass()
 {
-	m_pClass = MonoInternals::mono_class_from_name(m_pLibrary->GetImage(), m_namespace, m_name);
+	if (m_pLibrary->GetImage() != nullptr)
+	{
+		m_pClass = MonoInternals::mono_class_from_name(m_pLibrary->GetImage(), m_namespace, m_name);
+	}
+	else
+	{
+		m_pClass = nullptr;
+	}
 }
 
 void CMonoClass::OnAssemblyUnload()
@@ -120,6 +129,8 @@ void CMonoClass::OnAssemblyUnload()
 			pObject->ReleaseGCHandle();
 		}
 	}
+
+	m_pClass = nullptr;
 }
 
 const char* CMonoClass::GetName() const

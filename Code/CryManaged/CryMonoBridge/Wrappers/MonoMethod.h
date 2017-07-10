@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include "MonoObject.h"
-
 #ifndef HAVE_MONO_API
 namespace MonoInternals
 {
 	struct MonoMethod;
 }
 #endif
+
+class CMonoObject;
 
 class CMonoMethod
 {
@@ -26,7 +26,10 @@ public:
 
 	uint32 GetParameterCount() const;
 	string GetSignatureDescription(bool bIncludeNamespace = true) const;
+	const char* GetName() const { return MonoInternals::mono_method_get_name(m_pMethod); }
 	
+	MonoInternals::MonoMethod* GetHandle() const { return m_pMethod; }
+
 protected:
 	std::shared_ptr<CMonoObject> InvokeInternal(MonoInternals::MonoObject* pMonoObject, void** pParameters, bool &bEncounteredException) const;
 

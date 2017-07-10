@@ -337,9 +337,9 @@ namespace CryEngine
 		/// <returns></returns>
 		public T AddComponent<T>() where T : EntityComponent, new()
 		{
-            var componentTypeInfo = EntityComponent._componentClassMap[typeof(T)];
+            var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
 
-			return NativeInternals.Entity.AddComponent(NativeEntityPointer, componentTypeInfo.guid.hipart, componentTypeInfo.guid.lopart) as T;
+			return NativeInternals.Entity.AddComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
 		}
 
 		/// <summary>
@@ -347,19 +347,18 @@ namespace CryEngine
 		/// </summary>
 		public T GetComponent<T>() where T : EntityComponent
 		{
-            var componentTypeInfo = EntityComponent._componentClassMap[typeof(T)];
+            var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
 
-            return NativeInternals.Entity.GetComponent(NativeEntityPointer, componentTypeInfo.guid.hipart, componentTypeInfo.guid.lopart) as T;
+            return NativeInternals.Entity.GetComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
 		}
 
 		private EntityComponent[] GetComponents(Type type)
 		{
-			var componentTypeInfo = EntityComponent._componentClassMap[type];
-			var guid = componentTypeInfo.guid;
-
+            var componentTypeGUID = EntityComponent.GetComponentTypeGUID(type);
+            
 			EntityComponent[] baseComponents;
 
-			NativeInternals.Entity.GetComponents(NativeEntityPointer, guid.hipart, guid.lopart, out baseComponents);
+			NativeInternals.Entity.GetComponents(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart, out baseComponents);
 
 			return baseComponents;
 		}
@@ -463,9 +462,9 @@ namespace CryEngine
 		/// <returns></returns>
 		public T GetOrCreateComponent<T>() where T : EntityComponent, new()
 		{
-            var componentTypeInfo = EntityComponent._componentClassMap[typeof(T)];
+            var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
 
-            return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, componentTypeInfo.guid.hipart, componentTypeInfo.guid.lopart) as T;
+            return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
 		}
 
 		/// <summary>

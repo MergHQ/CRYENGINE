@@ -187,7 +187,7 @@ void CMonoLibrary::Serialize(CMonoObject* pSerializer)
 	// This is automatically cached in GetFilePath.
 	GetFilePath();
 
-	static_cast<CAppDomain*>(m_pDomain)->SerializeObject(pSerializer, GetManagedObject(), true);
+	static_cast<CAppDomain*>(m_pDomain)->SerializeObject(pSerializer, m_pAssembly != nullptr ? GetManagedObject() : nullptr, true);
 
 	for (auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
@@ -207,6 +207,14 @@ void CMonoLibrary::Deserialize(CMonoObject* pSerializer)
 
 CMonoClass* CMonoLibrary::GetClass(const char* szNamespace, const char* szClassName)
 {
+	for (auto it = m_classes.begin(); it != m_classes.end(); ++it)
+	{
+		if (!strcmp(it->get()->GetNamespace(), szNamespace) && !strcmp(it->get()->GetName(), szClassName))
+		{
+			return it->get();;
+		}
+	}
+
 	m_classes.emplace_back(std::make_shared<CMonoClass>(this, szNamespace, szClassName));
 
 	std::shared_ptr<CMonoClass> pClass = m_classes.back();
@@ -270,7 +278,7 @@ const char* CMonoLibrary::GetImageName() const
 
 const char* CMonoLibrary::GetFilePath()
 {
-	if (m_assemblyPath.size() == 0)
+	if (m_assemblyPath.size() == 0 && m_pAssembly != nullptr)
 	{
 		MonoInternals::MonoAssemblyName* pAssemblyName = MonoInternals::mono_assembly_get_name(m_pAssembly);
 		m_assemblyPath = MonoInternals::mono_assembly_name_get_name(pAssemblyName);
