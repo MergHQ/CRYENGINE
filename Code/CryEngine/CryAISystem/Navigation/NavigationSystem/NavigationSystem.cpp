@@ -574,24 +574,11 @@ void NavigationSystem::SetVolume(NavigationVolumeID volumeID, Vec3* vertices, si
 		bool recomputeAABB = false;
 
 		NavigationBoundingVolume newVolume;
-		AABB aabbNew(AABB::RESET);
-
-		newVolume.vertices.reserve(vertexCount);
-
-		for (size_t i = 0; i < vertexCount; ++i)
-		{
-			aabbNew.Add(vertices[i]);
-			newVolume.vertices.push_back(vertices[i]);
-		}
-
-		aabbNew.Add(vertices[0] + Vec3(0.0f, 0.0f, height));
-
-		newVolume.height = height;
-		newVolume.aabb = aabbNew;
+		newVolume.Set(vertices, vertexCount, height);
 
 		NavigationBoundingVolume& volume = m_volumes[volumeID];
 
-		if (!volume.vertices.empty())
+		if (!volume.GetBoundaryVertices().empty())
 		{
 			AgentTypes::const_iterator it = m_agentTypes.begin();
 			AgentTypes::const_iterator end = m_agentTypes.end();
@@ -619,7 +606,7 @@ void NavigationSystem::SetVolume(NavigationVolumeID volumeID, Vec3* vertices, si
 					if (std::find(mesh.exclusions.begin(), mesh.exclusions.end(), volumeID) != mesh.exclusions.end())
 					{
 						m_updatesManager.RequestMeshUpdate(meshID, volume.aabb);
-						m_updatesManager.RequestMeshUpdate(meshID, aabbNew);
+						m_updatesManager.RequestMeshUpdate(meshID, newVolume.aabb);
 						++mesh.version;
 					}
 				}
@@ -1200,7 +1187,7 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 	MNM::CTileGenerator::Params params;
 
 	SetupGenerator(meshID, paramsGrid, x, y, z, params, &def->boundary,
-	               def->exclusions.empty() ? 0 : &def->exclusions[0], def->exclusions.size());
+	               def->exclusions.empty() ? nullptr : &def->exclusions[0], def->exclusions.size());
 
 	if (mt)
 	{
@@ -3175,7 +3162,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				CRY_ASSERT(m_volumes.validate(volumeId));
 				const MNM::BoundingVolume& volume = m_volumes.get(volumeId);
 
-				const uint32 verticesCount = volume.vertices.size();
+				const uint32 verticesCount = volume.GetBoundaryVertices().size();
 
 				volumeAreaName.clear();
 				m_volumesManager.GetAreaName(volumeId, *&volumeAreaName);
@@ -3184,7 +3171,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				WriteNavigationIdType(file, volumeId);
 				file.WriteType(&volume.height);
 				file.WriteType(&verticesCount);
-				for (const Vec3& vertex : volume.vertices)
+				for (const Vec3& vertex : volume.GetBoundaryVertices())
 				{
 					file.WriteType(&vertex.x, 3);
 				}

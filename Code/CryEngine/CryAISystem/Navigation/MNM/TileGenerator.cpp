@@ -230,11 +230,10 @@ bool CTileGenerator::Generate(const Params& params, STile& tile, uint32* tileHas
 			for (size_t e = 0; e < m_params.exclusionCount; ++e)
 			{
 				const BoundingVolume& volume = m_params.exclusions[e];
-				const size_t vertexCount = volume.vertices.size();
 
-				for (size_t v = 0; v < vertexCount; ++v)
+				for (const Vec3& v : volume.GetBoundaryVertices())
 				{
-					hash.Add(volume.vertices[v]);
+					hash.Add(v);
 				}
 
 				hash.Add(volume.height);
@@ -243,11 +242,10 @@ bool CTileGenerator::Generate(const Params& params, STile& tile, uint32* tileHas
 			if (m_params.boundary)
 			{
 				const BoundingVolume& volume = *m_params.boundary;
-				const size_t vertexCount = volume.vertices.size();
 
-				for (size_t v = 0; v < vertexCount; ++v)
+				for (const Vec3& v : volume.GetBoundaryVertices())
 				{
-					hash.Add(volume.vertices[v]);
+					hash.Add(v);
 				}
 
 				hash.Add(volume.height);
@@ -267,6 +265,9 @@ bool CTileGenerator::Generate(const Params& params, STile& tile, uint32* tileHas
 		extensionParams.tileAabbWorld = tileAabbWorld;
 		extensionParams.extendedTileAabbWorld = aabb;
 		extensionParams.navAgentTypeId = params.navAgentTypeId;
+		extensionParams.pBoundaryVolume = params.boundary;
+		extensionParams.pExclusionVolumes = params.exclusions;
+		extensionParams.exclusionVolumesCount = params.exclusionCount;
 
 		{
 			AUTO_READLOCK(params.pTileGeneratorExtensions->extensionsLock);
