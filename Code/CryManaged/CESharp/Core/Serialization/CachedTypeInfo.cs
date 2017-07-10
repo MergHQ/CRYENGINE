@@ -29,6 +29,7 @@ namespace CryEngine.Serialization
 		public static Type _objectType = typeof(object);
 		public static Type _delegateType = typeof(Delegate);
 		static Type _typeType = typeof(Type);
+        static Type _assemblyType = typeof(Assembly);
 		static Type _memberInfoType = typeof(MemberInfo);
 		static Type _stringType = typeof(string);
 		static Type _intptrType = typeof(IntPtr);
@@ -38,11 +39,13 @@ namespace CryEngine.Serialization
 		static Type _serializableType = typeof(ISerializable);
 
 		static Type _monoType;
+        static Type _monoAssemblyType;
 
 		static CachedTypeInfo()
 		{
-			_monoType = Type.GetType("System.MonoType");
-		}
+            _monoType = Type.GetType("System.MonoType");
+            _monoAssemblyType = Type.GetType("System.Reflection.MonoAssembly");
+        }
 
 		public CachedTypeInfo(Type type)
 		{
@@ -65,11 +68,15 @@ namespace CryEngine.Serialization
 			{
 				_serializedType = SerializedObjectType.Enum;
 			}
-			else if (_typeType.IsAssignableFrom(_type) || _type == _monoType)
-			{
-				_serializedType = SerializedObjectType.Type;
-			}
-			else if (_type == _stringType)
+            else if (_assemblyType.IsAssignableFrom(_type) || _type == _monoAssemblyType)
+            {
+                _serializedType = SerializedObjectType.Assembly;
+            }
+            else if (_typeType.IsAssignableFrom(_type) || _type == _monoType)
+            {
+                _serializedType = SerializedObjectType.Type;
+            }
+            else if (_type == _stringType)
 			{
 				_serializedType = SerializedObjectType.String;
 			}
@@ -77,11 +84,11 @@ namespace CryEngine.Serialization
 			{
 				_serializedType = SerializedObjectType.Array;
 			}
-			else if (_memberInfoType.IsAssignableFrom(_type))
-			{
-				_serializedType = SerializedObjectType.MemberInfo;
-			}
-			else if (_serializableType.IsAssignableFrom(_type) && _type.GetCustomAttributes(typeof(SerializableAttribute), true).Length > 0)
+            else if (_memberInfoType.IsAssignableFrom(_type))
+            {
+                _serializedType = SerializedObjectType.MemberInfo;
+            }
+            else if (_serializableType.IsAssignableFrom(_type) && _type.GetCustomAttributes(typeof(SerializableAttribute), true).Length > 0)
 			{
 				_serializedType = SerializedObjectType.ISerializable;
 			}

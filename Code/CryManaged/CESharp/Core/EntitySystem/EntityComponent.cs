@@ -33,12 +33,31 @@ namespace CryEngine
 
 		internal class TypeInfo
 		{
+            public Type type;
 			public GUID guid;
 		}
 
-		internal static Dictionary<Type, TypeInfo> _componentClassMap = new Dictionary<Type, TypeInfo>();
+		internal static List<TypeInfo> _componentTypes = new List<TypeInfo>();
 
-		public Entity Entity { get; private set; }
+        internal static GUID GetComponentTypeGUID<T>()
+        {
+            return GetComponentTypeGUID(typeof(T));
+        }
+
+        internal static GUID GetComponentTypeGUID(Type type)
+        {
+            foreach (var typeInfo in _componentTypes)
+            {
+                if (typeInfo.type == type)
+                {
+                    return typeInfo.guid;
+                }
+            }
+
+            throw new KeyNotFoundException("Component was not registered!");
+        }
+
+        public Entity Entity { get; private set; }
 
 		#region Functions
 		internal void SetEntity(IntPtr entityHandle, uint id)
@@ -112,9 +131,9 @@ namespace CryEngine
 		internal static void TryRegister(Type entityComponentType)
 		{
 			var typeInfo = new TypeInfo();
-			_componentClassMap[entityComponentType] = typeInfo;
+            _componentTypes.Add(typeInfo);
 
-			var guidAttribute = (GuidAttribute)entityComponentType.GetCustomAttributes(typeof(GuidAttribute), false).FirstOrDefault();
+            var guidAttribute = (GuidAttribute)entityComponentType.GetCustomAttributes(typeof(GuidAttribute), false).FirstOrDefault();
 			if(guidAttribute != null)
 			{
 				var guid = new Guid(guidAttribute.Value);

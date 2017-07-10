@@ -31,23 +31,30 @@ namespace CryEngine.Serialization
 
 		public void WriteStatics(Assembly assembly)
 		{
-			var types = assembly.GetTypes();
+            if (assembly != null)
+            {
+                var types = assembly.GetTypes();
 
-			Writer.Write(types.Length);
+                Writer.Write(types.Length);
 
-			foreach (var type in types)
-			{
-				if (type.IsGenericTypeDefinition || type.IsInterface || type.IsEnum)
-				{
-					Writer.Write(false);
-					continue;
-				}
+                foreach (var type in types)
+                {
+                    if (type.IsGenericTypeDefinition || type.IsInterface || type.IsEnum)
+                    {
+                        Writer.Write(false);
+                        continue;
+                    }
 
-				Writer.Write(true);
-				WriteType(type);
+                    Writer.Write(true);
+                    WriteType(type);
 
-				WriteObjectMembers(null, type, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Static);
-			}
+                    WriteObjectMembers(null, type, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Static);
+                }
+            }
+            else
+            {
+                Writer.Write(0);
+            }
 
 			Writer.Flush();
 		}
@@ -169,6 +176,11 @@ namespace CryEngine.Serialization
 								WriteType((Type)obj);
 							}
 							break;
+                        case SerializedObjectType.Assembly:
+                            {
+                                WriteAssembly((Assembly)obj);
+                            }
+                            break;
 						case SerializedObjectType.String:
 							{
 								Writer.Write((string)obj);
@@ -385,5 +397,10 @@ namespace CryEngine.Serialization
 				}
 			}
 		}
+
+        void WriteAssembly(Assembly assembly)
+        {
+            Writer.Write(assembly.Location);
+        }
 	}
 }

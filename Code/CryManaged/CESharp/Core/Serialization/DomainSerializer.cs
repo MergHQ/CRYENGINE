@@ -31,6 +31,7 @@ namespace CryEngine.Serialization
 		ISerializable,
 		Array,
 		Type,
+        Assembly,
 		Enum,
 		MemberInfo
 	}

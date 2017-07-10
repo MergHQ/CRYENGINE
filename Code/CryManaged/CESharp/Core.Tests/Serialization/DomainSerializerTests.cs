@@ -669,5 +669,22 @@ namespace Core.Tests.Serialization
                 Assert.AreEqual(readClass.Float, 800.0);
             }
         }
+
+        [Test]
+        public void AssemblyLoad()
+        {
+            using (var stream = new MemoryStream())
+            {
+                {
+                    var myAssembly = AppDomain.CurrentDomain.GetAssemblies()[1];
+
+                    var writer = new ObjectWriter(stream);
+                    writer.Write(myAssembly);
+                }
+
+                var reader = new ObjectReader(stream);
+                var readAssembly = reader.Read() as Assembly;
+            }
+        }
     }
 }
