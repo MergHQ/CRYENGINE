@@ -26,8 +26,16 @@ void CPlayerComponent::Initialize()
 
 	// CryNetwork/CryPhysics: the entity has to be physicalized on both sides
 	// *prior* to binding to network, so the physical state is synced properly.
-	m_pEntity->LoadGeometry(GetOrMakeEntitySlotId(), "Objects/Default/primitive_sphere.cgf");
-
+	int slot = m_pEntity->LoadGeometry(GetOrMakeEntitySlotId(), "Objects/Default/primitive_sphere.cgf");
+	if (slot != -1)
+	{
+		auto material = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial("%ENGINE%/EngineAssets/TextureMsg/DefaultSolids");
+		if (material != nullptr)
+		{
+			m_pEntity->SetMaterial(material);
+		}
+	}
+	
 	SEntityPhysicalizeParams physParams;
 	physParams.type = PE_RIGID;
 	physParams.mass = 90.f;
@@ -163,31 +171,34 @@ void CPlayerComponent::UpdateMovementRequest(float frameTime)
 		auto cameraTransformation = m_lookOrientation;
 
 		// Update movement
-		pe_action_impulse impulseAction;
-		impulseAction.impulse = ZERO;
+		Vec3 direction = ZERO;
 
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveLeft)
 		{
-			impulseAction.impulse -= cameraTransformation.GetColumn0() * moveImpulseStrength;
+			direction -= cameraTransformation.GetColumn0();
 		}
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveRight)
 		{
-			impulseAction.impulse += cameraTransformation.GetColumn0() * moveImpulseStrength;
+			direction += cameraTransformation.GetColumn0();
 		}
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveForward)
 		{
-			impulseAction.impulse += cameraTransformation.GetColumn1() * moveImpulseStrength;
+			direction += cameraTransformation.GetColumn1();
 		}
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveBack)
 		{
-			impulseAction.impulse -= cameraTransformation.GetColumn1() * moveImpulseStrength;
+			direction -= cameraTransformation.GetColumn1();
 		}
+		
+		direction.z = 0.0f;
 
 		// Only dispatch the impulse to physics if one was provided
-		if (!impulseAction.impulse.IsZero())
+		if (!direction.IsZero())
 		{
+			pe_action_impulse impulseAction;
+
 			// Multiply by frame time to keep consistent across machines
-			impulseAction.impulse *= frameTime;
+			impulseAction.impulse = direction.GetNormalized() * moveImpulseStrength * frameTime;
 
 			pPhysicalEntity->Action(&impulseAction);
 		}
@@ -205,8 +216,8 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 
 		ypr.x += m_mouseDeltaRotation.x * rotationSpeed;
 
-		const float rotationLimitsMinPitch = -0.84f;
-		const float rotationLimitsMaxPitch = 1.5f;
+		const float rotationLimitsMinPitch = -1.2;
+		const float rotationLimitsMaxPitch = 0.05f;
 
 		// TODO: Perform soft clamp here instead of hard wall, should reduce rot speed in this direction when close to limit.
 		ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * rotationSpeed, rotationLimitsMinPitch, rotationLimitsMaxPitch);
