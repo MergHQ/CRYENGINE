@@ -130,9 +130,12 @@ void CGraphView::OnContextMenuEntryClicked(CAbstractDictionaryEntry& entry)
 	CryGraphEditor::CAbstractNodeItem* pAssetNode = GetModel()->GetNodeItemById(entry.GetIdentifier());
 	MAKE_SURE(pAssetNode, return );
 	CryGraphEditor::CNodeWidget* pWidget = GetNodeWidget(*pAssetNode);
-	SelectWidget(pWidget);
-	ensureVisible(pWidget);
-	m_pSearchPopup->hide();
+	if (pWidget)
+	{
+		SelectWidget(*pWidget);
+		ensureVisible(pWidget);
+		m_pSearchPopup->hide();
+	}
 }
 
 CAssetWidget::CAssetWidget(CAssetNodeBase& item, CryGraphEditor::CNodeGraphView& view)
