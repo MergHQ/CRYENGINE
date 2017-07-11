@@ -50,7 +50,7 @@ void CPlayerComponent::LocalPlayerInitialize()
 	// Register an action, and the callback that will be sent when it's m_pEntity
 	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveLeft, activationMode);  });
 	// Bind the 'A' key the "moveleft" action
-	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse,	EKeyId::eKI_A);
+	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse, EKeyId::eKI_A);
 
 	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveRight, activationMode);  });
 	m_pInputComponent->BindAction("player", "moveright", eAID_KeyboardMouse, EKeyId::eKI_D);
@@ -70,7 +70,30 @@ void CPlayerComponent::LocalPlayerInitialize()
 	// Register the shoot action
 	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value)
 	{
-		if (activationMode == eIS_Pressed)
+		if (activationMode != eIS_Pressed)
+			return;
+
+		// Flags for the ray cast
+		const auto rayFlags = rwi_stop_at_pierceable | rwi_colltype_any;
+
+		// Container which holds the ray hit information
+		ray_hit hit;
+
+		// Get the player bbox
+		AABB bbox;
+		m_pEntity->GetLocalBounds(bbox);
+
+		// Ray cast direction which is down for our case.
+		const Vec3 rayDirection = Vec3(0.0f, 0.0f, -1.0f) * bbox.GetRadius();
+
+		// Max hit is 1 since we only want to know the closest collision to the player.
+		const int maxHits = 1;
+
+		// Find out if the player is in the air
+		// Ray cast the world and add the player to the skip entity list so we don't hit the player itself.
+		int bCanJump = gEnv->pPhysicalWorld->RayWorldIntersection(m_pEntity->GetWorldPos(), rayDirection, ent_all, rayFlags, &hit, maxHits, m_pEntity->GetPhysicalEntity());
+
+		if (bCanJump)
 		{
 			// RMI is used here only for demo purposes, the actual jump action
 			// can be sent with input flags as well.
@@ -79,8 +102,8 @@ void CPlayerComponent::LocalPlayerInitialize()
 		}
 	});
 
-	// Bind the shoot action to left mouse click
-	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, EKeyId::eKI_Mouse1);
+	// Bind the jump action to the space bar
+	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, EKeyId::eKI_Space);
 }
 
 uint64 CPlayerComponent::GetEventMask() const
@@ -88,7 +111,7 @@ uint64 CPlayerComponent::GetEventMask() const
 	return BIT64(ENTITY_EVENT_START_GAME)
 		| BIT64(ENTITY_EVENT_UPDATE)
 		| BIT64(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER)
-	;
+		;
 }
 
 void CPlayerComponent::ProcessEvent(SEntityEvent& event)
@@ -109,14 +132,14 @@ void CPlayerComponent::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_UPDATE:
 	{
 		SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
-		
+
 		// Camera components exists only for the local player
 		if (m_pCameraComponent)
 		{
 			// Update the camera component offset
 			UpdateCamera(pCtx->fFrameTime);
 		}
-		
+
 		if (gEnv->bServer) // Simulate physics only on the server for now.
 		{
 			// Start by updating the movement request we want to send to the character controller
