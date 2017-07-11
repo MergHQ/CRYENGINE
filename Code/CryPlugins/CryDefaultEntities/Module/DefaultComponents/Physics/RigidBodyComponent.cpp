@@ -2,6 +2,7 @@
 #include "RigidBodyComponent.h"
 
 #include "CharacterControllerComponent.h"
+#include "Vehicles/VehicleComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
 
@@ -85,6 +86,7 @@ void CRigidBodyComponent::ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent>&
 
 	// Entities can only have one physical entity type, thus these are incompatible
 	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CCharacterControllerComponent>());
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CVehiclePhysicsComponent>());
 
 	desc.AddMember(&CRigidBodyComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
 
