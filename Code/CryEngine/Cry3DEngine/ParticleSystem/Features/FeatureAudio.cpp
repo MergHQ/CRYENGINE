@@ -57,7 +57,7 @@ public:
 		{
 			ar(m_followParticle, "FollowParticle", "Follow Particle");
 			if (m_stopTrigger.HasName())
-				m_stopOnDeath = true;
+				m_stopOnDeath = false;
 			else
 				ar(m_stopOnDeath, "StopOnDeath", "Stop on Death");
 		}
@@ -172,8 +172,8 @@ private:
 					pIObject->SetTransformation(positions.Load(particleId));
 				break;
 			case ES_Expired:
-				if (m_stopTrigger)
-					Trigger(m_stopTrigger, proxyName, positions.Load(particleId));
+				if (m_stopTrigger && pIObject)
+					pIObject->ExecuteTrigger(m_stopTrigger);
 				break;
 			case ES_Dead:
 				if (pIObject)
