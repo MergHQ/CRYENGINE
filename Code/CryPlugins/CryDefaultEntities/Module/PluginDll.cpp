@@ -29,6 +29,11 @@
 #include "DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
 #include "DefaultComponents/Physics/RigidBodyComponent.h"
 #include "DefaultComponents/Physics/SpherePrimitiveComponent.h"
+#include "DefaultComponents/Physics/AreaComponent.h"
+#include "DefaultComponents/Physics/ThrusterComponent.h"
+#include "DefaultComponents/Physics/Vehicles/VehicleComponent.h"
+#include "DefaultComponents/Physics/Vehicles/WheelComponent.h"
+#include "DefaultComponents/Utilities/ChildEntityComponent.h"
 
 #include <CryEntitySystem/IEntityClass.h>
 
@@ -162,6 +167,26 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSpherePrimitiveComponent));
 			Cry::DefaultComponents::CSpherePrimitiveComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CAreaComponent));
+			Cry::DefaultComponents::CAreaComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CThrusterComponent));
+			Cry::DefaultComponents::CThrusterComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CVehiclePhysicsComponent));
+			Cry::DefaultComponents::CVehiclePhysicsComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CWheelComponent));
+			Cry::DefaultComponents::CWheelComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CChildEntityComponent));
+			Cry::DefaultComponents::CChildEntityComponent::Register(componentScope);
 		}
 	}
 }

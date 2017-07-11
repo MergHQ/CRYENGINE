@@ -25,6 +25,7 @@ public:
 	~CMonoLibrary();
 	
 	bool IsLoaded() const { return m_pAssembly != nullptr; }
+	virtual bool WasCompiledAtRuntime() { return false; }
 
 	const char* GetFilePath();
 
@@ -60,7 +61,7 @@ public:
 	MonoInternals::MonoObject* GetManagedObject();
 
 protected:
-	bool Load();
+	virtual bool Load();
 	void Unload();
 	void Reload();
 
@@ -70,7 +71,7 @@ protected:
 	const char* GetPath() const { return m_assemblyPath; }
 	const char* GetImageName() const;
 
-private:
+protected:
 	MonoInternals::MonoAssembly* m_pAssembly;
 	MonoInternals::MonoImage* m_pImage;
 

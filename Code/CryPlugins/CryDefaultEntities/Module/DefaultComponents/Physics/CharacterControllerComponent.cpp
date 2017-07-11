@@ -2,6 +2,7 @@
 #include "CharacterControllerComponent.h"
 
 #include "RigidBodyComponent.h"
+#include "Vehicles/VehicleComponent.h"
 
 namespace Cry
 {
@@ -88,6 +89,7 @@ void CCharacterControllerComponent::ReflectType(Schematyc::CTypeDesc<CCharacterC
 
 	// Entities can only have one physical entity type, thus these are incompatible
 	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CRigidBodyComponent>());
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CVehiclePhysicsComponent>());
 
 	desc.AddMember(&CCharacterControllerComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
 	desc.AddMember(&CCharacterControllerComponent::m_physics, 'phys', "Physics", "Physics", "Physical properties for the character", CCharacterControllerComponent::SPhysics());

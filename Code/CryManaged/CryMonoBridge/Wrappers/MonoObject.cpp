@@ -80,9 +80,8 @@ CMonoClass* CMonoObject::GetClass()
 		MonoInternals::MonoImage* pImage = MonoInternals::mono_class_get_image(pClass);
 		MonoInternals::MonoAssembly* pAssembly = MonoInternals::mono_image_get_assembly(pImage);
 
-		CMonoLibrary* pLibrary = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pAssembly);
-
-		m_pClass = pLibrary->GetClassFromMonoClass(pClass);
+		CMonoLibrary& library = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pAssembly);
+		m_pClass = library.GetClassFromMonoClass(pClass);
 	}
 
 	return m_pClass.get();

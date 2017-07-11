@@ -106,6 +106,7 @@ public:
 	virtual CRootMonoDomain*            GetRootDomain() override;
 	virtual CMonoDomain*                GetActiveDomain() override;
 	virtual CAppDomain*                 CreateDomain(char* name, bool bActivate = false) override;
+	virtual void                        ReloadPluginDomain() override;
 
 	virtual CMonoLibrary*               GetCryCommonLibrary() const override;
 	virtual CMonoLibrary*               GetCryCoreLibrary() const override;
@@ -130,8 +131,6 @@ public:
 
 	void         HandleException(MonoInternals::MonoException* pException);
 
-	void ReloadPluginDomain();
-
 private:
 	static void MonoLogCallback(const char* szLogDomain, const char* szLogLevel, const char* szMessage, MonoInternals::mono_bool is_fatal, void* pUserData);
 	static void MonoPrintCallback(const char* szMessage, MonoInternals::mono_bool is_stdout);
@@ -140,9 +139,6 @@ private:
 	void RegisterInternalInterfaces();
 
 	void InvokeManagedConsoleCommandNotification(const char* szCommandName, IConsoleCmdArgs* pConsoleCommandArguments);
-
-	void CompileAssetSourceFiles();
-	void FindSourceFilesInDirectoryRecursive(const char* szDirectory, std::vector<string>& sourceFiles);
 
 private:
 	std::unordered_map<MonoInternals::MonoDomain*, std::shared_ptr<CMonoDomain>> m_domainLookupMap;

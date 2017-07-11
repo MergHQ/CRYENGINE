@@ -3,6 +3,7 @@
 
 #include "MonoRuntime.h"
 #include "MonoLibrary.h"
+#include "CompiledMonoLibrary.h"
 #include "MonoClass.h"
 #include "MonoMethod.h"
 
@@ -89,13 +90,19 @@ bool CAppDomain::Reload()
 	return true;
 }
 
+CMonoLibrary* CAppDomain::CompileFromSource(const char* szDirectory)
+{
+	m_loadedLibraries.emplace_back(stl::make_unique<CCompiledMonoLibrary>(szDirectory, this));
+	return m_loadedLibraries.back().get();
+}
+
 void CAppDomain::SerializeDomainData(std::vector<char>& serializedData)
 {
 	// Create the shared serialization utilities that may be called by libraries and objects
 	// Now serialize the statics contained inside this library
-	CMonoLibrary* pNetCoreLibrary = GetMonoRuntime()->GetRootDomain()->GetNetCoreLibrary();
+	CMonoLibrary& netCoreLibrary = GetMonoRuntime()->GetRootDomain()->GetNetCoreLibrary();
 
-	std::shared_ptr<CMonoClass> pMemoryStreamClass = pNetCoreLibrary->GetTemporaryClass("System.IO", "MemoryStream");
+	std::shared_ptr<CMonoClass> pMemoryStreamClass = netCoreLibrary.GetTemporaryClass("System.IO", "MemoryStream");
 	std::shared_ptr<CMonoObject> pMemoryStream = std::static_pointer_cast<CMonoObject>(pMemoryStreamClass->CreateInstance());
 
 	m_serializationTicks = 0;
@@ -114,7 +121,7 @@ void CAppDomain::SerializeDomainData(std::vector<char>& serializedData)
 
 	// Grab the serialized buffer
 	std::shared_ptr<CMonoObject> pManagedBuffer = pMemoryStream->GetClass()->FindMethod("GetBuffer")->Invoke(pMemoryStream.get());
-
+	
 	serializedData.resize(pManagedBuffer->GetArraySize());
 	char* arrayBuffer = pManagedBuffer->GetArrayAddress(sizeof(char), 0);
 
@@ -126,7 +133,7 @@ void CAppDomain::SerializeDomainData(std::vector<char>& serializedData)
 void CAppDomain::DeserializeDomainData(const std::vector<char>& serializedData)
 {
 	// Now serialize the statics contained inside this library
-	CMonoLibrary* pNetCoreLibrary = GetMonoRuntime()->GetRootDomain()->GetNetCoreLibrary();
+	CMonoLibrary& netCoreLibrary = GetMonoRuntime()->GetRootDomain()->GetNetCoreLibrary();
 
 	m_serializationTicks = 0;
 
@@ -135,7 +142,7 @@ void CAppDomain::DeserializeDomainData(const std::vector<char>& serializedData)
 	CMonoDomain* pDomain = pCryObjectReaderClass->GetAssembly()->GetDomain();
 
 	MonoInternals::MonoArray* pMonoManagedBuffer = MonoInternals::mono_array_new(pDomain->GetMonoDomain(), MonoInternals::mono_get_byte_class(), serializedData.size());
-	std::shared_ptr<CMonoClass> pBufferClass = pNetCoreLibrary->GetClassFromMonoClass(MonoInternals::mono_object_get_class((MonoInternals::MonoObject*)pMonoManagedBuffer));
+	std::shared_ptr<CMonoClass> pBufferClass = netCoreLibrary.GetClassFromMonoClass(MonoInternals::mono_object_get_class((MonoInternals::MonoObject*)pMonoManagedBuffer));
 
 	std::shared_ptr<CMonoObject> pManagedBuffer = std::make_shared<CMonoObject>((MonoInternals::MonoObject*)pMonoManagedBuffer, pBufferClass);
 	char* arrayBuffer = pManagedBuffer->GetArrayAddress(sizeof(char), 0);
@@ -149,7 +156,7 @@ void CAppDomain::DeserializeDomainData(const std::vector<char>& serializedData)
 	MonoInternals::MonoObject* pBoolObject = MonoInternals::mono_value_box(pDomain->GetMonoDomain(), MonoInternals::mono_get_boolean_class(), &bWritable);
 	memoryStreamCtorArgs[1] = pBoolObject;
 
-	std::shared_ptr<CMonoClass> pMemoryStreamClass = pNetCoreLibrary->GetTemporaryClass("System.IO", "MemoryStream");
+	std::shared_ptr<CMonoClass> pMemoryStreamClass = netCoreLibrary.GetTemporaryClass("System.IO", "MemoryStream");
 	std::shared_ptr<CMonoObject> pMemoryStream = std::static_pointer_cast<CMonoObject>(pMemoryStreamClass->CreateInstance(memoryStreamCtorArgs, 2));
 
 	void* readerConstructorParams[1];

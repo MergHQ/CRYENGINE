@@ -110,13 +110,13 @@ CMonoLibrary* CMonoDomain::LoadLibrary(const char* path)
 	return nullptr;
 }
 
-CMonoLibrary* CMonoDomain::GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly)
+CMonoLibrary& CMonoDomain::GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly)
 {
 	for (const std::unique_ptr<CMonoLibrary>& pLibrary : m_loadedLibraries)
 	{
 		if (pLibrary.get()->GetAssembly() == pAssembly)
 		{
-			return pLibrary.get();
+			return *pLibrary.get();
 		}
 	}
 
@@ -124,5 +124,5 @@ CMonoLibrary* CMonoDomain::GetLibraryFromMonoAssembly(MonoInternals::MonoAssembl
 	string assemblyPath = MonoInternals::mono_assembly_name_get_name(pAssemblyName);
 	
 	m_loadedLibraries.emplace_back(stl::make_unique<CMonoLibrary>(pAssembly, assemblyPath, this));
-	return m_loadedLibraries.back().get();
+	return *m_loadedLibraries.back().get();
 }

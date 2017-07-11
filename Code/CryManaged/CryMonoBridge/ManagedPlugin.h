@@ -65,6 +65,7 @@ public:
 	// ~ISystemEventListener
 
 	void Load(CAppDomain* pDomain);
+	void OnReloaded();
 
 	// INetworkedClientListener
 	virtual void OnLocalClientDisconnected(EDisconnectionCause cause, const char* description) {}
@@ -85,6 +86,8 @@ public:
 
 protected:
 	void InitializePlugin();
+	void ScanAssembly();
+	void CreatePluginInstance();
 
 protected:
 	CMonoLibrary* m_pLibrary;

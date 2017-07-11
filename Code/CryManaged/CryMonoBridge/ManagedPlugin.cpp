@@ -20,7 +20,7 @@ CManagedPlugin::CManagedPlugin(const char* szBinaryPath)
 
 CManagedPlugin::CManagedPlugin(CMonoLibrary* pLibrary)
 	: m_pLibrary(pLibrary)
-	, m_libraryPath(pLibrary->GetFilePath())
+	, m_libraryPath(pLibrary != nullptr ? pLibrary->GetFilePath() : "")
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CManagedPlugin");
 }
@@ -39,73 +39,103 @@ CManagedPlugin::~CManagedPlugin()
 
 void CManagedPlugin::InitializePlugin()
 {
-	std::shared_ptr<CMonoClass> pReflectionHelper = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "ReflectionHelper");
-	CRY_ASSERT(pReflectionHelper != nullptr);
+	CreatePluginInstance();
 
-	void* pPluginSearchArgs[1]{ m_pLibrary->GetManagedObject() };
-
-	std::shared_ptr<CMonoObject> pPluginInstanceName = pReflectionHelper->FindMethodWithDesc("FindPluginInstance(Assembly)")->InvokeStatic(pPluginSearchArgs);
-	if (pPluginInstanceName != nullptr)
+	if (m_pLibrary->WasCompiledAtRuntime())
 	{
-		std::shared_ptr<CMonoString> pPluginClassName = pPluginInstanceName->ToString();
-		const char* szPluginClassName = pPluginClassName->GetString();
+		m_guid = gEnv->pSystem->GetIProjectManager()->GetCurrentProjectGUID();
 
-		m_name = PathUtil::GetExt(szPluginClassName);
-		const string nameSpace = PathUtil::RemoveExtension(szPluginClassName);
-
-		CMonoClass* pPluginClass = m_pLibrary->GetClass(nameSpace, m_name);
-		if (pPluginClass != nullptr)
+		if (m_name.size() == 0)
 		{
-			m_pMonoObject = std::static_pointer_cast<CMonoObject>(pPluginClass->CreateInstance());
+			m_name = gEnv->pSystem->GetIProjectManager()->GetCurrentProjectName();
+		}
+	}
+	else
+	{
+		// Load GUID from assembly, should be the same every time
+		m_guid = CryGUID::FromString(mono_image_get_guid(m_pLibrary->GetImage()));
 
-			gEnv->pGameFramework->AddNetworkedClientListener(*this);
+		if (m_name.size() == 0)
+		{
+			m_name = PathUtil::GetFileName(m_pLibrary->GetFilePath());
 		}
 	}
 
-	m_guid = CryGUID::FromString(mono_image_get_guid(m_pLibrary->GetImage()));
-
-	if (m_name.size() == 0)
-	{
-		m_name = PathUtil::GetFileName(m_pLibrary->GetFilePath());
-	}
-
-	CMonoLibrary* pCoreAssembly = static_cast<CMonoLibrary*>(GetMonoRuntime()->GetCryCoreLibrary());
-	std::shared_ptr<CMonoClass> pEngineClass = pCoreAssembly->GetTemporaryClass("CryEngine", "Engine");
-
-	s_pCurrentlyRegisteringFactory = &m_entityComponentFactoryMap;
-
-	//Scan for types in the assembly
-	void* pRegisterArgs[1] = { m_pLibrary->GetManagedObject() };
-	pEngineClass->FindMethodWithDesc("ScanAssembly(Assembly)")->InvokeStatic(pRegisterArgs);
-
-	s_pCurrentlyRegisteringFactory = nullptr;
-
-	// Register any potential Schematyc types
-	gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(stl::make_unique<CSchematycPackage>(*this));
+	ScanAssembly();
 
 	if (m_pMonoObject != nullptr)
 	{
 		m_pMonoObject->GetClass()->FindMethod("Initialize")->Invoke(m_pMonoObject.get());
 	}
+}
 
-	// scans for console command attributes
-	std::shared_ptr<CMonoClass> attributeManager = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleCommandAttributeManager");
-	CRY_ASSERT(attributeManager != nullptr);
-	void* args[1];
-	args[0] = m_pLibrary->GetManagedObject(); //load the plug-in assembly to scans for ConsoleCommandRegisterAttribute
-	attributeManager->FindMethod("RegisterAttribute", 1)->Invoke(nullptr, args);
+void CManagedPlugin::ScanAssembly()
+{
+	if (m_pLibrary != nullptr && m_pLibrary->GetAssembly() != nullptr)
+	{
+		CMonoLibrary* pCoreAssembly = static_cast<CMonoLibrary*>(GetMonoRuntime()->GetCryCoreLibrary());
+		std::shared_ptr<CMonoClass> pEngineClass = pCoreAssembly->GetTemporaryClass("CryEngine", "Engine");
 
-	//scans for console variable attributes
-	std::shared_ptr<CMonoClass> consoleVariableAttributeManager = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleVariableAttributeManager");
-	CRY_ASSERT(consoleVariableAttributeManager != nullptr);
-	void* args2[1];
-	args2[0] = m_pLibrary->GetManagedObject(); //load the plug-in assembly to scans for ConsoleVariableAttribute
-	consoleVariableAttributeManager->FindMethod("RegisterAttribute", 1)->Invoke(nullptr, args2);
+		m_entityComponentFactoryMap.clear();
+		s_pCurrentlyRegisteringFactory = &m_entityComponentFactoryMap;
+
+		//Scan for types in the assembly
+		void* pRegisterArgs[1] = { m_pLibrary->GetManagedObject() };
+		pEngineClass->FindMethodWithDesc("ScanAssembly(Assembly)")->InvokeStatic(pRegisterArgs);
+
+		s_pCurrentlyRegisteringFactory = nullptr;
+
+		// Register any potential Schematyc types
+		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(stl::make_unique<CSchematycPackage>(*this));
+
+		// scans for console command attributes
+		std::shared_ptr<CMonoClass> attributeManager = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleCommandAttributeManager");
+		CRY_ASSERT(attributeManager != nullptr);
+		void* args[1];
+		args[0] = m_pLibrary->GetManagedObject(); //load the plug-in assembly to scans for ConsoleCommandRegisterAttribute
+		attributeManager->FindMethod("RegisterAttribute", 1)->Invoke(nullptr, args);
+
+		//scans for console variable attributes
+		std::shared_ptr<CMonoClass> consoleVariableAttributeManager = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleVariableAttributeManager");
+		CRY_ASSERT(consoleVariableAttributeManager != nullptr);
+		void* args2[1];
+		args2[0] = m_pLibrary->GetManagedObject(); //load the plug-in assembly to scans for ConsoleVariableAttribute
+		consoleVariableAttributeManager->FindMethod("RegisterAttribute", 1)->Invoke(nullptr, args2);
+	}
+}
+
+void CManagedPlugin::CreatePluginInstance()
+{
+	if (m_pLibrary != nullptr && m_pLibrary->GetAssembly() != nullptr && m_pMonoObject == nullptr)
+	{
+		std::shared_ptr<CMonoClass> pReflectionHelper = GetMonoRuntime()->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "ReflectionHelper");
+		CRY_ASSERT(pReflectionHelper != nullptr);
+
+		void* pPluginSearchArgs[1]{ m_pLibrary->GetManagedObject() };
+
+		std::shared_ptr<CMonoObject> pPluginInstanceName = pReflectionHelper->FindMethodWithDesc("FindPluginInstance(Assembly)")->InvokeStatic(pPluginSearchArgs);
+		if (pPluginInstanceName != nullptr)
+		{
+			std::shared_ptr<CMonoString> pPluginClassName = pPluginInstanceName->ToString();
+			const char* szPluginClassName = pPluginClassName->GetString();
+
+			m_name = PathUtil::GetExt(szPluginClassName);
+			const string nameSpace = PathUtil::RemoveExtension(szPluginClassName);
+
+			CMonoClass* pPluginClass = m_pLibrary->GetClass(nameSpace, m_name);
+			if (pPluginClass != nullptr)
+			{
+				m_pMonoObject = std::static_pointer_cast<CMonoObject>(pPluginClass->CreateInstance());
+
+				gEnv->pGameFramework->AddNetworkedClientListener(*this);
+			}
+		}
+	}
 }
 
 void CManagedPlugin::Load(CAppDomain* pPluginDomain)
 {
-	if (m_pLibrary == nullptr)
+	if (m_pLibrary == nullptr && m_libraryPath.size() > 0)
 	{
 		m_pLibrary = pPluginDomain->LoadLibrary(m_libraryPath);
 		if (m_pLibrary == nullptr)
@@ -118,6 +148,14 @@ void CManagedPlugin::Load(CAppDomain* pPluginDomain)
 	InitializePlugin();
 }
 
+void CManagedPlugin::OnReloaded()
+{
+	gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(GetGUID());
+
+	CreatePluginInstance();
+	ScanAssembly();
+}
+
 void CManagedPlugin::RegisterSchematycPackageContents(Schematyc::IEnvRegistrar& registrar) const
 {
 	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
@@ -125,7 +163,6 @@ void CManagedPlugin::RegisterSchematycPackageContents(Schematyc::IEnvRegistrar& 
 		for (auto it = m_entityComponentFactoryMap.begin(); it != m_entityComponentFactoryMap.end(); ++it)
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(it->second);
-			// Functions
 		}
 	}
 }
@@ -168,17 +205,23 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	break;
 	case ESYSTEM_EVENT_LEVEL_GAMEPLAY_START:
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStart"))
+		if (m_pMonoObject != nullptr)
 		{
-			pMethod->Invoke(m_pMonoObject.get());
+			if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStart"))
+			{
+				pMethod->Invoke(m_pMonoObject.get());
+			}
 		}
 	}
 	break;
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStop"))
+		if (m_pMonoObject != nullptr)
 		{
-			pMethod->Invoke(m_pMonoObject.get());
+			if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStop"))
+			{
+				pMethod->Invoke(m_pMonoObject.get());
+			}
 		}
 	}
 	break;
