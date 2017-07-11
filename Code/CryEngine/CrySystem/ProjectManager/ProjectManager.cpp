@@ -29,22 +29,27 @@ CProjectManager::CProjectManager()
 	CryFindRootFolderAndSetAsCurrentWorkingDirectory();
 }
 
-const char* CProjectManager::GetCurrentProjectName()
+const char* CProjectManager::GetCurrentProjectName() const
 {
 	return m_sys_game_name->GetString();
 }
 
-const char* CProjectManager::GetCurrentProjectDirectoryAbsolute()
+CryGUID CProjectManager::GetCurrentProjectGUID() const
+{
+	return m_project.guid;
+}
+
+const char* CProjectManager::GetCurrentProjectDirectoryAbsolute() const
 {
 	return m_project.rootDirectory;
 }
 
-const char* CProjectManager::GetCurrentAssetDirectoryRelative()
+const char* CProjectManager::GetCurrentAssetDirectoryRelative() const
 {
 	return gEnv->pCryPak->GetGameFolder();
 }
 
-const char* CProjectManager::GetCurrentAssetDirectoryAbsolute()
+const char* CProjectManager::GetCurrentAssetDirectoryAbsolute() const
 { 
 	return m_project.assetDirectoryFullPath;
 }
@@ -78,9 +83,9 @@ void SProject::Serialize(Serialization::IArchive& ar)
 	}
 
 	ar(version, "version", "version");
-	if (version == 0 || version == 1)
+	if (version == 0 || version == 1 || version == 2)
 	{
-		SProjectFileParser<1> parser;
+		SProjectFileParser<2> parser;
 		parser.Serialize(ar, *this);
 	}
 }
@@ -178,6 +183,11 @@ void CProjectManager::ParseProjectFile()
 				AddDefaultPlugins();
 				LoadLegacyPluginCSV();
 				LoadLegacyGameCfg();
+			}
+			else if(m_project.version == 1)
+			{
+				// Generate GUID
+				m_project.guid = CryGUID::Create();
 			}
 
 			m_project.version = LatestProjectFileVersion;

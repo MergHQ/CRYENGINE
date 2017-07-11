@@ -12,7 +12,7 @@ void CRootMonoDomain::Initialize()
 	m_bNativeDomain = true;
 }
 
-CMonoLibrary* CRootMonoDomain::GetNetCoreLibrary()
+CMonoLibrary& CRootMonoDomain::GetNetCoreLibrary()
 {
 	MonoInternals::MonoImage* pMonoCorlib = MonoInternals::mono_get_corlib();
 	

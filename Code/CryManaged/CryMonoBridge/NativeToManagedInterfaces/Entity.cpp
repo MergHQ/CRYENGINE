@@ -16,9 +16,6 @@ static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 g
 	MonoInternals::MonoClass* pMonoClass = MonoInternals::mono_type_get_class(MonoInternals::mono_reflection_type_get_type(pType));
 	MonoInternals::MonoImage* pImage = MonoInternals::mono_class_get_image(pMonoClass);
 
-	CMonoDomain* pDomain = GetMonoRuntime()->FindDomainByHandle(MonoInternals::mono_object_get_domain((MonoInternals::MonoObject*)pType));
-	CMonoLibrary* pLibrary = pDomain->GetLibraryFromMonoAssembly(MonoInternals::mono_image_get_assembly(pImage));
-
 	CryGUID id = CryGUID::Construct(guidHipart, guidLopart);
 	Schematyc::SSourceFileInfo info("Unknown .NET source file", 0);
 
@@ -46,12 +43,15 @@ static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 g
 		}
 	}
 
-	std::shared_ptr<CMonoString> pClassName = CMonoDomain::CreateString(pName);
-	std::shared_ptr<CMonoString> pClassCategory = CMonoDomain::CreateString(pCategory);
-	std::shared_ptr<CMonoString> pDesc = CMonoDomain::CreateString(pCategory);
-	std::shared_ptr<CMonoString> pClassIcon = CMonoDomain::CreateString(pIcon);
+	CMonoDomain* pDomain = GetMonoRuntime()->FindDomainByHandle(MonoInternals::mono_object_get_domain((MonoInternals::MonoObject*)pType));
+	CMonoLibrary& library = pDomain->GetLibraryFromMonoAssembly(MonoInternals::mono_image_get_assembly(pImage));
 
-	CManagedPlugin::s_pCurrentlyRegisteringFactory->emplace(pType, std::make_shared<CManagedEntityComponentFactory>(pLibrary->GetClassFromMonoClass(pMonoClass), id, info, pClassName->GetString(), pClassCategory->GetString(), pDesc->GetString(), pClassIcon->GetString()));
+	std::shared_ptr<CMonoString> pClassName = pDomain->CreateString(pName);
+	std::shared_ptr<CMonoString> pClassCategory = pDomain->CreateString(pCategory);
+	std::shared_ptr<CMonoString> pDesc = pDomain->CreateString(pCategory);
+	std::shared_ptr<CMonoString> pClassIcon = pDomain->CreateString(pIcon);
+
+	CManagedPlugin::s_pCurrentlyRegisteringFactory->emplace(pType, std::make_shared<CManagedEntityComponentFactory>(library.GetClassFromMonoClass(pMonoClass), id, info, pClassName->GetString(), pClassCategory->GetString(), pDesc->GetString(), pClassIcon->GetString()));
 }
 
 static void AddComponentBase(MonoInternals::MonoReflectionType* pType, MonoInternals::MonoReflectionType* pBaseType)

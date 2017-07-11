@@ -20,6 +20,8 @@ public:
 	virtual bool Reload() override;
 	// ~CMonoDomain
 
+	CMonoLibrary* CompileFromSource(const char* szDirectory);
+
 	void SerializeObject(CMonoObject* pSerializer, MonoInternals::MonoObject* pObject, bool bIsAssembly);
 	std::shared_ptr<CMonoObject> DeserializeObject(CMonoObject* pSerializer, bool bIsAssembly);
 

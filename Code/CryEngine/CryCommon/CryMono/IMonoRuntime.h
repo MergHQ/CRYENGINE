@@ -37,7 +37,7 @@ struct IMonoEngineModule : public Cry::IDefaultModule
 	virtual void                        Shutdown() = 0;
 
 	virtual std::shared_ptr<ICryPlugin> LoadBinary(const char* szBinaryPath) = 0;
-
+	
 	virtual void                        Update(int updateFlags = 0, int nPauseMode = 0) = 0;
 
 	virtual void                        RegisterListener(IMonoListener* pListener) = 0;
@@ -46,6 +46,7 @@ struct IMonoEngineModule : public Cry::IDefaultModule
 	virtual CRootMonoDomain*            GetRootDomain() = 0;
 	virtual CMonoDomain*                GetActiveDomain() = 0;
 	virtual CAppDomain*                 CreateDomain(char* name, bool bActivate = false) = 0;
+	virtual void                        ReloadPluginDomain() = 0;
 
 	virtual CMonoLibrary*               GetCryCommonLibrary() const = 0;
 	virtual CMonoLibrary*               GetCryCoreLibrary() const = 0;

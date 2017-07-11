@@ -17,6 +17,7 @@ class CMonoDomain
 {
 	friend class CAppDomain;
 	friend class CMonoLibrary;
+	friend class CCompiledMonoLibrary;
 	friend class CMonoClass;
 	friend class CMonoRuntime;
 
@@ -41,7 +42,7 @@ public:
 	static std::shared_ptr<CMonoString> CreateString(MonoInternals::MonoString* pManagedString);
 	
 	CMonoLibrary* LoadLibrary(const char* szPath);
-	CMonoLibrary* GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly);
+	CMonoLibrary& GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly);
 
 	MonoInternals::MonoDomain* GetHandle() const { return m_pDomain; }
 

@@ -56,6 +56,8 @@ public:
 
 	MonoInternals::MonoClass* GetMonoClass() const { return m_pClass; }
 
+	bool IsVoid() const { return m_pClass == MonoInternals::mono_get_void_class(); }
+
 protected:
 	void Serialize(CMonoObject* pSerializer);
 	void Deserialize(CMonoObject* pSerializer);

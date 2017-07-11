@@ -45,6 +45,7 @@ namespace Cry
 			string type;
 			// Project name
 			string name;
+			CryGUID guid;
 			// Path to the .cryproject file
 			string filePath;
 			string engineVersionId;
@@ -87,7 +88,7 @@ namespace Cry
 
 		template<int version> struct SProjectFileParser {};
 
-		constexpr int LatestProjectFileVersion = 1;
+		constexpr int LatestProjectFileVersion = 2;
 
 		template<>
 		struct SProjectFileParser<LatestProjectFileVersion>
@@ -114,6 +115,7 @@ namespace Cry
 					void Serialize(Serialization::IArchive& ar)
 					{
 						ar(project.name, "name", "name");
+						ar(project.guid, "guid", "guid");
 					}
 
 					SProject& project;
@@ -210,12 +212,13 @@ public:
 	void MigrateFromLegacyWorkflowIfNecessary();
 
 	// IProjectManager
-	virtual const char* GetCurrentProjectName() override;
+	virtual const char* GetCurrentProjectName() const override;
+	virtual CryGUID     GetCurrentProjectGUID() const override;
 
-	virtual const char* GetCurrentProjectDirectoryAbsolute() override;
+	virtual const char* GetCurrentProjectDirectoryAbsolute() const override;
 
-	virtual const char* GetCurrentAssetDirectoryRelative() override;
-	virtual const char* GetCurrentAssetDirectoryAbsolute() override;
+	virtual const char* GetCurrentAssetDirectoryRelative() const override;
+	virtual const char* GetCurrentAssetDirectoryAbsolute() const override;
 
 	virtual void        StoreConsoleVariable(const char* szCVarName, const char* szValue) override;
 	virtual void        SaveProjectChanges() override;
