@@ -37,6 +37,7 @@
 #include <EditorFramework/Inspector.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
+#include <QtUtil.h>
 
 #include <QCollapsibleFrame.h>
 #include <QAction>

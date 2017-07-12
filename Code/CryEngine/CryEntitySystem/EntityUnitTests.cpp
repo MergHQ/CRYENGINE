@@ -5,6 +5,8 @@
 #include "EntitySystem.h"
 
 #include <CrySystem/CryUnitTest.h>
+#include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CrySchematyc/Env/Elements/EnvComponent.h>
 
 #include "SubstitutionProxy.h"
 
