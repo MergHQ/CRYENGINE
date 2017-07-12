@@ -43,13 +43,13 @@ public:
 	void Clear();
 
 	// Libraries
-	CAudioLibrary* CreateLibrary(const string& name);
+	CAudioLibrary* CreateLibrary(string const& name);
 	CAudioLibrary* GetLibrary(size_t const index) const { return m_audioLibraries[index]; }
 	size_t         GetLibraryCount() const              { return m_audioLibraries.size(); }
 
 	//
-	IAudioAsset*   CreateFolder(const string& name, IAudioAsset* pParent = nullptr);
-	CAudioControl* CreateControl(const string& controlName, EItemType type, IAudioAsset* pParent = nullptr);
+	IAudioAsset*   CreateFolder(string const& name, IAudioAsset* pParent = nullptr);
+	CAudioControl* CreateControl(string const& controlName, EItemType type, IAudioAsset* pParent = nullptr);
 	void           DeleteItem(IAudioAsset* pItem);
 
 	CAudioControl* GetControlByID(CID id) const;
@@ -60,22 +60,24 @@ public:
 
 	// Scope
 	void       ClearScopes();
-	void       AddScope(const string& name, bool bLocalOnly = false);
-	bool       ScopeExists(const string& name) const;
-	Scope      GetScope(const string& name) const;
+	void       AddScope(string const& name, bool bLocalOnly = false);
+	bool       ScopeExists(string const& name) const;
+	Scope      GetScope(string const& name) const;
 	SScopeInfo GetScopeInfo(Scope id) const;
 	void       GetScopeInfoList(ScopeInfoList& scopeList) const;
 
 	// Helper functions
 	void ClearAllConnections();
 	void ReloadAllConnections();
-	void MoveItems(IAudioAsset* pParent, const std::vector<IAudioAsset*>& items);
+	void MoveItems(IAudioAsset* pParent, std::vector<IAudioAsset*> const& items);
 	void CreateAndConnectImplItems(IAudioSystemItem* pImplItem, IAudioAsset* pParent);
 
 	bool IsTypeDirty(EItemType eType);
 	bool IsDirty();
 	void ClearDirtyFlags();
 	bool IsLoading() const { return m_bLoading; }
+
+	void SetAssetModified(IAudioAsset* pAsset);
 
 	// Library signals
 	CCrySignal<void()>               signalLibraryAboutToBeAdded;
@@ -107,7 +109,7 @@ private:
 	static CID                  m_nextId;
 	Controls                    m_controls;
 	std::map<Scope, SScopeInfo> m_scopeMap;
-	std::array<bool, 5>         m_bControlTypeModified { false, false, false, false, false };
+	std::array<bool, 8>         m_bControlTypeModified { false, false, false, false, false, false ,false, false };
 	bool                        m_bLoading = false;
 };
 
@@ -115,11 +117,11 @@ namespace Utils
 {
 Scope         GetGlobalScope();
 string        GenerateUniqueName(string const& name, EItemType const type, IAudioAsset* const pParent);
-string        GenerateUniqueLibraryName(const string& name, const CAudioAssetsManager& assetManager);
-string        GenerateUniqueControlName(const string& name, EItemType type, const CAudioAssetsManager& assetManager);
+string        GenerateUniqueLibraryName(string const& name, CAudioAssetsManager const& assetManager);
+string        GenerateUniqueControlName(string const& name, EItemType type, CAudioAssetsManager const& assetManager);
 IAudioAsset*  GetParentLibrary(IAudioAsset* pAsset);
-void          SelectTopLevelAncestors(const std::vector<IAudioAsset*>& source, std::vector<IAudioAsset*>& dest);
-const string& GetAssetFolder();
+void          SelectTopLevelAncestors(std::vector<IAudioAsset*> const& source, std::vector<IAudioAsset*>& dest);
+string const& GetAssetFolder();
 }
 
 }

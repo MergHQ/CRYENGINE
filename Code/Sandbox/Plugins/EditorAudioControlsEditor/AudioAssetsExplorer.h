@@ -44,10 +44,10 @@ private:
 	void                ResetFilters();
 	void                ShowControlType(EItemType type, bool bShow);
 
-	CAudioControl*      CreateControl(const string& name, EItemType type, IAudioAsset* pParent);
+	CAudioControl*      CreateControl(string const& name, EItemType type, IAudioAsset* pParent);
 	IAudioAsset*        CreateFolder(IAudioAsset* pParent);
 
-	QAbstractItemModel* CreateLibraryModelFromIndex(const QModelIndex& sourceIndex);
+	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
 	IAudioAsset*        GetSelectedAsset() const;
 
 	// ------------------ QWidget ----------------------------
@@ -57,7 +57,7 @@ private:
 private slots:
 
 	void DeleteSelectedControl();
-	void ShowControlsContextMenu(const QPoint& pos);
+	void ShowControlsContextMenu(QPoint const& pos);
 
 	// Audio Preview
 	void ExecuteControl();

@@ -51,7 +51,7 @@ protected:
 
 private:
 	void UpdateAudioSystemData();
-	void StartWatchingFolder(const QString& folderPath);
+	void StartWatchingFolder(QString const& folderPath);
 
 	CAudioAssetsManager*                                m_pAssetsManager;
 	CAudioAssetsExplorer*                               m_pExplorer;
@@ -60,7 +60,7 @@ private:
 	FileSystem::SubTreeMonitorPtr                       m_pMonitor;
 	std::vector<FileSystem::CEnumerator::MonitorHandle> m_watchingHandles;
 	FileSystem::SFileFilter                             m_filter;
-	bool       m_allowedTypes[EItemType::eItemType_NumTypes];
+	bool                                                m_allowedTypes[EItemType::eItemType_NumTypes];
 
 	QSplitter* m_pSplitter;
 
