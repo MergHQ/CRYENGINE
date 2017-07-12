@@ -9,22 +9,6 @@
             "value": "4"
         },
         {
-            "name": "r_width",
-            "value": "1920"
-        },
-        {
-            "name": "r_height",
-            "value": "1080"
-        },
-        {
-            "name": "r_fullscreen",
-            "value": "0"
-        },
-        {
-            "name": "r_fullscreenWindow",
-            "value": "1"
-        },
-        {
             "name": "r_displayinfo",
             "value": "0"
         },

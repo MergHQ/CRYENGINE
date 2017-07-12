@@ -174,7 +174,13 @@ void Console::Init()
 	DefineConstIntCVar(ca_DebugModelCache, 0, VF_CHEAT, "shows what models are currently loaded and how much memory they take");
 	DefineConstIntCVar(ca_ReloadAllCHRPARAMS, 0, VF_CHEAT, "reload all CHRPARAMS");
 	DefineConstIntCVar(ca_DebugAnimUpdates, 0, VF_CHEAT, "shows the amount of skeleton-updates");
-	DefineConstIntCVar(ca_DebugAnimUsage, 0, VF_CHEAT, "shows what animation assets are used in the level");
+	DefineConstIntCVar(ca_DebugAnimUsage, 0, VF_CHEAT, "shows what animation assets are used in the level (bitmask)"
+                       "\n BIT 0 - Display general information"
+                       "\n BIT 1 - Display CAF files used"
+                       "\n BIT 2 - Dump CAF files used to console (bit will be reset after use)"
+                       "\n BIT 3 - Display BlendSpaces used"
+                       "\n BIT 4 - Dump BlendSpaces used to console (bit will be reset after use)"
+                      );
 	DefineConstIntCVar(ca_StoreAnimNamesOnLoad, 0, VF_CHEAT, "stores the names of animations during load to allow name lookup for debugging");
 	DefineConstIntCVar(ca_DumpUsedAnims, 0, VF_CHEAT, "writes animation asset statistics to the disk");
 	DefineConstIntCVar(ca_AnimWarningLevel, 3, VF_CHEAT | VF_DUMPTODISK,

@@ -23,27 +23,27 @@ public:
 	uint             GetErrorCodeMask() const { return m_errorCodeMask; }
 
 private:
-	typedef std::vector<const char*> SwitchStates;
-	void           LoadAllLibrariesInFolder(const string& folderPath, const string& level);
-	void           LoadControlsLibrary(XmlNodeRef pRoot, const string& filepath, const string& level, const string& filename, uint version);
+	using SwitchStates = std::vector<const char*>;
+	void           LoadAllLibrariesInFolder(string const& folderPath, string const& level);
+	void           LoadControlsLibrary(XmlNodeRef pRoot, string const& filepath, string const& level, string const& filename, uint version);
 	CAudioControl* LoadControl(XmlNodeRef pNode, Scope scope, uint version, IAudioAsset* pParentItem);
 
 	void           LoadPreloadConnections(XmlNodeRef pNode, CAudioControl* pControl, uint version);
 	void           LoadConnections(XmlNodeRef root, CAudioControl* pControl);
 
 	void           CreateDefaultControls();
-	void           CreateDefaultSwitch(IAudioAsset* pLibrary, const char* szExternalName, const char* szInternalName, const SwitchStates& states);
+	void           CreateDefaultSwitch(IAudioAsset* pLibrary, const char* szExternalName, const char* szInternalName, SwitchStates const& states);
 
-	void           LoadScopesImpl(const string& path);
+	void           LoadScopesImpl(string const& path);
 
 	void           LoadEditorData(XmlNodeRef pEditorDataNode, IAudioAsset* pRootItem);
 	void           LoadAllFolders(XmlNodeRef pRootFoldersNode, IAudioAsset* pParentItem);
 	void           LoadFolderData(XmlNodeRef pRootFoldersNode, IAudioAsset* pParentItem);
 
-	IAudioAsset*   AddUniqueFolderPath(IAudioAsset* pParent, const QString& path);
+	IAudioAsset*   AddUniqueFolderPath(IAudioAsset* pParent, QString const& path);
 
-	static const string ms_controlsLevelsFolder;
-	static const string ms_levelsFolder;
+	static string const ms_controlsLevelsFolder;
+	static string const ms_levelsFolder;
 	// TODO: Move these strings to Utils
 
 	CAudioAssetsManager* m_pAssetsManager;

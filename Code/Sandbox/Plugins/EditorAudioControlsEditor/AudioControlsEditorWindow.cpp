@@ -41,9 +41,9 @@ public:
 	CAudioFileMonitor(CAudioControlsEditorWindow& window)
 		: m_window(window) {}
 
-	virtual void Activated(const FileSystem::SnapshotPtr& initialSnapshot) override {}
+	virtual void Activated(FileSystem::SnapshotPtr const& initialSnapshot) override {}
 
-	virtual void Update(const FileSystem::SSubTreeMonitorUpdate& update) override
+	virtual void Update(FileSystem::SSubTreeMonitorUpdate const& update) override
 	{
 		if (!update.root.subDirectoryChanges.empty())
 		{
@@ -70,13 +70,13 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 
 	QAction* pSaveAction = new QAction(this);
 	pSaveAction->setIcon(CryIcon("icons:General/File_Save.ico"));
-	pSaveAction->setText(tr("Save All"));
+	pSaveAction->setToolTip(tr("Save All"));
 	connect(pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
 	pToolBar->addAction(pSaveAction);
 
 	QAction* pReloadAction = new QAction(this);
 	pReloadAction->setIcon(CryIcon("icons:General/Reload.ico"));
-	pReloadAction->setText(tr("Reload"));
+	pReloadAction->setToolTip(tr("Reload"));
 	connect(pReloadAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Reload);
 	pToolBar->addAction(pReloadAction);
 	addToolBar(pToolBar);
@@ -145,7 +145,7 @@ CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
-void CAudioControlsEditorWindow::StartWatchingFolder(const QString& folderPath)
+void CAudioControlsEditorWindow::StartWatchingFolder(QString const& folderPath)
 {
 	// Fix the path so that it is a path relative to the engine folder. The file monitor system expects it that way.
 	QString enginePath = QDir::cleanPath(QtUtil::ToQStringSafe(PathUtil::GetEnginePath()));

@@ -185,6 +185,7 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 	if (m_pPreview)
 	{
 		m_pPreview->SetClass(nullptr);
+		m_pPreview->SetComponentInstance(nullptr);
 	}
 
 	QPoint graphPos;
@@ -261,10 +262,6 @@ bool CMainWindow::OnOpenAsset(CAsset* pAsset)
 		{
 			m_pPreview->SetClass(static_cast<const Schematyc::IScriptClass*>(m_pScript->GetRoot()));
 		}
-		else
-		{
-			m_pPreview->SetComponentInstance(nullptr);
-		}
 
 		return true;
 	}
@@ -307,6 +304,7 @@ void CMainWindow::OnCloseAsset()
 	if (m_pPreview)
 	{
 		m_pPreview->SetClass(nullptr);
+		m_pPreview->SetComponentInstance(nullptr);
 	}
 
 	if (m_pScriptBrowser)

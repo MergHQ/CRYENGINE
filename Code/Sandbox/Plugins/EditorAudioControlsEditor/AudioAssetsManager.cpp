@@ -14,7 +14,7 @@
 
 namespace ACE
 {
-uint ItemTypeToIndex(const EItemType type)
+uint ItemTypeToIndex(EItemType const type)
 {
 	switch (type)
 	{
@@ -24,10 +24,16 @@ uint ItemTypeToIndex(const EItemType type)
 		return 1;
 	case EItemType::eItemType_Switch:
 		return 2;
-	case EItemType::eItemType_Environment:
+	case EItemType::eItemType_State:
 		return 3;
-	case EItemType::eItemType_Preload:
+	case EItemType::eItemType_Environment:
 		return 4;
+	case EItemType::eItemType_Preload:
+		return 5;
+	case EItemType::eItemType_Folder:
+		return 6;
+	case EItemType::eItemType_Library:
+		return 7;
 	}
 
 	return 0;
@@ -72,7 +78,7 @@ void CAudioAssetsManager::Initialize()
 	  });
 }
 
-CAudioControl* CAudioAssetsManager::CreateControl(const string& name, EItemType type, IAudioAsset* pParent)
+CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType type, IAudioAsset* pParent)
 {
 	if (pParent != nullptr && !name.empty())
 	{
@@ -95,6 +101,7 @@ CAudioControl* CAudioAssetsManager::CreateControl(const string& name, EItemType 
 			pParent->AddChild(pControl);
 
 			signalItemAdded(pControl);
+			SetAssetModified(pControl);
 
 			return pControl;
 		}
@@ -121,7 +128,7 @@ void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 			DeleteItem(pItem->GetChild(0));
 		}
 
-		const EItemType type = pItem->GetType();
+		EItemType const type = pItem->GetType();
 
 		// Inform that we're about to remove the item
 		if (type == EItemType::eItemType_Library)
@@ -161,6 +168,7 @@ void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 			signalItemRemoved(pParent, pItem);
 		}
 
+		SetAssetModified(pItem);
 		delete pItem;
 	}
 }
@@ -186,13 +194,13 @@ void CAudioAssetsManager::ClearScopes()
 	m_scopeMap[Utils::GetGlobalScope()] = SScopeInfo("global", false);
 }
 
-void CAudioAssetsManager::AddScope(const string& name, bool bLocalOnly)
+void CAudioAssetsManager::AddScope(string const& name, bool bLocalOnly)
 {
 	string scopeName = name;
 	m_scopeMap[CCrc32::Compute(scopeName.MakeLower())] = SScopeInfo(scopeName, bLocalOnly);
 }
 
-bool CAudioAssetsManager::ScopeExists(const string& name) const
+bool CAudioAssetsManager::ScopeExists(string const& name) const
 {
 	string scopeName = name;
 	return m_scopeMap.find(CCrc32::Compute(scopeName.MakeLower())) != m_scopeMap.end();
@@ -203,7 +211,7 @@ void CAudioAssetsManager::GetScopeInfoList(ScopeInfoList& scopeList) const
 	stl::map_to_vector(m_scopeMap, scopeList);
 }
 
-Scope CAudioAssetsManager::GetScope(const string& name) const
+Scope CAudioAssetsManager::GetScope(string const& name) const
 {
 	string scopeName = name;
 	scopeName.MakeLower();
@@ -229,11 +237,11 @@ void CAudioAssetsManager::Clear()
 	ClearDirtyFlags();
 }
 
-CAudioLibrary* CAudioAssetsManager::CreateLibrary(const string& name)
+CAudioLibrary* CAudioAssetsManager::CreateLibrary(string const& name)
 {
 	if (!name.empty())
 	{
-		const size_t size = m_audioLibraries.size();
+		size_t const size = m_audioLibraries.size();
 		for (size_t i = 0; i < size; ++i)
 		{
 			CAudioLibrary* pLibrary = m_audioLibraries[i];
@@ -247,12 +255,13 @@ CAudioLibrary* CAudioAssetsManager::CreateLibrary(const string& name)
 		CAudioLibrary* pLibrary = new CAudioLibrary(name);
 		m_audioLibraries.push_back(pLibrary);
 		signalLibraryAdded(pLibrary);
+		SetAssetModified(pLibrary);
 		return pLibrary;
 	}
 	return nullptr;
 }
 
-ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(const string& name, IAudioAsset* pParent)
+ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(string const& name, IAudioAsset* pParent)
 {
 	if (pParent != nullptr && !name.empty())
 	{
@@ -277,6 +286,7 @@ ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(const string& name, IAudioAs
 			}
 
 			signalItemAdded(pFolder);
+			SetAssetModified(pFolder);
 			return pFolder;
 		}
 		else
@@ -310,6 +320,11 @@ void CAudioAssetsManager::OnControlModified(CAudioControl* pControl)
 {
 	signalControlModified(pControl);
 	m_bControlTypeModified[ItemTypeToIndex(pControl->GetType())] = true;
+}
+
+void CAudioAssetsManager::SetAssetModified(IAudioAsset* pAsset)
+{
+	m_bControlTypeModified[ItemTypeToIndex(pAsset->GetType())] = true;
 }
 
 bool CAudioAssetsManager::IsDirty()
@@ -391,7 +406,7 @@ void CAudioAssetsManager::ReloadAllConnections()
 	}
 }
 
-void CAudioAssetsManager::MoveItems(IAudioAsset* pParent, const std::vector<IAudioAsset*>& items)
+void CAudioAssetsManager::MoveItems(IAudioAsset* pParent, std::vector<IAudioAsset*> const& items)
 {
 	if (pParent != nullptr)
 	{
@@ -407,14 +422,18 @@ void CAudioAssetsManager::MoveItems(IAudioAsset* pParent, const std::vector<IAud
 					pPreviousParent->RemoveChild(pItem);
 					pItem->SetParent(nullptr);
 					signalItemRemoved(pPreviousParent, pItem);
+					SetAssetModified(pPreviousParent);
 				}
 
 				signalItemAboutToBeAdded(pParent);
 				pParent->AddChild(pItem);
 				pItem->SetParent(pParent);
 				signalItemAdded(pItem);
+				SetAssetModified(pItem);
 			}
 		}
+
+		SetAssetModified(pParent);
 	}
 }
 
@@ -486,7 +505,7 @@ namespace Utils
 //////////////////////////////////////////////////////////////////////////
 Scope GetGlobalScope()
 {
-	static const Scope globalScopeId = CCrc32::Compute("global");
+	static Scope const globalScopeId = CCrc32::Compute("global");
 	return globalScopeId;
 }
 
@@ -518,7 +537,7 @@ string GenerateUniqueName(string const& name, EItemType const type, IAudioAsset*
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GenerateUniqueLibraryName(const string& name, const CAudioAssetsManager& assetManager)
+string GenerateUniqueLibraryName(string const& name, CAudioAssetsManager const& assetManager)
 {
 	size_t const size = assetManager.GetLibraryCount();
 	std::vector<string> names;
@@ -538,7 +557,7 @@ string GenerateUniqueLibraryName(const string& name, const CAudioAssetsManager& 
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GenerateUniqueControlName(const string& name, EItemType type, const CAudioAssetsManager& assetManager)
+string GenerateUniqueControlName(string const& name, EItemType type, CAudioAssetsManager const& assetManager)
 {
 	CAudioAssetsManager::Controls const& controls(assetManager.GetControls());
 	std::vector<string> names;
@@ -564,7 +583,7 @@ IAudioAsset* GetParentLibrary(IAudioAsset* pAsset)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SelectTopLevelAncestors(const std::vector<IAudioAsset*>& source, std::vector<IAudioAsset*>& dest)
+void SelectTopLevelAncestors(std::vector<IAudioAsset*> const& source, std::vector<IAudioAsset*>& dest)
 {
 	for (auto pItem : source)
 	{
@@ -601,7 +620,7 @@ void SelectTopLevelAncestors(const std::vector<IAudioAsset*>& source, std::vecto
 }
 
 //////////////////////////////////////////////////////////////////////////
-const string& GetAssetFolder()
+string const& GetAssetFolder()
 {
 	static string path = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR;
 	return path;

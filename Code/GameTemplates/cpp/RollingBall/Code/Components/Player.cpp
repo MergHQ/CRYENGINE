@@ -26,8 +26,16 @@ void CPlayerComponent::Initialize()
 
 	// CryNetwork/CryPhysics: the entity has to be physicalized on both sides
 	// *prior* to binding to network, so the physical state is synced properly.
-	m_pEntity->LoadGeometry(GetOrMakeEntitySlotId(), "Objects/Default/primitive_sphere.cgf");
-
+	int slot = m_pEntity->LoadGeometry(GetOrMakeEntitySlotId(), "Objects/Default/primitive_sphere.cgf");
+	if (slot != -1)
+	{
+		auto material = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial("%ENGINE%/EngineAssets/TextureMsg/DefaultSolids");
+		if (material != nullptr)
+		{
+			m_pEntity->SetMaterial(material);
+		}
+	}
+	
 	SEntityPhysicalizeParams physParams;
 	physParams.type = PE_RIGID;
 	physParams.mass = 90.f;
@@ -50,7 +58,7 @@ void CPlayerComponent::LocalPlayerInitialize()
 	// Register an action, and the callback that will be sent when it's m_pEntity
 	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveLeft, activationMode);  });
 	// Bind the 'A' key the "moveleft" action
-	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse,	EKeyId::eKI_A);
+	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse, EKeyId::eKI_A);
 
 	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value) { HandleInputFlagChange((TInputFlags)EInputFlag::MoveRight, activationMode);  });
 	m_pInputComponent->BindAction("player", "moveright", eAID_KeyboardMouse, EKeyId::eKI_D);
@@ -70,7 +78,30 @@ void CPlayerComponent::LocalPlayerInitialize()
 	// Register the shoot action
 	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value)
 	{
-		if (activationMode == eIS_Pressed)
+		if (activationMode != eIS_Pressed)
+			return;
+
+		// Flags for the ray cast
+		const auto rayFlags = rwi_stop_at_pierceable | rwi_colltype_any;
+
+		// Container which holds the ray hit information
+		ray_hit hit;
+
+		// Get the player bbox
+		AABB bbox;
+		m_pEntity->GetLocalBounds(bbox);
+
+		// Ray cast direction which is down for our case.
+		const Vec3 rayDirection = Vec3(0.0f, 0.0f, -1.0f) * bbox.GetRadius();
+
+		// Max hit is 1 since we only want to know the closest collision to the player.
+		const int maxHits = 1;
+
+		// Find out if the player is in the air
+		// Ray cast the world and add the player to the skip entity list so we don't hit the player itself.
+		int bCanJump = gEnv->pPhysicalWorld->RayWorldIntersection(m_pEntity->GetWorldPos(), rayDirection, ent_all, rayFlags, &hit, maxHits, m_pEntity->GetPhysicalEntity());
+
+		if (bCanJump)
 		{
 			// RMI is used here only for demo purposes, the actual jump action
 			// can be sent with input flags as well.
@@ -79,8 +110,8 @@ void CPlayerComponent::LocalPlayerInitialize()
 		}
 	});
 
-	// Bind the shoot action to left mouse click
-	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, EKeyId::eKI_Mouse1);
+	// Bind the jump action to the space bar
+	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, EKeyId::eKI_Space);
 }
 
 uint64 CPlayerComponent::GetEventMask() const
@@ -88,7 +119,7 @@ uint64 CPlayerComponent::GetEventMask() const
 	return BIT64(ENTITY_EVENT_START_GAME)
 		| BIT64(ENTITY_EVENT_UPDATE)
 		| BIT64(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER)
-	;
+		;
 }
 
 void CPlayerComponent::ProcessEvent(SEntityEvent& event)
@@ -109,14 +140,14 @@ void CPlayerComponent::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_UPDATE:
 	{
 		SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
-		
+
 		// Camera components exists only for the local player
 		if (m_pCameraComponent)
 		{
 			// Update the camera component offset
 			UpdateCamera(pCtx->fFrameTime);
 		}
-		
+
 		if (gEnv->bServer) // Simulate physics only on the server for now.
 		{
 			// Start by updating the movement request we want to send to the character controller
@@ -140,31 +171,34 @@ void CPlayerComponent::UpdateMovementRequest(float frameTime)
 		auto cameraTransformation = m_lookOrientation;
 
 		// Update movement
-		pe_action_impulse impulseAction;
-		impulseAction.impulse = ZERO;
+		Vec3 direction = ZERO;
 
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveLeft)
 		{
-			impulseAction.impulse -= cameraTransformation.GetColumn0() * moveImpulseStrength;
+			direction -= cameraTransformation.GetColumn0();
 		}
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveRight)
 		{
-			impulseAction.impulse += cameraTransformation.GetColumn0() * moveImpulseStrength;
+			direction += cameraTransformation.GetColumn0();
 		}
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveForward)
 		{
-			impulseAction.impulse += cameraTransformation.GetColumn1() * moveImpulseStrength;
+			direction += cameraTransformation.GetColumn1();
 		}
 		if (m_inputFlags & (TInputFlags)EInputFlag::MoveBack)
 		{
-			impulseAction.impulse -= cameraTransformation.GetColumn1() * moveImpulseStrength;
+			direction -= cameraTransformation.GetColumn1();
 		}
+		
+		direction.z = 0.0f;
 
 		// Only dispatch the impulse to physics if one was provided
-		if (!impulseAction.impulse.IsZero())
+		if (!direction.IsZero())
 		{
+			pe_action_impulse impulseAction;
+
 			// Multiply by frame time to keep consistent across machines
-			impulseAction.impulse *= frameTime;
+			impulseAction.impulse = direction.GetNormalized() * moveImpulseStrength * frameTime;
 
 			pPhysicalEntity->Action(&impulseAction);
 		}
@@ -182,8 +216,8 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 
 		ypr.x += m_mouseDeltaRotation.x * rotationSpeed;
 
-		const float rotationLimitsMinPitch = -0.84f;
-		const float rotationLimitsMaxPitch = 1.5f;
+		const float rotationLimitsMinPitch = -1.2;
+		const float rotationLimitsMaxPitch = 0.05f;
 
 		// TODO: Perform soft clamp here instead of hard wall, should reduce rot speed in this direction when close to limit.
 		ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * rotationSpeed, rotationLimitsMinPitch, rotationLimitsMaxPitch);

@@ -45,6 +45,7 @@ CAudioSystemPanel::CAudioSystemPanel()
 
 	QToolButton* pSettingsButton = new QToolButton();
 	pSettingsButton->setIcon(QIcon("://Icons/Options.ico"));
+	pSettingsButton->setToolTip(tr("Location settings of audio middleware project"));
 	connect(pSettingsButton, &QToolButton::clicked, [&]()
 		{
 			QAudioSystemSettingsDialog dialog(this);
@@ -73,10 +74,11 @@ CAudioSystemPanel::CAudioSystemPanel()
 
 	pNameFilter->setPlaceholderText(tr("Search", 0));
 	pHideAssignedCheckbox->setText(tr("Hide Assigned", 0));
+	pHideAssignedCheckbox->setToolTip(tr("Hide or show assigned middleware controls"));
 
 	m_pModelProxy->setDynamicSortFilter(true);
 
-	connect(pNameFilter, &QLineEdit::textChanged, [&](const QString& filter)
+	connect(pNameFilter, &QLineEdit::textChanged, [&](QString const& filter)
 		{
 			m_pModelProxy->setFilterFixedString(filter);
 	  });
