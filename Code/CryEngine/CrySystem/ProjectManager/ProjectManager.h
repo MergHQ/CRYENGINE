@@ -220,6 +220,8 @@ public:
 	virtual const char* GetCurrentAssetDirectoryRelative() const override;
 	virtual const char* GetCurrentAssetDirectoryAbsolute() const override;
 
+	virtual void        RegenerateCSharpSolution(const char* szDirectory) const override;
+
 	virtual void        StoreConsoleVariable(const char* szCVarName, const char* szValue) override;
 	virtual void        SaveProjectChanges() override;
 	// ~IProjectManager
@@ -238,6 +240,9 @@ protected:
 	void AddDefaultPlugins();
 
 	void AddPlugin(ICryPluginManager::EPluginType type, const char* szFileName);
+
+	string LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const;
+	void FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const;
 
 protected:
 	Cry::ProjectManagerInternals::SProject m_project;

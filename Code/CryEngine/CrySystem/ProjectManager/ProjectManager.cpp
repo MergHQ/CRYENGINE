@@ -7,6 +7,8 @@
 #include <CrySerialization/STL.h>
 #include <CrySerialization/Enum.h>
 
+#include <cctype>
+
 using namespace Cry::ProjectManagerInternals;
 
 #if CRY_PLATFORM_WINDOWS
@@ -376,4 +378,202 @@ void CProjectManager::AddPlugin(ICryPluginManager::EPluginType type, const char*
 	}
 
 	m_project.plugins.emplace_back(type, szFileName);
+}
+
+string CProjectManager::LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const
+{
+	CCryFile file(szPath, "rb");
+	if (file.GetHandle() == nullptr)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load template %s!", szPath);
+		return "";
+	}
+
+	size_t fileLength = file.GetLength();
+	file.SeekToBegin();
+
+	std::vector<char> parsedString;
+	parsedString.resize(fileLength);
+
+	if (file.ReadRaw(parsedString.data(), fileLength) != fileLength)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to read template %s!", szPath);
+		return "";
+	}
+
+	string finalText;
+	finalText.reserve(parsedString.size());
+
+	for (auto it = parsedString.cbegin(), end = parsedString.cend(); it != end; ++it)
+	{
+		// Words prefixed by $ are treated as aliases and replaced by the callback
+		if (*it == '$')
+		{
+			// Double $ means we replace with one $
+			if (it + 1 == end || *(it + 1) == '$')
+			{
+				finalText += '$';
+				it += 1;
+			}
+			else
+			{
+				string alias;
+
+				auto subIt = it + 1;
+				for (; subIt != end && (std::isalpha(*subIt) || *subIt == '_'); ++subIt)
+				{
+					alias += *subIt;
+				}
+
+				it = subIt - 1;
+
+				finalText += aliasReplacementFunc(alias);
+			}
+		}
+		else
+		{
+			finalText += *it;
+		}
+	}
+
+	return finalText;
+}
+
+void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
+{
+	std::vector<string> sourceFiles;
+	FindSourceFilesInDirectoryRecursive(szDirectory, "*.cs", sourceFiles);
+	if (sourceFiles.size() == 0)
+	{
+		return;
+	}
+
+	string includes;
+	for (const string& sourceFile : sourceFiles)
+	{
+		string sourceFileRelativePath = sourceFile;
+
+		const auto fullpath = PathUtil::ToUnixPath(sourceFile.c_str());
+		const auto rootDataFolder = PathUtil::ToUnixPath(PathUtil::AddSlash(m_project.rootDirectory));
+		if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
+		{
+			sourceFileRelativePath = fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
+		}
+
+		includes += "<Compile Include=\"" + PathUtil::ToDosPath(sourceFileRelativePath) + "\" />\n";
+	}
+
+	string csProjName = "Game.csproj";
+
+	string projectFilePath = PathUtil::Make(m_project.rootDirectory, csProjName.c_str());
+	CCryFile projectFile(projectFilePath.c_str(), "wb");
+	if (projectFile.GetHandle() != nullptr)
+	{
+		string projectFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedProject.csproj", [this, includes](const char* szAlias) -> string
+		{
+			if (!strcmp(szAlias, "csproject_guid"))
+			{
+				char buff[40];
+				m_project.guid.ToString(buff);
+
+				return buff;
+			}
+			else if (!strcmp(szAlias, "project_name"))
+			{
+				return m_project.name;
+			}
+			else if (!strcmp(szAlias, "engine_bin_directory"))
+			{
+				char szEngineExecutableFolder[_MAX_PATH];
+				CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineExecutableFolder), szEngineExecutableFolder);
+
+				return szEngineExecutableFolder;
+			}
+			else if (!strcmp(szAlias, "project_file"))
+			{
+				return m_project.filePath;
+			}
+			else if (!strcmp(szAlias, "output_path"))
+			{
+				return PathUtil::Make(m_project.rootDirectory, "user/bin");
+			}
+			else if (!strcmp(szAlias, "includes"))
+			{
+				return includes;
+			}
+
+			CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
+			return "";
+		});
+
+		projectFile.Write(projectFileContents.data(), projectFileContents.size());
+
+		string solutionFilePath = PathUtil::Make(m_project.rootDirectory, "Game.sln");
+		CCryFile solutionFile(solutionFilePath.c_str(), "wb");
+		if (solutionFile.GetHandle() != nullptr)
+		{
+			string solutionFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedSolution.sln", [this, csProjName](const char* szAlias) -> string
+			{
+				if (!strcmp(szAlias, "project_name"))
+				{
+					return m_project.name;
+				}
+				else  if (!strcmp(szAlias, "csproject_name"))
+				{
+					return csProjName;
+				}
+				else if (!strcmp(szAlias, "csproject_guid"))
+				{
+					char buff[40];
+					m_project.guid.ToString(buff);
+
+					return buff;
+				}
+
+				CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
+				return "";
+			});
+
+			solutionFile.Write(solutionFileContents.data(), solutionFileContents.size());
+		}
+	}
+}
+
+void CProjectManager::FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const
+{
+	string searchPath = PathUtil::Make(szDirectory, szExtension);
+
+	_finddata_t fd;
+	intptr_t handle = gEnv->pCryPak->FindFirst(searchPath, &fd);
+	if (handle != -1)
+	{
+		do
+		{
+			sourceFiles.emplace_back(PathUtil::Make(szDirectory, fd.name));
+		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+
+		gEnv->pCryPak->FindClose(handle);
+	}
+
+	// Find additional directories
+	searchPath = PathUtil::Make(szDirectory, "*.*");
+
+	handle = gEnv->pCryPak->FindFirst(searchPath, &fd);
+	if (handle != -1)
+	{
+		do
+		{
+			if (fd.attrib & _A_SUBDIR)
+			{
+				if (strcmp(fd.name, ".") != 0 && strcmp(fd.name, "..") != 0)
+				{
+					string sDirectory = PathUtil::Make(szDirectory, fd.name);
+
+					FindSourceFilesInDirectoryRecursive(sDirectory, szExtension, sourceFiles);
+				}
+			}
+		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+
+		gEnv->pCryPak->FindClose(handle);
+	}
 }

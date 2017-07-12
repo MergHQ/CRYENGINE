@@ -15,6 +15,8 @@ struct IProjectManager
 	virtual const char* GetCurrentAssetDirectoryRelative() const = 0;
 	virtual const char* GetCurrentAssetDirectoryAbsolute() const = 0;
 
+	virtual void        RegenerateCSharpSolution(const char* szDirectory) const = 0;
+
 	//! Adds or updates the value of a CVar in the project configuration
 	virtual void        StoreConsoleVariable(const char* szCVarName, const char* szValue) = 0;
 
