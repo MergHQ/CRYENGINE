@@ -143,15 +143,22 @@ bool CNodeGraphViewModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 	if (!pNodeItem->IsRemovable())
 		return false;
 
-	for (CryGraphEditor::CAbstractPinItem* pPin : pNodeItem->GetPinItems())
+	// TODO: Move this to NodeGraphView.
+	const CryGraphEditor::PinItemArray pins(pNodeItem->GetPinItems());
+	for (CryGraphEditor::CAbstractPinItem* pPin : pins)
 	{
-		const CryGraphEditor::ConnectionItemSet& connections = pPin->GetConnectionItems();
-		for (auto itr = connections.begin(); itr != connections.end(); itr = connections.begin())
+		CRY_ASSERT_MESSAGE(pPin, "Value of pPin must be not null.");
+		if (pPin)
 		{
-			CryGraphEditor::CAbstractConnectionItem* pConnection = *itr;
-			RemoveConnection(*pConnection);
+			const CryGraphEditor::ConnectionItemSet& connections = pPin->GetConnectionItems();
+			for (auto itr = connections.begin(); itr != connections.end(); itr = connections.begin())
+			{
+				CryGraphEditor::CAbstractConnectionItem* pConnection = *itr;
+				RemoveConnection(*pConnection);
+			}
 		}
 	}
+	// ~TODO
 
 	NodesByIndex::iterator result = std::find(m_nodesByIndex.begin(), m_nodesByIndex.end(), pNodeItem);
 	if (result != m_nodesByIndex.end())

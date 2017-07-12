@@ -130,7 +130,10 @@ namespace CryEngine
 		/// <param name="entityComponentType">Entity class prototype.</param>
 		internal static void TryRegister(Type entityComponentType)
 		{
-			var typeInfo = new TypeInfo();
+			var typeInfo = new TypeInfo
+			{
+				type = entityComponentType
+			};
             _componentTypes.Add(typeInfo);
 
             var guidAttribute = (GuidAttribute)entityComponentType.GetCustomAttributes(typeof(GuidAttribute), false).FirstOrDefault();
