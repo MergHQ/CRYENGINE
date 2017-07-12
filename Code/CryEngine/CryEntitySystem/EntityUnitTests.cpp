@@ -8,6 +8,9 @@
 
 #include "SubstitutionProxy.h"
 
+#include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CrySchematyc/Env/Elements/EnvComponent.h>
+
 CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 {
 	struct IUnifiedEntityComponent : public IEntityComponent
@@ -234,7 +237,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 	}
 }
 
-static void RegisterUnitTestComponents(Schematyc::IEnvRegistrar& registrar)
+void RegisterUnitTestComponents(Schematyc::IEnvRegistrar& registrar)
 {
 	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{

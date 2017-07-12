@@ -8,6 +8,7 @@
 #include <CryMath/Angle.h>
 
 #include <CrySchematyc/CoreAPI.h>
+#include "CoreEnv/CoreEnv.h"
 
 static void ReflectType(Schematyc::CTypeDesc<CCamera>& desc)
 {

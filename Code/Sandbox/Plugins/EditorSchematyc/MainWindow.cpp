@@ -35,6 +35,7 @@
 #include <Serialization/Qt.h>
 #include <CryIcon.h>
 #include <EditorFramework/Inspector.h>
+#include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
 
 #include <QCollapsibleFrame.h>
