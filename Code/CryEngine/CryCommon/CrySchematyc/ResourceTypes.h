@@ -134,6 +134,34 @@ inline void ReflectType(CTypeDesc<ParticleEffectName>& desc)
 	desc.SetDescription("Particle effect name");
 }
 
+// Audio
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioEnvironment<string>> AudioEnvironmentName;
+
+inline void ReflectType(CTypeDesc<AudioEnvironmentName>& desc)
+{
+	desc.SetGUID("C312E1D3-D31F-4509-A92F-644965E2BD6F"_cry_guid);
+	desc.SetLabel("AudioEnvironmentName");
+	desc.SetDescription("Audio Environment name");
+}
+
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioPreloadRequest<string>> AudioPreloadRequestName;
+
+inline void ReflectType(CTypeDesc<AudioPreloadRequestName>& desc)
+{
+	desc.SetGUID("A1AD3BA1-FCD0-4CE0-99FB-A77736E897FE"_cry_guid);
+	desc.SetLabel("AudioPreloadRequestName");
+	desc.SetDescription("Audio Preload Request name");
+}
+
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioRTPC<string>> AudioRtpcName;
+
+inline void ReflectType(CTypeDesc<AudioRtpcName>& desc)
+{
+	desc.SetGUID("730c191c-531f-48ae-bba9-5c1d8216b701"_cry_guid);
+	desc.SetLabel("AudioRtpcName");
+	desc.SetDescription("Audio Rtpc name");
+}
+
 typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioSwitch<string>> AudioSwitchName;
 
 inline void ReflectType(CTypeDesc<AudioSwitchName>& desc)
@@ -152,14 +180,15 @@ inline void ReflectType(CTypeDesc<AudioSwitchStateName>& desc)
 	desc.SetDescription("Audio switch state name");
 }
 
-typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioRTPC<string>> AudioRtpcName;
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioTrigger<string>> AudioTriggerName;
 
-inline void ReflectType(CTypeDesc<AudioRtpcName>& desc)
+inline void ReflectType(CTypeDesc<AudioTriggerName>& desc)
 {
-	desc.SetGUID("730c191c-531f-48ae-bba9-5c1d8216b701"_cry_guid);
-	desc.SetLabel("AudioRtpcName");
-	desc.SetDescription("Audio Rtpc name");
+	desc.SetGUID("A4A3C724-3A78-4F10-9184-3ECEB03C55BA"_cry_guid);
+	desc.SetLabel("AudioTriggerName");
+	desc.SetDescription("Audio Trigger name");
 }
+// ~Audio
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::DialogName<string>> DialogName;
 
