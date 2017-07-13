@@ -3,6 +3,8 @@
 #ifndef __VEHICLE_XML_HELPER__H__
 #define __VEHICLE_XML_HELPER__H__
 
+struct IVariable;
+
 namespace VehicleXml
 {
 

@@ -1667,27 +1667,18 @@ void CharacterDocument::PreRender(const SRenderContext& context)
 		// get relative movement
 		QuatT relMove = skeletonAnim.GetRelMovement();
 
-		const int layerId = m_system->scene->layers.activeLayer;
-		const uint32 animationCount = skeletonAnim.GetNumAnimsInFIFO(layerId);
-		if (animationCount == 1)
+		// Determine normalizedTime/relativeMovement by actual selected (active) layer
+		const int activeLayerId = m_system->scene->layers.activeLayer;
+		const uint32 activeLayerAnimationCount = skeletonAnim.GetNumAnimsInFIFO(activeLayerId);
+		if (activeLayerAnimationCount == 1)
 		{
-			const f32 fSmoothTime = m_bPaused && m_playbackOptions.smoothTimelineSlider ? 0.2f : 0.0f;
-			SmoothCD(m_NormalizedTimeSmooth, m_NormalizedTimeRate, FrameTime, m_NormalizedTime, fSmoothTime);
-			CAnimation* pAnimation = &skeletonAnim.GetAnimFromFIFO(layerId, 0);
+			CAnimation* pAnimation = &skeletonAnim.GetAnimFromFIFO(activeLayerId, 0);
 			if (pAnimation)
 			{
 				if (m_bPaused)
 				{
 					//At this point the animation pose was already fully updated by StartAnimationProcessing(params)
 					relMove = m_lastCalculateRelativeMovement;  //if we set a new time with 'scrubbing' then we have to work with one frame delay (or we will see foot-sliding at low framerate)
-					//Set a new animation-time. We will see the effect one frame later.
-					skeletonAnim.SetAnimationNormalizedTime(pAnimation, m_NormalizedTimeSmooth, 1);
-					if (uncompressedCharacterUsed)
-					{
-						CAnimation* pUncompressedAnimation = &m_uncompressedCharacter->GetISkeletonAnim()->GetAnimFromFIFO(layerId, 0);
-						if (pUncompressedAnimation)
-							m_uncompressedCharacter->GetISkeletonAnim()->SetAnimationNormalizedTime(pUncompressedAnimation, m_NormalizedTimeSmooth, 1);
-					}
 					//Read back the new 'locator movement' immediately and use it next frame.
 					m_lastCalculateRelativeMovement = skeletonAnim.CalculateRelativeMovement(-1.0f); //there is no "delta-time" in scrub-mode
 				}
@@ -1695,6 +1686,30 @@ void CharacterDocument::PreRender(const SRenderContext& context)
 				{
 					m_NormalizedTime = skeletonAnim.GetAnimationNormalizedTime(pAnimation);
 				}
+			}
+		}
+
+		// In case of scrubbing [paused animation]: set normalized time on all layers 
+		if (m_bPaused)
+		{
+			const f32 fSmoothTime = m_playbackOptions.smoothTimelineSlider ? 0.2f : 0.0f;
+			SmoothCD(m_NormalizedTimeSmooth, m_NormalizedTimeRate, FrameTime, m_NormalizedTime, fSmoothTime);
+			for (auto& it : m_system->scene->layers.layers)
+			{
+				const int& layerId = it.layerId;
+				const uint32 animationCount = skeletonAnim.GetNumAnimsInFIFO(layerId);
+				if (animationCount != 1) continue;
+
+				CAnimation* pAnimation = &skeletonAnim.GetAnimFromFIFO(layerId, 0);
+				if (!pAnimation) continue;
+
+				// Set a new animation-time. We will see the effect one frame later.
+				skeletonAnim.SetAnimationNormalizedTime(pAnimation, m_NormalizedTimeSmooth, 1);
+
+				if (!uncompressedCharacterUsed) continue;
+				CAnimation* pUncompressedAnimation = &m_uncompressedCharacter->GetISkeletonAnim()->GetAnimFromFIFO(layerId, 0);
+				if (!pUncompressedAnimation) continue;
+				m_uncompressedCharacter->GetISkeletonAnim()->SetAnimationNormalizedTime(pUncompressedAnimation, m_NormalizedTimeSmooth, 1);
 			}
 		}
 

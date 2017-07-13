@@ -1996,6 +1996,7 @@ static char* sDescList[] =
 	"Decal",
 	"WaterVolume",
 	"Transparent",
+	"TransparentNearest",
 	"Water",
 	"AfterHDRPostProcess",
 	"AfterPostProcess",

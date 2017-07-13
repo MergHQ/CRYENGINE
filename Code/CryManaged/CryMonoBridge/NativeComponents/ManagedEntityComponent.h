@@ -19,7 +19,9 @@ public:
 	// ~IEntityComponent
 
 	CMonoObject* GetObject() const { return m_pMonoObject.get(); }
-	const CManagedEntityComponentFactory& GetManagedFactoy() const { return m_factory; }
+	const CManagedEntityComponentFactory& GetManagedFactory() const { return m_factory; }
+
+	void SendSignal(int signalId, MonoInternals::MonoArray* pParams);
 
 protected:
 	const CManagedEntityComponentFactory& m_factory;

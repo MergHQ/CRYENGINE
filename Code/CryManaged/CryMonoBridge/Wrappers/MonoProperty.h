@@ -3,9 +3,11 @@
 #pragma once
 
 #include "MonoObject.h"
+#include "MonoMethod.h"
 
 class CMonoProperty
 {
+public:
 	// Hacky workaround for no API access for getting MonoProperty from reflection data
 	// Post-5.3 we should expose this to Mono and send the change back.
 	struct InternalMonoReflectionType
@@ -15,18 +17,17 @@ class CMonoProperty
 		MonoInternals::MonoProperty *property;
 	};
 
-public:
 	CMonoProperty(MonoInternals::MonoProperty* pProperty);
 	CMonoProperty(MonoInternals::MonoReflectionProperty* pProperty);
 	virtual ~CMonoProperty() {}
 
-	std::shared_ptr<CMonoObject> Get(const CMonoObject* pObject, bool &bEncounteredException) const;
-	void Set(const CMonoObject* pObject, const CMonoObject* pValue, bool &bEncounteredException) const;
-
-	void Set(const class CMonoObject* pObject, void** pParams, bool &bEncounteredException) const;
-
+	std::shared_ptr<CMonoObject> Get(MonoInternals::MonoObject* pObject, bool &bEncounteredException) const;
+	void Set(MonoInternals::MonoObject* pObject, MonoInternals::MonoObject* pValue, bool &bEncounteredException) const;
+	
 	MonoInternals::MonoProperty* GetHandle() const { return m_pProperty; }
-	MonoInternals::MonoTypeEnum GetType(MonoInternals::MonoReflectionProperty* pReflectionProperty) const;
+
+	CMonoMethod GetGetMethod() const;
+	CMonoMethod GetSetMethod() const;
 
 protected:
 	MonoInternals::MonoProperty* m_pProperty;

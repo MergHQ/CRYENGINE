@@ -9,6 +9,5 @@
 
 #include "EditorCommon.h"
 
-#include "Util/Variable.h"
 #include "IObjectManager.h"
 #include "Resource.h"

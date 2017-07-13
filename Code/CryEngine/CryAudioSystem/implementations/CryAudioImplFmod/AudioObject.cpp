@@ -7,6 +7,7 @@
 #include "SharedAudioData.h"
 #include <AudioLogger.h>
 #include <fmod_common.h>
+#include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
 {
