@@ -48,6 +48,12 @@ CUnitTestManager::CUnitTestManager(ILog& logToUse)
 	m_pAutoTestsContext = stl::make_unique<SAutoTestsContext>();
 	CRY_ASSERT(m_pAutoTestsContext != nullptr);
 
+	// Listen to asserts and fatal errors, turn them into unit test failures during the test
+	if (!gEnv->pSystem->RegisterErrorObserver(this))
+	{
+		CRY_ASSERT_MESSAGE(false, "Unit test manager failed to register error system callback");
+	}
+
 	// Register tests defined in this module
 	CreateTests("CrySystem");
 }
@@ -55,6 +61,11 @@ CUnitTestManager::CUnitTestManager(ILog& logToUse)
 //Empty destructor here to enable m_pAutoTestsContext forward declaration
 CUnitTestManager::~CUnitTestManager()
 {
+	// Clean up listening to asserts and fatal errors
+	if (!gEnv->pSystem->UnregisterErrorObserver(this))
+	{
+		CRY_ASSERT_MESSAGE(false, "Unit test manager failed to unregister error system callback");
+	}
 }
 
 IUnitTest* CUnitTestManager::GetTestInstance(const CUnitTestInfo& info)
@@ -264,13 +275,20 @@ void CUnitTestManager::SetExceptionCause(const char* szExpression, const char* s
 {
 	if (m_bRunningTest)
 	{
+		// Reset assert flag to not block other updates depending on the flag, e.g. editor update, 
+		// in case we do not immediately quit after the unit test.
+		// The flag has to be set here, since the majority of engine code does not use exceptions
+		// but we are using exception or longjmp here, so it no longer returns to the assert caller
+		// which would otherwise reset the flag.
+		gEnv->bStoppedOnAssert = false;
+
 		m_failureMsg = szExpression;
-	}
 #if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
-	throw CryUnitTest::assert_exception(szExpression, szFile, line);
+		throw CryUnitTest::assert_exception(szExpression, szFile, line);
 #else
-	longjmp(*GetAssertJmpBuf(), 1);
+		longjmp(*GetAssertJmpBuf(), 1);
 #endif
+	}
 }
 
 bool CUnitTestManager::IsTestMatch(const CUnitTest& test, const string& sSuiteName, const string& sTestName) const
@@ -286,6 +304,33 @@ bool CUnitTestManager::IsTestMatch(const CUnitTest& test, const string& sSuiteNa
 		isMatch &= (sTestName == test.GetInfo().GetName());
 	}
 	return isMatch;
+}
+
+void CryUnitTest::CUnitTestManager::OnAssert(const char* szCondition, const char* szMessage, const char* szFileName, unsigned int fileLineNumber)
+{
+	if (m_bRunningTest)
+	{
+		string sCause;
+		if (szMessage != nullptr && strlen(szMessage))
+		{
+			sCause.Format("Assert: condition \"%s\" failed with \"%s\"", szCondition, szMessage);
+		}
+		else
+		{
+			sCause.Format("Assert: \"%s\"", szCondition);
+		}
+		SetExceptionCause(sCause.c_str(), szFileName, fileLineNumber);
+	}
+}
+
+void CryUnitTest::CUnitTestManager::OnFatalError(const char* szMessage)
+{
+	if (m_bRunningTest)
+	{
+		string sCause;
+		sCause.Format("Fatal Error: %s", szMessage);
+		SetExceptionCause(sCause.c_str(), "", 0);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
