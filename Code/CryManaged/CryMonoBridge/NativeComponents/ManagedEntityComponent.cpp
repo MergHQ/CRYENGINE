@@ -124,3 +124,76 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 			break;
 	}
 }
+
+void CManagedEntityComponent::SendSignal(int signalId, MonoInternals::MonoArray* pParams)
+{
+	if (Schematyc::IObject* pSchematycObject = m_pEntity->GetSchematycObject())
+	{
+		CManagedEntityComponentFactory::CSchematycSignal& signal = *m_factory.m_schematycSignals[signalId].get();
+		Schematyc::SObjectSignal objectSignal(signal.GetGUID(), GetGUID());
+
+		size_t numParams = MonoInternals::mono_array_length(pParams);
+		objectSignal.params.ReserveInputs(numParams);
+
+		std::vector<std::shared_ptr<Schematyc::CAnyValue>> inputValues;
+		inputValues.resize(numParams);
+
+		for (size_t i = 0; i < numParams; ++i)
+		{
+			MonoInternals::MonoObject* pObject = *(MonoInternals::MonoObject**)MonoInternals::mono_array_addr_with_size(pParams, sizeof(void*), i);
+			MonoInternals::MonoType* pType = MonoInternals::mono_class_get_type(MonoInternals::mono_object_get_class(pObject));
+			MonoInternals::MonoTypeEnum type = (MonoInternals::MonoTypeEnum)MonoInternals::mono_type_get_type(pType);
+
+			switch (type)
+			{
+			case MonoInternals::MONO_TYPE_BOOLEAN:
+			{
+				inputValues[i] = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<bool>(), (bool*)mono_object_unbox(pObject));
+			}
+			break;
+			case MonoInternals::MONO_TYPE_STRING:
+			{
+				char* szString = MonoInternals::mono_string_to_utf8((MonoInternals::MonoString*)pObject);
+				Schematyc::CSharedString sharedString(szString);
+
+				inputValues[i] = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<Schematyc::CSharedString>(), &sharedString);
+
+				MonoInternals::mono_free(szString);
+			}
+			break;
+			case MonoInternals::MONO_TYPE_U1:
+			case MonoInternals::MONO_TYPE_CHAR: // Char is unsigned by default for .NET
+			case MonoInternals::MONO_TYPE_U2:
+			case MonoInternals::MONO_TYPE_U4:
+			case MonoInternals::MONO_TYPE_U8:  // Losing precision! TODO: Add Schematyc support for 64?
+			{
+				inputValues[i] = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<uint32>(), (uint32*)mono_object_unbox(pObject));
+			}
+			break;
+			case MonoInternals::MONO_TYPE_I1:
+			case MonoInternals::MONO_TYPE_I2:
+			case MonoInternals::MONO_TYPE_I4:
+			case MonoInternals::MONO_TYPE_I8:  // Losing precision! TODO: Add Schematyc support for 64?
+			{
+				inputValues[i] = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<int32>(), (int32*)mono_object_unbox(pObject));
+			}
+			break;
+			
+			case MonoInternals::MONO_TYPE_R4:
+			case MonoInternals::MONO_TYPE_R8:  // Losing precision! TODO: Add Schematyc support for 64?
+			{
+				inputValues[i] = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<float>(), (float*)mono_object_unbox(pObject));
+			}
+			break;
+
+			default:
+				CRY_ASSERT_MESSAGE(false, "Tried to send Schematyc signal with non-primitive parameter type!");
+				return;
+			}
+
+			objectSignal.params.BindInput(Schematyc::CUniqueId::FromUInt32(i), inputValues[i]);
+		}
+
+		pSchematycObject->ProcessSignal(objectSignal);
+	}
+}

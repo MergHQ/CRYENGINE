@@ -37,7 +37,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Debugging" FILES ${Debugging_FILES})
 
 
-	set(EntitySystem_Attributes_FILES EntitySystem/Attributes/EntityClassAttribute.cs EntitySystem/Attributes/EntityComponentAttribute.cs)
+	set(EntitySystem_Attributes_FILES EntitySystem/Attributes/EntityClassAttribute.cs EntitySystem/Attributes/EntityComponentAttribute.cs EntitySystem/Attributes/SchematycMethodAttribute.cs EntitySystem/Attributes/SchematycSignalAttribute.cs)
 	source_group("EntitySystem\\Attributes" FILES ${EntitySystem_Attributes_FILES})
 
 

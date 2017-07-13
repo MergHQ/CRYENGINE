@@ -100,7 +100,7 @@ static void RegisterManagedEntityWithDefaultComponent(MonoInternals::MonoString*
 	clsDesc.pUserProxyCreateFunc = &CreateManagedComponent;
 	clsDesc.pUserProxyData = (void*)&it->second->m_classDescription.GetGUID();
 
-	it->second->m_pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
 }
 
 static MonoInternals::MonoObject* GetComponent(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart)
@@ -186,6 +186,45 @@ static void RegisterComponentProperty(MonoInternals::MonoReflectionType* pCompon
 	it->second->AddProperty(pProperty, pName->GetString(), pLabel->GetString(), pDescription->GetString(), type);
 }
 
+static void RegisterComponentFunction(MonoInternals::MonoReflectionType* pComponentType, MonoInternals::MonoReflectionMethod* pMethod)
+{
+	auto it = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pComponentType);
+	CRY_ASSERT(it != CManagedPlugin::s_pCurrentlyRegisteringFactory->end());
+
+	it->second->AddFunction(pMethod);
+}
+
+static int RegisterComponentSignal(MonoInternals::MonoReflectionType* pComponentType, MonoInternals::MonoString* pSignalName)
+{
+	auto it = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pComponentType);
+	CRY_ASSERT(it != CManagedPlugin::s_pCurrentlyRegisteringFactory->end()); 
+
+	char* szSignalName = MonoInternals::mono_string_to_utf8(pSignalName);
+	int signalId = it->second->AddSignal(szSignalName);
+	MonoInternals::mono_free(szSignalName);
+
+	return signalId;
+}
+
+static void AddComponentSignalParameter(MonoInternals::MonoReflectionType* pComponentType, int signalId, MonoInternals::MonoString* pParamName, MonoInternals::MonoReflectionType* pParamType)
+{
+	auto it = CManagedPlugin::s_pCurrentlyRegisteringFactory->find(pComponentType);
+	CRY_ASSERT(it != CManagedPlugin::s_pCurrentlyRegisteringFactory->end());
+
+	char* szParamName = MonoInternals::mono_string_to_utf8(pParamName);
+	it->second->AddSignalParameter(signalId, szParamName, pParamType);
+	MonoInternals::mono_free(szParamName);
+}
+
+static void SendComponentSignal(IEntity* pEntity, uint64 guidHipart, uint64 guidLopart, int signalId, MonoInternals::MonoArray* pParameters)
+{
+	CryGUID id = CryGUID::Construct(guidHipart, guidLopart);
+	if (CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(id)))
+	{
+		pComponent->SendSignal(signalId, pParameters);
+	}
+}
+
 void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* methodName)> func)
 {
 	func(RegisterComponent, "RegisterComponent");
@@ -196,4 +235,8 @@ void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* p
 	func(GetOrCreateComponent, "GetOrCreateComponent");
 	func(AddComponent, "AddComponent");
 	func(RegisterComponentProperty, "RegisterComponentProperty");
+	func(RegisterComponentFunction, "RegisterComponentFunction");
+	func(RegisterComponentSignal, "RegisterComponentSignal");
+	func(AddComponentSignalParameter, "AddComponentSignalParameter");
+	func(SendComponentSignal, "SendComponentSignal");
 }

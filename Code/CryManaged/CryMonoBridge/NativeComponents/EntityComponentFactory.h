@@ -3,6 +3,7 @@
 #include <CryEntitySystem/IEntityComponent.h>
 
 #include "Wrappers/MonoProperty.h"
+#include "Wrappers/MonoMethod.h"
 
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -79,6 +80,9 @@ public:
 	// ~Schematyc::IEnvComponent
 
 	void AddProperty(MonoInternals::MonoReflectionProperty* pProperty, const char* szPropertyName, const char* szPropertyLabel, const char* szPropertyDesc, EEntityPropertyType type);
+	void AddFunction(MonoInternals::MonoReflectionMethod* pMethod);
+	int AddSignal(const char* szEventName);
+	void AddSignalParameter(int signalId, const char* szParameter, MonoInternals::MonoReflectionType* pType);
 
 	class CManagedComponentClassDescription : public CEntityComponentClassDesc
 	{
@@ -97,7 +101,6 @@ public:
 	CManagedComponentClassDescription m_classDescription;
 	std::shared_ptr<CMonoClass> m_pClass;
 
-	IEntityClass* m_pEntityClass;
 	uint64 m_eventMask;
 
 	std::vector<std::unique_ptr<SProperty>> m_properties;
@@ -117,4 +120,173 @@ public:
 
 	std::shared_ptr<CMonoMethod> m_pGameStartMethod;
 	std::shared_ptr<CMonoMethod> m_pRemoveMethod;
+
+	class CSchematycFunction final : public Schematyc::CEnvElementBase<Schematyc::IEnvFunction>
+	{
+		struct SParameter
+		{
+			int index;
+			MonoInternals::MonoType* pType;
+			string name;
+			Schematyc::CAnyConstPtr defaultValue;
+		};
+
+	public:
+		CSchematycFunction(std::shared_ptr<CMonoMethod>&& pMethod, const CryGUID& guid, Schematyc::CCommonTypeDesc* pOwnerDesc);
+
+		// IEnvElement
+		virtual bool IsValidScope(Schematyc::IEnvElement& scope) const override
+		{
+			switch (scope.GetType())
+			{
+			case Schematyc::EEnvElementType::Module:
+			case Schematyc::EEnvElementType::DataType:
+			case Schematyc::EEnvElementType::Class:
+			case Schematyc::EEnvElementType::Component:
+			case Schematyc::EEnvElementType::Action:
+			{
+				return true;
+			}
+			default:
+			{
+				return false;
+			}
+			}
+		}
+		// ~IEnvElement
+
+		// IEnvFunction
+		virtual bool Validate() const override
+		{
+			return m_pMethod != nullptr && m_pMethod->GetHandle() != nullptr;
+		}
+
+		virtual Schematyc::EnvFunctionFlags GetFunctionFlags() const override
+		{
+			return { Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction };
+		}
+
+		virtual const Schematyc::CCommonTypeDesc* GetObjectTypeDesc() const override
+		{
+			return m_pOwnerDescription;
+		}
+
+		virtual uint32 GetInputCount() const override
+		{
+			return m_inputs.size();
+		}
+
+		virtual uint32 GetInputId(uint32 inputIdx) const override
+		{
+			return m_inputs[inputIdx].index;
+		}
+
+		virtual const char* GetInputName(uint32 inputIdx) const override
+		{
+			return m_inputs[inputIdx].name;
+		}
+
+		virtual const char* GetInputDescription(uint32 inputIdx) const override
+		{
+			return "";
+		}
+
+		virtual Schematyc::CAnyConstPtr GetInputData(uint32 inputIdx) const override
+		{
+			return m_inputs[inputIdx].defaultValue;
+		}
+
+		virtual uint32 GetOutputCount() const override
+		{
+			return m_outputs.size();
+		}
+
+		virtual uint32 GetOutputId(uint32 outputIdx) const override
+		{
+			return m_outputs[outputIdx].index;
+		}
+
+		virtual const char* GetOutputName(uint32 outputIdx) const override
+		{
+			return m_outputs[outputIdx].name;
+		}
+
+		virtual const char* GetOutputDescription(uint32 outputIdx) const override
+		{
+			return "";
+		}
+
+		virtual Schematyc::CAnyConstPtr GetOutputData(uint32 outputIdx) const override
+		{
+			return m_outputs[outputIdx].defaultValue;
+		}
+
+		virtual void Execute(Schematyc::CRuntimeParamMap& params, void* pObject) const override;
+		// ~IEnvFunction
+
+	protected:
+		Schematyc::CCommonTypeDesc* m_pOwnerDescription;
+		std::shared_ptr<CMonoMethod> m_pMethod;
+		std::vector<SParameter> m_outputs;
+		std::vector<SParameter> m_inputs;
+		size_t m_numParameters;
+	};
+
+	class CSchematycSignal final : public Schematyc::CEnvElementBase<Schematyc::IEnvSignal>
+	{
+	public:
+		CSchematycSignal(const CryGUID& guid, const char* szLabel)
+			: Schematyc::CEnvElementBase<Schematyc::IEnvSignal>(guid, szLabel, Schematyc::SSourceFileInfo("Unknown .NET source file", 0))
+			, m_classDesc(guid, szLabel) {}
+
+		// IEnvElement
+		virtual bool IsValidScope(Schematyc::IEnvElement& scope) const override
+		{
+			switch (scope.GetType())
+			{
+			case Schematyc::EEnvElementType::Root:
+			case Schematyc::EEnvElementType::Module:
+			case Schematyc::EEnvElementType::Component:
+			case Schematyc::EEnvElementType::Action:
+			{
+				return true;
+			}
+			default:
+			{
+				return false;
+			}
+			}
+		}
+		// ~IEnvElement
+
+		// IEnvSignal
+		virtual const Schematyc::CClassDesc& GetDesc() const override { return m_classDesc; }
+		// ~IEnvSignal
+
+		void AddParameter(const char* szParameter, MonoInternals::MonoReflectionType* pType)
+		{
+			m_classDesc.AddParameter(szParameter, pType);
+		}
+
+		class CSignalClassDesc : public Schematyc::CClassDesc
+		{
+		public:
+			CSignalClassDesc(const CryGUID& guid, const char* szLabel)
+				: m_label(szLabel)
+			{
+				SetGUID(guid);
+				SetLabel(m_label.c_str());
+			}
+
+			void AddParameter(const char* szParameter, MonoInternals::MonoReflectionType* pType);
+
+			string m_label;
+			std::vector<string> m_memberNames;
+		};
+
+		CSignalClassDesc m_classDesc;
+	};
+
+	std::vector<std::shared_ptr<CSchematycFunction>> m_schematycFunctions;
+	std::vector<std::shared_ptr<CSchematycSignal>>   m_schematycSignals;
 };

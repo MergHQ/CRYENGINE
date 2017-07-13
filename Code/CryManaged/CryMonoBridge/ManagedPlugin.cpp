@@ -163,6 +163,14 @@ void CManagedPlugin::RegisterSchematycPackageContents(Schematyc::IEnvRegistrar& 
 		for (auto it = m_entityComponentFactoryMap.begin(); it != m_entityComponentFactoryMap.end(); ++it)
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(it->second);
+			for (const std::shared_ptr<CManagedEntityComponentFactory::CSchematycFunction>& pFunction : it->second->m_schematycFunctions)
+			{
+				componentScope.Register(pFunction);
+			}
+			for (const std::shared_ptr<CManagedEntityComponentFactory::CSchematycSignal>& pSignal : it->second->m_schematycSignals)
+			{
+				componentScope.Register(pSignal);
+			}
 		}
 	}
 }

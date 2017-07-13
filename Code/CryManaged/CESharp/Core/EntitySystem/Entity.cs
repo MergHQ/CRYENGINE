@@ -271,7 +271,7 @@ namespace CryEngine
 
 		internal IEntity NativeHandle { get; set; }
 
-		private IntPtr NativeEntityPointer { get; set; }
+		internal IntPtr NativeEntityPointer { get; set; }
 
 
 		#endregion

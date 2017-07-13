@@ -14,10 +14,10 @@ CMonoProperty::CMonoProperty(MonoInternals::MonoReflectionProperty* pProperty)
 {
 }
 
-std::shared_ptr<CMonoObject> CMonoProperty::Get(const CMonoObject* pObject, bool &bEncounteredException) const
+std::shared_ptr<CMonoObject> CMonoProperty::Get(MonoInternals::MonoObject* pObject, bool &bEncounteredException) const
 {
 	MonoInternals::MonoObject* pException = nullptr;
-	MonoInternals::MonoObject* pResult = MonoInternals::mono_property_get_value(m_pProperty, pObject->GetManagedObject(), nullptr, &pException);
+	MonoInternals::MonoObject* pResult = MonoInternals::mono_property_get_value(m_pProperty, pObject, nullptr, &pException);
 	bEncounteredException = pException != nullptr;
 
 	if (!bEncounteredException)
@@ -38,16 +38,12 @@ std::shared_ptr<CMonoObject> CMonoProperty::Get(const CMonoObject* pObject, bool
 	return nullptr;
 }
 
-void CMonoProperty::Set(const CMonoObject* pObject, const CMonoObject* pValue, bool &bEncounteredException) const
+void CMonoProperty::Set(MonoInternals::MonoObject* pObject, MonoInternals::MonoObject* pValue, bool &bEncounteredException) const
 {
-	void* pParams[1] = { pValue->GetManagedObject() };
-	Set(pObject, pParams, bEncounteredException);
-}
+	void* pParams[1] = { pValue };
 
-void CMonoProperty::Set(const CMonoObject* pObject, void** pParams, bool &bEncounteredException) const
-{
 	MonoInternals::MonoObject* pException = nullptr;
-	mono_property_set_value(m_pProperty, pObject->GetManagedObject(), pParams, &pException);
+	mono_property_set_value(m_pProperty, pObject, pParams, &pException);
 	bEncounteredException = pException != nullptr;
 
 	if (bEncounteredException)
@@ -56,14 +52,12 @@ void CMonoProperty::Set(const CMonoObject* pObject, void** pParams, bool &bEncou
 	}
 }
 
-MonoInternals::MonoTypeEnum CMonoProperty::GetType(MonoInternals::MonoReflectionProperty* pReflectionProperty) const
+CMonoMethod CMonoProperty::GetGetMethod() const
 {
-	InternalMonoReflectionType* pInternalProperty = (InternalMonoReflectionType*)pReflectionProperty;
-	CRY_ASSERT(m_pProperty == pInternalProperty->property);
+	return CMonoMethod(MonoInternals::mono_property_get_get_method(m_pProperty));
+}
 
-	MonoInternals::MonoMethod* pGetMethod = mono_property_get_get_method(m_pProperty);
-	MonoInternals::MonoMethodSignature* pGetMethodSignature = mono_method_get_signature(pGetMethod, mono_class_get_image(pInternalProperty->klass), mono_method_get_token(pGetMethod));
-
-	MonoInternals::MonoType* pPropertyType = mono_signature_get_return_type(pGetMethodSignature);
-	return (MonoInternals::MonoTypeEnum)mono_type_get_type(pPropertyType);
+CMonoMethod CMonoProperty::GetSetMethod() const
+{
+	return CMonoMethod(MonoInternals::mono_property_get_set_method(m_pProperty));
 }
