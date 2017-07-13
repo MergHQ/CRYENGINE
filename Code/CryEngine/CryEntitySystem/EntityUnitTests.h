@@ -4,4 +4,4 @@
 
 #include <CrySchematyc/CoreAPI.h>
 
-static void RegisterUnitTestComponents(Schematyc::IEnvRegistrar& registrar);
+void RegisterUnitTestComponents(Schematyc::IEnvRegistrar& registrar);

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "VehicleXMLHelper.h"
+#include <Util/Variable.h>
 
 #include <algorithm>
 

@@ -6,6 +6,8 @@
 #include <ILevelSystem.h>
 #include <Cry3DEngine/IRenderNode.h>
 
+#include <array>
+
 namespace Cry
 {
 namespace DefaultComponents

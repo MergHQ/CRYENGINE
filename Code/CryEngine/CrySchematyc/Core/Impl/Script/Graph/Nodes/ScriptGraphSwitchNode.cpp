@@ -135,6 +135,7 @@ void CScriptGraphSwitchNode::LoadDependencies(Serialization::IArchive& archive, 
 
 void CScriptGraphSwitchNode::PostLoad(Serialization::IArchive& archive, const ISerializationContext& context)
 {
+	m_defaultValue.SerializeTypeId(archive);
 	SerializeCases(archive);
 }
 

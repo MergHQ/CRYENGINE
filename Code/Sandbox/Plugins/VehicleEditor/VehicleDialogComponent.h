@@ -4,6 +4,8 @@
 #define __VehicleDialogComponent_h__
 #pragma once
 
+struct IVariable;
+
 // icon indexes
 #define VEED_ASSET_HELPER_ICON 0
 #define VEED_HELPER_ICON       2

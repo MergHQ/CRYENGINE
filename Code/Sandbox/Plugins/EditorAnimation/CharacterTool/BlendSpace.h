@@ -44,17 +44,16 @@ typedef vector<BlendSpaceDimension> BlendSpaceDimensions;
 
 struct BlendSpaceAnnotation
 {
-	vector<int> indices;
+	vector<CryGUID> exampleGuids;
 
-	void        Serialize(IArchive& ar)
-	{
-		ar(indices, "indices", "^");
-	}
+	void Serialize(IArchive& ar);
 };
 typedef vector<BlendSpaceAnnotation> BlendSpaceAnnotations;
 
 struct BlendSpaceExample
 {
+	CryGUID runtimeGuid; //<! GUID used to identify this object at runtime, not serialized to file.
+
 	string animation;
 	Vec4   parameters;
 	bool   specified[4];
@@ -62,11 +61,13 @@ struct BlendSpaceExample
 	float  playbackScale;
 
 	BlendSpaceExample()
-		: playbackScale(1.0f)
-		, parameters(0.0f, 0.0f, 0.0f, 0.0f)
+		: runtimeGuid(CryGUID::Create())
+		, animation()
+		, parameters(ZERO)
+		, specified()
+		, useDirectlyForDeltaMotion()
+		, playbackScale(1.0f)
 	{
-		memset(specified, 0, sizeof(specified));
-		memset(useDirectlyForDeltaMotion, 0, sizeof(useDirectlyForDeltaMotion));
 	}
 
 	void Serialize(IArchive& ar);
@@ -89,13 +90,19 @@ bool Serialize(IArchive& ar, BlendSpaceAdditionalExtraction& value, const char* 
 
 struct BlendSpacePseudoExample
 {
-	int   i0, i1;
-	float w0;
-	float w1;
+	CryGUID runtimeGuid; //<! GUID used to identify this object at runtime, not serialized to file.
+
+	CryGUID guid0;
+	CryGUID guid1;
+	float weight0;
+	float weight1;
 
 	BlendSpacePseudoExample()
-		: i0(0), i1(0)
-		, w0(0.5f), w1(0.5f)
+		: runtimeGuid(CryGUID::Create())
+		, guid0(CryGUID::Null())
+		, guid1(CryGUID::Null())
+		, weight0(0.5f)
+		, weight1(0.5f)
 	{
 	}
 
