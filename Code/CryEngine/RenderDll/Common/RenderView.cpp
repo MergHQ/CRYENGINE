@@ -653,7 +653,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 
 		if (nList == EFSLIST_GENERAL && (bHair || bTransparent))
 		{
-			nList = EFSLIST_TRANSP;
+			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;
 		}
 		else if (nList == EFSLIST_GENERAL && (!(pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL) || bForceOpaqueForward))
 		{
@@ -795,6 +795,14 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 		if ((bForwardOpaqueFlags || bIsMaterialEmissive) && !bIsTransparent && !bForwardOpaqueList)
 		{
 			const int targetRenderList = bNearest ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
+			m_renderItems[targetRenderList].push_back(ri);
+			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[targetRenderList], nBatchFlags);
+		}
+
+		const bool bTransparentList = (nRenderList == EFSLIST_TRANSP) || (nRenderList == EFSLIST_TRANSP_NEAREST);
+		if (bTransparentList)
+		{
+			const int targetRenderList = bNearest ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;
 			m_renderItems[targetRenderList].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[targetRenderList], nBatchFlags);
 		}

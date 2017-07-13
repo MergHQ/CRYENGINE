@@ -1839,6 +1839,7 @@ enum ERenderListID
 	EFSLIST_DECAL,                   //!< Opaque or transparent decals.
 	EFSLIST_WATER_VOLUMES,           //!< After decals.
 	EFSLIST_TRANSP,                  //!< Sorted by distance under-water render items.
+	EFSLIST_TRANSP_NEAREST,          //!< Nearest transparent items
 	EFSLIST_WATER,                   //!< Water-ocean render items.
 	EFSLIST_AFTER_HDRPOSTPROCESS,    //!< After hdr post-processing screen effects.
 	EFSLIST_AFTER_POSTPROCESS,       //!< After post-processing screen effects.

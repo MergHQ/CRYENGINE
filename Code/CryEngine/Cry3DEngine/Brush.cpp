@@ -147,9 +147,8 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	rParms.nEditorSelectionID = m_nEditorSelectionID;
 
 	rParms.dwFObjFlags |= (m_dwRndFlags & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : 0;
-	//rParms.dwFObjFlags |= (m_dwRndFlags & ERF_FOB_NEAREST) ? FOB_NEAREST : 0;
 	rParms.dwFObjFlags |= FOB_TRANS_MASK;
-
+	
 	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
 	rParms.nSubObjHideMask = m_nSubObjHideMask;
 
@@ -157,6 +156,21 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	    (gEnv->nMainFrameID - m_lastMoveFrameId < 3))
 	{
 		rParms.dwFObjFlags |= FOB_DYNAMIC_OBJECT;
+	}
+
+	if ((m_dwRndFlags & ERF_FOB_NEAREST) != 0)
+	{
+		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
+			return;
+
+		rParms.dwFObjFlags |= FOB_NEAREST;
+		if (rParms.dwFObjFlags & FOB_DYNAMIC_OBJECT)
+		{
+			rParms.pInstance = this;
+		}
+
+		// Nearest objects recalculate instance matrix every frame
+		CalcNearestTransform(m_Matrix, passInfo);	
 	}
 
 	m_pStatObj->Render(rParms, passInfo);

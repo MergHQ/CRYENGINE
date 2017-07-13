@@ -640,6 +640,7 @@ void CSceneForwardStage::Execute_Opaque()
 void CSceneForwardStage::Execute_Transparent(bool bBelowWater)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
+	SThreadInfo* const pThreadInfo = &(pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID]);
 
 	if (!SRendItem::IsListEmpty(EFSLIST_TRANSP) && ((SRendItem::BatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER) || !bBelowWater))
 	{
@@ -654,19 +655,26 @@ void CSceneForwardStage::Execute_Transparent(bool bBelowWater)
 		D3DViewPort viewport = { 0.f, 0.f, float(pRenderer->m_MainViewport.nWidth), float(pRenderer->m_MainViewport.nHeight), 0.0f, 1.0f };
 		pRenderer->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
 
+		CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
+		if (pThreadInfo->m_PersFlags & RBPF_REVERSE_DEPTH)
+			passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;
+
 		PreparePerPassResources(pRenderView, false);
 
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 		CSceneRenderPass& scenePass = bBelowWater ? m_forwardTransparentBWPass : m_forwardTransparentAWPass;
 
 		scenePass.PrepareRenderPassForUse(commandList);
-		scenePass.SetFlags(CSceneRenderPass::ePassFlags_None);
+		scenePass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
 		scenePass.SetViewport(viewport);
 
 		RenderView()->GetDrawer().InitDrawSubmission();
 
 		scenePass.BeginExecution();
+
 		scenePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP);
+		scenePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+
 		scenePass.EndExecution();
 
 		RenderView()->GetDrawer().JobifyDrawSubmission();

@@ -261,7 +261,7 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	passContext.stageID = m_stageID;
 	passContext.passID = m_passID;
 
-	const bool bNearest = (list == EFSLIST_NEAREST_OBJECTS) || (list == EFSLIST_FORWARD_OPAQUE_NEAREST);
+	const bool bNearest = (list == EFSLIST_NEAREST_OBJECTS) || (list == EFSLIST_FORWARD_OPAQUE_NEAREST) || (list == EFSLIST_TRANSP_NEAREST);
 
 	passContext.renderNearest = bNearest && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);
 	passContext.renderListId = list;
