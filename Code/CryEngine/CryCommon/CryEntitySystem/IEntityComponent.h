@@ -119,6 +119,7 @@ enum class EEntityComponentFlags : uint32
 	HideFromInspector = BIT(11), //!< This component can not be added from the Inspector, instead requiring use in Schematyc or C++.
 	ServerOnly        = BIT(12), //!< This component can only be loaded when we are running as local or dedicated server
 	ClientOnly        = BIT(13), //!< This component can only be loaded when we are running as a client, never on a dedicated server
+	HiddenFromUser    = BIT(14), //!< This component will not be shown to the user
 };
 typedef CEnumFlags<EEntityComponentFlags> EntityComponentFlags;
 

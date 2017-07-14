@@ -58,7 +58,7 @@ namespace Schematyc
 		desc.SetLabel("Entity");
 		desc.SetDescription("Entity utilities component");
 		desc.SetIcon("icons:schematyc/entity_utils_component.ico");
-		desc.SetComponentFlags({ EFlags::Singleton, EFlags::HideFromInspector });
+		desc.SetComponentFlags({ EFlags::Singleton, EFlags::HideFromInspector, EFlags::HiddenFromUser });
 	}
 
 	void CEntityUtilsComponent::Register(IEnvRegistrar& registrar)
