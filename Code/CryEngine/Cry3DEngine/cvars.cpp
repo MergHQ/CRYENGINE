@@ -746,7 +746,7 @@ void CVars::Init()
 	DefineConstIntCVar(e_Objects, 1, VF_CHEAT,
 	                   "Render or not all objects");
 	DefineConstIntCVar(e_Render, e_RenderDefault, VF_CHEAT,
-	                   "Enable engine rendering");
+			   		   "Enable engine rendering: 0 - Disable; 1 - Enable; 2 - In Sandbox: Disable, if not in focus (improve performance for tools)");
 	DefineConstIntCVar(e_ObjectsTreeBBoxes, 0, VF_CHEAT,
 	                   "Debug draw of object tree bboxes");
 	REGISTER_CVAR(e_ObjectsTreeNodeMinSize, 8.f, VF_CHEAT,
