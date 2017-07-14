@@ -956,7 +956,9 @@ void CScriptRegistry::OnScriptRenamed(IScript& script, const char* szFilePath)
 		filePathHash = CCrc32::ComputeLowercase(szFilePath);
 		m_scriptsByFileName.emplace(filePathHash, pScript);
 
-		// TODO: We should refresh the whole registry.
+		gEnv->pEntitySystem->GetClassRegistry()->UnregisterStdClass(pScript->GetRoot()->GetGUID());
+
+		CCore::GetInstance().GetCompiler().CompileDependencies(pScript->GetRoot()->GetGUID());
 	}
 }
 
@@ -1135,9 +1137,15 @@ void CScriptRegistry::RemoveElement(IScriptElement& element)
 
 	ProcessChange(SScriptRegistryChange(EScriptRegistryChangeType::ElementRemoved, element));
 
+	IScriptElement* pParent = element.GetParent();
 	CScript* pScript = static_cast<CScript*>(element.GetScript());
+	if (pScript)
+	{
+		pParent->DetachChild(element);
+		gEnv->pEntitySystem->GetClassRegistry()->UnregisterStdClass(pScript->GetRoot()->GetGUID());
+	}
 
-	const CryGUID parentGuid = element.GetParent() ? element.GetParent()->GetGUID() : m_pRoot->GetGUID();
+	const CryGUID parentGuid = pParent ? pParent->GetGUID() : m_pRoot->GetGUID();
 	const CryGUID guid = element.GetGUID();
 	m_elements.erase(guid);
 
@@ -1147,8 +1155,6 @@ void CScriptRegistry::RemoveElement(IScriptElement& element)
 		const uint32 fileNameHash = CCrc32::ComputeLowercase(pScript->GetFilePath());
 		m_scriptsByFileName.erase(fileNameHash);
 	}
-
-	ProcessChangeDependencies(EScriptRegistryChangeType::ElementRemoved, guid);
 
 	CCore::GetInstance().GetCompiler().CompileDependencies(parentGuid);
 }
