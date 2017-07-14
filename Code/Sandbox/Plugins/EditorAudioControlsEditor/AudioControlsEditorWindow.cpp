@@ -112,6 +112,22 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		setCentralWidget(m_pSplitter);
 	}
 
+	if (m_pAssetsManager->IsLoading())
+	{
+		// The middleware is being swapped out therefore we must not
+		// reload it and must not call signalAboutToLoad and signalLoaded!
+		CAudioControlsEditorPlugin::ReloadModels(false);
+	}
+	else
+	{
+		CAudioControlsEditorPlugin::signalAboutToLoad();
+		CAudioControlsEditorPlugin::ReloadModels(true);
+		CAudioControlsEditorPlugin::signalLoaded();
+	}
+
+	m_pInspectorPanel->Reload();
+	m_pAudioSystemPanel->Reset();
+	Update();
 	CheckErrorMask();
 
 	// -------------- HACK -------------
