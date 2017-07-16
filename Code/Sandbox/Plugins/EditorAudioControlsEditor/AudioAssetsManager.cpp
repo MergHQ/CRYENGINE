@@ -256,6 +256,7 @@ CAudioLibrary* CAudioAssetsManager::CreateLibrary(string const& name)
 		m_audioLibraries.push_back(pLibrary);
 		signalLibraryAdded(pLibrary);
 		SetAssetModified(pLibrary);
+		pLibrary->SetModified(true);
 		return pLibrary;
 	}
 	return nullptr;

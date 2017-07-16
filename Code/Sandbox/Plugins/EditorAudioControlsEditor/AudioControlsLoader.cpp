@@ -99,6 +99,7 @@ void CAudioControlsLoader::LoadControls()
 		pCryPak->FindClose(handle);
 	}
 
+	m_pAssetsManager->ClearDirtyFlags(); // To avoid false warning when closing the ACE without changes.
 	CreateDefaultControls();
 }
 
@@ -298,6 +299,7 @@ void CAudioControlsLoader::CreateDefaultControls()
 {
 	// Create default controls if they don't exist.
 	// These controls need to always exist in your project!
+	bool bWasModified = false;
 	IAudioAsset* const pLibrary = static_cast<IAudioAsset*>(m_pAssetsManager->CreateLibrary("default_controls"));
 
 	if (pLibrary != nullptr)
@@ -306,30 +308,35 @@ void CAudioControlsLoader::CreateDefaultControls()
 		if (pControl == nullptr)
 		{
 			m_pAssetsManager->CreateControl(CryAudio::GetFocusTriggerName, eItemType_Trigger, pLibrary);
+			bWasModified = true;
 		}
 
 		pControl = m_pAssetsManager->FindControl(CryAudio::LoseFocusTriggerName, eItemType_Trigger);
 		if (pControl == nullptr)
 		{
 			m_pAssetsManager->CreateControl(CryAudio::LoseFocusTriggerName, eItemType_Trigger, pLibrary);
+			bWasModified = true;
 		}
 
 		pControl = m_pAssetsManager->FindControl(CryAudio::MuteAllTriggerName, eItemType_Trigger);
 		if (pControl == nullptr)
 		{
 			m_pAssetsManager->CreateControl(CryAudio::MuteAllTriggerName, eItemType_Trigger, pLibrary);
+			bWasModified = true;
 		}
 
 		pControl = m_pAssetsManager->FindControl(CryAudio::UnmuteAllTriggerName, eItemType_Trigger);
 		if (pControl == nullptr)
 		{
 			m_pAssetsManager->CreateControl(CryAudio::UnmuteAllTriggerName, eItemType_Trigger, pLibrary);
+			bWasModified = true;
 		}
 
 		pControl = m_pAssetsManager->FindControl(CryAudio::DoNothingTriggerName, eItemType_Trigger);
 		if (pControl == nullptr)
 		{
 			m_pAssetsManager->CreateControl(CryAudio::DoNothingTriggerName, eItemType_Trigger, pLibrary);
+			bWasModified = true;
 		}
 
 		/*
@@ -355,6 +362,8 @@ void CAudioControlsLoader::CreateDefaultControls()
 			{
 				pControl->SetName(CryAudio::AbsoluteVelocityParameterName);
 			}
+
+			bWasModified = true;
 		}
 
 		pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityParameterName, eItemType_RTPC);
@@ -369,6 +378,8 @@ void CAudioControlsLoader::CreateDefaultControls()
 			{
 				pControl->SetName(CryAudio::RelativeVelocityParameterName);
 			}
+
+			bWasModified = true;
 		}
 
 		{
@@ -407,6 +418,8 @@ void CAudioControlsLoader::CreateDefaultControls()
 						}
 					}
 				}
+
+				bWasModified = true;
 			}
 
 			pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityTrackingSwitchName, eItemType_Switch);
@@ -436,6 +449,8 @@ void CAudioControlsLoader::CreateDefaultControls()
 						}
 					}
 				}
+
+				bWasModified = true;
 			}
 		}
 
@@ -443,8 +458,10 @@ void CAudioControlsLoader::CreateDefaultControls()
 		{
 			m_pAssetsManager->DeleteItem(pLibrary);
 		}
-
-		m_pAssetsManager->ClearDirtyFlags(); // To avoid false warning when closing the ACE without changes.
+		else if (bWasModified)
+		{
+			pLibrary->SetModified(true, true);
+		}
 	}
 }
 

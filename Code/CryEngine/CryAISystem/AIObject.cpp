@@ -13,6 +13,7 @@
 #include <CryNetwork/ISerialize.h>
 #include <CryAISystem/VisionMapTypes.h>
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "Formation/FormationManager.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

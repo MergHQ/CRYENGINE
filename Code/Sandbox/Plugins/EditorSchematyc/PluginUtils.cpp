@@ -155,7 +155,7 @@ dll_string EntityClassNameSelector(const SResourceSelectorContext& context, cons
 	QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Entity Class", dict);
 
 	const QPoint pos = QCursor::pos();
-	pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+	pDictionary->ExecAt(pos);
 
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
 	if (pEntry)
@@ -184,7 +184,7 @@ dll_string ActionMapNameSelector(const SResourceSelectorContext& context, const 
 	QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Action Map", dict);
 
 	const QPoint pos = QCursor::pos();
-	pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+	pDictionary->ExecAt(pos);
 
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
 	if (pEntry)
@@ -203,7 +203,7 @@ dll_string ActionMapActionNameSelector(const SResourceSelectorContext& context, 
 	QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Action Map Action", dict);
 
 	const QPoint pos = QCursor::pos();
-	pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+	pDictionary->ExecAt(pos);
 
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
 	if (pEntry)
@@ -231,7 +231,7 @@ dll_string SurfaceTypeNameSelector(const SResourceSelectorContext& context, cons
 	QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Surface Type", dict);
 
 	const QPoint pos = QCursor::pos();
-	pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+	pDictionary->ExecAt(pos);
 
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
 	if (pEntry)
@@ -259,7 +259,7 @@ static dll_string MannequinScopeContextName(const SResourceSelectorContext& cont
 			QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Mannequin Scope Context", dict);
 
 			const QPoint pos = QCursor::pos();
-			pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+			pDictionary->ExecAt(pos);
 
 			CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
 			if (pEntry)
@@ -289,7 +289,7 @@ static dll_string MannequinFragmentName(const SResourceSelectorContext& context,
 			QPointer<CModalPopupDictionary> pDictionary = new CModalPopupDictionary("Mannequin Fragment", dict);
 
 			const QPoint pos = QCursor::pos();
-			pDictionary->ExecAt(pos, QPopupWidget::TopRight);
+			pDictionary->ExecAt(pos);
 
 			CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(pDictionary->GetResult());
 			if (pEntry)
