@@ -90,6 +90,10 @@ void SProject::Serialize(Serialization::IArchive& ar)
 		SProjectFileParser<2> parser;
 		parser.Serialize(ar, *this);
 	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to load project with unrecognized cryproject format version %i!\nPossible attempt at running a project from a newer engine version.");
+	}
 }
 
 void CProjectManager::ParseProjectFile()
