@@ -46,7 +46,7 @@ namespace CryEngine
 		/// <param name="helper">Geometry path for 3D helper..</param>
 		/// <param name="icon">Bitmap path for 2D helper..</param>
 		/// <param name="hide">If set to <c>true</c> the marked entity class will not be displayed inside Sandbox.</param>
-		[Obsolete("Please use EntityClassAttribute(string name, string category, string helper, IconHelper.IconType icon, bool hide)")]
+		[Obsolete("EntityClassAttribute is obsolete and will be removed. Use EntityComponentAttribute instead")]
 		public EntityClassAttribute(string name = "", string category = "Game", string helper = null, string icon = "prompt.bmp", bool hide = false)
 		{
 			Name = name;
@@ -56,6 +56,7 @@ namespace CryEngine
 			Hide = hide;
 		}
 
+		[Obsolete("EntityClassAttribute is obsolete and will be removed. Use EntityComponentAttribute instead")]
 		public EntityClassAttribute(string name = "", string category = "Game", string helper = null, IconType icon = IconType.None, bool hide = false)
 		{
 			Name = name;
