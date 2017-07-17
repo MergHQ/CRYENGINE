@@ -368,8 +368,8 @@ private:
 	bool HasDebugInstancesCreated(const char* szCharacterFileName) const;
 	DynArray<DebugInstances> m_arrCharacterBase;
 #endif
-#ifdef EDITOR_PCDEBUGCODE
 	virtual void GetMotionParameterDetails(SMotionParameterDetails& outDetails, EMotionParamID paramId) const;
+#ifdef EDITOR_PCDEBUGCODE
 	virtual bool InjectCDF(const char* pathname, const char* content, size_t contentLength);
 	virtual void ClearCDFCache() { m_arrCacheForCDF.clear(); }  //deactivate the cache in Editor-Mode, or we can't load the same CDF after we changed & saved it
 	virtual void InjectCHRPARAMS(const char* pathname, const char* content, size_t contentLength);

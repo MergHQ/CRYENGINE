@@ -367,7 +367,7 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 				m_Dimensions = nodeList->getChildCount();
 				if (m_Dimensions > 3)
 				{
-					m_Status = "Error: More then 3 dimensions per Blend-Space are not supported";
+					m_Status = "Error: More than 3 dimensions per Blend-Space are not supported";
 					gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
 					return false;
 				}
@@ -378,41 +378,25 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 					const char* ExampleTag = nodeExample->getTag();
 					if (strcmp(ExampleTag, "Param") == 0)
 					{
-						//each dimension must have a parameter-name
+						// Each dimension must have a parameter-name
 						m_DimPara[d].m_strParaName = nodeExample->getAttr("name");
-						//check if the parameter-name is supported by the system
-						uint32 supported = 0;
-						if (m_DimPara[d].m_strParaName == "MoveSpeed")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelSpeed, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TurnSpeed")
-							m_DimPara[d].m_ParaID = eMotionParamID_TurnSpeed, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TravelSlope")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelSlope, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TravelAngle")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelAngle, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TravelDist")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelDist, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TurnAngle")
-							m_DimPara[d].m_ParaID = eMotionParamID_TurnAngle, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight, supported = 1;  //this is just a custom "Blend-Node"
-						if (m_DimPara[d].m_strParaName == "BlendWeight2")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight2, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight3")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight3, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight4")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight4, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight5")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight5, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight6")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight6, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight7")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight7, supported = 1;
 
-						if (m_DimPara[d].m_strParaName == "StopLeg")
-							m_DimPara[d].m_ParaID = eMotionParamID_StopLeg, supported = 1; //I don't like this. It's a case for CryManequin
+						// Check if the parameter-name is supported by the system
+						bool supported = false;
+						for (int iParam = 0; iParam < eMotionParamID_COUNT; ++iParam)
+						{
+							SMotionParameterDetails details;
+							gEnv->pCharacterManager->GetMotionParameterDetails(details, static_cast<EMotionParamID>(iParam));
 
-						if (supported == 0)
+							if (details.name == m_DimPara[d].m_strParaName)
+							{
+								m_DimPara[d].m_ParaID = static_cast<EMotionParamID>(iParam);
+								supported = true;
+								break;
+							}
+						}
+
+						if (!supported)
 						{
 							((m_Status = "Error: The parameter '") += m_DimPara[d].m_strParaName.c_str()) += "' is currently not supported";
 							gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
@@ -454,7 +438,7 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 				m_ExtractionParams = nodeList->getChildCount();
 				if (m_ExtractionParams > 4)
 				{
-					m_Status = "Error: More then 4 additional extraction parameters are not supported";
+					m_Status = "Error: More than 4 additional extraction parameters are not supported";
 					gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
 					return false;
 				}
@@ -464,25 +448,27 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 					const char* ExampleTag = nodeExample->getTag();
 					if (strcmp(ExampleTag, "Param") == 0)
 					{
-						//each dimension must have a parameter-name
+						// Each dimension must have a parameter-name
 						m_ExtPara[d].m_strParaName = nodeExample->getAttr("name");
-						//check if the parameter-name is supported by the system
-						uint32 supported = 0;
-						if (m_ExtPara[d].m_strParaName == "MoveSpeed")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelSpeed, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TurnSpeed")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TurnSpeed, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TravelSlope")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelSlope, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TravelAngle")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelAngle, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TravelDist")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelDist, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TurnAngle")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TurnAngle, supported = 1;
-						if (supported == 0)
+
+						// Check if the parameter-name is supported by the system
+						bool supported = false;
+						for (int iParam = 0; iParam < eMotionParamID_COUNT; ++iParam)
 						{
-							((m_Status = "Error: The parameter '") += m_DimPara[d].m_strParaName.c_str()) += "' is currently not supported";
+							SMotionParameterDetails details;
+							gEnv->pCharacterManager->GetMotionParameterDetails(details, static_cast<EMotionParamID>(iParam));
+
+							if ((details.flags & SMotionParameterDetails::ADDITIONAL_EXTRACTION) && (details.name == m_ExtPara[d].m_strParaName))
+							{
+								m_ExtPara[d].m_ParaID = static_cast<EMotionParamID>(iParam);
+								supported = true;
+								break;
+							}
+						}
+
+						if (!supported)
+						{
+							((m_Status = "Error: The parameter '") += m_ExtPara[d].m_strParaName.c_str()) += "' is currently not supported";
 							gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
 							return false;
 						}
@@ -766,7 +752,7 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 				m_Dimensions = nodeList->getChildCount();
 				if (m_Dimensions > 4)
 				{
-					m_Status = "Error: More then 4 dimensions per ParaGroup are not supported";
+					m_Status = "Error: More than 4 dimensions per ParaGroup are not supported";
 					gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
 					return false;
 				}
@@ -777,40 +763,25 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 					const char* ExampleTag = nodeExample->getTag();
 					if (strcmp(ExampleTag, "Param") == 0)
 					{
-						//each dimension must have a parameter-name
+						// Each dimension must have a parameter-name
 						m_DimPara[d].m_strParaName = nodeExample->getAttr("name");
-						//check if the parameter-name is supported by the system
-						uint32 supported = 0;
-						if (m_DimPara[d].m_strParaName == "MoveSpeed")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelSpeed, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TurnSpeed")
-							m_DimPara[d].m_ParaID = eMotionParamID_TurnSpeed, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TravelSlope")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelSlope, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TravelAngle")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelAngle, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TravelDist")
-							m_DimPara[d].m_ParaID = eMotionParamID_TravelDist, supported = 1;
-						if (m_DimPara[d].m_strParaName == "TurnAngle")
-							m_DimPara[d].m_ParaID = eMotionParamID_TurnAngle, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight, supported = 1; //these are just a custom "Blend-Node"
-						if (m_DimPara[d].m_strParaName == "BlendWeight2")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight2, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight3")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight3, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight4")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight4, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight5")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight5, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight6")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight6, supported = 1;
-						if (m_DimPara[d].m_strParaName == "BlendWeight7")
-							m_DimPara[d].m_ParaID = eMotionParamID_BlendWeight7, supported = 1;
-						if (m_DimPara[d].m_strParaName == "StopLeg")
-							m_DimPara[d].m_ParaID = eMotionParamID_StopLeg, supported = 1; //I don't like this. It's a case for CryManequin
 
-						if (supported == 0)
+						// Check if the parameter-name is supported by the system
+						bool supported = false;
+						for (int iParam = 0; iParam < eMotionParamID_COUNT; ++iParam)
+						{
+							SMotionParameterDetails details;
+							gEnv->pCharacterManager->GetMotionParameterDetails(details, static_cast<EMotionParamID>(iParam));
+
+							if (details.name == m_DimPara[d].m_strParaName)
+							{
+								m_DimPara[d].m_ParaID = static_cast<EMotionParamID>(iParam);
+								supported = true;
+								break;
+							}
+						}
+
+						if (!supported)
 						{
 							((m_Status = "Error: The parameter '") += m_DimPara[d].m_strParaName.c_str()) += "' is currently not supported";
 							gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
@@ -838,7 +809,7 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 				m_ExtractionParams = nodeList->getChildCount();
 				if (m_ExtractionParams > 4)
 				{
-					m_Status = "Error: More then 4 additional extraction parameters are not supported";
+					m_Status = "Error: More than 4 additional extraction parameters are not supported";
 					gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
 					return false;
 				}
@@ -848,25 +819,27 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 					const char* ExampleTag = nodeExample->getTag();
 					if (strcmp(ExampleTag, "Param") == 0)
 					{
-						//each dimension must have a parameter-name
+						// Each dimension must have a parameter-name
 						m_ExtPara[d].m_strParaName = nodeExample->getAttr("name");
-						//check if the parameter-name is supported by the system
-						uint32 supported = 0;
-						if (m_ExtPara[d].m_strParaName == "MoveSpeed")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelSpeed, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TurnSpeed")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TurnSpeed, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TravelSlope")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelSlope, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TravelAngle")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelAngle, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TravelDist")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TravelDist, supported = 1;
-						if (m_ExtPara[d].m_strParaName == "TurnAngle")
-							m_ExtPara[d].m_ParaID = eMotionParamID_TurnAngle, supported = 1;
-						if (supported == 0)
+
+						// Check if the parameter-name is supported by the system
+						bool supported = false;
+						for (int iParam = 0; iParam < eMotionParamID_COUNT; ++iParam)
 						{
-							((m_Status = "Error: The parameter '") += m_DimPara[d].m_strParaName.c_str()) += "' is currently not supported";
+							SMotionParameterDetails details;
+							gEnv->pCharacterManager->GetMotionParameterDetails(details, static_cast<EMotionParamID>(iParam));
+
+							if ((details.flags & SMotionParameterDetails::ADDITIONAL_EXTRACTION) && (details.name == m_ExtPara[d].m_strParaName))
+							{
+								m_ExtPara[d].m_ParaID = static_cast<EMotionParamID>(iParam);
+								supported = true;
+								break;
+							}
+						}
+
+						if (!supported)
+						{
+							((m_Status = "Error: The parameter '") += m_ExtPara[d].m_strParaName.c_str()) += "' is currently not supported";
 							gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
 							return false;
 						}

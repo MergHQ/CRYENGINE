@@ -316,8 +316,8 @@ struct ICharacterManager
 	virtual void RenderBlendSpace(const SRenderingPassInfo& passInfo, ICharacterInstance* character, float fCharacterScale, unsigned int debugFlags) = 0;
 	virtual bool HasDebugInstancesCreated(const char* szFilename) const = 0;
 #endif
-#ifdef EDITOR_PCDEBUGCODE
 	virtual void GetMotionParameterDetails(SMotionParameterDetails& outDetails, EMotionParamID paramId) const = 0;
+#ifdef EDITOR_PCDEBUGCODE
 	virtual bool InjectCDF(const char* pathname, const char* content, size_t contentLength) = 0;
 	virtual void ClearCDFCache() = 0;
 	virtual void ClearAllKeepInMemFlags() = 0;
