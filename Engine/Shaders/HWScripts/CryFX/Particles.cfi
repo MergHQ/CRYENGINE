@@ -952,7 +952,7 @@ pixoutParticle ParticlePS(OutputVS IN)
 	OUT.Color = cFinal;
 
 #if %DEPTH_FIXUP
-	const float fZ = tcScreen.w * PS_NearFarClipDist.w;
+	const float fZ = tcScreen.w * CV_NearFarClipDist.w;
 	OUT.Color.a = cFinal.a > DepthFixupThreshold ? -fZ : 1;
 	OUT.BlendFactors = cFinal.a;
 #endif
