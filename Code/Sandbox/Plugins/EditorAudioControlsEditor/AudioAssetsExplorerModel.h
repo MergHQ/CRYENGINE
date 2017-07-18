@@ -55,8 +55,9 @@ class QControlsProxyFilter : public QDeepFilterProxyModel
 {
 public:
 	QControlsProxyFilter(QObject* parent);
-	virtual bool rowMatchesFilter(int source_row, const QModelIndex& source_parent) const override;
-	virtual bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
+	virtual bool     rowMatchesFilter(int source_row, const QModelIndex& source_parent) const override;
+	virtual bool     lessThan(const QModelIndex& left, const QModelIndex& right) const override;
+	virtual QVariant data(const QModelIndex& index, int role) const override;
 
 	void         EnableControl(const bool bEnabled, const EItemType type);
 

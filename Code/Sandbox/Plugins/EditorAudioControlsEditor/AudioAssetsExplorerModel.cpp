@@ -17,6 +17,7 @@
 #include "IEditor.h"
 #include "AudioAssetsExplorerModel.h"
 #include "QAudioControlTreeWidget.h"
+#include "EditorStyleHelper.h"
 
 #include "Controls/QuestionDialog.h"
 #include <CryString/CryPath.h>
@@ -163,7 +164,7 @@ QVariant CAudioAssetsExplorerModel::data(const QModelIndex& index, int role) con
 		case Qt::ForegroundRole:
 			if (pLibrary->HasPlaceholderConnection())
 			{
-				return QColor(200, 100, 100);
+				return GetStyleHelper()->errorColor();
 			}
 			break;
 
@@ -373,6 +374,11 @@ bool QControlsProxyFilter::lessThan(const QModelIndex& left, const QModelIndex& 
 	return QSortFilterProxyModel::lessThan(left, right);
 }
 
+QVariant QControlsProxyFilter::data(const QModelIndex& proxyIndex, int role) const
+{
+	return QSortFilterProxyModel::data(proxyIndex, role);
+}
+
 void QControlsProxyFilter::EnableControl(const bool bEnabled, const EItemType type)
 {
 	if (bEnabled)
@@ -463,7 +469,7 @@ QVariant CAudioLibraryModel::data(const QModelIndex& index, int role) const
 		case Qt::ForegroundRole:
 			if (pItem->HasPlaceholderConnection())
 			{
-				return QColor(200, 100, 100);
+				return GetStyleHelper()->errorColor();
 			}
 			break;
 
