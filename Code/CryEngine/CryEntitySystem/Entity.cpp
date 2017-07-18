@@ -1781,28 +1781,30 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 		componentTypeID = pEnvComponent->GetGUID();
 		pClassDescription = &pEnvComponent->GetDesc();
 	}
+	// Fall back to legacy 5.3 creation
+	else if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
+	{
+		size_t numFactories = 1;
+		pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
+		if (numFactories == 0 || pLegacyComponentFactory == nullptr)
+		{
+			// Nothing found by interface, check by implementation id
+			pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
+		}
+
+		if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
+		{
+			CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
+			return nullptr;
+		}
+
+		// Resolve to implementation id, since we may have queried by interface
+		componentTypeID = pLegacyComponentFactory->GetClassID();
+	}
 	else
 	{
-		// Fall back to legacy 5.3 creation
-		if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
-		{
-			size_t numFactories = 1;
-			pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
-			if (numFactories == 0 || pLegacyComponentFactory == nullptr)
-			{
-				// Nothing found by interface, check by implementation id
-				pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
-			}
-
-			if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
-			{
-				CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
-				return nullptr;
-			}
-
-			// Resolve to implementation id, since we may have queried by interface
-			componentTypeID = pLegacyComponentFactory->GetClassID();
-		}
+		CRY_ASSERT_MESSAGE("Tried to create unregistered component with type id %s!", interfaceId.ToDebugString());
+		return nullptr;
 	}
 
 	// All pre-checks successful, we can now create the component
@@ -1810,10 +1812,9 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 	std::shared_ptr<IEntityComponent> pComponent = pEnvComponent != nullptr ? pEnvComponent->CreateFromPool() : cryinterface_cast<IEntityComponent>(pLegacyComponentFactory->CreateClassInstance());
 	CRY_ASSERT(pComponent != nullptr);
 
-	// Add the component to the entity
+	// Add the component to the entity, and initialize it manually immediately after
 	AddComponentInternal(pComponent, componentTypeID, pInitParams, pClassDescription);
 
-	// Initialize the component
 	pComponent->Initialize();
 
 	return pComponent.get();

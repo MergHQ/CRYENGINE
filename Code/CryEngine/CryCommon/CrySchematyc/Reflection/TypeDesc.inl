@@ -501,6 +501,15 @@ public:
 	}
 };
 
+template<typename TYPE> class CSimpleTypeDesc : public CTypeDesc<TYPE>
+{
+public:
+	inline CSimpleTypeDesc()
+	{
+		ReflectType(static_cast<CTypeDesc<TYPE>&>(*this));
+	}
+};
+
 } // Helpers
 
 template<typename TYPE> constexpr bool IsReflectedType()
@@ -514,6 +523,14 @@ template<typename TYPE> inline const CTypeDesc<TYPE>& GetTypeDesc()
 
 	static const Helpers::CAppliedTypeDesc<TYPE> s_desc;
 	return s_desc;
+}
+
+template<typename TYPE> inline CryGUID GetTypeGUID()
+{
+	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
+
+	static const Helpers::CSimpleTypeDesc<TYPE> s_desc;
+	return s_desc.GetGUID();
 }
 
 } // Schematyc

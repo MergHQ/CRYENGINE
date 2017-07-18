@@ -27,18 +27,6 @@ void CPathfindingComponent::Register(Schematyc::CEnvRegistrationScope& component
 	componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SOnMovementRecommendation));
 }
 
-void CPathfindingComponent::ReflectType(Schematyc::CTypeDesc<CPathfindingComponent>& desc)
-{
-	desc.SetGUID(CPathfindingComponent::IID());
-	desc.SetEditorCategory("AI");
-	desc.SetLabel("Pathfinder");
-	desc.SetDescription("Exposes the ability to get path finding callbacks");
-	//desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-
-	desc.AddMember(&CPathfindingComponent::m_maxAcceleration, 'maxa', "MaxAcceleration", "Maximum Acceleration", "Maximum possible physical acceleration", 10.f);
-}
-
 void CPathfindingComponent::Initialize()
 {
 	Reset();

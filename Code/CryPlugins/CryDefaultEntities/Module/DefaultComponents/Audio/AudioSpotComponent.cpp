@@ -7,14 +7,6 @@
 
 #include <CryMath/Random.h>
 
-namespace Schematyc
-{
-static void ReflectType(CTypeDesc<CryAudio::EOcclusionType>& desc)
-{
-	desc.SetGUID("ed87ee11-3733-4d3f-90de-fab399d011f1"_cry_guid);
-}
-}
-
 namespace Cry
 {
 namespace DefaultComponents
@@ -25,26 +17,6 @@ SERIALIZATION_ENUM(CEntityAudioSpotComponent::EPlayMode::TriggerOnce, "TriggerOn
 SERIALIZATION_ENUM(CEntityAudioSpotComponent::EPlayMode::ReTriggerConstantly, "ReTriggerConstantly", "Trigger Rate")
 SERIALIZATION_ENUM(CEntityAudioSpotComponent::EPlayMode::ReTriggerWhenDone, "ReTriggerWhenDone", "Delay")
 SERIALIZATION_ENUM_END()
-
-static void ReflectType(Schematyc::CTypeDesc<CEntityAudioSpotComponent::EPlayMode>& desc)
-{
-	desc.SetGUID("f40378ca-fd06-4f6e-b84d-b974b57e2ada"_cry_guid);
-}
-
-static void ReflectType(Schematyc::CTypeDesc<SAudioTriggerSerializeHelper>& desc)
-{
-	desc.SetGUID("C5DE4974-ECAB-4D6F-A93D-02C1F5C55C31"_cry_guid);
-}
-
-static void ReflectType(Schematyc::CTypeDesc<SAudioParameterSerializeHelper>& desc)
-{
-	desc.SetGUID("5287D8F9-7638-41BB-BFDD-2F5B47DEEA07"_cry_guid);
-}
-
-static void ReflectType(Schematyc::CTypeDesc<SAudioSwitchWithStateSerializeHelper>& desc)
-{
-	desc.SetGUID("9DB56B33-57FE-4E97-BED2-F0BBD3012967"_cry_guid);
-}
 
 static void ReflectType(Schematyc::CTypeDesc<CEntityAudioSpotComponent::SAudioTriggerFinishedSignal>& desc)
 {
@@ -98,24 +70,6 @@ void CEntityAudioSpotComponent::Register(Schematyc::CEnvRegistrationScope& compo
 	}
 	// Signals
 	componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(CEntityAudioSpotComponent::SAudioTriggerFinishedSignal));
-}
-
-void CEntityAudioSpotComponent::ReflectType(Schematyc::CTypeDesc<CEntityAudioSpotComponent>& desc)
-{
-	desc.SetGUID(CEntityAudioSpotComponent::IID());
-	desc.SetEditorCategory("Audio");
-	desc.SetLabel("Audio Spot");
-	desc.SetDescription("Entity audio spot component");
-	desc.SetIcon("icons:schematyc/entity_audio_component.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
-
-	desc.AddMember(&CEntityAudioSpotComponent::m_occlusionType, 'occ', "occlusionType", "Occlusion Type", "Specifies the occlusion type for all sounds played via this component.", CryAudio::EOcclusionType::Ignore);
-	desc.AddMember(&CEntityAudioSpotComponent::m_defaultTrigger, 'tri', "defaultTrigger", "Default Trigger", "The default trigger that should be used.", SAudioTriggerSerializeHelper());
-	desc.AddMember(&CEntityAudioSpotComponent::m_playMode, 'mode', "playMode", "Play Mode", "PlayMode used for the DefaultTrigger", CEntityAudioSpotComponent::EPlayMode::TriggerOnce);
-	desc.AddMember(&CEntityAudioSpotComponent::m_minDelay, 'min', "minDelay", "Min Delay", "Depending on the PlayMode: The min time between triggering or the min delay of re-triggering, after the trigger has finished", 1.0f);
-	desc.AddMember(&CEntityAudioSpotComponent::m_maxDelay, 'max', "maxDelay", "Max Delay", "Depending on the PlayMode: The max time between triggering or the max delay of re-triggering, after the trigger has finished", 2.0f);
-	desc.AddMember(&CEntityAudioSpotComponent::m_bEnabled, 'ena', "enabled", "Enabled", "Enables/Disables the looping of the default Trigger", true);
-	desc.AddMember(&CEntityAudioSpotComponent::m_randomOffset, 'rand', "randomOffset", "Random Offset", "Randomized offset that is added to the proxy position on each triggering", Vec3(0.f));
 }
 
 void CEntityAudioSpotComponent::Initialize()

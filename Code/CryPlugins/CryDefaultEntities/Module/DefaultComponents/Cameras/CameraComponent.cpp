@@ -32,22 +32,6 @@ namespace Cry
 			}
 		}
 
-		void CCameraComponent::ReflectType(Schematyc::CTypeDesc<CCameraComponent>& desc)
-		{
-			desc.SetGUID(CCameraComponent::IID());
-			desc.SetEditorCategory("Cameras");
-			desc.SetLabel("Camera");
-			desc.SetDescription("Represents a camera that can be activated to render to screen");
-			desc.SetIcon("icons:General/Camera.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
-			
-			desc.AddMember(&CCameraComponent::m_bActivateOnCreate, 'actv', "Active", "Active", "Whether or not this camera should be activated on component creation", true);
-			desc.AddMember(&CCameraComponent::m_nearPlane, 'near', "NearPlane", "Near Plane", nullptr, 0.25f);
-			desc.AddMember(&CCameraComponent::m_fieldOfView, 'fov', "FieldOfView", "Field of View", nullptr, 75.0_degrees);
-
-			desc.AddMember(&CCameraComponent::m_bAutomaticAudioListenerPosition, 'audi', "AutoAudioListenerPos", "Automatic Audio Listener", "If true, automatically moves the audio listener with the entity.", true);
-		}
-
 		CCameraComponent::~CCameraComponent()
 		{
 			if (s_pActiveCamera == this)

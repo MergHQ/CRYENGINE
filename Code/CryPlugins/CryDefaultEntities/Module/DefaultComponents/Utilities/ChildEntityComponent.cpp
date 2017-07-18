@@ -17,19 +17,6 @@ namespace Cry
 			}
 		}
 
-		void CChildEntityComponent::ReflectType(Schematyc::CTypeDesc<CChildEntityComponent>& desc)
-		{
-			desc.SetGUID(CChildEntityComponent::IID());
-			desc.SetEditorCategory("Utilities");
-			desc.SetLabel("Child Entity");
-			desc.SetDescription("Spawns an entity of the specified type at creation");
-			//desc.SetIcon("icons:General/Camera.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-			desc.AddMember(&CChildEntityComponent::m_className, 'clsn', "ClassName", "Entity Class", "Class of the entity we want to spawn", "");
-			desc.AddMember(&CChildEntityComponent::m_bLinkTransformation, 'link', "LockTransform", "Lock Transformation", "Whether to lock the spawned entities transformation to its parent", false);
-			desc.AddMember(&CChildEntityComponent::m_bIgnoreContactsWithChild, 'ign', "IgnoreChild", "Ignore Collisions With", "Whether to ignore all collisions with the child", true);
-		}
-
 		CChildEntityComponent::~CChildEntityComponent()
 		{
 			// Remove the entity when we're destroyed

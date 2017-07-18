@@ -51,12 +51,16 @@ namespace Cry
 				Reset();
 			}
 
-			static void ReflectType(Schematyc::CTypeDesc<CPathfindingComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CPathfindingComponent>& desc)
 			{
-				static CryGUID id = "{470C0CD6-198F-412E-A99A-15456066162B}"_cry_guid;
-				return id;
+				desc.SetGUID("{470C0CD6-198F-412E-A99A-15456066162B}"_cry_guid);
+				desc.SetEditorCategory("AI");
+				desc.SetLabel("Pathfinder");
+				desc.SetDescription("Exposes the ability to get path finding callbacks");
+				//desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+
+				desc.AddMember(&CPathfindingComponent::m_maxAcceleration, 'maxa', "MaxAcceleration", "Maximum Acceleration", "Maximum possible physical acceleration", 10.f);
 			}
 
 			virtual void RequestMoveTo(const Vec3 &position)

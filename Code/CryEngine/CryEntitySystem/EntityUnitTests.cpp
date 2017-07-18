@@ -148,12 +148,12 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, pEntity->GetComponent<ILegacyComponentInterface>());
 
 		DynArray<CLegacyEntityComponentWithInterface*> components;
-		pEntity->GetComponents<CLegacyEntityComponentWithInterface>(components);
+		pEntity->GetAllComponents<CLegacyEntityComponentWithInterface>(components);
 		CRY_UNIT_TEST_CHECK_EQUAL(components.size(), 1);
 		CRY_UNIT_TEST_CHECK_EQUAL(components.at(0), static_cast<CLegacyEntityComponentWithInterface*>(pComponent));
 
 		DynArray<ILegacyComponentInterface*> componentsbyInterface;
-		pEntity->GetComponents<ILegacyComponentInterface>(componentsbyInterface);
+		pEntity->GetAllComponents<ILegacyComponentInterface>(componentsbyInterface);
 		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.size(),  1);
 		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.at(0), static_cast<CLegacyEntityComponentWithInterface*>(pComponent));
 	}
@@ -182,12 +182,12 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, pEntity->GetComponent<IUnifiedEntityComponent>());
 
 		DynArray<CUnifiedEntityComponent*> components;
-		pEntity->GetComponents<CUnifiedEntityComponent>(components);
+		pEntity->GetAllComponents<CUnifiedEntityComponent>(components);
 		CRY_UNIT_TEST_CHECK_EQUAL(components.size(), 1);
 		CRY_UNIT_TEST_CHECK_EQUAL(components.at(0), static_cast<CUnifiedEntityComponent*>(pComponent));
 
 		DynArray<IUnifiedEntityComponent*> componentsbyInterface;
-		pEntity->GetComponents<IUnifiedEntityComponent>(componentsbyInterface);
+		pEntity->GetAllComponents<IUnifiedEntityComponent>(componentsbyInterface);
 		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.size(), 1);
 		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.at(0), static_cast<CUnifiedEntityComponent*>(pComponent));
 	}

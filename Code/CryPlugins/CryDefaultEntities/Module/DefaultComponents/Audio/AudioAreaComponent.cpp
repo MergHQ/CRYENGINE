@@ -37,11 +37,6 @@ static void ReflectType(Schematyc::CTypeDesc<CEntityAudioAreaComponent::SInsideA
 	desc.SetLabel("Inside Area Entered");
 }
 
-static void ReflectType(Schematyc::CTypeDesc<SAudioEnvironmentSerializeHelper>& desc)
-{
-	desc.SetGUID("1d528007-b6fe-4310-b6cd-acb7e3f662ca"_cry_guid);
-}
-
 void CEntityAudioAreaComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
 	// Functions
@@ -66,26 +61,6 @@ void CEntityAudioAreaComponent::Register(Schematyc::CEnvRegistrationScope& compo
 		componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(CEntityAudioAreaComponent::SFadingAreaEnteredSignal));
 		componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(CEntityAudioAreaComponent::SInsideAreaEnteredSignal));
 	}
-}
-
-void CEntityAudioAreaComponent::ReflectType(Schematyc::CTypeDesc<CEntityAudioAreaComponent>& desc)
-{
-	desc.SetGUID(CEntityAudioAreaComponent::IID());
-	desc.SetEditorCategory("Audio");
-	desc.SetLabel("Audio Fade Area");
-
-	desc.SetDescription("Entity audio fading area component");
-	desc.SetIcon("icons:schematyc/entity_audio_component.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Singleton });
-
-	desc.AddMember(&CEntityAudioAreaComponent::m_bEnabled, 'ena', "enabled", "Enabled", "Enables/Disables this audio area", true);
-	desc.AddMember(&CEntityAudioAreaComponent::m_fadeDistance, 'fade', "fadeDistance", "Fade Distance", "Distance over which fading will happen", 5.0f);
-	desc.AddMember(&CEntityAudioAreaComponent::m_triggerEntityName, 'enti', "triggeringEntity", "Triggering Entity", "You can specify the name of an entity if you only want to listen to that", "Player");
-
-	desc.AddMember(&CEntityAudioAreaComponent::m_bMoveAlongWithTriggeringEntity, 'move', "moveAlong", "Move along", "Specifies if this entity should follow the triggering entity inside the area", false);
-	desc.AddMember(&CEntityAudioAreaComponent::m_bToggleAudioTriggerSpots, 'togg', "toggleSpots", "Toggle Spots", "Specifies if all audio spots components should be enabled/disabled when the area is entered/left", false);
-	desc.AddMember(&CEntityAudioAreaComponent::m_controlledAudioParameter, 'para', "audioParameter", "Audio Parameter", "The audio parameter that is synced with the current fade factor", SAudioParameterSerializeHelper());
-	desc.AddMember(&CEntityAudioAreaComponent::m_environment, 'env', "audioEnv", "Audio Environment", "The audio environment used in in this area", SAudioEnvironmentSerializeHelper());
 }
 
 void CEntityAudioAreaComponent::Initialize()
@@ -278,7 +253,7 @@ void CEntityAudioAreaComponent::ToggleAudioSpots(bool bEnable)
 	{
 		const IEntity::ComponentsVisitor visitComponent = [bEnable](IEntityComponent* pComponent)
 		{
-			if (pComponent->GetClassDesc().GetGUID() == CEntityAudioSpotComponent::IID())
+			if (pComponent->GetClassDesc().GetGUID() == Schematyc::GetTypeDesc<CEntityAudioSpotComponent>().GetGUID())
 			{
 				CEntityAudioSpotComponent* pAudioSpotComp = static_cast<CEntityAudioSpotComponent*>(pComponent);
 				pAudioSpotComp->Enable(bEnable);

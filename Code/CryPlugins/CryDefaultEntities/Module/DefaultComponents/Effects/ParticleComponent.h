@@ -32,12 +32,19 @@ namespace Cry
 		public:
 			virtual ~CParticleComponent() {}
 
-			static void ReflectType(Schematyc::CTypeDesc<CParticleComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CParticleComponent>& desc)
 			{
-				static CryGUID id = "{7925BC64-521F-4A2A-9068-C9C9A1D3499E}"_cry_guid;
-				return id;
+				desc.SetGUID("{7925BC64-521F-4A2A-9068-C9C9A1D3499E}"_cry_guid);
+				desc.SetEditorCategory("Effects");
+				desc.SetLabel("Particle Emitter");
+				desc.SetDescription("Emits a particle effect");
+				desc.SetIcon("icons:schematyc/entity_particle_emitter_component.png");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
+
+				desc.AddMember(&CParticleComponent::m_bEnabled, 'actv', "Enabled", "Enabled", "Whether or not the particle should emit by default", true);
+				desc.AddMember(&CParticleComponent::m_effectName, 'file', "FilePath", "Effect", "Determines the particle effect to load", "");
+
+				desc.AddMember(&CParticleComponent::m_spawnParams, 'spaw', "SpawnParams", "Spawn Parameters", nullptr, CParticleComponent::SSpawnParameters());
 			}
 
 			virtual void LoadEffect(bool bActivate)
@@ -103,12 +110,24 @@ namespace Cry
 
 				inline bool operator==(const SAttributes &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 				
+				static void ReflectType(Schematyc::CTypeDesc<SAttributes>& desc)
+				{
+					desc.SetGUID("{24AE6687-F855-4736-9C71-3419083BAECB}"_cry_guid);
+					desc.SetLabel("Particle Attributes");
+				}
+
 				TParticleAttributesPtr m_pAttributes;
 			};
 
 			struct SSpawnParameters
 			{
 				inline bool operator==(const SSpawnParameters &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
+
+				static void ReflectType(Schematyc::CTypeDesc<SSpawnParameters>& desc)
+				{
+					desc.SetGUID("{9E4544F0-3E5A-4479-B618-E9CB46905149}"_cry_guid);
+					desc.SetLabel("Particle Spawn Parameters");
+				}
 
 				SpawnParams m_spawnParams;
 			};

@@ -190,6 +190,12 @@ public:
 		m_interactions.emplace_back(type, guid);
 	}
 
+	template<class T>
+	inline void AddComponentInteraction(SEntityComponentRequirements::EType type)
+	{
+		m_interactions.emplace_back(type, Schematyc::GetTypeGUID<T>());
+	}
+
 	inline bool IsCompatibleWith(const CryGUID& guid) const
 	{
 		for (const SEntityComponentRequirements& dependency : m_interactions)
@@ -508,7 +514,7 @@ protected:
 	// Needs access to OnShutDown to maintain legacy game object extension shutdown behavior
 	friend class CGameObject;
 	// Needs access to Initialize
-	friend class Schematyc::CObject;
+	friend Schematyc::CObject;
 
 	// Host Entity pointer
 	IEntity*       m_pEntity = nullptr;

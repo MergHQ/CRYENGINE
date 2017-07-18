@@ -27,12 +27,22 @@ namespace Cry
 		public:
 			virtual ~CLineConstraintComponent();
 
-			static void ReflectType(Schematyc::CTypeDesc<CLineConstraintComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CLineConstraintComponent>& desc)
 			{
-				static CryGUID id = "{D25359AC-E566-47F9-B056-AC52C4361348}"_cry_guid;
-				return id;
+				desc.SetGUID("{D25359AC-E566-47F9-B056-AC52C4361348}"_cry_guid);
+				desc.SetEditorCategory("Physics Constraints");
+				desc.SetLabel("Line Constraint");
+				desc.SetDescription("Constrains the physical object to a line");
+				//desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+
+				desc.AddMember(&CLineConstraintComponent::m_bActive, 'actv', "Active", "Active", "Whether or not the constraint should be added on component reset", true);
+				desc.AddMember(&CLineConstraintComponent::m_bLockRotation, 'loro', "LockRot", "Lock Rotation", nullptr, true);
+				desc.AddMember(&CLineConstraintComponent::m_axis, 'axis', "Axis", "Axis", "Axis around which the physical entity is constrained", Vec3(0.f, 0.f, 1.f));
+
+				desc.AddMember(&CLineConstraintComponent::m_limitMin, 'lmin', "LimitMin", "Minimum Limit", nullptr, 0.f);
+				desc.AddMember(&CLineConstraintComponent::m_limitMax, 'lmax', "LimitMax", "Maximum Limit", nullptr, 1.f);
+				desc.AddMember(&CLineConstraintComponent::m_damping, 'damp', "Damping", "Damping", nullptr, 0.f);
 			}
 
 			virtual void ConstrainToEntity(Schematyc::ExplicitEntityId targetEntityId, bool bDisableCollisionsWith, bool bAllowRotation)

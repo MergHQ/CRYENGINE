@@ -28,19 +28,6 @@ void CThrusterComponent::Register(Schematyc::CEnvRegistrationScope& componentSco
 	}
 }
 
-void CThrusterComponent::ReflectType(Schematyc::CTypeDesc<CThrusterComponent>& desc)
-{
-	desc.SetGUID(CThrusterComponent::IID());
-	desc.SetEditorCategory("Physics");
-	desc.SetLabel("Thruster");
-	desc.SetDescription("Allows for applying thrust on a specific point, requires a Simple Physics or Character Controller component.");
-	desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-
-	desc.AddMember(&CThrusterComponent::m_bEnableConstantThrustByDefault, 'enab', "EnableConstantThrust", "Constant", "Whether to continuously apply the thrust each frame", true);
-	desc.AddMember(&CThrusterComponent::m_constantThrust, 'cons', "ConstantThrust", "Constant Thrust", "The impulse to apply every frame if constant thrust is enabled", 1.f);
-}
-
 void CThrusterComponent::ApplySingleThrust(float thrust)
 {
 	if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
