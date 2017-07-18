@@ -8,9 +8,7 @@
 #include "StringHelpers.h"
 #include "FileUtil.h"
 #include "CryString/CryPath.h"
-#include "CryGUIDHelper.h"
 #include "IRCLog.h"
-#include "CryExtension/CryGUIDHelper.h"
 
 namespace Private_Cryasset
 {
