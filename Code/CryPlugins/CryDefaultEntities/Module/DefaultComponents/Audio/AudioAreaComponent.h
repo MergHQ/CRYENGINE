@@ -19,6 +19,11 @@ struct SAudioEnvironmentSerializeHelper
 	void Serialize(Serialization::IArchive& archive);
 	bool operator==(const SAudioEnvironmentSerializeHelper& other) const { return m_envName == other.m_envName; }
 
+	static void ReflectType(Schematyc::CTypeDesc<SAudioEnvironmentSerializeHelper>& desc)
+	{
+		desc.SetGUID("1d528007-b6fe-4310-b6cd-acb7e3f662ca"_cry_guid);
+	}
+
 	CryAudio::ControlId m_envId = CryAudio::InvalidControlId;
 	string              m_envName;
 };
@@ -66,12 +71,24 @@ public:
 		virtual void OnFadingFactorChanged(float newValue, EAreaState currentState) = 0;
 	};
 
-	static void ReflectType(Schematyc::CTypeDesc<CEntityAudioAreaComponent>& desc);
-
-	static CryGUID& IID()
+	static void ReflectType(Schematyc::CTypeDesc<CEntityAudioAreaComponent>& desc)
 	{
-		static CryGUID id = "88f8417f-0f4c-48a5-8f51-ecabee83d955"_cry_guid;
-		return id;
+		desc.SetGUID("88f8417f-0f4c-48a5-8f51-ecabee83d955"_cry_guid);
+		desc.SetEditorCategory("Audio");
+		desc.SetLabel("Audio Fade Area");
+
+		desc.SetDescription("Entity audio fading area component");
+		desc.SetIcon("icons:schematyc/entity_audio_component.ico");
+		desc.SetComponentFlags({ IEntityComponent::EFlags::Singleton });
+
+		desc.AddMember(&CEntityAudioAreaComponent::m_bEnabled, 'ena', "enabled", "Enabled", "Enables/Disables this audio area", true);
+		desc.AddMember(&CEntityAudioAreaComponent::m_fadeDistance, 'fade', "fadeDistance", "Fade Distance", "Distance over which fading will happen", 5.0f);
+		desc.AddMember(&CEntityAudioAreaComponent::m_triggerEntityName, 'enti', "triggeringEntity", "Triggering Entity", "You can specify the name of an entity if you only want to listen to that", "Player");
+
+		desc.AddMember(&CEntityAudioAreaComponent::m_bMoveAlongWithTriggeringEntity, 'move', "moveAlong", "Move along", "Specifies if this entity should follow the triggering entity inside the area", false);
+		desc.AddMember(&CEntityAudioAreaComponent::m_bToggleAudioTriggerSpots, 'togg', "toggleSpots", "Toggle Spots", "Specifies if all audio spots components should be enabled/disabled when the area is entered/left", false);
+		desc.AddMember(&CEntityAudioAreaComponent::m_controlledAudioParameter, 'para', "audioParameter", "Audio Parameter", "The audio parameter that is synced with the current fade factor", SAudioParameterSerializeHelper());
+		desc.AddMember(&CEntityAudioAreaComponent::m_environment, 'env', "audioEnv", "Audio Environment", "The audio environment used in in this area", SAudioEnvironmentSerializeHelper());
 	}
 
 	float GetCurrentFadeFactor() const { return m_currentFadeFactor; }

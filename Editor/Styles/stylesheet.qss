@@ -725,6 +725,11 @@ QScrollBar::handle:pressed {
 	border-radius:2px;
 }
 
+QScrollBar::handle:disabled
+{
+	background-color: rgb(80,80,80);
+}
+
 QPropertyTree {
     color: rgb(166,166,166);
     selection-background-color: rgb(166,166,166);

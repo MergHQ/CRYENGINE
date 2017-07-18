@@ -143,52 +143,6 @@ namespace Cry
 			}
 		}
 
-		void CVehiclePhysicsComponent::ReflectType(Schematyc::CTypeDesc<CVehiclePhysicsComponent>& desc)
-		{
-			desc.SetGUID(CVehiclePhysicsComponent::IID());
-			desc.SetEditorCategory("Physics");
-			desc.SetLabel("Vehicle Physics");
-			desc.SetDescription("");
-			desc.SetIcon("icons:ObjectTypes/object.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::Singleton });
-
-			// Entities can only have one physical entity type, thus these are incompatible
-			desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CCharacterControllerComponent>());
-			desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CRigidBodyComponent>());
-
-			desc.AddMember(&CVehiclePhysicsComponent::m_engineParams, 'engn', "EngineParams", "Engine Parameters", nullptr, CVehiclePhysicsComponent::SEngineParams());
-			desc.AddMember(&CVehiclePhysicsComponent::m_gearParams, 'gear', "GearParams", "Gear Parameters", nullptr, CVehiclePhysicsComponent::SGearParams());
-			desc.AddMember(&CVehiclePhysicsComponent::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
-		}
-
-		static void ReflectType(Schematyc::CTypeDesc<CVehiclePhysicsComponent::SEngineParams>& desc)
-		{
-			desc.SetGUID("{8B051D30-2D75-48CE-8649-9D9920CAFBB7}"_cry_guid);
-			desc.SetLabel("Engine Parameters");
-			desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_power, 'powe', "Power", "Power", "Power of the engine", 10000.f);
-			desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_maxRPM, 'maxr', "MaxRPM", "Maximum RPM", "engine torque decreases to 0 after reaching this rotation speed", 1200.f);
-			desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_minRPM, 'minr', "MinRPM", "Minimum RPM", "disengages the clutch when falling behind this limit, if braking with the engine", 60.f);
-			desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_idleRPM, 'idle', "IdleRPM", "Idle RPM", "RPM for idle state", 120.f);
-			desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_startRPM, 'star', "StartRPM", "Start RPM", "RPM when the engine is started", 400.f);
-		}
-
-		static void ReflectType(Schematyc::CTypeDesc<CVehiclePhysicsComponent::SGearParams>& desc)
-		{
-			desc.SetGUID("{C632BB61-DAE8-4270-B759-114F01F55517}"_cry_guid);
-			desc.SetLabel("Gear Parameters");
-			desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_gears, 'gear', "Gears", "Gears", "Specifies number of gears, and their parameters", Schematyc::CArray<CVehiclePhysicsComponent::SGearParams::SGear>());
-			desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_shiftUpRPM, 'shiu', "ShiftUpRPM", "Shift Up RPM", "RPM threshold for for automatic gear switching", 600.f);
-			desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_shiftDownRPM, 'shid', "ShiftDownRPM", "Shift Down RPM", "RPM threshold for for automatic gear switching", 240.f);
-			desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_directionSwitchRPM, 'dirs', "DirectionSwitchRPM", "Direction Switch RPM", "RPM threshold for switching back and forward gears", 10.f);
-		}
-
-		static void ReflectType(Schematyc::CTypeDesc<CVehiclePhysicsComponent::SGearParams::SGear>& desc)
-		{
-			desc.SetGUID("{C1D4377F-D3CD-438F-B8FD-576E8FA2A3EF}"_cry_guid);
-			desc.SetLabel("Gear");
-			desc.AddMember(&CVehiclePhysicsComponent::SGearParams::SGear::m_ratio, 'rati', "Ratio", "Ratio", "assumes 0-backward gear, 1-neutral, 2 and above - forward", 2.f);
-		}
-
 		static void ReflectType(Schematyc::CTypeDesc<CVehiclePhysicsComponent::SCollisionSignal>& desc)
 		{
 			desc.SetGUID("{5E5E88FF-C466-4579-9F74-4E59DB3B2A47}"_cry_guid);

@@ -47,18 +47,6 @@ namespace Cry
 			}
 		}
 
-		void CAlembicComponent::ReflectType(Schematyc::CTypeDesc<CAlembicComponent>& desc)
-		{
-			desc.SetGUID(CAlembicComponent::IID());
-			desc.SetEditorCategory("Geometry");
-			desc.SetLabel("Alembic Mesh");
-			desc.SetDescription("A component containing an alembic mesh");
-			desc.SetIcon("icons:ObjectTypes/object.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-
-			desc.AddMember(&CAlembicComponent::m_filePath, 'file', "FilePath", "File", "Determines the geom cache file (abc / cbc) to load", "%ENGINE%/EngineAssets/GeomCaches/default.cbc");
-		}
-
 		void CAlembicComponent::Initialize()
 		{
 			if (m_filePath.value.size() > 0)

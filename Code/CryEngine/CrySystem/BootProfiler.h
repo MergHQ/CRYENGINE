@@ -74,11 +74,14 @@ private:
 
 	static int            CV_sys_bp_frames_worker_thread;
 	static int            CV_sys_bp_frames;
+	static int            CV_sys_bp_frames_sample_period;
+	static int            CV_sys_bp_frames_sample_period_rnd;
 	static float          CV_sys_bp_frames_threshold;
 	static float          CV_sys_bp_time_threshold;
 	CBootProfilerRecord*  m_pMainThreadFrameRecord;
 
 	int                   m_levelLoadAdditionalFrames;
+	int                   m_countdownToNextSaveSesssion;
 };
 
 #else //ENABLE_LOADING_PROFILER

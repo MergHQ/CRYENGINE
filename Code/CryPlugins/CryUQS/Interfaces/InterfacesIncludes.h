@@ -8,6 +8,8 @@
 #include <CrySchematyc/CoreAPI.h>
 #endif
 
+#include <CrySchematyc/Utils/EnumFlags.h>
+
 #include "shared/TypeInfo.h"
 #include "shared/DataTypeHelper.h"
 #include "shared/IUqsString.h"

@@ -31,12 +31,16 @@ namespace Cry
 			CAlembicComponent() {}
 			virtual ~CAlembicComponent() {}
 
-			static void ReflectType(Schematyc::CTypeDesc<CAlembicComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CAlembicComponent>& desc)
 			{
-				static CryGUID id = "{32B8795F-C9A7-4162-B71F-E514C65093F6}"_cry_guid;
-				return id;
+				desc.SetGUID("{32B8795F-C9A7-4162-B71F-E514C65093F6}"_cry_guid);
+				desc.SetEditorCategory("Geometry");
+				desc.SetLabel("Alembic Mesh");
+				desc.SetDescription("A component containing an alembic mesh");
+				desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+
+				desc.AddMember(&CAlembicComponent::m_filePath, 'file', "FilePath", "File", "Determines the geom cache file (abc / cbc) to load", "%ENGINE%/EngineAssets/GeomCaches/default.cbc");
 			}
 
 			virtual void Enable(bool bEnable);

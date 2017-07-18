@@ -115,6 +115,8 @@ end_sources()
 
 CryEngineModule(CryUQS_Core PCH "core/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_Shared)
+target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_DataSource_XML)
+target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_StdLib)
 
 target_include_directories(${THIS_PROJECT}
 	PRIVATE core

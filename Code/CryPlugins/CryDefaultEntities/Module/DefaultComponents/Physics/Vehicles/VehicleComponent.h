@@ -40,6 +40,17 @@ namespace Cry
 			{
 				inline bool operator==(const SEngineParams &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
+				static void ReflectType(Schematyc::CTypeDesc<SEngineParams>& desc)
+				{
+					desc.SetGUID("{8B051D30-2D75-48CE-8649-9D9920CAFBB7}"_cry_guid);
+					desc.SetLabel("Engine Parameters");
+					desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_power, 'powe', "Power", "Power", "Power of the engine", 10000.f);
+					desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_maxRPM, 'maxr', "MaxRPM", "Maximum RPM", "engine torque decreases to 0 after reaching this rotation speed", 1200.f);
+					desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_minRPM, 'minr', "MinRPM", "Minimum RPM", "disengages the clutch when falling behind this limit, if braking with the engine", 60.f);
+					desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_idleRPM, 'idle', "IdleRPM", "Idle RPM", "RPM for idle state", 120.f);
+					desc.AddMember(&CVehiclePhysicsComponent::SEngineParams::m_startRPM, 'star', "StartRPM", "Start RPM", "RPM when the engine is started", 400.f);
+				}
+
 				Schematyc::Range<0, 10000000> m_power = 50000.f;
 				float m_maxRPM = 1200.f;
 				float m_minRPM = 60.f;
@@ -61,8 +72,25 @@ namespace Cry
 						archive(m_ratio, "Ratio", "Ratio");
 					}
 
+					static void ReflectType(Schematyc::CTypeDesc<SGear>& desc)
+					{
+						desc.SetGUID("{C1D4377F-D3CD-438F-B8FD-576E8FA2A3EF}"_cry_guid);
+						desc.SetLabel("Gear");
+						desc.AddMember(&CVehiclePhysicsComponent::SGearParams::SGear::m_ratio, 'rati', "Ratio", "Ratio", "assumes 0-backward gear, 1-neutral, 2 and above - forward", 2.f);
+					}
+
 					Schematyc::Range<0, 2> m_ratio;
 				};
+
+				static void ReflectType(Schematyc::CTypeDesc<SGearParams>& desc)
+				{
+					desc.SetGUID("{C632BB61-DAE8-4270-B759-114F01F55517}"_cry_guid);
+					desc.SetLabel("Gear Parameters");
+					desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_gears, 'gear', "Gears", "Gears", "Specifies number of gears, and their parameters", Schematyc::CArray<CVehiclePhysicsComponent::SGearParams::SGear>());
+					desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_shiftUpRPM, 'shiu', "ShiftUpRPM", "Shift Up RPM", "RPM threshold for for automatic gear switching", 600.f);
+					desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_shiftDownRPM, 'shid', "ShiftDownRPM", "Shift Down RPM", "RPM threshold for for automatic gear switching", 240.f);
+					desc.AddMember(&CVehiclePhysicsComponent::SGearParams::m_directionSwitchRPM, 'dirs', "DirectionSwitchRPM", "Direction Switch RPM", "RPM threshold for switching back and forward gears", 10.f);
+				}
 
 				Schematyc::CArray<SGear> m_gears;
 
@@ -85,11 +113,25 @@ namespace Cry
 			CVehiclePhysicsComponent();
 			virtual ~CVehiclePhysicsComponent();
 
-			static void ReflectType(Schematyc::CTypeDesc<CVehiclePhysicsComponent>& desc);
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CVehiclePhysicsComponent>& desc)
 			{
-				static CryGUID id = "{47EBC019-41CB-415E-AB57-2A3A99B918C2}}"_cry_guid;
-				return id;
+				desc.SetGUID("{47EBC019-41CB-415E-AB57-2A3A99B918C2}}"_cry_guid);
+				desc.SetEditorCategory("Physics");
+				desc.SetLabel("Vehicle Physics");
+				desc.SetDescription("");
+				desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::Singleton });
+
+				// Mark the Character Controller component as incompatible
+				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{98183F31-A685-43CD-92A9-815274F0A81C}"_cry_guid);
+				// Mark the RigidBody component as incompatible
+				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{912C6CE8-56F7-4FFA-9134-F98D4E307BD6}"_cry_guid);
+				// Mark the Area component as incompatible
+				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{EC7F145B-D48F-4863-B9C2-3D3E2C8DCC61}"_cry_guid);
+
+				desc.AddMember(&CVehiclePhysicsComponent::m_engineParams, 'engn', "EngineParams", "Engine Parameters", nullptr, CVehiclePhysicsComponent::SEngineParams());
+				desc.AddMember(&CVehiclePhysicsComponent::m_gearParams, 'gear', "GearParams", "Gear Parameters", nullptr, CVehiclePhysicsComponent::SGearParams());
+				desc.AddMember(&CVehiclePhysicsComponent::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
 			}
 
 			virtual void UseHandbrake(bool bSet) 

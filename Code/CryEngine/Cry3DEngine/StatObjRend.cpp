@@ -1159,6 +1159,12 @@ void CStatObj::RenderSubObject(CRenderObject* pRenderObject, int nLod,
 
 	if (subObj.bIdentityMatrix)
 	{
+		if ((pRenderObject->m_ObjFlags & FOB_DYNAMIC_OBJECT) && (pRenderObject->m_ObjFlags & FOB_NEAREST))
+		{
+			SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
+			pRenderObjectData->m_uniqueObjectId = pRenderObjectData->m_uniqueObjectId + nSubObjId;
+		}
+
 		pStatObj->RenderSubObjectInternal(pRenderObject, nLod, passInfo);
 	}
 	else

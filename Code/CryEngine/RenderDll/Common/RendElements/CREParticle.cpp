@@ -444,6 +444,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 	const bool bVolumeFog = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_VOLUME_FOG) != 0;
 	const bool bPulledVertices = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) != 0;
 	const bool bUseTessShader = !bVolumeFog && (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
+	const bool bNearest = (pRenderObject->m_ObjFlags & FOB_NEAREST) != 0;
 
 	// Adjust shader and flags.
 	if (bUseTessShader)
@@ -492,7 +493,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 	else if (bVolumeFog)
 		nList = EFSLIST_FOG_VOLUME;
 	else if (pRenderObject->m_RState & OS_TRANSPARENT)
-		nList = EFSLIST_TRANSP;
+		nList = bNearest ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;
 	else
 		nList = EFSLIST_GENERAL;
 }

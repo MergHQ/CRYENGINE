@@ -11,22 +11,6 @@ void CStaticMeshComponent::Register(Schematyc::CEnvRegistrationScope& componentS
 {
 }
 
-void CStaticMeshComponent::ReflectType(Schematyc::CTypeDesc<CStaticMeshComponent>& desc)
-{
-	desc.SetGUID(CStaticMeshComponent::IID());
-	desc.SetEditorCategory("Geometry");
-	desc.SetLabel("Mesh");
-	desc.SetDescription("A component containing a simple mesh that can not be animated");
-	desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-
-	desc.AddMember(&CStaticMeshComponent::m_type, 'type', "Type", "Type", "Determines the behavior of the static mesh", EMeshType::RenderAndCollider);
-
-	desc.AddMember(&CStaticMeshComponent::m_filePath, 'file', "FilePath", "File", "Determines the CGF to load", "%ENGINE%/EngineAssets/Objects/Default.cgf");
-	desc.AddMember(&CStaticMeshComponent::m_renderParameters, 'rend', "Render", "Rendering Settings", "Settings for the rendered representation of the component", SRenderParameters());
-	desc.AddMember(&CStaticMeshComponent::m_physics, 'phys', "Physics", "Physics Settings", "Physical properties for the object, only used if a simple physics or character controller is applied to the entity.", SPhysicsParameters());
-}
-
 void CStaticMeshComponent::Initialize()
 {
 	LoadFromDisk();

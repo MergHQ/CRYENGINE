@@ -21,7 +21,18 @@ namespace Cry
 			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
 
 		public:
-			static void ReflectType(Schematyc::CTypeDesc<CThrusterComponent>& desc);
+			static void ReflectType(Schematyc::CTypeDesc<CThrusterComponent>& desc)
+			{
+				desc.SetGUID("{B3222B05-BE90-4E19-B0A8-C0250F62AC98}"_cry_guid);
+				desc.SetEditorCategory("Physics");
+				desc.SetLabel("Thruster");
+				desc.SetDescription("Allows for applying thrust on a specific point, requires a Simple Physics or Character Controller component.");
+				desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+
+				desc.AddMember(&CThrusterComponent::m_bEnableConstantThrustByDefault, 'enab', "EnableConstantThrust", "Constant", "Whether to continuously apply the thrust each frame", true);
+				desc.AddMember(&CThrusterComponent::m_constantThrust, 'cons', "ConstantThrust", "Constant Thrust", "The impulse to apply every frame if constant thrust is enabled", 1.f);
+			}
 
 			CThrusterComponent() {}
 			virtual ~CThrusterComponent() {}
@@ -43,12 +54,6 @@ namespace Cry
 			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
 			// ~IEntityComponentPreviewer
 #endif
-
-			static CryGUID& IID()
-			{
-				static CryGUID id = "{B3222B05-BE90-4E19-B0A8-C0250F62AC98}"_cry_guid;
-				return id;
-			}
 
 			virtual void EnableConstantThrust(bool bEnable);
 			virtual bool IsConstantThrustEnabled() const { return m_bConstantThrustActive; }

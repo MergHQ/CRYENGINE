@@ -9,6 +9,7 @@
 #include "AudioSystemModel.h"
 #include "ImplementationManager.h"
 #include "IUndoObject.h"
+#include "EditorStyleHelper.h"
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 #include <QtUtil.h>
 
@@ -137,7 +138,7 @@ QVariant QConnectionModel::data(const QModelIndex& index, int role) const
 					case Qt::ForegroundRole:
 						if (pItem->IsPlaceholder())
 						{
-							return QColor(200, 100, 100);
+							return GetStyleHelper()->errorColor();
 						}
 						break;
 					case Qt::ToolTipRole:

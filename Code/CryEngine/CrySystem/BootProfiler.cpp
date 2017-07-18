@@ -6,6 +6,7 @@
 
 	#include "BootProfiler.h"
 	#include "ThreadInfo.h"
+	#include "CryMath/Cry_Math.h"
 
 namespace
 {
@@ -76,6 +77,8 @@ CBootProfilerThreadsInterface gThreadsInterface;
 
 int CBootProfiler::CV_sys_bp_frames_worker_thread = 0;
 int CBootProfiler::CV_sys_bp_frames = 0;
+int CBootProfiler::CV_sys_bp_frames_sample_period = 0;
+int CBootProfiler::CV_sys_bp_frames_sample_period_rnd = 0;
 float CBootProfiler::CV_sys_bp_frames_threshold = 0.0f;
 float CBootProfiler::CV_sys_bp_time_threshold = 0.0f;
 
@@ -476,6 +479,7 @@ CBootProfiler::CBootProfiler()
 	, m_quitSaveThread(false)
 	, m_pMainThreadFrameRecord(nullptr)
 	, m_levelLoadAdditionalFrames(0)
+	, m_countdownToNextSaveSesssion(0)
 {
 }
 
@@ -639,7 +643,16 @@ void CBootProfiler::StopFrame()
 
 		m_pCurrentSession->Stop();
 
-		if ((m_pCurrentSession->GetTotalTime() >= CV_sys_bp_frames_threshold) && !bDisablingThresholdMode)
+		--m_countdownToNextSaveSesssion;
+		const bool bShouldCollectResults = m_countdownToNextSaveSesssion < 0;
+
+		if (bShouldCollectResults)
+		{
+			const int nextOffset = cry_random(0, CV_sys_bp_frames_sample_period_rnd);
+			m_countdownToNextSaveSesssion = crymath::clamp(CV_sys_bp_frames_sample_period + nextOffset, 0, std::numeric_limits<int>::max());
+		}
+
+		if ((m_pCurrentSession->GetTotalTime() >= CV_sys_bp_frames_threshold) && !bDisablingThresholdMode && bShouldCollectResults)
 		{
 			CBootProfilerSession* pSession = m_pCurrentSession;
 			m_pCurrentSession = nullptr;
@@ -710,6 +723,8 @@ void CBootProfiler::RegisterCVars()
 {
 	REGISTER_CVAR2("sys_bp_frames_worker_thread", &CV_sys_bp_frames_worker_thread, 0, VF_DEV_ONLY | VF_REQUIRE_APP_RESTART, "If this is set to true. The system will dump the profiled session from a different thread.");
 	REGISTER_CVAR2("sys_bp_frames", &CV_sys_bp_frames, 0, VF_DEV_ONLY, "Starts frame profiling for specified number of frames using BootProfiler");
+	REGISTER_CVAR2("sys_bp_frames_sample_period", &CV_sys_bp_frames_sample_period, 0, VF_DEV_ONLY, "When in threshold mode, the period at which we are going to dump a frame.");
+	REGISTER_CVAR2("sys_bp_frames_sample_period_rnd", &CV_sys_bp_frames_sample_period_rnd, 0, VF_DEV_ONLY, "When in threshold mode, the random offset at which we are going to dump a next frame.");
 	REGISTER_CVAR2("sys_bp_frames_threshold", &CV_sys_bp_frames_threshold, 0, VF_DEV_ONLY, "Starts frame profiling but gathers the results for frames that frame time exceeded the threshold");
 	REGISTER_CVAR2("sys_bp_time_threshold", &CV_sys_bp_time_threshold, 0.1f, VF_DEV_ONLY, "If greater than 0 don't write blocks that took less time (default 0.1 ms)");
 

@@ -188,7 +188,7 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 	// Start with updating look orientation from the latest input
 	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_lookOrientation));
 
-	const float rotationSpeed = 0.05f;
+	const float rotationSpeed = 0.002f;
 
 	ypr.x += m_mouseDeltaRotation.x * rotationSpeed;
 
