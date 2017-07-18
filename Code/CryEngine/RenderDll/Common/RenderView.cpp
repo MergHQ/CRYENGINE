@@ -649,9 +649,11 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	if (!bShadowPass)
 	{
 		const bool bHair = (pShader->m_Flags2 & EF2_HAIR) != 0;
+		const bool bRefractive = (pShader->m_Flags & EF_REFRACTIVE) != 0;
 		const bool bTransparent = shaderItem.m_pShaderResources && static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->IsTransparent();
 
-		if (nList == EFSLIST_GENERAL && (bHair || bTransparent))
+		if (nList == EFSLIST_GENERAL && (bHair || bTransparent) || 
+		   (nList == EFSLIST_TRANSP && bRefractive))
 		{
 			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;
 		}
@@ -669,7 +671,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	ri.pObj = pObj;
 	ri.pCompiledObject = nullptr;
 
-	if (nList == EFSLIST_TRANSP || nList == EFSLIST_HALFRES_PARTICLES)
+	if (nList == EFSLIST_TRANSP || nList == EFSLIST_TRANSP_NEAREST || nList == EFSLIST_HALFRES_PARTICLES)
 		ri.fDist = pObj->m_fDistance + pObj->m_fSort;
 	else
 		ri.ObjSort = (pObj->m_ObjFlags & 0xffff0000) | pObj->m_nSort;
@@ -769,7 +771,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 	{
 		const bool bForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
-		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP);
+		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP) || (nRenderList == EFSLIST_TRANSP_NEAREST);
 		const bool bIsSelectable = ri.pObj->m_editorSelectionID > 0;
 		const bool bNearest = (ri.pObj->m_ObjFlags & FOB_NEAREST) != 0;
 
@@ -795,14 +797,6 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 		if ((bForwardOpaqueFlags || bIsMaterialEmissive) && !bIsTransparent && !bForwardOpaqueList)
 		{
 			const int targetRenderList = bNearest ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
-			m_renderItems[targetRenderList].push_back(ri);
-			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[targetRenderList], nBatchFlags);
-		}
-
-		const bool bTransparentList = (nRenderList == EFSLIST_TRANSP) || (nRenderList == EFSLIST_TRANSP_NEAREST);
-		if (bTransparentList)
-		{
-			const int targetRenderList = bNearest ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;
 			m_renderItems[targetRenderList].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[targetRenderList], nBatchFlags);
 		}
@@ -1234,6 +1228,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 
 	case EFSLIST_WATER_VOLUMES:
 	case EFSLIST_TRANSP:
+	case EFSLIST_TRANSP_NEAREST:
 	case EFSLIST_WATER:
 	case EFSLIST_HALFRES_PARTICLES:
 	case EFSLIST_LENSOPTICS:

@@ -3555,7 +3555,7 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 			nMisc++;
 		else
 		{
-			if (rRP.m_nPassGroupID == EFSLIST_TRANSP)
+			if (rRP.m_nPassGroupID == EFSLIST_TRANSP || rRP.m_nPassGroupID == EFSLIST_TRANSP_NEAREST)
 			{
 				nTransparent++;
 			}
