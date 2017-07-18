@@ -12,6 +12,10 @@
 
 #include "PluginDll.h"
 
+#if !defined(_RELEASE)
+#define INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
+#endif // _RELEASE
+
 template<class T>
 static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const char* editorCategory = "", const char* editorIcon = "", bool bIconOnTop = false)
 {
