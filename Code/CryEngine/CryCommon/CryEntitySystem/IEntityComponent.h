@@ -503,11 +503,12 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 protected:
+	friend IEntity;
 	friend class CEntity;
 	// Needs access to OnShutDown to maintain legacy game object extension shutdown behavior
 	friend class CGameObject;
-	// Needs access to Run, remove when the function is gone
-	friend class CEntityObject;
+	// Needs access to Initialize
+	friend class Schematyc::CObject;
 
 	// Host Entity pointer
 	IEntity*       m_pEntity = nullptr;

@@ -1436,8 +1436,11 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		//classProperties.Apply(componentClassDesc, pComponent.get());
 		Schematyc::Utils::SerializeClass(archive, componentClassDesc, pComponent.get(), "properties", "properties");
 
-		// Finally Create and Initialize the component
+		// Add the component to the entity
 		AddComponentInternal(pComponent, typeGUID, &initParams, &componentClassDesc);
+
+		// Initialize the component
+		pComponent->Initialize();
 	}
 	else
 	{
@@ -1807,7 +1810,11 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 	std::shared_ptr<IEntityComponent> pComponent = pEnvComponent != nullptr ? pEnvComponent->CreateFromPool() : cryinterface_cast<IEntityComponent>(pLegacyComponentFactory->CreateClassInstance());
 	CRY_ASSERT(pComponent != nullptr);
 
+	// Add the component to the entity
 	AddComponentInternal(pComponent, componentTypeID, pInitParams, pClassDescription);
+
+	// Initialize the component
+	pComponent->Initialize();
 
 	return pComponent.get();
 }
@@ -1865,12 +1872,8 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	// Sorted insertion, all elements of the m_components are sorted by the proxyType
 	m_components.Add(componentRecord);
 
-	// Call initialization of the component
-	pComponent->Initialize();
-
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
-
 }
 
 //////////////////////////////////////////////////////////////////////////

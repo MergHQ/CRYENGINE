@@ -829,6 +829,9 @@ public:
 		std::shared_ptr<ComponentType> pComponent = std::make_shared<ComponentType>();
 		if (AddComponent(pComponent))
 		{
+			// Initialize the now added component
+			static_cast<IEntityComponent*>(pComponent.get())->Initialize();
+
 			return pComponent.get();
 		}
 

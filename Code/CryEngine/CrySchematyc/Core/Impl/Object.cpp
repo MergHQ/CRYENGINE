@@ -612,6 +612,13 @@ bool CObject::CreateComponents()
 
 			pEntity->AddComponent(component.pComponent, &initParams);
 		}
+
+		// Now initialize all the components
+		// This is done in a separate iteration step from adding in order to allow components to query each other in the Initialize call.
+		for(const SComponent& component : m_components)
+		{
+			component.pComponent->Initialize();
+		}
 	}
 
 	return true;
