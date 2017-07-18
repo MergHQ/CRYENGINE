@@ -9,7 +9,6 @@
 // - not required when building a .lib
 #include <CryCore/Platform/platform_impl.inl>
 
-#include <IViewSystem.h>
 
 namespace UQS
 {
@@ -119,21 +118,13 @@ namespace UQS
 				//
 
 				CQueryHistoryManager& queryHistoryManager = m_pHub->GetQueryHistoryManager();
-
 				queryHistoryManager.AutomaticUpdateDebugRendering3DBegin();
 
-				if (IView* pActiveView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView())
-				{
-					const SViewParams* pViewParams = pActiveView->GetCurrentParams();
-					SDebugCameraView debugCameraView;
-					debugCameraView.pos = pViewParams->position;
-					debugCameraView.dir = pViewParams->rotation.GetColumn1();
-					queryHistoryManager.UpdateDebugRendering3D(&debugCameraView, IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet());
-				}
-				else
-				{
-					queryHistoryManager.UpdateDebugRendering3D(nullptr, IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet());
-				}
+				const CCamera& sysCamera = gEnv->pSystem->GetViewCamera();
+				SDebugCameraView debugCameraView;
+				debugCameraView.pos = sysCamera.GetPosition();
+				debugCameraView.dir = sysCamera.GetViewdir();
+				queryHistoryManager.UpdateDebugRendering3D(&debugCameraView, IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet());
 
 				queryHistoryManager.AutomaticUpdateDebugRendering3DEnd();
 			}
