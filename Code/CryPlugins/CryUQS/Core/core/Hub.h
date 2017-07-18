@@ -6,6 +6,11 @@
 
 namespace UQS
 {
+	namespace DataSource_XML
+	{
+		class CXMLDatasource;
+	}
+
 	namespace Core
 	{
 
@@ -24,6 +29,7 @@ namespace UQS
 			// IHub
 			virtual void                                               RegisterHubEventListener(IHubEventListener* pListener) override;
 			virtual void                                               Update() override;
+			virtual CEnumFlags<EHubOverrideFlags>&                     GetOverrideFlags() override;
 			// the co-variant return types are intended to help getting around casting down along the inheritance hierarchy when double-dispatching is involved
 			virtual QueryFactoryDatabase&                              GetQueryFactoryDatabase() override;
 			virtual ItemFactoryDatabase&                               GetItemFactoryDatabase() override;
@@ -43,6 +49,8 @@ namespace UQS
 			// ~IHub
 
 			bool                                                       HaveConsistencyChecksBeenDoneAlready() const;
+			void                                                       AutomaticUpdateBegin();
+			void                                                       AutomaticUpdateEnd();
 
 #if UQS_SCHEMATYC_SUPPORT
 			static void                                                OnRegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar);  // gcc-4.9 requires this method to be public when registering as a callback
@@ -65,8 +73,11 @@ namespace UQS
 			static void                                                CmdClearDeserializedQueryHistory(IConsoleCmdArgs* pArgs);
 
 		private:
-			bool                                                       m_consistencyChecksDoneAlready;
+			CEnumFlags<EHubOverrideFlags>                              m_overrideFlags;
 			std::list<IHubEventListener*>                              m_eventListeners;
+			bool                                                       m_bConsistencyChecksDoneAlready;
+			std::unique_ptr<DataSource_XML::CXMLDatasource>            m_pXmlDatasource;
+			bool                                                       m_bAutomaticUpdateInProgress;
 			QueryFactoryDatabase                                       m_queryFactoryDatabase;
 			ItemFactoryDatabase                                        m_itemFactoryDatabase;
 			FunctionFactoryDatabase                                    m_functionFactoryDatabase;

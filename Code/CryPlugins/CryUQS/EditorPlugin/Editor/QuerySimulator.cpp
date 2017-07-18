@@ -138,7 +138,7 @@ void CQuerySimulator::CUQSHistoryPostRenderer::OnPostRender() const
 				UQS::Core::SDebugCameraView uqsCameraView;
 				uqsCameraView.pos = viewTM.GetTranslation();
 				uqsCameraView.dir = orientation * Vec3(0, 1, 0);
-				pHub->GetQueryHistoryManager().UpdateDebugRendering3D(uqsCameraView, UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet());
+				pHub->GetQueryHistoryManager().UpdateDebugRendering3D(&uqsCameraView, UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet());
 			}
 		}
 	}

@@ -478,7 +478,7 @@ void CMainEditorWindow::CUQSHistoryPostRenderer::OnPostRender() const
 				evaluatorDrawMasks = pSelectedQuery->evaluatorDrawMasks;
 			}
 
-			pHub->GetQueryHistoryManager().UpdateDebugRendering3D(uqsCameraView, evaluatorDrawMasks);
+			pHub->GetQueryHistoryManager().UpdateDebugRendering3D(&uqsCameraView, evaluatorDrawMasks);
 		}
 	}
 }

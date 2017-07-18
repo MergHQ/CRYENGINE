@@ -1,7 +1,7 @@
 {
-	"version": 1,
+	"version": 2,
 	"type": "CRYENGINE Project",
-	"info": { "name": "CRYENGINE" },
+	"info": { "name": "CRYENGINE", "guid": "981c2e0b-5ce6-ce71-f0be-eab93bbd43f6" },
 	"content": {
 		"assets": [ "gamesdk" ],
 		"code": [ "" ],
@@ -17,7 +17,8 @@
 		"plugins": [
 			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
 			{ "type": "EPluginType::Native", "path": "CrySensorSystem" },
-			{ "type": "EPluginType::Native", "path": "CryPerceptionSystem" }
+			{ "type": "EPluginType::Native", "path": "CryPerceptionSystem" },
+			{ "type": "EPluginType::Native", "path": "CryUQS_Core" }
 		]
 	},
 	"console_variables": [
