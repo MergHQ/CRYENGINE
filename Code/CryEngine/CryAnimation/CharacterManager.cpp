@@ -2741,7 +2741,6 @@ void CharacterManager::DummyUpdate()
 	m_nUpdateCounter++;
 }
 
-#ifdef EDITOR_PCDEBUGCODE
 void CharacterManager::GetMotionParameterDetails(SMotionParameterDetails& outDetails, EMotionParamID paramId) const
 {
 	static SMotionParameterDetails details[eMotionParamID_COUNT] = {
@@ -2766,6 +2765,7 @@ void CharacterManager::GetMotionParameterDetails(SMotionParameterDetails& outDet
 		outDetails = SMotionParameterDetails();
 }
 
+#ifdef EDITOR_PCDEBUGCODE
 bool CharacterManager::InjectCDF(const char* pathname, const char* fileContent, size_t fileLength)
 {
 	uint32 id = GetOrLoadCDFId(pathname);

@@ -161,8 +161,7 @@ struct SMotionParameterDetails
 {
 	enum EFlags
 	{
-		OBSOLETE              = 1 << 0,
-		ADDITIONAL_EXTRACTION = 1 << 1,
+		ADDITIONAL_EXTRACTION = 1 << 0,
 	};
 
 	const char* name;

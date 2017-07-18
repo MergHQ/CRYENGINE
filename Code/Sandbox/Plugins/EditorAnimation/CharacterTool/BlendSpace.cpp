@@ -245,25 +245,22 @@ void BlendSpaceExample::Serialize(IArchive& ar)
 
 bool SerializeParameterName(string* str, IArchive& ar, const char* name, const char* label)
 {
-	static Serialization::StringList parameters;
-	if (parameters.empty())
+	static std::vector<string> parameterValues;
+	static Serialization::StringList parameterLabels;
+	if (parameterLabels.empty())
 	{
+		parameterValues.reserve(eMotionParamID_COUNT);
+		parameterLabels.reserve(eMotionParamID_COUNT);
 		for (int i = 0; i < eMotionParamID_COUNT; ++i)
 		{
 			SMotionParameterDetails details;
 			gEnv->pCharacterManager->GetMotionParameterDetails(details, EMotionParamID(i));
-			if ((details.flags & details.OBSOLETE) == 0)
-				parameters.push_back(details.name);
+			parameterValues.push_back(details.name);
+			parameterLabels.push_back(details.humanReadableName);
 		}
 	}
-	int index = parameters.find(str->c_str());
-	Serialization::StringListValue value(parameters, index == -1 ? 0 : index);
-
-	if (!ar(value, name, label))
-		return false;
-
-	*str = value.c_str();
-	return true;
+	
+	return ar(Serialization::ListSelector(*str, parameterValues, parameterLabels, parameterValues[0]), name, label);
 }
 
 bool Serialize(IArchive& ar, BlendSpaceAdditionalExtraction& value, const char* name, const char* label)
