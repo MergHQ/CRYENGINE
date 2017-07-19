@@ -4,8 +4,9 @@
 #include "PluginDll.h"
 
 #include "DefaultComponents/AI/PathfindingComponent.h"
-#include "DefaultComponents/Audio/AudioSpotComponent.h"
-#include "DefaultComponents/Audio/AudioAreaComponent.h"
+#include "DefaultComponents/Audio/ParameterComponent.h"
+#include "DefaultComponents/Audio/SwitchComponent.h"
+#include "DefaultComponents/Audio/TriggerComponent.h"
 #include "DefaultComponents/Cameras/CameraComponent.h"
 #include "DefaultComponents/Constraints/LineConstraint.h"
 #include "DefaultComponents/Constraints/PlaneConstraint.h"
@@ -45,8 +46,6 @@
 IEntityRegistrator* IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator* IEntityRegistrator::g_pLast = nullptr;
 
-
-
 CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
 {
 	if (gEnv->pSchematyc != nullptr)
@@ -73,12 +72,16 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope);
 		}
 		{
-			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CEntityAudioSpotComponent));
-			Cry::DefaultComponents::CEntityAudioSpotComponent::Register(componentScope);
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CParameterComponent));
+			Cry::Audio::DefaultComponents::CParameterComponent::Register(componentScope);
 		}
 		{
-			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CEntityAudioAreaComponent));
-			Cry::DefaultComponents::CEntityAudioAreaComponent::Register(componentScope);
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSwitchComponent));
+			Cry::Audio::DefaultComponents::CSwitchComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CTriggerComponent));
+			Cry::Audio::DefaultComponents::CTriggerComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCameraComponent));
