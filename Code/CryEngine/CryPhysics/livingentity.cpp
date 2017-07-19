@@ -1450,7 +1450,7 @@ int CLivingEntity::Step(float time_interval)
 				ent.entType=pentlist[i]->GetType(); 
 				ent.iSimClass=pentlist[i]->m_iSimClass; 
 				ent.pent=pentlist[i]; 
-				ent.nParts=pentlist[i]->m_nParts;
+				ent.nParts=0;
 				ent.ignoreCollisionsWith=pentlist[i]->IgnoreCollisionsWith(this,1);
 				ent.iPartsBegin=nPrecompParts; 
 				ent.iPartsEnd=nPrecompParts+(nUsedPartsCount=pentlist[i]->GetUsedPartsCount(iCaller));
@@ -1466,7 +1466,7 @@ int CLivingEntity::Step(float time_interval)
 					part.partflags=pentlist[i]->m_parts[j].flags; 
 					part.pgeom=pentlist[i]->m_parts[j].pPhysGeomProxy->pGeom; 
 					part.surface_idx=pentlist[i]->m_parts[j].surface_idx;
-					ent.iLastPart=nPrecompParts-1; 
+					ent.nParts+=1-iszero(-j1>>31 & part.partflags & (int)collider_flags);
 				}
 			}
 		
@@ -1684,7 +1684,7 @@ int CLivingEntity::Step(float time_interval)
 					pNRC = pNoResponseContactLE; pNRC->pent = NULL; pNRC->tmin = tmin;
 					for(i=0; i<nents; ++i) {
 						if (pPrecompEnts[i].entType!=PE_LIVING || 
-								pPrecompEnts[i].nParts - iszero((int)(pPrecompParts[pPrecompEnts[i].iLastPart].partflags & collider_flags)) > 1-bHasExtraParts || 
+								pPrecompEnts[i].nParts+bHasExtraParts > 0 || 
 								max(sqr(m_qrot.v.x)+sqr(m_qrot.v.y),sqr(pPrecompEnts[i].pent->m_qrot.v.x)+sqr(pPrecompEnts[i].pent->m_qrot.v.y))>0.001f) 
 						{
 							CPhysicalEntity *const pent=pPrecompEnts[i].pent;
