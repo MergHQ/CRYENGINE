@@ -836,7 +836,6 @@ public:
 	{
 		static const CryGUID& GetGUID()
 		{
-			CRY_ASSERT_MESSAGE(cryiidof<ComponentType>() != cryiidof<IEntityComponent>(), "Component must implement an IID function returning CryGUID!");
 			return cryiidof<ComponentType>();
 		}
 
@@ -892,7 +891,7 @@ public:
 		}
 		else
 		{
-			//return static_cast<ComponentType*>(GetComponentByTypeId(SComponentType<ComponentType>::GetGUID()));
+			return static_cast<ComponentType*>(GetComponentByTypeId(SComponentType<ComponentType>::GetGUID()));
 		}
 
 		return nullptr;
