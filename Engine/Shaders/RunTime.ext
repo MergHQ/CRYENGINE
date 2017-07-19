@@ -1141,6 +1141,7 @@ Property
   Precache = HDRPostProcessPS
   Precache = PostSunShaftsPS
   Precache = PostProcessGamePS
+  Precache = PostAA_PS
   Precache = DeferredPassPS
 	Precache = DeferredPassVS
 	Precache = DeferredLightPassPS

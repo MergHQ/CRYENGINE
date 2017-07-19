@@ -30,6 +30,8 @@ half4 PostAAParams;
 
 ////////////////// samplers /////////////////////
 
+sampler2D colorChartMap : register(s8);
+
 struct vtxOutAA
 {
   OUT_HPOS_IN_WPOS
@@ -928,9 +930,13 @@ pixout PostAAComposites_PS(vtxOut IN)
 		half2 vTexelSize = 2.0h * PS_ScreenSize.zw * vLensOpticsParams.w;
 		cLensOpticsComposite.r = tex2D(_tex5, (IN.baseTC.xy-0.5) * (1 + vTexelSize)+ 0.5).r;
 	#endif
-		OUT.Color.rgb += cLensOpticsComposite * (1-OUT.Color.rgb);// should blend in linear space, but increases cost further
+		float3 cLensOptics = cLensOpticsComposite * (1 - OUT.Color.rgb);// should blend in linear space, but increases cost further
+	#if %_RT_SAMPLE5
+		TexColorChart2D(colorChartMap, cLensOptics.rgb);
+	#endif
+	OUT.Color.rgb += cLensOptics;
 #endif
-
+		
 	// Range rescaling
 #if %_RT_SAMPLE4
 	OUT.Color.xyz = (16.0/255.0) + OUT.Color.xyz * ((235.0 - 16.0) / 255.0);

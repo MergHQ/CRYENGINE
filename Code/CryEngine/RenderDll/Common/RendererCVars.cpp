@@ -473,6 +473,7 @@ int CRendererCVars::CV_r_flares = FLARES_DEFAULT_VAL;
 AllocateConstIntCVar(CRendererCVars, CV_r_flareHqShafts);
 float CRendererCVars::CV_r_FlaresChromaShift;
 int CRendererCVars::CV_r_FlaresIrisShaftMaxPolyNum;
+int CRendererCVars::CV_r_FlaresEnableColorGrading;
 float CRendererCVars::CV_r_FlaresTessellationRatio;
 
 int CRendererCVars::CV_r_envcmresolution;
@@ -2694,6 +2695,11 @@ void CRendererCVars::InitCVars()
 	               "Usage : r_FlaresIrisShaftMaxPolyNum [n]\n"
 	               "Default is 200\n"
 	               "0 Infinite");
+
+	REGISTER_CVAR3("r_FlaresEnableColorGrading", CV_r_FlaresEnableColorGrading, 1, VF_NULL,
+				   "Toggles color grading on lens flares.\n"
+				   "Usage : r_FlaresEnableColorGrading [n]\n"
+				   "Default is 1 (on).");
 
 	REGISTER_CVAR3_CB("r_FlaresTessellationRatio", CV_r_FlaresTessellationRatio, 1, VF_NULL,
 	                  "Set the tessellation rate of flares. 1 is the original mesh.\n"

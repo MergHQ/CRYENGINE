@@ -5,6 +5,7 @@
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "GraphicsPipeline/LensOptics.h"
+#include "ColorGrading.h"
 
 struct PostAAConstants
 {
@@ -267,7 +268,18 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
 	}
 
-	if (m_passComposition.InputChanged(pCurrRT->GetID(), pOutputRT->GetID(), CTexture::s_ptexCurLumTexture->GetID()) || rtMask != prevRTMask)
+	CTexture* pColorChartTex = CTexture::s_ptexBlack;
+	if (CRenderer::CV_r_FlaresEnableColorGrading)
+	{
+		CColorGradingStage* pColorGradingStage = (CColorGradingStage*)pRenderer->GetGraphicsPipeline().GetStage(eStage_ColorGrading);
+		if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
+		{
+			pColorChartTex = pColorChartTexTentative;
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE5];
+		}
+	}
+
+	if (m_passComposition.InputChanged(pCurrRT->GetID(), pOutputRT->GetID(), CTexture::s_ptexCurLumTexture->GetID(), pColorChartTex->GetID()) || rtMask != prevRTMask)
 	{
 		static CCryNameTSCRC techComposition("PostAAComposites");
 		m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -278,6 +290,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		m_passComposition.SetTextureSamplerPair(5, pTexLensOptics, EDefaultSamplerStates::PointClamp);
 		m_passComposition.SetTextureSamplerPair(6, CTexture::s_ptexFilmGrainMap, EDefaultSamplerStates::PointWrap);
 		m_passComposition.SetTextureSamplerPair(7, CTexture::s_ptexCurLumTexture, EDefaultSamplerStates::PointClamp);
+		m_passComposition.SetTextureSamplerPair(8, pColorChartTex, EDefaultSamplerStates::LinearClamp);
 		prevRTMask = rtMask;
 	}
 
