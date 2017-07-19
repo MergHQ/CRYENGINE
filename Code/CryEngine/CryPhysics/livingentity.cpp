@@ -1396,7 +1396,7 @@ int CLivingEntity::Step(float time_interval)
 			nents = m_pWorld->GetEntitiesAround(BBoxOuter0,BBoxOuter1, 
 				pentlist, m_collTypes|ent_independent|ent_triggers|ent_sort_by_mass, this, 0,iCaller);
 
-			if (m_vel.len2()) for(i=0;i<m_nColliders;i++) if (m_pColliders[i]->HasConstraintContactsWith(this,constraint_inactive))
+			if (m_vel.len2()>sqr(0.01f) || m_velRequested.len2()) for(i=0;i<m_nColliders;i++) if (m_pColliders[i]->HasConstraintContactsWith(this,constraint_inactive))
 				m_pColliders[i]->Awake();
 
 			const float fMassInv = m_massinv;
@@ -2151,7 +2151,7 @@ int CLivingEntity::RegisterContacts(float time_interval,int nMaxPlaneContacts)
 			pcontact->ipart[1] = -1;
 		}
 		pcontact->pbody[1] = pcontact->pent[1]->GetRigidBody(pcontact->ipart[1]);
-		pcontact->friction = 0;
+		pcontact->friction = m_velRequested.len2() || m_slopeClimb<=0 ? 0.0f : (1-sqr(m_slopeClimb))/m_slopeClimb;
 		pcontact->pt[0]=pcontact->pt[1] = m_pos;
 		pcontact->n = m_bFlying ? m_qrot*Vec3(0,0,1):m_nslope;
 		//pcontact->K.SetZero();
