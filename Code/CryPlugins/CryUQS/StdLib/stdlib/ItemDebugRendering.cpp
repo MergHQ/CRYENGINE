@@ -28,7 +28,7 @@ namespace UQS
 
 				entityBounds.Move(worldTM.GetTranslation());
 				OBB obb;
-				obb.CreateOBBfromAABB(Matrix33(worldTM), entityBounds);
+				obb.SetOBBfromAABB(Matrix33(worldTM), entityBounds);
 
 				debugRW.AddOBB(obb, Col_Blue);
 
