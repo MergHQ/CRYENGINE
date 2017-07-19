@@ -45,12 +45,6 @@ public:
 
 	static void     ReflectType(Schematyc::CTypeDesc<CTriggerComponent>& desc);
 
-	static CryGUID& IID()
-	{
-		static CryGUID id = "672F0641-004E-4300-B4F7-764B70CC4DA0"_cry_guid;
-		return id;
-	}
-
 	void SetAutoPlay(bool const bEnable);
 	void Play();
 	void Stop();

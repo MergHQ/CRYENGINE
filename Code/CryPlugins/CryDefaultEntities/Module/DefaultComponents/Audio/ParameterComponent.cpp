@@ -25,7 +25,7 @@ void CParameterComponent::Register(Schematyc::CEnvRegistrationScope& componentSc
 //////////////////////////////////////////////////////////////////////////
 void CParameterComponent::ReflectType(Schematyc::CTypeDesc<CParameterComponent>& desc)
 {
-	desc.SetGUID(CParameterComponent::IID());
+	desc.SetGUID("634927FC-AE0E-4B6E-9846-99BF8CBE56E2"_cry_guid);
 	desc.SetEditorCategory("Audio");
 	desc.SetLabel("Parameter");
 	desc.SetDescription("Allows for setting a parameter on all audio audio objects created by the component this component is attached to.");

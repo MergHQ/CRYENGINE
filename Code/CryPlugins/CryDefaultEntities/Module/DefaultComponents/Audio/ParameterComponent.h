@@ -45,12 +45,6 @@ public:
 
 	static void     ReflectType(Schematyc::CTypeDesc<CParameterComponent>& desc);
 
-	static CryGUID& IID()
-	{
-		static CryGUID id = "634927FC-AE0E-4B6E-9846-99BF8CBE56E2"_cry_guid;
-		return id;
-	}
-
 	void Set(SParameterSerializeHelper const& parameter, float const value);
 
 protected:

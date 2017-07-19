@@ -47,12 +47,6 @@ public:
 
 	static void     ReflectType(Schematyc::CTypeDesc<CSwitchComponent>& desc);
 
-	static CryGUID& IID()
-	{
-		static CryGUID id = "EDCC5BA5-F4A7-486A-9BB7-3C2F1D7F9684"_cry_guid;
-		return id;
-	}
-
 	void Set(SSwitchWithStateSerializeHelper const& switchAndState);
 
 protected:
