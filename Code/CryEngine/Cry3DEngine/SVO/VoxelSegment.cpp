@@ -2244,23 +2244,29 @@ void CVoxelSegment::FindTrianglesForVoxelization(int nTID, PodArray<int>*& rpNod
 					SRayHitTriangle ht = arrTris[t];
 
 					// Workaround for over occlusion from vegetation; TODO: make thin geoemtry produce less occlusion
-					if (info.bVegetation && ht.pMat)
+					if (ht.pMat)
 					{
-						float fMidZ = 0;
-						for (int v = 0; v < 3; v++)
-							fMidZ += ht.v[v].z;
-						fMidZ *= 0.333f;
-
 						SShaderItem& rSI = ht.pMat->GetShaderItem();
 
-						if (rSI.m_pShaderResources && rSI.m_pShader)
+						if (rSI.m_pShaderResources && rSI.m_pShader && (rSI.m_pShader->GetShaderType() == eST_Vegetation || info.bVegetation))
 						{
-							bool bVegetationLeaves = (rSI.m_pShaderResources->GetAlphaRef() > 0.05f && rSI.m_pShader->GetShaderType() == eST_Vegetation);
+							bool vegetationLeaves = (rSI.m_pShaderResources->GetAlphaRef() > 0.05f && rSI.m_pShader->GetShaderType() == eST_Vegetation);
 
-							if (bVegetationLeaves)
+							if (vegetationLeaves)
+							{
 								ht.nOpacity = min(ht.nOpacity, uint8(SATURATEB(GetCVars()->e_svoTI_VegetationMaxOpacity * 255.f)));
+							}
 							else
-								ht.nOpacity = min(ht.nOpacity, uint8(SATURATEB(LERP(255.f, GetCVars()->e_svoTI_VegetationMaxOpacity * 255.f, SATURATE(fMidZ * .5f)))));
+							{
+								float midZ = 0;
+								for (int v = 0; v < 3; v++)
+								{
+									midZ += ht.v[v].z;
+								}
+								midZ *= 0.333f;
+
+								ht.nOpacity = min(ht.nOpacity, uint8(SATURATEB(LERP(255.f, GetCVars()->e_svoTI_VegetationMaxOpacity * 255.f, SATURATE(midZ * .5f)))));
+							}
 						}
 					}
 
