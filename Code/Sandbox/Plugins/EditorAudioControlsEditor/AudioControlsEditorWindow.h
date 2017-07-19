@@ -8,9 +8,6 @@
 #include <QFileSystemWatcher>
 #include <QtViewPane.h>
 #include <qobjectdefs.h>
-#include <FileSystem/FileSystem_SubTreeMonitor.h>
-#include <FileSystem/FileSystem_Enumerator.h>
-#include <FileSystem/FileSystem_FileFilter.h>
 
 class QSplitter;
 
@@ -21,6 +18,7 @@ class CAudioAssetsExplorer;
 class CInspectorPanel;
 class CAudioSystemPanel;
 class CAudioControl;
+class CAudioFileMonitor;
 
 class CAudioControlsEditorWindow : public CDockableWindow, public IEditorNotifyListener
 {
@@ -42,7 +40,6 @@ private:
 	void Reload();
 	void Save();
 	void FilterControlType(EItemType type, bool bShow);
-	void Update();
 	void CheckErrorMask();
 
 protected:
@@ -51,18 +48,14 @@ protected:
 
 private:
 	void UpdateAudioSystemData();
-	void StartWatchingFolder(QString const& folderPath);
 
 	CAudioAssetsManager*                                m_pAssetsManager;
 	CAudioAssetsExplorer*                               m_pExplorer;
 	CInspectorPanel*                                    m_pInspectorPanel;
 	CAudioSystemPanel*                                  m_pAudioSystemPanel;
-	FileSystem::SubTreeMonitorPtr                       m_pMonitor;
-	std::vector<FileSystem::CEnumerator::MonitorHandle> m_watchingHandles;
-	FileSystem::SFileFilter                             m_filter;
+	CAudioFileMonitor*                                  m_pMonitor;
 	bool                                                m_allowedTypes[EItemType::eItemType_NumTypes];
 
 	QSplitter* m_pSplitter;
-
 };
 } // namespace ACE
