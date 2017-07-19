@@ -20,7 +20,7 @@
 #include "Controls/QuestionDialog.h"
 
 // File watching
-#include <FileSystem/FileSystem_Snapshot.h>
+#include <CrySystem/File/IFileChangeMonitor.h>
 
 #include <QPushButton>
 #include <QApplication>
@@ -35,30 +35,66 @@
 
 namespace ACE
 {
-class CAudioFileMonitor final : public FileSystem::ISubTreeMonitor
+class CAudioFileMonitor final : public IFileChangeListener
 {
 public:
-	CAudioFileMonitor(CAudioControlsEditorWindow& window)
+	CAudioFileMonitor(CAudioControlsEditorWindow* window)
 		: m_window(window) {}
 
-	virtual void Activated(FileSystem::SnapshotPtr const& initialSnapshot) override {}
-
-	virtual void Update(FileSystem::SSubTreeMonitorUpdate const& update) override
+	~CAudioFileMonitor()
 	{
-		if (!update.root.subDirectoryChanges.empty())
+		GetIEditor()->GetFileMonitor()->UnregisterListener(this);
+	}
+
+	void OnFileChange(const char* filename, EChangeType eType) override
+	{
+		m_window->ReloadMiddlewareData();
+	}
+
+	void Update()
+	{
+		IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
+		if (pAudioSystemImpl != nullptr)
 		{
-			m_window.ReloadMiddlewareData();
+			IImplementationSettings const* const pSettings = pAudioSystemImpl->GetSettings();
+
+			if (pSettings != nullptr)
+			{
+				m_monitorFolders.clear();
+
+				int const gameFolderPathLength = (PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR).GetLength();
+
+				string const& projectPath = pSettings->GetProjectPath();
+				string const& projectPathSubstr = projectPath.substr(gameFolderPathLength);
+				m_monitorFolders.emplace_back(projectPathSubstr.c_str());
+
+				string const& soundBanksPath = pSettings->GetSoundBanksPath();
+				string const& soundBanksPathSubstr = (soundBanksPath).substr(gameFolderPathLength);
+				m_monitorFolders.emplace_back(soundBanksPathSubstr.c_str());
+
+				string const& localizationPath = PathUtil::GetLocalizationFolder();
+				m_monitorFolders.emplace_back(localizationPath.c_str());
+
+				GetIEditor()->GetFileMonitor()->UnregisterListener(this);
+
+				for (auto const folder : m_monitorFolders)
+				{
+					GetIEditor()->GetFileMonitor()->RegisterListener(this, folder);
+				}
+			}
 		}
 	}
 
 private:
-	CAudioControlsEditorWindow& m_window;
+	CAudioControlsEditorWindow* m_window;
+	std::vector<const char*>    m_monitorFolders;
 };
 
 CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 {
 	memset(m_allowedTypes, true, sizeof(m_allowedTypes));
-	m_pMonitor = std::make_shared<CAudioFileMonitor>(*this);
+	m_pMonitor = new CAudioFileMonitor(this);
 
 	setWindowTitle(tr("Audio Controls Editor"));
 	resize(972, 674);
@@ -89,14 +125,16 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		m_pInspectorPanel = new CInspectorPanel(m_pAssetsManager);
 		m_pAudioSystemPanel = new CAudioSystemPanel();
 
-		Update();
 		connect(m_pExplorer, &CAudioAssetsExplorer::SelectedControlChanged, [&]()
 		{
 			m_pInspectorPanel->SetSelectedControls(m_pExplorer->GetSelectedControls());
 		});
 		connect(m_pExplorer, &CAudioAssetsExplorer::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
 		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Reload);
-		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, this, &CAudioControlsEditorWindow::Update);
+		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, [&]()
+		{
+			m_pMonitor->Update();
+		});
 
 		GetIEditor()->RegisterNotifyListener(this);
 
@@ -127,7 +165,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 
 	m_pInspectorPanel->Reload();
 	m_pAudioSystemPanel->Reset();
-	Update();
+	m_pMonitor->Update();
 	CheckErrorMask();
 
 	// -------------- HACK -------------
@@ -159,38 +197,6 @@ CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 	GetIEditor()->UnregisterNotifyListener(this);
 	CAudioControlsEditorPlugin::signalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-}
-
-void CAudioControlsEditorWindow::StartWatchingFolder(QString const& folderPath)
-{
-	// Fix the path so that it is a path relative to the engine folder. The file monitor system expects it that way.
-	QString enginePath = QDir::cleanPath(QtUtil::ToQStringSafe(PathUtil::GetEnginePath()));
-	QString finalPath = QDir::cleanPath(folderPath);
-	if (QDir::isAbsolutePath(finalPath))
-	{
-		int index = finalPath.indexOf(enginePath, 0, Qt::CaseInsensitive);
-		if (index == 0)
-		{
-			finalPath = finalPath.right(finalPath.size() - enginePath.size());
-		}
-		else
-		{
-			return;   // it's a path outside the engine folder
-		}
-	}
-	else
-	{
-		QString absolutePath = enginePath + QDir::separator() + finalPath;
-		QDir path(absolutePath);
-		if (!path.exists())
-		{
-			return;   // it's a relative path that doesn't exist
-		}
-	}
-
-	m_filter.directories.push_back(finalPath);
-	FileSystem::CEnumerator* pEnumerator = GetIEditor()->GetFileSystemEnumerator();
-	m_watchingHandles.push_back(pEnumerator->StartSubTreeMonitor(m_filter, m_pMonitor));
 }
 
 void CAudioControlsEditorWindow::keyPressEvent(QKeyEvent* pEvent)
@@ -285,34 +291,8 @@ void CAudioControlsEditorWindow::Reload()
 
 			m_pInspectorPanel->Reload();
 			m_pAudioSystemPanel->Reset();
-			Update();
+			m_pMonitor->Update();
 			CheckErrorMask();
-		}
-	}
-}
-
-void CAudioControlsEditorWindow::Update()
-{
-	IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
-
-	if (pAudioSystemImpl != nullptr)
-	{
-		IImplementationSettings const* const pSettings = pAudioSystemImpl->GetSettings();
-
-		if (pSettings != nullptr)
-		{
-			FileSystem::CEnumerator* const pEnumerator = GetIEditor()->GetFileSystemEnumerator();
-
-			for (auto const handle : m_watchingHandles)
-			{
-				pEnumerator->StopSubTreeMonitor(handle);
-			}
-
-			m_watchingHandles.clear();
-			m_filter = FileSystem::SFileFilter();
-
-			StartWatchingFolder(QtUtil::ToQString(pSettings->GetProjectPath()));
-			StartWatchingFolder(QtUtil::ToQString(pSettings->GetSoundBanksPath()));
 		}
 	}
 }

@@ -597,13 +597,13 @@ enum EVoxelEditOperation
 
 struct STerrainInfo
 {
-	int   nHeightMapSize_InUnits;
-	int   nUnitSize_InMeters;
-	int   nSectorSize_InMeters;
+	int   heightMapSize_InUnits;
+	float unitSize_InMeters;
+	int   sectorSize_InMeters;
 
-	int   nSectorsTableSize_InSectors;
-	float fHeightmapZRatio;
-	float fOceanWaterLevel;
+	int   sectorsTableSize_InSectors;
+	float heightmapZRatio;
+	float oceanWaterLevel;
 
 	AUTO_STRUCT_INFO;
 };
@@ -729,7 +729,7 @@ struct ITerrain
 	virtual IRenderNode* AddVegetationInstance(int nStaticGroupID, const Vec3& vPos, const float fScale, uint8 ucBright, uint8 angle, uint8 angleX = 0, uint8 angleY = 0, int nSID = DEFAULT_SID) = 0;
 
 	//! Set ocean level.
-	virtual void SetOceanWaterLevel(float fOceanWaterLevel) = 0;
+	virtual void SetOceanWaterLevel(float oceanWaterLevel) = 0;
 
 	//! Call this before any calls to CloneRegion to mark all the render nodes in the
 	//! source region(s) with the flag ERF_CLONE_SOURCE.  This ensures that the clone
@@ -1639,14 +1639,14 @@ struct I3DEngine : public IProcess
 	//! \param x X coordinate of the location.
 	//! \param y Y coordinate of the location.
 	//! \return A float which indicate the elevation level.
-	virtual float GetTerrainZ(int x, int y) = 0;
+	virtual float GetTerrainZ(float x, float y) = 0;
 
 	//! Gets the terrain hole flag for a specified location.
 	//! Only values between 0 and WORLD_SIZE.
 	//! \param x - X coordinate of the location.
 	//! \param y - Y coordinate of the location.
 	//! \return A bool which indicate is there hole or not.
-	virtual bool GetTerrainHole(int x, int y) = 0;
+	virtual bool GetTerrainHole(float x, float y) = 0;
 
 	//! Gets the terrain surface normal for a specified location.
 	//! \param vPos.x - X coordinate of the location.
@@ -1658,7 +1658,7 @@ struct I3DEngine : public IProcess
 	//! Gets the unit size of the terrain.
 	//! The value should currently be 2.
 	//! \return A int value representing the terrain unit size in meters.
-	virtual int GetHeightMapUnitSize() = 0;
+	virtual float GetHeightMapUnitSize() = 0;
 
 	//! Gets the size of the terrain.
 	//! The value should be 2048 by default.

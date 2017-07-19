@@ -416,6 +416,7 @@ public:
 	static float CV_r_ZPrepassMaxDist;
 	static float CV_r_FlaresChromaShift;
 	static int   CV_r_FlaresIrisShaftMaxPolyNum;
+	static int   CV_r_FlaresEnableColorGrading;
 	static float CV_r_FlaresTessellationRatio;
 
 	static float CV_r_msaa_threshold_normal;

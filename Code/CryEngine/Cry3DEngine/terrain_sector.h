@@ -313,8 +313,6 @@ struct STerrainNodeLeafData
 	~STerrainNodeLeafData();
 	float                   m_arrTexGen[MAX_RECURSION_LEVELS][ARR_TEX_OFFSETS_SIZE];
 	int                     m_arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4];
-	PodArray<CTerrainNode*> m_lstNeighbourSectors;
-	PodArray<uint8>         m_lstNeighbourLods;
 	_smart_ptr<IRenderMesh> m_pRenderMesh;
 };
 
@@ -430,18 +428,18 @@ public:
 	void                DrawArray(const SRenderingPassInfo& passInfo);
 
 	void                UpdateRenderMesh(struct CStripsInfo* pArrayInfo, bool bUpdateVertices);
-	void                BuildVertices(int step, bool bSafetyBorder);
-	void                SetVertexSurfaceType(int x, int y, int nStep, CTerrain* pTerrain, const int nSID, SVF_P2S_N4B_C4B_T1F &vert);
-	void                SetVertexNormal(int x, int y, const int iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, const int nSID, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm = nullptr);
-	void                AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const int nSID, const int nStep, const int nTerrainSize);
+	void                BuildVertices(float stepSize, bool bSafetyBorder);
+	void                SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, const int nSID, SVF_P2S_N4B_C4B_T1F &vert);
+	void                SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, const int nSID, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm = nullptr);
+	void                AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const int nSID, const float stepSize, const int nTerrainSize);
 
 	int                 GetMML(int dist, int mmMin, int mmMax);
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
-	void                         AddIndexAliased(int _x, int _y, int _step, int nSectorSize, PodArray<CTerrainNode*>* plstNeighbourSectors, CStripsInfo* pArrayInfo, const SRenderingPassInfo& passInfo);
+	void AddIndexAliased(float x, float y, float stepSize, float fSectorSize, CStripsInfo* pArrayInfo);
 	static void                  GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, int nSID, CUpdateTerrainTempData* pUpdateTerrainTempData = NULL);
-	void                         BuildIndices(CStripsInfo& si, PodArray<CTerrainNode*>* pNeighbourSectors, bool bSafetyBorder, const SRenderingPassInfo& passInfo);
+	void                         BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRenderingPassInfo& passInfo);
 
 	void                         BuildIndices_Wrapper(SRenderingPassInfo passInfo);
 	void                         BuildVertices_Wrapper();

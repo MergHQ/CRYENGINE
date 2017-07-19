@@ -1396,7 +1396,7 @@ int CLivingEntity::Step(float time_interval)
 			nents = m_pWorld->GetEntitiesAround(BBoxOuter0,BBoxOuter1, 
 				pentlist, m_collTypes|ent_independent|ent_triggers|ent_sort_by_mass, this, 0,iCaller);
 
-			if (m_vel.len2()) for(i=0;i<m_nColliders;i++) if (m_pColliders[i]->HasConstraintContactsWith(this,constraint_inactive))
+			if (m_vel.len2()>sqr(0.01f) || m_velRequested.len2()) for(i=0;i<m_nColliders;i++) if (m_pColliders[i]->HasConstraintContactsWith(this,constraint_inactive))
 				m_pColliders[i]->Awake();
 
 			const float fMassInv = m_massinv;
@@ -1450,7 +1450,7 @@ int CLivingEntity::Step(float time_interval)
 				ent.entType=pentlist[i]->GetType(); 
 				ent.iSimClass=pentlist[i]->m_iSimClass; 
 				ent.pent=pentlist[i]; 
-				ent.nParts=pentlist[i]->m_nParts;
+				ent.nParts=0;
 				ent.ignoreCollisionsWith=pentlist[i]->IgnoreCollisionsWith(this,1);
 				ent.iPartsBegin=nPrecompParts; 
 				ent.iPartsEnd=nPrecompParts+(nUsedPartsCount=pentlist[i]->GetUsedPartsCount(iCaller));
@@ -1466,7 +1466,7 @@ int CLivingEntity::Step(float time_interval)
 					part.partflags=pentlist[i]->m_parts[j].flags; 
 					part.pgeom=pentlist[i]->m_parts[j].pPhysGeomProxy->pGeom; 
 					part.surface_idx=pentlist[i]->m_parts[j].surface_idx;
-					ent.iLastPart=nPrecompParts-1; 
+					ent.nParts+=1-iszero(-j1>>31 & part.partflags & (int)collider_flags);
 				}
 			}
 		
@@ -1684,7 +1684,7 @@ int CLivingEntity::Step(float time_interval)
 					pNRC = pNoResponseContactLE; pNRC->pent = NULL; pNRC->tmin = tmin;
 					for(i=0; i<nents; ++i) {
 						if (pPrecompEnts[i].entType!=PE_LIVING || 
-								pPrecompEnts[i].nParts - iszero((int)(pPrecompParts[pPrecompEnts[i].iLastPart].partflags & collider_flags)) > 1-bHasExtraParts || 
+								pPrecompEnts[i].nParts+bHasExtraParts > 0 || 
 								max(sqr(m_qrot.v.x)+sqr(m_qrot.v.y),sqr(pPrecompEnts[i].pent->m_qrot.v.x)+sqr(pPrecompEnts[i].pent->m_qrot.v.y))>0.001f) 
 						{
 							CPhysicalEntity *const pent=pPrecompEnts[i].pent;
@@ -2151,7 +2151,7 @@ int CLivingEntity::RegisterContacts(float time_interval,int nMaxPlaneContacts)
 			pcontact->ipart[1] = -1;
 		}
 		pcontact->pbody[1] = pcontact->pent[1]->GetRigidBody(pcontact->ipart[1]);
-		pcontact->friction = 0;
+		pcontact->friction = m_velRequested.len2() || m_slopeClimb<=0 ? 0.0f : (1-sqr(m_slopeClimb))/m_slopeClimb;
 		pcontact->pt[0]=pcontact->pt[1] = m_pos;
 		pcontact->n = m_bFlying ? m_qrot*Vec3(0,0,1):m_nslope;
 		//pcontact->K.SetZero();

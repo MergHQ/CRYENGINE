@@ -64,7 +64,6 @@ struct CRY_ALIGN(16) le_precomp_entity {
 	int iSimClass;
 	int ignoreCollisionsWith;
 	int iPartsBegin, iPartsEnd;
-	int iLastPart;
 	CPhysicalEntity* pent;
 }; 
 
