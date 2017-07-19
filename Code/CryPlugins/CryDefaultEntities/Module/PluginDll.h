@@ -1,14 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "IDefaultComponentsPlugin.h"
 
-#include <CrySystem/ICryPlugin.h>
-
-class CPlugin_CryDefaultEntities final
-	: public ICryPlugin
-	, public ISystemEventListener
+class CPlugin_CryDefaultEntities final : public IPlugin_CryDefaultEntities
 {
 	CRYINTERFACE_BEGIN()
+	CRYINTERFACE_ADD(IPlugin_CryDefaultEntities)
 	CRYINTERFACE_ADD(ICryPlugin)
 	CRYINTERFACE_END()
 
@@ -31,9 +29,17 @@ public:
 	virtual void OnPluginUpdate(EPluginUpdateType updateType) override {}
 	// ~ICryPlugin
 
+	virtual ICameraManager* GetICameraManager() override
+	{
+		return m_pCameraManager.get();
+	}
+
 	// ISystemEventListener
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
+
+private:
+	std::unique_ptr<ICameraManager> m_pCameraManager;
 };
 
 struct IEntityRegistrator

@@ -35,6 +35,7 @@
 #include "DefaultComponents/Physics/Vehicles/VehicleComponent.h"
 #include "DefaultComponents/Physics/Vehicles/WheelComponent.h"
 #include "DefaultComponents/Utilities/ChildEntityComponent.h"
+#include "DefaultComponents/Cameras/CameraManager.h"
 
 #include <CryEntitySystem/IEntityClass.h>
 
@@ -45,6 +46,8 @@
 
 IEntityRegistrator* IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator* IEntityRegistrator::g_pLast = nullptr;
+
+
 
 CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
 {
@@ -58,6 +61,8 @@ CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
 
 bool CPlugin_CryDefaultEntities::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 {
+	m_pCameraManager = stl::make_unique<CCameraManager>();
+
 	env.pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CCryPluginManager");
 
 	return true;

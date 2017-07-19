@@ -5,8 +5,6 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
-		CCameraComponent* CCameraComponent::s_pActiveCamera = nullptr;
-
 		void CCameraComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		{
 			// Functions
@@ -29,101 +27,6 @@ namespace Cry
 				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'tran', "Transform");
 				componentScope.Register(pFunction);
-			}
-		}
-
-		CCameraComponent::~CCameraComponent()
-		{
-			if (s_pActiveCamera == this)
-			{
-				s_pActiveCamera = nullptr;
-
-				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-				{
-					pDevice->SetAsynCameraCallback(nullptr);
-				}
-			}
-
-			if (m_pAudioListener != nullptr)
-			{
-				gEnv->pEntitySystem->RemoveEntityEventListener(m_pAudioListener->GetId(), ENTITY_EVENT_DONE, this);
-				gEnv->pEntitySystem->RemoveEntity(m_pAudioListener->GetId(), true);
-				m_pAudioListener = nullptr;
-			}
-		}
-
-		void CCameraComponent::Initialize()
-		{
-			if (m_bActivateOnCreate)
-			{
-				Activate();
-			}
-		}
-
-		void CCameraComponent::ProcessEvent(SEntityEvent& event)
-		{
-			if (event.event == ENTITY_EVENT_UPDATE)
-			{
-				const CCamera& systemCamera = gEnv->pSystem->GetViewCamera();
-
-				const float farPlane = gEnv->p3DEngine->GetMaxViewDistance();
-
-				m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), m_fieldOfView.ToRadians(), m_nearPlane, farPlane, systemCamera.GetPixelAspectRatio());
-				m_camera.SetMatrix(GetWorldTransformMatrix());
-
-				gEnv->pSystem->SetViewCamera(m_camera);
-
-				if (m_bAutomaticAudioListenerPosition)
-				{
-					// Make sure we update the audio listener position
-					m_pAudioListener->SetWorldTM(m_camera.GetMatrix());
-				}
-			}
-			else if (event.event == ENTITY_EVENT_START_GAME || event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
-			{
-				if (m_bActivateOnCreate && !IsActive())
-				{
-					Activate();
-				}
-			}
-		}
-
-		uint64 CCameraComponent::GetEventMask() const
-		{
-			uint64 bitFlags = IsActive() ? BIT64(ENTITY_EVENT_UPDATE) : 0;
-			bitFlags |= BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
-
-			return bitFlags;
-		}
-
-		bool CCameraComponent::OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context)
-		{
-			context.outputCameraMatrix = GetWorldTransformMatrix();
-
-			Matrix33 orientation = Matrix33(context.outputCameraMatrix);
-			Vec3 position = context.outputCameraMatrix.GetTranslation();
-
-			context.outputCameraMatrix.AddTranslation(orientation * sensorState.pose.position);
-			context.outputCameraMatrix.SetRotation33(orientation * Matrix33(sensorState.pose.orientation));
-
-			return true;
-		}
-
-		void CCameraComponent::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
-		{
-			switch (event.event)
-			{
-			case ENTITY_EVENT_DONE:
-			{
-				// In case something destroys our listener entity before we had the chance to remove it.
-				if ((m_pAudioListener != nullptr) && (pEntity->GetId() == m_pAudioListener->GetId()))
-				{
-					gEnv->pEntitySystem->RemoveEntityEventListener(m_pAudioListener->GetId(), ENTITY_EVENT_DONE, this);
-					m_pAudioListener = nullptr;
-				}
-
-				break;
-			}
 			}
 		}
 	}
