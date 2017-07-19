@@ -40,33 +40,39 @@ CTerrain::CTerrain(const STerrainInfo& TerrainInfo)
 	m_nBlackTexId = Get3DEngine()->GetBlackTexID();
 
 	// set params
-	m_nUnitSize = TerrainInfo.nUnitSize_InMeters;
-	m_fInvUnitSize = 1.f / TerrainInfo.nUnitSize_InMeters;
-	m_nTerrainSize = TerrainInfo.nHeightMapSize_InUnits * TerrainInfo.nUnitSize_InMeters;
-	m_nSectorSize = TerrainInfo.nSectorSize_InMeters;
+	m_fUnitSize = TerrainInfo.unitSize_InMeters;
+
+	if (m_fUnitSize <= 0 || m_fUnitSize > GetSectorSize())
+	{
+		m_fUnitSize = (float)*((int32*)&TerrainInfo.unitSize_InMeters);
+	}
+
+	m_fInvUnitSize = 1.f / m_fUnitSize;
+	m_nTerrainSize = int(TerrainInfo.heightMapSize_InUnits * m_fUnitSize);
+	m_nSectorSize = TerrainInfo.sectorSize_InMeters;
 #ifndef SEG_WORLD
-	m_nSectorsTableSize = TerrainInfo.nSectorsTableSize_InSectors;
+	m_nSectorsTableSize = TerrainInfo.sectorsTableSize_InSectors;
 #endif
-	m_fHeightmapZRatio = TerrainInfo.fHeightmapZRatio;
-	m_fOceanWaterLevel = TerrainInfo.fOceanWaterLevel;
+	m_fHeightmapZRatio = TerrainInfo.heightmapZRatio;
+	m_fOceanWaterLevel = TerrainInfo.oceanWaterLevel;
 
 	m_nUnitsToSectorBitShift = 0;
-	while (m_nSectorSize >> m_nUnitsToSectorBitShift > m_nUnitSize)
+	float nSecSize = (float)m_nSectorSize;
+	while (nSecSize > m_fUnitSize)
+	{
+		nSecSize /= 2;
 		m_nUnitsToSectorBitShift++;
+	}
 
 	// make flat 0 level heightmap
-	//	m_arrusHightMapData.Allocate(TerrainInfo.nHeightMapSize_InUnits+1);
-	//	m_arrHightMapRangeInfo.Allocate((TerrainInfo.nHeightMapSize_InUnits>>m_nRangeBitShift)+1);
+	//	m_arrusHightMapData.Allocate(TerrainInfo.heightMapSize_InUnits+1);
+	//	m_arrHightMapRangeInfo.Allocate((TerrainInfo.heightMapSize_InUnits>>m_nRangeBitShift)+1);
 
 #ifndef SEG_WORLD
 	assert(m_nSectorsTableSize == m_nTerrainSize / m_nSectorSize);
 #endif
 
-	m_nBitShift = 0;
-	while ((128 >> m_nBitShift) != 128 / CTerrain::GetHeightMapUnitSize())
-		m_nBitShift++;
-
-	m_nTerrainSizeDiv = (m_nTerrainSize >> m_nBitShift) - 1;
+	m_nTerrainSizeDiv = int(m_nTerrainSize * m_fInvUnitSize) - 1;
 
 	m_lstSectors.reserve(512); // based on inspection in MemReplay
 
@@ -169,7 +175,7 @@ void CTerrain::InitHeightfieldPhysics(int nSID)
 	hf.Basis.SetIdentity();
 	hf.origin.zero();
 	hf.step.x = hf.step.y = (float)CTerrain::GetHeightMapUnitSize();
-	hf.size.x = hf.size.y = CTerrain::GetTerrainSize() / CTerrain::GetHeightMapUnitSize();
+	hf.size.x = hf.size.y = int(CTerrain::GetTerrainSize() * CTerrain::GetHeightMapUnitSizeInverted());
 	hf.stride.set(hf.size.y + 1, 1);
 	hf.heightscale = 1.0f;//m_fHeightmapZRatio;
 	hf.typemask = SRangeInfo::e_hole | SRangeInfo::e_undefined;

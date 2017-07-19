@@ -1726,7 +1726,7 @@ void CLevelSystem::OnLoadingComplete(ILevelInfo* pLevelInfo)
 	 */
 
 	// LoadLevel is not called in the editor, hence OnLoadingComplete is not invoked on the ILevelSystemListeners
-	if (gEnv->IsEditor())
+	if (gEnv->IsEditor() && pLevelInfo)
 	{
 		for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
 		{

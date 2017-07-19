@@ -427,9 +427,9 @@ public:
 	virtual void                     GenerateFarTrees(const SRenderingPassInfo& passInfo);
 	virtual float                    GetTerrainElevation(float x, float y, int nSID = GetDefSID());
 	virtual float                    GetTerrainElevation3D(Vec3 vPos);
-	virtual float                    GetTerrainZ(int x, int y);
-	virtual bool                     GetTerrainHole(int x, int y);
-	virtual int                      GetHeightMapUnitSize();
+  virtual float                    GetTerrainZ(float x, float y);
+  virtual bool                     GetTerrainHole(float x, float y);
+  virtual float                    GetHeightMapUnitSize();
 	virtual int                      GetTerrainSize();
 	virtual void                     SetSunDir(const Vec3& newSunOffset);
 	virtual Vec3                     GetSunDir() const;

@@ -1538,19 +1538,19 @@ float C3DEngine::GetTerrainElevation3D(Vec3 vPos)
 	return fZ;
 }
 
-float C3DEngine::GetTerrainZ(int x, int y)
+float C3DEngine::GetTerrainZ(float x, float y)
 {
 	if (x < 0 || y < 0 || x >= CTerrain::GetTerrainSize() || y >= CTerrain::GetTerrainSize())
 		return TERRAIN_BOTTOM_LEVEL;
 	return m_pTerrain ? m_pTerrain->GetZ(x, y, GetDefSID()) : 0;
 }
 
-bool C3DEngine::GetTerrainHole(int x, int y)
+bool C3DEngine::GetTerrainHole(float x, float y)
 {
 	return m_pTerrain ? m_pTerrain->GetHole(x, y, GetDefSID()) : false;
 }
 
-int C3DEngine::GetHeightMapUnitSize()
+float C3DEngine::GetHeightMapUnitSize()
 {
 	return CTerrain::GetHeightMapUnitSize();
 }
@@ -1585,10 +1585,18 @@ void C3DEngine::OnExplosion(Vec3 vPos, float fRadius, bool bDeformTerrain)
 
 	// do not create decals near the terrain holes
 	{
-		for (int x = int(vPos.x - fRadius); x <= int(vPos.x + fRadius) + 1; x += CTerrain::GetHeightMapUnitSize())
-			for (int y = int(vPos.y - fRadius); y <= int(vPos.y + fRadius) + 1; y += CTerrain::GetHeightMapUnitSize())
+		float unitSize = GetHeightMapUnitSize();
+
+		for (float x = vPos.x - fRadius; x <= vPos.x + fRadius + unitSize; x += unitSize)
+		{
+			for (float y = vPos.y - fRadius; y <= vPos.y + fRadius + unitSize; y += unitSize)
+			{
 				if (m_pTerrain->GetHole(x, y, GetDefSID()))
+				{
 					return;
+				}
+			}
+		}
 	}
 
 	// try to remove objects around

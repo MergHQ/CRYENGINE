@@ -1943,7 +1943,7 @@ void CGeometryManager::GetUsedMeshes(DynArray<string>& names)
 		CStatObj* pObj = NULL;
 		if (geom.is_obj)
 			pObj = geom.srcObj;
-		else
+		else if(geom.srcGroupId < (uint32)GetObjManager()->m_lstStaticTypes[0].Count())
 		{
 			pObj = GetStatObj(&geom);
 		}

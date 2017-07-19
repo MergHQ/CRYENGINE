@@ -665,16 +665,22 @@ bool CDecalManager::Spawn(CryEngineDecalInfo DecalInfo, CDecal* pCallerManagedDe
 		{
 			newDecal.m_eDecalType = eDecalType_WS_OnTheGround;
 
-			int nUnitSize = CTerrain::GetHeightMapUnitSize();
-			int x1 = int(DecalInfo.vPos.x - DecalInfo.fSize) / nUnitSize * nUnitSize - nUnitSize;
-			int x2 = int(DecalInfo.vPos.x + DecalInfo.fSize) / nUnitSize * nUnitSize + nUnitSize;
-			int y1 = int(DecalInfo.vPos.y - DecalInfo.fSize) / nUnitSize * nUnitSize - nUnitSize;
-			int y2 = int(DecalInfo.vPos.y + DecalInfo.fSize) / nUnitSize * nUnitSize + nUnitSize;
+			float unitSize = CTerrain::GetHeightMapUnitSize();
+			float x1 = std::floor((DecalInfo.vPos.x - DecalInfo.fSize) / unitSize) * unitSize - unitSize;
+			float x2 = std::floor((DecalInfo.vPos.x + DecalInfo.fSize) / unitSize) * unitSize + unitSize;
+			float y1 = std::floor((DecalInfo.vPos.y - DecalInfo.fSize) / unitSize) * unitSize - unitSize;
+			float y2 = std::floor((DecalInfo.vPos.y + DecalInfo.fSize) / unitSize) * unitSize + unitSize;
 
-			for (int x = x1; x <= x2; x += CTerrain::GetHeightMapUnitSize())
-				for (int y = y1; y <= y2; y += CTerrain::GetHeightMapUnitSize())
+			for (float x = x1; x <= x2; x += CTerrain::GetHeightMapUnitSize())
+			{
+				for (float y = y1; y <= y2; y += CTerrain::GetHeightMapUnitSize())
+				{
 					if (pTerrain->GetHole(x, y, GetDefSID()))
+					{
 						return false;
+					}
+				}
+			}
 		}
 		else
 			newDecal.m_eDecalType = eDecalType_WS_SimpleQuad;

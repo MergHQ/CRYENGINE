@@ -908,17 +908,17 @@ bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
 		XmlNodeRef levelInfo = GetISystem()->LoadXmlFromFile(GetLevelFilePath(LEVEL_INFO_FILE_NAME));
 		XmlNodeRef terrainInfoNode = levelInfo->findChild("TerrainInfo");
 		STerrainInfo terrainInfo;
-		terrainInfoNode->getAttr("UnitSize", terrainInfo.nUnitSize_InMeters);
+		terrainInfoNode->getAttr("UnitSize", terrainInfo.unitSize_InMeters);
 
-		//terrainInfoNode->getAttr("HeightmapSize", terrainInfo.nHeightMapSize_InUnits);
+		//terrainInfoNode->getAttr("HeightmapSize", terrainInfo.heightMapSize_InUnits);
 		int xm, ym;
 		m_pSegmentsManager->GetTerrainSizeInMeters(xm, ym);
-		terrainInfo.nHeightMapSize_InUnits = max(xm, ym) / terrainInfo.nUnitSize_InMeters;
+		terrainInfo.heightMapSize_InUnits = int(std::max(xm, ym) / terrainInfo.unitSize_InMeters);
 
-		terrainInfoNode->getAttr("SectorSize", terrainInfo.nSectorSize_InMeters);
-		terrainInfoNode->getAttr("SectorsTableSize", terrainInfo.nSectorsTableSize_InSectors);
-		terrainInfoNode->getAttr("HeightmapZRatio", terrainInfo.fHeightmapZRatio);
-		terrainInfoNode->getAttr("OceanWaterLevel", terrainInfo.fOceanWaterLevel);
+		terrainInfoNode->getAttr("SectorSize", terrainInfo.sectorSize_InMeters);
+		terrainInfoNode->getAttr("SectorsTableSize", terrainInfo.sectorsTableSize_InSectors);
+		terrainInfoNode->getAttr("HeightmapZRatio", terrainInfo.heightmapZRatio);
+		terrainInfoNode->getAttr("OceanWaterLevel", terrainInfo.oceanWaterLevel);
 
 		if (!m_pTerrain)
 		{

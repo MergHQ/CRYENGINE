@@ -2046,7 +2046,7 @@ void CVoxelSegment::FindTrianglesForVoxelization(int nTID, PodArray<int>*& rpNod
 
 			CTerrain* pTerrain = GetTerrain();
 			int nWorldSize = pTerrain->GetTerrainSize();
-			int S = pTerrain->GetHeightMapUnitSize();
+			int S = (int)max(2.f, pTerrain->GetHeightMapUnitSize());
 
 			if (bThisIsLowLodNode)
 				S *= 4;
