@@ -41,7 +41,6 @@ public:
 	CSpeakerManager();
 	virtual ~CSpeakerManager() override;
 
-
 	void Init();
 	void Shutdown();
 	void Reset();
@@ -72,7 +71,7 @@ private:
 	struct SSpeakInfo
 	{
 		SSpeakInfo() = default;
-		SSpeakInfo(CryAudio::AuxObjectId auxAudioObjectId) : speechAuxObjectId(auxAudioObjectId), voiceAttachmentIndex(-1) {} 
+		SSpeakInfo(CryAudio::AuxObjectId auxAudioObjectId) : speechAuxObjectId(auxAudioObjectId), voiceAttachmentIndex(-1) {}
 
 		CResponseActor*       pActor;
 		IEntity*              pEntity;
@@ -128,9 +127,9 @@ private:
 	DRS::ISpeakerManager::ILipsyncProvider* m_pLipsyncProvider;
 	CDefaultLipsyncProvider*                m_pDefaultLipsyncProvider;
 
-	int                                     m_numActiveSpeaker;
-	CryAudio::ControlId                     m_audioRtpcIdLocal;
-	CryAudio::ControlId                     m_audioRtpcIdGlobal;
+	int                                            m_numActiveSpeaker;
+	CryAudio::ControlId                            m_audioParameterIdLocal;
+	CryAudio::ControlId                            m_audioParameterIdGlobal;
 
 	std::vector<std::pair<CResponseActor*, float>> m_recentlyFinishedSpeakers;
 
@@ -140,7 +139,7 @@ private:
 	int          m_samePrioCancelsLinesCVar;
 	float        m_defaultMaxQueueTime;
 	static float s_defaultPauseAfterLines;
-	ICVar*       m_pDrsDialogDialogRunningEntityRtpcName;
-	ICVar*       m_pDrsDialogDialogRunningGlobalRtpcName;
+	ICVar*       m_pDrsDialogDialogRunningEntityParameterName;
+	ICVar*       m_pDrsDialogDialogRunningGlobalParameterName;
 };
 }  //namespace CryDRS

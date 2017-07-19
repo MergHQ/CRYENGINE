@@ -80,12 +80,6 @@ public:
 	virtual void          AddRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override;
 	virtual void          RemoveRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
 	virtual void          ExternalUpdate() override;
-	virtual bool          GetTriggerId(char const* const szName, ControlId& id) const override;
-	virtual bool          GetParameterId(char const* const szName, ControlId& id) const override;
-	virtual bool          GetSwitchId(char const* const szName, ControlId& id) const override;
-	virtual bool          GetSwitchStateId(ControlId const switchId, char const* const szName, SwitchStateId& id) const override;
-	virtual bool          GetPreloadRequestId(char const* const szName, PreloadRequestId& id) const override;
-	virtual bool          GetEnvironmentId(char const* const szName, EnvironmentId& id) const override;
 	virtual char const*   GetConfigPath() const override;
 	virtual IListener*    CreateListener() override;
 	virtual void          ReleaseListener(IListener* const pIListener) override;

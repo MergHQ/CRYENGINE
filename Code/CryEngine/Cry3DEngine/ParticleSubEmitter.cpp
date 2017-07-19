@@ -619,12 +619,12 @@ void CParticleSubEmitter::UpdateAudio()
 			{
 				if (!params.sStartTrigger.empty())
 				{
-					gEnv->pAudioSystem->GetTriggerId(params.sStartTrigger.c_str(), m_startAudioTriggerId);
+					m_startAudioTriggerId = CryAudio::StringToId_RunTime(params.sStartTrigger.c_str());
 				}
 
 				if (!params.sStopTrigger.empty())
 				{
-					gEnv->pAudioSystem->GetTriggerId(params.sStopTrigger.c_str(), m_stopAudioTriggerId);
+					m_stopAudioTriggerId = CryAudio::StringToId_RunTime(params.sStopTrigger.c_str());
 				}
 
 				if (m_startAudioTriggerId != CryAudio::InvalidControlId || m_stopAudioTriggerId != CryAudio::InvalidControlId)
@@ -635,13 +635,9 @@ void CParticleSubEmitter::UpdateAudio()
 
 					if (!spawnParams.audioRtpc.empty())
 					{
-						gEnv->pAudioSystem->GetParameterId(spawnParams.audioRtpc.c_str(), m_audioParameterId);
-
-						if (m_audioParameterId != CryAudio::InvalidControlId)
-						{
-							float const value = params.fSoundFXParam(m_ChaosKey, GetStrength(0.0f, params.eSoundControlTime));
-							m_pIAudioObject->SetParameter(m_audioParameterId, value);
-						}
+						m_audioParameterId = CryAudio::StringToId_RunTime(spawnParams.audioRtpc.c_str());
+						float const value = params.fSoundFXParam(m_ChaosKey, GetStrength(0.0f, params.eSoundControlTime));
+						m_pIAudioObject->SetParameter(m_audioParameterId, value);
 					}
 
 					// Execute start trigger immediately.

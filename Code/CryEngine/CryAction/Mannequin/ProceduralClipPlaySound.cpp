@@ -234,29 +234,21 @@ public:
 		{
 			if (!params.audioParameter.empty())
 			{
-				gEnv->pAudioSystem->GetParameterId(params.audioParameter.c_str(), m_audioParameterId);
-
-				if (m_audioParameterId != CryAudio::InvalidControlId)
-				{
-					m_audioParameterValue = params.audioParameterValue;
-					m_context->SetAudioParameter(m_audioParameterId, m_audioParameterValue);
-				}
+				m_audioParameterId = CryAudio::StringToId_RunTime(params.audioParameter.c_str());
+				m_audioParameterValue = params.audioParameterValue;
+				m_context->SetAudioParameter(m_audioParameterId, m_audioParameterValue);
 			}
 
 			if (!params.startTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetTriggerId(params.startTrigger.c_str(), m_audioTriggerStartId);
-
-				if (m_audioTriggerStartId != CryAudio::InvalidControlId)
-				{
-					m_audioOcclusionType = params.audioOcclusionType;
-					m_context->ExecuteAudioTrigger(m_audioTriggerStartId, m_audioOcclusionType, playFacial);
-				}
+				m_audioTriggerStartId = CryAudio::StringToId_RunTime(params.startTrigger.c_str());
+				m_audioOcclusionType = params.audioOcclusionType;
+				m_context->ExecuteAudioTrigger(m_audioTriggerStartId, m_audioOcclusionType, playFacial);
 			}
 
 			if (!params.stopTrigger.empty())
 			{
-				gEnv->pAudioSystem->GetTriggerId(params.stopTrigger.c_str(), m_audioTriggerStopId);
+				m_audioTriggerStopId = CryAudio::StringToId_RunTime(params.stopTrigger.c_str());
 			}
 		}
 	}

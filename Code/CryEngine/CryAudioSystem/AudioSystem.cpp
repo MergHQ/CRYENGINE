@@ -22,6 +22,8 @@ void CMainThread::Init(CSystem* const pSystem)
 //////////////////////////////////////////////////////////////////////////
 void CMainThread::ThreadEntry()
 {
+	m_pSystem->m_mainAudioThreadId = CryGetCurrentThreadId();
+
 	while (!m_bQuit)
 	{
 		m_pSystem->InternalUpdate();
@@ -41,8 +43,6 @@ void CMainThread::Activate()
 	{
 		CryFatalError(R"(Error spawning "MainAudioThread" thread.)");
 	}
-
-	m_pSystem->m_mainAudioThreadId = CryGetCurrentThreadId();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -116,8 +116,7 @@ void CSystem::ExternalUpdate()
 		{
 			request.pObject->DecrementSyncCallbackCounter();
 		}
-	}	
-
+	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	DrawAudioDebugData();
@@ -619,57 +618,6 @@ void CSystem::ReloadControlsData(
 }
 
 ///////////////////////////////////////////////////////////////////////////
-bool CSystem::GetTriggerId(char const* const szName, ControlId& id) const
-{
-	// TODO: Create blocking requests that do this or re-evaluate the feasibility of this method!
-	CRY_ASSERT(m_mainAudioThreadId == CryGetCurrentThreadId());
-	return m_atl.GetAudioTriggerId(szName, id);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CSystem::GetParameterId(char const* const szName, ControlId& id) const
-{
-	// TODO: Create blocking requests that do this or re-evaluate the feasibility of this method!
-	CRY_ASSERT(m_mainAudioThreadId == CryGetCurrentThreadId());
-	return m_atl.GetAudioParameterId(szName, id);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CSystem::GetSwitchId(char const* const szName, ControlId& id) const
-{
-	// TODO: Create blocking requests that do this or re-evaluate the feasibility of this method!
-	CRY_ASSERT(m_mainAudioThreadId == CryGetCurrentThreadId());
-	return m_atl.GetAudioSwitchId(szName, id);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CSystem::GetSwitchStateId(
-  ControlId const switchId,
-  char const* const szName,
-  SwitchStateId& id) const
-{
-	// TODO: Create blocking requests that do this or re-evaluate the feasibility of this method!
-	CRY_ASSERT(m_mainAudioThreadId == CryGetCurrentThreadId());
-	return m_atl.GetAudioSwitchStateId(switchId, szName, id);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CSystem::GetPreloadRequestId(char const* const szName, PreloadRequestId& id) const
-{
-	// TODO: Create blocking requests that do this or re-evaluate the feasibility of this method!
-	CRY_ASSERT(m_mainAudioThreadId == CryGetCurrentThreadId());
-	return m_atl.GetAudioPreloadRequestId(szName, id);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CSystem::GetEnvironmentId(char const* const szName, EnvironmentId& id) const
-{
-	// TODO: Create blocking requests that do this or re-evaluate the feasibility of this method!
-	CRY_ASSERT(m_mainAudioThreadId == CryGetCurrentThreadId());
-	return m_atl.GetAudioEnvironmentId(szName, id);
-}
-
-///////////////////////////////////////////////////////////////////////////
 char const* CSystem::GetConfigPath() const
 {
 	return m_configPath.c_str();
@@ -756,15 +704,11 @@ void CSystem::OnLoadLevel(char const* const szLevelName)
 	request2.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request2);
 
-	PreloadRequestId audioPreloadRequestId = InvalidPreloadRequestId;
-
-	if (m_atl.GetAudioPreloadRequestId(szLevelName, audioPreloadRequestId))
-	{
-		SAudioManagerRequestData<EAudioManagerRequestType::PreloadSingleRequest> requestData3(audioPreloadRequestId, true);
-		CAudioRequest request3(&requestData3);
-		request3.flags = ERequestFlags::ExecuteBlocking;
-		PushRequest(request3);
-	}
+	PreloadRequestId const preloadRequestId = CryAudio::StringToId_RunTime(szLevelName);
+	SAudioManagerRequestData<EAudioManagerRequestType::PreloadSingleRequest> requestData3(preloadRequestId, true);
+	CAudioRequest request3(&requestData3);
+	request3.flags = ERequestFlags::ExecuteBlocking;
+	PushRequest(request3);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -823,7 +767,6 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 		{
 			request.status = ERequestStatus::Pending;
 			ProcessRequest(request);
-			bSuccess = true;
 		}
 		else
 		{
@@ -866,6 +809,8 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 				m_mainEvent.Set();
 			}
 		}
+
+		bSuccess = true;
 	}
 
 	return bSuccess;
@@ -889,7 +834,7 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 
 			//if the trigger failed to start or has finished, we (also) send ENTITY_EVENT_AUDIO_TRIGGER_ENDED
 			if (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerFinished
-				|| (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerExecuted && pRequestInfo->requestResult != CryAudio::ERequestResult::Success))
+			    || (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerExecuted && pRequestInfo->requestResult != CryAudio::ERequestResult::Success))
 			{
 				eventData.event = ENTITY_EVENT_AUDIO_TRIGGER_ENDED;
 				pEntity->SendEvent(eventData);

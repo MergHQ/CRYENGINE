@@ -36,8 +36,8 @@ CSpeakerManager::CSpeakerManager() : m_listeners(2)
   CryAudio::ESystemEvents events = CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished | CryAudio::ESystemEvents::FilePlay | CryAudio::ESystemEvents::FileStarted | CryAudio::ESystemEvents::FileStopped;
 	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, events);
 
-	m_audioRtpcIdGlobal = CryAudio::InvalidControlId;
-	m_audioRtpcIdLocal = CryAudio::InvalidControlId;
+	m_audioParameterIdGlobal = CryAudio::InvalidControlId;
+	m_audioParameterIdLocal = CryAudio::InvalidControlId;
 	m_numActiveSpeaker = 0;
 
 	REGISTER_CVAR2("drs_dialogSubtitles", &m_displaySubtitlesCVar, 0, VF_NULL, "Toggles use of subtitles for dialog lines on and off.\n");
@@ -46,8 +46,8 @@ CSpeakerManager::CSpeakerManager() : m_listeners(2)
 	REGISTER_CVAR2("drs_dialogsDefaultMaxQueueTime", &m_defaultMaxQueueTime, 3.0f, VF_NULL, "If a new line is queued (because of a already running line with higher priority) it will wait for this amount of seconds before simply being skipped.");
 	REGISTER_CVAR2("drs_dialogsDefaultPauseAfterLines", &s_defaultPauseAfterLines, 0.2f, VF_NULL, "Artificial pause after a line is done, can be used to make dialog sound a bit more natural.");
 
-	m_pDrsDialogDialogRunningEntityRtpcName = REGISTER_STRING("drs_dialogEntityRtpcName", "", 0, "name of the rtpc on the entity to set to 1 when it is speaking");
-	m_pDrsDialogDialogRunningGlobalRtpcName = REGISTER_STRING("drs_dialogGlobalRtpcName", "", 0, "name of the global rtpc to set to 1 when someone is speaking");
+	m_pDrsDialogDialogRunningEntityParameterName = REGISTER_STRING("drs_dialogEntityRtpcName", "", 0, "name of the rtpc on the entity to set to 1 when it is speaking");
+	m_pDrsDialogDialogRunningGlobalParameterName = REGISTER_STRING("drs_dialogGlobalRtpcName", "", 0, "name of the global rtpc to set to 1 when someone is speaking");
 
 	m_pLipsyncProvider = nullptr;
 	m_pDefaultLipsyncProvider = nullptr;
@@ -57,7 +57,6 @@ CSpeakerManager::CSpeakerManager() : m_listeners(2)
 CSpeakerManager::~CSpeakerManager()
 {
 	Shutdown();
-
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -69,13 +68,13 @@ void CSpeakerManager::Init()
 		m_pLipsyncProvider = m_pDefaultLipsyncProvider;
 	}
 
-	if (m_pDrsDialogDialogRunningEntityRtpcName)
+	if (m_pDrsDialogDialogRunningEntityParameterName)
 	{
-		gEnv->pAudioSystem->GetParameterId(m_pDrsDialogDialogRunningEntityRtpcName->GetString(), m_audioRtpcIdLocal);
+		m_audioParameterIdLocal = CryAudio::StringToId_RunTime(m_pDrsDialogDialogRunningEntityParameterName->GetString());
 	}
-	if (m_pDrsDialogDialogRunningGlobalRtpcName)
+	if (m_pDrsDialogDialogRunningGlobalParameterName)
 	{
-		gEnv->pAudioSystem->GetParameterId(m_pDrsDialogDialogRunningGlobalRtpcName->GetString(), m_audioRtpcIdGlobal);
+		m_audioParameterIdGlobal = CryAudio::StringToId_RunTime(m_pDrsDialogDialogRunningGlobalParameterName->GetString());
 	}
 }
 
@@ -695,9 +694,9 @@ void CSpeakerManager::SetNumActiveSpeaker(int newAmountOfSpeaker)
 		CVariable* pActiveSpeakerVariable = pGlobalVariableCollection->CreateOrGetVariable("ActiveSpeakers");
 		pActiveSpeakerVariable->SetValue(newAmountOfSpeaker);
 
-		if (m_audioRtpcIdGlobal != CryAudio::InvalidControlId)
+		if (m_audioParameterIdGlobal != CryAudio::InvalidControlId)
 		{
-			gEnv->pAudioSystem->SetParameter(m_audioRtpcIdGlobal, static_cast<float>(newAmountOfSpeaker));
+			gEnv->pAudioSystem->SetParameter(m_audioParameterIdGlobal, static_cast<float>(newAmountOfSpeaker));
 		}
 	}
 }
@@ -716,13 +715,13 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 		pSpeakerInfoToUse->text = pSpeakerInfoToUse->pPickedLine->GetText();
 		if (!pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().empty())
 		{
-			gEnv->pAudioSystem->GetTriggerId(pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().c_str(), pSpeakerInfoToUse->startTriggerID);
+			pSpeakerInfoToUse->startTriggerID = CryAudio::StringToId_RunTime(pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().c_str());
 		}
 
 		pSpeakerInfoToUse->standaloneFile = pSpeakerInfoToUse->pPickedLine->GetStandaloneFile();
 		if (!pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().empty())
 		{
-			gEnv->pAudioSystem->GetTriggerId(pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().c_str(), pSpeakerInfoToUse->stopTriggerID);
+			pSpeakerInfoToUse->stopTriggerID = CryAudio::StringToId_RunTime(pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().c_str());
 		}
 	}
 	else
@@ -737,9 +736,9 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 	{
 		IEntityAudioComponent* pEntityAudioProxy = pSpeakerInfoToUse->pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-		if (m_audioRtpcIdLocal != CryAudio::InvalidControlId)
+		if (m_audioParameterIdLocal != CryAudio::InvalidControlId)
 		{
-			pEntityAudioProxy->SetParameter(m_audioRtpcIdLocal, 1.0f, CryAudio::InvalidAuxObjectId);
+			pEntityAudioProxy->SetParameter(m_audioParameterIdLocal, 1.0f, CryAudio::InvalidAuxObjectId);
 		}
 
 		//if the actor does not specify a auxProxyId to use, we are trying to create a default one
@@ -885,15 +884,15 @@ void CSpeakerManager::Shutdown()
 		gEnv->pConsole->UnregisterVariable("drs_dialogAudio", true);
 		gEnv->pConsole->UnregisterVariable("drs_dialogsLinesWithSamePriorityCancel", true);
 
-		if (m_pDrsDialogDialogRunningEntityRtpcName)
+		if (m_pDrsDialogDialogRunningEntityParameterName)
 		{
-			m_pDrsDialogDialogRunningEntityRtpcName->Release();
-			m_pDrsDialogDialogRunningEntityRtpcName = nullptr;
+			m_pDrsDialogDialogRunningEntityParameterName->Release();
+			m_pDrsDialogDialogRunningEntityParameterName = nullptr;
 		}
-		if (m_pDrsDialogDialogRunningGlobalRtpcName)
+		if (m_pDrsDialogDialogRunningGlobalParameterName)
 		{
-			m_pDrsDialogDialogRunningGlobalRtpcName->Release();
-			m_pDrsDialogDialogRunningGlobalRtpcName = nullptr;
+			m_pDrsDialogDialogRunningGlobalParameterName->Release();
+			m_pDrsDialogDialogRunningGlobalParameterName = nullptr;
 		}
 	}
 }

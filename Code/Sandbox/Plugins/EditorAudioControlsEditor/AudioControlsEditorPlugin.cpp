@@ -117,18 +117,14 @@ ACE::IAudioSystemEditor* CAudioControlsEditorPlugin::GetAudioSystemEditorImpl()
 
 void CAudioControlsEditorPlugin::ExecuteTrigger(const string& sTriggerName)
 {
-	if (!sTriggerName.empty() && s_pIAudioObject)
+	if (!sTriggerName.empty() && s_pIAudioObject != nullptr)
 	{
 		StopTriggerExecution();
-		gEnv->pAudioSystem->GetTriggerId(sTriggerName.c_str(), s_audioTriggerId);
-
-		if (s_audioTriggerId != CryAudio::InvalidControlId)
-		{
-			const CCamera& camera = GetIEditor()->GetSystem()->GetViewCamera();
-			const Matrix34& cameraMatrix = camera.GetMatrix();
-			s_pIAudioObject->SetTransformation(cameraMatrix);
-			s_pIAudioObject->ExecuteTrigger(s_audioTriggerId);
-		}
+		const CCamera& camera = GetIEditor()->GetSystem()->GetViewCamera();
+		const Matrix34& cameraMatrix = camera.GetMatrix();
+		s_pIAudioObject->SetTransformation(cameraMatrix);
+		s_audioTriggerId = CryAudio::StringToId_RunTime(sTriggerName.c_str());
+		s_pIAudioObject->ExecuteTrigger(s_audioTriggerId);
 	}
 }
 

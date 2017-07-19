@@ -73,33 +73,33 @@ void CRuntimeAreaManager::FillAudioControls()
 
 			if (pSurfaceTypeNode && _stricmp(pSurfaceTypeNode->getTag(), SXMLTags::sMergedMeshSurfaceTag) == 0)
 			{
-				char const* const sSurfaceName = pSurfaceTypeNode->getAttr(SXMLTags::sNameAttribute);
+				char const* const szSurfaceName = pSurfaceTypeNode->getAttr(SXMLTags::sNameAttribute);
 
-				if ((sSurfaceName != nullptr) && (sSurfaceName[0] != '\0'))
+				if ((szSurfaceName != nullptr) && (szSurfaceName[0] != '\0'))
 				{
-					CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
-					CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
-
 					XmlNodeRef const pAudioNode(pSurfaceTypeNode->findChild(SXMLTags::sAudioTag));
+
 					if (pAudioNode)
 					{
+						CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
+						CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
 						char const* const szTriggerName = pAudioNode->getAttr(SXMLTags::sATLTriggerAttribute);
 
 						if ((szTriggerName != nullptr) && (szTriggerName[0] != '\0'))
 						{
-							gEnv->pAudioSystem->GetTriggerId(szTriggerName, triggerId);
+							triggerId = CryAudio::StringToId_RunTime(szTriggerName);
 						}
 
 						char const* const szParameterName = pAudioNode->getAttr(SXMLTags::sATLRtpcAttribute);
 
 						if ((szParameterName != nullptr) && (szParameterName[0] != '\0'))
 						{
-							gEnv->pAudioSystem->GetParameterId(szParameterName, parameterId);
+							parameterId = CryAudio::StringToId_RunTime(szParameterName);
 						}
 
 						if ((triggerId != CryAudio::InvalidControlId) && (parameterId != CryAudio::InvalidControlId))
 						{
-							CRuntimeAreaObject::m_audioControls[CCrc32::ComputeLowercase(sSurfaceName)] =
+							CRuntimeAreaObject::m_audioControls[CCrc32::ComputeLowercase(szSurfaceName)] =
 							  CRuntimeAreaObject::SAudioControls(triggerId, parameterId);
 						}
 					}

@@ -329,30 +329,22 @@ public:
 
 	void SetRTPC(const char* name, float value)
 	{
-		CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
-		gEnv->pAudioSystem->GetParameterId(name, parameterId);
+		CryAudio::ControlId const parameterId = CryAudio::StringToId_RunTime(name);
 		m_pIAudioObject->SetParameter(parameterId, value);
 	}
 
 	void SetSwitch(const char* name, const char* state)
 	{
-		CryAudio::ControlId switchId = CryAudio::InvalidControlId;
-		CryAudio::SwitchStateId stateId = CryAudio::InvalidSwitchStateId;
-		gEnv->pAudioSystem->GetSwitchId(name, switchId);
-		gEnv->pAudioSystem->GetSwitchStateId(switchId, state, stateId);
+		CryAudio::ControlId const switchId = CryAudio::StringToId_RunTime(name);
+		CryAudio::SwitchStateId const stateId = CryAudio::StringToId_RunTime(state);
 		m_pIAudioObject->SetSwitchState(switchId, stateId);
 	}
 
 	void PlayTrigger(const char* trigger, Vec3 const& pos)
 	{
-		CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
-		gEnv->pAudioSystem->GetTriggerId(trigger, triggerId);
-
-		if (triggerId != CryAudio::InvalidControlId)
-		{
-			m_pIAudioObject->SetTransformation(pos);
-			m_pIAudioObject->ExecuteTrigger(triggerId);
-		}
+		CryAudio::ControlId const triggerId = CryAudio::StringToId_RunTime(trigger);
+		m_pIAudioObject->SetTransformation(pos);
+		m_pIAudioObject->ExecuteTrigger(triggerId);
 	}
 
 private:
@@ -361,7 +353,7 @@ private:
 		string name;
 		string state;
 
-		void   Serialize(Serialization::IArchive& ar)
+		void Serialize(Serialization::IArchive& ar)
 		{
 			ar(Serialization::AudioSwitch(name), "name", "^");
 			ar(Serialization::AudioSwitchState(state), "state", "^");

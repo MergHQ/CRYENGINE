@@ -1029,21 +1029,16 @@ void CDialogScriptView::PlayLine(int index)
 {
 	StopSound();
 
-	if (m_pScript)
+	if (m_pScript != nullptr && m_pIAudioObject != nullptr)
 	{
 		CXTPReportRecords* pRecords = GetRecords();
 		CDialogScriptRecord* pRecord = static_cast<CDialogScriptRecord*>(pRecords->GetAt(index));
 		const CEditorDialogScript::SScriptLine* pLine = pRecord->GetLine();
-
-		CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
-		gEnv->pAudioSystem->GetTriggerId(pLine->m_audioTriggerName, triggerId);
-		if (triggerId != CryAudio::InvalidControlId && m_pIAudioObject != nullptr)
-		{
-			const CCamera& camera = GetIEditor()->GetSystem()->GetViewCamera();
-			m_pIAudioObject->SetTransformation(camera.GetMatrix());
-			m_pIAudioObject->ExecuteTrigger(triggerId);
-			ms_currentPlayLine = triggerId;
-		}
+		const CCamera& camera = GetIEditor()->GetSystem()->GetViewCamera();
+		m_pIAudioObject->SetTransformation(camera.GetMatrix());
+		CryAudio::ControlId const triggerId = CryAudio::StringToId_RunTime(pLine->m_audioTriggerName.c_str());
+		m_pIAudioObject->ExecuteTrigger(triggerId);
+		ms_currentPlayLine = triggerId;
 	}
 }
 

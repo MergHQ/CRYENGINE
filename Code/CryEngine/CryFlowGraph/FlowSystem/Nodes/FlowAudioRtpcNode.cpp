@@ -114,7 +114,7 @@ private:
 
 		if (!parameterName.empty())
 		{
-			gEnv->pAudioSystem->GetParameterId(parameterName.c_str(), m_parameterId);
+			m_parameterId = CryAudio::StringToId_RunTime(parameterName.c_str());
 		}
 	}
 

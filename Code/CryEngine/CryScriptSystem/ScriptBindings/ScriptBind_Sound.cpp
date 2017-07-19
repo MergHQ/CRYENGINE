@@ -28,16 +28,8 @@ int CScriptBind_Sound::GetAudioTriggerID(IFunctionHandler* pH, char const* const
 {
 	if ((szName != nullptr) && (szName[0] != '\0'))
 	{
-		CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
-		if (gEnv->pAudioSystem->GetTriggerId(szName, triggerId))
-		{
-			// ID retrieved successfully
-			return pH->EndFunction(IntToHandle(triggerId));
-		}
-		else
-		{
-			return pH->EndFunction();
-		}
+		CryAudio::ControlId const triggerId = CryAudio::StringToId_RunTime(szName);
+		return pH->EndFunction(IntToHandle(triggerId));
 	}
 
 	return pH->EndFunction();
@@ -48,16 +40,8 @@ int CScriptBind_Sound::GetAudioSwitchID(IFunctionHandler* pH, char const* const 
 {
 	if ((szName != nullptr) && (szName[0] != '\0'))
 	{
-		CryAudio::ControlId switchId = CryAudio::InvalidControlId;
-		if (gEnv->pAudioSystem->GetSwitchId(szName, switchId))
-		{
-			// ID retrieved successfully
-			return pH->EndFunction(IntToHandle(switchId));
-		}
-		else
-		{
-			return pH->EndFunction();
-		}
+		CryAudio::ControlId const switchId = CryAudio::StringToId_RunTime(szName);
+		return pH->EndFunction(IntToHandle(switchId));
 	}
 
 	return pH->EndFunction();
@@ -68,17 +52,8 @@ int CScriptBind_Sound::GetAudioSwitchStateID(IFunctionHandler* pH, ScriptHandle 
 {
 	if ((szName != nullptr) && (szName[0] != '\0'))
 	{
-		CryAudio::SwitchStateId switchStateId = CryAudio::InvalidSwitchStateId;
-		CryAudio::ControlId switchId = HandleToInt<CryAudio::ControlId>(hSwitchID);
-		if (gEnv->pAudioSystem->GetSwitchStateId(switchId, szName, switchStateId))
-		{
-			// ID retrieved successfully
-			return pH->EndFunction(IntToHandle(switchStateId));
-		}
-		else
-		{
-			return pH->EndFunction();
-		}
+		CryAudio::SwitchStateId const switchStateId = CryAudio::StringToId_RunTime(szName);
+		return pH->EndFunction(IntToHandle(switchStateId));
 	}
 
 	return pH->EndFunction();
@@ -89,16 +64,8 @@ int CScriptBind_Sound::GetAudioRtpcID(IFunctionHandler* pH, char const* const sz
 {
 	if ((szName != nullptr) && (szName[0] != '\0'))
 	{
-		CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
-		if (gEnv->pAudioSystem->GetParameterId(szName, parameterId))
-		{
-			// ID retrieved successfully
-			return pH->EndFunction(IntToHandle(parameterId));
-		}
-		else
-		{
-			return pH->EndFunction();
-		}
+		CryAudio::ControlId const parameterId = CryAudio::StringToId_RunTime(szName);
+		return pH->EndFunction(IntToHandle(parameterId));
 	}
 
 	return pH->EndFunction();
@@ -109,16 +76,8 @@ int CScriptBind_Sound::GetAudioEnvironmentID(IFunctionHandler* pH, char const* c
 {
 	if ((szName != nullptr) && (szName[0] != '\0'))
 	{
-		CryAudio::EnvironmentId environmentId = CryAudio::InvalidEnvironmentId;
-		if (gEnv->pAudioSystem->GetEnvironmentId(szName, environmentId))
-		{
-			// ID retrieved successfully
-			return pH->EndFunction(IntToHandle(environmentId));
-		}
-		else
-		{
-			return pH->EndFunction();
-		}
+		CryAudio::EnvironmentId const environmentId = CryAudio::StringToId_RunTime(szName);
+		return pH->EndFunction(IntToHandle(environmentId));
 	}
 
 	return pH->EndFunction();

@@ -7,92 +7,28 @@
 
 namespace MaterialEffectsUtils
 {
-struct SAudio1pOr3pSwitch
-{
-	static const SAudio1pOr3pSwitch& Instance()
-	{
-		static SAudio1pOr3pSwitch theInstance;
-		return theInstance;
-	}
-
-	CryAudio::ControlId GetSwitchId() const
-	{
-		return m_switchID;
-	}
-
-	CryAudio::SwitchStateId Get1pStateId() const
-	{
-		return m_1pStateID;
-	}
-
-	CryAudio::SwitchStateId Get3pStateId() const
-	{
-		return m_3pStateID;
-	}
-
-	bool IsValid() const
-	{
-		return m_isValid;
-	}
-
-private:
-
-	SAudio1pOr3pSwitch()
-		: m_switchID(CryAudio::InvalidControlId)
-		, m_1pStateID(CryAudio::InvalidSwitchStateId)
-		, m_3pStateID(CryAudio::InvalidSwitchStateId)
-		, m_isValid(false)
-	{
-		Initialize();
-	}
-
-	void Initialize()
-	{
-		gEnv->pAudioSystem->GetSwitchId("1stOr3rdP", m_switchID);
-		gEnv->pAudioSystem->GetSwitchStateId(m_switchID, "1stP", m_1pStateID);
-		gEnv->pAudioSystem->GetSwitchStateId(m_switchID, "3rdP", m_3pStateID);
-
-		m_isValid = (m_switchID != CryAudio::InvalidControlId) &&
-		            (m_1pStateID != CryAudio::InvalidSwitchStateId) && (m_3pStateID != CryAudio::InvalidSwitchStateId);
-	}
-
-	CryAudio::ControlId     m_switchID;
-	CryAudio::SwitchStateId m_1pStateID;
-	CryAudio::SwitchStateId m_3pStateID;
-
-	bool                    m_isValid;
-};
+	static constexpr CryAudio::ControlId switchId = CryAudio::StringToId_CompileTime("1stOr3rdP");
+	static constexpr CryAudio::SwitchStateId fpStateId = CryAudio::StringToId_CompileTime("1stP");
+	static constexpr CryAudio::SwitchStateId tpStateId = CryAudio::StringToId_CompileTime("3rdP");
 
 template<typename AudioObjectType>
 void PrepareForAudioTriggerExecution(AudioObjectType* pIAudioObject, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
 {
-	const MaterialEffectsUtils::SAudio1pOr3pSwitch& audio1pOr3pSwitch = MaterialEffectsUtils::SAudio1pOr3pSwitch::Instance();
+	pIAudioObject->SetSwitchState(switchId,	runtimeParams.playSoundFP ? fpStateId : tpStateId);
 
-	if (audio1pOr3pSwitch.IsValid())
+	for (auto const& switchWrapper : audioParams.triggerSwitches)
 	{
-		pIAudioObject->SetSwitchState(
-		  audio1pOr3pSwitch.GetSwitchId(),
-		  runtimeParams.playSoundFP ? audio1pOr3pSwitch.Get1pStateId() : audio1pOr3pSwitch.Get3pStateId());
-	}
-
-	for (SMFXAudioEffectParams::TSwitches::const_iterator it = audioParams.triggerSwitches.begin(), itEnd = audioParams.triggerSwitches.end(); it != itEnd; ++it)
-	{
-		const SAudioSwitchWrapper& switchWrapper = *it;
 		pIAudioObject->SetSwitchState(switchWrapper.GetSwitchId(), switchWrapper.GetSwitchStateId());
 	}
 
-	for (int i = 0; i < runtimeParams.numAudioRtpcs; ++i)
+	for (uint32 i = 0; i < runtimeParams.numAudioRtpcs; ++i)
 	{
-		const char* szParameterName = runtimeParams.audioRtpcs[i].rtpcName;
+		char const* const szParameterName = runtimeParams.audioRtpcs[i].rtpcName;
 
 		if (szParameterName != nullptr && szParameterName[0] != '\0')
 		{
-			CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
-
-			if (gEnv->pAudioSystem->GetParameterId(szParameterName, parameterId))
-			{
-				pIAudioObject->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue);
-			}
+			CryAudio::ControlId const parameterId = CryAudio::StringToId_RunTime(szParameterName);
+			pIAudioObject->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue);
 		}
 	}
 }
@@ -103,8 +39,7 @@ void PrepareForAudioTriggerExecution(AudioObjectType* pIAudioObject, const SMFXA
 void SAudioTriggerWrapper::Init(const char* triggerName)
 {
 	CRY_ASSERT(triggerName != nullptr);
-
-	gEnv->pAudioSystem->GetTriggerId(triggerName, m_triggerID);
+	m_triggerID = CryAudio::StringToId_RunTime(triggerName);
 
 #if defined(MATERIAL_EFFECTS_DEBUG)
 	m_triggerName = triggerName;
@@ -115,9 +50,8 @@ void SAudioSwitchWrapper::Init(const char* switchName, const char* switchStateNa
 {
 	CRY_ASSERT(switchName != nullptr);
 	CRY_ASSERT(switchStateName != nullptr);
-
-	gEnv->pAudioSystem->GetSwitchId(switchName, m_switchID);
-	gEnv->pAudioSystem->GetSwitchStateId(m_switchID, switchStateName, m_switchStateID);
+	m_switchID = CryAudio::StringToId_RunTime(switchName);
+	m_switchStateID = CryAudio::StringToId_RunTime(switchStateName);
 
 #if defined(MATERIAL_EFFECTS_DEBUG)
 	m_switchName = switchName;

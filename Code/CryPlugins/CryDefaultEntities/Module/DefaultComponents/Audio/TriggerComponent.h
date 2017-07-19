@@ -92,7 +92,7 @@ void STriggerSerializeHelper::Serialize(Serialization::IArchive& archive)
 
 	if (archive.isInput())
 	{
-		gEnv->pAudioSystem->GetTriggerId(m_name.c_str(), m_id);
+		m_id = CryAudio::StringToId_RunTime(m_name.c_str());
 	}
 }
 } // namespace DefaultComponents
