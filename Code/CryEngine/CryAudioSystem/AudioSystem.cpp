@@ -22,8 +22,6 @@ void CMainThread::Init(CSystem* const pSystem)
 //////////////////////////////////////////////////////////////////////////
 void CMainThread::ThreadEntry()
 {
-	m_pSystem->m_mainAudioThreadId = CryGetCurrentThreadId();
-
 	while (!m_bQuit)
 	{
 		m_pSystem->InternalUpdate();
