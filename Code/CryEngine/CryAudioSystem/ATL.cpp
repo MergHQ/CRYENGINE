@@ -212,116 +212,6 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-bool CAudioTranslationLayer::GetAudioTriggerId(char const* const szAudioTriggerName, ControlId& audioTriggerId) const
-{
-	ControlId const tempAudioTriggerId = static_cast<ControlId const>(StringToId(szAudioTriggerName));
-
-	if (stl::find_in_map(m_triggers, tempAudioTriggerId, nullptr) != nullptr)
-	{
-		audioTriggerId = tempAudioTriggerId;
-	}
-	else
-	{
-		audioTriggerId = InvalidControlId;
-	}
-
-	return (audioTriggerId != InvalidControlId);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CAudioTranslationLayer::GetAudioParameterId(char const* const szAudioParameterName, ControlId& audioParameterId) const
-{
-	ControlId const parameterId = static_cast<ControlId const>(StringToId(szAudioParameterName));
-
-	if (stl::find_in_map(m_parameters, parameterId, nullptr) != nullptr)
-	{
-		audioParameterId = parameterId;
-	}
-	else
-	{
-		audioParameterId = InvalidControlId;
-	}
-
-	return (audioParameterId != InvalidControlId);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CAudioTranslationLayer::GetAudioSwitchId(char const* const szAudioSwitchName, ControlId& audioSwitchId) const
-{
-	ControlId const switchId = static_cast<ControlId const>(StringToId(szAudioSwitchName));
-
-	if (stl::find_in_map(m_switches, switchId, nullptr) != nullptr)
-	{
-		audioSwitchId = switchId;
-	}
-	else
-	{
-		audioSwitchId = InvalidControlId;
-	}
-
-	return (audioSwitchId != InvalidControlId);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CAudioTranslationLayer::GetAudioSwitchStateId(
-  ControlId const switchId,
-  char const* const szAudioSwitchStateName,
-  SwitchStateId& audioSwitchStateId) const
-{
-	audioSwitchStateId = InvalidControlId;
-
-	CATLSwitch const* const pSwitch = stl::find_in_map(m_switches, switchId, nullptr);
-
-	if (pSwitch != nullptr)
-	{
-		SwitchStateId const nStateID = static_cast<SwitchStateId const>(StringToId(szAudioSwitchStateName));
-
-		CATLSwitchState const* const pState = stl::find_in_map(pSwitch->audioSwitchStates, nStateID, nullptr);
-
-		if (pState != nullptr)
-		{
-			audioSwitchStateId = nStateID;
-		}
-	}
-
-	return (audioSwitchStateId != InvalidControlId);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CAudioTranslationLayer::GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, PreloadRequestId& audioPreloadRequestId) const
-{
-	PreloadRequestId const nAudioPreloadRequestID = static_cast<PreloadRequestId const>(StringToId(szAudioPreloadRequestName));
-
-	if (stl::find_in_map(m_preloadRequests, nAudioPreloadRequestID, nullptr) != nullptr)
-	{
-		audioPreloadRequestId = nAudioPreloadRequestID;
-	}
-	else
-	{
-		audioPreloadRequestId = InvalidPreloadRequestId;
-	}
-
-	return (audioPreloadRequestId != InvalidPreloadRequestId);
-}
-
-///////////////////////////////////////////////////////////////////////////
-bool CAudioTranslationLayer::GetAudioEnvironmentId(char const* const szAudioEnvironmentName, EnvironmentId& audioEnvironmentId) const
-{
-	EnvironmentId const environmentId = static_cast<ControlId const>(StringToId(szAudioEnvironmentName));
-
-	if (stl::find_in_map(m_environments, environmentId, nullptr) != nullptr)
-	{
-		audioEnvironmentId = environmentId;
-	}
-	else
-	{
-		audioEnvironmentId = InvalidControlId;
-	}
-
-	return (audioEnvironmentId != InvalidControlId);
-}
-
-///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioTranslationLayer::ParseControlsData(char const* const szFolderPath, EDataScope const dataScope)
 {
 	m_xmlProcessor.ParseControlsData(szFolderPath, dataScope);
@@ -1469,13 +1359,9 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 		result = ParsePreloadsData(configPath.c_str(), EDataScope::LevelSpecific);
 		CRY_ASSERT(result == ERequestStatus::Success);
 
-		PreloadRequestId audioPreloadRequestId = InvalidPreloadRequestId;
-
-		if (GetAudioPreloadRequestId(szLevelName, audioPreloadRequestId))
-		{
-			result = m_fileCacheMgr.TryLoadRequest(audioPreloadRequestId, true, true);
-			CRY_ASSERT(result == ERequestStatus::Success);
-		}
+		PreloadRequestId const preloadRequestId = StringToId_RunTime(szLevelName);
+		result = m_fileCacheMgr.TryLoadRequest(preloadRequestId, true, true);
+		CRY_ASSERT(result == ERequestStatus::Success);
 	}
 
 	g_logger.Log(ELogType::Warning, "Done refreshing the AudioSystem!");

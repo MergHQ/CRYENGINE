@@ -3,7 +3,6 @@
 #pragma once
 
 #include <CryAudio/IAudioInterfacesCommonData.h>
-#include <CryCore/CryCrc32.h>
 
 /**
  * @namespace CryAudio
@@ -20,16 +19,6 @@ enum class EEventState : EnumFlagsType
 	Unloading,
 	Virtual,
 };
-
-/**
-* A utility function to convert a string value to an Id.
-* @param szSource - string to convert
-* @return a 32bit CRC computed on the lower case version of the passed string
-*/
-inline uint32 StringToId(char const* const szSource)
-{
-	return CCrc32::ComputeLowercase(szSource);
-}
 
 /**
  * @namespace CryAudio::Impl

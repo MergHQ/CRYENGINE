@@ -475,26 +475,21 @@ bool CProjectile::Init(IGameObject* pGameObject)
 
 	pEntity->SetFlags(flags | ENTITY_FLAG_NO_SAVE);
 
-	CryAudio::IAudioSystem const* const pIAudioSystem = gEnv->pAudioSystem;
-
-	if (pIAudioSystem != nullptr)
+	if (m_pAmmoParams->pRicochet)
 	{
-		if (m_pAmmoParams->pRicochet)
+		const string& ricochetTriggerName = m_pAmmoParams->pRicochet->audioTriggerName;
+		if (!ricochetTriggerName.empty())
 		{
-			const string& ricochetTriggerName = m_pAmmoParams->pRicochet->audioTriggerName;
-			if (!ricochetTriggerName.empty())
-			{
-				pIAudioSystem->GetTriggerId(ricochetTriggerName.c_str(), m_ricochetTriggerID);
-			}
+			m_ricochetTriggerID = CryAudio::StringToId_RunTime(ricochetTriggerName.c_str());
 		}
+	}
 
-		if (m_pAmmoParams->pWhiz)
+	if (m_pAmmoParams->pWhiz)
+	{
+		const string& whizTriggerName = m_pAmmoParams->pWhiz->audioTriggerName;
+		if (!whizTriggerName.empty())
 		{
-			const string& whizTriggerName = m_pAmmoParams->pWhiz->audioTriggerName;
-			if (!whizTriggerName.empty())
-			{
-				pIAudioSystem->GetTriggerId(whizTriggerName.c_str(), m_whizTriggerID);
-			}
+			m_whizTriggerID = CryAudio::StringToId_RunTime(whizTriggerName.c_str());
 		}
 	}
 

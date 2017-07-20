@@ -98,7 +98,6 @@ struct DimensionParams
 	uint8  m_nInitialized;
 	uint8  m_nDimensionFlags;
 	uint8  m_ParaID;
-	string m_strJointName;
 	f32    m_skey, m_ekey;
 	f32    m_ParaScale;        //for combined blend-spaces
 	int    m_ChooseBlendSpace; //for combined blend-spaces

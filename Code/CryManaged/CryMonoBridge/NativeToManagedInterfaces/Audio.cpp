@@ -54,19 +54,13 @@ static void StopTrigger(uint triggerId, bool bExecuteSync)
 static uint GetAudioTriggerId(MonoInternals::MonoString* pAudioTriggerName)
 {
 	std::shared_ptr<CMonoString> pAudioTriggerNameObject = CMonoDomain::CreateString(pAudioTriggerName);
-
-	CryAudio::ControlId triggerId = CryAudio::InvalidControlId;
-	gEnv->pAudioSystem->GetTriggerId(pAudioTriggerNameObject->GetString(), triggerId);
-	return triggerId;
+	return CryAudio::StringToId_RunTime(pAudioTriggerNameObject->GetString());
 }
 
 static uint GetAudioParameterId(MonoInternals::MonoString* pAudioParameterName)
 {
 	std::shared_ptr<CMonoString> pAudioParameterNameObject = CMonoDomain::CreateString(pAudioParameterName);
-
-	CryAudio::ControlId parameterId = CryAudio::InvalidControlId;
-	gEnv->pAudioSystem->GetParameterId(pAudioParameterNameObject->GetString(), parameterId);
-	return parameterId;
+	return CryAudio::StringToId_RunTime(pAudioParameterNameObject->GetString());
 }
 
 static void SetAudioParameter(uint parameterId, float parameterValue)
@@ -77,19 +71,13 @@ static void SetAudioParameter(uint parameterId, float parameterValue)
 static uint GetAudioSwitchId(MonoInternals::MonoString* pAudioSwitchName)
 {
 	std::shared_ptr<CMonoString> pAudioSwitchNameObject = CMonoDomain::CreateString(pAudioSwitchName);
-
-	CryAudio::ControlId switchId = CryAudio::InvalidControlId;
-	gEnv->pAudioSystem->GetSwitchId(pAudioSwitchNameObject->GetString(), switchId);
-	return switchId;
+	return CryAudio::StringToId_RunTime(pAudioSwitchNameObject->GetString());
 }
 
 static uint GetAudioSwitchStateId(uint audioSwitchId, MonoInternals::MonoString* pAudioSwitchStateName)
 {
 	std::shared_ptr<CMonoString> pAudioSwitchStateNameObject = CMonoDomain::CreateString(pAudioSwitchStateName);
-
-	CryAudio::SwitchStateId switchStateId = CryAudio::InvalidSwitchStateId;
-	gEnv->pAudioSystem->GetSwitchStateId(audioSwitchId, pAudioSwitchStateNameObject->GetString(), switchStateId);
-	return switchStateId;
+	return CryAudio::StringToId_RunTime(pAudioSwitchStateNameObject->GetString());
 }
 
 static void SetAudioSwitchState(uint audioSwitchId, uint switchStateId)

@@ -336,22 +336,12 @@ void CCVars::UnregisterVariables()
 //////////////////////////////////////////////////////////////////////////
 void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
-	ControlId triggerId = InvalidControlId;
-
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
-		gEnv->pAudioSystem->GetTriggerId(pCmdArgs->GetArg(1), triggerId);
-
-		if (triggerId == InvalidControlId)
-		{
-			g_logger.Log(ELogType::Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
-		}
-		else
-		{
-			gEnv->pAudioSystem->ExecuteTrigger(triggerId);
-		}
+		ControlId const triggerId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->ExecuteTrigger(triggerId);
 	}
 	else
 	{
@@ -362,22 +352,12 @@ void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 {
-	ControlId triggerId = InvalidControlId;
-
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
-		gEnv->pAudioSystem->GetTriggerId(pCmdArgs->GetArg(1), triggerId);
-
-		if (triggerId == InvalidControlId)
-		{
-			g_logger.Log(ELogType::Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
-		}
-		else
-		{
-			gEnv->pAudioSystem->StopTrigger(triggerId);
-		}
+		ControlId const triggerId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->StopTrigger(triggerId);
 	}
 	else
 	{
@@ -388,24 +368,13 @@ void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 {
-	ControlId parameterId = InvalidControlId;
-
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 3) || (numArgs == 4))
 	{
-		gEnv->pAudioSystem->GetParameterId(pCmdArgs->GetArg(1), parameterId);
-
+		ControlId const parameterId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
-
-		if (parameterId == InvalidControlId)
-		{
-			g_logger.Log(ELogType::Error, "Unknown parameter name: %s", pCmdArgs->GetArg(1));
-		}
-		else
-		{
-			gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
-		}
+		gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
 	}
 	else
 	{
@@ -416,32 +385,13 @@ void CCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 {
-	ControlId switchId = InvalidControlId;
-	SwitchStateId switchStateId = InvalidSwitchStateId;
-
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 3) || (numArgs == 4))
 	{
-		gEnv->pAudioSystem->GetSwitchId(pCmdArgs->GetArg(1), switchId);
-
-		if (switchId != InvalidControlId)
-		{
-			gEnv->pAudioSystem->GetSwitchStateId(switchId, pCmdArgs->GetArg(2), switchStateId);
-
-			if (switchStateId != InvalidSwitchStateId)
-			{
-				gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
-			}
-			else
-			{
-				g_logger.Log(ELogType::Error, "Invalid  Switch State name: %s", pCmdArgs->GetArg(2));
-			}
-		}
-		else
-		{
-			g_logger.Log(ELogType::Error, "Unknown Switch name: %s", pCmdArgs->GetArg(1));
-		}
+		ControlId const switchId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
+		SwitchStateId const switchStateId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(2));
+		gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
 	}
 	else
 	{

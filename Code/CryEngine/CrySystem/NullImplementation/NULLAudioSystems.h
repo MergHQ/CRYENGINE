@@ -16,19 +16,19 @@ public:
 	CObject() = default;
 	virtual ~CObject() override = default;
 
-	virtual void ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                             {}
-	virtual void StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                             {}
-	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                        {}
-	virtual void SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                          {}
-	virtual void SetSwitchState(ControlId const audioSwitchId, SwitchStateId const audioSwitchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override {}
-	virtual void SetEnvironment(EnvironmentId const audioEnvironmentId, float const amount, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override            {}
-	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                             {}
-	virtual void ResetEnvironments(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                     {}
-	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                  {}
-	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                           {}
-	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                    {}
-	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                     {}
-	virtual EntityId GetEntityId() const override { return INVALID_ENTITYID; }
+	virtual void     ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                             {}
+	virtual void     StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                             {}
+	virtual void     SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                        {}
+	virtual void     SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                          {}
+	virtual void     SetSwitchState(ControlId const audioSwitchId, SwitchStateId const audioSwitchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override {}
+	virtual void     SetEnvironment(EnvironmentId const audioEnvironmentId, float const amount, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override            {}
+	virtual void     SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                             {}
+	virtual void     ResetEnvironments(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                     {}
+	virtual void     SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                  {}
+	virtual void     PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                           {}
+	virtual void     StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                    {}
+	virtual void     SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                     {}
+	virtual EntityId GetEntityId() const override                                                                                                                                          { return INVALID_ENTITYID; }
 };
 
 class CSystem final : public IAudioSystem
@@ -67,12 +67,6 @@ public:
 	virtual void          AddRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override                                     {}
 	virtual void          RemoveRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo) override                                                                 {}
 	virtual void          ExternalUpdate() override                                                                                                                                               {}
-	virtual bool          GetTriggerId(char const* const szName, ControlId& id) const override                                                                                                    { return true; }
-	virtual bool          GetParameterId(char const* const szName, ControlId& id) const override                                                                                                  { return true; }
-	virtual bool          GetSwitchId(char const* const szName, ControlId& id) const override                                                                                                     { return true; }
-	virtual bool          GetSwitchStateId(ControlId const switchId, char const* const szName, SwitchStateId& id) const override                                                                  { return true; }
-	virtual bool          GetPreloadRequestId(char const* const szName, PreloadRequestId& id) const override                                                                                      { id = InvalidPreloadRequestId; return true; }
-	virtual bool          GetEnvironmentId(char const* const szName, EnvironmentId& id) const override                                                                                            { id = InvalidEnvironmentId; return true; }
 	virtual char const*   GetConfigPath() const override                                                                                                                                          { return ""; }
 	virtual IListener*    CreateListener() override                                                                                                                                               { return nullptr; }
 	virtual void          ReleaseListener(IListener* const pIListener) override                                                                                                                   {}

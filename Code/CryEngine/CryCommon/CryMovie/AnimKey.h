@@ -1,18 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   AnimKey.h
-//  Created:     22/4/2002 by Timur.
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CrySystem/IConsole.h>     // <> required for Interfuscator
 #include <CrySystem/File/ICryPak.h> // <> required for Interfuscator
 #include <CrySystem/ILocalizationManager.h>
 #include <CryMath/Bezier.h>
-#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryMovie/AnimTime.h>
 
@@ -282,8 +275,8 @@ struct SAudioTriggerKey : public STrackDurationKey
 
 		if (ar.isInput())
 		{
-			gEnv->pAudioSystem->GetTriggerId(m_startTriggerName.c_str(), m_startTriggerId);
-			gEnv->pAudioSystem->GetTriggerId(m_stopTriggerName.c_str(), m_stopTriggerId);
+			m_startTriggerId = CryAudio::StringToId_RunTime(m_startTriggerName.c_str());
+			m_stopTriggerId = CryAudio::StringToId_RunTime(m_stopTriggerName.c_str());
 		}
 	}
 
@@ -365,8 +358,8 @@ struct SAudioSwitchKey : public STrackKey
 
 		if (ar.isInput())
 		{
-			gEnv->pAudioSystem->GetSwitchId(m_audioSwitchName.c_str(), m_audioSwitchId);
-			gEnv->pAudioSystem->GetSwitchStateId(m_audioSwitchId, m_audioSwitchStateName.c_str(), m_audioSwitchStateId);
+			m_audioSwitchId = CryAudio::StringToId_RunTime(m_audioSwitchName.c_str());
+			m_audioSwitchStateId = CryAudio::StringToId_RunTime(m_audioSwitchStateName.c_str());
 		}
 
 		m_keyDescription.Format("%s : %s", m_audioSwitchName.c_str(), m_audioSwitchStateName.c_str());

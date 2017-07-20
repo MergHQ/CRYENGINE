@@ -252,12 +252,8 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 				pAudioSystem->ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific, data);
 				pAudioSystem->ParsePreloadsData(levelPath.c_str(), EDataScope::LevelSpecific, data);
 
-				PreloadRequestId preloadRequestId = InvalidPreloadRequestId;
-
-				if (pAudioSystem->GetPreloadRequestId(levelName.c_str(), preloadRequestId))
-				{
-					pAudioSystem->PreloadSingleRequest(preloadRequestId, true, data);
-				}
+				PreloadRequestId const preloadRequestId = CryAudio::StringToId_RunTime(levelName.c_str());
+				pAudioSystem->PreloadSingleRequest(preloadRequestId, true, data);
 			}
 
 			// And finally re-trigger all active audio controls to restart previously playing sounds.

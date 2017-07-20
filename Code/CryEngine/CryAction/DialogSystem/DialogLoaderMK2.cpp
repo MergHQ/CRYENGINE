@@ -277,9 +277,14 @@ bool CDialogLoaderMK2::ReadLine(const XmlNodeRef& lineNode, CDialogScript::SScri
 	if (lineNode->getAttr("flagAGEP", tmp)) line.m_flagAGEP = tmp;
 	const char* szTriggerName = lineNode->getAttr("audioID");
 	if (szTriggerName != nullptr && szTriggerName[0] != '\0')
-		gEnv->pAudioSystem->GetTriggerId(szTriggerName, line.m_audioID);
+	{
+		line.m_audioID = CryAudio::StringToId_RunTime(szTriggerName);
+	}
 	else
+	{
 		line.m_audioID = CryAudio::InvalidControlId;
+	}
+
 	line.m_anim = lineNode->getAttr("anim");
 	line.m_facial = lineNode->getAttr("facial");
 	if (CryStringUtils::stristr(line.m_facial, "#RESET#") != 0)

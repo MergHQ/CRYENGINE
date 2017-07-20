@@ -886,19 +886,19 @@ bool CFileUtil::SelectFiles(const CString& fileSpec, const CString& searchFolder
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CFileUtil::SelectSaveFile(const char* fileFilter, const char* defaulExtension, const char* startFolder, string& fileName)
+bool CFileUtil::SelectSaveFile(const char* fileFilter, const char* defaulExtension, const char* startFolder, string& fileName, bool bAllowCreateFolder /* = false */)
 {
 	CString fF = fileFilter;
 	CString dE = defaulExtension;
 	CString sF = startFolder;
 	CString oF = fileName.GetString();
 
-	bool result = SelectSaveFile(fF, dE, sF, oF);
+	bool result = SelectSaveFile(fF, dE, sF, oF, bAllowCreateFolder);
 	fileName = oF.GetString();
 	return result;
 }
 
-bool CFileUtil::SelectSaveFile(const CString& fileFilter, const CString& defaulExtension, const CString& startFolder, CString& fileName)
+bool CFileUtil::SelectSaveFile(const CString& fileFilter, const CString& defaulExtension, const CString& startFolder, CString& fileName, bool bAllowCreateFolder /* = false */)
 {
 	CSystemFileDialog::OpenParams dialogParams(CSystemFileDialog::SaveFile);
 	dialogParams.initialDir = FormatInitialFolderForFileDialog(startFolder);
@@ -909,6 +909,7 @@ bool CFileUtil::SelectSaveFile(const CString& fileFilter, const CString& defaulE
 	}
 	dialogParams.extensionFilters = CExtensionFilter::Parse(fileFilter);
 	dialogParams.defaultExtension = defaulExtension.GetString();
+	dialogParams.allowCreateFolder = bAllowCreateFolder;
 	CSystemFileDialog fileDialog(dialogParams);
 	if (fileDialog.exec() == QDialog::Accepted)
 	{
