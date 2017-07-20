@@ -54,10 +54,18 @@ namespace UQS
 		template <class TItem>
 		void CVariantDict::AddOrReplaceFromOriginalValue(const char* szKey, const TItem& originalValueToClone)
 		{
+			UQS::Core::IHub* pHub = UQS::Core::IHubPlugin::GetHubPtr();
+
+			if (!pHub)
+			{
+				CryWarning(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ERROR, "UQS: CVariantDict::AddOrReplaceFromOriginalValue: UQS Plugin is not loaded. The dictionary you're trying to fill will be lacking the entry with key = '%s'.", szKey);
+				return;
+			}
+
 			// FIXME: searching for the item-factory might not be the best approach; we could have the caller pass in the item-factory and assert() type matching,
 			//        but that would also mean more responsibility on the client side
 			const CTypeInfo& typeOfOriginalValue = Shared::SDataTypeHelper<TItem>::GetTypeInfo();
-			Client::IItemFactory* pItemFactoryOfOriginalValue = UQS::Core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(typeOfOriginalValue);
+			Client::IItemFactory* pItemFactoryOfOriginalValue = pHub->GetUtils().FindItemFactoryByType(typeOfOriginalValue);
 
 			// If this fails then there is obviously no item-factory registered that can create items of given type.
 			// Currently we do nothing about it since it should be the responsibility of the caller to ensure consistency beforehand.
