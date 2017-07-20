@@ -267,6 +267,13 @@ bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppS
 	SwapEndian(header, (header.nFlags & SERIALIZATION_FLAG_BIG_ENDIAN) ? eBigEndian : eLittleEndian);
 	m_bLevelFilesEndian = (header.nFlags & SERIALIZATION_FLAG_BIG_ENDIAN) ? eBigEndian : eLittleEndian;
 
+	// detect old header format where unitSize_InMeters was an int (now it is float)
+	if (header.TerrainInfo.unitSize_InMeters < 0.25f || header.TerrainInfo.unitSize_InMeters > 64.f)
+	{
+		int unitSize_InMeters = *(int*)&header.TerrainInfo.unitSize_InMeters;
+		header.TerrainInfo.unitSize_InMeters = (float)unitSize_InMeters;
+	}
+
 	if (header.nChunkSize)
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Terrain");
