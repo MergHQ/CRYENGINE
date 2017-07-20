@@ -1216,7 +1216,6 @@ void VExampleInit::Init(const CDefaultSkeleton* pDefaultSkeleton, const DynArray
 
 				if (m_fSmallest < 10.0)
 				{
-					assert(m_fSmallest < (PRECISION * 2));
 					PolarGrid[y * CHUNK_GAHAIM_INFO::XGRID + x].m_fSmalest = f32(m_fSmallest);
 					PolarGrid[y * CHUNK_GAHAIM_INFO::XGRID + x].i0 = i0;
 					PolarGrid[y * CHUNK_GAHAIM_INFO::XGRID + x].i1 = i1;
@@ -1855,7 +1854,6 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	assert(c);
 	assert(c < 1000);
 	f64 length = (polar[c] - polar[0]).GetLength();
-	assert(length < 0.0001);
 	polar[c] = polar[0];
 
 	Vec2d ControlPointEnd = ControlPoint + Vec2d(1, 0) * 10;

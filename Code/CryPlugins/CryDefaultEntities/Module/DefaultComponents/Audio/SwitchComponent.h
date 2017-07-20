@@ -71,8 +71,8 @@ void SSwitchWithStateSerializeHelper::Serialize(Serialization::IArchive& archive
 
 	if (archive.isInput())
 	{
-		gEnv->pAudioSystem->GetSwitchId(m_switchName.c_str(), m_switchId);
-		gEnv->pAudioSystem->GetSwitchStateId(m_switchId, m_switchStateName.c_str(), m_switchStateId);
+		m_switchId = CryAudio::StringToId_RunTime(m_switchName.c_str());
+		m_switchStateId = CryAudio::StringToId_RunTime(m_switchStateName.c_str());
 	}
 }
 } // namespace DefaultComponents

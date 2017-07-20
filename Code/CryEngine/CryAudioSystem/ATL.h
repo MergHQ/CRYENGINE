@@ -47,12 +47,6 @@ public:
 	bool           ShutDown();
 	void           ProcessRequest(CAudioRequest& request);
 	void           Update(float const deltaTime);
-	bool           GetAudioTriggerId(char const* const szAudioTriggerName, ControlId& audioTriggerId) const;
-	bool           GetAudioParameterId(char const* const szAudioParameterName, ControlId& audioParameterId) const;
-	bool           GetAudioSwitchId(char const* const szAudioSwitchName, ControlId& audioSwitchId) const;
-	bool           GetAudioSwitchStateId(ControlId const switchId, char const* const szAudioSwitchStateName, SwitchStateId& audioSwitchStateId) const;
-	bool           GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, PreloadRequestId& audioPreloadRequestId) const;
-	bool           GetAudioEnvironmentId(char const* const szAudioEnvironmentName, EnvironmentId& audioEnvironmentId) const;
 
 	bool           CanProcessRequests() const { return (m_flags& EInternalStates::AudioMiddlewareShuttingDown) == 0; }
 

@@ -120,11 +120,16 @@ bool CEntityAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 		Schematyc::IScript* pScript = GetScript(*pAsset);
 		if (pScript)
 		{
-			stack_string prevName = pAsset->GetName();
+			CryPathString prevName = pAsset->GetName();
 			if (CAssetType::RenameAsset(pAsset, szNewName))
 			{
-				stack_string filePath = pScript->GetFilePath();
-				filePath.replace(prevName.c_str(), szNewName);
+				CryPathString filePath = pScript->GetFilePath();
+				CryPathString path;
+				CryPathString file;
+				CryPathString ext;
+				PathUtil::Split(filePath, path, file, ext);
+				file = szNewName;
+				filePath = PathUtil::Make(path, file, ext);
 
 				gEnv->pSchematyc->GetScriptRegistry().OnScriptRenamed(*pScript, filePath);
 				return true;

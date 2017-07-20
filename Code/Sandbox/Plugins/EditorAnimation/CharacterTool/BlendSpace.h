@@ -22,7 +22,6 @@ struct BlendSpaceDimension
 	float  debugVisualScale;
 	float  startKey;
 	float  endKey;
-	string jointName;
 	bool   locked;
 
 	BlendSpaceDimension()
@@ -52,20 +51,23 @@ typedef vector<BlendSpaceAnnotation> BlendSpaceAnnotations;
 
 struct BlendSpaceExample
 {
+	struct SParameter
+	{
+		float value;
+		bool userDefined;
+		bool useDirectlyForDeltaMotion; //!< Serialized, but not exposed in GUI.
+	};
+
 	CryGUID runtimeGuid; //<! GUID used to identify this object at runtime, not serialized to file.
 
 	string animation;
-	Vec4   parameters;
-	bool   specified[4];
-	bool   useDirectlyForDeltaMotion[4];
+	SParameter parameters[eMotionParamID_COUNT];
 	float  playbackScale;
 
 	BlendSpaceExample()
 		: runtimeGuid(CryGUID::Create())
 		, animation()
-		, parameters(ZERO)
-		, specified()
-		, useDirectlyForDeltaMotion()
+		, parameters()
 		, playbackScale(1.0f)
 	{
 	}
@@ -76,17 +78,16 @@ typedef vector<BlendSpaceExample> BlendSpaceExamples;
 
 struct BlendSpaceAdditionalExtraction
 {
-	string parameterName;
-	int32  parameterId;
+	int32 parameterId;
 
 	BlendSpaceAdditionalExtraction()
-		: parameterId(0)
+		: parameterId(eMotionParamID_TravelSpeed)
 	{
 	}
+
+	void Serialize(IArchive& ar);
 };
 typedef vector<BlendSpaceAdditionalExtraction> BlendSpaceAdditionalExtractions;
-
-bool Serialize(IArchive& ar, BlendSpaceAdditionalExtraction& value, const char* name, const char* label);
 
 struct BlendSpacePseudoExample
 {

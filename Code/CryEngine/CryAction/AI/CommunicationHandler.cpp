@@ -9,18 +9,9 @@ namespace ATLUtils
 void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAudioComponent* pIEntityAudioComponent)
 {
 	CRY_ASSERT(gEnv && gEnv->pAudioSystem != nullptr);
-	CryAudio::ControlId switchId = CryAudio::InvalidControlId;
-	gEnv->pAudioSystem->GetSwitchId(switchIdName, switchId);
-	if (switchId != CryAudio::InvalidControlId)
-	{
-		CryAudio::SwitchStateId switchStateId = CryAudio::InvalidSwitchStateId;
-		gEnv->pAudioSystem->GetSwitchStateId(switchId, switchValue, switchStateId);
-		IF_UNLIKELY (switchStateId == CryAudio::InvalidSwitchStateId)
-		{
-			CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "CommunicationHandler - You are trying to switch the state of the audio switch '%s' to the value '%s'. This switch state doesn't exist.", switchIdName, switchValue);
-		}
-		pIEntityAudioComponent->SetSwitchState(switchId, switchStateId);
-	}
+	CryAudio::ControlId const switchId = CryAudio::StringToId_RunTime(switchIdName);
+	CryAudio::SwitchStateId const switchStateId = CryAudio::StringToId_RunTime(switchValue);
+	pIEntityAudioComponent->SetSwitchState(switchId, switchStateId);
 }
 } // namespace ATLUtils
 
@@ -306,43 +297,32 @@ SCommunicationSound CommunicationHandler::PlaySound(CommPlayID playID, const cha
 		if (pIEntityAudioComponent)
 		{
 			const ICommunicationManager::WWiseConfiguration& wiseConfigutation = gEnv->pAISystem->GetCommunicationManager()->GetWiseConfiguration();
-
-			CRY_ASSERT(gEnv && gEnv->pAudioSystem);
-			CryAudio::IAudioSystem* pIAudioSystem = gEnv->pAudioSystem;
-			CryAudio::ControlId playCommunicationControlId(CryAudio::InvalidControlId);
-			CryAudio::ControlId stopCommunicationControlId(CryAudio::InvalidControlId);
+			
 			stack_string playTriggerName;
 			playTriggerName.Format("%s%s", wiseConfigutation.prefixForPlayTrigger.c_str(), name);
 			stack_string stopTriggerName;
 			stopTriggerName.Format("%s%s", wiseConfigutation.prefixForStopTrigger.c_str(), name);
+			CryAudio::ControlId const playCommunicationControlId = CryAudio::StringToId_RunTime(playTriggerName.c_str());
+			CryAudio::ControlId const stopCommunicationControlId = CryAudio::StringToId_RunTime(stopTriggerName.c_str());
 
-			pIAudioSystem->GetTriggerId(playTriggerName, playCommunicationControlId);
-			pIAudioSystem->GetTriggerId(stopTriggerName, stopCommunicationControlId);
-			if (playCommunicationControlId != CryAudio::InvalidControlId)
+			if (listener != nullptr)
 			{
-				if (listener)
-				{
-					std::pair<PlayingSounds::iterator, bool> iresult = m_playingSounds.insert(
-					  PlayingSounds::value_type(playCommunicationControlId, PlayingSound()));
+				std::pair<PlayingSounds::iterator, bool> iresult = m_playingSounds.insert(
+					PlayingSounds::value_type(playCommunicationControlId, PlayingSound()));
 
-					PlayingSound& playingSound = iresult.first->second;
-					playingSound.listener = listener;
-					playingSound.type = type;
-					playingSound.playID = playID;
-				}
-
-				CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_entityId)), this);
-				pIEntityAudioComponent->ExecuteTrigger(playCommunicationControlId, CryAudio::DefaultAuxObjectId, userData);
-
-				SCommunicationSound soundInfo;
-				soundInfo.playSoundControlId = playCommunicationControlId;
-				soundInfo.stopSoundControlId = stopCommunicationControlId;
-				return soundInfo;
+				PlayingSound& playingSound = iresult.first->second;
+				playingSound.listener = listener;
+				playingSound.type = type;
+				playingSound.playID = playID;
 			}
-			else
-			{
-				CryLogAlways("The audio trigger to play communication '%s' is not defined.", name);
-			}
+
+			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_entityId)), this);
+			pIEntityAudioComponent->ExecuteTrigger(playCommunicationControlId, CryAudio::DefaultAuxObjectId, userData);
+
+			SCommunicationSound soundInfo;
+			soundInfo.playSoundControlId = playCommunicationControlId;
+			soundInfo.stopSoundControlId = stopCommunicationControlId;
+			return soundInfo;
 		}
 	}
 

@@ -212,7 +212,7 @@ private:
 
 		void Resolve()
 		{
-			gEnv->pAudioSystem->GetTriggerId(m_name, m_id);
+			m_id = CryAudio::StringToId_RunTime(m_name.c_str());
 		}
 		bool HasName() const                 { return !m_name.empty(); }
 		operator CryAudio::ControlId() const { return m_id; }
@@ -238,9 +238,9 @@ public:
 
 	void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		gEnv->pAudioSystem->GetParameterId(m_parameterName, m_parameterId);
-		if (m_parameterId != CryAudio::InvalidControlId)
+		if (!m_parameterName.empty())
 		{
+			m_parameterId = CryAudio::StringToId_RunTime(m_parameterName.c_str());
 			pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
 			m_value.AddToComponent(pComponent, this);
 		}

@@ -3972,18 +3972,16 @@ void CVehicleMovementArcadeWheeled::UpdateSurfaceEffects(const float deltaTime)
 
 			if (pSurfaceType)
 			{
-				CryAudio::SwitchStateId surfaceStateId = CryAudio::InvalidSwitchStateId;
 				string surfaceTypeName = pSurfaceType->GetName();
 
 				if (surfaceTypeName.find("mat_") != std::string::npos)
 				{
-					gEnv->pAudioSystem->GetSwitchStateId(m_audioControlIDs[eSID_VehicleSurface], surfaceTypeName.substr(4), surfaceStateId);
+					CryAudio::SwitchStateId const surfaceStateId = CryAudio::StringToId_RunTime(surfaceTypeName.substr(4).c_str());
+					auto pIEntityAudioComponent = GetAudioProxy();
 
-					if (surfaceStateId != CryAudio::InvalidSwitchStateId)
+					if (pIEntityAudioComponent != nullptr)
 					{
-						auto pIEntityAudioComponent = GetAudioProxy();
-						if (pIEntityAudioComponent)
-							pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], surfaceStateId);
+						pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], surfaceStateId);
 					}
 				}
 			}

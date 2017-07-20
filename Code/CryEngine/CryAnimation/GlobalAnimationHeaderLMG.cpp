@@ -413,8 +413,6 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 						nodeExample->getAttr("scale", m_DimPara[d].m_scale);   //just for visual-debugging
 						m_DimPara[d].m_scale = max(0.01f, m_DimPara[d].m_scale);
 
-						//from which joint do we wnat to extract the parameters to initialize the patameter-space??
-						m_DimPara[d].m_strJointName = nodeExample->getAttr("JointName");
 						nodeExample->getAttr("skey", m_DimPara[d].m_skey);
 						nodeExample->getAttr("ekey", m_DimPara[d].m_ekey);
 

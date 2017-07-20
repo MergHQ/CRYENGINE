@@ -150,9 +150,9 @@ void CAudioAreaRandom::OnResetState()
 	auto& audioEntityComponent = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	// Get properties
-	gEnv->pAudioSystem->GetTriggerId(m_playTriggerName, m_playTriggerId);
-	gEnv->pAudioSystem->GetTriggerId(m_stopTriggerName, m_stopTriggerId);
-	gEnv->pAudioSystem->GetParameterId(m_parameterName, m_parameterId);
+	m_playTriggerId = CryAudio::StringToId_RunTime(m_playTriggerName.c_str());
+	m_stopTriggerId = CryAudio::StringToId_RunTime(m_stopTriggerName.c_str());
+	m_parameterId = CryAudio::StringToId_RunTime(m_parameterName.c_str());
 
 	// Update values
 	audioEntityComponent.SetFadeDistance(m_parameterDistance);

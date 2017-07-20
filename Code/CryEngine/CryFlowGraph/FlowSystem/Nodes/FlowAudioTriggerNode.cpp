@@ -199,7 +199,7 @@ private:
 
 		if (!triggerName.empty())
 		{
-			gEnv->pAudioSystem->GetTriggerId(triggerName.c_str(), outTriggerId);
+			outTriggerId = CryAudio::StringToId_RunTime(triggerName.c_str());
 		}
 	}
 

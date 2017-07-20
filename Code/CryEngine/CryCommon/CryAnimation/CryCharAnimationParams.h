@@ -191,6 +191,7 @@ enum EMotionParamID
 	eMotionParamID_BlendWeight_Last = eMotionParamID_BlendWeight7,
 
 	eMotionParamID_COUNT,
+	eMotionParamID_INVALID = eMotionParamID_COUNT
 };
 
 //--------------------------------------------------------------------------------

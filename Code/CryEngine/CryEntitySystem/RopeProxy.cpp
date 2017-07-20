@@ -26,7 +26,7 @@ CEntityComponentRope::CEntityComponentRope()
 CEntityComponentRope::~CEntityComponentRope()
 {
 	// Delete physical entity from physical world.
-	m_pRopeRenderNode = 0;
+	m_pRopeRenderNode = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -266,28 +266,15 @@ void CEntityComponentRope::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			if (xmlNodeAudio)
 			{
 				IRopeRenderNode::SRopeAudioParams audioParams;
-				CryAudio::ControlId tempControlId = CryAudio::InvalidControlId;
 				char const* szTemp = nullptr;
 				xmlNodeAudio->getAttr("StartTrigger", &szTemp);
-
-				if (gEnv->pAudioSystem->GetTriggerId(szTemp, tempControlId))
-				{
-					audioParams.startTrigger = tempControlId;
-				}
+				audioParams.startTrigger = CryAudio::StringToId_RunTime(szTemp);
 
 				xmlNodeAudio->getAttr("StopTrigger", &szTemp);
-
-				if (gEnv->pAudioSystem->GetTriggerId(szTemp, tempControlId))
-				{
-					audioParams.stopTrigger = tempControlId;
-				}
+				audioParams.stopTrigger = CryAudio::StringToId_RunTime(szTemp);
 
 				xmlNodeAudio->getAttr("AngleParameter", &szTemp);
-
-				if (gEnv->pAudioSystem->GetParameterId(szTemp, tempControlId))
-				{
-					audioParams.angleParameter = tempControlId;
-				}
+				audioParams.angleParameter = CryAudio::StringToId_RunTime(szTemp);
 
 				std::underlying_type<CryAudio::EOcclusionType>::type tempOcclusionType;
 				xmlNodeAudio->getAttr("OcclusionType", tempOcclusionType);

@@ -47,24 +47,44 @@ static constexpr char* OnStateName = "on";
 static constexpr char* OffStateName = "off";
 static constexpr char* GlobalPreloadRequestName = "global_atl_preloads";
 
-static constexpr ControlId RelativeVelocityTrackingSwitchId = CCrc32::ComputeLowercase_CompileTime(RelativeVelocityTrackingSwitchName);
-static constexpr ControlId RelativeVelocityParameterId = CCrc32::ComputeLowercase_CompileTime(RelativeVelocityParameterName);
-static constexpr ControlId AbsoluteVelocityTrackingSwitchId = CCrc32::ComputeLowercase_CompileTime(AbsoluteVelocityTrackingSwitchName);
-static constexpr ControlId AbsoluteVelocityParameterId = CCrc32::ComputeLowercase_CompileTime(AbsoluteVelocityParameterName);
-static constexpr ControlId LoseFocusTriggerId = CCrc32::ComputeLowercase_CompileTime(LoseFocusTriggerName);
-static constexpr ControlId GetFocusTriggerId = CCrc32::ComputeLowercase_CompileTime(GetFocusTriggerName);
-static constexpr ControlId MuteAllTriggerId = CCrc32::ComputeLowercase_CompileTime(MuteAllTriggerName);
-static constexpr ControlId UnmuteAllTriggerId = CCrc32::ComputeLowercase_CompileTime(UnmuteAllTriggerName);
-static constexpr ControlId DoNothingTriggerId = CCrc32::ComputeLowercase_CompileTime(DoNothingTriggerName);
-static constexpr ControlId OcclusionCalcSwitchId = CCrc32::ComputeLowercase_CompileTime(OcclusionCalcSwitchName);
-static constexpr SwitchStateId IgnoreStateId = CCrc32::ComputeLowercase_CompileTime(IgnoreStateName);
-static constexpr SwitchStateId AdaptiveStateId = CCrc32::ComputeLowercase_CompileTime(AdaptiveStateName);
-static constexpr SwitchStateId LowStateId = CCrc32::ComputeLowercase_CompileTime(LowStateName);
-static constexpr SwitchStateId MediumStateId = CCrc32::ComputeLowercase_CompileTime(MediumStateName);
-static constexpr SwitchStateId HighStateId = CCrc32::ComputeLowercase_CompileTime(HighStateName);
-static constexpr SwitchStateId OnStateId = CCrc32::ComputeLowercase_CompileTime(OnStateName);
-static constexpr SwitchStateId OffStateId = CCrc32::ComputeLowercase_CompileTime(OffStateName);
-static constexpr PreloadRequestId GlobalPreloadRequestId = CCrc32::ComputeLowercase_CompileTime(GlobalPreloadRequestName);
+/**
+* A utility function to convert a string value to an Id at compile time.
+* @param szSource - string to convert
+* @return a 32bit CRC computed on the lower case version of the passed string
+*/
+static constexpr uint32 StringToId_CompileTime(char const* const szSource)
+{
+	return CCrc32::ComputeLowercase_CompileTime(szSource);
+}
+
+/**
+* A utility function to convert a string value to an Id during run time.
+* @param szSource - string to convert
+* @return a 32bit CRC computed on the lower case version of the passed string
+*/
+static uint32 StringToId_RunTime(char const* const szSource)
+{
+	return CCrc32::ComputeLowercase(szSource);
+}
+
+static constexpr ControlId RelativeVelocityTrackingSwitchId = StringToId_CompileTime(RelativeVelocityTrackingSwitchName);
+static constexpr ControlId RelativeVelocityParameterId = StringToId_CompileTime(RelativeVelocityParameterName);
+static constexpr ControlId AbsoluteVelocityTrackingSwitchId = StringToId_CompileTime(AbsoluteVelocityTrackingSwitchName);
+static constexpr ControlId AbsoluteVelocityParameterId = StringToId_CompileTime(AbsoluteVelocityParameterName);
+static constexpr ControlId LoseFocusTriggerId = StringToId_CompileTime(LoseFocusTriggerName);
+static constexpr ControlId GetFocusTriggerId = StringToId_CompileTime(GetFocusTriggerName);
+static constexpr ControlId MuteAllTriggerId = StringToId_CompileTime(MuteAllTriggerName);
+static constexpr ControlId UnmuteAllTriggerId = StringToId_CompileTime(UnmuteAllTriggerName);
+static constexpr ControlId DoNothingTriggerId = StringToId_CompileTime(DoNothingTriggerName);
+static constexpr ControlId OcclusionCalcSwitchId = StringToId_CompileTime(OcclusionCalcSwitchName);
+static constexpr SwitchStateId IgnoreStateId = StringToId_CompileTime(IgnoreStateName);
+static constexpr SwitchStateId AdaptiveStateId = StringToId_CompileTime(AdaptiveStateName);
+static constexpr SwitchStateId LowStateId = StringToId_CompileTime(LowStateName);
+static constexpr SwitchStateId MediumStateId = StringToId_CompileTime(MediumStateName);
+static constexpr SwitchStateId HighStateId = StringToId_CompileTime(HighStateName);
+static constexpr SwitchStateId OnStateId = StringToId_CompileTime(OnStateName);
+static constexpr SwitchStateId OffStateId = StringToId_CompileTime(OffStateName);
+static constexpr PreloadRequestId GlobalPreloadRequestId = StringToId_CompileTime(GlobalPreloadRequestName);
 
 // Forward declarations.
 struct IListener;
@@ -432,55 +452,6 @@ struct IAudioSystem
 	 * @return void
 	 */
 	virtual void ExternalUpdate() = 0;
-
-	/**
-	 * Used to retrieve an audio trigger's ID.
-	 * @param szName - name of the audio trigger which ID is to be retrieved.
-	 * @param id - out parameter that receives the ID.
-	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
-	 */
-	virtual bool GetTriggerId(char const* const szName, ControlId& id) const = 0;
-
-	/**
-	 * Used to retrieve an audio parameter's ID.
-	 * @param szName - name of the audio parameter which ID is to be retrieved.
-	 * @param id - out parameter that receives the ID.
-	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
-	 */
-	virtual bool GetParameterId(char const* const szName, ControlId& id) const = 0;
-
-	/**
-	 * Used to retrieve an audio switch's ID.
-	 * @param szName - name of the audio switch which ID is to be retrieved.
-	 * @param id - out parameter that receives the ID.
-	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
-	 */
-	virtual bool GetSwitchId(char const* const szName, ControlId& id) const = 0;
-
-	/**
-	 * Used to retrieve an audio switch's state ID.
-	 * @param switchId - ID of the switch to which the state belongs.
-	 * @param szName - name of the audio switch state which ID is to be retrieved.
-	 * @param id - out parameter that receives the ID.
-	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
-	 */
-	virtual bool GetSwitchStateId(ControlId const switchId, char const* const szName, SwitchStateId& id) const = 0;
-
-	/**
-	 * Used to retrieve an audio preload request's ID.
-	 * @param szName - name of the audio preload request which ID is to be retrieved.
-	 * @param id - out parameter that receives the ID.
-	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
-	 */
-	virtual bool GetPreloadRequestId(char const* const szName, PreloadRequestId& id) const = 0;
-
-	/**
-	 * Used to retrieve an audio environment's ID.
-	 * @param szName - name of the audio environment which ID is to be retrieved.
-	 * @param id - out parameter that receives the ID.
-	 * @return bool - returns true if the control was found and the ID retrieved successfully otherwise false.
-	 */
-	virtual bool GetEnvironmentId(char const* const szName, EnvironmentId& id) const = 0;
 
 	/**
 	 * Returns the path in which audio data is stored.

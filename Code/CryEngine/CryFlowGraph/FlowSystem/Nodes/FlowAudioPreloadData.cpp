@@ -79,18 +79,15 @@ public:
 
 				if (!preloadName.empty())
 				{
-					CryAudio::PreloadRequestId preloadRequestId = CryAudio::InvalidPreloadRequestId;
-
-					if (gEnv->pAudioSystem->GetPreloadRequestId(preloadName.c_str(), preloadRequestId))
+					CryAudio::PreloadRequestId const preloadRequestId = CryAudio::StringToId_RunTime(preloadName.c_str());
+					
+					if (bEnable)
 					{
-						if (bEnable)
-						{
-							gEnv->pAudioSystem->PreloadSingleRequest(preloadRequestId, false);
-						}
-						else
-						{
-							gEnv->pAudioSystem->UnloadSingleRequest(preloadRequestId);
-						}
+						gEnv->pAudioSystem->PreloadSingleRequest(preloadRequestId, false);
+					}
+					else
+					{
+						gEnv->pAudioSystem->UnloadSingleRequest(preloadRequestId);
 					}
 				}
 			}
