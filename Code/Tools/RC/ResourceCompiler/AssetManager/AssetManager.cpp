@@ -6,6 +6,7 @@
 #include "IResCompiler.h"
 #include "IRCLog.h"
 #include "FileUtil.h"
+#include "CryGUIDHelper.h"
 #include "StringHelpers.h"
 #include <CryString/CryString.h>
 
@@ -65,7 +66,7 @@ void UpdateFiles(AssetManager::SAssetMetadata& metadata, IResourceCompiler* cons
 
 	if (metadata.guid == CryGUID::Null())
 	{
-		metadata.guid = CryGUID::Create();
+		metadata.guid = CryGUIDHelper::Create();
 	}
 
 	const char* szExt = PathUtil::GetExt(files.begin()->c_str());
