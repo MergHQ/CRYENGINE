@@ -290,6 +290,16 @@ Vec3 CrossProduct(const Vec3& a, const Vec3& b)
 	return a.Cross(b);
 }
 
+Vec3 Project(const Vec3& direction, const Vec3& normal)
+{
+	return Vec3::CreateProjection(direction, normal);
+}
+
+Vec3 Reflect(const Vec3& direction, const Vec3& normal)
+{
+	return Vec3::CreateReflection(direction, normal);
+}
+
 void ToString(const Vec3& input, CSharedString& output)
 {
 	Schematyc::ToString(output, input);
@@ -400,6 +410,22 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		pFunction->BindInput(1, 'a', "A", nullptr, Vec3(ZERO));
 		pFunction->BindInput(2, 'b', "B", nullptr, Vec3(ZERO));
 		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Project, "{C35F9856-14B4-4180-A000-0A1FF64851F5}"_cry_guid, "Project");
+		pFunction->SetDescription("Projects a vector to a plane");
+		pFunction->BindInput(1, 'dir', "Direction", nullptr, Vec3(0, 1, 0));
+		pFunction->BindInput(2, 'norm', "Normal", nullptr, Vec3(0, 0, 1));
+		pFunction->BindOutput(0, 'res', "Result");
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Reflect, "{E1C1BD22-1A30-4137-B314-273265DF0093}"_cry_guid, "Reflect");
+		pFunction->SetDescription("Reflects the direction along the normal");
+		pFunction->BindInput(1, 'dir', "Direction", nullptr, Vec3(0, 1, 0));
+		pFunction->BindInput(2, 'norm', "Normal", nullptr, Vec3(0, 0, 1));
+		pFunction->BindOutput(0, 'res', "Result");
 		scope.Register(pFunction);
 	}
 	{
