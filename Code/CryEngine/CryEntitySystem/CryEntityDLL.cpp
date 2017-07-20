@@ -103,6 +103,11 @@ class CEngineModule_EntitySystem : public IEntitySystemEngineModule
 
 	virtual ~CEngineModule_EntitySystem()
 	{
+		if (gEnv->pSchematyc)
+		{
+			gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage("A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid);
+		}
+
 		GetISystem()->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_entity);
 		SAFE_RELEASE(gEnv->pEntitySystem);
 	}
