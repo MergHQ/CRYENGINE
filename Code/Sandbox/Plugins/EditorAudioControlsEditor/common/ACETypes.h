@@ -14,7 +14,7 @@ enum EItemType
 
 	// controls
 	eItemType_Trigger,
-	eItemType_RTPC,
+	eItemType_Parameter,
 	eItemType_Switch,
 	eItemType_State,
 	eItemType_Environment,

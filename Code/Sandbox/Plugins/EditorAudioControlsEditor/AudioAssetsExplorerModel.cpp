@@ -513,7 +513,7 @@ bool CAudioLibraryModel::setData(const QModelIndex& index, const QVariant& value
 							switch (itemType)
 							{
 							case EItemType::eItemType_Preload:
-							case EItemType::eItemType_RTPC:
+							case EItemType::eItemType_Parameter:
 							case EItemType::eItemType_State:
 							case EItemType::eItemType_Switch:
 							case EItemType::eItemType_Trigger:

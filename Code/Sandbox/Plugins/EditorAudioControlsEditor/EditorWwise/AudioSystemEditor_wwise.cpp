@@ -152,7 +152,7 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionToControl(EItemType eATL
 		{
 			switch (eATLControlType)
 			{
-			case EItemType::eItemType_RTPC:
+			case EItemType::eItemType_Parameter:
 				{
 					return std::make_shared<CRtpcConnection>(pMiddlewareControl->GetId());
 				}
@@ -260,7 +260,7 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 				{
 					switch (eATLControlType)
 					{
-					case EItemType::eItemType_RTPC:
+					case EItemType::eItemType_Parameter:
 						{
 							RtpcConnectionPtr pConnection = std::make_shared<CRtpcConnection>(pControl->GetId());
 
@@ -316,7 +316,7 @@ XmlNodeRef CAudioSystemEditor_wwise::CreateXMLNodeFromConnection(const Connectio
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(pControl->GetType()));
 				pConnectionNode->setAttr(g_nameAttribute, pControl->GetName());
 
-				if (eATLControlType == eItemType_RTPC)
+				if (eATLControlType == eItemType_Parameter)
 				{
 					std::shared_ptr<const CRtpcConnection> pRtpcConnection = std::static_pointer_cast<const CRtpcConnection>(pConnection);
 					if (pRtpcConnection->mult != 1.0f)
@@ -421,7 +421,7 @@ ACE::EItemType CAudioSystemEditor_wwise::ImplTypeToATLType(ItemType type) const
 		return eItemType_Trigger;
 		break;
 	case eWwiseItemTypes_Rtpc:
-		return eItemType_RTPC;
+		return eItemType_Parameter;
 		break;
 	case eWwiseItemTypes_Switch:
 	case eWwiseItemTypes_State:
@@ -448,7 +448,7 @@ ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EItemType
 	case eItemType_Trigger:
 		return eWwiseItemTypes_Event;
 		break;
-	case eItemType_RTPC:
+	case eItemType_Parameter:
 		return eWwiseItemTypes_Rtpc;
 		break;
 	case eItemType_Switch:

@@ -324,7 +324,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionToControl(EItemType contr
 		}
 		else if (type == eFmodItemType_EventParameter || type == eFmodItemType_SnapshotParameter)
 		{
-			if (controlType == eItemType_RTPC)
+			if (controlType == eItemType_Parameter)
 			{
 				return std::make_shared<CParamConnection>(pMiddlewareControl->GetId());
 			}
@@ -390,7 +390,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 			case eFmodItemType_EventParameter:
 			case eFmodItemType_SnapshotParameter:
 				{
-					if (controlType == eItemType_RTPC)
+					if (controlType == eItemType_Parameter)
 					{
 						std::shared_ptr<CParamConnection> pConnection = std::make_shared<CParamConnection>(pItem->GetId());
 						float mult = 1.0f;
@@ -468,7 +468,7 @@ XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const Connection
 						pNode->setAttr(g_valueAttribute, pRtpcConnection->m_value);
 					}
 				}
-				else if (controlType == eItemType_RTPC)
+				else if (controlType == eItemType_Parameter)
 				{
 					auto pParamConnection = static_cast<const CParamConnection*>(pConnection.get());
 					if (pParamConnection->mult != 1.0f)
@@ -524,11 +524,11 @@ ACE::EItemType CAudioSystemEditor_fmod::ImplTypeToATLType(ItemType type) const
 	case eFmodItemType_Event:
 		return eItemType_Trigger;
 	case eFmodItemType_EventParameter:
-		return eItemType_RTPC;
+		return eItemType_Parameter;
 	case eFmodItemType_Snapshot:
 		return eItemType_Trigger;
 	case eFmodItemType_SnapshotParameter:
-		return eItemType_RTPC;
+		return eItemType_Parameter;
 	case eFmodItemType_Bank:
 		return eItemType_Preload;
 	case eFmodItemType_Return:
@@ -544,7 +544,7 @@ ACE::TImplControlTypeMask CAudioSystemEditor_fmod::GetCompatibleTypes(EItemType 
 	case eItemType_Trigger:
 		return eFmodItemType_Event | eFmodItemType_Snapshot;
 		break;
-	case eItemType_RTPC:
+	case eItemType_Parameter:
 		return eFmodItemType_EventParameter | eFmodItemType_SnapshotParameter;
 		break;
 	case eItemType_Preload:

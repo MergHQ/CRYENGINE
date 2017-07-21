@@ -25,6 +25,7 @@ class QFilterButton;
 class CAudioAssetsExplorerModel;
 class QControlsProxyFilter;
 class CAudioLibraryModel;
+class CAudioAdvancedTreeView;
 
 class CAudioAssetsExplorer final : public QFrame
 {
@@ -80,7 +81,7 @@ private:
 	QCheckableMenu*                  m_pFilterMenu;
 
 	QLineEdit*                       m_pTextFilter;
-	QAdvancedTreeView*               m_pControlsTree;
+	CAudioAdvancedTreeView*          m_pControlsTree;
 	CAudioAssetsExplorerModel*       m_pAssetsModel;
 	QControlsProxyFilter*            m_pProxyModel;
 

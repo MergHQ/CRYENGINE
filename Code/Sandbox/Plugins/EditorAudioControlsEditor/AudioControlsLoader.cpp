@@ -40,7 +40,7 @@ EItemType TagToType(string const& tag)
 	}
 	else if (tag == "ATLRtpc")
 	{
-		return eItemType_RTPC;
+		return eItemType_Parameter;
 	}
 	else if (tag == "ATLTrigger")
 	{
@@ -350,13 +350,13 @@ void CAudioControlsLoader::CreateDefaultControls()
 		   are handled for backwards compatibility reasons.
 		   Introduced in March 2017, remove this code at a feasible point in the future.
 		 */
-		pControl = m_pAssetsManager->FindControl(CryAudio::AbsoluteVelocityParameterName, eItemType_RTPC);
+		pControl = m_pAssetsManager->FindControl(CryAudio::AbsoluteVelocityParameterName, eItemType_Parameter);
 		if (pControl == nullptr)
 		{
-			pControl = m_pAssetsManager->FindControl("object_speed", eItemType_RTPC);
+			pControl = m_pAssetsManager->FindControl("object_speed", eItemType_Parameter);
 			if (pControl == nullptr)
 			{
-				m_pAssetsManager->CreateControl(CryAudio::AbsoluteVelocityParameterName, eItemType_RTPC, pLibrary);
+				m_pAssetsManager->CreateControl(CryAudio::AbsoluteVelocityParameterName, eItemType_Parameter, pLibrary);
 			}
 			else
 			{
@@ -366,13 +366,13 @@ void CAudioControlsLoader::CreateDefaultControls()
 			bWasModified = true;
 		}
 
-		pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityParameterName, eItemType_RTPC);
+		pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityParameterName, eItemType_Parameter);
 		if (pControl == nullptr)
 		{
-			pControl = m_pAssetsManager->FindControl("object_doppler", eItemType_RTPC);
+			pControl = m_pAssetsManager->FindControl("object_doppler", eItemType_Parameter);
 			if (pControl == nullptr)
 			{
-				m_pAssetsManager->CreateControl(CryAudio::RelativeVelocityParameterName, eItemType_RTPC, pLibrary);
+				m_pAssetsManager->CreateControl(CryAudio::RelativeVelocityParameterName, eItemType_Parameter, pLibrary);
 			}
 			else
 			{

@@ -48,7 +48,7 @@ dll_string AudioSwitchStateSelector(const SResourceSelectorContext& context, con
 
 dll_string AudioRTPCSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
-	return ShowSelectDialog(context, szPreviousValue, eItemType_RTPC);
+	return ShowSelectDialog(context, szPreviousValue, eItemType_Parameter);
 }
 
 dll_string AudioEnvironmentSelector(const SResourceSelectorContext& context, const char* szPreviousValue)

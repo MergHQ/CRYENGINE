@@ -35,7 +35,7 @@ struct SLibraryScope
 		{
 		case EItemType::eItemType_Trigger:
 			return pNodes[0];
-		case EItemType::eItemType_RTPC:
+		case EItemType::eItemType_Parameter:
 			return pNodes[1];
 		case EItemType::eItemType_Switch:
 			return pNodes[2];
