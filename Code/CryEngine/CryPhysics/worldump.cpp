@@ -1316,6 +1316,7 @@ struct CRigidEntitySerializer : CPhysicalEntitySerializer {
 			ctx.pobj = &aac;
 			(ctx.pSerializer = pConstraintSerializer)->Serialize(ctx);
 		} else {
+			pent->m_pNewCoords->pos=pent->m_pos; pent->m_pNewCoords->q=pent->m_qrot;
 			pe_action_add_constraint aac;
 			aac.id = atol(str);
 			ctx.PushState();
