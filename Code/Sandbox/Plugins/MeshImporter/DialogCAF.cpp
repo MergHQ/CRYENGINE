@@ -481,6 +481,7 @@ void CDialogCAF::AssignMaterial(CMaterial* pMat, void* pUserData)
 
 QString CreateCHPARAMS(const QString& path)
 {
+	const QString animPath = !path.isEmpty() ? path : QString(".");
 	static const char* const szFormat =
 	  "<Params>\n"
 	  " <AnimationList>\n"
@@ -490,7 +491,7 @@ QString CreateCHPARAMS(const QString& path)
 	  "  <Animation name=\"*\" path=\"*/*.comb\"/>\n"
 	  " </AnimationList>\n"
 	  "</Params>\n";
-	return QString(szFormat).arg(path);
+	return QString(szFormat).arg(animPath);
 }
 
 void CDialogCAF::PreviewAnimationClip(const Private_DialogCAF::SAnimationClip& clip)
