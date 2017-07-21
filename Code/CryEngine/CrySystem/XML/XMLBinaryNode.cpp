@@ -12,6 +12,7 @@
 #include <StdAfx.h>
 #include "XMLBinaryNode.h"
 #include <CryMemory/CrySizer.h>
+#include <CryExtension/CryGUIDHelper.h>
 
 #pragma warning(disable : 6031) // Return value ignored: 'sscanf'
 
@@ -331,7 +332,7 @@ bool CBinaryXmlNode::getAttr(const char* key, ColorB& value) const
 
 void CBinaryXmlNode::setAttr(const char* key, const CryGUID& value)
 {
-	setAttr(key, value.ToString());
+	setAttr(key, CryGUIDHelper::Print(value));
 }
 
 bool CBinaryXmlNode::getAttr(const char* key, CryGUID& value) const
@@ -339,7 +340,7 @@ bool CBinaryXmlNode::getAttr(const char* key, CryGUID& value) const
 	const char* svalue = GetValue(key);
 	if (svalue)
 	{
-		value = CryGUID::FromString(svalue);
+		value = CryGUIDHelper::FromString(svalue);
 		if ((value.hipart >> 32) == 0)
 		{
 			memset(&value, 0, sizeof(value));

@@ -1360,9 +1360,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 	// Load component unique GUID
 	CryGUID componentGUID;
 	archive(componentGUID, "GUID", "GUID");
-#ifdef CRY_SUPPORT_LEGACY_GUID
-	CryGUID legacyComponentGUID = ConvertToLegacyGUID(componentGUID);
-#endif // CRY_SUPPORT_LEGACY_GUID
 
 	std::shared_ptr<IEntityComponent> pComponent;
 	IEntityComponent* pParentComponent = nullptr;
@@ -1372,21 +1369,10 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		// Find component in the list of the existing entity components
 		for (auto& record : m_components.GetVector())
 		{
-			if (record.pComponent != nullptr)
+			if (record.pComponent != nullptr && record.pComponent->GetGUID() == componentGUID)
 			{
-				if (record.pComponent->GetGUID() == componentGUID)
-				{
-					pComponent = record.pComponent;
-					break;
-				}
-#ifdef CRY_SUPPORT_LEGACY_GUID
-				else if (record.pComponent->GetGUID() == legacyComponentGUID)
-				{
-					pComponent = record.pComponent;
-					componentGUID = legacyComponentGUID;
-					break;
-				}
-#endif // CRY_SUPPORT_LEGACY_GUID
+				pComponent = record.pComponent;
+				break;
 			}
 		}
 	}
@@ -1401,15 +1387,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 	if (archive(parentGUID, "ParentGUID", "ParentGUID") && !parentGUID.IsNull())
 	{
 		pParentComponent = GetComponentByGUID(parentGUID);
-#ifdef CRY_SUPPORT_LEGACY_GUID
-		if (!pParentComponent)
-		{
-			CryGUID legacyParentGUID = ConvertToLegacyGUID(parentGUID);
-			pParentComponent = GetComponentByGUID(legacyParentGUID);
-			if (pParentComponent)
-				parentGUID = legacyParentGUID;
-		}
-#endif
 	}
 
 	// Load component transform
@@ -1556,15 +1533,6 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 	}
 
 	IEntityComponent* pComponent = GetComponentByTypeId(componentTypeId);
-#ifdef CRY_SUPPORT_LEGACY_GUID
-	CryInterfaceID legacyComponentTypeId = ConvertToLegacyGUID(componentTypeId);
-	if (!pComponent)
-	{
-		pComponent = GetComponentByTypeId(legacyComponentTypeId);
-		if (pComponent)
-			componentTypeId = legacyComponentTypeId;
-	}
-#endif // CRY_SUPPORT_LEGACY_GUID
 
 	if (!pComponent)
 	{
@@ -1577,22 +1545,6 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 			}
 		}
 	}
-
-#ifdef CRY_SUPPORT_LEGACY_GUID
-	if (!pComponent)
-	{
-		for (const SEntityComponentRecord& record : m_components.GetVector())
-		{
-			if (record.pComponent != nullptr && record.pComponent->GetClassDesc().GetGUID() == legacyComponentTypeId)
-			{
-				pComponent = record.pComponent.get();
-				componentTypeId = legacyComponentTypeId;
-				break;
-			}
-		}
-	}
-#endif // CRY_SUPPORT_LEGACY_GUID
-
 	if (pComponent && pComponent->GetComponentFlags().Check(EEntityComponentFlags::Schematyc))
 	{
 		// Do not load Schematyc components
@@ -1603,12 +1555,6 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 	{
 		// Script proxy cannot be created from list of components.
 		bool bCanCreateComponent = componentTypeId != CEntityComponentLuaScript::GetCID() &&
-#ifdef CRY_SUPPORT_LEGACY_GUID
-		                           legacyComponentTypeId != CEntityComponentLuaScript::GetCID() &&
-		                           legacyComponentTypeId != cryiidof<IEntityScriptComponent>() &&
-		                           legacyComponentTypeId != cryiidof<ICryUnknown>() &&
-		                           legacyComponentTypeId != cryiidof<IEntityComponent>();
-#endif // CRY_SUPPORT_LEGACY_GUID
 		                           componentTypeId != cryiidof<IEntityScriptComponent>() &&
 		                           componentTypeId != cryiidof<ICryUnknown>() &&
 		                           componentTypeId != cryiidof<IEntityComponent>();
@@ -1812,10 +1758,6 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 	// First look for a unified Schematyc / Entity component type
 	// TODO: Search hierarchy
 	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(interfaceId);
-#ifdef CRY_SUPPORT_LEGACY_GUID
-	if (pEnvComponent == nullptr)
-		pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(ConvertToLegacyGUID(interfaceId));
-#endif // CRY_SUPPORT_LEGACY_GUID
 	ICryFactory* pLegacyComponentFactory = nullptr;
 	if (pEnvComponent != nullptr)
 	{
@@ -1830,22 +1772,10 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 		{
 			size_t numFactories = 1;
 			pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
-#ifdef CRY_SUPPORT_LEGACY_GUID
-			if (numFactories == 0 || pLegacyComponentFactory == nullptr)
-			{
-				numFactories = 1;
-				pFactoryRegistry->IterateFactories(ConvertToLegacyGUID(interfaceId), &pLegacyComponentFactory, numFactories);
-			}
-#endif // CRY_SUPPORT_LEGACY_GUID
-
 			if (numFactories == 0 || pLegacyComponentFactory == nullptr)
 			{
 				// Nothing found by interface, check by implementation id
 				pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
-#ifdef CRY_SUPPORT_LEGACY_GUID
-				if (pLegacyComponentFactory == nullptr)
-					pLegacyComponentFactory = pFactoryRegistry->GetFactory(ConvertToLegacyGUID(interfaceId));
-#endif // CRY_SUPPORT_LEGACY_GUID
 			}
 
 			if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))

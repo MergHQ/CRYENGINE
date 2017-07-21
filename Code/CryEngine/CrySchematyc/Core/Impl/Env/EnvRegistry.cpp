@@ -305,16 +305,7 @@ void CEnvRegistry::VisitInterfaceFunctions(const EnvInterfaceFunctionConstVisito
 const IEnvComponent* CEnvRegistry::GetComponent(const CryGUID& guid) const
 {
 	Components::const_iterator itComponent = m_components.find(guid);
-	if (itComponent != m_components.end())
-		return itComponent->second.get();
-
-#ifdef CRY_SUPPORT_LEGACY_GUID
-	itComponent = m_components.find(ConvertToLegacyGUID(guid));
-	if (itComponent != m_components.end())
-		return itComponent->second.get();
-#endif // CRY_SUPPORT_LEGACY_GUID
-
-	return nullptr;
+	return itComponent != m_components.end() ? itComponent->second.get() : nullptr;
 }
 
 void CEnvRegistry::VisitComponents(const EnvComponentConstVisitor& visitor) const

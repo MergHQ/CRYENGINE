@@ -6,6 +6,7 @@
 
 #include <CryExtension/ICryUnknown.h>
 #include <CryExtension/RegFactoryNode.h>
+#include <CryExtension/CryGUIDHelper.h>
 
 #include <algorithm>
 
@@ -118,8 +119,8 @@ bool CCryFactoryRegistryImpl::GetInsertionPos(ICryFactory* pFactory, FactoriesBy
 			cry_sprintf(err, "Conflicting factories...\n"
 			                 "Factory (0x%p): ClassID = %s, ClassName = \"%s\"\n"
 			                 "Factory (0x%p): ClassID = %s, ClassName = \"%s\"",
-			            pKnownFactory, pKnownFactory ? pKnownFactory->GetClassID().ToString().c_str() : "$unknown$", pKnownFactory ? pKnownFactory->GetName() : "$unknown$",
-			            pNewFactory, pNewFactory ? pNewFactory->GetClassID().ToString().c_str() : "$unknown$", pNewFactory ? pNewFactory->GetName() : "$unknown$");
+			            pKnownFactory, pKnownFactory ? CryGUIDHelper::Print(pKnownFactory->GetClassID()).c_str() : "$unknown$", pKnownFactory ? pKnownFactory->GetName() : "$unknown$",
+			            pNewFactory, pNewFactory ? CryGUIDHelper::Print(pNewFactory->GetClassID()).c_str() : "$unknown$", pNewFactory ? pNewFactory->GetName() : "$unknown$");
 
 #if CRY_PLATFORM_ORBIS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 			printf("\n!!! Fatal error !!!\n");

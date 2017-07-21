@@ -8,6 +8,7 @@
 #include "FileUtil.h"
 #include "CryGUIDHelper.h"
 #include "StringHelpers.h"
+#include "CryExtension/CryGUIDHelper.h"
 #include <CryString/CryString.h>
 
 namespace

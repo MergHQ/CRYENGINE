@@ -138,6 +138,9 @@ struct CryGUID
 			uint16 Data3;
 			uint8  Data4[8];
 		};
+		// Structures used for debug visualizer
+		struct hex_dummy_low { unsigned char c; };
+		struct hex_dummy_high { unsigned char c; };
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -197,21 +200,18 @@ struct CryGUID
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	static CryGUID FromString(const char* szGuidAsString)
 	{
-		CRY_ASSERT(szGuidAsString);
+		assert(szGuidAsString);
 		CryGUID guid;
 		if (szGuidAsString)
 		{
-			if (szGuidAsString[0] == '{' && strlen(szGuidAsString) >= CRY_ARRAY_COUNT("{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}") - 1)
-			{
-				guid = FromStringInternal(szGuidAsString + 1);
-			}
-			else if (szGuidAsString[0] != '{' && strlen(szGuidAsString) >= CRY_ARRAY_COUNT("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX") - 1)
+			if ((szGuidAsString[0] == '{' && strlen(szGuidAsString) >= 38) ||
+					(szGuidAsString[0] != '{' && strlen(szGuidAsString) >= 36))
 			{
 				guid = FromStringInternal(szGuidAsString);
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "GUID string is too short: %s", szGuidAsString);
+				CRY_ASSERT_MESSAGE(0,"GUID string is too short: %s",szGuidAsString);
 			}
 		}
 		return guid;
@@ -222,13 +222,6 @@ struct CryGUID
 	{
 		static_assert( N > 36,"GUID require buffer of at least 36 bytes" );
 		ToString( (char*)ar,N );
-	}
-
-	string ToString() const
-	{
-		char temp[CRY_ARRAY_COUNT("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")];
-		ToString(temp);
-		return string(temp);
 	}
 
 	//! Returns a character string used for Debugger Visualization or log messages.
@@ -327,41 +320,3 @@ inline bool Serialize(Serialization::IArchive& ar, CryGUID::StringUtils::SGuidSt
 }
 
 #define MAKE_CRYGUID(high, low) CryGUID::Construct((uint64) high ## LL, (uint64) low ## LL)
-
-#define CRY_SUPPORT_LEGACY_GUID
-#ifdef CRY_SUPPORT_LEGACY_GUID
-inline CryGUID ConvertToLegacyGUID(const CryGUID& guid)
-{
-	uint16 h[4];
-	h[0] = (guid.hipart >> 48) & 0xFFFF;
-	h[1] = (guid.hipart >> 32) & 0xFFFF;
-	h[2] = (guid.hipart >> 16) & 0xFFFF;
-	h[3] = (guid.hipart >>  0) & 0xFFFF;
-	const uint64 hipart =
-		((uint64)h[2] << 48) |
-		((uint64)h[3] << 32) |
-		((uint64)h[1] << 16) |
-		((uint64)h[0] << 0);
-
-	uint8 l[8];
-	l[0] = (guid.lopart >> 56) & 0xFF;
-	l[1] = (guid.lopart >> 48) & 0xFF;
-	l[2] = (guid.lopart >> 40) & 0xFF;
-	l[3] = (guid.lopart >> 32) & 0xFF;
-	l[4] = (guid.lopart >> 24) & 0xFF;
-	l[5] = (guid.lopart >> 16) & 0xFF;
-	l[6] = (guid.lopart >>  8) & 0xFF;
-	l[7] = (guid.lopart >>  0) & 0xFF;
-	const uint64 lopart =
-		((uint64)l[7] << 56) |
-		((uint64)l[6] << 48) |
-		((uint64)l[5] << 40) |
-		((uint64)l[4] << 32) |
-		((uint64)l[3] << 24) |
-		((uint64)l[2] << 16) |
-		((uint64)l[1] <<  8) |
-		((uint64)l[0] <<  0);
-
-	return CryGUID::Construct(hipart, lopart);
-}
-#endif // CRY_SUPPORT_LEGACY_GUID
