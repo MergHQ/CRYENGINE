@@ -69,6 +69,7 @@
 #include <CryIcon.h>
 #include "Controls/QuestionDialog.h"
 #include <ICommandManager.h>
+#include "Preferences/ViewportPreferences.h"
 
 extern CharacterTool::System* g_pCharacterToolSystem;
 
@@ -139,6 +140,7 @@ CharacterToolForm::CharacterToolForm(QWidget* parent)
 	, m_dockWidgetManager(new DockWidgetManager(this))
 	, m_menuView()
 	, m_closed(false)
+	, m_bHasFocus(true)
 {
 	m_displayParametersSplitterWidths[0] = 400;
 	m_displayParametersSplitterWidths[1] = 200;
@@ -209,6 +211,7 @@ void CharacterToolForm::Initialize()
 	EXPECTED(connect(m_system->document.get(), SIGNAL(SignalExplorerSelectionChanged()), this, SLOT(OnExplorerSelectionChanged())));
 	EXPECTED(connect(m_system->document.get(), SIGNAL(SignalCharacterLoaded()), this, SLOT(OnCharacterLoaded())));
 	EXPECTED(connect(m_system->document.get(), SIGNAL(SignalDisplayOptionsChanged(const DisplayOptions &)), this, SLOT(OnDisplayOptionsChanged(const DisplayOptions &))));
+	EXPECTED(connect(QApplication::instance(), SIGNAL(focusChanged(QWidget*, QWidget*)), this, SLOT(OnFocusChanged(QWidget*, QWidget*))));
 
 	QWidget* centralWidget = new QWidget();
 	setCentralWidget(centralWidget);
@@ -366,6 +369,17 @@ void CharacterToolForm::OnPanelDestroyed(QObject* obj)
 	}
 }
 
+void CharacterToolForm::OnFocusChanged(QWidget *old, QWidget *now)
+{
+	m_bHasFocus = false;
+	QWidget* parent = parentWidget();
+	if (parent)
+	{
+		while (parent->parentWidget()) parent = parent->parentWidget();
+		m_bHasFocus = parent->isAncestorOf(now);
+	}
+}
+
 void CharacterToolForm::ResetLayout()
 {
 	m_system->document->ScrubTime(0.0f, false);
@@ -478,6 +492,8 @@ void CharacterToolForm::Serialize(Serialization::IArchive& ar)
 
 void CharacterToolForm::OnIdleUpdate()
 {
+	if (gViewportPreferences.toolsRenderUpdateMutualExclusive && !m_bHasFocus) return;
+
 	if (m_splitViewport)
 	{
 		m_splitViewport->OriginalViewport()->Update();
