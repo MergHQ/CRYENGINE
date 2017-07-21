@@ -338,19 +338,19 @@ void ReflectType(Schematyc::CTypeDesc<CInputComponent::EMouseInputId>& desc)
 	desc.SetDescription("Input Key Identifier");
 	desc.SetFlags(Schematyc::ETypeFlags::Switchable);
 	desc.SetDefaultValue((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse1);
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse1, "Button_1", "Left Button");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse2, "Button_2", "Right Button");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse3, "Button_3", "Middle Button");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse4, "Button_4", "Button_4");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse5, "Button_5", "Button_5");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse6, "Button_6", "Button_6");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse7, "Button_7", "Button_7");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse8, "Button_8", "Button_8");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseWheelUp, "WheelUp", "WheelUp");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseWheelDown, "WheelDown", "WheelDown");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseX, "X", "X");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseY, "Y", "Y");
-	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseZ, "Z", "Z");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse1, "mouse1", "Left Button");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse2, "mouse2", "Right Button");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse3, "mouse3", "Middle Button");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse4, "mouse4", "Button_4");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse5, "mouse5", "Button_5");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse6, "mouse6", "Button_6");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse7, "mouse7", "Button_7");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_Mouse8, "mouse8", "Button_8");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseWheelUp, "mwheel_up", "WheelUp");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseWheelDown, "mwheel_down", "WheelDown");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseX, "maxis_x", "X");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseY, "maxis_y", "Y");
+	desc.AddConstant((CInputComponent::EMouseInputId)EKeyId::eKI_MouseZ, "maxis_z", "Z");
 }
 
 void ReflectType(Schematyc::CTypeDesc<CInputComponent::EXboxInputId>& desc)
@@ -482,6 +482,7 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		pFunction->BindInput(3, 'keyn', "Input Id");
 		pFunction->BindInput(4, 'pres', "Receive Press Events");
 		pFunction->BindInput(5, 'rele', "Receive Release Events");
+		pFunction->BindInput(6, 'hold', "Receive Hold Events");
 		componentScope.Register(pFunction);
 	}
 	{
@@ -493,6 +494,7 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		pFunction->BindInput(3, 'keyn', "Input Id");
 		pFunction->BindInput(4, 'pres', "Receive Press Events");
 		pFunction->BindInput(5, 'rele', "Receive Release Events");
+		pFunction->BindInput(6, 'hold', "Receive Hold Events");
 		componentScope.Register(pFunction);
 	}
 	{
@@ -504,6 +506,7 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		pFunction->BindInput(3, 'keyn', "Input Id");
 		pFunction->BindInput(4, 'pres', "Receive Press Events");
 		pFunction->BindInput(5, 'rele', "Receive Release Events");
+		pFunction->BindInput(6, 'hold', "Receive Hold Events");
 		componentScope.Register(pFunction);
 	}
 	{
@@ -515,6 +518,7 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		pFunction->BindInput(3, 'keyn', "Input Id");
 		pFunction->BindInput(4, 'pres', "Receive Press Events");
 		pFunction->BindInput(5, 'rele', "Receive Release Events");
+		pFunction->BindInput(6, 'hold', "Receive Hold Events");
 		componentScope.Register(pFunction);
 	}
 
@@ -591,7 +595,7 @@ void CInputComponent::RegisterSchematycAction(Schematyc::CSharedString groupName
 }
 
 template <typename TEnum = EKeyId>
-void InternalBindAction(EntityId id, Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice inputDevice, TEnum keyId, bool bOnPress = true, bool bOnRelease = true)
+void InternalBindAction(EntityId id, Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice inputDevice, TEnum keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true)
 {
 	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 	IActionMap* pActionMap = pActionMapManager->GetActionMap(groupName.c_str());
@@ -620,6 +624,10 @@ void InternalBindAction(EntityId id, Schematyc::CSharedString groupName, Schemat
 	{
 		input.activationMode |= eAAM_OnRelease;
 	}
+	if (bOnHold)
+	{
+		input.activationMode |= eAAM_OnHold;
+	}
 
 	pActionMap->AddAndBindActionInput(ActionId(name.c_str()), input);
 
@@ -631,29 +639,29 @@ void InternalBindAction(EntityId id, Schematyc::CSharedString groupName, Schemat
 	}
 }
 
-void CInputComponent::BindKeyboardAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EKeyboardInputId keyId, bool bOnPress, bool bOnRelease)
+void CInputComponent::BindKeyboardAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EKeyboardInputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
-	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_KeyboardMouse, keyId, bOnPress, bOnRelease);
+	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_KeyboardMouse, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
-void CInputComponent::BindMouseAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EMouseInputId keyId, bool bOnPress, bool bOnRelease)
+void CInputComponent::BindMouseAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EMouseInputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
-	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_KeyboardMouse, keyId, bOnPress, bOnRelease);
+	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_KeyboardMouse, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
-void CInputComponent::BindXboxAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EXboxInputId keyId, bool bOnPress, bool bOnRelease)
+void CInputComponent::BindXboxAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EXboxInputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
-	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_XboxPad, keyId, bOnPress, bOnRelease);
+	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_XboxPad, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
-void CInputComponent::BindPS4Action(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EPS4InputId keyId, bool bOnPress, bool bOnRelease)
+void CInputComponent::BindPS4Action(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EPS4InputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
-	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_PS4Pad, keyId, bOnPress, bOnRelease);
+	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_PS4Pad, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
-void CInputComponent::BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice device, EKeyId keyId, bool bOnPress, bool bOnRelease)
+void CInputComponent::BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice device, EKeyId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
-	InternalBindAction(GetEntityId(), groupName, name, device, keyId, bOnPress, bOnRelease);
+	InternalBindAction(GetEntityId(), groupName, name, device, keyId, bOnPress, bOnRelease, bOnHold);
 }
 }
 }

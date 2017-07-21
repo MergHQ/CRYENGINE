@@ -180,6 +180,18 @@ namespace Generic
 	}
 
 	template<typename T>
+	T Negate(T x)
+	{
+		return -x;
+	}
+
+	template<typename T>
+	int Sign(T x)
+	{
+		return sgn(x);
+	}
+
+	template<typename T>
 	bool Equal(T a, T b)
 	{
 		return a == b;
@@ -286,9 +298,23 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		scope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Generic::Abs<int32>, "f2f63e0a-3adc-4659-9444-32546d73c550"_cry_guid, "Abs");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Generic::Abs<int32>, "f2f63e0a-3adc-4659-9444-32546d73c550"_cry_guid, "Absolute");
 		pFunction->SetDescription("Returns the absolute value");
 		pFunction->BindInput(1, 'x', "Value"); // #SchematycTODO : Rename 'X'!
+		pFunction->BindOutput(0, 'res', "Result");
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Generic::Negate<int32>, "{C244F1BA-9B6C-46E2-BB5C-6AD1CD0CBCF5}"_cry_guid, "Negate");
+		pFunction->SetDescription("Returns the negated value, for example -1 becomes 1, 1 becomes -1");
+		pFunction->BindInput(1, 'x', "Value");
+		pFunction->BindOutput(0, 'res', "Result");
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Generic::Sign<int32>, "{37661484-156F-430F-AA8B-5F3CFBC87BCC}"_cry_guid, "Sign");
+		pFunction->SetDescription("Gets the sign of the entity, for example 10 returns 1, -10 returns -1");
+		pFunction->BindInput(1, 'x', "Value");
 		pFunction->BindOutput(0, 'res', "Result");
 		scope.Register(pFunction);
 	}
@@ -716,6 +742,20 @@ namespace Float
 			pFunction->SetDescription("Checks if A is greater than or equals B");
 			pFunction->BindInput(1, 'a', "A");
 			pFunction->BindInput(2, 'b', "B");
+			pFunction->BindOutput(0, 'res', "Result");
+			scope.Register(pFunction);
+		}
+		{
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Generic::Negate<float>, "{7FA0213D-9354-4E2A-A47F-971323EAC9F6}"_cry_guid, "Negate");
+			pFunction->SetDescription("Returns the negated value, for example -1 becomes 1, 1 becomes -1");
+			pFunction->BindInput(1, 'x', "Value");
+			pFunction->BindOutput(0, 'res', "Result");
+			scope.Register(pFunction);
+		}
+		{
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Generic::Sign<float>, "{00670DC4-663A-424B-ADC3-052B5CF5CEF0}"_cry_guid, "Sign");
+			pFunction->SetDescription("Gets the sign of the entity, for example 10 returns 1, -10 returns -1");
+			pFunction->BindInput(1, 'x', "Value");
 			pFunction->BindOutput(0, 'res', "Result");
 			scope.Register(pFunction);
 		}

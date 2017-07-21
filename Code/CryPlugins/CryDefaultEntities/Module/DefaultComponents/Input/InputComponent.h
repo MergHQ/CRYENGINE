@@ -83,11 +83,11 @@ namespace Cry
 				}
 			}
 
-			virtual void BindKeyboardAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EKeyboardInputId keyId, bool bOnPress = true, bool bOnRelease = true);
-			virtual void BindMouseAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EMouseInputId keyId, bool bOnPress = true, bool bOnRelease = true);
-			virtual void BindXboxAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EXboxInputId keyId, bool bOnPress = true, bool bOnRelease = true);
-			virtual void BindPS4Action(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EPS4InputId keyId, bool bOnPress = true, bool bOnRelease = true);
-			virtual void BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice device, EKeyId keyId, bool bOnPress = true, bool bOnRelease = true);
+			virtual void BindKeyboardAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EKeyboardInputId keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true);
+			virtual void BindMouseAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EMouseInputId keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true);
+			virtual void BindXboxAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EXboxInputId keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true);
+			virtual void BindPS4Action(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EPS4InputId keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true);
+			virtual void BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice device, EKeyId keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true);
 
 			static void ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc)
 			{

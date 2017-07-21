@@ -105,16 +105,14 @@ public:
 
 	void InternalUpdate();
 
-	threadID m_mainAudioThreadId;
-
 private:
 
 	using AudioRequests = ConcQueue<UnboundMPSC, CAudioRequest>;
 	using AudioRequestsSyncCallbacks = ConcQueue<UnboundSPSC, CAudioRequest>;
 
-	void UpdateTime();
-	bool ProcessRequests(AudioRequests& requestQueue);
-	void ProcessRequest(CAudioRequest& request);
+	void        UpdateTime();
+	bool        ProcessRequests(AudioRequests& requestQueue);
+	void        ProcessRequest(CAudioRequest& request);
 	static void OnCallback(SRequestInfo const* const pRequestInfo);
 
 	bool                               m_bSystemInitialized;
