@@ -201,13 +201,13 @@ void CCVars::RegisterVariables()
 	                 "otherwise, the AudioTrigger is stopped on the GlobalAudioObject\n"
 	                 "Usage: s_StopTrigger Play_chicken_idle 605 or s_StopTrigger MuteDialog\n");
 
-	REGISTER_COMMAND("s_SetRtpc", CmdSetRtpc, VF_CHEAT,
-	                 "Set an Audio RTPC value.\n"
-	                 "The first argument is the name of the AudioRtpc to be set, the second argument is the float value to be set,"
+	REGISTER_COMMAND("s_SetParameter", CmdSetParameter, VF_CHEAT,
+	                 "Set an Audio Parameter value.\n"
+	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set,"
 	                 "the third argument is an optional AudioObject ID.\n"
-	                 "If the third argument is provided, the AudioRtpc is set on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioRtpc is set on the GlobalAudioObject\n"
-	                 "Usage: s_SetRtpc character_speed  0.0  601 or s_SetRtpc volume_music 1.0\n");
+	                 "If the third argument is provided, the parameter is set on the AudioObject with the given ID,\n"
+	                 "otherwise, the AudioParameter is set on the GlobalAudioObject\n"
+	                 "Usage: s_SetParameter character_speed  0.0  601 or s_SetParameter volume_music 1.0\n");
 
 	REGISTER_COMMAND("s_SetSwitchState", CmdSetSwitchState, VF_CHEAT,
 	                 "Set an Audio Switch to a provided State.\n"
@@ -238,7 +238,7 @@ void CCVars::RegisterVariables()
 	               "b: Show text labels for active audio objects.\n"
 	               "c: Show trigger names for active audio objects.\n"
 	               "d: Show current states for active audio objects.\n"
-	               "e: Show RTPC values for active audio objects.\n"
+	               "e: Show Parameter values for active audio objects.\n"
 	               "f: Show Environment amounts for active audio objects.\n"
 	               "g: Show occlusion ray labels.\n"
 	               "h: Draw occlusion rays.\n"
@@ -316,7 +316,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_TickWithMainThread");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");
-		pConsole->UnregisterVariable("s_SetRtpc");
+		pConsole->UnregisterVariable("s_SetParameter");
 		pConsole->UnregisterVariable("s_SetSwitchState");
 		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
 
@@ -366,7 +366,7 @@ void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
+void CCVars::CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
 {
 	int const numArgs = pCmdArgs->GetArgCount();
 
@@ -378,7 +378,7 @@ void CCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_logger.Log(ELogType::Error, "Usage: s_SetRtpc [RtpcName] [RtpcValue]");
+		g_logger.Log(ELogType::Error, "Usage: s_SetParameter [ParameterName] [ParameterValue]");
 	}
 }
 

@@ -81,6 +81,17 @@ public:
 
 namespace ACE
 {
+class CAudioAdvancedTreeView : public QAdvancedTreeView
+{
+public:
+	CAudioAdvancedTreeView() = default;
+
+	bool IsEditing()
+	{
+		return state() == QAbstractItemView::EditingState;
+	}
+};
+
 CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pProxyModel(new QControlsProxyFilter(this))
@@ -120,10 +131,10 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	pAction->setChecked(true);
 	m_pFilterMenu->addAction(pAction);
 
-	pAction = new QAction(tr("RTPCs"), this);
+	pAction = new QAction(tr("Parameters"), this);
 	connect(pAction, &QAction::triggered, [&](bool const bShow)
 		{
-			ShowControlType(eItemType_RTPC, bShow);
+			ShowControlType(eItemType_Parameter, bShow);
 	  });
 	pAction->setCheckable(true);
 	pAction->setChecked(true);
@@ -195,7 +206,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	pHorizontalLayout->setStretch(0, 1);
 	pMainLayout->addLayout(pHorizontalLayout);
 
-	m_pControlsTree = new QAdvancedTreeView();
+	m_pControlsTree = new CAudioAdvancedTreeView();
 	m_pControlsTree->setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
 	m_pControlsTree->setDragEnabled(true);
 	m_pControlsTree->setDragDropMode(QAbstractItemView::DragDrop);
@@ -234,13 +245,13 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	pAddButton->setText(tr("Add"));
 
 	// ************ Context Menu ************
-	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Library), tr("Library"), [this]() { m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("New Library", *m_pAssetsManager)); });
+	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Library), tr("Library"), [this]() { m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("new_library", *m_pAssetsManager)); });
 	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Folder), tr("Folder"), [&]() { CreateFolder(GetSelectedAsset()); });
-	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Trigger), tr("Trigger"), [&]() { CreateControl("trigger", eItemType_Trigger, GetSelectedAsset()); });
-	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_RTPC), tr("RTPC"), [&]() { CreateControl("rtpc", eItemType_RTPC, GetSelectedAsset()); });
-	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Switch), tr("Switch"), [&]() { CreateControl("switch", eItemType_Switch, GetSelectedAsset()); });
-	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Environment), tr("Environment"), [&]() { CreateControl("environment", eItemType_Environment, GetSelectedAsset()); });
-	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Preload), tr("Preload"), [&]() { CreateControl("preload", eItemType_Preload, GetSelectedAsset()); });
+	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Trigger), tr("Trigger"), [&]() { CreateControl("new_trigger", eItemType_Trigger, GetSelectedAsset()); });
+	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", eItemType_Parameter, GetSelectedAsset()); });
+	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Switch), tr("Switch"), [&]() { CreateControl("new_switch", eItemType_Switch, GetSelectedAsset()); });
+	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Environment), tr("Environment"), [&]() { CreateControl("new_environment", eItemType_Environment, GetSelectedAsset()); });
+	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Preload), tr("Preload"), [&]() { CreateControl("new_preload", eItemType_Preload, GetSelectedAsset()); });
 	m_addItemMenu.addSeparator();
 	pAddButton->setMenu(&m_addItemMenu);
 
@@ -293,7 +304,6 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 			  }
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
-
 }
 
 CAudioAssetsExplorer::~CAudioAssetsExplorer()
@@ -314,7 +324,7 @@ CAudioAssetsExplorer::~CAudioAssetsExplorer()
 
 bool CAudioAssetsExplorer::eventFilter(QObject* pObject, QEvent* pEvent)
 {
-	if (pEvent->type() == QEvent::KeyRelease)
+	if ((pEvent->type() == QEvent::KeyRelease) && !m_pControlsTree->IsEditing())
 	{
 		QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
 		if (pKeyEvent)
@@ -409,11 +419,11 @@ void CAudioAssetsExplorer::ShowControlsContextMenu(QPoint const& pos)
 
 		addMenu.addAction(GetItemTypeIcon(eItemType_Folder), tr("Folder"), [&]() { CreateFolder(pParent); });
 		addMenu.addSeparator();
-		addMenu.addAction(GetItemTypeIcon(eItemType_Trigger), tr("Trigger"), [&]() { CreateControl("trigger", eItemType_Trigger, pParent); });
-		addMenu.addAction(GetItemTypeIcon(eItemType_RTPC), tr("RTPC"), [&]() { CreateControl("rtpc", eItemType_RTPC, pParent); });
-		addMenu.addAction(GetItemTypeIcon(eItemType_Switch), tr("Switch"), [&]() { CreateControl("switch", eItemType_Switch, pParent); });
-		addMenu.addAction(GetItemTypeIcon(eItemType_Environment), tr("Environment"), [&]() { CreateControl("environment", eItemType_Environment, pParent); });
-		addMenu.addAction(GetItemTypeIcon(eItemType_Preload), tr("Preload"), [&]() { CreateControl("preload", eItemType_Preload, pParent); });
+		addMenu.addAction(GetItemTypeIcon(eItemType_Trigger), tr("Trigger"), [&]() { CreateControl("new_trigger", eItemType_Trigger, pParent); });
+		addMenu.addAction(GetItemTypeIcon(eItemType_Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", eItemType_Parameter, pParent); });
+		addMenu.addAction(GetItemTypeIcon(eItemType_Switch), tr("Switch"), [&]() { CreateControl("new_switch", eItemType_Switch, pParent); });
+		addMenu.addAction(GetItemTypeIcon(eItemType_Environment), tr("Environment"), [&]() { CreateControl("new_environment", eItemType_Environment, pParent); });
+		addMenu.addAction(GetItemTypeIcon(eItemType_Preload), tr("Preload"), [&]() { CreateControl("new_preload", eItemType_Preload, pParent); });
 		contextMenu.addMenu(&addMenu);
 		contextMenu.addSeparator();
 
@@ -437,7 +447,7 @@ void CAudioAssetsExplorer::ShowControlsContextMenu(QPoint const& pos)
 			contextMenu.addSeparator();
 			break;
 		case EItemType::eItemType_Switch:
-			contextMenu.addAction(GetItemTypeIcon(eItemType_State), tr("Add State"), [&]() { CreateControl("state", eItemType_State, pControl); });
+			contextMenu.addAction(GetItemTypeIcon(eItemType_State), tr("Add State"), [&]() { CreateControl("new_state", eItemType_State, pControl); });
 			contextMenu.addSeparator();
 			break;
 		case EItemType::eItemType_Preload:
@@ -590,7 +600,7 @@ void CAudioAssetsExplorer::ResetFilters()
 		pAction->setChecked(true);
 	}
 	ShowControlType(eItemType_Trigger, true);
-	ShowControlType(eItemType_RTPC, true);
+	ShowControlType(eItemType_Parameter, true);
 	ShowControlType(eItemType_Environment, true);
 	ShowControlType(eItemType_Preload, true);
 	ShowControlType(eItemType_Switch, true);

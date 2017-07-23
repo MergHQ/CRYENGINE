@@ -27,7 +27,7 @@ string TypeToTag(EItemType eType)
 {
 	switch (eType)
 	{
-	case eItemType_RTPC:
+	case eItemType_Parameter:
 		return "ATLRtpc";
 	case eItemType_Trigger:
 		return "ATLTrigger";

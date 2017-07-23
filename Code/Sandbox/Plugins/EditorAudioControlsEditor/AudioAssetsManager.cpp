@@ -20,7 +20,7 @@ uint ItemTypeToIndex(EItemType const type)
 	{
 	case EItemType::eItemType_Trigger:
 		return 0;
-	case EItemType::eItemType_RTPC:
+	case EItemType::eItemType_Parameter:
 		return 1;
 	case EItemType::eItemType_Switch:
 		return 2;

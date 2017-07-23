@@ -51,7 +51,7 @@ private:
 
 	static void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs);
 	static void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs);
-	static void CmdSetRtpc(IConsoleCmdArgs* pCmdArgs);
+	static void CmdSetParameter(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
 };
 

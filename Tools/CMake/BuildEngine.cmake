@@ -80,7 +80,11 @@ if(ORBIS)
 endif()
 
 if(WIN64)
-  OPTION(RENDERER_VULKAN "Renderer for Vulkan API" ON)
+	OPTION(RENDERER_VULKAN "Renderer for Vulkan API" ON)
+	if (RENDERER_VULKAN AND NOT EXISTS "${SDK_DIR}/VulkanSDK")
+		message(STATUS "Vulkan SDK not found in ${SDK_DIR} - disabling Vulkan renderer.")
+		set(RENDERER_VULKAN OFF)
+	endif()
 endif()
 
 #Audio modules

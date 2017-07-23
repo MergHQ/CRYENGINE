@@ -35,12 +35,12 @@ CCamera GetCurrentCamera()
 
 CryTransform::CRotation GetRotation(const CCamera& camera)
 {
-	return CryTransform::CRotation(Matrix33(camera.GetViewMatrix()));
+	return CryTransform::CRotation(Matrix33(camera.GetMatrix()));
 }
 
 CryTransform::CTransform GetTransform(const CCamera& camera)
 {
-	return CryTransform::CTransform(camera.GetViewMatrix());
+	return CryTransform::CTransform(camera.GetMatrix());
 }
 
 Vec3 ScreenToWorld(const Vec2& screenSpaceCoordinates)

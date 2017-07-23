@@ -12,7 +12,7 @@ inline QIcon GetItemTypeIcon(EItemType type)
 	{
 	case EItemType::eItemType_Trigger:
 		return QIcon(":Icons/Trigger.ico");
-	case EItemType::eItemType_RTPC:
+	case EItemType::eItemType_Parameter:
 		return QIcon(":Icons/RTPC.ico");
 	case EItemType::eItemType_Switch:
 		return QIcon(":Icons/Switch.ico");

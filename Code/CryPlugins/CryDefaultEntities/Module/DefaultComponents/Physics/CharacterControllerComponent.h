@@ -118,13 +118,19 @@ namespace Cry
 				// Prefer usage of a cylinder
 				playerDimensions.bUseCapsule = m_physics.m_bCapsule ? 1 : 0;
 
-				// Specify the size of our capsule
-				playerDimensions.sizeCollider = m_physics.m_colliderSize;
+				// Specify the size of our capsule, physics treats the input as the half-size, so we multiply our value by 0.5.
+				// This ensures that 1 unit = 1m for designers.
+				playerDimensions.sizeCollider = Vec3(m_physics.m_radius * 0.5f, 1.f, m_physics.m_height * 0.5f);
+				// Capsule height needs to be adjusted to match 1 unit ~= 1m.
+				if (playerDimensions.bUseCapsule)
+				{
+					playerDimensions.sizeCollider.z *= 0.5f;
+				}
 
 				// Keep pivot at the player's feet (defined in player geometry) 
 				playerDimensions.heightPivot = 0.f;
-				// Offset collider upwards
-				playerDimensions.heightCollider = 1.f;
+				// Offset collider upwards if the user requested it
+				playerDimensions.heightCollider = m_pTransform != nullptr ? m_pTransform->GetTranslation().z : 0.f;
 				playerDimensions.groundContactEps = 0.004f;
 
 				physParams.pPlayerDimensions = &playerDimensions;
@@ -171,14 +177,16 @@ namespace Cry
 				{
 					desc.SetGUID("{3341F1DC-0753-466E-BC7A-FA77A49D3CB4}"_cry_guid);
 					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_mass, 'mass', "Mass", "Mass", "Mass of the character in kg", 80.f);
-					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_colliderSize, 'size', "Size", "Collider Size", "Dimensions of the capsule or cylinder", Vec3(0.45f, 0.45f, 0.935f * 0.5f));
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_radius, 'radi', "Radius", "Collider Radius", "Radius of the capsule or cylinder", 0.45f);
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_height, 'heig', "Height", "Collider Height", "Height of the capsule or cylinder", 0.935f);
 					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bCapsule, 'caps', "Capsule", "Use Capsule", "Whether or not to use a capsule as the main collider, otherwise cylinder", true);
 
 					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
 				}
 
 				Schematyc::PositiveFloat m_mass = 80.f;
-				Vec3 m_colliderSize = Vec3(0.45f, 0.45f, 0.935f * 0.5f);
+				float m_radius = 0.45f;
+				float m_height = 0.935f;
 				bool m_bCapsule = true;
 
 				bool m_bSendCollisionSignal = false;
