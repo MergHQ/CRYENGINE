@@ -27,6 +27,7 @@
 #include <limits>
 #include <CrySystem/IConsole.h>
 #include <CryNetwork/ISerialize.h>
+#include "Formation/AIFormationDescriptor.h"
 
 //
 //----------------------------------------------------------------------------------------------------

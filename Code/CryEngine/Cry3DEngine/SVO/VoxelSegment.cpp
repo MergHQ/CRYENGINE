@@ -22,6 +22,9 @@
 	#include <CryThreading/IJobManager_JobDelegator.h>
 	#include <CryAnimation/ICryAnimation.h>
 
+	#pragma warning(push)
+	#pragma warning(disable: 4244) //conversion' conversion from 'type1' to 'type2', possible loss of data
+
 	#define SVO_CPU_VOXELIZATION_OFFSET_MESH    0
 	#define SVO_CPU_VOXELIZATION_OFFSET_TERRAIN -0.04f
 	#define SVO_CPU_VOXELIZATION_OFFSET_VISAREA (Cry3DEngineBase::GetCVars()->e_svoMinNodeSize / (float)nVoxTexMaxDim)
@@ -3240,4 +3243,6 @@ void SSuperMesh::Clear(PodArray<SMINDEX>* parrVertHash)
 	m_boxTris.Reset();
 }
 
+
+	#pragma warning(pop)
 #endif

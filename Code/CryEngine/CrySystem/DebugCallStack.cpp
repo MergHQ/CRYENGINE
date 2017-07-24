@@ -29,7 +29,8 @@ LINK_SYSTEM_LIBRARY("version.lib")
 	#include <CryCore/Platform/CryWindows.h>
 	#include <dbghelp.h> // requires <windows.h>
 	#pragma comment( lib, "dbghelp" )
-	#pragma warning(disable: 4244)
+	#pragma warning(push)
+	#pragma warning(disable: 4244) //conversion' conversion from 'type1' to 'type2', possible loss of data
 
 	#ifdef CRY_USE_CRASHRPT
 		#include <CrashRpt.h>
@@ -1837,6 +1838,8 @@ int DebugCallStack::PrintException(EXCEPTION_POINTERS* exception_pointer)
 {
 	return DialogBoxParam(gDLLHandle, MAKEINTRESOURCE(IDD_CRITICAL_ERROR), NULL, DebugCallStack::ExceptionDialogProc, (LPARAM)exception_pointer);
 }
+
+	#pragma warning(pop)
 
 #else
 void MarkThisThreadForDebugging(const char*) {}

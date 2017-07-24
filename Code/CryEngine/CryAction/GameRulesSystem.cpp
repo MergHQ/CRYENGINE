@@ -19,10 +19,6 @@
 
 #include <list>
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	#pragma warning ( disable : 4244 )
-#endif
-
 #define GAMERULES_GLOBAL_VARIABLE   ("g_gameRules")
 #define GAMERULESID_GLOBAL_VARIABLE ("g_gameRulesId")
 

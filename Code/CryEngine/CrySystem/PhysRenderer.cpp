@@ -8,6 +8,7 @@
 #include <Cry3DEngine/IRenderNode.h>
 #include <Cry3DEngine/IStatObj.h>
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 ColorB CPhysRenderer::g_colorTab[9] = {
@@ -688,3 +689,5 @@ void CPhysRenderer::DrawGeometry(int itype, const void* pGeomData, geom_world_da
 	rflags.SetDrawInFrontMode(difmode);
 	aux->SetRenderFlags(rflags);
 }
+
+#pragma warning(pop)

@@ -58,6 +58,7 @@
 
 #include "Schematyc/EntityObjectDebugger.h"
 
+#pragma warning(push)
 #pragma warning(disable: 6255)  // _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead. (Note: _malloca requires _freea.)
 
 stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 16>* g_Alloc_EntitySlot = 0;
@@ -3434,3 +3435,5 @@ void CEntitySystem::ReleaseBSPTree3D(IBSPTree3D*& pTree)
 {
 	SAFE_DELETE(pTree);
 }
+
+#pragma warning(pop)

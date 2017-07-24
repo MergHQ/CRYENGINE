@@ -21,6 +21,7 @@
 #include "NullAIDebugRenderer.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include "BehaviorTree/BehaviorTreeGraft.h"
+#include "Formation/FormationManager.h"
 
 static CNullAIDebugRenderer nullAIRenderer;
 

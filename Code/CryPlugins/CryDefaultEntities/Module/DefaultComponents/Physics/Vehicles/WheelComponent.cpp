@@ -1,6 +1,5 @@
 #include "StdAfx.h"
 #include "WheelComponent.h"
-
 #include <Cry3DEngine/IRenderNode.h>
 
 namespace Cry

@@ -33,6 +33,7 @@
 //						- If not possible, tag pixel frequency regions using stencil + m_pMSAAMaskRT
 //						- Alternative poor man version, do clip in shader.
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 CDeferredShading* CDeferredShading::m_pInstance = NULL;
@@ -3325,3 +3326,5 @@ bool CREDeferredShading::mfDraw(CShader* ef, SShaderPass* sfm)
 	gcpRendD3D->FX_DeferredRendering(gRenDev->m_RP.m_pCurrentRenderView);
 	return true;
 }
+
+#pragma warning(pop)

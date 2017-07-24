@@ -8,6 +8,7 @@
 #include "Wrappers/MonoLibrary.h"
 #include "Wrappers/MonoClass.h"
 #include "Wrappers/MonoMethod.h"
+#include <CrySystem/IProjectManager.h>
 
 CManagedPlugin::TComponentFactoryMap* CManagedPlugin::s_pCurrentlyRegisteringFactory = nullptr;
 

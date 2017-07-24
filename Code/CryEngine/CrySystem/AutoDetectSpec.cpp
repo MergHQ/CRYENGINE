@@ -20,6 +20,7 @@
 	#include "AutoDetectCPUTestSuit.h"
 	#include "AutoDetectSpec.h"
 
+	#pragma warning(push)
 	#pragma warning(disable: 4244)
 
 // both function live in CPUDetect.cpp
@@ -1039,6 +1040,8 @@ void CSystem::AutoDetectSpec(const bool detectResolution)
 			m_rFullscreen->Set(1);
 	}
 }
+
+	#pragma warning(pop)
 
 #else
 

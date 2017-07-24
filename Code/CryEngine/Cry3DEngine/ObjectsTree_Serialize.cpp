@@ -13,6 +13,7 @@
 #include "VisAreas.h"
 #include "Brush.h"
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 #pragma pack(push,4)
@@ -1392,3 +1393,5 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		pPtr++;
 	}
 }
+
+#pragma warning(pop)

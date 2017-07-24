@@ -15,8 +15,6 @@
 #include "D3DPostProcess.h"
 #include "D3DStereo.h"
 
-#pragma warning(disable: 4244)
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -157,7 +155,7 @@ bool CColorGrading::UpdateParams(SColorGradingMergeParams& pMergeParams, bool bU
 	Matrix44 pColorMat = pSaturationMat * (pBrightMat * pContrastMat);
 
 	Vec4 pParams0 = Vec4(fMinInput, fGammaInput, fMaxInput, fMinOutput);
-	Vec4 pParams1 = Vec4(fMaxOutput, fGrain, cry_random(0, 1023), cry_random(0, 1023));
+	Vec4 pParams1 = Vec4(fMaxOutput, fGrain, cry_random(0.f, 1023.f), cry_random(0.f, 1023.f));
 	Vec4 pParams2 = Vec4(pFilterColor.x, pFilterColor.y, pFilterColor.z, fFilterColorDensity);
 	Vec4 pParams3 = Vec4(pSelectiveColor.x, pSelectiveColor.y, pSelectiveColor.z, fSharpenAmount + 1.0f);
 	Vec4 pParams4 = Vec4(fSelectiveColorCyans, fSelectiveColorMagentas, fSelectiveColorYellows, fSelectiveColorBlacks);

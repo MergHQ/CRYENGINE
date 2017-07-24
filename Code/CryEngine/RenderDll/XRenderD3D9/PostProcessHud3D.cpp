@@ -16,6 +16,7 @@
 #include "D3DStereo.h"
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 enum EHud3dDebugView
@@ -838,3 +839,5 @@ void C3DHud::Render()
 		FinalPass();
 	}
 }
+
+#pragma warning(pop)

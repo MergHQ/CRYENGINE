@@ -32,10 +32,6 @@
 #include "CompiledRenderObject.h"
 #include "../Scaleform/ScaleformRender.h"
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-#pragma warning(disable: 4244)
-#endif
-
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 #include <CrySystem/ILog.h>
 #endif

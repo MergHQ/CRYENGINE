@@ -13,6 +13,7 @@
 #include "ClipVolumeManager.h"
 #include "ShadowCache.h"
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 PodArray<SPlaneObject> CLightEntity::s_lstTmpCastersHull;
@@ -2194,3 +2195,5 @@ Vec3 CLightEntity::GetPos(bool bWorldOnly) const
 	assert(bWorldOnly);
 	return m_light.m_Origin;
 }
+
+#pragma warning(pop)

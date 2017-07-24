@@ -37,6 +37,7 @@
 	#include "D3D_SVO.h"
 #endif
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 #if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN
@@ -7598,3 +7599,5 @@ compute_skinning::IComputeSkinningStorage* CD3D9Renderer::GetComputeSkinningStor
 {
 	return &GetGraphicsPipeline().GetComputeSkinningStage()->GetStorage();
 }
+
+#pragma warning(pop)

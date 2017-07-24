@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "FormationManager.h"
+#include "Puppet.h"
+#include "AIVehicle.h"
 
 //-----------------------------------------------------------------------------------------------------------
 CFormationManager::CFormationManager()

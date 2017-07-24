@@ -5,9 +5,11 @@
 #include "SequenceManager.h"
 #include "SequenceAgent.h"
 #include "GoalPipe.h"
+#include "PipeUser.h"
 #include "Movement/MoveOp.h"
 #include "GoalOps/TeleportOp.h"
 #include <CryAISystem/IAgent.h>
+#include <CryAISystem/IMovementSystem.h>
 #include <CryGame/IGameFramework.h>
 
 namespace AIActionSequence

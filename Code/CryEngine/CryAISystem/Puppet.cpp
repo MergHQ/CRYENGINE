@@ -39,6 +39,7 @@
 #include <CryAISystem/IPerceptionHandlerModifier.h>
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "Formation/FormationManager.h"
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)

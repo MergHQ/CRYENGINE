@@ -14,6 +14,7 @@
 
 #define SMALL_MESH_NUM_INDEX 30
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 //////////////////////////////////////////////////////////////////////////
@@ -4157,3 +4158,5 @@ int CStatObjFoliage::Serialize(TSerialize ser)
 
 	return 1;
 }
+
+#pragma warning(pop)

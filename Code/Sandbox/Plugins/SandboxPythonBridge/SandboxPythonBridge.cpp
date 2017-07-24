@@ -6,12 +6,11 @@
 #include "EditorFramework/Editor.h"
 
 // Disable warnings (treated as errors) thrown by shiboken headers, causing compilation to fail.
-#pragma warning (disable : 4522)
-#pragma warning (disable : 4800)
-#pragma warning (disable : 4244)
-#pragma warning (disable : 4005)
+#pragma warning (push)
+#pragma warning (disable : 4522 4800 4244 4005)
 #include <sbkpython.h>
 #include <shiboken.h>
+#pragma warning (pop)
 #include <pyside.h>
 
 #include <pyside2_qtwidgets_python.h>

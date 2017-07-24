@@ -5,6 +5,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,3 +133,5 @@ void CWaterFlow::Render()
 
 	PostProcessUtils().ShEndPass();
 }
+
+#pragma warning(pop)

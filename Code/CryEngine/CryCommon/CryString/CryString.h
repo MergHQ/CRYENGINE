@@ -589,9 +589,10 @@ class CConstCharWrapper
 {
 public:
 	// Passing *this is safe since the char pointer is already set and therefore is the this-ptr constructed complete enough.
-	#pragma warning (disable : 4355)
+#pragma warning (push)
+#pragma warning (disable : 4355) //'this' : used in base member initializer list
 	CConstCharWrapper(const char* const cpString) : cpChar(cpString), str(*this){ assert(cpString); }//!< Create stack string.
-	#pragma warning (default : 4355)
+#pragma warning (pop)
 	~CConstCharWrapper(){ str.m_str = CryStringT<char>::_emptyHeader()->GetChars(); }  //!< Reset string.
 	operator const CryStringT<char> &() const { return str; }                          //!< Cast operator to const string reference.
 private:
