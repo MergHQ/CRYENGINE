@@ -89,7 +89,12 @@ void CProjectManager::ParseProjectFile()
 {
 	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
 	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
-	projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
+
+	string extension = PathUtil::GetExt(projectFile);
+	if (extension.length() == 0)
+	{
+		projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
+	}
 
 	char szEngineRootDirectoryBuffer[_MAX_PATH];
 	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDirectoryBuffer), szEngineRootDirectoryBuffer);

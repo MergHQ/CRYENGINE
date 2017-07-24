@@ -23,6 +23,8 @@ public:
 	bool AddCAFHeaderOnly(const GlobalAnimationHeaderCAF& header);
 	bool HasCAFHeader(const GlobalAnimationHeaderCAF& header) const;
 
+	bool CanBeSkipped();
+
 	bool SaveAIMImage(const char* fileName, FILETIME timeStamp, bool bigEndianFormat);
 	bool SaveCAFImage(const char* fileName, FILETIME timeStamp, bool bigEndianFormat);
 private:
