@@ -58,14 +58,14 @@ endif()
 
 #Renderer modules
 if(NOT (ORBIS OR ANDROID OR LINUX))
-	OPTION(RENDERER_DX11 "Renderer for DirectX 11" ON)
+	option(RENDERER_DX11 "Renderer for DirectX 11" ON)
 endif()
 
 if (WIN32 OR WIN64)
 	if (MSVC_VERSION LESS 1900)
 		message(STATUS "MSVC 14.0 or above is required to build CryRenderD3D12.")
 	else()
-		OPTION(RENDERER_DX12 "Renderer for DirectX 12" ON)
+		option(RENDERER_DX12 "Renderer for DirectX 12" ON)
 	endif()
 endif()
 
@@ -73,14 +73,14 @@ endif()
 set(RENDERER_OPENGL OFF)
 
 if(ORBIS)
-	OPTION(RENDERER_GNM "Use GNM renderer for Orbis" ON)
+	option(RENDERER_GNM "Use GNM renderer for Orbis" ON)
 	if(NOT RENDERER_GNM)
-		SET(RENDERER_DX11 ON)
+		set(RENDERER_DX11 ON)
 	endif()
 endif()
 
 if(WIN64)
-	OPTION(RENDERER_VULKAN "Renderer for Vulkan API" ON)
+	option(RENDERER_VULKAN "Renderer for Vulkan API" ON)
 	if (RENDERER_VULKAN AND NOT EXISTS "${SDK_DIR}/VulkanSDK")
 		message(STATUS "Vulkan SDK not found in ${SDK_DIR} - disabling Vulkan renderer.")
 		set(RENDERER_VULKAN OFF)
@@ -113,6 +113,10 @@ endif()
 
 if(WIN32 OR WIN64)
 	option(AUDIO_HRTF "HRTF support " ON)
+	if (AUDIO_HRTF AND NOT EXISTS "${SDK_DIR}/Audio/oculus")
+		message(STATUS "Oculus SDK not found in ${SDK_DIR} - disabling Oculus based HRTF support.")
+		set(AUDIO_HRTF OFF)
+	endif()
 endif()
 
 #Physics modules

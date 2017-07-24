@@ -98,6 +98,7 @@ public slots:
 	void                OnDockWidgetsChanged();
 	void                OnCharacterLoaded();
 	void                OnPanelDestroyed(QObject* obj);
+	void				OnFocusChanged(QWidget *old, QWidget *now);
 
 	void                OnAnimEventPresetPanelPutEvent();
 
@@ -169,6 +170,7 @@ private:
 	std::vector<char>                          m_defaultLayoutSnapshot;
 
 	bool                                       m_closed;
+	bool									   m_bHasFocus;
 };
 
 void ShowCharacterToolForm();

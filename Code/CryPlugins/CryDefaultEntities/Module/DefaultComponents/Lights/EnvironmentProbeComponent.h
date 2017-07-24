@@ -264,7 +264,7 @@ namespace Cry
 						szLevelName = "UnknownLevel";
 					}
 
-					string folder = string("Textures\\cubemaps\\") + szLevelName;
+					string folder = string("textures\\cubemaps\\") + szLevelName;
 					m_generation.m_generatedCubemapPath.value = folder + "\\" + m_pEntity->GetName() + string("_cm.tif");
 				}
 
