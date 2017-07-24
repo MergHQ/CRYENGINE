@@ -23,23 +23,14 @@
 #include "FilePathUtil.h"
 #include <QAdvancedTreeView.h>
 
-#include <QWidgetAction>
 #include <QPushButton>
-#include <QPaintEvent>
-#include <QPainter>
-#include <QMimeData>
 #include <QKeyEvent>
-#include <QSortFilterProxyModel>
-#include <QModelIndex>
 #include <QAction>
-#include <QApplication>
-#include <QButtonGroup>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <ProxyModels/MountingProxyModel.h>
-#include <CrySandbox/CryFunction.h>
 
 class QCheckableMenu final : public QMenu
 {
@@ -90,7 +81,72 @@ public:
 	{
 		return state() == QAbstractItemView::EditingState;
 	}
+
+	QModelIndexList GetSelectedIndexes()
+	{
+		return selectedIndexes();
+	}
 };
+
+void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const row)
+{
+	if (parent.isValid())
+	{
+		if (m_bCreatedFromMenu)
+		{
+			QModelIndex const& assetIndex = m_pProxyModel->mapFromSource(m_pMountedModel->index(row, 0, parent));
+			m_pControlsTree->setCurrentIndex(assetIndex);
+			m_pControlsTree->edit(assetIndex);
+			m_bCreatedFromMenu = false;
+		}
+		else if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
+		{
+			QModelIndex const& parentIndex = m_pProxyModel->mapFromSource(parent);
+			m_pControlsTree->expand(parentIndex);
+			m_pControlsTree->setCurrentIndex(parentIndex);
+		}
+	}
+}
+
+void CAudioAssetsExplorer::ExpandSelection(QModelIndexList const& indexList)
+{
+	for (auto const& index : indexList)
+	{
+		if (index.isValid())
+		{
+			int const childCount = index.model()->rowCount(index);
+
+			for (int i = 0; i < childCount; ++i)
+			{
+				QModelIndexList childList;
+				childList.append(index.child(i, 0));
+				ExpandSelection(childList);
+			}
+
+			m_pControlsTree->expand(index);
+		}
+	}
+}
+
+void CAudioAssetsExplorer::CollapseSelection(QModelIndexList const& indexList)
+{
+	for (auto const& index : indexList)
+	{
+		if (index.isValid())
+		{
+			int const childCount = index.model()->rowCount(index);
+
+			for (int i = 0; i < childCount; ++i)
+			{
+				QModelIndexList childList;
+				childList.append(index.child(i, 0));
+				CollapseSelection(childList);
+			}
+
+			m_pControlsTree->collapse(index);
+		}
+	}
+}
 
 CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
@@ -245,7 +301,11 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	pAddButton->setText(tr("Add"));
 
 	// ************ Context Menu ************
-	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Library), tr("Library"), [this]() { m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("new_library", *m_pAssetsManager)); });
+	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Library), tr("Library"), [this]()
+		{
+			m_bCreatedFromMenu = true;
+			m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("new_library", *m_pAssetsManager));
+		});
 	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Folder), tr("Folder"), [&]() { CreateFolder(GetSelectedAsset()); });
 	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Trigger), tr("Trigger"), [&]() { CreateControl("new_trigger", eItemType_Trigger, GetSelectedAsset()); });
 	m_addItemMenu.addAction(GetItemTypeIcon(eItemType_Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", eItemType_Parameter, GetSelectedAsset()); });
@@ -261,7 +321,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 
 	m_pAssetsManager->signalItemAdded.Connect([&](IAudioAsset* pItem)
 		{
-			if (!m_reloading)
+			if (!m_bReloading)
 			{
 			  ResetFilters();
 			}
@@ -287,9 +347,11 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CAudioAssetsExplorer::SelectedControlChanged);
 	connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &CAudioAssetsExplorer::StopControlExecution);
 
+	connect(m_pMountedModel, &CMountingProxyModel::rowsInserted, this, &CAudioAssetsExplorer::SelectNewAsset);
+
 	m_pAssetsManager->signalLibraryAboutToBeRemoved.Connect([&](CAudioLibrary* pLibrary)
 		{
-			if (!m_reloading)
+			if (!m_bReloading)
 			{
 			  int const libCount = m_pAssetsManager->GetLibraryCount();
 			  for (int i = 0; i < libCount; ++i)
@@ -370,6 +432,8 @@ void CAudioAssetsExplorer::ShowControlType(EItemType type, bool bShow)
 
 CAudioControl* CAudioAssetsExplorer::CreateControl(string const& name, EItemType type, IAudioAsset* pParent)
 {
+	m_bCreatedFromMenu = true;
+
 	if (type != eItemType_State)
 	{
 		return m_pAssetsManager->CreateControl(Utils::GenerateUniqueControlName(name, type, *m_pAssetsManager), type, pParent);
@@ -382,6 +446,7 @@ CAudioControl* CAudioAssetsExplorer::CreateControl(string const& name, EItemType
 
 IAudioAsset* CAudioAssetsExplorer::CreateFolder(IAudioAsset* pParent)
 {
+	m_bCreatedFromMenu = true;
 	return m_pAssetsManager->CreateFolder(Utils::GenerateUniqueName("new_folder", EItemType::eItemType_Folder, pParent), pParent);
 }
 
@@ -499,6 +564,9 @@ void CAudioAssetsExplorer::ShowControlsContextMenu(QPoint const& pos)
 
 	contextMenu.addAction(tr("Rename"), [&]() { m_pControlsTree->edit(m_pControlsTree->currentIndex()); });
 	contextMenu.addAction(tr("Delete"), [&]() { DeleteSelectedControl(); });
+	contextMenu.addSeparator();
+	contextMenu.addAction(tr("Expand Selection"), [&]() { ExpandSelection(m_pControlsTree->GetSelectedIndexes()); });
+	contextMenu.addAction(tr("Collapse Selection"), [&]() { CollapseSelection(m_pControlsTree->GetSelectedIndexes()); });
 	contextMenu.addSeparator();
 	contextMenu.addAction(tr("Expand All"), [&]() { m_pControlsTree->expandAll(); });
 	contextMenu.addAction(tr("Collapse All"), [&]() { m_pControlsTree->collapseAll(); });

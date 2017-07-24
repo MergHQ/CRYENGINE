@@ -4,6 +4,7 @@
 
 #include <QFrame>
 #include <QMenu>
+#include <QModelIndex>
 
 #include "AudioAssets.h"
 #include "QTreeWidgetFilter.h"
@@ -51,6 +52,10 @@ private:
 	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
 	IAudioAsset*        GetSelectedAsset() const;
 
+	void                SelectNewAsset(QModelIndex const& parent, int const row);
+	void                ExpandSelection(QModelIndexList const& indexList);
+	void                CollapseSelection(QModelIndexList const& indexList);
+
 	// ------------------ QWidget ----------------------------
 	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// -------------------------------------------------------
@@ -87,6 +92,7 @@ private:
 
 	CMountingProxyModel*             m_pMountedModel;
 	std::vector<CAudioLibraryModel*> m_libraryModels;
-	bool                             m_reloading = false;
+	bool                             m_bReloading = false;
+	bool                             m_bCreatedFromMenu = false;
 };
 } // namespace ACE
