@@ -18,8 +18,6 @@
 	#include <CryInput/IHardwareMouse.h>
 #endif
 
-#pragma warning(disable: 4244)
-
 SD3DPostEffectsUtils SD3DPostEffectsUtils::m_pInstance;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -531,7 +529,7 @@ void SD3DPostEffectsUtils::TexBlurIterative(CTexture* pTex, int nIterationsMul, 
 
 		gRenDev->FX_SetState(GS_NODEPTHTEST);
 		// increase kernel size for second iteration
-		fSampleSize = 2.0 * ((float) i);
+		fSampleSize = 2.0f * ((float) i);
 		// Set samples position
 		s1 = fSampleSize / (float) pTex->GetWidth();  // 2.0 better results on lower res images resizing
 		t1 = fSampleSize / (float) pTex->GetHeight();
@@ -769,7 +767,7 @@ void SD3DPostEffectsUtils::TexBlurGaussian(CTexture* pTex, int nAmount, float fS
 	for (s = 0; s < nSamples; ++s)
 	{
 		if (fDistribution != 0.0f)
-			pWeights[s] = GaussianDistribution1D(s - nHalfSamples, fDistribution);
+			pWeights[s] = GaussianDistribution1D(static_cast<float>(s - nHalfSamples), fDistribution);
 		else
 			pWeights[s] = 0.0f;
 		fWeightSum += pWeights[s];

@@ -6,6 +6,8 @@
 #endif
 
 #include <CryFlowGraph/IFlowSystem.h> // <> required for Interfuscator
+#include <CryParticleSystem/IParticles.h>
+#include <CryMath/Cry_Color.h>
 
 struct IEntityClass;
 struct ISurfaceType;

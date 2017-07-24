@@ -12,6 +12,7 @@
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include "Group/GroupManager.h"
 #include "Factions/FactionMap.h"
+#include "Formation/FormationManager.h"
 #include <CryCore/CryCrc32.h>
 #include <CryEntitySystem/IEntity.h>
 
@@ -29,7 +30,6 @@ static const float UNINITIALIZED_COS_CACHE = 2.0f;
 
 #define _ser_value_(val) ser.Value( # val, val)
 
-#pragma warning (disable : 4355)
 CAIActor::CAIActor()
 	: m_bCheckedBody(true)
 #ifdef CRYAISYSTEM_DEBUG
@@ -56,7 +56,6 @@ CAIActor::CAIActor()
 
 	AILogComment("CAIActor (%p)", this);
 }
-#pragma warning (default : 4355)
 
 CAIActor::~CAIActor()
 {

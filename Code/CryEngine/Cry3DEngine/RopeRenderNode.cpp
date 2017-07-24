@@ -9,6 +9,7 @@
 
 #include <CryEntitySystem/IEntity.h>
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 class TubeSurface : public _i_reference_target_t
@@ -1938,3 +1939,5 @@ IMaterial* CRopeRenderNode::GetMaterial(Vec3* pHitPos) const
 {
 	return m_pMaterial;
 }
+
+#pragma warning(pop)

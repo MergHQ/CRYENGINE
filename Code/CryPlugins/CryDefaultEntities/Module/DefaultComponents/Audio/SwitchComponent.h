@@ -58,13 +58,13 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-static void ReflectType(Schematyc::CTypeDesc<SSwitchWithStateSerializeHelper>& desc)
+inline void ReflectType(Schematyc::CTypeDesc<SSwitchWithStateSerializeHelper>& desc)
 {
 	desc.SetGUID("9DB56B33-57FE-4E97-BED2-F0BBD3012967"_cry_guid);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SSwitchWithStateSerializeHelper::Serialize(Serialization::IArchive& archive)
+inline void SSwitchWithStateSerializeHelper::Serialize(Serialization::IArchive& archive)
 {
 	archive(Serialization::AudioSwitch<string>(m_switchName), "switchName", "SwitchName");
 	archive(Serialization::AudioSwitchState<string>(m_switchStateName), "stateName", "StateName");

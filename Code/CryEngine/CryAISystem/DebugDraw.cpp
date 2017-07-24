@@ -51,8 +51,6 @@
 #include <CryAISystem/IAIBubblesSystem.h>
 #include <CryAISystem/IAISystemComponent.h>
 
-#pragma warning(disable: 4244)
-
 #define whiteTrans ColorB(255, 255, 255, 179)
 #define redTrans   ColorB(255, 0, 0, 179)
 
@@ -1185,7 +1183,7 @@ void CAISystem::DebugDrawForceAGSignal() const
 	const char* szInput = gAIEnv.CVars.ForceAGSignal;
 
 	CDebugDrawContext dc;
-	dc->Draw2dLabel(10, dc->GetHeight() - 90, 2.0f, colorRed, false, "Forced AG Signal Input: %s", szInput);
+	dc->Draw2dLabel(10.f, dc->GetHeight() - 90.f, 2.0f, colorRed, false, "Forced AG Signal Input: %s", szInput);
 }
 
 void CAISystem::DebugDrawForceAGAction() const
@@ -1196,7 +1194,7 @@ void CAISystem::DebugDrawForceAGAction() const
 	const char* szInput = gAIEnv.CVars.ForceAGAction;
 
 	CDebugDrawContext dc;
-	dc->Draw2dLabel(10, dc->GetHeight() - 60, 2.0f, colorRed, false, "Forced AG Action Input: %s", szInput);
+	dc->Draw2dLabel(10.f, dc->GetHeight() - 60.f, 2.0f, colorRed, false, "Forced AG Action Input: %s", szInput);
 }
 
 void CAISystem::DebugDrawForceStance() const
@@ -1207,7 +1205,7 @@ void CAISystem::DebugDrawForceStance() const
 	const char* szStance = GetStanceName(gAIEnv.CVars.ForceStance);
 
 	CDebugDrawContext dc;
-	dc->Draw2dLabel(10, dc->GetHeight() - 30, 2.0f, colorRed, false, "Forced Stance: %s", szStance);
+	dc->Draw2dLabel(10.f, dc->GetHeight() - 30.f, 2.0f, colorRed, false, "Forced Stance: %s", szStance);
 }
 
 void CAISystem::DebugDrawForcePosture() const
@@ -1218,7 +1216,7 @@ void CAISystem::DebugDrawForcePosture() const
 	const char* szPosture = gAIEnv.CVars.ForcePosture;
 
 	CDebugDrawContext dc;
-	dc->Draw2dLabel(10, dc->GetHeight() - 30, 2.0f, colorRed, false, "Forced Posture: %s", szPosture);
+	dc->Draw2dLabel(10.f, dc->GetHeight() - 30.f, 2.0f, colorRed, false, "Forced Posture: %s", szPosture);
 }
 
 // Player actions
@@ -1480,10 +1478,10 @@ void CAISystem::DebugDrawRadar()
 	float s = (float)size / worldSize;
 	worldToScreen = Matrix34::CreateScale(Vec3(s, s, 0)) * worldToScreen;
 	// offset the position to upper right corner
-	worldToScreen.AddTranslation(Vec3(centerx, centery, 0));
+	worldToScreen.AddTranslation(Vec3(static_cast<float>(centerx), static_cast<float>(centery), 0.f));
 	// Inverse Y
 	worldToScreen = Matrix34::CreateScale(Vec3(1, -1, 0)) * worldToScreen;
-	worldToScreen.AddTranslation(Vec3(0, h, 0));
+	worldToScreen.AddTranslation(Vec3(0, static_cast<float>(h), 0));
 
 	Matrix34 screenToNorm;
 	screenToNorm.SetIdentity();
@@ -1708,7 +1706,7 @@ void CAISystem::DebugDrawVegetationCollision()
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
 
-	float range = gAIEnv.CVars.DebugDrawVegetationCollisionDist;
+	float range = static_cast<float>(gAIEnv.CVars.DebugDrawVegetationCollisionDist);
 	if (range < 0.1f)
 		return;
 
@@ -1792,7 +1790,7 @@ void CAISystem::DebugDrawDynamicHideObjects()
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
 
-	float range = gAIEnv.CVars.DebugDrawDynamicHideObjectsRange;
+	float range = static_cast<float>(gAIEnv.CVars.DebugDrawDynamicHideObjectsRange);
 	if (range < 0.1f)
 		return;
 
@@ -3264,7 +3262,7 @@ void CAISystem::DebugDrawStatsTarget(const char* pName)
 		}
 	}
 
-	dc->TextToScreen(50, 62, "GR.MEMBERS:%" PRISIZE_T " GROUPID:%d", m_mapGroups.count(pTargetAIActor->GetGroupId()), pTargetAIActor->GetGroupId());
+	dc->TextToScreen(50, 62, "GR.MEMBERS:%" PRISIZE_T " GROUPID:%d", m_mapGroups.count(static_cast<short>(pTargetAIActor->GetGroupId())), pTargetAIActor->GetGroupId());
 
 	if (pTargetProxy)
 		pTargetProxy->DebugDraw(1);
@@ -3549,7 +3547,7 @@ void CAISystem::DebugDrawType() const
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
 
-	int type = gAIEnv.CVars.DrawType;
+	short type = static_cast<short>(gAIEnv.CVars.DrawType);
 
 	AIObjectOwners::const_iterator ai;
 	if ((ai = gAIEnv.pAIObjectManager->m_Objects.find(type)) != gAIEnv.pAIObjectManager->m_Objects.end())
@@ -4147,7 +4145,7 @@ void CAISystem::DebugDrawGroups()
 			{
 				ColorB color = groupColors[groupCount % colorCount];
 
-				DebugDrawOneGroup(x, y, w, 1.075f, groupID, color, color, drawWorld);
+				DebugDrawOneGroup(x, y, w, 1.075f, static_cast<short>(groupID), color, color, drawWorld);
 				y += 6.5f;
 
 				if (y >= 635.0f)
@@ -4257,7 +4255,7 @@ void CAISystem::DebugDrawOneGroup(float x, float& y, float& w, float fontSize, s
 		if (hasLeader)
 			groupCenter = leaderCenter;
 		else if (activeMemberCount > 1)
-			groupCenter /= activeMemberCount;
+			groupCenter /= static_cast<f32>(activeMemberCount);
 
 		if (memberCount > 0)
 		{
@@ -4445,12 +4443,15 @@ void CAISystem::DebugDrawAreas() const
 		{
 			switch (shape.type)
 			{
+#pragma warning(push)
+#pragma warning(disable: 4244)
 			case ALERT_STANDBY_IN_RANGE:
 				dc->DrawRangePolygon(&tempVector[0], tempVector.size(), 0.75f, ColorB(255, 128, 0, a / 2), ColorB(255, 128, 0, a), true);
 				break;
 			case COMBAT_TERRITORY:
 				dc->DrawRangePolygon(&tempVector[0], tempVector.size(), 0.75f, ColorB(40, 85, 180, a / 2), ColorB(40, 85, 180, a), true);
 				break;
+#pragma warning(pop)
 			}
 		}
 	}

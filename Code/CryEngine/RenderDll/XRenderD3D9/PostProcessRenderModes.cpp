@@ -18,6 +18,7 @@
 #include "D3DPostProcess.h"
 #include <CryAudio/IAudioSystem.h>
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -705,3 +706,5 @@ void CThermalVision::Render()
 
 	gcpRendD3D->m_RP.m_FlagsShader_RT = nSaveFlagsShader_RT;
 }
+
+#pragma warning(pop)

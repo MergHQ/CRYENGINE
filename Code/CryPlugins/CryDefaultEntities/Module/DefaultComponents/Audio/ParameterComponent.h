@@ -57,13 +57,13 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-static void ReflectType(Schematyc::CTypeDesc<SParameterSerializeHelper>& desc)
+inline void ReflectType(Schematyc::CTypeDesc<SParameterSerializeHelper>& desc)
 {
 	desc.SetGUID("5287D8F9-7638-41BB-BFDD-2F5B47DEEA07"_cry_guid);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SParameterSerializeHelper::Serialize(Serialization::IArchive& archive)
+inline void SParameterSerializeHelper::Serialize(Serialization::IArchive& archive)
 {
 	archive(Serialization::AudioRTPC<string>(m_name), "parameterName", "^");
 

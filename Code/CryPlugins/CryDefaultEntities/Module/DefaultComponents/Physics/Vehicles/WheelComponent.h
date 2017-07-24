@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
+#include "VehicleComponent.h"
 
 namespace Cry
 {

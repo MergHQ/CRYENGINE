@@ -37,7 +37,6 @@
 
 #pragma warning(push)
 #pragma warning(disable:4355) // 'this': used in base member initializer list
-
 CPipeUser::CPipeUser()
 	: m_fTimePassed(0)
 	, m_adjustingAim(false)

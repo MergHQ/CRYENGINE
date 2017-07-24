@@ -6,6 +6,7 @@
 #include "MergedMeshGeometry.h"
 #include "VMath.hpp"
 
+#pragma warning(push)
 #pragma warning(disable: 6001)
 #pragma warning(disable: 4101)
 
@@ -4680,3 +4681,5 @@ void CMergedMeshRenderNode::InitializeSpines()
 	}
 	m_SpinesActive = true;
 }
+
+#pragma warning(pop)

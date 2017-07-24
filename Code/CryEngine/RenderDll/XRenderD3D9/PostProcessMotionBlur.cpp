@@ -13,6 +13,7 @@
 #include "D3DPostProcess.h"
 #include "D3DStereo.h"
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 CMotionBlur::OMBParamsMap CMotionBlur::m_pOMBData[3];
@@ -513,3 +514,5 @@ void CMotionBlur::Render()
 	gcpRendD3D->FX_SetActiveRenderTargets();
 	gcpRendD3D->RT_SetViewport(iTempX, iTempY, iWidth, iHeight);
 }
+
+#pragma warning(pop)

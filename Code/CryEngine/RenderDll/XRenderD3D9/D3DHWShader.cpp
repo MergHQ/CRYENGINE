@@ -26,6 +26,7 @@
 #define MAX_PF_SAMPLERS (4)
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#pragma warning(push)
 	#pragma warning(disable: 4244)
 #endif
 
@@ -6299,3 +6300,6 @@ Vec4 CHWShader_D3D::GetFogColorGradientRadial(const CRenderCamera& rcam)
 	return sGetFogColorGradientRadial(rcam);
 }
 
+#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#pragma warning(pop)
+#endif

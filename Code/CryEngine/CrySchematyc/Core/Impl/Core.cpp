@@ -74,6 +74,10 @@ CCore::CCore()
 
 CCore::~CCore()
 {
+	// TODO: This should be moved to a proper shutdown function later.
+	m_pEnvRegistry->DeregisterPackage(g_coreEnvPackageGuid);
+	// ~TODO
+
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 
 	m_pLog->Shutdown();
@@ -132,7 +136,7 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 
 	env.pSchematyc = this;
 
-	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_cry_guid, "CoreEnv", g_szCrytek, "Core Schematyc environment", SCHEMATYC_DELEGATE(&RegisterCoreEnvPackage))))
+	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(g_coreEnvPackageGuid, "CoreEnv", g_szCrytek, "Core Schematyc environment", SCHEMATYC_DELEGATE(&RegisterCoreEnvPackage))))
 	{
 		env.pSchematyc = nullptr;
 		return false;

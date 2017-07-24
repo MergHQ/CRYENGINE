@@ -15,10 +15,6 @@
 #define __particleemitter_h__
 #pragma once
 
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-	#pragma warning(disable: 4355)
-#endif
-
 #include "ParticleEffect.h"
 #include "ParticleEnviron.h"
 #include "ParticleContainer.h"

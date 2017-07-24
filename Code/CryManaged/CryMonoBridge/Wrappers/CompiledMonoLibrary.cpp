@@ -2,6 +2,9 @@
 
 #include "StdAfx.h"
 #include "CompiledMonoLibrary.h"
+#include "MonoRuntime.h"
+#include "MonoLibrary.h"
+#include "MonoDomain.h"
 
 CCompiledMonoLibrary::CCompiledMonoLibrary(const char* szDirectory, CMonoDomain* pDomain)
 	: CMonoLibrary(nullptr, "", pDomain)

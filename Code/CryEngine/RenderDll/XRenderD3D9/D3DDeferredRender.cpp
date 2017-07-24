@@ -9,6 +9,7 @@
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
 #include "GraphicsPipeline/ShadowMap.h"
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 #if CRY_PLATFORM_DURANGO
@@ -736,3 +737,4 @@ void CD3D9Renderer::FX_CreateDeferredQuad(const SRenderLight* pLight, float mask
 	TempDynVB<SVF_P3F_T2F_T3F>::CreateFillAndBind(vQuad, 4, 0);
 }
 
+#pragma warning(pop)

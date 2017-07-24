@@ -33,6 +33,7 @@
 #include "Common/RenderView.h"
 #include "CompiledRenderObject.h"
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 //============================================================================================
@@ -3789,3 +3790,5 @@ void CD3D9Renderer::WaitForParticleBuffer()
 	rp.m_particleBuffer.WaitForFence();
 }
 //========================================================================================================
+
+#pragma warning(pop)
