@@ -897,16 +897,17 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 		std::vector<D3DRectangle> clearDepthRects; clearDepthRects.reserve(64);
 		std::vector<D3DRectangle> clearColorRects; clearColorRects.reserve(64);
 
-		for (EPass pass = ePass_LocalLight; pass <= ePass_DirectionalLightRSM; pass = EPass(pass+1))
+
+		for (EPass pass = ePass_LocalLight; pass <= ePass_LocalLightRSM; pass = EPass(pass + (ePass_LocalLightRSM - ePass_LocalLight)))
 		{
-			for (auto& localLightPass : shadowMapPasses[ePass_LocalLight])
+			for (auto& localLightPass : shadowMapPasses[pass])
 			{
 				CRY_ASSERT(localLightPass.GetPassDesc().GetDepthTarget().pTexture == CTexture::s_ptexRT_ShadowPool);
 				CRY_ASSERT(localLightPass.m_clearMode == CShadowMapPass::eClearMode_FillRect);
 
 				clearDepthRects.push_back(localLightPass.GetScissorRect());
 
-				if (pass == ePass_DirectionalLightRSM)
+				if (pass == ePass_LocalLightRSM)
 				{
 					clearColorRects.push_back(localLightPass.GetScissorRect());
 				}
