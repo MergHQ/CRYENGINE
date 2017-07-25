@@ -73,6 +73,17 @@ SPerInstanceResources::SPerInstanceResources(const int numVertices, const int nu
 	passVertexTangents.SetFlags(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader);
 }
 
+SPerInstanceResources::~SPerInstanceResources()
+{
+	verticesOut.FreeDeviceBuffer();
+	tangentsOut.FreeDeviceBuffer();
+
+	passDeform.Reset();
+	passDeformWithMorphs.Reset();
+	passTriangleTangents.Reset();
+	passVertexTangents.Reset();
+}
+
 size_t SPerInstanceResources::GetSizeBytes()
 {
 	size_t total = 0;
