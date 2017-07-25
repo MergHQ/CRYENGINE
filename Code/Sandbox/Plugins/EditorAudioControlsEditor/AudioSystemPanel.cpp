@@ -9,6 +9,7 @@
 #include "AudioSystemModel.h"
 #include "QAudioSystemSettingsDialog.h"
 #include "ImplementationManager.h"
+#include "AudioAdvancedTreeView.h"
 
 // Qt
 #include <QtUtil.h>
@@ -17,7 +18,6 @@
 #include <QHeaderView>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QTreeView>
 #include <QToolButton>
 #include <QIcon>
 #include <QLabel>
@@ -88,17 +88,20 @@ CAudioSystemPanel::CAudioSystemPanel()
 			m_pModelProxy->SetHideConnected(bHide);
 	  });
 
-	QTreeView* pTreeView = new QTreeView();
-	pTreeView->header()->setVisible(false);
-	pTreeView->setDragEnabled(true);
-	pTreeView->setDragDropMode(QAbstractItemView::DragOnly);
-	pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	pTreeView->setSortingEnabled(true);
-	pTreeView->sortByColumn(0, Qt::AscendingOrder);
+	m_pTreeView = new CAudioAdvancedTreeView();
+	m_pTreeView->header()->setVisible(false);
+	m_pTreeView->setDragEnabled(true);
+	m_pTreeView->setDragDropMode(QAbstractItemView::DragOnly);
+	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_pTreeView->setSortingEnabled(true);
+	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
 
 	m_pModelProxy->setSourceModel(m_pModel);
-	pTreeView->setModel(m_pModelProxy);
-	pVerticalLayout->addWidget(pTreeView);
+	m_pTreeView->setModel(m_pModelProxy);
+	pVerticalLayout->addWidget(m_pTreeView);
+
+	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(m_pTreeView, &QAdvancedTreeView::customContextMenuRequested, this, &CAudioSystemPanel::ShowControlsContextMenu);
 
 	// Update the middleware name label.
 	// Note the 'this' ptr being passed as a context variable so that Qt can disconnect this lambda when the object is destroyed (ie. the ACE is closed).
@@ -130,10 +133,28 @@ void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
 	}
 }
 
+void CAudioSystemPanel::ShowControlsContextMenu(QPoint const& pos)
+{
+	QMenu contextMenu(tr("Context menu"), this);
+	QMenu addMenu(tr("Add"));
+	auto selection = m_pTreeView->selectionModel()->selectedRows();
+
+	if (!selection.isEmpty())
+	{
+		contextMenu.addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(m_pTreeView->GetSelectedIndexes()); });
+		contextMenu.addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(m_pTreeView->GetSelectedIndexes()); });
+		contextMenu.addSeparator();
+	}
+
+	contextMenu.addAction(tr("Expand All"), [&]() { m_pTreeView->expandAll(); });
+	contextMenu.addAction(tr("Collapse All"), [&]() { m_pTreeView->collapseAll(); });
+
+	contextMenu.exec(m_pTreeView->mapToGlobal(pos));
+}
+
 void CAudioSystemPanel::Reset()
 {
 	m_pModel->Reset();
 	m_pModelProxy->invalidate();
 }
-
-}
+} // namespace ACE

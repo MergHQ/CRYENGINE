@@ -21,7 +21,7 @@
 #include "IUndoObject.h"
 #include "Controls/QuestionDialog.h"
 #include "FilePathUtil.h"
-#include <QAdvancedTreeView.h>
+#include "AudioAdvancedTreeView.h"
 
 #include <QPushButton>
 #include <QKeyEvent>
@@ -72,22 +72,6 @@ public:
 
 namespace ACE
 {
-class CAudioAdvancedTreeView : public QAdvancedTreeView
-{
-public:
-	CAudioAdvancedTreeView() = default;
-
-	bool IsEditing()
-	{
-		return state() == QAbstractItemView::EditingState;
-	}
-
-	QModelIndexList GetSelectedIndexes()
-	{
-		return selectedIndexes();
-	}
-};
-
 void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const row)
 {
 	if (parent.isValid())
@@ -104,46 +88,6 @@ void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const r
 			QModelIndex const& parentIndex = m_pProxyModel->mapFromSource(parent);
 			m_pControlsTree->expand(parentIndex);
 			m_pControlsTree->setCurrentIndex(parentIndex);
-		}
-	}
-}
-
-void CAudioAssetsExplorer::ExpandSelection(QModelIndexList const& indexList)
-{
-	for (auto const& index : indexList)
-	{
-		if (index.isValid())
-		{
-			int const childCount = index.model()->rowCount(index);
-
-			for (int i = 0; i < childCount; ++i)
-			{
-				QModelIndexList childList;
-				childList.append(index.child(i, 0));
-				ExpandSelection(childList);
-			}
-
-			m_pControlsTree->expand(index);
-		}
-	}
-}
-
-void CAudioAssetsExplorer::CollapseSelection(QModelIndexList const& indexList)
-{
-	for (auto const& index : indexList)
-	{
-		if (index.isValid())
-		{
-			int const childCount = index.model()->rowCount(index);
-
-			for (int i = 0; i < childCount; ++i)
-			{
-				QModelIndexList childList;
-				childList.append(index.child(i, 0));
-				CollapseSelection(childList);
-			}
-
-			m_pControlsTree->collapse(index);
 		}
 	}
 }
@@ -565,9 +509,14 @@ void CAudioAssetsExplorer::ShowControlsContextMenu(QPoint const& pos)
 	contextMenu.addAction(tr("Rename"), [&]() { m_pControlsTree->edit(m_pControlsTree->currentIndex()); });
 	contextMenu.addAction(tr("Delete"), [&]() { DeleteSelectedControl(); });
 	contextMenu.addSeparator();
-	contextMenu.addAction(tr("Expand Selection"), [&]() { ExpandSelection(m_pControlsTree->GetSelectedIndexes()); });
-	contextMenu.addAction(tr("Collapse Selection"), [&]() { CollapseSelection(m_pControlsTree->GetSelectedIndexes()); });
-	contextMenu.addSeparator();
+
+	if (!selection.isEmpty())
+	{
+		contextMenu.addAction(tr("Expand Selection"), [&]() { m_pControlsTree->ExpandSelection(m_pControlsTree->GetSelectedIndexes()); });
+		contextMenu.addAction(tr("Collapse Selection"), [&]() { m_pControlsTree->CollapseSelection(m_pControlsTree->GetSelectedIndexes()); });
+		contextMenu.addSeparator();
+	}
+	
 	contextMenu.addAction(tr("Expand All"), [&]() { m_pControlsTree->expandAll(); });
 	contextMenu.addAction(tr("Collapse All"), [&]() { m_pControlsTree->collapseAll(); });
 

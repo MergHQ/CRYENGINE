@@ -673,16 +673,20 @@ bool CAnimationConverter::RebuildDatabases()
 		m_rc->AddInputOutputFilePair(dbaTableFilename.c_str(), sAnimationsImgFilename);
 	}
 
-	const string sDirectionalBlendsImgFilename = PathHelpers::Join(targetGameFolderPath, "Animations\\DirectionalBlends.img");
-	RCLog("Saving %s...",sDirectionalBlendsImgFilename);
-	if(!animationManager.SaveAIMImage(sDirectionalBlendsImgFilename, latest, bigEndianOutput))
+	// Check if it can be skipped so it won't accidentally log errors.
+	if (!animationManager.CanBeSkipped())
 	{
-		RCLogError("Error saving DirectionalBlends.img");
-		return false;
-	}
-	if (m_rc)
-	{
-		m_rc->AddInputOutputFilePair(dbaTableFilename.c_str(), sDirectionalBlendsImgFilename);
+		const string sDirectionalBlendsImgFilename = PathHelpers::Join(targetGameFolderPath, "Animations\\DirectionalBlends.img");
+		RCLog("Saving %s...", sDirectionalBlendsImgFilename);
+		if (!animationManager.SaveAIMImage(sDirectionalBlendsImgFilename, latest, bigEndianOutput))
+		{
+			RCLogError("Error saving DirectionalBlends.img");
+			return false;
+		}
+		if (m_rc)
+		{
+			m_rc->AddInputOutputFilePair(dbaTableFilename.c_str(), sDirectionalBlendsImgFilename);
+		}
 	}
 
 	if (!unusedDBAs.empty())

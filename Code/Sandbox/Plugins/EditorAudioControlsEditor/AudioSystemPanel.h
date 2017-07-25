@@ -9,9 +9,9 @@ class QLabel;
 
 namespace ACE
 {
-
 class QAudioSystemModelProxyFilter;
 class QAudioSystemModel;
+class CAudioAdvancedTreeView;
 
 class CAudioSystemPanel : public QFrame
 {
@@ -22,6 +22,9 @@ public:
 	void SetAllowedControls(EItemType type, bool bAllowed);
 	void Reset();
 
+private slots:
+	void ShowControlsContextMenu(QPoint const& pos);
+
 signals:
 	void ImplementationSettingsChanged();
 
@@ -30,5 +33,6 @@ private:
 	QAudioSystemModelProxyFilter* m_pModelProxy;
 	QAudioSystemModel*            m_pModel;
 	QLabel*                       m_pImplNameLabel;
+	CAudioAdvancedTreeView*       m_pTreeView;
 };
-}
+} // namespace ACE
