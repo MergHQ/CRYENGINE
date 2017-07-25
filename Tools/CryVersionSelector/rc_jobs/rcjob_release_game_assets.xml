@@ -195,19 +195,19 @@
 		<Properties AlembicTypes="*.cax" />
 		<Properties GameDataInputs="Libs/*.*;config/*.*;Materials/*.*;Prefabs/*.*;Fonts/*.*;Difficulty/*.*;Data/*.*;Particles/*.*" />
 		<Properties CompressedExcludes="audio/*.*;Music/*.*;Libs/UI/*.*;config/*.*;${AnimationTypes};*.cgf;${TextureTypes};Levels/*.*;${CryassetType}" />
+		<Properties DefaultExcludes="Levels/*.*;${CryassetType}" />
 		
 		<!-- Pak all files that don't need to be compressed. -->
-		<Job Zip="${TargetRoot}/Data.pak" 		Input="*.*" 					Exclude="${CompressedExcludes}"	Zip_SizeSplit="1"	Zip_MaxSize="1900000"	Zip_Compression="0" />
-		<Job Zip="${TargetRoot}/Audio.pak"		Input="audio/*.*"				Exclude="${CryassetType}"		Zip_Compression="0" />
-		<Job Zip="${TargetRoot}/Music.pak"		Input="Music/*.*"				Exclude="${CryassetType}"		Zip_Compression="0" />
+		<Job Zip="${TargetRoot}/Data.pak"		Input="*.*"						Exclude="${CompressedExcludes}"	Zip_SizeSplit="1"	Zip_MaxSize="1900000"	Zip_Compression="0" />
+		<Job Zip="${TargetRoot}/Audio.pak"		Input="audio/*.*"				Exclude="${DefaultExcludes}"	Zip_SizeSplit="1"	Zip_MaxSize="1900000"	Zip_Compression="0" />
+		<Job Zip="${TargetRoot}/Music.pak"		Input="Music/*.*"				Exclude="${DefaultExcludes}"	Zip_SizeSplit="1"	Zip_MaxSize="1900000"	Zip_Compression="0" />
 		<Job Zip="${TargetRoot}/GameData.pak"	Input="Libs/UI/*.*;config/*.*"	Exclude="${CryassetType}"		Zip_Compression="0" />
-		
-		
+
 		<!-- Pak all files that need to be compressed. -->
-		<Job Zip="${TargetRoot}/Animations.pak" Input="${AnimationTypes}" 	Exclude="*.cgf;${CryassetType}"  			Zip_SizeSplit="1" Zip_MaxSize="1900000" />
-		<Job Zip="${TargetRoot}/Objects.pak" 	Input="*.cgf" 				Exclude="${CryassetType}"  					Zip_SizeSplit="1" Zip_MaxSize="1900000" />
-		<Job Zip="${TargetRoot}/Textures.pak" 	Input="${TextureTypes}" 	Exclude="${CryassetType}" 					Zip_SizeSplit="1" Zip_MaxSize="1900000" />
-		<Job Zip="${TargetRoot}/GameData.pak" 	Input="${GameDataInputs}" 	Exclude="Libs/UI/*.*;${CryassetType}" />
+		<Job Zip="${TargetRoot}/Animations.pak"	Input="${AnimationTypes}"	Exclude="*.cgf;${DefaultExcludes}"	Zip_SizeSplit="1" Zip_MaxSize="1900000" />
+		<Job Zip="${TargetRoot}/Objects.pak"	Input="*.cgf"				Exclude="${DefaultExcludes}"		Zip_SizeSplit="1" Zip_MaxSize="1900000" />
+		<Job Zip="${TargetRoot}/Textures.pak"	Input="${TextureTypes}"		Exclude="${DefaultExcludes}"		Zip_SizeSplit="1" Zip_MaxSize="1900000" />
+		<Job Zip="${TargetRoot}/GameData.pak"	Input="${GameDataInputs}"	Exclude="Libs/UI/*.*;${CryassetType}" />
 
 		<!-- Startup cache, this is deprecated -->
 		<If CreateStartupCache="1">
@@ -229,6 +229,7 @@
 		<If Platform="Durango">
 			<Run Job="CopySubfolderJob" SubFolder="Grammars" Input="*.*" />
 		</If>
+		<Job Input="game.cfg" CopyOnly="1" />
 
 		<If CreateIntroMovies="1">
 			<Run Job="IntroMoviesCache" />
