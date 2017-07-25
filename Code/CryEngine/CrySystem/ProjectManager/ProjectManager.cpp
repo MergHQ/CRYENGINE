@@ -114,7 +114,11 @@ void CProjectManager::ParseProjectFile()
 		return;
 	}
 
-	projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
+	string extension = PathUtil::GetExt(projectFile);
+	if (extension.empty())
+	{
+		projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
+	}
 
 #if CRY_PLATFORM_DURANGO
 	if(true)

@@ -2571,10 +2571,12 @@ bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
 				stm.Write(true); w.SaveGeometry(stm,pent->m_pCylinderGeom);
 				objs.insert(std::pair<void*,int>(pent->m_pCylinderGeom,objs.size()));
 			}
+			sphere sph; sph.center.zero(); sph.r=1e4f;
+			CSphereGeom sg;	sg.CreateSphere(&sph);
 			for(CPhysArea *parea=(i=objs.size(),w.m_pGlobalArea); parea; parea=parea->m_next) {
 				IGeometry *geoms[3] = { parea->m_pGeom, parea->m_pContainer, parea->m_pSurface };
 				for(i=0;i<3;i++) if (geoms[i]) {
-					stm.Write(true); w.SaveGeometry(stm,geoms[i]);
+					stm.Write(true); w.SaveGeometry(stm,geoms[i]->GetType()!=GEOM_HEIGHTFIELD ? geoms[i] : &sg);
 					objs.insert(std::pair<void*,int>(geoms[i],objs.size())); 
 					if (!i) geoms[i]->AddRef();
 				}
