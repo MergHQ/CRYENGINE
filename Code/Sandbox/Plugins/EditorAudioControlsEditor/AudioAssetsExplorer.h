@@ -4,7 +4,6 @@
 
 #include <QFrame>
 #include <QMenu>
-#include <QModelIndex>
 
 #include "AudioAssets.h"
 #include "QTreeWidgetFilter.h"
@@ -53,8 +52,6 @@ private:
 	IAudioAsset*        GetSelectedAsset() const;
 
 	void                SelectNewAsset(QModelIndex const& parent, int const row);
-	void                ExpandSelection(QModelIndexList const& indexList);
-	void                CollapseSelection(QModelIndexList const& indexList);
 
 	// ------------------ QWidget ----------------------------
 	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
