@@ -34,7 +34,7 @@ if (AUDIO_WWISE)
 	CryEngineModule(CryAudioImplWwise FORCE_SHARED PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 	target_include_directories(${THIS_PROJECT} PRIVATE ../../Common "${SDK_DIR}/Audio/oculus/wwise/Include" "${SDK_DIR}/Audio/wwise/SDK/include" )
 	
-	if(AUDIO_HRTF)
+	if(AUDIO_OCULUS_HRTF)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -DWWISE_USE_OCULUS)
 	endif()
 

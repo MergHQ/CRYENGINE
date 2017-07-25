@@ -82,42 +82,215 @@ endif()
 if(WIN64)
 	option(RENDERER_VULKAN "Renderer for Vulkan API" ON)
 	if (RENDERER_VULKAN AND NOT EXISTS "${SDK_DIR}/VulkanSDK")
-		message(STATUS "Vulkan SDK not found in ${SDK_DIR} - disabling Vulkan renderer.")
-		set(RENDERER_VULKAN OFF)
+		message(STATUS "Vulkan SDK not found in ${SDK_DIR}/VulkanSDK - disabling Vulkan renderer.")
+		
+		# Disables the RENDERER_VULKAN option but also updates the message in the cache that is then used in the GUI as a tooltip.
+		set(RENDERER_VULKAN OFF CACHE BOOL "Disabled Vulkan renderer due to absent Vulkan SDK. Must reside in ${SDK_DIR}/VulkanSDK")
 	endif()
 endif()
 
-#Audio modules
-if (ANDROID)
-	# SDL_mixer is only supported audio on these platforms
-	set(AUDIO_SDL_MIXER ON)
-elseif (NOT (WIN32 OR WIN64 OR LINUX))
-	# Wwise is only supported audio on these platforms
-	set(AUDIO_WWISE ON)
+# Audio
+function(try_to_enable_fmod)
+if (NOT ORBIS AND NOT DURANGO)
+	if (DEFINED AUDIO_FMOD)
+		if (AUDIO_FMOD)
+			if (EXISTS "${SDK_DIR}/Audio/fmod")
+				message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod - enabling Fmod support.")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_FMOD "Fmod SDK found in ${SDK_DIR}/Audio/fmod." ON)
+				
+				include(${TOOLS_CMAKE_DIR}/modules/fmod.cmake)
+			else()
+				message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod - disabling Fmod support.")
+				
+				# Disables the AUDIO_FMOD option but also updates the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_FMOD "Fmod SDK not found in ${SDK_DIR}/Audio/fmod." OFF)
+			endif()
+		else()
+			if (EXISTS "${SDK_DIR}/Audio/fmod")
+				message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod but AUDIO_FMOD option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_FMOD "Fmod SDK found in ${SDK_DIR}/Audio/fmod but AUDIO_FMOD option turned OFF." OFF)
+			else()
+				message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod and AUDIO_FMOD option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_FMOD "Fmod SDK not found in ${SDK_DIR}/Audio/fmod and AUDIO_FMOD option turned OFF." OFF)
+			endif()
+		endif()
+	else()
+		# If this option is not in the cache yet, set it depending on whether the SDK is present or not.
+		if (EXISTS "${SDK_DIR}/Audio/fmod")
+			message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod - enabling Fmod support.")
+			set(AUDIO_FMOD ON CACHE BOOL "Fmod SDK found in ${SDK_DIR}/Audio/fmod." FORCE)
+			include(${TOOLS_CMAKE_DIR}/modules/fmod.cmake)
+		else()
+			message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod - disabling Fmod support.")
+			set(AUDIO_FMOD OFF CACHE BOOL "Fmod SDK not found in ${SDK_DIR}/Audio/fmod." FORCE)
+		endif()
+	endif()
 else()
-	if (EXISTS "${SDK_DIR}/Audio/fmod")
-		option(AUDIO_FMOD "FMOD Studio support" ON)
-		include(${TOOLS_CMAKE_DIR}/modules/fmod.cmake)
-	endif()
-	if (EXISTS "${SDK_DIR}/Audio/portaudio" AND EXISTS "${SDK_DIR}/Audio/libsndfile" AND (WIN32 OR WIN64))
-		option(AUDIO_PORTAUDIO "PortAudio support" ON)
-		include(${TOOLS_CMAKE_DIR}/modules/PortAudio.cmake)
-	endif()
-	if(WIN32)
-		option(AUDIO_SDL_MIXER "SDL_mixer support" ON)
-	endif()
-	if (EXISTS "${SDK_DIR}/Audio/wwise")
-		option(AUDIO_WWISE "Wwise support" ON)
-	endif()
+	message(STATUS "Disabling Fmod support due to unsupported platform.")
+	set(AUDIO_FMOD OFF CACHE BOOL "Fmod disabled due to unsupported platform." FORCE)
 endif()
+endfunction(try_to_enable_fmod)
 
-if(WIN32 OR WIN64)
-	option(AUDIO_HRTF "HRTF support " ON)
-	if (AUDIO_HRTF AND NOT EXISTS "${SDK_DIR}/Audio/oculus")
-		message(STATUS "Oculus SDK not found in ${SDK_DIR} - disabling Oculus based HRTF support.")
-		set(AUDIO_HRTF OFF)
+function(try_to_enable_portaudio)
+if (WIN32 OR WIN64)
+	if (DEFINED AUDIO_PORTAUDIO)
+		if (AUDIO_PORTAUDIO)
+			if (EXISTS "${SDK_DIR}/Audio/portaudio" AND EXISTS "${SDK_DIR}/Audio/libsndfile")
+				message(STATUS "PortAudio and libsndfile SDKs found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile - enabling PortAudio support.")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_PORTAUDIO "PortAudio and libsndfile SDKs found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile." ON)
+				
+				include(${TOOLS_CMAKE_DIR}/modules/PortAudio.cmake)
+			else()
+				message(STATUS "PortAudio or libsndfile SDK not found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile - disabling PortAudio support.")
+				
+				# Disables the AUDIO_PORTAUDIO option but also updates the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_PORTAUDIO "PortAudio or libsndfile SDK not found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile." OFF)
+			endif()
+		else()
+			if (EXISTS "${SDK_DIR}/Audio/portaudio" AND EXISTS "${SDK_DIR}/Audio/libsndfile")
+				message(STATUS "PortAudio and libsndfile SDKs found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile but AUDIO_PORTAUDIO option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_PORTAUDIO "PortAudio and libsndfile SDKs found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile but AUDIO_PORTAUDIO option turned OFF." OFF)
+			else()
+				message(STATUS "PortAudio or libsndfile SDK not found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile and AUDIO_PORTAUDIO option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_PORTAUDIO "PortAudio or libsndfile SDK not found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile and AUDIO_PORTAUDIO option turned OFF." OFF)
+			endif()
+		endif()
+	else()
+		# If this option is not in the cache yet, set it depending on whether the SDK is present or not.
+		if (EXISTS "${SDK_DIR}/Audio/portaudio" AND EXISTS "${SDK_DIR}/Audio/libsndfile")
+			message(STATUS "PortAudio and libsndfile SDKs found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile - enabling PortAudio support.")
+			set(AUDIO_PORTAUDIO ON CACHE BOOL "PortAudio and libsndfile SDKs found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile." FORCE)
+			include(${TOOLS_CMAKE_DIR}/modules/PortAudio.cmake)
+		else()
+			message(STATUS "PortAudio or libsndfile SDK not found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile - disabling PortAudio support.")
+			set(AUDIO_PORTAUDIO OFF CACHE BOOL "PortAudio or libsndfile SDK not found in ${SDK_DIR}/Audio/portaudio and ${SDK_DIR}/Audio/libsndfile." FORCE)
+		endif()
+	endif()
+else()
+	message(STATUS "Disabling PortAudio support due to unsupported platform.")
+	set(AUDIO_PORTAUDIO OFF CACHE BOOL "PortAudio disabled due to unsupported platform." FORCE)
+endif()
+endfunction(try_to_enable_portaudio)
+
+function(try_to_enable_sdl_mixer)
+if (ANDROID OR WIN32 OR WIN64)
+	# We build SDL_mixer ourselves for these platforms.
+	option(AUDIO_SDL_MIXER "SDL_mixer support" ON)
+	
+	if (AUDIO_SDL_MIXER)
+		# Supported platforms and the user enabled the AUDIO_SDL_MIXER option.
+		message(STATUS "Enabling SDL_mixer support.")
+	else()
+		# Supported platforms but the user disabled the AUDIO_SDL_MIXER option.
+		message(STATUS "SDL_mixer support manually disabled.")
+	endif()
+else()
+	message(STATUS "Disabling SDL_mixer support due to unsupported platform.")
+	set(AUDIO_SDL_MIXER OFF CACHE BOOL "SDL_mixer disabled due to unsupported platform." FORCE)
+endif()
+endfunction(try_to_enable_sdl_mixer)
+
+function(try_to_enable_wwise)
+if (DEFINED AUDIO_WWISE)
+	if (AUDIO_WWISE)
+		if (EXISTS "${SDK_DIR}/Audio/wwise")
+			message(STATUS "Wwise SDK found in ${SDK_DIR}/Audio/wwise - enabling Wwise support.")
+			
+			# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_WWISE "Wwise SDK found in ${SDK_DIR}/Audio/wwise." ON)
+		else()
+			message(STATUS "Wwise SDK not found in ${SDK_DIR}/Audio/wwise - disabling Wwise support.")
+			
+			# Disables the AUDIO_WWISE option but also updates the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_WWISE "Wwise SDK not found in ${SDK_DIR}/Audio/wwise." OFF)
+		endif()
+	else()
+		if (EXISTS "${SDK_DIR}/Audio/wwise")
+			message(STATUS "Wwise SDK found in ${SDK_DIR}/Audio/wwise but AUDIO_WWISE option turned OFF")
+			
+			# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_WWISE "Wwise SDK found in ${SDK_DIR}/Audio/wwise but AUDIO_WWISE option turned OFF." OFF)
+		else()
+			message(STATUS "Wwise SDK not found in ${SDK_DIR}/Audio/wwise and AUDIO_WWISE option turned OFF")
+			
+			# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_WWISE "Wwise SDK not found in ${SDK_DIR}/Audio/wwise and AUDIO_WWISE option turned OFF." OFF)
+		endif()
+	endif()
+else()
+	# If this option is not in the cache yet, set it depending on whether the SDK is present or not.
+	if (EXISTS "${SDK_DIR}/Audio/wwise")
+		message(STATUS "Wwise SDK found in ${SDK_DIR}/Audio/wwise - enabling Wwise support.")
+		set(AUDIO_WWISE ON CACHE BOOL "Wwise SDK found in ${SDK_DIR}/Audio/wwise." FORCE)
+	else()
+		message(STATUS "Wwise SDK not found in ${SDK_DIR}/Audio/wwise - disabling Wwise support.")
+		set(AUDIO_WWISE OFF CACHE BOOL "Wwise SDK not found in ${SDK_DIR}/Audio/wwise." FORCE)
 	endif()
 endif()
+endfunction(try_to_enable_wwise)
+
+function(try_to_enable_oculus_hrtf)
+if(WIN32 OR WIN64)
+	if (DEFINED AUDIO_OCULUS_HRTF)
+		if (AUDIO_OCULUS_HRTF)
+			if (EXISTS "${SDK_DIR}/Audio/oculus")
+				message(STATUS "Oculus audio SDK found in ${SDK_DIR}/Audio/oculus - enabling Oculus HRTF support.")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_OCULUS_HRTF "Oculus audio SDK found in ${SDK_DIR}/Audio/oculus." ON)
+			else()
+				message(STATUS "Oculus audio SDK not found in ${SDK_DIR}/Audio/oculus - disabling Oculus HRTF support.")
+				
+				# Disables the AUDIO_OCULUS_HRTF option but also updates the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_OCULUS_HRTF "Oculus audio SDK not found in ${SDK_DIR}/Audio/oculus." OFF)
+			endif()
+		else()
+			if (EXISTS "${SDK_DIR}/Audio/oculus")
+				message(STATUS "Oculus audio SDK found in ${SDK_DIR}/Audio/oculus but AUDIO_OCULUS_HRTF option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_OCULUS_HRTF "Oculus audio SDK found in ${SDK_DIR}/Audio/oculus but AUDIO_OCULUS_HRTF option turned OFF." OFF)
+			else()
+				message(STATUS "Oculus audio SDK not found in ${SDK_DIR}/Audio/oculus and AUDIO_OCULUS_HRTF option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_OCULUS_HRTF "Oculus audio SDK not found in ${SDK_DIR}/Audio/oculus and AUDIO_OCULUS_HRTF option turned OFF." OFF)
+			endif()
+		endif()
+	else()
+		# If this option is not in the cache yet, set it depending on whether the SDK is present or not.
+		if (EXISTS "${SDK_DIR}/Audio/oculus")
+			message(STATUS "Oculus audio SDK found in ${SDK_DIR}/Audio/oculus - enabling Oculus HRTF support.")
+			set(AUDIO_OCULUS_HRTF ON CACHE BOOL "Oculus audio SDK found in ${SDK_DIR}/Audio/oculus." FORCE)
+		else()
+			message(STATUS "Oculus audio SDK not found in ${SDK_DIR}/Audio/oculus - disabling Oculus HRTF support.")
+			set(AUDIO_OCULUS_HRTF OFF CACHE BOOL "Oculus audio SDK not found in ${SDK_DIR}/Audio/oculus." FORCE)
+		endif()
+	endif()
+else()
+	message(STATUS "Disabling Oculus HRTF support due to unsupported platform.")
+	set(AUDIO_OCULUS_HRTF OFF CACHE BOOL "Oculus HRTF disabled due to unsupported platform." FORCE)
+endif()
+endfunction(try_to_enable_oculus_hrtf)
+
+try_to_enable_fmod()
+try_to_enable_portaudio()
+try_to_enable_sdl_mixer()
+try_to_enable_wwise()
+try_to_enable_oculus_hrtf()
+# ~Audio
 
 #Physics modules
 option(PHYSICS_CRYPHYSICS "Enable" ON)
