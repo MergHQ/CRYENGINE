@@ -9,6 +9,6 @@
 	#pragma warning(disable: 4275)
 #endif
 
-#ifdef CryQt_EXPORTS
+#if defined(CryQt_EXPORTS) && !defined(QToolWindowManager_EXPORTS)
 	#define QToolWindowManager_EXPORTS
 #endif
