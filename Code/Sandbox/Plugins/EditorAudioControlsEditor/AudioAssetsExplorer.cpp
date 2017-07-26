@@ -72,26 +72,7 @@ public:
 
 namespace ACE
 {
-void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const row)
-{
-	if (parent.isValid())
-	{
-		if (m_bCreatedFromMenu)
-		{
-			QModelIndex const& assetIndex = m_pProxyModel->mapFromSource(m_pMountedModel->index(row, 0, parent));
-			m_pControlsTree->setCurrentIndex(assetIndex);
-			m_pControlsTree->edit(assetIndex);
-			m_bCreatedFromMenu = false;
-		}
-		else if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
-		{
-			QModelIndex const& parentIndex = m_pProxyModel->mapFromSource(parent);
-			m_pControlsTree->expand(parentIndex);
-			m_pControlsTree->setCurrentIndex(parentIndex);
-		}
-	}
-}
-
+//////////////////////////////////////////////////////////////////////////
 CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pProxyModel(new QControlsProxyFilter(this))
@@ -108,6 +89,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	QHBoxLayout* pHorizontalLayout = new QHBoxLayout();
 	m_pTextFilter = new QLineEdit(this);
 	m_pTextFilter->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignVCenter);
+	m_pTextFilter->setClearButtonEnabled(true);
 	pHorizontalLayout->addWidget(m_pTextFilter);
 
 	QPushButton* pFiltersButton = new QPushButton(this);
@@ -312,6 +294,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	  }, reinterpret_cast<uintptr_t>(this));
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioAssetsExplorer::~CAudioAssetsExplorer()
 {
 	m_pAssetsManager->signalLibraryAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -328,6 +311,7 @@ CAudioAssetsExplorer::~CAudioAssetsExplorer()
 	m_libraryModels.clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool CAudioAssetsExplorer::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if ((pEvent->type() == QEvent::KeyRelease) && !m_pControlsTree->IsEditing())
@@ -348,6 +332,7 @@ bool CAudioAssetsExplorer::eventFilter(QObject* pObject, QEvent* pEvent)
 	return QWidget::eventFilter(pObject, pEvent);
 }
 
+//////////////////////////////////////////////////////////////////////////
 std::vector<CAudioControl*> CAudioAssetsExplorer::GetSelectedControls()
 {
 	QModelIndexList indexes = m_pControlsTree->selectionModel()->selectedIndexes();
@@ -358,11 +343,13 @@ std::vector<CAudioControl*> CAudioAssetsExplorer::GetSelectedControls()
 	return controls;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::Reload()
 {
 	ResetFilters();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::ShowControlType(EItemType type, bool bShow)
 {
 	m_pProxyModel->EnableControl(bShow, type);
@@ -374,6 +361,7 @@ void CAudioAssetsExplorer::ShowControlType(EItemType type, bool bShow)
 	ControlTypeFiltered(type, bShow);
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioControl* CAudioAssetsExplorer::CreateControl(string const& name, EItemType type, IAudioAsset* pParent)
 {
 	m_bCreatedFromMenu = true;
@@ -388,12 +376,14 @@ CAudioControl* CAudioAssetsExplorer::CreateControl(string const& name, EItemType
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 IAudioAsset* CAudioAssetsExplorer::CreateFolder(IAudioAsset* pParent)
 {
 	m_bCreatedFromMenu = true;
 	return m_pAssetsManager->CreateFolder(Utils::GenerateUniqueName("new_folder", EItemType::eItemType_Folder, pParent), pParent);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::ShowControlsContextMenu(QPoint const& pos)
 {
 	QMenu contextMenu(tr("Context menu"), this);
@@ -523,6 +513,7 @@ void CAudioAssetsExplorer::ShowControlsContextMenu(QPoint const& pos)
 	contextMenu.exec(m_pControlsTree->mapToGlobal(pos));
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::DeleteSelectedControl()
 {
 	auto selection = m_pControlsTree->selectionModel()->selectedRows();
@@ -565,6 +556,7 @@ void CAudioAssetsExplorer::DeleteSelectedControl()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::ExecuteControl()
 {
 	IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(m_pControlsTree->currentIndex());
@@ -574,11 +566,13 @@ void CAudioAssetsExplorer::ExecuteControl()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::StopControlExecution()
 {
 	CAudioControlsEditorPlugin::StopTriggerExecution();
 }
 
+//////////////////////////////////////////////////////////////////////////
 QAbstractItemModel* CAudioAssetsExplorer::CreateLibraryModelFromIndex(QModelIndex const& sourceIndex)
 {
 	if (sourceIndex.model() != m_pAssetsModel)
@@ -600,6 +594,7 @@ QAbstractItemModel* CAudioAssetsExplorer::CreateLibraryModelFromIndex(QModelInde
 	return m_libraryModels[row];
 }
 
+//////////////////////////////////////////////////////////////////////////
 IAudioAsset* CAudioAssetsExplorer::GetSelectedAsset() const
 {
 	QModelIndex const& index = m_pControlsTree->currentIndex();
@@ -610,6 +605,28 @@ IAudioAsset* CAudioAssetsExplorer::GetSelectedAsset() const
 	return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const row)
+{
+	if (parent.isValid())
+	{
+		if (m_bCreatedFromMenu)
+		{
+			QModelIndex const& assetIndex = m_pProxyModel->mapFromSource(m_pMountedModel->index(row, 0, parent));
+			m_pControlsTree->setCurrentIndex(assetIndex);
+			m_pControlsTree->edit(assetIndex);
+			m_bCreatedFromMenu = false;
+		}
+		else if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
+		{
+			QModelIndex const& parentIndex = m_pProxyModel->mapFromSource(parent);
+			m_pControlsTree->expand(parentIndex);
+			m_pControlsTree->setCurrentIndex(parentIndex);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::ResetFilters()
 {
 	for (QAction* pAction : m_pFilterMenu->actions())

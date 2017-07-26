@@ -219,9 +219,9 @@ CTexture* CD3D9Renderer::GetCurrentDepthOutput()
 {
 	if (m_pActiveContext || !GetS3DRend().IsStereoEnabled() || !(m_RP.m_nRendFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)))
 	{
-	//	if (m_pActiveContext && !m_pActiveContext->m_bMainViewport)
-	//		return FX_GetDepthSurface(m_pActiveContext->m_Width, m_pActiveContext->m_Height, false)->pTexture;
-	//	else
+		if (m_pActiveContext && !m_pActiveContext->m_bMainViewport)
+			return FX_GetDepthSurface(m_pActiveContext->m_Width, m_pActiveContext->m_Height, false, true)->pTexture;
+		else
 			return m_DepthBufferNative.pTexture;
 	}
 	{

@@ -106,6 +106,8 @@ struct SPerMeshResources : public compute_skinning::IPerMeshDataSupply
 struct SPerInstanceResources
 {
 	SPerInstanceResources(const int numVertices, const int numTriangles);
+	~SPerInstanceResources();
+
 	CComputeRenderPass passDeform;
 	CComputeRenderPass passDeformWithMorphs;
 	CComputeRenderPass passTriangleTangents;

@@ -26,7 +26,7 @@ def engine_id(self):
 
     
 def shared_dir(self, platform, config):
-    lib= self['content'].get ('libs', [None])[0]
+    lib = libs_list(self)[0]
     if lib is None:
         return os.path.join ("bin", platform)
 
@@ -41,13 +41,16 @@ def cmakelists_dir(self):
 def require_list(self):
     return self.get ('require', [])
 
+def plugins_list(self):
+    return self.get ('require', {}).get ('plugins')
+
+def libs_list(self):
+    return self['content'].get ('libs', [None])
+
 def is_managed(self):
     plugins = plugins_list(self)
     for plugin in plugins:
         if plugin.get('type') == "EPluginType::Managed":
             return True
-    
+
     return False
-    
-def plugins_list(self):
-    return self.get ('require', {}).get ('plugins')

@@ -38,6 +38,7 @@ private:
 
 	std::vector<std::unique_ptr<CryGraphEditor::CAbstractNodeItem>>       m_nodes;
 	std::vector<std::unique_ptr<CryGraphEditor::CAbstractConnectionItem>> m_connections;
+	bool m_bSuppressComplexityWarning;
 };
 
 //! Asset view model.

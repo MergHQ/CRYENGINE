@@ -4469,22 +4469,29 @@ NavigationSystemDebugDraw::DebugDrawSettings NavigationSystemDebugDraw::GetDebug
 		{
 			settings.meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugLocation);
 
-			const NavigationMesh& mesh = navigationSystem.GetMesh(settings.meshID);
-			const MNM::CNavMesh::SGridParams& params = mesh.navMesh.GetGridParams();
-
-			size_t x = (size_t)((debugLocation.x - params.origin.x) / (float)params.tileSize.x);
-			size_t y = (size_t)((debugLocation.y - params.origin.y) / (float)params.tileSize.y);
-			size_t z = (size_t)((debugLocation.z - params.origin.z) / (float)params.tileSize.z);
-
-			if ((x != selectedX) || (y != selectedY) || (z != selectedZ))
+			if (settings.meshID)
 			{
-				settings.forceGeneration = true;
+				const NavigationMesh& mesh = navigationSystem.GetMesh(settings.meshID);
+				const MNM::CNavMesh::SGridParams& params = mesh.navMesh.GetGridParams();
 
-				selectedX = x;
-				selectedY = y;
-				selectedZ = z;
+				size_t x = (size_t)((debugLocation.x - params.origin.x) / (float)params.tileSize.x);
+				size_t y = (size_t)((debugLocation.y - params.origin.y) / (float)params.tileSize.y);
+				size_t z = (size_t)((debugLocation.z - params.origin.z) / (float)params.tileSize.z);
+
+				if ((x != selectedX) || (y != selectedY) || (z != selectedZ))
+				{
+					settings.forceGeneration = true;
+
+					selectedX = x;
+					selectedY = y;
+					selectedZ = z;
+				}
+				lastLocation = debugLocation;
 			}
-			lastLocation = debugLocation;
+			else
+			{
+				lastLocation.zero();
+			}
 		}
 	}
 	else

@@ -21,9 +21,11 @@
 #include <QToolButton>
 #include <QIcon>
 #include <QLabel>
+#include <QMenu>
 
 namespace ACE
 {
+//////////////////////////////////////////////////////////////////////////
 CAudioSystemPanel::CAudioSystemPanel()
 	: m_pModelProxy(new QAudioSystemModelProxyFilter(this))
 	, m_pModel(new QAudioSystemModel())
@@ -37,6 +39,7 @@ CAudioSystemPanel::CAudioSystemPanel()
 
 	QLineEdit* pNameFilter = new QLineEdit(this);
 	pNameFilter->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignVCenter);
+	pNameFilter->setClearButtonEnabled(true);
 	pHorizontalLayout->addWidget(pNameFilter);
 
 	QCheckBox* pHideAssignedCheckbox = new QCheckBox(this);
@@ -80,12 +83,37 @@ CAudioSystemPanel::CAudioSystemPanel()
 
 	connect(pNameFilter, &QLineEdit::textChanged, [&](QString const& filter)
 		{
+			if (m_filter != filter)
+			{
+				if (m_filter.isEmpty() && !filter.isEmpty())
+				{
+					m_pTreeView->BackupExpanded();
+					m_pTreeView->expandAll();
+				}
+				else if (!m_filter.isEmpty() && filter.isEmpty())
+				{
+					m_pTreeView->collapseAll();
+					m_pTreeView->RestoreExpanded();
+				}
+
+				m_filter = filter;
+			}
+
 			m_pModelProxy->setFilterFixedString(filter);
 	  });
 
 	connect(pHideAssignedCheckbox, &QCheckBox::clicked, [&](bool bHide)
 		{
-			m_pModelProxy->SetHideConnected(bHide);
+			if (bHide)
+			{
+				m_pTreeView->BackupExpanded();
+				m_pModelProxy->SetHideConnected(bHide);
+			}
+			else
+			{
+				m_pModelProxy->SetHideConnected(bHide);
+				m_pTreeView->RestoreExpanded();
+			}
 	  });
 
 	m_pTreeView = new CAudioAdvancedTreeView();
@@ -115,6 +143,7 @@ CAudioSystemPanel::CAudioSystemPanel()
 	  });
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
 {
 	const ACE::IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
@@ -133,6 +162,7 @@ void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioSystemPanel::ShowControlsContextMenu(QPoint const& pos)
 {
 	QMenu contextMenu(tr("Context menu"), this);
@@ -152,6 +182,7 @@ void CAudioSystemPanel::ShowControlsContextMenu(QPoint const& pos)
 	contextMenu.exec(m_pTreeView->mapToGlobal(pos));
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioSystemPanel::Reset()
 {
 	m_pModel->Reset();

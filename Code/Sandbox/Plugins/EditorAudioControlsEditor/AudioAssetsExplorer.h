@@ -41,6 +41,10 @@ public:
 
 private:
 
+	// QObject
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
+	// ~QObject
+
 	// Filtering
 	void                ResetFilters();
 	void                ShowControlType(EItemType type, bool bShow);
@@ -52,10 +56,6 @@ private:
 	IAudioAsset*        GetSelectedAsset() const;
 
 	void                SelectNewAsset(QModelIndex const& parent, int const row);
-
-	// ------------------ QWidget ----------------------------
-	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
-	// -------------------------------------------------------
 
 private slots:
 
