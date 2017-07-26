@@ -7,16 +7,15 @@
 
 namespace ACE
 {
-
 class IAudioSystemEditor;
 class IAudioSystemItem;
 
 namespace AudioModelUtils
 {
 void DecodeImplMimeData(const QMimeData* pData, std::vector<IAudioSystemItem*>& outItems);
-}
+} // namespace AudioModelUtils
 
-class QAudioSystemModel : public QAbstractItemModel
+class QAudioSystemModel final : public QAbstractItemModel
 {
 
 public:
@@ -37,8 +36,7 @@ public:
 
 	QAudioSystemModel();
 
-	//////////////////////////////////////////////////////////
-	// QAbstractTableModel implementation
+	// QAbstractItemModel
 	virtual int             rowCount(const QModelIndex& parent) const override;
 	virtual int             columnCount(const QModelIndex& parent) const override;
 	virtual QVariant        data(const QModelIndex& index, int role) const override;
@@ -46,10 +44,10 @@ public:
 	virtual Qt::ItemFlags   flags(const QModelIndex& index) const override;
 	virtual QModelIndex     index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
 	virtual QModelIndex     parent(const QModelIndex& index) const override;
-	virtual Qt::DropActions supportedDragActions() const;
-	virtual QStringList     mimeTypes() const;
-	virtual QMimeData*      mimeData(const QModelIndexList& indexes) const;
-	//////////////////////////////////////////////////////////
+	virtual Qt::DropActions supportedDragActions() const override;
+	virtual QStringList     mimeTypes() const override;
+	virtual QMimeData*      mimeData(const QModelIndexList& indexes) const override;
+	// ~QAbstractItemModel
 
 	IAudioSystemItem* ItemFromIndex(const QModelIndex& index) const;
 	QModelIndex       IndexFromItem(IAudioSystemItem* pItem) const;
@@ -60,18 +58,25 @@ private:
 	IAudioSystemEditor* m_pAudioSystem;
 };
 
-class QAudioSystemModelProxyFilter : public QDeepFilterProxyModel
+class QAudioSystemModelProxyFilter final : public QDeepFilterProxyModel
 {
 public:
 	QAudioSystemModelProxyFilter(QObject* parent);
-	virtual bool rowMatchesFilter(int source_row, const QModelIndex& source_parent) const override;
-	void         SetAllowedControlsMask(uint allowedControlsMask);
-	void         SetHideConnected(bool bHideConnected);
-	virtual bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 
+	// QSortFilterProxyModel
+	virtual bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
+	// ~QSortFilterProxyModel
+
+	// QDeepFilterProxyModel
+	virtual bool rowMatchesFilter(int source_row, const QModelIndex& source_parent) const override;
+	virtual      QVariant data(const QModelIndex& index, int role) const override;
+	// ~QDeepFilterProxyModel
+
+	void SetAllowedControlsMask(uint allowedControlsMask);
+	void SetHideConnected(bool bHideConnected);
+	
 private:
 	uint m_allowedControlsMask;
 	uint m_bHideConnected;
 };
-
-}
+} // namespace ACE

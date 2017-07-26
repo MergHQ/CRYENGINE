@@ -34,5 +34,6 @@ private:
 	QAudioSystemModel*            m_pModel;
 	QLabel*                       m_pImplNameLabel;
 	CAudioAdvancedTreeView*       m_pTreeView;
+	QString                       m_filter;
 };
 } // namespace ACE
