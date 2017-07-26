@@ -343,6 +343,7 @@ def create_config(project, project_file, export_path):
 
     with open(os.path.join(export_path, 'system.cfg'), 'w') as fd:
         fd.write('sys_project={}\n'.format(project_name))
+        fd.write('sys_asserts=0\n')
 
 
 def copy_plugins(project, project_path, export_path):
