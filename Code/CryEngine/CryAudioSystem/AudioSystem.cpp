@@ -748,12 +748,6 @@ IProfileData* CSystem::GetProfileData() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ProcessRequest(CAudioRequest& request)
-{
-	m_atl.ProcessRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 {
 	bool bSuccess = false;
@@ -764,7 +758,7 @@ bool CSystem::ProcessRequests(AudioRequests& requestQueue)
 		if (request.status == ERequestStatus::None)
 		{
 			request.status = ERequestStatus::Pending;
-			ProcessRequest(request);
+			m_atl.ProcessRequest(request);
 		}
 		else
 		{
