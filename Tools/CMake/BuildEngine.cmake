@@ -85,7 +85,7 @@ if(WIN64)
 		message(STATUS "Vulkan SDK not found in ${SDK_DIR}/VulkanSDK - disabling Vulkan renderer.")
 		
 		# Disables the RENDERER_VULKAN option but also updates the message in the cache that is then used in the GUI as a tooltip.
-		set(RENDERER_VULKAN OFF CACHE BOOL "Disabled Vulkan renderer due to absent Vulkan SDK. Must reside in ${SDK_DIR}/VulkanSDK")
+		set(RENDERER_VULKAN OFF CACHE BOOL "Disabled Vulkan renderer due to absent Vulkan SDK. Must reside in ${SDK_DIR}/VulkanSDK" FORCE)
 	endif()
 endif()
 
