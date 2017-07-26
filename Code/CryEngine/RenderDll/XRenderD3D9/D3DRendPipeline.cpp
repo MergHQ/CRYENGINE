@@ -3435,6 +3435,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	CV_r_watercaustics         = nSaveDrawCaustics;
 	CV_r_texturesstreamingsync = nSaveStreamSync;
 
+	gRenDev->GetIRenderAuxGeom()->Flush();
+
 	////////////////////////////////////////////////
 	// Lists still needed for right eye when stereo is active
 	if (!GetS3DRend().RequiresSequentialSubmission() || !(nFlags & SHDF_STEREO_LEFT_EYE))
@@ -3688,9 +3690,8 @@ void CD3D9Renderer::EF_Scene3D(SViewport& VP, int nFlags, const SRenderingPassIn
 	const bool bSecondaryViewport = (nFlags & SHDF_SECONDARY_VIEWPORT) != 0;
 	UpdateConstParamsPF(passInfo, bSecondaryViewport);
 
+	// EF_RenderScene leaves no active render-output set
 	EF_RenderScene(nFlags, VP, passInfo);
-
-	if (!passInfo.IsRecursivePass()) gRenDev->GetIRenderAuxGeom()->Flush();
 }
 
 bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture *pDataD, ITexture *pDataN)
