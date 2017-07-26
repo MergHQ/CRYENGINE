@@ -30,9 +30,27 @@ CONFIGS = [
         'cmake_toolchain': 'toolchain\android\Android-Nsight.cmake',
         'cmake_generator': 'Visual Studio 14 2015 ARM',
         'cmake_builddir': 'solutions_cmake/android',
-    }
+    },
 
 #Visual Studio 15 2017
+    {
+        'title':'Visual Studio 2017 Win32',
+        'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+        'cmake_generator': 'Visual Studio 15 2017',
+        'cmake_builddir': 'solutions_cmake/win32',
+    },
+    {
+        'title':'Visual Studio 2017 Win64',
+        'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+        'cmake_generator': 'Visual Studio 15 2017 Win64',
+        'cmake_builddir': 'solutions_cmake/win64',
+    },
+    {
+        'title':'Visual Studio 2017 Android Nsight Tegra',
+        'cmake_toolchain': 'toolchain\android\Android-Nsight.cmake',
+        'cmake_generator': 'Visual Studio 15 2017 ARM',
+        'cmake_builddir': 'solutions_cmake/android',
+    }
 ]
 
 
