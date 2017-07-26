@@ -442,6 +442,7 @@ private:
 CGraphViewModel::CGraphViewModel(CModel* pModel)
 	: m_pRuntimeContext(new CGraphRuntimeContext(*this))
 	, m_pModel(pModel)
+	, m_bSuppressComplexityWarning(false)
 {
 	m_pModel->signalBeginChange.Connect(this, &CGraphViewModel::OnBeginModelChange);
 	m_pModel->signalEndChange.Connect(this, &CGraphViewModel::OnEndModelChange);
@@ -567,20 +568,28 @@ void CGraphViewModel::OnEndModelChange()
 
 	static const size_t maximumNumberOfNodes = 100;
 	const bool bAllNodes = assets.size() <= maximumNumberOfNodes;
-	if (!bAllNodes)
-	{
-		GetIEditor()->GetNotificationCenter()->ShowWarning(tr("Dependency Graph"), tr("\"%1\" has too many dependencies to display the whole graph."
-			"\nOnly the graph of missing assets will be displayed.").arg(QtUtil::ToQString(m_pModel->GetAsset()->GetName())));
-	}
 
 	// Create a simple table layout.
 	// Having pre-order depth-first traversing of the nodes, we move to the next table row If we do not go to the next depth level.
 	size_t row = 0;
 	size_t column = 0;
+	size_t totalCountOfUnresolvedNodes = 0;
+	size_t countOfUnresolvedNodesToBeShown = 0;
 	for (SAssetData& asset : assets)
 	{
+		if (!asset.p)
+		{
+			++totalCountOfUnresolvedNodes;
+		}
+
 		if (!asset.bSelected && !bAllNodes)
 		{
+			continue;
+		}
+
+		if (!bAllNodes && (m_nodes.size() >= maximumNumberOfNodes))
+		{
+			asset.bSelected = false;
 			continue;
 		}
 
@@ -602,6 +611,11 @@ void CGraphViewModel::OnEndModelChange()
 
 		asset.node = m_nodes.size();
 		m_nodes.emplace_back(pNode);
+
+		if (!asset.p)
+		{
+			++countOfUnresolvedNodesToBeShown;
+		}
 	}
 
 	for (const auto c : connections)
@@ -612,6 +626,17 @@ void CGraphViewModel::OnEndModelChange()
 			CryGraphEditor::CAbstractPinItem* pDstPinItem = m_nodes[assets[c.second].node]->GetPinItemByIndex(CAssetNode::ePin_In);
 			m_connections.emplace_back(new CConnectionItem(*pSrcPinItem, *pDstPinItem, *this));
 		}
+	}
+
+	if (!bAllNodes && !m_bSuppressComplexityWarning)
+	{
+		GetIEditor()->GetNotificationCenter()->ShowWarning(tr("Dependency Graph"), tr("\"%1\" has too many dependencies to display the whole graph."
+			"\n%2 out of %3 missing assets will be displayed.")
+			.arg(QtUtil::ToQString(m_pModel->GetAsset()->GetName()))
+			.arg(countOfUnresolvedNodesToBeShown)
+			.arg(totalCountOfUnresolvedNodes));
+
+		m_bSuppressComplexityWarning = true;
 	}
 
 	SignalInvalidated();

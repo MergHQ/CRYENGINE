@@ -45,7 +45,7 @@ macro(add_optional_runtime_files)
 		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/Mono/bin/x86/mono-2.0.dll")
 	endif()
 
-	if (PLUGIN_VR_OCULUS OR AUDIO_HRTF)
+	if (PLUGIN_VR_OCULUS OR AUDIO_OCULUS_HRTF)
 		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/audio/oculus/wwise/x64/bin/plugins/OculusSpatializerWwise.dll")
 		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/audio/oculus/wwise/Win32/bin/plugins/OculusSpatializerWwise.dll")
 	endif()

@@ -48,6 +48,8 @@ def run(project_file):
         task_list.append(("Copying mono files...", copy_mono_files, engine_path_long, export_path_long))
 
     task_list.append(("Copying game binaries...", copy_plugins, project, project_path, export_path))
+    task_list.append(("Copying shared libraries...", copy_libs, project, project_path, export_path))
+    task_list.append(("Copying existing game asset packages...", copy_assets, project, project_path_long, export_path_long))
     task_list.append(("Packaging game assets...", package_assets, project, engine_path, project_path, export_path))
     task_list.append(("Cleaning up temp folders...", delete_temp_folders, engine_path_long, project_path_long))
     task_list.append(("Creating config files...", create_config, project, project_file, export_path))
@@ -201,7 +203,7 @@ def run_command(command, silent=True):
         if silent:
             subprocess.check_output(command_str)
         else:
-            subprocess.check_call(command_str)
+            subprocess.check_call(command_str, universal_newlines=True)
     except subprocess.CalledProcessError as e:
         if not e.returncode == 0:
             print("Encountered and error while running command '{}'!".format(command_str))
@@ -228,7 +230,8 @@ def package_engine_assets(engine_path, export_path):
                     '/p=PC',
                     '/pak_root="{}"'.format(export_path),
                     '/IncludeShaderSource=1',
-                    '/stripMetadata']
+                    '/stripMetadata',
+                    '/skipmissing']
         run_command(rc_cmd)
         os.chdir(pwd)
     else:
@@ -243,20 +246,62 @@ def copy_engine_assets(engine_path, export_path):
     If the engine assets have already been packaged this function will
     not overwrite them.
     """
-    if not os.path.exists(os.path.join(export_path, 'engine')):
-        os.makedirs(os.path.join(export_path, 'engine'))
+    srcpath = os.path.join(engine_path, 'engine')
+    dstpath = os.path.join(export_path, 'engine')
 
-    for pakfile in os.listdir(os.path.join(engine_path, 'engine')):
-        srcpath = os.path.join(engine_path, 'engine', pakfile)
-        dstpath = os.path.join(export_path, 'engine', pakfile)
+    copy_directory_contents(srcpath, dstpath, ["*.pak"], ["*.cryasset.pak"])
 
-        if pakfile.endswith('.cryasset.pak') or not pakfile.endswith('.pak'):
+def copy_assets(project, project_path, export_path):
+    """
+    Copies existing .pak files from the assets directory to the
+    export location. Other assets can be added to these pak files
+    later on in package_assets().
+    """
+    asset_dir = cryproject.asset_dir(project)
+    srcpath = os.path.join(project_path, asset_dir)
+    dstpath = os.path.join(export_path, asset_dir)
+    
+    copy_directory_contents(srcpath, dstpath, ["*.pak"], ["*.cryasset.pak"])
+
+def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_patterns=None, recursive=True, overwrite=False):
+    """
+    Copies all files that match the include patterns and don't 
+    match the exclude patterns to the destination directory.
+    If the include_patterns are empty every file will be included.
+    If the exclude_patterns are emtpty no file will be excluded.
+    """
+    for file in os.listdir(src_dir):
+        srcpath = os.path.join(src_dir, file)
+        dstpath = os.path.join(dst_dir, file)
+        
+        if os.path.isdir(srcpath) and recursive:
+            copy_directory_contents(srcpath, dstpath, include_patterns, exclude_patterns, recursive, overwrite)
             continue
 
-        # If package_engine_assets has already copied a .pak file of the same name, don't overwrite it.
-        if os.path.isfile(dstpath):
+        if exclude_patterns:
+            exclude = False
+            for pattern in exclude_patterns:
+                exclude = fnmatch.fnmatch(srcpath, os.path.join(src_dir, pattern))
+                if exclude:
+                    break
+            if exclude:
+                continue
+
+        if include_patterns:
+            include = False
+            for pattern in include_patterns:
+                include = fnmatch.fnmatch(srcpath, os.path.join(src_dir, pattern))
+                if include:
+                    break
+            if not include:
+                continue
+
+        if os.path.isfile(dstpath) and not overwrite:
             continue
 
+        if not os.path.exists(dst_dir):
+            os.makedirs(dst_dir)
+            
         shutil.copyfile(srcpath, dstpath)
 
 def package_assets(project, engine_path, project_path, export_path):
@@ -279,7 +324,8 @@ def package_assets(project, engine_path, project_path, export_path):
                     '/pak_root="{}"'.format(export_path),
                     '/TargetHasEditor=0',
                     '/game="{}"'.format(asset_dir),
-                    '/stripMetadata']
+                    '/stripMetadata',
+                    '/skipmissing']
         run_command(rc_cmd)
         os.chdir(pwd)
     else:
@@ -320,3 +366,45 @@ def copy_plugins(project, project_path, export_path):
         else:
             print("Failed to copy plugin file '" + path + "'!")
             print(src_file)
+
+def copy_libs(project, project_path, export_path):
+    """
+    Searches the bin folder for files that fit the name of the shared libs,
+    and copies them to the export directory.
+    """
+    libs = cryproject.libs_list(project)
+    
+    if not libs:
+        return
+
+    bin_dir = os.path.join(project_path, "bin")
+    if not os.path.isdir(bin_dir):
+        return
+
+    export_bin = os.path.join(export_path, "bin")
+
+    exclude = ["*.mdb", "*.pdb", "*.xml", "*.ilk"]
+
+    for lib in libs:
+        if not lib:
+            continue
+
+        shared = lib.get("shared", None)
+        if shared == None:
+            continue
+        
+        any = shared.get("any", None)
+        win86 = shared.get("win_x86", None)
+        win64 = shared.get("win_x64", None)
+        
+        if any:
+            include = ["{}*".format(any)]
+            copy_directory_contents(bin_dir, export_bin, include, exclude)
+
+        if win86:
+            include = ["{}*".format(win86)]
+            copy_directory_contents(os.path.join(bin_dir, "win_x86"), os.path.join(export_bin, "win_x86"), include, exclude)
+
+        if win64:
+            include = ["{}*".format(win64)]
+            copy_directory_contents(os.path.join(bin_dir, "win_x64"), os.path.join(export_bin, "win_x64"), include, exclude)
