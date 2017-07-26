@@ -1438,9 +1438,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 
 		// Add the component to the entity
 		AddComponentInternal(pComponent, typeGUID, &initParams, &componentClassDesc);
-
-		// Initialize the component
-		pComponent->Initialize();
 	}
 	else
 	{
@@ -1462,9 +1459,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		// Apply loaded properties values on the members of the component
 		//classProperties.Apply(componentClassDesc, pComponent.get());
 		Schematyc::Utils::SerializeClass(archive, componentClassDesc, pComponent.get(), "properties", "properties");
-
-		// Call component Initialize again
-		pComponent->Initialize();
 	}
 }
 
@@ -1515,21 +1509,6 @@ void CEntity::SaveComponent(Serialization::IArchive& archive, IEntityComponent& 
 	// Save component members
 	Schematyc::Utils::SerializeClass(archive, component.GetClassDesc(), &component, "properties", "properties");
 }
-
-struct SEntityComponentSerializationHelper
-{
-	CEntity&          entity;
-	IEntityComponent* pComponent = nullptr;
-	SEntityComponentSerializationHelper(CEntity& e) : entity(e) {};
-	SEntityComponentSerializationHelper(CEntity& e, IEntityComponent* comp) : entity(e), pComponent(comp) {};
-	void Serialize(Serialization::IArchive& archive)
-	{
-		if (archive.isInput())
-			entity.LoadComponent(archive);
-		else
-			entity.SaveComponent(archive, *pComponent);
-	}
-};
 
 static bool SerializePropertiesWrapper(void* rawPointer, yasli::Archive& ar)
 {
@@ -1647,6 +1626,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 	{
 		if (XmlNodeRef componentsNode = node->findChild("Components"))
 		{
+			// Load components into the m_components vector (without initializing them!)
 			for (int i = 0, n = componentsNode->getChildCount(); i < n; ++i)
 			{
 				XmlNodeRef componentNode = componentsNode->getChild(i);
@@ -1656,11 +1636,28 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 				}
 				else
 				{
-					SEntityComponentSerializationHelper componentSerializationHelper(*this);
+					struct SEntityComponentLoadHelper
+					{
+						CEntity& entity;
+						void Serialize(Serialization::IArchive& archive)
+						{
+							entity.LoadComponent(archive);
+						}
+					};
 
-					Serialization::LoadXmlNode(componentSerializationHelper, componentNode);
+					SEntityComponentLoadHelper loadHelper = SEntityComponentLoadHelper{ *this };
+					Serialization::LoadXmlNode(loadHelper, componentNode);
 				}
 			}
+
+			// Now that all components are in place, initialize them (does not apply to legacy proxies).
+			m_components.ForEach([&](const SEntityComponentRecord& record)
+			{
+				if (record.proxyType == ENTITY_PROXY_LAST)
+				{
+					record.pComponent->Initialize();
+				}
+			});
 		}
 		m_physics.SerializeXML(node, bLoading);
 	}
@@ -1684,7 +1681,19 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 						componentsNode = node->newChild("Components");
 					}
 					XmlNodeRef componentNode = componentsNode->newChild("Component");
-					Serialization::SaveXmlNode(componentNode, Serialization::SStruct(SEntityComponentSerializationHelper(*this, &component)));
+
+					struct SEntityComponentSaveHelper
+					{
+						CEntity&          entity;
+						IEntityComponent* pComponent;
+						void Serialize(Serialization::IArchive& archive)
+						{
+							entity.SaveComponent(archive, *pComponent);
+						}
+					};
+
+					SEntityComponentSaveHelper saveHelper{ *this, &component };
+					Serialization::SaveXmlNode(componentNode, Serialization::SStruct(saveHelper));
 				}
 				else if (component.GetPropertyGroup() || component.GetComponentFlags().Check(EEntityComponentFlags::Legacy))
 				{

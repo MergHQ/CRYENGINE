@@ -17,35 +17,19 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 {
 	struct IUnifiedEntityComponent : public IEntityComponent
 	{
-		static CryGUID& IID()
-		{
-			static CryGUID id = "{C89DD0DD-9850-43BA-BF52-86EFB7C9D0A5}"_cry_guid;
-			return id;
-		}
-
 		static void ReflectType(Schematyc::CTypeDesc<IUnifiedEntityComponent>& desc)
 		{
-			desc.SetGUID(cryiidof<IUnifiedEntityComponent>());
+			desc.SetGUID("{C89DD0DD-9850-43BA-BF52-86EFB7C9D0A5}"_cry_guid);
 		}
 	};
 
 	class CUnifiedEntityComponent : public IUnifiedEntityComponent
 	{
 	public:
-		static CryGUID& IID()
-		{
-			static CryGUID id = "{C89DD0DD-9850-43BA-BF52-86EFB7C9D0A5}"_cry_guid;
-			return id;
-		}
-
-		static void Register(Schematyc::CEnvRegistrationScope& componentScope)
-		{
-		}
-
 		static void ReflectType(Schematyc::CTypeDesc<CUnifiedEntityComponent>& desc)
 		{
 			desc.AddBase<IUnifiedEntityComponent>();
-			desc.SetGUID(CUnifiedEntityComponent::IID());
+			desc.SetGUID("{C89DD0DD-9850-43BA-BF52-86EFB7C9D0A5}"_cry_guid);
 			desc.SetEditorCategory("Unit Tests");
 			desc.SetLabel("Unified Entity Component");
 			desc.SetDescription("Does stuff");
@@ -237,13 +221,82 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		// Querying the lowest level GUIDs is disallowed
 		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetComponent<IEntityComponent>(), nullptr);
 	}
+
+	class CComponent2 : public IEntityComponent
+	{
+	public:
+		static void ReflectType(Schematyc::CTypeDesc<CComponent2>& desc)
+		{
+			desc.SetGUID("{8B80B6EA-3A85-48F0-89DC-EDE69E72BC08}"_cry_guid);
+			desc.SetLabel("CComponent2");
+		}
+
+		virtual void Initialize() override
+		{
+			m_bInitialized = true;
+		}
+
+		bool m_bInitialized = false;
+	};
+
+	class CComponent1 : public IEntityComponent
+	{
+	public:
+		static void ReflectType(Schematyc::CTypeDesc<CComponent1>& desc)
+		{
+			desc.SetGUID("{00235E09-55EC-46AD-A6C7-606EA4A40A6B}"_cry_guid);
+			desc.SetLabel("CComponent1");
+			desc.AddMember(&CComponent1::m_bLoadingFromDisk, 'load', "Loading", "Loading", "", false);
+		}
+
+		virtual void Initialize() override
+		{
+			if (m_bLoadingFromDisk)
+			{
+				// Make sure that CComponent2 is already available (but uninitialized)
+				CComponent2* pOtherComponent = m_pEntity->GetComponent<CComponent2>();
+				CRY_UNIT_TEST_CHECK_DIFFERENT(pOtherComponent, nullptr);
+				if (pOtherComponent != nullptr)
+				{
+					CRY_UNIT_TEST_CHECK_EQUAL(pOtherComponent->m_bInitialized, false);
+				}
+			}
+		}
+
+		bool m_bLoadingFromDisk = false;
+	};
+
+	// Test whether two components will be deserialized into CEntity::m_components before being Initialized
+	// Initialize must never be called during loading from disk if another component (in the same entity) has yet to be loaded
+	CRY_UNIT_TEST(LoadMultipleComponents)
+	{
+		IEntity *pEntity = SpawnTestEntity("SaveMultipleComponents");
+		CComponent1 *pComponent1 = pEntity->GetOrCreateComponent<CComponent1>();
+		CComponent2 *pComponent2 = pEntity->GetOrCreateComponent<CComponent2>();
+
+		// Set boolean to true so we can assert existence of CComponent2 in CComponent1::Initialize
+		pComponent1->m_bLoadingFromDisk = true;
+		
+		// Save
+		XmlNodeRef xmlNode = gEnv->pSystem->CreateXmlNode("Entity");
+		pEntity->SerializeXML(xmlNode, false);
+		gEnv->pEntitySystem->RemoveEntity(pEntity->GetId());
+
+		// Load
+		pEntity = SpawnTestEntity("LoadMultipleComponents");
+		pEntity->SerializeXML(xmlNode, true);
+
+		CRY_UNIT_TEST_CHECK_DIFFERENT(pEntity->GetComponent<CComponent1>(), nullptr);
+		CRY_UNIT_TEST_CHECK_DIFFERENT(pEntity->GetComponent<CComponent2>(), nullptr);
+	}
 }
 
 void RegisterUnitTestComponents(Schematyc::IEnvRegistrar& registrar)
 {
 	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{
-		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(EntityTestsSuit::CUnifiedEntityComponent));
-		EntityTestsSuit::CUnifiedEntityComponent::Register(componentScope);
+		scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(EntityTestsSuit::CUnifiedEntityComponent));
+		scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(EntityTestsSuit::CComponent1));
+		scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(EntityTestsSuit::CComponent2));
 	}
 }
