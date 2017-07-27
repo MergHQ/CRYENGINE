@@ -25,33 +25,6 @@ void CParticleComponent::Register(Schematyc::CEnvRegistrationScope& componentSco
 	}
 }
 
-void CParticleComponent::ReflectType(Schematyc::CTypeDesc<CParticleComponent>& desc)
-{
-	desc.SetGUID(CParticleComponent::IID());
-	desc.SetEditorCategory("Effects");
-	desc.SetLabel("Particle Emitter");
-	desc.SetDescription("Emits a particle effect");
-	desc.SetIcon("icons:schematyc/entity_particle_emitter_component.png");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
-
-	desc.AddMember(&CParticleComponent::m_bEnabled, 'actv', "Enabled", "Enabled", "Whether or not the particle should emit by default", true);
-	desc.AddMember(&CParticleComponent::m_effectName, 'file', "FilePath", "Effect", "Determines the particle effect to load", "");
-
-	desc.AddMember(&CParticleComponent::m_spawnParams, 'spaw', "SpawnParams", "Spawn Parameters", nullptr, CParticleComponent::SSpawnParameters());
-}
-
-static void ReflectType(Schematyc::CTypeDesc<CParticleComponent::SAttributes>& desc)
-{
-	desc.SetGUID("{24AE6687-F855-4736-9C71-3419083BAECB}"_cry_guid);
-	desc.SetLabel("Particle Attributes");
-}
-
-static void ReflectType(Schematyc::CTypeDesc<CParticleComponent::SSpawnParameters>& desc)
-{
-	desc.SetGUID("{9E4544F0-3E5A-4479-B618-E9CB46905149}"_cry_guid);
-	desc.SetLabel("Particle Spawn Parameters");
-}
-
 void CParticleComponent::Initialize()
 {
 	if (m_effectName.value.size() > 0)

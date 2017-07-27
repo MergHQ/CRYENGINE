@@ -24,7 +24,7 @@ void CSwitchComponent::Register(Schematyc::CEnvRegistrationScope& componentScope
 //////////////////////////////////////////////////////////////////////////
 void CSwitchComponent::ReflectType(Schematyc::CTypeDesc<CSwitchComponent>& desc)
 {
-	desc.SetGUID(CSwitchComponent::IID());
+	desc.SetGUID("EDCC5BA5-F4A7-486A-9BB7-3C2F1D7F9684"_cry_guid);
 	desc.SetEditorCategory("Audio");
 	desc.SetLabel("Switch");
 	desc.SetDescription("Allows for setting a switch on all audio audio objects created by the component this component is attached to.");

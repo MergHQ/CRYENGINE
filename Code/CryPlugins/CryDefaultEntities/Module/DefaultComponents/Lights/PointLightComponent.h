@@ -68,12 +68,22 @@ namespace Cry
 			CPointLightComponent() {}
 			virtual ~CPointLightComponent() {}
 
-			static void ReflectType(Schematyc::CTypeDesc<CPointLightComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CPointLightComponent>& desc)
 			{
-				static CryGUID id = "0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid;
-				return id;
+				desc.SetGUID("0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid);
+				desc.SetEditorCategory("Lights");
+				desc.SetLabel("Point Light");
+				desc.SetDescription("Emits light from its origin into all directions");
+				desc.SetIcon("icons:ObjectTypes/light.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
+
+				desc.AddMember(&CPointLightComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the light is enabled", true);
+				desc.AddMember(&CPointLightComponent::m_radius, 'radi', "Radius", "Radius", "Determines whether the range of the point light", 10.f);
+
+				desc.AddMember(&CPointLightComponent::m_color, 'colo', "Color", "Color", "Color emission information", CPointLightComponent::SColor());
+				desc.AddMember(&CPointLightComponent::m_shadows, 'shad', "Shadows", "Shadows", "Shadow casting settings", CPointLightComponent::SShadows());
+				desc.AddMember(&CPointLightComponent::m_options, 'opt', "Options", "Options", "Specific Light Options", CPointLightComponent::SOptions());
+				desc.AddMember(&CPointLightComponent::m_animations, 'anim', "Animations", "Animations", "Light style / animation properties", CPointLightComponent::SAnimations());
 			}
 
 			struct SOptions

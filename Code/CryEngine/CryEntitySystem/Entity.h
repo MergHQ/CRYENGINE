@@ -453,9 +453,11 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Component Save/Load
 	//////////////////////////////////////////////////////////////////////////
+	// Loads a component, but leaves it uninitialized
 	void LoadComponent(Serialization::IArchive& archive);
 	void SaveComponent(Serialization::IArchive& archive,IEntityComponent &component);
-	bool LoadComponentLegacy(XmlNodeRef& entityNode,XmlNodeRef& componentNode);
+	// Loads a component with the legacy XML format, but leaves it uninitialized
+	bool LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentNode);
 	void SaveComponentLegacy(CryGUID typeId,XmlNodeRef& entityNode,XmlNodeRef& componentNode,IEntityComponent &component,bool bIncludeScriptProxy);
 	//////////////////////////////////////////////////////////////////////////
 
@@ -469,7 +471,6 @@ private:
 	friend class CEntityComponentTriggerBounds;
 	friend class CEntityPhysics;
 	friend class CNetEntity; // CNetEntity iterates all components on serialization.
-	friend struct SEntityComponentSerializationHelper;
 
 	enum class EBindingType
 	{

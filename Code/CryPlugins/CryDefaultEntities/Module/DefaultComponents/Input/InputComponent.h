@@ -89,12 +89,14 @@ namespace Cry
 			virtual void BindPS4Action(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EPS4InputId keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true);
 			virtual void BindAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EActionInputDevice device, EKeyId keyId, bool bOnPress = true, bool bOnRelease = true, bool bOnHold = true);
 
-			static void ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc)
 			{
-				static CryGUID id = "{183E3C84-2E08-4506-95FA-B362F7E735E9}"_cry_guid;
-				return id;
+				desc.SetGUID("{183E3C84-2E08-4506-95FA-B362F7E735E9}"_cry_guid);
+				desc.SetEditorCategory("Input");
+				desc.SetLabel("Input");
+				desc.SetDescription("Exposes support for inputs and action maps");
+				//desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::HideFromInspector });
 			}
 
 			virtual void RegisterSchematycAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name);

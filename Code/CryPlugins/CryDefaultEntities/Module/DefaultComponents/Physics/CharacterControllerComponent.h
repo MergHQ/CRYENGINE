@@ -1,7 +1,5 @@
 #pragma once
 
-#include "DefaultComponents/Geometry/AdvancedAnimationComponent.h"
-
 class CPlugin_CryDefaultEntities;
 
 namespace Cry
@@ -38,16 +36,29 @@ namespace Cry
 #endif
 
 		public:
-			static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent>& desc);
+			static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent>& desc)
+			{
+				desc.SetGUID("{98183F31-A685-43CD-92A9-815274F0A81C}"_cry_guid);
+				desc.SetEditorCategory("Physics");
+				desc.SetLabel("Character Controller");
+				desc.SetDescription("Functionality for a standard FPS / TPS style walking character");
+				//desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::Singleton });
+
+				// Mark the Rigid Body component as incompatible
+				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{912C6CE8-56F7-4FFA-9134-F98D4E307BD6}"_cry_guid);
+				// Mark the Vehicle Physics component as incompatible
+				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{47EBC019-41CB-415E-AB57-2A3A99B918C2}}"_cry_guid);
+				// Mark the Area component as incompatible
+				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{EC7F145B-D48F-4863-B9C2-3D3E2C8DCC61}"_cry_guid);
+
+				desc.AddMember(&CCharacterControllerComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
+				desc.AddMember(&CCharacterControllerComponent::m_physics, 'phys', "Physics", "Physics", "Physical properties for the character", CCharacterControllerComponent::SPhysics());
+				desc.AddMember(&CCharacterControllerComponent::m_movement, 'move', "Movement", "Movement", "Movement properties for the character", CCharacterControllerComponent::SMovement());
+			}
 
 			CCharacterControllerComponent() = default;
 			virtual ~CCharacterControllerComponent();
-
-			static CryGUID& IID()
-			{
-				static CryGUID id = "{98183F31-A685-43CD-92A9-815274F0A81C}"_cry_guid;
-				return id;
-			}
 
 			bool IsOnGround() const { return m_bOnGround; }
 			const Schematyc::UnitLength<Vec3>& GetGroundNormal() const { return m_groundNormal; }
@@ -157,6 +168,17 @@ namespace Cry
 			{
 				inline bool operator==(const SPhysics &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
+				static void ReflectType(Schematyc::CTypeDesc<SPhysics>& desc)
+				{
+					desc.SetGUID("{3341F1DC-0753-466E-BC7A-FA77A49D3CB4}"_cry_guid);
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_mass, 'mass', "Mass", "Mass", "Mass of the character in kg", 80.f);
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_radius, 'radi', "Radius", "Collider Radius", "Radius of the capsule or cylinder", 0.45f);
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_height, 'heig', "Height", "Collider Height", "Height of the capsule or cylinder", 0.935f);
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bCapsule, 'caps', "Capsule", "Use Capsule", "Whether or not to use a capsule as the main collider, otherwise cylinder", true);
+
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
+				}
+
 				Schematyc::PositiveFloat m_mass = 80.f;
 				float m_radius = 0.45f;
 				float m_height = 0.935f;
@@ -168,6 +190,20 @@ namespace Cry
 			struct SMovement
 			{
 				inline bool operator==(const SMovement &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
+
+				static void ReflectType(Schematyc::CTypeDesc<SMovement>& desc)
+				{
+					desc.SetGUID("{71D2F72F-1AAF-4368-A356-FC07938837EB}"_cry_guid);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_airControlRatio, 'airc', "AirControl", "Air Control Ratio", "Indicates how much the character can move in the air, 0 means no movement while 1 means full control.", 1.f);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_airResistance, 'airr', "AirResistance", "Air Resistance", nullptr, 0.2f);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_inertia, 'iner', "Inertia", "Inertia Coefficient", "More amount gives less inertia, 0 being none", 8.f);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_inertiaAcceleration, 'inea', "InertiaAcc", "Inertia Acceleration Coefficient", "More amount gives less inertia on acceleration, 0 being none", 8.f);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_maxClimbAngle, 'maxc', "MaxClimb", "Maximum Climb Angle", "Maximum angle the character can climb", 50.0_degrees);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_maxJumpAngle, 'maxj', "MaxJump", "Maximum Jump Angle", "Maximum angle the character can jump at", 50.0_degrees);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_minSlideAngle, 'mins', "MinSlide", "Minimum Angle For Slide", "Minimum angle before the player starts sliding", 70.0_degrees);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_minFallAngle, 'minf', "MinFall", "Minimum Angle For Fall", "Minimum angle before the character starts falling", 80.0_degrees);
+					desc.AddMember(&CCharacterControllerComponent::SMovement::m_maxGroundVelocity, 'maxg', "MaxGroundVelocity", "Maximum Surface Velocity", "Maximum velocity of the surface the character is on before they are considered airborne and slide off", DEG2RAD(50.f));
+				}
 
 				Schematyc::Range<0, 1> m_airControlRatio = 0.f;
 				Schematyc::Range<0, 10000> m_airResistance = 0.2f;

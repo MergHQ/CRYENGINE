@@ -46,7 +46,7 @@ void CTriggerComponent::Register(Schematyc::CEnvRegistrationScope& componentScop
 //////////////////////////////////////////////////////////////////////////
 void CTriggerComponent::ReflectType(Schematyc::CTypeDesc<CTriggerComponent>& desc)
 {
-	desc.SetGUID(CTriggerComponent::IID());
+	desc.SetGUID("672F0641-004E-4300-B4F7-764B70CC4DA0"_cry_guid);
 	desc.SetEditorCategory("Audio");
 	desc.SetLabel("Trigger");
 	desc.SetDescription("Allows for execution of an audio trigger at provided transformation.");

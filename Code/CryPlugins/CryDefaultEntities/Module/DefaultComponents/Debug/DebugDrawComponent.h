@@ -28,12 +28,19 @@ namespace Cry
 		public:
 			virtual ~CDebugDrawComponent() {}
 
-			static void ReflectType(Schematyc::CTypeDesc<CDebugDrawComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CDebugDrawComponent>& desc)
 			{
-				static CryGUID id = "{9C255A6C-B3E2-4AF2-BDB4-9ADCCC9E07D3}"_cry_guid;
-				return id;
+				desc.SetGUID("{9C255A6C-B3E2-4AF2-BDB4-9ADCCC9E07D3}"_cry_guid);
+				desc.SetEditorCategory("Debug");
+				desc.SetLabel("Debug Draw");
+				desc.SetDescription("Allows drawing debug information to the screen");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
+
+				desc.AddMember(&CDebugDrawComponent::m_bDrawPersistent, 'draw', "DrawPersistent", "Draw Persistent Text", "Whether or not to draw the persistent text to screen", false);
+				desc.AddMember(&CDebugDrawComponent::m_persistentText, 'text', "PersistentText", "Persistent Text", "Persistent text to draw to screen", "");
+				desc.AddMember(&CDebugDrawComponent::m_persistentTextColor, 'tcol', "PersistentTextCol", "Persistent Text Color", "Color of the text to draw to screen", ColorF(1, 1, 1));
+				desc.AddMember(&CDebugDrawComponent::m_persistentViewDistance, 'view', "PersistentDist", "Persistent View Distance", "View distance of the persistent text", 100.f);
+				desc.AddMember(&CDebugDrawComponent::m_persistentFontSize, 'font', "PersistentSize", "Persistent Font Size", "Size of the persistent font", 1.2f);
 			}
 
 			virtual void DrawSphere(const Vec3& pos, float radius, const ColorF& color, float duration);

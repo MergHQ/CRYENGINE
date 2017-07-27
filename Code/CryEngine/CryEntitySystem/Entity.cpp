@@ -1423,7 +1423,7 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		//classProperties.Apply(componentClassDesc, pComponent.get());
 		Schematyc::Utils::SerializeClass(archive, componentClassDesc, pComponent.get(), "properties", "properties");
 
-		// Finally Create and Initialize the component
+		// Add the component to the entity
 		AddComponentInternal(pComponent, typeGUID, &initParams, &componentClassDesc);
 	}
 	else
@@ -1446,9 +1446,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 		// Apply loaded properties values on the members of the component
 		//classProperties.Apply(componentClassDesc, pComponent.get());
 		Schematyc::Utils::SerializeClass(archive, componentClassDesc, pComponent.get(), "properties", "properties");
-
-		// Call component Initialize again
-		pComponent->Initialize();
 	}
 }
 
@@ -1499,21 +1496,6 @@ void CEntity::SaveComponent(Serialization::IArchive& archive, IEntityComponent& 
 	// Save component members
 	Schematyc::Utils::SerializeClass(archive, component.GetClassDesc(), &component, "properties", "properties");
 }
-
-struct SEntityComponentSerializationHelper
-{
-	CEntity&          entity;
-	IEntityComponent* pComponent = nullptr;
-	SEntityComponentSerializationHelper(CEntity& e) : entity(e) {};
-	SEntityComponentSerializationHelper(CEntity& e, IEntityComponent* comp) : entity(e), pComponent(comp) {};
-	void Serialize(Serialization::IArchive& archive)
-	{
-		if (archive.isInput())
-			entity.LoadComponent(archive);
-		else
-			entity.SaveComponent(archive, *pComponent);
-	}
-};
 
 static bool SerializePropertiesWrapper(void* rawPointer, yasli::Archive& ar)
 {
@@ -1631,6 +1613,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 	{
 		if (XmlNodeRef componentsNode = node->findChild("Components"))
 		{
+			// Load components into the m_components vector (without initializing them!)
 			for (int i = 0, n = componentsNode->getChildCount(); i < n; ++i)
 			{
 				XmlNodeRef componentNode = componentsNode->getChild(i);
@@ -1640,11 +1623,28 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 				}
 				else
 				{
-					SEntityComponentSerializationHelper componentSerializationHelper(*this);
+					struct SEntityComponentLoadHelper
+					{
+						CEntity& entity;
+						void Serialize(Serialization::IArchive& archive)
+						{
+							entity.LoadComponent(archive);
+						}
+					};
 
-					Serialization::LoadXmlNode(componentSerializationHelper, componentNode);
+					SEntityComponentLoadHelper loadHelper = SEntityComponentLoadHelper{ *this };
+					Serialization::LoadXmlNode(loadHelper, componentNode);
 				}
 			}
+
+			// Now that all components are in place, initialize them (does not apply to legacy proxies).
+			m_components.ForEach([&](const SEntityComponentRecord& record)
+			{
+				if (record.proxyType == ENTITY_PROXY_LAST)
+				{
+					record.pComponent->Initialize();
+				}
+			});
 		}
 		m_physics.SerializeXML(node, bLoading);
 	}
@@ -1668,7 +1668,19 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 						componentsNode = node->newChild("Components");
 					}
 					XmlNodeRef componentNode = componentsNode->newChild("Component");
-					Serialization::SaveXmlNode(componentNode, Serialization::SStruct(SEntityComponentSerializationHelper(*this, &component)));
+
+					struct SEntityComponentSaveHelper
+					{
+						CEntity&          entity;
+						IEntityComponent* pComponent;
+						void Serialize(Serialization::IArchive& archive)
+						{
+							entity.SaveComponent(archive, *pComponent);
+						}
+					};
+
+					SEntityComponentSaveHelper saveHelper{ *this, &component };
+					Serialization::SaveXmlNode(componentNode, Serialization::SStruct(saveHelper));
 				}
 				else if (component.GetPropertyGroup() || component.GetComponentFlags().Check(EEntityComponentFlags::Legacy))
 				{
@@ -1765,28 +1777,30 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 		componentTypeID = pEnvComponent->GetGUID();
 		pClassDescription = &pEnvComponent->GetDesc();
 	}
+	// Fall back to legacy 5.3 creation
+	else if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
+	{
+		size_t numFactories = 1;
+		pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
+		if (numFactories == 0 || pLegacyComponentFactory == nullptr)
+		{
+			// Nothing found by interface, check by implementation id
+			pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
+		}
+
+		if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
+		{
+			CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
+			return nullptr;
+		}
+
+		// Resolve to implementation id, since we may have queried by interface
+		componentTypeID = pLegacyComponentFactory->GetClassID();
+	}
 	else
 	{
-		// Fall back to legacy 5.3 creation
-		if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
-		{
-			size_t numFactories = 1;
-			pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
-			if (numFactories == 0 || pLegacyComponentFactory == nullptr)
-			{
-				// Nothing found by interface, check by implementation id
-				pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
-			}
-
-			if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
-			{
-				CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
-				return nullptr;
-			}
-
-			// Resolve to implementation id, since we may have queried by interface
-			componentTypeID = pLegacyComponentFactory->GetClassID();
-		}
+		CRY_ASSERT_MESSAGE("Tried to create unregistered component with type id %s!", interfaceId.ToDebugString());
+		return nullptr;
 	}
 
 	// All pre-checks successful, we can now create the component
@@ -1794,7 +1808,10 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 	std::shared_ptr<IEntityComponent> pComponent = pEnvComponent != nullptr ? pEnvComponent->CreateFromPool() : cryinterface_cast<IEntityComponent>(pLegacyComponentFactory->CreateClassInstance());
 	CRY_ASSERT(pComponent != nullptr);
 
+	// Add the component to the entity, and initialize it manually immediately after
 	AddComponentInternal(pComponent, componentTypeID, pInitParams, pClassDescription);
+
+	pComponent->Initialize();
 
 	return pComponent.get();
 }
@@ -1852,12 +1869,8 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	// Sorted insertion, all elements of the m_components are sorted by the proxyType
 	m_components.Add(componentRecord);
 
-	// Call initialization of the component
-	pComponent->Initialize();
-
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
-
 }
 
 //////////////////////////////////////////////////////////////////////////

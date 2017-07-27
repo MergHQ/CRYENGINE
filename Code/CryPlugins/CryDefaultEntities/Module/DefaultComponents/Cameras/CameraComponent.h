@@ -40,12 +40,20 @@ namespace Cry
 		public:
 			virtual ~CCameraComponent();
 
-			static void ReflectType(Schematyc::CTypeDesc<CCameraComponent>& desc);
-
-			static CryGUID& IID()
+			static void ReflectType(Schematyc::CTypeDesc<CCameraComponent>& desc)
 			{
-				static CryGUID id = "{A4CB0508-5F07-46B4-B6D4-AB76BFD550F4}"_cry_guid;
-				return id;
+				desc.SetGUID("{A4CB0508-5F07-46B4-B6D4-AB76BFD550F4}"_cry_guid);
+				desc.SetEditorCategory("Cameras");
+				desc.SetLabel("Camera");
+				desc.SetDescription("Represents a camera that can be activated to render to screen");
+				desc.SetIcon("icons:General/Camera.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
+
+				desc.AddMember(&CCameraComponent::m_bActivateOnCreate, 'actv', "Active", "Active", "Whether or not this camera should be activated on component creation", true);
+				desc.AddMember(&CCameraComponent::m_nearPlane, 'near', "NearPlane", "Near Plane", nullptr, 0.25f);
+				desc.AddMember(&CCameraComponent::m_fieldOfView, 'fov', "FieldOfView", "Field of View", nullptr, 75.0_degrees);
+
+				desc.AddMember(&CCameraComponent::m_bAutomaticAudioListenerPosition, 'audi', "AutoAudioListenerPos", "Automatic Audio Listener", "If true, automatically moves the audio listener with the entity.", true);
 			}
 
 			virtual void Activate()

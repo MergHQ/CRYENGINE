@@ -1,8 +1,6 @@
 #include "StdAfx.h"
 #include "RigidBodyComponent.h"
 
-#include "CharacterControllerComponent.h"
-
 #include <Cry3DEngine/IRenderNode.h>
 
 namespace Cry
@@ -72,35 +70,6 @@ void CRigidBodyComponent::Register(Schematyc::CEnvRegistrationScope& componentSc
 		pSignal->SetDescription("Sent when the entity collided with another object");
 		componentScope.Register(pSignal);
 	}
-}
-
-void CRigidBodyComponent::ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent>& desc)
-{
-	desc.SetGUID(CRigidBodyComponent::IID());
-	desc.SetEditorCategory("Physics");
-	desc.SetLabel("Rigidbody");
-	desc.SetDescription("Creates a physical representation of the entity, ");
-	desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::Singleton });
-
-	// Entities can only have one physical entity type, thus these are incompatible
-	desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, cryiidof<CCharacterControllerComponent>());
-
-	desc.AddMember(&CRigidBodyComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
-
-	desc.AddMember(&CRigidBodyComponent::m_bEnabledByDefault, 'enab', "EnabledByDefault", "Enabled by Default", "Whether the component is enabled by default", true);
-	desc.AddMember(&CRigidBodyComponent::m_type, 'type', "Type", "Type", "Type of physicalized object to create", CRigidBodyComponent::EPhysicalType::Rigid);
-	desc.AddMember(&CRigidBodyComponent::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
-}
-
-static void ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent::EPhysicalType>& desc)
-{
-	desc.SetGUID("{C8B86CC7-E86D-46BA-9110-7FEA8052FABC}"_cry_guid);
-	desc.SetLabel("Simple Physicalization Type");
-	desc.SetDescription("Determines how to physicalize a simple (CGF) object");
-	desc.SetDefaultValue(CRigidBodyComponent::EPhysicalType::Rigid);
-	desc.AddConstant(CRigidBodyComponent::EPhysicalType::Static, "Static", "Static");
-	desc.AddConstant(CRigidBodyComponent::EPhysicalType::Rigid, "Rigid", "Rigid");
 }
 
 static void ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent::SCollisionSignal>& desc)

@@ -534,16 +534,6 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 	}
 }
 
-void CInputComponent::ReflectType(Schematyc::CTypeDesc<CInputComponent>& desc)
-{
-	desc.SetGUID(CInputComponent::IID());
-	desc.SetEditorCategory("Input");
-	desc.SetLabel("Input");
-	desc.SetDescription("Exposes support for inputs and action maps");
-	//desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::HideFromInspector });
-}
-
 static void ReflectType(Schematyc::CTypeDesc<SActionPressedSignal>& desc)
 {
 	desc.SetGUID("{603771B5-6321-4113-82FB-B839F1BE7F64}"_cry_guid);

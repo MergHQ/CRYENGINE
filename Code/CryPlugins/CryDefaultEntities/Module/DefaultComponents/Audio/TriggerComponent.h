@@ -45,12 +45,6 @@ public:
 
 	static void     ReflectType(Schematyc::CTypeDesc<CTriggerComponent>& desc);
 
-	static CryGUID& IID()
-	{
-		static CryGUID id = "672F0641-004E-4300-B4F7-764B70CC4DA0"_cry_guid;
-		return id;
-	}
-
 	void SetAutoPlay(bool const bEnable);
 	void Play();
 	void Stop();
@@ -80,13 +74,13 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-static void ReflectType(Schematyc::CTypeDesc<STriggerSerializeHelper>& desc)
+inline void ReflectType(Schematyc::CTypeDesc<STriggerSerializeHelper>& desc)
 {
 	desc.SetGUID("C5DE4974-ECAB-4D6F-A93D-02C1F5C55C31"_cry_guid);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void STriggerSerializeHelper::Serialize(Serialization::IArchive& archive)
+inline void STriggerSerializeHelper::Serialize(Serialization::IArchive& archive)
 {
 	archive(Serialization::AudioTrigger<string>(m_name), "triggerName", "^");
 
