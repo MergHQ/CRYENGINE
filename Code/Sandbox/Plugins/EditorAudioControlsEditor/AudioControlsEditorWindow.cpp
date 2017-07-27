@@ -31,13 +31,14 @@
 #include <QSplitter>
 #include <QKeyEvent>
 #include <QDir>
-#include <QScrollArea>
 
 namespace ACE
 {
+//////////////////////////////////////////////////////////////////////////
 class CAudioFileMonitor final : public IFileChangeListener
 {
 public:
+
 	CAudioFileMonitor(CAudioControlsEditorWindow* window)
 		: m_window(window) {}
 
@@ -46,10 +47,12 @@ public:
 		GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 	}
 
-	void OnFileChange(const char* filename, EChangeType eType) override
+	// IFileChangeListener
+	virtual void OnFileChange(const char* filename, EChangeType eType) override
 	{
 		m_window->ReloadMiddlewareData();
 	}
+	// ~IFileChangeListener
 
 	void Update()
 	{
@@ -78,7 +81,7 @@ public:
 
 				GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 
-				for (auto const folder : m_monitorFolders)
+				for (auto const& folder : m_monitorFolders)
 				{
 					GetIEditor()->GetFileMonitor()->RegisterListener(this, folder);
 				}
@@ -87,10 +90,12 @@ public:
 	}
 
 private:
+
 	CAudioControlsEditorWindow* m_window;
 	std::vector<const char*>    m_monitorFolders;
 };
 
+//////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 {
 	memset(m_allowedTypes, true, sizeof(m_allowedTypes));
@@ -138,15 +143,11 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 
 		GetIEditor()->RegisterNotifyListener(this);
 
-		QScrollArea* const pScrollArea = new QScrollArea();
-		pScrollArea->setWidgetResizable(true);
-		pScrollArea->setWidget(m_pAudioSystemPanel);
-
 		m_pSplitter = new QSplitter(this);
 		m_pSplitter->setHandleWidth(0);
 		m_pSplitter->addWidget(m_pExplorer);
 		m_pSplitter->addWidget(m_pInspectorPanel);
-		m_pSplitter->addWidget(pScrollArea);
+		m_pSplitter->addWidget(m_pAudioSystemPanel);
 		setCentralWidget(m_pSplitter);
 	}
 
@@ -192,6 +193,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
@@ -199,6 +201,7 @@ CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::keyPressEvent(QKeyEvent* pEvent)
 {
 
@@ -221,6 +224,7 @@ void CAudioControlsEditorWindow::keyPressEvent(QKeyEvent* pEvent)
 	QMainWindow::keyPressEvent(pEvent);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 {
 	if (m_pAssetsManager && m_pAssetsManager->IsDirty())
@@ -261,6 +265,7 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::Reload()
 {
 	if (m_pAssetsManager != nullptr)
@@ -318,6 +323,7 @@ void CAudioControlsEditorWindow::CheckErrorMask()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::Save()
 {
 	bool bPreloadsChanged = m_pAssetsManager->IsTypeDirty(eItemType_Preload);
@@ -349,6 +355,7 @@ void CAudioControlsEditorWindow::Save()
 	m_pAssetsManager->ClearDirtyFlags();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::UpdateAudioSystemData()
 {
 	string levelPath = CRY_NATIVE_PATH_SEPSTR "levels" CRY_NATIVE_PATH_SEPSTR;
@@ -356,6 +363,7 @@ void CAudioControlsEditorWindow::UpdateAudioSystemData()
 	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str());
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	if (event == eNotify_OnEndSceneSave)
@@ -365,6 +373,7 @@ void CAudioControlsEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::FilterControlType(EItemType type, bool bShow)
 {
 	m_allowedTypes[type] = bShow;
@@ -376,6 +385,7 @@ void CAudioControlsEditorWindow::FilterControlType(EItemType type, bool bShow)
 	m_pAudioSystemPanel->SetAllowedControls(type, bShow);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::ReloadMiddlewareData()
 {
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();

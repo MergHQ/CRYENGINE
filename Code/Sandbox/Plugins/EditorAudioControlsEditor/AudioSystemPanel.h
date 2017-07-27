@@ -5,7 +5,7 @@
 #include <QFrame>
 #include <ACETypes.h>
 
-class QLabel;
+class CElidedLabel;
 
 namespace ACE
 {
@@ -13,26 +13,30 @@ class QAudioSystemModelProxyFilter;
 class QAudioSystemModel;
 class CAudioAdvancedTreeView;
 
-class CAudioSystemPanel : public QFrame
+class CAudioSystemPanel final : public QFrame
 {
 	Q_OBJECT
 
 public:
+
 	CAudioSystemPanel();
 	void SetAllowedControls(EItemType type, bool bAllowed);
 	void Reset();
 
 private slots:
+
 	void ShowControlsContextMenu(QPoint const& pos);
 
 signals:
+
 	void ImplementationSettingsChanged();
 
 private:
+
 	bool                          m_allowedATLTypes[EItemType::eItemType_NumTypes];
 	QAudioSystemModelProxyFilter* m_pModelProxy;
 	QAudioSystemModel*            m_pModel;
-	QLabel*                       m_pImplNameLabel;
+	CElidedLabel*                 m_pImplNameLabel;
 	CAudioAdvancedTreeView*       m_pTreeView;
 	QString                       m_filter;
 };

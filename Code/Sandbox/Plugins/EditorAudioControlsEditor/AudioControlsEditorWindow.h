@@ -20,13 +20,18 @@ class CAudioSystemPanel;
 class CAudioControl;
 class CAudioFileMonitor;
 
-class CAudioControlsEditorWindow : public CDockableWindow, public IEditorNotifyListener
+class CAudioControlsEditorWindow final : public CDockableWindow, public IEditorNotifyListener
 {
 	Q_OBJECT
+
 public:
+
 	CAudioControlsEditorWindow();
 	virtual ~CAudioControlsEditorWindow() override;
+
+	// IEditorNotifyListener
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
+	// ~IEditorNotifyListener
 
 	//////////////////////////////////////////////////////////
 	// CDockableWindow implementation
@@ -37,16 +42,19 @@ public:
 	void ReloadMiddlewareData();
 
 private:
+
 	void Reload();
 	void Save();
 	void FilterControlType(EItemType type, bool bShow);
 	void CheckErrorMask();
 
 protected:
+
 	virtual void keyPressEvent(QKeyEvent* pEvent) override;
 	virtual void closeEvent(QCloseEvent* pEvent) override;
 
 private:
+
 	void UpdateAudioSystemData();
 
 	CAudioAssetsManager*                                m_pAssetsManager;
