@@ -336,7 +336,7 @@ struct SEntityProximityQuery
 
 struct IEntitySystemEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IEntitySystemEngineModule, 0xBBBB58B0FF9749CF, 0xBFFE254420CD166F);
+	CRYINTERFACE_DECLARE_GUID(IEntitySystemEngineModule, "bbbb58b0-ff97-49cf-bffe-254420cd166f"_cry_guid);
 };
 
 //! Interface to the system that manages the entities in the game.

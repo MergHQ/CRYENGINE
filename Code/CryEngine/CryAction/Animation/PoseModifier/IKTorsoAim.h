@@ -18,7 +18,7 @@ public:
 		CRYINTERFACE_ADD(IAnimationPoseModifierTorsoAim)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_CLASS(CIKTorsoAim, "AnimationPoseModifier_IKTorsoAim", 0x2058e99dd05243e2, 0x88985eff40b942e4)
+	CRYGENERATE_CLASS_GUID(CIKTorsoAim, "AnimationPoseModifier_IKTorsoAim", "2058e99d-d052-43e2-8898-5eff40b942e4"_cry_guid)
 
 	CIKTorsoAim();
 	virtual ~CIKTorsoAim() {}

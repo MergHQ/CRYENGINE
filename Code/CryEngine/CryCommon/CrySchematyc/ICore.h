@@ -52,7 +52,7 @@ struct SObjectParams
 
 struct ICrySchematycCore : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(ICrySchematycCore, 0x041b8bda35d74341, 0xbde7f0ca69be2595)
+	CRYINTERFACE_DECLARE_GUID(ICrySchematycCore, "041b8bda-35d7-4341-bde7-f0ca69be2595"_cry_guid)
 
 	virtual void                                SetGUIDGenerator(const Schematyc::GUIDGenerator& guidGenerator) = 0;
 	virtual CryGUID                             CreateGUID() const = 0;

@@ -414,7 +414,7 @@ void Preload(struct IScriptTable* pEntityScript);
 
 struct IAnimationPoseModifierTorsoAim : public IAnimationPoseModifier
 {
-	CRYINTERFACE_DECLARE(IAnimationPoseModifierTorsoAim, 0x388374EADDF849BA, 0xB8B75DFD824B2C3A);
+	CRYINTERFACE_DECLARE_GUID(IAnimationPoseModifierTorsoAim, "388374ea-ddf8-49ba-b8b7-5dfd824b2c3a"_cry_guid);
 };
 
 #endif

@@ -753,7 +753,7 @@ enum EListenerPriorityType
 
 struct INetworkEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(INetworkEngineModule, 0xE608361742194054, 0x93FA3B2ADA514755);
+	CRYINTERFACE_DECLARE_GUID(INetworkEngineModule, "e6083617-4219-4054-93fa-3b2ada514755"_cry_guid);
 };
 
 //! Main access point for creating Network objects.

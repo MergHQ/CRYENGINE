@@ -164,7 +164,7 @@ struct SCryLobbyParameters
 
 struct ILobbyEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(ILobbyEngineModule, 0x3ED8EF8853324BDF, 0xA5CB5A3AD5016279);
+	CRYINTERFACE_DECLARE_GUID(ILobbyEngineModule, "3ed8ef88-5332-4bdf-a5cb-5a3ad5016279"_cry_guid);
 };
 
 struct ICryLobby

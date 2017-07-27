@@ -37,7 +37,7 @@ private:
 
 public:
 
-	PROCEDURAL_CONTEXT(CAudioContext, "AudioContext", 0xC6C087F64CE14854, 0xADCA544D252834BD);
+	PROCEDURAL_CONTEXT(CAudioContext, "AudioContext", "c6c087f6-4ce1-4854-adca-544d252834bd"_cry_guid);
 
 	virtual void Initialise(IEntity& entity, IActionController& actionController) override
 	{

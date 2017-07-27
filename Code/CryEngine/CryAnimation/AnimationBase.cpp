@@ -83,7 +83,7 @@ class CEngineModule_CryAnimation : public IAnimationEngineModule
 		CRYINTERFACE_ADD(Cry::IDefaultModule)
 		CRYINTERFACE_ADD(IAnimationEngineModule)
 	CRYINTERFACE_END()
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAnimation, "EngineModule_CryAnimation", 0x9c73d2cd142c4256, 0xa8f0706d80cd7ad2)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryAnimation, "EngineModule_CryAnimation", "9c73d2cd-142c-4256-a8f0-706d80cd7ad2"_cry_guid)
 
 	virtual ~CEngineModule_CryAnimation()
 	{

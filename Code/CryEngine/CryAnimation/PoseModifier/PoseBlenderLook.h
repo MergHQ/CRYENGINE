@@ -15,7 +15,7 @@ class CPoseBlenderLook : public IAnimationPoseBlenderDir
 	CRYINTERFACE_ADD(IAnimationPoseBlenderDir)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_CLASS(CPoseBlenderLook, "AnimationPoseModifier_PoseBlenderLook", 0x058c3e18b9874faf, 0x8989b9cb2cff0d64)
+	CRYGENERATE_CLASS_GUID(CPoseBlenderLook, "AnimationPoseModifier_PoseBlenderLook", "058c3e18-b987-4faf-8989-b9cb2cff0d64"_cry_guid)
 
 	CPoseBlenderLook();
 	virtual ~CPoseBlenderLook() {}

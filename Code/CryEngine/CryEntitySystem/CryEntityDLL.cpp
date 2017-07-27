@@ -23,6 +23,7 @@
 #include <CryCore/StaticInstanceList.h>
 
 CEntitySystem* g_pIEntitySystem = NULL;
+constexpr CryGUID SchematyEntityComponentsPackageGUID = "A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid;
 
 struct CSystemEventListener_Entity : public ISystemEventListener
 {
@@ -48,7 +49,7 @@ public:
 
 				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 					stl::make_unique<Schematyc::CEnvPackage>(
-						"A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid,
+						SchematyEntityComponentsPackageGUID,
 						"EntityComponents",
 						"Crytek GmbH",
 						"CRYENGINE Default Entity Components",
@@ -63,7 +64,7 @@ public:
 			// Deregister the Schematyc packages which were registered in the entity system.
 			if (gEnv->pSchematyc)
 			{
-				gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage("A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid);
+				gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(SchematyEntityComponentsPackageGUID);
 
 				gEnv->pEntitySystem->GetClassRegistry()->UnregisterSchematycEntityClass();
 			}
@@ -110,7 +111,7 @@ class CEngineModule_EntitySystem : public IEntitySystemEngineModule
 	CRYINTERFACE_ADD(IEntitySystemEngineModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_EntitySystem, "EngineModule_CryEntitySystem", 0x885655072f014c03, 0x820c5a1a9b4d623b)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_EntitySystem, "EngineModule_CryEntitySystem", "88565507-2f01-4c03-820c-5a1a9b4d623b"_cry_guid)
 
 	virtual ~CEngineModule_EntitySystem()
 	{

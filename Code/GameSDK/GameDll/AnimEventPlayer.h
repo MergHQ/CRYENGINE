@@ -14,7 +14,7 @@ public:
 		CRYINTERFACE_ADD(IAnimEventPlayer)
 		CRYINTERFACE_ADD(IAnimEventPlayerGame)
 	CRYINTERFACE_END()
-	CRYGENERATE_CLASS(AnimEventPlayer_CRYENGINE_SDK, "AnimEventPlayer_CRYENGINE_SDK", 0x7cb241402ca9e311, 0x058e7ce6b77865e4)
+	CRYGENERATE_CLASS_GUID(AnimEventPlayer_CRYENGINE_SDK, "AnimEventPlayer_CRYENGINE_SDK", "7cb24140-2ca9-e311-058e-7ce6b77865e4"_cry_guid)
 
 	virtual ~AnimEventPlayer_CRYENGINE_SDK() {}
 

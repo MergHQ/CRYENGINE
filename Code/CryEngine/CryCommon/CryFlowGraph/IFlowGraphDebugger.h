@@ -132,7 +132,7 @@ protected:
 
 struct IFlowGraphDebugger : public ICryUnknown
 {
-	CRYINTERFACE_DECLARE(IFlowGraphDebugger, 0x416CE2E1B23B4017, 0xAD93D04DA67E90E6);
+	CRYINTERFACE_DECLARE_GUID(IFlowGraphDebugger, "416ce2e1-b23b-4017-ad93-d04da67e90e6"_cry_guid);
 
 public:
 	//! Adds a new breakpoint for a specific flownode and port.

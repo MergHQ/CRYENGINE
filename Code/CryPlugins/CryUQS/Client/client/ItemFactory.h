@@ -89,11 +89,11 @@ namespace UQS
 
 			struct SPartialGUIDs
 			{
-				constexpr static uint64 ItemType_ShuttledItemsContainer() { return (uint64)0xcafebabecafebabe; }
-				constexpr static uint64 Function_GlobalParam()            { return (uint64)0xbaadf00dbaadf00d; }
-				constexpr static uint64 Function_IteratedItem()           { return (uint64)0xdeadbeefdeadbeef; }
-				constexpr static uint64 Function_Literal()                { return (uint64)0xfacefeedfacefeed; }
-				constexpr static uint64 Function_ShuttledItems()          { return (uint64)0xf005ba11f005ba11; }
+				constexpr static uint64 ItemType_ShuttledItemsContainer() { return (uint64)0x3d7a0c3358136d54; }
+				constexpr static uint64 Function_GlobalParam()            { return (uint64)0x783bbaf211f33c88; }
+				constexpr static uint64 Function_IteratedItem()           { return (uint64)0x76068d79bad2531c; }
+				constexpr static uint64 Function_Literal()                { return (uint64)0xbc60970f5e5236ca; }
+				constexpr static uint64 Function_ShuttledItems()          { return (uint64)0x8d6ee3255c7d7def; }
 			};
 
 			//===================================================================================

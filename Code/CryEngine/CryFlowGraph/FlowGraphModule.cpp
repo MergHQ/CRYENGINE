@@ -22,7 +22,7 @@ class CEngineModule_FlowGraph : public IFlowSystemEngineModule
 		CRYINTERFACE_ADD(Cry::IDefaultModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_FlowGraph, "EngineModule_FlowGraph", 0x8D22D250CBF24DBA, 0xADCCA656C06752D7)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_FlowGraph, "EngineModule_FlowGraph", "8d22d250-cbf2-4dba-adcc-a656c06752d7"_cry_guid)
 
 	CEngineModule_FlowGraph();
 	~CEngineModule_FlowGraph();

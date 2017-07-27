@@ -54,12 +54,12 @@ namespace UQS
 			const char* szDescription_square = "Squares the original score, thus giving an increasing gradient with increasing scores.";
 			const char* szDescription_squareInverse = "Subtracts the squared score from 1.0, thus giving a negative gradient which decreases even further with increasing scores.";
 
-			static const CScoreTransformFactory scoreTransformFactory_linear("Linear", "a4782c62-101b-4039-a68d-c115b65493b1"_uqs_guid, szDescription_linear, EScoreTransformType::Linear);
-			static const CScoreTransformFactory scoreTransformFactory_linearInverse("LinearInverse", "92bb5c1d-f6a3-4477-a24d-adb04b4b6828"_uqs_guid, szDescription_linearInverse, EScoreTransformType::LinearInverse);
-			static const CScoreTransformFactory scoreTransformFactory_sine180("Sine180", "c1593038-fc89-43cc-ac1f-6d2ef563fe14"_uqs_guid, szDescription_sine180, EScoreTransformType::Sine180);
-			static const CScoreTransformFactory scoreTransformFactory_sine180inverse("Sine180Inverse", "8b81091c-6de7-45b6-a58c-12d03cbf2dad"_uqs_guid, szDescription_sine180inverse, EScoreTransformType::Sine180Inverse);
-			static const CScoreTransformFactory scoreTransformFactory_square("Square", "b52a94b5-3322-4b02-a9d8-c388d6b6cf31"_uqs_guid, szDescription_square, EScoreTransformType::Square);
-			static const CScoreTransformFactory scoreTransformFactory_squareInverse("SquareInverse", "752ad11d-8cf4-42e8-b6ae-8d8fb6ccc7a8"_uqs_guid, szDescription_squareInverse, EScoreTransformType::SquareInverse);
+			static const CScoreTransformFactory scoreTransformFactory_linear("Linear", "a4782c62-101b-4039-a68d-c115b65493b1"_cry_guid, szDescription_linear, EScoreTransformType::Linear);
+			static const CScoreTransformFactory scoreTransformFactory_linearInverse("LinearInverse", "92bb5c1d-f6a3-4477-a24d-adb04b4b6828"_cry_guid, szDescription_linearInverse, EScoreTransformType::LinearInverse);
+			static const CScoreTransformFactory scoreTransformFactory_sine180("Sine180", "c1593038-fc89-43cc-ac1f-6d2ef563fe14"_cry_guid, szDescription_sine180, EScoreTransformType::Sine180);
+			static const CScoreTransformFactory scoreTransformFactory_sine180inverse("Sine180Inverse", "8b81091c-6de7-45b6-a58c-12d03cbf2dad"_cry_guid, szDescription_sine180inverse, EScoreTransformType::Sine180Inverse);
+			static const CScoreTransformFactory scoreTransformFactory_square("Square", "b52a94b5-3322-4b02-a9d8-c388d6b6cf31"_cry_guid, szDescription_square, EScoreTransformType::Square);
+			static const CScoreTransformFactory scoreTransformFactory_squareInverse("SquareInverse", "752ad11d-8cf4-42e8-b6ae-8d8fb6ccc7a8"_cry_guid, szDescription_squareInverse, EScoreTransformType::SquareInverse);
 
 			s_pDefaultScoreTransformFactory = &scoreTransformFactory_linear;
 		}

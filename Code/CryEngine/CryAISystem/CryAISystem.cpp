@@ -34,7 +34,7 @@ class CEngineModule_CryAISystem : public IAIEngineModule
 		CRYINTERFACE_ADD(IAIEngineModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAISystem, "EngineModule_CryAISystem", 0x6b8e79a784004f44, 0x97db7614428ad251)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryAISystem, "EngineModule_CryAISystem", "6b8e79a7-8400-4f44-97db-7614428ad251"_cry_guid)
 
 	virtual ~CEngineModule_CryAISystem()
 	{

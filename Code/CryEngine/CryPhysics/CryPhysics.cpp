@@ -203,7 +203,7 @@ class CEngineModule_CryPhysics : public IPhysicsEngineModule
 		CRYINTERFACE_ADD(IPhysicsEngineModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryPhysics, "EngineModule_CryPhysics", 0x526cabf3d776407f, 0xaa2338545bb6ae7f)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryPhysics, "EngineModule_CryPhysics", "526cabf3-d776-407f-aa23-38545bb6ae7f"_cry_guid)
 
 	virtual ~CEngineModule_CryPhysics()
 	{

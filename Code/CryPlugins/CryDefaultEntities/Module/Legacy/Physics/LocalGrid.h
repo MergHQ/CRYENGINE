@@ -8,7 +8,7 @@ class CLocalGridEntity final
 	: public CDesignerEntityComponent<IEntityComponent>
 	, public IEntityPropertyGroup
 {
-	CRY_ENTITY_COMPONENT_CLASS(CLocalGridEntity, IEntityComponent, "LocalGrid", 0xC7B59A1C7D7A4AD9, 0xB965C80A40467089);
+	CRY_ENTITY_COMPONENT_CLASS_GUID(CLocalGridEntity, IEntityComponent, "LocalGrid", "c7b59a1c-7d7a-4ad9-b965-c80a40467089"_cry_guid);
 	virtual ~CLocalGridEntity() {}
 
 public:

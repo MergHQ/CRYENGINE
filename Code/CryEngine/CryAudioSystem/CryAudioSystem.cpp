@@ -145,7 +145,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 	CRYINTERFACE_ADD(ISystemModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", 0xec73cf4362ca4a7f, 0x8b451076dc6fdb8b)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", "ec73cf43-62ca-4a7f-8b45-1076dc6fdb8b"_cry_guid)
 
 	CEngineModule_CryAudioSystem();
 

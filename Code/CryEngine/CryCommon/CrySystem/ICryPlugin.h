@@ -25,7 +25,7 @@ struct IPluginUpdateListener
 
 struct ICryPlugin : public ICryUnknown, IPluginUpdateListener
 {
-	CRYINTERFACE_DECLARE(ICryPlugin, 0xF491A0DB38634FCA, 0xB6E6BCFE2D98EEA2);
+	CRYINTERFACE_DECLARE_GUID(ICryPlugin, "f491a0db-3863-4fca-b6e6-bcfe2d98eea2"_cry_guid);
 
 	virtual ~ICryPlugin() {}
 

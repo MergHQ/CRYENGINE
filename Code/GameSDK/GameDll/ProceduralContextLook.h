@@ -17,7 +17,7 @@ class CProceduralContextLook
 	: public IProceduralContext
 {
 public:
-	PROCEDURAL_CONTEXT( CProceduralContextLook, "ProceduralContextLook", 0x0928592BD91648A5, 0x9024C8221945BB17 );
+	PROCEDURAL_CONTEXT(CProceduralContextLook, "ProceduralContextLook", "0928592b-d916-48a5-9024-c8221945bb17"_cry_guid);
 
 	CProceduralContextLook();
 	virtual ~CProceduralContextLook() {}

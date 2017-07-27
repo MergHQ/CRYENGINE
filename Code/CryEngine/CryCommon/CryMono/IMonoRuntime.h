@@ -32,7 +32,7 @@ struct IManagedNodeCreator
 
 struct IMonoEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IMonoEngineModule, 0xAE47C9890FFA4876, 0xB0B5FBB833C2B4EF);
+	CRYINTERFACE_DECLARE_GUID(IMonoEngineModule, "ae47c989-0ffa-4876-b0b5-fbb833c2b4ef"_cry_guid);
 
 	virtual void                        Shutdown() = 0;
 

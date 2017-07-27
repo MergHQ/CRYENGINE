@@ -122,7 +122,7 @@ class CEngineModule_Cry3DEngine : public I3DEngineModule
 		CRYINTERFACE_ADD(I3DEngineModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_Cry3DEngine, "EngineModule_Cry3DEngine", 0x2d38f12a521d43cf, 0xba18fd1fa7ea5020)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_Cry3DEngine, "EngineModule_Cry3DEngine", "2d38f12a-521d-43cf-ba18-fd1fa7ea5020"_cry_guid)
 
 	virtual ~CEngineModule_Cry3DEngine()
 	{
