@@ -42,6 +42,7 @@ namespace UQS
 			static void    InstantiateAllFactoriesForRegistration();                 // call this function once to automatically make all standard stuff available
 #if UQS_SCHEMATYC_SUPPORT
 			static void    RegisterInSchematyc();                                    // stdlib/SchematycSupport.cpp
+			static void    UnregisterInSchematyc();                                  // stdlib/SchematycSupport.cpp
 #endif
 
 		private:
