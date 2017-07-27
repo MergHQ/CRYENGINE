@@ -213,12 +213,12 @@ struct SExecuteTriggerData : public SCreateObjectData
 
 struct ISystemModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(ISystemModule, 0x6C7BA422375B4325, 0xAE00918679610D2E);
+	CRYINTERFACE_DECLARE_GUID(ISystemModule, "6c7ba422-375b-4325-ae00-918679610d2e"_cry_guid);
 };
 
 struct IImplModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IImplModule, 0x5C4ADBECA34349CE, 0xB7992A856CDD553B);
+	CRYINTERFACE_DECLARE_GUID(IImplModule, "5c4adbec-a343-49ce-b799-2a856cdd553b"_cry_guid);
 };
 
 struct IAudioSystem

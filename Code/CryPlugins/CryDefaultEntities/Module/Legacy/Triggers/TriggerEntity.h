@@ -9,7 +9,7 @@ class CTriggerEntity final
 	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CTriggerEntity, "TriggerEntity", 0x717FCF92E0484479, 0xAB8D6AF20D94AA85);
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CTriggerEntity, "TriggerEntity", "717fcf92-e048-4479-ab8d-6af20d94aa85"_cry_guid);
 
 	CTriggerEntity();
 	virtual ~CTriggerEntity() {}

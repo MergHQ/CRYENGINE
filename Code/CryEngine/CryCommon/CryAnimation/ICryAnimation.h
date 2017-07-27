@@ -136,7 +136,7 @@ class CLodValue;
 struct IAnimationSerializable :
 	public ICryUnknown
 {
-	CRYINTERFACE_DECLARE(IAnimationSerializable, 0x69b4f3ae61974bee, 0xba70d361b7975e69);
+	CRYINTERFACE_DECLARE_GUID(IAnimationSerializable, "69b4f3ae-6197-4bee-ba70-d361b7975e69"_cry_guid);
 
 	virtual void Serialize(Serialization::IArchive& ar) = 0;
 };
@@ -145,7 +145,7 @@ DECLARE_SHARED_POINTERS(IAnimationSerializable);
 
 struct IAnimationEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IAnimationEngineModule, 0xEA8FAA6F4EC948FB, 0x935DB54C09823B86);
+	CRYINTERFACE_DECLARE_GUID(IAnimationEngineModule, "ea8faa6f-4ec9-48fb-935d-b54c09823b86"_cry_guid);
 };
 
 //! This class is the main access point for any character animation required for a program which uses CRYENGINE.

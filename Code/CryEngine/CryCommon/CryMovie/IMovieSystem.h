@@ -969,7 +969,7 @@ struct IMovieListener
 
 struct IMovieEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IMovieEngineModule, 0x271A9F977E6D4CFA, 0xB3AE2A5C3227D302);
+	CRYINTERFACE_DECLARE_GUID(IMovieEngineModule, "271a9f97-7e6d-4cfa-b3ae-2a5c3227d302"_cry_guid);
 };
 
 //! Movie System interface.

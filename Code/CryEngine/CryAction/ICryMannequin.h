@@ -74,7 +74,7 @@ typedef std::shared_ptr<IProceduralParamsComparer> IProceduralParamsComparerPtr;
 struct IProceduralParamsComparer
 	: public ICryUnknown
 {
-	CRYINTERFACE_DECLARE(IProceduralParamsComparer, 0xdde3edc3dca84794, 0xb71ee1c21047c654);
+	CRYINTERFACE_DECLARE_GUID(IProceduralParamsComparer, "dde3edc3-dca8-4794-b71e-e1c21047c654"_cry_guid);
 
 	virtual bool                        Equal(const IProceduralParams& lhs, const IProceduralParams& rhs) const = 0;
 
@@ -2017,11 +2017,11 @@ private:
 	IActionPtr m_action;
 };
 
-#define PROCEDURAL_CONTEXT(className, name, uid1, uid2) \
-  CRYINTERFACE_BEGIN()                                  \
-  CRYINTERFACE_ADD(IProceduralContext)                  \
-  CRYINTERFACE_END()                                    \
-  CRYGENERATE_CLASS(className, name, uid1, uid2)        \
+#define PROCEDURAL_CONTEXT(className, name, guid) \
+  CRYINTERFACE_BEGIN()                            \
+  CRYINTERFACE_ADD(IProceduralContext)            \
+  CRYINTERFACE_END()                              \
+  CRYGENERATE_CLASS_GUID(className, name, guid)
 
 class IProceduralContext : public ICryUnknown
 {
@@ -2033,7 +2033,7 @@ public:
 	{
 	}
 
-	CRYINTERFACE_DECLARE(IProceduralContext, 0xCC61BC284B5243E0, 0xAAE3950B2A7F7DCB);
+	CRYINTERFACE_DECLARE_GUID(IProceduralContext, "cc61bc28-4b52-43e0-aae3-950b2a7f7dcb"_cry_guid);
 
 	virtual void Initialise(IEntity& entity, IActionController& actionController)
 	{

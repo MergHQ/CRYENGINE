@@ -1887,19 +1887,27 @@ CRY_UNIT_TEST(CUT_CRYGUID)
 {
 	CryGUID guid;
 
-	// Test that CryGUID constructor initialize it to 0
-	CRY_UNIT_TEST_ASSERT(guid.lopart == 0 && guid.hipart == 0);
+	// Test that CryGUID constructor initialize it to null
+	CRY_UNIT_TEST_ASSERT(guid.IsNull());
 
 	guid = "296708CE-F570-4263-B067-C6D8B15990BD"_cry_guid;
 
+	// Verify that all string-based ways to create CryGUID return the same result
+	CRY_UNIT_TEST_CHECK_EQUAL(guid, CryGUID::FromString("296708CE-F570-4263-B067-C6D8B15990BD"));
+
 	// Test that GUID specified in string with or without brackets work reliably
 	CRY_UNIT_TEST_CHECK_EQUAL(guid, "{296708CE-F570-4263-B067-C6D8B15990BD}"_cry_guid);
+	CRY_UNIT_TEST_CHECK_EQUAL(guid, CryGUID::FromString("{296708CE-F570-4263-B067-C6D8B15990BD}"));
 
+	// Verify that CryGUID is case insensitive
+	CRY_UNIT_TEST_CHECK_EQUAL(guid, "296708ce-f570-4263-b067-c6d8b15990bd"_cry_guid);
+	CRY_UNIT_TEST_CHECK_EQUAL(guid, "{296708ce-f570-4263-b067-c6d8b15990bd}"_cry_guid);
+
+	// Test back conversion from GUID to string
 	char str[64];
 	guid.ToString(str);
-	// Test back conversion from GUID to string
 	CRY_UNIT_TEST_CHECK_EQUAL(CryStringUtils::toUpper(str), "296708CE-F570-4263-B067-C6D8B15990BD");
-
+	CRY_UNIT_TEST_CHECK_EQUAL(CryStringUtils::toUpper(guid.ToString()), "296708CE-F570-4263-B067-C6D8B15990BD");
 }
 
 #endif //CRY_UNIT_TESTING

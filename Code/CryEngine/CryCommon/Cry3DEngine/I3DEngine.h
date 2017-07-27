@@ -1290,7 +1290,7 @@ struct SLightVolume
 
 struct I3DEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(I3DEngineModule, 0x31BD20FF13474F02, 0xB923C3F83BA73D84);
+	CRYINTERFACE_DECLARE_GUID(I3DEngineModule, "31bd20ff-1347-4f02-b923-c3f83ba73d84"_cry_guid);
 };
 
 //! Interface to the 3d Engine.

@@ -27,7 +27,7 @@ namespace UQS
 			CRYINTERFACE_ADD(ICryPlugin)
 			CRYINTERFACE_END()
 
-			CRYGENERATE_SINGLETONCLASS(CHubPlugin, "Plugin_UQS", 0x2a2f00e0f0684baf, 0xb31bb3c8f78b3477)
+			CRYGENERATE_SINGLETONCLASS_GUID(CHubPlugin, "Plugin_UQS", "2a2f00e0-f068-4baf-b31b-b3c8f78b3477"_cry_guid)
 
 			CHubPlugin();
 			virtual ~CHubPlugin();

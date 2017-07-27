@@ -258,9 +258,9 @@ namespace UQS
 				"All child queries must return the same item type.\n"
 				"Needs at least 1 child query.";
 
-			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", "166b3a88-3cf3-45ea-bb4c-3eb6cb11d6de"_uqs_guid, szDescription_regular, true, true, true, 0, 0);
-			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", "89b926fb-a825-4de0-8817-ecef882efc0d"_uqs_guid, szDescription_chained, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
-			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", "a5ac314b-29a0-4bd0-82b6-c8ae3752371b"_uqs_guid, szDescription_fallbacks, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+			static const CQueryFactory<CQuery_Regular> queryFactory_regular("Regular", "166b3a88-3cf3-45ea-bb4c-3eb6cb11d6de"_cry_guid, szDescription_regular, true, true, true, 0, 0);
+			static const CQueryFactory<CQuery_Chained> queryFactory_chained("Chained", "89b926fb-a825-4de0-8817-ecef882efc0d"_cry_guid, szDescription_chained, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
+			static const CQueryFactory<CQuery_Fallbacks> queryFactory_fallbacks("Fallbacks", "a5ac314b-29a0-4bd0-82b6-c8ae3752371b"_cry_guid, szDescription_fallbacks, false, false, false, 1, IQueryFactory::kUnlimitedChildren);
 
 			s_pDefaultQueryFactory = &queryFactory_regular;
 		}

@@ -17,7 +17,7 @@ struct SScriptState;
 //////////////////////////////////////////////////////////////////////////
 class CEntityComponentLuaScript final : public IEntityScriptComponent
 {
-	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentLuaScript, IEntityScriptComponent, "CEntityComponentLuaScript", 0x38CF87CCD44B4A1D, 0xA16D7EA3C5BDE757);
+	CRY_ENTITY_COMPONENT_CLASS_GUID(CEntityComponentLuaScript, IEntityScriptComponent, "CEntityComponentLuaScript", "38cf87cc-d44b-4a1d-a16d-7ea3c5bde757"_cry_guid);
 
 	CEntityComponentLuaScript();
 	virtual ~CEntityComponentLuaScript() override;

@@ -9,7 +9,7 @@ struct IFlashLoadMovieHandler;
 
 struct IScaleformHelperEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IScaleformHelperEngineModule, 0x3B0E89404AC64CBB, 0xAA3F7E13ECB9F871);
+	CRYINTERFACE_DECLARE_GUID(IScaleformHelperEngineModule, "3b0e8940-4ac6-4cbb-aa3f-7e13ecb9f871"_cry_guid);
 };
 
 //! Helper for Scaleform-specific function access

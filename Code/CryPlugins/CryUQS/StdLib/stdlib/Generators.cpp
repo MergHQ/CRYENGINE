@@ -17,7 +17,7 @@ namespace UQS
 				Client::CGeneratorFactory<CGenerator_PointsOnPureGrid>::SCtorParams ctorParams;
 
 				ctorParams.szName = "std::PointsOnPureGrid";
-				ctorParams.guid = "498bce51-a2b9-4e77-b0f9-e127e8a5cc72"_uqs_guid;
+				ctorParams.guid = "498bce51-a2b9-4e77-b0f9-e127e8a5cc72"_cry_guid;
 				ctorParams.szDescription =
 					"Generates points on a grid.\n"
 					"The grid is specified by a center, size (of one edge) and a spacing between the points.\n"
@@ -30,7 +30,7 @@ namespace UQS
 				Client::CGeneratorFactory<CGenerator_PointsOnNavMesh>::SCtorParams ctorParams;
 
 				ctorParams.szName = "std::PointsOnNavMesh";
-				ctorParams.guid = "70b13c46-e012-4fde-bba5-70ccd4f8b321"_uqs_guid;
+				ctorParams.guid = "70b13c46-e012-4fde-bba5-70ccd4f8b321"_cry_guid;
 				ctorParams.szDescription =
 					"Generates Pos3s on the navigation mesh limited by an AABB.\n"
 					"The AABB is defined by a pivot and local mins and maxs.\n"

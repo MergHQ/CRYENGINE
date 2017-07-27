@@ -9,7 +9,6 @@
 	#include <CrySystem/IConsole.h>
 	#include <CryThreading/IThreadManager.h>
 	#include <CryExtension/CryGUID.h>
-	#include <CryExtension/CryGUIDHelper.h>
 	#include <CrySystem/CryVersion.h>
 	#include <CrySerialization/IArchiveHost.h>
 	#include <CryString/CryPath.h>
@@ -216,7 +215,7 @@ string CUserAnalytics::GetTimestamp()
 string& CUserAnalytics::GetSessionId()
 {
 	static CryGUID sessionId = CryGUID::Create();
-	static string sessionIdName = CryGUIDHelper::PrintGuid(sessionId);
+	static string sessionIdName = sessionId.ToString();
 
 	return sessionIdName;
 }
@@ -351,7 +350,7 @@ void CUserAnalytics::ReadWriteAnonymousToken()
 			{
 				// Store a random GUID in the file
 				CryGUID guid = CryGUID::Create();
-				m_anonymousUserToken = CryGUIDHelper::PrintGuid(guid);
+				m_anonymousUserToken = guid.ToString();
 
 				fwrite(m_anonymousUserToken.c_str(), sizeof(char), m_anonymousUserToken.size(), pFile);
 				fclose(pFile);

@@ -63,8 +63,8 @@ class AnimEventPlayer_CharacterTool : public IAnimEventPlayer
 public:
 	CRYINTERFACE_BEGIN()
 		CRYINTERFACE_ADD(IAnimEventPlayer)
-		CRYINTERFACE_END()
-		CRYGENERATE_CLASS(AnimEventPlayer_CharacterTool, "AnimEventPlayer_CharacterTool", 0xa5fefb2dfe05dec4, 0xa8169d6e3ac635b0)
+	CRYINTERFACE_END()
+	CRYGENERATE_CLASS_GUID(AnimEventPlayer_CharacterTool, "AnimEventPlayer_CharacterTool", "a5fefb2d-fe05-dec4-a816-9d6e3ac635b0"_cry_guid)
 
 		AnimEventPlayer_CharacterTool();
 	virtual ~AnimEventPlayer_CharacterTool() {}

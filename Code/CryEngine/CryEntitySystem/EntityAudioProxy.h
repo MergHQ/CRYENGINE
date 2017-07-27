@@ -14,7 +14,7 @@
 class CEntityComponentAudio final : public IEntityAudioComponent
 {
 public:
-	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentAudio, IEntityAudioComponent, "CEntityComponentAudio", 0x51AE5FC21B454351, 0xAC889CAF0C757B5F);
+	CRY_ENTITY_COMPONENT_CLASS_GUID(CEntityComponentAudio, IEntityAudioComponent, "CEntityComponentAudio", "51ae5fc2-1b45-4351-ac88-9caf0c757b5f"_cry_guid);
 
 	CEntityComponentAudio();
 	virtual ~CEntityComponentAudio() override;

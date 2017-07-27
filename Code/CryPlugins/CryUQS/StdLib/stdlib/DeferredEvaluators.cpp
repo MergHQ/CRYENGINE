@@ -17,7 +17,7 @@ namespace UQS
 				Client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast>::SCtorParams ctorParams;
 
 				ctorParams.szName = "std::TestRaycast";
-				ctorParams.guid = "e8d294e5-ab1f-40ce-abc1-9b6fc687c990"_uqs_guid;
+				ctorParams.guid = "e8d294e5-ab1f-40ce-abc1-9b6fc687c990"_cry_guid;
 				ctorParams.szDescription =
 					"Tests a raycast between 2 given positions.\n"
 					"Whether success or failure of the raycast counts as overall success or failure of the evaluator can be specified by a parameter.\n"

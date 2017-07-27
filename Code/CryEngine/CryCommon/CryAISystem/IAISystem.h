@@ -479,7 +479,7 @@ enum EAIFilterType
 
 struct IAIEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IAIEngineModule, 0x4B00591DC87443C7, 0x9BCA78A59ECD6D9C);
+	CRYINTERFACE_DECLARE_GUID(IAIEngineModule, "4b00591d-c874-43c7-9bca-78a59ecd6d9c"_cry_guid);
 };
 
 struct IAISystemCallbacks

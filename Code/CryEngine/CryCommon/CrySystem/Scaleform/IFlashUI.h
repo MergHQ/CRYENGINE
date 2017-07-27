@@ -1696,7 +1696,7 @@ struct IUIModule
 
 struct IFlashUI : public ICryUnknown
 {
-	CRYINTERFACE_DECLARE(IFlashUI, 0xE1161004DA5B4F04, 0x9DFF8FC0EACE3BD4);
+	CRYINTERFACE_DECLARE_GUID(IFlashUI, "e1161004-da5b-4f04-9dff-8fc0eace3bd4"_cry_guid);
 
 public:
 	//! Init the Flash UI system.

@@ -76,7 +76,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 	class CLegacyEntityComponent : public IEntityComponent
 	{
 	public:
-		CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CLegacyEntityComponent, "LegacyEntityComponent", 0xB1FEBCEEBE1246A9, 0xB69ACC66D6C0D3E0);
+		CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CLegacyEntityComponent, "LegacyEntityComponent", "b1febcee-be12-46a9-b69a-cc66d6c0d3e0"_cry_guid);
 	};
 
 	CRYREGISTER_CLASS(CLegacyEntityComponent);
@@ -95,7 +95,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	struct ILegacyComponentInterface : public IEntityComponent
 	{
-		CRY_ENTITY_COMPONENT_INTERFACE(ILegacyComponentInterface, 0xD9A710128AF14426, 0x883599C4F4EB987D)
+		CRY_ENTITY_COMPONENT_INTERFACE_GUID(ILegacyComponentInterface, "d9a71012-8af1-4426-8835-99c4f4eb987d"_cry_guid)
 
 		virtual bool IsValid() const { return false; }
 	};
@@ -103,7 +103,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 	class CLegacyEntityComponentWithInterface final : public ILegacyComponentInterface
 	{
 	public:
-		CRY_ENTITY_COMPONENT_CLASS(CLegacyEntityComponentWithInterface, ILegacyComponentInterface, "LegacyEntityComponentWithInterface", 0x34EE1B9221544BAD, 0xB69ACC66D6C0D3E0);
+		CRY_ENTITY_COMPONENT_CLASS_GUID(CLegacyEntityComponentWithInterface, ILegacyComponentInterface, "LegacyEntityComponentWithInterface", "34ee1b92-2154-4bad-b69a-cc66d6c0d3e0"_cry_guid);
 
 		virtual bool IsValid() const final { return true; }
 	};

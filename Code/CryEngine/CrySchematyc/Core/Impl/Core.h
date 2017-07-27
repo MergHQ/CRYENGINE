@@ -32,7 +32,7 @@ class CCore : public ICrySchematycCore, public ISystemEventListener
 	CRYINTERFACE_ADD(ICrySchematycCore)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CCore, "EngineModule_SchematycCore", 0x96d98d9835aa4fb6, 0x830b53dbfe71908d)
+	CRYGENERATE_SINGLETONCLASS_GUID(CCore, "EngineModule_SchematycCore", "96d98d98-35aa-4fb6-830b-53dbfe71908d"_cry_guid)
 
 public:
 

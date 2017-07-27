@@ -40,7 +40,7 @@ const uint kTexcoordRange = 64;
 const uint kTangentQuatPrecision = 10;
 
 //! Current file version GUID. Files with other GUIDs will not be loaded by the engine.
-const CryGUID kCurrentVersion = MAKE_CRYGUID(0x1641defe440af501, 0x7ec5e9164c8c2d1c);
+constexpr CryGUID kCurrentVersion = "1641defe-440a-f501-7ec5-e9164c8c2d1c"_cry_guid;
 
 //! Mesh prediction look back array size.
 const uint kMeshPredictorLookBackMaxDist = 4096;

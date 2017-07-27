@@ -43,7 +43,7 @@ class CEngineModule_CryMovie : public IMovieEngineModule
 		CRYINTERFACE_ADD(IMovieEngineModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMovie, "EngineModule_CryMovie", 0xdce26beebdc6400f, 0xa0e9b42839f2dd5b)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryMovie, "EngineModule_CryMovie", "dce26bee-bdc6-400f-a0e9-b42839f2dd5b"_cry_guid)
 
 	virtual ~CEngineModule_CryMovie()
 	{

@@ -24,7 +24,7 @@ namespace pfx2
 class CParticleSystem : public Cry3DEngineBase, public IParticleSystem
 {
 	CRYINTERFACE_SIMPLE(IParticleSystem)
-	CRYGENERATE_SINGLETONCLASS(CParticleSystem, "CryEngine_ParticleSystem", 0xCD8D738D54B446F7, 0x82BA23BA999CF2AC)
+	CRYGENERATE_SINGLETONCLASS_GUID(CParticleSystem, "CryEngine_ParticleSystem", "cd8d738d-54b4-46f7-82ba-23ba999cf2ac"_cry_guid)
 
 	CParticleSystem();
 	virtual ~CParticleSystem() {}

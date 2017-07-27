@@ -10,7 +10,7 @@ class CAudioAreaRandom final
 	: public CDesignerEntityComponent<>
 	  , public IEntityPropertyGroup
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAudioAreaRandom, "AudioAreaRandom", 0x8952D4D63E2347D5, 0x86EC4724BF34789F);
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CAudioAreaRandom, "AudioAreaRandom", "8952d4d6-3e23-47d5-86ec-4724bf34789f"_cry_guid);
 
 public:
 	CAudioAreaRandom() = default;

@@ -16,7 +16,7 @@ class CDefaultLightEntity final
 	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CDefaultLightEntity, "LightEntity", 0x61BFE88AAB1C4DFB, 0xBBD263D328C3D037);
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CDefaultLightEntity, "LightEntity", "61bfe88a-ab1c-4dfb-bbd2-63d328c3d037"_cry_guid);
 
 	CDefaultLightEntity();
 	virtual ~CDefaultLightEntity() {}

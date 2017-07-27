@@ -181,7 +181,7 @@ struct IParticleEffectPfx2 : public IParticleEffect
 
 struct IParticleSystem : public ICryUnknown
 {
-	CRYINTERFACE_DECLARE(IParticleSystem, 0xCC3AA21D44A24DED, 0x9AA1DADED21D570A);
+	CRYINTERFACE_DECLARE_GUID(IParticleSystem, "cc3aa21d-44a2-4ded-9aa1-daded21d570a"_cry_guid);
 
 	virtual PParticleEffect         CreateEffect() = 0;
 	virtual PParticleEffect         ConvertEffect(const IParticleEffect* pOldEffect, bool bReplace = false) = 0;

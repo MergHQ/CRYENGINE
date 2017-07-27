@@ -108,7 +108,7 @@ struct IGOUpdateDbg;
 
 class CGameObject : public IGameObject
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CGameObject, "GameObject", 0xEC4E2FDCDCFF4AB3, 0xA691B9CC4ECE5788);
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CGameObject, "GameObject", "ec4e2fdc-dcff-4ab3-a691-b9cc4ece5788"_cry_guid);
 
 public:
 	CGameObject();

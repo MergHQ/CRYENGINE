@@ -9,7 +9,7 @@ class CDefaultParticleEntity final
 	: public CDesignerEntityComponent<IParticleEntityComponent>
 	, public IEntityPropertyGroup
 {
-	CRY_ENTITY_COMPONENT_CLASS(CDefaultParticleEntity, IParticleEntityComponent, "ParticleEntity", 0x31B3EAD4C34442F7, 0xB794B33746D4232B);
+	CRY_ENTITY_COMPONENT_CLASS_GUID(CDefaultParticleEntity, IParticleEntityComponent, "ParticleEntity", "31b3ead4-c344-42f7-b794-b33746d4232b"_cry_guid);
 
 public:
 	CDefaultParticleEntity();

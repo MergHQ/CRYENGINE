@@ -26,7 +26,7 @@ class CBoidObject;
 //////////////////////////////////////////////////////////////////////////
 class CBoidsProxy : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CBoidsProxy, "CBoidsProxy", 0x382D896A7C224637, 0xB32321C67EC5F588)
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CBoidsProxy, "CBoidsProxy", "382d896a-7c22-4637-b323-21c67ec5f588"_cry_guid)
 
 		CBoidsProxy();
 	virtual ~CBoidsProxy();
@@ -81,7 +81,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 struct CBoidObjectProxy : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CBoidObjectProxy, "CBoidObjectProxy", 0x191DC4B2C2224E1E, 0x81BDFE1D882C9F3E)
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CBoidObjectProxy, "CBoidObjectProxy", "191dc4b2-c222-4e1e-81bd-fe1d882c9f3e"_cry_guid)
 
 		CBoidObjectProxy();
 	virtual ~CBoidObjectProxy() {}

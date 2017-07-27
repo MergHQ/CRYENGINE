@@ -30,7 +30,7 @@ typedef ICryFont*(* PFNCREATECRYFONTINTERFACE)(ISystem* pSystem);
 
 struct IFontEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IFontEngineModule, 0xCDDD1B3CA1054612, 0xADA4EA7E6F919DF1);
+	CRYINTERFACE_DECLARE_GUID(IFontEngineModule, "cddd1b3c-a105-4612-ada4-ea7e6f919df1"_cry_guid);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
