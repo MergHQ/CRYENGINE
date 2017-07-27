@@ -83,7 +83,7 @@ class CMonoRuntime final
 		CRYINTERFACE_ADD(Cry::IDefaultModule)
 		CRYINTERFACE_ADD(IMonoEngineModule)
 	CRYINTERFACE_END()
-	CRYGENERATE_SINGLETONCLASS(CMonoRuntime, "EngineModule_CryMonoBridge", 0x2b4615a571524d67, 0x920dc857f8503b3a)
+	CRYGENERATE_SINGLETONCLASS_GUID(CMonoRuntime, "EngineModule_CryMonoBridge", "2b4615a5-7152-4d67-920d-c857f8503b3a"_cry_guid)
 
 public:
 	CMonoRuntime();

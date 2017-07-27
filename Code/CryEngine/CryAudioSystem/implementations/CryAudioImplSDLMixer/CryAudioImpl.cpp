@@ -26,7 +26,7 @@ class CEngineModule_CryAudioImplSDLMixer : public IImplModule
 	CRYINTERFACE_ADD(IImplModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "EngineModule_AudioImpl", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryAudioImplSDLMixer, "EngineModule_AudioImpl", "8030c0d1-905b-4031-a378-5a8b53125f3f"_cry_guid)
 
 	CEngineModule_CryAudioImplSDLMixer();
 

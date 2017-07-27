@@ -188,7 +188,7 @@ public:
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(IAnimEventPlayer)
 	CRYINTERFACE_END()
-	CRYGENERATE_CLASS(AnimEventPlayer_AudioTranslationLayer, "AnimEventPlayer_AudioTranslationLayer", 0xa9fefa2dfe04dec4, 0xa6169d6e3ac635b0)
+	CRYGENERATE_CLASS_GUID(AnimEventPlayer_AudioTranslationLayer, "AnimEventPlayer_AudioTranslationLayer", "a9fefa2d-fe04-dec4-a616-9d6e3ac635b0"_cry_guid)
 
 	AnimEventPlayer_AudioTranslationLayer();
 	virtual ~AnimEventPlayer_AudioTranslationLayer();
@@ -414,7 +414,7 @@ public:
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(IAnimEventPlayer)
 	CRYINTERFACE_END()
-	CRYGENERATE_CLASS(AnimEventPlayerMaterialEffects, "AnimEventPlayer_MaterialEffects", 0xa9fffa2dae34d6c4, 0xa6969d6e3ac732b0)
+	CRYGENERATE_CLASS_GUID(AnimEventPlayerMaterialEffects, "AnimEventPlayer_MaterialEffects", "a9fffa2d-ae34-d6c4-a696-9d6e3ac732b0"_cry_guid)
 
 	AnimEventPlayerMaterialEffects();
 	virtual ~AnimEventPlayerMaterialEffects() {}
@@ -619,7 +619,7 @@ public:
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(IAnimEventPlayer)
 	CRYINTERFACE_END()
-	CRYGENERATE_CLASS(AnimEventPlayerAnimFXEvents, "AnimEventPlayer_AnimFXEvents", 0x9688f29304f3400c, 0x886c2d31c5199481)
+	CRYGENERATE_CLASS_GUID(AnimEventPlayerAnimFXEvents, "AnimEventPlayer_AnimFXEvents", "9688f293-04f3-400c-886c-2d31c5199481"_cry_guid)
 
 	AnimEventPlayerAnimFXEvents();
 	virtual ~AnimEventPlayerAnimFXEvents() {}
@@ -773,7 +773,7 @@ public:
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(IAnimEventPlayer)
 	CRYINTERFACE_END()
-	CRYGENERATE_CLASS(AnimEventPlayer_Particles, "AnimEventPlayer_Particles", 0xa9fef72df304dec4, 0xa9162a6e4ac635b0)
+	CRYGENERATE_CLASS_GUID(AnimEventPlayer_Particles, "AnimEventPlayer_Particles", "a9fef72d-f304-dec4-a916-2a6e4ac635b0"_cry_guid)
 
 	AnimEventPlayer_Particles();
 	virtual ~AnimEventPlayer_Particles() {}

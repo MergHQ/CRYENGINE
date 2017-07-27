@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "Metadata.h"
 #include "IConverter.h"
-#include "CryExtension\CryGUIDHelper.h"
 
 
 namespace AssetManager
@@ -23,7 +22,7 @@ bool WriteMetadata(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 	pMetadataNode->setAttr("type", metadata.type);
 
 	CRY_ASSERT(metadata.guid != CryGUID::Null());
-	pMetadataNode->setAttr("guid", CryGUIDHelper::Print(metadata.guid));
+	pMetadataNode->setAttr("guid", metadata.guid.ToString().c_str());
 
 	if (!metadata.source.empty())
 	{
@@ -82,7 +81,7 @@ bool ReadMetadata(const XmlNodeRef& asset, SAssetMetadata& metadata)
 	if (pMetadataNode->haveAttr("guid"))
 	{
 		const string guid = pMetadataNode->getAttr("guid");
-		metadata.guid = CryGUIDHelper::FromString(guid);
+		metadata.guid = CryGUID::FromString(guid);
 	}
 
 	XmlNodeRef pFiles = pMetadataNode->findChild("Files");

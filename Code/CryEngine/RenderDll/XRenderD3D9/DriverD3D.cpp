@@ -7448,7 +7448,7 @@ class CEngineModule_CryRenderer : public IRendererEngineModule
 		CRYINTERFACE_ADD(IRendererEngineModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryRenderer, "EngineModule_CryRenderer", 0x540c91a7338e41d3, 0xaceeac9d55614450)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryRenderer, "EngineModule_CryRenderer", "540c91a7-338e-41d3-acee-ac9d55614450"_cry_guid)
 
 	virtual ~CEngineModule_CryRenderer() 
 	{

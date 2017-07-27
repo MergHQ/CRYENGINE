@@ -20,7 +20,7 @@ namespace UQS
 
 		class IHubPlugin : public ICryPlugin
 		{
-			CRYINTERFACE_DECLARE(IHubPlugin, 0xde73f1db0c37498f, 0x8396d76e43988c60)
+			CRYINTERFACE_DECLARE_GUID(IHubPlugin, "de73f1db-0c37-498f-8396-d76e43988c60"_cry_guid)
 
 			// virtual ~IHubPlugin() {} is already provided by the CRYINTERFACE_DECLARE class-weaver macro
 

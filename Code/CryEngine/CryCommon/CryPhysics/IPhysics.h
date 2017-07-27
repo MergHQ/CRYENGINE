@@ -41,7 +41,7 @@ enum EPhysicsForeignIds
 
 struct IPhysicsEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IPhysicsEngineModule, 0x0B6197F33C68, 0xA13408BB46801741);
+	CRYINTERFACE_DECLARE_GUID(IPhysicsEngineModule, "00000b61-97f3-3c68-a134-08bb46801741"_cry_guid);
 };
 
 #include <CryMemory/CrySizer.h>

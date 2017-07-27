@@ -1867,7 +1867,7 @@ typedef std::shared_ptr<IFlowSystemContainer> IFlowSystemContainerPtr;
 
 struct IFlowSystemEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IFlowSystemEngineModule, 0x96B193486AD3427F, 0x9A8F7764052A5536);
+	CRYINTERFACE_DECLARE_GUID(IFlowSystemEngineModule, "96b19348-6ad3-427f-9a8f-7764052a5536"_cry_guid);
 };
 
 struct IFlowSystem

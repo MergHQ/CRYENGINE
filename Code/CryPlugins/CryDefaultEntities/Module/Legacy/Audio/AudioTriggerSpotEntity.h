@@ -21,7 +21,7 @@ class CAudioTriggerSpotEntity final
 	: public CDesignerEntityComponent<>
 	  , public IEntityPropertyGroup
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAudioTriggerSpotEntity, "AudioTriggerSpot", 0x1009FA03153C459C, 0x883D33B33298813D);
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(CAudioTriggerSpotEntity, "AudioTriggerSpot", "1009fa03-153c-459c-883d-33b33298813d"_cry_guid);
 
 public:
 	CAudioTriggerSpotEntity();

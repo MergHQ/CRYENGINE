@@ -22,6 +22,42 @@
 #include <QIcon>
 #include <QLabel>
 #include <QMenu>
+#include <QFontMetrics>
+
+class CElidedLabel final : public QLabel
+{
+public:
+
+	CElidedLabel::CElidedLabel(QString const& text)
+	{
+		setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+		SetLabelText(text);
+	}
+
+	void SetLabelText(QString const& text)
+	{
+		m_originalText = text;
+		ElideText();
+	}
+
+private:
+
+	// QWidget
+	virtual void resizeEvent(QResizeEvent *) override
+	{
+		ElideText();
+	}
+	// ~QWidget
+
+	void ElideText()
+	{
+		QFontMetrics const metrics(font());
+		QString const elidedText = metrics.elidedText(m_originalText, Qt::ElideRight, size().width());
+		setText(elidedText);
+	}
+
+	QString m_originalText;
+};
 
 namespace ACE
 {
@@ -64,19 +100,19 @@ CAudioSystemPanel::CAudioSystemPanel()
 	QVBoxLayout* pVerticalLayout = new QVBoxLayout(this);
 	pVerticalLayout->setContentsMargins(0, 0, 0, 0);
 
-	m_pImplNameLabel = new QLabel("");
+	m_pImplNameLabel = new CElidedLabel("");
 	IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 	if (pAudioImpl)
 	{
-		m_pImplNameLabel->setText(QtUtil::ToQString(pAudioImpl->GetName()));
+		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 	}
 	m_pImplNameLabel->setObjectName("ImplementationTitle");
 	pVerticalLayout->addWidget(m_pImplNameLabel);
 
 	pVerticalLayout->addLayout(pHorizontalLayout);
 
-	pNameFilter->setPlaceholderText(tr("Search", 0));
-	pHideAssignedCheckbox->setText(tr("Hide Assigned", 0));
+	pNameFilter->setPlaceholderText(tr("Search"));
+	pHideAssignedCheckbox->setText(tr("Hide Assigned"));
 	pHideAssignedCheckbox->setToolTip(tr("Hide or show assigned middleware controls"));
 
 	m_pModelProxy->setDynamicSortFilter(true);
@@ -138,7 +174,7 @@ CAudioSystemPanel::CAudioSystemPanel()
 			IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 			if (pAudioImpl)
 			{
-			  m_pImplNameLabel->setText(QtUtil::ToQString(pAudioImpl->GetName()));
+			  m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 			}
 	  });
 }

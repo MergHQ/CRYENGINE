@@ -35,7 +35,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 	CRYINTERFACE_ADD(CryAudio::IImplModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplFmod, "EngineModule_AudioImpl", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryAudioImplFmod, "EngineModule_AudioImpl", "aa6a039a-0ce5-bbab-33e0-aad69f3136f4"_cry_guid);
 
 	CEngineModule_CryAudioImplFmod();
 

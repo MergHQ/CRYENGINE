@@ -292,6 +292,8 @@ struct IEntityClassRegistry
 	//! Unregister a listener.
 	virtual void UnregisterListener(IEntityClassRegistryListener* pListener) = 0;
 
+	virtual void UnregisterSchematycEntityClass() = 0;
+
 	// Registry iterator.
 
 	//! Move the entity class iterator to the begin of the registry.

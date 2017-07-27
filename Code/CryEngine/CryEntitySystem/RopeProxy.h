@@ -26,7 +26,7 @@ struct IPhysicalWorld;
 //////////////////////////////////////////////////////////////////////////
 class CEntityComponentRope : public IEntityRopeComponent
 {
-	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentRope,IEntityRopeComponent,"CEntityComponentRope",0xDFAE2B7E15BB4F3D,0xBD09E0C8E560BF85);
+	CRY_ENTITY_COMPONENT_CLASS_GUID(CEntityComponentRope, IEntityRopeComponent, "CEntityComponentRope", "dfae2b7e-15bb-4f3d-bd09-e0c8e560bf85"_cry_guid);
 
 	CEntityComponentRope();
 	virtual ~CEntityComponentRope();

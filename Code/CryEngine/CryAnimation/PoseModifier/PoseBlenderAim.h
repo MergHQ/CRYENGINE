@@ -13,7 +13,7 @@ class CPoseBlenderAim : public IAnimationPoseBlenderDir
 	CRYINTERFACE_ADD(IAnimationPoseBlenderDir)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_CLASS(CPoseBlenderAim, "AnimationPoseModifier_PoseBlenderAim", 0x058c3e18b9574faf, 0x8989b9cb2cff0d64)
+	CRYGENERATE_CLASS_GUID(CPoseBlenderAim, "AnimationPoseModifier_PoseBlenderAim", "058c3e18-b957-4faf-8989-b9cb2cff0d64"_cry_guid)
 
 	virtual ~CPoseBlenderAim() {}
 

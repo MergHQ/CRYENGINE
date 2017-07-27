@@ -76,18 +76,14 @@ struct CryGUID
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		constexpr static uint16 HexCharToUInt16(char x)
 		{
-			return x >= '0' && x <= '9' ? x - '0' :
-				x >= 'a' && x <= 'f' ? x - 'a' + 10 :
-				x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0;
+			return static_cast<uint16>(HexCharToUInt8(x));
 		}
 
 		// Convert hexadecimal character to unsigned long.
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		constexpr static uint32 HexCharToUInt32(char x)
 		{
-			return x >= '0' && x <= '9' ? x - '0' :
-				x >= 'a' && x <= 'f' ? x - 'a' + 10 :
-				x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0;
+			return static_cast<uint32>(HexCharToUInt8(x));
 		}
 
 		// Convert hexadecimal string to unsigned char.
@@ -138,9 +134,6 @@ struct CryGUID
 			uint16 Data3;
 			uint8  Data4[8];
 		};
-		// Structures used for debug visualizer
-		struct hex_dummy_low { unsigned char c; };
-		struct hex_dummy_high { unsigned char c; };
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -200,18 +193,26 @@ struct CryGUID
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	static CryGUID FromString(const char* szGuidAsString)
 	{
-		assert(szGuidAsString);
+		CRY_ASSERT(szGuidAsString);
 		CryGUID guid;
 		if (szGuidAsString)
 		{
-			if ((szGuidAsString[0] == '{' && strlen(szGuidAsString) >= 38) ||
-					(szGuidAsString[0] != '{' && strlen(szGuidAsString) >= 36))
+			const size_t len = strlen(szGuidAsString);
+			if (szGuidAsString[0] == '{' && len >= CRY_ARRAY_COUNT("{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}") - 1)
+			{
+				guid = FromStringInternal(szGuidAsString + 1);
+			}
+			else if (szGuidAsString[0] != '{' && len >= CRY_ARRAY_COUNT("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX") - 1)
 			{
 				guid = FromStringInternal(szGuidAsString);
 			}
+			else if (len <= sizeof(uint64) * 2 && std::all_of(szGuidAsString, szGuidAsString + len, ::isxdigit)) // Convert if it still coming from the old 64bit GUID system.
+			{
+				guid.hipart = std::strtoull(szGuidAsString, 0, 16);
+			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(0,"GUID string is too short: %s",szGuidAsString);
+				CRY_ASSERT_MESSAGE(false, "GUID string is invalid: %s", szGuidAsString);
 			}
 		}
 		return guid;
@@ -220,15 +221,22 @@ struct CryGUID
 	template<std::size_t N>
 	void ToString(char(&ar)[N]) const
 	{
-		static_assert( N > 36,"GUID require buffer of at least 36 bytes" );
-		ToString( (char*)ar,N );
+		static_assert(N >= CRY_ARRAY_COUNT("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX") - 1, "GUID require buffer of at least 36 bytes");
+		ToString((char*)ar, N);
+	}
+	
+	string ToString() const
+	{
+		char temp[CRY_ARRAY_COUNT("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")];
+		ToString(temp);
+		return string(temp);
 	}
 
 	//! Returns a character string used for Debugger Visualization or log messages.
 	//! Do not use this method in runtime code.
 	const char* ToDebugString() const
 	{
-		static char temp[64];
+		static char temp[CRY_ARRAY_COUNT("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")];
 		ToString(temp);
 		return temp;
 	}
@@ -318,5 +326,3 @@ inline bool Serialize(Serialization::IArchive& ar, CryGUID::StringUtils::SGuidSt
 {
 	return ar(static_cast<Serialization::IString&>(value), name, label);
 }
-
-#define MAKE_CRYGUID(high, low) CryGUID::Construct((uint64) high ## LL, (uint64) low ## LL)

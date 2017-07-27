@@ -1187,7 +1187,7 @@ struct IInputDevice
 
 struct IInputEngineModule : public Cry::IDefaultModule
 {
-	CRYINTERFACE_DECLARE(IInputEngineModule, 0x2C8744B167944FE0, 0x80038FC3ADE9076A);
+	CRYINTERFACE_DECLARE_GUID(IInputEngineModule, "2c8744b1-6794-4fe0-8003-8fc3ade9076a"_cry_guid);
 };
 
 //! Interface to the Input system.

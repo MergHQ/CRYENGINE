@@ -32,7 +32,7 @@ class CEngineModule_CryInput : public IInputEngineModule
 		CRYINTERFACE_ADD(IInputEngineModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryInput, "EngineModule_CryInput", 0x3cc0516071bb44f6, 0xae525949f30277f9)
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryInput, "EngineModule_CryInput", "3cc05160-71bb-44f6-ae52-5949f30277f9"_cry_guid)
 
 	virtual ~CEngineModule_CryInput() {}
 

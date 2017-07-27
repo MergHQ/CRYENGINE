@@ -683,6 +683,12 @@ extern "C" {
 	#define MESSAGE(msg)
 #endif
 
+#ifdef _MSC_VER
+	#define CRY_PP_ERROR(msg) __pragma(message( __FILE__ "(" STRINGIFY(__LINE__) ")" ": error: " msg))
+#else
+	#define CRY_PP_ERROR(msg)
+#endif
+
 #define DECLARE_SHARED_POINTERS(name)                   \
   typedef std::shared_ptr<name> name ##       Ptr;      \
   typedef std::shared_ptr<const name> name ## ConstPtr; \

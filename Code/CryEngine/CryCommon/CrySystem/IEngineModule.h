@@ -12,7 +12,7 @@ namespace Cry
 	//! Base Interface for all engine module extensions.
 	struct IDefaultModule : public ICryUnknown
 	{
-		CRYINTERFACE_DECLARE(IDefaultModule, 0xf899cf661df04f61, 0xa341a8a7ffdf9de4);
+		CRYINTERFACE_DECLARE_GUID(IDefaultModule, "f899cf66-1df0-4f61-a341-a8a7ffdf9de4"_cry_guid);
 
 		// <interfuscator:shuffle>
 		//! Retrieve name of the extension module.

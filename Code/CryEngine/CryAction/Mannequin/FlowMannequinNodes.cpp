@@ -305,7 +305,7 @@ class CFlowGraphEventsProceduralContext
 	: public IProceduralContext
 {
 public:
-	PROCEDURAL_CONTEXT(CFlowGraphEventsProceduralContext, "FlowGraphEvents", 0x334455925E8947FB, 0x8008B3F89CAC0C37);
+	PROCEDURAL_CONTEXT(CFlowGraphEventsProceduralContext, "FlowGraphEvents", "33445592-5e89-47fb-8008-b3f89cac0c37"_cry_guid);
 
 	CFlowGraphEventsProceduralContext();
 

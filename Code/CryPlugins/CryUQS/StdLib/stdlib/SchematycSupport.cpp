@@ -14,16 +14,16 @@ namespace UQS
 	{
 
 		static const Schematyc::CryGUID g_uqsStdlibModuleGUID = "29fade44-bd65-470f-863e-458342f1ab92"_cry_guid;
+		static const Schematyc::CryGUID g_uqsStdlibPackageGUID = "156dba39-d156-495a-97c5-ed1cf951ecc7"_cry_guid;
 
 		static void OnRegisterInSchematyc(Schematyc::IEnvRegistrar& registrar);
 
 		void CStdLibRegistration::RegisterInSchematyc()
 		{
-			const Schematyc::CryGUID guid = "156dba39-d156-495a-97c5-ed1cf951ecc7"_cry_guid;
 			const char* szName = "UQSStdLib";
 			const char* szDescription = "UQS Standard Library";
 			Schematyc::EnvPackageCallback callback = SCHEMATYC_DELEGATE(&OnRegisterInSchematyc);
-			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, Schematyc::g_szCrytek, szDescription, callback));
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(g_uqsStdlibPackageGUID, szName, Schematyc::g_szCrytek, szDescription, callback));
 		}
 
 		static void OnRegisterInSchematyc(Schematyc::IEnvRegistrar& registrar)
@@ -31,11 +31,16 @@ namespace UQS
 			registrar.RootScope().Register(SCHEMATYC_MAKE_ENV_MODULE(g_uqsStdlibModuleGUID, "UQSStdlib"));
 			{
 				Schematyc::CEnvRegistrationScope scope = registrar.Scope(g_uqsStdlibModuleGUID);
-
+			
 				scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(NavigationAgentTypeID));
 				// leave out the more common data types like int, float, bool, etc. (they already get registered by schematyc itself)
-
+			
 			}
+		}
+
+		void CStdLibRegistration::UnregisterInSchematyc()
+		{
+			gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(g_uqsStdlibPackageGUID);
 		}
 
 	}

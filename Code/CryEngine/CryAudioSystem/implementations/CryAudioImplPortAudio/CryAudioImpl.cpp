@@ -26,7 +26,7 @@ class CEngineModule_CryAudioImplPortAudio : public IImplModule
 	CRYINTERFACE_ADD(IImplModule)
 	CRYINTERFACE_END()
 
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplPortAudio, "EngineModule_AudioImpl", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
+	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryAudioImplPortAudio, "EngineModule_AudioImpl", "c0c05842-ff77-4a61-96de-43a684515dc8"_cry_guid);
 
 	CEngineModule_CryAudioImplPortAudio();
 
