@@ -857,6 +857,7 @@ protected:
 			return HandleSuccess(context, runtimeData);
 
 		case eTPSQS_Fail:
+		case eTPSQS_Error:
 			return Failure;
 
 		default:
