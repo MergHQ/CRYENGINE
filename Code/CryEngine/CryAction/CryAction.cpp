@@ -185,7 +185,7 @@
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-#ifdef _LIB
+#if defined(_LIB) && !defined(DISABLE_LEGACY_GAME_DLL)
 extern "C" IGameStartup* CreateGameStartup();
 #endif //_LIB
 
@@ -2140,6 +2140,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 		}
 #endif
 
+#if !defined(_LIB) || !defined(DISABLE_LEGACY_GAME_DLL)
 		// create the game startup interface
 		IGameStartup* pGameStartup = CreateGameStartup();
 		if (!pGameStartup)
@@ -2156,6 +2157,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 			m_externalGameLibrary.dllHandle = hGameDll;
 			m_externalGameLibrary.pGameStartup = pGameStartup;
 		}
+#endif
 	}
 
 	return m_externalGameLibrary.IsValid();
