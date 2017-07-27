@@ -1178,6 +1178,7 @@ int box_cylinder_lin_unprojection(unprojection_mode *pmode, const box *pbox,int 
 		isg.x = -sgnnz(n[ic.x])*isg.z; isg.y = -sgnnz(n[ic.y])*isg.z;
 		pt[ic.z]=0; pt[ic.x]=size[ic.x]*isg.x; pt[ic.y]=size[ic.y]*isg.y;	
 		t.set((r*nlen+((center-pt)*n)*isg.z)*dlen, fabs_tpl(dir*n));
+		t += isneg(t.x)*isneg(-idbest-1)*r*0.001f;
 		bBest = isneg(-t.x) & isneg(t-tmin);
 		UPDATE_IDBEST(tmin,0x60 | ic.z<<3 | isg.z+1<<1 | isg.y+1 | isg.x+1>>1);
 		dir_best = dir_best*(bBest^1) + dir*bBest;
@@ -1463,7 +1464,7 @@ int box_cylinder_lin_unprojection(unprojection_mode *pmode, const box *pbox,int 
 		}
 	}
 
-	if (bContact && (!parea || parea->npt<2)) {
+	if (bContact & (bCapped^1) && (!parea || parea->npt<2)) {
 		// make sure contact point lies on primitives (there might be false hits if they were initially separated)
 		e = 1.1f;
 		pt = (pbox->Basis*(pcontact->pt-pbox->center-pmode->dir*pcontact->t)).abs();
@@ -2109,7 +2110,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode *pmode, const cylinder *pcyl1,int
 		}
 	}
 
-	if (idbest==-1 || bNoContact && tmax>min(pcyl[0]->r,pcyl[1]->r)*0.1f)
+	if (idbest==-1 || bNoContact && (!(bCapped[0]&bCapped[1]) || tmax>min(pcyl[0]->r,pcyl[1]->r)*0.1f))
 		return 0;
 	if (bFindMinUnproj)
 		pmode->dir = dir_best.normalized();
@@ -2193,7 +2194,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode *pmode, const cylinder *pcyl1,int
 						parea->piFeature[icyl^1][parea->npt] = 0x40 | ((i&-icyl | j&~-icyl)+1>>1)+1;
 						parea->piFeature[icyl][parea->npt] = 0x20 | (i&~-icyl | j&-icyl)+1>>1;
 						if (icyl)
-							parea->pt[parea->npt] = center[0]+pcyl[0]->axis*(pcyl[0]->axis*(parea->pt[parea->npt]-center[0]));
+							parea->pt[parea->npt] -= pcyl[0]->axis*(pcyl[0]->axis*(parea->pt[parea->npt]-center[0]));
 						parea->npt += isneg((parea->pt[parea->npt]-center[icyl^1]).len2()-sqr(pcyl[icyl^1]->r*1.01f));
 						a=pt2d[0].x; pt2d[0].x=(pt2d[0].x-pt2d[0].y)*(sqrt2/2); pt2d[0].y=(a+pt2d[0].y)*(sqrt2/2); // rotate by 45 degrees
 					}
