@@ -135,6 +135,7 @@ public:
 	// IObject
 	virtual ObjectId             GetId() const override;
 	virtual const IRuntimeClass& GetClass() const override;
+	virtual const char*          GetScriptFile() const override;
 	virtual void*                GetCustomData() const override;
 	virtual ESimulationMode      GetSimulationMode() const override;
 
