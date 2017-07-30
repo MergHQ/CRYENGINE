@@ -48,7 +48,7 @@ namespace Cry
 				desc.SetLabel("Character Controller");
 				desc.SetDescription("Functionality for a standard FPS / TPS style walking character");
 				//desc.SetIcon("icons:ObjectTypes/object.ico");
-				desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::Singleton });
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Singleton, IEntityComponent::EFlags::Transform });
 
 				// Mark the Rigid Body component as incompatible
 				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{912C6CE8-56F7-4FFA-9134-F98D4E307BD6}"_cry_guid);
@@ -126,12 +126,11 @@ namespace Cry
 				{
 					playerDimensions.sizeCollider.z *= 0.5f;
 				}
-
+				playerDimensions.groundContactEps = m_physics.m_groundContactEps;
 				// Keep pivot at the player's feet (defined in player geometry) 
 				playerDimensions.heightPivot = 0.f;
-				// Offset collider upwards if the user requested it
+				// Offset collider upwards
 				playerDimensions.heightCollider = m_pTransform != nullptr ? m_pTransform->GetTranslation().z : 0.f;
-				playerDimensions.groundContactEps = 0.004f;
 
 				physParams.pPlayerDimensions = &playerDimensions;
 
@@ -180,7 +179,7 @@ namespace Cry
 					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_radius, 'radi', "Radius", "Collider Radius", "Radius of the capsule or cylinder", 0.45f);
 					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_height, 'heig', "Height", "Collider Height", "Height of the capsule or cylinder", 0.935f);
 					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bCapsule, 'caps', "Capsule", "Use Capsule", "Whether or not to use a capsule as the main collider, otherwise cylinder", true);
-
+					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_groundContactEps, 'gce', "GroundContactEps", "Ground Contact Epsilon", "The amount that the player needs to move upwards before ground contact is lost", 0.004f);
 					desc.AddMember(&CCharacterControllerComponent::SPhysics::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
 				}
 
@@ -188,6 +187,7 @@ namespace Cry
 				float m_radius = 0.45f;
 				float m_height = 0.935f;
 				bool m_bCapsule = true;
+				Schematyc::Range<-100, 100> m_groundContactEps = 0.004f;
 
 				bool m_bSendCollisionSignal = false;
 			};
