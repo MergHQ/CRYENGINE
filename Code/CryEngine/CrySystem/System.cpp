@@ -3217,11 +3217,26 @@ bool CSystem::IsImeSupported() const
 
 //////////////////////////////////////////////////////////////////////////
 #if CRY_PLATFORM_WINDOWS
+
+enum class EMouseWheelOrigin
+{
+	ScreenSpace,
+	WindowSpace,
+	WindowSpaceClamped
+};
+
+#ifndef GET_X_LPARAM
+#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+#endif
+#ifndef GET_Y_LPARAM
+#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+#endif
+
 bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	static bool sbInSizingModalLoop;
-	int x = LOWORD(lParam);
-	int y = HIWORD(lParam);
+	int x = GET_X_LPARAM(lParam);
+	int y = GET_Y_LPARAM(lParam);
 	EHARDWAREMOUSEEVENT event = (EHARDWAREMOUSEEVENT)-1;
 	*pResult = 0;
 	switch (uMsg)
@@ -3338,8 +3353,43 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 		event = HARDWAREMOUSEEVENT_MBUTTONDOUBLECLICK;
 		break;
 	case WM_MOUSEWHEEL:
-		event = HARDWAREMOUSEEVENT_WHEEL;
-		break;
+		{
+			event = HARDWAREMOUSEEVENT_WHEEL;
+			ICVar* cv = gEnv->pConsole->GetCVar("i_mouse_scroll_coordinate_origin");
+			if (cv)
+			{
+				switch ((EMouseWheelOrigin)cv->GetIVal())
+				{
+				case EMouseWheelOrigin::ScreenSpace:
+					// Windows default - do nothing
+					break;
+				case EMouseWheelOrigin::WindowSpace:
+					{
+						POINT p{ x, y };
+						ScreenToClient(hWnd, &p);
+						x = p.x;
+						y = p.y;
+						break;
+					}
+				case EMouseWheelOrigin::WindowSpaceClamped:
+					{
+						POINT p{ x, y };
+						ScreenToClient(hWnd, &p);
+						RECT r;
+						GetClientRect(hWnd, &r);
+						x = crymath::clamp<int>(p.x, 0, r.right - r.left);
+						y = crymath::clamp<int>(p.y, 0, r.bottom - r.top);
+						break;
+					}
+				default:
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "i_mouse_scroll_coordinate_origin out of range");
+					break;
+				}
+				CryLogAlways("Scroll coordinates: %d %d", x, y);
+			}
+			break;
+		}
+		
 
 	// Any other event doesn't interest us
 	default:
