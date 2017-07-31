@@ -59,7 +59,7 @@ void SItemTypeName::Serialize(Serialization::IArchive& archive)
 		{
 			CKeyValueStringList<CryGUID> itemTypeList;
 			itemTypeList.FillFromFactoryDatabase(UQS::Core::IHubPlugin::GetHub().GetItemFactoryDatabase(), true);
-			itemTypeList.Serialize(archive, "typeGUID", "^", oldTypeGUID, setTypeGUID);
+			itemTypeList.SerializeByData(archive, "typeGUID", "^", oldTypeGUID, setTypeGUID);
 		}
 		else
 		{

@@ -536,6 +536,14 @@ namespace UQS
 			return bFoundACloseEnoughItem;
 		}
 
+		static ColorF ScoreToColor(float bestScoreAmongAllItems, float worstScoreAmongAllItems, float accumulatedAndWeightedScoreOfMaskedEvaluators)
+		{
+			const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
+			const float itemRelativeScore = accumulatedAndWeightedScoreOfMaskedEvaluators - worstScoreAmongAllItems;
+			const float fraction = (range > FLT_EPSILON) ? itemRelativeScore / range : 1.0f;
+			return Lerp(Col_Red, Col_Green, fraction);
+		}
+
 		void CHistoricQuery::DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks) const
 		{
 			m_debugRenderWorldPersistent.DrawAllAddedPrimitivesWithNoItemAssociation();
@@ -580,6 +588,9 @@ namespace UQS
 			// draw all items in the debug-renderworld
 			//
 
+			const float alphaValueForItemsInTheFinalResultSet = 1.0f;
+			const float alphaValueForDiscardedItems = (float)crymath::clamp(SCvars::debugDrawAlphaValueOfDiscardedItems, 0, 255) / 255.0f;
+
 			for (size_t i = 0, n = m_items.size(); i < n; ++i)
 			{
 				const SHistoricItem& item = m_items[i];
@@ -604,41 +615,34 @@ namespace UQS
 				case EItemAnalyzeStatus::ExceptionOccurred:
 					bShouldDrawAnExclamationMarkAsWarning = true;
 					color = Col_Black;
+					color.a = alphaValueForDiscardedItems;
 					break;
 
 				case EItemAnalyzeStatus::DiscardedByAtLeastOneEvaluator:
 					color = Col_Black;
+					color.a = alphaValueForDiscardedItems;
 					break;
 
 				case EItemAnalyzeStatus::DisqualifiedDueToBadScoreBeforeAllEvaluatorsHadRun:
 					color = Col_Plum;
+					color.a = alphaValueForDiscardedItems;
 					break;
 
 				case EItemAnalyzeStatus::StillBeingEvaluated:
 					color = Col_Yellow;
+					color.a = alphaValueForDiscardedItems;  // FIXME: this alpha value is actually for finished items that did not survive (and not for items still being evaluated)
 					break;
 
 				case EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun:
-					if (0)  // TODO: currently, we don't draw items that were fully run but then disqualified due to bad score with a specific color (we just apply that nice color gradation), 
-						    // but in the future, we might wanna allow the user to tick a checkbox in the History Inspector for getting even more insight into an item)
-					{
-						bDrawScore = true;
-						color = Col_DarkGray;
-						break;
-					}
-					// fall through
+					color = ScoreToColor(bestScoreAmongAllItems, worstScoreAmongAllItems, accumulatedAndWeightedScoreOfMaskedEvaluators);
+					color.a = alphaValueForDiscardedItems;
+					bDrawScore = true;
+					break;
 
 				case EItemAnalyzeStatus::SurvivedAllEvaluators:
-					{
-						// it's one of the items in the result set (or at least one that survived all masked evaluators) => gradate its color from red to green, depending on its score
-
-						const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
-						const float itemRelativeScore = accumulatedAndWeightedScoreOfMaskedEvaluators - worstScoreAmongAllItems;
-						const float fraction = (range > FLT_EPSILON) ? itemRelativeScore / range : 1.0f;
-
-						color = Lerp(Col_Red, Col_Green, fraction);
-						bDrawScore = true;
-					}
+					color = ScoreToColor(bestScoreAmongAllItems, worstScoreAmongAllItems, accumulatedAndWeightedScoreOfMaskedEvaluators);
+					color.a = alphaValueForItemsInTheFinalResultSet;
+					bDrawScore = true;
 					break;
 
 				default:
