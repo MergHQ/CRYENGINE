@@ -466,16 +466,8 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
 	// Functions
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::RegisterSchematycAction, "{1AC261E2-D7E0-4F80-99D1-73D34D670F0C}"_cry_guid, "RegisterAction");
-		pFunction->SetDescription("Registers an action that results in OnAction signal being sent when the input is modified, requires BindInput to connect to keys");
-		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
-		pFunction->BindInput(1, 'grou', "Group Name");
-		pFunction->BindInput(2, 'name', "Name");
-		componentScope.Register(pFunction);
-	}
-	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindKeyboardAction, "{0F22767B-6AA6-4EDF-92F0-7BCD10CAB00E}"_cry_guid, "BindKeyboardAction");
-		pFunction->SetDescription("Binds a keyboard input to an action registered with RegisterAction");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindKeyboardAction, "{0F22767B-6AA6-4EDF-92F0-7BCD10CAB00E}"_cry_guid, "RegisterKeyboardAction");
+		pFunction->SetDescription("Registers the action and binds the keyboard input to it");
 		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
 		pFunction->BindInput(1, 'grou', "Group Name");
 		pFunction->BindInput(2, 'name', "Name");
@@ -486,8 +478,8 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		componentScope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindMouseAction, "{64199BB3-88A5-4404-BAEF-212BC0D0ACCC}"_cry_guid, "BindMouseAction");
-		pFunction->SetDescription("Binds a mouse input to an action registered with RegisterAction");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindMouseAction, "{64199BB3-88A5-4404-BAEF-212BC0D0ACCC}"_cry_guid, "RegisterMouseAction");
+		pFunction->SetDescription("Registers the action and binds the mouse input to it");
 		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
 		pFunction->BindInput(1, 'grou', "Group Name");
 		pFunction->BindInput(2, 'name', "Name");
@@ -498,8 +490,8 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		componentScope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindXboxAction, "{5D8DDAD6-AEFD-4A1A-8BA0-F27F7836AC05}"_cry_guid, "BindXboxAction");
-		pFunction->SetDescription("Binds an Xbox input to an action registered with RegisterAction");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindXboxAction, "{5D8DDAD6-AEFD-4A1A-8BA0-F27F7836AC05}"_cry_guid, "RegisterXboxAction");
+		pFunction->SetDescription("Registers the action and binds the Xbox input to it");
 		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
 		pFunction->BindInput(1, 'grou', "Group Name");
 		pFunction->BindInput(2, 'name', "Name");
@@ -510,8 +502,8 @@ void CInputComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		componentScope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindPS4Action, "{D7CE1BF1-F192-4E0D-B3D6-305B31E8C693}"_cry_guid, "BindPS4Action");
-		pFunction->SetDescription("Binds a PlayStation input to an action registered with RegisterAction");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CInputComponent::BindPS4Action, "{D7CE1BF1-F192-4E0D-B3D6-305B31E8C693}"_cry_guid, "RegisterPS4Action");
+		pFunction->SetDescription("Registers the action and binds the PS4 input to it");
 		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
 		pFunction->BindInput(1, 'grou', "Group Name");
 		pFunction->BindInput(2, 'name', "Name");
@@ -641,21 +633,29 @@ void InternalBindAction(EntityId id, Schematyc::CSharedString groupName, Schemat
 
 void CInputComponent::BindKeyboardAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EKeyboardInputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
+	RegisterSchematycAction(groupName, name);
+
 	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_KeyboardMouse, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
 void CInputComponent::BindMouseAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EMouseInputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
+	RegisterSchematycAction(groupName, name);
+
 	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_KeyboardMouse, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
 void CInputComponent::BindXboxAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EXboxInputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
+	RegisterSchematycAction(groupName, name);
+
 	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_XboxPad, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
 void CInputComponent::BindPS4Action(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EPS4InputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
 {
+	RegisterSchematycAction(groupName, name);
+
 	InternalBindAction(GetEntityId(), groupName, name, EActionInputDevice::eAID_PS4Pad, keyId, bOnPress, bOnRelease, bOnHold);
 }
 
