@@ -468,10 +468,8 @@ EServerError CShaderSrv::Send(std::vector<uint8>& rCompileData) const
 	if (gRenDev->CV_r_ShaderCompilerServer)
 		Tokenize(ServerVec, gRenDev->CV_r_ShaderCompilerServer->GetString(), ";");
 
-	if (ServerVec.empty())
-	{
-		ServerVec.push_back("localhost");
-	}
+	// Always add localhost as last resort
+	ServerVec.push_back("localhost");
 
 #if CRY_PLATFORM_WINDOWS
 	int nPort = 0;
