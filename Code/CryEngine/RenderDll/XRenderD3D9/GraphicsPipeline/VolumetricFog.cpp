@@ -1099,7 +1099,7 @@ void CVolumetricFogStage::PrepareLightList(CRenderView* pRenderView)
 	const auto& ambientLights = pRenderView->GetLightsArray(eDLT_DeferredAmbientLight);
 
 	const uint32 lightArraySize = 3;
-	const RenderLightsArray* lightLists[lightArraySize] = {
+	const RenderLightsList* lightLists[3] = {
 		CRenderer::CV_r_DeferredShadingEnvProbes ? &envProbes : nullptr,
 		CRenderer::CV_r_DeferredShadingAmbientLights ? &ambientLights : nullptr,
 		CRenderer::CV_r_DeferredShadingLights ? &defLights : nullptr,
@@ -1135,9 +1135,11 @@ void CVolumetricFogStage::PrepareLightList(CRenderView* pRenderView)
 		if (lightLists[lightListIdx] == nullptr)
 			continue;
 
-		for (uint32 lightIdx = 0, lightListSize = lightLists[lightListIdx]->size(); lightIdx < lightListSize; ++lightIdx)
+		auto stp = lightLists[lightListIdx]->end();
+		auto itr = lightLists[lightListIdx]->begin();
+		for (uint32 lightIdx = 0; itr != stp; ++itr, ++lightIdx)
 		{
-			const SRenderLight& renderLight = (*lightLists[lightListIdx])[lightIdx];
+			const SRenderLight& renderLight = *itr;
 			SVolumeLightCullInfo& lightCullInfo = tileLightsCull[numTileLights];
 			STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
 

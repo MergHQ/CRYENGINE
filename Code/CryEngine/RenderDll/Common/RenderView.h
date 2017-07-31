@@ -190,15 +190,16 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Dynamic Lights
 	//////////////////////////////////////////////////////////////////////////
-	virtual void          AddDynamicLight(SRenderLight& light) final;
-	virtual int           GetDynamicLightsCount() const final;
-	virtual SRenderLight& GetDynamicLight(int nLightId) final;
+	virtual RenderLightIndex AddDynamicLight(const SRenderLight& light) final;
+	virtual RenderLightIndex GetDynamicLightsCount() const final;
+	virtual SRenderLight&    GetDynamicLight(RenderLightIndex nLightId) final;
 
-	virtual void          AddLight(eDeferredLightType lightType, SRenderLight& light) final;
-	virtual int           GetLightsCount(eDeferredLightType lightType) const final;
-	virtual SRenderLight& GetLight(eDeferredLightType lightType, int nLightId) final;
-	RenderLightsArray&    GetLightsArray(eDeferredLightType lightType);
-	SRenderLight*         AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, int index = -1);
+	virtual RenderLightIndex AddLight(eDeferredLightType lightType, const SRenderLight& light) final;
+	virtual RenderLightIndex GetLightsCount(eDeferredLightType lightType) const final;
+	virtual SRenderLight&    GetLight(eDeferredLightType lightType, RenderLightIndex nLightId) final;
+
+	RenderLightsList&       GetLightsArray(eDeferredLightType lightType);
+	SRenderLight*            AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, RenderLightIndex index = -1);
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -286,7 +287,7 @@ private:
 	//volatile uint32* m_pFlagsPointer[EFSLIST_NUM];
 
 	// Light sources affecting the view.
-	std::vector<SRenderLight> m_lights[eDLT_NumLightTypes];
+	RenderLightsList m_lights[eDLT_NumLightTypes];
 
 	//////////////////////////////////////////////////////////////////////////
 	// Clip Volumes

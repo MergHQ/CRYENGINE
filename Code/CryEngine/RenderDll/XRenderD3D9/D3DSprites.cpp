@@ -250,7 +250,7 @@ static void sRT_RenderObject(IStatObj* pEngObj, SRendParams& RP, const SRenderin
 
 static void sRT_ADDDlight(SRenderLight* Source, const SRenderingPassInfo& passInfo)
 {
-	gRenDev->m_RP.RenderView()->AddDynamicLight(*Source);
+	Source->m_Id = gRenDev->m_RP.RenderView()->AddDynamicLight(*Source);
 }
 
 static void sRT_EndEf(const SRenderingPassInfo& passInfo)

@@ -19,19 +19,23 @@ void CMobileCompositionStage::Execute(CRenderView* pCurrentRenderView)
 		gcpRendD3D->FX_PopRenderTarget(0);
 	}
 	
-	SRenderLight* pBestProbe = nullptr;
+	CTexture* pBestProbe = CTexture::s_ptexDefaultProbeCM;
 		
 	// Find largest probe
 	{
 		auto& envProbes = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView()->GetLightsArray(eDLT_DeferredCubemap);
 		float bestRadius = 0;
+
+		auto stp = envProbes.end();
+		auto itr = envProbes.begin();
 	
-		for (uint32 i = 0; i < envProbes.size(); i++)
+		while (itr != stp)
 		{
-			if (envProbes[i].m_fRadius > bestRadius)
+			float currRadius = itr->m_fRadius;
+			if (bestRadius < currRadius)
 			{
-				bestRadius = envProbes[i].m_fRadius;
-				pBestProbe = &envProbes[i];
+				bestRadius = currRadius;
+				pBestProbe = reinterpret_cast<CTexture*>(itr->m_pSpecularCubemap);
 			}
 		}
 	}
@@ -63,7 +67,7 @@ void CMobileCompositionStage::Execute(CRenderView* pCurrentRenderView)
 		m_passLighting.SetTexture(1, CTexture::s_ptexSceneNormalsMap);
 		m_passLighting.SetTexture(2, CTexture::s_ptexSceneDiffuse);
 		m_passLighting.SetTexture(3, CTexture::s_ptexSceneSpecular);
-		m_passLighting.SetTextureSamplerPair(7, pBestProbe ? (CTexture*)pBestProbe->m_pSpecularCubemap : CTexture::s_ptexDefaultProbeCM, EDefaultSamplerStates::TrilinearClamp);
+		m_passLighting.SetTextureSamplerPair(7, pBestProbe, EDefaultSamplerStates::TrilinearClamp);
 
 		CTiledShading& tiledShading = gcpRendD3D->GetTiledShading();
 		m_passLighting.SetBuffer(16, &tiledShading.m_tileOpaqueLightMaskBuf);

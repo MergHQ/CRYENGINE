@@ -25,6 +25,7 @@ enum EDecalType
 	DTYP_NUM,
 };
 
+#define MAX_DEFERRED_LIGHT_SOURCES 32
 #define MAX_DEFERRED_CLIP_VOLUMES 64
 
 class CTexPoolAtlas;
@@ -70,16 +71,16 @@ public:
 
 	void        FilterGBuffer();
 	void        PrepareClipVolumeData(bool& bOutdoorVisible);
-	bool        AmbientPass(SRenderLight* pGlobalCubemap, bool& bOutdoorVisible);
+	bool        AmbientPass(const SRenderLight* pGlobalCubemap, bool& bOutdoorVisible);
 
 	bool        DeferredDecalPass(const SDeferredDecal& rDecal, uint32 indDecal);
 	bool        ShadowLightPasses(const SRenderLight& light, const int nLightID);
 	void        DrawDecalVolume(const SDeferredDecal& rDecal, Matrix44A& mDecalLightProj, ECull volumeCull);
 	void        DrawLightVolume(EShapeMeshType meshType, const Matrix44& mVolumeToWorld, const Vec4& vSphereAdjust = Vec4(ZERO));
 	void        LightPass(const SRenderLight* const __restrict pDL, bool bForceStencilDisable = false);
-	void        DeferredCubemaps(const RenderLightsArray& rCubemaps, const uint32 nStartIndex = 0);
+	void        DeferredCubemaps(const RenderLightsList& rCubemaps, uint32 nStartIndex = 0);
 	void        DeferredCubemapPass(const SRenderLight* const __restrict pDL);
-	void        DeferredLights(RenderLightsArray& rLights, bool bCastShadows);
+	void        DeferredLights(RenderLightsList& rLights, bool bCastShadows);
 	void        DeferredShadingPass();
 
 	void        CreateDeferredMaps();
@@ -88,7 +89,7 @@ public:
 	void        Debug();
 	void        DebugGBuffer();
 
-	uint32      AddLight(const CDLight& pDL, float fMult, const SRenderingPassInfo& passInfo);
+	RenderLightIndex AddLight(const CDLight& pDL, float fMult, const SRenderingPassInfo& passInfo);
 
 	void        AddGIClipVolume(IRenderMesh* pClipVolume, const Matrix34& mxTransform);
 	inline void ResetLights();

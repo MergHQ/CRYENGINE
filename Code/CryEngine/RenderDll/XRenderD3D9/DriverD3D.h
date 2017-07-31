@@ -476,7 +476,7 @@ public:
 	void FX_PrepareDepthMapsForLight(CRenderView* pRenderView, const SRenderLight& rLight, int nLightID, bool bClearPool = false);
 	void EF_PrepareShadowGenRenderList(CRenderView* pRenderView);
 	bool EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRenderLight* pLight, int nLightID);
-	bool PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowMapFrustum* pCurFrustum, SRenderLight* pLight, int nLightID, int nLOD = 0);
+	bool PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowMapFrustum* pCurFrustum, const SRenderLight* pLight, int nLightID, int nLOD = 0);
 
 	virtual void EF_InvokeShadowMapRenderJobs(CRenderView* pRenderView, const int nFlags) override;
 	void InvokeShadowMapRenderJobs(ShadowMapFrustum *pCurFrustum, SRenderingPassInfo passInfo);

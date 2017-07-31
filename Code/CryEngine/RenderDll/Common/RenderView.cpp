@@ -296,75 +296,102 @@ void CRenderView::PrepareForWriting()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::AddDynamicLight(SRenderLight& light)
+RenderLightIndex CRenderView::AddDynamicLight(const SRenderLight& light)
 {
-	AddLight(eDLT_DynamicLight, light);
+	return AddLight(eDLT_DynamicLight, light);
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderView::GetDynamicLightsCount() const
+RenderLightIndex CRenderView::GetDynamicLightsCount() const
 {
 	return GetLightsCount(eDLT_DynamicLight);
 }
 
 //////////////////////////////////////////////////////////////////////////
-SRenderLight& CRenderView::GetDynamicLight(int nLightId)
+SRenderLight& CRenderView::GetDynamicLight(RenderLightIndex nLightId)
 {
 	return GetLight(eDLT_DynamicLight, nLightId);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::AddLight(eDeferredLightType lightType, SRenderLight& light)
+RenderLightIndex CRenderView::AddLight(eDeferredLightType lightType, const SRenderLight& light)
 {
 	assert((light.m_Flags & DLF_LIGHTTYPE_MASK) != 0);
-	if (m_lights[lightType].size() >= 32)
+
+	RenderLightIndex nLightId = -1;
+	if (m_lights[lightType].size() < MAX_DEFERRED_LIGHT_SOURCES)
 	{
-		light.m_Id = -1;
-		return;
-	}
-	if (light.m_Flags & DLF_FAKE)
-	{
-		light.m_Id = -1;
-	}
-	{
-		light.m_Id = int16(m_lights[lightType].size());
+		if (!(light.m_Flags & DLF_FAKE))
+		{
+			nLightId = GetLightsCount(lightType);
+		}
+
 		m_lights[lightType].push_back(light);
+		SRenderLight* pLight = &m_lights[lightType].back();
+
+		pLight->m_Id = nLightId;
+		pLight->AcquireResources();
 	}
+
+	return nLightId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-SRenderLight* CRenderView::AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, int index /*=-1*/)
+SRenderLight* CRenderView::AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, RenderLightIndex nLightId /*=-1*/)
 {
-	if (index < 0)
+	assert(nLightId                   <  GetLightsCount(lightType));
+	assert(MAX_DEFERRED_LIGHT_SOURCES >= GetLightsCount(lightType));
+
+	SRenderLight* pLight = nullptr;
+	if (nLightId < 0)
 	{
+		nLightId = GetLightsCount(lightType);
+
 		m_lights[lightType].push_back(light);
-		index = m_lights[lightType].size() - 1;
+		pLight = &m_lights[lightType].back();
 	}
 	else
 	{
-		m_lights[lightType].insert(m_lights[lightType].begin() + index, light);
+		// find iterator at given index (assuming no [] operator)
+		auto itr = m_lights[lightType].begin();
+		while (--nLightId >= 0)
+			++itr;
+		m_lights[lightType].insert(itr, light);
+
+		// invalidate indices of following lights (ID could also be incremented ...)
+		auto stp = m_lights[lightType].end();
+		while (++itr != stp)
+			(*itr).m_Id = -2;
 	}
-	m_lights[lightType][index].AcquireResources();
-	return &m_lights[lightType][index];
+
+	pLight->m_Id = nLightId;
+	pLight->AcquireResources();
+
+	return pLight;
 }
 
-int CRenderView::GetLightsCount(eDeferredLightType lightType) const
+RenderLightIndex CRenderView::GetLightsCount(eDeferredLightType lightType) const
 {
-	return (int)m_lights[lightType].size();
+	return (RenderLightIndex)m_lights[lightType].size();
 }
 
-SRenderLight& CRenderView::GetLight(eDeferredLightType lightType, int nLightId)
+SRenderLight& CRenderView::GetLight(eDeferredLightType lightType, RenderLightIndex nLightId)
 {
 	assert(nLightId >= 0 && nLightId < m_lights[lightType].size());
-	return m_lights[lightType][nLightId];
+	// find iterator at given index (assuming no [] operator)
+	auto itr = m_lights[lightType].begin();
+	while (--nLightId >= 0)
+		++itr;
+	return *itr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-RenderLightsArray& CRenderView::GetLightsArray(eDeferredLightType lightType)
+RenderLightsList& CRenderView::GetLightsArray(eDeferredLightType lightType)
 {
 	assert(lightType >= 0 && lightType < eDLT_NumLightTypes);
 	return m_lights[lightType];
 }
+
 //////////////////////////////////////////////////////////////////////////
 uint8 CRenderView::AddClipVolume(const IClipVolume* pClipVolume)
 {
@@ -1326,8 +1353,8 @@ void CRenderView::SortLights()
 		}
 	};
 
-	auto& deferredCubemaps = GetLightsArray(eDLT_DeferredCubemap);
-	std::sort(deferredCubemaps.begin(), deferredCubemaps.end(), CubemapCompare());
+	// does not invalidate references or iterators, but invalidates all m_Id in the lights
+	GetLightsArray(eDLT_DeferredCubemap).sort(CubemapCompare());
 }
 
 int CRenderView::FindRenderListSplit(ERenderListID list, uint32 objFlag)
