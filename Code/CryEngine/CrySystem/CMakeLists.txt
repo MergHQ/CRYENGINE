@@ -308,6 +308,8 @@ add_sources("CrySystem_uber_4.cpp"
 		"PerfHUD.h"
 		"ProfileLogSystem.h"
 		"Sampler.h"
+		"Watchdog.h"
+		"Watchdog.cpp"
 	SOURCE_GROUP "Windows"
 		"WindowsErrorReporting.cpp"
 )

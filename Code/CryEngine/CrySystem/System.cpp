@@ -82,6 +82,7 @@
 #include "RemoteConsole/RemoteConsole.h"
 #include "ImeManager.h"
 #include "BootProfiler.h"
+#include "Watchdog.h"
 #include "NullImplementation/NULLAudioSystems.h"
 #include "NullImplementation/NULLRenderAuxGeom.h"
 
@@ -278,79 +279,80 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_randomGenerator.SetState(m_Time.GetAsyncTime().GetMicroSecondsAsInt64());
 
-	m_pStreamEngine = NULL;
-	m_PhysThread = 0;
+	m_pStreamEngine = nullptr;
+	m_PhysThread = nullptr;
 
-	m_pIFont = NULL;
-	m_pTestSystem = NULL;
-	m_pVisRegTest = NULL;
-	m_rWidth = NULL;
-	m_rHeight = NULL;
-	m_rColorBits = NULL;
-	m_rDepthBits = NULL;
-	m_cvSSInfo = NULL;
-	m_rStencilBits = NULL;
-	m_rFullscreen = NULL;
-	m_rDriver = NULL;
-	m_pPhysicsLibrary = NULL;
-	m_sysNoUpdate = NULL;
-	m_pMemoryManager = NULL;
-	m_pProcess = NULL;
-	m_pMtState = NULL;
+	m_pIFont = nullptr;
+	m_pTestSystem = nullptr;
+	m_pVisRegTest = nullptr;
+	m_rWidth = nullptr;
+	m_rHeight = nullptr;
+	m_rColorBits = nullptr;
+	m_rDepthBits = nullptr;
+	m_cvSSInfo = nullptr;
+	m_rStencilBits = nullptr;
+	m_rFullscreen = nullptr;
+	m_rDriver = nullptr;
+	m_pPhysicsLibrary = nullptr;
+	m_sysNoUpdate = nullptr;
+	m_pMemoryManager = nullptr;
+	m_pProcess = nullptr;
+	m_pMtState = nullptr;
 
-	m_pValidator = NULL;
-	m_pCmdLine = NULL;
-	m_pDefaultValidator = NULL;
-	m_pIBudgetingSystem = NULL;
-	m_pIZLibCompressor = NULL;
-	m_pIZLibDecompressor = NULL;
-	m_pILZ4Decompressor = NULL;
-	m_pNULLRenderAuxGeom = NULL;
-	m_pLocalizationManager = NULL;
-	m_sys_physics_enable_MT = 0;
-	m_sys_min_step = 0;
-	m_sys_max_step = 0;
+	m_pValidator = nullptr;
+	m_pCmdLine = nullptr;
+	m_pDefaultValidator = nullptr;
+	m_pIBudgetingSystem = nullptr;
+	m_pIZLibCompressor = nullptr;
+	m_pIZLibDecompressor = nullptr;
+	m_pILZ4Decompressor = nullptr;
+	m_pNULLRenderAuxGeom = nullptr;
+	m_pLocalizationManager = nullptr;
+	m_sys_physics_enable_MT = nullptr;
+	m_sys_min_step = nullptr;
+	m_sys_max_step = nullptr;
 
-	m_pNotificationNetwork = NULL;
+	m_pNotificationNetwork = nullptr;
 
-	m_cvAIUpdate = NULL;
+	m_cvAIUpdate = nullptr;
 
-	m_pUserCallback = NULL;
+	m_pUserCallback = nullptr;
 #if defined(CVARS_WHITELIST)
-	m_pCVarsWhitelist = NULL;
+	m_pCVarsWhitelist = nullptr;
 	m_pCVarsWhitelistConfigSink = &g_CVarsWhitelistConfigSink;
 #endif // defined(CVARS_WHITELIST)
-	m_sys_memory_debug = NULL;
-	m_sysWarnings = NULL;
-	m_sysKeyboard = NULL;
-	m_sys_profile = NULL;
-	m_sys_profile_deep = NULL;
-	m_sys_profile_additionalsub = NULL;
-	m_sys_profile_graphScale = NULL;
-	m_sys_profile_pagefaultsgraph = NULL;
-	m_sys_profile_graph = NULL;
-	m_sys_profile_filter = NULL;
-	m_sys_profile_filter_thread = NULL;
-	m_sys_profile_allThreads = NULL;
-	m_sys_profile_network = NULL;
-	m_sys_profile_peak = NULL;
-	m_sys_profile_peak_time = NULL;
-	m_sys_profile_memory = NULL;
-	m_sys_profile_sampler = NULL;
-	m_sys_profile_sampler_max_samples = NULL;
-	m_sys_job_system_filter = NULL;
-	m_sys_job_system_enable = NULL;
-	m_sys_job_system_profiler = NULL;
-	m_sys_job_system_max_worker = NULL;
-	m_sys_spec = NULL;
-	m_sys_firstlaunch = NULL;
-	m_sys_enable_budgetmonitoring = NULL;
-	m_sys_preload = NULL;
+	m_sys_memory_debug = nullptr;
+	m_sysWarnings = nullptr;
+	m_sysKeyboard = nullptr;
+	m_sys_profile = nullptr;
+	m_sys_profile_deep = nullptr;
+	m_sys_profile_additionalsub = nullptr;
+	m_sys_profile_graphScale = nullptr;
+	m_sys_profile_pagefaultsgraph = nullptr;
+	m_sys_profile_graph = nullptr;
+	m_sys_profile_filter = nullptr;
+	m_sys_profile_filter_thread = nullptr;
+	m_sys_profile_allThreads = nullptr;
+	m_sys_profile_network = nullptr;
+	m_sys_profile_peak = nullptr;
+	m_sys_profile_peak_time = nullptr;
+	m_sys_profile_memory = nullptr;
+	m_sys_profile_sampler = nullptr;
+	m_sys_profile_sampler_max_samples = nullptr;
+	m_sys_profile_watchdog_timeout = nullptr;
+	m_sys_job_system_filter = nullptr;
+	m_sys_job_system_enable = nullptr;
+	m_sys_job_system_profiler = nullptr;
+	m_sys_job_system_max_worker = nullptr;
+	m_sys_spec = nullptr;
+	m_sys_firstlaunch = nullptr;
+	m_sys_enable_budgetmonitoring = nullptr;
+	m_sys_preload = nullptr;
 	m_sys_use_Mono = nullptr;
 
-	//	m_sys_filecache = NULL;
-	m_gpu_particle_physics = NULL;
-	m_pCpu = NULL;
+	//	m_sys_filecache = nullptr;
+	m_gpu_particle_physics = nullptr;
+	m_pCpu = nullptr;
 
 	m_bQuit = false;
 	m_bShaderCacheGenMode = false;
@@ -370,11 +372,11 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_nStrangeRatio = 1000;
 	// no mem stats at the moment
-	m_pMemStats = NULL;
-	m_pSizer = NULL;
-	m_pCVarQuit = NULL;
+	m_pMemStats = nullptr;
+	m_pSizer = nullptr;
+	m_pCVarQuit = nullptr;
 
-	m_pDownloadManager = 0;
+	m_pDownloadManager = nullptr;
 	m_bForceNonDevMode = false;
 	m_bWasInDevMode = false;
 	m_bInDevMode = false;
@@ -388,14 +390,14 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	//m_bStopPhysics = 0;
 	//m_bPhysicsActive = 0;
 
-	m_pProgressListener = 0;
+	m_pProgressListener = nullptr;
 
 	m_bPaused = false;
 	m_bNoUpdate = false;
 	m_nUpdateCounter = 0;
 	m_iApplicationInstance = -1;
 
-	m_pPhysRenderer = 0;
+	m_pPhysRenderer = nullptr;
 
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();
@@ -404,9 +406,9 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
-	m_pTextModeConsole = NULL;
-	m_pThreadProfiler = 0;
-	m_pDiskProfiler = NULL;
+	m_pTextModeConsole = nullptr;
+	m_pThreadProfiler = nullptr;
+	m_pDiskProfiler = nullptr;
 
 #if defined(ENABLE_LOADING_PROFILER)
 	if (!startupParams.bShaderCacheGen)
@@ -419,8 +421,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	LOADING_TIME_PROFILE_SECTION_NAMED("CSystem Boot");
 
-	m_pMiniGUI = NULL;
-	m_pPerfHUD = NULL;
+	m_pMiniGUI = nullptr;
+	m_pPerfHUD = nullptr;
 
 	m_pHmdManager = nullptr;
 	m_sys_vr_support = nullptr;
@@ -442,7 +444,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bHasRenderedErrorMessage = false;
 	m_bIsSteamInitialized = false;
 
-	m_pImeManager = NULL;
+	m_pImeManager = nullptr;
 	RegisterWindowMessageHandler(this);
 
 	m_pPluginManager = new CCryPluginManager(startupParams);
@@ -493,7 +495,7 @@ CSystem::~CSystem()
 
 	m_pTestSystem.reset();
 
-	m_env.pSystem = 0;
+	m_env.pSystem = nullptr;
 #if !defined(SYS_ENV_AS_STRUCT)
 	gEnv = 0;
 #endif
@@ -771,6 +773,7 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_sys_profile_memory);
 	SAFE_RELEASE(m_sys_profile_sampler);
 	SAFE_RELEASE(m_sys_profile_sampler_max_samples);
+	SAFE_RELEASE(m_sys_profile_watchdog_timeout);
 	SAFE_RELEASE(m_sys_job_system_filter);
 	SAFE_RELEASE(m_sys_job_system_enable);
 	SAFE_RELEASE(m_sys_job_system_profiler);
@@ -781,6 +784,10 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_sys_physics_enable_MT);
 	SAFE_RELEASE(m_sys_min_step);
 	SAFE_RELEASE(m_sys_max_step);
+
+	//Purposely leaking the object as we do not want to block the MainThread waiting for the Watchdog thread to join
+	if (m_pWatchdog != nullptr)
+		m_pWatchdog->SignalStopWork();
 
 	if (m_env.pInput)
 	{

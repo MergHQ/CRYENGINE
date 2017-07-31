@@ -29,7 +29,6 @@ class CServerThrottle;
 struct ICryFactoryRegistryImpl;
 struct IZLibCompressor;
 class CLoadingProfilerSystem;
-class CWatchdogThread;
 struct SThreadMetaData;
 class CResourceManager;
 class CThreadManager;
@@ -314,33 +313,33 @@ public:
 	virtual const sUpdateTimes*  GetUpdateTimeStats(uint32&, uint32&) override;
 	virtual void                 FillRandomMT(uint32* pOutWords, uint32 numWords) override;
 
-	virtual CRndGen&             GetRandomGenerator() override  { return m_randomGenerator; }
+	virtual CRndGen&             GetRandomGenerator() override   { return m_randomGenerator; }
 
-	INetwork*                    GetINetwork() override         { return m_env.pNetwork; }
-	IRenderer*                   GetIRenderer() override        { return m_env.pRenderer; }
-	IInput*                      GetIInput() override           { return m_env.pInput; }
-	ITimer*                      GetITimer() override           { return m_env.pTimer; }
-	ICryPak*                     GetIPak() override             { return m_env.pCryPak; };
-	IConsole*                    GetIConsole() override         { return m_env.pConsole; };
+	INetwork*                    GetINetwork() override          { return m_env.pNetwork; }
+	IRenderer*                   GetIRenderer() override         { return m_env.pRenderer; }
+	IInput*                      GetIInput() override            { return m_env.pInput; }
+	ITimer*                      GetITimer() override            { return m_env.pTimer; }
+	ICryPak*                     GetIPak() override              { return m_env.pCryPak; };
+	IConsole*                    GetIConsole() override          { return m_env.pConsole; };
 	IRemoteConsole*              GetIRemoteConsole() override;
-	IScriptSystem*               GetIScriptSystem() override    { return m_env.pScriptSystem; }
-	I3DEngine*                   GetI3DEngine() override        { return m_env.p3DEngine; }
-	ICharacterManager*           GetIAnimationSystem() override { return m_env.pCharacterManager; }
-	CryAudio::IAudioSystem*      GetIAudioSystem() override     { return m_env.pAudioSystem; }
-	IPhysicalWorld*              GetIPhysicalWorld() override   { return m_env.pPhysicalWorld; }
-	IMovieSystem*                GetIMovieSystem() override     { return m_env.pMovieSystem; };
-	IAISystem*                   GetAISystem() override         { return m_env.pAISystem; }
-	IMemoryManager*              GetIMemoryManager() override   { return m_pMemoryManager; }
-	IEntitySystem*               GetIEntitySystem() override    { return m_env.pEntitySystem; }
-	LiveCreate::IHost*           GetLiveCreateHost()            { return m_env.pLiveCreateHost; }
-	LiveCreate::IManager*        GetLiveCreateManager()         { return m_env.pLiveCreateManager; }
-	IThreadManager*              GetIThreadManager() override   { return m_env.pThreadManager; }
-	IMonoEngineModule*           GetIMonoEngineModule() override{ return m_env.pMonoRuntime; }
-	ICryFont*                    GetICryFont() override         { return m_env.pCryFont; }
-	ILog*                        GetILog() override             { return m_env.pLog; }
-	ICmdLine*                    GetICmdLine() override         { return m_pCmdLine; }
+	IScriptSystem*               GetIScriptSystem() override     { return m_env.pScriptSystem; }
+	I3DEngine*                   GetI3DEngine() override         { return m_env.p3DEngine; }
+	ICharacterManager*           GetIAnimationSystem() override  { return m_env.pCharacterManager; }
+	CryAudio::IAudioSystem*      GetIAudioSystem() override      { return m_env.pAudioSystem; }
+	IPhysicalWorld*              GetIPhysicalWorld() override    { return m_env.pPhysicalWorld; }
+	IMovieSystem*                GetIMovieSystem() override      { return m_env.pMovieSystem; };
+	IAISystem*                   GetAISystem() override          { return m_env.pAISystem; }
+	IMemoryManager*              GetIMemoryManager() override    { return m_pMemoryManager; }
+	IEntitySystem*               GetIEntitySystem() override     { return m_env.pEntitySystem; }
+	LiveCreate::IHost*           GetLiveCreateHost()             { return m_env.pLiveCreateHost; }
+	LiveCreate::IManager*        GetLiveCreateManager()          { return m_env.pLiveCreateManager; }
+	IThreadManager*              GetIThreadManager() override    { return m_env.pThreadManager; }
+	IMonoEngineModule*           GetIMonoEngineModule() override { return m_env.pMonoRuntime; }
+	ICryFont*                    GetICryFont() override          { return m_env.pCryFont; }
+	ILog*                        GetILog() override              { return m_env.pLog; }
+	ICmdLine*                    GetICmdLine() override          { return m_pCmdLine; }
 	IStreamEngine*               GetStreamEngine() override;
-	IValidator*                  GetIValidator() override       { return m_pValidator; };
+	IValidator*                  GetIValidator() override        { return m_pValidator; };
 	IPhysicsDebugRenderer*       GetIPhysicsDebugRenderer() override;
 	IPhysRenderer*               GetIPhysRenderer() override;
 	IFrameProfileSystem*         GetIProfileSystem() override         { return &m_FrameProfileSystem; }
@@ -419,7 +418,7 @@ public:
 	void                                 SetGCFrequency(const float fRate);
 
 	void                                 SetIProcess(IProcess* process) override;
-	IProcess*                            GetIProcess() override      { return m_pProcess; }
+	IProcess*                            GetIProcess() override { return m_pProcess; }
 	//@}
 
 	void                    SleepIfNeeded();
@@ -495,8 +494,8 @@ public:
 	void         SetVersionInfo(const char* const szVersion);
 
 	virtual ICryFactory* LoadModuleWithFactory(const char* dllName, const CryInterfaceID& moduleInterfaceId) override;
-	virtual bool InitializeEngineModule(const char* dllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound) override;
-	virtual bool UnloadEngineModule(const char* dllName) override;
+	virtual bool         InitializeEngineModule(const char* dllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound) override;
+	virtual bool         UnloadEngineModule(const char* dllName) override;
 
 #if CRY_PLATFORM_WINDOWS
 	friend LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -596,10 +595,10 @@ private:
 	// recursive
 	// Arguments:
 	//   sPath - e.g. "Game/Config/CVarGroups"
-	void        AddCVarGroupDirectory(const string& sPath);
+	void AddCVarGroupDirectory(const string& sPath);
 
 #if CRY_PLATFORM_WINDOWS
-	bool        GetWinGameFolder(char* szMyDocumentsPath, int maxPathSize);
+	bool GetWinGameFolder(char* szMyDocumentsPath, int maxPathSize);
 #endif
 public:
 	// interface ISystem -------------------------------------------
@@ -821,6 +820,7 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_profile_memory;
 	ICVar* m_sys_profile_sampler;
 	ICVar* m_sys_profile_sampler_max_samples;
+	ICVar* m_sys_profile_watchdog_timeout;
 	ICVar* m_sys_job_system_filter;
 	ICVar* m_sys_job_system_enable;
 	ICVar* m_sys_job_system_profiler;
@@ -1048,6 +1048,9 @@ protected: // -------------------------------------------------------------
 
 	// Keeping a copy of startup params for deferred module loading (see CryLobby).
 	const SSystemInitParams m_startupParams;
+
+	class CWatchdogThread*  m_pWatchdog = nullptr;
+	static void WatchDogTimeOutChanged(ICVar* cvar);
 };
 
 /*extern static */ bool QueryModuleMemoryInfo(SCryEngineStatsModuleInfo& moduleInfo, int index);
