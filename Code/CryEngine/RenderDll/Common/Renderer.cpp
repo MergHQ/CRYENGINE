@@ -1713,7 +1713,7 @@ void CRenderer::EF_ADDDlight(CDLight* Source, const SRenderingPassInfo& passInfo
 		return;
 	}
 
-	passInfo.GetRenderView()->AddDynamicLight(*Source);
+	Source->m_Id = passInfo.GetRenderView()->AddDynamicLight(*Source);
 
 	EF_PrecacheResource(Source, (passInfo.GetCamera().GetPosition() - Source->m_Origin).GetLengthSquared() / max(0.001f, Source->m_fRadius * Source->m_fRadius), 0.1f, 0, 0);
 

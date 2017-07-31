@@ -246,7 +246,7 @@ float CTexPoolAtlas::_GetDebugUsage() const
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-uint32 CDeferredShading::AddLight(const CDLight& pDL, float fMult, const SRenderingPassInfo& passInfo)
+RenderLightIndex CDeferredShading::AddLight(const CDLight& pDL, float fMult, const SRenderingPassInfo& passInfo)
 {
 	const uint32 nThreadID = gcpRendD3D->m_RP.m_nFillThreadID;
 
@@ -275,14 +275,14 @@ uint32 CDeferredShading::AddLight(const CDLight& pDL, float fMult, const SRender
 
 	SRenderLight* pAddedLight = nullptr;
 
-	const int32 lightsNum = passInfo.GetRenderView()->GetLightsCount(LightType);
-	int idx = -1;
+	const RenderLightIndex lightsNum = passInfo.GetRenderView()->GetLightsCount(LightType);
+	RenderLightIndex nLightId = -1;
 
 	if (CRenderer::CV_r_DeferredShadingSortLights == 1 && bSort && lightsNum)
 	{
-		int endPoint = lightsNum - 1;
-		int midPoint = 0;
-		int startPoint = 0;
+		RenderLightIndex endPoint = lightsNum - 1;
+		RenderLightIndex midPoint = 0;
+		RenderLightIndex startPoint = 0;
 
 		uint32 lightArea = pDL.m_sWidth * pDL.m_sHeight;
 
@@ -290,7 +290,7 @@ uint32 CDeferredShading::AddLight(const CDLight& pDL, float fMult, const SRender
 		{
 			midPoint = (endPoint + startPoint) / 2;
 
-			SRenderLight& compareLight = passInfo.GetRenderView()->GetLight(LightType, midPoint);
+			const SRenderLight& compareLight = passInfo.GetRenderView()->GetLight(LightType, midPoint);
 			uint32 compareLightArea = compareLight.m_sWidth * compareLight.m_sHeight;
 
 			if (lightArea < compareLightArea)
@@ -305,16 +305,16 @@ uint32 CDeferredShading::AddLight(const CDLight& pDL, float fMult, const SRender
 
 		if (startPoint < lightsNum)
 		{
-			idx = startPoint;
 			pAddedLight = passInfo.GetRenderView()->AddLightAtIndex(LightType, pDL, startPoint);
+			nLightId = startPoint /* => pAddedLight->m_Id */;
 			bAppend = false;
 		}
 	}
 
 	if (bAppend)
 	{
-		pAddedLight = passInfo.GetRenderView()->AddLightAtIndex(LightType, pDL, -1);
-		idx = passInfo.GetRenderView()->GetLightsCount(LightType) - 1;
+		pAddedLight = passInfo.GetRenderView()->AddLightAtIndex(LightType, pDL);
+		nLightId = pAddedLight->m_Id;
 	}
 
 	IF_LIKELY ((pDL.m_Flags & (DLF_DEFERRED_CUBEMAPS | DLF_AMBIENT)) == 0)
@@ -332,9 +332,9 @@ uint32 CDeferredShading::AddLight(const CDLight& pDL, float fMult, const SRender
 		pAddedLight->m_Color.a = fMult; // store fade-out constant separately in alpha channel for deferred cubemaps
 	}
 
-	gcpRendD3D->EF_CheckLightMaterial(const_cast<CDLight*>(&pDL), idx, passInfo);
+	gcpRendD3D->EF_CheckLightMaterial(const_cast<CDLight*>(&pDL), nLightId, passInfo);
 
-	return idx;
+	return nLightId;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1426,7 +1426,7 @@ void CDeferredShading::PrepareClipVolumeData(bool& bOutdoorVisible)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CDeferredShading::AmbientPass(SRenderLight* pGlobalCubemap, bool& bOutdoorVisible)
+bool CDeferredShading::AmbientPass(const SRenderLight* pGlobalCubemap, bool& bOutdoorVisible)
 {
 	PROFILE_FRAME(CDeferredShading_AmbientPass);
 	PROFILE_LABEL_SCOPE("AMBIENT_PASS");
@@ -1601,16 +1601,21 @@ bool CDeferredShading::AmbientPass(SRenderLight* pGlobalCubemap, bool& bOutdoorV
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeferredShading::DeferredCubemaps(const RenderLightsArray& rCubemaps, const uint32 nStartIndex /* = 0 */)
+void CDeferredShading::DeferredCubemaps(const RenderLightsList& rCubemaps, uint32 nStartIndex /* = 0 */)
 {
 	if (nStartIndex < rCubemaps.size() && CRenderer::CV_r_DeferredShadingEnvProbes)
 	{
 		// apply deferred cubemaps first
 		PROFILE_LABEL_SCOPE("DEFERRED_CUBEMAPS");
 
-		for (uint32 nCurrentCubemap = nStartIndex; nCurrentCubemap < rCubemaps.size(); ++nCurrentCubemap)
+		auto stp = rCubemaps.end();
+		auto itr = rCubemaps.begin();
+		while (--nStartIndex >= 0)
+			++itr;
+		while (itr != stp)
 		{
-			const SRenderLight& pDL = rCubemaps[nCurrentCubemap];
+			const SRenderLight& pDL = *itr;
+			++itr;
 			if (pDL.m_Flags & (DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY))
 				continue;
 			DeferredCubemapPass(&pDL);
@@ -2064,7 +2069,7 @@ void CDeferredShading::DeferredShadingPass()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeferredShading::DeferredLights(RenderLightsArray& rLights, bool bCastShadows)
+void CDeferredShading::DeferredLights(RenderLightsList& rLights, bool bCastShadows)
 {
 	if (rLights.size())
 	{
@@ -2075,9 +2080,11 @@ void CDeferredShading::DeferredLights(RenderLightsArray& rLights, bool bCastShad
 			PackAllShadowFrustums(false);
 		}
 
-		for (uint32 nCurrentLight = 0; nCurrentLight < rLights.size(); ++nCurrentLight)
+		auto stp = rLights.end();
+		auto itr = rLights.begin();
+		for (; itr != stp; ++itr)
 		{
-			const SRenderLight& pDL = rLights[nCurrentLight];
+			const SRenderLight& pDL = *itr;
 			if (pDL.m_Flags & (DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY))
 				continue;
 
@@ -2105,7 +2112,7 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop)
 
 	static ICVar* p_e_ShadowsPoolSize = iConsole->GetCVar("e_ShadowsPoolSize");
 
-	RenderLightsArray& arrLights = m_pCurrentRenderView->GetLightsArray(eDLT_DeferredLight);
+	RenderLightsList& arrLights = m_pCurrentRenderView->GetLightsArray(eDLT_DeferredLight);
 
 #ifndef _RELEASE
 	rd->m_RP.m_PS[m_nThreadID].m_NumShadowPoolFrustums = 0;
@@ -2134,12 +2141,20 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop)
 
 	bool bShadowRendered = false;
 
+	auto nLightId = 0;
+	auto itrStop = arrLights.end();
+	auto itrCurr = arrLights.begin();
+
 	// light pass here
 	if (!bPreLoop)
 	{
-		for (uint nLightPacked = m_nFirstCandidateShadowPoolLight; nLightPacked < m_nCurrentShadowPoolLight; ++nLightPacked)
+		nLightId = m_nFirstCandidateShadowPoolLight;
+		while (--nLightId >= 0)
+			++itrCurr;
+
+		for (uint nLightPacked = m_nFirstCandidateShadowPoolLight; nLightPacked < m_nCurrentShadowPoolLight; ++itrCurr, ++nLightPacked)
 		{
-			const SRenderLight& rLight = arrLights[nLightPacked];
+			const SRenderLight& rLight = *itrCurr;
 			if (rLight.m_Flags & DLF_FAKE)
 				continue;
 			ShadowLightPasses(rLight, nLightPacked);
@@ -2148,17 +2163,16 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop)
 
 	// TODO: Sort lights so allocated ones are rendered first to reduce impact of a thrash
 
-	while (m_nCurrentShadowPoolLight < arrLights.size()) //pre-loop to avoid 0.5 ms restore/resolve
+	for (; itrCurr != itrStop; ++itrCurr) //pre-loop to avoid 0.5 ms restore/resolve
 	{
-		SRenderLight& rLight = arrLights[m_nCurrentShadowPoolLight];
+		const SRenderLight& rLight = *itrCurr;
 		if (!(rLight.m_Flags & DLF_DIRECTIONAL) && (rLight.m_Flags & DLF_CASTSHADOW_MAPS))
-		{
 			break;
-		}
-		m_nCurrentShadowPoolLight++;
+
+		++m_nCurrentShadowPoolLight;
 	}
 
-	if (bPreLoop && m_nCurrentShadowPoolLight < arrLights.size()) // Shadow allocation tick, free old shadows.
+	if (bPreLoop && (itrCurr != itrStop)) // Shadow allocation tick, free old shadows.
 	{
 		uint32 nAllocs = m_shadowPoolAlloc.Num();
 		for (uint32 i = 0; i < nAllocs; i++)
@@ -2174,66 +2188,73 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop)
 		}
 	}
 
-	while (m_nCurrentShadowPoolLight < arrLights.size() && (!bPreLoop || !bShadowRendered))
+	if (!bPreLoop || !bShadowRendered)
 	{
-		m_nFirstCandidateShadowPoolLight = m_nCurrentShadowPoolLight;
-
-		// init before shadowgen
-		SetupPasses();
-		rd->FX_ResetPipe();
-		rd->EF_Scissor(false, 0, 0, 0, 0);
-		rd->SetDepthBoundTest(0.0f, 1.0f, false);
-
+		while (itrCurr != itrStop)
 		{
+			auto itrNext = itrCurr;
+			m_nFirstCandidateShadowPoolLight = m_nCurrentShadowPoolLight;
 
-			if (!bPreLoop)
-				ResolveCurrentBuffers();
+			// init before shadowgen
+			SetupPasses();
+			rd->FX_ResetPipe();
+			rd->EF_Scissor(false, 0, 0, 0, 0);
+			rd->SetDepthBoundTest(0.0f, 1.0f, false);
 
-			while (m_nCurrentShadowPoolLight < arrLights.size())
 			{
-				SRenderLight& rLight = arrLights[m_nCurrentShadowPoolLight];
 
-				if (!(rLight.m_Flags & (DLF_DIRECTIONAL | DLF_FAKE)) && (rLight.m_Flags & DLF_CASTSHADOW_MAPS))
+				if (!bPreLoop)
+					ResolveCurrentBuffers();
+
+				while (itrNext != itrStop)
 				{
-
-					bool bPacked = PackToPool(&m_blockPack, rLight, m_nCurrentShadowPoolLight, m_nFirstCandidateShadowPoolLight, m_bClearPool);
-					m_bClearPool = !bPacked;
-					if (!bPacked)
+					SRenderLight& rLight = *itrNext;
+					if (!(rLight.m_Flags & (DLF_DIRECTIONAL | DLF_FAKE)) && (rLight.m_Flags & DLF_CASTSHADOW_MAPS))
 					{
-						break;
+
+						bool bPacked = PackToPool(&m_blockPack, rLight, m_nCurrentShadowPoolLight, m_nFirstCandidateShadowPoolLight, m_bClearPool);
+						m_bClearPool = !bPacked;
+						if (!bPacked)
+						{
+							break;
+						}
+					}
+					bShadowRendered = true;
+
+					++m_nCurrentShadowPoolLight;
+					++itrNext;
+				}
+
+	#ifndef _RELEASE
+				{
+					uint32 nAllocs = m_shadowPoolAlloc.Num();
+					for (uint32 i = 0; i < nAllocs; i++)
+					{
+						if (!m_shadowPoolAlloc[i].isFree())
+						{
+							rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_NumShadowPoolFrustums++;
+						}
 					}
 				}
-				++m_nCurrentShadowPoolLight;
-				bShadowRendered = true;
+	#endif
 			}
 
-#ifndef _RELEASE
+			if (!bPreLoop && bShadowRendered)
 			{
-				uint32 nAllocs = m_shadowPoolAlloc.Num();
-				for (uint32 i = 0; i < nAllocs; i++)
+				RestoreCurrentBuffers();
+
+				//insert light pass here
+				for (uint nLightPacked = m_nFirstCandidateShadowPoolLight; itrCurr != itrNext; ++itrCurr, ++nLightPacked)
 				{
-					if (!m_shadowPoolAlloc[i].isFree())
-					{
-						rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_NumShadowPoolFrustums++;
-					}
+					const SRenderLight& rLight = *itrCurr;
+					if (rLight.m_Flags & DLF_FAKE)
+						continue;
+
+					ShadowLightPasses(rLight, nLightPacked);
 				}
 			}
-#endif
-		}
 
-		if (!bPreLoop && bShadowRendered)
-		{
-			RestoreCurrentBuffers();
-
-			//insert light pass here
-			for (uint nLightPacked = m_nFirstCandidateShadowPoolLight; nLightPacked < m_nCurrentShadowPoolLight; ++nLightPacked)
-			{
-				const SRenderLight& rLight = arrLights[nLightPacked];
-				if (rLight.m_Flags & DLF_FAKE)
-					continue;
-
-				ShadowLightPasses(rLight, nLightPacked);
-			}
+			itrCurr = itrNext;
 		}
 	}
 
@@ -2869,10 +2890,11 @@ void CDeferredShading::Render(CRenderView* pRenderView)
 	// sort lights
 	if (rDeferredCubemaps.size())
 	{
+		// does not invalidate references or iterators, but invalidates all m_Id in the lights
 		if (CRenderer::CV_r_DeferredShadingTiled <= 1)
-			std::sort(rDeferredCubemaps.begin(), rDeferredCubemaps.end(), CubemapsCompare());
+			rDeferredCubemaps.sort(CubemapsCompare());
 		else
-			std::sort(rDeferredCubemaps.begin(), rDeferredCubemaps.end(), CubemapsCompareInv());
+			rDeferredCubemaps.sort(CubemapsCompareInv());
 	}
 
 	// Process deferred direct lighting accumulation
@@ -2908,7 +2930,7 @@ void CDeferredShading::Render(CRenderView* pRenderView)
 	SRenderLight* pGlobalCubemap = NULL;
 	if (rDeferredCubemaps.size() && CRenderer::CV_r_DeferredShadingEnvProbes)
 	{
-		SRenderLight& pFirstLight = rDeferredCubemaps[0];
+		SRenderLight& pFirstLight = *rDeferredCubemaps.begin();
 		ITexture* pDiffuseCubeCheck = pFirstLight.GetDiffuseCubemap();
 		float fRadius = pFirstLight.m_fRadius;
 
@@ -2992,7 +3014,8 @@ void CDeferredShading::Render(CRenderView* pRenderView)
 		if (CRenderer::CV_r_DeferredShadingTiled == 1)
 		{
 			// Sort cubemaps in inverse order for tiled forward shading
-			std::sort(rDeferredCubemaps.begin(), rDeferredCubemaps.end(), CubemapsCompareInv());
+			// does not invalidate references or iterators, but invalidates all m_Id in the lights
+			rDeferredCubemaps.sort(CubemapsCompareInv());
 
 			gcpRendD3D->GetTiledShading().Render(pRenderView, m_vClipVolumeParams);
 		}
@@ -3200,7 +3223,7 @@ void CDeferredShading::DebugGBuffer()
 int CRenderer::EF_AddDeferredLight(const CDLight& pLight, float fMult, const SRenderingPassInfo& passInfo)
 {
 	CDeferredShading& pDS = CDeferredShading::Instance();
-	int nLightID = pDS.AddLight(pLight, fMult, passInfo);
+	RenderLightIndex nLightID = pDS.AddLight(pLight, fMult, passInfo);
 
 	int nThreadID = m_RP.m_nFillThreadID;
 	float mipFactor = (m_RP.m_TI[nThreadID].m_cam.GetPosition() - pLight.m_Origin).GetLengthSquared() / max(0.001f, pLight.m_fRadius * pLight.m_fRadius);

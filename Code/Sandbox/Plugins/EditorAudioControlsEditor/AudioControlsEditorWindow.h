@@ -61,7 +61,7 @@ private:
 	CAudioAssetsExplorer*                               m_pExplorer;
 	CInspectorPanel*                                    m_pInspectorPanel;
 	CAudioSystemPanel*                                  m_pAudioSystemPanel;
-	CAudioFileMonitor*                                  m_pMonitor;
+	std::unique_ptr<CAudioFileMonitor>                  m_pMonitor;
 	bool                                                m_allowedTypes[EItemType::eItemType_NumTypes];
 
 	QSplitter* m_pSplitter;

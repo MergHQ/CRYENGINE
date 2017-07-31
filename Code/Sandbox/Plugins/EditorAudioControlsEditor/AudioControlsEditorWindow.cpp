@@ -99,7 +99,7 @@ private:
 CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 {
 	memset(m_allowedTypes, true, sizeof(m_allowedTypes));
-	m_pMonitor = new CAudioFileMonitor(this);
+	m_pMonitor = std::make_unique<ACE::CAudioFileMonitor>(this);
 
 	setWindowTitle(tr("Audio Controls Editor"));
 	resize(972, 674);
@@ -199,6 +199,7 @@ CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 	GetIEditor()->UnregisterNotifyListener(this);
 	CAudioControlsEditorPlugin::signalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -504,9 +504,9 @@ int CFunctionSerializationHelper::CFunctionList::SerializeGUID(
 	const int oldFunctionIdx)
 {
 	const bool bIsNpos = (oldFunctionIdx == CFunctionSerializationHelper::npos);
-	const CryGUID oldGUID = bIsNpos ? CryGUID::Null() : m_functions[oldFunctionIdx].guid;
+	const string oldPrettyName = bIsNpos ? "" : m_functions[oldFunctionIdx].prettyName;
 
-	const CKeyValueStringList<CryGUID>::SSerializeResult serializeResult = m_functionsGuidList.Serialize(archive, szName, szLabel, oldGUID, nullptr, &validatorKey);
+	const CKeyValueStringList<CryGUID>::SSerializeResult serializeResult = m_functionsGuidList.SerializeByLabelForDisplayInDropDownList(archive, szName, szLabel, &validatorKey, oldPrettyName);
 	const int newFunctionIdx = serializeResult.newIndex - 1;	// careful: could become -2 if the drop-down-list has no entries ("I GUESS"!)
 	const bool bChanged = newFunctionIdx != oldFunctionIdx;
 
@@ -1774,7 +1774,7 @@ bool CGeneratorBlueprint::SerializeGUID(Serialization::IArchive& archive, const 
 	{
 		CKeyValueStringList<CryGUID> generatorGuidList;
 		generatorGuidList.FillFromFactoryDatabase(UQS::Core::IHubPlugin::GetHub().GetGeneratorFactoryDatabase(), true);
-		generatorGuidList.Serialize(archive, szName, szLabel, oldGeneratorGUID, setGUID);
+		generatorGuidList.SerializeByData(archive, szName, szLabel, oldGeneratorGUID, setGUID);
 	}
 	else
 	{
@@ -2245,7 +2245,7 @@ bool CEvaluator::SerializeEvaluatorGUID(Serialization::IArchive& archive, const 
 		CKeyValueStringList<CryGUID> evaluatorGuidList;
 		evaluatorGuidList.FillFromFactoryDatabase(UQS::Core::IHubPlugin::GetHub().GetInstantEvaluatorFactoryDatabase(), true);
 		evaluatorGuidList.FillFromFactoryDatabase(UQS::Core::IHubPlugin::GetHub().GetDeferredEvaluatorFactoryDatabase(), false);
-		evaluatorGuidList.Serialize(archive, szName, szLabel, oldGUID, setGUID);
+		evaluatorGuidList.SerializeByData(archive, szName, szLabel, oldGUID, setGUID);
 	}
 	else
 	{
@@ -2266,7 +2266,7 @@ void CEvaluator::SerializeScoreTransformGUID(Serialization::IArchive& archive, c
 	{
 		CKeyValueStringList<CryGUID> scoreTransformsList;
 		scoreTransformsList.FillFromFactoryDatabase(UQS::Core::IHubPlugin::GetHub().GetScoreTransformFactoryDatabase(), true);
-		scoreTransformsList.Serialize(archive, szName, szLabel, oldScoreTransformGUID, setScoreTransformGUID);
+		scoreTransformsList.SerializeByData(archive, szName, szLabel, oldScoreTransformGUID, setScoreTransformGUID);
 	}
 	else
 	{
@@ -2515,7 +2515,7 @@ bool SQueryFactoryType::Serialize(Serialization::IArchive& archive, const char* 
 	{
 		CKeyValueStringList<CryGUID> queryGuidList;
 		queryGuidList.FillFromFactoryDatabase(UQS::Core::IHubPlugin::GetHub().GetQueryFactoryDatabase(), true);
-		queryGuidList.Serialize(archive, szName, szLabel, oldGUID, setGUID);
+		queryGuidList.SerializeByData(archive, szName, szLabel, oldGUID, setGUID);
 	}
 	else
 	{

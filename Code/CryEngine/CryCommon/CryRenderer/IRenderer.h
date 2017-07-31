@@ -1540,13 +1540,13 @@ struct IRenderView : public CMultiThreadRefCount
 
 	//////////////////////////////////////////////////////////////////////////
 	// Access to dynamic lights
-	virtual void          AddDynamicLight(SRenderLight& light) = 0;
-	virtual int           GetDynamicLightsCount() const = 0;
-	virtual SRenderLight& GetDynamicLight(int nLightId) = 0;
+	virtual RenderLightIndex AddDynamicLight(const SRenderLight& light) = 0;
+	virtual RenderLightIndex GetDynamicLightsCount() const = 0;
+	virtual SRenderLight&    GetDynamicLight(RenderLightIndex nLightId) = 0;
 
-	virtual void          AddLight(eDeferredLightType lightType, SRenderLight& light) = 0;
-	virtual int           GetLightsCount(eDeferredLightType lightType) const = 0;
-	virtual SRenderLight& GetLight(eDeferredLightType lightType, int nLightId) = 0;
+	virtual RenderLightIndex AddLight(eDeferredLightType lightType, const SRenderLight& light) = 0;
+	virtual RenderLightIndex GetLightsCount(eDeferredLightType lightType) const = 0;
+	virtual SRenderLight&    GetLight(eDeferredLightType lightType, RenderLightIndex nLightId) = 0;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

@@ -13,6 +13,8 @@ void CPlayerComponent::Initialize()
 	
 	// The character controller is responsible for maintaining player physics
 	m_pCharacterController = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCharacterControllerComponent>();
+	// Offset the default character controller up by one unit
+	m_pCharacterController->SetTransformMatrix(Matrix34::Create(Vec3(1.f), IDENTITY, Vec3(0, 0, 1.f)));
 
 	// Create the advanced animation component, responsible for updating Mannequin and animating the player
 	m_pAnimationComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CAdvancedAnimationComponent>();

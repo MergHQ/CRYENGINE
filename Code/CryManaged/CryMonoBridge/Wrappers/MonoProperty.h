@@ -23,6 +23,7 @@ public:
 
 	std::shared_ptr<CMonoObject> Get(MonoInternals::MonoObject* pObject, bool &bEncounteredException) const;
 	void Set(MonoInternals::MonoObject* pObject, MonoInternals::MonoObject* pValue, bool &bEncounteredException) const;
+	void Set(MonoInternals::MonoObject* pObject, void** pParams, bool &bEncounteredException) const;
 	
 	MonoInternals::MonoProperty* GetHandle() const { return m_pProperty; }
 

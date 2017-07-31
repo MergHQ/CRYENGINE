@@ -2422,7 +2422,8 @@ struct SRenderLight
 	IClipVolume*         m_pClipVolumes[2];
 };
 
-typedef std::vector<SRenderLight> RenderLightsArray;
+typedef std::list<SRenderLight> RenderLightsList;
+typedef int16 RenderLightIndex;
 
 //////////////////////////////////////////////////////////////////////
 class CDLight : public SRenderLight

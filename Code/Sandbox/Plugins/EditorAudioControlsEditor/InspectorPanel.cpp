@@ -19,6 +19,7 @@ using namespace QtUtil;
 
 namespace ACE
 {
+//////////////////////////////////////////////////////////////////////////
 CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 {
@@ -35,7 +36,7 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 
 	pMainLayout->addWidget(m_pPropertyTree);
 
-	m_pUsageHint.reset(new QString(tr("Select an audio control from the left pane to see its properties!")));
+	m_pUsageHint = std::make_unique<QString>(tr("Select an audio control from the left pane to see its properties!"));
 
 	m_pConnectionsLabel = new QLabel(*m_pUsageHint);
 	m_pConnectionsLabel->setObjectName("ConnectionsTitle");
@@ -53,6 +54,7 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 			m_pPropertyTree->revert();
 		}
 	};
+
 	pAssetsManager->signalItemAdded.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalItemRemoved.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalControlModified.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
@@ -72,13 +74,18 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 	  });
 }
 
+//////////////////////////////////////////////////////////////////////////
 CInspectorPanel::~CInspectorPanel()
 {
 	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CInspectorPanel::Reload()
 {
 	m_pConnectionList->Reload();

@@ -416,20 +416,23 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 	ZeroMemory(tileLightsCull, sizeof(STiledLightCullInfo) * MaxNumTileLights);
 	ZeroMemory(tileLightsShade, sizeof(STiledLightShadeInfo) * MaxNumTileLights);
 
-	const RenderLightsArray* lightLists[3] = {
+	const uint32 lightArraySize = 3;
+	const RenderLightsList* lightLists[3] = {
 		CRenderer::CV_r_DeferredShadingEnvProbes ? &envProbes : NULL,
 		CRenderer::CV_r_DeferredShadingAmbientLights ? &ambientLights : NULL,
 		CRenderer::CV_r_DeferredShadingLights ? &defLights : NULL
 	};
 
-	for (uint32 lightListIdx = 0; lightListIdx < 3; ++lightListIdx)
+	for (uint32 lightListIdx = 0; lightListIdx < lightArraySize; ++lightListIdx)
 	{
 		if (lightLists[lightListIdx] == NULL)
 			continue;
 
-		for (uint32 lightIdx = 0, lightListSize = lightLists[lightListIdx]->size(); lightIdx < lightListSize; ++lightIdx)
+		auto stp = lightLists[lightListIdx]->end();
+		auto itr = lightLists[lightListIdx]->begin();
+		for (uint32 lightIdx = 0; itr != stp; ++itr, ++lightIdx)
 		{
-			const SRenderLight& renderLight = (*lightLists[lightListIdx])[lightIdx];
+			const SRenderLight& renderLight = *itr;
 			STiledLightInfo& lightInfo = m_tileLights[numTileLights];
 			STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
 

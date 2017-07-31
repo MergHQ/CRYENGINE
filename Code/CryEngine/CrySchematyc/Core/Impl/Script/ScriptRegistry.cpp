@@ -819,6 +819,8 @@ IScriptElement* CScriptRegistry::RestoreUndo(const XmlNodeRef& input, IScriptEle
 			inputBlock.rootElement.instance->SetScript(pSharedScript.get());
 
 			ProcessInputBlocks(inputBlocks, *m_pRoot, EScriptEventId::FileReload);
+			CCore::GetInstance().GetCompiler().CompileDependencies(pSharedScript->GetRoot()->GetGUID());
+
 			return pSharedScript->GetRoot();
 		}
 	}

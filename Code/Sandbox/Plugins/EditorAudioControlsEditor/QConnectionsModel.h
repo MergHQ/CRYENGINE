@@ -18,7 +18,10 @@ class IAudioSystemEditor;
 class QConnectionModel : public QAbstractItemModel
 {
 public:
+
 	QConnectionModel();
+	virtual ~QConnectionModel() override;
+
 	void Init(CAudioControl* pControl);
 
 	enum EConnectionModelRoles
@@ -33,8 +36,7 @@ public:
 		eConnectionModelColumns_Size,
 	};
 
-	//////////////////////////////////////////////////////////
-	// QAbstractTableModel implementation
+	// QAbstractTableModel
 	virtual int             rowCount(const QModelIndex& parent) const override;
 	virtual int             columnCount(const QModelIndex& parent) const override;
 	virtual QVariant        data(const QModelIndex& index, int role) const override;
@@ -47,7 +49,7 @@ public:
 	virtual bool            dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
 	virtual Qt::DropActions supportedDropActions() const override;
 	virtual bool            setData(const QModelIndex& index, const QVariant& value, int role) override;
-	//////////////////////////////////////////////////////////
+	// ~QAbstractTableModel
 
 private:
 
@@ -59,5 +61,4 @@ private:
 	std::vector<ConnectionPtr> m_connectionsCache;
 	std::vector<QString>       m_platformNames;
 };
-
-}
+} // namespace ACE

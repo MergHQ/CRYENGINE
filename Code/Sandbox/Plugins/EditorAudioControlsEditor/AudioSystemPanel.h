@@ -20,6 +20,8 @@ class CAudioSystemPanel final : public QFrame
 public:
 
 	CAudioSystemPanel();
+	virtual ~CAudioSystemPanel() override;
+
 	void SetAllowedControls(EItemType type, bool bAllowed);
 	void Reset();
 

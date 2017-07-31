@@ -16,10 +16,13 @@
 #include <CrySchematyc/Services/IUpdateScheduler.h>
 #include <CrySchematyc/Utils/Assert.h>
 #include <CrySchematyc/Utils/STLUtils.h>
+#include <CrySchematyc/Script/IScriptElement.h>
 
 #include "Core.h"
 #include "CVars.h"
 #include "CoreEnv/CoreEnvSignals.h"
+#include "Script/ScriptRegistry.h"
+#include "Script/Script.h"
 #include "Runtime/RuntimeRegistry.h"
 
 #include <CryEntitySystem/IEntitySystem.h>
@@ -104,6 +107,22 @@ const IRuntimeClass& CObject::GetClass() const
 {
 	CRY_ASSERT_MESSAGE(m_pClass, "Runtime class of Schematyc Object must be not null.");
 	return *m_pClass;
+}
+
+const char* CObject::GetScriptFile() const
+{
+	const IScriptElement* pElement = CCore::GetInstance().GetScriptRegistry().GetElement(m_pClass->GetGUID());
+	CRY_ASSERT_MESSAGE(pElement, "Script Element not found!");
+	if (pElement && pElement->GetType() == EScriptElementType::Class || pElement->GetType() == EScriptElementType::Module)
+	{
+		const IScript* pScript = pElement->GetScript();
+		CRY_ASSERT_MESSAGE(pScript, "Script Element doesn't have a script.");
+		if (pScript)
+		{
+			return pScript->GetFilePath() + sizeof("assets");
+		}
+	}
+	return nullptr;
 }
 
 void* CObject::GetCustomData() const
@@ -615,7 +634,7 @@ bool CObject::CreateComponents()
 
 		// Now initialize all the components
 		// This is done in a separate iteration step from adding in order to allow components to query each other in the Initialize call.
-		for(const SComponent& component : m_components)
+		for (const SComponent& component : m_components)
 		{
 			component.pComponent->Initialize();
 		}

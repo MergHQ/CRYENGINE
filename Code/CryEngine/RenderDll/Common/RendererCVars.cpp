@@ -1878,9 +1878,9 @@ void CRendererCVars::InitCVars()
 	                                             "Usage: r_ShowDynTexturesFilter start*\n"
 	                                             "Default is *. Set to 'pattern' to show only specific textures (activate r_ShowDynTextures)");
 
-	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "0.0.0.0", VF_NULL,
-	                                            "Usage: r_ShaderCompilerServer localhost \n"
-	                                            "Default is 0.0.0.0 ");
+	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "localhost", VF_NULL,
+	                                            "Usage: r_ShaderCompilerServer <ip;ip;ip;...> \n"
+	                                            "Default is localhost ");
 																							
 	CV_r_ShaderCompilerFolderName = REGISTER_STRING("r_ShaderCompilerFolderName", "", VF_NULL,
 	                                             "Usage: r_ShaderCompilerFolderName foldername \n"

@@ -151,6 +151,7 @@ struct IObject
 
 	virtual ObjectId                      GetId() const = 0;
 	virtual const IRuntimeClass&          GetClass() const = 0;
+	virtual const char*                   GetScriptFile() const = 0;
 	virtual void*                         GetCustomData() const = 0;
 	virtual ESimulationMode               GetSimulationMode() const = 0;
 

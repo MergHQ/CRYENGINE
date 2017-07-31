@@ -31,7 +31,7 @@
 
 namespace ACE
 {
-
+//////////////////////////////////////////////////////////////////////////
 QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 	: QWidget(pParent)
 	, m_pControl(nullptr)
@@ -105,21 +105,30 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 			  m_pConnectionsView->selectionModel()->clear();
 			  RefreshConnectionProperties();
 			}
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
 			m_pConnectionsView->selectionModel()->clear();
 			RefreshConnectionProperties();
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
 
 }
 
+//////////////////////////////////////////////////////////////////////////
+QConnectionsWidget::~QConnectionsWidget()
+{
+	CAudioControlsEditorPlugin::GetAssetsManager()->signalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+}
+
+//////////////////////////////////////////////////////////////////////////
 void QConnectionsWidget::Init()
 {
 	connect(m_pConnectionsView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &QConnectionsWidget::RefreshConnectionProperties);
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool QConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if (pEvent->type() == QEvent::KeyPress)
@@ -134,6 +143,7 @@ bool QConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 	return QWidget::eventFilter(pObject, pEvent);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void QConnectionsWidget::RemoveSelectedConnection()
 {
 	if (m_pControl)
@@ -147,7 +157,7 @@ void QConnectionsWidget::RemoveSelectedConnection()
 			QString text;
 			if (size == 1)
 			{
-				text = "Are you sure you want to delete the connection between \"" + QtUtil::ToQString(m_pControl->GetName()) + "\" and \"" + selectedIndices[0].data(Qt::DisplayRole).toString() + "\"?";
+				text = R"(Are you sure you want to delete the connection between ")" + QtUtil::ToQString(m_pControl->GetName()) + R"(" and ")" + selectedIndices[0].data(Qt::DisplayRole).toString() + R"("?)";
 			}
 			else
 			{
@@ -181,6 +191,7 @@ void QConnectionsWidget::RemoveSelectedConnection()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void QConnectionsWidget::SetControl(CAudioControl* pControl)
 {
 	if (m_pControl != pControl)
@@ -190,6 +201,7 @@ void QConnectionsWidget::SetControl(CAudioControl* pControl)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void QConnectionsWidget::Reload()
 {
 	m_pConnectionModel->Init(m_pControl);
@@ -198,6 +210,7 @@ void QConnectionsWidget::Reload()
 	RefreshConnectionProperties();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void QConnectionsWidget::RefreshConnectionProperties()
 {
 	ConnectionPtr pConnection;
@@ -226,5 +239,4 @@ void QConnectionsWidget::RefreshConnectionProperties()
 		m_pConnectionPropertiesFrame->setHidden(true);
 	}
 }
-
 } // namespace ACE
