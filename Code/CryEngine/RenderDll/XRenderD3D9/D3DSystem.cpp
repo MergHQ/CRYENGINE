@@ -197,8 +197,11 @@ bool CD3D9Renderer::DeleteContext(WIN_HWND hWnd)
 		}
 	}
 
+	if (!m_RContexts[i]->m_pBackBuffers.empty())
+	{
+		ReleaseBackBuffers(m_RContexts[i]);
+	}
 	SAFE_RELEASE(m_RContexts[i]->m_pSwapChain);
-
 	SAFE_RELEASE(m_RContexts[i]->m_pHDRTargetTex);
 
 	delete m_RContexts[i];
