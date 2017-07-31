@@ -41,7 +41,11 @@ std::shared_ptr<CMonoObject> CMonoProperty::Get(MonoInternals::MonoObject* pObje
 void CMonoProperty::Set(MonoInternals::MonoObject* pObject, MonoInternals::MonoObject* pValue, bool &bEncounteredException) const
 {
 	void* pParams[1] = { pValue };
+	Set(pObject, pParams, bEncounteredException);
+}
 
+void CMonoProperty::Set(MonoInternals::MonoObject* pObject, void** pParams, bool &bEncounteredException) const
+{
 	MonoInternals::MonoObject* pException = nullptr;
 	mono_property_set_value(m_pProperty, pObject, pParams, &pException);
 	bEncounteredException = pException != nullptr;

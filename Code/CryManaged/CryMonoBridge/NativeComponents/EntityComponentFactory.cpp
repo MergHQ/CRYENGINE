@@ -215,8 +215,11 @@ static bool SerializePrimitive(Serialization::IArchive& archive, const CMonoProp
 
 	if (archive.isInput())
 	{
+		void* pParams[1];
+		pParams[0] = &value;
+
 		bool bEncounteredException;
-		pProperty->Set(pObject, MonoInternals::mono_value_box(MonoInternals::mono_domain_get(), pClass, &value), bEncounteredException);
+		pProperty->Set(pObject, pParams, bEncounteredException);
 
 		return !bEncounteredException;
 	}
