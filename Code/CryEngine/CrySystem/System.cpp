@@ -3385,7 +3385,6 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "i_mouse_scroll_coordinate_origin out of range");
 					break;
 				}
-				CryLogAlways("Scroll coordinates: %d %d", x, y);
 			}
 			break;
 		}
