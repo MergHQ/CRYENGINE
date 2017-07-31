@@ -19,7 +19,7 @@ template<typename F> struct Quat_tpl
 	using NV::Normalize;
 
 	ILINE Quat_tpl() {}
-	ILINE Quat_tpl(type_zero) : NV(ZERO) {}
+	ILINE Quat_tpl(type_zero) { NV::SetZero(); }
 	ILINE Quat_tpl(type_identity): v(0), w(1) {}
 	template<class F2> ILINE Quat_tpl(const Quat_tpl<F2> &q) { NV::Set(q); }
 
@@ -701,14 +701,8 @@ template<typename F> struct QuatT_tpl
 	ILINE QuatT_tpl(){}
 
 	//! Initialize with zeros.
-	ILINE QuatT_tpl(type_zero)
-	{
-		q.w = 0, q.v.x = 0, q.v.y = 0, q.v.z = 0, t.x = 0, t.y = 0, t.z = 0;
-	}
-	ILINE QuatT_tpl(type_identity)
-	{
-		q.w = 1, q.v.x = 0, q.v.y = 0, q.v.z = 0, t.x = 0, t.y = 0, t.z = 0;
-	}
+	ILINE QuatT_tpl(type_zero) : q(ZERO), t(ZERO) {}
+	ILINE QuatT_tpl(type_identity) : q(IDENTITY), t(ZERO) {}
 
 	ILINE QuatT_tpl(const Vec3_tpl<F>& _t, const Quat_tpl<F>& _q) { q = _q; t = _t; }
 
