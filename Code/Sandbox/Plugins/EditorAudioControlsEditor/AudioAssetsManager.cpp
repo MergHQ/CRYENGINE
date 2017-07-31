@@ -14,6 +14,7 @@
 
 namespace ACE
 {
+//////////////////////////////////////////////////////////////////////////
 uint ItemTypeToIndex(EItemType const type)
 {
 	switch (type)
@@ -41,6 +42,7 @@ uint ItemTypeToIndex(EItemType const type)
 
 CID CAudioAssetsManager::m_nextId = 1;
 
+//////////////////////////////////////////////////////////////////////////
 CAudioAssetsManager::CAudioAssetsManager()
 {
 	ClearDirtyFlags();
@@ -48,24 +50,30 @@ CAudioAssetsManager::CAudioAssetsManager()
 	m_controls.reserve(8192);
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioAssetsManager::~CAudioAssetsManager()
 {
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::signalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	Clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::Initialize()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
 			m_bLoading = true;
 			ClearAllConnections();
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
 			ReloadAllConnections();
 			m_bLoading = false;
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
 		{
@@ -75,9 +83,10 @@ void CAudioAssetsManager::Initialize()
 	CAudioControlsEditorPlugin::signalLoaded.Connect([&]()
 		{
 			m_bLoading = false;
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType type, IAudioAsset* pParent)
 {
 	if (pParent != nullptr && !name.empty())
@@ -118,6 +127,7 @@ CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType 
 	return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 {
 	if (pItem)
@@ -173,6 +183,7 @@ void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioControl* CAudioAssetsManager::GetControlByID(CID id) const
 {
 	for (auto const pControl : m_controls)
@@ -186,6 +197,7 @@ CAudioControl* CAudioAssetsManager::GetControlByID(CID id) const
 	return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ClearScopes()
 {
 	m_scopeMap.clear();
@@ -194,23 +206,27 @@ void CAudioAssetsManager::ClearScopes()
 	m_scopeMap[Utils::GetGlobalScope()] = SScopeInfo("global", false);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::AddScope(string const& name, bool bLocalOnly)
 {
 	string scopeName = name;
 	m_scopeMap[CCrc32::Compute(scopeName.MakeLower())] = SScopeInfo(scopeName, bLocalOnly);
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool CAudioAssetsManager::ScopeExists(string const& name) const
 {
 	string scopeName = name;
 	return m_scopeMap.find(CCrc32::Compute(scopeName.MakeLower())) != m_scopeMap.end();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::GetScopeInfoList(ScopeInfoList& scopeList) const
 {
 	stl::map_to_vector(m_scopeMap, scopeList);
 }
 
+//////////////////////////////////////////////////////////////////////////
 Scope CAudioAssetsManager::GetScope(string const& name) const
 {
 	string scopeName = name;
@@ -218,11 +234,13 @@ Scope CAudioAssetsManager::GetScope(string const& name) const
 	return CCrc32::Compute(scopeName);
 }
 
+//////////////////////////////////////////////////////////////////////////
 SScopeInfo CAudioAssetsManager::GetScopeInfo(Scope id) const
 {
 	return stl::find_in_map(m_scopeMap, id, SScopeInfo());
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::Clear()
 {
 	std::vector<CAudioLibrary*> libraries = m_audioLibraries;
@@ -237,6 +255,7 @@ void CAudioAssetsManager::Clear()
 	ClearDirtyFlags();
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioLibrary* CAudioAssetsManager::CreateLibrary(string const& name)
 {
 	if (!name.empty())
@@ -262,6 +281,7 @@ CAudioLibrary* CAudioAssetsManager::CreateLibrary(string const& name)
 	return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////
 ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(string const& name, IAudioAsset* pParent)
 {
 	if (pParent != nullptr && !name.empty())
@@ -303,31 +323,37 @@ ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(string const& name, IAudioAs
 	return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::OnControlAboutToBeModified(CAudioControl* pControl)
 {
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::OnConnectionAdded(CAudioControl* pControl, IAudioSystemItem* pMiddlewareControl)
 {
 	signalConnectionAdded(pControl);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::OnConnectionRemoved(CAudioControl* pControl, IAudioSystemItem* pMiddlewareControl)
 {
 	signalConnectionRemoved(pControl);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::OnControlModified(CAudioControl* pControl)
 {
 	signalControlModified(pControl);
 	m_bControlTypeModified[ItemTypeToIndex(pControl->GetType())] = true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::SetAssetModified(IAudioAsset* pAsset)
 {
 	m_bControlTypeModified[ItemTypeToIndex(pAsset->GetType())] = true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool CAudioAssetsManager::IsDirty()
 {
 	for (auto const i : m_bControlTypeModified)
@@ -341,11 +367,13 @@ bool CAudioAssetsManager::IsDirty()
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool CAudioAssetsManager::IsTypeDirty(EItemType eType)
 {
 	return m_bControlTypeModified[ItemTypeToIndex(eType)];
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ClearDirtyFlags()
 {
 	for (auto& i : m_bControlTypeModified)
@@ -354,6 +382,7 @@ void CAudioAssetsManager::ClearDirtyFlags()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioControl* CAudioAssetsManager::FindControl(string const& controlName, EItemType const type, IAudioAsset* const pParent) const
 {
 	if (pParent == nullptr)
@@ -384,6 +413,7 @@ CAudioControl* CAudioAssetsManager::FindControl(string const& controlName, EItem
 	return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ClearAllConnections()
 {
 	for (auto const pControl : m_controls)
@@ -395,6 +425,7 @@ void CAudioAssetsManager::ClearAllConnections()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ReloadAllConnections()
 {
 	for (auto const pControl : m_controls)
@@ -407,6 +438,7 @@ void CAudioAssetsManager::ReloadAllConnections()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::MoveItems(IAudioAsset* pParent, std::vector<IAudioAsset*> const& items)
 {
 	if (pParent != nullptr)
@@ -438,6 +470,7 @@ void CAudioAssetsManager::MoveItems(IAudioAsset* pParent, std::vector<IAudioAsse
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::CreateAndConnectImplItems(IAudioSystemItem* pImplItem, IAudioAsset* pParent)
 {
 	signalItemAboutToBeAdded(pParent);
@@ -445,6 +478,7 @@ void CAudioAssetsManager::CreateAndConnectImplItems(IAudioSystemItem* pImplItem,
 	signalItemAdded(pItem);
 }
 
+//////////////////////////////////////////////////////////////////////////
 IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSystemItem* pImplItem, IAudioAsset* pParent)
 {
 	IAudioAsset* pItem = nullptr;
@@ -501,6 +535,7 @@ IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 	return pItem;
 }
 
+//////////////////////////////////////////////////////////////////////////
 namespace Utils
 {
 //////////////////////////////////////////////////////////////////////////
@@ -626,6 +661,5 @@ string const& GetAssetFolder()
 	static string path = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR;
 	return path;
 }
-
 } // namespace Utils
 } // namespace ACE

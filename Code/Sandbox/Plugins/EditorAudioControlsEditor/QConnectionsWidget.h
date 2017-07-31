@@ -17,12 +17,16 @@ class QConnectionModel;
 class QConnectionsWidget : public QWidget
 {
 public:
+
 	QConnectionsWidget(QWidget* pParent = nullptr);
+	virtual ~QConnectionsWidget() override;
+
 	void Init();
 	void SetControl(CAudioControl* pControl);
 	void Reload();
 
 private:
+
 	bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
@@ -33,4 +37,4 @@ private:
 	QConnectionModel*  m_pConnectionModel;
 	QAdvancedTreeView* m_pConnectionsView;
 };
-}
+} // namespace ACE

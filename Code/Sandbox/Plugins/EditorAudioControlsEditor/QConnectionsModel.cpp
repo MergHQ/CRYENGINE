@@ -18,12 +18,11 @@
 
 namespace ACE
 {
-
+//////////////////////////////////////////////////////////////////////////
 QConnectionModel::QConnectionModel()
 	: m_pControl(nullptr)
 	, m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
 {
-
 	auto resetFunction = [&]()
 	{
 		beginResetModel();
@@ -32,9 +31,9 @@ QConnectionModel::QConnectionModel()
 	};
 
 	CAudioAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	pAssetsManager->signalItemAdded.Connect(resetFunction);
-	pAssetsManager->signalItemRemoved.Connect(resetFunction);
-	pAssetsManager->signalControlModified.Connect(resetFunction);
+	pAssetsManager->signalItemAdded.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
+	pAssetsManager->signalItemRemoved.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
+	pAssetsManager->signalControlModified.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
@@ -42,7 +41,7 @@ QConnectionModel::QConnectionModel()
 			m_pAudioSystem = nullptr;
 			m_connectionsCache.clear();
 			endResetModel();
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
@@ -50,7 +49,7 @@ QConnectionModel::QConnectionModel()
 			beginResetModel();
 			ResetCache();
 			endResetModel();
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
 
@@ -60,6 +59,18 @@ QConnectionModel::QConnectionModel()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+QConnectionModel::~QConnectionModel()
+{
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+	pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+}
+
+//////////////////////////////////////////////////////////////////////////
 void QConnectionModel::Init(CAudioControl* pControl)
 {
 	beginResetModel();
@@ -68,6 +79,7 @@ void QConnectionModel::Init(CAudioControl* pControl)
 	endResetModel();
 }
 
+//////////////////////////////////////////////////////////////////////////
 int QConnectionModel::rowCount(const QModelIndex& parent) const
 {
 	if (m_pControl && m_pAudioSystem)
@@ -80,11 +92,13 @@ int QConnectionModel::rowCount(const QModelIndex& parent) const
 	return 0;
 }
 
+//////////////////////////////////////////////////////////////////////////
 int QConnectionModel::columnCount(const QModelIndex& parent) const
 {
 	return static_cast<int>(eConnectionModelColumns_Size) + static_cast<int>(m_platformNames.size());
 }
 
+//////////////////////////////////////////////////////////////////////////
 QVariant QConnectionModel::data(const QModelIndex& index, int role) const
 {
 	if (m_pAudioSystem && m_pControl && index.isValid())
@@ -169,6 +183,7 @@ QVariant QConnectionModel::data(const QModelIndex& index, int role) const
 	return QVariant();
 }
 
+//////////////////////////////////////////////////////////////////////////
 QVariant QConnectionModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
 {
 	if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
@@ -192,6 +207,7 @@ QVariant QConnectionModel::headerData(int section, Qt::Orientation orientation, 
 	return QVariant();
 }
 
+//////////////////////////////////////////////////////////////////////////
 Qt::ItemFlags QConnectionModel::flags(const QModelIndex& index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
@@ -202,6 +218,7 @@ Qt::ItemFlags QConnectionModel::flags(const QModelIndex& index) const
 	return flags | Qt::ItemIsDropEnabled;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool QConnectionModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
 	if (index.column() >= eConnectionModelColumns_Size && role == Qt::CheckStateRole)
@@ -215,6 +232,7 @@ bool QConnectionModel::setData(const QModelIndex& index, const QVariant& value, 
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 QModelIndex QConnectionModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
 {
 	if (m_pAudioSystem && m_pControl)
@@ -238,11 +256,13 @@ QModelIndex QConnectionModel::index(int row, int column, const QModelIndex& pare
 	return QModelIndex();
 }
 
+//////////////////////////////////////////////////////////////////////////
 QModelIndex QConnectionModel::parent(const QModelIndex& index) const
 {
 	return QModelIndex();
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool QConnectionModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
 {
 	if (m_pAudioSystem && m_pControl)
@@ -265,6 +285,7 @@ bool QConnectionModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 QStringList QConnectionModel::mimeTypes() const
 {
 	QStringList list = QAbstractItemModel::mimeTypes();
@@ -272,6 +293,7 @@ QStringList QConnectionModel::mimeTypes() const
 	return list;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool QConnectionModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent)
 {
 	if (m_pAudioSystem && m_pControl)
@@ -299,11 +321,13 @@ bool QConnectionModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 	return QAbstractItemModel::dropMimeData(pData, action, row, column, parent);
 }
 
+//////////////////////////////////////////////////////////////////////////
 Qt::DropActions QConnectionModel::supportedDropActions() const
 {
 	return Qt::CopyAction;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void QConnectionModel::ResetCache()
 {
 	m_connectionsCache.clear();
@@ -321,6 +345,7 @@ void QConnectionModel::ResetCache()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void QConnectionModel::DecodeMimeData(const QMimeData* pData, std::vector<CID>& ids) const
 {
 	const QString format = QAudioSystemModel::ms_szMimeType;
@@ -339,5 +364,4 @@ void QConnectionModel::DecodeMimeData(const QMimeData* pData, std::vector<CID>& 
 		}
 	}
 }
-
-}
+} // namespace ACE

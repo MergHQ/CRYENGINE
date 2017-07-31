@@ -176,7 +176,13 @@ CAudioSystemPanel::CAudioSystemPanel()
 			{
 			  m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 			}
-	  });
+	  }, reinterpret_cast<uintptr_t>(this));
+}
+
+//////////////////////////////////////////////////////////////////////////
+CAudioSystemPanel::~CAudioSystemPanel()
+{
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

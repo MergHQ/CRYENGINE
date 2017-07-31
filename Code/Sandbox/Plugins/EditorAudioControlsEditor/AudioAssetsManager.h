@@ -36,10 +36,11 @@ class CAudioAssetsManager
 	friend class CAudioControl;
 
 public:
+
 	CAudioAssetsManager();
 	~CAudioAssetsManager();
-	void Initialize();
 
+	void Initialize();
 	void Clear();
 
 	// Libraries
@@ -96,6 +97,7 @@ public:
 	CCrySignal<void(CAudioControl*)>             signalConnectionRemoved;
 
 private:
+
 	IAudioAsset* CreateAndConnectImplItemsRecursively(IAudioSystemItem* pImplItem, IAudioAsset* pParent);
 	void         OnControlAboutToBeModified(CAudioControl* pControl);
 	void         OnControlModified(CAudioControl* pControl);
@@ -122,6 +124,5 @@ string        GenerateUniqueControlName(string const& name, EItemType type, CAud
 IAudioAsset*  GetParentLibrary(IAudioAsset* pAsset);
 void          SelectTopLevelAncestors(std::vector<IAudioAsset*> const& source, std::vector<IAudioAsset*>& dest);
 string const& GetAssetFolder();
-}
-
-}
+} // namespace Utils
+} // namespace ACE
