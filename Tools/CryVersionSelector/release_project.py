@@ -44,7 +44,7 @@ def run(project_file):
     task_list.append(("Copying default engine assets...", copy_engine_assets, engine_path_long, export_path_long))
     task_list.append(("Copying engine binaries...", copy_engine_binaries, engine_path_long, export_path_long, os.path.join('bin', 'win_x64')))
 
-    if cryproject.is_managed(project):
+    if requires_mono(project, project_path_long):
         task_list.append(("Copying mono files...", copy_mono_files, engine_path_long, export_path_long))
 
     task_list.append(("Copying game binaries...", copy_plugins, project, project_path, export_path))
@@ -75,6 +75,7 @@ def delete_previous_build(export_path):
     """
     if os.path.exists(export_path):
         shutil.rmtree(export_path, onerror = on_rm_error)
+
 def delete_temp_folders(engine_path, project_path):
     delete_temp_engine_folder(engine_path)
     delete_temp_assets_folder(project_path)
@@ -100,6 +101,13 @@ def on_rm_error(func, path, exc_info):
     """
     os.chmod( path, stat.S_IWRITE )
     os.unlink( path )
+
+def requires_mono(project, project_path):
+    if cryproject.is_managed(project):
+        return True
+
+    asset_path = os.path.join(project_path, cryproject.asset_dir(project))
+    return directory_contains_file(asset_path, ["*.cs"])
 
 def get_percentage(index, count):
     return (100.0 / count) * index
@@ -303,6 +311,39 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
             os.makedirs(dst_dir)
             
         shutil.copyfile(srcpath, dstpath)
+
+def directory_contains_file(directory, include_patterns, exclude_patterns=None, recursive=True):
+    """
+    Checks if a directory contains a file that matches the specified pattern.
+    """
+    for file in os.listdir(directory):
+        file_path = os.path.join(directory, file)
+        
+        if os.path.isdir(file_path) and recursive:
+            if directory_contains_file(file_path, include_patterns, exclude_patterns, recursive):
+                return True
+            continue
+
+        if exclude_patterns:
+            exclude = False
+            for pattern in exclude_patterns:
+                exclude = fnmatch.fnmatch(file_path, os.path.join(directory, pattern))
+                if exclude:
+                    break
+            if exclude:
+                continue
+
+        if include_patterns:
+            include = False
+            for pattern in include_patterns:
+                include = fnmatch.fnmatch(file_path, os.path.join(directory, pattern))
+                if include:
+                    break
+            if include:
+                return True
+
+    return False
+
 
 def package_assets(project, engine_path, project_path, export_path):
     """

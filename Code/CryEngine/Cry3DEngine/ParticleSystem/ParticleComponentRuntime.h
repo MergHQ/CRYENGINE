@@ -53,7 +53,7 @@ public:
 	const CParticleContainer& GetContainer() const      { return m_container; }
 
 	void                      MainPreUpdate();
-	void                      UpdateAll(const SUpdateContext& context);
+	void                      UpdateAll();
 	void                      AddRemoveNewBornsParticles(const SUpdateContext& context);
 	void                      UpdateParticles(const SUpdateContext& context);
 	void                      OrphanAllParticles();

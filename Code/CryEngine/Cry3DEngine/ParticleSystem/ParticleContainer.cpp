@@ -261,7 +261,7 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 		{
 			float fraction = spawnEntry.m_fractionBegin;
 			float* pSpawnFractions = GetData<float>(EPDT_SpawnFraction);
-			for (uint32 i = currentId; i < currentId + toAddCount; ++i, fraction += spawnEntry.m_fractionCounter)
+			for (uint32 i = currentId; i < currentId + toAddCount; ++i, fraction += spawnEntry.m_fractionIncrement)
 				pSpawnFractions[i] = min(fraction, 1.0f);
 		}
 

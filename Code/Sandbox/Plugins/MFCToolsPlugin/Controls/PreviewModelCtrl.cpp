@@ -435,9 +435,9 @@ bool CPreviewModelCtrl::Render()
 	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true);
 
 	m_pRenderer->SetClearColor(Vec3(m_clearColor.r, m_clearColor.g, m_clearColor.b));
-	m_pRenderer->BeginFrame();
 	m_pRenderer->SetCurrentContext(GetSafeHwnd());
 	m_pRenderer->ChangeViewport(0, 0, width, height);
+	m_pRenderer->BeginFrame();
 	m_pRenderer->SetRenderTile(m_tileX, m_tileY, m_tileSizeX, m_tileSizeY);
 	m_pRenderer->SetCamera(m_camera);
 

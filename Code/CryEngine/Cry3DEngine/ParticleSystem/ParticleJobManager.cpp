@@ -65,7 +65,7 @@ void CParticleJobManager::AddComponentRecursive(CParticleEmitter* pEmitter, size
 {
 	const CParticleComponentRuntime* pParentComponentRuntime = m_componentRefs[parentRefIdx].m_pComponentRuntime;
 
-	for (auto pChild : pParentComponentRuntime->GetComponent()->GetChildComponents())
+	for (const auto& pChild : pParentComponentRuntime->GetComponent()->GetChildComponents())
 	{
 		auto pChildRuntime = pEmitter->GetRuntimeFor(pChild)->GetCpuRuntime();
 		if (!pChildRuntime)
@@ -166,8 +166,7 @@ void CParticleJobManager::KernelUpdateAll()
 		// No threading
 		for (auto& componentRef : m_componentRefs)
 		{
-			SUpdateContext context(componentRef.m_pComponentRuntime);
-			componentRef.m_pComponentRuntime->UpdateAll(context);
+			componentRef.m_pComponentRuntime->UpdateAll();
 		}
 	}
 }
@@ -211,8 +210,7 @@ void CParticleJobManager::Job_UpdateEmitter(uint emitterRefIdx)
 			if (pCpuRuntime->IsActive())
 			{
 				profiler.AddEntry(pCpuRuntime, EPS_Jobs);
-				SUpdateContext context(pCpuRuntime);
-				pCpuRuntime->UpdateAll(context);
+				pCpuRuntime->UpdateAll();
 			}
 		}
 	}
@@ -225,8 +223,7 @@ void CParticleJobManager::Job_UpdateComponent(uint componentRefIdx)
 	CParticleComponentRuntime* pRuntime = componentRef.m_pComponentRuntime;
 	GetPSystem()->GetProfiler().AddEntry(pRuntime, EPS_Jobs);
 
-	SUpdateContext context(pRuntime);
-	pRuntime->UpdateAll(context);
+	pRuntime->UpdateAll();
 	m_updateState.SetStopped();
 
 	// Schedule child components

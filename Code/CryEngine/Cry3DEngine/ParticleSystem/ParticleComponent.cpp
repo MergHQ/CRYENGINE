@@ -281,7 +281,7 @@ float CParticleComponent::GetEquilibriumTime(Range parentLife) const
 	float eqTime = std::isfinite(compLife.end) ? 
 		compLife.end : 
 		compLife.start + (std::isfinite(m_componentParams.m_maxParticleLifeTime) ? m_componentParams.m_maxParticleLifeTime : 0.0f);
-	for (auto child : m_children)
+	for (const auto& child : m_children)
 	{
 		if (child->IsEnabled())
 		{

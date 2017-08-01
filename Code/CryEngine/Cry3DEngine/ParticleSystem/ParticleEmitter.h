@@ -95,6 +95,7 @@ public:
 	virtual int          GetAttachedEntitySlot() override { return m_entitySlot; }
 	// ~pfx1 CPArticleEmitter
 
+	void                      InitSeed();
 	void                      DebugRender() const;
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }

@@ -2730,7 +2730,7 @@ enum entity_query_flags
 	ent_no_ondemand_activation = 0x80000,  //!< can only be used in RayWorldIntersection
 	ent_delayed_deformations   = 0x80000   //!< queues procedural breakage requests; can only be used in SimulateExplosion
 };
-enum phys_locks { PLOCK_WORLD_STEP = 1, PLOCK_CALLER0, PLOCK_CALLER1, PLOCK_QUEUE, PLOCK_AREAS };
+enum phys_locks { PLOCK_WORLD_STEP = 1, PLOCK_QUEUE, PLOCK_AREAS, PLOCK_CALLER0, PLOCK_CALLER1 };
 
 struct phys_profile_info
 {
