@@ -94,12 +94,12 @@ void CParticleEffect::Sort()
 	};
 
 	SortedComponents sortedComponents(m_components);
-	m_components = sortedComponents;
+	std::swap(m_components, sortedComponents);
 }
 
 CParticleComponent* CParticleEffect::FindComponentByName(const char* name) const
 {
-	for (auto pComponent : m_components)
+	for (const auto& pComponent : m_components)
 	{
 		if (pComponent->m_name == name)
 			return pComponent;
@@ -146,7 +146,7 @@ uint CParticleEffect::GetNumRenderObjectIds() const
 float CParticleEffect::GetEquilibriumTime() const
 {
 	float maxEqTime = 0.0f;
-	for (auto pComponent : m_components)
+	for (const auto& pComponent : m_components)
 	{
 		// Iterate top-level components
 		auto const& params = pComponent->GetComponentParams();
@@ -162,7 +162,7 @@ float CParticleEffect::GetEquilibriumTime() const
 int CParticleEffect::GetEditVersion() const
 {
 	int version = m_editVersion + m_components.size();
-	for (auto pComponent : m_components)
+	for (const auto& pComponent : m_components)
 	{
 		const SComponentParams& params = pComponent->GetComponentParams();
 		const CMatInfo* pMatInfo = (CMatInfo*)params.m_pMaterial.get();

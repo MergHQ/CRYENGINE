@@ -252,7 +252,7 @@ float CParticleEmitter::GetMaxViewDist()
 		* m_viewDistRatio;
 
 	float maxViewDist = 0.0f;
-	for (auto pComponent : m_pEffect->GetComponents())
+	for (const auto& pComponent : m_pEffect->GetComponents())
 	{
 		if (pComponent->IsEnabled())
 		{
@@ -316,6 +316,28 @@ const IParticleEffect* CParticleEmitter::GetEffect() const
 	return m_pEffect;
 }
 
+void CParticleEmitter::InitSeed()
+{
+	const int forcedSeed = GetCVars()->e_ParticlesForceSeed;
+	if (m_spawnParams.nSeed != -1)
+	{
+		m_initialSeed = uint32(m_spawnParams.nSeed);
+		m_time = 0.0f;
+	}
+	else if (forcedSeed != 0)
+	{
+		m_initialSeed = forcedSeed;
+		m_time = 0.0f;
+	}
+	else
+	{
+		m_initialSeed = cry_random_uint32();
+		m_time = gEnv->pTimer->GetCurrTime();
+	}
+	m_lastTimeRendered = m_time;
+	m_currentSeed = m_initialSeed;
+}
+
 void CParticleEmitter::Activate(bool activate)
 {
 	if (!m_pEffect || activate == m_active)
@@ -328,6 +350,8 @@ void CParticleEmitter::Activate(bool activate)
 		m_parentContainer.AddParticleData(EPVF_Velocity);
 		m_parentContainer.AddParticleData(EPVF_AngularVelocity);
 		m_parentContainer.AddParticleData(EPDT_NormalAge);
+
+		InitSeed();
 
 		UpdateRuntimeRefs();
 
@@ -437,7 +461,7 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	for (auto pComponent : m_pEffect->GetComponents())
+	for (const auto& pComponent : m_pEffect->GetComponents())
 	{
 		const SComponentParams& params = pComponent->GetComponentParams();
 
@@ -473,25 +497,6 @@ void CParticleEmitter::SetEmitGeom(const GeomRef& geom)
 void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 {
 	m_spawnParams = spawnParams;	
-	
-	const int forcedSeed = GetCVars()->e_ParticlesForceSeed;
-	if (spawnParams.nSeed != -1)
-	{
-		m_initialSeed = uint32(spawnParams.nSeed);
-		m_time = 0.0f;
-	}
-	else if (forcedSeed != 0)
-	{
-		m_initialSeed = forcedSeed;
-		m_time = 0.0f;
-	}
-	else
-	{
-		m_initialSeed = cry_random_uint32();
-		m_time = gEnv->pTimer->GetCurrTime();
-	}
-	m_lastTimeRendered = m_time;
-	m_currentSeed = m_initialSeed;
 }
 
 uint CParticleEmitter::GetAttachedEntityId()
@@ -507,10 +512,10 @@ void CParticleEmitter::UpdateRuntimeRefs()
 
 	TComponentRuntimes newRuntimes;
 
-	for (auto pComponent : m_pEffect->GetComponents())
+	for (const auto& pComponent : m_pEffect->GetComponents())
 	{
 		auto it = std::find_if(m_componentRuntimes.begin(), m_componentRuntimes.end(),
-		                       [=](const SRuntimeRef& ref)
+		                       [&](const SRuntimeRef& ref)
 			{
 				return ref.pComponent == pComponent;
 		  });
@@ -583,7 +588,7 @@ void CParticleEmitter::ResetRenderObjects()
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
 		m_pRenderObjects[threadId].resize(numROs, nullptr);
 
-	for (auto pComponent : m_pEffect->GetComponents())
+	for (auto& pComponent : m_pEffect->GetComponents())
 	{
 		pComponent->ResetRenderObjects(this);
 	}

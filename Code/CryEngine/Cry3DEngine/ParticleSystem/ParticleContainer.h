@@ -41,7 +41,7 @@ public:
 		float  m_ageBegin;
 		float  m_ageIncrement;
 		float  m_fractionBegin;
-		float  m_fractionCounter;
+		float  m_fractionIncrement;
 	};
 
 public:

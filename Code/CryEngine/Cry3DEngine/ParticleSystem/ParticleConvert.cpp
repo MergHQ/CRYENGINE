@@ -291,6 +291,14 @@ bool ConvertParamBase(XmlNodeRef node, cstr name, P& param, float defValue = 0.f
 	return true;
 }
 
+template<typename P>
+P& ZeroIsInfinity(P& param, bool yes = true)
+{
+	if (yes && !param)
+		param = gInfinity;
+	return param;
+}
+
 // Special-purpose param to convert StrengthCurve to AgeCurve
 template<class S>
 struct TVarEtoPParam : TVarEPParam<S>
@@ -409,29 +417,16 @@ void ConvertSpawn(IParticleComponent& component, ParticleParams& params, bool al
 {
 	XmlNodeRef spawn = MakeFeature("SpawnCount");
 
-	float count = params.fCount;
 	ConvertParam(spawn, "Amount", params.fCount, 0.0f, 1.0f);
 	ConvertParam(spawn, "Delay", params.fSpawnDelay);
-	ConvertParam(spawn, "Restart", params.fPulsePeriod);
-	if (ResetValue(params.bContinuous))
-		ConvertParam(spawn, "Duration", params.fEmitterLifeTime);
-	ResetValue(params.fEmitterLifeTime);
+	ConvertParam(spawn, "Duration", ZeroIsInfinity(params.fEmitterLifeTime, ResetValue(params.bContinuous)));
+	ConvertParam(spawn, "Restart", ZeroIsInfinity(params.fPulsePeriod));
 
 	AddFeature(component, spawn);
 
-	if (count)
-	{
-		if (params.fParticleLifeTime || allowZeroLifetime)
-		{
-			XmlNodeRef life = MakeFeature("LifeTime");
-			ConvertParam(life, "LifeTime", params.fParticleLifeTime);
-			AddFeature(component, life);
-		}
-		else
-		{
-			AddFeature(component, "LifeImmortal");
-		}
-	}
+	XmlNodeRef life = MakeFeature("LifeTime");
+	ConvertParam(life, "LifeTime", ZeroIsInfinity(params.fParticleLifeTime, !allowZeroLifetime));
+	AddFeature(component, life);
 }
 
 void ConvertAppearance(IParticleComponent& component, ParticleParams& params)
@@ -898,7 +893,7 @@ void ConvertVisibility(IParticleComponent& component, ParticleParams& params)
 	XmlNodeRef vis = MakeFeature("AppearanceVisibility");
 	ConvertValue(vis, "ViewDistanceMultiple", params.fViewDistanceAdjust, 1.f);
 	ConvertValue(vis, "MinCameraDistance", params.fCameraMinDistance);
-	ConvertValue(vis, "MaxCameraDistance", params.fCameraMaxDistance);
+	ConvertValue(vis, "MaxCameraDistance", ZeroIsInfinity(params.fCameraMaxDistance));
 	switch (ResetValue(params.tVisibleIndoors, ETrinary::Both))
 	{
 		case ETrinary::If_True:  AddValue(vis, "IndoorVisibility", "IndoorOnly"); break;

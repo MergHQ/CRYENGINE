@@ -73,12 +73,12 @@ void CParticleComponentRuntime::SetActive(bool active)
 		Reset();
 }
 
-void CParticleComponentRuntime::UpdateAll(const SUpdateContext& context)
+void CParticleComponentRuntime::UpdateAll()
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 
-	AddRemoveNewBornsParticles(context);
-	UpdateParticles(context);
+	AddRemoveNewBornsParticles(SUpdateContext(this));
+	UpdateParticles(SUpdateContext(this));
 	CalculateBounds();
 }
 
@@ -215,6 +215,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 	CParticleEffect* pEffect = GetEffect();
 	CParticleEmitter* pEmitter = GetEmitter();
 	const bool hasKillFeatures = !GetComponent()->GetUpdateList(EUL_KillUpdate).empty();
+	const bool isActive = IsActive() && GetEmitter()->IsActive();
 	const size_t maxParticles = m_container.GetMaxParticles();
 	const uint32 numParticles = m_container.GetNumParticles();
 	TIStream<uint8> states = m_container.GetTIStream<uint8>(EPDT_State);
@@ -241,8 +242,11 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 	//////////////////////////////////////////////////////////////////////////
 
-	for (auto& it : GetComponent()->GetUpdateList(EUL_Spawn))
-		it->SpawnParticles(context);
+	if (isActive)
+	{
+		for (auto& it : GetComponent()->GetUpdateList(EUL_Spawn))
+			it->SpawnParticles(context);
+	}
 
 	TParticleIdArray particleIds(*context.m_pMemHeap);
 	particleIds.reserve(numParticles);
@@ -265,7 +269,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 		if (hasSwapIds)
 		{
-			for (auto pChild : m_pComponent->GetChildComponents())
+			for (const auto& pChild : m_pComponent->GetChildComponents())
 			{
 				IParticleComponentRuntime* pSubRuntime = pEmitter->GetRuntimeFor(pChild);
 				if (pSubRuntime->IsActive())
