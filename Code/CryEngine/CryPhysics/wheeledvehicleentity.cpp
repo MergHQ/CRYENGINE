@@ -34,7 +34,7 @@ CWheeledVehicleEntity::CWheeledVehicleEntity(CPhysicalWorld *pworld, IGeneralMem
 	, m_steer(0.0f)
 	, m_ackermanOffset(0.0f)
 	, m_clutch(0.0f)
-	, m_nGears(2)
+	, m_nGears(3)
 	, m_iCurGear(1)
 	, m_maxGear(127)
 	, m_minGear(0)
@@ -59,7 +59,8 @@ CWheeledVehicleEntity::CWheeledVehicleEntity(CPhysicalWorld *pworld, IGeneralMem
 	m_engineShiftDownw = m_engineMaxw*0.2f;	
 
 	m_gears[0] = -1.0f;
-	m_gears[1] = 1.0f;
+	m_gears[1] = 1.0f; // neutral, unused
+	m_gears[2] = 1.0f;
 
 	m_EminRigid = m_Emin;
 	m_maxAllowedStepRigid = m_maxAllowedStep;
