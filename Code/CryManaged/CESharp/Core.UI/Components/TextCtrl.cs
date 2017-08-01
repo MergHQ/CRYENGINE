@@ -235,7 +235,8 @@ namespace CryEngine.UI.Components
 			if(updateTextLayout)
 				_text.UpdateLayout();
 			var cursorOffset = _text.GetOffsetAt(_cursorIndex);
-			var fieldWidth = (Owner as UIElement).RectTransform.Bounds.w - 2;
+			var rect = Owner.GetComponent<RectTransform>();
+			var fieldWidth = rect == null ? 0 : rect.Bounds.w - 2;
 			if(cursorOffset < fieldWidth)
 			{
 				_cursor.RectTransform.Padding = new Padding(cursorOffset, 0);
@@ -255,7 +256,8 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override bool HitTest(int x, int y)
 		{
-			return (Owner as UIElement).RectTransform.ClampRect.Contains(x, y);
+			var rect = Owner.GetComponent<RectTransform>();
+			return rect != null && rect.ClampRect.Contains(x, y);
 		}
 	}
 }

@@ -19,6 +19,10 @@ namespace CryEngine.UI
 		/// <value>The caption.</value>
 		public string Caption { set { _caption.Content = value; } }
 
+		/// <summary>
+		/// The height of the caption of this window.
+		/// </summary>
+		/// <value>The height of the caption.</value>
 		public byte CaptionHeight { set { _caption.Height = value; } }
 
 		/// <summary>

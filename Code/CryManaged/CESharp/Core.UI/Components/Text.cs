@@ -206,7 +206,11 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override void OnAwake()
 		{
-			var rt = (Owner as UIElement).RectTransform;
+			var rt = Owner.GetComponent<RectTransform>();
+			if(rt == null)
+			{
+				rt = Owner.AddComponent<RectTransform>();
+			}
 			rt.LayoutChanged += UpdateLayout;
 		}
 
@@ -216,10 +220,10 @@ namespace CryEngine.UI.Components
 		public override void OnUpdate()
 		{
 			UpdateContent();
-			var rt = (Owner as UIElement).RectTransform;
-			if(_texture != null)
+			var rt = Owner.GetComponent<RectTransform>();
+			if(rt != null && _texture != null)
 			{
-				_texture.ClampRect = ((Owner as UIElement).RectTransform).ClampRect;
+				_texture.ClampRect = rt.ClampRect;
 				_texture.Color = Color;
 				_texture.TargetCanvas = ParentCanvas;
 				_texture.Draw(_alignedOffset.x, _alignedOffset.y, _alignedSize.x, _alignedSize.y);
@@ -318,7 +322,12 @@ namespace CryEngine.UI.Components
 			var font = new Font(FontName, GetSizeForHeight(Height), _fontStyle);
 			var nullSize = g.MeasureString("XX", font);
 			var fillSize = g.MeasureString("X" + _content + "X", font);
-			var rt = (Owner as UIElement).RectTransform;
+			var rt = Owner.GetComponent<RectTransform>();
+			if(rt == null)
+			{
+				rt = Owner.AddComponent<RectTransform>();
+			}
+
 			var tl = rt.TopLeft;
 			var width = fillSize.Width - nullSize.Width * 0.8f;
 			var height = fillSize.Height;

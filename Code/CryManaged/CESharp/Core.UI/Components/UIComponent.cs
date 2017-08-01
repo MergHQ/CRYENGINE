@@ -1,6 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
+using CryEngine.UI.Components;
 
 namespace CryEngine.UI
 {
@@ -9,19 +10,74 @@ namespace CryEngine.UI
 	/// </summary>
 	public class UIComponent : IUpdateReceiver
 	{
-		protected bool _isActive = false;
-		protected bool _isActiveByHierarchy = true;
+		private bool _isActive = false;
+		private bool _isActiveByHierarchy = true;
 
+		/// <summary>
+		/// Called when the component is added to a SceneObject.
+		/// </summary>
 		public virtual void OnAwake() { }
+
+		/// <summary>
+		/// Called every frame.
+		/// </summary>
 		public virtual void OnUpdate() { }
+
+		/// <summary>
+		/// Called when this component is destroyed.
+		/// </summary>
 		public virtual void OnDestroy() { }
+
+		/// <summary>
+		/// Called when the UIElement of this component gets focused.
+		/// </summary>
 		public virtual void OnEnterFocus() { }
+
+		/// <summary>
+		/// Called when the UIElement of this component loses focus.
+		/// </summary>
 		public virtual void OnLeaveFocus() { }
+
+		/// <summary>
+		/// Called when the mouse is pressed down on the UIElement of this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public virtual void OnLeftMouseDown(int x, int y) { }
+
+		/// <summary>
+		/// Called when the mouse button is let go on the UIElement of this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
+		/// <param name="inside">If set to <c>true</c> inside.</param>
 		public virtual void OnLeftMouseUp(int x, int y, bool inside) { }
+
+		/// <summary>
+		/// Called when the mouse enters the rectangle of the UIElement of this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public virtual void OnMouseEnter(int x, int y) { }
+
+		/// <summary>
+		/// Called when the mouse leaves the rectangle of the UIElement of this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public virtual void OnMouseLeave(int x, int y) { }
+
+		/// <summary>
+		/// Called when the mouse hovers over the UIElement of this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public virtual void OnMouseMove(int x, int y) { }
+
+		/// <summary>
+		/// Called when a key is pressed while this UIElement is focused.
+		/// </summary>
+		/// <param name="e">The input event.</param>
 		public virtual void OnKey(InputEvent e) { }
 
 		/// <summary>
@@ -34,7 +90,7 @@ namespace CryEngine.UI
 		/// Determines whether object is individually focusable.
 		/// </summary>
 		/// <value><c>true</c> if enabled; otherwise, <c>false</c>.</value>
-		public bool Enabled { get; set; }
+		public bool Enabled { get; set; } = true;
 
 		/// <summary>
 		/// Owning SceneObject.
@@ -96,11 +152,6 @@ namespace CryEngine.UI
 			{
 				return _isActiveByHierarchy && Active;
 			}
-		}
-
-		protected UIComponent()
-		{
-			Enabled = true;
 		}
 
 		/// <summary>
@@ -180,43 +231,79 @@ namespace CryEngine.UI
 			return Tools.ToJSON(this);
 		}
 
+		/// <summary>
+		/// Invokes the OnEnterFocus message on this component.
+		/// </summary>
 		public void InvokeOnEnterFocus()
 		{
 			HasFocus = true;
 			OnEnterFocus();
 		}
 
+		/// <summary>
+		/// Invokes the OnLeaveFocus message on this component.
+		/// </summary>
 		public void InvokeOnLeaveFocus()
 		{
 			HasFocus = false;
 			OnLeaveFocus();
 		}
 
+		/// <summary>
+		/// Invokes the OnLeftMouseDown message on this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public void InvokeOnLeftMouseDown(int x, int y)
 		{
 			OnLeftMouseDown(x, y);
 		}
 
+		/// <summary>
+		/// Invokes the OnLeftMouseUp message on this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
+		/// <param name="wasInside">If set to <c>true</c> was inside.</param>
 		public void InvokeOnLeftMouseUp(int x, int y, bool wasInside)
 		{
 			OnLeftMouseUp(x, y, wasInside);
 		}
 
+		/// <summary>
+		/// Invokes the OnMouseEnter message on this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public void InvokeOnMouseEnter(int x, int y)
 		{
 			OnMouseEnter(x, y);
 		}
 
+		/// <summary>
+		/// Invokes the OnMouseLeave message on this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public void InvokeOnMouseLeave(int x, int y)
 		{
 			OnMouseLeave(x, y);
 		}
 
+		/// <summary>
+		/// Invokes the OnMouseMove message on this component.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public void InvokeOnMouseMove(int x, int y)
 		{
 			OnMouseMove(x, y);
 		}
 
+		/// <summary>
+		/// Invokes the OnKey message on this component.
+		/// </summary>
+		/// <param name="e">E.</param>
 		public void InvokeOnKey(InputEvent e)
 		{
 			OnKey(e);
@@ -234,7 +321,7 @@ namespace CryEngine.UI
 			{
 				if(_parentCanvas == null)
 				{
-					_parentCanvas = (Owner as UIElement).FindParentCanvas();
+					_parentCanvas = Owner.GetParentWithType<Canvas>();
 				}
 				return _parentCanvas;
 			}
@@ -245,7 +332,13 @@ namespace CryEngine.UI
 		/// </summary>
 		public virtual Rect GetAlignedRect()
 		{
-			return (Owner as UIElement).RectTransform.Bounds;
+			var rect = Owner.GetComponent<RectTransform>();
+			if(rect != null)
+			{
+				return rect.Bounds;
+			}
+
+			return new Rect();
 		}
 
 		/// <summary>
@@ -256,8 +349,14 @@ namespace CryEngine.UI
 		/// <param name="y">The y coordinate.</param>
 		public virtual bool HitTest(int x, int y)
 		{
-			var prt = (Owner as UIElement).RectTransform;
-			return prt.ClampRect == null ? prt.Bounds.Contains(x, y) : prt.ClampRect.Contains(x, y);
+			var prt = Owner.GetComponent<RectTransform>();
+
+			if(prt == null)
+			{
+				return false;
+			}
+
+			return prt.ClampRect.Size > 0 ? prt.Bounds.Contains(x, y) : prt.ClampRect.Contains(x, y);
 		}
 	}
 }

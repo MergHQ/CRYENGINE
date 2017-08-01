@@ -81,8 +81,8 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override bool HitTest(int x, int y)
 		{
-			var ort = (Owner as UIElement).RectTransform;
-			return ort.Bounds.Contains(x, y);
+			var ort = Owner.GetComponent<RectTransform>();
+			return ort != null && ort.Bounds.Contains(x, y);
 		}
 	}
 }

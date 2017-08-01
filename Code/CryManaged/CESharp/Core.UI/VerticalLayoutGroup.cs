@@ -2,8 +2,15 @@
 
 namespace CryEngine.UI
 {
+	/// <summary>
+	/// A LayoutGroup that creates a vertical layout.
+	/// </summary>
 	public class VerticalLayoutGroup : LayoutGroup
 	{
+		/// <summary>
+		/// Called when the layout needs to be updated.
+		/// </summary>
+		/// <param name="items">Items.</param>
 		protected override void OnUpdateLayout(List<UIElement> items)
 		{
 			RectTransform.Height = Spacing;
