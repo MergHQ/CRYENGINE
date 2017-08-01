@@ -493,7 +493,7 @@ void CClipVolumesStage::PrepareVolumetricFog()
 			const int32 h = scaledHeight;
 			const int32 d = depth;
 			ETEX_Format format = eTF_D24S8;
-			CTexture* pTex = CTexture::GetOrCreateTextureArray("$VolFogClipVolumeStencil", w, h, d, 1, eTT_2D, dsFlags, format);
+			CTexture* pTex = CTexture::GetOrCreateTextureArray("$VolFogClipVolumeStencil", w, h, d, 1, eTT_2DArray, dsFlags, format);
 
 			if (pTex == nullptr
 			    || m_pClipVolumeStencilVolumeTex != pTex // texture name must exactly match the name when creating texture object.

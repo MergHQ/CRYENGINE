@@ -132,6 +132,7 @@ void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 	indices = desc.numBuffers;
 #endif
 	pContext->m_pBackBuffers.resize(indices, nullptr);
+	pContext->m_pBackBufferPresented = nullptr;
 
 	for (int i = 0, n = indices; i < n; ++i)
 	{
@@ -201,6 +202,7 @@ void CD3D9Renderer::ReleaseBackBuffers(SDisplayContext* pContext)
 	for (int i = 0, n = indices; i < n; ++i)
 	{
 		pContext->m_pBackBuffers[i]->SetDevTexture(nullptr);
+		SAFE_RELEASE(pContext->m_pBackBuffers[i]);
 	}
 }
 
@@ -1225,7 +1227,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		if (bForceReset || bChangeRes || bFullScreen != m_bFullScreen || colorBits != m_cbpp || CV_r_vsync != m_VSync)
 			ChangeResolution(width, height, colorBits, 75, bFullScreen, bForceReset);
 	}
-	else if (GetBaseDisplayContext() && GetBaseDisplayContext()->m_bMainViewport)
+	else if (pDC->m_bMainViewport)
 	{
 		static bool bCustomRes = false;
 		static int nOrigWidth = m_d3dsdBackBuffer.Width;

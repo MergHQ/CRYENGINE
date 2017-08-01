@@ -197,10 +197,14 @@ bool CD3D9Renderer::DeleteContext(WIN_HWND hWnd)
 		}
 	}
 
-	if (!m_RContexts[i]->m_pBackBuffers.empty())
+	// Wait for GPU to finish occupying the resources
+	FlushRTCommands(true, true, true);
+
+	if (m_RContexts[i]->m_pSwapChain)
 	{
 		ReleaseBackBuffers(m_RContexts[i]);
 	}
+
 	SAFE_RELEASE(m_RContexts[i]->m_pSwapChain);
 	SAFE_RELEASE(m_RContexts[i]->m_pHDRTargetTex);
 
@@ -2533,7 +2537,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_Y = 0;
 	pDC->m_Width = rd->m_d3dsdBackBuffer.Width;
 	pDC->m_Height = rd->m_d3dsdBackBuffer.Height;
-	pDC->m_pBackBufferPresented = nullptr;
 
 	pDC->m_nViewportWidth = pDC->m_Width;
 	pDC->m_nViewportHeight = pDC->m_Height;
