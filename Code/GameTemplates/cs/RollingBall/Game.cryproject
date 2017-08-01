@@ -5,19 +5,11 @@
             "value": "pc,ps4,xboxone,linux"
         },
         {
-            "name": "sys_spec",
-            "value": "4"
-        },
-        {
             "name": "r_displayinfo",
             "value": "0"
         },
         {
             "name": "e_waterocean",
-            "value": "0"
-        },
-        {
-            "name": "e_permanentrenderobjects",
             "value": "0"
         },
         {
