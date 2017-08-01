@@ -176,8 +176,6 @@ SERIALIZATION_ENUM(EKeyId::eKI_XI_ThumbRY, "xi_thumbry", "Pad_RightThumb_Y-Axis"
 //SERIALIZATION_ENUM(EKeyId::eKI_XI_ThumbRDown, "Pad_ThumbRDown", "Pad_ThumbRDown")
 //SERIALIZATION_ENUM(EKeyId::eKI_XI_ThumbRLeft, "Pad_ThumbRLeft", "Pad_ThumbRLeft")
 //SERIALIZATION_ENUM(EKeyId::eKI_XI_ThumbRRight, "Pad_ThumbRRight", "Pad_ThumbRRight")
-SERIALIZATION_ENUM(EKeyId::eKI_XI_TriggerLBtn, "xi_triggerl_btn", "Pad_LeftTriggerBtn")
-SERIALIZATION_ENUM(EKeyId::eKI_XI_TriggerRBtn, "xi_triggerr_btn", "Pad_RightTriggerBtn")
 
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Options, "pad_start", "Orbis_Options")
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_L3, "pad_l3", "Orbis_L3")
@@ -186,10 +184,10 @@ SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Up, "pad_up", "Orbis_Up")
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Right, "pad_right", "Orbis_Right")
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Down, "pad_down", "Orbis_Down")
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Left, "pad_left", "Orbis_Left")
-SERIALIZATION_ENUM(EKeyId::eKI_Orbis_L2, "pad_l2", "Orbis_L2")
-SERIALIZATION_ENUM(EKeyId::eKI_Orbis_R2, "pad_r2", "Orbis_R2")
-SERIALIZATION_ENUM(EKeyId::eKI_Orbis_L1, "pad_l1", "Orbis_L1")
-SERIALIZATION_ENUM(EKeyId::eKI_Orbis_R1, "pad_r1", "Orbis_R1")
+SERIALIZATION_ENUM(EKeyId::eKI_Orbis_LeftTrigger, "pad_ltrigger", "Orbis_LeftTrigger")
+SERIALIZATION_ENUM(EKeyId::eKI_Orbis_RightTrigger, "pad_rtrigger", "Orbis_RightTrigger")
+SERIALIZATION_ENUM(EKeyId::eKI_Orbis_L1, "pad_l1", "Orbis_LeftShoulderButton")
+SERIALIZATION_ENUM(EKeyId::eKI_Orbis_R1, "pad_r1", "Orbis_RightShoulderButton")
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Triangle, "pad_triangle", "Orbis_Triangle")
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Circle, "pad_circle", "Orbis_Circle")
 SERIALIZATION_ENUM(EKeyId::eKI_Orbis_Cross, "pad_cross", "Orbis_Cross")
@@ -205,8 +203,6 @@ SERIALIZATION_ENUM(EKeyId::eKI_Orbis_StickRY, "pad_stickry", "Orbis_StickRY")
 //SERIALIZATION_ENUM(EKeyId::eKI_Orbis_RotX_KeyR, "Orbis_RotX_KeyR", "Orbis_RotX_KeyR")
 //SERIALIZATION_ENUM(EKeyId::eKI_Orbis_RotZ_KeyD, "Orbis_RotZ_KeyD", "Orbis_RotZ_KeyD")
 //SERIALIZATION_ENUM(EKeyId::eKI_Orbis_RotZ_KeyU, "Orbis_RotZ_KeyU", "Orbis_RotZ_KeyU")
-SERIALIZATION_ENUM(EKeyId::eKI_Orbis_LeftTrigger, "pad_ltrigger", "Orbis_LeftTrigger")
-SERIALIZATION_ENUM(EKeyId::eKI_Orbis_RightTrigger, "pad_rtrigger", "Orbis_RightTrigger")
 SERIALIZATION_ENUM_END()
 
 namespace Cry
@@ -360,22 +356,22 @@ void ReflectType(Schematyc::CTypeDesc<CInputComponent::EXboxInputId>& desc)
 	desc.SetDescription("Input Key Identifier");
 	desc.SetFlags(Schematyc::ETypeFlags::Switchable);
 	desc.SetDefaultValue((CInputComponent::EXboxInputId)EKeyId::eKI_XI_X);
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadUp, "DUp", "D-Pad Up");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadDown, "DDown", "D-Pad Down");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadLeft, "DLeft", "D-Pad Left");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadRight, "DRight", "D-Pad Right");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_Start, "Start", "Start");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_Back, "Back", "Back");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbL, "LeftThumbPress", "Left Thumb Press");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbR, "RightThumbPress", "Right Thumb Press");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ShoulderL, "LeftShoulder", "Left Shoulder");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ShoulderR, "RightShoulder", "Right Shoulder");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_A, "Button_A", "A");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_B, "Button_B", "B");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_X, "Button_X", "X");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_Y, "Button_Y", "Y");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_TriggerL, "LeftTrigger", "Left Trigger");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_TriggerR, "RightTrigger", "Right Trigger");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadUp, "xi_dpad_up", "D-Pad Up");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadDown, "xi_dpad_down", "D-Pad Down");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadLeft, "xi_dpad_left", "D-Pad Left");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_DPadRight, "xi_dpad_right", "D-Pad Right");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_Start, "xi_start", "Start");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_Back, "xi_back", "Back");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbL, "xi_thumbl", "Left Thumb Press");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbR, "xi_thumbr", "Right Thumb Press");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ShoulderL, "xi_shoulderl", "Left Shoulder");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ShoulderR, "xi_shoulderr", "Right Shoulder");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_A, "xi_a", "A");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_B, "xi_b", "B");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_X, "xi_x", "X");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_Y, "xi_y", "Y");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_TriggerL, "xi_triggerl", "Left Trigger");
+	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_TriggerR, "xi_triggerr", "Right Trigger");
 	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbLX, "xi_thumblx", "Left Thumb X Axis");
 	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbLY, "xi_thumbly", "Left Thumb Y Axis");
 	//desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbLUp, "ThumbLUp", "ThumbLUp");
@@ -388,8 +384,6 @@ void ReflectType(Schematyc::CTypeDesc<CInputComponent::EXboxInputId>& desc)
 	//desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbRDown, "ThumbRDown", "ThumbRDown");
 	//desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbRLeft, "ThumbRLeft", "ThumbRLeft");
 	//desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_ThumbRRight, "ThumbRRight", "ThumbRRight");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_TriggerLBtn, "LeftTriggerBtn", "Left Trigger Button");
-	desc.AddConstant((CInputComponent::EXboxInputId)EKeyId::eKI_XI_TriggerRBtn, "RightTriggerBtn", "Right Trigger Button");
 }
 
 void ReflectType(Schematyc::CTypeDesc<CInputComponent::EPS4InputId>& desc)
@@ -399,25 +393,25 @@ void ReflectType(Schematyc::CTypeDesc<CInputComponent::EPS4InputId>& desc)
 	desc.SetDescription("Input Key Identifier");
 	desc.SetFlags(Schematyc::ETypeFlags::Switchable);
 	desc.SetDefaultValue((CInputComponent::EPS4InputId)EKeyId::eKI_XI_X);
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Options, "Options", "Options");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_L3, "L3", "L3");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_R3, "R3", "R3");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Up, "Up", "D-Pad Up");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Right, "Right", "D-Pad Right");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Down, "Down", "D-Pad Down");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Left, "Left", "D-Pad Left");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_L2, "L2", "L2");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_R2, "R2", "R2");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_L1, "L1", "L1");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_R1, "R1", "R1");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Triangle, "Triangle", "Triangle");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Circle, "Circle", "Circle");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Cross, "Cross", "Cross");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Square, "Square", "Square");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickLX, "StickLX", "Left Stick X");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickLY, "StickLY", "Left Stick Y");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickRX, "StickRX", "Right Stick X");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickRY, "StickRY", "Right Stick Y");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Options, "pad_start", "Options");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_L3, "pad_l3", "Left Thumb Press");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_R3, "pad_r3", "Right Thumb Press");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Up, "pad_up", "D-Pad Up");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Right, "pad_right", "D-Pad Right");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Down, "pad_down", "D-Pad Down");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Left, "pad_left", "D-Pad Left");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_LeftTrigger, "pad_ltrigger", "Left Trigger");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RightTrigger, "pad_rtrigger", "Right Trigger");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_L1, "pad_l1", "Left Shoulder");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_R1, "pad_r1", "Right Shoulder");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Triangle, "pad_triangle", "Triangle");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Circle, "pad_circle", "Circle");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Cross, "pad_cross", "Cross");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_Square, "pad_square", "Square");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickLX, "pad_sticklx", "Left Stick X");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickLY, "pad_stickly", "Left Stick Y");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickRX, "pad_stickrx", "Right Stick X");
+	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_StickRY, "pad_stickry", "Right Stick Y");
 	//desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RotX, "RotX", "RotX");
 	//desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RotY, "RotY", "RotY");
 	//desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RotZ, "RotZ", "RotZ");
@@ -425,8 +419,6 @@ void ReflectType(Schematyc::CTypeDesc<CInputComponent::EPS4InputId>& desc)
 	//desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RotX_KeyR, "RotX_KeyR", "RotX_KeyR");
 	//desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RotZ_KeyD, "RotZ_KeyD", "RotZ_KeyD");
 	//desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RotZ_KeyU, "RotZ_KeyU", "RotZ_KeyU");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_LeftTrigger, "LeftTrigger", "Left Trigger");
-	desc.AddConstant((CInputComponent::EPS4InputId)EKeyId::eKI_Orbis_RightTrigger, "RightTrigger", "Right Trigger");
 }
 
 struct SActionPressedSignal
@@ -553,7 +545,7 @@ static void ReflectType(Schematyc::CTypeDesc<SActionChangedSignal>& desc)
 void CInputComponent::Initialize()
 {
 	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
-	
+
 	pActionMapManager->ClearInputDevicesMappings();
 
 	pActionMapManager->AddInputDeviceMapping(eAID_KeyboardMouse, "keyboard");
@@ -624,11 +616,6 @@ void InternalBindAction(EntityId id, Schematyc::CSharedString groupName, Schemat
 	pActionMap->AddAndBindActionInput(ActionId(name.c_str()), input);
 
 	pActionMapManager->EnableActionMap(groupName.c_str(), true);
-
-	if (IActionMap *pActionMap = pActionMapManager->GetActionMap(groupName.c_str()))
-	{
-		pActionMap->SetActionListener(id);
-	}
 }
 
 void CInputComponent::BindKeyboardAction(Schematyc::CSharedString groupName, Schematyc::CSharedString name, EKeyboardInputId keyId, bool bOnPress, bool bOnRelease, bool bOnHold)
