@@ -63,7 +63,9 @@ namespace Cry
 					gEnv->pEntitySystem->GetAreaManager()->ExitAllAreas(s_pActiveCamera->m_pAudioListener->GetId());
 					s_pActiveCamera->m_pAudioListener->SetFlagsExtended(s_pActiveCamera->m_pAudioListener->GetFlagsExtended() & ~ENTITY_FLAG_EXTENDED_AUDIO_LISTENER);
 
-					m_pEntity->UpdateComponentEventMask(s_pActiveCamera);
+					CCameraComponent* pPreviousCamera = s_pActiveCamera;
+					s_pActiveCamera = nullptr;
+					m_pEntity->UpdateComponentEventMask(pPreviousCamera);
 				}
 
 				s_pActiveCamera = this;

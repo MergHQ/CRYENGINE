@@ -3098,9 +3098,12 @@ public:
 			break;
 		case eFE_PrecacheResources:
 			{
-				if (IGame::IResourcesPreCache* pResourceCache = gEnv->pGameFramework->GetIGame()->GetResourceCache())
+				if (IGame* pGame = gEnv->pGameFramework->GetIGame())
 				{
-					pResourceCache->QueueEntityClass(GetPortString(pActInfo, EIP_ClassName));
+					if (IGame::IResourcesPreCache* pResourceCache = pGame->GetResourceCache())
+					{
+						pResourceCache->QueueEntityClass(GetPortString(pActInfo, EIP_ClassName));
+					}
 				}
 			}
 			break;
@@ -3276,9 +3279,12 @@ public:
 			break;
 		case eFE_PrecacheResources:
 			{
-				if (IGame::IResourcesPreCache* pResourceCache = gEnv->pGameFramework->GetIGame()->GetResourceCache())
+				if (IGame* pGame = gEnv->pGameFramework->GetIGame())
 				{
-					pResourceCache->QueueEntityArchetype(GetPortString(pActInfo, EIP_ArchetypeName));
+					if (IGame::IResourcesPreCache* pResourceCache = pGame->GetResourceCache())
+					{
+						pResourceCache->QueueEntityArchetype(GetPortString(pActInfo, EIP_ArchetypeName));
+					}
 				}
 			}
 			break;
@@ -3451,8 +3457,14 @@ public:
 	{
 		if (eFE_Activate == event && IsPortActive(pActInfo, IN_GET))
 		{
-			IEntity* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRulesEntity();
-			ActivateOutput(pActInfo, OUT_ID, pGameRules->GetId());
+			if (IEntity* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRulesEntity())
+			{
+				ActivateOutput(pActInfo, OUT_ID, pGameRules->GetId());
+			}
+			else
+			{
+				ActivateOutput(pActInfo, OUT_ID, INVALID_ENTITYID);
+			}
 		}
 	}
 

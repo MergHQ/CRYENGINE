@@ -33,7 +33,13 @@ CManagedPlugin::~CManagedPlugin()
 
 	if (m_pMonoObject != nullptr)
 	{
-		m_pMonoObject->GetClass()->FindMethod("Shutdown")->Invoke(m_pMonoObject.get());
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
+		{
+			if (std::shared_ptr<CMonoMethod> pShutdownMethod = pClass->FindMethod("Shutdown"))
+			{
+				pShutdownMethod->Invoke(m_pMonoObject.get());
+			}
+		}
 	}
 }
 
@@ -85,7 +91,13 @@ void CManagedPlugin::InitializePlugin()
 
 	if (m_pMonoObject != nullptr)
 	{
-		m_pMonoObject->GetClass()->FindMethod("Initialize")->Invoke(m_pMonoObject.get());
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("Initialize"))
+			{
+				pMethod->Invoke(m_pMonoObject.get());
+			}
+		}
 	}
 
 	// scans for console command attributes
@@ -138,9 +150,12 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	{
 		if (m_pMonoObject != nullptr)
 		{
-			if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnLevelLoaded"))
+			if (CMonoClass* pClass = m_pMonoObject->GetClass())
 			{
-				pMethod->Invoke(m_pMonoObject.get());
+				if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnLevelLoaded"))
+				{
+					pMethod->Invoke(m_pMonoObject.get());
+				}
 			}
 		}
 	}
@@ -151,34 +166,46 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		{
 			if (m_pMonoObject != nullptr)
 			{
-				if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStart"))
+				if (CMonoClass* pClass = m_pMonoObject->GetClass())
 				{
-					pMethod->Invoke(m_pMonoObject.get());
+					if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStart"))
+					{
+						pMethod->Invoke(m_pMonoObject.get());
+					}
 				}
 			}
 		}
 		else if (m_pMonoObject != nullptr)
 		{
-			if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStop"))
+			if (CMonoClass* pClass = m_pMonoObject->GetClass())
 			{
-				pMethod->Invoke(m_pMonoObject.get());
+				if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStop"))
+				{
+					pMethod->Invoke(m_pMonoObject.get());
+				}
 			}
 		}
 	}
 	break;
 	case ESYSTEM_EVENT_LEVEL_GAMEPLAY_START:
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStart"))
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
 		{
-			pMethod->Invoke(m_pMonoObject.get());
+			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStart"))
+			{
+				pMethod->Invoke(m_pMonoObject.get());
+			}
 		}
 	}
 	break;
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStop"))
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
 		{
-			pMethod->Invoke(m_pMonoObject.get());
+			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStop"))
+			{
+				pMethod->Invoke(m_pMonoObject.get());
+			}
 		}
 	}
 	break;
@@ -189,13 +216,17 @@ bool CManagedPlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 {
 	if (m_pMonoObject != nullptr)
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnClientConnectionReceived"))
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
 		{
-			void* pParameters[1];
-			pParameters[0] = &channelId;
+			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnClientConnectionReceived"))
+			{
+				void* pParameters[1];
+				pParameters[0] = &channelId;
 
-			pMethod->Invoke(m_pMonoObject.get(), pParameters);
+				pMethod->Invoke(m_pMonoObject.get(), pParameters);
+			}
 		}
+		
 	}
 
 	return true;
@@ -205,12 +236,15 @@ bool CManagedPlugin::OnClientReadyForGameplay(int channelId, bool bIsReset)
 {
 	if (m_pMonoObject != nullptr)
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnClientReadyForGameplay"))
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
 		{
-			void* pParameters[1];
-			pParameters[0] = &channelId;
+			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnClientReadyForGameplay"))
+			{
+				void* pParameters[1];
+				pParameters[0] = &channelId;
 
-			pMethod->Invoke(m_pMonoObject.get(), pParameters);
+				pMethod->Invoke(m_pMonoObject.get(), pParameters);
+			}
 		}
 	}
 
@@ -221,11 +255,14 @@ void CManagedPlugin::OnClientDisconnected(int channelId, EDisconnectionCause cau
 {
 	if (m_pMonoObject != nullptr)
 	{
-		if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnClientDisconnected"))
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
 		{
-			void* pParameters[1];
-			pParameters[0] = &channelId;
-			pMethod->Invoke(m_pMonoObject.get(), pParameters);
+			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnClientDisconnected"))
+			{
+				void* pParameters[1];
+				pParameters[0] = &channelId;
+				pMethod->Invoke(m_pMonoObject.get(), pParameters);
+			}
 		}
 	}
 }

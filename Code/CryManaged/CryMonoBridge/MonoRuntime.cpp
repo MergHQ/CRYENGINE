@@ -426,24 +426,27 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 			CAppDomain* pPluginDomain = LaunchPluginDomain();
 			CRY_ASSERT(pPluginDomain != nullptr);
 
-			// Temporary, remove scanning of the Core assembly when we use the unified components
-			static CManagedPlugin::TComponentFactoryMap coreLibraryFactoryMap;
-			CManagedPlugin::s_pCurrentlyRegisteringFactory = &coreLibraryFactoryMap;
-
-			//Scan the Core-assembly for entity components etc.
-			void* pRegisterArgs[1] = { m_pLibCore->GetManagedObject() };
-			std::shared_ptr<CMonoClass> pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
-			pEngineClass->FindMethodWithDesc("ScanAssembly(Assembly)")->InvokeStatic(pRegisterArgs);
-
-			CManagedPlugin::s_pCurrentlyRegisteringFactory = nullptr;
-
-			CompileAssetSourceFiles();
-
-			for (const std::weak_ptr<CManagedPlugin>& plugin : m_plugins)
+			if (pPluginDomain != nullptr)
 			{
-				if (std::shared_ptr<CManagedPlugin> pPlugin = plugin.lock())
+				// Temporary, remove scanning of the Core assembly when we use the unified components
+				static CManagedPlugin::TComponentFactoryMap coreLibraryFactoryMap;
+				CManagedPlugin::s_pCurrentlyRegisteringFactory = &coreLibraryFactoryMap;
+
+				//Scan the Core-assembly for entity components etc.
+				void* pRegisterArgs[1] = { m_pLibCore->GetManagedObject() };
+				std::shared_ptr<CMonoClass> pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
+				pEngineClass->FindMethodWithDesc("ScanAssembly(Assembly)")->InvokeStatic(pRegisterArgs);
+
+				CManagedPlugin::s_pCurrentlyRegisteringFactory = nullptr;
+
+				CompileAssetSourceFiles();
+
+				for (const std::weak_ptr<CManagedPlugin>& plugin : m_plugins)
 				{
-					pPlugin->Load(pPluginDomain);
+					if (std::shared_ptr<CManagedPlugin> pPlugin = plugin.lock())
+					{
+						pPlugin->Load(pPluginDomain);
+					}
 				}
 			}
 		}
@@ -485,12 +488,15 @@ void CMonoRuntime::CompileAssetSourceFiles()
 
 	void* pParams[1] = { pStringArray };
 	std::shared_ptr<CMonoObject> pResult = pCompilationMethod->InvokeStatic(pParams);
-	if (MonoInternals::MonoReflectionAssembly* pReflectionAssembly = (MonoInternals::MonoReflectionAssembly*)pResult->GetManagedObject())
+	if (pResult != nullptr)
 	{
-		MonoInternals::MonoAssembly* pAssembly = mono_reflection_assembly_get_assembly(pReflectionAssembly);
+		if (MonoInternals::MonoReflectionAssembly* pReflectionAssembly = (MonoInternals::MonoReflectionAssembly*)pResult->GetManagedObject())
+		{
+			MonoInternals::MonoAssembly* pAssembly = mono_reflection_assembly_get_assembly(pReflectionAssembly);
 
-		m_pAssetsPlugin = std::make_shared<CManagedPlugin>(pDomain->GetLibraryFromMonoAssembly(pAssembly));
-		m_plugins.emplace_back(m_pAssetsPlugin);
+			m_pAssetsPlugin = std::make_shared<CManagedPlugin>(pDomain->GetLibraryFromMonoAssembly(pAssembly));
+			m_plugins.emplace_back(m_pAssetsPlugin);
+		}
 	}
 
 	/*for (int i = 0; i < sourceFiles.size(); ++i)
