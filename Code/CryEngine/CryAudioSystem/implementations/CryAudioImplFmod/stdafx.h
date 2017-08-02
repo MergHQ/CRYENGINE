@@ -8,13 +8,14 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
-#include <AudioLogger.h>
 #include <fmod_studio.hpp>
 
 #if !defined(_RELEASE)
 	#define INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 	#define ENABLE_AUDIO_LOGGING
 #endif // _RELEASE
+
+#include <AudioLogger.h>
 
 #if CRY_PLATFORM_DURANGO
 	#define PROVIDE_FMOD_IMPL_SECONDARY_POOL
