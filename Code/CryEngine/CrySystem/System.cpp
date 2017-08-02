@@ -680,7 +680,10 @@ void CSystem::ShutDown()
 	}
 
 	SAFE_DELETE(m_pUserAnalyticsSystem);
-	UnloadEngineModule(m_sys_dll_response_system->GetString());
+	if (m_sys_dll_response_system != nullptr)
+	{
+		UnloadEngineModule(m_sys_dll_response_system->GetString());
+	}
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	if (m_env.pRenderer)
@@ -729,8 +732,11 @@ void CSystem::ShutDown()
 
 	SAFE_RELEASE(m_env.pRenderer);
 
-	auto r_driver = m_env.pConsole->GetCVar("r_driver")->GetString();
-	CloseRenderLibrary(r_driver);
+	if (ICVar* pDriverCVar = m_env.pConsole->GetCVar("r_driver"))
+	{
+		const char* szRenderDriver = pDriverCVar->GetString();
+		CloseRenderLibrary(szRenderDriver);
+	}
 
 	SAFE_RELEASE(m_env.pCodeCheckpointMgr);
 

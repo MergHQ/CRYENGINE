@@ -206,7 +206,7 @@ public:
 	CProjectManager();
 	virtual ~CProjectManager() {}
 
-	void ParseProjectFile();
+	bool ParseProjectFile();
 	void MigrateFromLegacyWorkflowIfNecessary();
 
 	// IProjectManager
