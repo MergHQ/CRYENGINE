@@ -747,7 +747,9 @@ namespace UQS
 				m_queryBlueprintName.c_str(),
 				numGeneratedItems,
 				numItemsInFinalResultSet,
-				elapsedTime);
+				elapsedTime,
+				m_queryCreatedTimestamp,
+				m_queryDestroyedTimestamp);
 			consumer.AddOrUpdateHistoricQuery(overview);
 		}
 
@@ -779,7 +781,7 @@ namespace UQS
 				}
 			}
 
-			// elapsed frames and time
+			// elapsed frames and time, and timestamps of creation + destruction of the query
 			{
 				// elapsed frames
 				consumer.AddTextLineToCurrentHistoricQuery(color, "elapsed frames until result:  %i", (int)m_finalStatistics.totalElapsedFrames);
@@ -790,6 +792,17 @@ namespace UQS
 
 				// consumed time (this is the accumulation of the granted and consumed amounts of time per update call while the query was running)
 				consumer.AddTextLineToCurrentHistoricQuery(color, "consumed seconds:             %f (%.2f milliseconds)", m_finalStatistics.totalConsumedTime.GetSeconds(), m_finalStatistics.totalConsumedTime.GetMilliSeconds());
+
+				// timestamps of when the query was created and destroyed (notice: if the query was canceled prematurely it will miss the timestamp of query destruction)
+				// -> "h:mm:ss:mmm"
+
+				int hours, minutes, seconds, milliseconds;
+
+				UQS::Shared::CTimeValueUtil::Split(m_queryCreatedTimestamp, &hours, &minutes, &seconds, &milliseconds);
+				consumer.AddTextLineToCurrentHistoricQuery(color, "timestamp query created:      %i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
+
+				UQS::Shared::CTimeValueUtil::Split(m_queryDestroyedTimestamp, &hours, &minutes, &seconds, &milliseconds);
+				consumer.AddTextLineToCurrentHistoricQuery(color, "timestamp query destroyed:    %i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
 			}
 
 			// canceled: yes/no

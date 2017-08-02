@@ -51,6 +51,8 @@ struct SQuery
 		// TODO: column for displaying the itemType of the items in the result set
 		Column_ItemCounts, // number of resulting items vs. generated items
 		Column_ElapsedTime,
+		Column_TimestampQueryCreated,
+		Column_TimestampQueryDestroyed,
 
 		ColumnCount
 	};
@@ -93,16 +95,26 @@ struct SQuery
 		stack_string queryIdAndQuerierName;
 		stack_string itemCountsAsString;
 		stack_string elapsedTimeAsString;
+		stack_string timestampQueryCreatedAsString;
+		stack_string timestampQueryDestroyedAsString;
+
+		int hours, minutes, seconds, milliseconds;
 
 		overview.queryID.ToString(queryIdAsString);
 		queryIdAndQuerierName.Format("#%s: %s", queryIdAsString.c_str(), overview.szQuerierName);
 		itemCountsAsString.Format("%i / %i", (int)overview.numResultingItems, (int)overview.numGeneratedItems);
 		elapsedTimeAsString.Format("%.2f ms", overview.timeElapsedUntilResult.GetMilliSeconds());
+		UQS::Shared::CTimeValueUtil::Split(overview.timestampQueryCreated, &hours, &minutes, &seconds, &milliseconds);
+		timestampQueryCreatedAsString.Format  ("%i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
+		UQS::Shared::CTimeValueUtil::Split(overview.timestampQueryDestroyed, &hours, &minutes, &seconds, &milliseconds);
+		timestampQueryDestroyedAsString.Format("%i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
 
 		this->dataPerColumn[Column_QueryIdAndQuerierName] = QtUtil::ToQString(queryIdAndQuerierName.c_str());
 		this->dataPerColumn[Column_QueryBlueprintName] = QtUtil::ToQString(overview.szQueryBlueprintName);
 		this->dataPerColumn[Column_ItemCounts] = QtUtil::ToQString(itemCountsAsString.c_str());
 		this->dataPerColumn[Column_ElapsedTime] = QtUtil::ToQString(elapsedTimeAsString.c_str());
+		this->dataPerColumn[Column_TimestampQueryCreated] = QtUtil::ToQString(timestampQueryCreatedAsString.c_str());
+		this->dataPerColumn[Column_TimestampQueryDestroyed] = QtUtil::ToQString(timestampQueryDestroyedAsString.c_str());
 	}
 
 	static void HelpSerializeEvaluatorsBitfield(Serialization::IArchive& ar, UQS::Core::evaluatorsBitfield_t& bitfieldToSerialize, const std::vector<string>& evaluatorNames, const std::vector<string>& evaluatorLabelsForUI)
@@ -161,7 +173,9 @@ const char* SQuery::headers[SQuery::ColumnCount] =
 	"Query ID + querier",         // Column_QueryIdAndQuerierName
 	"Query Blueprint",            // Column_QueryBlueprintName
 	"Items (accepted/generated)", // Column_ItemCounts
-	"Elapsed time"                // Column_ElapsedTime,
+	"Elapsed time",               // Column_ElapsedTime
+	"Timestamp query created",    // Column_TimestampQueryCreated
+	"Timestamp query destroyed",  // Column_TimestampQueryDestroyed
 };
 
 const char* SQuery::toolTips[SQuery::ColumnCount] =
@@ -169,7 +183,9 @@ const char* SQuery::toolTips[SQuery::ColumnCount] =
 	"Unique id of the query instance and the name of who started that query",                                                                                                                           // Column_QueryIdAndQuerierName
 	"Name of the blueprint from which the live query was instantiated",                                                                                                                                 // Column_QueryBlueprintName
 	"Number of items that were generated and ended up in the final result set. Notice: a hierarchical query may not necessarily generate items, yet grab the resulting items from one of its children", // Column_ItemCounts
-	"Elapsed time from start to finish of the query. Notice: don't confuse with *consumed* time."                                                                                                       // Column_ElapsedTime,
+	"Elapsed time from start to finish of the query. Notice: don't confuse with *consumed* time.",                                                                                                      // Column_ElapsedTime
+	"Timestamp of when the query was created in h:mm:ss:mmm",                                                                                                                                           // Column_TimestampQueryCreated
+	"Timestamp of when the query was destroyed in h:mm:ss:mmm. Notice: might show some weird value if the query was canceled prematurely.",                                                             // Column_TimestampQueryDestroyed
 };
 
 //===================================================================================
