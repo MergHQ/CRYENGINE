@@ -114,7 +114,17 @@ namespace CryEngine.UI.Components
 		/// Defines how clamping should be computed in ClampRect.
 		/// </summary>
 		/// <value>The clamp mode.</value>
-		public ClampMode ClampMode { set { _clampMode = value; _clampRect = null; } get { return _clampMode; } }
+		public ClampMode ClampMode 
+		{ 
+			set 
+			{ 
+				_clampMode = value;
+			} 
+			get 
+			{ 
+				return _clampMode; 
+			} 
+		}
 
 		/// <summary>
 		/// Defines the center of the element, relative to its size.
@@ -132,7 +142,14 @@ namespace CryEngine.UI.Components
 		/// Returns Parent elements RectTransform, if available.
 		/// </summary>
 		/// <value>The prt.</value>
-		public RectTransform PRT { get { return (Transform.Parent != null && Transform.Parent.Owner is UIElement) ? (Transform.Parent.Owner as UIElement).RectTransform : null; } }
+		public RectTransform PRT 
+		{ 
+			get 
+			{
+				var parent = Transform.Parent;
+				return parent == null ? null : parent.Owner.GetComponent<RectTransform>();
+			}
+		}
 
 		/// <summary>
 		/// Returns center of owning element.
@@ -206,38 +223,54 @@ namespace CryEngine.UI.Components
 			switch(ClampMode)
 			{
 			case ClampMode.Full:
-				_clampRect = Spacing != null ? _bounds.Pad(Spacing) : _bounds;
+				_clampRect = _bounds.Pad(Spacing);
 
 				// Use intersection if parent and own rect exist
-				if(prt != null && prt.ClampRect != null && _clampRect != null)
+				if(prt != null && prt.ClampRect.Size > 0 && _clampRect.Size > 0)
+				{
 					_clampRect = prt._clampRect & _clampRect;
+				}
 
 				// Take over Parent CR if self null
-				if(_clampRect == null && prt != null)
+				if(MathHelpers.Approximately(_clampRect.Size, 0) && prt != null)
+				{
 					_clampRect = prt._clampRect;
+				}
 				break;
 
 			case ClampMode.Self:
-				_clampRect = Spacing != null ? Bounds.Pad(Spacing) : _bounds;
+				_clampRect = Bounds.Pad(Spacing);
 				break;
 
 			case ClampMode.Parent:
-				_clampRect = prt != null ? prt._clampRect : null;
+				_clampRect = prt != null ? prt._clampRect : new Rect();
 				break;
 
 			case ClampMode.None:
-				_clampRect = null;
+				_clampRect = new Rect();
 				break;
 			}
 		}
 
 		RectTransform GetOutdatedAncestor()
 		{
-			if(Transform.Parent == null || !(Transform.Parent.Owner is UIElement))
+			var parent = Transform.Parent;
+			if(parent == null)
+			{
 				return null;
-			var prt = (Transform.Parent.Owner as UIElement).RectTransform;
+			}
+
+			var prt = parent.Owner.GetComponent<RectTransform>();
+			if(prt == null)
+			{
+				return null;
+			}
+
 			if(prt.NeedsRefresh)
+			{
 				return prt;
+			}
+
 			return prt.GetOutdatedAncestor();
 		}
 
@@ -333,7 +366,9 @@ namespace CryEngine.UI.Components
 			ComputeClampRect();
 
 			if(DeltaChanged)
+			{
 				Transform.Children.Where(t => t.Owner is UIElement).ToList().ForEach(t => (t.Owner as UIElement).RectTransform.PerformLayout(true));
+			}
 
 			if(LayoutChanged != null)
 				LayoutChanged();

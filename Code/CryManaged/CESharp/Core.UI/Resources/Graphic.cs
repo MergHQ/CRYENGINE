@@ -9,6 +9,10 @@ namespace CryEngine.UI
 	/// </summary>
 	public class Graphic : Texture
 	{
+		/// <summary>
+		/// The Canvas that this Graphic is targeting.
+		/// </summary>
+		/// <value>The target canvas.</value>
 		public Canvas TargetCanvas { get; set; }
 
 		/// <summary>
@@ -53,7 +57,7 @@ namespace CryEngine.UI
 		private void DrawSection(float x, float y, float w, float h, float u0, float v0, float u1, float v1)
 		{
 			float crx = x, cry = y, crw = w, crh = h;
-			if(ClampRect != null)
+			if(ClampRect.Size > 0)
 			{
 				crx = ClampRect.x;
 				cry = ClampRect.y;
@@ -61,9 +65,14 @@ namespace CryEngine.UI
 				crh = ClampRect.h;
 			}
 
-			if(ClampRect == null || (crx <= x && cry <= y && crx + crw >= x + w && cry + crh >= y + h))
+			if(MathHelpers.Approximately(ClampRect.Size, 0) || (crx <= x && cry <= y && crx + crw >= x + w && cry + crh >= y + h))
 			{
-				if(RoundLocation) { x = (int)x; y = (int)y; }
+				if(RoundLocation) 
+				{ 
+					x = (int)x; 
+					y = (int)y; 
+				}
+
 				TargetCanvas.PushTexturePart(x, y, w, h, ID, u0, v0, u1, v1, Angle, Color);
 			}
 			else

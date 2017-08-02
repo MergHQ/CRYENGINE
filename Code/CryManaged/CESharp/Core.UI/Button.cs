@@ -43,7 +43,10 @@ namespace CryEngine.UI
 			}
 		}
 
-
+		/// <summary>
+		/// The path to the image that will be used for the background of this button.
+		/// </summary>
+		/// <value>The background image URL.</value>
 		public string BackgroundImageUrl
 		{
 			get { return _backgroundImageUrl; }
@@ -59,7 +62,10 @@ namespace CryEngine.UI
 			}
 		}
 
-
+		/// <summary>
+		/// The path to the image that will be used for the background of this button if it is pressed.
+		/// </summary>
+		/// <value>The background image inverted URL.</value>
 		public string BackgroundImageInvertedUrl
 		{
 			get { return _backgroundImageInvertedUrl; }
@@ -75,7 +81,10 @@ namespace CryEngine.UI
 			}
 		}
 
-
+		/// <summary>
+		/// The path to the image that will be shown when the button is pressed.
+		/// </summary>
+		/// <value>The frame image URL.</value>
 		public string FrameImageUrl
 		{
 			get { return _frameImageUrl; }

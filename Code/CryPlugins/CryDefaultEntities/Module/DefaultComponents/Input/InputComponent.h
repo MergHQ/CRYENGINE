@@ -78,7 +78,7 @@ namespace Cry
 				{
 					if (!strcmp(group.m_szName, szGroupName))
 					{
-						group.m_actions.emplace_back(SGroup::SAction{ szName, callback });
+						group.AddAction(szName, callback);
 					}
 				}
 			}
@@ -111,14 +111,44 @@ namespace Cry
 				};
 
 				SGroup(const char* szName)
-					: m_szName(szName)
+					: m_szName(szName) {}
+
+				SGroup(const SGroup& other)
+					: m_szName(other.m_szName)
+					, m_actions(other.m_actions)
 				{
-					gEnv->pGameFramework->GetIActionMapManager()->AddExtraActionListener(this);
+					if (m_actions.size() > 0)
+					{
+						gEnv->pGameFramework->GetIActionMapManager()->AddExtraActionListener(this);
+					}
 				}
 
 				virtual ~SGroup()
 				{
-					gEnv->pGameFramework->GetIActionMapManager()->RemoveExtraActionListener(this);
+					if (m_actions.size() > 0)
+					{
+						gEnv->pGameFramework->GetIActionMapManager()->RemoveExtraActionListener(this);
+					}
+				}
+
+				void AddAction(const char* szName, TActionCallback callback)
+				{
+					// Delete already existing entries
+					for (auto it = m_actions.begin(); it != m_actions.end(); it++)
+					{
+						if (strcmp(it->szName, szName) == 0)
+						{
+							m_actions.erase(it);
+							break;
+						}
+					}
+
+					if (m_actions.size() == 0)
+					{
+						gEnv->pGameFramework->GetIActionMapManager()->AddExtraActionListener(this);
+					}
+
+					m_actions.emplace_back(SGroup::SAction{ szName, callback });
 				}
 
 				// IActionListener
@@ -136,6 +166,8 @@ namespace Cry
 				// ~IActionListener
 
 				const char* m_szName;
+
+			protected:
 				DynArray<SAction> m_actions;
 			};
 

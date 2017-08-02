@@ -14,6 +14,12 @@ namespace CryEngine.UI
 	[DebuggerDisplay("SceneObject({Name})")]
 	public class SceneObject : IUpdateReceiver
 	{
+		private static int _updateOrder;
+
+		private List<UIComponent> _components = new List<UIComponent>();
+		private bool _isActive = true;
+		private bool _isActiveByHierarchy = true;
+
 		/// <summary>
 		/// Called if Active property was changed
 		/// </summary>
@@ -54,13 +60,19 @@ namespace CryEngine.UI
 		/// <value><c>true</c> if is updateable; otherwise, <c>false</c>.</value>
 		public bool IsUpdateable { get; private set; } = false;
 
-		static int _updateOrder;
-		List<UIComponent> _components = new List<UIComponent>();
-		protected bool _isActive = true;
-		protected bool _isActiveByHierarchy = true;
-
+		/// <summary>
+		/// Called when this SceneObject is instantiated.
+		/// </summary>
 		public virtual void OnAwake() { }
+
+		/// <summary>
+		/// Called once every frame.
+		/// </summary>
 		public virtual void OnUpdate() { }
+
+		/// <summary>
+		/// Called when this SceneObject is destroyed.
+		/// </summary>
 		public virtual void OnDestroy() { }
 
 		/// <summary>
@@ -185,6 +197,27 @@ namespace CryEngine.UI
 		}
 
 		/// <summary>
+		/// Get the first parent SceneObject of type T. Returns null of no parent is of type T.
+		/// </summary>
+		/// <returns>The parent with type T, or null of none is found.</returns>
+		/// <param name="includeSelf">If set to <c>true</c> includes itself while searching for the type.</param>
+		/// <typeparam name="T">The type of the parent.</typeparam>
+		public T GetParentWithType<T>(bool includeSelf = true) where T : SceneObject
+		{
+			SceneObject element = includeSelf ? this : Parent;
+			while(element != null)
+			{
+				var foundType = element as T;
+				if(foundType != null)
+				{
+					return foundType;
+				}
+				element = element.Parent;
+			}
+			return null;
+		}
+
+		/// <summary>
 		/// Adds a component of type T.
 		/// </summary>
 		public T AddComponent<T>() where T : UIComponent
@@ -257,31 +290,42 @@ namespace CryEngine.UI
 			return false;
 		}
 
-		public void ForEach<T>(Action<T> a) where T : SceneObject
+		/// <summary>
+		/// Execute an action on all child objects of Type <typeparamref name="T"/> on this SceneObject.
+		/// </summary>
+		/// <param name="action">The action that will that will be run.</param>
+		/// <typeparam name="T">The type of SceneObjects it will run on.</typeparam>
+		public void ForEach<T>(Action<T> action) where T : SceneObject
 		{
 			foreach(var t in Transform.Children)
 			{
 				if(t.Owner is T)
 				{
-					a(t.Owner as T);
+					action(t.Owner as T);
 				}
-				t.Owner.ForEach(a);
+				t.Owner.ForEach(action);
 			}
 		}
 
-		public void ForEachComponent<C>(Action<C> a) where C : UIComponent
+		/// <summary>
+		/// Execute an action on all components of Type <typeparamref name="C"/> on this SceneObject, and run it also on all child SceneObjects.
+		/// </summary>
+		/// <param name="action">The action that will be run.</param>
+		/// <typeparam name="C">The type of components it will be run on.</typeparam>
+		public void ForEachComponent<C>(Action<C> action) where C : UIComponent
 		{
-			foreach(var c in Components)
+			foreach(var component in Components)
 			{
-				if(c is C)
+				C castComponent = component as C;
+				if(castComponent != null)
 				{
-					a(c as C);
+					action(castComponent);
 				}
 			}
 
 			foreach(var t in Transform.Children)
 			{
-				t.Owner.ForEachComponent(a);
+				t.Owner.ForEachComponent(action);
 			}
 		}
 

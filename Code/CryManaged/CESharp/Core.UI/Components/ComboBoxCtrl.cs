@@ -80,16 +80,25 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override void OnAwake()
 		{
-			_text = (Owner as ComboBox).BgPanel.AddComponent<Text>();
-			_text.Offset = new Point(5, 1);
+			var comboBox = Owner as ComboBox;
+			if(comboBox != null)
+			{
+				_text = comboBox.BgPanel.AddComponent<Text>();
+				_text.Offset = new Point(5, 1);
+			}
 
 			_choiceFrame = SceneObject.Instantiate<UIElement>(Owner);
 			_choiceFrame.RectTransform.Alignment = Alignment.TopHStretch;
 
 			_choiceRoot = SceneObject.Instantiate(null, "ChoiceRoot");
 			var canvas = SceneObject.Instantiate<Canvas>(_choiceRoot);
-			var pc = (Owner as UIElement).FindParentCanvas();
-			canvas.SetupTargetEntity(pc.TargetEntity, pc.TargetTexture);
+
+			var pc = Owner.GetParentWithType<Canvas>();
+			if(pc != null)
+			{	
+				canvas.SetupTargetEntity(pc.TargetEntity, pc.TargetTexture);
+			}
+
 			_choice = SceneObject.Instantiate<Panel>(canvas);
 			_choice.RectTransform.Alignment = Alignment.TopLeft;
 			_choice.Background.Source = ResourceManager.ImageFromFile(Path.Combine(UIElement.DataDirectory, "button.png"));
