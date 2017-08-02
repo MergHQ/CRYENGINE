@@ -41,6 +41,12 @@ public:
 	virtual void ProcessEvent(SEntityEvent& event) override;
 	// ~IEntityComponent
 
+	// Reflect type to set a unique identifier for this component
+	static void ReflectType(Schematyc::CTypeDesc<CPlayerComponent>& desc)
+	{
+		desc.SetGUID("{63F4C0C6-32AF-4ACB-8FB0-57D45DD14725}"_cry_guid);
+	}
+
 	void Revive();
 
 protected:

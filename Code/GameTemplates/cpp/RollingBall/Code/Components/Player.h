@@ -48,23 +48,18 @@ public:
 	CPlayerComponent() = default;
 	virtual ~CPlayerComponent() {}
 
-	static CryGUID& IID()
-	{
-		static CryGUID id = "B08F2F41-F02E-48B5-921A-3FF857F19ED6"_cry_guid;
-		return id;
-	}
-
-	static void ReflectType(Schematyc::CTypeDesc<CPlayerComponent>& desc)
-	{
-		desc.SetGUID(CPlayerComponent::IID());
-	}
-
 	// IEntityComponent
 	virtual void Initialize() override;
 
 	virtual uint64 GetEventMask() const override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 	// ~IEntityComponent
+
+	// Reflect type to set a unique identifier for this component
+	static void ReflectType(Schematyc::CTypeDesc<CPlayerComponent>& desc)
+	{
+		desc.SetGUID("{B08F2F41-F02E-48B5-921A-3FF857F19ED6}"_cry_guid);
+	}
 
 	void Revive();
 

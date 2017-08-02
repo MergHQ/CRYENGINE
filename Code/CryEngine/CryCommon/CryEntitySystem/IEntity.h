@@ -818,6 +818,8 @@ public:
 			IEntityComponent::SInitParams initParams = IEntityComponent::SInitParams{ pEntity, CryGUID::Create(), "", &Schematyc::GetTypeDesc<ComponentType>(), EEntityComponentFlags::None, nullptr, nullptr };
 			if (pEntity->AddComponent(pComponent, &initParams))
 			{
+				static_cast<IEntityComponent*>(pComponent.get())->Initialize();
+
 				return pComponent.get();
 			}
 
