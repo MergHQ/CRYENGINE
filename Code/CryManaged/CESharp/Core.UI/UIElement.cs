@@ -82,21 +82,60 @@ namespace CryEngine.UI
 	/// </summary>
 	public enum Alignment
 	{
+		/// <summary>
+		/// Center the element.
+		/// </summary>
 		Center,
+		/// <summary>
+		/// Align the element to the top.
+		/// </summary>
 		Top,
+		/// <summary>
+		/// Align the element to the top-right.
+		/// </summary>
 		TopRight,
+		/// <summary>
+		/// Align the element to the right.
+		/// </summary>
 		Right,
+		/// <summary>
+		/// Align the element to the bottom-right.
+		/// </summary>
 		BottomRight,
+		/// <summary>
+		/// Align the element to the bottom.
+		/// </summary>
 		Bottom,
+		/// <summary>
+		/// Align the element to the bottom-left.
+		/// </summary>
 		BottomLeft,
+		/// <summary>
+		/// Align the element to the left.
+		/// </summary>
 		Left,
+		/// <summary>
+		/// Align the element to the top-left.
+		/// </summary>
 		TopLeft,
+		/// <summary>
+		/// Align the element to the top and stretch it horizontally.
+		/// </summary>
 		TopHStretch,
 		//CenterHStretch,
+		/// <summary>
+		/// Align the element to the bottom and stretch it horizontally.
+		/// </summary>
 		BottomHStretch,
 		//LeftVStretch,
 		//CenterVStretch,
+		/// <summary>
+		/// Align the element to the right, and stretch it vertically.
+		/// </summary>
 		RightVStretch,
+		/// <summary>
+		/// Stretch the element in all directions.
+		/// </summary>
 		Stretch
 	}
 
@@ -128,21 +167,6 @@ namespace CryEngine.UI
 		public UIElement()
 		{
 			RectTransform = AddComponent<RectTransform>();
-		}
-
-		/// <summary>
-		/// Returns ths hierarchically predecessing Canvas object for this element.
-		/// </summary>
-		/// <returns>The parent Canvas.</returns>
-		public Canvas FindParentCanvas()
-		{
-			var canvas = this as Canvas;
-			if(canvas != null)
-			{
-				return canvas;
-			}
-
-			return (Parent as UIElement)?.FindParentCanvas();
 		}
 	}
 }

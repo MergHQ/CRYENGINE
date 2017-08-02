@@ -11,7 +11,14 @@ namespace CryEngine.UI.Components
 	/// </summary>
 	public class ButtonCtrl : UIComponent
 	{
+		/// <summary>
+		/// Occurs then the mouse enters this ButtonCtrl.
+		/// </summary>
 		public event Action OnEnterMouse;
+
+		/// <summary>
+		/// Occurs when the mouse leaves this ButtonCtrl.
+		/// </summary>
 		public event Action OnLeaveMouse;
 
 		/// <summary>
@@ -40,16 +47,30 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override void OnAwake()
 		{
-			Text = (Owner as Button).AddComponent<Text>();
-			Text.Alignment = Alignment.Center;
+			var button = Owner as Button;
+			if(button != null)
+			{
+				Text = button.AddComponent<Text>();
+				Text.Alignment = Alignment.Center;
+			}
 		}
 
+		/// <summary>
+		/// Called when the mouse enters the rectangle of this button.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public override void OnMouseEnter(int x, int y)
 		{
 			if (OnEnterMouse != null)
 				OnEnterMouse();
 		}
 
+		/// <summary>
+		/// Called when the mouse leaves the rectangle of this button.
+		/// </summary>
+		/// <param name="x">The x coordinate.</param>
+		/// <param name="y">The y coordinate.</param>
 		public override void OnMouseLeave(int x, int y)
 		{
 			if (OnLeaveMouse != null)
@@ -79,7 +100,8 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override bool HitTest(int x, int y)
 		{
-			return (Owner as UIElement).RectTransform.ClampRect.Contains(x, y);
+			var rect = Owner.GetComponent<RectTransform>();
+			return rect != null && rect.ClampRect.Contains(x, y);
 		}
 
 		/// <summary>
@@ -87,7 +109,7 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override void OnLeftMouseDown(int x, int y)
 		{
-			(Owner as Button).SetDown();
+			(Owner as Button)?.SetDown();
 		}
 
 		/// <summary>
@@ -95,11 +117,18 @@ namespace CryEngine.UI.Components
 		/// </summary>
 		public override void OnLeftMouseUp(int x, int y, bool inside)
 		{
-			(Owner as Button).SetUp();
+			(Owner as Button)?.SetUp();
 			if (inside && OnPressed != null)
+			{
 				OnPressed();
+			}
 		}
 
+		/// <summary>
+		/// Called when a key is pressed while this button is focused. If the button is the Space, Enter or XInput-A key,
+		/// it will call OnPressed().
+		/// </summary>
+		/// <param name="e">E.</param>
 		public override void OnKey(InputEvent e)
 		{
 			if (e.KeyPressed(KeyId.Space) || e.KeyPressed(KeyId.Enter) || e.KeyPressed(KeyId.XI_A))

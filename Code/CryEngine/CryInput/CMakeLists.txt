@@ -1,3 +1,5 @@
+# Note: By default, the include files required are located at C:\Program Files (x86)\SCE\Common\External Tools\libScePad for PC Games
+# Copy the \include and \lib folder from there to <ROOT>\Code\SDKs\OrbisPad\include and \lib
 if(EXISTS ${SDK_DIR}/OrbisPad)
 	set(HAS_ORBISPAD TRUE)	
 endif()

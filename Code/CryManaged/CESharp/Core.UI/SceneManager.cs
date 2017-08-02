@@ -43,6 +43,10 @@ namespace CryEngine.UI
 
 		internal static SceneManager Instance { get; set; } = new SceneManager();
 
+		/// <summary>
+		/// The root SceneObject created by the SceneManager.
+		/// </summary>
+		/// <value>The root object.</value>
 		public static SceneObject RootObject { get; private set; }
 
 		static readonly List<SceneDescription> _scenes = new List<SceneDescription>();
@@ -73,7 +77,9 @@ namespace CryEngine.UI
 		{
 			var scene = _scenes.SingleOrDefault(x => x.Root == root);
 			if(scene != null)
+			{
 				scene.Priority = priority;
+			}
 		}
 
 		/// <summary>
@@ -110,7 +116,7 @@ namespace CryEngine.UI
 			GameFramework.RegisterForUpdate(this);
 		}
 
-		~SceneManager()
+		internal void Destroy()
 		{
 			GameFramework.UnregisterFromUpdate(this);
 		}
