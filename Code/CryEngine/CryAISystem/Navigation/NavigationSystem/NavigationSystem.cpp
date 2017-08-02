@@ -3616,6 +3616,8 @@ bool NavigationSystem::UnRegisterTileGeneratorExtension(const TileGeneratorExten
 
 void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
 	const bool validDebugAgent = m_agentTypeID && (m_agentTypeID <= navigationSystem.GetAgentTypeCount());
 
 	if (validDebugAgent)
@@ -4349,13 +4351,20 @@ void NavigationSystemDebugDraw::DebugDrawIslandConnection(NavigationSystem& navi
 
 void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(NavigationSystem& navigationSystem, MNM::TileID excludeTileID)
 {
+	FRAME_PROFILER("NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent()", gEnv->pSystem, PROFILE_AI);
+
 	AgentType& agentType = navigationSystem.m_agentTypes[m_agentTypeID - 1];
 	AgentType::Meshes::const_iterator it = agentType.meshes.begin();
 	AgentType::Meshes::const_iterator end = agentType.meshes.end();
 
+	CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
+
 	for (; it != end; ++it)
 	{
 		const NavigationMesh& mesh = navigationSystem.GetMesh(it->id);
+
+		if(!viewCamera.IsAABBVisible_F(navigationSystem.m_volumes[mesh.boundary].aabb))
+			continue;
 
 		size_t drawFlag = MNM::STile::DrawTriangles | MNM::STile::DrawMeshBoundaries;
 		if (gAIEnv.CVars.MNMDebugAccessibility)
