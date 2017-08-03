@@ -934,7 +934,7 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 #else
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
 	AK::SoundEngine::SetDefaultListeners(&m_gameObjectId, 1);
-	pIListener = static_cast<IListener*>(new CListener(m_gameObjectId++));
+	pIListener = static_cast<IListener*>(new CListener(m_gameObjectId));
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	g_listenerID = m_gameObjectId++;
