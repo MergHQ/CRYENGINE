@@ -58,7 +58,18 @@ public:
 				);
 			}
 			break;
+		case ESYSTEM_EVENT_FULL_SHUTDOWN:
+		case ESYSTEM_EVENT_FAST_SHUTDOWN:
+		{
+			// Deregister the Schematyc packages which were registered in the entity system.
+			if (gEnv->pSchematyc)
+			{
+				gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage("A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid);
 
+				gEnv->pEntitySystem->GetClassRegistry()->UnregisterSchematycEntityClass();
+			}
+		}
+		break;
 		case ESYSTEM_EVENT_LEVEL_LOAD_START:
 			if (g_pIEntitySystem)
 				g_pIEntitySystem->OnLevelLoadStart();
@@ -104,11 +115,6 @@ class CEngineModule_EntitySystem : public IEntitySystemEngineModule
 
 	virtual ~CEngineModule_EntitySystem()
 	{
-		if (gEnv->pSchematyc)
-		{
-			gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(SchematyEntityComponentsPackageGUID);
-		}
-
 		GetISystem()->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_entity);
 		SAFE_RELEASE(gEnv->pEntitySystem);
 	}

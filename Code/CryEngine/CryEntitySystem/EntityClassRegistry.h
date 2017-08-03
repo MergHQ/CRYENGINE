@@ -46,6 +46,8 @@ public:
 	IEntityClass* RegisterStdClass(const SEntityClassDesc& entityClassDesc) override;
 	virtual bool  UnregisterStdClass(const CryGUID &guid) override;
 
+	void          UnregisterSchematycEntityClass() override;
+	
 	void          RegisterListener(IEntityClassRegistryListener* pListener) override;
 	void          UnregisterListener(IEntityClassRegistryListener* pListener) override;
 

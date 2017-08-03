@@ -509,6 +509,7 @@ private:
 };
 
 static constexpr CryGUID EntityModuleGUID = "{FB618A28-5A7A-4940-8424-D34A9B034155}"_cry_guid;
+static constexpr CryGUID EntityPackageGUID = "{FAA7837E-1310-454D-808B-99BDDC6954A7}"_cry_guid;
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityClassRegistry::RegisterSchematycEntityClass()
@@ -534,7 +535,7 @@ void CEntityClassRegistry::RegisterSchematycEntityClass()
 
 	gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 	  stl::make_unique<Schematyc::CEnvPackage>(
-	    "{FAA7837E-1310-454D-808B-99BDDC6954A7}"_cry_guid,
+		EntityPackageGUID,
 	    "EntitySystem",
 	    "Crytek GmbH",
 	    "CRYENGINE EntitySystem Package",
@@ -609,5 +610,13 @@ void CEntityClassRegistry::OnSchematycClassCompilation(const Schematyc::IRuntime
 	if (!pEnvClass)
 	{
 		//pEnvClass->SetPreviewer();
+	}
+}
+
+void CEntityClassRegistry::UnregisterSchematycEntityClass()
+{
+	if (gEnv->pSchematyc)
+	{
+		gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(EntityPackageGUID);
 	}
 }

@@ -242,6 +242,13 @@ namespace UQS
 
 				SendHubEventToAllListeners(EHubEvent::LoadQueryBlueprintLibrary);
 			}
+#if UQS_SCHEMATYC_SUPPORT
+			if (event == ESYSTEM_EVENT_FULL_SHUTDOWN || event == ESYSTEM_EVENT_FAST_SHUTDOWN)
+			{
+				if(gEnv->pSchematyc)
+					gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(GetSchematycPackageGUID());
+			}
+#endif 
 		}
 
 		void CHub::SendHubEventToAllListeners(EHubEvent ev)
