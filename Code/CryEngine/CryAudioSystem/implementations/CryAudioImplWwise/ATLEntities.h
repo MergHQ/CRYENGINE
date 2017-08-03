@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Common.h"
 #include <ATLEntityData.h>
 #include <IAudioImpl.h>
 #include <PoolObject.h>
@@ -15,6 +14,9 @@ namespace Impl
 {
 namespace Wwise
 {
+// To be removed once multi-listener support is implemented.
+static AkGameObjectID g_listenerID = AK_INVALID_GAME_OBJECT;
+
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
 {
 public:
@@ -47,7 +49,7 @@ public:
 
 	AkGameObjectID const  m_id;
 	bool                  m_bNeedsToUpdateEnvironments;
-	EnvironmentImplMap    m_environemntImplAmounts;
+	EnvironmentImplMap    m_environmentImplAmounts;
 
 	static AkGameObjectID s_dummyGameObjectId;
 
@@ -60,7 +62,7 @@ class CListener final : public IListener
 {
 public:
 
-	explicit CListener(AkUniqueID const id)
+	explicit CListener(AkGameObjectID const id)
 		: m_id(id)
 	{}
 
@@ -73,7 +75,7 @@ public:
 	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
 	// ~CryAudio::Impl::IListener
 
-	AkUniqueID const m_id;
+	AkGameObjectID const m_id;
 };
 
 class CTrigger final : public ITrigger

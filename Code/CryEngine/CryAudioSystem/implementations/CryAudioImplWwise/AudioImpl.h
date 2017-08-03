@@ -52,7 +52,7 @@ public:
 	virtual IObject*            ConstructGlobalObject() override;
 	virtual IObject*            ConstructObject(char const* const szName = nullptr) override;
 	virtual void                DestructObject(IObject const* const pIObject) override;
-	virtual IListener*          ConstructListener() override;
+	virtual IListener*          ConstructListener(char const* const szName = nullptr) override;
 	virtual void                DestructListener(IListener* const pIListener) override;
 	virtual IEvent*             ConstructEvent(CATLEvent& event) override;
 	virtual void                DestructEvent(IEvent const* const pIEvent) override;
@@ -86,6 +86,8 @@ private:
 	void                ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift);
 	void                SignalAuxAudioThread();
 	void                WaitForAuxAudioThread();
+
+	AkGameObjectID                     m_gameObjectId;
 
 	AkBankID                           m_initBankId;
 	CFileIOHandler                     m_fileIOHandler;

@@ -61,21 +61,21 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	if (g_cvars.m_audioObjectPoolSize < 1)
 	{
 		g_cvars.m_audioObjectPoolSize = 1;
-		g_logger.Log(ELogType::Warning, "Audio Object pool size should be greater than zero. Forcing the cvar \"s_AudioObjectPoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, R"(Audio Object pool size should be greater than zero. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
 	}
 	CATLAudioObject::CreateAllocator(g_cvars.m_audioObjectPoolSize);
 
 	if (g_cvars.m_audioEventPoolSize < 1)
 	{
 		g_cvars.m_audioEventPoolSize = 1;
-		g_logger.Log(ELogType::Warning, "Audio Event pool size should be greater than zero. Forcing the cvar \"s_AudioEventPoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, R"(Audio Event pool size should be greater than zero. Forcing the cvar "s_AudioEventPoolSize" to 1!)");
 	}
 	CATLEvent::CreateAllocator(g_cvars.m_audioEventPoolSize);
 
 	if (g_cvars.m_audioStandaloneFilePoolSize < 1)
 	{
 		g_cvars.m_audioStandaloneFilePoolSize = 1;
-		g_logger.Log(ELogType::Warning, "Audio Standalone File pool size should be greater than zero. Forcing the cvar \"s_AudioStandaloneFilePoolSize\" to 1!");
+		g_logger.Log(ELogType::Warning, R"(Audio Standalone File pool size should be greater than zero. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
 	}
 	CATLStandaloneFile::CreateAllocator(g_cvars.m_audioStandaloneFilePoolSize);
 
@@ -379,13 +379,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 
 	switch (pRequestDataBase->type)
 	{
-	case EAudioManagerRequestType::ConstructAudioListener:
-		{
-			SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> const*>(request.GetData());
-			*pRequestData->ppListener = m_audioListenerMgr.CreateListener();
-
-			break;
-		}
 	case EAudioManagerRequestType::AddRequestListener:
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const*>(request.GetData());
@@ -919,7 +912,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
 #else
 				pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 
 				result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 
@@ -1077,7 +1070,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
 #else
 			pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 			CRY_ASSERT(result == ERequestStatus::Success);
@@ -1186,6 +1179,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 			}
 		}
 		break;
+	case EAudioListenerRequestType::RegisterListener:
+		{
+			SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const* const pRequestData =
+			  static_cast<SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const*>(pPassedRequestData);
+			*pRequestData->ppListener = m_audioListenerMgr.CreateListener(pRequestData->name.c_str());
+		}
+		break;
 	case EAudioListenerRequestType::ReleaseListener:
 		{
 			SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> const* const pRequestData =
@@ -1198,9 +1198,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 				m_audioListenerMgr.ReleaseListener(pRequestData->pListener);
 				result = ERequestStatus::Success;
 			}
-
-			break;
 		}
+		break;
 	case EAudioListenerRequestType::None:
 		result = ERequestStatus::Success;
 		break;
@@ -1553,9 +1552,6 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		static float syncRays = 0;
 		static float asyncRays = 0;
 
-		Vec3 const& listenerPosition = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition();
-		Vec3 const& listenerDirection = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetForward();
-		float const listenerVelocity = m_audioListenerMgr.GetActiveListenerAttributes().velocity.GetLength();
 		size_t const numObjects = m_audioObjectMgr.GetNumAudioObjects();
 		size_t const numActiveObjects = m_audioObjectMgr.GetNumActiveAudioObjects();
 		size_t const numEvents = m_audioEventMgr.GetNumConstructed();
@@ -1575,8 +1571,16 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 		float const* colorNumbers = s_colorBlue;
 
-		posY += lineHeight;
-		pAuxGeom->Draw2dLabel(posX, posY, 1.35f, colorListener, false, "Listener <%d> PosXYZ: %.2f %.2f %.2f FwdXYZ: %.2f %.2f %.2f Velocity: %.2f m/s", 0, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+		if (numListeners > 0)
+		{
+			Vec3 const& listenerPosition = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition();
+			Vec3 const& listenerDirection = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetForward();
+			float const listenerVelocity = m_audioListenerMgr.GetActiveListenerAttributes().velocity.GetLength();
+			char const* const szName = m_audioListenerMgr.GetActiveListenerName();
+
+			posY += lineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, colorListener, false, "%s PosXYZ: %.2f %.2f %.2f FwdXYZ: %.2f %.2f %.2f Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+		}
 
 		posY += lineHeight;
 		pAuxGeom->Draw2dLabel(posX, posY, 1.35f, colorNumbers, false,

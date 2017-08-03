@@ -125,7 +125,6 @@ protected:
 private:
 
 	IDType const m_id;
-
 };
 
 typedef CATLEntity<ControlId> ATLControl;
@@ -159,6 +158,10 @@ public:
 	Impl::SObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
 
 	Impl::IListener* m_pImplData;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
 

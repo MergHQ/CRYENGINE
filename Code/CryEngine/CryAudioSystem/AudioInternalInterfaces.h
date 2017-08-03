@@ -34,7 +34,6 @@ enum class EAudioManagerRequestType : EnumFlagsType
 	SetAudioImpl,
 	ReleaseAudioImpl,
 	RefreshAudioSystem,
-	ConstructAudioListener,
 	LoseFocus,
 	GetFocus,
 	MuteAll,
@@ -96,6 +95,7 @@ enum class EAudioListenerRequestType : EnumFlagsType
 {
 	None,
 	SetTransformation,
+	RegisterListener,
 	ReleaseListener,
 };
 
@@ -175,25 +175,6 @@ struct SAudioManagerRequestData<EAudioManagerRequestType::SetAudioImpl> final : 
 	virtual ~SAudioManagerRequestData() override = default;
 
 	Impl::IImpl* const pIImpl;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> final : public SAudioManagerRequestDataBase
-{
-	explicit SAudioManagerRequestData(CATLListener** const ppListener_)
-		: SAudioManagerRequestDataBase(EAudioManagerRequestType::ConstructAudioListener)
-		, ppListener(ppListener_)
-	{}
-
-	explicit SAudioManagerRequestData(SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> const* const pAMRData)
-		: SAudioManagerRequestDataBase(EAudioManagerRequestType::ConstructAudioListener)
-		, ppListener(pAMRData->ppListener)
-	{}
-
-	virtual ~SAudioManagerRequestData() override = default;
-
-	CATLListener** const ppListener;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1012,8 +993,8 @@ template<>
 struct SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> final : public SAudioListenerRequestDataBase
 {
 	explicit SAudioListenerRequestData(
-	  CObjectTransformation const& transformation_,
-	  CATLListener* const pListener_)
+		CObjectTransformation const& transformation_,
+		CATLListener* const pListener_)
 		: SAudioListenerRequestDataBase(EAudioListenerRequestType::SetTransformation)
 		, transformation(transformation_)
 		, pListener(pListener_)
@@ -1029,6 +1010,28 @@ struct SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> f
 
 	CObjectTransformation const transformation;
 	CATLListener* const         pListener;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> final : public SAudioListenerRequestDataBase
+{
+	explicit SAudioListenerRequestData(CATLListener** const ppListener_, char const* const szName)
+		: SAudioListenerRequestDataBase(EAudioListenerRequestType::RegisterListener)
+		, ppListener(ppListener_)
+		, name(szName)
+	{}
+
+	explicit SAudioListenerRequestData(SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const* const pALRData)
+		: SAudioListenerRequestDataBase(EAudioListenerRequestType::RegisterListener)
+		, ppListener(pALRData->ppListener)
+		, name(pALRData->name)
+	{}
+
+	virtual ~SAudioListenerRequestData() override = default;
+
+	CATLListener** const                       ppListener;
+	CryFixedStringT<MaxObjectNameLength> const name;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -163,7 +163,7 @@ public:
 
 		if (!gEnv->pThreadManager->SpawnThread(this, "AuxWwiseAudioThread"))
 		{
-			CryFatalError("Error spawning \"AuxWwiseAudioThread\" thread.");
+			CryFatalError(R"(Error spawning "AuxWwiseAudioThread" thread.)");
 		}
 	}
 
@@ -221,7 +221,8 @@ CAuxWwiseAudioThread g_auxAudioThread;
 
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-	: m_initBankId(AK_INVALID_BANK_ID)
+	: m_gameObjectId(1)
+	, m_initBankId(AK_INVALID_BANK_ID)
 #if !defined(WWISE_FOR_RELEASE)
 	, m_bCommSystemInitialized(false)
 #endif // !WWISE_FOR_RELEASE
@@ -877,20 +878,18 @@ IObject* CImpl::ConstructGlobalObject()
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 {
-	static AkGameObjectID id = 1;
-
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(id, szName);
+	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(m_gameObjectId, szName);
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
-		g_implLogger.Log(ELogType::Warning, "Wwise RegisterGameObj failed with AKRESULT: %d", wwiseResult);
+		g_implLogger.Log(ELogType::Warning, "Wwise ConstructObject failed with AKRESULT: %d", wwiseResult);
 	}
 #else
-	AK::SoundEngine::RegisterGameObj(id);
+	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IObject*>(new CObject(id++));
+	return static_cast<IObject*>(new CObject(m_gameObjectId++));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -901,23 +900,60 @@ void CImpl::DestructObject(IObject const* const pIObject)
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
-		g_implLogger.Log(ELogType::Warning, "Wwise UnregisterGameObj failed with AKRESULT: %d", wwiseResult);
+		g_implLogger.Log(ELogType::Warning, "Wwise DestructObject failed with AKRESULT: %d", wwiseResult);
 	}
 
 	delete pObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 {
-	static AkUniqueID id = 0;
-	return static_cast<IListener*>(new CListener(id++));
+	IListener* pIListener = nullptr;
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	AKRESULT wwiseResult = AK::SoundEngine::RegisterGameObj(m_gameObjectId, szName);
+
+	if (IS_WWISE_OK(wwiseResult))
+	{
+		wwiseResult = AK::SoundEngine::SetDefaultListeners(&m_gameObjectId, 1);
+
+		if (IS_WWISE_OK(wwiseResult))
+		{
+			pIListener = static_cast<IListener*>(new CListener(m_gameObjectId));
+		}
+		else
+		{
+			g_implLogger.Log(ELogType::Warning, "SetDefaultListeners failed with AKRESULT: %d", wwiseResult);
+		}
+	}
+	else
+	{
+		g_implLogger.Log(ELogType::Warning, "RegisterGameObj in ConstructListener failed with AKRESULT: %d", wwiseResult);
+	}
+#else
+	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
+	AK::SoundEngine::SetDefaultListeners(&m_gameObjectId, 1);
+	pIListener = static_cast<IListener*>(new CListener(m_gameObjectId++));
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+	g_listenerID = m_gameObjectId++;
+
+	return pIListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	delete pIListener;
+	CListener const* const pListener = static_cast<CListener const* const>(pIListener);
+	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(pListener->m_id);
+
+	if (!IS_WWISE_OK(wwiseResult))
+	{
+		g_implLogger.Log(ELogType::Warning, "Wwise DestructListener failed with AKRESULT: %d", wwiseResult);
+	}
+
+	delete pListener;
 }
 
 //////////////////////////////////////////////////////////////////////////

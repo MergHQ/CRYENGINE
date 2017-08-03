@@ -462,10 +462,11 @@ struct IAudioSystem
 	/**
 	 * Constructs an instance of an audio listener.
 	 * Note: Retrieving a listener this way requires the instance to be freed via ReleaseListener once not needed anymore!
+	 * @param szName - optional name of the listener to be created.
 	 * @return Pointer to a freshly constructed CryAudio::IListener instance.
 	 * @see ReleaseListener
 	 */
-	virtual IListener* CreateListener() = 0;
+	virtual IListener* CreateListener(char const* const szName = nullptr) = 0;
 
 	/**
 	 * Destructs the passed audio listener instance.

@@ -161,7 +161,7 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 {
 	return static_cast<IListener*>(new SListener());
 }
