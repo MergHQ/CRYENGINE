@@ -40,7 +40,7 @@ function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader Precompiled
     return()
   endif()
 
-  if (OPTION_UNITY_BUILD AND UBERFILES)
+	if (OPTION_UNITY_BUILD AND UBERFILES AND UNITY_${TargetProject})
 	return()
   endif()
   
@@ -390,7 +390,10 @@ macro(end_sources)
 endmacro()
 
 macro(generate_uber_files)
-	if(OPTION_UNITY_BUILD AND UBERFILES)
+	if(UBERFILES)
+		option(UNITY_${THIS_PROJECT} "Ensable unity building for ${THIS_PROJECT} (requires OPTION_UNITY_BUILD)" ON)
+	endif()
+	if(OPTION_UNITY_BUILD AND UBERFILES AND UNITY_${THIS_PROJECT})
 		list(REMOVE_DUPLICATES UBERFILES)
 		foreach(u ${UBERFILES})
 			set(UB_PROJECTS ${${u}_PROJECTS})
