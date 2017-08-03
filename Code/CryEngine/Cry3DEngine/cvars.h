@@ -477,6 +477,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_WaterOcean, e_WaterOceanDefault);
 	float e_ViewDistRatio;
 	float e_ViewDistRatioVegetation;
+	float e_ViewDistRatioModifierGameDecals;
 	DeclareConstIntCVar(e_ObjectLayersActivationPhysics, 1);
 	DeclareConstIntCVar(e_StreamCgfDebugHeatMap, 0);
 	DeclareConstFloatCVar(e_StreamPredictionDistanceFar);
@@ -487,6 +488,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_TerrainOcclusionCullingMaxSteps, 50);
 	int e_ParticlesUseLevelSpecificLibs;
 	int   e_DecalsOverlapping;
+	float e_DecalsSpawnDistRatio;
 	int   e_CGFMaxFileSize;
 	int   e_MaxDrawCalls;
 	DeclareConstFloatCVar(e_ParticlesLightMinRadiusThreshold);
