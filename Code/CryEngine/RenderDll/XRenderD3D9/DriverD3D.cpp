@@ -202,7 +202,7 @@ void CD3D9Renderer::ReleaseBackBuffers(SDisplayContext* pContext)
 	for (int i = 0, n = indices; i < n; ++i)
 	{
 		pContext->m_pBackBuffers[i]->SetDevTexture(nullptr);
-		SAFE_RELEASE(pContext->m_pBackBuffers[i]);
+	//	SAFE_RELEASE(pContext->m_pBackBuffers[i]); TODO
 	}
 }
 

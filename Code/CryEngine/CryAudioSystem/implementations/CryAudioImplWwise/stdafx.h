@@ -8,12 +8,22 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CryString/CryPath.h> // need to include before AK includes windows.h
-#include <AudioLogger.h>
 
 #if CRY_PLATFORM_DURANGO
 	#define PROVIDE_WWISE_IMPL_SECONDARY_POOL
 // Memory Allocation
 	#include <CryMemory/CryPool/PoolAlloc.h>
+#endif
+
+#if !defined(_RELEASE)
+#define INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#define ENABLE_AUDIO_LOGGING
+#endif // _RELEASE
+
+#include <AudioLogger.h>
+
+#if CRY_PLATFORM_DURANGO
+#define PROVIDE_WWISE_IMPL_SECONDARY_POOL
 #endif
 
 namespace CryAudio
@@ -22,16 +32,7 @@ namespace Impl
 {
 namespace Wwise
 {
-extern CryAudio::CLogger g_implLogger;
-
-#if !defined(_RELEASE)
-	#define INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-	#define ENABLE_AUDIO_LOGGING
-#endif // _RELEASE
-
-#if CRY_PLATFORM_DURANGO
-	#define PROVIDE_WWISE_IMPL_SECONDARY_POOL
-#endif
+extern CLogger g_implLogger;
 
 // Memory Allocation
 #if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)

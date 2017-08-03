@@ -1431,9 +1431,6 @@ bool CDeviceRenderPassDesc::SetRenderTarget(uint32 slot, CTexture* pTexture, Res
 
 bool CDeviceRenderPassDesc::SetDepthTarget(CTexture* pTexture, ResourceViewHandle hView)
 {
-	CRY_ASSERT(!pTexture || !m_renderTargets[0].pTexture || (
-	           pTexture->GetWidthNonVirtual () == m_renderTargets[0].pTexture->GetWidthNonVirtual () &&
-	           pTexture->GetHeightNonVirtual() == m_renderTargets[0].pTexture->GetHeightNonVirtual()));
 	return UpdateResource(m_depthTarget, SResourceBinding(pTexture, hView));
 }
 

@@ -25,15 +25,6 @@ static void RegisterSpawnPointComponent(Schematyc::IEnvRegistrar& registrar)
 
 CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterSpawnPointComponent)
 
-void CSpawnPointComponent::ReflectType(Schematyc::CTypeDesc<CSpawnPointComponent>& desc)
-{
-	desc.SetGUID(CSpawnPointComponent::IID());
-	desc.SetEditorCategory("Game");
-	desc.SetLabel("SpawnPoint");
-	desc.SetDescription("This spawn point can be used to spawn entities");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-}
-
 void CSpawnPointComponent::SpawnEntity(IEntity* otherEntity)
 {
 	otherEntity->SetWorldTM(m_pEntity->GetWorldTM());

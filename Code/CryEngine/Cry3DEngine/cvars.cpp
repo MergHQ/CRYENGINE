@@ -314,6 +314,9 @@ void CVars::Init()
 	                   "Number of frames after which not visible static decals are removed");
 	REGISTER_CVAR(e_DecalsMaxUpdatesPerFrame, 4, VF_NULL,
 	              "Maximum number of static decal render mesh updates per frame");
+	REGISTER_CVAR(e_DecalsSpawnDistRatio, 4.f, VF_NULL,
+				  "Max distance ratio for spawning dynamic decals.\n"
+				  "This will be applied on top of e_ViewDistRatio");
 	DefineConstIntCVar(e_VegetationBending, 2, VF_NULL,
 	                   "Enable vegetation bending (does not affect merged grass)");
 	REGISTER_CVAR(e_VegetationBillboards, 0, VF_NULL,
@@ -849,6 +852,9 @@ void CVars::Init()
 	              "View distance ratio for detail objects");
 	REGISTER_CVAR(e_ViewDistRatioVegetation, 30.0f, VF_CVARGRP_IGNOREINREALVAL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for vegetation");
+	REGISTER_CVAR(e_ViewDistRatioModifierGameDecals, 4.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
+				  "View distance ratio for dynamically generated decals"
+				  "This will be applied on top of e_ViewDistRatio");
 	REGISTER_CVAR(e_ViewDistRatioLights, 50.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for light sources");
 	REGISTER_CVAR(e_ViewDistRatioCustom, 60.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,

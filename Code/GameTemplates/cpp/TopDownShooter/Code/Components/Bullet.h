@@ -45,6 +45,12 @@ public:
 		}
 	}
 
+	// Reflect type to set a unique identifier for this component
+	static void ReflectType(Schematyc::CTypeDesc<CPlayerComponent>& desc)
+	{
+		desc.SetGUID("{B53A9A5F-F27A-42CB-82C7-B1E379C41A2A}"_cry_guid);
+	}
+
 	virtual uint64 GetEventMask() const override { return BIT64(ENTITY_EVENT_COLLISION); }
 	virtual void ProcessEvent(SEntityEvent& event) override
 	{

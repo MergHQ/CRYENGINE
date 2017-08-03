@@ -7,6 +7,12 @@
 #include <CryCore/Platform/platform.h>
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
+
+#if !defined(_RELEASE)
+	#define INCLUDE_AUDIO_PRODUCTION_CODE
+	#define ENABLE_AUDIO_LOGGING
+#endif // _RELEASE
+
 #include <AudioLogger.h>
 
 namespace CryAudio
@@ -14,8 +20,3 @@ namespace CryAudio
 extern CLogger g_logger;
 extern CTimeValue g_lastMainThreadFrameStartTime;
 } // namespace CryAudio
-
-#if !defined(_RELEASE)
-	#define INCLUDE_AUDIO_PRODUCTION_CODE
-	#define ENABLE_AUDIO_LOGGING
-#endif // _RELEASE

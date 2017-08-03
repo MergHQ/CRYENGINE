@@ -268,7 +268,8 @@ bool CDecalManager::Spawn(CryEngineDecalInfo DecalInfo, CDecal* pCallerManagedDe
 	// do not spawn if too far
 	float fZoom = GetObjManager() ? Get3DEngine()->GetZoomFactor() : 1.f;
 	float fDecalDistance = DecalInfo.vPos.GetDistance(vCamPos);
-	if (!pCallerManagedDecal && (fDecalDistance > Get3DEngine()->GetMaxViewDistance() || fDecalDistance * fZoom > DecalInfo.fSize * ENTITY_DECAL_DIST_FACTOR * 3.f))
+	float fMaxDist = max(GetCVars()->e_ViewDistMin, min(GetFloatCVar(e_ViewDistCompMaxSize), DecalInfo.fSize) * GetCVars()->e_ViewDistRatio * GetCVars()->e_DecalsSpawnDistRatio);
+	if (!pCallerManagedDecal && (fDecalDistance > Get3DEngine()->GetMaxViewDistance() || fDecalDistance * fZoom > fMaxDist))
 		return false;
 
 	int overlapCount(0);
@@ -827,7 +828,7 @@ void CDecalManager::Render(const SRenderingPassInfo& passInfo)
 			CDecal* pDecal = &m_arrDecals[i];
 			pDecal->m_vWSPos = pDecal->GetWorldPosition();
 			float fDist = rCamera.GetPosition().GetDistance(pDecal->m_vWSPos) * fZoom;
-			float fMaxViewDist = pDecal->m_fWSSize * ENTITY_DECAL_DIST_FACTOR * 3.0f;
+			float fMaxViewDist = max(GetCVars()->e_ViewDistMin, min(GetFloatCVar(e_ViewDistCompMaxSize), pDecal->m_fWSSize) * GetCVars()->e_ViewDistRatio * GetCVars()->e_ViewDistRatioModifierGameDecals);
 			if (fDist < fMaxViewDist)
 				if (rCamera.IsSphereVisible_F(Sphere(pDecal->m_vWSPos, pDecal->m_fWSSize)))
 				{
