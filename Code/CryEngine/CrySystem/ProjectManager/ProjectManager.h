@@ -236,6 +236,8 @@ protected:
 
 	void AddPlugin(ICryPluginManager::EPluginType type, const char* szFileName);
 
+	bool CanMigrateFromLegacyWorkflow() const { return m_project.version == 0 && strlen(gEnv->pCryPak->GetGameFolder()) > 0; }
+
 protected:
 	Cry::ProjectManagerInternals::SProject m_project;
 
