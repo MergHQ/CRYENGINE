@@ -8,11 +8,15 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
-#include <AudioLogger.h>
-
-extern CryAudio::CLogger g_implLogger;
 
 #if !defined(_RELEASE)
 	#define INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 	#define ENABLE_AUDIO_LOGGING
 #endif // _RELEASE
+
+#include <AudioLogger.h>
+
+namespace CryAudio
+{
+extern CLogger g_implLogger;
+} // namespace CryAudio

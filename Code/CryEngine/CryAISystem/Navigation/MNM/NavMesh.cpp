@@ -2301,8 +2301,11 @@ void CNavMesh::Swap(CNavMesh& other)
 
 void CNavMesh::Draw(size_t drawFlags, TileID excludeID) const
 {
-	TileMap::const_iterator it = m_tileMap.begin();
-	TileMap::const_iterator end = m_tileMap.end();
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
+	const CCamera& camera = gEnv->pSystem->GetViewCamera();
+	const Vec3 cameraPos = camera.GetPosition();
+	const float maxDistanceToRenderSqr = sqr(gAIEnv.CVars.NavmeshTileDistanceDraw);
 
 	// collect areas
 	// TODO: Clean this up!  Temprorary to get up and running.
@@ -2312,6 +2315,8 @@ void CNavMesh::Draw(size_t drawFlags, TileID excludeID) const
 		islandAreas[i] = m_islands[i].area;
 	}
 
+	TileMap::const_iterator it = m_tileMap.begin();
+	TileMap::const_iterator end = m_tileMap.end();
 	for (; it != end; ++it)
 	{
 		if (excludeID == it->second)
@@ -2319,17 +2324,16 @@ void CNavMesh::Draw(size_t drawFlags, TileID excludeID) const
 
 		const TileContainer& container = m_tiles[it->second - 1];
 
-		container.tile.Draw(drawFlags, vector3_t(
-		                      real_t(m_params.origin.x + container.x * m_params.tileSize.x),
-		                      real_t(m_params.origin.y + container.y * m_params.tileSize.y),
-		                      real_t(m_params.origin.z + container.z * m_params.tileSize.z)),
-		                    it->second,
-		                    islandAreas);
+		vector3_t origin(
+			real_t(m_params.origin.x + container.x * m_params.tileSize.x),
+			real_t(m_params.origin.y + container.y * m_params.tileSize.y),
+			real_t(m_params.origin.z + container.z * m_params.tileSize.z));
 
-		const Vec3 offset = Vec3(0.0f, 0.0f, 0.05f) + m_params.origin +
-		                    Vec3((float)container.x * m_params.tileSize.x,
-		                         (float)container.y * m_params.tileSize.y,
-		                         (float)container.z * m_params.tileSize.z);
+		Vec3 min = origin.GetVec3();
+		if (cameraPos.GetSquaredDistance2D(min) < maxDistanceToRenderSqr && camera.IsAABBVisible_F(AABB(min, min + m_params.tileSize)))
+		{
+			container.tile.Draw(drawFlags, origin, it->second, islandAreas);
+		}
 	}
 }
 

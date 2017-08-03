@@ -397,10 +397,14 @@ void AIConsoleVars::Init()
 	                       " Fast machine [10]\n"
 	                       " Slow machine [4]\n"
 	                       " Smooth [1]\n");
+	REGISTER_CVAR2("ai_NavmeshTileDistanceDraw", &NavmeshTileDistanceDraw, 200.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Maximum distance from the camera for tile to be drawn.\n"
+	               "Usage: ai_NavmeshTileDistanceDraw [0.0-...]\n"
+	               "Default is 200.0\n");
 	REGISTER_CVAR2("ai_NavmeshStabilizationTimeToUpdate", &NavmeshStabilizationTimeToUpdate, 0.3f, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "Time that navmesh needs to be without any new updates to apply the latest changes.\n"
-	               "Usage: ai_NavmeshStabilizationTimeToUpdate [0.0-...]\n"
-	               "Default is 0.3\n");
+		"Time that navmesh needs to be without any new updates to apply the latest changes.\n"
+		"Usage: ai_NavmeshStabilizationTimeToUpdate [0.0-...]\n"
+		"Default is 0.3\n");
 	DefineConstIntCVarName("ai_DebugDrawNavigationWorldMonitor", DebugDrawNavigationWorldMonitor, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Enables displaying bounding boxes for world changes.\n"
 	                       "Usage: ai_DebugDrawNavigationWorldMonitor [0/1]\n"

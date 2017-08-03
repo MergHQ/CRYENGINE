@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryCore/Platform/platform.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IConsole.h>

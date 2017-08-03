@@ -1766,7 +1766,6 @@ bool CSystem::InitScriptSystem()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-
 bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -1834,7 +1833,10 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 	LoadConfiguration("system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
 #endif
 
-	m_pProjectManager->ParseProjectFile();
+	if (!m_pProjectManager->ParseProjectFile())
+	{
+		return false;
+	}
 
 	bool bRes = m_env.pCryPak->Init("");
 
@@ -2674,7 +2676,11 @@ bool CSystem::Init()
 		//////////////////////////////////////////////////////////////////////////
 		// File system, must be very early
 		//////////////////////////////////////////////////////////////////////////
-		InitFileSystem(m_startupParams.pGameStartup);
+		if (!InitFileSystem(m_startupParams.pGameStartup))
+		{
+			return false;
+		}
+
 		//////////////////////////////////////////////////////////////////////////
 		InlineInitializationProcessing("CSystem::Init InitFileSystem");
 

@@ -96,7 +96,7 @@ void SProject::Serialize(Serialization::IArchive& ar)
 	}
 }
 
-void CProjectManager::ParseProjectFile()
+bool CProjectManager::ParseProjectFile()
 {
 	char szEngineRootDirectoryBuffer[_MAX_PATH];
 	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDirectoryBuffer), szEngineRootDirectoryBuffer);
@@ -111,7 +111,7 @@ void CProjectManager::ParseProjectFile()
 		m_sys_game_name->Set("CRYENGINE - No Project");
 		// Specify an assets directory despite having no project, this is to prevent CryPak scanning engine root
 		m_sys_game_folder->Set("Assets");
-		return;
+		return false;
 	}
 
 	string extension = PathUtil::GetExt(projectFile);
@@ -141,6 +141,18 @@ void CProjectManager::ParseProjectFile()
 
 		// Create the full path to the asset directory
 		m_project.assetDirectoryFullPath = PathUtil::Make(m_project.rootDirectory, m_project.assetDirectory);
+
+		if (!gEnv->pCryPak->IsFileExist(m_project.assetDirectoryFullPath))
+		{
+			EQuestionResult result = CryMessageBox(string().Format("Attempting to start the engine with non-existent asset directory %s!\nDo you want to create it?", m_project.assetDirectoryFullPath.c_str()), "Non-existent asset directory", eMB_YesCancel);
+			if (result == eQR_Cancel)
+			{
+				CryLogAlways("\tNon-existent asset directory %s detected, user opted to quit", m_project.assetDirectoryFullPath.c_str());
+				return false;
+			}
+			
+			CryCreateDirectory(m_project.assetDirectoryFullPath);
+		}
 
 		// Set the legacy game folder and name
 		m_sys_game_folder->Set(m_project.assetDirectory);
@@ -205,12 +217,66 @@ void CProjectManager::ParseProjectFile()
 			SaveProjectChanges();
 		}
 	}
+	else if(m_sys_game_folder->GetString()[0] == '\0')
+	{
+		// No project folder found, and no legacy context to migrate from.
+		m_project.filePath.clear();
+	}
 
+	// Detect running engine without project directory
+	if (m_project.filePath.empty())
+	{
+		if (gEnv->bTesting)
+		{
+			CryLogAlways("\nRunning engine in unit testing mode without project");
+
+			// Create a temporary asset directory, as some systems rely on an assets directory existing.
+			m_project.assetDirectory = "NoAssetFolder";
+			m_project.assetDirectoryFullPath = PathUtil::Make(szEngineRootDirectoryBuffer, m_project.assetDirectory);
+			if (!gEnv->pCryPak->IsFileExist(m_project.assetDirectoryFullPath))
+			{
+				CryCreateDirectory(m_project.assetDirectoryFullPath);
+			}
+
+			m_sys_game_folder->Set(m_project.assetDirectory);
+
+			return true;
+		}
+		else
+		{
+			CryMessageBox("Attempting to start the engine without a project!\nPlease use a .cryproject file!", "Engine initialization failed", eMB_Error);
+			return false;
+		}
+	}
 
 	CryLogAlways("\nProject %s", GetCurrentProjectName());
-	CryLogAlways("	Using Project Folder %s", GetCurrentProjectDirectoryAbsolute());
-	CryLogAlways("	Using Asset Folder %s", GetCurrentAssetDirectoryAbsolute());
-	CryLogAlways("	Using Engine Folder %s", szEngineRootDirectoryBuffer);
+	CryLogAlways("\tUsing Project Folder %s", GetCurrentProjectDirectoryAbsolute());
+	CryLogAlways("\tUsing Engine Folder %s", szEngineRootDirectoryBuffer);
+
+	if (m_project.assetDirectory.empty())
+	{
+		if (!gEnv->bTesting)
+		{
+			EQuestionResult result = CryMessageBox("Attempting to start the engine without an asset directory!\nContinuing will put the engine into a readonly state where changes can't be saved, do you want to continue?", "No Assets directory", eMB_YesCancel);
+			if (result == eQR_Cancel)
+			{
+				CryLogAlways("\tNo asset directory detected, user opted to quit");
+				return false;
+			}
+		}
+
+		// Engine started without asset directory, we have to create a temporary directory in this case
+		// This is done as many systems rely on checking for files in the asset directory, without one they will search the root or even the entire drive.
+		m_project.assetDirectory = "NoAssetFolder";
+
+		CryLogAlways("\tSkipped use of assets directory");
+	}
+	else
+	{
+		CryLogAlways("\tUsing Asset Folder %s", GetCurrentAssetDirectoryAbsolute());
+	}
+
+	return true;
 }
 
 void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
