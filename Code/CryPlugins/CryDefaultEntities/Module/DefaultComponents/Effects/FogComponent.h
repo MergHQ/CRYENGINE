@@ -108,8 +108,48 @@ namespace Cry
 				Vec3 m_densityNoiseFrequency = Vec3(1.f);
 			};
 
-			virtual void SetActive(bool bActive) { m_bActive = bActive; }
-			bool IsActive() const { return m_bActive; }
+			virtual void Enable(bool bEnable)
+			{
+				if (bEnable)
+				{
+					SFogVolumeProperties fogProperties;
+					fogProperties.m_volumeType = m_type;
+					fogProperties.m_size = m_size;
+					fogProperties.m_color = m_color;
+
+					fogProperties.m_useGlobalFogColor = m_options.m_bUseGlobalFogColor;
+					fogProperties.m_fHDRDynamic = 0.f;
+
+					fogProperties.m_globalDensity = m_options.m_globalDensity;
+					fogProperties.m_densityOffset = m_options.m_densityOffset;
+					fogProperties.m_nearCutoff = m_options.m_nearCutoff;
+					fogProperties.m_softEdges = m_options.m_softEdges;
+					fogProperties.m_heightFallOffDirLong = m_options.m_heightFallOffDirLong;
+					fogProperties.m_heightFallOffDirLati = m_options.m_heightFallOffDirLati;
+					fogProperties.m_heightFallOffShift = m_options.m_heightFallOffShift;
+					fogProperties.m_heightFallOffScale = m_options.m_heightFallOffScale;
+					fogProperties.m_rampStart = m_options.m_rampStart;
+					fogProperties.m_rampEnd = m_options.m_rampEnd;
+					fogProperties.m_rampInfluence = m_options.m_rampInfluence;
+					fogProperties.m_windInfluence = m_options.m_windInfluence;
+					fogProperties.m_densityNoiseScale = m_options.m_densityNoiseScale;
+					fogProperties.m_densityNoiseOffset = m_options.m_densityNoiseOffset;
+					fogProperties.m_densityNoiseTimeFrequency = m_options.m_densityNoiseTimeFrequency;
+					fogProperties.m_densityNoiseFrequency = m_options.m_densityNoiseFrequency;
+
+					const float kiloScale = 1000.0f;
+					const float toLightUnitScale = kiloScale / RENDERER_LIGHT_UNIT_SCALE;
+
+					m_pEntity->LoadFogVolume(GetOrMakeEntitySlotId(), fogProperties);
+				}
+				else
+				{
+					FreeEntitySlot();
+				}
+
+				m_bActive = bEnable;
+			}
+			bool IsEnabled() const { return m_bActive; }
 
 			virtual void SetType(IFogVolumeRenderNode::eFogVolumeType type) { m_type = type; }
 			IFogVolumeRenderNode::eFogVolumeType GetType() const { return m_type; }

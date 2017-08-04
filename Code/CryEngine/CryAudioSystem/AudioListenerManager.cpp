@@ -33,7 +33,12 @@ void CAudioListenerManager::Init(Impl::IImpl* const pIImpl)
 	{
 		for (auto const pListener : m_activeListeners)
 		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			pListener->m_pImplData = m_pIImpl->ConstructListener(pListener->m_name.c_str());
+#else
 			pListener->m_pImplData = m_pIImpl->ConstructListener();
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+			
 			pListener->HandleSetTransformation(pListener->Get3DAttributes().transformation);
 		}
 	}
@@ -61,7 +66,7 @@ void CAudioListenerManager::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLListener* CAudioListenerManager::CreateListener()
+CATLListener* CAudioListenerManager::CreateListener(char const* const szName /*= nullptr*/)
 {
 	if (!m_activeListeners.empty())
 	{
@@ -69,7 +74,12 @@ CATLListener* CAudioListenerManager::CreateListener()
 		return m_activeListeners.front();
 	}
 
-	CATLListener* const pListener = new CATLListener(m_pIImpl->ConstructListener());
+	CATLListener* const pListener = new CATLListener(m_pIImpl->ConstructListener(szName));
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	pListener->m_name = szName;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	m_activeListeners.push_back(pListener);
 	return pListener;
 }
@@ -111,4 +121,18 @@ Impl::SObject3DAttributes const& CAudioListenerManager::GetActiveListenerAttribu
 
 	return Impl::SObject3DAttributes::GetEmptyObject();
 }
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+char const* CAudioListenerManager::GetActiveListenerName() const
+{
+	for (auto const pListener : m_activeListeners)
+	{
+		// Only one listener supported currently!
+		return pListener->m_name.c_str();
+	}
+
+	return nullptr;
+}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 } // namespace CryAudio

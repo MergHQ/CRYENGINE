@@ -223,8 +223,16 @@ bool CProjectManager::ParseProjectFile()
 		m_project.filePath.clear();
 	}
 
+	// Check if we are migrating from legacy workflow
+	if (CanMigrateFromLegacyWorkflow())
+	{
+		CryLogAlways("\nMigrating from legacy project workflow to new %s file", m_project.filePath.c_str());
+
+		// Migration will occur once MigrateFromLegacyWorkflowIfNecessary is called
+		return true;
+	} 
 	// Detect running engine without project directory
-	if (m_project.filePath.empty())
+	else if (m_project.filePath.empty())
 	{
 		if (gEnv->bTesting)
 		{
@@ -248,12 +256,8 @@ bool CProjectManager::ParseProjectFile()
 			return false;
 		}
 	}
-
-	CryLogAlways("\nProject %s", GetCurrentProjectName());
-	CryLogAlways("\tUsing Project Folder %s", GetCurrentProjectDirectoryAbsolute());
-	CryLogAlways("\tUsing Engine Folder %s", szEngineRootDirectoryBuffer);
-
-	if (m_project.assetDirectory.empty())
+	// Detect running without asset directory
+	else if (m_project.assetDirectory.empty())
 	{
 		if (!gEnv->bTesting)
 		{
@@ -268,13 +272,13 @@ bool CProjectManager::ParseProjectFile()
 		// Engine started without asset directory, we have to create a temporary directory in this case
 		// This is done as many systems rely on checking for files in the asset directory, without one they will search the root or even the entire drive.
 		m_project.assetDirectory = "NoAssetFolder";
-
 		CryLogAlways("\tSkipped use of assets directory");
 	}
-	else
-	{
-		CryLogAlways("\tUsing Asset Folder %s", GetCurrentAssetDirectoryAbsolute());
-	}
+
+	CryLogAlways("\nProject %s", GetCurrentProjectName());
+	CryLogAlways("\tUsing Project Folder %s", GetCurrentProjectDirectoryAbsolute());
+	CryLogAlways("\tUsing Engine Folder %s", szEngineRootDirectoryBuffer);
+	CryLogAlways("\tUsing Asset Folder %s", GetCurrentAssetDirectoryAbsolute());
 
 	return true;
 }
@@ -283,7 +287,7 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 {
 	// Populate project data and save .cryproject if no project was used
 	// This is done by assuming legacy game folder setup.
-	if (m_project.version == 0 && strlen(GetCurrentAssetDirectoryRelative()) > 0)
+	if (CanMigrateFromLegacyWorkflow())
 	{
 		m_project.version = LatestProjectFileVersion;
 		m_project.type = "CRYENGINE Project";

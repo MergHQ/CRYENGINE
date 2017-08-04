@@ -39,6 +39,9 @@ public:
 	virtual QWidget* getContents() Q_DECL_OVERRIDE { return m_contents; }
 	virtual void setContents(QWidget* widget) Q_DECL_OVERRIDE { internalSetContents(widget,false); }
 	virtual void startDrag() Q_DECL_OVERRIDE;
+	virtual void hide() Q_DECL_OVERRIDE { QCustomWindowFrame::hide(); }
+	virtual void deferDeletion() Q_DECL_OVERRIDE;
+	void setParent(QWidget* parent) Q_DECL_OVERRIDE { QCustomWindowFrame::setParent(parent); };
 
 private:
 	virtual bool event(QEvent *)Q_DECL_OVERRIDE;

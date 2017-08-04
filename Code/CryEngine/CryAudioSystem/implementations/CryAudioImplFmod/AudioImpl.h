@@ -48,7 +48,7 @@ public:
 	virtual IObject*            ConstructGlobalObject() override;
 	virtual IObject*            ConstructObject(char const* const szName = nullptr) override;
 	virtual void                DestructObject(IObject const* const pIObject) override;
-	virtual IListener*          ConstructListener() override;
+	virtual IListener*          ConstructListener(char const* const szName = nullptr) override;
 	virtual void                DestructListener(IListener* const pIListener) override;
 	virtual IEvent*             ConstructEvent(CATLEvent& event) override;
 	virtual void                DestructEvent(IEvent const* const pIEvent) override;

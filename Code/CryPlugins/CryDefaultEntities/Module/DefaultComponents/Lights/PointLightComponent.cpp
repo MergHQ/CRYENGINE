@@ -12,6 +12,14 @@ namespace Cry
 	{
 		void CPointLightComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 		{
+			// Functions
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CPointLightComponent::Enable, "{415ECD3F-880C-4647-92CB-2A8F2321709D}"_cry_guid, "Enable");
+				pFunction->SetDescription("Enables or disables the light component");
+				pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+				pFunction->BindInput(1, 'ena', "Enable");
+				componentScope.Register(pFunction);
+			}
 		}
 
 		void CPointLightComponent::Initialize()

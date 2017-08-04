@@ -622,10 +622,10 @@ char const* CSystem::GetConfigPath() const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::IListener* CSystem::CreateListener()
+CryAudio::IListener* CSystem::CreateListener(char const* const szName /*= nullptr*/)
 {
 	CATLListener* pListener = nullptr;
-	SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> requestData(&pListener);
+	SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> requestData(&pListener, szName);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
@@ -636,7 +636,6 @@ CryAudio::IListener* CSystem::CreateListener()
 ///////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseListener(CryAudio::IListener* const pIListener)
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 	SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> requestData(static_cast<CATLListener*>(pIListener));
 	CAudioRequest request(&requestData);
 	PushRequest(request);

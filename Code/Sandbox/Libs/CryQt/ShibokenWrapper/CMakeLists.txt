@@ -63,6 +63,7 @@ target_link_libraries(${THIS_PROJECT} PRIVATE python27)
 
 # Must include all sub-directories of CryQt, since generated files include header of wraped code by name only.
 FILE(GLOB_RECURSE all_headers "${PARENT_SOURCE_DIRECTORY}/*.h")
+set_property(DIRECTORY . PROPERTY CMAKE_CONFIGURE_DEPENDS ${all_headers})
 
 FOREACH(header ${all_headers})
         GET_FILENAME_COMPONENT(dir_path "${header}" DIRECTORY)

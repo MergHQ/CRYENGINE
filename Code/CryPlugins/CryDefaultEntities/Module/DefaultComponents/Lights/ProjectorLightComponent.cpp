@@ -14,6 +14,14 @@ namespace DefaultComponents
 {
 void CProjectorLightComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
+	// Functions
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CProjectorLightComponent::Enable, "{54F96D7F-3B98-47F2-B256-4AD856CFE5BD}"_cry_guid, "Enable");
+		pFunction->SetDescription("Enables or disables the light component");
+		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+		pFunction->BindInput(1, 'ena', "Enable");
+		componentScope.Register(pFunction);
+	}
 }
 
 void CProjectorLightComponent::Initialize()

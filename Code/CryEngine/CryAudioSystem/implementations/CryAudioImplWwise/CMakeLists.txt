@@ -93,34 +93,35 @@ if (AUDIO_WWISE)
 		AkPeakLimiterFX
 		AkPitchShifterFX
 		AkRecorderFX
+		AkReflectFX
 		AkRoomVerbFX
 		AkSilenceSource
 		AkSineSource
 		AkSoundSeedImpactFX
 		AkSoundSeedWind
 		AkSoundSeedWoosh
+		AkSpatialAudio
 		AkStereoDelayFX
+		AkSynthOne
 		AkTimeStretchFX
 		AkToneSource
 		AkTremoloFX
 		AkVorbisDecoder
 		McDSPFutzBoxFX
 		McDSPLimiterFX
-		AkSynthOne
 		)
 
 	set( WWISE_EXTRA_PLUGIN_LIBS
+		CrankcaseAudioREVModelPlayerFX
+		iZHybridReverbFX
 		iZTrashBoxModelerFX
+		iZTrashDelayFX
 		iZTrashDistortionFX
 		iZTrashDynamicsFX
-		iZTrashDelayFX
-		iZHybridReverbFX
-		CrankcaseAudioREVModelPlayerFX
-		iZTrashMultibandDistortionFX
 		iZTrashFiltersFX
+		iZTrashMultibandDistortionFX
 		AkMotionGenerator
 		AkRumble
-		IOSONOProximityMixer
 		)
 
 	set( COMMON_WWISE_LIBS ${WWISE_CORE_LIBS} ${WWISE_PLUGIN_LIBS} )

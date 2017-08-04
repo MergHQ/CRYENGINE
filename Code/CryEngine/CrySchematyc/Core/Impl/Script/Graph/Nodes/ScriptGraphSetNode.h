@@ -41,18 +41,10 @@ private:
 		uint32       pos;
 	};
 
-	struct SComponentPropertyRuntimeData
-	{
-		static void ReflectType(CTypeDesc<SComponentPropertyRuntimeData>& desc) { desc.SetGUID("68074A67-B731-489A-BFE0-16269BD9A8DC"_cry_guid); };
-
-		uint32 componentMemberIndex;
-		uint32 componentIdx;
-	};
-
 public:
 
 	CScriptGraphSetNode();
-	CScriptGraphSetNode(const CryGUID& referenceGUID,uint32 componentMemberId = 0);
+	CScriptGraphSetNode(const CryGUID& referenceGUID);
 
 	// CScriptGraphNodeModel
 	virtual CryGUID GetTypeGUID() const override;
@@ -69,8 +61,7 @@ public:
 private:
 
 	static SRuntimeResult Execute(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
-	static SRuntimeResult ExecuteSetComponentProperty(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
-
+	
 public:
 
 	static const CryGUID ms_typeGUID;
@@ -78,6 +69,5 @@ public:
 private:
 
 	CryGUID m_referenceGUID;
-	uint32  m_componentMemberId = 0;
 };
 }

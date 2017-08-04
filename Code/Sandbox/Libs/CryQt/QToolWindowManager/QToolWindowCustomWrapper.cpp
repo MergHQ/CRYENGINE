@@ -198,7 +198,7 @@ bool QToolWindowCustomWrapper::winEvent(MSG *msg, long *result)
 			{
 				m_manager->finishWrapperDrag();
 			}
-			if (m_manager->resizedWrapper() == this)
+			else if (m_manager->resizedWrapper() == this)
 			{
 				m_manager->finishWrapperResize();
 			}
@@ -216,4 +216,15 @@ bool QToolWindowCustomWrapper::winEvent(MSG *msg, long *result)
 void QToolWindowCustomWrapper::startDrag()
 {
 	m_titleBar->onBeginDrag();
+}
+
+void QToolWindowCustomWrapper::deferDeletion()
+{
+	if (m_manager)
+	{
+		m_manager->removeWrapper(this);
+		m_manager = nullptr;
+	}
+	setParent(nullptr);
+	deleteLater();
 }

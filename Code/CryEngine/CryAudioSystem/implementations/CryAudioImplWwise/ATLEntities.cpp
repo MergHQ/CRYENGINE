@@ -69,7 +69,7 @@ ERequestStatus CObject::Set3DAttributes(SObject3DAttributes const& attributes)
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
-		g_implLogger.Log(ELogType::Warning, "Wwise SetPosition failed with AKRESULT: %d", wwiseResult);
+		g_implLogger.Log(ELogType::Warning, "Wwise - SetPosition failed with AKRESULT: %d", wwiseResult);
 		return ERequestStatus::Failure;
 	}
 
@@ -89,11 +89,11 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 		{
 		case EEnvironmentType::AuxBus:
 			{
-				float const currentAmount = stl::find_in_map(m_environemntImplAmounts, pEnvironment->busId, -1.0f);
+				float const currentAmount = stl::find_in_map(m_environmentImplAmounts, pEnvironment->busId, -1.0f);
 
 				if ((currentAmount == -1.0f) || (fabs(currentAmount - amount) > envEpsilon))
 				{
-					m_environemntImplAmounts[pEnvironment->busId] = amount;
+					m_environmentImplAmounts[pEnvironment->busId] = amount;
 					m_bNeedsToUpdateEnvironments = true;
 				}
 
@@ -113,7 +113,7 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 				{
 					g_implLogger.Log(
 					  ELogType::Warning,
-					  "Wwise failed to set the Rtpc %u to value %f on object %u in SetEnvironement()",
+					  "Wwise - failed to set the Rtpc %u to value %f on object %u in SetEnvironement()",
 					  pEnvironment->rtpcId,
 					  rtpcValue,
 					  m_id);
@@ -129,7 +129,7 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 	}
 	else
 	{
-		g_implLogger.Log(ELogType::Error, "Invalid EnvironmentData passed to the Wwise implementation of SetEnvironment");
+		g_implLogger.Log(ELogType::Error, "Wwise - Invalid EnvironmentData passed to the Wwise implementation of SetEnvironment");
 	}
 
 	return result;
@@ -155,7 +155,7 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 		{
 			g_implLogger.Log(
 			  ELogType::Warning,
-			  "Wwise failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
+			  "Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
 			  pParameter->id,
 			  static_cast<AkRtpcValue>(value),
 			  m_id);
@@ -163,7 +163,7 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 	}
 	else
 	{
-		g_implLogger.Log(ELogType::Error, "Invalid RtpcData passed to the Wwise implementation of SetParameter");
+		g_implLogger.Log(ELogType::Error, "Wwise - Invalid RtpcData passed to the Wwise implementation of SetParameter");
 	}
 
 	return result;
@@ -218,7 +218,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 				{
 					g_implLogger.Log(
 					  ELogType::Warning,
-					  "Wwise failed to set the SwitchGroup %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
+					  "Wwise - failed to set the SwitchGroup %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
 					  pSwitchState->stateOrSwitchGroupId,
 					  pSwitchState->stateOrSwitchId,
 					  gameObjectId);
@@ -243,7 +243,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 				{
 					g_implLogger.Log(
 					  ELogType::Warning,
-					  "Wwise failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
+					  "Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
 					  pSwitchState->stateOrSwitchGroupId,
 					  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
 					  gameObjectId);
@@ -257,7 +257,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 			}
 		default:
 			{
-				g_implLogger.Log(ELogType::Warning, "Unknown ESwitchType: %" PRISIZE_T, pSwitchState->type);
+				g_implLogger.Log(ELogType::Warning, "Wwise - Unknown ESwitchType: %" PRISIZE_T, pSwitchState->type);
 
 				break;
 			}
@@ -265,7 +265,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 	}
 	else
 	{
-		g_implLogger.Log(ELogType::Error, "Invalid SwitchState passed to the Wwise implementation of SetSwitchState");
+		g_implLogger.Log(ELogType::Error, "Wwise - Invalid SwitchState passed to the Wwise implementation of SetSwitchState");
 	}
 
 	return result;
@@ -276,24 +276,31 @@ ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float c
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	AKRESULT const wwiseResult = AK::SoundEngine::SetObjectObstructionAndOcclusion(
-	  m_id,
-	  0,                                // only set the obstruction/occlusion for the default listener for now
-	  static_cast<AkReal32>(occlusion), // Currently used on obstruction until the ATL produces a correct obstruction value.
-	  static_cast<AkReal32>(occlusion));
-
-	if (IS_WWISE_OK(wwiseResult))
+	if (g_listenerID != AK_INVALID_GAME_OBJECT)
 	{
-		result = ERequestStatus::Success;
+		AKRESULT const wwiseResult = AK::SoundEngine::SetObjectObstructionAndOcclusion(
+		  m_id,
+		  g_listenerID,                     // only set the obstruction/occlusion for the default listener for now
+		  static_cast<AkReal32>(occlusion), // Currently used on obstruction until the ATL produces a correct obstruction value.
+		  static_cast<AkReal32>(occlusion));
+
+		if (IS_WWISE_OK(wwiseResult))
+		{
+			result = ERequestStatus::Success;
+		}
+		else
+		{
+			g_implLogger.Log(
+			  ELogType::Warning,
+			  "Wwise - failed to set Obstruction %f and Occlusion %f on object %" PRISIZE_T,
+			  obstruction,
+			  occlusion,
+			  m_id);
+		}
 	}
 	else
 	{
-		g_implLogger.Log(
-		  ELogType::Warning,
-		  "Wwise failed to set Obstruction %f and Occlusion %f on object %" PRISIZE_T,
-		  obstruction,
-		  occlusion,
-		  m_id);
+		g_implLogger.Log(ELogType::Warning, "Wwise - invalid listener Id during SetObjectObstructionAndOcclusion!");
 	}
 
 	return result;
@@ -374,73 +381,81 @@ ERequestStatus CObject::SetName(char const* const szName)
 ERequestStatus CObject::PostEnvironmentAmounts()
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
-	uint32 auxIndex = 0;
+	std::size_t const numEnvironments = m_environmentImplAmounts.size();
 
-	CObject::EnvironmentImplMap::iterator iEnvPair = m_environemntImplAmounts.begin();
-	CObject::EnvironmentImplMap::const_iterator const iEnvStart = m_environemntImplAmounts.begin();
-	CObject::EnvironmentImplMap::const_iterator const iEnvEnd = m_environemntImplAmounts.end();
-
-	if (m_environemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
+	if (numEnvironments > 0)
 	{
-		for (; iEnvPair != iEnvEnd; ++auxIndex)
+		AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
+		uint32 auxIndex = 0;
+
+		CObject::EnvironmentImplMap::iterator iEnvPair = m_environmentImplAmounts.begin();
+		CObject::EnvironmentImplMap::const_iterator const iEnvStart = m_environmentImplAmounts.begin();
+		CObject::EnvironmentImplMap::const_iterator const iEnvEnd = m_environmentImplAmounts.end();
+
+		if (numEnvironments <= AK_MAX_AUX_PER_OBJ)
 		{
-			float const amount = iEnvPair->second;
-
-			auxValues[auxIndex].auxBusID = iEnvPair->first;
-			auxValues[auxIndex].fControlValue = amount;
-
-			// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
-			if (amount == 0.0f)
+			for (; iEnvPair != iEnvEnd; ++auxIndex)
 			{
-				m_environemntImplAmounts.erase(iEnvPair++);
-			}
-			else
-			{
-				++iEnvPair;
+				float const amount = iEnvPair->second;
+				AkAuxSendValue& auxValue = auxValues[auxIndex];
+				auxValue.auxBusID = iEnvPair->first;
+				auxValue.fControlValue = amount;
+				auxValue.listenerID = g_listenerID;
+
+				// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
+				if (amount == 0.0f)
+				{
+					m_environmentImplAmounts.erase(iEnvPair++);
+				}
+				else
+				{
+					++iEnvPair;
+				}
 			}
 		}
-	}
-	else
-	{
-		// sort the environments in order of decreasing amounts and take the first AK_MAX_AUX_PER_OBJ worth
-		typedef std::set<std::pair<AkAuxBusID, float>, SEnvPairCompare> TEnvPairSet;
-		TEnvPairSet cEnvPairs(iEnvStart, iEnvEnd);
-
-		TEnvPairSet::const_iterator iSortedEnvPair = cEnvPairs.begin();
-		TEnvPairSet::const_iterator const iSortedEnvEnd = cEnvPairs.end();
-
-		for (; (iSortedEnvPair != iSortedEnvEnd) && (auxIndex < AK_MAX_AUX_PER_OBJ); ++iSortedEnvPair, ++auxIndex)
+		else
 		{
-			auxValues[auxIndex].auxBusID = iSortedEnvPair->first;
-			auxValues[auxIndex].fControlValue = iSortedEnvPair->second;
+			// sort the environments in order of decreasing amounts and take the first AK_MAX_AUX_PER_OBJ worth
+			using TEnvPairSet = std::set<std::pair<AkAuxBusID, float>, SEnvPairCompare>;
+			TEnvPairSet cEnvPairs(iEnvStart, iEnvEnd);
+
+			TEnvPairSet::const_iterator iSortedEnvPair = cEnvPairs.begin();
+			TEnvPairSet::const_iterator const iSortedEnvEnd = cEnvPairs.end();
+
+			for (; (iSortedEnvPair != iSortedEnvEnd) && (auxIndex < AK_MAX_AUX_PER_OBJ); ++iSortedEnvPair, ++auxIndex)
+			{
+				AkAuxSendValue& auxValue = auxValues[auxIndex];
+				auxValue.auxBusID = iSortedEnvPair->first;
+				auxValue.fControlValue = iSortedEnvPair->second;
+				auxValue.listenerID = g_listenerID;
+			}
+
+			//remove all Environments with 0.0 amounts
+			while (iEnvPair != iEnvEnd)
+			{
+				if (iEnvPair->second == 0.0f)
+				{
+					m_environmentImplAmounts.erase(iEnvPair++);
+				}
+				else
+				{
+					++iEnvPair;
+				}
+			}
 		}
 
-		//remove all Environments with 0.0 amounts
-		while (iEnvPair != iEnvEnd)
+		CRY_ASSERT(auxIndex <= AK_MAX_AUX_PER_OBJ);
+
+		AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, auxValues, auxIndex);
+
+		if (IS_WWISE_OK(wwiseResult))
 		{
-			if (iEnvPair->second == 0.0f)
-			{
-				m_environemntImplAmounts.erase(iEnvPair++);
-			}
-			else
-			{
-				++iEnvPair;
-			}
+			result = ERequestStatus::Success;
 		}
-	}
-
-	CRY_ASSERT(auxIndex <= AK_MAX_AUX_PER_OBJ);
-
-	AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, auxValues, auxIndex);
-
-	if (IS_WWISE_OK(wwiseResult))
-	{
-		result = ERequestStatus::Success;
-	}
-	else
-	{
-		g_implLogger.Log(ELogType::Warning, "Wwise SetGameObjectAuxSendValues failed on object %" PRISIZE_T " with AKRESULT: %d", m_id, wwiseResult);
+		else
+		{
+			g_implLogger.Log(ELogType::Warning, "Wwise - SetGameObjectAuxSendValues failed on object %" PRISIZE_T " with AKRESULT: %d", m_id, wwiseResult);
+		}
 	}
 
 	m_bNeedsToUpdateEnvironments = false;
@@ -471,18 +486,16 @@ ERequestStatus CEvent::Stop()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CListener::Set3DAttributes(SObject3DAttributes const& attributes)
 {
-	ERequestStatus result = ERequestStatus::Failure;
+	ERequestStatus result = ERequestStatus::Success;
 	AkListenerPosition listenerPos;
 	FillAKListenerPosition(attributes.transformation, listenerPos);
-	AKRESULT const wwiseResult = AK::SoundEngine::SetListenerPosition(listenerPos, m_id);
 
-	if (IS_WWISE_OK(wwiseResult))
+	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, listenerPos);
+
+	if (!IS_WWISE_OK(wwiseResult))
 	{
-		result = ERequestStatus::Success;
-	}
-	else
-	{
-		g_implLogger.Log(ELogType::Warning, "Wwise SetListenerPosition failed with AKRESULT: %" PRISIZE_T, wwiseResult);
+		g_implLogger.Log(ELogType::Warning, "Wwise - CListener::Set3DAttributes failed with AKRESULT: %d", wwiseResult);
+		result = ERequestStatus::Failure;
 	}
 
 	return result;
@@ -527,7 +540,7 @@ ERequestStatus CTrigger::SetLoaded(bool const bLoad) const
 	{
 		g_implLogger.Log(
 		  ELogType::Warning,
-		  "Wwise PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %" PRISIZE_T,
+		  "Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
 		  bLoad ? "Preparation_Load" : "Preparation_Unload",
 		  m_id,
 		  wwiseResult);
@@ -563,7 +576,7 @@ ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad)
 		{
 			g_implLogger.Log(
 			  ELogType::Warning,
-			  "Wwise PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
+			  "Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
 			  bLoad ? "Preparation_Load" : "Preparation_Unload",
 			  m_id,
 			  wwiseResult);
@@ -572,7 +585,7 @@ ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad)
 	else
 	{
 		g_implLogger.Log(ELogType::Error,
-		                 "Invalid IEvent passed to the Wwise implementation of %sTriggerAsync",
+		                 "Wwise - Invalid IEvent passed to the Wwise implementation of %sTriggerAsync",
 		                 bLoad ? "Load" : "Unprepare");
 	}
 
