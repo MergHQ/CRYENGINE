@@ -150,7 +150,7 @@ namespace CryEngine.Game
 					return _animationDrivenMotion;
 				}
 
-				return skeleton.GetAnimationDrivenMotion() == 1u;
+				return skeleton.GetAnimationDrivenMotion() == 0u;
 			}
 			set
 			{
