@@ -124,7 +124,7 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 		if (CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(passInfo.IsShadowPass() ? 0 : m_cNodeNewTexMML, ett_Diffuse))
 		{
 			// update RGB and normal textures
-			if (pTextureSourceNode->m_eTextureEditingState == eTES_SectorIsModified_AtlasIsDirty && C3DEngine::m_pGetLayerIdAtCallback)
+			if (pTextureSourceNode->m_eTextureEditingState == eTES_SectorIsModified_AtlasIsDirty && C3DEngine::m_pEditorHeightmap)
 			{
 				pTextureSourceNode->UpdateNodeTextureFromEditorData();
 				pTextureSourceNode->m_eTextureEditingState = eTES_SectorIsModified_AtlasIsUpToDate;
@@ -536,50 +536,57 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	int nTexSize = GetTerrain()->m_arrBaseTexInfos[0].m_TerrainTextureLayer[0].nSectorSizePixels;
+	int texDim = GetTerrain()->m_arrBaseTexInfos[0].m_TerrainTextureLayer[0].nSectorSizePixels;
 	ETEX_Format texFormat = GetTerrain()->m_arrBaseTexInfos[0].m_TerrainTextureLayer[0].eTexFormat;
 
 	static Array2d<ColorB> arrRGB;
-	arrRGB.Allocate(nTexSize);
+	arrRGB.Allocate(texDim);
 
-	float fMult = 1.f / gEnv->p3DEngine->GetTerrainTextureMultiplier(0);
-
-	float fBoxSize = GetBBox().GetSize().x;
-
-	for (int x = 0; x < nTexSize; x++)
+	// prepare lookup table with terrain color multiplier pre-integrated in linear space
+	const int CRY_ALIGN(128) lookupTableSize = 128;
+	byte lookupTable[lookupTableSize];
+	float rgbMult = 1.f / gEnv->p3DEngine->GetTerrainTextureMultiplier(0);
+	ColorF colR;
+	for (int i = 0; i < lookupTableSize; i++)
 	{
-		for (int y = 0; y < nTexSize; y++)
+		colR.r = 1.f / float(lookupTableSize - 1) * float(i);
+		colR.srgb2rgb();
+		colR *= rgbMult;
+		colR.Clamp();
+		colR.rgb2srgb();
+		lookupTable[i] = SATURATEB((uint32)(colR.r * 255.0f + 0.5f));
+	}
+
+	float sectorSizeM = GetBBox().GetSize().x;
+	
+	int smallestEditorTileSizeM = GetTerrain()->GetTerrainSize() / 16;
+
+	ColorB* colors = (ColorB*)alloca(sizeof(ColorB) * texDim);
+
+	float pixToMeter = sectorSizeM / texDim * (1.f + 1.f / (float)texDim);
+
+	// copy by row
+	for (int x = 0; x < texDim; x++)
+	{
+		C3DEngine::m_pEditorHeightmap->GetColorAtPosition(
+			(float)m_nOriginY + float(0) * pixToMeter, (float)m_nOriginX + float(x) * pixToMeter, colors, texDim, pixToMeter);
+
+		ColorB* dst = &arrRGB[x][0];
+		ColorB* dstEnd = dst + texDim;
+		ColorB* src = colors;
+
+		while(dst < dstEnd)
 		{
-			arrRGB[x][y] = C3DEngine::m_pGetLayerIdAtCallback->GetColorAtPosition(
-				(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize),
-				(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
-				true);
-
-			ColorF colRGB;
-			colRGB.r = 1.f / 255.f * arrRGB[x][y].r;
-			colRGB.g = 1.f / 255.f * arrRGB[x][y].g;
-			colRGB.b = 1.f / 255.f * arrRGB[x][y].b;
-			colRGB.a = 1.f;
-
-			{
-				// Convert to linear space
-				colRGB.srgb2rgb();
-
-				colRGB *= fMult;
-				colRGB.Clamp();
-
-				// Convert to gamma 2.2 space
-				colRGB.rgb2srgb();
-
-				arrRGB[x][y].r = (uint32)(colRGB.r * 255.0f + 0.5f);
-				arrRGB[x][y].g = (uint32)(colRGB.g * 255.0f + 0.5f);
-				arrRGB[x][y].b = (uint32)(colRGB.b * 255.0f + 0.5f);
-				arrRGB[x][y].a = 255;
-			}
+			dst->r = lookupTable[src->r >> 1];
+			dst->g = lookupTable[src->g >> 1];
+			dst->b = lookupTable[src->b >> 1];
+			dst->a = 255;
+			++dst;
+			++src;
 		}
 	}
 
-	GetRenderer()->DXTCompress((byte*)arrRGB.GetData(), nTexSize, nTexSize, texFormat, false, false, 4, SaveCompressedMipmapLevel);
+	GetRenderer()->DXTCompress((byte*)arrRGB.GetData(), texDim, texDim, texFormat, false, false, 4, SaveCompressedMipmapLevel);
 
 	m_pTerrain->m_texCache[0].UpdateTexture(gTerrainCompressedImgData.GetElements(), m_nNodeTexSet.nSlot0);
 }

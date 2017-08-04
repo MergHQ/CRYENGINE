@@ -113,7 +113,7 @@ bool Cry3DEngineBase::m_bEditor = false;
 #endif
 ESystemConfigSpec Cry3DEngineBase::m_LightConfigSpec = CONFIG_VERYHIGH_SPEC;
 int Cry3DEngineBase::m_arrInstancesCounter[eERType_TypesNum];
-IGetLayerIdAtCallback* C3DEngine::m_pGetLayerIdAtCallback = 0;
+IEditorHeightmap* C3DEngine::m_pEditorHeightmap = 0;
 
 #define LAST_POTENTIALLY_VISIBLE_TIME 2
 
