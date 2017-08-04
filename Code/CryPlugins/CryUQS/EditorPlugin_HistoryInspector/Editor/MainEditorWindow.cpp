@@ -64,6 +64,8 @@ struct SQuery
 	SQuery*              pParent;
 	std::vector<SQuery*> children;
 	UQS::Core::CQueryID  queryID;
+	bool                 bFoundTooFewItems;
+	bool                 bExceptionEncountered;
 	UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks;
 
 	std::vector<string> instantEvaluatorNames;
@@ -78,6 +80,8 @@ struct SQuery
 	SQuery(SQuery* _pParent, const UQS::Core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
 		: pParent(_pParent)
 		, queryID(overview.queryID)
+		, bFoundTooFewItems(overview.bFoundTooFewItems)
+		, bExceptionEncountered(overview.bQueryEncounteredAnException)
 		, evaluatorDrawMasks(UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet())
 	{
 		UpdateInformation(overview);
@@ -115,6 +119,8 @@ struct SQuery
 		this->dataPerColumn[Column_ElapsedTime] = QtUtil::ToQString(elapsedTimeAsString.c_str());
 		this->dataPerColumn[Column_TimestampQueryCreated] = QtUtil::ToQString(timestampQueryCreatedAsString.c_str());
 		this->dataPerColumn[Column_TimestampQueryDestroyed] = QtUtil::ToQString(timestampQueryDestroyedAsString.c_str());
+		this->bFoundTooFewItems = overview.bFoundTooFewItems;
+		this->bExceptionEncountered = overview.bQueryEncounteredAnException;
 	}
 
 	static void HelpSerializeEvaluatorsBitfield(Serialization::IArchive& ar, UQS::Core::evaluatorsBitfield_t& bitfieldToSerialize, const std::vector<string>& evaluatorNames, const std::vector<string>& evaluatorLabelsForUI)
@@ -283,6 +289,26 @@ public:
 
 	Q_INVOKABLE virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
 	{
+		if (role == Qt::TextColorRole)
+		{
+			if (index.isValid())
+			{
+				const SQuery* pQuery = static_cast<const SQuery*>(index.internalPointer());
+
+				// *red* text if the query encountered an exception
+				if (pQuery->bExceptionEncountered)
+				{
+					return QtUtil::ToQColor(ColorB(255, 0, 0));
+				}
+
+				// *yellow* text if too few items were found
+				if (pQuery->bFoundTooFewItems)
+				{
+					return QtUtil::ToQColor(ColorB(255, 255, 0));
+				}
+			}
+		}
+
 		if (role == Qt::DisplayRole)
 		{
 			if (index.isValid())
