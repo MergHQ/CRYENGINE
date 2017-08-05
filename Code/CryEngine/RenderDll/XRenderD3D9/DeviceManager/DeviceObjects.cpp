@@ -1033,7 +1033,7 @@ CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource(const
 		existingBinding = resource;
 
 		// add invalidate callback to new binding
-		if (m_invalidateCallback)
+		if (existingBinding.fastCompare && m_invalidateCallback)
 		{
 			existingBinding.AddInvalidateCallback(m_invalidateCallbackOwner, m_invalidateCallback);
 		}
@@ -1050,12 +1050,12 @@ template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResou
 
 void CDeviceResourceSetDesc::Clear()
 {
-	if (m_invalidateCallback)
+	for (const auto& it : m_resources)
 	{
-		for (const auto& it : m_resources)
+		const SResourceBinding& existingBinding = it.second;
+		if (existingBinding.fastCompare && m_invalidateCallback)
 		{
-			const SResourceBinding& resource = it.second;
-			resource.RemoveInvalidateCallback(m_invalidateCallbackOwner);
+			existingBinding.RemoveInvalidateCallback(m_invalidateCallbackOwner);
 		}
 	}
 
@@ -1069,7 +1069,7 @@ CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::RemoveResource(const
 	if (it != m_resources.end())
 	{
 		SResourceBinding& existingBinding = it->second;
-		if (m_invalidateCallback)
+		if (existingBinding.fastCompare && m_invalidateCallback)
 		{
 			existingBinding.RemoveInvalidateCallback(m_invalidateCallbackOwner);
 		}
@@ -1426,18 +1426,21 @@ bool CDeviceRenderPassDesc::GetDeviceDepthstencilView(D3DDepthSurface*& pView) c
 bool CDeviceRenderPassDesc::SetRenderTarget(uint32 slot, CTexture* pTexture, ResourceViewHandle hView)
 {
 	CRY_ASSERT(slot < MaxRendertargetCount);
-	return UpdateResource(m_renderTargets[slot], SResourceBinding(pTexture, hView));
+	bool result = UpdateResource(m_renderTargets[slot], SResourceBinding(pTexture, hView));
+	return result;
 }
 
 bool CDeviceRenderPassDesc::SetDepthTarget(CTexture* pTexture, ResourceViewHandle hView)
 {
-	return UpdateResource(m_depthTarget, SResourceBinding(pTexture, hView));
+	bool result = UpdateResource(m_depthTarget, SResourceBinding(pTexture, hView));
+	return result;
 }
 
 bool CDeviceRenderPassDesc::SetOutputUAV(uint32 slot, CGpuBuffer* pBuffer)
 {
 	CRY_ASSERT(slot < MaxOutputUAVCount);
-	return UpdateResource(m_outputUAVs[slot], SResourceBinding(pBuffer, EDefaultResourceViews::Default));
+	bool result = UpdateResource(m_outputUAVs[slot], SResourceBinding(pBuffer, EDefaultResourceViews::Default));
+	return result;
 }
 
 bool CDeviceRenderPassDesc::UpdateResource(SResourceBinding& dstResource, const SResourceBinding& srcResource)
@@ -1657,11 +1660,10 @@ void CDeviceObjectFactory::TrimRenderPasses()
 bool CDeviceObjectFactory::OnRenderPassInvalidated(void* pRenderPass, uint32 flags)
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
-	static_assert(uint32(CGpuBuffer::eResourceDestroyed) == uint32(CTexture::eResourceDestroyed), "Flags need to match");
 
 	auto pPass     = reinterpret_cast<CDeviceRenderPass*>(pRenderPass);
 	
-	if (flags & CTexture::eResourceDestroyed)
+	if (flags & eResourceDestroyed)
 	{
 		GetDeviceObjectFactory().EraseRenderPass(pPass, false);
 		return false;

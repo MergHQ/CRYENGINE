@@ -1520,17 +1520,6 @@ public:
 	void ValidateSRVs();
 #endif
 
-	//////////////////////////////////////////////////////////////////////////
-	// Will notify resource's user that some data of the the resource was invalidated.
-	// dirtyFlags - one or more of the EDeviceDirtyFlags enum bits
-	//! Dirty flags will indicate what kind of device data was invalidated
-	enum EDeviceDirtyFlags
-	{
-		eDeviceResourceDirty     = BIT(0),
-		eDeviceResourceViewDirty = BIT(1),
-		eResourceDestroyed       = BIT(2)
-	};
-
 	void AddInvalidateCallback(void* listener, const SResourceBinding::InvalidateCallbackFunction& callback);
 	void RemoveInvalidateCallbacks(void* listener);
 	void InvalidateDeviceResource(uint32 dirtyFlags);

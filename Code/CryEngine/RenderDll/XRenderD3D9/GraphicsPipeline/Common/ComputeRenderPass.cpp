@@ -6,9 +6,10 @@
 
 bool CComputeRenderPass::OnResourceInvalidated(void* pThis, uint32 flags) 
 {
-	reinterpret_cast<CComputeRenderPass*>(pThis)->m_dirtyMask |= eDirty_Resources; return true; 
+	reinterpret_cast<CComputeRenderPass*>(pThis)->m_dirtyMask |= eDirty_Resources;
+	// Don't keep the callback when the resource goes out of scope
+	return !(flags & eResourceDestroyed);
 }
-
 
 CComputeRenderPass::CComputeRenderPass(EPassFlags flags)
 	: m_flags(flags)
