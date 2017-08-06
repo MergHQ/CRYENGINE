@@ -739,6 +739,7 @@ namespace UQS
 			const size_t numItemsInFinalResultSet = m_finalStatistics.numItemsInFinalResultSet;
 
 			const CTimeValue elapsedTime = ComputeElapsedTimeFromQueryCreationToDestruction();
+			const bool bFoundTooFewItems = (m_finalStatistics.numItemsInFinalResultSet == 0) || (m_finalStatistics.numItemsInFinalResultSet < m_finalStatistics.numDesiredItems);
 			const IQueryHistoryConsumer::SHistoricQueryOverview overview(
 				color,
 				m_querierName.c_str(),
@@ -749,7 +750,9 @@ namespace UQS
 				numItemsInFinalResultSet,
 				elapsedTime,
 				m_queryCreatedTimestamp,
-				m_queryDestroyedTimestamp);
+				m_queryDestroyedTimestamp,
+				bFoundTooFewItems,
+				m_bExceptionOccurred);
 			consumer.AddOrUpdateHistoricQuery(overview);
 		}
 
@@ -810,16 +813,28 @@ namespace UQS
 				consumer.AddTextLineToCurrentHistoricQuery(color, "canceled prematurely:         %s", m_bGotCanceledPrematurely ? "YES" : "NO");
 			}
 
-			// number of generated items, remaining items to inspect, final items
+			// number of desired items, generated items, remaining items to inspect, final items
 			{
+				static const ColorF warningColor = Col_Yellow;
+
+				const bool bHasDesiredItemLimit = (m_finalStatistics.numDesiredItems > 0);
+				const bool bFoundTooFewItems = (m_finalStatistics.numItemsInFinalResultSet == 0) || (m_finalStatistics.numItemsInFinalResultSet < m_finalStatistics.numDesiredItems);
+
+				const ColorF& colorForItemsGenerated = (m_finalStatistics.numGeneratedItems == 0) ? warningColor : color;
+				const ColorF& colorForDesiredItems = (bHasDesiredItemLimit && bFoundTooFewItems) ? warningColor : color;
+				const ColorF& colorForItemsInFinalResultSet = bFoundTooFewItems ? warningColor : color;
+
+				// desired items
+				consumer.AddTextLineToCurrentHistoricQuery(colorForDesiredItems,          "items desired:                %s", (m_finalStatistics.numDesiredItems < 1) ? "(no limit)" : stack_string().Format("%i", (int)m_finalStatistics.numDesiredItems).c_str());
+
 				// generated items
-				consumer.AddTextLineToCurrentHistoricQuery(color, "items generated:              %i", (int)m_finalStatistics.numGeneratedItems);
+				consumer.AddTextLineToCurrentHistoricQuery(colorForItemsGenerated,        "items generated:              %i", (int)m_finalStatistics.numGeneratedItems);
 
 				// remaining items to inspect
-				consumer.AddTextLineToCurrentHistoricQuery(color, "items still to inspect:       %i", (int)m_finalStatistics.numRemainingItemsToInspect);
+				consumer.AddTextLineToCurrentHistoricQuery(color,                         "items still to inspect:       %i", (int)m_finalStatistics.numRemainingItemsToInspect);
 
 				// final items
-				consumer.AddTextLineToCurrentHistoricQuery(color, "final items:                  %i", (int)m_finalStatistics.numItemsInFinalResultSet);
+				consumer.AddTextLineToCurrentHistoricQuery(colorForItemsInFinalResultSet, "final items:                  %i", (int)m_finalStatistics.numItemsInFinalResultSet);
 			}
 
 			// memory usage

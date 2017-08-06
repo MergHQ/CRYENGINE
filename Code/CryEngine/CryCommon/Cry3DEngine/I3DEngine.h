@@ -653,14 +653,14 @@ struct SOcTreeNodeChunk
 	AUTO_STRUCT_INFO;
 };
 
-struct IGetLayerIdAtCallback
+struct IEditorHeightmap
 {
 	// <interfuscator:shuffle>
-	virtual ~IGetLayerIdAtCallback(){}
+	virtual ~IEditorHeightmap(){}
 	virtual uint32 GetLayerIdAtPosition(const int x, const int y) const = 0;
 	virtual uint32 GetSurfaceTypeIdAtPosition(const int x, const int y) const = 0;
 	virtual bool   GetHoleAtPosition(const int x, const int y) const = 0;
-	virtual ColorB GetColorAtPosition(const float x, const float y, bool bBilinear) = 0;
+	virtual ColorB GetColorAtPosition(const float x, const float y, ColorB* colors = nullptr, const int colorsNum = 0, const float xStep = 0) = 0;
 	virtual float  GetElevationAtPosition(const float x, const float y) = 0;
 	virtual float  GetRGBMultiplier() = 0;
 	// </interfuscator:shuffle>
@@ -2159,7 +2159,7 @@ struct I3DEngine : public IProcess
 	virtual const char* GetVoxelEditOperationName(EVoxelEditOperation eOperation) = 0;
 
 	//! Gives 3dengine access to original and most precise heighmap data in the editor
-	virtual void                SetGetLayerIdAtCallback(IGetLayerIdAtCallback* pCallBack) = 0;
+	virtual void                SetEditorHeightmapCallback(IEditorHeightmap* pCallBack) = 0;
 
 	virtual PodArray<CDLight*>* GetDynamicLightSources() = 0;
 

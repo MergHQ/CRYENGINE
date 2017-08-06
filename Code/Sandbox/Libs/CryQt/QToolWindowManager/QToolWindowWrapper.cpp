@@ -203,3 +203,14 @@ void QToolWindowWrapper::startDrag()
 	ReleaseCapture();
 	SendMessage((HWND)winId(), WM_NCLBUTTONDOWN, HTCAPTION, 0);
 }
+
+void QToolWindowWrapper::deferDeletion()
+{
+	if (m_manager)
+	{
+		m_manager->removeWrapper(this);
+		m_manager = nullptr;
+	}
+	setParent(nullptr);
+	deleteLater();
+}

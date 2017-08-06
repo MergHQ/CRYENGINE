@@ -142,17 +142,13 @@ bool CD3D9Renderer::CreateContext(WIN_HWND hWnd, bool bMainViewport, int SSX, in
 	pContext->m_Width = m_width;
 	pContext->m_Height = m_height;
 	pContext->m_pSwapChain = 0;
+	pContext->m_pHDRTargetTex = 0;
 	pContext->m_nViewportWidth = m_width / (m_pActiveContext ? m_pActiveContext->m_nSSSamplesX : 1);
 	pContext->m_nViewportHeight = m_height / (m_pActiveContext ? m_pActiveContext->m_nSSSamplesY : 1);
 	pContext->m_nSSSamplesX = std::max(1, SSX);
 	pContext->m_nSSSamplesY = std::max(1, SSY);
 	pContext->m_bMainViewport = bMainViewport;
 	pContext->m_uniqueId = m_uniqueRContextId;
-
-	// NOTE: Actual device texture allocation happens just before rendering.
-	const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET;
-	const string uniqueTexName = string("$HDRTarget_context_") + string().Format("%d", m_uniqueRContextId);
-	pContext->m_pHDRTargetTex = CTexture::GetOrCreateTextureObject(uniqueTexName.c_str(), 0, 0, 1, eTT_2D, renderTargetFlags, eTF_Unknown);
 
 	m_pActiveContext = pContext;
 	m_RContexts.AddElem(pContext);
@@ -202,11 +198,14 @@ bool CD3D9Renderer::DeleteContext(WIN_HWND hWnd)
 
 	if (m_RContexts[i]->m_pSwapChain)
 	{
+		// Force the release of the back-buffer currently bound as a render-target (otherwise resizing the swap-chain will fail, because of outstanding reference)
+		FX_SetRenderTarget(0, (D3DSurface*)0xDEADBEEF, (SDepthTexture*)0xDEADBEEF);
+		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
+
 		ReleaseBackBuffers(m_RContexts[i]);
 	}
 
 	SAFE_RELEASE(m_RContexts[i]->m_pSwapChain);
-	SAFE_RELEASE(m_RContexts[i]->m_pHDRTargetTex);
 
 	delete m_RContexts[i];
 	m_RContexts.Remove(i, 1);

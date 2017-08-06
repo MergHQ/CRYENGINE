@@ -105,9 +105,10 @@ namespace UQS
 				std::vector<SGrantedAndUsedTime>        grantedAndUsedTimePerFrame;       // grows with each update call
 
 				// could be known to composite query classes that pass around the resulting items (but currently only known to + set by CQuery_Regular)
-				size_t                                  numGeneratedItems;
-				size_t                                  numRemainingItemsToInspect;
-				size_t                                  numItemsInFinalResultSet;
+				size_t                                  numDesiredItems;                  // number of items the user wants to find; this is often 1 (e. g. "give me *one* good shooting position"), but can be any number, whereas 0 has a special meaning: "give me all items you can find"
+				size_t                                  numGeneratedItems;                // number of items the generator has produced
+				size_t                                  numRemainingItemsToInspect;       // this number decreases with each finished item while the query is ongoing
+				size_t                                  numItemsInFinalResultSet;         // number of items that finally made it into the result set
 				size_t                                  memoryUsedByGeneratedItems;       // amount of memory used by all generated items; this memory is usually used on the client side (since they provide us with an item generator that we just call)
 				size_t                                  memoryUsedByItemsWorkingData;     // amount of memory used to keep track of the working state of all items throughout the evaluation phases
 

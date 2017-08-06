@@ -223,6 +223,9 @@ namespace UQS
 			out.elapsedTimePerPhase = m_elapsedTimePerPhase;
 			out.peakElapsedTimePerPhaseUpdate = m_peakElapsedTimePerPhaseUpdate;
 
+			const int maxItemsToKeepInResultSet = m_pQueryBlueprint->GetMaxItemsToKeepInResultSet();
+
+			out.numDesiredItems = (maxItemsToKeepInResultSet < 1) ? 0 : (size_t)maxItemsToKeepInResultSet;
 			out.numGeneratedItems = m_generatedItems.GetItemCount();
 			out.numRemainingItemsToInspect = m_remainingItemWorkingDatasToInspect.size();
 			out.numItemsInFinalResultSet = m_candidates.size();

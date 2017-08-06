@@ -81,7 +81,7 @@ public:
 	virtual void          RemoveRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
 	virtual void          ExternalUpdate() override;
 	virtual char const*   GetConfigPath() const override;
-	virtual IListener*    CreateListener() override;
+	virtual IListener*    CreateListener(char const* const szname = nullptr) override;
 	virtual void          ReleaseListener(IListener* const pIListener) override;
 	virtual IObject*      CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject(), SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void          ReleaseObject(IObject* const pIObject) override;

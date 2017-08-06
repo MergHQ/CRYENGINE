@@ -277,11 +277,12 @@ struct IImpl
 	/**
 	 * Construct an object implementing IListener that stores all of the data needed by the AudioImplementation
 	 * to identify and use an AudioListener. Return a pointer to that object.
+	 * @param szName - optional name of the listener to construct (not used in release builds)
 	 * @return CryAudio::Impl::IListener pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding AudioListener; nullptr if the new CryAudio::Impl::IListener instance was not created.
 	 * @see DestructListener
 	 */
-	virtual IListener* ConstructListener() = 0;
+	virtual IListener* ConstructListener(char const* const szName = nullptr) = 0;
 
 	/**
 	 * Destruct the supplied CryAudio::Impl::IListener instance.

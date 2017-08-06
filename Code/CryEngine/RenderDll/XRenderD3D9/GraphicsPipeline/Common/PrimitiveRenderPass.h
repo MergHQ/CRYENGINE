@@ -269,7 +269,8 @@ protected:
 inline bool CRenderPrimitive::OnResourceInvalidated(void* pThis, uint32 flags)
 {
 	reinterpret_cast<CRenderPrimitive*>(pThis)->m_bResourcesInvalidated = true;
-	return true;
+	// Don't keep the callback when the resource goes out of scope
+	return !(flags & eResourceDestroyed);
 }
 
 #define ASSIGN_VALUE(dst, src, dirtyFlag)                     \

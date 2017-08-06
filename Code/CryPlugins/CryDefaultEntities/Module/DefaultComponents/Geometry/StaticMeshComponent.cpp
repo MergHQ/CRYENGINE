@@ -9,6 +9,19 @@ namespace DefaultComponents
 {
 void CStaticMeshComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
+	// Functions
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CStaticMeshComponent::LoadFromDisk, "{E900651C-169C-4FF2-B987-CFC5613D51EB}"_cry_guid, "LoadFromDisk");
+		pFunction->SetDescription("Load the mesh from disk");
+		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CStaticMeshComponent::ResetObject, "{86AA9C32-3D54-4622-8032-C99C194FF24A}"_cry_guid, "ResetObject");
+		pFunction->SetDescription("Resets the object");
+		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+		componentScope.Register(pFunction);
+	}
 }
 
 void CStaticMeshComponent::Initialize()

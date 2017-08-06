@@ -36,7 +36,6 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::SetAudioImpl)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::ReleaseAudioImpl)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::RefreshAudioSystem)
-				AM_REQUEST_BLOCK(EAudioManagerRequestType::ConstructAudioListener)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::LoseFocus)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetFocus)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::MuteAll)
@@ -109,6 +108,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 			switch (pBase->type)
 			{
 				AL_REQUEST_BLOCK(EAudioListenerRequestType::SetTransformation)
+				AL_REQUEST_BLOCK(EAudioListenerRequestType::RegisterListener)
 				AL_REQUEST_BLOCK(EAudioListenerRequestType::ReleaseListener)
 			default:
 				{

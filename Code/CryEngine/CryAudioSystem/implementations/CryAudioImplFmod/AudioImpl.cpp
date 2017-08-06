@@ -390,7 +390,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener()
+IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 {
 	static int id = 0;
 	return static_cast<IListener*>(new CListener(id++));

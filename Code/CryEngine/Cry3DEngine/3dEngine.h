@@ -1104,8 +1104,8 @@ public:
 	virtual void                     OnEntityDeleted(struct IEntity* pEntity);
 	virtual const char*              GetVoxelEditOperationName(EVoxelEditOperation eOperation);
 
-	virtual void                     SetGetLayerIdAtCallback(IGetLayerIdAtCallback* pCallBack) { m_pGetLayerIdAtCallback = pCallBack; }
-	static IGetLayerIdAtCallback* m_pGetLayerIdAtCallback;
+	virtual void                     SetEditorHeightmapCallback(IEditorHeightmap* pCallBack) { m_pEditorHeightmap = pCallBack; }
+	static IEditorHeightmap* m_pEditorHeightmap;
 
 	virtual IParticleManager* GetParticleManager() { return m_pPartManager; }
 	virtual IOpticsManager*   GetOpticsManager()   { return m_pOpticsManager; }

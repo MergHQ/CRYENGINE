@@ -451,9 +451,9 @@ void CPrimitiveRenderPass::Reset()
 
 inline bool CPrimitiveRenderPass::OnResourceInvalidated(void* pThis, uint32 flags)
 {
-	CRY_ASSERT((flags & CTexture::eResourceDestroyed) == 0);
 	reinterpret_cast<CPrimitiveRenderPass*>(pThis)->m_bResourcesInvalidated = true;
-	return true;
+	// Don't keep the callback when the resource goes out of scope
+	return !(flags & eResourceDestroyed);
 }
 
 CPrimitiveRenderPass::~CPrimitiveRenderPass()

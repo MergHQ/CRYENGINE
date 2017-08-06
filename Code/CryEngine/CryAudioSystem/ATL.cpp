@@ -379,13 +379,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 
 	switch (pRequestDataBase->type)
 	{
-	case EAudioManagerRequestType::ConstructAudioListener:
-		{
-			SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ConstructAudioListener> const*>(request.GetData());
-			*pRequestData->ppListener = m_audioListenerMgr.CreateListener();
-
-			break;
-		}
 	case EAudioManagerRequestType::AddRequestListener:
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const*>(request.GetData());
@@ -1186,6 +1179,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 			}
 		}
 		break;
+	case EAudioListenerRequestType::RegisterListener:
+		{
+			SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const* const pRequestData =
+			  static_cast<SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const*>(pPassedRequestData);
+			*pRequestData->ppListener = m_audioListenerMgr.CreateListener(pRequestData->name.c_str());
+		}
+		break;
 	case EAudioListenerRequestType::ReleaseListener:
 		{
 			SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> const* const pRequestData =
@@ -1198,9 +1198,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 				m_audioListenerMgr.ReleaseListener(pRequestData->pListener);
 				result = ERequestStatus::Success;
 			}
-
-			break;
 		}
+		break;
 	case EAudioListenerRequestType::None:
 		result = ERequestStatus::Success;
 		break;
@@ -1659,9 +1658,17 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 		pAuxGeom->Draw2dLabel(posX, posY, textSize, colorListener, false, "Listener <%d> PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", 0, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 
+		if (numListeners > 0)
+		{
+			char const* const szName = m_audioListenerMgr.GetActiveListenerName();
+
+			posY += lineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, textSize, colorListener, false, "%s PosXYZ: %.2f %.2f %.2f FwdXYZ: %.2f %.2f %.2f Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+		}
+
 		posY += lineHeight;
 		pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorBlue, false,
-		                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | Events: %3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f | AsyncRays: %3.1f",
+		                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " Events: %3" PRISIZE_T " EventListeners %3" PRISIZE_T " Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
 		                      numActiveObjects, numObjects, numEvents, numEventListeners, numListeners, syncRays, asyncRays);
 
 		posY += lineHeightClause;

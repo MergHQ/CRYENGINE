@@ -32,6 +32,8 @@
 #include "CompiledRenderObject.h"
 #include "../Scaleform/ScaleformRender.h"
 
+#define PROCESS_TEXTURES_IN_PARALLEL
+
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 #include <CrySystem/ILog.h>
 #endif
@@ -2992,6 +2994,8 @@ DECLARE_JOB("DXTCompressRowFloat", TDXTCompressRowFloat, DXTCompressRowFloat);
 
 bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* destinationData, int width, int height, int mips, ETEX_Format sourceFormat, bool bUseHW, int nDstBytesPerPix)
 {
+	FUNCTION_PROFILER_RENDERER
+
 	if (bUseHW)
 		return false;
 
@@ -3148,6 +3152,8 @@ bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* 
 
 bool CRenderer::DXTCompress(byte* sourceData, int width, int height, ETEX_Format destinationFormat, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback)
 {
+	FUNCTION_PROFILER_RENDERER
+
 	if (bUseHW)
 		return false;
 	if (bGenMips)

@@ -58,6 +58,7 @@ namespace UQS
 			, totalConsumedTime()
 			, grantedAndUsedTimePerFrame()
 
+			, numDesiredItems(0)
 			, numGeneratedItems(0)
 			, numRemainingItemsToInspect(0)
 			, numItemsInFinalResultSet(0)
@@ -80,6 +81,7 @@ namespace UQS
 			ar(totalConsumedTime, "totalConsumedTime");
 			ar(grantedAndUsedTimePerFrame, "grantedAndUsedTimePerFrame");
 
+			ar(numDesiredItems, "numDesiredItems");
 			ar(numGeneratedItems, "numGeneratedItems");
 			ar(numRemainingItemsToInspect, "numRemainingItemsToInspect");
 			ar(numItemsInFinalResultSet, "numItemsInFinalResultSet");
