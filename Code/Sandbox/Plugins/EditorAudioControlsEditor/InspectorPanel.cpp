@@ -132,4 +132,16 @@ void CInspectorPanel::SetSelectedControls(const std::vector<CAudioControl*>& sel
 		m_pConnectionsLabel->setText(*m_pUsageHint);
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CInspectorPanel::BackupTreeViewStates()
+{
+	m_pConnectionList->BackupTreeViewStates();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CInspectorPanel::RestoreTreeViewStates()
+{
+	m_pConnectionList->RestoreTreeViewStates();
+}
 } // namespace ACE

@@ -26,6 +26,7 @@ CCharacterRenderNode::CCharacterRenderNode()
 	m_cachedBoundsWorld = AABB(0.0f);
 	m_cachedBoundsLocal = AABB(0.0f);
 	m_matrix.SetIdentity();
+	m_nearestMatrix.SetIdentity();
 	m_renderOffset.SetIdentity();
 
 	GetInstCount(GetRenderNodeType())++;
@@ -68,6 +69,7 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 	// some parameters will be modified
 	SRendParams rParms(inputRendParams);
 
+	rParms.pRenderNode = this;
 	rParms.nMaterialLayers = m_nMaterialLayers;
 	rParms.pMatrix = &m_matrix;
 	rParms.pMaterial = m_pMaterial;
@@ -88,9 +90,10 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 		//m_bPermanentRenderObjectMatrixValid = false;
 		QuatTS offset;
 		offset.SetIdentity();
-		Matrix34 nearestMatrix = m_matrix;
-		CalcNearestTransform(nearestMatrix, passInfo);
-		rParms.pMatrix = &nearestMatrix;
+
+		m_nearestMatrix = m_matrix;	
+		CalcNearestTransform(m_nearestMatrix, passInfo);
+		rParms.pNearestMatrix = &m_nearestMatrix;
 
 		m_pCharacterInstance->Render(rParms, offset, passInfo);
 	}

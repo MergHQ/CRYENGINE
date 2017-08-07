@@ -408,6 +408,7 @@ public:
 	CTexture*        GetLastBackBuffer(SDisplayContext* pContext);
 	CTexture*        GetCurrentBackBuffer(SDisplayContext* pContext);
 	void             ObtainBackBuffers(SDisplayContext* pContext);
+	void             ObtainDepthBuffer(SDisplayContext* pContext);
 	void             ReleaseBackBuffers(SDisplayContext* pContext);
 	void             ResizeBackBuffers(SDisplayContext* pContext);
 	SDisplayContext* GetActiveDisplayContext() { return m_pActiveContext ? m_pActiveContext : &m_BaseContext; }

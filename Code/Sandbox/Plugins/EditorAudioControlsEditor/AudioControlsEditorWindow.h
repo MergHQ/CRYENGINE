@@ -18,7 +18,8 @@ class CAudioAssetsExplorer;
 class CInspectorPanel;
 class CAudioSystemPanel;
 class CAudioControl;
-class CAudioFileMonitor;
+class CFileMonitorSystem;
+class CFileMonitorMiddleware;
 
 class CAudioControlsEditorWindow final : public CDockableWindow, public IEditorNotifyListener
 {
@@ -39,14 +40,8 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	//////////////////////////////////////////////////////////
 
+	void ReloadSystemData();
 	void ReloadMiddlewareData();
-
-private:
-
-	void Reload();
-	void Save();
-	void FilterControlType(EItemType type, bool bShow);
-	void CheckErrorMask();
 
 protected:
 
@@ -55,13 +50,20 @@ protected:
 
 private:
 
+	void Reload();
+	void Save();
+	void FilterControlType(EItemType type, bool bShow);
+	void CheckErrorMask();
 	void UpdateAudioSystemData();
+	void BackupTreeViewStates();
+	void RestoreTreeViewStates();
 
 	CAudioAssetsManager*                                m_pAssetsManager;
 	CAudioAssetsExplorer*                               m_pExplorer;
 	CInspectorPanel*                                    m_pInspectorPanel;
 	CAudioSystemPanel*                                  m_pAudioSystemPanel;
-	std::unique_ptr<CAudioFileMonitor>                  m_pMonitor;
+	std::unique_ptr<CFileMonitorSystem>                 m_pMonitorSystem;
+	std::unique_ptr<CFileMonitorMiddleware>             m_pMonitorMiddleware;
 	bool                                                m_allowedTypes[EItemType::eItemType_NumTypes];
 
 	QSplitter* m_pSplitter;

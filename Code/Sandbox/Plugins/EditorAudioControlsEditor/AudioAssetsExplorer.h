@@ -14,9 +14,8 @@ class QSortFilterProxyModel;
 class QLineEdit;
 class QAudioControlsTreeView;
 class QAbstractItemModel;
-class QAdvancedTreeView;
 class CMountingProxyModel;
-class QCheckableMenu;
+class CCheckableMenu;
 
 namespace ACE
 {
@@ -25,7 +24,7 @@ class QFilterButton;
 class CAudioAssetsExplorerModel;
 class QControlsProxyFilter;
 class CAudioLibraryModel;
-class CAudioAdvancedTreeView;
+class CAdvancedTreeView;
 
 class CAudioAssetsExplorer final : public QFrame
 {
@@ -36,8 +35,12 @@ public:
 	CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager);
 	virtual ~CAudioAssetsExplorer() override;
 
+	CAdvancedTreeView*          GetTreeView() { return m_pControlsTree; }
+
 	std::vector<CAudioControl*> GetSelectedControls();
 	void                        Reload();
+	void                        BackupTreeViewStates();
+	void                        RestoreTreeViewStates();
 
 private:
 
@@ -70,6 +73,8 @@ signals:
 
 	void SelectedControlChanged();
 	void ControlTypeFiltered(EItemType type, bool bShow);
+	void StartTextFiltering();
+	void StopTextFiltering();
 
 private:
 
@@ -80,10 +85,10 @@ private:
 
 	// Filtering
 	QString                          m_filter;
-	QCheckableMenu*                  m_pFilterMenu;
+	CCheckableMenu*                  m_pFilterMenu;
 
 	QLineEdit*                       m_pTextFilter;
-	CAudioAdvancedTreeView*          m_pControlsTree;
+	CAdvancedTreeView*               m_pControlsTree;
 	CAudioAssetsExplorerModel*       m_pAssetsModel;
 	QControlsProxyFilter*            m_pProxyModel;
 

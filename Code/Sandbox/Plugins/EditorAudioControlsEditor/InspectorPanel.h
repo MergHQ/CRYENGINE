@@ -24,6 +24,8 @@ public:
 	virtual ~CInspectorPanel() override;
 
 	void Reload();
+	void BackupTreeViewStates();
+	void RestoreTreeViewStates();
 
 public slots:
 

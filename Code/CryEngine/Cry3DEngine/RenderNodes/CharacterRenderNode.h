@@ -93,6 +93,7 @@ private:
 
 	// World space transformation
 	Matrix34 m_matrix;
+	Matrix34 m_nearestMatrix;
 	// Cached World space bounding box
 	mutable AABB m_cachedBoundsWorld;
 	// Cached Local space bounding box

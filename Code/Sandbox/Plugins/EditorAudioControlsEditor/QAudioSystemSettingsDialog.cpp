@@ -14,17 +14,21 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include "FileDialogs/SystemFileDialog.h"
 
 namespace ACE
 {
+//////////////////////////////////////////////////////////////////////////
 QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 	: CEditorDialog("AudioSystemSettingsDialog")
 {
 	IAudioSystemEditor* pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
 	if (pAudioSystem)
 	{
 		IImplementationSettings* pSettings = pAudioSystem->GetSettings();
+
 		if (pSettings)
 		{
 			setWindowTitle(tr("Audio System Settings"));
@@ -43,8 +47,13 @@ QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 			pLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
 
 			QHBoxLayout* pProjectPathLayout = new QHBoxLayout(this);
-			QLineEdit* pLineEdit = new QLineEdit(pSettings->GetProjectPath());
+			m_projectPath = pSettings->GetProjectPath();
+			QLineEdit* pLineEdit = new QLineEdit(m_projectPath);
 			pLineEdit->setMinimumWidth(250);
+			connect(pLineEdit, &QLineEdit::textChanged, [&](QString const& projectPath)
+			{
+				EnableSaveButton(m_projectPath.toLower().replace("/", R"(\)") != projectPath.toLower().replace("/", R"(\)"));
+			});
 			pProjectPathLayout->addWidget(pLineEdit);
 
 			QToolButton* pBrowseButton = new QToolButton();
@@ -52,17 +61,19 @@ QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 			connect(pBrowseButton, &QToolButton::clicked, [=]()
 				{
 					IAudioSystemEditor* pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
 					if (pAudioSystem)
 					{
-					  CSystemFileDialog::RunParams runParams;
-					  runParams.initialDir = pLineEdit->text();
-					  QString path = CSystemFileDialog::RunSelectDirectory(runParams, this);
-					  if (!path.isEmpty())
-					  {
-					    pLineEdit->setText(path);
-					  }
+						CSystemFileDialog::RunParams runParams;
+						runParams.initialDir = pLineEdit->text();
+						QString path = CSystemFileDialog::RunSelectDirectory(runParams, this);
+
+						if (!path.isEmpty())
+						{
+							pLineEdit->setText(path);
+						}
 					}
-			  });
+				});
 			pProjectPathLayout->addWidget(pBrowseButton);
 
 			pLayout->addLayout(pProjectPathLayout, 2, 1);
@@ -71,26 +82,28 @@ QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 
 			QDialogButtonBox* pButtons = new QDialogButtonBox(this);
 			pButtons->setStandardButtons(QDialogButtonBox::Save | QDialogButtonBox::Cancel);
+			pButtons->button(QDialogButtonBox::Save)->setEnabled(false);
+			connect(this, &QAudioSystemSettingsDialog::EnableSaveButton, pButtons->button(QDialogButtonBox::Save), &QPushButton::setEnabled);
 			connect(pButtons, &QDialogButtonBox::accepted, [=]()
 				{
 					IAudioSystemEditor* pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 					if (pAudioSystem)
 					{
-					  IImplementationSettings* pSettings = pAudioSystem->GetSettings();
-					  if (pSettings)
-					  {
+						IImplementationSettings* pSettings = pAudioSystem->GetSettings();
 
-					    pSettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
-
-					    // clear all connections to the middleware since we are reloading everything
-					    CAudioControlsEditorPlugin::GetAssetsManager()->ClearAllConnections();
-					    pAudioSystem->Reload();
-					    CAudioControlsEditorPlugin::GetAssetsManager()->ReloadAllConnections();
-
-					  }
+						if (pSettings)
+						{
+							pSettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
+							ImplementationSettingsAboutToChange();
+							// clear all connections to the middleware since we are reloading everything
+							CAudioControlsEditorPlugin::GetAssetsManager()->ClearAllConnections();
+							pAudioSystem->Reload();
+							CAudioControlsEditorPlugin::GetAssetsManager()->ReloadAllConnections();
+							ImplementationSettingsChanged();
+						}
 					}
 					accept();
-			  });
+				});
 			connect(pButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 			pMainLayout->addWidget(pButtons, 0);
 

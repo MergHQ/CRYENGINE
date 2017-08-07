@@ -49,8 +49,10 @@ add_sources("EditorAudioControlsEditor_uber_0.cpp"
 		"AudioSystemModel.cpp"
 		"QAudioSystemSettingsDialog.h"
 		"QAudioSystemSettingsDialog.cpp"
-		"AudioAdvancedTreeView.cpp"
-		"AudioAdvancedTreeView.h"
+		"AdvancedTreeView.cpp"
+		"AdvancedTreeView.h"
+		"FileMonitor.cpp"
+		"FileMonitor.h"
 )
 
 add_sources("NoUberFile"

@@ -177,6 +177,7 @@ SERIALIZATION_ENUM(FLAGS_ATTACH_COMPUTE_SKINNING, "compute_skinning", "Compute S
 SERIALIZATION_ENUM(FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS, "compute_premorphs", "Apply morphs pre-skinning")
 SERIALIZATION_ENUM(FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS, "compute_tangents", "Recompute Normals")
 SERIALIZATION_ENUM(FLAGS_ATTACH_HIDE_ATTACHMENT, "hide", "Hidden                                                                     ")
+SERIALIZATION_ENUM(FLAGS_ATTACH_EXCLUDE_FROM_NEAREST, "exclude_nearest", "Exclude from nearest camera range                                                                     ")
 SERIALIZATION_ENUM(FLAGS_ATTACH_PHYSICALIZED_RAYS, "physicalized_rays", "Physicalized Rays                                                          ")
 SERIALIZATION_ENUM(FLAGS_ATTACH_PHYSICALIZED_COLLISIONS, "physicalized_collisions", "Physicalized Collisions                                                    ")
 SERIALIZATION_ENUM(FLAGS_ATTACH_SW_SKINNING, "cpu_skinning", "CPU Skinning")
@@ -641,7 +642,7 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 
 		ar(m_simulationParams, "simulation", "+Simulation");
 
-		int availableFlags = FLAGS_ATTACH_HIDE_ATTACHMENT | FLAGS_ATTACH_PHYSICALIZED_RAYS | FLAGS_ATTACH_PHYSICALIZED_COLLISIONS;
+		int availableFlags = FLAGS_ATTACH_HIDE_ATTACHMENT | FLAGS_ATTACH_PHYSICALIZED_RAYS | FLAGS_ATTACH_PHYSICALIZED_COLLISIONS | FLAGS_ATTACH_EXCLUDE_FROM_NEAREST;
 		BitFlags<AttachmentFlags>(m_nFlags, availableFlags).Serialize(ar);
 		if ((m_nFlags & FLAGS_ATTACH_HIDE_ATTACHMENT) != 0)
 			ar.warning(*this, "Hidden by default.");
@@ -674,7 +675,7 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 		if (m_simulationParams.m_nClampType == SimulationParams::TRANSLATIONAL_PROJECTION)
 			m_simulationParams.m_nClampType = SimulationParams::DISABLED; //you can't choose this mode on face attachments
 
-		int availableFlags = FLAGS_ATTACH_HIDE_ATTACHMENT | FLAGS_ATTACH_PHYSICALIZED_RAYS | FLAGS_ATTACH_PHYSICALIZED_COLLISIONS;
+		int availableFlags = FLAGS_ATTACH_HIDE_ATTACHMENT | FLAGS_ATTACH_PHYSICALIZED_RAYS | FLAGS_ATTACH_PHYSICALIZED_COLLISIONS | FLAGS_ATTACH_EXCLUDE_FROM_NEAREST;
 		BitFlags<AttachmentFlags>(m_nFlags, availableFlags).Serialize(ar);
 		if ((m_nFlags & FLAGS_ATTACH_HIDE_ATTACHMENT) != 0)
 			ar.warning(*this, "Hidden by default.");
@@ -685,8 +686,8 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 		ar(ResourceFilePath(m_strGeometryFilepath, "Attachment Geometry (skin)|*.skin", "Objects"), "geometry", "<Geometry");
 		ar(ResourceFilePath(m_strMaterial, "Materials (mtl)|*.mtl", "Materials"), "material", "<Material");
 		ar(m_viewDistanceMultiplier, "viewDistanceMultiplier", "View Distance Multiplier");
-
-		int availableFlags = FLAGS_ATTACH_HIDE_ATTACHMENT;
+				
+		int availableFlags = FLAGS_ATTACH_HIDE_ATTACHMENT | FLAGS_ATTACH_EXCLUDE_FROM_NEAREST;
 		{
 			SkinningMethod skinningMethod = SKINNING_VERTEX_SHADER;
 			if (m_nFlags & FLAGS_ATTACH_SW_SKINNING)

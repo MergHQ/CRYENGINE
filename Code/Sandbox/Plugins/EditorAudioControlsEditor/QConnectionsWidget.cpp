@@ -11,9 +11,15 @@
 #include "ImplementationManager.h"
 #include "AudioSystemPanel.h"
 #include "AudioSystemModel.h"
+#include "AdvancedTreeView.h"
 #include "QConnectionsModel.h"
 #include "IUndoObject.h"
 #include "Controls/QuestionDialog.h"
+
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/STL.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
+
 #include <QDropEvent>
 #include <QEvent>
 #include <QMimeData>
@@ -21,11 +27,6 @@
 #include <QVBoxLayout>
 #include <QTreeView>
 #include <QHeaderView>
-
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/STL.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <QAdvancedTreeView.h>
 #include <QSplitter>
 #include <QSizePolicy>
 
@@ -36,9 +37,10 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 	: QWidget(pParent)
 	, m_pControl(nullptr)
 	, m_pConnectionModel(new QConnectionModel())
-	, m_pConnectionsView(new QAdvancedTreeView())
+	, m_pConnectionsView(new CAdvancedTreeView())
 {
 	m_pConnectionsView->setContextMenuPolicy(Qt::CustomContextMenu);
+	m_pConnectionsView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_pConnectionsView->setDragEnabled(false);
 	m_pConnectionsView->setAcceptDrops(true);
 	m_pConnectionsView->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -48,15 +50,45 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 	m_pConnectionsView->installEventFilter(this);
 	m_pConnectionsView->header()->setMinimumSectionSize(50);
 	m_pConnectionsView->setIndentation(0);
+	m_pConnectionsView->setSortingEnabled(true);
+	connect(m_pConnectionsView->header(), &QHeaderView::customContextMenuRequested, [&](const QPoint& pos)
+	{
+		QAbstractItemModel* pModel = m_pConnectionsView->model();
+
+		if (pModel)
+		{
+			QMenu contextMenu(tr("Context menu"), this);
+			int columnCount = pModel->columnCount();
+
+			for (int i = 0; i < columnCount; ++i)
+			{
+				QAction* pAction = contextMenu.addAction(pModel->headerData(i, Qt::Horizontal).toString());
+				pAction->setCheckable(true);
+				pAction->setChecked(!(m_pConnectionsView->header()->isSectionHidden(i)));
+
+				connect(pAction, &QAction::toggled, [=](bool bChecked)
+				{
+					int column = pAction->data().toInt();
+					m_pConnectionsView->header()->setSectionHidden(i, !bChecked);
+				});
+
+				pAction->setData(QVariant(i));
+			}
+
+			contextMenu.exec(QCursor::pos());
+		}
+	});
 	connect(m_pConnectionsView, &QTreeView::customContextMenuRequested, [&](const QPoint& pos)
 		{
 			QMenu contextMenu(tr("Context menu"), this);
 			QAction* pAction = contextMenu.addAction(tr("Remove Connection"));
+
 			connect(pAction, &QAction::triggered, [&]()
 			{
 				RemoveSelectedConnection();
 			});
-			contextMenu.exec(m_pConnectionsView->mapToGlobal(pos));
+
+			contextMenu.exec(QCursor::pos());
 	  });
 
 	m_pConnectionPropertiesFrame = new QFrame(this);
@@ -91,7 +123,7 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 
 	for (int i = 2; i < count; ++i)
 	{
-		m_pConnectionsView->SetColumnVisible(i, false);
+		m_pConnectionsView->header()->setSectionHidden(i, true);
 	}
 
 	// Then hide the entire widget.
@@ -112,7 +144,6 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 			m_pConnectionsView->selectionModel()->clear();
 			RefreshConnectionProperties();
 	  }, reinterpret_cast<uintptr_t>(this));
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -134,6 +165,7 @@ bool QConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 	if (pEvent->type() == QEvent::KeyPress)
 	{
 		QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
+
 		if (pKeyEvent && pKeyEvent->key() == Qt::Key_Delete && pObject == m_pConnectionsView)
 		{
 			RemoveSelectedConnection();
@@ -238,5 +270,17 @@ void QConnectionsWidget::RefreshConnectionProperties()
 		m_pConnectionProperties->detach();
 		m_pConnectionPropertiesFrame->setHidden(true);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void QConnectionsWidget::BackupTreeViewStates()
+{
+	m_pConnectionsView->BackupSelection();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void QConnectionsWidget::RestoreTreeViewStates()
+{
+	m_pConnectionsView->RestoreSelection();
 }
 } // namespace ACE
