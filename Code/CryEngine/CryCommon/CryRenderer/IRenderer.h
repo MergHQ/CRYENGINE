@@ -2592,6 +2592,8 @@ struct SRendParams
 
 	Matrix34*                 pPrevMatrix; //!< object previous transformations - motion blur specific.
 
+	Matrix34*				  pNearestMatrix; //!< object transformations - nearest camera specific.
+
 	IVisArea*                 m_pVisArea; //!< VisArea that contains this object, used for RAM-ambient cube query.
 
 	IMaterial*                pMaterial; //!< Override material.

@@ -1765,13 +1765,23 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				IAttachment* pIAttachment = m_arrAttachments[i];
 				CAttachmentBONE* pCAttachmentBone = (CAttachmentBONE*)pIAttachment;
 				IAttachmentObject* pIAttachmentObject = pCAttachmentBone->m_pIAttachmentObject;
+
+				if ((pIAttachment->GetFlags() & FLAGS_ATTACH_EXCLUDE_FROM_NEAREST) != 0)
+				{
+					rParams.dwFObjFlags &= ~FOB_NEAREST;
+				}
+				else if ((rParams.pRenderNode->GetRndFlags() & ERF_FOB_NEAREST) != 0)
+				{
+					rParams.dwFObjFlags |= FOB_NEAREST;
+				}
+
 				if (pIAttachmentObject == 0)
 					continue;              //most likely all of them are 0
 				if (pCAttachmentBone->m_AttFlags & uHideFlags)
 					continue;
 				if (pCAttachmentBone->m_nJointID < 0)
 					continue;              //No success! Maybe next time
-				Matrix34 FinalMat34 = rWorldMat34 * Matrix34(pCAttachmentBone->m_AttModelRelative * pCAttachmentBone->m_addTransformation);
+				Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34) * Matrix34(pCAttachmentBone->m_AttModelRelative * pCAttachmentBone->m_addTransformation);
 				rParams.pMatrix = &FinalMat34;
 				pIAttachmentObject->RenderAttachment(rParams, passInfo);
 			}
@@ -1781,6 +1791,16 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 		{
 			IAttachment* pIAttachment = m_arrAttachments[i];
 			CAttachmentBONE* pCAttachmentBone = (CAttachmentBONE*)pIAttachment;
+
+			if ((pIAttachment->GetFlags() & FLAGS_ATTACH_EXCLUDE_FROM_NEAREST) != 0)
+			{
+				rParams.dwFObjFlags &= ~FOB_NEAREST;
+			}
+			else if ((rParams.pRenderNode->GetRndFlags() & ERF_FOB_NEAREST) != 0)
+			{
+				rParams.dwFObjFlags |= FOB_NEAREST;
+			}
+
 			if (pCAttachmentBone->m_AttFlags & uHideFlags)
 				continue;
 			if (pCAttachmentBone->m_nJointID < 0)
@@ -1789,7 +1809,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				continue;
 			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && (pCAttachmentBone->m_AttFlags & FLAGS_ATTACH_VISIBLE) == 0)
 				continue;
-			Matrix34 FinalMat34 = rWorldMat34 * Matrix34(pCAttachmentBone->m_AttModelRelative * pCAttachmentBone->m_addTransformation);
+			Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34) * Matrix34(pCAttachmentBone->m_AttModelRelative * pCAttachmentBone->m_addTransformation);
 			rParams.pMatrix = &FinalMat34;
 			pCAttachmentBone->m_pIAttachmentObject->RenderAttachment(rParams, passInfo);
 		}
@@ -1809,7 +1829,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				continue;
 			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && (pCAttachmentFace->m_AttFlags & FLAGS_ATTACH_VISIBLE) == 0)
 				continue;                //Distance culling. Object is too small for rendering
-			Matrix34 FinalMat34 = rWorldMat34 * Matrix34(pCAttachmentFace->m_AttModelRelative * pCAttachmentFace->m_addTransformation);
+			Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34) * Matrix34(pCAttachmentFace->m_AttModelRelative * pCAttachmentFace->m_addTransformation);
 			rParams.pMatrix = &FinalMat34;
 			pCAttachmentFace->m_pIAttachmentObject->RenderAttachment(rParams, passInfo);
 		}
@@ -1834,6 +1854,16 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 		for (uint32 i = m_sortedRanges[eRange_SkinMesh].begin; i < m_sortedRanges[eRange_SkinMesh].end; i++)
 		{
 			IAttachment* pIAttachment = m_arrAttachments[i];
+	
+			if ((pIAttachment->GetFlags() & FLAGS_ATTACH_EXCLUDE_FROM_NEAREST) != 0)
+			{
+				rParams.dwFObjFlags &= ~FOB_NEAREST;
+			}			
+			else if ((rParams.pRenderNode->GetRndFlags() & ERF_FOB_NEAREST) != 0)
+			{
+				rParams.dwFObjFlags |= FOB_NEAREST;		
+			}
+
 			CAttachmentSKIN* pCAttachmentSkin = (CAttachmentSKIN*)pIAttachment;
 			if (pCAttachmentSkin->m_AttFlags & uHideFlags)
 				continue;
@@ -1849,7 +1879,8 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				continue;  //if radius is zero, then the object is most probably not visible and we can continue
 			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
 				continue;  //too small to render. cancel the update
-			pCAttachmentSkin->DrawAttachment(rParams, passInfo, rWorldMat34, fZoomFactor);
+			
+			pCAttachmentSkin->DrawAttachment(rParams, passInfo, ((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34, fZoomFactor);
 
 #if !defined(_RELEASE)
 			// pMaterial is set to NULL above, but restored in DrawAttachment with correct material
@@ -1884,7 +1915,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				continue;   //too small to render. cancel the update
 
 			pCAttachmentVCloth->InitializeCloth();
-			pCAttachmentVCloth->DrawAttachment(rParams, passInfo, rWorldMat34, fZoomFactor);
+			pCAttachmentVCloth->DrawAttachment(rParams, passInfo, ((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34, fZoomFactor);
 
 #if !defined(_RELEASE)
 			if (p_e_debug_draw->GetIVal() == 20)

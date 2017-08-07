@@ -45,6 +45,8 @@ enum AttachmentFlags
 	FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS = BIT(7),  //!< Already stored in CDF, so don't change this.
 	FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS  = BIT(8),  //!< Already stored in CDF, so don't change this.
 
+	FLAGS_ATTACH_EXCLUDE_FROM_NEAREST	    = BIT(9), //!< Already stored in CDF, so don't change this.
+
 	// Dynamic Flags.
 	FLAGS_ATTACH_VISIBLE            = BIT(13),    //!< We set this flag if we can render the object.
 	FLAGS_ATTACH_PROJECTED          = BIT(14),    //!< We set this flag if we can attacht the object to a triangle.
