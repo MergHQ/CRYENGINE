@@ -9,7 +9,7 @@
 #include "AudioSystemModel.h"
 #include "QAudioSystemSettingsDialog.h"
 #include "ImplementationManager.h"
-#include "AudioAdvancedTreeView.h"
+#include "AdvancedTreeView.h"
 
 // Qt
 #include <QtUtil.h>
@@ -87,13 +87,11 @@ CAudioSystemPanel::CAudioSystemPanel()
 	pSettingsButton->setToolTip(tr("Location settings of audio middleware project"));
 	connect(pSettingsButton, &QToolButton::clicked, [&]()
 		{
-			QAudioSystemSettingsDialog dialog(this);
-			if (dialog.exec() == QDialog::Accepted)
-			{
-			  Reset();
-			  ImplementationSettingsChanged();
-			}
-	  });
+			QAudioSystemSettingsDialog* dialog = new QAudioSystemSettingsDialog(this);
+			connect(dialog, &QAudioSystemSettingsDialog::ImplementationSettingsAboutToChange, this, &CAudioSystemPanel::ImplementationSettingsAboutToChange);
+			connect(dialog, &QAudioSystemSettingsDialog::ImplementationSettingsChanged, this, &CAudioSystemPanel::ImplementationSettingsChanged);
+			dialog->exec();
+		});
 
 	pHorizontalLayout->addWidget(pSettingsButton);
 
@@ -102,10 +100,12 @@ CAudioSystemPanel::CAudioSystemPanel()
 
 	m_pImplNameLabel = new CElidedLabel("");
 	IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
 	if (pAudioImpl)
 	{
 		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 	}
+
 	m_pImplNameLabel->setObjectName("ImplementationTitle");
 	pVerticalLayout->addWidget(m_pImplNameLabel);
 
@@ -123,20 +123,21 @@ CAudioSystemPanel::CAudioSystemPanel()
 			{
 				if (m_filter.isEmpty() && !filter.isEmpty())
 				{
-					m_pTreeView->BackupExpanded();
+					BackupTreeViewStates();
 					m_pTreeView->expandAll();
 				}
 				else if (!m_filter.isEmpty() && filter.isEmpty())
 				{
+					m_pModelProxy->setFilterFixedString(filter);
 					m_pTreeView->collapseAll();
-					m_pTreeView->RestoreExpanded();
+					RestoreTreeViewStates();
 				}
 
 				m_filter = filter;
 			}
 
 			m_pModelProxy->setFilterFixedString(filter);
-	  });
+		});
 
 	connect(pHideAssignedCheckbox, &QCheckBox::clicked, [&](bool bHide)
 		{
@@ -150,9 +151,9 @@ CAudioSystemPanel::CAudioSystemPanel()
 				m_pModelProxy->SetHideConnected(bHide);
 				m_pTreeView->RestoreExpanded();
 			}
-	  });
+		});
 
-	m_pTreeView = new CAudioAdvancedTreeView();
+	m_pTreeView = new CAdvancedTreeView();
 	m_pTreeView->header()->setVisible(false);
 	m_pTreeView->setDragEnabled(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragOnly);
@@ -165,18 +166,20 @@ CAudioSystemPanel::CAudioSystemPanel()
 	pVerticalLayout->addWidget(m_pTreeView);
 
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(m_pTreeView, &QAdvancedTreeView::customContextMenuRequested, this, &CAudioSystemPanel::ShowControlsContextMenu);
+	connect(m_pTreeView, &CAdvancedTreeView::customContextMenuRequested, this, &CAudioSystemPanel::ShowControlsContextMenu);
+	connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, m_pTreeView, &CAdvancedTreeView::OnSelectionChanged);
 
 	// Update the middleware name label.
 	// Note the 'this' ptr being passed as a context variable so that Qt can disconnect this lambda when the object is destroyed (ie. the ACE is closed).
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
 			IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
 			if (pAudioImpl)
 			{
 			  m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -189,10 +192,12 @@ CAudioSystemPanel::~CAudioSystemPanel()
 void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
 {
 	const ACE::IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
 	if (pAudioSystemEditorImpl)
 	{
 		m_allowedATLTypes[type] = bAllowed;
 		uint mask = 0;
+
 		for (int i = 0; i < EItemType::eItemType_NumTypes; ++i)
 		{
 			if (m_allowedATLTypes[i])
@@ -200,6 +205,7 @@ void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
 				mask |= pAudioSystemEditorImpl->GetCompatibleTypes((EItemType)i);
 			}
 		}
+
 		m_pModelProxy->SetAllowedControlsMask(mask);
 	}
 }
@@ -229,5 +235,19 @@ void CAudioSystemPanel::Reset()
 {
 	m_pModel->Reset();
 	m_pModelProxy->invalidate();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioSystemPanel::BackupTreeViewStates()
+{
+	m_pTreeView->BackupExpanded();
+	m_pTreeView->BackupSelection();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioSystemPanel::RestoreTreeViewStates()
+{
+	m_pTreeView->RestoreExpanded();
+	m_pTreeView->RestoreSelection();
 }
 } // namespace ACE

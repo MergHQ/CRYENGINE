@@ -7,7 +7,7 @@
 class QVBoxLayout;
 class QFrame;
 class QPropertyTree;
-class QAdvancedTreeView;
+class CAdvancedTreeView;
 
 namespace ACE
 {
@@ -24,6 +24,8 @@ public:
 	void Init();
 	void SetControl(CAudioControl* pControl);
 	void Reload();
+	void BackupTreeViewStates();
+	void RestoreTreeViewStates();
 
 private:
 
@@ -31,10 +33,10 @@ private:
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
 
-	CAudioControl*     m_pControl;
-	QFrame*            m_pConnectionPropertiesFrame;
-	QPropertyTree*     m_pConnectionProperties;
-	QConnectionModel*  m_pConnectionModel;
-	QAdvancedTreeView* m_pConnectionsView;
+	CAudioControl*          m_pControl;
+	QFrame*                 m_pConnectionPropertiesFrame;
+	QPropertyTree*          m_pConnectionProperties;
+	QConnectionModel*       m_pConnectionModel;
+	CAdvancedTreeView*      m_pConnectionsView;
 };
 } // namespace ACE

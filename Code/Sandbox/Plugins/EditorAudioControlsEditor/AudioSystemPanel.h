@@ -11,7 +11,7 @@ namespace ACE
 {
 class QAudioSystemModelProxyFilter;
 class QAudioSystemModel;
-class CAudioAdvancedTreeView;
+class CAdvancedTreeView;
 
 class CAudioSystemPanel final : public QFrame
 {
@@ -24,6 +24,8 @@ public:
 
 	void SetAllowedControls(EItemType type, bool bAllowed);
 	void Reset();
+	void BackupTreeViewStates();
+	void RestoreTreeViewStates();
 
 private slots:
 
@@ -31,6 +33,7 @@ private slots:
 
 signals:
 
+	void ImplementationSettingsAboutToChange();
 	void ImplementationSettingsChanged();
 
 private:
@@ -39,7 +42,7 @@ private:
 	QAudioSystemModelProxyFilter* m_pModelProxy;
 	QAudioSystemModel*            m_pModel;
 	CElidedLabel*                 m_pImplNameLabel;
-	CAudioAdvancedTreeView*       m_pTreeView;
+	CAdvancedTreeView*            m_pTreeView;
 	QString                       m_filter;
 };
 } // namespace ACE
