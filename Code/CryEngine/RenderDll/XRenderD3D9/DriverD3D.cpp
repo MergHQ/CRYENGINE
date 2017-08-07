@@ -198,6 +198,61 @@ void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 	pContext->m_pHDRTargetTex = CTexture::GetOrCreateTextureObject(uniqueTexName.c_str(), 0, 0, 1, eTT_2D, renderTargetFlags, eTF_Unknown);
 }
 
+void CD3D9Renderer::ObtainDepthBuffer(SDisplayContext* pContext)
+{
+	const float clearDepth = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
+	const uint clearStencil = 1;
+	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
+
+	int nDepthBufferWidth = IsEditorMode() ? m_d3dsdBackBuffer.Width : GetWidth();
+	int nDepthBufferHeight = IsEditorMode() ? m_d3dsdBackBuffer.Height : GetHeight();
+	m_preferredDepthFormat = m_zbpp == 32 ? eTF_D32FS8 : m_zbpp == 24 ? eTF_D24S8 : (m_zbpp == 8 ? eTF_D16S8 : eTF_D16);
+
+	m_pZTexture = CTexture::GetOrCreateDepthStencil("$DeviceDepthScene", nDepthBufferWidth, nDepthBufferHeight,
+		clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, m_preferredDepthFormat);
+#if defined(DURANGO_USE_ESRAM)
+	m_pZTexture->SetESRAMOffset(11894784 + 5955584 * 2);
+#endif
+
+	D3DTexture* pZTarget = m_pZTexture->GetDevTexture()->Get2DTexture();
+	D3DDepthSurface* pZSurface = m_pZTexture->GetDevTexture(m_d3dsdBackBuffer.SampleDesc.Count > 1)->LookupDSV(EDefaultResourceViews::DepthStencil);
+
+#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
+	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	commandList.GetGraphicsInterface()->ClearSurface(pZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
+#endif
+
+	m_DepthBufferOrig.pTexture = m_pZTexture;
+	m_DepthBufferOrig.pTarget = pZTarget;
+	m_DepthBufferOrig.pSurface = pZSurface;
+	m_DepthBufferOrig.nWidth = nDepthBufferWidth;
+	m_DepthBufferOrig.nHeight = nDepthBufferHeight;
+	m_DepthBufferOrig.bBusy = true;
+	m_DepthBufferOrig.nFrameAccess = -2;
+
+	m_DepthBufferNative = m_DepthBufferOrig;
+
+	// Create the native resolution depth stencil buffer for overlay rendering if needed
+	if (!IsEditorMode() && (gcpRendD3D->GetOverlayWidth() != nDepthBufferWidth || gcpRendD3D->GetOverlayHeight() != nDepthBufferHeight))
+	{
+		m_pNativeZTexture = CTexture::GetOrCreateDepthStencil("$DeviceDepthOverlay", GetOverlayWidth(), GetOverlayHeight(),
+			clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, m_preferredDepthFormat);
+
+		D3DTexture* pNativeZTarget = m_pZTexture->GetDevTexture()->Get2DTexture();
+		D3DDepthSurface* pNativeZSurface = m_pZTexture->GetDevTexture(m_d3dsdBackBuffer.SampleDesc.Count > 1)->LookupDSV(EDefaultResourceViews::DepthStencil);
+
+#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
+		commandList.GetGraphicsInterface()->ClearSurface(pNativeZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
+#endif
+
+		m_DepthBufferNative.pTexture = m_pNativeZTexture;
+		m_DepthBufferNative.pTarget = pNativeZTarget;
+		m_DepthBufferNative.pSurface = pNativeZSurface;
+		m_DepthBufferNative.nWidth = m_nativeWidth;
+		m_DepthBufferNative.nHeight = m_nativeHeight;
+	}
+}
+
 void CD3D9Renderer::ReleaseBackBuffers(SDisplayContext* pContext)
 {
 	unsigned indices = 1;
@@ -1642,12 +1697,14 @@ void CD3D9Renderer::RT_BeginFrame()
 	}
 
 #if defined(SUPPORT_DEVICE_INFO)
-	if (m_bEditor)
+	if (m_bEditor && GetActiveDisplayContext()->m_bMainViewport)
 	{
 		const int width = GetWidth();
 		const int height = GetHeight();
 
-		if (m_DepthBufferOrig.nWidth < width || m_DepthBufferOrig.nHeight < height)
+		// If the BaseContext and the Editor's active bMainViewPort context are divergent, make the BaseContext match the ActiveContext
+		if (m_devInfo.SwapChainDesc().BufferDesc.Width  != width ||
+			m_devInfo.SwapChainDesc().BufferDesc.Height != height)
 		{
 			SDisplayContext* pDC = GetBaseDisplayContext();
 
@@ -1656,8 +1713,8 @@ void CD3D9Renderer::RT_BeginFrame()
 			GetS3DRend().ReleaseBuffers();
 			ReleaseBackBuffers(pDC);
 
-			m_devInfo.SwapChainDesc().BufferDesc.Width = max(m_DepthBufferOrig.nWidth, width);
-			m_devInfo.SwapChainDesc().BufferDesc.Height = max(m_DepthBufferOrig.nHeight, height);
+			m_devInfo.SwapChainDesc().BufferDesc.Width  = width;
+			m_devInfo.SwapChainDesc().BufferDesc.Height = height;
 			m_devInfo.ResizeDXGIBuffers();
 
 			OnD3D11PostCreateDevice(m_devInfo.Device());
