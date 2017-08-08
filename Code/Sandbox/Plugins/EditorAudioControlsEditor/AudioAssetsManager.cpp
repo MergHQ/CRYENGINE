@@ -65,25 +65,23 @@ void CAudioAssetsManager::Initialize()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
-			m_bLoading = true;
 			ClearAllConnections();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
 			ReloadAllConnections();
-			m_bLoading = false;
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
 		{
 			m_bLoading = true;
-	  });
+		}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::signalLoaded.Connect([&]()
 		{
 			m_bLoading = false;
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,9 +90,10 @@ CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType 
 	if (pParent != nullptr && !name.empty())
 	{
 		if ((pParent->GetType() == EItemType::eItemType_Folder || pParent->GetType() == EItemType::eItemType_Library) ||
-		    (pParent->GetType() == EItemType::eItemType_Switch && type == EItemType::eItemType_State))
+			(pParent->GetType() == EItemType::eItemType_Switch && type == EItemType::eItemType_State))
 		{
 			CAudioControl* const pFoundControl = FindControl(name, type, pParent);
+
 			if (pFoundControl != nullptr)
 			{
 				return pFoundControl;
@@ -110,7 +109,7 @@ CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType 
 			pParent->AddChild(pControl);
 
 			signalItemAdded(pControl);
-			SetAssetModified(pControl);
+			pControl->SetModified(true);
 
 			return pControl;
 		}
@@ -152,6 +151,7 @@ void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 
 		// Remove/detach item from the tree
 		IAudioAsset* pParent = pItem->GetParent();
+
 		if (pParent)
 		{
 			pParent->RemoveChild(pItem);
@@ -169,6 +169,7 @@ void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 			{
 				// Must be a control
 				CAudioControl* pControl = static_cast<CAudioControl*>(pItem);
+
 				if (pControl)
 				{
 					pControl->ClearConnections();
@@ -178,7 +179,7 @@ void CAudioAssetsManager::DeleteItem(IAudioAsset* pItem)
 			signalItemRemoved(pParent, pItem);
 		}
 
-		SetAssetModified(pItem);
+		pItem->SetModified(true);
 		delete pItem;
 	}
 }
@@ -244,6 +245,7 @@ SScopeInfo CAudioAssetsManager::GetScopeInfo(Scope id) const
 void CAudioAssetsManager::Clear()
 {
 	std::vector<CAudioLibrary*> libraries = m_audioLibraries;
+
 	for (auto pLibrary : libraries)
 	{
 		DeleteItem(pLibrary);
@@ -261,9 +263,11 @@ CAudioLibrary* CAudioAssetsManager::CreateLibrary(string const& name)
 	if (!name.empty())
 	{
 		size_t const size = m_audioLibraries.size();
+
 		for (size_t i = 0; i < size; ++i)
 		{
 			CAudioLibrary* pLibrary = m_audioLibraries[i];
+
 			if (pLibrary && (name.compareNoCase(pLibrary->GetName()) == 0))
 			{
 				return pLibrary;
@@ -274,10 +278,10 @@ CAudioLibrary* CAudioAssetsManager::CreateLibrary(string const& name)
 		CAudioLibrary* pLibrary = new CAudioLibrary(name);
 		m_audioLibraries.push_back(pLibrary);
 		signalLibraryAdded(pLibrary);
-		SetAssetModified(pLibrary);
 		pLibrary->SetModified(true);
 		return pLibrary;
 	}
+
 	return nullptr;
 }
 
@@ -289,9 +293,11 @@ ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(string const& name, IAudioAs
 		if (pParent->GetType() == EItemType::eItemType_Folder || pParent->GetType() == EItemType::eItemType_Library)
 		{
 			size_t const size = pParent->ChildCount();
+
 			for (size_t i = 0; i < size; ++i)
 			{
 				IAudioAsset* const pItem = pParent->GetChild(i);
+
 				if (pItem != nullptr && (pItem->GetType() == EItemType::eItemType_Folder) && (name.compareNoCase(pItem->GetName()) == 0))
 				{
 					return pItem;
@@ -299,6 +305,7 @@ ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(string const& name, IAudioAs
 			}
 
 			CAudioFolder* const pFolder = new CAudioFolder(name);
+
 			if (pFolder != nullptr)
 			{
 				signalItemAboutToBeAdded(pParent);
@@ -307,7 +314,7 @@ ACE::IAudioAsset* CAudioAssetsManager::CreateFolder(string const& name, IAudioAs
 			}
 
 			signalItemAdded(pFolder);
-			SetAssetModified(pFolder);
+			pFolder->SetModified(true);
 			return pFolder;
 		}
 		else
@@ -345,12 +352,14 @@ void CAudioAssetsManager::OnControlModified(CAudioControl* pControl)
 {
 	signalControlModified(pControl);
 	m_bControlTypeModified[ItemTypeToIndex(pControl->GetType())] = true;
+	signalIsDirty(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::SetAssetModified(IAudioAsset* pAsset)
 {
 	m_bControlTypeModified[ItemTypeToIndex(pAsset->GetType())] = true;
+	signalIsDirty(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -380,6 +389,8 @@ void CAudioAssetsManager::ClearDirtyFlags()
 	{
 		i = false;
 	}
+
+	signalIsDirty(false);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -416,6 +427,8 @@ CAudioControl* CAudioAssetsManager::FindControl(string const& controlName, EItem
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ClearAllConnections()
 {
+	m_bLoading = true;
+
 	for (auto const pControl : m_controls)
 	{
 		if (pControl != nullptr)
@@ -436,6 +449,8 @@ void CAudioAssetsManager::ReloadAllConnections()
 			pControl->ReloadConnections();
 		}
 	}
+
+	m_bLoading = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -455,18 +470,18 @@ void CAudioAssetsManager::MoveItems(IAudioAsset* pParent, std::vector<IAudioAsse
 					pPreviousParent->RemoveChild(pItem);
 					pItem->SetParent(nullptr);
 					signalItemRemoved(pPreviousParent, pItem);
-					SetAssetModified(pPreviousParent);
+					pPreviousParent->SetModified(true);
 				}
 
 				signalItemAboutToBeAdded(pParent);
 				pParent->AddChild(pItem);
 				pItem->SetParent(pParent);
 				signalItemAdded(pItem);
-				SetAssetModified(pItem);
+				pItem->SetModified(true);
 			}
 		}
 
-		SetAssetModified(pParent);
+		pParent->SetModified(true);
 	}
 }
 
@@ -508,6 +523,7 @@ IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 		m_controls.push_back(pControl);
 
 		ConnectionPtr pAudioConnection = pImpl->CreateConnectionToControl(pControl->GetType(), pImplItem);
+
 		if (pAudioConnection)
 		{
 			pControl->AddConnection(pAudioConnection);
@@ -527,6 +543,7 @@ IAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 	}
 
 	size_t const size = pImplItem->ChildCount();
+
 	for (size_t i = 0; i < size; ++i)
 	{
 		CreateAndConnectImplItemsRecursively(pImplItem->GetChildAt(i), pItem);
@@ -625,12 +642,14 @@ void SelectTopLevelAncestors(std::vector<IAudioAsset*> const& source, std::vecto
 	{
 		// Check if item has ancestors that are also selected
 		bool bAncestorAlsoSelected = false;
+
 		for (auto pOtherItem : source)
 		{
 			if (pItem != pOtherItem)
 			{
 				// Find if pOtherItem is the ancestor of pItem
 				const IAudioAsset* pParent = pItem->GetParent();
+
 				while (pParent)
 				{
 					if (pParent == pOtherItem)

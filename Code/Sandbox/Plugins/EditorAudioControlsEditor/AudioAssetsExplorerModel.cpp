@@ -224,7 +224,6 @@ bool CAudioAssetsExplorerModel::setData(const QModelIndex& index, const QVariant
 						if (!newName.empty() && newName.compareNoCase(oldName) != 0)
 						{
 							pItem->SetName(Utils::GenerateUniqueLibraryName(newName, *m_pAssetsManager));
-							m_pAssetsManager->SetAssetModified(pItem);
 							pItem->SetModified(true);
 						}
 
@@ -575,12 +574,10 @@ bool CAudioLibraryModel::setData(const QModelIndex& index, const QVariant& value
 							case EItemType::eItemType_Trigger:
 							case EItemType::eItemType_Environment:
 								pItem->SetName(Utils::GenerateUniqueControlName(newName, itemType, *m_pAssetsManager));
-								m_pAssetsManager->SetAssetModified(pItem);
 								pItem->SetModified(true);
 								break;
 							case EItemType::eItemType_Folder:
 								pItem->SetName(Utils::GenerateUniqueName(newName, itemType, pItem->GetParent()));
-								m_pAssetsManager->SetAssetModified(pItem);
 								pItem->SetModified(true);
 								break;
 							default:

@@ -48,11 +48,12 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	pToolBar->setFloatable(false);
 	pToolBar->setMovable(false);
 
-	QAction* pSaveAction = new QAction(this);
-	pSaveAction->setIcon(CryIcon("icons:General/File_Save.ico"));
-	pSaveAction->setToolTip(tr("Save All"));
-	connect(pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
-	pToolBar->addAction(pSaveAction);
+	m_pSaveAction = new QAction(this);
+	m_pSaveAction->setIcon(CryIcon("icons:General/File_Save.ico"));
+	m_pSaveAction->setToolTip(tr("Save All"));
+	m_pSaveAction->setEnabled(false);
+	connect(m_pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
+	pToolBar->addAction(m_pSaveAction);
 
 	QAction* pReloadAction = new QAction(this);
 	pReloadAction->setIcon(CryIcon("icons:General/Reload.ico"));
@@ -63,6 +64,11 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 
 	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
+	m_pAssetsManager->signalIsDirty.Connect([&](bool bDirty)
+	{ 
+		m_pSaveAction->setEnabled(bDirty); 
+	}, reinterpret_cast<uintptr_t>(this));
 
 	if (pAudioSystemImpl)
 	{
@@ -78,6 +84,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		connect(m_pExplorer, &CAudioAssetsExplorer::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
 		connect(m_pExplorer, &CAudioAssetsExplorer::StartTextFiltering, m_pInspectorPanel, &CInspectorPanel::BackupTreeViewStates);
 		connect(m_pExplorer, &CAudioAssetsExplorer::StopTextFiltering, m_pInspectorPanel, &CInspectorPanel::RestoreTreeViewStates);
+		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(this, &CAudioControlsEditorWindow::SaveBeforeImplementationChange);
 		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Reload);
 
 		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsAboutToChange, [&]()
@@ -156,8 +163,10 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
+	m_pAssetsManager->signalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::signalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
@@ -192,7 +201,7 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 	if (m_pAssetsManager && m_pAssetsManager->IsDirty())
 	{
 		CQuestionDialog messageBox;
-		messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("There are unsaved changes.").append(QString(" ").append(tr("Do you want to save your changes?"))), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
+		messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("There are unsaved changes.\nDo you want to save your changes?"), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
 		
 		switch (messageBox.Execute())
 		{
@@ -238,7 +247,7 @@ void CAudioControlsEditorWindow::Reload()
 		if (m_pAssetsManager->IsDirty())
 		{
 			CQuestionDialog messageBox;
-			messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("If you reload you will lose all your unsaved changes.").append(QString(" ").append(tr("Are you sure you want to reload?"))), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
+			messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("If you reload you will lose all your unsaved changes.\nAre you sure you want to reload?"), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
 			bReload = (messageBox.Execute() == QDialogButtonBox::Yes);
 		}
 
@@ -279,6 +288,27 @@ void CAudioControlsEditorWindow::Reload()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CAudioControlsEditorWindow::SaveBeforeImplementationChange()
+{
+	if (m_pAssetsManager != nullptr)
+	{
+		if (m_pAssetsManager->IsDirty())
+		{
+			CQuestionDialog messageBox;
+			messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("Middleware implementation changed.\nThere are unsaved changes.\nDo you want to save before reloading?"), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
+			
+			if (messageBox.Execute() == QDialogButtonBox::Yes)
+			{
+				m_pAssetsManager->ClearDirtyFlags();
+				Save();
+			}
+		}
+
+		m_pAssetsManager->ClearDirtyFlags();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::CheckErrorMask()
 {
 	uint const errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
@@ -314,7 +344,6 @@ void CAudioControlsEditorWindow::Save()
 		CQuestionDialog messageBox;
 
 		messageBox.SetupQuestion(tr("Audio Controls Editor"), tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
-		messageBox.setWindowTitle(tr("Audio Controls Editor"));
 
 		if (messageBox.Execute() == QDialogButtonBox::Yes)
 		{

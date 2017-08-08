@@ -108,7 +108,6 @@ void CAudioControlsLoader::LoadControls()
 		pCryPak->FindClose(handle);
 	}
 
-	m_pAssetsManager->ClearDirtyFlags(); // To avoid false warning when closing the ACE without changes.
 	CreateDefaultControls();
 }
 
