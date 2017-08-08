@@ -61,6 +61,13 @@ void CStaticMeshComponent::ResetObject()
 	if (m_pCachedStatObj != nullptr)
 	{
 		m_pEntity->SetStatObj(m_pCachedStatObj, GetOrMakeEntitySlotId(), false);
+		if (!m_materialPath.value.empty())
+		{
+			if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialPath.value, false))
+			{
+				m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+			}
+		}
 	}
 	else
 	{
@@ -74,6 +81,15 @@ void CStaticMeshComponent::ProcessEvent(SEntityEvent& event)
 	{
 		LoadFromDisk();
 		ResetObject();
+
+		// Update Editor UI to show the default object material
+		if (m_materialPath.value.empty() && m_pCachedStatObj != nullptr)
+		{
+			if (IMaterial* pMaterial = m_pCachedStatObj->GetMaterial())
+			{
+				m_materialPath = pMaterial->GetName();
+			}
+		}
 	}
 
 	CBaseMeshComponent::ProcessEvent(event);
