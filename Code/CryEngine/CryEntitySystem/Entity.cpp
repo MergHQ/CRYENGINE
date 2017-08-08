@@ -44,6 +44,7 @@
 #include <CryExtension/CryCreateClassInstance.h>
 
 #include <CrySchematyc/CoreAPI.h>
+#include <CrySchematyc/Utils/ClassProperties.h>
 
 // enable this to check nan's on position updates... useful for debugging some weird crashes
 #define ENABLE_NAN_CHECK
@@ -57,11 +58,6 @@
 
 #define CHECKQNAN_VEC(v) \
   CHECKQNAN_FLT(v.x); CHECKQNAN_FLT(v.y); CHECKQNAN_FLT(v.z)
-
-namespace
-{
-Matrix34 sIdentityMatrix = Matrix34::CreateIdentity();
-}
 
 //////////////////////////////////////////////////////////////////////////
 CEntity::CEntity(SEntitySpawnParams& params)

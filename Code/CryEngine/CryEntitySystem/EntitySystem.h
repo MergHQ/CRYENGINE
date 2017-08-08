@@ -44,6 +44,7 @@ class CEntityLoadManager;
 struct SEntityLayerGarbage;
 class CGeomCacheAttachmentManager;
 class CCharacterBoneAttachmentManager;
+class CEntitiesComponentPropertyCache;
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
@@ -525,6 +526,8 @@ private: // -----------------------------------------------------------------
 	THeaps  m_garbageLayerHeaps;
 	bool    m_bEntitiesUseGUIDs;
 	int     m_nGeneratedFromGuid;
+
+	std::unique_ptr<CEntitiesComponentPropertyCache> m_entitiesPropertyCache;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Pool Allocators.

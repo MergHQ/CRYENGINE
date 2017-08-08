@@ -56,6 +56,8 @@
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryNetwork/IRemoteCommand.h>
 
+#include "EntityComponentsCache.h"
+
 #include "Schematyc/EntityObjectDebugger.h"
 
 #pragma warning(disable: 6255)  // _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead. (Note: _malloca requires _freea.)
@@ -233,6 +235,11 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	}
 
 	m_pEntityObjectDebugger.reset(new CEntityObjectDebugger);
+
+	if (gEnv->IsEditor())
+	{
+		m_entitiesPropertyCache.reset(new CEntitiesComponentPropertyCache);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1750,6 +1757,20 @@ bool CEntitySystem::IsIDUsed(EntityId nID) const
 void CEntitySystem::SendEventToAll(SEntityEvent& event)
 {
 	uint32 dwMaxUsed = (uint32)m_EntitySaltBuffer.GetMaxUsed() + 1;
+
+	if (event.event == ENTITY_EVENT_RESET)
+	{
+		bool bToGame = event.nParam[0] != 0;
+		if (gEnv->IsEditor() && bToGame && m_entitiesPropertyCache)
+		{
+			m_entitiesPropertyCache->StoreEntities();
+		}
+		if (gEnv->IsEditor() && !bToGame && m_entitiesPropertyCache)
+		{
+			m_entitiesPropertyCache->RestoreEntities();
+			m_entitiesPropertyCache->ClearCache();
+		}
+	}
 
 	for (uint32 dwI = 0; dwI < dwMaxUsed; ++dwI)
 	{
