@@ -23,13 +23,6 @@ namespace Cry
 				pFunction->BindOutput(0, 'iact', "IsActive");
 				componentScope.Register(pFunction);
 			}
-			{
-				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::OverrideAudioListenerTransform, "{46FA7961-95AF-4BF3-B7E8-A67ECE233EE3}"_cry_guid, "OverrideAudioListenerTransform");
-				pFunction->SetDescription("Overrides the transformation of this camera's audio listener. Using this function will set Automatic Audio Listener to false, meaning that the audio listener will stay at the overridden position until this function is called again.");
-				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-				pFunction->BindInput(1, 'tran', "Transform");
-				componentScope.Register(pFunction);
-			}
 		}
 
 		CCameraComponent::~CCameraComponent()
@@ -43,13 +36,6 @@ namespace Cry
 					pDevice->SetAsynCameraCallback(nullptr);
 				}
 			}
-
-			if (m_pAudioListener != nullptr)
-			{
-				gEnv->pEntitySystem->RemoveEntityEventListener(m_pAudioListener->GetId(), ENTITY_EVENT_DONE, this);
-				gEnv->pEntitySystem->RemoveEntity(m_pAudioListener->GetId(), true);
-				m_pAudioListener = nullptr;
-			}
 		}
 
 		void CCameraComponent::Initialize()
@@ -58,6 +44,10 @@ namespace Cry
 			{
 				Activate();
 			}
+
+			m_pAudioListener = m_pEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
+			CRY_ASSERT(m_pAudioListener != nullptr);
+			m_pAudioListener->SetComponentFlags(m_pAudioListener->GetComponentFlags() | IEntityComponent::EFlags::UserAdded);
 		}
 
 		void CCameraComponent::ProcessEvent(SEntityEvent& event)
@@ -72,12 +62,6 @@ namespace Cry
 				m_camera.SetMatrix(GetWorldTransformMatrix());
 
 				gEnv->pSystem->SetViewCamera(m_camera);
-
-				if (m_bAutomaticAudioListenerPosition)
-				{
-					// Make sure we update the audio listener position
-					m_pAudioListener->SetWorldTM(m_camera.GetMatrix());
-				}
 			}
 			else if (event.event == ENTITY_EVENT_START_GAME || event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{
@@ -107,24 +91,6 @@ namespace Cry
 			context.outputCameraMatrix.SetRotation33(orientation * Matrix33(sensorState.pose.orientation));
 
 			return true;
-		}
-
-		void CCameraComponent::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
-		{
-			switch (event.event)
-			{
-			case ENTITY_EVENT_DONE:
-			{
-				// In case something destroys our listener entity before we had the chance to remove it.
-				if ((m_pAudioListener != nullptr) && (pEntity->GetId() == m_pAudioListener->GetId()))
-				{
-					gEnv->pEntitySystem->RemoveEntityEventListener(m_pAudioListener->GetId(), ENTITY_EVENT_DONE, this);
-					m_pAudioListener = nullptr;
-				}
-
-				break;
-			}
-			}
 		}
 	}
 }

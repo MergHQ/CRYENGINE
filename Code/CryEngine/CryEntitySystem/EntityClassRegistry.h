@@ -1,24 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   EntityClassRegistry.h
-//  Version:     v1.00
-//  Created:     3/8/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __EntityClassRegistry_h__
-#define __EntityClassRegistry_h__
 #pragma once
 
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryEntitySystem/IEntityClass.h>
-
-#include  <CrySchematyc/Utils/ScopedConnection.h>
+#include <CrySchematyc/Utils/ScopedConnection.h>
 
 namespace Schematyc
 {
@@ -29,11 +15,11 @@ namespace Schematyc
 // Description:
 //    Standard implementation of the IEntityClassRegistry interface.
 //////////////////////////////////////////////////////////////////////////
-class CEntityClassRegistry : public IEntityClassRegistry
+class CEntityClassRegistry final : public IEntityClassRegistry
 {
 public:
 	CEntityClassRegistry();
-	~CEntityClassRegistry();
+	virtual ~CEntityClassRegistry() override;
 
 	bool          RegisterEntityClass(IEntityClass* pClass);
 	bool          UnregisterEntityClass(IEntityClass* pClass);
@@ -98,5 +84,3 @@ private:
 
 	Schematyc::CConnectionScope m_connectionScope;
 };
-
-#endif // __EntityClassRegistry_h__

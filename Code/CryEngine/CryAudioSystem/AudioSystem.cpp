@@ -8,7 +8,6 @@
 #include "ProfileData.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
-
 #include <CryEntitySystem/IEntitySystem.h>
 
 namespace CryAudio
@@ -812,15 +811,17 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 {
 	if (gEnv->mMainThreadId == CryGetCurrentThreadId() && pRequestInfo->pAudioObject != nullptr)
 	{
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pRequestInfo->pAudioObject->GetEntityId());
-		if (pEntity)
+		IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(pRequestInfo->pAudioObject->GetEntityId());
+
+		if (pIEntity != nullptr)
 		{
 			SEntityEvent eventData;  //converting audio events to entityEvents
 			eventData.nParam[0] = reinterpret_cast<intptr_t>(pRequestInfo);
+
 			if (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerExecuted)
 			{
 				eventData.event = ENTITY_EVENT_AUDIO_TRIGGER_STARTED;
-				pEntity->SendEvent(eventData);
+				pIEntity->SendEvent(eventData);
 			}
 
 			//if the trigger failed to start or has finished, we (also) send ENTITY_EVENT_AUDIO_TRIGGER_ENDED
@@ -828,7 +829,7 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 			    || (pRequestInfo->systemEvent == CryAudio::ESystemEvents::TriggerExecuted && pRequestInfo->requestResult != CryAudio::ERequestResult::Success))
 			{
 				eventData.event = ENTITY_EVENT_AUDIO_TRIGGER_ENDED;
-				pEntity->SendEvent(eventData);
+				pIEntity->SendEvent(eventData);
 			}
 		}
 	}

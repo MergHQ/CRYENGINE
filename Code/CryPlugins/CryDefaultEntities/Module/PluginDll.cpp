@@ -4,6 +4,7 @@
 #include "PluginDll.h"
 
 #include "DefaultComponents/AI/PathfindingComponent.h"
+#include "DefaultComponents/Audio/ListenerComponent.h"
 #include "DefaultComponents/Audio/ParameterComponent.h"
 #include "DefaultComponents/Audio/SwitchComponent.h"
 #include "DefaultComponents/Audio/TriggerComponent.h"
@@ -65,6 +66,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPathfindingComponent));
 			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CListenerComponent));
+			Cry::Audio::DefaultComponents::CListenerComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CParameterComponent));
@@ -174,48 +179,49 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 	switch (event)
 	{
 	case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
-	{
-		// Register legacy components introduced with 5.3 and below
-		if (IEntityRegistrator::g_pFirst != nullptr)
 		{
-			do
+			// Register legacy components introduced with 5.3 and below
+			if (IEntityRegistrator::g_pFirst != nullptr)
 			{
-				IEntityRegistrator::g_pFirst->Register();
+				do
+				{
+					IEntityRegistrator::g_pFirst->Register();
 
-				IEntityRegistrator::g_pFirst = IEntityRegistrator::g_pFirst->m_pNext;
-			} while (IEntityRegistrator::g_pFirst != nullptr);
+					IEntityRegistrator::g_pFirst = IEntityRegistrator::g_pFirst->m_pNext;
+				}
+				while (IEntityRegistrator::g_pFirst != nullptr);
+			}
+
+			// Register dummy entities
+			IEntityClassRegistry::SEntityClassDesc stdClass;
+			stdClass.flags |= ECLF_INVISIBLE;
+
+			stdClass.sName = "AreaBox";
+			gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
+
+			stdClass.sName = "AreaSphere";
+			gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
+
+			stdClass.sName = "AreaSolid";
+			gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
+
+			stdClass.sName = "ClipVolume";
+			gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
+
+			stdClass.sName = "AreaShape";
+			gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
+
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+			  stl::make_unique<Schematyc::CEnvPackage>(
+			    GetSchematycPackageGUID(),
+			    "EntityComponents",
+			    "Crytek GmbH",
+			    "CRYENGINE Default Entity Components",
+			    [this](Schematyc::IEnvRegistrar& registrar) { RegisterComponents(registrar); }
+			    )
+			  );
 		}
-
-		// Register dummy entities
-		IEntityClassRegistry::SEntityClassDesc stdClass;
-		stdClass.flags |= ECLF_INVISIBLE;
-
-		stdClass.sName = "AreaBox";
-		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
-
-		stdClass.sName = "AreaSphere";
-		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
-
-		stdClass.sName = "AreaSolid";
-		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
-
-		stdClass.sName = "ClipVolume";
-		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
-
-		stdClass.sName = "AreaShape";
-		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
-
-		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
-			stl::make_unique<Schematyc::CEnvPackage>(
-				GetSchematycPackageGUID(),
-				"EntityComponents",
-				"Crytek GmbH",
-				"CRYENGINE Default Entity Components",
-				[this](Schematyc::IEnvRegistrar& registrar) { RegisterComponents(registrar); }
-				)
-		);
-	}
-	break;
+		break;
 	}
 }
 
