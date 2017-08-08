@@ -38,7 +38,7 @@ namespace Cry
 		struct SProject
 		{
 			// Serialize the project file
-			void Serialize(Serialization::IArchive& ar);
+			bool Serialize(Serialization::IArchive& ar);
 
 			int version = 0;
 			// why do we need this?

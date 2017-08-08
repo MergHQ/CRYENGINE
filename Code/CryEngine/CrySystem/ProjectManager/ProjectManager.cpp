@@ -76,7 +76,7 @@ void CProjectManager::SaveProjectChanges()
 	gEnv->pSystem->GetArchiveHost()->SaveJsonFile(m_project.filePath, Serialization::SStruct(m_project));
 }
 
-void SProject::Serialize(Serialization::IArchive& ar)
+bool SProject::Serialize(Serialization::IArchive& ar)
 {
 	// Only save to the latest format
 	if (ar.isOutput())
@@ -85,15 +85,10 @@ void SProject::Serialize(Serialization::IArchive& ar)
 	}
 
 	ar(version, "version", "version");
-	if (version == 0 || version == 1 || version == 2)
-	{
-		SProjectFileParser<2> parser;
-		parser.Serialize(ar, *this);
-	}
-	else
-	{
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to load project with unrecognized cryproject format version %i!\nPossible attempt at running a project from a newer engine version.");
-	}
+
+	SProjectFileParser<LatestProjectFileVersion> parser;
+	parser.Serialize(ar, *this);
+	return true;
 }
 
 bool CProjectManager::ParseProjectFile()
@@ -137,6 +132,18 @@ bool CProjectManager::ParseProjectFile()
 
 	if (gEnv->pSystem->GetArchiveHost()->LoadJsonFile(Serialization::SStruct(m_project), m_project.filePath, true))
 	{
+		if (m_project.version > LatestProjectFileVersion)
+		{
+			EQuestionResult result = CryMessageBox("Attempting to start the engine with a potentially unsupported .cryproject made with a newer version of the engine!\nDo you want to continue?", "Loading unknown .cryproject version", eMB_YesCancel);
+			if (result == eQR_Cancel)
+			{
+				CryLogAlways("Unknown .cryproject version %i detected, user opted to quit", m_project.version);
+				return false;
+			}
+
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Loading a potentially unsupported .cryproject made with a newer version of the engine!");
+		}
+
 		m_project.rootDirectory = PathUtil::RemoveSlash(PathUtil::ToUnixPath(PathUtil::GetPathWithoutFilename(m_project.filePath)));
 
 		// Create the full path to the asset directory
