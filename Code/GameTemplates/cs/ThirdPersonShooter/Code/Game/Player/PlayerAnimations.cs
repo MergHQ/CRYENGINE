@@ -7,13 +7,11 @@ namespace CryEngine.Game
 {
 	public class PlayerAnimations
 	{
-		private const string RotationTagName = "rotate";
 		private const string WalkTagName = "walk";
 
 		private readonly float _minWalkSpeed = 0.2f;
 		private readonly Player _player;
 		private readonly CharacterAnimator _animator;
-		private AnimationTag _rotationTag;
 		private AnimationTag _walkTag;
 
 		public PlayerAnimations(Player player, CharacterAnimator animator)
@@ -21,7 +19,6 @@ namespace CryEngine.Game
 			_player = player;
 			_animator = animator;
 
-			_rotationTag = animator.FindTag(RotationTagName);
 			_walkTag = animator.FindTag(WalkTagName);
 		}
 
@@ -95,11 +92,9 @@ namespace CryEngine.Game
 				animator.SetMotionParameter(MotionParameterId.TravelSlope, travelSlope);
 			}
 
-			var isRotating = Math.Abs(turnAngle) > 0.0f;
 			var isWalking = travelSpeed > _minWalkSpeed && !livingStatus.IsFlying;
 
 			// Update the Animator tags
-			animator.SetTagValue(_rotationTag, isRotating);
 			animator.SetTagValue(_walkTag, isWalking);
 
 			// Send updated rotation to the entity.
