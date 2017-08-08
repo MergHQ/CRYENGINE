@@ -47,11 +47,9 @@ public:
 	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~CryAudio::Impl::IObject
 
-	AkGameObjectID const  m_id;
-	bool                  m_bNeedsToUpdateEnvironments;
-	EnvironmentImplMap    m_environmentImplAmounts;
-
-	static AkGameObjectID s_dummyGameObjectId;
+	AkGameObjectID const m_id;
+	bool                 m_bNeedsToUpdateEnvironments;
+	EnvironmentImplMap   m_environmentImplAmounts;
 
 private:
 
