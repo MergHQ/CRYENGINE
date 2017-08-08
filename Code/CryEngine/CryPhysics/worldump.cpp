@@ -2492,6 +2492,8 @@ void PostLoadEntity(CPhysicalEntity *pent, CLoaderSizer&) {
 		pent->m_parts[i].pMatMapping = pent->m_parts[i].pPhysGeom->pMatMapping;
 		pent->m_parts[i].nMats = pent->m_parts[i].pPhysGeom->nMats;
 	}
+	if (!pent->m_nParts)
+		pent->m_parts = &CPhysicalEntity::m_defpart;
 }
 void PostLoadEntityRigid(CRigidEntity *pent, CLoaderSizer& sizer)	{
 	PostLoadEntity(pent,sizer);
@@ -2517,6 +2519,7 @@ void PostLoadEntityVehicle(CWheeledVehicleEntity *pent, CLoaderSizer& sizer) {
 }
 void PostLoadEntityLiving(CLivingEntity *pent, CLoaderSizer& sizer) {
 	pent->m_parts[0].pPhysGeom=pent->m_parts[0].pPhysGeomProxy = &pent->m_CylinderGeomPhys;
+	pent->m_pContacts = nullptr;
 	PostLoadEntity(pent,sizer);
 }
 void (*g_postLoad[PE_GRID+1])(CPhysicalEntity*,CLoaderSizer&) = { PostLoadEntity };
