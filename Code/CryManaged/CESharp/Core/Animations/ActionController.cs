@@ -18,7 +18,20 @@ namespace CryEngine.Animations
 		RestoreNonLoopingAnimationTime = 4,
 		Default                        = RestartAnimations | RestoreLoopingAnimationTime | RestoreNonLoopingAnimationTime
 	}
-	
+
+	/// <summary>
+	/// Flags to set various options on the <see cref="ActionController"/>.
+	/// </summary>
+	[Flags]
+	public enum ActionControllerFlags
+	{
+		PausedUpdate = EActionControllerFlags.AC_PausedUpdate,
+		DebugDraw = EActionControllerFlags.AC_DebugDraw,
+		DumpState = EActionControllerFlags.AC_DumpState,
+		IsInUpdate = EActionControllerFlags.AC_IsInUpdate,
+		NoTransitions = EActionControllerFlags.AC_NoTransitions
+	}
+
 	public sealed class ActionController
 	{
 		/// <summary>
@@ -258,6 +271,16 @@ namespace CryEngine.Animations
 		public void Resume(ResumeFlags resumeFlags = ResumeFlags.Default)
 		{
 			NativeHandle.Resume((uint)resumeFlags);
+		}
+
+		/// <summary>
+		/// Used to set various options on the <see cref="ActionController"/>.
+		/// </summary>
+		/// <param name="flag">The option that needs to be set. Multiple flags can be combined.</param>
+		/// <param name="enable">If set to <c>true</c> enables the flag, otherwise the flag is disabled.</param>
+		public void SetFlag(ActionControllerFlags flag, bool enable)
+		{
+			NativeHandle.SetFlag((EActionControllerFlags)flag, enable);
 		}
 
 		/// <summary>
