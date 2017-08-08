@@ -3,6 +3,7 @@
 	{
 		"Source Files":
 		[
+			"StdAfx.h",
 			"Assert.cpp",
 			"assert.h",
 			"EngineSymbols.cpp",
