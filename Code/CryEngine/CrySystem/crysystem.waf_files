@@ -208,7 +208,9 @@
       "LoadingProfiler.h",
       "PerfHUD.h",
       "ProfileLogSystem.h",
-      "Sampler.h"
+      "Sampler.h",
+      "Watchdog.h",
+      "Watchdog.cpp"
     ],
     "Localization":[
       "LocalizedStringManager.cpp",

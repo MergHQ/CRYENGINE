@@ -10,6 +10,7 @@
 #include <qobjectdefs.h>
 
 class QSplitter;
+class QAction;
 
 namespace ACE
 {
@@ -52,6 +53,7 @@ private:
 
 	void Reload();
 	void Save();
+	void SaveBeforeImplementationChange();
 	void FilterControlType(EItemType type, bool bShow);
 	void CheckErrorMask();
 	void UpdateAudioSystemData();
@@ -67,5 +69,6 @@ private:
 	bool                                                m_allowedTypes[EItemType::eItemType_NumTypes];
 
 	QSplitter* m_pSplitter;
+	QAction*   m_pSaveAction;
 };
 } // namespace ACE

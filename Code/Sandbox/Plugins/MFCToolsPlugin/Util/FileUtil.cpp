@@ -855,7 +855,7 @@ bool CFileUtil::SelectFile(const CString& fileSpec, const CString& searchFolder,
 	}
 	dialogParams.extensionFilters = CExtensionFilter::Parse(fileSpec);
 	CSystemFileDialog fileDialog(dialogParams);
-	if (fileDialog.exec() == QDialog::Accepted)
+	if (fileDialog.Execute() == QDialog::Accepted)
 	{
 		auto files = fileDialog.GetSelectedFiles();
 		CRY_ASSERT(!files.empty());
@@ -872,7 +872,7 @@ bool CFileUtil::SelectFiles(const CString& fileSpec, const CString& searchFolder
 	dialogParams.extensionFilters = CExtensionFilter::Parse(fileSpec);
 	CSystemFileDialog fileDialog(dialogParams);
 	files.clear();
-	if (fileDialog.exec() == QDialog::Accepted)
+	if (fileDialog.Execute() == QDialog::Accepted)
 	{
 		auto filePathes = fileDialog.GetSelectedFiles();
 		CRY_ASSERT(!filePathes.empty());
@@ -886,32 +886,29 @@ bool CFileUtil::SelectFiles(const CString& fileSpec, const CString& searchFolder
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CFileUtil::SelectSaveFile(const char* fileFilter, const char* defaulExtension, const char* startFolder, string& fileName, bool bAllowCreateFolder /* = false */)
+bool CFileUtil::SelectSaveFile(const char* fileFilter, const char* defaulExtension, const char* startFolder, string& fileName)
 {
 	CString fF = fileFilter;
 	CString dE = defaulExtension;
 	CString sF = startFolder;
 	CString oF = fileName.GetString();
 
-	bool result = SelectSaveFile(fF, dE, sF, oF, bAllowCreateFolder);
+	bool result = SelectSaveFile(fF, dE, sF, oF);
 	fileName = oF.GetString();
 	return result;
 }
 
-bool CFileUtil::SelectSaveFile(const CString& fileFilter, const CString& defaulExtension, const CString& startFolder, CString& fileName, bool bAllowCreateFolder /* = false */)
+bool CFileUtil::SelectSaveFile(const CString& fileFilter, const CString& defaulExtension, const CString& startFolder, CString& fileName)
 {
 	CSystemFileDialog::OpenParams dialogParams(CSystemFileDialog::SaveFile);
 	dialogParams.initialDir = FormatInitialFolderForFileDialog(startFolder);
-	dialogParams.buttonLabel = QObject::tr("Save");
 	if (!fileName.IsEmpty())
 	{
 		dialogParams.initialFile = dialogParams.initialDir + fileName;
 	}
 	dialogParams.extensionFilters = CExtensionFilter::Parse(fileFilter);
-	dialogParams.defaultExtension = defaulExtension.GetString();
-	dialogParams.allowCreateFolder = bAllowCreateFolder;
 	CSystemFileDialog fileDialog(dialogParams);
-	if (fileDialog.exec() == QDialog::Accepted)
+	if (fileDialog.Execute() == QDialog::Accepted)
 	{
 		auto files = fileDialog.GetSelectedFiles();
 		CRY_ASSERT(!files.empty());

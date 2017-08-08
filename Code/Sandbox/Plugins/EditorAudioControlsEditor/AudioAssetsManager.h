@@ -80,6 +80,9 @@ public:
 
 	void SetAssetModified(IAudioAsset* pAsset);
 
+	// Dirty flags signal
+	CCrySignal<void(bool)> signalIsDirty;
+
 	// Library signals
 	CCrySignal<void()>               signalLibraryAboutToBeAdded;
 	CCrySignal<void(CAudioLibrary*)> signalLibraryAdded;

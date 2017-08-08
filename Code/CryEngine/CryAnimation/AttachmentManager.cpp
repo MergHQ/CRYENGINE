@@ -1755,6 +1755,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 		uHideFlags |= FLAGS_ATTACH_HIDE_MAIN_PASS;
 
 	const bool bDrawMergedAttachments = Console::GetInst().ca_DrawAttachmentsMergedForShadows != 0;
+	const bool bDrawNearest = (rParams.dwFObjFlags & FOB_NEAREST) != 0;
 
 	{
 		LOADING_TIME_PROFILE_SECTION_NAMED("BoneAttachments");
@@ -1770,7 +1771,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				{
 					rParams.dwFObjFlags &= ~FOB_NEAREST;
 				}
-				else if ((rParams.pRenderNode->GetRndFlags() & ERF_FOB_NEAREST) != 0)
+				else if (bDrawNearest)
 				{
 					rParams.dwFObjFlags |= FOB_NEAREST;
 				}
@@ -1796,7 +1797,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 			{
 				rParams.dwFObjFlags &= ~FOB_NEAREST;
 			}
-			else if ((rParams.pRenderNode->GetRndFlags() & ERF_FOB_NEAREST) != 0)
+			else if (bDrawNearest)
 			{
 				rParams.dwFObjFlags |= FOB_NEAREST;
 			}
@@ -1859,7 +1860,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 			{
 				rParams.dwFObjFlags &= ~FOB_NEAREST;
 			}			
-			else if ((rParams.pRenderNode->GetRndFlags() & ERF_FOB_NEAREST) != 0)
+			else if (bDrawNearest)
 			{
 				rParams.dwFObjFlags |= FOB_NEAREST;		
 			}

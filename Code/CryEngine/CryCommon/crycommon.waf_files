@@ -134,7 +134,6 @@
       "CryExtension/ICryUnknown.h",
       "CryExtension/Conversion.h",
       "CryExtension/ClassWeaver.h",
-      "CryExtension/CryGUIDHelper.h",
       "CryExtension/ICryFactoryRegistryImpl.h",
       "CryExtension/RegFactoryNode.h",
       "CryExtension/TypeList.h"

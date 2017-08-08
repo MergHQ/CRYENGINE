@@ -629,21 +629,18 @@ IAudioAsset* CAudioAssetsExplorer::GetSelectedAsset() const
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const row)
 {
-	if (parent.isValid())
+	if (m_bCreatedFromMenu)
 	{
-		if (m_bCreatedFromMenu)
-		{
-			QModelIndex const& assetIndex = m_pProxyModel->mapFromSource(m_pMountedModel->index(row, 0, parent));
-			m_pControlsTree->setCurrentIndex(assetIndex);
-			m_pControlsTree->edit(assetIndex);
-			m_bCreatedFromMenu = false;
-		}
-		else if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
-		{
-			QModelIndex const& parentIndex = m_pProxyModel->mapFromSource(parent);
-			m_pControlsTree->expand(parentIndex);
-			m_pControlsTree->setCurrentIndex(parentIndex);
-		}
+		QModelIndex const& assetIndex = m_pProxyModel->mapFromSource(m_pMountedModel->index(row, 0, parent));
+		m_pControlsTree->setCurrentIndex(assetIndex);
+		m_pControlsTree->edit(assetIndex);
+		m_bCreatedFromMenu = false;
+	}
+	else if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
+	{
+		QModelIndex const& parentIndex = m_pProxyModel->mapFromSource(parent);
+		m_pControlsTree->expand(parentIndex);
+		m_pControlsTree->setCurrentIndex(parentIndex);
 	}
 }
 
