@@ -14,8 +14,6 @@ namespace Impl
 {
 namespace Wwise
 {
-AkGameObjectID CObject::s_dummyGameObjectId = static_cast<AkGameObjectID>(-2);
-
 // AK callbacks
 void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
 {
@@ -203,12 +201,10 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 			}
 		case ESwitchType::SwitchGroup:
 			{
-				AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : s_dummyGameObjectId;
-
 				AKRESULT const wwiseResult = AK::SoundEngine::SetSwitch(
 				  pSwitchState->stateOrSwitchGroupId,
 				  pSwitchState->stateOrSwitchId,
-				  gameObjectId);
+				  m_id);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -221,19 +217,17 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 					  "Wwise - failed to set the SwitchGroup %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
 					  pSwitchState->stateOrSwitchGroupId,
 					  pSwitchState->stateOrSwitchId,
-					  gameObjectId);
+					  m_id);
 				}
 
 				break;
 			}
 		case ESwitchType::Rtpc:
 			{
-				AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : s_dummyGameObjectId;
-
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(
 				  pSwitchState->stateOrSwitchGroupId,
 				  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-				  gameObjectId);
+				  m_id);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -246,7 +240,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 					  "Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
 					  pSwitchState->stateOrSwitchGroupId,
 					  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-					  gameObjectId);
+					  m_id);
 				}
 
 				break;
@@ -316,20 +310,8 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
 	{
-		AkGameObjectID gameObjectId = AK_INVALID_GAME_OBJECT;
-
-		if (m_id != AK_INVALID_GAME_OBJECT)
-		{
-			gameObjectId = m_id;
-			PostEnvironmentAmounts();
-		}
-		else
-		{
-			// If ID is invalid, then it is the global audio object
-			gameObjectId = CObject::s_dummyGameObjectId;
-		}
-
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, gameObjectId, AK_EndOfEvent, &EndEventCallback, pEvent);
+		PostEnvironmentAmounts();
+		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, m_id, AK_EndOfEvent, &EndEventCallback, pEvent);
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{
@@ -354,8 +336,7 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::StopAllTriggers()
 {
-	AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : CObject::s_dummyGameObjectId;
-	AK::SoundEngine::StopAll(gameObjectId);
+	AK::SoundEngine::StopAll(m_id);
 	return ERequestStatus::Success;
 }
 

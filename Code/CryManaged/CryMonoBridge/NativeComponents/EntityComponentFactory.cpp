@@ -321,7 +321,7 @@ bool CManagedEntityComponentFactory::SProperty::Serialize(Serialization::IArchiv
 			archive(Serialization::TextureFilename(value), szName, szLabel);
 			break;
 		case EEntityPropertyType::Particle:
-			archive(Serialization::ParticleName(value), szName, szLabel);
+			archive(Serialization::ParticlePicker(value), szName, szLabel);
 			break;
 		case EEntityPropertyType::AnyFile:
 			archive(Serialization::GeneralFilename(value), szName, szLabel);

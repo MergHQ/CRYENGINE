@@ -430,6 +430,8 @@ public:
 
 	void ShutDownComponent(IEntityComponent* pComponent);
 
+	CEntityComponentsVector& GetComponentsVector() { return m_components; };
+
 protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Attachment.

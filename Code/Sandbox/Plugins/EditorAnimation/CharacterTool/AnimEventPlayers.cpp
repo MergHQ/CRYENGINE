@@ -27,7 +27,7 @@ void SerializeParameterAudioTrigger(string& parameter, IArchive& ar)
 }
 
 void SerializeParameterString(string& parameter, IArchive& ar) { ar(parameter, "parameter", "^"); }
-void SerializeParameterEffect(string& parameter, IArchive& ar) { ar(Serialization::ParticleName(parameter), "parameter", "^"); }
+void SerializeParameterEffect(string& parameter, IArchive& ar) { ar(Serialization::ParticlePickerLegacy(parameter), "parameter", "^"); }
 void SerializeParameterNone(string& parameter, IArchive& ar)   { ar(parameter, "parameter", 0); }
 
 void SerializeParameterAnimFXEvent(string& parameter, IArchive& ar)
