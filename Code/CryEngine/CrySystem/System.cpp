@@ -1793,30 +1793,6 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 		m_pNotificationNetwork->Update();
 	}
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
-	//////////////////////////////////////////////////////////////////////
-	//update sound system Part 1 if in Editor / in Game Mode Viewsystem updates the Listeners
-	if (!m_env.IsEditorGameMode())
-	{
-		if ((updateFlags & ESYSUPDATE_EDITOR) != 0 && !bNoUpdate && nPauseMode != 1)
-		{
-			// updating the Listener Position in a first separate step.
-			// Updating all views here is a bit of a workaround, since we need
-			//	to ensure that sound listeners owned by inactive views are also
-			//	marked as inactive. Ideally that should happen when exiting game mode.
-
-			gEnv->pGameFramework->GetIViewSystem()->UpdateSoundListeners();
-
-			/*if (IView* const pActiveView = pIGameFramework->GetIViewSystem()->GetActiveView())
-			   {
-			   EntityId const nListenerID = pActiveView->GetSoundListenerID();
-
-			   if (nListenerID != INVALID_ENTITYID)
-			   {
-			    pIGameFramework->GetIViewSystem()->UpdateSoundListeners();
-			   }
-			   }*/
-		}
-	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Update Resource Manager.

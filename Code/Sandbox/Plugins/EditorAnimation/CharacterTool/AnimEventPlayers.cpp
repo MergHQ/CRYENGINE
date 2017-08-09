@@ -257,11 +257,11 @@ public:
 		if (!m_audioEnabled)
 			return;
 
-		if (m_pIListener != nullptr)
+		if (m_pIAudioListener != nullptr)
 		{
 			Matrix34 cameraWithOffset = cameraMatrix;
 			cameraWithOffset.SetTranslation(cameraMatrix.GetTranslation());
-			m_pIListener->SetTransformation(cameraWithOffset);
+			m_pIAudioListener->SetTransformation(cameraWithOffset);
 		}
 
 		if (m_pIAudioObject != nullptr)
@@ -273,15 +273,14 @@ public:
 
 	void EnableAudio(bool enableAudio) override
 	{
-		if (enableAudio && !m_pIListener)
+		if (enableAudio && m_pIAudioListener == nullptr)
 		{
-			if (!m_pIListener)
-				m_pIListener = gEnv->pAudioSystem->CreateListener();
+			m_pIAudioListener = gEnv->pAudioSystem->CreateListener();
 		}
-		else if (m_pIListener != nullptr)
+		else if (m_pIAudioListener != nullptr)
 		{
-			gEnv->pAudioSystem->ReleaseListener(m_pIListener);
-			m_pIListener = nullptr;
+			gEnv->pAudioSystem->ReleaseListener(m_pIAudioListener);
+			m_pIAudioListener = nullptr;
 		}
 
 		m_audioEnabled = enableAudio;
@@ -364,7 +363,7 @@ private:
 
 	bool                          m_audioEnabled;
 	CryAudio::IObject*            m_pIAudioObject;
-	CryAudio::IListener*          m_pIListener;
+	CryAudio::IListener*          m_pIAudioListener;
 	string                        m_parameter;
 	string                        m_boneToAttachTo;
 
@@ -373,7 +372,8 @@ private:
 
 AnimEventPlayer_AudioTranslationLayer::AnimEventPlayer_AudioTranslationLayer()
 	: m_audioEnabled(false)
-	, m_pIAudioObject()
+	, m_pIAudioObject(nullptr)
+	, m_pIAudioListener(nullptr)
 {
 }
 
@@ -385,10 +385,10 @@ AnimEventPlayer_AudioTranslationLayer::~AnimEventPlayer_AudioTranslationLayer()
 		m_pIAudioObject = nullptr;
 	}
 
-	if (m_pIListener != nullptr)
+	if (m_pIAudioListener != nullptr)
 	{
-		gEnv->pAudioSystem->ReleaseListener(m_pIListener);
-		m_pIListener = nullptr;
+		gEnv->pAudioSystem->ReleaseListener(m_pIAudioListener);
+		m_pIAudioListener = nullptr;
 	}
 }
 

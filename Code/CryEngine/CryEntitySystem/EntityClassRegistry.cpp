@@ -1,23 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   EntityClassRegistry.cpp
-//  Version:     v1.00
-//  Created:     3/8/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "stdafx.h"
 #include "EntityClassRegistry.h"
 #include "EntityClass.h"
 #include "EntityScript.h"
-
 #include <CrySystem/File/CryFile.h>
-
 #include <CrySchematyc/CoreAPI.h>
 
 struct SSchematycEntityClassProperties
@@ -237,11 +224,6 @@ void CEntityClassRegistry::InitializeDefaultClasses()
 	stdFlowgraphClass.sName = "FlowgraphEntity";
 	stdFlowgraphClass.editorClassInfo.sIcon = "FlowgraphEntity.bmp";
 	RegisterStdClass(stdFlowgraphClass);
-
-	SEntityClassDesc stdAudioListenerClass;
-	stdAudioListenerClass.flags |= ECLF_INVISIBLE;
-	stdAudioListenerClass.sName = "AudioListener";
-	RegisterStdClass(stdAudioListenerClass);
 
 	RegisterSchematycEntityClass();
 }

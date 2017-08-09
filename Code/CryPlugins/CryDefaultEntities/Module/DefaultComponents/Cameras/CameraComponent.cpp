@@ -21,13 +21,6 @@ namespace Cry
 				pFunction->BindOutput(0, 'iact', "IsActive");
 				componentScope.Register(pFunction);
 			}
-			{
-				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCameraComponent::OverrideAudioListenerTransform, "{46FA7961-95AF-4BF3-B7E8-A67ECE233EE3}"_cry_guid, "OverrideAudioListenerTransform");
-				pFunction->SetDescription("Overrides the transformation of this camera's audio listener. Using this function will set Automatic Audio Listener to false, meaning that the audio listener will stay at the overridden position until this function is called again.");
-				pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-				pFunction->BindInput(1, 'tran', "Transform");
-				componentScope.Register(pFunction);
-			}
 		}
 	}
 }
