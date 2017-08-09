@@ -14,9 +14,9 @@ int CSceneRenderPass::s_recursionCounter = 0;
 
 bool CSceneRenderPass::OnResourceInvalidated(void* pThis, uint32 flags)
 {
-	CRY_ASSERT((flags & CTexture::eResourceDestroyed) == 0);
 	reinterpret_cast<CSceneRenderPass*>(pThis)->m_bResourcesInvalidated = true;
-	return true;
+	// Don't keep the callback when the resource goes out of scope
+	return !(flags & eResourceDestroyed);
 }
 
 CSceneRenderPass::CSceneRenderPass()
@@ -110,13 +110,13 @@ void CSceneRenderPass::SetDepthBias(float constBias, float slopeBias, float bias
 
 void CSceneRenderPass::ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget, ResourceViewHandle hRenderTargetView)
 {
-	CRY_ASSERT(pNewColorTarget && pNewColorTarget->GetDevTexture());
+	CRY_ASSERT(!pNewColorTarget || pNewColorTarget->GetDevTexture());
 	m_bOutputsDirty |= m_renderPassDesc.SetRenderTarget(slot, pNewColorTarget, hRenderTargetView);
 }
 
 void CSceneRenderPass::ExchangeDepthTarget(CTexture* pNewDepthTarget, ResourceViewHandle hDepthStencilView)
 {
-	CRY_ASSERT(pNewDepthTarget && pNewDepthTarget->GetDevTexture());
+	CRY_ASSERT(!pNewDepthTarget || pNewDepthTarget->GetDevTexture());
 	m_bOutputsDirty |= m_renderPassDesc.SetDepthTarget(pNewDepthTarget, hDepthStencilView);
 }
 

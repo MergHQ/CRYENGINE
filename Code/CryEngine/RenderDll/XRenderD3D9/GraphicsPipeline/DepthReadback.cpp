@@ -137,7 +137,8 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 	// Note: The texture instances are always at the "tail" of the CTexture array, to increase the chance of resize not being needed on a particular instance.
 	for (uint32 i = 0; i < m_downsamplePassCount && !bFailed; ++i)
 	{
-		CTexture* const pTarget = CTexture::s_ptexZTargetDownSample[i + (kMaxDownsamplePasses - m_downsamplePassCount)];
+		const uint32 downsampleIndex = i + (kMaxDownsamplePasses - m_downsamplePassCount);
+		CTexture* const pTarget = CTexture::s_ptexZTargetDownSample[downsampleIndex];
 		CRY_ASSERT(pTarget && "Z Downsample target should already exist");
 
 		// Ensure the intermediate textures are never larger than the source image
@@ -158,7 +159,8 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 	// Release down-sample textures not needed for the current source size.
 	for (uint32 i = m_downsamplePassCount; i < kMaxDownsamplePasses; ++i)
 	{
-		CTexture* const pTarget = CTexture::s_ptexZTargetDownSample[i - m_downsamplePassCount];
+		const uint32 downsampleIndex = i - m_downsamplePassCount;
+		CTexture* const pTarget = CTexture::s_ptexZTargetDownSample[downsampleIndex];
 		CRY_ASSERT(pTarget && "Z Downsample target should already exist");
 
 		if (pTarget->GetDevTexture())
@@ -171,10 +173,18 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 
 	for (uint32 i = 0; i < kMaxReadbackPasses && !bFailed; ++i)
 	{
-		CTexture* const pTarget = CTexture::s_ptexZTargetReadBack[i];
+		const uint32 readbackIndex = i;
+		CTexture* const pTarget = CTexture::s_ptexZTargetReadBack[readbackIndex];
 		CRY_ASSERT(pTarget && "Z Readback target should already exist");
 
-		if (!pTarget->GetDevTexture())
+		if (pTarget->GetDevTexture())
+		{
+			// Let all previous requested readbacks finish
+			if (m_readback[readbackIndex].bIssued && !m_readback[readbackIndex].bCompleted)
+				m_readback[readbackIndex].bCompleted = pTarget->GetDevTexture()->AccessCurrStagingResource(0, false);
+		}
+
+		if (!pTarget->GetDevTexture() || pTarget->GetWidthNonVirtual() != CULL_SIZEX || pTarget->GetHeightNonVirtual() != CULL_SIZEY)
 		{
 			const uint32 readbackFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_STAGE_READBACK;
 
@@ -189,7 +199,6 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 	{
 		if (!bFailed)
 		{
-			CRY_ASSERT(!readback.bIssued);
 			readback.bIssued    = false;
 			readback.bCompleted = false;
 			readback.bReceived  = false;

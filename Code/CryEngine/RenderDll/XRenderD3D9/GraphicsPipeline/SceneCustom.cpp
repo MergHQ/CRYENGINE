@@ -513,7 +513,6 @@ void CSceneCustomStage::ExecuteSilhouettePass()
 void CSceneCustomStage::ExecuteHelperPass()
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
-	CRenderView* pRenderView = RenderView();
 
 	PROFILE_LABEL_SCOPE("CUSTOM_SCENE_PASSE_DEBUG_HELPER");
 
@@ -528,17 +527,20 @@ void CSceneCustomStage::ExecuteHelperPass()
 		cb.CopyToDevice();
 	}
 
-	CTexture* pTargetTex = gcpRendD3D->GetCurrentTargetOutput();
-	CTexture* pDepthTex = gcpRendD3D->GetCurrentDepthOutput();
+	CRenderView* pRenderView = RenderView();
+	const CRenderOutput* pOutput = pRenderView->GetRenderOutput();
 
-	if (pRenderView)
+	CTexture* pTargetTex = nullptr;
+	CTexture* pDepthTex = nullptr;
+	if (pOutput)
 	{
-		const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
-		if (pRenderOutput)
-		{
-			pDepthTex = pRenderOutput->GetDepthTexture();
-			CRY_ASSERT(pDepthTex);
-		}
+		pTargetTex = pOutput->GetHDRTargetTexture();
+		pDepthTex = pOutput->GetDepthTexture();
+	}
+	else
+	{
+		pTargetTex = gcpRendD3D->GetCurrentTargetOutput();
+		pDepthTex = gcpRendD3D->GetCurrentDepthOutput();
 	}
 
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetTex);
@@ -562,4 +564,10 @@ void CSceneCustomStage::ExecuteHelperPass()
 
 	RenderView()->GetDrawer().JobifyDrawSubmission();
 	RenderView()->GetDrawer().WaitForDrawSubmission();
+
+	// TODO: This is a workaround for missing ref-count handling for SRVs/RTVs/DSVs in the
+	// device-objects, but the ref-counting is necessary because the secondary viewports
+	// are being destroyd very frequent and the resize of the viewport produces rapid
+	// invalidation of backbuffer resources
+	m_debugViewPass.ExchangeRenderTarget(0, nullptr);
 }

@@ -157,7 +157,8 @@ bool CWaterStage::UpdateCausticsGrid(N3DEngineCommon::SCausticInfo& causticInfo,
 bool CWaterStage::OnResourceInvalidated(void* pThis, uint32 flags)
 {
 	reinterpret_cast<CWaterStage*>(pThis)->m_bResourcesDirty = true;
-	return true;
+	// Don't keep the callback when the resource goes out of scope
+	return !(flags & eResourceDestroyed);
 }
 
 CWaterStage::CWaterStage()

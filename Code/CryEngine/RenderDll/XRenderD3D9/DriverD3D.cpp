@@ -130,7 +130,9 @@ void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 	CGnmSwapChain::SDesc desc = pContext->m_pSwapChain->GnmGetDesc();
 	indices = desc.numBuffers;
 #endif
+
 	pContext->m_pBackBuffers.resize(indices, nullptr);
+	pContext->m_pBackBufferPresented = nullptr;
 
 	for (int i = 0, n = indices; i < n; ++i)
 	{
@@ -150,38 +152,101 @@ void CD3D9Renderer::ObtainBackBuffers(SDisplayContext* pContext)
 			pContext->m_pBackBuffers[i]->SRGBRead(DeviceFormats::ConvertToSRGB(DeviceFormats::ConvertFromTexFormat(format)) == m_d3dsdBackBuffer.Format);
 		}
 
-#if CRY_RENDERER_GNM
-		CGnmTexture* pBackBuffer = pContext->m_pSwapChain->GnmGetBuffer(i);
-#elif CRY_PLATFORM_ORBIS
-		CCryDXOrbisTexture* pBackBuffer;
-		pContext->m_pSwapChain->GetBuffer(i, ID3D11Texture2D__GUID, (void**)&pBackBuffer);
-		assert(pBackBuffer != nullptr);
-#elif CRY_PLATFORM_DURANGO
-		D3DBaseTexture* pBackBuffer;
-		HRESULT hr = pContext->m_pSwapChain->GetBuffer(i, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-		assert(SUCCEEDED(hr) && pBackBuffer != nullptr);
-#elif CRY_RENDERER_VULKAN
-		D3DTexture* pBackBuffer = pContext->m_pSwapChain->GetVKBuffer(i);
-		assert(pBackBuffer != nullptr);
-//#elif defined(SUPPORT_DEVICE_INFO)
-//		D3DBaseTexture* pBackBuffer = m_devInfo.BackbufferTex2D();
-#else
-		D3DTexture* pBackBuffer = 0;
-		HRESULT hr = pContext->m_pSwapChain->GetBuffer(i, __uuidof(D3DTexture), (void**)&pBackBuffer);
-		assert(SUCCEEDED(hr) && pBackBuffer != nullptr);
+		if (!pContext->m_pBackBuffers[i]->GetDevTexture())
+		{
+	#if CRY_RENDERER_GNM
+			CGnmTexture* pBackBuffer = pContext->m_pSwapChain->GnmGetBuffer(i);
+	#elif CRY_PLATFORM_ORBIS
+			CCryDXOrbisTexture* pBackBuffer;
+			pContext->m_pSwapChain->GetBuffer(i, ID3D11Texture2D__GUID, (void**)&pBackBuffer);
+			assert(pBackBuffer != nullptr);
+	#elif CRY_PLATFORM_DURANGO
+			D3DBaseTexture* pBackBuffer;
+			HRESULT hr = pContext->m_pSwapChain->GetBuffer(i, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+			assert(SUCCEEDED(hr) && pBackBuffer != nullptr);
+	#elif CRY_RENDERER_VULKAN
+			D3DTexture* pBackBuffer = pContext->m_pSwapChain->GetVKBuffer(i);
+			assert(pBackBuffer != nullptr);
+	//#elif defined(SUPPORT_DEVICE_INFO)
+	//		D3DBaseTexture* pBackBuffer = m_devInfo.BackbufferTex2D();
+	#else
+			D3DTexture* pBackBuffer = 0;
+			HRESULT hr = pContext->m_pSwapChain->GetBuffer(i, __uuidof(D3DTexture), (void**)&pBackBuffer);
+			assert(SUCCEEDED(hr) && pBackBuffer != nullptr);
+	#endif
+
+			pContext->m_pBackBuffers[i]->SetWidth(width);
+			pContext->m_pBackBuffers[i]->SetHeight(height);
+			pContext->m_pBackBuffers[i]->SetDevTexture(CDeviceTexture::Associate(pContext->m_pBackBuffers[i]->GetLayout(), pBackBuffer));
+
+			// Guarantee that the back-buffers are cleared on first use (e.g. Flash alpha-blends onto the back-buffer)
+			// NOTE: GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
+			// NOTE: Can only access current backbuffer on DX12
+	#if !(CRY_RENDERER_GNM || CRY_RENDERER_DIRECT3D >= 120)
+			CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+			commandList.GetGraphicsInterface()->ClearSurface(pContext->m_pBackBuffers[i]->GetDevTexture()->LookupRTV(EDefaultResourceViews::RasterizerTarget), Clr_Transparent);
+	#endif
+		}
+	}
+
+	// NOTE: Actual device texture allocation happens just before rendering.
+	const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET;
+	const string uniqueTexName = string("$HDRTarget_context_") + string().Format("%d", m_uniqueRContextId);
+	pContext->m_pHDRTargetTex = CTexture::GetOrCreateTextureObject(uniqueTexName.c_str(), 0, 0, 1, eTT_2D, renderTargetFlags, eTF_Unknown);
+}
+
+void CD3D9Renderer::ObtainDepthBuffer(SDisplayContext* pContext)
+{
+	const float clearDepth = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
+	const uint clearStencil = 1;
+	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
+
+	int nDepthBufferWidth = IsEditorMode() ? m_d3dsdBackBuffer.Width : GetWidth();
+	int nDepthBufferHeight = IsEditorMode() ? m_d3dsdBackBuffer.Height : GetHeight();
+	m_preferredDepthFormat = m_zbpp == 32 ? eTF_D32FS8 : m_zbpp == 24 ? eTF_D24S8 : (m_zbpp == 8 ? eTF_D16S8 : eTF_D16);
+
+	m_pZTexture = CTexture::GetOrCreateDepthStencil("$DeviceDepthScene", nDepthBufferWidth, nDepthBufferHeight,
+		clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, m_preferredDepthFormat);
+#if defined(DURANGO_USE_ESRAM)
+	m_pZTexture->SetESRAMOffset(11894784 + 5955584 * 2);
 #endif
 
-		pContext->m_pBackBuffers[i]->SetWidth(width);
-		pContext->m_pBackBuffers[i]->SetHeight(height);
-		pContext->m_pBackBuffers[i]->SetDevTexture(CDeviceTexture::Associate(pContext->m_pBackBuffers[i]->GetLayout(), pBackBuffer));
+	D3DTexture* pZTarget = m_pZTexture->GetDevTexture()->Get2DTexture();
+	D3DDepthSurface* pZSurface = m_pZTexture->GetDevTexture(m_d3dsdBackBuffer.SampleDesc.Count > 1)->LookupDSV(EDefaultResourceViews::DepthStencil);
 
-		// Guarantee that the back-buffers are cleared on first use (e.g. Flash alpha-blends onto the back-buffer)
-		// NOTE: GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
-		// NOTE: Can only access current backbuffer on DX12
-#if !(CRY_RENDERER_GNM || CRY_RENDERER_DIRECT3D >= 120)
-		CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-		commandList.GetGraphicsInterface()->ClearSurface(pContext->m_pBackBuffers[i]->GetDevTexture()->LookupRTV(EDefaultResourceViews::RasterizerTarget), Clr_Transparent);
+#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
+	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	commandList.GetGraphicsInterface()->ClearSurface(pZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
 #endif
+
+	m_DepthBufferOrig.pTexture = m_pZTexture;
+	m_DepthBufferOrig.pTarget = pZTarget;
+	m_DepthBufferOrig.pSurface = pZSurface;
+	m_DepthBufferOrig.nWidth = nDepthBufferWidth;
+	m_DepthBufferOrig.nHeight = nDepthBufferHeight;
+	m_DepthBufferOrig.bBusy = true;
+	m_DepthBufferOrig.nFrameAccess = -2;
+
+	m_DepthBufferNative = m_DepthBufferOrig;
+
+	// Create the native resolution depth stencil buffer for overlay rendering if needed
+	if (!IsEditorMode() && (gcpRendD3D->GetOverlayWidth() != nDepthBufferWidth || gcpRendD3D->GetOverlayHeight() != nDepthBufferHeight))
+	{
+		m_pNativeZTexture = CTexture::GetOrCreateDepthStencil("$DeviceDepthOverlay", GetOverlayWidth(), GetOverlayHeight(),
+			clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, m_preferredDepthFormat);
+
+		D3DTexture* pNativeZTarget = m_pZTexture->GetDevTexture()->Get2DTexture();
+		D3DDepthSurface* pNativeZSurface = m_pZTexture->GetDevTexture(m_d3dsdBackBuffer.SampleDesc.Count > 1)->LookupDSV(EDefaultResourceViews::DepthStencil);
+
+#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
+		commandList.GetGraphicsInterface()->ClearSurface(pNativeZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
+#endif
+
+		m_DepthBufferNative.pTexture = m_pNativeZTexture;
+		m_DepthBufferNative.pTarget = pNativeZTarget;
+		m_DepthBufferNative.pSurface = pNativeZSurface;
+		m_DepthBufferNative.nWidth = m_nativeWidth;
+		m_DepthBufferNative.nHeight = m_nativeHeight;
 	}
 }
 
@@ -200,7 +265,50 @@ void CD3D9Renderer::ReleaseBackBuffers(SDisplayContext* pContext)
 	for (int i = 0, n = indices; i < n; ++i)
 	{
 		pContext->m_pBackBuffers[i]->SetDevTexture(nullptr);
+		SAFE_RELEASE(pContext->m_pBackBuffers[i]);
 	}
+
+	pContext->m_pHDRTargetTex->SetDevTexture(nullptr);
+	SAFE_RELEASE(pContext->m_pHDRTargetTex);
+}
+
+void CD3D9Renderer::ResizeBackBuffers(SDisplayContext* pContext)
+{
+	unsigned indices = 1;
+#if CRY_RENDERER_GNM
+	CGnmSwapChain::SDesc desc = pContext->m_pSwapChain->GnmGetDesc();
+	indices = desc.numBuffers;
+#else
+	DXGI_SWAP_CHAIN_DESC scDesc;
+	pContext->m_pSwapChain->GetDesc(&scDesc);
+#if (CRY_RENDERER_DIRECT3D >= 120) || (CRY_RENDERER_VULKAN >= 10)
+	indices = scDesc.BufferCount;
+#endif
+#endif
+
+	// Keep the CTextures for reuse, remove the device-resources and trigger dirty-handling
+	for (int i = 0, n = indices; i < n; ++i)
+	{
+		pContext->m_pBackBuffers[i]->SetDevTexture(nullptr);
+	}
+
+	pContext->m_pHDRTargetTex->SetDevTexture(nullptr);
+
+	const uint32 width = pContext->m_Width;
+	const uint32 height = pContext->m_Height;
+	const bool bBaseDisplayContext = (pContext->m_uniqueId == 0);
+	CRY_ASSERT(!bBaseDisplayContext || (width == m_d3dsdBackBuffer.Width && height == m_d3dsdBackBuffer.Height));
+
+#if CRY_RENDERER_GNM
+	desc.width = width;
+	desc.height = height;
+	HRESULT hr = m_pActiveContext->m_pSwapChain->GnmSetDesc(desc) ? S_OK : E_FAIL;
+#else
+	HRESULT hr = m_pActiveContext->m_pSwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, scDesc.Flags);
+#endif
+	CRY_ASSERT(SUCCEEDED(hr));
+
+	ObtainBackBuffers(pContext);
 }
 
 CTexture* CD3D9Renderer::GetCurrentTargetOutput()
@@ -594,7 +702,6 @@ void CD3D9Renderer::ChangeViewport(unsigned int x, unsigned int y, unsigned int 
 	width  *= m_pActiveContext->m_nSSSamplesX;
 	height *= m_pActiveContext->m_nSSSamplesY;
 
-	bool bBackbufferChanged = false;
 	DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	if (!m_pActiveContext->m_pSwapChain /* && !m_CurrContext->m_pBackBuffer */)
@@ -647,7 +754,12 @@ void CD3D9Renderer::ChangeViewport(unsigned int x, unsigned int y, unsigned int 
 		// Decrement Create() increment
 		SAFE_RELEASE(pSwapChain);
 #endif
-		bBackbufferChanged = true;
+		m_pActiveContext->m_X = x;
+		m_pActiveContext->m_Y = y;
+		m_pActiveContext->m_Width = width;
+		m_pActiveContext->m_Height = height;
+
+		ObtainBackBuffers(m_pActiveContext);
 	}
 	else if (m_pActiveContext->m_Width != width || m_pActiveContext->m_Height != height)
 	{
@@ -655,35 +767,19 @@ void CD3D9Renderer::ChangeViewport(unsigned int x, unsigned int y, unsigned int 
 		FX_SetRenderTarget(0, (D3DSurface*)0xDEADBEEF, NULL);
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
-		ReleaseBackBuffers(m_pActiveContext);
+		m_pActiveContext->m_X = x;
+		m_pActiveContext->m_Y = y;
+		m_pActiveContext->m_Width = width;
+		m_pActiveContext->m_Height = height;
 
-#if CRY_RENDERER_GNM
-		CGnmSwapChain::SDesc desc = m_pActiveContext->m_pSwapChain->GnmGetDesc();
-		desc.width = width;
-		desc.height = height;
-		HRESULT hr = m_pActiveContext->m_pSwapChain->GnmSetDesc(desc) ? S_OK : E_FAIL;
-#else
-		HRESULT hr = m_pActiveContext->m_pSwapChain->ResizeBuffers(0, width, height, fmt, 0);
-#endif
-		CRY_ASSERT(SUCCEEDED(hr));
-
-		bBackbufferChanged = true;
+		ResizeBackBuffers(m_pActiveContext);
 	}
 
-	m_pActiveContext->m_X = x;
-	m_pActiveContext->m_Y = y;
-	m_pActiveContext->m_Width = width;
-	m_pActiveContext->m_Height = height;
 	m_width = m_nativeWidth = width;
 	m_height = m_nativeHeight = height;
 
 	if (m_pActiveContext->m_pSwapChain /*&& m_CurrContext->m_pBackBuffer*/)
 	{
-		if (bBackbufferChanged)
-		{
-			ObtainBackBuffers(m_pActiveContext);
-		}
-
 		assert(m_nRTStackLevel[0] == 0);
 
 		// Force unbinding any render-target which is from another swap-chain, by setting the m_CurrContext's back-buffer
@@ -1222,6 +1318,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 			ChangeResolution(width, height, colorBits, 75, bFullScreen, bForceReset);
 	}
 	else if (GetBaseDisplayContext() && GetBaseDisplayContext()->m_bMainViewport)
+//	else if (pDC->m_bMainViewport) TODO
 	{
 		static bool bCustomRes = false;
 		static int nOrigWidth = m_d3dsdBackBuffer.Width;
@@ -1590,12 +1687,14 @@ void CD3D9Renderer::RT_BeginFrame()
 	}
 
 #if defined(SUPPORT_DEVICE_INFO)
-	if (m_bEditor)
+	if (m_bEditor && GetActiveDisplayContext()->m_bMainViewport)
 	{
 		const int width = GetWidth();
 		const int height = GetHeight();
 
-		if (m_DepthBufferOrig.nWidth < width || m_DepthBufferOrig.nHeight < height)
+		// If the BaseContext and the Editor's active bMainViewPort context are divergent, make the BaseContext match the ActiveContext
+		if (m_devInfo.SwapChainDesc().BufferDesc.Width  != width ||
+			m_devInfo.SwapChainDesc().BufferDesc.Height != height)
 		{
 			SDisplayContext* pDC = GetBaseDisplayContext();
 
@@ -1604,8 +1703,8 @@ void CD3D9Renderer::RT_BeginFrame()
 			GetS3DRend().ReleaseBuffers();
 			ReleaseBackBuffers(pDC);
 
-			m_devInfo.SwapChainDesc().BufferDesc.Width = max(m_DepthBufferOrig.nWidth, width);
-			m_devInfo.SwapChainDesc().BufferDesc.Height = max(m_DepthBufferOrig.nHeight, height);
+			m_devInfo.SwapChainDesc().BufferDesc.Width  = width;
+			m_devInfo.SwapChainDesc().BufferDesc.Height = height;
 			m_devInfo.ResizeDXGIBuffers();
 
 			OnD3D11PostCreateDevice(m_devInfo.Device());

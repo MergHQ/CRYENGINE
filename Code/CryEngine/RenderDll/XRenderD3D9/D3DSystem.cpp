@@ -142,17 +142,13 @@ bool CD3D9Renderer::CreateContext(WIN_HWND hWnd, bool bMainViewport, int SSX, in
 	pContext->m_Width = m_width;
 	pContext->m_Height = m_height;
 	pContext->m_pSwapChain = 0;
+	pContext->m_pHDRTargetTex = 0;
 	pContext->m_nViewportWidth = m_width / (m_pActiveContext ? m_pActiveContext->m_nSSSamplesX : 1);
 	pContext->m_nViewportHeight = m_height / (m_pActiveContext ? m_pActiveContext->m_nSSSamplesY : 1);
 	pContext->m_nSSSamplesX = std::max(1, SSX);
 	pContext->m_nSSSamplesY = std::max(1, SSY);
 	pContext->m_bMainViewport = bMainViewport;
 	pContext->m_uniqueId = m_uniqueRContextId;
-
-	// NOTE: Actual device texture allocation happens just before rendering.
-	const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET;
-	const string uniqueTexName = string("$HDRTarget_context_") + string().Format("%d", m_uniqueRContextId);
-	pContext->m_pHDRTargetTex = CTexture::GetOrCreateTextureObject(uniqueTexName.c_str(), 0, 0, 1, eTT_2D, renderTargetFlags, eTF_Unknown);
 
 	m_pActiveContext = pContext;
 	m_RContexts.AddElem(pContext);
@@ -197,12 +193,19 @@ bool CD3D9Renderer::DeleteContext(WIN_HWND hWnd)
 		}
 	}
 
-	if (!m_RContexts[i]->m_pBackBuffers.empty())
+	// Wait for GPU to finish occupying the resources
+	FlushRTCommands(true, true, true);
+
+	if (m_RContexts[i]->m_pSwapChain)
 	{
+		// Force the release of the back-buffer currently bound as a render-target (otherwise resizing the swap-chain will fail, because of outstanding reference)
+		FX_SetRenderTarget(0, (D3DSurface*)0xDEADBEEF, (SDepthTexture*)0xDEADBEEF);
+		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
+
 		ReleaseBackBuffers(m_RContexts[i]);
 	}
+
 	SAFE_RELEASE(m_RContexts[i]->m_pSwapChain);
-	SAFE_RELEASE(m_RContexts[i]->m_pHDRTargetTex);
 
 	delete m_RContexts[i];
 	m_RContexts.Remove(i, 1);
@@ -2533,7 +2536,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_Y = 0;
 	pDC->m_Width = rd->m_d3dsdBackBuffer.Width;
 	pDC->m_Height = rd->m_d3dsdBackBuffer.Height;
-	pDC->m_pBackBufferPresented = nullptr;
 
 	pDC->m_nViewportWidth = pDC->m_Width;
 	pDC->m_nViewportHeight = pDC->m_Height;
@@ -2542,58 +2544,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_bMainViewport = true;
 
 	rd->ObtainBackBuffers(pDC);
-
-	const float clearDepth = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
-	const uint clearStencil = 1;
-	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
-
-	int nDepthBufferWidth = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Width : rd->GetWidth();
-	int nDepthBufferHeight = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Height : rd->GetHeight();
-	rd->m_preferredDepthFormat = rd->m_zbpp == 32 ? eTF_D32FS8 : rd->m_zbpp == 24 ? eTF_D24S8 : (rd->m_zbpp == 8 ? eTF_D16S8 : eTF_D16);
-
-	rd->m_pZTexture = CTexture::GetOrCreateDepthStencil("$DeviceDepthScene", nDepthBufferWidth, nDepthBufferHeight,
-	                                                    clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, rd->m_preferredDepthFormat);
-#if defined(DURANGO_USE_ESRAM)
-	rd->m_pZTexture->SetESRAMOffset(11894784 + 5955584 * 2);
-#endif
-
-	D3DTexture* pZTarget = rd->m_pZTexture->GetDevTexture()->Get2DTexture();
-	D3DDepthSurface* pZSurface = rd->m_pZTexture->GetDevTexture(rd->m_d3dsdBackBuffer.SampleDesc.Count > 1)->LookupDSV(EDefaultResourceViews::DepthStencil);
-
-#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
-	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-	commandList.GetGraphicsInterface()->ClearSurface(pZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
-#endif
-
-	rd->m_DepthBufferOrig.pTexture = rd->m_pZTexture;
-	rd->m_DepthBufferOrig.pTarget = pZTarget;
-	rd->m_DepthBufferOrig.pSurface = pZSurface;
-	rd->m_DepthBufferOrig.nWidth = nDepthBufferWidth;
-	rd->m_DepthBufferOrig.nHeight = nDepthBufferHeight;
-	rd->m_DepthBufferOrig.bBusy = true;
-	rd->m_DepthBufferOrig.nFrameAccess = -2;
-
-	rd->m_DepthBufferNative = rd->m_DepthBufferOrig;
-
-	// Create the native resolution depth stencil buffer for overlay rendering if needed
-	if (!rd->IsEditorMode() && (gcpRendD3D->GetOverlayWidth() != nDepthBufferWidth || gcpRendD3D->GetOverlayHeight() != nDepthBufferHeight))
-	{
-		rd->m_pNativeZTexture = CTexture::GetOrCreateDepthStencil("$DeviceDepthOverlay", rd->GetOverlayWidth(), rd->GetOverlayHeight(),
-		                                                          clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, rd->m_preferredDepthFormat);
-
-		D3DTexture* pNativeZTarget = rd->m_pZTexture->GetDevTexture()->Get2DTexture();
-		D3DDepthSurface* pNativeZSurface = rd->m_pZTexture->GetDevTexture(rd->m_d3dsdBackBuffer.SampleDesc.Count > 1)->LookupDSV(EDefaultResourceViews::DepthStencil);
-
-#if !CRY_RENDERER_GNM // GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
-		commandList.GetGraphicsInterface()->ClearSurface(pNativeZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
-#endif
-
-		rd->m_DepthBufferNative.pTexture = rd->m_pNativeZTexture;
-		rd->m_DepthBufferNative.pTarget = pNativeZTarget;
-		rd->m_DepthBufferNative.pSurface = pNativeZSurface;
-		rd->m_DepthBufferNative.nWidth = rd->m_nativeWidth;
-		rd->m_DepthBufferNative.nHeight = rd->m_nativeHeight;
-	}
+	rd->ObtainDepthBuffer(pDC);
 
 	rd->m_nRTStackLevel[0] = 0;
 	if (rd->m_d3dsdBackBuffer.Width == rd->m_nativeWidth && rd->m_d3dsdBackBuffer.Height == rd->m_nativeHeight)
