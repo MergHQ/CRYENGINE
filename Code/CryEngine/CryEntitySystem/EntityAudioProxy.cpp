@@ -518,36 +518,33 @@ CryAudio::AuxObjectId CEntityComponentAudio::CreateAudioAuxObject()
 	CryAudio::AuxObjectId audioAuxObjectId = CryAudio::InvalidAuxObjectId;
 	char const* szName = nullptr;
 
-	if ((m_pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) == 0)
-	{
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-		if (m_auxObjectIdCounter == std::numeric_limits<CryAudio::AuxObjectId>::max())
-		{
-			CryFatalError("<Audio> Exceeded numerical limits during CEntityAudioProxy::CreateAudioProxy!");
-		}
-		else if (m_pEntity == nullptr)
-		{
-			CryFatalError("<Audio> nullptr entity pointer during CEntityAudioProxy::CreateAudioProxy!");
-		}
+	if (m_auxObjectIdCounter == std::numeric_limits<CryAudio::AuxObjectId>::max())
+	{
+		CryFatalError("<Audio> Exceeded numerical limits during CEntityAudioProxy::CreateAudioProxy!");
+	}
+	else if (m_pEntity == nullptr)
+	{
+		CryFatalError("<Audio> nullptr entity pointer during CEntityAudioProxy::CreateAudioProxy!");
+	}
 
-		CryFixedStringT<CryAudio::MaxObjectNameLength> name(m_pEntity->GetName());
-		size_t const numAuxObjects = m_mapAuxObjects.size();
+	CryFixedStringT<CryAudio::MaxObjectNameLength> name(m_pEntity->GetName());
+	size_t const numAuxObjects = m_mapAuxObjects.size();
 
-		if (numAuxObjects > 0)
-		{
-			// First AuxAudioObject is not explicitly identified, it keeps the entity's name.
-			// All additional objects however are being explicitly identified.
-			name.Format("%s_aux_object_#%" PRISIZE_T, m_pEntity->GetName(), numAuxObjects + 1);
-		}
+	if (numAuxObjects > 0)
+	{
+		// First AuxAudioObject is not explicitly identified, it keeps the entity's name.
+		// All additional objects however are being explicitly identified.
+		name.Format("%s_aux_object_#%" PRISIZE_T, m_pEntity->GetName(), numAuxObjects + 1);
+	}
 
-		szName = name.c_str();
+	szName = name.c_str();
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 
-		CryAudio::SCreateObjectData const objectData(szName, CryAudio::EOcclusionType::Ignore, m_pEntity->GetWorldTM(), m_pEntity->GetId(), true);
-		CryAudio::IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
-		m_mapAuxObjects.insert(AuxObjectPair(++m_auxObjectIdCounter, SAuxObjectWrapper(pIObject)));
-		audioAuxObjectId = m_auxObjectIdCounter;
-	}
+	CryAudio::SCreateObjectData const objectData(szName, CryAudio::EOcclusionType::Ignore, m_pEntity->GetWorldTM(), m_pEntity->GetId(), true);
+	CryAudio::IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
+	m_mapAuxObjects.insert(AuxObjectPair(++m_auxObjectIdCounter, SAuxObjectWrapper(pIObject)));
+	audioAuxObjectId = m_auxObjectIdCounter;
 
 	return audioAuxObjectId;
 }
