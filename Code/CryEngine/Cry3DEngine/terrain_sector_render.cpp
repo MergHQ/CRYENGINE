@@ -707,7 +707,7 @@ void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
 
 			if (_x != x || _y != y)
 			{
-				vert.z -= stepSize * 0.5f;
+				vert.z -= stepSize * 0.35f;
 			}
 
 			// set terrain surface normal
@@ -761,7 +761,7 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRend
 		{
 			if (!m_bHasHoles || !pTerrain->GetHole(m_nOriginX + x + halfStep, m_nOriginY + y + halfStep, m_nSID))
 			{
-				if (pTerrain->IsMeshQuadFlipped(m_nOriginX + x, m_nOriginY + y, stepSize, 0))
+				if (pTerrain->IsMeshQuadFlipped(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep, stepSize, 0))
 				{
 					AddIndexAliased(x + stepSize, y, stepSize, fSectorSizeSB, pSI);
 					AddIndexAliased(x + stepSize, y + stepSize, stepSize, fSectorSizeSB, pSI);
@@ -1092,81 +1092,98 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 			if (arrTriangle[0] >= (unsigned)nVertCount || arrTriangle[1] >= (unsigned)nVertCount || arrTriangle[2] >= (unsigned)nVertCount)
 				continue;
 
-			UCol& Color0 = *(UCol*)&pColor[arrTriangle[0] * nColorStride];
-			UCol& Color1 = *(UCol*)&pColor[arrTriangle[1] * nColorStride];
-			UCol& Color2 = *(UCol*)&pColor[arrTriangle[2] * nColorStride];
+			UCol arrColor[3];
+			arrColor[0] = *(UCol*)&pColor[arrTriangle[0] * nColorStride];
+			arrColor[1] = *(UCol*)&pColor[arrTriangle[1] * nColorStride];
+			arrColor[2] = *(UCol*)&pColor[arrTriangle[2] * nColorStride];
 
-			uint32 nVertSurfId0 = Color0.bcolor[1] & SRangeInfo::e_undefined;
-			uint32 nVertSurfId1 = Color1.bcolor[1] & SRangeInfo::e_undefined;
-			uint32 nVertSurfId2 = Color2.bcolor[1] & SRangeInfo::e_undefined;
+			// analyze triangle and collect used surface types and projection directions
 
-			nVertSurfId0 = CLAMP(nVertSurfId0, 0, SRangeInfo::e_undefined);
-			nVertSurfId1 = CLAMP(nVertSurfId1, 0, SRangeInfo::e_undefined);
-			nVertSurfId2 = CLAMP(nVertSurfId2, 0, SRangeInfo::e_undefined);
-
-			int lstSurfTypes[3];
-			int idxSurfTypes(0);
-			lstSurfTypes[idxSurfTypes++] = nVertSurfId0;
-			if (nVertSurfId1 != nVertSurfId0)
-				lstSurfTypes[idxSurfTypes++] = nVertSurfId1;
-			if (nVertSurfId2 != nVertSurfId0 && nVertSurfId2 != nVertSurfId1)
-				lstSurfTypes[idxSurfTypes++] = nVertSurfId2;
-
-			int lstProjIds[3];
-			int idxProjIds(0);
-
-			byte* pNorm;
-			Vec3 vNorm;
-
-			// if there are 3d materials - analyze normals
-			if (arrMat3DFlag[nVertSurfId0])
+			struct SSurfTypeProjInfo
 			{
-				pNorm = &pNormB[arrTriangle[0] * nNormStride];
-				vNorm.Set(((float)pNorm[0] - 127.5f), ((float)pNorm[1] - 127.5f), ((float)pNorm[2] - 127.5f));
-				int nProjId0 = GetVecProjectId(vNorm);
-				lstProjIds[idxProjIds++] = nProjId0;
+				bool operator == (const SSurfTypeProjInfo& o) const { return surfType == o.surfType; }
+				int surfType = 0;
+				byte projDir[4] = { 0 };
+			};
+
+			assert(Cry3DEngineBase::m_nMainThreadId == CryGetCurrentThreadId());
+			static PodArray<SSurfTypeProjInfo> lstSurfTypes;
+			lstSurfTypes.Clear();
+
+			// iterate through vertices
+			for (int v = 0; v < 3; v++)
+			{
+				// extract weights from vertex
+				const int weightBitMask = 15;
+				int surfWeights[3] = { 0, (arrColor[v].bcolor[3] & weightBitMask), ((arrColor[v].bcolor[3] >> 4) & weightBitMask) };
+				const int maxSummWeight = 15;
+				surfWeights[0] = SATURATEB(maxSummWeight - surfWeights[1] - surfWeights[2]);
+
+				// iterate through vertex surface types
+				for (int s = 0; s < 3; s++)
+				{
+					if (surfWeights[s])
+					{
+						SSurfTypeProjInfo stpi;
+						stpi.surfType = arrColor[v].bcolor[s];
+						assert(stpi.surfType >= 0 && stpi.surfType < SRangeInfo::e_palette_size);
+
+						SSurfTypeProjInfo* pType = 0;
+
+						// find or add new item
+						int foundId = lstSurfTypes.Find(stpi);
+						if (foundId < 0)
+						{
+							lstSurfTypes.Add(stpi);
+							pType = &lstSurfTypes.Last();
+						}
+						else
+						{
+							pType = &lstSurfTypes[foundId];
+						}
+
+						// check if surface type material is 3D
+						if (arrMat3DFlag[stpi.surfType])
+						{
+							byte* pNorm = &pNormB[arrTriangle[v] * nNormStride];
+							Vec3 vNorm(((float)pNorm[0] - 127.5f), ((float)pNorm[1] - 127.5f), ((float)pNorm[2] - 127.5f));
+						
+							// register projection direction
+							int p = GetVecProjectId(vNorm);							
+							assert(p >= 0 && p < 3);
+							pType->projDir[p] = true;
+						}
+						else
+						{
+							// slot 3 used for non 3d materials
+							pType->projDir[3] = true;
+						}
+					}
+				}
 			}
 
-			if (arrMat3DFlag[nVertSurfId1])
+			for (int s = 0; s < lstSurfTypes.Count(); s++)
 			{
-				pNorm = &pNormB[arrTriangle[1] * nNormStride];
-				vNorm.Set(((float)pNorm[0] - 127.5f), ((float)pNorm[1] - 127.5f), ((float)pNorm[2] - 127.5f));
-				int nProjId1 = GetVecProjectId(vNorm);
-				if (idxProjIds == 0 || lstProjIds[0] != nProjId1)
-					lstProjIds[idxProjIds++] = nProjId1;
-			}
+				SSurfTypeProjInfo& rType = lstSurfTypes[s];
 
-			if (arrMat3DFlag[nVertSurfId2])
-			{
-				pNorm = &pNormB[arrTriangle[2] * nNormStride];
-				vNorm.Set(((float)pNorm[0] - 127.5f), ((float)pNorm[1] - 127.5f), ((float)pNorm[2] - 127.5f));
-				int nProjId2 = GetVecProjectId(vNorm);
-				if ((idxProjIds < 2 || lstProjIds[1] != nProjId2) &&
-				    (idxProjIds < 1 || lstProjIds[0] != nProjId2))
-					lstProjIds[idxProjIds++] = nProjId2;
-			}
-
-			// if not 3d materials found
-			if (!arrMat3DFlag[nVertSurfId0] || !arrMat3DFlag[nVertSurfId1] || !arrMat3DFlag[nVertSurfId2])
-				lstProjIds[idxProjIds++] = 3;
-
-			for (int s = 0; s < idxSurfTypes; s++)
-			{
-				if (lstSurfTypes[s] == SRangeInfo::e_undefined)
+				if (rType.surfType == SRangeInfo::e_undefined)
 				{
 					continue;
 				}
 
-				for (int p = 0; p < idxProjIds; p++)
+				for (int p = 0; p < 4; p++)
 				{
-					assert(lstSurfTypes[s] >= 0 && lstSurfTypes[s] < SRangeInfo::e_undefined);
-					assert(lstProjIds[p] >= 0 && lstProjIds[p] < 4);
-					PodArray<vtx_idx>& rList = m_arrIndices[lstSurfTypes[s]][lstProjIds[p]];
+					if (rType.projDir[p])
+					{
+						PodArray<vtx_idx>& rList = m_arrIndices[rType.surfType][p];
 
-					if (!bOnlyBorder && j >= nBorderStartIndex && arrpNonBorderIdxNum[lstSurfTypes[s]][lstProjIds[p]] < 0)
-						arrpNonBorderIdxNum[lstSurfTypes[s]][lstProjIds[p]] = rList.Count();
+						if (!bOnlyBorder && j >= nBorderStartIndex && arrpNonBorderIdxNum[rType.surfType][p] < 0)
+						{
+							arrpNonBorderIdxNum[rType.surfType][p] = rList.Count();
+						}
 
-					rList.AddList(arrTriangle, 3);
+						rList.AddList(arrTriangle, 3);
+					}
 				}
 			}
 		}
@@ -1177,7 +1194,6 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 		pRM->UnlockStream(VSF_GENERAL);
 		pRM->UnLockForThreadAccess();
 	}
-
 }
 
 void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcRM, SSurfaceType* pSurface, _smart_ptr<IRenderMesh>& pMatRM, int nProjectionId,
@@ -1355,8 +1371,8 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 	vert.normal.bcolor[2] = 255l;
 	vert.normal.bcolor[3] = 255l;
 
-	vert.color.bcolor[0] = 255l;
-	vert.color.bcolor[1] = 0l;
+	vert.color.bcolor[0] = 0l;
+	vert.color.bcolor[1] = 255l;
 	vert.color.bcolor[2] = 255l;
 	vert.color.bcolor[3] = 255l;
 
@@ -1651,22 +1667,94 @@ void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, 
 
 void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, const int nSID, SVF_P2S_N4B_C4B_T1F &vert)
 {
-	uint8 ucSurfaceTypeID = pTerrain->GetSurfaceTypeID(x, y, nSID);
-	if (ucSurfaceTypeID == SRangeInfo::e_hole)
+	SSurfaceTypeItem st = pTerrain->GetSurfaceTypeItem(x, y, nSID);
+
+	if (st.GetHole())
 	{
 		// in case of hole - try to find some valid surface type around
-		for (float i = -stepSize; i <= stepSize && (ucSurfaceTypeID == SRangeInfo::e_hole); i += stepSize)
+		for (float i = -stepSize; i <= stepSize && (st.GetDominatingSurfaceType() == SRangeInfo::e_hole); i += stepSize)
 		{
-			for (float j = -stepSize; j <= stepSize && (ucSurfaceTypeID == SRangeInfo::e_hole); j += stepSize)
+			for (float j = -stepSize; j <= stepSize && (st.GetDominatingSurfaceType() == SRangeInfo::e_hole); j += stepSize)
 			{
-				ucSurfaceTypeID = pTerrain->GetSurfaceTypeID(x + i, y + j, nSID);
+				st = pTerrain->GetSurfaceTypeID(x + i, y + j, nSID);
 			}
 		}
 	}
 
-	vert.color.bcolor[0] = 255;
-	vert.color.bcolor[1] = ucSurfaceTypeID;
-	vert.color.bcolor[2] = 255;
-	vert.color.bcolor[3] = 255;
+	vert.color.bcolor[0] = st.ty[0];
+	vert.color.bcolor[1] = st.ty[1];
+	vert.color.bcolor[2] = st.ty[2];
+	
+	const int weightBitMask = 15;
+	vert.color.bcolor[3] = (st.we[1] & weightBitMask) | ((st.we[2] & weightBitMask) << 4);
+
 	SwapEndian(vert.color.dcolor, eLittleEndian);
+}
+
+uint16 SRangeInfo::GetLocalSurfaceTypeID(uint16 usGlobalSurfaceTypeID)
+{
+	if (pSTPalette)
+	{
+		if (usGlobalSurfaceTypeID == e_undefined) 
+			return e_index_undefined;
+		if (usGlobalSurfaceTypeID == e_hole) 
+			return e_index_hole;
+
+		// Check if a local entry has already been assigned for this global entry.
+		for (uint16 i = 0; i < e_index_undefined; i++)
+		{
+			if (pSTPalette[i] == usGlobalSurfaceTypeID)
+				return i;
+		}
+		// No local entry has been assigned; look for an entry that is marked as currently unused.
+		for (uint16 i = 0; i < e_index_undefined; i++)
+		{
+			if (pSTPalette[i] == e_undefined)
+			{
+				pSTPalette[i] = (uchar)usGlobalSurfaceTypeID;
+				return i;
+			}
+		}
+		// No local entry is marked as unused; look for one whose local ID does not actually occur in the data.
+		int nUsageCounters[e_palette_size];
+		memset(nUsageCounters, 0, sizeof(nUsageCounters));
+		int nCount = nSize * nSize;
+
+		for (uint16 i = 0; i < nCount; i++)
+		{
+			SSurfaceTypeLocal si;
+			SSurfaceTypeLocal::DecodeFromUint32(pHMData[i].surface, si);
+
+			for (int s = 0; s < SSurfaceTypeLocal::kMaxSurfaceTypesNum; s++)
+			{
+				if (si.we[s])
+				{
+					nUsageCounters[si.ty[s] & e_index_hole]++;
+				}
+			}
+		}
+
+		for (uint16 i = 0; i < e_index_undefined; i++)
+		{
+			if (!nUsageCounters[i])
+			{
+				pSTPalette[i] = (uchar)usGlobalSurfaceTypeID;
+				return i;
+			}
+		}
+		// Could not assign a local ID; mark the problem area with holes. (Should not happen, we have integrity checks.)
+		return e_index_undefined;
+	}
+	else
+	{
+		// If the sector still has no palette, create one and assign local ID 0.
+		pSTPalette = new uchar[e_palette_size];
+
+		for (int i = 0; i <= e_index_hole; pSTPalette[i++] = e_undefined)
+			;
+
+		pSTPalette[0] = (uchar)usGlobalSurfaceTypeID;
+		pSTPalette[e_index_hole] = e_hole;
+		return 0;
+	}
 }

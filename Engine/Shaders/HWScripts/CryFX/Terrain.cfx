@@ -297,11 +297,24 @@ vert2fragTerrain TerrainVS(app2vertGeneral IN_common)
 	OUT.tangent.xyz = normalize(tangent);
 	OUT.bitangent.xyz = normalize(bitangent);
 
-	half colorG = vertPassPos.Color.y;           
-	if (colorG > 127.f / 255.f)
-		colorG -= 128.f / 255.f;
+	// decode 3 weights
+	int arrWeights[3];
+	int nW = int(vertPassPos.Color.w * 255);
+	arrWeights[2] = ((nW >> 4) & 15);
+	arrWeights[1] = (nW & 15);
+	arrWeights[0] = 15 - arrWeights[1] - arrWeights[2];
 
-	float weight = saturate(1 - abs(colorG * 255 - terrainLayerInfo[2].w));
+	// find weight of current material
+	float weight = 0;
+	for (int c = 0; c < 3; c++)
+	{
+		half colorG = vertPassPos.Color[2-c];
+		if (colorG > 127.f / 255.f)
+			colorG -= 128.f / 255.f;
+
+		weight = max(weight, saturate(1 - abs(colorG * 255 - terrainLayerInfo[2].w)) / 15.f * arrWeights[c]);
+	}
+
 	float3 normalAbs = abs(vertPassPos.Normal.xyz); 
 	if (normalAbs.x >= normalAbs.y && normalAbs.x >= normalAbs.z)
 		weight *= terrainLayerInfo[2].x;
