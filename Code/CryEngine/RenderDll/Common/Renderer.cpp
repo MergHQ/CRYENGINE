@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -61,6 +61,41 @@ namespace
 		{ if (_bActive) _lock.Unlock(); }
 	};
 }
+
+// Enum -> Bitmask lookup table
+uint32 ColorMasks[(ColorMask::Count >> GS_COLMASK_SHIFT)][4] =
+{
+	{ 0x0, 0x0, 0x0, 0x0 }, // GS_NOCOLMASK_NONE
+	{ 0x1, 0x1, 0x1, 0x1 }, // GS_NOCOLMASK_R
+	{ 0x2, 0x2, 0x2, 0x2 }, // GS_NOCOLMASK_G
+	{ 0x4, 0x4, 0x4, 0x4 }, // GS_NOCOLMASK_B
+	{ 0x8, 0x8, 0x8, 0x8 }, // GS_NOCOLMASK_A
+	{ 0xE, 0xE, 0xE, 0xE }, // GS_NOCOLMASK_GBA
+	{ 0xD, 0xD, 0xD, 0xD }, // GS_NOCOLMASK_RBA
+	{ 0xB, 0xB, 0xB, 0xB }, // GS_NOCOLMASK_RGA
+	{ 0x7, 0x7, 0x7, 0x7 }, // GS_NOCOLMASK_RGB
+	{ 0xF, 0xF, 0xF, 0xF }, // GS_NOCOLMASK_RGBA
+	{ 0xF, 0xF, 0xB, 0xF }, // GS_NOCOLMASK_GBUFFER_OVERLAY
+};
+
+// Bitmask -> Enum lookup table
+std::array<uint32, (ColorMask::Count >> GS_COLMASK_SHIFT)> AvailableColorMasks =
+{
+	{ 
+		0x0, // GS_NOCOLMASK_NONE
+		0x1, // GS_NOCOLMASK_R
+		0x2, // GS_NOCOLMASK_G
+		0x4, // GS_NOCOLMASK_B
+		0x8, // GS_NOCOLMASK_A
+		0xE, // GS_NOCOLMASK_GBA
+		0xD, // GS_NOCOLMASK_RBA
+		0xB, // GS_NOCOLMASK_RGA
+		0x7, // GS_NOCOLMASK_RGB
+		0xF, // GS_NOCOLMASK_RGBA
+		0xF  // GS_NOCOLMASK_GBUFFER_OVERLAY
+	} 
+};
+
 
 bool QueryIsFullscreen();
 

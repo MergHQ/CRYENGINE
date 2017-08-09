@@ -620,9 +620,7 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 	// Blend state
 	{
 		const bool bBlendEnable = (renderState & GS_BLEND_MASK) != 0;
-
-		for (size_t i = 0; i < CD3D9Renderer::RT_STACK_WIDTH; ++i)
-			blendDesc.RenderTarget[i].BlendEnable = bBlendEnable;
+		blendDesc.RenderTarget[0].BlendEnable = bBlendEnable;
 
 		if (bBlendEnable)
 		{
@@ -677,26 +675,30 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 			blendDesc.RenderTarget[0].DestBlend      = DstBlendFactors[(renderState & GS_BLDST_MASK) >> GS_BLDST_SHIFT].BlendColor;
 			blendDesc.RenderTarget[0].DestBlendAlpha = DstBlendFactors[(renderState & GS_BLDST_MASK) >> GS_BLDST_SHIFT].BlendAlpha;
 
-			for (size_t i = 0; i < CD3D9Renderer::RT_STACK_WIDTH; ++i)
-			{
-				blendDesc.RenderTarget[i].BlendOp      = BlendOp[(renderState & GS_BLEND_OP_MASK) >> GS_BLEND_OP_SHIFT];
-				blendDesc.RenderTarget[i].BlendOpAlpha = BlendOp[(renderState & GS_BLALPHA_MASK ) >> GS_BLALPHA_SHIFT ];
-			}
-
+			blendDesc.RenderTarget[0].BlendOp      = BlendOp[(renderState & GS_BLEND_OP_MASK) >> GS_BLEND_OP_SHIFT];
+			blendDesc.RenderTarget[0].BlendOpAlpha = BlendOp[(renderState & GS_BLALPHA_MASK ) >> GS_BLALPHA_SHIFT ];
+			
 			if ((renderState & GS_BLALPHA_MASK) == GS_BLALPHA_MIN)
 			{
 				blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
 				blendDesc.RenderTarget[0].SrcBlendAlpha  = D3D11_BLEND_ONE;
 			}
 		}
-	}
 
-	// Color mask
-	{
-		uint32 mask = 0xfffffff0 | ((renderState & GS_COLMASK_MASK) >> GS_COLMASK_SHIFT);
-		mask = (~mask) & 0xf;
-		for (uint32 i = 0; i < CD3D9Renderer::RT_STACK_WIDTH; ++i)
+		// Copy blend state to support independent blend
+		for (size_t i = 0; i < CD3D9Renderer::RT_STACK_WIDTH; ++i)
+			blendDesc.RenderTarget[i] = blendDesc.RenderTarget[0];
+
+		blendDesc.IndependentBlendEnable = true;
+	}
+	
+	{ 		
+		for (uint32 i = 0; i < 4; ++i)
+		{
+			uint32 mask = 0xfffffff0 | (ColorMasks[(renderState & GS_COLMASK_MASK) >> GS_COLMASK_SHIFT][i]);
+			mask = (~mask) & 0xf;
 			blendDesc.RenderTarget[i].RenderTargetWriteMask = mask;
+		}	
 	}
 
 	// Depth-Stencil

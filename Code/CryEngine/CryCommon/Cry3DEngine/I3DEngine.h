@@ -608,7 +608,7 @@ struct STerrainInfo
 	AUTO_STRUCT_INFO;
 };
 
-#define TERRAIN_CHUNK_VERSION                                28
+#define TERRAIN_CHUNK_VERSION                                29
 #define VISAREAMANAGER_CHUNK_VERSION                         6
 
 #define SERIALIZATION_FLAG_BIG_ENDIAN                        1
@@ -657,8 +657,8 @@ struct IEditorHeightmap
 {
 	// <interfuscator:shuffle>
 	virtual ~IEditorHeightmap(){}
-	virtual uint32 GetLayerIdAtPosition(const int x, const int y) const = 0;
-	virtual uint32 GetSurfaceTypeIdAtPosition(const int x, const int y) const = 0;
+	virtual uint32 GetDominatingLayerIdAtPosition(const int x, const int y) const = 0;
+	virtual uint32 GetDominatingSurfaceTypeIdAtPosition(const int x, const int y) const = 0;
 	virtual bool   GetHoleAtPosition(const int x, const int y) const = 0;
 	virtual ColorB GetColorAtPosition(const float x, const float y, ColorB* colors = nullptr, const int colorsNum = 0, const float xStep = 0) = 0;
 	virtual float  GetElevationAtPosition(const float x, const float y) = 0;
@@ -688,6 +688,70 @@ struct SHotUpdateInfo
 	AUTO_STRUCT_INFO;
 };
 
+//! This structure is used by the editor for storing and editing of terrain surface types
+struct SSurfaceTypeItem
+{
+	//! Maximum number surface types stored in one heightmap uint item
+	enum { kMaxSurfaceTypesNum = 3 };
+
+	//! Default constructor
+	SSurfaceTypeItem()
+	{
+	}
+
+	//! Construct from single surface type
+	SSurfaceTypeItem(uint32 surfType)
+	{
+		*this = surfType;
+	}
+
+	//! Return surface type with highest weight
+	uint32 GetDominatingSurfaceType() const
+	{
+		return ty[0];
+	}
+
+	//! Mark as hole
+	void SetHole(bool enabled)
+	{
+		hole = enabled ? 255 : 0;
+	}
+
+	//! Return true if terrain has hole here
+	bool GetHole() const
+	{
+		return hole == 255;
+	}
+
+	//! Check if specified surface type is used
+	bool HasType(uint32 type) const
+	{
+		return (ty[0] == type) || (ty[1] == type) || (ty[2] == type);
+	}
+
+	//! Assign single specified surface type (clean previous state)
+	const SSurfaceTypeItem& operator = (uint32 nSurfType)
+	{
+		ZeroStruct(*this);
+		we[0] = 255;
+		ty[0] = nSurfType;
+		return *this;
+	}
+
+	//! Surface type id's
+	uint8 ty[3] = { 0 };
+
+	//! Is it hole
+	uint8 hole = 0;
+
+	//! Surface type weights
+	uint8 we[3] = { 0 };
+
+	//! Not used for now
+	uint8 dummy = 0;
+};
+
+//! Interface to terrain engine
 struct ITerrain
 {
 	struct SExportInfo
@@ -760,7 +824,7 @@ struct ITerrain
 	//! x1, y1, nSizeX, nSizeY are in terrain units
 	//! pTerrainBlock points to a square 2D array with dimensions GetTerrainSize()
 	//! by default update only elevation.
-	virtual void SetTerrainElevation(int x1, int y1, int nSizeX, int nSizeY, float* pTerrainBlock, uint8* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY, uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY, int nSID = DEFAULT_SID) = 0;
+	virtual void SetTerrainElevation(int x1, int y1, int nSizeX, int nSizeY, float* pTerrainBlock, SSurfaceTypeItem* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY, uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY, int nSID = DEFAULT_SID) = 0;
 
 	//! Checks if it is possible to paint on the terrain with a given surface type ID.
 	//! \note Should be called by the editor to avoid overflowing the sector surface type palettes.

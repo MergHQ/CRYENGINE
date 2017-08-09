@@ -895,7 +895,7 @@ if(PROJECT_BUILD)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE DISABLE_LEGACY_GAME_DLL=1)
 endif()
 
-target_link_libraries( ${THIS_PROJECT} PRIVATE md5)
+target_link_libraries(${THIS_PROJECT} PRIVATE md5)
 if (WIN32 OR WIN64)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Shell32)
 endif()
@@ -903,7 +903,10 @@ if(DURANGO)
 	target_link_libraries(${THIS_PROJECT} PRIVATE jsmn)
 endif()
 
-target_include_directories(CryAction INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/CryAction>")
+target_include_directories(${THIS_PROJECT} INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/CryAction>")
+
+# Remove once we've switched to entity components
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module")
 
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.hpp")

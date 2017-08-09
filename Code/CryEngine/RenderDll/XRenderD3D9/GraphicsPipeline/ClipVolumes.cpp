@@ -355,7 +355,7 @@ void CClipVolumesStage::Prepare(CRenderView* pRenderView)
 
 				CRenderPrimitive& primBlend = m_blendPrimitives[i];
 				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, CVrProjectionManager::Instance()->GetRTFlags());
-				primBlend.SetRenderState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_R | GS_NOCOLMASK_B | GS_NOCOLMASK_A);
+				primBlend.SetRenderState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_RBA);
 				primBlend.SetTexture(3, CTexture::s_ptexZTarget);
 				primBlend.SetCullMode(eCULL_Front);
 				primBlend.SetStencilState(StencilStateTest, stencilTestRef, StencilReadWriteMask, StencilReadWriteMask);
@@ -420,7 +420,7 @@ void CClipVolumesStage::Execute()
 		m_stencilResolvePass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 		m_stencilResolvePass.SetTechnique(CShaderMan::s_shDeferredShading, techResolveStencil, 0);
 		m_stencilResolvePass.SetRenderTarget(0, m_pBlendValuesRT);
-		m_stencilResolvePass.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_G | GS_NOCOLMASK_B | GS_NOCOLMASK_A);
+		m_stencilResolvePass.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_GBA);
 		m_stencilResolvePass.SetTexture(4, m_pDepthTarget, EDefaultResourceViews::StencilOnly);
 		m_stencilResolvePass.BeginConstantUpdate();
 		m_stencilResolvePass.Execute();

@@ -1046,15 +1046,28 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 #define GS_STENCIL                 0x00000400
 #define GS_ALPHATEST               0x00000800
 
-#define GS_NOCOLMASK_R             0x00001000
-#define GS_NOCOLMASK_G             0x00002000
-#define GS_NOCOLMASK_B             0x00004000
-#define GS_NOCOLMASK_A             0x00008000
-#define GS_COLMASK_RGB             (GS_NOCOLMASK_A)
-#define GS_COLMASK_A               (GS_NOCOLMASK_R | GS_NOCOLMASK_G | GS_NOCOLMASK_B)
-#define GS_COLMASK_NONE            (GS_NOCOLMASK_R | GS_NOCOLMASK_G | GS_NOCOLMASK_B | GS_NOCOLMASK_A)
-#define GS_COLMASK_MASK            GS_COLMASK_NONE
 #define GS_COLMASK_SHIFT           12
+#define GS_COLMASK_MASK            0x0000F000
+
+// Color Exclusion Mask
+// Note: Do not concatenate!
+enum ColorMask
+{
+	GS_NOCOLMASK_NONE				= 0,
+	GS_NOCOLMASK_R					= 0x00001000,
+	GS_NOCOLMASK_G					= 0x00002000,
+	GS_NOCOLMASK_B					= 0x00003000,
+	GS_NOCOLMASK_A					= 0x00004000,
+	GS_NOCOLMASK_GBA				= 0x00005000,
+	GS_NOCOLMASK_RBA				= 0x00006000,
+	GS_NOCOLMASK_RGA				= 0x00007000,
+	GS_NOCOLMASK_RGB				= 0x00008000,
+	GS_NOCOLMASK_RGBA				= 0x00009000,
+	GS_NOCOLMASK_GBUFFER_OVERLAY	= 0x0000A000,
+
+	Count							= 0x0000B000,
+};
+static_assert(ColorMask::Count <= GS_COLMASK_MASK, "Exceeded count limit of possible color masks (16)");
 
 #define GS_WIREFRAME               0x00010000
 #define GS_POINTRENDERING          0x00020000

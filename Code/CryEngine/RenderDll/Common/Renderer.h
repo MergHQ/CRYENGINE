@@ -61,6 +61,9 @@ static const char* s_pszAAModes[eAT_AAMODES_COUNT] =
 	"TSAA"
 };
 
+extern uint32 ColorMasks[(ColorMask::Count >> GS_COLMASK_SHIFT)][4];
+extern std::array<uint32, (ColorMask::Count >> GS_COLMASK_SHIFT)> AvailableColorMasks;
+
 struct ShadowMapFrustum;
 struct IStatObj;
 struct SShaderPass;

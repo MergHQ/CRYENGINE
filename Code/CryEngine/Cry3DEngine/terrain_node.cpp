@@ -577,9 +577,9 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 
 		while(dst < dstEnd)
 		{
-			dst->r = lookupTable[src->r >> 1];
+			dst->r = lookupTable[src->b >> 1];
 			dst->g = lookupTable[src->g >> 1];
-			dst->b = lookupTable[src->b >> 1];
+			dst->b = lookupTable[src->r >> 1];
 			dst->a = 255;
 			++dst;
 			++src;
@@ -763,7 +763,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 	}
 
 	// pre-cache surface types
-	for (int s = 0; s < SRangeInfo::e_hole; s++)
+	for (int s = 0; s < Cry3DEngineBase::GetTerrain()->m_SSurfaceType[m_nSID].Count(); s++)
 	{
 		SSurfaceType* pSurf = &Cry3DEngineBase::GetTerrain()->m_SSurfaceType[m_nSID][s];
 
@@ -1193,11 +1193,21 @@ void CTerrainNode::UpdateDetailLayersInfo(bool bRecursive)
 		{
 			for (float Y = m_nOriginY; Y <= m_nOriginY + CTerrain::GetSectorSize(); Y += CTerrain::GetHeightMapUnitSize())
 			{
-				uint8 ucSurfaceTypeID = GetTerrain()->GetSurfaceTypeID(X, Y, m_nSID);
-				if (SRangeInfo::e_hole == ucSurfaceTypeID)
+				const SSurfaceTypeItem& st = GetTerrain()->GetSurfaceTypeItem(X, Y, m_nSID);
+
+				if (st.GetHole())
+				{
 					m_bHasHoles = 1;
-				CRY_ASSERT(ucSurfaceTypeID < SRangeInfo::e_max_surface_types);
-				arrSurfaceTypesInSector[ucSurfaceTypeID]++;
+				}
+
+				for (int s = 0; s < SSurfaceTypeItem::kMaxSurfaceTypesNum; s++)
+				{
+					if (st.we[s])
+					{
+						CRY_ASSERT(st.ty[s] < SRangeInfo::e_max_surface_types);
+						arrSurfaceTypesInSector[st.ty[s]]++;
+					}
+				}
 			}
 		}
 

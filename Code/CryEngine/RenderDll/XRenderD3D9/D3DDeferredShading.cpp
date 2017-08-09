@@ -698,7 +698,7 @@ bool CDeferredShading::DeferredDecalPass(const SDeferredDecal& rDecal, uint32 in
 	int nStates = m_nRenderState;
 
 	nStates &= ~GS_BLEND_MASK;
-	nStates &= ~GS_COLMASK_NONE;
+	nStates &= ~GS_NOCOLMASK_RGBA;
 	nStates |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
 
 	ITexture* pNormalMap = TextureHelpers::LookupTexDefault(EFTT_NORMALS);
@@ -735,7 +735,7 @@ bool CDeferredShading::DeferredDecalPass(const SDeferredDecal& rDecal, uint32 in
 		rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
 
 	nStates &= ~(GS_NODEPTHTEST | GS_DEPTHFUNC_MASK);
-	nStates |= GS_DEPTHFUNC_LEQUAL | GS_COLMASK_RGB;
+	nStates |= GS_DEPTHFUNC_LEQUAL | GS_NOCOLMASK_A;
 
 	rd->m_RP.m_PersFlags2 |= RBPF2_READMASK_RESERVED_STENCIL_BIT;
 
@@ -761,7 +761,7 @@ bool CDeferredShading::DeferredDecalPass(const SDeferredDecal& rDecal, uint32 in
 
 	if (CRenderer::CV_r_deferredDecalsDebug == 2)
 	{
-		nStates &= ~GS_COLMASK_NONE;
+		nStates &= ~GS_NOCOLMASK_RGBA;
 		nStates &= ~GS_NODEPTHTEST;
 		//newState |= GS_NODEPTHTEST;
 		nStates |= GS_DEPTHWRITE;

@@ -94,7 +94,7 @@ bool CSunShafts::IsVisible()
 			PostProcessUtils().ShBeginPass(CShaderMan::s_shPostSunShafts, pTechName, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
 
 			gcpRendD3D->SetCullMode(R_CULL_NONE);
-			gcpRendD3D->FX_SetState(GS_DEPTHFUNC_LEQUAL | GS_COLMASK_NONE);
+			gcpRendD3D->FX_SetState(GS_DEPTHFUNC_LEQUAL | GS_NOCOLMASK_RGBA);
 
 			pOcclQuery->BeginQuery();
 			SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexBackBuffer->GetWidth(), CTexture::s_ptexBackBuffer->GetHeight(), 1.0f);

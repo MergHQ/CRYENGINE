@@ -149,7 +149,7 @@ void CTerrain::RemoveAllStaticObjects(int nSID)
 
 void CTerrain::BuildErrorsTableForArea(float* pLodErrors, int nMaxLods,
                                        int X1, int Y1, int X2, int Y2, float* pTerrainBlock,
-                                       uint8* pSurfaceData, int nSurfOffsetX, int nSurfOffsetY,
+                                       SSurfaceTypeItem* pSurfaceData, int nSurfOffsetX, int nSurfOffsetY,
                                        int nSurfSizeX, int nSurfSizeY, bool& bHasHoleEdges)
 {
 	memset(pLodErrors, 0, nMaxLods * sizeof(pLodErrors[0]));
@@ -176,7 +176,7 @@ void CTerrain::BuildErrorsTableForArea(float* pLodErrors, int nMaxLods,
 				{
 					int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
 					assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-					if (pSurfaceData[nSurfCell] == SRangeInfo::e_hole)
+					if (pSurfaceData[nSurfCell].GetDominatingSurfaceType() == SRangeInfo::e_hole)
 						bSectorHasHoles = true;
 					else
 						bSectorHasMesh = true;
@@ -210,7 +210,8 @@ void CTerrain::BuildErrorsTableForArea(float* pLodErrors, int nMaxLods,
 		{
 			for (int Y = y1; Y < y2; Y += nLodUnitSize)
 			{
-				uint8 nLodedSurfType = 0;
+				uint32 nLodedSurfType = 0;
+
 				{
 					int nSurfX = (X - nSurfOffsetX);
 					int nSurfY = (Y - nSurfOffsetY);
@@ -218,7 +219,7 @@ void CTerrain::BuildErrorsTableForArea(float* pLodErrors, int nMaxLods,
 					{
 						int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
 						assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-						nLodedSurfType = pSurfaceData[nSurfCell];
+						nLodedSurfType = pSurfaceData[nSurfCell].GetDominatingSurfaceType();
 					}
 				}
 
@@ -250,7 +251,7 @@ void CTerrain::BuildErrorsTableForArea(float* pLodErrors, int nMaxLods,
 							{
 								int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
 								assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-								uint8 nRealSurfType = pSurfaceData[nSurfCell];
+								uint32 nRealSurfType = pSurfaceData[nSurfCell].GetDominatingSurfaceType();
 
 								// rise error if surface types will pop
 								if (nRealSurfType != nLodedSurfType)
@@ -294,7 +295,7 @@ void CTerrain::HighlightTerrain(int x1, int y1, int x2, int y2, int nSID)
 }
 
 void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float* pTerrainBlock,
-	unsigned char* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY,
+	SSurfaceTypeItem* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY,
 	uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY, int nSID)
 {
 #ifndef _RELEASE
@@ -461,15 +462,6 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 
 			SRangeInfo& ri = pTerrainNode->m_rangeInfo;
 
-			// TODO: add proper fp16/fp32 support
-			/*
-					ri.fOffset = fMin = CryConvertHalfToFloat(CryConvertFloatToHalf(fMin));
-					ri.fRange = powf(2.0f, ceilf(logf((fMax - fMin) / 65535.f)/logf(2.0f)));
-			 */
-			 /*		ri.fOffset = fMin;
-					 ri.fRange	 = (fMax - fMin) / 65535.f;
-				*/
-
 			int nStep = 1 << nGeomMML;
 			int nMaxStep = 1 << m_nUnitsToSectorBitShift;
 
@@ -477,9 +469,11 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 			{
 				delete[] ri.pHMData;
 				ri.nSize = nMaxStep / nStep + 1;
-				ri.pHMData = new uint16[ri.nSize * ri.nSize];
+				ri.pHMData = new SHeightMapItem[ri.nSize * ri.nSize];
 				ri.UpdateBitShift(m_nUnitsToSectorBitShift);
 			}
+
+			assert(ri.pHMData);
 
 			if (rawHeightmap.size() < (size_t)ri.nSize * ri.nSize)
 			{
@@ -517,22 +511,9 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 			}
 
 			ri.fOffset = fMin;
-			ri.fRange = (fMax - fMin) / float(0xFFF0);
+			ri.fRange = (fMax - fMin) / float(0x0FFF);
 
-			const unsigned mask12bit = (1 << 12) - 1;
-			const int inv5cm = 20;
-
-			int iOffset = int(fMin * inv5cm);
-			int iRange = int((fMax - fMin) * inv5cm);
-			int iStep = iRange ? (iRange + mask12bit - 1) / mask12bit : 1;
-
-			iRange /= iStep;
-
-			ri.iOffset = iOffset;
-			ri.iRange = iRange;
-			ri.iStep = iStep;
-
-			bool bHMDataIsModified = false;
+			pTerrainNode->m_bHMDataIsModified = false;
 
 			for (int x = x1; x <= x2; x += nStep)
 			{
@@ -542,32 +523,63 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 					int ylocal = (y - y1) / nStep;
 					int nCellLocal = xlocal * ri.nSize + ylocal;
 
-					unsigned hdec = int((rawHeightmap[nCellLocal] - fMin) * inv5cm) / iStep;
-
-					uint16 usSurfType = ri.GetSurfaceTypeByIndex(nCellLocal); // BAD CODE!!! we deleted this info and new(ed) it => invalid data here
+					uint32 height = ri.fRange ? int((rawHeightmap[nCellLocal] - fMin) / ri.fRange) : 0;
 
 					assert(x >= x0 + X1 && y >= y0 + Y1 && x <= x0 + X1 + nSurfSizeX && y <= y0 + Y1 + nSurfSizeY && pSurfaceData);
 
 					int nSurfX = (x - nSurfOrgX);
 					int nSurfY = (y - nSurfOrgY);
 
-					if (nSurfX >= 0 && nSurfY >= 0 && nSurfX < nSurfSizeX && nSurfY < nSurfSizeY && pSurfaceData)
+					SSurfaceTypeLocal dst;
+
+					assert(nSurfX >= 0 && nSurfY >= 0 && pSurfaceData);
+
+					nSurfX = min(nSurfX, nSurfSizeX - 1);
+					nSurfY = min(nSurfY, nSurfSizeY - 1);
+
 					{
 						int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
 						assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-						usSurfType = ri.GetLocalSurfaceTypeID(pSurfaceData[nSurfCell]);
+
+						SSurfaceTypeItem & src = pSurfaceData[nSurfCell];
+
+						// read all 3 types, remap to local
+						for (int i = 0; i < SSurfaceTypeLocal::kMaxSurfaceTypesNum; i++)
+						{
+							dst.we[i] = src.we[i] / 16;
+							if (src.we[i])
+							{
+								dst.ty[i] = (byte)ri.GetLocalSurfaceTypeID(src.ty[i]);
+							}
+						}
+
+						dst.we[0] = SATURATEB(15 - dst.we[1] - dst.we[2]);
 					}
 
-					uint16 nNewValue = (usSurfType& SRangeInfo::e_index_hole) | (hdec << 4);
+					SHeightMapItem nNewValue;
+					nNewValue.height = height;
+
+					// pack SSurfTypeItem into uint32
+					uint32 surface = 0;
+					SSurfaceTypeLocal::EncodeIntoUint32(dst, surface);
+					nNewValue.surface = surface;
 
 					if (nNewValue != ri.pHMData[nCellLocal])
 					{
 						ri.pHMData[nCellLocal] = nNewValue;
 
-						bHMDataIsModified = true;
+						pTerrainNode->m_bHMDataIsModified = true;
 					}
 				}
 			}
+		}
+	}
+	
+	for (int rangeX = rangeX1; rangeX < rangeX2; rangeX++)
+	{
+		for (int rangeY = rangeY1; rangeY < rangeY2; rangeY++)
+		{
+			CTerrainNode* pTerrainNode = sectorLayer[rangeX][rangeY];
 
 			// re-init surface types info and update vert buffers in entire brunch
 			if (GetParentNode(nSID))
@@ -604,7 +616,7 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 					// request elevation texture update
 					if (pNode->m_nNodeTexSet.nSlot0 != 0xffff && pNode->m_nNodeTexSet.nSlot0 < m_pTerrain->m_texCache[2].GetPoolSize())
 					{
-						if(bHMDataIsModified)
+						if(pTerrainNode->m_bHMDataIsModified)
 							pNode->m_eElevTexEditingState = eTES_SectorIsModified_AtlasIsDirty;
 					}
 

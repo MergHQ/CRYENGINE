@@ -316,7 +316,7 @@ void CD3D9Renderer::FX_StencilCullPass(int nStencilID, int nNumVers, int nNumInd
 	// debug states
 	if (CV_r_DebugLightVolumes /*&& m_RP.m_TI.m_PersFlags2 & d3dRBPF2_ENABLESTENCILPB*/)
 	{
-		newState &= ~GS_COLMASK_NONE;
+		newState &= ~GS_NOCOLMASK_RGBA;
 		newState &= ~GS_NODEPTHTEST;
 		//	newState |= GS_NODEPTHTEST;
 		newState |= GS_DEPTHWRITE;
@@ -331,12 +331,12 @@ void CD3D9Renderer::FX_StencilCullPass(int nStencilID, int nNumVers, int nNumInd
 		//	// Disable color writes
 		//	if (CV_r_ShadowsStencilPrePass == 2)
 		//	{
-		//	  newState &= ~GS_COLMASK_NONE;
+		//	  newState &= ~GS_NOCOLMASK_RGBA;
 		//	  newState |= GS_COLMASK_A;
 		//	}
 		//	else
 		{
-			newState |= GS_COLMASK_NONE;
+			newState |= GS_NOCOLMASK_RGBA;
 		}
 
 		//setup depth test and enable stencil

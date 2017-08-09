@@ -45,11 +45,13 @@ public:
 	float                GetZfromUnits(uint32 nX_units, uint32 nY_units, int nSID) const;
 	void                 SetZfromUnits(uint32 nX_units, uint32 nY_units, float fHeight, int nSID);
 	float                GetZMaxFromUnits(uint32 nX0_units, uint32 nY0_units, uint32 nX1_units, uint32 nY1_units, int nSID) const;
-	uint8                GetSurfTypefromUnits(uint32 nX_units, uint32 nY_units, int nSID) const;
+	uint8                GetSurfTypeFromUnits(uint32 nX_units, uint32 nY_units, int nSID) const;
+	SSurfaceTypeItem     GetSurfTypeItemfromUnits(uint32 nX_units, uint32 nY_units, int nSID) const;
 	static float GetHeightFromUnits_Callback(int ix, int iy);
 	static unsigned char GetSurfaceTypeFromUnits_Callback(int ix, int iy);
 
-	uint8 GetSurfaceTypeID(float x, float y, int nSID) const;
+	uint8                GetSurfaceTypeID(float x, float y, int nSID) const;
+	SSurfaceTypeItem     GetSurfaceTypeItem(float x, float y, int nSID) const;
 	float                GetZApr(float x1, float y1, int nSID) const;
 	float                GetZMax(float x0, float y0, float x1, float y1, int nSID) const;
 	bool GetHole(float x, float y, int nSID) const;
@@ -511,7 +513,7 @@ public:
 	void SetTerrainSectorTexture(int nTexSectorX, int nTexSectorY, unsigned int textureId, bool bMergeNotAllowed, int nSID = GetDefSID());
 	void SetDetailLayerProperties(int nId, float fScaleX, float fScaleY, uint8 ucProjAxis, const char* szSurfName, const PodArray<int>& lstnVegetationGroups, IMaterial* pMat, int nSID);
 	bool IsOceanVisible() { return m_bOceanIsVisible != 0; }
-	void SetTerrainElevation(int x1, int y1, int nSizeX, int nSizeY, float* pTerrainBlock, unsigned char* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY, uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY, int nSID);
+	void SetTerrainElevation(int x1, int y1, int nSizeX, int nSizeY, float* pTerrainBlock, SSurfaceTypeItem* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY, uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY, int nSID);
 	void HighlightTerrain(int x1, int y1, int x2, int y2, int nSID = GetDefSID());
 	bool CanPaintSurfaceType(int x, int y, int r, uint16 usGlobalSurfaceType);
 	void GetVisibleSectorsInAABB(PodArray<struct CTerrainNode*>& lstBoxSectors, const AABB& boxBox);
@@ -522,7 +524,7 @@ public:
 	void IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult, int nSID);
 	void MarkAllSectorsAsUncompiled(int nSID);
 	void BuildErrorsTableForArea(float* pLodErrors, int nMaxLods, int X1, int Y1, int X2, int Y2, float* pTerrainBlock,
-	                             uint8* pSurfaceData, int nSurfOffsetX, int nSurfOffsetY, int nSurfSizeX, int nSurfSizeY, bool& bHasHoleEdges);
+		SSurfaceTypeItem* pSurfaceData, int nSurfOffsetX, int nSurfOffsetY, int nSurfSizeX, int nSurfSizeY, bool& bHasHoleEdges);
 
 	void GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& crstAABB, int nSID);
 	void UpdateSectorMeshes(const SRenderingPassInfo& passInfo);
