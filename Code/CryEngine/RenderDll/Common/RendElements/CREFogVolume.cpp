@@ -210,14 +210,14 @@ bool CREFogVolume::mfDraw(CShader* ef, SShaderPass* sfm)
 	if (m_viewerInsideVolume)
 	{
 		rd->SetCullMode(R_CULL_FRONT);
-		int nState = GS_COLMASK_RGB | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
+		int nState = GS_NOCOLMASK_A | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
 		nState |= m_nearCutoff ? 0 : GS_NODEPTHTEST;
 		rd->FX_SetState(nState);
 	}
 	else
 	{
 		rd->SetCullMode(R_CULL_BACK);
-		rd->FX_SetState(GS_COLMASK_RGB | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
+		rd->FX_SetState(GS_NOCOLMASK_A | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 	}
 
 	// set vs constants

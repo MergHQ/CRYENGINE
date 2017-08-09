@@ -896,7 +896,7 @@ void CD3D9Renderer::FX_ProcessHalfResParticlesRenderList(CRenderView* pRenderVie
 					CTexture* pZTarget       = CTexture::s_ptexZTarget;
 					CTexture* pZTargetScaled = CV_r_ParticlesHalfResAmount > 0 ? CTexture::s_ptexZTargetScaled2 : CTexture::s_ptexZTargetScaled;
 
-					uint32 nStates = GS_NODEPTHTEST | GS_COLMASK_RGB;
+					uint32 nStates = GS_NODEPTHTEST | GS_NOCOLMASK_A;
 					if (bAlphaBased)
 						nStates |= GS_BLSRC_ONE | GS_BLDST_SRCALPHA;
 					else
@@ -1068,7 +1068,7 @@ void CD3D9Renderer::FX_MSAASampleFreqStencilSetup(const uint32 nMSAAFlags, const
 		static const int32 nStState = STENC_FUNC(FSS_STENCFUNC_ALWAYS) | STENCOP_FAIL(FSS_STENCOP_REPLACE) | STENCOP_ZFAIL(FSS_STENCOP_REPLACE) | STENCOP_PASS(FSS_STENCOP_REPLACE);
 		m_RP.m_PersFlags2 |= RBPF2_READMASK_RESERVED_STENCIL_BIT;
 		FX_SetStencilState(nStState, 0, 0xFF, BIT_STENCIL_RESERVED, true);
-		FX_SetState(GS_STENCIL | GS_NODEPTHTEST | GS_COLMASK_NONE);
+		FX_SetState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_RGBA);
 		GetUtils().DrawQuadFS(CShaderMan::s_shDeferredShading, false, nWidth, nHeight);
 		GetUtils().ShEndPass();
 		m_RP.m_PersFlags2 &= ~RBPF2_READMASK_RESERVED_STENCIL_BIT;
@@ -1094,7 +1094,7 @@ void CD3D9Renderer::FX_MSAASampleFreqStencilSetup(const uint32 nMSAAFlags, const
 
 		static const int32 nStState = STENC_FUNC(FSS_STENCFUNC_ALWAYS) | STENCOP_FAIL(FSS_STENCOP_REPLACE) | STENCOP_ZFAIL(FSS_STENCOP_REPLACE) | STENCOP_PASS(FSS_STENCOP_REPLACE);
 		FX_SetStencilState(nStState, nStRef, 0xFF, nStWriteMask);
-		FX_SetState(GS_STENCIL | GS_NODEPTHTEST | GS_COLMASK_NONE);
+		FX_SetState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_RGBA);
 
 		CTexture::s_ptexBackBuffer->Apply(0, EDefaultSamplerStates::PointClamp);
 		GetUtils().DrawQuadFS(CShaderMan::s_shDeferredShading, false, nWidth, nHeight);

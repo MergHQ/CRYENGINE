@@ -615,7 +615,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 			backFacePrim.SetPrimitiveType(CRenderPrimitive::ePrim_UnitBox);
 
 			backFacePrim.SetCullMode(eCULL_Front);
-			backFacePrim.SetRenderState(GS_STENCIL | GS_COLMASK_NONE | gsDepthFunc);
+			backFacePrim.SetRenderState(GS_STENCIL | GS_NOCOLMASK_RGBA | gsDepthFunc);
 
 			backFacePrim.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, rd->GetGraphicsPipeline().GetMainViewConstantBuffer(), EShaderStage_Vertex);
 		}
@@ -653,7 +653,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 			frontFacePrim.SetPrimitiveType(CRenderPrimitive::ePrim_UnitBox);
 
 			frontFacePrim.SetCullMode(eCULL_Back);
-			frontFacePrim.SetRenderState(GS_STENCIL | GS_COLMASK_NONE | gsDepthFunc);
+			frontFacePrim.SetRenderState(GS_STENCIL | GS_NOCOLMASK_RGBA | gsDepthFunc);
 
 			frontFacePrim.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, rd->GetGraphicsPipeline().GetMainViewConstantBuffer(), EShaderStage_Vertex);
 		}
@@ -1491,7 +1491,7 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 				{
 					prim.SetFlags(CRenderPrimitive::eFlags_None);
 					prim.SetCullMode(eCULL_None);
-					prim.SetRenderState(GS_NODEPTHTEST | GS_NOCOLMASK_R | GS_NOCOLMASK_G | GS_NOCOLMASK_A);
+					prim.SetRenderState(GS_NODEPTHTEST | GS_NOCOLMASK_RGA);
 
 					prim.SetCustomVertexStream(hVertexStream, pCausticQuadMesh->_GetVertexFormat(), pCausticQuadMesh->GetStreamStride(VSF_GENERAL));
 					prim.SetCustomIndexStream(hIndexStream, (sizeof(vtx_idx) == 2 ? RenderIndexType::Index16 : RenderIndexType::Index32));

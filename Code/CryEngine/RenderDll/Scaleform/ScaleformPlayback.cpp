@@ -428,17 +428,17 @@ void CScaleformPlayback::ApplyStencilMask(SSF_GlobalDrawParams::ESFMaskOp maskOp
 	switch (maskOp)
 	{
 	case SSF_GlobalDrawParams::BeginSubmitMask_Clear:
-		renderMaskedStates = GS_STENCIL | GS_COLMASK_NONE;
+		renderMaskedStates = GS_STENCIL | GS_NOCOLMASK_RGBA;
 		stencilFunc = FSS_STENCFUNC_ALWAYS;
 		stencilPass = FSS_STENCOP_REPLACE;
 		break;
 	case SSF_GlobalDrawParams::BeginSubmitMask_Inc:
-		renderMaskedStates = GS_STENCIL | GS_COLMASK_NONE;
+		renderMaskedStates = GS_STENCIL | GS_NOCOLMASK_RGBA;
 		stencilFunc = FSS_STENCFUNC_EQUAL;
 		stencilPass = FSS_STENCOP_INCR;
 		break;
 	case SSF_GlobalDrawParams::BeginSubmitMask_Dec:
-		renderMaskedStates = GS_STENCIL | GS_COLMASK_NONE;
+		renderMaskedStates = GS_STENCIL | GS_NOCOLMASK_RGBA;
 		stencilFunc = FSS_STENCFUNC_EQUAL;
 		stencilPass = FSS_STENCOP_DECR;
 		break;

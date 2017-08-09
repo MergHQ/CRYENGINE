@@ -1028,7 +1028,7 @@ void CVolumetricFogStage::RenderDownscaledShadowmap(CRenderView* pRenderView)
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, techName, rtMask);
 				pass.SetDepthTarget(target);
-				pass.SetState(GS_COLMASK_NONE | GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
+				pass.SetState(GS_NOCOLMASK_RGBA | GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
 
 				pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
 			}
@@ -1059,7 +1059,7 @@ void CVolumetricFogStage::RenderDownscaledShadowmap(CRenderView* pRenderView)
 				CTexture* target = m_pDownscaledShadow[i];
 
 				pass.SetDepthTarget(target);
-				pass.SetState(GS_COLMASK_NONE | GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
+				pass.SetState(GS_NOCOLMASK_RGBA | GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
 				pass.SetTexture(0, source);
 				pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
 			}

@@ -645,10 +645,10 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 	if (!pSFShader)
 		return;
 
-	if (params.renderMaskedStates & GS_COLMASK_NONE)
+	if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 	{
 		rRP.m_PersFlags2 |= RBPF2_DISABLECOLORWRITES;
-		rRP.m_StateOr |= GS_COLMASK_NONE;
+		rRP.m_StateOr |= GS_NOCOLMASK_RGBA;
 	}
 
 	{
@@ -664,7 +664,7 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 		if (!pSFShader->FXBeginPass(0))
 		{
 			rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr &= ~GS_COLMASK_NONE;
+			rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 			pSFShader->FXEndPass();
 			pSFShader->FXEnd();
 			return;
@@ -699,7 +699,7 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 		if (!SF_SetVertexDeclaration(params.vtxData->VertexFormat))
 		{
 			rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr &= ~GS_COLMASK_NONE;
+			rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 			pSFShader->FXEndPass();
 			pSFShader->FXEnd();
 			return;
@@ -740,10 +740,10 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 		pSFShader->FXEnd();
 	}
 
-	if (params.renderMaskedStates & GS_COLMASK_NONE)
+	if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 	{
 		rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-		rRP.m_StateOr &= ~GS_COLMASK_NONE;
+		rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 	}
 
 }
@@ -813,10 +813,10 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 	{
 		//FRAME_PROFILER("SF_DLS::FxBegin", gEnv->pSystem, PROFILE_SYSTEM);
 
-		if (params.renderMaskedStates & GS_COLMASK_NONE)
+		if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 		{
 			rRP.m_PersFlags2 |= RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr |= GS_COLMASK_NONE;
+			rRP.m_StateOr |= GS_NOCOLMASK_RGBA;
 		}
 		uint32 numPasses(0);
 		pSFShader->FXBegin(&numPasses, /*FEF_DONTSETTEXTURES |*/ FEF_DONTSETSTATES);
@@ -855,7 +855,7 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 		if (!SF_SetVertexDeclaration(params.vtxData->VertexFormat))
 		{
 			rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr &= ~GS_COLMASK_NONE;
+			rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 			pSFShader->FXEndPass();
 			pSFShader->FXEnd();
 			return;
@@ -890,10 +890,10 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 		pSFShader->FXEnd();
 	}
 
-	if (params.renderMaskedStates & GS_COLMASK_NONE)
+	if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 	{
 		rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-		rRP.m_StateOr &= ~GS_COLMASK_NONE;
+		rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 	}
 }
 
@@ -970,10 +970,10 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 	{
 		//FRAME_PROFILER("SF_DG::FxBegin", gEnv->pSystem, PROFILE_SYSTEM);
 
-		if (params.renderMaskedStates & GS_COLMASK_NONE)
+		if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 		{
 			rRP.m_PersFlags2 |= RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr |= GS_COLMASK_NONE;
+			rRP.m_StateOr |= GS_NOCOLMASK_RGBA;
 		}
 
 		uint32 numPasses(0);
@@ -986,7 +986,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		if (!pSFShader->FXBeginPass(0))
 		{
 			rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr &= ~GS_COLMASK_NONE;
+			rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 			pSFShader->FXEndPass();
 			pSFShader->FXEnd();
 			return;
@@ -1028,7 +1028,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		if (!SF_SetVertexDeclaration(vtxData->VertexFormat))
 		{
 			rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr &= ~GS_COLMASK_NONE;
+			rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 			pSFShader->FXEndPass();
 			pSFShader->FXEnd();
 			return;
@@ -1063,10 +1063,10 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		pSFShader->FXEnd();
 	}
 
-	if (params.renderMaskedStates & GS_COLMASK_NONE)
+	if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 	{
 		rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-		rRP.m_StateOr &= ~GS_COLMASK_NONE;
+		rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 	}
 }
 
@@ -1128,10 +1128,10 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 	{
 		SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
 
-		if (params.renderMaskedStates & GS_COLMASK_NONE)
+		if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 		{
 			rRP.m_PersFlags2 |= RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr |= GS_COLMASK_NONE;
+			rRP.m_StateOr |= GS_NOCOLMASK_RGBA;
 		}
 
 		uint32 numPasses(0);
@@ -1163,7 +1163,7 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 		if (!SF_SetVertexDeclaration(vtxData->VertexFormat))
 		{
 			rRP.m_PersFlags2 &= ~RBPF2_DISABLECOLORWRITES;
-			rRP.m_StateOr &= ~GS_COLMASK_NONE;
+			rRP.m_StateOr &= ~GS_NOCOLMASK_RGBA;
 			pSFShader->FXEndPass();
 			pSFShader->FXEnd();
 			return;
