@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "EntityComponentsCache.h"
+#include "Entity.h"
 
 //////////////////////////////////////////////////////////////////////////
 void CEntitiesComponentPropertyCache::StoreEntities()
