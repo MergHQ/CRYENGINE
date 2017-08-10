@@ -413,11 +413,14 @@ void CMainWindow::RegisterWidgets()
 
 void CMainWindow::InitMenu()
 {
+	// TODO: Delete is not working atm. As soon as we have a mechanism to know what was last
+	//			 focused we can bring it back.
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save,
-		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo, CEditor::MenuItems::Redo,
-		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste,CEditor::MenuItems::Delete
+		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo,CEditor::MenuItems::Redo,
+		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste,/*CEditor::MenuItems::Delete*/
 	};
+	// ~TODO
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
 }
 
