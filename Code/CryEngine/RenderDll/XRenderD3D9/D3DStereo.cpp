@@ -813,7 +813,7 @@ void CD3DStereoRenderer::DisplayStereo()
 	// Restore original backbuffer on render target stack
 	assert(m_renderer.m_nRTStackLevel[0] == 0);
 //	m_renderer.FX_SetRenderTarget(0, m_renderer.m_pBackBuffer, NULL, 0);
-	m_renderer.FX_SetRenderTarget(0, (D3DSurface*)0xDEADBEEF, NULL, 0);
+	m_renderer.FX_SetRenderTarget(0, (D3DSurface*)0xDEADBEEF, (SDepthTexture*)0xDEADBEEF, 0);
 
 	// TODO: Fix this properly
 	if (!gEnv->IsEditor())
