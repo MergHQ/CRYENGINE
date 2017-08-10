@@ -217,8 +217,6 @@ void CAIPlayer::GetPhysicalSkipEntities(PhysSkipList& skipList) const
 	{
 		stl::push_back_unique(skipList, m_exposedCoverObjects[i].pPhysEnt);
 	}
-
-	CRY_ASSERT_MESSAGE(skipList.size() <= 5, "Too many physical skipped entities determined. See SRwiRequest definition.");
 }
 
 //
