@@ -111,7 +111,7 @@ struct CStripsInfo
 
 	inline void Clear() { idx_array.Clear(); nNonBorderIndicesCount = 0; }
 
-	inline void AddIndex(float _x, float _y, float _step, float nSectorSize)
+	inline void AddIndex(int _x, int _y, int _step, int nSectorSize)
 	{
 		vtx_idx id = vtx_idx(_x / _step * (nSectorSize / _step + 1) + _y / _step);
 		idx_array.Add(id);
@@ -728,16 +728,10 @@ void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
 	}
 }
 
-void CTerrainNode::AddIndexAliased(float x, float y, float stepSize, float fSectorSize, CStripsInfo* pArrayInfo)
-{
-	pArrayInfo->AddIndex(x, y, stepSize, fSectorSize);
-}
-
 void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	// 1<<MML_NOT_SET will generate 0;
 	if (m_cNewGeomMML == MML_NOT_SET)
 		return;
 
@@ -759,27 +753,33 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRend
 	{
 		for (float y = 0; y < fSectorSizeSB; y += stepSize)
 		{
-			if (!m_bHasHoles || !pTerrain->GetHole(m_nOriginX + x + halfStep, m_nOriginY + y + halfStep, m_nSID))
+			if (!m_bHasHoles || !pTerrain->GetHole(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep, m_nSID))
 			{
+				// convert to units
+				int xu = int(x * CTerrain::GetInvUnitSize());
+				int yu = int(y * CTerrain::GetInvUnitSize());
+				int su = int(stepSize * CTerrain::GetInvUnitSize());
+				int ssu = int(fSectorSizeSB * CTerrain::GetInvUnitSize());
+
 				if (pTerrain->IsMeshQuadFlipped(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep, stepSize, 0))
 				{
-					AddIndexAliased(x + stepSize, y, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x + stepSize, y + stepSize, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x, y, stepSize, fSectorSizeSB, pSI);
+					pSI->AddIndex(xu + su, yu, su, ssu);
+					pSI->AddIndex(xu + su, yu + su, su, ssu);
+					pSI->AddIndex(xu, yu, su, ssu);
 
-					AddIndexAliased(x, y, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x + stepSize, y + stepSize, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x, y + stepSize, stepSize, fSectorSizeSB, pSI);
+					pSI->AddIndex(xu, yu, su, ssu);
+					pSI->AddIndex(xu + su, yu + su, su, ssu);
+					pSI->AddIndex(xu, yu + su, su, ssu);
 				}
 				else
 				{
-					AddIndexAliased(x, y, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x + stepSize, y, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x, y + stepSize, stepSize, fSectorSizeSB, pSI);
+					pSI->AddIndex(xu, yu, su, ssu);
+					pSI->AddIndex(xu + su, yu, su, ssu);
+					pSI->AddIndex(xu, yu + su, su, ssu);
 
-					AddIndexAliased(x + stepSize, y, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x + stepSize, y + stepSize, stepSize, fSectorSizeSB, pSI);
-					AddIndexAliased(x, y + stepSize, stepSize, fSectorSizeSB, pSI);
+					pSI->AddIndex(xu + su, yu, su, ssu);
+					pSI->AddIndex(xu + su, yu + su, su, ssu);
+					pSI->AddIndex(xu, yu + su, su, ssu);
 				}
 			}
 		}
@@ -1126,37 +1126,40 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 					{
 						SSurfTypeProjInfo stpi;
 						stpi.surfType = arrColor[v].bcolor[s];
-						assert(stpi.surfType >= 0 && stpi.surfType < SRangeInfo::e_palette_size);
+						assert(stpi.surfType >= 0 && stpi.surfType <= SRangeInfo::e_hole);
 
-						SSurfTypeProjInfo* pType = 0;
+						if (stpi.surfType < SRangeInfo::e_hole)
+						{
+							SSurfTypeProjInfo* pType = 0;
 
-						// find or add new item
-						int foundId = lstSurfTypes.Find(stpi);
-						if (foundId < 0)
-						{
-							lstSurfTypes.Add(stpi);
-							pType = &lstSurfTypes.Last();
-						}
-						else
-						{
-							pType = &lstSurfTypes[foundId];
-						}
+							// find or add new item
+							int foundId = lstSurfTypes.Find(stpi);
+							if (foundId < 0)
+							{
+								lstSurfTypes.Add(stpi);
+								pType = &lstSurfTypes.Last();
+							}
+							else
+							{
+								pType = &lstSurfTypes[foundId];
+							}
 
-						// check if surface type material is 3D
-						if (arrMat3DFlag[stpi.surfType])
-						{
-							byte* pNorm = &pNormB[arrTriangle[v] * nNormStride];
-							Vec3 vNorm(((float)pNorm[0] - 127.5f), ((float)pNorm[1] - 127.5f), ((float)pNorm[2] - 127.5f));
-						
-							// register projection direction
-							int p = GetVecProjectId(vNorm);							
-							assert(p >= 0 && p < 3);
-							pType->projDir[p] = true;
-						}
-						else
-						{
-							// slot 3 used for non 3d materials
-							pType->projDir[3] = true;
+							// check if surface type material is 3D
+							if (arrMat3DFlag[stpi.surfType])
+							{
+								byte* pNorm = &pNormB[arrTriangle[v] * nNormStride];
+								Vec3 vNorm(((float)pNorm[0] - 127.5f), ((float)pNorm[1] - 127.5f), ((float)pNorm[2] - 127.5f));
+
+								// register projection direction
+								int p = GetVecProjectId(vNorm);
+								assert(p >= 0 && p < 3);
+								pType->projDir[p] = true;
+							}
+							else
+							{
+								// slot 3 used for non 3d materials
+								pType->projDir[3] = true;
+							}
 						}
 					}
 				}
@@ -1672,9 +1675,9 @@ void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerra
 	if (st.GetHole())
 	{
 		// in case of hole - try to find some valid surface type around
-		for (float i = -stepSize; i <= stepSize && (st.GetDominatingSurfaceType() == SRangeInfo::e_hole); i += stepSize)
+		for (float i = -stepSize; i <= stepSize && (st.GetHole()); i += stepSize)
 		{
-			for (float j = -stepSize; j <= stepSize && (st.GetDominatingSurfaceType() == SRangeInfo::e_hole); j += stepSize)
+			for (float j = -stepSize; j <= stepSize && (st.GetHole()); j += stepSize)
 			{
 				st = pTerrain->GetSurfaceTypeID(x + i, y + j, nSID);
 			}

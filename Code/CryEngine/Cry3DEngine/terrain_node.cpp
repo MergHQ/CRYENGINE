@@ -1188,6 +1188,7 @@ void CTerrainNode::UpdateDetailLayersInfo(bool bRecursive)
 			arrSurfaceTypesInSector[i] = 0;
 
 		m_bHasHoles = 0;
+		bool hasOnlyHoles = true;
 
 		for (float X = m_nOriginX; X <= m_nOriginX + CTerrain::GetSectorSize(); X += CTerrain::GetHeightMapUnitSize())
 		{
@@ -1198,6 +1199,10 @@ void CTerrainNode::UpdateDetailLayersInfo(bool bRecursive)
 				if (st.GetHole())
 				{
 					m_bHasHoles = 1;
+				}
+				else
+				{
+					hasOnlyHoles = false;
 				}
 
 				for (int s = 0; s < SSurfaceTypeItem::kMaxSurfaceTypesNum; s++)
@@ -1211,7 +1216,7 @@ void CTerrainNode::UpdateDetailLayersInfo(bool bRecursive)
 			}
 		}
 
-		if (arrSurfaceTypesInSector[SRangeInfo::e_hole] == (CTerrain::GetSectorSize() * CTerrain::GetHeightMapUnitSizeInverted() + 1) * (CTerrain::GetSectorSize() * CTerrain::GetHeightMapUnitSizeInverted() + 1))
+		if (hasOnlyHoles)
 			m_bHasHoles = 2; // only holes
 
 		for (int i = 0; i < m_lstSurfaceTypeInfo.Count(); i++)
