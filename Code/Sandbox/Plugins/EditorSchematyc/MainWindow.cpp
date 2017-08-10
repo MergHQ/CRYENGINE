@@ -218,7 +218,7 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 		m_pGraphView->SelectItems(selectedItemIds);
 	}
 
-	if (m_pPreview)
+	if (m_pPreview && m_pScript->GetRoot()->GetType() == Schematyc::EScriptElementType::Class)
 	{
 		m_pPreview->SetClass(static_cast<const Schematyc::IScriptClass*>(m_pScript->GetRoot()));
 	}
