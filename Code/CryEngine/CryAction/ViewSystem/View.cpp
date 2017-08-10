@@ -24,7 +24,8 @@ CView::CView(ISystem* const pSystem)
 	, m_frameAdditiveAngles(0.0f, 0.0f, 0.0f)
 	, m_scale(1.0f)
 	, m_zoomedScale(1.0f)
-	, m_pAudioListener(nullptr)
+	, m_pAudioListenerComponent(nullptr)
+	, m_pAudioListenerEntity(nullptr)
 {
 	if (!Cry::pCamShakeMult)
 	{
@@ -36,6 +37,18 @@ CView::CView(ISystem* const pSystem)
 	}
 
 	CreateAudioListener();
+}
+
+//------------------------------------------------------------------------
+CView::~CView()
+{
+	if (m_pAudioListenerEntity != nullptr)
+	{
+		gEnv->pEntitySystem->RemoveEntityEventListener(m_pAudioListenerEntity->GetId(), ENTITY_EVENT_DONE, this);
+		gEnv->pEntitySystem->RemoveEntity(m_pAudioListenerEntity->GetId(), true);
+		m_pAudioListenerEntity = nullptr;
+		m_pAudioListenerComponent = nullptr;
+	}
 }
 
 //-----------------------------------------------------------------------
@@ -230,6 +243,7 @@ void CView::Update(float frameTime, bool isActive)
 		Matrix34 viewMtx(q);
 		viewMtx.SetTranslation(pos + p);
 		m_camera.SetMatrix(viewMtx);
+		UpdateAudioListener(viewMtx);
 	}
 	else
 	{
@@ -768,17 +782,59 @@ void CView::PostSerialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CView::UpdateAudioListener(Matrix34 const& worldTM)
+{
+	if (m_pAudioListenerEntity != nullptr)
+	{
+		m_pAudioListenerEntity->SetWorldTM(worldTM);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CView::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+{
+	switch (event.event)
+	{
+	case ENTITY_EVENT_DONE:
+		// In case something destroys our listener entity before we had the chance to remove it.
+		if ((m_pAudioListenerEntity != nullptr) && (pEntity->GetId() == m_pAudioListenerEntity->GetId()))
+		{
+			gEnv->pEntitySystem->RemoveEntityEventListener(m_pAudioListenerEntity->GetId(), ENTITY_EVENT_DONE, this);
+			m_pAudioListenerEntity = nullptr;
+			m_pAudioListenerComponent = nullptr;
+		}
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CView::CreateAudioListener()
 {
-	if (m_pAudioListener == nullptr)
-	{
-		IEntity* const pIEntity = GetLinkedEntity();
+	IEntity* const pIEntity = GetLinkedEntity();
 
-		if (pIEntity != nullptr)
+	if (m_pAudioListenerEntity == nullptr && pIEntity != nullptr)
+	{
+		SEntitySpawnParams spawnParams;
+		spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
+
+		// We don't want the audio listener to serialize as the entity gets completely removed and recreated during save/load!
+		// NOTE: If we set ENTITY_FLAG_NO_SAVE *after* we spawn the entity, it will make it to m_dynamicEntities in GameSerialize.cpp
+		// (via CGameSerialize::OnSpawn) and GameSerialize will attempt to serialize it despite the flag with current (5.2.2) implementation
+		spawnParams.nFlags = ENTITY_FLAG_NO_SAVE;
+		m_pAudioListenerEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams, true);
+
+		if (m_pAudioListenerEntity != nullptr)
 		{
-			m_pAudioListener = pIEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
-			CRY_ASSERT(m_pAudioListener != nullptr);
-			m_pAudioListener->SetComponentFlags(m_pAudioListener->GetComponentFlags() | IEntityComponent::EFlags::UserAdded);
+			gEnv->pEntitySystem->AddEntityEventListener(m_pAudioListenerEntity->GetId(), ENTITY_EVENT_DONE, this);
+			m_pAudioListenerEntity->SetName(pIEntity->GetName());
+
+			m_pAudioListenerComponent = m_pAudioListenerEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
+			CRY_ASSERT(m_pAudioListenerComponent != nullptr);
+			m_pAudioListenerComponent->SetComponentFlags(m_pAudioListenerComponent->GetComponentFlags() | IEntityComponent::EFlags::UserAdded);
+		}
+		else
+		{
+			CryFatalError("<Audio>: AudioListenerEntity creation failed in CView::CreateAudioListener!");
 		}
 	}
 }
@@ -792,8 +848,8 @@ void CView::SetActive(bool const bActive)
 		CreateAudioListener();
 	}
 
-	if (m_pAudioListener != nullptr)
+	if (m_pAudioListenerComponent != nullptr)
 	{
-		m_pAudioListener->SetActive(bActive);
+		m_pAudioListenerComponent->SetActive(bActive);
 	}
 }

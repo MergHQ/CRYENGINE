@@ -271,4 +271,5 @@ struct IViewSystem
 	virtual void SetDeferredViewSystemUpdate(bool const bDeferred) = 0;
 	virtual bool UseDeferredViewSystemUpdate() const = 0;
 	virtual void SetControlAudioListeners(bool const bActive) = 0;
+	virtual void UpdateAudioListeners() = 0;
 };
