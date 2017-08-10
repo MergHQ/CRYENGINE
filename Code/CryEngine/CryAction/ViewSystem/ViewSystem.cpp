@@ -364,12 +364,14 @@ unsigned int CViewSystem::GetActiveViewId() const
 //------------------------------------------------------------------------
 IView* CViewSystem::GetViewByEntityId(EntityId id, bool forceCreate)
 {
-	for (TViewMap::const_iterator it = m_views.begin(); it != m_views.end(); ++it)
+	for (auto const& view : m_views)
 	{
-		IView* tView = it->second;
+		IView* const pIView = view.second;
 
-		if (tView && tView->GetLinkedId() == id)
-			return tView;
+		if (pIView != nullptr && pIView->GetLinkedId() == id)
+		{
+			return pIView;
+		}
 	}
 
 	if (forceCreate)

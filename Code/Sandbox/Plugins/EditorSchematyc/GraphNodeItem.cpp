@@ -224,7 +224,6 @@ void CNodeItem::Refresh(bool forceRefresh)
 			else
 			{
 				CPinItem* pPinItem = static_cast<CPinItem*>(*result);
-				pPinItem->UpdateWithNewIndex(i);
 				pins.push_back(pPinItem);
 
 				*result = nullptr;
@@ -253,7 +252,6 @@ void CNodeItem::Refresh(bool forceRefresh)
 			else
 			{
 				CPinItem* pPinItem = static_cast<CPinItem*>(*result);
-				pPinItem->UpdateWithNewIndex(i);
 				pins.push_back(pPinItem);
 
 				*result = nullptr;
@@ -271,6 +269,12 @@ void CNodeItem::Refresh(bool forceRefresh)
 				SignalPinRemoved(*pPinItem);
 				delete pPinItem;
 			}
+		}
+
+		for (uint32 i = 0; i < m_pins.size(); ++i)
+		{
+			CPinItem* pPinItem = static_cast<CPinItem*>(m_pins.at(i));
+			pPinItem->UpdateWithNewIndex(i);
 		}
 	}
 }

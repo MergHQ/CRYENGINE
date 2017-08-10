@@ -1102,8 +1102,11 @@ void CCryAction::LoadGameCmd(IConsoleCmdArgs* args)
 	if (args->GetArgCount() > 1)
 	{
 		GetCryAction()->NotifyForceFlashLoadingListeners();
-		bool quick = args->GetArgCount() > 2;
-		GetCryAction()->LoadGame(args->GetArg(1), quick);
+
+		const string path = PathUtil::ReplaceExtension(args->GetArg(1), CRY_SAVEGAME_FILE_EXT);
+		const bool quick = args->GetArgCount() > 2;
+
+		GetCryAction()->LoadGame(path.c_str(), quick);
 	}
 	else
 	{
