@@ -1034,15 +1034,11 @@ void C3DEngine::SetupLightScissors(CDLight* pLight, const SRenderingPassInfo& pa
 
 		Vec4 vScreenPoint = Vec4(pBRectVertices[i], 1.0) * mProj;
 
-		//projection space clamping
+		// convert to NDC
 		vScreenPoint.w = max(vScreenPoint.w, 0.00000000000001f);
-		vScreenPoint.x = max(vScreenPoint.x, -(vScreenPoint.w));
-		vScreenPoint.x = min(vScreenPoint.x, vScreenPoint.w);
-		vScreenPoint.y = max(vScreenPoint.y, -(vScreenPoint.w));
-		vScreenPoint.y = min(vScreenPoint.y, vScreenPoint.w);
-
-		//NDC
 		vScreenPoint /= vScreenPoint.w;
+		vScreenPoint.x = max(-1.0f, min(1.0f, vScreenPoint.x));
+		vScreenPoint.y = max(-1.0f, min(1.0f, vScreenPoint.y));
 
 		//output coords
 		//generate viewport (x=0,y=0,height=1,width=1)
