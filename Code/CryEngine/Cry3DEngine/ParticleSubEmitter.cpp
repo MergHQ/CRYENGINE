@@ -614,7 +614,7 @@ void CParticleSubEmitter::UpdateAudio()
 		{
 			float fAge = GetAge();
 			float fAge0 = m_fStartAge;
-			float fAge1 = m_fStartAge + GetParticleTimer()->GetFrameTime();
+			float fAge1 = m_fStopAge + GetParticleTimer()->GetFrameTime();
 			if (fAge >= fAge0 && fAge <= fAge1)
 			{
 				if (!params.sStartTrigger.empty())

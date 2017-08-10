@@ -317,6 +317,28 @@ const IParticleEffect* CParticleEmitter::GetEffect() const
 	return m_pEffect;
 }
 
+void CParticleEmitter::InitSeed()
+{
+	const int forcedSeed = GetCVars()->e_ParticlesForceSeed;
+	if (m_spawnParams.nSeed != -1)
+	{
+		m_initialSeed = uint32(m_spawnParams.nSeed);
+		m_time = 0.0f;
+	}
+	else if (forcedSeed != 0)
+	{
+		m_initialSeed = forcedSeed;
+		m_time = 0.0f;
+	}
+	else
+	{
+		m_initialSeed = cry_random_uint32();
+		m_time = gEnv->pTimer->GetCurrTime();
+	}
+	m_lastTimeRendered = m_time;
+	m_currentSeed = m_initialSeed;
+}
+
 void CParticleEmitter::Activate(bool activate)
 {
 	if (!m_pEffect || activate == m_active)
@@ -329,6 +351,8 @@ void CParticleEmitter::Activate(bool activate)
 		m_parentContainer.AddParticleData(EPVF_Velocity);
 		m_parentContainer.AddParticleData(EPVF_AngularVelocity);
 		m_parentContainer.AddParticleData(EPDT_NormalAge);
+
+		InitSeed();
 
 		UpdateRuntimeRefs();
 
@@ -471,25 +495,6 @@ void CParticleEmitter::SetEmitGeom(const GeomRef& geom)
 void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 {
 	m_spawnParams = spawnParams;	
-	
-	const int forcedSeed = GetCVars()->e_ParticlesForceSeed;
-	if (spawnParams.nSeed != -1)
-	{
-		m_initialSeed = uint32(spawnParams.nSeed);
-		m_time = 0.0f;
-	}
-	else if (forcedSeed != 0)
-	{
-		m_initialSeed = forcedSeed;
-		m_time = 0.0f;
-	}
-	else
-	{
-		m_initialSeed = cry_random_uint32();
-		m_time = gEnv->pTimer->GetCurrTime();
-	}
-	m_lastTimeRendered = m_time;
-	m_currentSeed = m_initialSeed;
 }
 
 uint CParticleEmitter::GetAttachedEntityId()

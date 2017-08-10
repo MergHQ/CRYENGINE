@@ -577,6 +577,8 @@ bool CREParticle::Compile(CRenderObject* pRenderObject)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SOFT_PARTICLE];
 	if (pRenderObject->m_RState & OS_ALPHA_BLEND)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
+	if (pRenderObject->m_RState & OS_ANIM_BLEND)
+		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ANIM_BLEND];
 	if (!(pRenderObject->m_ObjFlags & FOB_NO_FOG))
 	{
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_FOG];
@@ -606,6 +608,9 @@ bool CREParticle::Compile(CRenderObject* pRenderObject)
 			psoDesc.m_RenderState |= GS_BLSRC_DSTCOL | GS_BLDST_SRCCOL;
 			break;
 		}
+
+		if (desc.renderState & OS_NODEPTH_TEST)
+			psoDesc.m_RenderState |= GS_NODEPTHTEST;
 	};
 	
 	bool bCompiled = true;
