@@ -1360,7 +1360,8 @@ void CEntity::LoadComponent(Serialization::IArchive& archive)
 	std::shared_ptr<IEntityComponent> pComponent;
 	IEntityComponent* pParentComponent = nullptr;
 
-	if (!componentGUID.IsNull())
+	bool bValidInstanceGUID = !componentGUID.IsNull() && (m_flagsExtended & ENTITY_FLAG_EXTENDED_CLONED) == 0;
+	if (bValidInstanceGUID)
 	{
 		// Find component in the list of the existing entity components
 		for (auto& record : m_components.GetVector())
