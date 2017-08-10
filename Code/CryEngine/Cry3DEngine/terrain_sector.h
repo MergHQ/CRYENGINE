@@ -485,7 +485,6 @@ public:
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
-	void AddIndexAliased(float x, float y, float stepSize, float fSectorSize, CStripsInfo* pArrayInfo);
 	static void                  GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, int nSID, CUpdateTerrainTempData* pUpdateTerrainTempData = NULL);
 	void                         BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRenderingPassInfo& passInfo);
 

@@ -612,7 +612,7 @@ SSurfaceTypeItem CHeightMap::GetSurfTypeItemfromUnits(uint32 x, uint32 y, int nS
 					}
 				}
 
-				es.SetHole(si.GetDominatingSurfaceType() == SRangeInfo::e_hole);
+				es.SetHole(si.GetDominatingSurfaceType() == SRangeInfo::e_index_hole);
 
 				return es;
 			}

@@ -81,7 +81,6 @@ void CLightEntity::SetLightProperties(const CDLight& light)
 
 	m_bShadowCaster = (m_light.m_Flags & DLF_CASTSHADOW_MAPS) != 0;
 
-	m_light.m_fBaseRadius = m_light.m_fRadius;
 	m_light.m_fLightFrustumAngle = CLAMP(m_light.m_fLightFrustumAngle, 0.f, (LIGHT_PROJECTOR_MAX_FOV / 2.f));
 
 	if (!(m_light.m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT)))

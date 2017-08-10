@@ -455,6 +455,10 @@ void CParticleComponentRuntime::CalculateBounds()
 		m_bounds.max = max(m_bounds.max, position + sizev);
 	}
 #endif
+
+	// augment bounds from features
+	for (auto& it : GetComponent()->GetUpdateList(EUL_ComputeBounds))
+		it->ComputeBounds(this, m_bounds);
 }
 
 void CParticleComponentRuntime::AgeUpdate(const SUpdateContext& context)

@@ -176,7 +176,7 @@ void CTerrain::BuildErrorsTableForArea(float* pLodErrors, int nMaxLods,
 				{
 					int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
 					assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-					if (pSurfaceData[nSurfCell].GetDominatingSurfaceType() == SRangeInfo::e_hole)
+					if (pSurfaceData[nSurfCell].GetHole())
 						bSectorHasHoles = true;
 					else
 						bSectorHasMesh = true;
@@ -541,19 +541,27 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 						int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
 						assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
 
-						SSurfaceTypeItem & src = pSurfaceData[nSurfCell];
+						const SSurfaceTypeItem & src = pSurfaceData[nSurfCell];
 
-						// read all 3 types, remap to local
-						for (int i = 0; i < SSurfaceTypeLocal::kMaxSurfaceTypesNum; i++)
+						if (src.GetHole())
 						{
-							dst.we[i] = src.we[i] / 16;
-							if (src.we[i])
-							{
-								dst.ty[i] = (byte)ri.GetLocalSurfaceTypeID(src.ty[i]);
-							}
+							dst = SRangeInfo::e_index_hole;
 						}
+						else
+						{
+							// read all 3 types, remap to local
+							for (int i = 0; i < SSurfaceTypeLocal::kMaxSurfaceTypesNum; i++)
+							{
+								dst.we[i] = src.we[i] / 16;
 
-						dst.we[0] = SATURATEB(15 - dst.we[1] - dst.we[2]);
+								if (src.we[i] || !i)
+								{
+									dst.ty[i] = (byte)ri.GetLocalSurfaceTypeID(src.ty[i]);
+								}
+							}
+
+							dst.we[0] = SATURATEB(15 - dst.we[1] - dst.we[2]);
+						}
 					}
 
 					SHeightMapItem nNewValue;

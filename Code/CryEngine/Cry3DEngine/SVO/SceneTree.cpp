@@ -2134,7 +2134,7 @@ void CSvoEnv::DetectMovement_StatLights()
 
 						CDLight& m_light = pLS->GetLightProperties();
 
-						if (!Overlap::Sphere_AABB(Sphere(m_light.m_BaseOrigin, m_light.m_fBaseRadius), pSeg->m_pNode->m_nodeBox))
+						if (!Overlap::Sphere_AABB(Sphere(m_light.m_BaseOrigin, m_light.m_fRadius), pSeg->m_pNode->m_nodeBox))
 							continue;
 
 						if ((m_light.m_Flags & DLF_PROJECT) && (m_light.m_fLightFrustumAngle < 90.f) && m_light.m_pLightImage)

@@ -209,9 +209,9 @@ def run_command(command, silent=True):
     # while still having the option to print the output in case of an error.
     try:
         if silent:
-            subprocess.check_output(command_str)
+            subprocess.check_output(command_str, universal_newlines=True)
         else:
-            subprocess.check_call(command_str, universal_newlines=True)
+            subprocess.check_call(command_str)
     except subprocess.CalledProcessError as e:
         if not e.returncode == 0:
             print("Encountered and error while running command '{}'!".format(command_str))

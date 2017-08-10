@@ -47,6 +47,7 @@
 #define RESTRICT_POINTER __restrict
 
 // Safe memory helpers
+#define SAFE_ACQUIRE(p)       { if (p) (p)->AddRef(); }
 #define SAFE_DELETE(p)        { if (p) { delete (p);          (p) = NULL; } }
 #define SAFE_DELETE_ARRAY(p)  { if (p) { delete[] (p);        (p) = NULL; } }
 #define SAFE_RELEASE(p)       { if (p) { (p)->Release();      (p) = NULL; } }
