@@ -259,12 +259,6 @@ void CVars::Init()
 	REGISTER_CVAR(e_ParticlesProfilerTimingBudget, 10000, VF_NULL,
 		"Particle processing time budget (in nanoseconds) to be shown during profiling");
 
-	DefineConstFloatCVar(e_ParticlesLightMinRadiusThreshold, VF_NULL,
-	                     "Threshold for minimum particle light radius");
-
-	DefineConstFloatCVar(e_ParticlesLightMinColorThreshold, VF_NULL,
-	                     "Threshold for minumum particle light color");
-
 	REGISTER_CVAR(e_ParticlesForceSeed, 0, VF_NULL,
 		"0 - every emitter is random unless a seed is specified\n"
 		"n - uses this value as seed for all emitters without specified seed");
@@ -857,6 +851,8 @@ void CVars::Init()
 				  "This will be applied on top of e_ViewDistRatio");
 	REGISTER_CVAR(e_ViewDistRatioLights, 50.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for light sources");
+	REGISTER_CVAR(e_LightIlluminanceThreshold, ILLUMINANCE_THRESHOLD, VF_NULL | VF_LIVE_CREATE_SYNCED,
+	              "Min illuminance to determine light effect radius");
 	REGISTER_CVAR(e_ViewDistRatioCustom, 60.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for special marked objects (Players,AI,Vehicles)");
 	REGISTER_CVAR(e_ViewDistMin, 0.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,

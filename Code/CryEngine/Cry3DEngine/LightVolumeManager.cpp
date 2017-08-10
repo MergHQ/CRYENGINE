@@ -74,25 +74,20 @@ void CLightVolumesMgr::RegisterLight(const CDLight& pDL, uint32 nLightID, const 
 	{
 		FUNCTION_PROFILER_3DENGINE;
 
-		const f32 fColCheck = (f32) __fsel(pDL.m_Color.r + pDL.m_Color.g + pDL.m_Color.b - 0.333f, 1.0f, 0.0f); //light color > threshold
-		const f32 fRadCheck = (f32) __fsel(pDL.m_fRadius - 0.5f, 1.0f, 0.0f);                                   //light radius > threshold
-		if (fColCheck * fRadCheck)
-		{
-			int32 nMiny = (int32)(floorf((pDL.m_Origin.y - pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
-			int32 nMaxy = (int32)(floorf((pDL.m_Origin.y + pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
-			int32 nMinx = (int32)(floorf((pDL.m_Origin.x - pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
-			int32 nMaxx = (int32)(floorf((pDL.m_Origin.x + pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
+		int32 nMiny = (int32)(floorf((pDL.m_Origin.y - pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
+		int32 nMaxy = (int32)(floorf((pDL.m_Origin.y + pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
+		int32 nMinx = (int32)(floorf((pDL.m_Origin.x - pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
+		int32 nMaxx = (int32)(floorf((pDL.m_Origin.x + pDL.m_fRadius) * LV_LIGHT_CELL_R_SIZE));
 
-			// Register light into all cells touched by light radius
-			for (int32 y = nMiny, ymax = nMaxy; y <= ymax; ++y)
+		// Register light into all cells touched by light radius
+		for (int32 y = nMiny, ymax = nMaxy; y <= ymax; ++y)
+		{
+			for (int32 x = nMinx, xmax = nMaxx; x <= xmax; ++x)
 			{
-				for (int32 x = nMinx, xmax = nMaxx; x <= xmax; ++x)
-				{
-					SLightCell& lightCell = m_pWorldLightCells[GetWorldHashBucketKey(x, y, 1, LV_LIGHTS_WORLD_BUCKET_SIZE)];
-					CryPrefetch(&lightCell);
-					lightCell.nLightID[lightCell.nLightCount] = nLightID;
-					lightCell.nLightCount = (lightCell.nLightCount + 1) & (LV_LIGHTS_MAX_COUNT - 1);
-				}
+				SLightCell& lightCell = m_pWorldLightCells[GetWorldHashBucketKey(x, y, 1, LV_LIGHTS_WORLD_BUCKET_SIZE)];
+				CryPrefetch(&lightCell);
+				lightCell.nLightID[lightCell.nLightCount] = nLightID;
+				lightCell.nLightCount = (lightCell.nLightCount + 1) & (LV_LIGHTS_MAX_COUNT - 1);
 			}
 		}
 	}
