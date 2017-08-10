@@ -275,11 +275,14 @@ bool CMainWindow::OnSaveAsset(CEditableAsset& editAsset)
 {
 	if (m_pScript)
 	{
-		ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
-		Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
+		if (m_pAsset == &editAsset.GetAsset())
+		{
+			ICrySchematycCore* pSchematycCore = gEnv->pSchematyc;
+			Schematyc::IScriptRegistry& scriptRegistry = pSchematycCore->GetScriptRegistry();
 
-		scriptRegistry.SaveScript(*m_pScript);
-		return true;
+			scriptRegistry.SaveScript(*m_pScript);
+			return true;
+		}
 	}
 
 	return false;
