@@ -220,8 +220,6 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 
 	m_idForced = 0;
 
-	m_bReseting = false;
-
 #ifdef SW_ENTITY_ID_USE_GUID
 	m_bEntitiesUseGUIDs = true;
 	m_nGeneratedFromGuid = 2;
@@ -374,8 +372,7 @@ void CEntitySystem::Reset()
 		gEnv->pPhysicalWorld->TracePendingRays(0);
 		gEnv->pPhysicalWorld->ClearLoggedEvents();
 	}
-	GetBreakableManager()->ResetBrokenObjects();
-
+	
 	PurgeDeferredCollisionEvents(true);
 
 	CheckInternalConsistency();
@@ -387,8 +384,6 @@ void CEntitySystem::Reset()
 #ifdef SW_ENTITY_ID_USE_GUID
 	m_nGeneratedFromGuid = 2;
 #endif
-
-	m_bReseting = true;
 
 	// Delete entities that have already been added to the delete list.
 	UpdateDeletedEntities();
@@ -421,6 +416,9 @@ void CEntitySystem::Reset()
 	stl::free_container(m_deletedEntities);
 	m_guidMap.clear();
 
+	// Delete broken objects after deleting entities
+	GetBreakableManager()->ResetBrokenObjects();
+
 	ResetAreas();
 
 	m_EntitySaltBuffer.Reset();
@@ -433,8 +431,6 @@ void CEntitySystem::Reset()
 
 	m_pProximityTriggerSystem->Reset();
 	m_pPartitionGrid->Reset();
-
-	m_bReseting = false;
 
 	CheckInternalConsistency();
 }
