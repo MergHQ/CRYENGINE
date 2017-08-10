@@ -158,9 +158,9 @@ protected:
 	// IEntityComponent
 	virtual void ProcessEvent(SEntityEvent& event) override
 	{
-		if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
+		if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED || event.event == ENTITY_EVENT_SLOT_CHANGED)
 		{
-			Physicalize();
+			ApplyBaseMeshProperties();
 		}
 		else
 		{
@@ -183,14 +183,14 @@ protected:
 
 				m_pEntity->UpdateComponentEventMask(this);
 
-				Physicalize();
+				ApplyBaseMeshProperties();
 			}
 		}
 	}
 
 	virtual uint64 GetEventMask() const override
 	{
-		uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+		uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_SLOT_CHANGED);
 
 		if (((uint32)m_type & (uint32)EMeshType::Collider) != 0)
 		{
@@ -201,7 +201,7 @@ protected:
 	}
 	// ~IEntityComponent
 
-	void Physicalize()
+	void ApplyBaseMeshProperties()
 	{
 		if (GetEntitySlotId() != EmptySlotId)
 		{
