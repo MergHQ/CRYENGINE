@@ -1656,8 +1656,6 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		bool const bActive = true;
 		float const* colorListener = bActive ? s_colorGreen : s_colorRed;
 
-		pAuxGeom->Draw2dLabel(posX, posY, textSize, colorListener, false, "Listener <%d> PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", 0, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
-
 		if (numListeners > 0)
 		{
 			char const* const szName = m_audioListenerMgr.GetActiveListenerName();
