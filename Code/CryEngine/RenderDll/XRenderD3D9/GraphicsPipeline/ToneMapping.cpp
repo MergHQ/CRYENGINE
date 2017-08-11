@@ -14,7 +14,11 @@ void CToneMappingStage::Init()
 
 void CToneMappingStage::Execute()
 {
-	// TODO: Support HDR debug modes
+	// 0 is used for disable debugging and 1 is used to just show the average and estimated luminance, and exposure values.
+	if (CRenderer::CV_r_HDRDebug > 1) {
+		ExecuteDebug();
+		return;
+	}
 
 	PROFILE_LABEL_SCOPE("TONEMAPPING");
 
@@ -50,24 +54,23 @@ void CToneMappingStage::Execute()
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 		if (bColorGrading)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
-		if (CRenderer::CV_r_HDRDebug == 5)
-			rtMask |= g_HWSR_MaskBit[HWSR_DEBUG0];
 
 		static CCryNameTSCRC techToneMapping("HDRFinalPass");
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
 		m_passToneMapping.SetRenderTarget(0, CTexture::s_ptexSceneDiffuse);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
 		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
+		m_passToneMapping.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);	// Enables reflection constants addition in the shader
 
 		CTexture* pBloomTex = bBloomEnabled ? CTexture::s_ptexHDRFinalBloom : CTexture::s_ptexBlack;
-
-		m_passToneMapping.SetTextureSamplerPair(0, CTexture::s_ptexHDRTarget, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTextureSamplerPair(1, CTexture::s_ptexCurLumTexture, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTextureSamplerPair(2, pBloomTex, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTextureSamplerPair(5, CTexture::s_ptexZTarget, EDefaultSamplerStates::PointClamp);
-		m_passToneMapping.SetTextureSamplerPair(7, CTexture::s_ptexVignettingMap, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTextureSamplerPair(8, pColorChartTex, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTextureSamplerPair(9, pSunShaftsTex, EDefaultSamplerStates::LinearClamp);
+		
+		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+		m_passToneMapping.SetTexture(0, CTexture::s_ptexHDRTarget);
+		m_passToneMapping.SetTexture(1, CTexture::s_ptexCurLumTexture);
+		m_passToneMapping.SetTexture(2, pBloomTex);
+		m_passToneMapping.SetTexture(7, CTexture::s_ptexVignettingMap);
+		m_passToneMapping.SetTexture(8, pColorChartTex);
+		m_passToneMapping.SetTexture(9, pSunShaftsTex);
 		m_passToneMapping.SetRequireWorldPos(true);
 		m_passToneMapping.SetRequirePerViewConstantBuffer(true);
 	}
@@ -103,6 +106,56 @@ void CToneMappingStage::Execute()
 	m_passToneMapping.Execute();
 
 	m_pColorChartTex = pColorChartTex; // Keep a ref count on color chart to make sure it is destroyed after m_passToneMapping
+}
+
+void CToneMappingStage::ExecuteDebug()
+{
+	PROFILE_LABEL_SCOPE("TONEMAPPING-DEBUG");
+
+	CD3D9Renderer* pRenderer = gcpRendD3D;
+
+	CShader* pShader = CShaderMan::s_shHDRPostProcess;
+	
+	int featureMask = ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
+
+	if (m_passToneMapping.InputChanged(featureMask, CTexture::s_ptexCurLumTexture->GetTextureID()))
+	{
+		uint64 rtMask = 0;
+
+		// Supported HDR Debugging options
+		if (CRenderer::CV_r_HDRDebug == 2)
+			rtMask |= g_HWSR_MaskBit[HWSR_DEBUG0];
+		if (CRenderer::CV_r_HDRDebug == 3)
+			rtMask |= g_HWSR_MaskBit[HWSR_DEBUG1];
+
+		static CCryNameTSCRC techToneMapping("HDRFinalDebugPass");
+		const auto primFlags = CRenderer::CV_r_HDRDebug == 2 ? CRenderPrimitive::eFlags_ReflectShaderConstants_PS : CRenderPrimitive::eFlags_None;
+
+		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
+		m_passToneMapping.SetRenderTarget(0, CTexture::s_ptexSceneDiffuse);
+		m_passToneMapping.SetState(GS_NODEPTHTEST);
+		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);	
+		m_passToneMapping.SetPrimitiveFlags(primFlags);
+		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+		m_passToneMapping.SetTexture(0, CTexture::s_ptexHDRTarget);
+		m_passToneMapping.SetTexture(1, CTexture::s_ptexCurLumTexture);
+		m_passToneMapping.SetRequireWorldPos(true);
+		m_passToneMapping.SetRequirePerViewConstantBuffer(true);
+	}
+
+
+	if (CRenderer::CV_r_HDRDebug == 2)
+	{
+		m_passToneMapping.BeginConstantUpdate();
+
+		Vec4 hdrSetupParams[5];
+		gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
+
+		static CCryNameR eyeAdaptationName("HDREyeAdaptation");
+		m_passToneMapping.SetConstant(eyeAdaptationName, CRenderer::CV_r_HDREyeAdaptationMode == 2 ? hdrSetupParams[4] : hdrSetupParams[3], eHWSC_Pixel);
+	}
+
+	m_passToneMapping.Execute();
 }
 
 void CToneMappingStage::ExecuteFixedExposure()
