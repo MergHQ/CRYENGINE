@@ -2438,12 +2438,12 @@ struct CSaverSizer : public CDummySizer {
 	CMemStream &stm;
 	CSaverSizer(std::map<void*,int> &objs, CMemStream &stm) : objs(objs),stm(stm) {}
 	virtual bool IsLoading() { return false; }
-	virtual bool AddObject(const void* ptr, size_t size, int nCount=1)  { return AddObjectRaw((void*)ptr,size); }
-	virtual bool AddObjectRaw(void* ptr, size_t size, bool hasVMT=false) {
+	virtual bool AddObject(const void* ptr, size_t size, int nCount=1) { return AddObjectRaw((void*)ptr,size,false,size>=nCount*sizeof(void*)); }
+	virtual bool AddObjectRaw(void* ptr, size_t size, bool hasVMT=false, bool mapPtrs=true) {
 		int i=0,sz=size/sizeof(void*);
 		stm.Write(size);
 		stm.Write(ptr, size);
-		for(void **p=(void**)ptr; i<sz; i++) if (p[i]) {// && !nonptr(p[i])) {
+		if (mapPtrs) for(void **p=(void**)ptr; i<sz; i++) if (p[i]) {// && !nonptr(p[i])) {
 			auto iter = objs.find(p[i]);
 			if (iter!=objs.end()) {
 				stm.Write(i);	stm.Write(iter->second);
@@ -2464,21 +2464,26 @@ struct CLoaderSizer : public CDummySizer {
 	virtual bool AddObject(const void* ptr, size_t size, int nCount=1)  { return false; }
 #endif
 	virtual bool AddPartsAlloc(struct geom* &parts, size_t size) { 
-		parts = size ? pWorld->AllocEntityParts(size/sizeof(geom)) : &CPhysicalEntity::m_defpart;
+		int nparts = size/sizeof(geom);
+		parts = size ? pWorld->AllocEntityParts(nparts) : &CPhysicalEntity::m_defpart;
 		int bChuckStart = parts[0].bChunkStart;
 		AddObjectRaw(parts,size); 
 		parts[0].bChunkStart = bChuckStart;
 		return true;
 	}
 	virtual bool AddContactsAlloc(entity_contact* &ptr, size_t size) { return AddObjectRaw(ptr = size ? new entity_contact[size/sizeof(entity_contact)]:nullptr, size); }
-	virtual bool AddObjectRaw(void* ptr, size_t sizeDst, bool hasVMT=false) {
+	virtual bool AddIntArrayAlloc(int* &ptr, size_t size) { 
+		ptr = *(size_t*)(stm.m_pBuf+stm.m_iPos) ? new int[size/sizeof(int)] : nullptr;
+		return AddObjectRaw(ptr, size);
+	}
+	virtual bool AddObjectRaw(void* ptr, size_t sizeDst, bool hasVMT=false, bool mapPtrs=true) {
 		size_t size=stm.Read<size_t>(), offs=0;
 		if (hasVMT) {
 			void *pVMT; stm.Read(pVMT);
 			offs = sizeof(pVMT); 
 		}
 		stm.ReadRaw((char*)ptr+offs, min(size,sizeDst)-offs);
-		stm.m_iPos += size-sizeDst;
+		stm.m_iPos += max((size_t)0,size-sizeDst);
 		for(int i; (i=stm.Read<int>())>=0; )
 			((void**)ptr)[i] = objs[stm.Read<int>()];
 		return true;
@@ -2489,8 +2494,10 @@ void PostLoadEntity(CPhysicalEntity *pent, CLoaderSizer&) {
 	pent->m_pNewCoords = (coord_block*)&pent->m_pos;
 	for(int i=0;i<pent->m_nParts;i++)	{
 		pent->m_parts[i].pNewCoords = (coord_block_BBox*)&pent->m_parts[i].pos;
-		pent->m_parts[i].pMatMapping = pent->m_parts[i].pPhysGeom->pMatMapping;
-		pent->m_parts[i].nMats = pent->m_parts[i].pPhysGeom->nMats;
+		if (!pent->m_parts[i].pMatMapping) {
+			pent->m_parts[i].pMatMapping = pent->m_parts[i].pPhysGeom->pMatMapping;
+			pent->m_parts[i].nMats = pent->m_parts[i].pPhysGeom->nMats;
+		}
 	}
 	if (!pent->m_nParts)
 		pent->m_parts = &CPhysicalEntity::m_defpart;

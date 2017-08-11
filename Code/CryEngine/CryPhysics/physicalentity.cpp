@@ -1920,10 +1920,14 @@ void CPhysicalEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 	if (m_pWorld->m_vars.iDrawHelpers & 1<<31 && m_ig[0].x>-1)
 		pSizer->AddObject(&m_iGThunk0, (m_ig[1].x-m_ig[0].x+1)*(m_ig[1].y-m_ig[0].y+1)*sizeof(pe_gridthunk));
 	pSizer->AddObject(m_parts, m_nPartsAlloc*sizeof(m_parts[0]));
-	for(int i=0;i<m_nParts;i++) if (CPhysicalPlaceholder *ppc=m_parts[i].pPlaceholder) {
-		//pSizer->AddObject(ppc, sizeof(CPhysicalPlaceholder));
-		if (m_pWorld->m_vars.iDrawHelpers & 1<<31 && ppc->m_ig[0].x>-1)
-			pSizer->AddObject(&ppc->m_iGThunk0, (ppc->m_ig[1].x-ppc->m_ig[0].x+1)*(ppc->m_ig[1].y-ppc->m_ig[0].y+1)*sizeof(pe_gridthunk));
+	for(int i=0;i<m_nParts;i++) {
+		if (CPhysicalPlaceholder *ppc=m_parts[i].pPlaceholder) {
+			//pSizer->AddObject(ppc, sizeof(CPhysicalPlaceholder));
+			if (m_pWorld->m_vars.iDrawHelpers & 1<<31 && ppc->m_ig[0].x>-1)
+				pSizer->AddObject(&ppc->m_iGThunk0, (ppc->m_ig[1].x-ppc->m_ig[0].x+1)*(ppc->m_ig[1].y-ppc->m_ig[0].y+1)*sizeof(pe_gridthunk));
+		}
+		int nMats = m_parts[i].pMatMapping && m_parts[i].pMatMapping!=m_parts[i].pPhysGeom->pMatMapping ? m_parts[i].nMats : 0;
+		pSizer->AddObject(m_parts[i].pMatMapping, nMats*sizeof(int), nMats);
 	}
 	if(m_pColliders)
 		pSizer->AddObject(m_pColliders, m_nCollidersAlloc*sizeof(m_pColliders[0]));
