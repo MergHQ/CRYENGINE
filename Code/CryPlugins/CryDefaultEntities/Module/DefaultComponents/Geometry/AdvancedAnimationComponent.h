@@ -253,8 +253,6 @@ public:
 
 			m_pEntity->UpdateComponentEventMask(this);
 		}
-
-		Physicalize();
 	}
 
 	// Enable / disable motion on entity being applied from animation on the root node

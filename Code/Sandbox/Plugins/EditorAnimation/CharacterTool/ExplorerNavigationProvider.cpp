@@ -107,7 +107,7 @@ public:
 	static std::vector<string> GetAssetTypesForType(const char* type)
 	{
 		typedef std::vector<string> v;
-		return strcmp(type, "Character") == 0 ? v{ "CharacterDefinition" } :
+		return strcmp(type, "Character") == 0 ? v{ "Character" } :
 			strcmp(type, "Animation") == 0 ? v{ "Animation" } :
 			strcmp(type, "Skeleton") == 0 ? v{ "Skeleton", "AnimatedMesh" } :
 			v();

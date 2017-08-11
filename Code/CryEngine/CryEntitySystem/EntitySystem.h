@@ -530,13 +530,7 @@ private: // -----------------------------------------------------------------
 
 	std::unique_ptr<CEntitiesComponentPropertyCache> m_entitiesPropertyCache;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Pool Allocators.
-	//////////////////////////////////////////////////////////////////////////
 public:
-	bool m_bReseting;
-	//////////////////////////////////////////////////////////////////////////
-	
 	std::unique_ptr<class CEntityObjectDebugger> m_pEntityObjectDebugger;
 
 #ifdef ENABLE_PROFILING_CODE

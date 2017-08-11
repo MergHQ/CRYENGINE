@@ -748,3 +748,17 @@ void CViewSystem::SetControlAudioListeners(bool bActive)
 		view.second->SetActive(bActive);
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CViewSystem::UpdateAudioListeners()
+{
+  CView* const __restrict pActiveView = static_cast<CView*>(GetActiveView());
+
+  for (auto const& view : m_views)
+  {
+    CView* const __restrict pView = view.second;
+    bool const bIsActive = (pView == pActiveView);
+    CCamera const& camera = bIsActive ? gEnv->pSystem->GetViewCamera() : pView->GetCamera();
+    pView->UpdateAudioListener(camera.GetMatrix());
+  }
+}

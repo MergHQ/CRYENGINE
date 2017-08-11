@@ -73,8 +73,6 @@ void CAnimatedMeshComponent::ResetObject()
 	{
 		PlayAnimation(m_defaultAnimation, m_bLoopDefaultAnimation);
 	}
-
-	Physicalize();
 }
 
 void CAnimatedMeshComponent::ProcessEvent(SEntityEvent& event)

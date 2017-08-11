@@ -1155,6 +1155,19 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 	partpos.flagsCollider &= params.nFlagsAND;
 	partpos.density = params.density;
 	partpos.mass = params.mass;
+
+	if (IMaterial* pMaterial = m_pEntity->GetEntityRender()->GetRenderMaterial(nSlot))
+	{
+		// Assign custom material to physics.
+		int surfaceTypesId[MAX_SUB_MATERIALS];
+		memset(surfaceTypesId, 0, sizeof(surfaceTypesId));
+		int numIds = pMaterial->FillSurfaceTypeIds(surfaceTypesId);
+
+		// Assign physical materials mapping table for this material.
+		partpos.nMats = numIds;
+		partpos.pMatMapping = surfaceTypesId;
+	}
+
 	return pStatObj->Physicalize(pAdamProxy->m_pPhysicalEntity, &partpos, pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND && !nSlot ? -1 : GetPartId0(nSlot), params.szPropsOverride);
 }
 
