@@ -301,6 +301,12 @@ bool CMainWindow::OnAboutToCloseAsset(string& reason) const
 
 void CMainWindow::OnCloseAsset()
 {
+	if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
+	{
+		PopulateInspectorEvent popEvent([](CInspector& inspector) {});
+		pBroadcastManager->Broadcast(popEvent);
+	}
+
 	if (m_pGraphView)
 	{
 		m_pGraphView->SetModel(nullptr);
