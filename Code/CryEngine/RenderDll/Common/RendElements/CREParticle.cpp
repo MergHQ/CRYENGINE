@@ -580,6 +580,8 @@ bool CREParticle::Compile(CRenderObject* pRenderObject)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 	if (pRenderObject->m_RState & OS_ANIM_BLEND)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ANIM_BLEND];
+	if (pRenderObject->m_RState & OS_ENVIRONMENT_CUBEMAP)
+		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];
 	if (!(pRenderObject->m_ObjFlags & FOB_NO_FOG))
 	{
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_FOG];
