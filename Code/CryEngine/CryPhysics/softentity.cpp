@@ -1419,9 +1419,10 @@ int CSoftEntity::Step(float time_interval)
 	if (m_nVtx<=0 || !m_bAwake || !m_nConnectedVtx)
 		return 1;
 
+	int iCaller = get_iCaller_int();
 	if (m_flags & (pef_invisible|pef_disabled)) {
 	report_step0:
-		EventPhysPostStep event; InitEvent(&event,this);
+		EventPhysPostStep event; InitEvent(&event,this,iCaller);
 		event.dt=time_interval; event.pos=m_pos; event.q=m_qrot; event.idStep=m_pWorld->m_idStep;
 		m_pWorld->OnEvent(m_flags,&event);
 		return 1;
@@ -1442,7 +1443,6 @@ int CSoftEntity::Step(float time_interval)
 	plane waterPlane; 
 	Vec3 waterFlow(ZERO);
 	float waterDensity=0,ktimeBack;
-	int iCaller = get_iCaller_int();
 	{ ReadLock lock(m_lockSoftBody);
 
 	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
@@ -1694,7 +1694,7 @@ int CSoftEntity::Step(float time_interval)
 	//for(i=0;i<pMesh->m_nTris;i++)
 	//	MARK_UNUSED pMesh->m_pNormals[i];
 
-	EventPhysPostStep epps;	InitEvent(&epps,this);
+	EventPhysPostStep epps;	InitEvent(&epps,this,iCaller);
 	epps.dt=time_interval; epps.pos=m_pos; epps.q=m_qrot; epps.idStep=m_pWorld->m_idStep;
 	m_pWorld->OnEvent(m_flags&pef_monitor_poststep, &epps);
 	if (m_pWorld->m_iLastLogPump==m_iLastLog && m_pEvent) {

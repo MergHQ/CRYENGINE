@@ -56,6 +56,7 @@ CRigidEntity::CRigidEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 	, m_nEvents(0)
 	, m_nMaxEvents(0)
 	, m_icollMin(0)
+	, m_alwaysSweep(0)
 	, m_pColliderContacts(nullptr)
 	, m_pColliderConstraints(nullptr)
 	, m_nContacts(0)
@@ -431,7 +432,7 @@ int CRigidEntity::SetParams(pe_params *_params, int bThreadSafe)
 			m_prevPos = m_body.pos;
 			m_prevq = m_body.q;
 			if (params->bRecalcBounds & 64)
-				PostStepNotify(0,0,0);
+				PostStepNotify(0,0,0,0);
 		} else if (_params->type==pe_params_part::type_id) {
 			pe_params_part *params = (pe_params_part*)_params;
 			if (!is_unused(params->partid) || !is_unused(params->ipart)) {
@@ -2701,6 +2702,7 @@ void CRigidEntity::StartStep(float time_interval)
 {
 	m_timeStepPerformed = 0;
 	m_timeStepFull = time_interval;
+	m_sweepGap = m_pWorld->m_vars.maxContactGap*0.5f;
 }
 
 int __bstop = 0;
@@ -2712,7 +2714,7 @@ int CRigidEntity::Step(float time_interval)
   PHYS_ENTITY_PROFILER
 
 	geom_contact *pcontacts;
-	int i,j,itmax,itmax0,ncontacts,bHasContacts,bNoForce,bSeverePenetration=0,bNoUnproj=0,bWasUnproj=0;
+	int i,j,itmax,itmax0,ncontacts,bHasContacts,bNoForce,bSeverePenetration=0,bNoUnproj=0,bWasUnproj=0,nsweeps=0;
 	const int bUseSimpleSolver = 0;//isneg(-((int)m_flags&ref_use_simple_solver));
 	int iCaller = get_iCaller_int();
 	float r,e;
@@ -2723,7 +2725,6 @@ int CRigidEntity::Step(float time_interval)
 	coord_block_BBox partCoordTmp[2];
 	entity_contact *pContact;
 
-	
 	CPhysicalEntity *pDeadCollider=0;
 	{ ReadLock lockcl(m_lockColliders); 
 	for(i=m_nColliders-1,bHasContacts=isneg(-m_nContacts); i>=0; i--) {
@@ -2780,15 +2781,18 @@ int CRigidEntity::Step(float time_interval)
 		ip.maxSurfaceGapAngle = DEG2RAD(3.5f);
 		m_qNew.Normalize();
 
-		if (!EnforceConstraints(time_interval) && m_velFastDir*(time_interval-bNoUnproj)>m_sizeFastDir*0.5f) {
+		if (!EnforceConstraints(time_interval) && m_velFastDir*(time_interval-bNoUnproj)>m_sizeFastDir*0.5f*(1-m_alwaysSweep)) {
+			SweepAgain:
 			pos = m_posNew; m_posNew = m_pos;
 			qrot = m_qNew; m_qNew = m_qrot;
 			ComputeBBox(m_BBoxNew,0);
 			ip.bSweepTest = true; 
 			ip.time_interval = time_interval;
+			if (m_sweepGap<0 && gwd.v.len2()>m_body.v.len2()*0.01f)
+				ip.time_interval -= m_sweepGap*1.2f/max(1e-6f,gwd.v.len());
 			m_flags |= ref_small_and_fast & -isneg(ip.maxUnproj-1.0f);
 			int flagsAccum = 0;
-			ncontacts = CheckForNewContacts(&gwd,&ip, itmax0, gwd.v*time_interval, 0,-1, &flagsAccum);
+			ncontacts = CheckForNewContacts(&gwd,&ip, itmax0, gwd.v*ip.time_interval, 0,-1, &flagsAccum);
 			pcontacts = ip.pGlobalContacts;
 			if (flagsAccum & geom_no_coll_response) {
 				float tlim = itmax0>=0 ? pcontacts[itmax0].t : 1e10f;
@@ -2798,11 +2802,11 @@ int CRigidEntity::Step(float time_interval)
 							pcontacts[i].iPrim[1],pcontacts[i].iFeature[1], contact_new|contact_last, 0.001f, iCaller);
 			}
 			if (itmax0>=0)	{
-				m_body.pos = m_prevPos - pcontacts[itmax0].dir*(pcontacts[itmax0].t+e);
+				m_body.pos = m_prevPos - pcontacts[itmax0].dir*max(0.0f,(float)pcontacts[itmax0].t+m_sweepGap);
 				m_posNew = m_body.pos-qrot*m_body.offsfb;
-				bWasUnproj = 1;
-				if (m_nColliders)
-					m_minFriction = 3.0f;
+				bWasUnproj = m_alwaysSweep^1;
+				if (OnSweepHit(pcontacts[itmax0], itmax0, ip.time_interval, gwd.v, nsweeps))
+					goto SweepAgain;
 				if (m_bCollisionCulling || m_nParts==1 && m_parts[0].pPhysGeomProxy->pGeom->IsConvex(0.02f)) 
 					ip.ptOutsidePivot[0] = m_body.pos;
 			} else
@@ -2953,7 +2957,7 @@ int CRigidEntity::Step(float time_interval)
 #endif
 
 	pe_params_buoyancy pb[4];
-	int nBuoys = PostStepNotify(time_interval,pb,4);
+	int nBuoys = PostStepNotify(time_interval,pb,4,iCaller);
 
 	Vec3 gravity = m_nColliders ? m_gravity : m_gravityFreefall;
 	ApplyBuoyancy(time_interval,gravity,pb,nBuoys);
@@ -2986,7 +2990,7 @@ int CRigidEntity::Step(float time_interval)
 }
 
 
-int CRigidEntity::PostStepNotify(float time_interval,pe_params_buoyancy *pb,int nMaxBuoys)
+int CRigidEntity::PostStepNotify(float time_interval,pe_params_buoyancy *pb,int nMaxBuoys,int iCaller)
 {
 	Vec3 gravity;
 	int nBuoys=0;
@@ -3000,7 +3004,7 @@ int CRigidEntity::PostStepNotify(float time_interval,pe_params_buoyancy *pb,int 
 	}
 
 	if (m_flags & (pef_monitor_poststep | pef_log_poststep)) {
-		EventPhysPostStep event; InitEvent(&event,this);
+		EventPhysPostStep event; InitEvent(&event,this,iCaller);
 		event.dt = time_interval; event.pos = m_posNew; event.q = m_qNew; event.idStep=m_pWorld->m_idStep;
 		m_pWorld->OnEvent(m_flags&pef_monitor_poststep, &event);
 
@@ -3462,7 +3466,7 @@ int CRigidEntity::Update(float time_interval, float damping)
 		i = i^1 | isneg((m_timeIdle+=dt*i)-m_maxTimeIdle);
 
 		if (m_bAwake&=i) {
-			if (E<Emin && (m_nColliders+m_nPrevColliders+m_bFloating || m_gravity.len2()==0) && m_minAwakeTime<=0) {
+			if (E<Emin && (m_nColliders+m_nPrevColliders+m_bFloating+m_alwaysSweep || m_gravity.len2()==0) && m_minAwakeTime<=0) {
 				/*if (!m_bFloating) {
 					m_body.P.zero();m_body.L.zero(); m_body.v.zero();m_body.w.zero();
 				}*/
