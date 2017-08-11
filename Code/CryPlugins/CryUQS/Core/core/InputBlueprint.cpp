@@ -437,7 +437,7 @@ namespace UQS
 						{
 							if (DataSource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 							{
-								pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems and expects the shuttled items to be of type '%s', but they are actually of type '%s'", pNewChild->m_pFunctionFactory->GetName(), pTypeOfPossiblyShuttledItems->name(), pContainedType->name());
+								pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems and expects the shuttled items to be of type '%s', but they are actually of type '%s'", pNewChild->m_pFunctionFactory->GetName(), pContainedType->name(), pTypeOfPossiblyShuttledItems->name());
 							}
 							bResolveSucceeded = false;
 						}
