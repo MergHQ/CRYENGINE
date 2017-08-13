@@ -1939,7 +1939,7 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 
 		BufDesc.Usage = (D3D11_USAGE)D3D11_USAGE_DEFAULT;
 		BufDesc.MiscFlags = 0;
-		BufDesc.CPUAccessFlags = 0;
+		BufDesc.CPUAccessFlags = ConvertToDX11CPUAccessFlags(nUsage);
 		BufDesc.BindFlags = ConvertToDX11BindFlags(nBindFlags);
 		if (nBindFlags & (BIND_STREAM_OUTPUT | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL))
 		{

@@ -1794,6 +1794,16 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	}
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
 
+	// When in Editor and outside of Game Mode we will need to update the listeners here.
+	// But when in Editor and in Game Mode the ViewSystem will update the listeners.
+	if (!m_env.IsEditorGameMode())
+	{
+		if ((updateFlags & ESYSUPDATE_EDITOR) != 0 && !bNoUpdate && nPauseMode != 1)
+		{
+			gEnv->pGameFramework->GetIViewSystem()->UpdateAudioListeners();
+		}
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	// Update Resource Manager.
 	//////////////////////////////////////////////////////////////////////////

@@ -1916,6 +1916,7 @@ int CRopeEntity::Step(float time_interval)
 	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
 	PHYS_ENTITY_PROFILER
 	
+	int iCaller = get_iCaller_int();
 	float seglen=m_length/m_nSegs,seglen2=sqr(seglen), rseglen=m_nSegs/max(1e-6f,m_length),rseglen2=sqr(rseglen),scale; 
 	int i,j,k,iDir,iEnd,iter,bTargetPoseActive=m_bTargetPoseActive,bGridLocked=0,bHasContacts=0,nCheckParts=0;
 	int collTypes = m_collTypes;
@@ -2116,7 +2117,7 @@ int CRopeEntity::Step(float time_interval)
 				m_segs[i].pt0 = m_segs[i].pt;
 			m_pWorld->UnlockGrid(this,-bGridLocked);
 		}
-		InitEvent(&event,this);
+		InitEvent(&event,this,iCaller);
 		event.pos = m_pos;
 		m_pWorld->OnEvent(m_flags,&event);
 		return 1;
@@ -2144,7 +2145,7 @@ int CRopeEntity::Step(float time_interval)
 
 	if (collTypes & ent_all | m_flags & rope_collides_with_attachment) {
 		FRAME_PROFILER( "Rope collision",GetISystem(),PROFILE_PHYSICS );
-		int iCaller = get_iCaller_int(), objtypes;
+		int objtypes;
 		CPhysicalEntity **pentlist,*pentbuf[2];
 		int iseg,nEnts,iend,ippbv=0,nPrecompPartBVs=0;
 		box boxrope,boxpart;
@@ -2369,7 +2370,7 @@ int CRopeEntity::Step(float time_interval)
 		}
 		m_pWorld->UnlockGrid(this,-bGridLocked);
 	}
-	InitEvent(&event,this);
+	InitEvent(&event,this,iCaller);
 	event.pos = m_pos;
 	m_pWorld->OnEvent(m_flags,&event);
 

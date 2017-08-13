@@ -267,6 +267,13 @@ bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppS
 	SwapEndian(header, (header.nFlags & SERIALIZATION_FLAG_BIG_ENDIAN) ? eBigEndian : eLittleEndian);
 	m_bLevelFilesEndian = (header.nFlags & SERIALIZATION_FLAG_BIG_ENDIAN) ? eBigEndian : eLittleEndian;
 
+	// detect old header format where unitSize_InMeters was an int (now it is float)
+	if (header.TerrainInfo.unitSize_InMeters < 0.25f || header.TerrainInfo.unitSize_InMeters > 64.f)
+	{
+		int unitSize_InMeters = *(int*)&header.TerrainInfo.unitSize_InMeters;
+		header.TerrainInfo.unitSize_InMeters = (float)unitSize_InMeters;
+	}
+
 	if (header.nChunkSize)
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Terrain");
@@ -908,17 +915,17 @@ bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
 		XmlNodeRef levelInfo = GetISystem()->LoadXmlFromFile(GetLevelFilePath(LEVEL_INFO_FILE_NAME));
 		XmlNodeRef terrainInfoNode = levelInfo->findChild("TerrainInfo");
 		STerrainInfo terrainInfo;
-		terrainInfoNode->getAttr("UnitSize", terrainInfo.nUnitSize_InMeters);
+		terrainInfoNode->getAttr("UnitSize", terrainInfo.unitSize_InMeters);
 
-		//terrainInfoNode->getAttr("HeightmapSize", terrainInfo.nHeightMapSize_InUnits);
+		//terrainInfoNode->getAttr("HeightmapSize", terrainInfo.heightMapSize_InUnits);
 		int xm, ym;
 		m_pSegmentsManager->GetTerrainSizeInMeters(xm, ym);
-		terrainInfo.nHeightMapSize_InUnits = max(xm, ym) / terrainInfo.nUnitSize_InMeters;
+		terrainInfo.heightMapSize_InUnits = int(std::max(xm, ym) / terrainInfo.unitSize_InMeters);
 
-		terrainInfoNode->getAttr("SectorSize", terrainInfo.nSectorSize_InMeters);
-		terrainInfoNode->getAttr("SectorsTableSize", terrainInfo.nSectorsTableSize_InSectors);
-		terrainInfoNode->getAttr("HeightmapZRatio", terrainInfo.fHeightmapZRatio);
-		terrainInfoNode->getAttr("OceanWaterLevel", terrainInfo.fOceanWaterLevel);
+		terrainInfoNode->getAttr("SectorSize", terrainInfo.sectorSize_InMeters);
+		terrainInfoNode->getAttr("SectorsTableSize", terrainInfo.sectorsTableSize_InSectors);
+		terrainInfoNode->getAttr("HeightmapZRatio", terrainInfo.heightmapZRatio);
+		terrainInfoNode->getAttr("OceanWaterLevel", terrainInfo.oceanWaterLevel);
 
 		if (!m_pTerrain)
 		{
@@ -1269,8 +1276,8 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	m_fTerrainDetailMaterialsViewDistRatio = fTerrainDetailMaterialsViewDistRatio;
 
 	// SkyBox
-	m_skyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "Materials/Sky/Sky");
-	m_skyLowSpecMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "Materials/Sky/Sky");
+	m_skyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "%ENGINE%/EngineAssets/Materials/sky/Sky");
+	m_skyLowSpecMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "%ENGINE%/EngineAssets/Materials/sky/Sky");
 
 	// Forces the engine to reload the material of the skybox in the next time it renders it.
 	m_pSkyMat = NULL;

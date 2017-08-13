@@ -178,7 +178,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void SetTimer(int nTimerId, int nMilliSeconds) final;
+	virtual int SetTimer(int nTimerId, int nMilliSeconds) final;
 	virtual void KillTimer(int nTimerId) final;
 
 	virtual void Hide(bool bHide, EEntityHideFlags hideFlags = ENTITY_HIDE_NO_FLAG) final;
@@ -188,6 +188,8 @@ public:
 
 	virtual void Invisible(bool bInvisible) final;
 	virtual bool IsInvisible() const final { return m_bInvisible; }
+
+	virtual uint8 GetComponentChangeState() const final;
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const IAIObject* GetAI() const final            { return m_aiObjectID ? GetAIObject() : nullptr; }
@@ -213,11 +215,15 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IEntityComponent* AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent,bool bAllowDuplicate,IEntityComponent::SInitParams *pInitParams) final;
+	virtual IEntityComponent* CreateComponentByInterfaceID(const CryInterfaceID& interfaceId, IEntityComponent::SInitParams *pInitParams) final;
+	virtual bool              AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntityComponent::SInitParams *pInitParams) final;
 	virtual void              RemoveComponent(IEntityComponent* pComponent) final;
 	virtual void              RemoveAllComponents() final;
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const final;
+	virtual void              GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const final;
 	virtual IEntityComponent* GetComponentByGUID(const CryGUID& guid) const final;
+	virtual void              QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const final;
+	virtual IEntityComponent* QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const final;
 	virtual void              CloneComponentsFrom(IEntity& otherEntity) final;
 	virtual void              GetComponents( DynArray<IEntityComponent*> &components ) const final;
 	virtual uint32            GetComponentsCount() const final;
@@ -283,7 +289,7 @@ public:
 	virtual void                       UpdateSlotForComponent(IEntityComponent *pComponent) final;
 	virtual bool                       ShouldUpdateCharacter(int nSlot) const final;
 	virtual ICharacterInstance*        GetCharacter(int nSlot) final;
-	virtual int                        SetCharacter(ICharacterInstance* pCharacter, int nSlot) final;
+	virtual int                        SetCharacter(ICharacterInstance* pCharacter, int nSlot, bool bUpdatePhysics) final;
 	virtual IStatObj*                  GetStatObj(int nSlot) final;
 	virtual int                        SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, float mass = -1.0f) final;
 	virtual IParticleEmitter*          GetParticleEmitter(int nSlot) final;
@@ -424,6 +430,8 @@ public:
 
 	void ShutDownComponent(IEntityComponent* pComponent);
 
+	CEntityComponentsVector& GetComponentsVector() { return m_components; };
+
 protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Attachment.
@@ -443,12 +451,16 @@ private:
 
 	void CreateSchematycObject(const SEntitySpawnParams& params);
 
+	void AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent, const CryGUID& componentTypeID, IEntityComponent::SInitParams *pInitParams, const CEntityComponentClassDesc* pClassDescription);
+
 	//////////////////////////////////////////////////////////////////////////
 	// Component Save/Load
 	//////////////////////////////////////////////////////////////////////////
+	// Loads a component, but leaves it uninitialized
 	void LoadComponent(Serialization::IArchive& archive);
 	void SaveComponent(Serialization::IArchive& archive,IEntityComponent &component);
-	bool LoadComponentLegacy(XmlNodeRef& entityNode,XmlNodeRef& componentNode);
+	// Loads a component with the legacy XML format, but leaves it uninitialized
+	bool LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentNode);
 	void SaveComponentLegacy(CryGUID typeId,XmlNodeRef& entityNode,XmlNodeRef& componentNode,IEntityComponent &component,bool bIncludeScriptProxy);
 	//////////////////////////////////////////////////////////////////////////
 
@@ -462,7 +474,6 @@ private:
 	friend class CEntityComponentTriggerBounds;
 	friend class CEntityPhysics;
 	friend class CNetEntity; // CNetEntity iterates all components on serialization.
-	friend struct SEntityComponentSerializationHelper;
 
 	enum class EBindingType
 	{
@@ -510,7 +521,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	unsigned int         m_bInActiveList  : 1;      // Added to entity system active list.
 	unsigned int         m_bRequiresComponentUpdate  : 1; // Whether or not any components require update callbacks
-	mutable unsigned int m_bBoundsValid   : 1;      // Set when the entity bounding box is valid.
 	unsigned int         m_bInitialized   : 1;      // Set if this entity already Initialized.
 	unsigned int         m_bHidden        : 1;      // Set if this entity is hidden.
 	unsigned int         m_bIsInHiddenLayer : 1;    // Set if this entity is in a hidden layer.
@@ -534,6 +544,8 @@ private:
 	unsigned int m_eSwObjDebugFlag      : 2;
 	unsigned int m_bLocalSeg            : 1;
 	#endif //SEG_WORLD
+
+	uint8 m_componentChangeState;
 
 	// Name of the entity.
 	string m_szName;

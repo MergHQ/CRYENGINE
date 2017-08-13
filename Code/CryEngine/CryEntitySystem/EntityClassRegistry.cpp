@@ -1,29 +1,16 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   EntityClassRegistry.cpp
-//  Version:     v1.00
-//  Created:     3/8/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "stdafx.h"
 #include "EntityClassRegistry.h"
 #include "EntityClass.h"
 #include "EntityScript.h"
-
 #include <CrySystem/File/CryFile.h>
-
 #include <CrySchematyc/CoreAPI.h>
 
 struct SSchematycEntityClassProperties
 {
 	SSchematycEntityClassProperties()
-		: icon("editor/objecticons/schematyc.bmp")
+		: icon("%EDITOR%/objecticons/schematyc.bmp")
 		, bHideInEditor(false)
 		, bTriggerAreas(true)
 	{}
@@ -238,11 +225,6 @@ void CEntityClassRegistry::InitializeDefaultClasses()
 	stdFlowgraphClass.editorClassInfo.sIcon = "FlowgraphEntity.bmp";
 	RegisterStdClass(stdFlowgraphClass);
 
-	SEntityClassDesc stdAudioListenerClass;
-	stdAudioListenerClass.flags |= ECLF_INVISIBLE;
-	stdAudioListenerClass.sName = "AudioListener";
-	RegisterStdClass(stdAudioListenerClass);
-
 	RegisterSchematycEntityClass();
 }
 
@@ -456,7 +438,7 @@ public:
 		Schematyc::IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 		if (pObject)
 		{
-			if (!pObject->Reset(Schematyc::ESimulationMode::Preview, Schematyc::EObjectResetPolicy::Always))
+			if (!pObject->SetSimulationMode(Schematyc::ESimulationMode::Preview, Schematyc::EObjectSimulationUpdatePolicy::Always, false))
 			{
 				CRY_ASSERT_MESSAGE(0, "Failed to reset Schematyc Preview.");
 				DestroyObject(m_objectId);
@@ -509,6 +491,7 @@ private:
 };
 
 static constexpr CryGUID EntityModuleGUID = "{FB618A28-5A7A-4940-8424-D34A9B034155}"_cry_guid;
+static constexpr CryGUID EntityPackageGUID = "{FAA7837E-1310-454D-808B-99BDDC6954A7}"_cry_guid;
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityClassRegistry::RegisterSchematycEntityClass()
@@ -534,7 +517,7 @@ void CEntityClassRegistry::RegisterSchematycEntityClass()
 
 	gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 	  stl::make_unique<Schematyc::CEnvPackage>(
-	    "{FAA7837E-1310-454D-808B-99BDDC6954A7}"_cry_guid,
+		EntityPackageGUID,
 	    "EntitySystem",
 	    "Crytek GmbH",
 	    "CRYENGINE EntitySystem Package",
@@ -609,5 +592,13 @@ void CEntityClassRegistry::OnSchematycClassCompilation(const Schematyc::IRuntime
 	if (!pEnvClass)
 	{
 		//pEnvClass->SetPreviewer();
+	}
+}
+
+void CEntityClassRegistry::UnregisterSchematycEntityClass()
+{
+	if (gEnv->pSchematyc)
+	{
+		gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(EntityPackageGUID);
 	}
 }

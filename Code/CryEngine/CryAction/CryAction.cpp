@@ -185,7 +185,7 @@
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-#ifdef _LIB
+#if defined(_LIB) && !defined(DISABLE_LEGACY_GAME_DLL)
 extern "C" IGameStartup* CreateGameStartup();
 #endif //_LIB
 
@@ -894,6 +894,12 @@ void CCryAction::ConnectCmd(IConsoleCmdArgs* args)
 	params.hostname = tempHost.c_str();
 	params.pContextParams = NULL;
 	params.port = (gEnv->pLobby && gEnv->bMultiplayer) ? gEnv->pLobby->GetLobbyParameters().m_connectPort : pConsole->GetCVar("cl_serverport")->GetIVal();
+
+	if (!CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules())
+	{
+		params.flags |= eGSF_NoGameRules;
+	}
+
 	GetCryAction()->StartGameContext(&params);
 }
 
@@ -1096,8 +1102,11 @@ void CCryAction::LoadGameCmd(IConsoleCmdArgs* args)
 	if (args->GetArgCount() > 1)
 	{
 		GetCryAction()->NotifyForceFlashLoadingListeners();
-		bool quick = args->GetArgCount() > 2;
-		GetCryAction()->LoadGame(args->GetArg(1), quick);
+
+		const string path = PathUtil::ReplaceExtension(args->GetArg(1), CRY_SAVEGAME_FILE_EXT);
+		const bool quick = args->GetArgCount() > 2;
+
+		GetCryAction()->LoadGame(path.c_str(), quick);
 	}
 	else
 	{
@@ -2106,8 +2115,23 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 
 		if (!hGameDll)
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName);
-			return false;
+			// workaround to make the legacy game work with the new project system where the dll is in a separate folder
+			char executableFolder[MAX_PATH];
+			char engineRootFolder[MAX_PATH];
+			CryGetExecutableFolder(MAX_PATH, executableFolder);
+			CryFindEngineRootFolder(MAX_PATH, engineRootFolder);
+
+			string newGameDLLPath = string(executableFolder).erase(0, strlen(engineRootFolder));
+
+			newGameDLLPath += gameDLLName;
+
+			hGameDll = CryLoadLibrary(newGameDLLPath.c_str());
+
+			if (!hGameDll)
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName);
+				return false;
+			}
 		}
 
 		IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(hGameDll, "CreateGameStartup");
@@ -2119,6 +2143,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 		}
 #endif
 
+#if !defined(_LIB) || !defined(DISABLE_LEGACY_GAME_DLL)
 		// create the game startup interface
 		IGameStartup* pGameStartup = CreateGameStartup();
 		if (!pGameStartup)
@@ -2135,6 +2160,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 			m_externalGameLibrary.dllHandle = hGameDll;
 			m_externalGameLibrary.pGameStartup = pGameStartup;
 		}
+#endif
 	}
 
 	return m_externalGameLibrary.IsValid();

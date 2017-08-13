@@ -35,7 +35,7 @@ void CSceneCustomStage::Init()
 	m_debugViewPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
 	m_debugViewPass.SetRenderTargets(
 		// Depth
-		gcpRendD3D->m_pZTexture,
+		gcpRendD3D->GetCurrentDepthOutput(),
 		// Color 0
 		gcpRendD3D->GetCurrentTargetOutput()
 	);
@@ -105,8 +105,7 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 		// support only the mode of CRenderer::CV_r_customvisions=3.
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 
-		// support only no-depth-test mode, not support COB_HUD_REQUIRE_DEPTHTEST of render object custom flag.
-		psoDesc.m_RenderState = GS_NODEPTHTEST;
+		psoDesc.m_RenderState = (desc.objectFlags & FOB_HUD_REQUIRE_DEPTHTEST) ? GS_DEPTHFUNC_LEQUAL : GS_NODEPTHTEST;
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5]; //Ignore depth threshold in SilhoueteVisionOptimised
 
 		pSceneRenderPass = &m_silhouetteMaskPass;
@@ -187,19 +186,15 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 		if (gEnv->p3DEngine && gEnv->p3DEngine->GetITerrain())
 			gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
 
-		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_Pixel);
-
-		// bind the scene depth buffer before the regular scene shader texture IDs.
-		// TODO: This is fragile though and there should be a way to allocate unused IDs for this
-		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_SceneDepthBuffer, pRenderer->m_DepthBufferOrig.pTexture, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_PerlinNoiseMap, CTexture::s_ptexPerlinNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_Vertex);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
 		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexPaletteTexelsPerMeter, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_Pixel);
+		dirtyFlags |= m_perPassResources.SetTexture(ePerPassTexture_PaletteTexelsPerMeter, CTexture::s_ptexPaletteTexelsPerMeter, EDefaultResourceViews::Default, EShaderStage_Pixel);
 	}
 
 	// particle resources
@@ -311,10 +306,8 @@ void CSceneCustomStage::Execute_DebugModes()
 
 	SetAndBuildPerPassResources(false);
 
-	CTexture* pDepthRT = gcpRendD3D->m_pZTexture;
-
 	const bool bReverseDepth = (pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-	pRenderer->FX_ClearTarget(pDepthRT->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+	pRenderer->FX_ClearTarget(gcpRendD3D->GetCurrentDepthOutput()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
 
 	if (!bDebugDraw)
 	{
@@ -331,7 +324,7 @@ void CSceneCustomStage::Execute_DebugModes()
 	}
 
 	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
-	m_debugViewPass.SetRenderTargets(gcpRendD3D->m_pZTexture, gcpRendD3D->GetCurrentTargetOutput());
+	m_debugViewPass.SetRenderTargets(gcpRendD3D->GetCurrentDepthOutput(), gcpRendD3D->GetCurrentTargetOutput());
 
 	// NOTE: no more external state changes in here, everything should have been setup
 	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
@@ -410,6 +403,7 @@ void CSceneCustomStage::Execute_SelectionID()
 		m_selectionIDPass.BeginExecution();
 		m_selectionIDPass.DrawRenderItems(pRenderView, EFSLIST_HIGHLIGHT, startSelected, numItems);
 		m_selectionIDPass.EndExecution();
+
 		pRenderView->GetDrawer().JobifyDrawSubmission();
 		pRenderView->GetDrawer().WaitForDrawSubmission();
 	}
@@ -444,14 +438,6 @@ void CSceneCustomStage::Execute_SelectionID()
 	m_highlightPass.SetConstant(outlineName, Vec4(pRenderer->GetHighlightParams().x), eHWSC_Vertex);
 
 	m_highlightPass.Execute();
-
-	// reset the depth target
-	m_selectionIDPass.SetRenderTargets(
-		// Depth
-		0,
-		// Color 0
-		CTexture::s_ptexSceneSelectionIDs
-	);
 }
 
 void CSceneCustomStage::Execute()
@@ -527,7 +513,6 @@ void CSceneCustomStage::ExecuteSilhouettePass()
 void CSceneCustomStage::ExecuteHelperPass()
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
-	CRenderView* pRenderView = RenderView();
 
 	PROFILE_LABEL_SCOPE("CUSTOM_SCENE_PASSE_DEBUG_HELPER");
 
@@ -542,21 +527,24 @@ void CSceneCustomStage::ExecuteHelperPass()
 		cb.CopyToDevice();
 	}
 
-	CTexture* pTargetTexture = gcpRendD3D->GetCurrentTargetOutput();
-	CTexture* pDepthTextre = gcpRendD3D->m_pZTexture;
+	CRenderView* pRenderView = RenderView();
+	const CRenderOutput* pOutput = pRenderView->GetRenderOutput();
 
-	if (pRenderView)
+	CTexture* pTargetTex = nullptr;
+	CTexture* pDepthTex = nullptr;
+	if (pOutput)
 	{
-		const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
-		if (pRenderOutput)
-		{
-			pDepthTextre = pRenderOutput->GetDepthTexture();
-			CRY_ASSERT(pDepthTextre);
-		}
+		pTargetTex = pOutput->GetHDRTargetTexture();
+		pDepthTex = pOutput->GetDepthTexture();
+	}
+	else
+	{
+		pTargetTex = gcpRendD3D->GetCurrentTargetOutput();
+		pDepthTex = gcpRendD3D->GetCurrentDepthOutput();
 	}
 
-	m_debugViewPass.ExchangeRenderTarget(0, pTargetTexture);
-	m_debugViewPass.ExchangeDepthTarget(pDepthTextre);
+	m_debugViewPass.ExchangeRenderTarget(0, pTargetTex);
+	m_debugViewPass.ExchangeDepthTarget(pDepthTex);
 
 	SetAndBuildPerPassResources(false);
 
@@ -576,4 +564,10 @@ void CSceneCustomStage::ExecuteHelperPass()
 
 	RenderView()->GetDrawer().JobifyDrawSubmission();
 	RenderView()->GetDrawer().WaitForDrawSubmission();
+
+	// TODO: This is a workaround for missing ref-count handling for SRVs/RTVs/DSVs in the
+	// device-objects, but the ref-counting is necessary because the secondary viewports
+	// are being destroyd very frequent and the resize of the viewport produces rapid
+	// invalidation of backbuffer resources
+	m_debugViewPass.ExchangeRenderTarget(0, nullptr);
 }

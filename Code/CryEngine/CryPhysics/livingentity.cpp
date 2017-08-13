@@ -2076,7 +2076,7 @@ int CLivingEntity::Step(float time_interval)
 		}
 
 		if (m_flags & (pef_monitor_poststep | pef_log_poststep)) {
-			EventPhysPostStep epps; InitEvent(&epps,this);
+			EventPhysPostStep epps; InitEvent(&epps,this,iCaller);
 			epps.dt=time_interval; epps.pos=m_pos; epps.q=m_qrot; epps.idStep=m_pWorld->m_idStep;
 			epps.pos -= m_qrot*Vec3(0,0,m_dh);
 			m_pWorld->OnEvent(m_flags,&epps);

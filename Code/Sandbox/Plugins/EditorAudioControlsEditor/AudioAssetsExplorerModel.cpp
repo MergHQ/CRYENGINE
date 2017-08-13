@@ -1,9 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "IAudioSystemItem.h"
-#include "AudioControlsEditorPlugin.h"
-#include "AudioSystemModel.h"
+#include "AudioAssetsExplorerModel.h"
 #include "QAudioControlEditorIcons.h"
 
 #include <QtUtil.h>
@@ -15,7 +13,6 @@
 #include "IAudioSystemEditor.h"
 #include "IAudioSystemItem.h"
 #include "IEditor.h"
-#include "AudioAssetsExplorerModel.h"
 #include "QAudioControlTreeWidget.h"
 #include "EditorStyleHelper.h"
 
@@ -26,7 +23,7 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-bool IsParentValid(const IAudioAsset& parent, const EItemType type)
+bool IsParentValid(IAudioAsset const& parent, EItemType const type)
 {
 	switch (parent.GetType())
 	{
@@ -36,6 +33,7 @@ bool IsParentValid(const IAudioAsset& parent, const EItemType type)
 	default: // assumes the rest are actual controls
 		{
 			CAudioControl const* pControl = static_cast<CAudioControl const*>(&parent);
+
 			if (pControl && pControl->GetType() == eItemType_Switch)
 			{
 				return type == eItemType_State;
@@ -66,7 +64,7 @@ void DecodeMimeData(const QMimeData* pData, std::vector<IAudioAsset*>& outItems)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CanDropMimeData(const QMimeData* pData, const IAudioAsset& parent)
+bool CanDropMimeData(const QMimeData* pData, IAudioAsset const& parent)
 {
 	// Handle first if mime data is an external (from the implementation side) source
 	std::vector<IAudioSystemItem*> implItems;
@@ -146,7 +144,7 @@ CAudioAssetsExplorerModel::~CAudioAssetsExplorerModel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CAudioAssetsExplorerModel::rowCount(const QModelIndex& parent) const
+int CAudioAssetsExplorerModel::rowCount(QModelIndex const& parent) const
 {
 	if (!parent.isValid())
 	{
@@ -157,13 +155,13 @@ int CAudioAssetsExplorerModel::rowCount(const QModelIndex& parent) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CAudioAssetsExplorerModel::columnCount(const QModelIndex& parent) const
+int CAudioAssetsExplorerModel::columnCount(QModelIndex const& parent) const
 {
 	return 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant CAudioAssetsExplorerModel::data(const QModelIndex& index, int role) const
+QVariant CAudioAssetsExplorerModel::data(QModelIndex const& index, int role) const
 {
 	CAudioLibrary* pLibrary = static_cast<CAudioLibrary*>(index.internalPointer());
 
@@ -172,27 +170,35 @@ QVariant CAudioAssetsExplorerModel::data(const QModelIndex& index, int role) con
 		switch (role)
 		{
 		case Qt::DisplayRole:
+
 			if (pLibrary->IsModified())
 			{
 				return QtUtil::ToQStringSafe(pLibrary->GetName()) + " *";
 			}
+
 			return QtUtil::ToQStringSafe(pLibrary->GetName());
+			break;
 
 		case Qt::EditRole:
 			return QtUtil::ToQStringSafe(pLibrary->GetName());
+			break;
 
 		case Qt::ForegroundRole:
+
 			if (pLibrary->HasPlaceholderConnection())
 			{
 				return GetStyleHelper()->errorColor();
 			}
+
 			break;
 
 		case Qt::DecorationRole:
 			return GetItemTypeIcon(EItemType::eItemType_Library);
+			break;
 
 		case EDataRole::eDataRole_ItemType:
 			return EItemType::eItemType_Library;
+			break;
 
 		case EDataRole::eDataRole_InternalPointer:
 			return reinterpret_cast<intptr_t>(pLibrary);
@@ -204,7 +210,7 @@ QVariant CAudioAssetsExplorerModel::data(const QModelIndex& index, int role) con
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioAssetsExplorerModel::setData(const QModelIndex& index, const QVariant& value, int role)
+bool CAudioAssetsExplorerModel::setData(QModelIndex const& index, QVariant const& value, int role)
 {
 	if (index.isValid())
 	{
@@ -252,7 +258,7 @@ QVariant CAudioAssetsExplorerModel::headerData(int section, Qt::Orientation orie
 }
 
 //////////////////////////////////////////////////////////////////////////
-Qt::ItemFlags CAudioAssetsExplorerModel::flags(const QModelIndex& index) const
+Qt::ItemFlags CAudioAssetsExplorerModel::flags(QModelIndex const& index) const
 {
 	if (index.isValid())
 	{
@@ -263,7 +269,7 @@ Qt::ItemFlags CAudioAssetsExplorerModel::flags(const QModelIndex& index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CAudioAssetsExplorerModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
+QModelIndex CAudioAssetsExplorerModel::index(int row, int column, QModelIndex const& parent /*= QModelIndex()*/) const
 {
 	if ((row >= 0) && (column >= 0))
 	{
@@ -274,13 +280,13 @@ QModelIndex CAudioAssetsExplorerModel::index(int row, int column, const QModelIn
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CAudioAssetsExplorerModel::parent(const QModelIndex& index) const
+QModelIndex CAudioAssetsExplorerModel::parent(QModelIndex const& index) const
 {
 	return QModelIndex();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioAssetsExplorerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
+bool CAudioAssetsExplorerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
 	if (parent.isValid())
 	{
@@ -293,7 +299,7 @@ bool CAudioAssetsExplorerModel::canDropMimeData(const QMimeData* pData, Qt::Drop
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioAssetsExplorerModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+bool CAudioAssetsExplorerModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent)
 {
 	if (parent.isValid())
 	{
@@ -326,7 +332,7 @@ void CAudioAssetsExplorerModel::ConnectToSystem()
 {
 	m_pAssetsManager->signalLibraryAboutToBeAdded.Connect([&]()
 		{
-			const int row = m_pAssetsManager->GetLibraryCount();
+			int const row = m_pAssetsManager->GetLibraryCount();
 			beginInsertRows(QModelIndex(), row, row);
 		}, reinterpret_cast<uintptr_t>(this));
 
@@ -334,7 +340,7 @@ void CAudioAssetsExplorerModel::ConnectToSystem()
 
 	m_pAssetsManager->signalLibraryAboutToBeRemoved.Connect([&](CAudioLibrary* pLibrary)
 		{
-			const int libCount = m_pAssetsManager->GetLibraryCount();
+			int const libCount = m_pAssetsManager->GetLibraryCount();
 
 			for (int i = 0; i < libCount; ++i)
 			{
@@ -365,7 +371,7 @@ QControlsProxyFilter::QControlsProxyFilter(QObject* parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QControlsProxyFilter::rowMatchesFilter(int source_row, const QModelIndex& source_parent) const
+bool QControlsProxyFilter::rowMatchesFilter(int source_row, QModelIndex const& source_parent) const
 {
 	if (QDeepFilterProxyModel::rowMatchesFilter(source_row, source_parent))
 	{
@@ -376,7 +382,7 @@ bool QControlsProxyFilter::rowMatchesFilter(int source_row, const QModelIndex& s
 			if (m_validControlsMask != std::numeric_limits<uint>::max())
 			{
 				// has filtering
-				const EItemType itemType = (EItemType)sourceModel()->data(index, EDataRole::eDataRole_ItemType).toUInt();
+				EItemType const itemType = (EItemType)sourceModel()->data(index, EDataRole::eDataRole_ItemType).toUInt();
 
 				if (itemType < eItemType_Folder)
 				{
@@ -396,7 +402,7 @@ bool QControlsProxyFilter::rowMatchesFilter(int source_row, const QModelIndex& s
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QControlsProxyFilter::lessThan(const QModelIndex& left, const QModelIndex& right) const
+bool QControlsProxyFilter::lessThan(QModelIndex const& left, QModelIndex const& right) const
 {
 	if (left.column() == right.column())
 	{
@@ -418,13 +424,13 @@ bool QControlsProxyFilter::lessThan(const QModelIndex& left, const QModelIndex& 
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant QControlsProxyFilter::data(const QModelIndex& proxyIndex, int role) const
+QVariant QControlsProxyFilter::data(QModelIndex const& proxyIndex, int role) const
 {
 	return QSortFilterProxyModel::data(proxyIndex, role);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QControlsProxyFilter::EnableControl(const bool bEnabled, const EItemType type)
+void QControlsProxyFilter::EnableControl(bool const bEnabled, EItemType const type)
 {
 	if (bEnabled)
 	{
@@ -458,9 +464,10 @@ QModelIndex CAudioLibraryModel::IndexFromItem(const IAudioAsset* pItem) const
 	if (pItem)
 	{
 		IAudioAsset* pParent = pItem->GetParent();
+
 		if (pParent)
 		{
-			const int size = pParent->ChildCount();
+			int const size = pParent->ChildCount();
 
 			for (int i = 0; i < size; ++i)
 			{
@@ -476,7 +483,7 @@ QModelIndex CAudioLibraryModel::IndexFromItem(const IAudioAsset* pItem) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CAudioLibraryModel::rowCount(const QModelIndex& parent) const
+int CAudioLibraryModel::rowCount(QModelIndex const& parent) const
 {
 	if (!parent.isValid())
 	{
@@ -494,13 +501,13 @@ int CAudioLibraryModel::rowCount(const QModelIndex& parent) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CAudioLibraryModel::columnCount(const QModelIndex& parent) const
+int CAudioLibraryModel::columnCount(QModelIndex const& parent) const
 {
 	return 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant CAudioLibraryModel::data(const QModelIndex& index, int role) const
+QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 {
 	if (!index.isValid())
 	{
@@ -511,28 +518,34 @@ QVariant CAudioLibraryModel::data(const QModelIndex& index, int role) const
 
 	if (pItem)
 	{
-		const EItemType itemType = pItem->GetType();
+		EItemType const itemType = pItem->GetType();
 
 		switch (role)
 		{
 		case Qt::DisplayRole:
 			return QtUtil::ToQStringSafe(pItem->GetName());
+			break;
 
 		case Qt::EditRole:
 			return QtUtil::ToQStringSafe(pItem->GetName());
+			break;
 
 		case Qt::ForegroundRole:
+
 			if (pItem->HasPlaceholderConnection())
 			{
 				return GetStyleHelper()->errorColor();
 			}
+
 			break;
 
 		case Qt::DecorationRole:
 			return GetItemTypeIcon(itemType);
+			break;
 
 		case EDataRole::eDataRole_ItemType:
 			return pItem->GetType();
+			break;
 
 		case EDataRole::eDataRole_InternalPointer:
 			return reinterpret_cast<intptr_t>(pItem);
@@ -544,7 +557,7 @@ QVariant CAudioLibraryModel::data(const QModelIndex& index, int role) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioLibraryModel::setData(const QModelIndex& index, const QVariant& value, int role)
+bool CAudioLibraryModel::setData(QModelIndex const& index, QVariant const& value, int role)
 {
 	if (index.isValid())
 	{
@@ -611,7 +624,7 @@ QVariant CAudioLibraryModel::headerData(int section, Qt::Orientation orientation
 }
 
 //////////////////////////////////////////////////////////////////////////
-Qt::ItemFlags CAudioLibraryModel::flags(const QModelIndex& index) const
+Qt::ItemFlags CAudioLibraryModel::flags(QModelIndex const& index) const
 {
 	if (index.isValid())
 	{
@@ -622,7 +635,7 @@ Qt::ItemFlags CAudioLibraryModel::flags(const QModelIndex& index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CAudioLibraryModel::index(int row, int column, const QModelIndex& parent) const
+QModelIndex CAudioLibraryModel::index(int row, int column, QModelIndex const& parent) const
 {
 	if ((row >= 0) && (column >= 0))
 	{
@@ -650,7 +663,7 @@ QModelIndex CAudioLibraryModel::index(int row, int column, const QModelIndex& pa
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CAudioLibraryModel::parent(const QModelIndex& index) const
+QModelIndex CAudioLibraryModel::parent(QModelIndex const& index) const
 {
 	if (index.isValid())
 	{
@@ -669,7 +682,7 @@ QModelIndex CAudioLibraryModel::parent(const QModelIndex& index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioLibraryModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
+bool CAudioLibraryModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
 	if (parent.isValid())
 	{
@@ -682,7 +695,7 @@ bool CAudioLibraryModel::canDropMimeData(const QMimeData* pData, Qt::DropAction 
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioLibraryModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+bool CAudioLibraryModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent)
 {
 	if (parent.isValid())
 	{
@@ -696,7 +709,7 @@ bool CAudioLibraryModel::dropMimeData(const QMimeData* pData, Qt::DropAction act
 }
 
 //////////////////////////////////////////////////////////////////////////
-QMimeData* CAudioLibraryModel::mimeData(const QModelIndexList& indexes) const
+QMimeData* CAudioLibraryModel::mimeData(QModelIndexList const& indexes) const
 {
 	CDragDropData* pDragDropData = new CDragDropData();
 	QByteArray byteArray;
@@ -734,7 +747,7 @@ void CAudioLibraryModel::ConnectToSystem()
 		{
 			if (Utils::GetParentLibrary(pParent) == m_pLibrary)
 			{
-			  int row = pParent->ChildCount();
+				int row = pParent->ChildCount();
 
 				if (pParent->GetType() == EItemType::eItemType_Library)
 				{
@@ -762,7 +775,7 @@ void CAudioLibraryModel::ConnectToSystem()
 			if (Utils::GetParentLibrary(pAsset) == m_pLibrary)
 			{
 				IAudioAsset* pParent = pAsset->GetParent();
-				const int childCount = pParent->ChildCount();
+				int const childCount = pParent->ChildCount();
 
 				for (int i = 0; i < childCount; ++i)
 				{
@@ -807,7 +820,7 @@ void CAudioLibraryModel::DisconnectFromSystem()
 namespace AudioModelUtils
 {
 //////////////////////////////////////////////////////////////////////////
-void GetAssetsFromIndices(const QModelIndexList& list, std::vector<CAudioLibrary*>& outLibraries, std::vector<CAudioFolder*>& outFolders, std::vector<CAudioControl*>& outControls)
+void GetAssetsFromIndices(QModelIndexList const& list, std::vector<CAudioLibrary*>& outLibraries, std::vector<CAudioFolder*>& outFolders, std::vector<CAudioControl*>& outControls)
 {
 	for (auto& index : list)
 	{
@@ -834,7 +847,7 @@ void GetAssetsFromIndices(const QModelIndexList& list, std::vector<CAudioLibrary
 }
 
 //////////////////////////////////////////////////////////////////////////
-IAudioAsset* GetAssetFromIndex(const QModelIndex& index)
+IAudioAsset* GetAssetFromIndex(QModelIndex const& index)
 {
 	QVariant internalPtr = index.data(EDataRole::eDataRole_InternalPointer);
 

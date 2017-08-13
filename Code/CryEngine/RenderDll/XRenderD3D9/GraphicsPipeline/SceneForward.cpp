@@ -95,7 +95,7 @@ void CSceneForwardStage::Init()
 	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 	m_forwardLDRPass.SetRenderTargets(
 		// Depth
-		gcpRendD3D->m_pZTexture,
+		gcpRendD3D->GetCurrentDepthOutput(),
 		// Color 0
 		gcpRendD3D->GetCurrentTargetOutput()
 	);
@@ -237,8 +237,26 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		}
 		else if (bHair)
 		{
+			psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_TILED_SHADING] |g_HWSR_MaskBit[HWSR_QUALITY1]);
+			if (CRenderer::CV_r_DeferredShadingTiled && CRenderer::CV_r_DeferredShadingTiledHairQuality > 0)
+			{
+				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
+
+				if (CRenderer::CV_r_DeferredShadingTiledHairQuality > 1)
+					psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_QUALITY1];
+			}
+			
 			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-			psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
+			if (shaderFlags2 & EF2_DEPTH_FIXUP)  // Thin hair feature enabled
+			{
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL;
+				psoDesc.m_RenderState |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA | GS_BLALPHA_MIN;
+			}
+			else
+			{
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
+			}
+			
 			pSceneRenderPass = &m_forwardTransparentBWPass;
 		}
 		else if (bAlphaBlended || bOverlay || bEmissive)
@@ -247,12 +265,12 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			{
 				// Handle emissive materials
 				psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_ONE | GS_BLDST_ONE | GS_COLMASK_RGB;
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_ONE | GS_BLDST_ONE | GS_NOCOLMASK_A;
 			}
 			else
 			{
 				psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_COLMASK_RGB;
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NOCOLMASK_A;
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 			}
 
@@ -357,7 +375,8 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 			dirtyFlags |= pResources->SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(32, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			dirtyFlags |= pResources->SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+
 			dirtyFlags |= pResources->SetTexture(38, pShadowMask, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(39, CTexture::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			dirtyFlags |= pResources->SetTexture(40, CTexture::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
@@ -621,8 +640,9 @@ void CSceneForwardStage::Execute_Opaque()
 void CSceneForwardStage::Execute_Transparent(bool bBelowWater)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
+	SThreadInfo* const pThreadInfo = &(pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID]);
 
-	if (!SRendItem::IsListEmpty(EFSLIST_TRANSP) && ((SRendItem::BatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER) || !bBelowWater))
+	if (!SRendItem::IsListEmpty(EFSLIST_TRANSP) && (!SRendItem::IsListEmpty(EFSLIST_TRANSP_NEAREST)) && ((SRendItem::BatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER) || !bBelowWater))
 	{
 		CStretchRectPass& copyPass = bBelowWater ? m_copySceneTargetBWPass : m_copySceneTargetAWPass;
 		copyPass.Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexCurrSceneTarget);
@@ -635,19 +655,26 @@ void CSceneForwardStage::Execute_Transparent(bool bBelowWater)
 		D3DViewPort viewport = { 0.f, 0.f, float(pRenderer->m_MainViewport.nWidth), float(pRenderer->m_MainViewport.nHeight), 0.0f, 1.0f };
 		pRenderer->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
 
+		CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
+		if (pThreadInfo->m_PersFlags & RBPF_REVERSE_DEPTH)
+			passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;
+
 		PreparePerPassResources(pRenderView, false);
 
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 		CSceneRenderPass& scenePass = bBelowWater ? m_forwardTransparentBWPass : m_forwardTransparentAWPass;
 
 		scenePass.PrepareRenderPassForUse(commandList);
-		scenePass.SetFlags(CSceneRenderPass::ePassFlags_None);
+		scenePass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
 		scenePass.SetViewport(viewport);
 
 		RenderView()->GetDrawer().InitDrawSubmission();
 
 		scenePass.BeginExecution();
+
 		scenePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP);
+		scenePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+
 		scenePass.EndExecution();
 
 		RenderView()->GetDrawer().JobifyDrawSubmission();
@@ -686,6 +713,33 @@ void CSceneForwardStage::Execute_TransparentAboveWater()
 	PROFILE_LABEL_SCOPE("TRANSPARENT_AW");
 
 	Execute_Transparent(false);
+}
+
+void CSceneForwardStage::Execute_TransparentDepthFixup()
+{
+	PROFILE_LABEL_SCOPE("MERGE_DEPTH");
+
+	CTexture* pSrcRT = CTexture::s_ptexHDRTarget;
+	CTexture* pDestRT =  CTexture::s_ptexZTarget;
+
+	if (!m_depthFixupPass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	{
+		m_depthFixupPass.Execute();
+		return;
+	}
+
+	static CCryNameTSCRC techName("TranspDepthFixupMerge");
+
+	uint64 rtMask = 0;
+
+	m_depthFixupPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+	m_depthFixupPass.SetRenderTarget(0, pDestRT);
+	m_depthFixupPass.SetTechnique(CShaderMan::s_shPostEffects, techName, rtMask);
+	m_depthFixupPass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MIN);
+	m_depthFixupPass.SetRequirePerViewConstantBuffer(true);
+	m_depthFixupPass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::PointClamp);
+	m_depthFixupPass.BeginConstantUpdate();
+	m_depthFixupPass.Execute();
 }
 
 void CSceneForwardStage::Execute_AfterPostProcess()
@@ -1020,7 +1074,10 @@ void CSceneForwardStage::Execute_SkyPass()
 		{
 			pSkyDomeTextureMie = m_pHDRSkyRE->m_pSkyDomeTextureMie;
 			pSkyDomeTextureRayleigh = m_pHDRSkyRE->m_pSkyDomeTextureRayleigh;
-			pSkyMoonTex = m_pHDRSkyRE->m_moonTexId > 0 ? CTexture::GetByID(m_pHDRSkyRE->m_moonTexId) : m_pSkyMoonTex.get();
+			if (m_pHDRSkyRE->m_moonTexId > 0)
+			{
+				pSkyMoonTex = CTexture::GetByID(m_pHDRSkyRE->m_moonTexId);
+			}
 		}
 
 		m_skyPass.SetTextureSamplerPair(1, pSkyDomeTextureMie, samplerStateLinearWrapU);

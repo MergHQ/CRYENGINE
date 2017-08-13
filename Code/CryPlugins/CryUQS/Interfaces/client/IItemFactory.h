@@ -35,6 +35,8 @@ namespace UQS
 
 			virtual void*                             CreateItems(size_t numItems, EItemInitMode itemInitMode) = 0;
 			virtual void*                             CloneItem(const void* pOriginalItem) = 0;
+			virtual void*                             CloneItems(const void* pOriginalItems, size_t numItemsToClone) = 0;
+			virtual void*                             CloneItemsViaIndexList(const void* pOriginalItems, const size_t* pIndexes, size_t numIndexes) = 0;
 			virtual void                              DestroyItems(void* pItems) = 0;
 			virtual const Shared::CTypeInfo&          GetItemType() const = 0;
 			virtual size_t                            GetItemSize() const = 0;

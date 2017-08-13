@@ -20,12 +20,12 @@ class CListenerComponent;
 } // namespace Audio
 } // namespace Cry
 
-class CView final : public IView, public IHmdDevice::IAsyncCameraCallback
+class CView final : public IView, public IEntityEventListener, public IHmdDevice::IAsyncCameraCallback
 {
 public:
 
 	explicit CView(ISystem* const pSystem);
-	virtual ~CView() override = default;
+	virtual ~CView() override;
 
 	//shaking
 	struct SShake
@@ -121,12 +121,17 @@ public:
 	virtual void               SetActive(bool const bActive) override;
 	// ~IView
 
+	// IEntityEventListener
+	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) override;
+	// ~IEntityEventListener
+
 	virtual void ProcessShaking(float frameTime);
 	virtual void ProcessShake(SShake* pShake, float frameTime);
 
 	void         Serialize(TSerialize ser);
 	void         PostSerialize();
-	CCamera& GetCamera() { return m_camera; };
+	CCamera& GetCamera() { return m_camera; }
+	void     UpdateAudioListener(Matrix34 const& worldTM);
 
 	void     GetMemoryUsage(ICrySizer* s) const;
 
@@ -170,9 +175,10 @@ protected:
 
 	std::vector<SShake> m_shakes;
 
-	Cry::Audio::DefaultComponents::CListenerComponent* m_pAudioListener;
-	Ang3  m_frameAdditiveAngles; // Used mainly for cinematics, where the game can slightly override camera orientation
+	Cry::Audio::DefaultComponents::CListenerComponent* m_pAudioListenerComponent;
+	IEntity* m_pAudioListenerEntity;
+	Ang3     m_frameAdditiveAngles; // Used mainly for cinematics, where the game can slightly override camera orientation
 
-	float m_scale;
-	float m_zoomedScale;
+	float    m_scale;
+	float    m_zoomedScale;
 };

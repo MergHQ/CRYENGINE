@@ -2984,6 +2984,9 @@ void CTexture::LoadDefaultSystemTextures()
 		{
 			if (!texturesFromFile[t].pTexture)
 				texturesFromFile[t].pTexture = CTexture::ForName(texturesFromFile[t].szFileName, texturesFromFile[t].flags, eTF_Unknown);
+
+			if (!texturesFromFile[t].pTexture || !texturesFromFile[t].pTexture->IsLoaded() || !texturesFromFile[t].pTexture->GetDevTexture())
+				CryFatalError("Can't open %s texture file.", texturesFromFile[t].szFileName);
 		}
 
 		// Associate dummy NULL-resource with s_pTexNULL

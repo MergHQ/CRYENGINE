@@ -1407,7 +1407,7 @@ void CVehicle::KillTimers()
 {
 	KillAbandonedTimer();
 
-	GetEntity()->KillTimer(-1);
+	GetEntity()->KillTimer(IEntity::KILL_ALL_TIMER);
 	m_timers.clear();
 }
 
@@ -1506,11 +1506,8 @@ void CVehicle::Reset(bool enterGame)
 		NeedsUpdate(eVUF_AwakePhysics);
 
 		// Temp Code, testing only
-		CryAudio::ControlId triggerId;
-		if (gEnv->pAudioSystem->GetTriggerId("ENGINE_ON", triggerId))
-		{
-			m_pIEntityAudioComponent->ExecuteTrigger(triggerId);
-		}
+		CryAudio::ControlId const triggerId = CryAudio::StringToId_CompileTime("ENGINE_ON");
+		m_pIEntityAudioComponent->ExecuteTrigger(triggerId);
 	}
 	else
 	{
@@ -1523,11 +1520,8 @@ void CVehicle::Reset(bool enterGame)
 		}
 
 		// Temp Code, testing only
-		CryAudio::ControlId triggerId;
-		if (gEnv->pAudioSystem->GetTriggerId("ENGINE_OFF", triggerId))
-		{
-			m_pIEntityAudioComponent->ExecuteTrigger(triggerId);
-		}
+		CryAudio::ControlId const triggerId = CryAudio::StringToId_CompileTime("ENGINE_OFF");
+		m_pIEntityAudioComponent->ExecuteTrigger(triggerId);
 	}
 
 	m_collisionDisabledTime = 0.0f;
@@ -5897,14 +5891,9 @@ const char* CVehicle::GetModification() const
 	return m_modifications.c_str();
 }
 
-IEntityComponent::ComponentEventPriority CVehicle::GetEventPriority(const int eventID) const
+IEntityComponent::ComponentEventPriority CVehicle::GetEventPriority() const
 {
-	switch (eventID)
-	{
-	case ENTITY_EVENT_PREPHYSICSUPDATE:
-		return ENTITY_PROXY_USER + EEntityEventPriority_Vehicle;
-	}
-	return IGameObjectExtension::GetEventPriority(eventID);
+	return ENTITY_PROXY_USER + EEntityEventPriority_Vehicle;
 }
 
 #if ENABLE_VEHICLE_DEBUG

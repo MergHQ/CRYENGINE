@@ -50,6 +50,7 @@ public:
 	virtual void SetDeferredViewSystemUpdate(bool const bDeferred) override { m_useDeferredViewSystemUpdate = bDeferred; }
 	virtual bool UseDeferredViewSystemUpdate() const override               { return m_useDeferredViewSystemUpdate; }
 	virtual void SetControlAudioListeners(bool const bActive) override;
+	virtual void UpdateAudioListeners() override;
 	//~IViewSystem
 
 	//IMovieUser

@@ -94,6 +94,7 @@ public:
 		g_szParams[pe_params_timeout::type_id] = sizeof(pe_params_timeout);
 		g_szParams[pe_params_skeleton::type_id] = sizeof(pe_params_skeleton);
 		g_szParams[pe_params_collision_class::type_id] = sizeof(pe_params_collision_class);
+		g_szParams[pe_params_walking_rigid::type_id] = sizeof(pe_params_walking_rigid);
 
 		g_szAction[pe_action_impulse::type_id] = sizeof(pe_action_impulse);
 		g_szAction[pe_action_reset::type_id] = sizeof(pe_action_reset);
