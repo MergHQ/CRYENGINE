@@ -53,6 +53,7 @@
 #include <CryIcon.h>
 
 #include <ProxyModels/DeepFilterProxyModel.h>
+#include <EditorFramework/BroadcastManager.h>
 
 namespace Schematyc
 {
@@ -1831,20 +1832,28 @@ void CScriptBrowserWidget::OnRemoveItem()
 					}
 				}
 
-				if (szElementType && m_pModel)
+				if (ScriptBrowserUtils::RemoveScriptElement(*pScriptElement))
 				{
-					Schematyc::IScriptElement* pRootElement = m_pModel->GetRootElement();
+					if (szElementType && m_pModel)
+					{
+						Schematyc::IScriptElement* pRootElement = m_pModel->GetRootElement();
 
-					GetIEditor()->GetIUndoManager()->Begin();
-					stack_string desc("Added ");
-					desc.append(szElementType);
-					CrySchematycEditor::CScriptUndoObject* pUndoObject = new CrySchematycEditor::CScriptUndoObject(desc.c_str(), m_editor);
-					CUndo::Record(pUndoObject);
-					GetIEditor()->GetIUndoManager()->Accept(pUndoObject->GetDescription());
+						GetIEditor()->GetIUndoManager()->Begin();
+						stack_string desc("Added ");
+						desc.append(szElementType);
+						CrySchematycEditor::CScriptUndoObject* pUndoObject = new CrySchematycEditor::CScriptUndoObject(desc.c_str(), m_editor);
+						CUndo::Record(pUndoObject);
+						GetIEditor()->GetIUndoManager()->Accept(pUndoObject->GetDescription());
+					}
+
+					OnScriptElementRemoved(*pScriptElement);
+
+					if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
+					{
+						PopulateInspectorEvent popEvent([](CInspector& inspector) {});
+						pBroadcastManager->Broadcast(popEvent);
+					}
 				}
-
-				OnScriptElementRemoved(*pScriptElement);
-				ScriptBrowserUtils::RemoveScriptElement(*pScriptElement);
 			}
 		}
 	}

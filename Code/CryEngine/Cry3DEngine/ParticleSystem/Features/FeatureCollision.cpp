@@ -34,6 +34,7 @@ void CFeatureCollision::AddToComponent(CParticleComponent* pComponent, SComponen
 
 void CFeatureCollision::Serialize(Serialization::IArchive& ar)
 {
+	CParticleFeature::Serialize(ar);
 	ar(m_terrain, "Terrain", "Terrain");
 	ar(m_staticObjects, "StaticObjects", "Static Objects");
 	ar(m_dynamicObjects, "DynamicObjects", "Dynamic Objects");
@@ -565,6 +566,7 @@ void CFeatureGPUCollision::AddToComponent(CParticleComponent* pComponent, SCompo
 
 void CFeatureGPUCollision::Serialize(Serialization::IArchive& ar)
 {
+	CParticleFeature::Serialize(ar);
 	ar(m_offset, "Offset", "Offset");
 	ar(m_radius, "Radius", "Radius");
 	ar(m_restitution, "Restitution", "Restitution");
