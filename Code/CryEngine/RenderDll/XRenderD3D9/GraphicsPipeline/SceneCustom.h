@@ -21,6 +21,7 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 		ePerPassTexture_NormalsFitting,
 		ePerPassTexture_DissolveNoise,
 		ePerPassTexture_SceneLinearDepth,
+		ePerPassTexture_PaletteTexelsPerMeter,
 
 		ePerPassTexture_Count
 	};
