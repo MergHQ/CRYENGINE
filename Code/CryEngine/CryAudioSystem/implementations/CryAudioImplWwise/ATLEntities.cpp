@@ -171,7 +171,6 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-
 	SSwitchState const* const pSwitchState = static_cast<SSwitchState const* const>(pISwitchState);
 
 	if (pSwitchState != nullptr)
@@ -270,12 +269,12 @@ ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float c
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if (g_listenerID != AK_INVALID_GAME_OBJECT)
+	if (g_listenerId != AK_INVALID_GAME_OBJECT)
 	{
 		AKRESULT const wwiseResult = AK::SoundEngine::SetObjectObstructionAndOcclusion(
 		  m_id,
-		  g_listenerID,                     // only set the obstruction/occlusion for the default listener for now
-		  static_cast<AkReal32>(occlusion), // Currently used on obstruction until the ATL produces a correct obstruction value.
+		  g_listenerId,                     // Set obstruction/occlusion for only the default listener for now.
+		  static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
 		  static_cast<AkReal32>(occlusion));
 
 		if (IS_WWISE_OK(wwiseResult))
@@ -310,8 +309,16 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
 	{
-		PostEnvironmentAmounts();
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, m_id, AK_EndOfEvent, &EndEventCallback, pEvent);
+		// If the user executes a trigger on the global object we want to post events only to that particular object and not globally!
+		AkGameObjectID objectId = s_globalObjectId;
+
+		if (m_id != AK_INVALID_GAME_OBJECT)
+		{
+			objectId = m_id;
+			PostEnvironmentAmounts();
+		}
+
+		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, pEvent);
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{
@@ -336,7 +343,9 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::StopAllTriggers()
 {
-	AK::SoundEngine::StopAll(m_id);
+	// If the user wants to stop all triggers on the global object we want to stop them only on that particular object and not globally!
+	AkGameObjectID const objectId = (m_id != AK_INVALID_GAME_OBJECT) ? m_id : s_globalObjectId;
+	AK::SoundEngine::StopAll(objectId);
 	return ERequestStatus::Success;
 }
 
@@ -381,7 +390,7 @@ ERequestStatus CObject::PostEnvironmentAmounts()
 				AkAuxSendValue& auxValue = auxValues[auxIndex];
 				auxValue.auxBusID = iEnvPair->first;
 				auxValue.fControlValue = amount;
-				auxValue.listenerID = g_listenerID;
+				auxValue.listenerID = g_listenerId;
 
 				// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
 				if (amount == 0.0f)
@@ -408,7 +417,7 @@ ERequestStatus CObject::PostEnvironmentAmounts()
 				AkAuxSendValue& auxValue = auxValues[auxIndex];
 				auxValue.auxBusID = iSortedEnvPair->first;
 				auxValue.fControlValue = iSortedEnvPair->second;
-				auxValue.listenerID = g_listenerID;
+				auxValue.listenerID = g_listenerId;
 			}
 
 			//remove all Environments with 0.0 amounts
