@@ -828,7 +828,7 @@ bool RenameScriptElement(IScriptElement& scriptElement, const char* szName)
 	return false;
 }
 
-void RemoveScriptElement(const IScriptElement& element)
+bool RemoveScriptElement(const IScriptElement& element)
 {
 	if (CanRemoveScriptElement(element))
 	{
@@ -844,8 +844,11 @@ void RemoveScriptElement(const IScriptElement& element)
 		if (result == QDialogButtonBox::Yes)
 		{
 			gEnv->pSchematyc->GetScriptRegistry().RemoveElement(element.GetGUID());
+			return true;
 		}
 	}
+
+	return false;
 }
 } // ScriptBrowserUtils
 } // Schematyc
