@@ -1075,7 +1075,9 @@ void CPlayer::InitLocalPlayer()
 	if (m_pPlayerTypeComponent)
 		return;
 
+	// Make the player a local actor and update the third person state so the player is now in first person state
 	CActor::InitLocalPlayer();
+	UpdateThirdPersonState();
 
 	CGameLobby* pGameLobby = g_pGame->GetGameLobby();
 	if(pGameLobby && pGameLobby->GetSpectatorStatusFromChannelId(GetGameObject()->GetChannelId()))
