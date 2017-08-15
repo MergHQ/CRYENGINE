@@ -233,11 +233,11 @@ static dll_string AnimationResourceSelector(const SResourceSelectorContext& x, c
 	}
 }
 
-REGISTER_RESOURCE_SELECTOR("Animation", AnimationResourceSelector, "icons:Animation/Animation.ico")
-REGISTER_RESOURCE_SELECTOR("Skeleton", AnimationResourceSelector, "icons:Animation/Skeleton.ico")
-REGISTER_RESOURCE_SELECTOR("SkeletonParams", AnimationResourceSelector, "icons:Animation/Skeleton.ico")
-REGISTER_RESOURCE_SELECTOR("Character", AnimationResourceSelector, "icons:Animation/Character.ico")
-REGISTER_RESOURCE_SELECTOR("CharacterRig", AnimationResourceSelector, "icons:Animation/Rig.ico")
-REGISTER_RESOURCE_SELECTOR("CharacterPhysics", AnimationResourceSelector, "icons:Animation/Physics.ico")
+REGISTER_RESOURCE_SELECTOR("Animation", AnimationResourceSelector, "icons:common/assets_animation.ico")
+REGISTER_RESOURCE_SELECTOR("Skeleton", AnimationResourceSelector, "icons:common/animation_skeleton.ico")
+REGISTER_RESOURCE_SELECTOR("SkeletonParams", AnimationResourceSelector, "icons:common/animation_skeleton.ico")
+REGISTER_RESOURCE_SELECTOR("Character", AnimationResourceSelector, "icons:common/animation_character.ico")
+REGISTER_RESOURCE_SELECTOR("CharacterRig", AnimationResourceSelector, "icons:common/animation_rig.ico")
+REGISTER_RESOURCE_SELECTOR("CharacterPhysics", AnimationResourceSelector, "icons:common/animation_physics.ico")
 
 }

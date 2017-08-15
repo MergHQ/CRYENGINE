@@ -96,6 +96,8 @@ REGISTER_CVAR_AUTO(float, e_svoTI_PropagationBooster, 0, VF_EXPERIMENTAL,
                    "Controls fading of the light during in-SVO propagation\nValues greater than 1 help propagating light further but may bring more light leaking artifacts");
 REGISTER_CVAR_AUTO(float, e_svoTI_DiffuseBias, 0, VF_NULL,
                    "Constant ambient value added to GI\nHelps preventing completely black areas\nIf negative - modulate ambient with near range AO (prevents constant ambient in completely occluded indoor areas)");
+REGISTER_CVAR_AUTO(float, e_svoTI_PointLightsBias, 0.2f, VF_EXPERIMENTAL,
+                   "Modulates non shadowed injection from point light (helps simulating multiple bounces)");
 REGISTER_CVAR_AUTO(float, e_svoTI_DiffuseConeWidth, 0, VF_NULL,
                    "Controls wideness of diffuse cones\nWider cones work faster but may cause over-occlusion and more light leaking\nNarrow cones are slower and may bring more noise");
 REGISTER_CVAR_AUTO(float, e_svoTI_ConeMaxLength, 0, VF_NULL,

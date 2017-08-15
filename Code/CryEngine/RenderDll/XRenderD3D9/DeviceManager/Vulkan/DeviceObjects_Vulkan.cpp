@@ -9,6 +9,8 @@
 #include "Vulkan/API/VKSampler.hpp"
 #include "Vulkan/API/VKExtensions.hpp"
 
+#include <Common/Renderer.h>
+
 extern CD3D9Renderer gcpRendD3D;
 
 using namespace NCryVulkan;
@@ -870,9 +872,6 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		VK_BLEND_OP_REVERSE_SUBTRACT, // GS_BLOP_SUBREV / GS_BLALPHA_SUBREV
 	};
 
-	uint32 colorWriteMask = 0xfffffff0 | ((psoDesc.m_RenderState & GS_COLMASK_MASK) >> GS_COLMASK_SHIFT);
-	colorWriteMask = (~colorWriteMask) & 0xf;
-
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[CD3D9Renderer::RT_STACK_WIDTH];
 
 	int validBlendAttachmentStateCount = 0;
@@ -887,6 +886,10 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	{
 		if (!renderTargets[i].pTexture)
 			break;
+
+		uint32_t colorWriteMask = 0;
+		colorWriteMask = 0xfffffff0 | (ColorMasks[(psoDesc.m_RenderState & GS_COLMASK_MASK) >> GS_COLMASK_SHIFT][i]);
+		colorWriteMask = (~colorWriteMask) & 0xf;
 
 		colorBlendAttachmentStates[validBlendAttachmentStateCount].blendEnable = (psoDesc.m_RenderState & GS_BLEND_MASK) ? VK_TRUE : VK_FALSE;
 		colorBlendAttachmentStates[validBlendAttachmentStateCount].srcColorBlendFactor = SrcBlendFactors[(psoDesc.m_RenderState & GS_BLSRC_MASK) >> GS_BLSRC_SHIFT].BlendColor;

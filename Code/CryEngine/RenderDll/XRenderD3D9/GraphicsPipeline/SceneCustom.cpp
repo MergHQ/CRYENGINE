@@ -11,7 +11,7 @@
 CSceneCustomStage::CSceneCustomStage()
 	: m_perPassResources(nullptr, nullptr)
 {}
-
+ 
 void CSceneCustomStage::Init()
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;

@@ -4,6 +4,7 @@
 
 #include "GraphNodeItem.h"
 #include "GraphPinItem.h"
+#include "GraphViewModel.h"
 
 #include <CrySchematyc/Script/IScriptGraph.h>
 
@@ -201,8 +202,6 @@ void CNodeItem::Refresh(bool forceRefresh)
 		CryGraphEditor::PinItemArray pins;
 		pins.reserve(numPins);
 
-		size_t numKeptPins = 0;
-
 		const uint32 numInputPins = m_scriptNode.GetInputCount();
 		for (uint32 i = 0; i < numInputPins; ++i)
 		{
@@ -227,7 +226,6 @@ void CNodeItem::Refresh(bool forceRefresh)
 				pins.push_back(pPinItem);
 
 				*result = nullptr;
-				++numKeptPins;
 			}
 		}
 
@@ -255,7 +253,6 @@ void CNodeItem::Refresh(bool forceRefresh)
 				pins.push_back(pPinItem);
 
 				*result = nullptr;
-				++numKeptPins;
 			}
 		}
 
@@ -266,15 +263,28 @@ void CNodeItem::Refresh(bool forceRefresh)
 		{
 			if (pPinItem != nullptr)
 			{
+				// TODO: We need to destroy the connections since Schematyc backend did so already without
+				//			 notifying the editor. Remove that as soon as we have proper communication between
+				//			 editor and backend.
+				pPinItem->Disconnect();
+				// ~TODO
+
 				SignalPinRemoved(*pPinItem);
 				delete pPinItem;
 			}
 		}
 
+		size_t inputIdx = 0;
+		size_t outputIdx = 0;
 		for (uint32 i = 0; i < m_pins.size(); ++i)
 		{
 			CPinItem* pPinItem = static_cast<CPinItem*>(m_pins.at(i));
-			pPinItem->UpdateWithNewIndex(i);
+			if (pPinItem->IsInputPin())
+				pPinItem->UpdateWithNewIndex(inputIdx++);
+			else
+				pPinItem->UpdateWithNewIndex(outputIdx++);
+
+			pPinItem->SignalInvalidated();
 		}
 	}
 }

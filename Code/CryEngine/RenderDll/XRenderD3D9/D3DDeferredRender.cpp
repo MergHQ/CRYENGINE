@@ -504,7 +504,7 @@ void CD3D9Renderer::FX_StencilFrustumCull(int nStencilID, const SRenderLight* pL
 			SRenderLight instLight = *pLight;
 			vOffsetDir = (-pLight->m_fProjectorNearPlane) * (pLight->m_ObjMatrix.GetColumn0().GetNormalized());
 			instLight.SetPosition(instLight.m_Origin - vOffsetDir);
-			instLight.m_fRadius -= pLight->m_fProjectorNearPlane;
+			instLight.SetRadius(instLight.m_fClipRadius - pLight->m_fProjectorNearPlane);
 			CShadowUtils::GetCubemapFrustumForLight(&instLight, nAxis, 160.0f, &mProjection, &mView, false); // 3.0f -  offset to make sure that frustums are intersected
 		}
 		else if ((pLight->m_Flags & DLF_PROJECT) && pLightTexture && !(pLightTexture->GetFlags() & FT_REPLICATE_TO_ALL_SIDES))
