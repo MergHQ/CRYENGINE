@@ -1875,20 +1875,18 @@ bool CRenderer::EF_UpdateDLight(SRenderLight* dl)
 		if (pPosTrack && pPosTrack->GetNumKeys() > 0 &&
 			!(pPosTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
 		{
-			Vec3 vOffset(0, 0, 0);
 			float duration = max(pPosTrack->GetKeyTime(pPosTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
 			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
-			vOffset = stl::get<Vec3>(pPosTrack->GetValue(timeNormalized));
+			Vec3 vOffset = stl::get<Vec3>(pPosTrack->GetValue(timeNormalized));
 			dl->m_Origin = dl->m_BaseOrigin + vOffset;
 		}
 
 		if (pRotTrack && pRotTrack->GetNumKeys() > 0 &&
 			!(pRotTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
 		{
-			Vec3 vRot(0, 0, 0);
 			float duration = max(pRotTrack->GetKeyTime(pRotTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
 			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
-			vRot = stl::get<Vec3>(pRotTrack->GetValue(timeNormalized));
+			Vec3 vRot = stl::get<Vec3>(pRotTrack->GetValue(timeNormalized));
 			static_cast<CDLight*>(dl)->SetMatrix(
 				dl->m_BaseObjMatrix * Matrix34::CreateRotationXYZ(Ang3(DEG2RAD(vRot.x), DEG2RAD(vRot.y), DEG2RAD(vRot.z))),
 				false);
@@ -1897,10 +1895,9 @@ bool CRenderer::EF_UpdateDLight(SRenderLight* dl)
 		if (pColorTrack && pColorTrack->GetNumKeys() > 0 &&
 			!(pColorTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
 		{
-			Vec3 vColor(dl->m_Color.r, dl->m_Color.g, dl->m_Color.b);
 			float duration = max(pColorTrack->GetKeyTime(pColorTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
 			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
-			vColor = stl::get<Vec3>(pColorTrack->GetValue(timeNormalized));
+			Vec3 vColor = stl::get<Vec3>(pColorTrack->GetValue(timeNormalized));
 			dl->m_Color = ColorF(vColor.x / 255.0f, vColor.y / 255.0f, vColor.z / 255.0f);
 		}
 		else
@@ -1911,44 +1908,40 @@ bool CRenderer::EF_UpdateDLight(SRenderLight* dl)
 		if (pDiffMultTrack && pDiffMultTrack->GetNumKeys() > 0 &&
 			!(pDiffMultTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
 		{
-			float diffMult = 1.0;
 			float duration = max(pDiffMultTrack->GetKeyTime(pDiffMultTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
 			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
-			diffMult = stl::get<float>(pDiffMultTrack->GetValue(timeNormalized));
-			dl->m_Color *= diffMult;
+			float diffMult = stl::get<float>(pDiffMultTrack->GetValue(timeNormalized));
+			dl->m_Color = dl->m_BaseColor * diffMult;
 		}
 
 		if (pRadiusTrack && pRadiusTrack->GetNumKeys() > 0 &&
 			!(pRadiusTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
 		{
-			float radius = dl->m_fRadius;
 			float duration = max(pRadiusTrack->GetKeyTime(pRadiusTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
 			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
-			radius = stl::get<float>(pRadiusTrack->GetValue(timeNormalized));
-			dl->m_fRadius = radius;
+			float radius = stl::get<float>(pRadiusTrack->GetValue(timeNormalized));
+			dl->SetRadius(radius);
 		}
 
 		if (pSpecMultTrack && pSpecMultTrack->GetNumKeys() > 0 &&
 			!(pSpecMultTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
 		{
-			float specMult = dl->m_SpecMult;
 			float duration = max(pSpecMultTrack->GetKeyTime(pSpecMultTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
 			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
-			specMult = stl::get<float>(pSpecMultTrack->GetValue(timeNormalized));
+			float specMult = stl::get<float>(pSpecMultTrack->GetValue(timeNormalized));
 			dl->m_SpecMult = specMult;
 		}
 
 		if (pHDRDynamicTrack && pHDRDynamicTrack->GetNumKeys() > 0 &&
 			!(pHDRDynamicTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
 		{
-			float hdrDynamic = dl->m_fHDRDynamic;
 			float duration = max(pHDRDynamicTrack->GetKeyTime(pHDRDynamicTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
 			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
-			hdrDynamic = stl::get<float>(pHDRDynamicTrack->GetValue(timeNormalized));
+			float hdrDynamic = stl::get<float>(pHDRDynamicTrack->GetValue(timeNormalized));
 			dl->m_fHDRDynamic = hdrDynamic;
 		}
 	}
-	else if(nStyle > 0 && nStyle < CLightStyle::s_LStyles.Num() && CLightStyle::s_LStyles[nStyle])
+	else if (nStyle > 0 && nStyle < CLightStyle::s_LStyles.Num() && CLightStyle::s_LStyles[nStyle])
 	{
 		CLightStyle* ls = CLightStyle::s_LStyles[nStyle];
 
@@ -1968,6 +1961,8 @@ bool CRenderer::EF_UpdateDLight(SRenderLight* dl)
 	{
 		dl->m_Color = dl->m_BaseColor;
 	}
+
+	dl->ComputeEffectiveRadius();
 
 	/*if(IsHDRModeEnabled() && !(dl->m_Flags&(DLF_SUN|DLF_POST_3D_RENDERER)))
 	   {
