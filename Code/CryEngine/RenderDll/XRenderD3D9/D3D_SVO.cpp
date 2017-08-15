@@ -1272,7 +1272,7 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 	{
 		sData[0].f[0] = pSR->e_svoTI_VoxelOpacityMultiplier;
 		sData[0].f[1] = pSR->e_svoTI_SkyLightBottomMultiplier;
-		sData[0].f[2] = 0;
+		sData[0].f[2] = pSR->e_svoTI_PointLightsBias;
 		sData[0].f[3] = 0;
 		break;
 	}

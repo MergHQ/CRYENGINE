@@ -1896,6 +1896,7 @@ void CSvoEnv::GetSvoBricksForUpdate(PodArray<I3DEngine::SSvoNodeInfo>& arrNodeIn
 		fCheckVal += GetCVars()->e_svoTI_SunRSMInject;
 		fCheckVal += GetCVars()->e_svoTI_EmissiveMultiplier;
 		fCheckVal += GetCVars()->e_svoTI_PointLightsMultiplier;
+		fCheckVal += GetCVars()->e_svoTI_PointLightsBias;
 
 		//		fCheckVal += int(Get3DEngine()->GetSunDir().x*10);
 		//	fCheckVal += int(Get3DEngine()->GetSunDir().y*10);
@@ -2355,6 +2356,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 	GetCVars()->e_svoTI_NumberOfBounces = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "NumberOfBounces", "0"));
 	GetCVars()->e_svoTI_Saturation = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Saturation", "0"));
 	GetCVars()->e_svoTI_PropagationBooster = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PropagationBooster", "0"));
+	GetCVars()->e_svoTI_PointLightsBias = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PointLightsBias", "0"));
 	if (gEnv->IsEditor())
 	{
 		GetCVars()->e_svoTI_UpdateLighting = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UpdateLighting", "0"));
