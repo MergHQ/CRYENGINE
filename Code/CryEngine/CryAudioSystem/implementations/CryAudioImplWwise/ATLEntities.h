@@ -14,8 +14,8 @@ namespace Impl
 {
 namespace Wwise
 {
-// To be removed once multi-listener support is implemented.
-static AkGameObjectID g_listenerID = AK_INVALID_GAME_OBJECT;
+static AkGameObjectID g_listenerId = AK_INVALID_GAME_OBJECT; // To be removed once multi-listener support is implemented.
+static AkGameObjectID s_globalObjectId = AK_INVALID_GAME_OBJECT;
 
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
 {

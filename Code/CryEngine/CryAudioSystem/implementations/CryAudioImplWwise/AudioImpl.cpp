@@ -856,18 +856,20 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
+	s_globalObjectId = m_gameObjectId++;
+
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(m_gameObjectId, "GlobalObject");
+	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(s_globalObjectId, "GlobalObject");
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
 		g_implLogger.Log(ELogType::Warning, "Wwise ConstructGlobalObject failed with AKRESULT: %d", wwiseResult);
 	}
 #else
-	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
+	AK::SoundEngine::RegisterGameObj(s_globalObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IObject*>(new CObject(m_gameObjectId++));
+	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -932,7 +934,7 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 	pIListener = static_cast<IListener*>(new CListener(m_gameObjectId));
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	g_listenerID = m_gameObjectId++;
+	g_listenerId = m_gameObjectId++;
 
 	return pIListener;
 }
