@@ -122,8 +122,11 @@ namespace Cry
 				{
 					pDevice->SetAsynCameraCallback(this);
 				}
-
-				m_pAudioListener->SetActive(true);
+				
+				if (m_pAudioListener)
+				{
+					m_pAudioListener->SetActive(true);
+				}
 
 				m_pCameraManager->SwitchCameraToActive(this);
 			}
