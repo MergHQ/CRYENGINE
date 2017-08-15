@@ -25,7 +25,7 @@ inline QIcon GetItemTypeIcon(EItemType type)
 	case EItemType::eItemType_Folder:
 		return QIcon(":Icons/Folder.ico");
 	case EItemType::eItemType_Library:
-		return QIcon("icons:Assets/GeomCache.ico");
+		return QIcon("icons:common/assets_geomcache.ico");
 	}
 	return QIcon(":Icons/RTPC.ico");
 }

@@ -197,6 +197,6 @@ dll_string AttachmentNameSelector(const SResourceSelectorContext& x, const char*
 
 	return dialog.ChooseItem(previousValue);
 }
-REGISTER_RESOURCE_SELECTOR("Attachment", AttachmentNameSelector, "icons:Animation/Attachement.ico")
+REGISTER_RESOURCE_SELECTOR("Attachment", AttachmentNameSelector, "icons:common/animation_attachement.ico")
 
 }
