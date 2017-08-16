@@ -2765,6 +2765,12 @@ bool CSystem::Init()
 		void* pThreadHandle = 0; // Let system figure out thread handle
 		gEnv->pThreadManager->RegisterThirdPartyThread(pThreadHandle, "Main");
 
+		// Start watchdog after thread manager initialization
+		if (int val = m_sys_profile_watchdog_timeout->GetIVal())
+		{
+			m_pWatchdog = new CWatchdogThread(val);
+		}
+
 		CryGetIMemReplay()->EnableAsynchMode();
 
 		m_pResourceManager->Init();
