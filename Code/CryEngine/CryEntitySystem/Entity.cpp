@@ -42,7 +42,7 @@
 #include "ClipVolumeProxy.h"
 #include "DynamicResponseProxy.h"
 #include <CryExtension/CryCreateClassInstance.h>
-
+#include <CryGame/IGameFramework.h>
 #include <CrySchematyc/CoreAPI.h>
 #include <CrySchematyc/Utils/ClassProperties.h>
 
@@ -415,6 +415,10 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		else if (gEnv->IsEditing() && !g_pIEntitySystem->IsLoadingLevel())
 		{
 			m_simulationMode = EEntitySimulationMode::Editor;
+		}
+		else if (gEnv->pGameFramework->IsGameStarted())
+		{
+			m_simulationMode = EEntitySimulationMode::Game;
 		}
 		else
 		{

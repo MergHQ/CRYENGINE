@@ -60,7 +60,7 @@ void CStaticMeshComponent::ResetObject()
 {
 	if (m_pCachedStatObj != nullptr)
 	{
-		m_pEntity->SetStatObj(m_pCachedStatObj, GetOrMakeEntitySlotId(), false);
+		m_pEntity->SetStatObj(m_pCachedStatObj, GetOrMakeEntitySlotId() | ENTITY_SLOT_ACTUAL, false);
 		if (!m_materialPath.value.empty())
 		{
 			if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialPath.value, false))
