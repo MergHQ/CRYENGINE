@@ -43,9 +43,9 @@ public:
 
 	CParameterComponent() = default;
 
-	static void     ReflectType(Schematyc::CTypeDesc<CParameterComponent>& desc);
+	static void ReflectType(Schematyc::CTypeDesc<CParameterComponent>& desc);
 
-	void Set(SParameterSerializeHelper const& parameter, float const value);
+	void        Set(float const value);
 
 protected:
 
