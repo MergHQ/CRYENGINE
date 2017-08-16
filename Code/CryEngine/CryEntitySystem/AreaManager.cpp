@@ -321,7 +321,7 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 				else
 				{
 					// if they are not yet in the cache, add them
-					pAreaCache->entries.push_back(SAreaCacheEntry(pArea, false, false));
+					pAreaCache->entries.emplace_back(pArea, false, false);
 					pArea->OnAddedToAreaCache(entityId);
 				}
 
@@ -1090,45 +1090,45 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 {
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 	bool bDraw = CVar::pDrawAreas->GetIVal() != 0;
-	size_t const nCountAreasTotal = m_areas.size();
 
 	if (bDraw)
 	{
-		for (size_t aIdx = 0; aIdx < nCountAreasTotal; aIdx++)
-			m_areas[aIdx]->Draw(aIdx);
+		// Used to give the drawn area a distinct color.
+		size_t i = 0;
+
+		for (auto const pArea : m_areas)
+		{
+			pArea->Draw(i++);
+		}
 	}
 
-	int const nDrawDebugValue = CVar::pDrawAreaDebug->GetIVal();
-	bDraw = nDrawDebugValue != 0;
-
-	float const fColor[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
+	int const drawDebugValue = CVar::pDrawAreaDebug->GetIVal();
+	bDraw = drawDebugValue != 0;
+	float const color[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
 
 	if (bDraw)
 	{
-		float fDebugPosY = 10.0f;
-		IRenderAuxText::Draw2dLabel(10.0f, fDebugPosY, 1.5f, fColor, false, "<AreaManager>");
-		fDebugPosY += 20.0f;
-		IRenderAuxText::Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Entities: %d | Areas in Grid: %d", static_cast<int>(m_mapAreaCache.size()), static_cast<int>(m_areaGrid.GetNumAreas()));
-		fDebugPosY += 20.0f;
+		float posY = 10.0f;
+		IRenderAuxText::Draw2dLabel(10.0f, posY, 1.5f, color, false, "<AreaManager>");
+		posY += 20.0f;
+		IRenderAuxText::Draw2dLabel(30.0f, posY, 1.3f, color, false, "Entities: %d | Areas in Grid: %d", static_cast<int>(m_mapAreaCache.size()), static_cast<int>(m_areaGrid.GetNumAreas()));
+		posY += 20.0f;
 
-		TAreaCacheMap::const_iterator const IterAreaCacheEnd(m_mapAreaCache.end());
-		TAreaCacheMap::const_iterator IterAreaCache(m_mapAreaCache.begin());
-
-		for (; IterAreaCache != IterAreaCacheEnd; ++IterAreaCache)
+		for (auto const& areaCachePair : m_mapAreaCache)
 		{
-			IEntity const* const pEntity = m_pEntitySystem->GetEntity((*IterAreaCache).first);
+			IEntity const* const pIEntity = m_pEntitySystem->GetEntity(areaCachePair.first);
 
-			if (pEntity != nullptr)
+			if (pIEntity != nullptr)
 			{
-				EntityId const entityId = pEntity->GetId();
+				EntityId const entityId = pIEntity->GetId();
 
-				if (nDrawDebugValue == 1 || nDrawDebugValue == 2 || entityId == static_cast<EntityId>(nDrawDebugValue))
+				if (drawDebugValue == 1 || drawDebugValue == 2 || entityId == static_cast<EntityId>(drawDebugValue))
 				{
-					SAreasCache const& areaCache((*IterAreaCache).second);
+					SAreasCache const& areaCache(areaCachePair.second);
 					Vec3 const& pos(areaCache.lastUpdatePos);
 
-					IRenderAuxText::Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f) Areas in AreaCache: %d", entityId, pEntity->GetName(), pos.x, pos.y, pos.z, static_cast<int>(areaCache.entries.size()));
-					fDebugPosY += 12.0f;
+					IRenderAuxText::Draw2dLabel(30.0f, posY, 1.3f, color, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f) Areas in AreaCache: %d", entityId, pIEntity->GetName(), pos.x, pos.y, pos.z, static_cast<int>(areaCache.entries.size()));
+					posY += 12.0f;
 
 					// Invalidate grid flag in area cache
 					for (SAreaCacheEntry const& areaCacheEntry : areaCache.entries)
@@ -1140,59 +1140,38 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 	#endif    // DEBUG_AREAMANAGER
 
 						// This is optimized internally and might not recalculate but rather retrieve the cached data.
-						float const fDistanceSq = pArea->CalcPointNearDistSq(entityId, pos, false, false);
+						float const distanceSq = pArea->CalcPointNearDistSq(entityId, pos, false, false);
 						bool const bIsPointWithin = (pArea->CalcPosType(entityId, pos) == AREA_POS_TYPE_2DINSIDE_ZINSIDE);
 
-						CryFixedStringT<16> sAreaType("unknown");
-						EEntityAreaType const eAreaType = pArea->GetAreaType();
+						CryFixedStringT<16> areaTypeName("unknown");
+						EEntityAreaType const areaType = pArea->GetAreaType();
 
-						switch (eAreaType)
+						switch (areaType)
 						{
 						case ENTITY_AREA_TYPE_SHAPE:
-							{
-								sAreaType = "Shape";
-
-								break;
-							}
+							areaTypeName = "Shape";
+							break;
 						case ENTITY_AREA_TYPE_BOX:
-							{
-								sAreaType = "Box";
-
-								break;
-							}
+							areaTypeName = "Box";
+							break;
 						case ENTITY_AREA_TYPE_SPHERE:
-							{
-								sAreaType = "Sphere";
-
-								break;
-							}
+							areaTypeName = "Sphere";
+							break;
 						case ENTITY_AREA_TYPE_GRAVITYVOLUME:
-							{
-								sAreaType = "GravityVolume";
-
-								break;
-							}
+							areaTypeName = "GravityVolume";
+							break;
 						case ENTITY_AREA_TYPE_SOLID:
-							{
-								sAreaType = "Solid";
-
-								break;
-							}
-						default:
-							{
-								sAreaType = "unknown";
-
-								break;
-							}
+							areaTypeName = "Solid";
+							break;
 						}
 
-						CryFixedStringT<16> const sState(bIsPointWithin ? "Inside" : (areaCacheEntry.bNear ? "Near" : "Far"));
-						IRenderAuxText::Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Name: %s AreaID: %d GroupID: %d Priority: %d Type: %s Distance: %.2f State: %s Entities: %d", pArea->GetAreaEntityName(), pArea->GetID(), pArea->GetGroup(), pArea->GetPriority(), sAreaType.c_str(), sqrt_tpl(fDistanceSq > 0.0f ? fDistanceSq : 0.0f), sState.c_str(), static_cast<int>(pArea->GetCacheEntityCount()));
-						fDebugPosY += 12.0f;
+						CryFixedStringT<16> const state(bIsPointWithin ? "Inside" : (areaCacheEntry.bNear ? "Near" : "Far"));
+						IRenderAuxText::Draw2dLabel(30.0f, posY, 1.3f, color, false, "Name: %s AreaID: %d GroupID: %d Priority: %d Type: %s Distance: %.2f State: %s Entities: %d", pArea->GetAreaEntityName(), pArea->GetID(), pArea->GetGroup(), pArea->GetPriority(), areaTypeName.c_str(), sqrt_tpl(distanceSq > 0.0f ? distanceSq : 0.0f), state.c_str(), static_cast<int>(pArea->GetCacheEntityCount()));
+						posY += 12.0f;
 					}
 
 					// Next entity.
-					fDebugPosY += 12.0f;
+					posY += 12.0f;
 				}
 			}
 		}
@@ -1222,12 +1201,10 @@ size_t CAreaManager::MemStat()
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::ResetAreas()
 {
-	for (TAreaCacheMap::iterator cacheIt = m_mapAreaCache.begin(), cacheItEnd = m_mapAreaCache.end();
-	     cacheIt != cacheItEnd;
-	     ++cacheIt)
+	for (auto const& cacheIt : m_mapAreaCache)
 	{
-		EntityId const entityId = cacheIt->first;
-		SAreasCache const& areaCache((*cacheIt).second);
+		EntityId const entityId = cacheIt.first;
+		SAreasCache const& areaCache(cacheIt.second);
 		IEntity* const pEntity = m_pEntitySystem->GetEntity(entityId);
 
 		if (pEntity != nullptr)
@@ -1314,14 +1291,9 @@ void CAreaManager::RemoveEventListener(IAreaManagerEventListener* pListener)
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::OnEvent(EEntityEvent event, EntityId TriggerEntityID, IArea* pArea)
 {
-	if (!m_EventListeners.empty())
+	for (auto const pListener : m_EventListeners)
 	{
-		AreaManagerEventListenerVector::iterator ItEnd = m_EventListeners.end();
-		for (AreaManagerEventListenerVector::iterator It = m_EventListeners.begin(); It != ItEnd; ++It)
-		{
-			assert(*It);
-			(*It)->OnAreaManagerEvent(event, TriggerEntityID, pArea);
-		}
+		pListener->OnAreaManagerEvent(event, TriggerEntityID, pArea);
 	}
 }
 
@@ -1358,10 +1330,10 @@ int CAreaManager::GetNumberOfPlayersNearOrInArea(CArea const* const pArea)
 //////////////////////////////////////////////////////////////////////////
 size_t CAreaManager::GetOverlappingAreas(const AABB& bb, PodArray<IArea*>& list) const
 {
-	const CArea::TAreaBoxes& boxes = CArea::GetBoxHolders();
-	for (size_t i = 0, end = boxes.size(); i < end; ++i)
+	CArea::TAreaBoxes const& boxes = CArea::GetBoxHolders();
+
+	for (CArea::SBoxHolder const& holder : boxes)
 	{
-		const CArea::SBoxHolder& holder = boxes[i];
 		if (!holder.box.Overlaps2D(bb))
 			continue;
 		list.push_back(holder.area);
