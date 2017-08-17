@@ -13,7 +13,7 @@ inline QIcon GetItemTypeIcon(EItemType type)
 	case EItemType::eItemType_Trigger:
 		return QIcon(":Icons/Trigger.ico");
 	case EItemType::eItemType_Parameter:
-		return QIcon(":Icons/RTPC.ico");
+		return QIcon(":Icons/Parameter.ico");
 	case EItemType::eItemType_Switch:
 		return QIcon(":Icons/Switch.ico");
 	case EItemType::eItemType_State:
@@ -27,7 +27,7 @@ inline QIcon GetItemTypeIcon(EItemType type)
 	case EItemType::eItemType_Library:
 		return QIcon("icons:common/assets_geomcache.ico");
 	}
-	return QIcon(":Icons/RTPC.ico");
+	return QIcon(":Icons/Parameter.ico");
 }
 
 }

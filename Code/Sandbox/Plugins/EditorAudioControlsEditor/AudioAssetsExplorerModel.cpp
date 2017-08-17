@@ -6,22 +6,19 @@
 
 #include <QtUtil.h>
 
-#include "AudioAssets.h"
 #include "AudioControlsEditorPlugin.h"
-#include "AudioControlsEditorUndo.h"
 #include "AudioSystemModel.h"
-#include "IAudioSystemEditor.h"
 #include "IAudioSystemItem.h"
-#include "IEditor.h"
-#include "QAudioControlTreeWidget.h"
 #include "EditorStyleHelper.h"
 
-#include "Controls/QuestionDialog.h"
-#include <CryString/CryPath.h>
 #include <DragDrop.h>
 
 namespace ACE
 {
+static QColor s_placeholderColor = GetStyleHelper()->errorColor();
+static QColor s_noConnectionColor = QColor(255, 150, 50);
+static QColor s_noControlColor = QColor(50, 150, 255);
+
 //////////////////////////////////////////////////////////////////////////
 bool IsParentValid(IAudioAsset const& parent, EItemType const type)
 {
@@ -187,7 +184,32 @@ QVariant CAudioAssetsExplorerModel::data(QModelIndex const& index, int role) con
 
 			if (pLibrary->HasPlaceholderConnection())
 			{
-				return GetStyleHelper()->errorColor();
+				return s_placeholderColor;
+			}
+			else if (!pLibrary->HasConnection())
+			{
+				return s_noConnectionColor;
+			}
+			else if (!pLibrary->HasControl())
+			{
+				return s_noControlColor;
+			}
+			
+			break;
+
+		case Qt::ToolTipRole:
+
+			if (pLibrary->HasPlaceholderConnection())
+			{
+				return tr("Contains item that has an invalid connection");
+			}
+			else if (!pLibrary->HasConnection())
+			{
+				return tr("Contains item that is not connected to any audio control");
+			}
+			else if (!pLibrary->HasControl())
+			{
+				return tr("Contains no audio control");
 			}
 
 			break;
@@ -424,12 +446,6 @@ bool QControlsProxyFilter::lessThan(QModelIndex const& left, QModelIndex const& 
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant QControlsProxyFilter::data(QModelIndex const& proxyIndex, int role) const
-{
-	return QSortFilterProxyModel::data(proxyIndex, role);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void QControlsProxyFilter::EnableControl(bool const bEnabled, EItemType const type)
 {
 	if (bEnabled)
@@ -534,7 +550,50 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 
 			if (pItem->HasPlaceholderConnection())
 			{
-				return GetStyleHelper()->errorColor();
+				return s_placeholderColor;
+			}
+			else if (!pItem->HasConnection())
+			{
+				return s_noConnectionColor;
+			}
+			else if (((pItem->GetType() == EItemType::eItemType_Folder) || (pItem->GetType() == EItemType::eItemType_Switch)) && !pItem->HasControl())
+			{
+				return s_noControlColor;
+			}
+
+			break;
+
+		case Qt::ToolTipRole:
+
+			if (pItem->HasPlaceholderConnection())
+			{
+				if ((pItem->GetType() == EItemType::eItemType_Folder) || (pItem->GetType() == EItemType::eItemType_Switch))
+				{
+					return tr("Contains item that has an invalid connection");
+				}
+				else
+				{
+					return tr("Item has an invalid connection");
+				}
+			}
+			else if (!pItem->HasConnection())
+			{
+				if ((pItem->GetType() == EItemType::eItemType_Folder) || (pItem->GetType() == EItemType::eItemType_Switch))
+				{
+					return tr("Contains item that is not connected to any audio control");
+				}
+				else
+				{
+					return tr("Item is not connected to any audio control");
+				}
+			}
+			else if ((pItem->GetType() == EItemType::eItemType_Folder) && !pItem->HasControl())
+			{
+				return tr("Contains no audio control");
+			}
+			else if ((pItem->GetType() == EItemType::eItemType_Switch) && !pItem->HasControl())
+			{
+				return tr("Contains no state");
 			}
 
 			break;
