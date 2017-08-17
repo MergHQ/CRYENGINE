@@ -938,6 +938,8 @@ void CSystem::Quit()
 		CryGetIMemReplay()->Stop();
 #endif
 
+		GetIRemoteConsole()->Stop();
+
 		//////////////////////////////////////////////////////////////////////////
 		// [marco] in test mode, kill the process and quit without performing full C libs cleanup
 		// (for faster closing of application)
