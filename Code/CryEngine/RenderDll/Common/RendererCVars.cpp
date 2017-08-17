@@ -1274,11 +1274,9 @@ void CRendererCVars::InitCVars()
 	                    "Toggles HDR debugging info (to debug HDR/eye adaptation)\n"
 	                    "Usage: r_HDRDebug\n"
 	                    "0 off (default)\n"
-	                    "1 show gamma-corrected scene target without HDR processing\n"
-	                    "2 identify illegal colors (grey=normal, red=NotANumber, green=negative)\n"
-	                    "3 display internal HDR textures\n"
-	                    "4 display HDR range adaptation\n"
-	                    "5 debug merged posts composition mask\n");
+						"1 display avgerage luminance, estimated luminance, and exposure values\n"
+	                    "2 show gamma-corrected scene target without tone-mapping processing\n"
+	                    "3 identify illegal colors (grey=normal, red=NotANumber, green=negative)\n");
 
 	REGISTER_CVAR3("r_HDRBloom", CV_r_HDRBloom, 1, VF_NULL,
 	               "Enables bloom/glare.\n"

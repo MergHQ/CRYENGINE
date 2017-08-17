@@ -10,7 +10,9 @@ class CToneMappingStage : public CGraphicsPipelineStage
 public:
 	void Init();
 	void Execute();
+	void ExecuteDebug();
 	void ExecuteFixedExposure();
+	void DisplayDebugInfo();
 
 private:
 	_smart_ptr<CTexture> m_pColorChartTex;
