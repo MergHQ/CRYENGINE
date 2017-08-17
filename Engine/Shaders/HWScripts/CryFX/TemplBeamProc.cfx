@@ -161,8 +161,10 @@ v2f TemplBeamVS(app2vertGeneral IN)
 	OUT.baseTC = vertPassPos.baseTC;
 	OUT.HPosition = Pos_VS_General(CV_ViewProjZeroMatr, vertPassPos);
 
-	float3 camVec = normalize(vertPassPos.WorldPos);
-	float d = dot(camVec.xyz, vertPassPos.ObjToTangentSpace[2].xyz);
+	float3 vCamera = normalize(vertPassPos.WorldPos);
+	float3 vNormal = normalize(mul(vertPassPos.InstMatrix, float4(vertPassPos.ObjToTangentSpace[2].xyz, 0.0f)));
+
+	float d = dot(vCamera.xyz, vNormal);
 	d = saturate(d * d * viewDependencyFactor);
 	d *= d;
 
