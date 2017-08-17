@@ -8,8 +8,9 @@
 #include "ResourceSelectorModel.h"
 #include "QtUtil.h"
 
+#include <QSearchBox.h>
+
 #include <QDialogButtonBox>
-#include <QLineEdit>
 #include <QBoxLayout>
 #include <QHeaderView>
 #include <QPushButton>
@@ -33,12 +34,10 @@ ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EItemType eType)
 	QBoxLayout* pLayout = new QBoxLayout(QBoxLayout::TopToBottom);
 	setLayout(pLayout);
 
-	QLineEdit* pTextFilterLineEdit = new QLineEdit(this);
-	pTextFilterLineEdit->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignVCenter);
-	pTextFilterLineEdit->setPlaceholderText(tr("Search"));
-	pTextFilterLineEdit->setClearButtonEnabled(true);
-	connect(pTextFilterLineEdit, &QLineEdit::textChanged, this, &ATLControlsDialog::SetTextFilter);
-	pLayout->addWidget(pTextFilterLineEdit, 0);
+	QSearchBox* pSearchBox = new QSearchBox(this);
+	pSearchBox->setToolTip(tr("Show only controls with this name"));
+	connect(pSearchBox, &QSearchBox::textChanged, this, &ATLControlsDialog::SetTextFilter);
+	pLayout->addWidget(pSearchBox, 0);
 
 	m_pControlTree = new QAudioControlsTreeView(this);
 	m_pControlTree->header()->setVisible(false);
@@ -92,7 +91,7 @@ ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EItemType eType)
 	connect(m_pControlTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &ATLControlsDialog::StopTrigger);
 	connect(m_pControlTree, &QAudioControlsTreeView::doubleClicked, this, &ATLControlsDialog::ItemDoubleClicked);
 
-	pTextFilterLineEdit->setFocus(Qt::FocusReason::PopupFocusReason);
+	pSearchBox->setFocus(Qt::FocusReason::PopupFocusReason);
 }
 
 //////////////////////////////////////////////////////////////////////////

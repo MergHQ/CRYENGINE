@@ -39,7 +39,6 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 	, m_pConnectionsView(new CAdvancedTreeView())
 {
 	m_pConnectionsView->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_pConnectionsView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_pConnectionsView->setDragEnabled(false);
 	m_pConnectionsView->setAcceptDrops(true);
 	m_pConnectionsView->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -49,34 +48,7 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 	m_pConnectionsView->installEventFilter(this);
 	m_pConnectionsView->header()->setMinimumSectionSize(50);
 	m_pConnectionsView->setIndentation(0);
-	m_pConnectionsView->setSortingEnabled(true);
-	connect(m_pConnectionsView->header(), &QHeaderView::customContextMenuRequested, [&](QPoint const& pos)
-	{
-		QAbstractItemModel* pModel = m_pConnectionsView->model();
-
-		if (pModel)
-		{
-			QMenu contextMenu(tr("Context menu"), this);
-			int const columnCount = pModel->columnCount();
-
-			for (int i = 0; i < columnCount; ++i)
-			{
-				QAction* pAction = contextMenu.addAction(pModel->headerData(i, Qt::Horizontal).toString());
-				pAction->setCheckable(true);
-				pAction->setChecked(!(m_pConnectionsView->header()->isSectionHidden(i)));
-
-				connect(pAction, &QAction::toggled, [=](bool bChecked)
-				{
-					int column = pAction->data().toInt();
-					m_pConnectionsView->header()->setSectionHidden(i, !bChecked);
-				});
-
-				pAction->setData(QVariant(i));
-			}
-
-			contextMenu.exec(QCursor::pos());
-		}
-	});
+	
 	connect(m_pConnectionsView, &CAdvancedTreeView::customContextMenuRequested, [&](QPoint const& pos)
 	{
 		int const selectionCount = m_pConnectionsView->selectionModel()->selectedRows().count();
@@ -135,7 +107,7 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 
 	for (int i = 2; i < count; ++i)
 	{
-		m_pConnectionsView->header()->setSectionHidden(i, true);
+		m_pConnectionsView->SetColumnVisible(i, false);
 	}
 
 	// Then hide the entire widget.

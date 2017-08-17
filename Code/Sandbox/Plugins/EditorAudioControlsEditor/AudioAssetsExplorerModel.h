@@ -19,6 +19,7 @@ class CAudioLibrary;
 class CAudioFolder;
 class IAudioAsset;
 class CAudioAssetsManager;
+enum EItemType;
 
 namespace AudioModelUtils
 {
@@ -62,7 +63,6 @@ public:
 	QControlsProxyFilter(QObject* parent);
 
 	// QDeepFilterProxyModel
-	virtual QVariant data(QModelIndex const& index, int role) const override;
 	virtual bool     rowMatchesFilter(int source_row, QModelIndex const& source_parent) const override;
 	// ~QDeepFilterProxyModel
 

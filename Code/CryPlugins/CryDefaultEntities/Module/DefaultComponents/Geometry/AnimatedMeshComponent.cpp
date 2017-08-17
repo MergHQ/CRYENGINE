@@ -67,7 +67,7 @@ void CAnimatedMeshComponent::ResetObject()
 		return;
 	}
 
-	m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId(), false);
+	m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId() | ENTITY_SLOT_ACTUAL, false);
 
 	if (m_defaultAnimation.value.size() > 0)
 	{
