@@ -2838,8 +2838,6 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 				m_pGameplayRecorder->Update(frameTime);
 
 		{
-			// These things need to be updated in game mode and ai/physics mode
-			gEnv->pGameFramework->GetIPersistantDebug()->Update(gEnv->pTimer->GetFrameTime());
 			CDebugHistoryManager::RenderAll();
 			CCryAction::GetCryAction()->GetTimeOfDayScheduler()->Update();
 		}
@@ -2871,6 +2869,9 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 			}
 		}
 	}
+
+	// These things need to be updated in game mode and ai/physics mode
+	m_pPersistantDebug->Update(gEnv->pTimer->GetFrameTime());
 
 	m_pActionMapManager->Update();
 

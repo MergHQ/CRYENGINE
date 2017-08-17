@@ -228,7 +228,7 @@ public:
 			return;
 		}
 
-		m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId(), false);
+		m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId() | ENTITY_SLOT_ACTUAL, false);
 		SetAnimationDrivenMotion(m_bAnimationDrivenMotion);
 
 		if (m_pControllerDefinition != nullptr)
