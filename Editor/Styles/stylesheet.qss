@@ -986,8 +986,6 @@ QTreeView {                                 /* tree body*/
 }
 
 QTreeView::item{
-    color: rgb(229,229,229);
-    background-color: transparent;
     padding-top: 2px;
     height: 24px;
 }
@@ -998,11 +996,13 @@ QTreeView::branch {
 }
 
 QTreeView::item:hover, QTreeView::branch:hover {
+	padding-top: 0px;
 	color: rgb(255,255,255);
 	background-color: rgb(86,86,86);
 }
 
 QTreeView::item:selected, QTreeView::branch:selected {
+	padding-top: 0px;
 	color: rgb(255,255,255);
 	background-color: rgb(51,51,51);
 }
@@ -1032,6 +1032,10 @@ QTreeView QHeaderView::section {                /* the tree view header */
 	font-size:12px;
 	font:bold;
 	padding-left:4px;
+}
+
+CLevelExplorer QTreeView::Item{
+	padding-top: 0px;
 }
 
 CLevelExplorer QTreeView::indicator QHeaderView::section:first {
@@ -1355,7 +1359,7 @@ EditorStyleHelper {
 	qproperty-contrastingIconTint: rgb(35, 35, 35);
 
 	/* QtreeView */
-	qproperty-treeViewItemMarginTop: 2;
+	qproperty-treeViewItemMarginTop: 0;
 
 	/* Timeline colors */
 	qproperty-timelineTrackColor: rgb(68, 68, 68);
