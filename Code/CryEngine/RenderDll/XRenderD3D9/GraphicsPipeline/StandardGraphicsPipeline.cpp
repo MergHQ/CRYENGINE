@@ -1376,7 +1376,8 @@ void CStandardGraphicsPipeline::Execute()
 
 		m_pSceneCustomStage->Execute();
 
-		if (CRenderer::CV_r_HDRDebug && (pRenderer->m_RP.m_nRendFlags & SHDF_ALLOWPOSTPROCESS))
+		// Display tone mapping debugging information on the screen
+		if (CRenderer::CV_r_HDRDebug == 1 && (pRenderer->m_RP.m_nRendFlags & SHDF_ALLOWPOSTPROCESS))
 		{
 			m_pToneMappingStage->DisplayDebugInfo();
 		}

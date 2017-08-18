@@ -213,13 +213,13 @@ void CToneMappingStage::DisplayDebugInfo()
 {
 	if (CRenderer::CV_r_HDRDebug != 1)
 		return;
-		
+
 	float fLuminance = -1.f;
 	float fIlluminance = -1.f;
 
 	CDeviceTexture* pSrcDevTex = CTexture::s_ptexHDRToneMaps[0]->GetDevTexture();
 	assert(pSrcDevTex);
-		
+
 	// Read back data
 	const auto readbackData = [&fLuminance, &fIlluminance](void* pData, uint32 rowPitch, uint32 slicePitch) -> bool
 	{
@@ -230,7 +230,7 @@ void CToneMappingStage::DisplayDebugInfo()
 	};
 	pSrcDevTex->DownloadToStagingResource(0);
 	pSrcDevTex->AccessCurrStagingResource(0, false, readbackData);
-	
+
 	// Display data
 	char str[256];
 	sprintf(str, "Average Luminance (cd/m2): %.2f", fLuminance * RENDERER_LIGHT_UNIT_SCALE);
@@ -241,14 +241,14 @@ void CToneMappingStage::DisplayDebugInfo()
 
 	Vec4 vHDRSetupParams[5];
 	gEnv->p3DEngine->GetHDRSetupParams(vHDRSetupParams);
-		
+
 	if (CRenderer::CV_r_HDREyeAdaptationMode == 2)
 	{
 		// Compute scene key and exposure in the same way as in the tone mapping shader
 		float sceneKey = 1.03f - 2.0f / (2.0f + log(fLuminance + 1.0f) / log(2.0f));
 		float exposure = clamp_tpl<float>(sceneKey / fLuminance, vHDRSetupParams[4].y, vHDRSetupParams[4].z);
-			
-		sprintf(str,"Exposure: %.2f  SceneKey: %.2f", exposure, sceneKey);
+
+		sprintf(str, "Exposure: %.2f  SceneKey: %.2f", exposure, sceneKey);
 		IRenderAuxText::DrawText(Vec3(5, 75, 1), IRenderAuxText::ASize(1.0f), ColorF(1, 0, 1, 1), eDrawText_800x600 | eDrawText_2D, str);
 	}
 	else
@@ -258,7 +258,7 @@ void CToneMappingStage::DisplayDebugInfo()
 		float autoCompensation = (clamp_tpl<float>(sceneKey, 0.1f, 5.2f) - 3.0f) / 2.0f * vHDRSetupParams[3].z;
 		float finalExposure = clamp_tpl<float>(exposure - autoCompensation, vHDRSetupParams[3].x, vHDRSetupParams[3].y);
 
-		sprintf(str,"Measured EV: %.1f  Auto-EC: %.1f  Final EV: %.1f", exposure, autoCompensation, finalExposure);
+		sprintf(str, "Measured EV: %.1f  Auto-EC: %.1f  Final EV: %.1f", exposure, autoCompensation, finalExposure);
 		IRenderAuxText::DrawText(Vec3(5, 75, 1), IRenderAuxText::ASize(1.0f), ColorF(1, 0, 1, 1), eDrawText_800x600 | eDrawText_2D, str);
 	}
 }
