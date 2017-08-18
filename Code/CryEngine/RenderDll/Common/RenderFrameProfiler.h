@@ -59,9 +59,13 @@
 	#endif
 
 	// real push/pop marker for GPU, also add to the internal profiler and CPU Markers
-	#define PROFILE_LABEL(X)      do { PLATFORM_PROFILER_MARKER(X); PROFILE_LABEL_GPU(X); } while (0)
-	#define PROFILE_LABEL_PUSH(X) do { CryProfile::PushProfilingMarker(EProfileDescription::PUSHPOP, X); PLATFORM_PROFILER_PUSH(X); PROFILE_LABEL_PUSH_GPU(X); if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->BeginSection(X); } while (0)
-	#define PROFILE_LABEL_POP(X)  do { CryProfile::PopProfilingMarker(); PLATFORM_PROFILER_POP(); PROFILE_LABEL_POP_GPU(X); if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->EndSection(X); } while (0)
+	#define PROFILE_LABEL(X)      do { CRY_PROFILE_MARKER(X); PROFILE_LABEL_GPU(X); } while (0)
+
+	#define PROFILE_LABEL_PUSH(X) \
+		do { CryProfile::PushProfilingMarker(EProfileDescription::PUSH_MARKER, X); CRY_PROFILE_PUSH_MARKER(X); PROFILE_LABEL_PUSH_GPU(X); if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->BeginSection(X); } while (0)
+	
+	#define PROFILE_LABEL_POP(X)\
+		do { CryProfile::PopProfilingMarker (EProfileDescription::POP_MARKER, X);  CRY_PROFILE_POP_MARKER(X);  PROFILE_LABEL_POP_GPU(X);  if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->EndSection(X); } while (0)
 
 	// scope util class for GPU profiling Marker
 	#define PROFILE_LABEL_SCOPE(X)                             \
@@ -74,7 +78,6 @@
 	    ~CProfileLabelScope()                                  \
 	    { PROFILE_LABEL_POP(m_label); }                        \
 	  } PP_CONCAT(profileLabelScope, __LINE__)(X);             \
-	  LOADING_TIME_PROFILE_SECTION_NAMED(X);
 
 #else
 // NULL implementation
