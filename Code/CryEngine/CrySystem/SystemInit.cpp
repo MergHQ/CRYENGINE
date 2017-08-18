@@ -3041,7 +3041,10 @@ bool CSystem::Init()
 			CryLogAlways("Renderer initialization");
 
 			if (!InitRenderer((m_startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd))
+			{
+				CryFatalError("Renderer initialization failed.");
 				return false;
+			}
 			assert(IsHeapValid());
 			if (m_env.pRenderer)
 			{

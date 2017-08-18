@@ -1046,8 +1046,15 @@ CDeviceTimestampGroup::CDeviceTimestampGroup()
 
 CDeviceTimestampGroup::~CDeviceTimestampGroup()
 {
-	vkDestroyQueryPool(GetDevice()->GetVkDevice(), m_queryPool, nullptr);
-	GetDeviceObjectFactory().ReleaseFence(m_fence);
+	if (m_queryPool != VK_NULL_HANDLE)
+	{
+		vkDestroyQueryPool(GetDevice()->GetVkDevice(), m_queryPool, nullptr);
+	}
+
+	if (m_fence != 0)
+	{
+		GetDeviceObjectFactory().ReleaseFence(m_fence);
+	}
 }
 
 void CDeviceTimestampGroup::Init()
