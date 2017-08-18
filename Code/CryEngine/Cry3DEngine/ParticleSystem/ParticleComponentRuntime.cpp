@@ -256,8 +256,9 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 	//////////////////////////////////////////////////////////////////////////
 
-	for (auto& it : GetComponent()->GetUpdateList(EUL_Spawn))
-		it->SpawnParticles(context);
+	if (pEmitter->IsActive())
+		for (auto& it : GetComponent()->GetUpdateList(EUL_Spawn))
+			it->SpawnParticles(context);
 
 	TParticleIdArray particleIds(*context.m_pMemHeap);
 	particleIds.reserve(numParticles);
