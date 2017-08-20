@@ -1076,8 +1076,7 @@ public:
 	CFlashFunctionProfilerLight()
 		: m_startTick(FlashTimer::GetTicks())
 	{
-		//CRY_PROFILE_PUSH(PROFILE_SYSTEM, "Flash");
-		CryProfile::PushProfilingMarker(EProfileDescription::PUSHPOP, "%s", "Flash");
+		CRY_PROFILE_PUSH_MARKER("Flash");
 	}
 
 	~CFlashFunctionProfilerLight()
@@ -1094,8 +1093,7 @@ public:
 		#else
 		ms_deltaTicksAccum += delta;
 		#endif
-		//CRY_PROFILE_POP();
-		CryProfile::PopProfilingMarker();
+		CRY_PROFILE_POP_MARKER("Flash");
 	}
 
 	static void Update()

@@ -6,6 +6,8 @@
 #include <CryEntitySystem/IEntityClass.h>
 #include <CrySchematyc/Utils/ScopedConnection.h>
 
+#include <CryNetwork/INetwork.h>
+
 namespace Schematyc
 {
 	struct IRuntimeClass;
@@ -15,7 +17,9 @@ namespace Schematyc
 // Description:
 //    Standard implementation of the IEntityClassRegistry interface.
 //////////////////////////////////////////////////////////////////////////
-class CEntityClassRegistry final : public IEntityClassRegistry
+class CEntityClassRegistry final 
+	: public IEntityClassRegistry
+	, public INetworkedClientListener
 {
 public:
 	CEntityClassRegistry();
@@ -58,6 +62,14 @@ public:
 	}
 	//~IEntityClassRegistry
 
+	// INetworkedClientListener
+	virtual void OnLocalClientDisconnected(EDisconnectionCause cause, const char* description) override {}
+	virtual bool OnClientConnectionReceived(int channelId, bool bIsReset) override;
+	virtual bool OnClientReadyForGameplay(int channelId, bool bIsReset) override;
+	virtual void OnClientDisconnected(int channelId, EDisconnectionCause cause, const char* description, bool bKeepClient) override;
+	virtual bool OnClientTimingOut(int channelId, EDisconnectionCause cause, const char* description) override { return true; }
+	// ~INetworkedClientListener
+
 private:
 	void LoadArchetypeDescription(const XmlNodeRef& root);
 	void LoadClassDescription(const XmlNodeRef& root, bool bOnlyNewClasses);
@@ -71,6 +83,8 @@ private:
 
 	typedef std::map<string, IEntityClass*> ClassNameMap;
 	ClassNameMap           m_mapClassName;
+
+	std::vector<std::vector<EntityId>> m_channelEntityInstances;
 
 	std::map<CryGUID,IEntityClass*> m_mapClassGUIDs;
 

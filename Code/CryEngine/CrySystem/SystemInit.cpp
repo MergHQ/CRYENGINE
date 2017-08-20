@@ -5428,11 +5428,11 @@ const char* CSystem::GetLoadingProfilerCallstack()
 #endif
 }
 
-CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args)
+CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args,EProfileDescription type)
 {
 #if defined(ENABLE_LOADING_PROFILER)
 	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	return profiler.StartBlock(name, args);
+	return profiler.StartBlock(name, args,type);
 #else
 	return NULL;
 #endif

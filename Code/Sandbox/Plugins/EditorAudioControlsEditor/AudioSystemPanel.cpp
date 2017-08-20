@@ -131,6 +131,11 @@ CAudioSystemPanel::CAudioSystemPanel()
 					m_pTreeView->collapseAll();
 					RestoreTreeViewStates();
 				}
+				else if (!m_filter.isEmpty() && !filter.isEmpty())
+				{
+					m_pModelProxy->setFilterFixedString(filter);
+					m_pTreeView->expandAll();
+				}
 
 				m_filter = filter;
 			}

@@ -947,6 +947,8 @@ void CSystem::Quit()
 		CryGetIMemReplay()->Stop();
 #endif
 
+		GetIRemoteConsole()->Stop();
+
 		//////////////////////////////////////////////////////////////////////////
 		// [marco] in test mode, kill the process and quit without performing full C libs cleanup
 		// (for faster closing of application)
@@ -1291,7 +1293,6 @@ void CSystem::SleepIfInactive()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SleepIfNeeded()
 {
-	LOADING_TIME_PROFILE_SECTION;
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
 
 	static ICVar * pSysMaxFPS = NULL;
@@ -1483,8 +1484,8 @@ void CSystem::PrePhysicsUpdate()
 //////////////////////////////////////////////////////////////////////
 bool CSystem::Update(int updateFlags, int nPauseMode)
 {
-	LOADING_TIME_PROFILE_SECTION;
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
 	CRYPROFILE_SCOPE_PROFILE_MARKER("CSystem::Update()");
 
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE

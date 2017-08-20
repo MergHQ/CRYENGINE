@@ -428,6 +428,8 @@ public:
 	virtual EEntitySimulationMode GetSimulationMode() const final { return m_simulationMode; };
 	//~IEntity
 
+	void SetSimulationMode(EEntitySimulationMode mode);
+
 	void ShutDownComponent(IEntityComponent* pComponent);
 
 	CEntityComponentsVector& GetComponentsVector() { return m_components; };

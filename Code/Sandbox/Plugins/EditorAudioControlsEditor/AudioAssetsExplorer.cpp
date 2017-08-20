@@ -177,6 +177,11 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 					RestoreTreeViewStates();
 					StopTextFiltering();
 				}
+				else if (!m_filter.isEmpty() && !filter.isEmpty())
+				{
+					m_pProxyModel->setFilterFixedString(filter);
+					m_pControlsTree->expandAll();
+				}
 
 				m_filter = filter;
 			}
