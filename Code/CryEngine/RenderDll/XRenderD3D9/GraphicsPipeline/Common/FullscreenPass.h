@@ -55,7 +55,7 @@ public:
 		m_primitive.SetSampler(slot, sampler);
 	}
 
-	ILINE void SetBuffer(uint32 shaderSlot, const CGpuBuffer* pBuffer, ResourceViewHandle resourceViewID = EDefaultResourceViews::Default, EShaderStage shaderStages = EShaderStage_Pixel)
+	ILINE void SetBuffer(uint32 shaderSlot, CGpuBuffer* pBuffer, ResourceViewHandle resourceViewID = EDefaultResourceViews::Default, EShaderStage shaderStages = EShaderStage_Pixel)
 	{
 		m_primitive.SetBuffer(shaderSlot, pBuffer, resourceViewID, shaderStages);
 	}

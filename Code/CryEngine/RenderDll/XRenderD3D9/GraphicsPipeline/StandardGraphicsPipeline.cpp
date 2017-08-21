@@ -227,8 +227,8 @@ CRenderView* CGraphicsPipelineStage::RenderView()
 
 CStandardGraphicsPipeline::CStandardGraphicsPipeline()
 	: m_changedCVars(gEnv->pConsole)
-	, m_defaultMaterialResources(nullptr, nullptr)
-	, m_defaultInstanceExtraResources(nullptr, nullptr)
+	, m_defaultMaterialResources()
+	, m_defaultInstanceExtraResources()
 {}
 
 void CStandardGraphicsPipeline::Init()

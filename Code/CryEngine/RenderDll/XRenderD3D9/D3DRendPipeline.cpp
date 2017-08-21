@@ -2986,11 +2986,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		for (auto pShaderResources : CShader::s_ShaderResources_known)
 		{
 			// TODO: Check why s_ShaderResources_known can contain null pointers
-			if (pShaderResources && pShaderResources->m_bResourcesDirty)
+			if (pShaderResources && pShaderResources->HasChanges())
 			{
 				// NOTE: unconditionally clear dirty flag here, as there is no point in trying to update the resource set again
 				// in case of failure. any change to the resources will set the dirty flag again. 
-				pShaderResources->m_bResourcesDirty = false;
 				pShaderResources->RT_UpdateResourceSet();
 			}
 		}
@@ -3452,6 +3451,9 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	}
 
 	m_RP.m_pCurrentRenderView = nullptr;
+
+	// Don't keep resource-binds cached across rendering-boundaries (e.g. because of resize or chain-loading)
+	gRenDev->RT_UnbindResources();
 }
 
 void CD3D9Renderer::RT_DrawUITextureInternal(S2DImage& img)
