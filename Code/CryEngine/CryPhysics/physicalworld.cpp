@@ -439,6 +439,7 @@ void CPhysicalWorld::Init()
 	memset(&CPhysicalEntity::m_defpart,0,sizeof(geom));
 	CPhysicalEntity::m_defpart.q.SetIdentity();
 	CPhysicalEntity::m_defpart.scale = 1.0f;
+	CPhysicalEntity::m_defpart.pNewCoords = (coord_block_BBox*)&CPhysicalEntity::m_defpart.pos;
 	m_rwiQueueHead=-1; m_rwiQueueTail=-64; m_rwiQueueSz=m_rwiQueueAlloc = 0;
 	m_rwiQueue = 0; m_lockRwiQueue = 0;
 	m_pRwiHitsTail = (m_pRwiHitsHead = m_pRwiHitsPool+1)+255;
@@ -789,6 +790,8 @@ IPhysicalEntity *CPhysicalWorld::SetHeightfieldData(const heightfield *phf, int 
 		pHF->m_parts[0].BBox[1].zero();
 		m_pHeightfield[iCaller] = pHF;
 	}
+	if (!m_nEnts)
+		ReserveEntityCount(1);
 	return m_pHeightfield[0];
 }
 
