@@ -1077,7 +1077,7 @@ void CStandardGraphicsPipeline::Execute()
 	}
 
 	// Prepare tiled shading resources early to give DMA operations enough time to finish
-	m_pTiledShadingStage->PrepareResources();
+	m_pTiledShadingStage->ExecutePreprocess();
 
 	if (!m_pCurrentRenderView->IsRecursive() && pRenderer->m_CurRenderEye != RIGHT_EYE)
 	{

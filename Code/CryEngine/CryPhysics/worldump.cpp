@@ -1137,10 +1137,12 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 			i = atol(str); j = pent->m_nPartsAlloc;
 			if ((pent->m_nParts=max(pent->m_nParts,i+1)) > pent->m_nPartsAlloc) {
 				geom *pparts = pent->m_parts;
+				int nparts = pent->m_nPartsAlloc;
 				memcpy(pent->m_parts = new geom[pent->m_nPartsAlloc=(pent->m_nParts-1&~3)+4], pparts, sizeof(geom)*j);
 				for(int k=0; k<pent->m_nParts; k++) if (pent->m_parts[k].pNewCoords==(coord_block_BBox*)&pparts[k].pos)
 					pent->m_parts[k].pNewCoords = (coord_block_BBox*)&pent->m_parts[k].pos;
-				if (pparts!=&pent->m_defpart) delete[] pparts;
+				if (pparts!=&pent->m_defpart) 
+					ctx.pWorld->FreeEntityParts(pparts, nparts);
 			}
 #if CRY_PLATFORM_DURANGO	 
 #pragma warning(disable : 4390)
@@ -1652,10 +1654,12 @@ struct CLivingEntitySerializer : CPhysicalEntitySerializer {
 		DECLARE_MEMBER("MaxVelGround", ft_float, m_maxVelGround)
 		DECLARE_PROC("Active", &CLivingEntitySerializer::SerializeActive)
 		DECLARE_PROC("Swimming", &CLivingEntitySerializer::SerializeSwimming)
+		DECLARE_PROC("UseCapsule", &CLivingEntitySerializer::SerializeUseCapsule)
 		DECLARE_PROC("end", &CLivingEntitySerializer::Finalize)
 	}
 	DEFINE_MEMBER_PROC(CLivingEntity, SerializeActive, m_bActive)
 	DEFINE_MEMBER_PROC(CLivingEntity, SerializeSwimming, m_bSwimming)
+	DEFINE_MEMBER_PROC(CLivingEntity, SerializeUseCapsule, m_bUseCapsule)
 
 	int Finalize(parse_context &ctx, char *str) {
 		CLivingEntity *pent = (CLivingEntity*)ctx.pobj;
@@ -1665,7 +1669,14 @@ struct CLivingEntitySerializer : CPhysicalEntitySerializer {
 			dim.hh = pent->m_size.z;
 			dim.center.zero();
 			dim.axis.Set(0,0,1);
-			pent->m_pCylinderGeom->CreateCylinder(&dim);
+			if ((pent->m_pCylinderGeom->GetType()==GEOM_CAPSULE) != pent->m_bUseCapsule) {
+				delete pent->m_pCylinderGeom;
+				pent->m_CylinderGeomPhys.pGeom = pent->m_pCylinderGeom = pent->m_bUseCapsule ? (new CCapsuleGeom()) : (new CCylinderGeom());
+			}
+			if (pent->m_bUseCapsule)
+				((CCapsuleGeom*)pent->m_pCylinderGeom)->CreateCapsule((capsule*)&dim);
+			else
+				pent->m_pCylinderGeom->CreateCylinder(&dim);
 			pent->m_pNewCoords->pos=pent->m_pos; pent->m_pNewCoords->q=pent->m_qrot;
 			ctx.pWorld->RepositionEntity(pent,3|8);
 		}

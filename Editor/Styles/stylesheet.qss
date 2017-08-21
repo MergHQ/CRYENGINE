@@ -922,7 +922,7 @@ QLineEdit {
 }
 
 QLineEdit:focus {
-	color:rgb(97,172,236);
+	border: 1px solid rgb(97,172,236) outset;
 }
 
 QSizeGrip {
@@ -2032,6 +2032,36 @@ QThumbnailsView > QToolButton{
 	icon-size: 17px;
 }
 
-QAbstractItemView::item::text{
-	selection-background: green;
+CAssetBrowser CBreadcrumbsBar
+{
+    max-height: 22px;
+}
+
+CAssetBrowser CBreadcrumbsBar QToolButton
+{ 
+    margin-top: 2px;
+}
+
+CAssetBrowser CBreadcrumbsBar QLineEdit
+{
+    min-height: 20px;
+}
+
+CAssetBrowser CBreadcrumbsBar QLineEdit[error=true]
+{
+    border: 1px solid rgb(193,70,70) outset;
+}
+
+QWidget#HoverWidget
+{
+	margin-top: 2px;
+	margin-left: 1px;
+	margin-right: 3px;
+	min-height: 18px;
+}
+
+QWidget#HoverWidget:hover
+{
+	background-color: rgb(86,86,86);
+    border-radius: 3px;
 }
