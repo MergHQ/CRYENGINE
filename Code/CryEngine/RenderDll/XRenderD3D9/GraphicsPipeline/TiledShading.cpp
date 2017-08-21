@@ -258,11 +258,14 @@ void CTiledShadingStage::PrepareResources()
 }
 
 
-bool CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY)
+bool CTiledShadingStage::IsSeparateVolumeListGen()
 {
-	if (CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile)
-		return false;
-	
+	return !(CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile);
+}
+
+
+void CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY)
+{
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CTiledShading* pTiledShading = &pRenderer->GetTiledShading();
 
@@ -388,10 +391,34 @@ bool CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 	}
 
 	m_passLightVolumes.Execute();
-
-	return true;
 }
 
+
+void CTiledShadingStage::ExecutePreprocess()
+{
+	PrepareResources();
+
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	CTiledShading* pTiledShading = &rd->GetTiledShading();
+
+	int screenWidth = rd->GetWidth();
+	int screenHeight = rd->GetHeight();
+	int gridWidth = screenWidth;
+	int gridHeight = screenHeight;
+
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
+
+	uint32 dispatchSizeX = gridWidth / LightTileSizeX + (gridWidth % LightTileSizeX > 0 ? 1 : 0);
+	uint32 dispatchSizeY = gridHeight / LightTileSizeY + (gridHeight % LightTileSizeY > 0 ? 1 : 0);
+
+	bool bSeparateCullingPass = IsSeparateVolumeListGen();
+
+	if (bSeparateCullingPass)
+	{
+		ExecuteVolumeListGen(dispatchSizeX, dispatchSizeY);
+	}
+}
 
 void CTiledShadingStage::Execute()
 {
@@ -416,7 +443,7 @@ void CTiledShadingStage::Execute()
 	uint32 dispatchSizeX = gridWidth / LightTileSizeX + (gridWidth % LightTileSizeX > 0 ? 1 : 0);
 	uint32 dispatchSizeY = gridHeight / LightTileSizeY + (gridHeight % LightTileSizeY > 0 ? 1 : 0);
 
-	bool bSeparateCullingPass = ExecuteVolumeListGen(dispatchSizeX, dispatchSizeY);
+	bool bSeparateCullingPass = IsSeparateVolumeListGen();
 	
 	if (CRenderer::CV_r_DeferredShadingTiled == 4 || CRenderer::CV_r_GraphicsPipelineMobile)
 		return;
