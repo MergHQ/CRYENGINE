@@ -525,7 +525,7 @@ void QToolWindowArea::showContextMenu(const QPoint &point)
 	if (singleTabFrame && singleTabFrame->m_caption && singleTabFrame->m_caption->contentsRect().contains(point))
 	{
 		QMenu menu(this);
-		connect(menu.addAction(tr("Close")), &QAction::triggered, [this]() { close(); });
+		connect(menu.addAction(tr("Close")), &QAction::triggered, [this, singleTabFrame]() { singleTabFrame->close(); });
 
 		menu.exec(mapToGlobal(QPoint(point.x(), point.y())));
 		return;
