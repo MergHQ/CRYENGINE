@@ -746,7 +746,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 		pe_action_add_constraint *action = (pe_action_add_constraint*)_action;
 		CPhysicalEntity *pBuddy = (CPhysicalEntity*)action->pBuddy;
 		CPhysicalPlaceholder *pBuddy0 = (CPhysicalPlaceholder*)action->pBuddy;
-		if (pBuddy==WORLD_ENTITY || pBuddy0->m_iSimClass>4)
+		if (pBuddy==WORLD_ENTITY || pBuddy0 && pBuddy0->m_iSimClass>4)
 			pBuddy = &g_StaticPhysicalEntity;
 		if (!pBuddy || (unsigned int)pBuddy->m_iSimClass>4u)
 			return 0;
@@ -2212,7 +2212,7 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			continue;
 		}
 		int flagsForce = 0;
-		if (m_pConstraintInfos[i].flags & constraint_area) {
+		if (m_pConstraintInfos[i].flags & constraint_area && m_pConstraintInfos[i].pConstraintEnt) {
 			pe_status_area sa; sa.ptClosest = m_pConstraints[i].pt[0];
 			m_pConstraintInfos[i].pConstraintEnt->GetStatus(&sa);
 			m_pConstraints[i].pt[1] = sa.ptClosest;
@@ -4670,7 +4670,14 @@ int CRigidEntity::CompactContactBlock(entity_contact *pContact,int endFlags, flo
 int CRigidEntity::ExtractConstraintInfo(int i, masktype constraintMask, pe_action_add_constraint &aac)
 {
 	int i1,j;
-	QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames);
+	int realent = m_pConstraints[i].pent[1]->m_iSimClass<3 || m_pConstraints[i].pent[1]->GetType()==PE_ARTICULATED;
+	QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames, realent+1);
+	if (!realent) {
+		pe_status_pos sp;
+		m_pConstraints[i].pent[1]->GetStatus(&sp);
+		frames[1] = QuatT(sp.q,sp.pos);
+		aac.partid[1] = 0;
+	}
 	aac.pBuddy = m_pConstraints[i].pent[1];
 	aac.pt[0] = frames[0]*m_pConstraintInfos[i].ptloc[0]; 
 	aac.pt[1] = frames[1]*m_pConstraintInfos[i].ptloc[1];
@@ -4680,10 +4687,17 @@ int CRigidEntity::ExtractConstraintInfo(int i, masktype constraintMask, pe_actio
 	aac.damping = m_pConstraintInfos[i].damping;
 	aac.flags = world_frames | m_pConstraintInfos[i].flags;
 	aac.sensorRadius = m_pConstraintInfos[i].sensorRadius;
-	for(j=0;j<2;j++) aac.partid[j] = m_pConstraints[i].pent[j]->m_parts[m_pConstraints[i].ipart[j]].id;
+	for(j=0;j<realent+1;j++) aac.partid[j] = m_pConstraints[i].pent[j]->m_parts[m_pConstraints[i].ipart[j]].id;
 	if (i+1<NMASKBITS && constraintMask & getmask(i+1) && m_pConstraintInfos[i+1].id==m_pConstraintInfos[i].id &&
 			m_pConstraints[i+1].flags & (contact_constraint_2dof|contact_constraint_1dof|contact_constraint_3dof)) 
-	{	GetContactFrames(m_pConstraints[i+1], frames);
+	{	
+		realent = m_pConstraints[i+1].pent[1]->m_iSimClass<3 || m_pConstraints[i+1].pent[1]->GetType()==PE_ARTICULATED;
+		GetContactFrames(m_pConstraints[i+1], frames, realent+1);
+		if (!realent) {
+			pe_status_pos sp;
+			m_pConstraints[i+1].pent[1]->GetStatus(&sp);
+			frames[1] = QuatT(sp.q,sp.pos);
+		}
 		for(j=0;j<2;j++) aac.qframe[j] = frames[j].q*m_pConstraintInfos[i+1].qframe_rel[j];
 		if (m_pConstraints[i+1].flags & contact_constraint_3dof)
 			aac.flags |= constraint_no_rotation;
