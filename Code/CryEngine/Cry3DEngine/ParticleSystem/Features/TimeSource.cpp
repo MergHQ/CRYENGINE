@@ -86,7 +86,7 @@ void CTimeSource::SerializeInplace(Serialization::IArchive& ar)
 		break;
 	}
 
-	if (ar.isInput() && GetVersion(ar) < 7)
+	if (ar.isInput() && GetVersion(ar) <= 8)
 	{
 		ar(m_timeScale, "Scale", "Scale");
 		ar(m_timeBias, "Bias", "Bias");
