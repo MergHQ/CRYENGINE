@@ -564,10 +564,4 @@ void CSceneCustomStage::ExecuteHelperPass()
 
 	RenderView()->GetDrawer().JobifyDrawSubmission();
 	RenderView()->GetDrawer().WaitForDrawSubmission();
-
-	// TODO: This is a workaround for missing ref-count handling for SRVs/RTVs/DSVs in the
-	// device-objects, but the ref-counting is necessary because the secondary viewports
-	// are being destroyd very frequent and the resize of the viewport produces rapid
-	// invalidation of backbuffer resources
-	m_debugViewPass.ExchangeRenderTarget(0, nullptr);
 }
