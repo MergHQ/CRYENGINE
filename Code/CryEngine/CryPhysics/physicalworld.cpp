@@ -1554,13 +1554,13 @@ int CPhysicalWorld::ReserveEntityCount(int nNewEnts)
 	if (m_nEnts+nNewEnts > m_nEntsAlloc-1) {
 		m_nEntsAlloc = (m_nEnts+nNewEnts & ~4095) + 4096;
 		m_nEntListAllocs++; m_bEntityCountReserved = 1;
-		ReallocateList(m_pTmpEntList,m_nEnts-1,m_nEntsAlloc);
-		ReallocateList(m_pTmpEntList1,m_nEnts-1,m_nEntsAlloc);
-		ReallocateList(m_pTmpEntList2,m_nEnts-1,m_nEntsAlloc);
-		ReallocateList(m_pGroupMass,m_nEnts-1,m_nEntsAlloc);
-		ReallocateList(m_pMassList,m_nEnts-1,m_nEntsAlloc);
-		ReallocateList(m_pGroupIds,m_nEnts-1,m_nEntsAlloc);
-		ReallocateList(m_pGroupNums,m_nEnts-1,m_nEntsAlloc);
+		ReallocateList(m_pTmpEntList,m_nEnts,m_nEntsAlloc);
+		ReallocateList(m_pTmpEntList1,m_nEnts,m_nEntsAlloc);
+		ReallocateList(m_pTmpEntList2,m_nEnts,m_nEntsAlloc);
+		ReallocateList(m_pGroupMass,m_nEnts,m_nEntsAlloc);
+		ReallocateList(m_pMassList,m_nEnts,m_nEntsAlloc);
+		ReallocateList(m_pGroupIds,m_nEnts,m_nEntsAlloc);
+		ReallocateList(m_pGroupNums,m_nEnts,m_nEntsAlloc);
 	}
 	return m_nEntsAlloc;
 }
