@@ -233,6 +233,12 @@ CStandardGraphicsPipeline::CStandardGraphicsPipeline()
 
 void CStandardGraphicsPipeline::Init()
 {
+	// Initialize all subsequently created passes with the correct stereo-resources
+	if (gcpRendD3D->GetS3DRend().IsStereoEnabled())
+	{
+		gcpRendD3D->m_RP.m_nRendFlags |= (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE);
+	}
+
 	// default material bind points
 	{
 		m_defaultMaterialBindPoints.SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);
@@ -303,6 +309,11 @@ void CStandardGraphicsPipeline::Init()
 	// Out-of-pipeline passes for display
 	m_DownscalePass.reset(new CDownsamplePass);
 	m_UpscalePass  .reset(new CSharpeningUpsamplePass);
+
+	if (gcpRendD3D->GetS3DRend().IsStereoEnabled())
+	{
+		gcpRendD3D->m_RP.m_nRendFlags &= ~(SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE);
+	}
 }
 
 void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)
