@@ -6,19 +6,19 @@ namespace pfx2
 namespace detail
 {
 
-template<typename T>
-ILINE floatv AntiAliasParentAge(const T deltaTime, const T selfAge, const T parentInvLifeTime, const T parentAge)
+
+
+
+ILINE const CParticleContainer& GetContainer(const SUpdateContext context, EModDomain domain)
 {
-	const T tempAntAliasParentAge = MAdd(selfAge * parentInvLifeTime, deltaTime, parentAge);
-	const T sample = __fsel(selfAge, parentAge, tempAntAliasParentAge);
-	return sample;
+	return domain == EMD_PerParticle ? context.m_container : context.m_parentContainer;
 }
 
 class CSelfStreamSampler
 {
 public:
 	CSelfStreamSampler(const SUpdateContext& context, EParticleDataType sourceStreamType, EModDomain domain = EMD_PerParticle)
-		: sourceStream(domain == EMD_PerParticle ? context.m_container.GetIFStream(sourceStreamType) : context.m_parentContainer.GetIFStream(sourceStreamType))
+		: sourceStream(GetContainer(context, domain).GetIFStream(sourceStreamType))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
@@ -32,23 +32,44 @@ class CParentStreamSampler
 {
 public:
 	CParentStreamSampler(const SUpdateContext& context, EParticleDataType sourceStreamType)
+		: parentSourceStream(context.m_parentContainer.GetIFStream(sourceStreamType, 1.0f))
+		, parentIds(context.m_container.GetIPidStream(EPDT_ParentId))
+	{}
+	ILINE floatv Sample(TParticleGroupId particleId) const
+	{
+		const TParticleIdv parentId = parentIds.Load(particleId);
+		return parentSourceStream.Load(parentId);
+	}
+private:
+	IFStream   parentSourceStream;
+	IPidStream parentIds;
+};
+
+class CParentAgeSampler
+{
+public:
+	CParentAgeSampler(const SUpdateContext& context)
 		: deltaTime(ToFloatv(context.m_deltaTime))
 		, selfAges(context.m_container.GetIFStream(EPDT_NormalAge))
-		, parentSourceStream(context.m_parentContainer.GetIFStream(sourceStreamType, 1.0f))
-		, parentInvLifeTimes(context.m_parentContainer.GetIFStream(EPDT_InvLifeTime, 1.0f))
+		, parentAges(context.m_parentContainer.GetIFStream(EPDT_NormalAge))
+		, parentInvLifeTimes(context.m_parentContainer.GetIFStream(EPDT_InvLifeTime))
 		, parentIds(context.m_container.GetIPidStream(EPDT_ParentId))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
 		const TParticleIdv parentId = parentIds.Load(particleId);
 		const floatv selfAge = selfAges.Load(particleId);
-		const floatv parentData = parentSourceStream.Load(parentId);
+		const floatv parentAge = parentAges.Load(parentId);
 		const floatv parentInvLifeTime = parentInvLifeTimes.Load(parentId);
-		return AntiAliasParentAge(deltaTime, selfAge, parentInvLifeTime, parentData);
+
+		// anti-alias parent age
+		const floatv tempAntAliasParentAge = MAdd(selfAge * parentInvLifeTime, deltaTime, parentAge);
+		const floatv sample = __fsel(selfAge, parentAge, tempAntAliasParentAge);
+		return sample;
 	}
 private:
 	IFStream   selfAges;
-	IFStream   parentSourceStream;
+	IFStream   parentAges;
 	IFStream   parentInvLifeTimes;
 	IPidStream parentIds;
 	floatv     deltaTime;
@@ -77,7 +98,7 @@ class CSelfSpeedSampler
 {
 public:
 	CSelfSpeedSampler(const SUpdateContext& context, EModDomain domain = EMD_PerParticle)
-		: velocities(domain == EMD_PerParticle ? context.m_container.GetIVec3Stream(EPVF_Velocity) : context.m_parentContainer.GetIVec3Stream(EPVF_Velocity))
+		: velocities(GetContainer(context, domain).GetIVec3Stream(EPVF_Velocity))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
@@ -91,9 +112,9 @@ private:
 class CParentSpeedSampler
 {
 public:
-	CParentSpeedSampler(const SUpdateContext& context, EModDomain domain)
+	CParentSpeedSampler(const SUpdateContext& context)
 		: parentVelocities(context.m_parentContainer.GetIVec3Stream(EPVF_Velocity))
-		, parentIds(domain == EMD_PerInstance ? context.m_parentContainer.GetIPidStream(EPDT_ParentId) : context.m_container.GetIPidStream(EPDT_ParentId))
+		, parentIds(context.m_container.GetIPidStream(EPDT_ParentId))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
@@ -141,9 +162,9 @@ private:
 class CViewAngleSampler
 {
 public:
-	CViewAngleSampler(const SUpdateContext& context)
-		: m_positions(context.m_container.GetIVec3Stream(EPVF_Position))
-		, m_orientations(context.m_container.GetIQuatStream(EPQF_Orientation))
+	CViewAngleSampler(const SUpdateContext& context, EModDomain domain = EMD_PerParticle)
+		: m_positions(GetContainer(context, domain).GetIVec3Stream(EPVF_Position))
+		, m_orientations(GetContainer(context, domain).GetIQuatStream(EPQF_Orientation))
 		, m_cameraPosition(ToVec3v(gEnv->p3DEngine->GetRenderingCamera().GetPosition())) {}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
@@ -180,8 +201,8 @@ private:
 class CCameraDistanceSampler
 {
 public:
-	CCameraDistanceSampler(const SUpdateContext& context)
-		: m_positions(context.m_container.GetIVec3Stream(EPVF_Position))
+	CCameraDistanceSampler(const SUpdateContext& context, EModDomain domain = EMD_PerParticle)
+		: m_positions(GetContainer(context, domain).GetIVec3Stream(EPVF_Position))
 		, m_cameraPosition(ToVec3v(gEnv->p3DEngine->GetRenderingCamera().GetPosition())) {}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
@@ -278,46 +299,36 @@ ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRan
 	case ETimeSource::ViewAngle:
 		((TBase*)this)->DoModify(
 			context, range, stream,
-			detail::CViewAngleSampler(context));
+			detail::CViewAngleSampler(context, domain));
 		break;
 	case ETimeSource::CameraDistance:
 		((TBase*)this)->DoModify(
 			context, range, stream,
-			detail::CCameraDistanceSampler(context));
+			detail::CCameraDistanceSampler(context, domain));
 		break;
-
 	case ETimeSource::Speed:
-		if (m_sourceOwner == ETimeSourceOwner::Self)
-			((TBase*)this)->DoModify(
-			  context, range, stream,
-			  detail::CSelfSpeedSampler(context));
-		else if (domain == EMD_PerInstance)
+		if (m_sourceOwner == ETimeSourceOwner::Self || domain == EMD_PerInstance)
 			((TBase*)this)->DoModify(
 			  context, range, stream,
 			  detail::CSelfSpeedSampler(context, domain));
 		else
 			((TBase*)this)->DoModify(
 			  context, range, stream,
-			  detail::CParentSpeedSampler(context, domain));
+			  detail::CParentSpeedSampler(context));
 		break;
 	default:
-		{
-			auto dataType = GetDataType();
-			if (m_sourceOwner == ETimeSourceOwner::Self)
-				((TBase*)this)->DoModify(
-				  context, range, stream,
-				  detail::CSelfStreamSampler(context, dataType));
-			else if (domain == EMD_PerInstance)
-				((TBase*)this)->DoModify(
-				  context, range, stream,
-				  detail::CSelfStreamSampler(context, dataType, domain));
-			else
-				((TBase*)this)->DoModify(
-				  context, range, stream,
-				  detail::CParentStreamSampler(context, dataType));
-			break;
-		}
-
+		if (m_sourceOwner == ETimeSourceOwner::Self || domain == EMD_PerInstance)
+			((TBase*)this)->DoModify(
+				context, range, stream,
+				detail::CSelfStreamSampler(context, GetDataType(), domain));
+		else if (GetDataType() == EPDT_NormalAge)
+			((TBase*)this)->DoModify(
+				context, range, stream,
+				detail::CParentAgeSampler(context));
+		else
+			((TBase*)this)->DoModify(
+				context, range, stream,
+				detail::CParentStreamSampler(context, GetDataType()));
 	}
 }
 

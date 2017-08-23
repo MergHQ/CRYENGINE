@@ -57,7 +57,8 @@ void CTimeSource::SerializeInplace(Serialization::IArchive& ar)
 	case ETimeSource::Speed:
 		if (m_sourceOwner == ETimeSourceOwner::_None)
 			m_sourceOwner = ETimeSourceOwner::Self;
-		ar(m_sourceOwner, "Owner", "Owner");
+		if (context.GetDomain() == EMD_PerParticle)
+			ar(m_sourceOwner, "Owner", "Owner");
 		break;
 	case ETimeSource::Attribute:
 		ar(m_attributeName, "AttributeName", "Attribute Name");
@@ -66,7 +67,6 @@ void CTimeSource::SerializeInplace(Serialization::IArchive& ar)
 	case ETimeSource::LevelTime:
 		m_sourceOwner = ETimeSourceOwner::_None;
 		break;
-
 	case ETimeSource::_ParentTime:
 		m_timeSource = ETimeSource::Age;
 		m_sourceOwner = ETimeSourceOwner::Parent;
