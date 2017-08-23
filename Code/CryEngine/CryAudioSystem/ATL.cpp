@@ -1360,7 +1360,11 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 
 		PreloadRequestId const preloadRequestId = StringToId_RunTime(szLevelName);
 		result = m_fileCacheMgr.TryLoadRequest(preloadRequestId, true, true);
-		CRY_ASSERT(result == ERequestStatus::Success);
+		
+		if (result != ERequestStatus::Success)
+		{
+			g_logger.Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
+		}
 	}
 
 	g_logger.Log(ELogType::Warning, "Done refreshing the AudioSystem!");
