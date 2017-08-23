@@ -227,19 +227,19 @@ CRenderView* CGraphicsPipelineStage::RenderView()
 
 CStandardGraphicsPipeline::CStandardGraphicsPipeline()
 	: m_changedCVars(gEnv->pConsole)
-	, m_defaultMaterialResources()
+	, m_defaultMaterialBindPoints()
 	, m_defaultInstanceExtraResources()
 {}
 
 void CStandardGraphicsPipeline::Init()
 {
-	// default material resources
+	// default material bind points
 	{
-		m_defaultMaterialResources.SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);
+		m_defaultMaterialBindPoints.SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);
 
 		for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 		{
-			m_defaultMaterialResources.SetTexture(texType, CTexture::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			m_defaultMaterialBindPoints.SetTexture(texType, CTexture::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		}
 	}
 
@@ -716,7 +716,7 @@ CDeviceResourceLayoutPtr CStandardGraphicsPipeline::CreateScenePassLayout(const 
 {
 	SDeviceResourceLayoutDesc layoutDesc;
 	layoutDesc.SetConstantBuffer(EResourceLayoutSlot_PerInstanceCB, eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
-	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, GetDefaultMaterialResources());
+	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, GetDefaultMaterialBindPoints());
 	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerInstanceExtraRS, GetDefaultInstanceExtraResources());
 	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerPassRS, perPassResources);
 

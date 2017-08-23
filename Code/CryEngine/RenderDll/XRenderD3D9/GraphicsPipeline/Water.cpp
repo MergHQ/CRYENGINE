@@ -927,7 +927,7 @@ bool CWaterStage::PrepareResourceLayout()
 	SDeviceResourceLayoutDesc layoutDesc;
 
 	layoutDesc.SetConstantBuffer(EResourceLayoutSlot_PerInstanceCB, eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Domain | EShaderStage_Pixel);
-	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialResources());
+	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialBindPoints());
 	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerInstanceExtraRS, m_defaultPerInstanceResources);
 	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerPassRS, m_perPassResources[ePass_ReflectionGen]);
 
