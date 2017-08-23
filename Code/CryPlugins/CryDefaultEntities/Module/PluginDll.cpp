@@ -46,7 +46,7 @@ CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
 {
 	if (gEnv->pSchematyc != nullptr)
 	{
-		gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(GetSchematycPackageGUID());
+		gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(CPlugin_CryDefaultEntities::GetCID());
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
@@ -213,7 +213,7 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 
 			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 			  stl::make_unique<Schematyc::CEnvPackage>(
-			    GetSchematycPackageGUID(),
+				CPlugin_CryDefaultEntities::GetCID(),
 			    "EntityComponents",
 			    "Crytek GmbH",
 			    "CRYENGINE Default Entity Components",
