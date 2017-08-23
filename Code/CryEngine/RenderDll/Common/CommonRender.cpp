@@ -243,7 +243,9 @@ void CResourceBindingInvalidator::AddInvalidateCallback(void* listener, const SR
 void CResourceBindingInvalidator::RemoveInvalidateCallbacks(void* listener, const SResourceBindPoint bindPoint) threadsafe
 {
 	typedef std::vector<SInvalidateRegistry::const_iterator, CryStack::CSingleBlockAllocator<SInvalidateRegistry::const_iterator>> StackErasureVector;
-	const size_t erasureLimit = m_invalidateCallbacks.size();
+	const bool bBatchRemoval = (bindPoint == SResourceBindPoint());
+	// If a bind-point is given the limit is 1, otherwise the limit is the maximum number of possible bind-points per listener (256 as in DX11s t0-t255)
+	const size_t erasureLimit = bBatchRemoval ? 256ULL /*m_invalidateCallbacks.size()*/ : 1ULL;
 
 	CryStackAllocatorWithSizeVector(SInvalidateRegistry::const_iterator, erasureLimit, erasureMem, NoAlign);
 	StackErasureVector erasureList(erasureMem);
@@ -253,7 +255,7 @@ void CResourceBindingInvalidator::RemoveInvalidateCallbacks(void* listener, cons
 		m_invalidationLock.RLock();
 
 		// remove all callback of this listener
-		if (bindPoint == SResourceBindPoint())
+		if (bBatchRemoval)
 		{
 			for (auto it = m_invalidateCallbacks.begin(), end = m_invalidateCallbacks.end(); it != end;)
 			{
