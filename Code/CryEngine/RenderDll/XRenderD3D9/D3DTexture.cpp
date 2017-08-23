@@ -345,7 +345,7 @@ bool CTexture::RT_CreateDeviceTexture(const void* pData[])
 	}
 
 	// Notify that resource is dirty
-	InvalidateDeviceResource(eDeviceResourceDirty | eDeviceResourceViewDirty);
+	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
 
 	if (!pData || !pData[0])
 		return true;
@@ -396,7 +396,7 @@ bool CTexture::RT_CreateDeviceTexture(D3DResource* pNatTex)
 	}
 
 	// Notify that resource is dirty
-	InvalidateDeviceResource(eDeviceResourceDirty | eDeviceResourceViewDirty);
+	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
 
 	if (!pNatTex)
 		return true;
@@ -1042,7 +1042,7 @@ void CTexture::ValidateSRVs()
 	// TODO: recreate all views that existed ...
 
 	// Notify that resource is dirty
-	InvalidateDeviceResource(eDeviceResourceDirty | eDeviceResourceViewDirty);
+	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
 }
 #endif
 

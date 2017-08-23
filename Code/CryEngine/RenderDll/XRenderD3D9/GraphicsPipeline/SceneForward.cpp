@@ -25,9 +25,9 @@ struct SPerPassConstantBuffer
 };
 
 CSceneForwardStage::CSceneForwardStage()
-	: m_opaquePassResources(nullptr, nullptr)
-	, m_transparentPassResources(nullptr, nullptr)
-	, m_eyeOverlayPassResources(nullptr, nullptr)
+	: m_opaquePassResources()
+	, m_transparentPassResources()
+	, m_eyeOverlayPassResources()
 {}
 
 
@@ -46,6 +46,11 @@ void CSceneForwardStage::Init()
 	m_pOpaqueResourceLayout      = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_opaquePassResources);
 	m_pTransparentResourceLayout = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_transparentPassResources);
 	m_pEyeOverlayResourceLayout  = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_eyeOverlayPassResources);
+
+	// Freeze resource-set layout (assert  will fire when violating the constraint)
+	m_opaquePassResources     .AcceptChangedBindPoints();
+	m_transparentPassResources.AcceptChangedBindPoints();
+	m_eyeOverlayPassResources .AcceptChangedBindPoints();
 
 	// Opaque forward scene pass
 	m_forwardOpaquePass.SetLabel("FORWARD_OPAQUE");
@@ -344,22 +349,20 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 		CDeviceResourceSetDesc* pResources = pResourceDescs[i];
 		CDeviceResourceSet*     pResourceSet = pResourceSets[i];
 
-		CDeviceResourceSetDesc::EDirtyFlags dirtyFlags = CDeviceResourceSetDesc::EDirtyFlags::eNone;
-
 		// Samplers
 		{
 			auto materialSamplers = gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialSamplers();
 			for (int i = 0; i < materialSamplers.size(); ++i)
 			{
-				dirtyFlags |= pResources->SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
+				pResources->SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
 			}
 			
-			dirtyFlags |= pResources->SetSampler(8, EDefaultSamplerStates::PointWrap, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetSampler(9, EDefaultSamplerStates::PointClamp, EShaderStage_AllWithoutCompute);
+			pResources->SetSampler(8, EDefaultSamplerStates::PointWrap, EShaderStage_AllWithoutCompute);
+			pResources->SetSampler(9, EDefaultSamplerStates::PointClamp, EShaderStage_AllWithoutCompute);
 			
 			// Custom for pass
-			dirtyFlags |= pResources->SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
+			pResources->SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
+			pResources->SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
 		}
 
 		// Textures
@@ -368,56 +371,61 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 			if (gEnv->p3DEngine && gEnv->p3DEngine->GetITerrain())
 				gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
 
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_PerlinNoiseMap, CTexture::s_ptexPerlinNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_PerlinNoiseMap, CTexture::s_ptexPerlinNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(ePerPassTexture_SceneLinearDepth, CTexture::s_ptexZTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-			dirtyFlags |= pResources->SetTexture(38, pShadowMask, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(39, CTexture::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(40, CTexture::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(45, (pRenderView && pRenderView->IsRecursive()) ? CTexture::s_ptexBlackCM : CTexture::s_ptexDefaultProbeCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(38, pShadowMask, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(39, CTexture::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(40, CTexture::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(45, (pRenderView && pRenderView->IsRecursive()) ? CTexture::s_ptexBlackCM : CTexture::s_ptexDefaultProbeCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		}
 
 		// Particle resources
 		{
 			const CParticleBufferSet& particleBuffer = pRenderer->m_RP.m_particleBuffer;
 			const CLightVolumeBuffer& lightVolumes = pRenderer->m_RP.m_lightVolumeBuffer;
-			dirtyFlags |= pResources->SetBuffer(
-				EReservedTextureSlot_LightvolumeInfos, &lightVolumes.GetLightInfosBuffer(),
+			pResources->SetBuffer(
+				EReservedTextureSlot_LightvolumeInfos,
+				const_cast<CGpuBuffer*>(&lightVolumes.GetLightInfosBuffer()),
 				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetBuffer(
-				EReservedTextureSlot_LightVolumeRanges, &lightVolumes.GetLightRangesBuffer(),
+			pResources->SetBuffer(
+				EReservedTextureSlot_LightVolumeRanges,
+				const_cast<CGpuBuffer*>(&lightVolumes.GetLightRangesBuffer()),
 				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			if (bOnInit)
 			{
-				dirtyFlags |= pResources->SetBuffer(
-					EReservedTextureSlot_ParticlePositionStream, CDeviceBufferManager::GetNullBufferStructured(),
+				pResources->SetBuffer(
+					EReservedTextureSlot_ParticlePositionStream,
+					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetBuffer(
-					EReservedTextureSlot_ParticleAxesStream, CDeviceBufferManager::GetNullBufferStructured(),
+				pResources->SetBuffer(
+					EReservedTextureSlot_ParticleAxesStream,
+					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetBuffer(
-					EReservedTextureSlot_ParticleColorSTStream, CDeviceBufferManager::GetNullBufferStructured(),
+				pResources->SetBuffer(
+					EReservedTextureSlot_ParticleColorSTStream,
+					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 			else
 			{
-				dirtyFlags |= pResources->SetBuffer(
+				pResources->SetBuffer(
 					EReservedTextureSlot_ParticlePositionStream,
-					&particleBuffer.GetPositionStream(),
+					const_cast<CGpuBuffer*>(&particleBuffer.GetPositionStream()),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetBuffer(
+				pResources->SetBuffer(
 					EReservedTextureSlot_ParticleAxesStream,
-					&particleBuffer.GetAxesStream(),
+					const_cast<CGpuBuffer*>(&particleBuffer.GetAxesStream()),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetBuffer(
+				pResources->SetBuffer(
 					EReservedTextureSlot_ParticleColorSTStream,
-					&particleBuffer.GetColorSTsStream(),
+					const_cast<CGpuBuffer*>(&particleBuffer.GetColorSTsStream()),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 		}
@@ -425,26 +433,26 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 		// Tiled shading resources
 		{
 			CTiledShading& tiledShading = pRenderer->GetTiledShading();
-			dirtyFlags |= pResources->SetBuffer(17,  &tiledShading.m_tileOpaqueLightMaskBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetBuffer(18,  &tiledShading.m_lightShadeInfoBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetBuffer(19,  &tiledShading.m_clipVolumeInfoBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(20, tiledShading.m_specularProbeAtlas.texArray, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(21, tiledShading.m_diffuseProbeAtlas.texArray, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(22, tiledShading.m_spotTexAtlas.texArray, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(23, CTexture::s_ptexRT_ShadowPool, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(24, CTexture::s_ptexSceneNormalsBent, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			dirtyFlags |= pResources->SetTexture(41, CTexture::s_ptexSceneDiffuse, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);  //  Eye AO overlay
+			pResources->SetBuffer(17,  &tiledShading.m_tileOpaqueLightMaskBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetBuffer(18,  &tiledShading.m_lightShadeInfoBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetBuffer(19,  &tiledShading.m_clipVolumeInfoBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(20, tiledShading.m_specularProbeAtlas.texArray, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(21, tiledShading.m_diffuseProbeAtlas.texArray, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(22, tiledShading.m_spotTexAtlas.texArray, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(23, CTexture::s_ptexRT_ShadowPool, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(24, CTexture::s_ptexSceneNormalsBent, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			pResources->SetTexture(41, CTexture::s_ptexSceneDiffuse, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);  //  Eye AO overlay
 
 			if (CRenderer::CV_r_DeferredShadingTiled < 3)
 			{
-				dirtyFlags |= pResources->SetBuffer(17, &tiledShading.m_tileTranspLightMaskBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetBuffer(17, &tiledShading.m_tileTranspLightMaskBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 
 			// Overwrite resources for transparent pass (need to be careful that the layout is still the same)
 			if (bTransparentPass)
 			{
-				dirtyFlags |= pResources->SetBuffer(17, &tiledShading.m_tileTranspLightMaskBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetTexture(24, CTexture::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetBuffer(17, &tiledShading.m_tileTranspLightMaskBuf, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(24, CTexture::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
 				CShadowUtils::SShadowCascades cascades;
 				if (bOnInit)
@@ -456,33 +464,33 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 					CShadowUtils::GetShadowCascades(cascades, RenderView());
 				}
 
-				dirtyFlags |= pResources->SetTexture(25, CTexture::s_ptexCurrSceneTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetTexture(26, cascades.pShadowMap[0], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetTexture(27, cascades.pShadowMap[1], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetTexture(28, cascades.pShadowMap[2], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetTexture(29, cascades.pShadowMap[3], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetTexture(30, CTexture::s_ptexWhite, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				dirtyFlags |= pResources->SetTexture(31, CTexture::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(25, CTexture::s_ptexCurrSceneTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(26, cascades.pShadowMap[0], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(27, cascades.pShadowMap[1], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(28, cascades.pShadowMap[2], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(29, cascades.pShadowMap[3], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(30, CTexture::s_ptexWhite, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(31, CTexture::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
 				// volumetric fog supports only general pass currently so only transparent pass needs those textures.
 				auto* pVolFogStage = pRenderer->GetGraphicsPipeline().GetVolumetricFogStage();
 				if (bOnInit || !pVolFogStage || !bFog)
 				{
-					dirtyFlags |= pResources->SetTexture(42, CTexture::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					dirtyFlags |= pResources->SetTexture(43, CTexture::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					dirtyFlags |= pResources->SetTexture(44, CTexture::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					pResources->SetTexture(42, CTexture::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					pResources->SetTexture(43, CTexture::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					pResources->SetTexture(44, CTexture::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 				else
 				{
-					dirtyFlags |= pResources->SetTexture(42, pVolFogStage->GetVolumetricFogTex(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					dirtyFlags |= pResources->SetTexture(43, pVolFogStage->GetGlobalEnvProbeTex0(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					dirtyFlags |= pResources->SetTexture(44, pVolFogStage->GetGlobalEnvProbeTex1(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					pResources->SetTexture(42, pVolFogStage->GetVolumetricFogTex(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					pResources->SetTexture(43, pVolFogStage->GetGlobalEnvProbeTex0(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					pResources->SetTexture(44, pVolFogStage->GetGlobalEnvProbeTex1(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 			}
 			else if (bEyeOverlayPass)
 			{
 				// Eye AO overlay pass resource must not contain eye AO overlay texture.
-				dirtyFlags |= pResources->SetTexture(41, CTexture::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(41, CTexture::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 		}
 
@@ -504,7 +512,7 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 				m_pPerPassCB->UpdateBuffer(cb, cbSize);
 			}
 
-			dirtyFlags |= pResources->SetConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pPerPassCB, EShaderStage_AllWithoutCompute);
+			pResources->SetConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pPerPassCB, EShaderStage_AllWithoutCompute);
 
 			CConstantBufferPtr pPerViewCB;
 			if (bOnInit)  // Handle case when no view is available in the initialization of the stage
@@ -512,14 +520,14 @@ bool CSceneForwardStage::PreparePerPassResources(CRenderView* pRenderView, bool 
 			else
 				pPerViewCB = pRenderer->GetGraphicsPipeline().GetMainViewConstantBuffer();
 
-			dirtyFlags |= pResources->SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
-
-			if (bOnInit)
-				continue;
+			pResources->SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
 		}
 
-		CRY_ASSERT(bOnInit || uint8(dirtyFlags & CDeviceResourceSetDesc::EDirtyFlags::eDirtyBindPoint) == 0); // Cannot change resource layout after init. It is baked into the shaders
-		pResourceSet->Update(*pResources, dirtyFlags);
+		if (bOnInit)
+			continue;
+
+		CRY_ASSERT(!pResources->HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
+		pResourceSet->Update(*pResources);
 	}
 
 	return bOnInit || (m_pOpaquePassResourceSet->IsValid() && m_pTransparentPassResourceSet->IsValid());

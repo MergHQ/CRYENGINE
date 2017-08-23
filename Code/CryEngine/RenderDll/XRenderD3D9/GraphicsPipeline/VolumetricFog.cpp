@@ -225,7 +225,7 @@ CVolumetricFogStage::CVolumetricFogStage()
 	, m_frameID(-1)
 	, m_tick(0)
 	, m_resourceFrameID(-1)
-	, m_sceneRenderPassResources(nullptr, nullptr)
+	, m_sceneRenderPassResources()
 {
 	static_assert(MaxFrameNum >= MAX_GPU_NUM, "MaxFrameNum must be more than or equal to MAX_GPU_NUM.");
 
@@ -374,6 +374,9 @@ void CVolumetricFogStage::Init()
 		// NOTE: use the resource layout of forward pass because CREParticle expects that layout in scene render pass.
 		m_pSceneRenderResourceLayout = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_sceneRenderPassResources);
 		CRY_ASSERT(m_pSceneRenderResourceLayout);
+
+		// Freeze resource-set layout (assert will fire when violating the constraint)
+		m_sceneRenderPassResources.AcceptChangedBindPoints();
 
 		m_passInjectParticleDensity.SetLabel("ParticleInjection");
 		m_passInjectParticleDensity.SetupPassContext(m_stageID, 0, TTYPE_GENERAL, FB_GENERAL, EFSLIST_FOG_VOLUME, 0, false);
@@ -724,14 +727,12 @@ bool CVolumetricFogStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER 
 {
 	CRY_ASSERT(m_pSceneRenderPassResourceSet);
 
-	CDeviceResourceSetDesc::EDirtyFlags dirtyFlags = CDeviceResourceSetDesc::EDirtyFlags::eNone;
-
 	// Samplers
 	{
 		auto materialSamplers = gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialSamplers();
 		for (int i = 0; i < materialSamplers.size(); ++i)
 		{
-			dirtyFlags |= m_sceneRenderPassResources.SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
+			m_sceneRenderPassResources.SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
 		}
 	}
 
@@ -747,7 +748,7 @@ bool CVolumetricFogStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER 
 			m_pSceneRenderPassCB->UpdateBuffer(cb, cbSize);
 		}
 
-		dirtyFlags |= m_sceneRenderPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pSceneRenderPassCB, EShaderStage_AllWithoutCompute);
+		m_sceneRenderPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pSceneRenderPassCB, EShaderStage_AllWithoutCompute);
 
 		CConstantBufferPtr pPerViewCB;
 		if (bOnInit)  // Handle case when no view is available in the initialization of the stage
@@ -755,14 +756,14 @@ bool CVolumetricFogStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER 
 		else
 			pPerViewCB = gcpRendD3D->GetGraphicsPipeline().GetMainViewConstantBuffer();
 
-		dirtyFlags |= m_sceneRenderPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
+		m_sceneRenderPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
 	}
 
 	if (bOnInit)
 		return true;
 
-	CRY_ASSERT(bOnInit || uint8(dirtyFlags & CDeviceResourceSetDesc::EDirtyFlags::eDirtyBindPoint) == 0); // Cannot change resource layout after init. It is baked into the shaders
-	return m_pSceneRenderPassResourceSet->Update(m_sceneRenderPassResources, dirtyFlags);
+	CRY_ASSERT(!m_sceneRenderPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
+	return m_pSceneRenderPassResourceSet->Update(m_sceneRenderPassResources);
 }
 
 void CVolumetricFogStage::InjectParticipatingMedia(CRenderView* pRenderView, const SScopedComputeCommandList& commandList)

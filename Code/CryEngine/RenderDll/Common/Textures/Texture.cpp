@@ -41,7 +41,6 @@ float CTexture::s_nStreamingTotalTime = 0;
 CTextureStreamPoolMgr* CTexture::s_pPoolMgr;
 std::set<string> CTexture::s_vTexReloadRequests;
 CryCriticalSection CTexture::s_xTexReloadLock;
-CryCriticalSectionNonRecursive CTexture::s_invalidationLock;
 #ifdef TEXTURE_GET_SYSTEM_COPY_SUPPORT
 CTexture::LowResSystemCopyType CTexture::s_LowResSystemCopy;
 #endif
@@ -428,7 +427,7 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 
 CTexture::~CTexture()
 {
-	InvalidateDeviceResource(eResourceDestroyed);
+	InvalidateDeviceResource(this, eResourceDestroyed);
 
 	// sizes of these structures should NOT exceed L2 cache line!
 #if CRY_PLATFORM_64BIT
@@ -469,8 +468,6 @@ CTexture::~CTexture()
 #ifdef TEXTURE_GET_SYSTEM_COPY_SUPPORT
 	s_LowResSystemCopy.erase(this);
 #endif
-
-	CRY_ASSERT_MESSAGE(m_invalidateCallbacks.empty(), "Make sure any clients (e.g. Renderpasses, resource sets, etc..) are released before destroying this resource");
 }
 
 void CTexture::RT_ReleaseDevice()
@@ -573,7 +570,7 @@ void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 		m_pDevTexture->SetOwner(this);
 	}
 
-	InvalidateDeviceResource(eDeviceResourceDirty);
+	InvalidateDeviceResource(this, eDeviceResourceDirty);
 }
 
 void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
@@ -601,7 +598,7 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 		CryInterlockedAdd(&CTexture::s_nStatsCurManagedNonStreamedTexMem, m_nDevTextureSize);
 	}
 
-	InvalidateDeviceResource(eDeviceResourceDirty);
+	InvalidateDeviceResource(this, eDeviceResourceDirty);
 }
 
 void CTexture::PostCreate()
@@ -1965,7 +1962,7 @@ void CTexture::SetDefaultShaderResourceView(D3DBaseView* pDeviceShaderResource, 
 	// Notify that resource is dirty
 	if (!(m_eFlags & FT_USAGE_RENDERTARGET))
 	{
-		InvalidateDeviceResource(eDeviceResourceViewDirty);
+		InvalidateDeviceResource(this, eDeviceResourceViewDirty);
 	}
 }
 
@@ -4468,45 +4465,3 @@ void CTexture::PrepareLowResSystemCopy(byte* pTexData, bool bTexDataHasAllMips)
 }
 
 #endif // TEXTURE_GET_SYSTEM_COPY_SUPPORT
-
-void CTexture::AddInvalidateCallback(void* listener, const SResourceBinding::InvalidateCallbackFunction& callback)
-{
-	AUTO_LOCK_T(CryCriticalSectionNonRecursive, s_invalidationLock);
-
-#if !CRY_PLATFORM_ORBIS || defined(__GXX_RTTI)
-	CRY_ASSERT(callback.target<SResourceBinding::InvalidateCallbackSignature*>() != nullptr);
-#endif
-
-	auto insertResult = m_invalidateCallbacks.emplace(listener, callback);
-	++insertResult.first->second.refCount;
-
-	// We only allow one callback function per listener
-#if !CRY_PLATFORM_ORBIS || defined(__GXX_RTTI)
-	CRY_ASSERT(*callback.target<SResourceBinding::InvalidateCallbackSignature*>() == *insertResult.first->second.callback.target<SResourceBinding::InvalidateCallbackSignature*>());
-#endif
-}
-
-void CTexture::RemoveInvalidateCallbacks(void* listener)
-{
-	AUTO_LOCK_T(CryCriticalSectionNonRecursive, s_invalidationLock);
-
-	auto it = m_invalidateCallbacks.find(listener);
-
-	if (it != m_invalidateCallbacks.end())
-	{
-		if (--it->second.refCount <= 0)
-			m_invalidateCallbacks.erase(listener);
-	}
-}
-
-void CTexture::InvalidateDeviceResource(uint32 dirtyFlags)
-{
-	AUTO_LOCK_T(CryCriticalSectionNonRecursive, s_invalidationLock);
-
-	for (auto it = m_invalidateCallbacks.begin(), end = m_invalidateCallbacks.end(); it != end;)
-	{
-		auto itCurrentCallback = it++;
-		if (itCurrentCallback->second.callback(itCurrentCallback->first, dirtyFlags) == false)
-			m_invalidateCallbacks.erase(itCurrentCallback);
-	}
-}

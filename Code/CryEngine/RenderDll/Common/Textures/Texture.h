@@ -1192,20 +1192,6 @@ private:
 	string m_sAssetScopeName;
 #endif
 
-	struct SInvalidateCallback
-	{
-		int refCount;
-		SResourceBinding::InvalidateCallbackFunction callback;
-
-		SInvalidateCallback(const SResourceBinding::InvalidateCallbackFunction& cb)
-			: callback(cb)
-			, refCount(0)
-		{}
-	};
-
-	std::unordered_map<void*, SInvalidateCallback> m_invalidateCallbacks;
-	static CryCriticalSectionNonRecursive          s_invalidationLock;
-
 public:
 	int m_nUpdateFrameID;         // last write access, compare with GetFrameID(false)
 
@@ -1519,10 +1505,6 @@ public:
 
 	void ValidateSRVs();
 #endif
-
-	void AddInvalidateCallback(void* listener, const SResourceBinding::InvalidateCallbackFunction& callback);
-	void RemoveInvalidateCallbacks(void* listener);
-	void InvalidateDeviceResource(uint32 dirtyFlags);
 
 	//////////////////////////////////////////////////////////////////////////
 
