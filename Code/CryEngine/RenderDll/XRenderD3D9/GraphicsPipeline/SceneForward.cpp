@@ -650,7 +650,9 @@ void CSceneForwardStage::Execute_Transparent(bool bBelowWater)
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	SThreadInfo* const pThreadInfo = &(pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID]);
 
-	if (!SRendItem::IsListEmpty(EFSLIST_TRANSP) && (!SRendItem::IsListEmpty(EFSLIST_TRANSP_NEAREST)) && ((SRendItem::BatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER) || !bBelowWater))
+	const bool bItemsBelowWater = !SRendItem::IsListEmpty(EFSLIST_TRANSP) && (SRendItem::BatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER);
+	const bool bItemsBelowWaterNearest = !SRendItem::IsListEmpty(EFSLIST_TRANSP_NEAREST) && (SRendItem::BatchFlags(EFSLIST_TRANSP_NEAREST) & FB_BELOW_WATER);
+	if(bItemsBelowWater || bItemsBelowWaterNearest || !bBelowWater)
 	{
 		CStretchRectPass& copyPass = bBelowWater ? m_copySceneTargetBWPass : m_copySceneTargetAWPass;
 		copyPass.Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexCurrSceneTarget);
