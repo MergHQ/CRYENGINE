@@ -131,7 +131,7 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 			}
 
 			// update elevation texture
-			if (pTextureSourceNode->m_eElevTexEditingState == eTES_SectorIsModified_AtlasIsDirty)
+			if (pTextureSourceNode->m_eElevTexEditingState == eTES_SectorIsModified_AtlasIsDirty && !GetTerrain()->IsTerrainPaintingInProgress())
 			{
 				pTextureSourceNode->UpdateNodeNormalMapFromEditorData();
 

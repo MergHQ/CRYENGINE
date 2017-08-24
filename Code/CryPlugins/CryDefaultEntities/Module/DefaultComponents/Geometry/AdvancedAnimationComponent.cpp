@@ -112,24 +112,21 @@ namespace Cry
 							// Set the travel speed based on the physics velocity magnitude
 							// Keep in mind that the maximum number for motion parameters is 10.
 							// If your velocity can reach a magnitude higher than this, divide by the maximum theoretical account and work with a 0 - 1 ratio.
-							m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSpeed, travelSpeed, 0.f);
+							if (!m_overriddenMotionParams.test(eMotionParamID_TravelSpeed))
+							{
+								m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSpeed, travelSpeed, 0.f);
+							}
 
 							// Update the turn speed in CryAnimation, note that the maximum motion parameter (10) applies here too.
-							m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TurnAngle, m_turnAngle, 0.f);
-							m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelAngle, travelAngle, 0.f);
-
-							/*if (IsOnGround())
+							if (!m_overriddenMotionParams.test(eMotionParamID_TurnAngle))
 							{
-								// Calculate slope value
-								Vec3 groundNormal = GetGroundNormal().value * Quat(characterTransform);
-								groundNormal.x = 0.0f;
-								float cosine = Vec3Constants<float>::fVec3_OneZ | groundNormal;
-								Vec3 sine = Vec3Constants<float>::fVec3_OneZ % groundNormal;
+								m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TurnAngle, m_turnAngle, 0.f);
+							}
 
-								float travelSlope = atan2f(sgn(sine.x) * sine.GetLength(), cosine);
-
-								m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSlope, travelSlope, 0.f);
-							}*/
+							if (!m_overriddenMotionParams.test(eMotionParamID_TravelAngle))
+							{
+								m_pCachedCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelAngle, travelAngle, 0.f);
+							}
 						}
 					}
 
@@ -139,6 +136,8 @@ namespace Cry
 						m_pPoseAligner->Update(m_pCachedCharacter, QuatT(characterTransform), pCtx->fFrameTime);
 					}
 				}
+
+				m_overriddenMotionParams.reset();
 			}
 			else if (event.event == ENTITY_EVENT_ANIM_EVENT)
 			{
