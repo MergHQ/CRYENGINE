@@ -113,7 +113,12 @@ bool CProjectManager::ParseProjectFile()
 		m_project.filePath = projectFile.c_str();
 	}
 
-	if (gEnv->pSystem->GetArchiveHost()->LoadJsonFile(Serialization::SStruct(m_project), m_project.filePath))
+	CCryFile file;
+	file.Open(m_project.filePath.c_str(), "rb", ICryPak::FOPEN_ONDISK);
+	std::vector<char> projectFileJson;
+	projectFileJson.resize(file.GetLength());
+	
+	if (file.ReadRaw(projectFileJson.data(), projectFileJson.size()) == projectFileJson.size() && gEnv->pSystem->GetArchiveHost()->LoadJsonBuffer(Serialization::SStruct(m_project), projectFileJson.data(), projectFileJson.size()))
 	{
 		if (m_project.version > LatestProjectFileVersion)
 		{
