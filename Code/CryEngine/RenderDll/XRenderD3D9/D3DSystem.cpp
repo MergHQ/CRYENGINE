@@ -983,7 +983,8 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	m_bInShutdown = true;
 
 	// Force Flush RT command buffer
-	SAFE_DELETE(m_pGraphicsPipeline);
+	if (m_pRT)
+		m_pRT->RC_ReleaseGraphicsPipeline();
 	ForceFlushRTCommands();	
 	PreShutDown();
 	if (m_pRT)

@@ -3268,7 +3268,7 @@ struct SPoolManager
 		memset(m_sdata, 0, sizeof(m_sdata));
 #endif
 
-		m_pNullConstantBuffer.Assign_NoAddRef(new CConstantBuffer(0));
+		m_pNullConstantBuffer.Assign_NoAddRef(new CConstantBuffer(~0u));
 		m_pNullConstantBuffer->m_size = 0;
 		m_pNullConstantBuffer->m_dynamic = false;
 		m_pNullConstantBuffer->m_lock = true;
@@ -4036,7 +4036,8 @@ void CConstantBuffer::ReturnToPool()
 #endif
 
 #if !DEVBUFFERMAN_DEBUG
-	s_PoolManager.m_constant_buffers[m_lock].Free(m_handle);
+	if (m_handle != ~0u)
+		s_PoolManager.m_constant_buffers[m_lock].Free(m_handle);
 #else
 	delete this;
 #endif

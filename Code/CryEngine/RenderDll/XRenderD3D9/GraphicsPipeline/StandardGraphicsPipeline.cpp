@@ -227,19 +227,25 @@ CRenderView* CGraphicsPipelineStage::RenderView()
 
 CStandardGraphicsPipeline::CStandardGraphicsPipeline()
 	: m_changedCVars(gEnv->pConsole)
-	, m_defaultMaterialResources()
+	, m_defaultMaterialBindPoints()
 	, m_defaultInstanceExtraResources()
 {}
 
 void CStandardGraphicsPipeline::Init()
 {
-	// default material resources
+	// Initialize all subsequently created passes with the correct stereo-resources
+	if (gcpRendD3D->GetS3DRend().IsStereoEnabled())
 	{
-		m_defaultMaterialResources.SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);
+		gcpRendD3D->m_RP.m_nRendFlags |= (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE);
+	}
+
+	// default material bind points
+	{
+		m_defaultMaterialBindPoints.SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);
 
 		for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 		{
-			m_defaultMaterialResources.SetTexture(texType, CTexture::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			m_defaultMaterialBindPoints.SetTexture(texType, CTexture::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		}
 	}
 
@@ -303,6 +309,11 @@ void CStandardGraphicsPipeline::Init()
 	// Out-of-pipeline passes for display
 	m_DownscalePass.reset(new CDownsamplePass);
 	m_UpscalePass  .reset(new CSharpeningUpsamplePass);
+
+	if (gcpRendD3D->GetS3DRend().IsStereoEnabled())
+	{
+		gcpRendD3D->m_RP.m_nRendFlags &= ~(SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE);
+	}
 }
 
 void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)
@@ -716,7 +727,7 @@ CDeviceResourceLayoutPtr CStandardGraphicsPipeline::CreateScenePassLayout(const 
 {
 	SDeviceResourceLayoutDesc layoutDesc;
 	layoutDesc.SetConstantBuffer(EResourceLayoutSlot_PerInstanceCB, eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
-	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, GetDefaultMaterialResources());
+	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, GetDefaultMaterialBindPoints());
 	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerInstanceExtraRS, GetDefaultInstanceExtraResources());
 	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerPassRS, perPassResources);
 
