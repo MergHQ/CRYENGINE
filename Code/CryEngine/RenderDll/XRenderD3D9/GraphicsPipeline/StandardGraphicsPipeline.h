@@ -164,8 +164,8 @@ public:
 	int GetViewInfo(SViewInfo viewInfo[2], const D3DViewPort * pCustomViewport = NULL);
 	uint32 GetRenderFlags() const { return m_renderingFlags; }
 
-	CConstantBufferPtr                       GetMainViewConstantBuffer()        { return m_mainViewConstantBuffer.GetDeviceConstantBuffer(); }
-	const CDeviceResourceSetDesc&            GetDefaultMaterialResources()        const { return m_defaultMaterialResources; }
+	CConstantBufferPtr                       GetMainViewConstantBuffer()                { return m_mainViewConstantBuffer.GetDeviceConstantBuffer(); }
+	const CDeviceResourceSetDesc&            GetDefaultMaterialBindPoints()       const { return m_defaultMaterialBindPoints; }
 	std::array<SamplerStateHandle, EFSS_MAX> GetDefaultMaterialSamplers()         const;
 	const CDeviceResourceSetDesc&            GetDefaultInstanceExtraResources()   const { return m_defaultInstanceExtraResources; }
 	CDeviceResourceSetPtr                    GetDefaultInstanceExtraResourceSet() const { return m_pDefaultInstanceExtraResourceSet; }
@@ -226,7 +226,7 @@ private:
 	CMobileCompositionStage*      m_pMobileCompositionStage = nullptr;
 
 	CTypedConstantBuffer<HLSL_PerViewGlobalConstantBuffer> m_mainViewConstantBuffer;
-	CDeviceResourceSetDesc                                 m_defaultMaterialResources;
+	CDeviceResourceSetDesc                                 m_defaultMaterialBindPoints;
 	CDeviceResourceSetDesc                                 m_defaultInstanceExtraResources;
 	CDeviceResourceSetPtr                                  m_pDefaultInstanceExtraResourceSet;
 

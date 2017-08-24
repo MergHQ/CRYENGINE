@@ -4647,6 +4647,9 @@ void CRenderer::ForceRemoveNodeFromDrawCallsMap(IRenderNode* pNode)
 
 void CRenderer::ClearDrawCallsInfo()
 {
+	if (&gcpRendD3D->GetGraphicsPipeline() == nullptr)
+		return;
+
 	gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode()->clear();
 	gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh()->clear();
 }

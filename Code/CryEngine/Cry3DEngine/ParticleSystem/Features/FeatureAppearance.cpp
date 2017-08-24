@@ -128,16 +128,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		if (!m_materialName.empty())
-		{
-			if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName.c_str()))
-			{
-				if (IShader* pShader = pMaterial->GetShaderItem().m_pShader)
-				{
-					if (pShader->GetShaderType() == eST_Particle)
-						pParams->m_pMaterial = pMaterial;
-				}
-			}
-		}
+			pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName.c_str());
 		if (!m_textureName.empty())
 			pParams->m_diffuseMap = m_textureName;
 	}
