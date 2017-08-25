@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryAudio/IListener.h>
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
@@ -65,7 +64,6 @@ public:
 		SOnNearToFarSignal() = default;
 	};
 
-	// inline?
 	static void ReflectType(Schematyc::CTypeDesc<CAreaComponent>& desc)
 	{
 		desc.SetGUID("E57B86BA-9F4D-4EDA-94D2-1E20E4CAE94F"_cry_guid);
