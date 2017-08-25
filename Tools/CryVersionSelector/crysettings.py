@@ -23,7 +23,6 @@ class Settings:
             return
         try:
             with open (filepath) as fd:
-            
                 self.settings = json.loads (fd.read())
         except ValueError:
             self.settings = {}
@@ -31,7 +30,7 @@ class Settings:
     def save(self):
         filepath = self.get_filepath()
         with open(filepath, 'w') as fd:
-            json.dumps(self.settings, fd, indent=4, sort_keys=True)
+            json.dump(self.settings, fd, indent=4, sort_keys=True)
 
     def get_last_cmake_config(self):
         return self.settings.get('last_cmake_config', None)
