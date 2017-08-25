@@ -344,7 +344,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 	if (result != ERequestStatus::Success)
 	{
 		// No TriggerImpl generated an active event.
-		g_logger.Log(ELogType::Warning, "Trigger \"%s\" failed on AudioObject \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
+		g_logger.Log(ELogType::Warning, R"(Trigger "%s" failed on AudioObject "%s")", pTrigger->m_name.c_str(), m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -383,7 +383,7 @@ ERequestStatus CATLAudioObject::HandleSetSwitchState(CATLSwitch const* const pSw
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_logger.Log(ELogType::Warning, "Failed to set the ATLSwitch \"%s\" to ATLSwitchState \"%s\" on AudioObject \"%s\"", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
+		g_logger.Log(ELogType::Warning, R"(Failed to set the ATLSwitch "%s" to ATLSwitchState "%s" on AudioObject "%s")", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -407,7 +407,7 @@ ERequestStatus CATLAudioObject::HandleSetParameter(CParameter const* const pPara
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_logger.Log(ELogType::Warning, "Failed to set the Audio Parameter \"%s\" to %f on Audio Object \"%s\"", pParameter->m_name.c_str(), value, m_name.c_str());
+		g_logger.Log(ELogType::Warning, R"(Failed to set the Audio Parameter "%s" to %f on Audio Object "%s")", pParameter->m_name.c_str(), value, m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -440,7 +440,7 @@ ERequestStatus CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const*
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_logger.Log(ELogType::Warning, "Failed to set the ATLAudioEnvironment \"%s\" to %f on AudioObject \"%s\"", pEnvironment->m_name.c_str(), amount, m_name.c_str());
+		g_logger.Log(ELogType::Warning, R"(Failed to set the ATLAudioEnvironment "%s" to %f on AudioObject "%s")", pEnvironment->m_name.c_str(), amount, m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -516,7 +516,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 	if (result != ERequestStatus::Success)
 	{
 		// No TriggerImpl produced an active event.
-		g_logger.Log(ELogType::Warning, "LoadTriggerAsync failed on AudioObject \"%s\"", m_name.c_str());
+		g_logger.Log(ELogType::Warning, R"(LoadTriggerAsync failed on AudioObject "%s")", m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -551,7 +551,7 @@ ERequestStatus CATLAudioObject::HandleResetEnvironments(AudioEnvironmentLookup c
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		g_logger.Log(ELogType::Warning, "Failed to Reset AudioEnvironments on AudioObject \"%s\"", m_name.c_str());
+		g_logger.Log(ELogType::Warning, R"(Failed to Reset AudioEnvironments on AudioObject "%s")", m_name.c_str());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -663,6 +663,13 @@ ERequestStatus CATLAudioObject::HandleSetTransformation(CObjectTransformation co
 			m_previousTime = 0.0f;  // ...in that case we force an update to the new position
 			HandleSetTransformation(transformation, 0.0f);
 		}
+		else
+		{
+			// No time has passed meaning different transformations were set during the same main frame.
+			// TODO: update velocity accordingly!
+			m_attributes.transformation = transformation;
+			m_previousAttributes = m_attributes;
+		}
 
 		status = m_pImplData->Set3DAttributes(m_attributes);
 	}
@@ -717,7 +724,7 @@ ERequestStatus CATLAudioObject::HandlePlayFile(CATLStandaloneFile* const pFile, 
 	else
 	{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		g_logger.Log(ELogType::Warning, "PlayFile failed with \"%s\" on AudioObject \"%s\"", pFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
+		g_logger.Log(ELogType::Warning, R"(PlayFile failed with "%s" on AudioObject "%s")", pFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 
 		s_pStandaloneFileManager->ReleaseStandaloneFile(pFile);
@@ -759,7 +766,7 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 				default:
 					break;
 				}
-				g_logger.Log(ELogType::Warning, "Request to stop a standalone audio file that is not playing! State: \"%s\"", szState);
+				g_logger.Log(ELogType::Warning, R"(Request to stop a standalone audio file that is not playing! State: "%s")", szState);
 			}
 #endif  //INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -904,11 +911,11 @@ void CATLAudioObject::UpdateControls(float const deltaTime, Impl::SObject3DAttri
 ///////////////////////////////////////////////////////////////////////////
 bool CATLAudioObject::CanBeReleased() const
 {
-	return (m_flags & EObjectFlags::InUse) == 0 &&
+	return (m_flags& EObjectFlags::InUse) == 0 &&
 	       m_activeEvents.empty() &&
 	       m_activeStandaloneFiles.empty() &&
 	       !m_propagationProcessor.HasPendingRays() &&
-		   m_numPendingSyncCallbacks == 0;
+	       m_numPendingSyncCallbacks == 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -950,7 +957,7 @@ void CATLAudioObject::CStateDebugDrawData::Update(SwitchStateId const audioSwitc
 	}
 }
 
-typedef std::map<ControlId const, size_t> TriggerCountMap;
+using TriggerCountMap = std::map<ControlId const, size_t>;
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::DrawDebugInfo(
@@ -1240,7 +1247,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 			if (result != ERequestStatus::Success)
 			{
-				g_logger.Log(ELogType::Warning, "Parameter \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pParameter->m_name.c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, R"(Parameter "%s" failed during audio middleware switch on AudioObject "%s")", pParameter->m_name.c_str(), m_name.c_str());
 			}
 		}
 	}
@@ -1262,7 +1269,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 				if (result != ERequestStatus::Success)
 				{
-					g_logger.Log(ELogType::Warning, "SwitchStateImpl \"%s\" : \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
+					g_logger.Log(ELogType::Warning, R"(SwitchStateImpl "%s" : "%s" failed during audio middleware switch on AudioObject "%s")", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
 				}
 			}
 		}
@@ -1281,7 +1288,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 			if (result != ERequestStatus::Success)
 			{
-				g_logger.Log(ELogType::Warning, "Environment \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pEnvironment->m_name.c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, R"(Environment "%s" failed during audio middleware switch on AudioObject "%s")", pEnvironment->m_name.c_str(), m_name.c_str());
 			}
 		}
 	}
@@ -1326,7 +1333,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 					}
 					else
 					{
-						g_logger.Log(ELogType::Warning, "TriggerImpl \"%s\" failed during audio middleware switch on AudioObject \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
+						g_logger.Log(ELogType::Warning, R"(TriggerImpl "%s" failed during audio middleware switch on AudioObject "%s")", pTrigger->m_name.c_str(), m_name.c_str());
 						s_pEventManager->ReleaseEvent(pEvent);
 					}
 				}
@@ -1335,7 +1342,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 			{
 				// The middleware has no connections set up.
 				// Stop the event in this case.
-				g_logger.Log(ELogType::Warning, "No trigger connections found during audio middleware switch for \"%s\" on \"%s\"", pTrigger->m_name.c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, R"(No trigger connections found during audio middleware switch for "%s" on "%s")", pTrigger->m_name.c_str(), m_name.c_str());
 			}
 		}
 		else
@@ -1373,7 +1380,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 			}
 			else
 			{
-				g_logger.Log(ELogType::Warning, "PlayFile failed with \"%s\" on AudioObject \"%s\"", pStandaloneFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
+				g_logger.Log(ELogType::Warning, R"(PlayFile failed with "%s" on AudioObject "%s")", pStandaloneFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
 			}
 		}
 		else

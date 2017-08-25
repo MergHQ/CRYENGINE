@@ -22,7 +22,7 @@ enum class EEntitySimulationMode
 // (MATT) This should really live in a minimal AI include, which right now we don't have  {2009/04/08}
 #ifndef INVALID_AIOBJECTID
 typedef uint32 tAIObjectID;
-#define INVALID_AIOBJECTID ((tAIObjectID)(0))
+	#define INVALID_AIOBJECTID ((tAIObjectID)(0))
 #endif
 
 //! EEntityEvent defines all events that can be sent to an entity.
@@ -135,9 +135,6 @@ enum EEntityEvent
 	//! Sent when triggering entity moves inside the area within the near region of the outside area border.
 	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area, fParam[0] = FadeRatio (0-1)
 	ENTITY_EVENT_MOVENEARAREA,
-
-	//! Sent when triggering entity enters or leaves an area so all active areas of same group get notified. This event is sent to all target entities of the area.
-	ENTITY_EVENT_CROSS_AREA,
 
 	//! Sent when an entity with pef_monitor_poststep receives a poststep notification (the hamdler should be thread safe!)
 	//! fParam[0] = time interval
@@ -252,15 +249,15 @@ enum EEntityEvent
 	ENTITY_EVENT_AUDIO_TRIGGER_STARTED,
 	ENTITY_EVENT_AUDIO_TRIGGER_ENDED,   //Remark: Will also be sent, if the trigger failed to start
 
-										//! Sent when an entity slot changes, i.e. geometry was added
-										//! nParam[0] stores the slot index
-										ENTITY_EVENT_SLOT_CHANGED,
+	//! Sent when an entity slot changes, i.e. geometry was added
+	//! nParam[0] stores the slot index
+	ENTITY_EVENT_SLOT_CHANGED,
 
-										//! Sent when the physical type of an entity changed, i.e. physicalized or dephysicalized.
-										ENTITY_EVENT_PHYSICAL_TYPE_CHANGED,
+	//! Sent when the physical type of an entity changed, i.e. physicalized or dephysicalized.
+	ENTITY_EVENT_PHYSICAL_TYPE_CHANGED,
 
-										//! Last entity event in list.
-										ENTITY_EVENT_LAST,
+	//! Last entity event in list.
+	ENTITY_EVENT_LAST,
 };
 
 #define ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK (BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) | BIT64(ENTITY_EVENT_PREPHYSICSUPDATE) | BIT64(ENTITY_EVENT_UPDATE))
@@ -272,14 +269,14 @@ enum EEntityEvent
 struct SEntityEvent
 {
 	SEntityEvent(
-		const int n0,
-		const int n1,
-		const int n2,
-		const int n3,
-		const float f0,
-		const float f1,
-		const float f2,
-		Vec3 const& _vec)
+	  const int n0,
+	  const int n1,
+	  const int n2,
+	  const int n3,
+	  const float f0,
+	  const float f1,
+	  const float f2,
+	  Vec3 const& _vec)
 		: vec(_vec)
 	{
 		nParam[0] = n0;
