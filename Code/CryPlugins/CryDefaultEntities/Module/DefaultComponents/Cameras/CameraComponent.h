@@ -9,7 +9,8 @@
 #include "../Audio/ListenerComponent.h"
 #include <CryExtension/ICryPluginManager.h>
 
-#include "PluginDll.h"
+#include "../../IDefaultComponentsPlugin.h"
+#include "ICameraManager.h"
 
 namespace Cry
 {
@@ -44,9 +45,7 @@ namespace Cry
 				{
 					const CCamera& systemCamera = gEnv->pSystem->GetViewCamera();
 
-					const float farPlane = gEnv->p3DEngine->GetMaxViewDistance();
-
-					m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), m_fieldOfView.ToRadians(), m_nearPlane, farPlane, systemCamera.GetPixelAspectRatio());
+					m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), m_fieldOfView.ToRadians(), m_nearPlane, m_farPlane, systemCamera.GetPixelAspectRatio());
 					m_camera.SetMatrix(GetWorldTransformMatrix());
 
 					gEnv->pSystem->SetViewCamera(m_camera);
@@ -111,6 +110,7 @@ namespace Cry
 
 				desc.AddMember(&CCameraComponent::m_bActivateOnCreate, 'actv', "Active", "Active", "Whether or not this camera should be activated on component creation", true);
 				desc.AddMember(&CCameraComponent::m_nearPlane, 'near', "NearPlane", "Near Plane", nullptr, 0.25f);
+				desc.AddMember(&CCameraComponent::m_farPlane, 'far', "FarPlane", "Far Plane", nullptr, 1024.f);
 				desc.AddMember(&CCameraComponent::m_fieldOfView, 'fov', "FieldOfView", "Field of View", nullptr, 75.0_degrees);
 			}
 
@@ -147,6 +147,9 @@ namespace Cry
 			virtual void SetNearPlane(float nearPlane) { m_nearPlane = nearPlane; }
 			float GetNearPlane() const { return m_nearPlane; }
 
+			virtual void SetFarPlane(float farPlane) { m_farPlane = farPlane; }
+			float GetFarPlane() const { return m_farPlane; }
+
 			virtual void SetFieldOfView(CryTransform::CAngle angle) { m_fieldOfView = angle; }
 			CryTransform::CAngle GetFieldOfView() const { return m_fieldOfView; }
 
@@ -156,6 +159,7 @@ namespace Cry
 		protected:
 			bool m_bActivateOnCreate = true;
 			Schematyc::Range<0, 32768> m_nearPlane = 0.25f;
+			Schematyc::Range<0, 32768> m_farPlane = 1024;
 			CryTransform::CClampedAngle<20, 360> m_fieldOfView = 75.0_degrees;
 
 			ICameraManager* m_pCameraManager = nullptr;
