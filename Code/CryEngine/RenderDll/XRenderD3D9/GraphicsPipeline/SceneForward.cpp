@@ -95,24 +95,14 @@ void CSceneForwardStage::Init()
 		CTexture::s_ptexHDRTarget
 	);
 
-	m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX");
-	m_forwardLDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_POSTPROCESS, 0);
-	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
-	m_forwardLDRPass.SetRenderTargets(
+	m_forwardTransparentLoResPass.SetLabel("FORWARD_TRANSPARENT_LORES");
+	m_forwardTransparentLoResPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_HALFRES_PARTICLES, 0);
+	m_forwardTransparentLoResPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardTransparentLoResPass.SetRenderTargets(
 		// Depth
-		gcpRendD3D->GetCurrentDepthOutput(),
+		nullptr,
 		// Color 0
-		gcpRendD3D->GetCurrentTargetOutput()
-	);
-
-	m_forwardEyeOverlayPass.SetLabel("FORWARD_EYE_AO_OVERLAY");
-	m_forwardEyeOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_EYE_OVERLAY, 0);
-	m_forwardEyeOverlayPass.SetPassResources(m_pEyeOverlayResourceLayout, m_pEyeOverlayPassResourceSet);
-	m_forwardEyeOverlayPass.SetRenderTargets(
-		// Depth
-		gcpRendD3D->m_pZTexture,
-		// Color 0
-		CTexture::s_ptexSceneDiffuse
+		CTexture::s_ptexHDRTargetScaled[0]//[1]//[2]
 	);
 
 	// Opaque forward recursive scene pass
@@ -146,6 +136,41 @@ void CSceneForwardStage::Init()
 		// Color 0
 		CTexture::s_ptexHDRTarget // this texture is used only for initialization.
 	);
+
+	m_forwardEyeOverlayPass.SetLabel("FORWARD_EYE_AO_OVERLAY");
+	m_forwardEyeOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_EYE_OVERLAY, 0);
+	m_forwardEyeOverlayPass.SetPassResources(m_pEyeOverlayResourceLayout, m_pEyeOverlayPassResourceSet);
+	m_forwardEyeOverlayPass.SetRenderTargets(
+		// Depth
+		gcpRendD3D->m_pZTexture,
+		// Color 0
+		CTexture::s_ptexSceneDiffuse
+	);
+
+	m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX_HDR");
+	m_forwardLDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_HDRPOSTPROCESS, 0);
+	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardLDRPass.SetRenderTargets(
+		// Depth
+		gcpRendD3D->GetCurrentDepthOutput(),
+		// Color 0
+		CTexture::s_ptexSceneDiffuse
+	);
+
+	m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX_LDR");
+	m_forwardLDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_POSTPROCESS, 0);
+	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardLDRPass.SetRenderTargets(
+		// Depth
+		gcpRendD3D->GetCurrentDepthOutput(),
+		// Color 0
+		gcpRendD3D->GetCurrentTargetOutput()
+	);
+
+	// Information flow:
+	//  CTexture::s_ptexHDRTarget ->
+	//  CTexture::s_ptexSceneDiffuse ->
+	//  gcpRendD3D->GetCurrentTargetOutput()
 }
 
 bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
@@ -752,32 +777,155 @@ void CSceneForwardStage::Execute_TransparentDepthFixup()
 	m_depthFixupPass.Execute();
 }
 
-void CSceneForwardStage::Execute_AfterPostProcess()
+void CSceneForwardStage::Execute_TransparentLoRes(int subRes)
+{
+	PROFILE_LABEL_SCOPE("TRANSPARENT_SUBRES");
+
+	CD3D9Renderer* pRenderer = gcpRendD3D;
+	const bool bAlphaBased = pRenderer->CV_r_ParticlesHalfResBlendMode == 0;
+
+	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
+
+	if (pRenderView->GetRenderItems(EFSLIST_HALFRES_PARTICLES).empty())
+		return;
+
+	if (pRenderer->m_nGraphicsPipeline >= 3)
+	{
+		CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
+
+		D3DViewPort viewport = { 0.f, 0.f, float(CTexture::s_ptexHDRTargetScaled[subRes]->GetWidth()), float(CTexture::s_ptexHDRTargetScaled[subRes]->GetHeight()), 0.0f, 1.0f };
+		pRenderer->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
+
+		PreparePerPassResources(pRenderView, false);
+
+		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		CSceneRenderPass& scenePass = m_forwardTransparentLoResPass;//[subRes];
+
+		scenePass.ExchangeRenderTarget(0, CTexture::s_ptexHDRTargetScaled[subRes]);
+
+		scenePass.PrepareRenderPassForUse(commandList);
+		scenePass.SetFlags(CSceneRenderPass::ePassFlags_None);
+		scenePass.SetViewport(viewport);
+
+		RenderView()->GetDrawer().InitDrawSubmission();
+
+		scenePass.BeginExecution();
+		scenePass.DrawRenderItems(pRenderView, EFSLIST_HALFRES_PARTICLES);
+		scenePass.EndExecution();
+
+		RenderView()->GetDrawer().JobifyDrawSubmission();
+		RenderView()->GetDrawer().WaitForDrawSubmission();
+
+		m_depthUpscalePass.Execute(
+			CTexture::s_ptexZTarget, // TODO: Scaled[subRes - 1]
+			CTexture::s_ptexHDRTargetScaled[subRes],
+			CTexture::s_ptexZTargetScaled[subRes],
+			gcpRendD3D->GetCurrentTargetOutput(), // TODO: Scaled[subRes - 1]
+			bAlphaBased
+		);
+	}
+#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
+	else
+	{
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+
+		void(*pRenderFunc)() = &pRenderer->FX_FlushShader_General;
+
+		pRenderer->GetTiledShading().BindForwardShadingResources(NULL);
+
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+		pRenderer->FX_ProcessRenderList(EFSLIST_HALFRES_PARTICLES, pRenderFunc, true);
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+
+		pRenderer->GetTiledShading().UnbindForwardShadingResources();
+
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+	}
+#endif
+}
+
+void CSceneForwardStage::Execute_AfterPostProcessHDR()
+{
+	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
+
+	if (pRenderView->GetRenderItems(EFSLIST_AFTER_HDRPOSTPROCESS).empty())
+		return;
+
+	CD3D9Renderer* pRenderer = gcpRendD3D;
+	if (pRenderer->m_nGraphicsPipeline >= 3)
+	{
+		m_forwardHDRPass.ExchangeRenderTarget(0, CTexture::s_ptexSceneDiffuse);
+
+		D3DViewPort viewport = { 0.f, 0.f, float(gcpRendD3D->m_MainViewport.nWidth), float(gcpRendD3D->m_MainViewport.nHeight), 0.0f, 1.0f };
+		PreparePerPassResources(pRenderView, false);
+
+		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+
+		m_forwardHDRPass.PrepareRenderPassForUse(commandList);
+		m_forwardHDRPass.SetFlags(CSceneRenderPass::ePassFlags_None);
+		m_forwardHDRPass.SetViewport(viewport);
+
+		RenderView()->GetDrawer().InitDrawSubmission();
+
+		m_forwardHDRPass.BeginExecution();
+		m_forwardHDRPass.DrawRenderItems(pRenderView, EFSLIST_AFTER_HDRPOSTPROCESS);
+		m_forwardHDRPass.EndExecution();
+
+		RenderView()->GetDrawer().JobifyDrawSubmission();
+		RenderView()->GetDrawer().WaitForDrawSubmission();
+	}
+#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
+	else
+	{
+		void(*pRenderFunc)() = &pRenderer->FX_FlushShader_General;
+
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+		pRenderer->FX_ProcessRenderList(EFSLIST_AFTER_HDRPOSTPROCESS, pRenderFunc, false);
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+	}
+#endif
+}
+
+void CSceneForwardStage::Execute_AfterPostProcessLDR()
 {
 	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
 
 	if (pRenderView->GetRenderItems(EFSLIST_AFTER_POSTPROCESS).empty())
 		return;
+
+	CD3D9Renderer* pRenderer = gcpRendD3D;
+	if (pRenderer->m_nGraphicsPipeline >= 3)
+	{
+		m_forwardLDRPass.ExchangeRenderTarget(0, gcpRendD3D->GetCurrentTargetOutput());
 	
-	m_forwardLDRPass.ExchangeRenderTarget(0, gcpRendD3D->GetCurrentTargetOutput());
+		D3DViewPort viewport = { 0.f, 0.f, float(gcpRendD3D->m_MainViewport.nWidth), float(gcpRendD3D->m_MainViewport.nHeight), 0.0f, 1.0f };
+		PreparePerPassResources(pRenderView, false);
+
+		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 	
-	D3DViewPort viewport = { 0.f, 0.f, float(gcpRendD3D->m_MainViewport.nWidth), float(gcpRendD3D->m_MainViewport.nHeight), 0.0f, 1.0f };
-	PreparePerPassResources(pRenderView, false);
+		m_forwardLDRPass.PrepareRenderPassForUse(commandList);
+		m_forwardLDRPass.SetFlags(CSceneRenderPass::ePassFlags_None);
+		m_forwardLDRPass.SetViewport(viewport);
 
-	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
-	
-	m_forwardLDRPass.PrepareRenderPassForUse(commandList);
-	m_forwardLDRPass.SetFlags(CSceneRenderPass::ePassFlags_None);
-	m_forwardLDRPass.SetViewport(viewport);
+		RenderView()->GetDrawer().InitDrawSubmission();
 
-	RenderView()->GetDrawer().InitDrawSubmission();
+		m_forwardLDRPass.BeginExecution();
+		m_forwardLDRPass.DrawRenderItems(pRenderView, EFSLIST_AFTER_POSTPROCESS);
+		m_forwardLDRPass.EndExecution();
 
-	m_forwardLDRPass.BeginExecution();
-	m_forwardLDRPass.DrawRenderItems(pRenderView, EFSLIST_AFTER_POSTPROCESS);
-	m_forwardLDRPass.EndExecution();
+		RenderView()->GetDrawer().JobifyDrawSubmission();
+		RenderView()->GetDrawer().WaitForDrawSubmission();
+	}
+#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
+	else
+	{
+		void(*pRenderFunc)() = &pRenderer->FX_FlushShader_General;
 
-	RenderView()->GetDrawer().JobifyDrawSubmission();
-	RenderView()->GetDrawer().WaitForDrawSubmission();
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+		pRenderer->FX_ProcessRenderList(EFSLIST_AFTER_POSTPROCESS, pRenderFunc, false);
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+	}
+#endif
 }
 
 void CSceneForwardStage::Execute_Minimum()

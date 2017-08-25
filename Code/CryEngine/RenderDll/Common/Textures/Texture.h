@@ -1971,9 +1971,7 @@ public:
 	static CTexture*           s_ptexZOcclusion[2];
 	static CTexture*           s_ptexZTargetReadBack[4];
 	static CTexture*           s_ptexZTargetDownSample[4];
-	static CTexture*           s_ptexZTargetScaled;
-	static CTexture*           s_ptexZTargetScaled2;
-	static CTexture*           s_ptexZTargetScaled3;
+	static CTexture*           s_ptexZTargetScaled[3];
 
 	static CTexture*           s_ptexHDRTarget;
 	static CTexture*           s_ptexVelocityObjects[2]; // Dynamic object velocity (for left and right eye)

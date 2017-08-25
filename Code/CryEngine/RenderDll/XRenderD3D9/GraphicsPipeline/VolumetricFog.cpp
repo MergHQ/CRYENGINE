@@ -422,7 +422,7 @@ void CVolumetricFogStage::Prepare(CRenderView* pRenderView)
 
 	// downscaled depth buffer.
 	const int32 depthTempWidth = (scaledWidth << 1);
-	const int32 depthTempHeight = (CTexture::s_ptexZTargetScaled->GetHeight() >> 1);
+	const int32 depthTempHeight = (CTexture::s_ptexZTargetScaled[0]->GetHeight() >> 1);
 	const ETEX_Format fmtDepth = eTF_R16F;
 
 	// downscaled shadow maps.
@@ -1590,8 +1590,8 @@ void CVolumetricFogStage::RenderDownscaledDepth(const SScopedComputeCommandList&
 	{
 		const int32 nScreenWidth = m_pMaxDepthTemp->GetWidth();
 		const int32 nScreenHeight = m_pMaxDepthTemp->GetHeight();
-		const int32 nSrcTexWidth = CTexture::s_ptexZTargetScaled->GetWidth();
-		const int32 nSrcTexHeight = CTexture::s_ptexZTargetScaled->GetHeight();
+		const int32 nSrcTexWidth = CTexture::s_ptexZTargetScaled[0]->GetWidth();
+		const int32 nSrcTexHeight = CTexture::s_ptexZTargetScaled[0]->GetHeight();
 
 		auto& pass = m_passDownscaleDepthHorizontal;
 
@@ -1602,7 +1602,7 @@ void CVolumetricFogStage::RenderDownscaledDepth(const SScopedComputeCommandList&
 
 			pass.SetOutputUAV(0, m_pMaxDepthTemp);
 
-			pass.SetTexture(0, CTexture::s_ptexZTargetScaled);
+			pass.SetTexture(0, CTexture::s_ptexZTargetScaled[0]);
 
 			pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}

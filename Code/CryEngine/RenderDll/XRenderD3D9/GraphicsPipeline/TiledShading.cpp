@@ -281,7 +281,7 @@ void CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 		m_passCopyDepth.SetRequirePerViewConstantBuffer(true);
 		m_passCopyDepth.SetDepthTarget(pDepthRT);
 		m_passCopyDepth.SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
-		m_passCopyDepth.SetTexture(0, CTexture::s_ptexZTargetScaled3);
+		m_passCopyDepth.SetTexture(0, CTexture::s_ptexZTargetScaled[2]);
 		
 		m_passCopyDepth.BeginConstantUpdate();
 		m_passCopyDepth.Execute();
@@ -340,7 +340,7 @@ void CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 				primitive.SetRenderState(bInsideVolume ? GS_NODEPTHTEST : GS_DEPTHFUNC_GEQUAL);
 				primitive.SetEnableDepthClip(!bInsideVolume);
 				primitive.SetCullMode(bInsideVolume ? eCULL_Front : eCULL_Back);
-				primitive.SetTexture(3, CTexture::s_ptexZTargetScaled3, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
+				primitive.SetTexture(3, CTexture::s_ptexZTargetScaled[2], EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
 				primitive.SetBuffer(1, &m_lightVolumeInfoBuf, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
 
 				SVolumeGeometry& volumeMesh = m_volumeMeshes[volumeType];
