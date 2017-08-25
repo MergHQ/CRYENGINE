@@ -4,9 +4,14 @@ import os
 import os.path
 import uuid
 import glob
-
-from win32com.client import Dispatch
 from string import Template
+
+has_win_modules = True
+try:
+    from win32com.client import Dispatch
+except ImportError:
+    has_win_modules = False
+
 
 def generate_solution (project_file, code_directory, engine_root_directory):
     project_name = os.path.splitext(os.path.basename(project_file))[0]
@@ -58,7 +63,6 @@ EndGlobal""")
 
     if len(projects) > 0:
         solution_file_contents = solution_file_template.substitute({ 'projects': projects, 'project_configurations': project_configurations})
-
         solution_file_path = os.path.join(code_directory, project_name + ".sln")
         solution_file = open(solution_file_path, 'w')
         solution_file.write(solution_file_contents)
@@ -333,6 +337,9 @@ def add_cpp_sources(directoryname, project_name, code_directory, skip_directorie
     return ""
 
 def create_shortcut(file_path, project_file):
+    if not has_win_modules:
+        return
+
     if not os.path.exists(file_path):
         return
 
