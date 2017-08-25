@@ -7,6 +7,7 @@
 #include "DefaultComponents/Audio/AreaComponent.h"
 #include "DefaultComponents/Audio/ListenerComponent.h"
 #include "DefaultComponents/Audio/ParameterComponent.h"
+#include "DefaultComponents/Audio/PreloadComponent.h"
 #include "DefaultComponents/Audio/SwitchComponent.h"
 #include "DefaultComponents/Audio/TriggerComponent.h"
 #include "DefaultComponents/Cameras/CameraComponent.h"
@@ -79,6 +80,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CParameterComponent));
 			Cry::Audio::DefaultComponents::CParameterComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CPreloadComponent));
+			Cry::Audio::DefaultComponents::CPreloadComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSwitchComponent));
@@ -218,7 +223,7 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 
 			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 			  stl::make_unique<Schematyc::CEnvPackage>(
-				CPlugin_CryDefaultEntities::GetCID(),
+			    CPlugin_CryDefaultEntities::GetCID(),
 			    "EntityComponents",
 			    "Crytek GmbH",
 			    "CRYENGINE Default Entity Components",
