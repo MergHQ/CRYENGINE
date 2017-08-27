@@ -1138,9 +1138,9 @@ void CStandardGraphicsPipeline::Execute()
 		pSourceDepth = pZTexture;  // On Durango reading device depth is faster since it is in ESRAM
 #endif
 
-		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(pSourceDepth, CTexture::s_ptexZTargetScaled, (pSourceDepth == pZTexture), true);
-		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CTexture::s_ptexZTargetScaled, CTexture::s_ptexZTargetScaled2, false, false);
-		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CTexture::s_ptexZTargetScaled2, CTexture::s_ptexZTargetScaled3, false, false);
+		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(pSourceDepth, CTexture::s_ptexZTargetScaled[0], (pSourceDepth == pZTexture), true);
+		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CTexture::s_ptexZTargetScaled[0], CTexture::s_ptexZTargetScaled[1], false, false);
+		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CTexture::s_ptexZTargetScaled[1], CTexture::s_ptexZTargetScaled[2], false, false);
 	}
 
 	// Depth readback (for occlusion culling)
@@ -1313,14 +1313,13 @@ void CStandardGraphicsPipeline::Execute()
 		m_pSceneForwardStage->Execute_TransparentDepthFixup();
 	}
 
-#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
 	// Half-res particles
+	if (CRenderer::CV_r_ParticlesHalfRes)
 	{
-		SwitchToLegacyPipeline();
-		pRenderer->FX_ProcessHalfResParticlesRenderList(m_pCurrentRenderView, EFSLIST_HALFRES_PARTICLES, pRenderFunc, true);
-		SwitchFromLegacyPipeline();
+		m_pSceneForwardStage->Execute_TransparentLoRes(1 + crymath::clamp<int>(CRenderer::CV_r_ParticlesHalfResAmount, 0, 1));
 	}
 
+#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
 	pRenderer->m_CameraProjMatrixPrev = pRenderer->m_CameraProjMatrix;
 #endif
 
@@ -1353,15 +1352,7 @@ void CStandardGraphicsPipeline::Execute()
 		{
 			pRenderer->m_RP.m_PersFlags1 &= ~RBPF1_SKIP_AFTER_POST_PROCESS;
 
-#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
-			if (pRenderer->m_nGraphicsPipeline < 3)
-			{
-				SwitchToLegacyPipeline();
-				pRenderer->FX_ProcessRenderList(EFSLIST_AFTER_HDRPOSTPROCESS, pRenderFunc, false);
-				SwitchFromLegacyPipeline();
-			}
-#endif
-
+			m_pSceneForwardStage->Execute_AfterPostProcessHDR();
 			m_pPostEffectStage->Execute();
 
 			pRenderer->RT_SetViewport(0, 0, pRenderer->GetWidth(), pRenderer->GetHeight());
@@ -1371,18 +1362,7 @@ void CStandardGraphicsPipeline::Execute()
 		bool bDrawAfterPostProcess = !(pRenderer->m_RP.m_PersFlags1 & RBPF1_SKIP_AFTER_POST_PROCESS);
 		if (bDrawAfterPostProcess)
 		{
-			if (pRenderer->m_nGraphicsPipeline >= 3)
-			{
-				m_pSceneForwardStage->Execute_AfterPostProcess();
-			}
-			else
-			{
-#if defined(RENDERER_ENABLE_LEGACY_PIPELINE)
-				SwitchToLegacyPipeline();
-				pRenderer->FX_ProcessRenderList(EFSLIST_AFTER_POSTPROCESS, pRenderFunc, false);
-				SwitchFromLegacyPipeline();
-#endif
-			}
+			m_pSceneForwardStage->Execute_AfterPostProcessLDR();
 		}
 
 		m_pSceneCustomStage->Execute();

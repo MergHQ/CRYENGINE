@@ -894,7 +894,7 @@ void CD3D9Renderer::FX_ProcessHalfResParticlesRenderList(CRenderView* pRenderVie
 					CShader*  pSH            = CShaderMan::s_shPostEffects;
 					CTexture* pHalfResSrc    = pHalfResTarget;
 					CTexture* pZTarget       = CTexture::s_ptexZTarget;
-					CTexture* pZTargetScaled = CV_r_ParticlesHalfResAmount > 0 ? CTexture::s_ptexZTargetScaled2 : CTexture::s_ptexZTargetScaled;
+					CTexture* pZTargetScaled = CTexture::s_ptexZTargetScaled[CV_r_ParticlesHalfResAmount > 0];
 
 					uint32 nStates = GS_NODEPTHTEST | GS_NOCOLMASK_A;
 					if (bAlphaBased)
@@ -2712,11 +2712,11 @@ void CD3D9Renderer::FX_ProcessZPassRenderLists()
 
 		FX_LinearizeDepth();
 #if CRY_PLATFORM_DURANGO
-		GetUtils().DownsampleDepth(NULL, CTexture::s_ptexZTargetScaled, true);    // On Durango reading device depth is faster since it is in ESRAM
+		GetUtils().DownsampleDepth(NULL, CTexture::s_ptexZTargetScaled[0], true);    // On Durango reading device depth is faster since it is in ESRAM
 #else
-		GetUtils().DownsampleDepth(CTexture::s_ptexZTarget, CTexture::s_ptexZTargetScaled, true);
+		GetUtils().DownsampleDepth(CTexture::s_ptexZTarget, CTexture::s_ptexZTargetScaled[0], true);
 #endif
-		GetUtils().DownsampleDepth(CTexture::s_ptexZTargetScaled, CTexture::s_ptexZTargetScaled2, false);
+		GetUtils().DownsampleDepth(CTexture::s_ptexZTargetScaled[0], CTexture::s_ptexZTargetScaled[1], false);
 
 		FX_ZScene(true, m_RP.m_bUseHDR, false, true);
 		m_RP.m_PersFlags2 &= ~RBPF2_NOALPHABLEND;

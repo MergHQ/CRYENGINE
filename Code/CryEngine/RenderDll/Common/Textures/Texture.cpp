@@ -165,9 +165,7 @@ CTexture* CTexture::s_ptexZTarget;
 CTexture* CTexture::s_ptexZOcclusion[2];
 CTexture* CTexture::s_ptexZTargetReadBack[4];
 CTexture* CTexture::s_ptexZTargetDownSample[4];
-CTexture* CTexture::s_ptexZTargetScaled;
-CTexture* CTexture::s_ptexZTargetScaled2;
-CTexture* CTexture::s_ptexZTargetScaled3;
+CTexture* CTexture::s_ptexZTargetScaled[3];
 CTexture* CTexture::s_ptexHDRTarget;
 CTexture* CTexture::s_ptexVelocity;
 CTexture* CTexture::s_ptexVelocityTiles[3] = { NULL };
@@ -3113,9 +3111,9 @@ void CTexture::LoadDefaultSystemTextures()
 				s_ptexZTarget = CTexture::GetOrCreateTextureObject("$ZTarget", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 			}
 
-			s_ptexZTargetScaled = CTexture::GetOrCreateTextureObject("$ZTargetScaled", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_DOWNSCALED_ZTARGET_FOR_AO);
-			s_ptexZTargetScaled2 = CTexture::GetOrCreateTextureObject("$ZTargetScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_QUARTER_ZTARGET_FOR_AO);
-			s_ptexZTargetScaled3 = CTexture::GetOrCreateTextureObject("$ZTargetScaled3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+			s_ptexZTargetScaled[0] = CTexture::GetOrCreateTextureObject("$ZTargetScaled", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_DOWNSCALED_ZTARGET_FOR_AO);
+			s_ptexZTargetScaled[1] = CTexture::GetOrCreateTextureObject("$ZTargetScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_QUARTER_ZTARGET_FOR_AO);
+			s_ptexZTargetScaled[2] = CTexture::GetOrCreateTextureObject("$ZTargetScaled3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		}
 
 		s_ptexSceneSelectionIDs = CTexture::GetOrCreateTextureObject("$SceneSelectionIDs", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R32F);

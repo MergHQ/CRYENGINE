@@ -2284,9 +2284,9 @@ void CTexture::ReleaseSystemTargets()
 	SAFE_RELEASE_FORCE(s_ptexSceneSpecularAccMap);
 	SAFE_RELEASE_FORCE(s_ptexBackBuffer);
 	SAFE_RELEASE_FORCE(s_ptexSceneTarget);
-	SAFE_RELEASE_FORCE(s_ptexZTargetScaled);
-	SAFE_RELEASE_FORCE(s_ptexZTargetScaled2);
-	SAFE_RELEASE_FORCE(s_ptexZTargetScaled3);
+	SAFE_RELEASE_FORCE(s_ptexZTargetScaled[0]);
+	SAFE_RELEASE_FORCE(s_ptexZTargetScaled[1]);
+	SAFE_RELEASE_FORCE(s_ptexZTargetScaled[2]);
 	SAFE_RELEASE_FORCE(s_ptexDepthBufferQuarter);
 	SAFE_RELEASE_FORCE(s_ptexDepthBufferHalfQuarter);
 

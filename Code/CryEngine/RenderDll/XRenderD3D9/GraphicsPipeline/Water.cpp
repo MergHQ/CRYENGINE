@@ -1060,7 +1060,7 @@ bool CWaterStage::SetAndBuildPerPassResources(CRenderView* RESTRICT_POINTER pRen
 
 		if (passId == ePass_ReflectionGen)
 		{
-			resources.SetTexture(ePerPassTexture_SceneDepth, CTexture::s_ptexZTargetScaled, EDefaultResourceViews::Default, EShaderStage_Pixel);
+			resources.SetTexture(ePerPassTexture_SceneDepth, CTexture::s_ptexZTargetScaled[0], EDefaultResourceViews::Default, EShaderStage_Pixel);
 			resources.SetTexture(ePerPassTexture_Refraction, CTexture::s_ptexHDRTargetPrev, EDefaultResourceViews::Default, EShaderStage_Pixel);
 			resources.SetTexture(ePerPassTexture_Reflection, pPrevWaterVolRefl, EDefaultResourceViews::Default, EShaderStage_Pixel);
 		}
