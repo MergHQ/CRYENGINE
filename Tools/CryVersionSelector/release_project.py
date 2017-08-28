@@ -4,12 +4,18 @@ This script combines the required engine and project files into a single directo
 It also creates .pak files from the asset directory and writes an appropriate system.cfg.
 """
 import os
+import sys
 import shutil
 import stat
 import fnmatch
 import subprocess
-import cryrun, cryproject
-import ctypes
+import cryproject
+
+has_win_modules = True
+try:
+    import ctypes
+except:
+    has_win_modules = False
 
 def run(project_file):
     # Path to the project file as created by the launcher - engine and project path are derivable from this.
@@ -25,7 +31,7 @@ def run(project_file):
     project_path_long = long_path_prefix + project_path
 
     # The path to the engine that is being used by the project.
-    engine_path = cryrun.get_engine_path()
+    engine_path = get_engine_path()
     engine_path_long = long_path_prefix + engine_path
 
     # Path to which the game is to be exported.
@@ -44,7 +50,7 @@ def run(project_file):
     task_list.append(("Copying default engine assets...", copy_engine_assets, engine_path_long, export_path_long))
     task_list.append(("Copying engine binaries...", copy_engine_binaries, engine_path_long, export_path_long, os.path.join('bin', 'win_x64')))
 
-    if cryproject.is_managed(project):
+    if requires_mono(project, project_path_long):
         task_list.append(("Copying mono files...", copy_mono_files, engine_path_long, export_path_long))
 
     task_list.append(("Copying game binaries...", copy_plugins, project, project_path, export_path))
@@ -101,6 +107,24 @@ def on_rm_error(func, path, exc_info):
     os.chmod( path, stat.S_IWRITE )
     os.unlink( path )
 
+def requires_mono(project, project_path):
+    if cryproject.is_managed(project):
+        return True
+
+    asset_path = os.path.join(project_path, cryproject.asset_dir(project))
+    return directory_contains_file(asset_path, ["*.cs"])
+
+def get_tools_path():
+    if getattr( sys, 'frozen', False ):
+        ScriptPath = sys.executable
+    else:
+        ScriptPath = __file__
+
+    return os.path.abspath (os.path.dirname (ScriptPath))
+
+def get_engine_path():
+    return os.path.abspath (os.path.join (get_tools_path(), '..', '..'))
+
 def get_percentage(index, count):
     return (100.0 / count) * index
 
@@ -109,13 +133,15 @@ def set_title(title):
         title = "Building..."
 
     #using the kernel32 should be better, but in case it's not working it can switch to using system().
-    try:
-        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-        if kernel32:
-            kernel32.SetConsoleTitleW(u"{}".format(title))
-    except:
+    if has_win_modules:
+        try:
+            kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+            if kernel32:
+                kernel32.SetConsoleTitleW(u"{}".format(title))
+        except:
+            system("title {}".format(title))
+    else:
         system("title {}".format(title))
-
 def copy_engine_binaries(engine_path, export_path, rel_dir):
     """
     Copy a directory to its corresponding location in the export directory.
@@ -303,6 +329,39 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
             os.makedirs(dst_dir)
             
         shutil.copyfile(srcpath, dstpath)
+
+def directory_contains_file(directory, include_patterns, exclude_patterns=None, recursive=True):
+    """
+    Checks if a directory contains a file that matches the specified pattern.
+    """
+    for file in os.listdir(directory):
+        file_path = os.path.join(directory, file)
+        
+        if os.path.isdir(file_path) and recursive:
+            if directory_contains_file(file_path, include_patterns, exclude_patterns, recursive):
+                return True
+            continue
+
+        if exclude_patterns:
+            exclude = False
+            for pattern in exclude_patterns:
+                exclude = fnmatch.fnmatch(file_path, os.path.join(directory, pattern))
+                if exclude:
+                    break
+            if exclude:
+                continue
+
+        if include_patterns:
+            include = False
+            for pattern in include_patterns:
+                include = fnmatch.fnmatch(file_path, os.path.join(directory, pattern))
+                if include:
+                    break
+            if include:
+                return True
+
+    return False
+
 
 def package_assets(project, engine_path, project_path, export_path):
     """
