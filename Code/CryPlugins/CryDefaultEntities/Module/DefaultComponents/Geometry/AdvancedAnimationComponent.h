@@ -311,6 +311,9 @@ public:
 
 	virtual bool IsTurning() const { return fabsf(m_turnAngle) > 0; }
 
+	// Helper to allow exposing derived function to Schematyc
+	virtual void SetMeshType(EMeshType type) { SetType(type); }
+
 protected:
 	bool                                      m_bAnimationDrivenMotion = true;
 

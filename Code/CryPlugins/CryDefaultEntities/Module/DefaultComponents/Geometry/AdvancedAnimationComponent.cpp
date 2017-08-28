@@ -40,6 +40,13 @@ namespace Cry
 				pFunction->BindInput(2, 'val', "Value");
 				componentScope.Register(pFunction);
 			}
+			{
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAdvancedAnimationComponent::SetMeshType, "{A4D2B249-64BE-48DA-8700-E3B479BB6F65}"_cry_guid, "SetType");
+				pFunction->BindInput(1, 'type', "Type");
+				pFunction->SetDescription("Changes the type of the object");
+				pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member });
+				componentScope.Register(pFunction);
+			}
 		}
 
 		inline bool Serialize(Serialization::IArchive& archive, CAdvancedAnimationComponent::SDefaultScopeSettings& defaultSettings, const char* szName, const char* szLabel)
