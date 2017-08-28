@@ -35,6 +35,7 @@
 #include "Rain.h"
 #include "Snow.h"
 #include "MobileComposition.h"
+#include "OmniCamera.h"
 
 #include "DepthReadback.h"
 #include "Common/TypedConstantBuffer.h"
@@ -302,6 +303,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CSnowStage>(m_pSnowStage, eStage_Snow);
 	RegisterStage<CDepthReadbackStage>(m_pDepthReadbackStage, eStage_DepthReadback);
 	RegisterStage<CMobileCompositionStage>(m_pMobileCompositionStage, eStage_MobileComposition);
+	RegisterStage<COmniCameraStage>(m_pOmniCameraStage, eStage_OmniCamera);
 
 	// Now init stages
 	InitStages();
@@ -1382,6 +1384,8 @@ void CStandardGraphicsPipeline::Execute()
 #endif
 		}
 	}
+
+	m_pOmniCameraStage->Execute();
 
 	PROFILE_LABEL_POP("GRAPHICS_PIPELINE");
 

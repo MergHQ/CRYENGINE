@@ -199,7 +199,26 @@ PRIVATE
 
     if is_default_project:
         cmakelists_template.template += '''\n# Set StartUp project in Visual Studio
-set_solution_startup_target($${THIS_PROJECT})
+
+add_library(GameLauncher STATIC "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryCore/Platform/platform.h")
+set_target_properties(GameLauncher PROPERTIES LINKER_LANGUAGE CXX)
+if (WIN32)
+    set_visual_studio_debugger_command(GameLauncher "$${CRYENGINE_DIR}/bin/win_x64/GameLauncher.exe" "-project \\"$projectfile\\"")
+endif()
+
+add_library(Sandbox STATIC "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryCore/Platform/platform.h")
+set_target_properties(Sandbox PROPERTIES LINKER_LANGUAGE CXX)
+if (WIN32)
+    set_visual_studio_debugger_command(Sandbox "$${CRYENGINE_DIR}/bin/win_x64/Sandbox.exe" "-project \\"$projectfile\\"")
+endif()
+
+add_library(GameServer STATIC "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryCore/Platform/platform.h")
+set_target_properties(GameServer PROPERTIES LINKER_LANGUAGE CXX)
+if (WIN32)
+    set_visual_studio_debugger_command(GameServer "$${CRYENGINE_DIR}/bin/win_x64/Game_Server.exe" "-project \\"$projectfile\\"")
+endif()
+
+set_solution_startup_target(GameLauncher)
 
 if (WIN32)
     set_visual_studio_debugger_command( $${THIS_PROJECT} "$${CRYENGINE_DIR}/bin/win_x64/GameLauncher.exe" "-project \\"$projectfile\\"" )
