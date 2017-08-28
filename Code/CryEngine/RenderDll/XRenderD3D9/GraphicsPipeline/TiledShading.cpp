@@ -7,6 +7,7 @@
 #include "D3DPostProcess.h"
 #include "D3D_SVO.h"
 
+#include "GraphicsPipeline/OmniCamera.h"
 
 struct STiledLightVolumeInfo
 {
@@ -260,7 +261,7 @@ void CTiledShadingStage::PrepareResources()
 
 bool CTiledShadingStage::IsSeparateVolumeListGen()
 {
-	return !(CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile);
+	return !(CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile) && !gcpRendD3D->GetGraphicsPipeline().GetOmniCameraStage()->IsEnabled();
 }
 
 

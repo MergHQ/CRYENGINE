@@ -16,6 +16,21 @@ namespace Cry
 {
 	namespace DefaultComponents
 	{
+		enum class ECameraType
+		{
+			Default = 0,
+			Omnidirectional
+		};
+
+		static void ReflectType(Schematyc::CTypeDesc<ECameraType>& desc)
+		{
+			desc.SetGUID("{E4DC6A37-2FAE-4DFF-AB21-3C4308A266D6}"_cry_guid);
+			desc.SetLabel("Camera Type");
+			desc.SetDefaultValue(ECameraType::Default);
+			desc.AddConstant(ECameraType::Default, "Default", "Default");
+			desc.AddConstant(ECameraType::Omnidirectional, "Omnidirectional", "Omnidirectional");
+		}
+
 		class CCameraComponent
 			: public IEntityComponent
 			, public IHmdDevice::IAsyncCameraCallback
@@ -108,6 +123,7 @@ namespace Cry
 				desc.SetIcon("icons:General/Camera.ico");
 				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
+				desc.AddMember(&CCameraComponent::m_type, 'type', "Type", "Type", "Method of rendering to use for the camera", ECameraType::Default);
 				desc.AddMember(&CCameraComponent::m_bActivateOnCreate, 'actv', "Active", "Active", "Whether or not this camera should be activated on component creation", true);
 				desc.AddMember(&CCameraComponent::m_nearPlane, 'near', "NearPlane", "Near Plane", nullptr, 0.25f);
 				desc.AddMember(&CCameraComponent::m_farPlane, 'far', "FarPlane", "Far Plane", nullptr, 1024.f);
@@ -153,10 +169,13 @@ namespace Cry
 			virtual void SetFieldOfView(CryTransform::CAngle angle) { m_fieldOfView = angle; }
 			CryTransform::CAngle GetFieldOfView() const { return m_fieldOfView; }
 
+			ECameraType GetType() const { return m_type; }
+
 			virtual CCamera& GetCamera() { return m_camera; }
 			const CCamera& GetCamera() const { return m_camera; }
 
 		protected:
+			ECameraType m_type = ECameraType::Default;
 			bool m_bActivateOnCreate = true;
 			Schematyc::Range<0, 32768> m_nearPlane = 0.25f;
 			Schematyc::Range<0, 32768> m_farPlane = 1024;

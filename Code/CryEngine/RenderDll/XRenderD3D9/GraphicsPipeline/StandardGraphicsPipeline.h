@@ -38,6 +38,7 @@ class CLensOpticsStage;
 class CPostEffectStage;
 class CRainStage;
 class CSnowStage;
+class COmniCameraStage;
 class CDepthReadbackStage;
 class CMobileCompositionStage;
 class CRenderCamera;
@@ -84,6 +85,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_Snow,
 	eStage_DepthReadback,
 	eStage_MobileComposition,
+	eStage_OmniCamera,
 
 	eStage_Count
 };
@@ -186,6 +188,7 @@ public:
 	CWaterStage*              GetWaterStage()                    const { return m_pWaterStage; }
 	CLensOpticsStage*         GetLensOpticsStage()               const { return m_pLensOpticsStage; }
 	CDepthReadbackStage*      GetDepthReadbackStage()            const { return m_pDepthReadbackStage; }
+	COmniCameraStage*         GetOmniCameraStage()               const { return m_pOmniCameraStage; }
 
 public:
 	static void ApplyShaderQuality(CDeviceGraphicsPSODesc& psoDesc, const SShaderProfile& shaderProfile);
@@ -224,6 +227,7 @@ private:
 	CSnowStage*                   m_pSnowStage = nullptr;
 	CDepthReadbackStage*          m_pDepthReadbackStage = nullptr;
 	CMobileCompositionStage*      m_pMobileCompositionStage = nullptr;
+	COmniCameraStage*             m_pOmniCameraStage = nullptr;
 
 	CTypedConstantBuffer<HLSL_PerViewGlobalConstantBuffer> m_mainViewConstantBuffer;
 	CDeviceResourceSetDesc                                 m_defaultMaterialBindPoints;

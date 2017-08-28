@@ -1485,15 +1485,6 @@ bool CTexture::RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short
 
 		DrawSceneToCubeSide(Pos, size, nSide);
 
-		// Transfer to sysmem
-		D3D11_BOX srcBox;
-		srcBox.left = 0;
-		srcBox.right = size;
-		srcBox.top = 0;
-		srcBox.bottom = size;
-		srcBox.front = 0;
-		srcBox.back = 1;
-
 		CDeviceTexture* pDevTextureSrc = CTexture::s_ptexHDRTarget->GetDevTexture();
 		CDeviceTexture* pDevTextureDst = ptexGenEnvironmentCM->GetDevTexture();
 		CRY_ASSERT(CTexture::s_ptexHDRTarget->GetNumMips() == ptexGenEnvironmentCM->GetNumMips());
