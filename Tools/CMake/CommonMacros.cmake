@@ -87,7 +87,7 @@ ENDMACRO(EXCLUDE_FILE_FROM_MSVC_PRECOMPILED_HEADER)
 # Organize projects into solution folders
 macro(set_solution_folder folder target)
 	if(TARGET ${target})
-		if (NOT "${folder}" MATCHES "^Projects")
+		if (NOT "${folder}" MATCHES "^Projects" AND NOT "${folder}" MATCHES "^Project")
 			set_property(TARGET ${target} PROPERTY FOLDER "${VS_FOLDER_PREFIX}/${folder}")
 		else()
 			set_property(TARGET ${target} PROPERTY FOLDER "${folder}")
