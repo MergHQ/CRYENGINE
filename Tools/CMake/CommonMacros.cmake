@@ -381,6 +381,41 @@ macro(add_sources name)
 	endforeach()
 endmacro()
 
+# Automatically add sources in current CMakeLists directory, respecting directory structure
+macro(add_sources_recursive_search)
+	set(_src_root_path "${CMAKE_CURRENT_SOURCE_DIR}")
+	file(
+		GLOB_RECURSE _source_list 
+		LIST_DIRECTORIES false
+		"${_src_root_path}/*.cpp"
+		"${_src_root_path}/*.h"
+	)
+
+	foreach(_source IN ITEMS ${_source_list})
+		get_filename_component(_source_path "${_source}" PATH)
+		file(RELATIVE_PATH _source_path_rel "${_src_root_path}" "${_source_path}")
+		string(REPLACE "/" "\\" _group_path "${_source_path_rel}")
+		source_group("${_group_path}" FILES "${_source}")
+		file(RELATIVE_PATH _source_rel "${_src_root_path}" "${_source}")
+		
+		if (_group_path STREQUAL "")
+			set(_group_path "Root")
+		endif()
+		
+		string(REPLACE "\\" "_" _group_path "${_group_path}")
+		
+		set(_group_path "${_group_path}.cpp")
+		
+		list(FIND UBERFILES ${_group_path} GROUP_INDEX)			
+		if(GROUP_INDEX EQUAL -1)
+			list(APPEND UBERFILES "${_group_path}")
+			set(${_group_path}_PROJECTS ${UB_PROJECTS})
+		endif()
+		
+		add_to_uberfile(${_group_path} ${_source_rel})
+	endforeach()
+endmacro()
+
 macro(get_source_group output group)
 	string(REPLACE " " "_" group_var ${group})	
 	set(${output} ${SOURCE_GROUP_${group_var}})
