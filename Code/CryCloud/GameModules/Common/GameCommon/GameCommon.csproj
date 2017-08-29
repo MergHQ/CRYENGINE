@@ -1,0 +1,169 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E66E7675-9424-40B3-BD0D-628FF1523EAC}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GameCommon</RootNamespace>
+    <AssemblyName>GameCommon</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\..\Solutions\</SolutionDir>
+  </PropertyGroup>
+  <Import Project="..\..\..\CryBackend.Interfaces.props" />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(CryBackendBin)</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(CryBackendBin)</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AustinHarris.JsonRpc, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\Solutions\packages\AustinHarris.JsonRpc.1.0.4.29\lib\net40\AustinHarris.JsonRpc.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Google.Protobuf, Version=3.1.0.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(ProtobufLibPath)</HintPath>
+    </Reference>
+    <Reference Include="log4net, Version=1.2.15.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\Solutions\packages\log4net.2.0.5\lib\net45-full\log4net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nancy, Version=1.4.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\Solutions\packages\Nancy.1.4.3\lib\net40\Nancy.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nancy.Authentication.Basic, Version=1.4.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\Solutions\packages\Nancy.Authentication.Basic.1.4.1\lib\net40\Nancy.Authentication.Basic.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\Solutions\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GrainFactoryExtensions.cs" />
+    <Compile Include="GrainTaskUtils.cs" />
+    <Compile Include="interfaces\BootstrapInterfaces.cs" />
+    <Compile Include="interfaces\GameExceptions.cs" />
+    <Compile Include="interfaces\IMockHelper.cs" />
+    <Compile Include="interfaces\DediSrvInterfaces.cs" />
+    <Compile Include="interfaces\IGameSessionBase.cs" />
+    <Compile Include="interfaces\INodeAgentManager.cs" />
+    <Compile Include="interfaces\IProfileBase.cs" />
+    <Compile Include="interfaces\ISessionCallbackRegistrar.cs" />
+    <Compile Include="interfaces\IUserSessionSkeleton.cs" />
+    <Compile Include="Properties\orleans.codegen.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="interfaces\IUser.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProtoBufItem Include="Protobuf\Dedi.proto">
+      <LastGenOutput>Dedi.Plugin.Generated.cs</LastGenOutput>
+      <LastGenOutput>Dedi.Generated.cs</LastGenOutput>
+    </ProtoBufItem>
+    <ProtoBufItem Include="Protobuf\GMCommands.proto">
+      <LastGenOutput>GMCommands.Plugin.Generated.cs</LastGenOutput>
+      <LastGenOutput>GMCommands.Generated.cs</LastGenOutput>
+    </ProtoBufItem>
+    <ProtoBufItem Include="Protobuf\NodeManagementCommands.proto">
+      <LastGenOutput>NodeManagementCommands.Plugin.Generated.cs</LastGenOutput>
+      <LastGenOutput>NodeManagementCommands.Generated.cs</LastGenOutput>
+    </ProtoBufItem>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+    <None Include="Protobuf\Dedi.Plugin.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Dedi.proto</DependentUpon>
+    </None>
+    <None Include="Protobuf\Dedi.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Dedi.proto</DependentUpon>
+    </None>
+    <None Include="Protobuf\GMCommands.Plugin.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GMCommands.proto</DependentUpon>
+    </None>
+    <None Include="Protobuf\GMCommands.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GMCommands.proto</DependentUpon>
+    </None>
+    <None Include="Protobuf\NodeManagementCommands.Plugin.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>NodeManagementCommands.proto</DependentUpon>
+    </None>
+    <None Include="Protobuf\NodeManagementCommands.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>NodeManagementCommands.proto</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Common\Common.csproj">
+      <Project>{872b44ea-eb03-4389-bc6a-80b87da81f83}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Engine\src\Orleans\Orleans.csproj">
+      <Project>{bc1bd60c-e7d8-4452-a21c-290aec8e2e74}</Project>
+      <Name>Orleans</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Messaging\Messaging.csproj">
+      <Project>{ab6e22e4-f7a3-44f1-b15b-5f6a0fc83dbc}</Project>
+      <Name>Messaging</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\ProtocolBase\ProtocolBase.csproj">
+      <Project>{17a975b3-2922-40e8-9b00-216097897bad}</Project>
+      <Name>ProtocolBase</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(CryBackendTargetsFilePath)" />
+  <!-- From NuGet 3.0 and on (but unfortunately vs2012 don't support 3.0) csproj tweaking is no longer needed -->
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="('$(VisualStudioVersion)' == '11.0') And Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild" Condition="'$(VisualStudioVersion)' == '11.0'">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
