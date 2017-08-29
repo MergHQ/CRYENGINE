@@ -3432,7 +3432,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	CV_r_watercaustics         = nSaveDrawCaustics;
 	CV_r_texturesstreamingsync = nSaveStreamSync;
 
-	gRenDev->GetIRenderAuxGeom()->Flush();
+	if (!pRenderView->IsRecursive())
+	{
+		gRenDev->GetIRenderAuxGeom()->Flush();
+	}
 
 	////////////////////////////////////////////////
 	// Lists still needed for right eye when stereo is active
