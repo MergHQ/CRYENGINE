@@ -175,9 +175,18 @@ bool CProjectManager::ParseProjectFile()
 		m_sys_game_folder->Set(m_project.assetDirectory);
 		m_sys_game_name->Set(m_project.name);
 
-		for (SProject::SConsoleVariable& consoleVariable : m_project.consoleVariables)
+		for (SProject::SConsoleInstruction& consoleVariable : m_project.consoleVariables)
 		{
 			gEnv->pConsole->LoadConfigVar(consoleVariable.key, consoleVariable.value);
+		}
+
+		for (SProject::SConsoleInstruction& consoleCommand : m_project.consoleCommands)
+		{
+			stack_string command = consoleCommand.key;
+			command.append(" ");
+			command.append(consoleCommand.value.c_str());
+			
+			gEnv->pConsole->ExecuteString(command.c_str(), false, true);
 		}
 
 		auto gameDllIt = m_project.legacyGameDllPaths.find("any");

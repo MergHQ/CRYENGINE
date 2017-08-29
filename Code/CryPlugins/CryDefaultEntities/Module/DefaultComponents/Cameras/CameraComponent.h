@@ -34,6 +34,9 @@ namespace Cry
 		class CCameraComponent
 			: public IEntityComponent
 			, public IHmdDevice::IAsyncCameraCallback
+#ifndef RELEASE
+			, public IEntityComponentPreviewer
+#endif
 		{
 		protected:
 			friend CPlugin_CryDefaultEntities;
@@ -81,7 +84,18 @@ namespace Cry
 
 				return bitFlags;
 			}
+
+#ifndef RELEASE
+			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
+#endif
 			// ~IEntityComponent
+
+#ifndef RELEASE
+			// IEntityComponentPreviewer
+			virtual void SerializeProperties(Serialization::IArchive& archive) final {}
+			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
+			// ~IEntityComponentPreviewer
+#endif
 
 			// IAsyncCameraCallback
 			virtual bool OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context) override

@@ -4,6 +4,7 @@ import os
 import os.path
 import uuid
 import glob
+
 from string import Template
 
 has_win_modules = True
