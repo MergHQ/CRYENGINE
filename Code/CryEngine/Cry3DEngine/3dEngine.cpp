@@ -6318,10 +6318,13 @@ bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderin
 
 bool C3DEngine::IsStatObjBufferRenderTasksAllowed() const
 {
-	return
-		(gEnv->pConsole->GetCVar("e_DebugDraw") == nullptr || gEnv->pConsole->GetCVar("e_DebugDraw")->GetIVal() == 0) &&
-		(gEnv->pConsole->GetCVar("mn_debug") == nullptr || strlen(gEnv->pConsole->GetCVar("mn_debug")->GetString()) == 0) &&
-		(gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks") == nullptr || gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks")->GetIVal() == 0);		
+	auto bDebugDrawEnabled = gEnv->pConsole->GetCVar("e_DebugDraw") != nullptr && gEnv->pConsole->GetCVar("e_DebugDraw")->GetIVal() != 0;
+	auto bMnDebugEnabled = gEnv->pConsole->GetCVar("mn_debug") != nullptr && strlen(gEnv->pConsole->GetCVar("mn_debug")->GetString()) != 0;
+	auto bStatObjBufferRenderTasksEnabled = 
+		gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks") != nullptr && gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks")->GetIVal() != 0;
+
+	return !bDebugDrawEnabled && !bMnDebugEnabled && bStatObjBufferRenderTasksEnabled;
+		
 }
 
 ///////////////////////////////////////////////////////////////////////////////
