@@ -570,7 +570,7 @@ bool CTimeOfDay::SetCurrentPreset(const char* szPresetName)
 			m_pCurrentPreset = newPreset;
 			m_currentPresetName = szPresetName;
 			Update(true, true);
-			NotifyOnChange(IListener::CURRENT_PRESET_CHANGED, szPresetName);
+			NotifyOnChange(IListener::EChangeType::CurrentPresetChanged, szPresetName);
 		}
 		return true;
 	}
