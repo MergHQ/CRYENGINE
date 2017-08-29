@@ -2697,6 +2697,11 @@ IRenderNode* CEntity::GetRenderNode(int nSlot) const
 void CEntity::MoveSlot(IEntity* targetIEnt, int nSlot)
 {
 	CEntity* targetEnt = (CEntity*)targetIEnt;
+	if (targetIEnt == this)
+	{
+		assert(false);
+		return;
+	}
 
 	CEntitySlot* srcSlot = GetSlot(nSlot);
 	CEntitySlot* dstSlot = targetEnt->m_render.AllocSlot(nSlot);

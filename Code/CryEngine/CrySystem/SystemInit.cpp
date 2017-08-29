@@ -3230,6 +3230,11 @@ bool CSystem::Init()
 		//////////////////////////////////////////////////////////////////////////
 		if (m_env.pRenderer)
 		{
+			if (m_pUserCallback != nullptr)
+			{
+				m_pUserCallback->OnInitProgress("Initializing Renderer...");
+			}
+
 			m_env.pRenderer->PostInit();
 
 			if (!m_startupParams.bShaderCacheGen)

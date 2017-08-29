@@ -86,11 +86,15 @@ namespace Cry
 				if (IParticleEmitter* pParticleEmitter = GetEntity()->GetParticleEmitter(GetEntitySlotId()))
 				{
 					pParticleEmitter->Activate(bActive);
-					if (m_bCurrentlyActive)
-					{
-						pParticleEmitter->Restart();
-					}
 					m_bCurrentlyActive = bActive;
+				}
+				else if (bActive)
+				{
+					if (IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(m_effectName.value, "CParticleComponent"))
+					{
+						m_pEntity->LoadParticleEmitter(GetOrMakeEntitySlotId(), pEffect, &m_spawnParams.m_spawnParams);
+						m_bCurrentlyActive = true;
+					}
 				}
 				else
 				{
