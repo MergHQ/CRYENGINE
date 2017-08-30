@@ -1358,7 +1358,7 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 		result = ParsePreloadsData(configPath.c_str(), EDataScope::LevelSpecific);
 		CRY_ASSERT(result == ERequestStatus::Success);
 
-		PreloadRequestId const preloadRequestId = StringToId_RunTime(szLevelName);
+		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
 		result = m_fileCacheMgr.TryLoadRequest(preloadRequestId, true, true);
 		
 		if (result != ERequestStatus::Success)

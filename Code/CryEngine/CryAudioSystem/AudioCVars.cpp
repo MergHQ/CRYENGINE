@@ -338,7 +338,7 @@ void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
-		ControlId const triggerId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
+		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId);
 	}
 	else
@@ -354,7 +354,7 @@ void CCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
-		ControlId const triggerId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
+		ControlId const triggerId = CryAudio::StringToId(pCmdArgs->GetArg(1));
 		gEnv->pAudioSystem->StopTrigger(triggerId);
 	}
 	else
@@ -370,7 +370,7 @@ void CCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 
 	if ((numArgs == 3) || (numArgs == 4))
 	{
-		ControlId const parameterId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
+		ControlId const parameterId = CryAudio::StringToId(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
 		gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
 	}
@@ -387,8 +387,8 @@ void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 
 	if ((numArgs == 3) || (numArgs == 4))
 	{
-		ControlId const switchId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(1));
-		SwitchStateId const switchStateId = CryAudio::StringToId_RunTime(pCmdArgs->GetArg(2));
+		ControlId const switchId = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		SwitchStateId const switchStateId = CryAudio::StringToId(pCmdArgs->GetArg(2));
 		gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
 	}
 	else
