@@ -36,11 +36,7 @@ std::shared_ptr<CMonoObject> CMonoMethod::InvokeInternal(MonoInternals::MonoObje
 	{
 		if (pResult != nullptr)
 		{
-			CMonoDomain* pDomain = static_cast<CMonoDomain*>(GetMonoRuntime()->GetActiveDomain());
-
-			std::shared_ptr<CMonoObject> pResultObject = std::make_shared<CMonoObject>(pResult);
-			pResultObject->SetWeakPointer(pResultObject);
-			return pResultObject;
+			return std::make_shared<CMonoObject>(pResult);
 		}
 		else
 		{

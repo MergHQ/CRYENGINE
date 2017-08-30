@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "MonoProperty.h"
+#include "MonoMethod.h"
 #include "MonoRuntime.h"
 
 CMonoProperty::CMonoProperty(MonoInternals::MonoProperty* pProperty)
@@ -24,9 +25,7 @@ std::shared_ptr<CMonoObject> CMonoProperty::Get(const CMonoObject* pObject, bool
 	{
 		if (pResult != nullptr)
 		{
-			auto pResultObject = std::make_shared<CMonoObject>(pResult);
-			pResultObject->SetWeakPointer(pResultObject);
-			return pResultObject;
+			return std::make_shared<CMonoObject>(pResult);
 		}
 		else
 		{
@@ -40,7 +39,16 @@ std::shared_ptr<CMonoObject> CMonoProperty::Get(const CMonoObject* pObject, bool
 
 void CMonoProperty::Set(const CMonoObject* pObject, const CMonoObject* pValue, bool &bEncounteredException) const
 {
-	void* pParams[1] = { pValue->GetManagedObject() };
+	void* pParams[1];
+	if (const_cast<CMonoObject*>(pValue)->GetClass()->IsValueType())
+	{
+		pParams[0] = MonoInternals::mono_object_unbox(pValue->GetManagedObject());
+	}
+	else
+	{
+		pParams[0] = pValue->GetManagedObject();
+	}
+
 	Set(pObject, pParams, bEncounteredException);
 }
 
@@ -58,12 +66,24 @@ void CMonoProperty::Set(const CMonoObject* pObject, void** pParams, bool &bEncou
 
 MonoInternals::MonoTypeEnum CMonoProperty::GetType(MonoInternals::MonoReflectionProperty* pReflectionProperty) const
 {
+	MonoInternals::MonoType* pPropertyType = GetUnderlyingType(pReflectionProperty);
+
+	return (MonoInternals::MonoTypeEnum)mono_type_get_type(pPropertyType);
+}
+
+MonoInternals::MonoType* CMonoProperty::GetUnderlyingType(MonoInternals::MonoReflectionProperty* pReflectionProperty) const
+{
 	InternalMonoReflectionType* pInternalProperty = (InternalMonoReflectionType*)pReflectionProperty;
 	CRY_ASSERT(m_pProperty == pInternalProperty->property);
 
 	MonoInternals::MonoMethod* pGetMethod = mono_property_get_get_method(m_pProperty);
 	MonoInternals::MonoMethodSignature* pGetMethodSignature = mono_method_get_signature(pGetMethod, mono_class_get_image(pInternalProperty->klass), mono_method_get_token(pGetMethod));
 
-	MonoInternals::MonoType* pPropertyType = mono_signature_get_return_type(pGetMethodSignature);
-	return (MonoInternals::MonoTypeEnum)mono_type_get_type(pPropertyType);
+	return mono_signature_get_return_type(pGetMethodSignature);
+}
+
+MonoInternals::MonoClass* CMonoProperty::GetUnderlyingClass(MonoInternals::MonoReflectionProperty* pReflectionProperty) const
+{
+	MonoInternals::MonoType* pPropertyType = GetUnderlyingType(pReflectionProperty);
+	return MonoInternals::mono_class_from_mono_type(pPropertyType);
 }

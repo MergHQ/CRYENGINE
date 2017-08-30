@@ -19,7 +19,18 @@ public:
 	// ~IEntityComponent
 
 	CMonoObject* GetObject() const { return m_pMonoObject.get(); }
-	const CManagedEntityComponentFactory& GetManagedFactoy() const { return m_factory; }
+	const CManagedEntityComponentFactory& GetManagedFactory() const { return m_factory; }
+
+	struct SProperty
+	{
+		uint16 index;
+		size_t offsetFromComponent;
+		MonoInternals::MonoTypeEnum monoType;
+		EEntityPropertyType serializationType;
+
+		// Temporary object containing the value of the property
+		std::shared_ptr<CMonoObject> pTempObject;
+	};
 
 protected:
 	const CManagedEntityComponentFactory& m_factory;

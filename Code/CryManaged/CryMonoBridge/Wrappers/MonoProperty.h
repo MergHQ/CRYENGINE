@@ -28,6 +28,9 @@ public:
 	MonoInternals::MonoProperty* GetHandle() const { return m_pProperty; }
 	MonoInternals::MonoTypeEnum GetType(MonoInternals::MonoReflectionProperty* pReflectionProperty) const;
 
+	MonoInternals::MonoType* GetUnderlyingType(MonoInternals::MonoReflectionProperty* pReflectionProperty) const;
+	MonoInternals::MonoClass* GetUnderlyingClass(MonoInternals::MonoReflectionProperty* pReflectionProperty) const;
+
 protected:
 	MonoInternals::MonoProperty* m_pProperty;
 };
