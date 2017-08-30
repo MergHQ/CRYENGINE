@@ -54,6 +54,7 @@ void CPreloadComponent::Load()
 {
 	if (m_preload.m_id != CryAudio::InvalidPreloadRequestId)
 	{
+		m_bLoaded = true;
 		gEnv->pAudioSystem->PreloadSingleRequest(m_preload.m_id, false);
 	}
 }
@@ -63,6 +64,7 @@ void CPreloadComponent::Unload()
 {
 	if (m_preload.m_id != CryAudio::InvalidPreloadRequestId)
 	{
+		m_bLoaded = false;
 		gEnv->pAudioSystem->UnloadSingleRequest(m_preload.m_id);
 	}
 }
