@@ -14,6 +14,7 @@
 #include "DefaultComponents/Constraints/LineConstraint.h"
 #include "DefaultComponents/Constraints/PlaneConstraint.h"
 #include "DefaultComponents/Constraints/PointConstraint.h"
+#include "DefaultComponents/Constraints/BreakableJoint.h"
 #include "DefaultComponents/Debug/DebugDrawComponent.h"
 #include "DefaultComponents/Effects/DecalComponent.h"
 #include "DefaultComponents/Effects/FogComponent.h"
@@ -119,6 +120,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPointConstraintComponent));
 			Cry::DefaultComponents::CPointConstraintComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CBreakableJointComponent));
+			Cry::DefaultComponents::CBreakableJointComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CDebugDrawComponent));
