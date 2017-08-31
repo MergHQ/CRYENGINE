@@ -172,18 +172,12 @@ public:
 	//IArea
 	virtual size_t         GetEntityAmount() const override                  { return m_entityIds.size(); }
 	virtual const EntityId GetEntityByIdx(size_t const index) const override { return m_entityIds[index]; }
-	virtual void           GetMinMax(Vec3** min, Vec3** max) const override
-	{
-		(*min)->x = m_areaBBox.min.x;
-		(*min)->y = m_areaBBox.min.y;
-		(*min)->z = m_origin;
-		(*max)->x = m_areaBBox.max.x;
-		(*max)->y = m_areaBBox.max.y;
-		(*max)->z = m_origin + m_height;
-	}
 	virtual int GetGroup() const override    { return m_areaGroupId; }
 	virtual int GetPriority() const override { return m_priority; }
 	virtual int GetID() const override       { return m_areaId; }
+	virtual AABB GetAABB() const override;
+	virtual float GetExtent(EGeomForm eForm) const override;
+	virtual void GetRandomPos(PosNorm& ran, CRndGen seed, EGeomForm eForm) const override;
 	//~IArea
 
 	void     Release();

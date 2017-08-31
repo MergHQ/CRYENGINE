@@ -469,7 +469,6 @@ void CStatObj::DisableStreaming()
 			{
 				IReadStream_AutoPtr readStream;
 				pParentObject->StartStreaming(true, &readStream);
-				readStream->Wait();
 			}
 		}
 	}

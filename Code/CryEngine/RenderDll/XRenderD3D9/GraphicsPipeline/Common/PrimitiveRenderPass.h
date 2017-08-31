@@ -217,6 +217,8 @@ public:
 	void   SetScissor(bool bEnable, const D3DRectangle& scissor);
 	void   SetTargetClearMask(uint32 clearMask);
 
+	bool   IsOutputDirty() const { return m_renderPassDesc.HasChanged(); }
+
 	void   Reset();
 
 	void   BeginAddingPrimitives(bool bClearPrimitiveList = true);

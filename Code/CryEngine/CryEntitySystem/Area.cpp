@@ -4,6 +4,7 @@
 #include "Area.h"
 #include "AreaSolid.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryMath/GeomQuery.h>
 
 namespace
 {
@@ -3355,6 +3356,69 @@ const CArea::TAreaBoxes& CArea::GetBoxHolders()
 {
 	return s_areaBoxes;
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+AABB CArea::GetAABB() const
+{
+	switch (m_areaType)
+	{
+	case ENTITY_AREA_TYPE_SPHERE:
+		return AABB(m_sphereCenter, m_sphereRadius);
+	case ENTITY_AREA_TYPE_BOX:
+		return AABB::CreateTransformedAABB(m_worldTM, AABB(m_boxMin, m_boxMax));
+	case ENTITY_AREA_TYPE_SHAPE:
+		return AABB(
+			Vec3(m_areaBBox.min.x, m_areaBBox.min.y, m_origin),
+			Vec3(m_areaBBox.max.x, m_areaBBox.max.y, m_origin + m_height));
+	case ENTITY_AREA_TYPE_SOLID:
+		return AABB::CreateTransformedAABB(m_worldTM, m_pAreaSolid->GetBoundBox());
+	default:
+		return AABB(AABB::RESET);
+	}
+}
+
+float CArea::GetExtent(EGeomForm eForm) const
+{
+	switch (m_areaType)
+	{
+	case ENTITY_AREA_TYPE_SPHERE:
+		return SphereExtent(eForm, m_sphereRadius);
+	case ENTITY_AREA_TYPE_BOX:
+		return BoxExtent(eForm, (m_boxMax - m_boxMin) * 0.5f) * ScaleExtent(eForm, m_worldTM);
+	case ENTITY_AREA_TYPE_SHAPE:
+		// To do
+	case ENTITY_AREA_TYPE_SOLID:
+		// To do
+		// m_pAreaSolid->GetExtent(eForm) * ScaleExtent(eForm, m_worldTM);
+	default:
+		return 0.0f;
+	}
+}
+
+void CArea::GetRandomPos(PosNorm& ran, CRndGen seed, EGeomForm eForm) const
+{
+	switch (m_areaType)
+	{
+	case ENTITY_AREA_TYPE_SPHERE:
+		SphereRandomPos(ran, seed, eForm, m_sphereRadius);
+		ran.vPos += m_sphereCenter;
+		return;
+	case ENTITY_AREA_TYPE_BOX:
+		BoxRandomPos(ran, seed, eForm, (m_boxMax - m_boxMin) * 0.5f);
+		ran.vPos += (m_boxMax + m_boxMin) * 0.5f;
+		ran <<= m_worldTM;
+		return;
+	case ENTITY_AREA_TYPE_SHAPE:
+		// To do
+	case ENTITY_AREA_TYPE_SOLID:
+		// To do
+	default:
+		return;
+	}
+}
+
+
 
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
