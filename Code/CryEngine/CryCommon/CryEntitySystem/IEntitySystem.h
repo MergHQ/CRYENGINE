@@ -55,10 +55,12 @@ struct IArea
 	virtual ~IArea()= default;
 	virtual size_t         GetEntityAmount() const = 0;
 	virtual const EntityId GetEntityByIdx(size_t const index) const = 0;
-	virtual void           GetMinMax(Vec3** min, Vec3** max) const = 0;
 	virtual int            GetGroup() const = 0;
 	virtual int            GetPriority() const = 0;
 	virtual int            GetID() const = 0;
+	virtual AABB           GetAABB() const = 0;
+	virtual float          GetExtent(EGeomForm eForm) const = 0;
+	virtual void           GetRandomPos(PosNorm& ran, CRndGen seed, EGeomForm eForm) const = 0;
 	// </interfuscator:shuffle>
 };
 
