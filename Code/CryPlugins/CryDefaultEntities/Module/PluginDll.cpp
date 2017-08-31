@@ -18,6 +18,8 @@
 #include "DefaultComponents/Debug/DebugDrawComponent.h"
 #include "DefaultComponents/Effects/DecalComponent.h"
 #include "DefaultComponents/Effects/FogComponent.h"
+#include "DefaultComponents/Effects/WaterRippleComponent.h"
+#include "DefaultComponents/Effects/RainComponent.h"
 #include "DefaultComponents/Effects/ParticleComponent.h"
 #include "DefaultComponents/Geometry/AdvancedAnimationComponent.h"
 #include "DefaultComponents/Geometry/AlembicComponent.h"
@@ -200,6 +202,14 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSpherePrimitiveComponent));
 			Cry::DefaultComponents::CSpherePrimitiveComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CWaterRippleComponent));
+			Cry::DefaultComponents::CWaterRippleComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CRainComponent));
+			Cry::DefaultComponents::CRainComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CAreaComponent));
