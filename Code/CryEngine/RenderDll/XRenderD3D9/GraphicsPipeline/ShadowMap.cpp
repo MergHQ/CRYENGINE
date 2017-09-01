@@ -926,7 +926,7 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 			CTexture* pRsmColor = CSvoRenderer::GetInstance()->GetRsmPoolCol();
 			CTexture* pRsmNormals = CSvoRenderer::GetInstance()->GetRsmPoolNor();
 
-			if (pRsmColor && pRsmNormals)
+			if (CTexture::IsTextureExist(pRsmColor) && CTexture::IsTextureExist(pRsmNormals))
 			{
 				m_ClearShadowPoolColorPass.Execute(pRsmColor, Clr_Transparent, clearColorRects.size(), clearColorRects.data());
 				m_ClearShadowPoolNormalsPass.Execute(pRsmNormals, Clr_Transparent, clearColorRects.size(), clearColorRects.data());
