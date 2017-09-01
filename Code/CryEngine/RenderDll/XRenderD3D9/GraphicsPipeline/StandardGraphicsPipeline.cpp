@@ -810,7 +810,10 @@ std::array<SamplerStateHandle, EFSS_MAX> CStandardGraphicsPipeline::GetDefaultMa
 void CStandardGraphicsPipeline::RenderTiledShading()
 {
 	SwitchFromLegacyPipeline();
+
+	m_pTiledShadingStage->ExecutePreprocess();
 	m_pTiledShadingStage->Execute();
+
 	SwitchToLegacyPipeline();
 }
 
@@ -1142,10 +1145,6 @@ void CStandardGraphicsPipeline::Execute()
 		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CTexture::s_ptexZTargetScaled[1], CTexture::s_ptexZTargetScaled[2], false, false);
 	}
 
-	// Prepare tiled shading resources early to give DMA operations enough time to finish
-	// Requires quater-res depth buffer (CTexture::s_ptexZTargetScaled[2])
-	m_pTiledShadingStage->ExecutePreprocess();
-
 	// Depth readback (for occlusion culling)
 	m_pDepthReadbackStage->Execute();
 
@@ -1250,6 +1249,7 @@ void CStandardGraphicsPipeline::Execute()
 			uint32 numVolumes;
 			const Vec4* pVolumeParams;
 			m_pClipVolumesStage->GetClipVolumeShaderParams(pVolumeParams, numVolumes);
+
 			pRenderer->GetTiledShading().Render(m_pCurrentRenderView, (Vec4*)pVolumeParams);
 
 			if (CRenderer::CV_r_DeferredShadingSSS)
