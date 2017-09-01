@@ -306,15 +306,6 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 			m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeomProxy);
 	}
 	int bRecalcBounds = 0;
-#ifdef SEG_WORLD
-	int bForcePosChange = 0;
-	if (_params->type==pe_params_pos::type_id)
-	{
-		pe_params_pos *params = (pe_params_pos*)_params;
-		bRecalcBounds = params->bRecalcBounds&2;
-		bForcePosChange = (params->bRecalcBounds == 3) ? 1 : 0;
-	}
-#endif
 	ChangeRequest<pe_params> req(this,m_pWorld,_params,bThreadSafe);
 	if (req.IsQueued() && !bRecalcBounds)
 		return 1+(m_bProcessed>>PENT_QUEUED_BIT);
@@ -322,9 +313,6 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 	if (_params->type==pe_params_pos::type_id) {
 		pe_params_pos *params = (pe_params_pos*)_params;
 		int i,j,bPosChanged=0,bBBoxReady=0;
-#ifdef SEG_WORLD
-		bPosChanged = bForcePosChange;
-#endif
 		SEntityGrid *pgridCur = m_pWorld->GetGrid(this), *pgridNew = is_unused(params->pGridRefEnt) ? pgridCur : 
 			(!params->pGridRefEnt || params->pGridRefEnt==WORLD_ENTITY ? &m_pWorld->m_entgrid : m_pWorld->GetGrid(params->pGridRefEnt));
 		if (pgridNew != pgridCur) {

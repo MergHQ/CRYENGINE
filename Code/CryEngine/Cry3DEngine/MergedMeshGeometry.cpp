@@ -4521,12 +4521,7 @@ void CMergedMeshRenderNode::CalculateDensity()
 	{
 		SMMRMGroupHeader* header = &m_groups[i];
 		SMMRMGeometry* geom = header->procGeom;
-		StatInstGroup& instGroup =
-#ifdef SEG_WORLD
-		  GetObjManager()->m_lstStaticTypes[geom->m_nStaticTypeSlot][geom->srcGroupId];
-#else
-		  GetObjManager()->m_lstStaticTypes[0][geom->srcGroupId];
-#endif
+		StatInstGroup& instGroup = GetObjManager()->m_lstStaticTypes[geom->srcGroupId];
 		// Hopefully correctly extract the surface type of the material
 		IMaterial* material = NULL;
 		if (instGroup.pMaterial)

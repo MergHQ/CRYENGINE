@@ -366,13 +366,6 @@ void CRigidEntity::RecomputeMassDistribution(int ipart,int bMassChanged)
 int CRigidEntity::SetParams(pe_params *_params, int bThreadSafe)
 {
 	int bRecalcBounds = 0;
-#ifdef SEG_WORLD
-	if (_params->type==pe_params_pos::type_id)
-	{
-		pe_params_pos *params = (pe_params_pos*)_params;
-		bRecalcBounds = params->bRecalcBounds&2;
-	}
-#endif
 	ChangeRequest<pe_params> req(this,m_pWorld,_params,bThreadSafe);
 	if (req.IsQueued() && !bRecalcBounds)
 		return 1+(m_bProcessed>>PENT_QUEUED_BIT);

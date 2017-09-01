@@ -676,11 +676,6 @@ void CEntityPhysics::OnEntityXForm(SEntityEvent& event)
 				ppos.pGridRefEnt = m_pEntity->m_hierarchy.pParent->GetPhysics();
 			}
 
-#ifdef SEG_WORLD
-			if (event.nParam[1])
-				ppos.bRecalcBounds |= 2;
-#endif
-
 			m_pPhysicalEntity->SetParams(&ppos);
 			SetFlags(m_nFlags & (~FLAG_IGNORE_XFORM_EVENT));
 		}

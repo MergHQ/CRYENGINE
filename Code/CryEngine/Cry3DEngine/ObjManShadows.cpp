@@ -80,9 +80,7 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 		PodArray<CTerrainNode*>& lstCastingNodes = m_lstTmpCastingNodes;
 		lstCastingNodes.Clear();
 
-		for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-			if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-				Get3DEngine()->m_pObjectsTree[nSID]->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+		Get3DEngine()->m_pObjectsTree->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
 
 		// check also visareas effected by sun
 		CVisAreaManager* pVisAreaManager = GetVisAreaManager();
@@ -117,7 +115,7 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 		if (bNeedRenderTerrain && passInfo.RenderTerrain() && Get3DEngine()->m_bShowTerrainSurface)
 		{
 			// find all caster sectors
-			GetTerrain()->IntersectWithShadowFrustum(&pFr->castersList, pFr, GetDefSID(), passInfo);
+			GetTerrain()->IntersectWithShadowFrustum(&pFr->castersList, pFr, passInfo);
 		}
 	}
 
@@ -147,16 +145,13 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 {
 	int nRemainingNodes = nMaxNodes;
 
-	int nNumTrees = Get3DEngine()->m_pObjectsTree.Count();
+	int nNumTrees = Get3DEngine()->m_pObjectsTree ? 1 : 0;
 	if (CVisAreaManager* pVisAreaManager = GetVisAreaManager())
 		nNumTrees += pVisAreaManager->m_lstVisAreas.size() + pVisAreaManager->m_lstPortals.size();
 
 	// objects tree first
-	int nStartSID = pFrustum->pShadowCacheData->mOctreePath[0];
-	for (int nSID = nStartSID; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
 	{
-		if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-			Get3DEngine()->m_pObjectsTree[nSID]->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 1, passInfo);
+		Get3DEngine()->m_pObjectsTree->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 1, passInfo);
 
 		if (nRemainingNodes <= 0)
 			return nRemainingNodes;
@@ -174,14 +169,12 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 			&pVisAreaManager->m_lstPortals
 		};
 
-		nStartSID = max(0, nStartSID - Get3DEngine()->m_pObjectsTree.Count());
-
 		const int nNumAreaTypes = CRY_ARRAY_COUNT(lstAreaTypes);
 		for (int nAreaType = 0; nAreaType < nNumAreaTypes; ++nAreaType)
 		{
 			PodArray<CVisArea*>& lstAreas = *lstAreaTypes[nAreaType];
 
-			for (int i = nStartSID; i < lstAreas.Count(); i++)
+			for (int i = 0; i < lstAreas.Count(); i++)
 			{
 				if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->m_pObjectsTree)
 				{
@@ -194,8 +187,6 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 
 				pFrustum->pShadowCacheData->mOctreePath[0]++;
 			}
-
-			nStartSID = max(0, nStartSID - lstAreas.Count());
 		}
 	}
 

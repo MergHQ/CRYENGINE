@@ -1152,8 +1152,8 @@ void COctreeNode::UpdateTerrainNodes(CTerrainNode* pParentNode)
 {
 	if (pParentNode != 0)
 		SetTerrainNode(pParentNode->FindMinNodeContainingBox(GetNodeBox()));
-	else if (m_nSID >= 0 && GetTerrain() != 0)
-		SetTerrainNode(GetTerrain()->FindMinNodeContainingBox(GetNodeBox(), m_nSID));
+	else if (GetTerrain() != 0)
+		SetTerrainNode(GetTerrain()->FindMinNodeContainingBox(GetNodeBox()));
 	else
 		SetTerrainNode(NULL);
 
@@ -1164,18 +1164,14 @@ void COctreeNode::UpdateTerrainNodes(CTerrainNode* pParentNode)
 
 void C3DEngine::GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint64 dwFlags)
 {
-	for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-		if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-			Get3DEngine()->m_pObjectsTree[nSID]->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady, dwFlags);
+	Get3DEngine()->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady, dwFlags);
 }
 
 void C3DEngine::MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox,
                                           bool bRemoveObjects, bool bSkipDecals, bool bSkip_ERF_NO_DECALNODE_DECALS, bool bSkipDynamicObjects,
                                           EERType eRNType)
 {
-	for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-		if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-			Get3DEngine()->m_pObjectsTree[nSID]->MoveObjectsIntoList(plstResultEntities, pAreaBox, bRemoveObjects, bSkipDecals, bSkip_ERF_NO_DECALNODE_DECALS, bSkipDynamicObjects, eRNType);
+	Get3DEngine()->m_pObjectsTree->MoveObjectsIntoList(plstResultEntities, pAreaBox, bRemoveObjects, bSkipDecals, bSkip_ERF_NO_DECALNODE_DECALS, bSkipDynamicObjects, eRNType);
 }
 
 void COctreeNode::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox)
@@ -1562,7 +1558,7 @@ COctreeNode* COctreeNode::FindChildFor(IRenderNode* pObj, const AABB& objBox, co
 
 	if (!m_arrChilds[nChildId])
 	{
-		m_arrChilds[nChildId] = COctreeNode::Create(m_nSID, GetChildBBox(nChildId), m_pVisArea, this);
+		m_arrChilds[nChildId] = COctreeNode::Create(GetChildBBox(nChildId), m_pVisArea, this);
 	}
 
 	return m_arrChilds[nChildId];
@@ -1858,20 +1854,20 @@ bool COctreeNode::UpdateStreamingPriority(PodArray<COctreeNode*>& arrRecursion, 
 	return true;
 }
 
-int COctreeNode::Load(FILE*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibilityMask, const Vec3& segmentOffset)
+int COctreeNode::Load(FILE*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibilityMask)
 {
-	return Load_T(f, nDataSize, pStatObjTable, pMatTable, eEndian, pBox, pLayerVisibilityMask, segmentOffset);
+	return Load_T(f, nDataSize, pStatObjTable, pMatTable, eEndian, pBox, pLayerVisibilityMask);
 }
-int COctreeNode::Load(uint8*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibilityMask, const Vec3& segmentOffset)
+int COctreeNode::Load(uint8*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibilityMask)
 {
-	return Load_T(f, nDataSize, pStatObjTable, pMatTable, eEndian, pBox, pLayerVisibilityMask, segmentOffset);
+	return Load_T(f, nDataSize, pStatObjTable, pMatTable, eEndian, pBox, pLayerVisibilityMask);
 }
 
 int FTell(FILE*& f)  { return Cry3DEngineBase::GetPak()->FTell(f); }
 int FTell(uint8*& f) { return 0; }
 
 template<class T>
-int COctreeNode::Load_T(T*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibilityMask, const Vec3& segmentOffset)
+int COctreeNode::Load_T(T*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibilityMask)
 {
 	if (pBox && !Overlap::AABB_AABB(GetNodeBox(), *pBox))
 		return 0;
@@ -1883,7 +1879,7 @@ int COctreeNode::Load_T(T*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjT
 
 	ELoadObjectsMode eLoadObjectsMode = (GetCVars()->e_StreamInstances && !gEnv->IsEditor()) ? LOM_LOAD_ONLY_NON_STREAMABLE : LOM_LOAD_ALL;
 
-	if (!ReadObjects(f, nDataSize, eEndian, pStatObjTable, pMatTable, pLayerVisibilityMask, segmentOffset, chunk, eLoadObjectsMode))
+	if (!ReadObjects(f, nDataSize, eEndian, pStatObjTable, pMatTable, pLayerVisibilityMask, chunk, eLoadObjectsMode))
 		return 0;
 
 	if (chunk.nObjectsBlockSize)
@@ -1904,10 +1900,10 @@ int COctreeNode::Load_T(T*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjT
 		{
 			if (!m_arrChilds[nChildId])
 			{
-				m_arrChilds[nChildId] = COctreeNode::Create(m_nSID, GetChildBBox(nChildId), m_pVisArea, this);
+				m_arrChilds[nChildId] = COctreeNode::Create(GetChildBBox(nChildId), m_pVisArea, this);
 			}
 
-			int nNewNodesNum = m_arrChilds[nChildId]->Load_T(f, nDataSize, pStatObjTable, pMatTable, eEndian, pBox, pLayerVisibilityMask, segmentOffset);
+			int nNewNodesNum = m_arrChilds[nChildId]->Load_T(f, nDataSize, pStatObjTable, pMatTable, eEndian, pBox, pLayerVisibilityMask);
 
 			if (!nNewNodesNum && !pBox)
 				return 0; // data error
@@ -1942,7 +1938,7 @@ void COctreeNode::BuildLoadingDatas(PodArray<SOctreeLoadObjectsData>* pQueue, by
 			if (!m_arrChilds[nChildId])
 			{
 				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, EMemStatContextFlags::MSF_Instance, "Octree node");
-				m_arrChilds[nChildId] = new COctreeNode(m_nSID, GetChildBBox(nChildId), m_pVisArea, this);
+				m_arrChilds[nChildId] = new COctreeNode(GetChildBBox(nChildId), m_pVisArea, this);
 			}
 
 			m_arrChilds[nChildId]->BuildLoadingDatas(pQueue, pOrigData, pData, nDataSize, eEndian);
@@ -1984,15 +1980,8 @@ bool COctreeNode::StreamLoad(uint8* pData, int nDataSize, std::vector<IStatObj*>
 		}
 		else
 		{
-			// if we are not in segmented world mode then the offset is 0
-			Vec3 segmentOffset(0, 0, 0);
-			if (Get3DEngine()->m_pSegmentsManager)
-			{
-				segmentOffset = GetTerrain()->GetSegmentOrigin(m_nSID);
-			}
-
 			IRenderNode* pRN = 0;
-			data.pNode->LoadSingleObject(data.pObjPtr, pStatObjTable, pMatTable, eEndian, OCTREENODE_CHUNK_VERSION, NULL, m_nSID, segmentOffset, LOM_LOAD_ALL, pRN);
+			data.pNode->LoadSingleObject(data.pObjPtr, pStatObjTable, pMatTable, eEndian, OCTREENODE_CHUNK_VERSION, NULL, LOM_LOAD_ALL, pRN);
 			if (data.pObjPtr >= data.pEndObjPtr)
 				m_loadingDatas.Delete(0);
 		}
@@ -2002,7 +1991,7 @@ bool COctreeNode::StreamLoad(uint8* pData, int nDataSize, std::vector<IStatObj*>
 }
 
 #if ENGINE_ENABLE_COMPILATION
-int COctreeNode::GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, SHotUpdateInfo* pExportInfo, const Vec3& segmentOffset)
+int COctreeNode::GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, SHotUpdateInfo* pExportInfo)
 {
 	AABB* pBox = (pExportInfo && !pExportInfo->areaBox.IsReset()) ? &pExportInfo->areaBox : NULL;
 
@@ -2024,7 +2013,7 @@ int COctreeNode::GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* p
 				chunk.ucChildsMask |= (1 << i);
 
 		CMemoryBlock memblock;
-		SaveObjects(&memblock, pStatObjTable, pMatTable, pStatInstGroupTable, eEndian, pExportInfo, segmentOffset);
+		SaveObjects(&memblock, pStatObjTable, pMatTable, pStatInstGroupTable, eEndian, pExportInfo);
 
 		chunk.nObjectsBlockSize = memblock.GetSize();
 
@@ -2035,7 +2024,7 @@ int COctreeNode::GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* p
 	else // just count size
 	{
 		nDataSize += sizeof(SOcTreeNodeChunk);
-		nDataSize += SaveObjects(NULL, NULL, NULL, NULL, eEndian, pExportInfo, segmentOffset);
+		nDataSize += SaveObjects(NULL, NULL, NULL, NULL, eEndian, pExportInfo);
 	}
 
 	// count number of nodes loaded
@@ -2044,7 +2033,7 @@ int COctreeNode::GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* p
 	// process childs
 	for (int i = 0; i < 8; i++)
 		if (m_arrChilds[i])
-			nNodesNum += m_arrChilds[i]->GetData(pData, nDataSize, pStatObjTable, pMatTable, pStatInstGroupTable, eEndian, pExportInfo, segmentOffset);
+			nNodesNum += m_arrChilds[i]->GetData(pData, nDataSize, pStatObjTable, pMatTable, pStatInstGroupTable, eEndian, pExportInfo);
 
 	return nNodesNum;
 }
@@ -2136,7 +2125,7 @@ bool COctreeNode::HasAnyRenderableCandidates(const SRenderingPassInfo& passInfo)
 }
 
 template<class T>
-int COctreeNode::ReadObjects(T*& f, int& nDataSize, EEndian eEndian, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, const SLayerVisibility* pLayerVisibilityMask, const Vec3& segmentOffset, SOcTreeNodeChunk& chunk, ELoadObjectsMode eLoadMode)
+int COctreeNode::ReadObjects(T*& f, int& nDataSize, EEndian eEndian, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, const SLayerVisibility* pLayerVisibilityMask, SOcTreeNodeChunk& chunk, ELoadObjectsMode eLoadMode)
 {
 	if (!CTerrain::LoadDataFromFile(&chunk, 1, f, nDataSize, eEndian))
 		return 0;
@@ -2157,8 +2146,8 @@ int COctreeNode::ReadObjects(T*& f, int& nDataSize, EEndian eEndian, std::vector
 			if (!CTerrain::LoadDataFromFile(pPtr, chunk.nObjectsBlockSize, f, nDataSize, eEndian))
 				return 0;
 
-			if (!m_bEditor || Get3DEngine()->IsSegmentOperationInProgress())
-				LoadObjects(pPtr, pPtr + chunk.nObjectsBlockSize, pStatObjTable, pMatTable, eEndian, chunk.nChunkVersion, pLayerVisibilityMask, segmentOffset, eLoadMode);
+			if (!m_bEditor)
+				LoadObjects(pPtr, pPtr + chunk.nObjectsBlockSize, pStatObjTable, pMatTable, eEndian, chunk.nChunkVersion, pLayerVisibilityMask, eLoadMode);
 		}
 
 		if (eLoadMode != LOM_LOAD_ALL)
@@ -2248,7 +2237,7 @@ void COctreeNode::StreamOnCompleteReadObjects(T* f, int nDataSize)
 
 	C3DEngine* pEng = Get3DEngine();
 
-	if (!ReadObjects(f, nDataSize, pEng->m_bLevelFilesEndian, pEng->m_pLevelStatObjTable, pEng->m_pLevelMaterialsTable, NULL, Vec3(0, 0, 0), chunk, LOM_LOAD_ONLY_STREAMABLE))
+	if (!ReadObjects(f, nDataSize, pEng->m_bLevelFilesEndian, pEng->m_pLevelStatObjTable, pEng->m_pLevelMaterialsTable, NULL, chunk, LOM_LOAD_ONLY_STREAMABLE))
 	{
 		PrintMessage("%s: Instances read error", __FUNCTION__);
 	}
@@ -2401,7 +2390,7 @@ void COctreeNode::CheckUpdateStaticInstancing()
 	}
 }
 
-COctreeNode::COctreeNode(int nSID, const AABB& box, CVisArea* pVisArea, COctreeNode* pParent)
+COctreeNode::COctreeNode(const AABB& box, CVisArea* pVisArea, COctreeNode* pParent)
 {
 	m_fPrevTerrainTexScale = 0;
 	m_updateStaticInstancingLock = 0;
@@ -2429,7 +2418,6 @@ COctreeNode::COctreeNode(int nSID, const AABB& box, CVisArea* pVisArea, COctreeN
 	m_pReadStream = 0;
 	m_nUpdateStreamingPrioriryRoundId = -1;
 
-	m_nSID = nSID;
 	m_vNodeCenter = box.GetCenter();
 	m_vNodeAxisRadius = box.GetSize() * 0.5f;
 	m_objectsBox.min = box.max;
@@ -2443,7 +2431,7 @@ COctreeNode::COctreeNode(int nSID, const AABB& box, CVisArea* pVisArea, COctreeN
 			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR_DBGBRK, "COctreeNode being created with a huge m_objectsBox: [%f %f %f] -> [%f %f %f]\n", m_objectsBox.min.x, m_objectsBox.min.y, m_objectsBox.min.z, m_objectsBox.max.x, m_objectsBox.max.y, m_objectsBox.max.z);
 #endif
 
-	SetTerrainNode(m_nSID >= 0 && GetTerrain() ? GetTerrain()->FindMinNodeContainingBox(box, m_nSID) : NULL);
+	SetTerrainNode(GetTerrain() ? GetTerrain()->FindMinNodeContainingBox(box) : NULL);
 	m_pVisArea = pVisArea;
 	m_pParent = pParent;
 	m_streamComplete = false;
@@ -2459,11 +2447,11 @@ COctreeNode::COctreeNode(int nSID, const AABB& box, CVisArea* pVisArea, COctreeN
 }
 
 //////////////////////////////////////////////////////////////////////////
-COctreeNode* COctreeNode::Create(int nSID, const AABB& box, struct CVisArea* pVisArea, COctreeNode* pParent)
+COctreeNode* COctreeNode::Create(const AABB& box, struct CVisArea* pVisArea, COctreeNode* pParent)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, EMemStatContextFlags::MSF_Instance, "Octree node");
 	m_nNodesCounterAll++;
-	return new COctreeNode(nSID, box, pVisArea, pParent);
+	return new COctreeNode(box, pVisArea, pParent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2890,14 +2878,11 @@ bool COctreeNode::DeleteObject(IRenderNode* pObj)
 			m_bStaticInstancingIsDirty = true;
 	}
 
-	bool bSafeToUse = Get3DEngine()->IsSegmentSafeToUse(pObj->m_nSID);
-
 	pObj->m_pOcNode = NULL;
-	pObj->m_nSID = -1;
 
 	if (!gEnv->IsEditor()) // in the editor in huge levels the usage of m_arrEmptyNodes optimization causes very long level loading time and very slow other whole world operations
 	{
-		if (bSafeToUse && IsEmpty() && m_arrEmptyNodes.Find(this) < 0)
+		if (IsEmpty() && m_arrEmptyNodes.Find(this) < 0)
 			m_arrEmptyNodes.Add(this);
 	}
 
@@ -2958,7 +2943,7 @@ void COctreeNode::InsertObject(IRenderNode* pObj, const AABB& objBox, const floa
 
 					if (!pCurrentNode->m_arrChilds[nChildId])
 					{
-						pCurrentNode->m_arrChilds[nChildId] = COctreeNode::Create(pCurrentNode->m_nSID, pCurrentNode->GetChildBBox(nChildId), pCurrentNode->m_pVisArea, pCurrentNode);
+						pCurrentNode->m_arrChilds[nChildId] = COctreeNode::Create(pCurrentNode->GetChildBBox(nChildId), pCurrentNode->m_pVisArea, pCurrentNode);
 					}
 
 					pCurrentNode = pCurrentNode->m_arrChilds[nChildId];
@@ -2977,11 +2962,6 @@ void COctreeNode::InsertObject(IRenderNode* pObj, const AABB& objBox, const floa
 	pCurrentNode->LinkObject(pObj, eType);
 
 	pObj->m_pOcNode = pCurrentNode;
-#ifndef SEG_WORLD
-	pObj->m_nSID = pCurrentNode->m_nSID;
-#else
-	pObj->m_nSID = pCurrentNode->m_nSID >= 0 ? pCurrentNode->m_nSID : GetTerrain()->WorldToSegment(vObjectCentre, GetDefSID());
-#endif
 
 	// only mark octree nodes as not compiled during loading and in the editor
 	// otherwise update node (and parent node) flags on per added object basis
@@ -3282,13 +3262,12 @@ int16 CObjManager::GetNearestCubeProbe(PodArray<CDLight*>* pAffectingLights, IVi
 
 	if (!pVisArea)
 	{
-		int nObjTreeCount = Get3DEngine()->m_pObjectsTree.Count();
-		for (int nCurrTree = 0; nCurrTree < nObjTreeCount; ++nCurrTree)
-			if (Get3DEngine()->IsSegmentSafeToUse(nCurrTree))
-				Get3DEngine()->m_pObjectsTree[nCurrTree]->GetNearestCubeProbe(fMinDistance, nMaxPriority, pNearestLight, &objBox);
+		Get3DEngine()->m_pObjectsTree->GetNearestCubeProbe(fMinDistance, nMaxPriority, pNearestLight, &objBox);
 	}
 	else
+	{
 		Get3DEngine()->GetVisAreaManager()->GetNearestCubeProbe(fMinDistance, nMaxPriority, pNearestLight, &objBox);
+	}
 
 	if (pNearestLight)
 	{

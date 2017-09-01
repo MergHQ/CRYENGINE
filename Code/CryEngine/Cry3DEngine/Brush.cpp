@@ -665,7 +665,7 @@ void CBrush::SetStatObj(IStatObj* pStatObj)
 	if (m_pStatObj && m_pStatObj->IsDeformable())
 	{
 		if (!m_pDeform)
-			m_pDeform = new CDeformableNode(m_nSID);
+			m_pDeform = new CDeformableNode();
 		m_pDeform->SetStatObj(static_cast<CStatObj*>(m_pStatObj.get()));
 		m_pDeform->BakeDeform(GetMatrix());
 	}

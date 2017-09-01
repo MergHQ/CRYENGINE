@@ -202,9 +202,6 @@ int CRopeEntity::SetParams(pe_params *_params, int bThreadSafe)
 	if (req.IsQueued())
 		return 1;
 
-#ifdef SEG_WORLD
-	bool bRecalcBBox = false;
-#endif
 	int res;
 	unsigned int flags0 = m_flags;
 	Vec3 prevpos = m_pos;

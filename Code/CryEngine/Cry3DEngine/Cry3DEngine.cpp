@@ -70,21 +70,12 @@ public:
 			}
 		case ESYSTEM_EVENT_3D_POST_RENDERING_START:
 			{
-				// Pre allocate object tree for objects to go in
-				if ((Cry3DEngineBase::Get3DEngine()) && (Cry3DEngineBase::Get3DEngine()->m_pObjectsTree.Count() == 0))
-				{
-					Cry3DEngineBase::Get3DEngine()->m_pObjectsTree.PreAllocate(1, 1);
-				}
 				Cry3DEngineBase::GetMatMan()->DoLoadSurfaceTypesInInit(false);
 				break;
 			}
 		case ESYSTEM_EVENT_3D_POST_RENDERING_END:
 			{
-				for (int nSID = 0; nSID < Cry3DEngineBase::Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-				{
-					SAFE_DELETE(Cry3DEngineBase::Get3DEngine()->m_pObjectsTree[nSID]);
-				}
-				Cry3DEngineBase::Get3DEngine()->m_pObjectsTree.Free();
+				SAFE_DELETE(Cry3DEngineBase::Get3DEngine()->m_pObjectsTree);
 
 				// We have to unload physics data *before* shutting down the geom manager
 				// Otherwise physical entities that are destroyed later will reference dangling geom pointers

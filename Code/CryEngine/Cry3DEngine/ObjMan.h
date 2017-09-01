@@ -227,7 +227,7 @@ public:
 	// Only should be called by Release function of CStatObj.
 	bool InternalDeleteObject(CStatObj* pObject);
 
-	PodArray<PodArray<StatInstGroup>> m_lstStaticTypes;
+	PodArray<StatInstGroup> m_lstStaticTypes;
 
 	uint64 GetShadowFrustumsList(PodArray<CDLight*>* pAffectingLights, const AABB& aabbReceiver,
 	                             float fObjDistance, uint32 nDLightMask, bool bIncludeNearFrustums,
@@ -325,10 +325,10 @@ public:
 	void      RenderObjectDebugInfo_Impl(IRenderNode* pEnt, float fEntDistance);
 	void      RemoveFromRenderAllObjectDebugInfo(IRenderNode* pEnt);
 
-	float     GetXYRadius(int nType, int nSID = GetDefSID());
-	bool      GetStaticObjectBBox(int nType, Vec3& vBoxMin, Vec3& vBoxMax, int nSID = GetDefSID());
+	float     GetXYRadius(int nType);
+	bool      GetStaticObjectBBox(int nType, Vec3& vBoxMin, Vec3& vBoxMax);
 
-	IStatObj* GetStaticObjectByTypeID(int nTypeID, int nSID = GetDefSID());
+	IStatObj* GetStaticObjectByTypeID(int nTypeID);
 	IStatObj* FindStaticObjectByFilename(const char* filename);
 
 	float     GetBendingRandomFactor();

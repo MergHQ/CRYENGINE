@@ -173,9 +173,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 
 					if (bFoundOutside)
 					{
-						for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-							if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-								m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree[nSID]);
+							m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
 					}
 
 					for (int v = 0; v < m_tmpAreas0.Count(); v++)
@@ -188,9 +186,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 				}
 				else if (GetVisAreaManager())
 				{
-					for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-						if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-							m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree[nSID]);
+					m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
 
 					// find portals around
 					m_tmpAreas0.Clear();
@@ -213,9 +209,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 				}
 				else
 				{
-					for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-						if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-							m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree[nSID]);
+					m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
 				}
 			}
 
@@ -301,9 +295,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 
 				if (bFoundOutside)
 				{
-					for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-						if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-							fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree[nSID]);
+					fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
 				}
 
 				for (int v = 0; v < m_tmpAreas0.Count(); v++)
@@ -316,9 +308,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 			}
 			else if (GetVisAreaManager())
 			{
-				for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-					if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-						fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree[nSID]);
+				fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
 
 				// find portals around
 				m_tmpAreas0.Clear();
@@ -341,9 +331,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 			}
 			else
 			{
-				for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-					if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-						fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree[nSID]);
+				fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
 			}
 		}
 
@@ -400,18 +388,13 @@ void CObjManager::CheckTextureReadyFlag()
 	if (m_lstStaticTypes.empty())
 		return;
 
-	static uint32 nSID = 0;
 	static uint32 nGroupId = 0;
 
-	if (nSID >= m_lstStaticTypes.size())
-		nSID = 0;
-
-	PodArray<StatInstGroup>& rGroupTable = m_lstStaticTypes[nSID];
+	PodArray<StatInstGroup>& rGroupTable = m_lstStaticTypes;
 
 	if (nGroupId >= rGroupTable.size())
 	{
 		nGroupId = 0;
-		nSID++;
 	}
 
 	for (size_t currentGroup = 0; currentGroup < rGroupTable.size(); currentGroup++)

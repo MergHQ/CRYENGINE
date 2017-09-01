@@ -343,7 +343,7 @@ class CProcObjSector : public Cry3DEngineBase
 public:
 	CProcObjSector() { m_nProcVegetNum = 0; m_ProcVegetChunks.PreAllocate(32); }
 	~CProcObjSector();
-	CVegetation* AllocateProcObject(int nSID);
+	CVegetation* AllocateProcObject();
 	void         ReleaseAllObjects();
 	int          GetUsedInstancesCount(int& nAll) { nAll = m_ProcVegetChunks.Count(); return m_nProcVegetNum; }
 	void         GetMemoryUsage(ICrySizer* pSizer) const;
@@ -406,9 +406,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	void         StartSectorTexturesStreaming(bool bFinishNow);
 
-	void         Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bool bBuildErrorsTable, int nSID);
+	void         Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bool bBuildErrorsTable);
 	CTerrainNode() :
-		m_nSID(0),
 		m_nNodeTexSet(),
 		m_nTexSet(),
 		m_nNodeTextureOffset(-1),
@@ -429,7 +428,7 @@ public:
 	}
 	~CTerrainNode();
 	static void   ResetStaticData();
-	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const Vec3& vSegmentOrigin, const SRenderingPassInfo& passInfo);
+	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo);
 	void          SetupTexturing(bool bMakeUncompressedForEditing, const SRenderingPassInfo& passInfo);
 	void          RequestTextures(const SRenderingPassInfo& passInfo);
 	void          EnableTextureEditingMode(unsigned int textureId);
@@ -477,15 +476,15 @@ public:
 
 	void                UpdateRenderMesh(struct CStripsInfo* pArrayInfo, bool bUpdateVertices);
 	void                BuildVertices(float stepSize, bool bSafetyBorder);
-	void                SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, const int nSID, SVF_P2S_N4B_C4B_T1F &vert);
-	void                SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, const int nSID, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm = nullptr);
-	void                AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const int nSID, const float stepSize, const int nTerrainSize);
+	void                SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, SVF_P2S_N4B_C4B_T1F &vert);
+	void                SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm = nullptr);
+	void                AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const float stepSize, const int nTerrainSize);
 
 	int                 GetMML(int dist, int mmMin, int mmMax);
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
-	static void                  GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, int nSID, CUpdateTerrainTempData* pUpdateTerrainTempData = NULL);
+	static void                  GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, CUpdateTerrainTempData* pUpdateTerrainTempData = NULL);
 	void                         BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRenderingPassInfo& passInfo);
 
 	void                         BuildIndices_Wrapper(SRenderingPassInfo passInfo);
@@ -564,7 +563,6 @@ public:
 	SSectorTextureSet          m_nNodeTexSet, m_nTexSet; // texture id's
 
 	uint16                     m_nNodeTextureLastUsedSec4;
-	uint16                     m_nSID;
 
 	AABB                       m_boxHeigtmapLocal;
 	float                      m_fBBoxExtentionByObjectsIntegration;
@@ -636,8 +634,7 @@ struct STerrainNodeChunk
 
 inline const AABB CTerrainNode::GetBBox() const
 {
-	const Vec3& vOrigin = GetTerrain()->m_arrSegmentOrigns[m_nSID];
-	return AABB(m_boxHeigtmapLocal.min + vOrigin, m_boxHeigtmapLocal.max + vOrigin + Vec3(0, 0, m_fBBoxExtentionByObjectsIntegration));
+	return AABB(m_boxHeigtmapLocal.min, m_boxHeigtmapLocal.max + Vec3(0, 0, m_fBBoxExtentionByObjectsIntegration));
 }
 
 #endif

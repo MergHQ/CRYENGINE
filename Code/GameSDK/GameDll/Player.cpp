@@ -5113,25 +5113,13 @@ void CPlayer::NetSerialize_Spectator( TSerialize ser, bool bReading )
 void CPlayer::NetSerialize_InputClient( TSerialize ser, bool bReading )
 {
 	NET_PROFILE_SCOPE("PlayerInput", bReading);
-#ifdef SEG_WORLD
-	ISegmentsManager *pSM = gEnv->p3DEngine->GetSegmentsManager();
-#endif
 	SSerializedPlayerInput serializedInput;
 	if (m_pPlayerInput.get())
 	{
 		m_pPlayerInput->GetState(serializedInput);
 		if (!IsRemote() && !bReading)
 		{
-#ifdef SEG_WORLD
-			Vec3 pos(GetEntity()->GetPos());
-			if(gEnv->IsClient() && !gEnv->bServer && pSM)
-			{
-				pos = pSM->LocalToAbsolutePosition(pos);
-			}
-			serializedInput.position	= pos;
-#else
 			serializedInput.position	= GetEntity()->GetPos();
-#endif
 			serializedInput.physCounter = GetNetPhysCounter();
 		}
 	}
@@ -5147,13 +5135,6 @@ void CPlayer::NetSerialize_InputClient( TSerialize ser, bool bReading )
 
 	if (bReading)
 	{
-#ifdef SEG_WORLD
-		m_lastSyncedWorldPosition = serializedInput.position;
-		if (gEnv->IsClient() && !gEnv->bServer && pSM)
-		{
-			serializedInput.position = pSM->WorldVecToLocalSegVec(serializedInput.position);
-		}
-#endif
 		if(m_pPlayerInput.get())
 		{
 			m_pPlayerInput->SetState(serializedInput);
@@ -5227,9 +5208,6 @@ void CPlayer::NetSerialize_InputClient_Aug( TSerialize ser, bool bReading )
 {
 	// This aspect is used for serialising what the player is standing on
 	NET_PROFILE_SCOPE("PlayerInput_Aug", bReading);
-#ifdef SEG_WORLD
-	ISegmentsManager *pSM = gEnv->p3DEngine->GetSegmentsManager();
-#endif
 	SSerializedPlayerInput serializedInput;
 
 	if (m_pPlayerInput.get())
@@ -5237,16 +5215,7 @@ void CPlayer::NetSerialize_InputClient_Aug( TSerialize ser, bool bReading )
 
 	if (!bReading && !IsRemote())
 	{
-#ifdef SEG_WORLD
-		Vec3 pos(GetEntity()->GetPos());
-		if(gEnv->IsClient() && !gEnv->bServer && pSM)
-		{
-			pos = pSM->LocalToAbsolutePosition(pos);
-		}
-		serializedInput.position = pos;
-#else
 		serializedInput.position = GetEntity()->GetPos();
-#endif
 	}
 	
 	NET_PROFILE_BEGIN("SerializedInput::Serialize", ser.IsReading());
@@ -5255,13 +5224,6 @@ void CPlayer::NetSerialize_InputClient_Aug( TSerialize ser, bool bReading )
 
 	if (bReading && m_pPlayerInput.get())
 	{
-#ifdef SEG_WORLD
-		if (gEnv->IsClient() && !gEnv->bServer && pSM)
-		{
-			m_lastSyncedWorldPosition = serializedInput.position;
-			serializedInput.position = pSM->WorldVecToLocalSegVec(serializedInput.position);
-		}
-#endif
 		m_pPlayerInput->SetState(serializedInput);
 	}
 }
@@ -10610,18 +10572,3 @@ void CPlayer::RMIBenchmarkCallback( ERMIBenchmarkLogPoint point0, ERMIBenchmarkL
 }
 
 #endif
-
-void CPlayer::OnShiftWorld()
-{
-	if (m_pPlayerInput.get() && m_pPlayerInput->GetType() == IPlayerInput::NETPLAYER_INPUT)
-	{
-		ISegmentsManager *pSM = gEnv->p3DEngine->GetSegmentsManager();
-		if (gEnv->IsClient() && !gEnv->bServer && pSM)
-		{
-			SSerializedPlayerInput serializedInput;
-			m_pPlayerInput->GetState(serializedInput);
-			serializedInput.position = pSM->WorldVecToLocalSegVec(m_lastSyncedWorldPosition);
-			m_pPlayerInput->SetState(serializedInput);
-		}
-	}
-}

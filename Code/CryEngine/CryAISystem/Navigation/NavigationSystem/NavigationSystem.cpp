@@ -162,13 +162,6 @@ NavigationSystem::NavigationSystem(const char* configName)
 
 	m_pEditorBackgroundUpdate = new NavigationSystemBackgroundUpdate(*this);
 
-#ifdef SEG_WORLD
-	if (ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher())
-	{
-		pSystemEventDispatcher->RegisterListener(this, "NavigationSystem");
-	}
-#endif
-
 #ifdef NAVIGATION_SYSTEM_CONSOLE_AUTOCOMPLETE
 	gEnv->pConsole->RegisterAutoComplete("ai_debugMNMAgentType", &s_agentTypeListAutoComplete);
 #endif
@@ -181,13 +174,6 @@ NavigationSystem::~NavigationSystem()
 	Clear();
 
 	SAFE_DELETE(m_pEditorBackgroundUpdate);
-
-#ifdef SEG_WORLD
-	if (ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher())
-	{
-		pSystemEventDispatcher->RemoveListener(this);
-	}
-#endif
 
 #ifdef NAVIGATION_SYSTEM_CONSOLE_AUTOCOMPLETE
 	gEnv->pConsole->UnRegisterAutoComplete("ai_debugMNMAgentType");
@@ -3116,11 +3102,7 @@ void NavigationSystem::GatherNavigationVolumesToSave(std::vector<NavigationVolum
 	}
 }
 
-#if defined(SEG_WORLD)
-bool NavigationSystem::SaveToFile(const char* fileName, const AABB& segmentAABB) const PREFAST_SUPPRESS_WARNING(6262)
-#else
 bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_WARNING(6262)
-#endif
 {
 #if NAVIGATION_SYSTEM_PC_ONLY
 
@@ -3145,10 +3127,6 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 
 		// Saving boundary volumes, their ID's and names
 		{
-	#if SEG_WORLD
-			static_assert(false, "Segmented world is deprecated and not supported anymore by the current implementation of NavigationSystem");
-	#endif
-
 			std::vector<NavigationVolumeID> usedVolumes;
 			GatherNavigationVolumesToSave(*&usedVolumes);
 
@@ -3204,10 +3182,6 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 
 			AgentType::Meshes::const_iterator mit = agentType.meshes.begin();
 			AgentType::Meshes::const_iterator mend = agentType.meshes.end();
-	#if defined(SEG_WORLD)
-			size_t writtenMeshCountDataPosition = file.GetPosition();
-			uint32 actualWrittenMeshCount = 0;
-	#endif
 			uint32 meshesCount = agentType.meshes.size();
 			file.Write(&meshesCount, sizeof(meshesCount));
 
@@ -3217,13 +3191,6 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				const NavigationMesh& mesh = m_meshes[NavigationMeshID(meshIDuint32)];
 				const MNM::BoundingVolume& volume = m_volumes[mesh.boundary];
 				const MNM::CNavMesh& navMesh = mesh.navMesh;
-
-	#ifdef SEG_WORLD
-				if (!segmentAABB.IsIntersectBox(volume.aabb))
-					continue;
-
-				++actualWrittenMeshCount;
-	#endif
 
 				// Saving mesh id
 	#ifdef SW_NAVMESH_USE_GUID
@@ -3410,14 +3377,6 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 			totalAgentMemory = endingAgentDataPosition - totalAgentMemoryPositionInFile - sizeof(totalAgentMemory);
 			file.Seek(totalAgentMemoryPositionInFile, SEEK_SET);
 			file.Write(&totalAgentMemory, sizeof(totalAgentMemory));
-
-	#if defined(SEG_WORLD)
-			file.Seek(writtenMeshCountDataPosition, SEEK_SET);
-			file.Write(&actualWrittenMeshCount, sizeof(actualWrittenMeshCount));
-
-			file.Seek(areasCountDataPosition, SEEK_SET);
-			file.Write(&actualWrittenAreasCount, sizeof(actualWrittenAreasCount));
-	#endif
 
 			file.Seek(endingAgentDataPosition, SEEK_SET);
 		}
