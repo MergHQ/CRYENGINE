@@ -2430,8 +2430,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool  LoadShaderLevelCache() = 0;
 	virtual void  UnloadShaderLevelCache() = 0;
 
-	virtual void  OffsetPosition(const Vec3& delta) = 0;
-
 	virtual void  SetRendererCVar(ICVar* pCVar, const char* pArgText, const bool bSilentMode = false) = 0;
 
 #ifdef SUPPORT_HW_MOUSE_CURSOR

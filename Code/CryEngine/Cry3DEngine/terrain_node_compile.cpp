@@ -86,7 +86,7 @@ int CTerrainNode::Load_T(T*& f, int& nDataSize, EEndian eEndian, bool bSectorPal
 			return 0;
 
 		for (int i = 0; i < m_lstSurfaceTypeInfo.Count() && i < SRangeInfo::e_hole; i++)
-			m_lstSurfaceTypeInfo[i].pSurfaceType = &GetTerrain()->m_SSurfaceType[m_nSID][min((int)pTypes[i], (int)SRangeInfo::e_undefined)];
+			m_lstSurfaceTypeInfo[i].pSurfaceType = &GetTerrain()->m_SSurfaceType[min((int)pTypes[i], (int)SRangeInfo::e_undefined)];
 
 		if (!m_pChilds)
 		{
@@ -210,11 +210,7 @@ int CTerrainNode::GetData(byte*& pData, int& nDataSize, EEndian eEndian, SHotUpd
 		// get node data
 		STerrainNodeChunk* pCunk = (STerrainNodeChunk*)pData;
 		pCunk->nChunkVersion = TERRAIN_NODE_CHUNK_VERSION;
-#ifdef SEG_WORLD
-		pCunk->boxHeightmap = this->m_boxHeigtmapLocal;
-#else
 		pCunk->boxHeightmap = boxWS;
-#endif
 		pCunk->bHasHoles = m_bHasHoles;
 		pCunk->fOffset = m_rangeInfo.fOffset;
 		pCunk->fRange = m_rangeInfo.fRange;

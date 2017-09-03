@@ -177,7 +177,7 @@ void CDecalRenderNode::CreateDecalOnStaticObjects()
 
 void CDecalRenderNode::CreateDecalOnTerrain()
 {
-	float terrainHeight(GetTerrain()->GetZApr(m_decalProperties.m_pos.x, m_decalProperties.m_pos.y, m_nSID));
+	float terrainHeight(GetTerrain()->GetZApr(m_decalProperties.m_pos.x, m_decalProperties.m_pos.y));
 	float terrainDelta(m_decalProperties.m_pos.z - terrainHeight);
 	if (terrainDelta < m_decalProperties.m_radius && terrainDelta > -0.5f)
 	{

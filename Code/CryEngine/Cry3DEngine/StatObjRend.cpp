@@ -46,31 +46,6 @@ void CStatObj::Render(const SRendParams& rParams, const SRenderingPassInfo& pass
 	CRenderObject* pObj = GetRenderer()->EF_GetObject_Temp(passInfo.ThreadID());
 	FillRenderObject(rParams, rParams.pRenderNode, m_pMaterial, NULL, pObj, passInfo);
 
-#ifdef SEG_WORLD
-	if (GetISystem()->GetIConsole()->GetCVar("sw_debugInfo")->GetIVal() == 4)
-	{
-		//////////////////////////////////////////////////////////////////////////
-		// Show colored sw object.
-		//////////////////////////////////////////////////////////////////////////
-
-		ColorB clr = ColorB(0, 255, 0, 255);
-		if (rParams.nCustomFlags & COB_SW_GLOBAL)
-		{
-			clr = ColorB(255, 0, 0, 255);
-		}
-		else if (rParams.nCustomFlags & COB_SW_CROSSSEG)
-		{
-			clr = ColorB(0, 0, 255, 255);
-		}
-
-		if (pObj)
-		{
-			pObj->m_II.m_AmbColor = ColorF(clr.r / 155.0f, clr.g / 155.0f, clr.b / 155.0f, 1);
-			pObj->m_nMaterialLayers = 0;
-		}
-	}
-#endif //SEG_WORLD
-
 	RenderInternal(pObj, rParams.nSubObjHideMask, rParams.lodValue, passInfo);
 }
 
@@ -1026,13 +1001,6 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 			}
 		}
 	}
-
-#ifdef SEG_WORLD
-	if (GetISystem()->GetIConsole()->GetCVar("sw_debugInfo")->GetIVal() == 4)
-	{
-		pRenderObject->m_ObjFlags |= FOB_SELECTED;
-	}
-#endif //SEG_WORLD
 
 	if ((m_nFlags & STATIC_OBJECT_COMPOUND) && !m_bMerged)
 	{

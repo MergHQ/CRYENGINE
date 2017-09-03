@@ -102,10 +102,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 
 	m_objectID = 0;
 
-#ifdef SEG_WORLD
-	m_bLocalSeg = false;
-#endif
-
 	//////////////////////////////////////////////////////////////////////////
 	// Initialize basic parameters.
 	//////////////////////////////////////////////////////////////////////////
@@ -1022,9 +1018,6 @@ void CEntity::InvalidateTM(int nWhyFlags, bool bRecalcPhyBounds)
 	{
 		SEntityEvent event(ENTITY_EVENT_XFORM);
 		event.nParam[0] = nWhyFlags;
-#ifdef SEG_WORLD
-		event.nParam[1] = bRecalcPhyBounds;
-#endif
 		SendEvent(event);
 	}
 }

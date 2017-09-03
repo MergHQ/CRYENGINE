@@ -895,7 +895,7 @@ void CVisArea::UpdateOcclusionFlagInTerrain()
 	if (m_bAffectedByOutLights && !m_bThisIsPortal)
 	{
 		Vec3 vCenter = GetAABBox()->GetCenter();
-		if (vCenter.z < GetTerrain()->GetZApr(vCenter.x, vCenter.y, GetDefSID()))
+		if (vCenter.z < GetTerrain()->GetZApr(vCenter.x, vCenter.y))
 		{
 			AABB box = *GetAABBox();
 			box.min.z = 0;
@@ -904,7 +904,7 @@ void CVisArea::UpdateOcclusionFlagInTerrain()
 			box.max += Vec3(8, 8, 8);
 			PodArray<CTerrainNode*>& lstResult = s_tmpLstTerrainNodeResult;
 			lstResult.Clear();
-			GetTerrain()->IntersectWithBox(box, &lstResult, GetDefSID());
+			GetTerrain()->IntersectWithBox(box, &lstResult);
 			for (int i = 0; i < lstResult.Count(); i++)
 				if (lstResult[i]->m_nTreeLevel <= 2)
 					lstResult[i]->m_bNoOcclusion = true;
@@ -1454,7 +1454,7 @@ bool CVisAreaManager::SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const
 			pVisArea = pCurrentPortal;
 			if (!pVisArea->m_pObjectsTree)
 			{
-				pVisArea->m_pObjectsTree = COctreeNode::Create(DEFAULT_SID, pVisArea->m_boxArea, pVisArea);
+				pVisArea->m_pObjectsTree = COctreeNode::Create(pVisArea->m_boxArea, pVisArea);
 			}
 			pVisArea->m_pObjectsTree->InsertObject(pEnt, objBox, fObjRadiusSqr, vEntCenter);
 			break;
@@ -1476,7 +1476,7 @@ bool CVisAreaManager::SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const
 				pVisArea = pCurrentPortal;
 				if (!pVisArea->m_pObjectsTree)
 				{
-					pVisArea->m_pObjectsTree = COctreeNode::Create(DEFAULT_SID, pVisArea->m_boxArea, pVisArea);
+					pVisArea->m_pObjectsTree = COctreeNode::Create(pVisArea->m_boxArea, pVisArea);
 				}
 
 				pVisArea->m_pObjectsTree->InsertObject(pEnt, objBox, fObjRadiusSqr, vEntCenter);
@@ -1498,7 +1498,7 @@ bool CVisAreaManager::SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const
 				pVisArea = pCurrentVisArea;
 				if (!pVisArea->m_pObjectsTree)
 				{
-					pVisArea->m_pObjectsTree = COctreeNode::Create(DEFAULT_SID, pVisArea->m_boxArea, pVisArea);
+					pVisArea->m_pObjectsTree = COctreeNode::Create(pVisArea->m_boxArea, pVisArea);
 				}
 				pVisArea->m_pObjectsTree->InsertObject(pEnt, objBox, fObjRadiusSqr, vEntCenter);
 				break;

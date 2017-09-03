@@ -3023,8 +3023,6 @@ void CVehicleSeat::OnCharacterChange()
 //------------------------------------------------------------------------
 void CVehicleSeat::OffsetPosition(const Vec3& delta)
 {
-#ifdef SEG_WORLD
 	for (TVehicleViewVector::iterator it = m_views.begin(); it != m_views.end(); ++it)
 		(*it)->OffsetPosition(delta);
-#endif
 }

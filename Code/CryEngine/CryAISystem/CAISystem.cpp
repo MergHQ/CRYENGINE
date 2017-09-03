@@ -2061,11 +2061,7 @@ IAIGroup* CAISystem::GetIAIGroup(int nGroupID)
 //====================================================================
 // ReadAreasFromFile
 //====================================================================
-#if defined(SEG_WORLD)
-void CAISystem::ReadAreasFromFile(const char* fileNameAreas, const Vec3& vSegmentOffset)
-#else
 void CAISystem::ReadAreasFromFile(const char* fileNameAreas)
-#endif
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Navigation, 0, "Areas (%s)", fileNameAreas);
 	LOADING_TIME_PROFILE_SECTION
@@ -2089,18 +2085,8 @@ void CAISystem::ReadAreasFromFile(const char* fileNameAreas)
 
 		if (iNumber >= BAI_AREA_FILE_VERSION_WRITE)
 		{
-#if defined(SEG_WORLD)
-			m_pNavigation->ReadAreasFromFile(file, iNumber, vSegmentOffset);
-#else
 			m_pNavigation->ReadAreasFromFile(file, iNumber);
-#endif
 		}
-
-#if defined(SEG_WORLD)
-		// don't flush all areas here if we're in segmented world
-		if (!gEnv->p3DEngine->GetSegmentsManager()) //@TODO: make seg-world manager available from gEnv.
-			FlushAllAreas();
-#endif
 
 		unsigned numAreas;
 
@@ -2192,13 +2178,11 @@ void CAISystem::LoadMNM(const char* szLevel, const char* szMission, bool bAfterE
 	/// First clear any previous data, and then load stored meshes
 	/// Note smart objects must go after, they will link to the mesh after is loaded
 	gAIEnv.pNavigationSystem->Clear();
-	ISegmentsManager* pSegmentsManager = gEnv->p3DEngine->GetSegmentsManager();
-	if (gEnv->IsEditor() || !pSegmentsManager)
-	{
-		char mnmFileName[1024] = { 0 };
-		cry_sprintf(mnmFileName, "%s/mnmnav%s.bai", szLevel, szMission);
-		gAIEnv.pNavigationSystem->ReadFromFile(mnmFileName, bAfterExporting);
-	}
+
+	char mnmFileName[1024] = { 0 };
+	cry_sprintf(mnmFileName, "%s/mnmnav%s.bai", szLevel, szMission);
+	gAIEnv.pNavigationSystem->ReadFromFile(mnmFileName, bAfterExporting);
+
 #ifdef DEDICATED_SERVER
 	else
 	{

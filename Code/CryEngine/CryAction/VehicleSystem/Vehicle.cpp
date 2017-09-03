@@ -5942,7 +5942,6 @@ void CVehicle::DebugReorient()
 
 void CVehicle::OffsetPosition(const Vec3& delta)
 {
-#ifdef SEG_WORLD
 	// go through all seats, not just driver...
 	for (TVehicleSeatVector::iterator it = m_seats.begin(); it != m_seats.end(); ++it)
 	{
@@ -5952,5 +5951,4 @@ void CVehicle::OffsetPosition(const Vec3& delta)
 			pSeat->OffsetPosition(delta);
 		}
 	}
-#endif
 }

@@ -436,18 +436,6 @@ struct IEntity
 	static constexpr int CREATE_NEW_UNIQUE_TIMER_ID = -666;
 	static constexpr int KILL_ALL_TIMER = -1;
 
-#ifdef SEG_WORLD
-	enum ESWObjFlag
-	{
-		ESWOF_Normal   = 0x00,
-		ESWOF_CrossSeg = 0x01,
-		ESWOF_Global   = 0x02
-	};
-
-	virtual void SetLocalSeg(bool bL) = 0;
-	virtual bool IsLocalSeg() const = 0;
-#endif //SEG_WORLD
-
 	struct SRenderNodeParams
 	{
 		uint8             lodRatio = 100;                  //!< LOD ratio
@@ -1255,12 +1243,6 @@ public:
 
 	//! \return the last time (as set by the system timer) when the entity was last seen.
 	virtual float GetLastSeenTime() const = 0;
-
-#ifdef SEG_WORLD
-	//! Draw a debug view of this entity geometry
-	virtual unsigned int GetSwObjDebugFlag() const = 0;
-	virtual void         SetSwObjDebugFlag(unsigned int uiVal) = 0;
-#endif //SEG_WORLD
 
 	//! ObjectID that corresponds to editor base objects. This is used for selection and highlighting
 	//! so it should be set by editor and have a 1-1 correspondence with a baseobject. This is intended as a

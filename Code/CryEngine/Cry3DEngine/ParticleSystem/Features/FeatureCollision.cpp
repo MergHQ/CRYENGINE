@@ -225,7 +225,7 @@ bool RayWorldIntersection(SContactPoint& contact, const Vec3& startIn, const Vec
 	{
 		objectFilter &= ~ent_terrain;
 		CHeightMap::SRayTrace rt;
-		if (Cry3DEngineBase::GetTerrain()->RayTrace(start, start + ray, &rt, 0))
+		if (Cry3DEngineBase::GetTerrain()->RayTrace(start, start + ray, &rt))
 		{
 			contact.m_point = rt.vHit;
 			contact.m_normal = rt.vNorm;

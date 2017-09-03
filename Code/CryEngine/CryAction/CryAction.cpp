@@ -178,8 +178,6 @@
 
 #include <CrySystem/Scaleform/IFlashUI.h>
 
-#include "SegmentedWorld/SegmentedWorld.h"
-
 #include "LipSync/LipSync_TransitionQueue.h"
 #include "LipSync/LipSync_FacialInstance.h"
 
@@ -363,7 +361,6 @@ CCryAction::CCryAction()
 	m_pCooperativeAnimationManager(NULL),
 	m_pGameSessionHandler(0),
 	m_pAIProxyManager(0),
-	m_pSegmentedWorld(0),
 	m_pCustomActionManager(0),
 	m_pCustomEventManager(0),
 	m_pPhysicsQueues(0),
@@ -2400,11 +2397,6 @@ bool CCryAction::CompleteInit()
 		m_pAIProxyManager->Init();
 	}
 
-#ifdef SEG_WORLD
-	if (!gEnv->IsEditor())
-		m_pSegmentedWorld = new CSegmentedWorld();
-#endif
-
 	// in pure game mode we load the equipment packs from disk
 	// in editor mode, this is done in GameEngine.cpp
 	if ((m_pItemSystem) && (gEnv->IsEditor() == false))
@@ -2665,7 +2657,6 @@ void CCryAction::ShutdownEngine()
 
 	SAFE_DELETE(m_pDevMode);
 	SAFE_DELETE(m_pCallbackTimer);
-	SAFE_DELETE(m_pSegmentedWorld);
 
 	CSignalTimer::Shutdown();
 	CRangeSignaling::Shutdown();
@@ -2815,11 +2806,6 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 		}
 
 		const bool bGameWasPaused = bGameIsPaused;
-
-		if (!bGameIsPaused && m_pSegmentedWorld)
-		{
-			m_pSegmentedWorld->Update();
-		}
 
 		bRetRun = m_pSystem->Update(updateFlags, updateLoopPaused);
 #ifdef ENABLE_LW_PROFILERS
@@ -3049,9 +3035,6 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 
 	if (!bInLevelLoad)
 		m_pGameObjectSystem->PostUpdate(delta);
-
-	if (m_pSegmentedWorld)
-		m_pSegmentedWorld->PostUpdate();
 
 	CRangeSignaling::ref().SetDebug(m_pDebugRangeSignaling->GetIVal() == 1);
 	CRangeSignaling::ref().Update(delta);
@@ -5489,10 +5472,6 @@ void CCryAction::StopNetworkStallTicker()
 
 void CCryAction::GoToSegment(int x, int y)
 {
-	if (m_pSegmentedWorld)
-	{
-		m_pSegmentedWorld->MoveToSegment(x, y);
-	}
 }
 
 // TypeInfo implementations for CryAction

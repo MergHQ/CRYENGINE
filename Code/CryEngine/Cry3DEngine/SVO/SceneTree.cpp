@@ -307,13 +307,13 @@ bool CSvoEnv::Render()
 
 	CollectAnalyticalOccluders();
 
-	if (Get3DEngine()->m_pObjectsTree[0])
+	if (Get3DEngine()->m_pObjectsTree)
 	{
 		m_pGlobalSpecCM = 0;
 		m_fGlobalSpecCM_Mult = 0;
 
 		PodArray<IRenderNode*> arrObjects;
-		Get3DEngine()->m_pObjectsTree[0]->GetObjectsByType(arrObjects, eERType_Light, &m_worldBox, 0, false);
+		Get3DEngine()->m_pObjectsTree->GetObjectsByType(arrObjects, eERType_Light, &m_worldBox, 0, (uint64)~0, false);
 
 		float fMaxRadius = 999;
 

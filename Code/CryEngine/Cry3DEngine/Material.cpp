@@ -259,7 +259,7 @@ void CMatInfo::UpdateMaterialFlags()
 		static int nLastUpdateFrameId = 0;
 		if (gEnv->IsEditing() && GetTerrain() && GetVisAreaManager() && nLastUpdateFrameId != GetRenderer()->GetFrameID())
 		{
-			GetTerrain()->MarkAllSectorsAsUncompiled(0);
+			GetTerrain()->MarkAllSectorsAsUncompiled();
 			GetVisAreaManager()->MarkAllSectorsAsUncompiled();
 			nLastUpdateFrameId = GetRenderer()->GetFrameID();
 		}

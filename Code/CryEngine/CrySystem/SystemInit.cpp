@@ -2050,12 +2050,6 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 	}
 	AddCVarGroupDirectory("Config/CVarGroups");
 
-#ifdef SEG_WORLD
-	int maxStdio = gEnv->pConsole->GetCVar("sys_max_stdio")->GetIVal();
-	int res = _setmaxstdio(maxStdio);
-	assert(res != -1);
-#endif
-
 #if defined(USE_PATCH_PAK)
 	LoadPatchPaks();
 #endif
@@ -5324,10 +5318,6 @@ void CSystem::CreateSystemVars()
 	m_pPhysicsLibrary = REGISTER_STRING("p_physics_library", p_physics_library_default, VF_DUMPTODISK,
 	                                    "Sets the physics library to be used. Default is 'CryPhysics'"
 	                                    "Specify in system.cfg like this: p_physics_library = \"CryPhysics\"");
-
-#ifdef SEG_WORLD
-	REGISTER_INT("sys_max_stdio", 2048, 0, "Sets a maximum for the number of simultaneously open files at the stdio level");
-#endif
 
 	REGISTER_INT("sys_system_timer_resolution", 1, VF_NULL, "(Windows only) Value of the system timer resolution in milliseconds (ms)");
 

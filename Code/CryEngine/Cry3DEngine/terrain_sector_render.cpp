@@ -447,7 +447,6 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 
 		pTerrainRenderObject->m_II.m_Matrix.SetIdentity();
 		Vec3 vOrigin(m_nOriginX, m_nOriginY, 0);
-		vOrigin += GetTerrain()->m_arrSegmentOrigns[m_nSID];
 		pTerrainRenderObject->m_II.m_Matrix.SetTranslation(vOrigin);
 		pTerrainRenderObject->m_ObjFlags |= FOB_TRANS_TRANSLATE;
 
@@ -688,7 +687,6 @@ void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
 	// keep often used variables on stack
 	const int nOriginX = m_nOriginX;
 	const int nOriginY = m_nOriginY;
-	const int nSID = m_nSID;
 	const int nTerrainSize = CTerrain::GetTerrainSize();
 	CTerrain* pTerrain = GetTerrain();
 
@@ -698,7 +696,7 @@ void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
 		{
 			float _x = CLAMP(x, nOriginX, nOriginX + nSectorSize);
 			float _y = CLAMP(y, nOriginY, nOriginY + nSectorSize);
-			float _z = pTerrain->GetZ(_x, _y, nSID);
+			float _z = pTerrain->GetZ(_x, _y);
 
 			SVF_P2S_N4B_C4B_T1F vert;
 
@@ -711,10 +709,10 @@ void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
 			}
 
 			// set terrain surface normal
-			SetVertexNormal(x, y, stepSize, pTerrain, nTerrainSize, nSID, vert);
+			SetVertexNormal(x, y, stepSize, pTerrain, nTerrainSize, vert);
 
 			// set terrain surface type
-			SetVertexSurfaceType(x, y, stepSize, pTerrain, nSID, vert);
+			SetVertexSurfaceType(x, y, stepSize, pTerrain, vert);
 
 			m_pUpdateTerrainTempData->m_lstTmpVertArray.Add(vert);
 		}
@@ -724,7 +722,7 @@ void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
 
 	if (!m_nTreeLevel && Get3DEngine()->m_bIntegrateObjectsIntoTerrain)
 	{
-		AppendTrianglesFromObjects(nOriginX, nOriginY, pTerrain, nSID, stepSize, nTerrainSize);
+		AppendTrianglesFromObjects(nOriginX, nOriginY, pTerrain, stepSize, nTerrainSize);
 	}
 }
 
@@ -753,7 +751,7 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRend
 	{
 		for (float y = 0; y < fSectorSizeSB; y += stepSize)
 		{
-			if (!m_bHasHoles || !pTerrain->GetHole(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep, m_nSID))
+			if (!m_bHasHoles || !pTerrain->GetHole(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep))
 			{
 				// convert to units
 				int xu = int(x * CTerrain::GetInvUnitSize());
@@ -761,7 +759,7 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRend
 				int su = int(stepSize * CTerrain::GetInvUnitSize());
 				int ssu = int(fSectorSizeSB * CTerrain::GetInvUnitSize());
 
-				if (pTerrain->IsMeshQuadFlipped(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep, stepSize, 0))
+				if (pTerrain->IsMeshQuadFlipped(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep, stepSize))
 				{
 					pSI->AddIndex(xu + su, yu, su, ssu);
 					pSI->AddIndex(xu + su, yu + su, su, ssu);
@@ -867,7 +865,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 	if (passInfo.RenderTerrainDetailMaterial())
 	{
 		// build all indices
-		GenerateIndicesForAllSurfaces(pRenderMesh, m_bUpdateOnlyBorders, pLeafData->m_arrpNonBorderIdxNum, m_pUpdateTerrainTempData->m_StripsInfo.nNonBorderIndicesCount, 0, m_nSID, m_pUpdateTerrainTempData);
+		GenerateIndicesForAllSurfaces(pRenderMesh, m_bUpdateOnlyBorders, pLeafData->m_arrpNonBorderIdxNum, m_pUpdateTerrainTempData->m_StripsInfo.nNonBorderIndicesCount, 0, m_pUpdateTerrainTempData);
 
 		m_lstReadyTypes.Clear(); // protection from duplications in palette of types
 
@@ -982,7 +980,7 @@ int GetVecProjectId(const Vec3& vNorm)
 	return nOpenId;
 }
 
-void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, int nSID, CUpdateTerrainTempData* pUpdateTerrainTempData)
+void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, CUpdateTerrainTempData* pUpdateTerrainTempData)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -1013,7 +1011,7 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 				arrMat3DFlag[s] = pSurfaceTypeInfos[s].pSurfaceType->IsMaterial3D();
 		}
 		else
-			arrMat3DFlag[s] = GetTerrain()->GetSurfaceTypes(nSID)[s].IsMaterial3D();
+			arrMat3DFlag[s] = GetTerrain()->GetSurfaceTypes()[s].IsMaterial3D();
 	}
 
 	int nSrcCount = 0;
@@ -1454,7 +1452,7 @@ uint32 CTerrainNode::GetMaterialsModificationId()
 }
 
 // add triangles (from marked objects) intersecting terrain
-void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const int nSID, const float stepSize, const int nTerrainSize)
+void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const float stepSize, const int nTerrainSize)
 {
 	AABB aabbTNode = GetBBox();
 	float fHeightMapMax = aabbTNode.max.z;
@@ -1547,7 +1545,7 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 
 								triBox.Add(vPosWS[v]);
 
-								fElev[v] = GetTerrain()->GetZApr(vPosWS[v].x, vPosWS[v].y, 0);
+								fElev[v] = GetTerrain()->GetZApr(vPosWS[v].x, vPosWS[v].y);
 
 								fElevMin = min(fElevMin, fElev[v]);
 								fElevMax = max(fElevMax, fElev[v]);
@@ -1590,7 +1588,7 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 									{
 										// set terrain surface normal
 										Vec3 vTerrainNorm;
-										SetVertexNormal(x, y, stepSize, pTerrain, nTerrainSize, nSID, vert, &vTerrainNorm);
+										SetVertexNormal(x, y, stepSize, pTerrain, nTerrainSize, vert, &vTerrainNorm);
 
 										// use terrain normal near the ground
 										float fLerp = SATURATE((vPosWS[v].z - fElev[v]) * 2.f);
@@ -1601,7 +1599,7 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 										vert.normal.bcolor[3] = 0;
 
 										// set terrain surface type
-										SetVertexSurfaceType(x, y, stepSize, pTerrain, nSID, vert);
+										SetVertexSurfaceType(x, y, stepSize, pTerrain, vert);
 
 										nIndex = m_pUpdateTerrainTempData->m_lstTmpVertArray.Count();
 
@@ -1623,19 +1621,12 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 	}
 }
 
-void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, const int nSID, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm /*= nullptr*/)
+void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm /*= nullptr*/)
 {
-#ifdef SEG_WORLD
-	bool bOutOfBound = (x + iLookupRadius) >= nTerrainSize || x <= iLookupRadius;
-	float sx = pTerrain->GetZ(x + iLookupRadius, y, nSID, bOutOfBound) - pTerrain->GetZ(x - iLookupRadius, y, nSID, bOutOfBound);
-
-	bOutOfBound = (y + iLookupRadius) >= nTerrainSize || y <= iLookupRadius;
-	float sy = pTerrain->GetZ(x, y + iLookupRadius, nSID, bOutOfBound) - pTerrain->GetZ(x, y - iLookupRadius, nSID, bOutOfBound);
-#else
 	float sx;
 	if ((x + iLookupRadius) < nTerrainSize && x > iLookupRadius)
 	{
-		sx = pTerrain->GetZ(x + iLookupRadius, y, nSID) - pTerrain->GetZ(x - iLookupRadius, y, nSID);
+		sx = pTerrain->GetZ(x + iLookupRadius, y) - pTerrain->GetZ(x - iLookupRadius, y);
 	}
 	else
 	{
@@ -1645,13 +1636,13 @@ void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, 
 	float sy;
 	if ((y + iLookupRadius) < nTerrainSize && y > iLookupRadius)
 	{
-		sy = pTerrain->GetZ(x, y + iLookupRadius, nSID) - pTerrain->GetZ(x, y - iLookupRadius, nSID);
+		sy = pTerrain->GetZ(x, y + iLookupRadius) - pTerrain->GetZ(x, y - iLookupRadius);
 	}
 	else
 	{
 		sy = 0;
 	}
-#endif
+
 	// z component of normal will be used as point brightness ( for burned terrain )
 	Vec3 vNorm(-sx, -sy, iLookupRadius * 2.0f);
 	vNorm.Normalize();
@@ -1668,9 +1659,9 @@ void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, 
 	SwapEndian(vert.normal.dcolor, eLittleEndian);
 }
 
-void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, const int nSID, SVF_P2S_N4B_C4B_T1F &vert)
+void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, SVF_P2S_N4B_C4B_T1F &vert)
 {
-	SSurfaceTypeItem st = pTerrain->GetSurfaceTypeItem(x, y, nSID);
+	SSurfaceTypeItem st = pTerrain->GetSurfaceTypeItem(x, y);
 
 	if (st.GetHole())
 	{
@@ -1679,7 +1670,7 @@ void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerra
 		{
 			for (float j = -stepSize; j <= stepSize && (st.GetHole()); j += stepSize)
 			{
-				st = pTerrain->GetSurfaceTypeID(x + i, y + j, nSID);
+				st = pTerrain->GetSurfaceTypeID(x + i, y + j);
 			}
 		}
 	}

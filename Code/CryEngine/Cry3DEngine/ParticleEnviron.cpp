@@ -349,7 +349,7 @@ bool SPhysEnviron::PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const
 	{
 		nEnvFlags &= ~ENV_TERRAIN;
 		CHeightMap::SRayTrace rt;
-		if (GetTerrain()->RayTrace(vStart, vStart + vMove, &rt, GetDefSID()))
+		if (GetTerrain()->RayTrace(vStart, vStart + vMove, &rt))
 		{
 			if ((fMoveNorm = rt.vNorm * vMove) < 0.f)
 			{

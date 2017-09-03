@@ -61,12 +61,8 @@ void OnDynamicDistanceShadowsVarChange(ICVar* pArgs)
 
 void OnVegetationVisibleChange(ICVar* pArgs)
 {
-	if (Cry3DEngineBase::Get3DEngine()->m_pObjectsTree.empty())
-	{
-		return;
-	}
+	COctreeNode* pObjectsTree = Cry3DEngineBase::Get3DEngine()->m_pObjectsTree;
 
-	COctreeNode* pObjectsTree = Cry3DEngineBase::Get3DEngine()->m_pObjectsTree[0];
 	if (pObjectsTree && !pObjectsTree->IsEmpty())
 	{
 		if (pArgs->GetIVal() != 0)

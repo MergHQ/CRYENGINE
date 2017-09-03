@@ -575,11 +575,8 @@ int CPhysStreamer::CreatePhysicalEntity(void* pForeignData, int iForeignData, in
 int CPhysStreamer::CreatePhysicalEntitiesInBox(const Vec3& boxMin, const Vec3& boxMax)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
-	for (int nSID = 0; nSID < ((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree.Count(); nSID++)
-	{
-		if (((C3DEngine*)gEnv->p3DEngine)->IsSegmentSafeToUse(nSID))
-			((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree[nSID]->PhysicalizeInBox(AABB(boxMin, boxMax));
-	}
+	if (((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree)
+		((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree->PhysicalizeInBox(AABB(boxMin, boxMax));
 	if (((C3DEngine*)gEnv->p3DEngine)->m_pVisAreaManager)
 		((C3DEngine*)gEnv->p3DEngine)->m_pVisAreaManager->PhysicalizeInBox(AABB(boxMin, boxMax));
 	return 1;
@@ -588,11 +585,8 @@ int CPhysStreamer::CreatePhysicalEntitiesInBox(const Vec3& boxMin, const Vec3& b
 int CPhysStreamer::DestroyPhysicalEntitiesInBox(const Vec3& boxMin, const Vec3& boxMax)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
-	for (int nSID = 0; nSID < ((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree.Count(); nSID++)
-	{
-		if (((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree[nSID])
-			((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree[nSID]->DephysicalizeInBox(AABB(boxMin, boxMax));
-	}
+	if (((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree)
+		((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree->DephysicalizeInBox(AABB(boxMin, boxMax));
 	if (((C3DEngine*)gEnv->p3DEngine)->m_pVisAreaManager)
 		((C3DEngine*)gEnv->p3DEngine)->m_pVisAreaManager->DephysicalizeInBox(AABB(boxMin, boxMax));
 	return 1;

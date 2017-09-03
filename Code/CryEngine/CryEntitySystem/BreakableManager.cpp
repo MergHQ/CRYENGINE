@@ -1715,17 +1715,6 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		pRopeNew->SetMatrix(pSrcEntity->GetWorldTM());
 		pRopeNew->SetPhysics(pCreateEvent->pEntNew);
 
-#ifdef SEG_WORLD
-		// fix rope streaming crash
-		ISegmentsManager* pSM = gEnv->p3DEngine->GetSegmentsManager();
-		if (pSM)
-		{
-			// push the new Entity to segnode's EntitesArray
-			bool bLocal = pSrcEntity->IsLocalSeg();
-			pSM->PushEntityToSegment(pNewEntity->GetId(), bLocal);
-		}
-#endif
-
 		return;
 	}
 

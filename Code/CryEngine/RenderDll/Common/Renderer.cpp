@@ -305,7 +305,6 @@ void CRenderer::InitRenderer()
 	m_IdentityMatrix.SetIdentity();
 
 	m_vProjMatrixSubPixoffset = Vec2(0.0f, 0.0f);
-	m_vSegmentedWorldOffset   = Vec3(ZERO);
 
 	m_RP.m_newOcclusionCameraProj.SetIdentity();
 	m_RP.m_newOcclusionCameraView.SetIdentity();
@@ -4471,14 +4470,7 @@ CRenderView* CRenderer::GetRenderViewForThread(int nThreadID, IRenderView::EView
 
 Matrix44A CRenderer::GetCameraMatrix()
 {
-	if (m_vSegmentedWorldOffset.IsZero())
-		return m_CameraMatrix;
-
-	static const Matrix33 matRotX = Matrix33::CreateRotationX(-gf_PI / 2);
-	Matrix34 matCam               = GetCamera().GetMatrix();
-	matCam.SetTranslation(matCam.GetTranslation() + m_vSegmentedWorldOffset);
-	Matrix44A matView = Matrix44A(matRotX * matCam.GetInverted()).GetTransposed();
-	return matView;
+	return m_CameraMatrix;
 }
 
 const Matrix44A& CRenderer::GetPreviousFrameCameraMatrix() const
@@ -4489,13 +4481,6 @@ const Matrix44A& CRenderer::GetPreviousFrameCameraMatrix() const
 void CRenderer::SetPreviousFrameCameraMatrix(const Matrix44A& m)
 {
 	gRenDev->m_CameraMatrixPrev[m_CurViewportID][m_CurRenderEye] = m;
-}
-
-void CRenderer::OffsetPosition(const Vec3& delta)
-{
-#ifdef SEG_WORLD
-	m_vSegmentedWorldOffset = delta;
-#endif
 }
 
 void CRenderer::GetPolyCount(int& nPolygons, int& nShadowPolys)

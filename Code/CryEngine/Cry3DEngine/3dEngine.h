@@ -379,7 +379,7 @@ public:
 	virtual void      SetupDistanceFog();
 	virtual IStatObj* LoadStatObj(const char* szFileName, const char* szGeomName = NULL, /*[Out]*/ IStatObj::SSubObject** ppSubObject = NULL, bool bUseStreaming = true, unsigned long nLoadingFlags = 0);
 	virtual IStatObj* FindStatObjectByFilename(const char* filename);
-	virtual void      RegisterEntity(IRenderNode* pEnt, int nSID = -1, int nSIDConsideredSafe = -1);
+	virtual void      RegisterEntity(IRenderNode* pEnt);
 	virtual void      SelectEntity(IRenderNode* pEnt);
 
 #ifndef _RELEASE
@@ -407,7 +407,7 @@ public:
 
 	virtual IStatObj* LoadDesignerObject(int nVersion, const char* szBinaryStream, int size);
 
-	void              AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsideredSafe, uint32 nFrameID, bool bUnRegisterOnly);
+	void              AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRegisterOnly);
 	bool              UnRegisterEntityImpl(IRenderNode* pEnt);
 	virtual void      UpdateObjectsLayerAABB(IRenderNode* pEnt);
 
@@ -425,7 +425,7 @@ public:
 	virtual void                     CreateDecal(const CryEngineDecalInfo& Decal);
 	virtual void                     DrawFarTrees(const SRenderingPassInfo& passInfo);
 	virtual void                     GenerateFarTrees(const SRenderingPassInfo& passInfo);
-	virtual float                    GetTerrainElevation(float x, float y, int nSID = GetDefSID());
+	virtual float                    GetTerrainElevation(float x, float y);
 	virtual float                    GetTerrainElevation3D(Vec3 vPos);
   virtual float                    GetTerrainZ(float x, float y);
   virtual bool                     GetTerrainHole(float x, float y);
@@ -450,7 +450,7 @@ public:
 	virtual bool                     GetSnowFallParams(int& nSnowFlakeCount, float& fSnowFlakeSize, float& fSnowFallBrightness, float& fSnowFallGravityScale, float& fSnowFallWindScale, float& fSnowFallTurbulence, float& fSnowFallTurbulenceFreq);
 	virtual void                     OnExplosion(Vec3 vPos, float fRadius, bool bDeformTerrain = true);
 	//! For editor
-	virtual void                     RemoveAllStaticObjects(int nSID);
+	virtual void                     RemoveAllStaticObjects();
 	virtual void                     SetTerrainSurfaceType(int x, int y, int nType);
 	virtual void                     SetTerrainSectorTexture(const int nTexSectorX, const int nTexSectorY, unsigned int textureId);
 	virtual void                     SetPhysMaterialEnumerator(IPhysMaterialEnumerator* pPhysMaterialEnumerator);
@@ -505,7 +505,7 @@ public:
 	virtual float                     GetSSAOAmount() const;
 	virtual float                     GetSSAOContrast() const;
 	virtual float                     GetGIAmount() const;
-	virtual float                     GetTerrainTextureMultiplier(int nSID) const;
+	virtual float                     GetTerrainTextureMultiplier() const;
 
 	virtual Vec3                      GetAmbientColorFromPosition(const Vec3& vPos, float fRadius = 1.f);
 	virtual void                      FreeRenderNodeState(IRenderNode* pEnt);
@@ -513,9 +513,9 @@ public:
 	virtual void                      SetTerrainBurnedOut(int x, int y, bool bBurnedOut);
 	virtual bool                      IsTerrainBurnedOut(int x, int y);
 	virtual int                       GetTerrainSectorSize();
-	virtual void                      LoadTerrainSurfacesFromXML(XmlNodeRef pDoc, bool bUpdateTerrain, int nSID);
-	virtual bool                      SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup, int nSID);
-	virtual bool                      GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup, int nSID);
+	virtual void                      LoadTerrainSurfacesFromXML(XmlNodeRef pDoc, bool bUpdateTerrain);
+	virtual bool                      SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup);
+	virtual bool                      GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup);
 	virtual void                      ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName);
 	virtual void                      ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate);
 	virtual void                      GetMemoryUsage(ICrySizer* pSizer) const;
@@ -552,9 +552,9 @@ public:
 	virtual void                      DeleteLightSource(ILightSource* pLightSource);
 	virtual const PodArray<CDLight*>* GetStaticLightSources();
 	virtual bool                      IsTerrainHightMapModifiedByGame();
-	virtual bool                      RestoreTerrainFromDisk(int nSID);
+	virtual bool                      RestoreTerrainFromDisk();
 	virtual void                      CheckMemoryHeap();
-	virtual void                      CloseTerrainTextureFile(int nSID);
+	virtual void                      CloseTerrainTextureFile();
 	virtual int                       GetLoadedObjectCount();
 	virtual void                      GetLoadedStatObjArray(IStatObj** pObjectsArray, int& nCount);
 	virtual void                      GetObjectsStreamingStatus(SObjectsStreamingStatus& outStatus);
@@ -697,8 +697,6 @@ public:
 	virtual void           UpdateShaderItems();
 	void                   GetCollisionClass(SCollisionClass& collclass, int tableIndex);
 
-	virtual void           OffsetPosition(Vec3& delta);
-
 public:
 	C3DEngine(ISystem* pSystem);
 	~C3DEngine();
@@ -715,7 +713,7 @@ public:
 	bool CreateDecalInstance(const CryEngineDecalInfo &DecalInfo, class CDecal * pCallerManagedDecal);
 	//void CreateDecalOnCharacterComponents(ICharacterInstance * pChar, const struct CryEngineDecalInfo & decal);
 	Vec3 GetTerrainSurfaceNormal(Vec3 vPos);
-	void LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID);
+	void LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode);
 #if defined(FEATURE_SVO_GI)
 	void LoadTISettings(XmlNodeRef pInputNode);
 #endif
@@ -950,7 +948,7 @@ private:
 	// without calling high level functions like panorama screenshot
 	void RenderInternal(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName);
 
-	void RegisterLightSourceInSectors(CDLight* pDynLight, int nSID, const SRenderingPassInfo& passInfo);
+	void RegisterLightSourceInSectors(CDLight* pDynLight, const SRenderingPassInfo& passInfo);
 
 	bool IsCameraAnd3DEngineInvalid(const SRenderingPassInfo& passInfo, const char* szCaller);
 
@@ -1065,7 +1063,7 @@ public:
 
 	virtual ITerrain*             CreateTerrain(const STerrainInfo& TerrainInfo);
 	void                          DeleteTerrain();
-	bool                          LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable, int nSID, Vec3 vSegmentOrigin);
+	bool                          LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable);
 	bool                          LoadVisAreas(std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable);
 	bool                          LoadUsedShadersList();
 	bool                          PrecreateDecals();
@@ -1123,23 +1121,6 @@ public:
 	static void               GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL, uint64 dwFlags = ~0);
 	static void               MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox, bool bRemoveObjects = false, bool bSkipDecals = false, bool bSkip_ERF_NO_DECALNODE_DECALS = false, bool bSkipDynamicObjects = false, EERType eRNType = eERType_TypesNum);
 
-	virtual ISegmentsManager* GetSegmentsManager() { return m_pSegmentsManager; };
-	virtual void              SetSegmentsManager(ISegmentsManager* pSegmentsManager);
-	virtual bool              IsSegmentOperationInProgress();
-	virtual void              SetSegmentOperationInProgress(bool bActive);
-
-	// Returns true if the segment is completely loaded and prepared to be used/rendered/whatever in game.
-	// If this returns false, DO NOT TOUCH THE SEGMENT OR ANYTHING IN IT. It is probably being streamed in
-	// a background thread and you will race all over its internal structures.
-	inline bool IsSegmentSafeToUse(int nSID)
-	{
-#ifdef SEG_WORLD
-		return m_safeToUseSegments[nSID] != 0;
-#else
-		return !m_pObjectsTree.empty() && m_pObjectsTree[nSID] != NULL;
-#endif
-	}
-
 	void         CreateRenderNodeTempData(SRenderNodeTempData** ppInfo, IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
 	bool         CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempData, IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
 
@@ -1185,9 +1166,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// PUBLIC DATA
 	//////////////////////////////////////////////////////////////////////////
-	PodArray<class COctreeNode*> m_pObjectsTree;
-	PodArray<char>               m_safeToUseSegments;
-	//  class CSceneTree * m_pSceneTree;
+	class COctreeNode*             m_pObjectsTree = nullptr;
 
 	int                            m_idMatLeaves; // for shooting foliages
 	bool                           m_bResetRNTmpDataPool;
@@ -1202,8 +1181,6 @@ public:
 	int                            m_nCustomShadowFrustumCount;
 
 	PodArray<SImageInfo>           m_arrBaseTextureData;
-
-	ISegmentsManager*              m_pSegmentsManager;
 
 	bool                           m_bInShutDown;
 	bool                           m_bInUnload;
@@ -1258,7 +1235,6 @@ private:
 	bool                   m_bLayersActivated;
 	bool                   m_bContentPrecacheRequested;
 	bool                   m_bTerrainTextureStreamingInProgress;
-	bool                   m_bSegmentOperationInProgress;
 
 	// interfaces
 	IPhysMaterialEnumerator* m_pPhysMaterialEnumerator;

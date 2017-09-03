@@ -459,10 +459,6 @@ void CEntitySlot::GetCameraSpacePos(Vec3& cameraSpacePos)
      rParams.dwFObjFlags |= FOB_RENDER_AFTER_POSTPROCESSING;
      }
 
-   #ifdef SEG_WORLD
-     rParams.nCustomFlags |= (1 << (COB_SW_SHIFT + m_pEntity->GetSwObjDebugFlag()));
-   #endif // SEG_WORLD
-
    return CLodValue(wantedLod);
    }
 
@@ -482,10 +478,6 @@ void CEntitySlot::GetCameraSpacePos(Vec3& cameraSpacePos)
      {
      rParams.dwFObjFlags |= FOB_RENDER_AFTER_POSTPROCESSING;
      }
-
-   #ifdef SEG_WORLD
-     rParams.nCustomFlags |= (1 << (COB_SW_SHIFT + m_pEntity->GetSwObjDebugFlag()));
-   #endif // SEG_WORLD
 
      //////////////////////////////////////////////////////////////////////////
 

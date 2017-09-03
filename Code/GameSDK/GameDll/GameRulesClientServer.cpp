@@ -261,13 +261,6 @@ void CGameRules::ClientHit(const HitInfo &hitInfo)
 				pLagOMeter->OnClientRequestHit(hitToSend);
 			}
 #endif
-#ifdef SEG_WORLD
-			ISegmentsManager *pSM = gEnv->p3DEngine->GetSegmentsManager();
-			if(pSM)
-			{
-				hitToSend.pos = pSM->LocalToAbsolutePosition(hitToSend.pos);
-			}
-#endif
 			GetGameObject()->InvokeRMI(SvRequestHit(), hitToSend, eRMI_ToServer);
 
 			if (gEnv->bMultiplayer && g_pGameCVars->g_useNetSyncToSpeedUpRMIs)

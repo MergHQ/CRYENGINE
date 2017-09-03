@@ -397,14 +397,6 @@ public:
 	virtual void  OnRenderNodeVisibilityChange(bool bBecomeVisible) final;
 	virtual float GetLastSeenTime() const final;
 
-	#ifdef SEG_WORLD
-	virtual unsigned int GetSwObjDebugFlag() const             { return m_eSwObjDebugFlag; };
-	virtual void         SetSwObjDebugFlag(unsigned int uiVal) { m_eSwObjDebugFlag = uiVal; };
-
-	virtual void         SetLocalSeg(bool bLocalSeg)           { m_bLocalSeg = bLocalSeg; }
-	virtual bool         IsLocalSeg() const                    { return m_bLocalSeg; }
-	#endif //SEG_WORLD
-
 	void SetCloneLayerId(int cloneLayerId) { m_cloneLayerId = cloneLayerId; }
 	int  GetCloneLayerId() const           { return m_cloneLayerId; }
 
@@ -542,10 +534,6 @@ private:
 
 	mutable unsigned int m_bDirtyForwardDir     : 1;    // Cached world transformed forward vector
 	unsigned int m_bLoadedFromLevelFile : 1;    // Entity was loaded from level file
-	#ifdef SEG_WORLD
-	unsigned int m_eSwObjDebugFlag      : 2;
-	unsigned int m_bLocalSeg            : 1;
-	#endif //SEG_WORLD
 
 	uint8 m_componentChangeState;
 
