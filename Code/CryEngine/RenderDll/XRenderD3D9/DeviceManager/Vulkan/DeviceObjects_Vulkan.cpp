@@ -830,37 +830,38 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	{
 		VkBlendFactor BlendColor;
 		VkBlendFactor BlendAlpha;
+		bool		  bAllowOnAllTargets;
 	};
 
 	static SBlendFactors SrcBlendFactors[GS_BLSRC_MASK >> GS_BLSRC_SHIFT] =
 	{
-		{ (VkBlendFactor)0,                    (VkBlendFactor)0                    }, // UNINITIALIZED BLEND FACTOR
-		{ VK_BLEND_FACTOR_ZERO,                VK_BLEND_FACTOR_ZERO                }, // GS_BLSRC_ZERO
-		{ VK_BLEND_FACTOR_ONE,                 VK_BLEND_FACTOR_ONE                 }, // GS_BLSRC_ONE
-		{ VK_BLEND_FACTOR_DST_COLOR,           VK_BLEND_FACTOR_DST_ALPHA           }, // GS_BLSRC_DSTCOL
-		{ VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA }, // GS_BLSRC_ONEMINUSDSTCOL
-		{ VK_BLEND_FACTOR_SRC_ALPHA,           VK_BLEND_FACTOR_SRC_ALPHA           }, // GS_BLSRC_SRCALPHA
-		{ VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA }, // GS_BLSRC_ONEMINUSSRCALPHA
-		{ VK_BLEND_FACTOR_DST_ALPHA,           VK_BLEND_FACTOR_DST_ALPHA           }, // GS_BLSRC_DSTALPHA
-		{ VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA }, // GS_BLSRC_ONEMINUSDSTALPHA
-		{ VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,  VK_BLEND_FACTOR_SRC_ALPHA_SATURATE  }, // GS_BLSRC_ALPHASATURATE
-		{ VK_BLEND_FACTOR_SRC_ALPHA,           VK_BLEND_FACTOR_ZERO                }, // GS_BLSRC_SRCALPHA_A_ZERO
-		{ VK_BLEND_FACTOR_SRC1_ALPHA,          VK_BLEND_FACTOR_SRC1_ALPHA          }, // GS_BLSRC_SRC1ALPHA
+		{ (VkBlendFactor)0,                    (VkBlendFactor)0,						true },		// UNINITIALIZED BLEND FACTOR
+		{ VK_BLEND_FACTOR_ZERO,                VK_BLEND_FACTOR_ZERO,					true },		// GS_BLSRC_ZERO
+		{ VK_BLEND_FACTOR_ONE,                 VK_BLEND_FACTOR_ONE,						true },		// GS_BLSRC_ONE
+		{ VK_BLEND_FACTOR_DST_COLOR,           VK_BLEND_FACTOR_DST_ALPHA,				true },		// GS_BLSRC_DSTCOL
+		{ VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,		true },		// GS_BLSRC_ONEMINUSDSTCOL
+		{ VK_BLEND_FACTOR_SRC_ALPHA,           VK_BLEND_FACTOR_SRC_ALPHA,				true },		// GS_BLSRC_SRCALPHA
+		{ VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,		true },		// GS_BLSRC_ONEMINUSSRCALPHA
+		{ VK_BLEND_FACTOR_DST_ALPHA,           VK_BLEND_FACTOR_DST_ALPHA,				true },		// GS_BLSRC_DSTALPHA
+		{ VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,		true },		// GS_BLSRC_ONEMINUSDSTALPHA
+		{ VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,  VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,		true },		// GS_BLSRC_ALPHASATURATE
+		{ VK_BLEND_FACTOR_SRC_ALPHA,           VK_BLEND_FACTOR_ZERO,					true },		// GS_BLSRC_SRCALPHA_A_ZERO
+		{ VK_BLEND_FACTOR_SRC1_ALPHA,          VK_BLEND_FACTOR_SRC1_ALPHA,				false },	// GS_BLSRC_SRC1ALPHA
 	};
 
 	static SBlendFactors DstBlendFactors[GS_BLDST_MASK >> GS_BLDST_SHIFT] =
 	{
-		{ (VkBlendFactor)0,                     (VkBlendFactor)0                     }, // UNINITIALIZED BLEND FACTOR
-		{ VK_BLEND_FACTOR_ZERO,                 VK_BLEND_FACTOR_ZERO                 }, // GS_BLDST_ZERO
-		{ VK_BLEND_FACTOR_ONE,                  VK_BLEND_FACTOR_ONE                  }, // GS_BLDST_ONE
-		{ VK_BLEND_FACTOR_SRC_COLOR,            VK_BLEND_FACTOR_SRC_ALPHA            }, // GS_BLDST_SRCCOL
-		{ VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,  VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA  }, // GS_BLDST_ONEMINUSSRCCOL
-		{ VK_BLEND_FACTOR_SRC_ALPHA,            VK_BLEND_FACTOR_SRC_ALPHA            }, // GS_BLDST_SRCALPHA
-		{ VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,  VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA  }, // GS_BLDST_ONEMINUSSRCALPHA
-		{ VK_BLEND_FACTOR_DST_ALPHA,            VK_BLEND_FACTOR_DST_ALPHA            }, // GS_BLDST_DSTALPHA
-		{ VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,  VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA  }, // GS_BLDST_ONEMINUSDSTALPHA
-		{ VK_BLEND_FACTOR_ONE,                  VK_BLEND_FACTOR_ZERO                 }, // GS_BLDST_ONE_A_ZERO
-		{ VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA }, // GS_BLDST_ONEMINUSSRC1ALPHA
+		{ (VkBlendFactor)0,                     (VkBlendFactor)0,						true },		// UNINITIALIZED BLEND FACTOR
+		{ VK_BLEND_FACTOR_ZERO,                 VK_BLEND_FACTOR_ZERO,					true },		// GS_BLDST_ZERO
+		{ VK_BLEND_FACTOR_ONE,                  VK_BLEND_FACTOR_ONE,					true },		// GS_BLDST_ONE
+		{ VK_BLEND_FACTOR_SRC_COLOR,            VK_BLEND_FACTOR_SRC_ALPHA ,				true },		// GS_BLDST_SRCCOL
+		{ VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,  VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,	true },		// GS_BLDST_ONEMINUSSRCCOL
+		{ VK_BLEND_FACTOR_SRC_ALPHA,            VK_BLEND_FACTOR_SRC_ALPHA,				true },		// GS_BLDST_SRCALPHA
+		{ VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,  VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,	true },		// GS_BLDST_ONEMINUSSRCALPHA
+		{ VK_BLEND_FACTOR_DST_ALPHA,            VK_BLEND_FACTOR_DST_ALPHA,				true },		// GS_BLDST_DSTALPHA
+		{ VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,  VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,	true },		// GS_BLDST_ONEMINUSDSTALPHA
+		{ VK_BLEND_FACTOR_ONE,                  VK_BLEND_FACTOR_ZERO,					true },		// GS_BLDST_ONE_A_ZERO
+		{ VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,	false },	// GS_BLDST_ONEMINUSSRC1ALPHA
 	};
 
 	static VkBlendOp BlendOp[GS_BLEND_OP_MASK >> GS_BLEND_OP_SHIFT] =
@@ -881,6 +882,10 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		return EInitResult::Failure;
 
 	const auto& renderTargets = pRenderPassDesc->GetRenderTargets();
+
+	const bool bSrcBlendAllowAllTargets = SrcBlendFactors[(psoDesc.m_RenderState & GS_BLSRC_MASK) >> GS_BLSRC_SHIFT].bAllowOnAllTargets;
+	const bool bDstBlendAllowAllTargets = DstBlendFactors[(psoDesc.m_RenderState & GS_BLDST_MASK) >> GS_BLDST_SHIFT].bAllowOnAllTargets;
+	const bool bBlendAllowAllTargets = bSrcBlendAllowAllTargets && bDstBlendAllowAllTargets;
 
 	for (int i = 0; i < renderTargets.size(); i++)
 	{
@@ -904,6 +909,12 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		{
 			colorBlendAttachmentStates[validBlendAttachmentStateCount].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 			colorBlendAttachmentStates[validBlendAttachmentStateCount].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		}
+
+		// Dual source color blend cannot be enabled for any RT slot but 0
+		if (bBlendAllowAllTargets && i > 0)
+		{
+			colorBlendAttachmentStates[validBlendAttachmentStateCount].blendEnable = false;
 		}
 
 		validBlendAttachmentStateCount++;

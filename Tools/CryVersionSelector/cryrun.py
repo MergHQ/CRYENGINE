@@ -62,6 +62,10 @@ def error_solution_not_found(path):
     sys.stderr.write ("Solution not found in '%s'.\nMake sure to first generate a solution if the project contains C++ code.\n" % path)
     sys.exit (641)
 
+def error_code_folder_not_specified():
+    sys.stderr.write ("The code folder has not been specified in the project file!\n")
+    sys.exit (642)
+
 def print_subprocess (cmd):
     print (' '.join (map (lambda a: '"%s"' % a, cmd)))
 
@@ -173,6 +177,10 @@ def cmd_projgen(args):
     engine_path = get_engine_path()
 
     cmakelists_dir = cryproject.cmakelists_dir(project)
+
+    if not cmakelists_dir:
+        error_code_folder_not_specified()
+
     code_directory = os.path.join (project_path, cmakelists_dir)
 
     # Generate solutions

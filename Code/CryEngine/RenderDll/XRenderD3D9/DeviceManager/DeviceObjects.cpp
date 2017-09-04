@@ -624,54 +624,59 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 		const bool bBlendEnable = (renderState & GS_BLEND_MASK) != 0;
 		blendDesc.RenderTarget[0].BlendEnable = bBlendEnable;
 
-		if (bBlendEnable)
+		struct BlendFactors
 		{
-			struct BlendFactors
-			{
-				D3D11_BLEND BlendColor;
-				D3D11_BLEND BlendAlpha;
-			};
+			D3D11_BLEND BlendColor;
+			D3D11_BLEND BlendAlpha;
+			bool		bAllowOnAllTargets;
+		};
 
-			static BlendFactors SrcBlendFactors[GS_BLSRC_MASK >> GS_BLSRC_SHIFT] =
-			{
-				{ (D3D11_BLEND)0,             (D3D11_BLEND)0             },        // UNINITIALIZED BLEND FACTOR
-				{ D3D11_BLEND_ZERO,           D3D11_BLEND_ZERO           },        // GS_BLSRC_ZERO
-				{ D3D11_BLEND_ONE,            D3D11_BLEND_ONE            },        // GS_BLSRC_ONE
-				{ D3D11_BLEND_DEST_COLOR,     D3D11_BLEND_DEST_ALPHA     },        // GS_BLSRC_DSTCOL
-				{ D3D11_BLEND_INV_DEST_COLOR, D3D11_BLEND_INV_DEST_ALPHA },        // GS_BLSRC_ONEMINUSDSTCOL
-				{ D3D11_BLEND_SRC_ALPHA,      D3D11_BLEND_SRC_ALPHA      },        // GS_BLSRC_SRCALPHA
-				{ D3D11_BLEND_INV_SRC_ALPHA,  D3D11_BLEND_INV_SRC_ALPHA  },        // GS_BLSRC_ONEMINUSSRCALPHA
-				{ D3D11_BLEND_DEST_ALPHA,     D3D11_BLEND_DEST_ALPHA     },        // GS_BLSRC_DSTALPHA
-				{ D3D11_BLEND_INV_DEST_ALPHA, D3D11_BLEND_INV_DEST_ALPHA },        // GS_BLSRC_ONEMINUSDSTALPHA
-				{ D3D11_BLEND_SRC_ALPHA_SAT,  D3D11_BLEND_SRC_ALPHA_SAT  },        // GS_BLSRC_ALPHASATURATE
-				{ D3D11_BLEND_SRC_ALPHA,      D3D11_BLEND_ZERO           },        // GS_BLSRC_SRCALPHA_A_ZERO
-				{ D3D11_BLEND_SRC1_ALPHA,     D3D11_BLEND_SRC1_ALPHA     },        // GS_BLSRC_SRC1ALPHA
-			};
+		static BlendFactors SrcBlendFactors[GS_BLSRC_MASK >> GS_BLSRC_SHIFT] =
+		{
+			{ (D3D11_BLEND)0,             (D3D11_BLEND)0, 					true },        // UNINITIALIZED BLEND FACTOR
+			{ D3D11_BLEND_ZERO,           D3D11_BLEND_ZERO,					true },        // GS_BLSRC_ZERO
+			{ D3D11_BLEND_ONE,            D3D11_BLEND_ONE,					true },        // GS_BLSRC_ONE
+			{ D3D11_BLEND_DEST_COLOR,     D3D11_BLEND_DEST_ALPHA,			true },		   // GS_BLSRC_DSTCOL
+			{ D3D11_BLEND_INV_DEST_COLOR, D3D11_BLEND_INV_DEST_ALPHA,		true },        // GS_BLSRC_ONEMINUSDSTCOL
+			{ D3D11_BLEND_SRC_ALPHA,      D3D11_BLEND_SRC_ALPHA,			true },        // GS_BLSRC_SRCALPHA
+			{ D3D11_BLEND_INV_SRC_ALPHA,  D3D11_BLEND_INV_SRC_ALPHA,		true },        // GS_BLSRC_ONEMINUSSRCALPHA
+			{ D3D11_BLEND_DEST_ALPHA,     D3D11_BLEND_DEST_ALPHA,			true },        // GS_BLSRC_DSTALPHA
+			{ D3D11_BLEND_INV_DEST_ALPHA, D3D11_BLEND_INV_DEST_ALPHA,		true },        // GS_BLSRC_ONEMINUSDSTALPHA
+			{ D3D11_BLEND_SRC_ALPHA_SAT,  D3D11_BLEND_SRC_ALPHA_SAT,		true },        // GS_BLSRC_ALPHASATURATE
+			{ D3D11_BLEND_SRC_ALPHA,      D3D11_BLEND_ZERO,					true },        // GS_BLSRC_SRCALPHA_A_ZERO
+			{ D3D11_BLEND_SRC1_ALPHA,     D3D11_BLEND_SRC1_ALPHA,			false },       // GS_BLSRC_SRC1ALPHA
+		};
 
-			static BlendFactors DstBlendFactors[GS_BLDST_MASK >> GS_BLDST_SHIFT] =
-			{
-				{ (D3D11_BLEND)0,             (D3D11_BLEND)0             },        // UNINITIALIZED BLEND FACTOR
-				{ D3D11_BLEND_ZERO,           D3D11_BLEND_ZERO           },        // GS_BLDST_ZERO
-				{ D3D11_BLEND_ONE,            D3D11_BLEND_ONE            },        // GS_BLDST_ONE
-				{ D3D11_BLEND_SRC_COLOR,      D3D11_BLEND_SRC_ALPHA      },        // GS_BLDST_SRCCOL
-				{ D3D11_BLEND_INV_SRC_COLOR,  D3D11_BLEND_INV_SRC_ALPHA  },        // GS_BLDST_ONEMINUSSRCCOL
-				{ D3D11_BLEND_SRC_ALPHA,      D3D11_BLEND_SRC_ALPHA      },        // GS_BLDST_SRCALPHA
-				{ D3D11_BLEND_INV_SRC_ALPHA,  D3D11_BLEND_INV_SRC_ALPHA  },        // GS_BLDST_ONEMINUSSRCALPHA
-				{ D3D11_BLEND_DEST_ALPHA,     D3D11_BLEND_DEST_ALPHA     },        // GS_BLDST_DSTALPHA
-				{ D3D11_BLEND_INV_DEST_ALPHA, D3D11_BLEND_INV_DEST_ALPHA },        // GS_BLDST_ONEMINUSDSTALPHA
-				{ D3D11_BLEND_ONE,            D3D11_BLEND_ZERO           },        // GS_BLDST_ONE_A_ZERO
-				{ D3D11_BLEND_INV_SRC1_ALPHA, D3D11_BLEND_INV_SRC1_ALPHA },        // GS_BLDST_ONEMINUSSRC1ALPHA
-			};
+		static BlendFactors DstBlendFactors[GS_BLDST_MASK >> GS_BLDST_SHIFT] =
+		{
+			{ (D3D11_BLEND)0,             (D3D11_BLEND)0,					true },        // UNINITIALIZED BLEND FACTOR
+			{ D3D11_BLEND_ZERO,           D3D11_BLEND_ZERO,					true },        // GS_BLDST_ZERO
+			{ D3D11_BLEND_ONE,            D3D11_BLEND_ONE,					true },        // GS_BLDST_ONE
+			{ D3D11_BLEND_SRC_COLOR,      D3D11_BLEND_SRC_ALPHA,			true },        // GS_BLDST_SRCCOL
+			{ D3D11_BLEND_INV_SRC_COLOR,  D3D11_BLEND_INV_SRC_ALPHA,		true },        // GS_BLDST_ONEMINUSSRCCOL
+			{ D3D11_BLEND_SRC_ALPHA,      D3D11_BLEND_SRC_ALPHA,			true },        // GS_BLDST_SRCALPHA
+			{ D3D11_BLEND_INV_SRC_ALPHA,  D3D11_BLEND_INV_SRC_ALPHA,		true },        // GS_BLDST_ONEMINUSSRCALPHA
+			{ D3D11_BLEND_DEST_ALPHA,     D3D11_BLEND_DEST_ALPHA,			true },        // GS_BLDST_DSTALPHA
+			{ D3D11_BLEND_INV_DEST_ALPHA, D3D11_BLEND_INV_DEST_ALPHA,		true },        // GS_BLDST_ONEMINUSDSTALPHA
+			{ D3D11_BLEND_ONE,            D3D11_BLEND_ZERO,					true },        // GS_BLDST_ONE_A_ZERO
+			{ D3D11_BLEND_INV_SRC1_ALPHA, D3D11_BLEND_INV_SRC1_ALPHA,		false },       // GS_BLDST_ONEMINUSSRC1ALPHA
+		};
 
-			static D3D11_BLEND_OP BlendOp[GS_BLEND_OP_MASK >> GS_BLEND_OP_SHIFT] =
-			{
-				D3D11_BLEND_OP_ADD,          // 0 (unspecified): Default
-				D3D11_BLEND_OP_MAX,          // GS_BLOP_MAX / GS_BLALPHA_MAX
-				D3D11_BLEND_OP_MIN,          // GS_BLOP_MIN / GS_BLALPHA_MIN
-				D3D11_BLEND_OP_SUBTRACT,     // GS_BLOP_SUB / GS_BLALPHA_SUB
-				D3D11_BLEND_OP_REV_SUBTRACT, // GS_BLOP_SUBREV / GS_BLALPHA_SUBREV
-			};
+		static D3D11_BLEND_OP BlendOp[GS_BLEND_OP_MASK >> GS_BLEND_OP_SHIFT] =
+		{
+			D3D11_BLEND_OP_ADD,          // 0 (unspecified): Default
+			D3D11_BLEND_OP_MAX,          // GS_BLOP_MAX / GS_BLALPHA_MAX
+			D3D11_BLEND_OP_MIN,          // GS_BLOP_MIN / GS_BLALPHA_MIN
+			D3D11_BLEND_OP_SUBTRACT,     // GS_BLOP_SUB / GS_BLALPHA_SUB
+			D3D11_BLEND_OP_REV_SUBTRACT, // GS_BLOP_SUBREV / GS_BLALPHA_SUBREV
+		};
 
+		const bool bSrcBlendAllowAllTargets = SrcBlendFactors[(renderState & GS_BLSRC_MASK) >> GS_BLSRC_SHIFT].bAllowOnAllTargets;
+		const bool bDstBlendAllowAllTargets = DstBlendFactors[(renderState & GS_BLDST_MASK) >> GS_BLDST_SHIFT].bAllowOnAllTargets;
+		const bool bBlendAllowAllTargets = bSrcBlendAllowAllTargets && bDstBlendAllowAllTargets;
+
+		if (bBlendEnable)
+		{			
 			blendDesc.RenderTarget[0].SrcBlend       = SrcBlendFactors[(renderState & GS_BLSRC_MASK) >> GS_BLSRC_SHIFT].BlendColor;
 			blendDesc.RenderTarget[0].SrcBlendAlpha  = SrcBlendFactors[(renderState & GS_BLSRC_MASK) >> GS_BLSRC_SHIFT].BlendAlpha;
 			blendDesc.RenderTarget[0].DestBlend      = DstBlendFactors[(renderState & GS_BLDST_MASK) >> GS_BLDST_SHIFT].BlendColor;
@@ -689,8 +694,15 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 
 		// Copy blend state to support independent blend
 		for (size_t i = 0; i < CD3D9Renderer::RT_STACK_WIDTH; ++i)
+		{
 			blendDesc.RenderTarget[i] = blendDesc.RenderTarget[0];
 
+			// Dual source color blend cannot be enabled for any RT slot but 0
+			if (bBlendAllowAllTargets && i > 0)
+			{
+				blendDesc.RenderTarget[i].BlendEnable = false;
+			}
+		}
 		blendDesc.IndependentBlendEnable = true;
 	}
 	

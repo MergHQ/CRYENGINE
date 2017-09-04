@@ -1213,8 +1213,19 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 				BS.Desc.RenderTarget[i].BlendEnable = FALSE;
 		}
 
+		const bool bDualSrcBlend = BS.Desc.RenderTarget[0].SrcBlend == D3D11_BLEND_SRC1_ALPHA;
+		const bool bDualSrcDstBlend = BS.Desc.RenderTarget[0].DestBlend == D3D11_BLEND_INV_SRC1_ALPHA;
+
 		for (size_t i = 0; i < RT_STACK_WIDTH; ++i)
+		{
 			BS.Desc.RenderTarget[i] = BS.Desc.RenderTarget[0];
+			
+			// Dual source color blend cannot be enabled for any RT slot but 0
+			if (i > 0 && bDualSrcBlend && bDualSrcDstBlend)
+			{
+				BS.Desc.RenderTarget[i].BlendEnable = false;
+			}
+		}
 	}
 
 	if (Changed & GS_DEPTHWRITE)
