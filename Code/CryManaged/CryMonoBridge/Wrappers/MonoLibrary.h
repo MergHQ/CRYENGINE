@@ -67,6 +67,8 @@ protected:
 	void Serialize(CMonoObject* pSerializer);
 	void Deserialize(CMonoObject* pSerializer);
 
+	bool CanSerialize() const;
+
 	const char* GetPath() const { return m_assemblyPath; }
 	const char* GetImageName() const;
 

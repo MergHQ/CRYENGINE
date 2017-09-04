@@ -40,13 +40,20 @@ std::shared_ptr<CMonoObject> CMonoProperty::Get(const CMonoObject* pObject, bool
 void CMonoProperty::Set(const CMonoObject* pObject, const CMonoObject* pValue, bool &bEncounteredException) const
 {
 	void* pParams[1];
-	if (const_cast<CMonoObject*>(pValue)->GetClass()->IsValueType())
+	if (pValue != nullptr)
 	{
-		pParams[0] = MonoInternals::mono_object_unbox(pValue->GetManagedObject());
+		if (const_cast<CMonoObject*>(pValue)->GetClass()->IsValueType())
+		{
+			pParams[0] = MonoInternals::mono_object_unbox(pValue->GetManagedObject());
+		}
+		else
+		{
+			pParams[0] = pValue->GetManagedObject();
+		}
 	}
 	else
 	{
-		pParams[0] = pValue->GetManagedObject();
+		pParams[0] = nullptr;
 	}
 
 	Set(pObject, pParams, bEncounteredException);
