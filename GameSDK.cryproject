@@ -3,7 +3,7 @@
 	"type": "CRYENGINE Project",
 	"info": { "name": "CRYENGINE SDK" },
 	"content": {
-		"assets": [ "Assets" ],
+		"assets": [ "GameSDK" ],
 		"code": [ "" ],
 		"libs": [
 			{
