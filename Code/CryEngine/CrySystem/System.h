@@ -430,6 +430,7 @@ public:
 	// Validator Warning.
 	void                    WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) override;
 	void                    Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
+	void                    WarningOnce(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
 	virtual EQuestionResult ShowMessage(const char* text, const char* caption, EMessageBox uType) override;
 	bool                    CheckLogVerbosity(int verbosity) override;
 
@@ -1034,6 +1035,10 @@ protected: // -------------------------------------------------------------
 	TErrorMessages m_ErrorMessages;
 	bool           m_bHasRenderedErrorMessage;
 	bool           m_bNeedDoWorkDuringOcclusionChecks;
+
+
+	std::unordered_map<uint32, bool> m_mapWarningOnceAlreadyPrinted;
+	CryMutex						 m_mapWarningOnceMutex;
 
 	bool           m_bIsAsserting;
 
