@@ -112,10 +112,7 @@ namespace CryEngine
 		/// </summary>
 		internal static void OnReloadDone()
 		{
-			if(EndReload != null)
-			{
-				EndReload();
-			}
+			EndReload?.Invoke();
 		}
 
 		internal static void ScanAssembly(Assembly assembly)

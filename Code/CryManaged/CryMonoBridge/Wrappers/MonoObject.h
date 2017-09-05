@@ -38,6 +38,8 @@ public:
 	CMonoClass* GetClass();
 
 	void CopyFrom(const CMonoObject& source);
+	void CopyFrom(MonoInternals::MonoObject* pSource);
+	std::shared_ptr<CMonoObject> Clone();
 
 	void* UnboxObject();
 	template<typename T>

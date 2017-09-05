@@ -1204,6 +1204,7 @@ struct ISystem
 	//! ##@{
 	virtual void WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) = 0;
 	virtual void Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) = 0;
+	virtual void WarningOnce(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) = 0;
 	//! ##@}.
 
 	//! Report message by provider or by using CryMessageBox.

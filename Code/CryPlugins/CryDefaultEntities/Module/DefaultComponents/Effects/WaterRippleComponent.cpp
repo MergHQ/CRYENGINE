@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "WaterRippleComponent.h"
+#include <CryMath/Random.h>
 
 namespace Cry
 {

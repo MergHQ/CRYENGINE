@@ -55,25 +55,25 @@ namespace CryEngine
 
 		internal static List<TypeInfo> _componentTypes = new List<TypeInfo>();
 
-        internal static GUID GetComponentTypeGUID<T>()
-        {
-            return GetComponentTypeGUID(typeof(T));
-        }
+		internal static GUID GetComponentTypeGUID<T>()
+		{
+			return GetComponentTypeGUID(typeof(T));
+		}
 
-        internal static GUID GetComponentTypeGUID(Type type)
-        {
-            foreach (var typeInfo in _componentTypes)
-            {
-                if (typeInfo.type == type)
-                {
-                    return typeInfo.guid;
-                }
-            }
+		internal static GUID GetComponentTypeGUID(Type type)
+		{
+			foreach(var typeInfo in _componentTypes)
+			{
+				if(typeInfo.type == type)
+				{
+					return typeInfo.guid;
+				}
+			}
 
-            throw new KeyNotFoundException("Component was not registered!");
-        }
+			throw new KeyNotFoundException("Component was not registered!");
+		}
 
-        public Entity Entity { get; private set; }
+		public Entity Entity { get; private set; }
 
         #region Functions
         internal void SetEntity(IntPtr entityHandle, uint id)
@@ -170,19 +170,29 @@ namespace CryEngine
 			return result;
 		}
 
-        /// <summary>
-        /// Register the given entity prototype class. 
-        /// </summary>
-        /// <param name="entityComponentType">Entity class prototype.</param>
-        internal static void TryRegister(Type entityComponentType)
-        {
-            var typeInfo = new TypeInfo
+		/// <summary>
+		/// Register the given entity prototype class. 
+		/// </summary>
+		/// <param name="entityComponentType">Entity class prototype.</param>
+		internal static void TryRegister(Type entityComponentType)
+		{
+			if(!entityComponentType.IsAbstract && !entityComponentType.IsValueType && entityComponentType.GetConstructor(Type.EmptyTypes) == null)
+			{
+				string errorMessage = string.Format("Unable to register component of type {0}!{2}" +
+													"The component doesn't have a default parameterless constructor defined which is not supported on classes inheriting from {1}." +
+													"The {1} will overwrite the values of the constructor with the serialized values of the component." +
+													"Use {3} instead to initialize your component.",
+													entityComponentType.FullName, nameof(EntityComponent), Environment.NewLine, nameof(EntityComponent.OnInitialize));
+				throw new NotSupportedException(errorMessage);
+			}
+
+			var typeInfo = new TypeInfo
             {
                 type = entityComponentType
             };
-            _componentTypes.Add(typeInfo);
+			_componentTypes.Add(typeInfo);
 
-            var guidAttribute = (GuidAttribute)entityComponentType.GetCustomAttributes(typeof(GuidAttribute), false).FirstOrDefault();
+			var guidAttribute = (GuidAttribute)entityComponentType.GetCustomAttributes(typeof(GuidAttribute), false).FirstOrDefault();
             if (guidAttribute != null)
             {
                 var guid = new Guid(guidAttribute.Value);
@@ -241,53 +251,73 @@ namespace CryEngine
                 baseType = baseType.BaseType;
             }
 
+			if(!entityComponentType.IsAbstract)
+			{
+				RegisterComponentProperties(typeInfo);
+			}
+		}
 
-            // Register all properties
-            var properties = entityComponentType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
-            foreach (PropertyInfo propertyInfo in properties)
-            {
-                var attribute = (EntityPropertyAttribute)propertyInfo.GetCustomAttributes(typeof(EntityPropertyAttribute), false).FirstOrDefault();
-                if (attribute == null)
-                    continue;
+		private static void RegisterComponentProperties(TypeInfo componentTypeInfo)
+		{
+			// Create a dummy from which we can get default values.
+			var dummy = Activator.CreateInstance(componentTypeInfo.type);
 
-				object defaultValue;
+			// Retrieve all properties
+			var properties = componentTypeInfo.type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
+			foreach(PropertyInfo propertyInfo in properties)
+			{
+				// Only properties with the EntityProperty attribute are registered.
+				var attribute = (EntityPropertyAttribute)propertyInfo.GetCustomAttributes(typeof(EntityPropertyAttribute), false).FirstOrDefault();
+				if(attribute == null)
+				{
+					continue;
+				}
+
+				object defaultValue = null;
+				var propertyType = propertyInfo.PropertyType;
 				var defaultValueAttribute = (DefaultValueAttribute)propertyInfo.GetCustomAttributes(typeof(DefaultValueAttribute), false).FirstOrDefault();
 				if(defaultValueAttribute != null)
 				{
 					defaultValue = defaultValueAttribute.Value;
 				}
-				else if(propertyInfo.PropertyType.IsValueType || propertyInfo.PropertyType.GetConstructor(Type.EmptyTypes) != null)
+				else if(propertyType.IsValueType || propertyType.IsAssignableFrom(typeof(string)))
 				{
-					defaultValue = Activator.CreateInstance(propertyInfo.PropertyType);
-				}
-				else
-				{
-					defaultValue = FormatterServices.GetUninitializedObject(propertyInfo.PropertyType);
+					// It could happen that a property needs a reference to an Entity, which it doesn't have yet.
+					try
+					{
+						defaultValue = propertyInfo.GetValue(dummy);
+					}
+					catch
+					{
+						// Value type (struct) always has an empty constructor, so it's safe to construct a default one.
+						defaultValue = propertyType.IsAssignableFrom(typeof(string)) ? "" : Activator.CreateInstance(propertyType);
+					}
 				}
 
-				NativeInternals.Entity.RegisterComponentProperty(entityComponentType, propertyInfo, propertyInfo.Name, propertyInfo.Name, attribute.Description, attribute.Type, defaultValue);
+				// Register the property in native code.
+				NativeInternals.Entity.RegisterComponentProperty(componentTypeInfo.type, propertyInfo, propertyInfo.Name, propertyInfo.Name, attribute.Description, attribute.Type, defaultValue);
             }
 
             // Register all Schematyc functions
-            var methods = entityComponentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var methods = componentTypeInfo.type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             foreach (MethodInfo methodInfo in methods)
             {
                 var attribute = (SchematycMethodAttribute)methodInfo.GetCustomAttributes(typeof(SchematycMethodAttribute), false).FirstOrDefault();
                 if (attribute == null)
                     continue;
 
-                NativeInternals.Entity.RegisterComponentFunction(entityComponentType, methodInfo);
+                NativeInternals.Entity.RegisterComponentFunction(componentTypeInfo.type, methodInfo);
             }
 
             // Register all Schematyc signals
-            var nestedTypes = entityComponentType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
+            var nestedTypes = componentTypeInfo.type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
             foreach (Type nestedType in nestedTypes)
             {
                 var attribute = (SchematycSignalAttribute)nestedType.GetCustomAttributes(typeof(SchematycSignalAttribute), false).FirstOrDefault();
                 if (attribute == null)
                     continue;
 
-                int signalId = NativeInternals.Entity.RegisterComponentSignal(entityComponentType, nestedType.Name);
+                int signalId = NativeInternals.Entity.RegisterComponentSignal(componentTypeInfo.type, nestedType.Name);
                 
                 MethodInfo invoke = nestedType.GetMethod("Invoke");
                 ParameterInfo[] pars = invoke.GetParameters();
@@ -296,16 +326,16 @@ namespace CryEngine
 
                 foreach (ParameterInfo p in pars)
                 {
-                    NativeInternals.Entity.AddComponentSignalParameter(entityComponentType, signalId, p.Name, p.ParameterType);
+                    NativeInternals.Entity.AddComponentSignalParameter(componentTypeInfo.type, signalId, p.Name, p.ParameterType);
 
                     parameters.Add(p);
                 }
-                if(typeInfo.signals == null)
+                if(componentTypeInfo.signals == null)
                 {
-                    typeInfo.signals = new List<TypeInfo.Signal>();
+                    componentTypeInfo.signals = new List<TypeInfo.Signal>();
                 }
-                
-                typeInfo.signals.Add(new TypeInfo.Signal
+
+                componentTypeInfo.signals.Add(new TypeInfo.Signal
                 {
                     id = signalId,
                     delegateType = nestedType

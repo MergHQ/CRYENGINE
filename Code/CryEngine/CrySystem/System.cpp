@@ -2284,6 +2284,25 @@ void CSystem::Warning(EValidatorModule module, EValidatorSeverity severity, int 
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystem::WarningOnce(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...)
+{
+	char szBuffer[MAX_WARNING_LENGTH];
+	va_list args;
+	va_start(args, format);
+	cry_vsprintf(szBuffer, format, args);
+	va_end(args);
+
+	CryAutoLock<CryMutex> lock(m_mapWarningOnceMutex);
+	uint32 crc = CCrc32::ComputeLowercase(szBuffer);
+	if (m_mapWarningOnceAlreadyPrinted.find(crc) == m_mapWarningOnceAlreadyPrinted.end())
+	{
+		m_mapWarningOnceAlreadyPrinted[crc] = true;
+
+		Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, 0, szBuffer);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 EQuestionResult CSystem::ShowMessage(const char* text, const char* caption, EMessageBox uType)
 {
 	if (m_pUserCallback)

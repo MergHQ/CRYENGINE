@@ -42,9 +42,8 @@ struct SSchematycEntityClassProperties
 CEntityClassRegistry::CEntityClassRegistry()
 	: m_pDefaultClass(nullptr)
 	, m_listeners(2)
+	, m_pSystem(GetISystem())
 {
-	m_pSystem = GetISystem();
-
 	gEnv->pGameFramework->AddNetworkedClientListener(*this);
 }
 
@@ -159,6 +158,7 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 		pClass->Release();
 		return NULL;
 	}
+
 	return pClass;
 }
 
@@ -638,16 +638,13 @@ bool CEntityClassRegistry::OnClientConnectionReceived(int channelId, bool bIsRes
 				pClientEntity->GetNetEntity()->SetChannelId(channelId);
 				pClientEntity->GetNetEntity()->BindToNetwork();
 
-				// channelId starts at 1, we want an index
-				uint32 clientIndex = channelId - 1;
-
-				if (m_channelEntityInstances.size() <= clientIndex)
+				if ((size_t)channelId >= m_channelEntityInstances.size())
 				{
-					m_channelEntityInstances.resize(clientIndex + 1);
+					m_channelEntityInstances.resize(channelId + 1);
 				}
 
 				// Push the entity into our map, with the channel id as the key
-				m_channelEntityInstances[clientIndex].push_back(pClientEntity->GetId());
+				m_channelEntityInstances[channelId].push_back(pClientEntity->GetId());
 			}
 		}
 	}
@@ -657,19 +654,15 @@ bool CEntityClassRegistry::OnClientConnectionReceived(int channelId, bool bIsRes
 
 bool CEntityClassRegistry::OnClientReadyForGameplay(int channelId, bool bIsReset)
 {
-	// channelId starts at 1, we want an index
-	uint32 clientIndex = channelId - 1;
-
-	if (m_channelEntityInstances.size() > clientIndex)
+	if ((size_t)channelId < m_channelEntityInstances.size())
 	{
-		for (EntityId entityId : m_channelEntityInstances[clientIndex])
+		for (EntityId entityId : m_channelEntityInstances[channelId])
 		{
 			if (CEntity* pClientEntity = g_pIEntitySystem->GetEntityFromID(entityId))
 			{
 				pClientEntity->SetSimulationMode(EEntitySimulationMode::Game);
 			}
 		}
-
 	}
 
 	return true;
@@ -677,16 +670,13 @@ bool CEntityClassRegistry::OnClientReadyForGameplay(int channelId, bool bIsReset
 
 void CEntityClassRegistry::OnClientDisconnected(int channelId, EDisconnectionCause cause, const char* description, bool bKeepClient)
 {
-	// channelId starts at 1, we want an index
-	uint32 clientIndex = channelId - 1;
-
-	if (m_channelEntityInstances.size() <= (clientIndex + 1))
+	if ((size_t)channelId < m_channelEntityInstances.size())
 	{
-		for (EntityId entityId : m_channelEntityInstances[clientIndex])
+		for (EntityId entityId : m_channelEntityInstances[channelId])
 		{
 			g_pIEntitySystem->RemoveEntity(entityId);
 		}
 
-		m_channelEntityInstances[clientIndex].clear();
+		m_channelEntityInstances[channelId].clear();
 	}
 }
