@@ -7,10 +7,7 @@
 
 static inline uint32 PackColor(const ColorB& col)
 {
-	return(((uint8) (col.a) << 24) +
-	       ((uint8) (col.r) << 16) +
-	       ((uint8) (col.g) << 8) +
-	       ((uint8) (col.b)));
+	return col.pack_argb8888();
 }
 
 static inline ColorB
@@ -132,6 +129,30 @@ void CAuxGeomCB::DrawLines(const Vec3* v, uint32 numPoints, const ColorB& col, f
 		for (uint32 i(0); i < numPoints; i += 2)
 		{
 			DrawThickLine(v[i], col, v[i + 1], col, thickness);
+		}
+	}
+}
+
+void CAuxGeomCB::DrawLines(const Vec3* v, const uint32* packedColorARGB8888, uint32 numPoints, float thickness, bool alphaFlag)
+{
+	CRY_ASSERT((numPoints >= 2) && (0 == (numPoints & 1)));
+
+	if (thickness <= 1.0f)
+	{
+		SAuxVertex* pVertices(nullptr);
+		AddPrimitive(pVertices, numPoints, CreateLineRenderFlags(false) | AlphaFlags(ColorB(0,0,0, alphaFlag ? 255 : 0) ) );
+
+		for (uint32 i(0); i < numPoints; ++i)
+		{
+			pVertices[i].xyz = v[i];
+			pVertices[i].color.dcolor = packedColorARGB8888[i];
+		}
+	}
+	else
+	{
+		for (uint32 i(0); i < numPoints; i += 2)
+		{
+			DrawThickLine(v[i], packedColorARGB8888[i], v[i + 1], packedColorARGB8888[i + 1], thickness);
 		}
 	}
 }
