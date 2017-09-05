@@ -4711,7 +4711,7 @@ void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 	if (IRenderer* const pRenderer = GetRenderer())
 	{
 		// refresh cached shadow casters
-		if (GetCVars()->e_DynamicDistanceShadows != 0)
+		if (GetCVars()->e_DynamicDistanceShadows != 0 && m_pObjectsTree) 
 		{
 			static int lastFrameId = 0;
 
