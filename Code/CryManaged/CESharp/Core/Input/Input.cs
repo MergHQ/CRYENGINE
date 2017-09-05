@@ -18,7 +18,6 @@ namespace CryEngine
 			internal InputListener()
 			{
 				AddListener();
-				Engine.EndReload += AddListener;
 			}
 
 			private void AddListener()
@@ -26,9 +25,14 @@ namespace CryEngine
 				Global.gEnv.pInput.AddEventListener(this);
 			}
 
-			public override void Dispose()
+			private void RemoveListener()
 			{
 				Global.gEnv.pInput.RemoveEventListener(this);
+			}
+
+			public override void Dispose()
+			{
+				RemoveListener();
 
 				base.Dispose();
 			}
@@ -56,7 +60,7 @@ namespace CryEngine
 		/// </summary>
 		public static event Action<InputEvent> OnKey;
 
-		private static readonly InputListener _listener = new InputListener();
+		private static InputListener _listener;
 		private static bool _lShiftDown = false;
 		private static bool _rShiftDown = false;
 		private static readonly Dictionary<string, Vector2> _axisByName = new Dictionary<string, Vector2>();
@@ -72,7 +76,25 @@ namespace CryEngine
 
 		static Input()
 		{
+			Engine.StartReload += UnloadListener;
+			Engine.EndReload += LoadListener;
+		}
+
+		private static void LoadListener()
+		{
+			if(_listener != null)
+			{
+				UnloadListener();
+			}
+
+			_listener = new InputListener();
 			_listener.OnInputReceived += OnInput;
+		}
+
+		private static void UnloadListener()
+		{
+			_listener.Dispose();
+			_listener = null;
 		}
 
 		/// <summary>
@@ -80,6 +102,8 @@ namespace CryEngine
 		/// </summary>
 		internal static void Initialize()
 		{
+			LoadListener();
+
 			if(_listener == null)
 			{
 				//If this is ever called it means there's something wrong with the static constructor.

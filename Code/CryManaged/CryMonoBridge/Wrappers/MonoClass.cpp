@@ -227,6 +227,8 @@ std::shared_ptr<CMonoObject> CMonoClass::CreateInstanceWithDesc(const char* para
 
 std::shared_ptr<CMonoObject> CMonoClass::CreateFromMonoObject(MonoInternals::MonoObject* pObject)
 {
+	CRY_ASSERT(pObject != nullptr);
+
 	std::shared_ptr<CMonoObject> pWrappedObject = std::make_shared<CMonoObject>(pObject, m_pThis.lock());
 
 	// Push back a weak pointer to the instance, so that we can serialize the object in case of app domain reload
