@@ -698,7 +698,7 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 			blendDesc.RenderTarget[i] = blendDesc.RenderTarget[0];
 
 			// Dual source color blend cannot be enabled for any RT slot but 0
-			if (bBlendAllowAllTargets && i > 0)
+			if (!bBlendAllowAllTargets && i > 0)
 			{
 				blendDesc.RenderTarget[i].BlendEnable = false;
 			}
