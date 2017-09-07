@@ -174,8 +174,6 @@ namespace CryEngine
 		/// </summary>
 		public static void Shutdown()
 		{
-			OnUnloadStart();
-
 			if(!IsSandbox)
 			{
 				Console.ExecuteString("quit", false, true);
@@ -183,6 +181,7 @@ namespace CryEngine
 			else
 			{
 				Console.ExecuteString("ed_disable_game_mode", false, true);
+				OnUnloadStart();
 			}
 		}
 
