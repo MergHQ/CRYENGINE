@@ -349,6 +349,16 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_enable_budgetmonitoring = nullptr;
 	m_sys_preload = nullptr;
 	m_sys_use_Mono = nullptr;
+	m_sys_dll_ai = nullptr;
+	m_sys_dll_response_system = nullptr;
+	m_sys_user_folder = nullptr;
+
+#if !defined(_RELEASE)
+	m_sys_resource_cache_folder = nullptr;
+#endif
+
+	m_sys_initpreloadpacks = nullptr;
+	m_sys_menupreloadpacks = nullptr;
 
 	//	m_sys_filecache = nullptr;
 	m_gpu_particle_physics = nullptr;

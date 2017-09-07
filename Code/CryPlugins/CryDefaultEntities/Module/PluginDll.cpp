@@ -63,7 +63,10 @@ CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
 		gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(CPlugin_CryDefaultEntities::GetCID());
 	}
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	if (ISystem* pSystem = GetISystem())
+	{
+		pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	}
 }
 
 bool CPlugin_CryDefaultEntities::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)

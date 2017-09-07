@@ -39,7 +39,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserve
 */
 
 //////////////////////////////////////////////////////////////////////////
-struct CSystemEventListner_Physics : public ISystemEventListener
+struct CSystemEventListener_Physics : public ISystemEventListener
 {
 public:
 	virtual void OnSystemEvent( ESystemEvent event,UINT_PTR wparam,UINT_PTR lparam )
@@ -58,7 +58,7 @@ public:
 		}
 	}
 };
-static CSystemEventListner_Physics g_system_event_listener_physics;
+static CSystemEventListener_Physics g_system_event_listener_physics;
 
 class InitPhysicsGlobals {
 public:
@@ -188,7 +188,7 @@ CRYPHYSICS_API IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
 
 	if (pSystem)
 	{
-		pSystem->GetISystemEventDispatcher()->RegisterListener( &g_system_event_listener_physics, "CSystemEventListner_Physics");
+		pSystem->GetISystemEventDispatcher()->RegisterListener( &g_system_event_listener_physics, "CSystemEventListener_Physics");
 		return new CPhysicalWorld(pSystem->GetILog());
 	}
 
@@ -208,7 +208,10 @@ class CEngineModule_CryPhysics : public IPhysicsEngineModule
 
 	virtual ~CEngineModule_CryPhysics()
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_physics);
+		if (ISystem* pSystem = GetISystem())
+		{
+			pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_physics);
+		}
 		SAFE_RELEASE(gEnv->pPhysicalWorld);
 	}
 
