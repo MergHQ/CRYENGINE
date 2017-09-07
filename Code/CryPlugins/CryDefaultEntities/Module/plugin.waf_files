@@ -5,10 +5,14 @@
             "DefaultComponents/AI/PathfindingComponent.h"
         ], 
         "Audio": [
+            "DefaultComponents/Audio/AreaComponent.cpp", 
+            "DefaultComponents/Audio/AreaComponent.h", 
             "DefaultComponents/Audio/ListenerComponent.cpp", 
             "DefaultComponents/Audio/ListenerComponent.h", 
             "DefaultComponents/Audio/ParameterComponent.cpp", 
             "DefaultComponents/Audio/ParameterComponent.h", 
+            "DefaultComponents/Audio/PreloadComponent.cpp", 
+            "DefaultComponents/Audio/PreloadComponent.h", 
             "DefaultComponents/Audio/SwitchComponent.cpp", 
             "DefaultComponents/Audio/SwitchComponent.h", 
             "DefaultComponents/Audio/TriggerComponent.cpp", 
@@ -26,7 +30,9 @@
             "DefaultComponents/Constraints/LineConstraint.cpp", 
             "DefaultComponents/Constraints/LineConstraint.h", 
             "DefaultComponents/Constraints/PlaneConstraint.cpp", 
-            "DefaultComponents/Constraints/PlaneConstraint.h"
+            "DefaultComponents/Constraints/PlaneConstraint.h", 
+            "DefaultComponents/Constraints/BreakableJoint.cpp", 
+            "DefaultComponents/Constraints/BreakableJoint.h"
         ], 
         "Debug": [
             "DefaultComponents/Debug/DebugDrawComponent.cpp", 
@@ -38,7 +44,11 @@
             "DefaultComponents/Effects/FogComponent.cpp", 
             "DefaultComponents/Effects/FogComponent.h", 
             "DefaultComponents/Effects/DecalComponent.cpp", 
-            "DefaultComponents/Effects/DecalComponent.h"
+            "DefaultComponents/Effects/DecalComponent.h", 
+            "DefaultComponents/Effects/WaterRippleComponent.cpp", 
+            "DefaultComponents/Effects/WaterRippleComponent.h", 
+            "DefaultComponents/Effects/RainComponent.cpp", 
+            "DefaultComponents/Effects/RainComponent.h"
         ], 
         "Geometry": [
             "DefaultComponents/Geometry/BaseMeshComponent.h", 

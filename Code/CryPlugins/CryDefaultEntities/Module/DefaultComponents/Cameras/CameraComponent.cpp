@@ -1,6 +1,8 @@
 #include "StdAfx.h"
 #include "CameraComponent.h"
 
+#include <array>
+
 namespace Cry
 {
 	namespace DefaultComponents
@@ -35,12 +37,14 @@ namespace Cry
 				float size = distance * tan(m_fieldOfView.ToRadians());
 
 				std::array<Vec3, 4> points =
-				{ {
+				{ 
+					{
 						Vec3(size, distance, size),
 						Vec3(-size, distance, size),
 						Vec3(-size, distance, -size),
 						Vec3(size, distance, -size)
-					} };
+					}
+				};
 
 				gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(slotTransform.GetTranslation(), context.debugDrawInfo.color, slotTransform.TransformPoint(points[0]), context.debugDrawInfo.color);
 				gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(slotTransform.GetTranslation(), context.debugDrawInfo.color, slotTransform.TransformPoint(points[1]), context.debugDrawInfo.color);
