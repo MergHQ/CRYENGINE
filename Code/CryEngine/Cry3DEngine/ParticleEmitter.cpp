@@ -325,7 +325,6 @@ CParticleEmitter::~CParticleEmitter()
 	}
 	m_p3DEngine->FreeRenderNodeState(this); // Also does unregister entity.
 	GetInstCount(GetRenderNodeType())--;
-	GetEmitGeom().Release();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -615,12 +614,9 @@ bool CParticleEmitter::IsInstant() const
 
 void CParticleEmitter::SetEmitGeom(GeomRef const& geom)
 {
-	GeomRef emit_new(geom);
-	if (emit_new != GetEmitGeom())
+	if (geom != GetEmitGeom())
 	{
-		emit_new.AddRef();
-		GetEmitGeom().Release();
-		static_cast<GeomRef&>(*this) = emit_new;
+		static_cast<GeomRef&>(*this) = geom;
 		InvalidateStaticBounds();
 	}
 

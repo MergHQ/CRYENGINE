@@ -71,7 +71,7 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		context.m_container.FillData(EPDT_AudioObject, nullptr, context.GetSpawnedRange());
+		context.m_container.FillData(EPDT_AudioObject, (CryAudio::IObject*)0, context.GetSpawnedRange());
 	}
 
 	void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
