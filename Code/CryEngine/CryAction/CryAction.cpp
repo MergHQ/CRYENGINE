@@ -210,7 +210,7 @@ static const int s_saveGameFrameDelay = 3; // enough to render enough frames to 
 static const float s_loadSaveDelay = 0.5f;  // Delay between load/save operations.
 
 //////////////////////////////////////////////////////////////////////////
-struct CSystemEventListner_Action : public ISystemEventListener
+struct CSystemEventListener_Action : public ISystemEventListener
 {
 public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
@@ -239,7 +239,7 @@ public:
 		}
 	}
 };
-static CSystemEventListner_Action g_system_event_listener_action;
+static CSystemEventListener_Action g_system_event_listener_action;
 
 void CCryAction::DumpMemInfo(const char* format, ...)
 {

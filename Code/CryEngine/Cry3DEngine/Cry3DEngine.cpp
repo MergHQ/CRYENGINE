@@ -36,7 +36,7 @@
 #endif
 //////////////////////////////////////////////////////////////////////
 
-struct CSystemEventListner_3DEngine : public ISystemEventListener
+struct CSystemEventListener_3DEngine : public ISystemEventListener
 {
 public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
@@ -102,7 +102,7 @@ public:
 		}
 	}
 };
-static CSystemEventListner_3DEngine g_system_event_listener_engine;
+static CSystemEventListener_3DEngine g_system_event_listener_engine;
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -130,7 +130,7 @@ class CEngineModule_Cry3DEngine : public I3DEngineModule
 	{
 		ISystem* pSystem = env.pSystem;
 
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_engine, "CSystemEventListner_3DEngine");
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_engine, "CSystemEventListener_3DEngine");
 
 		C3DEngine* p3DEngine = CryAlignedNew<C3DEngine>(pSystem);
 		env.p3DEngine = p3DEngine;
