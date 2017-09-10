@@ -159,7 +159,8 @@ bool CProjectManager::ParseProjectFile()
 		// Create the full path to the asset directory
 		m_project.assetDirectoryFullPath = PathUtil::Make(m_project.rootDirectory, m_project.assetDirectory);
 
-		if (!gEnv->pCryPak->IsFileExist(m_project.assetDirectoryFullPath))
+		// Does directory exist
+		if (!CryDirectoryExists(m_project.assetDirectoryFullPath.c_str()))
 		{
 			EQuestionResult result = CryMessageBox(string().Format("Attempting to start the engine with non-existent asset directory %s!\nDo you want to create it?", m_project.assetDirectoryFullPath.c_str()), "Non-existent asset directory", eMB_YesCancel);
 			if (result == eQR_Cancel)
@@ -168,7 +169,7 @@ bool CProjectManager::ParseProjectFile()
 				return false;
 			}
 			
-			CryCreateDirectory(m_project.assetDirectoryFullPath);
+			CryCreateDirectory(m_project.assetDirectoryFullPath.c_str());
 		}
 
 		// Set the legacy game folder and name
@@ -267,12 +268,9 @@ bool CProjectManager::ParseProjectFile()
 			// Create a temporary asset directory, as some systems rely on an assets directory existing.
 			m_project.assetDirectory = "NoAssetFolder";
 			m_project.assetDirectoryFullPath = PathUtil::Make(szEngineRootDirectoryBuffer, m_project.assetDirectory);
-			if (!gEnv->pCryPak->IsFileExist(m_project.assetDirectoryFullPath))
-			{
-				CryCreateDirectory(m_project.assetDirectoryFullPath);
-			}
+			CryCreateDirectory(m_project.assetDirectoryFullPath.c_str());
 
-			m_sys_game_folder->Set(m_project.assetDirectory);
+			m_sys_game_folder->Set(m_project.assetDirectory.c_str());
 
 			return true;
 		}

@@ -7395,7 +7395,7 @@ ITimer* iTimer;
 ISystem* iSystem;
 
 //////////////////////////////////////////////////////////////////////////
-struct CSystemEventListner_Render : public ISystemEventListener
+struct CSystemEventListener_Render : public ISystemEventListener
 {
 public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
@@ -7525,7 +7525,7 @@ public:
 	}
 };
 
-static CSystemEventListner_Render g_system_event_listener_render;
+static CSystemEventListener_Render g_system_event_listener_render;
 
 extern "C" DLL_EXPORT IRenderer * CreateCryRenderInterface(ISystem * pSystem)
 {
@@ -7542,7 +7542,7 @@ extern "C" DLL_EXPORT IRenderer * CreateCryRenderInterface(ISystem * pSystem)
 	QueryPerformanceCounter(&li);
 	srand((uint32) li.QuadPart);
 
-	iSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_render, "CSystemEventListner_Render");
+	iSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_render, "CSystemEventListener_Render");
 	return gRenDev;
 }
 

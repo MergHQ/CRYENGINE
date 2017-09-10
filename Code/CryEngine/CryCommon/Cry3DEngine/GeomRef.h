@@ -14,16 +14,9 @@ struct IArea;
 
 struct GeomRef
 {
-	IMeshObj*        m_pMeshObj;    //!< Render object attachment.
-	IPhysicalEntity* m_pPhysEnt;    //!< Physics object attachment.
-	IArea*           m_pArea;       //!< Area attachment.
-
-	GeomRef()
-	{
-		m_pMeshObj = 0;
-		m_pPhysEnt = 0;
-		m_pArea = 0;
-	}
+	_smart_ptr<IMeshObj>        m_pMeshObj;      //!< Render object attachment.
+	_smart_ptr<IPhysicalEntity> m_pPhysEnt;      //!< Physics object attachment.
+	IArea*                      m_pArea     = 0; //!< Area attachment.
 
 	void Set(IMeshObj* pMesh)
 	{
@@ -38,9 +31,6 @@ struct GeomRef
 		m_pArea = pArea;
 	}
 	int  Set(IEntity* pEntity, int iSlot = -1);
-
-	void AddRef() const;
-	void Release() const;
 
 	operator bool() const
 	{

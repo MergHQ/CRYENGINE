@@ -912,7 +912,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		}
 
 		// Dual source color blend cannot be enabled for any RT slot but 0
-		if (bBlendAllowAllTargets && i > 0)
+		if (!bBlendAllowAllTargets && i > 0)
 		{
 			colorBlendAttachmentStates[validBlendAttachmentStateCount].blendEnable = false;
 		}

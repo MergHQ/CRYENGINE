@@ -1520,8 +1520,6 @@ CParticle::~CParticle()
 		GetPhysicalWorld()->DestroyPhysicalEntity(m_pPhysEnt);
 	}
 
-	GeomRef::Release();
-
 	IF (m_pCollisionInfo, 0)
 	{
 		m_pCollisionInfo->Clear();

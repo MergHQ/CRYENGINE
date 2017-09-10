@@ -484,12 +484,6 @@ public:
 		m_velocity.AddToComponent(pComponent, this);
 		if (m_orientToNormal)
 			pComponent->AddParticleData(EPQF_Orientation);
-
-		if (CParticleComponent* pParentComponent = pComponent->GetParentComponent())
-		{
-			if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
-				pMesh->GetExtent((EGeomForm)m_location);
-		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -506,7 +500,12 @@ public:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		if (CParticleEmitter* pEmitter = pComponentRuntime->GetEmitter())
+		if (CParticleComponent* pParentComponent = pComponentRuntime->GetComponent()->GetParentComponent())
+		{
+			if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
+				pMesh->GetExtent((EGeomForm)m_location);
+		}
+		else if (CParticleEmitter* pEmitter = pComponentRuntime->GetEmitter())
 		{
 			pEmitter->UpdateEmitGeomFromEntity();
 			const GeomRef& emitterGeometry = pEmitter->GetEmitterGeometry();
@@ -614,9 +613,12 @@ private:
 
 		for (auto particleId : context.GetSpawnedRange())
 		{
-			GeomRef particleGeometry = emitterGeometry;
+			CRndGen rng(context.m_spawnRng.Rand());
+			PosNorm randPositionNormal;
+			
 			if (pParentComponent)
 			{
+				GeomRef particleGeometry = emitterGeometry;
 				TParticleId parentId = parentIds.Load(particleId);
 				geomLocation.t = parentPositions.SafeLoad(parentId);
 				geomLocation.q = parentQuats.SafeLoad(parentId);
@@ -628,16 +630,20 @@ private:
 					if (IPhysicalEntity* pPhysics = parentPhysics.SafeLoad(parentId))
 						particleGeometry.Set(pPhysics);
 				}
+				particleGeometry.GetRandomPos(
+				  randPositionNormal, rng, geomType, geomForm,
+				  geomLocation, geometryCentered);
 			}
-
-			CRndGen rng(context.m_spawnRng.Rand());
-			PosNorm randPositionNormal;
-			particleGeometry.GetRandomPos(
-			  randPositionNormal, rng, geomType, geomForm,
-			  geomLocation, geometryCentered);
-
+			else
+			{
+				emitterGeometry.GetRandomPos(
+				  randPositionNormal, rng, geomType, geomForm,
+				  geomLocation, geometryCentered);
+			}
+			
 			const float offset = offsets.m_stream.SafeLoad(particleId);
 			const Vec3 wPosition = randPositionNormal.vPos + randPositionNormal.vNorm * offset;
+			assert((wPosition - geomLocation.t).len() < 10000);
 			positions.Store(particleId, wPosition);
 
 			if (UseVelocity)

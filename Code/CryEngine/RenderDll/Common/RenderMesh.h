@@ -348,6 +348,20 @@ public:
 		return arr.data;
 	}
 
+	template<class T>
+	T* GetStridedArray(strided_pointer<T>& arr, EStreamIDs stream, int dataType)
+	{
+		if (GetStridedArray(arr, stream))
+		{
+			int8 offset = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[dataType];
+			if (offset < 0)
+				arr.data = nullptr;
+			else
+				arr.data = (T*)((char*)arr.data + offset);
+		}
+		return arr.data;
+	}
+
   vtx_idx *LockIB(uint32 nFlags, int nOffset=0, int nInds=0);
   void UnlockVB(int nStream);
   void UnlockIB();

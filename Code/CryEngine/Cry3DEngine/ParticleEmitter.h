@@ -267,7 +267,6 @@ public:
 		m_Containers.clear();
 
 		// Release and remove external geom refs.
-		GeomRef::Release();
 		GeomRef::operator=(GeomRef());
 	}
 

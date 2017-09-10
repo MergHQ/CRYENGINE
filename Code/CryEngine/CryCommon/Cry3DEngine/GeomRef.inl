@@ -10,22 +10,6 @@
 //////////////////////////////////////////////////////////////////////////
 // GeomRef implementation
 
-void GeomRef::AddRef() const
-{
-	if (m_pMeshObj)
-		m_pMeshObj->AddRef();
-	if (m_pPhysEnt)
-		m_pPhysEnt->AddRef();
-}
-
-void GeomRef::Release() const
-{
-	if (m_pMeshObj)
-		m_pMeshObj->Release();
-	if (m_pPhysEnt)
-		m_pPhysEnt->Release();
-}
-
 int GeomRef::Set(IEntity* pEntity, int iSlot)
 {
 	if (!pEntity)
