@@ -41,6 +41,8 @@
 #define SIGC_CASTSHADOW_MINSPEC_SHIFT (15)
 #define SIGC_CASTSHADOW_MINSPEC_MASK  ((END_CONFIG_SPEC_ENUM - 1) << SIGC_CASTSHADOW_MINSPEC_SHIFT)
 
+#define SIGC_INSTANCING               BIT(16)
+
 void CTerrain::GetVegetationMaterials(std::vector<IMaterial*>*& pMatTable)
 {
 	if (!pMatTable)
@@ -184,6 +186,8 @@ void CTerrain::SaveTables(byte*& pData, int& nDataSize, std::vector<struct IStat
 					lstFileChunks[i].nFlags |= SIGC_PROCEDURALLYANIMATED;
 				if (rTable[i]->bGIMode)
 					lstFileChunks[i].nFlags |= SIGC_GI_MODE;
+				if (rTable[i]->bInstancing)
+					lstFileChunks[i].nFlags |= SIGC_INSTANCING;
 				if (rTable[i]->bDynamicDistanceShadows)
 					lstFileChunks[i].nFlags |= SIGC_DYNAMICDISTANCESHADOWS;
 				if (rTable[i]->bUseSprites)
@@ -421,6 +425,7 @@ void CTerrain::LoadVegetationData(PodArray<StatInstGroup>& rTable, PodArray<Stat
 	rTable[i].bPickable = (lstFileChunks[i].nFlags & SIGC_PICKABLE) != 0;
 	rTable[i].bAutoMerged = (lstFileChunks[i].nFlags & SIGC_PROCEDURALLYANIMATED) != 0;  // && GetCVars()->e_MergedMeshes;
 	rTable[i].bGIMode = (lstFileChunks[i].nFlags & SIGC_GI_MODE) != 0;
+	rTable[i].bInstancing = (lstFileChunks[i].nFlags & SIGC_INSTANCING) != 0;
 	rTable[i].bDynamicDistanceShadows = (lstFileChunks[i].nFlags & SIGC_DYNAMICDISTANCESHADOWS) != 0;
 	rTable[i].bUseSprites = (lstFileChunks[i].nFlags & SIGC_USESPRITES) != 0;
 	rTable[i].bRandomRotation = (lstFileChunks[i].nFlags & SIGC_RANDOMROTATION) != 0;

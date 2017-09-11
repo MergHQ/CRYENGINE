@@ -2104,6 +2104,7 @@ bool C3DEngine::SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup)
 	rGroup.nCastShadowMinSpec = siGroup.nCastShadowMinSpec;
 	rGroup.bDynamicDistanceShadows = siGroup.bDynamicDistanceShadows;
 	rGroup.bGIMode = siGroup.bGIMode;
+	rGroup.bInstancing = siGroup.bInstancing;
 	rGroup.fSpriteDistRatio = siGroup.fSpriteDistRatio;
 	rGroup.fLodDistRatio = siGroup.fLodDistRatio;
 	rGroup.fShadowDistRatio = siGroup.fShadowDistRatio;
@@ -2174,6 +2175,7 @@ bool C3DEngine::GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup)
 	siGroup.nCastShadowMinSpec = rGroup.nCastShadowMinSpec;
 	siGroup.bDynamicDistanceShadows = rGroup.bDynamicDistanceShadows;
 	siGroup.bGIMode = rGroup.bGIMode;
+	siGroup.bInstancing = rGroup.bInstancing;
 	siGroup.fSpriteDistRatio = rGroup.fSpriteDistRatio;
 	siGroup.fLodDistRatio = rGroup.fLodDistRatio;
 	siGroup.fShadowDistRatio = rGroup.fShadowDistRatio;
