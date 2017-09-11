@@ -1118,6 +1118,9 @@ public:
 
 	void                      MarkRNTmpDataPoolForReset() { m_bResetRNTmpDataPool = true; }
 
+	bool					  IsObjectsTreeValid()	      { return m_pObjectsTree != nullptr; }
+	class COctreeNode*  	  GetObjectsTree()	    	  { return m_pObjectsTree; }
+
 	static void               GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL, uint64 dwFlags = ~0);
 	static void               MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox, bool bRemoveObjects = false, bool bSkipDecals = false, bool bSkip_ERF_NO_DECALNODE_DECALS = false, bool bSkipDynamicObjects = false, EERType eRNType = eERType_TypesNum);
 

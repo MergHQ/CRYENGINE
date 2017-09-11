@@ -171,22 +171,27 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 						bFoundOutside = true;
 					}
 
-					if (bFoundOutside)
+					if (bFoundOutside && Get3DEngine()->IsObjectsTreeValid())
 					{
-							m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
+							m_arrStreamingNodeStack.Add(Get3DEngine()->GetObjectsTree());
 					}
 
 					for (int v = 0; v < m_tmpAreas0.Count(); v++)
 					{
 						CVisArea* pN1 = m_tmpAreas0[v];
-						assert(bNeedsUnique || m_arrStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
-						if (pN1->m_pObjectsTree)
-							m_arrStreamingNodeStack.Add(pN1->m_pObjectsTree);
+						assert(bNeedsUnique || m_arrStreamingNodeStack.Find(pN1->GetObjectsTree()) < 0);
+						if (pN1->IsObjectsTreeValid())
+						{
+							m_arrStreamingNodeStack.Add(pN1->GetObjectsTree());
+						}
 					}
 				}
 				else if (GetVisAreaManager())
 				{
-					m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
+					if (Get3DEngine()->IsObjectsTreeValid()) 
+					{
+						m_arrStreamingNodeStack.Add(Get3DEngine()->GetObjectsTree());
+					}
 
 					// find portals around
 					m_tmpAreas0.Clear();
@@ -202,14 +207,19 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 					for (int v = 0; v < m_tmpAreas1.Count(); v++)
 					{
 						CVisArea* pN1 = m_tmpAreas1[v];
-						assert(bNeedsUnique || m_arrStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
-						if (pN1->m_pObjectsTree)
-							m_arrStreamingNodeStack.Add(pN1->m_pObjectsTree);
+						assert(bNeedsUnique || m_arrStreamingNodeStack.Find(pN1->GetObjectsTree()) < 0);
+						if (pN1->IsObjectsTreeValid())
+						{
+							m_arrStreamingNodeStack.Add(pN1->GetObjectsTree());
+						}
 					}
 				}
 				else
 				{
-					m_arrStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
+					if (Get3DEngine()->IsObjectsTreeValid())
+					{
+						m_arrStreamingNodeStack.Add(Get3DEngine()->GetObjectsTree());
+					}
 				}
 			}
 
@@ -293,22 +303,27 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 					bFoundOutside = true;
 				}
 
-				if (bFoundOutside)
+				if (bFoundOutside && Get3DEngine()->IsObjectsTreeValid())
 				{
-					fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
+					fastStreamingNodeStack.Add(Get3DEngine()->GetObjectsTree());
 				}
 
 				for (int v = 0; v < m_tmpAreas0.Count(); v++)
 				{
 					CVisArea* pN1 = m_tmpAreas0[v];
-					assert(bNeedsUnique || fastStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
-					if (pN1->m_pObjectsTree)
-						fastStreamingNodeStack.Add(pN1->m_pObjectsTree);
+					assert(bNeedsUnique || fastStreamingNodeStack.Find(pN1->GetObjectsTree()) < 0);
+					if (pN1->IsObjectsTreeValid())
+					{
+						fastStreamingNodeStack.Add(pN1->GetObjectsTree());
+					}
 				}
 			}
 			else if (GetVisAreaManager())
 			{
-				fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
+				if (Get3DEngine()->IsObjectsTreeValid())
+				{
+					fastStreamingNodeStack.Add(Get3DEngine()->GetObjectsTree());
+				}
 
 				// find portals around
 				m_tmpAreas0.Clear();
@@ -324,14 +339,19 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 				for (int v = 0; v < m_tmpAreas1.Count(); v++)
 				{
 					CVisArea* pN1 = m_tmpAreas1[v];
-					assert(bNeedsUnique || fastStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
-					if (pN1->m_pObjectsTree)
-						fastStreamingNodeStack.Add(pN1->m_pObjectsTree);
+					assert(bNeedsUnique || fastStreamingNodeStack.Find(pN1->GetObjectsTree()) < 0);
+					if (pN1->IsObjectsTreeValid())
+					{
+						fastStreamingNodeStack.Add(pN1->GetObjectsTree());
+					}
 				}
 			}
 			else
 			{
-				fastStreamingNodeStack.Add(Get3DEngine()->m_pObjectsTree);
+				if (Get3DEngine()->IsObjectsTreeValid())
+				{
+					fastStreamingNodeStack.Add(Get3DEngine()->GetObjectsTree());
+				}
 			}
 		}
 

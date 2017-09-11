@@ -134,19 +134,25 @@ bool CVisAreaManager::SetCompiledData(byte* pData, int nDataSize, std::vector<st
 	return bRes;
 }
 
+namespace
+{
+	inline void HelperUnregisterEngineObjectsInArea(PodArray<CVisArea*>& arrayVisArea, const SHotUpdateInfo* pExportInfo, PodArray<IRenderNode*>& arrUnregisteredObjects, bool bOnlyEngineObjects)
+	{
+		for (int i = 0; i < arrayVisArea.Count(); i++)
+		{
+			if (arrayVisArea[i]->IsObjectsTreeValid())
+			{
+				arrayVisArea[i]->GetObjectsTree()->UnregisterEngineObjectsInArea(pExportInfo, arrUnregisteredObjects, bOnlyEngineObjects);
+			}
+		}
+	}
+}
+
 void CVisAreaManager::UnregisterEngineObjectsInArea(const SHotUpdateInfo* pExportInfo, PodArray<IRenderNode*>& arrUnregisteredObjects, bool bOnlyEngineObjects)
 {
-	for (int i = 0; i < m_lstVisAreas.Count(); i++)
-		if (m_lstVisAreas[i]->m_pObjectsTree)
-			m_lstVisAreas[i]->m_pObjectsTree->UnregisterEngineObjectsInArea(pExportInfo, arrUnregisteredObjects, bOnlyEngineObjects);
-
-	for (int i = 0; i < m_lstPortals.Count(); i++)
-		if (m_lstPortals[i]->m_pObjectsTree)
-			m_lstPortals[i]->m_pObjectsTree->UnregisterEngineObjectsInArea(pExportInfo, arrUnregisteredObjects, bOnlyEngineObjects);
-
-	for (int i = 0; i < m_lstOcclAreas.Count(); i++)
-		if (m_lstOcclAreas[i]->m_pObjectsTree)
-			m_lstOcclAreas[i]->m_pObjectsTree->UnregisterEngineObjectsInArea(pExportInfo, arrUnregisteredObjects, bOnlyEngineObjects);
+	HelperUnregisterEngineObjectsInArea(m_lstVisAreas,  pExportInfo, arrUnregisteredObjects, bOnlyEngineObjects);
+	HelperUnregisterEngineObjectsInArea(m_lstPortals,   pExportInfo, arrUnregisteredObjects, bOnlyEngineObjects);
+	HelperUnregisterEngineObjectsInArea(m_lstOcclAreas, pExportInfo, arrUnregisteredObjects, bOnlyEngineObjects);
 }
 
 void CVisAreaManager::OnVisAreaDeleted(IVisArea* pArea)
@@ -257,8 +263,8 @@ void CVisAreaManager::ResetVisAreaList(PodArray<CVisArea*>& lstVisAreas, PodArra
 	for (int i = 0; i < visAreas.Count(); i++)
 	{
 		CVisArea* pVisArea = visAreas[i];
-		if (pVisArea->m_pObjectsTree)
-			pVisArea->m_pObjectsTree->SetVisArea(pVisArea);
+		if (pVisArea->IsObjectsTreeValid())
+			pVisArea->GetObjectsTree()->SetVisArea(pVisArea);
 		pVisArea->SetColdDataPtr(&visAreaColdData[i]);
 		lstVisAreas[i] = pVisArea;
 	}
