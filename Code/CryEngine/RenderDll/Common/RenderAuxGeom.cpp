@@ -1961,8 +1961,18 @@ void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char*
 	if (!gEnv->IsDedicated())
 	{
 		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
+		IFFont* pFont = ti.pFont;
 
-		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, ti.scale, ti.flags, text);
+		if (!pFont)
+		{
+			if (gEnv->pSystem && gEnv->pSystem->GetICryFont())
+				pFont = gEnv->pSystem->GetICryFont()->GetFont("default");
+
+			if (!pFont)
+				return;
+		}
+
+		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, pFont, ti.scale, ti.flags, text);
 	}
 }
 
@@ -1970,6 +1980,7 @@ void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char*
 
 void CAuxGeomCB::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
+	CRY_ASSERT(gcpRendD3D->m_pRT && gcpRendD3D->m_pRT->IsRenderThread());
 	m_pRenderAuxGeom->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
 }
 
