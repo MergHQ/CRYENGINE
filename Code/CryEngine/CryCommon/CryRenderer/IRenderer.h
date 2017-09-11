@@ -1291,12 +1291,14 @@ struct SDrawTextInfo
 	//! Text color, (r,g,b,a) all members must be specified.
 	float color[4];
 	Vec2  scale;
+	IFFont* pFont;
 
 	SDrawTextInfo()
 	{
 		flags = 0;
 		color[0] = color[1] = color[2] = color[3] = 1;
 		scale = ZERO;
+		pFont = nullptr;
 	}
 };
 

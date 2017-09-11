@@ -54,8 +54,10 @@ struct SVisAreaChunk
 #if ENGINE_ENABLE_COMPILATION
 int CVisArea::GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, SHotUpdateInfo* pExportInfo)
 {
-	if (m_pObjectsTree)
-		m_pObjectsTree->CleanUpTree();
+	if (IsObjectsTreeValid())
+	{
+		GetObjectsTree()->CleanUpTree();
+	}
 
 	if (pData)
 	{
@@ -82,8 +84,10 @@ int CVisArea::GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pSta
 		nDataSize += sizeof(int);
 		nDataSize += m_lstShapePoints.GetDataSize();
 
-		if (m_pObjectsTree)
-			m_pObjectsTree->GetData(pData, nDataSize, NULL, NULL, NULL, eEndian, pExportInfo);
+		if (IsObjectsTreeValid())
+		{
+			GetObjectsTree()->GetData(pData, nDataSize, NULL, NULL, NULL, eEndian, pExportInfo);
+		}
 	}
 	return true;
 }
@@ -201,11 +205,11 @@ int CVisArea::SaveObjetsTree(byte*& pData, int& nDataSize, std::vector<IStatObj*
 	pCunk->nObjectsBlockSize = 0;
 
 	// get data from objects tree
-	if (m_pObjectsTree)
+	if (IsObjectsTreeValid())
 	{
 		byte* pTmp = NULL;
-		m_pObjectsTree->GetData(pTmp, pCunk->nObjectsBlockSize, NULL, NULL, NULL, eEndian, pExportInfo);
-		m_pObjectsTree->GetData(pData, nDataSize, pStatObjTable, pMatTable, pStatInstGroupTable, eEndian, pExportInfo); // UPDATE_PTR_AND_SIZE is inside
+		GetObjectsTree()->GetData(pTmp, pCunk->nObjectsBlockSize, NULL, NULL, NULL, eEndian, pExportInfo);
+		GetObjectsTree()->GetData(pData, nDataSize, pStatObjTable, pMatTable, pStatInstGroupTable, eEndian, pExportInfo); // UPDATE_PTR_AND_SIZE is inside
 	}
 
 	SwapEndian(*pCunk, eEndian);
@@ -276,9 +280,9 @@ int CVisArea::LoadObjectsTree_T(T*& f, int& nDataSizeLeft, std::vector<IStatObj*
 		int nCurDataSize = nDataSizeLeft;
 		if (nCurDataSize > 0)
 		{
-			if (!m_pObjectsTree)
+			if (!IsObjectsTreeValid())
 			{
-				m_pObjectsTree = COctreeNode::Create(m_boxArea, this);
+				SetObjectsTree( COctreeNode::Create(m_boxArea, this) );
 			}
 
 			if (pExportInfo != NULL && pExportInfo->pVisibleLayerMask != NULL && pExportInfo->pLayerIdTranslation)
@@ -286,11 +290,11 @@ int CVisArea::LoadObjectsTree_T(T*& f, int& nDataSizeLeft, std::vector<IStatObj*
 				SLayerVisibility visInfo;
 				visInfo.pLayerVisibilityMask = pExportInfo->pVisibleLayerMask;
 				visInfo.pLayerIdTranslation = pExportInfo->pLayerIdTranslation;
-				m_pObjectsTree->Load(f, nDataSizeLeft, pStatObjTable, pMatTable, eEndian, pBox, &visInfo);
+				GetObjectsTree()->Load(f, nDataSizeLeft, pStatObjTable, pMatTable, eEndian, pBox, &visInfo);
 			}
 			else
 			{
-				m_pObjectsTree->Load(f, nDataSizeLeft, pStatObjTable, pMatTable, eEndian, pBox, NULL);
+				GetObjectsTree()->Load(f, nDataSizeLeft, pStatObjTable, pMatTable, eEndian, pBox, NULL);
 			}
 
 			assert(nDataSizeLeft == (nCurDataSize - objBlockSize));

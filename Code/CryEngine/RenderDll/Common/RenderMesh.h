@@ -577,8 +577,8 @@ public:
 	static void ShutDown();
 	static void Tick(uint numFrames = 1);
 	static void UpdateModified();
-	static void UpdateModifiedMeshes(bool bLocked, int threadId);
-	static bool ClearStaleMemory(bool bLocked, int threadId);
+	static void UpdateModifiedMeshes(bool bAcquireLock, int threadId);
+	static bool ClearStaleMemory(bool bAcquireLock, int threadId);
 	static void PrintMeshLeaks();
 	static void GetPoolStats(SMeshPoolStatistics* stats);
 

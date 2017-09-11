@@ -1780,9 +1780,9 @@ void CAnimEntityNode::PrepareAnimations()
 						{
 							float duration = pAnimations->GetDuration_sec(animId);
 
-							if (duration != key.m_animDuration)
+							if (duration != key.m_defaultAnimDuration)
 							{
-								key.m_animDuration = duration;
+								key.m_defaultAnimDuration = duration;
 								pTrack->SetKey(i, &key);
 							}
 						}
@@ -2428,9 +2428,9 @@ void CAnimEntityNode::AnimateCharacterTrack(class CCharacterTrack* pTrack, SAnim
 				{
 					float duration = pAnimations->GetDuration_sec(animId);
 
-					if (key.m_animDuration != duration)
+					if (key.m_defaultAnimDuration != duration)
 					{
-						key.m_animDuration = duration;
+						key.m_defaultAnimDuration = duration;
 						pTrack->SetKey(k, &key);
 					}
 				}
@@ -2959,15 +2959,15 @@ void CAnimEntityNode::ApplyAnimKey(int32 keyIndex, class CCharacterTrack* track,
 	float t = (ectime - key.m_time).ToFloat();
 	t = key.m_startTime + t * key.m_speed;
 
-	if ((key.GetMaxEndTime() - key.m_startTime) > 0.0f && key.m_animDuration > 0.0f)
+	if ((key.GetMaxEndTime() - key.m_startTime) > 0.0f && key.GetAnimDuration() > 0.0f)
 	{
 		if (t < key.m_startTime)
 		{
 			t = key.m_startTime;
 		}
-		else if (key.m_bLoop && key.m_animDuration > 0.0f)
+		else if (key.m_bLoop && key.GetAnimDuration() > 0.0f)
 		{
-			t = fmod(t, key.m_animDuration);
+			t = fmod(t, key.GetAnimDuration());
 		}
 		else if (t > key.GetMaxEndTime())
 		{
@@ -2975,7 +2975,7 @@ void CAnimEntityNode::ApplyAnimKey(int32 keyIndex, class CCharacterTrack* track,
 		}
 
 		pCharacter->SetPlaybackScale(0.0000f);
-		float fNormalizedTime = t / key.m_animDuration;
+		float fNormalizedTime = t / key.GetAnimDuration();
 		assert(fNormalizedTime >= 0.0f && fNormalizedTime <= 1.0f);
 		pCharacter->GetISkeletonAnim()->ManualSeekAnimationInFIFO(layer, animIndex, fNormalizedTime, bAnimEvents);
 		pCharacter->GetISkeletonAnim()->SetLayerNormalizedTime(layer, fNormalizedTime);
@@ -3069,18 +3069,18 @@ void CAnimEntityNode::UpdateAnimBlendGap(int32 activeKeys[], class CCharacterTra
 	pCharacter->SetPlaybackScale(0.0000f);
 	f32 endTimeNorm = 1.0f;
 
-	if (key1.m_animDuration > 0.0f)
+	if (key1.GetAnimDuration() > 0.0f)
 	{
-		endTimeNorm = key1.GetMaxEndTime() / key1.m_animDuration;
+		endTimeNorm = key1.GetMaxEndTime() / key1.GetAnimDuration();
 	}
 
 	assert(endTimeNorm >= 0.0f && endTimeNorm <= 1.0f);
 	pCharacter->GetISkeletonAnim()->ManualSeekAnimationInFIFO(layer, 0, endTimeNorm, false);
 	f32 startTimeNorm = 0.0f;
 
-	if (key2.m_animDuration > 0.0f)
+	if (key2.GetAnimDuration() > 0.0f)
 	{
-		startTimeNorm = key2.m_startTime / key2.m_animDuration;
+		startTimeNorm = key2.m_startTime / key2.GetAnimDuration();
 	}
 
 	assert(startTimeNorm >= 0.0f && startTimeNorm <= 1.0f);

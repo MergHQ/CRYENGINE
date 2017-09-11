@@ -1413,8 +1413,10 @@ void C3DEngine::CreateDecal(const struct CryEngineDecalInfo& decal)
 
 		if (CVisArea* pArea = (CVisArea*)decal.ownerInfo.pRenderNode->GetEntityVisArea())
 		{
-			if (pArea->m_pObjectsTree)
-				pArea->m_pObjectsTree->MoveObjectsIntoList(&lstEntities, &cExplosionBox, false, true, true, true);
+			if (pArea->IsObjectsTreeValid())
+			{
+				pArea->GetObjectsTree()->MoveObjectsIntoList(&lstEntities, &cExplosionBox, false, true, true, true);
+			}
 		}
 		else
 			Get3DEngine()->MoveObjectsIntoListGlobal(&lstEntities, &cExplosionBox, false, true, true, true);
@@ -2104,6 +2106,7 @@ bool C3DEngine::SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup)
 	rGroup.nCastShadowMinSpec = siGroup.nCastShadowMinSpec;
 	rGroup.bDynamicDistanceShadows = siGroup.bDynamicDistanceShadows;
 	rGroup.bGIMode = siGroup.bGIMode;
+	rGroup.bInstancing = siGroup.bInstancing;
 	rGroup.fSpriteDistRatio = siGroup.fSpriteDistRatio;
 	rGroup.fLodDistRatio = siGroup.fLodDistRatio;
 	rGroup.fShadowDistRatio = siGroup.fShadowDistRatio;
@@ -2174,6 +2177,7 @@ bool C3DEngine::GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup)
 	siGroup.nCastShadowMinSpec = rGroup.nCastShadowMinSpec;
 	siGroup.bDynamicDistanceShadows = rGroup.bDynamicDistanceShadows;
 	siGroup.bGIMode = rGroup.bGIMode;
+	siGroup.bInstancing = rGroup.bInstancing;
 	siGroup.fSpriteDistRatio = rGroup.fSpriteDistRatio;
 	siGroup.fLodDistRatio = rGroup.fLodDistRatio;
 	siGroup.fShadowDistRatio = rGroup.fShadowDistRatio;
@@ -2803,19 +2807,19 @@ void C3DEngine::DeleteVisArea(IVisArea* pVisArea)
 	{
 		CVisArea* pArea = (CVisArea*)pVisArea;
 
-		//		if(pArea->m_pObjectsTree)
-		//		pArea->m_pObjectsTree->FreeAreaBrushes(true);
+		//		if(pArea->IsObjectsTreeValid())
+		//		pArea->GetObjectsTree()->FreeAreaBrushes(true);
 
 		PodArray<SRNInfo> lstEntitiesInArea;
-		if (pArea->m_pObjectsTree)
-			pArea->m_pObjectsTree->MoveObjectsIntoList(&lstEntitiesInArea, NULL);
+		if (pArea->IsObjectsTreeValid())
+			pArea->GetObjectsTree()->MoveObjectsIntoList(&lstEntitiesInArea, NULL);
 
 		// unregister from indoor
 		for (int i = 0; i < lstEntitiesInArea.Count(); i++)
 			Get3DEngine()->UnRegisterEntityDirect(lstEntitiesInArea[i].pNode);
 
-		if (pArea->m_pObjectsTree)
-			assert(pArea->m_pObjectsTree->GetObjectsCount(eMain) == 0);
+		if (pArea->IsObjectsTreeValid())
+			assert(pArea->GetObjectsTree()->GetObjectsCount(eMain) == 0);
 
 		m_pVisAreaManager->DeleteVisArea((CVisArea*)pVisArea);
 
@@ -2839,7 +2843,7 @@ void C3DEngine::UpdateVisArea(IVisArea* pVisArea, const Vec3* pPoints, int nCoun
 
 	m_pVisAreaManager->UpdateVisArea((CVisArea*)pVisArea, pPoints, nCount, szName, info);
 
-	if (((CVisArea*)pVisArea)->m_pObjectsTree && ((CVisArea*)pVisArea)->m_pObjectsTree->GetObjectsCount(eMain))
+	if (((CVisArea*)pVisArea)->IsObjectsTreeValid() && ((CVisArea*)pVisArea)->GetObjectsTree()->GetObjectsCount(eMain))
 	{
 		// merge old and new bboxes
 		vTotalBoxMin.CheckMin(pArea->m_boxArea.min);

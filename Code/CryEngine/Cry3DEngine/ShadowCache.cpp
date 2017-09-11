@@ -214,12 +214,20 @@ void ShadowCache::GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const 
 	if (CVisAreaManager* pVisAreaManager = GetVisAreaManager())
 	{
 		for (int i = 0; i < pVisAreaManager->m_lstVisAreas.Count(); ++i)
-			if (pVisAreaManager->m_lstVisAreas[i] && pVisAreaManager->m_lstVisAreas[i]->m_pObjectsTree)
-				casterBoxLS.Add(pVisAreaManager->m_lstVisAreas[i]->m_pObjectsTree->GetShadowCastersBox(&BBoxWS, &matView));
+		{
+			if (pVisAreaManager->m_lstVisAreas[i] && pVisAreaManager->m_lstVisAreas[i]->IsObjectsTreeValid())
+			{
+				casterBoxLS.Add(pVisAreaManager->m_lstVisAreas[i]->GetObjectsTree()->GetShadowCastersBox(&BBoxWS, &matView));
+			}
+		}
 
 		for (int i = 0; i < pVisAreaManager->m_lstPortals.Count(); ++i)
-			if (pVisAreaManager->m_lstPortals[i] && pVisAreaManager->m_lstPortals[i]->m_pObjectsTree)
-				casterBoxLS.Add(pVisAreaManager->m_lstPortals[i]->m_pObjectsTree->GetShadowCastersBox(&BBoxWS, &matView));
+		{
+			if (pVisAreaManager->m_lstPortals[i] && pVisAreaManager->m_lstPortals[i]->IsObjectsTreeValid())
+			{
+				casterBoxLS.Add(pVisAreaManager->m_lstPortals[i]->GetObjectsTree()->GetShadowCastersBox(&BBoxWS, &matView));
+			}
+		}
 	}
 
 	if (!casterBoxLS.IsReset() && casterBoxLS.GetSize().z < 2 * fRadius)

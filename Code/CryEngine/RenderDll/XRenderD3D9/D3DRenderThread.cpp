@@ -553,6 +553,10 @@ void CD3D9Renderer::RT_UnbindTMUs()
 	m_DevMan.BindSRV(CSubmissionQueue_DX11::TYPE_PS, pTex, 0, MAX_TMU);
 
 	m_DevMan.CommitDeviceStates();
+
+#if	CRY_RENDERER_DIRECT3D < 120
+	GetDeviceObjectFactory().GetCoreCommandList().Reset();
+#endif
 }
 
 void CD3D9Renderer::RT_UnbindResources()

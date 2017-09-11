@@ -494,6 +494,10 @@ void COctreeNode::UpdateStaticInstancing()
 		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 			continue;
 
+		const StatInstGroup& vegetGroup = pInst->GetStatObjGroup();
+		if(!vegetGroup.bInstancing)
+			continue;
+
 		Matrix34A objMatrix;
 		CStatObj* pStatObj = (CStatObj*)pInst->GetEntityStatObj(0, &objMatrix);
 		/*

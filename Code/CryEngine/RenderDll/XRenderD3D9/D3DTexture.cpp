@@ -301,7 +301,14 @@ void CTexture::Unbind()
 	CDeviceTexture* pDevTex = m_pDevTexture;
 
 	if (pDevTex)
+	{
 		pDevTex->Unbind();
+
+#if	CRY_RENDERER_DIRECT3D < 120
+		GetDeviceObjectFactory().GetCoreCommandList().Reset();
+#endif
+
+	}
 }
 
 bool CTexture::RT_CreateDeviceTexture(const void* pData[])

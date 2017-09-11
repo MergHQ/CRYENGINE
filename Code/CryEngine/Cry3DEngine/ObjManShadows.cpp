@@ -41,8 +41,10 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 
 	if (pArea)
 	{
-		if (pArea->m_pObjectsTree)
-			pArea->m_pObjectsTree->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+		if (pArea->IsObjectsTreeValid())
+		{
+			pArea->GetObjectsTree()->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+		}
 
 		if (pLightArea)
 		{
@@ -52,14 +54,18 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 				for (int pp = 0; pp < pArea->m_lstConnections.Count(); pp++)
 				{
 					CVisArea* pN = pArea->m_lstConnections[pp];
-					if (pN->m_pObjectsTree)
-						pN->m_pObjectsTree->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+					if (pN->IsObjectsTreeValid())
+					{
+						pN->GetObjectsTree()->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+					}
 
 					for (int p = 0; p < pN->m_lstConnections.Count(); p++)
 					{
 						CVisArea* pNN = pN->m_lstConnections[p];
-						if (pNN != pLightArea && pNN->m_pObjectsTree)
-							pNN->m_pObjectsTree->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+						if (pNN != pLightArea && pNN->IsObjectsTreeValid())
+						{
+							pNN->GetObjectsTree()->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+						}
 					}
 				}
 			}
@@ -69,8 +75,10 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 				for (int p = 0; p < pArea->m_lstConnections.Count(); p++)
 				{
 					CVisArea* pN = pArea->m_lstConnections[p];
-					if (pN->m_pObjectsTree)
-						pN->m_pObjectsTree->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+					if (pN->IsObjectsTreeValid())
+					{
+						pN->GetObjectsTree()->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+					}
 				}
 			}
 		}
@@ -89,23 +97,23 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 			{
 				PodArray<CVisArea*>& lstAreas = pVisAreaManager->m_lstVisAreas;
 				for (int i = 0; i < lstAreas.Count(); i++)
-					if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->m_pObjectsTree)
+					if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->IsObjectsTreeValid())
 					{
 						bool bUnused = false;
 						if (pFr->IntersectAABB(*lstAreas[i]->GetAABBox(), &bUnused))
 							if (!pShadowHull || IsAABBInsideHull(pShadowHull->GetElements(), pShadowHull->Count(), *lstAreas[i]->GetAABBox()))
-								lstAreas[i]->m_pObjectsTree->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+								lstAreas[i]->GetObjectsTree()->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
 					}
 			}
 			{
 				PodArray<CVisArea*>& lstAreas = pVisAreaManager->m_lstPortals;
 				for (int i = 0; i < lstAreas.Count(); i++)
-					if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->m_pObjectsTree)
+					if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->IsObjectsTreeValid())
 					{
 						bool bUnused = false;
 						if (pFr->IntersectAABB(*lstAreas[i]->GetAABBox(), &bUnused))
 							if (!pShadowHull || IsAABBInsideHull(pShadowHull->GetElements(), pShadowHull->Count(), *lstAreas[i]->GetAABBox()))
-								lstAreas[i]->m_pObjectsTree->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
+								lstAreas[i]->GetObjectsTree()->FillShadowCastersList(false, pLight, pFr, pShadowHull, nRenderNodeFlags, passInfo);
 					}
 			}
 		}
@@ -176,10 +184,10 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 
 			for (int i = 0; i < lstAreas.Count(); i++)
 			{
-				if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->m_pObjectsTree)
+				if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->IsObjectsTreeValid())
 				{
 					if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, *lstAreas[i]->GetAABBox()))
-						lstAreas[i]->m_pObjectsTree->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 0, passInfo);
+						lstAreas[i]->GetObjectsTree()->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 0, passInfo);
 				}
 
 				if (nRemainingNodes <= 0)

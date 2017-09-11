@@ -1117,9 +1117,9 @@ bool CRenderer::EF_ReloadFile_Request (const char* szFileName)
 	int  nameLength = __min(strlen(szFileName), size_t(MAX_PATH));
 	memcpy(realName, szFileName, nameLength);
 	realName[nameLength] = 0;
-	static const char* tifExtension    = "tif";
-	static const char* ddsExtension    = "dds";
-	static const int   extensionLength = 3;
+	static const char* tifExtension    = ".tif"; // Must start with "." to distinguish from ".*tif"
+	static const char* ddsExtension    = ".dds";
+	static const int   extensionLength = 4;
 
 	if (nameLength >= extensionLength && memcmp(realName + nameLength - extensionLength, tifExtension, extensionLength) == 0)
 		memcpy(realName + nameLength - extensionLength, ddsExtension, extensionLength);
@@ -1152,9 +1152,9 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 	int  nameLength = __min(strlen(szFileName), size_t(MAX_PATH));
 	memcpy(realName, szFileName, nameLength);
 	realName[nameLength] = 0;
-	static const char* tifExtension    = "tif";
-	static const char* ddsExtension    = "dds";
-	static const int   extensionLength = 3;
+	static const char* tifExtension    = ".tif"; // Must start with "." to distinguish from ".*tif"
+	static const char* ddsExtension    = ".dds";
+	static const int   extensionLength = 4;
 
 #if defined(CRY_ENABLE_RC_HELPER)
 	if (nameLength >= extensionLength && (memcmp(realName + nameLength - extensionLength, tifExtension, extensionLength) == 0 ||
