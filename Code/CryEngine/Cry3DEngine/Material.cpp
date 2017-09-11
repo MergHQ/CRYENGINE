@@ -151,6 +151,12 @@ void CMatInfo::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+bool CMatInfo::IsValid()
+{
+	return !m_bDeletePending && !m_bDeleted;
+}
+
 void CMatInfo::ShutDown()
 {
 	if (!m_bDeleted)
@@ -168,6 +174,7 @@ void CMatInfo::ShutDown()
 
 		m_subMtls.clear();
 	}
+
 	m_bDeleted = true;
 }
 
