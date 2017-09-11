@@ -53,7 +53,7 @@ namespace
 
 	static inline void RelinkTail(util::list<CRenderMesh>& instance, util::list<CRenderMesh>& list)
 	{
-		CConditionalLock lock(CRenderMesh::m_sLinkLock, !gRenDev->m_pRT->IsRenderThread());
+		CConditionalLock lock(CRenderMesh::m_sLinkLock, !(gRenDev->m_pRT->IsMultithreaded() && gRenDev->m_pRT->IsRenderThread()));
 		instance.relink_tail(&list);
 	}
 
@@ -123,11 +123,11 @@ namespace
 			{
 				s_MeshPool.m_MeshPoolCS.Unlock();
 				// Clean up the stale mesh temporary data - and do it from the main thread.
-				if (gRenDev->m_pRT->IsMainThread() && CRenderMesh::ClearStaleMemory(false,gRenDev->m_RP.m_nFillThreadID))
+				if (gRenDev->m_pRT->IsMainThread() && CRenderMesh::ClearStaleMemory(true, gRenDev->m_RP.m_nFillThreadID))
 				{
 					goto try_again;
 				}
-				else if (gRenDev->m_pRT->IsRenderThread() && CRenderMesh::ClearStaleMemory(false,gRenDev->m_RP.m_nProcessThreadID))
+				else if (gRenDev->m_pRT->IsRenderThread() && CRenderMesh::ClearStaleMemory(true, gRenDev->m_RP.m_nProcessThreadID))
 				{
 					goto try_again;
 				}
@@ -4033,13 +4033,13 @@ void CRenderMesh::PrintMeshLeaks()
 	}
 }
 
-bool CRenderMesh::ClearStaleMemory(bool bLocked, int threadId)
+bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 {
   MEMORY_SCOPE_CHECK_HEAP();
   FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
 	bool cleared = false; 
 	bool bKeepSystem = false; 
-	CConditionalLock lock(m_sLinkLock, !bLocked);
+	CConditionalLock lock(m_sLinkLock, bAcquireLock);
 	// Clean up the stale mesh temporary data
   for (util::list<CRenderMesh>* iter=s_MeshDirtyList[threadId].next, *pos=iter->next; iter != &s_MeshDirtyList[threadId]; iter=pos, pos=pos->next)
   {
@@ -4091,11 +4091,11 @@ bool CRenderMesh::ClearStaleMemory(bool bLocked, int threadId)
 	return cleared;
 }
 
-void CRenderMesh::UpdateModifiedMeshes(bool bLocked, int threadId)
+void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 {
   MEMORY_SCOPE_CHECK_HEAP();
   FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
-	CConditionalLock lock(m_sLinkLock, !bLocked);
+	CConditionalLock lock(m_sLinkLock, bAcquireLock);
 	// Update device buffers on modified meshes
 	for (util::list<CRenderMesh>* iter=s_MeshModifiedList[threadId].next, *pos=iter->next; iter != &s_MeshModifiedList[threadId]; iter=pos, pos=pos->next)
 	{
@@ -4131,15 +4131,15 @@ void CRenderMesh::UpdateModified()
 	ASSERT_IS_RENDER_THREAD(pRT);
 	const int threadId = gRenDev->m_RP.m_nProcessThreadID; 
 
-	// Call the update and clear functions with bLocked == true even if the lock
-	// was previously released in the above scope. The resasoning behind this is
-	// that only the renderthread can access the below lists as they are double
-	// buffered. Note: As the Lock/Unlock functions can come from the mainthread
-	// and from any other thread, they still have guarded against contention!
+	// Call the update and clear functions with bAcquireLock == false even if the lock
+	// was previously released in the above scope. The reasoning behind this is
+	// that only the render thread can access the below lists as they are double
+	// buffered. Note: As the Lock/Unlock functions can come from the main thread
+	// and from any other thread, they still have to be guarded against contention!
 	// The only exception to this is if we have no render thread, as there is no
 	// double buffering in that case - so always lock.
 
-	UpdateModifiedMeshes(pRT->IsMultithreaded(), threadId);
+	UpdateModifiedMeshes(!pRT->IsMultithreaded(), threadId);
 
 }
 
@@ -4173,13 +4173,13 @@ void CRenderMesh::Tick(uint numFrames)
 		s_MeshPool.m_MeshInstancePool->Cleanup();
 	}
 
-	// Call the clear functions with bLocked == true even if the lock
-	// was previously released in the above scope. The resasoning behind this is
-	// that only the renderthread can access the below lists as they are double
-	// buffered. Note: As the Lock/Unlock functions can come from the mainthread
-	// and from any other thread, they still have guarded against contention!
+	// Call the clear functions with bAcquireLock == false even if the lock
+	// was previously released in the above scope. The reasoning behind this is
+	// that only the render thread can access the below lists as they are double
+	// buffered. Note: As the Lock/Unlock functions can come from the main thread
+	// and from any other thread, they still have to be guarded against contention!
 
-	ClearStaleMemory(true, threadId);
+	ClearStaleMemory(false, threadId);
 }
 
 void CRenderMesh::Initialize()
