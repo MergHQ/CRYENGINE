@@ -756,6 +756,8 @@ void CMatInfo::SetTexture(int textureId, int textureSlot)
 		ITexture*& pTex = m_shaderItem.m_pShaderResources->GetTexture(textureSlot)->m_Sampler.m_pITex;
 		SAFE_RELEASE(pTex);
 		pTex = pTexture;
+
+		gEnv->pRenderer->ForceUpdateShaderItem(&m_shaderItem, this);
 	}
 }
 
