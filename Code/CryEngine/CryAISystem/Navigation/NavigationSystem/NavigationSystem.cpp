@@ -4150,7 +4150,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 		const float pathSharingPenalty = .0f;
 		const float pathLinkSharingPenalty = .0f;
 		MNM::CNavMesh::WayQueryRequest inputParams(debugObjectStart.entityId, triStart, startLoc, triEnd, endLoc,
-			offMeshNavigation, *offMeshNavigationManager, dangersInfo);
+			offMeshNavigation, *offMeshNavigationManager, dangersInfo, MNMCustomPathCostComputerSharedPtr());  // no custom cost-computer (where should we get it from!?)
 		MNM::CNavMesh::WayQueryResult result(k_MaxWaySize);
 
 		const bool hasPathfindingFinished = (navMesh.FindWay(inputParams, workingSet, result) == MNM::CNavMesh::eWQR_Done);
@@ -4188,7 +4188,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 				CTimeValue stringPullingStartTime = gEnv->pTimer->GetAsyncTime();
 				if (bBeautifyPath)
 				{
-					outputPath.PullPathOnNavigationMesh(navMesh, gAIEnv.CVars.PathStringPullingIterations);
+					outputPath.PullPathOnNavigationMesh(navMesh, gAIEnv.CVars.PathStringPullingIterations, nullptr);
 				}
 				stringPullingTotalTime = gEnv->pTimer->GetAsyncTime() - stringPullingStartTime;
 

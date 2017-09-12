@@ -1122,10 +1122,11 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQu
 					//const real_t stepCost = stepDistance.approximatedLen();
 
 					const real_t dangersTotalCost = CalculateHeuristicCostForDangers(nextNode->location, startLocation, m_params.origin, inputRequest.GetDangersInfos());
+					const real_t customCost = CalculateHeuristicCostForCustomRules(bestNode->location, nextNode->location, m_params.origin, inputRequest.GetCustomPathCostComputer().get());
 
 					real_t costMultiplier = real_t(nextTri.costMultiplier);
 
-					const real_t cost = bestNode->cost + (stepCost * costMultiplier) + dangersTotalCost;
+					const real_t cost = bestNode->cost + (stepCost * costMultiplier) + dangersTotalCost + customCost;
 					const real_t total = cost + heuristic;
 
 					if (nextNode->open && nextNode->estimatedTotalCost <= total)
@@ -1213,6 +1214,25 @@ real_t CNavMesh::CalculateHeuristicCostForDangers(const vector3_t& locationToEva
 	const Vec3 locationInWorldSpace = locationToEval.GetVec3() + meshOrigin;
 	std::for_each(dangersInfos.begin(), dangersInfos.end(), CostAccumulator(locationInWorldSpace, startingLocationInWorldSpace, totalCost));
 	return totalCost;
+}
+
+real_t CNavMesh::CalculateHeuristicCostForCustomRules(const vector3_t& locationComingFrom, const vector3_t& locationGoingTo, const Vec3& meshOrigin, const IMNMCustomPathCostComputer* pCustomPathCostComputer) const
+{
+	if (pCustomPathCostComputer)
+	{
+		static const IMNMCustomPathCostComputer::ComputationFlags flags{ IMNMCustomPathCostComputer::EComputationType::Cost };
+
+		const Vec3 locationComingFromInWorldSpace = locationComingFrom.GetVec3() + meshOrigin;
+		const Vec3 locationGoingToInWorldSpace = locationGoingTo.GetVec3() + meshOrigin;
+		const IMNMCustomPathCostComputer::SComputationInput computationInput(flags, locationComingFromInWorldSpace, locationGoingToInWorldSpace);
+		IMNMCustomPathCostComputer::SComputationOutput computationOutput;
+		pCustomPathCostComputer->ComputeCostThreadUnsafe(computationInput, computationOutput);
+		return computationOutput.cost;
+	}
+	else
+	{
+		return real_t(0);
+	}
 }
 
 void CNavMesh::PullString(const vector3_t& from, const TriangleID fromTriID, const vector3_t& to, const TriangleID toTriID, vector3_t& middlePoint) const
