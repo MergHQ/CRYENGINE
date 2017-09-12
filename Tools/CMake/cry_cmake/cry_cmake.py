@@ -4,6 +4,7 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk
 
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #CRYENGINE_DIR = os.path.abspath(os.path.join(CURRENT_DIR,'../../../'))
@@ -17,19 +18,21 @@ SDK_DOWNLOAD_EXE = os.path.abspath(os.path.join(CRYENGINE_DIR,'download_sdks.exe
 CONFIGS = [
     {
         'title':'Visual Studio 2015 Win64',
-        'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+        'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
         'cmake_generator': 'Visual Studio 14 2015 Win64',
         'cmake_builddir': 'solutions_cmake/win64',
+        'compiler': { 'key_path': r'\VisualStudio.DTE.14.0' }
     },
     {
         'title':'Visual Studio 2015 Win32',
-        'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+        'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
         'cmake_generator': 'Visual Studio 14 2015',
         'cmake_builddir': 'solutions_cmake/win32',
+        'compiler': { 'key_path': r'\VisualStudio.DTE.14.0' }
     },
 #    {
 #        'title':'Visual Studio 2015 Android Nsight Tegra',
-#        'cmake_toolchain': 'toolchain\android\Android-Nsight.cmake',
+#        'cmake_toolchain': r'toolchain\android\Android-Nsight.cmake',
 #        'cmake_generator': 'Visual Studio 14 2015 ARM',
 #        'cmake_builddir': 'solutions_cmake/android',
 #    },
@@ -37,23 +40,41 @@ CONFIGS = [
 #Visual Studio 15 2017
     {
         'title':'Visual Studio 2017 Win64',
-        'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+        'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
         'cmake_generator': 'Visual Studio 15 2017 Win64',
         'cmake_builddir': 'solutions_cmake/win64',
+        'compiler': { 'key_path': r'\VisualStudio.DTE.15.0' }
     },
     {
         'title':'Visual Studio 2017 Win32',
-        'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+        'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
         'cmake_generator': 'Visual Studio 15 2017',
         'cmake_builddir': 'solutions_cmake/win32',
+        'compiler': { 'key_path': r'\VisualStudio.DTE.15.0' }
     },
 #    {
 #        'title':'Visual Studio 2017 Android Nsight Tegra',
-#        'cmake_toolchain': 'toolchain\android\Android-Nsight.cmake',
+#        'cmake_toolchain': r'toolchain\android\Android-Nsight.cmake',
 #        'cmake_generator': 'Visual Studio 15 2017 ARM',
 #        'cmake_builddir': 'solutions_cmake/android',
 #    }
 ]
+
+def valid_configs():
+    try:
+        import winreg
+        def valid_config(c):
+            try:
+                registry = winreg.ConnectRegistry(None, winreg.HKEY_CLASSES_ROOT)
+                key = winreg.OpenKey(registry, c['compiler']['key_path'])
+                return True
+            except:
+                return False
+        return [c for c in CONFIGS if valid_config(c)]
+    except ImportError:
+        return CONFIGS
+
+CONFIGS = valid_configs()
 
 def center_window(win):
     win.update_idletasks()
@@ -95,7 +116,6 @@ def cmake_configure(generator, srcdir, builddir, cmakeexe=CMAKE_EXE, options=[],
     subprocess.Popen([CMAKE_GUI_EXE,'-H'+srcdir,'-B'+builddir])
     sys.exit(0)
 
-
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
@@ -119,7 +139,16 @@ class Application(tk.Frame):
             config_list.append(config['title'])
         self.configs_box['values'] = config_list
 
-        self.configs_box.current(0)
+        i = 0
+        try:
+            with open(os.path.expandvars(r'%APPDATA%\Crytek\CryENGINE\cry_cmake.cfg'), 'r') as f:
+                last_choice = f.read()
+            for c in CONFIGS:
+                if c['title'] == last_choice:
+                    i = CONFIGS.index(c)
+        except:
+            pass
+        self.configs_box.current(i)
         #self.configs_box.bind("<<ComboboxSelected>>", self.newselection)
         #self.configs_box.grid(column=0, row=0)
         #self.configs_box.pack(side="top")
@@ -134,12 +163,11 @@ class Application(tk.Frame):
         #self.quit = tk.Button(self, text="QUIT", fg="red",command=root.destroy)
         #self.quit.pack(side="bottom")
 
-    def say_hi(self):
-        print("hi there, everyone!")
-
     def generate_cmd(self):
         current = self.configs_box.current()
         config = CONFIGS[current]
+        with open(os.path.expandvars(r'%APPDATA%\Crytek\CryENGINE\cry_cmake.cfg'), 'w') as f:
+            f.write(config['title'])
         self.parent.destroy()
         cmake_configure(
             generator=config['cmake_generator'],
@@ -147,18 +175,6 @@ class Application(tk.Frame):
             builddir = os.path.join(CRYENGINE_DIR,config['cmake_builddir']),
             toolchain = os.path.join(CMAKE_DIR,config['cmake_toolchain'])
             )
-
-    def newselection(self):
-        print ('selected')
-
-    def combo(self):
-        self.newselection = CONFIGS[0]
-        self.box_value = tk.StringVar()
-        self.box = ttk.Combobox(self, textvariable=self.box_value)
-        self.box['values'] = CONFIGS
-        self.box.current(0)
-        self.box.bind("<<ComboboxSelected>>", self.newselection)
-        self.box.grid(column=0, row=0)
 
 class dlgMissingSDKs(tk.Frame):
     def __init__(self, master=None):
