@@ -87,6 +87,8 @@ Skeleton::CPoseData& CSkeletonPose::GetPoseDataForceWriteable()
 
 bool CSkeletonPose::PreparePoseDataAndLocatorWriteables(Memory::CPool& memoryPool)
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	if (m_pPoseDataWriteable)
 	{
 		m_poseDataWriteable.Initialize(GetPoseDataDefault());
