@@ -1373,6 +1373,7 @@ EditorStyleHelper {
 	qproperty-timelineBottomLines: rgb(50, 50, 50);
 	qproperty-timelineToggleColor: rgb(152, 152, 152);
 	qproperty-timelineClipPen: rgb(200, 200, 200);
+	qproperty-timelineUnclipPen: rgb(200, 200, 200, 110);
 	qproperty-timelineClipBrush: rgba(220, 220, 220, 64);
 	qproperty-timelineSelectedClip: rgb(0, 0, 0);
 	qproperty-timelineSelectedClipFocused: rgb(0, 161, 222);

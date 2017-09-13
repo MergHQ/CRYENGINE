@@ -1604,7 +1604,7 @@ entity_contact *CRigidEntity::RegisterContactPoint(int idx, const Vec3 &pt, cons
 {
 	//if (!(m_pWorld->m_vars.bUseDistanceContacts | m_flags&ref_use_simple_solver) && penetration==0 && GetType()!=PE_ARTICULATED)
 	//	return 0;
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	float min_dist2;
 	bool bNoCollResponse=false;
@@ -1906,7 +1906,7 @@ static float g_timeInterval=0.01f,g_rtimeInterval=100.0f;
 
 int CRigidEntity::UpdatePenaltyContact(entity_contact *pContact, float time_interval)//, int bResolveInstantly,entity_contact **pContacts,int &nContacts)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	int j,bRemoveContact,bCanPull;
 	Vec3 dp,n,vrel,dP,r;
@@ -2607,7 +2607,7 @@ void CRigidEntity::ProcessCanopyContact(geom_contact *pcontacts, int i, float ti
 
 void CRigidEntity::DelayedIntersect(geom_contact *pcontacts, int ncontacts, CPhysicalEntity **pColliders, int (*iCollParts)[2])
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_ENTITY_PROFILER
 	int i,j;
 	int iCaller = MAX_PHYS_THREADS;
@@ -2703,7 +2703,7 @@ extern int __curstep;
 
 int CRigidEntity::Step(float time_interval)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
   PHYS_ENTITY_PROFILER
 
 	geom_contact *pcontacts;
@@ -3197,7 +3197,7 @@ int CRigidEntity::GetContactCount(int nMaxPlaneContacts)
 
 int CRigidEntity::RegisterContacts(float time_interval,int nMaxPlaneContacts)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	int i,j,bComplexCollider,bStable,nContacts,bUseAreaContact,constrFlags=0;
 	Vec3 sz = m_BBox[1]-m_BBox[0],n;

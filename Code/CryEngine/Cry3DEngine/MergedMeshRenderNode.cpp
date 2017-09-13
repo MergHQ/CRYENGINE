@@ -3027,26 +3027,26 @@ bool CMergedMeshRenderNode::PostRender(const SRenderingPassInfo& passInfo)
 
 	if (m_needsStaticMeshUpdate)
 	{
-		FRAME_PROFILER("MMRM PR CR static", gEnv->pSystem, PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE,"MMRM PR CR static");
 		CreateRenderMesh(RUT_STATIC, passInfo);
 		m_needsStaticMeshUpdate = false;
 	}
 	if (m_needsDynamicMeshUpdate)
 	{
-		FRAME_PROFILER("MMRM PR CR dynamic", gEnv->pSystem, PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE,"MMRM PR CR dynamic");
 		CreateRenderMesh(RUT_DYNAMIC, passInfo);
 		m_needsDynamicMeshUpdate = false;
 	}
 
 	if (m_needsPostRenderStatic)
 	{
-		FRAME_PROFILER("MMRM PR RR static", gEnv->pSystem, PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE,"MMRM PR RR static");
 		RenderRenderMesh(RUT_STATIC, distance, passInfo);
 		m_needsPostRenderStatic = false;
 	}
 	if (m_needsPostRenderDynamic)
 	{
-		FRAME_PROFILER("MMRM PR RR dynamic", gEnv->pSystem, PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE,"MMRM PR RR dynamic");
 		RenderRenderMesh(RUT_DYNAMIC, distance, passInfo);
 		m_needsPostRenderDynamic = false;
 	}
@@ -4841,7 +4841,7 @@ void CDeformableNode::UpdateInternalDeform(
   , size_t& iv
   , size_t& ii)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
+	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 	SMMRMGroupHeader* group = &pData->m_mmrmHeader;
 	if (group == NULL)
 		return;
@@ -4916,7 +4916,7 @@ void CDeformableNode::RenderInternalDeform(
   CRenderObject* pRenderObject, int nLod, const AABB& bbox
   , const SRenderingPassInfo& passInfo)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
+	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 	if (nLod > 0 || m_nData == 0 || Cry3DEngineBase::GetCVars()->e_MergedMeshes == 0)
 		return;
 
@@ -4927,7 +4927,7 @@ void CDeformableNode::RenderInternalDeform(
 	if (passInfo.IsGeneralPass() && ((passInfo.GetCamera().GetPosition() - bbox.GetCenter()).len2() < sqr(((IRenderNode*)pRenderObject->m_pRenderNode)->GetMaxViewDist()) * Cry3DEngineBase::GetCVars()->e_MergedMeshesDeformViewDistMod))
 	{
 		{
-			FRAME_PROFILER("CDeformableNode::RenderInternalDeform JobSync", gEnv->pSystem, PROFILE_3DENGINE);
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CDeformableNode::RenderInternalDeform JobSync");
 			gEnv->pJobManager->WaitForJob(m_cullState);
 			gEnv->pJobManager->WaitForJob(m_updateState);
 		}

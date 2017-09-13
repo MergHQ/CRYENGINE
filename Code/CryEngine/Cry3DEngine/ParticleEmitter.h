@@ -211,7 +211,7 @@ public:
 
 	void GetCounts(SParticleCounts& counts, bool bClear = false) const
 	{
-		FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		counts.emitters.alive += 1.f;
 		if (IsActive())

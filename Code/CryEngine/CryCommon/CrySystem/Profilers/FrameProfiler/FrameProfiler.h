@@ -590,19 +590,6 @@ public:
 	#define CRY_PROFILE_POP_MARKER(szLabel)                     /*do nothing*/
 #endif
 
-/////////// DEPRECATED - do not use anymore /////////////
-
-#define FUNCTION_PROFILER(pISystem, subsystem) \
-  CRY_PROFILE_FUNCTION(subsystem)
-
-#define FRAME_PROFILER(szName, pISystem, subsystem) \
-  CRY_PROFILE_SECTION(subsystem, szName)
-
-// STALL_PROFILER labels should be converted to WAITING sections
-#define STALL_PROFILER(cause)
-
-/////////////////////////////////////////////////////////
-
 #if defined(ENABLE_LOADING_PROFILER)
 
 struct DiskOperationInfo

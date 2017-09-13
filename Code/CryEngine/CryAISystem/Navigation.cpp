@@ -448,7 +448,7 @@ const char* CNavigation::GetNearestPathOfTypeInRange(IAIObject* requester, const
 //====================================================================
 IAISystem::ENavigationType CNavigation::CheckNavigationType(const Vec3& pos, int& nBuildingID, IAISystem::tNavCapMask navCapMask) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	if (navCapMask & IAISystem::NAV_TRIANGULAR)
 		return IAISystem::NAV_TRIANGULAR;

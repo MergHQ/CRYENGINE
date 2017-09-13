@@ -344,7 +344,7 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 
 		if (!m_bEditor)
 		{
-			FRAME_PROFILER("CTerrain::OpenTerrainTextureFile: ReleaseHoleNodes & UpdateTerrainNodes", GetSystem(), PROFILE_3DENGINE);
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CTerrain::OpenTerrainTextureFile: ReleaseHoleNodes & UpdateTerrainNodes");
 
 			int nNodesCounterBefore = CTerrainNode::m_nNodesCounter;
 			GetParentNode()->ReleaseHoleNodes();

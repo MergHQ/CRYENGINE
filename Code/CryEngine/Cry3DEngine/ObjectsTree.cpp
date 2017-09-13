@@ -639,7 +639,7 @@ void COctreeNode::FillShadowCastersList(bool bNodeCompletellyInFrustum, CDLight*
 	{
 		if (m_renderFlags & ERF_CASTSHADOWMAPS)
 		{
-			FRAME_PROFILER("COctreeNode::FillShadowMapCastersList", GetSystem(), PROFILE_3DENGINE);
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "COctreeNode::FillShadowMapCastersList");
 
 			CRY_ALIGN(64) ShadowMapFrustumParams params;
 			params.pLight = pLight;

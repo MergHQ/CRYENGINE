@@ -177,7 +177,7 @@ public:
 	virtual int GetID() const override       { return m_areaId; }
 	virtual AABB GetAABB() const override;
 	virtual float GetExtent(EGeomForm eForm) const override;
-	virtual void GetRandomPos(PosNorm& ran, CRndGen seed, EGeomForm eForm) const override;
+	virtual void GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm) const override;
 	//~IArea
 
 	void     Release();

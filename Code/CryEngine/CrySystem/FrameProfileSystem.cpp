@@ -1026,7 +1026,7 @@ void CFrameProfileSystem::EndFrame()
 	if (m_bCollectionPaused || (!m_bCollect && !m_bNetworkProfiling))
 		return;
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 	float smoothTime = gEnv->pTimer->TicksToSeconds(m_totalProfileTime);
 	float smoothFactor = 1.f - gEnv->pTimer->GetProfileFrameBlending(&smoothTime);

@@ -930,7 +930,7 @@ void CTimeOfDay::SetSunPos(float longitude, float latitude)
 //////////////////////////////////////////////////////////////////////////
 void CTimeOfDay::Update(bool bInterpolate, bool bForceUpdate)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
+	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 
 	if (bInterpolate)
 	{

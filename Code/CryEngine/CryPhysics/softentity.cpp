@@ -1445,7 +1445,7 @@ int CSoftEntity::Step(float time_interval)
 	float waterDensity=0,ktimeBack;
 	{ ReadLock lock(m_lockSoftBody);
 
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_ENTITY_PROFILER
 
 	if ((g_lastqHost|g_lastqHost)>0) {

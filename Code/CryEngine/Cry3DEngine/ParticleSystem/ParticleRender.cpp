@@ -70,7 +70,7 @@ void CParticleRenderBase::ResetRenderObjects(CParticleEmitter* pEmitter, CPartic
 
 void CParticleRenderBase::Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	const SComponentParams& params = pComponent->GetComponentParams();
 	const uint threadId = renderContext.m_passInfo.ThreadID();

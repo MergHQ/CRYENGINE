@@ -119,7 +119,21 @@ float GeomRef::GetExtent(EGeomType eAttachType, EGeomForm eForm) const
 	return 0.f;
 }
 
-void GeomRef::GetRandomPos(PosNorm& ran, CRndGen seed, EGeomType eAttachType, EGeomForm eForm, QuatTS const& tWorld, bool bCentered) const
+ILINE void TransformPoints(Array<PosNorm> points, QuatTS const* ptWorld, Vec3 const& center, bool bCentered)
+{
+	if (ptWorld || bCentered)
+	{
+		for (auto& point : points)
+		{
+			if (bCentered)
+				point.vPos -= center;
+			if (ptWorld)
+				point <<= *ptWorld;
+		}
+	}
+}
+
+void GeomRef::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomType eAttachType, EGeomForm eForm, QuatTS const* ptWorld, bool bCentered) const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
@@ -128,18 +142,16 @@ void GeomRef::GetRandomPos(PosNorm& ran, CRndGen seed, EGeomType eAttachType, EG
 		if (IPhysicalEntity* pPhysEnt = GetPhysicalEntity())
 		{
 			pe_status_random sr;
+			sr.points = points;
 			sr.eForm = eForm;
 			sr.seed = seed;
 			m_pPhysEnt->GetStatus(&sr);
-			ran = sr.ran;
 			return;
 		}
 		if (IGeometry* pGeom = GetGeometry())
 		{
-			pGeom->GetRandomPos(ran, seed, eForm);
-			if (bCentered)
-				ran.vPos -= pGeom->GetCenter();
-			ran <<= tWorld;
+			pGeom->GetRandomPoints(points, seed, eForm);
+			TransformPoints(points, ptWorld, pGeom->GetCenter(), bCentered);
 			return;
 		}
 	}
@@ -147,16 +159,14 @@ void GeomRef::GetRandomPos(PosNorm& ran, CRndGen seed, EGeomType eAttachType, EG
 	// Use render objects if requested, or if no physics objects
 	if (m_pMeshObj)
 	{
-		m_pMeshObj->GetRandomPos(ran, seed, eForm);
-		if (bCentered)
-			ran.vPos -= m_pMeshObj->GetAABB().GetCenter();
-		ran <<= tWorld;
+		m_pMeshObj->GetRandomPoints(points, seed, eForm);
+		TransformPoints(points, ptWorld, m_pMeshObj->GetAABB().GetCenter(), bCentered);
 		return;
 	}
 	else if (m_pArea)
-		return m_pArea->GetRandomPos(ran, seed, eForm);
+		return m_pArea->GetRandomPoints(points, seed, eForm);
 
-	ran.zero();
+	points.fill(ZERO);
 }
 
 #endif

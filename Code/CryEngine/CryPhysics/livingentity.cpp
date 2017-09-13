@@ -1326,7 +1326,7 @@ int CLivingEntity::Step(float time_interval)
 			(!(vel.len2()==0 && m_velRequested.len2()==0 && (!bFlying || m_gravity.len2()==0) && m_dhSpeed==0 && m_dhAcc==0) || 
 			m_bActiveEnvironment || m_nslope.z<m_slopeSlide || m_velGround.len2()>0))	
 	{
-		FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+		CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 		PHYS_ENTITY_PROFILER
 
 		m_bActiveEnvironment = 0;

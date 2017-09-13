@@ -836,7 +836,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 	assert(m_pUpdateTerrainTempData != NULL);
 	if (passInfo.IsGeneralPass())
 	{
-		FRAME_PROFILER("Sync_UpdateTerrain", GetSystem(), PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Sync_UpdateTerrain");
 		gEnv->GetJobManager()->WaitForJob(m_pUpdateTerrainTempData->m_JobStateBuildIndices);
 		gEnv->GetJobManager()->WaitForJob(m_pUpdateTerrainTempData->m_JobStateBuildVertices);
 

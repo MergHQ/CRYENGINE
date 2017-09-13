@@ -351,7 +351,7 @@ void CD3D9Renderer::RT_PushUITexture(float xpos, float ypos, float w, float h, C
 
 void CD3D9Renderer::RT_Draw2dImageList()
 {
-	FUNCTION_PROFILER_RENDERER
+	FUNCTION_PROFILER_RENDERER();
 
 	if (m_2dImages.empty())
 		return;
@@ -384,7 +384,7 @@ void CD3D9Renderer::RT_Draw2dImageList()
 
 void CD3D9Renderer::FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bStereo, bool bDoRealRender)
 {
-	FUNCTION_PROFILER_RENDERER
+	FUNCTION_PROFILER_RENDERER();
 
 	if (bDoRealRender)
 	{

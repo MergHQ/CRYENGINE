@@ -1561,7 +1561,7 @@ void CVehicle::DoRequestedPhysicalization()
 //------------------------------------------------------------------------
 void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 #if ENABLE_VEHICLE_DEBUG
 	gEnv->pAuxGeomRenderer->SetRenderFlags(e_Def3DPublicRenderflags);
@@ -2070,7 +2070,7 @@ void CVehicle::HandleEvent(const SGameObjectEvent& event)
 //------------------------------------------------------------------------
 void CVehicle::UpdateStatus(const float deltaTime)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	int frameId = gEnv->nMainFrameID;
 	if (!(frameId > m_status.frameId))
@@ -3477,7 +3477,7 @@ bool CVehicle::SetMovement(const string& movementName, const CVehicleParams& tab
 //------------------------------------------------------------------------
 void CVehicle::OnPhysPostStep(const EventPhys* pEvent, bool logged)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 	const EventPhysPostStep* eventPhys = (const EventPhysPostStep*)pEvent;
 	float deltaTime = eventPhys->dt;
 	if (logged)

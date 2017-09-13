@@ -369,7 +369,7 @@ bool CParticleSubEmitter::GetMoveRelative(Vec3& vPreTrans, QuatTS& qtsMove) cons
 
 void CParticleSubEmitter::UpdateForce()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	// Set or clear physical force.
 
@@ -581,7 +581,7 @@ void CParticleSubEmitter::UpdateForce()
 
 void CParticleSubEmitter::UpdateAudio()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	SpawnParams const& spawnParams = GetMain().GetSpawnParams();
 
 	if (spawnParams.bEnableAudio && GetCVars()->e_ParticlesAudio > 0)

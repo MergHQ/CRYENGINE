@@ -581,7 +581,7 @@ void CD3D9Renderer::SF_HandleClear(const SSF_GlobalDrawParams& __restrict params
 //////////////////////////////////////////////////////////////////////////
 void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexIndex, int numVertices, int startIndex, int triangleCount, const SSF_GlobalDrawParams& __restrict params)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 	if (IsDeviceLost())
 		return;
@@ -652,7 +652,7 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 	}
 
 	{
-		//FRAME_PROFILER("SF_DITL::FxBegin", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DITL::FxBegin");
 
 		uint32 numPasses(0);
 		pSFShader->FXBegin(&numPasses, /*FEF_DONTSETTEXTURES |*/ FEF_DONTSETSTATES);
@@ -671,14 +671,14 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 		}
 	}
 	{
-		//FRAME_PROFILER("SF_DITL::SetState", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DITL::SetState");
 
 		// Set states
 		FX_SetState(SF_AdjustBlendStateForMeasureOverdraw(params.blendModeStates) | /*GS_NODEPTHTEST | */ params.renderMaskedStates);
 		D3DSetCull(eCULL_None);
 	}
 	{
-		//FRAME_PROFILER("SF_DITL::FX_Commit", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DITL::FX_Commit");
 
 		m_DevMan.BindConstantBuffer(CSubmissionQueue_DX11::TYPE_VS, params.m_vsBuffer, 0);
 		m_DevMan.BindConstantBuffer(CSubmissionQueue_DX11::TYPE_PS, params.m_psBuffer, 0);
@@ -693,7 +693,7 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 		FX_Commit();
 	}
 	{
-		//FRAME_PROFILER("SF_DITL::SetVertexDecl", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DITL::SetVertexDecl");
 
 		// Set vertex declaration
 		if (!SF_SetVertexDeclaration(params.vtxData->VertexFormat))
@@ -721,7 +721,7 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 		}
 	}
 	{
-		//FRAME_PROFILER("SF_DITL::BlendStateAndDraw", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DITL::BlendStateAndDraw");
 
 		// Override blend op if necessary
 		SF_SetBlendOp(params.blendOp);
@@ -733,7 +733,7 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 		SF_SetBlendOp(params.blendOp, true);
 	}
 	{
-		//FRAME_PROFILER("SF_DITL::FXEnd", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DITL::FXEnd");
 
 		// End shader pass
 		pSFShader->FXEndPass();
@@ -751,7 +751,7 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 //////////////////////////////////////////////////////////////////////////
 void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const SSF_GlobalDrawParams& __restrict params)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 	if (IsDeviceLost())
 		return;
@@ -811,7 +811,7 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 		return;
 
 	{
-		//FRAME_PROFILER("SF_DLS::FxBegin", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DLS::FxBegin");
 
 		if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 		{
@@ -827,14 +827,14 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 		pSFShader->FXBeginPass(0);
 	}
 	{
-		//FRAME_PROFILER("SF_DLS::SetState", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DLS::SetState");
 
 		// Set states
 		FX_SetState(SF_AdjustBlendStateForMeasureOverdraw(params.blendModeStates) | /*GS_NODEPTHTEST | */ params.renderMaskedStates);
 		D3DSetCull(eCULL_None);
 	}
 	{
-		//FRAME_PROFILER("SF_DLS::FX_Commit", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DLS::FX_Commit");
 		
 		m_DevMan.BindConstantBuffer(CSubmissionQueue_DX11::TYPE_VS, params.m_vsBuffer, 0);
 		m_DevMan.BindConstantBuffer(CSubmissionQueue_DX11::TYPE_PS, params.m_psBuffer, 0);
@@ -849,7 +849,7 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 		FX_Commit();
 	}
 	{
-		//FRAME_PROFILER("SF_DLS::SetVertexDecl", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DLS::SetVertexDecl");
 
 		// Set vertex declaration
 		if (!SF_SetVertexDeclaration(params.vtxData->VertexFormat))
@@ -871,7 +871,7 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 		}
 	}
 	{
-		//FRAME_PROFILER("SF_DLS::BlendStateAndDraw", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DLS::BlendStateAndDraw");
 
 		// Override blend op if necessary
 		SF_SetBlendOp(params.blendOp);
@@ -883,7 +883,7 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 		SF_SetBlendOp(params.blendOp, true);
 	}
 	{
-		//FRAME_PROFILER("SF_DLS::FXEnd", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DLS::FXEnd", gEnv->pSystem);
 
 		// End shader pass
 		pSFShader->FXEndPass();
@@ -968,7 +968,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		return;
 
 	{
-		//FRAME_PROFILER("SF_DG::FxBegin", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DG::FxBegin");
 
 		if (params.renderMaskedStates & GS_NOCOLMASK_RGBA)
 		{
@@ -993,14 +993,14 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		}
 	}
 	{
-		//FRAME_PROFILER("SF_DG::SetState", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DG::SetState");
 
 		// Set states
 		FX_SetState(SF_AdjustBlendStateForMeasureOverdraw(params.blendModeStates) | /*GS_NODEPTHTEST | */ params.renderMaskedStates);
 		D3DSetCull(eCULL_None);
 	}
 	{
-		//FRAME_PROFILER("SF_DG::FX_Commit", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DG::FX_Commit");
 		
 		m_DevMan.BindConstantBuffer(CSubmissionQueue_DX11::TYPE_VS, params.m_vsBuffer, 0);
 		m_DevMan.BindConstantBuffer(CSubmissionQueue_DX11::TYPE_PS, params.m_psBuffer, 0);
@@ -1022,7 +1022,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		FX_Commit();
 	}
 	{
-		//FRAME_PROFILER("SF_DG::SetVertexDecl", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DG::SetVertexDecl");
 
 		// Set vertex declaration
 		if (!SF_SetVertexDeclaration(vtxData->VertexFormat))
@@ -1044,7 +1044,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		}
 	}
 	{
-		//FRAME_PROFILER("SF_DG::BlendStateAndDraw", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DG::BlendStateAndDraw");
 
 		// Override blend op if necessary
 		SF_SetBlendOp(params.blendOp);
@@ -1056,7 +1056,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 		SF_SetBlendOp(params.blendOp, true);
 	}
 	{
-		//FRAME_PROFILER("SF_DG::FXEnd", gEnv->pSystem, PROFILE_SYSTEM);
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "SF_DG::FXEnd");
 
 		// End shader pass
 		pSFShader->FXEndPass();
@@ -1232,7 +1232,7 @@ int CRenderer::SF_CreateTexture(int width, int height, int numMips, const unsign
 //////////////////////////////////////////////////////////////////////////
 bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pSrcData, size_t rowPitch, size_t size, ETEX_Format eSrcFormat)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 	assert(texId > 0 && numRects > 0 && pRects != 0 && pSrcData != 0 && rowPitch > 0);
 
@@ -1272,7 +1272,7 @@ bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, cons
 
 bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	__debugbreak();
 
 	assert(texId > 0 && numRects > 0 && pRects != 0 && pData != 0);

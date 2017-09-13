@@ -634,7 +634,7 @@ void CD3D9Renderer::GenerateObjSprites(PodArray<struct SVegetationSpriteInfo>* p
 	if (pList == 0)
 		return;
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 #ifndef _RELEASE
 	bool bFirstInFrame = false;

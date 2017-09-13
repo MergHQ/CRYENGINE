@@ -1371,7 +1371,7 @@ bool SShaderItem::RefreshResourceConstants()
 
 void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	FUNCTION_PROFILER_RENDERER();
 
 	m_beginFrameCount++;
 
@@ -1453,7 +1453,7 @@ void CRenderer::RT_DisableTemporalEffects()
 
 void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 {
-	FUNCTION_PROFILER_RENDERER
+	FUNCTION_PROFILER_RENDERER();
 
 	m_pRT->RC_SubmitWind(pWind);
 }
@@ -2651,7 +2651,7 @@ _smart_ptr<IRenderMesh> CRenderer::CreateRenderMeshInitialized(
 	void* CustomData, bool bOnlyVideoBuffer, bool bPrecache,
 	const SPipTangents* pTangents, bool bLockForThreadAcc, Vec3* pNormals)
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, szType);
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, szSourceName);
@@ -2784,7 +2784,7 @@ bool CRenderer::EF_PrecacheResource(IRenderMesh* _pPB, IMaterial* pMaterial, flo
 
 bool CRenderer::EF_PrecacheResource(CDLight* pLS, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	if (!CRenderer::CV_r_texturesstreaming)
 		return true;
@@ -3040,7 +3040,7 @@ DECLARE_JOB("DXTCompressRowFloat", TDXTCompressRowFloat, DXTCompressRowFloat);
 
 bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* destinationData, int width, int height, int mips, ETEX_Format sourceFormat, bool bUseHW, int nDstBytesPerPix)
 {
-	FUNCTION_PROFILER_RENDERER
+	FUNCTION_PROFILER_RENDERER();
 
 	if (bUseHW)
 		return false;
@@ -3198,7 +3198,7 @@ bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* 
 
 bool CRenderer::DXTCompress(byte* sourceData, int width, int height, ETEX_Format destinationFormat, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback)
 {
-	FUNCTION_PROFILER_RENDERER
+	FUNCTION_PROFILER_RENDERER();
 
 	if (bUseHW)
 		return false;

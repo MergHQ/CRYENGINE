@@ -694,7 +694,7 @@ void C3DEngine::InitShadowFrustums(const SRenderingPassInfo& passInfo)
 }
 
 void C3DEngine::AddPerObjectShadow(IShadowCaster* pCaster, float fConstBias, float fSlopeBias, float fJitter, const Vec3& vBBoxScale, uint nTexSize)
-{
+{	
 	SPerObjectShadow* pOS = GetPerObjectShadow(pCaster);
 	if (!pOS)
 		pOS = &m_lstPerObjectShadows.AddNew();
@@ -710,7 +710,7 @@ void C3DEngine::AddPerObjectShadow(IShadowCaster* pCaster, float fConstBias, flo
 
 	if (bRequiresObjTreeUpdate)
 	{
-		FRAME_PROFILER("C3DEngine::AddPerObjectShadow", GetSystem(), PROFILE_3DENGINE);
+		CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 		ObjectsTreeMarkAsUncompiled(static_cast<IRenderNode*>(pCaster));
 	}
 }
@@ -720,7 +720,7 @@ void C3DEngine::RemovePerObjectShadow(IShadowCaster* pCaster)
 	SPerObjectShadow* pOS = GetPerObjectShadow(pCaster);
 	if (pOS)
 	{
-		FRAME_PROFILER("C3DEngine::RemovePerObjectShadow", GetSystem(), PROFILE_3DENGINE);
+		CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 
 		size_t nIndex = (size_t)(pOS - m_lstPerObjectShadows.begin());
 		m_lstPerObjectShadows.Delete(nIndex);
@@ -1357,7 +1357,7 @@ void C3DEngine::UregisterLightFromAccessabilityCache(ILightSource* pLight)
 
 void C3DEngine::OnCasterDeleted(IShadowCaster* pCaster)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
+	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 	{
 		// make sure pointer to object will not be used somewhere in the renderer
 		PodArray<CDLight*>* pLigts = GetDynamicLightSources();

@@ -925,7 +925,7 @@ void CEntityComponentLuaScript::OnCollision(CEntity* pTarget, int matId, const V
 	if (!CurrentState()->IsStateFunctionImplemented(ScriptState_OnCollision))
 		return;
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if (!m_hitTable)
 		m_hitTable.Create(gEnv->pScriptSystem);

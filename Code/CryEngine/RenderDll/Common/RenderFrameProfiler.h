@@ -10,7 +10,7 @@
 
 // set #if 0 here if you don't want profiling to be compiled in the code
 #ifdef ENABLE_FRAME_PROFILER
-	#define PROFILE_FRAME(id) FRAME_PROFILER("Renderer:" # id, iSystem, PROFILE_RENDERER)
+	#define PROFILE_FRAME(id) CRY_PROFILE_SECTION(PROFILE_RENDERER, "Renderer:" # id)
 #else
 	#define PROFILE_FRAME(id)
 #endif
@@ -90,7 +90,7 @@
 #define PROFILE_LABEL_SHADER(X) PROFILE_LABEL(X)
 
 #if defined(ENABLE_FRAME_PROFILER) && !defined(_RELEASE)
-	#define FUNCTION_PROFILER_RENDER_FLAT FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER)
+	#define FUNCTION_PROFILER_RENDER_FLAT CRY_PROFILE_FUNCTION(PROFILE_RENDERER)
 #else
 	#define FUNCTION_PROFILER_RENDER_FLAT
 #endif

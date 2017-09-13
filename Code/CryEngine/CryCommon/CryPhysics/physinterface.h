@@ -1582,8 +1582,8 @@ struct pe_status_extent : pe_status
 struct pe_status_random : pe_status_extent
 {
 	enum entype { type_id = ePE_status_random };
-	pe_status_random() { type = type_id; ran.vPos.zero(); ran.vNorm.zero(); }
-	PosNorm ran;
+	pe_status_random() { type = type_id; }
+	Array<PosNorm> points;
 	CRndGen seed;
 };
 
@@ -2500,7 +2500,7 @@ struct IGeometry
 	virtual void  RemapForeignIdx(int* pCurForeignIdx, int* pNewForeignIdx, int nTris) = 0; //!< used in rendermesh-physics sync after boolean ops
 	virtual void  AppendVertices(Vec3* pVtx, int* pVtxMap, int nVtx) = 0;                   //!< used in rendermesh-physics sync after boolean ops
 	virtual float GetExtent(EGeomForm eForm) const = 0;
-	virtual void  GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const = 0;
+	virtual void  GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const = 0;
 	virtual void  CompactMemory() = 0; //!< used only by non-breakable meshes to compact non-shared vertices into same contingous block of memory
 	//! Boxify: attempts to build a set of boxes covering the geometry's volume (only supported by trimeshes)
 	virtual int   Boxify(primitives::box* pboxes, int nMaxBoxes, const SBoxificationParams& params) = 0;

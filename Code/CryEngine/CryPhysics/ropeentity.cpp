@@ -1557,7 +1557,7 @@ float CRopeEntity::Solver(float time_interval, float seglen)
 		Ebefore += m_segs[i].vel.len2();
 
 	if (m_bHasContacts+m_nAttach || m_flags & rope_subdivide_segs) {
-		FRAME_PROFILER( "Rope solver MC",GetISystem(),PROFILE_PHYSICS );
+		CRY_PROFILE_REGION(PROFILE_PHYSICS, "Rope solver MC");
 		int bBounced; iter=m_maxIters;
 		float vrel,vreq,dPtang;
 		Vec3 dp;
@@ -1654,7 +1654,7 @@ float CRopeEntity::Solver(float time_interval, float seglen)
 				m_segs[i].vel = m_vtx[m_segs[i].iVtx0].vel;
 		}
 	}	else {
-		FRAME_PROFILER( "Rope solver CG",GetISystem(),PROFILE_PHYSICS );
+		CRY_PROFILE_REGION(PROFILE_PHYSICS, "Rope solver CG");
 		m_segs[0].vcontact.x = 0;
 		m_segs[0].vcontact.y = m_segs[1].dir*m_segs[0].dir;
 		m_segs[0].vcontact.z = (m_segs[0].vel-m_segs[1].vel)*m_segs[0].dir;
@@ -1910,7 +1910,7 @@ int CRopeEntity::Step(float time_interval)
 {
 	if (m_nSegs<=0 || !m_bAwake)
 		return 1;
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_ENTITY_PROFILER
 	
 	int iCaller = get_iCaller_int();
@@ -2141,7 +2141,7 @@ int CRopeEntity::Step(float time_interval)
 	collBBox[0]=BBox[0]; collBBox[1]=BBox[1];
 
 	if (collTypes & ent_all | m_flags & rope_collides_with_attachment) {
-		FRAME_PROFILER( "Rope collision",GetISystem(),PROFILE_PHYSICS );
+		CRY_PROFILE_REGION(PROFILE_PHYSICS, "Rope collision");
 		int objtypes;
 		CPhysicalEntity **pentlist,*pentbuf[2];
 		int iseg,nEnts,iend,ippbv=0,nPrecompPartBVs=0;
@@ -3024,32 +3024,33 @@ float CRopeEntity::GetExtent(EGeomForm eForm)	const
 	return ext.TotalExtent();
 }
 
-void CRopeEntity::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const
+void CRopeEntity::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
+
+	CGeomExtent const& ext = m_Extents[GeomForm_Edges];
+	if (eForm != GeomForm_Vertices && !ext.NumParts())
+		return points.fill(ZERO);
+
 	strided_pointer<Vec3> vtx;
 	int nVerts = GetVertices(vtx);
-	int i;
-	Vec3 dir;
 
-	if (eForm == GeomForm_Vertices)
-	{
-		i = seed.GetRandom(0, nVerts - 1);
-		ran.vPos = vtx[i];
-		dir = (vtx[min(i+1,nVerts-1)] - vtx[max(i-1,0)]).normalized();
-	}
-	else
-	{
-		CGeomExtent const& ext = m_Extents[GeomForm_Edges];
-		if (!ext.NumParts())
-			return ran.zero();
-		i = ext.RandomPart(seed);
-		ran.vPos = vtx[i]+(vtx[i+1]-vtx[i])*seed.GetRandom(0.0f, 1.0f);
-		dir = (vtx[i+1]-vtx[i]).normalized();
-	}
+	for (auto& ran : points) {
+		Vec3 dir;
+		if (eForm == GeomForm_Vertices) {
+			int i = seed.GetRandom(0, nVerts - 1);
+			ran.vPos = vtx[i];
+			dir = (vtx[min(i+1,nVerts-1)] - vtx[max(i-1,0)]).normalized();
+		}
+		else {
+			int i = ext.RandomPart(seed);
+			ran.vPos = vtx[i]+(vtx[i+1]-vtx[i])*seed.GetRandom(0.0f, 1.0f);
+			dir = (vtx[i+1]-vtx[i]).normalized();
+		}
 
-	Vec3 axisx = dir.GetOrthogonal().normalized(), axisy = dir^axisx;
-	float angle = seed.GetRandom(0.0f, 2.0f*gf_PI);
-	ran.vNorm = axisx*cos_tpl(angle)+axisy*sin_tpl(angle);
+		Vec3 axisx = dir.GetOrthogonal().normalized(), axisy = dir^axisx;
+		float angle = seed.GetRandom(0.0f, 2.0f*gf_PI);
+		ran.vNorm = axisx*cos_tpl(angle)+axisy*sin_tpl(angle);
+	}
 }
 
 #undef m_bAwake

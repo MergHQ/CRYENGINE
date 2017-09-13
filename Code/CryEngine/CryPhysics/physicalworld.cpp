@@ -1192,7 +1192,7 @@ int CPhysicalWorld::GetSurfaceParameters(int surface_idx, float &bounciness,floa
 IPhysicalEntity* CPhysicalWorld::CreatePhysicalEntity(pe_type type, float lifeTime, pe_params* params, void *pForeignData,int iForeignData,
 																											int id, IPhysicalEntity *pHostPlaceholder, IGeneralMemoryHeap* pHeap)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other,0,"CreatePhysicalEntity");
 
 	CPhysicalEntity *res=0;
@@ -1338,7 +1338,7 @@ IPhysicalEntity *CPhysicalWorld::CreatePhysicalPlaceholder(pe_type type, pe_para
 
 int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent,int mode,int bThreadSafe)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	int idx;
 	CPhysicalPlaceholder *ppc = (CPhysicalPlaceholder*)_pent;
@@ -1822,7 +1822,7 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 		pList = pTmpEntList; return m_nprevGEAEnts[iCaller];
 	}
 
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 #ifndef PHYS_FUNC_PROFILER_DISABLED
 	INT_PTR mask = (INT_PTR)pPetitioner;
 	mask = mask>>sizeof(mask)*8-1 ^ (mask-1)>>sizeof(mask)*8-1;
@@ -2417,7 +2417,7 @@ int __curstep = 0; // debug
 
 void CPhysicalWorld::TimeStep(float time_interval, int flags)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	float m,/*m_groupTimeStep,*/time_interval_org = time_interval;
 	CPhysicalEntity *pent,*phead,*ptail,**pentlist,*pent_next,*pent1,*pentmax;
@@ -3537,7 +3537,7 @@ void CPhysicalWorld::UnmarkEntityAsDeforming(CPhysicalEntity *pent)
 
 void CPhysicalWorld::SimulateExplosion(pe_explosion *pexpl, IPhysicalEntity **pSkipEnts,int nSkipEnts, int iTypes, int iCaller)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	CPhysicalEntity **pents;
 	int nents,nents1,i,j,i1,bBreak,bEntChanged;
@@ -4125,7 +4125,7 @@ int CPhysicalWorld::CollideEntityWithBeam(IPhysicalEntity *_pent, Vec3 org,Vec3 
 {
 	if (!_pent)
 		return 0;
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	CPhysicalEntity *pent = (CPhysicalEntity*)_pent;
 	WriteLock lockc(m_lockCaller[get_iCaller()]);
@@ -4171,7 +4171,7 @@ int CPhysicalWorld::CollideEntityWithPrimitive(IPhysicalEntity *_pent, int itype
 	if (!_pent || ((CPhysicalPlaceholder*)_pent)->m_iSimClass==5)
 		return 0;
 
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	CPhysicalEntity *pent = (CPhysicalEntity*)_pent;
 
@@ -4322,7 +4322,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 		return 1;
 	}
 
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_FUNC_PROFILER( pNameTag );
 	WriteLockCond lock(m_lockCaller[iCaller]), &lockContacts = pLockContactsExp ? *pLockContactsExp : const_cast<SPWIParams&>(pp).lockContacts;
 
@@ -4786,7 +4786,7 @@ uint32 CPhysicalWorld::GetPumpLoggedEventsTicks()
 
 void CPhysicalWorld::PumpLoggedEvents()
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 #ifdef ENABLE_LW_PROFILERS
 	//simple timer shown in r_DisplayInfo=3
 	LARGE_INTEGER pumpStart, pumpEnd;

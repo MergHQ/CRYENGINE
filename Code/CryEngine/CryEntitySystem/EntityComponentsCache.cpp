@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////////////////////////
 void CEntitiesComponentPropertyCache::StoreEntities()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	IEntityItPtr it = GetISystem()->GetIEntitySystem()->GetEntityIterator();
 	while (IEntity* pEntity = it->Next())
@@ -22,7 +22,7 @@ void CEntitiesComponentPropertyCache::StoreEntities()
 //////////////////////////////////////////////////////////////////////////
 void CEntitiesComponentPropertyCache::RestoreEntities()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	IEntityItPtr it = GetISystem()->GetIEntitySystem()->GetEntityIterator();
 	while (IEntity* pEntity = it->Next())
@@ -37,7 +37,7 @@ void CEntitiesComponentPropertyCache::RestoreEntities()
 //////////////////////////////////////////////////////////////////////////
 void CEntitiesComponentPropertyCache::StoreComponent(CEntity& entity, IEntityComponent& component)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	// Only Schematyc editable and user added components are eligible for storing
 	if (!component.GetComponentFlags().Check(EEntityComponentFlags::SchematycEditable) &&
@@ -56,7 +56,7 @@ void CEntitiesComponentPropertyCache::StoreComponent(CEntity& entity, IEntityCom
 //////////////////////////////////////////////////////////////////////////
 void CEntitiesComponentPropertyCache::LoadComponent(CEntity& entity, IEntityComponent& component)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	// Only Schematyc editable and user added components are eligible for storing
 	if (!component.GetComponentFlags().Check(EEntityComponentFlags::SchematycEditable) &&
@@ -108,6 +108,6 @@ void CEntitiesComponentPropertyCache::LoadEntity(CEntity& entity)
 //////////////////////////////////////////////////////////////////////////
 void CEntitiesComponentPropertyCache::ClearCache()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	m_componentPropertyCache.clear();
 }

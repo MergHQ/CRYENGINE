@@ -652,4 +652,5 @@ CRY_ALIGN(64) uint32 BoxSides[0x40 * 8] = {
 
 #if !defined(_LIB) || defined(_LAUNCHER)
 	#include <Cry3DEngine/GeomRef.inl>
+	#include <CryMath/GeomQuery.cpp>
 #endif

@@ -531,7 +531,7 @@ EntityId CEntitySystem::GenerateEntityId(bool bStaticId)
 IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS((params.pClass ? params.pClass->GetName() : "Unknown"));
-	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 #ifndef _RELEASE
 	if (params.sName)
@@ -692,7 +692,7 @@ bool CEntitySystem::InitEntity(IEntity* pEntity, SEntitySpawnParams& params)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::DeleteEntity(CEntity* pEntity)
 {
-	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if (CVar::es_debugEntityLifetime)
 	{
@@ -1927,7 +1927,7 @@ void CEntitySystem::UpdateTimers()
 	if (m_timersMap.empty())
 		return;
 
-	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	CTimeValue nCurrTimeMillis = gEnv->pTimer->GetFrameStartTime();
 
@@ -3424,7 +3424,7 @@ void CEntitySystem::DebugDrawProximityTriggers()
 
 void CEntitySystem::DoPrePhysicsUpdate()
 {
-	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	float fFrameTime = gEnv->pTimer->GetFrameTime();
 

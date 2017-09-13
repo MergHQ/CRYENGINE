@@ -1586,7 +1586,7 @@ void CPlayer::AddViewAngleOffsetForFrame(const Ang3 &offset)
 
 void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 #if ENABLE_RMI_BENCHMARK
 	if ( gEnv->bMultiplayer && IsClient() && ( g_pGameCVars->g_RMIBenchmarkInterval > 0 ) )
@@ -1755,7 +1755,7 @@ void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 	}
 
 	{
-		FRAME_PROFILER("Player Update :: UpdateListeners", GetISystem(), PROFILE_GAME);
+		CRY_PROFILE_REGION(PROFILE_GAME, "Player Update :: UpdateListeners");
 
 		TPlayerUpdateListeners::iterator it = m_playerUpdateListeners.begin();
 		TPlayerUpdateListeners::iterator end = m_playerUpdateListeners.end();
@@ -2079,7 +2079,7 @@ void CPlayer::UpdateAnimationState(const SActorFrameMovementParams &frameMovemen
 
 void CPlayer::PrePhysicsUpdate()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 	// TODO: This whole function needs to be optimized.
 
@@ -2436,7 +2436,7 @@ void CPlayer::SetIK( const SActorFrameMovementParams& frameMovementParams )
 
 void CPlayer::UpdateView(SViewParams &viewParams)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 #ifndef _RELEASE
 	if (g_pGameCVars->pl_debug_view != 0)
@@ -2498,7 +2498,7 @@ void CPlayer::UpdateView(SViewParams &viewParams)
 
 void CPlayer::PostUpdateView(SViewParams &viewParams)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 	if (CItem *pItem=GetItem(GetInventory()->GetCurrentItem()))
 		pItem->PostFilterView(viewParams);
@@ -2843,7 +2843,7 @@ void CPlayer::SetStance(EStance desiredStance)
 
 void CPlayer::OnStanceChanged(EStance newStance, EStance oldStance)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 	CActor::OnStanceChanged(newStance, oldStance);
 
@@ -2978,7 +2978,7 @@ void CPlayer::SetStats(SmartScriptTable &rTable)
 //------------------------------------------------------------------------
 void CPlayer::UpdateStats(float frameTime)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 	
 	//The results from GetEntity() are used without checking in
 	//	CPlayer::Update, so should be safe here!

@@ -816,25 +816,31 @@ float CStatObj::GetExtent(EGeomForm eForm)
 	return ext.TotalExtent();
 }
 
-void CStatObj::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const
+void CStatObj::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
 	if (!m_subObjects.empty())
 	{
 		CGeomExtent const& ext = m_Extents[eForm];
-		int iSubObj = ext.RandomPart(seed);
-		if (iSubObj-- > 0)
+		for (auto part : ext.RandomPartsAliasSum(points, seed))
 		{
-			IStatObj::SSubObject const* pSub = &m_subObjects[iSubObj];
-			assert(pSub && pSub->pStatObj);
-			pSub->pStatObj->GetRandomPos(ran, seed, eForm);
-			ran <<= pSub->tm;
-			return;
+			if (part.iPart > 0)
+			{
+				IStatObj::SSubObject const* pSub = &m_subObjects[part.iPart - 1];
+				assert(pSub && pSub->pStatObj);
+				pSub->pStatObj->GetRandomPoints(part.aPoints, seed, eForm);
+				for (auto& point : part.aPoints)
+					point <<= pSub->tm;
+			}
+			else if (m_pRenderMesh)
+				m_pRenderMesh->GetRandomPoints(part.aPoints, seed, eForm);
+			else
+				part.aPoints.fill(ZERO);
 		}
 	}
 	if (m_pRenderMesh)
-		m_pRenderMesh->GetRandomPos(ran, seed, eForm);
+		m_pRenderMesh->GetRandomPoints(points, seed, eForm);
 	else
-		ran.zero();
+		points.fill(ZERO);
 }
 
 SMeshLodInfo CStatObj::ComputeAndStoreLodDistances()

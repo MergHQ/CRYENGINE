@@ -1125,7 +1125,7 @@ int CPhysicalEntity::GetStatus(pe_status *_status) const
 	if (_status->type==pe_status_random::type_id)
 	{
 		pe_status_random *status = (pe_status_random*)_status;
-		GetRandomPos(status->ran, status->seed, status->eForm);
+		GetRandomPoints(status->points, status->seed, status->eForm);
 		return 1;
 	}
 
@@ -1372,16 +1372,18 @@ float CPhysicalEntity::GetExtent(EGeomForm eForm) const
 	return ext.TotalExtent();
 }
 
-void CPhysicalEntity::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const
+void CPhysicalEntity::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
 	// choose sub-part, get random pos, transform to world
 	const CGeomExtent& ext = m_Extents[eForm];
-	int iPart = ext.RandomPart(seed);
-	if (iPart >= 0 && iPart < m_nParts) {
-		geom const& part = m_parts[iPart];
-		part.pPhysGeom->pGeom->GetRandomPos(ran, seed, eForm);
-		QuatTS qts(m_qrot * part.q, m_qrot * part.pos + m_pos, part.scale);
-		ran <<= qts;
+	for (auto subPoints : ext.RandomPartsAliasSum(points, seed)) {
+		if (subPoints.iPart >= 0 && subPoints.iPart < m_nParts) {
+			geom const& part = m_parts[subPoints.iPart];
+			part.pPhysGeom->pGeom->GetRandomPoints(subPoints.aPoints, seed, eForm);
+			QuatTS qts(m_qrot * part.q, m_qrot * part.pos + m_pos, part.scale);
+			for (auto& ran : subPoints.aPoints)
+				ran <<= qts;
+		}
 	}
 }
 

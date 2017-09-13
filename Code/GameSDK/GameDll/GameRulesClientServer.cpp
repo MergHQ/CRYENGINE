@@ -99,7 +99,7 @@ void CGameRules::ClientHit(const HitInfo &hitInfo)
 	// [*DavidR | 1/Jun/2010] ToDo: This method would need a queue to handle concurrent calls like ServerHit does
 	// (ProcessClientHit would be perfect name for this method in that pipeline)
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 	const IActor *pClientActor = g_pGame->GetIGameFramework()->GetClientActor();
 	const IEntity *pTarget = m_pEntitySystem->GetEntity(hitInfo.targetId);
