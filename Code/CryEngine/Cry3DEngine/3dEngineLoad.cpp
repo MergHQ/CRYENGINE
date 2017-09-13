@@ -1543,9 +1543,6 @@ void C3DEngine::LoadTimeOfDaySettingsFromXML(XmlNodeRef node)
 	if (node)
 	{
 		GetTimeOfDay()->Serialize(node, true);
-		ITimeOfDay::SAdvancedInfo info;
-		GetTimeOfDay()->GetAdvancedInfo(info);
-		GetTimeOfDay()->SetTime(info.fStartTime, true);
 	}
 }
 
