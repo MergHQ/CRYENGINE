@@ -58,5 +58,9 @@ struct GeomRef
 
 	void             GetAABB(AABB& bb, EGeomType eAttachType, QuatTS const& tLoc, bool bCentered = false) const;
 	float            GetExtent(EGeomType eAttachType, EGeomForm eForm) const;
-	void             GetRandomPos(PosNorm& ran, CRndGen seed, EGeomType eAttachType, EGeomForm eForm, QuatTS const& tWorld, bool bCentered = false) const;
+	void             GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomType eAttachType, EGeomForm eForm, QuatTS const* ptWorld, bool bCentered = false) const;
+	void             GetRandomPos(PosNorm& ran, CRndGen seed, EGeomType eAttachType, EGeomForm eForm, QuatTS const& tWorld, bool bCentered = false) const
+	{
+		return GetRandomPoints({&ran, 1}, seed, eAttachType, eForm, &tWorld, bCentered);
+	}
 };

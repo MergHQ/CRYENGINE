@@ -60,7 +60,7 @@ struct IArea
 	virtual int            GetID() const = 0;
 	virtual AABB           GetAABB() const = 0;
 	virtual float          GetExtent(EGeomForm eForm) const = 0;
-	virtual void           GetRandomPos(PosNorm& ran, CRndGen seed, EGeomForm eForm) const = 0;
+	virtual void           GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm) const = 0;
 	// </interfuscator:shuffle>
 };
 

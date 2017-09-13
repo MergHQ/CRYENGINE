@@ -463,7 +463,7 @@ public:
 	virtual vtx_idx*                              GetIndexPtr(uint32 nFlags, int32 nOffset = 0) final;
 	virtual const PodArray<std::pair<int, int> >* GetTrisForPosition(const Vec3& vPos, IMaterial* pMaterial) final;
 	virtual float                                 GetExtent(EGeomForm eForm) final;
-	virtual void                                  GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm, SSkinningData const* pSkinning = NULL) final;
+	virtual void                                  GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm, SSkinningData const* pSkinning = NULL) final;
 	virtual uint32*                               GetPhysVertexMap() final { return NULL; }
 	virtual bool                                  IsEmpty() final;
 
@@ -510,15 +510,15 @@ private:
 
 public:
 	// --------------------------------------------------------------
-  // Members
+	// Members
 
 	// When modifying or traversing any of the lists below, be sure to always hold the link lock
-  static CryCriticalSection m_sLinkLock;
+	static CryCriticalSection      m_sLinkLock;
 
 	// intrusive list entries - a mesh can be in multiple lists at the same time
-	util::list<CRenderMesh>          m_Chain; // mesh will either be in the mesh list or garbage mesh list
-	util::list<CRenderMesh>          m_Dirty[2]; // if linked, mesh has volatile data (data read back from vram)
-	util::list<CRenderMesh>          m_Modified[2]; // if linked, mesh has modified data (to be uploaded to vram)
+	util::list<CRenderMesh>        m_Chain;       // mesh will either be in the mesh list or garbage mesh list
+	util::list<CRenderMesh>        m_Dirty[2];    // if linked, mesh has volatile data (data read back from vram)
+	util::list<CRenderMesh>        m_Modified[2]; // if linked, mesh has modified data (to be uploaded to vram)
 
 	// The static list heads, corresponds to the entries above
 	static util::list<CRenderMesh> s_MeshList;
@@ -526,23 +526,24 @@ public:
 	static util::list<CRenderMesh> s_MeshDirtyList[2];
 	static util::list<CRenderMesh> s_MeshModifiedList[2];
 
-	TRenderChunkArray  m_Chunks;
-	TRenderChunkArray  m_ChunksSubObjects; // Chunks of sub-objects.
-  TRenderChunkArray  m_ChunksSkinned;
+	TRenderChunkArray              m_Chunks;
+	TRenderChunkArray              m_ChunksSubObjects; // Chunks of sub-objects.
+	TRenderChunkArray              m_ChunksSkinned;
 
-  int                     m_nClientTextureBindID;
-  Vec3                    m_vBoxMin;
-  Vec3                    m_vBoxMax;
+	int                            m_nClientTextureBindID;
+	Vec3                           m_vBoxMin;
+	Vec3                           m_vBoxMax;
 
-  float                   m_fGeometricMeanFaceArea;
-	CGeomExtents						m_Extents;
+	float                          m_fGeometricMeanFaceArea;
+	CGeomExtents                   m_Extents;
+	DynArray<PosNorm>              m_PosNorms;
 
 	// Frame id when this render mesh was last rendered.
-	uint32                  m_nLastRenderFrameID;
-	uint32                  m_nLastSubsetGCRenderFrameID;
+	uint32                         m_nLastRenderFrameID;
+	uint32                         m_nLastSubsetGCRenderFrameID;
 
-	string									m_sType;          //!< pointer to the type name in the constructor call
-	string									m_sSource;        //!< pointer to the source  name in the constructor call
+	string                         m_sType;          //!< pointer to the type name in the constructor call
+	string                         m_sSource;        //!< pointer to the source  name in the constructor call
 
 	// For debugging purposes to catch longstanding data accesses
 # if !defined(_RELEASE) && defined(RM_CATCH_EXCESSIVE_LOCKS)

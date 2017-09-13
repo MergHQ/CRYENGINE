@@ -3522,54 +3522,22 @@ static void BlendWeights(DualQuat& dq, Array<const DualQuat> aBoneLocs, const Jo
 	dq.Normalize();
 }
 
-struct PosNormData
-{
-	strided_pointer<Vec3> aPos;
-	strided_pointer<Vec3f16> aPosH;
-	strided_pointer<SPipNormal> aNorm;
-	strided_pointer<UCol> aNormB;
-	strided_pointer<SPipQTangents> aQTan;
-	strided_pointer<SPipTangents> aTan2;
-
-	void GetPosNorm(PosNorm& ran, int nV)
-	{
-		// Position
-		if (aPos.data)
-			ran.vPos = aPos[nV];
-		else if (aPosH.data)
-			ran.vPos = aPosH[nV].ToVec3();
-
-		// Normal
-		if (aNorm.data)
-			ran.vNorm = aNorm[nV].GetN();
-		else if (aNormB.data)
-			ran.vNorm = aNormB[nV].GetN();
-		else if (aQTan.data)
-			ran.vNorm = aQTan[nV].GetN();
-		else if (aTan2.data)
-			ran.vNorm = aTan2[nV].GetN();
-	}
-};
-
 // To do: replace with VSF_MORPHBUDDY support
 #define SKIN_MORPHING 0
 
-struct SkinnedPosNormData: PosNormData
+struct PosNormData
 {
-	SSkinningData const* pSkinningData;
-
+	Array<PosNorm> aPosNorms;
+	// Skinning data
+	SSkinningData const* pSkinningData = 0;
 #if SKIN_MORPHING
 	strided_pointer<SVF_P3F_P3F_I4B> aMorphing;
 #endif
-
 	strided_pointer<SVF_W4B_I4S> aSkinning;
-
-	SkinnedPosNormData() : pSkinningData(nullptr) {}
 
 	void GetPosNorm(PosNorm& ran, int nV)
 	{
-		PosNormData::GetPosNorm(ran, nV);
-
+		ran = aPosNorms[nV];
 	#if SKIN_MORPHING
 		if (aShapeDeform && aMorphing)
 		{
@@ -3604,18 +3572,68 @@ struct SkinnedPosNormData: PosNormData
 
 float CRenderMesh::GetExtent(EGeomForm eForm)
 {
-	if (eForm == GeomForm_Vertices)
-		return (float)m_nVerts;
 	CGeomExtent& ext = m_Extents.Make(eForm);
 	if (!ext)
 	{
 		LockForThreadAccess();
 
-		vtx_idx *pInds = GetIndexPtr(FSL_READ);
-		strided_pointer<Vec3> aPos;
-		aPos.data = (Vec3*)GetPosPtr(aPos.iStride, FSL_READ);
-		if (pInds && aPos.data)
+		// Possible vertex data streams
+		vtx_idx*                       pInds = GetIndexPtr(FSL_READ);
+		strided_pointer<Vec3>          aPos;
+		strided_pointer<Vec3f16>       aPosH;
+		strided_pointer<SPipNormal>    aNorm;
+		strided_pointer<UCol>          aNormB;
+		strided_pointer<SPipQTangents> aQTan;
+		strided_pointer<SPipTangents>  aTan2;
+
+		// Check position streams
+		if (m_eVF == EDefaultInputLayouts::P3S_C4B_T2S || m_eVF == EDefaultInputLayouts::P3S_N4B_C4B_T2S)
+			GetStridedArray(aPosH, VSF_GENERAL, SInputLayout::eOffset_Position);
+		else
+			GetStridedArray(aPos, VSF_GENERAL, SInputLayout::eOffset_Position);
+
+		// Check normal streams
+		bool bNormals = GetStridedArray(aNormB, VSF_GENERAL, SInputLayout::eOffset_Normal)
+		             || GetStridedArray(aNorm, VSF_NORMALS)
+		             || GetStridedArray(aQTan, VSF_QTANGENTS)
+		             || GetStridedArray(aTan2, VSF_TANGENTS);
+
+		if (pInds && (aPos || aPosH) && bNormals)
 		{
+			// Cache decompressed vertex data
+			m_PosNorms.resize(m_nVerts);
+			if (aPos)
+			{
+				for (int n = 0; n < m_nVerts; ++n)
+					m_PosNorms[n].vPos = aPos[n];
+			}
+			else if (aPosH)
+			{
+				for (int n = 0; n < m_nVerts; ++n)
+					m_PosNorms[n].vPos = aPosH[n].ToVec3();
+			}
+
+			if (aNorm)
+			{
+				for (int n = 0; n < m_nVerts; ++n)
+					m_PosNorms[n].vNorm = aNorm[n].GetN();
+			}
+			else if (aNormB)
+			{
+				for (int n = 0; n < m_nVerts; ++n)
+					m_PosNorms[n].vNorm = aNormB[n].GetN();
+			}
+			else if (aQTan)
+			{
+				for (int n = 0; n < m_nVerts; ++n)
+					m_PosNorms[n].vNorm = aQTan[n].GetN();
+			}
+			else if (aTan2)
+			{
+				for (int n = 0; n < m_nVerts; ++n)
+					m_PosNorms[n].vNorm = aTan2[n].GetN();
+			}
+
 			// Iterate chunks to track renderable verts
 			bool* aValidVerts = new bool[m_nVerts];
 			memset(aValidVerts, 0, m_nVerts);
@@ -3638,44 +3656,32 @@ float CRenderMesh::GetExtent(EGeomForm eForm)
 				int aIndices[3];
 				Vec3 aVec[3];
 				for (int v = TriIndices(aIndices, i, eForm)-1; v >= 0; v--)
-					aVec[v] = aPos[ pInds[aIndices[v]] ];
+					aVec[v] = m_PosNorms[ pInds[aIndices[v]] ].vPos;
 				ext.AddPart( aValidVerts[ pInds[aIndices[0]] ] ? max(TriExtent(eForm, aVec, vCenter), 0.f) : 0.f );
 			}
 			delete[] aValidVerts;
 		}
 
 		UnlockStream(VSF_GENERAL);
+		UnlockStream(VSF_NORMALS);
+		UnlockStream(VSF_QTANGENTS);
+		UnlockStream(VSF_TANGENTS);
 		UnlockIndexStream();
 		UnLockForThreadAccess();
 	}
 	return ext.TotalExtent();
 }
 
-void CRenderMesh::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm, SSkinningData const* pSkinning)
+void CRenderMesh::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm, SSkinningData const* pSkinning)
 {
+	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
 	LockForThreadAccess();
 
-	SkinnedPosNormData vdata;
-	if (m_pCachePos)
+	vtx_idx* pInds = GetIndexPtr(FSL_READ);
+	if (pInds && m_PosNorms.size())
 	{
-		vdata.aPos.data = m_pCachePos;
-		vdata.aPos.iStride = sizeof(Vec3);
-	}
-	else if (m_eVF == EDefaultInputLayouts::P3S_C4B_T2S || m_eVF == EDefaultInputLayouts::P3S_N4B_C4B_T2S)
-		GetStridedArray(vdata.aPosH, VSF_GENERAL, SInputLayout::eOffset_Position);
-	else
-		GetStridedArray(vdata.aPos, VSF_GENERAL, SInputLayout::eOffset_Position);
-
-	if (vdata.aPos.data || vdata.aPosH.data)
-	{
-		// Check possible sources for normals.
-		GetStridedArray(vdata.aNormB, VSF_GENERAL, SInputLayout::eOffset_Normal)
-		|| GetStridedArray(vdata.aNorm, VSF_NORMALS)
-		|| GetStridedArray(vdata.aQTan, VSF_QTANGENTS)
-		|| GetStridedArray(vdata.aTan2, VSF_TANGENTS);
-
-		vtx_idx* pInds = GetIndexPtr(FSL_READ);
-
+		PosNormData vdata;
+		vdata.aPosNorms = m_PosNorms;
 		if (vdata.pSkinningData = pSkinning)
 		{
 			GetStridedArray(vdata.aSkinning, VSF_HWSKIN_INFO);
@@ -3688,54 +3694,60 @@ void CRenderMesh::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm, SSk
 		if (eForm == GeomForm_Vertices)
 		{
 			if (m_nInds == 0)
-				ran.zero();
+				return points.fill(ZERO);
 			else
 			{
-				int nIndex = seed.GetRandom(0U, m_nInds - 1);
-				vdata.GetPosNorm(ran, pInds[nIndex]);
+				for (auto& ran : points)
+				{
+					int nIndex = seed.GetRandom(0U, m_nInds - 1);
+					vdata.GetPosNorm(ran, pInds[nIndex]);
+				}
 			}
 		}
 		else
 		{
 			CGeomExtent const& extent = m_Extents[eForm];
 			if (!extent.NumParts())
-				ran.zero();
+				return points.fill(ZERO);
 			else
 			{
-				int aIndices[3];
-				int nPart = extent.RandomPart(seed);
-				int nVerts = TriIndices(aIndices, nPart, eForm);
 				Vec3 vCenter = (m_vBoxMin + m_vBoxMax) * 0.5f;
-
-				// Extract vertices, blend.
-				PosNorm aRan[3];
-				while (--nVerts >= 0)
-					vdata.GetPosNorm(aRan[nVerts], pInds[aIndices[nVerts]]);
-				TriRandomPos(ran, seed, eForm, aRan, vCenter, true);
-
-				// Temporary fix for bad skinning data
-				if (pSkinning)
+				for (auto& ran : points)
 				{
-					if (!IsValid(ran.vPos) || AABB(m_vBoxMin, m_vBoxMax).GetDistanceSqr(ran.vPos) > 100)
-						ran.vPos = vCenter;
-					if (!IsValid(ran.vNorm))
-						ran.vNorm = Vec3(0,0,1);
-				}
-				else
-				{
-					assert(IsValid(ran.vPos) && IsValid(ran.vNorm));
-					assert(AABB(m_vBoxMin, m_vBoxMax).GetDistanceSqr(ran.vPos) < 100);
+					int nPart = extent.RandomPart(seed);
+					int aIndices[3];
+					int nVerts = TriIndices(aIndices, nPart, eForm);
+
+					// Extract vertices, blend.
+					PosNorm aRan[3];
+					while (--nVerts >= 0)
+						vdata.GetPosNorm(aRan[nVerts], pInds[aIndices[nVerts]]);
+					TriRandomPos(ran, seed, eForm, aRan, vCenter, true);
+
+					// Temporary fix for bad skinning data
+					if (pSkinning)
+					{
+						if (!IsValid(ran.vPos) || AABB(m_vBoxMin, m_vBoxMax).GetDistanceSqr(ran.vPos) > 100)
+							ran.vPos = vCenter;
+						if (!IsValid(ran.vNorm))
+							ran.vNorm = Vec3(0, 0, 1);
+					}
+					else
+					{
+						assert(IsValid(ran.vPos) && IsValid(ran.vNorm));
+						assert(AABB(m_vBoxMin, m_vBoxMax).GetDistanceSqr(ran.vPos) < 100);
+					}
 				}
 			}
 		}
 	}
 
 	UnLockForThreadAccess();
-	UnlockStream(VSF_GENERAL);
-	UnlockStream(VSF_NORMALS);
-	UnlockStream(VSF_QTANGENTS);
-	UnlockStream(VSF_TANGENTS);
+	UnlockIndexStream();
 	UnlockStream(VSF_HWSKIN_INFO);
+	#if SKIN_MORPHING
+		UnlockStream(VSF_HWSKIN_SHAPEDEFORM_INFO);
+	#endif
 }
 
 int CRenderChunk::Size() const

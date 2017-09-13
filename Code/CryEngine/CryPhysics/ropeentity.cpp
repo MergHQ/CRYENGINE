@@ -3024,32 +3024,33 @@ float CRopeEntity::GetExtent(EGeomForm eForm)	const
 	return ext.TotalExtent();
 }
 
-void CRopeEntity::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const
+void CRopeEntity::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
+
+	CGeomExtent const& ext = m_Extents[GeomForm_Edges];
+	if (eForm != GeomForm_Vertices && !ext.NumParts())
+		return points.fill(ZERO);
+
 	strided_pointer<Vec3> vtx;
 	int nVerts = GetVertices(vtx);
-	int i;
-	Vec3 dir;
 
-	if (eForm == GeomForm_Vertices)
-	{
-		i = seed.GetRandom(0, nVerts - 1);
-		ran.vPos = vtx[i];
-		dir = (vtx[min(i+1,nVerts-1)] - vtx[max(i-1,0)]).normalized();
-	}
-	else
-	{
-		CGeomExtent const& ext = m_Extents[GeomForm_Edges];
-		if (!ext.NumParts())
-			return ran.zero();
-		i = ext.RandomPart(seed);
-		ran.vPos = vtx[i]+(vtx[i+1]-vtx[i])*seed.GetRandom(0.0f, 1.0f);
-		dir = (vtx[i+1]-vtx[i]).normalized();
-	}
+	for (auto& ran : points) {
+		Vec3 dir;
+		if (eForm == GeomForm_Vertices) {
+			int i = seed.GetRandom(0, nVerts - 1);
+			ran.vPos = vtx[i];
+			dir = (vtx[min(i+1,nVerts-1)] - vtx[max(i-1,0)]).normalized();
+		}
+		else {
+			int i = ext.RandomPart(seed);
+			ran.vPos = vtx[i]+(vtx[i+1]-vtx[i])*seed.GetRandom(0.0f, 1.0f);
+			dir = (vtx[i+1]-vtx[i]).normalized();
+		}
 
-	Vec3 axisx = dir.GetOrthogonal().normalized(), axisy = dir^axisx;
-	float angle = seed.GetRandom(0.0f, 2.0f*gf_PI);
-	ran.vNorm = axisx*cos_tpl(angle)+axisy*sin_tpl(angle);
+		Vec3 axisx = dir.GetOrthogonal().normalized(), axisy = dir^axisx;
+		float angle = seed.GetRandom(0.0f, 2.0f*gf_PI);
+		ran.vNorm = axisx*cos_tpl(angle)+axisy*sin_tpl(angle);
+	}
 }
 
 #undef m_bAwake

@@ -974,7 +974,7 @@ public:
 	static int OnBBoxOverlap(const EventPhysBBoxOverlap*);
 
 	float GetExtent(EGeomForm eForm) const;
-	void GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const;
+	void GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const;
 
 	virtual void GetMemoryStatistics(ICrySizer *pSizer) const;
 

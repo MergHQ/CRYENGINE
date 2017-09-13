@@ -611,18 +611,42 @@ private:
 		STempInitBuffer<float> offsets(context, m_offset);
 		STempInitBuffer<float> velocityMults(context, m_velocity);
 
-		for (auto particleId : context.GetSpawnedRange())
+		auto spawnRange = container.GetSpawnedRange();
+		TParticleHeap::Array<PosNorm> randomPoints(*context.m_pMemHeap, spawnRange.size());
+
+		// Count children for each parent attachment object
+		struct GeomChildren
 		{
-			CRndGen rng(context.m_spawnRng.Rand());
-			PosNorm randPositionNormal;
-			
-			if (pParentComponent)
+			GeomRef geom;
+			uint pos;
+		};
+		THeapArray<GeomChildren*> parentGeom(*context.m_pMemHeap);
+		THeapArray<GeomChildren> mapGeomChildren(*context.m_pMemHeap);
+
+		if (!pParentComponent)
+		{
+			emitterGeometry.GetRandomPoints(
+				randomPoints,
+				context.m_spawnRng.Rand(), geomType, geomForm,
+				&geomLocation, geometryCentered);
+		}
+		else
+		{
+			auto FindGeomChildren = [&mapGeomChildren](const GeomRef& geom) -> GeomChildren&
+			{
+				for (auto& elem : mapGeomChildren)
+					if (elem.geom == geom)
+						return elem;
+				mapGeomChildren.push_back(GeomChildren{geom, 0});
+				return mapGeomChildren.back();
+			};
+
+			parentGeom.resize(spawnRange.size());
+			mapGeomChildren.reserve(parentContainer.GetNumParticles());
+			for (auto particleId : context.GetSpawnedRange())
 			{
 				GeomRef particleGeometry = emitterGeometry;
 				TParticleId parentId = parentIds.Load(particleId);
-				geomLocation.t = parentPositions.SafeLoad(parentId);
-				geomLocation.q = parentQuats.SafeLoad(parentId);
-				geomLocation.s = parentSizes.SafeLoad(parentId);
 				if (IMeshObj* mesh = parentMeshes.SafeLoad(parentId))
 					particleGeometry.Set(mesh);
 				if (m_source == EGeometrySource::Physics)
@@ -630,15 +654,46 @@ private:
 					if (IPhysicalEntity* pPhysics = parentPhysics.SafeLoad(parentId))
 						particleGeometry.Set(pPhysics);
 				}
-				particleGeometry.GetRandomPos(
-				  randPositionNormal, rng, geomType, geomForm,
-				  geomLocation, geometryCentered);
+
+				auto& geom = FindGeomChildren(particleGeometry);
+
+				parentGeom[particleId - spawnRange.m_begin] = &geom;
+				geom.pos++;
+			}
+
+			// Assign geom position, and get random points
+			uint pos = 0;
+			for (auto& elem : mapGeomChildren)
+			{
+				uint count = elem.pos;
+				elem.pos = pos;
+
+				elem.geom.GetRandomPoints(
+					randomPoints(pos, count),
+					context.m_spawnRng.Rand(), geomType, geomForm,
+					nullptr, geometryCentered);
+				pos += count;
+			}
+		}
+
+		for (auto particleId : context.GetSpawnedRange())
+		{
+			PosNorm randPositionNormal;
+			
+			if (!pParentComponent)
+			{
+				randPositionNormal = randomPoints[particleId - spawnRange.m_begin];
 			}
 			else
 			{
-				emitterGeometry.GetRandomPos(
-				  randPositionNormal, rng, geomType, geomForm,
-				  geomLocation, geometryCentered);
+				TParticleId parentId = parentIds.Load(particleId);
+				geomLocation.t = parentPositions.SafeLoad(parentId);
+				geomLocation.q = parentQuats.SafeLoad(parentId);
+				geomLocation.s = parentSizes.SafeLoad(parentId);
+
+				auto& geom = *parentGeom[particleId - spawnRange.m_begin];
+				randPositionNormal = randomPoints[geom.pos++];
+				randPositionNormal <<= geomLocation;
 			}
 			
 			const float offset = offsets.m_stream.SafeLoad(particleId);

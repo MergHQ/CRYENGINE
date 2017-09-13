@@ -594,18 +594,19 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 			}
 
 			CRndGen seed = cry_random_next();
+			DynArray<PosNorm> points(max(nCount, 1));
+			if (geoOrig.m_pMeshObj)
+				geoOrig.m_pMeshObj->GetRandomPoints(points, seed, GeomForm_Volume);
+
 			for (int n = 0; n < max(nCount, 1); n++)
 			{
 				// Compute initial position.
 				if (nCount)
 				{
 					// Position randomly in parent.
-					PosNorm ran;
-					if (geoOrig.m_pMeshObj)
-						geoOrig.m_pMeshObj->GetRandomPos(ran, seed, GeomForm_Volume);
-					ran.vPos = entityQuatTS * ran.vPos;
-					ran.vNorm = entityQuatTS.q * ran.vNorm;
-					mxPiece.SetTranslation(ran.vPos);
+					Vec3 vPos = points[n].vPos;
+					vPos = entityQuatTS * vPos;
+					mxPiece.SetTranslation(vPos);
 
 					// Random rotation and size.
 					if (!sRotAxes.empty())

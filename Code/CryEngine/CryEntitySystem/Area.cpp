@@ -3396,19 +3396,25 @@ float CArea::GetExtent(EGeomForm eForm) const
 	}
 }
 
-void CArea::GetRandomPos(PosNorm& ran, CRndGen seed, EGeomForm eForm) const
+void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm) const
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY)
 	switch (m_areaType)
 	{
 	case ENTITY_AREA_TYPE_SPHERE:
-		SphereRandomPos(ran, seed, eForm, m_sphereRadius);
-		ran.vPos += m_sphereCenter;
+		SphereRandomPoints(points, seed, eForm, m_sphereRadius);
+		for (auto& point : points)
+			point.vPos += m_sphereCenter;
 		return;
 	case ENTITY_AREA_TYPE_BOX:
-		BoxRandomPos(ran, seed, eForm, (m_boxMax - m_boxMin) * 0.5f);
-		ran.vPos += (m_boxMax + m_boxMin) * 0.5f;
-		ran <<= m_worldTM;
+	{
+		BoxRandomPoints(points, seed, eForm, (m_boxMax - m_boxMin) * 0.5f);
+		Matrix34 tm = m_worldTM;
+		tm.SetTranslation(tm.GetTranslation() + (m_boxMax + m_boxMin) * 0.5f);
+		for (auto& point : points)
+			point <<= tm;
 		return;
+	}
 	case ENTITY_AREA_TYPE_SHAPE:
 		// To do
 	case ENTITY_AREA_TYPE_SOLID:
