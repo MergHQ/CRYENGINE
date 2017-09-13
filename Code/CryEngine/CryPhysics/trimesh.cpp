@@ -505,7 +505,7 @@ int CTriMesh::CalculateTopology(index_t *pIndices, int bCheckOnly)
 
 void CTriMesh::RebuildBVTree(CBVTree *pRefTree)
 {
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
 	int nMinTrisPerNode=2,nMaxTrisPerNode=4,i,j,jnext,*pIdxOld2New;
 	Vec3 n,nnext,BBox[2];
@@ -1584,7 +1584,7 @@ void update_unprojection(real t, unprojection_mode *pmode, geometry_under_test *
 int CTriMesh::RegisterIntersection(primitive *pprim1,primitive *pprim2, geometry_under_test *pGTest1,geometry_under_test *pGTest2,
 																	 prim_inters *pinters)
 {
-	//FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	//CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	geometry_under_test *pGTest[2];
   pGTest[0] = pGTest1;   pGTest[1] = pGTest2;
 	indexed_triangle tri = *(indexed_triangle*)pprim1, tri1;

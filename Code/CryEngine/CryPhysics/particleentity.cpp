@@ -539,7 +539,7 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
     m_timeSurplus=1;
 
 	if (IsAwake()) {
-		FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+		CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 		PHYS_ENTITY_PROFILER
 		g_pCurParticle[iCaller] = this;
 

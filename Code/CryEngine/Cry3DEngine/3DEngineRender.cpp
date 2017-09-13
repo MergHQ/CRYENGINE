@@ -1683,7 +1683,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			m_pTerrain->UpdateNodesIncrementaly(passInfo);
 
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
-		FRAME_PROFILER("COctreeNode::Render_____", GetSystem(), PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "COctreeNode::Render_____");
 		m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), passInfo);
 
 		if (GetCVars()->e_ObjectsTreeBBoxes >= 3)
@@ -1711,7 +1711,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	// render outdoor entities very near of camera - fix for 1p vehicle entering into indoor
 	{
-		FRAME_PROFILER("COctreeNode::Render_Object_Nodes_NEAR", GetSystem(), PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "COctreeNode::Render_Object_Nodes_NEAR");
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
 		if (GetCVars()->e_PortalsBigEntitiesFix)
 		{
@@ -1735,7 +1735,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		auto dwRndFlags = pObj->GetRndFlags();
 		if (dwRndFlags & ERF_HUD || passInfo.GetCamera().IsAABBVisible_E(objBox))
 		{
-			FRAME_PROFILER("C3DEngine::RenderScene_DrawAlwaysVisible", GetSystem(), PROFILE_3DENGINE);
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "C3DEngine::RenderScene_DrawAlwaysVisible");
 
 			Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 			float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
@@ -1843,7 +1843,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	FinishWindGridJob();
 
 	{
-		FRAME_PROFILER("Renderer::EF_EndEf3D", GetSystem(), PROFILE_RENDERER);
+		CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer::EF_EndEf3D");
 		// TODO: separate SHDF_NOASYNC and SHDF_STREAM_SYNC flags
 		GetRenderer()->EF_EndEf3D(IsShadersSyncLoad() ? (nRenderFlags | SHDF_NOASYNC | SHDF_STREAM_SYNC) : nRenderFlags, GetObjManager()->m_nUpdateStreamingPrioriryRoundId, GetObjManager()->m_nUpdateStreamingPrioriryRoundIdFast, passInfo);
 	}

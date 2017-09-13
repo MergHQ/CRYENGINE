@@ -21,7 +21,7 @@ inline Vec3 TriangleCenter(const Vec3& a, const Vec3& b, const Vec3& c)
 
 void MNM::PathfinderUtils::QueuedRequest::SetupDangerousLocationsData()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	dangerousAreas.clear();
 	if (requestParams.dangersToAvoidFlags == eMNMDangers_None)
@@ -384,7 +384,7 @@ void CMNMPathfinder::SpawnPathfinderProcessingJob(MNM::PathfinderUtils::Processi
 
 void CMNMPathfinder::WaitForJobsToFinish()
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	m_processingContextsPool.ExecuteFunctionOnElements(functor(*this, &CMNMPathfinder::WaitForJobToFinish));
 }
 
@@ -414,7 +414,7 @@ void CMNMPathfinder::DispatchResults()
 
 void CMNMPathfinder::Update()
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	if (gAIEnv.CVars.MNMPathFinderDebug)
 	{

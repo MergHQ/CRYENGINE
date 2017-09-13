@@ -1093,7 +1093,7 @@ void CPhysArea::Update(float dt)
 	Release(); // since it was addreffed by an update request
 	if (m_bDeleted)
 		return;
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_AREA_PROFILER(this)
 	int bAwakeEnv = 0;
 

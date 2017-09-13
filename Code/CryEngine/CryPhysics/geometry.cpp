@@ -277,7 +277,7 @@ void GTestPrepPartDeux(geometry_under_test *gtest, Vec3r &offsetWorld)
 
 int CGeometry::Intersect(IGeometry *pCollider, geom_world_data *pdata1,geom_world_data *pdata2, intersection_params *pparams, geom_contact *&pcontacts)
 {
-	//FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	//CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	geometry_under_test gtest[2];
 	geom_world_data *pdata[2] = { pdata1,pdata2 };
 	int i,j,jmax,mask,nContacts=0,iStartNode[2],bActive=0,iCaller;
@@ -609,7 +609,7 @@ int CPrimitive::Intersect(IGeometry *_pCollider, geom_world_data *pdata1, geom_w
 	if (!pCollider->IsAPrimitive())
 		return CGeometry::Intersect(pCollider,pdata1,pdata2,pparams,pcontacts);
 
-	//FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	//CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	pdata1 = (geom_world_data*)((intptr_t)pdata1 | -iszero((intptr_t)pdata1) & (intptr_t)&defgwd);
 	pdata2 = (geom_world_data*)((intptr_t)pdata2 | -iszero((intptr_t)pdata2) & (intptr_t)&defgwd);
 	//pparams = (intersection_params*)((intptr_t)pparams | -iszero((intptr_t)pparams) & (intptr_t)&defip);

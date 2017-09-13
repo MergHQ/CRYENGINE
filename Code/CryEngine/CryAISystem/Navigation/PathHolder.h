@@ -132,7 +132,7 @@ private:
 	template <class TStringPullChecker>
 	void StringPullLoop(const MNM::CNavMesh& navMesh, uint16 iteration, const TStringPullChecker& stringPullChecker)
 	{
-		FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
+		CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 		if (m_path.size() < 3)
 			return;

@@ -207,7 +207,7 @@ bool CIKTorsoAim::Prepare(const SAnimationPoseModifierParams& params)
 
 bool CIKTorsoAim::Execute(const SAnimationPoseModifierParams& params)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ANIMATION);
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
 
 	const IDefaultSkeleton& rIDefaultSkeleton = params.GetIDefaultSkeleton();
 	if ((m_params.effectorJoint < 0) || (m_params.aimJoint < 0))

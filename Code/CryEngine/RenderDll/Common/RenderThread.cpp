@@ -3481,7 +3481,7 @@ void SRenderThread::FlushAndWait()
 	if (IsRenderThread())
 		return;
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	if (gEnv->pStatoscope)
 		gEnv->pStatoscope->LogCallstack("Flush Render Thread");
@@ -3660,7 +3660,7 @@ void SRenderThread::WaitFlushFinishedCond()
 // Must be executed from render thread
 void SRenderThread::WaitFlushCond()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	CTimeValue time = iTimer->GetAsyncTime();
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC

@@ -1912,7 +1912,7 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 	, D3DBuffer** ppBuff
 	, const void* pData)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CreateBuffer");
 	HRESULT hr = S_OK;
 

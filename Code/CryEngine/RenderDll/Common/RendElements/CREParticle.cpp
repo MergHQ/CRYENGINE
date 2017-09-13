@@ -35,7 +35,7 @@ void CFillRateManager::AddPixelCount(float fPixels)
 
 void CFillRateManager::ComputeMaxPixels()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	// Find per-container maximum which will not exceed total.
 	// don't use static here, this function can be called before particle cvars are registered
@@ -268,7 +268,7 @@ SRenderVertices* CREParticle::AllocPullVertices(int nPulledVerts)
 
 void CREParticle::ComputeVertices(SCameraInfo camInfo, uint64 uRenderFlags)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_pVertexCreator->ComputeVertices(camInfo, this, uRenderFlags, gRenDev->m_FillRateManager.GetMaxPixels());
 }
@@ -304,7 +304,7 @@ CRenderer::SyncComputeVerticesJobs()
 
 void CRenderer::EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) PREFAST_SUPPRESS_WARNING(6262)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	ASSERT_IS_MAIN_THREAD(m_pRT)
 
 	// update fill thread id for particle jobs
@@ -325,7 +325,7 @@ void CRenderer::EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jo
 ///////////////////////////////////////////////////////////////////////////////
 void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob> aJobs, int nREStart, SRenderingPassInfo passInfoOriginal) PREFAST_SUPPRESS_WARNING(6262)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	SRenderingPassInfo passInfo(passInfoOriginal);
 

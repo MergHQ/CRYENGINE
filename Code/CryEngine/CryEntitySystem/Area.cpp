@@ -70,7 +70,7 @@ void CArea::Release()
 //////////////////////////////////////////////////////////////////////////
 void CArea::SetSoundObstructionOnAreaFace(size_t const index, bool const bObstructs)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	switch (m_areaType)
 	{
 	case ENTITY_AREA_TYPE_BOX:
@@ -142,7 +142,7 @@ void CArea::SetSoundObstructionOnAreaFace(size_t const index, bool const bObstru
 //////////////////////////////////////////////////////////////////////////
 void CArea::SetAreaType(EEntityAreaType type)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	m_areaType = type;
 
 	// to prevent gravity volumes being evaluated in the
@@ -156,7 +156,7 @@ void CArea::SetAreaType(EEntityAreaType type)
 //////////////////////////////////////////////////////////////////////////
 void CArea::ClearPoints()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if (!m_areaSegments.empty())
 	{
@@ -184,7 +184,7 @@ size_t CArea::MemStat()
 //////////////////////////////////////////////////////////////////////////
 void CArea::AddSegment(const a2DPoint& p0, const a2DPoint& p1, bool const bObstructSound)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	a2DSegment* const pSegment = new a2DSegment;
 	pSegment->bObstructSound = bObstructSound;
 	UpdateSegment(*pSegment, p0, p1);
@@ -246,7 +246,7 @@ void CArea::UpdateSegment(a2DSegment& segment, a2DPoint const& p0, a2DPoint cons
 //////////////////////////////////////////////////////////////////////////
 float CArea::CalcDistToPoint(a2DPoint const& point) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) == 0)
 		return -1;
 
@@ -325,7 +325,7 @@ float CArea::CalcDistToPoint(a2DPoint const& point) const
 //////////////////////////////////////////////////////////////////////////
 bool CArea::CalcPointWithin(EntityId const nEntityID, Vec3 const& point3d, bool const bIgnoreHeight /* = false */, bool const bCacheResult /* = true */)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	bool bResult = false;
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
@@ -473,7 +473,7 @@ bool CArea::CalcPointWithin(EntityId const nEntityID, Vec3 const& point3d, bool 
 //////////////////////////////////////////////////////////////////////////
 float CArea::CalcPointWithinDist(EntityId const nEntityID, Vec3 const& point3d, bool const bIgnoreSoundObstruction /* = true */, bool const bCacheResult /* = true */)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	float fMinDist = -1.0f;
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
@@ -634,7 +634,7 @@ float CArea::CalcPointWithinDist(EntityId const nEntityID, Vec3 const& point3d, 
 //////////////////////////////////////////////////////////////////////////
 float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Point3d, Vec3& OnHull3d, bool const bIgnoreSoundObstruction /* = true */, bool const bCacheResult /* = true */)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	float fClosestDistance = -1.0f;
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
@@ -912,7 +912,7 @@ float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Poin
 //////////////////////////////////////////////////////////////////////////
 float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, Vec3& OnHull3d, bool const bIgnoreSoundObstruction /* = true */, bool const bCacheResult /* = true */)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	float fClosestDistance = -1.0f;
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
@@ -1237,7 +1237,7 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 //////////////////////////////////////////////////////////////////////////
 float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, bool const bIgnoreHeight /* = false */, bool const bIgnoreSoundObstruction /* = true */, bool const bCacheResult /* = true */)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	float fClosestDistance = -1.0f;
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
@@ -1557,7 +1557,7 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 //////////////////////////////////////////////////////////////////////////
 EAreaPosType CArea::CalcPosType(EntityId const nEntityID, Vec3 const& rPos, bool const bCacheResult /* = true */)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	EAreaPosType eTempPosType = AREA_POS_TYPE_COUNT;
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
@@ -1745,7 +1745,7 @@ EAreaPosType CArea::CalcPosType(EntityId const nEntityID, Vec3 const& rPos, bool
 //////////////////////////////////////////////////////////////////////////
 void CArea::CalcClosestPointToObstructedShape(EntityId const nEntityID, Vec3& outClosest, float& outClosestDistSq, Vec3 const& sourcePos)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	size_t const numSegments = m_areaSegments.size();
 	Lineseg oLine;
 	Vec3 closest(ZERO);
@@ -1928,7 +1928,7 @@ void CArea::CalcClosestPointToObstructedShape(EntityId const nEntityID, Vec3& ou
 //////////////////////////////////////////////////////////////////////////
 void CArea::CalcClosestPointToObstructedBox(Vec3& outClosest, float& outClosestDistSq, Vec3 const& sourcePos) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	Vec3 source(sourcePos);
 	Vec3 closest(sourcePos);
 	outClosestDistSq = FLT_MAX;
@@ -2191,7 +2191,7 @@ void CArea::CalcClosestPointToObstructedBox(Vec3& outClosest, float& outClosestD
 //////////////////////////////////////////////////////////////////////////
 void CArea::CalcClosestPointToSolid(Vec3 const& rv3SourcePos, bool bIgnoreSoundObstruction, float& rfClosestDistSq, Vec3* rv3ClosestPos) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	Vec3 localPoint3D = m_invMatrix.TransformPoint(rv3SourcePos);
 	int queryFlag = bIgnoreSoundObstruction ? CAreaSolid::eSegmentQueryFlag_All : CAreaSolid::eSegmentQueryFlag_Open;
 	if (m_pAreaSolid->IsInside(localPoint3D))
@@ -2205,7 +2205,7 @@ void CArea::CalcClosestPointToSolid(Vec3 const& rv3SourcePos, bool bIgnoreSoundO
 //////////////////////////////////////////////////////////////////////////
 void CArea::InvalidateCachedAreaData(EntityId const nEntityID)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	TEntityCachedAreaDataMap::iterator Iter(m_mapEntityCachedAreaData.find(nEntityID));
 
 	if (Iter != m_mapEntityCachedAreaData.end())
@@ -2223,7 +2223,7 @@ void CArea::InvalidateCachedAreaData(EntityId const nEntityID)
 //////////////////////////////////////////////////////////////////////////
 void CArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	m_areaType = ENTITY_AREA_TYPE_SHAPE;
 
 	// at least two points needed to create closed shape
@@ -2459,7 +2459,7 @@ void CArea::SetSphere(const Vec3& center, float fRadius)
 //////////////////////////////////////////////////////////////////////////
 void CArea::CalcBBox()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	a2DBBox& areaBBox = m_areaBBox;
 	areaBBox.min.x = m_areaSegments[0]->bbox.min.x;
 	areaBBox.min.y = m_areaSegments[0]->bbox.min.y;
@@ -2505,7 +2505,7 @@ void CArea::ReleaseCachedAreaData()
 //////////////////////////////////////////////////////////////////////////
 float CArea::GetFadeDistance()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if (m_fadeDistance < 0.0f || gEnv->IsEditor())
 	{
@@ -2559,7 +2559,7 @@ float CArea::GetEnvironmentFadeDistance()
 //////////////////////////////////////////////////////////////////////////
 float CArea::GetGreatestFadeDistance()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if (m_greatestFadeDistance < 0.0f || gEnv->IsEditor())
 	{
@@ -2765,7 +2765,7 @@ void CArea::ClearCachedEvents()
 //////////////////////////////////////////////////////////////////////////
 void CArea::SendCachedEventsFor(EntityId const nEntityID)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	size_t const nCountCachedEvents = m_cachedEvents.size();
 
 	if (((m_state & Cry::AreaManager::EAreaState::Initialized) != 0) && nCountCachedEvents > 0)
@@ -2830,7 +2830,7 @@ void CArea::SendEvent(SEntityEvent& newEvent, bool bClearCachedEvents /* = true 
 //////////////////////////////////////////////////////////////////////////
 void CArea::EnterArea(EntityId const entityId)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
 	{
@@ -2862,7 +2862,7 @@ void CArea::EnterArea(EntityId const entityId)
 //////////////////////////////////////////////////////////////////////////
 void CArea::LeaveArea(EntityId const entityId)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
 	{
@@ -2889,7 +2889,7 @@ void CArea::EnterNearArea(
   Vec3 const& closestPointToArea,
   float const distance)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
 	{
@@ -2917,7 +2917,7 @@ void CArea::EnterNearArea(
 //////////////////////////////////////////////////////////////////////////
 void CArea::LeaveNearArea(EntityId const entityId)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
 	{
@@ -2938,7 +2938,7 @@ void CArea::LeaveNearArea(EntityId const entityId)
 //////////////////////////////////////////////////////////////////////////
 void CArea::OnAddedToAreaCache(EntityId const entityId)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
 	{
@@ -2959,7 +2959,7 @@ void CArea::OnAddedToAreaCache(EntityId const entityId)
 //////////////////////////////////////////////////////////////////////////
 void CArea::OnRemovedFromAreaCache(EntityId const entityId)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	m_mapEntityCachedAreaData.erase(entityId);
 }
 
@@ -2970,7 +2970,7 @@ void CArea::ExclusiveUpdateAreaInside(
   EntityId const higherAreaId,
   float const fade)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
 	{
@@ -3008,7 +3008,7 @@ void CArea::ExclusiveUpdateAreaNear(
   float const distance,
   Vec3 const& position)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
 	{
@@ -3043,7 +3043,7 @@ void CArea::ExclusiveUpdateAreaNear(
 //////////////////////////////////////////////////////////////////////////
 float CArea::CalculateFade(const Vec3& pos3D)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	float fadeCoeff = 0.0f;
 
 	if ((m_state & Cry::AreaManager::EAreaState::Initialized) != 0)
@@ -3125,7 +3125,7 @@ float CArea::CalculateFade(const Vec3& pos3D)
 //////////////////////////////////////////////////////////////////////////
 void CArea::Draw(size_t const idx)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	I3DEngine* p3DEngine = gEnv->p3DEngine;
 	IRenderAuxGeom* pRC = gEnv->pRenderer->GetIRenderAuxGeom();
 	pRC->SetRenderFlags(e_Def3DPublicRenderflags);
@@ -3254,7 +3254,7 @@ void CArea::Draw(size_t const idx)
 //////////////////////////////////////////////////////////////////////////
 void CArea::ReleaseAreaData()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	ClearPoints();
 
 	stl::free_container(m_mapEntityCachedAreaData);
@@ -3280,7 +3280,7 @@ void CArea::GetMemoryUsage(ICrySizer* pSizer) const
 //////////////////////////////////////////////////////////////////////////
 float CArea::GetCachedPointWithinDistSq(EntityId const nEntityID) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	float fValue = 0.0f;
 	TEntityCachedAreaDataMap::const_iterator const Iter(m_mapEntityCachedAreaData.find(nEntityID));
 
@@ -3295,7 +3295,7 @@ float CArea::GetCachedPointWithinDistSq(EntityId const nEntityID) const
 //////////////////////////////////////////////////////////////////////////
 bool CArea::GetCachedPointWithin(EntityId const nEntityID) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	bool bValue = false;
 	TEntityCachedAreaDataMap::const_iterator const Iter(m_mapEntityCachedAreaData.find(nEntityID));
 
@@ -3310,7 +3310,7 @@ bool CArea::GetCachedPointWithin(EntityId const nEntityID) const
 //////////////////////////////////////////////////////////////////////////
 EAreaPosType CArea::GetCachedPointPosTypeWithin(EntityId const nEntityID) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	EAreaPosType eValue = AREA_POS_TYPE_COUNT;
 	TEntityCachedAreaDataMap::const_iterator const Iter(m_mapEntityCachedAreaData.find(nEntityID));
 
@@ -3325,7 +3325,7 @@ EAreaPosType CArea::GetCachedPointPosTypeWithin(EntityId const nEntityID) const
 //////////////////////////////////////////////////////////////////////////
 float CArea::GetCachedPointNearDistSq(EntityId const nEntityID) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	float fValue = 0.0f;
 	TEntityCachedAreaDataMap::const_iterator const Iter(m_mapEntityCachedAreaData.find(nEntityID));
 
@@ -3340,7 +3340,7 @@ float CArea::GetCachedPointNearDistSq(EntityId const nEntityID) const
 //////////////////////////////////////////////////////////////////////////
 Vec3 const& CArea::GetCachedPointOnHull(EntityId const nEntityID) const
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	TEntityCachedAreaDataMap::const_iterator const Iter(m_mapEntityCachedAreaData.find(nEntityID));
 
 	if (Iter != m_mapEntityCachedAreaData.end())

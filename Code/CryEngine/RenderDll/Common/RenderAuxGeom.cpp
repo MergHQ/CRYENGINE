@@ -2042,7 +2042,7 @@ void CAuxGeomCB::Flush()
 
 void CAuxGeomCB::Flush(bool reset)
 {
-	FUNCTION_PROFILER_RENDERER
+	FUNCTION_PROFILER_RENDERER();
 
 	size_t lastFlushPos = GetLastFlushPos();
 	size_t curFlushPos = GetCurFlushPos();

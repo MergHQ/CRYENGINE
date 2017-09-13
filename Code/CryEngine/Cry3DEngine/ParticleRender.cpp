@@ -1361,7 +1361,7 @@ void SParticleVertexContext::Init(float fMaxContainerPixels, CParticleContainer*
 
 void CParticleContainer::ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uVertexFlags, float fMaxPixels)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
 	// Update, if not yet done.

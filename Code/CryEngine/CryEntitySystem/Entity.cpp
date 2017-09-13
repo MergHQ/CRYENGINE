@@ -183,7 +183,7 @@ void CEntity::SetFlagsExtended(uint32 flagsExtended)
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::SendEvent(SEntityEvent& event)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	CTimeValue t0;
 	if (CVar::es_DebugEvents)
@@ -479,7 +479,7 @@ bool CEntity::Init(SEntitySpawnParams& params)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::Update(SEntityUpdateContext& ctx)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	if (m_bHidden && !CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN))
 		return;
@@ -515,7 +515,7 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::PrePhysicsUpdate(SEntityEvent& event)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	m_components.ForEachSorted(
 	  [&event](const SEntityComponentRecord& componentRecord)

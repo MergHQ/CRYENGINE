@@ -69,7 +69,7 @@ CMFXAudioEffect::CMFXAudioEffect()
 
 void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	IF_UNLIKELY (!m_audioParams.trigger.IsValid())
 		return;

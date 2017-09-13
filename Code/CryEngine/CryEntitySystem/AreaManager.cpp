@@ -209,7 +209,7 @@ void CAreaManager::TriggerAudioListenerUpdate(IArea const* const _pArea)
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::Update()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 	// Update the area grid data structure.
 	UpdateDirtyAreas();

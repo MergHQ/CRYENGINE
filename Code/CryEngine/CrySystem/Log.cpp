@@ -432,7 +432,7 @@ void CLog::LogV(const ELogType type, int flags, const char* szFormat, va_list ar
 		}
 	}
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	//LOADING_TIME_PROFILE_SECTION(GetISystem());
 
 	bool bfile = false, bconsole = false;
@@ -1446,7 +1446,7 @@ void CLog::RemoveCallback(ILogCallback* pCallback)
 //////////////////////////////////////////////////////////////////////////
 void CLog::Update()
 {
-	FUNCTION_PROFILER(m_pSystem, PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 	if (CryGetCurrentThreadId() == m_nMainThreadId)
 	{

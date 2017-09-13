@@ -243,7 +243,7 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 
 	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(true, false));
 

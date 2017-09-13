@@ -437,7 +437,7 @@ bool CSvoEnv::Render()
 
 	//	if(GetCVars()->e_rsMode != RS_FAT_CLIENT)
 	{
-		FRAME_PROFILER("CGlobalCloud::Render_StartStreaming", GetSystem(), PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_StartStreaming");
 
 		for (int nTreeLevel = 0; (nTreeLevel < nVoxStreamQueueMaxSize); nTreeLevel++)
 			for (int nDistId = 0; (nDistId < nVoxStreamQueueMaxSize); nDistId++)
@@ -461,13 +461,13 @@ bool CSvoEnv::Render()
 	if (CVoxelSegment::m_arrLoadedSegments.Count() > (nMaxLoadedNodes - Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests))
 	{
 		{
-			FRAME_PROFILER("CGlobalCloud::Render_UnloadStreamable_Sort", GetSystem(), PROFILE_3DENGINE);
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_UnloadStreamable_Sort");
 
 			qsort(CVoxelSegment::m_arrLoadedSegments.GetElements(), CVoxelSegment::m_arrLoadedSegments.Count(), sizeof(CVoxelSegment::m_arrLoadedSegments[0]), CVoxelSegment::ComparemLastVisFrameID);
 		}
 
 		{
-			FRAME_PROFILER("CGlobalCloud::Render_UnloadStreamable_FreeRenderData", GetSystem(), PROFILE_3DENGINE);
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_UnloadStreamable_FreeRenderData");
 
 			int nNumNodesToDelete = 4 + Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests;//CVoxelSegment::m_arrLoadedSegments.Count()/1000;
 
@@ -507,7 +507,7 @@ bool CSvoEnv::Render()
 
 	//if(nUserId == 0 || !bMultiUserMode)
 	{
-		FRAME_PROFILER("CGlobalCloud::Render_BrickUpdate", GetSystem(), PROFILE_3DENGINE);
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_BrickUpdate");
 
 		CVoxelSegment::m_nUpdatesInProgressTex = 0;
 		CVoxelSegment::m_nUpdatesInProgressBri = 0;
@@ -539,7 +539,7 @@ bool CSvoEnv::Render()
 
 		if (m_nTexNodePoolId)
 		{
-			FRAME_PROFILER("CGlobalCloud::Render_UpdateNodeRenderDataPtrs", GetSystem(), PROFILE_3DENGINE);
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_UpdateNodeRenderDataPtrs");
 
 			m_pSvoRoot->UpdateNodeRenderDataPtrs();
 		}

@@ -633,7 +633,7 @@ void CProjectile::FullSerialize(TSerialize ser)
 //------------------------------------------------------------------------
 void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 	CRY_ASSERT_MESSAGE(!RequiresDelayedDestruct() || gEnv->bMultiplayer, "The mpProjectileDestructDelay ammo params should only ever be greater than zero in Multiplayer");
 
@@ -721,7 +721,7 @@ void CProjectile::HandleEvent(const SGameObjectEvent& event)
 		return;
 	}
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 	if (event.event == eGFE_OnPostStep && (event.flags & eGOEF_LoggedPhysicsEvent) == 0)
 	{

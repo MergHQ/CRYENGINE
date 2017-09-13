@@ -425,7 +425,7 @@ bool CVehicleMovementBase::RequestMovement(CMovementRequest& movementRequest)
 // NOTE: This function must be thread-safe. Before adding stuff contact MarcoC.
 void CVehicleMovementBase::ProcessMovement(const float deltaTime)
 {
-	FUNCTION_PROFILER( GetISystem(), PROFILE_GAME );
+	CRY_PROFILE_FUNCTION( PROFILE_GAME );
 
 	IPhysicalEntity* pPhysics = GetPhysics();
 	if (pPhysics==NULL)
@@ -478,7 +478,7 @@ void CVehicleMovementBase::UpdateSpeedRatio(const float deltaTime)
 //------------------------------------------------------------------------
 void CVehicleMovementBase::Update(const float deltaTime)
 {  
-	FUNCTION_PROFILER( GetISystem(), PROFILE_GAME );
+	CRY_PROFILE_FUNCTION( PROFILE_GAME );
 
 	IPhysicalEntity* pPhysics = GetPhysics();
 
@@ -1487,7 +1487,7 @@ void CVehicleMovementBase::EnableEnvEmitter(TEnvEmitter& emitter, bool enable)
 //------------------------------------------------------------------------
 void CVehicleMovementBase::UpdateExhaust(const float deltaTime)
 { 
-  FUNCTION_PROFILER( GetISystem(), PROFILE_GAME );
+  CRY_PROFILE_FUNCTION( PROFILE_GAME );
 
 	if (m_isProbablyDistant | (m_isProbablyVisible^1)) return;
 
@@ -1856,7 +1856,7 @@ void CVehicleMovementBase::GetParticleScale(const SEnvironmentLayer& layer, floa
 //------------------------------------------------------------------------
 void CVehicleMovementBase::UpdateSurfaceEffects(const float deltaTime)
 {
-  FUNCTION_PROFILER( GetISystem(), PROFILE_GAME );
+  CRY_PROFILE_FUNCTION( PROFILE_GAME );
   
   if (0 == g_pGameCVars->v_pa_surface)
   {

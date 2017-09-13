@@ -556,7 +556,7 @@ CNULLRenderAuxGeom::~CNULLRenderAuxGeom()
 void CNULLRenderAuxGeom::BeginFrame()
 {
 #ifdef ENABLE_WGL_DEBUG_RENDERER
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	gEnv->pSystem->PumpWindowMessage(false);
 
@@ -614,7 +614,7 @@ void CNULLRenderAuxGeom::BeginFrame()
 void CNULLRenderAuxGeom::EndFrame()
 {
 #ifdef ENABLE_WGL_DEBUG_RENDERER
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	if (!s_hidden)
 	{
@@ -784,7 +784,7 @@ void CNULLRenderAuxGeom::DrawPolyline(const Vec3* v, uint32 numPoints, bool clos
 void CNULLRenderAuxGeom::DrawTriangle(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, const Vec3& v2, const ColorB& colV2)
 {
 #ifdef ENABLE_WGL_DEBUG_RENDERER
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	m_triangles.push_back(STriangle(SPoint(v0, colV0), SPoint(v1, colV1), SPoint(v2, colV2)));
 #endif
 }
@@ -793,7 +793,7 @@ void CNULLRenderAuxGeom::DrawTriangles(const Vec3* v, uint32 numPoints, const Co
 {
 #ifdef ENABLE_WGL_DEBUG_RENDERER
 	assert((numPoints >= 3) && !(numPoints % 3));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	for (size_t i = 0; i < numPoints; i += 3)
 		m_triangles.push_back(STriangle(SPoint(v[i], col), SPoint(v[i + 1], col), SPoint(v[i + 2], col)));
 #endif
@@ -803,7 +803,7 @@ void CNULLRenderAuxGeom::DrawTriangles(const Vec3* v, uint32 numPoints, const Co
 {
 #ifdef ENABLE_WGL_DEBUG_RENDERER
 	assert((numPoints >= 3) && !(numPoints % 3));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	for (size_t i = 0; i < numPoints; i += 3)
 		m_triangles.push_back(STriangle(SPoint(v[i], *col), SPoint(v[i + 1], *col), SPoint(v[i + 2], *col)));
 #endif
@@ -814,7 +814,7 @@ void CNULLRenderAuxGeom::DrawTriangles(const Vec3* v, uint32 numPoints, const vt
 #ifdef ENABLE_WGL_DEBUG_RENDERER
 	assert(numPoints >= 3);
 	assert((numIndices >= 3) && !(numIndices % 3));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	for (size_t i = 0; i < numIndices; i += 3)
 	{
 		vtx_idx i0 = ind[i], i1 = ind[i + 1], i2 = ind[i + 2];
@@ -829,7 +829,7 @@ void CNULLRenderAuxGeom::DrawTriangles(const Vec3* v, uint32 numPoints, const vt
 #ifdef ENABLE_WGL_DEBUG_RENDERER
 	assert(numPoints >= 3);
 	assert((numIndices >= 3) && !(numIndices % 3));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	for (size_t i = 0; i < numIndices; i += 3)
 	{
 		vtx_idx i0 = ind[i], i1 = ind[i + 1], i2 = ind[i + 2];

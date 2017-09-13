@@ -1257,7 +1257,7 @@ void CDeviceCommandListImpl::LockToThreadImpl()
 
 void CDeviceCommandListImpl::CloseImpl()
 {
-	FUNCTION_PROFILER_RENDERER
+	FUNCTION_PROFILER_RENDERER();
 	GetVKCommandList()->End();
 }
 

@@ -1267,7 +1267,7 @@ int CArticulatedEntity::Step(float time_interval)
 	if (!m_bAwake && !m_bCheckCollisions || m_nRoots>1 || (!m_bCheckCollisions && !m_bGrounded) || bNoSim)
 		return UpdateHistory(1);
 
-	FUNCTION_PROFILER( GetISystem(),PROFILE_PHYSICS );
+	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_ENTITY_PROFILER
 
 	int iCaller = get_iCaller_int();

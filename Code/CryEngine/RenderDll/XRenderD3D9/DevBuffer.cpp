@@ -1249,7 +1249,7 @@ struct CDynamicDefragAllocator
 
 	item_handle_t Allocate(buffer_size_t size, SBufferPoolItem*& item)
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+		CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 		MEMORY_SCOPE_CHECK_HEAP();
 		DEVBUFFERMAN_ASSERT(size);
 		IDefragAllocator::Hdl hdl = m_defrag_allocator->Allocate(size, NULL);
@@ -1268,7 +1268,7 @@ struct CDynamicDefragAllocator
 
 	void Free(SBufferPoolItem* item)
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+		CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 		MEMORY_SCOPE_CHECK_HEAP();
 		IF (item->m_defrag_handle != IDefragAllocator::InvalidHdl, 1)
 			m_defrag_allocator->Free(item->m_defrag_handle);
@@ -1388,7 +1388,7 @@ struct CConstantBufferAllocator
 	{
 		if (m_pages * s_PoolConfig.m_cb_bank_size <= s_PoolConfig.m_cb_threshold)
 			return;
-		FUNCTION_PROFILER_RENDERER;
+		FUNCTION_PROFILER_RENDERER();
 		for (size_t i = 0; i < 16; ++i)
 		{
 			for (PageBucketsT::iterator j = m_page_buckets[i].begin(),
@@ -1438,7 +1438,7 @@ struct CConstantBufferAllocator
 
 	bool Allocate(CConstantBuffer* cbuffer)
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+		CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 		CRY_ASSERT(cbuffer && cbuffer->m_size && "Bad allocation request");
 		const unsigned size = cbuffer->m_size;
 		const unsigned nsize = NextPower2(size);
@@ -1703,7 +1703,7 @@ struct CBufferPoolImpl final
 	// Creates a new bank for the buffer
 	SBufferPoolBank* CreateBank()
 	{
-		FUNCTION_PROFILER_RENDERER;
+		FUNCTION_PROFILER_RENDERER();
 		// Allocate a new bank
 		size_t bank_index = ~0u;
 		CDeviceBuffer* buffer;
@@ -1761,7 +1761,7 @@ struct CBufferPoolImpl final
 	// Recreates a previously freed bank
 	bool RecreateBank(SBufferPoolBank* bank)
 	{
-		FUNCTION_PROFILER_RENDERER;
+		FUNCTION_PROFILER_RENDERER();
 		{
 			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
 
@@ -3512,7 +3512,7 @@ bool CDeviceBufferManager::Shutdown()
 //////////////////////////////////////////////////////////////////////////////////////
 void CDeviceBufferManager::Sync(uint32 frameId)
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 	MEMORY_SCOPE_CHECK_HEAP();
 	SREC_AUTO_LOCK(s_PoolManager.m_lock);
 
@@ -3541,7 +3541,7 @@ void CDeviceBufferManager::Sync(uint32 frameId)
 //////////////////////////////////////////////////////////////////////////////////////
 void CDeviceBufferManager::ReleaseEmptyBanks(uint32 frameId)
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 	MEMORY_SCOPE_CHECK_HEAP();
 	SREC_AUTO_LOCK(s_PoolManager.m_lock);
 
@@ -3569,7 +3569,7 @@ void CDeviceBufferManager::ReleaseEmptyBanks(uint32 frameId)
 //////////////////////////////////////////////////////////////////////////////////////
 void CDeviceBufferManager::Update(uint32 frameId, bool called_during_loading)
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 
 	MEMORY_SCOPE_CHECK_HEAP();
 	SREC_AUTO_LOCK(s_PoolManager.m_lock);
@@ -3771,7 +3771,7 @@ buffer_handle_t CDeviceBufferManager::Create_Locked(BUFFER_BIND_TYPE type, BUFFE
 
 buffer_handle_t CDeviceBufferManager::Create(BUFFER_BIND_TYPE type, BUFFER_USAGE usage, buffer_size_t size, bool bUsePool)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_creator_time);
 	if (!s_PoolManager.m_pools[type][usage])
 		return ~0u;
@@ -3785,7 +3785,7 @@ buffer_handle_t CDeviceBufferManager::Create(BUFFER_BIND_TYPE type, BUFFER_USAGE
 //////////////////////////////////////////////////////////////////////////////////////
 void CDeviceBufferManager::Destroy_Locked(buffer_handle_t handle)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	MEMORY_SCOPE_CHECK_HEAP();
 	DEVBUFFERMAN_ASSERT(handle != 0);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
@@ -3844,7 +3844,7 @@ void* CDeviceBufferManager::BeginRead_Locked(buffer_handle_t handle)
 {
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_io_time);
 	STATOSCOPE_IO_READ(Size(handle));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	MEMORY_SCOPE_CHECK_HEAP();
 	DEVBUFFERMAN_ASSERT(handle != 0);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
@@ -3852,7 +3852,7 @@ void* CDeviceBufferManager::BeginRead_Locked(buffer_handle_t handle)
 }
 void* CDeviceBufferManager::BeginRead(buffer_handle_t handle)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 #if CRY_PLATFORM_WINDOWS
 	SRecursiveSpinLocker __lock(&s_PoolManager.m_lock);
 #endif
@@ -3877,7 +3877,7 @@ void* CDeviceBufferManager::BeginWrite_Locked(buffer_handle_t handle)
 {
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_io_time);
 	STATOSCOPE_IO_WRITTEN(Size(handle));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	MEMORY_SCOPE_CHECK_HEAP();
 	DEVBUFFERMAN_ASSERT(handle != 0);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
@@ -3898,7 +3898,7 @@ void CDeviceBufferManager::EndReadWrite_Locked(buffer_handle_t handle)
 {
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_io_time);
 	STATOSCOPE_IO_WRITTEN(Size(handle));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	MEMORY_SCOPE_CHECK_HEAP();
 	DEVBUFFERMAN_ASSERT(handle != 0);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
@@ -3920,7 +3920,7 @@ bool CDeviceBufferManager::UpdateBuffer_Locked(
 {
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_io_time);
 	STATOSCOPE_IO_WRITTEN(Size(handle));
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	MEMORY_SCOPE_CHECK_HEAP();
 	DEVBUFFERMAN_ASSERT(handle != 0);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
@@ -3977,7 +3977,7 @@ D3DIndexBuffer* CDeviceBufferManager::GetD3DIB(buffer_handle_t handle, buffer_si
 //////////////////////////////////////////////////////////////////////////////////////
 bool CDeviceBufferManager::GetStats(BUFFER_BIND_TYPE type, BUFFER_USAGE usage, SDeviceBufferPoolStats& stats)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	stats.buffer_descr = string(ConstantToString(type));
 	stats.buffer_descr += "_";
 	stats.buffer_descr += string(ConstantToString(usage));

@@ -892,7 +892,7 @@ CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uin
 
 CTexture* CTexture::GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	CTexture* pTex = GetOrCreateTextureObject(szName, nWidth, nHeight, 1, eTT_2D, nFlags, eSrcFormat, -1);
 	pTex->m_bAsyncDevTexCreation = bAsyncDevTexCreation;
@@ -1522,7 +1522,7 @@ bool CTexture::FormatFixup(STexData& td)
 
 bool CTexture::ImagePreprocessing(STexData& td)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	const char* pTexFileName = td.m_pFilePath ? td.m_pFilePath : "$Unknown";
 
@@ -1597,7 +1597,7 @@ int CTexture::CalcNumMips(int nWidth, int nHeight)
 
 uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM)
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 
 	// Don't allow 0 dimensions, it's clearly wrong to reflect on "unspecified-yet" textures.
 	CRY_ASSERT(eTF != eTF_Unknown && nWidth && nHeight && nDepth);
@@ -2082,7 +2082,7 @@ int __cdecl TexCallbackMips(const VOID* arg1, const VOID* arg2)
 
 void CTexture::Update()
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 
 	CRenderer* rd = gRenDev;
 	char buf[256] = "";

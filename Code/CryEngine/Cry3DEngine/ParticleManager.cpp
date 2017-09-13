@@ -640,7 +640,7 @@ void CParticleManager::Update()
 		PARTICLE_LIGHT_PROFILER();
 
 		{
-			FRAME_PROFILER("SyncComputeVerticesJobs", GetSystem(), PROFILE_PARTICLE);
+			CRY_PROFILE_REGION(PROFILE_PARTICLE, "SyncComputeVerticesJobs");
 			GetRenderer()->SyncComputeVerticesJobs();
 		}
 
@@ -703,7 +703,7 @@ void CParticleManager::Update()
 CParticleEmitter* CParticleManager::CreateEmitter(const ParticleLoc& loc, const IParticleEffect* pEffect, const SpawnParams* pSpawnParams)
 {
 	PARTICLE_LIGHT_PROFILER();
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	if (!pEffect)
 		return NULL;
@@ -729,7 +729,7 @@ CParticleEmitter* CParticleManager::CreateEmitter(const ParticleLoc& loc, const 
 IParticleEmitter* CParticleManager::CreateEmitter(const ParticleLoc& loc, const ParticleParams& Params, const SpawnParams* pSpawnParams)
 {
 	PARTICLE_LIGHT_PROFILER();
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	if (!m_bEnabled)
 		return NULL;
@@ -1247,7 +1247,7 @@ void CParticleManager::RenderDebugInfo()
 	if ((GetCVars()->e_ParticlesDebug & AlphaBit('b')) || gEnv->IsEditing() || bRefractivePartialResolveDebugView)
 	{
 		// Debug particle BBs.
-		FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 		for (auto& e : m_Emitters)
 			if (!e.GetSpawnParams().bNowhere)
 				e.RenderDebugInfo();
@@ -1589,7 +1589,7 @@ bool CParticleWidget::ShouldUpdate()
 
 void CParticleWidget::Update()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_pTable->ClearTable();
 

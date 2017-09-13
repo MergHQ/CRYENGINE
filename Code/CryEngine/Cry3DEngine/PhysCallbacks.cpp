@@ -181,8 +181,7 @@ void CDeferredCollisionEventOnPhysCollision::RayTraceVegetation()
 	if (!(pSrfType && pSrfType->GetFlags() & SURFACE_TYPE_NO_COLLIDE))
 		return;
 
-	FRAME_PROFILER("3dEngine::RaytraceVegetation", GetISystem(), PROFILE_3DENGINE);
-
+	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 	IRenderNode* pVeg = GetRenderNodeFromPhys(pCollision->pForeignData[1], pCollision->iForeignData[1]);
 	if (!pVeg)
 	{
@@ -574,7 +573,7 @@ int CPhysStreamer::CreatePhysicalEntity(void* pForeignData, int iForeignData, in
 
 int CPhysStreamer::CreatePhysicalEntitiesInBox(const Vec3& boxMin, const Vec3& boxMax)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
+	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 	if (((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree)
 		((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree->PhysicalizeInBox(AABB(boxMin, boxMax));
 	if (((C3DEngine*)gEnv->p3DEngine)->m_pVisAreaManager)
@@ -584,7 +583,7 @@ int CPhysStreamer::CreatePhysicalEntitiesInBox(const Vec3& boxMin, const Vec3& b
 
 int CPhysStreamer::DestroyPhysicalEntitiesInBox(const Vec3& boxMin, const Vec3& boxMax)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
+	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 	if (((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree)
 		((C3DEngine*)gEnv->p3DEngine)->m_pObjectsTree->DephysicalizeInBox(AABB(boxMin, boxMax));
 	if (((C3DEngine*)gEnv->p3DEngine)->m_pVisAreaManager)

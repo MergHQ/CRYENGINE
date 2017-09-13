@@ -3790,7 +3790,7 @@ void CD3D9Renderer::LogShaderImportMiss(const CShader* pShader)
 ///////////////////////////////////////////////////////////////////////////////
 void CD3D9Renderer::WaitForParticleBuffer()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	SRenderPipeline& rp = gRenDev->m_RP;
 
 	rp.m_particleBuffer.WaitForFence();

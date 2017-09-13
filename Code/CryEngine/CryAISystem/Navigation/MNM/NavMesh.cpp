@@ -739,7 +739,7 @@ void CNavMesh::ResetConnectedIslandsIDs()
 
 void CNavMesh::ComputeStaticIslandsAndConnections(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	ResetConnectedIslandsIDs();
 	ComputeStaticIslands();
@@ -748,7 +748,7 @@ void CNavMesh::ComputeStaticIslandsAndConnections(const NavigationMeshID meshID,
 
 void CNavMesh::ComputeStaticIslands()
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	typedef std::vector<TriangleID> Triangles;
 	Triangles trianglesToVisit;
@@ -1342,7 +1342,7 @@ inline size_t OppositeSide(size_t side)
 CNavMesh::ERayCastResult CNavMesh::RayCast(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri,
                                            RaycastRequestBase& raycastRequest) const
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	switch (gAIEnv.CVars.MNMRaycastImplementation)
 	{
@@ -1405,7 +1405,7 @@ typedef VectorSet<TriangleID>                             RaycastClosedList;
 CNavMesh::ERayCastResult CNavMesh::RayCast_v2(const vector3_t& from, TriangleID fromTriangleID, const vector3_t& to, TriangleID toTriangleID,
 	RaycastRequestBase& raycastRequest) const
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	if (!IsLocationInTriangle(from, fromTriangleID))
 		return eRayCastResult_InvalidStart;
@@ -1598,7 +1598,7 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v2(const vector3_t& from, TriangleID 
 
 CNavMesh::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromPos, TriangleID fromTriangleID, const vector3_t& toPos, RaycastRequestBase& raycastRequest) const
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	if (!IsLocationInTriangle(fromPos, fromTriangleID))
 		return eRayCastResult_InvalidStart;
@@ -1806,7 +1806,7 @@ bool CNavMesh::IsLocationInTriangle(const vector3_t& location, const TriangleID 
 
 CNavMesh::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri, RaycastRequestBase& raycastRequest) const
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	if (TileID tileID = ComputeTileID(fromTri))
 	{
@@ -2117,7 +2117,7 @@ bool TestEdgeOverlap(size_t side, const real_t& toleranceSq, const vector3_t& a0
 
 TileID CNavMesh::SetTile(size_t x, size_t y, size_t z, STile& tile)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	assert((x <= max_x) && (y <= max_y) && (z <= max_z));
 
@@ -2183,7 +2183,7 @@ TileID CNavMesh::SetTile(size_t x, size_t y, size_t z, STile& tile)
 
 void CNavMesh::ClearTile(TileID tileID, bool clearNetwork)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	{
 		TileContainer& container = m_tiles[tileID - 1];
@@ -2236,7 +2236,7 @@ void CNavMesh::ClearTile(TileID tileID, bool clearNetwork)
 
 void CNavMesh::CreateNetwork()
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	TileMap::iterator it = m_tileMap.begin();
 	TileMap::iterator end = m_tileMap.end();
@@ -2255,7 +2255,7 @@ void CNavMesh::CreateNetwork()
 
 void CNavMesh::ConnectToNetwork(TileID tileID)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	{
 		TileContainer& container = m_tiles[tileID - 1];
@@ -2371,7 +2371,7 @@ struct Edge
 void ComputeTileTriangleAdjacency(const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount,
                                   Edge* edges, uint16* adjacency)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	{
 		enum { Unused = 0xffff, };
@@ -2565,7 +2565,7 @@ struct SideTileInfo
 #pragma warning (disable: 6262)
 void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	const size_t vertexCount = tile.vertexCount;
 	const Tile::Vertex* vertices = tile.GetVertices();
@@ -2705,7 +2705,7 @@ void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 void CNavMesh::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile,
                                   size_t side, size_t tx, size_t ty, size_t tz, TileID targetID)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	const Tile::Vertex* vertices = tile.GetVertices();
 

@@ -123,7 +123,7 @@ void CSystem::ExternalUpdate()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::PushRequest(CAudioRequest const& request)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_AUDIO);
+	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
 
 	if (m_atl.CanProcessRequests())
 	{

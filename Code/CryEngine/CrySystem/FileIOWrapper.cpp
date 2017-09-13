@@ -12,7 +12,7 @@ CryCriticalSection CIOWrapper::m_ReadCS;
 
 size_t CIOWrapper::Fread(void* pData, size_t nSize, size_t nCount, FILE* hFile)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 	PROFILE_DISK_READ(nSize * nCount);
 

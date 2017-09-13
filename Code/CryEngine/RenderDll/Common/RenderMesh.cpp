@@ -588,7 +588,7 @@ SMeshStream* CRenderMesh::GetVertexStream(int nStream, uint32 nFlags)
 
 void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, int *nStride, bool prefetchIB, bool inplaceCachePos)
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 
   MEMORY_SCOPE_CHECK_HEAP();
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
@@ -745,7 +745,7 @@ lSysUpdate:
 
 vtx_idx *CRenderMesh::LockIB(uint32 nFlags, int nOffset, int nInds)
 {
-	FUNCTION_PROFILER_RENDERER;
+	FUNCTION_PROFILER_RENDERER();
 
   MEMORY_SCOPE_CHECK_HEAP();
   byte *pD;
@@ -1003,7 +1003,7 @@ void CRenderMesh::UnlockIndexStream()
 bool CRenderMesh::CopyStreamToSystemForUpdate(SMeshStream& MS, size_t nSize)
 {
   MEMORY_SCOPE_CHECK_HEAP();
-  FUNCTION_PROFILER_RENDERER;  
+  FUNCTION_PROFILER_RENDERER();  
   SREC_AUTO_LOCK(m_sResLock);
   if (!MS.m_pUpdateData)
 	{
@@ -3674,7 +3674,7 @@ float CRenderMesh::GetExtent(EGeomForm eForm)
 
 void CRenderMesh::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm, SSkinningData const* pSkinning)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	LockForThreadAccess();
 
 	vtx_idx* pInds = GetIndexPtr(FSL_READ);
@@ -4048,7 +4048,7 @@ void CRenderMesh::PrintMeshLeaks()
 bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 {
   MEMORY_SCOPE_CHECK_HEAP();
-  FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+  CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	bool cleared = false; 
 	bool bKeepSystem = false; 
 	CConditionalLock lock(m_sLinkLock, bAcquireLock);
@@ -4106,7 +4106,7 @@ bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 {
   MEMORY_SCOPE_CHECK_HEAP();
-  FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+  CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	CConditionalLock lock(m_sLinkLock, bAcquireLock);
 	// Update device buffers on modified meshes
 	for (util::list<CRenderMesh>* iter=s_MeshModifiedList[threadId].next, *pos=iter->next; iter != &s_MeshModifiedList[threadId]; iter=pos, pos=pos->next)
@@ -4367,7 +4367,7 @@ bool CRenderMesh::SyncAsyncUpdate(int threadID, bool block)
 	SREC_AUTO_LOCK(m_sResLock); 
 	if (m_asyncUpdateStateCounter[threadID]) 
 	{
-		FRAME_PROFILER("CRenderMesh::SyncAsyncUpdate() sync", gEnv->pSystem,PROFILE_RENDERER);
+		CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::SyncAsyncUpdate() sync");
 		int iter = 0;
 		while (m_asyncUpdateState[threadID])
 		{
@@ -4807,7 +4807,7 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 	if (!pMaterial || !m_nVerts || !m_nInds || m_Chunks.empty() || (m_nFlags & FRM_ALLOCFAILURE) != 0)
 		return;
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	IF(!CanRender(), 0)
 	return;
