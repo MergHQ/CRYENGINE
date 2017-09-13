@@ -129,6 +129,17 @@ include("${TOOLS_CMAKE_DIR}/CommonOptions.cmake")
 # Must be included after SDK_DIR definition
 include("${TOOLS_CMAKE_DIR}/CopyFilesToBin.cmake")
 
+if (DURANGO)
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+		MESSAGE(STATUS "OPTION_STATIC_LINKING required for this configuration")
+		set(OPTION_STATIC_LINKING ON CACHE BOOL "Required for Release build." FORCE)
+	endif()
+	if(NOT OPTION_STATIC_LINKING)
+		MESSAGE(STATUS "Disabling Release builds; OPTION_STATIC_LINKING required on this platform")
+		set(CMAKE_CONFIGURATION_TYPES Debug Profile CACHE STRING "Reset the configurations to what we need" FORCE)
+	endif()
+endif()
+
 if(OPTION_STATIC_LINKING)
 	# Enable static libraries
 	MESSAGE(STATUS "Use Static Linking (.lib/.a)" )
