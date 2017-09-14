@@ -4,6 +4,7 @@
 #include "RenderAuxGeom.h"
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
+#include "DriverD3D.h"
 
 static inline uint32 PackColor(const ColorB& col)
 {
