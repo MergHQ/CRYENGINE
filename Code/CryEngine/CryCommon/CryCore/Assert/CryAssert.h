@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // Note: Can't use #pragma once here, since (like assert.h) this file CAN be included more than once.
 // Each time it's included, it will re-define assert to match CRY_ASSERT.

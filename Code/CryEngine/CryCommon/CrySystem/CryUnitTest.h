@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 //! Defines interfaces and macros for Cry Unit Tests.
 //! CRY_UNIT_TEST_SUITE:           A suite name to group tests locally together.

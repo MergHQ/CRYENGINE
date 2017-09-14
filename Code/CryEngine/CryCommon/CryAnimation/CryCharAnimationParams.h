@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #ifndef _CRY_COMMON_CRY_CHAR_ANIMATION_PARAMS_HDR_
 #define _CRY_COMMON_CRY_CHAR_ANIMATION_PARAMS_HDR_
