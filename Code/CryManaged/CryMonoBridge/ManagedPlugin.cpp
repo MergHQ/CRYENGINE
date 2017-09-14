@@ -189,22 +189,28 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	break;
 	case ESYSTEM_EVENT_LEVEL_GAMEPLAY_START:
 	{
-		if (CMonoClass* pClass = m_pMonoObject->GetClass())
+		if (m_pMonoObject != nullptr)
 		{
-			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStart"))
+			if (CMonoClass* pClass = m_pMonoObject->GetClass())
 			{
-				pMethod->Invoke(m_pMonoObject.get());
+				if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStart"))
+				{
+					pMethod->Invoke(m_pMonoObject.get());
+				}
 			}
 		}
 	}
 	break;
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 	{
-		if (CMonoClass* pClass = m_pMonoObject->GetClass())
+		if (m_pMonoObject != nullptr)
 		{
-			if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStop"))
+			if (CMonoClass* pClass = m_pMonoObject->GetClass())
 			{
-				pMethod->Invoke(m_pMonoObject.get());
+				if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStop"))
+				{
+					pMethod->Invoke(m_pMonoObject.get());
+				}
 			}
 		}
 	}
