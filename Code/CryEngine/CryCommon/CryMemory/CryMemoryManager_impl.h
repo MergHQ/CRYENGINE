@@ -189,11 +189,8 @@ template<int> void _CryMemoryManagerPoolHelper::BindMemoryFunctionPointers()
 	{
 		const char* errMsg = hMod ? "Memory Manager: Unable to bind memory management functions."
 			: "Memory Manager: Unable to bind memory management functions. Could not access " CryLibraryDefName("CrySystem")" (check working directory)";
-#if CRY_PLATFORM_WINAPI && !CRY_PLATFORM_DURANGO
-		MessageBox(NULL, errMsg, "Memory Manager", MB_OK);
-#else
-		OutputDebugString(errMsg);
-#endif
+
+		CryMessageBox(errMsg, "Memory Manager", eMB_Error);
 		__debugbreak();
 		abort();
 	}

@@ -129,7 +129,7 @@ bool CCryFactoryRegistryImpl::GetInsertionPos(ICryFactory* pFactory, FactoriesBy
 			OutputDebugStringA("\n!!! Fatal error !!!\n");
 			OutputDebugStringA(err);
 			OutputDebugStringA("\n");
-			MessageBoxA(0, err, "!!! Fatal error !!!", MB_OK | MB_ICONERROR);
+			CryMessageBox(err, "!!! Fatal error !!!", eMB_Error);
 #endif
 
 			assert(0);

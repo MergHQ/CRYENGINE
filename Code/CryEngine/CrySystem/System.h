@@ -431,7 +431,6 @@ public:
 	void                    WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) override;
 	void                    Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
 	void                    WarningOnce(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
-	virtual EQuestionResult ShowMessage(const char* text, const char* caption, EMessageBox uType) override;
 	bool                    CheckLogVerbosity(int verbosity) override;
 
 	virtual void            DebugStats(bool checkpoint, bool leaks) override;

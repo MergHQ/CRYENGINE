@@ -48,9 +48,7 @@
 	#if CRY_PLATFORM_WINDOWS
 		#define CryLoadLibrary(libName) ::LoadLibraryA(libName)
 	#elif CRY_PLATFORM_DURANGO
-//For Durango
-extern HMODULE DurangoLoadLibrary(const char* libName);
-		#define CryLoadLibrary(libName) DurangoLoadLibrary(libName)
+		#define CryLoadLibrary(libName) ::LoadLibraryExA(libName, 0, 0)
 	#endif
 	#define CryGetCurrentModule() ::GetModuleHandle(nullptr)
 	#define CrySharedLibrarySupported true

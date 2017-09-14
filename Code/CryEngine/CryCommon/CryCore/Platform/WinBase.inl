@@ -1833,47 +1833,6 @@ BOOL RemoveDirectory(LPCSTR lpPathName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-EQuestionResult CryMessageBox(const char* lpText, const char* lpCaption, EMessageBox uType)
-{
-#if CRY_PLATFORM_WINDOWS
-	#error CRY_PLATFORM_WINDOWS is defined in WinBase.cpp (it is a non-Windows file)
-#elif CRY_PLATFORM_MAC
-	CFStringRef strText = CFStringCreateWithCString(NULL, lpText, strlen(lpText));
-	CFStringRef strCaption = CFStringCreateWithCString(NULL, lpCaption, strlen(lpCaption));
-
-	CFOptionFlags kResult;
-	CFUserNotificationDisplayAlert(
-	  0,                                 // no timeout
-	  kCFUserNotificationNoteAlertLevel, //change it depending message_type flags ( MB_ICONASTERISK.... etc.)
-	  NULL,                              //icon url, use default, you can change it depending message_type flags
-	  NULL,                              //not used
-	  NULL,                              //localization of strings
-	  strText,                           //header text
-	  strCaption,                        //message text
-	  NULL,                              //default "ok" text in button
-	  CFSTR("Cancel"),                   //alternate button title
-	  NULL,                              //other button title, null--> no other button
-	  &kResult                           //response flags
-	  );
-
-	CFRelease(strCaption);
-	CFRelease(strText);
-
-	if (kResult == kCFUserNotificationDefaultResponse)
-		return eQR_Yes;
-	else
-		return eQR_Cancel;
-#else
-	printf("Messagebox: cap: %s  text:%s\n", lpCaption ? lpCaption : " ", lpText ? lpText : " ");
-	return eQR_None;
-#endif
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CryCreateDirectory(const char* lpPathName)
 {
 	struct stat st_info;

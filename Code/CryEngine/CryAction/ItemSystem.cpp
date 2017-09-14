@@ -1882,7 +1882,7 @@ void CItemSystem::ItemSystemErrorMessage(const char* fileName, const char* error
 
 	if (displayErrorDialog)
 	{
-		gEnv->pSystem->ShowMessage(messageBuffer.c_str(), "Error", eMB_Error);
+		CryMessageBox(messageBuffer.c_str(), "Error", eMB_Error);
 	}
 }
 

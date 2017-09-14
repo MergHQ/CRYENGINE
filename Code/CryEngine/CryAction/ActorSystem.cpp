@@ -475,7 +475,7 @@ void CActorSystem::ActorSystemErrorMessage(const char* fileName, const char* err
 
 	if (displayErrorDialog)
 	{
-		gEnv->pSystem->ShowMessage(messageBuffer.c_str(), "Error", eMB_Error);
+		CryMessageBox(messageBuffer.c_str(), "Error", eMB_Error);
 	}
 }
 

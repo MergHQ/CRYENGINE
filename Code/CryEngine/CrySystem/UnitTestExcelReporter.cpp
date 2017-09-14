@@ -248,7 +248,7 @@ void CryUnitTest::CUnitTestExcelNotificationReporter::PostFinishTesting(const SU
 	{
 		// For local unit testing notify user to close previously opened report.
 		// Use primitive windows msgbox because we are supposed to hide all pop-ups during auto testing. 
-		MessageBox(NULL, "Unit test failed to save one or more report documents, make sure the file is writable!", "Unit Test", MB_OK | MB_ICONWARNING);
+		CryMessageBox("Unit test failed to save one or more report documents, make sure the file is writable!", "Unit Test", eMB_Error);
 	}
 	else
 	{

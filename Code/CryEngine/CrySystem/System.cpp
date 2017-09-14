@@ -255,7 +255,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.callbackStartSection = 0;
 	m_env.callbackEndSection = 0;
 	m_env.bIgnoreAllAsserts = false;
-	m_env.bNoAssertDialog = false;
+	m_env.bUnattendedMode = false;
 	m_env.bTesting = false;
 
 	m_env.pGameFramework = startupParams.pGameFramework;
@@ -2312,18 +2312,6 @@ void CSystem::WarningOnce(EValidatorModule module, EValidatorSeverity severity, 
 
 		Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, 0, szBuffer);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-EQuestionResult CSystem::ShowMessage(const char* text, const char* caption, EMessageBox uType)
-{
-	if (m_pUserCallback)
-		return m_pUserCallback->ShowMessage(text, caption, uType);
-#if CRY_PLATFORM_WINDOWS
-	return eQR_None;
-#else
-	return CryMessageBox(text, caption, uType);
-#endif
 }
 
 inline const char* ValidatorModuleToString(EValidatorModule module)

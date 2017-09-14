@@ -1102,9 +1102,7 @@ void ReportJiraBug()
 
 	if (!CJiraClient::ReportBug())
 	{
-	#ifndef _RELEASE
-		MessageBox(NULL, "Error running jira crash handler: bug submission failed.", "Bug submission failed", MB_OK | MB_ICONWARNING);
-	#endif
+		CryMessageBox("Error running jira crash handler: bug submission failed.", "Bug submission failed", eMB_Error);
 	}
 }
 
