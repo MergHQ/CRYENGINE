@@ -42,7 +42,7 @@ public:
 	int    m_drawAudioDebug = 0;
 	int    m_fileCacheManagerDebugFilter = 0;
 	int    m_audioLoggingOptions = 0;
-	int    m_showActiveAudioObjectsOnly = 0;
+	int    m_hideInactiveAudioObjects = 0;
 	int    m_audioObjectsRayType = 0;
 	ICVar* m_pDebugFilter = nullptr;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

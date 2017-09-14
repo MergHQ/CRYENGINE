@@ -268,9 +268,9 @@ void CCVars::RegisterVariables()
 	               "b: Warnings\n"
 	               "c: Comments\n");
 
-	REGISTER_CVAR2("s_ShowActiveAudioObjectsOnly", &m_showActiveAudioObjectsOnly, 1, VF_DEV_ONLY,
+	REGISTER_CVAR2("s_HideInactiveAudioObjects", &m_hideInactiveAudioObjects, 1, VF_DEV_ONLY,
 	               "When drawing audio object names on the screen this cvar can be used to choose between all registered audio objects or only those that reference active audio triggers.\n"
-	               "Usage: s_ShowActiveAudioObjectsOnly [0/1]\n"
+	               "Usage: s_HideInactiveAudioObjects [0/1]\n"
 	               "Default: 1 (active only)\n");
 
 	REGISTER_CVAR2("s_AudioObjectsRayType", &m_audioObjectsRayType, m_audioObjectsRayType, VF_DEV_ONLY,
@@ -328,7 +328,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_DrawAudioDebug");
 		pConsole->UnregisterVariable("s_FileCacheManagerDebugFilter");
 		pConsole->UnregisterVariable("s_AudioLoggingOptions");
-		pConsole->UnregisterVariable("s_ShowActiveAudioObjectsOnly");
+		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");
 		pConsole->UnregisterVariable("s_AudioObjectsRayType");
 		pConsole->UnregisterVariable("s_AudioTriggersDebugFilter");
 		pConsole->UnregisterVariable("s_AudioObjectsDebugFilter");
