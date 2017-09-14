@@ -71,20 +71,20 @@ namespace Cry
 					desc.AddMember(&CFogComponent::SOptions::m_globalDensity, 'glde', "GlobalDensity", "Global Density", nullptr, 1.f);
 					desc.AddMember(&CFogComponent::SOptions::m_densityOffset, 'deno', "DensityOffset", "Density Offset", nullptr, 0.f);
 
-					//desc.AddMember(&CFogComponent::SOptions::m_nearCutoff, 'necu', "NearCutoff", "Near Cutoff", nullptr, 0.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_softEdges, 'soed', "SoftEdges", "Soft Edges", nullptr, 1.f);
+					desc.AddMember(&CFogComponent::SOptions::m_nearCutoff, 'necu', "NearCutoff", "Near Cutoff", nullptr, 0.f);
+					desc.AddMember(&CFogComponent::SOptions::m_softEdges, 'soed', "SoftEdges", "Soft Edges", nullptr, 1.f);
 					desc.AddMember(&CFogComponent::SOptions::m_heightFallOffDirLong, 'helo', "HeightFalloffDirLong", "Height Falloff Longitude", nullptr, 0.f);
 					desc.AddMember(&CFogComponent::SOptions::m_heightFallOffDirLati, 'hela', "HeightFalloffDirLati", "Height Falloff Latitude", nullptr, 0.f);
 					desc.AddMember(&CFogComponent::SOptions::m_heightFallOffShift, 'hesh', "HeightFalloffShift", "Height Falloff Shift", nullptr, 0.f);
 					desc.AddMember(&CFogComponent::SOptions::m_heightFallOffScale, 'hesc', "HeightFalloffScale", "Height Falloff Scale", nullptr, 1.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_rampStart, 'rast', "RampStart", "Ramp Start", nullptr, 0.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_rampEnd, 'raen', "RampEnd", "Ramp End", nullptr, 50.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_rampInfluence, 'rain', "RampInfluence", "Ramp Influence", nullptr, 0.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_windInfluence, 'wiin', "WindInfluence", "Wind Influence", nullptr, 1.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_densityNoiseScale, 'dens', "DensityNoiseScale", "Density Noise Scale", nullptr, 0.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_densityNoiseOffset, 'deof', "DensityNoiseOffset", "Density Noise Offset", nullptr, 0.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_densityNoiseTimeFrequency, 'denf', "DensityNoiseTimeFrequency", "Density Noise Time Frequency", nullptr, 0.f);
-					//desc.AddMember(&CFogComponent::SOptions::m_densityNoiseFrequency, 'defn', "DensityNoiseFrequence", "Density Noise Frequenc", nullptr, Vec3(1.f));
+					desc.AddMember(&CFogComponent::SOptions::m_rampStart, 'rast', "RampStart", "Ramp Start", nullptr, 0.f);
+					desc.AddMember(&CFogComponent::SOptions::m_rampEnd, 'raen', "RampEnd", "Ramp End", nullptr, 50.f);
+					desc.AddMember(&CFogComponent::SOptions::m_rampInfluence, 'rain', "RampInfluence", "Ramp Influence", nullptr, 0.f);
+					desc.AddMember(&CFogComponent::SOptions::m_windInfluence, 'wiin', "WindInfluence", "Wind Influence", nullptr, 1.f);
+					desc.AddMember(&CFogComponent::SOptions::m_densityNoiseScale, 'dens', "DensityNoiseScale", "Density Noise Scale", nullptr, 0.f);
+					desc.AddMember(&CFogComponent::SOptions::m_densityNoiseOffset, 'deof', "DensityNoiseOffset", "Density Noise Offset", nullptr, 0.f);
+					desc.AddMember(&CFogComponent::SOptions::m_densityNoiseTimeFrequency, 'denf', "DensityNoiseTimeFrequency", "Density Noise Time Frequency", nullptr, 0.f);
+					desc.AddMember(&CFogComponent::SOptions::m_densityNoiseFrequency, 'defn', "DensityNoiseFrequence", "Density Noise Frequenc", nullptr, Vec3(1.f));
 				}
 
 				bool m_bUseGlobalFogColor = false;
@@ -93,17 +93,17 @@ namespace Cry
 				Schematyc::Range<0, 10000> m_globalDensity = 1.f;
 				Schematyc::Range<0, 100> m_densityOffset = 0.f;
 				Schematyc::Range<0, 100> m_nearCutoff = 0.f;
-				Schematyc::Range<0, 1> m_softEdges = 1.f;
+				Schematyc::Range<0, 1, 0, 1, float> m_softEdges = 1.f;
 				Schematyc::Range<0, 100> m_heightFallOffDirLong = 0.f;
 				Schematyc::Range<0, 100> m_heightFallOffDirLati = 0.f;
 				Schematyc::Range<0, 100> m_heightFallOffShift = 0.f;
 				Schematyc::Range<0, 100> m_heightFallOffScale = 1.f;
 				Schematyc::Range<0, 30000> m_rampStart = 0.f;
 				Schematyc::Range<0, 30000> m_rampEnd = 50.f;
-				Schematyc::Range<0, 1> m_rampInfluence = 0.f;
+				Schematyc::Range<0, 1, 0, 1, float> m_rampInfluence = 0.f;
 				Schematyc::Range<0, 20> m_windInfluence = 1.f;
 				Schematyc::Range<0, 20> m_densityNoiseScale = 0.f;
-				Schematyc::Range<-20, 20> m_densityNoiseOffset = 0.f;
+				Schematyc::Range<-20, 20, -20, 20, float> m_densityNoiseOffset = 0.f;
 				Schematyc::Range<0, 10> m_densityNoiseTimeFrequency = 0.f;
 				Vec3 m_densityNoiseFrequency = Vec3(1.f);
 			};
