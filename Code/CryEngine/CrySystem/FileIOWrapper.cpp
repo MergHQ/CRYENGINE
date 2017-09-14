@@ -81,7 +81,7 @@ FILE * CIOWrapper::FopenEx(const char* file, const char* mode)
 	FILE* f = NULL;
 
 	IPlatformOS* pOS = gEnv->pSystem->GetPlatformOS();
-	if (pOS->IsFileAvailable(file))
+	if (pOS != nullptr && pOS->IsFileAvailable(file))
 	{
 #if CRY_PLATFORM_WINDOWS
 		f = ::_wfopen(CryStringUtils::UTF8ToWStr(file), CryStringUtils::UTF8ToWStr(mode));

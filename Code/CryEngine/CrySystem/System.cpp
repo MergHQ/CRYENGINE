@@ -737,6 +737,9 @@ void CSystem::ShutDown()
 
 	SAFE_DELETE(m_pPhysRenderer); // Must be destroyed before unloading CryPhysics as it holds memory that was allocated by that module
 	UnloadEngineModule("CryPhysics");
+
+	UnloadEngineModule("CryMonoBridge");
+	
 	if (m_env.pConsole)
 		((CXConsole*)m_env.pConsole)->FreeRenderResources();
 	SAFE_RELEASE(m_pIZLibCompressor);
