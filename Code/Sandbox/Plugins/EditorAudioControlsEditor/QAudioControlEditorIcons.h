@@ -1,33 +1,33 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <QIcon>
+
+#include <CryIcon.h>
 #include "AudioAssets.h"
 
 namespace ACE
 {
-inline QIcon GetItemTypeIcon(EItemType type)
+inline CryIcon GetItemTypeIcon(EItemType const type)
 {
 	switch (type)
 	{
 	case EItemType::eItemType_Trigger:
-		return QIcon(":Icons/Trigger.ico");
+		return CryIcon(":Icons/Trigger.ico");
 	case EItemType::eItemType_Parameter:
-		return QIcon(":Icons/Parameter.ico");
+		return CryIcon(":Icons/Parameter.ico");
 	case EItemType::eItemType_Switch:
-		return QIcon(":Icons/Switch.ico");
+		return CryIcon(":Icons/Switch.ico");
 	case EItemType::eItemType_State:
-		return QIcon(":Icons/Property.ico");
+		return CryIcon(":Icons/Property.ico");
 	case EItemType::eItemType_Environment:
-		return QIcon(":Icons/Environment.ico");
+		return CryIcon(":Icons/Environment.ico");
 	case EItemType::eItemType_Preload:
-		return QIcon(":Icons/Bank.ico");
+		return CryIcon(":Icons/Bank.ico");
 	case EItemType::eItemType_Folder:
-		return QIcon(":Icons/Folder.ico");
+		return CryIcon(":Icons/Folder.ico");
 	case EItemType::eItemType_Library:
-		return QIcon("icons:common/assets_geomcache.ico");
+		return CryIcon("icons:common/assets_geomcache.ico");
 	}
-	return QIcon(":Icons/Parameter.ico");
+	return CryIcon("icons:Dialogs/dialog-error.ico");
 }
-
-}
+} // namespace ACE

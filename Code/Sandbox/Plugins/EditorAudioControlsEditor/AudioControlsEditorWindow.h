@@ -10,7 +10,7 @@
 #include <qobjectdefs.h>
 
 class QSplitter;
-class QAction;
+class QToolButton;
 
 namespace ACE
 {
@@ -68,7 +68,7 @@ private:
 	std::unique_ptr<CFileMonitorMiddleware>             m_pMonitorMiddleware;
 	bool                                                m_allowedTypes[EItemType::eItemType_NumTypes];
 
-	QSplitter* m_pSplitter;
-	QAction*   m_pSaveAction;
+	QSplitter*   m_pSplitter;
+	QToolButton* m_pSaveButton;
 };
 } // namespace ACE

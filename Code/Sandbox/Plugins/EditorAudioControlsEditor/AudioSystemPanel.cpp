@@ -7,10 +7,10 @@
 #include "IAudioSystemEditor.h"
 #include "AudioControlsEditorPlugin.h"
 #include "AudioSystemModel.h"
-#include "QAudioSystemSettingsDialog.h"
 #include "ImplementationManager.h"
 #include "AdvancedTreeView.h"
 
+#include <CryIcon.h>
 #include <QSearchBox.h>
 
 // Qt
@@ -19,8 +19,6 @@
 #include <QHeaderView>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QToolButton>
-#include <QIcon>
 #include <QLabel>
 #include <QMenu>
 #include <QFontMetrics>
@@ -68,35 +66,13 @@ CAudioSystemPanel::CAudioSystemPanel()
 	, m_pModel(new QAudioSystemModel())
 	, m_pImplNameLabel(nullptr)
 {
-	resize(299, 674);
-
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-	QHBoxLayout* pHorizontalLayout = new QHBoxLayout();
+	m_pModelProxy->setDynamicSortFilter(true);
+	m_pModelProxy->setSourceModel(m_pModel);
 
-	QSearchBox* pSearchBox = new QSearchBox(this);
-	pSearchBox->setToolTip(tr("Show only middleware controls with this name"));
-	pHorizontalLayout->addWidget(pSearchBox);
-
-	QCheckBox* pHideAssignedCheckbox = new QCheckBox(this);
-	pHideAssignedCheckbox->setEnabled(true);
-	pHorizontalLayout->addWidget(pHideAssignedCheckbox);
-
-	QToolButton* pSettingsButton = new QToolButton();
-	pSettingsButton->setIcon(QIcon("://Icons/Options.ico"));
-	pSettingsButton->setToolTip(tr("Location settings of audio middleware project"));
-	connect(pSettingsButton, &QToolButton::clicked, [&]()
-		{
-			QAudioSystemSettingsDialog* dialog = new QAudioSystemSettingsDialog(this);
-			connect(dialog, &QAudioSystemSettingsDialog::ImplementationSettingsAboutToChange, this, &CAudioSystemPanel::ImplementationSettingsAboutToChange);
-			connect(dialog, &QAudioSystemSettingsDialog::ImplementationSettingsChanged, this, &CAudioSystemPanel::ImplementationSettingsChanged);
-			dialog->exec();
-		});
-
-	pHorizontalLayout->addWidget(pSettingsButton);
-
-	QVBoxLayout* pVerticalLayout = new QVBoxLayout(this);
-	pVerticalLayout->setContentsMargins(0, 0, 0, 0);
+	QVBoxLayout* pMainLayout = new QVBoxLayout(this);
+	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
 	m_pImplNameLabel = new CElidedLabel("");
 	IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
@@ -106,56 +82,56 @@ CAudioSystemPanel::CAudioSystemPanel()
 		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 	}
 
-	m_pImplNameLabel->setObjectName("ImplementationTitle");
-	pVerticalLayout->addWidget(m_pImplNameLabel);
+	QHBoxLayout* pTopBarLayout = new QHBoxLayout();
 
-	pVerticalLayout->addLayout(pHorizontalLayout);
+	QSearchBox* pSearchBox = new QSearchBox();
+	pSearchBox->setToolTip(tr("Show only middleware controls with this name"));
+	connect(pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
+	{
+		if (m_filter != filter)
+		{
+			if (m_filter.isEmpty() && !filter.isEmpty())
+			{
+				BackupTreeViewStates();
+				m_pTreeView->expandAll();
+			}
+			else if (!m_filter.isEmpty() && filter.isEmpty())
+			{
+				m_pModelProxy->setFilterFixedString(filter);
+				m_pTreeView->collapseAll();
+				RestoreTreeViewStates();
+			}
+			else if (!m_filter.isEmpty() && !filter.isEmpty())
+			{
+				m_pModelProxy->setFilterFixedString(filter);
+				m_pTreeView->expandAll();
+			}
 
+			m_filter = filter;
+		}
+
+		m_pModelProxy->setFilterFixedString(filter);
+	});
+	
+	QCheckBox* pHideAssignedCheckbox = new QCheckBox();
 	pHideAssignedCheckbox->setText(tr("Hide Assigned"));
 	pHideAssignedCheckbox->setToolTip(tr("Hide or show assigned middleware controls"));
-
-	m_pModelProxy->setDynamicSortFilter(true);
-
-	connect(pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
-		{
-			if (m_filter != filter)
-			{
-				if (m_filter.isEmpty() && !filter.isEmpty())
-				{
-					BackupTreeViewStates();
-					m_pTreeView->expandAll();
-				}
-				else if (!m_filter.isEmpty() && filter.isEmpty())
-				{
-					m_pModelProxy->setFilterFixedString(filter);
-					m_pTreeView->collapseAll();
-					RestoreTreeViewStates();
-				}
-				else if (!m_filter.isEmpty() && !filter.isEmpty())
-				{
-					m_pModelProxy->setFilterFixedString(filter);
-					m_pTreeView->expandAll();
-				}
-
-				m_filter = filter;
-			}
-
-			m_pModelProxy->setFilterFixedString(filter);
-		});
-
 	connect(pHideAssignedCheckbox, &QCheckBox::clicked, [&](bool bHide)
+	{
+		if (bHide)
 		{
-			if (bHide)
-			{
-				m_pTreeView->BackupExpanded();
-				m_pModelProxy->SetHideConnected(bHide);
-			}
-			else
-			{
-				m_pModelProxy->SetHideConnected(bHide);
-				m_pTreeView->RestoreExpanded();
-			}
-		});
+			m_pTreeView->BackupExpanded();
+			m_pModelProxy->SetHideConnected(bHide);
+		}
+		else
+		{
+			m_pModelProxy->SetHideConnected(bHide);
+			m_pTreeView->RestoreExpanded();
+		}
+	});
+
+	pTopBarLayout->addWidget(pSearchBox);
+	pTopBarLayout->addWidget(pHideAssignedCheckbox);
 
 	m_pTreeView = new CAdvancedTreeView();
 	m_pTreeView->header()->setVisible(false);
@@ -164,26 +140,26 @@ CAudioSystemPanel::CAudioSystemPanel()
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_pTreeView->setSortingEnabled(true);
 	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
-
-	m_pModelProxy->setSourceModel(m_pModel);
 	m_pTreeView->setModel(m_pModelProxy);
-	pVerticalLayout->addWidget(m_pTreeView);
-
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(m_pTreeView, &CAdvancedTreeView::customContextMenuRequested, this, &CAudioSystemPanel::ShowControlsContextMenu);
+	connect(m_pTreeView, &CAdvancedTreeView::customContextMenuRequested, this, &CAudioSystemPanel::OnContextMenu);
 	connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, m_pTreeView, &CAdvancedTreeView::OnSelectionChanged);
+
+	pMainLayout->addWidget(m_pImplNameLabel);
+	pMainLayout->addLayout(pTopBarLayout);
+	pMainLayout->addWidget(m_pTreeView);
 
 	// Update the middleware name label.
 	// Note the 'this' ptr being passed as a context variable so that Qt can disconnect this lambda when the object is destroyed (ie. the ACE is closed).
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
-		{
-			IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+	{
+		IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
-			if (pAudioImpl)
-			{
-			  m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
-			}
-		}, reinterpret_cast<uintptr_t>(this));
+		if (pAudioImpl)
+		{
+			m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
+		}
+	}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -215,23 +191,22 @@ void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioSystemPanel::ShowControlsContextMenu(QPoint const& pos)
+void CAudioSystemPanel::OnContextMenu(QPoint const& pos) const
 {
-	QMenu contextMenu(tr("Context menu"), this);
-	QMenu addMenu(tr("Add"));
-	auto selection = m_pTreeView->selectionModel()->selectedRows();
+	QMenu* pContextMenu = new QMenu();
+	auto const selection = m_pTreeView->selectionModel()->selectedRows();
 
 	if (!selection.isEmpty())
 	{
-		contextMenu.addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(m_pTreeView->GetSelectedIndexes()); });
-		contextMenu.addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(m_pTreeView->GetSelectedIndexes()); });
-		contextMenu.addSeparator();
+		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(m_pTreeView->GetSelectedIndexes()); });
+		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(m_pTreeView->GetSelectedIndexes()); });
+		pContextMenu->addSeparator();
 	}
 
-	contextMenu.addAction(tr("Expand All"), [&]() { m_pTreeView->expandAll(); });
-	contextMenu.addAction(tr("Collapse All"), [&]() { m_pTreeView->collapseAll(); });
+	pContextMenu->addAction(tr("Expand All"), [&]() { m_pTreeView->expandAll(); });
+	pContextMenu->addAction(tr("Collapse All"), [&]() { m_pTreeView->collapseAll(); });
 
-	contextMenu.exec(m_pTreeView->mapToGlobal(pos));
+	pContextMenu->exec(m_pTreeView->mapToGlobal(pos));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -46,7 +46,7 @@ dll_string AudioSwitchStateSelector(const SResourceSelectorContext& context, con
 	return ShowSelectDialog(context, szPreviousValue, eItemType_State);
 }
 
-dll_string AudioRTPCSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
+dll_string AudioParameterSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	return ShowSelectDialog(context, szPreviousValue, eItemType_Parameter);
 }
@@ -64,7 +64,7 @@ dll_string AudioPreloadRequestSelector(const SResourceSelectorContext& context, 
 REGISTER_RESOURCE_SELECTOR("AudioTrigger", AudioTriggerSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioSwitch", AudioSwitchSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioSwitchState", AudioSwitchStateSelector, "")
-REGISTER_RESOURCE_SELECTOR("AudioRTPC", AudioRTPCSelector, "")
+REGISTER_RESOURCE_SELECTOR("AudioRTPC", AudioParameterSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioEnvironment", AudioEnvironmentSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioPreloadRequest", AudioPreloadRequestSelector, "")
 }

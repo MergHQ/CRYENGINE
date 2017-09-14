@@ -29,12 +29,7 @@ public:
 
 private slots:
 
-	void ShowControlsContextMenu(QPoint const& pos);
-
-signals:
-
-	void ImplementationSettingsAboutToChange();
-	void ImplementationSettingsChanged();
+	void OnContextMenu(QPoint const& pos) const;
 
 private:
 

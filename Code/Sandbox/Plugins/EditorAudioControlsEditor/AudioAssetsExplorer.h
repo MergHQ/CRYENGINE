@@ -5,11 +5,10 @@
 #include <QFrame>
 
 #include "AudioAssets.h"
-#include "QTreeWidgetFilter.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 // Forward declarations
-class QMenu;
+class QVBoxLayout;
 class QSortFilterProxyModel;
 class QSearchBox;
 class QAudioControlsTreeView;
@@ -34,8 +33,7 @@ public:
 	CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager);
 	virtual ~CAudioAssetsExplorer() override;
 
-	CAdvancedTreeView*          GetTreeView() { return m_pControlsTree; }
-
+	bool                        IsEditing() const;
 	std::vector<CAudioControl*> GetSelectedControls();
 	void                        Reload();
 	void                        BackupTreeViewStates();
@@ -48,6 +46,7 @@ private:
 	// ~QObject
 
 	// Filtering
+	void                InitFilterWidget();
 	void                ResetFilters();
 	void                ShowControlType(EItemType type, bool bShow);
 
@@ -62,7 +61,7 @@ private:
 private slots:
 
 	void DeleteSelectedControl();
-	void ShowControlsContextMenu(QPoint const& pos);
+	void OnContextMenu(QPoint const& pos);
 
 	// Audio Preview
 	void ExecuteControl();
@@ -81,7 +80,8 @@ private:
 
 	// Filtering
 	QString                          m_filter;
-	QMenu*                           m_pFilterMenu;
+	QWidget*                         m_pFilterWidget;
+	QVBoxLayout*                     m_pFiltersLayout;
 
 	QSearchBox*                      m_pSearchBox;
 	CAdvancedTreeView*               m_pControlsTree;

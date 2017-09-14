@@ -11,6 +11,7 @@
 #include "IUndoObject.h"
 #include "EditorStyleHelper.h"
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
+#include <CryIcon.h>
 #include <QtUtil.h>
 
 #include <QMimeData>
@@ -146,7 +147,7 @@ QVariant QConnectionModel::data(const QModelIndex& index, int role) const
 					case Qt::DecorationRole:
 						if (index.column() == eConnectionModelColumns_Name)
 						{
-							return QIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
+							return CryIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
 						}
 						break;
 					case Qt::ForegroundRole:

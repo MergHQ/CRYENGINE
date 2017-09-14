@@ -4,6 +4,7 @@
 #include "AudioControlsEditorWindow.h"
 #include "AudioControlsEditorPlugin.h"
 #include "QAudioControlEditorIcons.h"
+#include "QAudioSystemSettingsDialog.h"
 #include "AudioAssetsManager.h"
 #include <CryAudio/IAudioSystem.h>
 #include "AudioControlsEditorUndo.h"
@@ -21,15 +22,12 @@
 #include <CryIcon.h>
 #include "Controls/QuestionDialog.h"
 
-#include <QPushButton>
 #include <QApplication>
-#include <QPainter>
-#include <QAction>
 #include <QMenu>
 #include <QToolBar>
+#include <QToolButton>
 #include <QSplitter>
 #include <QKeyEvent>
-#include <QDir>
 
 namespace ACE
 {
@@ -37,38 +35,63 @@ namespace ACE
 CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 {
 	memset(m_allowedTypes, true, sizeof(m_allowedTypes));
+	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	m_pMonitorSystem = std::make_unique<ACE::CFileMonitorSystem>(this, 500);
 	m_pMonitorMiddleware = std::make_unique<ACE::CFileMonitorMiddleware>(this, 500);
 
 	setWindowTitle(tr("Audio Controls Editor"));
-	resize(972, 674);
 
 	// Tool Bar
 	QToolBar* pToolBar = new QToolBar(this);
 	pToolBar->setFloatable(false);
 	pToolBar->setMovable(false);
 
-	m_pSaveAction = new QAction(this);
-	m_pSaveAction->setIcon(CryIcon("icons:General/File_Save.ico"));
-	m_pSaveAction->setToolTip(tr("Save All"));
-	m_pSaveAction->setEnabled(false);
-	connect(m_pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
-	pToolBar->addAction(m_pSaveAction);
+	m_pSaveButton = new QToolButton();
+	m_pSaveButton->setIcon(CryIcon("icons:General/File_Save.ico"));
+	m_pSaveButton->setToolTip(tr("Save All"));
+	m_pSaveButton->setEnabled(false);
+	connect(m_pSaveButton, &QToolButton::clicked, this, &CAudioControlsEditorWindow::Save);
+	m_pAssetsManager->signalIsDirty.Connect([&](bool bDirty)
+	{
+		m_pSaveButton->setEnabled(bDirty);
+	}, reinterpret_cast<uintptr_t>(this));
 
-	QAction* pReloadAction = new QAction(this);
-	pReloadAction->setIcon(CryIcon("icons:General/Reload.ico"));
-	pReloadAction->setToolTip(tr("Reload"));
-	connect(pReloadAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Reload);
-	pToolBar->addAction(pReloadAction);
+	QToolButton* pReloadButton = new QToolButton();
+	pReloadButton->setIcon(CryIcon("icons:General/Reload.ico"));
+	pReloadButton->setToolTip(tr("Reload"));
+	connect(pReloadButton, &QToolButton::clicked, this, &CAudioControlsEditorWindow::Reload);
+
+	QWidget* pSpacer = new QWidget();
+	pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+	QToolButton* pSettingsButton = new QToolButton();
+	pSettingsButton->setIcon(CryIcon("://Icons/Options.ico"));
+	pSettingsButton->setToolTip(tr("Location settings of audio middleware project"));
+	connect(pSettingsButton, &QToolButton::clicked, [&]()
+	{
+		QAudioSystemSettingsDialog* pSettingsDialog = new QAudioSystemSettingsDialog(this);
+		connect(pSettingsDialog, &QAudioSystemSettingsDialog::ImplementationSettingsAboutToChange, [&]()
+		{
+			BackupTreeViewStates();
+		});
+
+		connect(pSettingsDialog, &QAudioSystemSettingsDialog::ImplementationSettingsChanged, [&]()
+		{
+			m_pAudioSystemPanel->Reset();
+			RestoreTreeViewStates();
+			m_pMonitorMiddleware->Update();
+		});
+
+		pSettingsDialog->exec();
+	});
+
+	pToolBar->addWidget(m_pSaveButton);
+	pToolBar->addWidget(pReloadButton);
+	pToolBar->addWidget(pSpacer);
+	pToolBar->addWidget(pSettingsButton);
 	addToolBar(pToolBar);
 
-	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
-
-	m_pAssetsManager->signalIsDirty.Connect([&](bool bDirty)
-	{ 
-		m_pSaveAction->setEnabled(bDirty); 
-	}, reinterpret_cast<uintptr_t>(this));
 
 	if (pAudioSystemImpl)
 	{
@@ -97,22 +120,9 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 			m_pMonitorSystem->EnableDelayed();
 		}, reinterpret_cast<uintptr_t>(this));
 
-		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsAboutToChange, [&]()
-		{
-			BackupTreeViewStates();
-		});
-
-		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, [&]()
-		{
-			m_pAudioSystemPanel->Reset();
-			RestoreTreeViewStates();
-			m_pMonitorMiddleware->Update();
-		});
-
 		GetIEditor()->RegisterNotifyListener(this);
 
-		m_pSplitter = new QSplitter(this);
-		m_pSplitter->setHandleWidth(0);
+		m_pSplitter = new QSplitter();
 		m_pSplitter->addWidget(m_pExplorer);
 		m_pSplitter->addWidget(m_pInspectorPanel);
 		m_pSplitter->addWidget(m_pAudioSystemPanel);
@@ -141,33 +151,6 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	CheckErrorMask();
 	m_pMonitorSystem->Enable();
 	m_pMonitorMiddleware->Update();
-
-	// -------------- HACK -------------
-	// There's a bug with the mounting models when being reloaded so we are destroying
-	// and recreating the entire explorer panel to make this work
-	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
-		{
-			delete m_pExplorer;
-			std::vector<CAudioControl*> controls;
-			m_pInspectorPanel->SetSelectedControls(controls);
-		}, reinterpret_cast<uintptr_t>(this));
-
-	CAudioControlsEditorPlugin::signalLoaded.Connect([&]()
-		{
-			m_pExplorer = new CAudioAssetsExplorer(m_pAssetsManager);
-			m_pSplitter->insertWidget(0, m_pExplorer);
-
-			connect(m_pExplorer, &CAudioAssetsExplorer::SelectedControlChanged, [&]()
-			{
-				m_pInspectorPanel->SetSelectedControls(m_pExplorer->GetSelectedControls());
-			});
-
-			connect(m_pExplorer, &CAudioAssetsExplorer::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
-			connect(m_pExplorer, &CAudioAssetsExplorer::StartTextFiltering, m_pInspectorPanel, &CInspectorPanel::BackupTreeViewStates);
-			connect(m_pExplorer, &CAudioAssetsExplorer::StopTextFiltering, m_pInspectorPanel, &CInspectorPanel::RestoreTreeViewStates);
-		}, reinterpret_cast<uintptr_t>(this));
-	// --------------------------------
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -175,8 +158,6 @@ CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
 	m_pAssetsManager->signalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::signalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::signalAboutToSave.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::signalSaved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -186,7 +167,7 @@ CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::keyPressEvent(QKeyEvent* pEvent)
 {
-	if (!m_pExplorer->GetTreeView()->IsEditing())
+	if (!m_pExplorer->IsEditing())
 	{
 		if ((pEvent->key() == Qt::Key_S) && (pEvent->modifiers() == Qt::ControlModifier))
 		{
@@ -205,7 +186,7 @@ void CAudioControlsEditorWindow::keyPressEvent(QKeyEvent* pEvent)
 		}
 	}
 
-	QMainWindow::keyPressEvent(pEvent);
+	QWidget::keyPressEvent(pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -269,8 +250,6 @@ void CAudioControlsEditorWindow::Reload()
 			m_pMonitorSystem->Disable();
 			m_pMonitorMiddleware->Disable();
 
-			auto const explorerExpandedBackup = m_pExplorer->GetTreeView()->BackupExpandedOnReset(); // Change this when mounting model reload bug is fixed.
-			auto const explorerSelectedBackup = m_pExplorer->GetTreeView()->BackupSelectionOnReset(); // Change this when mounting model reload bug is fixed.
 			BackupTreeViewStates();
 
 			if (m_pAssetsManager->IsLoading())
@@ -291,8 +270,6 @@ void CAudioControlsEditorWindow::Reload()
 			m_pAudioSystemPanel->Reset();
 			CheckErrorMask();
 
-			m_pExplorer->GetTreeView()->RestoreExpandedOnReset(explorerExpandedBackup); // Change this when mounting model reload bug is fixed.
-			m_pExplorer->GetTreeView()->RestoreSelectionOnReset(explorerSelectedBackup); // Change this when mounting model reload bug is fixed.
 			RestoreTreeViewStates();
 
 			m_pMonitorSystem->Enable();
@@ -439,6 +416,21 @@ void CAudioControlsEditorWindow::ReloadSystemData()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::ReloadMiddlewareData()
 {
+	if (m_pAssetsManager != nullptr)
+	{
+		if (m_pAssetsManager->IsDirty())
+		{
+			char const* messageText = "External changes have been made to middleware data.\n\nWarning: If middleware data gets refreshed without saving audio control files, unsaved connection changes will get lost!\n\nDo you want to save before refreshing middleware data?";
+			CQuestionDialog messageBox;
+			messageBox.SetupQuestion(tr("Audio Controls Editor"), tr(messageText), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::Yes);
+
+			if (messageBox.Execute() == QDialogButtonBox::Yes)
+			{
+				Save();
+			}
+		}
+	}
+
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
 	BackupTreeViewStates();
@@ -461,6 +453,7 @@ void CAudioControlsEditorWindow::ReloadMiddlewareData()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::BackupTreeViewStates()
 {
+	m_pExplorer->BackupTreeViewStates();
 	m_pAudioSystemPanel->BackupTreeViewStates();
 	m_pInspectorPanel->BackupTreeViewStates();
 }
@@ -468,6 +461,7 @@ void CAudioControlsEditorWindow::BackupTreeViewStates()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::RestoreTreeViewStates()
 {
+	m_pExplorer->RestoreTreeViewStates();
 	m_pAudioSystemPanel->RestoreTreeViewStates();
 	m_pInspectorPanel->RestoreTreeViewStates();
 }

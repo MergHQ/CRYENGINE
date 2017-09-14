@@ -12,9 +12,9 @@ class CAdvancedTreeView final : public QAdvancedTreeView
 
 public:
 
-	CAdvancedTreeView() = default;
-
-	using QSetItemId = QSet<uint32>;
+	CAdvancedTreeView()
+		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::None))
+	{}
 
 	QModelIndexList GetSelectedIndexes() const { return selectedIndexes(); }
 	bool            IsEditing() const;
@@ -23,14 +23,10 @@ public:
 	void            CollapseSelection(QModelIndexList const& indexList);
 
 	void            BackupExpanded();
-	QSetItemId      BackupExpandedOnReset();
 	void            RestoreExpanded();
-	void            RestoreExpandedOnReset(QSetItemId const& expandedBackup);
 
 	void            BackupSelection();
-	QSetItemId      BackupSelectionOnReset();
 	void            RestoreSelection();
-	void            RestoreSelectionOnReset(QSetItemId const& selectedBackup);
 
 public slots:
 
@@ -43,8 +39,8 @@ private:
 	void   RestoreExpandedChildren(QModelIndex const& index);
 	void   RestoreSelectionChildren(QModelIndex const& index);
 
-	bool       m_bSelectionChanged;
-	QSetItemId m_expandedBackup;
-	QSetItemId m_selectionBackup;
+	bool         m_bSelectionChanged;
+	QSet<uint32> m_expandedBackup;
+	QSet<uint32> m_selectionBackup;
 };
 } // namespace ACE
