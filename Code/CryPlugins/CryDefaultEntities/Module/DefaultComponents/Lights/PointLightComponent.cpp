@@ -77,11 +77,18 @@ namespace Cry
 			light.m_fFogRadialLobe = m_options.m_fogRadialLobe;
 
 			// Load the light source into the entity
-			m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
+			const int slot = m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
 
 			uint32 slotFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
 			UpdateGIModeEntitySlotFlags((uint8)m_options.m_giMode, slotFlags);
 			m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
+
+			if (IRenderNode* pRenderNode = m_pEntity->GetSlotRenderNode(slot))
+			{
+				int viewDistance = static_cast<int>((m_viewDistance / 100.0f) * 255.0f);
+				pRenderNode->SetViewDistRatio(viewDistance);
+			}
+
 		}
 
 		void CPointLightComponent::ProcessEvent(SEntityEvent& event)
