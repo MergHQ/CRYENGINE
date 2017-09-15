@@ -338,7 +338,7 @@ EQuestionResult CryMessageBox(const char* szText, const char* szCaption, EMessag
 
 EQuestionResult CryMessageBox(const wchar_t* szText, const wchar_t* szCaption, EMessageBox type)
 {
-#if CRY_PLATFORM_WINDOWS
+#if CRY_PLATFORM_WINAPI
 	if (gEnv && gEnv->bUnattendedMode)
 	{
 		return eQR_None;
