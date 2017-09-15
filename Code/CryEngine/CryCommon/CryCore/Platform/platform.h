@@ -362,7 +362,10 @@ enum EQuestionResult
 	eQR_None,
 	eQR_Cancel = eQR_None,
 	eQR_Yes,
-	eQR_No
+	eQR_No,
+	eQR_Abort,
+	eQR_Retry,
+	eQR_Ignore
 };
 
 enum EMessageBox
@@ -371,12 +374,14 @@ enum EMessageBox
 	eMB_YesCancel,
 	eMB_YesNoCancel,
 	eMB_Error,
+	eMB_AbortRetryIgnore
 };
 
 void            CryDebugBreak();
 void            CrySleep(unsigned int dwMilliseconds);
 void            CryLowLatencySleep(unsigned int dwMilliseconds);
 EQuestionResult CryMessageBox(const char* lpText, const char* lpCaption, EMessageBox uType = eMB_Info);
+EQuestionResult CryMessageBox(const wchar_t* lpText, const wchar_t* lpCaption, EMessageBox uType = eMB_Info);
 bool            CryCreateDirectory(const char* lpPathName);
 bool            CryDirectoryExists(const char* szPath);
 void            CryGetCurrentDirectory(unsigned int pathSize, char* szOutPath);

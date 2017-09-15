@@ -1247,11 +1247,11 @@ void CATLAudioObject::DrawDebugInfo(
 				if (bShowLabel)
 				{
 					bool const bHasActiveData = HasActiveData(pAudioObject);
-					bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
-					bool const bDraw = (g_cvars.m_showActiveAudioObjectsOnly == 0) || ((g_cvars.m_showActiveAudioObjectsOnly > 0) && bHasActiveData && !bIsVirtual);
+					bool const bDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && bHasActiveData);
 
 					if (bDraw)
 					{
+						bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 						static float const objectActiveColor[4] = { 0.9f, 0.9f, 0.9f, 0.9f };
 						static float const objectInactiveColor[4] = { 0.5f, 0.5f, 0.5f, 0.9f };
 						static float const objectVirtualColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
@@ -1395,8 +1395,7 @@ void CATLAudioObject::DrawDebugInfo(
 					m_propagationProcessor.GetPropagationData(propagationData);
 
 					bool const bHasActiveData = HasActiveData(pAudioObject);
-					bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
-					bool const bDraw = (g_cvars.m_showActiveAudioObjectsOnly == 0) || ((g_cvars.m_showActiveAudioObjectsOnly > 0) && bHasActiveData && !bIsVirtual);
+					bool const bDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && bHasActiveData);
 
 					if (bDraw)
 					{
@@ -1421,6 +1420,7 @@ void CATLAudioObject::DrawDebugInfo(
 							debugText.Format("Ignore (exceeded activity range)");
 						}
 
+						bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 						float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
 						static float const ignoredRayLabelColor[4] = { 0.5f, 0.5f, 0.5f, 0.9f };
 						static float const virtualRayLabelColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };

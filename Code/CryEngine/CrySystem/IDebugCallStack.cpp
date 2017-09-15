@@ -199,15 +199,14 @@ void IDebugCallStack::FatalError(const char* description)
 	WriteLineToLog(description);
 
 #if !defined(_RELEASE) && !defined(CRY_PLATFORM_WINDOWS)
-	IPlatformOS* pOS = gEnv->pSystem->GetPlatformOS();
-	bool bShowDebugScreen = pOS && g_cvars.sys_no_crash_dialog == 0;
+	bool bShowDebugScreen = g_cvars.sys_no_crash_dialog == 0;
 	// showing the debug screen is not safe when not called from mainthread
 	// it normally leads to a infinity recursion followed by a stackoverflow, preventing
 	// useful callstacks, thus they are disabled
 	bShowDebugScreen = bShowDebugScreen && gEnv->mMainThreadId == CryGetCurrentThreadId();
 	if (bShowDebugScreen)
 	{
-		pOS->DebugMessageBox(description, "CryEngine Fatal Error");
+		CryMessageBox(description, "CryEngine Fatal Error", eMB_Error);
 	}
 #endif
 

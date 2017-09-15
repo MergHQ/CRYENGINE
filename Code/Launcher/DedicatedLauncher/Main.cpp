@@ -84,7 +84,7 @@ ILINE int RunGame(const char* szCommandLine)
 		string errorStr;
 		errorStr.Format("Failed to load the Game DLL! %s", frameworkDLLName);
 
-		MessageBox(0, errorStr.c_str(), "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
+		CryMessageBox(errorStr.c_str(), "Error", eMB_Error);
 		// failed to load the dll
 
 		return EXIT_FAILURE;
@@ -98,7 +98,7 @@ ILINE int RunGame(const char* szCommandLine)
 		// dll is not a compatible game dll
 		CryFreeLibrary(frameworkDll);
 
-		MessageBox(0, "Specified Game DLL is not valid! Please make sure you are running the correct executable", "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
+		CryMessageBox("Specified Game DLL is not valid! Please make sure you are running the correct executable", "Error", eMB_Error);
 
 		return EXIT_FAILURE;
 	}
@@ -120,7 +120,7 @@ ILINE int RunGame(const char* szCommandLine)
 		// failed to create the startup interface
 		CryFreeLibrary(frameworkDll);
 
-		MessageBox(0, "Failed to create the GameStartup Interface!", "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
+		CryMessageBox("Failed to create the GameStartup Interface!", "Error", eMB_Error);
 
 		return EXIT_FAILURE;
 	}

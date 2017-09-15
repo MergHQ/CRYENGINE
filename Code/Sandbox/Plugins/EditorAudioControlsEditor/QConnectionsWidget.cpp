@@ -55,7 +55,7 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 
 		if (selectionCount > 0)
 		{
-			QMenu contextMenu(tr("Context menu"), this);
+			QMenu* pContextMenu = new QMenu();
 
 			char const* actionName = "Remove Connection";
 
@@ -64,14 +64,8 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 				actionName = "Remove Connections";
 			}
 
-			QAction* pAction = contextMenu.addAction(tr(actionName));
-
-			connect(pAction, &QAction::triggered, [&]()
-			{
-				RemoveSelectedConnection();
-			});
-
-			contextMenu.exec(QCursor::pos());
+			pContextMenu->addAction(tr(actionName), [&]() { RemoveSelectedConnection(); });
+			pContextMenu->exec(QCursor::pos());
 		}
 	});
 

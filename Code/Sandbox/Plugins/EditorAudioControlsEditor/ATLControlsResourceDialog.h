@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Controls/EditorDialog.h"
-#include "QTreeWidgetFilter.h"
 #include <ACETypes.h>
 
 class QAudioControlsTreeView;

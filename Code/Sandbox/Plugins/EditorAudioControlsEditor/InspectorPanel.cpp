@@ -24,17 +24,14 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 {
 	assert(m_pAssetsManager);
-	resize(300, 490);
 	setWindowTitle(tr("Inspector Panel"));
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
 	QVBoxLayout* pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
-	m_pPropertyTree = new QPropertyTree(this);
+	m_pPropertyTree = new QPropertyTree();
 	m_pPropertyTree->setSizeToContent(true);
-
-	pMainLayout->addWidget(m_pPropertyTree);
 
 	m_pUsageHint = std::make_unique<QString>(tr("Select an audio control from the left pane to see its properties!"));
 
@@ -42,9 +39,12 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 	m_pConnectionsLabel->setObjectName("ConnectionsTitle");
 	m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 	m_pConnectionsLabel->setWordWrap(true);
-	pMainLayout->addWidget(m_pConnectionsLabel);
-
+	
 	m_pConnectionList = new QConnectionsWidget();
+	m_pConnectionList->Init();
+
+	pMainLayout->addWidget(m_pPropertyTree);
+	pMainLayout->addWidget(m_pConnectionsLabel);
 	pMainLayout->addWidget(m_pConnectionList);
 
 	auto revertFunction = [&]()
@@ -59,19 +59,17 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 	pAssetsManager->signalItemRemoved.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalControlModified.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 
-	m_pConnectionList->Init();
-
 	Reload();
 
 	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]()
 		{
 			m_bSupressUpdates = true;
-	  });
+		});
 
 	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]()
 		{
 			m_bSupressUpdates = false;
-	  });
+		});
 }
 
 //////////////////////////////////////////////////////////////////////////

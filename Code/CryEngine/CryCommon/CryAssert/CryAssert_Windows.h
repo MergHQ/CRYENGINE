@@ -377,7 +377,7 @@ bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _ui
 	{
 		return false;
 	}
-	if (!gEnv->bNoAssertDialog && !gEnv->bIgnoreAllAsserts && !gEnv->bStoppedOnAssert)
+	if (!gEnv->bUnattendedMode && !gEnv->bIgnoreAllAsserts && !gEnv->bStoppedOnAssert)
 	{
 		gEnv->bStoppedOnAssert = true;
 

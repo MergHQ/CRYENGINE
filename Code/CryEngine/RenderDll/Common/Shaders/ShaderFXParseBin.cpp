@@ -1145,27 +1145,9 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 
 						if (bShowMessageBox)
 						{
-							IPlatformOS::EMsgBoxResult result;
-
-							IPlatformOS* pOS = gEnv->pSystem->GetPlatformOS();
-							if (pOS)
-							{
-								result = pOS->DebugMessageBox(acTemp, "Invalid ShaderCache");
-
-								if (result == IPlatformOS::eMsgBox_Cancel)
-								{
-									CryDebugBreak();
-								}
-								else
-								{
-									bShowMessageBox = false;
-									Sleep(33);
-								}
-							}
-							else
-							{
-								Warning("Invalid ShaderCache");
-							}
+							CryMessageBox(acTemp, "Invalid ShaderCache", eMB_Error);
+							bShowMessageBox = false;
+							CrySleep(33);
 						}
 					}
 				}

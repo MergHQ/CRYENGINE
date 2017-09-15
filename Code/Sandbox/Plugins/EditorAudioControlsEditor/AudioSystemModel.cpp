@@ -11,10 +11,10 @@
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 #include <QtUtil.h>
 #include <CrySandbox/CrySignal.h>
+#include <CryIcon.h>
 
 #include <QMimeData>
 #include <QDataStream>
-#include <QIcon>
 #include <QColor>
 
 namespace ACE
@@ -89,7 +89,7 @@ QVariant QAudioSystemModel::data(const QModelIndex& index, int role) const
 					case Qt::DisplayRole:
 						return (const char*)pItem->GetName();
 					case Qt::DecorationRole:
-						return QIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
+						return CryIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
 					case Qt::ForegroundRole:
 						if (pItem->IsLocalised())
 						{

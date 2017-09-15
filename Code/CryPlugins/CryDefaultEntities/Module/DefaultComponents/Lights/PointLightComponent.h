@@ -79,6 +79,7 @@ namespace Cry
 
 				desc.AddMember(&CPointLightComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the light is enabled", true);
 				desc.AddMember(&CPointLightComponent::m_radius, 'radi', "Radius", "Radius", "Determines the range of the point light", 10.f);
+				desc.AddMember(&CPointLightComponent::m_viewDistance, 'view', "ViewDistance", "View Distance", "Determines the distance in which this light will be active", 50);
 
 				desc.AddMember(&CPointLightComponent::m_color, 'colo', "Color", "Color", "Color emission information", CPointLightComponent::SColor());
 				desc.AddMember(&CPointLightComponent::m_shadows, 'shad', "Shadows", "Shadows", "Shadow casting settings", CPointLightComponent::SShadows());
@@ -144,6 +145,7 @@ namespace Cry
 			bool m_bActive = true;
 			Schematyc::Range<0, 32768> m_radius = 10.f;
 
+			Schematyc::Range<0, 100, 0, 100, int> m_viewDistance = 50;
 			SOptions m_options;
 			SColor m_color;
 			SShadows m_shadows;

@@ -82,8 +82,6 @@ public:
 	virtual const char*                                          GetSKUId();
 	virtual ILocalizationManager::TLocalizationBitfield          GetSystemSupportedLanguages();
 
-	virtual IPlatformOS::EMsgBoxResult                           DebugMessageBox(const char* body, const char* title, unsigned int flags = 0) const;
-
 	virtual bool                                                 PostLocalizationBootChecks();
 
 	virtual void                                                 GetMemoryUsage(ICrySizer* pSizer) const;
@@ -152,7 +150,6 @@ private:
 	int   m_cachePakUser;
 	bool  m_bSignedIn;
 	bool  m_bSaving;
-	bool  m_bAllowMessageBox;
 	bool  m_bLevelLoad;
 	bool  m_bSaveDuringLevelLoad;
 };

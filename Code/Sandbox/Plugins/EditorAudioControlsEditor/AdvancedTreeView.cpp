@@ -90,13 +90,6 @@ void CAdvancedTreeView::BackupExpanded()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAdvancedTreeView::QSetItemId CAdvancedTreeView::BackupExpandedOnReset()
-{
-	BackupExpanded();
-	return m_expandedBackup;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAdvancedTreeView::BackupExpandedChildren(QModelIndex const& index)
 {
 	if (index.isValid())
@@ -130,13 +123,6 @@ void CAdvancedTreeView::RestoreExpanded()
 
 		m_expandedBackup.clear();
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::RestoreExpandedOnReset(QSetItemId const& expandedBackup)
-{
-	m_expandedBackup = expandedBackup;
-	RestoreExpanded();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -176,13 +162,6 @@ void CAdvancedTreeView::BackupSelection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAdvancedTreeView::QSetItemId CAdvancedTreeView::BackupSelectionOnReset()
-{
-	BackupSelection();
-	return m_selectionBackup;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAdvancedTreeView::RestoreSelection()
 {
 	if (!m_selectionBackup.isEmpty() && !m_bSelectionChanged)
@@ -199,13 +178,6 @@ void CAdvancedTreeView::RestoreSelection()
 			scrollTo(index);
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::RestoreSelectionOnReset(QSetItemId const& selectedBackup)
-{
-	m_selectionBackup = selectedBackup;
-	RestoreSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////

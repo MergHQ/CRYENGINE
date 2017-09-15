@@ -890,10 +890,13 @@ struct SSystemGlobalEnvironment
 	//////////////////////////////////////////////////////////////////////////
 	// Used by CRY_ASSERT
 	bool bIgnoreAllAsserts;
-	bool bNoAssertDialog;
-	bool bTesting;
 	bool bStoppedOnAssert;
 	//////////////////////////////////////////////////////////////////////////
+
+	//! Whether we are running unattended, disallows message boxes and other blocking events that require human intervention
+	bool bUnattendedMode;
+	//! Whether we are unit testing
+	bool bTesting;
 
 	bool          bNoRandomSeed;
 
@@ -1206,10 +1209,6 @@ struct ISystem
 	virtual void Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) = 0;
 	virtual void WarningOnce(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) = 0;
 	//! ##@}.
-
-	//! Report message by provider or by using CryMessageBox.
-	//! Doesn't terminate the execution.
-	virtual EQuestionResult ShowMessage(const char* text, const char* caption, EMessageBox uType) = 0;
 
 	//! Compare specified verbosity level to the one currently set.
 	virtual bool CheckLogVerbosity(int verbosity) = 0;

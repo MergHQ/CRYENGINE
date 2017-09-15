@@ -92,6 +92,7 @@ add_sources("NoUberFile"
 		"CryCore/Platform/AndroidSpecific.h"
 		"CryCore/Platform/Android32Specific.h"
 		"CryCore/Platform/Android64Specific.h"
+		"CryCore/Platform/platform_impl_android.inl"
 )
 
 # -- crycommon_sce.waf_files --
@@ -102,6 +103,7 @@ add_sources("NoUberFile"
 		
 	SOURCE_GROUP "CryCore\\\\Platform"
 		"CryCore/Platform/WinBase_sce.inl"
+		"CryCore/Platform/platform_impl_orbis.inl"
 	SOURCE_GROUP "CryNetwork"
 		"CryNetwork/CrySocks_sce.h"
 	SOURCE_GROUP "CryThreading"
@@ -136,6 +138,7 @@ add_sources("NoUberFile"
 		"CryCore/Platform/iOSSpecific.h"
 		"CryCore/Platform/MacSpecific.h"
 		"CryCore/Platform/CryPlatform.Darwin.h"
+		"CryCore/Platform/platform_impl_mac.inl"
 )
 
 # -- crycommon_windows.waf_files --
@@ -151,6 +154,7 @@ add_sources("NoUberFile"
 		"CryCore/Platform/CryPlatform.Win64.h"
 		"CryCore/Platform/Win32specific.h"
 		"CryCore/Platform/Win64specific.h"
+		"CryCore/Platform/platform_impl_winapi.inl"
 	SOURCE_GROUP "CrySystem"
 		
 	SOURCE_GROUP "CrySystem\\\\Profilers"

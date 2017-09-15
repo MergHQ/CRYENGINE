@@ -370,19 +370,9 @@ static void fileAccessMessage(int threadIndex, const char* inName)
 		}
 		OutputDebugString(msg);
 
-		IPlatformOS::EMsgBoxResult result;
+		CryMessageBox(msg.c_str(), "TRC/TCR Fail: Synchronous File Access", eMB_Error);
+		CrySleep(33);
 
-		IPlatformOS* pOS = gEnv->pSystem->GetPlatformOS();
-		result = pOS->DebugMessageBox(msg.c_str(), "TRC/TCR Fail: Syncronous File Access");
-
-		if (result == IPlatformOS::eMsgBox_Cancel)
-		{
-			CryDebugBreak();
-		}
-		else
-		{
-			Sleep(33);
-		}
 		s_threadAndRecursionGuard = false;
 	}
 }

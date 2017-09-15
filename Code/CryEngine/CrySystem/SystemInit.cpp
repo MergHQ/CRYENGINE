@@ -930,11 +930,7 @@ bool CSystem::OpenRenderLibrary(int type)
 			if (m_env.pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "anygpu") == NULL)  // Useful for shader cache generation
 		#endif
 			{
-				bool allowMessageBox = m_env.pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "noprompt") == NULL;
-				if (allowMessageBox)
-				{
-					MessageBoxW(0, GetErrorStringUnsupportedGPU(gpuName, gpuVendorId, gpuDeviceId).c_str(), L"CRYENGINE", MB_ICONERROR | MB_OK | MB_DEFAULT_DESKTOP_ONLY);
-				}
+				CryMessageBox(GetErrorStringUnsupportedGPU(gpuName, gpuVendorId, gpuDeviceId).c_str(), L"CRYENGINE", eMB_Error);
 				return false;
 			}
 		}
@@ -1124,10 +1120,7 @@ bool CSystem::InitInput()
 	if (!InitializeEngineModule(DLL_INPUT, cryiidof<IInputEngineModule>(), true))
 	{
 #if CRY_PLATFORM_WINDOWS
-		if (!m_startupParams.bUnattendedMode)
-		{
-			MessageBox(NULL, "CryInput.dll could not be loaded. This is likely due to not having XInput support installed.\nPlease install the most recent version of the DirectX runtime.", "ERROR: CryInput.dll could not be loaded!", MB_OK | MB_ICONERROR);
-		}
+		CryMessageBox("CryInput.dll could not be loaded. This is likely due to not having XInput support installed.\nPlease install the most recent version of the DirectX runtime.", "ERROR: CryInput.dll could not be loaded!", eMB_Error);
 #endif
 		return false;
 	}
@@ -2392,33 +2385,11 @@ static bool CheckCPURequirements(CCpuFeatures* pCpu, CSystem* pSystem)
 		{
 			CryLogAlways("Unsupported CPU! Need SSE, SSE2 and SSE3 instructions to be available.");
 
-		#if !defined(_RELEASE)
-			const bool allowPrompts = pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "noprompt") == 0;
-		#else
-			const bool allowPrompts = true;
-		#endif // !defined(_RELEASE)
-			if (allowPrompts)
+			CryLogAlways("Asking user if they wish to continue...");
+			if (CryMessageBox(GetErrorStringUnsupportedCPU().c_str(), L"CRYENGINE", eMB_YesCancel) == eQR_Cancel)
 			{
-				CryLogAlways("Asking user if they wish to continue...");
-				const int mbRes = MessageBoxW(0, GetErrorStringUnsupportedCPU().c_str(), L"CRYENGINE", MB_ICONWARNING | MB_OKCANCEL | MB_DEFBUTTON2 | MB_DEFAULT_DESKTOP_ONLY);
-				if (mbRes == IDCANCEL)
-				{
-					CryLogAlways("User chose to cancel.");
-					return false;
-				}
-			}
-			else
-			{
-		#if !defined(_RELEASE)
-				const bool obeyCPUCheck = pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "anycpu") == 0;
-		#else
-				const bool obeyCPUCheck = true;
-		#endif // !defined(_RELEASE)
-				if (obeyCPUCheck)
-				{
-					CryLogAlways("No prompts allowed and unsupported CPU check active. Treating unsupported CPU as error and exiting.");
-					return false;
-				}
+				CryLogAlways("User chose to cancel.");
+				return false;
 			}
 
 			CryLogAlways("User chose to continue despite unsupported CPU!");
@@ -2445,9 +2416,16 @@ bool CSystem::Init()
 	InlineInitializationProcessing("CSystem::Init start");
 	m_szCmdLine = m_startupParams.szSystemCmdLine;
 
+	m_pCmdLine = new CCmdLine(m_startupParams.szSystemCmdLine);
+
 	m_env.szCmdLine = m_szCmdLine.c_str();
 	m_env.bTesting = m_startupParams.bTesting;
-	m_env.bNoAssertDialog = m_startupParams.bTesting;
+	m_env.bUnattendedMode = m_startupParams.bTesting || m_startupParams.bUnattendedMode;
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "noprompt"))
+	{
+		m_env.bUnattendedMode = true;
+	}
+
 	m_env.bNoRandomSeed = m_startupParams.bNoRandom;
 	m_bShaderCacheGenMode = m_startupParams.bShaderCacheGen;
 	assert(IsHeapValid());
@@ -2473,7 +2451,6 @@ bool CSystem::Init()
 	m_pCVarsWhitelist = m_startupParams.pCVarsWhitelist;
 #endif // defined(CVARS_WHITELIST)
 	m_bDedicatedServer = m_startupParams.bDedicatedServer;
-	m_pCmdLine = new CCmdLine(m_startupParams.szSystemCmdLine);
 	m_currentLanguageAudio = "";
 #if defined(DEDICATED_SERVER)
 	m_bNoCrashDialog = true;
@@ -2518,8 +2495,6 @@ bool CSystem::Init()
 	if (m_startupParams.bUnattendedMode)
 	{
 		m_bNoCrashDialog = true;
-		m_env.bNoAssertDialog = true; //this also suppresses CryMessageBox
-		AddPlatformOSCreateFlag(IPlatformOS::eCF_NoDialogs);
 	}
 
 	if (!m_startupParams.pValidator)
@@ -2881,7 +2856,7 @@ bool CSystem::Init()
 			GetISystem()->LoadConfiguration("vr.cfg", 0, eLoadConfigInit);
 		if (g_cvars.sys_asserts > 1)
 		{
-			gEnv->bNoAssertDialog = true; // skip assert UI when sys_assert is 2 or 3
+			gEnv->bUnattendedMode = true; // skip assert UI when sys_assert is 2 or 3
 		}
 
 #if defined(CRY_PLATFORM_DESKTOP) && defined(USE_DEDICATED_SERVER_CONSOLE)

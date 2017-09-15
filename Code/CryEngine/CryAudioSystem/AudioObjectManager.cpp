@@ -328,12 +328,13 @@ void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& lis
 			CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
 			lowerCaseObjectName.MakeLower();
 			bool const bHasActiveData = HasActiveData(pAudioObject);
-			bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) > 0;
 			bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-			bool const bDraw = bStringFound && ((g_cvars.m_showActiveAudioObjectsOnly == 0) || (g_cvars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
+			bool const bDraw = bStringFound && ((g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && bHasActiveData));
 
 			if (bDraw)
 			{
+				bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
+
 				auxGeom.Draw2dLabel(posX, posY, 1.25f,
 					bIsVirtual ? itemVirtualColor : (bHasActiveData ? itemActiveColor : itemInactiveColor),
 					false,

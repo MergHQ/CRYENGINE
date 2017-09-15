@@ -505,8 +505,8 @@ bool CFileUtil::CompileLuaFile(const char* luaFilename)
 		// Errors while compiling file.
 
 		// Show output from Lua compiler
-		if (MessageBox(NULL, (CString("Error output from Lua compiler:\r\n") + CompilerOutput.GetString() +
-		                      CString("\r\nDo you want to edit the file ?")), "Lua Compiler", MB_ICONERROR | MB_YESNO) == IDYES)
+		if (CryMessageBox((CString("Error output from Lua compiler:\r\n") + CompilerOutput.GetString() +
+		                      CString("\r\nDo you want to edit the file ?")), "Lua Compiler", eMB_YesCancel) == eQR_Yes)
 		{
 			int line = 0;
 			string cmdLine = luaFile;
@@ -2421,7 +2421,7 @@ void CFileUtil::PopupMenu(const char* filename, const char* fullGamePath, CWnd* 
 {
 	std::function<void()> func([wnd]
 	{
-		MessageBox(wnd ? wnd->GetSafeHwnd() : nullptr, "Source Control Operation Failed.\r\nCheck if Source Control Provider correctly setup and working directory is correct.", "Error", MB_OK | MB_ICONERROR);
+		CryMessageBox("Source Control Operation Failed.\r\nCheck if Source Control Provider correctly setup and working directory is correct.", "Error", eMB_Error);
 	});
 	auto pMenu = Private_FileUtil::CreateDynamicPopupMenu(filename, fullGamePath, pIsSelected, pItems, func);
 	pMenu->SpawnAtCursor();

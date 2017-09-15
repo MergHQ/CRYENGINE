@@ -45,17 +45,9 @@ CPlatformOS_PC::CPlatformOS_PC(const uint8 createParams)
 	, m_delayLevelStartIcon(0.0f)
 	, m_bSignedIn(false)
 	, m_bSaving(false)
-	#if defined(DEDICATED_SERVER)
-	, m_bAllowMessageBox(false)
-	#else
-	, m_bAllowMessageBox((createParams & eCF_NoDialogs) == 0)
-	#endif //defined(DEDICATED_SERVER)
 	, m_bLevelLoad(false)
 	, m_bSaveDuringLevelLoad(false)
 {
-	#if !defined(_RELEASE)
-	m_bAllowMessageBox = (GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "noprompt") == NULL);
-	#endif // !defined(_RELEASE)
 	AddListener(this, "PC");
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CPlatformOS_PC_SystemEventListener");
@@ -447,27 +439,6 @@ void CPlatformOS_PC::GetEncryptionKey(const std::vector<char>** pMagic, const st
 void CPlatformOS_PC::AddListener(IPlatformOS::IPlatformListener* pListener, const char* szName)
 {
 	m_listeners.Add(pListener, szName);
-}
-
-IPlatformOS::EMsgBoxResult
-CPlatformOS_PC::DebugMessageBox(const char* body, const char* title, unsigned int flags) const
-{
-	if (!m_bAllowMessageBox)
-		return eMsgBox_OK;
-
-	ICVar* pCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_no_crash_dialog") : NULL;
-	if (pCVar && pCVar->GetIVal() != 0)
-	{
-		return eMsgBox_OK;
-	}
-
-	#if CRY_PLATFORM_WINDOWS
-	int winresult = CryMessageBox(body, title, eMB_YesCancel);
-	return (winresult == eQR_Yes) ? eMsgBox_OK : eMsgBox_Cancel;
-	#else
-	CRY_ASSERT_MESSAGE(false, "DebugMessageBox not implemented on non-windows platforms!");
-	return eMsgBox_OK; // [AlexMcC|30.03.10]: Ok? Cancel? Dunno! Uh-oh :( This is only used in CryPak.cpp so far, and for that use it's better to return ok
-	#endif
 }
 
 bool CPlatformOS_PC::PostLocalizationBootChecks()
