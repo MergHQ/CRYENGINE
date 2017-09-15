@@ -68,7 +68,6 @@ struct CVar
 	static int         es_DebugFindEntity;
 	static int         es_DebugEvents;
 	static int         es_debugEntityLifetime;
-	static int         es_DisableTriggers;
 	static int         es_DrawProximityTriggers;
 
 	static int         es_DebugEntityUsage;

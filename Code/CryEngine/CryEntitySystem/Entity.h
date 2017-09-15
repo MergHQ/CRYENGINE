@@ -198,11 +198,6 @@ public:
 	virtual tAIObjectID GetAIObjectID() const final         { return m_aiObjectID; }
 	virtual void        SetAIObjectID(tAIObjectID id) final { m_aiObjectID = id; }
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool        RegisterInAISystem(const AIObjectParams& params) final;
-	//////////////////////////////////////////////////////////////////////////
-	// reflect changes in position or orientation to the AI object
-	void UpdateAIObject();
-	//////////////////////////////////////////////////////////////////////////
 
 	virtual void                SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy) final;
 	virtual EEntityUpdatePolicy GetUpdatePolicy() const final { return (EEntityUpdatePolicy)m_eUpdatePolicy; }
@@ -375,6 +370,8 @@ public:
 
 	void ActivateEntityIfNecessary();
 	bool ShouldActivate();
+
+	void PrepareForDeletion();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Description:

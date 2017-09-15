@@ -52,6 +52,7 @@ History:
 #include "PersistantStats.h"
 
 #include <CryExtension/CryCreateClassInstance.h>
+#include <CryAISystem/IAIObjectManager.h>
 
 #include "ItemAnimation.h"
 #include "Melee.h"
@@ -2121,7 +2122,7 @@ void CWeapon::MountAt(const Vec3 &pos)
 {
 	BaseClass::MountAt(pos);
 
-	GetEntity()->RegisterInAISystem(AIObjectParams(AIOBJECT_MOUNTEDWEAPON));
+	gEnv->pAISystem->GetAIObjectManager()->CreateAIObject(AIObjectParams(AIOBJECT_MOUNTEDWEAPON, 0, GetEntityId()));
 }
 
 //------------------------------------------------------------------------

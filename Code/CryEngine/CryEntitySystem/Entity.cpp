@@ -154,8 +154,6 @@ void CEntity::SetName(const char* sName)
 		CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, "!Unremovable entities should never change their name! This is non-compatible with C2 savegames.");
 
 	g_pIEntitySystem->ChangeEntityName(this, sName);
-	if (IAIObject* pAIObject = GetAIObject())
-		pAIObject->SetName(sName);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -183,7 +181,8 @@ void CEntity::SetFlagsExtended(uint32 flagsExtended)
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::SendEvent(SEntityEvent& event)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+	CRY_PROFILE_REGION(PROFILE_ENTITY, "Entity::SendEvent");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("Entity::SendEvent");
 
 	CTimeValue t0;
 	if (CVar::es_DebugEvents)
@@ -191,63 +190,8 @@ bool CEntity::SendEvent(SEntityEvent& event)
 		t0 = gEnv->pTimer->GetAsyncTime();
 	}
 
-	if (CVar::es_DisableTriggers)
-	{
-		static IEntityClass* pProximityTriggerClass = NULL;
-		static IEntityClass* pAreaTriggerClass = NULL;
-
-		if (pProximityTriggerClass == NULL || pAreaTriggerClass == NULL)
-		{
-			IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-
-			if (pEntitySystem != NULL)
-			{
-				IEntityClassRegistry* pClassRegistry = pEntitySystem->GetClassRegistry();
-
-				if (pClassRegistry != NULL)
-				{
-					pProximityTriggerClass = pClassRegistry->FindClass("ProximityTrigger");
-					pAreaTriggerClass = pClassRegistry->FindClass("AreaTrigger");
-				}
-			}
-		}
-
-		IEntityClass* pEntityClass = GetClass();
-		if (pEntityClass == pProximityTriggerClass || pEntityClass == pAreaTriggerClass)
-		{
-			if (event.event == ENTITY_EVENT_ENTERAREA || event.event == ENTITY_EVENT_LEAVEAREA)
-			{
-				return true;
-			}
-		}
-	}
-
-	// AI object position must be updated first so proxies could eventually use it (as CSmartObjects does)
 	switch (event.event)
 	{
-	case ENTITY_EVENT_XFORM:
-		if (!m_bGarbage)
-		{
-			UpdateAIObject();
-		}
-		break;
-	case ENTITY_EVENT_ENTERAREA:
-	case ENTITY_EVENT_HIDE:
-	case ENTITY_EVENT_UNHIDE:
-		{
-			if (!m_bGarbage)
-			{
-				// Notify audio proxies before script proxies!
-				auto pIEntityAudioComponent = GetComponent<IEntityAudioComponent>();
-
-				if (pIEntityAudioComponent != NULL)
-				{
-					pIEntityAudioComponent->ProcessEvent(event);
-				}
-			}
-
-			break;
-		}
 	case ENTITY_EVENT_RESET:
 		{
 			if (m_simulationMode != EEntitySimulationMode::Preview)
@@ -259,6 +203,7 @@ bool CEntity::SendEvent(SEntityEvent& event)
 			if (m_bGarbage)
 			{
 				m_bGarbage = false;
+
 				// If entity was deleted in game, ressurect it.
 				SEntityEvent entevnt;
 				entevnt.event = ENTITY_EVENT_INIT;
@@ -281,45 +226,6 @@ bool CEntity::SendEvent(SEntityEvent& event)
 			}
 			break;
 		}
-	case ENTITY_EVENT_INIT:
-		m_bGarbage = false;
-		break;
-
-	case ENTITY_EVENT_ANIM_EVENT:
-		{
-			// If the event is a sound event, make sure we have a sound proxy.
-			const AnimEventInstance* pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
-			const char* eventName = (pAnimEvent ? pAnimEvent->m_EventName : 0);
-			if (eventName && stricmp(eventName, "sound") == 0)
-			{
-				GetOrCreateComponent<IEntityAudioComponent>();
-			}
-		}
-		break;
-
-	case ENTITY_EVENT_DONE:
-		// When deleting should detach all children.
-		{
-			//g_pIEntitySystem->RemoveTimerEvent(GetId(), -1);
-			DetachAll();
-			DetachThis(0);
-
-			IPhysicalEntity* pPhysics = GetPhysics();
-			if (pPhysics && pPhysics->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
-			{
-				pe_params_foreign_data pfd;
-				pfd.pForeignData = 0;
-				pfd.iForeignData = -1;
-				pPhysics->SetParams(&pfd, 1);
-			}
-		}
-		break;
-
-	case ENTITY_EVENT_PRE_SERIALIZE:
-		//filter out event if not using save/load
-		if (!g_pIEntitySystem->ShouldSerializedEntity(this))
-			return true;
-		break;
 
 	case ENTITY_EVENT_LEVEL_LOADED:
 		{
@@ -565,21 +471,6 @@ void CEntity::ShutDown()
 	if (m_flags & ENTITY_FLAG_TRIGGER_AREAS)
 	{
 		static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->ExitAllAreas(m_nID);
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// release AI object and SmartObject
-	{
-		if (gEnv->pAISystem)
-		{
-			if (IAIObject* pAIObject = GetAIObject())
-			{
-				gEnv->pAISystem->GetAIObjectManager()->RemoveObject(m_aiObjectID);
-			}
-		}
-
-		m_aiObjectID = INVALID_AIOBJECTID;
-		m_flags &= ~ENTITY_FLAG_HAS_AI;
 	}
 
 	if (gEnv->pAISystem && gEnv->pAISystem->GetSmartObjectManager())
@@ -1146,10 +1037,6 @@ void CEntity::ActivateEntityIfNecessary()
 	if (bEnable != m_bInActiveList)
 	{
 		g_pIEntitySystem->ActivateEntity(this, bEnable);
-
-		if (IAIObject* pAIObject = GetAIObject())
-			if (IAIActorProxy* pProxy = pAIObject->GetProxy())
-				pProxy->EnableUpdate(bEnable);
 	}
 }
 
@@ -1170,6 +1057,23 @@ bool CEntity::ShouldActivate()
 
 	return (m_bRequiresComponentUpdate || m_nUpdateCounter || bActivateByPhysics) &&
 	       (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::PrepareForDeletion()
+{
+	// When deleting should detach all children.
+	DetachAll();
+	DetachThis(0);
+
+	IPhysicalEntity* pPhysics = GetPhysics();
+	if (pPhysics && pPhysics->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
+	{
+		pe_params_foreign_data pfd;
+		pfd.pForeignData = 0;
+		pfd.iForeignData = -1;
+		pPhysics->SetParams(&pfd, 1);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2926,58 +2830,8 @@ int CEntity::FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntity::RegisterInAISystem(const AIObjectParams& params)
-{
-	m_flags &= ~ENTITY_FLAG_HAS_AI;
-
-	IAISystem* pAISystem = gEnv->pAISystem;
-	if (pAISystem)
-	{
-		IAIObjectManager* pAIObjMgr = pAISystem->GetAIObjectManager();
-		if (IAIObject* pAIObject = GetAIObject())
-		{
-			pAIObjMgr->RemoveObject(m_aiObjectID);
-			m_aiObjectID = INVALID_AIOBJECTID;
-			// The RemoveObject() call triggers immediate complete cleanup. Ideally the system would wait, as it does for internal removals. {2009/04/07}
-		}
-
-		if (params.type == 0)
-			return true;
-
-		AIObjectParams myparams(params);
-		myparams.entityID = m_nID;
-		myparams.name = GetName();
-
-		if (IAIObject* pAIObject = pAIObjMgr->CreateAIObject(myparams))
-		{
-			m_aiObjectID = pAIObject->GetAIObjectID();
-
-			m_flags |= ENTITY_FLAG_HAS_AI;
-
-			UpdateAIObject();
-
-			return true;
-		}
-	}
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// reflect changes in position or orientation to the AI object
-void CEntity::UpdateAIObject()
-{
-	IAIObject* pAIObject = GetAIObject();
-	if (pAIObject)
-		pAIObject->SetPos(GetWorldPos(), GetForwardDir());
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntity::ActivateForNumUpdates(int numUpdates)
 {
-	IAIObject* pAIObject = GetAIObject();
-	if (pAIObject && pAIObject->GetProxy())
-		return;
-
 	if (m_nUpdateCounter != 0)
 	{
 		m_nUpdateCounter = numUpdates;

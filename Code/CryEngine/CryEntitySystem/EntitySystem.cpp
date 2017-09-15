@@ -811,6 +811,8 @@ void CEntitySystem::RemoveEntity(EntityId entity, bool bForceRemoveNow)
 			entevent.nParam[0] = pEntity->GetId();
 			pEntity->SendEvent(entevent);
 
+			pEntity->PrepareForDeletion();
+
 			// Make sure this entity is not in active list anymore.
 			RemoveEntityFromActiveList(pEntity);
 
@@ -992,7 +994,21 @@ void CEntitySystem::PrePhysicsUpdate()
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::PrePhysicsUpdate");
 
-	DoPrePhysicsUpdate();
+	float fFrameTime = gEnv->pTimer->GetFrameTime();
+
+	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
+	event.fParam[0] = fFrameTime;
+
+	m_mapPrePhysicsEntities.for_each(
+		[this, &event](EntityId eid)
+	{
+		CEntity* pEntity = (CEntity*)GetEntity(eid);
+		if (pEntity)
+		{
+			pEntity->PrePhysicsUpdate(event);
+		}
+	}
+	);
 }
 
 //update the entity system
@@ -1508,6 +1524,9 @@ private:
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::DoUpdateLoop(float fFrameTime)
 {
+	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::DoUpdateLoop");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::DoUpdateLoop");
+
 	CCamera Cam = m_pISystem->GetViewCamera();
 	int nRendererFrameID = 0;
 	if (m_pISystem)
@@ -3420,27 +3439,6 @@ void CEntitySystem::DebugDrawProximityTriggers()
 			pRenderAuxGeom->SetRenderFlags(oldFlags);
 		}
 	}
-}
-
-void CEntitySystem::DoPrePhysicsUpdate()
-{
-	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
-
-	float fFrameTime = gEnv->pTimer->GetFrameTime();
-
-	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
-	event.fParam[0] = fFrameTime;
-
-	m_mapPrePhysicsEntities.for_each(
-	  [this, &event](EntityId eid)
-	{
-		CEntity* pEntity = (CEntity*)GetEntity(eid);
-		if (pEntity)
-		{
-		  pEntity->PrePhysicsUpdate(event);
-		}
-	}
-	  );
 }
 
 IBSPTree3D* CEntitySystem::CreateBSPTree3D(const IBSPTree3D::FaceList& faceList)

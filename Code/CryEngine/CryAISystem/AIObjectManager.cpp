@@ -11,6 +11,7 @@
 #include "AIObjectIterators.h"//TODO get rid of this file totally!
 #include "ObjectContainer.h"
 #include "./TargetSelection/TargetTrackManager.h"
+#include "AIEntityComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 //	SAIObjectCreationHelper - helper for serializing AI objects
@@ -127,6 +128,7 @@ void CAIObjectManager::Reset(bool includingPooled /*=true*/)
 IAIObject* CAIObjectManager::CreateAIObject(const AIObjectParams& params)
 {
 	CCCPOINT(CreateAIObject);
+	CRY_ASSERT(params.type != 0);
 
 	if (!GetAISystem()->IsEnabled())
 		return 0;
@@ -144,6 +146,11 @@ IAIObject* CAIObjectManager::CreateAIObject(const AIObjectParams& params)
 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(params.entityID);
 	uint16 type = params.type;
+
+	if (CAIEntityComponent* pExistingAIComponent = pEntity->GetComponent<CAIEntityComponent>())
+	{
+		RemoveObject(pExistingAIComponent->GetAIObjectID());
+	}
 
 	switch (type)
 	{
@@ -306,7 +313,7 @@ void CAIObjectManager::CreateDummyObject(CStrongRef<CAIObject>& ref, const char*
 	AILogComment("CAIObjectManager::CreateDummyObject %s (%p)", pObject->GetName(), pObject);
 }
 
-void CAIObjectManager::RemoveObject(tAIObjectID objectID)
+void CAIObjectManager::RemoveObject(const tAIObjectID objectID)
 {
 	EntityId entityId = 0;
 
@@ -338,6 +345,29 @@ void CAIObjectManager::RemoveObject(tAIObjectID objectID)
 	// Because Action doesn't yet handle a delayed removal of the Proxies, we should perform cleanup immediately.
 	// Note that this only happens when triggered externally, when an entity is refreshed/removed
 	gAIEnv.pObjectContainer->ReleaseDeregisteredObjects(false);
+
+	// Remove the AI entity component associated with the entity
+	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
+	{
+		if (CAIEntityComponent* pExistingAIComponent = pEntity->GetComponent<CAIEntityComponent>())
+		{
+			pEntity->RemoveComponent(pExistingAIComponent);
+		}
+	}
+}
+
+void CAIObjectManager::RemoveObjectByEntityId(const EntityId entityId)
+{
+	AIObjectOwners::iterator it = m_Objects.begin();
+	AIObjectOwners::iterator itEnd = m_Objects.end();
+	for (; it != itEnd; ++it)
+	{
+		if (it->second->GetEntityID() == entityId)
+		{
+			RemoveObject(it->second.GetObjectID());
+			return;
+		}
+	}
 }
 
 // Get an AI object by it's AI object ID

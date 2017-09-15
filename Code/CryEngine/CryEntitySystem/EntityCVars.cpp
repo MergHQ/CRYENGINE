@@ -59,7 +59,6 @@ float CVar::es_FarPhysTimeout;
 int CVar::es_DebugEvents = 0;
 int CVar::es_SortUpdatesByClass = 0;
 int CVar::es_debugEntityLifetime = 0;
-int CVar::es_DisableTriggers = 0;
 int CVar::es_DrawProximityTriggers = 0;
 int CVar::es_DebugEntityUsage = 0;
 const char* CVar::es_DebugEntityUsageFilter = "";
@@ -251,7 +250,6 @@ void CVar::Init()
 	              "Usage: es_DebugTimers 0/1");
 	REGISTER_CVAR(es_DebugFindEntity, 0, VF_CHEAT, "");
 	REGISTER_CVAR(es_DebugEvents, 0, VF_CHEAT, "Enables logging of entity events");
-	REGISTER_CVAR(es_DisableTriggers, 0, 0, "Disable enter/leave events for proximity and area triggers");
 	REGISTER_CVAR(es_DrawProximityTriggers, 0, 0,
 	              "Shows Proximity Triggers.\n"
 	              "Usage: es_DrawProximityTriggers [0-255].  The parameter sets the transparency (alpha) level.\n"

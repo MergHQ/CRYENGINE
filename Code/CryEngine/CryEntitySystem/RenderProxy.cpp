@@ -109,6 +109,12 @@ void CEntityRender::PreviewRender(SEntityPreviewContext &context)
 //////////////////////////////////////////////////////////////////////////
 void CEntityRender::AnimationEvent(ICharacterInstance* pCharacter, const AnimEventInstance& animEvent)
 {
+	// If the event is a sound event, make sure we have an audio component before sending the event
+	if (animEvent.m_EventName != nullptr && stricmp(animEvent.m_EventName, "sound") == 0)
+	{
+		GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
+	}
+
 	// Send an entity event.
 	SEntityEvent event(ENTITY_EVENT_ANIM_EVENT);
 	event.nParam[0] = (INT_PTR)&animEvent;

@@ -416,7 +416,6 @@ public:
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) final;
 
 private: // -----------------------------------------------------------------
-	void DoPrePhysicsUpdate();
 	void DoUpdateLoop(float fFrameTime);
 
 	void DeleteEntity(CEntity* pEntity);

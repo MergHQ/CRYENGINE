@@ -28,6 +28,7 @@
 #include "AI/HazardModule/HazardModule.h"
 #include "AI/GameAIEnv.h"
 #include <IPerceptionManager.h>
+#include <CryAISystem/IAIObjectManager.h>
 
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
 #include "Weapon.h"
@@ -1121,7 +1122,7 @@ void CProjectile::Destroy()
 			m_mpDestructionDelay = m_pAmmoParams->mpProjectileDestructDelay;
 		}
 		SetProjectileFlags(ePFlag_needDestruction);
-		GetEntity()->RegisterInAISystem(AIObjectParams(0));                         // unregister from AI. Will be removed from active list when hidden otherwise (see EvaluateUpdateActivation)
+		gEnv->pAISystem->GetAIObjectManager()->RemoveObjectByEntityId(GetEntityId());         // unregister from AI. Will be removed from active list when hidden otherwise (see EvaluateUpdateActivation)
 		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_UPDATE_HIDDEN); // Bugfix for grenades persisting on client after exploding.
 		GetEntity()->Hide(true);
 		return;
@@ -1797,7 +1798,7 @@ void CProjectile::InitWithAI()
 				unsigned short int nOwnerType = pOwnerAI->GetAIType();
 				if (nOwnerType != AIOBJECT_ACTOR)
 				{
-					GetEntity()->RegisterInAISystem(AIObjectParams(m_pAmmoParams->aiType));
+					gEnv->pAISystem->GetAIObjectManager()->CreateAIObject(AIObjectParams(m_pAmmoParams->aiType, 0, GetEntityId()));
 				}
 			}
 		}
