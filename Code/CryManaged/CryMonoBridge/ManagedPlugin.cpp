@@ -231,9 +231,12 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	{
 		if (m_pMonoObject != nullptr)
 		{
-			if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStart"))
+			if (CMonoClass* pClass = m_pMonoObject->GetClass())
 			{
-				pMethod->Invoke(m_pMonoObject.get());
+				if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStart"))
+				{
+					pMethod->Invoke(m_pMonoObject.get());
+				}
 			}
 		}
 	}
@@ -242,9 +245,12 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	{
 		if (m_pMonoObject != nullptr)
 		{
-			if (std::shared_ptr<CMonoMethod> pMethod = m_pMonoObject->GetClass()->FindMethod("OnGameStop"))
+			if (CMonoClass* pClass = m_pMonoObject->GetClass())
 			{
-				pMethod->Invoke(m_pMonoObject.get());
+				if (std::shared_ptr<CMonoMethod> pMethod = pClass->FindMethod("OnGameStop"))
+				{
+					pMethod->Invoke(m_pMonoObject.get());
+				}
 			}
 		}
 	}

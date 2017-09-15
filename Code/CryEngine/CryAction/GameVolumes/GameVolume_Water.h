@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #ifndef _GAME_VOLUME_WATER_H
 #define _GAME_VOLUME_WATER_H
