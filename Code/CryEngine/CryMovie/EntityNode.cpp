@@ -3086,6 +3086,9 @@ void CAnimEntityNode::UpdateAnimBlendGap(int32 activeKeys[], class CCharacterTra
 	assert(startTimeNorm >= 0.0f && startTimeNorm <= 1.0f);
 	pCharacter->GetISkeletonAnim()->ManualSeekAnimationInFIFO(layer, 1, startTimeNorm, false);
 	pCharacter->GetISkeletonAnim()->SetTrackViewMixingWeight(layer, blendWeight);
+
+	ApplyAnimKey(activeKeys[0], track, endTimeNorm, pCharacter, layer, 0, true);
+	ApplyAnimKey(activeKeys[1], track, startTimeNorm, pCharacter, layer, 1, true);
 }
 
 bool CAnimEntityNode::CheckTimeJumpingOrOtherChanges(const SAnimContext& animContext, int32 activeKeys[], int32 numActiveKeys,
