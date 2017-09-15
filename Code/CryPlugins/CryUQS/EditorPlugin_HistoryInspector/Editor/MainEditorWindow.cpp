@@ -378,12 +378,12 @@ public:
 
 	void ClearAllHistoricQueries()
 	{
-		beginResetModel();
-		endResetModel();
-
 		for (SQuery* pChild : m_root.children)
 			delete pChild;
 		m_root.children.clear();
+
+		beginResetModel();
+		endResetModel();
 	}
 
 private:
