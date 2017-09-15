@@ -1469,6 +1469,9 @@ struct ISystem
 	//! OBS2: it will always return false, if asserts are disabled or ignored.
 	virtual bool IsAssertDialogVisible() const = 0;
 
+	//! Returns true if the system is loading a level currently
+	virtual bool IsLoading() = 0;
+
 	//! Returns address controlled by sys_asserts CVar, if available.
 	//! The value at the address shall be non-zero if asserts are enabled.
 	//! The function shall return nullptr if sys_asserts CVar is not available (ie, release config).
