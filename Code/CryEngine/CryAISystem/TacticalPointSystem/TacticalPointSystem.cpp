@@ -1436,17 +1436,20 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 			if (!pipeUser)
 				return false;
 
-			m_avoidCircles.resize(0);
-			GatherAvoidCircles(objPos, fSearchDist, pipeUser, m_avoidCircles);
+			ICoverUser* pCoverUser = pipeUser->GetCoverUser();
+			if (!pCoverUser)
+				return false;
 
-			Vec3 eyes[8];
-			const uint32 MaxEyeCount = std::min<uint32>(gAIEnv.CVars.CoverMaxEyeCount, CRY_ARRAY_COUNT(eyes));
+			// Manually update cover eyes with our object
+			pipeUser->UpdateCoverEyesWithTarget(pObjectAux, vObjectAuxPos);
+			const DynArray<Vec3>& eyes = pCoverUser->GetCoverEyes();
 
-			uint32 eyeCount = pipeUser->GetCoverEyes(pObjectAux, vObjectAuxPos, eyes, MaxEyeCount);
-
-			if (eyeCount)
+			if (eyes.size())
 			{
 				CRY_PROFILE_REGION(PROFILE_AI, "TPS Generate Cover Locations [GetOcclusion]");
+
+				m_avoidCircles.resize(0);
+				GatherAvoidCircles(objPos, fSearchDist, pipeUser, m_avoidCircles);
 
 				IPersistantDebug* pPD = 0;
 				if (CVars.DebugTacticalPointsBlocked)
@@ -1465,7 +1468,7 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 					{
 						const CoverID& coverID = m_cover[i];
 
-						if (pipeUser && pipeUser->IsCoverBlacklisted(coverID))
+						if (pCoverUser->IsCoverBlackListed(coverID))
 							continue;
 
 						Vec3 normal;
@@ -1496,36 +1499,17 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 						if (occupied)
 							continue;
 
-						bool inCover = true;
-
-						float lowestSq = FLT_MAX;
-						float heightSq;
-
-						const CoverSurface& surface = gAIEnv.pCoverSystem->GetCoverSurface(coverID);
-
-						for (uint e = 0; e < eyeCount; ++e)
+						const float effectiveCoverHeight = pCoverUser->CalculateEffectiveHeightAt(location, coverID);
+						if (effectiveCoverHeight != -1.0f)
 						{
-							if (!surface.GetCoverOcclusionAt(eyes[e], location, inCoverRadius, &heightSq))
-							{
-								inCover = false;
-								break;
-							}
-
-							if (heightSq < lowestSq)
-								lowestSq = heightSq;
-						}
-
-						if (inCover)
-						{
-							if ((heightSq >= sqr(context.effectiveCoverHeight)) || (context.effectiveCoverHeight <= 0.0001f))
+							if ((effectiveCoverHeight >= context.effectiveCoverHeight) || (context.effectiveCoverHeight <= 0.0001f))
 								accumulator.push_back(CTacticalPoint(coverID, location));
 							else
 							{
-								float height = sqrt_tpl(heightSq);
-								location.z += height;
+								location.z += effectiveCoverHeight;
 
 								if (pPD)
-									pPD->AddCone(location, Vec3(0.0f, 0.0f, -1.0f), 0.25f, height, Col_Red, 3.5f);
+									pPD->AddCone(location, Vec3(0.0f, 0.0f, -1.0f), 0.25f, effectiveCoverHeight, Col_Red, 3.5f);
 							}
 						}
 						else if (pPD)

@@ -152,6 +152,7 @@ const size_t GetPhysicalEntitiesInBoxMaxResultCount = 2048;
 typedef StaticDynArray<AABB, GetPhysicalEntitiesInBoxMaxResultCount>             StaticAABBArray;
 typedef StaticDynArray<IPhysicalEntity*, GetPhysicalEntitiesInBoxMaxResultCount> StaticPhysEntityArray;
 
+bool FindFloor(const Vec3& position, Vec3& floor);
 
 //====================================================================
 // GetEntitiesFromAABB

@@ -898,7 +898,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 				{
 					Reset(pPipeUser);
 
-					pPipeUser->SetInCover(false);
+					pPipeUser->SetCoverState(ICoverUser::EStateFlags::None);
 
 					return eGOR_FAILED;
 				}
@@ -988,17 +988,15 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 					            vPos.x, vPos.y, vPos.z);
 				}
 
+				ICoverUser::StateFlags coverState = ICoverUser::EStateFlags::MovingToCover;
 				if (CoverID nextCoverID = pPipeUser->GetCoverRegister())
 				{
 					if (CoverID currCoverID = pPipeUser->GetCoverID())
 					{
 						CCoverSystem& coverSystem = *gAIEnv.pCoverSystem;
-
-						bool movingInCover = false;
-
 						if (coverSystem.GetSurfaceID(currCoverID) == coverSystem.GetSurfaceID(nextCoverID))
 						{
-							movingInCover = true;
+							coverState.Add(ICoverUser::EStateFlags::InCover);
 						}
 						else
 						{
@@ -1021,20 +1019,16 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 								if (Distance::Point_Point2DSq(currLeft, nextRight) < neighborDistSq ||
 								    Distance::Point_Point2DSq(currRight, nextLeft) < neighborDistSq)
 								{
-									movingInCover = true;
+									coverState.Add(ICoverUser::EStateFlags::InCover);
 								}
 							}
 						}
-
-						pPipeUser->SetMovingInCover(movingInCover);
-						pPipeUser->SetInCover(movingInCover);
 					}
 
 					pPipeUser->SetCoverRegister(CoverID());
 					pPipeUser->SetCoverID(nextCoverID);
 				}
-
-				pPipeUser->SetMovingToCover(true);
+				pPipeUser->SetCoverState(coverState);
 
 				m_pTracer = new COPTrace(m_exact, 0.0f);
 			}
@@ -1045,8 +1039,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 				// Could not reach the point, mark it ignored so that we do not try to pick it again.
 				if (CoverID coverID = pPipeUser->GetCoverRegister())
 				{
-					pPipeUser->SetMovingToCover(false);
-					pPipeUser->SetMovingInCover(false);
+					pPipeUser->SetCoverState(ICoverUser::EStateFlags::None);
 
 					pPipeUser->SetCoverRegister(CoverID());
 					pPipeUser->SetCoverBlacklisted(coverID, true, 10.0f);
@@ -1069,9 +1062,6 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 				CCCPOINT(COPCrysis2Hide_Execute_A);
 
 				Reset(pPipeUser);
-
-				pPipeUser->SetMovingToCover(false);
-				pPipeUser->SetMovingInCover(false);
 
 				if (pPipeUser->GetCoverID())
 				{
@@ -1117,8 +1107,7 @@ void COPCrysis2Hide::Reset(CPipeUser* pPipeUser)
 
 	if (pPipeUser)
 	{
-		pPipeUser->SetMovingToCover(false);
-		pPipeUser->SetMovingInCover(false);
+		pPipeUser->SetCoverState(ICoverUser::EStateFlags::None);
 
 		pPipeUser->ClearPath("COPCrysis2Hide::Reset");
 
@@ -1232,7 +1221,7 @@ void COPCrysis2Hide::UpdateMovingToCoverAnimation(CPipeUser* pPipeUser) const
 			float radius = pPipeUser->GetParameters().distanceToCover;
 			hidePos = gAIEnv.pCoverSystem->GetCoverLocation(coverID, radius, &hideHeight, &hideNormal);
 			//hidePos = gAIEnv.pCoverSystem->GetCoverSurface(coverID)->GetCoverOcclusionAt(radius, &hideHeight, &hideNormal);
-			hideHeight = pPipeUser->GetCoverLocationEffectiveHeight();
+			hideHeight = pPipeUser->GetCoverUser()->GetLocationEffectiveHeight();
 		}
 		else
 		{

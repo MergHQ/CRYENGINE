@@ -1042,13 +1042,13 @@ struct IPipeUser
 	virtual bool       SetCharacter(const char* character, const char* behaviour = NULL) = 0;
 #endif
 
-	virtual void        SetInCover(bool inCover) = 0;
-	virtual bool        IsInCover() const = 0;
-	virtual bool        IsCoverCompromised() const = 0;
+	virtual void        SetInCover(bool bInCover) = 0;
+	virtual void        SetMovingToCover(bool bMovingInCover) = 0;
 	virtual void        SetCoverCompromised() = 0;
-	virtual bool        IsTakingCover(float distanceThreshold) const = 0;
+	virtual bool        IsCoverCompromised() const = 0;
+	virtual bool        IsInCover() const = 0;
 	virtual bool        IsMovingToCover() const = 0;
-	virtual CoverHeight CalculateEffectiveCoverHeight() const = 0;
+	virtual bool        IsTakingCover(float distanceThreshold) const = 0;
 
 	virtual void        ClearDevalued() = 0;
 

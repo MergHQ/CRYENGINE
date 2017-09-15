@@ -25,6 +25,8 @@ public:
 	virtual void              Update(float updateTime) override;
 	virtual void              Reset() override;
 	virtual void              RegisterFunctionToConstructMovementBlockForCustomNavigationType(Movement::CustomNavigationBlockCreatorFunction blockFactoryFunction) override;
+	virtual bool              AddActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability) override;
+	virtual bool              RemoveActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability) override;
 	// ~IMovementSystem
 
 	Movement::BlockPtr CreateCustomBlock(const CNavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style);

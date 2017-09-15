@@ -2463,6 +2463,7 @@ bool CSystem::Init()
 #if CRY_PLATFORM_DESKTOP
 	m_env.SetIsEditor(m_bEditor);
 	m_env.SetIsEditorGameMode(false);
+	m_env.SetIsEditorSimulationMode(false);
 #endif
 
 	m_env.bIsOutOfMemory = false;

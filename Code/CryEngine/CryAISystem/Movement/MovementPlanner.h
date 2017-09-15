@@ -90,6 +90,9 @@ struct IPlanner
 	// Fill in the 'status' object and explain what's currently
 	// being worked on. It's very handy for debugging.
 	virtual void GetStatus(MovementRequestStatus& status) const = 0;
+
+	// Return registered navigation agent type
+	virtual NavigationAgentTypeID GetNavigationAgentType() const = 0;
 };
 
 // This generic movement planner will be able to these satisfy requests:
@@ -108,6 +111,7 @@ public:
 	virtual Status Update(const MovementUpdateContext& context) override;
 	virtual bool   IsReadyForNewRequest() const override;
 	virtual void   GetStatus(MovementRequestStatus& status) const override;
+	virtual NavigationAgentTypeID GetNavigationAgentType() const override { return m_navigationAgentTypeID; }
 
 private:
 	void CheckOnPathfinder(const MovementUpdateContext& context, OUT Status& status);

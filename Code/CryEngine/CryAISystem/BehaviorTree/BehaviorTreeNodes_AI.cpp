@@ -929,8 +929,11 @@ private:
 		{
 			assert(point.flags & eTPDF_CoverID);
 
-			assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
-			       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pipeUser.GetAIObjectID()));
+			if (gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) && gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) != pipeUser.GetEntityID())
+			{
+				// Found cover was occupied by someone else in the meantime
+				return Failure;
+			}
 
 			pipeUser.SetCoverRegister(point.coverID);
 			return Success;

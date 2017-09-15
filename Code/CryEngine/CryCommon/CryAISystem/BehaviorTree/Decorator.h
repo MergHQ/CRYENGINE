@@ -36,7 +36,7 @@ public:
 	}
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
-	void Serialize(Serialization::IArchive& archive)
+	void Serialize(Serialization::IArchive& archive) override
 	{
 		archive(m_child, "child", "+<>" NODE_COMBOBOX_FIXED_WIDTH ">");
 		if (!m_child)

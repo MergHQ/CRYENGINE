@@ -215,6 +215,26 @@ void MovementSystem::RegisterFunctionToConstructMovementBlockForCustomNavigation
 	m_createMovementBlockToHandleCustomNavigationType = blockFactoryFunction;
 }
 
+//////////////////////////////////////////////////////////////////////////
+bool MovementSystem::AddActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability)
+{
+	MovementActor* pActor = GetExistingActor(entityId);
+	if (!pActor)
+		return false;
+
+	return pActor->AddActionAbilityCallbacks(ability);
+}
+
+bool MovementSystem::RemoveActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability)
+{
+	MovementActor* pActor = GetExistingActor(entityId);
+	if (!pActor)
+		return false;
+
+	return pActor->RemoveActionAbilityCallbacks(ability);
+}
+//////////////////////////////////////////////////////////////////////////
+
 Movement::BlockPtr MovementSystem::CreateCustomBlock(const CNavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style)
 {
 	if (m_createMovementBlockToHandleCustomNavigationType)

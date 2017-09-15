@@ -67,6 +67,9 @@
 
 #include "XMLUtils.h"
 
+//Schematyc includes
+#include <CrySchematyc/CoreAPI.h>
+
 #include "Environment.h"
 
 // Hijack the old CCCPOINT definition (and add a semi-colon to allow compilation)

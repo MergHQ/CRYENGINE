@@ -2067,8 +2067,12 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 
 	CPipeUser* pPipeUser = pAgent->CastToCPipeUser();
 	if (pPipeUser)
+	{
 		if (gAIEnv.CVars.DebugDrawCover)
-			pPipeUser->DebugDrawCoverUser();
+		{
+			gAIEnv.pCoverSystem->DebugDrawCoverUser(pPipeUser->GetEntityID());
+		}
+	}
 
 	CAIVehicle* pVehicle = pAgent->CastToCAIVehicle();
 	if (pVehicle && !pVehicle->IsDriverInside())
@@ -2788,9 +2792,9 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 		const float fovSeconday = pAgent->m_Parameters.m_PerceptionParams.FOVSecondary;
 		const float sightRange = pAgent->m_Parameters.m_PerceptionParams.sightRange;
 		const Vec3& viewDir = pAgent->GetViewDir();
-		dc->DrawWireFOVCone(pos, viewDir, sightRange * drawFOV * 0.99f, DEG2RAD(fovPrimary) * 0.5f, white);
+		dc->DrawWireFOVCone(pos, viewDir, sightRange * drawFOV * 0.99f, DEG2RAD(fovPrimary), white);
 
-		dc->DrawWireFOVCone(pos, viewDir, sightRange * drawFOV, DEG2RAD(fovSeconday) * 0.5f, grey);
+		dc->DrawWireFOVCone(pos, viewDir, sightRange * drawFOV, DEG2RAD(fovSeconday), grey);
 
 		const Vec3 midPoint = pos + viewDir * sightRange * drawFOV / 2;
 		dc->DrawLine(pos, white, midPoint, white);

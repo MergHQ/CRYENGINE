@@ -2,22 +2,22 @@
 
 #pragma once
 
-#ifndef MovementBlock_SetupActorCoverInformation_h
-	#define MovementBlock_SetupActorCoverInformation_h
-
-	#include "MovementPlan.h"
+#include <CryAISystem/MovementBlock.h>
 
 namespace Movement
 {
 namespace MovementBlocks
 {
-class SetupActorCoverInformation : public Movement::Block
+class SetupPipeUserCoverInformation : public Movement::Block
 {
 public:
+	SetupPipeUserCoverInformation(CPipeUser& pipeUser)
+		: m_pipeUser(pipeUser)
+	{}
 	virtual void        Begin(IMovementActor& actor);
 	virtual const char* GetName() const { return "SetCoverInfo"; }
+private:
+	CPipeUser& m_pipeUser;
 };
 }
 }
-
-#endif // MovementBlock_SetupActorCoverInformation_h

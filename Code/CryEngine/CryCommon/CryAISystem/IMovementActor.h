@@ -7,6 +7,16 @@
 
 struct IMovementActorAdapter;
 
+struct IMovementActionAbilities
+{
+	typedef std::function<void(const Movement::BlockPtr&)> OnCreateFunction;
+	
+	virtual void CreateStartBlocksForPlanner(const MovementRequest& request, OnCreateFunction onCreateFnc) = 0;
+	virtual void CreateEndBlocksForPlanner(const MovementRequest& request, OnCreateFunction onCreateFnc) = 0;
+	virtual void PrePathFollowUpdateCall(const MovementUpdateContext& context, bool bIsLastBlock) = 0;
+	virtual void PostPathFollowUpdateCall(const MovementUpdateContext& context, bool bIsLastBlock) = 0;
+};
+
 struct IMovementActor
 {
 	virtual ~IMovementActor() {}
@@ -18,9 +28,9 @@ struct IMovementActor
 	virtual const char*               GetName() const = 0;
 	virtual void                      Log(const char* message) = 0;
 
-	virtual bool                      IsLastPointInPathASmartObject() const = 0;
 	virtual EntityId                  GetEntityId() const = 0;
 	virtual MovementActorCallbacks    GetCallbacks() const = 0;
+	virtual IMovementActionAbilities& GetActionAbilities() = 0;
 };
 
 #endif // __IMOVEMENTACTOR_H__

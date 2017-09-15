@@ -941,6 +941,11 @@ struct SSystemGlobalEnvironment
 		bEditorGameMode = isEditorGameMode;
 	}
 
+	ILINE void SetIsEditorSimulationMode(bool isEditorSimulationMode)
+	{
+		bEditorSimulationMode = isEditorSimulationMode;
+	}
+
 	ILINE void SetIsDedicated(bool isDedicated)
 	{
 	#if defined(DEDICATED_SERVER)
@@ -972,6 +977,24 @@ struct SSystemGlobalEnvironment
 		return bEditorGameMode;
 #else
 		return false;
+#endif
+	}
+
+	ILINE const bool IsEditorSimulationMode() const
+	{
+#if CRY_PLATFORM_DESKTOP
+		return bEditorSimulationMode;
+#else
+		return false;
+#endif
+	}
+
+	ILINE const bool IsGameOrSimulation() const
+	{
+#if CRY_PLATFORM_DESKTOP
+		return !bEditor || bEditorGameMode || bEditorSimulationMode;
+#else
+		return true;
 #endif
 	}
 
@@ -1041,6 +1064,7 @@ private:
 	bool bEditor;          //!< Engine is running under editor.
 	bool bEditorGameMode;  //!< Engine is in editor game mode.
 	bool bDedicated;       //!< Engine is in dedicated.
+	bool bEditorSimulationMode; //!< Engine is in editor Physics/AI simulation mode.
 #endif
 
 	bool m_isFMVPlaying;

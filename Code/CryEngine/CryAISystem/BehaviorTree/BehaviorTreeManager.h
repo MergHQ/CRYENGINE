@@ -56,6 +56,7 @@ public:
 
 	size_t                  GetTreeInstanceCount() const;
 	EntityId                GetTreeInstanceEntityIdByIndex(const size_t index) const;
+	BehaviorTreeInstance*   GetBehaviorTree(const EntityId entityId) const;
 
 	BehaviorTreeInstancePtr CreateBehaviorTreeInstanceFromXml(const char* behaviorTreeName, XmlNodeRef behaviorTreeXmlNode);
 
@@ -70,8 +71,6 @@ private:
 	void                    StopAllBehaviorTreeInstances();
 
 	bool                    LoadBehaviorTreeTemplate(const char* behaviorTreeName, XmlNodeRef behaviorTreeXmlNode, BehaviorTreeTemplate& behaviorTreeTemplate);
-
-	BehaviorTreeInstance*   GetBehaviorTree(const EntityId entityId) const;
 
 #if defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	void UpdateDebugVisualization(UpdateContext updateContext, const EntityId entityId, DebugTree debugTree, BehaviorTreeInstance& instance, IEntity* agentEntity);

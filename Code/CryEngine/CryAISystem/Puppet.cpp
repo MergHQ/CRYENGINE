@@ -1322,10 +1322,9 @@ void CPuppet::Event(unsigned short eType, SAIEVENT* pEvent)
 		{
 			SetNavSOFailureStates();
 
-			if (m_inCover || m_movingToCover)
+			if (m_pCoverUser)
 			{
-				SetCoverRegister(CoverID());
-				m_coverUser.SetCoverID(CoverID());
+				m_pCoverUser->Reset();
 			}
 
 			ResetModularBehaviorTree(AIOBJRESET_SHUTDOWN);

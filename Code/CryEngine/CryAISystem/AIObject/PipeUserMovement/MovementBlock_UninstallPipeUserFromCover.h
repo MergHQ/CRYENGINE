@@ -2,34 +2,32 @@
 
 #pragma once
 
-#ifndef MovementBlock_UninstallAgentFromCover_h
-	#define MovementBlock_UninstallAgentFromCover_h
-
-	#include "MovementPlan.h"
+#include <CryAISystem/MovementBlock.h>
+#include <CryAISystem/IMovementActor.h>
 
 namespace Movement
 {
 namespace MovementBlocks
 {
-class UninstallAgentFromCover : public Movement::Block
+class UninstallPipeUserFromCover : public Movement::Block
 {
 public:
-	UninstallAgentFromCover(const MovementStyle::Stance stance)
-		: m_stance(stance)
+	UninstallPipeUserFromCover(CPipeUser& pipeUser, const MovementStyle::Stance stance)
+		: m_pipeUser(pipeUser)
+		, m_stance(stance)
 	{
 	}
 
 	virtual void Begin(IMovementActor& actor)
 	{
-		actor.GetAdapter().SetInCover(false);
+		m_pipeUser.SetCoverState(ICoverUser::EStateFlags::None);
 		actor.GetAdapter().SetStance(m_stance);
 	}
 
 	virtual const char* GetName() const { return "UninstallFromCover"; }
 private:
+	CPipeUser& m_pipeUser;
 	MovementStyle::Stance m_stance;
 };
 }
 }
-
-#endif // MovementBlock_UninstallAgentFromCover_h

@@ -37,6 +37,7 @@ struct Sphere;
 struct IAIActionManager;
 struct ISmartObjectManager;
 struct HidespotQueryContext;
+struct IAuditionMap;
 class IVisionMap;
 struct IFactionMap;
 class IAISystemComponent;
@@ -608,8 +609,14 @@ struct IAISystem
 	virtual void LoadLevelData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems) = 0;
 	virtual void LoadNavigationData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems) = 0;
 
+#if defined(SEG_WORLD)
+	// Reads areas from file. clears the existing areas.
+	// SEG_WORLD: adds offset to the areas read, and doesn't clear existing areas.
+	virtual void ReadAreasFromFile(const char* fileNameAreas, const Vec3& vSegmentOffset) = 0;
+#else
 	//! Reads areas from file. clears the existing areas.
 	virtual void ReadAreasFromFile(const char* fileNameAreas) = 0;
+#endif
 
 	virtual void OnMissionLoaded() = 0;
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -742,6 +749,7 @@ struct IAISystem
 	virtual void         DynOmniLightEvent(const Vec3& pos, float radius, EAILightEventType type, EntityId shooterId, float time = 5.0f) = 0;
 	virtual void         DynSpotLightEvent(const Vec3& pos, const Vec3& dir, float radius, float fov, EAILightEventType type, EntityId shooterId, float time = 5.0f) = 0;
 
+	virtual IAuditionMap*  GetAuditionMap() = 0;
 	virtual IVisionMap*  GetVisionMap() = 0;
 	virtual IFactionMap& GetFactionMap() = 0;
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
