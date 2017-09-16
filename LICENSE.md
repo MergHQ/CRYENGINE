@@ -72,13 +72,13 @@ Other policies which apply with respect to the CryEngine include without limitat
   - the CryEngine Documentation;
   - the CryEngine Tools;
   - use the CryEngine for the development of any product other than Games, including without limitation:
-  - military projects
-  - gambling;
-  - simulation (technical, scientific, other);
-  - science;
-  - architecture;
-  - pornography;
-  - Serious Games.
+    - military projects
+    - gambling;
+    - simulation (technical, scientific, other);
+    - science;
+    - architecture;
+    - pornography;
+    - Serious Games.
   - use the CryEngine for the development of any Games which are harmful, abusive, racially or ethnically offensive, vulgar, sexually explicit, defamatory, infringing, invasive of personal privacy or publicity rights, or in a reasonable person's view, objectionable;
   - remove any technical safeguards from the CryEngine (if any);
   - copy, replicate or mimic Crytek's games;
