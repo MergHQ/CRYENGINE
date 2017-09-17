@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 /********************************************************************
    -------------------------------------------------------------------------
@@ -22,6 +22,7 @@
 #include "AIObject.h"
 #include "BlackBoard.h"
 #include "PersonalLog.h"
+#include "CollisionAvoidance/CollisionAvoidanceSystem.h"
 
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAgent.h>
@@ -37,6 +38,29 @@ namespace BehaviorTree
 struct INode;
 class TimestampCollection;
 }
+
+// AI Actor Collision Avoidance agent
+class CActorCollisionAvoidance : public ICollisionAvoidanceAgent
+{
+public:
+	CActorCollisionAvoidance(CAIActor* pActor);
+	virtual ~CActorCollisionAvoidance() override;
+
+	void Reset();
+	void Serialize(TSerialize ser);
+
+	virtual NavigationAgentTypeID GetNavigationTypeId() const override;
+	virtual const char* GetName() const override;
+	virtual TreatType GetTreatmentType() const override;
+
+	virtual void InitializeCollisionAgent(CCollisionAvoidanceSystem::SAgentParams& agent) const override;
+	virtual void InitializeCollisionObstacle(CCollisionAvoidanceSystem::SObstacleParams& obstacle) const override;
+	virtual void ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime) override;
+
+private:
+	CAIActor* m_pActor;
+	float m_radiusIncrement;
+};
 
 // Structure reflecting the physical entity parts.
 // When choosing the target location to hit, the AI chooses amongst one of these.
@@ -360,10 +384,10 @@ protected:
 	string              m_modularBehaviorTreeName;
 
 private:
+	CActorCollisionAvoidance m_collisionAvoidanceAgent;
+
 	float m_FOVPrimaryCos;
 	float m_FOVSecondaryCos;
-
-	float m_currentCollisionAvoidanceRadiusIncrement;
 
 	typedef VectorSet<tAIObjectID> PersonallyHostiles;
 	PersonallyHostiles    m_forcefullyHostiles;

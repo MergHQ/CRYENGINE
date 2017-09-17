@@ -1,14 +1,9 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "MovementActor.h"
 #include "../PipeUser.h"
 #include "MovementPlanner.h"
-
-void MovementActor::SetLowCoverStance()
-{
-	GetAIActor()->GetState().bodystate = STANCE_LOW_COVER;
-}
 
 CAIActor* MovementActor::GetAIActor()
 {
@@ -67,4 +62,49 @@ IMovementActorAdapter& MovementActor::GetAdapter() const
 {
 	assert(pAdapter);
 	return *pAdapter;
+}
+
+bool MovementActor::AddActionAbilityCallbacks(const SMovementActionAbilityCallbacks& ability)
+{
+	bool bNoCallbackAlreadyPresent = true;
+	if (ability.addStartMovementBlocksCallback)
+	{
+		bNoCallbackAlreadyPresent &= actionAbilities.m_addStartMovementBlocksCallback.AddUnique(ability.addStartMovementBlocksCallback);
+	}
+	if (ability.addEndMovementBlocksCallback)
+	{
+		bNoCallbackAlreadyPresent &= actionAbilities.m_addEndMovementBlocksCallback.AddUnique(ability.addEndMovementBlocksCallback);
+	}
+	if (ability.prePathFollowingUpdateCallback)
+	{
+		bNoCallbackAlreadyPresent &= actionAbilities.m_prePathFollowingUpdateCallback.AddUnique(ability.prePathFollowingUpdateCallback);
+	}
+	if (ability.postPathFollowingUpdateCallback)
+	{
+		bNoCallbackAlreadyPresent &= actionAbilities.m_postPathFollowingUpdateCallback.AddUnique(ability.postPathFollowingUpdateCallback);
+	}
+	
+	CRY_ASSERT_MESSAGE(bNoCallbackAlreadyPresent, "MovementActor::AddActionAbilityCallbacks - Trying to add the same movement action ability twice");
+	return true;
+}
+
+bool MovementActor::RemoveActionAbilityCallbacks(const SMovementActionAbilityCallbacks& ability)
+{
+	if (ability.addStartMovementBlocksCallback)
+	{
+		actionAbilities.m_addStartMovementBlocksCallback.Remove(ability.addStartMovementBlocksCallback);
+	}
+	if (ability.addEndMovementBlocksCallback)
+	{
+		actionAbilities.m_addEndMovementBlocksCallback.Remove(ability.addEndMovementBlocksCallback);
+	}
+	if (ability.prePathFollowingUpdateCallback)
+	{
+		actionAbilities.m_prePathFollowingUpdateCallback.Remove(ability.prePathFollowingUpdateCallback);
+	}
+	if (ability.postPathFollowingUpdateCallback)
+	{
+		actionAbilities.m_postPathFollowingUpdateCallback.Remove(ability.postPathFollowingUpdateCallback);
+	}
+	return true;
 }

@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #ifndef WORLD_COLLISION_H
 #define WORLD_COLLISION_H
@@ -152,6 +152,7 @@ const size_t GetPhysicalEntitiesInBoxMaxResultCount = 2048;
 typedef StaticDynArray<AABB, GetPhysicalEntitiesInBoxMaxResultCount>             StaticAABBArray;
 typedef StaticDynArray<IPhysicalEntity*, GetPhysicalEntitiesInBoxMaxResultCount> StaticPhysEntityArray;
 
+bool FindFloor(const Vec3& position, Vec3& floor);
 
 //====================================================================
 // GetEntitiesFromAABB

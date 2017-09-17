@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #pragma once
 
@@ -982,7 +982,7 @@ public:
 
 	virtual void AddPlatformOSCreateFlag(const uint8 createFlag) override { m_PlatformOSCreateFlags |= createFlag; }
 
-	bool         IsLoading()
+	virtual bool IsLoading() override
 	{
 		return (m_systemGlobalState <= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
 	}

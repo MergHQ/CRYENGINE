@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 /********************************************************************
    -------------------------------------------------------------------------
@@ -29,20 +29,21 @@
 #include "Formation/FormationManager.h"
 
 #include "Cover/CoverSystem.h"
+#include "AIObject/PipeUserMovement/MovementBlock_InstallPipeUserInCover.h"
+#include "AIObject/PipeUserMovement/MovementBlock_SetupPipeUserCoverInformation.h"
+#include "AIObject/PipeUserMovement/MovementBlock_UninstallPipeUserFromCover.h"
 
 #include "DebugDrawContext.h"
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include <CryAISystem/MovementStyle.h>
+#include <CryAISystem/MovementRequest.h>
 
 #pragma warning(push)
 #pragma warning(disable:4355) // 'this': used in base member initializer list
 CPipeUser::CPipeUser()
 	: m_fTimePassed(0)
 	, m_adjustingAim(false)
-	, m_inCover(false)
-	, m_movingToCover(false)
-	, m_movingInCover(false)
 	, m_pPathFollower(0)
 	, m_bPathfinderConsidersPathTargetDirection(true)
 	, m_vLastMoveDir(ZERO)
@@ -78,13 +79,14 @@ CPipeUser::CPipeUser()
 	, m_lastExecutedGoalop(eGO_LAST)
 	, m_paused(0)
 	, m_bEnableUpdateLookTarget(true)
-	, m_regCoverID(0)
 	, m_adjustpath(0)
 	, m_pipeExecuting(false)
 	, m_cutPathAtSmartObject(true)
 	, m_considerActorsAsPathObstacles(false)
 	, m_movementActorAdapter(*this)
 	, m_bLastActionSucceed(false)
+	, m_pCoverUser(nullptr)
+	, m_pCoverEyesTargetObject(nullptr)
 {
 	CCCPOINT(CPipeUser_CPipeUser);
 
@@ -99,6 +101,10 @@ CPipeUser::CPipeUser()
 	m_callbacksForPipeuser.checkOnPathfinderStateFunction = functor(*this, &CPipeUser::GetPathfinderState);
 	m_callbacksForPipeuser.getPathFollowerFunction = functor(*this, &CPipeUser::GetPathFollower);
 	m_callbacksForPipeuser.getPathFunction = functor(*this, &CPipeUser::GetINavPath);
+
+	m_coverMovementAbility.addStartMovementBlocksCallback = functor(*this, &CPipeUser::CreateMovementPlanCoverStartBlocks);
+	m_coverMovementAbility.addEndMovementBlocksCallback = functor(*this, &CPipeUser::CreateMovementPlanCoverEndBlocks);
+	m_coverMovementAbility.prePathFollowingUpdateCallback = functor(*this, &CPipeUser::PrePathFollowUpdate);
 }
 #pragma warning(pop)
 
@@ -115,8 +121,6 @@ CPipeUser::~CPipeUser(void)
 		ResetCurrentPipe(true);
 	}
 
-	m_coverUsageInfoState.Reset();
-
 	while (!m_mapGoalPipeListeners.empty())
 		UnRegisterGoalPipeListener(m_mapGoalPipeListeners.begin()->second.first, m_mapGoalPipeListeners.begin()->first);
 
@@ -128,6 +132,11 @@ CPipeUser::~CPipeUser(void)
 	SAFE_DELETE(m_pActorTargetRequest);
 
 	gAIEnv.pMovementSystem->UnregisterEntity(GetEntityID());
+
+	if (m_pCoverUser)
+	{
+		gAIEnv.pCoverSystem->UnregisterEntity(GetEntityID());
+	}
 }
 
 void CPipeUser::Event(unsigned short int eType, SAIEVENT* pAIEvent)
@@ -153,11 +162,10 @@ void CPipeUser::Event(unsigned short int eType, SAIEVENT* pAIEvent)
 		break;
 	case AIEVENT_AGENTDIED:
 		SetNavSOFailureStates();
-		if (m_inCover || m_movingToCover)
+		CRY_ASSERT(m_pCoverUser);
+		if (m_pCoverUser && !m_pCoverUser->GetState().IsEmpty())
 		{
-			SetCoverRegister(CoverID());
-			m_coverUser.SetCoverID(CoverID());
-			m_inCover = m_movingToCover = false;
+			m_pCoverUser->Reset();
 		}
 
 		m_Path.Clear("Agent Died");
@@ -228,11 +236,6 @@ void CPipeUser::Reset(EObjectResetType type)
 
 	m_bLastNearForbiddenEdge = false;
 
-	m_coverUser.Reset();
-	m_movingToCover = false;
-	m_movingInCover = false;
-	m_inCover = false;
-
 	SetAttentionTarget(NILREF);
 	m_PathDestinationPos.zero();
 	m_refPathFindTarget.Reset();
@@ -249,11 +252,6 @@ void CPipeUser::Reset(EObjectResetType type)
 	ResetBodyTargetDir();
 	ResetDesiredBodyDirectionAtTarget();
 	ResetMovementContext();
-
-	ResetCoverBlacklist();
-	m_regCoverID = CoverID();
-
-	m_coverUsageInfoState.Reset();
 
 	m_aimState = AI_AIM_NONE;
 
@@ -297,11 +295,32 @@ void CPipeUser::Reset(EObjectResetType type)
 	switch (type)
 	{
 	case AIOBJRESET_INIT:
+	{
 		gAIEnv.pMovementSystem->RegisterEntity(GetEntityID(), m_callbacksForPipeuser, m_movementActorAdapter);
+		gAIEnv.pMovementSystem->AddActionAbilityCallbacks(GetEntityID(), m_coverMovementAbility);
+
+		ICoverUser::Params params;
+		params.distanceToCover = m_Parameters.distanceToCover;
+		params.inCoverRadius = m_Parameters.inCoverRadius;
+		params.minEffectiveCoverHeight = m_Parameters.effectiveCoverHeight;
+		params.userID = GetEntityID();
+		params.fillCoverEyesCustomMethod = functor(*this, &CPipeUser::FillCoverEyes);
+		params.activeCoverInvalidateCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
+		params.activeCoverCompromisedCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
+		m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(GetEntityID(), params);
+		m_pCoverUser->Reset();
 		break;
+	}
 	case AIOBJRESET_SHUTDOWN:
+	{
 		gAIEnv.pMovementSystem->UnregisterEntity(GetEntityID());
+		if (m_pCoverUser)
+		{
+			gAIEnv.pCoverSystem->UnregisterEntity(GetEntityID());
+			m_pCoverUser = nullptr;
+		}
 		break;
+	}
 	default:
 		assert(0);
 		break;
@@ -773,69 +792,7 @@ void CPipeUser::Update(EUpdateType type)
 
 	CAIActor::Update(type);
 
-	Vec3 pos = GetPhysicsPos();
-
-	if (m_refAttentionTarget.IsValid() && m_coverUser.GetCoverID())
-	{
-		if (type == EUpdateType::Full)
-		{
-			CAIObject* attTarget = m_refAttentionTarget.GetAIObject();
-
-			if (attTarget)
-			{
-				Vec3 eyes[8];
-				const uint32 MaxEyeCount = std::min<uint32>(gAIEnv.CVars.CoverMaxEyeCount, CRY_ARRAY_COUNT(eyes));
-
-				uint32 eyeCount = GetCoverEyes(attTarget, attTarget->GetPos(), eyes, MaxEyeCount);
-
-				const bool coverWasNoLongerValidBeforeUpdate = m_coverUser.IsCompromised() || m_coverUser.IsFarFromCoverLocation();
-
-				if (m_movingToCover || m_movingInCover)
-					m_coverUser.UpdateWhileMoving(m_fTimePassed, pos, &eyes[0], eyeCount);
-				else if (m_inCover)
-					m_coverUser.Update(m_fTimePassed, pos, &eyes[0], eyeCount, m_Parameters.effectiveCoverHeight);
-
-				const bool coverIsNoLongerValidAfterUpdate = m_coverUser.IsCompromised() || m_coverUser.IsFarFromCoverLocation();
-
-				if (coverIsNoLongerValidAfterUpdate && !coverWasNoLongerValidBeforeUpdate)
-				{
-					//          if (gAIEnv.CVars.DebugDrawCover && (locationEffectiveHeight < minEffectiveCoverHeight))
-					//          {
-					//            #ifdef CRYAISYSTEM_DEBUG
-					//            GetAISystem()->AddDebugCone(GetCoverLocation() + (CoverUp * locationEffectiveHeight), -CoverUp, 0.15f,
-					//              locationEffectiveHeight, Col_Red,	3.0f);
-					//            #endif
-					//          }
-
-					SetCoverCompromised();
-				}
-				else
-				{
-					//          if ((m_inCover || m_movingInCover) && !m_adjustingAim)
-					//          {
-					//            float effectiveHeight = m_coverUser.GetEffectiveHeight();
-					//
-					//            if (effectiveHeight >= m_Parameters.effectiveHighCoverHeight)
-					//              SetSignal(1, "OnHighCover", 0, 0, gAIEnv.SignalCRCs.m_nOnHighCover);
-					//            else
-					//              SetSignal(1, "OnLowCover", 0, 0, gAIEnv.SignalCRCs.m_nOnLowCover);
-					//          }
-				}
-			}
-		}
-	}
-
-	if ((m_inCover || m_movingInCover) && m_coverUser.GetCoverID())
-	{
-		m_coverUser.UpdateNormal(pos);
-
-		const Vec3& coverNormal = m_coverUser.GetCoverNormal();
-		const Vec3& coverPos = m_coverUser.GetCoverLocation();
-		SetBodyTargetDir(-coverNormal); // TODO: Remove this if old cover alignment method is not needed anymore
-		m_State.coverRequest.SetCoverLocation(coverPos, -coverNormal);
-	}
-
-	UpdateCoverBlacklist(gEnv->pTimer->GetFrameTime());
+	UpdateCovers(type, gEnv->pTimer->GetFrameTime());
 
 	CAIObject* pAttentionTarget = m_refAttentionTarget.GetAIObject();
 
@@ -1107,77 +1064,126 @@ void CPipeUser::SetAdjustingAim(bool adjustingAim)
 	m_adjustingAim = adjustingAim;
 }
 
-bool CPipeUser::IsInCover() const
+void CPipeUser::SetCoverState(const ICoverUser::StateFlags& state)
 {
-	return m_inCover;
-}
-
-bool CPipeUser::IsMovingToCover() const
-{
-	return m_movingToCover;
-}
-
-void CPipeUser::SetMovingToCover(bool movingToCover)
-{
-	if (m_movingToCover != movingToCover)
+	if (!m_pCoverUser)
+		return;
+	
+	ICoverUser::StateFlags currentState = m_pCoverUser->GetState();
+	m_pCoverUser->SetState(state);
+	
+	if (state.Check(ICoverUser::EStateFlags::InCover))
 	{
-		if (movingToCover)
-			SetSignal(1, "OnMovingToCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingToCover);
-
-		m_movingToCover = movingToCover;
-	}
-}
-
-bool CPipeUser::IsMovingInCover() const
-{
-	return m_movingInCover;
-}
-
-void CPipeUser::SetMovingInCover(bool movingInCover)
-{
-	if (m_movingInCover != movingInCover)
-	{
-		if (movingInCover)
-			SetSignal(1, "OnMovingInCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingInCover);
-
-		m_movingInCover = movingInCover;
-	}
-}
-
-void CPipeUser::SetInCover(bool inCover)
-{
-	assert(!inCover || m_coverUser.GetCoverID());
-
-	if (m_inCover != inCover)
-	{
-		if (inCover)
+		CRY_ASSERT(currentState.Check(ICoverUser::EStateFlags::MovingToCover));
+		if (!currentState.Check(ICoverUser::EStateFlags::InCover))
 		{
 			SetSignal(1, "OnEnterCover", 0, 0, gAIEnv.SignalCRCs.m_nOnEnterCover);
 		}
-		else
+	}
+	else if (state.Check(ICoverUser::EStateFlags::MovingToCover))
+	{
+		CRY_ASSERT(!currentState.Check(ICoverUser::EStateFlags::InCover));
+		if (!currentState.Check(ICoverUser::EStateFlags::MovingToCover))
+		{
+			SetSignal(1, "OnMovingToCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingToCover);
+			if (state.Check(ICoverUser::EStateFlags::InCover))
+			{
+				SetSignal(1, "OnMovingInCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingInCover);
+			}
+		}
+	}
+	else if (state.IsEmpty())
+	{
+		if (currentState.Check(ICoverUser::EStateFlags::InCover))
 		{
 			SetCoverID(CoverID());
 			ResetBodyTargetDir();
 			SetSignal(1, "OnLeaveCover", 0, 0, gAIEnv.SignalCRCs.m_nOnLeaveCover);
 		}
-
-		m_inCover = inCover;
 	}
+}
+
+bool CPipeUser::IsInCover() const
+{
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return false;
+
+	return m_pCoverUser->GetState().Check(ICoverUser::EStateFlags::InCover);
+}
+
+bool CPipeUser::IsMovingToCover() const
+{
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return false;
+
+	return m_pCoverUser->GetState().Check(ICoverUser::EStateFlags::MovingToCover);
+}
+
+bool CPipeUser::IsMovingInCover() const
+{
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return false;
+
+	return m_pCoverUser->GetState().CheckAll({ ICoverUser::EStateFlags::MovingToCover, ICoverUser::EStateFlags::InCover });
+}
+
+void CPipeUser::SetMovingToCover(bool bMovingInCover)
+{
+	ICoverUser::StateFlags state = ICoverUser::EStateFlags::MovingToCover;
+	if (bMovingInCover)
+	{
+		state.Add(ICoverUser::EStateFlags::InCover);
+	}
+	SetCoverState(state);
+}
+
+void CPipeUser::SetInCover(bool inCover)
+{
+	SetCoverState(inCover ? ICoverUser::EStateFlags::InCover : ICoverUser::EStateFlags::None);
 }
 
 void CPipeUser::SetCoverCompromised()
 {
-	if (m_inCover || m_movingToCover)
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return;
+
+	if (!m_pCoverUser->GetState().IsEmpty())
 	{
 		SetSignal(1, "OnCoverCompromised", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverCompromised);
 
-		if (CoverID coverID = m_coverUser.GetCoverID())
+		if (CoverID coverID = m_pCoverUser->GetCoverID())
 			SetCoverBlacklisted(coverID, true, 10.0f);
 
-		SetInCover(false);
+		SetCoverState(ICoverUser::EStateFlags::None);
 
-		m_coverUser.SetCoverID(CoverID());
+		m_pCoverUser->SetCoverID(CoverID());
 	}
+}
+
+void CPipeUser::SetCoverInvalidated(CoverID coverID, ICoverUser* pCoverUser)
+{
+	CRY_ASSERT(m_pCoverUser == pCoverUser);
+	if (!m_pCoverUser)
+		return;
+	
+	SetSignal(1, "OnCoverCompromised", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverCompromised);
+
+	SetCoverState(ICoverUser::EStateFlags::None);
+
+	if (m_pCoverUser->GetCoverID() == coverID)
+	{
+		m_pCoverUser->SetCoverID(CoverID());
+	}
+	else if (m_pCoverUser->GetNextCoverID() == coverID)
+	{
+		m_pCoverUser->SetNextCoverID(CoverID());
+	}
+
+	SetCoverBlacklisted(coverID, true, 10.0f);
 }
 
 //
@@ -1186,7 +1192,7 @@ bool CPipeUser::IsCoverCompromised() const
 {
 	if (gAIEnv.CVars.CoverSystem)
 	{
-		return m_coverUser.IsCompromised();
+		return m_pCoverUser ? m_pCoverUser->IsCompromised() : false;
 	}
 	else
 	{
@@ -1216,27 +1222,48 @@ bool CPipeUser::IsTakingCover(float distanceThreshold) const
 
 void CPipeUser::SetCoverID(const CoverID& coverID)
 {
-	if (coverID)
+	CRY_ASSERT(m_pCoverUser);
+	if (m_pCoverUser)
 	{
-		CoverUser::Params params;
-		params.distanceToCover = m_Parameters.distanceToCover;
-		params.inCoverRadius = m_Parameters.inCoverRadius;
-		params.userID = GetAIObjectID();
-
-		m_coverUser.SetParams(params);
+		m_pCoverUser->SetCoverID(coverID);
 	}
-
-	m_coverUser.SetCoverID(coverID);
 }
 
 const CoverID& CPipeUser::GetCoverID() const
 {
-	return m_coverUser.GetCoverID();
+	CRY_ASSERT(m_pCoverUser);
+	if (m_pCoverUser)
+	{
+		return m_pCoverUser->GetCoverID();
+	}
+	else
+	{
+		static CoverID invalidCoverId;
+		return invalidCoverId;
+	}
 }
 
-Vec3 CPipeUser::GetCoverLocation() const
+void CPipeUser::SetCoverRegister(const CoverID& coverID)
 {
-	return m_coverUser.GetCoverLocation();
+	CRY_ASSERT(m_pCoverUser);
+	if (m_pCoverUser)
+	{
+		m_pCoverUser->SetNextCoverID(coverID);
+	}
+}
+
+const CoverID& CPipeUser::GetCoverRegister() const
+{
+	CRY_ASSERT(m_pCoverUser);
+	if (m_pCoverUser)
+	{
+		return m_pCoverUser->GetNextCoverID();
+	}
+	else
+	{
+		static CoverID invalidCoverId;
+		return invalidCoverId;
+	}
 }
 
 inline bool HasPointInRangeSq(const Vec3* points, uint32 pointCount, const Vec3& pos, float rangeSq)
@@ -1250,325 +1277,148 @@ inline bool HasPointInRangeSq(const Vec3* points, uint32 pointCount, const Vec3&
 	return false;
 }
 
-uint32 CPipeUser::GetCoverEyes(CAIObject* targetEnemy, const Vec3& enemyTargetLocation, Vec3* eyes, uint32 maxCount) const
+void CPipeUser::UpdateCoverEyesWithTarget(const CAIObject* pTarget, const Vec3& targetPosition)
 {
-	uint32 eyeCount = 0;
-	if (!enemyTargetLocation.IsZero())
-		eyes[eyeCount++] = enemyTargetLocation;
+	CRY_ASSERT(m_pCoverUser);
 
-	bool prediction = gAIEnv.CVars.CoverPredictTarget > 0.001f;
+	m_pCoverEyesTargetObject = pTarget;
+	m_coverEyesTargetPosition = targetPosition;
 
-	if (!targetEnemy)
-		return eyeCount;
+	m_pCoverUser->UpdateCoverEyes();
+}
 
+void CPipeUser::FillCoverEyes(DynArray<Vec3>& eyesContainer)
+{
+	const uint32 kMaxEyesCount = 8;
+
+	const CAIObject* pTarget = m_refAttentionTarget.GetAIObject();
+	Vec3 targetPosition = ZERO;
+	if (m_pCoverEyesTargetObject || !m_coverEyesTargetPosition.IsZero())
+	{
+		pTarget = m_pCoverEyesTargetObject;
+		targetPosition = m_coverEyesTargetPosition;
+
+		m_pCoverEyesTargetObject = nullptr;
+		m_coverEyesTargetPosition = ZERO;
+	}
+	else if(pTarget)
+	{
+		targetPosition = pTarget->GetPos();
+	}
+	else
+	{
+		return;
+	}
+
+	if (!targetPosition.IsZero())
+		eyesContainer.push_back(targetPosition);
+
+	if (!pTarget || eyesContainer.size() >= kMaxEyesCount)
+		return;
+
+	const bool prediction = gAIEnv.CVars.CoverPredictTarget > 0.001f;
 	const float RangeThresholdSq = sqr(0.5f);
 
-	if (prediction && (eyeCount < maxCount) && targetEnemy->IsAgent())
+	if (prediction && pTarget->IsAgent())
 	{
-		Vec3 targetVelocity = targetEnemy->GetVelocity();
-		Vec3 futureLocation = eyes[eyeCount - 1] + targetVelocity * gAIEnv.CVars.CoverPredictTarget;
+		const Vec3 targetVelocity = pTarget->GetVelocity();
+		const Vec3 futureLocation = eyesContainer.back() + targetVelocity * gAIEnv.CVars.CoverPredictTarget;
 
-		if (!HasPointInRangeSq(eyes, eyeCount, futureLocation, RangeThresholdSq))
+		if (!HasPointInRangeSq(eyesContainer.data(), eyesContainer.size(), futureLocation, RangeThresholdSq))
 		{
-			eyes[eyeCount] = futureLocation;
-			++eyeCount;
+			eyesContainer.push_back(futureLocation);
 		}
 	}
 
-	if (eyeCount < maxCount)
+	if (eyesContainer.size() >= kMaxEyesCount)
+		return;
+
+	const CPuppet* pPuppet = CastToCPuppet();
+	if (!pPuppet)
+		return;
+
+	tAIObjectID targetID = pTarget->GetAIObjectID();
+	tAIObjectID targetAssociationID = pTarget->GetAssociation().GetObjectID();
+
+	const uint32 MaxTargets = 8;
+	tAIObjectID targets[MaxTargets];
+
+	uint32 targetCount = pPuppet->GetBestTargets(targets, MaxTargets);
+
+	for (uint32 i = 0; i < targetCount; ++i)
 	{
-		if (const CPuppet* puppet = CastToCPuppet())
+		tAIObjectID nextTargetID = targets[i];
+		if(nextTargetID == targetID || nextTargetID == targetAssociationID)
+			continue;
+
+		IAIObject* nextTargetObject = gAIEnv.pObjectContainer->GetAIObject(nextTargetID);
+		if(!nextTargetObject || !CanSee(nextTargetObject->GetVisionID()))
+			continue;
+
+		Vec3 location = nextTargetObject->GetPos();
+		if (!HasPointInRangeSq(eyesContainer.data(), eyesContainer.size(), location, RangeThresholdSq))
 		{
-			tAIObjectID targetID = targetEnemy->GetAIObjectID();
-			tAIObjectID targetAssociationID = targetEnemy->GetAssociation().GetObjectID();
+			eyesContainer.push_back(location);
+			if (eyesContainer.size() >= kMaxEyesCount)
+				return;
+		}
 
-			const uint32 MaxTargets = 8;
-			tAIObjectID targets[MaxTargets];
+		if (prediction && nextTargetObject->IsAgent())
+		{
+			Vec3 targetVelocity = nextTargetObject->GetVelocity();
+			Vec3 futureLocation = eyesContainer.back() + targetVelocity * gAIEnv.CVars.CoverPredictTarget;
 
-			uint32 targetCount = puppet->GetBestTargets(targets, MaxTargets);
-
-			for (uint32 i = 0; i < targetCount; ++i)
+			if (!HasPointInRangeSq(eyesContainer.data(), eyesContainer.size(), futureLocation, RangeThresholdSq))
 			{
-				tAIObjectID nextTargetID = targets[i];
-				if (nextTargetID != targetID && nextTargetID != targetAssociationID)
-				{
-					if (IAIObject* nextTargetObject = gAIEnv.pObjectContainer->GetAIObject(nextTargetID))
-					{
-						if (CanSee(nextTargetObject->GetVisionID()))
-						{
-							Vec3 location = nextTargetObject->GetPos();
-
-							if (!HasPointInRangeSq(eyes, eyeCount, location, RangeThresholdSq))
-							{
-								eyes[eyeCount] = location;
-								++eyeCount;
-							}
-
-							if (prediction && (eyeCount < maxCount) && nextTargetObject->IsAgent())
-							{
-								Vec3 targetVelocity = nextTargetObject->GetVelocity();
-								Vec3 futureLocation = eyes[eyeCount - 1] + targetVelocity * gAIEnv.CVars.CoverPredictTarget;
-
-								if (!HasPointInRangeSq(eyes, eyeCount, futureLocation, RangeThresholdSq))
-								{
-									eyes[eyeCount] = futureLocation;
-									++eyeCount;
-								}
-							}
-						}
-					}
-				}
-
-				if (eyeCount >= maxCount)
-					break;
+				eyesContainer.push_back(futureLocation);
+				if (eyesContainer.size() >= kMaxEyesCount)
+					return;
 			}
 		}
 	}
-
-	return eyeCount;
 }
 
-void CPipeUser::UpdateCoverBlacklist(float updateTime)
+void CPipeUser::UpdateCovers(EUpdateType type, float updateTime)
 {
-	CoverBlacklist::iterator it = m_coverBlacklist.begin();
-	CoverBlacklist::iterator end = m_coverBlacklist.end();
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return;
 
-	for (; it != end; )
+	if (!m_pCoverUser->GetState().IsEmpty() && m_pCoverUser->GetCoverID())
 	{
-		float& time = it->second;
-		time -= updateTime;
-
-		if (time > 0.0f)
-		{
-			++it;
-			continue;
-		}
-
-		m_coverBlacklist.erase(it++);
-		end = m_coverBlacklist.end();
+		const Vec3& coverNormal = m_pCoverUser->GetCoverNormal(GetPhysicsPos());
+		const Vec3& coverPos = m_pCoverUser->GetCoverLocation(m_pCoverUser->GetCoverID());
+		SetBodyTargetDir(-coverNormal); // TODO: Remove this if old cover alignment method is not needed anymore
+		m_State.coverRequest.SetCoverLocation(coverPos, -coverNormal);
 	}
-}
-
-void CPipeUser::ResetCoverBlacklist()
-{
-	m_coverBlacklist.clear();
 }
 
 void CPipeUser::SetCoverBlacklisted(const CoverID& coverID, bool blacklist, float time)
 {
-	if (blacklist)
-	{
-		std::pair<CoverBlacklist::iterator, bool> iresult = m_coverBlacklist.insert(CoverBlacklist::value_type(coverID, time));
-		if (!iresult.second)
-			iresult.first->second = time;
-	}
-	else
-		m_coverBlacklist.erase(coverID);
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return;
+
+	m_pCoverUser->SetCoverBlacklisted(coverID, blacklist, time);
 }
 
 bool CPipeUser::IsCoverBlacklisted(const CoverID& coverID) const
 {
-	return m_coverBlacklist.find(coverID) != m_coverBlacklist.end();
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return false;
+	
+	return m_pCoverUser->IsCoverBlackListed(coverID);
 }
 
 CoverHeight CPipeUser::CalculateEffectiveCoverHeight() const
 {
-	Vec3 eyes[8];
-	const uint32 MaxEyeCount = std::min<uint32>(gAIEnv.CVars.CoverMaxEyeCount, CRY_ARRAY_COUNT(eyes));
-	CAIObject* attTarget = m_refAttentionTarget.GetAIObject();
-	uint32 eyeCount = 0;
-	if (attTarget)
-		eyeCount = GetCoverEyes(attTarget, attTarget->GetPos(), eyes, MaxEyeCount);
-	const float effectiveHeight = m_coverUser.CalculateEffectiveHeightAt(GetPhysicsPos(), eyes, eyeCount);
+	CRY_ASSERT(m_pCoverUser);
+	if (!m_pCoverUser)
+		return HighCover;
+
+	const float effectiveHeight = m_pCoverUser->CalculateEffectiveHeightAt(GetPhysicsPos(), m_pCoverUser->GetCoverID());
 	return (effectiveHeight >= m_Parameters.effectiveHighCoverHeight) ? HighCover : LowCover;
-}
-
-//
-//-------------------------------------------------------------------------------------------------------------
-enum ECoverUsageCheckLocation
-{
-	LowLeft = 0,
-	LowCenter,
-	LowRight,
-	HighLeft,
-	HighCenter,
-	HighRight,
-};
-
-AsyncState CPipeUser::GetCoverUsageInfo(CoverUsageInfo& coverUsageInfo)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	if (m_coverUsageInfoState.state == AsyncComplete)
-	{
-		coverUsageInfo = m_coverUsageInfoState.result;
-		m_coverUsageInfoState.state = AsyncReady;
-
-		return AsyncComplete;
-	}
-
-	IAIObject* attentionTarget = GetAttentionTarget();
-	if (!attentionTarget)
-	{
-		coverUsageInfo = CoverUsageInfo(false);
-
-		return AsyncComplete;
-	}
-
-	if (m_coverUsageInfoState.state == AsyncReady)
-	{
-		m_coverUsageInfoState.state = AsyncInProgress;
-
-		CAIHideObject& hideObject = m_CurrentHideObject;
-
-		const Vec3& target = attentionTarget->GetPos();
-		const float offset = GetParameters().m_fPassRadius;
-
-		bool lowCover = hideObject.HasLowCover();
-		bool highCover = hideObject.HasHighCover();
-
-		Vec3 checkOrigin[6];
-		bool checkResult[6];
-
-		m_coverUsageInfoState.result.lowCompromised = !lowCover;
-		m_coverUsageInfoState.result.highCompromised = !highCover;
-
-		float leftEdge;
-		float rightEdge;
-		float leftUmbra;
-		float rightUmbra;
-
-		if (lowCover)
-		{
-			bool compromised = false;
-
-			hideObject.GetCoverDistances(true, target, compromised, leftEdge, rightEdge, leftUmbra, rightUmbra);
-			float left = max(leftEdge, leftUmbra);
-			float right = min(rightEdge, rightUmbra);
-
-			left += offset;
-			right -= offset;
-
-			Vec3 originOffset(0.0f, 0.0f, 0.7f);
-
-			checkOrigin[LowLeft] = hideObject.GetPointAlongCoverPath(left) + originOffset;
-			checkOrigin[LowRight] = hideObject.GetPointAlongCoverPath(right) + originOffset;
-			checkOrigin[LowCenter] = 0.5f * (checkOrigin[LowLeft] + checkOrigin[LowRight]);
-
-			checkResult[LowLeft] = hideObject.IsLeftEdgeValid(true);
-			checkResult[LowCenter] = true;
-			checkResult[LowRight] = hideObject.IsRightEdgeValid(true);
-
-			m_coverUsageInfoState.result.lowCompromised = compromised;
-		}
-		else
-		{
-			checkResult[LowLeft] = false;
-			checkResult[LowRight] = false;
-			checkResult[LowCenter] = false;
-
-			m_coverUsageInfoState.result.lowLeft = false;
-			m_coverUsageInfoState.result.lowCenter = false;
-			m_coverUsageInfoState.result.lowRight = false;
-		}
-
-		if (highCover)
-		{
-			bool compromised = false;
-
-			hideObject.GetCoverDistances(false, target, compromised, leftEdge, rightEdge, leftUmbra, rightUmbra);
-			float left = max(leftEdge, leftUmbra);
-			float right = min(rightEdge, rightUmbra);
-
-			left += offset;
-			right -= offset;
-
-			Vec3 originOffset(0.0f, 0.0f, 1.5f);
-
-			checkOrigin[HighLeft] = hideObject.GetPointAlongCoverPath(left) + originOffset;
-			checkOrigin[HighRight] = hideObject.GetPointAlongCoverPath(right) + originOffset;
-			checkOrigin[HighCenter] = 0.5f * (checkOrigin[HighLeft] + checkOrigin[HighRight]);
-
-			checkResult[HighLeft] = hideObject.IsLeftEdgeValid(false);
-			checkResult[HighCenter] = true;
-			checkResult[HighRight] = hideObject.IsRightEdgeValid(false);
-
-			m_coverUsageInfoState.result.highCompromised = compromised;
-		}
-		else
-		{
-			checkResult[HighLeft] = false;
-			checkResult[HighCenter] = false;
-			checkResult[HighRight] = false;
-
-			m_coverUsageInfoState.result.highLeft = false;
-			m_coverUsageInfoState.result.highCenter = false;
-			m_coverUsageInfoState.result.highRight = false;
-		}
-
-		for (int i = 0; i < 6; ++i)
-		{
-			if (!checkResult[i])
-				continue;
-
-			Vec3 dir = target - checkOrigin[i];
-			if (dir.GetLengthSquared2D() > 3.0f * 3.0f)
-				dir.SetLength(3.0f);
-
-			m_coverUsageInfoState.rayID[i] = gAIEnv.pRayCaster->Queue(
-			  RayCastRequest::HighPriority,
-			  RayCastRequest(
-			    checkOrigin[i], dir, COVER_OBJECT_TYPES,
-			    AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER),
-			  functor(*this, &CPipeUser::CoverUsageInfoRayComplete));
-			++m_coverUsageInfoState.rayCount;
-		}
-	}
-
-	return m_coverUsageInfoState.state;
-}
-
-void CPipeUser::CoverUsageInfoRayComplete(const QueuedRayID& rayID, const RayCastResult& result)
-{
-	--m_coverUsageInfoState.rayCount;
-
-	for (uint32 i = 0; i < 6; ++i)
-	{
-		if (m_coverUsageInfoState.rayID[i] != rayID)
-			continue;
-
-		m_coverUsageInfoState.rayID[i] = 0;
-
-		switch (i)
-		{
-		case LowLeft:
-			m_coverUsageInfoState.result.lowLeft = result.hitCount != 0;
-			break;
-		case LowCenter:
-			m_coverUsageInfoState.result.lowCenter = result.hitCount != 0;
-			break;
-		case LowRight:
-			m_coverUsageInfoState.result.lowRight = result.hitCount != 0;
-			break;
-		case HighLeft:
-			m_coverUsageInfoState.result.highLeft = result.hitCount != 0;
-			break;
-		case HighCenter:
-			m_coverUsageInfoState.result.highCenter = result.hitCount != 0;
-			break;
-		case HighRight:
-			m_coverUsageInfoState.result.highRight = result.hitCount != 0;
-			break;
-		default:
-			assert(0);
-			break;
-		}
-
-		break;
-	}
-
-	if (m_coverUsageInfoState.rayCount == 0)
-		m_coverUsageInfoState.state = AsyncComplete;
 }
 
 //
@@ -3205,11 +3055,11 @@ void CPipeUser::Serialize(TSerialize ser)
 #else
 	if (ser.IsReading())
 	{
-		m_inCover = false;
-		m_movingToCover = false;
-		m_movingInCover = false;
 		m_vBodyTargetDir.zero();
-		m_coverUser.SetCoverID(CoverID());
+		if (m_pCoverUser)
+		{
+			m_pCoverUser->Reset();
+		}
 	}
 #endif // SERIALIZE_COVER_INFORMATION
 
@@ -3390,7 +3240,19 @@ void CPipeUser::PostSerialize()
 {
 	CAIActor::PostSerialize();
 
-	gAIEnv.pMovementSystem->RegisterEntity(GetEntityID(), m_callbacksForPipeuser, m_movementActorAdapter);
+	const EntityId entityId = GetEntityID();
+	
+	gAIEnv.pMovementSystem->RegisterEntity(entityId, m_callbacksForPipeuser, m_movementActorAdapter);
+	gAIEnv.pMovementSystem->AddActionAbilityCallbacks(entityId, m_coverMovementAbility);
+
+	ICoverUser::Params params;
+	params.distanceToCover = m_Parameters.distanceToCover;
+	params.inCoverRadius = m_Parameters.inCoverRadius;
+	params.minEffectiveCoverHeight = m_Parameters.effectiveCoverHeight;
+	params.userID = entityId;
+	params.activeCoverInvalidateCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
+	params.activeCoverCompromisedCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
+	m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(entityId, params);
 }
 
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
@@ -4180,22 +4042,6 @@ SShape* CPipeUser::GetRefShape()
 	return m_refShape;
 }
 
-void CPipeUser::SetCoverRegister(const CoverID& coverID)
-{
-	if (m_regCoverID)
-		gAIEnv.pCoverSystem->SetCoverOccupied(m_regCoverID, false, GetAIObjectID());
-
-	m_regCoverID = coverID;
-
-	if (m_regCoverID)
-		gAIEnv.pCoverSystem->SetCoverOccupied(m_regCoverID, true, GetAIObjectID());
-}
-
-const CoverID& CPipeUser::GetCoverRegister() const
-{
-	return m_regCoverID;
-}
-
 //
 //----------------------------------------------------------------------------------------------
 void CPipeUser::RecordSnapshot()
@@ -4476,6 +4322,86 @@ IPathFollower* CPipeUser::CreatePathFollower(const PathFollowerParams& params)
 	return pResult;
 }
 
+void CPipeUser::CreateMovementPlanCoverStartBlocks(DynArray<Movement::BlockPtr>& blocks, const MovementRequest& request)
+{
+	if (IsInCover())
+	{
+		blocks.push_back(Movement::BlockPtr(new Movement::MovementBlocks::UninstallPipeUserFromCover(*this, request.style.GetStance())));
+	}
+	if (request.style.IsMovingToCover() && GetCoverRegister())
+	{
+		blocks.push_back(Movement::BlockPtr(new Movement::MovementBlocks::SetupPipeUserCoverInformation(*this)));
+	}
+}
+
+void CPipeUser::CreateMovementPlanCoverEndBlocks(DynArray<Movement::BlockPtr>& blocks, const MovementRequest& request)
+{
+	if (request.style.IsMovingToCover() && GetCoverRegister())
+	{
+		blocks.push_back(Movement::BlockPtr(new Movement::MovementBlocks::InstallPipeUserInCover(*this)));
+	}
+}
+
+void CPipeUser::PrePathFollowUpdate(const MovementUpdateContext& context, bool bIsLastFollowBlock)
+{
+	if (!bIsLastFollowBlock || !IsMovingToCover())
+		return;
+	
+	CoverID coverID = GetCoverID();
+	IF_UNLIKELY(coverID == 0)
+		return;
+
+	Vec3 coverNormal(ZERO);
+	const Vec3 coverPosition = gAIEnv.pCoverSystem->GetCoverLocation(coverID, m_Parameters.distanceToCover, 0, &coverNormal);
+
+	SAICoverRequest& coverRequest = m_State.coverRequest;
+
+	coverRequest.SetCoverLocation(coverPosition, -coverNormal);
+
+	const Vec3 agentPosition = GetPhysicsPos();
+
+	if (IsMovingInCover())
+	{
+		SetDesiredBodyDirectionAtTarget(-coverNormal);
+
+		// Turn body to the direction we're moving
+		const Vec3 directionAgentIsMovingIn = (coverPosition - agentPosition).GetNormalized();
+		coverRequest.SetCoverBodyDirection(coverNormal, directionAgentIsMovingIn);
+	}
+	else
+	{
+		// Give hints to the animation system for sliding into cover
+		SetDesiredBodyDirectionAtTarget(-coverNormal); // TODO: Change this to something like DesiredCoverLocation when old cover alignment method is not used anymore
+
+		// Update the desired cover body direction while we're further
+		// away from the cover than a certain threshold.
+		// The threshold is there to prevent us from setting the cover
+		// body direction while being very close, because we could
+		// by accident overshoot slightly and set the wrong direction.
+
+		if (agentPosition.GetSquaredDistance(coverPosition) > square(1.0f) ||
+			coverRequest.coverBodyDirection == eCoverBodyDirection_Unspecified)
+		{
+			// Turn the body towards the direction we're coming from.
+			// This is because we know that the direction we're coming from
+			// was traversable and therefor makes somewhat sense to look
+			// towards. If we look in the direction we're running towards,
+			// or in the direction of our target we might end up with
+			// characters looking straight into the wall.
+
+			const Vec3 directionAgentIsComingFrom = (agentPosition - coverPosition).GetNormalized();
+			coverRequest.SetCoverBodyDirection(coverNormal, directionAgentIsComingFrom);
+		}
+
+		enum
+		{
+			MovingIntoLowCover = 1,
+		};
+
+		SetMovementContext(MovingIntoLowCover);
+	}
+}
+
 //
 //----------------------------------------------------------------------------------------------
 EAimState CPipeUser::GetAimState() const
@@ -4504,11 +4430,6 @@ const SAIActorTargetRequest* CPipeUser::GetActiveActorTargetRequest() const
 void CPipeUser::ClearActorTargetRequest()
 {
 	SAFE_DELETE(m_pActorTargetRequest);
-}
-
-void CPipeUser::DebugDrawCoverUser()
-{
-	m_coverUser.DebugDraw();
 }
 
 void CPipeUser::HandleVisualStimulus(SAIEVENT* pAIEvent)

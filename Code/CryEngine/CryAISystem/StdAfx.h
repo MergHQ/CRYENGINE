@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #if !defined(AFX_STDAFX_H__81DAABA0_0054_42BF_8696_D99BA6832D03__INCLUDED_)
 #define AFX_STDAFX_H__81DAABA0_0054_42BF_8696_D99BA6832D03__INCLUDED_
@@ -66,6 +66,9 @@
 #include "CryAISystem/NavigationSystem/NavigationIdTypes.h"
 
 #include "XMLUtils.h"
+
+//Schematyc includes
+#include <CrySchematyc/CoreAPI.h>
 
 #include "Environment.h"
 

@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "AIDebugRenderer.h"
@@ -594,8 +594,9 @@ void CAIDebugRenderer::DrawWireFOVCone(const Vec3& vPos, const Vec3& vDir, float
 	Matrix33 base;
 	base.SetRotationVDir(vDir);
 
-	float coneRadius = sinf(fFOV) * fRadius;
-	float coneHeight = cosf(fFOV) * fRadius;
+	const float halfFOV = fFOV * 0.5f;
+	const float coneRadius = sinf(halfFOV) * fRadius;
+	const float coneHeight = cosf(halfFOV) * fRadius;
 
 	for (unsigned int i = 0; i < npts; i++)
 	{
@@ -607,7 +608,7 @@ void CAIDebugRenderer::DrawWireFOVCone(const Vec3& vPos, const Vec3& vDir, float
 
 	for (unsigned int i = 0; i < npts2; i++)
 	{
-		float a = -fFOV + ((float)i / (float)(npts2 - 1)) * (fFOV * 2);
+		float a = -halfFOV + ((float)i / (float)(npts2 - 1)) * fFOV;
 		float rx = sinf(a) * fRadius;
 		float ry = cosf(a) * fRadius;
 		pointsx[i] = vPos + base.TransformVector(Vec3(rx, ry, 0));

@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 /********************************************************************
    -------------------------------------------------------------------------
@@ -346,7 +346,7 @@ void CAILightManager::DebugDraw()
 			Vec3 conePos = light.pos + light.dir * coneHeight;
 			dc->DrawLine(light.pos, c, light.pos + light.dir * light.radius, c);
 			dc->DrawCone(conePos, -light.dir, coneRadius, coneHeight, ct);
-			dc->DrawWireFOVCone(light.pos, light.dir, light.radius, light.fov, c);
+			dc->DrawWireFOVCone(light.pos, light.dir, light.radius, light.fov * 2.0f, c);
 		}
 
 		dc->Draw3dLabel(light.pos, 1.1f, "DYN %s\n%s", g_szLightLevels[(int)light.level], g_szLightType[(int)light.type]);

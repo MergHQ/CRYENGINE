@@ -16,6 +16,7 @@ History:
 #include <CryMath/Cry_GeoOverlap.h>
 #include <IActorSystem.h>
 #include <IMovementController.h>
+#include <CryAISystem/IAIObjectManager.h>
 #include <IGameObjectSystem.h>
 #include <IVehicleSystem.h>
 #include <GameRules.h>
@@ -350,7 +351,7 @@ void CGunTurret::OnDestroyed()
 {
 	CWeapon::OnDestroyed();
 
-	GetEntity()->RegisterInAISystem(AIObjectParams(0)); // Remove AI object
+	gEnv->pAISystem->GetAIObjectManager()->RemoveObjectByEntityId(GetEntityId());
 
 	if (m_fm2)
 	{
@@ -2001,8 +2002,7 @@ void CGunTurret::CreateAIRepresentation()
 {
 	IEntity* entity = GetEntity();
 	AIObjectParams params(AIOBJECT_TARGET, NULL, GetEntityId());
-	entity->RegisterInAISystem(AIObjectParams(0)); // Remove any existing AI object for entity
-	entity->RegisterInAISystem(params);
+	gEnv->pAISystem->GetAIObjectManager()->CreateAIObject(params);
 
 	if(IAIObject* aiObject = entity->GetAI())
 	{

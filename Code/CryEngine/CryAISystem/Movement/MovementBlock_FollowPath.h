@@ -1,9 +1,6 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #pragma once
-
-#ifndef MovementBlock_FollowPath_h
-#define MovementBlock_FollowPath_h
 
 #include "MovementPlan.h"
 #include <CryAISystem/MovementStyle.h>
@@ -22,11 +19,7 @@ public:
 	virtual void                    End(IMovementActor& actor);
 	virtual Movement::Block::Status Update(const MovementUpdateContext& context);
 
-	void                            UpdateLooking(const MovementUpdateContext& context, const bool targetReachable, const float pathDistanceToEnd, const Vec3& followTargetPosition);
 	virtual const char*             GetName() const { return "FollowPath"; }
-
-private:
-	void UpdateCoverLocations(CPipeUser& pipeUser);
 
 private:
 	CNavPath                         m_path;
@@ -35,9 +28,7 @@ private:
 	std::shared_ptr<Vec3>            m_lookTarget;
 	float                            m_finishBlockEndDistance;
 	float                            m_accumulatedPathFollowerFailureTime;
-	bool                             m_endsInCover;
+	bool                             m_bLastFollowBlock;
 };
 }
 }
-
-#endif // MovementBlock_FollowPath_h

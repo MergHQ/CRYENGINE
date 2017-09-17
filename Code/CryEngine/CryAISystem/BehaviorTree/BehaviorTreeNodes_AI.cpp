@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "BehaviorTreeNodes_AI.h"
@@ -929,8 +929,11 @@ private:
 		{
 			assert(point.flags & eTPDF_CoverID);
 
-			assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
-			       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pipeUser.GetAIObjectID()));
+			if (gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) && gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) != pipeUser.GetEntityID())
+			{
+				// Found cover was occupied by someone else in the meantime
+				return Failure;
+			}
 
 			pipeUser.SetCoverRegister(point.coverID);
 			return Success;

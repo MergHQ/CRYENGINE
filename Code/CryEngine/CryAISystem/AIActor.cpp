@@ -1,13 +1,9 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "AIActor.h"
 #include "PipeUser.h"
-#include "GoalOp.h"
-#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
-#include <CryAISystem/BehaviorTree/Node.h>
-#include <CryAISystem/BehaviorTree/XmlLoader.h>
-#include "BehaviorTree/BehaviorTreeNodes_AI.h"
+
 #include "TargetSelection/TargetTrackManager.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include "Group/GroupManager.h"
@@ -16,13 +12,169 @@
 #include <CryCore/CryCrc32.h>
 #include <CryEntitySystem/IEntity.h>
 
+#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/VisionMapTypes.h>
+
 #include <limits>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
 
 static const float UNINITIALIZED_COS_CACHE = 2.0f;
+
+//////////////////////////////////////////////////////////////////////////
+// AI Actor Collision Avoidance
+//////////////////////////////////////////////////////////////////////////
+
+CActorCollisionAvoidance::CActorCollisionAvoidance(CAIActor* pActor)
+	: m_pActor(pActor)
+	, m_radiusIncrement(0.0f)
+{
+	gAIEnv.pCollisionAvoidanceSystem->RegisterAgent(this);
+}
+
+CActorCollisionAvoidance::~CActorCollisionAvoidance()
+{
+	gAIEnv.pCollisionAvoidanceSystem->UnregisterAgent(this);
+}
+
+void CActorCollisionAvoidance::Reset()
+{
+	m_radiusIncrement = 0.0f;
+}
+
+void CActorCollisionAvoidance::Serialize(TSerialize ser)
+{
+	ser.BeginGroup("CollisionAvoidance");
+	{
+		ser.Value("m_radiusIncrement", m_radiusIncrement);
+	}
+	ser.EndGroup();
+}
+
+NavigationAgentTypeID CActorCollisionAvoidance::GetNavigationTypeId() const
+{
+	return m_pActor->GetNavigationTypeID();
+}
+
+const char* CActorCollisionAvoidance::GetName() const
+{
+	return m_pActor->GetName();
+}
+
+ICollisionAvoidanceAgent::TreatType CActorCollisionAvoidance::GetTreatmentType() const
+{
+	if (!m_pActor->IsEnabled() || !m_pActor->GetMovementAbility().collisionAvoidanceParticipation)
+		return ICollisionAvoidanceAgent::TreatType::None;
+
+	uint16 aiType = m_pActor->GetAIType();
+	if (aiType == AIOBJECT_PLAYER)
+	{
+		// player is always treated only as obstacle
+		return ICollisionAvoidanceAgent::TreatType::Obstacle;
+	}
+
+	if ((aiType == AIOBJECT_ALIENTICK) || (aiType == AIOBJECT_ACTOR) || (aiType == AIOBJECT_INFECTED))
+	{
+		const float targetCutoff = gAIEnv.CVars.CollisionAvoidanceTargetCutoffRange;
+		const float pathEndCutoff = gAIEnv.CVars.CollisionAvoidancePathEndCutoffRange;
+		const float smartObjectCutoff = gAIEnv.CVars.CollisionAvoidanceSmartObjectCutoffRange;
+
+		CPipeUser* pPipeUser = m_pActor->CastToCPipeUser();
+
+		bool bIsMoving = (fabs_tpl(m_pActor->m_State.fDesiredSpeed) > 0.0001f);
+		bool bCuttoff = (m_pActor->m_State.fDistanceFromTarget < targetCutoff)
+			|| (m_pActor->m_State.fDistanceToPathEnd < pathEndCutoff)
+			|| (pPipeUser && pPipeUser->GetPendingSmartObjectID() && (m_pActor->m_State.fDistanceToPathEnd < smartObjectCutoff));
+
+		return (bIsMoving && !bCuttoff) ? ICollisionAvoidanceAgent::TreatType::Agent : ICollisionAvoidanceAgent::TreatType::Obstacle;
+	}
+	return ICollisionAvoidanceAgent::TreatType::None;
+}
+
+void CActorCollisionAvoidance::InitializeCollisionAgent(CCollisionAvoidanceSystem::SAgentParams& agent) const
+{
+	const float forcedSpeed = gAIEnv.CVars.DebugCollisionAvoidanceForceSpeed;
+	const bool bUseForcedSpeed = fabs_tpl(forcedSpeed) > 0.0001f;
+
+	float minSpeed;
+	float maxSpeed;
+	float normalSpeed;
+
+	m_pActor->GetMovementSpeedRange(m_pActor->m_State.fMovementUrgency, false, normalSpeed, minSpeed, maxSpeed);
+
+	agent.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
+	if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
+		agent.radius += m_radiusIncrement;
+	agent.maxSpeed = min(m_pActor->m_State.fDesiredSpeed, maxSpeed);
+	agent.maxAcceleration = min(agent.maxAcceleration, m_pActor->m_movementAbility.maxAccel);
+	agent.currentLocation = m_pActor->GetPhysicsPos();
+	agent.currentVelocity = Vec2(m_pActor->GetVelocity());
+
+	agent.desiredVelocity = bUseForcedSpeed ? Vec2(m_pActor->GetMoveDir() * forcedSpeed) : Vec2(m_pActor->m_State.vMoveDir * m_pActor->m_State.fDesiredSpeed);
+	agent.currentLookDirection = Vec2(agent.desiredVelocity);
+}
+
+void CActorCollisionAvoidance::InitializeCollisionObstacle(CCollisionAvoidanceSystem::SObstacleParams& obstacle) const
+{
+	obstacle.currentLocation = m_pActor->GetPhysicsPos();
+	obstacle.currentVelocity = Vec2(m_pActor->GetVelocity());
+	obstacle.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
+}
+	
+
+void CActorCollisionAvoidance::ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime)
+{
+	m_pActor->m_State.allowStrafing = false;
+	m_pActor->ResetBodyTargetDir();
+
+	const Vec3 currentVelocity(m_pActor->m_State.vMoveDir * m_pActor->m_State.fDesiredSpeed);
+	const Vec3 avoidanceVelocity3D(avoidanceVelocity.x, avoidanceVelocity.y, currentVelocity.z);
+
+	if ((avoidanceVelocity - Vec2(currentVelocity)).GetLength2() >= 0.000001f)
+	{
+		float speedSq = avoidanceVelocity3D.len2();
+
+		if (m_pActor->m_State.bodyOrientationMode != FullyTowardsAimOrLook)
+		{
+			m_pActor->m_State.allowStrafing = true;
+			m_pActor->SetBodyTargetDir(m_pActor->m_State.vMoveDir);
+		}
+
+		if (speedSq > 0.000001f)
+		{
+			float speed = sqrt_tpl(speedSq);
+
+			m_pActor->m_State.vMoveDir = avoidanceVelocity3D / speed;
+			m_pActor->m_State.fDesiredSpeed = speed;
+		}
+		else
+		{
+			m_pActor->m_State.vMoveDir.zero();
+			m_pActor->m_State.fDesiredSpeed = 0.0f;
+		}
+
+		m_pActor->m_State.vMoveTarget.zero();
+	}
+
+	if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
+	{
+		if (m_pActor->m_State.fDesiredSpeed > 0.5f)
+		{
+			m_radiusIncrement = min(
+				m_radiusIncrement + (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.CollisionAvoidanceRadiusIncrementIncreaseRate * updateTime),
+				m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement
+			);
+		}
+		else
+		{
+			m_radiusIncrement = max(
+				m_radiusIncrement - (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.CollisionAvoidanceRadiusIncrementDecreaseRate * updateTime),
+				0.0f
+			);
+		}
+	}
+}
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -49,8 +201,8 @@ CAIActor::CAIActor()
 	, m_stimulusStartTime(-100.f)
 	, m_activeCoordinationCount(0)
 	, m_navigationTypeID(0)
-	, m_currentCollisionAvoidanceRadiusIncrement(0.0f)
 	, m_runningBehaviorTree(false)
+	, m_collisionAvoidanceAgent(this)
 {
 	_fastcast_CAIActor = true;
 
@@ -315,7 +467,7 @@ void CAIActor::Reset(EObjectResetType type)
 
 	m_activeCoordinationCount = 0;
 
-	m_currentCollisionAvoidanceRadiusIncrement = 0.0f;
+	m_collisionAvoidanceAgent.Reset();
 }
 
 //
@@ -1190,10 +1342,10 @@ void CAIActor::Serialize(TSerialize ser)
 		m_navigationTypeID = NavigationAgentTypeID(navigationTypeId);
 	}
 
-	ser.Value("m_currentCollisionAvoidanceRadiusIncrement", m_currentCollisionAvoidanceRadiusIncrement);
-
 	ser.Value("m_initialPosition.isValid", m_initialPosition.isValid);
 	ser.Value("m_initialPosition.pos", m_initialPosition.pos);
+
+	m_collisionAvoidanceAgent.Serialize(ser);
 }
 
 void CAIActor::SetAttentionTarget(CWeakRef<CAIObject> refTarget)

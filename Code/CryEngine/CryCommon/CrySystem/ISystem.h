@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #pragma once
 
@@ -941,6 +941,11 @@ struct SSystemGlobalEnvironment
 		bEditorGameMode = isEditorGameMode;
 	}
 
+	ILINE void SetIsEditorSimulationMode(bool isEditorSimulationMode)
+	{
+		bEditorSimulationMode = isEditorSimulationMode;
+	}
+
 	ILINE void SetIsDedicated(bool isDedicated)
 	{
 	#if defined(DEDICATED_SERVER)
@@ -972,6 +977,24 @@ struct SSystemGlobalEnvironment
 		return bEditorGameMode;
 #else
 		return false;
+#endif
+	}
+
+	ILINE const bool IsEditorSimulationMode() const
+	{
+#if CRY_PLATFORM_DESKTOP
+		return bEditorSimulationMode;
+#else
+		return false;
+#endif
+	}
+
+	ILINE const bool IsGameOrSimulation() const
+	{
+#if CRY_PLATFORM_DESKTOP
+		return !bEditor || bEditorGameMode || bEditorSimulationMode;
+#else
+		return true;
 #endif
 	}
 
@@ -1041,6 +1064,7 @@ private:
 	bool bEditor;          //!< Engine is running under editor.
 	bool bEditorGameMode;  //!< Engine is in editor game mode.
 	bool bDedicated;       //!< Engine is in dedicated.
+	bool bEditorSimulationMode; //!< Engine is in editor Physics/AI simulation mode.
 #endif
 
 	bool m_isFMVPlaying;
@@ -1468,6 +1492,9 @@ struct ISystem
 	//! some events such as mouse movement in a CryPhysics assert.
 	//! OBS2: it will always return false, if asserts are disabled or ignored.
 	virtual bool IsAssertDialogVisible() const = 0;
+
+	//! Returns true if the system is loading a level currently
+	virtual bool IsLoading() = 0;
 
 	//! Returns address controlled by sys_asserts CVar, if available.
 	//! The value at the address shall be non-zero if asserts are enabled.

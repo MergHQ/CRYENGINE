@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "GameSerialize.h"
@@ -720,8 +720,17 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 		gEnv->pEntitySystem->SendEventToAll(resetEvent);
 
 	//tell existing entities that serialization starts
+	IEntityItPtr pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
+	pEntityIterator->MoveFirst();
+
 	SEntityEvent serializeEvent(ENTITY_EVENT_PRE_SERIALIZE);
-	gEnv->pEntitySystem->SendEventToAll(serializeEvent);
+	while (IEntity* pEntity = pEntityIterator->Next())
+	{
+		if (gEnv->pEntitySystem->ShouldSerializedEntity(pEntity))
+		{
+			pEntity->SendEvent(serializeEvent);
+		}
+	}
 
 	loadEnvironment.m_checkpoint.Check("PreSerialize Event");
 
@@ -1564,8 +1573,17 @@ bool CGameSerialize::LoadLevel(SLoadEnvironment& loadEnv, SGameStartParams& star
 	loadEnv.m_bHaveReserved = true;
 	ReserveEntityIds(loadEnv.m_basicEntityData);
 
+	IEntityItPtr pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
+	pEntityIterator->MoveFirst();
+
 	SEntityEvent serializeEvent(ENTITY_EVENT_PRE_SERIALIZE);
-	gEnv->pEntitySystem->SendEventToAll(serializeEvent);
+	while (IEntity* pEntity = pEntityIterator->Next())
+	{
+		if (gEnv->pEntitySystem->ShouldSerializedEntity(pEntity))
+		{
+			pEntity->SendEvent(serializeEvent);
+		}
+	}
 
 	return true;
 }

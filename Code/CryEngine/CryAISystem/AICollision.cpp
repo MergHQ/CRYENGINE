@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "AICollision.h"
@@ -119,6 +119,26 @@ bool OverlapCylinder(const Lineseg& lineseg, float radius, const std::vector<IPh
 			return true;
 	}
 	return false;
+}
+
+//====================================================================
+// FindFloor
+//====================================================================
+bool FindFloor(const Vec3& position, Vec3& floor)
+{
+	const Vec3 dir = Vec3(0.0f, 0.0f, -(WalkabilityFloorDownDist + WalkabilityFloorUpDist));
+	const Vec3 start = position + Vec3(0, 0, WalkabilityFloorUpDist);
+
+	const RayCastResult& result = gAIEnv.pRayCaster->Cast(RayCastRequest(start, dir, AICE_ALL,
+		rwi_stop_at_pierceable | rwi_colltype_any(geom_colltype_player)));
+
+	if (!result || (result[0].dist < 0.0f))
+	{
+		return false;
+	}
+
+	floor = Vec3(start.x, start.y, start.z - result[0].dist);
+	return true;
 }
 
 //===================================================================

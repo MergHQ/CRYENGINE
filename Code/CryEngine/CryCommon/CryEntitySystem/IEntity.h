@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #pragma once
 
@@ -712,8 +712,6 @@ public:
 	virtual bool        HasAI() const = 0;
 	virtual tAIObjectID GetAIObjectID() const = 0;
 	virtual void        SetAIObjectID(tAIObjectID id) = 0;
-	//////////////////////////////////////////////////////////////////////////
-	virtual bool        RegisterInAISystem(const AIObjectParams& params) = 0;
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Retrieve access to the rendering functionality of the Entity.

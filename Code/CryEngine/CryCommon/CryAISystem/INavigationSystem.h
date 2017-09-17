@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #ifndef __INavigationSystem_h__
 #define __INavigationSystem_h__
@@ -6,6 +6,7 @@
 #pragma once
 
 #include <CryAISystem/IMNM.h>
+#include <CryAISystem/NavigationSystem/MNMNavMesh.h>
 #include <CryAISystem/NavigationSystem/NavigationIdTypes.h>
 #include <functional>
 
@@ -33,8 +34,6 @@ struct INavigationSystemUser
 
 namespace MNM
 {
-struct INavMesh;
-
 namespace TileGenerator
 {
 struct IExtension;
@@ -193,6 +192,14 @@ struct INavigationSystem
 
 	virtual bool   IsLocationContainedWithinTriangleInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float downRange, float upRange) const = 0;
 	virtual size_t GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, float minIslandArea = 0.f) const = 0;
+	
+	//! Performs raycast on navmesh.
+	//! \param agentTypeID navigation agent type Id
+	//! \param startPos Starting position of the ray
+	//! \param endPos End position of the ray
+	//! \param pOutHit Optional pointer for a return value of additional information about the hit. This structure is valid only when the hit is reported. 
+	//! \return Returns true if the ray is hits navmesh boundary before end position.
+	virtual bool   NavmeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, MNM::SRayHitOutput* pOutHit) const = 0;
 
 	//! Returns all borders (unconnected edges) in the specified AABB.
 	//! There are 3 Vec3's per border edge, vert 0, vert 1, and a normal pointing out from the edge.

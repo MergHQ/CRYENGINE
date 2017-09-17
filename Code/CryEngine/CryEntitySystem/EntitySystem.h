@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  File name:   EntitySystem.h
@@ -416,7 +416,6 @@ public:
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) final;
 
 private: // -----------------------------------------------------------------
-	void DoPrePhysicsUpdate();
 	void DoUpdateLoop(float fFrameTime);
 
 	void DeleteEntity(CEntity* pEntity);

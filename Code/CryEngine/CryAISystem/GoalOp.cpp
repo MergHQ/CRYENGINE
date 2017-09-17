@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "GoalOp.h"
@@ -2861,7 +2861,7 @@ EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 							else if (point.flags & eTPDF_CoverID)
 							{
 								assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
-								       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetAIObjectID()));
+								       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetEntityID()));
 
 								pPipeUser->SetCoverRegister(point.coverID);
 
@@ -3007,7 +3007,7 @@ void COPTacticalPos::QueryDryUpdate(CPipeUser* pPipeUser)
 					else if (point.flags & eTPDF_CoverID)
 					{
 						assert(!gAIEnv.pCoverSystem->IsCoverOccupied(point.coverID) ||
-						       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetAIObjectID()));
+						       (gAIEnv.pCoverSystem->GetCoverOccupant(point.coverID) == pPipeUser->GetEntityID()));
 
 						pPipeUser->SetCoverRegister(point.coverID);
 					}

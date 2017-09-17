@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #ifndef _CAISYSTEM_H_
 #define _CAISYSTEM_H_
@@ -30,7 +30,7 @@ typedef std::vector<Vec3> ListPositions;
 #include "HideSpot.h"
 #include "VisionMap.h"
 #include "Group/Group.h"
-#include "Factions/FactionMap.h"
+#include "Factions/FactionSystem.h"
 #include "AIObjectManager.h"
 #include "GlobalPerceptionScaleHandler.h"
 #include "ClusterDetector.h"
@@ -66,6 +66,11 @@ class ICentralInterestManager;
 class CAIHideObject;
 
 class CScriptBind_AI;
+
+namespace Schematyc
+{
+	struct IEnvRegistrar;
+}
 
 #define AGENT_COVER_CLEARANCE 0.35f
 
@@ -403,6 +408,7 @@ public:
 
 	virtual void         DynOmniLightEvent(const Vec3& pos, float radius, EAILightEventType type, EntityId shooterId, float time = 5.0f);
 	virtual void         DynSpotLightEvent(const Vec3& pos, const Vec3& dir, float radius, float fov, EAILightEventType type, EntityId shooterId, float time = 5.0f);
+	virtual IAuditionMap* GetAuditionMap();
 	virtual IVisionMap*  GetVisionMap()  { return gAIEnv.pVisionMap; }
 	virtual IFactionMap& GetFactionMap() { return *gAIEnv.pFactionMap; }
 
@@ -489,7 +495,9 @@ public:
 
 	const AIActorSet& GetEnabledAIActorSet() const;
 
+	CFactionSystem*   GetFactionSystem() { return gAIEnv.pFactionSystem; }
 	void              AddToFaction(CAIObject* pObject, uint8 factionID);
+	void              OnFactionReactionChanged(uint8 factionOne, uint8 factionTwo, IFactionMap::ReactionType reaction);
 
 	IAIObject*        GetLeaderAIObject(int iGroupId);
 	IAIObject*        GetLeaderAIObject(IAIObject* pObject);
@@ -566,7 +574,6 @@ public:
 
 	void UpdateAmbientFire();
 	void UpdateExpensiveAccessoryQuota();
-	void UpdateCollisionAvoidance(const AIActorVector& agents, float updateTime);
 
 	// just steps through objects - for debugging
 	void         DebugOutputObjects(const char* txt) const;
@@ -1014,9 +1021,6 @@ private:
 
 	void        DetachFromTerritoryAllAIObjectsOfType(const char* szTerritoryName, unsigned short int nType);
 
-	void        UpdateCollisionAvoidanceRadiusIncrement(CAIActor* actor, float updateTime);
-	inline bool IsParticipatingInCollisionAvoidance(CAIActor* actor) const;
-
 	void        LoadCover(const char* szLevel, const char* szMission);
 	void        LoadMNM(const char* szLevel, const char* szMission, bool afterExporting);
 
@@ -1024,6 +1028,8 @@ private:
 	////////////////////////////////////////////////////////////////////
 
 private:
+	void RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar);
+
 	void RegisterFirecommandHandler(IFireCommandDesc* desc);
 
 	void CallReloadTPSQueriesScript();

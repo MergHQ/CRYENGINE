@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  File name:   AIEnvironment.cpp
@@ -40,8 +40,10 @@ SAIEnvironment::SAIEnvironment()
 	, pNavigationSystem(NULL)
 	, pBehaviorTreeManager(NULL)
 	, pGraftManager(NULL)
+	, pAuditionMap(NULL)
 	, pVisionMap(NULL)
 	, pFactionMap(NULL)
+	, pFactionSystem(NULL)
 	, pGroupManager(NULL)
 	, pCollisionAvoidanceSystem(NULL)
 	, pRayCaster(NULL)
@@ -73,6 +75,7 @@ void SAIEnvironment::ShutDown()
 {
 	SAFE_DELETE(pActorLookUp);
 	SAFE_DELETE(pFactionMap);
+	SAFE_DELETE(pFactionSystem);
 	SAFE_DELETE(pGoalOpFactory);
 	SAFE_DELETE(pStatsManager);
 	SAFE_DELETE(pTacticalPointSystem);

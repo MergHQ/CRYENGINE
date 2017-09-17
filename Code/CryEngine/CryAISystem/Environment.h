@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  File name:   AIEnvironment.h
@@ -52,10 +52,15 @@ namespace BehaviorTree
 class BehaviorTreeManager;
 class GraftManager;
 }
+namespace Perception
+{
+	class CAuditionMap;
+}
 class CVisionMap;
 class CFactionMap;
+class CFactionSystem;
 class CGroupManager;
-class CollisionAvoidanceSystem;
+class CCollisionAvoidanceSystem;
 class CAIObjectManager;
 class NavigationSystem;
 namespace AIActionSequence {
@@ -96,10 +101,12 @@ struct SAIEnvironment
 	NavigationSystem*                    pNavigationSystem;
 	BehaviorTree::BehaviorTreeManager*   pBehaviorTreeManager;
 	BehaviorTree::GraftManager*          pGraftManager;
+	Perception::CAuditionMap*            pAuditionMap;
 	CVisionMap*                          pVisionMap;
 	CFactionMap*                         pFactionMap;
+	CFactionSystem*                      pFactionSystem;
 	CGroupManager*                       pGroupManager;
-	CollisionAvoidanceSystem*            pCollisionAvoidanceSystem;
+	CCollisionAvoidanceSystem*           pCollisionAvoidanceSystem;
 	struct IMovementSystem*              pMovementSystem;
 	AIActionSequence::SequenceManager*   pSequenceManager;
 	ClusterDetector*                     pClusterDetector;

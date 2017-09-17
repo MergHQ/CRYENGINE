@@ -5,6 +5,14 @@
 namespace MNM
 {
 
+//! Structure used as output in navmesh raycast queries
+struct SRayHitOutput
+{
+	Vec3 position;
+	Vec3 normal2D;
+	float distance;
+};
+
 namespace NavMesh
 {
 

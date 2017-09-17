@@ -32,7 +32,7 @@
                 "type": "EPluginType::Native"
             },
             {
-                "path": "bin/Game.dll",
+                "path": "bin/Plugin.dll",
                 "type": "EPluginType::Managed"
             }
         ]

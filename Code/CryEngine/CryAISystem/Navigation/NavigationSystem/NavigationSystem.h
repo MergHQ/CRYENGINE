@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #ifndef __NavigationSystem_h__
 #define __NavigationSystem_h__
@@ -33,6 +33,8 @@
 #else
 	#define NAVIGATION_SYSTEM_PC_ONLY 0
 #endif
+
+struct RayCastRequest;
 
 #if DEBUG_MNM_ENABLED || NAVIGATION_SYSTEM_EDITOR_BACKGROUND_UPDATE
 class NavigationSystem;
@@ -523,6 +525,8 @@ public:
 	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) override;
 
 	virtual const MNM::INavMesh*             GetMNMNavMesh(NavigationMeshID meshID) const override;
+
+	virtual bool                             NavmeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, MNM::SRayHitOutput* pOutHit) const override;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const override { return m_offMeshNavigationManager; }
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() override       { return m_offMeshNavigationManager; }

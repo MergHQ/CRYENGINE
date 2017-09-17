@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "NavigationSystem.h"
@@ -2443,6 +2443,60 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	}
 
 	return MNM::TriangleID(0);
+}
+
+bool NavigationSystem::NavmeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, MNM::SRayHitOutput* pOutHit) const
+{
+	NavigationMeshID meshId = GetEnclosingMeshID(agentTypeID, startPos);
+	if (!meshId)
+		return false;
+
+	const NavigationMesh& mesh = GetMesh(meshId);
+	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
+	const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
+
+	const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
+	const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentTypeID);
+
+	const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
+	const MNM::real_t verticalDownwardRange(verticalRange);
+
+	AgentType agentTypeProperties;
+	const bool arePropertiesValid = GetAgentTypeProperties(agentTypeID, agentTypeProperties);
+	assert(arePropertiesValid);
+	const uint16 minZOffsetMultiplier(2);
+	const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
+	const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
+
+	MNM::TriangleID startTriangle = mesh.navMesh.GetTriangleAt(startPos - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange);
+	MNM::TriangleID endTriangle = mesh.navMesh.GetTriangleAt(toPos - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange);
+	
+	MNM::CNavMesh::RayCastRequest<512> request;
+	MNM::CNavMesh::ERayCastResult result = mesh.navMesh.RayCast(startPos - paramsGrid.origin, startTriangle, toPos - paramsGrid.origin, endTriangle, request);
+	
+	bool isHit = result == MNM::CNavMesh::eRayCastResult_Hit;
+	if (isHit && pOutHit)
+	{
+		const float t = request.hit.distance.as_float();
+		
+		pOutHit->distance = t;
+		pOutHit->position = startPos + (toPos - startPos) * t;
+
+		if (request.hit.triangleID != MNM::Constants::InvalidTriangleID && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
+		{
+			MNM::vector3_t verts[3];
+			mesh.navMesh.GetVertices(request.hit.triangleID, verts);
+			const Vec3 edgeDir = (verts[(request.hit.edge + 1) % 3] - verts[request.hit.edge]).GetVec3();
+			const Vec3 edgeNormal(-edgeDir.y, edgeDir.x, 0.0f);
+
+			pOutHit->normal2D = edgeNormal.GetNormalized();
+		}
+		else
+		{
+			pOutHit->normal2D = (startPos - toPos).GetNormalized();
+		}
+	}
+	return isHit;
 }
 
 const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) const

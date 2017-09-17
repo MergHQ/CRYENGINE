@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "SystemInit.h"
@@ -2463,6 +2463,7 @@ bool CSystem::Init()
 #if CRY_PLATFORM_DESKTOP
 	m_env.SetIsEditor(m_bEditor);
 	m_env.SetIsEditorGameMode(false);
+	m_env.SetIsEditorSimulationMode(false);
 #endif
 
 	m_env.bIsOutOfMemory = false;

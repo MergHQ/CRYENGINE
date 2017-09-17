@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "MovementPlanner.h"
@@ -8,10 +8,7 @@
 
 #include "MovementBlock_FollowPath.h"
 #include "MovementBlock_HarshStop.h"
-#include "MovementBlock_InstallAgentInCover.h"
-#include "MovementBlock_SetupPipeUserCoverInformation.h"
 #include "MovementBlock_TurnTowardsPosition.h"
-#include "MovementBlock_UninstallAgentFromCover.h"
 #include "MovementBlock_UseSmartObject.h"
 #include "MovementBlock_UseExactPositioning.h"
 
@@ -426,15 +423,10 @@ void GenericPlanner::ProduceMoveToPlan(const MovementUpdateContext& context)
 			}
 		}
 
-		if (context.actor.GetAdapter().IsInCover())
+		context.actor.GetActionAbilities().CreateStartBlocksForPlanner(m_request, [this](BlockPtr block)
 		{
-			m_plan.AddBlock(BlockPtr(new UninstallAgentFromCover(m_request.style.GetStance())));
-		}
-
-		if (m_request.style.IsMovingToCover())
-		{
-			m_plan.AddBlock<SetupActorCoverInformation>();
-		}
+			m_plan.AddBlock(block);
+		});
 
 		// Go through the full path from start to end and split it up into
 		// FollowPath & UseSmartObject blocks.
@@ -470,8 +462,7 @@ void GenericPlanner::ProduceMoveToPlan(const MovementUpdateContext& context)
 				const bool blockAfterThisIsUseExactPositioning = isLastNode && (m_request.style.GetExactPositioningRequest() != 0);
 				const bool blockAfterThisUsesSomeFormOfExactPositioning = isSmartObject || isCustomObject || blockAfterThisIsUseExactPositioning;
 				const float endDistance = blockAfterThisUsesSomeFormOfExactPositioning ? 2.5f : 0.0f;   // The value 2.5 meters was used prior to Crysis 3
-				const bool endsInCover = isLastNode && m_request.style.IsMovingToCover();
-				m_plan.AddBlock(BlockPtr(new FollowPath(path, endDistance, m_request.style, endsInCover)));
+				m_plan.AddBlock(BlockPtr(new FollowPath(path, endDistance, m_request.style, isLastNode)));
 
 				if (lastAddedSmartObjectBlock)
 				{
@@ -511,10 +502,10 @@ void GenericPlanner::ProduceMoveToPlan(const MovementUpdateContext& context)
 			}
 		}
 
-		if (m_request.style.IsMovingToCover())
+		context.actor.GetActionAbilities().CreateEndBlocksForPlanner(m_request, [this](BlockPtr block)
 		{
-			m_plan.AddBlock<InstallAgentInCover>();
-		}
+			m_plan.AddBlock(block);
+		});
 	}
 }
 

@@ -58,7 +58,7 @@ namespace Cry
 				desc.SetLabel("Pathfinder");
 				desc.SetDescription("Exposes the ability to get path finding callbacks");
 				//desc.SetIcon("icons:ObjectTypes/object.ico");
-				desc.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+				desc.SetComponentFlags({ IEntityComponent::EFlags::HiddenFromUser, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 				desc.AddMember(&CPathfindingComponent::m_maxAcceleration, 'maxa', "MaxAcceleration", "Maximum Acceleration", "Maximum possible physical acceleration", 10.f);
 			}
@@ -139,12 +139,6 @@ namespace Cry
 			virtual bool                  IsClosestToUseTheSmartObject(const OffMeshLink_SmartObject& smartObjectLink) const final { return false; }
 			virtual bool                  PrepareNavigateSmartObject(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) final { return false; }
 			virtual void                  InvalidateSmartObjectLink(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) final {}
-
-			virtual void                  SetInCover(const bool inCover) final {}
-			virtual void                  UpdateCoverLocations() final {}
-			virtual void                  InstallInLowCover(const bool inCover) final {}
-			virtual void                  SetupCoverInformation() final {}
-			virtual bool                  IsInCover() const final { return false; }
 
 			virtual bool                  GetDesignedPath(SShape& pathShape) const final { return false; }
 			virtual void                  CancelRequestedPath() final {}
