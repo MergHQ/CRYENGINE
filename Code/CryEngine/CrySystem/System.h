@@ -813,7 +813,6 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_profile_pagefaultsgraph;
 	ICVar* m_sys_profile_filter;
 	ICVar* m_sys_profile_filter_thread;
-	ICVar* m_sys_profile_allThreads;
 	ICVar* m_sys_profile_network;
 	ICVar* m_sys_profile_peak;
 	ICVar* m_sys_profile_peak_time;

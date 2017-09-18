@@ -68,7 +68,6 @@ CFrameProfileSystem::CFrameProfileSystem()
 	, m_bEnabled(false)
 	, m_bCollectionPaused(false)
 	, m_bCollect(false)
-	, m_nThreadSupport(0)
 	, m_bDisplay(false)
 	, m_bNetworkProfiling(false)
 	, m_bMemoryProfiling(true)
@@ -192,10 +191,8 @@ CFrameProfileSystem::~CFrameProfileSystem()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFrameProfileSystem::Init(int nThreadSupport)
+void CFrameProfileSystem::Init()
 {
-	m_nThreadSupport = nThreadSupport;
-
 	gEnv->callbackStartSection = &StartProfilerSection;
 	gEnv->callbackEndSection = &EndProfilerSection;
 
@@ -572,12 +569,6 @@ void CFrameProfileSystem::StartProfilerSection(CFrameProfilerSection* pSection)
 	TThreadId nThreadId = GetCurrentThreadId();
 	if (nThreadId != s_pFrameProfileSystem->GetMainThreadId())
 	{
-		if (!s_pFrameProfileSystem->m_nThreadSupport)
-		{
-			pSection->m_pFrameProfiler = nullptr;
-			return;
-		}
-
 		pSection->m_pFrameProfiler = s_pFrameProfileSystem->m_ProfilerThreads.GetThreadProfiler(pSection->m_pFrameProfiler, nThreadId);
 		if (!pSection->m_pFrameProfiler)
 			return;
@@ -804,7 +795,6 @@ void CFrameProfileSystem::EndCustomSection(CCustomProfilerSection* pSection)
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::StartFrame()
 {
-	SetThreadSupport(gEnv->pConsole->GetCVar("profile_allthreads")->GetIVal());
 	m_ProfilerThreads.Reset();
 
 	m_bCollect = m_bEnabled && !m_bCollectionPaused;
@@ -879,29 +869,16 @@ const char* CFrameProfileSystem::GetFullName(CFrameProfiler* pProfiler)
 
 	// Add thread name.
 	static char sFullName[256];
-	if (!pProfiler->m_pNextThread || m_nThreadSupport > 1)
+	const char* sThreadName = gEnv->pThreadManager->GetThreadName(pProfiler->m_threadId);
+	if (sThreadName)
 	{
-		const char* sThreadName = gEnv->pThreadManager->GetThreadName(pProfiler->m_threadId);
-		if (sThreadName)
-		{
-			cry_sprintf(sFullName, "%s @%s", sNameBuffer, sThreadName);
-		}
-		else
-		{
-			cry_sprintf(sFullName, "%s @%" PRI_THREADID, sNameBuffer, pProfiler->m_threadId);
-		}
+		cry_sprintf(sFullName, "%s @%s", sNameBuffer, sThreadName);
 	}
 	else
 	{
-		int nThreads = 1;
-		while (pProfiler->m_pNextThread)
-		{
-			pProfiler = pProfiler->m_pNextThread;
-			nThreads++;
-		}
-		cry_sprintf(sFullName, "%s @(%d threads)", sNameBuffer, nThreads);
+		cry_sprintf(sFullName, "%s @%" PRI_THREADID, sNameBuffer, pProfiler->m_threadId);
 	}
-
+	
 	sFullName[sizeof(sFullName) - 1] = 0;
 	return sFullName;
 }
@@ -1136,7 +1113,7 @@ void CFrameProfileSystem::EndFrame()
 			float aveValue;
 			float currentValue;
 
-			if (m_nThreadSupport == 1 && pFrameProfiler->m_threadId == mainThreadId)
+			if (pFrameProfiler->m_threadId == mainThreadId)
 			{
 				// Combine all non-main thread stats into 1
 				if (CFrameProfiler* pThread = pFrameProfiler->m_pNextThread)

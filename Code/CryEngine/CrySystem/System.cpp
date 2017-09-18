@@ -332,7 +332,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_profile_graph = nullptr;
 	m_sys_profile_filter = nullptr;
 	m_sys_profile_filter_thread = nullptr;
-	m_sys_profile_allThreads = nullptr;
 	m_sys_profile_network = nullptr;
 	m_sys_profile_peak = nullptr;
 	m_sys_profile_peak_time = nullptr;
@@ -785,7 +784,6 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_sys_profile_graphScale);
 	SAFE_RELEASE(m_sys_profile_filter);
 	SAFE_RELEASE(m_sys_profile_filter_thread);
-	SAFE_RELEASE(m_sys_profile_allThreads);
 	SAFE_RELEASE(m_sys_profile_network);
 	SAFE_RELEASE(m_sys_profile_peak);
 	SAFE_RELEASE(m_sys_profile_peak_time);

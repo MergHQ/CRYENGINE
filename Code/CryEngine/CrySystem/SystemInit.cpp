@@ -2715,6 +2715,8 @@ bool CSystem::Init()
 		// Set this as soon as the system cvars got initialized.
 		static_cast<CCryPak* const>(m_env.pCryPak)->SetLocalizationFolder(g_cvars.sys_localization_folder->GetString());
 
+		m_FrameProfileSystem.Init();
+
 		//////////////////////////////////////////////////////////////////////////
 		//Load engine files
 		//////////////////////////////////////////////////////////////////////////
@@ -2742,6 +2744,8 @@ bool CSystem::Init()
 		}
 
 		CryGetIMemReplay()->EnableAsynchMode();
+
+		m_FrameProfileSystem.Init();
 
 		m_pResourceManager->Init();
 
@@ -2818,9 +2822,7 @@ bool CSystem::Init()
 			{
 				pSysSpecCVar->Set(curSpecVal);
 			}
-		}
-
-		m_FrameProfileSystem.Init(m_sys_profile_allThreads->GetIVal());
+		}		
 
 		if (!m_startupParams.bSkipRenderer)
 		{
@@ -4901,7 +4903,7 @@ void CSystem::CreateSystemVars()
 	                                              "	-1: Profiling enabled, but not displayed\n"
 	                                              "Default is 0 (off)");
 
-	m_sys_profile_deep = REGISTER_INT("profile_deep", 0, 0, "Enable deep profiling\n"
+	m_sys_profile_deep = REGISTER_INT("profile_deep", 1, 0, "Enable deep profiling\n"
 	                                                        "Usage: profile_deep_profiling #\n"
 	                                                        "Where # sets profiling level to:\n"
 	                                                        "	0: Regions only\n"
@@ -4947,9 +4949,7 @@ void CSystem::CreateSystemVars()
 	                                          "Sets the scale of profiling histograms.\n"
 	                                          "Usage: profileGraphScale 100");
 	m_sys_profile_pagefaultsgraph = REGISTER_INT("profile_pagefaults", 0, 0,
-	                                             "Enable drawing of page faults graph.");
-	m_sys_profile_allThreads = REGISTER_INT("profile_allthreads", 1, 0,
-	                                        "Enables profiling of non-main threads.\n");
+	                                             "Enable drawing of page faults graph.");	
 	m_sys_profile_network = REGISTER_INT("profile_network", 0, 0,
 	                                     "Enables network profiling");
 	m_sys_profile_peak = REGISTER_FLOAT("profile_peak", 10.0f, 0,

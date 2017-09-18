@@ -657,7 +657,6 @@ void CSystem::RenderStatistics()
 		{
 			sSysProfileFilterThread = m_sys_profile_filter_thread->GetString();
 			m_FrameProfileSystem.SetSubsystemFilterThread(sSysProfileFilterThread.c_str());
-			m_sys_profile_allThreads->Set(1);
 		}
 		m_FrameProfileSystem.SetHistogramScale(m_sys_profile_graphScale->GetFVal());
 		m_FrameProfileSystem.SetDrawGraph(m_sys_profile_graph->GetIVal() != 0);
