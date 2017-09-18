@@ -8,7 +8,7 @@ Instructions on getting started with git can be found [here](http://docs.cryengi
 In order to compile, you will need to download some third party SDKs. They can be downloaded by running the *download_sdks.py* script.
 Or on Windows, the *download_sdks.exe* can be used alternatively.
 
-To compile the engine the provided WAF has to be used. See [here](http://docs.cryengine.com/display/CEPROG/Getting+Started+with+WAF) for more information.
+CMake must be used to compile the engine, see [here](http://docs.cryengine.com/display/CEPROG/CMake) for more information.
 
 
 ## Branches
