@@ -11,7 +11,7 @@ namespace pfx2
 {
 
 template<typename T>
-ILINE T* CParticleComponentRuntime::GetSubInstanceData(size_t instanceId, TInstanceDataOffset offset)
+ILINE T* CParticleComponentRuntime::GetSubInstanceData(uint instanceId, TInstanceDataOffset offset)
 {
 	const SComponentParams& params = GetComponentParams();
 	CRY_PFX2_ASSERT(offset < params.m_instanceDataStride);            // very likely to be an invalid offset

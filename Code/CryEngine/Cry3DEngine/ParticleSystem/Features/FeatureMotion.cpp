@@ -33,7 +33,6 @@ CFeatureMotionPhysics::CFeatureMotionPhysics()
 	, m_angularDragMultiplier(1.0f)
 	, m_uniformAcceleration(ZERO)
 	, m_uniformWind(ZERO)
-	, CParticleFeature(gpu_pfx2::eGpuFeatureType_Motion)
 {
 }
 
@@ -54,7 +53,7 @@ void CFeatureMotionPhysics::AddToComponent(CParticleComponent* pComponent, SComp
 			pEffector->AddToMotionFeature(pComponent, this);
 	}
 
-	if (auto pInt = GetGpuInterface())
+	if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Motion))
 	{
 		gpu_pfx2::SFeatureParametersMotionPhysics params;
 		params.gravity = m_gravity.GetBaseValue();

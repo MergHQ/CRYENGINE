@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLECONTAINER_H
-#define PARTICLECONTAINER_H
-
 #pragma once
 
 #include <CrySerialization/IArchive.h>
@@ -32,29 +29,15 @@ typedef TIOStream<TParticleId> IOPidStream;
 class CParticleContainer
 {
 public:
-	struct SParticleRangeIterator;
-
-	struct SSpawnEntry
-	{
-		uint32 m_count;
-		uint32 m_parentId;
-		float  m_ageBegin;
-		float  m_ageIncrement;
-		float  m_fractionBegin;
-		float  m_fractionIncrement;
-	};
-
-public:
 	CParticleContainer();
 	CParticleContainer(const CParticleContainer& copy);
 	~CParticleContainer();
 
-	void                              Resize(size_t newSize);
+	void                              Resize(uint32 newSize);
 	void                              ResetUsedData();
 	void                              AddParticleData(EParticleDataType type);
 	bool                              HasData(EParticleDataType type) const { return m_useData[type]; }
 	void                              AddParticle();
-	void                              AddRemoveParticles(TConstArray<SSpawnEntry> spawnEntries, TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 	void                              Trim();
 	void                              Clear();
 
@@ -83,7 +66,7 @@ public:
 	bool                              HasSpawnedParticles() const     { return GetNumSpawnedParticles() != 0; }
 	TParticleId                       GetFirstSpawnParticleId() const { return TParticleId(m_firstSpawnId); }
 	TParticleId                       GetLastParticleId() const       { return TParticleId(m_lastSpawnId); }
-	size_t                            GetMaxParticles() const         { return m_maxParticles; }
+	uint32                            GetMaxParticles() const         { return m_maxParticles; }
 	uint32                            GetNumSpawnedParticles() const  { return m_lastSpawnId - m_firstSpawnId; }
 	void                              ResetSpawnedParticles();
 	void                              RemoveNewBornFlags();
@@ -92,11 +75,12 @@ public:
 	SUpdateRange                      GetFullRange() const            { return SUpdateRange(0, GetLastParticleId()); }
 	SUpdateRange                      GetSpawnedRange() const         { return SUpdateRange(GetFirstSpawnParticleId(), GetLastParticleId()); }
 
-private:
-	void AddParticles(TConstArray<SSpawnEntry> spawnEntries);
-	void RemoveParticles(TConstArray<TParticleId> toRemove);
-	void MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
+	void                              AddParticles(TConstArray<SSpawnEntry> spawnEntries);
+	void                              RemoveParticles(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 
+private:
+	void                              MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
+	
 	StaticEnumArray<void*, EParticleDataType> m_pData;
 	StaticEnumArray<bool, EParticleDataType>  m_useData;
 	uint32 m_nextSpawnId;
@@ -112,4 +96,3 @@ private:
 #include "ParticleUpdate.h"
 #include "ParticleContainerImpl.h"
 
-#endif // PARTICLECONTAINER_H

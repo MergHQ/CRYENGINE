@@ -500,7 +500,7 @@ template<typename F>
 struct TElementCounts
 	: INumberVector<F, 3, TElementCounts<F>>
 {
-	F alive, updated, rendered;
+	F alive = 0, updated = 0, rendered = 0;
 };
 
 // pfx1 particle stats
@@ -510,15 +510,15 @@ struct TContainerCountsBase
 	TElementCounts<F> components;
 	struct SubEmitterCounts
 	{
-		F updated;
+		F updated = 0;
 	} subemitters;
 	struct ParticleCounts : TElementCounts<F>
 	{
-		F reiterate, reject, clip, collideTest, collideHit;
+		F reiterate = 0, reject = 0, clip = 0, collideTest = 0, collideHit = 0;
 	} particles;
 	struct PixelCounts
 	{
-		F updated, rendered;
+		F updated = 0, rendered = 0;
 	} pixels;
 };
 
@@ -527,7 +527,6 @@ struct TContainerCounts
 	: INumberVector<float, 14, TContainerCounts<F>>
 	, TContainerCountsBase<F>
 {
-	TContainerCounts() { this->SetZero(); }
 };
 
 template<typename F>
@@ -538,10 +537,8 @@ struct TParticleCounts
 	TElementCounts<F> emitters;
 	struct VolumeStats
 	{
-		F stat, dyn, error;
+		F stat = 0, dyn = 0, error = 0;
 	} volume;
-
-	TParticleCounts()  { this->SetZero(); }
 };
 
 typedef TContainerCounts<float> SContainerCounts;

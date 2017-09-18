@@ -57,17 +57,17 @@ namespace Cry
 				}
 			}
 
-			virtual void ProcessEvent(SEntityEvent& event) override
+		virtual void ProcessEvent(SEntityEvent& event) override
+		{
+			if (event.event == ENTITY_EVENT_UPDATE)
 			{
-				if (event.event == ENTITY_EVENT_UPDATE)
-				{
-					const CCamera& systemCamera = gEnv->pSystem->GetViewCamera();
+				const CCamera& systemCamera = gEnv->pSystem->GetViewCamera();
 
-					m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), m_fieldOfView.ToRadians(), m_nearPlane, m_farPlane, systemCamera.GetPixelAspectRatio());
-					m_camera.SetMatrix(GetWorldTransformMatrix());
+				m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), m_fieldOfView.ToRadians(), m_nearPlane, m_farPlane, systemCamera.GetPixelAspectRatio());
+				m_camera.SetMatrix(GetWorldTransformMatrix());
 
-					gEnv->pSystem->SetViewCamera(m_camera);
-				}
+				gEnv->pSystem->SetViewCamera(m_camera);
+			}
 				else if (event.event == ENTITY_EVENT_START_GAME || event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 				{
 					if (m_bActivateOnCreate && !IsActive())
@@ -124,7 +124,7 @@ namespace Cry
 
 				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
 				{
-					pDevice->SetAsynCameraCallback(nullptr);
+					pDevice->SetAsyncCameraCallback(nullptr);
 				}
 			}
 
@@ -150,7 +150,7 @@ namespace Cry
 
 				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
 				{
-					pDevice->SetAsynCameraCallback(this);
+					pDevice->SetAsyncCameraCallback(this);
 				}
 				
 				if (m_pAudioListener)

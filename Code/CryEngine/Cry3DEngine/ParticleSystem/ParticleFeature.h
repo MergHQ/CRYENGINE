@@ -26,36 +26,23 @@
 namespace pfx2
 {
 
-struct SGpuInterfaceRef
-{
-	SGpuInterfaceRef(gpu_pfx2::EGpuFeatureType feature) : feature(feature) {}
-	gpu_pfx2::EGpuFeatureType                          feature;
-	_smart_ptr<gpu_pfx2::IParticleFeatureGpuInterface> gpuInterface;
-};
-
 class CParticleFeature : public IParticleFeature, public _i_reference_target_t
 {
 public:
-	CParticleFeature() : m_gpuInterfaceRef(gpu_pfx2::eGpuFeatureType_None) {}
-	CParticleFeature(gpu_pfx2::EGpuFeatureType feature) : m_gpuInterfaceRef(feature) {}
-
 	// IParticleFeature
-	void                                    SetEnabled(bool enabled) override                 { m_enabled.Set(enabled); }
-	bool                                    IsEnabled() const override                        { return m_enabled; }
-	void                                    Serialize(Serialization::IArchive& ar) override;
-	uint                                    GetNumConnectors() const override                 { return 0; }
-	const char*                             GetConnectorName(uint connectorId) const override { return nullptr; }
-	void                                    ConnectTo(const char* pOtherName) override        {}
-	void                                    DisconnectFrom(const char* pOtherName) override   {}
-	void                                    SetGpuInterfaceNeeded(bool gpuInterface)          { m_gpuInterfaceNeeded = gpuInterface; }
-	uint                                    GetNumResources() const override                  { return 0; }
-	const char*                             GetResourceName(uint resourceId) const override   { return nullptr; }
-	gpu_pfx2::IParticleFeatureGpuInterface* GetGpuInterface() override;
+	void                        SetEnabled(bool enabled) override                 { m_enabled.Set(enabled); }
+	bool                        IsEnabled() const override                        { return m_enabled; }
+	void                        Serialize(Serialization::IArchive& ar) override;
+	uint                        GetNumConnectors() const override                 { return 0; }
+	const char*                 GetConnectorName(uint connectorId) const override { return nullptr; }
+	void                        ConnectTo(const char* pOtherName) override        {}
+	void                        DisconnectFrom(const char* pOtherName) override   {}
+	uint                        GetNumResources() const override                  { return 0; }
+	const char*                 GetResourceName(uint resourceId) const override   { return nullptr; }
 	// ~IParticleFeature
 
 	// Initialization
-	virtual bool              VersionValidate(CParticleComponent* pComponent)                           { return true; }
-	virtual void              ResolveDependency(CParticleComponent* pComponent)                         {}
+	virtual bool              ResolveDependency(CParticleComponent* pComponent)                         { return true; }
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
 	virtual EFeatureType      GetFeatureType()                                                          { return EFT_Generic; }
 	virtual bool              CanMakeRuntime(CParticleEmitter* pEmitter) const                          { return true; }
@@ -64,7 +51,7 @@ public:
 	virtual void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) {}
 
 	// EUL_InitSubInstance
-	virtual void InitSubInstance(CParticleComponentRuntime* pComponentRuntime, size_t firstInstance, size_t lastInstance) {}
+	virtual void InitSubInstances(const SUpdateContext& context, SUpdateRange instanceRange) {}
 
 	// EUL_GetExtents
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) {}
@@ -94,21 +81,26 @@ public:
 	virtual void PostUpdate(const SUpdateContext& context) {}
 
 	// EUL_ComputeBounds
-	virtual void ComputeBounds(IParticleComponentRuntime* pComponentRuntime, AABB& bounds) {}
+	virtual void ComputeBounds(CParticleComponentRuntime* pComponentRuntime, AABB& bounds) {}
 
 	// EUL_Render
 	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                            {}
 	virtual void ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                              {}
-	virtual void Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
+	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)          {}
+
+	// GPU interface
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const { }
+
+	gpu_pfx2::IParticleFeature* GetGpuInterface() { return m_gpuInterface; }
+	gpu_pfx2::IParticleFeature* MakeGpuInterface(CParticleComponent* pComponent, gpu_pfx2::EGpuFeatureType feature);
 
 protected:
 	void AddNoPropertiesLabel(Serialization::IArchive& ar);
 
 private:
-	SGpuInterfaceRef m_gpuInterfaceRef;
-	SEnable          m_enabled;
-	bool             m_gpuInterfaceNeeded;
+	SEnable                                m_enabled;
+	_smart_ptr<gpu_pfx2::IParticleFeature> m_gpuInterface;
 };
 
 ILINE ColorB HexToColor(uint hex)
@@ -130,9 +122,9 @@ static const ColorB colorLight      = HexToColor(0xfffdd0);
 static const ColorB colorAudio      = HexToColor(0xd671f7);
 static const ColorB colorGeneral    = HexToColor(0xececec);
 static const ColorB colorChild      = HexToColor(0xc0c0c0);
-static const ColorB colorProject    = HexToColor(0xc0c0c0);
+static const ColorB colorProject    = HexToColor(0xc080c0);
 static const ColorB colorGPU        = HexToColor(0x00e87e);
-static const ColorB colorComponent  = HexToColor(0x000000);
+static const ColorB colorComponent  = HexToColor(0x80c0c0);
 
 #define CRY_PFX2_DECLARE_FEATURE \
   struct SFeatureParams; \
@@ -140,6 +132,7 @@ static const ColorB colorComponent  = HexToColor(0x000000);
 
 #define CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, UseConnector, DefaultForType) \
   struct Type::SFeatureParams: SParticleFeatureParams { SFeatureParams() {                                               \
+    m_fullName = GroupName ": " FeatureName;                                                                             \
     m_groupName = GroupName;                                                                                             \
     m_featureName = FeatureName;                                                                                         \
     m_color = Color;                                                                                                     \

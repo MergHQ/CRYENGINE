@@ -13,9 +13,9 @@ namespace CryVR
 {
 namespace OpenVR {
 
-	float CPlugin_OpenVR::s_hmd_quad_distance = 0.25f;
-	float CPlugin_OpenVR::s_hmd_quad_width = 1.0f;
-	int CPlugin_OpenVR::s_hmd_quad_absolute = 1;
+	float CPlugin_OpenVR::s_hmd_quad_distance = 1.7f;
+	float CPlugin_OpenVR::s_hmd_quad_width = 2.8562;
+	int   CPlugin_OpenVR::s_hmd_quad_absolute = 0;
 
 CPlugin_OpenVR::~CPlugin_OpenVR()
 {

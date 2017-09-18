@@ -34,13 +34,9 @@ class CFeatureRenderGpuSprites : public CParticleRenderBase
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureRenderGpuSprites()
-		: CParticleRenderBase(gpu_pfx2::eGpuFeatureType_RenderGpu)
-	{}
-
 	virtual void         Serialize(Serialization::IArchive& ar) override;
 	virtual EFeatureType GetFeatureType() override { return EFT_Render; }
-	virtual void         ResolveDependency(CParticleComponent* pComponent) override;
+	virtual bool         ResolveDependency(CParticleComponent* pComponent) override;
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 
 private:
@@ -51,8 +47,6 @@ private:
 	};
 	typedef TValue<uint, THardLimits<1024, 1024*1024, ConvertNextPowerOfTwo>> UIntNextPowerOfTwo;
 
-	UIntNextPowerOfTwo    m_maxParticles = 128*1024;
-	UIntNextPowerOfTwo    m_maxNewBorns  = 8*1024;
 	gpu_pfx2::ESortMode   m_sortMode     = gpu_pfx2::ESortMode::None;
 	gpu_pfx2::EFacingMode m_facingMode   = gpu_pfx2::EFacingMode::Screen;
 	UFloat10              m_axisScale    = 1.0f;
@@ -70,8 +64,6 @@ void CFeatureRenderGpuSprites::AddToComponent(CParticleComponent* pComponent, SC
 void CFeatureRenderGpuSprites::Serialize(Serialization::IArchive& ar)
 {
 	CParticleFeature::Serialize(ar);
-	ar(m_maxParticles, "MaxParticles", "Max Particles");
-	ar(m_maxNewBorns, "MaxNewBorns", "Max New Particles");
 	ar(m_sortMode, "SortMode", "Sort Mode");
 	ar(m_facingMode, "FacingMode", "Facing Mode");
 
@@ -81,17 +73,16 @@ void CFeatureRenderGpuSprites::Serialize(Serialization::IArchive& ar)
 	ar(m_sortBias, "SortBias", "Sort Bias");
 }
 
-void CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
+bool CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
 {
-	gpu_pfx2::SComponentParams params;
-	params.usesGpuImplementation = true;
-	params.maxParticles = m_maxParticles;
-	params.maxNewBorns = m_maxNewBorns;
+	pComponent->ComponentParams().m_usesGPU = true;
+
+	gpu_pfx2::SComponentParams& params = pComponent->GPUComponentParams();
 	params.sortMode = m_sortMode;
 	params.facingMode = m_facingMode;
 	params.version = pComponent->GetEffect()->GetEditVersion();
 
-	pComponent->SetGPUComponentParams(params);
+	return true;
 }
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "GPU Particles", "Sprites", colorGPU);

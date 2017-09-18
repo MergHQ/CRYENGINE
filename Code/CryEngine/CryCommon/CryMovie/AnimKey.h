@@ -439,7 +439,7 @@ struct SCharacterKey : public STimeRangeKey
 		return m_endTime;
 	}
 
-	float GetAnimDuration() const
+	float GetCroppedAnimDuration() const
 	{
 		if ((m_startTime > 0.0f) && (m_endTime > 0.0f))
 		{
@@ -454,6 +454,11 @@ struct SCharacterKey : public STimeRangeKey
 			return min(m_defaultAnimDuration, m_endTime);
 		}
 
+		return m_defaultAnimDuration;
+	}
+
+	float GetAnimDuration() const
+	{
 		return m_defaultAnimDuration;
 	}
 

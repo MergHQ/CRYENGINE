@@ -19,14 +19,6 @@ struct CRY_ALIGN(CRY_PFX2_PARTICLES_ALIGNMENT) SCachedRenderObject
 {
 };
 
-CParticleRenderBase::CParticleRenderBase(gpu_pfx2::EGpuFeatureType type)
-	: CParticleFeature(type)
-	, m_renderObjectBeforeWaterId(-1)
-	, m_renderObjectAfterWaterId(-1)
-	, m_waterCulling(false)
-{
-}
-
 EFeatureType CParticleRenderBase::GetFeatureType()
 {
 	return EFT_Render;
@@ -68,7 +60,7 @@ void CParticleRenderBase::ResetRenderObjects(CParticleEmitter* pEmitter, CPartic
 	}
 }
 
-void CParticleRenderBase::Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
+void CParticleRenderBase::Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
@@ -133,7 +125,7 @@ void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticl
 	pEmitter->SetRenderObject(nullptr, threadId, renderObjectId);
 }
 
-void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
+void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
 {
 	const SComponentParams& params = pComponent->GetComponentParams();
 	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);

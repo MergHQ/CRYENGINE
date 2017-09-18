@@ -34,21 +34,17 @@ stl::TPoolAllocator<TPostUpdateParticlesJob>& GetPostJobPool()
 
 void CParticleJobManager::AddEmitter(CParticleEmitter* pEmitter)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
 
 	uint numComponents = 0;
-	for (auto& ref : pEmitter->GetRuntimes())
+	for (auto pRuntime : pEmitter->GetRuntimes())
 	{
-		auto pCpuRuntime = ref.pRuntime->GetCpuRuntime();
-		if (!pCpuRuntime)
-			continue;
-		const bool isActive = pCpuRuntime->IsActive();
-		const bool isChild = pCpuRuntime->IsChild();
-		if (isActive && !isChild)
+		if (!pRuntime->IsChild())
 		{
 			size_t refIdx = m_componentRefs.size();
 			m_firstGenComponentsRef.push_back(refIdx);
-			m_componentRefs.push_back(SComponentRef(pCpuRuntime));
+			m_componentRefs.push_back(SComponentRef(pRuntime));
 			SComponentRef& componentRef = m_componentRefs.back();
 			componentRef.m_firstChild = m_componentRefs.size();
 			componentRef.m_pPostSubUpdates = GetPostJobPool().New(m_componentRefs.size() - 1);
@@ -56,6 +52,8 @@ void CParticleJobManager::AddEmitter(CParticleEmitter* pEmitter)
 			AddComponentRecursive(pEmitter, refIdx);
 			numComponents++;
 		}
+		else if (pRuntime->GetGpuRuntime())
+			numComponents++;
 	}
 	if (numComponents)
 		m_emitterRefs.push_back(pEmitter);
@@ -67,11 +65,7 @@ void CParticleJobManager::AddComponentRecursive(CParticleEmitter* pEmitter, size
 
 	for (const auto& pChild : pParentComponentRuntime->GetComponent()->GetChildComponents())
 	{
-		auto pChildRuntime = pEmitter->GetRuntimeFor(pChild)->GetCpuRuntime();
-		if (!pChildRuntime)
-			continue;
-		const bool isActive = pChildRuntime->IsActive();
-		if (isActive)
+		if (auto pChildRuntime = pEmitter->GetRuntimeFor(pChild))
 		{
 			const SComponentParams& childParams = pChildRuntime->GetComponentParams();
 			m_componentRefs.push_back(SComponentRef(pChildRuntime));
@@ -98,7 +92,7 @@ void CParticleJobManager::AddDeferredRender(CParticleComponentRuntime* pRuntime,
 	m_deferredRenders.push_back(render);
 }
 
-void CParticleJobManager::ScheduleComputeVertices(IParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
+void CParticleJobManager::ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
 {
 	CParticleManager* pPartManager = static_cast<CParticleManager*>(gEnv->pParticleManager);
 
@@ -116,7 +110,7 @@ void CParticleJobManager::ScheduleComputeVertices(IParticleComponentRuntime* pCo
 
 void CParticleJobManager::KernelUpdateAll()
 {
-	if (m_firstGenComponentsRef.empty())
+	if (m_emitterRefs.empty())
 		return;
 
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
@@ -164,9 +158,10 @@ void CParticleJobManager::KernelUpdateAll()
 	else
 	{
 		// No threading
-		for (auto& componentRef : m_componentRefs)
+		for (auto pEmitter : m_emitterRefs)
 		{
-			componentRef.m_pComponentRuntime->UpdateAll();
+			for (auto pRuntime : pEmitter->GetRuntimes())
+				pRuntime->UpdateAll();
 		}
 	}
 }
@@ -203,16 +198,10 @@ void CParticleJobManager::Job_UpdateEmitter(uint emitterRefIdx)
 	auto& profiler = GetPSystem()->GetProfiler();
 	CParticleEmitter* pEmitter = m_emitterRefs[emitterRefIdx];
 
-	for (auto ref : pEmitter->GetRuntimes())
+	for (auto pRuntime : pEmitter->GetRuntimes())
 	{
-		if (auto pCpuRuntime = ref.pRuntime->GetCpuRuntime())
-		{
-			if (pCpuRuntime->IsActive())
-			{
-				profiler.AddEntry(pCpuRuntime, EPS_Jobs);
-				pCpuRuntime->UpdateAll();
-			}
-		}
+		profiler.AddEntry(pRuntime, EPS_Jobs);
+		pRuntime->UpdateAll();
 	}
 	m_updateState.SetStopped();
 }
@@ -241,7 +230,7 @@ void CParticleJobManager::Job_AddRemoveParticles(uint componentRefIdx)
 	GetPSystem()->GetProfiler().AddEntry(pRuntime, EPS_Jobs);
 
 	SUpdateContext context(pRuntime);
-	pRuntime->AddRemoveNewBornsParticles(context);
+	pRuntime->AddRemoveParticles(context);
 	ScheduleUpdateParticles(componentRefIdx);
 }
 

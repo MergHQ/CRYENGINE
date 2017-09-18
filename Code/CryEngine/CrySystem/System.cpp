@@ -114,6 +114,11 @@ WATERMARKDATA(_m);
 #include <CryCore/CrtDebugStats.h>
 #include "Interprocess/StatsAgent.h"
 
+#if CRY_PLATFORM_WINDOWS
+#include <timeapi.h>
+#include <algorithm>
+#endif
+
 // Define global cvars.
 SSystemCVars g_cvars;
 
@@ -332,7 +337,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_profile_graph = nullptr;
 	m_sys_profile_filter = nullptr;
 	m_sys_profile_filter_thread = nullptr;
-	m_sys_profile_allThreads = nullptr;
 	m_sys_profile_network = nullptr;
 	m_sys_profile_peak = nullptr;
 	m_sys_profile_peak_time = nullptr;
@@ -785,7 +789,6 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_sys_profile_graphScale);
 	SAFE_RELEASE(m_sys_profile_filter);
 	SAFE_RELEASE(m_sys_profile_filter_thread);
-	SAFE_RELEASE(m_sys_profile_allThreads);
 	SAFE_RELEASE(m_sys_profile_network);
 	SAFE_RELEASE(m_sys_profile_peak);
 	SAFE_RELEASE(m_sys_profile_peak_time);
@@ -874,6 +877,18 @@ void CSystem::ShutDown()
 #if CAPTURE_REPLAY_LOG
 	CryGetIMemReplay()->Stop();
 #endif
+
+	// Fix to improve wait() time within third party APIs using sleep()
+#if CRY_PLATFORM_WINDOWS
+	TIMECAPS tc;
+	UINT wTimerRes;
+	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR)
+	{
+		CryFatalError("Error while changing the system timer resolution!");
+	}
+	wTimerRes = std::min(std::max(tc.wPeriodMin, 1u), tc.wPeriodMax);
+	timeEndPeriod(wTimerRes);
+#endif // CRY_PLATFORM_WINDOWS
 }
 
 /////////////////////////////////////////////////////////////////////////////////

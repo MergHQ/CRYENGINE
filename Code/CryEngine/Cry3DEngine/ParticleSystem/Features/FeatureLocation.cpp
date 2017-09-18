@@ -32,7 +32,6 @@ public:
 	CFeatureLocationOffset()
 		: m_offset(ZERO)
 		, m_scale(1.0f)
-		, CParticleFeature(gpu_pfx2::eGpuFeatureType_LocationOffset)
 	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
@@ -40,15 +39,8 @@ public:
 		pComponent->AddToUpdateList(EUL_GetExtents, this);
 		pComponent->AddToUpdateList(EUL_GetEmitOffset, this);
 		pComponent->AddToUpdateList(EUL_InitUpdate, this);
+		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
 		m_scale.AddToComponent(pComponent, this);
-
-		if (auto pInt = GetGpuInterface())
-		{
-			gpu_pfx2::SFeatureParametersLocationOffset params;
-			params.offset = m_offset;
-			params.scale = m_scale.GetBaseValue();
-			pInt->SetParameters(params);
-		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -66,8 +58,8 @@ public:
 		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles());
 		auto modRange = m_scale.GetValues(context, sizes, EMD_PerInstance, true);
 
-		const size_t numInstances = context.m_runtime.GetNumInstances();
-		for (size_t i = 0; i < numInstances; ++i)
+		const uint numInstances = context.m_runtime.GetNumInstances();
+		for (uint i = 0; i < numInstances; ++i)
 		{
 			const TParticleId parentId = context.m_runtime.GetInstance(i).m_parentId;
 			float e = abs(sizes[parentId]) * modRange.Length();
@@ -111,6 +103,13 @@ public:
 		}
 	}
 
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	{
+		params.offset = m_offset;
+		params.scale.x = m_scale.GetValueRange(context)(0.5f);
+		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_LocationOffset;
+	}
+
 private:
 	Vec3 m_offset;
 	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
@@ -126,23 +125,12 @@ class CFeatureLocationBox : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureLocationBox()
-		: m_box(ZERO)
-		, CParticleFeature(gpu_pfx2::eGpuFeatureType_LocationBox)
-	{}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->AddToUpdateList(EUL_InitUpdate, this);
 		pComponent->AddToUpdateList(EUL_GetExtents, this);
+		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
 		m_scale.AddToComponent(pComponent, this);
-		if (auto pInt = GetGpuInterface())
-		{
-			gpu_pfx2::SFeatureParametersLocationBox params;
-			params.box = m_box;
-			params.scale = m_scale.GetBaseValue();
-			pInt->SetParameters(params);
-		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -154,12 +142,12 @@ public:
 
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
-		size_t numInstances = context.m_runtime.GetNumInstances();
+		uint numInstances = context.m_runtime.GetNumInstances();
 		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles());
 		auto modRange = m_scale.GetValues(context, sizes, EMD_PerInstance, true);
 		float avg = (modRange.start + modRange.end) * 0.5f;
 
-		for (size_t i = 0; i < numInstances; ++i)
+		for (uint i = 0; i < numInstances; ++i)
 		{
 			// Increase each dimension by 1 to include boundaries; works properly for boxes, rects, and lines
 			const TParticleId parentId = context.m_runtime.GetInstance(i).m_parentId;
@@ -196,8 +184,15 @@ public:
 		}
 	}
 
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	{
+		params.box = m_box;
+		params.scale.x = m_scale.GetValueRange(context)(0.5f);
+		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_LocationBox;
+	}
+
 private:
-	Vec3 m_box;
+	Vec3 m_box = ZERO;
 	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
 };
 
@@ -215,23 +210,15 @@ public:
 		: m_radius(0.0f)
 		, m_velocity(0.0f)
 		, m_axisScale(1.0f, 1.0f, 1.0f)
-		, CParticleFeature(gpu_pfx2::eGpuFeatureType_LocationSphere)
 	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->AddToUpdateList(EUL_InitUpdate, this);
 		pComponent->AddToUpdateList(EUL_GetExtents, this);
+		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
 		m_radius.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
-		if (auto pInt = GetGpuInterface())
-		{
-			gpu_pfx2::SFeatureParametersLocationSphere params;
-			params.scale = m_axisScale;
-			params.radius = m_radius.GetBaseValue();
-			params.velocity = m_velocity.GetBaseValue();
-			pInt->SetParameters(params);
-		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -258,13 +245,21 @@ public:
 			SphericalDist<false, true>(context);
 	}
 
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	{
+		params.scale = m_axisScale;
+		params.radius = m_radius.GetValueRange(context)(0.5f);
+		params.velocity = m_velocity.GetValueRange(context)(0.5f);
+		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_LocationSphere;
+	}
+
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
-		size_t numInstances = context.m_runtime.GetNumInstances();
+		uint numInstances = context.m_runtime.GetNumInstances();
 		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles());
 		auto modRange = m_radius.GetValues(context, sizes, EMD_PerInstance, true);
 
-		for (size_t i = 0; i < numInstances; ++i)
+		for (uint i = 0; i < numInstances; ++i)
 		{
 			// Increase each dimension by 1 to include sphere bounds; works properly for spheres and circles
 			const TParticleId parentId = context.m_runtime.GetInstance(i).m_parentId;
@@ -332,23 +327,15 @@ public:
 		, m_velocity(0.0f)
 		, m_axisScale(1.0f, 1.0f)
 		, m_axis(0.0f, 0.0f, 1.0f)
-		, CParticleFeature(gpu_pfx2::eGpuFeatureType_LocationCircle)
 	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->AddToUpdateList(EUL_InitUpdate, this);
 		pComponent->AddToUpdateList(EUL_GetExtents, this);
+		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
 		m_radius.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
-		if (auto pInt = GetGpuInterface())
-		{
-			gpu_pfx2::SFeatureParametersLocationCircle params;
-			params.scale = m_axisScale;
-			params.radius = m_radius.GetBaseValue();
-			params.velocity = m_velocity.GetBaseValue();
-			pInt->SetParameters(params);
-		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -376,13 +363,22 @@ public:
 			CircularDist<false, true>(context);
 	}
 
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	{
+		params.scale.x = m_axisScale.x;
+		params.scale.y = m_axisScale.y;
+		params.radius = m_radius.GetValueRange(context)(0.5f);
+		params.velocity = m_velocity.GetValueRange(context)(0.5f);
+		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_LocationCircle;
+	}
+
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
-		const size_t numInstances = context.m_runtime.GetNumInstances();
+		const uint numInstances = context.m_runtime.GetNumInstances();
 		TFloatArray sizes(*context.m_pMemHeap, context.m_parentContainer.GetMaxParticles()); 
 		auto modRange = m_radius.GetValues(context, sizes, EMD_PerInstance, true);
 
-		for (size_t i = 0; i < numInstances; ++i)
+		for (uint i = 0; i < numInstances; ++i)
 		{
 			const TParticleId parentId = context.m_runtime.GetInstance(i).m_parentId;
 			const Vec2 axisMax = m_axisScale * abs(scales[i] * sizes[parentId] * modRange.end) + Vec2(1.0f),
@@ -543,8 +539,8 @@ public:
 			const TIStream<IMeshObj*> parentMeshes = context.m_parentContainer.GetTIStream<IMeshObj*>(EPDT_MeshGeometry, emitterGeometry.m_pMeshObj);
 			const TIStream<IPhysicalEntity*> parentPhysics = context.m_parentContainer.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
 
-			size_t numInstances = context.m_runtime.GetNumInstances();
-			for (size_t i = 0; i < numInstances; ++i)
+			uint numInstances = context.m_runtime.GetNumInstances();
+			for (uint i = 0; i < numInstances; ++i)
 			{
 				if (hasParentParticles)
 				{
@@ -744,21 +740,13 @@ public:
 		, m_size(1.0f)
 		, m_rate(0.0f)
 		, m_octaves(1)
-		, CParticleFeature(gpu_pfx2::eGpuFeatureType_LocationNoise) {}
+	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->AddToUpdateList(EUL_InitUpdate, this);
+		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
 		m_amplitude.AddToComponent(pComponent, this);
-		if (auto pInt = GetGpuInterface())
-		{
-			gpu_pfx2::SFeatureParametersLocationNoise params;
-			params.amplitude = m_amplitude.GetBaseValue();
-			params.size = m_size;
-			params.rate = m_rate;
-			params.octaves = m_octaves;
-			pInt->SetParameters(params);
-		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -801,6 +789,15 @@ public:
 		}
 	}
 
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	{
+		params.amplitude = m_amplitude.GetValueRange(context)(0.5f);
+		params.noiseSize = m_size;
+		params.rate = m_rate;
+		params.octaves = m_octaves;
+		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_LocationNoise;
+	}
+	
 private:
 	// non-inline version with Vec4f conversion
 	ILINE static float SNoise(const Vec4 v)
@@ -900,8 +897,8 @@ public:
 
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
 	{
-		size_t numInstances = context.m_runtime.GetNumInstances();
-		for (size_t i = 0; i < numInstances; ++i)
+		uint numInstances = context.m_runtime.GetNumInstances();
+		for (uint i = 0; i < numInstances; ++i)
 		{
 			TParticleId parentId = context.m_runtime.GetInstance(i).m_parentId;
 			const Vec3 wSource = m_source.GetTarget(context, parentId, true);
@@ -1211,8 +1208,8 @@ public:
 	{
 		UpdateCameraData(context);
 		const float visibility = m_visibility.GetValueRange(context).end;
-		const size_t numInstances = context.m_runtime.GetNumInstances();
-		for (size_t i = 0; i < numInstances; ++i)
+		const uint numInstances = context.m_runtime.GetNumInstances();
+		for (uint i = 0; i < numInstances; ++i)
 		{
 			const Vec3 box = Vec3(m_camData.scrWidth.x, m_camData.scrWidth.y, 1.0f) * (visibility * scales[i]);
 			float extent = (box.x * 2.0f + 1.0f) * (box.y * 2.0f + 1.0f) * (box.z + 1.0f);

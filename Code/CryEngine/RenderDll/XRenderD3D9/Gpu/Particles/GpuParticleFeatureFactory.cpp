@@ -6,13 +6,8 @@
 #include "GpuParticleFeatureColor.h"
 #include "GpuParticleFeatureCollision.h"
 #include "GpuParticleFeatureField.h"
-#include "GpuParticleFeatureLifeTime.h"
-#include "GpuParticleFeatureLocation.h"
 #include "GpuParticleFeatureMotion.h"
 #include "GpuParticleFeatureFluidDynamics.h"
-#include "GpuParticleFeatureRender.h"
-#include "GpuParticleFeatureSpawn.h"
-#include "GpuParticleFeatureVelocity.h"
 
 namespace gpu_pfx2
 {

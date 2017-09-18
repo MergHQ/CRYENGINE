@@ -17,14 +17,14 @@
 
 // compile options
 #ifdef _DEBUG
-	#define CRY_DEBUG_PARTICLE_SYSTEM    // enable debugging on all particle source code
+	#define CRY_PFX2_DEBUG    // enable debugging on all particle source code
 #endif
 // #define CRY_PFX1_BAIL_UNSUPPORTED	// disable pfx1 features that not yet supported by pfx2 for precision profiling
 // #define CRY_PFX2_LOAD_PRIORITY		// when trying to load a pfx1 effect, try to load pfx2 effect with the same name first
 #define CRY_PFX2_PROFILE_DETAILS        // more in detail profile of pfx2. Individual features and sub update parts will appear here.
 // ~compile options
 
-#if defined(CRY_DEBUG_PARTICLE_SYSTEM) && CRY_PLATFORM_WINDOWS
+#if defined(CRY_PFX2_DEBUG) && CRY_PLATFORM_WINDOWS
 	#pragma optimize("", off)
 	#pragma inline_depth(0)
 	#undef ILINE
@@ -38,7 +38,7 @@
 	#define CRY_PFX2_ASSERT(cond)
 #endif
 
-#ifdef CRY_DEBUG_PARTICLE_SYSTEM
+#ifdef CRY_PFX2_DEBUG
 #	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond) CRY_PFX2_ASSERT(cond);
 #else
 #	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond)
@@ -92,9 +92,7 @@ template<typename T> using THeapArray  = TParticleHeap::Array<T, uint, CRY_PFX2_
 using TParticleIdArray                 = THeapArray<TParticleId>;
 using TFloatArray                      = THeapArray<float>;
 
-template<typename T> using TDynArray   = DynArray<T, uint>;
-template<typename T> using TVarArray   = Array<T, uint>;
-template<typename T> using TConstArray = Array<const T, uint>;
+template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
 
 
 #ifdef CRY_PFX2_USE_SSE
@@ -132,6 +130,7 @@ typedef TParticleId TParticleGroupId;
 
 #define CRY_PFX2_PARTICLESGROUP_LOWER(id) ((id) & ~((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
 #define CRY_PFX2_PARTICLESGROUP_UPPER(id) ((id) | ((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
+#define CRY_PFX2_PARTICLESGROUP_ALIGN(id) Align(id, CRY_PFX2_PARTICLESGROUP_STRIDE)
 
 
 struct SRenderContext
@@ -185,11 +184,12 @@ typedef TIndexRange<TParticleGroupId, CRY_PFX2_PARTICLESGROUP_STRIDE> SGroupRang
 enum EFeatureType
 {
 	EFT_Generic = 0x0,        // this feature does nothing in particular. Can have many of this per component.
-	EFT_Spawn   = BIT(0),     // this feature is capable of spawning particles. At least one is needed in a component.
-	EFT_Size    = BIT(2),     // this feature changes particles sizes. At least one is required per component.
-	EFT_Life    = BIT(3),     // this feature changes particles life time. At least one is required per component.
-	EFT_Render  = BIT(4),     // this feature renders particles. Each component can only have either none or just one of this.
-	EFT_Motion  = BIT(5),     // this feature moves particles around. Each component can only have either none or just one of this.
+	EFT_Spawn   = BIT(0),     // this feature spawns particles. At least one is needed in a component.
+	EFT_Size    = BIT(1),     // this feature changes particles sizes. At least one is required per component.
+	EFT_Life    = BIT(2),     // this feature changes particles life time. At least one is required per component.
+	EFT_Render  = BIT(3),     // this feature renders particles. Each component can only have either none or just one of this.
+	EFT_Motion  = BIT(4),     // this feature moves particles around. Each component can only have either none or just one of this.
+	EFT_Child   = BIT(5),     // this feature spawns instances from parent particles. At least one is needed for child components
 
 	EFT_END     = BIT(6)
 };

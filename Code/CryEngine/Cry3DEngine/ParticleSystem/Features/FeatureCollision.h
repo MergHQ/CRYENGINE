@@ -92,8 +92,7 @@ public:
 	CRY_PFX2_DECLARE_FEATURE
 
 	CFeatureGPUCollision()
-		: CParticleFeature(gpu_pfx2::eGpuFeatureType_Collision)
-		, m_offset(0.5f)
+		: m_offset(0.5f)
 		, m_radius(0.5f)
 		, m_restitution(0.5f)
 	{}

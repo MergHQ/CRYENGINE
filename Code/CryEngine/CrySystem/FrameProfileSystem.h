@@ -39,8 +39,6 @@ public:
 
 	//! If set profiling data will be collected.
 	bool                        m_bCollect;
-	//! If >0, profiling will operate on all threads. If >=2, will use thread-safe QueryPerformanceCounter instead of CryTicks.
-	int                         m_nThreadSupport;
 	//! If set profiling data will be displayed.
 	bool                        m_bDisplay;
 	//! True if network profiling is enabled.
@@ -409,7 +407,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	CFrameProfileSystem();
 	~CFrameProfileSystem();
-	void Init(int nThreadSupport);
+	void Init();
 	void Done();
 
 	void SetProfiling(bool on, bool display, char* prefix, ISystem* pSystem);
@@ -496,7 +494,6 @@ public:
 	void         AddPeak(SPeakRecord& peak);
 	void         SetHistogramScale(float fScale)         { m_histogramScale = fScale; }
 	void         SetDrawGraph(bool bDrawGraph)           { m_bDrawGraph = bDrawGraph; };
-	void         SetThreadSupport(int nThreading)        { m_nThreadSupport = nThreading; }
 	void         SetNetworkProfiler(bool bNet)           { m_bNetworkProfiling = bNet; };
 	void         SetPeakTolerance(float fPeakTimeMillis) { m_peakTolerance = fPeakTimeMillis; }
 	void         SetPageFaultsGraph(bool bEnabled)       { m_bPageFaultsGraph = bEnabled; }
@@ -605,7 +602,7 @@ struct CFrameProfileSystem : public IFrameProfileSystem
 	virtual void                         SetAdditionalSubsystems(bool bEnabled)     {}
 	virtual const float                  GetOverBudgetRatio(int modulenumber) const { return 0.0f; }
 
-	void                                 Init(int nThreadSupport)                   {}
+	void                                 Init()                   {}
 	void                                 Done()                                     {}
 	void                                 Render()                                   {}
 

@@ -23,12 +23,15 @@ public:
 	virtual void                      ReleaseBuffers() override;
 	virtual void                      PrepareFrame() override;
 	virtual void                      SubmitFrame() override;
+	virtual void                      OnPostPresent() override;
 	virtual void                      RenderSocialScreen() override;
 	virtual RenderLayer::CProperties* GetQuadLayerProperties(RenderLayer::EQuadLayers id) override;
 	virtual RenderLayer::CProperties* GetSceneLayerProperties(RenderLayer::ESceneLayers id) override { return nullptr; }
 	// ~IHDMRenderer
 
 protected:
+	struct SSocialScreenRenderAutoRestore;
+
 	struct Eye
 	{
 		CTexture* texture;
@@ -42,6 +45,8 @@ protected:
 	bool             InitializeEyeTarget(D3DDevice* d3dDevice, EEyeType eye, CryVR::OpenVR::TextureDesc desc, const char* name);
 	bool             InitializeQuadLayer(D3DDevice* d3dDevice, RenderLayer::EQuadLayers quadLayer, CryVR::OpenVR::TextureDesc desc, const char* name);
 	bool             InitializeMirrorTexture(D3DDevice* d3dDevice, EEyeType eye, CryVR::OpenVR::TextureDesc desc, const char* name);
+
+	void             RenderQuadLayers();
 
 protected:
 	CTexture*                     m_mirrorTextures[EEyeType::eEyeType_NumEyes];

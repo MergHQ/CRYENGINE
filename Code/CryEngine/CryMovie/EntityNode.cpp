@@ -2958,24 +2958,26 @@ void CAnimEntityNode::ApplyAnimKey(int32 keyIndex, class CCharacterTrack* track,
 
 	float t = (ectime - key.m_time).ToFloat();
 	t = key.m_startTime + t * key.m_speed;
+	float maxEndTime = key.GetMaxEndTime();
+	float duration = key.GetAnimDuration();
 
-	if ((key.GetMaxEndTime() - key.m_startTime) > 0.0f && key.GetAnimDuration() > 0.0f)
+	if ((maxEndTime - key.m_startTime) > 0.0f && key.GetCroppedAnimDuration() > 0.0f)
 	{
 		if (t < key.m_startTime)
 		{
 			t = key.m_startTime;
 		}
-		else if (key.m_bLoop && key.GetAnimDuration() > 0.0f)
+		else if (key.m_bLoop && key.GetCroppedAnimDuration() > 0.0f)
 		{
-			t = fmod(t, key.GetAnimDuration());
+			t = fmod(t, duration);
 		}
-		else if (t > key.GetMaxEndTime())
+		else if (t > maxEndTime)
 		{
-			t = key.GetMaxEndTime();
+			t = maxEndTime;
 		}
 
 		pCharacter->SetPlaybackScale(0.0000f);
-		float fNormalizedTime = t / key.GetAnimDuration();
+		float fNormalizedTime = t / duration;
 		assert(fNormalizedTime >= 0.0f && fNormalizedTime <= 1.0f);
 		pCharacter->GetISkeletonAnim()->ManualSeekAnimationInFIFO(layer, animIndex, fNormalizedTime, bAnimEvents);
 		pCharacter->GetISkeletonAnim()->SetLayerNormalizedTime(layer, fNormalizedTime);
@@ -3074,6 +3076,12 @@ void CAnimEntityNode::UpdateAnimBlendGap(int32 activeKeys[], class CCharacterTra
 		endTimeNorm = key1.GetMaxEndTime() / key1.GetAnimDuration();
 	}
 
+	// The animation system will remove this animation from it's transition queue if it's on it's last
+	// frame. We need to force this animation to not be unloaded so we can blend the last frame of this
+	// animation with the first frame of the next
+	if (endTimeNorm >= 1.0f)
+		endTimeNorm -= EPSILON;
+
 	assert(endTimeNorm >= 0.0f && endTimeNorm <= 1.0f);
 	pCharacter->GetISkeletonAnim()->ManualSeekAnimationInFIFO(layer, 0, endTimeNorm, false);
 	f32 startTimeNorm = 0.0f;
@@ -3086,9 +3094,6 @@ void CAnimEntityNode::UpdateAnimBlendGap(int32 activeKeys[], class CCharacterTra
 	assert(startTimeNorm >= 0.0f && startTimeNorm <= 1.0f);
 	pCharacter->GetISkeletonAnim()->ManualSeekAnimationInFIFO(layer, 1, startTimeNorm, false);
 	pCharacter->GetISkeletonAnim()->SetTrackViewMixingWeight(layer, blendWeight);
-
-	ApplyAnimKey(activeKeys[0], track, endTimeNorm, pCharacter, layer, 0, true);
-	ApplyAnimKey(activeKeys[1], track, startTimeNorm, pCharacter, layer, 1, true);
 }
 
 bool CAnimEntityNode::CheckTimeJumpingOrOtherChanges(const SAnimContext& animContext, int32 activeKeys[], int32 numActiveKeys,

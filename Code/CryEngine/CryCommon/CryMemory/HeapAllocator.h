@@ -388,7 +388,7 @@ public:
 			else
 			{
 				// Dealloc
-				if (!_pHeap->Deallocate(Lock(*_pHeap), a.data, a.size, align))
+				if (!_pHeap->Deallocate(Lock(*_pHeap), a.data, Align(a.size, align), align))
 					assert(!"HeapAllocator array deallocation failed");
 				a = NAlloc::AllocArray();
 			}

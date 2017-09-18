@@ -631,7 +631,7 @@ add_sources("CryRenderer_uber_5_vulkan_dxgi.cpp"
 		"Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIOutput_DXGI.hpp"
 		"Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIOutput_DXGI.cpp"
 )
-	
+
 # -- core_renderer.waf_files --
 sources_platform(ALL)
 add_sources("CryGpuParticles_uber.cpp"
@@ -648,13 +648,8 @@ add_sources("CryGpuParticles_uber.cpp"
 		"Gpu/Particles/GpuParticleFeatureColor.h"
 		"Gpu/Particles/GpuParticleFeatureCollision.h"
 		"Gpu/Particles/GpuParticleFeatureField.h"
-		"Gpu/Particles/GpuParticleFeatureLifeTime.h"
-		"Gpu/Particles/GpuParticleFeatureLocation.h"
 		"Gpu/Particles/GpuParticleFeatureMotion.h"
 		"Gpu/Particles/GpuParticleFeatureFluidDynamics.h"
-		"Gpu/Particles/GpuParticleFeatureRender.h"
-		"Gpu/Particles/GpuParticleFeatureSpawn.h"
-		"Gpu/Particles/GpuParticleFeatureVelocity.h"
 	SOURCE_GROUP "Header Files\\\\Gpu\\\\Physics"
 		"Gpu/Physics/GpuPhysicsParticleFluid.h"
 	SOURCE_GROUP "Source Files\\\\Gpu"
@@ -669,13 +664,8 @@ add_sources("CryGpuParticles_uber.cpp"
 		"Gpu/Particles/GpuParticleFeatureColor.cpp"
 		"Gpu/Particles/GpuParticleFeatureCollision.cpp"
 		"Gpu/Particles/GpuParticleFeatureField.cpp"
-		"Gpu/Particles/GpuParticleFeatureLifeTime.cpp"
-		"Gpu/Particles/GpuParticleFeatureLocation.cpp"
 		"Gpu/Particles/GpuParticleFeatureMotion.cpp"
 		"Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp"
-		"Gpu/Particles/GpuParticleFeatureRender.cpp"
-		"Gpu/Particles/GpuParticleFeatureSpawn.cpp"
-		"Gpu/Particles/GpuParticleFeatureVelocity.cpp"
 	SOURCE_GROUP "Source Files\\\\Gpu\\\\Physics"
 		"Gpu/Physics/GpuPhysicsParticleFluid.cpp"
 )
@@ -1129,7 +1119,7 @@ endif()
 
 if (RENDERER_DX11)
 	CryEngineModule(CryRenderD3D11 FORCE_SHARED_WIN PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-	
+
 	target_include_directories(${THIS_PROJECT} PRIVATE .. "${SDK_DIR}/squish-ccr")
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 
@@ -1177,7 +1167,7 @@ if (RENDERER_OPENGL)
 		target_link_libraries(${THIS_PROJECT} PRIVATE "${SDL2}" "${LIBHLSLCC}" "${OPENGL}" "${APPLICATIONSERVICES}" "${IOKIT}")
 	elseif(LINUX)
 		target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
-		target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include")	
+		target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include")
 		if(LINUX64)
 			find_library(LIBHLSLCC HLSLcc PATHS "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/lib/linux")
 			target_link_libraries(${THIS_PROJECT} PRIVATE "${LIBHLSLCC}")
@@ -1186,11 +1176,11 @@ if (RENDERER_OPENGL)
 #		target_compile_definitions(${THIS_PROJECT} PRIVATE -DGLEW_MX -DDXGL_ANDROID_GL)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -DGLEW_MX -DOPENGL_ES)
 
-		target_include_directories(${THIS_PROJECT} PRIVATE 
+		target_include_directories(${THIS_PROJECT} PRIVATE
 			"${CRYENGINE_DIR}/Code/CryEngine/CrySystem"
 			"${SDK_DIR}/SDL2/include/SDL"
-			"${SDK_DIR}/SDL2/include/linux" 
-			"${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/include" 
+			"${SDK_DIR}/SDL2/include/linux"
+			"${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/include"
 			"${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include")
 		target_link_libraries(${THIS_PROJECT} PRIVATE EGL GLESv1_CM SDL2)
 	endif()
@@ -1204,7 +1194,7 @@ if (RENDERER_DX12)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_RENDERER_DIRECT3D=120 -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 	target_include_directories(${THIS_PROJECT} PRIVATE .. "${SDK_DIR}" "${SDK_DIR}/squish-ccr" "${CRYENGINE_DIR}/Code/Tools/LibTIFF" "${CRYENGINE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes")
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
-	
+
 	if (WIN32 OR WIN64)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
 		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 png16 tiff)
@@ -1230,7 +1220,7 @@ if (RENDERER_VULKAN)
 		set_libpath_flag()
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/VulkanSDK/Lib\"")
 	elseif(ANDROID)
-		target_include_directories(${THIS_PROJECT} PRIVATE 
+		target_include_directories(${THIS_PROJECT} PRIVATE
 			"${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include")
 
 		target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)

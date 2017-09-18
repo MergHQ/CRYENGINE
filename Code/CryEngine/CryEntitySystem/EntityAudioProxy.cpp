@@ -290,34 +290,31 @@ bool CEntityComponentAudio::ExecuteTrigger(
 {
 	if (m_pEntity != nullptr)
 	{
-		if ((m_pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_DISABLED) == 0)
+		if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
 		{
-			if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
-			{
-				AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
+			AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
 
-				if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
-				{
-					(SRepositionAudioProxy(m_pEntity->GetWorldTM(), userData))(audioObjectPair);
-					audioObjectPair.second.pIObject->ExecuteTrigger(audioTriggerId, userData);
-					return true;
-				}
-#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-				else
-				{
-					gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> Could not find AuxAudioProxy with id '%u' on entity '%s' to ExecuteTrigger '%u'", audioAuxObjectId, m_pEntity->GetEntityTextDescription().c_str(), audioTriggerId);
-				}
-#endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
+			if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
+			{
+				(SRepositionAudioProxy(m_pEntity->GetWorldTM(), userData))(audioObjectPair);
+				audioObjectPair.second.pIObject->ExecuteTrigger(audioTriggerId, userData);
+				return true;
 			}
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 			else
 			{
-				for (auto const& auxObjectPair : m_mapAuxObjects)
-				{
-					(SRepositionAudioProxy(m_pEntity->GetWorldTM(), userData))(auxObjectPair);
-					auxObjectPair.second.pIObject->ExecuteTrigger(audioTriggerId, userData);
-				}
-				return !m_mapAuxObjects.empty();
+				gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> Could not find AuxAudioProxy with id '%u' on entity '%s' to ExecuteTrigger '%u'", audioAuxObjectId, m_pEntity->GetEntityTextDescription().c_str(), audioTriggerId);
 			}
+#endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
+		}
+		else
+		{
+			for (auto const& auxObjectPair : m_mapAuxObjects)
+			{
+				(SRepositionAudioProxy(m_pEntity->GetWorldTM(), userData))(auxObjectPair);
+				auxObjectPair.second.pIObject->ExecuteTrigger(audioTriggerId, userData);
+			}
+			return !m_mapAuxObjects.empty();
 		}
 	}
 	else

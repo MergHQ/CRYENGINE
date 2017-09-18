@@ -79,6 +79,6 @@ float CCharacterTrack::GetKeyDuration(int key) const
 	}
 	else
 	{
-		return m_keys[key].GetAnimDuration();
+		return m_keys[key].GetCroppedAnimDuration();
 	}
 }

@@ -1028,7 +1028,7 @@ int Device::GetControllerCount() const
 	return m_controller.IsConnected(eHmdController_OculusRightHand) ? cnt + 1 : cnt;
 }
 
-void Device::SetAsynCameraCallback(IAsyncCameraCallback* pCallback)
+void Device::SetAsyncCameraCallback(IAsyncCameraCallback* pCallback)
 {
 	m_pAsyncCameraCallback = pCallback;
 }

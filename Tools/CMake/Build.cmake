@@ -13,6 +13,12 @@ if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SA
 	include ("${TOOLS_CMAKE_DIR}/BuildEngine.cmake")
 endif()
 
+# Sandbox Editor
+if (OPTION_SANDBOX AND OPTION_STATIC_LINKING)
+	message(STATUS "Disabling Sandbox - requires dynamic linking")
+	set(OPTION_SANDBOX OFF)
+endif()
+
 if (OPTION_SANDBOX AND WIN64)
 	# Find Qt before including any plugin subdirectories
 	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
@@ -32,6 +38,9 @@ if (OPTION_SANDBOX AND WIN64)
 	set(Qt5_DIR "${Qt5_DIR}" CACHE INTERNAL "QT directory" FORCE)
 
 	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "${VS_FOLDER_PREFIX}/Sandbox/AUTOGEN")
+
+	message(STATUS "Include Sandbox Editor")
+	include ("${TOOLS_CMAKE_DIR}/BuildSandbox.cmake")
 endif()
 	
 # Only allow building legacy GameDLL's with the engine, assuming that we're not using the project system
@@ -49,17 +58,6 @@ include ("${TOOLS_CMAKE_DIR}/BuildLaunchers.cmake")
 if (OPTION_CRYMONO)
 	add_subdirectory(Code/CryManaged/CryMonoBridge)
 	add_subdirectory(Code/CryManaged/CESharp)
-endif()
-
-# Sandbox Editor
-if(OPTION_SANDBOX AND OPTION_STATIC_LINKING)
-	message(STATUS "Disabling Sandbox - requires dynamic linking")
-	set(OPTION_SANDBOX OFF)
-endif()
-
-if (OPTION_SANDBOX AND WIN64)
-	MESSAGE(STATUS "Include Sandbox Editor")
-	include ("${TOOLS_CMAKE_DIR}/BuildSandbox.cmake")
 endif()
 
 macro(generate_unit_test_targets target_name using_runner_target_name)

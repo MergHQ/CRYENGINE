@@ -50,7 +50,7 @@ public:
 			// again. This will make us re-use lowest indices faster which means
 			// that newly 'allocated' stimuli will remain clustered at the start of
 			// the memory buffers (more or less).
-			std::sort(freeIndices.begin(), freeIndices.end(), std::greater<int>());
+			std::sort(freeIndices.begin(), freeIndices.end(), std::greater<size_type>());
 
 			// Sort ascendantly so that we run through all the allocated items
 			// we will access them in sequential order in memory.

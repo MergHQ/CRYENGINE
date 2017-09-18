@@ -221,7 +221,7 @@ void CView::Update(float frameTime, bool isActive)
 		}
 		else if (bHmdTrackingEnabled)
 		{
-			pHmdDevice->SetAsynCameraCallback(this);
+			pHmdDevice->SetAsyncCameraCallback(this);
 			if (Cry::pHmdTrackingOrigin && Cry::pHmdTrackingOrigin->GetIVal() == (int)EHmdTrackingOrigin::Floor)
 			{
 				const IEntity* pEnt = GetLinkedEntity();
@@ -816,6 +816,8 @@ void CView::CreateAudioListener()
 	{
 		SEntitySpawnParams spawnParams;
 		spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
+		spawnParams.vPosition = pIEntity->GetWorldPos();
+		spawnParams.qRotation = pIEntity->GetWorldRotation();
 
 		// We don't want the audio listener to serialize as the entity gets completely removed and recreated during save/load!
 		// NOTE: If we set ENTITY_FLAG_NO_SAVE *after* we spawn the entity, it will make it to m_dynamicEntities in GameSerialize.cpp
@@ -836,6 +838,11 @@ void CView::CreateAudioListener()
 		{
 			CryFatalError("<Audio>: AudioListenerEntity creation failed in CView::CreateAudioListener!");
 		}
+	}
+
+	if (m_pAudioListenerEntity != nullptr)
+	{
+		m_pAudioListenerEntity->InvalidateTM(ENTITY_XFORM_POS);
 	}
 }
 

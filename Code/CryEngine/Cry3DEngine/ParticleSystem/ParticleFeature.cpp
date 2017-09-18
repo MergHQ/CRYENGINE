@@ -27,18 +27,14 @@ void CParticleFeature::AddNoPropertiesLabel(Serialization::IArchive& ar)
 	}
 }
 
-gpu_pfx2::IParticleFeatureGpuInterface* pfx2::CParticleFeature::GetGpuInterface()
+gpu_pfx2::IParticleFeature* CParticleFeature::MakeGpuInterface(CParticleComponent* pComponent, gpu_pfx2::EGpuFeatureType feature)
 {
-	if (m_gpuInterfaceRef.feature == gpu_pfx2::eGpuFeatureType_None)
-		return nullptr;
-	if (!m_gpuInterfaceNeeded || !gEnv->pRenderer)
-		m_gpuInterfaceRef.gpuInterface.reset();
-	else
-	{
-		if (!m_gpuInterfaceRef.gpuInterface)
-			m_gpuInterfaceRef.gpuInterface = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleFeatureGpuInterface(m_gpuInterfaceRef.feature);
-	}
-	return m_gpuInterfaceRef.gpuInterface.get();
+	if (!feature || !pComponent->UsesGPU() || !gEnv->pRenderer)
+		m_gpuInterface.reset();
+	else if (!m_gpuInterface)
+		m_gpuInterface = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleFeature(feature);
+	pComponent->AddGPUFeature(m_gpuInterface);
+	return m_gpuInterface;
 }
 
 class CFeatureComment : public CParticleFeature

@@ -1202,20 +1202,16 @@ IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(IHmdDevice& device, CD3D9Ren
 //////////////////////////////////////////////////////////////////////////
 void CD3DStereoRenderer::TryInjectHmdCameraAsync(CRenderView* pRenderView)
 {
-	IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager();
-	if (!pHmdManager)
-		return;
-
-	IHmdDevice* pHmdDevice = pHmdManager->GetHmdDevice();
-	if (!pHmdDevice)
-		return;
-
-	const HmdTrackingState& trackingState = pHmdDevice->GetLocalTrackingState();
-	if (!trackingState.CheckStatusFlags(eHmdStatus_IsUsable))
-		return;
-
 	if (m_renderer.m_CurRenderEye == LEFT_EYE)
 	{
+		IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager();
+		if (!pHmdManager)
+			return;
+
+		IHmdDevice* pHmdDevice = pHmdManager->GetHmdDevice();
+		if (!pHmdDevice)
+			return;
+
 		m_bAsyncCameraMatrixValid = false;
 		// Only query async tracking state for the first left eye.
 		IHmdDevice::AsyncCameraContext context;
@@ -1232,8 +1228,24 @@ void CD3DStereoRenderer::TryInjectHmdCameraAsync(CRenderView* pRenderView)
 	// new up to date matrix is received, use it for current frame
 	CCamera currentCamera = m_renderer.GetCamera();
 	currentCamera.SetMatrix(m_asyncCameraMatrix);
-	CCamera newCamera = PrepareCamera(m_renderer.m_CurRenderEye, currentCamera);
-	m_renderer.SetCamera(newCamera);
+	m_renderer.SetCamera(currentCamera);
+
+	uint32 renderingFlags = pRenderView->GetShaderRenderingFlags();
+
+	if ((renderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == 0) // non-stereo case
+		renderingFlags |= SHDF_STEREO_LEFT_EYE;
+
+	for (CCamera::EEye eye = CCamera::eEye_Left; eye != CCamera::eEye_eCount; eye = CCamera::EEye(eye + 1))
+	{
+		uint32 currentEyeFlag = eye == CCamera::eEye_Left ? SHDF_STEREO_LEFT_EYE : SHDF_STEREO_RIGHT_EYE;
+
+		if (renderingFlags & currentEyeFlag)
+		{
+			CCamera newCamera = PrepareCamera(eye, currentCamera);
+
+			pRenderView->SetCameras(&newCamera, 1);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

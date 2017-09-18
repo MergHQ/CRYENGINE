@@ -38,7 +38,7 @@ public:
 	virtual void                    DisableHMDTracking(bool disable) override;
 	virtual void                    GetPreferredRenderResolution(unsigned int& width, unsigned int& height) override;
 	virtual int                     GetControllerCount() const override;
-	virtual void                    SetAsynCameraCallback(IAsyncCameraCallback* pCallback) override;
+	virtual void                    SetAsyncCameraCallback(IAsyncCameraCallback* pCallback) override;
 	virtual bool                    RequestAsyncCameraUpdate(AsyncCameraContext& context) override;
 	// ~IHMDDevice interface
 

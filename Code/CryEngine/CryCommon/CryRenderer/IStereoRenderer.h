@@ -178,6 +178,7 @@ struct IHmdRenderer
 
 	// Submits the frame to the Hmd device
 	virtual void                      SubmitFrame() = 0;
+	virtual void                      OnPostPresent() {}
 
 	virtual void                      RenderSocialScreen() = 0;
 

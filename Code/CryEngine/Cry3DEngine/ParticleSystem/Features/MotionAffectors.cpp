@@ -58,7 +58,7 @@ public:
 		ar(m_scale, "scale", "Scale");
 	}
 
-	virtual void SetParameters(gpu_pfx2::IParticleFeatureGpuInterface* gpuInterface) const override
+	virtual void SetParameters(gpu_pfx2::IParticleFeature* gpuInterface) const override
 	{
 
 		switch (m_mode)
@@ -273,7 +273,7 @@ public:
 			ar(m_axis, "Axis", "Axis");
 	}
 
-	virtual void SetParameters(gpu_pfx2::IParticleFeatureGpuInterface* gpuInterface) const override
+	virtual void SetParameters(gpu_pfx2::IParticleFeature* gpuInterface) const override
 	{
 		gpu_pfx2::SFeatureParametersMotionPhysicsGravity params;
 		params.gravityType =
@@ -388,7 +388,7 @@ public:
 		ar(m_axis, "Axis", "Axis");
 	}
 
-	virtual void SetParameters(gpu_pfx2::IParticleFeatureGpuInterface* gpuInterface) const override
+	virtual void SetParameters(gpu_pfx2::IParticleFeature* gpuInterface) const override
 	{
 		gpu_pfx2::SFeatureParametersMotionPhysicsVortex params;
 		params.vortexDirection =

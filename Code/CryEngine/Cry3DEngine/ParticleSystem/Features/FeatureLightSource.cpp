@@ -45,27 +45,26 @@ public:
 		SERIALIZE_VAR(ar, m_flare);
 	}
 
-	virtual void Render(CParticleEmitter* pEmitter, IParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		ComputeLights(pComponentRuntime, &renderContext, nullptr);
 	}
 
-	void ComputeBounds(IParticleComponentRuntime* pComponentRuntime, AABB& bounds) override
+	void ComputeBounds(CParticleComponentRuntime* pComponentRuntime, AABB& bounds) override
 	{
 		// PFX2_TODO: Compute bounds augmentation statically, using min/max particle data. 
 		// Track min/max of all float data types, in AddToComponent.
 		ComputeLights(pComponentRuntime, nullptr, &bounds);
 	}
 
-	void ComputeLights(IParticleComponentRuntime* pCommonComponentRuntime, const SRenderContext* pRenderContext, AABB* pBounds)
+	void ComputeLights(CParticleComponentRuntime* pComponentRuntime, const SRenderContext* pRenderContext, AABB* pBounds)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		if (!GetCVars()->e_DynamicLights)
 			return;
 
-		CParticleComponentRuntime* pComponentRuntime = pCommonComponentRuntime->GetCpuRuntime();
-		if (!pComponentRuntime)
+		if (!pComponentRuntime->GetCpuRuntime())
 			return;
 
 		CDLight light;

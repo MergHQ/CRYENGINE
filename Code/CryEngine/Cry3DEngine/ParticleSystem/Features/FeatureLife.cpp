@@ -21,10 +21,6 @@ class CFeatureLifeTime : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureLifeTime()
-		: CParticleFeature(gpu_pfx2::eGpuFeatureType_LifeTime)
-	{}
-
 	virtual EFeatureType GetFeatureType() override
 	{
 		return EFT_Life;
@@ -47,13 +43,7 @@ public:
 
 		if (m_killOnParentDeath)
 			pComponent->AddToUpdateList(EUL_PostUpdate, this);
-
-		if (auto pInt = GetGpuInterface())
-		{
-			gpu_pfx2::SFeatureParametersLifeTime params;
-			params.lifeTime = m_lifeTime.GetBaseValue();
-			pInt->SetParameters(params);
-		}
+		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
 	}
 
 	virtual void InitParticles(const SUpdateContext& context) override
@@ -111,6 +101,11 @@ public:
 		}
 	}
 
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	{
+		params.lifeTime = m_lifeTime.GetValueRange(context)(0.5f);
+	}
+
 protected:
 	CParamMod<SModParticleSpawnInit, UInfFloat> m_lifeTime          = 1;
 	bool                                        m_killOnParentDeath = false;
@@ -141,7 +136,7 @@ public:
 		m_killOnParentDeath = true;
 	}
 
-	virtual bool VersionValidate(CParticleComponent* pComponent) override
+	virtual bool ResolveDependency(CParticleComponent* pComponent) override
 	{
 		// If another LifeTime feature exists, use it, and set the Kill param.
 		// Otherwise, use this feature, with default LifeTime param.
