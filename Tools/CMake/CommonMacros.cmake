@@ -542,6 +542,10 @@ function(CryEngineModule target)
 		target_link_libraries(${THIS_PROJECT} PRIVATE m log c android)
 	endif()
 
+	if(OPTION_DEDICATED_SERVER)
+		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DDEDICATED_SERVER")
+	endif()
+
 	if (NOT DEFINED PROJECT_BUILD_CRYENGINE OR PROJECT_BUILD_CRYENGINE)
 		install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 	endif()
@@ -562,6 +566,10 @@ function(CryGameModule target)
 		target_link_libraries(${THIS_PROJECT} PRIVATE m log c android)
 	endif()
 	add_metadata()
+
+	if(OPTION_DEDICATED_SERVER)
+		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DDEDICATED_SERVER")
+	endif()
 
 	if (NOT DEFINED PROJECT_BUILD_CRYENGINE OR PROJECT_BUILD_CRYENGINE)
 		install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
@@ -643,6 +651,11 @@ function(CryDedicatedServer target)
 		wrap_whole_archive(${target} WRAPPED_MODULES MODULES_LIST)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ${WRAPPED_MODULES})
 	endif()
+
+	if(OPTION_DEDICATED_SERVER) 
+		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DDEDICATED_SERVER") 
+	endif() 
+	
 	apply_compile_settings()	
 endfunction()
 
