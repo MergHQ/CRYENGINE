@@ -216,15 +216,14 @@ enum EEntityFlags
 enum EEntityFlagsExtended
 {
 	ENTITY_FLAG_EXTENDED_AUDIO_LISTENER                 = BIT(0),
-	ENTITY_FLAG_EXTENDED_AUDIO_DISABLED                 = BIT(1),
-	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT(2),
-	ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES = BIT(3),
-	ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS       = BIT(4),
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT(5), // Bit0 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(6), // Bit1 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(7), // Bit2 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_PREVIEW                        = BIT(8), //!< Entity is spawn for the previewing
-	ENTITY_FLAG_EXTENDED_CLONED                         = BIT(9)  //!< Entity was cloned from another
+	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT(1),
+	ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES = BIT(2),
+	ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS       = BIT(3),
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT(4), // Bit0 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(5), // Bit1 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(6), // Bit2 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_PREVIEW                        = BIT(7), //!< Entity is spawn for the previewing
+	ENTITY_FLAG_EXTENDED_CLONED                         = BIT(8)  //!< Entity was cloned from another
 };
 
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 5                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended.

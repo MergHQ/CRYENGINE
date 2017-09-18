@@ -44,7 +44,15 @@ public:
 		desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 	}
 
-	inline void SetActive(bool const bValue) { m_bActive = bValue; }
+	inline void SetActive(bool const bValue)
+	{ 
+		m_bActive = bValue;
+
+		if (!m_bActive)
+		{
+			gEnv->pEntitySystem->GetAreaManager()->ExitAllAreas(GetEntityId());
+		}
+	}
 
 private:
 
