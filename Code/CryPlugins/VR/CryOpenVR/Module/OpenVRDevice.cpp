@@ -194,6 +194,10 @@ Device::Device(vr::IVRSystem* pSystem)
 	, m_hmdQuadDistance(CPlugin_OpenVR::s_hmd_quad_distance)
 	, m_hmdQuadWidth(CPlugin_OpenVR::s_hmd_quad_width)
 	, m_hmdQuadAbsolute(CPlugin_OpenVR::s_hmd_quad_absolute)
+	, m_pAsyncCameraCallback(nullptr)
+	, m_submitTimeStamp(0)
+	, m_poseTimestamp(0)
+	, m_predictedRenderPoseTimestamp(0)
 {
 	CreateDevice();
 
@@ -223,6 +227,8 @@ Device::Device(vr::IVRSystem* pSystem)
 	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_keep_aspect");
 	m_pHmdSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen");
 	m_pTrackingOriginCVar = gEnv->pConsole->GetCVar("hmd_tracking_origin");
+
+	ZeroArray(m_predictedRenderPose);
 }
 
 // -------------------------------------------------------------------------
@@ -388,6 +394,8 @@ void Device::Release()
 void Device::GetPreferredRenderResolution(unsigned int& width, unsigned int& height)
 {
 	GetRenderTargetSize(width, height);
+	// Convert to full screen size, render target is per eye
+	width *= 2;
 }
 
 // -------------------------------------------------------------------------
@@ -408,7 +416,7 @@ void Device::GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const
 	float fNear = gEnv->pRenderer->GetCamera().GetNearPlane();
 	float fFar = gEnv->pRenderer->GetCamera().GetFarPlane();
 
-	vr::HmdMatrix44_t proj = m_system->GetProjectionMatrix(vr::EVREye::Eye_Left, fNear, fFar, vr::API_DirectX);
+	vr::HmdMatrix44_t proj = m_system->GetProjectionMatrix(vr::EVREye::Eye_Left, fNear, fFar);
 
 	fov = 2.0f * atan(1.0f / proj.m[1][1]);
 	aspectRatioFactor = 2.0f;
@@ -479,18 +487,22 @@ void Device::UpdateTrackingState(EVRComponent type)
 	ft.m_nSize = sizeof(vr::Compositor_FrameTiming);
 	m_compositor->GetFrameTiming(&ft, 0);
 
-	float fSecondsSinceLastVsync = ft.m_flPresentCallCpuMs / 1000.0f;
 	float rFreq = m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_DisplayFrequency_Float);
 	if (rFreq < 1 || !NumberValid(rFreq)) // in case we can't get a proper refresh rate, we just assume 90 fps, to avoid crashes
 		rFreq = 90.0f;
-	float fFrameDuration = 1.0f / rFreq;
-	float fSecondsUntilPhotons = 3.0f * fFrameDuration - fSecondsSinceLastVsync + m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_SecondsFromVsyncToPhotons_Float);
-	m_system->GetDeviceToAbsoluteTrackingPose(m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, fSecondsUntilPhotons, m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount);
+	double fFrameDuration = 1.0f / rFreq;
+	double elapsedTime = (ft.m_flSystemTimeInSeconds - m_submitTimeStamp);
+	static double maxFrame = -10000000000000.f, minFrame = 100000000000.f;
+	if (elapsedTime < 1000 && elapsedTime * 1000 >= 1)
+	{
+		minFrame = min(elapsedTime, minFrame);
+		maxFrame = max(elapsedTime, maxFrame);
+	}
+	uint64 numFrames = clamp_tpl(2llu, 10llu, (uint64)(0.5 + elapsedTime / fFrameDuration));
+	double fSecondsUntilPhotons = (fFrameDuration*numFrames) - (ft.m_flPresentCallCpuMs / 1000.0f) + m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_SecondsFromVsyncToPhotons_Float);
 
-	IView* pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
-	const SViewParams* params = pView ? pView->GetCurrentParams() : nullptr;
-	Vec3 pos = params ? params->position : Vec3(0, 0, 0);
-	Quat rot = params ? params->rotation : Quat::CreateIdentity();
+	m_system->GetDeviceToAbsoluteTrackingPose(m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, (float)fSecondsUntilPhotons, m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount);
+
 	for (int i = 0; i < vr::k_unMaxTrackedDeviceCount; i++)
 	{
 		m_localStates[i].statusFlags = m_nativeStates[i].statusFlags = ((m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid) ? eHmdStatus_OrientationTracked : 0) |
@@ -509,7 +521,7 @@ void Device::UpdateTrackingState(EVRComponent type)
 			case vr::ETrackedDeviceClass::TrackedDeviceClass_Controller:
 				{
 					vr::VRControllerState_t state;
-					if (m_system->GetControllerState(i, &state))
+					if (m_system->GetControllerState(i, &state, sizeof(vr::VRControllerState_t)))
 					{
 						m_controller.Update(i, m_nativeStates[i], m_localStates[i], state);
 					}
@@ -666,7 +678,7 @@ void Device::CreateDevice()
 	float fNear = gEnv->pRenderer->GetCamera().GetNearPlane();
 	float fFar = gEnv->pRenderer->GetCamera().GetFarPlane();
 
-	vr::HmdMatrix44_t proj = m_system->GetProjectionMatrix(vr::EVREye::Eye_Left, fNear, fFar, vr::EGraphicsAPIConvention::API_DirectX);
+	vr::HmdMatrix44_t proj = m_system->GetProjectionMatrix(vr::EVREye::Eye_Left, fNear, fFar);
 
 	float fovh = 2.0f * atan(1.0f / proj.m[1][1]);
 	float aspectRatio = proj.m[1][1] / proj.m[0][0];
@@ -827,13 +839,19 @@ void Device::PrintHmdInfo()
 }
 
 // -------------------------------------------------------------------------
-void Device::SubmitOverlay(int id)
+void Device::SubmitOverlay(int id, const RenderLayer::CProperties* pOverlayProperties)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+
 	if (!m_overlay)
 		return;
 
+	CRY_ASSERT(pOverlayProperties->IsActive());
+
 	if (m_overlays[id].vrTexture)
 	{
+		m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
+		
 		m_overlay->SetOverlayTexture(m_overlays[id].handle, m_overlays[id].vrTexture);
 		m_overlays[id].submitted = true;
 	}
@@ -842,15 +860,15 @@ void Device::SubmitOverlay(int id)
 // -------------------------------------------------------------------------
 void Device::SubmitFrame()
 {
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "Device::SubmitFrame");
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 	if (m_compositor && m_eyeTargets[EEyeType::eEyeType_LeftEye] && m_eyeTargets[EEyeType::eEyeType_RightEye])
 	{
 		m_compositor->Submit(vr::Eye_Left, m_eyeTargets[EEyeType::eEyeType_LeftEye]);
 		m_compositor->Submit(vr::Eye_Right, m_eyeTargets[EEyeType::eEyeType_RightEye]);
-
-		m_compositor->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
 	}
+
+	m_submitTimeStamp = m_poseTimestamp;
 
 	if (!m_overlay)
 		return;
@@ -908,18 +926,24 @@ void Device::OnSetupEyeTargets(ERenderAPI api, ERenderColorSpace colorSpace, voi
 	switch (api)
 	{
 	case CryVR::OpenVR::ERenderAPI::eRenderAPI_DirectX:
-		m_eyeTargets[EEyeType::eEyeType_LeftEye]->eType = m_eyeTargets[EEyeType::eEyeType_RightEye]->eType = vr::EGraphicsAPIConvention::API_DirectX;
+		m_eyeTargets[EEyeType::eEyeType_LeftEye]->eType = m_eyeTargets[EEyeType::eEyeType_RightEye]->eType = vr::TextureType_DirectX;
 		break;
 	case CryVR::OpenVR::ERenderAPI::eRenderAPI_OpenGL:
-		m_eyeTargets[EEyeType::eEyeType_LeftEye]->eType = m_eyeTargets[EEyeType::eEyeType_RightEye]->eType = vr::EGraphicsAPIConvention::API_OpenGL;
+		m_eyeTargets[EEyeType::eEyeType_LeftEye]->eType = m_eyeTargets[EEyeType::eEyeType_RightEye]->eType = vr::TextureType_OpenGL;
 		break;
 	default:
-		m_eyeTargets[EEyeType::eEyeType_LeftEye]->eType = m_eyeTargets[EEyeType::eEyeType_RightEye]->eType = vr::EGraphicsAPIConvention::API_DirectX;
+		m_eyeTargets[EEyeType::eEyeType_LeftEye]->eType = m_eyeTargets[EEyeType::eEyeType_RightEye]->eType = vr::TextureType_DirectX;
 		break;
 	}
 
 	m_eyeTargets[EEyeType::eEyeType_LeftEye]->handle = leftEyeHandle;
 	m_eyeTargets[EEyeType::eEyeType_RightEye]->handle = rightEyeHandle;
+}
+
+// -------------------------------------------------------------------------
+bool Device::IsActiveOverlay(int id) const
+{
+	return m_overlays[id].visible;
 }
 
 // -------------------------------------------------------------------------
@@ -950,13 +974,13 @@ void Device::OnSetupOverlay(int id, ERenderAPI api, ERenderColorSpace colorSpace
 	switch (api)
 	{
 	case CryVR::OpenVR::ERenderAPI::eRenderAPI_DirectX:
-		m_overlays[id].vrTexture->eType = vr::EGraphicsAPIConvention::API_DirectX;
+		m_overlays[id].vrTexture->eType = vr::TextureType_DirectX;
 		break;
 	case CryVR::OpenVR::ERenderAPI::eRenderAPI_OpenGL:
-		m_overlays[id].vrTexture->eType = vr::EGraphicsAPIConvention::API_OpenGL;
+		m_overlays[id].vrTexture->eType = vr::TextureType_OpenGL;
 		break;
 	default:
-		m_overlays[id].vrTexture->eType = vr::EGraphicsAPIConvention::API_DirectX;
+		m_overlays[id].vrTexture->eType = vr::TextureType_DirectX;
 		break;
 	}
 	switch (colorSpace)
@@ -1014,6 +1038,58 @@ void Device::OnDeleteOverlay(int id)
 	SAFE_DELETE(m_overlays[id].vrTexture);
 	m_overlays[id].visible = false;
 	m_overlays[id].submitted = false;
+}
+
+// -------------------------------------------------------------------------
+void Device::OnPrepare()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+
+	m_compositor->SetTrackingSpace(m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated);
+	m_compositor->WaitGetPoses(m_predictedRenderPose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
+
+	vr::Compositor_FrameTiming ft;
+	ft.m_nSize = sizeof(vr::Compositor_FrameTiming);
+	m_compositor->GetFrameTiming(&ft, 0);
+	
+	m_predictedRenderPoseTimestamp = ft.m_flSystemTimeInSeconds;
+}
+
+// -------------------------------------------------------------------------
+void Device::OnPostPresent()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+
+	m_compositor->PostPresentHandoff();
+}
+
+// -------------------------------------------------------------------------
+void Device::SetAsyncCameraCallback(IAsyncCameraCallback *pCallback)
+{
+	m_pAsyncCameraCallback = pCallback;
+}
+
+// -------------------------------------------------------------------------
+bool Device::RequestAsyncCameraUpdate(AsyncCameraContext &context)
+{
+	if (!m_pAsyncCameraCallback)
+		return false;
+
+	if (m_predictedRenderPose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid && m_predictedRenderPose[vr::k_unTrackedDeviceIndex_Hmd].bDeviceIsConnected)
+	{
+		HmdPoseState worldPose, hmdPose;
+		CopyPoseState(worldPose, hmdPose, m_predictedRenderPose[vr::k_unTrackedDeviceIndex_Hmd]);
+
+		HmdTrackingState worldTrackingState;
+		worldTrackingState.pose = worldPose;
+
+		if (m_pAsyncCameraCallback->OnAsyncCameraCallback(worldTrackingState, context))
+			return true;
+
+		m_poseTimestamp = m_predictedRenderPoseTimestamp;
+	}
+
+	return false;
 }
 
 } // namespace OpenVR

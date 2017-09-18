@@ -4247,6 +4247,12 @@ void CD3D9Renderer::RT_EndFrame()
 			DWORD syncInterval = ComputePresentInterval(m_devInfo.SyncInterval() != 0, m_devInfo.RefreshRate().Numerator, m_devInfo.RefreshRate().Denominator);
 			DWORD presentFlags = m_devInfo.PresentFlags();
 			hReturn = pDC->m_pSwapChain->Present(syncInterval, presentFlags);
+
+			if (IHmdRenderer* pHmdRenderer = GetS3DRend().GetIHmdRenderer())
+			{
+				pHmdRenderer->OnPostPresent();
+			}
+
 			if (DXGI_ERROR_DEVICE_RESET == hReturn)
 			{
 				CryFatalError("DXGI_ERROR_DEVICE_RESET");

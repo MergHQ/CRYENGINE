@@ -221,7 +221,7 @@ void CView::Update(float frameTime, bool isActive)
 		}
 		else if (bHmdTrackingEnabled)
 		{
-			pHmdDevice->SetAsynCameraCallback(this);
+			pHmdDevice->SetAsyncCameraCallback(this);
 			if (Cry::pHmdTrackingOrigin && Cry::pHmdTrackingOrigin->GetIVal() == (int)EHmdTrackingOrigin::Floor)
 			{
 				const IEntity* pEnt = GetLinkedEntity();

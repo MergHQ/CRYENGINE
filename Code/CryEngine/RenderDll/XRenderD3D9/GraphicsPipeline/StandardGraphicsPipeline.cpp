@@ -1072,6 +1072,10 @@ void CStandardGraphicsPipeline::Execute()
 	
 	pRenderer->RT_SetCameraInfo();
 
+	gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(m_pCurrentRenderView);
+
+	UpdateMainViewConstantBuffer();
+
 	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
 	{
 		m_pGpuParticlesStage->Execute(m_pCurrentRenderView);
@@ -1081,10 +1085,6 @@ void CStandardGraphicsPipeline::Execute()
 		m_pRainStage->ExecuteRainPreprocess();
 		m_pSnowStage->ExecuteSnowPreprocess();
 	}
-
-	UpdateMainViewConstantBuffer();
-
-	gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(m_pCurrentRenderView);
 
 	// new graphics pipeline doesn't need clearing stereo render targets.
 	if (pRenderer->m_nGraphicsPipeline > 0)

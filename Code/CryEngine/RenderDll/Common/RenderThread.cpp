@@ -3400,7 +3400,7 @@ void SRenderThread::Process()
 					}
 
 					// Make sure we aren't running with thousands of FPS with VSync disabled
-					gRenDev->LimitFramerate(60, true);
+					gRenDev->LimitFramerate(120, true);
 
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 					gcpRendD3D->DevInfo().ProcessSystemEventQueue();
