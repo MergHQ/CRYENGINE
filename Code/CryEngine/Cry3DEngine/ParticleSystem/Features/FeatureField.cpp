@@ -34,7 +34,6 @@ public:
 		: m_alphaScale(0, 1)
 		, m_clipLow(0, 0)
 		, m_clipRange(1, 1)
-		, CParticleFeature(gpu_pfx2::eGpuFeatureType_FieldOpacity)
 	{
 	}
 
@@ -49,7 +48,7 @@ public:
 		pParams->m_shaderData.m_alphaTest[0][2] = m_clipRange.x;
 		pParams->m_shaderData.m_alphaTest[1][2] = m_clipRange.y - m_clipRange.x;
 
-		if (auto pInt = GetGpuInterface())
+		if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldOpacity))
 		{
 			const int numSamples = gpu_pfx2::kNumModifierSamples;
 			float samples[numSamples];
@@ -104,14 +103,12 @@ class CFeatureFieldSize : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureFieldSize() : CParticleFeature(gpu_pfx2::eGpuFeatureType_FieldSize) {}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_size.AddToComponent(pComponent, this, EPDT_Size);
 		pParams->m_maxParticleSize = max(pParams->m_maxParticleSize, m_size.GetValueRange().end);
 
-		if (auto gpuInt = GetGpuInterface())
+		if (auto gpuInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldSize))
 		{
 			const int numSamples = gpu_pfx2::kNumModifierSamples;
 			float samples[numSamples];
@@ -165,7 +162,7 @@ public:
 		, m_maxSize(0.0f)
 		, m_initAlphas(false)
 		, m_affectOpacity(true)
-		, CParticleFeature(gpu_pfx2::eGpuFeatureType_FieldPixelSize) {}
+	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
@@ -178,7 +175,7 @@ public:
 		}
 		pComponent->AddToUpdateList(EUL_Update, this);
 
-		if (auto gpuInt = GetGpuInterface())
+		if (auto gpuInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldPixelSize))
 		{
 			gpu_pfx2::SFeatureParametersPixelSize params;
 			params.minSize = m_minSize;

@@ -14,9 +14,7 @@ namespace gpu_pfx2
 {
 const int CParticleComponentRuntime::kThreadsInBlock = 1024;
 
-static pfx2::EUpdateList s_updateListmapping[] = { pfx2::EUL_Spawn, pfx2::EUL_InitUpdate, pfx2::EUL_Update, pfx2::EUL_InitSubInstance };
-
-void CParticleComponentRuntime::AddRemoveNewBornsParticles(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
+void CParticleComponentRuntime::AddRemoveParticles(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	if (!m_container.HasDefaultParticleData())
 		return;
@@ -27,21 +25,7 @@ void CParticleComponentRuntime::AddRemoveNewBornsParticles(SUpdateContext& conte
 	if (m_parameters->numKilled)
 		SwapToEnd(context, commandList);
 
-	{
-		// this is the only place where there needs to be a lock during the render
-		// thread processing, because here, the sub instance data is actually passed to the
-		// render thread
-		CryAutoLock<CryCriticalSection> lock(m_cs);
-		m_subInstancesRenderThread = m_subInstances;
-
-		m_parentDataSizeRenderThread = m_parentData.size();
-		if (m_parentDataSizeRenderThread)
-		{
-			m_parentDataRenderThread.UpdateBufferContentAligned(&m_parentData[0], m_parentDataSizeRenderThread);
-		}
-	}
-
-	AddRemoveParticles(context);
+	AddParticles(context);
 	if (m_parameters->numNewBorns)
 		UpdateNewBorns(context, commandList);
 }
@@ -53,8 +37,6 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 
 	m_parameters->deltaTime = context.deltaTime;
 	m_parameters->currentTime += context.deltaTime;
-	m_parameters->physAccel = m_envParams.physAccel;
-	m_parameters->physWind = m_envParams.physWind;
 	m_parameters->viewProjection = gcpRendD3D->m_CameraProjMatrix;
 	m_parameters->sortMode = m_params.sortMode;
 
@@ -126,17 +108,6 @@ void CParticleComponentRuntime::SetCounterFromManager(const uint32* pCounter)
 		m_parameters->numKilled = 0;
 }
 
-void CParticleComponentRuntime::SpawnParticles(int instanceId, uint32 count)
-{
-	if (count == 0)
-		return;
-
-	SSpawnEntry entry;
-	entry.m_count = count;
-	entry.m_instanceId = instanceId;
-	m_spawnEntries.push_back(entry);
-}
-
 void CParticleComponentRuntime::SetUpdateBuffer(EFeatureUpdateSrvSlot slot, CGpuBuffer* pGpuBuffer)
 {
 	m_updateSrvSlots[slot] = pGpuBuffer;
@@ -157,59 +128,63 @@ void CParticleComponentRuntime::SetUpdateConstantBuffer(EConstantBufferSlot slot
 	m_updateConstantBuffers[slot] = pConstantBuffer;
 }
 
-void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context)
+void CParticleComponentRuntime::UpdateData(const SUpdateParams& params, TConstArray<SSpawnEntry> entries, TConstArray<SParentData> parentData)
 {
-	// spawn
-	if (m_active)
-	{
-		for (CFeature* feature : m_gpuUpdateLists[eGpuUpdateList_Spawn])
-		{
-			feature->SpawnParticles(context);
-		}
-	}
-	// now we have a spawn list in m_spawnEntries
+	auto& updateData = m_updateData[gRenDev->m_RP.m_nFillThreadID];
+
+	static_cast<SUpdateParams&>(updateData) = params;
+	updateData.parentData = parentData;
+	updateData.spawnEntries = entries;
+}
+
+void CParticleComponentRuntime::AddParticles(SUpdateContext& context)
+{
+	const auto& updateData = m_updateData[gRenDev->m_RP.m_nProcessThreadID];
+
+	// copy parameters from CPU features
+	m_particleInitializationParameters = updateData;
+	m_initializationShaderFlags        = updateData.initFlags;
+
+	m_parameters->lifeTime             = updateData.lifeTime;
+	m_parameters->emitterPosition      = updateData.emitterPosition;
+	m_parameters->emitterOrientation   = updateData.emitterOrientation;
+	m_parameters->physAccel            = updateData.physAccel;
+	m_parameters->physWind             = updateData.physWind;
+	
+	// count and cap the number of particles to spawn
 	m_parameters->numNewBorns = 0;
-	for (int i = 0; i < m_spawnEntries.size(); ++i)
-	{
-		m_parameters->numNewBorns += m_spawnEntries[i].m_count;
-	}
+	for (const auto& entry : updateData.spawnEntries)
+		m_parameters->numNewBorns += entry.m_count;
 
-	stl::aligned_vector<uint, CRY_PLATFORM_ALIGNMENT> newBornData;
-	newBornData.resize(m_parameters->numNewBorns);
-	int index = 0;
-	for (int i = 0; i < m_spawnEntries.size(); ++i)
-	{
-		for (int c = 0; c < m_spawnEntries[i].m_count; ++c)
-		{
-			newBornData[index] = std::min(m_spawnEntries[i].m_instanceId, m_parentDataSizeRenderThread - 1);
-			index++;
-		}
-	}
-
-	// cap because of size of newborn array
-	m_parameters->numNewBorns =
-	  min(m_params.maxNewBorns, m_parameters->numNewBorns);
-	// cap global
-	m_parameters->numNewBorns =
-	  min(m_params.maxParticles - m_parameters->numParticles, m_parameters->numNewBorns);
-
+	// cap the count to max newborns
+	int maxNewBorns = min(m_parameters->numNewBorns, m_params.maxParticles - m_parameters->numParticles);
+	m_parameters->numNewBorns = min(m_parameters->numNewBorns, maxNewBorns);
 	m_parameters->numParticles += m_parameters->numNewBorns;
-
-	if (m_parameters->numNewBorns)
-		m_newBornIndices.UpdateBufferContentAligned(&newBornData[0], m_parameters->numNewBorns);
 
 	m_parameters.CopyToDevice();
 
-	m_spawnEntries.resize(0);
+	// copy parentData and newbornData
+	if (updateData.parentData.size())
+		m_parentDataRenderThread.UpdateBufferContentAligned(updateData.parentData.begin(), updateData.parentData.size());
+
+	if (m_parameters->numNewBorns)
+	{
+		TDynArrayAligned<TParticleId> newBornIndices;
+		newBornIndices.reserve(m_parameters->numNewBorns);
+		for (const auto& entry : updateData.spawnEntries)
+		{
+			TParticleId id = min(entry.m_parentId, updateData.parentData.size() - 1);
+			TParticleId count = min(entry.m_count, m_parameters->numNewBorns - newBornIndices.size());
+			newBornIndices.append(count, id);
+		}
+
+		m_newBornIndices.UpdateBufferContentAligned(newBornIndices.begin(), newBornIndices.size());
+	}
 }
 
 void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
-	m_initializationShaderFlags = 0;
-
-	m_particleInitializationParameters->velocityScale = 0.0f;
-
-	for (CFeature* feature : m_gpuUpdateLists[eGpuUpdateList_InitUpdate])
+	for (CFeature* feature : m_features)
 	{
 		feature->InitParticles(context);
 	}
@@ -270,7 +245,7 @@ void CParticleComponentRuntime::UpdateFeatures(const SUpdateContext& context, CD
 {
 	m_updateShaderFlags = 0;
 
-	for (CFeature* feature : m_gpuUpdateLists[eGpuUpdateList_Update])
+	for (CFeature* feature : m_features)
 	{
 		feature->Update(context, commandList);
 	}
@@ -363,7 +338,6 @@ void CParticleComponentRuntime::UpdatePasses()
 bool CParticleComponentRuntime::IsValidForParams(const SComponentParams& parameters)
 {
 	if (
-	  parameters.usesGpuImplementation &&
 	  parameters.maxNewBorns == m_params.maxNewBorns &&
 	  parameters.maxParticles == m_params.maxParticles &&
 	  parameters.sortMode == m_params.sortMode &&
@@ -384,103 +358,28 @@ void CParticleComponentRuntime::SetInitializationSRV(EFeatureInitializationSrvSl
 	m_initializationSrvSlots[slot] = pGpuBuffer;
 }
 
-void CParticleComponentRuntime::SetInitializationFlags(uint64 flags)
-{
-	m_initializationShaderFlags |= flags;
-}
-
-CParticleComponentRuntime::CParticleComponentRuntime(IParticleEmitter* pEmitter, pfx2::IParticleComponent* pComponent, const SComponentParams& params)
+CParticleComponentRuntime::CParticleComponentRuntime(const SComponentParams& params, TConstArray<IParticleFeature*> features)
 	: m_bounds(AABB::RESET)
-	, m_active(true)
-	, m_state(IParticleComponentRuntime::EState::Uninitialized)
+	, m_initialized(false)
 	, m_blockSums(params.maxParticles)
 	, m_killList(params.maxParticles)
 	, m_newBornIndices(params.maxNewBorns)
 	, m_parentDataRenderThread(params.maxNewBorns)
-	, m_parentDataSizeRenderThread(0)
-	, m_pComponent(pComponent)
 	, m_params(params)
 	, m_container(params.maxParticles)
 	, m_updateShaderFlags(0)
 	, m_previousUpdateShaderShaderFlags(std::numeric_limits<uint64>::max())
 	, m_initializationShaderFlags(0)
 	, m_previousInitializationShaderFlags(std::numeric_limits<uint64>::max())
-	, m_pEmitter(pEmitter)
 {
-	assert(m_pEmitter);
-	for (int i = 0; i < eGpuUpdateList_COUNT; ++i)
-	{
-		m_gpuUpdateLists[i].resize(0);
-		auto list = pComponent->GetGpuUpdateList(s_updateListmapping[i]);
-		for (auto feature: list)
-			m_gpuUpdateLists[i].push_back(static_cast<CFeature*>(feature));
-	}
+	ZeroStruct(m_updateSrvSlots);
+	ZeroStruct(m_updateTextureSlots);
+	ZeroStruct(m_updateConstantBuffers);
+	ZeroStruct(m_initializationSrvSlots);
 
-	memset(m_updateSrvSlots, 0, sizeof(m_updateSrvSlots));
-	memset(m_updateTextureSlots, 0, sizeof(m_updateTextureSlots));
-	memset(m_updateConstantBuffers, 0, sizeof(m_updateConstantBuffers));
-	memset(m_initializationSrvSlots, 0, sizeof(m_initializationSrvSlots));
-}
-
-void CParticleComponentRuntime::UpdateEmitterData()
-{
-	assert(m_pEmitter);
-	CryAutoLock<CryCriticalSection> lock(m_cs);
-	m_parameters->emitterPosition = m_pEmitter->GetLocation().t;
-	m_parameters->emitterOrientation = m_pEmitter->GetLocation().q;
-	m_parentData.resize(m_subInstances.size());
-	if (m_subInstances.size())
-	{
-		m_pComponent->GetParentData(m_pEmitter, m_subInstances, &m_parentData[0]);
-	}
-}
-
-void CParticleComponentRuntime::AddSubInstances(TConstArray<SInstance> instances)
-{
-	CryAutoLock<CryCriticalSection> lock(m_cs);
-	uint count = min(m_params.maxNewBorns - m_subInstances.size(), instances.size());
-	for (int i = 0; i < count; ++i)
-	{
-		m_subInstances.push_back(instances[i].m_parentId);
-		m_spawnData.push_back(SSpawnData());
-	}
-
-	for (CFeature* feature : m_gpuUpdateLists[eGpuUpdateList_InitSubInstance])
-	{
-		feature->InitSubInstance(this, &m_spawnData[m_spawnData.size() - count], count);
-	}
-}
-
-void CParticleComponentRuntime::RemoveSubInstance(size_t instanceId)
-{
-	CryAutoLock<CryCriticalSection> lock(m_cs);
-	size_t toCopy = m_subInstances.size() - 1;
-	m_subInstances[instanceId] = m_subInstances[toCopy];
-	m_spawnData[instanceId] = m_spawnData[toCopy];
-	m_subInstances.pop_back();
-	m_spawnData.pop_back();
-}
-
-void CParticleComponentRuntime::RemoveAllSubInstances()
-{
-	CryAutoLock<CryCriticalSection> lock(m_cs);
-	m_subInstances.clear();
-	m_spawnData.clear();
-}
-
-void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapIds)
-{
-	CryAutoLock<CryCriticalSection> lock(m_cs);
-	size_t toCopy = 0;
-	for (size_t i = 0; i < m_subInstances.size(); ++i)
-	{
-		m_subInstances[i] = swapIds[m_subInstances[i]];
-		if (m_subInstances[i] == -1)
-			continue;
-		m_subInstances[toCopy] = m_subInstances[i];
-		++toCopy;
-	}
-	m_subInstances.erase(m_subInstances.begin() + toCopy, m_subInstances.end());
+	m_features.reserve(features.size());
+	for (auto pFeature : features)
+		m_features.push_back(static_cast<CFeature*>(pFeature));
 }
 
 void CParticleComponentRuntime::SwapToEnd(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
@@ -546,10 +445,13 @@ void CParticleComponentRuntime::Initialize()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	memset(m_updateSrvSlots, 0, sizeof(m_updateSrvSlots));
-	memset(m_updateTextureSlots, 0, sizeof(m_updateTextureSlots));
-	memset(m_updateConstantBuffers, 0, sizeof(m_updateConstantBuffers));
-	memset(m_initializationSrvSlots, 0, sizeof(m_initializationSrvSlots));
+	if (m_initialized)
+		return;
+
+	ZeroStruct(m_updateSrvSlots);
+	ZeroStruct(m_updateTextureSlots);
+	ZeroStruct(m_updateConstantBuffers);
+	ZeroStruct(m_initializationSrvSlots);
 
 	m_particleInitializationParameters->velocityScale = 0.0;
 	m_particleInitializationParameters->color = Vec3(1.0f, 1.0f, 1.0f);
@@ -582,40 +484,16 @@ void CParticleComponentRuntime::Initialize()
 
 	InitializePasses();
 
-	m_state = EState::Ready;
+	m_initialized = true;
 }
 
-void CParticleComponentRuntime::Reset()
-{
-	m_container.Clear();
-	m_subInstances.clear();
-	m_subInstances.shrink_to_fit();
-	m_spawnData.clear();
-	m_spawnData.shrink_to_fit();
-
-	m_parameters->numParticles = 0;
-	m_parameters->numNewBorns = 0;
-
-	m_bounds = AABB::RESET;
-
-	m_state = EState::Uninitialized;
-}
-
-void CParticleComponentRuntime::PrepareRelease()
-{
-	for (int i = 0; i < eGpuUpdateList_COUNT; ++i)
-	{
-		m_gpuUpdateLists[i].resize(0);
-	}
-}
-
-void CParticleComponentRuntime::AccumStats(pfx2::SParticleStats& stats)
+void CParticleComponentRuntime::AccumStats(SParticleStats& stats)
 {
 	stats.components.alive++;
 	stats.components.updated++;
 	stats.components.rendered++;
 	stats.particles.rendered += m_parameters->numParticles;
 	stats.particles.updated += m_parameters->numParticles;
-	stats.particles.alive += m_parameters->numParticles;
+	stats.particles.alive += m_params.maxParticles;
 }
 }

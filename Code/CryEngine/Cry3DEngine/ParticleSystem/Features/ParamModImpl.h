@@ -66,7 +66,8 @@ void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pCompon
 	auto it = std::remove_if(m_modifiers.begin(), m_modifiers.end(), [](const PModifier& ptr) { return !ptr; });
 	m_modifiers.erase(it, m_modifiers.end());
 
-	pComponent->AddToUpdateList(EUL_InitUpdate, pFeature);
+	if (Context().GetDomain() == EMD_PerParticle)
+		pComponent->AddToUpdateList(EUL_InitUpdate, pFeature);
 
 	for (auto& pModifier : m_modifiers)
 	{
@@ -84,7 +85,8 @@ void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pCompon
 	if (dataType.info().hasInit && !m_modUpdate.empty())
 	{
 		pComponent->AddParticleData(InitType(dataType));
-		pComponent->AddToUpdateList(EUL_Update, pFeature);
+		if (Context().GetDomain() == EMD_PerParticle)
+			pComponent->AddToUpdateList(EUL_Update, pFeature);
 	}
 }
 

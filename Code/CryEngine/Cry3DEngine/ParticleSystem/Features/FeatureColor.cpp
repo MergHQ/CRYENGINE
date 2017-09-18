@@ -25,7 +25,7 @@ void IColorModifier::Serialize(Serialization::IArchive& ar)
 	ar(m_enabled);
 }
 
-CFeatureFieldColor::CFeatureFieldColor() : m_color(255, 255, 255), CParticleFeature(gpu_pfx2::eGpuFeatureType_Color) {}
+CFeatureFieldColor::CFeatureFieldColor() : m_color(255, 255, 255) {}
 
 void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
@@ -46,7 +46,7 @@ void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SCompone
 		pComponent->AddToUpdateList(EUL_Update, this);
 	}
 
-	if (auto pInt = GetGpuInterface())
+	if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Color))
 	{
 		const int numSamples = gpu_pfx2::kNumModifierSamples;
 		Vec3 samples[numSamples];

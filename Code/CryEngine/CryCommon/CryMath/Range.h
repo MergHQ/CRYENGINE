@@ -26,7 +26,7 @@ public:
 	//! Get length of range.
 	T Length() const { return end - start; };
 
-	//! Check if range is empty.
+	bool IsValid()  const { return start <= end; }
 	bool IsEmpty()  const { return start >= end; }
 
 	//! Check if value is inside range.
@@ -104,6 +104,11 @@ public:
 	TRange operator+(TRange r) const
 	{
 		return TRange(start + r.start, end + r.end);
+	}
+	//! Interpolate range
+	T operator()(float f) const
+	{
+		return start + T(Length() * f);
 	}
 };
 

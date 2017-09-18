@@ -554,7 +554,7 @@ void CFeatureGPUCollision::AddToComponent(CParticleComponent* pComponent, SCompo
 {
 	pComponent->AddToUpdateList(EUL_Update, this);
 
-	if (auto pInt = GetGpuInterface())
+	if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Collision))
 	{
 		gpu_pfx2::SFeatureParametersCollision params;
 		params.offset = m_offset;

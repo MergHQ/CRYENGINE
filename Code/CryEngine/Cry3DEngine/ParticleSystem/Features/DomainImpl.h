@@ -265,6 +265,13 @@ ILINE void CDomain::AddToParam(CParticleComponent* pComponent, TParam* pParam, T
 
 ILINE EModDomain CDomain::GetDomain() const
 {
+	switch (m_domain)
+	{
+	case EDomain::Global:
+	case EDomain::Attribute:
+		return EMD_PerEffect;
+	}
+
 	switch (m_sourceOwner)
 	{
 	case EDomainOwner::Self:

@@ -25,7 +25,7 @@ SERIALIZATION_DECLARE_ENUM(ESecondGenMode,
                            )
 
 
-typedef THeapArray<CParticleComponentRuntime::SInstance> TInstanceArray;
+typedef THeapArray<SInstance> TInstanceArray;
 
 class CFeatureSecondGenBase : public CParticleFeature
 {
@@ -34,7 +34,7 @@ public:
 		: m_probability(1.0f)
 		, m_mode(ESecondGenMode::All) {}
 
-	void ResolveDependency(CParticleComponent* pComponent) override
+	bool ResolveDependency(CParticleComponent* pComponent) override
 	{
 		CRY_PFX2_ASSERT(pComponent);
 
@@ -45,14 +45,14 @@ public:
 		{
 			if (auto pSubComp = pEffect->FindComponentByName(componentName))
 			{
-				const bool isUnique = std::find(m_components.begin(), m_components.end(), pSubComp) == m_components.end();
-				if (isUnique)
+				if (!stl::find(m_components, pSubComp))
 				{
-					if (pSubComp->SetParentComponent(pComponent, IsDelayed()))
-						m_components.push_back(pSubComp);
+					pSubComp->SetParentComponent(pComponent, IsDelayed());
+					m_components.push_back(pSubComp);
 				}
 			}
 		}
+		return true;
 	}
 
 	void Serialize(Serialization::IArchive& ar) override
@@ -104,7 +104,7 @@ protected:
 		const uint numEntries = m_components.size();
 		for (uint i = 0; i < numEntries; ++i)
 		{
-			IParticleComponentRuntime* pChildComponentRuntime = context.m_runtime.GetEmitter()->GetRuntimeFor(m_components[i]);
+			CParticleComponentRuntime* pChildComponentRuntime = context.m_runtime.GetEmitter()->GetRuntimeFor(m_components[i]);
 			SChaosKey chaosKey = context.m_spawnRng;
 
 			for (const auto& trigger : triggers)

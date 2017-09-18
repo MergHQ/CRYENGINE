@@ -447,10 +447,9 @@ void CParticleProfiler::DrawMemoryStats()
 	for (CParticleEmitter* pEmitter : GetPSystem()->GetActiveEmitters())
 	{
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
-		for (auto ref : pEmitter->GetRuntimes())
+		for (auto pRuntime : pEmitter->GetRuntimes())
 		{
-			const CParticleComponentRuntime* pRuntime = ref.pRuntime->GetCpuRuntime();
-			if (!pRuntime)
+			if (!pRuntime->GetCpuRuntime())
 				continue;
 			const CParticleContainer& container = pRuntime->GetContainer();
 			const uint totalNumParticles = container.GetMaxParticles();
@@ -475,10 +474,9 @@ void CParticleProfiler::DrawMemoryStats()
 	for (CParticleEmitter* pEmitter : GetPSystem()->GetActiveEmitters())
 	{
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
-		for (auto ref : pEmitter->GetRuntimes())
+		for (auto pRuntime : pEmitter->GetRuntimes())
 		{
-			const CParticleComponentRuntime* pRuntime = ref.pRuntime->GetCpuRuntime();
-			if (!pRuntime)
+			if (!pRuntime->GetCpuRuntime())
 				continue;
 
 			const CParticleContainer& container = pRuntime->GetContainer();

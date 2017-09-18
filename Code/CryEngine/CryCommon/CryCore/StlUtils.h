@@ -3,7 +3,7 @@
 #ifndef _STL_UTILS_HEADER_
 #define _STL_UTILS_HEADER_
 
-#include "Wrapper.h"
+#include <CryMath/Range.h>
 
 #include <map>
 #include <set>
@@ -11,28 +11,6 @@
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
-
-/*
-   {
-   typename Map::const_iterator it = mapKeyToValue.find (key);
-   if (it == mapKeyToValue.end())
-    return valueDefault;
-   else
-    return it->second;
-   }
-
-   //! Searches the given entry in the map by key, and if there is none, returns the default value.
-   //! The values are taken/returned in REFERENCEs rather than values.
-   template <typename Map>
-   inline typename Map::mapped_type& find_in_map_ref(Map& mapKeyToValue, typename Map::key_type key, typename Map::mapped_type& valueDefault)
-   {
-   typename Map::iterator it = mapKeyToValue.find (key);
-   if (it == mapKeyToValue.end())
-    return valueDefault;
-   else
-    return it->second;
-   }
- */
 
 //! Auto-cleaner: upon destruction, calls the clear() method.
 template<class T>
@@ -195,6 +173,38 @@ inline void set_to_vector(const Set& theSet, Vector& array)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename C, typename V>
+bool has_value(const C& container, const V& value)
+{
+	auto it = std::find(container.begin(), container.end(), value);
+	return it != container.end();
+}
+
+template<typename C, typename P>
+bool has_value_if(const C& container, const P& pred)
+{
+	auto it = std::find_if(container.begin(), container.end(), pred);
+	return it != container.end();
+}
+
+template<typename C, typename P>
+typename C::value_type find_value_if(const C& container, const P& pred)
+{
+	auto it = std::find_if(container.begin(), container.end(), pred);
+	return it != container.end() ? *it : typename C::value_type();
+}
+
+template<typename C, typename V>
+bool append_unique(C& container, const V& value)
+{
+	if (has_value(container, value))
+		return false;
+	container.push_back(value);
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
 //! Find and erase element from container.
 //! \return true if item was find and erased, false if item not found.
 template<class Container, class Value>
@@ -705,44 +715,6 @@ struct SAllocatorConstruct
 	//! Note: add more implementations if required.
 #endif
 };
-
-/////////////////////////////////////////////////////////////////////
-// Iteration utilities and adaptors
-
-// Provide an arbitrary range for range-based for loops
-// Examples:
-//		for (auto& e : stl::range(B, E))  // replaces:
-//		for (auto it = B; it != E; ++it)
-//
-
-template<class IT>
-struct Range
-{
-	typedef IT iterator;
-
-	TProperty<IT> begin;
-	TProperty<IT> end;
-
-	Range(IT b, IT e)
-		: begin(b), end(e) {}
-};
-
-template<class IT>
-Range<IT> range(IT b, IT e)
-{ return Range<IT>(b, e); }
-
-// Adapter for iterating a container in reverse
-// Example:
-//		for (auto& e : stl::reverse(cont))  // replaces:
-//		for (auto it = cont.rbegin(); it != cont.rend(); ++it)
-
-template<class C>
-Range<typename C::const_reverse_iterator> reversed(const C& c)
-{ return range(c.rbegin(), c.rend()); }
-
-template<class C>
-Range<typename C::reverse_iterator> reversed(C& c)
-{ return range(c.rbegin(), c.rend()); }
 
 // Adapter for iterating over a container of non-null pointers
 // Example:

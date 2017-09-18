@@ -19,7 +19,7 @@ public:
 	virtual void ComputeEffector(const SUpdateContext& context, IOVec3Stream localVelocities, IOVec3Stream localAccelerations) {}
 	virtual void ComputeMove(const SUpdateContext& context, IOVec3Stream localMoves, float fTime) {}
 	virtual void Serialize(Serialization::IArchive& ar);
-	virtual void SetParameters(gpu_pfx2::IParticleFeatureGpuInterface* gpuInterface) const {}
+	virtual void SetParameters(gpu_pfx2::IParticleFeature* gpuInterface) const {}
 private:
 	SEnable m_enabled;
 };

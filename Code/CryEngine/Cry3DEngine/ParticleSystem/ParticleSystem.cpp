@@ -66,8 +66,7 @@ PParticleEmitter CParticleSystem::CreateEmitter(PParticleEffect pEffect)
 	CParticleEffect* pCEffect = CastEffect(pEffect);
 	pCEffect->Compile();
 
-	_smart_ptr<CParticleEmitter> pEmitter = new CParticleEmitter(m_nextEmitterId++);
-	pEmitter->SetCEffect(pCEffect);
+	_smart_ptr<CParticleEmitter> pEmitter = new CParticleEmitter(pCEffect, m_nextEmitterId++);
 	m_newEmitters.push_back(pEmitter);
 	return pEmitter;
 }
@@ -164,9 +163,6 @@ void CParticleSystem::Update()
 			pEmitter->Update();
 			m_jobManager.AddEmitter(pEmitter);
 		}
-
-		for (auto& pEmitter : m_emitters)
-			UpdateGpuRuntimesForEmitter(pEmitter);
 
 		m_jobManager.KernelUpdateAll();
 	}
@@ -336,27 +332,6 @@ const SParticleFeatureParams* CParticleSystem::GetDefaultFeatureParam(EFeatureTy
 		if (feature.m_defaultForType == type)
 			return &feature;
 	return nullptr;
-}
-
-void CParticleSystem::UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter)
-{
-	FUNCTION_PROFILER_3DENGINE
-
-	for (auto ref : pEmitter->GetRuntimes())
-	{
-		auto pGpuRuntime = ref.pRuntime->GetGpuRuntime();
-		if (!pGpuRuntime)
-			continue;
-		const bool isActive = pGpuRuntime->IsActive();
-		if (isActive)
-		{
-			gpu_pfx2::SEnvironmentParameters params;
-			params.physAccel = pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
-			params.physWind = pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
-			pGpuRuntime->SetEnvironmentParameters(params);
-			pGpuRuntime->UpdateEmitterData();
-		}
-	}
 }
 
 void CParticleSystem::GetStats(SParticleStats& stats)

@@ -13,40 +13,21 @@ namespace gpu_pfx2
 static const int kMaxRuntimes = 4096;
 
 CManager::CManager()
-	: m_state(EState::Uninitialized)
-	, m_readback(kMaxRuntimes)
+	: m_readback(kMaxRuntimes)
 	, m_counter(kMaxRuntimes)
 	, m_scratch(kMaxRuntimes)
 	, m_numRuntimesReadback(0)
 {
 }
 
-void CManager::Initialize()
-{
-	m_state = EState::Ready;
-}
-
-void CManager::BeginFrame()
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	if (m_state == EState::Uninitialized)
-		Initialize();
-}
-
-_smart_ptr<IParticleComponentRuntime>
-CManager::CreateParticleComponentRuntime(
-	IParticleEmitter* pEmitter,
-	pfx2::IParticleComponent* pComponent,
-	const SComponentParams& params)
+IParticleComponentRuntime* CManager::CreateParticleContainer(const SComponentParams& params, TConstArray<IParticleFeature*> features)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CryAutoLock<CryCriticalSection> lock(m_cs);
 
-	CParticleComponentRuntime* pRuntime = new CParticleComponentRuntime(pEmitter, pComponent, params);
-	_smart_ptr<IParticleComponentRuntime> result(pRuntime);
+	auto* pRuntime = new CParticleComponentRuntime(params, features);
 	GetWriteRuntimes().push_back(pRuntime);
-	return result;
+	return pRuntime;
 }
 
 void CManager::RenderThreadUpdate()
@@ -91,8 +72,7 @@ void CManager::RenderThreadUpdate()
 		{
 			for (auto& pRuntime : GetReadRuntimes())
 			{
-				if (pRuntime->GetState() == CParticleComponentRuntime::EState::Uninitialized)
-					pRuntime->Initialize();
+				pRuntime->Initialize();
 			}
 		}
 
@@ -118,7 +98,7 @@ void CManager::RenderThreadUpdate()
 
 				pRuntime->SetCounterFromManager(pCounter);
 				pRuntime->SetManagerSlot(i);
-				pRuntime->AddRemoveNewBornsParticles(context, pComputeInterface);
+				pRuntime->AddRemoveParticles(context, pComputeInterface);
 				pRuntime->UpdateParticles(context, pComputeInterface);
 				pRuntime->CalculateBounds(context, pComputeInterface);
 			}
@@ -229,15 +209,13 @@ void CManager::ProcessResources()
 	m_particleFeatureGpuInterfacesInitialization.resize(0);
 }
 
-_smart_ptr<IParticleFeatureGpuInterface>
-CManager::CreateParticleFeatureGpuInterface(EGpuFeatureType feature)
+IParticleFeature* CManager::CreateParticleFeature(EGpuFeatureType feature)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CryAutoLock<CryCriticalSection> lock(m_cs);
 
-	_smart_ptr<CFeature> result =
-	  m_gpuInterfaceFactory.CreateInstance(feature);
-	if (result != nullptr)
+	CFeature* result = m_gpuInterfaceFactory.CreateInstance(feature);
+	if (result)
 	{
 		m_particleFeatureGpuInterfaces.push_back(result);
 		m_particleFeatureGpuInterfacesInitialization.push_back(result);
@@ -247,8 +225,6 @@ CManager::CreateParticleFeatureGpuInterface(EGpuFeatureType feature)
 
 void CManager::CleanupResources()
 {
-	for (auto& runtime : GetWriteRuntimes())
-		runtime->PrepareRelease();
 	GetWriteRuntimes().clear();
 	ProcessResources();
 

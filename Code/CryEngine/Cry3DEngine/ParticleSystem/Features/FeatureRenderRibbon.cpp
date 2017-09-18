@@ -164,7 +164,7 @@ void CFeatureRenderRibbon::ComputeVertices(CParticleComponentRuntime* pComponent
 	int totalRenderedParticles = 0;
 	for (uint ribbonId = 0; ribbonId < uint(ribbons.size()); ++ribbonId)
 		totalRenderedParticles += ribbons[ribbonId].m_lastIdx - ribbons[ribbonId].m_firstIdx;
-	pComponentRuntime->GetEmitter()->AddDrawCallCounts(totalRenderedParticles, 0);
+	pComponentRuntime->GetParticleStats().rendered += totalRenderedParticles;
 	GetPSystem()->GetProfiler().AddEntry(pComponentRuntime, EPS_RendereredParticles, uint(totalRenderedParticles));
 }
 

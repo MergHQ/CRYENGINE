@@ -29,8 +29,7 @@ public:
 	typedef TValue<uint> TParticleCount;
 
 	CFeatureMotionFluidDynamics()
-		: CParticleFeature(gpu_pfx2::eGpuFeatureType_MotionFluidDynamics)
-		, m_initialVelocity(0.0, 0.0, 5.0)
+		: m_initialVelocity(0.0, 0.0, 5.0)
 		, m_stiffness(1000.f)
 		, m_gravityConstant(-5.f)
 		, m_h(0.5f)
@@ -54,7 +53,7 @@ public:
 	{
 		pComponent->AddToUpdateList(EUL_Update, this);
 
-		if (auto pInt = GetGpuInterface())
+		if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_MotionFluidDynamics))
 		{
 			gpu_pfx2::SFeatureParametersMotionFluidDynamics params;
 			params.initialVelocity = m_initialVelocity;

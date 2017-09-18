@@ -21,23 +21,11 @@ namespace pfx2
 
 class CParticleEmitter : public IParticleEmitter, public Cry3DEngineBase
 {
-private:
-	struct SRuntimeRef
-	{
-		SRuntimeRef() : pRuntime(nullptr), pComponent(nullptr) {}
-		SRuntimeRef(CParticleEmitter* emitter, CParticleComponent* component, const gpu_pfx2::SComponentParams& params);
-
-		_smart_ptr<IParticleComponentRuntime> pRuntime;
-		CParticleComponent*                   pComponent;
-	};
-
-	typedef std::vector<SRuntimeRef>                          TComponentRuntimes;
-	typedef std::vector<CParticleComponentRuntime*>           TCPUComponentRuntimes;
-	typedef std::vector<gpu_pfx2::IParticleComponentRuntime*> TGPUComponentRuntimes;
-
 public:
-	CParticleEmitter(uint emitterId);
+	CParticleEmitter(CParticleEffect* pEffect, uint emitterId);
 	~CParticleEmitter();
+
+	using TRuntimes = std::vector<_smart_ptr<CParticleComponentRuntime>>;
 
 	// IRenderNode
 	virtual EERType          GetRenderNodeType() override;
@@ -100,9 +88,8 @@ public:
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
-	const TComponentRuntimes& GetRuntimes() const          { return m_componentRuntimes; }
-	IParticleComponentRuntime* GetRuntimeFor(CParticleComponent* pComponent) { return m_componentRuntimes[pComponent->GetComponentId()].pRuntime; }
-	void                      SetCEffect(CParticleEffect* pEffect);
+	const TRuntimes&          GetRuntimes() const          { return m_componentRuntimes; }
+	CParticleComponentRuntime* GetRuntimeFor(CParticleComponent* pComponent) { return m_componentRuntimesFor[pComponent->GetComponentId()]; }
 	const CParticleEffect*    GetCEffect() const           { return m_pEffect; }
 	CParticleEffect*          GetCEffect()                 { return m_pEffect; }
 	void                      Register();
@@ -127,17 +114,15 @@ public:
 	ColorF                    GetProfilerColor() const     { return m_profilerColor; }
 	uint                      GetParticleSpec() const;
 
-	bool                      IsIndependent() const { return Unique(); }
+	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
 	bool                      WasRenderedLastFrame() const { return (m_lastTimeRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 
 	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
-	void                      AddUpdatedParticles(uint updatedParticles);
-	void                      AddDrawCallCounts(uint numRendererdParticles, uint numClippedParticles);
-
+	
 private:
 	void     UpdateBoundingBox(const float frameTime);
-	void     UpdateRuntimeRefs();
+	void     UpdateRuntimes();
 	void     AddInstance();
 	void     UpdateFromEntity();
 	void     UpdateTargetFromEntity(IEntity* pEntity);
@@ -154,11 +139,9 @@ private:
 	AABB                        m_bounds;
 	float                       m_resetBoundsCache;
 	CParticleContainer          m_parentContainer;
-	TComponentRuntimes          m_componentRuntimes;
-	TCPUComponentRuntimes       m_cpuComponentRuntimes;
-	TGPUComponentRuntimes       m_gpuComponentRuntimes;
-	SParticleStats              m_emitterStats;
-	CryMutex                    m_statsMutex;
+	TRuntimes                   m_componentRuntimes;
+	TRuntimes                   m_componentRuntimesFor;
+	TElementCounts<uint>        m_emitterStats;
 	QuatTS                      m_location;
 	IEntity*                    m_entityOwner;
 	int                         m_entitySlot;

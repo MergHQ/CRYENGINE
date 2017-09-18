@@ -85,7 +85,7 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 	const SUpdateContext context = SUpdateContext(pRuntime);
 	const CParticleContainer& container = context.m_container;
 	const SComponentParams& params = context.m_params;
-	const size_t numInstances = pRuntime->GetNumInstances();
+	const uint numInstances = pRuntime->GetNumInstances();
 	IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 	TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 	IFStream normAges = container.GetIFStream(EPDT_NormalAge);
@@ -101,7 +101,7 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		const Vec2 instSz = Vec2(barSz, 0.9f / numInstances);
 		const Vec2 instLoc = Vec2(barIdx * barGap + startPos, startPos);
 		pos = instLoc;
-		for (size_t i = 0; i < numInstances; ++i)
+		for (uint i = 0; i < numInstances; ++i)
 		{
 			AABB box;
 			box.min = pos;
@@ -319,9 +319,9 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 		for (CParticleEmitter* pEmitter : activeEmitters)
 		{
 			CParticleEffect* pEffect = pEmitter->GetCEffect();
-			for (auto ref : pEmitter->GetRuntimes())
+			for (auto pRuntime : pEmitter->GetRuntimes())
 			{
-				auto pComponentRuntime = ref.pRuntime->GetCpuRuntime();
+				auto pComponentRuntime = pRuntime->GetCpuRuntime();
 				if (!pComponentRuntime)
 					continue;
 				if (!pComponentRuntime->GetComponent()->IsEnabled())

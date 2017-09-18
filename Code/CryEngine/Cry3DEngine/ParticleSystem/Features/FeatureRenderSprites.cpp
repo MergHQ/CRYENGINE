@@ -183,9 +183,9 @@ void CFeatureRenderSprites::ComputeVertices(CParticleComponentRuntime* pComponen
 	{
 		SortSprites(&spritesContext);
 		WriteToGPUMem(spritesContext);
-		pComponentRuntime->GetEmitter()->AddDrawCallCounts(
-		  spritesContext.m_numSprites,
-		  spritesContext.m_numParticles - spritesContext.m_numSprites);
+		auto& particleStats = pComponentRuntime->GetParticleStats();
+		particleStats.rendered += spritesContext.m_numSprites;
+		particleStats.clipped += spritesContext.m_numParticles - spritesContext.m_numSprites;
 		GetPSystem()->GetProfiler().AddEntry(pComponentRuntime, EPS_RendereredParticles, uint(spritesContext.m_numSprites));
 	}
 }

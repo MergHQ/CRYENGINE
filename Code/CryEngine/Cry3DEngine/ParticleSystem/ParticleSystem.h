@@ -70,13 +70,13 @@ public:
 	TParticleEmitters    GetActiveEmitters() const { return m_emitters; }
 	IMaterial*           GetFlareMaterial();
 
-	static std::vector<SParticleFeatureParams>& GetFeatureParams() { static std::vector<SParticleFeatureParams> params; return params; }
-	static bool RegisterFeature(const SParticleFeatureParams& params) { GetFeatureParams().push_back(params); return true; }
+	typedef std::vector<SParticleFeatureParams> TFeatureParams;
+	
+	static TFeatureParams&               GetFeatureParams()                                    { static TFeatureParams params; return params; }
+	static bool                          RegisterFeature(const SParticleFeatureParams& params) { GetFeatureParams().push_back(params); return true; }
 	static const SParticleFeatureParams* GetDefaultFeatureParam(EFeatureType);
 
 private:
-	float             DisplayDebugStats(Vec2 displayLocation, float lineHeight, const char* name, const SParticleStats& stats);
-	void              UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter);
 	void              TrimEmitters();
 	void              InvalidateCachedRenderObjects();
 	CParticleEffect*  CastEffect(const PParticleEffect& pEffect) const;

@@ -51,7 +51,6 @@ void CParticleEffect::Compile()
 	{
 		component->m_pEffect = this;
 		component->SetChanged();
-		component->m_componentParams.Reset();
 		component->PreCompile();
 	}
 	for (auto& component : m_components)
@@ -62,8 +61,8 @@ void CParticleEffect::Compile()
 	uint id = 0;
 	for (auto& component : m_components)
 	{
-		component->Compile();
 		component->m_componentId = id++;
+		component->Compile();
 	}
 	for (auto& component : m_components)
 		component->FinalizeCompile();
@@ -200,6 +199,7 @@ void CParticleEffect::Serialize(Serialization::IArchive& ar)
 	{
 		if (ar.isInput() && !ar.isEdit())
 			m_components.clear();
+		Serialization::SContext effectContext(ar, this);
 		ar(m_components, "Components", "+Components");
 	}
 
