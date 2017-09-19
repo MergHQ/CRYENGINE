@@ -85,7 +85,7 @@ class CAreaManager : public IAreaManager, public ISystemEventListener
 
 public:
 
-	explicit CAreaManager(CEntitySystem* pEntitySystem);
+	explicit CAreaManager();
 	~CAreaManager(void);
 
 	//IAreaManager
@@ -103,8 +103,6 @@ public:
 
 	// Makes a new area.
 	CArea*         CreateArea();
-
-	CEntitySystem* GetEntitySystem() const { return m_pEntitySystem; };
 
 	// Puts the passed entity ID into the update list for the next update.
 	virtual void MarkEntityForUpdate(EntityId const entityId) override;
@@ -152,7 +150,6 @@ protected:
 	// Holds all registered areas.
 	TAreaPointers  m_areas;
 
-	CEntitySystem* m_pEntitySystem;
 	bool           m_bAreasDirty;
 	CAreaGrid      m_areaGrid;
 
@@ -187,9 +184,9 @@ private:
 		m_mapAreaCache.erase(nEntityId);
 	}
 
-	void UpdateEntity(Vec3 const& position, IEntity* const pIEntity);
+	void UpdateEntity(Vec3 const& position, CEntity* const pIEntity);
 	void UpdateDirtyAreas();
-	void ProcessArea(CArea* const pArea, SAreaCacheEntry& areaCacheEntry, SAreasCache* const pAreaCache, Vec3 const& pos, IEntity const* const pIEntity, AreaEnvironments& areaEnvironments);
+	void ProcessArea(CArea* const pArea, SAreaCacheEntry& areaCacheEntry, SAreasCache* const pAreaCache, Vec3 const& pos, CEntity const* const pIEntity, AreaEnvironments& areaEnvironments);
 	void ExitArea(EntityId const entityId, CArea const* const _pArea);
 	bool GetEnvFadeValue(SAreasCache const& areaCache, SAreaCacheEntry& areaCacheEntry, Vec3 const& entityPos, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
 	bool GetEnvFadeValueInner(SAreasCache const& areaCache, SAreaCacheEntry const& areaCacheEntry, Vec3 const& entityPos, Vec3 const& posOnLowerArea, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);

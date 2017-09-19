@@ -3536,16 +3536,6 @@ void NavigationSystem::OffsetAllMeshes(const Vec3& additionalOffset)
 	}
 }
 
-void NavigationSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-{
-	switch (event)
-	{
-	case ESYSTEM_EVENT_SW_SHIFT_WORLD:
-		OffsetAllMeshes(*(const Vec3*)wparam);
-		break;
-	}
-}
-
 TileGeneratorExtensionID NavigationSystem::RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension)
 {
 	const TileGeneratorExtensionID newId = TileGeneratorExtensionID(m_tileGeneratorExtensionsContainer.idCounter + 1);

@@ -343,7 +343,6 @@ private:
 	const a2DBBox& GetBBox() const;
 	a2DBBox&       GetBBox();
 	void           ClearPoints();
-	IEntitySystem* GetEntitySystem() { return m_pAreaManager->GetEntitySystem(); }
 	void           CalcClosestPointToObstructedShape(EntityId const nEntityID, Vec3& rv3ClosestPos, float& rfClosestDistSq, Vec3 const& rv3SourcePos);
 	void           CalcClosestPointToObstructedBox(Vec3& rv3ClosestPos, float& rfClosestDistSq, Vec3 const& rv3SourcePos) const;
 	void           CalcClosestPointToSolid(Vec3 const& rv3SourcePos, bool bIgnoreSoundObstruction, float& rfClosestDistSq, Vec3* rv3ClosestPos) const;

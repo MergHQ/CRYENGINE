@@ -95,7 +95,7 @@ public:
 		return m_pAIObject->GetEntity()->GetWorldPos();
 	}
 
-	const Vec3& GetEntityForwardDir() const
+	Vec3 GetEntityForwardDir() const
 	{
 		return m_pAIObject->GetEntity()->GetForwardDir();
 	}

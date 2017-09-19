@@ -382,8 +382,7 @@ struct AgentType
 	string                 name;
 };
 
-class NavigationSystem :
-	public INavigationSystem, public ISystemEventListener
+class NavigationSystem : public INavigationSystem
 {
 	friend class NavigationSystemDebugDraw;
 	friend class NavigationSystemBackgroundUpdate;
@@ -506,8 +505,6 @@ public:
 
 	virtual bool                             IsInUse() const override;
 	virtual void                             CalculateAccessibility() override;
-
-	virtual void                             OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
 	void                                     OffsetBoundingVolume(const Vec3& additionalOffset, const NavigationVolumeID volumeId);
 	void                                     OffsetAllMeshes(const Vec3& additionalOffset);

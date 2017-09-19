@@ -9,8 +9,8 @@ void CEntitiesComponentPropertyCache::StoreEntities()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
-	IEntityItPtr it = GetISystem()->GetIEntitySystem()->GetEntityIterator();
-	while (IEntity* pEntity = it->Next())
+	IEntityItPtr it = g_pIEntitySystem->GetEntityIterator();
+	while (CEntity* pEntity = static_cast<CEntity*>(it->Next()))
 	{
 		if (!pEntity->IsGarbage())
 		{
@@ -24,8 +24,8 @@ void CEntitiesComponentPropertyCache::RestoreEntities()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
-	IEntityItPtr it = GetISystem()->GetIEntitySystem()->GetEntityIterator();
-	while (IEntity* pEntity = it->Next())
+	IEntityItPtr it = g_pIEntitySystem->GetEntityIterator();
+	while (CEntity* pEntity = static_cast<CEntity*>(it->Next()))
 	{
 		if (!pEntity->IsGarbage())
 		{

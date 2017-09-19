@@ -745,9 +745,6 @@ void CSystem::Render()
 
 				//			m_pProcess->Draw();
 
-				if (m_env.pEntitySystem)
-					m_env.pEntitySystem->DebugDraw();
-
 				if (m_env.pAISystem)
 					m_env.pAISystem->DebugDraw();
 #endif

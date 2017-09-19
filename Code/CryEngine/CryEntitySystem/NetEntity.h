@@ -1,14 +1,16 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 #pragma once
+
 #include <CryNetwork/INetEntity.h>
-#include <CryEntitySystem/IEntity.h>
+
+class CEntity;
 
 struct SEntitySchedulingProfiles;
 
 class CNetEntity : public INetEntity
 {
 public:
-	CNetEntity(IEntity *entity_);
+	CNetEntity(CEntity *entity_);
 	virtual ~CNetEntity();
 
 	virtual bool BindToNetwork(EBindToNetworkMode mode) override;
@@ -53,7 +55,7 @@ private:
 	bool DoSetAspectProfile(EEntityAspects aspect, uint8 profile, bool fromNetwork);
 
 private:
-	IEntity                          *m_pEntity;
+	CEntity                          *m_pEntity;
 	IGameObjectProfileManager        *m_pProfileManager;
 	const SEntitySchedulingProfiles  *m_schedulingProfiles;
 	std::vector<SRmiHandler>         m_rmiHandlers;

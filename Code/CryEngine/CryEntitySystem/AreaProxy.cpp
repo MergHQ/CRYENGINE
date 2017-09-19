@@ -40,7 +40,7 @@ CEntityComponentArea::~CEntityComponentArea()
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentArea::Initialize()
 {
-	m_pArea = static_cast<CAreaManager*>(gEnv->pEntitySystem->GetAreaManager())->CreateArea();
+	m_pArea = static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->CreateArea();
 	m_pArea->SetEntityID(m_pEntity->GetId());
 
 	Reset();
@@ -422,17 +422,9 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 				XmlNodeRef entNode = entitiesNode->getChild(i);
 				EntityId entityId;
 				EntityGUID entityGuid;
-				if (gEnv->pEntitySystem->EntitiesUseGUIDs())
+				if (entNode->getAttr("Id", entityId) && (entityId != INVALID_ENTITYID))
 				{
-					if (entNode->getAttr("Guid", entityGuid))
-						m_pArea->AddEntity(entityGuid);
-				}
-				else
-				{
-					if (entNode->getAttr("Id", entityId) && (entityId != INVALID_ENTITYID))
-					{
-						m_pArea->AddEntity(entityId);
-					}
+					m_pArea->AddEntity(entityId);
 				}
 			}
 		}
@@ -539,21 +531,6 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			}
 		}
 
-#ifdef SW_ENTITY_ID_USE_GUID
-		const std::vector<EntityGUID>& entGUIDs = *m_pArea->GetEntitiesGuid();
-		// Export Entities.
-		if (!entGUIDs.empty())
-		{
-			XmlNodeRef nodes = areaNode->newChild("Entities");
-			for (uint32 i = 0; i < entGUIDs.size(); i++)
-			{
-				EntityGUID guid = entGUIDs[i];
-				XmlNodeRef entNode = nodes->newChild("Entity");
-				entNode->setAttr("Guid", guid);
-				entNode->setAttr("Id", gEnv->pEntitySystem->GenerateEntityIdFromGuid(guid));
-			}
-		}
-#else
 		const std::vector<EntityId>& entIDs = *m_pArea->GetEntities();
 		// Export Entities.
 		if (!entIDs.empty())
@@ -566,7 +543,6 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 				entNode->setAttr("Id", entityId);
 			}
 		}
-#endif
 	}
 }
 

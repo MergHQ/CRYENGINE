@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "EntityCVars.h"
+#include "Entity.h"
 #include "EntitySystem.h"
 #include "AreaManager.h"
 #include <CryAnimation/ICryAnimation.h>
@@ -59,7 +60,6 @@ float CVar::es_FarPhysTimeout;
 int CVar::es_DebugEvents = 0;
 int CVar::es_SortUpdatesByClass = 0;
 int CVar::es_debugEntityLifetime = 0;
-int CVar::es_DrawProximityTriggers = 0;
 int CVar::es_DebugEntityUsage = 0;
 const char* CVar::es_DebugEntityUsageFilter = "";
 int CVar::es_DebugEntityUsageSortMode = 0;
@@ -76,7 +76,7 @@ static void OnSysSpecLightChange(ICVar* pVar)
 	IEntityItPtr it = GetIEntitySystem()->GetEntityIterator();
 	it->MoveFirst();
 
-	while (IEntity* pEntity = it->Next())
+	while (CEntity* pEntity = static_cast<CEntity*>(it->Next()))
 	{
 		IScriptTable* pScriptTable = pEntity->GetScriptTable();
 		if (pScriptTable && pScriptTable->HaveValue("OnSysSpecLightChanged"))
@@ -98,7 +98,7 @@ int SEntityWithCharacterInstanceAutoComplete::GetCount() const
 	auto itEntity = GetIEntitySystem()->GetEntityIterator();
 	while (!itEntity->IsEnd())
 	{
-		if (IEntity* pEnt = itEntity->Next())
+		if (CEntity* pEnt = static_cast<CEntity*>(itEntity->Next()))
 		{
 			const uint32 numSlots = pEnt->GetSlotCount();
 			for (uint32 i = 0; i < numSlots; i++)
@@ -122,7 +122,7 @@ const char* SEntityWithCharacterInstanceAutoComplete::GetValue(int index) const
 	uint32 count = 0;
 	while (!itEntity->IsEnd())
 	{
-		if (IEntity* pEnt = itEntity->Next())
+		if (CEntity* pEnt = static_cast<CEntity*>(itEntity->Next()))
 		{
 			const uint32 numSlots = pEnt->GetSlotCount();
 			for (uint32 i = 0; i < numSlots; i++)
@@ -250,11 +250,6 @@ void CVar::Init()
 	              "Usage: es_DebugTimers 0/1");
 	REGISTER_CVAR(es_DebugFindEntity, 0, VF_CHEAT, "");
 	REGISTER_CVAR(es_DebugEvents, 0, VF_CHEAT, "Enables logging of entity events");
-	REGISTER_CVAR(es_DrawProximityTriggers, 0, 0,
-	              "Shows Proximity Triggers.\n"
-	              "Usage: es_DrawProximityTriggers [0-255].  The parameter sets the transparency (alpha) level.\n"
-	              "Value 1 will be changed to 70.\n"
-	              "Default is 0 (off)\n");
 
 	REGISTER_CVAR(es_DebugEntityUsage, 0, 0,
 	              "Draws information to the screen to show how entities are being used, per class, including total, active and hidden counts and memory usage"
@@ -329,7 +324,7 @@ void CVar::DumpEntityClassesInUse(IConsoleCmdArgs* args)
 	it->MoveFirst();
 
 	std::map<string, int> classes;
-	while (IEntity* pEntity = it->Next())
+	while (CEntity* pEntity = static_cast<CEntity*>(it->Next()))
 	{
 		classes[pEntity->GetClass()->GetName()]++;
 	}
@@ -347,7 +342,7 @@ void CVar::CompileAreaGrid(IConsoleCmdArgs*)
 		pAreaManager->SetAreasDirty();
 }
 
-void CVar::SetDebugAnimText(IEntity* pEntity, const bool bEnable)
+void CVar::SetDebugAnimText(CEntity* pEntity, const bool bEnable)
 {
 	CEntitySystem* pEntitySystem = GetIEntitySystem();
 
@@ -376,7 +371,7 @@ void CVar::SetDebugAnimText(IEntity* pEntity, const bool bEnable)
 						}
 						if (pObject->GetAttachmentType() == IAttachmentObject::eAttachment_Entity)
 						{
-							IEntity* pAttachmentEntity = pEntitySystem->GetEntity(static_cast<CEntityAttachment*>(pObject)->GetEntityId());
+							CEntity* pAttachmentEntity = pEntitySystem->GetEntityFromID(static_cast<CEntityAttachment*>(pObject)->GetEntityId());
 							if (pAttachmentEntity)
 							{
 								SetDebugAnimText(pAttachmentEntity, bEnable);
@@ -401,7 +396,7 @@ void CVar::EnableDebugAnimText(IConsoleCmdArgs* args)
 		}
 
 		CEntitySystem* pEntitySystem = GetIEntitySystem();
-		IEntity* pEntity = pEntitySystem->FindEntityByName(szFilterName);
+		CEntity* pEntity = static_cast<CEntity*>(pEntitySystem->FindEntityByName(szFilterName));
 
 		SetDebugAnimText(pEntity, bEnable);
 	}
@@ -410,14 +405,14 @@ void CVar::EnableDebugAnimText(IConsoleCmdArgs* args)
 void CVar::ConsoleCommandToggleLayer(IConsoleCmdArgs* pArgs)
 {
 	// Note: based on Flow Node Engine:LayerSwitch
-	if (pArgs && pArgs->GetArgCount() > 1 && gEnv->pEntitySystem)
+	if (pArgs && pArgs->GetArgCount() > 1 && g_pIEntitySystem)
 	{
 		const char* szLayerName = pArgs->GetArg(1);
 		const bool bSerialize = false;
-		const bool bShouldBeEnabled = !gEnv->pEntitySystem->IsLayerEnabled(szLayerName, false);
+		const bool bShouldBeEnabled = !g_pIEntitySystem->IsLayerEnabled(szLayerName, false);
 		
 		CryLogAlways("[Info][Layers] Toggling EntitySystemLayer %s to: %s", szLayerName, bShouldBeEnabled ? "Enabled" : "Disabled");
-		gEnv->pEntitySystem->EnableLayer(szLayerName, bShouldBeEnabled, bSerialize);
+		g_pIEntitySystem->EnableLayer(szLayerName, bShouldBeEnabled, bSerialize);
 		
 		if (bShouldBeEnabled && gEnv->pAISystem)
 		{

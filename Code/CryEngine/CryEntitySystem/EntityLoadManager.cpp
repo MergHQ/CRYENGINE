@@ -21,13 +21,6 @@
 #include <CryNetwork/INetwork.h>
 
 //////////////////////////////////////////////////////////////////////////
-CEntityLoadManager::CEntityLoadManager(CEntitySystem* pEntitySystem)
-	: m_pEntitySystem(pEntitySystem)
-{
-	assert(m_pEntitySystem);
-}
-
-//////////////////////////////////////////////////////////////////////////
 CEntityLoadManager::~CEntityLoadManager()
 {
 	stl::free_container(m_queuedAttachments);
@@ -40,7 +33,7 @@ void CEntityLoadManager::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityLoadManager::LoadEntities(XmlNodeRef& entitiesNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset, std::vector<IEntity*>* outGlobalEntityIds, std::vector<IEntity*>* outLocalEntityIds)
+bool CEntityLoadManager::LoadEntities(XmlNodeRef& entitiesNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset)
 {
 	bool bResult = false;
 
@@ -48,7 +41,7 @@ bool CEntityLoadManager::LoadEntities(XmlNodeRef& entitiesNode, bool bIsLoadingL
 	{
 		PrepareBatchCreation(entitiesNode->getChildCount());
 
-		bResult = ParseEntities(entitiesNode, bIsLoadingLevelFile, segmentOffset, outGlobalEntityIds, outLocalEntityIds);
+		bResult = ParseEntities(entitiesNode, bIsLoadingLevelFile, segmentOffset);
 
 		OnBatchCreationCompleted();
 	}
@@ -97,7 +90,7 @@ bool CEntityLoadManager::ReserveEntityIds(XmlNodeRef& entitiesNode)
 			EntityGUID guid;
 			if (entityNode->getAttr("EntityId", entityId))
 			{
-				m_pEntitySystem->ReserveEntityId(entityId);
+				g_pIEntitySystem->ReserveEntityId(entityId);
 				bResult = true;
 			}
 			else if (entityNode->getAttr("EntityGuid", guid))
@@ -116,7 +109,7 @@ bool CEntityLoadManager::ReserveEntityIds(XmlNodeRef& entitiesNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityLoadManager::CanParseEntity(XmlNodeRef& entityNode, std::vector<IEntity*>* outGlobalEntityIds)
+bool CEntityLoadManager::CanParseEntity(XmlNodeRef& entityNode)
 {
 	assert(entityNode);
 
@@ -137,7 +130,7 @@ bool CEntityLoadManager::CanParseEntity(XmlNodeRef& entityNode, std::vector<IEnt
 	if (bResult)
 	{
 		const char* pLayerName = entityNode->getAttr("Layer");
-		IEntityLayer* pLayer = m_pEntitySystem->FindLayer(pLayerName);
+		IEntityLayer* pLayer = g_pIEntitySystem->FindLayer(pLayerName);
 
 		if (pLayer)
 			bResult = !pLayer->IsSkippedBySpec();
@@ -147,7 +140,7 @@ bool CEntityLoadManager::CanParseEntity(XmlNodeRef& entityNode, std::vector<IEnt
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset, std::vector<IEntity*>* outGlobalEntityIds, std::vector<IEntity*>* outLocalEntityIds)
+bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset)
 {
 #if !defined(SYS_ENV_AS_STRUCT)
 	assert(gEnv);
@@ -172,9 +165,8 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 		SYNCHRONOUS_LOADING_TICK();
 
 		XmlNodeRef entityNode = entitiesNode->getChild(i);
-		if (entityNode && entityNode->isTag("Entity") && CanParseEntity(entityNode, outGlobalEntityIds))
+		if (entityNode && entityNode->isTag("Entity") && CanParseEntity(entityNode))
 		{
-
 			// Create entities only if we are not in editor game mode.
 			if (!gEnv->IsEditorGameMode())
 			{
@@ -225,13 +217,13 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 	if (entityNode->getAttr("ClassGUID", classGUID))
 	{
 		// Class GUID exist, so use it instead of the class name
-		pClass = m_pEntitySystem->GetClassRegistry()->FindClassByGUID(classGUID);
+		pClass = g_pIEntitySystem->GetClassRegistry()->FindClassByGUID(classGUID);
 	}
 
 	if (!pClass)
 	{
 		// (Legacy) If class not found by GUID try to find it by class name
-		pClass = m_pEntitySystem->GetClassRegistry()->FindClass(szEntityClass);
+		pClass = g_pIEntitySystem->GetClassRegistry()->FindClass(szEntityClass);
 	}
 
 	if (pClass)
@@ -310,7 +302,7 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		if (szArchetypeName && szArchetypeName[0])
 		{
 			MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", szArchetypeName);
-			spawnParams.pArchetype = m_pEntitySystem->LoadEntityArchetype(szArchetypeName);
+			spawnParams.pArchetype = g_pIEntitySystem->LoadEntityArchetype(szArchetypeName);
 
 			if (!spawnParams.pArchetype)
 			{
@@ -381,7 +373,7 @@ bool CEntityLoadManager::CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams
 	    ((loadParams.spawnParams.pClass->GetFlags() & ECLF_DO_NOT_SPAWN_AS_STATIC) == 0))
 	{
 		// If ID is not set we generate a static ID.
-		loadParams.spawnParams.id = m_pEntitySystem->GenerateEntityId(true);
+		loadParams.spawnParams.id = g_pIEntitySystem->GenerateEntityId(true);
 	}
 	return(CreateEntity(loadParams, outUsingId, true));
 }
@@ -408,18 +400,18 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 		}
 	}
 
-	IEntity* pSpawnedEntity = NULL;
+	CEntity* pSpawnedEntity = NULL;
 	bool bWasSpawned = false;
-	if (m_pEntitySystem->OnBeforeSpawn(spawnParams))
+	if (g_pIEntitySystem->OnBeforeSpawn(spawnParams))
 	{
 		// Create a new one
-		pSpawnedEntity = m_pEntitySystem->SpawnEntity(spawnParams, false);
+		pSpawnedEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(spawnParams, false));
 		bWasSpawned = true;
 	}
 
 	if (bResult && pSpawnedEntity)
 	{
-		m_pEntitySystem->AddEntityToLayer(spawnParams.sLayerName, pSpawnedEntity->GetId());
+		g_pIEntitySystem->AddEntityToLayer(spawnParams.sLayerName, pSpawnedEntity->GetId());
 
 		CEntity* pCSpawnedEntity = (CEntity*)pSpawnedEntity;
 		pCSpawnedEntity->SetLoadedFromLevelFile(bIsLoadingLevellFile);
@@ -527,7 +519,7 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 
 		if (bWasSpawned)
 		{
-			const bool bInited = m_pEntitySystem->InitEntity(pSpawnedEntity, spawnParams);
+			const bool bInited = g_pIEntitySystem->InitEntity(pSpawnedEntity, spawnParams);
 			if (!bInited)
 			{
 				// Failed to initialise an entity, need to bail or we'll crash
@@ -536,7 +528,7 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 		}
 		else
 		{
-			m_pEntitySystem->OnEntityReused(pSpawnedEntity, spawnParams);
+			g_pIEntitySystem->OnEntityReused(pSpawnedEntity, spawnParams);
 
 			if (pCSpawnedEntity && loadParams.bCallInit)
 			{
@@ -666,7 +658,7 @@ void CEntityLoadManager::AddQueuedAttachment(EntityId nParent, EntityGUID parent
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityLoadManager::AddQueuedFlowgraph(IEntity* pEntity, XmlNodeRef& pNode)
+void CEntityLoadManager::AddQueuedFlowgraph(CEntity* pEntity, XmlNodeRef& pNode)
 {
 	SQueuedFlowGraph f;
 	f.pEntity = pEntity;
@@ -676,7 +668,7 @@ void CEntityLoadManager::AddQueuedFlowgraph(IEntity* pEntity, XmlNodeRef& pNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityLoadManager::AddQueuedEntityLink(IEntity* pEntity, XmlNodeRef& pNode)
+void CEntityLoadManager::AddQueuedEntityLink(CEntity* pEntity, XmlNodeRef& pNode)
 {
 	SQueuedFlowGraph f;
 	f.pEntity = pEntity;
@@ -695,15 +687,15 @@ void CEntityLoadManager::OnBatchCreationCompleted()
 	{
 		const SEntityAttachment& entityAttachment = *itQueuedAttachment;
 
-		IEntity* pChild = m_pEntitySystem->GetEntity(entityAttachment.child);
+		CEntity* pChild = g_pIEntitySystem->GetEntityFromID(entityAttachment.child);
 		if (pChild)
 		{
 			EntityId parentId = entityAttachment.parent;
 			if (!entityAttachment.parentGuid.IsNull())
 			{
-				parentId = m_pEntitySystem->FindEntityByGuid(entityAttachment.parentGuid);
+				parentId = g_pIEntitySystem->FindEntityByGuid(entityAttachment.parentGuid);
 			}
-			IEntity* pParent = m_pEntitySystem->GetEntity(parentId);
+			CEntity* pParent = g_pIEntitySystem->GetEntityFromID(parentId);
 			if (pParent)
 			{
 				SChildAttachParams attachParams(entityAttachment.flags, entityAttachment.target.c_str());
@@ -744,7 +736,7 @@ void CEntityLoadManager::OnBatchCreationCompleted()
 			f.pNode->getAttr("TargetId",targetId);
 			if (f.pNode->getAttr("TargetGuid", targetGuid))
 			{
-				targetId = gEnv->pEntitySystem->FindEntityByGuid(targetGuid);
+				targetId = g_pIEntitySystem->FindEntityByGuid(targetGuid);
 			}
 			const char* sLinkName = f.pNode->getAttr("Name");
 			Quat relRot(IDENTITY);
@@ -758,5 +750,5 @@ void CEntityLoadManager::OnBatchCreationCompleted()
 	// Resume loading by calling POST SERIALZIE event
 	SEntityEvent event;
 	event.event = ENTITY_EVENT_POST_SERIALIZE;
-	gEnv->pEntitySystem->SendEventToAll(event);
+	g_pIEntitySystem->SendEventToAll(event);
 }

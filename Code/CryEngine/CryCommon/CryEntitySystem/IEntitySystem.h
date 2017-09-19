@@ -488,7 +488,7 @@ struct IEntitySystem
 	//! Loads entities exported from Editor.
 	//! bIsLoadingLevelFile indicates if the loaded entities come from the original level file.
 	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile) = 0;
-	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffest, std::vector<IEntity*>* outGlobalEntityIds, std::vector<IEntity*>* outLocalEntityIds) = 0;
+	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffest) = 0;
 
 	//! Registers Entity Event's listeners.
 	virtual void AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) = 0;
@@ -502,9 +502,6 @@ struct IEntitySystem
 
 	//! Finds entity by Entity GUID.
 	virtual EntityId FindEntityByGuid(const EntityGUID& guid) const = 0;
-
-	//! Generates new entity id based on Entity GUID.
-	virtual EntityId GenerateEntityIdFromGuid(const EntityGUID& guid) = 0;
 
 	//! Gets a pointer to access to area manager.
 	virtual IAreaManager* GetAreaManager() const = 0;
@@ -585,11 +582,6 @@ struct IEntitySystem
 	virtual void UnregisterPhysicCallbacks() = 0;
 
 	virtual void PurgeDeferredCollisionEvents(bool bForce = false) = 0;
-
-	virtual bool EntitiesUseGUIDs() const = 0;
-	virtual void SetEntitiesUseGUIDs(const bool bEnable) = 0;
-
-	virtual void DebugDraw() = 0;
 
 	//! Resets physical simulation suppressed by LiveCreate during "edit mode".
 	//! Called by LiveCreate subsystem when user resumed normal game mode.

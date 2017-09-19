@@ -68,7 +68,6 @@ struct CVar
 	static int         es_DebugFindEntity;
 	static int         es_DebugEvents;
 	static int         es_debugEntityLifetime;
-	static int         es_DrawProximityTriggers;
 
 	static int         es_DebugEntityUsage;
 	static const char* es_DebugEntityUsageFilter;
@@ -96,7 +95,7 @@ struct CVar
 	static void CompileAreaGrid(IConsoleCmdArgs*);
 
 	static void EnableDebugAnimText(IConsoleCmdArgs* args);
-	static void SetDebugAnimText(IEntity* entity, const bool enable);
+	static void SetDebugAnimText(CEntity* entity, const bool enable);
 
 	// Console commands to enable/disable layers
 	static void ConsoleCommandToggleLayer(IConsoleCmdArgs* pArgs);

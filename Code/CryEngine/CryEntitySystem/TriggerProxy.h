@@ -61,7 +61,7 @@ public:
 	const AABB&              GetAABB() const { return m_aabb; }
 	void                     SetAABB(const AABB& aabb);
 
-	CProximityTriggerSystem* GetTriggerSystem() { return static_cast<CEntitySystem*>(gEnv->pEntitySystem)->GetProximityTriggerSystem(); }
+	CProximityTriggerSystem* GetTriggerSystem() { return static_cast<CEntitySystem*>(g_pIEntitySystem)->GetProximityTriggerSystem(); }
 
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const final
 	{

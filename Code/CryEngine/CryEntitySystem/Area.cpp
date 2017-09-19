@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Area.h"
 #include "AreaSolid.h"
+#include "Entity.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/GeomQuery.h>
 
@@ -2489,7 +2490,7 @@ void CArea::ResolveEntityIds()
 
 		for (auto const& guid : m_entityGuids)
 		{
-			m_entityIds[index++] = GetEntitySystem()->FindEntityByGuid(guid);
+			m_entityIds[index++] = g_pIEntitySystem->FindEntityByGuid(guid);
 		}
 
 		m_state |= Cry::AreaManager::EAreaState::EntityIdsResolved;
@@ -2513,7 +2514,7 @@ float CArea::GetFadeDistance()
 
 		for (auto const entityId : m_entityIds)
 		{
-			IEntity const* const pIEntity = GetEntitySystem()->GetEntity(entityId);
+			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 			if (pIEntity != nullptr)
 			{
@@ -2539,7 +2540,7 @@ float CArea::GetEnvironmentFadeDistance()
 
 		for (auto const entityId : m_entityIds)
 		{
-			IEntity const* const pIEntity = GetEntitySystem()->GetEntity(entityId);
+			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 			if (pIEntity != nullptr)
 			{
@@ -2567,7 +2568,7 @@ float CArea::GetGreatestFadeDistance()
 
 		for (auto const entityId : m_entityIds)
 		{
-			IEntity const* const pIEntity = GetEntitySystem()->GetEntity(entityId);
+			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 			if (pIEntity != nullptr)
 			{
@@ -2630,7 +2631,7 @@ void CArea::AddEntity(const EntityId entId)
 		// Always add as the entity might not exist yet.
 		stl::push_back_unique(m_entityIds, entId);
 
-		IEntity* const pIEntity = GetEntitySystem()->GetEntity(entId);
+		CEntity* const pIEntity = g_pIEntitySystem->GetEntityFromID(entId);
 
 		if (pIEntity != nullptr)
 		{
@@ -2656,7 +2657,7 @@ void CArea::AddEntity(const EntityId entId)
 void CArea::AddEntity(const EntityGUID entGuid)
 {
 	stl::push_back_unique(m_entityGuids, entGuid);
-	AddEntity(GetEntitySystem()->FindEntityByGuid(entGuid));
+	AddEntity(g_pIEntitySystem->FindEntityByGuid(entGuid));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2687,7 +2688,7 @@ void CArea::RemoveEntity(EntityId const entId)
 		// Always remove as the entity might be already gone.
 		stl::find_and_erase(m_entityIds, entId);
 
-		IEntity* const pIEntity = GetEntitySystem()->GetEntity(entId);
+		CEntity* const pIEntity = g_pIEntitySystem->GetEntityFromID(entId);
 
 		if (pIEntity != nullptr)
 		{
@@ -2713,7 +2714,7 @@ void CArea::RemoveEntity(EntityId const entId)
 void CArea::RemoveEntity(EntityGUID const entGuid)
 {
 	stl::find_and_erase(m_entityGuids, entGuid);
-	RemoveEntity(GetEntitySystem()->FindEntityByGuid(entGuid));
+	RemoveEntity(g_pIEntitySystem->FindEntityByGuid(entGuid));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2815,7 +2816,7 @@ void CArea::SendEvent(SEntityEvent& newEvent, bool bClearCachedEvents /* = true 
 
 	for (size_t eIdx = 0; eIdx < nCountEntities; ++eIdx)
 	{
-		if (IEntity* pAreaAttachedEntity = GetEntitySystem()->GetEntity(m_entityIds[eIdx]))
+		if (CEntity* pAreaAttachedEntity = g_pIEntitySystem->GetEntityFromID(m_entityIds[eIdx]))
 		{
 			pAreaAttachedEntity->SendEvent(newEvent);
 
@@ -2983,7 +2984,7 @@ void CArea::ExclusiveUpdateAreaInside(
 
 		for (size_t index = 0; index < numAttachedEntities; ++index)
 		{
-			IEntity* const pEntity = GetEntitySystem()->GetEntity(m_entityIds[index]);
+			CEntity* const pEntity = g_pIEntitySystem->GetEntityFromID(m_entityIds[index]);
 
 			if (pEntity != nullptr)
 			{
@@ -3021,7 +3022,7 @@ void CArea::ExclusiveUpdateAreaNear(
 
 		for (size_t index = 0; index < numAttachedEntities; ++index)
 		{
-			IEntity* const pEntity = GetEntitySystem()->GetEntity(m_entityIds[index]);
+			CEntity* const pEntity = g_pIEntitySystem->GetEntityFromID(m_entityIds[index]);
 
 			if (pEntity != nullptr)
 			{
@@ -3430,11 +3431,9 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 //////////////////////////////////////////////////////////////////////////
 char const* const CArea::GetAreaEntityName() const
 {
-	IEntitySystem const* const pIEntitySystem = gEnv->pEntitySystem;
-
-	if (pIEntitySystem != nullptr)
+	if (g_pIEntitySystem != nullptr)
 	{
-		IEntity const* const pIEntity = pIEntitySystem->GetEntity(m_entityId);
+		CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(m_entityId);
 
 		if (pIEntity != nullptr)
 		{

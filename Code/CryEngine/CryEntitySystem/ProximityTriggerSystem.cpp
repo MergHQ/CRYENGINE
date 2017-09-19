@@ -23,7 +23,7 @@
 
 #define ENTITY_RADIUS (0.5f)
 
-#define GET_ENTITY_NAME(eid) ((CEntity*)gEnv->pEntitySystem->GetEntity(eid))->GetName()
+#define GET_ENTITY_NAME(eid) ((CEntity*)g_pIEntitySystem->GetEntityFromID(eid))->GetName()
 
 namespace
 {
@@ -230,7 +230,7 @@ void CProximityTriggerSystem::SortTriggers()
 					{
 						SEntityProximityQuery q;
 						q.box = differences[j];
-						gEnv->pEntitySystem->QueryProximity(q);
+						g_pIEntitySystem->QueryProximity(q);
 						for (int k = 0; k < q.nCount; k++)
 						{
 							CEntity* pEnt = (CEntity*) q.pEntities[k];
@@ -387,11 +387,11 @@ void CProximityTriggerSystem::Update()
 //////////////////////////////////////////////////////////////////////////
 void CProximityTriggerSystem::SendEvent(EEntityEvent eventId, EntityId triggerId, EntityId entityId)
 {
-	IEntity* pTriggerEntity = gEnv->pEntitySystem->GetEntity(triggerId);
+	CEntity* pTriggerEntity = g_pIEntitySystem->GetEntityFromID(triggerId);
 	if (pTriggerEntity)
 	{
 		SEntityEvent event;
-		//if (gEnv->pEntitySystem->GetEntity( entityId ))
+		//if (g_pIEntitySystem->GetEntityFromID( entityId ))
 		//{
 		// if (eventId = ENTITY_EVENT_ENTERAREA)
 		//CryLogAlways( "[Trigger] Enter %s into %s",GET_ENTITY_NAME( entityId ),pTriggerEntity->GetName() );

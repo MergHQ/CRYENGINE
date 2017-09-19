@@ -90,13 +90,13 @@ private:
 
 	static AuxObjectPair s_nullAuxObjectPair;
 
-	void           OnListenerEnter(IEntity const* const pEntity);
+	void           OnListenerEnter(CEntity const* const pEntity);
 	void           OnListenerMoveNear(Vec3 const& closestPointToArea);
 	void           OnListenerMoveInside(Vec3 const& listenerPos);
-	void           OnListenerExclusiveMoveInside(IEntity const* const __restrict pEntity, IEntity const* const __restrict pAreaHigh, IEntity const* const __restrict pAreaLow, float const fade);
+	void           OnListenerExclusiveMoveInside(CEntity const* const __restrict pEntity, CEntity const* const __restrict pAreaHigh, CEntity const* const __restrict pAreaLow, float const fade);
 	void           OnMove();
 	AuxObjectPair& GetAudioAuxObjectPair(CryAudio::AuxObjectId const audioAuxObjectId);
-	void           SetEnvironmentAmountInternal(IEntity const* const pIEntity, float const amount) const;
+	void           SetEnvironmentAmountInternal(CEntity const* const pIEntity, float const amount) const;
 
 	// Function objects
 	struct SReleaseAudioProxy

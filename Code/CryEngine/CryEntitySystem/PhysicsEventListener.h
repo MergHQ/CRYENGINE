@@ -23,7 +23,7 @@ struct IPhysicalWorld;
 class CPhysicsEventListener
 {
 public:
-	CPhysicsEventListener(CEntitySystem* pEntitySystem, IPhysicalWorld* pPhysics);
+	CPhysicsEventListener(IPhysicalWorld* pPhysics);
 	~CPhysicsEventListener();
 
 	static int OnBBoxOverlap(const EventPhys* pEvent);
@@ -47,7 +47,6 @@ private:
 	static CEntity* GetEntity(void* pForeignData, int iForeignData);
 	static CEntity* GetEntity(IPhysicalEntity* pPhysEntity);
 
-	CEntitySystem*  m_pEntitySystem;
 	IPhysicalWorld* m_pPhysics;
 
 	static std::vector<IPhysicalEntity*> m_physVisAreaUpdateVector;

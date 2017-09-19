@@ -6,7 +6,7 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryString/StringUtils.h>
 
-#include <CryEntitySystem/IEntitySystem.h>
+#include "Entity.h"
 
 #include  <CrySchematyc/Runtime/IRuntimeClass.h>
 #include  <CrySchematyc/IObject.h>
@@ -132,7 +132,7 @@ void CEntityObjectDebugger::Update()
 		{
 			if (pObject->GetSimulationMode() == Schematyc::ESimulationMode::Game)
 			{
-				const IEntity& entity = *pObject->GetEntity();
+				const CEntity& entity = static_cast<const CEntity&>(*pObject->GetEntity());
 				const char* szName = entity.GetName();
 				if ((szFilter[0] == '\0') || CryStringUtils::stristr(szName, szFilter))
 				{
@@ -175,12 +175,12 @@ void CEntityObjectDebugger::Update()
 		return Schematyc::EVisitStatus::Continue;
 	};
 
-	IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
+	IEntityItPtr pIt = g_pIEntitySystem->GetEntityIterator();
 	//////////////////////////////////////////////////////////////////////////
 	pIt->MoveFirst();
 	while (!pIt->IsEnd())
 	{
-		IEntity* pEntity = pIt->Next();
+		CEntity* pEntity = static_cast<CEntity*>(pIt->Next());
 		if (pEntity->GetSchematycObject())
 		{
 			visitEntityObject(pEntity->GetId(),pEntity->GetSchematycObject()->GetId());
