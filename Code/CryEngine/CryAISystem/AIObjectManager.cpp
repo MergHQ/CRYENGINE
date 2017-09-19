@@ -233,6 +233,9 @@ IAIObject* CAIObjectManager::CreateAIObject(const AIObjectParams& params)
 	// this is a multimap
 	m_Objects.insert(AIObjectOwners::iterator::value_type(type, countedRef));
 
+	// Create an associated AI entity component
+	pEntity->GetOrCreateComponentClass<CAIEntityComponent>(countedRef.GetWeakRef());
+
 	// Reset the object after registration, so other systems can reference back to it if needed
 	pObject->SetType(type);
 	pObject->SetEntityID(params.entityID);

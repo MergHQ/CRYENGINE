@@ -462,23 +462,6 @@ void CAIObject::SetEntityID(unsigned ID)
 {
 	AIAssert((ID == 0) || (gEnv->pEntitySystem->GetEntity(ID) != NULL));
 
-	if (m_entityID != ID)
-	{
-		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityID))
-		{
-			if (CAIEntityComponent* pAIComponent = pEntity->GetComponent<CAIEntityComponent>())
-			{
-				pEntity->RemoveComponent(pAIComponent);
-			}
-		}
-
-		// Create an associated AI entity component
-		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(ID))
-		{
-			pEntity->GetOrCreateComponentClass<CAIEntityComponent>(m_refThis);
-		}
-	}
-
 	m_entityID = ID;
 }
 

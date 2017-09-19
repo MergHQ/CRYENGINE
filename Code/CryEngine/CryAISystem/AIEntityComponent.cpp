@@ -5,7 +5,6 @@
 
 CAIEntityComponent::~CAIEntityComponent()
 {
-	m_objectReference.Reset();
 	m_pEntity->SetFlags(m_pEntity->GetFlags() & ~ENTITY_FLAG_HAS_AI);
 	m_pEntity->SetAIObjectID(0);
 
