@@ -168,7 +168,13 @@ struct PathFollowResult
 	TPredictedStates* predictedStates;  //!< If this is non-zero then on output the prediction will be placed into it.
 
 	PathFollowResult()
-		: predictionDeltaTime(0.1f), predictedStates(0), desiredPredictionTime(0), followTargetPos(0), inflectionPoint(0) {}
+		: predictionDeltaTime(0.1f)
+		, predictedStates(0)
+		, desiredPredictionTime(0)
+		, followTargetPos(0)
+		, inflectionPoint(0)
+		, velocityDuration(-1.0f)
+	{}
 
 	bool reachedEnd;
 	Vec3 velocityOut;
@@ -181,6 +187,8 @@ struct PathFollowResult
 
 	/// The maximum distance the agent can safely move in a straight line beyond the turning point
 	//	float maxOverrunDistance;
+
+	float velocityDuration; //!< How long physics is allowed to apply the velocity (-1.0f if it is undefined).
 };
 
 //! Intermediary and minimal interface to use the pathfinder without requiring an AI object.

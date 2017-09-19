@@ -329,6 +329,8 @@ struct ITacticalPointSystem
 	// <interfuscator:shuffle>
 	virtual ~ITacticalPointSystem() {}
 
+	virtual void Update(const float fBudgetSeconds) = 0;
+
 	//! Extend the language by adding new keywords.
 	//! For Generators and Primary Objects, the cost is not relevant (use eTPQC_IGNORE).
 	virtual bool ExtendQueryLanguage(const char* szName, ETacticalPointQueryType eType, ETacticalPointQueryCost eCost) = 0;
