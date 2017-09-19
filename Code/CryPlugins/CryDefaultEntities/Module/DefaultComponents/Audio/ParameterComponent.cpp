@@ -29,7 +29,7 @@ void CParameterComponent::ReflectType(Schematyc::CTypeDesc<CParameterComponent>&
 	desc.SetEditorCategory("Audio");
 	desc.SetLabel("Parameter");
 	desc.SetDescription("Allows for setting a parameter on all audio audio objects created by the component this component is attached to.");
-	desc.SetIcon("icons:Audio/parameter.ico");
+	desc.SetIcon("icons:Audio/component_parameter.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly, IEntityComponent::EFlags::HideFromInspector });
 
 	desc.AddMember(&CParameterComponent::m_parameter, 'para', "parameter", "Parameter", "The parameter which value is applied to all audio objects.", SParameterSerializeHelper());
