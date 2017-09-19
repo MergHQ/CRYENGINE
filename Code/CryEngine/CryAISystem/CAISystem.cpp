@@ -2245,14 +2245,6 @@ void CAISystem::LoadMNM(const char* szLevel, const char* szMission, bool bAfterE
 	char mnmFileName[1024] = { 0 };
 	cry_sprintf(mnmFileName, "%s/mnmnav%s.bai", szLevel, szMission);
 	gAIEnv.pNavigationSystem->ReadFromFile(mnmFileName, bAfterExporting);
-
-#ifdef DEDICATED_SERVER
-	else
-	{
-		// load ai data from segment pak instead
-		pSegmentsManager->ForceLoadSegments(ISegmentsManager::slfNavigation);
-	}
-#endif
 }
 
 void CAISystem::LoadCover(const char* szLevel, const char* szMission)
