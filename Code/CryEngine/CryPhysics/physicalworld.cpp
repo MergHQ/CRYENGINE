@@ -2946,6 +2946,9 @@ void CPhysicalWorld::DetachEntityGridThunks(CPhysicalPlaceholder *pobj)
 
 void CPhysicalWorld::SortThunks()
 {
+	if (m_thunkPoolSz == 0)
+		return;
+
 	int i,j,icell,nthunks=1;
 	int *new2old=new int[m_thunkPoolSz], *old2new=new int[m_thunkPoolSz];
 	SEntityGrid *pgrid;
