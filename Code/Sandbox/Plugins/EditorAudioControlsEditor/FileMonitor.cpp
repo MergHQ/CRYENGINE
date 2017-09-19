@@ -45,6 +45,7 @@ CFileMonitorSystem::CFileMonitorSystem(CAudioControlsEditorWindow* window, int d
 	m_delayTimer = new QTimer();
 	m_delayTimer->setSingleShot(true);
 	connect(m_delayTimer, &QTimer::timeout, this, &CFileMonitorSystem::Enable);
+	Enable();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -66,7 +67,14 @@ void CFileMonitorSystem::ReloadData()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileMonitorMiddleware::Update()
+CFileMonitorMiddleware::CFileMonitorMiddleware(CAudioControlsEditorWindow* window, int delay)
+	: CFileMonitor(window, delay)
+{
+	Enable();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CFileMonitorMiddleware::Enable()
 {
 	IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 

@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#include "AudioSystemModel.h"
+#include "MiddlewareDataModel.h"
 #include "IAudioSystemEditor.h"
 #include "IAudioSystemItem.h"
 #include "AudioControlsEditorPlugin.h"
@@ -19,10 +19,10 @@
 
 namespace ACE
 {
-char const* const QAudioSystemModel::ms_szMimeType = "application/cryengine-audioimplementationitem";
+char const* const CMiddlewareDataModel::ms_szMimeType = "application/cryengine-audioimplementationitem";
 
 //////////////////////////////////////////////////////////////////////////
-QAudioSystemModel::QAudioSystemModel()
+CMiddlewareDataModel::CMiddlewareDataModel()
 	: m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
 {
 
@@ -42,7 +42,7 @@ QAudioSystemModel::QAudioSystemModel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-int QAudioSystemModel::rowCount(const QModelIndex& parent) const
+int CMiddlewareDataModel::rowCount(const QModelIndex& parent) const
 {
 	if (m_pAudioSystem)
 	{
@@ -62,13 +62,13 @@ int QAudioSystemModel::rowCount(const QModelIndex& parent) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-int QAudioSystemModel::columnCount(const QModelIndex& parent) const
+int CMiddlewareDataModel::columnCount(const QModelIndex& parent) const
 {
 	return eAudioSystemColumns_Count;
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant QAudioSystemModel::data(const QModelIndex& index, int role) const
+QVariant CMiddlewareDataModel::data(const QModelIndex& index, int role) const
 {
 	if (m_pAudioSystem)
 	{
@@ -129,7 +129,7 @@ QVariant QAudioSystemModel::data(const QModelIndex& index, int role) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant QAudioSystemModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
+QVariant CMiddlewareDataModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
 {
 	if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
 	{
@@ -139,7 +139,7 @@ QVariant QAudioSystemModel::headerData(int section, Qt::Orientation orientation,
 }
 
 //////////////////////////////////////////////////////////////////////////
-Qt::ItemFlags QAudioSystemModel::flags(const QModelIndex& index) const
+Qt::ItemFlags CMiddlewareDataModel::flags(const QModelIndex& index) const
 {
 	Qt::ItemFlags flag = QAbstractItemModel::flags(index);
 	if (index.isValid() && m_pAudioSystem)
@@ -154,7 +154,7 @@ Qt::ItemFlags QAudioSystemModel::flags(const QModelIndex& index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex QAudioSystemModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
+QModelIndex CMiddlewareDataModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
 {
 	if (m_pAudioSystem)
 	{
@@ -179,7 +179,7 @@ QModelIndex QAudioSystemModel::index(int row, int column, const QModelIndex& par
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex QAudioSystemModel::parent(const QModelIndex& index) const
+QModelIndex CMiddlewareDataModel::parent(const QModelIndex& index) const
 {
 	if (index.isValid())
 	{
@@ -194,13 +194,13 @@ QModelIndex QAudioSystemModel::parent(const QModelIndex& index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-Qt::DropActions QAudioSystemModel::supportedDragActions() const
+Qt::DropActions CMiddlewareDataModel::supportedDragActions() const
 {
 	return Qt::CopyAction;
 }
 
 //////////////////////////////////////////////////////////////////////////
-QStringList QAudioSystemModel::mimeTypes() const
+QStringList CMiddlewareDataModel::mimeTypes() const
 {
 	QStringList list = QAbstractItemModel::mimeTypes();
 	list << ms_szMimeType;
@@ -208,7 +208,7 @@ QStringList QAudioSystemModel::mimeTypes() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QMimeData* QAudioSystemModel::mimeData(const QModelIndexList& indexes) const
+QMimeData* CMiddlewareDataModel::mimeData(const QModelIndexList& indexes) const
 {
 	QMimeData* pData = QAbstractItemModel::mimeData(indexes);
 	QByteArray byteArray;
@@ -227,7 +227,7 @@ QMimeData* QAudioSystemModel::mimeData(const QModelIndexList& indexes) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-IAudioSystemItem* QAudioSystemModel::ItemFromIndex(const QModelIndex& index) const
+IAudioSystemItem* CMiddlewareDataModel::ItemFromIndex(const QModelIndex& index) const
 {
 	if ((index.row() < 0) || (index.column() < 0))
 	{
@@ -237,7 +237,7 @@ IAudioSystemItem* QAudioSystemModel::ItemFromIndex(const QModelIndex& index) con
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex QAudioSystemModel::IndexFromItem(IAudioSystemItem* pItem) const
+QModelIndex CMiddlewareDataModel::IndexFromItem(IAudioSystemItem* pItem) const
 {
 	if (pItem)
 	{
@@ -263,14 +263,14 @@ QModelIndex QAudioSystemModel::IndexFromItem(IAudioSystemItem* pItem) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QAudioSystemModel::Reset()
+void CMiddlewareDataModel::Reset()
 {
 	beginResetModel();
 	endResetModel();
 }
 
 //////////////////////////////////////////////////////////////////////////
-QAudioSystemModelProxyFilter::QAudioSystemModelProxyFilter(QObject* parent)
+CMiddlewareDataFilterProxyModel::CMiddlewareDataFilterProxyModel(QObject* parent)
 	: QDeepFilterProxyModel(QDeepFilterProxyModel::BehaviorFlags(QDeepFilterProxyModel::AcceptIfChildMatches), parent)
 	, m_allowedControlsMask(std::numeric_limits<uint>::max())
 	, m_bHideConnected(false)
@@ -278,7 +278,7 @@ QAudioSystemModelProxyFilter::QAudioSystemModelProxyFilter(QObject* parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QAudioSystemModelProxyFilter::rowMatchesFilter(int source_row, const QModelIndex& source_parent) const
+bool CMiddlewareDataFilterProxyModel::rowMatchesFilter(int source_row, const QModelIndex& source_parent) const
 {
 	if (QDeepFilterProxyModel::rowMatchesFilter(source_row, source_parent))
 	{
@@ -286,13 +286,13 @@ bool QAudioSystemModelProxyFilter::rowMatchesFilter(int source_row, const QModel
 		if (index.isValid())
 		{
 			// Hide placeholder
-			if (sourceModel()->data(index, QAudioSystemModel::eAudioSystemAttributes_Placeholder).toBool())
+			if (sourceModel()->data(index, CMiddlewareDataModel::eAudioSystemAttributes_Placeholder).toBool())
 			{
 				return false;
 			}
 			if (m_bHideConnected)
 			{
-				if (sourceModel()->data(index, QAudioSystemModel::eAudioSystemAttributes_Connected).toBool())
+				if (sourceModel()->data(index, CMiddlewareDataModel::eAudioSystemAttributes_Connected).toBool())
 				{
 					return false;
 				}
@@ -317,21 +317,21 @@ bool QAudioSystemModelProxyFilter::rowMatchesFilter(int source_row, const QModel
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QAudioSystemModelProxyFilter::SetAllowedControlsMask(uint allowedControlsMask)
+void CMiddlewareDataFilterProxyModel::SetAllowedControlsMask(uint allowedControlsMask)
 {
 	m_allowedControlsMask = allowedControlsMask;
 	invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QAudioSystemModelProxyFilter::SetHideConnected(bool bHideConnected)
+void CMiddlewareDataFilterProxyModel::SetHideConnected(bool bHideConnected)
 {
 	m_bHideConnected = bHideConnected;
 	invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QAudioSystemModelProxyFilter::lessThan(const QModelIndex& left, const QModelIndex& right) const
+bool CMiddlewareDataFilterProxyModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
 {
 	if (left.column() == right.column())
 	{
@@ -359,7 +359,7 @@ namespace AudioModelUtils
 void DecodeImplMimeData(const QMimeData* pData, std::vector<IAudioSystemItem*>& outItems)
 {
 	ACE::IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
-	QByteArray encoded = pData->data(QAudioSystemModel::ms_szMimeType);
+	QByteArray encoded = pData->data(CMiddlewareDataModel::ms_szMimeType);
 	QDataStream stream(&encoded, QIODevice::ReadOnly);
 	while (!stream.atEnd())
 	{

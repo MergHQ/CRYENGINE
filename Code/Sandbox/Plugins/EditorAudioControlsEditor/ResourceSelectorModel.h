@@ -2,19 +2,32 @@
 
 #pragma once
 
-#include "AudioAssetsExplorerModel.h"
+#include "SystemControlsModel.h"
+
+#include <ProxyModels/DeepFilterProxyModel.h>
 
 namespace ACE
 {
 class CAudioLibrary;
 class CAudioAssetsManager;
 
-class CResourceControlModel final : public CAudioAssetsExplorerModel
+class CResourceFilterProxyModel final: public QDeepFilterProxyModel
+{
+public:
+
+	CResourceFilterProxyModel() = default;
+
+protected:
+
+	bool lessThan(QModelIndex const& left, QModelIndex const& right) const;
+};
+
+class CResourceControlModel final : public CSystemControlsModel
 {
 public:
 
 	CResourceControlModel(CAudioAssetsManager* pAssetsManager)
-		: CAudioAssetsExplorerModel(pAssetsManager)
+		: CSystemControlsModel(pAssetsManager)
 	{}
 
 private:

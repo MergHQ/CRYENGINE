@@ -1,12 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "QConnectionsModel.h"
+#include "ConnectionsModel.h"
 #include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
 #include "AudioAssets.h"
 #include "AudioControlsEditorPlugin.h"
-#include "AudioSystemModel.h"
+#include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
 #include "IUndoObject.h"
 #include "EditorStyleHelper.h"
@@ -20,7 +20,7 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-QConnectionModel::QConnectionModel()
+CConnectionModel::CConnectionModel()
 	: m_pControl(nullptr)
 	, m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
 {
@@ -61,7 +61,7 @@ QConnectionModel::QConnectionModel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-QConnectionModel::~QConnectionModel()
+CConnectionModel::~CConnectionModel()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -72,7 +72,7 @@ QConnectionModel::~QConnectionModel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionModel::Init(CAudioControl* pControl)
+void CConnectionModel::Init(CAudioControl* pControl)
 {
 	beginResetModel();
 	m_pControl = pControl;
@@ -81,7 +81,7 @@ void QConnectionModel::Init(CAudioControl* pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-int QConnectionModel::rowCount(const QModelIndex& parent) const
+int CConnectionModel::rowCount(const QModelIndex& parent) const
 {
 	if (m_pControl && m_pAudioSystem)
 	{
@@ -94,13 +94,13 @@ int QConnectionModel::rowCount(const QModelIndex& parent) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-int QConnectionModel::columnCount(const QModelIndex& parent) const
+int CConnectionModel::columnCount(const QModelIndex& parent) const
 {
 	return static_cast<int>(eConnectionModelColumns_Size) + static_cast<int>(m_platformNames.size());
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant QConnectionModel::data(const QModelIndex& index, int role) const
+QVariant CConnectionModel::data(const QModelIndex& index, int role) const
 {
 	if (m_pAudioSystem && m_pControl && index.isValid())
 	{
@@ -185,7 +185,7 @@ QVariant QConnectionModel::data(const QModelIndex& index, int role) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant QConnectionModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
+QVariant CConnectionModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
 {
 	if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
 	{
@@ -209,7 +209,7 @@ QVariant QConnectionModel::headerData(int section, Qt::Orientation orientation, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-Qt::ItemFlags QConnectionModel::flags(const QModelIndex& index) const
+Qt::ItemFlags CConnectionModel::flags(const QModelIndex& index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 	if (index.isValid() && index.column() >= eConnectionModelColumns_Size)
@@ -220,7 +220,7 @@ Qt::ItemFlags QConnectionModel::flags(const QModelIndex& index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QConnectionModel::setData(const QModelIndex& index, const QVariant& value, int role)
+bool CConnectionModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
 	if (index.column() >= eConnectionModelColumns_Size && role == Qt::CheckStateRole)
 	{
@@ -234,7 +234,7 @@ bool QConnectionModel::setData(const QModelIndex& index, const QVariant& value, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex QConnectionModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
+QModelIndex CConnectionModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
 {
 	if (m_pAudioSystem && m_pControl)
 	{
@@ -258,13 +258,13 @@ QModelIndex QConnectionModel::index(int row, int column, const QModelIndex& pare
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex QConnectionModel::parent(const QModelIndex& index) const
+QModelIndex CConnectionModel::parent(const QModelIndex& index) const
 {
 	return QModelIndex();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QConnectionModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
+bool CConnectionModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
 {
 	if (m_pAudioSystem && m_pControl)
 	{
@@ -287,15 +287,15 @@ bool QConnectionModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 }
 
 //////////////////////////////////////////////////////////////////////////
-QStringList QConnectionModel::mimeTypes() const
+QStringList CConnectionModel::mimeTypes() const
 {
 	QStringList list = QAbstractItemModel::mimeTypes();
-	list << QAudioSystemModel::ms_szMimeType;
+	list << CMiddlewareDataModel::ms_szMimeType;
 	return list;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QConnectionModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+bool CConnectionModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent)
 {
 	if (m_pAudioSystem && m_pControl)
 	{
@@ -323,13 +323,13 @@ bool QConnectionModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 }
 
 //////////////////////////////////////////////////////////////////////////
-Qt::DropActions QConnectionModel::supportedDropActions() const
+Qt::DropActions CConnectionModel::supportedDropActions() const
 {
 	return Qt::CopyAction;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionModel::ResetCache()
+void CConnectionModel::ResetCache()
 {
 	m_connectionsCache.clear();
 	if (m_pControl)
@@ -347,9 +347,9 @@ void QConnectionModel::ResetCache()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionModel::DecodeMimeData(const QMimeData* pData, std::vector<CID>& ids) const
+void CConnectionModel::DecodeMimeData(const QMimeData* pData, std::vector<CID>& ids) const
 {
-	const QString format = QAudioSystemModel::ms_szMimeType;
+	const QString format = CMiddlewareDataModel::ms_szMimeType;
 	if (pData->hasFormat(format))
 	{
 		QByteArray encoded = pData->data(format);

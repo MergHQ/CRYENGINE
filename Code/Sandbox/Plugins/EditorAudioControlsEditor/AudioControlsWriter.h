@@ -8,7 +8,7 @@
 #include <CrySystem/XML/IXml.h>
 #include <QModelIndex>
 #include <CrySystem/ISystem.h>
-#include "ACETypes.h"
+#include <ACETypes.h>
 
 class QStandardItemModel;
 
@@ -60,11 +60,11 @@ public:
 
 private:
 	void WriteLibrary(CAudioLibrary& library);
-	void WriteItem(IAudioAsset* pItem, const string& path, LibraryStorage& library);
-	void GetScopes(IAudioAsset const* const pItem, std::unordered_set<Scope>& scopes);
+	void WriteItem(CAudioAsset* pItem, const string& path, LibraryStorage& library);
+	void GetScopes(CAudioAsset const* const pItem, std::unordered_set<Scope>& scopes);
 	void WriteControlToXML(XmlNodeRef pNode, CAudioControl* pControl, const string& path);
 	void WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl* pControl, const int platformIndex = -1);
-	void WriteEditorData(IAudioAsset* pLibrary, XmlNodeRef pParentNode) const;
+	void WriteEditorData(CAudioAsset* pLibrary, XmlNodeRef pParentNode) const;
 
 	void CheckOutFile(const string& filepath);
 	void DeleteLibraryFile(const string& filepath);

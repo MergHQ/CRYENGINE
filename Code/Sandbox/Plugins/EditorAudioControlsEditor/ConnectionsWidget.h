@@ -11,15 +11,15 @@ class QPropertyTree;
 namespace ACE
 {
 class CAudioControl;
-class QConnectionModel;
+class CConnectionModel;
 class CAdvancedTreeView;
 
-class QConnectionsWidget : public QWidget
+class CConnectionsWidget : public QWidget
 {
 public:
 
-	QConnectionsWidget(QWidget* pParent = nullptr);
-	virtual ~QConnectionsWidget() override;
+	CConnectionsWidget(QWidget* pParent = nullptr);
+	virtual ~CConnectionsWidget() override;
 
 	void Init();
 	void SetControl(CAudioControl* pControl);
@@ -36,7 +36,7 @@ private:
 	CAudioControl*          m_pControl;
 	QFrame*                 m_pConnectionPropertiesFrame;
 	QPropertyTree*          m_pConnectionProperties;
-	QConnectionModel*       m_pConnectionModel;
+	CConnectionModel*       m_pConnectionModel;
 	CAdvancedTreeView*      m_pConnectionsView;
 };
 } // namespace ACE

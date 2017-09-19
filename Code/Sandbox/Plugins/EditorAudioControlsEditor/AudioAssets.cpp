@@ -19,21 +19,21 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-void IAudioAsset::SetParent(IAudioAsset* pParent)
+void CAudioAsset::SetParent(CAudioAsset* pParent)
 {
 	m_pParent = pParent;
 	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void IAudioAsset::AddChild(IAudioAsset* pChildControl)
+void CAudioAsset::AddChild(CAudioAsset* pChildControl)
 {
 	m_children.push_back(pChildControl);
 	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void IAudioAsset::RemoveChild(IAudioAsset* pChildControl)
+void CAudioAsset::RemoveChild(CAudioAsset* pChildControl)
 {
 	m_children.erase(std::remove(m_children.begin(), m_children.end(), pChildControl), m_children.end());
 	SetModified(true);
@@ -41,7 +41,7 @@ void IAudioAsset::RemoveChild(IAudioAsset* pChildControl)
 
 //////////////////////////////////////////////////////////////////////////
 CAudioControl::CAudioControl(const string& controlName, CID id, EItemType type)
-	: IAudioAsset(controlName)
+	: CAudioAsset(controlName)
 	, m_id(id)
 	, m_type(type)
 	, m_modifiedSignalEnabled(true)

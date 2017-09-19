@@ -1,10 +1,16 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "AudioAssetsExplorer.h"
+#include "SystemControlsWidget.h"
+
+#include "AudioControlsEditorPlugin.h"
+#include "MiddlewareDataWidget.h"
+#include "MiddlewareDataModel.h"
 #include "AudioAssets.h"
 #include "AudioAssetsManager.h"
-#include "QAudioControlEditorIcons.h"
+#include "SystemControlsEditorIcons.h"
+#include "AdvancedTreeView.h"
+
 #include <IEditor.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
@@ -13,17 +19,12 @@
 #include <CryAudio/IAudioSystem.h>
 #include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
-#include "QtUtil.h"
+#include <QtUtil.h>
 #include <EditorStyleHelper.h>
-#include "AudioControlsEditorPlugin.h"
-#include "AudioSystemPanel.h"
-#include "AudioSystemModel.h"
-#include "QAudioControlTreeWidget.h"
-#include "IUndoObject.h"
-#include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
-#include "AdvancedTreeView.h"
-
+#include <IUndoObject.h>
+#include <Controls/QuestionDialog.h>
+#include <FilePathUtil.h>
+#include <ProxyModels/MountingProxyModel.h>
 #include <QSearchBox.h>
 
 #include <QMenu>
@@ -36,14 +37,14 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QVBoxLayout>
-#include <ProxyModels/MountingProxyModel.h>
+
 
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
+CSystemControlsWidget::CSystemControlsWidget(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
-	, m_pProxyModel(new QControlsProxyFilter(this))
+	, m_pProxyModel(new CSystemControlsFilterProxyModel(this))
 {
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -94,8 +95,8 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	pMainLayout->addLayout(pHorizontalLayout);
 	pMainLayout->addWidget(pSplitter);
 
-	connect(pFilterButton, &QToolButton::toggled, m_pFilterWidget, &QWidget::setVisible);
-	connect(m_pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
+	QObject::connect(pFilterButton, &QToolButton::toggled, m_pFilterWidget, &QWidget::setVisible);
+	QObject::connect(m_pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
 	{
 		if (m_filter != filter)
 		{
@@ -142,10 +143,10 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	pAddButton->setMenu(pContextMenu);
 
 	m_pControlsTree->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(m_pControlsTree, &CAdvancedTreeView::customContextMenuRequested, this, &CAudioAssetsExplorer::OnContextMenu);
+	QObject::connect(m_pControlsTree, &CAdvancedTreeView::customContextMenuRequested, this, &CSystemControlsWidget::OnContextMenu);
 	// *********************************
 
-	m_pAssetsManager->signalItemAboutToBeAdded.Connect([&](IAudioAsset* pItem)
+	m_pAssetsManager->signalItemAboutToBeAdded.Connect([&](CAudioAsset* pItem)
 	{
 		if (!m_bReloading)
 		{
@@ -161,7 +162,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsModel = new CAudioAssetsExplorerModel(m_pAssetsManager);
+	m_pAssetsModel = new CSystemControlsModel(m_pAssetsManager);
 
 	auto const count = m_pAssetsManager->GetLibraryCount();
 	m_libraryModels.resize(count);
@@ -171,7 +172,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 		m_libraryModels[i] = new CAudioLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
 	}
 
-	m_pMountedModel = new CMountingProxyModel(WrapMemberFunction(this, &CAudioAssetsExplorer::CreateLibraryModelFromIndex));
+	m_pMountedModel = new CMountingProxyModel(WrapMemberFunction(this, &CSystemControlsWidget::CreateLibraryModelFromIndex));
 	m_pMountedModel->SetHeaderDataCallbacks(1, &GetHeaderData);
 	m_pMountedModel->SetSourceModel(m_pAssetsModel);
 
@@ -179,11 +180,11 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 	m_pProxyModel->setDynamicSortFilter(true);
 	m_pControlsTree->setModel(m_pProxyModel);
 
-	connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CAudioAssetsExplorer::SelectedControlChanged);
-	connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::selectionChanged, m_pControlsTree, &CAdvancedTreeView::OnSelectionChanged);
-	connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &CAudioAssetsExplorer::StopControlExecution);
+	QObject::connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CSystemControlsWidget::SelectedControlChanged);
+	QObject::connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::selectionChanged, m_pControlsTree, &CAdvancedTreeView::OnSelectionChanged);
+	QObject::connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &CSystemControlsWidget::StopControlExecution);
 
-	connect(m_pMountedModel, &CMountingProxyModel::rowsInserted, this, &CAudioAssetsExplorer::SelectNewAsset);
+	QObject::connect(m_pMountedModel, &CMountingProxyModel::rowsInserted, this, &CSystemControlsWidget::SelectNewAsset);
 
 	m_pAssetsManager->signalLibraryAboutToBeRemoved.Connect([&](CAudioLibrary* pLibrary)
 	{
@@ -205,7 +206,7 @@ CAudioAssetsExplorer::CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioAssetsExplorer::~CAudioAssetsExplorer()
+CSystemControlsWidget::~CSystemControlsWidget()
 {
 	m_pAssetsManager->signalLibraryAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalItemAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -225,7 +226,7 @@ CAudioAssetsExplorer::~CAudioAssetsExplorer()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioAssetsExplorer::eventFilter(QObject* pObject, QEvent* pEvent)
+bool CSystemControlsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if ((pEvent->type() == QEvent::KeyRelease) && !m_pControlsTree->IsEditing())
 	{
@@ -247,7 +248,7 @@ bool CAudioAssetsExplorer::eventFilter(QObject* pObject, QEvent* pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<CAudioControl*> CAudioAssetsExplorer::GetSelectedControls()
+std::vector<CAudioControl*> CSystemControlsWidget::GetSelectedControls()
 {
 	QModelIndexList indexes = m_pControlsTree->selectionModel()->selectedIndexes();
 	std::vector<CAudioLibrary*> libraries;
@@ -258,13 +259,13 @@ std::vector<CAudioControl*> CAudioAssetsExplorer::GetSelectedControls()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::Reload()
+void CSystemControlsWidget::Reload()
 {
 	ResetFilters();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::ShowControlType(EItemType type, bool bShow)
+void CSystemControlsWidget::ShowControlType(EItemType type, bool bShow)
 {
 	m_pProxyModel->EnableControl(bShow, type);
 
@@ -277,7 +278,7 @@ void CAudioAssetsExplorer::ShowControlType(EItemType type, bool bShow)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioControl* CAudioAssetsExplorer::CreateControl(string const& name, EItemType type, IAudioAsset* pParent)
+CAudioControl* CSystemControlsWidget::CreateControl(string const& name, EItemType type, CAudioAsset* pParent)
 {
 	m_bCreatedFromMenu = true;
 
@@ -292,14 +293,14 @@ CAudioControl* CAudioAssetsExplorer::CreateControl(string const& name, EItemType
 }
 
 //////////////////////////////////////////////////////////////////////////
-IAudioAsset* CAudioAssetsExplorer::CreateFolder(IAudioAsset* pParent)
+CAudioAsset* CSystemControlsWidget::CreateFolder(CAudioAsset* pParent)
 {
 	m_bCreatedFromMenu = true;
 	return m_pAssetsManager->CreateFolder(Utils::GenerateUniqueName("new_folder", EItemType::eItemType_Folder, pParent), pParent);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::OnContextMenu(QPoint const& pos)
+void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 {
 	QMenu* pContextMenu = new QMenu();
 	std::vector<CAudioLibrary*> libraries;
@@ -310,15 +311,15 @@ void CAudioAssetsExplorer::OnContextMenu(QPoint const& pos)
 
 	if (libraries.size() == 1 || folders.size() == 1)
 	{
-		IAudioAsset* pParent = nullptr;
+		CAudioAsset* pParent = nullptr;
 
 		if (libraries.empty())
 		{
-			pParent = static_cast<IAudioAsset*>(folders[0]);
+			pParent = static_cast<CAudioAsset*>(folders[0]);
 		}
 		else
 		{
-			pParent = static_cast<IAudioAsset*>(libraries[0]);
+			pParent = static_cast<CAudioAsset*>(libraries[0]);
 		}
 
 		QMenu* pAddMenu = new QMenu(tr("Add"));
@@ -423,7 +424,7 @@ void CAudioAssetsExplorer::OnContextMenu(QPoint const& pos)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::DeleteSelectedControl()
+void CSystemControlsWidget::DeleteSelectedControl()
 {
 	auto const selection = m_pControlsTree->selectionModel()->selectedRows();
 	int const size = selection.length();
@@ -448,7 +449,7 @@ void CAudioAssetsExplorer::DeleteSelectedControl()
 		{
 			CUndo undo("Audio Control Removed");
 
-			std::vector<IAudioAsset*> selectedItems;
+			std::vector<CAudioAsset*> selectedItems;
 
 			for (auto index : selection)
 			{
@@ -458,7 +459,7 @@ void CAudioAssetsExplorer::DeleteSelectedControl()
 				}
 			}
 
-			std::vector<IAudioAsset*> itemsToDelete;
+			std::vector<CAudioAsset*> itemsToDelete;
 			Utils::SelectTopLevelAncestors(selectedItems, itemsToDelete);
 
 			for (auto pItem : itemsToDelete)
@@ -470,9 +471,9 @@ void CAudioAssetsExplorer::DeleteSelectedControl()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::ExecuteControl()
+void CSystemControlsWidget::ExecuteControl()
 {
-	IAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(m_pControlsTree->currentIndex());
+	CAudioAsset* pAsset = AudioModelUtils::GetAssetFromIndex(m_pControlsTree->currentIndex());
 
 	if (pAsset && pAsset->GetType() == eItemType_Trigger)
 	{
@@ -481,13 +482,13 @@ void CAudioAssetsExplorer::ExecuteControl()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::StopControlExecution()
+void CSystemControlsWidget::StopControlExecution()
 {
 	CAudioControlsEditorPlugin::StopTriggerExecution();
 }
 
 //////////////////////////////////////////////////////////////////////////
-QAbstractItemModel* CAudioAssetsExplorer::CreateLibraryModelFromIndex(QModelIndex const& sourceIndex)
+QAbstractItemModel* CSystemControlsWidget::CreateLibraryModelFromIndex(QModelIndex const& sourceIndex)
 {
 	if (sourceIndex.model() != m_pAssetsModel)
 	{
@@ -511,7 +512,7 @@ QAbstractItemModel* CAudioAssetsExplorer::CreateLibraryModelFromIndex(QModelInde
 }
 
 //////////////////////////////////////////////////////////////////////////
-IAudioAsset* CAudioAssetsExplorer::GetSelectedAsset() const
+CAudioAsset* CSystemControlsWidget::GetSelectedAsset() const
 {
 	QModelIndex const& index = m_pControlsTree->currentIndex();
 
@@ -524,7 +525,7 @@ IAudioAsset* CAudioAssetsExplorer::GetSelectedAsset() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const row)
+void CSystemControlsWidget::SelectNewAsset(QModelIndex const& parent, int const row)
 {
 	if (m_bCreatedFromMenu)
 	{
@@ -542,13 +543,13 @@ void CAudioAssetsExplorer::SelectNewAsset(QModelIndex const& parent, int const r
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::InitFilterWidget()
+void CSystemControlsWidget::InitFilterWidget()
 {
 	m_pFiltersLayout = new QVBoxLayout();
 	m_pFiltersLayout->setContentsMargins(0, 5, 0, 5);
 
 	QCheckBox* pFilterTriggersCheckbox = new QCheckBox(tr("Triggers"));
-	connect(pFilterTriggersCheckbox, &QCheckBox::toggled, [&](bool const bShow)
+	QObject::connect(pFilterTriggersCheckbox, &QCheckBox::toggled, [&](bool const bShow)
 	{
 		ShowControlType(eItemType_Trigger, bShow);
 	});
@@ -559,7 +560,7 @@ void CAudioAssetsExplorer::InitFilterWidget()
 	m_pFiltersLayout->addWidget(pFilterTriggersCheckbox);
 
 	QCheckBox* pFilterParametersCheckbox = new QCheckBox(tr("Parameters"));
-	connect(pFilterParametersCheckbox, &QCheckBox::toggled, [&](bool const bShow)
+	QObject::connect(pFilterParametersCheckbox, &QCheckBox::toggled, [&](bool const bShow)
 	{
 		ShowControlType(eItemType_Parameter, bShow);
 	});
@@ -570,7 +571,7 @@ void CAudioAssetsExplorer::InitFilterWidget()
 	m_pFiltersLayout->addWidget(pFilterParametersCheckbox);
 
 	QCheckBox* pFilterSwitchesCheckbox = new QCheckBox(tr("Switches"));
-	connect(pFilterSwitchesCheckbox, &QCheckBox::toggled, [&](bool const bShow)
+	QObject::connect(pFilterSwitchesCheckbox, &QCheckBox::toggled, [&](bool const bShow)
 	{
 		ShowControlType(eItemType_Switch, bShow);
 	});
@@ -581,7 +582,7 @@ void CAudioAssetsExplorer::InitFilterWidget()
 	m_pFiltersLayout->addWidget(pFilterSwitchesCheckbox);
 
 	QCheckBox* pFilterEnvironmentsCheckbox = new QCheckBox(tr("Environments"));
-	connect(pFilterEnvironmentsCheckbox, &QCheckBox::toggled, [&](bool const bShow)
+	QObject::connect(pFilterEnvironmentsCheckbox, &QCheckBox::toggled, [&](bool const bShow)
 	{
 		ShowControlType(eItemType_Environment, bShow);
 	});
@@ -592,7 +593,7 @@ void CAudioAssetsExplorer::InitFilterWidget()
 	m_pFiltersLayout->addWidget(pFilterEnvironmentsCheckbox);
 
 	QCheckBox* pFilterPreloadsCheckbox = new QCheckBox(tr("Preloads"));
-	connect(pFilterPreloadsCheckbox, &QCheckBox::toggled, [&](bool const bShow)
+	QObject::connect(pFilterPreloadsCheckbox, &QCheckBox::toggled, [&](bool const bShow)
 	{
 		ShowControlType(eItemType_Preload, bShow);
 	});
@@ -607,7 +608,7 @@ void CAudioAssetsExplorer::InitFilterWidget()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::ResetFilters()
+void CSystemControlsWidget::ResetFilters()
 {
 	int const filtersCount = m_pFiltersLayout->count();
 
@@ -625,21 +626,21 @@ void CAudioAssetsExplorer::ResetFilters()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::BackupTreeViewStates()
+void CSystemControlsWidget::BackupTreeViewStates()
 {
 	m_pControlsTree->BackupExpanded();
 	m_pControlsTree->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsExplorer::RestoreTreeViewStates()
+void CSystemControlsWidget::RestoreTreeViewStates()
 {
 	m_pControlsTree->RestoreExpanded();
 	m_pControlsTree->RestoreSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioAssetsExplorer::IsEditing() const
+bool CSystemControlsWidget::IsEditing() const
 {
 	return m_pControlsTree->IsEditing();
 }

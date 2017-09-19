@@ -15,7 +15,7 @@ namespace AudioModelUtils
 void DecodeImplMimeData(const QMimeData* pData, std::vector<IAudioSystemItem*>& outItems);
 } // namespace AudioModelUtils
 
-class QAudioSystemModel final : public QAbstractItemModel
+class CMiddlewareDataModel final : public QAbstractItemModel
 {
 
 public:
@@ -35,7 +35,7 @@ public:
 		eAudioSystemAttributes_Localized,
 	};
 
-	QAudioSystemModel();
+	CMiddlewareDataModel();
 
 	// QAbstractItemModel
 	virtual int             rowCount(const QModelIndex& parent) const override;
@@ -60,11 +60,11 @@ private:
 	IAudioSystemEditor* m_pAudioSystem;
 };
 
-class QAudioSystemModelProxyFilter final : public QDeepFilterProxyModel
+class CMiddlewareDataFilterProxyModel final : public QDeepFilterProxyModel
 {
 public:
 
-	QAudioSystemModelProxyFilter(QObject* parent);
+	CMiddlewareDataFilterProxyModel(QObject* parent);
 
 	// QSortFilterProxyModel
 	virtual bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;

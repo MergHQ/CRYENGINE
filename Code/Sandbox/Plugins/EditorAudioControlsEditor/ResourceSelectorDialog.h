@@ -2,12 +2,12 @@
 
 #pragma once
 
-#include "Controls/EditorDialog.h"
+#include <Controls/EditorDialog.h>
 #include <ACETypes.h>
 
-class QAudioControlsTreeView;
+class QAdvancedTreeView;
+class QDeepFilterProxyModel;
 class QDialogButtonBox;
-class QAudioControlSortProxy;
 class CMountingProxyModel;
 class QAbstractItemModel;
 class QModelIndex;
@@ -17,15 +17,16 @@ namespace ACE
 class CAudioAssetsManager;
 class CResourceControlModel;
 class CResourceLibraryModel;
+class CResourceFilterProxyModel;
 
-class ATLControlsDialog final : public CEditorDialog
+class CResourceSelectorDialog final : public CEditorDialog
 {
 	Q_OBJECT
 
 public:
 
-	ATLControlsDialog(QWidget* pParent, EItemType eType);
-	~ATLControlsDialog();
+	CResourceSelectorDialog(QWidget* pParent, EItemType const eType);
+	~CResourceSelectorDialog();
 
 private slots:
 
@@ -33,7 +34,7 @@ private slots:
 	void SetTextFilter(QString const&filter);
 	void StopTrigger();
 	void ItemDoubleClicked(QModelIndex const& modelIndex);
-	void ShowControlsContextMenu(QPoint const& pos);
+	void OnContextMenu(QPoint const& pos);
 
 public:
 
@@ -61,13 +62,13 @@ private:
 
 	static string                       s_previousControlName;
 	static EItemType                    s_previousControlType;
-	QAudioControlsTreeView*             m_pControlTree;
+	QAdvancedTreeView*                  m_pControlsTree;
 	QDialogButtonBox*                   m_pDialogButtons;
 
-	QAudioControlSortProxy*             m_pProxyModel;
 	CAudioAssetsManager*                m_pAssetsManager;
+	CResourceFilterProxyModel*          m_pFilterProxyModel;
 	CResourceControlModel*              m_pAssetsModel;
-	CMountingProxyModel*                m_pMountedModel;
+	CMountingProxyModel*                m_pMountingProxyModel;
 	std::vector<CResourceLibraryModel*> m_libraryModels;
 };
 } // namespace ACE

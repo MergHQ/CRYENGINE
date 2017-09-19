@@ -6,7 +6,6 @@
 #include <IAudioConnection.h>
 #include <ACETypes.h>
 #include <CrySystem/XML/IXml.h>
-#include "ACETypes.h"
 #include <CrySerialization/Forward.h>
 
 namespace ACE
@@ -26,20 +25,20 @@ struct SRawConnectionData
 
 using XMLNodeList = std::vector<SRawConnectionData>;
 
-class IAudioAsset
+class CAudioAsset
 {
 public:
 
-	IAudioAsset(const string& name) : m_name(name) {}
+	CAudioAsset(const string& name) : m_name(name) {}
 	virtual EItemType GetType() const { return eItemType_Invalid; }
 
-	IAudioAsset*      GetParent() const { return m_pParent; }
-	void              SetParent(IAudioAsset* pParent);
+	CAudioAsset*      GetParent() const { return m_pParent; }
+	void              SetParent(CAudioAsset* pParent);
 
 	size_t            ChildCount() const { return m_children.size(); }
-	IAudioAsset*      GetChild(size_t const index) const { return m_children[index]; }
-	void              AddChild(IAudioAsset* pChildControl);
-	void              RemoveChild(IAudioAsset* pChildControl);
+	CAudioAsset*      GetChild(size_t const index) const { return m_children[index]; }
+	void              AddChild(CAudioAsset* pChildControl);
+	void              RemoveChild(CAudioAsset* pChildControl);
 
 	string            GetName() const { return m_name; }
 	virtual void      SetName(const string& name) { m_name = name; }
@@ -58,19 +57,19 @@ public:
 
 protected:
 
-	IAudioAsset*              m_pParent = nullptr;
-	std::vector<IAudioAsset*> m_children;
+	CAudioAsset*              m_pParent = nullptr;
+	std::vector<CAudioAsset*> m_children;
 	string                    m_name;
 	bool                      m_bHasPlaceholderConnection = false;
 	bool                      m_bHasConnection = false;
 	bool                      m_bHasControl = false;
 };
 
-class CAudioLibrary : public IAudioAsset
+class CAudioLibrary : public CAudioAsset
 {
 public:
 
-	CAudioLibrary(const string& name) : IAudioAsset(name) {}
+	CAudioLibrary(const string& name) : CAudioAsset(name) {}
 	virtual EItemType GetType() const override    { return eItemType_Library; }
 	bool              IsModified() const override { return m_bModified; }
 	virtual void      SetModified(bool const bModified, bool const bForce = false) override;
@@ -80,17 +79,17 @@ private:
 	bool m_bModified = false;
 };
 
-class CAudioFolder : public IAudioAsset
+class CAudioFolder : public CAudioAsset
 {
 public:
 
-	CAudioFolder(const string& name) : IAudioAsset(name) {}
+	CAudioFolder(const string& name) : CAudioAsset(name) {}
 	virtual EItemType GetType() const override { return eItemType_Folder; }
 	bool              IsModified() const override;
 	virtual void      SetModified(bool const bModified, bool const bForce = false) override;
 };
 
-class CAudioControl : public IAudioAsset
+class CAudioControl : public CAudioAsset
 {
 	friend class CAudioControlsLoader;
 	friend class CAudioControlsWriter;

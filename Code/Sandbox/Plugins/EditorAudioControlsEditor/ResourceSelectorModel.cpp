@@ -1,20 +1,28 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "AudioAssets.h"
 #include "ResourceSelectorModel.h"
-#include "QAudioControlEditorIcons.h"
+#include "SystemControlsEditorIcons.h"
 
 #include <QtUtil.h>
 
-#include "AudioAssets.h"
-#include "IEditor.h"
-#include "QAudioControlTreeWidget.h"
-
-#include <CryString/CryPath.h>
-#include <DragDrop.h>
-
 namespace ACE
 {
+//////////////////////////////////////////////////////////////////////////
+bool CResourceFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
+{
+	uint eLeftType = sourceModel()->data(left, eDataRole_ItemType).toUInt();
+	uint eRightType = sourceModel()->data(right, eDataRole_ItemType).toUInt();
+
+	if (eLeftType != eRightType)
+	{
+		return eLeftType > eRightType;
+	}
+
+	return left.data(Qt::DisplayRole) > right.data(Qt::DisplayRole);
+}
+
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceControlModel::data(QModelIndex const& index, int role) const
 {
@@ -50,7 +58,7 @@ bool CResourceControlModel::setData(QModelIndex const& index, QVariant const& va
 {
 	if (index.isValid())
 	{
-		IAudioAsset* const pItem = static_cast<IAudioAsset*>(index.internalPointer());
+		CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
@@ -86,7 +94,7 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 		return QVariant();
 	}
 
-	IAudioAsset* const pItem = static_cast<IAudioAsset*>(index.internalPointer());
+	CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
 
 	if (pItem != nullptr)
 	{
@@ -103,7 +111,7 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 			break;
 
 		case EDataRole::eDataRole_ItemType:
-			return pItem->GetType();
+			return itemType;
 			break;
 
 		case EDataRole::eDataRole_InternalPointer:
@@ -120,7 +128,7 @@ bool CResourceLibraryModel::setData(QModelIndex const& index, QVariant const& va
 {
 	if (index.isValid())
 	{
-		IAudioAsset* const pItem = static_cast<IAudioAsset*>(index.internalPointer());
+		CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
