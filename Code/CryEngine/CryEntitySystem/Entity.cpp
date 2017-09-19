@@ -183,67 +183,6 @@ bool CEntity::SendEvent(SEntityEvent& event)
 		t0 = gEnv->pTimer->GetAsyncTime();
 	}
 
-	switch (event.event)
-	{
-	case ENTITY_EVENT_RESET:
-		{
-			if (m_simulationMode != EEntitySimulationMode::Preview)
-			{
-				m_simulationMode = event.nParam[0] == 1 ? EEntitySimulationMode::Game : EEntitySimulationMode::Editor;
-			}
-
-			// Activate entity if was deactivated:
-			if (m_bGarbage)
-			{
-				m_bGarbage = false;
-
-				// If entity was deleted in game, ressurect it.
-				SEntityEvent entevnt;
-				entevnt.event = ENTITY_EVENT_INIT;
-				SendEvent(entevnt);
-			}
-
-			//CryLogAlways( "%s became visible",GetEntityTextDescription() );
-			// [marco] needed when going in and out of game mode in the editor
-			{
-				m_render.SetLastSeenTime(gEnv->pTimer->GetCurrTime());
-				ICharacterInstance* pCharacterInstance = m_render.GetCharacter(0);
-				if (pCharacterInstance)
-					pCharacterInstance->SetPlaybackScale(1.0f);
-			}
-
-			// We only want to reset when we return from game mode to editor mode.
-			if (m_pSchematycObject && gEnv->IsEditor() && !gEnv->IsEditorGameMode())
-			{
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
-			}
-			break;
-		}
-
-	case ENTITY_EVENT_LEVEL_LOADED:
-		{
-			// After level load we set the simulation mode but don't start simulation yet. Mean we
-			// fully prepare the object for the simulation to start. Simulation will be started with
-			// the ENTITY_EVENT_START_GAME event.
-			if (m_pSchematycObject)
-			{
-				m_simulationMode = !gEnv->IsEditing() ? EEntitySimulationMode::Game : EEntitySimulationMode::Editor;
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
-			}
-		}
-		break;
-
-	case ENTITY_EVENT_START_GAME:
-		{
-			// Set simulation mode and finally start simulation.
-			if (m_pSchematycObject)
-			{
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, true);
-			}
-		}
-		break;
-	}
-
 	if (!m_bGarbage)
 	{
 		// Broadcast event to proxies.
@@ -505,7 +444,7 @@ void CEntity::AttachChild(IEntity* pChildEntity, const SChildAttachParams& attac
 	// In debug mode check for attachment recursion.
 #ifdef _DEBUG
 	assert(this != pChildEntity && "Trying to Attach to itself");
-	for (CEntity* pParent = GetParent(); pParent; pParent = pParent->GetParent())
+	for (CEntity* pParent = static_cast<CEntity*>(GetParent()); pParent; pParent = static_cast<CEntity*>(pParent->GetParent()))
 	{
 		assert(pParent != pChildEntity && "Recursive Attachment");
 
@@ -3148,7 +3087,36 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 void CEntity::SetSimulationMode(EEntitySimulationMode mode)
 {
 	m_simulationMode = mode;
-	m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, m_simulationMode == EEntitySimulationMode::Game);
+	if (m_pSchematycObject != nullptr)
+	{
+		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, m_simulationMode == EEntitySimulationMode::Game);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
+{
+	if (m_simulationMode != EEntitySimulationMode::Preview)
+	{
+		m_simulationMode = bEnterGameMode ? EEntitySimulationMode::Game : EEntitySimulationMode::Editor;
+	}
+
+	// Activate entity if was deactivated:
+	if (m_bGarbage)
+	{
+		m_bGarbage = false;
+
+		// If entity was deleted in game, resurrect it.
+		SEntityEvent entevnt;
+		entevnt.event = ENTITY_EVENT_INIT;
+		SendEvent(entevnt);
+	}
+
+	// We only want to reset when we return from game mode to editor mode.
+	if (m_pSchematycObject && !bEnterGameMode)
+	{
+		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

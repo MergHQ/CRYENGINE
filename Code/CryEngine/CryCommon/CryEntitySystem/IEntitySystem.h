@@ -353,6 +353,17 @@ struct IEntitySystem
 		SinkMaxEventSubscriptionCount = 5,
 	};
 
+	//! Determines the state of simulation in the Editor, see OnEditorSimulationModeChanged
+	enum class EEditorSimulationMode
+	{
+		//! User is in editing mode
+		Editing,
+		//! User is in game (ctrl + g / F5)
+		InGame,
+		// Entities are being simulated without player being active
+		Simulation
+	};
+
 	// <interfuscator:shuffle>
 	virtual ~IEntitySystem(){}
 
@@ -425,6 +436,15 @@ struct IEntitySystem
 	//! Sends the same event to all entities in Entity System.
 	//! \param event Event to send.
 	virtual void SendEventToAll(SEntityEvent& event) = 0;
+
+	//! Sent when game mode in Editor is changed
+	virtual void OnEditorSimulationModeChanged(EEditorSimulationMode mode) = 0;
+
+	//! Sent after the level has finished loading
+	virtual void OnLevelLoaded() = 0;
+
+	//! Sent when level is loaded and gameplay can start, triggers start of simulation for entities
+	virtual void OnLevelGameplayStart() = 0;
 
 	//! Get all entities within proximity of the specified bounding box.
 	//! \note Query is not exact, entities reported can be a few meters away from the bounding box.

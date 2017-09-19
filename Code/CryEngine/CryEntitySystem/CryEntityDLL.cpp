@@ -79,11 +79,8 @@ public:
 						// activate the default layers
 						g_pIEntitySystem->EnableDefaultLayers();
 					}
-					{
-						LOADING_TIME_PROFILE_SECTION_NAMED("ENTITY_EVENT_LEVEL_LOADED");
-						SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
-						g_pIEntitySystem->SendEventToAll(loadingCompleteEvent);
-					}
+
+					g_pIEntitySystem->OnLevelLoaded();
 				}
 			}
 			break;

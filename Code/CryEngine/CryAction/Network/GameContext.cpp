@@ -503,8 +503,7 @@ bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int e
 			AddLoadingCompleteTasks(pEst, m_loadFlags, pLoadingStarted, false);
 		if (HasContextFlag(eGSF_Server))
 		{
-			SEntityEvent startGameEvent(ENTITY_EVENT_START_GAME);
-			AddEntitySystemEvent(pEst, eCVS_InGame, startGameEvent);
+			AddEntitySystemGameplayStart(pEst, eCVS_InGame);
 		}
 	}
 	return true;
@@ -628,8 +627,7 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 
 	if (isClient && !HasContextFlag(eGSF_Server))
 	{
-		SEntityEvent startGameEvent(ENTITY_EVENT_START_GAME);
-		AddEntitySystemEvent(pEst, eCVS_InGame, startGameEvent);
+		AddEntitySystemGameplayStart(pEst, eCVS_InGame);
 	}
 
 	if (isClient && !gEnv->IsEditor() && !gEnv->bMultiplayer && !(m_flags & eGSF_DemoPlayback))

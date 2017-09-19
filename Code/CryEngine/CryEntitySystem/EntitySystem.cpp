@@ -375,7 +375,7 @@ void CEntitySystem::Reset()
 	// Delete entities that have already been added to the delete list.
 	DeletePendingEntities();
 
-	uint32 dwMaxUsed = (uint32)m_EntitySaltBuffer.GetMaxUsed() + 1;
+	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 
 	for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + dwMaxUsed; it != end; ++it)
 	{
@@ -860,7 +860,7 @@ CEntity* CEntitySystem::GetEntityFromID(EntityId id) const
 	assert(hdl <= dwMaxUsed);   // bad input id parameter
 
 	uint32 hd1cond = hdl <= dwMaxUsed;
-	hd1cond = (uint32)((int32)hd1cond | -(int32)hd1cond);  //0 for hdl>dwMaxUsed, 0xFFFFFFFF for hdl<=dwMaxUsed
+	hd1cond = static_cast<uint32>((int32)hd1cond | -(int32)hd1cond);  //0 for hdl>dwMaxUsed, 0xFFFFFFFF for hdl<=dwMaxUsed
 	hdl = hd1cond & hdl;
 
 	if (CEntity* const pEntity = m_EntityArray[hdl])
@@ -902,7 +902,7 @@ IEntity* CEntitySystem::FindEntityByName(const char* sEntityName) const
 uint32 CEntitySystem::GetNumEntities() const
 {
 	uint32 dwRet = 0;
-	uint32 dwMaxUsed = (uint32)m_EntitySaltBuffer.GetMaxUsed() + 1;
+	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 
 	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
 	{
@@ -1012,7 +1012,7 @@ void CEntitySystem::Update()
 		if (CVar::pEntityBBoxes->GetIVal() != 0)
 		{
 			// Render bboxes of all entities.
-			uint32 dwMaxUsed = (uint32)m_EntitySaltBuffer.GetMaxUsed() + 1;
+			uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 			for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + dwMaxUsed; it != end; ++it)
 			{
 				if (const CEntity* const pEntity = *it)
@@ -1611,7 +1611,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 		if (bDebug || bProfileEntitiesToLog)
 		{
 			// Draw the rest of not active entities
-			uint32 dwMaxUsed = (uint32)m_EntitySaltBuffer.GetMaxUsed() + 1;
+			uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 
 			for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + dwMaxUsed; it != end; ++it)
 			{
@@ -1651,7 +1651,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 			if (bProfileEntitiesAll)
 			{
 				uint32 dwRet = 0;
-				uint32 dwMaxUsed = (uint32)m_EntitySaltBuffer.GetMaxUsed() + 1;
+				uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 
 				for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + dwMaxUsed; it != end; ++it)
 				{
@@ -1713,26 +1713,89 @@ bool CEntitySystem::IsIDUsed(EntityId nID) const
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::SendEventToAll(SEntityEvent& event)
 {
-	uint32 dwMaxUsed = (uint32)m_EntitySaltBuffer.GetMaxUsed() + 1;
-
-	if (event.event == ENTITY_EVENT_RESET)
-	{
-		bool bToGame = event.nParam[0] != 0;
-		if (gEnv->IsEditor() && bToGame && m_entitiesPropertyCache)
-		{
-			m_entitiesPropertyCache->StoreEntities();
-		}
-		if (gEnv->IsEditor() && !bToGame && m_entitiesPropertyCache)
-		{
-			m_entitiesPropertyCache->RestoreEntities();
-			m_entitiesPropertyCache->ClearCache();
-		}
-	}
+	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 
 	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
 	{
 		if (CEntity* pEntity = *it)
 		{
+			pEntity->SendEvent(event);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::OnEditorSimulationModeChanged(EEditorSimulationMode mode)
+{
+	bool bSimulating = mode != EEditorSimulationMode::Editing;
+
+	if (bSimulating && m_entitiesPropertyCache)
+	{
+		m_entitiesPropertyCache->StoreEntities();
+	}
+	if (!bSimulating && m_entitiesPropertyCache)
+	{
+		m_entitiesPropertyCache->RestoreEntities();
+		m_entitiesPropertyCache->ClearCache();
+	}
+
+	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
+	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	{
+		if (CEntity* pEntity = *it)
+		{
+			pEntity->OnEditorGameModeChanged(bSimulating);
+
+			SEntityEvent event;
+			event.event = ENTITY_EVENT_RESET;
+			event.nParam[0] = bSimulating ? 1 : 0;
+			pEntity->SendEvent(event);
+
+			if (bSimulating)
+			{
+				event.event = ENTITY_EVENT_START_GAME;
+				pEntity->SendEvent(event);
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::OnLevelLoaded()
+{
+	LOADING_TIME_PROFILE_SECTION;
+
+	SEntityEvent event(ENTITY_EVENT_LEVEL_LOADED);
+
+	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
+	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	{
+		if (CEntity* pEntity = *it)
+		{
+			// After level load we set the simulation mode but don't start simulation yet. Mean we
+			// fully prepare the object for the simulation to start. Simulation will be started with
+			// the ENTITY_EVENT_START_GAME event.
+			pEntity->SetSimulationMode(gEnv->IsEditor() ? EEntitySimulationMode::Editor : EEntitySimulationMode::Game);
+
+			pEntity->SendEvent(event);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::OnLevelGameplayStart()
+{
+	LOADING_TIME_PROFILE_SECTION;
+
+	SEntityEvent event(ENTITY_EVENT_START_GAME);
+
+	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
+	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	{
+		if (CEntity* pEntity = *it)
+		{
+			pEntity->SetSimulationMode(gEnv->IsEditor() ? EEntitySimulationMode::Editor : EEntitySimulationMode::Game);
+
 			pEntity->SendEvent(event);
 		}
 	}

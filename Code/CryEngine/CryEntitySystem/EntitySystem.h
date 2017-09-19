@@ -240,7 +240,7 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////
-class CEntitySystem : public IEntitySystem
+class CEntitySystem final : public IEntitySystem
 {
 public:
 	CEntitySystem(ISystem* pSystem);
@@ -267,6 +267,9 @@ public:
 	virtual uint32                            GetNumEntities() const final;
 	virtual IEntityIt*                        GetEntityIterator() final;
 	virtual void                              SendEventToAll(SEntityEvent& event) final;
+	virtual void                              OnEditorSimulationModeChanged(EEditorSimulationMode mode) final;
+	virtual void                              OnLevelLoaded() final;
+	virtual void                              OnLevelGameplayStart() final;
 	virtual int                               QueryProximity(SEntityProximityQuery& query) final;
 	virtual void                              ResizeProximityGrid(int nWidth, int nHeight) final;
 	virtual int                               GetPhysicalEntitiesInBox(const Vec3& origin, float radius, IPhysicalEntity**& pList, int physFlags) const final;

@@ -412,6 +412,7 @@ public:
 	//~IEntity
 
 	void SetSimulationMode(EEntitySimulationMode mode);
+	void OnEditorGameModeChanged(bool bEnterGameMode);
 
 	void ShutDownComponent(IEntityComponent* pComponent);
 
