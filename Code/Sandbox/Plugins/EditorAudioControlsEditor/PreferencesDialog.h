@@ -6,13 +6,13 @@
 
 namespace ACE
 {
-class QAudioSystemSettingsDialog : public CEditorDialog
+class CPreferencesDialog : public CEditorDialog
 {
 	Q_OBJECT
 
 public:
 
-	QAudioSystemSettingsDialog(QWidget* pParent);
+	CPreferencesDialog(QWidget* pParent);
 
 signals:
 

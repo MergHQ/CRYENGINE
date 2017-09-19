@@ -317,7 +317,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 			CEntity* pChild, * pAdam;
 			CEntityPhysics* pChildProxy, * pAdamProxy;
 			pe_action_move_parts amp;
-			pChild = (CEntity*)m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			pChild = g_pIEntitySystem->GetEntityFromID((EntityId)event.nParam[0]);
 			pAdam = (CEntity*)GetAdam(pChild, amp.mtxRel);
 			if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
 			{
@@ -347,7 +347,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 		{
 			CEntity* pChild, * pAdam;
 			CEntityPhysics* pChildProxy, * pAdamProxy;
-			pChild = (CEntity*)m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			pChild = g_pIEntitySystem->GetEntityFromID((EntityId)event.nParam[0]);
 			pAdam = (CEntity*)m_pEntity->GetAdam();
 			if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
 			{
@@ -450,7 +450,7 @@ void CEntityPhysics::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_MATERIAL:
 		if (IMaterial* pMtl = (IMaterial*)event.nParam[0])
 		{
-			IEntity* pAdam = m_pEntity->GetAdam();
+			CEntity* pAdam = static_cast<CEntity*>(m_pEntity->GetAdam());
 			if (m_pEntity->m_hierarchy.attachId >= 0 && pAdam && pAdam != m_pEntity && pAdam->GetPhysics())
 			{
 				UpdateParamsFromRenderMaterial(0, pAdam->GetPhysics());
@@ -1746,7 +1746,7 @@ bool CEntityPhysics::PhysicalizeCharacter(SEntityPhysicalizeParams& params)
 		pCharacter->GetISkeletonPose()->SetCharacterPhysics(m_pPhysicalEntity);
 		pe_params_pos pp;
 		pp.q = m_pEntity->m_qRotation;
-		for (IEntity* pent = m_pEntity->GetParent(); pent; pent = pent->GetParent())
+		for (CEntity* pent = static_cast<CEntity*>(m_pEntity->GetParent()); pent; pent = static_cast<CEntity*>(pent->GetParent()))
 			pp.q = pent->GetRotation() * pp.q;
 		m_pPhysicalEntity->SetParams(&pp);
 		for (iAux = 0; pCharacter->GetISkeletonPose()->GetCharacterPhysics(iAux); iAux++)
@@ -1919,7 +1919,7 @@ void CEntityPhysics::AddImpulse(int ipart, const Vec3& pos, const Vec3& impulse,
 	const pe_type physicalEntityType = pPhysicalEntity->GetType();
 	const bool bNotLiving = physicalEntityType != PE_LIVING;
 
-	//if (m_pPhysicalEntity && (!m_bIsADeadBody || (m_pEntitySystem->m_pHitDeadBodies->GetIVal() )))
+	//if (m_pPhysicalEntity && (!m_bIsADeadBody || (g_pIEntitySystem->m_pHitDeadBodies->GetIVal() )))
 	if (pPhysicalEntity && CVar::pHitDeadBodies->GetIVal() && (fPushScale > 0.0f))
 	{
 		// Ignore the pushScale on not living entities

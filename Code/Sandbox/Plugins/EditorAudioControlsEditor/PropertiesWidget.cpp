@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "InspectorPanel.h"
+#include "PropertiesWidget.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -11,8 +11,8 @@
 #include <QtUtil.h>
 #include <QString>
 
-#include "QAudioControlEditorIcons.h"
-#include "QConnectionsWidget.h"
+#include "SystemControlsEditorIcons.h"
+#include "ConnectionsWidget.h"
 #include "AudioAssetsManager.h"
 
 using namespace QtUtil;
@@ -20,7 +20,7 @@ using namespace QtUtil;
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
+CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 {
 	assert(m_pAssetsManager);
@@ -40,7 +40,7 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 	m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 	m_pConnectionsLabel->setWordWrap(true);
 	
-	m_pConnectionList = new QConnectionsWidget();
+	m_pConnectionList = new CConnectionsWidget();
 	m_pConnectionList->Init();
 
 	pMainLayout->addWidget(m_pPropertyTree);
@@ -73,7 +73,7 @@ CInspectorPanel::CInspectorPanel(CAudioAssetsManager* pAssetsManager)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CInspectorPanel::~CInspectorPanel()
+CPropertiesWidget::~CPropertiesWidget()
 {
 	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -84,13 +84,13 @@ CInspectorPanel::~CInspectorPanel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CInspectorPanel::Reload()
+void CPropertiesWidget::Reload()
 {
 	m_pConnectionList->Reload();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CInspectorPanel::SetSelectedControls(const std::vector<CAudioControl*>& selectedControls)
+void CPropertiesWidget::SetSelectedControls(const std::vector<CAudioControl*>& selectedControls)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
@@ -132,13 +132,13 @@ void CInspectorPanel::SetSelectedControls(const std::vector<CAudioControl*>& sel
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CInspectorPanel::BackupTreeViewStates()
+void CPropertiesWidget::BackupTreeViewStates()
 {
 	m_pConnectionList->BackupTreeViewStates();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CInspectorPanel::RestoreTreeViewStates()
+void CPropertiesWidget::RestoreTreeViewStates()
 {
 	m_pConnectionList->RestoreTreeViewStates();
 }

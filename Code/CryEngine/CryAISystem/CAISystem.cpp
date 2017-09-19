@@ -2245,14 +2245,6 @@ void CAISystem::LoadMNM(const char* szLevel, const char* szMission, bool bAfterE
 	char mnmFileName[1024] = { 0 };
 	cry_sprintf(mnmFileName, "%s/mnmnav%s.bai", szLevel, szMission);
 	gAIEnv.pNavigationSystem->ReadFromFile(mnmFileName, bAfterExporting);
-
-#ifdef DEDICATED_SERVER
-	else
-	{
-		// load ai data from segment pak instead
-		pSegmentsManager->ForceLoadSegments(ISegmentsManager::slfNavigation);
-	}
-#endif
 }
 
 void CAISystem::LoadCover(const char* szLevel, const char* szMission)
@@ -2492,10 +2484,6 @@ void CAISystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lpar
 {
 	switch (event)
 	{
-	case ESYSTEM_EVENT_SW_SHIFT_WORLD:
-		// offset all AI areas when segmented world shifts.
-		OffsetAllAreas(*(const Vec3*)wparam);
-		break;
 	case ESYSTEM_EVENT_GAME_POST_INIT_DONE: //= ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV
 		{
 			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
@@ -5908,7 +5896,10 @@ void CAISystem::GetNavigationSeeds(std::vector<std::pair<Vec3, NavigationAgentTy
 
 		for (; itNavSeeds->GetObject(); itNavSeeds->Next())
 		{
-			seeds.push_back(std::make_pair(itNavSeeds->GetObject()->GetEntity()->GetPos(), NavigationAgentTypeID(0)));
+			if (IEntity* pEntity = itNavSeeds->GetObject()->GetEntity())
+			{
+				seeds.push_back(std::make_pair(pEntity->GetPos(), NavigationAgentTypeID(0)));
+			}
 		}
 	}
 }

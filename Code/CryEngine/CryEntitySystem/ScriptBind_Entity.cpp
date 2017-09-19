@@ -68,9 +68,8 @@
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEntitySystem* pEntitySystem)
-	: m_pEntitySystem(pEntitySystem)
-	, m_pISystem(pSystem)
+CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem)
+	: m_pISystem(pSystem)
 {
 	CScriptableBase::Init(pSS, pSystem, 1); // Use parameter offset 1 for self.
 	SetGlobalName("Entity");
@@ -574,10 +573,10 @@ void CScriptBind_Entity::DelegateCalls(IScriptTable* pInstanceTable)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEntity* CScriptBind_Entity::GetEntity(IFunctionHandler* pH)
+CEntity* CScriptBind_Entity::GetEntity(IFunctionHandler* pH)
 {
-	IEntity* pEntity = nullptr;
-	//IEntity *pEntity = (IEntity*)pH->GetThis();
+	CEntity* pEntity = nullptr;
+	//CEntity *pEntity = (CEntity*)pH->GetThis();
 	//if (!pEntity)
 	{
 		ScriptHandle handle;
@@ -588,7 +587,7 @@ IEntity* CScriptBind_Entity::GetEntity(IFunctionHandler* pH)
 			if (table->GetValue("id", handle))
 			{
 				EntityId id = (EntityId)handle.n;
-				pEntity = m_pEntitySystem->GetEntity(id);
+				pEntity = g_pIEntitySystem->GetEntityFromID(id);
 			}
 		}
 		else
@@ -597,7 +596,7 @@ IEntity* CScriptBind_Entity::GetEntity(IFunctionHandler* pH)
 			if (pH->GetSelf(handle))
 			{
 				EntityId id = (EntityId)handle.n;
-				pEntity = m_pEntitySystem->GetEntity(id);
+				pEntity = g_pIEntitySystem->GetEntityFromID(id);
 			}
 		}
 	}
@@ -622,7 +621,7 @@ int CScriptBind_Entity::DeleteThis(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	// Request to delete entity with this id.
-	m_pEntitySystem->RemoveEntity(pEntity->GetId());
+	g_pIEntitySystem->RemoveEntity(pEntity->GetId());
 	return pH->EndFunction();
 }
 
@@ -826,7 +825,7 @@ int CScriptBind_Entity::CalcWorldAnglesFromRelativeDir(IFunctionHandler* pH, Vec
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::IsEntityInside(IFunctionHandler* pH, ScriptHandle entityId)
 {
-	IEntity* pProbe = m_pEntitySystem->GetEntity((EntityId)entityId.n);
+	CEntity* pProbe = g_pIEntitySystem->GetEntityFromID((EntityId)entityId.n);
 	if (!pProbe)
 		return pH->EndFunction(false);
 
@@ -1715,7 +1714,7 @@ int CScriptBind_Entity::DrawSlot(IFunctionHandler* pH, int nSlot, int nEnable)
 
 	pEntity->SetSlotFlags(nSlot, flags);
 
-	IBreakableManager* pBreakableManager = m_pEntitySystem->GetBreakableManager();
+	IBreakableManager* pBreakableManager = g_pIEntitySystem->GetBreakableManager();
 
 	if (pBreakableManager)
 	{
@@ -1826,7 +1825,7 @@ int CScriptBind_Entity::ReattachSoftEntityVtx(IFunctionHandler* pH, ScriptHandle
 	GET_ENTITY;
 
 	EntityId attachEntityToId = (EntityId)entityId.n;
-	IEntity* pEntityAttach = gEnv->pEntitySystem->GetEntity(attachEntityToId);
+	CEntity* pEntityAttach = g_pIEntitySystem->GetEntityFromID(attachEntityToId);
 	IPhysicalEntity* pPhysEntityAttach = pEntityAttach ? pEntityAttach->GetPhysics() : nullptr;
 
 	pEntity->GetPhysicalProxy()->ReattachSoftEntityVtx(pPhysEntityAttach, partId);
@@ -2124,7 +2123,7 @@ int CScriptBind_Entity::SetAttachmentObject(IFunctionHandler* pH, int characterS
 	GET_ENTITY;
 
 	ICharacterInstance* pCharacter = pEntity->GetCharacter(characterSlot);
-	IEntity* pAttachEntity = m_pEntitySystem->GetEntity((EntityId)entityId.n);
+	CEntity* pAttachEntity = g_pIEntitySystem->GetEntityFromID((EntityId)entityId.n);
 
 	if (!pCharacter || !pAttachEntity)
 	{
@@ -2444,7 +2443,7 @@ int CScriptBind_Entity::AttachChild(IFunctionHandler* pH, ScriptHandle childEnti
 {
 	GET_ENTITY;
 
-	IEntity* pChildEntity = m_pEntitySystem->GetEntity((EntityId)childEntityId.n);
+	CEntity* pChildEntity = g_pIEntitySystem->GetEntityFromID((EntityId)childEntityId.n);
 
 	if (pChildEntity)
 	{
@@ -2490,7 +2489,7 @@ int CScriptBind_Entity::GetParent(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	IEntity* pParent = pEntity->GetParent();
+	CEntity* pParent = static_cast<CEntity*>(pEntity->GetParent());
 	if (pParent)
 	{
 		IScriptTable* pParentTable = pParent->GetScriptTable();
@@ -2514,7 +2513,7 @@ int CScriptBind_Entity::GetChild(IFunctionHandler* pH, int nIndex)
 
 	if (nIndex >= 0 && nIndex < pEntity->GetChildCount())
 	{
-		IEntity* pChild = pEntity->GetChild(nIndex);
+		CEntity* pChild = static_cast<CEntity*>(pEntity->GetChild(nIndex));
 		if (pChild && pChild->GetScriptTable())
 			return pH->EndFunction(pChild->GetScriptTable());
 	}
@@ -3355,7 +3354,7 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 	pe_params_timeout timeout_params;
 	const char* strName;
 	int idEnt;
-	IEntity* pEnt;
+	CEntity* pEnt;
 	//	IJoint *pBone;
 	int16 pBone_id;
 	float gears[8];
@@ -3465,7 +3464,7 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 			ScriptHandle ignore;
 			if (pTable->GetValue("collider_to_ignore", ignore))
 			{
-				IEntity* pEntity = m_pEntitySystem->GetEntity((EntityId)ignore.n);
+				CEntity* pEntity = g_pIEntitySystem->GetEntityFromID((EntityId)ignore.n);
 				if (pEntity)
 				{
 					IPhysicalEntity* pPE = pEntity->GetPhysics();
@@ -3695,7 +3694,7 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 			{
 				if (!strcmp(strName, "#world#"))
 					rope_params.pEntTiedTo[iEnd] = WORLD_ENTITY;
-				else if (*strName && (pEnt = m_pEntitySystem->FindEntityByName(strName)) && pEnt->GetPhysics())
+				else if (*strName && (pEnt = static_cast<CEntity*>(g_pIEntitySystem->FindEntityByName(strName))) && pEnt->GetPhysics())
 					rope_params.pEntTiedTo[iEnd] = pEnt->GetPhysics();
 				else
 					rope_params.pEntTiedTo[iEnd] = 0;
@@ -3711,7 +3710,7 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 		{
 			if (!strcmp(strName, "#world#"))
 				rope_params.pEntTiedTo[1] = WORLD_ENTITY;
-			else if (*strName && (pEnt = m_pEntitySystem->FindEntityByName(strName)) && pEnt->GetPhysics())
+			else if (*strName && (pEnt = static_cast<CEntity*>(g_pIEntitySystem->FindEntityByName(strName))) && pEnt->GetPhysics())
 				rope_params.pEntTiedTo[1] = pEnt->GetPhysics();
 			else
 				rope_params.pEntTiedTo[1] = 0;
@@ -3726,7 +3725,7 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 		{
 			if (!strcmp(strName, "#world#"))
 				rope_params.pEntTiedTo[0] = WORLD_ENTITY;
-			else if (*strName && (pEnt = m_pEntitySystem->FindEntityByName(strName)) && pEnt->GetPhysics())
+			else if (*strName && (pEnt = static_cast<CEntity*>(g_pIEntitySystem->FindEntityByName(strName))) && pEnt->GetPhysics())
 				rope_params.pEntTiedTo[0] = pEnt->GetPhysics();
 			else
 				rope_params.pEntTiedTo[0] = 0;
@@ -3980,7 +3979,7 @@ int CScriptBind_Entity::IsColliding(IFunctionHandler* pH)
 
 			   if (pPhysCollider)
 			   {
-			   pCollider = m_pEntitySystem->GetEntityFromPhysics(pPhysCollider);
+			   pCollider = g_pIEntitySystem->GetEntityFromPhysics(pPhysCollider);
 			   }
 
 			   SmartScriptTable hitTbl(m_pSS);
@@ -4144,7 +4143,7 @@ int CScriptBind_Entity::AddConstraint(IFunctionHandler* pH)
 	}
 
 	pe_action_add_constraint constraint;
-	IEntity* pBuddy = 0;
+	CEntity* pBuddy = 0;
 
 	{
 		CScriptSetGetChain chain(params);
@@ -4170,7 +4169,7 @@ int CScriptBind_Entity::AddConstraint(IFunctionHandler* pH)
 		constraint.qframe[0].SetRotationV0V1(frame1v0, frame1v1);
 		constraint.qframe[1].SetRotationV0V1(frame2v0, frame2v1);
 
-		pBuddy = m_pEntitySystem->GetEntity((EntityId)sh.n);
+		pBuddy = g_pIEntitySystem->GetEntityFromID((EntityId)sh.n);
 	}
 
 	if (pBuddy)
@@ -4353,7 +4352,7 @@ int CScriptBind_Entity::SetFadeDistance(IFunctionHandler* pH, float const fFadeD
 	if (pIEntityAudioComponent)
 	{
 		pIEntityAudioComponent->SetFadeDistance(fFadeDistance);
-		m_pEntitySystem->GetAreaManager()->SetAreasDirty();
+		g_pIEntitySystem->GetAreaManager()->SetAreasDirty();
 	}
 
 	return pH->EndFunction();
@@ -4414,7 +4413,7 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 		// The audio environment is being tampered with, we need to inform all entities affected by the area.
 		TAreaPointers areas;
 
-		if (flag > 0 && static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->GetLinkedAreas(pEntity->GetId(), -1, areas))
+		if (flag > 0 && static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->GetLinkedAreas(pEntity->GetId(), -1, areas))
 		{
 			for (auto const pArea : areas)
 			{
@@ -4426,11 +4425,11 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 				float const environmentFadeDistance = pArea->GetEnvironmentFadeDistance();
 				query.box.min = boxMin - Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
 				query.box.max = boxMax + Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
-				gEnv->pEntitySystem->QueryProximity(query);
+				g_pIEntitySystem->QueryProximity(query);
 
 				for (int i = 0; i < query.nCount; ++i)
 				{
-					IEntity* const pIEntity = query.pEntities[i];
+					CEntity* const pIEntity = static_cast<CEntity*>(query.pEntities[i]);
 
 					if (pIEntity != nullptr)
 					{
@@ -5054,7 +5053,7 @@ int CScriptBind_Entity::SelectPipe(IFunctionHandler* pH)
 
 	if (targetEntityId)
 	{
-		IEntity* pTargetEntity = m_pEntitySystem->GetEntity(targetEntityId);
+		CEntity* pTargetEntity = g_pIEntitySystem->GetEntityFromID(targetEntityId);
 		if (pTargetEntity)
 			pTargetAI = pTargetEntity->GetAI();
 	}
@@ -5235,7 +5234,7 @@ int CScriptBind_Entity::InsertSubpipe(IFunctionHandler* pH)
 
 	if (targetEntityId)
 	{
-		IEntity* pTargetEntity = m_pEntitySystem->GetEntity(targetEntityId);
+		CEntity* pTargetEntity = g_pIEntitySystem->GetEntityFromID(targetEntityId);
 		if (pTargetEntity)
 			pTargetAI = pTargetEntity->GetAI();
 	}
@@ -5741,8 +5740,7 @@ int CScriptBind_Entity::GetEntitiesInContact(IFunctionHandler* pH)
 		SmartScriptTable pObj(m_pSS);
 		for (int i = 0; i < cnt; i++)
 		{
-
-			IEntity* pFoundEntity = m_pEntitySystem->GetEntityFromPhysics(ppColliders[i]);
+			CEntity* pFoundEntity = static_cast<CEntity*>(g_pIEntitySystem->GetEntityFromPhysics(ppColliders[i]));
 			if (pFoundEntity)
 			{
 				if (pFoundEntity->GetId() == pEntity->GetId())
@@ -6685,7 +6683,7 @@ int CScriptBind_Entity::GetLinkTarget(IFunctionHandler* pH, const char* name)
 	IEntityLink* pLink = ::GetLink(pEntity->GetEntityLinks(), name, ith);
 	if (pLink)
 	{
-		IEntity* pLinkedEntity = m_pEntitySystem->GetEntity(pLink->entityId);
+		CEntity* pLinkedEntity = g_pIEntitySystem->GetEntityFromID(pLink->entityId);
 		if (pLinkedEntity)
 			return pH->EndFunction(pLinkedEntity->GetScriptTable());
 	}
@@ -6732,7 +6730,7 @@ int CScriptBind_Entity::GetLink(IFunctionHandler* pH, int ith)
 
 	if (pLink)
 	{
-		IEntity* pLinkedEntity = m_pEntitySystem->GetEntity(pLink->entityId);
+		CEntity* pLinkedEntity = g_pIEntitySystem->GetEntityFromID(pLink->entityId);
 		if (pLinkedEntity)
 			return pH->EndFunction(pLinkedEntity->GetScriptTable());
 	}
@@ -6983,7 +6981,7 @@ int CScriptBind_Entity::CheckCollisions(IFunctionHandler* pH)
 		geom_world_data gwd[2];
 		intersection_params ip;
 		geom_contact* pContacts;
-		IEntity* pIEnt;
+		CEntity* pIEnt;
 		SmartScriptTable psoRes(m_pSS), psoContactList(m_pSS), psoEntList(m_pSS);
 		IScriptTable* psoEnt, * psoNormals[32], * psoCenters[32], * psoContacts[32];
 
@@ -7001,7 +6999,7 @@ int CScriptBind_Entity::CheckCollisions(IFunctionHandler* pH)
 			if (ppEnts[i] != pEnt && !(pfd.pForeignData && ppEnts[i]->GetForeignData(pfd.iForeignData) == pfd.pForeignData))
 			{
 				ppEnts[i]->GetStatus(sp + 1);
-				psoEnt = (pIEnt = m_pEntitySystem->GetEntityFromPhysics(ppEnts[i])) ? pIEnt->GetScriptTable() : 0;
+				psoEnt = (pIEnt = static_cast<CEntity*>(g_pIEntitySystem->GetEntityFromPhysics(ppEnts[i]))) ? pIEnt->GetScriptTable() : 0;
 				nEntCont = 0;
 
 				pe_status_nparts statusTmp1;
@@ -7213,7 +7211,7 @@ int CScriptBind_Entity::UpdateAreas(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->MarkEntityForUpdate(pEntity->GetId());
+	static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->MarkEntityForUpdate(pEntity->GetId());
 
 	return pH->EndFunction();
 }
@@ -7226,7 +7224,7 @@ int CScriptBind_Entity::IsPointInsideArea(IFunctionHandler* pH, int areaId, Vec3
 	areas.resize(0);
 	EntityId const nEntityID = pEntity->GetId();
 
-	if (static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->GetLinkedAreas(nEntityID, areaId, areas))
+	if (static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->GetLinkedAreas(nEntityID, areaId, areas))
 	{
 		for (unsigned int i = 0; i < areas.size(); i++)
 		{
@@ -7243,7 +7241,7 @@ int CScriptBind_Entity::IsEntityInsideArea(IFunctionHandler* pH, int areaId, Scr
 {
 	GET_ENTITY;
 
-	CEntity* pTarget = static_cast<CEntity*>(m_pEntitySystem->GetEntity((EntityId)entityId.n));
+	CEntity* pTarget = static_cast<CEntity*>(g_pIEntitySystem->GetEntityFromID((EntityId)entityId.n));
 	if (!pTarget)
 		return pH->EndFunction();
 
@@ -7269,7 +7267,7 @@ int CScriptBind_Entity::IsEntityInsideArea(IFunctionHandler* pH, int areaId, Scr
 
 	EntityId const nEntityID = pEntity->GetId();
 
-	if (static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->GetLinkedAreas(nEntityID, areaId, areas))
+	if (static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->GetLinkedAreas(nEntityID, areaId, areas))
 	{
 		for (unsigned int i = 0; i < areas.size(); i++)
 		{
@@ -7608,7 +7606,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, CDLight& li
 	return true;
 }
 
-bool CScriptBind_Entity::ParseFogVolumesParams(IScriptTable* pTable, IEntity* pEntity, SFogVolumeProperties& properties)
+bool CScriptBind_Entity::ParseFogVolumesParams(IScriptTable* pTable, CEntity* pEntity, SFogVolumeProperties& properties)
 {
 	CScriptSetGetChain chain(pTable);
 
@@ -7853,7 +7851,7 @@ bool CScriptBind_Entity::ParsePhysicsParams(IScriptTable* pTable, SEntityPhysica
 				ScriptHandle ignore;
 				if (particle.GetValue("collider_to_ignore", ignore))
 				{
-					IEntity* pEntity = m_pEntitySystem->GetEntity((EntityId)ignore.n);
+					CEntity* pEntity = g_pIEntitySystem->GetEntityFromID((EntityId)ignore.n);
 					if (pEntity)
 					{
 						IPhysicalEntity* pPE = pEntity->GetPhysics();
@@ -8064,7 +8062,7 @@ bool CScriptBind_Entity::ParsePhysicsParams(IScriptTable* pTable, SEntityPhysica
 			int id;
 			ScriptHandle idEnt;
 			if (chain.GetValue("AttachmentIdEnt", idEnt))
-				if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity((EntityId)idEnt.n))
+				if (CEntity* pEntity = g_pIEntitySystem->GetEntityFromID((EntityId)idEnt.n))
 					params.pAttachToEntity = pEntity->GetPhysics();
 			if (chain.GetValue("AttachmentId", id))
 				params.pAttachToEntity = gEnv->pPhysicalWorld->GetPhysicalEntityById(id);
@@ -8084,7 +8082,7 @@ int CScriptBind_Entity::GetDistance(IFunctionHandler* pH)
 	ScriptHandle hdl;
 	pH->GetParam(1, hdl);
 	//retrieve the other entity
-	IEntity* pEntity2 = m_pISystem->GetIEntitySystem()->GetEntity((EntityId)hdl.n);
+	CEntity* pEntity2 = g_pIEntitySystem->GetEntityFromID((EntityId)hdl.n);
 	if (pEntity2)
 	{
 		return pH->EndFunction((pEntity2->GetWorldPos() - pEntity->GetWorldPos()).GetLength());
@@ -8426,7 +8424,7 @@ int CScriptBind_Entity::BreakToPieces(IFunctionHandler* pH, int nSlot, int nPiec
 	bp.fExplodeImpulse = fExplodeImp;
 	bp.vHitPoint = vHitPt;
 	bp.vHitImpulse = vHitImp;
-	m_pEntitySystem->GetBreakableManager()->BreakIntoPieces(pEntity, nSlot, nPiecesSlot, bp);
+	g_pIEntitySystem->GetBreakableManager()->BreakIntoPieces(pEntity, nSlot, nPiecesSlot, bp);
 	return pH->EndFunction();
 }
 

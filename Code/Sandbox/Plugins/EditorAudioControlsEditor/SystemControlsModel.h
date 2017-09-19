@@ -17,22 +17,22 @@ namespace ACE
 class CAudioControl;
 class CAudioLibrary;
 class CAudioFolder;
-class IAudioAsset;
+class CAudioAsset;
 class CAudioAssetsManager;
 enum EItemType;
 
 namespace AudioModelUtils
 {
 void         GetAssetsFromIndices(QModelIndexList const& list, std::vector<CAudioLibrary*>& outLibraries, std::vector<CAudioFolder*>& outFolders, std::vector<CAudioControl*>& outControls);
-IAudioAsset* GetAssetFromIndex(const QModelIndex& index);
+CAudioAsset* GetAssetFromIndex(const QModelIndex& index);
 } // namespace AudioModelUtils
 
-class CAudioAssetsExplorerModel : public QAbstractItemModel
+class CSystemControlsModel : public QAbstractItemModel
 {
 public:
 
-	CAudioAssetsExplorerModel(CAudioAssetsManager* pAssetsManager);
-	virtual ~CAudioAssetsExplorerModel() override;
+	CSystemControlsModel(CAudioAssetsManager* pAssetsManager);
+	virtual ~CSystemControlsModel() override;
 
 protected:
 
@@ -56,11 +56,11 @@ protected:
 	CAudioAssetsManager* m_pAssetsManager = nullptr;
 };
 
-class QControlsProxyFilter final : public QDeepFilterProxyModel
+class CSystemControlsFilterProxyModel final : public QDeepFilterProxyModel
 {
 public:
 
-	QControlsProxyFilter(QObject* parent);
+	CSystemControlsFilterProxyModel(QObject* parent);
 
 	// QDeepFilterProxyModel
 	virtual bool     rowMatchesFilter(int source_row, QModelIndex const& source_parent) const override;
@@ -88,7 +88,7 @@ public:
 
 protected:
 
-	QModelIndex IndexFromItem(const IAudioAsset* pItem) const;
+	QModelIndex IndexFromItem(const CAudioAsset* pItem) const;
 
 	// QAbstractItemModel
 	virtual int             rowCount(QModelIndex const& parent) const override;

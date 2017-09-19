@@ -8999,19 +8999,6 @@ void CGameRules::OnSystemEvent( ESystemEvent event,UINT_PTR wparam,UINT_PTR lpar
 				}
 			}
 			break;
-		case ESYSTEM_EVENT_SW_SHIFT_WORLD:
-			{
-				if(!gEnv->bMultiplayer && gEnv->bServer)
-					break;
-
-				IActorIteratorPtr actorIt = g_pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
-				IActor *pActor;
-				while (pActor = actorIt->Next())
-				{
-					pActor->OnShiftWorld();
-				}
-			}
-			break;
 		default:
 			break;
 	}

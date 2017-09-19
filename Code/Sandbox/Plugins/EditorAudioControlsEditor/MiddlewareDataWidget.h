@@ -9,18 +9,18 @@ class CElidedLabel;
 
 namespace ACE
 {
-class QAudioSystemModelProxyFilter;
-class QAudioSystemModel;
+class CMiddlewareDataFilterProxyModel;
+class CMiddlewareDataModel;
 class CAdvancedTreeView;
 
-class CAudioSystemPanel final : public QFrame
+class CMiddlewareDataWidget final : public QFrame
 {
 	Q_OBJECT
 
 public:
 
-	CAudioSystemPanel();
-	virtual ~CAudioSystemPanel() override;
+	CMiddlewareDataWidget();
+	virtual ~CMiddlewareDataWidget() override;
 
 	void SetAllowedControls(EItemType type, bool bAllowed);
 	void Reset();
@@ -34,8 +34,8 @@ private slots:
 private:
 
 	bool                          m_allowedATLTypes[EItemType::eItemType_NumTypes];
-	QAudioSystemModelProxyFilter* m_pModelProxy;
-	QAudioSystemModel*            m_pModel;
+	CMiddlewareDataFilterProxyModel* m_pModelProxy;
+	CMiddlewareDataModel*            m_pModel;
 	CElidedLabel*                 m_pImplNameLabel;
 	CAdvancedTreeView*            m_pTreeView;
 	QString                       m_filter;

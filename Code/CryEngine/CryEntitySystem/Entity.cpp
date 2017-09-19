@@ -97,9 +97,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 
 	m_pEntityLinks = 0;
 
-	// Forward dir cache is initially invalid
-	m_bDirtyForwardDir = true;
-
 	m_objectID = 0;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -113,8 +110,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_vScale = params.vScale;
 
 	CalcLocalTM(m_worldTM);
-
-	ComputeForwardDir();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Check if entity needs to create a script proxy.
@@ -131,8 +126,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	}
 
 	m_nKeepAliveCounter = 0;
-
-	m_cloneLayerId = -1;
 
 	// #netentity Will be addressed in BindToNetwork-refactoring
 	m_pNetEntity = std::unique_ptr<INetEntity>(new CNetEntity(this));
@@ -188,67 +181,6 @@ bool CEntity::SendEvent(SEntityEvent& event)
 	if (CVar::es_DebugEvents)
 	{
 		t0 = gEnv->pTimer->GetAsyncTime();
-	}
-
-	switch (event.event)
-	{
-	case ENTITY_EVENT_RESET:
-		{
-			if (m_simulationMode != EEntitySimulationMode::Preview)
-			{
-				m_simulationMode = event.nParam[0] == 1 ? EEntitySimulationMode::Game : EEntitySimulationMode::Editor;
-			}
-
-			// Activate entity if was deactivated:
-			if (m_bGarbage)
-			{
-				m_bGarbage = false;
-
-				// If entity was deleted in game, ressurect it.
-				SEntityEvent entevnt;
-				entevnt.event = ENTITY_EVENT_INIT;
-				SendEvent(entevnt);
-			}
-
-			//CryLogAlways( "%s became visible",GetEntityTextDescription() );
-			// [marco] needed when going in and out of game mode in the editor
-			{
-				m_render.SetLastSeenTime(gEnv->pTimer->GetCurrTime());
-				ICharacterInstance* pCharacterInstance = m_render.GetCharacter(0);
-				if (pCharacterInstance)
-					pCharacterInstance->SetPlaybackScale(1.0f);
-			}
-
-			// We only want to reset when we return from game mode to editor mode.
-			if (m_pSchematycObject && gEnv->IsEditor() && !gEnv->IsEditorGameMode())
-			{
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
-			}
-			break;
-		}
-
-	case ENTITY_EVENT_LEVEL_LOADED:
-		{
-			// After level load we set the simulation mode but don't start simulation yet. Mean we
-			// fully prepare the object for the simulation to start. Simulation will be started with
-			// the ENTITY_EVENT_START_GAME event.
-			if (m_pSchematycObject)
-			{
-				m_simulationMode = !gEnv->IsEditing() ? EEntitySimulationMode::Game : EEntitySimulationMode::Editor;
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
-			}
-		}
-		break;
-
-	case ENTITY_EVENT_START_GAME:
-		{
-			// Set simulation mode and finally start simulation.
-			if (m_pSchematycObject)
-			{
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, true);
-			}
-		}
-		break;
 	}
 
 	if (!m_bGarbage)
@@ -314,7 +246,7 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		{
 			m_simulationMode = Schematyc::ESimulationMode::Preview;
 		}
-		else if (gEnv->IsEditing() && !g_pIEntitySystem->IsLoadingLevel())
+		else if (gEnv->IsEditing() && !gEnv->pSystem->IsLoading())
 		{
 			m_simulationMode = EEntitySimulationMode::Editor;
 		}
@@ -512,7 +444,7 @@ void CEntity::AttachChild(IEntity* pChildEntity, const SChildAttachParams& attac
 	// In debug mode check for attachment recursion.
 #ifdef _DEBUG
 	assert(this != pChildEntity && "Trying to Attach to itself");
-	for (IEntity* pParent = GetParent(); pParent; pParent = pParent->GetParent())
+	for (CEntity* pParent = static_cast<CEntity*>(GetParent()); pParent; pParent = static_cast<CEntity*>(pParent->GetParent()))
 	{
 		assert(pParent != pChildEntity && "Recursive Attachment");
 
@@ -542,14 +474,14 @@ void CEntity::AttachChild(IEntity* pChildEntity, const SChildAttachParams& attac
 	{
 #if defined(USE_GEOM_CACHES)
 		pChild->m_hierarchy.parentBindingType = EBindingType::eBT_GeomCacheNode;
-		CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetGeomCacheAttachmentManager();
+		CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = g_pIEntitySystem->GetGeomCacheAttachmentManager();
 		pGeomCacheAttachmentManager->RegisterAttachment(pChild, this, CryStringUtils::HashString(attachParams.m_target));
 #endif
 	}
 	else if (attachParams.m_nAttachFlags & ATTACHMENT_CHARACTERBONE)
 	{
 		pChild->m_hierarchy.parentBindingType = EBindingType::eBT_CharacterBone;
-		CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetCharacterBoneAttachmentManager();
+		CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = g_pIEntitySystem->GetCharacterBoneAttachmentManager();
 		const uint32 targetCRC = CCrc32::ComputeLowercase(attachParams.m_target);
 		pCharacterBoneAttachmentManager->RegisterAttachment(pChild, this, targetCRC);
 	}
@@ -650,13 +582,13 @@ void CEntity::DetachThis(int nDetachFlags, int nWhyFlags)
 		if (m_hierarchy.parentBindingType == EBindingType::eBT_GeomCacheNode)
 		{
 #if defined(USE_GEOM_CACHES)
-			CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetGeomCacheAttachmentManager();
+			CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = g_pIEntitySystem->GetGeomCacheAttachmentManager();
 			pGeomCacheAttachmentManager->UnregisterAttachment(this, pParent);
 #endif
 		}
 		else if (m_hierarchy.parentBindingType == EBindingType::eBT_CharacterBone)
 		{
-			CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetCharacterBoneAttachmentManager();
+			CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = g_pIEntitySystem->GetCharacterBoneAttachmentManager();
 			pCharacterBoneAttachmentManager->UnregisterAttachment(this, pParent);
 		}
 	}
@@ -896,12 +828,6 @@ void CEntity::InvalidateTM(int nWhyFlags, bool bRecalcPhyBounds)
 		}
 	}
 
-	// [*DavidR | 23/Sep/2008] Caching world-space forward dir ignoring scaling
-	if (nWhyFlags & (ENTITY_XFORM_SCL | ENTITY_XFORM_ROT))
-	{
-		m_bDirtyForwardDir = true;
-	}
-
 	OnRellocate(nWhyFlags);
 
 	// Send transform event.
@@ -1041,7 +967,7 @@ void CEntity::ActivateEntityIfNecessary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntity::ShouldActivate()
+bool CEntity::ShouldActivate() const
 {
 	bool bActivateByPhysics = false;
 
@@ -2250,9 +2176,6 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		if (pScriptProxy)
 			pScriptProxy->SerializeProperties(ser);
 	}
-
-	m_bDirtyForwardDir = true;
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2785,7 +2708,7 @@ bool CEntity::UpdateLightClipBounds(CDLight& light)
 	bool bLightBoxValid = false;
 	for (IEntityLink* pLink = m_pEntityLinks; pLink; pLink = pLink->next)
 	{
-		if (IEntity* pLinkedEntity = gEnv->pEntitySystem->GetEntity(pLink->entityId))
+		if (CEntity* pLinkedEntity = g_pIEntitySystem->GetEntityFromID(pLink->entityId))
 		{
 			bool clipVolume = _stricmp(pLinkedEntity->GetClass()->GetName(), "ClipVolume") == 0;
 
@@ -2929,7 +2852,7 @@ IEntityLink* CEntity::AddEntityLink(const char* sLinkName, EntityId entityId, En
 	if (sLinkName == NULL)
 		return NULL;
 
-	IEntity* pLinkedEntity = GetEntitySystem()->GetEntity(entityId);
+	CEntity* pLinkedEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 	IEntityLink* pNewLink = new IEntityLink;
 	assert(strlen(sLinkName) <= ENTITY_LINK_NAME_MAX_LENGTH);
@@ -3164,7 +3087,36 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 void CEntity::SetSimulationMode(EEntitySimulationMode mode)
 {
 	m_simulationMode = mode;
-	m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, m_simulationMode == EEntitySimulationMode::Game);
+	if (m_pSchematycObject != nullptr)
+	{
+		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, m_simulationMode == EEntitySimulationMode::Game);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
+{
+	if (m_simulationMode != EEntitySimulationMode::Preview)
+	{
+		m_simulationMode = bEnterGameMode ? EEntitySimulationMode::Game : EEntitySimulationMode::Editor;
+	}
+
+	// Activate entity if was deactivated:
+	if (m_bGarbage)
+	{
+		m_bGarbage = false;
+
+		// If entity was deleted in game, resurrect it.
+		SEntityEvent entevnt;
+		entevnt.event = ENTITY_EVENT_INIT;
+		SendEvent(entevnt);
+	}
+
+	// We only want to reset when we return from game mode to editor mode.
+	if (m_pSchematycObject && !bEnterGameMode)
+	{
+		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3173,13 +3125,13 @@ Matrix34 CEntity::GetParentAttachPointWorldTM() const
 	if (m_hierarchy.parentBindingType == EBindingType::eBT_GeomCacheNode)
 	{
 #if defined(USE_GEOM_CACHES)
-		CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetGeomCacheAttachmentManager();
+		CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = g_pIEntitySystem->GetGeomCacheAttachmentManager();
 		return pGeomCacheAttachmentManager->GetNodeWorldTM(this, m_hierarchy.pParent);
 #endif
 	}
 	else if (m_hierarchy.parentBindingType == EBindingType::eBT_CharacterBone)
 	{
-		CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetCharacterBoneAttachmentManager();
+		CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = g_pIEntitySystem->GetCharacterBoneAttachmentManager();
 		return pCharacterBoneAttachmentManager->GetNodeWorldTM(this, m_hierarchy.pParent);
 	}
 
@@ -3200,13 +3152,13 @@ bool CEntity::IsParentAttachmentValid() const
 	if (m_hierarchy.parentBindingType == EBindingType::eBT_GeomCacheNode)
 	{
 #if defined(USE_GEOM_CACHES)
-		CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetGeomCacheAttachmentManager();
+		CGeomCacheAttachmentManager* pGeomCacheAttachmentManager = g_pIEntitySystem->GetGeomCacheAttachmentManager();
 		return pGeomCacheAttachmentManager->IsAttachmentValid(this, m_hierarchy.pParent);
 #endif
 	}
 	else if (m_hierarchy.parentBindingType == EBindingType::eBT_CharacterBone)
 	{
-		CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = static_cast<CEntitySystem*>(GetEntitySystem())->GetCharacterBoneAttachmentManager();
+		CCharacterBoneAttachmentManager* pCharacterBoneAttachmentManager = g_pIEntitySystem->GetCharacterBoneAttachmentManager();
 		return pCharacterBoneAttachmentManager->IsAttachmentValid(this, m_hierarchy.pParent);
 	}
 
@@ -3216,8 +3168,8 @@ bool CEntity::IsParentAttachmentValid() const
 //////////////////////////////////////////////////////////////////////////
 IEntity* CEntity::GetAdam()
 {
-	for (IEntity* pAdam = GetParent(); pAdam; pAdam = pAdam->GetParent())
-		if (!pAdam->GetParent() || ((CEntity*)pAdam)->m_hierarchy.parentBindingType == EBindingType::eBT_LocalSim)
+	for (CEntity* pAdam = static_cast<CEntity*>(GetParent()); pAdam; pAdam = static_cast<CEntity*>(pAdam->GetParent()))
+		if (!pAdam->GetParent() || pAdam->m_hierarchy.parentBindingType == EBindingType::eBT_LocalSim)
 			return pAdam;
 	return this;
 }
@@ -3258,29 +3210,6 @@ void CEntity::OnRenderNodeVisibilityChange(bool bBecomeVisible)
 float CEntity::GetLastSeenTime() const
 {
 	return m_render.GetLastSeenTime();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntity::ComputeForwardDir() const
-{
-	if (m_bDirtyForwardDir)
-	{
-		if (IsScaled())
-		{
-			Matrix34 auxTM = m_worldTM;
-			auxTM.OrthonormalizeFast();
-
-			// assuming (0, 1, 0) as the local forward direction
-			m_vForwardDir = auxTM.GetColumn1();
-		}
-		else
-		{
-			// assuming (0, 1, 0) as the local forward direction
-			m_vForwardDir = m_worldTM.GetColumn1();
-		}
-
-		m_bDirtyForwardDir = false;
-	}
 }
 
 INetEntity* CEntity::AssignNetEntityLegacy(INetEntity* ptr)

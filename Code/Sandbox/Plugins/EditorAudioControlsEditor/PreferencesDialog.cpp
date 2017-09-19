@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#include "QAudioSystemSettingsDialog.h"
+#include "PreferencesDialog.h"
 #include "AudioControlsEditorPlugin.h"
 #include "IAudioSystemEditor.h"
 #include <QtUtil.h>
@@ -20,8 +20,8 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
-	: CEditorDialog("AudioSystemSettingsDialog")
+CPreferencesDialog::CPreferencesDialog(QWidget* pParent)
+	: CEditorDialog("AudioSystemPreferencesDialog")
 {
 	IAudioSystemEditor* pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
@@ -31,7 +31,7 @@ QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 
 		if (pSettings)
 		{
-			setWindowTitle(tr("Audio System Settings"));
+			setWindowTitle(tr("Audio System Preferences"));
 
 			QVBoxLayout* pMainLayout = new QVBoxLayout(this);
 			setLayout(pMainLayout);
@@ -50,15 +50,16 @@ QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 			m_projectPath = pSettings->GetProjectPath();
 			QLineEdit* pLineEdit = new QLineEdit(m_projectPath);
 			pLineEdit->setMinimumWidth(250);
-			connect(pLineEdit, &QLineEdit::textChanged, [&](QString const& projectPath)
+			QObject::connect(pLineEdit, &QLineEdit::textChanged, [&](QString const& projectPath)
 			{
 				EnableSaveButton(m_projectPath.toLower().replace("/", R"(\)") != projectPath.toLower().replace("/", R"(\)"));
 			});
+
 			pProjectPathLayout->addWidget(pLineEdit);
 
 			QToolButton* pBrowseButton = new QToolButton();
 			pBrowseButton->setText("...");
-			connect(pBrowseButton, &QToolButton::clicked, [=]()
+			QObject::connect(pBrowseButton, &QToolButton::clicked, [=]()
 				{
 					IAudioSystemEditor* pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
@@ -83,8 +84,8 @@ QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 			QDialogButtonBox* pButtons = new QDialogButtonBox(this);
 			pButtons->setStandardButtons(QDialogButtonBox::Save | QDialogButtonBox::Cancel);
 			pButtons->button(QDialogButtonBox::Save)->setEnabled(false);
-			connect(this, &QAudioSystemSettingsDialog::EnableSaveButton, pButtons->button(QDialogButtonBox::Save), &QPushButton::setEnabled);
-			connect(pButtons, &QDialogButtonBox::accepted, [=]()
+			QObject::connect(this, &CPreferencesDialog::EnableSaveButton, pButtons->button(QDialogButtonBox::Save), &QPushButton::setEnabled);
+			QObject::connect(pButtons, &QDialogButtonBox::accepted, [=]()
 				{
 					IAudioSystemEditor* pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 					if (pAudioSystem)
@@ -104,7 +105,8 @@ QAudioSystemSettingsDialog::QAudioSystemSettingsDialog(QWidget* pParent)
 					}
 					accept();
 				});
-			connect(pButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+			QObject::connect(pButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 			pMainLayout->addWidget(pButtons, 0);
 
 			adjustSize();

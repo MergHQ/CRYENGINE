@@ -3,10 +3,10 @@
 #include "StdAfx.h"
 
 #include "QtUtil.h"
-#include "AudioSystemPanel.h"
+#include "MiddlewareDataWidget.h"
 #include "IAudioSystemEditor.h"
 #include "AudioControlsEditorPlugin.h"
-#include "AudioSystemModel.h"
+#include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
 #include "AdvancedTreeView.h"
 
@@ -61,9 +61,9 @@ private:
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CAudioSystemPanel::CAudioSystemPanel()
-	: m_pModelProxy(new QAudioSystemModelProxyFilter(this))
-	, m_pModel(new QAudioSystemModel())
+CMiddlewareDataWidget::CMiddlewareDataWidget()
+	: m_pModelProxy(new CMiddlewareDataFilterProxyModel(this))
+	, m_pModel(new CMiddlewareDataModel())
 	, m_pImplNameLabel(nullptr)
 {
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -142,7 +142,7 @@ CAudioSystemPanel::CAudioSystemPanel()
 	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
 	m_pTreeView->setModel(m_pModelProxy);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(m_pTreeView, &CAdvancedTreeView::customContextMenuRequested, this, &CAudioSystemPanel::OnContextMenu);
+	connect(m_pTreeView, &CAdvancedTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
 	connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, m_pTreeView, &CAdvancedTreeView::OnSelectionChanged);
 
 	pMainLayout->addWidget(m_pImplNameLabel);
@@ -163,13 +163,13 @@ CAudioSystemPanel::CAudioSystemPanel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioSystemPanel::~CAudioSystemPanel()
+CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
+void CMiddlewareDataWidget::SetAllowedControls(EItemType type, bool bAllowed)
 {
 	const ACE::IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
@@ -191,7 +191,7 @@ void CAudioSystemPanel::SetAllowedControls(EItemType type, bool bAllowed)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioSystemPanel::OnContextMenu(QPoint const& pos) const
+void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos) const
 {
 	QMenu* pContextMenu = new QMenu();
 	auto const selection = m_pTreeView->selectionModel()->selectedRows();
@@ -210,21 +210,21 @@ void CAudioSystemPanel::OnContextMenu(QPoint const& pos) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioSystemPanel::Reset()
+void CMiddlewareDataWidget::Reset()
 {
 	m_pModel->Reset();
 	m_pModelProxy->invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioSystemPanel::BackupTreeViewStates()
+void CMiddlewareDataWidget::BackupTreeViewStates()
 {
 	m_pTreeView->BackupExpanded();
 	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioSystemPanel::RestoreTreeViewStates()
+void CMiddlewareDataWidget::RestoreTreeViewStates()
 {
 	m_pTreeView->RestoreExpanded();
 	m_pTreeView->RestoreSelection();

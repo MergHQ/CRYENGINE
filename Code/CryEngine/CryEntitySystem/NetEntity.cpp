@@ -11,7 +11,7 @@ class CNetEntity;
 static std::set<CNetEntity*> g_updateSchedulingProfile;
 static CryCriticalSection g_updateSchedulingProfileCritSec;
 
-CNetEntity::CNetEntity(IEntity *entity_)
+CNetEntity::CNetEntity(CEntity *entity_)
 	: m_pEntity(entity_)
 	, m_channelId(0)
 	, m_enabledAspects(NET_ASPECT_ALL)

@@ -8,28 +8,29 @@
 #endif // _MSC_VER > 1000
 
 #include "EntitySystem.h"
+#include "Entity.h"
 
 class CEntity;
 struct IEntity;
 
-class CEntityItMap : public IEntityIt
+class CEntityItMap final : public IEntityIt
 {
 public:
-	CEntityItMap(CEntitySystem* pEntitySystem) : m_pEntitySystem(pEntitySystem)
+	CEntityItMap() 
 	{
-		assert(pEntitySystem);
 		m_nRefCount = 0;
 		MoveFirst();
 	}
+	virtual ~CEntityItMap() {}
 
-	bool IsEnd()
+	virtual bool IsEnd() override
 	{
-		uint32 dwMaxUsed = (uint32)m_pEntitySystem->m_EntitySaltBuffer.GetMaxUsed();
+		uint32 dwMaxUsed = (uint32)g_pIEntitySystem->m_EntitySaltBuffer.GetMaxUsed();
 
 		// jump over gaps
 		while (m_id <= (int)dwMaxUsed)
 		{
-			if (m_pEntitySystem->m_EntityArray[m_id] != 0)
+			if (g_pIEntitySystem->m_EntityArray[m_id] != 0)
 				return false;
 
 			++m_id;
@@ -38,31 +39,14 @@ public:
 		return m_id > (int)dwMaxUsed; // we passed the last element
 	}
 
-	IEntity* This()
-	{
-		if (IsEnd())   // might advance m_id
-			return 0;
-		else
-			return (IEntity*)m_pEntitySystem->m_EntityArray[m_id];
-	}
-
-	IEntity* Next()
-	{
-		if (IsEnd())   // might advance m_id
-			return 0;
-		else
-			return (IEntity*)m_pEntitySystem->m_EntityArray[m_id++];
-	}
-
-	void MoveFirst() { m_id = 0; };
-
-	void AddRef()    { m_nRefCount++; }
-
-	void Release()   { --m_nRefCount; if (m_nRefCount <= 0) { delete this; } }
+	virtual IEntity* This() override { return !IsEnd() ? g_pIEntitySystem->m_EntityArray[m_id] : nullptr; }
+	virtual IEntity* Next() override { return !IsEnd() ? g_pIEntitySystem->m_EntityArray[m_id++] : nullptr; }
+	virtual void MoveFirst() override { m_id = 0; };
+	virtual void AddRef() override { m_nRefCount++; }
+	virtual void Release() override { --m_nRefCount; if (m_nRefCount <= 0) { delete this; } }
 
 protected: // ---------------------------------------------------
 
-	CEntitySystem* m_pEntitySystem;           //
 	int            m_nRefCount;               //
 	int            m_id;                      //
 };

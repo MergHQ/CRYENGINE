@@ -4,7 +4,7 @@
 
 #include "AudioAssets.h"
 #include "IUndoObject.h"
-#include "AudioAssetsExplorerModel.h"
+#include "SystemControlsModel.h"
 
 #include <QAbstractItemModel>
 #include <QString>

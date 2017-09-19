@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "QConnectionsWidget.h"
+#include "ConnectionsWidget.h"
 #include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
 #include "AudioAssets.h"
@@ -9,10 +9,10 @@
 #include "IEditor.h"
 #include "QtUtil.h"
 #include "ImplementationManager.h"
-#include "AudioSystemPanel.h"
-#include "AudioSystemModel.h"
+#include "MiddlewareDataWidget.h"
+#include "MiddlewareDataModel.h"
 #include "AdvancedTreeView.h"
-#include "QConnectionsModel.h"
+#include "ConnectionsModel.h"
 #include "IUndoObject.h"
 #include "Controls/QuestionDialog.h"
 
@@ -32,10 +32,10 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
+CConnectionsWidget::CConnectionsWidget(QWidget* pParent)
 	: QWidget(pParent)
 	, m_pControl(nullptr)
-	, m_pConnectionModel(new QConnectionModel())
+	, m_pConnectionModel(new CConnectionModel())
 	, m_pConnectionsView(new CAdvancedTreeView())
 {
 	m_pConnectionsView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -125,20 +125,20 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-QConnectionsWidget::~QConnectionsWidget()
+CConnectionsWidget::~CConnectionsWidget()
 {
 	CAudioControlsEditorPlugin::GetAssetsManager()->signalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionsWidget::Init()
+void CConnectionsWidget::Init()
 {
-	connect(m_pConnectionsView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &QConnectionsWidget::RefreshConnectionProperties);
+	connect(m_pConnectionsView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CConnectionsWidget::RefreshConnectionProperties);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool QConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
+bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if (pEvent->type() == QEvent::KeyPress)
 	{
@@ -154,7 +154,7 @@ bool QConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionsWidget::RemoveSelectedConnection()
+void CConnectionsWidget::RemoveSelectedConnection()
 {
 	if (m_pControl)
 	{
@@ -189,7 +189,7 @@ void QConnectionsWidget::RemoveSelectedConnection()
 
 					for (QModelIndex index : selectedIndices)
 					{
-						CID id = index.data(QConnectionModel::eConnectionModelRoles_Id).toInt();
+						CID id = index.data(CConnectionModel::eConnectionModelRoles_Id).toInt();
 						items.push_back(pAudioSystemEditorImpl->GetControl(id));
 					}
 
@@ -207,7 +207,7 @@ void QConnectionsWidget::RemoveSelectedConnection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionsWidget::SetControl(CAudioControl* pControl)
+void CConnectionsWidget::SetControl(CAudioControl* pControl)
 {
 	if (m_pControl != pControl)
 	{
@@ -217,7 +217,7 @@ void QConnectionsWidget::SetControl(CAudioControl* pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionsWidget::Reload()
+void CConnectionsWidget::Reload()
 {
 	m_pConnectionModel->Init(m_pControl);
 	m_pConnectionsView->selectionModel()->clear();
@@ -226,7 +226,7 @@ void QConnectionsWidget::Reload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionsWidget::RefreshConnectionProperties()
+void CConnectionsWidget::RefreshConnectionProperties()
 {
 	ConnectionPtr pConnection;
 	if (m_pControl)
@@ -239,7 +239,7 @@ void QConnectionsWidget::RefreshConnectionProperties()
 
 			if (index.isValid())
 			{
-				CID const id = index.data(QConnectionModel::eConnectionModelRoles_Id).toInt();
+				CID const id = index.data(CConnectionModel::eConnectionModelRoles_Id).toInt();
 				pConnection = m_pControl->GetConnection(id);
 			}
 		}
@@ -258,13 +258,13 @@ void QConnectionsWidget::RefreshConnectionProperties()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionsWidget::BackupTreeViewStates()
+void CConnectionsWidget::BackupTreeViewStates()
 {
 	m_pConnectionsView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QConnectionsWidget::RestoreTreeViewStates()
+void CConnectionsWidget::RestoreTreeViewStates()
 {
 	m_pConnectionsView->RestoreSelection();
 }

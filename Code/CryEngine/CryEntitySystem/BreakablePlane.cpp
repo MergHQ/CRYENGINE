@@ -17,6 +17,7 @@
 #include <CryParticleSystem/IParticles.h>
 #include <CrySystem/ITimer.h>
 #include "BreakableManager.h"
+#include "Entity.h"
 
 template<class T> struct triplet
 {
@@ -813,10 +814,10 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 	phys_geometry* pPhysGeom;
 	float lifetime = 5, filterAng = 0.0f, ry = 0.0f, curFracture;
 	Vec2* ptout, bounds[2];
-	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
+	IEntitySystem* pEntitySystem = g_pIEntitySystem;
 	IEntityClass* pClass = 0;
 	SEntitySpawnParams params;
-	IEntity* pEntity;
+	CEntity* pEntity;
 	IParticleEffect* pEffect = 0;
 	IParticleEmitter* pEmitter = 0;
 	ISurfaceType::SBreakable2DParams* pBreak2DParams = in.pMat->GetBreakable2DParams();
@@ -1140,7 +1141,7 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 						}
 						else
 						{
-							pEntity = pEntitySystem->SpawnEntity(params);
+							pEntity = static_cast<CEntity*>(pEntitySystem->SpawnEntity(params));
 							if (!in.bLoading)
 								in.addChunkFunc(pEntity->GetId());
 

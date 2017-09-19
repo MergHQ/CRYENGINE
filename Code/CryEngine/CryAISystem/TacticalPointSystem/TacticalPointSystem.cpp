@@ -3460,7 +3460,7 @@ void CTacticalPointSystem::DestroyAllQueries()
 	m_mQueryEvaluationsInProgress.clear();
 }
 
-void CTacticalPointSystem::Update(float fBudgetSeconds)
+void CTacticalPointSystem::Update(const float fBudgetSeconds)
 {
 	// Convert to absolute integer values time limit for precision and efficiency
 	// Convert to floats only for debugging

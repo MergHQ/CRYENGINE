@@ -353,6 +353,17 @@ struct IEntitySystem
 		SinkMaxEventSubscriptionCount = 5,
 	};
 
+	//! Determines the state of simulation in the Editor, see OnEditorSimulationModeChanged
+	enum class EEditorSimulationMode
+	{
+		//! User is in editing mode
+		Editing,
+		//! User is in game (ctrl + g / F5)
+		InGame,
+		// Entities are being simulated without player being active
+		Simulation
+	};
+
 	// <interfuscator:shuffle>
 	virtual ~IEntitySystem(){}
 
@@ -426,6 +437,15 @@ struct IEntitySystem
 	//! \param event Event to send.
 	virtual void SendEventToAll(SEntityEvent& event) = 0;
 
+	//! Sent when game mode in Editor is changed
+	virtual void OnEditorSimulationModeChanged(EEditorSimulationMode mode) = 0;
+
+	//! Sent after the level has finished loading
+	virtual void OnLevelLoaded() = 0;
+
+	//! Sent when level is loaded and gameplay can start, triggers start of simulation for entities
+	virtual void OnLevelGameplayStart() = 0;
+
 	//! Get all entities within proximity of the specified bounding box.
 	//! \note Query is not exact, entities reported can be a few meters away from the bounding box.
 	virtual int QueryProximity(SEntityProximityQuery& query) = 0;
@@ -488,7 +508,7 @@ struct IEntitySystem
 	//! Loads entities exported from Editor.
 	//! bIsLoadingLevelFile indicates if the loaded entities come from the original level file.
 	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile) = 0;
-	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffest, std::vector<IEntity*>* outGlobalEntityIds, std::vector<IEntity*>* outLocalEntityIds) = 0;
+	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffest) = 0;
 
 	//! Registers Entity Event's listeners.
 	virtual void AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) = 0;
@@ -502,9 +522,6 @@ struct IEntitySystem
 
 	//! Finds entity by Entity GUID.
 	virtual EntityId FindEntityByGuid(const EntityGUID& guid) const = 0;
-
-	//! Generates new entity id based on Entity GUID.
-	virtual EntityId GenerateEntityIdFromGuid(const EntityGUID& guid) = 0;
 
 	//! Gets a pointer to access to area manager.
 	virtual IAreaManager* GetAreaManager() const = 0;
@@ -585,11 +602,6 @@ struct IEntitySystem
 	virtual void UnregisterPhysicCallbacks() = 0;
 
 	virtual void PurgeDeferredCollisionEvents(bool bForce = false) = 0;
-
-	virtual bool EntitiesUseGUIDs() const = 0;
-	virtual void SetEntitiesUseGUIDs(const bool bEnable) = 0;
-
-	virtual void DebugDraw() = 0;
 
 	//! Resets physical simulation suppressed by LiveCreate during "edit mode".
 	//! Called by LiveCreate subsystem when user resumed normal game mode.

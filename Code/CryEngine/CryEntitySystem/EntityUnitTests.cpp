@@ -44,28 +44,28 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		float m_myFloat = 0.f;
 	};
 
-	IEntity* SpawnTestEntity(const char* szName)
+	CEntity* SpawnTestEntity(const char* szName)
 	{
 		SEntitySpawnParams params;
 		params.guid = CryGUID::Create();
 		params.sName = szName;
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY;
-		params.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
+		params.pClass = g_pIEntitySystem->GetClassRegistry()->GetDefaultClass();
 
-		IEntity *pEntity = gEnv->pEntitySystem->SpawnEntity(params);
+		CEntity *pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params));
 		CRY_UNIT_TEST_ASSERT(pEntity != NULL);
 		return pEntity;
 	}
 
 	CRY_UNIT_TEST(SpawnTest)
 	{
-		IEntity *pEntity = SpawnTestEntity("TestEntity");
+		CEntity *pEntity = SpawnTestEntity("TestEntity");
 		EntityId id = pEntity->GetId();
 
 		CRY_UNIT_TEST_ASSERT( pEntity->GetGuid() != CryGUID::Null() );
 
-		CRY_UNIT_TEST_CHECK_EQUAL(id, gEnv->pEntitySystem->FindEntityByGuid(pEntity->GetGuid()));
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity, gEnv->pEntitySystem->FindEntityByName("TestEntity"));
+		CRY_UNIT_TEST_CHECK_EQUAL(id, g_pIEntitySystem->FindEntityByGuid(pEntity->GetGuid()));
+		CRY_UNIT_TEST_CHECK_EQUAL(pEntity, g_pIEntitySystem->FindEntityByName("TestEntity"));
 
 		// Test Entity components
 		IEntitySubstitutionComponent *pComponent = pEntity->GetOrCreateComponent<IEntitySubstitutionComponent>();
@@ -83,7 +83,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	CRY_UNIT_TEST(CreateLegacyComponent)
 	{
-		IEntity *pEntity = SpawnTestEntity("LegacyComponentTestEntity");
+		CEntity *pEntity = SpawnTestEntity("LegacyComponentTestEntity");
 
 		CLegacyEntityComponent *pComponent = pEntity->GetOrCreateComponent<CLegacyEntityComponent>();
 		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
@@ -112,7 +112,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	CRY_UNIT_TEST(CreateLegacyComponentWithInterface)
 	{
-		IEntity *pEntity = SpawnTestEntity("LegacyComponentTestInterfaceEntity");
+		CEntity *pEntity = SpawnTestEntity("LegacyComponentTestInterfaceEntity");
 
 		ILegacyComponentInterface *pComponent = pEntity->GetOrCreateComponent<ILegacyComponentInterface>();
 		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
@@ -144,7 +144,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	CRY_UNIT_TEST(CreateUnifiedComponent)
 	{
-		IEntity *pEntity = SpawnTestEntity("UnifiedComponentTestEntity");
+		CEntity *pEntity = SpawnTestEntity("UnifiedComponentTestEntity");
 
 		CUnifiedEntityComponent *pComponent = pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
 		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
@@ -182,7 +182,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		CryGUID instanceGUID;
 
 		{
-			IEntity *pEntity = SpawnTestEntity("UnifiedComponentSerializationTestEntity");
+			CEntity *pEntity = SpawnTestEntity("UnifiedComponentSerializationTestEntity");
 
 			CUnifiedEntityComponent *pComponent = pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
 			CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
@@ -200,7 +200,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		}
 
 		// Create another entity for deserialization
-		IEntity *pDeserializedEntity = SpawnTestEntity("UnifiedComponentDeserializationTestEntity");
+		CEntity *pDeserializedEntity = SpawnTestEntity("UnifiedComponentDeserializationTestEntity");
 		// Deserialize
 		pDeserializedEntity->SerializeXML(node, true);
 
@@ -214,7 +214,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	CRY_UNIT_TEST(QueryInvalidGUID)
 	{
-		IEntity *pEntity = SpawnTestEntity("UnifiedComponentTestEntity");
+		CEntity *pEntity = SpawnTestEntity("UnifiedComponentTestEntity");
 		CUnifiedEntityComponent *pComponent = pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
 		CLegacyEntityComponentWithInterface* pLegacyComponent = pEntity->GetOrCreateComponent<CLegacyEntityComponentWithInterface>();
 		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetComponentsCount(), 2);
@@ -270,7 +270,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 	// Initialize must never be called during loading from disk if another component (in the same entity) has yet to be loaded
 	CRY_UNIT_TEST(LoadMultipleComponents)
 	{
-		IEntity *pEntity = SpawnTestEntity("SaveMultipleComponents");
+		CEntity *pEntity = SpawnTestEntity("SaveMultipleComponents");
 		CComponent1 *pComponent1 = pEntity->GetOrCreateComponent<CComponent1>();
 		CComponent2 *pComponent2 = pEntity->GetOrCreateComponent<CComponent2>();
 
@@ -280,7 +280,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		// Save
 		XmlNodeRef xmlNode = gEnv->pSystem->CreateXmlNode("Entity");
 		pEntity->SerializeXML(xmlNode, false);
-		gEnv->pEntitySystem->RemoveEntity(pEntity->GetId());
+		g_pIEntitySystem->RemoveEntity(pEntity->GetId());
 
 		// Load
 		pEntity = SpawnTestEntity("LoadMultipleComponents");

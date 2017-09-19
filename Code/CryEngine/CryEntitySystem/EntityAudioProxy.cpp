@@ -57,7 +57,7 @@ void CEntityComponentAudio::OnListenerMoveInside(Vec3 const& listenerPos)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::OnListenerExclusiveMoveInside(IEntity const* const __restrict pEntity, IEntity const* const __restrict pAreaHigh, IEntity const* const __restrict pAreaLow, float const fade)
+void CEntityComponentAudio::OnListenerExclusiveMoveInside(CEntity const* const __restrict pEntity, CEntity const* const __restrict pAreaHigh, CEntity const* const __restrict pAreaLow, float const fade)
 {
 	IEntityAreaComponent const* const __restrict pAreaProxyLow = static_cast<IEntityAreaComponent const* const __restrict>(pAreaLow->GetProxy(ENTITY_PROXY_AREA));
 	IEntityAreaComponent* const __restrict pAreaProxyHigh = static_cast<IEntityAreaComponent* const __restrict>(pAreaHigh->GetProxy(ENTITY_PROXY_AREA));
@@ -78,7 +78,7 @@ void CEntityComponentAudio::OnListenerExclusiveMoveInside(IEntity const* const _
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::OnListenerEnter(IEntity const* const pEntity)
+void CEntityComponentAudio::OnListenerEnter(CEntity const* const pEntity)
 {
 	m_pEntity->SetPos(pEntity->GetWorldPos());
 }
@@ -124,7 +124,7 @@ void CEntityComponentAudio::ProcessEvent(SEntityEvent& event)
 				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
 				{
 					EntityId const entityId = static_cast<EntityId>(event.nParam[0]); // Entering entity!
-					IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
+					CEntity* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 					if ((pIEntity != nullptr) && (pIEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 					{
@@ -140,7 +140,7 @@ void CEntityComponentAudio::ProcessEvent(SEntityEvent& event)
 				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
 				{
 					EntityId const entityId = static_cast<EntityId>(event.nParam[0]); // Near entering/moving entity!
-					IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
+					CEntity* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 					if (pIEntity != nullptr)
 					{
@@ -158,15 +158,15 @@ void CEntityComponentAudio::ProcessEvent(SEntityEvent& event)
 				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
 				{
 					EntityId const entityId = static_cast<EntityId>(event.nParam[0]); // Inside moving entity!
-					IEntity* const __restrict pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
+					CEntity* const __restrict pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 					if (pIEntity != nullptr)
 					{
 						EntityId const area1Id = static_cast<EntityId>(event.nParam[2]); // AreaEntityID (low)
 						EntityId const area2Id = static_cast<EntityId>(event.nParam[3]); // AreaEntityID (high)
 
-						IEntity* const __restrict pArea1 = gEnv->pEntitySystem->GetEntity(area1Id);
-						IEntity* const __restrict pArea2 = gEnv->pEntitySystem->GetEntity(area2Id);
+						CEntity* const __restrict pArea1 = g_pIEntitySystem->GetEntityFromID(area1Id);
+						CEntity* const __restrict pArea2 = g_pIEntitySystem->GetEntityFromID(area2Id);
 
 						if (pArea1 != nullptr)
 						{
@@ -590,7 +590,7 @@ CEntityComponentAudio::AuxObjectPair& CEntityComponentAudio::GetAudioAuxObjectPa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::SetEnvironmentAmountInternal(IEntity const* const pIEntity, float const amount) const
+void CEntityComponentAudio::SetEnvironmentAmountInternal(CEntity const* const pIEntity, float const amount) const
 {
 	// If the passed-in entity is our parent we skip it.
 	// Meaning we do not apply our own environment to ourselves.

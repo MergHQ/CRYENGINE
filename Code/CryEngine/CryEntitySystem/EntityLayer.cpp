@@ -43,7 +43,7 @@ CEntityLayer::~CEntityLayer()
 
 void CEntityLayer::AddObject(EntityId id)
 {
-	IEntity* pEntity = g_pIEntitySystem->GetEntityFromID(id);
+	CEntity* pEntity = g_pIEntitySystem->GetEntityFromID(id);
 	if (pEntity)
 	{
 		bool bEnableScriptUpdate = false;

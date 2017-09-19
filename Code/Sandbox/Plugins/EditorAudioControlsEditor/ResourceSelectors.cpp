@@ -4,11 +4,11 @@
 #include "IResourceSelectorHost.h"
 #include "QParentWndWidget.h"
 #include "ListSelectionDialog.h"
-#include "QAudioControlEditorIcons.h"
+#include "SystemControlsEditorIcons.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ATLControlsResourceDialog.h"
+#include "ResourceSelectorDialog.h"
 #include <CryGame/IGameFramework.h>
-#include "IEditor.h"
+#include <IEditor.h>
 
 using namespace ACE;
 
@@ -23,7 +23,7 @@ dll_string ShowSelectDialog(const SResourceSelectorContext& context, const char*
 	parent.center();
 	parent.setWindowModality(Qt::ApplicationModal);
 
-	ATLControlsDialog dialog(&parent, controlType);
+	CResourceSelectorDialog dialog(&parent, controlType);
 
 	char* szLevelName;
 	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);

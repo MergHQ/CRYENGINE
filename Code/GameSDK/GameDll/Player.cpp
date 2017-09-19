@@ -2001,7 +2001,7 @@ void CPlayer::UpdateAnimationState(const SActorFrameMovementParams &frameMovemen
 	IActionController *pActionController = GetAnimatedCharacter()->GetActionController();
 	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 
-	if (IsAIControlled())
+	if (IsAIControlled() && pActionController)
 	{
 		UpdateAIAnimationState(frameMovementParams, pWeapon, pICharInst, pActionController, mannequinSys);
 	}

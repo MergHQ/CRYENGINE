@@ -729,6 +729,9 @@ DECLARE_SHARED_POINTERS(BehaviorTreeInstance);
 struct IBehaviorTreeManager
 {
 	virtual ~IBehaviorTreeManager() {}
+
+	virtual void Update() = 0;
+
 	virtual struct IMetaExtensionFactory&  GetMetaExtensionFactory() = 0;
 	virtual struct INodeFactory&           GetNodeFactory() = 0;
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION

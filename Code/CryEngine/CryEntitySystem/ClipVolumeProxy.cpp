@@ -27,7 +27,7 @@ CEntityComponentClipVolume::~CEntityComponentClipVolume()
 	m_pRenderMesh = NULL;
 	if (m_pBspTree)
 	{
-		gEnv->pEntitySystem->ReleaseBSPTree3D(m_pBspTree);
+		g_pIEntitySystem->ReleaseBSPTree3D(m_pBspTree);
 		m_pBspTree = nullptr;
 	}
 
@@ -58,7 +58,7 @@ uint64 CEntityComponentClipVolume::GetEventMask() const
 void CEntityComponentClipVolume::UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces)
 {
 	m_pRenderMesh = pRenderMesh;
-	gEnv->pEntitySystem->ReleaseBSPTree3D(m_pBspTree);
+	g_pIEntitySystem->ReleaseBSPTree3D(m_pBspTree);
 
 	const size_t nFaceCount = meshFaces.size() / 3;
 	if (nFaceCount > 0)
@@ -76,7 +76,7 @@ void CEntityComponentClipVolume::UpdateRenderMesh(IRenderMesh* pRenderMesh, cons
 			faceList.push_back(face);
 		}
 
-		m_pBspTree = gEnv->pEntitySystem->CreateBSPTree3D(faceList);
+		m_pBspTree = g_pIEntitySystem->CreateBSPTree3D(faceList);
 	}
 
 	if (m_pEntity && m_pClipVolume)
@@ -147,7 +147,7 @@ bool CEntityComponentClipVolume::LoadFromFile(const char* szFilePath)
 		{
 			if (IChunkFile::ChunkDesc* pBspTreeDataChunk = pChunkFile->FindChunkByType(ChunkType_BspTreeData))
 			{
-				m_pBspTree = gEnv->pEntitySystem->CreateBSPTree3D(IBSPTree3D::FaceList());
+				m_pBspTree = g_pIEntitySystem->CreateBSPTree3D(IBSPTree3D::FaceList());
 				m_pBspTree->ReadFromBuffer(static_cast<uint8*>(pBspTreeDataChunk->data));
 			}
 			else

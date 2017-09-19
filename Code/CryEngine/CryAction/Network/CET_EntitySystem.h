@@ -19,4 +19,5 @@ void AddRandomSystemReset(IContextEstablisher* pEst, EContextViewState state, bo
 void AddLoadLevelEntities(IContextEstablisher* pEst, EContextViewState state);
 void AddFakeSpawn(IContextEstablisher* pEst, EContextViewState state, unsigned what);
 void AddEntitySystemEvent(IContextEstablisher* pEst, EContextViewState state, const SEntityEvent& evt);
+void AddEntitySystemGameplayStart(IContextEstablisher* pEst, EContextViewState state);
 #endif

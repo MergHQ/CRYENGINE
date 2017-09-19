@@ -5,7 +5,7 @@
 #include <CryString/CryString.h>
 #include "AudioAssets.h"
 #include <IAudioConnection.h>
-#include "ACETypes.h"
+#include <ACETypes.h>
 #include <CrySandbox/CrySignal.h>
 #include <array>
 #include <QVariant>
@@ -14,16 +14,16 @@ namespace ACE
 {
 class IAudioSystemItem;
 
-static QVariant GetHeaderData(int section, Qt::Orientation orientation, int role)
+static QVariant GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
 	if (orientation != Qt::Horizontal)
 	{
 		return QVariant();
 	}
 
-	if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
+	if (role == Qt::DisplayRole)
 	{
-		return "name";
+		return "Name";
 	}
 
 	return QVariant();
@@ -49,12 +49,12 @@ public:
 	size_t         GetLibraryCount() const              { return m_audioLibraries.size(); }
 
 	//
-	IAudioAsset*   CreateFolder(string const& name, IAudioAsset* pParent = nullptr);
-	CAudioControl* CreateControl(string const& controlName, EItemType type, IAudioAsset* pParent = nullptr);
-	void           DeleteItem(IAudioAsset* pItem);
+	CAudioAsset*   CreateFolder(string const& name, CAudioAsset* pParent = nullptr);
+	CAudioControl* CreateControl(string const& controlName, EItemType type, CAudioAsset* pParent = nullptr);
+	void           DeleteItem(CAudioAsset* pItem);
 
 	CAudioControl* GetControlByID(CID id) const;
-	CAudioControl* FindControl(string const& controlName, EItemType const type, IAudioAsset* const pParent = nullptr) const;
+	CAudioControl* FindControl(string const& controlName, EItemType const type, CAudioAsset* const pParent = nullptr) const;
 
 	using Controls = std::vector<CAudioControl*>;
 	Controls const& GetControls() const { return m_controls; }
@@ -70,19 +70,19 @@ public:
 	// Helper functions
 	void ClearAllConnections();
 	void ReloadAllConnections();
-	void MoveItems(IAudioAsset* pParent, std::vector<IAudioAsset*> const& items);
-	void CreateAndConnectImplItems(IAudioSystemItem* pImplItem, IAudioAsset* pParent);
+	void MoveItems(CAudioAsset* pParent, std::vector<CAudioAsset*> const& items);
+	void CreateAndConnectImplItems(IAudioSystemItem* pImplItem, CAudioAsset* pParent);
 
 	bool IsTypeDirty(EItemType eType);
 	bool IsDirty();
 	void ClearDirtyFlags();
 	bool IsLoading() const { return m_bLoading; }
 
-	void SetAssetModified(IAudioAsset* pAsset);
+	void SetAssetModified(CAudioAsset* pAsset);
 
 	void UpdateAllConnectionStates();
-	void UpdateLibraryConnectionStates(IAudioAsset* pAsset);
-	void UpdateAssetConnectionStates(IAudioAsset* pAsset);
+	void UpdateLibraryConnectionStates(CAudioAsset* pAsset);
+	void UpdateAssetConnectionStates(CAudioAsset* pAsset);
 
 	// Dirty flags signal
 	CCrySignal<void(bool)> signalIsDirty;
@@ -94,10 +94,10 @@ public:
 	CCrySignal<void()>               signalLibraryRemoved;
 
 	// Items signals
-	CCrySignal<void(IAudioAsset*)>               signalItemAboutToBeAdded;
-	CCrySignal<void(IAudioAsset*)>               signalItemAdded;
-	CCrySignal<void(IAudioAsset*)>               signalItemAboutToBeRemoved;
-	CCrySignal<void(IAudioAsset*, IAudioAsset*)> signalItemRemoved;
+	CCrySignal<void(CAudioAsset*)>               signalItemAboutToBeAdded;
+	CCrySignal<void(CAudioAsset*)>               signalItemAdded;
+	CCrySignal<void(CAudioAsset*)>               signalItemAboutToBeRemoved;
+	CCrySignal<void(CAudioAsset*, CAudioAsset*)> signalItemRemoved;
 
 	CCrySignal<void(CAudioControl*)>             signalControlModified;
 	CCrySignal<void(CAudioControl*)>             signalConnectionAdded;
@@ -105,7 +105,7 @@ public:
 
 private:
 
-	IAudioAsset* CreateAndConnectImplItemsRecursively(IAudioSystemItem* pImplItem, IAudioAsset* pParent);
+	CAudioAsset* CreateAndConnectImplItemsRecursively(IAudioSystemItem* pImplItem, CAudioAsset* pParent);
 	void         OnControlAboutToBeModified(CAudioControl* pControl);
 	void         OnControlModified(CAudioControl* pControl);
 	void         OnConnectionAdded(CAudioControl* pControl, IAudioSystemItem* pMiddlewareControl);
@@ -125,11 +125,11 @@ private:
 namespace Utils
 {
 Scope         GetGlobalScope();
-string        GenerateUniqueName(string const& name, EItemType const type, IAudioAsset* const pParent);
+string        GenerateUniqueName(string const& name, EItemType const type, CAudioAsset* const pParent);
 string        GenerateUniqueLibraryName(string const& name, CAudioAssetsManager const& assetManager);
 string        GenerateUniqueControlName(string const& name, EItemType type, CAudioAssetsManager const& assetManager);
-IAudioAsset*  GetParentLibrary(IAudioAsset* pAsset);
-void          SelectTopLevelAncestors(std::vector<IAudioAsset*> const& source, std::vector<IAudioAsset*>& dest);
+CAudioAsset*  GetParentLibrary(CAudioAsset* pAsset);
+void          SelectTopLevelAncestors(std::vector<CAudioAsset*> const& source, std::vector<CAudioAsset*>& dest);
 string const& GetAssetFolder();
 } // namespace Utils
 } // namespace ACE

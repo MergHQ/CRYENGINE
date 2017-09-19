@@ -638,10 +638,6 @@ public:
 
 	//! Helper function to retrieve world space entity orientation quaternion
 	virtual Quat GetWorldRotation() const = 0;
-
-	//! Helper function to retrieve world space forward dir
-	virtual const Vec3& GetForwardDir() const = 0;
-
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Used to update the stored mask for a certain component, from IEntityComponent::GetEventMask
@@ -1268,6 +1264,43 @@ public:
 	void  SetOpacity(float fAmount);
 	float GetOpacity() const { return GetRenderNodeParams().opacity; };
 	//////////////////////////////////////////////////////////////////////////
+
+	//! Returns the forward facing direction of the entity
+	Vec3 GetForwardDir() const 
+	{
+		if (!GetScale().IsUnit())
+		{
+			Matrix34 auxTM = GetWorldTM();
+			auxTM.OrthonormalizeFast();
+			return auxTM.GetColumn1();
+		}
+
+		return GetWorldRotation().GetColumn1(); 
+	}
+	//! Returns the right facing direction of the entity
+	Vec3 GetRightDir() const
+	{
+		if (!GetScale().IsUnit())
+		{
+			Matrix34 auxTM = GetWorldTM();
+			auxTM.OrthonormalizeFast();
+			return auxTM.GetColumn0();
+		}
+
+		return GetWorldRotation().GetColumn0();
+	}
+	//! Returns the up facing direction of the entity
+	Vec3 GetUpDir() const
+	{
+		if (!GetScale().IsUnit())
+		{
+			Matrix34 auxTM = GetWorldTM();
+			auxTM.OrthonormalizeFast();
+			return auxTM.GetColumn2();
+		}
+
+		return GetWorldRotation().GetColumn2();
+	}
 };
 
 typedef IEntity IEntityRender;

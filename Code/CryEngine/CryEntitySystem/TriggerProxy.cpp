@@ -70,7 +70,7 @@ void CEntityComponentTriggerBounds::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_LEAVEAREA:
 		if (m_forwardingEntity)
 		{
-			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_forwardingEntity);
+			CEntity* pEntity = g_pIEntitySystem->GetEntityFromID(m_forwardingEntity);
 			if (pEntity && (pEntity != this->GetEntity()))
 			{
 				pEntity->SendEvent(event);

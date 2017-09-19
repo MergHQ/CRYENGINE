@@ -3,7 +3,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include "ACETypes.h"
+#include <ACETypes.h>
 
 class QVBoxLayout;
 class QFrame;
@@ -15,12 +15,12 @@ namespace ACE
 class CAudioControl;
 class IAudioSystemEditor;
 
-class QConnectionModel : public QAbstractItemModel
+class CConnectionModel : public QAbstractItemModel
 {
 public:
 
-	QConnectionModel();
-	virtual ~QConnectionModel() override;
+	CConnectionModel();
+	virtual ~CConnectionModel() override;
 
 	void Init(CAudioControl* pControl);
 

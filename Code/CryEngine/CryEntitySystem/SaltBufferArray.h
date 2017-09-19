@@ -62,7 +62,7 @@ public:
 	}
 
 	// max index that is allowed for TIndex (max entity count at a time)
-	static TIndex GetTSize()
+	static constexpr TIndex GetTSize()
 	{
 		return TSize;
 	}

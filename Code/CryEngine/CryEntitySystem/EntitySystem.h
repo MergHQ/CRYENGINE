@@ -23,6 +23,7 @@
 #include <CryCore/StlUtils.h>
 #include <CryMemory/STLPoolAllocator.h>
 #include <CryMemory/STLGlobalAllocator.h>
+#include <array>
 
 //////////////////////////////////////////////////////////////////////////
 // forward declarations.
@@ -239,7 +240,7 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////
-class CEntitySystem : public IEntitySystem
+class CEntitySystem final : public IEntitySystem
 {
 public:
 	CEntitySystem(ISystem* pSystem);
@@ -266,6 +267,9 @@ public:
 	virtual uint32                            GetNumEntities() const final;
 	virtual IEntityIt*                        GetEntityIterator() final;
 	virtual void                              SendEventToAll(SEntityEvent& event) final;
+	virtual void                              OnEditorSimulationModeChanged(EEditorSimulationMode mode) final;
+	virtual void                              OnLevelLoaded() final;
+	virtual void                              OnLevelGameplayStart() final;
 	virtual int                               QueryProximity(SEntityProximityQuery& query) final;
 	virtual void                              ResizeProximityGrid(int nWidth, int nHeight) final;
 	virtual int                               GetPhysicalEntitiesInBox(const Vec3& origin, float radius, IPhysicalEntity**& pList, int physFlags) const final;
@@ -287,8 +291,6 @@ public:
 	virtual void                              RemoveEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) final;
 
 	virtual EntityId                          FindEntityByGuid(const EntityGUID& guid) const final;
-
-	virtual EntityId                          GenerateEntityIdFromGuid(const EntityGUID& guid) final;
 
 	virtual IEntityArchetype*                 LoadEntityArchetype(XmlNodeRef oArchetype) final;
 	virtual IEntityArchetype*                 LoadEntityArchetype(const char* sArchetype) final;
@@ -336,11 +338,6 @@ public:
 	virtual void                              RegisterPhysicCallbacks() final;
 	virtual void                              UnregisterPhysicCallbacks() final;
 
-	// ------------------------------------------------------------------------
-	void                                      OnLevelLoadStart();
-	void                                      OnLevelLoadEnd();
-	bool                                      IsLoadingLevel() const;
-
 	CEntityLayer* GetLayerForEntity(EntityId id);
 	void EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren);
 
@@ -353,7 +350,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Load entities from XML.
 	void         LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile) final;
-	void         LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset, std::vector<IEntity*>* outGlobalEntityIds, std::vector<IEntity*>* outLocalEntityIds) final;
+	void         LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset) final;
 
 	virtual bool ExtractArcheTypeLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const final;
 	virtual bool ExtractEntityLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const final;
@@ -407,11 +404,6 @@ public:
 
 	virtual void                     PurgeDeferredCollisionEvents(bool bForce = false) final;
 
-	virtual void                     DebugDraw() final;
-
-	virtual bool                     EntitiesUseGUIDs() const final                { return m_bEntitiesUseGUIDs; }
-	virtual void                     SetEntitiesUseGUIDs(const bool bEnable) final { m_bEntitiesUseGUIDs = bEnable; }
-
 	virtual IBSPTree3D*              CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) final;
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) final;
 
@@ -419,19 +411,16 @@ private: // -----------------------------------------------------------------
 	void DoUpdateLoop(float fFrameTime);
 
 	void DeleteEntity(CEntity* pEntity);
-	void UpdateDeletedEntities();
 	void RemoveEntityFromActiveList(CEntity* pEntity);
-	void UpdateEngineCVars();
 	void UpdateTimers();
-	void DebugDraw(CEntity* pEntity, float fUpdateTime);
+	void DebugDraw(const CEntity* const pEntity, float fUpdateTime);
 
 	void DebugDrawEntityUsage();
 	void DebugDrawLayerInfo();
-	void DebugDrawProximityTriggers();
-
+	
 	void ClearEntityArray();
 
-	void DumpEntity(IEntity* pEntity);
+	void DumpEntity(CEntity* pEntity);
 
 	// slow - to find specific problems
 	void CheckInternalConsistency() const;
@@ -462,7 +451,7 @@ private: // -----------------------------------------------------------------
 	EntitySystemOnEventSinks m_onEventSinks;
 
 	ISystem*                 m_pISystem;
-	std::vector<CEntity*>    m_EntityArray;                 // [id.GetIndex()]=CEntity
+	std::array<CEntity*, CSaltBufferArray<>::GetTSize()>    m_EntityArray;                 // [id.GetIndex()]=CEntity
 	DeletedEntities          m_deletedEntities;
 	std::vector<CEntity*>    m_deferredUsedEntities;
 
@@ -509,24 +498,16 @@ private: // -----------------------------------------------------------------
 	//don't spawn any entities without being forced to
 	bool m_bLocked;
 
-	bool m_bLoadingLevel = false;
-
 	bool m_bSupportLegacy64bitGuids = false;
 
 	friend class CEntityItMap;
-	class CCompareEntityIdsByClass;
-
-	// helper to satisfy GCC
-	static IEntityClass* GetClassForEntity(CEntity*);
 
 	typedef std::map<string, CEntityLayer*>  TLayers;
 	typedef std::vector<SEntityLayerGarbage> THeaps;
 
 	TLayers m_layers;
 	THeaps  m_garbageLayerHeaps;
-	bool    m_bEntitiesUseGUIDs;
-	int     m_nGeneratedFromGuid;
-
+	
 	std::unique_ptr<CEntitiesComponentPropertyCache> m_entitiesPropertyCache;
 
 public:

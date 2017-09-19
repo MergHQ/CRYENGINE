@@ -63,11 +63,9 @@ class CFileMonitorMiddleware final : public CFileMonitor
 
 public:
 
-	CFileMonitorMiddleware(CAudioControlsEditorWindow* window,int delay)
-		: CFileMonitor(window, delay)
-	{}
+	CFileMonitorMiddleware(CAudioControlsEditorWindow* window, int delay);
 
-	void Update();
+	void Enable();
 
 private:
 

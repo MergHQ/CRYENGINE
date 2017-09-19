@@ -81,8 +81,6 @@ public:
 	// Should only be called from Entity System.
 	virtual ~CEntity();
 
-	IEntitySystem* GetEntitySystem() const { return g_pIEntitySystem; };
-
 	// Called by entity system to complete initialization of the entity.
 	bool Init(SEntitySpawnParams& params);
 	// Called by EntitySystem every frame for each pre-physics active entity.
@@ -162,7 +160,6 @@ public:
 	virtual Vec3        GetWorldPos() const final { return m_worldTM.GetTranslation(); }
 	virtual Ang3        GetWorldAngles() const final;
 	virtual Quat        GetWorldRotation() const final;
-	virtual const Vec3& GetForwardDir() const final { ComputeForwardDir(); return m_vForwardDir; }
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void UpdateComponentEventMask(const IEntityComponent* pComponent) final;
@@ -323,7 +320,7 @@ public:
 	virtual IScriptTable* GetScriptTable() const final;
 
 	// Load/Save entity parameters in XML node.
-	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy) final;
+	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy = true) final;
 
 	virtual IEntityLink* GetEntityLinks() final;
 	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid) final;
@@ -369,7 +366,7 @@ public:
 	void ActivateForNumUpdates(int numUpdates);
 
 	void ActivateEntityIfNecessary();
-	bool ShouldActivate();
+	bool ShouldActivate() const;
 
 	void PrepareForDeletion();
 
@@ -394,9 +391,6 @@ public:
 	virtual void  OnRenderNodeVisibilityChange(bool bBecomeVisible) final;
 	virtual float GetLastSeenTime() const final;
 
-	void SetCloneLayerId(int cloneLayerId) { m_cloneLayerId = cloneLayerId; }
-	int  GetCloneLayerId() const           { return m_cloneLayerId; }
-
 	virtual INetEntity* AssignNetEntityLegacy(INetEntity* ptr) final;
 	virtual INetEntity* GetNetEntity() final;
 
@@ -418,6 +412,7 @@ public:
 	//~IEntity
 
 	void SetSimulationMode(EEntitySimulationMode mode);
+	void OnEditorGameModeChanged(bool bEnterGameMode);
 
 	void ShutDownComponent(IEntityComponent* pComponent);
 
@@ -432,7 +427,6 @@ protected:
 	//////////////////////////////////////////////////////////////////////////
 
 private:
-	void ComputeForwardDir() const;
 	bool IsScaled(float threshold = 0.0003f) const
 	{
 		return (fabsf(m_vScale.x - 1.0f) + fabsf(m_vScale.y - 1.0f) + fabsf(m_vScale.z - 1.0f)) >= threshold;
@@ -529,9 +523,8 @@ private:
 	unsigned int m_bNotInheritXform     : 1;        // Inherit or not transformation from parent.
 	unsigned int m_bInShutDown          : 1;        // Entity is being shut down.
 
-	mutable unsigned int m_bDirtyForwardDir     : 1;    // Cached world transformed forward vector
 	unsigned int m_bLoadedFromLevelFile : 1;    // Entity was loaded from level file
-
+	
 	uint8 m_componentChangeState;
 
 	// Name of the entity.
@@ -604,13 +597,8 @@ private:
 	// World transformation matrix of this entity.
 	mutable Matrix34 m_worldTM;
 
-	mutable Vec3     m_vForwardDir;
-
 	// counter to prevent deletion if entity is processed deferred by for example physics events
 	uint32 m_nKeepAliveCounter;
 
-	// If this entity is part of a layer that was cloned at runtime, this is the cloned layer
-	// id (not related to the layer id)
-	int                              m_cloneLayerId;
 	uint32                           m_objectID;
 };

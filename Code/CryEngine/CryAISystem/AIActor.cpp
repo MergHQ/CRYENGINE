@@ -215,6 +215,8 @@ CAIActor::~CAIActor()
 
 	AILogComment("~CAIActor  %s (%p)", GetName(), this);
 
+	m_proxy.reset();
+
 	gAIEnv.pGroupManager->RemoveGroupMember(GetGroupId(), GetAIObjectID());
 
 	CAISystem* pAISystem = GetAISystem();

@@ -28,6 +28,7 @@ public:
 	virtual ~BehaviorTreeManager();
 
 	// IBehaviorTreeManager
+	virtual void                                Update() override;
 	virtual IMetaExtensionFactory&              GetMetaExtensionFactory() override;
 	virtual INodeFactory&                       GetNodeFactory() override;
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
@@ -52,7 +53,6 @@ public:
 #endif
 
 	void                    Reset();
-	void                    Update();
 
 	size_t                  GetTreeInstanceCount() const;
 	EntityId                GetTreeInstanceEntityIdByIndex(const size_t index) const;

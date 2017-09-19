@@ -376,15 +376,6 @@ enum ESystemEvent
 	//! Sent when frontend is reloaded.
 	ESYSTEM_EVENT_FRONTEND_RELOADED,
 
-	//! Sent before triggering a force loading of specified segments.
-	ESYSTEM_EVENT_SW_FORCE_LOAD_START,
-
-	//! Sent after triggering a force loading of specified segments.
-	ESYSTEM_EVENT_SW_FORCE_LOAD_END,
-
-	//! Sent once segmented world manager shifts the world.
-	ESYSTEM_EVENT_SW_SHIFT_WORLD,
-
 #if CRY_PLATFORM_DURANGO
 	// Description: PLM (Process Life Management) events.
 	ESYSTEM_EVENT_PLM_ON_RESUMING,

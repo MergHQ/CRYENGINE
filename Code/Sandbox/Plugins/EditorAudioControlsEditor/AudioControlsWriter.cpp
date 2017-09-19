@@ -160,7 +160,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 
 		for (size_t i = 0; i < numChildren; ++i)
 		{
-			IAudioAsset* const pItem = library.GetChild(i);
+			CAudioAsset* const pItem = library.GetChild(i);
 			GetScopes(pItem, scopes);
 		}
 
@@ -184,7 +184,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 	}
 }
 
-void CAudioControlsWriter::WriteItem(IAudioAsset* pItem, const string& path, LibraryStorage& library)
+void CAudioControlsWriter::WriteItem(CAudioAsset* pItem, const string& path, LibraryStorage& library)
 {
 	if (pItem)
 	{
@@ -213,7 +213,7 @@ void CAudioControlsWriter::WriteItem(IAudioAsset* pItem, const string& path, Lib
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsWriter::GetScopes(IAudioAsset const* const pItem, std::unordered_set<Scope>& scopes)
+void CAudioControlsWriter::GetScopes(CAudioAsset const* const pItem, std::unordered_set<Scope>& scopes)
 {
 	if (pItem->GetType() == EItemType::eItemType_Folder)
 	{
@@ -269,7 +269,7 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pC
 		const size_t size = pControl->ChildCount();
 		for (size_t i = 0; i < size; ++i)
 		{
-			IAudioAsset* pItem = pControl->GetChild(i);
+			CAudioAsset* pItem = pControl->GetChild(i);
 			if (pItem && pItem->GetType() == EItemType::eItemType_State)
 			{
 				WriteControlToXML(pChildNode, static_cast<CAudioControl*>(pItem), "");
@@ -405,14 +405,14 @@ void CAudioControlsWriter::DeleteLibraryFile(const string& filepath)
 	}
 }
 
-void CAudioControlsWriter::WriteEditorData(IAudioAsset* pLibrary, XmlNodeRef pParentNode) const
+void CAudioControlsWriter::WriteEditorData(CAudioAsset* pLibrary, XmlNodeRef pParentNode) const
 {
 	if (pParentNode && pLibrary)
 	{
 		const size_t itemCount = pLibrary->ChildCount();
 		for (size_t i = 0; i < itemCount; ++i)
 		{
-			IAudioAsset* pItem = pLibrary->GetChild(i);
+			CAudioAsset* pItem = pLibrary->GetChild(i);
 			if (pItem->GetType() == EItemType::eItemType_Folder)
 			{
 				XmlNodeRef pFolderNode = pParentNode->createNode("Folder");

@@ -11,7 +11,6 @@
 class QVBoxLayout;
 class QSortFilterProxyModel;
 class QSearchBox;
-class QAudioControlsTreeView;
 class QAbstractItemModel;
 class CMountingProxyModel;
 
@@ -19,19 +18,19 @@ namespace ACE
 {
 class CAudioAssetsManager;
 class QFilterButton;
-class CAudioAssetsExplorerModel;
-class QControlsProxyFilter;
+class CSystemControlsModel;
+class CSystemControlsFilterProxyModel;
 class CAudioLibraryModel;
 class CAdvancedTreeView;
 
-class CAudioAssetsExplorer final : public QFrame
+class CSystemControlsWidget final : public QFrame
 {
 	Q_OBJECT
 
 public:
 
-	CAudioAssetsExplorer(CAudioAssetsManager* pAssetsManager);
-	virtual ~CAudioAssetsExplorer() override;
+	CSystemControlsWidget(CAudioAssetsManager* pAssetsManager);
+	virtual ~CSystemControlsWidget() override;
 
 	bool                        IsEditing() const;
 	std::vector<CAudioControl*> GetSelectedControls();
@@ -50,11 +49,11 @@ private:
 	void                ResetFilters();
 	void                ShowControlType(EItemType type, bool bShow);
 
-	CAudioControl*      CreateControl(string const& name, EItemType type, IAudioAsset* pParent);
-	IAudioAsset*        CreateFolder(IAudioAsset* pParent);
+	CAudioControl*      CreateControl(string const& name, EItemType type, CAudioAsset* pParent);
+	CAudioAsset*        CreateFolder(CAudioAsset* pParent);
 
 	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
-	IAudioAsset*        GetSelectedAsset() const;
+	CAudioAsset*        GetSelectedAsset() const;
 
 	void                SelectNewAsset(QModelIndex const& parent, int const row);
 
@@ -85,8 +84,8 @@ private:
 
 	QSearchBox*                      m_pSearchBox;
 	CAdvancedTreeView*               m_pControlsTree;
-	CAudioAssetsExplorerModel*       m_pAssetsModel;
-	QControlsProxyFilter*            m_pProxyModel;
+	CSystemControlsModel*       m_pAssetsModel;
+	CSystemControlsFilterProxyModel*            m_pProxyModel;
 
 	CMountingProxyModel*             m_pMountedModel;
 	std::vector<CAudioLibraryModel*> m_libraryModels;

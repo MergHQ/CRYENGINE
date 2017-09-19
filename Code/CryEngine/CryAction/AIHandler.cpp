@@ -166,7 +166,8 @@ CAIHandler::~CAIHandler(void)
 		m_pAGState->RemoveListener(this);
 	}
 
-	IMovementController* pMC = (m_pGameObject ? m_pGameObject->GetMovementController() : NULL);
+	IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(m_pEntity->GetId());
+	IMovementController* pMC = (pGameObject ? pGameObject->GetMovementController() : NULL);
 	if (pMC)
 	{
 		pMC->SetExactPositioningListener(NULL);

@@ -10,18 +10,18 @@ class QString;
 
 namespace ACE
 {
-class QConnectionsWidget;
+class CConnectionsWidget;
 class CAudioAssetsManager;
 class IAudioSystemItem;
 class CAudioControl;
 
-class CInspectorPanel final : public QFrame
+class CPropertiesWidget final : public QFrame
 {
 	Q_OBJECT
 public:
 
-	explicit CInspectorPanel(CAudioAssetsManager* pAssetsManager);
-	virtual ~CInspectorPanel() override;
+	explicit CPropertiesWidget(CAudioAssetsManager* pAssetsManager);
+	virtual ~CPropertiesWidget() override;
 
 	void Reload();
 	void BackupTreeViewStates();
@@ -34,7 +34,7 @@ public slots:
 private:
 
 	CAudioAssetsManager*     m_pAssetsManager;
-	QConnectionsWidget*      m_pConnectionList;
+	CConnectionsWidget*      m_pConnectionList;
 	QPropertyTree*           m_pPropertyTree;
 	QLabel*                  m_pConnectionsLabel;
 	std::unique_ptr<QString> m_pUsageHint;

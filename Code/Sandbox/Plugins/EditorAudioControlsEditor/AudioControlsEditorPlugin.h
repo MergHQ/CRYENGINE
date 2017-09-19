@@ -5,7 +5,7 @@
 #include <IEditor.h>
 #include <IPlugin.h>
 #include "AudioAssetsManager.h"
-#include "AudioAssetsExplorerModel.h"
+#include "SystemControlsModel.h"
 #include <IAudioSystemEditor.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CrySandbox/CrySignal.h>

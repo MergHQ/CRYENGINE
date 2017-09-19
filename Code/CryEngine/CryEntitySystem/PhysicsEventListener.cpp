@@ -35,12 +35,10 @@ std::vector<IPhysicalEntity*> CPhysicsEventListener::m_physVisAreaUpdateVector;
 int CPhysicsEventListener::m_jointFxCount = 0, CPhysicsEventListener::m_jointFxFrameId = 0;
 
 //////////////////////////////////////////////////////////////////////////
-CPhysicsEventListener::CPhysicsEventListener(CEntitySystem* pEntitySystem, IPhysicalWorld* pPhysics)
+CPhysicsEventListener::CPhysicsEventListener(IPhysicalWorld* pPhysics)
 {
-	assert(pEntitySystem);
 	assert(pPhysics);
-	m_pEntitySystem = pEntitySystem;
-
+	
 	m_pPhysics = pPhysics;
 
 	RegisterPhysicCallbacks();
@@ -157,7 +155,7 @@ int CPhysicsEventListener::OnPostPump(const EventPhys* pEvent)
 		for (auto it = m_physVisAreaUpdateVector.begin(), end = m_physVisAreaUpdateVector.end(); it != end; ++it)
 		{
 			IRenderNode* pRndNode = nullptr;
-			if (IEntity *pent = (IEntity*)(*it)->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
+			if (CEntity *pent = (CEntity*)(*it)->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
 				pRndNode = pent->GetRenderNode();
 			else if ((*it)->GetiForeignData() == PHYS_FOREIGN_ID_ROPE)
 				pRndNode = (IRopeRenderNode*)(*it)->GetForeignData(PHYS_FOREIGN_ID_ROPE);

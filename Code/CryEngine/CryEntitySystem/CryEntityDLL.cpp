@@ -22,7 +22,7 @@
 #include  <CrySchematyc/Env/EnvPackage.h>
 #include <CryCore/StaticInstanceList.h>
 
-CEntitySystem* g_pIEntitySystem = NULL;
+CEntitySystem* g_pIEntitySystem = nullptr;
 constexpr CryGUID SchematyEntityComponentsPackageGUID = "A37D36D5-2AB1-4B48-9353-3DEC93A4236A"_cry_guid;
 
 struct CSystemEventListener_Entity : public ISystemEventListener
@@ -66,14 +66,10 @@ public:
 			{
 				gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(SchematyEntityComponentsPackageGUID);
 
-				gEnv->pEntitySystem->GetClassRegistry()->UnregisterSchematycEntityClass();
+				g_pIEntitySystem->GetClassRegistry()->UnregisterSchematycEntityClass();
 			}
 		}
 		break;
-		case ESYSTEM_EVENT_LEVEL_LOAD_START:
-			if (g_pIEntitySystem)
-				g_pIEntitySystem->OnLevelLoadStart();
-			break;
 		case ESYSTEM_EVENT_LEVEL_LOAD_END:
 			{
 				if (g_pIEntitySystem)
@@ -83,12 +79,8 @@ public:
 						// activate the default layers
 						g_pIEntitySystem->EnableDefaultLayers();
 					}
-					{
-						LOADING_TIME_PROFILE_SECTION_NAMED("ENTITY_EVENT_LEVEL_LOADED");
-						SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
-						g_pIEntitySystem->SendEventToAll(loadingCompleteEvent);
-					}
-					g_pIEntitySystem->OnLevelLoadEnd();
+
+					g_pIEntitySystem->OnLevelLoaded();
 				}
 			}
 			break;
@@ -116,7 +108,7 @@ class CEngineModule_EntitySystem : public IEntitySystemEngineModule
 	virtual ~CEngineModule_EntitySystem()
 	{
 		GetISystem()->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_entity);
-		SAFE_RELEASE(gEnv->pEntitySystem);
+		SAFE_RELEASE(g_pIEntitySystem);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

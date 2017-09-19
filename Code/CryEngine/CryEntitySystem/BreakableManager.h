@@ -28,7 +28,8 @@ struct GeomRef;
 class CBreakableManager : public IBreakableManager
 {
 public:
-	CBreakableManager(CEntitySystem* pEntitySystem);
+	CBreakableManager() = default;
+	virtual ~CBreakableManager() {}
 
 	// actual breaking function.
 	void BreakIntoPieces(GeomRef& geoOrig, const Matrix34& srcObjTM,
@@ -109,8 +110,7 @@ private:
 	// Remove Parts
 	bool RemoveStatObjParts(IStatObj*& pStatObj);
 
-	CEntitySystem*       m_pEntitySystem;
-	IBreakEventListener* m_pBreakEventListener;
+	IBreakEventListener* m_pBreakEventListener = nullptr;
 	//////////////////////////////////////////////////////////////////////////
 
 	std::vector<IBreakableManager::SBrokenObjRec> m_brokenObjs;

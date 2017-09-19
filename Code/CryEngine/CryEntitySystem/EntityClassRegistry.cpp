@@ -429,7 +429,7 @@ public:
 			params.pClass = pEntityClass;
 			params.sName = "Schematyc Preview Entity";
 			params.nFlagsExtended |= ENTITY_FLAG_EXTENDED_PREVIEW;
-			IEntity* pEntity = g_pIEntitySystem->SpawnEntity(params);
+			CEntity* pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params));
 			if (pEntity && pEntity->GetSchematycObject())
 			{
 				m_objectId = pEntity->GetSchematycObject()->GetId();
@@ -479,7 +479,7 @@ public:
 
 	virtual void RenderObject(const Schematyc::IObject& object, const SRendParams& params, const SRenderingPassInfo& passInfo) const override
 	{
-		IEntity* pEntity = object.GetEntity();
+		CEntity* pEntity = static_cast<CEntity*>(object.GetEntity());
 		if (pEntity)
 		{
 			SGeometryDebugDrawInfo debugDrawInfo;

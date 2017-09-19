@@ -27,13 +27,6 @@
 #include "RopeProxy.h"
 
 //////////////////////////////////////////////////////////////////////////
-CBreakableManager::CBreakableManager(CEntitySystem* pEntitySystem)
-{
-	m_pEntitySystem = pEntitySystem;
-	m_pBreakEventListener = NULL;
-}
-
-//////////////////////////////////////////////////////////////////////////
 float ExtractFloatKeyFromString(const char* key, const char* props)
 {
 	if (const char* ptr = strstr(props, key))
@@ -438,7 +431,7 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 		return;
 	}
 
-	IEntityClass* pClass = m_pEntitySystem->GetClassRegistry()->FindClass("Breakage");
+	IEntityClass* pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Breakage");
 	I3DEngine* p3DEngine = gEnv->p3DEngine;
 	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
 	PhysicsVars* pVars = pPhysicalWorld->GetPhysVars();
@@ -673,13 +666,13 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 					SEntitySpawnParams params;
 					params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SPAWNED | ENTITY_FLAG_MODIFIED_BY_PHYSICS;
 					params.pClass = pClass;
-					CEntity* pNewEntity = (CEntity*)m_pEntitySystem->SpawnEntity(params, false);
+					CEntity* pNewEntity = (CEntity*)g_pIEntitySystem->SpawnEntity(params, false);
 					if (!pNewEntity)
 						continue;
 
 					pNewEntity->SetStatObj(pSubObj, 0, false);
 					pNewEntity->SetWorldTM(mxPiece);
-					m_pEntitySystem->InitEntity(pNewEntity, params);
+					g_pIEntitySystem->InitEntity(pNewEntity, params);
 
 					SEntityPhysicalizeParams physparams;
 					physparams.type = PE_RIGID;
@@ -937,7 +930,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 	if (!createParams.pSrcStaticRenderNode)
 	{
 		BreakLogAlways("BREAK: Using 'Breakage' class");
-		pClass = m_pEntitySystem->GetClassRegistry()->FindClass("Breakage");
+		pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Breakage");
 	}
 	else
 	{
@@ -949,7 +942,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 		{
 			BreakLogAlways("BREAK: Using 'Breakage' class with SrcStaticRenderNode");
 			bDefault = true;
-			pClass = m_pEntitySystem->GetClassRegistry()->FindClass("Breakage");
+			pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Breakage");
 		}
 	}
 	if (!pClass)
@@ -977,7 +970,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 
 		//We don't want this auto-initialised as we want to init it when the statobj is set,
 		//	allowing entity events to access it
-		pEntity = (CEntity*)gEnv->pEntitySystem->SpawnEntity(params, false);
+		pEntity = (CEntity*)g_pIEntitySystem->SpawnEntity(params, false);
 		if (!pEntity)
 			return 0;
 
@@ -1067,7 +1060,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 
 	if (bNewEntitySpawned)
 	{
-		gEnv->pEntitySystem->InitEntity(pEntity, params);
+		g_pIEntitySystem->InitEntity(pEntity, params);
 	}
 
 	if (bDefault)
@@ -1222,7 +1215,7 @@ void CBreakableManager::GetBrokenObjectIndicesForCloning(int32* pPartRemovalIndi
 	int iLocalNumEntitiesToClone = 0;
 
 	//Get pointer to part removal event array from break replicator
-	IBreakableManager* pBreakableMgr = gEnv->pEntitySystem->GetBreakableManager();
+	IBreakableManager* pBreakableMgr = g_pIEntitySystem->GetBreakableManager();
 
 	int iNumBrokenObjects = 0;
 	const IBreakableManager::SBrokenObjRec* pPartBrokenObjects = pBreakableMgr->GetPartBrokenObjects(iNumBrokenObjects);
@@ -1268,7 +1261,7 @@ void CBreakableManager::GetBrokenObjectIndicesForCloning(int32* pPartRemovalIndi
 
 		if (BreakEvents[pPartRemovalIndices[k]].iForeignData == PHYS_FOREIGN_ID_ENTITY)
 		{
-			IEntity* pEnt = static_cast<IEntity*>(BreakEvents[pPartRemovalIndices[k]].pForeignData);
+			CEntity* pEnt = static_cast<CEntity*>(BreakEvents[pPartRemovalIndices[k]].pForeignData);
 			originalBrokenId = pEnt->GetId();
 
 			BreakLogAlways("PR:   Looking for object with EntityId: 0x%08X", originalBrokenId);
@@ -1318,7 +1311,7 @@ void CBreakableManager::ClonePartRemovedEntitiesByIndex(int32* pBrokenObjIndicie
                                                         SRenderNodeCloneLookup& nodeLookup)
 {
 	//Get pointer to part removal event array from break replicator
-	IBreakableManager* pBreakableMgr = gEnv->pEntitySystem->GetBreakableManager();
+	IBreakableManager* pBreakableMgr = g_pIEntitySystem->GetBreakableManager();
 
 	int iNumClonedEntitiesLocal = 0;
 
@@ -1349,7 +1342,7 @@ void CBreakableManager::ClonePartRemovedEntitiesByIndex(int32* pBrokenObjIndicie
 			}
 		}
 
-		IEntity* pOriginalEntity = gEnv->pEntitySystem->GetEntity(originalBrokenId);
+		CEntity* pOriginalEntity = g_pIEntitySystem->GetEntityFromID(originalBrokenId);
 
 		if (!bWillBeClonedElsewhere)
 		{
@@ -1373,7 +1366,7 @@ void CBreakableManager::ClonePartRemovedEntitiesByIndex(int32* pBrokenObjIndicie
 				createParams.pName = pRenderNode->GetName();
 				createParams.overrideEntityClass = pOriginalEntity->GetClass();
 
-				IEntity* pClonedEntity = pBreakableMgr->CreateObjectAsEntity(brokenObjRec.pStatObjOrg, NULL, NULL, createParams);
+				CEntity* pClonedEntity = static_cast<CEntity*>(pBreakableMgr->CreateObjectAsEntity(brokenObjRec.pStatObjOrg, NULL, NULL, createParams));
 
 				assert(pClonedEntity);
 
@@ -1420,7 +1413,7 @@ void CBreakableManager::HideBrokenObjectsByIndex(const int32* pBrokenObjectIndic
 	{
 		EntityId originalBrokenId = m_brokenObjs[pBrokenObjectIndices[k]].idEnt;
 
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(originalBrokenId);
+		CEntity* pEntity = g_pIEntitySystem->GetEntityFromID(originalBrokenId);
 
 		if (pEntity)
 		{
@@ -1448,7 +1441,7 @@ void CBreakableManager::HideBrokenObjectsByIndex(const int32* pBrokenObjectIndic
 //	is used to obtain the original brush pointers, which are then used to unhide the objects
 void CBreakableManager::UnhidePartRemovedObjectsByIndex(const int32* pPartRemovalIndices, const int32 iNumPartRemovalIndices, const EventPhysRemoveEntityParts* pBreakEvents)
 {
-	IBreakableManager* pBreakableMgr = gEnv->pEntitySystem->GetBreakableManager();
+	IBreakableManager* pBreakableMgr = g_pIEntitySystem->GetBreakableManager();
 	BreakLogAlways("PR: Unhiding part removed objects");
 
 	int iBrokenObjectCount = 0;
@@ -1458,12 +1451,12 @@ void CBreakableManager::UnhidePartRemovedObjectsByIndex(const int32* pPartRemova
 	{
 		int iEventIndex = pPartRemovalIndices[k];
 
-		IEntity* pEntity = NULL;
+		CEntity* pEntity = nullptr;
 		EntityId originalBrokenId = 0;
 
 		if (pBreakEvents[pPartRemovalIndices[k]].iForeignData == PHYS_FOREIGN_ID_ENTITY)
 		{
-			pEntity = static_cast<IEntity*>(pBreakEvents[pPartRemovalIndices[k]].pForeignData);
+			pEntity = static_cast<CEntity*>(pBreakEvents[pPartRemovalIndices[k]].pForeignData);
 			BreakLogAlways("PR: ENTITY TYPE: 0x%p", pEntity);
 			if (pEntity)
 			{
@@ -1487,7 +1480,7 @@ void CBreakableManager::UnhidePartRemovedObjectsByIndex(const int32* pPartRemova
 				}
 			}
 
-			pEntity = gEnv->pEntitySystem->GetEntity(originalBrokenId);
+			pEntity = g_pIEntitySystem->GetEntityFromID(originalBrokenId);
 		}
 
 		if (pEntity)
@@ -1549,7 +1542,7 @@ void CBreakableManager::ApplyPartBreakToClonedObjectFromEvent(const SRenderNodeC
 		BreakLogAlways("PR:     Found cloned Entity ptr 0x%p of original %s 0x%p at index %d", renderNodeLookup.pClonedNodes[iNodeIndex], OriginalEvent.iForeignData == PHYS_FOREIGN_ID_ENTITY ? "ENTITY" : "IRENDERNODE", OriginalEvent.pForeignData, iNodeIndex);
 
 		//Any clones will always be entities, with the ID masquerading as a pointer in the renderNodeLookup
-		IEntity* pEntity = reinterpret_cast<IEntity*>(renderNodeLookup.pClonedNodes[iNodeIndex]);
+		CEntity* pEntity = reinterpret_cast<CEntity*>(renderNodeLookup.pClonedNodes[iNodeIndex]);
 
 		tempEvent.pForeignData = static_cast<void*>(pEntity);
 		tempEvent.iForeignData = PHYS_FOREIGN_ID_ENTITY;
@@ -1619,7 +1612,7 @@ public:
 			if (!GetEntity()->IsRendered())
 			{
 				// Remove ourself
-				gEnv->pEntitySystem->RemoveEntity(GetEntity()->GetId());
+				g_pIEntitySystem->RemoveEntity(GetEntity()->GetId());
 			}
 			else
 			{
@@ -1647,7 +1640,7 @@ private:
 	int m_timeoutMillis = 0;
 };
 
-void SetEntityLifetime(IEntity* pEntity, const char* props, bool visible)
+void SetEntityLifetime(CEntity* pEntity, const char* props, bool visible)
 {
 	float timeout = -1, timeoutInvis = -1;
 	if (const char* ptr = strstr(props, "timeout"))
@@ -1657,7 +1650,7 @@ void SetEntityLifetime(IEntity* pEntity, const char* props, bool visible)
 
 	if (timeout == 0.0f || timeoutInvis == 0.0f && !visible)
 	{
-		gEnv->pEntitySystem->RemoveEntity(pEntity->GetId());
+		g_pIEntitySystem->RemoveEntity(pEntity->GetId());
 		return;
 	}
 	if (timeout > 0 || timeoutInvis >= 0)
@@ -1693,16 +1686,16 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		IRopeRenderNode* pRope = (IRopeRenderNode*)pForeignData;
 		pSrcEntity = static_cast<CEntity*>(pRope->GetOwnerEntity());
 		SEntitySpawnParams params;
-		params.pClass = m_pEntitySystem->GetClassRegistry()->FindClass("RopeEntity");
+		params.pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("RopeEntity");
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SPAWNED;
 		params.sName = "rope_piece";
-		pNewEntity = (CEntity*)gEnv->pEntitySystem->SpawnEntity(params, false);
+		pNewEntity = (CEntity*)g_pIEntitySystem->SpawnEntity(params, false);
 		if (!pNewEntity)
 			return;
 
 		pNewEntity->SetWorldTM(pSrcEntity->GetWorldTM());
 		IRopeRenderNode* pRopeNew = ((IEntityRopeComponent*)pNewEntity->CreateProxy(ENTITY_PROXY_ROPE))->GetRopeRenderNode();
-		gEnv->pEntitySystem->InitEntity(pNewEntity, params);
+		g_pIEntitySystem->InitEntity(pNewEntity, params);
 		pNewEntity->SetMaterial(pSrcEntity->GetMaterial());
 
 		IRopeRenderNode::SRopeParams rparams = pRope->GetParams();
@@ -1944,7 +1937,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		}
 		else
 		{
-			IEntity* pPrevNewEntity = pNewEntity;
+			CEntity* pPrevNewEntity = pNewEntity;
 			if (pCreateEvent->pEntity->GetType() == PE_ARTICULATED)
 			{
 				Matrix34 mtx = createParams.worldTM;
@@ -2319,7 +2312,7 @@ void CBreakableManager::HandlePhysicsRemoveSubPartsEvent(const EventPhysRemoveEn
 				createParams.nEntityFlagsAdd = ENTITY_FLAG_MODIFIED_BY_PHYSICS;
 			createParams.pName = pRenderNode->GetName();
 
-			IEntity* pNewHoldingEntity = CreateObjectAsEntity(pStatObj, pRemoveEvent->pEntity, pRemoveEvent->pEntity, createParams, true);
+			CEntity* pNewHoldingEntity = static_cast<CEntity*>(CreateObjectAsEntity(pStatObj, pRemoveEvent->pEntity, pRemoveEvent->pEntity, createParams, true));
 
 			if (pNewHoldingEntity)
 			{
@@ -2351,7 +2344,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		IRopeRenderNode::SRopeParams params = pRope->GetParams();
 		pe_params_rope pr;
 		pUpdateEvent->pEntity->GetParams(&pr);
-		IEntity* pSrcEntity = pRope->GetOwnerEntity();
+		CEntity* pSrcEntity = static_cast<CEntity*>(pRope->GetOwnerEntity());
 		CEntityComponentRope* pRopeProxy = (CEntityComponentRope*)pSrcEntity->GetProxy(ENTITY_PROXY_ROPE);
 		pRopeProxy->PreserveParams();
 		params.nNumSegments = FtoI(pr.nSegments * params.nNumSegments / (float)params.nPhysSegments);
@@ -2540,7 +2533,7 @@ void CBreakableManager::ResetBrokenObjects()
 {
 	for (int i = m_brokenObjs.size() - 1; i >= 0; i--)
 	{
-		IEntity* pEnt = m_pEntitySystem->GetEntity(m_brokenObjs[i].idEnt);
+		CEntity* pEnt = g_pIEntitySystem->GetEntityFromID(m_brokenObjs[i].idEnt);
 		if (pEnt)
 		{
 			for (int j = pEnt->GetSlotCount() - 1; j >= 0; j--)

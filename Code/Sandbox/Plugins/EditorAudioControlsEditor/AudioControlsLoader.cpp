@@ -12,7 +12,7 @@
 #include <IAudioSystemItem.h>
 #include "QtUtil.h"
 #include "IUndoObject.h"
-#include "AudioAssetsExplorerModel.h"
+#include "SystemControlsModel.h"
 #include "IEditor.h"
 #include <ConfigurationManager.h>
 #include "AudioControlsEditorPlugin.h"
@@ -165,7 +165,7 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 }
 
 //////////////////////////////////////////////////////////////////////////
-IAudioAsset* CAudioControlsLoader::AddUniqueFolderPath(IAudioAsset* pParent, QString const& path)
+CAudioAsset* CAudioControlsLoader::AddUniqueFolderPath(CAudioAsset* pParent, QString const& path)
 {
 	QStringList folderNames = path.split(QRegularExpression(R"((\\|\/))"), QString::SkipEmptyParts);
 
@@ -175,7 +175,7 @@ IAudioAsset* CAudioControlsLoader::AddUniqueFolderPath(IAudioAsset* pParent, QSt
 	{
 		if (!folderNames[i].isEmpty())
 		{
-			IAudioAsset* pChild = m_pAssetsManager->CreateFolder(QtUtil::ToString(folderNames[i]), pParent);
+			CAudioAsset* pChild = m_pAssetsManager->CreateFolder(QtUtil::ToString(folderNames[i]), pParent);
 
 			if (pChild)
 			{
@@ -223,13 +223,13 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef pRoot, string const& f
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, Scope scope, uint version, IAudioAsset* pParentItem)
+CAudioControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, Scope scope, uint version, CAudioAsset* pParentItem)
 {
 	CAudioControl* pControl = nullptr;
 
 	if (pNode)
 	{
-		IAudioAsset* pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(pNode->getAttr("path")));
+		CAudioAsset* pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(pNode->getAttr("path")));
 
 		if (pFolderItem)
 		{
@@ -335,7 +335,7 @@ void CAudioControlsLoader::CreateDefaultControls()
 	// Create default controls if they don't exist.
 	// These controls need to always exist in your project!
 	bool bWasModified = false;
-	IAudioAsset* const pLibrary = static_cast<IAudioAsset*>(m_pAssetsManager->CreateLibrary("default_controls"));
+	CAudioAsset* const pLibrary = static_cast<CAudioAsset*>(m_pAssetsManager->CreateLibrary("default_controls"));
 
 	if (pLibrary != nullptr)
 	{
@@ -515,7 +515,7 @@ void CAudioControlsLoader::CreateDefaultControls()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::CreateDefaultSwitch(IAudioAsset* pLibrary, const char* szExternalName, const char* szInternalName, SwitchStates const& states)
+void CAudioControlsLoader::CreateDefaultSwitch(CAudioAsset* pLibrary, const char* szExternalName, const char* szInternalName, SwitchStates const& states)
 {
 	CAudioControl* pSwitch = m_pAssetsManager->FindControl(szExternalName, eItemType_Switch);
 
@@ -527,7 +527,7 @@ void CAudioControlsLoader::CreateDefaultSwitch(IAudioAsset* pLibrary, const char
 
 		while (childIndex < childCount)
 		{
-			IAudioAsset* pChild = pSwitch->GetChild(childIndex);
+			CAudioAsset* pChild = pSwitch->GetChild(childIndex);
 
 			if (pChild)
 			{
@@ -679,7 +679,7 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef pNode, CAudioContro
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadEditorData(XmlNodeRef pEditorDataNode, IAudioAsset* pRootItem)
+void CAudioControlsLoader::LoadEditorData(XmlNodeRef pEditorDataNode, CAudioAsset* pRootItem)
 {
 	if (pEditorDataNode && pRootItem)
 	{
@@ -698,7 +698,7 @@ void CAudioControlsLoader::LoadEditorData(XmlNodeRef pEditorDataNode, IAudioAsse
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadAllFolders(XmlNodeRef pRootFoldersNode, IAudioAsset* pParentItem)
+void CAudioControlsLoader::LoadAllFolders(XmlNodeRef pRootFoldersNode, CAudioAsset* pParentItem)
 {
 	if (pRootFoldersNode && pParentItem)
 	{
@@ -712,9 +712,9 @@ void CAudioControlsLoader::LoadAllFolders(XmlNodeRef pRootFoldersNode, IAudioAss
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadFolderData(XmlNodeRef pFolderNode, IAudioAsset* pParentItem)
+void CAudioControlsLoader::LoadFolderData(XmlNodeRef pFolderNode, CAudioAsset* pParentItem)
 {
-	IAudioAsset* pItem = AddUniqueFolderPath(pParentItem, pFolderNode->getAttr("name"));
+	CAudioAsset* pItem = AddUniqueFolderPath(pParentItem, pFolderNode->getAttr("name"));
 
 	if (pItem)
 	{
