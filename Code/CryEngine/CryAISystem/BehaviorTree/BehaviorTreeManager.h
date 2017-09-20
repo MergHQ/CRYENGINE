@@ -56,7 +56,9 @@ public:
 
 	size_t                  GetTreeInstanceCount() const;
 	EntityId                GetTreeInstanceEntityIdByIndex(const size_t index) const;
-	BehaviorTreeInstance*   GetBehaviorTree(const EntityId entityId) const;
+
+	// Returns blackboard corresponding to behavior tree assigned to Entity with specified entityID.
+	BehaviorTree::Blackboard* GetBehaviorTreeBlackboard(const EntityId entityId);
 
 	BehaviorTreeInstancePtr CreateBehaviorTreeInstanceFromXml(const char* behaviorTreeName, XmlNodeRef behaviorTreeXmlNode);
 
@@ -69,6 +71,7 @@ private:
 	BehaviorTreeInstancePtr LoadFromCache(const char* behaviorTreeName);
 	bool                    StartBehaviorInstance(const EntityId entityId, BehaviorTreeInstancePtr instance, const char* treeName);
 	void                    StopAllBehaviorTreeInstances();
+	BehaviorTreeInstance*   GetBehaviorTree(const EntityId entityId) const;
 
 	bool                    LoadBehaviorTreeTemplate(const char* behaviorTreeName, XmlNodeRef behaviorTreeXmlNode, BehaviorTreeTemplate& behaviorTreeTemplate);
 

@@ -52,26 +52,53 @@ bool SLocation::GetTransformFromPivot(IEntity* pEntity, Vec3* pOutPosition, Vec3
 	return true;
 }
 
+bool SLocation::Validate(IEntity* pEntity, const char* szOwnerName) const
+{
+	CRY_ASSERT(szOwnerName);
+
+	if (type == EType::Bone)
+	{
+		const ICharacterInstance* pCharacter = pEntity->GetCharacter(0);     //TODO: how to get correct slot?
+		if (!pCharacter)
+		{
+			CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Cannot retrieve bone '%s' for '%s' (%s) because character instance is not available!", boneName.c_str(), pEntity->GetName(), szOwnerName);
+			return false;
+		}
+
+		const int32 boneId = pCharacter->GetIDefaultSkeleton().GetJointIDByName(boneName);
+		if (boneId < 0)
+		{
+			CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Cannot retrieve bone '%s' for '%s' (%s) because it could not be found on the default skeleton!", boneName.c_str(), pEntity->GetName(), szOwnerName);
+			return false;
+		}
+
+		const ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
+		if (!pSkeletonPose)
+		{
+			CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Cannot retrieve bone '%s' for '%s' (%s) because there is no skeleton pose for the character!", boneName.c_str(), pEntity->GetName(), szOwnerName);
+			return false;
+		}
+	}
+	return true;
+}
+
 bool SLocation::GetTransformFromBone(IEntity* pEntity, Vec3* pOutPosition, Vec3* pOutOrientation) const
 {
 	const ICharacterInstance* pCharacter = pEntity->GetCharacter(0);     //TODO: how to get correct slot?
 	if (!pCharacter)
 	{
-		SCHEMATYC_EDITOR_WARNING("Cannot retrieve bone '%s' because character instance is not available!", boneName.c_str());
 		return false;
 	}
 
 	const int32 boneId = pCharacter->GetIDefaultSkeleton().GetJointIDByName(boneName);
 	if (boneId < 0)
 	{
-		SCHEMATYC_EDITOR_WARNING("Cannot retrieve bone '%s' because it could not be found on the default skeleton!", boneName.c_str());
 		return false;
 	}
 
 	const ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
 	if (!pSkeletonPose)
 	{
-		SCHEMATYC_EDITOR_WARNING("Cannot retrieve bone '%s' because there is no skeleton pose for the character!", boneName.c_str());
 		return false;
 	}
 

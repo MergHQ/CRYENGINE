@@ -47,6 +47,17 @@ namespace Perception
 			//, pSoundTags( nullptr )
 		{}
 
+		SSoundStimulusParams& operator=(const SSoundStimulusParams& other)
+		{
+			position = other.position;
+			radius = other.radius;
+			sourceEntityId = other.sourceEntityId;
+			faction = other.faction;
+			//pSoundTags = other.pSoundTags;
+			obstructionHandling = other.obstructionHandling;
+			return *this;
+		}
+
 		Vec3                                    position;
 		float                                   radius;
 		EntityId                                sourceEntityId;

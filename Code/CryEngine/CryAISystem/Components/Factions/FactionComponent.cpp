@@ -26,7 +26,7 @@ void CEntityAIFactionComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIFactio
 {
 	desc.SetGUID(cryiidof<CEntityAIFactionComponent>());
 
-	desc.SetLabel("Faction");
+	desc.SetLabel("AI Faction");
 	desc.SetDescription("Faction component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");

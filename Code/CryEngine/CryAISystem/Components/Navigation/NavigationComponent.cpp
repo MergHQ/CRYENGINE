@@ -87,7 +87,7 @@ void CEntityAINavigationComponent::ReflectType(Schematyc::CTypeDesc<CEntityAINav
 {
 	desc.SetGUID(CEntityAINavigationComponent::IID());
 
-	desc.SetLabel("NavigationAgent");
+	desc.SetLabel("AI Navigation Agent");
 	desc.SetDescription("Navigation system agent component");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
 	desc.SetEditorCategory("AI");
@@ -399,7 +399,7 @@ bool CEntityAINavigationComponent::TestRaycastHit(const Vec3& toPositon, Vec3& h
 	MNM::SRayHitOutput rayHit;
 	const Vec3& startPos = GetPosition();
 
-	if (gEnv->pAISystem->GetNavigationSystem()->NavmeshTestRaycastHit(m_agentTypeId, startPos, toPositon, &rayHit))
+	if (gEnv->pAISystem->GetNavigationSystem()->NavMeshTestRaycastHit(m_agentTypeId, startPos, toPositon, &rayHit))
 	{
 		hitPos = rayHit.position;
 		hitNorm = rayHit.normal2D;

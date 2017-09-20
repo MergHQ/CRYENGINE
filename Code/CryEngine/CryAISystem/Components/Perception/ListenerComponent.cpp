@@ -54,7 +54,7 @@ void CEntityAIListenerComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIListe
 {
 	desc.SetGUID(cryiidof<CEntityAIListenerComponent>());
 
-	desc.SetLabel("Listener");
+	desc.SetLabel("AI Listener");
 	desc.SetDescription("Listener component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
@@ -149,6 +149,10 @@ void CEntityAIListenerComponent::RegisterToAuditionMap()
 		m_params.userConditionCallback = functor_ret(*this, &CEntityAIListenerComponent::OnListenerUserCondition);
 	}
 
+	for (const Perception::ComponentHelpers::SLocation& location : m_earLocations.locations)
+	{
+		location.Validate(pEntity, "AI Listener Component");
+	}
 	SyncWithEntity();
 
 	pAuditionMap->RegisterListener(pEntity->GetId(), m_params);
@@ -243,4 +247,4 @@ void CEntityAIListenerComponent::UpdateChange()
 }
 
 //TODO: Register component when it is finished
-//CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAIListenerComponent::Register)
+CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAIListenerComponent::Register)

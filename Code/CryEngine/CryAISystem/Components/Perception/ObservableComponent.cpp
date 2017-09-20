@@ -35,7 +35,7 @@ void CEntityAIObservableComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIObs
 {
 	desc.SetGUID(cryiidof<CEntityAIObservableComponent>());
 
-	desc.SetLabel("Observable");
+	desc.SetLabel("AI Observable");
 	desc.SetDescription("Observable component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
@@ -120,6 +120,10 @@ void CEntityAIObservableComponent::RegisterToVisionMap()
 	//	, userData(0)
 	//	, skipListSize(0)
 
+	for (const Perception::ComponentHelpers::SLocation& location : m_observableLocations.locations)
+	{
+		location.Validate(pEntity, "AI Observable Component");
+	}
 	SyncWithEntity();
 
 	// Register in Vision map

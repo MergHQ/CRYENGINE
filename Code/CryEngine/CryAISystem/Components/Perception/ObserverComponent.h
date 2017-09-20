@@ -126,7 +126,7 @@ private:
 	ObserverID                   m_observerId;
 	ObserverParams               m_params;
 	EChangeHint                  m_changeHintFlags;
-	bool                         m_userConditionResult;
+	bool                         m_bUserConditionResult = false;
 
 	std::unordered_set<EntityId> m_visibleEntitiesSet;
 	uint64                       m_entityEventMask;
@@ -137,5 +137,5 @@ private:
 	ObserverProperties::SVisionProperties        m_visionProperties;
 	Perception::ComponentHelpers::SVisionMapType m_typesToObserve;
 	SFactionFlagsMask                            m_factionsToObserve;
-	bool m_bUserCustomCondition = false;
+	bool m_bUseUserCustomCondition = false;
 };

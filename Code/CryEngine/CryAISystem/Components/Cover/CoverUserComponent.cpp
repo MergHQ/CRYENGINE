@@ -70,7 +70,7 @@ void CEntityAICoverUserComponent::ReflectType(Schematyc::CTypeDesc<CEntityAICove
 	desc.AddBase<IEntityCoverUserComponent>();
 	desc.SetGUID(cryiidof<CEntityAICoverUserComponent>());
 
-	desc.SetLabel("Cover User");
+	desc.SetLabel("AI Cover User");
 	desc.SetDescription("Cover user component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
@@ -325,7 +325,7 @@ void CEntityAICoverUserComponent::SetState(ICoverUser::StateFlags state)
 	if (state.Check(ICoverUser::EStateFlags::InCover))
 	{
 		CRY_ASSERT(m_pCoverUser->GetState().Check(ICoverUser::EStateFlags::MovingToCover));
-		if (!(state.Check(ICoverUser::EStateFlags::InCover)))
+		if (!(m_pCoverUser->GetState().Check(ICoverUser::EStateFlags::InCover)))
 		{
 			ProcessCoverEnteredEvent(m_pCoverUser->GetCoverID());
 		}

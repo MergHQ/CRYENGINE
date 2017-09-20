@@ -62,7 +62,8 @@ struct SLocation
 	Vec3   offset = ZERO;
 	string boneName;
 
-	void   GetPositionAndOrientation(IEntity* pEntity, Vec3* pOutPosition, Vec3* pOutOrientation) const;
+	bool Validate(IEntity* pEntity, const char* szComponentName) const;
+	void GetPositionAndOrientation(IEntity* pEntity, Vec3* pOutPosition, Vec3* pOutOrientation) const;
 
 private:
 	bool GetTransformFromPivot(IEntity* pEntity, Vec3* pOutPosition, Vec3* pOutOrientation) const;

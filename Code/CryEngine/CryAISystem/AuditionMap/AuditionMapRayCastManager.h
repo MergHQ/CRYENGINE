@@ -45,7 +45,7 @@ struct SPendingStimulusParams : public ItemCounted
 	bool        bReachedOneOrMoreEars;
 };
 
-typedef ItemPoolRefCount<SPendingStimulusParams> PendingStimuliParams;
+typedef CItemPoolRefCount<SPendingStimulusParams> PendingStimuliParams;
 typedef PendingStimuliParams::size_type          PendingStimulusParamsIndex;
 
 // Information about a stimulus that is pending to be delivered, waiting on ray casts to
@@ -66,7 +66,7 @@ struct SPendingListenerForStimulus
 // For now are assuming that the amount of pending stimuli will not be that large
 // at any given time because we process them as fast as possible. This means we can
 // keep all book-keeping very fast and straight forward using some vectors and indices.
-typedef ItemPool<SPendingListenerForStimulus>  PendingListenersForStimulus;
+typedef CItemPool<SPendingListenerForStimulus>  PendingListenersForStimulus;
 typedef PendingListenersForStimulus::size_type PendingListenerForStimulusIndex;
 static const PendingListenerForStimulusIndex s_invalidPendingStimulusIndex = (PendingListenerForStimulusIndex)(~0);
 
@@ -111,10 +111,22 @@ public:
 	static float ComputeSoundLinearFallOffFactor(const float soundRadius);
 
 	// Ray casting:
-	void QueueRaysBetweenStimulusAndListener(const Vec3& rayStartPos, const PendingStimulusParamsIndex pendingStimulusIndex, const float soundLinearFallOffFactor, const EntityId listenerEntityId, const Perception::SListenerParams& listenerParams);
+	void QueueRaysBetweenStimulusAndListener(const Vec3& rayStartPos, const PendingStimulusParamsIndex& pendingStimulusIndex, const float soundLinearFallOffFactor, const EntityId listenerEntityId, const Perception::SListenerParams& listenerParams);
 	void CancelAllPendingStimuliDirectedAtListener(const EntityId listenerEntityId);
 
 private:
+	// Params used for notifying listeners about results of the stimulus raycast checking
+	struct SParamsForListenerEvents
+	{
+		SSoundStimulusParams m_soundParams;
+		size_t m_reachedEarIndex = -1;
+		EntityId m_listenerEntityId = 0;
+
+		bool m_bReachedEar = false;
+		bool m_bReachedAtLeastOneEar = false;
+		bool m_bLastRay = false;
+	};
+
 	PendingStimulusParamsIndex PreparePendingStimulusParams(const SSoundStimulusParams& params);
 	void                       ReleasePendingStimulusParamsIfNotUsed(PendingStimulusParamsIndex stimulusParamsIndex);
 
@@ -131,8 +143,9 @@ private:
 	inline static float                     ComputeFurthestPossibleEarDistanceBasedOnRemainingObstruction(const float oldAccumulatedObstruction, const float distanceStartToLastObstructionComputation, const SRayCastRequestInfo& rayCastRequestInfo);
 
 	// Pending stimuli management:
-	void CancelRemainingRaysForPendingStimulus(const PendingListenerForStimulusIndex pendingStimulusIndex);
-	void ProcessPendingStimulusRayCastResult(const PendingListenerForStimulusIndex pendingStimulusIndex, const QueuedRayID queuedRayId, const bool bStimulusReachedEar);
+	void CancelRemainingRaysForPendingStimulus(const PendingListenerForStimulusIndex& pendingStimulusIndex);
+	void ProcessPendingStimulusRayCastResult(const PendingListenerForStimulusIndex& pendingStimulusIndex, const QueuedRayID queuedRayId, const bool bStimulusReachedEar);
+	bool InterpretPendingStimulusRayCastResult(const PendingListenerForStimulusIndex& pendingStimulusIndex, const QueuedRayID queuedRayId, const bool bStimulusReachedEar, SParamsForListenerEvents& eventsParams);
 	void CancelAllPendingStimuli();
 
 private:

@@ -159,7 +159,7 @@ void CEntityAIBehaviorTreeComponent::ProcessEvent(SEntityEvent& event)
 void CEntityAIBehaviorTreeComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIBehaviorTreeComponent>& desc)
 {
 	desc.SetGUID("c66c0266-b634-4dc4-9e69-899f69f9aabb"_cry_guid);
-	desc.SetLabel("BehaviorTree");
+	desc.SetLabel("AI Behavior Tree");
 	desc.SetDescription("Behavior Tree Component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
@@ -232,13 +232,12 @@ void CEntityAIBehaviorTreeComponent::SchematycFunction_SetBBKeyValue(const Schem
 {
 	if (m_bBehaviorTreeIsRunning)
 	{
-		// TODO #1: cache a pointer to the BT instance
+		// TODO #1: cache a pointer to the BT blackboard instance
 		// TODO #2: but then we'd need to be able to get notified when the BehaviorTreeManager resets (e. g. due to AISystem reset) and kills all BT instances
-		if (BehaviorTree::BehaviorTreeInstance* pInstance = gAIEnv.pBehaviorTreeManager->GetBehaviorTree(GetEntityId()))
+		if (BehaviorTree::Blackboard* pBlackboard = gAIEnv.pBehaviorTreeManager->GetBehaviorTreeBlackboard(GetEntityId()))
 		{
-			BehaviorTree::Blackboard& bb = pInstance->blackboard;
 			const BehaviorTree::BlackboardVariableId id(key.c_str());
-			const bool bSuccess = bb.SetVariable<TValue>(id, value);
+			const bool bSuccess = pBlackboard->SetVariable<TValue>(id, value);
 			if (!bSuccess)
 			{
 				SCHEMATYC_ENV_WARNING("CEntityAIBehaviorTreeComponent::SchematycFunction_SetBBKeyValue: type clash of variable '%s' in the blackboard", key.c_str());

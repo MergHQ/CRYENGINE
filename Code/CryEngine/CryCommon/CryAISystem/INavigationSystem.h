@@ -199,7 +199,7 @@ struct INavigationSystem
 	//! \param endPos End position of the ray
 	//! \param pOutHit Optional pointer for a return value of additional information about the hit. This structure is valid only when the hit is reported. 
 	//! \return Returns true if the ray is hits navmesh boundary before end position.
-	virtual bool   NavmeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, MNM::SRayHitOutput* pOutHit) const = 0;
+	virtual bool   NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, MNM::SRayHitOutput* pOutHit) const = 0;
 
 	//! Returns all borders (unconnected edges) in the specified AABB.
 	//! There are 3 Vec3's per border edge, vert 0, vert 1, and a normal pointing out from the edge.

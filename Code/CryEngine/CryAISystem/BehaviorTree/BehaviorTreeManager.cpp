@@ -508,7 +508,13 @@ BehaviorTreeInstance* BehaviorTreeManager::GetBehaviorTree(const EntityId entity
 	Instances::const_iterator it = m_instances.find(entityId);
 	if (it != m_instances.end())
 		return it->second.get();
-	return NULL;
+	return nullptr;
+}
+
+BehaviorTree::Blackboard* BehaviorTreeManager::GetBehaviorTreeBlackboard(const EntityId entityId)
+{
+	BehaviorTreeInstance* pBTInstance = GetBehaviorTree(entityId);
+	return pBTInstance ? &pBTInstance->blackboard : nullptr;
 }
 
 Variables::Collection* BehaviorTreeManager::GetBehaviorVariableCollection_Deprecated(const EntityId entityId) const
