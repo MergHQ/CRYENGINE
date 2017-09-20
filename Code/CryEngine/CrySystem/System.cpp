@@ -461,6 +461,10 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pImeManager = nullptr;
 	RegisterWindowMessageHandler(this);
 
+	m_env.pConsole = new CXConsole;
+	if (m_startupParams.pPrintSync)
+		m_env.pConsole->AddOutputPrintSink(m_startupParams.pPrintSync);
+
 	m_pPluginManager = new CCryPluginManager(startupParams);
 
 	m_pUserAnalyticsSystem = new CUserAnalyticsSystem();

@@ -16,6 +16,10 @@ else()
 	set(OPTION_SCALEFORMHELPER ON)
 endif()
 
+if(OPTION_DEDICATED_SERVER)
+	set(OPTION_SCALEFORMHELPER OFF)
+endif()
+
 #Plugins
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
 if(WIN32 OR WIN64)

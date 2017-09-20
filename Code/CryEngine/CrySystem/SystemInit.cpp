@@ -2628,19 +2628,6 @@ bool CSystem::Init()
 #endif // CRY_PLATFORM_DESKTOP
 
 	//////////////////////////////////////////////////////////////////////////
-	// CREATE CONSOLE
-	//////////////////////////////////////////////////////////////////////////
-	InlineInitializationProcessing("CSystem::Init Create console");
-
-	if (!m_startupParams.bSkipConsole)
-	{
-		m_env.pConsole = new CXConsole;
-
-		if (m_startupParams.pPrintSync)
-			m_env.pConsole->AddOutputPrintSink(m_startupParams.pPrintSync);
-	}
-
-	//////////////////////////////////////////////////////////////////////////
 	// LOAD GAME PROJECT CONFIGURATION
 	//////////////////////////////////////////////////////////////////////////
 	InlineInitializationProcessing("CSystem::Init Load project configuration");
@@ -2715,15 +2702,12 @@ bool CSystem::Init()
 		CStroboscope::GetInst()->RegisterCommands();
 #endif
 
-		if (!m_startupParams.bSkipConsole)
-		{
-			// Register system console variables.
-			CreateSystemVars();
+		// Register system console variables.
+		CreateSystemVars();
 
-			if (*m_startupParams.szUserPath)
-			{
-				m_sys_user_folder->Set(m_startupParams.szUserPath);
-			}
+		if (*m_startupParams.szUserPath)
+		{
+			m_sys_user_folder->Set(m_startupParams.szUserPath);
 		}
 
 		// Set this as soon as the system cvars got initialized.
@@ -2804,10 +2788,7 @@ bool CSystem::Init()
 
 		InlineInitializationProcessing("CSystem::Init Create console");
 
-		if (!m_startupParams.bSkipConsole)
-		{
-			LogSystemInfo();
-		}
+		LogSystemInfo();
 
 		//////////////////////////////////////////////////////////////////////////
 		//Load config files
@@ -3271,7 +3252,7 @@ bool CSystem::Init()
 		//////////////////////////////////////////////////////////////////////////
 		// CONSOLE
 		//////////////////////////////////////////////////////////////////////////
-		if (!m_startupParams.bSkipConsole && !m_startupParams.bShaderCacheGen)
+		if (!m_startupParams.bShaderCacheGen)
 		{
 			CryLogAlways("Console initialization");
 			if (!InitConsole())
