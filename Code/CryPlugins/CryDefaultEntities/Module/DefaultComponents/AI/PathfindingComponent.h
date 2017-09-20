@@ -72,10 +72,7 @@ namespace Cry
 				movementRequest.destination = position;
 				movementRequest.callback = functor(*this, &CPathfindingComponent::MovementRequestCallback);
 				movementRequest.style.SetSpeed(MovementStyle::Walk);
-
 				movementRequest.type = MovementRequest::Type::MoveTo;
-
-				m_state = Movement::StillFinding;
 
 				m_movementRequestId = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 			}
@@ -92,7 +89,7 @@ namespace Cry
 					gEnv->pAISystem->GetMNMPathfinder()->CancelPathRequest(m_pathFinderRequestId);
 
 					m_pathFinderRequestId = 0;
-					m_state = Movement::Canceled;
+					m_pathfindingState = Movement::Canceled;
 				}
 			}
 
@@ -186,10 +183,15 @@ namespace Cry
 			void MovementRequestCallback(const MovementRequestResult &result) {}
 
 			INavPath *GetINavPath() { return m_pFoundPath; };
-			Movement::PathfinderState GetPathfinderState() { return m_state; }
+			Movement::PathfinderState GetPathfinderState()
+			{ 
+				// This function should always return the state of the last path finding request.
+				// m_pathfindingState shouldn't be changed anywhere but when RequestPathTo callback is called or path finding request is completed or canceled 
+				return m_pathfindingState;
+			}
 			void RequestPathTo(MNMPathRequest& request)
 			{
-				m_state = Movement::StillFinding;
+				m_pathfindingState = Movement::StillFinding;
 
 				request.resultCallback = functor(*this, &CPathfindingComponent::OnMNMPathResult);
 				request.agentTypeID = m_navigationAgentTypeId;
@@ -203,7 +205,7 @@ namespace Cry
 
 				if (result.HasPathBeenFound())
 				{
-					m_state = Movement::FoundPath;
+					m_pathfindingState = Movement::FoundPath;
 
 					SAFE_DELETE(m_pFoundPath);
 					m_pFoundPath = result.pPath->Clone();
@@ -216,7 +218,7 @@ namespace Cry
 				}
 				else
 				{
-					m_state = Movement::CouldNotFindPath;
+					m_pathfindingState = Movement::CouldNotFindPath;
 				}
 			}
 
@@ -229,7 +231,7 @@ namespace Cry
 			std::shared_ptr<IPathFollower> m_pPathFollower;
 			CPathObstacles m_pathObstacles;
 
-			Movement::PathfinderState m_state;
+			Movement::PathfinderState m_pathfindingState = Movement::CouldNotFindPath;
 			INavPath *m_pFoundPath = nullptr;
 
 			AgentMovementAbility m_movementAbility;
