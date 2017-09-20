@@ -779,7 +779,7 @@ QMimeData* CAudioLibraryModel::mimeData(QModelIndexList const& indexes) const
 		stream << reinterpret_cast<intptr_t>(index.internalPointer());
 	}
 
-	pDragDropData->SetCustomData("Items", byteArray);
+	pDragDropData->SetCustomData("AudioLibraryItems", byteArray);
 	return pDragDropData;
 }
 
@@ -793,7 +793,7 @@ Qt::DropActions CAudioLibraryModel::supportedDropActions() const
 QStringList CAudioLibraryModel::mimeTypes() const
 {
 	QStringList result;
-	result << CDragDropData::GetMimeFormatForType("Items");
+	result << CDragDropData::GetMimeFormatForType("AudioLibraryItems");
 	result << CMiddlewareDataModel::ms_szMimeType;
 	return result;
 }

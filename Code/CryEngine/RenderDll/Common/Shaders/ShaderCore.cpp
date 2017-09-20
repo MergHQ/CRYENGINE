@@ -1818,6 +1818,7 @@ void CShaderResources::CreateModifiers(SInputShaderResources* pInRes)
 		SEfTexModificator* pMod = InTex.m_Ext.m_pTexModifier;
 		if (i != EFTT_DETAIL_OVERLAY)
 		{
+			//TODO : is this necessary? This makes changing the move type in UI impossible...
 			if (pMod->m_eMoveType[0] >= ETMM_Max)
 				pMod->m_eMoveType[0] = ETMM_NoChange;
 			if (pMod->m_eMoveType[1] >= ETMM_Max)

@@ -212,47 +212,9 @@ void CAudioControlsEditorWindow::RegisterWidgets()
 {
 	EnableDockingSystem();
 
-	// Audio System Controls
-	auto createAudioSystemControlsWidget = [this]()
-	{
-		CSystemControlsWidget* const pWidget = CreateSystemControlsWidget();
-
-		if (pWidget)
-		{
-			pWidget->setWindowTitle("Audio System Controls");
-		}
-
-		return pWidget;
-	};
-	RegisterWidget("Audio System Controls", createAudioSystemControlsWidget, true, false);
-
-	// Properties
-	auto createPropertiesWidget = [this]()
-	{
-		CPropertiesWidget* const pWidget = CreatePropertiesWidget();
-
-		if (pWidget)
-		{
-			pWidget->setWindowTitle("Properties");
-		}
-
-		return pWidget;
-	};
-	RegisterWidget("Properties", createPropertiesWidget, true, false);
-
-	// Middleware Data
-	auto createMiddlewareDataWidget = [this]()
-	{
-		CMiddlewareDataWidget* const pWidget = CreateMiddlewareDataWidget();
-
-		if (pWidget)
-		{
-			pWidget->setWindowTitle("Middleware Data");
-		}
-
-		return pWidget;
-	};
-	RegisterWidget("Middleware Data", createMiddlewareDataWidget, true, false);
+	RegisterDockableWidget("Audio System Controls", [&]() { return CreateSystemControlsWidget(); }, true, false);
+	RegisterDockableWidget("Properties", [&]() { return CreatePropertiesWidget(); }, true, false);
+	RegisterDockableWidget("Middleware Data", [&]() { return CreateMiddlewareDataWidget(); }, true, false);
 }
 
 //////////////////////////////////////////////////////////////////////////

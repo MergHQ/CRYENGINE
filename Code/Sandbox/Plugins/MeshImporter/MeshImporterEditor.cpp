@@ -161,7 +161,7 @@ CEditorAdapter::CEditorAdapter(std::unique_ptr<MeshImporter::CBaseDialog> pDialo
 
 void CEditorAdapter::Host_AddMenu(const char* menu)
 {
-	GetMenu()->CreateMenu(menu);
+	GetRootMenu()->CreateMenu(menu);
 }
 
 void CEditorAdapter::Host_AddToMenu(const char* menu, const char* command)

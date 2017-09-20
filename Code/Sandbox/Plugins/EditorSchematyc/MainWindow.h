@@ -88,10 +88,6 @@ protected:
 	virtual void OnCloseAsset() override;
 	// ~CAssetEditor
 
-	// QWidget
-	virtual void closeEvent(QCloseEvent* pEvent) override;
-	// ~QWidget
-
 	void SaveState();
 	void LoadState();
 

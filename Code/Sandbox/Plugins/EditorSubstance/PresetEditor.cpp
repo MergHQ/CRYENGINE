@@ -44,7 +44,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	m_pScrollBox = new QScrollableBox();
 
 	
-	m_pSubstanceMenu = GetMenu()->CreateMenu("Substance Preset");
+	m_pSubstanceMenu = GetMenu("Substance Preset");
 	QAction* const pAction = m_pSubstanceMenu->CreateAction("Reset Inputs");
 	connect(pAction, &QAction::triggered, [=]()
 	{
@@ -240,16 +240,6 @@ void CSubstancePresetEditor::OnCloseAsset()
 {
 	CManager::Instance()->PresetEditEnded(m_pPreset);
 	m_pResolutionWidget->hide();
-}
-
-
-bool CSubstancePresetEditor::CanQuit(std::vector<string>& unsavedChanges)
-{
-	if (GetAssetBeingEdited())
-	{
-		GetAssetBeingEdited()->IsModified();
-	}
-	return true;
 }
 
 void CSubstancePresetEditor::PushPresetToRender()
