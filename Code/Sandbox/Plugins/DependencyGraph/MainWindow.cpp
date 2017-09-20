@@ -76,7 +76,6 @@ void CMainWindow::RegisterDockingWidgets()
 	auto createGraphView = [this]()
 	{
 		CGraphView* const pGraphView = new CGraphView(m_pGraphViewModel.get());
-		pGraphView->setWindowTitle(tr("Graph"));
 
 		// One-time scene fitting in the view.
 		std::shared_ptr<QMetaObject::Connection> pConnection{ new QMetaObject::Connection };
@@ -93,7 +92,7 @@ void CMainWindow::RegisterDockingWidgets()
 
 		return pGraphView;
 	};
-	RegisterWidget("Graph", createGraphView, false, false);
+	RegisterDockableWidget("Graph", createGraphView, false, false);
 }
 
 void CMainWindow::CreateDefaultLayout(CDockableContainer* pSender)

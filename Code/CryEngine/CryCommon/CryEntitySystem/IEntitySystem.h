@@ -233,11 +233,6 @@ struct IEntitySystemSink
 	//! \param params The new params this entity is using.
 	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params) = 0;
 
-	//! Called in response to an entity event.
-	//! \param pEntity Entity that is being removed. This entity is still fully valid.
-	//! \param event
-	virtual void OnEvent(IEntity* pEntity, SEntityEvent& event) = 0;
-
 	//! Collect memory informations
 	//! \param pSizer Sizer class used to collect the memory informations.
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const {};
@@ -278,15 +273,6 @@ struct IEntityArchetypeManagerExtension
 	virtual void LoadFromXML(IEntityArchetype& archetype, XmlNodeRef& archetypeNode) = 0;
 	//! Called to save archetype extension data to the XML.
 	virtual void SaveToXML(IEntityArchetype& archetype, XmlNodeRef& archetypeNode) = 0;
-};
-
-//////////////////////////////////////////////////////////////////////////
-struct IEntityEventListener
-{
-	// <interfuscator:shuffle>
-	virtual ~IEntityEventListener(){}
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) = 0;
-	// </interfuscator:shuffle>
 };
 
 struct IEntityLayerSetUpdateListener
@@ -343,14 +329,11 @@ struct IEntitySystem
 		OnSpawn       = BIT(1),
 		OnRemove      = BIT(2),
 		OnReused      = BIT(3),
-		OnEvent       = BIT(4),
+
+		Last = OnReused,
+		Count = 4,
 
 		AllSinkEvents = ~0u,
-	};
-
-	enum
-	{
-		SinkMaxEventSubscriptionCount = 5,
 	};
 
 	//! Determines the state of simulation in the Editor, see OnEditorSimulationModeChanged
@@ -467,7 +450,7 @@ struct IEntitySystem
 	//! Adds the sink of the entity system. The sink is a class which implements IEntitySystemSink.
 	//! \param sink Pointer to the sink, must not be 0.
 	//! \param subscription - combination of SinkEventSubscriptions flags specifying which events to receive.
-	virtual void AddSink(IEntitySystemSink* sink, uint32 subscriptions, uint64 onEventSubscriptions) = 0;
+	virtual void AddSink(IEntitySystemSink* sink, std::underlying_type<SinkEventSubscriptions>::type subscriptions) = 0;
 
 	//! Removes listening sink from the entity system. The sink is a class which implements IEntitySystemSink.
 	//! \param sink Pointer to the sink, must not be 0.
@@ -509,10 +492,6 @@ struct IEntitySystem
 	//! bIsLoadingLevelFile indicates if the loaded entities come from the original level file.
 	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile) = 0;
 	virtual void LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffest) = 0;
-
-	//! Registers Entity Event's listeners.
-	virtual void AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) = 0;
-	virtual void RemoveEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) = 0;
 
 	//! Register entity layer listener
 	virtual void AddEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) = 0;
@@ -635,6 +614,23 @@ struct IEntitySystem
 	virtual IBSPTree3D* CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) = 0;
 	virtual void        ReleaseBSPTree3D(IBSPTree3D*& pTree) = 0;
 	// </interfuscator:shuffle>
+
+	//! Registers Entity Event's listeners.
+	inline void AddEntityEventListener(EntityId entityId, EEntityEvent event, IEntityEventListener* pListener)
+	{
+		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
+		{
+			pEntity->AddEventListener(event, pListener);
+		}
+	}
+
+	inline void RemoveEntityEventListener(EntityId entityId, EEntityEvent event, IEntityEventListener* pListener)
+	{
+		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
+		{
+			pEntity->RemoveEventListener(event, pListener);
+		}
+	}
 };
 
 extern "C"

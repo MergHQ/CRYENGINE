@@ -2445,7 +2445,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	return MNM::TriangleID(0);
 }
 
-bool NavigationSystem::NavmeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, MNM::SRayHitOutput* pOutHit) const
+bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, MNM::SRayHitOutput* pOutHit) const
 {
 	NavigationMeshID meshId = GetEnclosingMeshID(agentTypeID, startPos);
 	if (!meshId)

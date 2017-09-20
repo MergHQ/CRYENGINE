@@ -186,9 +186,10 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	// Assign allocators.
 	g_Alloc_EntitySlot = new stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 16>(stl::FHeap().FreeWhenEmpty(true));
 
-	m_onEventSinks.reserve(5);
-	for (size_t i = 0; i < SinkMaxEventSubscriptionCount; ++i)
-		m_sinks[i].reserve(8);
+	for (std::vector<IEntitySystemSink*>& sinkListeners : m_sinks)
+	{
+		sinkListeners.reserve(8);
+	}
 
 	m_EntityArray.fill(nullptr);
 
@@ -422,23 +423,20 @@ void CEntitySystem::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////
-void CEntitySystem::AddSink(IEntitySystemSink* pSink, uint32 subscriptions, uint64 onEventSubscriptions)
+void CEntitySystem::AddSink(IEntitySystemSink* pSink, std::underlying_type<SinkEventSubscriptions>::type subscriptions)
 {
 	assert(pSink);
 
 	if (pSink)
 	{
-		for (uint i = 0; i < SinkMaxEventSubscriptionCount; ++i)
+		for (uint i = 0; i < m_sinks.size(); ++i)
 		{
-			if ((subscriptions & (1 << i)) && (i != stl::static_log2<IEntitySystem::OnEvent>::value))
+			if ((subscriptions & (1 << i)) && (i != ((uint)SinkEventSubscriptions::Last - 1)))
 			{
 				assert(!stl::find(m_sinks[i], pSink));
 				m_sinks[i].push_back(pSink);
 			}
 		}
-
-		if (subscriptions & IEntitySystem::OnEvent)
-			m_onEventSinks.push_back(OnEventSink(onEventSubscriptions, pSink));
 	}
 }
 
@@ -447,38 +445,20 @@ void CEntitySystem::RemoveSink(IEntitySystemSink* pSink)
 {
 	assert(pSink);
 
-	for (uint i = 0; i < SinkMaxEventSubscriptionCount; ++i)
+	for(std::vector<IEntitySystemSink*>& sinkListeners : m_sinks)
 	{
-		EntitySystemSinks& sinks = m_sinks[i];
-
-		stl::find_and_erase(sinks, pSink);
-	}
-
-	EntitySystemOnEventSinks::iterator it = m_onEventSinks.begin();
-	EntitySystemOnEventSinks::iterator end = m_onEventSinks.end();
-
-	for (; it != end; ++it)
-	{
-		OnEventSink& sink = *it;
-
-		if (sink.pSink == pSink)
-		{
-			m_onEventSinks.erase(it);
-			break;
-		}
+		stl::find_and_erase(sinkListeners, pSink);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntitySystem::OnBeforeSpawn(SEntitySpawnParams& params)
 {
-	EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnBeforeSpawn> ::value];
-	EntitySystemSinks::iterator si = sinks.begin();
-	EntitySystemSinks::iterator siEnd = sinks.end();
+	const std::vector<IEntitySystemSink*>& sinks = m_sinks[stl::static_log2<(size_t)IEntitySystem::OnBeforeSpawn> ::value];
 
-	for (; si != siEnd; ++si)
+	for(IEntitySystemSink* pSink : sinks)
 	{
-		if (!(*si)->OnBeforeSpawn(params))
+		if (!pSink->OnBeforeSpawn(params))
 			return false;
 	}
 
@@ -488,13 +468,11 @@ bool CEntitySystem::OnBeforeSpawn(SEntitySpawnParams& params)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params)
 {
-	EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnReused>::value];
-	EntitySystemSinks::iterator si = sinks.begin();
-	EntitySystemSinks::iterator siEnd = sinks.end();
-
-	for (; si != siEnd; ++si)
+	const std::vector<IEntitySystemSink*>& sinks = m_sinks[stl::static_log2<(size_t)IEntitySystem::OnReused>::value];
+	
+	for (IEntitySystemSink* pSink : sinks)
 	{
-		(*si)->OnReused(pEntity, params);
+		pSink->OnReused(pEntity, params);
 	}
 }
 
@@ -664,12 +642,12 @@ bool CEntitySystem::InitEntity(IEntity* pEntity, SEntitySpawnParams& params)
 		return false;
 	}
 
-	EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnSpawn>::value];
-	EntitySystemSinks::iterator si = sinks.begin();
-	EntitySystemSinks::iterator siEnd = sinks.end();
+	const std::vector<IEntitySystemSink*>& sinks = m_sinks[stl::static_log2<(size_t)IEntitySystem::OnSpawn>::value];
 
-	for (; si != siEnd; ++si)
-		(*si)->OnSpawn(pEntity, params);
+	for (IEntitySystemSink* pSink : sinks)
+	{
+		pSink->OnSpawn(pEntity, params);
+	}
 
 	return true;
 }
@@ -772,13 +750,11 @@ void CEntitySystem::RemoveEntity(EntityId entity, bool bForceRemoveNow)
 
 		if (!pEntity->m_bGarbage)
 		{
-			EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnRemove>::value];
-			EntitySystemSinks::iterator si = sinks.begin();
-			EntitySystemSinks::iterator siEnd = sinks.end();
+			const std::vector<IEntitySystemSink*>& sinks = m_sinks[stl::static_log2<(size_t)IEntitySystem::OnRemove>::value];
 
-			for (; si != siEnd; ++si)
+			for(IEntitySystemSink* pSink : sinks)
 			{
-				if (!(*si)->OnRemove(pEntity))
+				if (!pSink->OnRemove(pEntity))
 				{
 					// basically unremovable... but hide it anyway to be polite
 					pEntity->Hide(true);
@@ -1814,8 +1790,11 @@ void CEntitySystem::GetMemoryStatistics(ICrySizer* pSizer) const
 
 	}
 
-	for (uint i = 0; i < SinkMaxEventSubscriptionCount; ++i)
-		pSizer->AddContainer(m_sinks[i]);
+	for (const std::vector<IEntitySystemSink*> sinkListeners : m_sinks)
+	{
+		pSizer->AddContainer(sinkListeners);
+	}
+
 	pSizer->AddObject(m_pPartitionGrid);
 	pSizer->AddObject(m_pProximityTriggerSystem);
 	pSizer->AddObject(this, sizeof(*this));
@@ -2064,20 +2043,6 @@ bool CEntitySystem::IsPrePhysicsActive(CEntity* pEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySystem::OnEntityEvent(CEntity* pEntity, SEntityEvent& event)
-{
-	EntitySystemOnEventSinks::const_iterator oeIt = m_onEventSinks.begin();
-	EntitySystemOnEventSinks::const_iterator oeEnd = m_onEventSinks.end();
-
-	for (; oeIt != oeEnd; ++oeIt)
-	{
-		const OnEventSink& sink = *oeIt;
-		if (sink.subscriptions & (1ll << event.event))
-			sink.pSink->OnEvent(pEntity, event);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CEntitySystem::OnLoadLevel(const char* szLevelPath)
 {
 	int nTerrainSize = gEnv->p3DEngine ? gEnv->p3DEngine->GetTerrainSize() : 0;
@@ -2111,26 +2076,6 @@ void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFi
 	if (!m_pEntityLoadManager->LoadEntities(objectsNode, bIsLoadingLevelFile, segmentOffset))
 	{
 		EntityWarning("CEntitySystem::LoadEntities : Not all entities were loaded correctly.");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntitySystem::AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener)
-{
-	CEntity* pCEntity = (CEntity*)GetEntity(nEntity);
-	if (pCEntity)
-	{
-		pCEntity->AddEntityEventListener(event, pListener);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntitySystem::RemoveEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener)
-{
-	CEntity* pCEntity = (CEntity*)GetEntity(nEntity);
-	if (pCEntity)
-	{
-		pCEntity->RemoveEntityEventListener(event, pListener);
 	}
 }
 

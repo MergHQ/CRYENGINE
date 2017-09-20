@@ -7,7 +7,7 @@ class CEntity;
 
 struct SEntitySchedulingProfiles;
 
-class CNetEntity : public INetEntity
+class CNetEntity final : public INetEntity
 {
 public:
 	CNetEntity(CEntity *entity_);
@@ -47,6 +47,7 @@ public:
 	virtual SRmiIndex RmiByDecoder(SRmiHandler::DecoderF decoder, SRmiHandler **handler) override;
 	virtual SRmiHandler::DecoderF RmiByIndex(const SRmiIndex idx) override;
 
+	virtual void OnNetworkedEntityTransformChanged(int whyFlags) override;
 
 	static void UpdateSchedulingProfiles();
 

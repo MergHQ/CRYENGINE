@@ -406,6 +406,14 @@ struct SEntityPreviewContext
 	const struct SRenderingPassInfo* pPassInfo = nullptr;
 };
 
+struct IEntityEventListener
+{
+	// <interfuscator:shuffle>
+	virtual ~IEntityEventListener() {}
+	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) = 0;
+	// </interfuscator:shuffle>
+};
+
 //! Interface to entity object.
 struct IEntity
 {
@@ -665,6 +673,11 @@ public:
 	//! Sends event to the entity.
 	//! \param event Event description (event id, parameters).
 	virtual bool SendEvent(SEntityEvent& event) = 0;
+
+	//! Adds a listener that can receive the specified event from this entity
+	virtual void AddEventListener(EEntityEvent event, IEntityEventListener* pListener) = 0;
+	//! Removes an existing event listener from the entity
+	virtual void RemoveEventListener(EEntityEvent event, IEntityEventListener* pListener) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 

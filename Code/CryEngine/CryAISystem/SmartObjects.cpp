@@ -850,15 +850,7 @@ CSmartObjectManager::CSmartObjectManager()
 	CSmartObject::CState("Combat");
 	CSmartObject::CState("Dead");
 
-	uint64 onEventSubscriptions = 0;
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_INIT);
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE);
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE);
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
-
-	gEnv->pEntitySystem->AddSink(this, IEntitySystem::AllSinkEvents & (~IEntitySystem::OnBeforeSpawn), onEventSubscriptions);
+	gEnv->pEntitySystem->AddSink(this, IEntitySystem::AllSinkEvents & (~IEntitySystem::OnBeforeSpawn));
 }
 
 CSmartObjectManager::~CSmartObjectManager()
@@ -3307,6 +3299,10 @@ void CSmartObjectManager::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 		smartObject = new CSmartObject(pEntity ? pEntity->GetId() : 0);
 	}
 
+	pEntity->AddEventListener(ENTITY_EVENT_HIDE, this);
+	pEntity->AddEventListener(ENTITY_EVENT_UNHIDE, this);
+	pEntity->AddEventListener(ENTITY_EVENT_XFORM, this);
+
 	for (uint32 i = 0; i < vClasses.size(); ++i)
 	{
 		CSmartObjectClass* pClass = vClasses[i];
@@ -3335,6 +3331,7 @@ void CSmartObjectManager::RemoveEntity(IEntity* pEntity)
 ///////////////////////////////////////////////
 bool CSmartObjectManager::OnRemove(IEntity* pEntity)
 {
+	DoRemove(pEntity);
 	return true;
 }
 
@@ -3346,6 +3343,10 @@ void CSmartObjectManager::DoRemove(IEntity* pEntity, bool bDeleteSmartObject)
 	CSmartObject* pSmartObject = GetSmartObject(pEntity->GetId());
 	if (pSmartObject)
 	{
+		pEntity->RemoveEventListener(ENTITY_EVENT_HIDE, this);
+		pEntity->RemoveEventListener(ENTITY_EVENT_UNHIDE, this);
+		pEntity->RemoveEventListener(ENTITY_EVENT_XFORM, this);
+
 		// let's make sure AI navigation is not using it
 		// in case this is a navigation smart object entity!
 		UnregisterFromNavigation(pSmartObject);
@@ -3423,15 +3424,12 @@ void CSmartObjectManager::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 
 // Implementation of IEntitySystemSink methods
 ///////////////////////////////////////////////
-void CSmartObjectManager::OnEvent(IEntity* pEntity, SEntityEvent& event)
+void CSmartObjectManager::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	switch (event.event)
 	{
-	case ENTITY_EVENT_DONE:
-		DoRemove(pEntity);
-		break;
 	case ENTITY_EVENT_HIDE:
 		{
 			CSmartObject* pSmartObject = GetSmartObject(pEntity->GetId());
@@ -3444,13 +3442,6 @@ void CSmartObjectManager::OnEvent(IEntity* pEntity, SEntityEvent& event)
 			CSmartObject* pSmartObject = GetSmartObject(pEntity->GetId());
 			if (pSmartObject)
 				pSmartObject->Hide(false);
-			break;
-		}
-	case ENTITY_EVENT_INIT:
-	case ENTITY_EVENT_RESET:
-		{
-			SEntitySpawnParams params;
-			OnSpawn(pEntity, params);
 			break;
 		}
 	case ENTITY_EVENT_XFORM:

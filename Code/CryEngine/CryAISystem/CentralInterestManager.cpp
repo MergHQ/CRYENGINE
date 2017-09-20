@@ -103,7 +103,7 @@ void CCentralInterestManager::Reset()
 		{
 			// Start listening to all moving entities
 			CryLog("Registering CentralInterestManager with EntitySystem");
-			gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn | IEntitySystem::OnRemove, 0);
+			gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
 			m_bEntityEventListenerInstalled = true;
 		}
 		else

@@ -1,4 +1,7 @@
 #! /usr/bin/env python3
+"""
+Script to call uncrustify.
+"""
 import argparse
 import os
 import subprocess
@@ -9,6 +12,9 @@ CPP_FILE_ENDINGS = ['.cpp', '.cxx', '.inl', '.h', '.hpp']
 
 
 def main():
+    """
+    Entry point.
+    """
     args, filelist = parse_arguments()
 
     p4 = P4.P4()
@@ -18,7 +24,7 @@ def main():
 
     workspace_root = p4.fetch_client()['Root']
 
-    cmd = ['Code/Tools/uncrustify/uncrustify', '-l', 'CPP',
+    cmd = ['{}/Code/Tools/uncrustify/uncrustify'.format(workspace_root), '-l', 'CPP',
            '--config={}/Code/Tools/uncrustify/CryEngine_uncrustify.cfg'.format(workspace_root)]
 
     if args.apply:
@@ -56,7 +62,7 @@ def get_changelist_files(p4, changelist):
     description = p4.run_describe(["-s", changelist])[0]
 
     if 'depotFile' not in description:
-        print('This script does not edit shelved files.'.format(changelist))
+        print('This script does not edit shelved files.')
         return None
 
     changelist_files = []
@@ -90,6 +96,9 @@ def filter_cpp_files(filelist):
 
 
 def parse_arguments():
+    """
+    Parses the command line arguments.
+    """
     parser = argparse.ArgumentParser(description='Build Template.')
     parser.add_argument('--apply', action='store_true', default=False, help='Overwrite files with formatted ones.')
     parser.add_argument('--user', default='', help='Perforce username.')

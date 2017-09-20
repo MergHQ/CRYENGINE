@@ -586,7 +586,7 @@ CRecordingSystem::CRecordingSystem()
 
 	Reset();
 
-	gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn | IEntitySystem::OnRemove, 0);
+	gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
 
 	if (IBreakableManager* pBreakMgr = gEnv->pEntitySystem->GetBreakableManager())
 		pBreakMgr->AddBreakEventListener(this);
@@ -6324,11 +6324,6 @@ bool CRecordingSystem::OnRemove(IEntity *pEntity)
 		}
 	}
 	return true;
-}
-
-void CRecordingSystem::OnEvent(IEntity *pEntity, SEntityEvent &event)
-{
-	CRY_ASSERT_MESSAGE(false, "Shouldn't be getting these events");
 }
 
 void CRecordingSystem::OnReused(IEntity *pEntity, SEntitySpawnParams &params)

@@ -173,6 +173,9 @@ public:
 
 	virtual bool SendEvent(SEntityEvent& event) final;
 
+	virtual void AddEventListener(EEntityEvent event, IEntityEventListener* pListener) final;
+	virtual void RemoveEventListener(EEntityEvent event, IEntityEventListener* pListener) final;
+
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual int SetTimer(int nTimerId, int nMilliSeconds) final;
@@ -395,8 +398,6 @@ public:
 	virtual INetEntity* GetNetEntity() final;
 
 	//////////////////////////////////////////////////////////////////////////
-	void AddEntityEventListener(EEntityEvent event, IEntityEventListener* pListener);
-	void RemoveEntityEventListener(EEntityEvent event, IEntityEventListener* pListener);
 	void RemoveAllEventListeners();
 
 	virtual	uint32 GetEditorObjectID() const final override;

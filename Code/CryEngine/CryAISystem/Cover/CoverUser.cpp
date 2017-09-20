@@ -11,6 +11,7 @@ CoverUser::CoverUser()
 	: m_coverID(0)
 	, m_nextCoverID(0)
 	, m_locationEffectiveHeight(FLT_MAX)
+	, m_distanceFromCoverLocationSqr(FLT_MAX)
 	, m_compromised(false)
 {
 }

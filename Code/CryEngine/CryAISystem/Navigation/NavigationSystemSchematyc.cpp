@@ -62,7 +62,7 @@ namespace NavigationSystemSchematyc
 	bool TestRaycastHitOnNavmeshSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, Vec3& hitPos)
 	{
 		MNM::SRayHitOutput hit;
-		bool bResult = gAIEnv.pNavigationSystem->NavmeshTestRaycastHit(agentTypeID, startPos, endPos, &hit);
+		bool bResult = gAIEnv.pNavigationSystem->NavMeshTestRaycastHit(agentTypeID, startPos, endPos, &hit);
 		if (bResult)
 		{
 			hitPos = hit.position;

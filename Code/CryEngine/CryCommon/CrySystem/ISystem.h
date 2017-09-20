@@ -618,7 +618,6 @@ struct SSystemInitParams
 	bool                 bUIFramework;
 	bool                 bSkipFont;            //!< Don't load CryFont.dll.
 	bool                 bSkipRenderer;        //!< Don't load Renderer.
-	bool                 bSkipConsole;         //!< Don't create console.
 	bool                 bSkipNetwork;         //!< Don't create Network.
 	bool                 bSkipLiveCreate;      //!< Don't create LiveCreate.
 	bool                 bSkipWebsocketServer; //!< Don't create the WebSocket server.
@@ -672,7 +671,6 @@ struct SSystemInitParams
 		bUIFramework = false;
 		bSkipFont = false;
 		bSkipRenderer = false;
-		bSkipConsole = false;
 		bSkipNetwork = false;
 #if CRY_PLATFORM_WINDOWS
 		// create websocket server by default. bear in mind that USE_HTTP_WEBSOCKETS is not defined in release.

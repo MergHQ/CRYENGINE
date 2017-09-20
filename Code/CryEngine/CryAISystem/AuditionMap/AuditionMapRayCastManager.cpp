@@ -149,7 +149,7 @@ void CAuditionMapRayCastManager::ReleasePendingStimulusParamsIfNotUsed(PendingSt
 
 void CAuditionMapRayCastManager::QueueRaysBetweenStimulusAndListener(
   const Vec3& rayStartPos,
-  const PendingStimulusParamsIndex stimulusParamsIndex,
+  const PendingStimulusParamsIndex& stimulusParamsIndex,
   const float soundLinearFallOffFactor,
   const EntityId listenerEntityId,
   const Perception::SListenerParams& listenerParams)
@@ -173,6 +173,8 @@ void CAuditionMapRayCastManager::QueueRaysBetweenStimulusAndListener(
 	const int earsCount = listenerParams.ears.size();
 	for (int earIndex = 0; earIndex < earsCount; ++earIndex)
 	{
+		m_pendingStimuliParams[stimulusParamsIndex].AddRef();
+		
 		rayCastRequestInfo.rayEndPos = listenerParams.ears[earIndex].worldPos;
 
 		const QueuedRayID queuedRayId = QueueRay(rayCastRequestInfo);
@@ -448,7 +450,7 @@ float CAuditionMapRayCastManager::ComputeFurthestPossibleEarDistanceBasedOnRemai
 	return min(furthestPossibleEarDistance, distanceUntilExhaustion);
 }
 
-void CAuditionMapRayCastManager::CancelRemainingRaysForPendingStimulus(const PendingListenerForStimulusIndex pendingStimulusIndex)
+void CAuditionMapRayCastManager::CancelRemainingRaysForPendingStimulus(const PendingListenerForStimulusIndex& pendingStimulusIndex)
 {
 	SPendingListenerForStimulus& pendingStimulus = m_pendingListenersForStimulus[pendingStimulusIndex];
 
@@ -463,12 +465,9 @@ void CAuditionMapRayCastManager::CancelRemainingRaysForPendingStimulus(const Pen
 	pendingStimulus.queuedRayInfos.clear();
 }
 
-void CAuditionMapRayCastManager::ProcessPendingStimulusRayCastResult(const PendingListenerForStimulusIndex pendingStimulusIndex, const QueuedRayID queuedRayId, const bool bStimulusReachedEar)
+bool CAuditionMapRayCastManager::InterpretPendingStimulusRayCastResult(const PendingListenerForStimulusIndex& pendingStimulusIndex, const QueuedRayID queuedRayId, const bool bStimulusReachedEar, SParamsForListenerEvents& eventsParams)
 {
 	SPendingListenerForStimulus& pendingStimulus = m_pendingListenersForStimulus[pendingStimulusIndex];
-	
-	const PendingStimulusParamsIndex stimulusParamsIndex = pendingStimulus.stimulusParamsIndex;
-	SPendingStimulusParams& stimulusParams = m_pendingStimuliParams[stimulusParamsIndex];
 
 	auto findIt = std::find_if(pendingStimulus.queuedRayInfos.begin(), pendingStimulus.queuedRayInfos.end(), [queuedRayId](const SPendingStimulusRayInfo& rayInfo)
 	{
@@ -476,27 +475,21 @@ void CAuditionMapRayCastManager::ProcessPendingStimulusRayCastResult(const Pendi
 	});
 
 	CRY_ASSERT(findIt != pendingStimulus.queuedRayInfos.end());
-
-	if (findIt != pendingStimulus.queuedRayInfos.end())
+	const bool bRayFound = findIt != pendingStimulus.queuedRayInfos.end();
+	if (bRayFound)
 	{
-		const size_t reachedEarIndex = findIt->targetEarIndex;
+		const PendingStimulusParamsIndex stimulusParamsIndex = pendingStimulus.stimulusParamsIndex;
+		SPendingStimulusParams& stimulusParams = m_pendingStimuliParams[stimulusParamsIndex];
+		stimulusParams.bReachedOneOrMoreEars |= bStimulusReachedEar;
+
+		// Make copy of the params to make sure, that they aren't changed when sending them further in events
+		eventsParams.m_listenerEntityId = pendingStimulus.listenerEntityId;
+		eventsParams.m_reachedEarIndex = findIt->targetEarIndex;
+		eventsParams.m_soundParams = stimulusParams.soundParams;
+		eventsParams.m_bReachedAtLeastOneEar = stimulusParams.bReachedOneOrMoreEars;
+		eventsParams.m_bLastRay = stimulusParams.GetRefCount() == 1;
+		
 		pendingStimulus.queuedRayInfos.erase(findIt);
-
-		if (bStimulusReachedEar)
-		{
-			stimulusParams.bReachedOneOrMoreEars = true;
-
-			m_owner.DeliverStimulusToListener(stimulusParams.soundParams, pendingStimulus.listenerEntityId, reachedEarIndex);
-			pendingStimulus = m_pendingListenersForStimulus[pendingStimulusIndex];
-		}
-
-		const bool bLastRay = stimulusParams.GetRefCount() == 1;
-		if (bLastRay && stimulusParams.bReachedOneOrMoreEars)
-		{
-			m_owner.NotifyGlobalListeners_StimulusProcessedAndReachedOneOrMoreEars(stimulusParams.soundParams);
-			pendingStimulus = m_pendingListenersForStimulus[pendingStimulusIndex];
-		}
-
 		m_pendingStimuliParams.DecRef(stimulusParamsIndex);
 	}
 
@@ -506,7 +499,23 @@ void CAuditionMapRayCastManager::ProcessPendingStimulusRayCastResult(const Pendi
 	{
 		CancelRemainingRaysForPendingStimulus(pendingStimulusIndex);
 		m_pendingListenersForStimulus.Release(pendingStimulusIndex);
-		return;
+	}
+	return bRayFound;
+}
+
+void CAuditionMapRayCastManager::ProcessPendingStimulusRayCastResult(const PendingListenerForStimulusIndex& pendingStimulusIndex, const QueuedRayID queuedRayId, const bool bStimulusReachedEar)
+{
+	SParamsForListenerEvents eventsParams;
+	if (InterpretPendingStimulusRayCastResult(pendingStimulusIndex, queuedRayId, bStimulusReachedEar, eventsParams))
+	{
+		if (bStimulusReachedEar)
+		{
+			m_owner.DeliverStimulusToListener(eventsParams.m_soundParams, eventsParams.m_listenerEntityId, eventsParams.m_reachedEarIndex);
+		}
+		if (eventsParams.m_bLastRay && eventsParams.m_bReachedAtLeastOneEar)
+		{
+			m_owner.NotifyGlobalListeners_StimulusProcessedAndReachedOneOrMoreEars(eventsParams.m_soundParams);
+		}
 	}
 }
 

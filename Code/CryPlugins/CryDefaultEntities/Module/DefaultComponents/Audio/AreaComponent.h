@@ -76,8 +76,7 @@ protected:
 	// ~IEntityComponent
 
 	// Properties exposed to UI
-	ETriggeringObjects m_triggeringObjects = ETriggeringObjects::None;
-	float              m_fadeDistance = 0.0f;
+	float m_fadeDistance = 0.0f;
 
 private:
 
@@ -88,10 +87,11 @@ private:
 		Inside,
 	};
 
-	EState m_state = EState::None;
-	EState m_previousState = EState::None;
-	float  m_fadeValue = 0.0f;
-	bool   m_bActive = true;
+	EState             m_state = EState::None;
+	EState             m_previousState = EState::None;
+	ETriggeringObjects m_triggeringObjects = ETriggeringObjects::None;
+	float              m_fadeValue = 0.0f;
+	bool               m_bActive = true;
 };
 } // namespace DefaultComponents
 } // namespace Audio

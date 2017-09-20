@@ -12,6 +12,7 @@ public:
 	CMovementActorAdapter(CEntityAINavigationComponent* owner)
 		: m_pOwningNavigationComponent(owner)
 		, m_navigationAgentTypeID(NavigationAgentTypeID())
+		, m_pPathfollower(nullptr)
 	{
 	}
 
@@ -50,8 +51,6 @@ public:
 
 private:
 	CEntityAINavigationComponent* m_pOwningNavigationComponent;
-
 	NavigationAgentTypeID m_navigationAgentTypeID;
-
 	IPathFollower* m_pPathfollower;
 };

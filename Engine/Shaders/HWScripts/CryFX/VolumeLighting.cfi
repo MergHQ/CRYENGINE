@@ -24,6 +24,13 @@
 #define BLOCK_SIZE_Z								4
 
 
+#if !VULKAN
+#define control_flow_branch [branch]
+#else
+// Work around for vulkan shader compiler issues
+#define control_flow_branch
+#endif
+
 ////////////////////////////////////////////////////////////////////////////
 // Shared constants, structures and functions
 ////////////////////////////////////////////////////////////////////////////
@@ -154,7 +161,7 @@ void BlurHorizontalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThre
 	for(int i = 0; i < 2; ++i)
 	{
 		int2 offset;
-		offset.x = gtid.x + (gtid.y & 0x1 ? 8: 0);
+		offset.x = gtid.x + (gtid.y & 0x1) * 8;
 		offset.y = (i * 4) + (gtid.y >> 1);
 
 		int4 p = loc;
@@ -402,7 +409,7 @@ void BlurHorizontalDensityVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID,
 	for(int i = 0; i < 2; ++i)
 	{
 		int2 offset;
-		offset.x = gtid.x + (gtid.y & 0x1 ? 8: 0);
+		offset.x = gtid.x + (gtid.y & 0x1) * 8;
 		offset.y = (i * 4) + (gtid.y >> 1);
 
 		int4 p = loc;
@@ -789,7 +796,7 @@ void AccumulateDensityFogVolume(inout float density, inout float3 densityColor, 
 		// fine-grained culling and finding intersected eye ray segment
 		float tS = 0.0f;
 		float tE = 0.0f;
-		[branch] if(injectFlag)
+		control_flow_branch if(injectFlag)
 		{
 			float3 eyeDirInWS = eyeRay.xyz;
 			float3 cameraLookDirInOS = mul( (float3x3)fv.worldToObjMatrix, eyeDirInWS.xyz );
@@ -850,10 +857,7 @@ void AccumulateDensityFogVolume(inout float density, inout float3 densityColor, 
 			tE *= toLinearDepth;
 
 			// cull a voxel which isn't included in intersected line segment.
-			if(tE < depthFront || depth < tS)
-			{
-				injectFlag = 0;
-			}
+			injectFlag = (tE >= depthFront) && (depth >= tS);	
 		}
 
 		[branch] if(injectFlag)
@@ -1962,8 +1966,7 @@ void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
 		// clip global fog by VisArea
 		globalFogDensity = (clipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN) ? globalFogDensity : 0.0f;
 
-
-		bool exec = (clipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN) ? 1 : 0;
+		bool exec = (clipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN) != 0 ;
 
 #if %_RT_SAMPLE4
 		float shadowSun = 0.0f;
@@ -2149,7 +2152,7 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 		for(int i = 0; i < 4; ++i)
 		{
 			int3 offset;
-			offset.x = gtid.x + (gtid.y & 0x1 ? 4: 0);
+			offset.x = gtid.x + (gtid.y & 0x1) * 4;
 			offset.y = (gtid.z * 2) + (gtid.y >> 1);
 			offset.z = i;
 
@@ -2168,7 +2171,7 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 		for(int i = 0; i < 6; ++i)
 		{
 			int3 offset;
-			offset.x = gtid.x + (gtid.y & 0x1 ? 4: 0);
+			offset.x = gtid.x + (gtid.y & 0x1) * 4;
 			offset.y = (gtid.z * 2) + (gtid.y >> 1);
 			offset.z = i;
 

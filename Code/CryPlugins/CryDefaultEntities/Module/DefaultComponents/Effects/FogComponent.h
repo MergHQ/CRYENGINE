@@ -53,6 +53,7 @@ namespace Cry
 				desc.AddMember(&CFogComponent::m_type, 'type', "Type", "Type", "Type of shape to use for rendering the fog volume", IFogVolumeRenderNode::eFogVolumeType_Ellipsoid);
 				desc.AddMember(&CFogComponent::m_size, 'size', "Size", "Size", "Size of the fog volume", Vec3(1.f));
 				desc.AddMember(&CFogComponent::m_color, 'col', "Color", "Color", "Color of the fog volume", ColorF(1.f));
+				desc.AddMember(&CFogComponent::m_emission, 'emi', "Emission", "Emission", "Emissive Color of the fog volume", ColorF(0.f));
 
 				desc.AddMember(&CFogComponent::m_options, 'opti', "Options", "Options", nullptr, CFogComponent::SOptions());
 			}
@@ -116,6 +117,7 @@ namespace Cry
 					fogProperties.m_volumeType = m_type;
 					fogProperties.m_size = m_size;
 					fogProperties.m_color = m_color;
+					fogProperties.m_emission = m_emission.toVec3();
 
 					fogProperties.m_useGlobalFogColor = m_options.m_bUseGlobalFogColor;
 					fogProperties.m_fHDRDynamic = 0.f;
@@ -160,6 +162,9 @@ namespace Cry
 			virtual void SetColor(const ColorF& color) { m_color = color; }
 			const ColorF& GetColor() const { return m_color; }
 
+			virtual void SetEmission(const ColorF& color) { m_emission = color; }
+			const ColorF& GetEmission() const { return m_emission; }
+
 			virtual SOptions& GetOptions() { return m_options; }
 			const SOptions& GetOptions() const { return m_options; }
 
@@ -168,6 +173,7 @@ namespace Cry
 			IFogVolumeRenderNode::eFogVolumeType m_type = IFogVolumeRenderNode::eFogVolumeType_Ellipsoid;
 			Vec3 m_size = Vec3(1.f);
 			ColorF m_color = ColorF(1.f);
+			ColorF m_emission = ColorF(0.f);
 
 			SOptions m_options;
 		};

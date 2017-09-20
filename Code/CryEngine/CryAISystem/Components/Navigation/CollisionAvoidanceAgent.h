@@ -12,6 +12,7 @@ class CCollisionAvoidanceAgent : public ICollisionAvoidanceAgent
 public:
 	CCollisionAvoidanceAgent(CEntityAINavigationComponent* pOwner)
 		: m_pOwningNavigationComponent(pOwner)
+		, m_pAttachedEntity(nullptr)
 	{}
 
 	~CCollisionAvoidanceAgent();

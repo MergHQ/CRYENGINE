@@ -269,6 +269,8 @@ public:
 	{
 		return nullptr;
 	};
+	
+	virtual void OnNetworkedEntityTransformChanged(int whyFlags) override;
 
 private:
 	INetEntity* m_pNetEntity;

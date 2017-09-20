@@ -51,7 +51,7 @@ void CEntityAIObserverComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIObser
 {
 	desc.SetGUID(cryiidof<CEntityAIObserverComponent>());
 
-	desc.SetLabel("Observer");
+	desc.SetLabel("AI Observer");
 	desc.SetDescription("Observer component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
@@ -62,7 +62,7 @@ void CEntityAIObserverComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIObser
 	desc.AddMember(&CEntityAIObserverComponent::m_visionProperties, 'vpt', "visionProps", "Vision", "Configuration of the vision sensor with which the entity can observe the world.", ObserverProperties::SVisionProperties());
 	desc.AddMember(&CEntityAIObserverComponent::m_typesToObserve, 'tto', "typesToObserve", "Types To Observe", "Only entities that belong to these vision map types will be processed for sight.", Perception::ComponentHelpers::SVisionMapType());
 	desc.AddMember(&CEntityAIObserverComponent::m_factionsToObserve, 'fto', "factionsToObserve", "Factions To Observe", "Only entities that belong to these factions will be processed for sight.", SFactionFlagsMask());
-	desc.AddMember(&CEntityAIObserverComponent::m_bUserCustomCondition, 'cfc', "useCustomFilter", "Use Custom Filter", "Flag for enabling custom condition filter.", false);
+	desc.AddMember(&CEntityAIObserverComponent::m_bUseUserCustomCondition, 'cfc', "useCustomFilter", "Use Custom Filter", "Flag for enabling custom condition filter.", false);
 }
 
 void CEntityAIObserverComponent::Register(Schematyc::IEnvRegistrar& registrar)
@@ -145,7 +145,7 @@ void CEntityAIObserverComponent::RegisterToVisionMap()
 
 	m_params.entityId = pEntity->GetId();
 	m_params.callback = functor(*this, &CEntityAIObserverComponent::OnObserverVisionChanged);
-	if (m_bUserCustomCondition)
+	if (m_bUseUserCustomCondition)
 	{
 		m_params.userConditionCallback = functor(*this, &CEntityAIObserverComponent::OnObserverUserCondition);
 	}
@@ -160,6 +160,8 @@ void CEntityAIObserverComponent::RegisterToVisionMap()
 
 	m_params.sightRange = m_visionProperties.range;
 	m_params.fovCos = crymath::cos(m_visionProperties.fov.ToRadians());
+	
+	m_visionProperties.location.Validate(pEntity, "AI Observer Component");
 	SyncWithEntity();
 
 	m_params.raycastFlags = GetRaycastFlags();
@@ -204,17 +206,17 @@ bool CEntityAIObserverComponent::CanSee(Schematyc::ExplicitEntityId entityId) co
 
 bool CEntityAIObserverComponent::OnObserverUserCondition(const VisionID& observerId, const ObserverParams& observerParams, const VisionID& observableId, const ObservableParams& observableParams)
 {
-	m_userConditionResult = true;
+	m_bUserConditionResult = true;
 	if (GetEntity()->GetSchematycObject())
 	{
 		GetEntity()->GetSchematycObject()->ProcessSignal(SObserverUserConditionSignal { Schematyc::ExplicitEntityId(observableParams.entityId) }, GetGUID());
 	}
-	return m_userConditionResult;
+	return m_bUserConditionResult;
 }
 
 void CEntityAIObserverComponent::ObserverUserConditionResult(bool bResult)
 {
-	m_userConditionResult = bResult;
+	m_bUserConditionResult = bResult;
 }
 
 void CEntityAIObserverComponent::OnObserverVisionChanged(const VisionID& observerId, const ObserverParams& observerParams, const VisionID& observableId, const ObservableParams& observableParams, bool visible)

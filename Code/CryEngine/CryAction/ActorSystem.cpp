@@ -64,7 +64,7 @@ CActorSystem::CActorSystem(ISystem* pSystem, IEntitySystem* pEntitySystem)
 
 	if (gEnv->pEntitySystem)
 	{
-		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnReused, 0);
+		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnReused);
 	}
 }
 
@@ -434,12 +434,6 @@ void CActorSystem::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 			actor->OnReused(pEntity, params);
 		}
 	}
-}
-
-//------------------------------------------------------------------------
-void CActorSystem::OnEvent(IEntity* pEntity, SEntityEvent& event)
-{
-	// nothing (but needed to implement IEntitySystemSink)
 }
 
 //------------------------------------------------------------------------
