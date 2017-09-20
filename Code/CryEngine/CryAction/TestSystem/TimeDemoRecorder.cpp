@@ -28,6 +28,8 @@
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CryCore/Platform/CryWindows.h>
 
+#include <array>
+
 //////////////////////////////////////////////////////////////////////////
 // Brush Export structures.
 //////////////////////////////////////////////////////////////////////////
@@ -554,6 +556,18 @@ const char* CTimeDemoRecorder::GetCurrentLevelPath()
 	 */
 }
 
+std::array<EEntityEvent, 8> g_recordedEntityEvents = 
+{ {
+	ENTITY_EVENT_XFORM,
+	ENTITY_EVENT_HIDE,
+	ENTITY_EVENT_UNHIDE,
+	ENTITY_EVENT_ATTACH,
+	ENTITY_EVENT_DETACH,
+	ENTITY_EVENT_DETACH_THIS,
+	ENTITY_EVENT_ENABLE_PHYSICS,
+	ENTITY_EVENT_ENTER_SCRIPT_STATE
+} };
+
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::Record(bool bEnable)
 {
@@ -572,17 +586,16 @@ void CTimeDemoRecorder::Record(bool bEnable)
 	{
 		SaveAllEntitiesState();
 
-		uint64 onEventSubscriptions = 0;
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE);
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE);
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_ATTACH);
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_DETACH);
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_DETACH_THIS);
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_ENABLE_PHYSICS);
-		onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_ENTER_SCRIPT_STATE);
+		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn);
 
-		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnEvent, onEventSubscriptions);
+		IEntityItPtr pEntityIter = gEnv->pEntitySystem->GetEntityIterator();
+		while (IEntity* pEntity = pEntityIter->Next())
+		{
+			for (const EEntityEvent event : g_recordedEntityEvents)
+			{
+				pEntity->AddEventListener(event, this);
+			}
+		}
 
 		// Start recording.
 		m_records.clear();
@@ -606,6 +619,15 @@ void CTimeDemoRecorder::Record(bool bEnable)
 		m_lastFrameTime = GetTime();
 
 		gEnv->pEntitySystem->RemoveSink(this);
+
+		IEntityItPtr pEntityIter = gEnv->pEntitySystem->GetEntityIterator();
+		while (IEntity* pEntity = pEntityIter->Next())
+		{
+			for (const EEntityEvent event : g_recordedEntityEvents)
+			{
+				pEntity->RemoveEventListener(event, this);
+			}
+		}
 
 		m_currentFrameInputEvents.clear();
 		m_currentFrameEntityEvents.clear();
@@ -2123,69 +2145,53 @@ void CTimeDemoRecorder::GetMemoryStatistics(ICrySizer* s) const
 	s->AddObject(m_currentFrameGameEvents);
 }
 
-bool CTimeDemoRecorder::OnBeforeSpawn(SEntitySpawnParams& params)
-{
-	return true;
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 {
+	pEntity->AddEventListener(ENTITY_EVENT_XFORM, this);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CTimeDemoRecorder::OnRemove(IEntity* pEntity)
+void CTimeDemoRecorder::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
 {
-	return true;
-}
+	CRY_ASSERT(m_bRecording);
 
-//////////////////////////////////////////////////////////////////////////
-void CTimeDemoRecorder::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
-{
-}
+	// Record entity event for this frame.
+	EntityGUID guid = pEntity->GetGuid();
+	if (guid.IsNull())
+		return;
 
-//////////////////////////////////////////////////////////////////////////
-void CTimeDemoRecorder::OnEvent(IEntity* pEntity, SEntityEvent& event)
-{
-	if (m_bRecording)
+	// Record entity event for this frame.
+	switch (event.event)
 	{
-		// Record entity event for this frame.
-		EntityGUID guid = pEntity->GetGuid();
-		if (guid.IsNull())
-			return;
-
-		// Record entity event for this frame.
-		switch (event.event)
+	// Events to save.
+	case ENTITY_EVENT_XFORM:
+	case ENTITY_EVENT_HIDE:
+	case ENTITY_EVENT_UNHIDE:
+	case ENTITY_EVENT_ATTACH:
+	case ENTITY_EVENT_DETACH:
+	case ENTITY_EVENT_DETACH_THIS:
+	case ENTITY_EVENT_ENABLE_PHYSICS:
+	case ENTITY_EVENT_ENTER_SCRIPT_STATE:
 		{
-		// Events to save.
-		case ENTITY_EVENT_XFORM:
-		case ENTITY_EVENT_HIDE:
-		case ENTITY_EVENT_UNHIDE:
-		case ENTITY_EVENT_ATTACH:
-		case ENTITY_EVENT_DETACH:
-		case ENTITY_EVENT_DETACH_THIS:
-		case ENTITY_EVENT_ENABLE_PHYSICS:
-		case ENTITY_EVENT_ENTER_SCRIPT_STATE:
-			{
-				EntityEventRecord rec;
-				memset(&rec, 0, sizeof(rec));
-				rec.entityId = pEntity->GetId();
-				rec.guid = guid;
-				rec.eventType = event.event;
-				rec.nParam[0] = event.nParam[0];
-				rec.nParam[1] = event.nParam[1];
-				rec.nParam[2] = event.nParam[2];
-				rec.nParam[3] = event.nParam[3];
-				rec.pos = pEntity->GetPos();
-				rec.q = pEntity->GetRotation();
-				m_currentFrameEntityEvents.push_back(rec);
-			}
-			break;
-
-		// Skip all other events.
-		default:
-			break;
+			EntityEventRecord rec;
+			memset(&rec, 0, sizeof(rec));
+			rec.entityId = pEntity->GetId();
+			rec.guid = guid;
+			rec.eventType = event.event;
+			rec.nParam[0] = event.nParam[0];
+			rec.nParam[1] = event.nParam[1];
+			rec.nParam[2] = event.nParam[2];
+			rec.nParam[3] = event.nParam[3];
+			rec.pos = pEntity->GetPos();
+			rec.q = pEntity->GetRotation();
+			m_currentFrameEntityEvents.push_back(rec);
 		}
+		break;
+
+	// Skip all other events.
+	default:
+		break;
 	}
 }
 

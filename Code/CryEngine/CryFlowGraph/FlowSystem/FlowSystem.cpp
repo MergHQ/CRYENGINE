@@ -659,7 +659,7 @@ void CFlowSystem::Reset(bool unload)
 void CFlowSystem::Init()
 {
 	if (gEnv->pEntitySystem)
-		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnReused | IEntitySystem::OnSpawn, 0);
+		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnReused | IEntitySystem::OnSpawn);
 }
 
 //////////////////////////////////////////////////////////////////////////

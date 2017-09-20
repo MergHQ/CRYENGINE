@@ -8,6 +8,7 @@
 #include "ScriptBind_Entity.h"
 #include "EntitySystem.h"
 #include <CryNetwork/ISerialize.h>
+#include <CryNetwork/INetwork.h>
 #include "EntityCVars.h"
 
 #include <CryAnimation/CryCharAnimationParams.h>
@@ -588,6 +589,11 @@ bool CEntityComponentLuaScript::GotoState(int nState)
 	   m_bUpdateOnContact = IsStateFunctionImplemented(ScriptState_OnContact);
 	   //////////////////////////////////////////////////////////////////////////
 	 */
+
+	if (gEnv->bMultiplayer && (m_pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) == 0)
+	{
+		gEnv->pNetContext->ChangedAspects(m_pEntity->GetId(), eEA_Script);
+	}
 
 	SEntityEvent eevent;
 	eevent.event = ENTITY_EVENT_ENTER_SCRIPT_STATE;

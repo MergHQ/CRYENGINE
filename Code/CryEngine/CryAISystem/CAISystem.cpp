@@ -4883,7 +4883,7 @@ void CAISystem::NotifyAIObjectMoved(IEntity* pEntity, SEntityEvent event)
 		return;
 
 	AIAssert(m_pSmartObjectManager);
-	((IEntitySystemSink*)m_pSmartObjectManager)->OnEvent(pEntity, event);
+	m_pSmartObjectManager->OnEntityEvent(pEntity, event);
 }
 
 //====================================================================

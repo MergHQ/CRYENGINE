@@ -794,9 +794,10 @@ typedef std::multimap<float, CQueryEvent> QueryEventMap;
 // CSmartObjectManager receives notifications from entity system about entities being spawned and deleted.
 // Keeps track of registered classes, and automatically creates smart object representation for every instance belonging to them.
 ///////////////////////////////////////////////
-class CSmartObjectManager
+class CSmartObjectManager final
 	: public IEntitySystemSink
-	  , public ISmartObjectManager
+	, public IEntityEventListener
+	, public ISmartObjectManager
 {
 private:
 	CSmartObject::CState    m_StateAttTarget;
@@ -824,7 +825,6 @@ private:
 	virtual void OnSpawn(IEntity* pEntity, SEntitySpawnParams& params);
 	virtual bool OnRemove(IEntity* pEntity);
 	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void OnEvent(IEntity* pEntity, SEntityEvent& event);
 
 	void         DoRemove(IEntity* pEntity, bool bDeleteSmartObject = true);
 
@@ -866,6 +866,10 @@ public:
 	virtual SmartObjectHelper* GetSmartObjectHelper(const char* className, const char* helperName) const;
 	//ISmartObjectManager/////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
+
+	// IEntityEventListener
+	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	// ~IEntityEventListener
 
 	CSmartObjectManager();
 	~CSmartObjectManager();

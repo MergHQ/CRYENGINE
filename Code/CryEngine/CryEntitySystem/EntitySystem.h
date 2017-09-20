@@ -274,7 +274,7 @@ public:
 	virtual void                              ResizeProximityGrid(int nWidth, int nHeight) final;
 	virtual int                               GetPhysicalEntitiesInBox(const Vec3& origin, float radius, IPhysicalEntity**& pList, int physFlags) const final;
 	virtual IEntity*                          GetEntityFromPhysics(IPhysicalEntity* pPhysEntity) const final;
-	virtual void                              AddSink(IEntitySystemSink* pSink, uint32 subscriptions, uint64 onEventSubscriptions) final;
+	virtual void                              AddSink(IEntitySystemSink* pSink, std::underlying_type<SinkEventSubscriptions>::type subscriptions) final;
 	virtual void                              RemoveSink(IEntitySystemSink* pSink) final;
 	virtual void                              PauseTimers(bool bPause, bool bResume = false) final;
 	virtual bool                              IsIDUsed(EntityId nID) const final;
@@ -283,9 +283,6 @@ public:
 	virtual void                              SetNextSpawnId(EntityId id) final;
 	virtual void                              ResetAreas() final;
 	virtual void                              UnloadAreas() final;
-
-	virtual void                              AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) final;
-	virtual void                              RemoveEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) final;
 
 	virtual void                              AddEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) final;
 	virtual void                              RemoveEntityLayerListener(const char* szLayerName, IEntityLayerListener* pListener, const bool bCaseSensitive = true) final;
@@ -368,7 +365,6 @@ public:
 	void ActivateEntity(CEntity* pEntity, bool bActivate);
 	void ActivatePrePhysicsUpdateForEntity(CEntity* pEntity, bool bActivate);
 	bool IsPrePhysicsActive(CEntity* pEntity);
-	void OnEntityEvent(CEntity* pEntity, SEntityEvent& event);
 
 	// Access to class that binds script to entity functions.
 	// Used by Script proxy.
@@ -441,15 +437,13 @@ private: // -----------------------------------------------------------------
 	};
 
 	typedef std::vector<OnEventSink, stl::STLGlobalAllocator<OnEventSink>>                                                                                                                              EntitySystemOnEventSinks;
-	typedef std::vector<IEntitySystemSink*, stl::STLGlobalAllocator<IEntitySystemSink*>>                                                                                                                EntitySystemSinks;
 	typedef std::vector<CEntity*>                                                                                                                                                                       DeletedEntities;
 	typedef std::multimap<CTimeValue, SEntityTimerEvent, std::less<CTimeValue>, stl::STLPoolAllocator<std::pair<const CTimeValue, SEntityTimerEvent>, stl::PoolAllocatorSynchronizationSinglethreaded>> EntityTimersMap;
 	typedef std::multimap<const char*, EntityId, stl::less_stricmp<const char*>>                                                                                                                        EntityNamesMap;
 	typedef std::vector<SEntityTimerEvent>                                                                                                                                                              EntityTimersVector;
 
-	EntitySystemSinks        m_sinks[SinkMaxEventSubscriptionCount];        // registered sinks get callbacks for creation and removal
-	EntitySystemOnEventSinks m_onEventSinks;
-
+	std::array<std::vector<IEntitySystemSink*>, (size_t)SinkEventSubscriptions::Count> m_sinks;
+	
 	ISystem*                 m_pISystem;
 	std::array<CEntity*, CSaltBufferArray<>::GetTSize()>    m_EntityArray;                 // [id.GetIndex()]=CEntity
 	DeletedEntities          m_deletedEntities;

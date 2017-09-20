@@ -1639,7 +1639,7 @@ public:
 						pent->SetParams(&pfd); // revert the changes done in AssignPhysicalEntity
 						pent->SetParams(&pf);
 						if (g_mapSkels.empty())
-							gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnRemove, 0);
+							gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnRemove);
 						g_mapSkels.emplace(id, pSkel);
 					}
 					ActivateOutput(pActInfo, OUT_SKEL_ENT, pSkel->GetId());

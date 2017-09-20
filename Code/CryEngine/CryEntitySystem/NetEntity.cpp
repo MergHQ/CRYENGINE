@@ -381,7 +381,30 @@ uint8 CNetEntity::GetDefaultProfile(EEntityAspects aspect)
 		return 0;
 }
 
-void CNetEntity::UpdateSchedulingProfiles()
+void CNetEntity::OnNetworkedEntityTransformChanged(int whyFlags)
+{
+	if (gEnv->bMultiplayer && (m_pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) == 0)
+	{
+		bool doAspectUpdate = true;
+		if (whyFlags & (ENTITY_XFORM_FROM_PARENT | ENTITY_XFORM_NO_PROPOGATE))
+			doAspectUpdate = false;
+		// position has changed, best let other people know about it
+		// disabled volatile... see OnSpawn for reasoning
+		if (doAspectUpdate)
+		{
+			gEnv->pNetContext->ChangedAspects(m_pEntity->GetId(), /*eEA_Volatile |*/ eEA_Physics);
+		}
+#if FULL_ON_SCHEDULING
+		float drawDistance = -1;
+		if (IEntityRender* pRP = pEntity->GetRenderInterface())
+			if (IRenderNode* pRN = pRP->GetRenderNode())
+				drawDistance = pRN->GetMaxViewDist();
+		m_pNetContext->ChangedTransform(entId, pEntity->GetWorldPos(), pEntity->GetWorldRotation(), drawDistance);
+#endif
+	}
+}
+
+/* static */ void CNetEntity::UpdateSchedulingProfiles()
 {
 	// We need to check NetContext here, because it's NULL in a dummy editor game session (or at least while starting up the editor).
 	if (!gEnv->pNetContext)

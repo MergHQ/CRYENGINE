@@ -217,7 +217,6 @@ bool CEntity::SendEvent(SEntityEvent& event)
 					});
 				}
 			}
-			g_pIEntitySystem->OnEntityEvent(this, event);
 		}
 
 #ifndef _RELEASE
@@ -696,7 +695,7 @@ Matrix34 CEntity::GetLocalTM() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::AddEntityEventListener(EEntityEvent event, IEntityEventListener* pListener)
+void CEntity::AddEventListener(EEntityEvent event, IEntityEventListener* pListener)
 {
 	if (!m_pEventListeners)
 	{
@@ -707,10 +706,12 @@ void CEntity::AddEntityEventListener(EEntityEvent event, IEntityEventListener* p
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::RemoveEntityEventListener(EEntityEvent event, IEntityEventListener* pListener)
+void CEntity::RemoveEventListener(EEntityEvent event, IEntityEventListener* pListener)
 {
-	if (m_pEventListeners)
+	if (m_pEventListeners != nullptr)
+	{
 		m_pEventListeners->m_listeners.Remove(SEventListeners::SListener(event, pListener));
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -833,6 +834,11 @@ void CEntity::InvalidateTM(int nWhyFlags, bool bRecalcPhyBounds)
 	// Send transform event.
 	if (!(nWhyFlags & ENTITY_XFORM_NO_EVENT))
 	{
+		if (m_pNetEntity != nullptr)
+		{
+			m_pNetEntity->OnNetworkedEntityTransformChanged(nWhyFlags);
+		}
+
 		SEntityEvent event(ENTITY_EVENT_XFORM);
 		event.nParam[0] = nWhyFlags;
 		SendEvent(event);

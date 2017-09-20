@@ -188,6 +188,9 @@ struct INetEntity
 	//! Internal use. \see IEntityComponent::NetSerialize() to implement network serialization.
 	virtual bool NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) = 0;
 
+	//! Sent by the entity when its transformation changes
+	virtual void OnNetworkedEntityTransformChanged(int whyFlags) = 0;
+
 	//--------------------------------------------------------------------------
 
 	//! Entity-local unique index of the RMI that is sent over the network.

@@ -59,7 +59,7 @@ CHUDMissionObjectiveSystem::CHUDMissionObjectiveSystem()
 , m_currentAnalysis("")
 {
 	if (gEnv->pEntitySystem)
-		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnReused, 0);
+		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnReused);
 }
 
 CHUDMissionObjectiveSystem::~CHUDMissionObjectiveSystem()

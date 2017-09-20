@@ -184,11 +184,7 @@ void CGameContext::Init(INetContext* pNetContext)
 	m_pEntitySystem = gEnv->pEntitySystem;
 	CRY_ASSERT(m_pEntitySystem);
 
-	uint64 onEventSubscriptions = 0;
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
-	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_ENTER_SCRIPT_STATE);
-
-	m_pEntitySystem->AddSink(this, static_cast<uint32>(IEntitySystem::AllSinkEvents), onEventSubscriptions);
+	m_pEntitySystem->AddSink(this, IEntitySystem::AllSinkEvents);
 	m_pNetContext = pNetContext;
 
 #if ENABLE_NETDEBUG
@@ -1241,81 +1237,6 @@ void CGameContext::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 
 	if (CGameObject* pGO = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER))
 		pGO->BindToNetwork(eBTNM_NowInitialized);
-}
-
-void CGameContext::OnEvent(IEntity* pEntity, SEntityEvent& event)
-{
-	struct SGetEntId
-	{
-		ILINE SGetEntId(IEntity* pEntity) : m_pEntity(pEntity), m_id(0) {}
-
-		ILINE operator EntityId()
-		{
-			if (!m_id && m_pEntity)
-				m_id = m_pEntity->GetId();
-			return m_id;
-		}
-
-		IEntity* m_pEntity;
-		EntityId m_id;
-	};
-	SGetEntId entId(pEntity);
-
-	struct SEntIsMP
-	{
-		ILINE SEntIsMP(IEntity* pEntity) : m_pEntity(pEntity), m_got(false), m_is(false) {}
-
-		ILINE operator bool()
-		{
-			if (!m_got)
-			{
-				m_is = !(m_pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY));
-				m_got = true;
-			}
-			return m_is;
-		}
-
-		IEntity* m_pEntity;
-		bool     m_got;
-		bool     m_is;
-	};
-	SEntIsMP entIsMP(pEntity);
-
-	switch (event.event)
-	{
-	case ENTITY_EVENT_XFORM:
-		if (gEnv->bMultiplayer && entIsMP)
-		{
-			bool doAspectUpdate = true;
-			if (event.nParam[0] & (ENTITY_XFORM_FROM_PARENT | ENTITY_XFORM_NO_PROPOGATE))
-				doAspectUpdate = false;
-			// position has changed, best let other people know about it
-			// disabled volatile... see OnSpawn for reasoning
-			if (doAspectUpdate)
-			{
-#if ENABLE_NETDEBUG
-				if (GetNetDebug())
-					GetNetDebug()->DebugAspectsChange(pEntity, eEA_Physics);
-#endif
-
-				m_pNetContext->ChangedAspects(entId, /*eEA_Volatile |*/ eEA_Physics);
-			}
-#if FULL_ON_SCHEDULING
-			float drawDistance = -1;
-			if (IEntityRender* pRP = pEntity->GetRenderInterface())
-				if (IRenderNode* pRN = pRP->GetRenderNode())
-					drawDistance = pRN->GetMaxViewDist();
-			m_pNetContext->ChangedTransform(entId, pEntity->GetWorldPos(), pEntity->GetWorldRotation(), drawDistance);
-#endif
-		}
-		break;
-	case ENTITY_EVENT_ENTER_SCRIPT_STATE:
-		if (entIsMP)
-		{
-			m_pNetContext->ChangedAspects(entId, eEA_Script);
-		}
-		break;
-	}
 }
 
 //

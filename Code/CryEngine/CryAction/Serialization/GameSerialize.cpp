@@ -180,7 +180,7 @@ CGameSerialize::CGameSerialize()
 {
 	if (!gEnv->IsEditor())
 	{
-		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn | IEntitySystem::OnRemove, 0);
+		gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
 
 		if (ILevelSystem* pLS = CCryAction::GetCryAction()->GetILevelSystem())
 			pLS->AddListener(this);

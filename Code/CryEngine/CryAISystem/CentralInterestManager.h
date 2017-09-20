@@ -155,7 +155,6 @@ public:
 	virtual void OnSpawn(IEntity* pEntity, SEntitySpawnParams&);
 	virtual bool OnRemove(IEntity* pEntity);
 	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& entitySpawnParams) {}
-	virtual void OnEvent(IEntity* pEntity, SEntityEvent& entityEvent)              {}
 
 	// IEntityEventListener
 	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
