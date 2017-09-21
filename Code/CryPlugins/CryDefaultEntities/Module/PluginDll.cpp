@@ -7,6 +7,7 @@
 #include "DefaultComponents/Audio/AreaComponent.h"
 #include "DefaultComponents/Audio/EnvironmentComponent.h"
 #include "DefaultComponents/Audio/ListenerComponent.h"
+#include "DefaultComponents/Audio/OcclusionComponent.h"
 #include "DefaultComponents/Audio/ParameterComponent.h"
 #include "DefaultComponents/Audio/PreloadComponent.h"
 #include "DefaultComponents/Audio/SwitchComponent.h"
@@ -98,6 +99,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CListenerComponent));
 			Cry::Audio::DefaultComponents::CListenerComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::COcclusionComponent));
+			Cry::Audio::DefaultComponents::COcclusionComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CParameterComponent));
