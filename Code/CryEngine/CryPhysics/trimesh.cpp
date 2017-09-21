@@ -2554,7 +2554,7 @@ void CTriMesh::PrepareForRayTest(float raylen)
 
 
 void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &hashsize, grid &hashgrid,index_t *&pHashGrid,index_t *&pHashData,
-																		float rcellsize, float pad, const index_t* pIndices, int nTris)
+																		float rcellsize, float pad, const index_t* pIndices, int nTris, int maxhash)
 {
 	float maxsz,tsx,tex,tsy,tey,ts,te;
 	Vec2 sz,pt[3],edge[3],step,rstep,ptc,sg;
@@ -2578,7 +2578,8 @@ void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &ha
 		isz.x = float2int(sz.x*rcellsize+0.499f);
 		isz.y = float2int(sz.y*rcellsize+0.499f);
 	}
-	const int maxhash = 4*(1<<sizeof(index_t)); // 64 on PC, 16 on consoles
+	if (!maxhash)
+		maxhash = 4*(1<<sizeof(index_t)); // 64 on PC, 16 on consoles
 	isz.x = min_safe(maxhash,max_safe(1,isz.x));
 	isz.y = min_safe(maxhash,max_safe(1,isz.y));
 	memset(pHashGrid = new index_t[isz.x*isz.y+1], 0, (isz.x*isz.y+1)*sizeof(index_t));
@@ -3632,7 +3633,6 @@ template<bool rngchk> CTriMesh::voxgrid_tpl<rngchk> CTriMesh::Voxelize(quaternio
 	}
 	Vec3 c=(ptmin+ptmax)*0.5f, sz=(ptmax-ptmin)*0.5f;
 	Vec3i voxdim = float2int(sz*rcelldim+Vec3(0.5f))+Vec3i(pad+1);
-	voxdim.x&=~1; voxdim.y&=~1; voxdim.z&=~1;
 	voxgrid_tpl<rngchk> grid(voxdim,q*c);	grid.q=q;	grid.celldim=celldim;	grid.rcelldim=rcelldim;
 
 	for(i=0;i<nTris;i++) if (pIds[i&idmask]>=0) {
@@ -3644,10 +3644,10 @@ template<bool rngchk> CTriMesh::voxgrid_tpl<rngchk> CTriMesh::Voxelize(quaternio
 			ptmin = min(min(vtx[0],vtx[1]),vtx[2])*rcelldim; ptmax=max(max(vtx[0],vtx[1]),vtx[2])*rcelldim;
 			Vec2i iBBox[2] = { Vec2i(float2int(ptmin.x-0.5f),float2int(ptmin.y-0.5f)), Vec2i(float2int(ptmax.x+0.5f),float2int(ptmax.y+0.5f)) };
 			for(ix=iBBox[0].x;ix<iBBox[1].x;ix++) for(iy=iBBox[0].y;iy<iBBox[1].y;iy++) {
-				Vec2 pt=Vec2(ix+0.5f,iy+0.5f)*celldim, ptx[3]={ Vec2(vtx[0])-pt,Vec2(vtx[1]-pt),Vec2(vtx[2])-pt };
+				Vec2 pt=Vec2(ix+0.5f,iy+0.5f)*celldim, ptx[3]={ Vec2(vtx[0])-pt,Vec2(vtx[1])-pt,Vec2(vtx[2])-pt };
 				Vec3 coord = Vec3(ptx[1]^ptx[2], ptx[2]^ptx[0], ptx[0]^ptx[1]);
 				if (min(min(coord.x*area,coord.y*area),coord.z*area) > 0)
-					for(iz=float2int((coord*zblend)*rcelldim)-1; iz>=-voxdim.z; iz--)
+					for(iz=float2int((coord*zblend)*rcelldim)-1; iz>-voxdim.z; iz--)
 						grid(ix,iy,iz) += dir;
 			}
 		}
@@ -4248,7 +4248,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 		for(i=1;i<27;i++) inv[i] = 1.0f/i;
 	}
 
-	auto GetIsland = [this,&pTris,&pNormals,&nTris](int isle) 
+	auto GetIsland = [this,&pTris,&pNormals](int isle,int nTris=0) 
 	{
 		for(int i=m_pIslands[isle].itri; i!=0x7fff; i=m_pTri2Island[i].inext) {
 			((Vec3_tpl<index_t>*)pTris)[nTris] = ((Vec3_tpl<index_t>*)m_pIndices)[i];
@@ -4269,7 +4269,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 		for(i=imin,j=0; i<=imax; i++) if (pVtxMap[m_nVertices+(i>>5)] & 1<<(i&31)) {
 			pVtxMap[j]=i;	swap(m_pVertices[i], m_pVertices[j++]);
 		}
-		delete[] pTris;
+		delete[] pTris;	pTris=nullptr;
 		int nTris = qhull(m_pVertices,j,pTris);
 		if (nTris>m_nTris || !pNormals) {
 			delete pNormals; pNormals = new Vec3[max(nTris,m_nTris)];
@@ -4395,7 +4395,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 		} else if (!params.convexHull) {
 			pTris = new index_t[m_nTris*3];	pNormals = new Vec3[m_nTris];
 			for(i=getNextBit(params.islandMap),nTris=0; i>=0; i=getNextBit(params.islandMap))
-				GetIsland(i);
+				nTris = GetIsland(i,nTris);
 		} else
 			nTris = qhullIslands(params.islandMap);
 		isle=0; params.islandMap=0; goto GotIslands;
@@ -4812,7 +4812,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 		hashplane.origin = vox.center;
 		for(i=0;i<2;i++) {
 			hashplane.n=vox.q*ort[i]; hashplane.axes[0]=vox.q*ort[inc_mod3[i]]; hashplane.axes[1]=vox.q*ort[dec_mod3[i]];
-			HashTrianglesToPlane(hashplane, Vec2(sz[inc_mod3[i]],sz[dec_mod3[i]])*2, hashgrid[i],pHashGrid[i],pHashData[i], 1/celldim, 0,pTris,nTris);
+			HashTrianglesToPlane(hashplane, Vec2(sz[inc_mod3[i]],sz[dec_mod3[i]])*2, hashgrid[i],pHashGrid[i],pHashData[i], 1/celldim, 0,pTris,nTris, max(vox.sz[inc_mod3[i]],vox.sz[dec_mod3[i]])*2);
 		}
 
 		if ((params.findPrimLines | params.findPrimSurfaces | params.reuseVox) & params.findMeshes) 
