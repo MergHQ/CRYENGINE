@@ -249,7 +249,7 @@ pixout WaterReflPS(v2f_hs IN)
 	half3 cSpecularAcc = MatSpecColor * EnvCubeBoxProjected( IN.vPosWS.xyz, vReflNorm, half4(1,1,1,1) );
 	
 #if %_RT_TILED_SHADING
-	cSpecularAcc = MatSpecColor * GatherCubemapSpecular(screenTC, IN.vPosWS.xyz - GetWorldViewPos(), vReflNorm, MatSpecColor.w);
+	cSpecularAcc = MatSpecColor * GatherCubemapSpecular(screenTC, IN.vPosWS.xyz - GetWorldViewPos(), vNormal, MatSpecColor.w);
 #endif
 
 	// Blend in screenspace reflections
