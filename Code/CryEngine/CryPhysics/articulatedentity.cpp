@@ -1264,8 +1264,11 @@ int CArticulatedEntity::Step(float time_interval)
 			m_pCollEntList[i]->Awake();
 		return UpdateHistory(1);
 	}
-	if (!m_bAwake && !m_bCheckCollisions || m_nRoots>1 || (!m_bCheckCollisions && !m_bGrounded) || bNoSim)
+	if (!m_bAwake && !m_bCheckCollisions || m_nRoots>1 || (!m_bCheckCollisions && !m_bGrounded) || bNoSim) {
+		if (m_iSimClass==4)
+			UpdateConstraints(time_interval);
 		return UpdateHistory(1);
+	}
 
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_ENTITY_PROFILER

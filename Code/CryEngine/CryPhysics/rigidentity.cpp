@@ -739,6 +739,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 		pe_action_add_constraint *action = (pe_action_add_constraint*)_action;
 		CPhysicalEntity *pBuddy = (CPhysicalEntity*)action->pBuddy;
 		CPhysicalPlaceholder *pBuddy0 = (CPhysicalPlaceholder*)action->pBuddy;
+		bool simple = pBuddy0 && pBuddy0!=WORLD_ENTITY && pBuddy0->m_iSimClass>3 && pBuddy0->GetType()!=PE_ARTICULATED;
 		if (pBuddy==WORLD_ENTITY || pBuddy0 && pBuddy0->m_iSimClass>4)
 			pBuddy = &g_StaticPhysicalEntity;
 		if (!pBuddy || (unsigned int)pBuddy->m_iSimClass>4u)
@@ -783,7 +784,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 			for(ipart[1]=0;ipart[1]<pBuddy->m_nParts && pBuddy->m_parts[ipart[1]].id!=action->partid[1];ipart[1]++);
 			if (pBuddy->m_nParts>0 && ipart[1]>=pBuddy->m_nParts)
 				return 0;
-		} else if (pBuddy->m_nParts || pBuddy==&g_StaticPhysicalEntity)
+		} else if (pBuddy->m_nParts || simple || pBuddy==&g_StaticPhysicalEntity)
 			ipart[1] = 0;
 		else
 			return 0;
@@ -831,7 +832,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 			m_pConstraintInfos[i].damping = damping;
 		}
 
-		if (pBuddy0!=WORLD_ENTITY && pBuddy0->m_iSimClass>3 && pBuddy0->GetType()!=PE_ARTICULATED) {
+		if (simple) {
 			pe_status_pos sp; pBuddy0->GetStatus(&sp);
 			m_pConstraints[i].pent[1] = (CPhysicalEntity*)pBuddy0;
 			m_pConstraintInfos[i].qframe_rel[1] = !sp.q*qframe[1];
