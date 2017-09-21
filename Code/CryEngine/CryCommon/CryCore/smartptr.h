@@ -315,6 +315,11 @@ public:
 	{
 	}
 
+	_i_reference_target(const _i_reference_target&) :
+		m_nRefCounter(0)
+	{
+	}
+
 	virtual ~_i_reference_target()
 	{
 	}
@@ -355,6 +360,7 @@ class CMultiThreadRefCount
 {
 public:
 	CMultiThreadRefCount() : m_cnt(0) {}
+	CMultiThreadRefCount(const CMultiThreadRefCount&) : m_cnt(0) {}
 	virtual ~CMultiThreadRefCount() {}
 
 	void AddRef()
@@ -402,6 +408,11 @@ class _i_multithread_reference_target
 {
 public:
 	_i_multithread_reference_target()
+		: m_nRefCounter(0)
+	{
+	}
+
+	_i_multithread_reference_target(const _i_multithread_reference_target&)
 		: m_nRefCounter(0)
 	{
 	}
