@@ -461,10 +461,10 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 				}
 			}
 
+			pTerrainNode->m_bHMDataIsModified = (ri.fOffset != fMin);
+
 			ri.fOffset = fMin;
 			ri.fRange = (fMax - fMin) / float(0x0FFF);
-
-			pTerrainNode->m_bHMDataIsModified = false;
 
 			for (int x = x1; x <= x2; x += nStep)
 			{
@@ -621,7 +621,10 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 
 	m_bHeightMapModified = 0;
 
-	m_bTerrainPaintingInProgress = true;
+	if (nSizeX != nHmapSize || nSizeY != nHmapSize)
+	{
+		m_bTerrainPaintingInProgress = true;
+	}
 
 #endif // _RELEASE
 }

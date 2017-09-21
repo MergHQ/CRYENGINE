@@ -277,9 +277,12 @@ vert2fragTerrain TerrainVS(app2vertGeneral IN_common)
 	float4 blendColInfo = Get_SPI_BlendWithTerrainColInfo();
 	OUT.basesectorTC.xyz = float3(blendColInfo.zz * vertPassPos.WorldPos.yx + blendColInfo.xy, 1);
 
-	// Allow normal map only in distance or only for mesh-instanced sectors
+	// Allow normal map only in distance (mainly for hiding DXT compression artifacts) or only for mesh-instanced sectors
 	if (blendColInfo.w >= 0)
-		OUT.basesectorTC.z = saturate(length(GetWorldViewPos().xyz - vertPassPos.WorldPos.xyz) / 1024.0 - 1.0);
+	{
+		const float terrainBaseNormalMapFadeInDistance = 768; 
+		OUT.basesectorTC.z = saturate(length(GetWorldViewPos().xyz - vertPassPos.WorldPos.xyz) / terrainBaseNormalMapFadeInDistance - 1.0);
+	}
 
 	OUT.normal = vertPassPos.Normal;
 
