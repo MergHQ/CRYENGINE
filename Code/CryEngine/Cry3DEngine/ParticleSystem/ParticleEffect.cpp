@@ -8,15 +8,12 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#include "ParticleEffect.h"
+#include "ParticleSystem.h"
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/SmartPtr.h>
 #include <CryParticleSystem/ParticleParams.h>
-#include "ParticleEffect.h"
-#include "ParticleEmitter.h"
-#include "ParticleFeature.h"
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {

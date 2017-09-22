@@ -2,11 +2,9 @@
 
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleRender.h"
-#include "ParticleSystem/ParticleEmitter.h"
+#include "ParticleSystem/ParticleSystem.h"
 #include <CrySerialization/Math.h>
 #include <CryMath/RadixSort.h>
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {

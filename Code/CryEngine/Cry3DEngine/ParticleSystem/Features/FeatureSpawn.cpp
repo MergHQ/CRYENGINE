@@ -8,7 +8,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
+#include "ParticleSystem/ParticleSystem.h"
+#include "ParticleSystem/ParticleComponentRuntime.h"
 #include "ParamMod.h"
 
 namespace pfx2
@@ -40,8 +41,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitSubInstances, this);
-		pComponent->AddToUpdateList(EUL_Spawn, this);
+		pComponent->InitSubInstances.add(this);
+		pComponent->SpawnParticles.add(this);
 		m_spawnDataOff = pComponent->AddInstanceData(sizeof(SSpawnData));
 		m_amount.AddToComponent(pComponent, this);
 		m_delay.AddToComponent(pComponent, this);
@@ -134,7 +135,7 @@ protected:
 			StartInstances(context, SUpdateRange(), indicesArray);
 		}
 
-		const float countScale = runtime.GetEmitter()->GetSpawnParams().fCountScale;
+		const float countScale = runtime.IsChild() ? 1.0f : runtime.GetEmitter()->GetSpawnParams().fCountScale;
 		const float dT = context.m_deltaTime;
 		const float invDT = dT ? 1.0f / dT : 0.0f;
 		SUpdateRange range(0, numInstances);
@@ -182,7 +183,7 @@ protected:
 						}
 					}
 
-					runtime.SpawnParticles(entry);
+					runtime.AddSpawnEntry(entry);
 				}
 				pSpawn->m_spawned += spawned;
 			}
@@ -396,8 +397,7 @@ private:
 		parentLoc.q = context.m_parentContainer.GetIQuatStream(EPQF_Orientation).SafeLoad(parentId);
 
 		Vec3 emitOffset(0);
-		for (auto& it : context.m_runtime.GetComponent()->GetUpdateList(EUL_GetEmitOffset))
-			emitOffset += it->GetEmitOffset(context, parentId);
+		context.m_runtime.GetComponent()->GetEmitOffset(context, parentId, emitOffset);
 		return parentLoc * emitOffset;
 	}
 };
@@ -426,7 +426,7 @@ public:
 
 		TFloatArray extents(*context.m_pMemHeap, numInstances);
 		extents.fill(0.0f);
-		runtime.GetSpatialExtents(context, amounts, extents);
+		runtime.GetComponent()->GetSpatialExtents(context, amounts, extents);
 		for (uint i = 0; i < numInstances; ++i)
 		{
 			amounts[i] = extents[i];

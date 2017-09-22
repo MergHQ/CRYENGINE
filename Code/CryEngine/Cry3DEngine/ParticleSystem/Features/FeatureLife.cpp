@@ -11,8 +11,6 @@
 #include "ParticleSystem/ParticleFeature.h"
 #include "ParamMod.h"
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -42,8 +40,8 @@ public:
 		pParams->m_maxParticleLifeTime = m_lifeTime.GetValueRange().end;
 
 		if (m_killOnParentDeath)
-			pComponent->AddToUpdateList(EUL_PostUpdate, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+			pComponent->PostUpdateParticles.add(this);
+		pComponent->UpdateGPUParams.add(this);
 	}
 
 	virtual void InitParticles(const SUpdateContext& context) override
@@ -81,7 +79,7 @@ public:
 		}
 	}
 
-	virtual void PostUpdate(const SUpdateContext& context) override
+	virtual void PostUpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -101,7 +99,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.lifeTime = m_lifeTime.GetValueRange(context)(0.5f);
 	}

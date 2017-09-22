@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleRender.h"
+#include "ParticleSystem/ParticleEffect.h"
 
 namespace gpu_pfx2
 {

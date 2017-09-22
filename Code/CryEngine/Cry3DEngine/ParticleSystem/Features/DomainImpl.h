@@ -132,12 +132,7 @@ private:
 class CAttributeSampler
 {
 public:
-	CAttributeSampler(const SUpdateContext& context, const string& m_attributeName)
-	{
-		const CAttributeInstance& attributes = context.m_runtime.GetEmitter()->GetAttributeInstance();
-		auto attributeId = attributes.FindAttributeIdByName(m_attributeName.c_str());
-		m_attributeValue = ToFloatv(attributes.GetAsFloat(attributeId, 1.0f));
-	}
+	CAttributeSampler(const SUpdateContext& context, const string& m_attributeName);
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
 		return m_attributeValue;

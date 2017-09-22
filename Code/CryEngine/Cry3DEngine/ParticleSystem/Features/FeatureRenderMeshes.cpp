@@ -3,9 +3,7 @@
 #include "StdAfx.h"
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Math.h>
-#include "ParticleSystem/ParticleFeature.h"
-
-CRY_PFX2_DBG
+#include "ParticleSystem/ParticleSystem.h"
 
 namespace pfx2
 {
@@ -69,7 +67,7 @@ public:
 		pParams->m_meshCentered = m_originMode == EOriginMode::Center;
 		if (m_pStaticObject)
 		{
-			pComponent->AddToUpdateList(EUL_RenderDeferred, this);
+			pComponent->RenderDeferred.add(this);
 			pComponent->AddParticleData(EPVF_Position);
 			pComponent->AddParticleData(EPQF_Orientation);
 
@@ -92,7 +90,7 @@ public:
 				{
 					// Require per-particle sub-objects
 					assert(m_aSubObjects.size() < 256);
-					pComponent->AddToUpdateList(EUL_InitUpdate, this);
+					pComponent->InitParticles.add(this);
 					pComponent->AddParticleData(EPDT_MeshGeometry);
 					if (m_piecesMode == EPiecesMode::AllPieces)
 					{
@@ -163,7 +161,7 @@ public:
 		}
 	}
 
-	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 

@@ -2,8 +2,7 @@
 
 #include "StdAfx.h"
 #include "FeatureCollision.h"
-
-CRY_PFX2_DBG
+#include "ParticleSystem/ParticleComponentRuntime.h"
 
 namespace pfx2
 {
@@ -24,8 +23,8 @@ CFeatureCollision::CFeatureCollision()
 
 void CFeatureCollision::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	pComponent->AddToUpdateList(EUL_InitUpdate, this);
-	pComponent->AddToUpdateList(EUL_PostUpdate, this);
+	pComponent->InitParticles.add(this);
+	pComponent->PostUpdateParticles.add(this);
 	pComponent->AddParticleData(EPVF_PositionPrev);
 	pComponent->AddParticleData(EPDT_ContactPoint);
 	if (m_rotateToNormal)
@@ -510,7 +509,7 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 	}
 }
 
-void CFeatureCollision::PostUpdate(const SUpdateContext& context)
+void CFeatureCollision::PostUpdateParticles(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -552,7 +551,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureCollision, "Motion", "Colli
 
 void CFeatureGPUCollision::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	pComponent->AddToUpdateList(EUL_Update, this);
+	pComponent->UpdateParticles.add(this);
 
 	if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Collision))
 	{

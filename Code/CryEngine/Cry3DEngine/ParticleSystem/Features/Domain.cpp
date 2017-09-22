@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include "Domain.h"
+#include "../ParticleSystem.h"
+#include "../ParticleComponentRuntime.h"
 #include "TimeOfDay.h"
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {
@@ -149,5 +149,14 @@ float CDomain::GetGlobalValue(EDomainGlobal source) const
 	return 0.0f;
 }
 
+namespace detail
+{
+	CAttributeSampler::CAttributeSampler(const SUpdateContext& context, const string& m_attributeName)
+	{
+		const CAttributeInstance& attributes = context.m_runtime.GetEmitter()->GetAttributeInstance();
+		auto attributeId = attributes.FindAttributeIdByName(m_attributeName.c_str());
+		m_attributeValue = ToFloatv(attributes.GetAsFloat(attributeId, 1.0f));
+	}
+}
 
 }

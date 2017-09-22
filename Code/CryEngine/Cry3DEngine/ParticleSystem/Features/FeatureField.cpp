@@ -15,8 +15,6 @@
 
 #include <CryRenderer/IGpuParticles.h>
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -61,7 +59,7 @@ public:
 			parameters.clipRange = m_clipRange;
 			pInt->SetParameters(parameters);
 		}
-		pComponent->AddToUpdateList(EUL_Update, this);
+		pComponent->UpdateParticles.add(this);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -79,7 +77,7 @@ public:
 		m_opacity.InitParticles(context, EPDT_Alpha);
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void UpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		m_opacity.Update(context, EPDT_Alpha);
@@ -137,7 +135,7 @@ public:
 		m_size.InitParticles(context, EPDT_Size);
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void UpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		m_size.Update(context, EPDT_Size);
@@ -173,7 +171,7 @@ public:
 			m_initAlphas = !pComponent->UseParticleData(EPDT_Alpha);
 			pComponent->AddParticleData(EPDT_Alpha);
 		}
-		pComponent->AddToUpdateList(EUL_Update, this);
+		pComponent->UpdateParticles.add(this);
 
 		if (auto gpuInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldPixelSize))
 		{
@@ -193,7 +191,7 @@ public:
 		ar(m_affectOpacity, "AffectOpacity", "Affect Opacity");
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void UpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 

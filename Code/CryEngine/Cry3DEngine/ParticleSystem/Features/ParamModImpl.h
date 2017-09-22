@@ -67,7 +67,7 @@ void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pCompon
 	m_modifiers.erase(it, m_modifiers.end());
 
 	if (Context().GetDomain() == EMD_PerParticle)
-		pComponent->AddToUpdateList(EUL_InitUpdate, pFeature);
+		pComponent->InitParticles.add(pFeature);
 
 	for (auto& pModifier : m_modifiers)
 	{
@@ -86,7 +86,7 @@ void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pCompon
 	{
 		pComponent->AddParticleData(InitType(dataType));
 		if (Context().GetDomain() == EMD_PerParticle)
-			pComponent->AddToUpdateList(EUL_Update, pFeature);
+			pComponent->UpdateParticles.add(pFeature);
 	}
 }
 

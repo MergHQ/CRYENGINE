@@ -10,8 +10,7 @@
 #pragma once
 
 #include "ParticleCommon.h"
-#include "ParticleContainer.h"
-#include "Features/ParamTraits.h"
+#include "ParticleFeature.h"
 #include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
@@ -19,33 +18,12 @@ namespace pfx2
 
 class CParticleComponentRuntime;
 
-// Feature functions
-enum EUpdateList
-{
-	EUL_MainPreUpdate,    // this feature will update once per frame on the main thread
-	EUL_InitSubInstances, // this feature has sub instance data to initialize
-	EUL_GetExtents,       // this feature has a spatial extent
-	EUL_GetEmitOffset,    // this feature moves the effective emit location
-	EUL_Spawn,            // this feature creates new particles
-	EUL_InitUpdate,       // this feature needs to initialize newborn particle data
-	EUL_PostInitUpdate,   // this feature needs to initialize newborn particle data after main InitUpdate
-	EUL_KillUpdate,       // this feature needs to run logic for particles that are being killed
-	EUL_PreUpdate,        // this feature changes particles over time before the main update
-	EUL_Update,           // this feature changes particle data over time
-	EUL_PostUpdate,       // this feature changes particles after the main update
-	EUL_ComputeBounds,    // this feature augments the bounding box for rendering
-	EUL_Render,           // this feature has geometry to render
-	EUL_RenderDeferred,   // this feature has geometry to render but can only render after all updates are done
-	EUL_UpdateGPU,        // this feature updates params for GPU particles
-
-	EUL_Count,
-};
-
 SERIALIZATION_ENUM_DECLARE(EAnimationCycle, : uint8,
-                           Once,
-                           Loop,
-                           Mirror
-                           )
+	Once,
+	Loop,
+	Mirror
+)
+
 
 struct STextureAnimation
 {
@@ -170,7 +148,7 @@ struct SComponentParams
 	void GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 };
 
-class CParticleComponent : public IParticleComponent
+class CParticleComponent : public IParticleComponent, public SFeatureDispatchers
 {
 public:
 	typedef _smart_ptr<CParticleComponent> TComponentPtr;
@@ -194,9 +172,11 @@ public:
 	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) override;
 	virtual Vec2                GetNodePosition() const override;
 	virtual void                SetNodePosition(Vec2 position) override;
-	virtual IParticleComponent* GetParent() const override                                { return GetParentComponent(); }
+	virtual IParticleComponent* GetParent() const override                                { return m_parent; }
 	// ~IParticleComponent
 
+	void                                  ClearFeatures()                       { m_features.clear(); }
+	void                                  AddFeature(CParticleFeature* pFeature);
 	void                                  PreCompile();
 	void                                  ResolveDependencies();
 	void                                  Compile();
@@ -206,10 +186,8 @@ public:
 	uint                                  GetComponentId() const                { return m_componentId; }
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
 
-	void                                  AddToUpdateList(EUpdateList list, CParticleFeature* pFeature);
 	TInstanceDataOffset                   AddInstanceData(size_t size);
 	void                                  AddParticleData(EParticleDataType type);
-	const std::vector<CParticleFeature*>& GetUpdateList(EUpdateList list) const { return m_updateLists[list]; }
 
 	bool                                  UsesGPU() const                       { return m_componentParams.m_usesGPU; }
 	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUComponentParams; };
@@ -227,10 +205,7 @@ public:
 	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 	float                   GetEquilibriumTime(Range parentLife = Range()) const;
 
-	void                    PrepareRenderObjects(CParticleEmitter* pEmitter);
-	void                    ResetRenderObjects(CParticleEmitter* pEmitter);
-	void                    Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
-	void                    RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
+	void                    RenderAll(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 
 private:
@@ -243,7 +218,6 @@ private:
 	Vec2                                     m_nodePosition;
 	SComponentParams                         m_componentParams;
 	std::vector<TParticleFeaturePtr>         m_features;
-	std::vector<CParticleFeature*>           m_updateLists[EUL_Count];
 	StaticEnumArray<bool, EParticleDataType> m_useParticleData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;

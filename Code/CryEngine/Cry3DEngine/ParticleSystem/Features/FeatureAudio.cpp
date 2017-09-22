@@ -4,6 +4,8 @@
 #include "ParticleSystem/ParticleFeature.h"
 #include <CrySerialization/Decorators/ResourcesAudio.h>
 #include <CryAudio/IObject.h>
+#include "../ParticleComponentRuntime.h"
+#include "../ParticleEffect.h"
 #include "ParamMod.h"
 
 namespace CryAudio
@@ -34,12 +36,12 @@ public:
 		m_stopTrigger.Resolve();
 		if (GetNumResources())
 		{
-			pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
+			pComponent->MainPreUpdate.add(this);
 			pComponent->AddParticleData(EPVF_Position);
 			if (m_followParticle || m_stopOnDeath)
 			{
 				pComponent->AddParticleData(EPDT_AudioObject);
-				pComponent->AddToUpdateList(EUL_InitUpdate, this);
+				pComponent->InitParticles.add(this);
 			}
 		}
 	}
@@ -241,7 +243,7 @@ public:
 		if (!m_parameterName.empty())
 		{
 			m_parameterId = CryAudio::StringToId(m_parameterName.c_str());
-			pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
+			pComponent->MainPreUpdate.add(this);
 			m_value.AddToComponent(pComponent, this);
 		}
 	}

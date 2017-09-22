@@ -18,6 +18,8 @@ struct IParticleEffectPfx2;
 typedef _smart_ptr<IParticleEffectPfx2> PParticleEffect;
 typedef _smart_ptr<IParticleEmitter>    PParticleEmitter;
 
+typedef Serialization::IArchive IArchive;
+
 template<typename F>
 struct TParticleStats
 	: INumberVector<F, 11, TParticleStats<F>>
@@ -46,11 +48,11 @@ struct SParticleFeatureParams
 
 typedef uint32 TParticleId;
 
-struct IParticleFeature
+struct IParticleFeature : public _i_reference_target_t
 {
 	virtual bool                          IsEnabled() const = 0;
 	virtual void                          SetEnabled(bool enabled) = 0;
-	virtual void                          Serialize(Serialization::IArchive& ar) = 0;
+	virtual void                          Serialize(IArchive& ar) = 0;
 	virtual const SParticleFeatureParams& GetFeatureParams() const = 0;
 	virtual uint                          GetNumConnectors() const = 0;
 	virtual const char*                   GetConnectorName(uint connectorId) const = 0;
@@ -67,7 +69,7 @@ struct IParticleComponent : public _i_reference_target_t
 	virtual void                SetEnabled(bool enabled) = 0;
 	virtual bool                IsVisible() const = 0;
 	virtual void                SetVisible(bool visible) = 0;
-	virtual void                Serialize(Serialization::IArchive& ar) = 0;
+	virtual void                Serialize(IArchive& ar) = 0;
 	virtual void                SetName(const char* name) = 0;
 	virtual const char*         GetName() const = 0;
 	virtual uint                GetNumFeatures() const = 0;
@@ -126,6 +128,7 @@ struct IParticleSystem : public ICryUnknown
 	virtual void                    Reset() = 0;
 
 	virtual void                    Serialize(TSerialize ser) = 0;
+	virtual bool                    SerializeFeatures(IArchive& ar, TParticleFeatures& features, cstr name, cstr label) const = 0;
 
 	virtual void                    GetStats(SParticleStats& stats) = 0;
 	virtual void                    GetMemoryUsage(ICrySizer* pSizer) const = 0;

@@ -8,15 +8,14 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#include "ParticleSystem.h"
+#include "ParticleEffect.h"
+#include "ParticleEmitter.h"
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include "CryExtension/CryCreateClassInstance.h"
 #include <CryString/StringUtils.h>
-#include "ParticleSystem.h"
-#include "ParticleEffect.h"
-#include "ParticleEmitter.h"
-
-CRY_PFX2_DBG
+#include <CrySerialization/SmartPtr.h>
 
 namespace pfx2
 {
@@ -25,9 +24,6 @@ CRYREGISTER_SINGLETON_CLASS(CParticleSystem)
 
 CParticleSystem::CParticleSystem()
 	: m_memHeap(gEnv->pJobManager->GetNumWorkerThreads() + 1)
-	, m_nextEmitterId(0)
-	, m_lastCameraPose(IDENTITY)
-	, m_lastSysSpec(END_CONFIG_SPEC_ENUM)
 {
 }
 
@@ -332,6 +328,11 @@ const SParticleFeatureParams* CParticleSystem::GetDefaultFeatureParam(EFeatureTy
 		if (feature.m_defaultForType == type)
 			return &feature;
 	return nullptr;
+}
+
+bool CParticleSystem::SerializeFeatures(IArchive& ar, TParticleFeatures& features, cstr name, cstr label) const
+{
+	return ar(features, name, label);
 }
 
 void CParticleSystem::GetStats(SParticleStats& stats)

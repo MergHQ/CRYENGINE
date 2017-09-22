@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLERENDER_H
-#define PARTICLERENDER_H
-
 #pragma once
 
 #include "ParticleSystem/ParticleFeature.h"
@@ -48,8 +45,7 @@ class CParticleRenderBase : public CParticleFeature, public Cry3DEngineBase
 public:
 	virtual EFeatureType GetFeatureType() override;
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
-	virtual void         PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent) override;
-	virtual void         ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent) override;
+	virtual void         PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent, bool bPrepare) override;
 	virtual void         Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
 
 protected:
@@ -68,5 +64,3 @@ private:
 }
 
 #include "ParticleRenderImpl.h"
-
-#endif // PARTICLERENDER_H

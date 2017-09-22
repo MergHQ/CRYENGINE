@@ -24,14 +24,16 @@
 
 class SmartScriptTable;
 
+//! Real-time params to control particle emitters.
+
 SERIALIZATION_DECLARE_ENUM(EParticleSpec,
-	Default = 0,
-	Low = CONFIG_LOW_SPEC,
-	Medium = CONFIG_MEDIUM_SPEC,
-	High = CONFIG_HIGH_SPEC,
+	Default  = 0,
+	Low      = CONFIG_LOW_SPEC,
+	Medium   = CONFIG_MEDIUM_SPEC,
+	High     = CONFIG_HIGH_SPEC,
 	VeryHigh = CONFIG_VERYHIGH_SPEC,
-	XBoxOne = CONFIG_DURANGO,
-	PS4 = CONFIG_ORBIS
+	XBoxOne  = CONFIG_DURANGO,
+	PS4      = CONFIG_ORBIS
 );
 
 //! Real-time params to control particle emitters.
@@ -230,6 +232,12 @@ struct IParticleAttributes
 };
 
 typedef std::shared_ptr<IParticleAttributes> TParticleAttributesPtr;
+
+namespace pfx2
+{
+	struct IParticleFeature;
+	typedef std::vector<_smart_ptr<IParticleFeature>> TParticleFeatures;
+};
 
 //! Interface to control a particle effect.
 //! This interface is used by I3DEngine::CreateParticleEffect to control a particle effect.
@@ -467,9 +475,12 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 	//! Get the Entity Slot that this particle emitter is attached to.
 	virtual int GetAttachedEntitySlot() = 0;
 
-	// Summary:
-	//		 Get Particle Attributes
+	// pfx2 base interface
+	//! Get Particle Attributes
 	virtual IParticleAttributes& GetAttributes() = 0;
+
+	//! Set additional Features on the emitter
+	virtual void SetEmitterFeatures(pfx2::TParticleFeatures& features) { }
 
 	// </interfuscator:shuffle>
 };
