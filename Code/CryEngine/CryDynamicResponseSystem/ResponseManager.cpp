@@ -15,35 +15,33 @@
 #include "Response.h"
 #include "ResponseSystemDataImportHelper.h"
 
-using namespace CryDRS;
-
+namespace CryDRS
+{
 string CResponseManager::s_currentSignal;
 
-typedef std::pair<CHashedString, ResponsePtr> ResponsePair;
-namespace std {
+typedef ::std::pair<CHashedString, ResponsePtr> ResponsePair;
+typedef ::std::pair<string, ResponsePtr> ResponsePairSorted;
+
 struct ResponsePairSerializer
 {
-	ResponsePairSerializer(ResponsePair& pair) : pair_(pair) {}
+	ResponsePairSerializer(CryDRS::ResponsePair& pair) : pair_(pair) {}
 	void Serialize(Serialization::IArchive& ar)
 	{
 		ar(pair_.first, "key", "^");
 		ar(pair_.second, "value", "^");
 	}
-	ResponsePair& pair_;
+	CryDRS::ResponsePair& pair_;
 };
-bool Serialize(Serialization::IArchive& ar, ResponsePair& pair, const char* szName, const char* szLabel)
+bool Serialize(Serialization::IArchive& ar, CryDRS::ResponsePair& pair, const char* szName, const char* szLabel)
 {
 	ResponsePairSerializer keyValue(pair);
 	return ar(keyValue, szName, szLabel);
 }
-}
 
 //--------------------------------------------------------------------------------------------------
-typedef std::pair<string, ResponsePtr> ResponsePairSorted;
-namespace std {
 struct ResponsePairSortedSerializer
 {
-	ResponsePairSortedSerializer(ResponsePairSorted& pair) : pair_(pair) {}
+	ResponsePairSortedSerializer(CryDRS::ResponsePairSorted& pair) : pair_(pair) {}
 	void Serialize(Serialization::IArchive& ar)
 	{
 		ar(pair_.first, "key", "^");
@@ -57,13 +55,22 @@ struct ResponsePairSortedSerializer
 		}
 		ar(pair_.second, "value", "^");
 	}
-	ResponsePairSorted& pair_;
+	CryDRS::ResponsePairSorted& pair_;
 };
-bool Serialize(Serialization::IArchive& ar, ResponsePairSorted& pair, const char* szName, const char* szLabel)
+bool Serialize(Serialization::IArchive& ar, CryDRS::ResponsePairSorted& pair, const char* szName, const char* szLabel)
 {
 	ResponsePairSortedSerializer keyValue(pair);
 	return ar(keyValue, szName, szLabel);
 }
+
+bool Serialize(Serialization::IArchive& ar, CryDRS::ResponsePtr& ptr, const char* szName, const char* szLabel)
+{
+	if (!ptr.get())
+	{
+		ptr.reset(new CryDRS::CResponse());
+	}
+	ar(*ptr.get(), szName, szLabel);
+	return true;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -312,20 +319,6 @@ void CResponseManager::Reset(bool bResetExecutionCounter, bool bClearAllResponse
 	}
 
 	m_runningResponses.clear();
-}
-
-//--------------------------------------------------------------------------------------------------
-namespace std
-{
-bool Serialize(Serialization::IArchive& ar, ResponsePtr& ptr, const char* szName, const char* szLabel)
-{
-	if (!ptr.get())
-	{
-		ptr.reset(new CResponse());
-	}
-	ar(*ptr.get(), szName, szLabel);
-	return true;
-}
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -792,4 +785,5 @@ SSignal::SSignal(
 	, m_pSignalContext(pSignalContext)
 	, m_id(++g_currentSignalId)
 {
+}
 }
