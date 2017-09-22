@@ -13,8 +13,8 @@ add_sources("NoUberFile"
     "RCConfigParser.inl"
     "ISubstanceInstanceRenderer.h" 
 	SOURCE_GROUP "Root"
-		"stdafx.cpp"
-		"stdafx.h"
+		"StdAfx.cpp"
+		"StdAfx.h"
         "CrySubstanceAPI.h"
    
 )
