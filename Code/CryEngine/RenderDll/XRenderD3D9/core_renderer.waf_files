@@ -346,13 +346,8 @@
       "Gpu/Particles/GpuParticleFeatureColor.cpp",
       "Gpu/Particles/GpuParticleFeatureCollision.cpp",
       "Gpu/Particles/GpuParticleFeatureField.cpp",
-      "Gpu/Particles/GpuParticleFeatureLifeTime.cpp",
-      "Gpu/Particles/GpuParticleFeatureLocation.cpp",
       "Gpu/Particles/GpuParticleFeatureMotion.cpp",
-      "Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp",
-      "Gpu/Particles/GpuParticleFeatureRender.cpp",
-      "Gpu/Particles/GpuParticleFeatureSpawn.cpp",
-      "Gpu/Particles/GpuParticleFeatureVelocity.cpp"
+      "Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp"
     ],
     "Header Files/Gpu/Particles":[
       "Gpu/Particles/GpuParticleComponentRuntime.h",
@@ -363,13 +358,8 @@
       "Gpu/Particles/GpuParticleFeatureColor.h",
       "Gpu/Particles/GpuParticleFeatureCollision.h",
       "Gpu/Particles/GpuParticleFeatureField.h",
-      "Gpu/Particles/GpuParticleFeatureLifeTime.h",
-      "Gpu/Particles/GpuParticleFeatureLocation.h",
       "Gpu/Particles/GpuParticleFeatureMotion.h",
-      "Gpu/Particles/GpuParticleFeatureFluidDynamics.h",
-      "Gpu/Particles/GpuParticleFeatureRender.h",
-      "Gpu/Particles/GpuParticleFeatureSpawn.h",
-      "Gpu/Particles/GpuParticleFeatureVelocity.h"
+      "Gpu/Particles/GpuParticleFeatureFluidDynamics.h"
     ],
     "Source Files/Gpu/Physics":[
       "Gpu/Physics/GpuPhysicsParticleFluid.cpp"

@@ -21,6 +21,7 @@
     ],
     "CryCore":[
       "CryCore/BaseTypes.h",
+	  "CryCore/Dispatcher.h",
       "CryCore/Octree.h",
       "CryCore/OctreeDebug.h",
       "CryCore/smartptr.h",
@@ -306,6 +307,7 @@
       "CryMath/Cry_XOptimise.h",
       "CryMath/CryHalf_info.h",
       "CryMath/GeomQuery.h",
+	  "CryMath/GeomQuery.cpp",
       "CryMath/CryHalf.inl",
       "CryMath/QTangent.h",
       "CryMath/ISplines.h",
@@ -373,7 +375,7 @@
       "CryAISystem/IAISystem.h",
       "CryAISystem/IBlackBoard.h",
       "CryAISystem/ICommunicationManager.h",
-      "CryAISystem/ICoverSystem.h",
+      "CryAISystem/ICoverSystem.h",	  
       "CryAISystem/IFactionMap.h",
       "CryAISystem/INavigation.h",
       "CryAISystem/IPathfinder.h",
@@ -401,6 +403,8 @@
       "CryAISystem/MovementStyle.h",
       "CryAISystem/IAIBubblesSystem.h",
       "CryAISystem/ValueHistory.h",
+	  "CryAISystem/Components/IEntityCoverUserComponent.h",
+	  "CryAISystem/IAuditionMap.h",
       {
         "BehaviorTree":[
           "CryAISystem/BehaviorTree/IBehaviorTree.h",
@@ -481,7 +485,9 @@
       "Cry3DEngine/IMeshObj.h",
       "Cry3DEngine/CryPodArray.h",
       "Cry3DEngine/ImageExtensionHelper.h",
-      "Cry3DEngine/ImageExtensionHelper_info.h"
+      "Cry3DEngine/ImageExtensionHelper_info.h",
+	  "Cry3DEngine/GeomRef.h",
+	  "Cry3DEngine/GeomRef.inl"
     ],
     "CryParticleSystem":[
       "CryParticleSystem/Options.h",
