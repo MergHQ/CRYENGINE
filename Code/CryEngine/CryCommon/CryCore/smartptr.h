@@ -151,6 +151,11 @@ public:
 	{
 	}
 
+	_reference_target_no_vtable(const _reference_target_no_vtable<TDerived, Counter>&) :
+		m_nRefCounter(0)
+	{
+	}
+
 	~_reference_target_no_vtable()
 	{
 		//assert (!m_nRefCounter);
@@ -195,6 +200,11 @@ template<typename Counter> class _reference_target
 {
 public:
 	_reference_target() :
+		m_nRefCounter(0)
+	{
+	}
+
+	_reference_target(const _reference_target<Counter>&) :
 		m_nRefCounter(0)
 	{
 	}
@@ -257,6 +267,12 @@ public:
 	explicit _cfg_reference_target(DeleteFncPtr pDeleteFnc) :
 		m_nRefCounter(0),
 		m_pDeleteFnc(pDeleteFnc)
+	{
+	}
+
+	_cfg_reference_target(const _cfg_reference_target<T, Counter>& rhs) :
+		m_nRefCounter(0),
+		m_pDeleteFnc(rhs.m_pDeleteFnc)
 	{
 	}
 
