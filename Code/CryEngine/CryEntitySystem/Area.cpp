@@ -349,105 +349,7 @@ bool CArea::CalcPointWithin(EntityId const nEntityID, Vec3 const& point3d, bool 
 		}
 		else
 		{
-			switch (m_areaType)
-			{
-			case ENTITY_AREA_TYPE_SPHERE:
-				{
-					Vec3 oPoint(point3d - m_sphereCenter);
-
-					if (bIgnoreHeight)
-					{
-						oPoint.z = 0.0f;
-					}
-
-					bResult = (oPoint.GetLengthSquared() < m_sphereRadius2);
-
-					break;
-				}
-			case ENTITY_AREA_TYPE_BOX:
-				{
-					Vec3 p3d = m_invMatrix.TransformPoint(point3d);
-
-					if (bIgnoreHeight)
-						p3d.z = m_boxMax.z;
-
-					// And put the result into the data cache
-					if ((p3d.x < m_boxMin.x) ||
-					    (p3d.y < m_boxMin.y) ||
-					    (p3d.z < m_boxMin.z) ||
-					    (p3d.x > m_boxMax.x) ||
-					    (p3d.y > m_boxMax.y) ||
-					    (p3d.z > m_boxMax.z))
-					{
-						bResult = false;
-					}
-					else
-					{
-						bResult = true;
-					}
-
-					break;
-				}
-			case ENTITY_AREA_TYPE_SOLID:
-				{
-					if (point3d.IsValid())
-					{
-						Vec3 localPoint3D = m_invMatrix.TransformPoint(point3d);
-						bResult = m_pAreaSolid->IsInside(localPoint3D);
-					}
-
-					break;
-				}
-			case ENTITY_AREA_TYPE_SHAPE:
-				{
-					bResult = true;
-
-					if (!bIgnoreHeight)
-					{
-						if (m_height > 0.0f)
-						{
-							if (point3d.z < m_origin || point3d.z > m_origin + m_height)
-							{
-								bResult = false;
-							}
-						}
-					}
-
-					if (bResult)
-					{
-						a2DPoint const* const point = (CArea::a2DPoint*)(&point3d);
-
-						bResult = !m_areaBBox.PointOutBBox2D(*point);
-
-						if (bResult)
-						{
-							size_t cntr = 0;
-							size_t const nSegmentCount = m_areaSegments.size();
-
-							for (size_t sIdx = 0; sIdx < nSegmentCount; ++sIdx)
-							{
-								if (!m_areaSegments[sIdx]->isHorizontal && !m_areaSegments[sIdx]->bbox.PointOutBBox2DVertical(*point))
-								{
-									if (m_areaSegments[sIdx]->IntersectsXPosVertical(*point) || m_areaSegments[sIdx]->IntersectsXPos(*point))
-									{
-										++cntr;
-									}
-								}
-							}
-
-							bResult = ((cntr & 1) != 0);
-						}
-					}
-
-					break;
-				}
-			default:
-				{
-					CryFatalError("Unknown area type during CArea::CalcPointWithin");
-
-					break;
-				}
-			}
+			bResult = CalcPointWithinNonCached(point3d, bIgnoreHeight);
 
 			// Set the flags and put the result into the data cache.
 			if (pCachedData != nullptr && bCacheResult)
@@ -463,6 +365,116 @@ bool CArea::CalcPointWithin(EntityId const nEntityID, Vec3 const& point3d, bool 
 
 				pCachedData->bPointWithin = bResult;
 			}
+		}
+	}
+
+	return bResult;
+}
+
+// helper function to figure out if given point is contained within the area
+// does not make use of any cached data
+//////////////////////////////////////////////////////////////////////////
+bool CArea::CalcPointWithinNonCached(Vec3 const& point3d, bool const bIgnoreHeight) const
+{
+	bool bResult = false;
+
+	switch (m_areaType)
+	{
+	case ENTITY_AREA_TYPE_SPHERE:
+		{
+			Vec3 oPoint(point3d - m_sphereCenter);
+
+			if (bIgnoreHeight)
+			{
+				oPoint.z = 0.0f;
+			}
+
+			bResult = (oPoint.GetLengthSquared() < m_sphereRadius2);
+
+			break;
+		}
+	case ENTITY_AREA_TYPE_BOX:
+		{
+			Vec3 p3d = m_invMatrix.TransformPoint(point3d);
+
+			if (bIgnoreHeight)
+				p3d.z = m_boxMax.z;
+
+			// And put the result into the data cache
+			if ((p3d.x < m_boxMin.x) ||
+				(p3d.y < m_boxMin.y) ||
+				(p3d.z < m_boxMin.z) ||
+				(p3d.x > m_boxMax.x) ||
+				(p3d.y > m_boxMax.y) ||
+				(p3d.z > m_boxMax.z))
+			{
+				bResult = false;
+			}
+			else
+			{
+				bResult = true;
+			}
+
+			break;
+		}
+	case ENTITY_AREA_TYPE_SOLID:
+		{
+			if (point3d.IsValid())
+			{
+				Vec3 localPoint3D = m_invMatrix.TransformPoint(point3d);
+				bResult = m_pAreaSolid->IsInside(localPoint3D);
+			}
+
+			break;
+		}
+	case ENTITY_AREA_TYPE_SHAPE:
+		{
+			bResult = true;
+
+			if (!bIgnoreHeight)
+			{
+				if (m_height > 0.0f)
+				{
+					if (point3d.z < m_origin || point3d.z > m_origin + m_height)
+					{
+						bResult = false;
+					}
+				}
+			}
+
+			if (bResult)
+			{
+				a2DPoint const* const point = (CArea::a2DPoint*)(&point3d);
+
+				bResult = !m_areaBBox.PointOutBBox2D(*point);
+
+				if (bResult)
+				{
+					size_t cntr = 0;
+					size_t const nSegmentCount = m_areaSegments.size();
+
+					for (size_t sIdx = 0; sIdx < nSegmentCount; ++sIdx)
+					{
+						if (!m_areaSegments[sIdx]->isHorizontal && !m_areaSegments[sIdx]->bbox.PointOutBBox2DVertical(*point))
+						{
+							if (m_areaSegments[sIdx]->IntersectsXPosVertical(*point) || m_areaSegments[sIdx]->IntersectsXPos(*point))
+							{
+								++cntr;
+							}
+						}
+					}
+
+					bResult = ((cntr & 1) != 0);
+				}
+			}
+
+			break;
+		}
+	default:
+		{
+			CryFatalError("Unknown area type during CArea::CalcPointWithin");
+
+			break;
 		}
 	}
 
@@ -3425,6 +3437,10 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 	}
 }
 
+bool CArea::IsPointInside(Vec3 const& pointToTest) const
+{
+	return CalcPointWithinNonCached(pointToTest, false);
+}
 
 
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
