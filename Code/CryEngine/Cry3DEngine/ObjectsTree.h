@@ -366,8 +366,10 @@ public:
 	void                FillShadowMapCastersList(const ShadowMapFrustumParams& params, bool bNodeCompletellyInFrustum);
 	void                ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox);
 	void                GetLayerMemoryUsage(uint16 nLayerId, ICrySizer* pSizer, int* pNumBrushes, int* pNumDecals);
-
-	void                MarkAsUncompiled(const IRenderNode* pRenderNode = NULL);
+	virtual void        MarkAsUncompiled(const ERNListType eListType) { SetCompiled(eListType, false); }
+	void                MarkAsUncompiled();
+	inline bool         IsCompiled(ERNListType eRNListType) const { return (m_compiledFlag & (1 << eRNListType)) != 0; }
+	void                SetCompiled(ERNListType eRNListType, bool compiled) { m_compiledFlag = (compiled ? (1 << eRNListType) : 0) | (m_compiledFlag & ~(1 << eRNListType)); }
 	COctreeNode*        FindNodeContainingBox(const AABB& objBox);
 	void                MoveObjectsIntoList(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox, bool bRemoveObjects = false, bool bSkipDecals = false, bool bSkip_ERF_NO_DECALNODE_DECALS = false, bool bSkipDynamicObjects = false, EERType eRNType = eERType_TypesNum);
 	int                 PhysicalizeInBox(const AABB& bbox);
@@ -443,16 +445,16 @@ public:
 
 	void OffsetObjects(const Vec3& offset);
 	void SetVisArea(CVisArea* pVisArea);
+	void SetTerrainNode(struct CTerrainNode* node) { m_pTerrainNode = node; }
 
 	static COctreeNode* Create(const AABB& box, struct CVisArea* pVisArea, COctreeNode* pParent = NULL);
 
 protected:
 	AABB  GetChildBBox(int nChildId);
-	void  CompileObjects();
+	void  CompileObjects(ERNListType eListType);
 	void  UpdateStaticInstancing();
 	void  UpdateObjects(IRenderNode* pObj);
 	void  CompileCharacter(ICharacterInstance* pChar, uint32& nInternalFlags);
-	void  CompileObjectsBrightness();
 	float GetNodeObjectsMaxViewDistance();
 
 	// Check if min spec specified in render node passes current server config spec.
@@ -485,7 +487,7 @@ private:
 
 	COctreeNode*                     m_arrChilds[8];
 	TDoublyLinkedList<IRenderNode>   m_arrObjects[eRNListType_ListsNum];
-	PodArray<SCasterInfo>            m_lstCasters;
+	PodArray<SCasterInfo>            m_lstCasters[eRNListType_ListsNum];
 	Vec3                             m_vNodeCenter;
 	Vec3                             m_vNodeAxisRadius;
 	PodArray<CDLight*>               m_lstAffectingLights;
@@ -497,12 +499,11 @@ private:
 
 	OcclusionTestClient              m_occlusionTestClient;
 
+	uint32                           m_compiledFlag : eRNListType_ListsNum;
 	uint32                           m_bHasLights               : 1;
 	uint32                           m_bHasRoads                : 1;
 	uint32                           m_bNodeCompletelyInFrustum : 1;
-	uint32                           m_fpSunDirX                : 7;
-	uint32                           m_fpSunDirZ                : 7;
-	uint32                           m_fpSunDirYs               : 1;
+	uint32                           m_bStaticInstancingIsDirty : 1;
 
 	// used for streaming
 	int                           m_nFileDataOffset; // TODO: make it 64bit
@@ -513,7 +514,6 @@ private:
 	static int                    m_nInstStreamTasksInProgress;
 	static FILE*                  m_pFileForSyncRead;
 	static PodArray<COctreeNode*> m_arrStreamedInNodes;
-	uint32                        m_bStaticInstancingIsDirty : 1;
 
 	struct SNodeInstancingInfo
 	{

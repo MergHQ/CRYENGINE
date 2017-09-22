@@ -358,7 +358,7 @@ int COctreeNode::LoadObjects(byte* pPtr, byte* pEndPtr, std::vector<IStatObj*>* 
 				Get3DEngine()->UnRegisterEntityDirect(pRN);
 				LinkObject(pRN, pRN->GetRenderNodeType());
 				pRN->m_pOcNode = this;
-				SetCompiled(false);
+				SetCompiled(IRenderNode::GetRenderNodeListId(pRN->GetRenderNodeType()), false);
 			}
 
 			m_nInstCounterLoaded++;

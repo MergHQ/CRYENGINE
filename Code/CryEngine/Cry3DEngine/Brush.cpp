@@ -885,7 +885,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	if (!passInfo.IsShadowPass() && m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP)
 	{
 		if (!(pObj->m_nTextureID = GetObjManager()->CheckCachedNearestCubeProbe(this)) || !GetCVars()->e_CacheNearestCubePicking)
-			pObj->m_nTextureID = GetObjManager()->GetNearestCubeProbe(pAffectingLights, m_pOcNode->m_pVisArea, CBrush::GetBBox());
+			pObj->m_nTextureID = GetObjManager()->GetNearestCubeProbe(pAffectingLights, m_pOcNode->GetVisArea(), CBrush::GetBBox());
 
 		m_pTempData->userData.nCubeMapId = pObj->m_nTextureID;
 	}
@@ -893,8 +893,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	//////////////////////////////////////////////////////////////////////////
 	// temp fix to update ambient color (Vlad please review!)
 	pObj->m_nClipVolumeStencilRef = userData.m_pClipVolume ? userData.m_pClipVolume->GetStencilRef() : 0;
-	if (m_pOcNode && m_pOcNode->m_pVisArea)
-		pObj->m_II.m_AmbColor = m_pOcNode->m_pVisArea->GetFinalAmbientColor();
+	if (m_pOcNode && m_pOcNode->GetVisArea())
+		pObj->m_II.m_AmbColor = m_pOcNode->GetVisArea()->GetFinalAmbientColor();
 	else
 		pObj->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
 	//////////////////////////////////////////////////////////////////////////

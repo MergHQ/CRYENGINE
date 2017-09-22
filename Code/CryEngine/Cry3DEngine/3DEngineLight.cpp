@@ -711,7 +711,11 @@ void C3DEngine::AddPerObjectShadow(IShadowCaster* pCaster, float fConstBias, flo
 	if (bRequiresObjTreeUpdate)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
-		ObjectsTreeMarkAsUncompiled(static_cast<IRenderNode*>(pCaster));
+
+		if (static_cast<IRenderNode*>(pCaster)->m_pOcNode)
+		{
+			static_cast<COctreeNode*>(static_cast<IRenderNode*>(pCaster)->m_pOcNode)->SetCompiled(IRenderNode::GetRenderNodeListId(pCaster->GetRenderNodeType()), false);
+		}
 	}
 }
 
@@ -725,7 +729,10 @@ void C3DEngine::RemovePerObjectShadow(IShadowCaster* pCaster)
 		size_t nIndex = (size_t)(pOS - m_lstPerObjectShadows.begin());
 		m_lstPerObjectShadows.Delete(nIndex);
 
-		ObjectsTreeMarkAsUncompiled(static_cast<IRenderNode*>(pCaster));
+		if (static_cast<IRenderNode*>(pCaster)->m_pOcNode)
+		{
+			static_cast<COctreeNode*>(static_cast<IRenderNode*>(pCaster)->m_pOcNode)->SetCompiled(IRenderNode::GetRenderNodeListId(pCaster->GetRenderNodeType()), false);
+		}
 	}
 }
 

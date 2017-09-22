@@ -628,7 +628,6 @@ public:
 	virtual void   GetLayerMemoryUsage(uint16 nLayerId, ICrySizer* pSizer, int* pNumBrushes, int* pNumDecals) const;
 	virtual void   SkipLayerLoading(uint16 nLayerId, bool bClearList);
 	bool           IsLayerSkipped(uint16 nLayerId);
-	void           ObjectsTreeMarkAsUncompiled(const IRenderNode* pRenderNode);
 
 	//////////////////////////////////////////////////////////////////////////
 

@@ -295,7 +295,7 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	virtual void         CloneRegion(const AABB& region, const Vec3& offset, float zRotation);
 	virtual void         ClearRegion(const AABB& region);
 
-	void                 MarkAllSectorsAsUncompiled(const IRenderNode* pRenderNode = NULL);
+	void                 MarkAllSectorsAsUncompiled();
 	void                 InitAABBTree();
 
 	// -------------------------------------

@@ -362,8 +362,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	// because it can be called from the physics callback.
 	// A query for the visareastencilref is therefore issued every time it is rendered.
 	pRenderObject->m_nClipVolumeStencilRef = 0;
-	if (m_pOcNode && m_pOcNode->m_pVisArea)
-		pRenderObject->m_nClipVolumeStencilRef = ((IVisArea*)m_pOcNode->m_pVisArea)->GetStencilRef();
+	if (m_pOcNode && m_pOcNode->GetVisArea())
+		pRenderObject->m_nClipVolumeStencilRef = ((IVisArea*)m_pOcNode->GetVisArea())->GetStencilRef();
 	else if (userData.m_pClipVolume)
 		pRenderObject->m_nClipVolumeStencilRef = userData.m_pClipVolume->GetStencilRef();
 

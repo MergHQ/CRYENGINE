@@ -83,9 +83,9 @@ void CDecalRenderNode::CreateDecalOnStaticObjects()
 	CVisAreaManager* pVisAreaManager(GetVisAreaManager());
 	PodArray<SRNInfo> decalReceivers;
 
-	if (pTerrain && m_pOcNode && !m_pOcNode->m_pVisArea)
+	if (pTerrain && m_pOcNode && !m_pOcNode->GetVisArea())
 		pTerrain->GetObjectsAround(m_decalProperties.m_pos, m_decalProperties.m_radius, &decalReceivers, true, false);
-	else if (pVisAreaManager && m_pOcNode && m_pOcNode->m_pVisArea)
+	else if (pVisAreaManager && m_pOcNode && m_pOcNode->GetVisArea())
 		pVisAreaManager->GetObjectsAround(m_decalProperties.m_pos, m_decalProperties.m_radius, &decalReceivers, true);
 
 	// delete vegetations
