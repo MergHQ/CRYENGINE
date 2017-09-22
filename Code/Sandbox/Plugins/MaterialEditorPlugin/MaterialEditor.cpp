@@ -170,10 +170,10 @@ void CMaterialEditor::OnReadOnlyChanged()
 
 void CMaterialEditor::CreateDefaultLayout(CDockableContainer* sender)
 {
-	//TODO : Material pane should be shrunk to only 20% of the height instead of 50%
 	auto centerWidget = sender->SpawnWidget("Properties");
 	sender->SpawnWidget("Preview", centerWidget, QToolWindowAreaReference::Right);
 	sender->SpawnWidget("Material", centerWidget, QToolWindowAreaReference::Top);
+	sender->SetSplitterSizes(centerWidget, { 1, 4 });
 }
 
 bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
