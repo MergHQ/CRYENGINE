@@ -88,7 +88,7 @@ void CShadowMapStage::Init()
 	m_ShadowMapPasses[ePass_DirectionalLightCached].Init(this, MAX_GSM_LODS_NUM,       CTexture::s_ptexCachedShadowMap[0],                        nullptr,            nullptr);
 	m_ShadowMapPasses[ePass_LocalLight            ].Init(this, MAX_SHADOWMAP_FRUSTUMS, CTexture::s_ptexRT_ShadowPool,                             nullptr,            nullptr);
 	m_ShadowMapPasses[ePass_DirectionalLightRSM   ].Init(this, MAX_GSM_LODS_NUM,       SDynTexture_Shadow::s_RootShadow.m_NextShadow->m_pTexture, m_pRsmColorTex,     m_pRsmNormalTex);
-	m_ShadowMapPasses[ePass_LocalLightRSM         ].Init(this, MAX_GSM_LODS_NUM,       CTexture::s_ptexRT_ShadowPool,                             m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
+	m_ShadowMapPasses[ePass_LocalLightRSM         ].Init(this, MAX_SHADOWMAP_FRUSTUMS, CTexture::s_ptexRT_ShadowPool,                             m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
 	// *INDENT-ON*
 }
 
