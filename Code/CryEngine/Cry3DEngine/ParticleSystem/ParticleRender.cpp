@@ -10,7 +10,7 @@
 #include "StdAfx.h"
 #include "ParticleRender.h"
 #include "ParticleManager.h"
-#include "ParticleEmitter.h"
+#include "ParticleSystem.h"
 
 namespace pfx2
 {
@@ -27,7 +27,9 @@ EFeatureType CParticleRenderBase::GetFeatureType()
 void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	CParticleEffect* pEffect = pComponent->GetEffect();
-	pComponent->AddToUpdateList(EUL_Render, this);
+	pComponent->PrepareRenderObjects.add(this);
+	pComponent->Render.add(this);
+	pComponent->ComputeVertices.add(this);
 	m_waterCulling = SupportsWaterCulling();
 	if (m_waterCulling)
 		m_renderObjectBeforeWaterId = pEffect->AddRenderObjectId();
@@ -35,7 +37,7 @@ void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SCompon
 	pParams->m_requiredShaderType = eST_Particle;
 }
 
-void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
+void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent, bool bPrepare)
 {
 	const SComponentParams& params = pComponent->GetComponentParams();
 
@@ -44,19 +46,18 @@ void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CPart
 
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
 	{
-		const uint64 objFlags = params.m_renderObjectFlags;
-		if (m_waterCulling)
-			PrepareRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId, objFlags);
-		PrepareRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId, objFlags);
-	}
-}
-
-void CParticleRenderBase::ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
-{
-	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
-	{
-		ResetRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId);
-		ResetRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId);
+		if (bPrepare)
+		{
+			const uint64 objFlags = params.m_renderObjectFlags;
+			if (m_waterCulling)
+				PrepareRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId, objFlags);
+			PrepareRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId, objFlags);
+		}
+		else
+		{
+			ResetRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId);
+			ResetRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId);
+		}
 	}
 }
 

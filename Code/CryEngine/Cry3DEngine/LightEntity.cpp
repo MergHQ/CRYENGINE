@@ -1870,7 +1870,13 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 		return;
 
 	if (m_light.m_fRadius < 0.01f)
+	{
+		if (m_light.m_nLightStyle)
+		{
+			GetRenderer()->EF_UpdateDLight(&m_light);
+		}
 		return;
+	}		
 
 	UpdateCastShadowFlag(rParams.fDistance, passInfo);
 

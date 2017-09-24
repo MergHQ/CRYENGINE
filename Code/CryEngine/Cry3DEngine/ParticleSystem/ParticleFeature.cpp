@@ -9,9 +9,15 @@
 
 #include "StdAfx.h"
 #include "ParticleFeature.h"
+#include "ParticleSystem.h"
 
 namespace pfx2
 {
+
+bool CParticleFeature::RegisterFeature(const SParticleFeatureParams& params)
+{
+	return CParticleSystem::RegisterFeature(params);
+}
 
 void CParticleFeature::Serialize(Serialization::IArchive& ar)
 {

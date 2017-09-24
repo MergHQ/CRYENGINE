@@ -7,13 +7,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLEEMITTER_H
-#define PARTICLEEMITTER_H
-
 #pragma once
 
 #include "ParticleEffect.h"
 #include "ParticleEnviron.h"
+#include "ParticleComponentRuntime.h"
+#include "ParticleAttributes.h"
 #include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
@@ -54,18 +53,19 @@ public:
 	// ~IRenderNode
 
 	// pfx2 IParticleEmitter
-	virtual const IParticleEffect* GetEffect() const override;
+	virtual const IParticleEffect* GetEffect() const override { return m_pEffectOriginal; }
 	virtual void                   Activate(bool activate) override;
 	virtual void                   Kill() override;
 	virtual bool                   IsActive() const;
 	virtual void                   SetLocation(const QuatTS& loc) override;
 	virtual QuatTS                 GetLocation() const override { return m_location; }
 	virtual void                   EmitParticle(const EmitParticleData* pData = NULL)  override;
-	virtual IParticleAttributes& GetAttributes()  override    { return m_attributeInstance; }
-	virtual void                 SetEntity(IEntity* pEntity, int nSlot) override;
-	virtual void                 InvalidateCachedEntityData() override;
-	virtual void                 SetTarget(const ParticleTarget& target) override;
-	virtual bool                 UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) override;
+	virtual IParticleAttributes&   GetAttributes()  override { return m_attributeInstance; }
+	virtual void                   SetEmitterFeatures(TParticleFeatures& features) override;
+	virtual void                   SetEntity(IEntity* pEntity, int nSlot) override;
+	virtual void                   InvalidateCachedEntityData() override;
+	virtual void                   SetTarget(const ParticleTarget& target) override;
+	virtual bool                   UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) override;
 	// ~pfx2 IParticleEmitter
 
 	// pfx1 IParticleEmitter
@@ -89,7 +89,7 @@ public:
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
 	const TRuntimes&          GetRuntimes() const          { return m_componentRuntimes; }
-	CParticleComponentRuntime* GetRuntimeFor(CParticleComponent* pComponent) { return m_componentRuntimesFor[pComponent->GetComponentId()]; }
+	CParticleComponentRuntime*GetRuntimeFor(CParticleComponent* pComponent) { return m_componentRuntimesFor[pComponent->GetComponentId()]; }
 	const CParticleEffect*    GetCEffect() const           { return m_pEffect; }
 	CParticleEffect*          GetCEffect()                 { return m_pEffect; }
 	void                      Register();
@@ -101,6 +101,7 @@ public:
 	const GeomRef&            GetEmitterGeometry() const   { return m_emitterGeometry; }
 	QuatTS                    GetEmitterGeometryLocation() const;
 	const CAttributeInstance& GetAttributeInstance() const { return m_attributeInstance; }
+	pfx2::TParticleFeatures&  GetFeatures()                { return m_emitterFeatures; }
 	const ParticleTarget&     GetTarget() const            { return m_target; }
 	float                     GetViewDistRatio() const     { return m_viewDistRatio; }
 	float                     GetTimeScale() const         { return Cry3DEngineBase::GetCVars()->e_ParticlesDebug & AlphaBit('z') ? 0.0f : m_spawnParams.fTimeScale; }
@@ -130,12 +131,14 @@ private:
 	void     ResetRenderObjects();
 
 private:
-	CParticleEffect*            m_pEffect;
+	_smart_ptr<CParticleEffect> m_pEffect;
+	_smart_ptr<CParticleEffect> m_pEffectOriginal;
 	std::vector<CRenderObject*> m_pRenderObjects[RT_COMMAND_BUF_COUNT];
 	SVisEnviron                 m_visEnviron;
 	SPhysEnviron                m_physEnviron;
 	SpawnParams                 m_spawnParams;
 	CAttributeInstance          m_attributeInstance;
+	pfx2::TParticleFeatures     m_emitterFeatures;
 	AABB                        m_bounds;
 	float                       m_resetBoundsCache;
 	CParticleContainer          m_parentContainer;
@@ -154,7 +157,8 @@ private:
 	float                       m_deltaTime;
 	float                       m_primeTime;
 	float                       m_lastTimeRendered;
-	int                         m_editVersion;
+	int                         m_emitterEditVersion;
+	int                         m_effectEditVersion;
 	uint                        m_initialSeed;
 	uint                        m_currentSeed;
 	uint                        m_emitterId;
@@ -164,4 +168,3 @@ private:
 
 }
 
-#endif // PARTICLEEMITTER_H

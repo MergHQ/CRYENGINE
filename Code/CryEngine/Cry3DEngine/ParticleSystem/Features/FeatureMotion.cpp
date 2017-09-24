@@ -6,8 +6,6 @@
 #include <CrySerialization/Math.h>
 #include <CrySystem/CryUnitTest.h>
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -38,7 +36,7 @@ CFeatureMotionPhysics::CFeatureMotionPhysics()
 
 void CFeatureMotionPhysics::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	pComponent->AddToUpdateList(EUL_Update, this);
+	pComponent->UpdateParticles.add(this);
 
 	m_gravity.AddToComponent(pComponent, this, EPDT_Gravity);
 	m_drag.AddToComponent(pComponent, this, EPDT_Drag);
@@ -90,7 +88,7 @@ void CFeatureMotionPhysics::InitParticles(const SUpdateContext& context)
 	m_drag.InitParticles(context, EPDT_Drag);
 }
 
-void CFeatureMotionPhysics::Update(const SUpdateContext& context)
+void CFeatureMotionPhysics::UpdateParticles(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -525,8 +523,8 @@ CFeatureMotionCryPhysics::CFeatureMotionCryPhysics()
 
 void CFeatureMotionCryPhysics::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	pComponent->AddToUpdateList(EUL_PostInitUpdate, this);
-	pComponent->AddToUpdateList(EUL_Update, this);
+	pComponent->PostInitParticles.add(this);
+	pComponent->UpdateParticles.add(this);
 	pComponent->AddParticleData(EPDT_PhysicalEntity);
 	pComponent->AddParticleData(EPVF_Position);
 	pComponent->AddParticleData(EPVF_Velocity);
@@ -655,7 +653,7 @@ void CFeatureMotionCryPhysics::PostInitParticles(const SUpdateContext& context)
 	}
 }
 
-void CFeatureMotionCryPhysics::Update(const SUpdateContext& context)
+void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -721,7 +719,7 @@ public:
 		const bool inheritVelOnDeath = (m_velocityInheritAfterDeath != 0.0f);
 
 		if (inheritPositions || inheritVelocities || inheritAngles)
-			pComponent->AddToUpdateList(EUL_PreUpdate, this);
+			pComponent->PreUpdateParticles.add(this);
 		if (inheritPositions)
 			pComponent->AddParticleData(EPVF_LocalPosition);
 		if (inheritVelocities)
@@ -732,7 +730,7 @@ public:
 			pComponent->AddParticleData(EPQF_LocalOrientation);
 		}
 		if (inheritVelOnDeath)
-			pComponent->AddToUpdateList(EUL_Update, this);
+			pComponent->UpdateParticles.add(this);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -744,7 +742,7 @@ public:
 		ar(m_velocityInheritAfterDeath, "VelocityInheritAfterDeath", "Velocity Inherit After Death");
 	}
 
-	virtual void PreUpdate(const SUpdateContext& context) override
+	virtual void PreUpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
@@ -808,7 +806,7 @@ public:
 		}
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void UpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 

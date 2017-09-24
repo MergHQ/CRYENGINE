@@ -80,14 +80,6 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 
 	FUNCTION_PROFILER_3DENGINE;
 
-	Vec3 sunDirReady((m_fpSunDirX - 63.5f) / 63.5f, 0.0f, (m_fpSunDirZ - 63.5f) / 63.5f);
-	sunDirReady.y = sqrt(clamp_tpl(1.0f - sunDirReady.x * sunDirReady.x - sunDirReady.z * sunDirReady.z, 0.0f, 1.0f));
-	if (m_fpSunDirYs)
-		sunDirReady.y *= -1.0f;
-
-	if (sunDirReady.Dot(p3DEngine->GetSunDirNormalized()) < 0.99f)
-		SetCompiled(false);
-
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	AABB objBox;
 
@@ -147,7 +139,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 				UnlinkObject(pObj);
 				LinkObject(pObj, eERType_Vegetation); //We know that only eERType_Vegetation can get into the vegetation list, see GetRenderNodeListId()
 
-				SetCompiled(false);
+				SetCompiled(eRNListType_Vegetation, false);
 
 				continue;
 			}
@@ -176,7 +168,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 				pObj->UpdateSpriteInfo(si, 0.0f, pTerrainTexInfo, passInfo);
 				pObj->m_pSpriteInfo->ucShow3DModel = (fEntDistance2D < fSpriteSwitchDist);
 
-				SetCompiled(false);
+				SetCompiled(eRNListType_Vegetation, false);
 			}
 		}
 	}
@@ -214,8 +206,13 @@ void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRender
 
 	m_nLastVisFrameId = passInfo.GetFrameID();
 
-	if (!IsCompiled())
-		CompileObjects();
+	for (int l = 0; l < eRNListType_ListsNum; l++)
+	{
+		if (!IsCompiled((ERNListType)l))
+		{
+			CompileObjects((ERNListType)l);
+		}
+	}
 
 	CheckUpdateStaticInstancing();
 
@@ -315,31 +312,34 @@ void COctreeNode::GetStreamedInNodesNum(int& nAllStreamable, int& nReady)
 			m_arrChilds[i]->GetStreamedInNodesNum(nAllStreamable, nReady);
 }
 
-void COctreeNode::CompileObjects()
+void COctreeNode::CompileObjects(ERNListType eListType)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	m_lstCasters.Clear();
+	m_lstCasters[eListType].Clear();
 
-	m_bStaticInstancingIsDirty = true;
+	if (eListType == eRNListType_Vegetation)
+	{
+		m_bStaticInstancingIsDirty = true;
 
-	CheckUpdateStaticInstancing();
+		CheckUpdateStaticInstancing();
+	}
 
 	float fObjMaxViewDistance = 0;
 
 	size_t numCasters = 0;
 	const unsigned int nSkipShadowCastersRndFlags = ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | ERF_STATIC_INSTANCING; // shadow casters with these render flags are ignored
 
-	for (int l = 0; l < eRNListType_ListsNum; l++)
+	if (eListType != eRNListType_DecalsAndRoads)
 	{
-		for (IRenderNode* pObj = m_arrObjects[l].m_pFirstNode; pObj; pObj = pObj->m_pNext)
+		for (IRenderNode* pObj = m_arrObjects[eListType].m_pFirstNode; pObj; pObj = pObj->m_pNext)
 		{
 			auto nFlags = pObj->GetRndFlags();
 
-			IF (nFlags & nSkipShadowCastersRndFlags, 0)
+			IF(nFlags & nSkipShadowCastersRndFlags, 0)
 				continue;
 
-			IF (GetCVars()->e_ShadowsPerObject && gEnv->p3DEngine->GetPerObjectShadow(pObj), 0)
+			IF(GetCVars()->e_ShadowsPerObject && gEnv->p3DEngine->GetPerObjectShadow(pObj), 0)
 				continue;
 
 			EERType eRType = pObj->GetRenderNodeType();
@@ -352,17 +352,17 @@ void COctreeNode::CompileObjects()
 		}
 	}
 
-	m_lstCasters.reserve(numCasters);
+	m_lstCasters[eListType].reserve(numCasters);
 
 	CObjManager* pObjManager = GetObjManager();
 
-	// update node
-	for (int l = 0; l < eRNListType_ListsNum; l++)
-		for (IRenderNode* pObj = m_arrObjects[l].m_pFirstNode, * pNext; pObj; pObj = pNext)
+	if (eListType != eRNListType_DecalsAndRoads)
+	{
+		for (IRenderNode* pObj = m_arrObjects[eListType].m_pFirstNode, *pNext; pObj; pObj = pNext)
 		{
 			pNext = pObj->m_pNext;
 
-			IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+			IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 				continue;
 
 			// update vegetation instances data
@@ -382,11 +382,11 @@ void COctreeNode::CompileObjects()
 			{
 				pObj->m_nInternalFlags &= ~(IRenderNode::REQUIRES_FORWARD_RENDERING | IRenderNode::REQUIRES_NEAREST_CUBEMAP);
 				if (eRType != eERType_Light &&
-				    eRType != eERType_FogVolume &&
-				    eRType != eERType_Decal &&
-				    eRType != eERType_Road &&
-				    eRType != eERType_DistanceCloud &&
-				    eRType != eERType_CloudBlocker)
+					eRType != eERType_FogVolume &&
+					eRType != eERType_Decal &&
+					eRType != eERType_Road &&
+					eRType != eERType_DistanceCloud &&
+					eRType != eERType_CloudBlocker)
 				{
 					if (eRType == eERType_ParticleEmitter)
 						pObj->m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING | IRenderNode::REQUIRES_NEAREST_CUBEMAP;
@@ -426,7 +426,7 @@ void COctreeNode::CompileObjects()
 			// fill shadow casters list
 			const bool bHasPerObjectShadow = GetCVars()->e_ShadowsPerObject && gEnv->p3DEngine->GetPerObjectShadow(pObj);
 			if (!(nFlags & nSkipShadowCastersRndFlags) && nFlags & ERF_CASTSHADOWMAPS && fNewMaxViewDist > fMinShadowCasterViewDist &&
-			    eRType != eERType_Light && !bHasPerObjectShadow)
+				eRType != eERType_Light && !bHasPerObjectShadow)
 			{
 				COctreeNode* pNode = this;
 				while (pNode && !(pNode->m_renderFlags & ERF_CASTSHADOWMAPS))
@@ -436,11 +436,28 @@ void COctreeNode::CompileObjects()
 				}
 
 				float fMaxCastDist = fNewMaxViewDist * GetCVars()->e_ShadowsCastViewDistRatio;
-				m_lstCasters.Add(SCasterInfo(pObj, fMaxCastDist, eRType));
+				m_lstCasters[eListType].Add(SCasterInfo(pObj, fMaxCastDist, eRType));
 			}
 
 			fObjMaxViewDistance = max(fObjMaxViewDistance, fNewMaxViewDist);
 		}
+	}
+	else
+	{
+		for (IRenderNode* pObj = m_arrObjects[eListType].m_pFirstNode, *pNext; pObj; pObj = pNext)
+		{
+			pNext = pObj->m_pNext;
+
+			IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+				continue;
+
+			// update max view distances
+			const float fNewMaxViewDist = pObj->GetMaxViewDist();
+			pObj->m_fWSMaxViewDist = fNewMaxViewDist;
+
+			fObjMaxViewDistance = max(fObjMaxViewDistance, fNewMaxViewDist);
+		}
+	}
 
 	if (fObjMaxViewDistance > m_fObjectsMaxViewDist)
 	{
@@ -452,12 +469,7 @@ void COctreeNode::CompileObjects()
 		}
 	}
 
-	SetCompiled(true);
-
-	const Vec3& sunDir = Get3DEngine()->GetSunDirNormalized();
-	m_fpSunDirX = (uint32) (sunDir.x * 63.5f + 63.5f);
-	m_fpSunDirZ = (uint32) (sunDir.z * 63.5f + 63.5f);
-	m_fpSunDirYs = sunDir.y < 0.0f ? 1 : 0;
+	SetCompiled(eListType, true);
 }
 
 void COctreeNode::UpdateStaticInstancing()
@@ -567,11 +579,11 @@ void COctreeNode::UpdateStaticInstancing()
 						UnlinkObject(ii.pRNode);
 						LinkObject(ii.pRNode, eERType_Vegetation, false);
 
-						for (int s = 0; s < m_lstCasters.Count(); s++)
+						for (int s = 0; s < m_lstCasters[eRNListType_Vegetation].Count(); s++)
 						{
-							if (m_lstCasters[s].pNode == ii.pRNode)
+							if (m_lstCasters[eRNListType_Vegetation][s].pNode == ii.pRNode)
 							{
-								m_lstCasters.Delete(s);
+								m_lstCasters[eRNListType_Vegetation].Delete(s);
 								break;
 							}
 						}
@@ -670,150 +682,153 @@ void COctreeNode::FillShadowMapCastersList(const ShadowMapFrustumParams& params,
 		return;
 	}
 
-	if (!IsCompiled())
+	for (int listType = 0; listType < eRNListType_ListsNum; listType++)
 	{
-		CompileObjects();
-	}
-
-	PrefetchLine(&m_lstCasters, 0);
-
-	const float fShadowsCastViewDistRatio = GetCVars()->e_ShadowsCastViewDistRatio;
-	if (fShadowsCastViewDistRatio != 0.0f)
-	{
-		float fNodeDistanceSqr = Distance::Point_AABBSq(params.vCamPos, m_objectsBox);
-		if (fNodeDistanceSqr > sqr(m_fObjectsMaxViewDist * fShadowsCastViewDistRatio))
+		if (!IsCompiled((ERNListType)listType))
 		{
-			nFillShadowCastersSkipFrameId = frameID;
-			return;
+			CompileObjects((ERNListType)listType);
 		}
-	}
 
-	PrefetchLine(m_lstCasters.begin(), 0);
-	PrefetchLine(m_lstCasters.begin(), 128);
+		PrefetchLine(&m_lstCasters[listType], 0);
 
-	IRenderNode* pNotCaster = ((CLightEntity*)params.pLight->m_pOwner)->m_pNotCaster;
-	bool bParticleShadows = params.bSun && params.pFr->nShadowMapLod < GetCVars()->e_ParticleShadowsNumGSMs;
+		const float fShadowsCastViewDistRatio = GetCVars()->e_ShadowsCastViewDistRatio;
+		if (fShadowsCastViewDistRatio != 0.0f)
+		{
+			float fNodeDistanceSqr = Distance::Point_AABBSq(params.vCamPos, m_objectsBox);
+			if (fNodeDistanceSqr > sqr(m_fObjectsMaxViewDist * fShadowsCastViewDistRatio))
+			{
+				nFillShadowCastersSkipFrameId = frameID;
+				return;
+			}
+		}
 
-	if (m_arrChilds[0])
-	{
-		PrefetchLine(&m_arrChilds[0]->m_nLightMaskFrameId, 0);
-	}
+		PrefetchLine(m_lstCasters[listType].begin(), 0);
+		PrefetchLine(m_lstCasters[listType].begin(), 128);
 
-	SCasterInfo* pCastersEnd = m_lstCasters.end();
-	for (SCasterInfo* pCaster = m_lstCasters.begin(); pCaster < pCastersEnd; pCaster++)
-	{
+		IRenderNode* pNotCaster = ((CLightEntity*)params.pLight->m_pOwner)->m_pNotCaster;
+		bool bParticleShadows = params.bSun && params.pFr->nShadowMapLod < GetCVars()->e_ParticleShadowsNumGSMs;
+
+		if (m_arrChilds[0])
+		{
+			PrefetchLine(&m_arrChilds[0]->m_nLightMaskFrameId, 0);
+		}
+
+		SCasterInfo* pCastersEnd = m_lstCasters[listType].end();
+		for (SCasterInfo* pCaster = m_lstCasters[listType].begin(); pCaster < pCastersEnd; pCaster++)
+		{
 #ifdef FEATURE_SVO_GI
-		if (!GetCVars()->e_svoTI_Apply || !GetCVars()->e_svoTI_InjectionMultiplier || (params.pFr->nShadowMapLod != GetCVars()->e_svoTI_GsmCascadeLod))
+			if (!GetCVars()->e_svoTI_Apply || !GetCVars()->e_svoTI_InjectionMultiplier || (params.pFr->nShadowMapLod != GetCVars()->e_svoTI_GsmCascadeLod))
 #endif
-		if (params.bSun && pCaster->nGSMFrameId == frameID && params.pShadowHull)
-			continue;
-		if (!IsRenderNodeTypeEnabled(pCaster->nRType))
-			continue;
-		if (pCaster->pNode == NULL || pCaster->pNode == pNotCaster)
-			continue;
-		if (!bParticleShadows && (pCaster->nRType == eERType_ParticleEmitter))
-			continue;
-		if ((pCaster->nRenderNodeFlags & params.nRenderNodeFlags) == 0)
-			continue;
+			if (params.bSun && pCaster->nGSMFrameId == frameID && params.pShadowHull)
+				continue;
+			if (!IsRenderNodeTypeEnabled(pCaster->nRType))
+				continue;
+			if (pCaster->pNode == NULL || pCaster->pNode == pNotCaster)
+				continue;
+			if (!bParticleShadows && (pCaster->nRType == eERType_ParticleEmitter))
+				continue;
+			if ((pCaster->nRenderNodeFlags & params.nRenderNodeFlags) == 0)
+				continue;
 
-		float fDistanceSq = Distance::Point_PointSq(params.vCamPos, pCaster->objSphere.center);
-		if (fDistanceSq > sqr(pCaster->fMaxCastingDist + pCaster->objSphere.radius))
-		{
-			pCaster->nGSMFrameId = frameID;
-			continue;
+			float fDistanceSq = Distance::Point_PointSq(params.vCamPos, pCaster->objSphere.center);
+			if (fDistanceSq > sqr(pCaster->fMaxCastingDist + pCaster->objSphere.radius))
+			{
+				pCaster->nGSMFrameId = frameID;
+				continue;
+			}
+
+			bool bObjCompletellyInFrustum = bNodeCompletellyInFrustum;
+			if (!bObjCompletellyInFrustum && !params.pFr->IntersectAABB(pCaster->objBox, &bObjCompletellyInFrustum))
+				continue;
+			if (params.bSun && bObjCompletellyInFrustum)
+				pCaster->nGSMFrameId = frameID;
+
+			if (params.bSun && bObjCompletellyInFrustum)
+				pCaster->nGSMFrameId = frameID;
+			if (params.pShadowHull && !IsSphereInsideHull(params.pShadowHull->GetElements(), params.pShadowHull->Count(), pCaster->objSphere))
+			{
+				pCaster->nGSMFrameId = frameID;
+				continue;
+			}
+
+			if (pCaster->bCanExecuteAsRenderJob)
+			{
+				params.pFr->jobExecutedCastersList.Add(pCaster->pNode);
+			}
+			else
+				params.pFr->castersList.Add(pCaster->pNode);
+
+			// This code does not exist yet!
+			//if(pCaster->nRType == eERType_ParticleEmitter)
+			//((CParticleEmitter*)pCaster->pNode)->AddUpdateParticlesJob();
 		}
-
-		bool bObjCompletellyInFrustum = bNodeCompletellyInFrustum;
-		if (!bObjCompletellyInFrustum && !params.pFr->IntersectAABB(pCaster->objBox, &bObjCompletellyInFrustum))
-			continue;
-		if (params.bSun && bObjCompletellyInFrustum)
-			pCaster->nGSMFrameId = frameID;
-
-		if (params.bSun && bObjCompletellyInFrustum)
-			pCaster->nGSMFrameId = frameID;
-		if (params.pShadowHull && !IsSphereInsideHull(params.pShadowHull->GetElements(), params.pShadowHull->Count(), pCaster->objSphere))
-		{
-			pCaster->nGSMFrameId = frameID;
-			continue;
-		}
-
-		if (pCaster->bCanExecuteAsRenderJob)
-		{
-			params.pFr->jobExecutedCastersList.Add(pCaster->pNode);
-		}
-		else
-			params.pFr->castersList.Add(pCaster->pNode);
-
-		// This code does not exist yet!
-		//if(pCaster->nRType == eERType_ParticleEmitter)
-		//((CParticleEmitter*)pCaster->pNode)->AddUpdateParticlesJob();
 	}
 
-	enum { maxNodeNum = 7 };
-	for (int i = 0; i <= maxNodeNum; i++)
 	{
-		const bool bPrefetch = i < maxNodeNum && !!m_arrChilds[i + 1];
-		if (bPrefetch)
+		enum { maxNodeNum = 7 };
+		for (int i = 0; i <= maxNodeNum; i++)
 		{
-			PrefetchLine(&m_arrChilds[i + 1]->m_nLightMaskFrameId, 0);
-		}
+			const bool bPrefetch = i < maxNodeNum && !!m_arrChilds[i + 1];
+			if (bPrefetch)
+			{
+				PrefetchLine(&m_arrChilds[i + 1]->m_nLightMaskFrameId, 0);
+			}
 
-		if (m_arrChilds[i] && (m_arrChilds[i]->m_renderFlags & ERF_CASTSHADOWMAPS))
-		{
-			bool bContinue = m_arrChilds[i]->nFillShadowCastersSkipFrameId != frameID;
+			if (m_arrChilds[i] && (m_arrChilds[i]->m_renderFlags & ERF_CASTSHADOWMAPS))
+			{
+				bool bContinue = m_arrChilds[i]->nFillShadowCastersSkipFrameId != frameID;
 
 #ifdef FEATURE_SVO_GI
-			if (GetCVars()->e_svoTI_Apply && GetCVars()->e_svoTI_InjectionMultiplier && (params.pFr->nShadowMapLod == GetCVars()->e_svoTI_GsmCascadeLod))
-				bContinue = true;
+				if (GetCVars()->e_svoTI_Apply && GetCVars()->e_svoTI_InjectionMultiplier && (params.pFr->nShadowMapLod == GetCVars()->e_svoTI_GsmCascadeLod))
+					bContinue = true;
 #endif
 
-			if (!params.bSun || !params.pShadowHull || bContinue)
-				m_arrChilds[i]->FillShadowMapCastersList(params, bNodeCompletellyInFrustum);
+				if (!params.bSun || !params.pShadowHull || bContinue)
+					m_arrChilds[i]->FillShadowMapCastersList(params, bNodeCompletellyInFrustum);
+			}
 		}
 	}
 }
 
-void COctreeNode::MarkAsUncompiled(const IRenderNode* pRenderNode)
+void COctreeNode::MarkAsUncompiled()
 {
-	if (pRenderNode)
-	{
-		for (int l = 0; l < eRNListType_ListsNum; l++)
-		{
-			for (IRenderNode* pObj = m_arrObjects[l].m_pFirstNode; pObj; pObj = pObj->m_pNext)
-			{
-				if (pObj == pRenderNode)
-				{
-					SetCompiled(false);
-					break;
-				}
-			}
-		}
-	}
-	else
-		SetCompiled(false);
+	m_compiledFlag = 0;
 
 	for (int i = 0; i < 8; i++)
+	{
 		if (m_arrChilds[i])
-			m_arrChilds[i]->MarkAsUncompiled(pRenderNode);
+		{
+			m_arrChilds[i]->MarkAsUncompiled();
+		}
+	}
 }
 
 AABB COctreeNode::GetShadowCastersBox(const AABB* pBBox, const Matrix34* pShadowSpaceTransform)
 {
-	if (!IsCompiled())
-		CompileObjects();
-
 	AABB result(AABB::RESET);
+
+	for (int l = 0; l < eRNListType_ListsNum; l++)
+	{
+		if (!IsCompiled((ERNListType)l))
+		{
+			CompileObjects((ERNListType)l);
+		}
+	}
+
 	if (!pBBox || Overlap::AABB_AABB(*pBBox, GetObjectsBBox()))
 	{
-		for (size_t i = 0; i < m_lstCasters.size(); ++i)
+		for (int l = 0; l < eRNListType_ListsNum; l++)
 		{
-			AABB casterBox = m_lstCasters[i].objBox;
-			if (!pBBox || Overlap::AABB_AABB(*pBBox, casterBox))
+			for (size_t i = 0; i < m_lstCasters[l].size(); ++i)
 			{
-				if (pShadowSpaceTransform)
-					casterBox = AABB::CreateTransformedAABB(*pShadowSpaceTransform, casterBox);
+				AABB casterBox = m_lstCasters[l][i].objBox;
+				if (!pBBox || Overlap::AABB_AABB(*pBBox, casterBox))
+				{
+					if (pShadowSpaceTransform)
+						casterBox = AABB::CreateTransformedAABB(*pShadowSpaceTransform, casterBox);
 
-				result.Add(casterBox);
+					result.Add(casterBox);
+				}
 			}
 		}
 
@@ -886,7 +901,7 @@ void COctreeNode::MoveObjectsIntoList(PodArray<SRNInfo>* plstResultEntities, con
 			{
 				UnlinkObject(pObj);
 
-				SetCompiled(false);
+				SetCompiled((ERNListType)l, false);
 			}
 
 			plstResultEntities->Add(pObj);
@@ -955,14 +970,14 @@ void COctreeNode::UnregisterEngineObjectsInArea(const SHotUpdateInfo* pExportInf
 				{
 					Get3DEngine()->UnRegisterEntityAsJob(pObj);
 					arrUnregisteredObjects.Add(pObj);
-					SetCompiled(false);
+					SetCompiled((ERNListType)l, false);
 				}
 			}
 			else
 			{
 				Get3DEngine()->UnRegisterEntityAsJob(pObj);
 				arrUnregisteredObjects.Add(pObj);
-				SetCompiled(false);
+				SetCompiled((ERNListType)l, false);
 			}
 		}
 	}
@@ -1191,7 +1206,7 @@ void COctreeNode::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPh
 			if (pBrush->m_nLayerId == nLayerId || nLayerId == uint16(~0))
 			{
 				if ((bActivate && pBrush->m_dwRndFlags & ERF_HIDDEN) || (!bActivate && !(pBrush->m_dwRndFlags & ERF_HIDDEN)))
-					SetCompiled(false);
+					SetCompiled(IRenderNode::GetRenderNodeListId(pObj->GetRenderNodeType()), false);
 
 				pBrush->SetRndFlags(ERF_HIDDEN, !bActivate);
 				pBrush->SetRndFlags(ERF_ACTIVE_LAYER, bActivate);
@@ -1708,8 +1723,13 @@ bool COctreeNode::UpdateStreamingPriority(PodArray<COctreeNode*>& arrRecursion, 
 	if (fNodeDistance > min(m_fObjectsMaxViewDist, fMaxDist) + GetFloatCVar(e_StreamPredictionDistanceFar)) // add || m_objectsBox.IsReset()
 		return true;
 
-	if (!IsCompiled())
-		CompileObjects();
+	for (int l = 0; l < eRNListType_ListsNum; l++)
+	{
+		if (!IsCompiled((ERNListType)l))
+		{
+			CompileObjects((ERNListType)l);
+		}
+	}
 
 	const float fPredictionDistanceFar = GetFloatCVar(e_StreamPredictionDistanceFar);
 
@@ -2100,20 +2120,26 @@ bool COctreeNode::CheckRenderFlagsMinSpec(uint32 dwRndFlags)
 
 void COctreeNode::OffsetObjects(const Vec3& offset)
 {
-	SetCompiled(false);
 	m_objectsBox.Move(offset);
 	m_vNodeCenter += offset;
 
 	for (int l = 0; l < eRNListType_ListsNum; l++)
 	{
+		SetCompiled((ERNListType)l, false);
+
 		for (IRenderNode* pObj = m_arrObjects[l].m_pFirstNode; pObj; pObj = pObj->m_pNext)
 		{
 			pObj->OffsetPosition(offset);
 		}
 	}
+
 	for (int i = 0; i < 8; ++i)
+	{
 		if (m_arrChilds[i])
+		{
 			m_arrChilds[i]->OffsetObjects(offset);
+		}
+	}
 }
 
 bool COctreeNode::HasAnyRenderableCandidates(const SRenderingPassInfo& passInfo) const
@@ -2248,7 +2274,10 @@ void COctreeNode::StreamOnCompleteReadObjects(T* f, int nDataSize)
 
 	//PrintMessage("Loaded %d KB for node size %.f", chunk.nObjectsBlockSize/1024, m_vNodeAxisRadius.x);
 
-	SetCompiled(false);
+	for (int l = 0; l < eRNListType_ListsNum; l++)
+	{
+		SetCompiled((ERNListType)l, false);
+	}
 
 	m_eStreamingStatus = ecss_Ready;
 
@@ -2311,7 +2340,10 @@ void COctreeNode::ReleaseStreamableContent()
 
 	m_eStreamingStatus = ecss_NotLoaded;
 
-	SetCompiled(false);
+	for (int l = 0; l < eRNListType_ListsNum; l++)
+	{
+		SetCompiled((ERNListType)l, false);
+	}
 }
 
 void COctreeNode::ReleaseObjects(bool bReleaseOnlyStreamable)
@@ -2440,14 +2472,10 @@ COctreeNode::COctreeNode(const AABB& box, CVisArea* pVisArea, COctreeNode* pPare
 	m_pParent = pParent;
 	m_streamComplete = false;
 
-	//	for(int n=0; n<2 && m_pTerrainNode && m_pTerrainNode->m_pParent; n++)
-	//	m_pTerrainNode = m_pTerrainNode->m_pParent;
-	m_fpSunDirX = 63;
-	m_fpSunDirZ = 0;
-	m_fpSunDirYs = 0;
-
 	m_pStaticInstancingInfo = 0;
 	m_bStaticInstancingIsDirty = 0;
+	
+	m_compiledFlag = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2867,11 +2895,13 @@ bool COctreeNode::DeleteObject(IRenderNode* pObj)
 	UnlinkObject(pObj);
 	//	m_lstMergedObjects.Delete(pObj);
 
-	for (int i = 0; i < m_lstCasters.Count(); i++)
+	ERNListType l = pObj->GetRenderNodeListId(pObj->GetRenderNodeType());
+
+	for (int i = 0; i < m_lstCasters[l].Count(); i++)
 	{
-		if (m_lstCasters[i].pNode == pObj)
+		if (m_lstCasters[l][i].pNode == pObj)
 		{
-			m_lstCasters.Delete(i);
+			m_lstCasters[l].Delete(i);
 			break;
 		}
 	}
@@ -2947,7 +2977,7 @@ void COctreeNode::InsertObject(IRenderNode* pObj, const AABB& objBox, const floa
 
 					if (!pCurrentNode->m_arrChilds[nChildId])
 					{
-						pCurrentNode->m_arrChilds[nChildId] = COctreeNode::Create(pCurrentNode->GetChildBBox(nChildId), pCurrentNode->m_pVisArea, pCurrentNode);
+						pCurrentNode->m_arrChilds[nChildId] = COctreeNode::Create(pCurrentNode->GetChildBBox(nChildId), pCurrentNode->GetVisArea(), pCurrentNode);
 					}
 
 					pCurrentNode = pCurrentNode->m_arrChilds[nChildId];
@@ -2970,7 +3000,11 @@ void COctreeNode::InsertObject(IRenderNode* pObj, const AABB& objBox, const floa
 	// only mark octree nodes as not compiled during loading and in the editor
 	// otherwise update node (and parent node) flags on per added object basis
 	if (m_bLevelLoadingInProgress || gEnv->IsEditor())
-		pCurrentNode->SetCompiled(pCurrentNode->IsCompiled() & (eType == eERType_Light));
+	{
+		ERNListType l = pObj->GetRenderNodeListId(pObj->GetRenderNodeType());
+
+		pCurrentNode->SetCompiled(l, pCurrentNode->IsCompiled(l) & (eType == eERType_Light));
+	}
 	else
 		pCurrentNode->UpdateObjects(pObj);
 
@@ -3072,11 +3106,6 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	IF(nFlags & ERF_HIDDEN, 0)
 		return;
 
-	const Vec3& sunDir = Get3DEngine()->GetSunDirNormalized();
-	uint32 sunDirX = (uint32)(sunDir.x * 63.5f + 63.5f);
-	uint32 sunDirZ = (uint32)(sunDir.z * 63.5f + 63.5f);
-	uint32 sunDirYs = (uint32)(sunDir.y < 0.0f ? 1 : 0);
-
 	pObj->m_nInternalFlags &= ~(IRenderNode::REQUIRES_FORWARD_RENDERING | IRenderNode::REQUIRES_NEAREST_CUBEMAP);
 
 	if (eRType == eERType_Vegetation)
@@ -3137,14 +3166,16 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	{
 		bUpdateParentShadowFlags = true;
 
+		ERNListType l = pObj->GetRenderNodeListId(pObj->GetRenderNodeType());
+
 		float fMaxCastDist = fNewMaxViewDist * GetCVars()->e_ShadowsCastViewDistRatio;
-		m_lstCasters.Add(SCasterInfo(pObj, fMaxCastDist, eRType));
+		m_lstCasters[l].Add(SCasterInfo(pObj, fMaxCastDist, eRType));
 
 		if (pObj->GetRenderNodeType() == eERType_Vegetation && ((CVegetation*)pObj)->m_pInstancingInfo)
 		{
 			AABB objBox = ((CVegetation*)pObj)->m_pInstancingInfo->m_aabbBox;
-			m_lstCasters.Last().objSphere.center = objBox.GetCenter();
-			m_lstCasters.Last().objSphere.radius = objBox.GetRadius();
+			m_lstCasters[l].Last().objSphere.center = objBox.GetCenter();
+			m_lstCasters[l].Last().objSphere.radius = objBox.GetRadius();
 		}
 	}
 
@@ -3171,10 +3202,6 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 
 		pNode = pNode->m_pParent;
 	} while (pNode != NULL && bContinue);
-
-	m_fpSunDirX = sunDirX;
-	m_fpSunDirZ = sunDirZ;
-	m_fpSunDirYs = sunDirYs;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3312,7 +3339,7 @@ void CObjManager::RenderObjectDebugInfo(IRenderNode* pEnt, float fEntDistance, c
 //////////////////////////////////////////////////////////////////////////
 void CObjManager::FillTerrainTexInfo(IOctreeNode* pOcNode, float fEntDistance, struct SSectorTextureSet*& pTerrainTexInfo, const AABB& objBox)
 {
-	IVisArea* pVisArea = pOcNode->m_pVisArea;
+	IVisArea* pVisArea = pOcNode->GetVisArea();
 	CTerrainNode* pTerrainNode = pOcNode->GetTerrainNode();
 
 	if ((!pVisArea || pVisArea->IsAffectedByOutLights()) && pTerrainNode)
@@ -3374,7 +3401,7 @@ void CObjManager::RenderBrush(CBrush* pEnt, PodArray<CDLight*>* pAffectingLights
 	if (nCheckOcclusion && pEnt->m_pOcNode)
 	{
 		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pEnt->m_pTempData->userData.m_OcclState,
-			pEnt->m_pOcNode->m_pVisArea != NULL, eoot_OBJECT, passInfo))
+			pEnt->m_pOcNode->GetVisArea() != NULL, eoot_OBJECT, passInfo))
 			return;
 	}
 	assert(pEnt && pEnt->m_pTempData);

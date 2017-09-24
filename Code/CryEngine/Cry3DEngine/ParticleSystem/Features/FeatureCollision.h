@@ -12,8 +12,6 @@
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleFeature.h"
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -60,7 +58,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void PostUpdate(const SUpdateContext& context) override;
+	virtual void PostUpdateParticles(const SUpdateContext& context) override;
 
 	bool  IsActive() const           { return m_terrain || m_staticObjects || m_dynamicObjects; }
 	float GetElasticity() const      { return m_elasticity; }

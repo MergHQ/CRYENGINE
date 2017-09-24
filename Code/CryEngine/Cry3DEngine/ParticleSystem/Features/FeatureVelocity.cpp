@@ -30,8 +30,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_angle.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
 	}
@@ -81,7 +81,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.angle = m_angle.GetValueRange(context)(0.5f);
 		params.velocity = m_velocity.GetValueRange(context)(0.5f);
@@ -110,8 +110,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_scale.AddToComponent(pComponent, this);
 	}
 
@@ -146,7 +146,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.direction = m_direction;
 		params.directionScale = m_scale.GetValueRange(context)(0.5f);
@@ -173,8 +173,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_velocity.AddToComponent(pComponent, this);
 	}
 
@@ -203,7 +203,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.velocity = m_velocity.GetValueRange(context)(0.5f);
 		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_VelocityOmniDirectional;
@@ -228,8 +228,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_scale.AddToComponent(pComponent, this);
 	}
 
@@ -283,7 +283,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.velocityScale = m_scale.GetValueRange(context)(0.5f);
 	}
@@ -308,7 +308,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
+		pComponent->InitParticles.add(this);
 		m_azimuth.AddToComponent(pComponent, this);
 		m_angle.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);

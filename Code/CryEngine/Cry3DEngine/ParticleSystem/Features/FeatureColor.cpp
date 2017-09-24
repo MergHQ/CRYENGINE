@@ -8,12 +8,11 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleEmitter.h"
-#include <CrySerialization/SmartPtr.h>
 #include "FeatureColor.h"
 #include "Domain.h"
-
-CRY_PFX2_DBG
+#include "ParticleSystem/ParticleEmitter.h"
+#include "ParticleSystem/ParticleComponentRuntime.h"
+#include <CrySerialization/SmartPtr.h>
 
 namespace pfx2
 {
@@ -32,7 +31,7 @@ void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SCompone
 	m_modInit.clear();
 	m_modUpdate.clear();
 
-	pComponent->AddToUpdateList(EUL_InitUpdate, this);
+	pComponent->InitParticles.add(this);
 	pComponent->AddParticleData(EPDT_Color);
 
 	for (auto& pModifier : m_modifiers)
@@ -43,7 +42,7 @@ void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SCompone
 	if (!m_modUpdate.empty())
 	{
 		pComponent->AddParticleData(InitType(EPDT_Color));
-		pComponent->AddToUpdateList(EUL_Update, this);
+		pComponent->UpdateParticles.add(this);
 	}
 
 	if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Color))
@@ -100,7 +99,7 @@ void CFeatureFieldColor::InitParticles(const SUpdateContext& context)
 	container.CopyData(InitType(EPDT_Color), EPDT_Color, container.GetSpawnedRange());
 }
 
-void CFeatureFieldColor::Update(const SUpdateContext& context)
+void CFeatureFieldColor::UpdateParticles(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 

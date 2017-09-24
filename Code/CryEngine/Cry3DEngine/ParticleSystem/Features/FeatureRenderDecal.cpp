@@ -4,8 +4,6 @@
 #include "ParticleSystem/ParticleRender.h"
 #include "ParticleSystem/ParticleEmitter.h"
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -24,7 +22,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
+	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
 
 private:
 	SFloat m_thickness;
@@ -35,7 +33,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderDecals, "Render", "De
 
 void CFeatureRenderDecals::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	pComponent->AddToUpdateList(EUL_RenderDeferred, this);
+	pComponent->RenderDeferred.add(this);
 	pComponent->AddParticleData(EPQF_Orientation);
 }
 
@@ -105,7 +103,7 @@ struct SDecalTiler
 	const bool hasAnimation;
 };
 
-void CFeatureRenderDecals::Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
+void CFeatureRenderDecals::RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 

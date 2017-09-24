@@ -7,8 +7,12 @@
         "Audio": [
             "DefaultComponents/Audio/AreaComponent.cpp", 
             "DefaultComponents/Audio/AreaComponent.h", 
+            "DefaultComponents/Audio/EnvironmentComponent.cpp", 
+            "DefaultComponents/Audio/EnvironmentComponent.h", 
             "DefaultComponents/Audio/ListenerComponent.cpp", 
             "DefaultComponents/Audio/ListenerComponent.h", 
+            "DefaultComponents/Audio/OcclusionComponent.cpp", 
+            "DefaultComponents/Audio/OcclusionComponent.h", 
             "DefaultComponents/Audio/ParameterComponent.cpp", 
             "DefaultComponents/Audio/ParameterComponent.h", 
             "DefaultComponents/Audio/PreloadComponent.cpp", 

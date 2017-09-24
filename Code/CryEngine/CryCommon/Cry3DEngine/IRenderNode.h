@@ -167,17 +167,13 @@ struct IShadowCaster
 struct IOctreeNode
 {
 public:
-	struct CTerrainNode* GetTerrainNode() const                    { return (CTerrainNode*) (m_pTerrainNode & ~0x1); }
-	void                 SetTerrainNode(struct CTerrainNode* node) { m_pTerrainNode = (m_pTerrainNode & 0x1) | ((INT_PTR) node); }
+	struct CTerrainNode* GetTerrainNode() const { return m_pTerrainNode; }
+	struct CVisArea*     GetVisArea() const     { return m_pVisArea; }
+	virtual void         MarkAsUncompiled(const ERNListType eListType) = 0;
 
-	// If true - this node needs to be recompiled for example update nodes max view distance.
-	bool IsCompiled() const         { return (bool) (m_pTerrainNode & 0x1); }
-	void SetCompiled(bool compiled) { m_pTerrainNode = ((int) compiled) | (m_pTerrainNode & ~0x1); }
-
-	struct CVisArea* m_pVisArea;
-
-private:
-	INT_PTR m_pTerrainNode;
+protected:
+	struct CVisArea*     m_pVisArea;
+	struct CTerrainNode* m_pTerrainNode;
 };
 
 struct IRenderNode : public IShadowCaster
@@ -408,10 +404,10 @@ public:
 	}
 
 	//! \return Current VisArea or null if in outdoors or entity was not registered in 3Dengine.
-	ILINE IVisArea* GetEntityVisArea() const { return m_pOcNode ? (IVisArea*)(m_pOcNode->m_pVisArea) : NULL; }
+	ILINE IVisArea* GetEntityVisArea() const { return m_pOcNode ? (IVisArea*)(m_pOcNode->GetVisArea()) : NULL; }
 
 	//! \return Current VisArea or null if in outdoors or entity was not registered in 3Dengine.
-	struct CTerrainNode* GetEntityTerrainNode() const { return (m_pOcNode && !m_pOcNode->m_pVisArea) ? m_pOcNode->GetTerrainNode() : NULL; }
+	struct CTerrainNode* GetEntityTerrainNode() const { return (m_pOcNode && !m_pOcNode->GetVisArea()) ? m_pOcNode->GetTerrainNode() : NULL; }
 
 	//! Makes object visible at any distance.
 	ILINE void SetViewDistUnlimited() { SetViewDistRatio(255); }
@@ -546,7 +542,7 @@ inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
 	{
 		m_ucViewDistRatio = nViewDistRatio;
 		if (m_pOcNode)
-			m_pOcNode->SetCompiled(false);
+			m_pOcNode->MarkAsUncompiled(GetRenderNodeListId(GetRenderNodeType()));
 	}
 }
 

@@ -6,8 +6,6 @@
 #include "ParamTraits.h"
 #include "FeatureAngles.h"
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -32,9 +30,9 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		if (m_spawnOnly)
-			pComponent->AddToUpdateList(EUL_InitUpdate, this);
+			pComponent->InitParticles.add(this);
 		else
-			pComponent->AddToUpdateList(EUL_Update, this);
+			pComponent->UpdateParticles.add(this);
 		if (m_projectPosition)
 			pComponent->AddParticleData(EPVF_Position);
 		if (m_projectVelocity)
@@ -67,7 +65,7 @@ public:
 		Project(context, context.m_container.GetSpawnedRange());
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void UpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		Project(context, context.m_updateRange);

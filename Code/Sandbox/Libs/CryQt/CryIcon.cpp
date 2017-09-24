@@ -4,6 +4,7 @@
 #include "CryIcon.h"
 
 #include <QApplication>
+#include <QDebug>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QPalette>
@@ -389,13 +390,7 @@ void CryPixmapIconEngine::addFile(const QString& fileName, const QSize& size, QI
 	QByteArray format = imageReaderTry.format();
 	if (format.isEmpty()) // Device failed to open or unsupported format.
 	{
-#ifdef WIN32
-		// Always notify programmer directly if we're trying to load an invalid file
-		if (IsDebuggerPresent())
-		{
-			__debugbreak();
-		}
-#endif
+		qWarning() << "Could not load icon at " << fileName;
 		//Try the default Icon
 		abs = QFileInfo("icons:common/general_icon_missing.ico").absoluteFilePath();
 		ImageReader imageReaderNew(abs);

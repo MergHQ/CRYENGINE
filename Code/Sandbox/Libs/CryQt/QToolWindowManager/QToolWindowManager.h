@@ -166,6 +166,11 @@ public:
 	QVariantMap saveSplitterState(QSplitter* splitter);
 	QSplitter* restoreSplitterState(const QVariantMap& data, int stateFormat);
 
+	//! Sets the sizes of a splitter in the layout.
+	//! \param widget If widget is a QSplitter, sets the sizes directly on that splitter. Otherwise, sets the sizes on the nearest QSplitter parent of widget.
+	//! \param sizes Specifies the sizes for each widget in the splitter.
+	void resizeSplitter(QWidget* widget, QList<int> sizes);
+
 	IToolWindowArea* createArea(QTWMWrapperAreaType areyType=watTabs);
 	IToolWindowWrapper* createWrapper();
 

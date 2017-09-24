@@ -8,12 +8,11 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include <CryMath/PNoise3.h>
 #include "ParamMod.h"
-#include "ParticleSystem/ParticleComponentRuntime.h"
 #include "Domain.h"
-
-CRY_PFX2_DBG
+#include "ParticleSystem/ParticleSystem.h"
+#include "ParticleSystem/ParticleComponentRuntime.h"
+#include <CryMath/PNoise3.h>
 
 namespace pfx2
 {

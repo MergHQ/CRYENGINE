@@ -61,6 +61,7 @@ struct IArea
 	virtual AABB           GetAABB() const = 0;
 	virtual float          GetExtent(EGeomForm eForm) const = 0;
 	virtual void           GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm) const = 0;
+	virtual bool           IsPointInside(Vec3 const& pointToTest) const = 0;
 	// </interfuscator:shuffle>
 };
 

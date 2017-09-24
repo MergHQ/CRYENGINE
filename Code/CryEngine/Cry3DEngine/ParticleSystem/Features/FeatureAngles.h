@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "../ParticleCommon.h"
+
 namespace pfx2
 {
 

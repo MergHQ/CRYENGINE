@@ -10,6 +10,8 @@ def build(bld):
 		use_module  = [ 'tiff' ],
 		module_extensions = ['toolkit_pro'],
 
+		features    = ['qt'],
+
 		defines 	= ['EDITOR_COMMON_IMPORTS'],
 		includes    = [ Path('Code/SDKs/squish-ccr')],
 

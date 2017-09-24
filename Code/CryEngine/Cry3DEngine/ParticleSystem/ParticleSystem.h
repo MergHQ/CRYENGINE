@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLESYSTEM_H
-#define PARTICLESYSTEM_H
-
 #pragma once
 
 #include <CryExtension/ClassWeaver.h>
@@ -18,6 +15,7 @@
 #include "ParticleJobManager.h"
 #include "ParticleProfiler.h"
 #include "ParticleEmitter.h"
+#include "ParticleEffect.h"
 
 namespace pfx2
 {
@@ -49,6 +47,7 @@ public:
 	void                    Reset() override;
 
 	void                    Serialize(TSerialize ser) override;
+	bool                    SerializeFeatures(IArchive& ar, TParticleFeatures& features, cstr name, cstr label) const override;
 
 	void                    GetStats(SParticleStats& stats) override;
 	void                    GetMemoryUsage(ICrySizer* pSizer) const override;
@@ -96,20 +95,18 @@ private:
 	TParticleEmitters          m_newEmitters;
 	std::vector<TParticleHeap> m_memHeap;
 	_smart_ptr<IMaterial>      m_pFlareMaterial;
-	QuatT                      m_lastCameraPose = ZERO;
-	QuatT                      m_cameraMotion = ZERO;
-	uint                       m_nextEmitterId;
-	int32                      m_lastSysSpec;
+	QuatT                      m_lastCameraPose = IDENTITY;
+	QuatT                      m_cameraMotion   = ZERO;
+	uint                       m_nextEmitterId  = 0;
+	int32                      m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
 };
 
-ILINE CParticleSystem*               GetPSystem()
+ILINE CParticleSystem* GetPSystem()
 {
 	static std::shared_ptr<IParticleSystem> pSystem(GetIParticleSystem());
 	return static_cast<CParticleSystem*>(pSystem.get());
 };
 
-uint                                 GetVersion(Serialization::IArchive& ar);
+uint GetVersion(IArchive& ar);
 
 }
-
-#endif // PARTICLESYSTEM_H

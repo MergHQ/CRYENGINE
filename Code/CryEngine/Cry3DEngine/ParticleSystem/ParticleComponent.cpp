@@ -8,16 +8,15 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#include "ParticleComponent.h"
+#include "ParticleSystem.h"
+#include "ParticleComponentRuntime.h"
+#include "ParticleEmitter.h"
+#include "Features/FeatureMotion.h"
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/SmartPtr.h>
 #include <CrySerialization/Math.h>
-#include "ParticleComponent.h"
-#include "ParticleEffect.h"
-#include "ParticleFeature.h"
-#include "Features/FeatureMotion.h"
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {
@@ -165,6 +164,12 @@ IParticleFeature* CParticleComponent::AddFeature(uint placeIdx, const SParticleF
 	return pNewFeature;
 }
 
+void CParticleComponent::AddFeature(CParticleFeature* pFeature)
+{
+	m_features.push_back(pFeature);
+	SetChanged();
+}
+
 void CParticleComponent::RemoveFeature(uint featureIdx)
 {
 	m_features.erase(m_features.begin() + featureIdx);
@@ -190,12 +195,6 @@ Vec2 CParticleComponent::GetNodePosition() const
 void CParticleComponent::SetNodePosition(Vec2 position)
 {
 	m_nodePosition = position;
-}
-
-void CParticleComponent::AddToUpdateList(EUpdateList list, CParticleFeature* pFeature)
-{
-	if (stl::append_unique(m_updateLists[list], pFeature))
-		SetChanged();
 }
 
 TInstanceDataOffset CParticleComponent::AddInstanceData(size_t size)
@@ -261,48 +260,23 @@ float CParticleComponent::GetEquilibriumTime(Range parentLife) const
 }
 
 
-void CParticleComponent::PrepareRenderObjects(CParticleEmitter* pEmitter)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	for (auto& it : GetUpdateList(EUL_Render))
-		it->PrepareRenderObjects(pEmitter, this);
-}
-
-void CParticleComponent::ResetRenderObjects(CParticleEmitter* pEmitter)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	for (auto& it : GetUpdateList(EUL_Render))
-		it->ResetRenderObjects(pEmitter, this);
-}
-
-void CParticleComponent::Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
+void CParticleComponent::RenderAll(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
 {
 	if (IsVisible())
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		for (auto& it : GetUpdateList(EUL_Render))
-			it->Render(pEmitter, pRuntime, this, renderContext);		
+		Render(pEmitter, pRuntime, this, renderContext);
 		
-		if (UsesGPU())
-			pRuntime->GetParticleStats().rendered++;
-		else if (!GetUpdateList(EUL_RenderDeferred).empty())
+		if (RenderDeferred.size())
 		{
 			CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
 			CParticleComponentRuntime* pCpuRuntime = static_cast<CParticleComponentRuntime*>(pRuntime);
 			jobManager.AddDeferredRender(pCpuRuntime, renderContext);
 		}
+		if (UsesGPU())
+			pRuntime->GetParticleStats().rendered++;
 	}
-}
-
-void CParticleComponent::RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	for (auto& it : GetUpdateList(EUL_RenderDeferred))
-		it->Render(pEmitter, pRuntime, this, renderContext);
 }
 
 bool CParticleComponent::CanMakeRuntime(CParticleEmitter* pEmitter) const
@@ -325,8 +299,7 @@ void CParticleComponent::PreCompile()
 	m_componentParams = {};
 	m_GPUComponentParams = {};
 
-	for (size_t i = 0; i < EUL_Count; ++i)
-		m_updateLists[i].clear();
+	static_cast<SFeatureDispatchers&>(*this) = {};
 	m_gpuFeatures.clear();
 
 	// add default particle data

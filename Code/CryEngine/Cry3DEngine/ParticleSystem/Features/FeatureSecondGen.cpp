@@ -8,11 +8,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
-#include "ParticleSystem/ParticleEmitter.h"
+#include "ParticleSystem/ParticleSystem.h"
 #include "FeatureCollision.h"
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {
@@ -163,7 +160,7 @@ public:
 	{
 		CFeatureSecondGenBase::AddToComponent(pComponent, pParams);
 		if (GetNumConnectors() != 0)
-			pComponent->AddToUpdateList(EUL_InitUpdate, this);
+			pComponent->InitParticles.add(this);
 	}
 
 	virtual void InitParticles(const SUpdateContext& context) override
@@ -199,7 +196,7 @@ public:
 	{
 		CFeatureSecondGenBase::AddToComponent(pComponent, pParams);
 		if (GetNumConnectors() != 0)
-			pComponent->AddToUpdateList(EUL_KillUpdate, this);
+			pComponent->KillParticles.add(this);
 	}
 
 	void KillParticles(const SUpdateContext& context, TConstArray<TParticleId> particleIds) override
@@ -239,10 +236,10 @@ public:
 	{
 		CFeatureSecondGenBase::AddToComponent(pComponent, pParams);
 		if (GetNumConnectors() != 0)
-			pComponent->AddToUpdateList(EUL_Update, this);
+			pComponent->UpdateParticles.add(this);
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void UpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 

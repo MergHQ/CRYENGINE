@@ -1,11 +1,9 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
+#include "ParticleSystem/ParticleSystem.h"
 #include "ClipVolumeManager.h"
 #include "ParamMod.h"
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {
@@ -28,8 +26,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_RenderDeferred, this);
-		pComponent->AddToUpdateList(EUL_ComputeBounds, this);
+		pComponent->RenderDeferred.add(this);
+		pComponent->ComputeBounds.add(this);
 		pComponent->AddParticleData(EPVF_Position);
 		if (GetPSystem()->GetFlareMaterial() && !m_flare.empty())
 			m_hasFlareOptics = gEnv->pOpticsManager->Load(m_flare.c_str(), m_lensOpticsId);
@@ -45,7 +43,7 @@ public:
 		SERIALIZE_VAR(ar, m_flare);
 	}
 
-	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		ComputeLights(pComponentRuntime, &renderContext, nullptr);
 	}

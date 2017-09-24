@@ -7,5 +7,12 @@ def build(bld):
 		vs_filter  = 'CryEngine',		
 		file_list  = 'cryaisystem.waf_files',
 
-		pch        = 'StdAfx.cpp'
+		pch        = 'StdAfx.cpp',
+
+
+		use_module    = [ 		
+			'CryUQS_Client', 
+			'CryUQS_DataSource_XML',
+			'CryUQS_StdLib'
+		],
 	)	

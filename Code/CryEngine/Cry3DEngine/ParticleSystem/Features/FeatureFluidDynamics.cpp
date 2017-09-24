@@ -16,8 +16,6 @@
 
 #include <CryRenderer/IGpuParticles.h>
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -51,7 +49,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_Update, this);
+		pComponent->UpdateParticles.add(this);
 
 		if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_MotionFluidDynamics))
 		{

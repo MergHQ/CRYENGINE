@@ -9,10 +9,8 @@
 
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleRender.h"
-#include "ParticleSystem/ParticleEmitter.h"
+#include "ParticleSystem/ParticleSystem.h"
 #include <CryMath/RadixSort.h>
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {
@@ -96,7 +94,7 @@ void CFeatureRenderRibbon::AddToComponent(CParticleComponent* pComponent, SCompo
 {
 	BaseClass::AddToComponent(pComponent, pParams);
 	CParticleComponent* pParent = pComponent->GetParentComponent();
-	pComponent->AddToUpdateList(EUL_InitUpdate, this);
+	pComponent->InitParticles.add(this);
 	pComponent->AddParticleData(EPDT_ParentId);
 	pComponent->AddParticleData(EPDT_SpawnId);
 	if (pParent)

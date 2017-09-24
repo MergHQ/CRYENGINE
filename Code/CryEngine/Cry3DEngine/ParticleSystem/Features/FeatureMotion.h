@@ -48,7 +48,7 @@ public:
 
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void Update(const SUpdateContext& context) override;
+	virtual void UpdateParticles(const SUpdateContext& context) override;
 	// ~CParticleFeature
 
 	// IFeatureMotion
@@ -97,7 +97,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	virtual void PostInitParticles(const SUpdateContext& context) override;
-	virtual void Update(const SUpdateContext& context) override;
+	virtual void UpdateParticles(const SUpdateContext& context) override;
 
 private:
 	typedef TValue<float, ConvertScale<1000, 1, THardMin<0>>> UDensity;

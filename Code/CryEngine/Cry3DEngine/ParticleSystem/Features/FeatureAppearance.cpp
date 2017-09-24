@@ -8,12 +8,11 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#include "ParticleSystem/ParticleComponent.h"
+#include "ParticleSystem/ParticleSystem.h"
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Enum.h>
-#include "ParticleSystem/ParticleFeature.h"
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {
@@ -51,7 +50,7 @@ public:
 			pComponent->AddParticleData(EPDT_Tile);
 			if (m_variantMode == EVariantMode::Ordered)
 				pComponent->AddParticleData(EPDT_SpawnId);
-			pComponent->AddToUpdateList(EUL_InitUpdate, this);
+			pComponent->InitParticles.add(this);
 		}
 
 		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);

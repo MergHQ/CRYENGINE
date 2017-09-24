@@ -7,5 +7,6 @@ def build(bld):
 		file_list   = 'FacialEditorPlugin.waf_files',
 		pch			= 'StdAfx.cpp',
 		use			= [ 'MFCToolsPlugin' ],
+		win_module_extensions = ['toolkit_pro'],
 		includes	= [ Path('Code/Sandbox/Plugins/MFCToolsPlugin')	]
 	)

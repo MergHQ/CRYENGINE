@@ -1,11 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CryString/CryPath.h>
+#include "FileMonitor.h"
 #include "IAudioSystemEditor.h"
+#include "AudioAssetsManager.h"
 #include "AudioControlsEditorPlugin.h"
 #include "AudioControlsEditorWindow.h"
-#include "FileMonitor.h"
+#include <CryString/CryPath.h>
 
 namespace ACE
 {
@@ -41,8 +42,9 @@ void CFileMonitor::Disable()
 //////////////////////////////////////////////////////////////////////////
 CFileMonitorSystem::CFileMonitorSystem(CAudioControlsEditorWindow* window, int delay)
 	: CFileMonitor(window, delay)
+	, m_assetFolder (Utils::GetAssetFolder())
+	, m_delayTimer(new QTimer())
 {
-	m_delayTimer = new QTimer();
 	m_delayTimer->setSingleShot(true);
 	connect(m_delayTimer, &QTimer::timeout, this, &CFileMonitorSystem::Enable);
 	Enable();

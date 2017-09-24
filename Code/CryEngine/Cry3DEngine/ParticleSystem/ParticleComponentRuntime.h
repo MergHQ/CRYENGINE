@@ -11,6 +11,7 @@
 
 #include "ParticleCommon.h"
 #include "ParticleComponent.h"
+#include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
 {
@@ -50,9 +51,7 @@ public:
 	CParticleContainer&       GetContainer()            { return m_container; }
 	const CParticleContainer& GetContainer() const      { return m_container; }
 
-	void                      MainPreUpdate();
 	void                      UpdateAll();
-	void                      SpawnParticles(const SUpdateContext& context);
 	void                      AddRemoveParticles(const SUpdateContext& context);
 	void                      UpdateParticles(const SUpdateContext& context);
 	void                      CalculateBounds();
@@ -62,10 +61,9 @@ public:
 	SInstance&                GetInstance(uint idx)         { return m_subInstances[idx]; }
 	TParticleId               GetParentId(uint idx) const   { return GetInstance(idx).m_parentId; }
 	template<typename T> T*   GetSubInstanceData(uint instanceId, TInstanceDataOffset offset);
-	void                      SpawnParticles(const SSpawnEntry& entry);
+	void                      AddSpawnEntry(const SSpawnEntry& entry);
 	SChaosKey                 MakeSeed(TParticleId id = 0) const;
 	SChaosKey                 MakeParentSeed(TParticleId id = 0) const;
-	void                      GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents);
 
 	bool                      HasParticles() const;
 	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
@@ -73,9 +71,9 @@ public:
 	SParticleStats::ParticleStats& GetParticleStats() { return m_particleStats; }
 
 private:
+	void AddParticles(const SUpdateContext& context);
 	void RemoveParticles(const SUpdateContext& context);
 	void UpdateNewBorns(const SUpdateContext& context);
-	void UpdateFeatures(const SUpdateContext& context);
 	void UpdateGPURuntime(const SUpdateContext& context);
 	void AgeUpdate(const SUpdateContext& context);
 	void UpdateLocalSpace(SUpdateRange range);

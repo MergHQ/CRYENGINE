@@ -38,7 +38,7 @@ void CParticleJobManager::AddEmitter(CParticleEmitter* pEmitter)
 	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
 
 	uint numComponents = 0;
-	for (auto pRuntime : pEmitter->GetRuntimes())
+	for (auto& pRuntime : pEmitter->GetRuntimes())
 	{
 		if (!pRuntime->IsChild())
 		{
@@ -160,7 +160,7 @@ void CParticleJobManager::KernelUpdateAll()
 		// No threading
 		for (auto pEmitter : m_emitterRefs)
 		{
-			for (auto pRuntime : pEmitter->GetRuntimes())
+			for (auto& pRuntime : pEmitter->GetRuntimes())
 				pRuntime->UpdateAll();
 		}
 	}
@@ -187,7 +187,7 @@ void CParticleJobManager::DeferredRender()
 		renderContext.m_distance = render.m_distance;
 		renderContext.m_lightVolumeId = render.m_lightVolumeId;
 		renderContext.m_fogVolumeId = render.m_fogVolumeId;
-		pComponent->RenderDeferred(pEmitter, pRuntime, renderContext);
+		pRuntime->GetComponent()->RenderDeferred(pEmitter, pRuntime, pComponent, renderContext);
 	}
 
 	ClearAll();
@@ -198,7 +198,7 @@ void CParticleJobManager::Job_UpdateEmitter(uint emitterRefIdx)
 	auto& profiler = GetPSystem()->GetProfiler();
 	CParticleEmitter* pEmitter = m_emitterRefs[emitterRefIdx];
 
-	for (auto pRuntime : pEmitter->GetRuntimes())
+	for (auto& pRuntime : pEmitter->GetRuntimes())
 	{
 		profiler.AddEntry(pRuntime, EPS_Jobs);
 		pRuntime->UpdateAll();
@@ -240,7 +240,7 @@ void CParticleJobManager::Job_UpdateParticles(uint componentRefIdx, SUpdateRange
 	GetPSystem()->GetProfiler().AddEntry(pRuntime, EPS_Jobs);
 
 	SUpdateContext context(pRuntime, updateRange);
-	pRuntime->UpdateParticles(context);
+	pRuntime->GetComponent()->UpdateParticles(context);
 }
 
 void CParticleJobManager::Job_PostUpdateParticles(uint componentRefIdx)

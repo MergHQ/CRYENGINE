@@ -17,6 +17,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/IStatObj.h>  // MAX_STATOBJ_LODS_NUM
 #include <Cry3DEngine/ITimeOfDay.h>
+#include <VisAreas.h>
 
 //////////////////////////////////////////////////////////////////////////
 void OnTimeOfDayVarChange(ICVar* pArgs)
@@ -42,7 +43,15 @@ void OnCGFStreamingChange(ICVar* pArgs)
 
 void OnPerCharacterShadowsChange(ICVar* pArgs)
 {
-	Cry3DEngineBase::Get3DEngine()->ObjectsTreeMarkAsUncompiled(NULL);
+	if (Cry3DEngineBase::Get3DEngine()->GetObjectsTree())
+	{
+		Cry3DEngineBase::Get3DEngine()->GetObjectsTree()->MarkAsUncompiled();
+	}
+
+	if (Cry3DEngineBase::GetVisAreaManager())
+	{
+		Cry3DEngineBase::GetVisAreaManager()->MarkAllSectorsAsUncompiled();
+	}
 }
 
 void OnGsmLodsNumChange(ICVar* pArgs)
@@ -55,7 +64,11 @@ void OnGsmLodsNumChange(ICVar* pArgs)
 
 void OnDynamicDistanceShadowsVarChange(ICVar* pArgs)
 {
-	Cry3DEngineBase::Get3DEngine()->ObjectsTreeMarkAsUncompiled(NULL);
+	if (Cry3DEngineBase::Get3DEngine()->GetObjectsTree())
+	{
+		Cry3DEngineBase::Get3DEngine()->GetObjectsTree()->MarkAsUncompiled();
+	}
+
 	Cry3DEngineBase::Get3DEngine()->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
 }
 

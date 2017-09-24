@@ -178,6 +178,7 @@ public:
 	virtual AABB GetAABB() const override;
 	virtual float GetExtent(EGeomForm eForm) const override;
 	virtual void GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm) const override;
+	virtual bool IsPointInside(Vec3 const& pointToTest) const override;
 	//~IArea
 
 	void     Release();
@@ -250,6 +251,7 @@ public:
 	EAreaPosType CalcPosType(EntityId const nEntityID, Vec3 const& rPos, bool const bCacheResult = true);
 	float        CalcPointWithinDist(EntityId const nEntityID, Vec3 const& point3d, bool const bIgnoreSoundObstruction = true, bool const bCacheResult = true);
 	bool         CalcPointWithin(EntityId const nEntityID, Vec3 const& point3d, bool const bIgnoreHeight = false, bool const bCacheResult = true);
+	bool         CalcPointWithinNonCached(Vec3 const& point3d, bool const bIgnoreHeight) const;
 	float        CalcDistToPoint(a2DPoint const& point) const;
 
 	// Squared-distance returned works only if point32 is not within the area

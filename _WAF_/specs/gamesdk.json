@@ -4,9 +4,11 @@
 	"valid_configuration"                   : [ "debug", "profile", "performance", "release" ],
 	"visual_studio_name"                    : "GameSDK",
 
-	"game_projects"                         : "GameSDK",
+  "game_projects": "GameSDK",
 
 	"win_module_extensions"                 : ["audio_fmod", "brofiler", "eyex", "mono"],
+
+  "defines"                               : [ "UQS_SCHEMATYC_SUPPORT=1", "SUPPORT_UNSIGNED_PAKS" ],
 
 	"modules" :
 	[

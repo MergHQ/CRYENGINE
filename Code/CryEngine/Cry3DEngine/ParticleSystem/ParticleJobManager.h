@@ -7,13 +7,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLEKERNEL_H
-#define PARTICLEKERNEL_H
-
 #pragma once
 
 #include <CryThreading/IJobManager_JobDelegator.h>
-#include "ParticleContainer.h"
 
 class CRenderObject;
 namespace JobManager {
@@ -103,4 +99,3 @@ private:
 
 }
 
-#endif // PARTICLEKERNEL_H

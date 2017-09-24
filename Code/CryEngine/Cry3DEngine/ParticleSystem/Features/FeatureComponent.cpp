@@ -3,8 +3,7 @@
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleFeature.h"
 #include "ParticleSystem/ParticleEmitter.h"
-
-CRY_PFX2_DBG
+#include "ParticleSystem/ParticleComponentRuntime.h"
 
 namespace pfx2
 {
@@ -67,7 +66,7 @@ public:
 public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
+		pComponent->MainPreUpdate.add(this);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override

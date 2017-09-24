@@ -516,10 +516,14 @@ void CTerrain::IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* pl
 void CTerrain::MarkAllSectorsAsUncompiled()
 {
 	if (GetParentNode())
+	{
 		GetParentNode()->RemoveProcObjects(true);
+	}
 
-	if (Get3DEngine()->m_pObjectsTree)
-		Get3DEngine()->m_pObjectsTree->MarkAsUncompiled();
+	if (Cry3DEngineBase::Get3DEngine()->GetObjectsTree())
+	{
+		Cry3DEngineBase::Get3DEngine()->GetObjectsTree()->MarkAsUncompiled();
+	}
 }
 
 void CTerrain::SetHeightMapMaxHeight(float fMaxHeight)
@@ -527,8 +531,6 @@ void CTerrain::SetHeightMapMaxHeight(float fMaxHeight)
 	if (m_pParentNode)
 		InitHeightfieldPhysics();
 }
-
-void SetTerrain(CTerrain& rTerrain);
 
 void CTerrain::SerializeTerrainState(TSerialize ser)
 {

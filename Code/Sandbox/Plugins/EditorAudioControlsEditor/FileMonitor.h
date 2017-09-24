@@ -3,7 +3,6 @@
 #pragma once
 
 #include <CrySystem/File/IFileChangeMonitor.h>
-
 #include <QTimer>
 
 namespace ACE
@@ -53,7 +52,7 @@ private:
 	virtual void ReloadData() override;
 	// ~CFileMonitor
 
-	string const m_assetFolder = Utils::GetAssetFolder();
+	string const m_assetFolder;
 	QTimer*      m_delayTimer;
 };
 

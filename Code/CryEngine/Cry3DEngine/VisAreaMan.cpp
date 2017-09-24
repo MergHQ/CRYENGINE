@@ -1789,14 +1789,14 @@ void CVisAreaManager::ClearRegion(const AABB& region)
 
 namespace
 {
-	inline void HelperMarkAllSectorsAsUncompiled(PodArray<CVisArea*>& arrayVisArea, const IRenderNode* pRenderNode)
+	inline void HelperMarkAllSectorsAsUncompiled(PodArray<CVisArea*>& arrayVisArea)
 	{
 		int s = arrayVisArea.Count();
 		for (int i = 0; i < s; ++i)
 		{
 			if (arrayVisArea[i]->IsObjectsTreeValid())
 			{
-				arrayVisArea[i]->GetObjectsTree()->MarkAsUncompiled(pRenderNode);
+				arrayVisArea[i]->GetObjectsTree()->MarkAsUncompiled();
 			}
 		}
 	}
@@ -1850,10 +1850,10 @@ namespace
 	}
 }
 
-void CVisAreaManager::MarkAllSectorsAsUncompiled(const IRenderNode* pRenderNode)
+void CVisAreaManager::MarkAllSectorsAsUncompiled()
 {
-	HelperMarkAllSectorsAsUncompiled(m_lstPortals,  pRenderNode);
-	HelperMarkAllSectorsAsUncompiled(m_lstVisAreas, pRenderNode);
+	HelperMarkAllSectorsAsUncompiled(m_lstPortals);
+	HelperMarkAllSectorsAsUncompiled(m_lstVisAreas);
 }
 
 void CVisAreaManager::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox)

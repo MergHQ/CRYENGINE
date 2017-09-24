@@ -71,7 +71,7 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<CDLight*>* pAff
 
 	if (nCheckOcclusion && pEnt->m_pOcNode)
 		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pEnt->m_pTempData->userData.m_OcclState,
-		                                   pEnt->m_pOcNode->m_pVisArea != NULL, eoot_OBJECT, passInfo))
+		                                   pEnt->m_pOcNode->GetVisArea() != NULL, eoot_OBJECT, passInfo))
 			return;
 
 	CVisArea* pVisArea = (CVisArea*)pEnt->GetEntityVisArea();
@@ -131,7 +131,7 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<CDLight*>* pAffec
 
 	if (nCheckOcclusion && pEnt->m_pOcNode)
 		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pEnt->m_pTempData->userData.m_OcclState,
-		                                   pEnt->m_pOcNode->m_pVisArea != NULL, eoot_OBJECT, passInfo))
+		                                   pEnt->m_pOcNode->GetVisArea() != NULL, eoot_OBJECT, passInfo))
 			return;
 
 	const CLodValue lodValue = pEnt->ComputeLod(pEnt->m_pTempData->userData.nWantedLod, passInfo);

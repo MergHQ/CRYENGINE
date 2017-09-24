@@ -1192,6 +1192,21 @@ QSplitter *QToolWindowManager::restoreSplitterState(const QVariantMap &data, int
 	return splitter;
 }
 
+void QToolWindowManager::resizeSplitter(QWidget* widget, QList<int> sizes)
+{
+	QSplitter* s = qobject_cast<QSplitter*>(widget);
+	if (!s)
+	{
+		s = findClosestParent<QSplitter*>(widget);
+	}
+	if (!s)
+	{
+		qWarning("Could not find a matching splitter!");
+		return;
+	}
+	s->setSizes(sizes);
+}
+
 QString QToolWindowManager::textForPosition(QToolWindowAreaReference reference)
 {
 	static const char* texts[10] = {

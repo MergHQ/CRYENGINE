@@ -4885,19 +4885,15 @@ uint32 C3DEngine::GetObjectsByFlags(uint dwFlags, IRenderNode** pObjects /* =0 *
 	return lstObjects.Count();
 }
 
-void C3DEngine::ObjectsTreeMarkAsUncompiled(const IRenderNode* pRenderNode)
-{
-	if (COctreeNode* curNode = Cry3DEngineBase::Get3DEngine()->m_pObjectsTree)
-		curNode->MarkAsUncompiled(pRenderNode);
-
-	if (GetVisAreaManager())
-		GetVisAreaManager()->MarkAllSectorsAsUncompiled(pRenderNode);
-}
-
 void C3DEngine::OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags)
 {
-	if ((dwFlags & (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS)) != 0)
+	bool bSkipCharacters = !GetCVars()->e_ShadowsCacheRenderCharacters || (dwFlags & ERF_DYNAMIC_DISTANCESHADOWS);
+
+	if ((dwFlags & (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS)) != 0 && (!pRenderNode || (pRenderNode->GetRenderNodeType() != eERType_Character || !bSkipCharacters)))
+	{
 		SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdateTimesliced);
+	}
+
 	if (pRenderNode)
 	{
 		pRenderNode->InvalidatePermanentRenderObject();

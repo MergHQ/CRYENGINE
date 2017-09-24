@@ -11,12 +11,9 @@
 #include <CrySystem/CryUnitTest.h>
 #include <CryMath/SNoise.h>
 #include <CrySerialization/Math.h>
-#include "ParticleSystem/ParticleFeature.h"
-#include "ParticleSystem/ParticleEmitter.h"
+#include "ParticleSystem/ParticleSystem.h"
 #include "ParamMod.h"
 #include "Target.h"
-
-CRY_PFX2_DBG
 
 namespace pfx2
 {
@@ -36,10 +33,10 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_GetExtents, this);
-		pComponent->AddToUpdateList(EUL_GetEmitOffset, this);
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->GetSpatialExtents.add(this);
+		pComponent->GetEmitOffset.add(this);
+		pComponent->InitParticles.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_scale.AddToComponent(pComponent, this);
 	}
 
@@ -68,14 +65,14 @@ public:
 		}
 	}
 
-	virtual Vec3 GetEmitOffset(const SUpdateContext& context, TParticleId parentId) override
+	virtual void GetEmitOffset(const SUpdateContext& context, TParticleId parentId, Vec3& offset) override
 	{
 		TFloatArray scales(*context.m_pMemHeap, parentId + 1);
 		const SUpdateRange range(parentId, parentId + 1);
 
 		auto modRange = m_scale.GetValues(context, scales.data(), range, EMD_PerInstance, true);
 		const float scale = scales[parentId] * (modRange.start + modRange.end) * 0.5f;
-		return m_offset * scale;
+		offset += m_offset * scale;
 	}
 
 	virtual void InitParticles(const SUpdateContext& context) override
@@ -103,7 +100,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.offset = m_offset;
 		params.scale.x = m_scale.GetValueRange(context)(0.5f);
@@ -127,9 +124,9 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_GetExtents, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->GetSpatialExtents.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_scale.AddToComponent(pComponent, this);
 	}
 
@@ -184,7 +181,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.box = m_box;
 		params.scale.x = m_scale.GetValueRange(context)(0.5f);
@@ -214,9 +211,9 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_GetExtents, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->GetSpatialExtents.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_radius.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
 	}
@@ -245,7 +242,7 @@ public:
 			SphericalDist<false, true>(context);
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.scale = m_axisScale;
 		params.radius = m_radius.GetValueRange(context)(0.5f);
@@ -331,9 +328,9 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_GetExtents, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->GetSpatialExtents.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_radius.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
 	}
@@ -363,7 +360,7 @@ public:
 			CircularDist<false, true>(context);
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.scale.x = m_axisScale.x;
 		params.scale.y = m_axisScale.y;
@@ -474,8 +471,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
-		pComponent->AddToUpdateList(EUL_GetExtents, this);
+		pComponent->MainPreUpdate.add(this);
+		pComponent->GetSpatialExtents.add(this);
 		m_offset.AddToComponent(pComponent, this);
 		m_velocity.AddToComponent(pComponent, this);
 		if (m_orientToNormal)
@@ -744,8 +741,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_UpdateGPU, this);
+		pComponent->InitParticles.add(this);
+		pComponent->UpdateGPUParams.add(this);
 		m_amplitude.AddToComponent(pComponent, this);
 	}
 
@@ -789,7 +786,7 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) const override
+	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
 	{
 		params.amplitude = m_amplitude.GetValueRange(context)(0.5f);
 		params.noiseSize = m_size;
@@ -859,8 +856,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_GetExtents, this);
+		pComponent->InitParticles.add(this);
+		pComponent->GetSpatialExtents.add(this);
 		pComponent->AddParticleData(EPDT_SpawnFraction);
 	}
 
@@ -927,9 +924,9 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_PostInitUpdate, this);
+		pComponent->PostInitParticles.add(this);
 		if (!m_spawnOnly)
-			pComponent->AddToUpdateList(EUL_PreUpdate, this);
+			pComponent->PreUpdateParticles.add(this);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -970,7 +967,7 @@ public:
 		}
 	}
 
-	virtual void PreUpdate(const SUpdateContext& context) override
+	virtual void PreUpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -1189,9 +1186,9 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->AddParticleData(EPVF_AuxPosition);
-		pComponent->AddToUpdateList(EUL_GetExtents, this);
-		pComponent->AddToUpdateList(EUL_InitUpdate, this);
-		pComponent->AddToUpdateList(EUL_Update, this);
+		pComponent->GetSpatialExtents.add(this);
+		pComponent->InitParticles.add(this);
+		pComponent->UpdateParticles.add(this);
 		m_visibility.AddToComponent(pComponent, this);
 	}
 
@@ -1249,7 +1246,7 @@ public:
 		}
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void UpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 

@@ -9,8 +9,8 @@
 
 #include "StdAfx.h"
 #include "ParticleComponentRuntime.h"
-#include "ParticleEmitter.h"
-#include "ParticleFeature.h"
+#include "ParticleSystem.h"
+#include "ParticleProfiler.h"
 
 namespace pfx2
 {
@@ -91,7 +91,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 	m_container.RemoveNewBornFlags();
 	RemoveParticles(context);
 
-	SpawnParticles(context);
+	AddParticles(context);
 	UpdateNewBorns(context);
 	m_container.ResetSpawnedParticles();
 
@@ -106,7 +106,17 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 	m_container.FillData(EPVF_Acceleration, 0.0f, context.m_updateRange);
 	m_container.FillData(EPVF_VelocityField, 0.0f, context.m_updateRange);
 
-	UpdateFeatures(context);
+	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().step())
+	{
+		if (type.info().hasInit)
+			m_container.CopyData(type, InitType(type), context.m_updateRange);
+	}
+
+	GetComponent()->PreUpdateParticles(context);
+	GetComponent()->UpdateParticles(context);
+	GetComponent()->PostUpdateParticles(context);
+
+	UpdateLocalSpace(context.m_updateRange);
 	AgeUpdate(context);
 }
 
@@ -117,8 +127,7 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 		CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_ComputeVerticesTime);
 
-		for (auto& it : GetComponent()->GetUpdateList(EUL_Render))
-			it->ComputeVertices(this, camInfo, pRE, uRenderFlags, fMaxPixels);
+		GetComponent()->ComputeVertices(this, camInfo, pRE, uRenderFlags, fMaxPixels);
 	}
 }
 
@@ -138,8 +147,7 @@ void CParticleComponentRuntime::AddSubInstances(TVarArray<SInstance> instances)
 	
 	SUpdateContext context(this);
 	SUpdateRange instanceRange(firstInstance, lastInstance);
-	for (auto& it : GetComponent()->GetUpdateList(EUL_InitSubInstances))
-		it->InitSubInstances(context, instanceRange);
+	GetComponent()->InitSubInstances(context, instanceRange);
 
 	DebugStabilityCheck();
 }
@@ -186,19 +194,7 @@ void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapI
 	DebugStabilityCheck();
 }
 
-void CParticleComponentRuntime::MainPreUpdate()
-{
-	for (auto& it : GetComponent()->GetUpdateList(EUL_MainPreUpdate))
-		it->MainPreUpdate(this);
-}
-
-void CParticleComponentRuntime::GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents)
-{
-	for (auto& it : GetComponent()->GetUpdateList(EUL_GetExtents))
-		it->GetSpatialExtents(context, scales, extents);
-}
-
-void CParticleComponentRuntime::SpawnParticles(const SSpawnEntry& entry)
+void CParticleComponentRuntime::AddSpawnEntry(const SSpawnEntry& entry)
 {
 	if (entry.m_count > 0)
 		m_spawnEntries.push_back(entry);
@@ -218,11 +214,10 @@ SChaosKey CParticleComponentRuntime::MakeParentSeed(TParticleId particleId) cons
 	return pfx2::SChaosKey(emitterSeed + componentId + particleId);
 }
 
-void CParticleComponentRuntime::SpawnParticles(const SUpdateContext& context)
+void CParticleComponentRuntime::AddParticles(const SUpdateContext& context)
 {
 	if (GetNumInstances())
-		for (auto& it : GetComponent()->GetUpdateList(EUL_Spawn))
-			it->SpawnParticles(context);
+		GetComponent()->SpawnParticles(context);
 	m_container.AddParticles(m_spawnEntries);
 	m_spawnEntries.clear();
 }
@@ -231,11 +226,10 @@ void CParticleComponentRuntime::RemoveParticles(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	const bool hasKillFeatures = !GetComponent()->GetUpdateList(EUL_KillUpdate).empty();
 	const uint32 numParticles = m_container.GetNumParticles();
 	TIStream<uint8> states = m_container.GetTIStream<uint8>(EPDT_State);
 
-	if (hasKillFeatures)
+	if (GetComponent()->KillParticles.size())
 	{
 		TParticleIdArray particleIds(*context.m_pMemHeap);
 		particleIds.reserve(numParticles);
@@ -248,8 +242,7 @@ void CParticleComponentRuntime::RemoveParticles(const SUpdateContext& context)
 		}
 		if (!particleIds.empty())
 		{
-			for (auto& it : GetComponent()->GetUpdateList(EUL_KillUpdate))
-				it->KillParticles(context, particleIds);
+			GetComponent()->KillParticles(context, particleIds);
 		}
 	}
 
@@ -352,8 +345,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 
 	// feature init particles
 	m_container.FillData(EPDT_State, uint8(ES_NewBorn), m_container.GetSpawnedRange());
-	for (auto& it : GetComponent()->GetUpdateList(EUL_InitUpdate))
-		it->InitParticles(context);
+	GetComponent()->InitParticles(context);
 
 	// modify with spawn params
 	const SpawnParams& spawnParams = GetEmitter()->GetSpawnParams();
@@ -384,30 +376,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	UpdateLocalSpace(m_container.GetSpawnedRange());
 
 	// feature post init particles
-	for (auto& it : GetComponent()->GetUpdateList(EUL_PostInitUpdate))
-		it->PostInitParticles(context);
-}
-
-void CParticleComponentRuntime::UpdateFeatures(const SUpdateContext& context)
-{
-	CRY_PFX2_PROFILE_DETAIL;
-
-	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().step())
-	{
-		if (type.info().hasInit)
-			m_container.CopyData(type, InitType(type), context.m_updateRange);
-	}
-
-	for (auto& it : GetComponent()->GetUpdateList(EUL_PreUpdate))
-		it->PreUpdate(context);
-	
-	for (auto& it : GetComponent()->GetUpdateList(EUL_Update))
-		it->Update(context);
-
-	for (auto& it : GetComponent()->GetUpdateList(EUL_PostUpdate))
-		it->PostUpdate(context);
-	
-	UpdateLocalSpace(context.m_updateRange);
+	GetComponent()->PostInitParticles(context);
 }
 
 void CParticleComponentRuntime::CalculateBounds()
@@ -464,8 +433,7 @@ void CParticleComponentRuntime::CalculateBounds()
 	}
 
 	// augment bounds from features
-	for (auto& it : GetComponent()->GetUpdateList(EUL_ComputeBounds))
-		it->ComputeBounds(this, m_bounds);
+	GetComponent()->ComputeBounds(this, m_bounds);
 }
 
 void CParticleComponentRuntime::AgeUpdate(const SUpdateContext& context)
@@ -570,12 +538,10 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 	params.physAccel          = m_pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
 	params.physWind           = m_pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
 	
-	for (auto& it : GetComponent()->GetUpdateList(EUL_UpdateGPU))
-		it->UpdateGPUParams(context, params);
+	GetComponent()->UpdateGPUParams(context, params);
 
 	if (GetNumInstances())
-		for (auto& it : GetComponent()->GetUpdateList(EUL_Spawn))
-			it->SpawnParticles(context);
+		GetComponent()->SpawnParticles(context);
 
 	// Get data of parent particles
 	const auto& parentContainer = context.m_parentContainer;
