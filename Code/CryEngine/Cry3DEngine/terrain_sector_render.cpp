@@ -405,7 +405,10 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 	{
 		SetupTexturing(false, passInfo);
 
-		IRenderMesh * pRenderMesh = GetSharedRenderMesh();
+		float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
+		float sectorSize = (m_boxHeigtmapLocal.max.x - m_boxHeigtmapLocal.min.x);
+
+		IRenderMesh * pRenderMesh = GetSharedRenderMesh(int(sectorSize / stepSize));
 
 		CRenderObject* pTerrainRenderObject = 0;
 
@@ -797,7 +800,10 @@ bool CTerrainNode::RenderSector(const SRenderingPassInfo& passInfo)
 
 	STerrainNodeLeafData* pLeafData = GetLeafData();
 
-	IRenderMesh * pRenderMesh = (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod) ? GetSharedRenderMesh() : GetLeafData()->m_pRenderMesh;
+	float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
+	float sectorSize = (m_boxHeigtmapLocal.max.x - m_boxHeigtmapLocal.min.x);
+
+	IRenderMesh * pRenderMesh = (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod) ? GetSharedRenderMesh(int(sectorSize / stepSize)) : GetLeafData()->m_pRenderMesh;
 
 	bool bDetailLayersReady = passInfo.IsShadowPass() ||
 	                          !m_lstSurfaceTypeInfo.Count() ||
@@ -1310,7 +1316,7 @@ void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcR
 			}
 		}
 
-	assert(8 + 8 <= ARR_TEX_OFFSETS_SIZE_DET_MAT);
+	assert(8 + 8 <= TERRAIN_TEX_OFFSETS_SIZE);
 
 	if (pMatRM->GetChunks().size() && pMatRM->GetChunks()[0].pRE)
 	{
@@ -1356,12 +1362,19 @@ void AddIndexShared(int _x, int _y, PodArray<vtx_idx> & arrIndices, int nSectorS
 }
 
 // Build single render mesh (with safety borders) to be re-used for multiple sectors
-_smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
+_smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
 {
-	if (m_pTerrain->m_pSharedRenderMesh)
-		return m_pTerrain->m_pSharedRenderMesh;
+	int nLod = 0;
+	int n = int(CTerrain::m_fInvUnitSize * (float)CTerrain::m_nSectorSize);
+	while (nDim < n && nLod<(TERRAIN_SHARED_MESH_LODS_NUM - 1))
+	{
+		nLod++;
+		n >>= 1;
+	}
 
-	int nDim = 32;
+	if (m_pTerrain->m_pSharedRenderMesh[nLod])
+		return m_pTerrain->m_pSharedRenderMesh[nLod];
+
 	int nBorder = 1;
 
 	SVF_P2S_N4B_C4B_T1F vert;
@@ -1412,7 +1425,7 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 		}
 	}
 
-	m_pTerrain->m_pSharedRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
+	m_pTerrain->m_pSharedRenderMesh[nLod] = GetRenderer()->CreateRenderMeshInitialized(
 		arrVertices.GetElements(),
 		arrVertices.Count(),
 		EDefaultInputLayouts::P2S_N4B_C4B_T1F,
@@ -1422,9 +1435,9 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 		"TerrainSectorSharedRenderMesh", "TerrainSectorSharedRenderMesh",
 		eRMT_Static);
 
-	m_pTerrain->m_pSharedRenderMesh->SetChunk(NULL, 0, arrVertices.Count(), 0, arrIndices.Count(), 1.0f, 0);
+	m_pTerrain->m_pSharedRenderMesh[nLod]->SetChunk(NULL, 0, arrVertices.Count(), 0, arrIndices.Count(), 1.0f, 0);
 
-	return m_pTerrain->m_pSharedRenderMesh;
+	return m_pTerrain->m_pSharedRenderMesh[nLod];
 }
 
 uint32 CTerrainNode::GetMaterialsModificationId()

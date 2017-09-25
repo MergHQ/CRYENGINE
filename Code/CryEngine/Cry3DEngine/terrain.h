@@ -16,19 +16,11 @@
 
 #include "TerrainModifications.h"           // CTerrainModifications
 
-// lowest level of the outdoor world
-#define TERRAIN_BOTTOM_LEVEL      0
-
-#define TERRAIN_BASE_TEXTURES_NUM 2
-
-// max view distance for objects shadow is size of object multiplied by this number
-#define OBJ_MAX_SHADOW_VIEW_DISTANCE_RATIO 4
-
-#define TERRAIN_NODE_TREE_DEPTH            16
-
-#define OCEAN_IS_VERY_FAR_AWAY             1000000.f
-
-#define ARR_TEX_OFFSETS_SIZE_DET_MAT       16
+#define TERRAIN_BOTTOM_LEVEL         0
+#define TERRAIN_NODE_TREE_DEPTH      16
+#define TERRAIN_TEX_OFFSETS_SIZE     16
+#define TERRAIN_SHARED_MESH_LODS_NUM 4
+#define OCEAN_IS_VERY_FAR_AWAY       1000000.f
 
 enum { nHMCacheSize = 64 };
 
@@ -177,7 +169,7 @@ struct SSurfaceType
 	PodArray<int>        lstnVegetationGroups;
 	float                fMaxMatDistanceXY;
 	float                fMaxMatDistanceZ;
-	float                arrRECustomData[4][ARR_TEX_OFFSETS_SIZE_DET_MAT];
+	float                arrRECustomData[4][TERRAIN_TEX_OFFSETS_SIZE];
 	uint8                ucDefProjAxis;
 	uint8                ucThisSurfaceTypeId;
 	float                fCustomMaxDistance;
@@ -598,7 +590,7 @@ protected: // ------------------------------------------------------------------
 	PodArray<ColorB>* m_pTerrainRgbLowResSystemCopy;
 #endif
 
-	_smart_ptr<IRenderMesh> m_pSharedRenderMesh;
+	_smart_ptr<IRenderMesh> m_pSharedRenderMesh[TERRAIN_SHARED_MESH_LODS_NUM];
 
 public:
 	bool    SetCompiledData(byte* pData, int nDataSize, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable, bool bHotUpdate, SHotUpdateInfo* pExportInfo);
