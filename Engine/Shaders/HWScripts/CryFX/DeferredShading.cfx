@@ -266,6 +266,7 @@ cbuffer CBDeferredDecal : register(b0)
 		float4   specularCol;
 		float4   mipLevels;
 		float4   generalParams;
+		float4   opacityParams;
 	} cbDecal;
 };
 
@@ -362,14 +363,15 @@ poDecalsMRT DefDecalPassPS(fragInWPOS IN)
 
 	half fAlpha = cDiffuse.a * cbDecal.diffuseCol.a * fAtten;
 	fAlpha = saturate(pow(fAlpha * cbDecal.generalParams.x, cbDecal.generalParams.y));
-	half fAlphaDiffuse = fAlpha * cbDecal.generalParams.z;
-	half fAlphaNormal = fAlpha;
+	half fAlphaDiffuse = fAlpha * cbDecal.opacityParams.x;
+	half fAlphaNormal = fAlpha * cbDecal.opacityParams.y;
+	half fAlphaSpecular = fAlpha * cbDecal.opacityParams.z;
 #if !%_RT_SAMPLE1
 	fAlphaNormal = 0;
 #endif
 
 	EncodeGBuffer(attribs, OUT.Normal, OUT.Diffuse, OUT.Specular);
-	SetGBufferBlending(OUT.Normal, OUT.Diffuse, OUT.Specular, fAlphaNormal, fAlphaDiffuse, fAlpha);
+	SetGBufferBlending(OUT.Normal, OUT.Diffuse, OUT.Specular, fAlphaNormal, fAlphaDiffuse, fAlphaSpecular);
 
 	return OUT;
 }
@@ -451,14 +453,15 @@ poDecalsMRT DecalPassPS(fragInWPOS IN)
 	
 	half fAlpha = cDiffuse.a * g_DecalDiffuse.a * fAtten;
 	fAlpha = saturate(pow(fAlpha * g_GeneralParams.x, g_GeneralParams.y));
-	half fAlphaDiffuse = fAlpha * g_GeneralParams.z;
-	half fAlphaNormal = fAlpha;
+	half fAlphaDiffuse = fAlpha * cbDecal.opacityParams.x;
+	half fAlphaNormal = fAlpha * cbDecal.opacityParams.y;
+	half fAlphaSpecular = fAlpha * cbDecal.opacityParams.z;
 #if !%_RT_SAMPLE1
 	fAlphaNormal = 0;
 #endif
 	
 	EncodeGBuffer( attribs, OUT.Normal, OUT.Diffuse, OUT.Specular );
-	SetGBufferBlending( OUT.Normal, OUT.Diffuse, OUT.Specular, fAlphaNormal, fAlphaDiffuse, fAlpha );
+	SetGBufferBlending( OUT.Normal, OUT.Diffuse, OUT.Specular, fAlphaNormal, fAlphaDiffuse, fAlphaSpecular);
 
   return OUT;
 }

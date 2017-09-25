@@ -16,6 +16,7 @@ struct SDecalConstants
 	Vec4     specularCol;
 	Vec4     mipLevels;
 	Vec4     generalParams;
+	Vec4	 opacityParams;
 };
 
 
@@ -172,7 +173,8 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		constants->specularCol = shaderItem.m_pShaderResources->GetColorValue(EFTT_SPECULAR).toVec4();
 		constants->specularCol.w = shaderItem.m_pShaderResources->GetStrengthValue(EFTT_SMOOTHNESS);
 
-		Vec4 decalParams(1, 1, 1, decal.fGrowAlphaRef);
+		Vec4 decalParams(1, 1, decal.fGrowAlphaRef, 1);
+		Vec4 decalOpacityParams(1, 1, 1, 1);
 		DynArrayRef<SShaderParam>& shaderParams = shaderItem.m_pShaderResources->GetParameters();
 		for (uint32 i = 0, si = shaderParams.size(); i < si; ++i)
 		{
@@ -181,13 +183,18 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 				decalParams.x = shaderParams[i].m_Value.m_Float;
 			else if (strcmp(name, "DecalFalloff") == 0)
 				decalParams.y = shaderParams[i].m_Value.m_Float;
-			else if (strcmp(name, "DecalDiffuseOpacity") == 0)
-				decalParams.z = shaderParams[i].m_Value.m_Float;
 			else if (strcmp(name, "DecalAngleBasedFading") == 0 && !decal.fGrowAlphaRef)
-				decalParams.w = shaderParams[i].m_Value.m_Float;
+				decalParams.z = shaderParams[i].m_Value.m_Float;
+			else if (strcmp(name, "DecalDiffuseOpacity") == 0)
+				decalOpacityParams.x = shaderParams[i].m_Value.m_Float;
+			else if (strcmp(name, "DecalNormalOpacity") == 0)
+				decalOpacityParams.y = shaderParams[i].m_Value.m_Float;
+			else if (strcmp(name, "DecalSpecularOpacity") == 0)
+				decalOpacityParams.z = shaderParams[i].m_Value.m_Float;
 		}
 		constants->generalParams = decalParams;
-
+		constants->opacityParams = decalOpacityParams;
+		
 		const float zNear = -0.3f;
 		const float zFar = 0.5f;
 		const Matrix44A matTextureAndDepth(

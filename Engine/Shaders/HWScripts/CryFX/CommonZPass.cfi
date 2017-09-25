@@ -582,15 +582,19 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 		
 		fAlpha = saturate( fAlpha );
 		half fAlphaDiffuse = fAlpha;
-		
+		half fAlphaNormal = fAlpha;
+		half fAlphaSpecular = fAlpha;
+
 		#if %DECAL && !%DIRTLAYER
 			fAlphaDiffuse *= DecalDiffuseOpacity;
+			fAlphaNormal *= DecalNormalOpacity;
+			fAlphaSpecular *= DecalSpecularOpacity;
 		#endif
 		
 		#if %_RT_SAMPLE0
 			OUT.GBufferA.w = fAlpha;
 		#else
-			SetGBufferBlending( OUT.GBufferA, OUT.GBufferB, OUT.GBufferC, fAlpha, fAlphaDiffuse, fAlpha );
+			SetGBufferBlending( OUT.GBufferA, OUT.GBufferB, OUT.GBufferC, fAlphaNormal, fAlphaDiffuse, fAlphaSpecular);
 		#endif
   #endif
 
