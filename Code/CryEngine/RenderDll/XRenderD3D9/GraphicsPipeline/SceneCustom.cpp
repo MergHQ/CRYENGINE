@@ -270,7 +270,7 @@ void CSceneCustomStage::Prepare(CRenderView* pRenderView)
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw > 0;
+	bool bDebugDraw = CRenderer::CV_e_DebugDraw != 0;
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
 
@@ -289,7 +289,7 @@ void CSceneCustomStage::Execute_DebugModes()
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw > 0;
+	bool bDebugDraw = CRenderer::CV_e_DebugDraw != 0;
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
 
@@ -444,7 +444,7 @@ void CSceneCustomStage::Execute()
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw > 0;
+	bool bDebugDraw = CRenderer::CV_e_DebugDraw != 0;
 	// should probably somehow allow some editor viewports to not use this pass
 	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
 
