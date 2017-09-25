@@ -906,7 +906,7 @@ int main(int argc, char** argv)
 			sprintf_s(dxbcFileName, sizeof(glslFileName), "%s.dxbc", options.outputShaderFile);
 			sprintf_s(glslFileName, sizeof(glslFileName), "%s.code", options.outputShaderFile);
 
-			sprintf_s(fullFxcCmdLine, sizeof(fullFxcCmdLine), "%s %s %s", options.fxcCmdLine, dxbcFileName, options.shaderFile);
+			sprintf_s(fullFxcCmdLine, sizeof(fullFxcCmdLine), "%s \"%s\" \"%s\"", options.fxcCmdLine, dxbcFileName, options.shaderFile);
 			retValue = system(fullFxcCmdLine);
 
 			if (retValue == 0)

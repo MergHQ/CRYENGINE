@@ -363,9 +363,20 @@ half DecalAlphaMult
   float UIStep = 0.01;
 > = 1;
 
+half DecalAngleBasedFading
+<
+	register = REG_PM_PARAM_7.x;
+	string UIHelp = "Controls fading of decal based on surface normal";
+	string UIName = "Decal Angle Based Fading";
+	string UIWidget = "slider";
+	float UIMin = 0;
+	float UIMax = 10;
+	float UIStep = 0.01;
+> = 1;
+
 half DecalDiffuseOpacity
 <
-  register = REG_PM_PARAM_7.x;
+  register = REG_PM_PARAM_7.y;
   string UIHelp = "Opacity multiplier for fading out decal diffuse color";
   string UIName = "Decal Diffuse Opacity";
   string UIWidget = "slider";
@@ -374,15 +385,26 @@ half DecalDiffuseOpacity
   float UIStep = 0.01;
 > = 1;
 
-half DecalAngleBasedFading
+half DecalNormalOpacity
 <
-  register = REG_PM_PARAM_7.y;
-  string UIHelp = "Controls fading of decal based on surface normal";
-  string UIName = "Decal Angle Based Fading";
-  string UIWidget = "slider";
-  float UIMin = 0;
-  float UIMax = 10;
-  float UIStep = 0.01;
+	register = REG_PM_PARAM_7.z;
+	string UIHelp = "Opacity multiplier for fading out decal normals";
+	string UIName = "Decal Normal Opacity";
+	string UIWidget = "slider";
+	float UIMin = 0;
+	float UIMax = 1;
+	float UIStep = 0.01;
+> = 1;
+
+half DecalSpecularOpacity
+<
+	register = REG_PM_PARAM_7.w;
+	string UIHelp = "Opacity multiplier for fading out decal specular";
+	string UIName = "Decal Specular Opacity";
+	string UIWidget = "slider";
+	float UIMin = 0;
+	float UIMax = 1;
+	float UIStep = 0.01;
 > = 1;
 
 #endif

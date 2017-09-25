@@ -119,12 +119,12 @@ bool RunHLSLcc(const SCompilerData& compilerData, bool remoteCompile)
 
 	if (remoteCompile)
 	{
-		std::string parameters = std::string("-lang=440 -flags=") + flags + " -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E " + compilerData.request.entryName + " /T " + compilerData.request.profileName + " /Zpr /Gec /Fo\" -out=" + outputFilename + " -in=" + sourceFilename;
+		std::string parameters = std::string("-lang=440 -flags=") + flags + " -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E " + compilerData.request.entryName + " /T " + compilerData.request.profileName + " /Zpr /Gec /Fo\" -out=\"" + outputFilename + "\" -in=\"" + sourceFilename + "\"";
 		return ShellExecute("..\\..\\PCGL\\V013\\HLSLcc.exe", parameters);
 	}
 	else
 	{
-		std::string parameters = std::string("-lang=440 -flags=") + flags + " -fxc=\"..\\..\\Tools\\RemoteShaderCompiler\\Compiler\\PCD3D11\\v007\\fxc.exe /nologo /E " + compilerData.request.entryName + " /T " + compilerData.request.profileName + " /Zpr /Gec /Fo\" -out=" + outputFilename + " -in=" + sourceFilename;
+		std::string parameters = std::string("-lang=440 -flags=") + flags + " -fxc=\"..\\..\\Tools\\RemoteShaderCompiler\\Compiler\\PCD3D11\\v007\\fxc.exe /nologo /E " + compilerData.request.entryName + " /T " + compilerData.request.profileName + " /Zpr /Gec /Fo\" -out=\"" + outputFilename + "\" -in=\"" + sourceFilename + "\"";
 		return ShellExecute("..\\..\\Tools\\RemoteShaderCompiler\\Compiler\\PCGL\\V013\\HLSLcc.exe", parameters);
 	}
 }
@@ -132,7 +132,7 @@ bool RunHLSLcc(const SCompilerData& compilerData, bool remoteCompile)
 bool RunGlslangValidator(const SCompilerData& compilerData, const std::string& outputFilename, bool remoteCompile)
 {
 	std::string sourceFilename = compilerData.filename + GLSLTranspiler::GetFileExtension(compilerData.request.shaderStage);
-	std::string parameters = std::string("-V ") + sourceFilename + " -o " + outputFilename;
+	std::string parameters = std::string("-V ") + "\"" + sourceFilename + "\" -o \"" + outputFilename + "\"";
 
 	if (remoteCompile)
 	{
