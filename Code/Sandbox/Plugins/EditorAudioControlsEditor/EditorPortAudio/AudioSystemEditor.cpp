@@ -179,7 +179,7 @@ XmlNodeRef CAudioSystemEditor::CreateXMLNodeFromConnection(const ConnectionPtr p
 {
 	std::shared_ptr<const CConnection> pSDLMixerConnection = std::static_pointer_cast<const CConnection>(pConnection);
 	const IAudioSystemItem* pControl = GetControl(pConnection->GetID());
-	if (pControl && pSDLMixerConnection && eATLControlType == eItemType_Trigger)
+	if (pControl && pSDLMixerConnection && eATLControlType == EItemType::Trigger)
 	{
 		XmlNodeRef pConnectionNode = GetISystem()->CreateXmlNode(s_eventConnectionTag);
 		pConnectionNode->setAttr(s_itemNameTag, pControl->GetName());
@@ -254,16 +254,16 @@ ACE::EItemType CAudioSystemEditor::ImplTypeToATLType(ItemType type) const
 	switch (type)
 	{
 	case ePortAudioTypes_Event:
-		return eItemType_Trigger;
+		return EItemType::Trigger;
 	}
-	return eItemType_Invalid;
+	return EItemType::Invalid;
 }
 
 ACE::TImplControlTypeMask CAudioSystemEditor::GetCompatibleTypes(EItemType eATLControlType) const
 {
 	switch (eATLControlType)
 	{
-	case eItemType_Trigger:
+	case EItemType::Trigger:
 		return ePortAudioTypes_Event;
 	}
 	return AUDIO_SYSTEM_INVALID_TYPE;

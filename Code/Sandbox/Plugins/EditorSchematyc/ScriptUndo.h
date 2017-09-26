@@ -18,7 +18,6 @@ public:
 
 	// IUndoObject
 	virtual const char* GetDescription() final { return m_desc.c_str(); }
-	virtual int         GetSize() override     { return sizeof(*this); }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;

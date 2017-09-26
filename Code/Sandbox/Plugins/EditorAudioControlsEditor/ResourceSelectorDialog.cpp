@@ -11,6 +11,7 @@
 #include <QAdvancedTreeView.h>
 #include <QSearchBox.h>
 #include <ProxyModels/MountingProxyModel.h>
+#include <ProxyModels/DeepFilterProxyModel.h>
 
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
@@ -23,7 +24,7 @@
 namespace ACE
 {
 string CResourceSelectorDialog::s_previousControlName = "";
-EItemType CResourceSelectorDialog::s_previousControlType = eItemType_Invalid;
+EItemType CResourceSelectorDialog::s_previousControlType = EItemType::Invalid;
 
 //////////////////////////////////////////////////////////////////////////
 CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, EItemType const eType)
@@ -34,7 +35,7 @@ CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, EItemType con
 	setWindowModality(Qt::ApplicationModal);
 
 	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	m_pFilterProxyModel = new CResourceFilterProxyModel();
+	m_pFilterProxyModel = new QDeepFilterProxyModel();
 	m_pAssetsModel = new CResourceControlModel(m_pAssetsManager);
 
 	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CResourceSelectorDialog::CreateLibraryModelFromIndex));
@@ -49,17 +50,17 @@ CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, EItemType con
 	QSearchBox* pSearchBox = new QSearchBox();
 	pWindowLayout->addWidget(pSearchBox);
 	
-	m_pControlsTree = new QAdvancedTreeView();
-	m_pControlsTree->setAutoScroll(true);
-	m_pControlsTree->setDragEnabled(false);
-	m_pControlsTree->setDragDropMode(QAbstractItemView::NoDragDrop);
-	m_pControlsTree->setDefaultDropAction(Qt::IgnoreAction);
-	m_pControlsTree->setSelectionMode(QAbstractItemView::SingleSelection);
-	m_pControlsTree->setEditTriggers(QAbstractItemView::NoEditTriggers);
-	m_pControlsTree->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_pControlsTree->setModel(m_pFilterProxyModel);
-	m_pControlsTree->installEventFilter(this);
-	pWindowLayout->addWidget(m_pControlsTree);
+	m_pTreeView = new QAdvancedTreeView();
+	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	m_pTreeView->setDragEnabled(false);
+	m_pTreeView->setDragDropMode(QAbstractItemView::NoDragDrop);
+	m_pTreeView->setDefaultDropAction(Qt::IgnoreAction);
+	m_pTreeView->setSelectionMode(QAbstractItemView::SingleSelection);
+	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
+	m_pTreeView->setModel(m_pFilterProxyModel);
+	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
+	m_pTreeView->installEventFilter(this);
+	pWindowLayout->addWidget(m_pTreeView);
 
 	m_pDialogButtons = new QDialogButtonBox();
 	m_pDialogButtons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -67,22 +68,11 @@ CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, EItemType con
 	pWindowLayout->addWidget(m_pDialogButtons);
 
 	QObject::connect(pSearchBox, &QSearchBox::textChanged, this, &CResourceSelectorDialog::SetTextFilter);
-
-	QObject::connect(m_pControlsTree, &QAdvancedTreeView::customContextMenuRequested, this, &CResourceSelectorDialog::OnContextMenu);
-	QObject::connect(m_pControlsTree, &QAdvancedTreeView::doubleClicked, this, &CResourceSelectorDialog::ItemDoubleClicked);
-	QObject::connect(m_pControlsTree->header(), &QHeaderView::sortIndicatorChanged, [&]()
-	{
-		QModelIndex const& currentIndex = m_pControlsTree->currentIndex();
-
-		if (currentIndex.isValid())
-		{
-			m_pControlsTree->scrollTo(currentIndex);
-		}
-	});
-
-	QObject::connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CResourceSelectorDialog::UpdateSelectedControl);
-	QObject::connect(m_pControlsTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &CResourceSelectorDialog::StopTrigger);
-	
+	QObject::connect(m_pTreeView, &QAdvancedTreeView::customContextMenuRequested, this, &CResourceSelectorDialog::OnContextMenu);
+	QObject::connect(m_pTreeView, &QAdvancedTreeView::doubleClicked, this, &CResourceSelectorDialog::ItemDoubleClicked);
+	QObject::connect(m_pTreeView->header(), &QHeaderView::sortIndicatorChanged, [&]() { m_pTreeView->scrollTo(m_pTreeView->currentIndex()); });
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CResourceSelectorDialog::UpdateSelectedControl);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CResourceSelectorDialog::StopTrigger);
 	QObject::connect(m_pDialogButtons, &QDialogButtonBox::accepted, this, &CResourceSelectorDialog::accept);
 	QObject::connect(m_pDialogButtons, &QDialogButtonBox::rejected, this, &CResourceSelectorDialog::reject);
 
@@ -141,7 +131,7 @@ const char* CResourceSelectorDialog::ChooseItem(const char* szCurrentValue)
 
 		if (index.isValid())
 		{
-			m_pControlsTree->setCurrentIndex(index);
+			m_pTreeView->setCurrentIndex(index);
 		}
 	}
 
@@ -158,7 +148,7 @@ void CResourceSelectorDialog::UpdateSelectedControl()
 {
 	if (m_pAssetsManager)
 	{
-		QModelIndexList const indexes = m_pControlsTree->selectionModel()->selectedIndexes();
+		QModelIndexList const indexes = m_pTreeView->selectionModel()->selectedIndexes();
 
 		if (!indexes.empty())
 		{
@@ -173,7 +163,7 @@ void CResourceSelectorDialog::UpdateSelectedControl()
 					s_previousControlName = pAsset->GetName();
 				}
 
-				m_bSelectionIsValid = (pAsset && (pAsset->GetType() != eItemType_Folder) && (pAsset && pAsset->GetType() != eItemType_Library));
+				m_bSelectionIsValid = (pAsset && (pAsset->GetType() != EItemType::Folder) && (pAsset && pAsset->GetType() != EItemType::Library));
 				m_pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(m_bSelectionIsValid);
 			}
 		}
@@ -187,23 +177,23 @@ void CResourceSelectorDialog::SetTextFilter(QString const& filter)
 	{
 		if (m_sFilter.isEmpty() && !filter.isEmpty())
 		{
-			m_pControlsTree->BackupExpanded();
-			m_pControlsTree->expandAll();
+			m_pTreeView->BackupExpanded();
+			m_pTreeView->expandAll();
 		}
 		else if (!m_sFilter.isEmpty() && filter.isEmpty())
 		{
-			m_pControlsTree->collapseAll();
-			m_pControlsTree->RestoreExpanded();
+			m_pTreeView->collapseAll();
+			m_pTreeView->RestoreExpanded();
 		}
 
 		m_sFilter = filter;
 		ApplyFilter();
 
-		QModelIndex const& currentIndex = m_pControlsTree->currentIndex();
+		QModelIndex const& currentIndex = m_pTreeView->currentIndex();
 
 		if (currentIndex.isValid())
 		{
-			m_pControlsTree->scrollTo(currentIndex);
+			m_pTreeView->scrollTo(currentIndex);
 		}
 	}
 }
@@ -243,12 +233,12 @@ bool CResourceSelectorDialog::ApplyFilter(QModelIndex const& parent)
 
 		if (bChildValid || (pAsset && pAsset->GetType() == m_eType && IsValid(parent)))
 		{
-			m_pControlsTree->setRowHidden(parent.row(), parent.parent(), false);
+			m_pTreeView->setRowHidden(parent.row(), parent.parent(), false);
 			return true;
 		}
 		else
 		{
-			m_pControlsTree->setRowHidden(parent.row(), parent.parent(), true);
+			m_pTreeView->setRowHidden(parent.row(), parent.parent(), true);
 
 		}
 	}
@@ -336,13 +326,13 @@ bool CResourceSelectorDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 
 		if (pKeyEvent && (pKeyEvent->key() == Qt::Key_Space))
 		{
-			QModelIndex const& index = m_pControlsTree->currentIndex();
+			QModelIndex const& index = m_pTreeView->currentIndex();
 
 			if (index.isValid())
 			{
 				CAudioAsset* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
 
-				if (pAsset && (pAsset->GetType() == eItemType_Trigger))
+				if (pAsset && (pAsset->GetType() == EItemType::Trigger))
 				{
 					CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
 				}
@@ -377,13 +367,13 @@ void CResourceSelectorDialog::ItemDoubleClicked(QModelIndex const& modelIndex)
 //////////////////////////////////////////////////////////////////////////
 void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 {
-	QModelIndex const& index = m_pControlsTree->currentIndex();
+	QModelIndex const& index = m_pTreeView->currentIndex();
 
 	if (index.isValid())
 	{
 		CAudioAsset* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
 
-		if (pAsset && (pAsset->GetType() == eItemType_Trigger))
+		if (pAsset && (pAsset->GetType() == EItemType::Trigger))
 		{
 			QMenu* pContextMenu = new QMenu();
 

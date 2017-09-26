@@ -76,12 +76,12 @@ private slots:
 private:
 
 	void InitMenu();
-	void InitToolbar(QVBoxLayout* pWindowLayout);
+	void InitToolbar(QVBoxLayout* const pWindowLayout);
 	void RegisterWidgets();
 	void Reload();
 	void Save();
 	void SaveBeforeImplementationChange();
-	void FilterControlType(EItemType type, bool bShow);
+	void FilterControlType(EItemType const type, bool const bShow);
 	void CheckErrorMask();
 	void UpdateAudioSystemData();
 	void BackupTreeViewStates();
@@ -100,6 +100,6 @@ private:
 	QAction*                                m_pSaveAction;
 	std::unique_ptr<CFileMonitorSystem>     m_pMonitorSystem;
 	std::unique_ptr<CFileMonitorMiddleware> m_pMonitorMiddleware;
-	bool                                    m_allowedTypes[EItemType::eItemType_NumTypes];
+	bool                                    m_allowedTypes[static_cast<int>(EItemType::NumTypes)]; // Replace this. Possibly with a QList.
 };
 } // namespace ACE

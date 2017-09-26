@@ -2,28 +2,29 @@
 
 #pragma once
 
-#include <QFrame>
-
-#include "AudioAssets.h"
+#include <QWidget>
+#include <ACETypes.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
-// Forward declarations
+class QAction;
+class QHBoxLayout;
 class QVBoxLayout;
-class QSortFilterProxyModel;
+class QToolButton;
 class QSearchBox;
 class QAbstractItemModel;
 class CMountingProxyModel;
 
 namespace ACE
 {
+class CAudioAsset;
+class CAudioControl;
 class CAudioAssetsManager;
-class QFilterButton;
 class CSystemControlsModel;
 class CSystemControlsFilterProxyModel;
 class CAudioLibraryModel;
-class CAdvancedTreeView;
+class CAudioTreeView;
 
-class CSystemControlsWidget final : public QFrame
+class CSystemControlsWidget final : public QWidget
 {
 	Q_OBJECT
 
@@ -38,16 +39,34 @@ public:
 	void                        BackupTreeViewStates();
 	void                        RestoreTreeViewStates();
 
+signals:
+
+	void SelectedControlChanged();
+	void ControlTypeFiltered(EItemType const type, bool const bShow);
+	void StartTextFiltering();
+	void StopTextFiltering();
+
+private slots:
+
+	void DeleteSelectedControl();
+	void OnContextMenu(QPoint const& pos);
+	void UpdateCreateButtons();
+
+	void ExecuteControl();
+	void StopControlExecution();
+
 private:
 
 	// QObject
 	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QObject
 
-	// Filtering
-	void                InitFilterWidget();
-	void                ResetFilters();
-	void                ShowControlType(EItemType type, bool bShow);
+	void InitAddControlWidget(QHBoxLayout* pLayout);
+	void InitFilterWidgets(QVBoxLayout* pMainLayout);
+	void InitTypeFilters();
+	void ResetFilters();
+	void ShowControlType(EItemType const type, bool const bShow);
+	void SelectNewAsset(QModelIndex const& parent, int const row);
 
 	CAudioControl*      CreateControl(string const& name, EItemType type, CAudioAsset* pParent);
 	CAudioAsset*        CreateFolder(CAudioAsset* pParent);
@@ -55,39 +74,26 @@ private:
 	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
 	CAudioAsset*        GetSelectedAsset() const;
 
-	void                SelectNewAsset(QModelIndex const& parent, int const row);
+	CAudioAssetsManager* const       m_pAssetsManager;
 
-private slots:
-
-	void DeleteSelectedControl();
-	void OnContextMenu(QPoint const& pos);
-
-	// Audio Preview
-	void ExecuteControl();
-	void StopControlExecution();
-
-signals:
-
-	void SelectedControlChanged();
-	void ControlTypeFiltered(EItemType type, bool bShow);
-	void StartTextFiltering();
-	void StopTextFiltering();
-
-private:
-
-	CAudioAssetsManager* const m_pAssetsManager;
-
-	// Filtering
 	QString                          m_filter;
 	QWidget*                         m_pFilterWidget;
-	QVBoxLayout*                     m_pFiltersLayout;
+
+	QAction*                         m_pCreateFolderAction;
+	QAction*                         m_pCreateTriggerAction;
+	QAction*                         m_pCreateParameterAction;
+	QAction*                         m_pCreateSwitchAction;
+	QAction*                         m_pCreateStateAction;
+	QAction*                         m_pCreateEnvironmentAction;
+	QAction*                         m_pCreatePreloadAction;
 
 	QSearchBox*                      m_pSearchBox;
-	CAdvancedTreeView*               m_pControlsTree;
-	CSystemControlsModel*       m_pAssetsModel;
-	CSystemControlsFilterProxyModel*            m_pProxyModel;
+	QToolButton*                     m_pFilterButton;
+	CAudioTreeView*                  m_pTreeView;
+	CSystemControlsModel*            m_pAssetsModel;
+	CSystemControlsFilterProxyModel* m_pFilterProxyModel;
 
-	CMountingProxyModel*             m_pMountedModel;
+	CMountingProxyModel*             m_pMountingProxyModel;
 	std::vector<CAudioLibraryModel*> m_libraryModels;
 	bool                             m_bReloading = false;
 	bool                             m_bCreatedFromMenu = false;

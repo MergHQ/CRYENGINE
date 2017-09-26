@@ -1,21 +1,29 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "AdvancedTreeView.h"
+#include "AudioTreeView.h"
 #include <CryAudio/IAudioSystem.h>
 
 #include <QMenu>
+#include <QHeaderView>
 
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-bool CAdvancedTreeView::IsEditing() const
+CAudioTreeView::CAudioTreeView()
+	: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::None))
+{
+	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this]() { scrollTo(currentIndex()); });
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CAudioTreeView::IsEditing() const
 {
 	return state() == QAbstractItemView::EditingState;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::ExpandSelection(QModelIndexList const& indexList)
+void CAudioTreeView::ExpandSelection(QModelIndexList const& indexList)
 {
 	for (auto const& index : indexList)
 	{
@@ -36,7 +44,7 @@ void CAdvancedTreeView::ExpandSelection(QModelIndexList const& indexList)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::CollapseSelection(QModelIndexList const& indexList)
+void CAudioTreeView::CollapseSelection(QModelIndexList const& indexList)
 {
 	for (auto const& index : indexList)
 	{
@@ -57,7 +65,7 @@ void CAdvancedTreeView::CollapseSelection(QModelIndexList const& indexList)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint32 CAdvancedTreeView::GetItemId(QModelIndex const& index) const
+uint32 CAudioTreeView::GetItemId(QModelIndex const& index) const
 {
 	if (index.isValid())
 	{
@@ -79,18 +87,20 @@ uint32 CAdvancedTreeView::GetItemId(QModelIndex const& index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::BackupExpanded()
+void CAudioTreeView::BackupExpanded()
 {
 	m_expandedBackup.clear();
 
-	for (int i = 0; i < model()->rowCount(); ++i)
+	int const rowCount = model()->rowCount();
+
+	for (int i = 0; i < rowCount; ++i)
 	{
 		BackupExpandedChildren(model()->index(i, 0));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::BackupExpandedChildren(QModelIndex const& index)
+void CAudioTreeView::BackupExpandedChildren(QModelIndex const& index)
 {
 	if (index.isValid())
 	{
@@ -112,11 +122,12 @@ void CAdvancedTreeView::BackupExpandedChildren(QModelIndex const& index)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::RestoreExpanded()
+void CAudioTreeView::RestoreExpanded()
 {
 	if (!m_expandedBackup.isEmpty())
 	{
-		for (int i = 0; i < model()->rowCount(); ++i)
+		int const rowCount = model()->rowCount();
+		for (int i = 0; i < rowCount; ++i)
 		{
 			RestoreExpandedChildren(model()->index(i, 0));
 		}
@@ -126,7 +137,7 @@ void CAdvancedTreeView::RestoreExpanded()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::RestoreExpandedChildren(QModelIndex const& index)
+void CAudioTreeView::RestoreExpandedChildren(QModelIndex const& index)
 {
 	if (index.isValid())
 	{
@@ -148,7 +159,7 @@ void CAdvancedTreeView::RestoreExpandedChildren(QModelIndex const& index)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::BackupSelection()
+void CAudioTreeView::BackupSelection()
 {
 	m_selectionBackup.clear();
 	m_bSelectionChanged = false;
@@ -162,11 +173,13 @@ void CAdvancedTreeView::BackupSelection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::RestoreSelection()
+void CAudioTreeView::RestoreSelection()
 {
 	if (!m_selectionBackup.isEmpty() && !m_bSelectionChanged)
 	{
-		for (int i = 0; i < model()->rowCount(); ++i)
+		int const rowCount = model()->rowCount();
+
+		for (int i = 0; i < rowCount; ++i)
 		{
 			RestoreSelectionChildren(model()->index(i, 0));
 		}
@@ -181,7 +194,7 @@ void CAdvancedTreeView::RestoreSelection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::RestoreSelectionChildren(QModelIndex const& index)
+void CAudioTreeView::RestoreSelectionChildren(QModelIndex const& index)
 {
 	if (index.isValid())
 	{
@@ -204,7 +217,7 @@ void CAdvancedTreeView::RestoreSelectionChildren(QModelIndex const& index)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAdvancedTreeView::OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected)
+void CAudioTreeView::OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected)
 {
 	for (QModelIndex const& index : selected.indexes())
 	{

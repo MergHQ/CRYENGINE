@@ -2,20 +2,22 @@
 
 #include "StdAfx.h"
 #include "AudioControlsLoader.h"
+
+#include "AudioAssetsManager.h"
+#include "SystemControlsModel.h"
+#include "AudioControlsEditorPlugin.h"
+
 #include <CryAudio/IAudioSystem.h>
 #include <CryString/StringUtils.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include "AudioAssetsManager.h"
 #include <CryString/CryPath.h>
 #include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
-#include "QtUtil.h"
-#include "IUndoObject.h"
-#include "SystemControlsModel.h"
-#include "IEditor.h"
+#include <QtUtil.h>
+#include <IUndoObject.h>
+#include <IEditor.h>
 #include <ConfigurationManager.h>
-#include "AudioControlsEditorPlugin.h"
 
 #include <QRegularExpression>
 
@@ -30,35 +32,35 @@ EItemType TagToType(string const& tag)
 {
 	if (tag == "ATLSwitch")
 	{
-		return eItemType_Switch;
+		return EItemType::Switch;
 	}
 	else if (tag == "ATLSwitchState")
 	{
-		return eItemType_State;
+		return EItemType::State;
 	}
 	else if (tag == "ATLEnvironment")
 	{
-		return eItemType_Environment;
+		return EItemType::Environment;
 	}
 	else if (tag == "ATLRtpc")
 	{
-		return eItemType_Parameter;
+		return EItemType::Parameter;
 	}
 	else if (tag == "ATLTrigger")
 	{
-		return eItemType_Trigger;
+		return EItemType::Trigger;
 	}
 	else if (tag == "ATLPreloadRequest")
 	{
-		return eItemType_Preload;
+		return EItemType::Preload;
 	}
-	return eItemType_NumTypes;
+	return EItemType::NumTypes;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CAudioControlsLoader::CAudioControlsLoader(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
-	, m_errorCodeMask(EErrorCode::eErrorCode_NoError)
+	, m_errorCodeMask(EErrorCode::NoError)
 {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -241,7 +243,7 @@ CAudioControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, Scope scope, 
 			{
 				switch (controlType)
 				{
-				case eItemType_Trigger:
+				case EItemType::Trigger:
 					{
 						float radius = 0.0f;
 						pNode->getAttr("atl_radius", radius);
@@ -258,7 +260,7 @@ CAudioControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, Scope scope, 
 						LoadConnections(pNode, pControl);
 					}
 					break;
-				case eItemType_Switch:
+				case EItemType::Switch:
 					{
 						int const stateCount = pNode->getChildCount();
 						for (int i = 0; i < stateCount; ++i)
@@ -267,7 +269,7 @@ CAudioControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, Scope scope, 
 						}
 					}
 					break;
-				case eItemType_Preload:
+				case EItemType::Preload:
 					LoadPreloadConnections(pNode, pControl, version);
 					break;
 				default:
@@ -339,43 +341,43 @@ void CAudioControlsLoader::CreateDefaultControls()
 
 	if (pLibrary != nullptr)
 	{
-		CAudioControl* pControl = m_pAssetsManager->FindControl(CryAudio::GetFocusTriggerName, eItemType_Trigger);
+		CAudioControl* pControl = m_pAssetsManager->FindControl(CryAudio::GetFocusTriggerName, EItemType::Trigger);
 
 		if (pControl == nullptr)
 		{
-			m_pAssetsManager->CreateControl(CryAudio::GetFocusTriggerName, eItemType_Trigger, pLibrary);
+			m_pAssetsManager->CreateControl(CryAudio::GetFocusTriggerName, EItemType::Trigger, pLibrary);
 			bWasModified = true;
 		}
 
-		pControl = m_pAssetsManager->FindControl(CryAudio::LoseFocusTriggerName, eItemType_Trigger);
+		pControl = m_pAssetsManager->FindControl(CryAudio::LoseFocusTriggerName, EItemType::Trigger);
 
 		if (pControl == nullptr)
 		{
-			m_pAssetsManager->CreateControl(CryAudio::LoseFocusTriggerName, eItemType_Trigger, pLibrary);
+			m_pAssetsManager->CreateControl(CryAudio::LoseFocusTriggerName, EItemType::Trigger, pLibrary);
 			bWasModified = true;
 		}
 
-		pControl = m_pAssetsManager->FindControl(CryAudio::MuteAllTriggerName, eItemType_Trigger);
+		pControl = m_pAssetsManager->FindControl(CryAudio::MuteAllTriggerName, EItemType::Trigger);
 
 		if (pControl == nullptr)
 		{
-			m_pAssetsManager->CreateControl(CryAudio::MuteAllTriggerName, eItemType_Trigger, pLibrary);
+			m_pAssetsManager->CreateControl(CryAudio::MuteAllTriggerName, EItemType::Trigger, pLibrary);
 			bWasModified = true;
 		}
 
-		pControl = m_pAssetsManager->FindControl(CryAudio::UnmuteAllTriggerName, eItemType_Trigger);
+		pControl = m_pAssetsManager->FindControl(CryAudio::UnmuteAllTriggerName, EItemType::Trigger);
 
 		if (pControl == nullptr)
 		{
-			m_pAssetsManager->CreateControl(CryAudio::UnmuteAllTriggerName, eItemType_Trigger, pLibrary);
+			m_pAssetsManager->CreateControl(CryAudio::UnmuteAllTriggerName, EItemType::Trigger, pLibrary);
 			bWasModified = true;
 		}
 
-		pControl = m_pAssetsManager->FindControl(CryAudio::DoNothingTriggerName, eItemType_Trigger);
+		pControl = m_pAssetsManager->FindControl(CryAudio::DoNothingTriggerName, EItemType::Trigger);
 
 		if (pControl == nullptr)
 		{
-			m_pAssetsManager->CreateControl(CryAudio::DoNothingTriggerName, eItemType_Trigger, pLibrary);
+			m_pAssetsManager->CreateControl(CryAudio::DoNothingTriggerName, EItemType::Trigger, pLibrary);
 			bWasModified = true;
 		}
 
@@ -390,15 +392,15 @@ void CAudioControlsLoader::CreateDefaultControls()
 		   are handled for backwards compatibility reasons.
 		   Introduced in March 2017, remove this code at a feasible point in the future.
 		 */
-		pControl = m_pAssetsManager->FindControl(CryAudio::AbsoluteVelocityParameterName, eItemType_Parameter);
+		pControl = m_pAssetsManager->FindControl(CryAudio::AbsoluteVelocityParameterName, EItemType::Parameter);
 
 		if (pControl == nullptr)
 		{
-			pControl = m_pAssetsManager->FindControl("object_speed", eItemType_Parameter);
+			pControl = m_pAssetsManager->FindControl("object_speed", EItemType::Parameter);
 
 			if (pControl == nullptr)
 			{
-				m_pAssetsManager->CreateControl(CryAudio::AbsoluteVelocityParameterName, eItemType_Parameter, pLibrary);
+				m_pAssetsManager->CreateControl(CryAudio::AbsoluteVelocityParameterName, EItemType::Parameter, pLibrary);
 			}
 			else
 			{
@@ -408,15 +410,15 @@ void CAudioControlsLoader::CreateDefaultControls()
 			bWasModified = true;
 		}
 
-		pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityParameterName, eItemType_Parameter);
+		pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityParameterName, EItemType::Parameter);
 
 		if (pControl == nullptr)
 		{
-			pControl = m_pAssetsManager->FindControl("object_doppler", eItemType_Parameter);
+			pControl = m_pAssetsManager->FindControl("object_doppler", EItemType::Parameter);
 
 			if (pControl == nullptr)
 			{
-				m_pAssetsManager->CreateControl(CryAudio::RelativeVelocityParameterName, eItemType_Parameter, pLibrary);
+				m_pAssetsManager->CreateControl(CryAudio::RelativeVelocityParameterName, EItemType::Parameter, pLibrary);
 			}
 			else
 			{
@@ -435,11 +437,11 @@ void CAudioControlsLoader::CreateDefaultControls()
 			char const* const arr[] = { CryAudio::OnStateName, CryAudio::OffStateName };
 			SwitchStates const states(arr, arr + sizeof(arr) / sizeof(arr[0]));
 
-			pControl = m_pAssetsManager->FindControl(CryAudio::AbsoluteVelocityTrackingSwitchName, eItemType_Switch);
+			pControl = m_pAssetsManager->FindControl(CryAudio::AbsoluteVelocityTrackingSwitchName, EItemType::Switch);
 
 			if (pControl == nullptr)
 			{
-				pControl = m_pAssetsManager->FindControl("object_velocity_tracking", eItemType_Switch);
+				pControl = m_pAssetsManager->FindControl("object_velocity_tracking", EItemType::Switch);
 
 				if (pControl == nullptr)
 				{
@@ -469,11 +471,11 @@ void CAudioControlsLoader::CreateDefaultControls()
 				bWasModified = true;
 			}
 
-			pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityTrackingSwitchName, eItemType_Switch);
+			pControl = m_pAssetsManager->FindControl(CryAudio::RelativeVelocityTrackingSwitchName, EItemType::Switch);
 
 			if (pControl == nullptr)
 			{
-				pControl = m_pAssetsManager->FindControl("object_doppler_tracking", eItemType_Switch);
+				pControl = m_pAssetsManager->FindControl("object_doppler_tracking", EItemType::Switch);
 
 				if (pControl == nullptr)
 				{
@@ -517,7 +519,7 @@ void CAudioControlsLoader::CreateDefaultControls()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::CreateDefaultSwitch(CAudioAsset* pLibrary, const char* szExternalName, const char* szInternalName, SwitchStates const& states)
 {
-	CAudioControl* pSwitch = m_pAssetsManager->FindControl(szExternalName, eItemType_Switch);
+	CAudioControl* pSwitch = m_pAssetsManager->FindControl(szExternalName, EItemType::Switch);
 
 	if (pSwitch)
 	{
@@ -553,7 +555,7 @@ void CAudioControlsLoader::CreateDefaultSwitch(CAudioAsset* pLibrary, const char
 	}
 	else
 	{
-		pSwitch = m_pAssetsManager->CreateControl(szExternalName, eItemType_Switch, pLibrary);
+		pSwitch = m_pAssetsManager->CreateControl(szExternalName, EItemType::Switch, pLibrary);
 	}
 
 	for (auto const& szStateName : states)
@@ -565,7 +567,7 @@ void CAudioControlsLoader::CreateDefaultSwitch(CAudioAsset* pLibrary, const char
 		for (size_t i = 0; i < stateCount; ++i)
 		{
 			CAudioControl* pChild = static_cast<CAudioControl*>(pSwitch->GetChild(i));
-			if (pChild && (strcmp(pChild->GetName().c_str(), szStateName) == 0) && pChild->GetType() == eItemType_State)
+			if (pChild && (strcmp(pChild->GetName().c_str(), szStateName) == 0) && pChild->GetType() == EItemType::State)
 			{
 				pState = pChild;
 				break;
@@ -574,7 +576,7 @@ void CAudioControlsLoader::CreateDefaultSwitch(CAudioAsset* pLibrary, const char
 
 		if (pState == nullptr)
 		{
-			pState = m_pAssetsManager->CreateControl(szStateName, eItemType_State, pSwitch);
+			pState = m_pAssetsManager->CreateControl(szStateName, EItemType::State, pSwitch);
 
 			XmlNodeRef pRequestNode = GetISystem()->CreateXmlNode("ATLSwitchRequest");
 			pRequestNode->setAttr("atl_name", szInternalName);
@@ -606,7 +608,7 @@ void CAudioControlsLoader::LoadConnections(XmlNodeRef pRoot, CAudioControl* pCon
 
 		if (radius != pControl->GetRadius())
 		{
-			m_errorCodeMask |= eErrorCode_NonMatchedActivityRadius;
+			m_errorCodeMask |= EErrorCode::NonMatchedActivityRadius;
 			pControl->SetModified(true, true);
 		}
 	}
@@ -659,7 +661,7 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef pNode, CAudioContro
 
 			if (platformIndex == -1)
 			{
-				m_errorCodeMask |= static_cast<uint>(EErrorCode::eErrorCode_UnkownPlatform);
+				m_errorCodeMask |= EErrorCode::UnkownPlatform;
 				pControl->SetModified(true, true);
 			}
 

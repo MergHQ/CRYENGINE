@@ -392,7 +392,7 @@ bool CPropagationProcessor::HasNewOcclusionValues()
 {
 	bool bNewValues = false;
 
-	if (fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > FloatEpsilon || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > FloatEpsilon)
+	if (_isnan(m_lastQuerriedOcclusion) || _isnan(m_lastQuerriedObstruction) || fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > FloatEpsilon || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > FloatEpsilon)
 	{
 		m_lastQuerriedObstruction = m_obstruction;
 		m_lastQuerriedOcclusion = m_occlusion;

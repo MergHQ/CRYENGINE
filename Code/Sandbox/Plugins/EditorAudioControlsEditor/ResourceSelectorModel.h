@@ -4,23 +4,10 @@
 
 #include "SystemControlsModel.h"
 
-#include <ProxyModels/DeepFilterProxyModel.h>
-
 namespace ACE
 {
 class CAudioLibrary;
 class CAudioAssetsManager;
-
-class CResourceFilterProxyModel final: public QDeepFilterProxyModel
-{
-public:
-
-	CResourceFilterProxyModel() = default;
-
-protected:
-
-	bool lessThan(QModelIndex const& left, QModelIndex const& right) const;
-};
 
 class CResourceControlModel final : public CSystemControlsModel
 {

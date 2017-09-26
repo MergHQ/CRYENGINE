@@ -1006,12 +1006,12 @@ namespace UQS
 
 				//
 				// - check for whether there's still room in the potential result set
-				// - notice that we allow one more item to get evaluated even if the capacity has already been exhausted
+				// - notice that we may allow one more item to get evaluated even if the capacity has already been exhausted
 				//   => it's this particular item that will tell us whether any of the remaining items are still promising (or whether we can cut them all off)
 				//
 
 				const size_t remainingCapacityInResultSet = m_maxCandidates - m_candidates.size();
-				const bool bRemainingCapacityAllowsToStartMoreEvaluators = (m_deferredTasks.size() < remainingCapacityInResultSet + 1);
+				const bool bRemainingCapacityAllowsToStartMoreEvaluators = (m_deferredTasks.size() < remainingCapacityInResultSet || m_deferredTasks.empty());
 
 				if (!bRemainingCapacityAllowsToStartMoreEvaluators)
 					break;

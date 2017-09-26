@@ -1,16 +1,10 @@
 <RCC>
     <qresource prefix="/">
-        <file>Icons/Bank.ico</file>
         <file>Icons/Environment.ico</file>
-        <file>Icons/Folder.ico</file>
-        <file>Icons/Property.ico</file>
         <file>Icons/Parameter.ico</file>
-        <file>Icons/Search.ico</file>
         <file>Icons/Switch.ico</file>
         <file>Icons/Trigger.ico</file>
         <file>Icons/Preload.ico</file>
-        <file>Icons/Load.ico</file>
-        <file>Icons/Save.ico</file>
-		<file>Icons/Options.ico</file>
+        <file>Icons/State.ico</file>
     </qresource>
 </RCC>

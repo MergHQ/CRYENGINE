@@ -39,12 +39,12 @@ public:
 		}
 	}
 
-	void UpdateThumbnail(CMaterial* pMaterial)
+	void InvalidateMaterial(CMaterial* pMaterial)
 	{
 		CRY_ASSERT(pMaterial && m_pMaterial);
 		if (pMaterial == m_pMaterial && !m_bIsMultiMtl)
 		{
-			UpdateCachedThumbnailForRow(0);
+			InvalidateRow(0);
 		}
 		else if (pMaterial->GetParent() == m_pMaterial)
 		{
@@ -53,7 +53,7 @@ public:
 			{
 				if (m_pMaterial->GetSubMaterial(i) == pMaterial)
 				{
-					UpdateCachedThumbnailForRow(i);
+					InvalidateRow(i);
 					break;
 				}
 			}
@@ -66,7 +66,7 @@ public:
 	}
 
 	//Use -1 for all rows
-	void UpdateCachedThumbnailForRow(int row)
+	void InvalidateRow(int row)
 	{
 		if (row == -1)
 		{
@@ -100,7 +100,7 @@ public:
 
 		m_pPreviewPixmaps.resize(m_bIsMultiMtl ? m_pMaterial->GetSubMaterialCount() : 1);
 
-		UpdateCachedThumbnailForRow(-1);
+		InvalidateRow(-1);
 	}
 
 	void OnSubMaterialChanged(CMaterial::SubMaterialChange change)
@@ -114,7 +114,7 @@ public:
 			endResetModel();
 			break;
 		case CMaterial::SubMaterialSet:
-			UpdateCachedThumbnailForRow(-1);//all
+			InvalidateRow(-1);//all
 			break;
 		default:
 			CRY_ASSERT(0);//case not handled
@@ -183,6 +183,33 @@ public:
 		}
 
 		return QVariant();
+	}
+
+	virtual bool setData(const QModelIndex &index, const QVariant &value, int role /* = Qt::EditRole */) override
+	{
+		CRY_ASSERT(m_bIsMultiMtl && index.isValid());
+		const int row = index.row();
+		CMaterial* material = GetMaterialForRow(row);
+		CRY_ASSERT(material && material->IsPureChild());
+
+		const QString newName = value.toString();
+		if (!newName.isEmpty())
+		{
+			material->GetParent()->RenameSubMaterial(material, newName.toStdString().c_str());
+			return true;
+		}
+
+		return false;
+	}
+
+	virtual Qt::ItemFlags flags(const QModelIndex &index) const override
+	{
+		if (!m_bIsMultiMtl)
+			return QAbstractListModel::flags(index);
+		else if (index.isValid())
+			return QAbstractListModel::flags(index) | Qt::ItemIsEditable;
+		else
+			return QAbstractListModel::flags(index);
 	}
 
 	QPixmap RenderMaterial(CMaterial* pMaterial) const
@@ -301,7 +328,7 @@ void CSubMaterialView::OnMaterialForEditChanged(CMaterial* pEditorMaterial)
 void CSubMaterialView::OnMaterialPropertiesChanged(CMaterial* pEditorMaterial)
 {
 	if (m_pModel->m_pMaterial && (m_pModel->m_pMaterial == pEditorMaterial || pEditorMaterial->GetParent() == m_pModel->m_pMaterial))
-		m_pModel->UpdateThumbnail(pEditorMaterial);
+		m_pModel->InvalidateMaterial(pEditorMaterial);
 }
 
 void CSubMaterialView::OnSelectionChanged(const QModelIndex& current, const QModelIndex& previous)
@@ -345,7 +372,17 @@ void CSubMaterialView::OnContextMenu(const QPoint& pos)
 		row = index.row();
 	}
 
-	CMaterial* pSelectedMaterial = row == -1 ? pMtl : pMtl->GetSubMaterial(row);
+
+	bool bIsMultiMtl = pMtl->IsMultiSubMaterial();
+	CMaterial* pSelectedMaterial = nullptr;
+
+	if(bIsMultiMtl)
+		pSelectedMaterial = row == -1 ? pMtl : pMtl->GetSubMaterial(row);
+	else
+	{
+		CRY_ASSERT(row == 0 || row == -1);
+		pSelectedMaterial = pMtl;
+	}
 
 	const bool isHighlighted = GetIEditor()->GetMaterialManager()->GetHighlightedMaterial() == pSelectedMaterial;
 	//Highlight
@@ -367,13 +404,21 @@ void CSubMaterialView::OnContextMenu(const QPoint& pos)
 
 	menu->addSeparator();
 
+	//Abstract menu must not go out of scope for actions to be visible in the menu
+	CAbstractMenu materialMenu;
+
 	const bool isReadOnly = m_pMatEd->IsReadOnly();
 	if(!isReadOnly)
 	{
-		if (row != -1)
+		if (row != -1 && bIsMultiMtl)
 		{
 			//Menu of the selected sub material
-			auto action = menu->addAction(tr("Reset Sub-Material"));
+			auto action = menu->addAction(tr("Rename Sub-Material"));
+			connect(action, &QAction::triggered, [this, index]() {
+				GetInternalView()->edit(index);
+			});
+
+			action = menu->addAction(tr("Reset Sub-Material"));
 			connect(action, &QAction::triggered, [this, row]() {
 				m_pMatEd->OnResetSubMaterial(row);
 			});
@@ -387,7 +432,7 @@ void CSubMaterialView::OnContextMenu(const QPoint& pos)
 		}
 
 		//Add global material menu options
-		CAbstractMenu materialMenu;
+		
 		m_pMatEd->FillMaterialMenu(&materialMenu);
 		MenuWidgetBuilders::CMenuBuilder::FillQMenu(menu, &materialMenu);
 	}

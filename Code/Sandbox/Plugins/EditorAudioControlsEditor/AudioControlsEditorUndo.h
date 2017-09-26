@@ -34,7 +34,6 @@ class CUndoControlAdd : public IUndoControlOperation
 public:
 	explicit CUndoControlAdd(CID id);
 protected:
-	virtual int         GetSize() override        { return sizeof(*this); };
 	virtual const char* GetDescription() override { return "Undo Control Add"; };
 
 	virtual void        Undo(bool bUndo) override;
@@ -46,7 +45,6 @@ class CUndoControlRemove : public IUndoControlOperation
 public:
 	explicit CUndoControlRemove(std::shared_ptr<CAudioControl>& pControl);
 protected:
-	virtual int         GetSize() override        { return sizeof(*this); };
 	virtual const char* GetDescription() override { return "Undo Control Remove"; };
 
 	virtual void        Undo(bool bUndo) override;
@@ -70,7 +68,6 @@ class CUndoFolderRemove : public IUndoFolderOperation
 public:
 	//explicit CUndoFolderRemove(QStandardItem* pItem);
 protected:
-	virtual int         GetSize() override        { return sizeof(*this); };
 	virtual const char* GetDescription() override { return "Undo Folder Remove"; };
 
 	virtual void        Undo(bool bUndo) override;
@@ -82,7 +79,6 @@ class CUndoFolderAdd : public IUndoFolderOperation
 public:
 	//explicit CUndoFolderAdd(QStandardItem* pItem);
 protected:
-	virtual int         GetSize() override        { return sizeof(*this); };
 	virtual const char* GetDescription() override { return "Undo Folder Add"; };
 
 	virtual void        Undo(bool bUndo) override;
@@ -95,7 +91,6 @@ class CUndoControlModified : public IUndoObject
 public:
 	explicit CUndoControlModified(CID id);
 protected:
-	virtual int         GetSize() override        { return sizeof(*this); };
 	virtual const char* GetDescription() override { return "Undo Control Changed"; };
 
 	void                SwapData();
@@ -116,7 +111,6 @@ public:
 	CUndoItemMove();
 
 protected:
-	virtual int         GetSize() override        { return sizeof(*this); };
 	virtual const char* GetDescription() override { return "Undo Control Changed"; };
 
 	virtual void        Undo(bool bUndo) override;

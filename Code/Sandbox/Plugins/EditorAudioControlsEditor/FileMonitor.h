@@ -15,7 +15,7 @@ class CFileMonitor : public QTimer, public IFileChangeListener
 
 protected:
 
-	CFileMonitor(CAudioControlsEditorWindow* window, int delay);
+	CFileMonitor(CAudioControlsEditorWindow* const window, int const delay);
 
 	virtual ~CFileMonitor() override;
 
@@ -32,7 +32,7 @@ protected:
 	virtual void ReloadData() {}
 
 	CAudioControlsEditorWindow* m_window;
-	int                         m_delay;
+	int const                   m_delay;
 };
 
 class CFileMonitorSystem final : public CFileMonitor
@@ -41,7 +41,7 @@ class CFileMonitorSystem final : public CFileMonitor
 
 public:
 
-	CFileMonitorSystem(CAudioControlsEditorWindow* window, int delay);
+	CFileMonitorSystem(CAudioControlsEditorWindow* const window, int const delay);
 
 	void Enable();
 	void EnableDelayed();
@@ -62,7 +62,7 @@ class CFileMonitorMiddleware final : public CFileMonitor
 
 public:
 
-	CFileMonitorMiddleware(CAudioControlsEditorWindow* window, int delay);
+	CFileMonitorMiddleware(CAudioControlsEditorWindow* const window, int const delay);
 
 	void Enable();
 

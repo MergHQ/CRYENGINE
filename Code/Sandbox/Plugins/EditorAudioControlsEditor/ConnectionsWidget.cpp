@@ -2,32 +2,31 @@
 
 #include "StdAfx.h"
 #include "ConnectionsWidget.h"
-#include <IAudioSystemEditor.h>
-#include <IAudioSystemItem.h>
+
 #include "AudioAssets.h"
 #include "AudioControlsEditorPlugin.h"
-#include "IEditor.h"
-#include "QtUtil.h"
+#include <IAudioSystemEditor.h>
+#include <IAudioSystemItem.h>
 #include "ImplementationManager.h"
 #include "MiddlewareDataWidget.h"
 #include "MiddlewareDataModel.h"
-#include "AdvancedTreeView.h"
+#include "AudioTreeView.h"
 #include "ConnectionsModel.h"
-#include "IUndoObject.h"
-#include "Controls/QuestionDialog.h"
 
+#include <IEditor.h>
+#include <QtUtil.h>
+#include <IUndoObject.h>
+#include <Controls/QuestionDialog.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <ProxyModels/DeepFilterProxyModel.h>
 
-#include <QDropEvent>
-#include <QEvent>
-#include <QMimeData>
-#include <QMenu>
-#include <QVBoxLayout>
 #include <QHeaderView>
+#include <QKeyEvent>
+#include <QMenu>
 #include <QSplitter>
-#include <QSizePolicy>
+#include <QVBoxLayout>
 
 namespace ACE
 {
@@ -36,40 +35,27 @@ CConnectionsWidget::CConnectionsWidget(QWidget* pParent)
 	: QWidget(pParent)
 	, m_pControl(nullptr)
 	, m_pConnectionModel(new CConnectionModel())
-	, m_pConnectionsView(new CAdvancedTreeView())
+	, m_pTreeView(new CAudioTreeView())
 {
-	m_pConnectionsView->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_pConnectionsView->setDragEnabled(false);
-	m_pConnectionsView->setAcceptDrops(true);
-	m_pConnectionsView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-	m_pConnectionsView->setDragDropMode(QAbstractItemView::DropOnly);
-	m_pConnectionsView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_pConnectionsView->setModel(m_pConnectionModel);
-	m_pConnectionsView->installEventFilter(this);
-	m_pConnectionsView->header()->setMinimumSectionSize(50);
-	m_pConnectionsView->setIndentation(0);
+	m_pFilterProxyModel = new QDeepFilterProxyModel();
+	m_pFilterProxyModel->setSourceModel(m_pConnectionModel);
+
+	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	m_pTreeView->setDragEnabled(false);
+	m_pTreeView->setAcceptDrops(true);
+	m_pTreeView->setDragDropMode(QAbstractItemView::DropOnly);
+	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
+	m_pTreeView->setModel(m_pFilterProxyModel);
+	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
+	m_pTreeView->setIndentation(0);
+	m_pTreeView->installEventFilter(this);
+	m_pTreeView->header()->setMinimumSectionSize(50);
 	
-	connect(m_pConnectionsView, &CAdvancedTreeView::customContextMenuRequested, [&](QPoint const& pos)
-	{
-		int const selectionCount = m_pConnectionsView->selectionModel()->selectedRows().count();
+	QObject::connect(m_pTreeView, &CAudioTreeView::customContextMenuRequested, this, &CConnectionsWidget::OnContextMenu);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CConnectionsWidget::RefreshConnectionProperties);
 
-		if (selectionCount > 0)
-		{
-			QMenu* pContextMenu = new QMenu();
-
-			char const* actionName = "Remove Connection";
-
-			if (selectionCount > 1)
-			{
-				actionName = "Remove Connections";
-			}
-
-			pContextMenu->addAction(tr(actionName), [&]() { RemoveSelectedConnection(); });
-			pContextMenu->exec(QCursor::pos());
-		}
-	});
-
-	m_pConnectionPropertiesFrame = new QFrame(this);
+	m_pConnectionPropertiesFrame = new QFrame();
 	m_pConnectionPropertiesFrame->setAutoFillBackground(false);
 	m_pConnectionPropertiesFrame->setStyleSheet(QStringLiteral("#m_pConnectionPropertiesFrame { border: 1px solid #363636; }"));
 	m_pConnectionPropertiesFrame->setFrameShape(QFrame::Box);
@@ -86,7 +72,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* pParent)
 	m_pConnectionPropertiesFrame->setLayout(pLayout);
 
 	QSplitter* const pSplitter = new QSplitter(Qt::Vertical);
-	pSplitter->addWidget(m_pConnectionsView);
+	pSplitter->addWidget(m_pTreeView);
 	pSplitter->addWidget(m_pConnectionPropertiesFrame);
 	pSplitter->setCollapsible(0, false);
 	pSplitter->setCollapsible(1, false);
@@ -101,7 +87,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* pParent)
 
 	for (int i = 2; i < count; ++i)
 	{
-		m_pConnectionsView->SetColumnVisible(i, false);
+		m_pTreeView->SetColumnVisible(i, false);
 	}
 
 	// Then hide the entire widget.
@@ -112,14 +98,14 @@ CConnectionsWidget::CConnectionsWidget(QWidget* pParent)
 			if (m_pControl == pControl)
 			{
 			  // clear the selection if a connection is removed
-			  m_pConnectionsView->selectionModel()->clear();
+			  m_pTreeView->selectionModel()->clear();
 			  RefreshConnectionProperties();
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
-			m_pConnectionsView->selectionModel()->clear();
+			m_pTreeView->selectionModel()->clear();
 			RefreshConnectionProperties();
 		}, reinterpret_cast<uintptr_t>(this));
 }
@@ -132,25 +118,41 @@ CConnectionsWidget::~CConnectionsWidget()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::Init()
-{
-	connect(m_pConnectionsView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CConnectionsWidget::RefreshConnectionProperties);
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if (pEvent->type() == QEvent::KeyPress)
 	{
 		QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
 
-		if (pKeyEvent && pKeyEvent->key() == Qt::Key_Delete && pObject == m_pConnectionsView)
+		if (pKeyEvent && (pKeyEvent->key() == Qt::Key_Delete) && (pObject == m_pTreeView))
 		{
 			RemoveSelectedConnection();
 			return true;
 		}
 	}
+
 	return QWidget::eventFilter(pObject, pEvent);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::OnContextMenu(QPoint const& pos)
+{
+	int const selectionCount = m_pTreeView->selectionModel()->selectedRows().count();
+
+	if (selectionCount > 0)
+	{
+		QMenu* pContextMenu = new QMenu();
+
+		char const* actionName = "Remove Connection";
+
+		if (selectionCount > 1)
+		{
+			actionName = "Remove Connections";
+		}
+
+		pContextMenu->addAction(tr(actionName), [&]() { RemoveSelectedConnection(); });
+		pContextMenu->exec(QCursor::pos());
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -158,8 +160,8 @@ void CConnectionsWidget::RemoveSelectedConnection()
 {
 	if (m_pControl)
 	{
-		CQuestionDialog messageBox;
-		QModelIndexList const selectedIndices = m_pConnectionsView->selectionModel()->selectedRows();
+		CQuestionDialog* messageBox = new CQuestionDialog();
+		QModelIndexList const selectedIndices = m_pTreeView->selectionModel()->selectedRows();
 
 		if (!selectedIndices.empty())
 		{
@@ -175,9 +177,9 @@ void CConnectionsWidget::RemoveSelectedConnection()
 				text = "Are you sure you want to delete the " + QString::number(size) + " selected connections?";
 			}
 
-			messageBox.SetupQuestion("Audio Controls Editor", text);
+			messageBox->SetupQuestion("Audio Controls Editor", text);
 
-			if (messageBox.Execute() == QDialogButtonBox::Yes)
+			if (messageBox->Execute() == QDialogButtonBox::Yes)
 			{
 				CUndo undo("Disconnected Audio Control from Audio System");
 				IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
@@ -187,9 +189,9 @@ void CConnectionsWidget::RemoveSelectedConnection()
 					std::vector<IAudioSystemItem*> items;
 					items.reserve(selectedIndices.size());
 
-					for (QModelIndex index : selectedIndices)
+					for (QModelIndex const index : selectedIndices)
 					{
-						CID id = index.data(CConnectionModel::eConnectionModelRoles_Id).toInt();
+						CID const id = index.data(static_cast<int>(CConnectionModel::EConnectionModelRoles::Id)).toInt();
 						items.push_back(pAudioSystemEditorImpl->GetControl(id));
 					}
 
@@ -220,8 +222,8 @@ void CConnectionsWidget::SetControl(CAudioControl* pControl)
 void CConnectionsWidget::Reload()
 {
 	m_pConnectionModel->Init(m_pControl);
-	m_pConnectionsView->selectionModel()->clear();
-	m_pConnectionsView->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+	m_pTreeView->selectionModel()->clear();
+	m_pTreeView->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
 	RefreshConnectionProperties();
 }
 
@@ -229,9 +231,10 @@ void CConnectionsWidget::Reload()
 void CConnectionsWidget::RefreshConnectionProperties()
 {
 	ConnectionPtr pConnection;
+
 	if (m_pControl)
 	{
-		QModelIndexList const selectedIndices = m_pConnectionsView->selectionModel()->selectedIndexes();
+		QModelIndexList const selectedIndices = m_pTreeView->selectionModel()->selectedIndexes();
 
 		if (!selectedIndices.empty())
 		{
@@ -239,7 +242,7 @@ void CConnectionsWidget::RefreshConnectionProperties()
 
 			if (index.isValid())
 			{
-				CID const id = index.data(CConnectionModel::eConnectionModelRoles_Id).toInt();
+				CID const id = index.data(static_cast<int>(CConnectionModel::EConnectionModelRoles::Id)).toInt();
 				pConnection = m_pControl->GetConnection(id);
 			}
 		}
@@ -260,12 +263,12 @@ void CConnectionsWidget::RefreshConnectionProperties()
 //////////////////////////////////////////////////////////////////////////
 void CConnectionsWidget::BackupTreeViewStates()
 {
-	m_pConnectionsView->BackupSelection();
+	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CConnectionsWidget::RestoreTreeViewStates()
 {
-	m_pConnectionsView->RestoreSelection();
+	m_pTreeView->RestoreSelection();
 }
 } // namespace ACE

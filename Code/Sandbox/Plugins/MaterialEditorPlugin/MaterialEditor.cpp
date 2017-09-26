@@ -176,6 +176,21 @@ void CMaterialEditor::CreateDefaultLayout(CDockableContainer* sender)
 	sender->SetSplitterSizes(centerWidget, { 1, 4 });
 }
 
+void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
+{
+	//Rebroadcast on layout change
+	//Do not update inspector as the properties pane is unique anyway
+	if (m_pMaterial)
+	{
+		signalMaterialLoaded(m_pMaterial);
+		if (m_pEditedMaterial)
+		{
+			signalMaterialForEditChanged(m_pEditedMaterial);
+			BroadcastPopulateInspector();
+		}
+	}
+}
+
 bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
 {
 	const auto& filename = pAsset->GetFile(0);

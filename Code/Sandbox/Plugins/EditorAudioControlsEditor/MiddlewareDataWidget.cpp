@@ -1,28 +1,29 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include "QtUtil.h"
 #include "MiddlewareDataWidget.h"
+
 #include "IAudioSystemEditor.h"
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
-#include "AdvancedTreeView.h"
+#include "AudioTreeView.h"
 
 #include <CryIcon.h>
 #include <QSearchBox.h>
-
-// Qt
 #include <QtUtil.h>
-#include <QCheckBox>
-#include <QHeaderView>
-#include <QVBoxLayout>
+
+#include <QFontMetrics>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QMenu>
-#include <QFontMetrics>
+#include <QToolButton>
+#include <QVBoxLayout>
 
+namespace ACE
+{
+//////////////////////////////////////////////////////////////////////////
 class CElidedLabel final : public QLabel
 {
 public:
@@ -58,18 +59,18 @@ private:
 	QString m_originalText;
 };
 
-namespace ACE
-{
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::CMiddlewareDataWidget()
-	: m_pModelProxy(new CMiddlewareDataFilterProxyModel(this))
-	, m_pModel(new CMiddlewareDataModel())
+	: m_pFilterProxyModel(new CMiddlewareDataFilterProxyModel(this))
+	, m_pAssetsModel(new CMiddlewareDataModel())
 	, m_pImplNameLabel(nullptr)
 {
-	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+	
 
-	m_pModelProxy->setDynamicSortFilter(true);
-	m_pModelProxy->setSourceModel(m_pModel);
+	m_pFilterProxyModel->setDynamicSortFilter(true);
+	m_pFilterProxyModel->setSourceModel(m_pAssetsModel);
+
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
 	QVBoxLayout* pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
@@ -82,75 +83,23 @@ CMiddlewareDataWidget::CMiddlewareDataWidget()
 		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 	}
 
-	QHBoxLayout* pTopBarLayout = new QHBoxLayout();
+	pMainLayout->addWidget(m_pImplNameLabel);
 
-	QSearchBox* pSearchBox = new QSearchBox();
-	pSearchBox->setToolTip(tr("Show only middleware controls with this name"));
-	connect(pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
-	{
-		if (m_filter != filter)
-		{
-			if (m_filter.isEmpty() && !filter.isEmpty())
-			{
-				BackupTreeViewStates();
-				m_pTreeView->expandAll();
-			}
-			else if (!m_filter.isEmpty() && filter.isEmpty())
-			{
-				m_pModelProxy->setFilterFixedString(filter);
-				m_pTreeView->collapseAll();
-				RestoreTreeViewStates();
-			}
-			else if (!m_filter.isEmpty() && !filter.isEmpty())
-			{
-				m_pModelProxy->setFilterFixedString(filter);
-				m_pTreeView->expandAll();
-			}
+	InitFilterWidgets(pMainLayout);
 
-			m_filter = filter;
-		}
-
-		m_pModelProxy->setFilterFixedString(filter);
-	});
-	
-	QCheckBox* pHideAssignedCheckbox = new QCheckBox();
-	pHideAssignedCheckbox->setText(tr("Hide Assigned"));
-	pHideAssignedCheckbox->setToolTip(tr("Hide or show assigned middleware controls"));
-	connect(pHideAssignedCheckbox, &QCheckBox::clicked, [&](bool bHide)
-	{
-		if (bHide)
-		{
-			m_pTreeView->BackupExpanded();
-			m_pModelProxy->SetHideConnected(bHide);
-		}
-		else
-		{
-			m_pModelProxy->SetHideConnected(bHide);
-			m_pTreeView->RestoreExpanded();
-		}
-	});
-
-	pTopBarLayout->addWidget(pSearchBox);
-	pTopBarLayout->addWidget(pHideAssignedCheckbox);
-
-	m_pTreeView = new CAdvancedTreeView();
-	m_pTreeView->header()->setVisible(false);
+	m_pTreeView = new CAudioTreeView();
+	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragOnly);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_pTreeView->setSortingEnabled(true);
-	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
-	m_pTreeView->setModel(m_pModelProxy);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(m_pTreeView, &CAdvancedTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
-	connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, m_pTreeView, &CAdvancedTreeView::OnSelectionChanged);
-
-	pMainLayout->addWidget(m_pImplNameLabel);
-	pMainLayout->addLayout(pTopBarLayout);
+	m_pTreeView->setModel(m_pFilterProxyModel);
+	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
 	pMainLayout->addWidget(m_pTreeView);
-
-	// Update the middleware name label.
-	// Note the 'this' ptr being passed as a context variable so that Qt can disconnect this lambda when the object is destroyed (ie. the ACE is closed).
+	
+	QObject::connect(m_pTreeView, &CAudioTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, m_pTreeView, &CAudioTreeView::OnSelectionChanged);
+	
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 	{
 		IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
@@ -169,16 +118,80 @@ CMiddlewareDataWidget::~CMiddlewareDataWidget()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::SetAllowedControls(EItemType type, bool bAllowed)
+void CMiddlewareDataWidget::InitFilterWidgets(QVBoxLayout* pMainLayout)
 {
-	const ACE::IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+	QHBoxLayout* pFilterLayout = new QHBoxLayout();
+
+	QSearchBox* pSearchBox = new QSearchBox();
+	QObject::connect(pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
+	{
+		if (m_filter != filter)
+		{
+			if (m_filter.isEmpty() && !filter.isEmpty())
+			{
+				BackupTreeViewStates();
+				m_pTreeView->expandAll();
+			}
+			else if (!m_filter.isEmpty() && filter.isEmpty())
+			{
+				m_pFilterProxyModel->setFilterFixedString(filter);
+				m_pTreeView->collapseAll();
+				RestoreTreeViewStates();
+			}
+			else if (!m_filter.isEmpty() && !filter.isEmpty())
+			{
+				m_pFilterProxyModel->setFilterFixedString(filter);
+				m_pTreeView->expandAll();
+			}
+
+			m_filter = filter;
+		}
+
+		m_pFilterProxyModel->setFilterFixedString(filter);
+	});
+
+	pFilterLayout->addWidget(pSearchBox);
+
+	m_pHideAssignedButton = new QToolButton();
+	m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_True.ico"));
+	m_pHideAssignedButton->setToolTip(tr("Hide assigned middleware data"));
+	m_pHideAssignedButton->setCheckable(true);
+	m_pHideAssignedButton->setMaximumSize(QSize(20, 20));
+	QObject::connect(m_pHideAssignedButton, &QToolButton::toggled, [&](bool const bChecked)
+	{
+		if (bChecked)
+		{
+			BackupTreeViewStates();
+			m_pFilterProxyModel->SetHideConnected(bChecked);
+			m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_False.ico"));
+			m_pHideAssignedButton->setToolTip(tr("Show all middleware data"));
+		}
+		else
+		{
+			m_pFilterProxyModel->SetHideConnected(bChecked);
+			RestoreTreeViewStates();
+			m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_True.ico"));
+			m_pHideAssignedButton->setToolTip(tr("Hide assigned middleware data"));
+		}
+	});
+
+	pFilterLayout->addWidget(m_pHideAssignedButton);
+
+	pMainLayout->addLayout(pFilterLayout);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMiddlewareDataWidget::SetAllowedControls(EItemType const type, bool const bAllowed)
+{
+	const IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
 	if (pAudioSystemEditorImpl)
 	{
-		m_allowedATLTypes[type] = bAllowed;
+		m_allowedATLTypes[static_cast<int>(type)] = bAllowed;
 		uint mask = 0;
+		int const numTypes = static_cast<int>(EItemType::NumTypes);
 
-		for (int i = 0; i < EItemType::eItemType_NumTypes; ++i)
+		for (int i = 0; i < numTypes; ++i)
 		{
 			if (m_allowedATLTypes[i])
 			{
@@ -186,7 +199,7 @@ void CMiddlewareDataWidget::SetAllowedControls(EItemType type, bool bAllowed)
 			}
 		}
 
-		m_pModelProxy->SetAllowedControlsMask(mask);
+		m_pFilterProxyModel->SetAllowedControlsMask(mask);
 	}
 }
 
@@ -206,14 +219,14 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos) const
 	pContextMenu->addAction(tr("Expand All"), [&]() { m_pTreeView->expandAll(); });
 	pContextMenu->addAction(tr("Collapse All"), [&]() { m_pTreeView->collapseAll(); });
 
-	pContextMenu->exec(m_pTreeView->mapToGlobal(pos));
+	pContextMenu->exec(QCursor::pos());
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CMiddlewareDataWidget::Reset()
 {
-	m_pModel->Reset();
-	m_pModelProxy->invalidate();
+	m_pAssetsModel->Reset();
+	m_pFilterProxyModel->invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////

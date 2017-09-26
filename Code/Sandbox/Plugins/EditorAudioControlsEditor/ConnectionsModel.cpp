@@ -96,7 +96,7 @@ int CConnectionModel::rowCount(const QModelIndex& parent) const
 //////////////////////////////////////////////////////////////////////////
 int CConnectionModel::columnCount(const QModelIndex& parent) const
 {
-	return static_cast<int>(eConnectionModelColumns_Size) + static_cast<int>(m_platformNames.size());
+	return static_cast<int>(EConnectionModelColumns::Size) + static_cast<int>(m_platformNames.size());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,9 +117,9 @@ QVariant CConnectionModel::data(const QModelIndex& index, int role) const
 					case Qt::DisplayRole:
 						switch (index.column())
 						{
-						case eConnectionModelColumns_Name:
+						case static_cast<int>(EConnectionModelColumns::Name):
 							return (const char*)pItem->GetName();
-						case eConnectionModelColumns_Path:
+						case static_cast<int>(EConnectionModelColumns::Path):
 							{
 								QString path;
 								IAudioSystemItem* pParent = pItem->GetParent();
@@ -145,7 +145,7 @@ QVariant CConnectionModel::data(const QModelIndex& index, int role) const
 						}
 						break;
 					case Qt::DecorationRole:
-						if (index.column() == eConnectionModelColumns_Name)
+						if (index.column() == static_cast<int>(EConnectionModelColumns::Name))
 						{
 							return CryIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
 						}
@@ -164,14 +164,14 @@ QVariant CConnectionModel::data(const QModelIndex& index, int role) const
 						break;
 					case Qt::CheckStateRole:
 						{
-							if ((m_pControl->GetType() == eItemType_Preload) && (index.column() >= eConnectionModelColumns_Size))
+							if ((m_pControl->GetType() == EItemType::Preload) && (index.column() >= static_cast<int>(EConnectionModelColumns::Size)))
 							{
-								return pConnection->IsPlatformEnabled(index.column() - eConnectionModelColumns_Size) ? Qt::Checked : Qt::Unchecked;
+								return pConnection->IsPlatformEnabled(index.column() - static_cast<int>(EConnectionModelColumns::Size)) ? Qt::Checked : Qt::Unchecked;
 							}
 							break;
 						}
-					case eConnectionModelRoles_Id:
-						if (index.column() == eConnectionModelColumns_Name)
+					case static_cast<int>(EConnectionModelRoles::Id):
+						if (index.column() == static_cast<int>(EConnectionModelColumns::Name))
 						{
 							return pItem->GetId();
 						}
@@ -190,19 +190,19 @@ QVariant CConnectionModel::headerData(int section, Qt::Orientation orientation, 
 	if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
 	{
 
-		if (section < eConnectionModelColumns_Size)
+		if (section < static_cast<int>(EConnectionModelColumns::Size))
 		{
 			switch (section)
 			{
-			case eConnectionModelColumns_Name:
+			case static_cast<int>(EConnectionModelColumns::Name):
 				return tr("Name");
-			case eConnectionModelColumns_Path:
+			case static_cast<int>(EConnectionModelColumns::Path):
 				return tr("Path");
 			}
 		}
 		else
 		{
-			return m_platformNames[section - eConnectionModelColumns_Size];
+			return m_platformNames[section - static_cast<int>(EConnectionModelColumns::Size)];
 		}
 	}
 	return QVariant();
@@ -212,7 +212,7 @@ QVariant CConnectionModel::headerData(int section, Qt::Orientation orientation, 
 Qt::ItemFlags CConnectionModel::flags(const QModelIndex& index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
-	if (index.isValid() && index.column() >= eConnectionModelColumns_Size)
+	if (index.isValid() && index.column() >= static_cast<int>(EConnectionModelColumns::Size))
 	{
 		flags |= Qt::ItemIsUserCheckable;
 	}
@@ -222,10 +222,10 @@ Qt::ItemFlags CConnectionModel::flags(const QModelIndex& index) const
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-	if (index.column() >= eConnectionModelColumns_Size && role == Qt::CheckStateRole)
+	if ((index.column() >= static_cast<int>(EConnectionModelColumns::Size)) && (role == Qt::CheckStateRole))
 	{
 		ConnectionPtr pConnection = m_connectionsCache[index.row()];
-		pConnection->EnableForPlatform(index.column() - eConnectionModelColumns_Size, value == Qt::Checked);
+		pConnection->EnableForPlatform(index.column() - static_cast<int>(EConnectionModelColumns::Size), value == Qt::Checked);
 		QVector<int> roleVector(1, role);
 		dataChanged(index, index, roleVector);
 		return true;

@@ -2,54 +2,57 @@
 
 #include "StdAfx.h"
 #include "AudioControlsWriter.h"
+
+#include "AudioAssetsManager.h"
+
+#include <IAudioSystemEditor.h>
+#include <IAudioSystemItem.h>
 #include <CryString/StringUtils.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include "AudioAssetsManager.h"
 #include <ISourceControl.h>
 #include <IEditor.h>
-#include <IAudioSystemEditor.h>
-#include <IAudioSystemItem.h>
-#include "QtUtil.h"
+#include <QtUtil.h>
 #include <ConfigurationManager.h>
-#include <QModelIndex>
 
 using namespace PathUtil;
 
 namespace ACE
 {
+string const CAudioControlsWriter::s_controlsPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR;
+string const CAudioControlsWriter::s_levelsFolder = "levels" CRY_NATIVE_PATH_SEPSTR;
+uint const CAudioControlsWriter::s_currentFileVersion = 2;
 
-const string CAudioControlsWriter::ms_controlsPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR;
-const string CAudioControlsWriter::ms_levelsFolder = "levels" CRY_NATIVE_PATH_SEPSTR;
-const uint CAudioControlsWriter::ms_currentFileVersion = 2;
-
-string TypeToTag(EItemType eType)
+//////////////////////////////////////////////////////////////////////////
+string TypeToTag(EItemType const eType)
 {
 	switch (eType)
 	{
-	case eItemType_Parameter:
+	case EItemType::Parameter:
 		return "ATLRtpc";
-	case eItemType_Trigger:
+	case EItemType::Trigger:
 		return "ATLTrigger";
-	case eItemType_Switch:
+	case EItemType::Switch:
 		return "ATLSwitch";
-	case eItemType_State:
+	case EItemType::State:
 		return "ATLSwitchState";
-	case eItemType_Preload:
+	case EItemType::Preload:
 		return "ATLPreloadRequest";
-	case eItemType_Environment:
+	case EItemType::Environment:
 		return "ATLEnvironment";
 	}
 	return "";
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioControlsWriter::CAudioControlsWriter(CAudioAssetsManager* pAssetsManager, IAudioSystemEditor* pAudioSystemImpl, std::set<string>& previousLibraryPaths)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pAudioSystemImpl(pAudioSystemImpl)
 {
 	if (pAssetsManager && pAudioSystemImpl)
 	{
-		const size_t libCount = pAssetsManager->GetLibraryCount();
+		size_t const libCount = pAssetsManager->GetLibraryCount();
+
 		for (size_t i = 0; i < libCount; ++i)
 		{
 			CAudioLibrary& library = *pAssetsManager->GetLibrary(i);
@@ -72,13 +75,15 @@ CAudioControlsWriter::CAudioControlsWriter(CAudioAssetsManager* pAssetsManager, 
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 {
 	if (library.IsModified())
 	{
 		LibraryStorage libraryXmlNodes;
 
-		const size_t itemCount = library.ChildCount();
+		size_t const itemCount = library.ChildCount();
+
 		for (size_t i = 0; i < itemCount; ++i)
 		{
 			WriteItem(library.GetChild(i), "", libraryXmlNodes);
@@ -92,8 +97,9 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 
 		for (auto const& libraryPair : libraryXmlNodes)
 		{
-			string libraryPath = ms_controlsPath;
-			const Scope scope = libraryPair.first;
+			string libraryPath = s_controlsPath;
+			Scope const scope = libraryPair.first;
+
 			if (scope == Utils::GetGlobalScope())
 			{
 				// no scope, file at the root level
@@ -102,23 +108,26 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 			else
 			{
 				// with scope, inside level folder
-				libraryPath += ms_levelsFolder + m_pAssetsManager->GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
+				libraryPath += s_levelsFolder + m_pAssetsManager->GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
 			}
 
 			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
 
-			const SLibraryScope& libScope = libraryPair.second;
+			SLibraryScope const& libScope = libraryPair.second;
+
 			if (libScope.bDirty)
 			{
 				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode("ATLConfig");
 				pFileNode->setAttr("atl_name", library.GetName());
-				pFileNode->setAttr("atl_version", ms_currentFileVersion);
+				pFileNode->setAttr("atl_version", s_currentFileVersion);
+				int const numTypes = static_cast<int>(EItemType::NumTypes);
 
-				for (int i = 0; i < eItemType_NumTypes; ++i)
+				for (int i = 0; i < numTypes; ++i)
 				{
-					if (i != eItemType_State)   // switch_states are written inside the switches
+					if (i != static_cast<int>(EItemType::State))   // switch_states are written inside the switches
 					{
 						XmlNodeRef node = libScope.GetXmlNode((EItemType)i);
+
 						if (node && node->getChildCount() > 0)
 						{
 							pFileNode->addChild(node);
@@ -131,17 +140,20 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 				if (pEditorData)
 				{
 					XmlNodeRef pFoldersNode = pEditorData->createNode("Folders");
+
 					if (pFoldersNode)
 					{
 						WriteEditorData(&library, pFoldersNode);
 						pEditorData->addChild(pFoldersNode);
 					}
+
 					pFileNode->addChild(pEditorData);
 				}
 
-				const string fullFilePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + libraryPath + ".xml";
+				string const fullFilePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + libraryPath + ".xml";
 
-				const DWORD fileAttributes = GetFileAttributesA(fullFilePath.c_str());
+				DWORD const fileAttributes = GetFileAttributesA(fullFilePath.c_str());
+
 				if (fileAttributes & FILE_ATTRIBUTE_READONLY)
 				{
 					// file is read-only
@@ -156,7 +168,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 	{
 		std::unordered_set<Scope> scopes;
 
-		const size_t numChildren = library.ChildCount();
+		size_t const numChildren = library.ChildCount();
 
 		for (size_t i = 0; i < numChildren; ++i)
 		{
@@ -166,7 +178,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 
 		for (auto const scope : scopes)
 		{
-			string libraryPath = ms_controlsPath;
+			string libraryPath = s_controlsPath;
 
 			if (scope == Utils::GetGlobalScope())
 			{
@@ -176,7 +188,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 			else
 			{
 				// with scope, inside level folder
-				libraryPath += ms_levelsFolder + m_pAssetsManager->GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
+				libraryPath += s_levelsFolder + m_pAssetsManager->GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
 			}
 
 			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
@@ -184,13 +196,15 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::WriteItem(CAudioAsset* pItem, const string& path, LibraryStorage& library)
 {
 	if (pItem)
 	{
-		if (pItem->GetType() == EItemType::eItemType_Folder)
+		if (pItem->GetType() == EItemType::Folder)
 		{
-			const size_t itemCount = pItem->ChildCount();
+			size_t const itemCount = pItem->ChildCount();
+
 			for (size_t i = 0; i < itemCount; ++i)
 			{
 				// Use forward slash only to ensure cross platform compatibility.
@@ -202,6 +216,7 @@ void CAudioControlsWriter::WriteItem(CAudioAsset* pItem, const string& path, Lib
 		else
 		{
 			CAudioControl* pControl = static_cast<CAudioControl*>(pItem);
+
 			if (pControl)
 			{
 				SLibraryScope& scope = library[pControl->GetScope()];
@@ -209,13 +224,15 @@ void CAudioControlsWriter::WriteItem(CAudioAsset* pItem, const string& path, Lib
 				WriteControlToXML(scope.GetXmlNode(pControl->GetType()), pControl, path);
 			}
 		}
+
+		pItem->SetModified(false);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::GetScopes(CAudioAsset const* const pItem, std::unordered_set<Scope>& scopes)
 {
-	if (pItem->GetType() == EItemType::eItemType_Folder)
+	if (pItem->GetType() == EItemType::Folder)
 	{
 		size_t const numChildren = pItem->ChildCount();
 
@@ -235,23 +252,27 @@ void CAudioControlsWriter::GetScopes(CAudioAsset const* const pItem, std::unorde
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pControl, const string& path)
 {
-	const EItemType type = pControl->GetType();
+	EItemType const type = pControl->GetType();
 	XmlNodeRef pChildNode = pNode->createNode(TypeToTag(type));
 	pChildNode->setAttr("atl_name", pControl->GetName());
+
 	if (!path.empty())
 	{
 		pChildNode->setAttr("path", path);
 	}
 
-	if (type == eItemType_Trigger)
+	if (type == EItemType::Trigger)
 	{
-		const float radius = pControl->GetRadius();
+		float const radius = pControl->GetRadius();
+
 		if (radius > 0.0f)
 		{
 			pChildNode->setAttr("atl_radius", radius);
-			const float fadeOutDistance = pControl->GetOcclusionFadeOutDistance();
+			float const fadeOutDistance = pControl->GetOcclusionFadeOutDistance();
+
 			if (fadeOutDistance > 0.0f)
 			{
 				pChildNode->setAttr("atl_occlusion_fadeout_distance", fadeOutDistance);
@@ -264,32 +285,36 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pC
 
 	}
 
-	if (type == eItemType_Switch)
+	if (type == EItemType::Switch)
 	{
-		const size_t size = pControl->ChildCount();
+		size_t const size = pControl->ChildCount();
+
 		for (size_t i = 0; i < size; ++i)
 		{
 			CAudioAsset* pItem = pControl->GetChild(i);
-			if (pItem && pItem->GetType() == EItemType::eItemType_State)
+
+			if (pItem && pItem->GetType() == EItemType::State)
 			{
 				WriteControlToXML(pChildNode, static_cast<CAudioControl*>(pItem), "");
 			}
 		}
 	}
-	else if (type == eItemType_Preload)
+	else if (type == EItemType::Preload)
 	{
 		if (pControl->IsAutoLoad())
 		{
 			pChildNode->setAttr("atl_type", "AutoLoad");
 		}
 
-		const std::vector<dll_string>& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-		const size_t count = platforms.size();
+		std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
+		size_t const count = platforms.size();
+
 		for (size_t i = 0; i < count; ++i)
 		{
 			XmlNodeRef pGroupNode = pChildNode->createNode("ATLPlatform");
 			pGroupNode->setAttr("atl_name", platforms[i].c_str());
 			WriteConnectionsToXML(pGroupNode, pControl, i);
+
 			if (pGroupNode->getChildCount() > 0)
 			{
 				pChildNode->addChild(pGroupNode);
@@ -304,6 +329,7 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pC
 	pNode->addChild(pChildNode);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl* pControl, const int platformIndex)
 {
 	if (pControl && m_pAudioSystemImpl)
@@ -349,15 +375,18 @@ void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl
 			}
 		}
 
-		const int size = pControl->GetConnectionCount();
+		int const size = pControl->GetConnectionCount();
+
 		for (int i = 0; i < size; ++i)
 		{
 			ConnectionPtr pConnection = pControl->GetConnectionAt(i);
+
 			if (pConnection)
 			{
-				if (pControl->GetType() != eItemType_Preload || pConnection->IsPlatformEnabled(platformIndex))
+				if (pControl->GetType() != EItemType::Preload || pConnection->IsPlatformEnabled(platformIndex))
 				{
 					XmlNodeRef pChild = m_pAudioSystemImpl->CreateXMLNodeFromConnection(pConnection, pControl->GetType());
+
 					if (pChild)
 					{
 						pNode->addChild(pChild);
@@ -369,12 +398,15 @@ void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl
 	}
 }
 
-void CAudioControlsWriter::CheckOutFile(const string& filepath)
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsWriter::CheckOutFile(string const& filepath)
 {
 	ISourceControl* pSourceControl = GetIEditor()->GetSourceControl();
+
 	if (pSourceControl)
 	{
-		uint32 fileAttributes = pSourceControl->GetFileAttributes(filepath.c_str());
+		uint32 const fileAttributes = pSourceControl->GetFileAttributes(filepath.c_str());
+
 		if (fileAttributes & SCC_FILE_ATTRIBUTE_MANAGED)
 		{
 			pSourceControl->CheckOut(filepath);
@@ -386,9 +418,11 @@ void CAudioControlsWriter::CheckOutFile(const string& filepath)
 	}
 }
 
-void CAudioControlsWriter::DeleteLibraryFile(const string& filepath)
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsWriter::DeleteLibraryFile(string const& filepath)
 {
 	ISourceControl* pSourceControl = GetIEditor()->GetSourceControl();
+
 	if (pSourceControl && pSourceControl->GetFileAttributes(filepath.c_str()) & SCC_FILE_ATTRIBUTE_MANAGED)
 	{
 		// if source control is connected, let it handle the delete
@@ -397,7 +431,8 @@ void CAudioControlsWriter::DeleteLibraryFile(const string& filepath)
 	}
 	else
 	{
-		DWORD fileAttributes = GetFileAttributesA(filepath.c_str());
+		DWORD const fileAttributes = GetFileAttributesA(filepath.c_str());
+
 		if (fileAttributes == INVALID_FILE_ATTRIBUTES || !DeleteFile(filepath.c_str()))
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed to delete file %s", filepath);
@@ -405,17 +440,21 @@ void CAudioControlsWriter::DeleteLibraryFile(const string& filepath)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::WriteEditorData(CAudioAsset* pLibrary, XmlNodeRef pParentNode) const
 {
 	if (pParentNode && pLibrary)
 	{
-		const size_t itemCount = pLibrary->ChildCount();
+		size_t const itemCount = pLibrary->ChildCount();
+
 		for (size_t i = 0; i < itemCount; ++i)
 		{
 			CAudioAsset* pItem = pLibrary->GetChild(i);
-			if (pItem->GetType() == EItemType::eItemType_Folder)
+
+			if (pItem->GetType() == EItemType::Folder)
 			{
 				XmlNodeRef pFolderNode = pParentNode->createNode("Folder");
+
 				if (pFolderNode)
 				{
 					pFolderNode->setAttr("name", pItem->GetName());
@@ -426,4 +465,4 @@ void CAudioControlsWriter::WriteEditorData(CAudioAsset* pLibrary, XmlNodeRef pPa
 		}
 	}
 }
-}
+} // namespace ACE

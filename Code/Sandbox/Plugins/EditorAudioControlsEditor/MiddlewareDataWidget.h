@@ -2,18 +2,20 @@
 
 #pragma once
 
-#include <QFrame>
+#include <QWidget>
 #include <ACETypes.h>
 
-class CElidedLabel;
+class QToolButton;
+class QVBoxLayout;
 
 namespace ACE
 {
 class CMiddlewareDataFilterProxyModel;
 class CMiddlewareDataModel;
-class CAdvancedTreeView;
+class CAudioTreeView;
+class CElidedLabel;
 
-class CMiddlewareDataWidget final : public QFrame
+class CMiddlewareDataWidget final : public QWidget
 {
 	Q_OBJECT
 
@@ -22,7 +24,7 @@ public:
 	CMiddlewareDataWidget();
 	virtual ~CMiddlewareDataWidget() override;
 
-	void SetAllowedControls(EItemType type, bool bAllowed);
+	void SetAllowedControls(EItemType const type, bool const bAllowed);
 	void Reset();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
@@ -33,11 +35,14 @@ private slots:
 
 private:
 
-	bool                          m_allowedATLTypes[EItemType::eItemType_NumTypes];
-	CMiddlewareDataFilterProxyModel* m_pModelProxy;
-	CMiddlewareDataModel*            m_pModel;
-	CElidedLabel*                 m_pImplNameLabel;
-	CAdvancedTreeView*            m_pTreeView;
-	QString                       m_filter;
+	void InitFilterWidgets(QVBoxLayout* pMainLayout);
+
+	bool                             m_allowedATLTypes[static_cast<int>(EItemType::NumTypes)]; // Replace this. Possibly with a QList.
+	CMiddlewareDataFilterProxyModel* m_pFilterProxyModel;
+	CMiddlewareDataModel*            m_pAssetsModel;
+	CElidedLabel*                    m_pImplNameLabel;
+	QToolButton*                     m_pHideAssignedButton;
+	CAudioTreeView*                  m_pTreeView;
+	QString                          m_filter;
 };
 } // namespace ACE

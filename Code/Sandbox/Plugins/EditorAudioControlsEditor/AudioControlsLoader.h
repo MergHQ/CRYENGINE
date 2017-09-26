@@ -2,11 +2,7 @@
 
 #pragma once
 
-#include <CryString/CryString.h>
-#include <IAudioConnection.h>
 #include "AudioAssets.h"
-#include <CrySystem/XML/IXml.h>
-#include <ACETypes.h>
 
 namespace ACE
 {
@@ -15,15 +11,18 @@ class CAudioAssetsManager;
 class CAudioControlsLoader
 {
 public:
+
 	CAudioControlsLoader(CAudioAssetsManager* pAssetsManager);
 	std::set<string> GetLoadedFilenamesList();
 	void             LoadAll();
 	void             LoadControls();
 	void             LoadScopes();
-	uint             GetErrorCodeMask() const { return m_errorCodeMask; }
+	EErrorCode       GetErrorCodeMask() const { return m_errorCodeMask; }
 
 private:
+
 	using SwitchStates = std::vector<const char*>;
+
 	void           LoadAllLibrariesInFolder(string const& folderPath, string const& level);
 	void           LoadControlsLibrary(XmlNodeRef pRoot, string const& filepath, string const& level, string const& filename, uint version);
 	CAudioControl* LoadControl(XmlNodeRef pNode, Scope scope, uint version, CAudioAsset* pParentItem);
@@ -48,6 +47,6 @@ private:
 
 	CAudioAssetsManager* m_pAssetsManager;
 	std::set<string>     m_loadedFilenames;
-	uint                 m_errorCodeMask;
+	EErrorCode           m_errorCodeMask;
 };
-}
+} // namespace ACE

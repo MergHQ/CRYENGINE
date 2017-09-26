@@ -13,7 +13,6 @@
 
 namespace ACE
 {
-
 const string g_userSettingsFile = "%USER%/audiocontrolseditor_fmod.user";
 
 // Paths
@@ -324,11 +323,11 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionToControl(EItemType contr
 		}
 		else if (type == eFmodItemType_EventParameter || type == eFmodItemType_SnapshotParameter)
 		{
-			if (controlType == eItemType_Parameter)
+			if (controlType == EItemType::Parameter)
 			{
 				return std::make_shared<CParamConnection>(pMiddlewareControl->GetId());
 			}
-			else if (controlType == eItemType_State)
+			else if (controlType == EItemType::State)
 			{
 				return std::make_shared<CParamToStateConnection>(pMiddlewareControl->GetId());
 			}
@@ -390,7 +389,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 			case eFmodItemType_EventParameter:
 			case eFmodItemType_SnapshotParameter:
 				{
-					if (controlType == eItemType_Parameter)
+					if (controlType == EItemType::Parameter)
 					{
 						std::shared_ptr<CParamConnection> pConnection = std::make_shared<CParamConnection>(pItem->GetId());
 						float mult = 1.0f;
@@ -409,7 +408,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 						pConnection->shift = shift;
 						return pConnection;
 					}
-					else if (controlType == eItemType_State)
+					else if (controlType == EItemType::State)
 					{
 						std::shared_ptr<CParamToStateConnection> pConnection = std::make_shared<CParamToStateConnection>(pItem->GetId());
 						string value = pNode->getAttr(g_valueAttribute);
@@ -460,7 +459,7 @@ XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const Connection
 			{
 				pNode->setAttr(g_nameAttribute, pItem->GetName());
 				pNode->setAttr(g_pathAttribute, GetFullPathName(pItem->GetParent()));
-				if (controlType == eItemType_State)
+				if (controlType == EItemType::State)
 				{
 					auto pRtpcConnection = static_cast<const CParamToStateConnection*>(pConnection.get());
 					if (pRtpcConnection)
@@ -468,7 +467,7 @@ XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const Connection
 						pNode->setAttr(g_valueAttribute, pRtpcConnection->m_value);
 					}
 				}
-				else if (controlType == eItemType_Parameter)
+				else if (controlType == EItemType::Parameter)
 				{
 					auto pParamConnection = static_cast<const CParamConnection*>(pConnection.get());
 					if (pParamConnection->mult != 1.0f)
@@ -522,38 +521,38 @@ ACE::EItemType CAudioSystemEditor_fmod::ImplTypeToATLType(ItemType type) const
 	switch (type)
 	{
 	case eFmodItemType_Event:
-		return eItemType_Trigger;
+		return EItemType::Trigger;
 	case eFmodItemType_EventParameter:
-		return eItemType_Parameter;
+		return EItemType::Parameter;
 	case eFmodItemType_Snapshot:
-		return eItemType_Trigger;
+		return EItemType::Trigger;
 	case eFmodItemType_SnapshotParameter:
-		return eItemType_Parameter;
+		return EItemType::Parameter;
 	case eFmodItemType_Bank:
-		return eItemType_Preload;
+		return EItemType::Preload;
 	case eFmodItemType_Return:
-		return eItemType_Environment;
+		return EItemType::Environment;
 	}
-	return eItemType_Invalid;
+	return EItemType::Invalid;
 }
 
 ACE::TImplControlTypeMask CAudioSystemEditor_fmod::GetCompatibleTypes(EItemType controlType) const
 {
 	switch (controlType)
 	{
-	case eItemType_Trigger:
+	case EItemType::Trigger:
 		return eFmodItemType_Event | eFmodItemType_Snapshot;
 		break;
-	case eItemType_Parameter:
+	case EItemType::Parameter:
 		return eFmodItemType_EventParameter | eFmodItemType_SnapshotParameter;
 		break;
-	case eItemType_Preload:
+	case EItemType::Preload:
 		return eFmodItemType_Bank;
 		break;
-	case eItemType_State:
+	case EItemType::State:
 		return eFmodItemType_EventParameter | eFmodItemType_SnapshotParameter;
 		break;
-	case eItemType_Environment:
+	case EItemType::Environment:
 		return eFmodItemType_Return;
 		break;
 	}
@@ -953,5 +952,4 @@ SERIALIZATION_ENUM_BEGIN(EFmodEventType, "Event Type")
 SERIALIZATION_ENUM(eFmodEventType_Start, "start", "Start")
 SERIALIZATION_ENUM(eFmodEventType_Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
-
-}
+} // namespace ACE
