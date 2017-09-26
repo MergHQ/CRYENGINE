@@ -62,6 +62,9 @@ void CMaterialPreviewWidget::OnContextMenu()
 	if (!m_pPreviewWidget->isVisible())
 		return;
 
+	if (!m_pPreviewWidget->underMouse())
+		return;
+
 	auto menu = new QMenu();
 
 	auto action = menu->addAction("Reset Camera");

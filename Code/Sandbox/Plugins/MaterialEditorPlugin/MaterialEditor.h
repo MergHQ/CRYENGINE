@@ -52,6 +52,7 @@ private:
 
 	void InitMenuBar();
 	virtual void CreateDefaultLayout(CDockableContainer* sender) override;
+	virtual void OnLayoutChange(const QVariantMap& state) override;
 	void BroadcastPopulateInspector();
 
 	void OnConvertToMultiMaterial();
