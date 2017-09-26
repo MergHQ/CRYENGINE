@@ -195,8 +195,7 @@ public:
 		const QString newName = value.toString();
 		if (!newName.isEmpty())
 		{
-			//TODO: correct undo handling here!
-			material->SetName(newName.toStdString().c_str());
+			material->GetParent()->RenameSubMaterial(material, newName.toStdString().c_str());
 			return true;
 		}
 
