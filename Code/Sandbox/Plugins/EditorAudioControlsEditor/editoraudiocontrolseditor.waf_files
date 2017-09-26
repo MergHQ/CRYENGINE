@@ -1,5 +1,11 @@
 {
     "EditorAudioControlsEditor_uber_0.cpp": {
+        "Connections": [
+            "ConnectionsWidget.h", 
+            "ConnectionsWidget.cpp", 
+            "ConnectionsModel.h", 
+            "ConnectionsModel.cpp"
+        ], 
         "MiddlewareData": [
             "MiddlewareDataWidget.h", 
             "MiddlewareDataWidget.cpp", 
@@ -12,11 +18,7 @@
         ], 
         "Properties": [
             "PropertiesWidget.h", 
-            "PropertiesWidget.cpp", 
-            "ConnectionsWidget.h", 
-            "ConnectionsWidget.cpp", 
-            "ConnectionsModel.h", 
-            "ConnectionsModel.cpp"
+            "PropertiesWidget.cpp"
         ], 
         "ResourceSelector": [
             "ResourceSelectors.cpp", 
@@ -45,8 +47,8 @@
             "ImplementationManager.h", 
             "ImplementationManager.cpp", 
             "SystemControlsEditorIcons.h", 
-            "AdvancedTreeView.cpp", 
-            "AdvancedTreeView.h", 
+            "AudioTreeView.cpp", 
+            "AudioTreeView.h", 
             "FileMonitor.cpp", 
             "FileMonitor.h"
         ], 
