@@ -46,9 +46,9 @@ void DecodeMimeData(const QMimeData* pData, std::vector<CAudioAsset*>& outItems)
 {
 	const CDragDropData* dragDropData = CDragDropData::FromMimeData(pData);
 
-	if (dragDropData->HasCustomData("Items"))
+	if (dragDropData->HasCustomData("AudioLibraryItems"))
 	{
-		QByteArray const byteArray = dragDropData->GetCustomData("Items");
+		QByteArray const byteArray = dragDropData->GetCustomData("AudioLibraryItems");
 		QDataStream stream(byteArray);
 
 		while (!stream.atEnd())
@@ -344,7 +344,7 @@ Qt::DropActions CSystemControlsModel::supportedDropActions() const
 QStringList CSystemControlsModel::mimeTypes() const
 {
 	QStringList result;
-	result << CDragDropData::GetMimeFormatForType("Items");
+	result << CDragDropData::GetMimeFormatForType("AudioLibraryItems");
 	result << CMiddlewareDataModel::ms_szMimeType;
 	return result;
 }
