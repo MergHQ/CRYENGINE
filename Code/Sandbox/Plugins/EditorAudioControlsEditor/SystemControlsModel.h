@@ -2,15 +2,8 @@
 
 #pragma once
 
-#include <QAbstractItemModel>
 #include <ProxyModels/DeepFilterProxyModel.h>
-
-enum EDataRole
-{
-	eDataRole_ItemType = Qt::UserRole + 1,
-	eDataRole_Modified,
-	eDataRole_InternalPointer
-};
+#include <ACETypes.h>
 
 namespace ACE
 {
@@ -19,12 +12,18 @@ class CAudioLibrary;
 class CAudioFolder;
 class CAudioAsset;
 class CAudioAssetsManager;
-enum EItemType;
+
+enum class EDataRole
+{
+	ItemType = Qt::UserRole + 1,
+	Modified,
+	InternalPointer
+};
 
 namespace AudioModelUtils
 {
 void         GetAssetsFromIndices(QModelIndexList const& list, std::vector<CAudioLibrary*>& outLibraries, std::vector<CAudioFolder*>& outFolders, std::vector<CAudioControl*>& outControls);
-CAudioAsset* GetAssetFromIndex(const QModelIndex& index);
+CAudioAsset* GetAssetFromIndex(QModelIndex const& index);
 } // namespace AudioModelUtils
 
 class CSystemControlsModel : public QAbstractItemModel
@@ -54,27 +53,6 @@ protected:
 	void ConnectToSystem();
 	void DisconnectFromSystem();
 	CAudioAssetsManager* m_pAssetsManager = nullptr;
-};
-
-class CSystemControlsFilterProxyModel final : public QDeepFilterProxyModel
-{
-public:
-
-	CSystemControlsFilterProxyModel(QObject* parent);
-
-	// QDeepFilterProxyModel
-	virtual bool     rowMatchesFilter(int source_row, QModelIndex const& source_parent) const override;
-	// ~QDeepFilterProxyModel
-
-	// QSortFilterProxyModel
-	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
-	// ~QSortFilterProxyModel
-
-	void EnableControl(bool const bEnabled, EItemType const type);
-
-private:
-
-	uint m_validControlsMask = std::numeric_limits<uint>::max();
 };
 
 class CAudioLibraryModel : public QAbstractItemModel
@@ -110,5 +88,26 @@ protected:
 
 	CAudioAssetsManager* m_pAssetsManager = nullptr;
 	CAudioLibrary*       m_pLibrary = nullptr;
+};
+
+class CSystemControlsFilterProxyModel final : public QDeepFilterProxyModel
+{
+public:
+
+	CSystemControlsFilterProxyModel(QObject* parent);
+
+	// QDeepFilterProxyModel
+	virtual bool rowMatchesFilter(int source_row, QModelIndex const& source_parent) const override;
+	// ~QDeepFilterProxyModel
+
+	// QSortFilterProxyModel
+	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
+	// ~QSortFilterProxyModel
+
+	void EnableControl(bool const bEnabled, EItemType const type);
+
+private:
+
+	uint m_validControlsMask = std::numeric_limits<uint>::max();
 };
 } // namespace ACE

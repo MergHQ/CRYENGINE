@@ -3,17 +3,18 @@
 #include "StdAfx.h"
 #include "PropertiesWidget.h"
 
-#include <QVBoxLayout>
-#include <QLabel>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include "AudioAssetsManager.h"
+#include "ConnectionsWidget.h"
+#include "SystemControlsEditorIcons.h"
+
 #include <ACETypes.h>
 #include <IEditor.h>
 #include <QtUtil.h>
-#include <QString>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 
-#include "SystemControlsEditorIcons.h"
-#include "ConnectionsWidget.h"
-#include "AudioAssetsManager.h"
+#include <QLabel>
+#include <QString>
+#include <QVBoxLayout>
 
 using namespace QtUtil;
 
@@ -23,8 +24,8 @@ namespace ACE
 CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 {
-	assert(m_pAssetsManager);
-	setWindowTitle(tr("Inspector Panel"));
+	CRY_ASSERT(m_pAssetsManager);
+
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
 	QVBoxLayout* pMainLayout = new QVBoxLayout(this);
@@ -32,20 +33,17 @@ CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
 
 	m_pPropertyTree = new QPropertyTree();
 	m_pPropertyTree->setSizeToContent(true);
+	pMainLayout->addWidget(m_pPropertyTree);
 
 	m_pUsageHint = std::make_unique<QString>(tr("Select an audio control from the left pane to see its properties!"));
 
 	m_pConnectionsLabel = new QLabel(*m_pUsageHint);
-	m_pConnectionsLabel->setObjectName("ConnectionsTitle");
 	m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 	m_pConnectionsLabel->setWordWrap(true);
-	
-	m_pConnectionList = new CConnectionsWidget();
-	m_pConnectionList->Init();
-
-	pMainLayout->addWidget(m_pPropertyTree);
 	pMainLayout->addWidget(m_pConnectionsLabel);
-	pMainLayout->addWidget(m_pConnectionList);
+	
+	m_pConnectionsWidget = new CConnectionsWidget();
+	pMainLayout->addWidget(m_pConnectionsWidget);
 
 	auto revertFunction = [&]()
 	{
@@ -59,17 +57,8 @@ CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
 	pAssetsManager->signalItemRemoved.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalControlModified.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 
-	Reload();
-
-	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]()
-		{
-			m_bSupressUpdates = true;
-		});
-
-	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]()
-		{
-			m_bSupressUpdates = false;
-		});
+	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_bSupressUpdates = true; });
+	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_bSupressUpdates = false; });
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -86,11 +75,11 @@ CPropertiesWidget::~CPropertiesWidget()
 //////////////////////////////////////////////////////////////////////////
 void CPropertiesWidget::Reload()
 {
-	m_pConnectionList->Reload();
+	m_pConnectionsWidget->Reload();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::SetSelectedControls(const std::vector<CAudioControl*>& selectedControls)
+void CPropertiesWidget::SetSelectedControls(std::vector<CAudioControl*> const& selectedControls)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
@@ -108,24 +97,25 @@ void CPropertiesWidget::SetSelectedControls(const std::vector<CAudioControl*>& s
 	if (selectedControls.size() == 1)
 	{
 		CAudioControl* pControl = selectedControls[0];
-		if (pControl->GetType() != eItemType_Switch)
+
+		if (pControl->GetType() != EItemType::Switch)
 		{
-			m_pConnectionList->SetControl(pControl);
-			m_pConnectionList->setHidden(false);
+			m_pConnectionsWidget->SetControl(pControl);
+			m_pConnectionsWidget->setHidden(false);
 			m_pConnectionsLabel->setAlignment(Qt::AlignLeft);
 			m_pConnectionsLabel->setText(tr("Connections"));
 		}
 		else
 		{
-			m_pConnectionList->setHidden(true);
+			m_pConnectionsWidget->setHidden(true);
 			m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
-			m_pConnectionsLabel->setText(tr("Select a switch state to see its properties!"));
+			m_pConnectionsLabel->setText(tr("Select a switch state to see its connections!"));
 		}
 	}
 	else
 	{
-		m_pConnectionList->setHidden(true);
-		m_pConnectionList->SetControl(nullptr);
+		m_pConnectionsWidget->setHidden(true);
+		m_pConnectionsWidget->SetControl(nullptr);
 		m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 		m_pConnectionsLabel->setText(*m_pUsageHint);
 	}
@@ -134,12 +124,12 @@ void CPropertiesWidget::SetSelectedControls(const std::vector<CAudioControl*>& s
 //////////////////////////////////////////////////////////////////////////
 void CPropertiesWidget::BackupTreeViewStates()
 {
-	m_pConnectionList->BackupTreeViewStates();
+	m_pConnectionsWidget->BackupTreeViewStates();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CPropertiesWidget::RestoreTreeViewStates()
 {
-	m_pConnectionList->RestoreTreeViewStates();
+	m_pConnectionsWidget->RestoreTreeViewStates();
 }
 } // namespace ACE

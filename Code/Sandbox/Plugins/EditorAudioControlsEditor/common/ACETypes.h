@@ -4,41 +4,41 @@
 
 #include <vector>
 #include <memory>
+#include <CryCore/CryEnumMacro.h>
 
 namespace ACE
 {
-
-enum EItemType
+enum class EItemType
 {
-	eItemType_Invalid = -1,
+	Invalid = -1,
 
 	// controls
-	eItemType_Trigger,
-	eItemType_Parameter,
-	eItemType_Switch,
-	eItemType_State,
-	eItemType_Environment,
-	eItemType_Preload,
+	Trigger,
+	Parameter,
+	Switch,
+	State,
+	Environment,
+	Preload,
 
-	eItemType_Folder,
-	eItemType_Library,
-	eItemType_NumTypes
+	Folder,
+	Library,
+	NumTypes
 };
 
-typedef unsigned int ItemType;
+using ItemType = unsigned int;
 static const ItemType AUDIO_SYSTEM_INVALID_TYPE = 0;
 
-typedef unsigned int CID; // TOdo: do we need this?
+using CID = unsigned int; // TOdo: do we need this?
 static const CID ACE_INVALID_ID = 0;
 
 class IAudioConnection;
-typedef std::shared_ptr<IAudioConnection> ConnectionPtr;
+using ConnectionPtr = std::shared_ptr<IAudioConnection>;
 
 // available levels where the controls can be stored
 struct SScopeInfo
 {
-	SScopeInfo() {}
-	SScopeInfo(const string& _name, bool _bOnlyLocal) : name(_name), bOnlyLocal(_bOnlyLocal) {}
+	SScopeInfo() = default;
+	SScopeInfo(string const& name_, bool const bOnlyLocal_) : name(name_), bOnlyLocal(bOnlyLocal_) {}
 	string name;
 
 	// if true, there is a level in the game audio
@@ -48,13 +48,13 @@ struct SScopeInfo
 };
 
 typedef uint32                  Scope;
-typedef std::vector<SScopeInfo> ScopeInfoList;
+using ScopeInfoList = std::vector<SScopeInfo>;
 
-enum EErrorCode
+enum class EErrorCode
 {
-	eErrorCode_NoError                  = 0,
-	eErrorCode_UnkownPlatform           = BIT(0),
-	eErrorCode_NonMatchedActivityRadius = BIT(1),
+	NoError,
+	UnkownPlatform           = BIT(0),
+	NonMatchedActivityRadius = BIT(1),
 };
-
-}
+CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
+} // namespace ACE

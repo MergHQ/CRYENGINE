@@ -1,28 +1,15 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "AudioAssets.h"
 #include "ResourceSelectorModel.h"
+
+#include "AudioAssets.h"
 #include "SystemControlsEditorIcons.h"
 
 #include <QtUtil.h>
 
 namespace ACE
 {
-//////////////////////////////////////////////////////////////////////////
-bool CResourceFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
-{
-	uint eLeftType = sourceModel()->data(left, eDataRole_ItemType).toUInt();
-	uint eRightType = sourceModel()->data(right, eDataRole_ItemType).toUInt();
-
-	if (eLeftType != eRightType)
-	{
-		return eLeftType > eRightType;
-	}
-
-	return left.data(Qt::DisplayRole) > right.data(Qt::DisplayRole);
-}
-
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceControlModel::data(QModelIndex const& index, int role) const
 {
@@ -37,14 +24,14 @@ QVariant CResourceControlModel::data(QModelIndex const& index, int role) const
 			break;
 
 		case Qt::DecorationRole:
-			return GetItemTypeIcon(EItemType::eItemType_Library);
+			return GetItemTypeIcon(EItemType::Library);
 			break;
 
-		case EDataRole::eDataRole_ItemType:
-			return EItemType::eItemType_Library;
+		case static_cast<int>(EDataRole::ItemType):
+			return static_cast<int>(EItemType::Library);
 			break;
 
-		case EDataRole::eDataRole_InternalPointer:
+		case static_cast<int>(EDataRole::InternalPointer):
 			return reinterpret_cast<intptr_t>(pLibrary);
 			break;
 		}
@@ -110,11 +97,11 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 			return GetItemTypeIcon(itemType);
 			break;
 
-		case EDataRole::eDataRole_ItemType:
-			return itemType;
+		case static_cast<int>(EDataRole::ItemType):
+			return static_cast<int>(itemType);
 			break;
 
-		case EDataRole::eDataRole_InternalPointer:
+		case static_cast<int>(EDataRole::InternalPointer):
 			return reinterpret_cast<intptr_t>(pItem);
 			break;
 		}

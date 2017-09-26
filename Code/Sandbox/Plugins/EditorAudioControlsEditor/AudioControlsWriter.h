@@ -2,15 +2,13 @@
 
 #pragma once
 
-#include <CryString/CryString.h>
-#include <IAudioConnection.h>
 #include "AudioAssets.h"
-#include <CrySystem/XML/IXml.h>
-#include <QModelIndex>
-#include <CrySystem/ISystem.h>
-#include <ACETypes.h>
 
-class QStandardItemModel;
+#include <ACETypes.h>
+#include <IAudioConnection.h>
+#include <CryString/CryString.h>
+#include <CrySystem/XML/IXml.h>
+#include <CrySystem/ISystem.h>
 
 namespace ACE
 {
@@ -29,25 +27,25 @@ struct SLibraryScope
 		pNodes[4] = GetISystem()->CreateXmlNode("AudioPreloads");
 	}
 
-	XmlNodeRef GetXmlNode(const EItemType type) const
+	XmlNodeRef GetXmlNode(EItemType const type) const
 	{
 		switch (type)
 		{
-		case EItemType::eItemType_Trigger:
+		case EItemType::Trigger:
 			return pNodes[0];
-		case EItemType::eItemType_Parameter:
+		case EItemType::Parameter:
 			return pNodes[1];
-		case EItemType::eItemType_Switch:
+		case EItemType::Switch:
 			return pNodes[2];
-		case EItemType::eItemType_Environment:
+		case EItemType::Environment:
 			return pNodes[3];
-		case EItemType::eItemType_Preload:
+		case EItemType::Preload:
 			return pNodes[4];
 		}
 		return nullptr;
 	}
 
-	XmlNodeRef pNodes[5]; // Trigger, RTPC, Switch, Environment, Preloads
+	XmlNodeRef pNodes[5]; // Trigger, Parameter, Switch, Environment, Preloads
 	bool       bDirty;
 };
 
@@ -56,9 +54,11 @@ typedef std::map<Scope, SLibraryScope> LibraryStorage;
 class CAudioControlsWriter
 {
 public:
+
 	CAudioControlsWriter(CAudioAssetsManager* pAssetsManager, IAudioSystemEditor* pAudioSystemImpl, std::set<string>& previousLibraryPaths);
 
 private:
+
 	void WriteLibrary(CAudioLibrary& library);
 	void WriteItem(CAudioAsset* pItem, const string& path, LibraryStorage& library);
 	void GetScopes(CAudioAsset const* const pItem, std::unordered_set<Scope>& scopes);
@@ -66,16 +66,16 @@ private:
 	void WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl* pControl, const int platformIndex = -1);
 	void WriteEditorData(CAudioAsset* pLibrary, XmlNodeRef pParentNode) const;
 
-	void CheckOutFile(const string& filepath);
-	void DeleteLibraryFile(const string& filepath);
+	void CheckOutFile(string const& filepath);
+	void DeleteLibraryFile(string const& filepath);
 
 	CAudioAssetsManager* m_pAssetsManager;
 	IAudioSystemEditor*  m_pAudioSystemImpl;
 
 	std::set<string>     m_foundLibraryPaths;
 
-	static const string  ms_controlsPath;
-	static const string  ms_levelsFolder;
-	static const uint    ms_currentFileVersion;
+	static string const  s_controlsPath;
+	static string const  s_levelsFolder;
+	static uint const    s_currentFileVersion;
 };
-}
+} // namespace ACE

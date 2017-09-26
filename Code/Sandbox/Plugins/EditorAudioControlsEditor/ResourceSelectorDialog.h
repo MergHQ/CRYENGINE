@@ -17,7 +17,6 @@ namespace ACE
 class CAudioAssetsManager;
 class CResourceControlModel;
 class CResourceLibraryModel;
-class CResourceFilterProxyModel;
 
 class CResourceSelectorDialog final : public CEditorDialog
 {
@@ -62,11 +61,11 @@ private:
 
 	static string                       s_previousControlName;
 	static EItemType                    s_previousControlType;
-	QAdvancedTreeView*                  m_pControlsTree;
+	QAdvancedTreeView*                  m_pTreeView;
 	QDialogButtonBox*                   m_pDialogButtons;
 
 	CAudioAssetsManager*                m_pAssetsManager;
-	CResourceFilterProxyModel*          m_pFilterProxyModel;
+	QDeepFilterProxyModel*              m_pFilterProxyModel;
 	CResourceControlModel*              m_pAssetsModel;
 	CMountingProxyModel*                m_pMountingProxyModel;
 	std::vector<CResourceLibraryModel*> m_libraryModels;

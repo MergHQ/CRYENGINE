@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <CryIcon.h>
 #include "AudioAssets.h"
+#include <CryIcon.h>
 
 namespace ACE
 {
@@ -11,22 +11,22 @@ inline CryIcon GetItemTypeIcon(EItemType const type)
 {
 	switch (type)
 	{
-	case EItemType::eItemType_Trigger:
+	case EItemType::Trigger:
 		return CryIcon(":Icons/Trigger.ico");
-	case EItemType::eItemType_Parameter:
+	case EItemType::Parameter:
 		return CryIcon(":Icons/Parameter.ico");
-	case EItemType::eItemType_Switch:
+	case EItemType::Switch:
 		return CryIcon(":Icons/Switch.ico");
-	case EItemType::eItemType_State:
-		return CryIcon(":Icons/Property.ico");
-	case EItemType::eItemType_Environment:
+	case EItemType::State:
+		return CryIcon(":Icons/State.ico");
+	case EItemType::Environment:
 		return CryIcon(":Icons/Environment.ico");
-	case EItemType::eItemType_Preload:
-		return CryIcon(":Icons/Bank.ico");
-	case EItemType::eItemType_Folder:
-		return CryIcon(":Icons/Folder.ico");
-	case EItemType::eItemType_Library:
-		return CryIcon("icons:common/assets_geomcache.ico");
+	case EItemType::Preload:
+		return CryIcon(":Icons/Preload.ico");
+	case EItemType::Folder:
+		return CryIcon("icons:General/Folder.ico");
+	case EItemType::Library:
+		return CryIcon("icons:General/File.ico");
 	}
 	return CryIcon("icons:Dialogs/dialog-error.ico");
 }

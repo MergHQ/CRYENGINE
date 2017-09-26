@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include <IEditor.h>
 #include <IPlugin.h>
+#include <IEditor.h>
+
 #include "AudioAssetsManager.h"
-#include "SystemControlsModel.h"
+
 #include <IAudioSystemEditor.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CrySandbox/CrySignal.h>
@@ -31,14 +32,14 @@ public:
 	const char*                    GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
 
 	static void                    SaveModels();
-	static void                    ReloadModels(bool bReloadImplementation);
+	static void                    ReloadModels(bool const bReloadImplementation);
 	static void                    ReloadScopes();
 	static CAudioAssetsManager*    GetAssetsManager();
 	static CImplementationManager* GetImplementationManger();
 	static IAudioSystemEditor*     GetAudioSystemEditorImpl();
-	static void                    ExecuteTrigger(const string& sTriggerName);
+	static void                    ExecuteTrigger(string const& sTriggerName);
 	static void                    StopTriggerExecution();
-	static uint                    GetLoadingErrorMask() { return s_loadingErrorMask; }
+	static EErrorCode              GetLoadingErrorMask() { return s_loadingErrorMask; }
 
 	static CCrySignal<void()> signalAboutToLoad;
 	static CCrySignal<void()> signalLoaded;
@@ -57,6 +58,6 @@ private:
 	static CryAudio::ControlId    s_audioTriggerId;
 
 	static CImplementationManager s_implementationManager;
-	static uint                   s_loadingErrorMask;
+	static EErrorCode             s_loadingErrorMask;
 };
 } // namespace ACE

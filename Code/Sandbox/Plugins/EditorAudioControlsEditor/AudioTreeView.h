@@ -6,15 +6,13 @@
 
 namespace ACE
 {
-class CAdvancedTreeView final : public QAdvancedTreeView
+class CAudioTreeView final : public QAdvancedTreeView
 {
 	Q_OBJECT
 
 public:
 
-	CAdvancedTreeView()
-		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::None))
-	{}
+	CAudioTreeView();
 
 	QModelIndexList GetSelectedIndexes() const { return selectedIndexes(); }
 	bool            IsEditing() const;

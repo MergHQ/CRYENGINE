@@ -2,12 +2,13 @@
 
 #include "StdAfx.h"
 #include "AudioAssets.h"
+
 #include "AudioAssetsManager.h"
-#include "IEditor.h"
-#include <IAudioSystemItem.h>
-#include <ACETypes.h>
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
+
+#include <IEditor.h>
+#include <IAudioSystemItem.h>
 #include <CrySerialization/StringList.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <Serialization/Decorators/EditorActionButton.h>
@@ -40,7 +41,20 @@ void CAudioAsset::RemoveChild(CAudioAsset* pChildControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioControl::CAudioControl(const string& controlName, CID id, EItemType type)
+void CAudioAsset::SetModified(bool const bModified, bool const bForce /* = false */)
+{
+	if (m_pParent != nullptr && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || bForce))
+	{
+		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this);
+		m_bModified = bModified;
+		// Note: This need to get changed once undo is working.
+		// Then we can't set the parent to be not modified if it still could contain other modified children.
+		m_pParent->SetModified(bModified, bForce);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+CAudioControl::CAudioControl(string const& controlName, CID const id, EItemType const type)
 	: CAudioAsset(controlName)
 	, m_id(id)
 	, m_type(type)
@@ -56,13 +70,7 @@ CAudioControl::~CAudioControl()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CID CAudioControl::GetId() const
-{
-	return m_id;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControl::SetName(const string& name)
+void CAudioControl::SetName(string const& name)
 {
 	if (name != m_name)
 	{
@@ -73,13 +81,7 @@ void CAudioControl::SetName(const string& name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-Scope CAudioControl::GetScope() const
-{
-	return m_scope;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControl::SetScope(Scope scope)
+void CAudioControl::SetScope(Scope const scope)
 {
 	if (m_scope != scope)
 	{
@@ -90,13 +92,7 @@ void CAudioControl::SetScope(Scope scope)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioControl::IsAutoLoad() const
-{
-	return m_bAutoLoad;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControl::SetAutoLoad(bool bAutoLoad)
+void CAudioControl::SetAutoLoad(bool const bAutoLoad)
 {
 	if (bAutoLoad != m_bAutoLoad)
 	{
@@ -107,13 +103,7 @@ void CAudioControl::SetAutoLoad(bool bAutoLoad)
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CAudioControl::GetConnectionCount()
-{
-	return m_connectedControls.size();
-}
-
-//////////////////////////////////////////////////////////////////////////
-ConnectionPtr CAudioControl::GetConnectionAt(int index)
+ConnectionPtr CAudioControl::GetConnectionAt(int const index) const
 {
 	if (index < m_connectedControls.size())
 	{
@@ -124,11 +114,11 @@ ConnectionPtr CAudioControl::GetConnectionAt(int index)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CAudioControl::GetConnection(CID id)
+ConnectionPtr CAudioControl::GetConnection(CID const id) const
 {
 	for (auto const pConnection : m_connectedControls)
 	{
-		if (pConnection != nullptr && pConnection->GetID() == id)
+		if ((pConnection != nullptr) && (pConnection->GetID() == id))
 		{
 			return pConnection;
 		}
@@ -138,7 +128,7 @@ ConnectionPtr CAudioControl::GetConnection(CID id)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CAudioControl::GetConnection(IAudioSystemItem* pAudioSystemControl)
+ConnectionPtr CAudioControl::GetConnection(IAudioSystemItem* pAudioSystemControl) const
 {
 	return GetConnection(pAudioSystemControl->GetId());
 }
@@ -178,7 +168,7 @@ void CAudioControl::RemoveConnection(ConnectionPtr pConnection)
 {
 	if (pConnection)
 	{
-		auto it = std::find(m_connectedControls.begin(), m_connectedControls.end(), pConnection);
+		auto const it = std::find(m_connectedControls.begin(), m_connectedControls.end(), pConnection);
 
 		if (it != m_connectedControls.end())
 		{
@@ -242,9 +232,9 @@ void CAudioControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 {
 	if (pAudioSystemControl)
 	{
-		const CID id = pAudioSystemControl->GetId();
+		CID const id = pAudioSystemControl->GetId();
 		auto it = m_connectedControls.begin();
-		auto end = m_connectedControls.end();
+		auto const end = m_connectedControls.end();
 
 		for (; it != end; ++it)
 		{
@@ -334,7 +324,7 @@ void CAudioControl::ReloadConnections()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControl::LoadConnectionFromXML(XmlNodeRef xmlNode, int platformIndex)
+void CAudioControl::LoadConnectionFromXML(XmlNodeRef xmlNode, int const platformIndex)
 {
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
@@ -344,7 +334,7 @@ void CAudioControl::LoadConnectionFromXML(XmlNodeRef xmlNode, int platformIndex)
 
 		if (pConnection)
 		{
-			if (GetType() == eItemType_Preload)
+			if (GetType() == EItemType::Preload)
 			{
 				// The connection could already exist but using a different platform
 				ConnectionPtr pPreviousConnection = GetConnection(pConnection->GetID());
@@ -372,12 +362,12 @@ void CAudioControl::LoadConnectionFromXML(XmlNodeRef xmlNode, int platformIndex)
 				AddConnection(pConnection);
 			}
 		}
-		else if (GetType() == eItemType_Preload && platformIndex == -1)
+		else if ((GetType() == EItemType::Preload) && (platformIndex == -1))
 		{
 			// If it's a preload connection from another middleware and the platform
 			// wasn't found (old file format) fall back to adding them to all the platforms
-			const std::vector<dll_string>& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-			const size_t count = platforms.size();
+			std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
+			size_t const count = platforms.size();
 
 			for (size_t i = 0; i < count; ++i)
 			{
@@ -397,7 +387,7 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 	if (ar.openBlock("properties", "+Properties"))
 	{
 		// Name
-		string newName = m_name;
+		string const newName = m_name;
 		ar(newName, "name", "Name");
 
 		// Scope
@@ -410,10 +400,10 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 			scopeList.push_back(scope.name);
 		}
 
-		Serialization::StringListValue selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
+		Serialization::StringListValue const selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
 		Scope newScope = m_scope;
 
-		if (m_type != eItemType_State)
+		if (m_type != EItemType::State)
 		{
 			ar(selectedScope, "scope", "Scope");
 			newScope = CAudioControlsEditorPlugin::GetAssetsManager()->GetScope(scopeList[selectedScope.index()]);
@@ -422,7 +412,7 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 		// Auto Load
 		bool bAutoLoad = m_bAutoLoad;
 
-		if (m_type == eItemType_Preload)
+		if (m_type == EItemType::Preload)
 		{
 			ar(bAutoLoad, "auto_load", "Auto Load");
 		}
@@ -431,7 +421,7 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 		float radius = m_radius;
 		float fadeOutDistance = m_occlusionFadeOutDistance;
 
-		if (m_type == eItemType_Trigger && ar.openBlock("activity_radius", "Activity Radius"))
+		if ((m_type == EItemType::Trigger) && (ar.openBlock("activity_radius", "Activity Radius")))
 		{
 			bool hasPlaceholderConnections = false;
 			IAudioSystemEditor const* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
@@ -444,7 +434,7 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 				{
 					IAudioSystemItem const* const pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
 
-					if (pItem != nullptr && !pItem->IsPlaceholder())
+					if ((pItem != nullptr) && (!pItem->IsPlaceholder()))
 					{
 						radius = std::max(radius, pItem->GetRadius());
 					}
@@ -501,28 +491,7 @@ void CAudioControl::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioControl::IsModified() const
-{
-	if (m_pParent)
-	{
-		return m_pParent->IsModified();
-	}
-
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControl::SetModified(bool const bModified, bool const bForce /* = false */)
-{
-	if (m_pParent != nullptr && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || bForce))
-	{
-		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this);
-		m_pParent->SetModified(bModified, bForce);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControl::SetOcclusionFadeOutDistance(float fadeOutDistance)
+void CAudioControl::SetOcclusionFadeOutDistance(float const fadeOutDistance)
 {
 	if (fadeOutDistance != m_occlusionFadeOutDistance)
 	{
@@ -533,13 +502,13 @@ void CAudioControl::SetOcclusionFadeOutDistance(float fadeOutDistance)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControl::AddRawXMLConnection(XmlNodeRef xmlNode, bool bValid, int platformIndex /*= -1*/)
+void CAudioControl::AddRawXMLConnection(XmlNodeRef xmlNode, bool const bValid, int const platformIndex /*= -1*/)
 {
 	m_connectionNodes[platformIndex].emplace_back(xmlNode, bValid);
 }
 
 //////////////////////////////////////////////////////////////////////////
-XMLNodeList& CAudioControl::GetRawXMLConnections(int platformIndex /*= -1*/)
+XMLNodeList& CAudioControl::GetRawXMLConnections(int const platformIndex /*= -1*/)
 {
 	return m_connectionNodes[platformIndex];
 }
@@ -573,27 +542,6 @@ void CAudioControl::MatchRadiusToAttenuation()
 		}
 
 		SetRadius(radius);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CAudioFolder::IsModified() const
-{
-	if (m_pParent)
-	{
-		return m_pParent->IsModified();
-	}
-
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioFolder::SetModified(bool const bModified, bool const bForce /* = false */)
-{
-	if (m_pParent != nullptr && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || bForce))
-	{
-		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this);
-		m_pParent->SetModified(bModified, bForce);
 	}
 }
 

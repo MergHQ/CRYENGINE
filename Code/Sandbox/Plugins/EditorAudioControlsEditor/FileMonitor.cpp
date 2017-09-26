@@ -11,7 +11,7 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CFileMonitor::CFileMonitor(CAudioControlsEditorWindow* window, int delay)
+CFileMonitor::CFileMonitor(CAudioControlsEditorWindow* const window, int const delay)
 	: m_window(window)
 	, m_delay(delay)
 {
@@ -40,7 +40,7 @@ void CFileMonitor::Disable()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileMonitorSystem::CFileMonitorSystem(CAudioControlsEditorWindow* window, int delay)
+CFileMonitorSystem::CFileMonitorSystem(CAudioControlsEditorWindow* const window, int const delay)
 	: CFileMonitor(window, delay)
 	, m_assetFolder (Utils::GetAssetFolder())
 	, m_delayTimer(new QTimer())
@@ -69,7 +69,7 @@ void CFileMonitorSystem::ReloadData()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileMonitorMiddleware::CFileMonitorMiddleware(CAudioControlsEditorWindow* window, int delay)
+CFileMonitorMiddleware::CFileMonitorMiddleware(CAudioControlsEditorWindow* const window, int const delay)
 	: CFileMonitor(window, delay)
 {
 	Enable();

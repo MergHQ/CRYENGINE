@@ -5,17 +5,12 @@
 #include <QAbstractItemModel>
 #include <ACETypes.h>
 
-class QVBoxLayout;
-class QFrame;
-class QPropertyTree;
-class QTreeView;
-
 namespace ACE
 {
 class CAudioControl;
 class IAudioSystemEditor;
 
-class CConnectionModel : public QAbstractItemModel
+class CConnectionModel final: public QAbstractItemModel
 {
 public:
 
@@ -24,16 +19,16 @@ public:
 
 	void Init(CAudioControl* pControl);
 
-	enum EConnectionModelRoles
+	enum class EConnectionModelRoles
 	{
-		eConnectionModelRoles_Id = Qt::UserRole + 1,
+		Id = Qt::UserRole + 1,
 	};
 
-	enum EConnectionModelColumns
+	enum class EConnectionModelColumns
 	{
-		eConnectionModelColumns_Name = 0,
-		eConnectionModelColumns_Path,
-		eConnectionModelColumns_Size,
+		Name = 0,
+		Path,
+		Size,
 	};
 
 	// QAbstractTableModel

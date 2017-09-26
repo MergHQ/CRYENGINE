@@ -4,39 +4,48 @@
 
 #include <QWidget>
 
-class QVBoxLayout;
 class QFrame;
 class QPropertyTree;
+class QDeepFilterProxyModel;
 
 namespace ACE
 {
 class CAudioControl;
 class CConnectionModel;
-class CAdvancedTreeView;
+class CAudioTreeView;
 
-class CConnectionsWidget : public QWidget
+class CConnectionsWidget final : public QWidget
 {
+	Q_OBJECT
+
 public:
 
 	CConnectionsWidget(QWidget* pParent = nullptr);
 	virtual ~CConnectionsWidget() override;
 
-	void Init();
 	void SetControl(CAudioControl* pControl);
 	void Reload();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
 
+private slots:
+
+	void OnContextMenu(QPoint const& pos);
+
 private:
 
+	// QObject
 	bool eventFilter(QObject* pObject, QEvent* pEvent) override;
+	// ~QObject
+
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
 
-	CAudioControl*          m_pControl;
-	QFrame*                 m_pConnectionPropertiesFrame;
-	QPropertyTree*          m_pConnectionProperties;
-	CConnectionModel*       m_pConnectionModel;
-	CAdvancedTreeView*      m_pConnectionsView;
+	CAudioControl*         m_pControl;
+	QFrame*                m_pConnectionPropertiesFrame;
+	QPropertyTree*         m_pConnectionProperties;
+	QDeepFilterProxyModel* m_pFilterProxyModel;
+	CConnectionModel*      m_pConnectionModel;
+	CAudioTreeView*        m_pTreeView;
 };
 } // namespace ACE

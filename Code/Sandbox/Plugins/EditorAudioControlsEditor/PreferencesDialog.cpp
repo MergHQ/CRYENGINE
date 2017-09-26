@@ -38,13 +38,15 @@ CPreferencesDialog::CPreferencesDialog(QWidget* pParent)
 
 			QGridLayout* pLayout = new QGridLayout(this);
 
-			pLayout->addWidget(new QLabel(tr("Audio Middleware") + ":"), 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
-			pLayout->addWidget(new QLabel(QtUtil::ToQString(pAudioSystem->GetName())), 0, 1, Qt::AlignLeft | Qt::AlignVCenter);
+			Qt::Alignment const labelAlignment = static_cast<Qt::Alignment>(Qt::AlignLeft | Qt::AlignVCenter);
 
-			pLayout->addWidget(new QLabel(tr("Sound Banks Path") + ":"), 1, 0, Qt::AlignLeft | Qt::AlignVCenter);
+			pLayout->addWidget(new QLabel(tr("Audio Middleware") + ":"), 0, 0, labelAlignment);
+			pLayout->addWidget(new QLabel(QtUtil::ToQString(pAudioSystem->GetName())), 0, 1, labelAlignment);
+
+			pLayout->addWidget(new QLabel(tr("Sound Banks Path") + ":"), 1, 0, labelAlignment);
 			pLayout->addWidget(new QLabel(pSettings->GetSoundBanksPath()), 1, 1);
 
-			pLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
+			pLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, labelAlignment);
 
 			QHBoxLayout* pProjectPathLayout = new QHBoxLayout(this);
 			m_projectPath = pSettings->GetProjectPath();
