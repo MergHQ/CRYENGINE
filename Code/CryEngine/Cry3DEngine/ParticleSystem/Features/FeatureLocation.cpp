@@ -462,13 +462,6 @@ class CFeatureLocationGeometry : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureLocationGeometry()
-		: m_offset(0.0f)
-		, m_velocity(0.0f)
-		, m_source(EGeometrySource::Render)
-		, m_location(EGeometryLocation::Surface)
-		, m_orientToNormal(false) {}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->MainPreUpdate.add(this);
@@ -482,11 +475,12 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_source, "Source", "Source");
-		ar(m_location, "Location", "Location");
-		ar(m_offset, "Offset", "Offset");
-		ar(m_velocity, "Velocity", "Velocity");
-		ar(m_orientToNormal, "OrientParticles", "Orient Particles");
+		SERIALIZE_VAR(ar, m_source);
+		SERIALIZE_VAR(ar, m_location);
+		SERIALIZE_VAR(ar, m_offset);
+		SERIALIZE_VAR(ar, m_velocity);
+		SERIALIZE_VAR(ar, m_orientToNormal);
+		SERIALIZE_VAR(ar, m_augmentLocation);
 	}
 
 	virtual void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
@@ -508,6 +502,42 @@ public:
 		}
 	}
 
+	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
+	{
+		if (!context.m_runtime.GetEmitter())
+			return;
+
+		GeomRef emitterGeometry = context.m_runtime.GetEmitter()->GetEmitterGeometry();
+		CParticleComponent* pParentComponent = context.m_runtime.GetComponent()->GetParentComponent();
+		if (pParentComponent)
+		{
+			if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
+				emitterGeometry.Set(pMesh);
+		}
+		const TIStream<IMeshObj*> parentMeshes = context.m_parentContainer.GetTIStream<IMeshObj*>(EPDT_MeshGeometry, emitterGeometry.m_pMeshObj);
+		const TIStream<IPhysicalEntity*> parentPhysics = context.m_parentContainer.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+
+		uint numInstances = context.m_runtime.GetNumInstances();
+		for (uint i = 0; i < numInstances; ++i)
+		{
+			if (pParentComponent)
+			{
+				TParticleId parentId = context.m_runtime.GetInstance(i).m_parentId;
+				if (IMeshObj* mesh = parentMeshes.Load(parentId))
+					emitterGeometry.Set(mesh);
+				if (m_source == EGeometrySource::Physics)
+				{
+					if (IPhysicalEntity* pPhysics = parentPhysics.Load(parentId))
+						emitterGeometry.Set(pPhysics);
+				}
+			}
+			float extent = emitterGeometry.GetExtent((EGeomType)m_source, (EGeomForm)m_location);
+			for (int dim = (int)m_location; dim > 0; --dim)
+				extent *= scales[i];
+			extents[i] += extent;
+		}
+	}
+
 	virtual void InitParticles(const SUpdateContext& context) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
@@ -515,62 +545,6 @@ public:
 		const float EPSILON = 1.0f / 2048.0f;
 		const bool useVelocity = abs(m_velocity.GetBaseValue()) > EPSILON;
 
-		if (useVelocity)
-			SampleGeometry<true>(context);
-		else
-			SampleGeometry<false>(context);
-	}
-
-	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) override
-	{
-		if (CParticleEmitter* pEmitter = context.m_runtime.GetEmitter())
-		{
-			GeomRef emitterGeometry = pEmitter->GetEmitterGeometry();
-			bool hasParentParticles = false;
-			if (CParticleComponent* pParentComponent = context.m_runtime.GetComponent()->GetParentComponent())
-			{
-				hasParentParticles = true;
-				if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
-					emitterGeometry.Set(pMesh);
-			}
-			const TIStream<IMeshObj*> parentMeshes = context.m_parentContainer.GetTIStream<IMeshObj*>(EPDT_MeshGeometry, emitterGeometry.m_pMeshObj);
-			const TIStream<IPhysicalEntity*> parentPhysics = context.m_parentContainer.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
-
-			uint numInstances = context.m_runtime.GetNumInstances();
-			for (uint i = 0; i < numInstances; ++i)
-			{
-				if (hasParentParticles)
-				{
-					TParticleId parentId = context.m_runtime.GetInstance(i).m_parentId;
-					if (IMeshObj* mesh = parentMeshes.Load(parentId))
-						emitterGeometry.Set(mesh);
-					if (m_source == EGeometrySource::Physics)
-					{
-						if (IPhysicalEntity* pPhysics = parentPhysics.Load(parentId))
-							emitterGeometry.Set(pPhysics);
-					}
-				}
-				float extent = emitterGeometry.GetExtent((EGeomType)m_source, (EGeomForm)m_location);
-				for (int dim = (int)m_location; dim > 0; --dim)
-					extent *= scales[i];
-				extents[i] += extent;
-			}
-		}
-	}
-
-private:
-	template<const bool UseVelocity>
-	ILINE void SampleGeometry(const SUpdateContext& context)
-	{
-		if (m_orientToNormal)
-			SampleGeometry<UseVelocity, true>(context);
-		else
-			SampleGeometry<UseVelocity, false>(context);
-	}
-
-	template<const bool UseVelocity, const bool OrientToNormal>
-	void SampleGeometry(const SUpdateContext& context)
-	{
 		const CParticleEmitter* pEmitter = context.m_runtime.GetEmitter();
 		const CParticleComponent* pParentComponent = context.m_runtime.GetComponent()->GetParentComponent();
 
@@ -589,6 +563,7 @@ private:
 		const EGeomType geomType = (EGeomType)m_source;
 		const EGeomForm geomForm = (EGeomForm)m_location;
 		QuatTS geomLocation = pEmitter->GetEmitterGeometryLocation();
+		const QuatTS emitterLocation = pEmitter->GetLocation();
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
@@ -676,6 +651,11 @@ private:
 			if (!pParentComponent)
 			{
 				randPositionNormal = randomPoints[particleId - spawnRange.m_begin];
+				if (m_augmentLocation)
+				{
+					Vec3 wPosition = positions.Load(particleId);
+					randPositionNormal.vPos += wPosition - emitterLocation.t;
+				}
 			}
 			else
 			{
@@ -691,10 +671,10 @@ private:
 			
 			const float offset = offsets.m_stream.SafeLoad(particleId);
 			const Vec3 wPosition = randPositionNormal.vPos + randPositionNormal.vNorm * offset;
-			assert((wPosition - geomLocation.t).len() < 10000);
+			assert((wPosition - geomLocation.t).len() < 100000);
 			positions.Store(particleId, wPosition);
 
-			if (UseVelocity)
+			if (useVelocity)
 			{
 				const float velocityMult = velocityMults.m_stream.SafeLoad(particleId);
 				const Vec3 wVelocity0 = velocities.Load(particleId);
@@ -702,7 +682,7 @@ private:
 				velocities.Store(particleId, wVelocity1);
 			}
 
-			if (OrientToNormal)
+			if (m_orientToNormal)
 			{
 				const Quat wOrient0 = orientations.Load(particleId);
 				const Quat oOrient = Quat::CreateRotationV0V1(randPositionNormal.vNorm, Vec3(0.0f, 0.0f, 1.0f));
@@ -712,11 +692,12 @@ private:
 		}
 	}
 
-	CParamMod<SModParticleSpawnInit, SFloat10> m_offset;
-	CParamMod<SModParticleSpawnInit, SFloat10> m_velocity;
-	EGeometrySource                            m_source;
-	EGeometryLocation                          m_location;
-	bool m_orientToNormal;
+	EGeometrySource                            m_source          = EGeometrySource::Render;
+	EGeometryLocation                          m_location        = EGeometryLocation::Surface;
+	CParamMod<SModParticleSpawnInit, SFloat10> m_offset = 0;
+	CParamMod<SModParticleSpawnInit, SFloat10> m_velocity = 0;
+	bool                                       m_orientToNormal  = true;
+	bool                                       m_augmentLocation = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationGeometry, "Location", "Geometry", colorLocation);

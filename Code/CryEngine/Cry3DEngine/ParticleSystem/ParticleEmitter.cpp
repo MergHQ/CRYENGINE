@@ -131,12 +131,12 @@ void CParticleEmitter::Update()
 	m_time += m_deltaTime;
 	++m_currentSeed;
 
-	m_pEffect->Compile();
-	if (m_active && m_effectEditVersion != m_pEffect->GetEditVersion() + m_emitterEditVersion)
+	m_pEffectOriginal->Compile();
+	if (m_active && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion)
 	{
-		m_attributeInstance.Reset(m_pEffect->GetAttributeTable(), EAttributeScope::PerEmitter);
+		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable(), EAttributeScope::PerEmitter);
 		UpdateRuntimes();
-		m_effectEditVersion = m_pEffect->GetEditVersion() + m_emitterEditVersion;
+		m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
 	}
 
 	if (m_entityOwner)
@@ -525,6 +525,7 @@ void CParticleEmitter::UpdateRuntimes()
 			{
 				// clone component and add features
 				pComponent = new CParticleComponent(*pComponent);
+				pComponent->SetEffect(m_pEffect);
 				for (auto& feature : m_emitterFeatures)
 					pComponent->AddFeature(static_cast<CParticleFeature*>(feature.get()));
 			}

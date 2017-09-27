@@ -35,6 +35,12 @@ public:
 	{
 		return !m_afCumExtents.empty() ? m_afCumExtents.back() : 0.f;
 	}
+	float PartExtent(int nPart) const
+	{
+		return nPart == 0 ?
+			m_afCumExtents[nPart] :
+			m_afCumExtents[nPart] - m_afCumExtents[nPart - 1];
+	}
 
 	void Clear()
 	{
@@ -211,6 +217,34 @@ const typename T::value_type& RandomElem(CRndGen& seed, const T& array)
 	return array[n];
 }
 
+inline void RandomSplit2(CRndGen& seed, float vals[2])
+{
+	vals[0] = seed.GenerateFloat();
+	vals[1] = 1.0f - vals[0];
+}
+
+inline void RandomSplit3(CRndGen& seed, float vals[3])
+{
+	float a = seed.GenerateFloat();
+	float b = seed.GenerateFloat();
+	vals[0] = min(a, b);
+	vals[1] = max(a, b) - vals[0];
+	vals[2] = 1.0f - vals[1] - vals[0];
+}
+
+inline void RandomSplit4(CRndGen& seed, float vals[4])
+{
+	float a = seed.GenerateFloat();
+	float b = seed.GenerateFloat();
+	float c = seed.GenerateFloat();
+	vals[0] = min(min(a, b), c);
+	vals[1] = a == vals[0] ? min(b, c) : b == vals[0] ? min(a, c) : min(a, b);
+	vals[2] = max(max(a, b), c);
+	vals[3] = 1.0f - vals[2];
+	vals[2] -= vals[1];
+	vals[1] -= vals[0];
+}
+
 // Geometric primitive randomizing functions.
 void BoxRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm, Vec3 const& vSize);
 
@@ -328,4 +362,164 @@ inline int TriIndices(int aIndices[3], int nPart, EGeomForm eForm)
 		return 3;
 	}
 }
+
+// Polygon 2D triangulation
+
+template<class T, class Vec = T, size_t offset = 0>
+struct TPolygon2D: Array<const T, size_t>
+{
+	using Array<const T, size_t>::Array;
+
+	TPolygon2D(const std::vector<T>& in)
+		: Array<const T, size_t>(&in[0], in.size()) {}
+
+	const Vec& operator[](size_t idx) const
+	{
+		assert(idx < this->size());
+		const T* pVertex = &this->at(idx);
+		return *(Vec*)((size_t)pVertex + offset);
+	}
+
+	float Area() const
+	{
+		int n = this->size();
+		float area = 0.0f;
+
+		for (int p = n - 1, q = 0; q < n; p = q++)
+			area += (*this)[p].x * (*this)[q].y - (*this)[q].x * (*this)[p].y;
+
+		return area * 0.5f;
+	}
+
+	template<typename Indices>
+	bool Triangulate(Indices& tri_indices)
+	{
+		using S = typename Indices::value_type;
+
+		// reset tri_indices
+		tri_indices.resize(0);
+
+		//C6255: _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead
+		PREFAST_SUPPRESS_WARNING(6255);
+		// allocate and initialize list of vertices in polygon
+		int n = this->size();
+		if (n < 3)
+			return false;
+
+		S* V = (S*)alloca(n * sizeof(S));
+
+		// we want a counter-clockwise polygon in V
+		if (0.0f < Area())
+			for (int v = 0; v < n; v++)
+				V[v] = v;
+		else
+			for (int v = 0; v < n; v++)
+				V[v] = (n - 1) - v;
+
+		int nv = n;
+
+		//  remove nv-2 vertices, creating 1 triangle every time
+		int count = 2 * nv;     // error detection
+
+		for (int m = 0, v = nv - 1; nv > 2; )
+		{
+			// if we loop, it is probably a non-simple polygon
+			if (0 >= (count--))
+				return false;   // ERROR - probably bad polygon!
+
+								// three consecutive vertices in current polygon, <u,v,w>
+			int u = v;
+			if (nv <= u) u = 0;                 // previous
+			v = u + 1;
+			if (nv <= v) v = 0;                 // new v
+			int w = v + 1;
+			if (nv <= w) w = 0;                 // next
+
+			if (Snip(u, v, w, nv, V))
+			{
+				// true names of the vertices
+				PREFAST_SUPPRESS_WARNING(6385);
+				S a = V[u];
+				S b = V[v];
+				S c = V[w];
+
+				// output triangle
+				tri_indices.push_back(a);
+				tri_indices.push_back(b);
+				tri_indices.push_back(c);
+
+				m++;
+
+				// remove v from remaining polygon
+				for (int s = v, t = v + 1; t < nv; s++, t++)
+				{
+					PREFAST_SUPPRESS_WARNING(6386);
+					V[s] = V[t];
+				}
+
+				nv--;
+
+				// reset error detection counter
+				count = 2 * nv;
+			}
+		}
+
+		return true;
+	}
+
+	static bool InsideTriangle(float Ax, float Ay, float Bx, float By, float Cx, float Cy, float Px, float Py)
+	{
+		float ax = Cx - Bx;
+		float ay = Cy - By;
+		float bx = Ax - Cx;
+		float by = Ay - Cy;
+		float cx = Bx - Ax;
+		float cy = By - Ay;
+		float apx = Px - Ax;
+		float apy = Py - Ay;
+		float bpx = Px - Bx;
+		float bpy = Py - By;
+		float cpx = Px - Cx;
+		float cpy = Py - Cy;
+
+		float aCROSSbp = ax * bpy - ay * bpx;
+		float cCROSSap = cx * apy - cy * apx;
+		float bCROSScp = bx * cpy - by * cpx;
+
+		const float fEpsilon = -0.01f;
+		return (aCROSSbp >= fEpsilon) && (bCROSScp >= fEpsilon) && (cCROSSap >= fEpsilon);
+	};
+
+protected:
+
+	template<typename S>
+	bool Snip(int u, int v, int w, int n, const S* V) const
+	{
+		float Ax = (*this)[V[u]].x;
+		float Ay = (*this)[V[u]].y;
+
+		float Bx = (*this)[V[v]].x;
+		float By = (*this)[V[v]].y;
+
+		float Cx = (*this)[V[w]].x;
+		float Cy = (*this)[V[w]].y;
+
+		if ((((Bx - Ax) * (Cy - Ay)) - ((By - Ay) * (Cx - Ax))) < 1e-6f)
+			return false;
+
+		for (int p = 0; p < n; p++)
+		{
+			if ((p == u) || (p == v) || (p == w))
+				continue;
+
+			float Px = (*this)[V[p]].x;
+			float Py = (*this)[V[p]].y;
+
+			if (InsideTriangle(Ax, Ay, Bx, By, Cx, Cy, Px, Py))
+				return false;
+		}
+
+		return true;
+	}
+};
 

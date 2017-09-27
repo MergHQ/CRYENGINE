@@ -286,6 +286,9 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			areaNode->getAttr("Height", height);
 			m_pArea->SetHeight(height);
 
+			bool bClosed = true;
+			areaNode->getAttr("Closed", bClosed);
+
 			size_t const numLocalPoints = s_tmpWorldPoints.size();
 			size_t const numAudioPoints = numLocalPoints + 2; // Adding "Roof" and "Floor"
 			bool* const pbObstructSound = new bool[numAudioPoints];
@@ -296,7 +299,7 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 				pbObstructSound[i] = m_abObstructSound[i];
 			}
 
-			m_pArea->SetPoints(&s_tmpWorldPoints[0], &pbObstructSound[0], numLocalPoints);
+			m_pArea->SetPoints(&s_tmpWorldPoints[0], &pbObstructSound[0], numLocalPoints, bClosed);
 			s_tmpWorldPoints.clear();
 			delete[] pbObstructSound;
 
@@ -575,7 +578,7 @@ void CEntityComponentArea::GameSerialize(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints, float const height)
+void CEntityComponentArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints, bool const bClosed, float const height)
 {
 	m_pArea->SetHeight(height);
 	m_pArea->SetAreaType(ENTITY_AREA_TYPE_SHAPE);
@@ -610,12 +613,12 @@ void CEntityComponentArea::SetPoints(Vec3 const* const pPoints, bool const* cons
 
 		if (!s_tmpWorldPoints.empty())
 		{
-			m_pArea->SetPoints(&s_tmpWorldPoints[0], pSoundObstructionSegments, numLocalPoints);
+			m_pArea->SetPoints(&s_tmpWorldPoints[0], pSoundObstructionSegments, numLocalPoints, bClosed);
 			s_tmpWorldPoints.clear();
 		}
 		else if (pSoundObstructionSegments != nullptr)
 		{
-			m_pArea->SetPoints(nullptr, pSoundObstructionSegments, numLocalPoints);
+			m_pArea->SetPoints(nullptr, pSoundObstructionSegments, numLocalPoints, bClosed);
 		}
 	}
 }
