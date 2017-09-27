@@ -245,6 +245,3 @@ void CEntityAIListenerComponent::UpdateChange()
 	gEnv->pAISystem->GetAuditionMap()->ListenerChanged(m_registeredEntityId, m_params, m_changeHintFlags);
 	m_changeHintFlags = Perception::ListenerParamsChangeOptions::Value();
 }
-
-//TODO: Register component when it is finished
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAIListenerComponent::Register)

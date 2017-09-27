@@ -72,6 +72,9 @@ namespace NavigationSystemSchematyc
 	
 	void Register(Schematyc::IEnvRegistrar& registrar, Schematyc::CEnvRegistrationScope& parentScope)
 	{
+		//Register Components
+		CEntityAINavigationComponent::Register(registrar);
+
 		const CryGUID NavigationSystemGUID = "ad6ac254-13b8-4a79-827c-cd6a5a8e89da"_cry_guid;
 
 		parentScope.Register(SCHEMATYC_MAKE_ENV_MODULE(NavigationSystemGUID, "Navigation"));

@@ -589,5 +589,3 @@ Vec3 CEntityAINavigationComponent::GetVelocity() const
 	}
 	return velocity;
 }
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAINavigationComponent::Register)
