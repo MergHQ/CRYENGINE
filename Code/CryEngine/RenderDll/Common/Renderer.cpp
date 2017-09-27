@@ -1978,8 +1978,6 @@ bool CRenderer::EF_UpdateDLight(SRenderLight* dl)
 		dl->m_Color = dl->m_BaseColor;
 	}
 
-	dl->ComputeEffectiveRadius();
-
 	/*if(IsHDRModeEnabled() && !(dl->m_Flags&(DLF_SUN|DLF_POST_3D_RENDERER)))
 	   {
 	   I3DEngine *p3DEngine = (I3DEngine *)gEnv->p3DEngine;		assert(p3DEngine);
