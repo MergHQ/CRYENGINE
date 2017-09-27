@@ -1751,9 +1751,7 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 					}
 					else if (lightType == TILEDLIGHT_TYPE_REGULAR_POINTFACE)
 					{
-						float3 dir = abs( vLight );
-						uint cubeFace = dir.x > dir.y ? (dir.x > dir.z ? (vLight.x < 0 ? 0 : 1) : (vLight.z < 0 ? 4 : 5)) :
-																						(dir.y > dir.z ? (vLight.y < 0 ? 2 : 3) : (vLight.z < 0 ? 4 : 5));
+						uint cubeFace = selectCubeFace(vLight);
 
 						if (light.resIndex != cubeFace)
 							flag |= SkipShading;
