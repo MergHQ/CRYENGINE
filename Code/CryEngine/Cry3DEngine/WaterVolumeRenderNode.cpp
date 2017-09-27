@@ -11,191 +11,6 @@
 DECLARE_JOB("CWaterVolume_Render", TCWaterVolume_Render, CWaterVolumeRenderNode::Render_JobEntry);
 
 //////////////////////////////////////////////////////////////////////////
-// private triangulation code
-namespace WaterVolumeRenderNodeUtils
-{
-template<typename T>
-size_t PosOffset();
-
-template<>
-size_t PosOffset<Vec3>()
-{
-	return 0;
-}
-
-template<>
-size_t PosOffset<SVF_P3F_C4B_T2F>()
-{
-	return offsetof(SVF_P3F_C4B_T2F, xyz);
-}
-
-template<typename T>
-struct VertexAccess
-{
-	VertexAccess(const T* pVertices, size_t numVertices)
-		: m_pVertices(pVertices)
-		, m_numVertices(numVertices)
-	{
-	}
-
-	const Vec3& operator[](size_t idx) const
-	{
-		assert(idx < m_numVertices);
-		const T* pVertex = &m_pVertices[idx];
-		return *(Vec3*) ((size_t) pVertex + PosOffset<T>());
-	}
-
-	const size_t GetNumVertices() const
-	{
-		return m_numVertices;
-	}
-
-private:
-	const T* m_pVertices;
-	size_t   m_numVertices;
-};
-
-template<typename T>
-float Area(const VertexAccess<T>& contour)
-{
-	int n = contour.GetNumVertices();
-	float area = 0.0f;
-
-	for (int p = n - 1, q = 0; q < n; p = q++)
-		area += contour[p].x * contour[q].y - contour[q].x * contour[p].y;
-
-	return area * 0.5f;
-}
-
-bool InsideTriangle(float Ax, float Ay, float Bx, float By, float Cx, float Cy, float Px, float Py)
-{
-	float ax = Cx - Bx;
-	float ay = Cy - By;
-	float bx = Ax - Cx;
-	float by = Ay - Cy;
-	float cx = Bx - Ax;
-	float cy = By - Ay;
-	float apx = Px - Ax;
-	float apy = Py - Ay;
-	float bpx = Px - Bx;
-	float bpy = Py - By;
-	float cpx = Px - Cx;
-	float cpy = Py - Cy;
-
-	float aCROSSbp = ax * bpy - ay * bpx;
-	float cCROSSap = cx * apy - cy * apx;
-	float bCROSScp = bx * cpy - by * cpx;
-
-	const float fEpsilon = -0.01f;
-	return (aCROSSbp >= fEpsilon) && (bCROSScp >= fEpsilon) && (cCROSSap >= fEpsilon);
-};
-
-template<typename T, typename S>
-bool Snip(const VertexAccess<T>& contour, int u, int v, int w, int n, const S* V)
-{
-	float Ax = contour[V[u]].x;
-	float Ay = contour[V[u]].y;
-
-	float Bx = contour[V[v]].x;
-	float By = contour[V[v]].y;
-
-	float Cx = contour[V[w]].x;
-	float Cy = contour[V[w]].y;
-
-	if ((((Bx - Ax) * (Cy - Ay)) - ((By - Ay) * (Cx - Ax))) < 1e-6f)
-		return false;
-
-	for (int p = 0; p < n; p++)
-	{
-		if ((p == u) || (p == v) || (p == w))
-			continue;
-
-		float Px = contour[V[p]].x;
-		float Py = contour[V[p]].y;
-
-		if (WaterVolumeRenderNodeUtils::InsideTriangle(Ax, Ay, Bx, By, Cx, Cy, Px, Py))
-			return false;
-	}
-
-	return true;
-}
-
-template<typename T, typename S>
-bool Triangulate(const VertexAccess<T>& contour, std::vector<S>& result)
-{
-	// reset result
-	result.resize(0);
-
-	//C6255: _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead
-	PREFAST_SUPPRESS_WARNING(6255)
-	// allocate and initialize list of vertices in polygon
-	int n = contour.GetNumVertices();
-	if (n < 3)
-		return false;
-
-	S* V = (S*) alloca(n * sizeof(S));
-
-	// we want a counter-clockwise polygon in V
-	if (0.0f < Area(contour))
-		for (int v = 0; v < n; v++)
-			V[v] = v;
-	else
-		for (int v = 0; v < n; v++)
-			V[v] = (n - 1) - v;
-
-	int nv = n;
-
-	//  remove nv-2 vertices, creating 1 triangle every time
-	int count = 2 * nv;     // error detection
-
-	for (int m = 0, v = nv - 1; nv > 2; )
-	{
-		// if we loop, it is probably a non-simple polygon
-		if (0 >= (count--))
-			return false;   // ERROR - probably bad polygon!
-
-		// three consecutive vertices in current polygon, <u,v,w>
-		int u = v;
-		if (nv <= u) u = 0;                 // previous
-		v = u + 1;
-		if (nv <= v) v = 0;                 // new v
-		int w = v + 1;
-		if (nv <= w) w = 0;                 // next
-
-		if (Snip(contour, u, v, w, nv, V))
-		{
-			// true names of the vertices
-			PREFAST_SUPPRESS_WARNING(6385)
-			S a = V[u];
-			S b = V[v];
-			S c = V[w];
-
-			// output triangle
-			result.push_back(a);
-			result.push_back(b);
-			result.push_back(c);
-
-			m++;
-
-			// remove v from remaining polygon
-			for (int s = v, t = v + 1; t < nv; s++, t++)
-			{
-				PREFAST_SUPPRESS_WARNING(6386)
-				V[s] = V[t];
-			}
-
-			nv--;
-
-			// reset error detection counter
-			count = 2 * nv;
-		}
-	}
-
-	return true;
-}
-}
-
-//////////////////////////////////////////////////////////////////////////
 // helpers
 
 inline static Vec3 MapVertexToFogPlane(const Vec3& v, const Plane& p)
@@ -431,7 +246,7 @@ void CWaterVolumeRenderNode::CreateArea(uint64 volumeID, const Vec3* pVertices, 
 
 	// generate indices.
 	//	Note: triangulation code not robust, relies on contour/vertices to be declared sequentially and no holes -> too many vertices will lead to stretched results
-	WaterVolumeRenderNodeUtils::Triangulate(WaterVolumeRenderNodeUtils::VertexAccess<SVF_P3F_C4B_T2F>(&m_waterSurfaceVertices[0], m_waterSurfaceVertices.size()), m_waterSurfaceIndices);
+	TPolygon2D<SVF_P3F_C4B_T2F, Vec3>(m_waterSurfaceVertices).Triangulate(m_waterSurfaceIndices);
 
 	// update bounding info
 	UpdateBoundingBox();
@@ -633,7 +448,7 @@ void CWaterVolumeRenderNode::SetAreaPhysicsArea(const Vec3* pVertices, unsigned 
 	m_pPhysAreaInput->m_contour.resize(numVertices);
 
 	// map input vertices onto fog plane
-	if (WaterVolumeRenderNodeUtils::Area(WaterVolumeRenderNodeUtils::VertexAccess<Vec3>(pVertices, numVertices)) > 0.0f)
+	if (TPolygon2D<Vec3>(pVertices, numVertices).Area() > 0.0f)
 	{
 		for (unsigned int i(0); i < numVertices; ++i)
 			m_pPhysAreaInput->m_contour[i] = MapVertexToFogPlane(pVertices[i], fogPlane);   // flip vertex order as physics expects them CCW
@@ -645,7 +460,7 @@ void CWaterVolumeRenderNode::SetAreaPhysicsArea(const Vec3* pVertices, unsigned 
 	}
 
 	// triangulate contour
-	WaterVolumeRenderNodeUtils::Triangulate(WaterVolumeRenderNodeUtils::VertexAccess<Vec3>(&m_pPhysAreaInput->m_contour[0], m_pPhysAreaInput->m_contour.size()), m_pPhysAreaInput->m_indices);
+	TPolygon2D<Vec3>(m_pPhysAreaInput->m_contour).Triangulate(m_pPhysAreaInput->m_indices);
 
 	// reset flow
 	m_pPhysAreaInput->m_flowContour.resize(0);
@@ -669,7 +484,7 @@ void CWaterVolumeRenderNode::SetRiverPhysicsArea(const Vec3* pVertices, unsigned
 	m_pPhysAreaInput->m_contour.resize(numVertices);
 
 	// map input vertices onto fog plane
-	if (WaterVolumeRenderNodeUtils::Area(WaterVolumeRenderNodeUtils::VertexAccess<Vec3>(pVertices, numVertices)) > 0.0f)
+	if (TPolygon2D<Vec3>(pVertices, numVertices).Area() > 0.0f)
 	{
 		for (unsigned int i(0); i < numVertices; ++i)
 			m_pPhysAreaInput->m_contour[i] = MapVertexToFogPlane(pVertices[i], fogPlane);   // flip vertex order as physics expects them CCW
@@ -1083,14 +898,14 @@ bool CWaterVolumeRenderNode::IsCameraInsideWaterVolumeSurface2D(const SRendering
 		return m_pPhysArea->GetStatus(&scp) != 0;
 	}
 
-	WaterVolumeRenderNodeUtils::VertexAccess<SVF_P3F_C4B_T2F> ca(&m_waterSurfaceVertices[0], m_waterSurfaceVertices.size());
+	TPolygon2D<SVF_P3F_C4B_T2F, Vec3> ca(m_waterSurfaceVertices);
 	for (size_t i(0); i < m_waterSurfaceIndices.size(); i += 3)
 	{
 		const Vec3 v0 = m_parentEntityWorldTM.TransformPoint(ca[m_waterSurfaceIndices[i]]);
 		const Vec3 v1 = m_parentEntityWorldTM.TransformPoint(ca[m_waterSurfaceIndices[i + 1]]);
 		const Vec3 v2 = m_parentEntityWorldTM.TransformPoint(ca[m_waterSurfaceIndices[i + 2]]);
 
-		if (WaterVolumeRenderNodeUtils::InsideTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, camPos.x, camPos.y))
+		if (ca.InsideTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, camPos.x, camPos.y))
 			return true;
 	}
 

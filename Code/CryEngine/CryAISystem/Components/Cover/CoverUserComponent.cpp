@@ -459,5 +459,3 @@ CoverID CEntityAICoverUserComponent::GetRandomCoverId(float radius) const
 
 	return validCovers.size() ? validCovers[cry_random(size_t(0), validCovers.size() - 1)] : CoverID();
 }
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAICoverUserComponent::Register)

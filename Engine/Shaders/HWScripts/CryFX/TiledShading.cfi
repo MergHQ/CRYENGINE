@@ -306,9 +306,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 			}
 			else if (light.lightType == TILEDLIGHT_TYPE_REGULAR_POINTFACE)
 			{
-				float3 dir = abs( lightVec );
-				uint cubeFace = dir.x > dir.y ? (dir.x > dir.z ? (lightVec.x < 0 ? 0 : 1) : (lightVec.z < 0 ? 4 : 5)) :
-																				(dir.y > dir.z ? (lightVec.y < 0 ? 2 : 3) : (lightVec.z < 0 ? 4 : 5));
+				uint cubeFace = selectCubeFace(lightVec);
 				
 				if (light.resIndex != cubeFace)
 					skipShading = true;
@@ -984,10 +982,8 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 				}
 				else if (lightType == TILEDLIGHT_TYPE_REGULAR_POINTFACE)
 				{
-					float3 dir = abs( lightVec );
-					uint cubeFace = dir.x > dir.y ? (dir.x > dir.z ? (lightVec.x < 0 ? 0 : 1) : (lightVec.z < 0 ? 4 : 5)) :
-																					(dir.y > dir.z ? (lightVec.y < 0 ? 2 : 3) : (lightVec.z < 0 ? 4 : 5));
-					
+					uint cubeFace = selectCubeFace(lightVec);
+			
 					if (light.resIndex != cubeFace)
 						skipShading = true;
 				}

@@ -24,6 +24,9 @@ namespace FactionSystemSchematyc
 	
 	void Register(Schematyc::IEnvRegistrar& registrar, Schematyc::CEnvRegistrationScope& parentScope)
 	{
+		//Register Components
+		CEntityAIFactionComponent::Register(registrar);
+		
 		const CryGUID FactionSystemGUID = "6c04b224-56e4-4cbf-93e1-5bd470b93704"_cry_guid;
 
 		parentScope.Register(SCHEMATYC_MAKE_ENV_MODULE(FactionSystemGUID, "Factions"));

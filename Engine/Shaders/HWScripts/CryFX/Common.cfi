@@ -628,6 +628,22 @@ half DecodeGBufferTransmittanceLum( half4 bufferA )
 	return (lightingModel == LIGHTINGMODEL_TRANSMITTANCE) ? frac( bufferA.w * TWO_BITS_EXTRACTION_FACTOR ) : 0;
 }
 
+uint selectCubeFace(in float3 lightVec)
+{
+	float3 dir = abs(lightVec);
+
+	bool3 pmag = bool3(dir.x > dir.y, dir.y > dir.z, dir.x > dir.z);
+	bool3 nmag = bool3(dir.x <= dir.y, dir.y <= dir.z, dir.x <= dir.z); 
+	bool3 flp  = bool3(lightVec.x == dir.x, lightVec.y == dir.y, lightVec.z == dir.z); 
+
+	uint cubeFace = 
+		(pmag.x) * (pmag.z) * (0 + flp.x) +
+		(nmag.x) * (pmag.y) * (2 + flp.y) +
+		(nmag.z) * (nmag.y) * (4 + flp.z); 
+		
+	return cubeFace;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 float  NumInstructions		: PI_NumInstructions;

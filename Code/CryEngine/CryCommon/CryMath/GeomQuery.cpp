@@ -169,40 +169,27 @@ void TriRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm, PosNorm const aR
 		return;
 	case GeomForm_Edges:
 	{
-		float t = seed.GenerateFloat();
-		ran.vPos = aRan[0].vPos * (1.f - t) + aRan[1].vPos * t;
+		float t[2]; RandomSplit2(seed, t);
+		ran.vPos = aRan[0].vPos * t[1] + aRan[1].vPos * t[0];
 		if (bDoNormals)
-			ran.vNorm = aRan[0].vNorm * (1.f - t) + aRan[1].vNorm * t;
+			ran.vNorm = aRan[0].vNorm * t[1] + aRan[1].vNorm * t[0];
 		break;
 	}
 	case GeomForm_Surface:
 	{
-		float a = seed.GenerateFloat();
-		float b = seed.GenerateFloat();
-		float t0 = std::min(a, b);
-		float t1 = std::max(a, b) - t0;
-		float t2 = 1.0f - t1 - t0;
-		ran.vPos = aRan[0].vPos * t0 + aRan[1].vPos * t1 + aRan[2].vPos * t2;
+		float t[3]; RandomSplit3(seed, t);
+		ran.vPos = aRan[0].vPos * t[0] + aRan[1].vPos * t[1] + aRan[2].vPos * t[2];
 		if (bDoNormals)
-			ran.vNorm = aRan[0].vNorm * t0 + aRan[1].vNorm * t1 + aRan[2].vNorm * t2;
+			ran.vNorm = aRan[0].vNorm * t[0] + aRan[1].vNorm * t[1] + aRan[2].vNorm * t[2];
 		break;
 	}
 	case GeomForm_Volume:
 	{
 		// Generate a point in the pyramid defined by the triangle and the origin
-		float a = seed.GenerateFloat();
-		float b = seed.GenerateFloat();
-		float c = seed.GenerateFloat();
-		float t0 = std::min(std::min(a, b), c);
-		float t1 = a == t0 ? std::min(b, c) : b == t0 ? std::min(a, c) : std::min(a, b);
-		float t2 = std::max(std::max(a, b), c);
-		float t3 = 1.0f - t2;
-		t2 -= t1;
-		t1 -= t0;
-
-		ran.vPos = aRan[0].vPos * t0 + aRan[1].vPos * t1 + aRan[2].vPos * t2 + vCenter * t3;
+		float t[4]; RandomSplit4(seed, t);
+		ran.vPos = aRan[0].vPos * t[0] + aRan[1].vPos * t[1] + aRan[2].vPos * t[2] + vCenter * t[3];
 		if (bDoNormals)
-			ran.vNorm = (aRan[0].vNorm * t0 + aRan[1].vNorm * t1 + aRan[2].vNorm * t2) * (1.f - t3) + ran.vPos.GetNormalizedFast() * t3;
+			ran.vNorm = (aRan[0].vNorm * t[0] + aRan[1].vNorm * t[1] + aRan[2].vNorm * t[2]) * (1.f - t[3]) + ran.vPos.GetNormalizedFast() * t[3];
 		break;
 	}
 	}

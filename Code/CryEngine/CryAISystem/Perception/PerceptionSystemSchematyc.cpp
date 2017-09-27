@@ -4,6 +4,10 @@
 #include "PerceptionSystemSchematyc.h"
 #include "Factions/FactionSystemSchematyc.h"
 
+#include "Components/Perception/ObserverComponent.h"
+#include "Components/Perception/ObservableComponent.h"
+#include "Components/Perception/ListenerComponent.h"
+
 namespace PerceptionSystemSchematyc
 {
 
@@ -26,6 +30,11 @@ void SoundStimulEvent(const Vec3& position, float radius, Schematyc::ExplicitEnt
 
 void Register(Schematyc::IEnvRegistrar& registrar, Schematyc::CEnvRegistrationScope& parentScope)
 {
+	//Register Components
+	CEntityAIObserverComponent::Register(registrar);
+	CEntityAIObservableComponent::Register(registrar);
+	CEntityAIListenerComponent::Register(registrar);
+	
 	const CryGUID PerceptionSystemGUID = "301D7755-A3C2-4BA9-A7CE-483ED826FC67"_cry_guid;
 
 	parentScope.Register(SCHEMATYC_MAKE_ENV_MODULE(PerceptionSystemGUID, "Perception"));

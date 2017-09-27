@@ -262,5 +262,3 @@ uint32 CEntityAIObserverComponent::GetRaycastFlags() const
 	}
 	return flags;
 }
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAIObserverComponent::Register)

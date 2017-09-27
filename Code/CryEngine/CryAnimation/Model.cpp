@@ -228,6 +228,7 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 	be.phys.flags = -1;
 	DynArray<BONE_ENTITY> arrBoneEntitiesSorted;
 	arrBoneEntitiesSorted.resize(numJoints);
+	float dfltApproxTol = 0.2f;
 	for (uint32 id = 0; id < numJoints; id++)
 	{
 		arrBoneEntitiesSorted[id] = be;
@@ -238,6 +239,8 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 		arrBoneEntitiesSorted[id].ParentID = m_arrModelJoints[id].m_idxParent;
 		arrBoneEntitiesSorted[id].nChildren = m_arrModelJoints[id].m_numChildren;
 		arrBoneEntitiesSorted[id].ControllerID = m_arrModelJoints[id].m_nJointCRC32;
+		if (GetMeshApproxFlags(arrBoneEntitiesSorted[id].prop, strnlen(arrBoneEntitiesSorted[id].prop, sizeof(arrBoneEntitiesSorted[id].prop))))
+			dfltApproxTol = 0.05f;
 	}
 
 	//loop over all BoneEntities and set the flags "joint_no_gravity" and "joint_isolated_accelerations" in m_PhysInfo.flags
@@ -293,14 +296,8 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 		// the chunks from which the physical geometry is read are the bone mesh chunks.
 		PhysicalProxy pbm = arrPhyBoneMeshes[p];
 		uint32 numFaces = pbm.m_arrMaterials.size();
-		uint32 flags = (numFaces <= 20 ? mesh_SingleBB : mesh_OBB | mesh_AABB | mesh_AABB_rotated) | mesh_multicontact0 | mesh_approx_box | ((mesh_approx_sphere | mesh_approx_cylinder | mesh_approx_capsule) & (useOnlyBoxes - 1));
-		IGeometry* pPhysicalGeometry = pPhysicalGeometryManager->CreateMesh(&pbm.m_arrPoints[0], &pbm.m_arrIndices[0], &pbm.m_arrMaterials[0], 0, numFaces, flags, (useOnlyBoxes ? 1.f : 0.05f));
-		if (pPhysicalGeometry == 0)
-		{
-			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filename, "Physics: Failed to create phys mesh");
-			assert(pPhysicalGeometry);
-			return false;
-		}
+		uint32 flags = (numFaces <= 20 ? mesh_SingleBB : mesh_OBB | mesh_AABB | mesh_AABB_rotated) | mesh_multicontact0;
+		const uint32 flagsAllPrim = mesh_approx_box | ((mesh_approx_sphere | mesh_approx_cylinder | mesh_approx_capsule) & (useOnlyBoxes - 1));
 
 		// Assign custom material to physics.
 		int defSurfaceIdx = pbm.m_arrMaterials.empty() ? 0 : pbm.m_arrMaterials[0];
@@ -308,7 +305,6 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 		memset(surfaceTypesId, 0, sizeof(surfaceTypesId));
 		int numIds = pIMaterial->FillSurfaceTypeIds(surfaceTypesId);
 
-		phys_geometry* pg = pPhysicalGeometryManager->RegisterGeometry(pPhysicalGeometry, defSurfaceIdx, &surfaceTypesId[0], numIds);
 		//After loading, pPhysGeom is set to the value equal to the ChunkID in the file where the physical geometry (BoneMesh) chunk is kept.
 		//To initialize a bone with a proxy, we loop over all joints and replace the ChunkID in pPhysGeom with the actual physical geometry object pointers.
 		for (uint32 i = 0; i < numJoints; ++i)
@@ -316,6 +312,18 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 			INT_PTR cid = INT_PTR(m_arrModelJoints[i].m_PhysInfo.pPhysGeom);
 			if (pbm.ChunkID != cid)
 				continue;
+
+			uint32 flagsPrim = GetMeshApproxFlags(arrBoneEntitiesSorted[i].prop, strnlen(arrBoneEntitiesSorted[i].prop, sizeof(arrBoneEntitiesSorted[i].prop)));
+			IGeometry* pPhysicalGeometry = pPhysicalGeometryManager->CreateMesh(&pbm.m_arrPoints[0], &pbm.m_arrIndices[0], &pbm.m_arrMaterials[0], 0, numFaces, 
+				flags | (flagsPrim ? flagsPrim : flagsAllPrim), ((useOnlyBoxes|flagsPrim) ? 1.5f : dfltApproxTol));
+			if (pPhysicalGeometry == 0)
+			{
+				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filename, "Physics: Failed to create phys mesh");
+				assert(pPhysicalGeometry);
+				return false;
+			}
+			phys_geometry* pg = pPhysicalGeometryManager->RegisterGeometry(pPhysicalGeometry, defSurfaceIdx, &surfaceTypesId[0], numIds);
+
 			int id = pg->pGeom->GetPrimitiveId(0, 0);
 			if (id < 0)
 				id = pg->surface_idx;
@@ -326,9 +334,8 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 				m_arrModelJoints[i].m_PhysInfo.pPhysGeom = pg, nHasPhysicsGeom++;
 			else
 				g_pIPhysicalWorld->GetGeomManager()->UnregisterGeometry(pg), m_arrModelJoints[i].m_PhysInfo.flags = -1;
+			pPhysicalGeometry->Release();
 		}
-
-		pPhysicalGeometry->Release();
 	}
 
 	for (uint32 i = 0; i < numJoints; ++i)

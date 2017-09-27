@@ -76,6 +76,8 @@
 #include "Cover/CoverSystemUQS.h"
 #include "Perception/PerceptionSystemSchematyc.h"
 
+#include "Components/BehaviorTree/BehaviorTreeComponent.h"
+
 #include <algorithm>  // std::min()
 
 #include <CryUQS/Client/ClientIncludes.h>
@@ -2514,6 +2516,8 @@ void CAISystem::RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar)
 		FactionSystemSchematyc::Register(registrar, AIScope);
 		CoverSystemSchematyc::Register(registrar, AIScope);
 		PerceptionSystemSchematyc::Register(registrar, AIScope);
+
+		CEntityAIBehaviorTreeComponent::Register(registrar);
 	}
 
 	Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);

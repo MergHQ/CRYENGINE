@@ -188,5 +188,3 @@ void CEntityAIObservableComponent::SyncWithEntity()
 		m_params.observablePositionsCount = 1;
 	}
 }
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAIObservableComponent::Register)

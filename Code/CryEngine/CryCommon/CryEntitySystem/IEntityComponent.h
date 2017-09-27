@@ -785,7 +785,7 @@ struct IEntityAreaComponent : public IEntityComponent
 	//! \param pSoundObstructionSegments Array of corresponding booleans that indicate sound obstruction.
 	//! \param numLocalPoints            Number of vertices in vPoints array.
 	//! \param height                    Height of the shape.
-	virtual void SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints, float const height) = 0;
+	virtual void SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints, bool const bClosed, float const height) = 0;
 
 	//! Sets area to be a Box, min and max must be in local entity space.
 	//! Host entity orientation will define the actual world position and orientation of area box.

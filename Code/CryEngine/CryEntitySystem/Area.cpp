@@ -168,6 +168,9 @@ void CArea::ClearPoints()
 
 		m_areaSegments.clear();
 	}
+	m_areaPoints.clear();
+	m_extents.Clear();
+	m_area = 0.0f;
 
 	m_state &= ~Cry::AreaManager::EAreaState::Initialized;
 }
@@ -239,6 +242,9 @@ void CArea::UpdateSegment(a2DSegment& segment, a2DPoint const& p0, a2DPoint cons
 		segment.k = 0.0f;
 		segment.b = 0.0f;
 	}
+	segment.normal = Vec2(p1.y - p0.y, p0.x - p1.x).GetNormalized();
+	if (m_area < 0.0f)
+		segment.normal = -segment.normal;
 }
 
 // calculates min distance from point within area to the border of area
@@ -270,9 +276,9 @@ float CArea::CalcDistToPoint(a2DPoint const& point) const
 			if (pAreaSegment->isHorizontal)
 			{
 				if (point.x < pAreaSegment->bbox.min.x)
-					curDist = pAreaSegment->bbox.min.DistSqr(point);
+					curDist = pAreaSegment->bbox.min.GetSquaredDistance(point);
 				else if (point.x > pAreaSegment->bbox.max.x)
-					curDist = pAreaSegment->bbox.max.DistSqr(point);
+					curDist = pAreaSegment->bbox.max.GetSquaredDistance(point);
 				else
 					curDist = fabsf(point.y - pAreaSegment->bbox.max.y);
 				curDist *= curDist;
@@ -282,9 +288,9 @@ float CArea::CalcDistToPoint(a2DPoint const& point) const
 				if (pAreaSegment->k == 0.0f)
 				{
 					if (point.y < pAreaSegment->bbox.min.y)
-						curDist = pAreaSegment->bbox.min.DistSqr(point);
+						curDist = pAreaSegment->bbox.min.GetSquaredDistance(point);
 					else if (point.y > pAreaSegment->bbox.max.y)
-						curDist = pAreaSegment->bbox.max.DistSqr(point);
+						curDist = pAreaSegment->bbox.max.GetSquaredDistance(point);
 					else
 						curDist = fabsf(point.x - pAreaSegment->b);
 					curDist *= curDist;
@@ -299,17 +305,11 @@ float CArea::CalcDistToPoint(a2DPoint const& point) const
 					intersection.y = k2 * intersection.x + b2;
 
 					if (intersection.x < pAreaSegment->bbox.min.x)
-						if (pAreaSegment->k < 0)
-							curDist = point.DistSqr(pAreaSegment->bbox.min.x, pAreaSegment->bbox.max.y);
-						else
-							curDist = point.DistSqr(pAreaSegment->bbox.min);
+						curDist = point.GetSquaredDistance(pAreaSegment->GetStart());
 					else if (intersection.x > pAreaSegment->bbox.max.x)
-						if (pAreaSegment->k < 0)
-							curDist = point.DistSqr(pAreaSegment->bbox.max.x, pAreaSegment->bbox.min.y);
-						else
-							curDist = point.DistSqr(pAreaSegment->bbox.max);
+						curDist = point.GetSquaredDistance(pAreaSegment->GetEnd());
 					else
-						curDist = intersection.DistSqr(point);
+						curDist = intersection.GetSquaredDistance(point);
 				}
 				if (curDist < distMin)
 					distMin = curDist;
@@ -2234,7 +2234,7 @@ void CArea::InvalidateCachedAreaData(EntityId const nEntityID)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints)
+void CArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints, bool const bClosed)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	m_areaType = ENTITY_AREA_TYPE_SHAPE;
@@ -2246,36 +2246,50 @@ void CArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstruc
 		{
 			// Set potentially both, points and sound obstruction.
 			ReleaseAreaData();
+			m_areaPoints.resize(numLocalPoints);
 			m_origin = pPoints[0].z;
+			m_bClosed = bClosed;
 
-			for (size_t i = 1; i < numLocalPoints; ++i)
+			for (size_t i = 0; i < numLocalPoints; ++i)
 			{
+				m_areaPoints[i] = pPoints[i];
 				if (pPoints[i].z < m_origin)
 				{
 					m_origin = pPoints[i].z;
 				}
+				if (bClosed)
+				{
+					size_t j = i == 0 ? numLocalPoints - 1 : i - 1;
+					m_area += (pPoints[j].x * pPoints[i].y - pPoints[j].y * pPoints[i].x);
+				}
 			}
+			m_area *= 0.5f;
 
 			// We ignore "Roof" and "Floor" as they are no segments.
-			size_t pIdx = 1;
 			bool bObstructSound = false;
 
-			for (; pIdx < numLocalPoints; ++pIdx)
+			for (size_t pIdx = (bClosed ? 0 : 1); pIdx < numLocalPoints; ++pIdx)
 			{
 				if (pSoundObstructionSegments != nullptr)
 				{
 					bObstructSound = *(pSoundObstructionSegments + pIdx - 1);
 				}
 
-				AddSegment(*((CArea::a2DPoint*)(pPoints + pIdx - 1)), *((CArea::a2DPoint*)(pPoints + pIdx)), bObstructSound);
+				size_t pIdx0 = pIdx ? pIdx - 1 : numLocalPoints - 1;
+				AddSegment(*((CArea::a2DPoint*)(pPoints + pIdx0)), *((CArea::a2DPoint*)(pPoints + pIdx)), bObstructSound);
 			}
 
-			if (pSoundObstructionSegments != nullptr)
+			// Reverse all arrays if CW
+			if (m_area < 0.0f)
 			{
-				bObstructSound = *(pSoundObstructionSegments + pIdx - 1);
+				for (size_t i = 0; i < numLocalPoints / 2; ++i)
+				{
+					std::swap(m_areaPoints[i], m_areaPoints[numLocalPoints - 1 - i]);
+					std::swap(m_areaSegments[i], m_areaSegments[numLocalPoints - 1 - i]);
+				}
+				m_area = -m_area;
 			}
 
-			AddSegment(*((CArea::a2DPoint*)(pPoints + pIdx - 1)), *((CArea::a2DPoint*)(pPoints)), bObstructSound);
 			CalcBBox();
 
 			if (pSoundObstructionSegments != nullptr)
@@ -3391,7 +3405,7 @@ AABB CArea::GetAABB() const
 	}
 }
 
-float CArea::GetExtent(EGeomForm eForm) const
+float CArea::GetExtent(EGeomForm eForm)
 {
 	switch (m_areaType)
 	{
@@ -3400,7 +3414,58 @@ float CArea::GetExtent(EGeomForm eForm) const
 	case ENTITY_AREA_TYPE_BOX:
 		return BoxExtent(eForm, (m_boxMax - m_boxMin) * 0.5f) * ScaleExtent(eForm, m_worldTM);
 	case ENTITY_AREA_TYPE_SHAPE:
-		// To do
+	{
+		if (eForm == GeomForm_Vertices)
+		{
+			return m_areaSegments.size() * (m_height > 0.0f ? 2.0f : 1.0f);
+		}
+
+		CGeomExtent& ext = m_extents.Make(eForm);
+		if (!ext)
+		{
+			float zscale = m_height > 0.0f ? (eForm == GeomForm_Edges ? 2.0f : m_height) : 1.0f;
+			if (eForm == GeomForm_Volume)
+			{
+				if (!m_bClosed)
+					return 0.0f;
+
+				TPolygon2D<Vec2> polygon(m_areaPoints);
+				polygon.Triangulate(m_triIndices);
+				int nTris = m_triIndices.size() / 3;
+				ext.ReserveParts(nTris);
+				for (uint index = 0; index < m_triIndices.size(); index += 3)
+				{
+					Vec2 a = m_areaPoints[m_triIndices[index]],
+					     b = m_areaPoints[m_triIndices[index + 1]],
+					     c = m_areaPoints[m_triIndices[index + 2]];
+
+					float extent = ((b - a) ^ (c - a)) * 0.5f;
+					extent *= zscale;
+					ext.AddPart(extent);
+				}
+			}
+			else
+			{
+				if (eForm == GeomForm_Edges && m_height > 0.0f)
+				{
+					// Add vertical edges
+					ext.ReserveParts(m_areaPoints.size() + m_areaSegments.size());
+					for (auto const& point : m_areaPoints)
+						ext.AddPart(m_height);
+				}
+
+				// Add horizontal edges/surfaces
+				ext.ReserveParts(m_areaSegments.size());
+				for (const auto& segment : m_areaSegments)
+				{
+					float extent = (segment->bbox.min - segment->bbox.max).GetLength();
+					extent *= zscale;
+					ext.AddPart(extent);
+				}
+			}
+		}
+		return ext.TotalExtent();
+	}
 	case ENTITY_AREA_TYPE_SOLID:
 		// To do
 		// m_pAreaSolid->GetExtent(eForm) * ScaleExtent(eForm, m_worldTM);
@@ -3429,7 +3494,87 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 		return;
 	}
 	case ENTITY_AREA_TYPE_SHAPE:
-		// To do
+	{
+		const CGeomExtent& ext = m_extents[eForm];
+
+		auto SetVertexPoint = [=](PosNorm& point, int n, float tv)
+		{
+			point.vPos = Vec3(m_areaPoints[n], m_origin + m_height * tv);
+			if (!m_bClosed && (n == 0 || n == m_areaPoints.size() - 1))
+				point.vNorm = Vec3(m_areaSegments[n]->normal);
+			else
+			{
+				int n2 = n > 0 ? n - 1 : m_areaSegments.size() - 1;
+				point.vNorm = Vec3(m_areaSegments[n]->normal + m_areaSegments[n2]->normal).GetNormalizedFast();
+			}
+		};
+		auto SetSegmentPoint = [=](PosNorm& point, int n, float th, float tv)
+		{
+			const auto& segment = m_areaSegments[n];
+			Vec2 v2 = Lerp(segment->GetStart(), segment->GetEnd(), th);
+			point.vPos = Vec3(v2, m_origin + m_height * tv);
+			point.vNorm = Vec3(segment->normal);
+		};
+
+		if (eForm == GeomForm_Vertices)
+		{
+			for (auto& point : points)
+			{
+				int part = seed.GetRandom(0, (int)m_areaPoints.size() - 1);
+				SetVertexPoint(point, part, (float)seed.GetRandom(0, 1));
+			}
+		}
+		else if (eForm == GeomForm_Edges)
+		{
+			for (auto& point : points)
+			{
+				int part = ext.RandomPart(seed);
+				if (m_height > 0.0f && part < (int)m_areaPoints.size())
+				{
+					// Vertical edge
+					SetVertexPoint(point, part, seed.GenerateFloat());
+				}
+				else
+				{
+					// Horizontal edge
+					if (m_height > 0.0f)
+						part -= m_areaPoints.size();
+					SetSegmentPoint(point, part, seed.GenerateFloat(), (float)seed.GetRandom(0, 1));
+				}
+			}
+		}
+		else if (eForm == GeomForm_Surface)
+		{
+			for (auto& point : points)
+			{
+				int part = ext.RandomPart(seed);
+				SetSegmentPoint(point, part, seed.GenerateFloat(), seed.GenerateFloat());
+			}
+		}
+		else if (eForm == GeomForm_Volume)
+		{
+			if (!m_bClosed)
+			{
+				return points.fill(PosNorm(ZERO));
+			}
+			for (auto& point : points)
+			{
+				int part = ext.RandomPart(seed);
+				int index = part * 3;
+				Vec2 a = m_areaPoints[m_triIndices[index]],
+				     b = m_areaPoints[m_triIndices[index + 1]],
+				     c = m_areaPoints[m_triIndices[index + 2]];
+
+				float t[3];
+				RandomSplit3(seed, t);
+
+				point.vPos = Vec3(a * t[0] + b * t[1] + c * t[2], m_origin);
+				point.vPos.z += seed.GetRandom(0.0f, m_height);
+				point.vNorm = Vec3(0, 0, 1);
+			}
+		}
+		return;
+	}
 	case ENTITY_AREA_TYPE_SOLID:
 		// To do
 	default:

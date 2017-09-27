@@ -4,6 +4,7 @@
 
 #include "AreaManager.h"
 #include "EntitySystem.h"
+#include <CryMath/GeomQuery.h>
 
 #define INVALID_AREA_GROUP_ID -1
 
@@ -58,25 +59,7 @@ class CArea final : public IArea
 
 public:
 
-	struct a2DPoint
-	{
-		float x, y;
-		a2DPoint() : x(0.0f), y(0.0f) {}
-		explicit a2DPoint(const Vec3& pos3D) { x = pos3D.x; y = pos3D.y; }
-		a2DPoint(float x, float y) : x(x), y(y){}
-		float DistSqr(const struct a2DPoint& point) const
-		{
-			float xx = x - point.x;
-			float yy = y - point.y;
-			return (xx * xx + yy * yy);
-		}
-		float DistSqr(const float px, const float py) const
-		{
-			float xx = x - px;
-			float yy = y - py;
-			return (xx * xx + yy * yy);
-		}
-	};
+	using a2DPoint = Vec2;
 
 	struct a2DBBox
 	{
@@ -154,6 +137,7 @@ public:
 		bool    isHorizontal;   // horizontal flag
 		float   k, b;           // line parameters y=kx+b
 		a2DBBox bbox;           // segment's BBox
+		Vec2    normal;         // 2D outward facing normal
 	};
 
 	struct SBoxHolder
@@ -176,7 +160,7 @@ public:
 	virtual int GetPriority() const override { return m_priority; }
 	virtual int GetID() const override       { return m_areaId; }
 	virtual AABB GetAABB() const override;
-	virtual float GetExtent(EGeomForm eForm) const override;
+	virtual float GetExtent(EGeomForm eForm) override;
 	virtual void GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm) const override;
 	virtual bool IsPointInside(Vec3 const& pointToTest) const override;
 	//~IArea
@@ -198,7 +182,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// These functions also switch area type.
 	//////////////////////////////////////////////////////////////////////////
-	void SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints);
+	void SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints, bool const bClosed);
 	void SetBox(const Vec3& min, const Vec3& max, const Matrix34& tm);
 	void SetSphere(const Vec3& vCenter, float fRadius);
 	void BeginSettingSolid(const Matrix34& worldTM);
@@ -384,8 +368,13 @@ private:
 	a2DBBox m_areaBBox;
 	size_t  m_bbox_holder;
 	// the area segments
+	std::vector<Vec2> m_areaPoints;
 	using AreaSegments = std::vector<a2DSegment*>;
 	AreaSegments m_areaSegments;
+	CGeomExtents m_extents;
+	float m_area = 0;
+	bool m_bClosed = true;
+	std::vector<int> m_triIndices;
 
 	// for sector areas ----------------------------------------------------------------------
 	//	int	m_Building;

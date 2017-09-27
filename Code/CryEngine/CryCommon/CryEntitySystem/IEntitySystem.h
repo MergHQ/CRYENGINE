@@ -59,7 +59,7 @@ struct IArea
 	virtual int            GetPriority() const = 0;
 	virtual int            GetID() const = 0;
 	virtual AABB           GetAABB() const = 0;
-	virtual float          GetExtent(EGeomForm eForm) const = 0;
+	virtual float          GetExtent(EGeomForm eForm) = 0;
 	virtual void           GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm) const = 0;
 	virtual bool           IsPointInside(Vec3 const& pointToTest) const = 0;
 	// </interfuscator:shuffle>

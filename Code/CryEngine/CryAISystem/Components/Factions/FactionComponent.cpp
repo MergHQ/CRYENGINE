@@ -130,4 +130,3 @@ void CEntityAIFactionComponent::OnReactionChanged(uint8 factionId, IFactionMap::
 	}
 }
 
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&CEntityAIFactionComponent::Register)

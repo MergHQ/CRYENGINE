@@ -399,8 +399,8 @@ half DecalNormalOpacity
 half DecalSpecularOpacity
 <
 	register = REG_PM_PARAM_7.w;
-	string UIHelp = "Opacity multiplier for fading out decal specular";
-	string UIName = "Decal Specular Opacity";
+	string UIHelp = "Opacity multiplier for fading out decal specular reflectance and gloss";
+	string UIName = "Decal Spec/Gloss Opacity";
 	string UIWidget = "slider";
 	float UIMin = 0;
 	float UIMax = 1;

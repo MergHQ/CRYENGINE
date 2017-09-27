@@ -328,7 +328,7 @@ int CPhysArea::ApplyParams(const Vec3& pt, Vec3& gravity, const Vec3 &vel, pe_pa
 								if (fabs(det)>fabs(maxdet)) 
 									maxdet=det, j=i;
 							}
-							if (j>=0 && maxz<10000.0f) {
+							if (fabs(maxdet)>=FLT_EPSILON && maxz<10000.0f) {
 								det = 1.0/maxdet;
 								n[j] = 1;
 								n[inc_mod3[j]] = -(C(inc_mod3[j],j)*C(dec_mod3[j],dec_mod3[j]) - C(dec_mod3[j],j)*C(inc_mod3[j],dec_mod3[j]))*det;
