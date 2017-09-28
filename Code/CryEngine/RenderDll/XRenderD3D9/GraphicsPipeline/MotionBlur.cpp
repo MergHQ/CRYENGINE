@@ -179,7 +179,7 @@ void CMotionBlurStage::Execute()
 			rtMask |= (CRenderer::CV_r_MotionBlurQuality == 1) ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
 
 			static CCryNameTSCRC techMotionBlur("MotionBlur");
-			m_passMotionBlur.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			m_passMotionBlur.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 			m_passMotionBlur.SetTechnique(pShader, techMotionBlur, rtMask);
 			m_passMotionBlur.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			m_passMotionBlur.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
@@ -188,11 +188,6 @@ void CMotionBlurStage::Execute()
 			m_passMotionBlur.SetTextureSamplerPair(1, CTexture::s_ptexVelocity, EDefaultSamplerStates::PointClamp);
 			m_passMotionBlur.SetTextureSamplerPair(2, CTexture::s_ptexVelocityTiles[2], EDefaultSamplerStates::PointClamp);
 		}
-
-		m_passMotionBlur.BeginConstantUpdate();
-
-		Vec4 params = Vec4(1.0f / tileCountX, 1.0f / tileCountY, 0, 0);
-		m_passMotionBlur.SetConstant(motionBlurParamName, params, eHWSC_Pixel);
 
 		m_passMotionBlur.Execute();
 	}

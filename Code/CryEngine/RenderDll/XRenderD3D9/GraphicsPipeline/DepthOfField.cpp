@@ -241,7 +241,7 @@ void CDepthOfFieldStage::Execute()
 			if (m_passComposition.InputChanged())
 			{
 				static CCryNameTSCRC techCompositeDof("CompositeDof");
-				m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				m_passComposition.SetTechnique(pShader, techCompositeDof, 0);
 				m_passComposition.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
 				m_passComposition.SetState(GS_NODEPTHTEST);
@@ -253,9 +253,6 @@ void CDepthOfFieldStage::Execute()
 				m_passComposition.SetTextureSamplerPair(4, CTexture::s_ptexSceneTarget, EDefaultSamplerStates::PointClamp);
 			}
 
-			m_passComposition.BeginConstantUpdate();
-			m_passComposition.SetConstant(dofFocusParam0Name, vDofParams0, eHWSC_Pixel);
-			m_passComposition.SetConstant(dofFocusParam1Name, vDofParams1, eHWSC_Pixel);
 			m_passComposition.Execute();
 		}
 	}
