@@ -2841,7 +2841,7 @@ void CPropertyItem::OnResourceSelectorButton()
 	x.parentWindow = m_propertyCtrl->GetSafeHwnd();
 	x.typeName = PropertyTypeToResourceType(m_type);
 
-	const Serialization::TypeID contextObjectType = GetIEditor()->GetResourceSelectorHost()->ResourceContextType(x.typeName);
+	const Serialization::TypeID contextObjectType = GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetContextType();
 	if (contextObjectType != Serialization::TypeID())
 	{
 		// We expect client code to always provide a matching context instance for the requested resource type.

@@ -562,10 +562,7 @@ struct MsgHelper
 
 void CDialogScriptRecord::OnBrowseAudioTrigger(string& value, CDialogScriptRecord* pRecord)
 {
-	SResourceSelectorContext x;
-	x.typeName = "AudioTrigger";
-
-	dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(x, value);
+	dll_string newValue = GetIEditor()->GetResourceSelectorHost()->GetSelector("AudioTrigger")->SelectResource(SResourceSelectorContext(), value);
 	value = newValue.c_str();
 }
 
