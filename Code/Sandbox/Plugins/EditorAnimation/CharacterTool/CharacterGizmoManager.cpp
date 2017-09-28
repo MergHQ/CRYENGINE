@@ -41,8 +41,6 @@ CharacterGizmoManager::CharacterGizmoManager(System* system)
 		EXPECTED(connect(tree.get(), &QPropertyTree::signalSerialized, this, &CharacterGizmoManager::OnTreeSerialized));
 	}
 
-	m_trees[GIZMO_LAYER_SCENE]->attach(Serialization::SStruct(*system->scene));
-
 	EXPECTED(connect(system->document.get(), SIGNAL(SignalActiveCharacterChanged()), SLOT(OnActiveCharacterChanged())));
 	EXPECTED(connect(system->document.get(), SIGNAL(SignalCharacterLoaded()), SLOT(OnActiveCharacterChanged())));
 	EXPECTED(connect(system->document.get(), SIGNAL(SignalActiveAnimationSwitched()), SLOT(OnActiveAnimationSwitched())));
@@ -132,6 +130,10 @@ QPropertyTree* CharacterGizmoManager::Tree(GizmoLayer layer)
 {
 	if (size_t(layer) >= m_trees.size())
 		return 0;
+
+	if(layer == GIZMO_LAYER_SCENE && !m_trees[GIZMO_LAYER_SCENE]->attached())
+		m_trees[GIZMO_LAYER_SCENE]->attach(Serialization::SStruct(*m_system->scene));
+
 	return m_trees[size_t(layer)].get();
 }
 

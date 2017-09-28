@@ -225,6 +225,12 @@ bool CEditorAdapter::OnSaveAsset(CEditableAsset&)
 	return false;
 }
 
+bool CEditorAdapter::OnSaveAs()
+{
+	m_pDialog->OnSaveAs();
+	return true;
+}
+
 void CEditorAdapter::OnCloseAsset()
 {
 	m_pDialog->OnCloseAsset();

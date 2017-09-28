@@ -1522,7 +1522,7 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 
 	ListSelectionDialog dialog("CTAnimationAliasSelection", &parent);
 	dialog.setWindowTitle("Animation Alias Selection");
-	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->ResourceIconPath(x.typeName)));
+	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetIconPath()));
 
 	IAnimationSet* animationSet = character->GetIAnimationSet();
 	if (!animationSet)

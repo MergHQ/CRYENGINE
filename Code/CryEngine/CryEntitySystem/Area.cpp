@@ -429,6 +429,12 @@ bool CArea::CalcPointWithinNonCached(Vec3 const& point3d, bool const bIgnoreHeig
 		}
 	case ENTITY_AREA_TYPE_SHAPE:
 		{
+			if (!m_bClosed)
+			{
+				bResult = false;
+				break;
+			}
+
 			bResult = true;
 
 			if (!bIgnoreHeight)
@@ -2321,29 +2327,21 @@ void CArea::MovePoints(Vec3 const* const pPoints, size_t const numLocalPoints)
 {
 	if (!m_areaSegments.empty() && numLocalPoints > 0)
 	{
-		a2DSegment* pSegment = nullptr;
-		size_t i = 1;
+		assert(numLocalPoints == m_areaPoints.size());
 
-		for (; i < numLocalPoints; ++i)
+		m_origin = pPoints[0].z;
+		for (size_t i = 0; i < numLocalPoints; ++i)
 		{
-			pSegment = m_areaSegments[i - 1];
-			a2DPoint const& p0 = *((CArea::a2DPoint*)(pPoints + i - 1));
-			a2DPoint const& p1 = *((CArea::a2DPoint*)(pPoints + i));
-			UpdateSegment(*pSegment, p0, p1);
+			m_areaPoints[i] = pPoints[i];
+			m_origin = min(m_origin, pPoints[i].z);
 		}
 
-		pSegment = m_areaSegments[i - 1];
-		a2DPoint const& p0 = *((CArea::a2DPoint*)(pPoints + i - 1));
-		a2DPoint const& p1 = *((CArea::a2DPoint*)(pPoints));
-		UpdateSegment(*pSegment, p0, p1);
-		m_origin = pPoints[0].z;
-
-		for (size_t i = 1; i < numLocalPoints; ++i)
+		for (size_t i = (m_bClosed ? 0 : 1); i < numLocalPoints; ++i)
 		{
-			if (pPoints[i].z < m_origin)
-			{
-				m_origin = pPoints[i].z;
-			}
+			size_t j = i ? i - 1 : numLocalPoints - 1;
+			a2DPoint const& p0 = *((CArea::a2DPoint*)(pPoints + j));
+			a2DPoint const& p1 = *((CArea::a2DPoint*)(pPoints + i));
+			UpdateSegment(*m_areaSegments[j], p0, p1);
 		}
 
 		CalcBBox();
@@ -3417,7 +3415,7 @@ float CArea::GetExtent(EGeomForm eForm)
 	{
 		if (eForm == GeomForm_Vertices)
 		{
-			return m_areaSegments.size() * (m_height > 0.0f ? 2.0f : 1.0f);
+			return m_areaPoints.size() * (m_height > 0.0f ? 2.0f : 1.0f);
 		}
 
 		CGeomExtent& ext = m_extents.Make(eForm);

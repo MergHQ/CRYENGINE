@@ -172,7 +172,7 @@ dll_string AttachmentNameSelector(const SResourceSelectorContext& x, const char*
 
 	ListSelectionDialog dialog("CTAttachmentSelection", &parent);
 	dialog.setWindowTitle("Attachment Selection");
-	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->ResourceIconPath(x.typeName)));
+	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetIconPath()));
 
 	IAttachmentManager* attachmentManager = characterInstance->GetIAttachmentManager();
 	if (!attachmentManager)
