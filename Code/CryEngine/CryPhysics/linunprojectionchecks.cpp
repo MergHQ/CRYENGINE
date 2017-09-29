@@ -1942,7 +1942,8 @@ int cyl_cyl_lin_unprojection(unprojection_mode *pmode, const cylinder *pcyl1,int
 				} while(idx[1]-idx[0]>1);
 
 				dist = len2(pt2d[1] = pt2d[0]-c2d);
-				if (pt2d[1]*pt2d[0]<0 && dist<sqr(r1) && r1-(dist=sqrt_tpl(dist))<tmax) {
+				// Dot product of pt2d[1] and pt2d[0] must be inlined to avoid triggering compiler bug in VS2015
+				if ((pt2d[1].x*pt2d[0].x+pt2d[1].y*pt2d[0].y)<0 && dist<sqr(r1) && r1-(dist=sqrt_tpl(dist))<tmax) {
 					ptbest2d.set(pt2d[0].x, g_sintab[iter]*sg.y*r0);
 					dp = dc-axisx*pt2d[0].x-(pcyl[icyl]->axis^axisx)*(ptbest2d.y*sgnnz(cosa));
 					bNoContact = isneg(pcyl[icyl^1]->hh-fabs_tpl(dp*pcyl[icyl^1]->axis));
