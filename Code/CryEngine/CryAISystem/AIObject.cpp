@@ -54,6 +54,22 @@ CAIObject::~CAIObject()
 {
 	AILogComment("~CAIObject  %s (%p)", GetName(), this);
 
+	// Remove the AI entity component associated with the entity
+	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityID))
+	{
+		DynArray<CAIEntityComponent*> components;
+		pEntity->GetAllComponents<CAIEntityComponent>(components);
+
+		for(CAIEntityComponent* pExistingAIComponent : components)
+		{
+			if (pExistingAIComponent->GetAIObjectID() == GetAIObjectID())
+			{
+				pEntity->RemoveComponent(pExistingAIComponent);
+				break;
+			}
+		}
+	}
+
 	SetObservable(false);
 
 	ReleaseFormation();
