@@ -630,10 +630,11 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 
 void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor)
 {
+	if (!m_clothPiece.GetSimulator().IsVisible()) return;
+
 	bool bNeedSWskinning = (m_pAttachmentManager->m_pSkelInstance->m_CharEditMode&CA_CharacterTool); // in character tool always use software skinning
 	if (!bNeedSWskinning)
 	{
-		if (!m_clothPiece.GetSimulator().IsVisible()) return;
 		m_clothPiece.GetSimulator().HandleCameraDistance();
 		bNeedSWskinning = !m_clothPiece.GetSimulator().IsGpuSkinning();
 	}
