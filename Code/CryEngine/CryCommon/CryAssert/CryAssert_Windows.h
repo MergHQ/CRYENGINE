@@ -152,35 +152,36 @@ struct SCryAssertInfo
 
 //-----------------------------------------------------------------------------------------------------
 
+static THREADLOCAL SCryAssertInfo* gs_pAssertInfo;
+
 static INT_PTR CALLBACK DlgProc(HWND _hDlg, UINT _uiMsg, WPARAM _wParam, LPARAM _lParam)
 {
-	static THREADLOCAL SCryAssertInfo* pAssertInfo;
 	switch (_uiMsg)
 	{
 	case WM_INITDIALOG:
 		{
-			pAssertInfo = (SCryAssertInfo*)_lParam;
+			gs_pAssertInfo = (SCryAssertInfo*)_lParam;
 
 			char buf[MAX_PATH];
-			const bool bFolded = PathUtil::SimplifyFilePath(pAssertInfo->pszFile, buf, MAX_PATH, PathUtil::ePathStyle_Windows);
+			const bool bFolded = PathUtil::SimplifyFilePath(gs_pAssertInfo->pszFile, buf, MAX_PATH, PathUtil::ePathStyle_Windows);
 
-			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_CONDITION), pAssertInfo->pszCondition);
-			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_FILE), bFolded ? buf : pAssertInfo->pszFile);
+			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_CONDITION), gs_pAssertInfo->pszCondition);
+			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_FILE), bFolded ? buf : gs_pAssertInfo->pszFile);
 
 			char szLine[MAX_PATH];
-			cry_sprintf(szLine, "%d", pAssertInfo->uiLine);
+			cry_sprintf(szLine, "%d", gs_pAssertInfo->uiLine);
 			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_LINE), szLine);
 
-			if (pAssertInfo->pszMessage && pAssertInfo->pszMessage[0] != '\0')
+			if (gs_pAssertInfo->pszMessage && gs_pAssertInfo->pszMessage[0] != '\0')
 			{
-				SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_REASON), pAssertInfo->pszMessage);
+				SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_REASON), gs_pAssertInfo->pszMessage);
 			}
 			else
 			{
 				SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_REASON), "No Reason");
 			}
 
-			SetWindowPos(_hDlg, HWND_TOPMOST, pAssertInfo->uiX, pAssertInfo->uiY, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE);
+			SetWindowPos(_hDlg, HWND_TOPMOST, gs_pAssertInfo->uiX, gs_pAssertInfo->uiY, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE);
 		}
 		break;
 
@@ -190,38 +191,38 @@ static INT_PTR CALLBACK DlgProc(HWND _hDlg, UINT _uiMsg, WPARAM _wParam, LPARAM 
 			{
 			case IDCANCEL:
 			case IDC_CRYASSERT_BUTTON_CONTINUE:
-				pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_CONTINUE;
+				gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_CONTINUE;
 				EndDialog(_hDlg, 0);
 				break;
 
 			case IDC_CRYASSERT_BUTTON_IGNORE:
-				pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_IGNORE;
+				gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_IGNORE;
 				EndDialog(_hDlg, 0);
 				break;
 
 			case IDC_CRYASSERT_BUTTON_IGNORE_ALL:
-				pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_IGNORE_ALL;
+				gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_IGNORE_ALL;
 				EndDialog(_hDlg, 0);
 				break;
 
 			case IDC_CRYASSERT_BUTTON_BREAK:
-				pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_BREAK;
+				gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_BREAK;
 				EndDialog(_hDlg, 0);
 				break;
 
 			case IDC_CRYASSERT_BUTTON_STOP:
-				pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_STOP;
+				gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_STOP;
 				EndDialog(_hDlg, 1);
 				break;
 
 			case IDC_CRYASSERT_BUTTON_REPORT:
-				pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_REPORT_AS_BUG;
+				gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_REPORT_AS_BUG;
 				EndDialog(_hDlg, 0);
 				break;
 
 			case IDC_CRYASSERT_BUTTON_MODULE:
 				g_bAssertsAreDisabledForThisModule = true;
-				pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_CONTINUE;
+				gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_CONTINUE;
 				EndDialog(_hDlg, 0);
 				break;
 			}
@@ -234,12 +235,12 @@ static INT_PTR CALLBACK DlgProc(HWND _hDlg, UINT _uiMsg, WPARAM _wParam, LPARAM 
 
 	case WM_DESTROY:
 		{
-			if (pAssertInfo)
+			if (gs_pAssertInfo)
 			{
 				RECT rcWindowBounds;
 				GetWindowRect(_hDlg, &rcWindowBounds);
-				pAssertInfo->uiX = rcWindowBounds.left;
-				pAssertInfo->uiY = rcWindowBounds.top;
+				gs_pAssertInfo->uiX = rcWindowBounds.left;
+				gs_pAssertInfo->uiY = rcWindowBounds.top;
 			}
 		}
 		break;
