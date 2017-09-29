@@ -90,7 +90,10 @@ public:
 		if (ev == UQS::Core::EHubEvent::RegisterYourFactoriesNow)
 		{
 			CoverSystemUQS::InstantiateFactories();
+
+#ifndef CRY_IS_MONOLITHIC_BUILD
 			UQS::Client::CFactoryRegistrationHelper::RegisterAllFactoryInstancesInHub(UQS::Core::IHubPlugin::GetHub());
+#endif
 		}
 	}
 
@@ -2520,7 +2523,9 @@ void CAISystem::RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar)
 		CEntityAIBehaviorTreeComponent::Register(registrar);
 	}
 
+#ifndef CRY_IS_MONOLITHIC_BUILD
 	Detail::CStaticAutoRegistrar<Schematyc::IEnvRegistrar&>::InvokeStaticCallbacks(registrar);
+#endif
 }
 
 //

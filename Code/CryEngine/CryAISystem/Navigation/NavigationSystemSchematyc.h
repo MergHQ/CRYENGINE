@@ -13,7 +13,7 @@ inline void NavigationAgentTypeIDToString(Schematyc::IString& output, const Navi
 
 inline void ReflectType(Schematyc::CTypeDesc<NavigationAgentTypeID>& desc)
 {
-	desc.SetGUID("b50d458b-faeb-4d12-98fd-3d2543d4e68d"_cry_guid);
+	desc.SetGUID("52fb5a3e-b615-496b-a7b2-e9dfe483f755"_cry_guid);
 	desc.SetLabel("NavAgentType");
 	desc.SetDescription("NavigationAgentTypeId");
 	desc.SetDefaultValue(NavigationAgentTypeID());
