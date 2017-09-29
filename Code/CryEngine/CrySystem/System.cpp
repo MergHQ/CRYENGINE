@@ -458,8 +458,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	RegisterWindowMessageHandler(this);
 
 	m_env.pConsole = new CXConsole;
-	if (m_startupParams.pPrintSync)
-		m_env.pConsole->AddOutputPrintSink(m_startupParams.pPrintSync);
+	if (startupParams.pPrintSync)
+		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
 
 	m_pPluginManager = new CCryPluginManager(startupParams);
 
@@ -683,6 +683,13 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
 
+	UnloadEngineModule("CrySchematyc");
+
+	if (gEnv->pGameFramework != nullptr)
+	{
+		gEnv->pGameFramework->ShutDown();
+	}
+
 	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
 	SAFE_DELETE(m_pPluginManager);
@@ -727,11 +734,9 @@ void CSystem::ShutDown()
 	UnloadEngineModule("CryAISystem");
 	UnloadEngineModule("CryFont");
 	UnloadEngineModule("CryNetwork");
-	UnloadEngineModule("CryLobby");
 	//	SAFE_RELEASE(m_env.pCharacterManager);
 	UnloadEngineModule("CryAnimation");
 	UnloadEngineModule("Cry3DEngine"); // depends on EntitySystem
-	UnloadEngineModule("CrySchematyc");
 	UnloadEngineModule("CryEntitySystem");
 
 	SAFE_DELETE(m_pPhysRenderer); // Must be destroyed before unloading CryPhysics as it holds memory that was allocated by that module
@@ -1506,6 +1511,11 @@ void CSystem::PrePhysicsUpdate()
 
 void CSystem::RunMainLoop()
 {
+	if (m_bShaderCacheGenMode)
+	{
+		return;
+	}
+
 #if CRY_PLATFORM_WINDOWS
 	if (!(gEnv && gEnv->pSystem) || (!gEnv->IsEditor() && !gEnv->IsDedicated()))
 	{

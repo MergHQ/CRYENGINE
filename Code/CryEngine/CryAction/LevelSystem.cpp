@@ -2034,7 +2034,10 @@ void CLevelSystem::UnLoadLevel()
 	// Disable filecaching during level unloading
 	// will be reenabled when we get back to the IIS (frontend directly)
 	// or after level loading is finished (via system event system)
-	gEnv->pSystem->GetPlatformOS()->AllowOpticalDriveUsage(false);
+	if (IPlatformOS* pPlatformOS = gEnv->pSystem->GetPlatformOS())
+	{
+		pPlatformOS->AllowOpticalDriveUsage(false);
+	}
 
 	if (gEnv->pScriptSystem)
 	{

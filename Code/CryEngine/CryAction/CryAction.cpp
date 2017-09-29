@@ -2471,7 +2471,7 @@ bool CCryAction::ShutdownGame()
 }
 
 //------------------------------------------------------------------------
-void CCryAction::Release()
+void CCryAction::ShutDown()
 {
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN, 0, 0);
 
@@ -2604,7 +2604,6 @@ void CCryAction::Release()
 	SAFE_DELETE(m_pPhysicsQueues);
 
 	m_pThis = nullptr;
-	delete this;
 }
 
 //------------------------------------------------------------------------

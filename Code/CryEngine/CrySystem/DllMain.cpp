@@ -171,6 +171,10 @@ extern "C"
 {
 	CRYSYSTEM_API ISystem* CreateSystemInterface(SSystemInitParams& startupParams, bool bManualEngineLoop)
 	{
+#if CAPTURE_REPLAY_LOG
+		CryGetIMemReplay()->StartOnCommandLine(startupParams.szSystemCmdLine);
+#endif
+
 #if CRY_PLATFORM_DURANGO && defined(ENABLE_PROFILING_CODE)
 		DurangoDebugCallStack::InstallExceptionHandler();
 #endif
@@ -200,8 +204,9 @@ extern "C"
 			startupParams.pUserCallback->OnSystemConnect(pSystem.get());
 
 		if (!pSystem->Initialize(startupParams))
-
 		{
+			CryMessageBox("CrySystem initialization failed!", "Engine initialization failed!");
+
 			return nullptr;
 		}
 
@@ -214,8 +219,6 @@ extern "C"
 			pSystem->RunMainLoop();
 			return nullptr;
 		}
-		return pSystem.release();
-
 		return pSystem.release();
 	}
 

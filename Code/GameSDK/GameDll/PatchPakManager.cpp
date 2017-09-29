@@ -171,7 +171,10 @@ CPatchPakManager::~CPatchPakManager()
 		ic->UnregisterVariable(m_patchPakDebug->GetName());
 	}
 
-	GetISystem()->GetPlatformOS()->RemoveListener(this);
+	if (IPlatformOS* pPlatformOS = GetISystem()->GetPlatformOS())
+	{
+		pPlatformOS->RemoveListener(this);
+	}
 }
 
 void CPatchPakManager::Update(float frameTime)

@@ -534,10 +534,8 @@ struct IGameFramework
 	// <interfuscator:shuffle>
 	virtual ~IGameFramework(){}
 
-	//! Entry function to the game framework.
-	//! Entry function used to create a new instance of the game framework from outside its own DLL.
-	//! \return New instance of the game framework.
-	typedef IGameFramework*(* TEntryFunction)(SSystemInitParams& initParams);
+	//! Called when the engine is shutting down to finalize the game framework
+	virtual void ShutDown() = 0;
 
 	//! Manually starts update of the engine, aka starts a new frame
 	//! This is automatically handled in the game loop inside StartEngine

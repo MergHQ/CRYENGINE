@@ -1051,9 +1051,6 @@ protected: // -------------------------------------------------------------
 	std::vector<IWindowMessageHandler*> m_windowMessageHandlers;
 	IImeManager*                        m_pImeManager;
 
-	// Keeping a copy of startup params for deferred module loading (see CryLobby).
-	const SSystemInitParams m_startupParams;
-
 	class CWatchdogThread*  m_pWatchdog = nullptr;
 	static void WatchDogTimeOutChanged(ICVar* cvar);
 };

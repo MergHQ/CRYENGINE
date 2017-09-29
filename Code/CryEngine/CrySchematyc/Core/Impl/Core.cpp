@@ -70,7 +70,9 @@ CCore::CCore()
 	, m_pLogRecorder(new CLogRecorder())
 	, m_pSettingsManager(new CSettingsManager())
 	, m_pUpdateScheduler(new CUpdateScheduler())
-{}
+{
+	gEnv->pSchematyc = this;
+}
 
 CCore::~CCore()
 {
@@ -85,6 +87,7 @@ CCore::~CCore()
 	Schematyc::CVars::Unregister();
 
 	s_pInstance = nullptr;
+	gEnv->pSchematyc = nullptr;
 }
 
 const char* CCore::GetName() const

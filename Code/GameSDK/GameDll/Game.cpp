@@ -595,7 +595,12 @@ CGame::~CGame()
 
 	gEnv->pGameFramework->EndGameContext();
 	gEnv->pGameFramework->UnregisterListener(this);
-	GetISystem()->GetPlatformOS()->RemoveListener(this);
+
+	if (IPlatformOS* pPlatformOS = GetISystem()->GetPlatformOS())
+	{
+		pPlatformOS->RemoveListener(this);
+	}
+
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	ReleaseScriptBinds();
 
@@ -705,8 +710,6 @@ CGame::~CGame()
 			pLobby->Terminate(eCLS_Online, eCLSO_All, NULL, NULL);
 		}
 	}
-
-	gEnv->pSystem->UnloadEngineModule("CryLobby");
 
 	GAME_FX_SYSTEM.Destroy();
 

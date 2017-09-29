@@ -1259,7 +1259,7 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
 		return true;
 #else
-		return (startupParams.bUnattendedMode || m_hWnd != 0);
+		return (startupParams.bUnattendedMode || startupParams.bShaderCacheGen || m_hWnd != 0);
 #endif
 	}
 	return true;
@@ -2481,7 +2481,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	InlineInitializationProcessing("CSystem::Init start");
 	m_szCmdLine = startupParams.szSystemCmdLine;
 
-	m_pCmdLine = new CCmdLine(m_startupParams.szSystemCmdLine);
+	m_pCmdLine = new CCmdLine(startupParams.szSystemCmdLine);
 
 	m_env.szCmdLine = m_szCmdLine.c_str();
 	m_env.bTesting = startupParams.bTesting;
@@ -2491,8 +2491,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_env.bUnattendedMode = true;
 	}
 
-	m_env.bNoRandomSeed = m_startupParams.bNoRandom;
-	m_bShaderCacheGenMode = m_startupParams.bShaderCacheGen;
+	m_env.bNoRandomSeed = startupParams.bNoRandom;
+	m_bShaderCacheGenMode = startupParams.bShaderCacheGen;
 	assert(IsHeapValid());
 
 #ifdef EXTENSION_SYSTEM_INCLUDE_TESTCASES
@@ -3551,7 +3551,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		InlineInitializationProcessing("CSystem::Init AIInit");
 
-		InitGameFramework(startupParams);
+		if (!startupParams.bShaderCacheGen)
+		{
+			InitGameFramework(startupParams);
+		}
 
 		//////////////////////////////////////////////////////////////////////////
 		// Create PerfHUD

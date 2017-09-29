@@ -14,11 +14,7 @@ class CEngineModule_CryAction : public IGameFrameworkEngineModule
 
 	virtual ~CEngineModule_CryAction()
 	{
-		if (gEnv->pGameFramework != nullptr)
-		{
-			static_cast<CCryAction*>(gEnv->pGameFramework)->Release();
-			gEnv->pGameFramework = nullptr;
-		}
+		SAFE_DELETE(gEnv->pGameFramework);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

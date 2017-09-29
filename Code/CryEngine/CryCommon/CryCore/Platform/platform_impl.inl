@@ -196,28 +196,18 @@ bool CryInitializeEngine(SSystemInitParams& startupParams, bool bManualEngineLoo
 	}
 #endif
 
-	ISystem* pSystem = CreateSystemInterface(startupParams, bManualEngineLoop);
-	if (pSystem == nullptr)
+	if (ISystem* pSystem = CreateSystemInterface(startupParams, bManualEngineLoop))
 	{
-		string errorStr = string().Format("Engine system interface creation failed!");
-		CryMessageBox(errorStr.c_str(), "Engine initialization failed!");
-
-		return false;
-	}
-
-#if CAPTURE_REPLAY_LOG
-	CryGetIMemReplay()->StartOnCommandLine(startupParams.szSystemCmdLine);
-#endif
-
 #if !defined(CRY_IS_MONOLITHIC_BUILD)
-	if (bManualEngineLoop)
-	{
-		// Forward ownership to the function caller
-		// This is done since the engine loop will be updated outside of this function scope
-		// In other cases we would be exiting the engine at this point.
-		systemLibrary.ReleaseOwnership();
-	}
+		if (bManualEngineLoop)
+		{
+			// Forward ownership to the function caller
+			// This is done since the engine loop will be updated outside of this function scope
+			// In other cases we would be exiting the engine at this point.
+			systemLibrary.ReleaseOwnership();
+		}
 #endif
+	}
 
 	return true;
 }

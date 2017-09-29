@@ -308,10 +308,16 @@ CActionGame::~CActionGame()
 
 	if (!gEnv->IsDedicated())
 	{
-		//gEnv->bMultiplayer = false;
-		const char* szDefaultGameRules = gEnv->pConsole->GetCVar("sv_gamerulesdefault")->GetString();
-		gEnv->pConsole->GetCVar("sv_gamerules")->Set(szDefaultGameRules);
-		gEnv->pConsole->GetCVar("sv_requireinputdevice")->Set("dontcare");
+		if (ICVar* pDefaultGameRulesCVar = gEnv->pConsole->GetCVar("sv_gamerulesdefault"))
+		{
+			//gEnv->bMultiplayer = false;
+			const char* szDefaultGameRules = pDefaultGameRulesCVar->GetString();
+			gEnv->pConsole->GetCVar("sv_gamerules")->Set(szDefaultGameRules);
+		}
+		if (ICVar* pInputDeviceVar = gEnv->pConsole->GetCVar("sv_requireinputdevice"))
+		{
+			pInputDeviceVar->Set("dontcare");
+		}
 #ifdef __WITH_PB__
 		gEnv->pConsole->ExecuteString("net_pb_sv_enable false");
 #endif

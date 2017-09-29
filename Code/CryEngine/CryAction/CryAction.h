@@ -117,6 +117,8 @@ public:
 	~CCryAction();
 
 	// IGameFramework
+	virtual void                          ShutDown();
+
 	void                                  ClearTimers();
 	virtual TimerID                       AddTimer(CTimeValue interval, bool repeat, TimerCallback callback, void* userdata);
 	virtual void*                         RemoveTimer(TimerID timerID);
@@ -291,8 +293,6 @@ protected:
 public:
 
 	static CCryAction*          GetCryAction() { return m_pThis; }
-
-	void                        Release();
 
 	virtual CGameServerNub*     GetGameServerNub();
 	CGameClientNub*             GetGameClientNub();

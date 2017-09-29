@@ -166,6 +166,8 @@ void CFlashUI::Shutdown()
 
 	SAFE_DELETE(m_pUIActionManager);
 	SAFE_DELETE(m_pFlashUIActionEvents);
+
+	gEnv->pFlashUI = nullptr;
 }
 
 //------------------------------------------------------------------------------------
