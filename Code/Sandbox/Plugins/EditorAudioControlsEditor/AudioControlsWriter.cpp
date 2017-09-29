@@ -49,7 +49,7 @@ CAudioControlsWriter::CAudioControlsWriter(CAudioAssetsManager* pAssetsManager, 
 	: m_pAssetsManager(pAssetsManager)
 	, m_pAudioSystemImpl(pAudioSystemImpl)
 {
-	if (pAssetsManager && pAudioSystemImpl)
+	if ((pAssetsManager != nullptr) && (pAudioSystemImpl != nullptr))
 	{
 		size_t const libCount = pAssetsManager->GetLibraryCount();
 
@@ -92,7 +92,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 		// If empty, force it to write an empty library at the root
 		if (libraryXmlNodes.empty())
 		{
-			libraryXmlNodes[Utils::GetGlobalScope()].bDirty = true;
+			libraryXmlNodes[Utils::GetGlobalScope()].isDirty = true;
 		}
 
 		for (auto const& libraryPair : libraryXmlNodes)
@@ -115,7 +115,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 
 			SLibraryScope const& libScope = libraryPair.second;
 
-			if (libScope.bDirty)
+			if (libScope.isDirty)
 			{
 				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode("ATLConfig");
 				pFileNode->setAttr("atl_name", library.GetName());
@@ -128,7 +128,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 					{
 						XmlNodeRef node = libScope.GetXmlNode((EItemType)i);
 
-						if (node && node->getChildCount() > 0)
+						if ((node != nullptr) && (node->getChildCount() > 0))
 						{
 							pFileNode->addChild(node);
 						}
@@ -137,11 +137,12 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 
 				// Editor data
 				XmlNodeRef pEditorData = pFileNode->createNode("EditorData");
-				if (pEditorData)
+
+				if (pEditorData != nullptr)
 				{
 					XmlNodeRef pFoldersNode = pEditorData->createNode("Folders");
 
-					if (pFoldersNode)
+					if (pFoldersNode != nullptr)
 					{
 						WriteEditorData(&library, pFoldersNode);
 						pEditorData->addChild(pFoldersNode);
@@ -159,6 +160,7 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 					// file is read-only
 					SetFileAttributesA(fullFilePath.c_str(), FILE_ATTRIBUTE_NORMAL);
 				}
+
 				pFileNode->saveToFile(fullFilePath);
 				CheckOutFile(fullFilePath);
 			}
@@ -197,9 +199,9 @@ void CAudioControlsWriter::WriteLibrary(CAudioLibrary& library)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsWriter::WriteItem(CAudioAsset* pItem, const string& path, LibraryStorage& library)
+void CAudioControlsWriter::WriteItem(CAudioAsset* const pItem, const string& path, LibraryStorage& library)
 {
-	if (pItem)
+	if (pItem != nullptr)
 	{
 		if (pItem->GetType() == EItemType::Folder)
 		{
@@ -217,10 +219,10 @@ void CAudioControlsWriter::WriteItem(CAudioAsset* pItem, const string& path, Lib
 		{
 			CAudioControl* pControl = static_cast<CAudioControl*>(pItem);
 
-			if (pControl)
+			if (pControl != nullptr)
 			{
 				SLibraryScope& scope = library[pControl->GetScope()];
-				scope.bDirty = true;
+				scope.isDirty = true;
 				WriteControlToXML(scope.GetXmlNode(pControl->GetType()), pControl, path);
 			}
 		}
@@ -253,10 +255,10 @@ void CAudioControlsWriter::GetScopes(CAudioAsset const* const pItem, std::unorde
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pControl, const string& path)
+void CAudioControlsWriter::WriteControlToXML(XmlNodeRef const pNode, CAudioControl* pControl, const string& path)
 {
 	EItemType const type = pControl->GetType();
-	XmlNodeRef pChildNode = pNode->createNode(TypeToTag(type));
+	XmlNodeRef const pChildNode = pNode->createNode(TypeToTag(type));
 	pChildNode->setAttr("atl_name", pControl->GetName());
 
 	if (!path.empty())
@@ -278,6 +280,7 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pC
 				pChildNode->setAttr("atl_occlusion_fadeout_distance", fadeOutDistance);
 			}
 		}
+
 		if (!pControl->IsMatchRadiusToAttenuationEnabled())
 		{
 			pChildNode->setAttr("atl_match_radius_attenuation", "0");
@@ -293,7 +296,7 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pC
 		{
 			CAudioAsset* pItem = pControl->GetChild(i);
 
-			if (pItem && pItem->GetType() == EItemType::State)
+			if ((pItem != nullptr) && (pItem->GetType() == EItemType::State))
 			{
 				WriteControlToXML(pChildNode, static_cast<CAudioControl*>(pItem), "");
 			}
@@ -330,19 +333,19 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CAudioControl* pC
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl* pControl, const int platformIndex)
+void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CAudioControl* const pControl, const int platformIndex)
 {
-	if (pControl && m_pAudioSystemImpl)
+	if ((pControl != nullptr) && (m_pAudioSystemImpl != nullptr))
 	{
 		XMLNodeList& otherNodes = pControl->GetRawXMLConnections(platformIndex);
 
-		XMLNodeList::const_iterator end = std::remove_if(otherNodes.begin(), otherNodes.end(), [](const SRawConnectionData& node) { return node.bValid; });
+		XMLNodeList::const_iterator end = std::remove_if(otherNodes.begin(), otherNodes.end(), [](const SRawConnectionData& node) { return node.isValid; });
 		otherNodes.erase(end, otherNodes.end());
 
-		for (auto& node : otherNodes)
+		for (auto const& node : otherNodes)
 		{
 			// Don't add identical nodes!
-			bool bAdd = true;
+			bool shouldAddNode = true;
 			XmlNodeRef const tempNode = pNode->findChild(node.xmlNode->getTag());
 
 			if (tempNode)
@@ -353,23 +356,23 @@ void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl
 				if (numAttributes1 == numAttributes2)
 				{
 					const char* key1 = nullptr, * val1 = nullptr, * key2 = nullptr, * val2 = nullptr;
-					bAdd = false;
+					shouldAddNode = false;
 
 					for (int i = 0; i < numAttributes1; ++i)
 					{
 						tempNode->getAttributeByIndex(i, &key1, &val1);
 						node.xmlNode->getAttributeByIndex(i, &key2, &val2);
 
-						if (_stricmp(key1, key2) != 0 || _stricmp(val1, val2) != 0)
+						if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
 						{
-							bAdd = true;
+							shouldAddNode = true;
 							break;
 						}
 					}
 				}
 			}
 
-			if (bAdd)
+			if (shouldAddNode)
 			{
 				pNode->addChild(node.xmlNode);
 			}
@@ -379,15 +382,15 @@ void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl
 
 		for (int i = 0; i < size; ++i)
 		{
-			ConnectionPtr pConnection = pControl->GetConnectionAt(i);
+			ConnectionPtr const pConnection = pControl->GetConnectionAt(i);
 
-			if (pConnection)
+			if (pConnection != nullptr)
 			{
-				if (pControl->GetType() != EItemType::Preload || pConnection->IsPlatformEnabled(platformIndex))
+				if ((pControl->GetType() != EItemType::Preload) || (pConnection->IsPlatformEnabled(platformIndex)))
 				{
-					XmlNodeRef pChild = m_pAudioSystemImpl->CreateXMLNodeFromConnection(pConnection, pControl->GetType());
+					XmlNodeRef const pChild = m_pAudioSystemImpl->CreateXMLNodeFromConnection(pConnection, pControl->GetType());
 
-					if (pChild)
+					if (pChild != nullptr)
 					{
 						pNode->addChild(pChild);
 						pControl->AddRawXMLConnection(pChild, true, platformIndex);
@@ -401,9 +404,9 @@ void CAudioControlsWriter::WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::CheckOutFile(string const& filepath)
 {
-	ISourceControl* pSourceControl = GetIEditor()->GetSourceControl();
+	ISourceControl* const pSourceControl = GetIEditor()->GetSourceControl();
 
-	if (pSourceControl)
+	if (pSourceControl != nullptr)
 	{
 		uint32 const fileAttributes = pSourceControl->GetFileAttributes(filepath.c_str());
 
@@ -421,9 +424,9 @@ void CAudioControlsWriter::CheckOutFile(string const& filepath)
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsWriter::DeleteLibraryFile(string const& filepath)
 {
-	ISourceControl* pSourceControl = GetIEditor()->GetSourceControl();
+	ISourceControl* const pSourceControl = GetIEditor()->GetSourceControl();
 
-	if (pSourceControl && pSourceControl->GetFileAttributes(filepath.c_str()) & SCC_FILE_ATTRIBUTE_MANAGED)
+	if ((pSourceControl != nullptr) && (pSourceControl->GetFileAttributes(filepath.c_str()) & SCC_FILE_ATTRIBUTE_MANAGED))
 	{
 		// if source control is connected, let it handle the delete
 		pSourceControl->Delete(filepath, "(ACE Changelist)", DELETE_WITHOUT_SUBMIT | ADD_CHANGELIST);
@@ -433,7 +436,7 @@ void CAudioControlsWriter::DeleteLibraryFile(string const& filepath)
 	{
 		DWORD const fileAttributes = GetFileAttributesA(filepath.c_str());
 
-		if (fileAttributes == INVALID_FILE_ATTRIBUTES || !DeleteFile(filepath.c_str()))
+		if ((fileAttributes == INVALID_FILE_ATTRIBUTES) || !DeleteFile(filepath.c_str()))
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed to delete file %s", filepath);
 		}
@@ -441,21 +444,21 @@ void CAudioControlsWriter::DeleteLibraryFile(string const& filepath)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsWriter::WriteEditorData(CAudioAsset* pLibrary, XmlNodeRef pParentNode) const
+void CAudioControlsWriter::WriteEditorData(CAudioAsset const* const pLibrary, XmlNodeRef const pParentNode) const
 {
-	if (pParentNode && pLibrary)
+	if ((pParentNode != nullptr) && (pLibrary != nullptr))
 	{
 		size_t const itemCount = pLibrary->ChildCount();
 
 		for (size_t i = 0; i < itemCount; ++i)
 		{
-			CAudioAsset* pItem = pLibrary->GetChild(i);
+			CAudioAsset const* const pItem = pLibrary->GetChild(i);
 
 			if (pItem->GetType() == EItemType::Folder)
 			{
-				XmlNodeRef pFolderNode = pParentNode->createNode("Folder");
+				XmlNodeRef const pFolderNode = pParentNode->createNode("Folder");
 
-				if (pFolderNode)
+				if (pFolderNode != nullptr)
 				{
 					pFolderNode->setAttr("name", pItem->GetName());
 					WriteEditorData(pItem, pFolderNode);

@@ -24,25 +24,25 @@ private:
 	using SwitchStates = std::vector<const char*>;
 
 	void           LoadAllLibrariesInFolder(string const& folderPath, string const& level);
-	void           LoadControlsLibrary(XmlNodeRef pRoot, string const& filepath, string const& level, string const& filename, uint version);
-	CAudioControl* LoadControl(XmlNodeRef pNode, Scope scope, uint version, CAudioAsset* pParentItem);
+	void           LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint const version);
+	CAudioControl* LoadControl(XmlNodeRef const pNode, Scope scope, uint version, CAudioAsset* const pParentItem);
 
-	void           LoadPreloadConnections(XmlNodeRef pNode, CAudioControl* pControl, uint version);
-	void           LoadConnections(XmlNodeRef root, CAudioControl* pControl);
+	void           LoadPreloadConnections(XmlNodeRef const pNode, CAudioControl* const pControl, uint const version);
+	void           LoadConnections(XmlNodeRef const root, CAudioControl* const pControl);
 
 	void           CreateDefaultControls();
-	void           CreateDefaultSwitch(CAudioAsset* pLibrary, const char* szExternalName, const char* szInternalName, SwitchStates const& states);
+	void           CreateDefaultSwitch(CAudioAsset* const pLibrary, char const* const szExternalName, char const* const szInternalName, SwitchStates const& states);
 
 	void           LoadScopesImpl(string const& path);
 
-	void           LoadEditorData(XmlNodeRef pEditorDataNode, CAudioAsset* pRootItem);
-	void           LoadAllFolders(XmlNodeRef pRootFoldersNode, CAudioAsset* pParentItem);
-	void           LoadFolderData(XmlNodeRef pRootFoldersNode, CAudioAsset* pParentItem);
+	void           LoadEditorData(XmlNodeRef const pEditorDataNode, CAudioAsset* const pRootItem);
+	void           LoadAllFolders(XmlNodeRef const pRootFoldersNode, CAudioAsset* const pParentItem);
+	void           LoadFolderData(XmlNodeRef const pRootFoldersNode, CAudioAsset* const pParentItem);
 
 	CAudioAsset*   AddUniqueFolderPath(CAudioAsset* pParent, QString const& path);
 
-	static string const ms_controlsLevelsFolder;
-	static string const ms_levelsFolder;
+	static string const s_controlsLevelsFolder;
+	static string const s_levelsFolder;
 	// TODO: Move these strings to Utils
 
 	CAudioAssetsManager* m_pAssetsManager;

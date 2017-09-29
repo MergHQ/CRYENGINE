@@ -34,11 +34,11 @@ public slots:
 
 private:
 
-	CAudioAssetsManager*     m_pAssetsManager;
-	CConnectionsWidget*      m_pConnectionsWidget;
-	QPropertyTree*           m_pPropertyTree;
-	QLabel*                  m_pConnectionsLabel;
-	std::unique_ptr<QString> m_pUsageHint;
-	bool                     m_bSupressUpdates = false;
+	CAudioAssetsManager* const m_pAssetsManager;
+	CConnectionsWidget* const  m_pConnectionsWidget;
+	QPropertyTree* const       m_pPropertyTree;
+	QLabel*                    m_pConnectionsLabel;
+	std::unique_ptr<QString>   m_pUsageHint;
+	bool                       m_supressUpdates = false;
 };
 } // namespace ACE

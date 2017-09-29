@@ -35,9 +35,10 @@ CConnectionsWidget::CConnectionsWidget(QWidget* pParent)
 	: QWidget(pParent)
 	, m_pControl(nullptr)
 	, m_pConnectionModel(new CConnectionModel())
+	, m_pFilterProxyModel(new QDeepFilterProxyModel())
+	, m_pConnectionProperties(new QPropertyTree())
 	, m_pTreeView(new CAudioTreeView())
 {
-	m_pFilterProxyModel = new QDeepFilterProxyModel();
 	m_pFilterProxyModel->setSourceModel(m_pConnectionModel);
 
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -55,25 +56,9 @@ CConnectionsWidget::CConnectionsWidget(QWidget* pParent)
 	QObject::connect(m_pTreeView, &CAudioTreeView::customContextMenuRequested, this, &CConnectionsWidget::OnContextMenu);
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CConnectionsWidget::RefreshConnectionProperties);
 
-	m_pConnectionPropertiesFrame = new QFrame();
-	m_pConnectionPropertiesFrame->setAutoFillBackground(false);
-	m_pConnectionPropertiesFrame->setStyleSheet(QStringLiteral("#m_pConnectionPropertiesFrame { border: 1px solid #363636; }"));
-	m_pConnectionPropertiesFrame->setFrameShape(QFrame::Box);
-	m_pConnectionPropertiesFrame->setFrameShadow(QFrame::Plain);
-	m_pConnectionPropertiesFrame->setHidden(true);
-	m_pConnectionPropertiesFrame->setMinimumHeight(20);
-
-	m_pConnectionProperties = new QPropertyTree();
-	m_pConnectionProperties->setSizeToContent(false);
-
-	QVBoxLayout* const pLayout = new QVBoxLayout();
-	pLayout->setContentsMargins(0, 0, 0, 0);
-	pLayout->addWidget(m_pConnectionProperties);
-	m_pConnectionPropertiesFrame->setLayout(pLayout);
-
 	QSplitter* const pSplitter = new QSplitter(Qt::Vertical);
 	pSplitter->addWidget(m_pTreeView);
-	pSplitter->addWidget(m_pConnectionPropertiesFrame);
+	pSplitter->addWidget(m_pConnectionProperties);
 	pSplitter->setCollapsible(0, false);
 	pSplitter->setCollapsible(1, false);
 
@@ -122,9 +107,9 @@ bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if (pEvent->type() == QEvent::KeyPress)
 	{
-		QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
+		QKeyEvent const* const pKeyEvent = static_cast<QKeyEvent*>(pEvent);
 
-		if (pKeyEvent && (pKeyEvent->key() == Qt::Key_Delete) && (pObject == m_pTreeView))
+		if ((pKeyEvent != nullptr) && (pKeyEvent->key() == Qt::Key_Delete) && (pObject == m_pTreeView))
 		{
 			RemoveSelectedConnection();
 			return true;
@@ -141,7 +126,7 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 
 	if (selectionCount > 0)
 	{
-		QMenu* pContextMenu = new QMenu();
+		QMenu* const pContextMenu = new QMenu();
 
 		char const* actionName = "Remove Connection";
 
@@ -158,10 +143,10 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 //////////////////////////////////////////////////////////////////////////
 void CConnectionsWidget::RemoveSelectedConnection()
 {
-	if (m_pControl)
+	if (m_pControl != nullptr)
 	{
-		CQuestionDialog* messageBox = new CQuestionDialog();
-		QModelIndexList const selectedIndices = m_pTreeView->selectionModel()->selectedRows();
+		CQuestionDialog* const messageBox = new CQuestionDialog();
+		QModelIndexList const& selectedIndices = m_pTreeView->selectionModel()->selectedRows();
 
 		if (!selectedIndices.empty())
 		{
@@ -182,22 +167,22 @@ void CConnectionsWidget::RemoveSelectedConnection()
 			if (messageBox->Execute() == QDialogButtonBox::Yes)
 			{
 				CUndo undo("Disconnected Audio Control from Audio System");
-				IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+				IAudioSystemEditor const* const pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
-				if (pAudioSystemEditorImpl)
+				if (pAudioSystemEditorImpl != nullptr)
 				{
 					std::vector<IAudioSystemItem*> items;
 					items.reserve(selectedIndices.size());
 
-					for (QModelIndex const index : selectedIndices)
+					for (QModelIndex const& index : selectedIndices)
 					{
 						CID const id = index.data(static_cast<int>(CConnectionModel::EConnectionModelRoles::Id)).toInt();
 						items.push_back(pAudioSystemEditorImpl->GetControl(id));
 					}
 
-					for (IAudioSystemItem* pItem : items)
+					for (IAudioSystemItem* const pItem : items)
 					{
-						if (pItem)
+						if (pItem != nullptr)
 						{
 							m_pControl->RemoveConnection(pItem);
 						}
@@ -232,13 +217,13 @@ void CConnectionsWidget::RefreshConnectionProperties()
 {
 	ConnectionPtr pConnection;
 
-	if (m_pControl)
+	if (m_pControl != nullptr)
 	{
-		QModelIndexList const selectedIndices = m_pTreeView->selectionModel()->selectedIndexes();
+		QModelIndexList const& selectedIndices = m_pTreeView->selectionModel()->selectedIndexes();
 
 		if (!selectedIndices.empty())
 		{
-			QModelIndex const index = selectedIndices[0];
+			QModelIndex const& index = selectedIndices[0];
 
 			if (index.isValid())
 			{
@@ -248,15 +233,15 @@ void CConnectionsWidget::RefreshConnectionProperties()
 		}
 	}
 
-	if (pConnection && pConnection->HasProperties())
+	if ((pConnection != nullptr) && pConnection->HasProperties())
 	{
 		m_pConnectionProperties->attach(Serialization::SStruct(*pConnection.get()));
-		m_pConnectionPropertiesFrame->setHidden(false);
+		m_pConnectionProperties->setHidden(false);
 	}
 	else
 	{
 		m_pConnectionProperties->detach();
-		m_pConnectionPropertiesFrame->setHidden(true);
+		m_pConnectionProperties->setHidden(true);
 	}
 }
 

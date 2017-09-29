@@ -38,7 +38,6 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	, m_pPropertiesWidget(nullptr)
 	, m_pMiddlewareDataWidget(nullptr)
 {
-	memset(m_allowedTypes, true, sizeof(m_allowedTypes));
 	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	
 	setAttribute(Qt::WA_DeleteOnClose);
@@ -80,9 +79,9 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		m_pMonitorSystem->EnableDelayed();
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalIsDirty.Connect([&](bool const bDirty)
+	m_pAssetsManager->signalIsDirty.Connect([&](bool const isDirty)
 	{
-		m_pSaveAction->setEnabled(bDirty);
+		m_pSaveAction->setEnabled(isDirty);
 	}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(this, &CAudioControlsEditorWindow::SaveBeforeImplementationChange);
@@ -109,7 +108,7 @@ void CAudioControlsEditorWindow::InitMenu()
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
 
 	CAbstractMenu* const pMenuEdit = GetMenu(MenuItems::EditMenu);
-	QAction* const pPreferencesAction = pMenuEdit->CreateAction(tr("Preferences..."));
+	QAction const* const pPreferencesAction = pMenuEdit->CreateAction(tr("Preferences..."));
 	QObject::connect(pPreferencesAction, &QAction::triggered, this, &CAudioControlsEditorWindow::OnPreferencesDialog);
 }
 
@@ -126,7 +125,7 @@ void CAudioControlsEditorWindow::InitToolbar(QVBoxLayout* const pWindowLayout)
 		{
 			m_pSaveAction = pToolBar->addAction(CryIcon("icons:General/File_Save.ico"), QString());
 			m_pSaveAction->setToolTip(tr("Save all changes"));
-			m_pSaveAction->setEnabled(false);
+			m_pSaveAction->setEnabled(m_pAssetsManager->IsDirty());
 			QObject::connect(m_pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
 		}
 
@@ -163,7 +162,6 @@ CSystemControlsWidget* CAudioControlsEditorWindow::CreateSystemControlsWidget()
 	}
 
 	QObject::connect(pSystemControlsWidget, &CSystemControlsWidget::SelectedControlChanged, this, &CAudioControlsEditorWindow::OnSelectedSystemControlChanged);
-	QObject::connect(pSystemControlsWidget, &CSystemControlsWidget::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
 	QObject::connect(pSystemControlsWidget, &CSystemControlsWidget::StartTextFiltering, this, &CAudioControlsEditorWindow::OnStartTextFiltering);
 	QObject::connect(pSystemControlsWidget, &CSystemControlsWidget::StopTextFiltering, this, &CAudioControlsEditorWindow::OnStopTextFiltering);
 	QObject::connect(pSystemControlsWidget, &QObject::destroyed, this, &CAudioControlsEditorWindow::OnSystemControlsWidgetDestruction);
@@ -193,6 +191,7 @@ CPropertiesWidget* CAudioControlsEditorWindow::CreatePropertiesWidget()
 	QObject::connect(this, &CAudioControlsEditorWindow::OnStopTextFiltering, pPropertiesWidget, &CPropertiesWidget::RestoreTreeViewStates);
 	QObject::connect(pPropertiesWidget, &QObject::destroyed, this, &CAudioControlsEditorWindow::OnPropertiesWidgetDestruction);
 
+	m_pPropertiesWidget->SetSelectedControls(GetSelectedSystemControls());
 	return pPropertiesWidget;
 }
 
@@ -212,7 +211,7 @@ CMiddlewareDataWidget* CAudioControlsEditorWindow::CreateMiddlewareDataWidget()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorWindow::OnSystemControlsWidgetDestruction(QObject* pObject)
+void CAudioControlsEditorWindow::OnSystemControlsWidgetDestruction(QObject* const pObject)
 {
 	CSystemControlsWidget* pWidget = static_cast<CSystemControlsWidget*>(pObject);
 
@@ -223,7 +222,7 @@ void CAudioControlsEditorWindow::OnSystemControlsWidgetDestruction(QObject* pObj
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorWindow::OnPropertiesWidgetDestruction(QObject* pObject)
+void CAudioControlsEditorWindow::OnPropertiesWidgetDestruction(QObject* const pObject)
 {
 	CPropertiesWidget* pWidget = static_cast<CPropertiesWidget*>(pObject);
 
@@ -234,7 +233,7 @@ void CAudioControlsEditorWindow::OnPropertiesWidgetDestruction(QObject* pObject)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorWindow::OnMiddlewareDataWidgetDestruction(QObject* pObject)
+void CAudioControlsEditorWindow::OnMiddlewareDataWidgetDestruction(QObject* const pObject)
 {
 	CMiddlewareDataWidget* pWidget = static_cast<CMiddlewareDataWidget*>(pObject);
 
@@ -258,9 +257,9 @@ void CAudioControlsEditorWindow::CreateDefaultLayout(CDockableContainer* pSender
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 {
-	if (m_pAssetsManager && m_pAssetsManager->IsDirty())
+	if ((m_pAssetsManager != nullptr) && m_pAssetsManager->IsDirty())
 	{
-		CQuestionDialog* messageBox = new CQuestionDialog();
+		CQuestionDialog* const messageBox = new CQuestionDialog();
 		messageBox->SetupQuestion(tr(GetEditorName()), tr("There are unsaved changes.\nDo you want to save your changes?"), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
 
 		switch (messageBox->Execute())
@@ -271,9 +270,9 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 			break;
 		case QDialogButtonBox::Discard:
 		{
-			IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+			IAudioSystemEditor* const pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
-			if (pAudioSystemEditorImpl)
+			if (pAudioSystemEditorImpl != nullptr)
 			{
 				pAudioSystemEditorImpl->Reload(false);
 			}
@@ -329,16 +328,16 @@ void CAudioControlsEditorWindow::Reload()
 		m_pMonitorSystem->Disable();
 		m_pMonitorMiddleware->Disable();
 
-		bool bReload = true;
+		bool shouldReload = true;
 
 		if (m_pAssetsManager->IsDirty())
 		{
-			CQuestionDialog* messageBox = new CQuestionDialog();
+			CQuestionDialog* const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion(tr(GetEditorName()), tr("If you reload you will lose all your unsaved changes.\nAre you sure you want to reload?"), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
-			bReload = (messageBox->Execute() == QDialogButtonBox::Yes);
+			shouldReload = (messageBox->Execute() == QDialogButtonBox::Yes);
 		}
 
-		if (bReload)
+		if (shouldReload)
 		{
 			QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 			BackupTreeViewStates();
@@ -357,6 +356,11 @@ void CAudioControlsEditorWindow::Reload()
 			}
 
 			m_pAssetsManager->UpdateAllConnectionStates();
+
+			if (m_pSystemControlsWidget != nullptr)
+			{
+				m_pSystemControlsWidget->Reload();
+			}
 
 			if (m_pPropertiesWidget != nullptr)
 			{
@@ -386,7 +390,7 @@ void CAudioControlsEditorWindow::SaveBeforeImplementationChange()
 	{
 		if (m_pAssetsManager->IsDirty())
 		{
-			CQuestionDialog* messageBox = new CQuestionDialog();
+			CQuestionDialog* const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion(tr(GetEditorName()), tr("Middleware implementation changed.\nThere are unsaved changes.\nDo you want to save before reloading?"), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
 
 			if (messageBox->Execute() == QDialogButtonBox::Yes)
@@ -424,36 +428,38 @@ void CAudioControlsEditorWindow::CheckErrorMask()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::Save()
 {
-	bool bPreloadsChanged = m_pAssetsManager->IsTypeDirty(EItemType::Preload);
-	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-	CAudioControlsEditorPlugin::SaveModels();
-	UpdateAudioSystemData();
-	QGuiApplication::restoreOverrideCursor();
-
-	// if preloads have been modified, ask the user if s/he wants to refresh the audio system
-	if (bPreloadsChanged)
+	if (m_pAssetsManager != nullptr)
 	{
-		CQuestionDialog* messageBox = new CQuestionDialog();
-		messageBox->SetupQuestion(tr(GetEditorName()), tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
+		QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+		CAudioControlsEditorPlugin::SaveModels();
+		UpdateAudioSystemData();
+		QGuiApplication::restoreOverrideCursor();
 
-		if (messageBox->Execute() == QDialogButtonBox::Yes)
+		// if preloads have been modified, ask the user if s/he wants to refresh the audio system
+		if (m_pAssetsManager->IsTypeDirty(EItemType::Preload))
 		{
-			QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-			char const* szLevelName = GetIEditor()->GetLevelName();
+			CQuestionDialog* const messageBox = new CQuestionDialog();
+			messageBox->SetupQuestion(tr(GetEditorName()), tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
 
-			if (_stricmp(szLevelName, "Untitled") == 0)
+			if (messageBox->Execute() == QDialogButtonBox::Yes)
 			{
-				// Rather pass nullptr to indicate that no level is loaded!
-				szLevelName = nullptr;
+				QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+				char const* szLevelName = GetIEditor()->GetLevelName();
+
+				if (_stricmp(szLevelName, "Untitled") == 0)
+				{
+					// Rather pass nullptr to indicate that no level is loaded!
+					szLevelName = nullptr;
+				}
+
+				CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
+				gEnv->pAudioSystem->Refresh(szLevelName, data);
+				QGuiApplication::restoreOverrideCursor();
 			}
-
-			CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
-			gEnv->pAudioSystem->Refresh(szLevelName, data);
-			QGuiApplication::restoreOverrideCursor();
 		}
-	}
 
-	m_pAssetsManager->ClearDirtyFlags();
+		m_pAssetsManager->ClearDirtyFlags();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -479,30 +485,13 @@ void CAudioControlsEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorWindow::FilterControlType(EItemType const type, bool const bShow)
-{
-	m_allowedTypes[static_cast<int>(type)] = bShow;
-
-	if (type == EItemType::Switch)
-	{
-		// need to keep states and switches filtering in sync as we don't have a separate filtering for states, only for switches
-		m_allowedTypes[static_cast<int>(EItemType::State)] = bShow;
-	}
-
-	if (m_pMiddlewareDataWidget != nullptr)
-	{
-		m_pMiddlewareDataWidget->SetAllowedControls(type, bShow);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::ReloadSystemData()
 {
 	if (m_pAssetsManager != nullptr)
 	{
 		m_pMonitorSystem->Disable();
 
-		bool bReload = true;
+		bool shouldReload = true;
 		char const* messageText;
 
 		if (m_pAssetsManager->IsDirty())
@@ -514,11 +503,11 @@ void CAudioControlsEditorWindow::ReloadSystemData()
 			messageText = "External changes have been made to audio controls files.\nDo you want to reload?";
 		}
 
-		CQuestionDialog* messageBox = new CQuestionDialog();
+		CQuestionDialog* const messageBox = new CQuestionDialog();
 		messageBox->SetupQuestion(tr(GetEditorName()), tr(messageText), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
-		bReload = (messageBox->Execute() == QDialogButtonBox::Yes);
+		shouldReload = (messageBox->Execute() == QDialogButtonBox::Yes);
 
-		if (bReload)
+		if (shouldReload)
 		{
 			m_pAssetsManager->ClearDirtyFlags();
 			Reload();
@@ -540,7 +529,7 @@ void CAudioControlsEditorWindow::ReloadMiddlewareData()
 			m_pMonitorMiddleware->Disable();
 
 			char const* messageText = "External changes have been made to middleware data.\n\nWarning: If middleware data gets refreshed without saving audio control files, unsaved connection changes will get lost!\n\nDo you want to save before refreshing middleware data?";
-			CQuestionDialog* messageBox = new CQuestionDialog();
+			CQuestionDialog* const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion(tr(GetEditorName()), tr(messageText), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::Yes);
 
 			if (messageBox->Execute() == QDialogButtonBox::Yes)
@@ -555,9 +544,9 @@ void CAudioControlsEditorWindow::ReloadMiddlewareData()
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	BackupTreeViewStates();
 
-	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+	IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
-	if (pAudioSystemImpl)
+	if (pAudioSystemImpl != nullptr)
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
 		pAudioSystemImpl->Reload();

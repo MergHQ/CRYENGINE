@@ -4,12 +4,6 @@
 
 #include "AudioAssets.h"
 
-#include <ACETypes.h>
-#include <IAudioConnection.h>
-#include <CryString/CryString.h>
-#include <CrySystem/XML/IXml.h>
-#include <CrySystem/ISystem.h>
-
 namespace ACE
 {
 class CAudioAssetsManager;
@@ -18,7 +12,7 @@ class IAudioSystemEditor;
 struct SLibraryScope
 {
 	SLibraryScope()
-		: bDirty(false)
+		: isDirty(false)
 	{
 		pNodes[0] = GetISystem()->CreateXmlNode("AudioTriggers");
 		pNodes[1] = GetISystem()->CreateXmlNode("AudioRTPCs");
@@ -46,7 +40,7 @@ struct SLibraryScope
 	}
 
 	XmlNodeRef pNodes[5]; // Trigger, Parameter, Switch, Environment, Preloads
-	bool       bDirty;
+	bool       isDirty;
 };
 
 typedef std::map<Scope, SLibraryScope> LibraryStorage;
@@ -60,11 +54,11 @@ public:
 private:
 
 	void WriteLibrary(CAudioLibrary& library);
-	void WriteItem(CAudioAsset* pItem, const string& path, LibraryStorage& library);
+	void WriteItem(CAudioAsset* const pItem, string const& path, LibraryStorage& library);
 	void GetScopes(CAudioAsset const* const pItem, std::unordered_set<Scope>& scopes);
-	void WriteControlToXML(XmlNodeRef pNode, CAudioControl* pControl, const string& path);
-	void WriteConnectionsToXML(XmlNodeRef pNode, CAudioControl* pControl, const int platformIndex = -1);
-	void WriteEditorData(CAudioAsset* pLibrary, XmlNodeRef pParentNode) const;
+	void WriteControlToXML(XmlNodeRef const pNode, CAudioControl* pControl, string const& path);
+	void WriteConnectionsToXML(XmlNodeRef const pNode, CAudioControl* const pControl, int const platformIndex = -1);
+	void WriteEditorData(CAudioAsset const* const pLibrary, XmlNodeRef const pParentNode) const;
 
 	void CheckOutFile(string const& filepath);
 	void DeleteLibraryFile(string const& filepath);
