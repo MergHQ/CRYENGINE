@@ -381,7 +381,7 @@ static void fileAccessMessage(int threadIndex, const char* inName)
 // Initializes the crypak system;
 //   pVarPakPriority points to the variable, which is, when set to 1,
 //   signals that the files from pak should have higher priority than filesystem files
-CCryPak::CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes, const IGameStartup* pGameStartup) :
+CCryPak::CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes) :
 	m_pLog(pLog),
 	m_eRecordFileOpenList(RFOM_Disabled),
 	m_pPakVars(pPakVars ? pPakVars : &g_cvars.pakVars),
@@ -415,17 +415,12 @@ CCryPak::CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes, const IG
 	m_mainThreadId = GetCurrentThreadId();
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CCryPak");
+}
 
+void CCryPak::SetDecryptionKey(const uint8* pKeyData, uint32 keyLength)
+{
 #ifdef INCLUDE_LIBTOMCRYPT
-	if (pGameStartup)
-	{
-		uint32 keyLen;
-		const uint8* pKeyData = pGameStartup->GetRSAKey(&keyLen);
-		if (pKeyData && keyLen > 0)
-		{
-			ZipEncrypt::Init(pKeyData, keyLen);
-		}
-	}
+	ZipEncrypt::Init(pKeyData, keyLength);
 #endif
 }
 

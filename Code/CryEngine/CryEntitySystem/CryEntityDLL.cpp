@@ -5,6 +5,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include "EntitySystem.h"
 #include "EntityUnitTests.h"
+#include "EntityClassRegistry.h"
 
 #include "Schematyc/EntitySchematycActions.h"
 #include "Schematyc/EntitySchematycUtilFunctions.h"
@@ -32,8 +33,14 @@ public:
 	{
 		switch (event)
 		{
+		case ESYSTEM_EVENT_GAME_POST_INIT:
+			{
+				static_cast<CEntityClassRegistry*>(g_pIEntitySystem->GetClassRegistry())->OnGameFrameworkInitialized();
+			}
+			break;
 		case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
 			{
+
 				auto entitySchematycRegistration = [](Schematyc::IEnvRegistrar& registrar)
 				{
 					Schematyc::CEntityTimerAction::Register(registrar);

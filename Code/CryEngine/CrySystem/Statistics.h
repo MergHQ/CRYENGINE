@@ -7,6 +7,6 @@
 
 extern void                            RegisterEngineStatistics();
 
-extern const std::vector<const char*>& GetModuleNames();
+extern const std::vector<string>& GetModuleNames();
 
 #endif //__statistics_h__

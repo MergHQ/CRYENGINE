@@ -53,6 +53,8 @@
 #include <CryAction/ILipSyncProvider.h>
 %}
 
+%ignore IGameFrameworkEngineModule;
+
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"
 
 %csconstvalue("0xFFFFFFFF") eEA_All;

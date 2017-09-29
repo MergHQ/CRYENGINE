@@ -254,9 +254,6 @@ public:
 	///////////////////////////////////////////////////////////////////////////
 	//! @name ISystem implementation
 	//@{
-	virtual bool                      Init();
-	virtual void                      Release() override;
-
 	virtual SSystemGlobalEnvironment* GetGlobalEnvironment() override { return &m_env; }
 
 	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
@@ -482,6 +479,9 @@ public:
 	virtual ICryFactoryRegistry* GetCryFactoryRegistry() const override;
 
 public:
+	bool Initialize(SSystemInitParams& initParams);
+	void RunMainLoop();
+
 	// this enumeration describes the purpose for which the statistics is gathered.
 	// if it's gathered to be dumped, then some different rules may be applied
 	enum MemStatsPurposeEnum {nMSP_ForDisplay, nMSP_ForDump, nMSP_ForCrashLog, nMSP_ForBudget};
@@ -494,8 +494,7 @@ public:
 	void         SetVersionInfo(const char* const szVersion);
 
 	virtual ICryFactory* LoadModuleWithFactory(const char* dllName, const CryInterfaceID& moduleInterfaceId) override;
-	virtual bool         InitializeEngineModule(const char* dllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound) override;
-	virtual bool         UnloadEngineModule(const char* dllName) override;
+	virtual bool UnloadEngineModule(const char* dllName) override;
 
 #if CRY_PLATFORM_WINDOWS
 	friend LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -515,8 +514,11 @@ public:
 
 	WIN_HMODULE LoadDynamicLibrary(const char* dllName, bool bQuitIfNotFound = true, bool bLogLoadingInfo = false);
 	bool        UnloadDynamicLibrary(const char* dllName);
+	void        GetLoadedDynamicLibraries(std::vector<string>& moduleNames) const;
 
 private:
+
+	bool InitializeEngineModule(const SSystemInitParams& startupParams, const char* dllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound);
 
 	// Release all resources.
 	void ShutDown();
@@ -526,33 +528,34 @@ private:
 	//! @name Initialization routines
 	//@{
 
-	bool InitNetwork();
-	bool InitInput();
+	bool InitNetwork(const SSystemInitParams& startupParams);
+	bool InitInput(const SSystemInitParams& startupParams);
 
 	bool InitConsole();
-	bool InitRenderer(WIN_HWND hwnd);
-	bool InitPhysics();
-	bool InitPhysicsRenderer();
+	bool InitRenderer(SSystemInitParams& startupParams);
+	bool InitPhysics(const SSystemInitParams& startupParams);
+	bool InitPhysicsRenderer(const SSystemInitParams& startupParams);
 
-	bool InitFont();
+	bool InitFont(const SSystemInitParams& startupParams);
 	bool InitFlash();
-	bool InitAISystem();
-	bool InitScriptSystem();
-	bool InitFileSystem(const IGameStartup* pGameStartup);
-	void InitLog();
+	bool InitAISystem(const SSystemInitParams& startupParams);
+	bool InitScriptSystem(const SSystemInitParams& startupParams);
+	bool InitFileSystem(const SSystemInitParams& startupParams);
+	void InitLog(const SSystemInitParams& startupParams);
 	void LoadPatchPaks();
 	bool InitFileSystem_LoadEngineFolders();
 	bool InitStreamEngine();
-	bool Init3DEngine();
-	bool InitAnimationSystem();
-	bool InitMovieSystem();
-	bool InitSchematyc();
-	bool InitEntitySystem();
-	bool InitDynamicResponseSystem();
-	bool InitLiveCreate();
-	bool InitMonoBridge();
-	bool OpenRenderLibrary(int type);
-	bool OpenRenderLibrary(const char* t_rend);
+	bool Init3DEngine(const SSystemInitParams& startupParams);
+	bool InitAnimationSystem(const SSystemInitParams& startupParams);
+	bool InitMovieSystem(const SSystemInitParams& startupParams);
+	bool InitSchematyc(const SSystemInitParams& startupParams);
+	bool InitEntitySystem(const SSystemInitParams& startupParams);
+	bool InitDynamicResponseSystem(const SSystemInitParams& startupParams);
+	bool InitLiveCreate(const SSystemInitParams& startupParams);
+	bool InitMonoBridge(const SSystemInitParams& startupParams);
+	void InitGameFramework(SSystemInitParams& startupParams);
+	bool OpenRenderLibrary(const SSystemInitParams& startupParams, int type);
+	bool OpenRenderLibrary(const SSystemInitParams& startupParams, const char* t_rend);
 	bool CloseRenderLibrary(const char* t_rend);
 
 	//@}
@@ -568,7 +571,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Helper functions.
 	//////////////////////////////////////////////////////////////////////////
-	void        CreateRendererVars();
+	void        CreateRendererVars(const SSystemInitParams& startupParams);
 	void        CreateSystemVars();
 	void        CreateAudioVars();
 	void        RenderStats();
@@ -710,8 +713,7 @@ private: // ------------------------------------------------------
 	};
 	SDllHandles                        m_dll;
 
-	std::map<CCryNameCRC, WIN_HMODULE> m_moduleDLLHandles;
-	std::map<CCryNameCRC, WIN_HMODULE> m_extensionDLLHandles;
+	std::unordered_map<string, WIN_HMODULE, stl::hash_strcmp<string>> m_moduleDLLHandles;
 
 	//! THe streaming engine
 	CStreamEngine* m_pStreamEngine;

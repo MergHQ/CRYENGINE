@@ -124,4 +124,33 @@ static HMODULE CryLoadLibrary(const char* libName, bool bLazy = false, bool bInM
 #define CryLibraryDefName(libName)               CrySharedLibraryPrefix libName CrySharedLibraryExtension
 #define CryLoadLibraryDefName(libName)           CryLoadLibrary(CryLibraryDefName(libName))
 
+// RAII helper to load a dynamic library and free it at the end of the scope.
+class CCryLibrary
+{
+public:
+	CCryLibrary(const char* szLibraryPath)
+	{
+		m_hModule = CryLoadLibrary(szLibraryPath);
+	}
+
+	~CCryLibrary()
+	{
+		if (m_hModule != nullptr)
+		{
+			CryFreeLibrary(m_hModule);
+		}
+	}
+
+	void ReleaseOwnership() { m_hModule = nullptr; }
+	bool IsLoaded() const { return m_hModule != nullptr; }
+
+	template<typename TProcedure>
+	TProcedure GetProcedureAddress(const char* szName)
+	{
+		return (TProcedure)CryGetProcAddress(m_hModule, szName);
+	}
+
+	HMODULE m_hModule;
+};
+
 #endif //CRYLIBRARY_H__

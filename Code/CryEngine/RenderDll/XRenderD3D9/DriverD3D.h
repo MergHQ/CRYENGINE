@@ -599,7 +599,7 @@ public:
 
 	//===============================================================================
 
-  virtual WIN_HWND Init(int x,int y,int width,int height,unsigned int cbpp, int zbpp, int sbits, bool fullscreen,WIN_HWND Glhwnd=0, bool bReInit=false, const SCustomRenderInitArgs* pCustomArgs=0, bool bShaderCacheGen = false) override;
+  virtual WIN_HWND Init(int x,int y,int width,int height,unsigned int cbpp, int zbpp, int sbits, bool fullscreen,WIN_HWND Glhwnd=0, bool bReInit=false, bool bShaderCacheGen = false) override;
 
 	virtual void GetVideoMemoryUsageStats( size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes = false ) override;
 

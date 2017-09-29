@@ -383,7 +383,7 @@ public:
 	static char* BeautifyPath(char* dst, bool bMakeLowercase);
 	static void  RemoveRelativeParts(char* dst);
 
-	CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes, const IGameStartup* pGameStartup);
+	CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes);
 	~CCryPak();
 
 	const PakVars* GetPakVars() const { return m_pPakVars; }
@@ -394,6 +394,8 @@ public:
 		m_pAssetManager = mgr;
 	}
 #endif
+
+	void SetDecryptionKey(const uint8* pKeyData, uint32 keyLength);
 
 public: // ---------------------------------------------------------------------------------------
 

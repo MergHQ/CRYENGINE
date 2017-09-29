@@ -926,13 +926,9 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 			}
 		}
 #endif
+		gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::Native, "CryLobby");
 
-		if (!gEnv->pSystem->InitializeEngineModule("CryLobby", cryiidof<ILobbyEngineModule>(), false))
-		{
-			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Error creating Lobby System!");
-		}
-
-		auto pLobby = gEnv->pNetwork->GetLobby();
+		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
 		if (pLobby)
 		{
 			pLobby->SetUserPacketEnd(eGUPD_End);

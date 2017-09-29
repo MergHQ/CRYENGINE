@@ -51,6 +51,7 @@ public:
 	IEntityClass* IteratorNext() override;
 	int           GetClassCount() const override { return m_mapClassName.size(); };
 
+	void          OnGameFrameworkInitialized();
 	void          InitializeDefaultClasses();
 
 	void          GetMemoryUsage(ICrySizer* pSizer) const

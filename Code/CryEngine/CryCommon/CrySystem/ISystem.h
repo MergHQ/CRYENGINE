@@ -393,8 +393,6 @@ enum ESystemEvent
 	ESYSTEM_EVENT_GLOBAL_SYSCMD_BACK,
 	ESYSTEM_EVENT_GLOBAL_SYSCMD_CHANGE_VIEW,
 
-	ESYSTEM_EVENT_ACTIVATION_EVENT, //!< Sent from external programs or the system.
-
 	//! ESYSTEM_EVENT_DURANGO_CHANGE_VISIBILITY is called when the app totally disappears or reappears.
 	//! ESYSTEM_EVENT_CHANGE_FOCUS is called in that situation, but also when the app is constantly visible and only the focus changes.
 	//! wparam = 0 -> visibility lost,  wparam = 1 -> visibility recovered.
@@ -611,7 +609,6 @@ struct SSystemInitParams
 	char                 szBinariesDir[256];
 
 	bool                 bEditor;             //!< When running in Editor mode.
-	bool                 bManualEngineLoop;   //!< Whether or not the engine should manage the engine loop by itself
 	bool                 bPreview;            //!< When running in Preview mode (Minimal initialization).
 	bool                 bDedicatedServer;    //!< When running a dedicated server.
 	bool                 bExecuteCommandLine; //!< can be switched of to suppress the feature or do it later during the initialization.
@@ -633,8 +630,6 @@ struct SSystemInitParams
 #endif
 
 	ISystem*        pSystem;              //!< Pointer to existing ISystem interface, it will be reused if not NULL.
-	IGameStartup*   pGameStartup;         //!< Pointer to the calling GameStartup instance, to allow use of some game specific data during engine init.
-	IGameFramework* pGameFramework;       //!< Pointer to the framework that started the engine
 	//! Char szLocalIP[256];              //! local IP address (needed if we have several servers on one machine).
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	void (* pCheckFunc)(void*);            //!< Authentication function (must be set).
@@ -650,21 +645,20 @@ struct SSystemInitParams
 	//! Initialization defaults.
 	SSystemInitParams()
 	{
-		hWnd = NULL;
-		pLog = NULL;
-		pLogCallback = NULL;
-		pUserCallback = NULL;
+		hWnd = nullptr;
+		pLog = nullptr;
+		pLogCallback = nullptr;
+		pUserCallback = nullptr;
 #if defined(CVARS_WHITELIST)
-		pCVarsWhitelist = NULL;
+		pCVarsWhitelist = nullptr;
 #endif // defined(CVARS_WHITELIST)
-		sLogFileName = NULL;
-		pValidator = NULL;
-		pPrintSync = NULL;
+		sLogFileName = nullptr;
+		pValidator = nullptr;
+		pPrintSync = nullptr;
 		memset(szSystemCmdLine, 0, sizeof(szSystemCmdLine));
 		memset(szUserPath, 0, sizeof(szUserPath));
 		memset(szBinariesDir, 0, sizeof(szBinariesDir));
 		bEditor = false;
-		bManualEngineLoop = false;
 		bPreview = false;
 		bDedicatedServer = false;
 		bExecuteCommandLine = true;
@@ -687,16 +681,15 @@ struct SSystemInitParams
 		bShaderCacheGen = false;
 		bUnattendedMode = false;
 
-		pSystem = NULL;
-		pGameStartup = NULL;
-		pCheckFunc = NULL;
+		pSystem = nullptr;
+		pCheckFunc = nullptr;
 
 #if CRY_PLATFORM_DURANGO
-		pLastPLMEvent = NULL;
+		pLastPLMEvent = nullptr;
 #endif
 
 		memset(pProtectedFunctions, 0, sizeof(pProtectedFunctions));
-		pCvarsDefault = NULL;
+		pCvarsDefault = nullptr;
 	}
 };
 
@@ -1121,9 +1114,6 @@ struct ISystem
 
 	// <interfuscator:shuffle>
 	virtual ~ISystem(){}
-
-	//! Releases ISystem.
-	virtual void Release() = 0;
 
 	//! Will return NULL if no whitelisting.
 	virtual ILoadConfigurationEntrySink* GetCVarsWhiteListConfigSink() const = 0;
@@ -1591,9 +1581,6 @@ struct ISystem
 		return nullptr;
 	}
 
-	//! Loads a dynamic library, creates and initializes an instance of the module class
-	virtual bool InitializeEngineModule(const char* szDllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound) = 0;
-
 	//! Unloads a dynamic library as well as the corresponding instance of the module class
 	virtual bool UnloadEngineModule(const char* szDllName) = 0;
 
@@ -1629,7 +1616,7 @@ struct ISystem
 #define SYNCHRONOUS_LOADING_TICK() do { if (gEnv && gEnv->pSystem) gEnv->pSystem->SynchronousLoadingTick(__FUNC__, __LINE__); } while (0)
 
 // CrySystem DLL Exports.
-typedef ISystem* (* PFNCREATESYSTEMINTERFACE)(SSystemInitParams& initParams);
+typedef ISystem* (* PFNCREATESYSTEMINTERFACE)(SSystemInitParams& initParams, bool bManualEngineLoop);
 
 // Global environment variable.
 #if defined(SYS_ENV_AS_STRUCT)
@@ -1658,7 +1645,7 @@ extern int g_iTraceAllocations;
 //! Interface of the DLL.
 extern "C"
 {
-	CRYSYSTEM_API ISystem* CreateSystemInterface(const SSystemInitParams& initParams);
+	CRYSYSTEM_API ISystem* CreateSystemInterface(SSystemInitParams& initParams, bool bManualEngineLoop);
 }
 
 //! Displays error message, logs it to console and file and error message box, tThen terminates execution.

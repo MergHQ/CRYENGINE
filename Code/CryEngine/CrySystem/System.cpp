@@ -208,11 +208,9 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 // System Implementation.
 //////////////////////////////////////////////////////////////////////////
 CSystem::CSystem(const SSystemInitParams& startupParams)
-	:
 #if defined(SYS_ENV_AS_STRUCT)
-	m_env(gEnv),
+	: m_env(gEnv)
 #endif
-	m_startupParams(startupParams)
 {
 	m_systemGlobalState = ESYSTEM_GLOBAL_STATE_INIT;
 	m_iHeight = 0;
@@ -262,8 +260,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.bIgnoreAllAsserts = false;
 	m_env.bUnattendedMode = false;
 	m_env.bTesting = false;
-
-	m_env.pGameFramework = startupParams.pGameFramework;
 
 #if CRY_PLATFORM_DURANGO
 	m_env.ePLM_State = EPLM_UNDEFINED;
@@ -527,12 +523,6 @@ CSystem::~CSystem()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::Release()
-{
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::FreeLib(WIN_HMODULE hLibModule)
 {
 	if (hLibModule)
@@ -693,6 +683,7 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
 
+	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
 	SAFE_DELETE(m_pPluginManager);
 
@@ -1511,6 +1502,12 @@ void CSystem::PrePhysicsUpdate()
 
 		m_env.pEntitySystem->PrePhysicsUpdate();
 	}
+}
+
+void CSystem::RunMainLoop()
+{
+	// TODO: Move the main loop to CrySystem
+	gEnv->pGameFramework->Run("");
 }
 
 //////////////////////////////////////////////////////////////////////

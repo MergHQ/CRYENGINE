@@ -1385,7 +1385,7 @@ static void Command_ColorGradingChartImage(IConsoleCmdArgs* pCmd)
 	}
 }
 
-WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd, bool bReInit, const SCustomRenderInitArgs* pCustomArgs, bool bShaderCacheGen)
+WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
 {
 	LOADING_TIME_PROFILE_SECTION;
 

@@ -203,8 +203,6 @@ extern "C" IGameStartup* CreateGameStartup();
 
 CCryAction* CCryAction::m_pThis = 0;
 
-#define DLL_INITFUNC_SYSTEM "CreateSystemInterface"
-
 static const int s_saveGameFrameDelay = 3; // enough to render enough frames to display the save warning icon before the save generation
 
 static const float s_loadSaveDelay = 0.5f;  // Delay between load/save operations.
@@ -233,7 +231,7 @@ public:
 			}
 		case ESYSTEM_EVENT_FAST_SHUTDOWN:
 			{
-				CCryAction::GetCryAction()->ShutdownEngineFast();
+				CCryAction::GetCryAction()->FastShutdown();
 			}
 			break;
 		}
@@ -278,7 +276,7 @@ void CCryAction::DumpMemInfo(const char* format, ...)
   }
 
 //------------------------------------------------------------------------
-CCryAction::CCryAction()
+CCryAction::CCryAction(SSystemInitParams& initParams)
 	: m_paused(false),
 	m_forcedpause(false),
 	m_pSystem(0),
@@ -288,7 +286,6 @@ CCryAction::CCryAction()
 	m_pEntitySystem(0),
 	m_pTimer(0),
 	m_pLog(0),
-	m_systemDll(0),
 	m_pGameToEditor(nullptr),
 	m_pGame(0),
 	m_pLevelSystem(0),
@@ -377,6 +374,8 @@ CCryAction::CCryAction()
 	m_editorLevelName[0] = 0;
 	m_editorLevelFolder[0] = 0;
 	cry_strcpy(m_gameGUID, "{00000000-0000-0000-0000-000000000000}");
+
+	Initialize(initParams);
 }
 
 CCryAction::~CCryAction()
@@ -1765,17 +1764,12 @@ static inline void InlineInitializationProcessing(const char* sDescription)
 }
 
 //------------------------------------------------------------------------
-bool CCryAction::StartEngine(SSystemInitParams& startupParams)
+bool CCryAction::Initialize(SSystemInitParams& startupParams)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CryAction Init");
 
-	// set unit test flag at start so multiple systems could handle initialization differently when needed
-	if (strstr(startupParams.szSystemCmdLine, "-run_unit_tests"))
-		startupParams.bTesting = true;
-
+	gEnv->pGameFramework = this;
 	m_pSystem = startupParams.pSystem;
-
-	startupParams.pGameFramework = this;
 
 	m_pGFListeners = new TGameFrameworkListeners();
 
@@ -1784,42 +1778,11 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	m_pGFListeners->reserve(20);
 	m_validListeners.reserve(m_pGFListeners->capacity());
 
-	if (!startupParams.pSystem)
-	{
-#if !defined(_LIB)
-		m_systemDll = CryLoadLibraryDefName("CrySystem");
-
-		if (!m_systemDll)
-		{
-			return false;
-		}
-		PFNCREATESYSTEMINTERFACE CreateSystemInterface =
-		  (PFNCREATESYSTEMINTERFACE)CryGetProcAddress(m_systemDll, DLL_INITFUNC_SYSTEM);
-		if (CreateSystemInterface)
-#endif // _LIB
-		{
-			// initialize the system
-			m_pSystem = CreateSystemInterface(startupParams);
-			startupParams.pSystem = m_pSystem;
-		}
-
-		if (!m_pSystem)
-		{
-			return false;
-		}
-	}
-	else
-	{
-		if (*startupParams.szUserPath)
-			startupParams.pSystem->ChangeUserPath(startupParams.szUserPath);
-	}
-
 	ModuleInitISystem(m_pSystem, "CryAction");  // Needed by GetISystem();
 
 	// Flow nodes are registered only when compiled as dynamic library
 	CryRegisterFlowNodes();
 
-	// here we have gEnv and m_pSystem
 	LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() after system");
 
 	InlineInitializationProcessing("CCryAction::Init CrySystem and CryAction init");
@@ -2085,11 +2048,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 		gEnv->pConsole->ExecuteString("exec autoexec.cfg");
 
-		// run main game loop
-		if (!startupParams.bManualEngineLoop)
-		{
-			Run("");
-		}
 		return true;
 	}
 
@@ -2150,7 +2108,6 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 			return false;
 		}
 
-		startupParams.pGameStartup = pGameStartup;
 		if (m_externalGameLibrary.pGame = pGameStartup->Init(startupParams))
 		{
 			m_externalGameLibrary.dllName = gameDLLName;
@@ -2559,7 +2516,7 @@ bool CCryAction::ShutdownGame()
 }
 
 //------------------------------------------------------------------------
-void CCryAction::ShutdownEngine()
+void CCryAction::Release()
 {
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN, 0, 0);
 
@@ -2688,24 +2645,15 @@ void CCryAction::ShutdownEngine()
 		m_pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_action);
 	}
 
-	// having a dll handle means we did create the system interface
-	// so we must release it
-	SAFE_RELEASE(m_pSystem);
-	if (m_systemDll)
-	{
-		CryFreeLibrary(m_systemDll);
-		m_systemDll = nullptr;
-		// in dll config, gEnv is dead after this point. RIP gEnv.
-	}
-
 	SAFE_DELETE(m_nextFrameCommand);
 	SAFE_DELETE(m_pPhysicsQueues);
 
 	m_pThis = nullptr;
+	delete this;
 }
 
 //------------------------------------------------------------------------
-void CCryAction::ShutdownEngineFast()
+void CCryAction::FastShutdown()
 {
 	IForceFeedbackSystem* pForceFeedbackSystem = GetIForceFeedbackSystem();
 	if (pForceFeedbackSystem)
@@ -2721,8 +2669,6 @@ void CCryAction::ShutdownEngineFast()
 }
 
 //------------------------------------------------------------------------
-f32 g_fPrintLine = 0.0f;
-
 void CCryAction::PrePhysicsUpdate()
 {
 	if (auto* pGame = GetIGame())
@@ -2741,8 +2687,6 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 	// Earliest point of adding profile labels
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreUpdate");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreUpdate");
-
-	g_fPrintLine = 10.0f;
 
 	if (!m_nextFrameCommand->empty())
 	{

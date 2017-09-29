@@ -113,7 +113,7 @@ class CCryAction :
 {
 
 public:
-	CCryAction();
+	CCryAction(SSystemInitParams& initParams);
 	~CCryAction();
 
 	// IGameFramework
@@ -130,12 +130,10 @@ public:
 	virtual void                          RegisterFactory(const char* name, ISaveGame*(*func)(), bool);
 	virtual void                          RegisterFactory(const char* name, ILoadGame*(*func)(), bool);
 
-	virtual bool                          StartEngine(SSystemInitParams& startupParams);
 	virtual void                          InitGameType(bool multiplayer, bool fromInit);
 	virtual bool                          CompleteInit();
-	virtual void                          ShutdownEngine();
-	virtual void                          ShutdownEngineFast();
 	virtual void                          PrePhysicsUpdate() /*override*/;
+	virtual void                          Run(const char* szAutoStartLevelName);
 	virtual int                           ManualFrameUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          Reset(bool clients);
 	virtual void                          GetMemoryUsage(ICrySizer* pSizer) const;
@@ -269,6 +267,7 @@ public:
 	virtual ISharedParamsManager* GetISharedParamsManager();
 
 	virtual IGame*                GetIGame();
+	virtual void* GetGameModuleHandle() const { return m_externalGameLibrary.dllHandle; }
 
 	virtual float                 GetLoadSaveDelay() const { return m_lastSaveLoad; }
 
@@ -293,6 +292,8 @@ protected:
 public:
 
 	static CCryAction*          GetCryAction() { return m_pThis; }
+
+	void                        Release();
 
 	virtual CGameServerNub*     GetGameServerNub();
 	CGameClientNub*             GetGameClientNub();
@@ -378,15 +379,16 @@ public:
 	void                    PostUpdate(bool haveFocus, unsigned int updateFlags);
 
 	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
+	void FastShutdown();
 
 private:
+	bool Initialize(SSystemInitParams& initParams);
+
 	void InitScriptBinds();
 	void ReleaseScriptBinds();
 
 	bool InitGame(SSystemInitParams& startupParams);
 	bool ShutdownGame();
-
-	void Run(const char* szAutoStartLevelName);
 
 	void InitForceFeedbackSystem();
 	void InitGameVolumesManager();
@@ -496,7 +498,6 @@ private:
 	IEntitySystem*                m_pEntitySystem;
 	ITimer*                       m_pTimer;
 	ILog*                         m_pLog;
-	void*                         m_systemDll;
 	IGameToEditorInterface*       m_pGameToEditor;
 
 	_smart_ptr<CActionGame>       m_pGame;

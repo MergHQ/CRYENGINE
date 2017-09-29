@@ -1,21 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	This is the interface which the Launcher.exe will interact
-                with the game dll. For an implementation of this interface
-                refer to the GameDll project of the title or MOD you are
-                working	on.
-
-   -------------------------------------------------------------------------
-   History:
-    - 23:7:2004   15:17 : Created by Marco Koegler
-    - 30:7:2004   12:00 : Taken-over by Márcio Martins
-
-*************************************************************************/
-
 #pragma once
 
 #include <CrySystem/ISystem.h>
@@ -27,7 +11,7 @@ struct ILogCallback;
 struct IValidator;
 struct ISystemUserCallback;
 
-//! Interfaces used to initialize a game using CRYENGINE.
+//! Interfaces used to initialize a legacy game using CRYENGINE.
 struct IGameStartup
 {
 	//! Entry function used to create a new instance of the game.

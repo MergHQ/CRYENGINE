@@ -161,7 +161,7 @@ void CSystem::CollectMemInfo(SCryEngineStatsGlobalMemInfo& m_stats)
 	m_stats.totalAllocatedInModules = 0;
 	m_stats.totalNumAllocsInModules = 0;
 
-	const std::vector<const char*>& szModules = GetModuleNames();
+	const std::vector<string>& szModules = GetModuleNames();
 	const int numModules = szModules.size();
 
 	//////////////////////////////////////////////////////////////////////////
@@ -194,7 +194,7 @@ void CSystem::CollectMemStats(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose, s
 	std::vector<SmallModuleInfo> stats;
 #if CRY_PLATFORM_WINDOWS
 	//////////////////////////////////////////////////////////////////////////
-	const std::vector<const char*>& szModules = GetModuleNames();
+	const std::vector<string>& szModules = GetModuleNames();
 	const int numModules = szModules.size();
 
 	for (int i = 0; i < numModules; i++)

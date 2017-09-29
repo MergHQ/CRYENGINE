@@ -50,12 +50,6 @@ namespace
 #define GCOV_FLUSH_UPDATE ((void)0)
 #endif
 
-#if defined(_LIB) || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-	extern "C" IGameFramework *CreateGameFramework();
-#endif
-
-#define DLL_INITFUNC_CREATEGAME "CreateGameFramework"
-
 #if CRY_PLATFORM_WINDOWS
 bool g_StickyKeysStatusSaved = false;
 STICKYKEYS g_StartupStickyKeys = {sizeof(STICKYKEYS), 0};
@@ -455,7 +449,6 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 #if defined(CVARS_WHITELIST)
 	startupParams.pCVarsWhitelist = &g_CVarsWhiteList;
 #endif // defined(CVARS_WHITELIST)
-	startupParams.pGameStartup = this;
 
 	InlineInitializationProcessing("CGameStartup::Init");
 

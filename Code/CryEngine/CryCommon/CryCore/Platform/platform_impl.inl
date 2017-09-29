@@ -27,6 +27,22 @@ extern SSystemGlobalEnvironment gEnv;
 struct SSystemGlobalEnvironment* gEnv = nullptr;
 #endif
 
+#if defined(CRY_IS_MONOLITHIC_BUILD) && defined(_LAUNCHER)
+// Include common type defines for static linking
+// Manually instantiate templates as needed here.
+#include <CryCore/Common_TypeInfo.h>
+STRUCT_INFO_T_INSTANTIATE(Vec2_tpl, <float>)
+STRUCT_INFO_T_INSTANTIATE(Vec2_tpl, <int>)
+STRUCT_INFO_T_INSTANTIATE(Vec4_tpl, <short>)
+STRUCT_INFO_T_INSTANTIATE(Vec3_tpl, <int>)
+STRUCT_INFO_T_INSTANTIATE(Ang3_tpl, <float>)
+STRUCT_INFO_T_INSTANTIATE(Quat_tpl, <float>)
+STRUCT_INFO_T_INSTANTIATE(Plane_tpl, <float>)
+STRUCT_INFO_T_INSTANTIATE(Matrix33_tpl, <float>)
+STRUCT_INFO_T_INSTANTIATE(Color_tpl, <float>)
+STRUCT_INFO_T_INSTANTIATE(Color_tpl, <uint8>)
+#endif
+
 #if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
 //The reg factory is used for registering the different modules along the whole project
 struct SRegFactoryNode* g_pHeadToRegFactories = nullptr;
@@ -155,6 +171,56 @@ int g_iTraceAllocations = 0;
 	#endif
 
 	#include <CryCore/Assert/CryAssert_impl.h>
+
+//////////////////////////////////////////////////////////////////////////
+bool CryInitializeEngine(SSystemInitParams& startupParams, bool bManualEngineLoop)
+{
+	CryFindRootFolderAndSetAsCurrentWorkingDirectory();
+
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+	CCryLibrary systemLibrary(CryLibraryDefName("CrySystem"));
+	if (!systemLibrary.IsLoaded())
+	{
+		string errorStr = string().Format("Failed to load the " CryLibraryDefName("CrySystem") " library!");
+		CryMessageBox(errorStr.c_str(), "Engine initialization failed!");
+		return false;
+	}
+
+	PFNCREATESYSTEMINTERFACE CreateSystemInterface = systemLibrary.GetProcedureAddress<PFNCREATESYSTEMINTERFACE>("CreateSystemInterface");
+	if (CreateSystemInterface == nullptr)
+	{
+		string errorStr = string().Format(CryLibraryDefName("CrySystem") " library was invalid, entry-point not found!");
+		CryMessageBox(errorStr.c_str(), "Engine initialization failed!");
+
+		return false;
+	}
+#endif
+
+	ISystem* pSystem = CreateSystemInterface(startupParams, bManualEngineLoop);
+	if (pSystem == nullptr)
+	{
+		string errorStr = string().Format("Engine system interface creation failed!");
+		CryMessageBox(errorStr.c_str(), "Engine initialization failed!");
+
+		return false;
+	}
+
+#if CAPTURE_REPLAY_LOG
+	CryGetIMemReplay()->StartOnCommandLine(startupParams.szSystemCmdLine);
+#endif
+
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+	if (bManualEngineLoop)
+	{
+		// Forward ownership to the function caller
+		// This is done since the engine loop will be updated outside of this function scope
+		// In other cases we would be exiting the engine at this point.
+		systemLibrary.ReleaseOwnership();
+	}
+#endif
+
+	return true;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CrySleep(unsigned int dwMilliseconds)

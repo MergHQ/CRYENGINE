@@ -44,13 +44,15 @@ CEntityClassRegistry::CEntityClassRegistry()
 	, m_listeners(2)
 	, m_pSystem(GetISystem())
 {
-	gEnv->pGameFramework->AddNetworkedClientListener(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CEntityClassRegistry::~CEntityClassRegistry()
 {
-	gEnv->pGameFramework->RemoveNetworkedClientListener(*this);
+	if (gEnv->pGameFramework != nullptr)
+	{
+		gEnv->pGameFramework->RemoveNetworkedClientListener(*this);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -209,6 +211,12 @@ IEntityClass* CEntityClassRegistry::IteratorNext()
 		++m_currentMapIterator;
 	}
 	return pClass;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityClassRegistry::OnGameFrameworkInitialized()
+{
+	gEnv->pGameFramework->AddNetworkedClientListener(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -509,6 +509,12 @@ struct IBreakEventListener
 	virtual void OnSetSubObjHideMask(IEntity* pEntity, int nSlot, hidemask nSubObjHideMask) = 0;
 };
 
+// Interface for the CryAction engine module
+struct IGameFrameworkEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE_GUID(IGameFrameworkEngineModule, "CE1E93CB-2665-4F76-809D-070F11418EB9"_cry_guid);
+};
+
 //! Interface which exposes the CryAction subsystems.
 struct IGameFramework
 {
@@ -531,16 +537,10 @@ struct IGameFramework
 	//! Entry function to the game framework.
 	//! Entry function used to create a new instance of the game framework from outside its own DLL.
 	//! \return New instance of the game framework.
-	typedef IGameFramework*(* TEntryFunction)();
+	typedef IGameFramework*(* TEntryFunction)(SSystemInitParams& initParams);
 
-	//! Initializes the engine and starts the main engine loop
-	//! Only returns after the engine loop has been terminated!
-	//! The game framework is automatically shut down before returning
-	//! \param startupParams Pointer to SSystemInitParams structure containing system initialization setup!
-	//! \return 0 if something went wrong with initialization, non-zero otherwise.
-	virtual bool StartEngine(SSystemInitParams& startupParams) = 0;
-
-	virtual void ShutdownEngine() = 0;
+	// Starts the main engine loop
+	virtual void Run(const char* szAutoStartLevelName) = 0;
 
 	//! Manually starts update of the engine, aka starts a new frame
 	//! This is automatically handled in the game loop inside StartEngine
@@ -678,6 +678,9 @@ struct IGameFramework
 
 	// Get game implementation, if any
 	virtual IGame* GetIGame() = 0;
+
+	// Gets the handle for the Game DLL
+	virtual void* GetGameModuleHandle() const = 0;
 
 	//! Initialises a game context.
 	//! \param pGameStartParams Parameters for configuring the game.

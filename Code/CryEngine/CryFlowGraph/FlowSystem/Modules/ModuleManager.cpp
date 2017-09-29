@@ -38,14 +38,6 @@ CFlowGraphModuleManager::CFlowGraphModuleManager()
 	  "2=Modules + Module Instances");
 	fg_debugmodules_filter = REGISTER_STRING("fg_debugmodules_filter", "", VF_NULL,
 	                                         "List of module names to display with the CVar 'fg_debugmodules'. Partial names can be supplied, but not regular expressions.");
-
-#if !defined (_RELEASE)
-	CRY_ASSERT_MESSAGE(gEnv->pGameFramework, "Unable to register as Framework listener!");
-	if (gEnv->pGameFramework)
-	{
-		gEnv->pGameFramework->RegisterListener(this, "FlowGraphModuleManager", FRAMEWORKLISTENERPRIORITY_GAME);
-	}
-#endif
 }
 
 CFlowGraphModuleManager::~CFlowGraphModuleManager()
@@ -557,6 +549,14 @@ void CFlowGraphModuleManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam,
 	{
 	case ESYSTEM_EVENT_GAME_POST_INIT:
 		{
+#if !defined (_RELEASE)
+			CRY_ASSERT_MESSAGE(gEnv->pGameFramework, "Unable to register as Framework listener!");
+			if (gEnv->pGameFramework)
+			{
+				gEnv->pGameFramework->RegisterListener(this, "FlowGraphModuleManager", FRAMEWORKLISTENERPRIORITY_GAME);
+			}
+#endif
+
 			ScanAndReloadModules(true, false); // load global modules only
 		}
 		break;
