@@ -133,7 +133,6 @@ public:
 	virtual void                          InitGameType(bool multiplayer, bool fromInit);
 	virtual bool                          CompleteInit();
 	virtual void                          PrePhysicsUpdate() /*override*/;
-	virtual void                          Run(const char* szAutoStartLevelName);
 	virtual int                           ManualFrameUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          Reset(bool clients);
 	virtual void                          GetMemoryUsage(ICrySizer* pSizer) const;

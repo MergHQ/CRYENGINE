@@ -1506,8 +1506,30 @@ void CSystem::PrePhysicsUpdate()
 
 void CSystem::RunMainLoop()
 {
-	// TODO: Move the main loop to CrySystem
-	gEnv->pGameFramework->Run("");
+#if CRY_PLATFORM_WINDOWS
+	if (!(gEnv && gEnv->pSystem) || (!gEnv->IsEditor() && !gEnv->IsDedicated()))
+	{
+		::ShowCursor(FALSE);
+		if (GetISystem()->GetIHardwareMouse())
+			GetISystem()->GetIHardwareMouse()->DecrementCounter();
+	}
+#else
+	if (gEnv && gEnv->pHardwareMouse)
+		gEnv->pHardwareMouse->DecrementCounter();
+#endif
+
+	for (;;)
+	{
+#if CRY_PLATFORM_DURANGO
+		Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+#endif
+
+		// TODO: Move the main loop to CrySystem
+		if (!gEnv->pGameFramework->ManualFrameUpdate(true, 0))
+		{
+			break;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////

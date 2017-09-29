@@ -539,9 +539,6 @@ struct IGameFramework
 	//! \return New instance of the game framework.
 	typedef IGameFramework*(* TEntryFunction)(SSystemInitParams& initParams);
 
-	// Starts the main engine loop
-	virtual void Run(const char* szAutoStartLevelName) = 0;
-
 	//! Manually starts update of the engine, aka starts a new frame
 	//! This is automatically handled in the game loop inside StartEngine
 	//! Currently this is used by the Editor since it manages its own update loop.

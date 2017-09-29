@@ -2121,51 +2121,6 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 }
 
 //------------------------------------------------------------------------
-void CCryAction::Run(const char* szAutoStartLevelName)
-{
-	if (szAutoStartLevelName[0])
-	{
-		//load savegame
-		if (CryStringUtils::stristr(szAutoStartLevelName, CRY_SAVEGAME_FILE_EXT) != 0)
-		{
-			CryFixedStringT<256> fileName(szAutoStartLevelName);
-			// NOTE! two step trimming is intended!
-			fileName.Trim(" ");  // first:  remove enclosing spaces (outside ")
-			fileName.Trim("\""); // second: remove potential enclosing "
-			gEnv->pGameFramework->LoadGame(fileName.c_str());
-		}
-		else  //start specified level
-		{
-			CryFixedStringT<256> mapCmd("map ");
-			mapCmd += szAutoStartLevelName;
-			gEnv->pConsole->ExecuteString(mapCmd.c_str());
-		}
-	}
-
-#if CRY_PLATFORM_WINDOWS
-	if (!(gEnv && gEnv->pSystem) || (!gEnv->IsEditor() && !gEnv->IsDedicated()))
-	{
-		::ShowCursor(FALSE);
-		if (GetISystem()->GetIHardwareMouse())
-			GetISystem()->GetIHardwareMouse()->DecrementCounter();
-	}
-#else
-	if (gEnv && gEnv->pHardwareMouse)
-		gEnv->pHardwareMouse->DecrementCounter();
-#endif
-
-#if !defined(CRY_PLATFORM_DURANGO)
-	for (;;)
-	{
-		if (!Update(true, 0))
-		{
-			break;
-		}
-	}
-#endif
-}
-
-//------------------------------------------------------------------------
 int CCryAction::ManualFrameUpdate(bool haveFocus, unsigned int updateFlags)
 {
 	return Update(haveFocus, updateFlags);
