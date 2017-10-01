@@ -28,11 +28,8 @@ add_sources("UQS_uber_stdlib.cpp"
 		"stdlib/ItemDebugRendering.h"
 		"stdlib/ItemDebugRendering.cpp"
 		"stdlib/Items.cpp"
-		"stdlib/ItemStringConversions.cpp"
-		"stdlib/ItemStringConversions.h"
 		"stdlib/ItemMonitors.h"
 		"stdlib/ItemMonitors.cpp"
-		"stdlib/SchematycSupport.cpp"
 )
 
 end_sources()

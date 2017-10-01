@@ -32,7 +32,7 @@ if (OPTION_SANDBOX AND WIN64)
 	endif()
 	set(Qt5_DIR "${QT_DIR}")
 
-	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
+	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}" NO_DEFAULT_PATH)
 
 	set(QT_DIR "${QT_DIR}" CACHE INTERNAL "QT directory" FORCE)
 	set(Qt5_DIR "${Qt5_DIR}" CACHE INTERNAL "QT directory" FORCE)

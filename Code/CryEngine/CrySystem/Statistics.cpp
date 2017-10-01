@@ -27,70 +27,13 @@
 #include <CryGame/IGameFramework.h>  // IGameFramework
 #include <../CryAction/ILevelSystem.h>   // ILevelSystemListener
 
-const std::vector<const char*>& GetModuleNames()
+const std::vector<string>& GetModuleNames()
 {
-	static std::vector<const char*> moduleNames;
+	static std::vector<string> moduleNames;
 
 	if (moduleNames.empty())
 	{
-
-#ifdef MODULE_EXTENSION
-#error MODULE_EXTENSION already defined!
-#endif
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-#define MODULE_EXTENSION ".so"
-#elif CRY_PLATFORM_APPLE
-#define MODULE_EXTENSION ".dylib"
-#else
-#define MODULE_EXTENSION ".dll"
-#endif
-
-		moduleNames.push_back("Cry3DEngine" MODULE_EXTENSION);
-		moduleNames.push_back("CryAction" MODULE_EXTENSION);
-		moduleNames.push_back("CryAISystem" MODULE_EXTENSION);
-		moduleNames.push_back("CryAnimation" MODULE_EXTENSION);
-		moduleNames.push_back("CryEntitySystem" MODULE_EXTENSION);
-		moduleNames.push_back("CryFont" MODULE_EXTENSION);
-		moduleNames.push_back("CryInput" MODULE_EXTENSION);
-		moduleNames.push_back("CryMovie" MODULE_EXTENSION);
-		moduleNames.push_back("CryNetwork" MODULE_EXTENSION);
-		moduleNames.push_back("CryLobby" MODULE_EXTENSION);
-		moduleNames.push_back("CryPhysics" MODULE_EXTENSION);
-		moduleNames.push_back("CryScriptSystem" MODULE_EXTENSION);
-		moduleNames.push_back("CryAudioSystem" MODULE_EXTENSION);
-		moduleNames.push_back("CrySystem" MODULE_EXTENSION);
-		// K01
-		moduleNames.push_back("CryOnline" MODULE_EXTENSION);
-
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-		const string  gameModuleNameRaw  = gEnv->pConsole->GetCVar("sys_dll_game")->GetString();
-		const size_t  extensionIndex     = gameModuleNameRaw.rfind(".dll");
-		static string gameModuleNameSafe = gameModuleNameRaw.substr(0, extensionIndex);
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-		gameModuleNameSafe.append(MODULE_EXTENSION);
-#endif
-		moduleNames.push_back(gameModuleNameSafe.c_str());
-#endif
-
-#undef MODULE_EXTENSION
-
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-		moduleNames.push_back("CryRenderNULL.so");
-#elif CRY_PLATFORM_APPLE
-		moduleNames.push_back("CryRenderNULL.dylib");
-#else
-		moduleNames.push_back(gEnv->pConsole->GetCVar("sys_dll_game")->GetString());
-		moduleNames.push_back("Sandbox.exe");
-		moduleNames.push_back("CryRenderD3D9.dll");
-		moduleNames.push_back("CryRenderD3D10.dll");
-		moduleNames.push_back("CryRenderD3D11.dll");
-		moduleNames.push_back("CryRenderD3D12.dll");
-		moduleNames.push_back("CryRenderOpenGL.dll");
-		moduleNames.push_back("CryRenderOGES.dll");
-		moduleNames.push_back("CryRenderVulkan.dll");
-		moduleNames.push_back("CryRenderNULL.dll");
-		//TODO: launcher?
-#endif
+		static_cast<CSystem*>(gEnv->pSystem)->GetLoadedDynamicLibraries(moduleNames);
 	}
 
 	return moduleNames;
@@ -1756,15 +1699,15 @@ void CEngineStats::CollectMemInfo()
 	m_stats.memInfo.totalAllocatedInModules = 0;
 	m_stats.memInfo.totalNumAllocsInModules = 0;
 
-	const std::vector<const char*>& szModules = GetModuleNames();
-	const int numModules = szModules.size();
+	const std::vector<string>& moduleNames = GetModuleNames();
+	const int numModules = moduleNames.size();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Hardcoded value for the OS memory allocation.
 	//////////////////////////////////////////////////////////////////////////
 	for (int i = 0; i < numModules; i++)
 	{
-		const char* szModule = szModules[i];
+		const char* szModule = moduleNames[i].c_str();
 
 		SCryEngineStatsModuleInfo moduleInfo;
 		ZeroStruct(moduleInfo.memInfo);

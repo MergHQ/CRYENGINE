@@ -72,7 +72,7 @@ CConnectionModel::~CConnectionModel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionModel::Init(CAudioControl* pControl)
+void CConnectionModel::Init(CAudioControl* const pControl)
 {
 	beginResetModel();
 	m_pControl = pControl;
@@ -81,36 +81,39 @@ void CConnectionModel::Init(CAudioControl* pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CConnectionModel::rowCount(const QModelIndex& parent) const
+int CConnectionModel::rowCount(QModelIndex const& parent) const
 {
-	if (m_pControl && m_pAudioSystem)
+	if ((m_pControl != nullptr) && (m_pAudioSystem != nullptr))
 	{
 		if ((parent.row() < 0) || (parent.column() < 0))
 		{
 			return m_connectionsCache.size();
 		}
 	}
+
 	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CConnectionModel::columnCount(const QModelIndex& parent) const
+int CConnectionModel::columnCount(QModelIndex const& parent) const
 {
 	return static_cast<int>(EConnectionModelColumns::Size) + static_cast<int>(m_platformNames.size());
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant CConnectionModel::data(const QModelIndex& index, int role) const
+QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 {
-	if (m_pAudioSystem && m_pControl && index.isValid())
+	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr) && index.isValid())
 	{
 		if (index.row() < m_connectionsCache.size())
 		{
-			ConnectionPtr pConnection = m_connectionsCache[index.row()];
-			if (pConnection)
+			ConnectionPtr const pConnection = m_connectionsCache[index.row()];
+
+			if (pConnection != nullptr)
 			{
-				IAudioSystemItem* pItem = m_pAudioSystem->GetControl(pConnection->GetID());
-				if (pItem)
+				IAudioSystemItem const* const pItem = m_pAudioSystem->GetControl(pConnection->GetID());
+
+				if (pItem != nullptr)
 				{
 					switch (role)
 					{
@@ -122,8 +125,9 @@ QVariant CConnectionModel::data(const QModelIndex& index, int role) const
 						case static_cast<int>(EConnectionModelColumns::Path):
 							{
 								QString path;
-								IAudioSystemItem* pParent = pItem->GetParent();
-								while (pParent)
+								IAudioSystemItem const* pParent = pItem->GetParent();
+
+								while (pParent != nullptr)
 								{
 									QString parentName = QString((const char*)pParent->GetName());
 									if (!parentName.isEmpty())
@@ -181,15 +185,15 @@ QVariant CConnectionModel::data(const QModelIndex& index, int role) const
 			}
 		}
 	}
+
 	return QVariant();
 }
 
 //////////////////////////////////////////////////////////////////////////
 QVariant CConnectionModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
 {
-	if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+	if ((orientation == Qt::Horizontal) && (role == Qt::DisplayRole))
 	{
-
 		if (section < static_cast<int>(EConnectionModelColumns::Size))
 		{
 			switch (section)
@@ -205,48 +209,54 @@ QVariant CConnectionModel::headerData(int section, Qt::Orientation orientation, 
 			return m_platformNames[section - static_cast<int>(EConnectionModelColumns::Size)];
 		}
 	}
+
 	return QVariant();
 }
 
 //////////////////////////////////////////////////////////////////////////
-Qt::ItemFlags CConnectionModel::flags(const QModelIndex& index) const
+Qt::ItemFlags CConnectionModel::flags(QModelIndex const& index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
-	if (index.isValid() && index.column() >= static_cast<int>(EConnectionModelColumns::Size))
+
+	if (index.isValid() && (index.column() >= static_cast<int>(EConnectionModelColumns::Size)))
 	{
 		flags |= Qt::ItemIsUserCheckable;
 	}
+
 	return flags | Qt::ItemIsDropEnabled;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CConnectionModel::setData(const QModelIndex& index, const QVariant& value, int role)
+bool CConnectionModel::setData(QModelIndex const& index, QVariant const& value, int role)
 {
 	if ((index.column() >= static_cast<int>(EConnectionModelColumns::Size)) && (role == Qt::CheckStateRole))
 	{
-		ConnectionPtr pConnection = m_connectionsCache[index.row()];
+		ConnectionPtr const pConnection = m_connectionsCache[index.row()];
 		pConnection->EnableForPlatform(index.column() - static_cast<int>(EConnectionModelColumns::Size), value == Qt::Checked);
 		QVector<int> roleVector(1, role);
 		dataChanged(index, index, roleVector);
 		return true;
 	}
+
 	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CConnectionModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const
+QModelIndex CConnectionModel::index(int row, int column, QModelIndex const& parent /*= QModelIndex()*/) const
 {
-	if (m_pAudioSystem && m_pControl)
+	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr))
 	{
 		if ((row >= 0) && (column >= 0))
 		{
 			if (row < m_connectionsCache.size())
 			{
-				ConnectionPtr pConnection = m_connectionsCache[row];
-				if (pConnection)
+				ConnectionPtr const pConnection = m_connectionsCache[row];
+
+				if (pConnection != nullptr)
 				{
-					IAudioSystemItem* pItem = m_pAudioSystem->GetControl(pConnection->GetID());
-					if (pItem)
+					IAudioSystemItem const* const pItem = m_pAudioSystem->GetControl(pConnection->GetID());
+
+					if (pItem != nullptr)
 					{
 						return createIndex(row, column);
 					}
@@ -254,26 +264,29 @@ QModelIndex CConnectionModel::index(int row, int column, const QModelIndex& pare
 			}
 		}
 	}
+
 	return QModelIndex();
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CConnectionModel::parent(const QModelIndex& index) const
+QModelIndex CConnectionModel::parent(QModelIndex const& index) const
 {
 	return QModelIndex();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CConnectionModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
+bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
-	if (m_pAudioSystem && m_pControl)
+	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr))
 	{
 		std::vector<CID> ids;
 		DecodeMimeData(pData, ids);
-		for (auto id : ids)
+
+		for (auto const id : ids)
 		{
-			IAudioSystemItem* pItem = m_pAudioSystem->GetControl(id);
-			if (pItem)
+			IAudioSystemItem const* const pItem = m_pAudioSystem->GetControl(id);
+
+			if (pItem != nullptr)
 			{
 				// is the type being dragged compatible?
 				if (!(m_pAudioSystem->GetCompatibleTypes(m_pControl->GetType()) & pItem->GetType()))
@@ -283,6 +296,7 @@ bool CConnectionModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 			}
 		}
 	}
+
 	return true;
 }
 
@@ -295,31 +309,39 @@ QStringList CConnectionModel::mimeTypes() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CConnectionModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent)
 {
-	if (m_pAudioSystem && m_pControl)
+	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr))
 	{
 		std::vector<CID> ids;
 		DecodeMimeData(pData, ids);
-		for (auto id : ids)
+		bool wasConnectionAdded = false;
+
+		for (auto const id : ids)
 		{
-			IAudioSystemItem* pItem = m_pAudioSystem->GetControl(id);
-			if (pItem)
+			IAudioSystemItem* const pItem = m_pAudioSystem->GetControl(id);
+
+			if (pItem != nullptr)
 			{
 				ConnectionPtr pConnection = m_pControl->GetConnection(pItem);
-				if (!pConnection)
+
+				if (pConnection == nullptr)
 				{
 					pConnection = m_pAudioSystem->CreateConnectionToControl(m_pControl->GetType(), pItem);
-					if (pConnection)
+
+					if (pConnection != nullptr)
 					{
-						CUndo undo("Connected Audio Control to Audio System");
 						m_pControl->AddConnection(pConnection);
+						wasConnectionAdded = true;
 					}
 				}
 			}
 		}
+
+		return wasConnectionAdded;
 	}
-	return QAbstractItemModel::dropMimeData(pData, action, row, column, parent);
+
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -332,13 +354,15 @@ Qt::DropActions CConnectionModel::supportedDropActions() const
 void CConnectionModel::ResetCache()
 {
 	m_connectionsCache.clear();
-	if (m_pControl)
+
+	if (m_pControl != nullptr)
 	{
-		const int size = m_pControl->GetConnectionCount();
+		int const size = m_pControl->GetConnectionCount();
 		for (int i = 0; i < size; ++i)
 		{
-			ConnectionPtr pConnection = m_pControl->GetConnectionAt(i);
-			if (pConnection)
+			ConnectionPtr const pConnection = m_pControl->GetConnectionAt(i);
+
+			if (pConnection != nullptr)
 			{
 				m_connectionsCache.push_back(pConnection);
 			}
@@ -347,17 +371,20 @@ void CConnectionModel::ResetCache()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionModel::DecodeMimeData(const QMimeData* pData, std::vector<CID>& ids) const
+void CConnectionModel::DecodeMimeData(QMimeData const* pData, std::vector<CID>& ids) const
 {
-	const QString format = CMiddlewareDataModel::ms_szMimeType;
+	QString const format = CMiddlewareDataModel::ms_szMimeType;
+
 	if (pData->hasFormat(format))
 	{
 		QByteArray encoded = pData->data(format);
 		QDataStream stream(&encoded, QIODevice::ReadOnly);
+
 		while (!stream.atEnd())
 		{
 			CID id;
 			stream >> id;
+
 			if (id != ACE_INVALID_ID)
 			{
 				ids.push_back(id);

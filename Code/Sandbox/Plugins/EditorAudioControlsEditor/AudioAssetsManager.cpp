@@ -16,32 +16,6 @@
 
 namespace ACE
 {
-//////////////////////////////////////////////////////////////////////////
-uint ItemTypeToIndex(EItemType const type)
-{
-	switch (type)
-	{
-	case EItemType::Trigger:
-		return 0;
-	case EItemType::Parameter:
-		return 1;
-	case EItemType::Switch:
-		return 2;
-	case EItemType::State:
-		return 3;
-	case EItemType::Environment:
-		return 4;
-	case EItemType::Preload:
-		return 5;
-	case EItemType::Folder:
-		return 6;
-	case EItemType::Library:
-		return 7;
-	}
-
-	return 0;
-}
-
 CID CAudioAssetsManager::m_nextId = 1;
 
 //////////////////////////////////////////////////////////////////////////
@@ -77,22 +51,23 @@ void CAudioAssetsManager::Initialize()
 
 	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
 		{
-			m_bLoading = true;
+			m_isLoading = true;
 		}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::signalLoaded.Connect([&]()
 		{
-			m_bLoading = false;
+			m_isLoading = false;
 		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
 CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType const type, CAudioAsset* const pParent)
 {
-	if (pParent != nullptr && !name.empty())
+	if ((pParent != nullptr) && !name.empty())
 	{
-		if ((pParent->GetType() == EItemType::Folder || pParent->GetType() == EItemType::Library) ||
-			(pParent->GetType() == EItemType::Switch && type == EItemType::State))
+		EItemType const parentType = pParent->GetType();
+
+		if ((parentType == EItemType::Folder || parentType == EItemType::Library) || (parentType == EItemType::Switch && type == EItemType::State))
 		{
 			CAudioControl* const pFoundControl = FindControl(name, type, pParent);
 
@@ -103,7 +78,7 @@ CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType 
 
 			signalItemAboutToBeAdded(pParent);
 
-			CAudioControl* pControl = new CAudioControl(name, GenerateUniqueId(), type);
+			CAudioControl* const pControl = new CAudioControl(name, GenerateUniqueId(), type);
 
 			m_controls.push_back(pControl);
 
@@ -131,7 +106,7 @@ CAudioControl* CAudioAssetsManager::CreateControl(string const& name, EItemType 
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::DeleteItem(CAudioAsset* const pItem)
 {
-	if (pItem)
+	if (pItem != nullptr)
 	{
 		// Recursively remove all children as well
 		while (pItem->ChildCount() > 0)
@@ -154,7 +129,7 @@ void CAudioAssetsManager::DeleteItem(CAudioAsset* const pItem)
 		// Remove/detach item from the tree
 		CAudioAsset* const pParent = pItem->GetParent();
 
-		if (pParent)
+		if (pParent != nullptr)
 		{
 			pParent->RemoveChild(pItem);
 			pItem->SetParent(nullptr);
@@ -172,7 +147,7 @@ void CAudioAssetsManager::DeleteItem(CAudioAsset* const pItem)
 				// Must be a control
 				CAudioControl* const pControl = static_cast<CAudioControl*>(pItem);
 
-				if (pControl)
+				if (pControl != nullptr)
 				{
 					pControl->ClearConnections();
 					m_controls.erase(std::remove_if(m_controls.begin(), m_controls.end(), [&](auto pIterControl) { return pIterControl->GetId() == pControl->GetId(); }), m_controls.end());
@@ -210,10 +185,10 @@ void CAudioAssetsManager::ClearScopes()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioAssetsManager::AddScope(string const& name, bool const bLocalOnly)
+void CAudioAssetsManager::AddScope(string const& name, bool const isLocalOnly)
 {
 	string scopeName = name;
-	m_scopeMap[CCrc32::Compute(scopeName.MakeLower())] = SScopeInfo(scopeName, bLocalOnly);
+	m_scopeMap[CCrc32::Compute(scopeName.MakeLower())] = SScopeInfo(scopeName, isLocalOnly);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -270,7 +245,7 @@ CAudioLibrary* CAudioAssetsManager::CreateLibrary(string const& name)
 		{
 			CAudioLibrary* const pLibrary = m_audioLibraries[i];
 
-			if (pLibrary && (name.compareNoCase(pLibrary->GetName()) == 0))
+			if ((pLibrary != nullptr) && (name.compareNoCase(pLibrary->GetName()) == 0))
 			{
 				return pLibrary;
 			}
@@ -353,7 +328,7 @@ void CAudioAssetsManager::OnConnectionRemoved(CAudioControl* const pControl, IAu
 void CAudioAssetsManager::OnControlModified(CAudioControl* const pControl)
 {
 	signalControlModified(pControl);
-	m_bControlTypeModified[ItemTypeToIndex(pControl->GetType())] = true;
+	m_controlTypesModified.emplace_back(pControl->GetType());
 	signalIsDirty(true);
 }
 
@@ -361,38 +336,26 @@ void CAudioAssetsManager::OnControlModified(CAudioControl* const pControl)
 void CAudioAssetsManager::SetAssetModified(CAudioAsset* const pAsset)
 {
 	UpdateLibraryConnectionStates(pAsset);
-	m_bControlTypeModified[ItemTypeToIndex(pAsset->GetType())] = true;
+	m_controlTypesModified.emplace_back(pAsset->GetType());
 	signalIsDirty(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioAssetsManager::IsDirty()
+bool CAudioAssetsManager::IsDirty() const
 {
-	for (auto const i : m_bControlTypeModified)
-	{
-		if (i)
-		{
-			return true;
-		}
-	}
-
-	return false;
+	return !m_controlTypesModified.empty();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioAssetsManager::IsTypeDirty(EItemType const type)
+bool CAudioAssetsManager::IsTypeDirty(EItemType const type) const
 {
-	return m_bControlTypeModified[ItemTypeToIndex(type)];
+	return std::find(m_controlTypesModified.begin(), m_controlTypesModified.end(), type) != m_controlTypesModified.end();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ClearDirtyFlags()
 {
-	for (auto& i : m_bControlTypeModified)
-	{
-		i = false;
-	}
-
+	m_controlTypesModified.clear();
 	signalIsDirty(false);
 }
 
@@ -430,7 +393,7 @@ CAudioControl* CAudioAssetsManager::FindControl(string const& controlName, EItem
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ClearAllConnections()
 {
-	m_bLoading = true;
+	m_isLoading = true;
 
 	for (auto const pControl : m_controls)
 	{
@@ -453,7 +416,7 @@ void CAudioAssetsManager::ReloadAllConnections()
 		}
 	}
 	
-	m_bLoading = false;
+	m_isLoading = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -488,9 +451,9 @@ void CAudioAssetsManager::UpdateAssetConnectionStates(CAudioAsset* const pAsset)
 
 		if ((type == EItemType::Library) || (type == EItemType::Folder) || (type == EItemType::Switch))
 		{
-			bool bHasPlaceholder = false;
-			bool bHasNoConnection = false;
-			bool bHasControl = false;
+			bool hasPlaceholder = false;
+			bool hasNoConnection = false;
+			bool hasControl = false;
 			int const childCount = pAsset->ChildCount();
 
 			for (int i = 0; i < childCount; ++i)
@@ -501,23 +464,23 @@ void CAudioAssetsManager::UpdateAssetConnectionStates(CAudioAsset* const pAsset)
 
 				if (pChild->HasPlaceholderConnection())
 				{
-					bHasPlaceholder = true;
+					hasPlaceholder = true;
 				}
 
 				if (!pChild->HasConnection())
 				{
-					bHasNoConnection = true;
+					hasNoConnection = true;
 				}
 				
 				if (pChild->HasControl())
 				{
-					bHasControl = true;
+					hasControl = true;
 				}
 			}
 
-			pAsset->SetHasPlaceholderConnection(bHasPlaceholder);
-			pAsset->SetHasConnection(!bHasNoConnection);
-			pAsset->SetHasControl(bHasControl);
+			pAsset->SetHasPlaceholderConnection(hasPlaceholder);
+			pAsset->SetHasConnection(!hasNoConnection);
+			pAsset->SetHasControl(hasControl);
 		}
 		else if (type != EItemType::Invalid)
 		{
@@ -526,31 +489,31 @@ void CAudioAssetsManager::UpdateAssetConnectionStates(CAudioAsset* const pAsset)
 			if (pControl != nullptr)
 			{
 				pControl->SetHasControl(true);
-				bool bHasPlaceholder = false;
-				bool bHasConnection = false;
+				bool hasPlaceholder = false;
+				bool hasConnection = false;
 				int const connectionCount = pControl->GetConnectionCount();
 
 				for (int i = 0; i < connectionCount; ++i)
 				{
-					bHasConnection = true;
-					IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+					hasConnection = true;
+					IAudioSystemEditor const* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
 					if (pAudioSystemImpl != nullptr)
 					{
-						IAudioSystemItem* const pAudioSystemControl = pAudioSystemImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
+						IAudioSystemItem const* const pAudioSystemControl = pAudioSystemImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
 
 						if (pAudioSystemControl != nullptr)
 						{
 							if (pAudioSystemControl->IsPlaceholder())
 							{
-								bHasPlaceholder = true;
+								hasPlaceholder = true;
 							}
 						}
 					}
 				}
 
-				pControl->SetHasPlaceholderConnection(bHasPlaceholder);
-				pControl->SetHasConnection(bHasConnection);
+				pControl->SetHasPlaceholderConnection(hasPlaceholder);
+				pControl->SetHasConnection(hasConnection);
 			}
 		}
 	}
@@ -626,7 +589,7 @@ CAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 
 		ConnectionPtr const pAudioConnection = pImpl->CreateConnectionToControl(pControl->GetType(), pImplItem);
 
-		if (pAudioConnection)
+		if (pAudioConnection != nullptr)
 		{
 			pControl->AddConnection(pAudioConnection);
 		}
@@ -679,7 +642,7 @@ string GenerateUniqueName(string const& name, EItemType const type, CAudioAsset*
 		{
 			CAudioAsset* const pChild = pParent->GetChild(i);
 
-			if (pChild != nullptr && pChild->GetType() == type)
+			if ((pChild != nullptr) && (pChild->GetType() == type))
 			{
 				names.emplace_back(pChild->GetName());
 			}
@@ -729,7 +692,7 @@ string GenerateUniqueControlName(string const& name, EItemType const type, CAudi
 //////////////////////////////////////////////////////////////////////////
 CAudioAsset* GetParentLibrary(CAudioAsset* pAsset)
 {
-	while (pAsset && (pAsset->GetType() != EItemType::Library))
+	while ((pAsset != nullptr) && (pAsset->GetType() != EItemType::Library))
 	{
 		pAsset = pAsset->GetParent();
 	}
@@ -743,16 +706,16 @@ void SelectTopLevelAncestors(std::vector<CAudioAsset*> const& source, std::vecto
 	for (auto const pItem : source)
 	{
 		// Check if item has ancestors that are also selected
-		bool bAncestorAlsoSelected = false;
+		bool isAncestorAlsoSelected = false;
 
 		for (auto const pOtherItem : source)
 		{
 			if (pItem != pOtherItem)
 			{
 				// Find if pOtherItem is the ancestor of pItem
-				const CAudioAsset* pParent = pItem->GetParent();
+				CAudioAsset const* pParent = pItem->GetParent();
 
-				while (pParent)
+				while (pParent != nullptr)
 				{
 					if (pParent == pOtherItem)
 					{
@@ -762,15 +725,15 @@ void SelectTopLevelAncestors(std::vector<CAudioAsset*> const& source, std::vecto
 					pParent = pParent->GetParent();
 				}
 
-				if (pParent)
+				if (pParent != nullptr)
 				{
-					bAncestorAlsoSelected = true;
+					isAncestorAlsoSelected = true;
 					break;
 				}
 			}
 		}
 
-		if (!bAncestorAlsoSelected)
+		if (!isAncestorAlsoSelected)
 		{
 			dest.push_back(pItem);
 		}

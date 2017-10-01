@@ -4,9 +4,6 @@
 
 #include "AudioAssets.h"
 
-#include <IAudioConnection.h>
-#include <ACETypes.h>
-#include <CryString/CryString.h>
 #include <CrySandbox/CrySignal.h>
 #include <array>
 
@@ -63,7 +60,7 @@ public:
 
 	// Scope
 	void       ClearScopes();
-	void       AddScope(string const& name, bool const bLocalOnly = false);
+	void       AddScope(string const& name, bool const isLocalOnly = false);
 	bool       ScopeExists(string const& name) const;
 	Scope      GetScope(string const& name) const;
 	SScopeInfo GetScopeInfo(Scope const id) const;
@@ -75,10 +72,10 @@ public:
 	void MoveItems(CAudioAsset* const pParent, std::vector<CAudioAsset*> const& items);
 	void CreateAndConnectImplItems(IAudioSystemItem* const pImplItem, CAudioAsset* const pParent);
 
-	bool IsTypeDirty(EItemType const type);
-	bool IsDirty();
+	bool IsTypeDirty(EItemType const type) const;
+	bool IsDirty() const;
 	void ClearDirtyFlags();
-	bool IsLoading() const { return m_bLoading; }
+	bool IsLoading() const { return m_isLoading; }
 
 	void SetAssetModified(CAudioAsset* const pAsset);
 
@@ -120,8 +117,8 @@ private:
 	static CID                  m_nextId;
 	Controls                    m_controls;
 	std::map<Scope, SScopeInfo> m_scopeMap;
-	std::array<bool, 8>         m_bControlTypeModified { false, false, false, false, false, false ,false, false }; // Replace this. Possibly with a QList.
-	bool                        m_bLoading = false;
+	std::vector<EItemType>      m_controlTypesModified;
+	bool                        m_isLoading = false;
 };
 
 namespace Utils

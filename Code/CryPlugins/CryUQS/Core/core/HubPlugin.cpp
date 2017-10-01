@@ -184,7 +184,7 @@ namespace UQS
 		{
 			switch (event)
 			{
-			case ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE:
+			case ESYSTEM_EVENT_GAME_POST_INIT:
 				assert(!m_pHub.get());
 				m_pHub.reset(new CHub);
 				break;

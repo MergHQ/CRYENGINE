@@ -5,52 +5,6 @@
 
 #include "Components/Navigation/NavigationComponent.h"
 
-bool Serialize(Serialization::IArchive& archive, NavigationAgentTypeID& value, const char* szName, const char* szLabel)
-{
-	INavigationSystem* pNavigationSystem = gEnv->pAISystem->GetNavigationSystem();
-
-	const size_t agentTypeCount = pNavigationSystem->GetAgentTypeCount();
-
-	Serialization::StringList agentTypeNamesList;
-	agentTypeNamesList.reserve(agentTypeCount);
-
-	for (size_t i = 0; i < agentTypeCount; ++i)
-	{
-		const NavigationAgentTypeID id = pNavigationSystem->GetAgentTypeID(i);
-		const char* szName = pNavigationSystem->GetAgentTypeName(id);
-		if (szName)
-		{
-			agentTypeNamesList.push_back(szName);
-		}
-	}
-
-	stack_string stringValue;
-	bool bResult = false;
-	if (archive.isInput())
-	{
-		Serialization::StringListValue temp(agentTypeNamesList, 0);
-		bResult = archive(temp, szName, szLabel);
-		stringValue = temp.c_str();
-		value = pNavigationSystem->GetAgentTypeID(stringValue);
-	}
-	else if (archive.isOutput())
-	{
-		if (value == NavigationAgentTypeID() && agentTypeNamesList.size())
-		{
-			stringValue = agentTypeNamesList[0].c_str();
-			value = pNavigationSystem->GetAgentTypeID(stringValue);
-		}
-		else
-		{
-			stringValue = pNavigationSystem->GetAgentTypeName(value);
-		}
-
-		const int pos = agentTypeNamesList.find(stringValue);
-		bResult = archive(Serialization::StringListValue(agentTypeNamesList, pos), szName, szLabel);
-	}
-	return bResult;
-}
-
 namespace NavigationSystemSchematyc
 {
 	bool NearestNavmeshPositionSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& location, float vrange, float hrange, Vec3& meshLocation)

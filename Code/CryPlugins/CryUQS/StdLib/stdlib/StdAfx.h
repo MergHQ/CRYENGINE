@@ -7,7 +7,6 @@
 #include <CryUQS/Client/ClientIncludes.h>
 
 #include "../StdLibRegistration.h"
-#include "ItemStringConversions.h"
 #include "ItemDebugProxies.h"
 #include "ItemDebugRendering.h"
 #include "ItemMonitors.h"

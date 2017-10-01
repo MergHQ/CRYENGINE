@@ -44,8 +44,8 @@ protected:
 	virtual Qt::ItemFlags   flags(QModelIndex const& index) const override;
 	virtual QModelIndex     index(int row, int column, QModelIndex const& parent = QModelIndex()) const override;
 	virtual QModelIndex     parent(QModelIndex const& index) const override;
-	virtual bool            canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const override;
-	virtual bool            dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) override;
+	virtual bool            canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const override;
+	virtual bool            dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) override;
 	virtual Qt::DropActions supportedDropActions() const override;
 	virtual QStringList     mimeTypes() const override;
 	// ~QAbstractItemModel
@@ -66,7 +66,7 @@ public:
 
 protected:
 
-	QModelIndex IndexFromItem(const CAudioAsset* pItem) const;
+	QModelIndex IndexFromItem(CAudioAsset const* pItem) const;
 
 	// QAbstractItemModel
 	virtual int             rowCount(QModelIndex const& parent) const override;
@@ -77,8 +77,8 @@ protected:
 	virtual Qt::ItemFlags   flags(QModelIndex const& index) const override;
 	virtual QModelIndex     index(int row, int column, QModelIndex const& parent = QModelIndex()) const override;
 	virtual QModelIndex     parent(QModelIndex const& index) const override;
-	virtual bool            canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const override;
-	virtual bool            dropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) override;
+	virtual bool            canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const override;
+	virtual bool            dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) override;
 	virtual QMimeData*      mimeData(QModelIndexList const& indexes) const override;
 	virtual Qt::DropActions supportedDropActions() const override;
 	virtual QStringList     mimeTypes() const override;
@@ -104,7 +104,7 @@ public:
 	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
 	// ~QSortFilterProxyModel
 
-	void EnableControl(bool const bEnabled, EItemType const type);
+	void EnableControl(bool const isEnabled, EItemType const type);
 
 private:
 

@@ -59,9 +59,9 @@ protected:
 
 protected slots:
 
-	void OnSystemControlsWidgetDestruction(QObject* pObject);
-	void OnPropertiesWidgetDestruction(QObject* pObject);
-	void OnMiddlewareDataWidgetDestruction(QObject* pObject);
+	void OnSystemControlsWidgetDestruction(QObject* const pObject);
+	void OnPropertiesWidgetDestruction(QObject* const pObject);
+	void OnMiddlewareDataWidgetDestruction(QObject* const pObject);
 
 signals:
 
@@ -81,7 +81,6 @@ private:
 	void Reload();
 	void Save();
 	void SaveBeforeImplementationChange();
-	void FilterControlType(EItemType const type, bool const bShow);
 	void CheckErrorMask();
 	void UpdateAudioSystemData();
 	void BackupTreeViewStates();
@@ -100,6 +99,5 @@ private:
 	QAction*                                m_pSaveAction;
 	std::unique_ptr<CFileMonitorSystem>     m_pMonitorSystem;
 	std::unique_ptr<CFileMonitorMiddleware> m_pMonitorMiddleware;
-	bool                                    m_allowedTypes[static_cast<int>(EItemType::NumTypes)]; // Replace this. Possibly with a QList.
 };
 } // namespace ACE

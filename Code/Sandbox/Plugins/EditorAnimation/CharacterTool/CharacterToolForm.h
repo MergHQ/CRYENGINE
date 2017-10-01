@@ -11,7 +11,6 @@ class QViewport;
 class QMainWindow;
 class QSplitter;
 class QToolButton;
-class QAdvancedTreeView;
 class QPropertyTree;
 class QBoxLayout;
 class QToolBar;
@@ -147,7 +146,6 @@ private:
 	SceneParametersPanel*                      m_sceneParametersPanel;
 	DisplayParametersPanel*                    m_displayParametersPanel;
 	AnimEventPresetPanel*                      m_animEventPresetPanel;
-	QAdvancedTreeView*                         m_characterTree;
 	QToolBar*                                  m_modeToolBar;
 	QToolButton*                               m_displayParametersButton;
 	TransformPanel*                            m_transformPanel;

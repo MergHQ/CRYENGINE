@@ -54,7 +54,7 @@ extern CMTSafeHeap* g_pPakHeap;
 extern int CryMemoryGetAllocatedSize();
 
 /////////////////////////////////////////////////////////////////////////////////
-void CSystem::CreateRendererVars()
+void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 {
 	int iFullScreenDefault  = 1;
 	int iDisplayInfoDefault = 1;
@@ -112,12 +112,12 @@ void CSystem::CreateRendererVars()
 	const char* p_r_DriverDef = STR_AUTO_RENDERER;
 #endif
 
-	if (m_startupParams.pCvarsDefault)
+	if (startupParams.pCvarsDefault)
 	{
 		// hack to customize the default value of r_Driver
-		SCvarsDefault* pCvarsDefault = m_startupParams.pCvarsDefault;
+		SCvarsDefault* pCvarsDefault = startupParams.pCvarsDefault;
 		if (pCvarsDefault->sz_r_DriverDef && pCvarsDefault->sz_r_DriverDef[0])
-			p_r_DriverDef = m_startupParams.pCvarsDefault->sz_r_DriverDef;
+			p_r_DriverDef = startupParams.pCvarsDefault->sz_r_DriverDef;
 	}
 
 	m_rDriver = REGISTER_STRING("r_Driver", p_r_DriverDef, VF_DUMPTODISK,

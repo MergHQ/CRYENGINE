@@ -24,7 +24,6 @@ public:
 	CMiddlewareDataWidget();
 	virtual ~CMiddlewareDataWidget() override;
 
-	void SetAllowedControls(EItemType const type, bool const bAllowed);
 	void Reset();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
@@ -35,14 +34,13 @@ private slots:
 
 private:
 
-	void InitFilterWidgets(QVBoxLayout* pMainLayout);
+	void InitFilterWidgets(QVBoxLayout* const pMainLayout);
 
-	bool                             m_allowedATLTypes[static_cast<int>(EItemType::NumTypes)]; // Replace this. Possibly with a QList.
-	CMiddlewareDataFilterProxyModel* m_pFilterProxyModel;
-	CMiddlewareDataModel*            m_pAssetsModel;
-	CElidedLabel*                    m_pImplNameLabel;
-	QToolButton*                     m_pHideAssignedButton;
-	CAudioTreeView*                  m_pTreeView;
-	QString                          m_filter;
+	CMiddlewareDataFilterProxyModel* const m_pFilterProxyModel;
+	CMiddlewareDataModel* const            m_pAssetsModel;
+	CElidedLabel* const                    m_pImplNameLabel;
+	QToolButton* const                     m_pHideAssignedButton;
+	CAudioTreeView* const                  m_pTreeView;
+	QString                                m_filter;
 };
 } // namespace ACE

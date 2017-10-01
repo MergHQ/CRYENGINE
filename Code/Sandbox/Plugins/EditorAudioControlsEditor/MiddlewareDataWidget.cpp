@@ -63,22 +63,21 @@ private:
 CMiddlewareDataWidget::CMiddlewareDataWidget()
 	: m_pFilterProxyModel(new CMiddlewareDataFilterProxyModel(this))
 	, m_pAssetsModel(new CMiddlewareDataModel())
-	, m_pImplNameLabel(nullptr)
+	, m_pHideAssignedButton(new QToolButton())
+	, m_pImplNameLabel(new CElidedLabel(""))
+	, m_pTreeView(new CAudioTreeView())
 {
-	
-
 	m_pFilterProxyModel->setDynamicSortFilter(true);
 	m_pFilterProxyModel->setSourceModel(m_pAssetsModel);
 
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-	QVBoxLayout* pMainLayout = new QVBoxLayout(this);
+	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
-	m_pImplNameLabel = new CElidedLabel("");
-	IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+	IAudioSystemEditor const* const pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
-	if (pAudioImpl)
+	if (pAudioImpl != nullptr)
 	{
 		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 	}
@@ -87,7 +86,6 @@ CMiddlewareDataWidget::CMiddlewareDataWidget()
 
 	InitFilterWidgets(pMainLayout);
 
-	m_pTreeView = new CAudioTreeView();
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragOnly);
@@ -102,9 +100,9 @@ CMiddlewareDataWidget::CMiddlewareDataWidget()
 	
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 	{
-		IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+		IAudioSystemEditor const* const pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
-		if (pAudioImpl)
+		if (pAudioImpl != nullptr)
 		{
 			m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
 		}
@@ -118,11 +116,11 @@ CMiddlewareDataWidget::~CMiddlewareDataWidget()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::InitFilterWidgets(QVBoxLayout* pMainLayout)
+void CMiddlewareDataWidget::InitFilterWidgets(QVBoxLayout* const pMainLayout)
 {
-	QHBoxLayout* pFilterLayout = new QHBoxLayout();
+	QHBoxLayout* const pFilterLayout = new QHBoxLayout();
 
-	QSearchBox* pSearchBox = new QSearchBox();
+	QSearchBox* const pSearchBox = new QSearchBox();
 	QObject::connect(pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
 	{
 		if (m_filter != filter)
@@ -152,23 +150,22 @@ void CMiddlewareDataWidget::InitFilterWidgets(QVBoxLayout* pMainLayout)
 
 	pFilterLayout->addWidget(pSearchBox);
 
-	m_pHideAssignedButton = new QToolButton();
 	m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_True.ico"));
 	m_pHideAssignedButton->setToolTip(tr("Hide assigned middleware data"));
 	m_pHideAssignedButton->setCheckable(true);
 	m_pHideAssignedButton->setMaximumSize(QSize(20, 20));
-	QObject::connect(m_pHideAssignedButton, &QToolButton::toggled, [&](bool const bChecked)
+	QObject::connect(m_pHideAssignedButton, &QToolButton::toggled, [&](bool const isChecked)
 	{
-		if (bChecked)
+		if (isChecked)
 		{
 			BackupTreeViewStates();
-			m_pFilterProxyModel->SetHideConnected(bChecked);
+			m_pFilterProxyModel->SetHideConnected(isChecked);
 			m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_False.ico"));
 			m_pHideAssignedButton->setToolTip(tr("Show all middleware data"));
 		}
 		else
 		{
-			m_pFilterProxyModel->SetHideConnected(bChecked);
+			m_pFilterProxyModel->SetHideConnected(isChecked);
 			RestoreTreeViewStates();
 			m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_True.ico"));
 			m_pHideAssignedButton->setToolTip(tr("Hide assigned middleware data"));
@@ -181,33 +178,10 @@ void CMiddlewareDataWidget::InitFilterWidgets(QVBoxLayout* pMainLayout)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::SetAllowedControls(EItemType const type, bool const bAllowed)
-{
-	const IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
-
-	if (pAudioSystemEditorImpl)
-	{
-		m_allowedATLTypes[static_cast<int>(type)] = bAllowed;
-		uint mask = 0;
-		int const numTypes = static_cast<int>(EItemType::NumTypes);
-
-		for (int i = 0; i < numTypes; ++i)
-		{
-			if (m_allowedATLTypes[i])
-			{
-				mask |= pAudioSystemEditorImpl->GetCompatibleTypes((EItemType)i);
-			}
-		}
-
-		m_pFilterProxyModel->SetAllowedControlsMask(mask);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos) const
 {
-	QMenu* pContextMenu = new QMenu();
-	auto const selection = m_pTreeView->selectionModel()->selectedRows();
+	QMenu* const pContextMenu = new QMenu();
+	auto const& selection = m_pTreeView->selectionModel()->selectedRows();
 
 	if (!selection.isEmpty())
 	{

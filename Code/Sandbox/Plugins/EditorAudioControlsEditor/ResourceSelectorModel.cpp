@@ -13,7 +13,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceControlModel::data(QModelIndex const& index, int role) const
 {
-	CAudioLibrary* const pLibrary = static_cast<CAudioLibrary*>(index.internalPointer());
+	CAudioLibrary const* const pLibrary = static_cast<CAudioLibrary*>(index.internalPointer());
 
 	if (pLibrary != nullptr)
 	{
@@ -45,7 +45,7 @@ bool CResourceControlModel::setData(QModelIndex const& index, QVariant const& va
 {
 	if (index.isValid())
 	{
-		CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+		CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
@@ -81,7 +81,7 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 		return QVariant();
 	}
 
-	CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+	CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
 
 	if (pItem != nullptr)
 	{
@@ -115,7 +115,7 @@ bool CResourceLibraryModel::setData(QModelIndex const& index, QVariant const& va
 {
 	if (index.isValid())
 	{
-		CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+		CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{

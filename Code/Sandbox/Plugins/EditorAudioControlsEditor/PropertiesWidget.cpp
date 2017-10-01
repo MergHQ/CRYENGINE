@@ -23,15 +23,16 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
+	, m_pPropertyTree(new QPropertyTree())
+	, m_pConnectionsWidget(new CConnectionsWidget())
 {
 	CRY_ASSERT(m_pAssetsManager);
 
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-	QVBoxLayout* pMainLayout = new QVBoxLayout(this);
+	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
-	m_pPropertyTree = new QPropertyTree();
 	m_pPropertyTree->setSizeToContent(true);
 	pMainLayout->addWidget(m_pPropertyTree);
 
@@ -42,12 +43,11 @@ CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
 	m_pConnectionsLabel->setWordWrap(true);
 	pMainLayout->addWidget(m_pConnectionsLabel);
 	
-	m_pConnectionsWidget = new CConnectionsWidget();
 	pMainLayout->addWidget(m_pConnectionsWidget);
 
 	auto revertFunction = [&]()
 	{
-		if (!m_bSupressUpdates)
+		if (!m_supressUpdates)
 		{
 			m_pPropertyTree->revert();
 		}
@@ -57,8 +57,8 @@ CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
 	pAssetsManager->signalItemRemoved.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalControlModified.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 
-	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_bSupressUpdates = true; });
-	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_bSupressUpdates = false; });
+	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_supressUpdates = true; });
+	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_supressUpdates = false; });
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ void CPropertiesWidget::SetSelectedControls(std::vector<CAudioControl*> const& s
 	// Update connections
 	if (selectedControls.size() == 1)
 	{
-		CAudioControl* pControl = selectedControls[0];
+		CAudioControl* const pControl = selectedControls[0];
 
 		if (pControl->GetType() != EItemType::Switch)
 		{

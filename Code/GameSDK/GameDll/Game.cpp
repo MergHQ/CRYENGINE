@@ -595,7 +595,12 @@ CGame::~CGame()
 
 	gEnv->pGameFramework->EndGameContext();
 	gEnv->pGameFramework->UnregisterListener(this);
-	GetISystem()->GetPlatformOS()->RemoveListener(this);
+
+	if (IPlatformOS* pPlatformOS = GetISystem()->GetPlatformOS())
+	{
+		pPlatformOS->RemoveListener(this);
+	}
+
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	ReleaseScriptBinds();
 
@@ -705,8 +710,6 @@ CGame::~CGame()
 			pLobby->Terminate(eCLS_Online, eCLSO_All, NULL, NULL);
 		}
 	}
-
-	gEnv->pSystem->UnloadEngineModule("CryLobby");
 
 	GAME_FX_SYSTEM.Destroy();
 
@@ -926,13 +929,9 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 			}
 		}
 #endif
+		gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::Native, "CryLobby");
 
-		if (!gEnv->pSystem->InitializeEngineModule("CryLobby", cryiidof<ILobbyEngineModule>(), false))
-		{
-			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Error creating Lobby System!");
-		}
-
-		auto pLobby = gEnv->pNetwork->GetLobby();
+		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
 		if (pLobby)
 		{
 			pLobby->SetUserPacketEnd(eGUPD_End);

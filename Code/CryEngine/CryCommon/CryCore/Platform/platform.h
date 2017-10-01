@@ -377,6 +377,9 @@ enum EMessageBox
 	eMB_AbortRetryIgnore
 };
 
+//! Loads CrySystem from disk and initializes the engine, commonly called from the Launcher implementation
+//! \param bManualEngineLoop Whether or not the caller will start and maintain the engine loop themselves. Otherwise the loop is started and engine shut down automatically inside the function.
+bool			CryInitializeEngine(struct SSystemInitParams& startupParams, bool bManualEngineLoop = false);
 void            CryDebugBreak();
 void            CrySleep(unsigned int dwMilliseconds);
 void            CryLowLatencySleep(unsigned int dwMilliseconds);

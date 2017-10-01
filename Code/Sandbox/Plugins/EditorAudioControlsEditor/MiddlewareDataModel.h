@@ -49,7 +49,7 @@ public:
 	// ~QAbstractItemModel
 
 	IAudioSystemItem* ItemFromIndex(QModelIndex const& index) const;
-	QModelIndex       IndexFromItem(IAudioSystemItem* pItem) const;
+	QModelIndex       IndexFromItem(IAudioSystemItem const* const pItem) const;
 	void              Reset();
 
 	static char const* const ms_szMimeType;
@@ -73,12 +73,10 @@ public:
 	virtual bool rowMatchesFilter(int source_row, QModelIndex const& source_parent) const override;
 	// ~QDeepFilterProxyModel
 
-	void SetAllowedControlsMask(uint allowedControlsMask);
-	void SetHideConnected(bool const bHideConnected);
+	void SetHideConnected(bool const hideConnected);
 	
 private:
 
-	uint m_allowedControlsMask;
-	uint m_bHideConnected;
+	bool m_hideConnected;
 };
 } // namespace ACE

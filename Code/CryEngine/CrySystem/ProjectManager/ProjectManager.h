@@ -247,7 +247,7 @@ protected:
 	string LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const;
 	void FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const;
 
-	bool CanMigrateFromLegacyWorkflow() const { return m_project.version == 0 && m_sys_game_folder->GetString()[0] != '\0'; }
+	bool CanMigrateFromLegacyWorkflow() const { return m_project.version == 0 && m_sys_game_folder->GetString()[0] != '\0' && !m_project.filePath.empty(); }
 
 protected:
 	Cry::ProjectManagerInternals::SProject m_project;

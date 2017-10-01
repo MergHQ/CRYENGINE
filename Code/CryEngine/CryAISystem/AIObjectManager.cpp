@@ -147,10 +147,8 @@ IAIObject* CAIObjectManager::CreateAIObject(const AIObjectParams& params)
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(params.entityID);
 	uint16 type = params.type;
 
-	if (CAIEntityComponent* pExistingAIComponent = pEntity->GetComponent<CAIEntityComponent>())
-	{
-		RemoveObject(pExistingAIComponent->GetAIObjectID());
-	}
+	// Attempt to remove already existing AI object for this entity
+	RemoveObjectByEntityId(params.entityID);
 
 	switch (type)
 	{
@@ -338,8 +336,6 @@ void CAIObjectManager::RemoveObject(const tAIObjectID objectID)
 	// Check we found one
 	if (it == itEnd)
 	{
-		AIError("AI system asked to erase AI object with unknown AIObjectID");
-		assert(false);
 		return;
 	}
 
@@ -348,15 +344,6 @@ void CAIObjectManager::RemoveObject(const tAIObjectID objectID)
 	// Because Action doesn't yet handle a delayed removal of the Proxies, we should perform cleanup immediately.
 	// Note that this only happens when triggered externally, when an entity is refreshed/removed
 	gAIEnv.pObjectContainer->ReleaseDeregisteredObjects(false);
-
-	// Remove the AI entity component associated with the entity
-	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
-	{
-		if (CAIEntityComponent* pExistingAIComponent = pEntity->GetComponent<CAIEntityComponent>())
-		{
-			pEntity->RemoveComponent(pExistingAIComponent);
-		}
-	}
 }
 
 void CAIObjectManager::RemoveObjectByEntityId(const EntityId entityId)

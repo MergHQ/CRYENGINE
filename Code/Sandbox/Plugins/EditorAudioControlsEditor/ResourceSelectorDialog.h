@@ -57,12 +57,12 @@ private:
 	QString                             m_sFilter;
 	EItemType                           m_eType;
 	Scope                               m_scope;
-	bool                                m_bSelectionIsValid = false;
+	bool                                m_selectionIsValid = false;
 
 	static string                       s_previousControlName;
 	static EItemType                    s_previousControlType;
-	QAdvancedTreeView*                  m_pTreeView;
-	QDialogButtonBox*                   m_pDialogButtons;
+	QAdvancedTreeView* const            m_pTreeView;
+	QDialogButtonBox* const             m_pDialogButtons;
 
 	CAudioAssetsManager*                m_pAssetsManager;
 	QDeepFilterProxyModel*              m_pFilterProxyModel;

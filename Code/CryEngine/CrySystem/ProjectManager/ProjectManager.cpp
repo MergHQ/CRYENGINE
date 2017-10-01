@@ -348,8 +348,10 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 
 void CProjectManager::RegisterCVars()
 {
-	// Default to no project when unit testing, indicating that we are testing pure engine
-	m_sys_project = REGISTER_STRING("sys_project", gEnv->bTesting ? "" : "game.cryproject", VF_NULL, "Specifies which project to load.\nLoads from the engine root if relative path, otherwise full paths are allowed to allow out-of-engine projects\nHas no effect if -project switch is used!");
+	// Default to no project when running unit tests or shader cache generator
+	bool bDefaultToNoProject = gEnv->bTesting || gEnv->pSystem->IsShaderCacheGenMode();
+
+	m_sys_project = REGISTER_STRING("sys_project", bDefaultToNoProject ? "" : "game.cryproject", VF_NULL, "Specifies which project to load.\nLoads from the engine root if relative path, otherwise full paths are allowed to allow out-of-engine projects\nHas no effect if -project switch is used!");
 
 	// Legacy
 	m_sys_game_name = REGISTER_STRING("sys_game_name", "CRYENGINE", VF_DUMPTODISK, "Specifies the name to be displayed in the Launcher window title bar");

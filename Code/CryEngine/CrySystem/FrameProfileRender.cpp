@@ -1758,7 +1758,7 @@ void CFrameProfileSystem::RenderMemoryInfo()
 	uint64 totalAllocatedInModules = 0;
 	int totalNumAllocsInModules = 0;
 
-	const std::vector<const char*>& szModules = GetModuleNames();
+	const std::vector<string>& szModules = GetModuleNames();
 	const int numModules = szModules.size();
 
 	for (int i = 0; i < numModules; i++)

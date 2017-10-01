@@ -208,11 +208,9 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 // System Implementation.
 //////////////////////////////////////////////////////////////////////////
 CSystem::CSystem(const SSystemInitParams& startupParams)
-	:
 #if defined(SYS_ENV_AS_STRUCT)
-	m_env(gEnv),
+	: m_env(gEnv)
 #endif
-	m_startupParams(startupParams)
 {
 	m_systemGlobalState = ESYSTEM_GLOBAL_STATE_INIT;
 	m_iHeight = 0;
@@ -262,8 +260,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.bIgnoreAllAsserts = false;
 	m_env.bUnattendedMode = false;
 	m_env.bTesting = false;
-
-	m_env.pGameFramework = startupParams.pGameFramework;
 
 #if CRY_PLATFORM_DURANGO
 	m_env.ePLM_State = EPLM_UNDEFINED;
@@ -462,8 +458,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	RegisterWindowMessageHandler(this);
 
 	m_env.pConsole = new CXConsole;
-	if (m_startupParams.pPrintSync)
-		m_env.pConsole->AddOutputPrintSink(m_startupParams.pPrintSync);
+	if (startupParams.pPrintSync)
+		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
 
 	m_pPluginManager = new CCryPluginManager(startupParams);
 
@@ -524,12 +520,6 @@ CSystem::~CSystem()
 #if CRY_PLATFORM_WINDOWS
 	((DebugCallStack*)IDebugCallStack::instance())->uninstallErrorHandler();
 #endif
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::Release()
-{
-	delete this;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -693,6 +683,14 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
 
+	UnloadEngineModule("CrySchematyc");
+
+	if (gEnv->pGameFramework != nullptr)
+	{
+		gEnv->pGameFramework->ShutDown();
+	}
+
+	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
 	SAFE_DELETE(m_pPluginManager);
 
@@ -736,11 +734,9 @@ void CSystem::ShutDown()
 	UnloadEngineModule("CryAISystem");
 	UnloadEngineModule("CryFont");
 	UnloadEngineModule("CryNetwork");
-	UnloadEngineModule("CryLobby");
 	//	SAFE_RELEASE(m_env.pCharacterManager);
 	UnloadEngineModule("CryAnimation");
 	UnloadEngineModule("Cry3DEngine"); // depends on EntitySystem
-	UnloadEngineModule("CrySchematyc");
 	UnloadEngineModule("CryEntitySystem");
 
 	SAFE_DELETE(m_pPhysRenderer); // Must be destroyed before unloading CryPhysics as it holds memory that was allocated by that module
@@ -1510,6 +1506,39 @@ void CSystem::PrePhysicsUpdate()
 		}
 
 		m_env.pEntitySystem->PrePhysicsUpdate();
+	}
+}
+
+void CSystem::RunMainLoop()
+{
+	if (m_bShaderCacheGenMode)
+	{
+		return;
+	}
+
+#if CRY_PLATFORM_WINDOWS
+	if (!(gEnv && gEnv->pSystem) || (!gEnv->IsEditor() && !gEnv->IsDedicated()))
+	{
+		::ShowCursor(FALSE);
+		if (GetISystem()->GetIHardwareMouse())
+			GetISystem()->GetIHardwareMouse()->DecrementCounter();
+	}
+#else
+	if (gEnv && gEnv->pHardwareMouse)
+		gEnv->pHardwareMouse->DecrementCounter();
+#endif
+
+	for (;;)
+	{
+#if CRY_PLATFORM_DURANGO
+		Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+#endif
+
+		// TODO: Move the main loop to CrySystem
+		if (!gEnv->pGameFramework->ManualFrameUpdate(true, 0))
+		{
+			break;
+		}
 	}
 }
 

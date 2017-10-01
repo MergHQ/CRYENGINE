@@ -10,17 +10,16 @@
 
 namespace ACE
 {
-class CAudioAssetsManager;
 class IAudioSystemItem;
 
 struct SRawConnectionData
 {
-	SRawConnectionData(XmlNodeRef node, bool const bIsValid)
+	SRawConnectionData(XmlNodeRef const node, bool const isValid_)
 		: xmlNode(node)
-		, bValid(bIsValid) {}
+		, isValid(isValid_) {}
 
 	XmlNodeRef xmlNode;
-	bool       bValid; // indicates if the connection is valid for the currently loaded middle-ware
+	bool       isValid; // indicates if the connection is valid for the currently loaded middle-ware
 };
 
 using XMLNodeList = std::vector<SRawConnectionData>;
@@ -34,37 +33,41 @@ public:
 	virtual EItemType GetType() const { return EItemType::Invalid; }
 
 	CAudioAsset*      GetParent() const { return m_pParent; }
-	void              SetParent(CAudioAsset* pParent);
+	void              SetParent(CAudioAsset* const pParent);
 
 	size_t            ChildCount() const { return m_children.size(); }
 	CAudioAsset*      GetChild(size_t const index) const { return m_children[index]; }
-	void              AddChild(CAudioAsset* pChildControl);
-	void              RemoveChild(CAudioAsset* pChildControl);
+	void              AddChild(CAudioAsset* const pChildControl);
+	void              RemoveChild(CAudioAsset const* const pChildControl);
 
 	string            GetName() const { return m_name; }
 	virtual void      SetName(string const& name) { m_name = name; }
 
-	virtual bool      IsModified() const { return m_bModified; }
-	virtual void      SetModified(bool const bModified, bool const bForce = false);
+	bool              IsHiddenDefault() const { return m_isHiddenDefault; }
+	void              SetHiddenDefault(bool const isHiddenDefault);
 
-	bool              HasPlaceholderConnection() const { return m_bHasPlaceholderConnection; }
-	void              SetHasPlaceholderConnection(bool const bHasPlaceholder) { m_bHasPlaceholderConnection = bHasPlaceholder; }
+	virtual bool      IsModified() const { return m_isModified; }
+	virtual void      SetModified(bool const isModified, bool const isForced = false);
+
+	bool              HasPlaceholderConnection() const { return m_hasPlaceholderConnection; }
+	void              SetHasPlaceholderConnection(bool const hasPlaceholder) { m_hasPlaceholderConnection = hasPlaceholder; }
 	
-	bool              HasConnection() const { return m_bHasConnection; }
-	void              SetHasConnection(bool const bHasConnection) { m_bHasConnection = bHasConnection; }
+	bool              HasConnection() const { return m_hasConnection; }
+	void              SetHasConnection(bool const hasConnection) { m_hasConnection = hasConnection; }
 	
-	bool              HasControl() const { return m_bHasControl; }
-	void              SetHasControl(bool const bHasControl) { m_bHasControl = bHasControl; }
+	bool              HasControl() const { return m_hasControl; }
+	void              SetHasControl(bool const hasControl) { m_hasControl = hasControl; }
 
 protected:
 
 	CAudioAsset*              m_pParent = nullptr;
 	std::vector<CAudioAsset*> m_children;
 	string                    m_name;
-	bool                      m_bModified = false;
-	bool                      m_bHasPlaceholderConnection = false;
-	bool                      m_bHasConnection = false;
-	bool                      m_bHasControl = false;
+	bool                      m_isHiddenDefault = false;
+	bool                      m_isModified = false;
+	bool                      m_hasPlaceholderConnection = false;
+	bool                      m_hasConnection = false;
+	bool                      m_hasControl = false;
 };
 
 class CAudioControl final : public CAudioAsset
@@ -87,8 +90,8 @@ public:
 	Scope         GetScope() const { return m_scope; }
 	void          SetScope(Scope const scope);
 
-	bool          IsAutoLoad() const { return m_bAutoLoad; }
-	void          SetAutoLoad(bool const bAutoLoad);
+	bool          IsAutoLoad() const { return m_isAutoLoad; }
+	void          SetAutoLoad(bool const isAutoLoad);
 
 	float         GetRadius() const { return m_radius; }
 	void          SetRadius(float const radius) { m_radius = radius; }
@@ -97,19 +100,19 @@ public:
 	void          SetOcclusionFadeOutDistance(float const fadeOutArea);
 
 	size_t        GetConnectionCount() const { return m_connectedControls.size(); }
-	void          AddConnection(ConnectionPtr pConnection);
-	void          RemoveConnection(ConnectionPtr pConnection);
-	void          RemoveConnection(IAudioSystemItem* pAudioSystemControl);
+	void          AddConnection(ConnectionPtr const pConnection);
+	void          RemoveConnection(ConnectionPtr const pConnection);
+	void          RemoveConnection(IAudioSystemItem* const pAudioSystemControl);
 	void          ClearConnections();
 	ConnectionPtr GetConnectionAt(int const index) const;
 	ConnectionPtr GetConnection(CID const id) const;
-	ConnectionPtr GetConnection(IAudioSystemItem* pAudioSystemControl) const;
+	ConnectionPtr GetConnection(IAudioSystemItem const* const pAudioSystemControl) const;
 	void          ReloadConnections();
-	void          LoadConnectionFromXML(XmlNodeRef xmlNode, int const platformIndex = -1);
+	void          LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
 
 	void          MatchRadiusToAttenuation();
-	bool          IsMatchRadiusToAttenuationEnabled() const { return m_bMatchRadiusAndAttenuation; }
-	void          SetMatchRadiusToAttenuationEnabled(bool const bEnabled) { m_bMatchRadiusAndAttenuation = bEnabled; }
+	bool          IsMatchRadiusToAttenuationEnabled() const { return m_matchRadiusAndAttenuation; }
+	void          SetMatchRadiusToAttenuationEnabled(bool const isEnabled) { m_matchRadiusAndAttenuation = isEnabled; }
 
 	void          Serialize(Serialization::IArchive& ar);
 
@@ -117,8 +120,8 @@ private:
 
 	void SignalControlAboutToBeModified();
 	void SignalControlModified();
-	void SignalConnectionAdded(IAudioSystemItem* pMiddlewareControl);
-	void SignalConnectionRemoved(IAudioSystemItem* pMiddlewareControl);
+	void SignalConnectionAdded(IAudioSystemItem* const pMiddlewareControl);
+	void SignalConnectionRemoved(IAudioSystemItem* const pMiddlewareControl);
 	void SignalConnectionModified();
 
 	CID                        m_id = ACE_INVALID_ID;
@@ -127,11 +130,11 @@ private:
 	std::vector<ConnectionPtr> m_connectedControls;
 	float                      m_radius = 0.0f;
 	float                      m_occlusionFadeOutDistance = 0.0f;
-	bool                       m_bAutoLoad = true;
-	bool                       m_bMatchRadiusAndAttenuation = true;
+	bool                       m_isAutoLoad = true;
+	bool                       m_matchRadiusAndAttenuation = true;
 
 	// All the raw connection nodes. Used for reloading the data when switching middleware.
-	void         AddRawXMLConnection(XmlNodeRef xmlNode, bool const bValid, int const platformIndex = -1);
+	void         AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
 	XMLNodeList& GetRawXMLConnections(int const platformIndex = -1);
 	std::map<int, XMLNodeList> m_connectionNodes;
 
@@ -145,7 +148,7 @@ public:
 	CAudioLibrary(string const& name) : CAudioAsset(name) {}
 
 	virtual EItemType GetType() const override { return EItemType::Library; }
-	virtual void      SetModified(bool const bModified, bool const bForce = false) override;
+	virtual void      SetModified(bool const isModified, bool const isForced = false) override;
 };
 
 class CAudioFolder final : public CAudioAsset

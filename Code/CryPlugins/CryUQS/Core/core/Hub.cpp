@@ -220,6 +220,13 @@ namespace UQS
 			if (event == ESYSTEM_EVENT_GAME_POST_INIT_DONE)
 			{
 				//
+				// - ask all sub-systems to register their factories (before doing the consistency checks below!!!)
+				// - the sub-systems should have used ESYSTEM_EVENT_GAME_POST_INIT (*not* the _DONE event) to subscribe to the IHub for receiving events
+				//
+
+				SendHubEventToAllListeners(UQS::Core::EHubEvent::RegisterYourFactoriesNow);
+
+				//
 				// instantiate all factories from the StdLib
 				//
 
@@ -230,16 +237,10 @@ namespace UQS
 
 				//
 				// register all factories from the StdLib (this happens implicitly)
+				// (this is also necessary for monolithic build where the game code, for example, does *not* call Client::CFactoryRegistrationHelper::RegisterAllFactoryInstancesInHub)
 				//
 
 				Client::CFactoryRegistrationHelper::RegisterAllFactoryInstancesInHub(*this);
-
-				//
-				// - ask all sub-systems to register their factories (before doing the consistency checks below!!!)
-				// - the sub-systems should have used ESYSTEM_EVENT_GAME_POST_INIT (*not* the _DONE event) to subscribe to the IHub for receiving events
-				//
-
-				SendHubEventToAllListeners(UQS::Core::EHubEvent::RegisterYourFactoriesNow);
 
 				//
 				// check for consistency errors (this needs to be done *after* all subsystems registered their item types, functions, generators, evaluators)
@@ -279,11 +280,6 @@ namespace UQS
 					Schematyc::EnvPackageCallback callback = SCHEMATYC_DELEGATE(&CHub::OnRegisterSchematycEnvPackage);
 					gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(GetSchematycPackageGUID(), szName, Schematyc::g_szCrytek, szDescription, callback));
 				}
-
-				if (!(m_overrideFlags & EHubOverrideFlags::InstantiateStdLibFactories))
-				{
-					StdLib::CStdLibRegistration::RegisterInSchematyc();
-				}
 #endif
 
 				//
@@ -305,7 +301,6 @@ namespace UQS
 			{
 				if (!(m_overrideFlags & EHubOverrideFlags::InstantiateStdLibFactories))
 				{
-					StdLib::CStdLibRegistration::UnregisterInSchematyc();
 					gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(GetSchematycPackageGUID());
 				}
 			}

@@ -4,7 +4,6 @@
 
 #include <QWidget>
 
-class QFrame;
 class QPropertyTree;
 class QDeepFilterProxyModel;
 
@@ -41,11 +40,10 @@ private:
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
 
-	CAudioControl*         m_pControl;
-	QFrame*                m_pConnectionPropertiesFrame;
-	QPropertyTree*         m_pConnectionProperties;
-	QDeepFilterProxyModel* m_pFilterProxyModel;
-	CConnectionModel*      m_pConnectionModel;
-	CAudioTreeView*        m_pTreeView;
+	CAudioControl*               m_pControl;
+	QPropertyTree* const         m_pConnectionProperties;
+	QDeepFilterProxyModel* const m_pFilterProxyModel;
+	CConnectionModel* const      m_pConnectionModel;
+	CAudioTreeView* const        m_pTreeView;
 };
 } // namespace ACE

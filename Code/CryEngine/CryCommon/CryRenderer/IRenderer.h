@@ -1371,12 +1371,6 @@ enum eDeferredLightType
 //! Scale factor between photometric and internal light units.
 const float RENDERER_LIGHT_UNIT_SCALE = 10000.0f;
 
-//////////////////////////////////////////////////////////////////////
-struct SCustomRenderInitArgs
-{
-	bool appStartedFromMediaCenter;
-};
-
 #if CRY_PLATFORM_ANDROID
 enum {CULL_SIZEX = 128};
 enum {CULL_SIZEY = 64};
@@ -1609,7 +1603,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual ERenderType GetRenderType() const = 0;
 
 	//! Initializes the renderer, parameters are self-explanatory.
-	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd = 0, bool bReInit = false, const SCustomRenderInitArgs* pCustomArgs = 0, bool bShaderCacheGen = false) = 0;
+	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) = 0;
 	virtual void     PostInit() = 0;
 
 	//! Start active rendering of the intro movies while initializing the rest of the engine.
