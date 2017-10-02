@@ -1,25 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	Implementation of the IGameFramework interface. CCryAction
-                provides a generic game framework for action based games
-                such as 1st and 3rd person shooters.
-
-   -------------------------------------------------------------------------
-   History:
-   - 20:7:2004   10:51 : Created by Marco Koegler
-   - 3:8:2004		11:11 : Taken-over by Marcio Martins
-
-*************************************************************************/
-#ifndef __CRYACTION_H__
-#define __CRYACTION_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ICmdLine.h>
@@ -104,11 +85,10 @@ struct ISerializeHelper;
 struct ITimeDemoRecorder;
 
 class CNetMessageDistpatcher;
-class CManualFrameStepController;
 class CEntityContainerMgr;
 class CEntityAttachmentExNodeRegistry;
 
-class CCryAction :
+class CCryAction final :
 	public IGameFramework
 {
 
@@ -118,6 +98,9 @@ public:
 
 	// IGameFramework
 	virtual void                          ShutDown();
+
+	virtual void                          PreBeginRender();
+	virtual bool                          Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>());
 
 	void                                  ClearTimers();
 	virtual TimerID                       AddTimer(CTimeValue interval, bool repeat, TimerCallback callback, void* userdata);
@@ -135,7 +118,6 @@ public:
 	virtual void                          InitGameType(bool multiplayer, bool fromInit);
 	virtual bool                          CompleteInit();
 	virtual void                          PrePhysicsUpdate() /*override*/;
-	virtual int                           ManualFrameUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          Reset(bool clients);
 	virtual void                          GetMemoryUsage(ICrySizer* pSizer) const;
 
@@ -254,8 +236,10 @@ public:
 
 	virtual bool                  CanCheat();
 
-	INetNub*                      GetServerNetNub();
-	INetNub*                      GetClientNetNub();
+	virtual INetNub*              GetServerNetNub();
+	virtual IGameServerNub*       GetIGameServerNub();
+	virtual INetNub*              GetClientNetNub();
+	virtual IGameClientNub*       GetIGameClientNub();
 
 	void                          SetGameGUID(const char* gameGUID);
 	const char*                   GetGameGUID()             { return m_gameGUID; }
@@ -294,7 +278,7 @@ public:
 
 	static CCryAction*          GetCryAction() { return m_pThis; }
 
-	virtual CGameServerNub*     GetGameServerNub();
+	CGameServerNub*             GetGameServerNub();
 	CGameClientNub*             GetGameClientNub();
 	CGameContext*               GetGameContext();
 	CScriptBind_Vehicle*        GetVehicleScriptBind()     { return m_pScriptBindVehicle; }
@@ -326,7 +310,6 @@ public:
 	void                        SetGameSessionHandler(IGameSessionHandler* pSessionHandler);
 
 	CNetMessageDistpatcher*     GetNetMessageDispatcher()      { return m_pNetMsgDispatcher; }
-	CManualFrameStepController* GetManualFrameStepController() { return m_pManualFrameStepController; }
 	CEntityContainerMgr&         GetEntityContainerMgr()       { return *m_pEntityContainerMgr; }
 	CEntityAttachmentExNodeRegistry& GetEntityAttachmentExNodeRegistry() { return *m_pEntityAttachmentExNodeRegistry; }
 
@@ -372,10 +355,6 @@ public:
 	void                    StartNetworkStallTicker(bool includeMinimalUpdate);
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
-
-	bool                    PreUpdate(bool haveFocus, unsigned int updateFlags);
-	int                     Update(bool haveFocus, unsigned int updateFlags);
-	void                    PostUpdate(bool haveFocus, unsigned int updateFlags);
 
 	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
 	void FastShutdown();
@@ -684,7 +663,6 @@ private:
 	SExternalGameLibrary                   m_externalGameLibrary;
 
 	CNetMessageDistpatcher*                m_pNetMsgDispatcher;
-	CManualFrameStepController*            m_pManualFrameStepController;
 	CEntityContainerMgr*                   m_pEntityContainerMgr;
 	CEntityAttachmentExNodeRegistry*       m_pEntityAttachmentExNodeRegistry;
 
@@ -692,5 +670,3 @@ private:
 
 	std::vector<INetworkedClientListener*> m_networkClientListeners;
 };
-
-#endif //__CRYACTION_H__

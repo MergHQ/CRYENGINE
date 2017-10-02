@@ -21,10 +21,12 @@
 #include <CrySystem/ISystemScheduler.h> // <> required for Interfuscator
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_Shared.h>
+#include <CrySchematyc/Utils/EnumFlags.h>
 
 #include <CryMath/LCGRandom.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ICryUnknown.h>
+#include <CrySystem/IManualFrameStepController.h>
 
 struct ILog;
 struct IProfileLogSystem;
@@ -167,15 +169,15 @@ struct ICrySchematycCore;
 #define USER_DATA_POINTER     6
 //! ##@}.
 
-enum ESystemUpdateFlags
+enum ESystemUpdateFlags : uint8
 {
-	ESYSUPDATE_IGNORE_AI         = 0x0001,
-	ESYSUPDATE_IGNORE_PHYSICS    = 0x0002,
+	ESYSUPDATE_IGNORE_AI         = BIT(0),
+	ESYSUPDATE_IGNORE_PHYSICS    = BIT(2),
 	//! Special update mode for editor.
-	ESYSUPDATE_EDITOR            = 0x0004,
-	ESYSUPDATE_MULTIPLAYER       = 0x0008,
-	ESYSUPDATE_EDITOR_AI_PHYSICS = 0x0010,
-	ESYSUPDATE_EDITOR_ONLY       = 0x0020
+	ESYSUPDATE_EDITOR            = BIT(3),
+	ESYSUPDATE_MULTIPLAYER       = BIT(4),
+	ESYSUPDATE_EDITOR_AI_PHYSICS = BIT(5),
+	ESYSUPDATE_EDITOR_ONLY       = BIT(6)
 };
 
 //! Configuration specification, depends on user selected machine specification.
@@ -1127,10 +1129,17 @@ struct ISystem
 	//! Returns the root folder specified by the command line option "-root <path>".
 	virtual const char* GetRootFolder() const = 0;
 
+	//! Starts a new frame, updating the entire engine including renderer and game logic.
+	//! \return Returns true if the engine should continue running, false to quit.
+	virtual bool StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
+
 	//! Updates all subsystems (including the ScriptSink() ).
 	//! \param flags One or more flags from ESystemUpdateFlags structure.
 	//! \param nPauseMode 0=normal(no pause), 1=menu/pause, 2=cutscene.
-	virtual bool Update(int updateFlags = 0, int nPauseMode = 0) = 0;
+	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) = 0;
+
+	//! Get the manual frame step controller, allows for completely blocking per-frame update
+	virtual IManualFrameStepController* GetManualFrameStepController() const = 0;
 
 	//! Updates only require components during loading.
 	virtual bool UpdateLoadtime() = 0;

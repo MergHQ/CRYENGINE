@@ -180,6 +180,21 @@ void CGameServerNub::FailedActiveConnect(EDisconnectionCause cause, const char* 
 }
 
 //------------------------------------------------------------------------
+void CGameServerNub::AddSendableToRemoteClients(INetSendablePtr pMsg, int numAfterHandle, const SSendableHandle* afterHandle, SSendableHandle* handle)
+{
+	INetChannel* pLocalChannel = GetLocalChannel();
+
+	for (TServerChannelMap::iterator iter = m_channels.begin(); iter != m_channels.end(); ++iter)
+	{
+		INetChannel* pNetChannel = iter->second->GetNetChannel();
+		if (pNetChannel != nullptr && pNetChannel != pLocalChannel)
+		{
+			pNetChannel->AddSendable(pMsg, numAfterHandle, afterHandle, handle);
+		}
+	}
+}
+
+//------------------------------------------------------------------------
 CGameServerChannel* CGameServerNub::GetChannel(uint16 channelId)
 {
 	TServerChannelMap::iterator it = m_channels.find(channelId);

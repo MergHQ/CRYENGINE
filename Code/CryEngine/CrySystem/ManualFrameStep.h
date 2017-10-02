@@ -19,9 +19,10 @@ enum class EManualFrameStepResult
 
 #if MANUAL_FRAME_STEP_ENABLED
 
-class CManualFrameStepController
-	: public CNetMessageSinkHelper<CManualFrameStepController, INetMessageSink>
-	  , public IInputEventListener
+class CManualFrameStepController final
+	: public IManualFrameStepController
+	, public CNetMessageSinkHelper<CManualFrameStepController, INetMessageSink>
+	, public IInputEventListener
 {
 private:
 	enum : uint8
@@ -66,6 +67,10 @@ public:
 
 	EManualFrameStepResult Update();
 
+	// IManualFrameStepController
+	virtual void DefineProtocols(IProtocolBuilder* pBuilder) override { DefineProtocol(pBuilder); }
+	// ~IManualFrameStepController
+
 	// INetMessageSink
 	virtual void DefineProtocol(IProtocolBuilder* pBuilder) override;
 	// ~INetMessageSink
@@ -97,10 +102,14 @@ private:
 };
 
 #else
-class CManualFrameStepController
+class CManualFrameStepController final
+	: public IManualFrameStepController
 {
 public:
 	inline EManualFrameStepResult Update()                                   { return EManualFrameStepResult::Continue; }
-	void                          DefineProtocol(IProtocolBuilder* pBuilder) {};
+	
+	// IManualFrameStepController
+	virtual void DefineProtocols(IProtocolBuilder* pBuilder) override {};
+	// ~IManualFrameStepController
 };
 #endif

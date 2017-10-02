@@ -195,7 +195,6 @@ extern "C" IGameStartup* CreateGameStartup();
 	#include "PlayerProfiles/PlayerProfileImplNoSave.h"
 #endif
 #include "Network/NetMsgDispatcher.h"
-#include "ManualFrameStep.h"
 #include "EntityContainers/EntityContainerMgr.h"
 #include "FlowSystem/Nodes/FlowEntityCustomNodes.h"
 
@@ -364,7 +363,6 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_PreUpdateTicks(0),
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(nullptr),
-	m_pManualFrameStepController(nullptr),
 	m_pEntityContainerMgr(nullptr),
 	m_pEntityAttachmentExNodeRegistry(nullptr)
 {
@@ -2021,8 +2019,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
 	m_pEntityContainerMgr = new CEntityContainerMgr();
 	m_pEntityAttachmentExNodeRegistry = new CEntityAttachmentExNodeRegistry();
-	m_pManualFrameStepController = new CManualFrameStepController();
-
+	
 	if (gEnv->pRenderer)
 	{
 		m_pColorGradientManager = new CColorGradientManager();
@@ -2118,84 +2115,6 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 	}
 
 	return m_externalGameLibrary.IsValid();
-}
-
-//------------------------------------------------------------------------
-int CCryAction::ManualFrameUpdate(bool haveFocus, unsigned int updateFlags)
-{
-	return Update(haveFocus, updateFlags);
-}
-
-//------------------------------------------------------------------------
-int CCryAction::Update(bool haveFocus, unsigned int updateFlags)
-{
-	// The frame profile system already creates an "overhead" profile label
-	// in StartFrame(). Hence we have to set the FRAMESTART before.
-	CRY_PROFILE_FRAMESTART("Main");
-
-#if defined(JOBMANAGER_SUPPORT_PROFILING)
-	gEnv->GetJobManager()->SetFrameStartTime(gEnv->pTimer->GetAsyncTime());
-#endif
-
-	if (gEnv->pConsole)
-	{
-#if CRY_PLATFORM_WINDOWS
-		if (gEnv && gEnv->pRenderer && gEnv->pRenderer->GetHWND())
-		{
-			bool focus = (::GetFocus() == gEnv->pRenderer->GetHWND());
-			static bool focused = focus;
-			if (focus != focused)
-			{
-				if (GetISystem()->GetISystemEventDispatcher())
-				{
-					GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, focus, 0);
-				}
-				focused = focus;
-			}
-		}
-#endif
-	}
-
-	bool bBlockUpdate = false;
-
-	if (m_pManualFrameStepController)
-	{
-		const auto manualStepResult = m_pManualFrameStepController->Update();
-		bBlockUpdate = (manualStepResult == EManualFrameStepResult::Block);
-	}
-
-	bool bRun = bBlockUpdate;
-	int gameUpdateResult = 1;
-
-	if (!bBlockUpdate)
-	{
-		bRun = PreUpdate(haveFocus, updateFlags);
-
-		if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
-		{
-			gameUpdateResult = pGame->Update(haveFocus, updateFlags);
-		}
-
-		PostUpdate(haveFocus, updateFlags);
-	}
-
-	/*
-	   if (!m_fullScreenCVarSetup && gEnv->pConsole)
-	   {
-	    ICVar* pVar = gEnv->pConsole->GetCVar("r_Fullscreen");
-	    if (pVar)
-	    {
-	      pVar->SetOnChangeCallback(FullScreenCVarChanged);
-	      m_fullScreenCVarSetup = true;
-	    }
-	   }
-	 */
-
-#if ENABLE_AUTO_TESTER
-	s_autoTesterSingleton.Update();
-#endif
-
-	return (bRun && (gameUpdateResult > 0)) ? 1 : 0;
 }
 
 //------------------------------------------------------------------------
@@ -2579,7 +2498,6 @@ void CCryAction::ShutDown()
 		SAFE_DELETE(m_pAIProxyManager);
 	}
 
-	SAFE_DELETE(m_pManualFrameStepController);
 	SAFE_DELETE(m_pNetMsgDispatcher);
 	SAFE_DELETE(m_pEntityContainerMgr);
 	SAFE_DELETE(m_pEntityAttachmentExNodeRegistry);
@@ -2631,16 +2549,10 @@ void CCryAction::PrePhysicsUpdate()
 	}
 }
 
-bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
+void CCryAction::PreBeginRender()
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
-
-	if (!(updateFlags & ESYSUPDATE_EDITOR))
-		gEnv->pFrameProfileSystem->StartFrame();
-
-	// Earliest point of adding profile labels
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreUpdate");
+	CRY_PROFILE_REGION(PROFILE_GAME, __FUNC__);
+	CRYPROFILE_SCOPE_PROFILE_MARKER(__FUNC__);
 
 	if (!m_nextFrameCommand->empty())
 	{
@@ -2654,58 +2566,45 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 	CheckConnectRepeatedly();   // handle repeated connect mode - mainly for autotests to not get broken by timeouts on initial connect
 #endif
 
-	if (ITextModeConsole* pTextModeConsole = gEnv->pSystem->GetITextModeConsole())
-		pTextModeConsole->BeginDraw();
-
-	/*
-	   IRenderer * pRend = gEnv->pRenderer;
-	   float white[4] = {1,1,1,1};
-	   pRend->Draw2dLabel( 10, 10, 3, white, false, "TIME: %f", gEnv->pTimer->GetFrameStartTime().GetSeconds() );
-	 */
-	bool gameRunning = IsGameStarted();
-
-	bool bGameIsPaused = !gameRunning || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	bool bGameIsPaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
 	if (m_pTimeDemoRecorder && !IsGamePaused())
 		m_pTimeDemoRecorder->PreUpdate();
 
-	// TODO: Craig - this probably needs to be updated after CSystem::Update
 	// update the callback system
 	if (!bGameIsPaused)
 	{
 		if (m_pCallbackTimer)
 			m_pCallbackTimer->Update();
 	}
+}
 
-	bool bRetRun = true;
+uint32 CCryAction::GetPreUpdateTicks()
+{
+	uint32 ticks = m_PreUpdateTicks;
+	m_PreUpdateTicks = 0;
+	return ticks;
+}
 
-	//////////////////////////////////////////////////////////////////////
-	// tell the network to go to sleep
-	if (gEnv->pNetwork)
-	{
-		gEnv->pNetwork->SyncWithGame(eNGS_SleepNetwork);
-	}
+bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
+{
+	// Earliest point of adding profile labels
+	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::EarlyUpdate");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::EarlyUpdate");
 
-	m_pSystem->RenderBegin();
-
-	float frameTime(gEnv->pTimer->GetFrameTime());
+	float frameTime = gEnv->pTimer->GetFrameTime();
 
 	LARGE_INTEGER updateStart, updateEnd;
 	updateStart.QuadPart = 0;
 	updateEnd.QuadPart = 0;
 
+	bool isGamePaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	bool isGameRunning = IsGameStarted();
+
 	// when we are updated by the editor, we should not update the system
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
 	{
-		int updateLoopPaused = (!gameRunning || m_paused) ? 1 : 0;
-		if (gEnv->pRenderer && gEnv->pRenderer->IsPost3DRendererEnabled())
-		{
-			updateLoopPaused = 0;
-			updateFlags |= ESYSUPDATE_IGNORE_AI;
-		}
+		const bool wasGamePaused = isGamePaused;
 
-		const bool bGameWasPaused = bGameIsPaused;
-
-		bRetRun = m_pSystem->Update(updateFlags, updateLoopPaused);
 #ifdef ENABLE_LW_PROFILERS
 		CRY_PROFILE_SECTION(PROFILE_ACTION, "ActionPreUpdate");
 		QueryPerformanceCounter(&updateStart);
@@ -2714,10 +2613,10 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 		OnActionEvent(SActionEvent(eAE_earlyPreUpdate));
 
 		// during m_pSystem->Update call the Game might have been paused or un-paused
-		gameRunning = IsGameStarted() && m_pGame && m_pGame->IsInited();
-		bGameIsPaused = !gameRunning || IsGamePaused();
+		isGameRunning = IsGameStarted() && m_pGame && m_pGame->IsInited();
+		isGamePaused = !isGameRunning || IsGamePaused();
 
-		if (!bGameIsPaused && !bGameWasPaused) // don't update gameplayrecorder if paused
+		if (!isGamePaused && !wasGamePaused) // don't update gameplayrecorder if paused
 			if (m_pGameplayRecorder)
 				m_pGameplayRecorder->Update(frameTime);
 
@@ -2726,7 +2625,7 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 			CCryAction::GetCryAction()->GetTimeOfDayScheduler()->Update();
 		}
 
-		if (!bGameIsPaused && gameRunning)
+		if (!isGamePaused && isGameRunning)
 		{
 			if (gEnv->pFlowSystem)
 			{
@@ -2748,7 +2647,7 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 			const bool useDeferredViewSystemUpdate = m_pViewSystem->UseDeferredViewSystemUpdate();
 			if (!useDeferredViewSystemUpdate)
 			{
-				if (!bGameIsPaused && !bGameWasPaused) // don't update view if paused
+				if (!isGamePaused && !wasGamePaused) // don't update view if paused
 					m_pViewSystem->Update(min(frameTime, 0.1f));
 			}
 		}
@@ -2766,7 +2665,7 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 		m_pPhysicsQueues->Update(frameTime);
 	}
 
-	if (!bGameIsPaused)
+	if (!isGamePaused)
 	{
 		if (m_pItemSystem)
 			m_pItemSystem->Update();
@@ -2807,25 +2706,23 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 #endif
 	}
 
-	return bRetRun;
-}
+	bool continueRunning;
 
-uint32 CCryAction::GetPreUpdateTicks()
-{
-	uint32 ticks = m_PreUpdateTicks;
-	m_PreUpdateTicks = 0;
-	return ticks;
-}
+	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
+	{
+		CRY_PROFILE_REGION(PROFILE_GAME, "UpdateLegacyGame");
+		continueRunning = pGame->Update(haveFocus, updateFlags.UnderlyingValue()) > 0;
+	}
+	else
+	{
+		return true;
+	}
 
-//------------------------------------------------------------------------
-void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
-{
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostUpdate");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "UpdateEngine");
 
 	if (updateFlags & ESYSUPDATE_EDITOR_ONLY)
 	{
-		return;
+		return continueRunning;
 	}
 
 	const bool bInLevelLoad = IsInLevelLoad();
@@ -2857,7 +2754,7 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 		if (m_pGameObjectSystem)
 			m_pGameObjectSystem->PostUpdate(delta);
 
-		return;
+		return continueRunning;
 	}
 
 	if (m_pShowLanBrowserCVAR->GetIVal() == 0)
@@ -2971,9 +2868,6 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 	if (m_pTimeDemoRecorder && !IsGamePaused())
 		m_pTimeDemoRecorder->PostUpdate();
 
-	if (gEnv->pStatoscope)
-		gEnv->pStatoscope->Tick();
-
 	if (m_delayedSaveCountDown)
 	{
 		--m_delayedSaveCountDown;
@@ -2986,18 +2880,7 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 		m_pLocalAllocs->m_delayedSaveGameName.assign("");
 	}
 
-	if (ITextModeConsole* pTextModeConsole = gEnv->pSystem->GetITextModeConsole())
-		pTextModeConsole->EndDraw();
-
-	gEnv->p3DEngine->SyncProcessStreamingUpdate();
-
-	if (m_pSystem->NeedDoWorkDuringOcclusionChecks())
-	{
-		m_pSystem->DoWorkDuringOcclusionChecks();
-	}
-
-	if (!(updateFlags & ESYSUPDATE_EDITOR))
-		gEnv->pFrameProfileSystem->EndFrame();
+	return continueRunning;
 }
 
 void CCryAction::Reset(bool clients)
@@ -4058,16 +3941,6 @@ void CCryAction::RegisterFactory(const char* name, ILoadGame*(*func)(), bool)
 	}
 }
 
-CGameServerNub* CCryAction::GetGameServerNub()
-{
-	return m_pGame ? m_pGame->GetGameServerNub() : NULL;
-}
-
-CGameClientNub* CCryAction::GetGameClientNub()
-{
-	return m_pGame ? m_pGame->GetGameClientNub() : NULL;
-}
-
 IActor* CCryAction::GetClientActor() const
 {
 	return m_pGame ? m_pGame->GetClientActor() : NULL;
@@ -4972,6 +4845,26 @@ void CCryAction::OnActionEvent(const SActionEvent& ev)
 INetNub* CCryAction::GetServerNetNub()
 {
 	return m_pGame ? m_pGame->GetServerNetNub() : 0;
+}
+
+IGameServerNub* CCryAction::GetIGameServerNub()
+{
+	return GetGameServerNub();
+}
+
+CGameServerNub* CCryAction::GetGameServerNub()
+{
+	return m_pGame ? m_pGame->GetGameServerNub() : NULL;
+}
+
+IGameClientNub* CCryAction::GetIGameClientNub()
+{
+	return GetGameClientNub();
+}
+
+CGameClientNub* CCryAction::GetGameClientNub()
+{
+	return m_pGame ? m_pGame->GetGameClientNub() : NULL;
 }
 
 INetNub* CCryAction::GetClientNetNub()
