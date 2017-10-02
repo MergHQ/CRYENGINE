@@ -2143,12 +2143,17 @@ bool CClothSimulator::CheckForceSkinningByFpsThreshold()
 	float fps = gEnv->pTimer->GetFrameRate();
 	forceSkinning = fps < m_config.forceSkinningFpsThreshold;
 
-	if (forceSkinning)
+	// force skinning only after n-th frame with framerate below threshold
+	if (forceSkinning && (m_forceSkinningAfterNFramesCounter < Console::GetInst().ca_ClothForceSkinningAfterNFrames))
 	{
-		// CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, "[Cloth] Force Skinning, Fps: %f [Thresh: %f Fps]", fps, m_config.forceSkinningFpsThreshold);
-		// g_pAuxGeom->Draw2dLabel( 100,140, 5.3f, ColorF(1,0,1,1), false, "[Cloth] FPS: %f",fps);
+		m_forceSkinningAfterNFramesCounter++;
+		forceSkinning = false;
 	}
-
+	else
+	{
+		m_forceSkinningAfterNFramesCounter = 0;
+	}
+	
 	return forceSkinning;
 }
 

@@ -288,6 +288,7 @@ public:
 		, m_steps(0)
 		, m_normalizedTimePrev(0)
 		, m_doSkinningForNSteps(0)
+		, m_forceSkinningAfterNFramesCounter(0)
 		, m_fadeInOutPhysicsDirection(0)
 		, m_fadeTimeActual(0) // physical fade time
 		, m_bUseDijkstraForLRA(true)
@@ -442,9 +443,10 @@ private:
 
 	std::vector<SCollidable>  m_permCollidables; //!< list of collision proxies (no collision with the world)
 
-	float                     m_fadeTimeActual;            //!< actual fade time
-	int                       m_fadeInOutPhysicsDirection; //!< -1 fade out, 1 fade in
-	int                       m_doSkinningForNSteps;       //!< use skinning if any position change has occured, to keep simulation stable
+	float                     m_fadeTimeActual;                   //!< actual fade time
+	int                       m_fadeInOutPhysicsDirection;        //!< -1 fade out, 1 fade in
+	int                       m_doSkinningForNSteps;              //!< use skinning if any position change has occured, to keep simulation stable
+	int                       m_forceSkinningAfterNFramesCounter; //!< safety mechanism, i.e. local counter: if framerate falls below threshold for n-frames, skinning is forced to avoid performance issues
 
 	Vec3                      m_externalDeltaTranslation;  //!< delta translation of locator per timestep; is used to determine external influence according to velocity
 	Vec3                      m_permCollidables0Old;       //!< to determine above m_externalDeltaTranslation per step
