@@ -45,6 +45,8 @@ class CLocalizedStringsManager;
 class CDownloadManager;
 struct ICryPerfHUD;
 class CNULLRenderAuxGeom;
+class CManualFrameStepController;
+class CProjectManager;
 
 namespace minigui
 {
@@ -257,8 +259,10 @@ public:
 
 	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
 
-	virtual bool                      StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
-	virtual bool                      Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) override;
+	virtual bool                        StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
+	virtual bool                        Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) override;
+	virtual IManualFrameStepController* GetManualFrameStepController() const override;
+
 	virtual bool                      UpdateLoadtime() override;
 	virtual void                      DoWorkDuringOcclusionChecks() override;
 	virtual bool                      NeedDoWorkDuringOcclusionChecks() override { return m_bNeedDoWorkDuringOcclusionChecks; }
@@ -1015,7 +1019,8 @@ protected: // -------------------------------------------------------------
 	INotificationNetwork*                     m_pNotificationNetwork;
 	CCryPluginManager*                        m_pPluginManager;
 	CUserAnalyticsSystem*                     m_pUserAnalyticsSystem;
-	class CProjectManager*                    m_pProjectManager;
+	CProjectManager*                          m_pProjectManager;
+	CManualFrameStepController*               m_pManualFrameStepController;
 
 	bool                                      m_hasWindowFocus;
 

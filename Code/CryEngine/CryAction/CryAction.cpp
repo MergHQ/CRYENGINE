@@ -195,7 +195,6 @@ extern "C" IGameStartup* CreateGameStartup();
 	#include "PlayerProfiles/PlayerProfileImplNoSave.h"
 #endif
 #include "Network/NetMsgDispatcher.h"
-#include "ManualFrameStep.h"
 #include "EntityContainers/EntityContainerMgr.h"
 #include "FlowSystem/Nodes/FlowEntityCustomNodes.h"
 
@@ -364,7 +363,6 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_PreUpdateTicks(0),
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(nullptr),
-	m_pManualFrameStepController(nullptr),
 	m_pEntityContainerMgr(nullptr),
 	m_pEntityAttachmentExNodeRegistry(nullptr)
 {
@@ -2021,8 +2019,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
 	m_pEntityContainerMgr = new CEntityContainerMgr();
 	m_pEntityAttachmentExNodeRegistry = new CEntityAttachmentExNodeRegistry();
-	m_pManualFrameStepController = new CManualFrameStepController();
-
+	
 	if (gEnv->pRenderer)
 	{
 		m_pColorGradientManager = new CColorGradientManager();
@@ -2123,34 +2120,16 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 //------------------------------------------------------------------------
 bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	bool bBlockUpdate = false;
+	bool bRun = PreUpdate(haveFocus, updateFlags);
 
-	if (m_pManualFrameStepController)
+	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
 	{
-		const auto manualStepResult = m_pManualFrameStepController->Update();
-		bBlockUpdate = (manualStepResult == EManualFrameStepResult::Block);
+		bRun = bRun && pGame->Update(haveFocus, updateFlags.UnderlyingValue()) > 0;
 	}
 
-	bool bRun = bBlockUpdate;
-	int gameUpdateResult = 1;
+	PostUpdate(haveFocus, updateFlags);
 
-	if (!bBlockUpdate)
-	{
-		bRun = PreUpdate(haveFocus, updateFlags);
-
-		if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
-		{
-			gameUpdateResult = pGame->Update(haveFocus, updateFlags.UnderlyingValue());
-		}
-
-		PostUpdate(haveFocus, updateFlags);
-	}
-
-#if ENABLE_AUTO_TESTER
-	s_autoTesterSingleton.Update();
-#endif
-
-	return (bRun && (gameUpdateResult > 0)) ? 1 : 0;
+	return bRun;
 }
 
 //------------------------------------------------------------------------
@@ -2534,7 +2513,6 @@ void CCryAction::ShutDown()
 		SAFE_DELETE(m_pAIProxyManager);
 	}
 
-	SAFE_DELETE(m_pManualFrameStepController);
 	SAFE_DELETE(m_pNetMsgDispatcher);
 	SAFE_DELETE(m_pEntityContainerMgr);
 	SAFE_DELETE(m_pEntityAttachmentExNodeRegistry);
@@ -2589,9 +2567,6 @@ void CCryAction::PrePhysicsUpdate()
 bool CCryAction::PreUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
-
-	if (!(updateFlags & ESYSUPDATE_EDITOR))
-		gEnv->pFrameProfileSystem->StartFrame();
 
 	// Earliest point of adding profile labels
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreUpdate");
@@ -4013,16 +3988,6 @@ void CCryAction::RegisterFactory(const char* name, ILoadGame*(*func)(), bool)
 	}
 }
 
-CGameServerNub* CCryAction::GetGameServerNub()
-{
-	return m_pGame ? m_pGame->GetGameServerNub() : NULL;
-}
-
-CGameClientNub* CCryAction::GetGameClientNub()
-{
-	return m_pGame ? m_pGame->GetGameClientNub() : NULL;
-}
-
 IActor* CCryAction::GetClientActor() const
 {
 	return m_pGame ? m_pGame->GetClientActor() : NULL;
@@ -4927,6 +4892,26 @@ void CCryAction::OnActionEvent(const SActionEvent& ev)
 INetNub* CCryAction::GetServerNetNub()
 {
 	return m_pGame ? m_pGame->GetServerNetNub() : 0;
+}
+
+IGameServerNub* CCryAction::GetIGameServerNub()
+{
+	return GetGameServerNub();
+}
+
+CGameServerNub* CCryAction::GetGameServerNub()
+{
+	return m_pGame ? m_pGame->GetGameServerNub() : NULL;
+}
+
+IGameClientNub* CCryAction::GetIGameClientNub()
+{
+	return GetGameClientNub();
+}
+
+CGameClientNub* CCryAction::GetGameClientNub()
+{
+	return m_pGame ? m_pGame->GetGameClientNub() : NULL;
 }
 
 INetNub* CCryAction::GetClientNetNub()

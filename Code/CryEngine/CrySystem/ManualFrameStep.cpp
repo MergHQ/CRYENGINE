@@ -3,22 +3,20 @@
 #include "StdAfx.h"
 #include "ManualFrameStep.h"
 
+#include <CryGame/IGameFramework.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+
 #if MANUAL_FRAME_STEP_ENABLED
 
-	#include "Network/GameClientChannel.h"
-	#include "Network/GameClientNub.h"
-	#include "Network/GameServerChannel.h"
-	#include "Network/GameServerNub.h"
+#if CRY_PLATFORM_WINDOWS
+	#define MANUAL_FRAME_STEP_VIEW_HISTORY 1
+#else
+	#define MANUAL_FRAME_STEP_VIEW_HISTORY 0
+#endif
 
-	#if CRY_PLATFORM_WINDOWS
-		#define MANUAL_FRAME_STEP_VIEW_HISTORY 1
-	#else
-		#define MANUAL_FRAME_STEP_VIEW_HISTORY 0
-	#endif
-
-	#if MANUAL_FRAME_STEP_VIEW_HISTORY
-		#include <CryCore/Platform/CryWindows.h>
-	#endif
+#if MANUAL_FRAME_STEP_VIEW_HISTORY
+	#include <CryCore/Platform/CryWindows.h>
+#endif
 
 /*static*/ void CManualFrameStepController::SCVars::Register()
 {
@@ -222,23 +220,13 @@ void CManualFrameStepController::NetSyncClients(const SNetMessage& netMessage)
 {
 	if (gEnv->bMultiplayer && gEnv->bServer)
 	{
-		if (CGameServerNub* pServerNub = CCryAction::GetCryAction()->GetGameServerNub())
+		if (IGameServerNub* pGameServerNub = gEnv->pGameFramework->GetIGameServerNub())
 		{
-			if (TServerChannelMap* pChanneMap = pServerNub->GetServerChannelMap())
-			{
-				INetSendablePtr pNetMessage = new CSimpleNetMessage<SNetMessage>(netMessage, CManualFrameStepController::OnNetworkMessage);
+			INetSendablePtr pNetMessage = new CSimpleNetMessage<SNetMessage>(netMessage, CManualFrameStepController::OnNetworkMessage);
 
-				for (TServerChannelMap::iterator iter = pChanneMap->begin(); iter != pChanneMap->end(); ++iter)
-				{
-					INetChannel* pNetChannel = iter->second->GetNetChannel();
-					if ((pNetChannel != nullptr) && (pNetChannel != pServerNub->GetLocalChannel()))
-					{
-						pNetChannel->AddSendable(pNetMessage, 0, NULL, NULL);
+			pGameServerNub->AddSendableToRemoteClients(pNetMessage, 0, nullptr, nullptr);
 
-						CryLog("[ManualFrameStepController] Client Sync sent. Frames = %u", netMessage.numFrames);
-					}
-				}
-			}
+			CryLog("[ManualFrameStepController] Client Sync sent. Frames = %u", netMessage.numFrames);
 		}
 	}
 }
@@ -247,12 +235,12 @@ void CManualFrameStepController::NetRequestStepToServer(const SNetMessage& netMe
 {
 	if (!gEnv->bServer)
 	{
-		if (CGameClientNub* pClientNub = CCryAction::GetCryAction()->GetGameClientNub())
+		if(IGameClientNub* pGameClientNub = gEnv->pGameFramework->GetIGameClientNub())
 		{
-			if (CGameClientChannel* pGameClientChannel = pClientNub->GetGameClientChannel())
+			if (INetChannel* pGameClientChannel = pGameClientNub->GetNetChannel())
 			{
 				INetSendablePtr pNetMessage = new CSimpleNetMessage<SNetMessage>(netMessage, CManualFrameStepController::OnNetworkMessage);
-				pGameClientChannel->GetNetChannel()->AddSendable(pNetMessage, 0, NULL, NULL);
+				pGameClientChannel->AddSendable(pNetMessage, 0, NULL, NULL);
 			}
 		}
 	}

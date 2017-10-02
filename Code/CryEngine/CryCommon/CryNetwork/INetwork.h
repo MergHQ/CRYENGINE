@@ -1420,6 +1420,16 @@ struct IGameNub
 	// </interfuscator:shuffle>
 };
 
+struct IGameServerNub : public IGameNub
+{
+	virtual void AddSendableToRemoteClients(INetSendablePtr pMsg, int numAfterHandle, const SSendableHandle* afterHandle, SSendableHandle* handle) = 0;
+};
+
+struct IGameClientNub : public IGameNub
+{
+	virtual INetChannel* GetNetChannel() = 0;
+};
+
 struct IGameChannel : public INetMessageSink
 {
 	// <interfuscator:shuffle>

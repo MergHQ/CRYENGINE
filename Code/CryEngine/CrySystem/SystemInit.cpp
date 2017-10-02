@@ -107,6 +107,7 @@
 #include "Serialization/ArchiveHost.h"
 
 #include "CrySchematyc/ICore.h"
+#include "ManualFrameStep.h"
 
 #if USE_STEAM
 	#include "Steamworks/public/steam/steam_api.h"
@@ -3732,6 +3733,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 	}
 #endif
+
+	m_pManualFrameStepController = new CManualFrameStepController();
 
 	return (true);
 }

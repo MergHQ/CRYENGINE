@@ -85,11 +85,10 @@ struct ISerializeHelper;
 struct ITimeDemoRecorder;
 
 class CNetMessageDistpatcher;
-class CManualFrameStepController;
 class CEntityContainerMgr;
 class CEntityAttachmentExNodeRegistry;
 
-class CCryAction :
+class CCryAction final :
 	public IGameFramework
 {
 
@@ -236,8 +235,10 @@ public:
 
 	virtual bool                  CanCheat();
 
-	INetNub*                      GetServerNetNub();
-	INetNub*                      GetClientNetNub();
+	virtual INetNub*              GetServerNetNub();
+	virtual IGameServerNub*       GetIGameServerNub();
+	virtual INetNub*              GetClientNetNub();
+	virtual IGameClientNub*       GetIGameClientNub();
 
 	void                          SetGameGUID(const char* gameGUID);
 	const char*                   GetGameGUID()             { return m_gameGUID; }
@@ -276,7 +277,7 @@ public:
 
 	static CCryAction*          GetCryAction() { return m_pThis; }
 
-	virtual CGameServerNub*     GetGameServerNub();
+	CGameServerNub*             GetGameServerNub();
 	CGameClientNub*             GetGameClientNub();
 	CGameContext*               GetGameContext();
 	CScriptBind_Vehicle*        GetVehicleScriptBind()     { return m_pScriptBindVehicle; }
@@ -308,7 +309,6 @@ public:
 	void                        SetGameSessionHandler(IGameSessionHandler* pSessionHandler);
 
 	CNetMessageDistpatcher*     GetNetMessageDispatcher()      { return m_pNetMsgDispatcher; }
-	CManualFrameStepController* GetManualFrameStepController() { return m_pManualFrameStepController; }
 	CEntityContainerMgr&         GetEntityContainerMgr()       { return *m_pEntityContainerMgr; }
 	CEntityAttachmentExNodeRegistry& GetEntityAttachmentExNodeRegistry() { return *m_pEntityAttachmentExNodeRegistry; }
 
@@ -665,7 +665,6 @@ private:
 	SExternalGameLibrary                   m_externalGameLibrary;
 
 	CNetMessageDistpatcher*                m_pNetMsgDispatcher;
-	CManualFrameStepController*            m_pManualFrameStepController;
 	CEntityContainerMgr*                   m_pEntityContainerMgr;
 	CEntityAttachmentExNodeRegistry*       m_pEntityAttachmentExNodeRegistry;
 

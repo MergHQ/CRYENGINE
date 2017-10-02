@@ -95,6 +95,7 @@
 #include "ProjectManager/ProjectManager.h"
 
 #include "DebugCallStack.h"
+#include "ManualFrameStep.h"
 
 WATERMARKDATA(_m);
 
@@ -218,6 +219,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 #if defined(SYS_ENV_AS_STRUCT)
 	, m_env(gEnv)
 #endif
+	, m_pManualFrameStepController(nullptr)
 {
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
@@ -559,6 +561,8 @@ void LvlRes_export(IConsoleCmdArgs* pParams);
 void CSystem::ShutDown()
 {
 	CryLogAlways("System Shutdown");
+
+	SAFE_DELETE(m_pManualFrameStepController);
 
 	m_FrameProfileSystem.Enable(false, false);
 
@@ -1540,6 +1544,17 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	m_env.GetJobManager()->SetFrameStartTime(gEnv->pTimer->GetAsyncTime());
 #endif
 
+	if (!updateFlags.Check(ESYSUPDATE_EDITOR))
+	{
+		gEnv->pFrameProfileSystem->StartFrame();
+	}
+
+	if (m_pManualFrameStepController != nullptr && m_pManualFrameStepController->Update() == EManualFrameStepResult::Block)
+	{
+		// Skip frame update
+		return true;
+	}
+
 	// TODO: Move core engine update from game framework to this function
 	return m_env.pGameFramework->Update(m_hasWindowFocus, updateFlags);
 }
@@ -2204,6 +2219,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 	return !m_bQuit;
 
+}
+
+IManualFrameStepController* CSystem::GetManualFrameStepController() const
+{
+	return m_pManualFrameStepController;
 }
 
 bool CSystem::UpdateLoadtime()

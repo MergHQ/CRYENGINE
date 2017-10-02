@@ -825,7 +825,9 @@ struct IGameFramework
 	virtual void                  UnregisterListener(IGameFrameworkListener* pGameFrameworkListener) = 0;
 
 	virtual INetNub*              GetServerNetNub() = 0;
+	virtual IGameServerNub*       GetIGameServerNub() = 0;
 	virtual INetNub*              GetClientNetNub() = 0;
+	virtual IGameClientNub*       GetIGameClientNub() = 0;
 
 	virtual void                  SetGameGUID(const char* gameGUID) = 0;
 	virtual const char*           GetGameGUID() = 0;

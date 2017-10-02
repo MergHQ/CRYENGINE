@@ -26,6 +26,7 @@
 #include <CryMath/LCGRandom.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ICryUnknown.h>
+#include <CrySystem/IManualFrameStepController.h>
 
 struct ILog;
 struct IProfileLogSystem;
@@ -1136,6 +1137,9 @@ struct ISystem
 	//! \param flags One or more flags from ESystemUpdateFlags structure.
 	//! \param nPauseMode 0=normal(no pause), 1=menu/pause, 2=cutscene.
 	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) = 0;
+
+	//! Get the manual frame step controller, allows for completely blocking per-frame update
+	virtual IManualFrameStepController* GetManualFrameStepController() const = 0;
 
 	//! Updates only require components during loading.
 	virtual bool UpdateLoadtime() = 0;
