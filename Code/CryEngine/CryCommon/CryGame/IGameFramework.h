@@ -522,7 +522,11 @@ struct IGameFramework
 	//! Called when the engine is shutting down to finalize the game framework
 	virtual void ShutDown() = 0;
 
-	//! Updates the game framework
+	//! Called just before calling ISystem::RenderBegin
+	virtual void PreBeginRender() = 0;
+
+	//! Updates the main game systems
+	//! \return True if the engine should continue running, otherwise false.
 	virtual bool Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
 
 	//! Used to notify the framework that we're switching between single and multi player.

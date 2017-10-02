@@ -99,7 +99,8 @@ public:
 	// IGameFramework
 	virtual void                          ShutDown();
 
-	virtual bool                          Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags);
+	virtual void                          PreBeginRender();
+	virtual bool                          Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>());
 
 	void                                  ClearTimers();
 	virtual TimerID                       AddTimer(CTimeValue interval, bool repeat, TimerCallback callback, void* userdata);
@@ -354,9 +355,6 @@ public:
 	void                    StartNetworkStallTicker(bool includeMinimalUpdate);
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
-
-	bool                    PreUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags);
-	void                    PostUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags);
 
 	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
 	void FastShutdown();

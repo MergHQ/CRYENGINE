@@ -766,9 +766,9 @@ private: // ------------------------------------------------------
 	//! to hold the values stored in system.cfg
 	//! because editor uses it's own values,
 	//! and then saves them to file, overwriting the user's resolution.
-	int m_iHeight;
-	int m_iWidth;
-	int m_iColorBits;
+	int m_iHeight = 0;
+	int m_iWidth = 0;
+	int m_iColorBits = 0;
 
 	// System console variables.
 	//////////////////////////////////////////////////////////////////////////
@@ -863,7 +863,7 @@ private: // ------------------------------------------------------
 	ILoadConfigurationEntrySink* m_pCVarsWhitelistConfigSink;
 #endif // defined(CVARS_WHITELIST)
 
-	WIN_HWND m_hWnd;
+	WIN_HWND m_hWnd = nullptr;
 
 	// this is the memory statistics that is retained in memory between frames
 	// in which it's not gathered
@@ -1001,7 +1001,7 @@ public:
 
 private:
 	std::vector<IErrorObserver*> m_errorObservers;
-	ESystemGlobalState           m_systemGlobalState;
+	ESystemGlobalState           m_systemGlobalState = ESYSTEM_GLOBAL_STATE_INIT;
 	static const char* GetSystemGlobalStateName(const ESystemGlobalState systemGlobalState);
 
 public:
@@ -1020,9 +1020,9 @@ protected: // -------------------------------------------------------------
 	CCryPluginManager*                        m_pPluginManager;
 	CUserAnalyticsSystem*                     m_pUserAnalyticsSystem;
 	CProjectManager*                          m_pProjectManager;
-	CManualFrameStepController*               m_pManualFrameStepController;
+	CManualFrameStepController*               m_pManualFrameStepController = nullptr;
 
-	bool                                      m_hasWindowFocus;
+	bool                                      m_hasWindowFocus = true;
 
 	string                                    m_binariesDir;
 	string                                    m_currentLanguageAudio;
@@ -1047,7 +1047,7 @@ protected: // -------------------------------------------------------------
 	std::unordered_map<uint32, bool> m_mapWarningOnceAlreadyPrinted;
 	CryMutex						 m_mapWarningOnceMutex;
 
-	bool           m_bIsAsserting;
+	bool           m_bIsAsserting = false;
 
 	friend struct SDefaultValidator;
 	friend struct SCryEngineFoldersLoader;

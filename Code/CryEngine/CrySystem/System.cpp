@@ -37,6 +37,7 @@
 #include <CryGame/IGameFramework.h>
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
+#include <CrySystem/Profilers/IStatoscope.h>
 #include "TestSystemLegacy.h"             // CTestSystem
 #include "VisRegTest.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
@@ -209,17 +210,9 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 // System Implementation.
 //////////////////////////////////////////////////////////////////////////
 CSystem::CSystem(const SSystemInitParams& startupParams)
-	: m_hasWindowFocus(true)
-	, m_systemGlobalState(ESYSTEM_GLOBAL_STATE_INIT)
-	, m_iWidth(0)
-	, m_iHeight(0)
-	, m_iColorBits(0)
-	, m_bIsAsserting(false)
-	, m_hWnd(nullptr)
 #if defined(SYS_ENV_AS_STRUCT)
-	, m_env(gEnv)
+	: m_env(gEnv)
 #endif
-	, m_pManualFrameStepController(nullptr)
 {
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
@@ -1540,6 +1533,12 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
 	CRY_PROFILE_FRAMESTART("Main");
 
+	if (m_pManualFrameStepController != nullptr && m_pManualFrameStepController->Update() == EManualFrameStepResult::Block)
+	{
+		// Skip frame update
+		return true;
+	}
+
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	m_env.GetJobManager()->SetFrameStartTime(gEnv->pTimer->GetAsyncTime());
 #endif
@@ -1549,14 +1548,77 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 		gEnv->pFrameProfileSystem->StartFrame();
 	}
 
-	if (m_pManualFrameStepController != nullptr && m_pManualFrameStepController->Update() == EManualFrameStepResult::Block)
+	CRY_PROFILE_REGION(PROFILE_SYSTEM, __FUNC__);
+	CRYPROFILE_SCOPE_PROFILE_MARKER(__FUNC__);
+
+	if (m_env.pGameFramework != nullptr)
 	{
-		// Skip frame update
-		return true;
+		m_env.pGameFramework->PreBeginRender();
+	}
+
+	if (ITextModeConsole* pTextModeConsole = GetITextModeConsole())
+	{
+		pTextModeConsole->BeginDraw();
+	}
+
+	// tell the network to go to sleep
+	if (m_env.pNetwork)
+	{
+		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
+	}
+
+	RenderBegin();
+
+	bool continueRunning;
+
+	// The Editor is responsible for updating the system manually, so we should skip in that case.
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		int pauseMode;
+
+		if (m_env.pRenderer != nullptr && m_env.pRenderer->IsPost3DRendererEnabled())
+		{
+			pauseMode = 0;
+			updateFlags |= ESYSUPDATE_IGNORE_AI;
+		}
+		else
+		{
+			pauseMode = (m_env.pGameFramework->IsGamePaused() || !m_env.pGameFramework->IsGameStarted()) ? 1 : 0;
+		}
+
+		continueRunning = Update(updateFlags, pauseMode);
+	}
+	else
+	{
+		continueRunning = true;
 	}
 
 	// TODO: Move core engine update from game framework to this function
-	return m_env.pGameFramework->Update(m_hasWindowFocus, updateFlags);
+	continueRunning |= m_env.pGameFramework->Update(m_hasWindowFocus, updateFlags);
+
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		if (gEnv->pStatoscope)
+		{
+			gEnv->pStatoscope->Tick();
+		}
+
+		if (ITextModeConsole* pTextModeConsole = GetITextModeConsole())
+		{
+			pTextModeConsole->EndDraw();
+		}
+
+		gEnv->p3DEngine->SyncProcessStreamingUpdate();
+
+		if (NeedDoWorkDuringOcclusionChecks())
+		{
+			DoWorkDuringOcclusionChecks();
+		}
+
+		gEnv->pFrameProfileSystem->EndFrame();
+	}
+
+	return continueRunning;
 }
 
 //////////////////////////////////////////////////////////////////////
