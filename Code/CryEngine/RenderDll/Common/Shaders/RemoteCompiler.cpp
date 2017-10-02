@@ -279,7 +279,7 @@ bool CShaderSrv::RequestLine(const string& rList, const string& rString) const
 	if (!gRenDev->CV_r_shaderssubmitrequestline)
 		return true;
 
-	string list = m_RequestLineRootFolder + rList;
+	string list = m_RequestLineRootFolder.c_str() + rList;
 
 	std::vector<uint8> CompileData;
 	std::vector<std::pair<string, string>> Nodes;
