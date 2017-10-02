@@ -214,7 +214,7 @@ static const char* PropertyTypeToResourceType(PropertyType type)
 	case ePropertyModel:
 		return "Model";
 	case ePropertyGeomCache:
-		return "GeomCache";
+		return "GeometryCache";
 	case ePropertyAudioTrigger:
 		return "AudioTrigger";
 	case ePropertyAudioSwitch:
@@ -2816,7 +2816,7 @@ void CPropertyItem::OnFileBrowseButton()
 	{
 		// Filters for geom caches.
 		SResourceSelectorContext context;
-		context.typeName = "GeomCache";
+		context.typeName = "GeometryCache";
 
 		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(context, tempValue);
 		SetValue(newValue.c_str(), true, true);

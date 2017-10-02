@@ -23,10 +23,11 @@ bool Serialize(Serialization::IArchive& ar, SkeletonAlias& value, const char* na
 using Serialization::AttachmentName;
 using Serialization::ResourceFilePath;
 using Serialization::MaterialPicker;
-using Serialization::SkeletonPath;
+using Serialization::SkeletonOrCgaPath;
 using Serialization::SkeletonParamsPath;
 using Serialization::AnimationAlias;
 using Serialization::AnimationPath;
+using Serialization::AnimationOrBlendSpacePath;
 using Serialization::AnimationPathWithId;
 using Serialization::CharacterPath;
 using Serialization::CharacterPhysicsPath;

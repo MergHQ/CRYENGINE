@@ -298,7 +298,7 @@ void BlendSpaceAdditionalExtraction::Serialize(IArchive& ar)
 
 bool Serialize(IArchive& ar, BlendSpaceReference& ref, const char* name, const char* label)
 {
-	return ar(AnimationPath(ref.path), name, label);
+	return ar(AnimationOrBlendSpacePath(ref.path), name, label);
 }
 
 void BlendSpacePseudoExample::Serialize(IArchive& ar)

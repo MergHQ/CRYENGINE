@@ -1047,7 +1047,7 @@ void CharacterDefinition::Serialize(Serialization::IArchive& ar)
 {
 	Serialization::SContext definitionContext(ar, this);
 
-	ar(SkeletonPath(skeleton), "skeleton", "Skeleton");
+	ar(SkeletonOrCgaPath(skeleton), "skeleton", "Skeleton");
 	ar.doc("The main skeleton of this character. (it can optionally be extended using attachments of type 'skin')");
 	if (skeleton.empty())
 		ar.warning(skeleton, "A skeleton is required for every character.");
