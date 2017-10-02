@@ -1,25 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	Implementation of the IGameFramework interface. CCryAction
-                provides a generic game framework for action based games
-                such as 1st and 3rd person shooters.
-
-   -------------------------------------------------------------------------
-   History:
-   - 20:7:2004   10:51 : Created by Marco Koegler
-   - 3:8:2004		11:11 : Taken-over by Marcio Martins
-
-*************************************************************************/
-#ifndef __CRYACTION_H__
-#define __CRYACTION_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ICmdLine.h>
@@ -119,6 +100,8 @@ public:
 	// IGameFramework
 	virtual void                          ShutDown();
 
+	virtual bool                          Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags);
+
 	void                                  ClearTimers();
 	virtual TimerID                       AddTimer(CTimeValue interval, bool repeat, TimerCallback callback, void* userdata);
 	virtual void*                         RemoveTimer(TimerID timerID);
@@ -135,7 +118,6 @@ public:
 	virtual void                          InitGameType(bool multiplayer, bool fromInit);
 	virtual bool                          CompleteInit();
 	virtual void                          PrePhysicsUpdate() /*override*/;
-	virtual int                           ManualFrameUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          Reset(bool clients);
 	virtual void                          GetMemoryUsage(ICrySizer* pSizer) const;
 
@@ -373,9 +355,8 @@ public:
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
 
-	bool                    PreUpdate(bool haveFocus, unsigned int updateFlags);
-	int                     Update(bool haveFocus, unsigned int updateFlags);
-	void                    PostUpdate(bool haveFocus, unsigned int updateFlags);
+	bool                    PreUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags);
+	void                    PostUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags);
 
 	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
 	void FastShutdown();
@@ -692,5 +673,3 @@ private:
 
 	std::vector<INetworkedClientListener*> m_networkClientListeners;
 };
-
-#endif //__CRYACTION_H__

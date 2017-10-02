@@ -1,20 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	This is the interface which the launcher.exe will interact
-                with to start the game framework. For an implementation of
-                this interface refer to CryAction.
-
-   -------------------------------------------------------------------------
-   History:
-   - 20:7:2004   10:34 : Created by Marco Koegler
-   - 3:8:2004		11:29 : Taken-over by Márcio Martins
-
-*************************************************************************/
-
 #pragma once
 
 #include <CryEntitySystem/IEntityComponent.h>
@@ -537,13 +522,8 @@ struct IGameFramework
 	//! Called when the engine is shutting down to finalize the game framework
 	virtual void ShutDown() = 0;
 
-	//! Manually starts update of the engine, aka starts a new frame
-	//! This is automatically handled in the game loop inside StartEngine
-	//! Currently this is used by the Editor since it manages its own update loop.
-	//! \param[in] haveFocus true if the game has the input focus.
-	//! \param[in] updateFlags - Flags specifying how to update.
-	//! \return 0 if something went wrong with initialization, non-zero otherwise.
-	virtual int ManualFrameUpdate(bool bHaveFocus, unsigned int updateFlags) = 0;
+	//! Updates the game framework
+	virtual bool Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
 
 	//! Used to notify the framework that we're switching between single and multi player.
 	virtual void InitGameType(bool multiplayer, bool fromInit) = 0;

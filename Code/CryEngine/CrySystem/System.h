@@ -231,9 +231,8 @@ struct CProfilingSystem : public IProfilingSystem
    ===========================================
  */
 class CXConsole;
-//////////////////////////////////////////////////////////////////////
-//!	ISystem implementation
-class CSystem : public ISystem, public ILoadConfigurationEntrySink, public ISystemEventListener, public IWindowMessageHandler
+
+class CSystem final : public ISystem, public ILoadConfigurationEntrySink, public ISystemEventListener, public IWindowMessageHandler
 {
 public:
 	CSystem(const SSystemInitParams& startupParams);
@@ -258,7 +257,8 @@ public:
 
 	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
 
-	virtual bool                      Update(int updateFlags = 0, int nPauseMode = 0) override;
+	virtual bool                      StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
+	virtual bool                      Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) override;
 	virtual bool                      UpdateLoadtime() override;
 	virtual void                      DoWorkDuringOcclusionChecks() override;
 	virtual bool                      NeedDoWorkDuringOcclusionChecks() override { return m_bNeedDoWorkDuringOcclusionChecks; }
@@ -1016,6 +1016,8 @@ protected: // -------------------------------------------------------------
 	CCryPluginManager*                        m_pPluginManager;
 	CUserAnalyticsSystem*                     m_pUserAnalyticsSystem;
 	class CProjectManager*                    m_pProjectManager;
+
+	bool                                      m_hasWindowFocus;
 
 	string                                    m_binariesDir;
 	string                                    m_currentLanguageAudio;

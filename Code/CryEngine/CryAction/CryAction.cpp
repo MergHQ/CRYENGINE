@@ -2121,41 +2121,8 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 }
 
 //------------------------------------------------------------------------
-int CCryAction::ManualFrameUpdate(bool haveFocus, unsigned int updateFlags)
+bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	return Update(haveFocus, updateFlags);
-}
-
-//------------------------------------------------------------------------
-int CCryAction::Update(bool haveFocus, unsigned int updateFlags)
-{
-	// The frame profile system already creates an "overhead" profile label
-	// in StartFrame(). Hence we have to set the FRAMESTART before.
-	CRY_PROFILE_FRAMESTART("Main");
-
-#if defined(JOBMANAGER_SUPPORT_PROFILING)
-	gEnv->GetJobManager()->SetFrameStartTime(gEnv->pTimer->GetAsyncTime());
-#endif
-
-	if (gEnv->pConsole)
-	{
-#if CRY_PLATFORM_WINDOWS
-		if (gEnv && gEnv->pRenderer && gEnv->pRenderer->GetHWND())
-		{
-			bool focus = (::GetFocus() == gEnv->pRenderer->GetHWND());
-			static bool focused = focus;
-			if (focus != focused)
-			{
-				if (GetISystem()->GetISystemEventDispatcher())
-				{
-					GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, focus, 0);
-				}
-				focused = focus;
-			}
-		}
-#endif
-	}
-
 	bool bBlockUpdate = false;
 
 	if (m_pManualFrameStepController)
@@ -2173,23 +2140,11 @@ int CCryAction::Update(bool haveFocus, unsigned int updateFlags)
 
 		if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
 		{
-			gameUpdateResult = pGame->Update(haveFocus, updateFlags);
+			gameUpdateResult = pGame->Update(haveFocus, updateFlags.UnderlyingValue());
 		}
 
 		PostUpdate(haveFocus, updateFlags);
 	}
-
-	/*
-	   if (!m_fullScreenCVarSetup && gEnv->pConsole)
-	   {
-	    ICVar* pVar = gEnv->pConsole->GetCVar("r_Fullscreen");
-	    if (pVar)
-	    {
-	      pVar->SetOnChangeCallback(FullScreenCVarChanged);
-	      m_fullScreenCVarSetup = true;
-	    }
-	   }
-	 */
 
 #if ENABLE_AUTO_TESTER
 	s_autoTesterSingleton.Update();
@@ -2631,7 +2586,7 @@ void CCryAction::PrePhysicsUpdate()
 	}
 }
 
-bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
+bool CCryAction::PreUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 
@@ -2818,7 +2773,7 @@ uint32 CCryAction::GetPreUpdateTicks()
 }
 
 //------------------------------------------------------------------------
-void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
+void CCryAction::PostUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostUpdate");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostUpdate");

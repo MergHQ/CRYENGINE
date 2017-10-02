@@ -208,31 +208,19 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 // System Implementation.
 //////////////////////////////////////////////////////////////////////////
 CSystem::CSystem(const SSystemInitParams& startupParams)
+	: m_hasWindowFocus(true)
+	, m_systemGlobalState(ESYSTEM_GLOBAL_STATE_INIT)
+	, m_iWidth(0)
+	, m_iHeight(0)
+	, m_iColorBits(0)
+	, m_bIsAsserting(false)
+	, m_hWnd(nullptr)
 #if defined(SYS_ENV_AS_STRUCT)
-	: m_env(gEnv)
+	, m_env(gEnv)
 #endif
 {
-	m_systemGlobalState = ESYSTEM_GLOBAL_STATE_INIT;
-	m_iHeight = 0;
-	m_iWidth = 0;
-	m_iColorBits = 0;
-	// CRT ALLOCATION threshold
-
-	m_bIsAsserting = false;
-
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.
-
-	if (m_pSystemEventDispatcher)
-	{
-		m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
-	}
-
-#if CRY_PLATFORM_WINDOWS
-	m_hWnd = NULL;
-	#if _MSC_VER < 1000
-	int sbh = _set_sbh_threshold(1016);
-	#endif
-#endif
+	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
 
 	//////////////////////////////////////////////////////////////////////////
 	// Clear environment.
@@ -1534,8 +1522,7 @@ void CSystem::RunMainLoop()
 		Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
 #endif
 
-		// TODO: Move the main loop to CrySystem
-		if (!gEnv->pGameFramework->ManualFrameUpdate(true, 0))
+		if (!StartFrame())
 		{
 			break;
 		}
@@ -1543,7 +1530,22 @@ void CSystem::RunMainLoop()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool CSystem::Update(int updateFlags, int nPauseMode)
+bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
+{
+	// The frame profile system already creates an "overhead" profile label
+	// in StartFrame(). Hence we have to set the FRAMESTART before.
+	CRY_PROFILE_FRAMESTART("Main");
+
+#if defined(JOBMANAGER_SUPPORT_PROFILING)
+	m_env.GetJobManager()->SetFrameStartTime(gEnv->pTimer->GetAsyncTime());
+#endif
+
+	// TODO: Move core engine update from game framework to this function
+	return m_env.pGameFramework->Update(m_hasWindowFocus, updateFlags);
+}
+
+//////////////////////////////////////////////////////////////////////
+bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 {
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
@@ -1740,7 +1742,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	if (m_sysNoUpdate && m_sysNoUpdate->GetIVal())
 	{
 		bNoUpdate = true;
-		updateFlags = ESYSUPDATE_IGNORE_AI | ESYSUPDATE_IGNORE_PHYSICS;
+		updateFlags = { ESYSUPDATE_IGNORE_AI, ESYSUPDATE_IGNORE_PHYSICS };
 	}
 
 	//if ((pProcess->GetFlags() & PROC_MENU) || (m_sysNoUpdate && m_sysNoUpdate->GetIVal()))
@@ -1834,7 +1836,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	//update the mono runtime
 	if (m_env.pMonoRuntime)
 	{
-		m_env.pMonoRuntime->Update(updateFlags, nPauseMode);
+		m_env.pMonoRuntime->Update(updateFlags.UnderlyingValue(), nPauseMode);
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -1859,7 +1861,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	// But when in Editor and in Game Mode the ViewSystem will update the listeners.
 	if (!m_env.IsEditorGameMode())
 	{
-		if ((updateFlags & ESYSUPDATE_EDITOR) != 0 && !bNoUpdate && nPauseMode != 1)
+		if (updateFlags.Check(ESYSUPDATE_EDITOR) && !bNoUpdate && nPauseMode != 1)
 		{
 			gEnv->pGameFramework->GetIViewSystem()->UpdateAudioListeners();
 		}
@@ -2045,7 +2047,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	// Run movie system pre-update
 	if (!bNoUpdate)
 	{
-		UpdateMovieSystem(updateFlags, fMovieFrameTime, true);
+		UpdateMovieSystem(updateFlags.UnderlyingValue(), fMovieFrameTime, true);
 	}
 
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
@@ -2063,7 +2065,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	// Run movie system post-update
 	if (!bNoUpdate)
 	{
-		UpdateMovieSystem(updateFlags, fMovieFrameTime, false);
+		UpdateMovieSystem(updateFlags.UnderlyingValue(), fMovieFrameTime, false);
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -3331,7 +3333,8 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 		return true;
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
-		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, uMsg == WM_SETFOCUS, 0);
+		m_hasWindowFocus = uMsg == WM_SETFOCUS;
+		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, m_hasWindowFocus, 0);
 		return false;
 	case WM_INPUTLANGCHANGE:
 		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LANGUAGE_CHANGE, wParam, lParam);
