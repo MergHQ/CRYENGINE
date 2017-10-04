@@ -1129,33 +1129,26 @@ struct ISystem
 	//! Returns the root folder specified by the command line option "-root <path>".
 	virtual const char* GetRootFolder() const = 0;
 
-	//! Starts a new frame, updating the entire engine including renderer and game logic.
+	//! Starts a new frame, updates engine systems, game logic and finally renders.
 	//! \return Returns true if the engine should continue running, false to quit.
-	virtual bool StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
+	virtual bool DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
 
-	//! Updates all subsystems (including the ScriptSink() ).
-	//! \param flags One or more flags from ESystemUpdateFlags structure.
-	//! \param nPauseMode 0=normal(no pause), 1=menu/pause, 2=cutscene.
-	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) = 0;
+	virtual void RenderBegin() = 0;
+	virtual void RenderEnd(bool bRenderStats = true) = 0;
+
+	//! Updates the engine's systems without creating a rendered frame
+	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode = 0) = 0;
+
+	virtual void DoWorkDuringOcclusionChecks() = 0;
+	virtual bool NeedDoWorkDuringOcclusionChecks() = 0;
+
+	virtual void RenderPhysicsHelpers() = 0;
 
 	//! Get the manual frame step controller, allows for completely blocking per-frame update
 	virtual IManualFrameStepController* GetManualFrameStepController() const = 0;
 
 	//! Updates only require components during loading.
 	virtual bool UpdateLoadtime() = 0;
-
-	//! Optimisation: do part of the update while waiting for occlusion queries to complete.
-	virtual void DoWorkDuringOcclusionChecks() = 0;
-	virtual bool NeedDoWorkDuringOcclusionChecks() = 0;
-
-	//! Renders subsystems.
-	virtual void Render() = 0;
-
-	//! Begins rendering frame.
-	virtual void RenderBegin() = 0;
-
-	//! Ends rendering frame and swap back buffer.
-	virtual void RenderEnd(bool bRenderStats = true) = 0;
 
 	//! Update screen and call some important tick functions during loading.
 	virtual void SynchronousLoadingTick(const char* pFunc, int line) = 0;
@@ -1165,9 +1158,7 @@ struct ISystem
 	//! it may call this method to render the essential statistics.
 	virtual void RenderStatistics() = 0;
 	virtual void RenderPhysicsStatistics(IPhysicalWorld* pWorld) = 0;
-	//! Renders physics helper, e.g. physics proxies
-	virtual void RenderPhysicsHelpers() = 0;
-
+	
 	//! Returns the current used memory.
 	virtual uint32 GetUsedMemory() = 0;
 

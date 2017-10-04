@@ -2549,10 +2549,10 @@ void CCryAction::PrePhysicsUpdate()
 	}
 }
 
-void CCryAction::PreBeginRender()
+void CCryAction::PreSystemUpdate()
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, __FUNC__);
-	CRYPROFILE_SCOPE_PROFILE_MARKER(__FUNC__);
+	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRenderUpdate");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreRenderUpdate");
 
 	if (!m_nextFrameCommand->empty())
 	{
@@ -2585,11 +2585,10 @@ uint32 CCryAction::GetPreUpdateTicks()
 	return ticks;
 }
 
-bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
+bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	// Earliest point of adding profile labels
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::EarlyUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::EarlyUpdate");
+	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostSystemUpdate");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostSystemUpdate");
 
 	float frameTime = gEnv->pTimer->GetFrameTime();
 
@@ -2713,49 +2712,23 @@ bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFla
 		CRY_PROFILE_REGION(PROFILE_GAME, "UpdateLegacyGame");
 		continueRunning = pGame->Update(haveFocus, updateFlags.UnderlyingValue()) > 0;
 	}
-	else
+
+	if (!updateFlags.Check(ESYSUPDATE_EDITOR_ONLY)  && updateFlags.Check(ESYSUPDATE_EDITOR_AI_PHYSICS) && !gEnv->bMultiplayer)
 	{
-		return true;
+		CRangeSignaling::ref().SetDebug(m_pDebugRangeSignaling->GetIVal() == 1);
+		CRangeSignaling::ref().Update(frameTime);
+
+		CSignalTimer::ref().SetDebug(m_pDebugSignalTimers->GetIVal() == 1);
+		CSignalTimer::ref().Update(frameTime);
 	}
 
-	CRY_PROFILE_SECTION(PROFILE_GAME, "UpdateEngine");
+	return continueRunning;
+}
 
-	if (updateFlags & ESYSUPDATE_EDITOR_ONLY)
-	{
-		return continueRunning;
-	}
-
-	const bool bInLevelLoad = IsInLevelLoad();
-	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
-	{
-		float delta = gEnv->pTimer->GetFrameTime();
-
-		if (!gEnv->bMultiplayer)
-		{
-			CRangeSignaling::ref().SetDebug(m_pDebugRangeSignaling->GetIVal() == 1);
-			CRangeSignaling::ref().Update(delta);
-
-			CSignalTimer::ref().SetDebug(m_pDebugSignalTimers->GetIVal() == 1);
-			CSignalTimer::ref().Update(delta);
-		}
-
-		// begin occlusion job after setting the correct camera
-		gEnv->p3DEngine->PrepareOcclusion(m_pSystem->GetViewCamera());
-
-		// synchronize all animations so ensure that their computations have finished
-		if (!bInLevelLoad)
-			gEnv->pCharacterManager->SyncAllAnimations();
-
-		m_pSystem->Render();
-
-		if (m_pPersistantDebug)
-			m_pPersistantDebug->PostUpdate(delta);
-
-		if (m_pGameObjectSystem)
-			m_pGameObjectSystem->PostUpdate(delta);
-
-		return continueRunning;
-	}
+void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
+{
+	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreFinalizeCamera");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreFinalizeCamera");
 
 	if (m_pShowLanBrowserCVAR->GetIVal() == 0)
 	{
@@ -2784,6 +2757,47 @@ bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFla
 			m_pEffectSystem->Update(delta);
 	}
 
+	//update view system before p3DEngine->PrepareOcclusion as it might change view camera
+	const bool useDeferredViewSystemUpdate = m_pViewSystem->UseDeferredViewSystemUpdate();
+	if (useDeferredViewSystemUpdate)
+	{
+		m_pViewSystem->Update(min(delta, 0.1f));
+	}
+}
+
+void CCryAction::PreRender()
+{
+	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRender");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreRender");
+
+	CALL_FRAMEWORK_LISTENERS(OnPreRender());
+}
+
+void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
+{
+	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRender");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostRender");
+
+	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
+	{
+		float frameTime = gEnv->pTimer->GetFrameTime();
+
+		if (m_pPersistantDebug)
+			m_pPersistantDebug->PostUpdate(frameTime);
+
+		if (m_pGameObjectSystem)
+			m_pGameObjectSystem->PostUpdate(frameTime);
+
+		return;
+	}
+
+	float delta = gEnv->pTimer->GetFrameTime();
+
+	if (gEnv->pRenderer && m_pPersistantDebug)
+		m_pPersistantDebug->PostUpdate(delta);
+
+	CALL_FRAMEWORK_LISTENERS(OnPostUpdate(delta));
+
 	const float now = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
 	float deltaUI = now - m_lastFrameTimeUI;
 	m_lastFrameTimeUI = now;
@@ -2795,39 +2809,10 @@ bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFla
 			m_lastSaveLoad = 0.0f;
 	}
 
-	// synchronize all animations so ensure that their computation have finished
-	if (gEnv->pCharacterManager && !bInLevelLoad)
-		gEnv->pCharacterManager->SyncAllAnimations();
-
-	//update view system before p3DEngine->PrepareOcclusion as it might change view camera
-	const bool useDeferredViewSystemUpdate = m_pViewSystem->UseDeferredViewSystemUpdate();
-	if (useDeferredViewSystemUpdate)
-	{
-		m_pViewSystem->Update(min(delta, 0.1f));
-	}
-
-	// begin occlusion job after settign the correct camera
-	// if camera isn't driven by an animation, it is possible to
-	// move this call before the SyncAllAnimation call
-	gEnv->p3DEngine->PrepareOcclusion(m_pSystem->GetViewCamera());
-
-	if (gEnv->pHardwareMouse)
-		gEnv->pHardwareMouse->Update();
-
-	CALL_FRAMEWORK_LISTENERS(OnPreRender());
-
-	m_pSystem->Render();
-
-	gEnv->p3DEngine->EndOcclusion();
-
-	if (gEnv->pRenderer && m_pPersistantDebug)
-		m_pPersistantDebug->PostUpdate(delta);
-
-	CALL_FRAMEWORK_LISTENERS(OnPostUpdate(delta));
-
 	if (gEnv->pFlashUI)
 		gEnv->pFlashUI->Update(deltaUI);
 
+	const bool bInLevelLoad = IsInLevelLoad();
 	if (!bInLevelLoad)
 		m_pGameObjectSystem->PostUpdate(delta);
 
@@ -2836,11 +2821,12 @@ bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFla
 
 	CSignalTimer::ref().SetDebug(m_pDebugSignalTimers->GetIVal() == 1);
 	CSignalTimer::ref().Update(delta);
+}
 
-#if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
-	m_pSystem->RenderPhysicsHelpers();
-#endif
-	m_pSystem->RenderEnd();
+void CCryAction::PostRenderSubmit()
+{
+	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRenderSubmit");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostRenderSubmit");
 
 	if (m_pGame)
 	{
@@ -2879,8 +2865,6 @@ bool CCryAction::Update(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFla
 		m_delayedSaveGameMethod = eSGM_NoSave;
 		m_pLocalAllocs->m_delayedSaveGameName.assign("");
 	}
-
-	return continueRunning;
 }
 
 void CCryAction::Reset(bool clients)

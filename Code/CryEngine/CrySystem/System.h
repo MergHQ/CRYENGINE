@@ -259,20 +259,24 @@ public:
 
 	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
 
-	virtual bool                        StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
-	virtual bool                        Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) override;
+	virtual bool                        DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
 	virtual IManualFrameStepController* GetManualFrameStepController() const override;
 
 	virtual bool                      UpdateLoadtime() override;
-	virtual void                      DoWorkDuringOcclusionChecks() override;
-	virtual bool                      NeedDoWorkDuringOcclusionChecks() override { return m_bNeedDoWorkDuringOcclusionChecks; }
 
 	//! Begin rendering frame.
-	void RenderBegin() override;
+	virtual void RenderBegin() override;
 	//! Render subsystems.
-	void Render() override;
+	void Render();
 	//! End rendering frame and swap back buffer.
-	void RenderEnd(bool bRenderStats = true) override;
+	virtual void RenderEnd(bool bRenderStats = true) override;
+
+	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>(), int nPauseMode = 0) override;
+
+	virtual void DoWorkDuringOcclusionChecks() override;
+	virtual bool NeedDoWorkDuringOcclusionChecks() override { return m_bNeedDoWorkDuringOcclusionChecks; }
+
+	virtual void RenderPhysicsHelpers() override;
 
 	//! Update screen during loading.
 	void UpdateLoadingScreen();
@@ -284,7 +288,6 @@ public:
 	//! Host application (Editor) doesn't employ the Render cycle in ISystem,
 	//! it may call this method to render the essencial statistics
 	void         RenderStatistics() override;
-	void         RenderPhysicsHelpers() override;
 	void         RenderPhysicsStatistics(IPhysicalWorld* pWorld) override;
 
 	uint32       GetUsedMemory() override;
