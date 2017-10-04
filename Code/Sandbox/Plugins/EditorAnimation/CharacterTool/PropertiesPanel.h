@@ -9,7 +9,7 @@
 #include <IEditor.h>
 #include <CrySerialization/Forward.h>
 
-#include "../EditorCommon/Explorer/ExplorerDataProvider.h"
+#include "Explorer/ExplorerDataProvider.h"
 
 class QDockWidget;
 class QToolBar;

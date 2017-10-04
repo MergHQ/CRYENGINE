@@ -14,7 +14,7 @@
 #include "Expected.h"
 #include <CryIcon.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
-#include "../EditorCommon/QPropertyTree/ContextList.h"
+#include "QPropertyTree/ContextList.h"
 #include "Explorer/ExplorerFileList.h"
 #include <CryAnimation/ICryAnimation.h>
 #include "CharacterToolForm.h"

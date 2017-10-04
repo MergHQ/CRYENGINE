@@ -20,7 +20,6 @@
 #include <QKeyEvent>
 #include <QCoreApplication>
 #include <CryAnimation/ICryAnimation.h>
-#include <QParentWndWidget.h>
 #include "IResourceSelectorHost.h"
 
 #include <ProxyModels/DeepFilterProxyModel.h>
@@ -224,10 +223,9 @@ bool JointSelectionDialog::chooseJoint(string* name, IDefaultSkeleton* skeleton)
 // ---------------------------------------------------------------------------
 dll_string JointNameSelector(const SResourceSelectorContext& x, const char* previousValue, ICharacterInstance* characterInstance)
 {
-	QParentWndWidget parent(x.parentWindow);
-	parent.center();
-	parent.setWindowModality(Qt::ApplicationModal);
-	JointSelectionDialog dialog(&parent);
+	JointSelectionDialog dialog(x.parentWidget);
+	dialog.setModal(true);
+
 	IDefaultSkeleton* skeleton = 0;
 	if (characterInstance)
 		skeleton = &characterInstance->GetIDefaultSkeleton();

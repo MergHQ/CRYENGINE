@@ -12,8 +12,7 @@
 #include <IBackgroundTaskManager.h>
 #include "GizmoSink.h"
 #include "IResourceSelectorHost.h"
-#include "QParentWndWidget.h"
-#include "../../EditorCommon/ListSelectionDialog.h"
+#include "ListSelectionDialog.h"
 #include "CryIcon.h"
 
 namespace CharacterTool {
@@ -166,13 +165,10 @@ dll_string AttachmentNameSelector(const SResourceSelectorContext& x, const char*
 	if (!characterInstance)
 		return previousValue;
 
-	QParentWndWidget parent(x.parentWindow);
-	parent.center();
-	parent.setWindowModality(Qt::ApplicationModal);
-
-	ListSelectionDialog dialog("CTAttachmentSelection", &parent);
+	ListSelectionDialog dialog("CTAttachmentSelection", x.parentWidget);
 	dialog.setWindowTitle("Attachment Selection");
 	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetIconPath()));
+	dialog.setModal(true);
 
 	IAttachmentManager* attachmentManager = characterInstance->GetIAttachmentManager();
 	if (!attachmentManager)

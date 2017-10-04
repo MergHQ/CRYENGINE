@@ -2,8 +2,8 @@
 
 #include "stdafx.h"
 
-#include "../EditorCommon/Timeline.h"
-#include "../EditorCommon/TimelineContent.h"
+#include "Timeline.h"
+#include "TimelineContent.h"
 #include "PlaybackPanel.h"
 #include "CharacterDocument.h"
 #include "Controls/QMenuComboBox.h"

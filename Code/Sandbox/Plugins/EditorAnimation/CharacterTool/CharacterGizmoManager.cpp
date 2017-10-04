@@ -8,7 +8,7 @@
 #include "AnimationContent.h"
 #include "Expected.h"
 #include <Serialization/QPropertyTree/QPropertyTree.h>
-#include "../../EditorCommon/QPropertyTree/ContextList.h"
+#include "QPropertyTree/ContextList.h"
 #include "GizmoSink.h"
 #include "SceneContent.h"
 #include "AnimationList.h"

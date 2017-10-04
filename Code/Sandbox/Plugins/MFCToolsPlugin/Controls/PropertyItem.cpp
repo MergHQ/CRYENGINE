@@ -2805,20 +2805,12 @@ void CPropertyItem::OnFileBrowseButton()
 
 	if (m_type == ePropertyTexture)
 	{
-		// Filters for texture.
-		SResourceSelectorContext context;
-		context.typeName = "Texture";
-
-		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(context, tempValue);
+		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource("Texture", tempValue);
 		SetValue(newValue.c_str(), true, false);
 	}
 	else if (m_type == ePropertyGeomCache)
 	{
-		// Filters for geom caches.
-		SResourceSelectorContext context;
-		context.typeName = "GeometryCache";
-
-		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(context, tempValue);
+		dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource("GeometryCache", tempValue);
 		SetValue(newValue.c_str(), true, true);
 	}
 	else
@@ -2836,21 +2828,7 @@ void CPropertyItem::OnResourceSelectorButton()
 {
 	m_propertyCtrl->HideBitmapTooltip();
 
-	SResourceSelectorContext x;
-
-	x.parentWindow = m_propertyCtrl->GetSafeHwnd();
-	x.typeName = PropertyTypeToResourceType(m_type);
-
-	const Serialization::TypeID contextObjectType = GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetContextType();
-	if (contextObjectType != Serialization::TypeID())
-	{
-		// We expect client code to always provide a matching context instance for the requested resource type.
-		// This could possibly be implemented in a more robust way by enabling IVariable to store type information for user data.
-		x.contextObject = m_pVariable->GetUserData();
-		x.contextObjectType = contextObjectType;
-	}
-
-	dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(x, GetValue());
+	dll_string newValue = GetIEditor()->GetResourceSelectorHost()->SelectResource(PropertyTypeToResourceType(m_type), GetValue(), nullptr, m_pVariable->GetUserData());
 	if (strcmp(GetValue(), newValue.c_str()) != 0)
 	{
 		SetValue(newValue.c_str());

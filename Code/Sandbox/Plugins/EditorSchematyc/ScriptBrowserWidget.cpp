@@ -16,7 +16,6 @@
 #include <QToolbar>
 #include <QWidgetAction>
 
-#include <QParentWndWidget.h>
 #include <QPushButton.h>
 #include <QSearchBox.h>
 #include <QAdvancedTreeView.h>

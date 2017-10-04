@@ -15,7 +15,7 @@
 #include <CryPhysics/IPhysicsDebugRenderer.h>
 #include <CryAction/IMaterialEffects.h>
 #include "QViewport.h"
-#include "../EditorCommon/QPropertyTree/ContextList.h"
+#include "QPropertyTree/ContextList.h"
 #include <QViewportSettings.h>
 #include <IResourceSelectorHost.h>
 #include "DisplayParameters.h"

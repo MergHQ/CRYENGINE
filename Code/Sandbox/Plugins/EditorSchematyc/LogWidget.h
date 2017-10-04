@@ -10,7 +10,6 @@
 
 class QBoxLayout;
 class QLineEdit;
-class QParentWndWidget;
 class QPlainTextEdit;
 class QAdvancedPropertyTree;
 class QPushButton;

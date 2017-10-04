@@ -10,7 +10,7 @@
 #include "SceneContent.h"
 #include "AnimationList.h"
 #include <IEditor.h>
-#include "../EditorCommon/FileDialogs/EngineFileDialog.h"
+#include "FileDialogs/EngineFileDialog.h"
 
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetResourceSelector.h"
