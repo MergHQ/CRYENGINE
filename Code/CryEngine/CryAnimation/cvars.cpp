@@ -291,7 +291,7 @@ void Console::Init()
 	DefineConstIntCVar(ca_ClothBlending, 1, VF_CHEAT, "if this is 0 blending with animation is disabled");
 	DefineConstIntCVar(ca_ClothBypassSimulation, 0, VF_CHEAT, "if this is 0 actual cloth simulation is disabled (wrap skinning still works)");
 	DefineConstIntCVar(ca_ClothMaxChars, 20, VF_CHEAT, "max characters with cloth on screen");
-	DefineConstIntCVar(ca_ClothForceSkinningAfterNFrames, 3, VF_CHEAT, "safety mechanism: if framerate falls below threshold for n-frames, skinning is forced to avoid performance issues");
+	REGISTER_INT("ca_ClothForceSkinningAfterNFrames", 3, 0, "safety mechanism: if framerate falls below threshold for n-frames, skinning is forced to avoid performance issues");
 
 }
 
