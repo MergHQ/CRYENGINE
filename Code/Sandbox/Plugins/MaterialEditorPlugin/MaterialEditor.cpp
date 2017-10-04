@@ -172,8 +172,8 @@ void CMaterialEditor::CreateDefaultLayout(CDockableContainer* sender)
 {
 	auto centerWidget = sender->SpawnWidget("Properties");
 	sender->SpawnWidget("Preview", centerWidget, QToolWindowAreaReference::Right);
-	sender->SpawnWidget("Material", centerWidget, QToolWindowAreaReference::Top);
-	sender->SetSplitterSizes(centerWidget, { 1, 4 });
+	auto materialWidget = sender->SpawnWidget("Material", centerWidget, QToolWindowAreaReference::Top);
+	sender->SetSplitterSizes(materialWidget, { 1, 4 });
 }
 
 void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
