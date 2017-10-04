@@ -519,7 +519,7 @@ QRect QToolWindowArea::combineAreaRect() const
 
 void QToolWindowArea::showContextMenu(const QPoint &point)
 {
-	if (point.isNull())
+	if (point.isNull() || m_manager->isMainWrapper(parentWidget()))
 		return;
 
 	QToolWindowSingleTabAreaFrame* singleTabFrame = qobject_cast<QToolWindowSingleTabAreaFrame*>(currentWidget());
@@ -633,6 +633,10 @@ void QToolWindowSingleTabAreaFrame::closeEvent(QCloseEvent* e)
 	if (m_contents)
 	{
 		e->setAccepted(m_contents->close());
+		if (e->isAccepted())
+		{
+			closeWidget();
+		}
 	}
 }
 
