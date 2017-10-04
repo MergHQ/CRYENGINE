@@ -78,17 +78,6 @@ void CMaterialPreviewWidget::OnContextMenu()
 
 void CMaterialPreviewWidget::SetPreviewModel(const char* model)
 {
-	/*auto pixmap = m_pPreviewWidget->GetPixmap();
-	pixmap.save("E:/ce/user/sandbox/preview_pixmap.png");
-
-	auto image = m_pPreviewWidget->GetImage();
-	image.save("E:/ce/user/sandbox/preview_Image.png");
-
-	CImageEx imageex;
-	m_pPreviewWidget->GetCImageEx(imageex, true);
-
-	m_pPreviewWidget->SavePreview("E:/ce/user/sandbox/preview_preview.png");*/
-
 	//TODO : save loaded file parameters in personalization!
 	m_pPreviewWidget->LoadFile(model);
 }
