@@ -3180,7 +3180,9 @@ void CParserBin::SetupFeatureDefines()
 	}
 
 #if defined(FEATURE_SVO_GI)
-	if (m_nPlatform == SF_D3D11 || m_nPlatform == SF_DURANGO || m_nPlatform == SF_ORBIS)
+	if (m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
+	{
 		AddMacro(CParserBin::GetCRC32("FEATURE_SVO_GI"), nEnable, 1, 0, m_StaticMacros);
+	}
 #endif
 }
