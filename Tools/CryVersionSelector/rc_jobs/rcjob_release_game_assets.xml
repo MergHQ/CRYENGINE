@@ -73,6 +73,7 @@
 		<DefaultProperties AnimConfigFolder="Animations" />
 		<Job Input="*.i_caf" Refresh="1" />
 		<Job Input="*.anm" CopyOnly="1" />
+		<Job Input="*.caf" CopyOnly="1" />
 	</AnimationsJob>
 
 	<!-- Convert alembic template -->
