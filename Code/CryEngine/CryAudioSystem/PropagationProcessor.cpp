@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "PropagationProcessor.h"
@@ -63,7 +63,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 
 		if (pRayInfo != nullptr)
 		{
-			pRayInfo->numHits = min(static_cast<size_t>(pRWIResult->nHits) + 1, s_maxRayHits);
+			pRayInfo->numHits = std::min(static_cast<size_t>(pRWIResult->nHits) + 1, s_maxRayHits);
 			SAudioObjectRequestData<EAudioObjectRequestType::ProcessPhysicsRay> requestData(pRayInfo);
 			CAudioRequest request(&requestData);
 			request.pObject = pRayInfo->pObject;
@@ -252,6 +252,10 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType,
 
 		CAudioRayInfo& rayInfo = m_raysInfo[0];
 		static int const physicsFlags = ent_water | ent_static | ent_sleeping_rigid | ent_rigid | ent_terrain;
+
+		// Note: The very first entry of rayInfo.hits is only filled by CryPhysics if the ray encountered a "solid hit".
+		// This is determined via formula "rwi pierceability (set in flags) >= surfacetype pierceability". We use "rwi_pierceability0" for "strongest" pierceability.
+		// Meaning the ray needs to encounter a surface type set to pierceability 0 to qualify as solid hit.
 		rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
 		                                        audioListenerPosition,
 		                                        finalDirection,
@@ -264,7 +268,7 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType,
 		                                        &rayInfo,
 		                                        PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
 
-		rayInfo.numHits = min(rayInfo.numHits + 1, s_maxRayHits);
+		rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
 		float totalOcclusion = 0.0f;
 
 		if (rayInfo.numHits > 0)
@@ -326,8 +330,8 @@ void CPropagationProcessor::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo
 {
 	CRY_ASSERT((0 <= pAudioRayInfo->samplePosIndex) && (pAudioRayInfo->samplePosIndex < s_numRaySamplePositionsHigh));
 
-	float totalOcclusion = 0.0f;
-	int numRealHits = 0;
+	float finalOcclusion = 0.0f;
+	std::size_t numRealHits = 0;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	float minDistance = FLT_MAX;
@@ -337,8 +341,9 @@ void CPropagationProcessor::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo
 	{
 		ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 		CRY_ASSERT(pAudioRayInfo->numHits <= s_maxRayHits);
+		bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
 
-		for (size_t i = 0; i < pAudioRayInfo->numHits; ++i)
+		for (std::size_t i = 0; i < pAudioRayInfo->numHits; ++i)
 		{
 			float const distance = pAudioRayInfo->hits[i].dist;
 
@@ -349,19 +354,33 @@ void CPropagationProcessor::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo
 				if (pMat != nullptr)
 				{
 					ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
-					totalOcclusion += physParams.sound_obstruction;// not clamping b/w 0 and 1 for performance reasons
+
+					if (accumulate)
+					{
+						finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
+					}
+					else
+					{
+						finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
+					}
+
 					++numRealHits;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-					minDistance = min(minDistance, distance);
+					minDistance = std::min(minDistance, distance);
 #endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+
+					if (finalOcclusion >= 1.0f)
+					{
+						break;
+					}
 				}
 			}
 		}
 	}
 
 	pAudioRayInfo->numHits = numRealHits;
-	pAudioRayInfo->totalSoundOcclusion = clamp_tpl(totalOcclusion, 0.0f, 1.0f);
+	pAudioRayInfo->totalSoundOcclusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	pAudioRayInfo->distanceToFirstObstacle = minDistance;
@@ -481,6 +500,9 @@ void CPropagationProcessor::CastObstructionRay(
 	directionNormalized.Normalize();
 	Vec3 const finalDirection(direction - (directionNormalized * g_cvars.m_occlusionRayLengthOffset));
 
+	// Note: The very first entry of rayInfo.hits is only filled by CryPhysics if the ray encountered a "solid hit".
+	// This is determined via formula "rwi pierceability (set in flags) >= surfacetype pierceability". We use "rwi_pierceability0" for "strongest" pierceability.
+	// Meaning the ray needs to encounter a surface type set to pierceability 0 to qualify as solid hit.
 	int const numHits = gEnv->pPhysicalWorld->RayWorldIntersection(
 	  origin,
 	  finalDirection, physicsFlags,
@@ -496,7 +518,7 @@ void CPropagationProcessor::CastObstructionRay(
 
 	if (bSynch)
 	{
-		rayInfo.numHits = min(static_cast<size_t>(numHits) + 1, s_maxRayHits);
+		rayInfo.numHits = std::min(static_cast<size_t>(numHits) + 1, s_maxRayHits);
 		ProcessPhysicsRay(&rayInfo);
 	}
 
@@ -724,31 +746,31 @@ void CPropagationProcessor::DrawObstructionRays(IRenderAuxGeom& auxGeom, EObject
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayIndex) const
 {
-		static ColorB const obstructedRayColor(200, 20, 1, 255);
-		static ColorB const freeRayColor(20, 200, 1, 255);
-		static ColorB const intersectionSphereColor(250, 200, 1, 240);
-		static float const collisionPtSphereRadius = 0.01f;
-		SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-		SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-		newRenderFlags.SetCullMode(e_CullModeNone);
+	static ColorB const obstructedRayColor(200, 20, 1, 255);
+	static ColorB const freeRayColor(20, 200, 1, 255);
+	static ColorB const intersectionSphereColor(250, 200, 1, 240);
+	static float const collisionPtSphereRadius = 0.01f;
+	SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+	SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+	newRenderFlags.SetCullMode(e_CullModeNone);
 
-		bool const bRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
-		Vec3 const rayEnd = bRayObstructed ?
-			m_rayDebugInfos[rayIndex].begin + (m_rayDebugInfos[rayIndex].end - m_rayDebugInfos[rayIndex].begin).GetNormalized() * m_rayDebugInfos[rayIndex].distanceToNearestObstacle :
-			m_rayDebugInfos[rayIndex].end; // only draw the ray to the first collision point
+	bool const bRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
+	Vec3 const rayEnd = bRayObstructed ?
+	                    m_rayDebugInfos[rayIndex].begin + (m_rayDebugInfos[rayIndex].end - m_rayDebugInfos[rayIndex].begin).GetNormalized() * m_rayDebugInfos[rayIndex].distanceToNearestObstacle :
+	                    m_rayDebugInfos[rayIndex].end; // only draw the ray to the first collision point
 
-		ColorB const& rayColor = bRayObstructed ? obstructedRayColor : freeRayColor;
+	ColorB const& rayColor = bRayObstructed ? obstructedRayColor : freeRayColor;
 
-		auxGeom.SetRenderFlags(newRenderFlags);
+	auxGeom.SetRenderFlags(newRenderFlags);
 
-		if (bRayObstructed)
-		{
-			// mark the nearest collision with a small sphere
-			auxGeom.DrawSphere(rayEnd, collisionPtSphereRadius, intersectionSphereColor);
-		}
+	if (bRayObstructed)
+	{
+		// mark the nearest collision with a small sphere
+		auxGeom.DrawSphere(rayEnd, collisionPtSphereRadius, intersectionSphereColor);
+	}
 
-		auxGeom.DrawLine(m_rayDebugInfos[rayIndex].begin, rayColor, rayEnd, rayColor, 1.0f);
-		auxGeom.SetRenderFlags(previousRenderFlags);
+	auxGeom.DrawLine(m_rayDebugInfos[rayIndex].begin, rayColor, rayEnd, rayColor, 1.0f);
+	auxGeom.SetRenderFlags(previousRenderFlags);
 }
 
 ///////////////////////////////////////////////////////////////////////////

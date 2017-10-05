@@ -99,8 +99,12 @@ public:
 	// IGameFramework
 	virtual void                          ShutDown();
 
-	virtual void                          PreBeginRender();
-	virtual bool                          Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>());
+	virtual void                          PreSystemUpdate();
+	virtual bool                          PostSystemUpdate(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>());
+	virtual void                          PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags);
+	virtual void                          PreRender();
+	virtual void                          PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags);
+	virtual void                          PostRenderSubmit();
 
 	void                                  ClearTimers();
 	virtual TimerID                       AddTimer(CTimeValue interval, bool repeat, TimerCallback callback, void* userdata);

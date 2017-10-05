@@ -96,6 +96,7 @@ namespace Cry
 				bool m_bVolumetricFogOnly = false;
 				bool m_bAffectsVolumetricFog = true;
 				bool m_bAffectsOnlyThisArea = true;
+				bool m_bLinkToSkyColor = false;
 				bool m_bAmbient = false;
 				Schematyc::Range<0, 10000> m_fogRadialLobe = CDLight().m_fFogRadialLobe;
 
@@ -160,6 +161,7 @@ namespace Cry
 			desc.AddMember(&CPointLightComponent::SOptions::m_bAffectsVolumetricFog, 'volf', "AffectVolumetricFog", "Affect Volumetric Fog", nullptr, true);
 			desc.AddMember(&CPointLightComponent::SOptions::m_bVolumetricFogOnly, 'volo', "VolumetricFogOnly", "Only Affect Volumetric Fog", nullptr, false);
 			desc.AddMember(&CPointLightComponent::SOptions::m_bAffectsOnlyThisArea, 'area', "OnlyAffectThisArea", "Only Affect This Area", nullptr, true);
+			desc.AddMember(&CPointLightComponent::SOptions::m_bLinkToSkyColor, 'ltsc', "LinkToSkyColor", "Link To Sky Color", "Multiply light color with current sky color (use GI sky color if available).", false);
 			desc.AddMember(&CPointLightComponent::SOptions::m_bAmbient, 'ambi', "Ambient", "Ambient", nullptr, false);
 			desc.AddMember(&CPointLightComponent::SOptions::m_fogRadialLobe, 'fogr', "FogRadialLobe", "Fog Radial Lobe", nullptr, CDLight().m_fFogRadialLobe);
 			desc.AddMember(&CPointLightComponent::SOptions::m_giMode, 'gimo', "GIMode", "Global Illumination", nullptr, ELightGIMode::Disabled);

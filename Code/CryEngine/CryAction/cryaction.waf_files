@@ -728,9 +728,7 @@
     "Debug Helpers": [
       "EntityTags.cpp",
       "PersistantDebug.cpp",
-      "PersistantDebug.h",
-      "ManualFrameStep.cpp",
-      "ManualFrameStep.h"
+      "PersistantDebug.h"
     ],
     "Graphics": [
       "ColorGradientManager.cpp",

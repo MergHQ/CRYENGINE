@@ -21,11 +21,10 @@
 #include "IAnimationCompressionManager.h"
 #include <CrySystem/File/ICryPak.h>
 #include "AnimEventFootstepGenerator.h"
-#include "../EditorCommon/QPropertyTree/QPropertyDialog.h"
-#include "../EditorCommon/QPropertyTree/ContextList.h"
-#include "../EditorCommon/QParentWndWidget.h"
-#include "../EditorCommon/ListSelectionDialog.h"
-#include "../EditorCommon/Explorer/ExplorerFileList.h"
+#include "QPropertyTree/QPropertyDialog.h"
+#include "QPropertyTree/ContextList.h"
+#include "ListSelectionDialog.h"
+#include "Explorer/ExplorerFileList.h"
 #include "dll_string.h"
 #include "IResourceSelectorHost.h"
 #include "CharacterDocument.h"
@@ -1516,13 +1515,10 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 	if (!character)
 		return previousValue;
 
-	QParentWndWidget parent(x.parentWindow);
-	parent.center();
-	parent.setWindowModality(Qt::ApplicationModal);
-
-	ListSelectionDialog dialog("CTAnimationAliasSelection", &parent);
+	ListSelectionDialog dialog("CTAnimationAliasSelection", x.parentWidget);
 	dialog.setWindowTitle("Animation Alias Selection");
 	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetIconPath()));
+	dialog.setModal(true);
 
 	IAnimationSet* animationSet = character->GetIAnimationSet();
 	if (!animationSet)

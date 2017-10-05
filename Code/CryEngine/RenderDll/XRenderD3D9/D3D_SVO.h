@@ -79,6 +79,7 @@ public:
 	CTexture*            GetRsmPoolCol()           { return IsActive() ? m_pRsmPoolCol : NULL; }
 	CTexture*            GetRsmPoolNor()           { return IsActive() ? m_pRsmPoolNor : NULL; }
 	static void          GetRsmTextures(_smart_ptr<CTexture>& pRsmColorMap, _smart_ptr<CTexture>& pRsmNormlMap, _smart_ptr<CTexture>& pRsmPoolCol, _smart_ptr<CTexture>& pRsmPoolNor);
+	ColorF               GetSkyColor() { return m_texInfo.vSkyColorTop; }
 
 protected:
 

@@ -1241,7 +1241,6 @@ int CSystem::SetThreadState(ESubsystem subsys, bool bActive)
 			{
 				return bActive ? ((CPhysicsThreadTask*)m_PhysThread)->Resume() : ((CPhysicsThreadTask*)m_PhysThread)->Pause();
 			}
-
 		}
 		break;
 	}
@@ -1502,15 +1501,17 @@ void CSystem::RunMainLoop()
 	}
 
 #if CRY_PLATFORM_WINDOWS
-	if (!(gEnv && gEnv->pSystem) || (!gEnv->IsEditor() && !gEnv->IsDedicated()))
+	if (!(gEnv && m_env.pSystem) || (!m_env.IsEditor() && !m_env.IsDedicated()))
 	{
 		::ShowCursor(FALSE);
-		if (GetISystem()->GetIHardwareMouse())
-			GetISystem()->GetIHardwareMouse()->DecrementCounter();
+		if (m_env.pHardwareMouse != nullptr)
+		{
+			m_env.pHardwareMouse->DecrementCounter();
+		}
 	}
 #else
-	if (gEnv && gEnv->pHardwareMouse)
-		gEnv->pHardwareMouse->DecrementCounter();
+	if (gEnv && m_env.pHardwareMouse)
+		m_env.pHardwareMouse->DecrementCounter();
 #endif
 
 	for (;;)
@@ -1519,7 +1520,7 @@ void CSystem::RunMainLoop()
 		Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
 #endif
 
-		if (!StartFrame())
+		if (!DoFrame())
 		{
 			break;
 		}
@@ -1527,7 +1528,7 @@ void CSystem::RunMainLoop()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
+bool CSystem::DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	// The frame profile system already creates an "overhead" profile label
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
@@ -1540,12 +1541,12 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	}
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
-	m_env.GetJobManager()->SetFrameStartTime(gEnv->pTimer->GetAsyncTime());
+	m_env.GetJobManager()->SetFrameStartTime(m_env.pTimer->GetAsyncTime());
 #endif
 
 	if (!updateFlags.Check(ESYSUPDATE_EDITOR))
 	{
-		gEnv->pFrameProfileSystem->StartFrame();
+		m_env.pFrameProfileSystem->StartFrame();
 	}
 
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, __FUNC__);
@@ -1553,7 +1554,7 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 
 	if (m_env.pGameFramework != nullptr)
 	{
-		m_env.pGameFramework->PreBeginRender();
+		m_env.pGameFramework->PreSystemUpdate();
 	}
 
 	if (ITextModeConsole* pTextModeConsole = GetITextModeConsole())
@@ -1561,7 +1562,7 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 		pTextModeConsole->BeginDraw();
 	}
 
-	// tell the network to go to sleep
+	// Tell the network to go to sleep
 	if (m_env.pNetwork)
 	{
 		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
@@ -1569,7 +1570,7 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 
 	RenderBegin();
 
-	bool continueRunning;
+	bool continueRunning = true;
 
 	// The Editor is responsible for updating the system manually, so we should skip in that case.
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
@@ -1581,26 +1582,93 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 			pauseMode = 0;
 			updateFlags |= ESYSUPDATE_IGNORE_AI;
 		}
-		else
+		else if(m_env.pGameFramework != nullptr)
 		{
 			pauseMode = (m_env.pGameFramework->IsGamePaused() || !m_env.pGameFramework->IsGameStarted()) ? 1 : 0;
 		}
+		else
+		{
+			pauseMode = 0;
+		}
 
-		continueRunning = Update(updateFlags, pauseMode);
+		if (!Update(updateFlags, pauseMode))
+		{
+			continueRunning = false;
+		}
 	}
-	else
+
+	if (m_env.pGameFramework != nullptr)
 	{
-		continueRunning = true;
+		if (!m_env.pGameFramework->PostSystemUpdate(m_hasWindowFocus, updateFlags))
+		{
+			continueRunning = false;
+		}
 	}
 
-	// TODO: Move core engine update from game framework to this function
-	continueRunning |= m_env.pGameFramework->Update(m_hasWindowFocus, updateFlags);
+	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
+	{
+		// Camera should now be valid, prepare occlusion
+		m_env.p3DEngine->PrepareOcclusion(m_ViewCamera);
+
+		// Synchronize all animations so ensure that their computations have finished
+		if (!IsLoading())
+		{
+			m_env.pCharacterManager->SyncAllAnimations();
+		}
+
+		Render();
+
+		if (m_env.pGameFramework != nullptr)
+		{
+			m_env.pGameFramework->PostRender(updateFlags);
+		}
+
+		return continueRunning;
+	}
+
+	// Synchronize all animations so ensure that their computation have finished
+	// Has to be done before view update, in case camera depends on a joint
+	if (m_env.pCharacterManager && !IsLoading())
+	{
+		m_env.pCharacterManager->SyncAllAnimations();
+	}
+
+	if (m_env.pGameFramework != nullptr && !updateFlags.Check(ESYSUPDATE_EDITOR_ONLY))
+	{
+		m_env.pGameFramework->PreFinalizeCamera(updateFlags);
+	}
+
+	m_env.p3DEngine->PrepareOcclusion(m_ViewCamera);
+
+	if (m_env.pGameFramework != nullptr)
+	{
+		m_env.pGameFramework->PreRender();
+	}
+
+	Render();
+	m_env.p3DEngine->EndOcclusion();
+
+	if (m_env.pGameFramework != nullptr)
+	{
+		m_env.pGameFramework->PostRender(updateFlags);
+	}
+
+#if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
+	RenderPhysicsHelpers();
+#endif
+
+	RenderEnd();
+
+	if (m_env.pGameFramework != nullptr)
+	{
+		m_env.pGameFramework->PostRenderSubmit();
+	}
 
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
 	{
-		if (gEnv->pStatoscope)
+		if (m_env.pStatoscope)
 		{
-			gEnv->pStatoscope->Tick();
+			m_env.pStatoscope->Tick();
 		}
 
 		if (ITextModeConsole* pTextModeConsole = GetITextModeConsole())
@@ -1608,14 +1676,14 @@ bool CSystem::StartFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 			pTextModeConsole->EndDraw();
 		}
 
-		gEnv->p3DEngine->SyncProcessStreamingUpdate();
+		m_env.p3DEngine->SyncProcessStreamingUpdate();
 
 		if (NeedDoWorkDuringOcclusionChecks())
 		{
 			DoWorkDuringOcclusionChecks();
 		}
 
-		gEnv->pFrameProfileSystem->EndFrame();
+		m_env.pFrameProfileSystem->EndFrame();
 	}
 
 	return continueRunning;
@@ -2260,6 +2328,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (m_pPluginManager)
 	{
 		m_pPluginManager->Update(IPluginUpdateListener::EUpdateType_Update);
+	}
+
+	if (m_env.pHardwareMouse != nullptr)
+	{
+		m_env.pHardwareMouse->Update();
 	}
 
 	//Now update frame statistics

@@ -843,7 +843,7 @@ PhysXWorld::PhysXWorld(ILog* pLog) : m_debugDraw(false)
 	bqd.preFilterShader = RaycastBatchFilter;
 	m_batchQuery[0] = g_cryPhysX.Scene()->createBatchQuery(bqd);
 	m_batchQuery[1] = g_cryPhysX.Scene()->createBatchQuery(bqd);
-	m_scratchBuf.resize(1<<11);
+	m_scratchBuf.resize(1<<20);
 
 	m_pbGlob.waterDensity = 1000;
 	m_pbGlob.kwaterDensity = 1;

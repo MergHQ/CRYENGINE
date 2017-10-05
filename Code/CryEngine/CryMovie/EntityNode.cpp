@@ -2915,19 +2915,19 @@ bool CAnimEntityNode::AnimateEntityComponentProperty(const SComponentPropertyPar
 
 void CAnimEntityNode::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks)
 {
-	CAnimNode::Serialize(xmlNode, bLoading, bLoadEmptyTracks);
-	IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName(m_name);
-
-	if (pEntity)
-	{
-		m_entityGuid = pEntity->GetGuid();
-	}
-
 	if (bLoading)
 	{
-		if (!pEntity)
+		const char* name = xmlNode->getAttr("Name");
+		IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName(name);
+		if (pEntity)
 		{
-			xmlNode->getAttr("EntityGUID", m_entityGuid);
+			SetEntityGuid(pEntity->GetGuid());
+		}
+		else
+		{
+			EntityGUID entityGuid;
+			xmlNode->getAttr("EntityGUID", entityGuid);
+			SetEntityGuid(entityGuid);
 		}
 
 		xmlNode->getAttr("EntityGUIDTarget", m_entityGuidTarget);
@@ -2948,6 +2948,10 @@ void CAnimEntityNode::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEm
 			xmlNode->setAttr("EntityGUIDSource", m_entityGuidSource);
 		}
 	}
+
+	// For the correct work of the InitializeTrackDefaultValue 
+	// this call requires that SetEntityGuid be called in advance.
+	CAnimNode::Serialize(xmlNode, bLoading, bLoadEmptyTracks);
 }
 
 void CAnimEntityNode::ApplyAnimKey(int32 keyIndex, class CCharacterTrack* track, SAnimTime ectime,

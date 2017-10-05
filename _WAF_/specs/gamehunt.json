@@ -2,11 +2,11 @@
 	"description"                           : "Configuration to build Engine and GameHunt",
 	"valid_platforms"                       : [ "win", "durango", "orbis" ],
 	"valid_configuration"                   : [ "debug", "profile", "performance", "release" ],
-	"visual_studio_name"                    : "GameHunt",
+	"visual_studio_name"                    : "Hunt",
 
 	"game_projects"                         : "GameHunt",
 
-	"win_module_extensions"                 : ["brofiler", "eyex"],
+	"win_module_extensions"                 : ["brofiler"],
 
 	"modules" :
 	[

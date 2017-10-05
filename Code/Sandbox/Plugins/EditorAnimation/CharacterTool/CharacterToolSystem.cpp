@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 
-#include "../EditorCommon/QPropertyTree/ContextList.h"
+#include "QPropertyTree/ContextList.h"
 #include "AnimationList.h"
 #include "AnimationTagList.h"
 #include "CharacterDocument.h"
@@ -27,7 +27,7 @@
 #include "SourceAssetContent.h"
 #include "AnimationCompressionManager.h"
 #include "CharacterGizmoManager.h"
-#include "../EditorCommon/Serialization/Decorators/INavigationProvider.h"
+#include "Serialization/Decorators/INavigationProvider.h"
 
 namespace CharacterTool
 {

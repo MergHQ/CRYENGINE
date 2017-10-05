@@ -9,7 +9,7 @@
 #include <QBoxLayout>
 #include <QDir>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
-#include "../EditorCommon/QPropertyTree/ContextList.h"
+#include "QPropertyTree/ContextList.h"
 #include "Serialization.h"
 #include "Expected.h"
 #include "CharacterDocument.h"

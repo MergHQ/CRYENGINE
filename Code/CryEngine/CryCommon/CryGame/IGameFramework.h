@@ -522,12 +522,26 @@ struct IGameFramework
 	//! Called when the engine is shutting down to finalize the game framework
 	virtual void ShutDown() = 0;
 
-	//! Called just before calling ISystem::RenderBegin
-	virtual void PreBeginRender() = 0;
+	//! Called just before calling ISystem::RenderBegin, after the renderer has been notified to prepare for a new frame
+	virtual void PreSystemUpdate() = 0;
 
 	//! Updates the main game systems
+	//! Called immediately after ISystem::Update, when core engine systems have been updated
 	//! \return True if the engine should continue running, otherwise false.
-	virtual bool Update(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
+	virtual bool PostSystemUpdate(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags) = 0;
+
+	//! Called when systems depending on rendering have been updated, and we are about to use the system camera
+	//! This is the final chance to modify the camera before it is passed to the 3D engine for occlusion culling
+	virtual void PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags) = 0;
+
+	//! Called just before ISystem::Render
+	virtual void PreRender() = 0;
+
+	//! Called after ISystem::Render, when the renderer should now have started rendering
+	virtual void PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags) = 0;
+
+	//! Called after ISystem::RenderEnd, when the renderer has been notified that the frame is final
+	virtual void PostRenderSubmit() = 0;
 
 	//! Used to notify the framework that we're switching between single and multi player.
 	virtual void InitGameType(bool multiplayer, bool fromInit) = 0;

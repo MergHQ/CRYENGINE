@@ -2151,7 +2151,7 @@ enum eDynamicLightFlags
 	DLF_AMBIENT                 = BIT(21),   //!< Ambient light (has name indicates, used for replacing ambient).
 	DLF_INDOOR_ONLY             = BIT(22),   //!< Do not affect height map.
 	DLF_VOLUMETRIC_FOG          = BIT(23),   //!< Affects volumetric fog.
-	//	UNUSED										= BIT(24),   //!< Add only to  Light Propagation Volume if it's possible.
+	DLF_LINK_TO_SKY_COLOR       = BIT(24),   //!< Multiply light color with current sky color (use GI sky color if available).
 	DLF_ATTACH_TO_SUN           = BIT(25),   //!< Add only to  Light Propagation Volume if it's possible.
 	DLF_TRACKVIEW_TIMESCRUBBING = BIT(26),   //!< Add only to  Light Propagation Volume if it's possible.
 	DLF_VOLUMETRIC_FOG_ONLY     = BIT(27),   //!< Affects only volumetric fog.

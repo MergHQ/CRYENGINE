@@ -1,14 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <IResourceSelectorHost.h>
-
+#include "IResourceSelectorHost.h"
+#include "ListSelectionDialog.h"
 #include "SystemControlsEditorIcons.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ResourceSelectorDialog.h"
-
-#include <QParentWndWidget.h>
-#include <ListSelectionDialog.h>
 #include <CryGame/IGameFramework.h>
 #include <IEditor.h>
 
@@ -21,11 +18,8 @@ dll_string ShowSelectDialog(const SResourceSelectorContext& context, const char*
 	CAudioAssetsManager const* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	CRY_ASSERT(pAssetsManager);
 
-	QParentWndWidget parent(context.parentWindow);
-	parent.center();
-	parent.setWindowModality(Qt::ApplicationModal);
-
-	CResourceSelectorDialog dialog(&parent, controlType);
+	CResourceSelectorDialog dialog(context.parentWidget, controlType);
+	dialog.setModal(true);
 
 	char* szLevelName;
 	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);

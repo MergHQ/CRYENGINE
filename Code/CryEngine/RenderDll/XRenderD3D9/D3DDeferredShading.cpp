@@ -317,6 +317,22 @@ RenderLightIndex CDeferredShading::AddLight(const CDLight& pDL, float fMult, con
 		nLightId = pAddedLight->m_Id;
 	}
 
+	if (pDL.m_Flags & DLF_LINK_TO_SKY_COLOR)
+	{
+	#if defined(FEATURE_SVO_GI)
+		CSvoRenderer* pSR = CSvoRenderer::GetInstance();
+		if (pSR)
+		{
+			pAddedLight->m_Color *= pSR->GetSkyColor();
+		}
+		else
+	#endif
+
+		{
+			pAddedLight->m_Color *= gEnv->p3DEngine->GetSkyColor();
+		}
+	}
+
 	IF_LIKELY ((pDL.m_Flags & (DLF_DEFERRED_CUBEMAPS | DLF_AMBIENT)) == 0)
 	{
 		pAddedLight->m_Color *= fMult;

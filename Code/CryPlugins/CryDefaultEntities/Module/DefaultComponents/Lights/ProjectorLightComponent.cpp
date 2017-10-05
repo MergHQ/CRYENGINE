@@ -61,6 +61,9 @@ void CProjectorLightComponent::Initialize()
 	if (m_options.m_bAffectsVolumetricFog)
 		light.m_Flags |= DLF_VOLUMETRIC_FOG;
 
+	if (m_options.m_bLinkToSkyColor)
+		light.m_Flags |= DLF_LINK_TO_SKY_COLOR;
+
 	if (m_options.m_bAmbient)
 		light.m_Flags |= DLF_AMBIENT;
 
@@ -154,9 +157,17 @@ void CProjectorLightComponent::Initialize()
 		}
 	}
 
+	CryTransform::CTransformPtr pTransform = m_pTransform;
+
+	Matrix34 slotTransform = pTransform != nullptr ? pTransform->ToMatrix34() : IDENTITY;
+	slotTransform = slotTransform * Matrix33::CreateRotationZ(gf_PI * 0.5f);
+
 	// Fix light orientation to point along the forward axis
 	// This has to be done since lights in the engine currently emit from the right axis for some reason.
-	m_pEntity->SetSlotLocalTM(GetEntitySlotId(), Matrix34::Create(Vec3(1.f), Quat::CreateRotationZ(gf_PI * 0.5f), ZERO));
+	m_pEntity->SetSlotLocalTM(GetEntitySlotId(), slotTransform);
+
+	// Restore to the user specified transform, as SetSlotLocalTM might override it
+	m_pTransform = pTransform;
 
 	uint32 slotFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
 	UpdateGIModeEntitySlotFlags((uint8)m_options.m_giMode, slotFlags);

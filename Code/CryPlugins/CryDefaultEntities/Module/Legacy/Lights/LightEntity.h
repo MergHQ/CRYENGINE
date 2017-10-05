@@ -74,6 +74,7 @@ public:
 			archive(m_bIgnoreVisAreas, "IgnoreVisAreas", "IgnoreVisAreas");
 			archive(m_bAffectsThisAreaOnly, "AffectsThisAreaOnly", "AffectsThisAreaOnly");
 			archive(m_bAmbient, "Ambient", "Ambient");
+			archive(m_bLinkToSkyColor, "LinkToSkyColor", "LinkToSkyColor");
 			archive(m_bFake, "FakeLight", "FakeLight");
 			archive(m_bAffectVolumetricFog, "AffectVolumetricFog", "AffectVolumetricFog");
 			archive(m_bAffectVolumetricFogOnly, "AffectVolumetricFogOnly", "AffectVolumetricFogOnly");
@@ -146,6 +147,7 @@ protected:
 	bool m_bIgnoreVisAreas = false;
 	bool m_bAffectsThisAreaOnly = true;
 	bool m_bAmbient = false;
+	bool m_bLinkToSkyColor = false;
 	bool m_bFake = false;
 	bool m_bAffectVolumetricFog = true;
 	bool m_bAffectVolumetricFogOnly = false;

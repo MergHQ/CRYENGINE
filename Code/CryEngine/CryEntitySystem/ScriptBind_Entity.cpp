@@ -7305,6 +7305,8 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, CDLight& li
 		light.m_Flags |= DLF_INDOOR_ONLY;
 	if (chain.GetValue("ambient", flag) && flag)
 		light.m_Flags |= DLF_AMBIENT;
+	if (chain.GetValue("link_to_sky_color", flag) && flag)
+		light.m_Flags |= DLF_LINK_TO_SKY_COLOR;
 	if (chain.GetValue("area_light", flag) && flag)
 		light.m_Flags |= DLF_AREA_LIGHT;
 	if (chain.GetValue("deferred_light", flag) && flag)

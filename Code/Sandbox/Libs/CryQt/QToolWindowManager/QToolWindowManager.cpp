@@ -1204,6 +1204,12 @@ void QToolWindowManager::resizeSplitter(QWidget* widget, QList<int> sizes)
 		qWarning("Could not find a matching splitter!");
 		return;
 	}
+
+	int scaleFactor = s->orientation() == Qt::Horizontal ? s->width() : s->height();
+	for (auto it = sizes.begin(); it != sizes.end(); it++)
+	{
+		*it *= scaleFactor;
+	}
 	s->setSizes(sizes);
 }
 

@@ -13,7 +13,6 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
-#include <QParentWndWidget.h>
 #include <QPushButton.h>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
