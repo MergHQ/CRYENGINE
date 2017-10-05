@@ -61,6 +61,9 @@ void CProjectorLightComponent::Initialize()
 	if (m_options.m_bAffectsVolumetricFog)
 		light.m_Flags |= DLF_VOLUMETRIC_FOG;
 
+	if (m_options.m_bLinkToSkyColor)
+		light.m_Flags |= DLF_LINK_TO_SKY_COLOR;
+
 	if (m_options.m_bAmbient)
 		light.m_Flags |= DLF_AMBIENT;
 

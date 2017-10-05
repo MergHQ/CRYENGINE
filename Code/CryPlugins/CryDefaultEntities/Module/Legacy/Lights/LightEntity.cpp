@@ -99,6 +99,10 @@ void CDefaultLightEntity::OnResetState()
 	{
 		m_light.m_Flags |= DLF_IGNORES_VISAREAS;
 	}
+	if (m_bLinkToSkyColor)
+	{
+		m_light.m_Flags |= DLF_LINK_TO_SKY_COLOR;
+	}
 	if (m_bAmbient)
 	{
 		m_light.m_Flags |= DLF_AMBIENT;
