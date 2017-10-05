@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioCVars.h"
@@ -98,11 +98,6 @@ void CCVars::RegisterVariables()
 	#error "Undefined platform."
 #endif
 
-	REGISTER_CVAR2("s_DebugDistance", &m_debugDistance, m_debugDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "Limits drawing of audio object debug info to the specified distance around the active listeners. Setting this cvar to 0 disables the limiting.\n"
-	               "Usage: s_DebugDistance [0/...]\n"
-	               "Default: 0 m (infinite)\n");
-
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Occlusion is not calculated for audio objects, whose distance to the listener is greater than this value. Setting this value to 0 disables obstruction/occlusion calculations.\n"
 	               "Usage: s_OcclusionMaxDistance [0/...]\n"
@@ -187,6 +182,11 @@ void CCVars::RegisterVariables()
 	               "Usage: s_TickWithMainThread [0/1]\n"
 	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
 
+	REGISTER_CVAR2("s_AccumulateOcclusion", &m_accumulateOcclusion, m_accumulateOcclusion, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Sets whether occlusion values encountered by a ray cast will be accumulated or only the highest value will be used.\n"
+	               "Usage: s_AccumulateOcclusion [0/1] (off/on)\n"
+	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
+
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
 	                 "The first argument is the name of the AudioTrigger to be executed, the second argument is an optional AudioObject ID.\n"
@@ -225,6 +225,11 @@ void CCVars::RegisterVariables()
 	                "Default: \"do_nothing\" \n");
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	REGISTER_CVAR2("s_DebugDistance", &m_debugDistance, m_debugDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Limits drawing of audio object debug info to the specified distance around the active listeners. Setting this cvar to 0 disables the limiting.\n"
+	               "Usage: s_DebugDistance [0/...]\n"
+	               "Default: 0 m (infinite)\n");
+
 	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_DEV_ONLY,
 	               "If set to 1, the sound system will continue playing when the Editor or Game window loses focus.\n"
 	               "Usage: s_IgnoreWindowFocus [0/1]\n"
@@ -291,7 +296,6 @@ void CCVars::RegisterVariables()
 	                                 "Allows for filtered display of audio debug info by a search string.\n"
 	                                 "Usage: s_DebugFilter spaceship\n"
 	                                 "Default: " " (all)\n");
-
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -317,6 +321,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
 		pConsole->UnregisterVariable("s_AudioProxiesInitType");
 		pConsole->UnregisterVariable("s_TickWithMainThread");
+		pConsole->UnregisterVariable("s_AccumulateOcclusion");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");
 		pConsole->UnregisterVariable("s_SetParameter");
@@ -324,14 +329,14 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+		pConsole->UnregisterVariable("s_DebugDistance");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
 		pConsole->UnregisterVariable("s_DrawAudioDebug");
 		pConsole->UnregisterVariable("s_FileCacheManagerDebugFilter");
 		pConsole->UnregisterVariable("s_AudioLoggingOptions");
 		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");
 		pConsole->UnregisterVariable("s_AudioObjectsRayType");
-		pConsole->UnregisterVariable("s_AudioTriggersDebugFilter");
-		pConsole->UnregisterVariable("s_AudioObjectsDebugFilter");
+		pConsole->UnregisterVariable("s_DebugFilter");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 }
