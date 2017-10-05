@@ -1241,7 +1241,6 @@ int CSystem::SetThreadState(ESubsystem subsys, bool bActive)
 			{
 				return bActive ? ((CPhysicsThreadTask*)m_PhysThread)->Resume() : ((CPhysicsThreadTask*)m_PhysThread)->Pause();
 			}
-
 		}
 		break;
 	}
@@ -1563,7 +1562,7 @@ bool CSystem::DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 		pTextModeConsole->BeginDraw();
 	}
 
-	// tell the network to go to sleep
+	// Tell the network to go to sleep
 	if (m_env.pNetwork)
 	{
 		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
@@ -1571,7 +1570,7 @@ bool CSystem::DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 
 	RenderBegin();
 
-	bool continueRunning;
+	bool continueRunning = true;
 
 	// The Editor is responsible for updating the system manually, so we should skip in that case.
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
@@ -1592,16 +1591,18 @@ bool CSystem::DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 			pauseMode = 0;
 		}
 
-		continueRunning = Update(updateFlags, pauseMode);
-	}
-	else
-	{
-		continueRunning = true;
+		if (!Update(updateFlags, pauseMode))
+		{
+			continueRunning = false;
+		}
 	}
 
 	if (m_env.pGameFramework != nullptr)
 	{
-		continueRunning |= m_env.pGameFramework->PostSystemUpdate(m_hasWindowFocus, updateFlags);
+		if (!m_env.pGameFramework->PostSystemUpdate(m_hasWindowFocus, updateFlags))
+		{
+			continueRunning = false;
+		}
 	}
 
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
