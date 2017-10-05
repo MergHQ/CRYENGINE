@@ -161,6 +161,7 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE
 )
 target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon tiff)
 
-target_include_directories( ${THIS_PROJECT} PRIVATE	"${SDK_DIR}/squish-ccr")
+target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/squish-ccr")
+target_include_directories( ${THIS_PROJECT} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 use_xt()

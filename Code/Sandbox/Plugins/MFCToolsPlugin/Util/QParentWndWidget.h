@@ -4,6 +4,8 @@
 
 #include <QWidget>
 
+#include "PluginAPI.h"
+
 // QParentWndWidget can be used to show Qt popup windows/dialogs on top on
 // Win32/MFC windows.
 //

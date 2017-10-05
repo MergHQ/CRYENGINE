@@ -7,8 +7,6 @@
 #include <QApplication>
 #include <QFocusEvent>
 
-#include "QParentWndWidget.h"
-
 #include <qt_windows.h>
 
 #if QT_VERSION >= 0x050000
