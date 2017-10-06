@@ -642,7 +642,6 @@ void PlaybackPanel::WriteTimeline()
 		}
 	}
 
- 	m_timeline->ZoomToTimeRange(track.startTime, track.endTime);
 	m_timeline->ContentUpdated();
 }
 
