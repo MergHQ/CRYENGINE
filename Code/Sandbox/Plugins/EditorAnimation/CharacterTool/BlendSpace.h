@@ -14,7 +14,6 @@ using std::vector;
 
 struct BlendSpaceDimension
 {
-	string parameterName;
 	int32  parameterId;
 	float  minimal;
 	float  maximal;
@@ -222,7 +221,6 @@ struct BlendSpace
 
 struct CombinedBlendSpaceDimension
 {
-	string parameterName;
 	int    parameterId;
 	bool   locked;
 	float  parameterScale;
