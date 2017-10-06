@@ -32,14 +32,14 @@ namespace Cry
 			}
 		}
 
-		CLineConstraintComponent::~CLineConstraintComponent()
-		{
-			Remove();
-		}
-
 		void CLineConstraintComponent::Initialize()
 		{
 			Reset();
+		}
+
+		void CLineConstraintComponent::OnShutDown()
+		{
+			Remove();
 		}
 
 		void CLineConstraintComponent::Reset()

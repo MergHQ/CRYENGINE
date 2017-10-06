@@ -30,14 +30,14 @@ namespace Cry
 			}
 		}
 
-		CPointConstraintComponent::~CPointConstraintComponent()
-		{
-			Remove();
-		}
-
 		void CPointConstraintComponent::Initialize()
 		{
 			Reset();
+		}
+
+		void CPointConstraintComponent::OnShutDown()
+		{
+			Remove();
 		}
 
 		void CPointConstraintComponent::Reset()

@@ -32,14 +32,14 @@ namespace Cry
 			}
 		}
 
-		CPlaneConstraintComponent::~CPlaneConstraintComponent()
-		{
-			Remove();
-		}
-
 		void CPlaneConstraintComponent::Initialize()
 		{
 			Reset();
+		}
+
+		void CPlaneConstraintComponent::OnShutDown()
+		{
+			Remove();
 		}
 
 		void CPlaneConstraintComponent::Reset()

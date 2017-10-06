@@ -88,6 +88,16 @@ namespace Cry
 #ifndef RELEASE
 			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
 #endif
+
+			virtual void OnShutDown() final
+			{
+				m_pCameraManager->RemoveCamera(this);
+
+				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
+				{
+					pDevice->SetAsyncCameraCallback(nullptr);
+				}
+			}
 			// ~IEntityComponent
 
 #ifndef RELEASE
@@ -118,15 +128,7 @@ namespace Cry
 				m_pCameraManager = gEnv->pSystem->GetIPluginManager()->QueryPlugin<IPlugin_CryDefaultEntities>()->GetICameraManager();
 			}
 
-			virtual ~CCameraComponent() override
-			{
-				m_pCameraManager->RemoveCamera(this);
-
-				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-				{
-					pDevice->SetAsyncCameraCallback(nullptr);
-				}
-			}
+			virtual ~CCameraComponent() = default;
 
 			static void ReflectType(Schematyc::CTypeDesc<CCameraComponent>& desc)
 			{

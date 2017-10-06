@@ -22,10 +22,12 @@ namespace Cry
 
 			virtual void ProcessEvent(SEntityEvent& event) final;
 			virtual uint64 GetEventMask() const final;
+
+			virtual void OnShutDown() final;
 			// ~IEntityComponent
 
 		public:
-			virtual ~CLineConstraintComponent();
+			virtual ~CLineConstraintComponent() = default;
 
 			static void ReflectType(Schematyc::CTypeDesc<CLineConstraintComponent>& desc)
 			{
