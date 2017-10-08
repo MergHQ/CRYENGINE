@@ -696,6 +696,8 @@ public:
 	virtual void           UpdateShaderItems();
 	void                   GetCollisionClass(SCollisionClass& collclass, int tableIndex);
 
+	void                   SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrategy);
+
 public:
 	C3DEngine(ISystem* pSystem);
 	~C3DEngine();

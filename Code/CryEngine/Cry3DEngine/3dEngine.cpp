@@ -4732,6 +4732,22 @@ void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void C3DEngine::SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrategy)
+{
+	m_nCachedShadowsUpdateStrategy = updateStrategy;
+
+	if (IRenderer* const pRenderer = GetRenderer())
+	{
+		if (GetCVars()->e_DynamicDistanceShadows != 0 && pNode->m_pOcNode != nullptr)
+		{
+			ERNListType nodeListType = IRenderNode::GetRenderNodeListId(pNode->GetRenderNodeType());
+
+			pNode->m_pOcNode->MarkAsUncompiled(nodeListType);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void C3DEngine::SetShadowsCascadesBias(const float* pCascadeConstBias, const float* pCascadeSlopeBias)
 {
 	memcpy(m_pShadowCascadeConstBias, pCascadeConstBias, sizeof(float) * MAX_SHADOW_CASCADES_NUM);
@@ -4891,7 +4907,7 @@ void C3DEngine::OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFl
 
 	if ((dwFlags & (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS)) != 0 && (!pRenderNode || (pRenderNode->GetRenderNodeType() != eERType_Character || !bSkipCharacters)))
 	{
-		SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdateTimesliced);
+		SetRecomputeCachedShadows(pRenderNode, ShadowMapFrustum::ShadowCacheData::eFullUpdateTimesliced);
 	}
 
 	if (pRenderNode)
