@@ -1104,12 +1104,6 @@ void CharacterDocument::OnExplorerEntryModified(ExplorerEntryModifyEvent& ev)
 	if (!ev.entry)
 		return;
 
-	if (!ev.continuousChange)
-	{
-		if (m_system->animationList->OwnsAssetEntry(ev.entry))
-			PreviewAnimationEntry(false);
-	}
-
 	ExplorerEntry* activePhysicsEntry = GetActivePhysicsEntry();
 	if (ev.entry == activePhysicsEntry)
 	{

@@ -672,7 +672,6 @@ private: // ------------------------------------------------------
 	bool               m_bNoCrashDialog;
 	bool               m_bPreviewMode;          //!< If running in Preview mode.
 	bool               m_bUIFrameworkMode;
-	bool               m_bDedicatedServer;      //!< If running as Dedicated server.
 	bool               m_bIgnoreUpdates;        //!< When set to true will ignore Update and Render calls,
 	IValidator*        m_pValidator;            //!< Pointer to validator interface.
 	bool               m_bForceNonDevMode;      //!< true when running on a cheat protected server or a client that is connected to it (not used in singlplayer)

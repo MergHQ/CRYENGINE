@@ -90,9 +90,6 @@ public:
 	virtual void   SetSkipRenderingFlags(uint32 nFlags) override   { m_nSkipRenderingFlags = nFlags; }
 	virtual uint32 GetSkipRenderingFlags() const final             { return m_nSkipRenderingFlags; };
 
-	virtual void   SetShaderRenderingFlags(uint32 nFlags) override { m_nShaderRenderingFlags = nFlags; }
-	virtual uint32 GetShaderRenderingFlags() const final           { return m_nShaderRenderingFlags; };
-
 	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) final;
 	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) final;
 
@@ -166,6 +163,9 @@ public:
 	bool       IsShadowGenView() const    { return m_viewType == eViewType_Shadow; }
 	bool       IsBillboardGenView() const { return m_viewType == eViewType_BillboardGen; }
 	EUsageMode GetUsageMode() const       { return m_usageMode; }
+
+	void       SetShaderRenderingFlags(uint32 nFlags) { m_nShaderRenderingFlags = nFlags; }
+	uint32     GetShaderRenderingFlags() const { return m_nShaderRenderingFlags; };
 	//////////////////////////////////////////////////////////////////////////
 	// Shadows related
 	void AddShadowFrustumToRender(const SShadowFrustumToRender& frustum);

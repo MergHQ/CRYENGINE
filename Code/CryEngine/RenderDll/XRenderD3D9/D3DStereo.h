@@ -150,8 +150,8 @@ private:
 	CTexture*     m_pVrQuadLayerTex[RenderLayer::eQuadLayers_Total];
 	CTexture*     m_pSideTexs[2];
 
-	CCamera       m_previousCamera[2];
-	bool          m_bPreviousCameraValid;
+	std::array<CCamera, 2> m_previousCameras;
+	bool                   m_bPreviousCameraValid;
 
 	void*         m_nvStereoHandle;
 	float         m_nvStereoStrength;

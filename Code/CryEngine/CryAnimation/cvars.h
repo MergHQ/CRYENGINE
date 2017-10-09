@@ -81,6 +81,7 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DebugFacial, 0);
 	DeclareConstIntCVar(ca_DebugFacialEyes, 0);
 	DeclareConstIntCVar(ca_DebugAnimationStreaming, 0);
+	DeclareConstIntCVar(ca_DebugAttachmentsProxies, 0);
 	DeclareConstIntCVar(ca_DebugCriticalErrors, 0);
 	DeclareConstIntCVar(ca_UseIMG_CAF, 1);
 	DeclareConstIntCVar(ca_UseIMG_AIM, 1);

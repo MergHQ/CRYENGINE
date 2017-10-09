@@ -2516,7 +2516,38 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 #if defined(CVARS_WHITELIST)
 	m_pCVarsWhitelist = startupParams.pCVarsWhitelist;
 #endif // defined(CVARS_WHITELIST)
-	m_bDedicatedServer = startupParams.bDedicatedServer;
+	
+#if !defined(_RELEASE)
+	if (!startupParams.bDedicatedServer)
+	{
+		const ICmdLineArg* dedicated = m_pCmdLine->FindArg(eCLAT_Pre, "dedicated");
+		if (dedicated)
+		{
+			startupParams.bDedicatedServer = true;
+		}
+}
+#endif // !defined(_RELEASE)
+
+#if defined(DEDICATED_SERVER)
+	startupParams.bDedicatedServer = true;
+#endif // #if defined(DEDICATED_SERVER)
+
+#if CRY_PLATFORM_DESKTOP
+	const ICmdLineArg* pDedicatedArbitrator = m_pCmdLine->FindArg(eCLAT_Pre, "dedicatedarbitrator");
+	if (pDedicatedArbitrator)
+	{
+		startupParams.bDedicatedServer = true;
+		gEnv->bDedicatedArbitrator = true;
+	}
+#endif
+
+#if CRY_PLATFORM_DESKTOP
+	if (startupParams.bDedicatedServer)
+	{
+		m_env.SetIsDedicated(true);
+	}
+#endif
+
 	m_pCmdLine = new CCmdLine(startupParams.szSystemCmdLine);
 	m_currentLanguageAudio = "";
 #if defined(DEDICATED_SERVER)
@@ -2575,43 +2606,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_pValidator = startupParams.pValidator;
 	}
 
-#if !defined(_RELEASE)
-	if (!m_bDedicatedServer)
-	{
-		const ICmdLineArg* dedicated = m_pCmdLine->FindArg(eCLAT_Pre, "dedicated");
-		if (dedicated)
-		{
-			m_bDedicatedServer = true;
-	#if CRY_PLATFORM_DESKTOP
-			gEnv->SetIsDedicated(true);
-	#endif
-		}
-	}
-#endif // !defined(_RELEASE)
-
-#if defined(DEDICATED_SERVER)
-	m_bDedicatedServer = true;
-	#if CRY_PLATFORM_DESKTOP
-	gEnv->SetIsDedicated(true);
-	#endif
-#endif // #if defined(DEDICATED_SERVER)
-
-#if CRY_PLATFORM_DESKTOP
-	const ICmdLineArg* pDedicatedArbitrator = m_pCmdLine->FindArg(eCLAT_Pre, "dedicatedarbitrator");
-	if (pDedicatedArbitrator)
-	{
-		m_bDedicatedServer = true;
-		gEnv->SetIsDedicated(true);
-		gEnv->bDedicatedArbitrator = true;
-	}
-#endif
-
-#if !defined(DEDICATED_SERVER)
 	if (!startupParams.bSkipRenderer)
 	{
 		m_pHmdManager = new CHmdManager();
 	}
-#endif
 
 #if CRY_PLATFORM_DESKTOP
 	#if !defined(_RELEASE)
@@ -2645,7 +2643,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		#endif
 		m_pTextModeConsole = static_cast<ITextModeConsole*>(pConsole);
 
-		if (m_pUserCallback == NULL && m_bDedicatedServer)
+		if (m_pUserCallback == NULL && m_env.IsDedicated())
 		{
 			m_pUserCallback = pConsole;
 			pConsole->SetRequireDedicatedServer(true);
@@ -2673,7 +2671,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		CNULLConsole* pConsole = new CNULLConsole(isDaemonMode);
 		m_pTextModeConsole = pConsole;
 
-		if (m_pUserCallback == NULL && m_bDedicatedServer)
+		if (m_pUserCallback == NULL && m_env.IsDedicated())
 			m_pUserCallback = pConsole;
 	}
 	#endif
@@ -2960,7 +2958,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		m_env.pOverloadSceneManager = new COverloadSceneManager;
 
-		if (m_bDedicatedServer && m_rDriver)
+		if (m_env.IsDedicated() && m_rDriver)
 		{
 			m_sSavedRDriver = m_rDriver->GetString();
 			m_rDriver->Set("NULL");
@@ -3025,7 +3023,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// AUDIO
 		//////////////////////////////////////////////////////////////////////////
 		bool bAudioInitSuccess = false;
-		if (!startupParams.bPreview && !m_bDedicatedServer && !m_bUIFrameworkMode && !startupParams.bShaderCacheGen &&
+		if (!startupParams.bPreview && !m_env.IsDedicated() && !m_bUIFrameworkMode && !startupParams.bShaderCacheGen &&
 		    (m_sys_audio_disable->GetIVal() == 0))
 		{
 			LOADING_TIME_PROFILE_SECTION_NAMED("AudioSystem initialization");
@@ -3055,7 +3053,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		// RENDERER
 		//////////////////////////////////////////////////////////////////////////
-		if (!startupParams.bSkipRenderer && !m_bDedicatedServer)
+		if (!startupParams.bSkipRenderer && !m_env.IsDedicated())
 		{
 			assert(IsHeapValid());
 			CryLogAlways("Renderer initialization");
@@ -3076,7 +3074,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		else
 		{
 #if CRY_PLATFORM_DESKTOP
-			if (m_bDedicatedServer && !isDaemonMode)
+			if (m_env.IsDedicated() && !isDaemonMode)
 			{
 				m_pNULLRenderAuxGeom = CNULLRenderAuxGeom::Create();
 				m_env.pAuxGeomRenderer = m_pNULLRenderAuxGeom;
@@ -3470,7 +3468,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			if (m_pUserCallback)
 				m_pUserCallback->OnInitProgress("Initializing Dynamic Response System...");
 
-			if (m_bDedicatedServer || !InitDynamicResponseSystem(startupParams))
+			if (m_env.IsDedicated() || !InitDynamicResponseSystem(startupParams))
 			{
 				CryLogAlways("No Dynamic Response System was loaded from a module, will use the NULL implementation.");
 				m_env.pDynamicResponseSystem = new NullDRS::CSystem();

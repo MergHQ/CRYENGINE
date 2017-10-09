@@ -2705,7 +2705,7 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 #endif
 	}
 
-	bool continueRunning;
+	bool continueRunning = true;
 
 	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
 	{

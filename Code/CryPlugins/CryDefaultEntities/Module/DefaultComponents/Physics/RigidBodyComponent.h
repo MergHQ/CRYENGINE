@@ -6,7 +6,6 @@
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
-#include "../Geometry/StaticMeshComponent.h"
 
 class CPlugin_CryDefaultEntities;
 
@@ -46,7 +45,7 @@ namespace Cry
 				// Mark the Area component as incompatible
 				desc.AddComponentInteraction(SEntityComponentRequirements::EType::Incompatibility, "{EC7F145B-D48F-4863-B9C2-3D3E2C8DCC61}"_cry_guid);
 				// Static meshes must be initialized since they need to have slots assigned during physicalization
-				desc.AddComponentInteraction<CStaticMeshComponent>(SEntityComponentRequirements::EType::SoftDependency);
+				desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, "{6DDD0033-6AAA-4B71-B8EA-108258205E29}"_cry_guid);
 
 				desc.AddMember(&CRigidBodyComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
 

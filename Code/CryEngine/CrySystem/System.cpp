@@ -1272,7 +1272,7 @@ void CSystem::SleepIfInactive()
 #endif
 
 	// ProcessSleep()
-	if (m_bDedicatedServer || m_bEditor || gEnv->bMultiplayer)
+	if (m_env.IsDedicated() || m_bEditor || gEnv->bMultiplayer)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
@@ -1317,7 +1317,7 @@ void CSystem::SleepIfNeeded()
 
 	int32 maxFPS = 0;
 
-	if (m_bDedicatedServer)
+	if (m_env.IsDedicated())
 	{
 		const float maxRate = m_svDedicatedMaxRate->GetFVal();
 		maxFPS = int32(maxRate);
@@ -2942,7 +2942,7 @@ void CSystem::DumpMemoryCoverage()
 
 ITextModeConsole* CSystem::GetITextModeConsole()
 {
-	if (m_bDedicatedServer)
+	if (m_env.IsDedicated())
 		return m_pTextModeConsole;
 
 	return 0;

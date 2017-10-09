@@ -175,6 +175,20 @@ inline void set_to_vector(const Set& theSet, Vector& array)
 
 //////////////////////////////////////////////////////////////////////////
 template<typename C, typename V>
+int find_index(const C& container, const V& value)
+{
+	auto it = std::find(container.begin(), container.end(), value);
+	return it == container.end() ? -1 : int(it - container.begin());
+}
+
+template<typename C, typename P>
+int find_index_if(const C& container, const P& pred)
+{
+	auto it = std::find_if(container.begin(), container.end(), pred);
+	return it == container.end() ? -1 : int(it - container.begin());
+}
+
+template<typename C, typename V>
 bool has_value(const C& container, const V& value)
 {
 	auto it = std::find(container.begin(), container.end(), value);

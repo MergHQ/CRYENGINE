@@ -32,7 +32,7 @@ namespace Cry
 		}
 
 		class CCameraComponent
-			: public IEntityComponent
+			: public ICameraComponent
 			, public IHmdDevice::IAsyncCameraCallback
 #ifndef RELEASE
 			, public IEntityComponentPreviewer
@@ -122,6 +122,13 @@ namespace Cry
 			}
 			// ~IAsyncCameraCallback
 
+			// ICameraComponent
+			virtual void DisableAudioListener() final
+			{
+				m_pAudioListener->SetActive(false);
+			}
+			// ~ICameraComponent
+
 		public:
 			CCameraComponent()
 			{
@@ -166,11 +173,6 @@ namespace Cry
 			bool IsActive() const
 			{
 				return m_pCameraManager->IsThisCameraActive(this);
-			}
-
-			void DisableAudioListener()
-			{
-				m_pAudioListener->SetActive(false);
 			}
 
 			virtual void EnableAutomaticActivation(bool bActivate) { m_bActivateOnCreate = bActivate; }

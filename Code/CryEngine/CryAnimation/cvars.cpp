@@ -152,6 +152,7 @@ void Console::Init()
 	ca_DebugTextLayer = 0xffffffff;
 	DefineConstIntCVar(ca_DebugCommandBuffer, 0, VF_CHEAT | VF_DUMPTODISK, "if this is 1, it will print the amount of commands for the blend-buffer");
 	DefineConstIntCVar(ca_DebugAnimationStreaming, 0, VF_CHEAT | VF_DUMPTODISK, "if this is 1, then it shows what animations are streamed in");
+	DefineConstIntCVar(ca_DebugAttachmentsProxies, 0, 0, "draw characters attachments proxies: 0 - disabled; 1 - dynamic proxies; 2 - auxiliary proxies; 4 - cloth proxies; 8 - ragdoll proxies");
 	DefineConstIntCVar(ca_LoadUncompressedChunks, 0, VF_CHEAT, "If this 1, then uncompressed chunks prefer compressed while loading");
 	DefineConstIntCVar(ca_UseMorph, 1, VF_CHEAT, "the morph skinning step is skipped (it's part of overall skinning during rendering)");
 	DefineConstIntCVar(ca_NoAnim, 0, VF_CHEAT, "the animation isn't updated (the characters remain in the same pose)");

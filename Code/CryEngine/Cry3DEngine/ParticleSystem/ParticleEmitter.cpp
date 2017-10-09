@@ -57,7 +57,7 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	m_profilerColor = ColorF(r, g, b);
 
 	if (m_pEffect)
-		m_attributeInstance.Reset(m_pEffect->GetAttributeTable(), EAttributeScope::PerEmitter);
+		m_attributeInstance.Reset(m_pEffect->GetAttributeTable());
 }
 
 CParticleEmitter::~CParticleEmitter()
@@ -134,7 +134,7 @@ void CParticleEmitter::Update()
 	m_pEffectOriginal->Compile();
 	if (m_active && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion)
 	{
-		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable(), EAttributeScope::PerEmitter);
+		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
 		UpdateRuntimes();
 		m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
 	}

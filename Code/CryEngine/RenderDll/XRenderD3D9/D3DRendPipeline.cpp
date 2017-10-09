@@ -2936,6 +2936,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 {
 	PROFILE_LABEL_SCOPE(pRenderView->IsRecursive() ? "SCENE_REC" : "SCENE");
 
+	pRenderView->SetShaderRenderingFlags(nFlags);
+
 	gcpRendD3D->SetCurDownscaleFactor(gcpRendD3D->m_CurViewportScale);
 
 	// Skip scene rendering when device is lost

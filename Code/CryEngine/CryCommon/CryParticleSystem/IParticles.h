@@ -118,7 +118,19 @@ struct SpawnParams
 
 		if (bOverrideSeed)
 		{
-			ar(nSeed, "seed", "Random Seed");
+			if (ar.isEdit())
+			{
+				int seed = nSeed;
+				ar(seed, "seed", "Random Seed");
+				if (!isneg(seed))
+				{
+					nSeed = seed;
+				}
+			}
+			else
+			{
+				ar(nSeed, "seed", "Random Seed");
+			}
 		}
 	}
 };
@@ -209,6 +221,8 @@ struct IParticleAttributes
 
 		ET_Count,
 	};
+
+	virtual ~IParticleAttributes() {}
 
 	virtual void         Reset(const IParticleAttributes* pCopySource = nullptr) = 0;
 	virtual void         Serialize(Serialization::IArchive& ar) = 0;
@@ -360,10 +374,6 @@ struct IParticleEffect : public _i_reference_target_t
 	//! Reloads the effect from the particle database.
 	//! \param bChildren When true, also recursively reloads effect children.
 	virtual void Reload(bool bChildren) = 0;
-
-	// Summary:
-	// Arguments:
-	virtual IParticleAttributes& GetAttributes() = 0;
 
 	// </interfuscator:shuffle>
 };

@@ -88,7 +88,7 @@ SComponentParams::SComponentParams()
 
 void SComponentParams::Serialize(Serialization::IArchive& ar)
 {
-	auto* pComponent = ar.context<CParticleComponent>();
+	auto* pComponent = static_cast<CParticleComponent*>(ar.context<IParticleComponent>());
 	if (!pComponent || !ar.isEdit() || !ar.isOutput())
 		return;
 	char buffer[1024];
@@ -441,7 +441,7 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 		SetName(inputName.c_str());
 	}
 
-	Serialization::SContext context(ar, this);
+	Serialization::SContext context(ar, static_cast<IParticleComponent*>(this));
 	ar(m_componentParams, "Stats", "Component Statistics");
 	ar(m_nodePosition, "nodePos", "Node Position");
 	ar(m_features, "Features", "^");
