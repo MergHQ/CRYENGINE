@@ -118,7 +118,19 @@ struct SpawnParams
 
 		if (bOverrideSeed)
 		{
-			ar(nSeed, "seed", "Random Seed");
+			if (ar.isEdit())
+			{
+				int seed = nSeed;
+				ar(seed, "seed", "Random Seed");
+				if (!isneg(seed))
+				{
+					nSeed = seed;
+				}
+			}
+			else
+			{
+				ar(nSeed, "seed", "Random Seed");
+			}
 		}
 	}
 };
