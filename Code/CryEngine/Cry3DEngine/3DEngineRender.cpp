@@ -830,8 +830,6 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 		CSvoManager::OnFrameStart(passInfo);
 #endif
 
-	passInfo.GetIRenderView()->SetShaderRenderingFlags(nRenderFlags);
-
 	if (passInfo.IsGeneralPass())
 	{
 		if (m_szLevelFolder[0] != 0)

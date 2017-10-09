@@ -605,20 +605,19 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 	int nThreadID = passInfo.ThreadID();
 	CRenderView* pRenderView = passInfo.GetRenderView();
 
-	CCamera cameras[] =
+	std::array<CCamera, 2> cameras =
 	{
-		PrepareCamera(LEFT_EYE,  m_renderer.m_RP.m_TI[nThreadID].m_cam),
-		PrepareCamera(RIGHT_EYE, m_renderer.m_RP.m_TI[nThreadID].m_cam)
+		{
+			PrepareCamera(LEFT_EYE,  m_renderer.m_RP.m_TI[nThreadID].m_cam),
+			PrepareCamera(RIGHT_EYE, m_renderer.m_RP.m_TI[nThreadID].m_cam)
+		}
 	};
 
 	if (!m_bPreviousCameraValid)
 	{
-		m_previousCamera[LEFT_EYE] = cameras[LEFT_EYE];
-		m_previousCamera[RIGHT_EYE] = cameras[RIGHT_EYE];
+		m_previousCameras = cameras;
 		m_bPreviousCameraValid = true;
 	}
-
-
 
 	if (!RequiresSequentialSubmission())
 	{
@@ -634,8 +633,8 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			m_renderer.m_pRT->RC_SetStereoEye(LEFT_EYE);
 			m_renderer.PushProfileMarker("DUAL_EYES");
 
-			pRenderView->SetCameras(cameras, 2);
-			pRenderView->SetPreviousFrameCameras(m_previousCamera, 2);
+			pRenderView->SetCameras(cameras.data(), 2);
+			pRenderView->SetPreviousFrameCameras(m_previousCameras.data(), 2);
 
 			m_renderer.SetCamera(cameras[0]);
 			RenderScene(sceneFlags | sceneFlagsDual, passInfo);
@@ -677,7 +676,7 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 
 			m_renderer.SetCamera(cameras[LEFT_EYE]);
 			pRenderView->SetCameras(&cameras[LEFT_EYE], 1);
-			pRenderView->SetPreviousFrameCameras(&m_previousCamera[LEFT_EYE], 1);
+			pRenderView->SetPreviousFrameCameras(&m_previousCameras[LEFT_EYE], 1);
 
 			RenderScene(sceneFlags | sceneFlagsLeft, passInfo);
 
@@ -696,7 +695,7 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 
 			m_renderer.SetCamera(cameras[RIGHT_EYE]);
 			pRenderView->SetCameras(&cameras[RIGHT_EYE], 1);
-			pRenderView->SetPreviousFrameCameras(&m_previousCamera[RIGHT_EYE], 1);
+			pRenderView->SetPreviousFrameCameras(&m_previousCameras[RIGHT_EYE], 1);
 
 			RenderScene(sceneFlags | sceneFlagsRight, passInfo);
 
@@ -709,8 +708,7 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 		}
 	}
 
-	m_previousCamera[LEFT_EYE] = cameras[LEFT_EYE];
-	m_previousCamera[RIGHT_EYE] = cameras[RIGHT_EYE];
+	m_previousCameras = cameras;
 }
 
 void CD3DStereoRenderer::SubmitFrameToHMD()
@@ -1242,6 +1240,10 @@ void CD3DStereoRenderer::TryInjectHmdCameraAsync(CRenderView* pRenderView)
 		if (renderingFlags & currentEyeFlag)
 		{
 			CCamera newCamera = PrepareCamera(eye, currentCamera);
+
+			static CCamera previousCameras[2];
+			pRenderView->SetPreviousFrameCameras(&previousCameras[eye], 1);
+			previousCameras[eye] = newCamera;
 
 			pRenderView->SetCameras(&newCamera, 1);
 		}

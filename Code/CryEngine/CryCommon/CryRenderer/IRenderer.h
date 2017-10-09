@@ -1535,10 +1535,6 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual void   SetSkipRenderingFlags(uint32 nFlags) = 0;
 	virtual uint32 GetSkipRenderingFlags() const = 0;
 
-	/// @see EShaderRenderingFlags
-	virtual void   SetShaderRenderingFlags(uint32 nFlags) = 0;
-	virtual uint32 GetShaderRenderingFlags() const = 0;
-
 	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) = 0;
 	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) = 0;
 
