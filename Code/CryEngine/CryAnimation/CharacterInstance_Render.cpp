@@ -123,6 +123,12 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 
 	// draw weapon and binded objects
 	m_AttachmentManager.DrawAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
+
+#ifndef _RELEASE
+	// in-game debug rendering of characters attachments proxies 
+	const uint32 uiProxies = (uint32)Console::GetInst().ca_DebugAttachmentsProxies;
+	m_AttachmentManager.DrawProxies(uiProxies ? uiProxies : 0x80);
+#endif
 }
 
 void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix34& RenderMat34, const SRenderingPassInfo& passInfo)
