@@ -1177,6 +1177,8 @@ int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix
 				}
 		pr.pPoints = strided_pointer<Vec3>(new Vec3[--pr.nSegments + 1]);
 		m_auxPhys[j].pauxBoneInfo = new aux_bone_info[(m_auxPhys[j].nBones = pr.nSegments) + 1];
+		if (!m_auxPhys[j].nBones)
+			goto bad_bones;
 		m_auxPhys[j].pVtx = pr.pPoints.data;
 		pr.length = 0;
 		m_auxPhys[j].bTied0 = m_auxPhys[j].bTied1 = false;
@@ -1260,6 +1262,7 @@ int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix
 			}
 		if (!bCloth && k != pr.nSegments)
 		{
+			bad_bones:
 			g_pIPhysicalWorld->DestroyPhysicalEntity(m_auxPhys[j].pPhysEnt);
 
 			delete[] m_auxPhys[j].pauxBoneInfo;
@@ -1402,11 +1405,15 @@ cloth_aux:
 				m_auxPhys[j].pPhysEnt->Action(&atv);
 			}
 
-			Quat qParent = GetPoseData().GetJointAbsolute(getBonePhysParentIndex(m_auxPhys[j].iBoneTiedTo[0], nLod)).q;
-			for (k = 0; k < m_auxPhys[j].nBones; k++)
+			int idxParent = m_auxPhys[j].iBoneTiedTo[0] >= 0 ? getBonePhysParentIndex(m_auxPhys[j].iBoneTiedTo[0], nLod) : -1;
+			if (idxParent >= 0)
 			{
-				m_auxPhys[j].pauxBoneInfo[k].dir0 = !qParent * m_auxPhys[j].pauxBoneInfo[k].dir0;
-				m_auxPhys[j].pauxBoneInfo[k].quat0 = !qParent * m_auxPhys[j].pauxBoneInfo[k].quat0;
+				Quat qParent = GetPoseData().GetJointAbsolute(idxParent).q;
+				for (k = 0; k < m_auxPhys[j].nBones; k++)
+				{
+					m_auxPhys[j].pauxBoneInfo[k].dir0 = !qParent * m_auxPhys[j].pauxBoneInfo[k].dir0;
+					m_auxPhys[j].pauxBoneInfo[k].quat0 = !qParent * m_auxPhys[j].pauxBoneInfo[k].quat0;
+				}
 			}
 
 			if (psb.stiffnessAnim > 0.0f && m_auxPhys[j].nBones)
