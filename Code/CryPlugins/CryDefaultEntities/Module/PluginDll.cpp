@@ -13,6 +13,7 @@
 #include "DefaultComponents/Audio/SwitchComponent.h"
 #include "DefaultComponents/Audio/TriggerComponent.h"
 #include "DefaultComponents/Cameras/CameraComponent.h"
+#include "DefaultComponents/Cameras/VirtualReality/RoomscaleCamera.h"
 #include "DefaultComponents/Constraints/LineConstraint.h"
 #include "DefaultComponents/Constraints/PlaneConstraint.h"
 #include "DefaultComponents/Constraints/PointConstraint.h"
@@ -123,6 +124,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCameraComponent));
 			Cry::DefaultComponents::CCameraComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::VirtualReality::CRoomscaleCameraComponent));
+			Cry::DefaultComponents::VirtualReality::CRoomscaleCameraComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CLineConstraintComponent));
