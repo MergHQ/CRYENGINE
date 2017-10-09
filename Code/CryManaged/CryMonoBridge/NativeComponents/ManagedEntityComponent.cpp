@@ -34,14 +34,18 @@ void CManagedEntityComponent::PreInit(const SInitParams& params)
 
 void CManagedEntityComponent::Initialize()
 {
-	if (m_factory.m_pInitializeMethod != nullptr)
+	// Initialize immediately if level is already loaded, otherwise wait for ENTITY_EVENT_LEVEL_LOADED event
+	if (!gEnv->pSystem->IsLoading())
 	{
-		m_factory.m_pInitializeMethod->Invoke(m_pMonoObject.get());
-	}
+		if (m_factory.m_pInitializeMethod != nullptr)
+		{
+			m_factory.m_pInitializeMethod->Invoke(m_pMonoObject.get());
+		}
 
-	if (m_factory.m_pGameStartMethod != nullptr && !gEnv->IsEditing() && gEnv->pGameFramework->IsGameStarted())
-	{
-		m_factory.m_pGameStartMethod->Invoke(m_pMonoObject.get());
+		if (m_factory.m_pGameStartMethod != nullptr && !gEnv->IsEditing() && gEnv->pGameFramework->IsGameStarted())
+		{
+			m_factory.m_pGameStartMethod->Invoke(m_pMonoObject.get());
+		}
 	}
 }
 
@@ -49,6 +53,14 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 {
 	switch (event.event)
 	{
+		case ENTITY_EVENT_LEVEL_LOADED:
+		{
+			if (m_factory.m_pInitializeMethod != nullptr)
+			{
+				m_factory.m_pInitializeMethod->Invoke(m_pMonoObject.get());
+			}
+		}
+		break;
 		case ENTITY_EVENT_START_GAME:
 			{
 				m_factory.m_pGameStartMethod->Invoke(m_pMonoObject.get());

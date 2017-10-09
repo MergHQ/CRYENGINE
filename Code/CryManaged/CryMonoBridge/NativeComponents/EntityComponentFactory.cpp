@@ -23,7 +23,7 @@ public:
 CManagedEntityComponentFactory::CManagedEntityComponentFactory(std::shared_ptr<CMonoClass> pMonoClass, const CryGUID& guid, const Schematyc::SSourceFileInfo& managedSourceFileInfo, const char* szName, const char* szUiCategory, const char* szUiDescription, const char* szIcon)
 	: Schematyc::CEnvElementBase<Schematyc::IEnvComponent>(guid, pMonoClass->GetName(), managedSourceFileInfo)
 	, m_pClass(pMonoClass)
-	, m_eventMask(0)
+	, m_eventMask(BIT64(ENTITY_EVENT_LEVEL_LOADED))
 {
 	m_classDescription.SetGUID(guid);
 
