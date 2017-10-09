@@ -43,7 +43,6 @@ void CParticleEffect::Compile()
 		return;
 
 	m_numRenderObjects = 0;
-	m_attributeInstance.Reset(m_pAttributes, EAttributeScope::PerEffect);
 	for (auto& component : m_components)
 	{
 		component->m_pEffect = this;

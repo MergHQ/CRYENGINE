@@ -65,7 +65,6 @@ public:
 	virtual void                  UnloadResources() override                                         {}
 	virtual void                  Serialize(XmlNodeRef node, bool bLoading, bool bChildren) override {}
 	virtual void                  Reload(bool bChildren) override                                    {}
-	virtual IParticleAttributes&  GetAttributes() override                                           { return m_attributeInstance; }
 	virtual bool                  IsSubstitutedPfx1() const override                                 { return m_substitutedPfx1; }
 	virtual void                  SetSubstitutedPfx1(bool b) override                                { m_substitutedPfx1 = b; }
 	// ~pfx1 IParticleEmitter
@@ -84,7 +83,6 @@ public:
 private:
 	string             m_name;
 	TAttributeTablePtr m_pAttributes;
-	CAttributeInstance m_attributeInstance;
 	TComponents        m_components;
 	uint               m_numRenderObjects;
 	int                m_editVersion;

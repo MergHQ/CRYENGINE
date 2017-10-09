@@ -19,8 +19,6 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/Color.h>
 
-CRY_PFX2_DBG
-
 CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 {
 
@@ -226,7 +224,7 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		const pfx2::CParticleContainer& container = GetContainer();
 
 		AddParticles(1);
-		CRY_PFX2_UNIT_TEST_ASSERT(container.GetRealId(4) == 0);
+		CRY_PFX2_UNIT_TEST_ASSERT(container.GetRealId(0) == 0);
 		ResetSpawnedParticles();
 
 		ResetAll();
@@ -308,6 +306,47 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 	private:
 		std::unique_ptr<pfx2::CParticleEffect> m_pEffect;
 	};
+
+	CRY_UNIT_TEST(ParticleAttributesTest)
+	{
+		auto pTable = std::make_shared<CAttributeTable>();
+		CAttributeTable& table = *pTable.get();
+
+		SAttributeDesc attr;
+		attr.m_name = "Float";
+		attr.m_defaultValue = -3.0f;
+		attr.m_maxFloat = 1.0f;
+		table.AddAttribute(attr);
+
+		attr.m_name = "Bool";
+		attr.m_defaultValue = false;
+		table.AddAttribute(attr);
+
+		attr.m_name = "Color";
+		attr.m_defaultValue = ColorAttr(50, 100, 150, 255);
+		table.AddAttribute(attr);
+
+		CRY_PFX2_UNIT_TEST_ASSERT(table.GetAttribute(1).GetType() == EAttributeType::Boolean);
+
+		CAttributeInstance inst;
+		inst.Reset(pTable);
+
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetNumAttributes() == 3);
+		uint id = inst.FindAttributeIdByName("Color");
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAttributeType(id) == CAttributeInstance::ET_Color);
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsBoolean(id, false) == true);
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsInteger(id, 0) == 91);
+		CRY_PFX2_UNIT_TEST_ASSERT(IsEquivalent(inst.SetAsFloat(id, 0.5f), 0.5f, 0.002f));
+
+		id = inst.FindAttributeIdByName("Float");
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsInteger(id, 0) == -3);
+
+		inst.SetAsInteger(id, 2);
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsFloat(id, 0.0f) == 1.0f);
+		inst.ResetValue(id);
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsFloat(id, 0.0f) == -3.0f);
+	};
+
 
 	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_USimpleEffect, CParticleEffectTests)
 	{
