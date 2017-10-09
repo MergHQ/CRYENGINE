@@ -710,7 +710,7 @@ void CSystem::Render()
 	//draw
 	m_env.p3DEngine->PreWorldStreamUpdate(m_ViewCamera);
 
-	if (m_pProcess && !m_bDedicatedServer)
+	if (m_pProcess && !m_env.IsDedicated())
 	{
 		if (m_pProcess->GetFlags() & PROC_3DENGINE)
 		{
