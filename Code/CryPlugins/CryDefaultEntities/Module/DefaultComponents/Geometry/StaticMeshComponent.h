@@ -36,7 +36,7 @@ public:
 
 		desc.AddMember(&CStaticMeshComponent::m_type, 'type', "Type", "Type", "Determines the behavior of the static mesh", EMeshType::RenderAndCollider);
 
-		desc.AddMember(&CStaticMeshComponent::m_filePath, 'file', "FilePath", "File", "Determines the CGF to load", "%ENGINE%/EngineAssets/Objects/Default.cgf");
+		desc.AddMember(&CStaticMeshComponent::m_filePath, 'file', "FilePath", "File", "Determines the CGF to load", "%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf");
 		desc.AddMember(&CStaticMeshComponent::m_materialPath, 'mat', "Material", "Material", "Specifies the override material for the selected object", "");
 
 		desc.AddMember(&CStaticMeshComponent::m_renderParameters, 'rend', "Render", "Rendering Settings", "Settings for the rendered representation of the component", SRenderParameters());
@@ -54,7 +54,7 @@ public:
 	virtual void SetMeshType(EMeshType type) { SetType(type); }
 
 protected:
-	Schematyc::GeomFileName m_filePath = "%ENGINE%/EngineAssets/Objects/Default.cgf";
+	Schematyc::GeomFileName m_filePath = "%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf";
 	Schematyc::MaterialFileName m_materialPath;
 
 	_smart_ptr<IStatObj>    m_pCachedStatObj = nullptr;

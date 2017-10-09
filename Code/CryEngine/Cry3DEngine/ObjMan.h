@@ -28,7 +28,7 @@
 
 #define ENTITY_MAX_DIST_FACTOR  100
 #define MAX_VALID_OBJECT_VOLUME (10000000000.f)
-#define DEFAULT_CGF_NAME        ("%ENGINE%\\EngineAssets\\Objects\\Default.cgf")
+#define DEFAULT_CGF_NAME        ("%ENGINE%\\EngineAssets\\Objects\\primitive_sphere.cgf")
 
 struct CStatObj;
 struct IIndoorBase;
