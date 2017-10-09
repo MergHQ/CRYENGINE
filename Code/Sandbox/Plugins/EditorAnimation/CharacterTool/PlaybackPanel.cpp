@@ -419,6 +419,7 @@ void PlaybackPanel::OnPlaybackTimeChanged()
 	{
 		m_duration = duration;
 		durationChanged = true;
+		ResetTimelineZoom();
 	}
 
 	UpdateTimeUnitsUI(timeChanged, durationChanged);
@@ -579,6 +580,11 @@ void PlaybackPanel::Serialize(Serialization::IArchive& ar)
 		UpdateTimeUnitsUI(true, true);
 		m_timeUnitsCombo->SetChecked(int(m_timeUnits));
 	}
+}
+
+void PlaybackPanel::ResetTimelineZoom()
+{
+	m_timeline->ZoomToTimeRange(0.0f, m_duration);
 }
 
 void PlaybackPanel::WriteTimeline()
