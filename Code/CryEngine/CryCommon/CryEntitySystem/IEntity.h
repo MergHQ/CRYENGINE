@@ -51,6 +51,27 @@ namespace Schematyc
 #include <CryNetwork/SerializeFwd.h>
 //////////////////////////////////////////////////////////////////////////
 
+struct SChildAttachParams
+{
+	SChildAttachParams()
+		: m_nAttachFlags(0)
+		, m_target(NULL)
+	{}
+
+	SChildAttachParams(const int nAttachFlags)
+		: m_nAttachFlags(nAttachFlags)
+		, m_target(NULL)
+	{}
+
+	SChildAttachParams(const int nAttachFlags, const char* target)
+		: m_nAttachFlags(nAttachFlags)
+		, m_target(target)
+	{}
+
+	int         m_nAttachFlags;
+	const char* m_target;
+};
+
 struct SEntitySpawnParams
 {
 	//! The Entity unique identifier (EntityId).
@@ -84,11 +105,16 @@ struct SEntitySpawnParams
 	//! More EntityIDs and save game might conflict with dynamic ones).
 	bool  bStaticEntityId;
 
-	Vec3  vPosition;                  //!< Initial entity position (Local space).
-	Quat  qRotation;                  //!< Initial entity rotation (Local space).
-	Vec3  vScale;                     //!< Initial entity scale (Local space).
+	Vec3  vPosition;                  //!< Initial entity position in world space if pParent is not specified, otherwise local.
+	Quat  qRotation;                  //!< Initial entity rotation in world space if pParent is not specified, otherwise local.
+	Vec3  vScale;                     //!< Initial entity scale in world space if pParent is not specified, otherwise local.
 	void* pUserData;                  //!< Any user defined data. It will be available for container when it will be created.
 	//////////////////////////////////////////////////////////////////////////
+
+	//! Used to set the parent of the spawned entity before initialization.
+	IEntity* pParent;
+	//! Used when pParent is specified, same behavior as pParent->AttachChild(this, attachmentParams).
+	SChildAttachParams attachmentParams;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Optional properties table.
@@ -112,6 +138,7 @@ struct SEntitySpawnParams
 		, pUserData(0)
 		, pPropertiesTable(0)
 		, pPropertiesInstanceTable(0)
+		, pParent(nullptr)
 	{
 		qRotation.SetIdentity();
 	}
@@ -254,27 +281,6 @@ struct IEntityLink
 	EntityId     entityId;                              //!< Entity targeted by the link.
 	EntityGUID   entityGuid;                            //!< Entity targeted by the link.
 	IEntityLink* next;                                  //!< Pointer to the next link, or NULL if last link.
-};
-
-struct SChildAttachParams
-{
-	SChildAttachParams()
-		: m_nAttachFlags(0)
-		, m_target(NULL)
-	{}
-
-	SChildAttachParams(const int nAttachFlags)
-		: m_nAttachFlags(nAttachFlags)
-		, m_target(NULL)
-	{}
-
-	SChildAttachParams(const int nAttachFlags, const char* target)
-		: m_nAttachFlags(nAttachFlags)
-		, m_target(target)
-	{}
-
-	int         m_nAttachFlags;
-	const char* m_target;
 };
 
 //! Parameters passed to IEntity::Physicalize function.
