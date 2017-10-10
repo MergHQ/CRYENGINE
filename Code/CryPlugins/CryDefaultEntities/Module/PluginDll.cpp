@@ -44,6 +44,7 @@
 #include "DefaultComponents/Physics/ThrusterComponent.h"
 #include "DefaultComponents/Physics/Vehicles/VehicleComponent.h"
 #include "DefaultComponents/Physics/Vehicles/WheelComponent.h"
+#include "DefaultComponents/Physics/VirtualReality/VirtualRealityInteractionComponent.h"
 #include "DefaultComponents/Utilities/ChildEntityComponent.h"
 #include "DefaultComponents/Cameras/CameraManager.h"
 
@@ -244,6 +245,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CWheelComponent));
 			Cry::DefaultComponents::CWheelComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::VirtualReality::CInteractionComponent));
+			Cry::DefaultComponents::VirtualReality::CInteractionComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CChildEntityComponent));
