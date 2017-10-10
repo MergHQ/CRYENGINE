@@ -8,41 +8,47 @@
 
 #include "SensorSystem.h"
 
-const char* CCrySensorSystemPlugin::GetName() const
+namespace Cry
 {
-	return "CrySensorSystem";
-}
-
-const char* CCrySensorSystemPlugin::GetCategory() const
-{
-	return "Plugin";
-}
-
-bool CCrySensorSystemPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
-{
-	m_pSensorSystem.reset(new CSensorSystem());
-	ICryPlugin::SetUpdateFlags(EUpdateType_Update);
-	return true;
-}
-
-ISensorSystem& CCrySensorSystemPlugin::GetSensorSystem() const
-{
-	CRY_ASSERT(m_pSensorSystem);
-	return *m_pSensorSystem.get();
-}
-
-void CCrySensorSystemPlugin::OnPluginUpdate(EPluginUpdateType updateType)
-{
-	switch (updateType)
+	namespace SensorSystem
 	{
-	case IPluginUpdateListener::EUpdateType_Update:
+		const char* CCrySensorSystemPlugin::GetName() const
 		{
-			m_pSensorSystem->Update();
-			break;
+			return "CrySensorSystem";
 		}
+
+		const char* CCrySensorSystemPlugin::GetCategory() const
+		{
+			return "Plugin";
+		}
+
+		bool CCrySensorSystemPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
+		{
+			m_pSensorSystem.reset(new CSensorSystem());
+			ICryPlugin::SetUpdateFlags(EUpdateType_Update);
+			return true;
+		}
+
+		ISensorSystem& CCrySensorSystemPlugin::GetSensorSystem() const
+		{
+			CRY_ASSERT(m_pSensorSystem);
+			return *m_pSensorSystem.get();
+		}
+
+		void CCrySensorSystemPlugin::OnPluginUpdate(EPluginUpdateType updateType)
+		{
+			switch (updateType)
+			{
+				case IPluginUpdateListener::EUpdateType_Update:
+				{
+					m_pSensorSystem->Update();
+					break;
+				}
+			}
+		}
+
+		CRYREGISTER_SINGLETON_CLASS(CCrySensorSystemPlugin)
 	}
 }
-
-CRYREGISTER_SINGLETON_CLASS(CCrySensorSystemPlugin)
 
 #include <CryCore/CrtDebugStats.h>
