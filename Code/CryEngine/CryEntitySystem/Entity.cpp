@@ -238,25 +238,23 @@ bool CEntity::Init(SEntitySpawnParams& params)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Init: %s", params.sName ? params.sName : "(noname)");
 
-	{
-		bool bIsPreview = (params.nFlagsExtended & ENTITY_FLAG_EXTENDED_PREVIEW) != 0;
+	const bool isPreview = (params.nFlagsExtended & ENTITY_FLAG_EXTENDED_PREVIEW) != 0;
 
-		if (bIsPreview)
-		{
-			m_simulationMode = Schematyc::ESimulationMode::Preview;
-		}
-		else if (gEnv->IsEditing() && !gEnv->pSystem->IsLoading())
-		{
-			m_simulationMode = EEntitySimulationMode::Editor;
-		}
-		else if (gEnv->pGameFramework->IsGameStarted())
-		{
-			m_simulationMode = EEntitySimulationMode::Game;
-		}
-		else
-		{
-			m_simulationMode = EEntitySimulationMode::Idle;
-		}
+	if (isPreview)
+	{
+		m_simulationMode = Schematyc::ESimulationMode::Preview;
+	}
+	else if (gEnv->IsEditing() && !gEnv->pSystem->IsLoading())
+	{
+		m_simulationMode = EEntitySimulationMode::Editor;
+	}
+	else if (gEnv->pGameFramework->IsGameStarted())
+	{
+		m_simulationMode = EEntitySimulationMode::Game;
+	}
+	else
+	{
+		m_simulationMode = EEntitySimulationMode::Idle;
 	}
 
 	CEntityClass* pClass = static_cast<CEntityClass*>(params.pClass);
@@ -274,6 +272,17 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		{
 			return false;
 		}
+	}
+
+	if (params.pParent != nullptr)
+	{
+		static_cast<CEntity*>(params.pParent)->AttachChild(this, params.attachmentParams);
+		SetLocalTM(Matrix34::Create(params.vScale, params.qRotation, params.vPosition));
+
+		// Reset the (from now on assumed to be world space) coordinates
+		params.vScale = Vec3(1.f);
+		params.qRotation = IDENTITY;
+		params.vPosition = ZERO;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
