@@ -28,6 +28,10 @@
             "DefaultComponents/Cameras/CameraManager.h", 
             "DefaultComponents/Cameras/ICameraManager.h"
         ], 
+        "Cameras/VirtualReality": [
+            "DefaultComponents/Cameras/VirtualReality/RoomscaleCamera.cpp", 
+            "DefaultComponents/Cameras/VirtualReality/RoomscaleCamera.h"
+        ], 
         "Constraints": [
             "DefaultComponents/Constraints/PointConstraint.cpp", 
             "DefaultComponents/Constraints/PointConstraint.h", 
