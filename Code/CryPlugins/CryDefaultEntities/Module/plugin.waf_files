@@ -157,6 +157,10 @@
             "DefaultComponents/Physics/Vehicles/WheelComponent.cpp", 
             "DefaultComponents/Physics/Vehicles/WheelComponent.h"
         ], 
+        "Physics/VirtualReality": [
+            "DefaultComponents/Physics/VirtualReality/VirtualRealityInteractionComponent.cpp", 
+            "DefaultComponents/Physics/VirtualReality/VirtualRealityInteractionComponent.h"
+        ], 
         "Root": [
             "PluginDll.cpp", 
             "PluginDll.h", 
