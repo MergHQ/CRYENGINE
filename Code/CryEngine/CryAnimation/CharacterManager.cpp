@@ -4031,7 +4031,7 @@ void CharacterManager::RenderDebugInstances(const SRenderingPassInfo& passInfo)
 		if (pMtl)
 			rp.pMaterial = pMtl;
 
-		pExampleInst->Render(rp, QuatTS(IDENTITY), passInfo);
+		pExampleInst->Render(rp, passInfo);
 	}
 }
 

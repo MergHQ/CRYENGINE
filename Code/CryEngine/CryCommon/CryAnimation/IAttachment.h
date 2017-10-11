@@ -651,7 +651,7 @@ struct CSKELAttachment : public IAttachmentObject
 		rParams.pMaterial = (IMaterial*)(m_pCharInstance ? m_pCharInstance->GetIMaterial() : 0);
 		if (m_pReplacementMaterial)
 			rParams.pMaterial = m_pReplacementMaterial;
-		m_pCharInstance->Render(rParams, QuatTS(IDENTITY), passInfo);
+		m_pCharInstance->Render(rParams, passInfo);
 		rParams.pMaterial = pPrev;
 	};
 	virtual void        ProcessAttachment(IAttachment* pIAttachment)  override {}

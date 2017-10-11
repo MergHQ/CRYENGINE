@@ -559,7 +559,7 @@ void CPreviewModelCtrl::RenderObject(IMaterial* pMaterial, SRenderingPassInfo& p
 		m_pEntity->Render(rp, passInfo);
 
 	if (m_pCharacter)
-		m_pCharacter->Render(rp, QuatTS(IDENTITY), passInfo);
+		m_pCharacter->Render(rp, passInfo);
 
 	if (m_pEmitter)
 	{

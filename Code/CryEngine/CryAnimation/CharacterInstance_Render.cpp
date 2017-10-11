@@ -22,7 +22,7 @@ CLodValue CCharInstance::ComputeLod(int wantedLod, const SRenderingPassInfo& pas
 }
 
 //! Render object ( register render elements into renderer )
-void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& Offset, const SRenderingPassInfo& passInfo)
+void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderingPassInfo& passInfo)
 {
 	if (GetFlags() & CS_FLAG_COMPOUND_BASE)
 	{
@@ -47,7 +47,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 
 	assert(RendParams.pMatrix);
 
-	Matrix34 RenderMat34 = *RendParams.pMatrix * Matrix34(Offset);
+	const Matrix34& RenderMat34 = *RendParams.pMatrix;
 
 	//f32 axisX = RenderMat34.GetColumn0().GetLength();
 	//f32 axisY = RenderMat34.GetColumn1().GetLength();

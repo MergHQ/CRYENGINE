@@ -1070,5 +1070,4 @@ struct IGeomCacheRenderNode : public IRenderNode
 struct ICharacterRenderNode : public IRenderNode
 {
 	virtual void SetCharacter(struct ICharacterInstance* pCharacter) = 0;
-	virtual void SetCharacterRenderOffset(const QuatTS& renderOffset) = 0;
 };
