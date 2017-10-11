@@ -125,6 +125,7 @@ enum class EEntityComponentFlags : uint32
 	ServerOnly        = BIT(12), //!< This component can only be loaded when we are running as local or dedicated server
 	ClientOnly        = BIT(13), //!< This component can only be loaded when we are running as a client, never on a dedicated server
 	HiddenFromUser    = BIT(14), //!< This component will not be shown to the user
+	NoCreationOffset  = BIT(15), //!< Disables the creation offset in sandbox. The sandbox uses the bounding box radius as an offset to place new entities so they don't clip into the terrain.
 };
 typedef CEnumFlags<EEntityComponentFlags> EntityComponentFlags;
 

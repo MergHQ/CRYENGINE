@@ -161,8 +161,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			ICharacterRenderNode* pCharacterRenderNode = static_cast<ICharacterRenderNode*>(gEnv->p3DEngine->CreateRenderNode(eERType_Character));
 			pCharacterRenderNode->SetOwnerEntity(m_pEntity);
 			pCharacterRenderNode->SetCharacter(GetCharacter());
-			pCharacterRenderNode->SetCharacterRenderOffset(QuatTS(m_localTM));
-			pCharacterRenderNode->SetMatrix(m_pEntity->m_worldTM);
+			pCharacterRenderNode->SetMatrix(m_worldTM);
 			m_pRenderNode = pCharacterRenderNode;
 		}
 	}
@@ -214,15 +213,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 		m_pRenderNode->SetRndFlags(renderNodeFlags);
 
 		// Update render node location
-		if (!GetCharacter())
-		{
-			m_pRenderNode->SetMatrix(m_worldTM);
-		}
-		else
-		{
-			// For characters local matrix is not used
-			m_pRenderNode->SetMatrix(m_pEntity->m_worldTM);
-		}
+		m_pRenderNode->SetMatrix(m_worldTM);
 
 		if (!m_bRegisteredRenderNode)
 		{
@@ -282,15 +273,7 @@ void CEntitySlot::OnXForm(int nWhyFlags)
 
 	if (m_pRenderNode)
 	{
-		if (!GetCharacter())
-		{
-			m_pRenderNode->SetMatrix(m_worldTM);
-		}
-		else
-		{
-			// For characters local matrix is not used
-			m_pRenderNode->SetMatrix(m_pEntity->m_worldTM);
-		}
+		m_pRenderNode->SetMatrix(m_worldTM);
 
 		if (nWhyFlags & ENTITY_XFORM_EDITOR)
 		{
@@ -420,11 +403,6 @@ void CEntitySlot::SetLocalTM(const Matrix34& localTM)
 	m_localTM = localTM;
 	ComputeWorldTransform();
 
-	if (GetCharacter() && m_pRenderNode)
-	{
-		ICharacterRenderNode* pCharacterRenderNode = static_cast<ICharacterRenderNode*>(m_pRenderNode);
-		pCharacterRenderNode->SetCharacterRenderOffset(QuatTS(m_localTM));
-	}
 	OnXForm(0);
 }
 

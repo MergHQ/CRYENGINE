@@ -515,11 +515,7 @@ struct ICharacterInstance : IMeshObj
 
 	//! Draw the character using specified rendering parameters.
 	//! \param RendParams Rendering parameters.
-	virtual void Render(const SRendParams& RendParams, const QuatTS& Offset, const SRenderingPassInfo& passInfo) = 0;
-	virtual void Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo) override
-	{
-		Render(RendParams, QuatTS(IDENTITY), passInfo);
-	}
+	virtual void Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo) = 0;
 
 	//! Set rendering flags defined in ECharRenderFlags for this character instance
 	//! \param nFlags Rendering flags

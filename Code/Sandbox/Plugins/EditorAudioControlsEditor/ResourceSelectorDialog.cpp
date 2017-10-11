@@ -148,24 +148,19 @@ void CResourceSelectorDialog::UpdateSelectedControl()
 {
 	if (m_pAssetsManager != nullptr)
 	{
-		QModelIndexList const indexes = m_pTreeView->selectionModel()->selectedIndexes();
+		QModelIndex const& index = m_pTreeView->currentIndex();
 
-		if (!indexes.empty())
+		if (index.isValid())
 		{
-			QModelIndex const& index = indexes[0];
+			CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
+			m_selectionIsValid = ((pAsset != nullptr) && (pAsset->GetType() == m_eType));
 
-			if (index.isValid())
+			if (m_selectionIsValid)
 			{
-				CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
-
-				if ((pAsset != nullptr) && pAsset->GetType() == m_eType)
-				{
-					s_previousControlName = pAsset->GetName();
-				}
-
-				m_selectionIsValid = ((pAsset != nullptr) && (pAsset->GetType() != EItemType::Folder) && (pAsset && pAsset->GetType() != EItemType::Library));
-				m_pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(m_selectionIsValid);
+				s_previousControlName = pAsset->GetName();
 			}
+
+			m_pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(m_selectionIsValid);
 		}
 	}
 }

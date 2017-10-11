@@ -1993,7 +1993,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 	const SRenderingPassInfo& passInfo = *context.passInfo;
 	gEnv->p3DEngine->PrecacheCharacter(NULL, 1.f, pInstanceBase, pInstanceBase->GetIMaterial(), m_LocalEntityMat, 0, 1.f, 4, true, passInfo);
 	pInstanceBase->SetViewdir(context.camera->GetViewdir());
-	pInstanceBase->Render(rp, QuatTS(IDENTITY), passInfo);
+	pInstanceBase->Render(rp, passInfo);
 
 	// draw DCC tool origin
 	if (m_displayOptions->animation.showDccToolOrigin)

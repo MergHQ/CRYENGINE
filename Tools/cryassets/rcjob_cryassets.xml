@@ -25,12 +25,6 @@
  <Job input="*.xml" assettypes="xml,Xml" />
 </AssetsJob>
 
- <!-- Levels -->
-<LevelsJob>
- <Job overwriteextension="cryasset" sourceroot="${src}/levels" input="*.cry" assettypes="cry,Level" />
-</LevelsJob>
-
 <Run Job="AssetsJob"/>
-<Run Job="LevelsJob"/>
 
 </RCJobs>
