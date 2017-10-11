@@ -293,6 +293,8 @@ void CAudioControlsLoader::LoadScopes()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
 {
+	// TODO: consider moving the file enumeration to a background thread to speed up the editor startup time.
+
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
 	intptr_t const handle = pCryPak->FindFirst(sLevelsFolder + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
@@ -311,9 +313,7 @@ void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
 				}
 				else
 				{
-					string const& extension = GetExt(name);
-
-					if (extension == "cry")
+					if (strcmp(GetExt(name), "level") == 0)
 					{
 						RemoveExtension(name);
 						m_pAssetsManager->AddScope(name);
