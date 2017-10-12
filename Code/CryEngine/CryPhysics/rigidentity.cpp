@@ -685,6 +685,8 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 
 			if (action->iSource!=1) {
 				m_bAwake = 1;
+				if (m_pWorld->m_vars.idEntBreakOnAwake==m_id)
+					DoBreak
 				if (m_iSimClass==1) {
 					m_iSimClass = 2;	m_pWorld->RepositionEntity(this, 2);
 				}
@@ -1167,10 +1169,10 @@ int CRigidEntity::Awake(int bAwake,int iSource)
 		{
 			PREFAST_ASSUME(m_pColliders[i]);
 			if (m_pColliders[i]!=this && m_pColliders[i]->GetMassInv()>0)
-			{
 				m_pColliders[i]->Awake();
-			}
 		}
+		if (m_pWorld->m_vars.idEntBreakOnAwake==m_id)
+			DoBreak
 	}	else
 		m_bAwake = bAwake;
 	return m_iSimClass;

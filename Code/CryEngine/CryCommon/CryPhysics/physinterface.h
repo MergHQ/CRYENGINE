@@ -2903,6 +2903,7 @@ struct PhysicsVars : SolverSettings
 	float breakageMinAxisInertia; //!< For procedural breaking, each axis must have a minium inertia compared to the axis with the largest inertia (0.01-1.00)
 
 	int   bForceSyncPhysics;
+	int   idEntBreakOnAwake;
 };
 
 struct ray_hit
