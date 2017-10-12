@@ -16,20 +16,39 @@ namespace pfx2
 namespace
 {
 	const uint numTypes = IParticleAttributes::ET_Count;
-	typedef SAttributeValue(*TAttribConverterFn)(SAttributeValue);
+	typedef IParticleAttributes::TValue (*TAttribConverterFn)(const IParticleAttributes::TValue&);
 
 	template<typename TIn, typename TOut>
-	SAttributeValue ConvertAttrib(SAttributeValue data)
+	IParticleAttributes::TValue ConvertAttrib(const IParticleAttributes::TValue& data)
 	{
 		return TOut(data.get<TIn>());
 	}
 
+	template<typename TIn, typename TMid, typename TOut>
+	IParticleAttributes::TValue ConvertAttr3(const IParticleAttributes::TValue& data)
+	{
+		return TOut(TMid(data.get<TIn>()));
+	}
+
+	// A specialized color type, with built-in conversion to/from other attribute types
+	struct ColorAttr : ColorB
+	{
+		ColorAttr(ColorB in)   : ColorB(in) {}
+		ColorAttr(bool in)     { r = g = b = in ? 0xff : 0x00; a = 0xff; }
+		ColorAttr(int in)      { r = g = b = crymath::clamp(in, 0, 0xff); a = 0xff; }
+		ColorAttr(float in)    { r = g = b = float_to_ufrac8(in); a = 0xff; }
+
+		operator bool() const  { return r + g + b > 0; }
+		operator int() const   { return int_round(Luminance()); }
+		operator float() const { return Luminance() / 255.0f; }
+	};
+
 	TAttribConverterFn s_AttributeConverterTable[numTypes][numTypes] =
 	{
-		{ ConvertAttrib<bool, bool>      , ConvertAttrib<bool, int>      , ConvertAttrib<bool, float>      , ConvertAttrib<bool, ColorAttr>   },
-		{ ConvertAttrib<int, bool>       , ConvertAttrib<int, int>       , ConvertAttrib<int, float>       , ConvertAttrib<int, ColorAttr>    },
-		{ ConvertAttrib<float, bool>     , ConvertAttrib<float, int>     , ConvertAttrib<float, float>     , ConvertAttrib<float, ColorAttr>  },
-		{ ConvertAttrib<ColorAttr, bool> , ConvertAttrib<ColorAttr, int> , ConvertAttrib<ColorAttr, float> , ConvertAttrib<ColorAttr, ColorAttr> }
+		{ ConvertAttrib<bool, bool>      , ConvertAttrib<bool, int>      , ConvertAttrib<bool, float>      , ConvertAttr3<bool, ColorAttr, ColorB>   },
+		{ ConvertAttrib<int, bool>       , ConvertAttrib<int, int>       , ConvertAttrib<int, float>       , ConvertAttr3<int, ColorAttr, ColorB>    },
+		{ ConvertAttrib<float, bool>     , ConvertAttrib<float, int>     , ConvertAttrib<float, float>     , ConvertAttr3<float, ColorAttr, ColorB>  },
+		{ ConvertAttr3<ColorB, ColorAttr, bool> , ConvertAttr3<ColorB, ColorAttr, int> , ConvertAttr3<ColorB, ColorAttr, float> , ConvertAttrib<ColorB, ColorB> }
 	};
 	
 	struct AttributeEditSerializer
@@ -40,9 +59,9 @@ namespace
 		void Serialize(IArchive& ar)
 		{
 			const SAttributeDesc& desc = m_pAttributes->GetDesc(m_index);
-			SAttributeValue value = m_pAttributes->GetValue(m_index);
+			auto value = m_pAttributes->GetValue(m_index);
 
-			value.SerializeValue(ar, desc.GetType());
+			value.Serialize(ar, desc.GetType(), "Value", "^");
 			if (ar.isInput())
 				m_pAttributes->SetValue(m_index, value);
 
@@ -56,40 +75,6 @@ namespace
 			m_pAttributes->ResetValue(m_index);
 		}
 	};
-}
-
-template<typename T>
-void SAttributeValue::SerializeValue(IArchive& ar, cstr name, cstr label)
-{
-	const T* pVal = get_if<T>();
-	T val = pVal ? *pVal : T();
-
-	ar(val, name, label);
-
-	if (ar.isInput())
-		*this = val;
-}
-
-void SAttributeValue::SerializeValue(IArchive& ar, EAttributeType type)
-{
-	switch (type)
-	{
-	case EAttributeType::Boolean:
-		return SerializeValue<bool>(ar, "Value", "^");
-	case EAttributeType::Integer:
-		return SerializeValue<int>(ar, "Value", "^");
-	case EAttributeType::Float:
-		return SerializeValue<float>(ar, "Value", "^");
-	case EAttributeType::Color:
-		return SerializeValue<ColorAttr>(ar, "Value", "^");
-	}
-}
-
-void SAttributeValue::Serialize(IArchive& ar)
-{
-	EAttributeType type = GetType();
-	ar(type, "Type", "^>85>");
-	SerializeValue(ar, type);
 }
 
 void SAttributeDesc::Serialize(IArchive& ar)
@@ -254,59 +239,6 @@ const SAttributeDesc& CAttributeInstance::GetDesc(uint id) const
 	return emptyDesc;
 }
 
-void CAttributeInstance::SetAsBoolean(TAttributeId id, bool value)
-{
-	SetValueAs(id, value);
-}
-
-bool CAttributeInstance::GetAsBoolean(TAttributeId id, bool defaultValue) const
-{
-	return GetValueAs(id, defaultValue);
-}
-
-int CAttributeInstance::SetAsInteger(TAttributeId id, int value)
-{
-	return SetValueAs(id, value);
-}
-
-int CAttributeInstance::GetAsInteger(TAttributeId id, int defaultValue) const
-{
-	return GetValueAs(id, defaultValue);
-}
-
-float CAttributeInstance::SetAsFloat(TAttributeId id, float value)
-{
-	return SetValueAs(id, value);
-}
-
-float CAttributeInstance::GetAsFloat(TAttributeId id, float defaultValue) const
-{
-	return GetValueAs(id, defaultValue);
-}
-
-void CAttributeInstance::SetAsColor(TAttributeId id, ColorB value)
-{
-	SetValueAs(id, ColorAttr(value));
-}
-
-void CAttributeInstance::SetAsColor(TAttributeId id, ColorF value)
-{
-	SetValueAs(id, ColorAttr(value));
-}
-
-ColorB CAttributeInstance::GetAsColorB(TAttributeId id, ColorB defaultValue) const
-{
-	return GetValueAs(id, ColorAttr(defaultValue));
-}
-
-ColorF CAttributeInstance::GetAsColorF(TAttributeId id, ColorF defaultValue) const
-{
-	if (id >= GetNumAttributes())
-		return defaultValue;
-	const ColorB color = GetValueAs(id, ColorAttr(defaultValue));
-	return ColorF(color.pack_abgr8888());
-}
-
 SAttributeEdit* CAttributeInstance::FindEditById(TAttributeId id)
 {
 	const CCryName& name = GetDesc(id).m_name;
@@ -317,21 +249,31 @@ SAttributeEdit* CAttributeInstance::FindEditById(TAttributeId id)
 	return editId >= 0 ? &m_attributesEdit[editId] : nullptr;
 }
 
-SAttributeValue CAttributeInstance::GetValue(TAttributeId id) const
+auto CAttributeInstance::GetValue(TAttributeId id) const -> const TValue&
 {
 	if (const auto* pEdit = FindEditById(id))
 		return pEdit->m_value;
 	return GetDesc(id).m_defaultValue;
 }
 
-void CAttributeInstance::SetValue(TAttributeId id, const SAttributeValue& input)
+auto CAttributeInstance::GetValue(TAttributeId id, const TValue& defaultValue) const -> TValue
 {
 	if (id >= GetNumAttributes())
-		return;
+		return defaultValue;
+
+	const TValue& value = GetValue(id);
+	TAttribConverterFn converter = s_AttributeConverterTable[value.index()][defaultValue.index()];
+	return converter(value);
+}
+
+bool CAttributeInstance::SetValue(TAttributeId id, const TValue& input)
+{
+	if (id >= GetNumAttributes())
+		return false;
 
 	const SAttributeDesc& desc = GetDesc(id);
 	TAttribConverterFn converter = s_AttributeConverterTable[input.index()][(uint)desc.GetType()];
-	SAttributeValue output = converter(input);
+	TValue output = converter(input);
 
 	if (output.get_if<int>())
 	{
@@ -348,6 +290,7 @@ void CAttributeInstance::SetValue(TAttributeId id, const SAttributeValue& input)
 		pEdit->m_value = output;
 	else
 		m_attributesEdit.emplace_back(GetDesc(id).m_name, output);
+	return true;
 }
 
 void CAttributeInstance::ResetValue(TAttributeId id)
@@ -357,28 +300,6 @@ void CAttributeInstance::ResetValue(TAttributeId id)
 	{
 		return edit.m_name == name;
 	});
-}
-
-SAttributeValue CAttributeInstance::GetValue(TAttributeId id, SAttributeValue defaultValue) const
-{
-	if (id >= GetNumAttributes())
-		return defaultValue;
-
-	SAttributeValue value = GetValue(id);
-	TAttribConverterFn converter = s_AttributeConverterTable[value.index()][defaultValue.index()];
-	return converter(value);
-}
-
-template<typename T> T CAttributeInstance::SetValueAs(TAttributeId id, T value)
-{
-	SAttributeValue input = value;
-	SetValue(id, input);
-
-	SAttributeValue output = GetValue(id);
-	TAttribConverterFn converter = s_AttributeConverterTable[output.index()][input.index()];
-	output = converter(output);
-
-	return output.get<T>();
 }
 
 bool CAttributeReference::Serialize(Serialization::IArchive& ar, cstr name, cstr label)
