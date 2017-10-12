@@ -194,6 +194,7 @@ void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
 			BroadcastPopulateInspector();
 		}
 	}
+	CAssetEditor::OnLayoutChange(state);
 }
 
 bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
