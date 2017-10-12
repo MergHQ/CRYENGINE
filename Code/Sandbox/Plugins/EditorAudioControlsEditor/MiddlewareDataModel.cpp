@@ -3,10 +3,10 @@
 #include "StdAfx.h"
 
 #include "MiddlewareDataModel.h"
-#include "IAudioSystemEditor.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 
+#include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 #include <QtUtil.h>
@@ -90,8 +90,10 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 					{
 					case Qt::DisplayRole:
 						return (const char*)pItem->GetName();
+						break;
 					case Qt::DecorationRole:
 						return CryIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
+						break;
 					case Qt::ForegroundRole:
 						if (pItem->IsLocalised())
 						{
@@ -115,12 +117,19 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 						break;
 					case static_cast<int>(EMiddlewareDataAttributes::Type):
 						return pItem->GetType();
+						break;
 					case static_cast<int>(EMiddlewareDataAttributes::Connected):
 						return pItem->IsConnected();
+						break;
 					case static_cast<int>(EMiddlewareDataAttributes::Placeholder):
 						return pItem->IsPlaceholder();
+						break;
 					case static_cast<int>(EMiddlewareDataAttributes::Localized):
 						return pItem->IsLocalised();
+						break;
+					case static_cast<int>(EMiddlewareDataAttributes::Id) :
+						return pItem->GetId();
+						break;
 					}
 				}
 				break;

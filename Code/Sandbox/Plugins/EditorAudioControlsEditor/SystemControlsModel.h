@@ -17,7 +17,8 @@ enum class EDataRole
 {
 	ItemType = Qt::UserRole + 1,
 	Modified,
-	InternalPointer
+	InternalPointer,
+	Id,
 };
 
 namespace AudioModelUtils

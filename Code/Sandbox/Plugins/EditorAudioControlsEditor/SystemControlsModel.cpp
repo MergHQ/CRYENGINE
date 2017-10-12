@@ -456,7 +456,7 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 		return QVariant();
 	}
 
-	CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+	CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
 
 	if (pItem != nullptr)
 	{
@@ -488,7 +488,7 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 			{
 				return s_noConnectionColor;
 			}
-			else if (((pItem->GetType() == EItemType::Folder) || (pItem->GetType() == EItemType::Switch)) && !pItem->HasControl())
+			else if (((itemType == EItemType::Folder) || (itemType == EItemType::Switch)) && !pItem->HasControl())
 			{
 				return s_noControlColor;
 			}
@@ -499,7 +499,7 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 
 			if (pItem->HasPlaceholderConnection())
 			{
-				if ((pItem->GetType() == EItemType::Folder) || (pItem->GetType() == EItemType::Switch))
+				if ((itemType == EItemType::Folder) || (itemType == EItemType::Switch))
 				{
 					return tr("Contains item that has an invalid connection");
 				}
@@ -510,7 +510,7 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 			}
 			else if (!pItem->HasConnection())
 			{
-				if ((pItem->GetType() == EItemType::Folder) || (pItem->GetType() == EItemType::Switch))
+				if ((itemType == EItemType::Folder) || (itemType == EItemType::Switch))
 				{
 					return tr("Contains item that is not connected to any audio control");
 				}
@@ -519,11 +519,11 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 					return tr("Item is not connected to any audio control");
 				}
 			}
-			else if ((pItem->GetType() == EItemType::Folder) && !pItem->HasControl())
+			else if ((itemType == EItemType::Folder) && !pItem->HasControl())
 			{
 				return tr("Contains no audio control");
 			}
-			else if ((pItem->GetType() == EItemType::Switch) && !pItem->HasControl())
+			else if ((itemType == EItemType::Switch) && !pItem->HasControl())
 			{
 				return tr("Contains no state");
 			}
@@ -535,11 +535,23 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 			break;
 
 		case static_cast<int>(EDataRole::ItemType):
-			return static_cast<int>(pItem->GetType());
+			return static_cast<int>(itemType);
 			break;
 
 		case static_cast<int>(EDataRole::InternalPointer):
 			return reinterpret_cast<intptr_t>(pItem);
+			break;
+		case static_cast<int>(EDataRole::Id):
+			if (itemType != EItemType::Folder)
+			{
+				CAudioControl const* const pControl = static_cast<CAudioControl*>(pItem);
+
+				if (pControl != nullptr)
+				{
+					return pControl->GetId();
+				}
+			}
+			return 0;
 			break;
 		}
 	}

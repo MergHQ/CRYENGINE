@@ -85,6 +85,7 @@ private:
 	void UpdateAudioSystemData();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
+	void SelectConnectedSystemControl(CAudioControl const* const pControl);
 
 	std::vector<CAudioControl*> GetSelectedSystemControls();
 

@@ -198,7 +198,7 @@ CPropertiesWidget* CAudioControlsEditorWindow::CreatePropertiesWidget()
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget* CAudioControlsEditorWindow::CreateMiddlewareDataWidget()
 {
-	CMiddlewareDataWidget* pMiddlewareDataWidget = new CMiddlewareDataWidget();
+	CMiddlewareDataWidget* pMiddlewareDataWidget = new CMiddlewareDataWidget(m_pAssetsManager);
 
 	if (m_pMiddlewareDataWidget == nullptr)
 	{
@@ -206,6 +206,7 @@ CMiddlewareDataWidget* CAudioControlsEditorWindow::CreateMiddlewareDataWidget()
 	}
 
 	QObject::connect(pMiddlewareDataWidget, &QObject::destroyed, this, &CAudioControlsEditorWindow::OnMiddlewareDataWidgetDestruction);
+	QObject::connect(pMiddlewareDataWidget, &CMiddlewareDataWidget::SelectConnectedSystemControl, this, &CAudioControlsEditorWindow::SelectConnectedSystemControl);
 
 	return pMiddlewareDataWidget;
 }
@@ -643,5 +644,14 @@ std::vector<CAudioControl*> CAudioControlsEditorWindow::GetSelectedSystemControl
 	}
 
 	return controls;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsEditorWindow::SelectConnectedSystemControl(CAudioControl const* const pControl)
+{
+	if ((m_pSystemControlsWidget != nullptr) && (pControl != nullptr))
+	{
+		m_pSystemControlsWidget->SelectConnectedSystemControl(pControl);
+	}
 }
 } // namespace ACE
