@@ -1385,24 +1385,26 @@ cloth_aux:
 			{
 				IStatObj* pStatObj = m_pInstance->m_AttachmentManager.GetInterfaceByIndex(idxAttachment)->GetIAttachmentObject()->GetIStatObj();
 				gEnv->p3DEngine->LoadStatObj(pStatObj->GetFilePath(), pStatObj->GetGeoName(), 0, false); // force synchronous rendermesh loading
-				IRenderMesh* pRM = pStatObj->GetRenderMesh();
-				strided_pointer<ColorB> pColors(0);
-				pRM->LockForThreadAccess();
-				aap.partid = iFirstBone;
-				if ((pColors.data = (ColorB*)pRM->GetColorPtr(pColors.iStride, FSL_READ)))
+				if (IRenderMesh* pRM = pStatObj->GetRenderMesh())
 				{
-					for (aap.nPoints = 0, i = 0; i < pRM->GetVerticesCount(); aap.nPoints += iszero(pColors[i++].g))
-						;
-					aap.piVtx = new int[aap.nPoints + 1];
-					for (i = k = 0; i < pRM->GetVerticesCount(); k += iszero(pColors[i++].g))
-						aap.piVtx[k] = i;
-					m_auxPhys[j].pPhysEnt->Action(&aap);
-					delete[] aap.piVtx;
+					strided_pointer<ColorB> pColors(0);
+					pRM->LockForThreadAccess();
+					aap.partid = iFirstBone;
+					if ((pColors.data = (ColorB*)pRM->GetColorPtr(pColors.iStride, FSL_READ)))
+					{
+						for (aap.nPoints = 0, i = 0; i < pRM->GetVerticesCount(); aap.nPoints += iszero(pColors[i++].g))
+							;
+						aap.piVtx = new int[aap.nPoints + 1];
+						for (i = k = 0; i < pRM->GetVerticesCount(); k += iszero(pColors[i++].g))
+							aap.piVtx[k] = i;
+						m_auxPhys[j].pPhysEnt->Action(&aap);
+						delete[] aap.piVtx;
+					}
+					pRM->UnLockForThreadAccess();
+					pStatObj->UpdateVertices(0, 0, 0, 0, 0);
+					MARK_UNUSED atv.posHost;
+					m_auxPhys[j].pPhysEnt->Action(&atv);
 				}
-				pRM->UnLockForThreadAccess();
-				pStatObj->UpdateVertices(0, 0, 0, 0, 0);
-				MARK_UNUSED atv.posHost;
-				m_auxPhys[j].pPhysEnt->Action(&atv);
 			}
 
 			int idxParent = m_auxPhys[j].iBoneTiedTo[0] >= 0 ? getBonePhysParentIndex(m_auxPhys[j].iBoneTiedTo[0], nLod) : -1;
@@ -2096,7 +2098,8 @@ void CSkeletonPhysics::Physics_SynchronizeToAux(const Skeleton::CPoseData& poseD
 				sr.bTargetPoseActive = pr.bTargetPoseActive;
 				const CryBonePhysics& physInfo = GetJointPhysInfo(m_auxPhys[j].iBoneTiedTo[0], nLod);
 				sr.bTargetPoseActive = sr.bTargetPoseActive && physInfo.min[0] > 0.0f;
-			}
+			}	else 
+				continue;
 			sr.nVtx = 0;
 		}
 		else
