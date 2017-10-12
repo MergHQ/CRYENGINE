@@ -36,10 +36,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserve
 
 CRYREGISTER_SINGLETON_CLASS(CMonoRuntime)
 
-#if CRY_PLATFORM_WINDOWS
-	#pragma comment(lib, "mono-2.0.lib")
-#endif
-
 static const char* s_monoLogLevels[] =
 {
 	NULL,

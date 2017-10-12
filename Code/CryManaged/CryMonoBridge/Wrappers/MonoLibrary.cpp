@@ -83,7 +83,7 @@ bool CMonoLibrary::Load()
 	#ifndef _RELEASE
 	// load debug information
 	string sDebugDatabasePath = m_assemblyPath;
-	sDebugDatabasePath.append(".mdb");
+	PathUtil::ReplaceExtension(sDebugDatabasePath, ".pdb");
 
 	CCryFile debugFile;
 	debugFile.Open(sDebugDatabasePath, "rb", ICryPak::FLAGS_PATH_REAL);
@@ -122,15 +122,15 @@ bool CMonoLibrary::Load()
 	assemblyPath = PathUtil::Make(tempBinaryDirectory, fileName);
 
 	// Also copy debug databases, if present
-	string mdbPathSource = m_assemblyPath + ".mdb";
-	string mdbPathTarget = assemblyPath + ".mdb";
+	string pdbPathSource = PathUtil::ReplaceExtension(m_assemblyPath, ".pdb");
+	string pdbPathTarget = PathUtil::ReplaceExtension(assemblyPath, ".pdb");
 
-	// It could be that old .dll and .mdb files are still in the temporary directory.
+	// It could be that old .dll and .pdb files are still in the temporary directory.
 	// This can cause unexpected behavior or out of sync debug-symbols, so delete the old files first.
-	if (FILE* handle = gEnv->pCryPak->FOpen(mdbPathTarget, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
+	if (FILE* handle = gEnv->pCryPak->FOpen(pdbPathTarget, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
 	{
 		gEnv->pCryPak->FClose(handle);
-		gEnv->pCryPak->RemoveFile(mdbPathTarget);
+		gEnv->pCryPak->RemoveFile(pdbPathTarget);
 	}
 
 	if (FILE* handle = gEnv->pCryPak->FOpen(assemblyPath, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
@@ -141,10 +141,10 @@ bool CMonoLibrary::Load()
 
 	// The path can be relative, so the default IsFileExist is not a sure way to check if the file exists.
 	// Instead we try opening the file and if it works the file exists.
-	if (auto handle = gEnv->pCryPak->FOpen(mdbPathSource, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
+	if (auto handle = gEnv->pCryPak->FOpen(pdbPathSource, "rb", ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL))
 	{
 		gEnv->pCryPak->FClose(handle);
-		gEnv->pCryPak->CopyFileOnDisk(mdbPathSource, mdbPathTarget, false);
+		gEnv->pCryPak->CopyFileOnDisk(pdbPathSource, pdbPathTarget, false);
 	}
 
 	gEnv->pCryPak->CopyFileOnDisk(m_assemblyPath, assemblyPath, false);
