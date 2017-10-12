@@ -3066,7 +3066,7 @@ struct EventPhysUpdateMesh : EventPhysMono
 	int             iReason;       //!< see enum reason
 	IGeometry*      pMesh;         //!< ->GetForeignData(DATA_MESHUPDATE) returns a list of bop_meshupdates
 	bop_meshupdate* pLastUpdate;   //!< the last mesh update for at moment when the event was generated
-	Matrix34        mtxSkelToMesh; //!< skeleton's frame -> mesh's frame transform
+	Matrix34f       mtxSkelToMesh; //!< skeleton's frame -> mesh's frame transform
 	IGeometry*      pMeshSkel;     //!< for deformable bodies
 	int             idx;           //!< used for event deferring by listeners
 };
