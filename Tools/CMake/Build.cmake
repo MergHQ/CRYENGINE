@@ -56,8 +56,7 @@ include ("${TOOLS_CMAKE_DIR}/BuildPlugins.cmake")
 include ("${TOOLS_CMAKE_DIR}/BuildLaunchers.cmake")
 
 if (OPTION_CRYMONO)
-	add_subdirectory(Code/CryManaged/CryMonoBridge)
-	add_subdirectory(Code/CryManaged/CESharp)
+	add_subdirectory(Code/CryManaged)
 endif()
 
 macro(generate_unit_test_targets target_name using_runner_target_name)

@@ -2461,7 +2461,8 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 				pDeformedStatObj = (IStatObj*)pUpdateEvent->pMesh->GetForeignData();
 			else if (pStatObj)
 			{
-				pDeformedStatObj = pStatObj->SkinVertices(md->pVertices, pUpdateEvent->mtxSkelToMesh);
+				Matrix34 mtxSkelToMeshAligned = pUpdateEvent->mtxSkelToMesh;
+				pDeformedStatObj = pStatObj->SkinVertices(md->pVertices, mtxSkelToMeshAligned);
 				if (pUpdateEvent->pMesh->GetPrimitiveCount() > 1)
 					pUpdateEvent->pMesh->SetForeignData(pDeformedStatObj, 0);
 			}

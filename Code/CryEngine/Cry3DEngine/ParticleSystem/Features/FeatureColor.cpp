@@ -290,7 +290,7 @@ public:
 
 		CParticleContainer& container = context.m_container;
 		const CAttributeInstance& attributes = context.m_runtime.GetEmitter()->GetAttributeInstance();
-		ColorF attribute = m_attribute.GetValueAs(attributes, ColorAttr(1.0f));
+		ColorF attribute = m_attribute.GetValueAs(attributes, ColorB(~0U));
 		attribute.r = pow(attribute.r, m_gamma) * m_scale + m_bias;
 		attribute.g = pow(attribute.g, m_gamma) * m_scale + m_bias;
 		attribute.b = pow(attribute.b, m_gamma) * m_scale + m_bias;

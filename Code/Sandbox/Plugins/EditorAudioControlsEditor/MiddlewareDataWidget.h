@@ -10,10 +10,13 @@ class QVBoxLayout;
 
 namespace ACE
 {
+class CAudioAssetsManager;
+class CAudioControl;
 class CMiddlewareDataFilterProxyModel;
 class CMiddlewareDataModel;
 class CAudioTreeView;
 class CElidedLabel;
+class IAudioSystemItem;
 
 class CMiddlewareDataWidget final : public QWidget
 {
@@ -21,21 +24,26 @@ class CMiddlewareDataWidget final : public QWidget
 
 public:
 
-	CMiddlewareDataWidget();
+	CMiddlewareDataWidget(CAudioAssetsManager* pAssetsManager);
 	virtual ~CMiddlewareDataWidget() override;
 
 	void Reset();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
 
+signals:
+
+	void SelectConnectedSystemControl(CAudioControl const* const pControl);
+
 private slots:
 
-	void OnContextMenu(QPoint const& pos) const;
+	void OnContextMenu(QPoint const& pos);
 
 private:
 
 	void InitFilterWidgets(QVBoxLayout* const pMainLayout);
 
+	CAudioAssetsManager* const             m_pAssetsManager;
 	CMiddlewareDataFilterProxyModel* const m_pFilterProxyModel;
 	CMiddlewareDataModel* const            m_pAssetsModel;
 	CElidedLabel* const                    m_pImplNameLabel;

@@ -3,12 +3,15 @@
 #include "StdAfx.h"
 #include "MiddlewareDataWidget.h"
 
-#include "IAudioSystemEditor.h"
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
+#include "AudioAssetsManager.h"
+#include "SystemControlsEditorIcons.h"
 #include "AudioTreeView.h"
 
+#include <IAudioSystemEditor.h>
+#include <IAudioSystemItem.h>
 #include <CryIcon.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
@@ -60,8 +63,9 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-CMiddlewareDataWidget::CMiddlewareDataWidget()
-	: m_pFilterProxyModel(new CMiddlewareDataFilterProxyModel(this))
+CMiddlewareDataWidget::CMiddlewareDataWidget(CAudioAssetsManager* pAssetsManager)
+	: m_pAssetsManager(pAssetsManager)
+	, m_pFilterProxyModel(new CMiddlewareDataFilterProxyModel(this))
 	, m_pAssetsModel(new CMiddlewareDataModel())
 	, m_pHideAssignedButton(new QToolButton())
 	, m_pImplNameLabel(new CElidedLabel(""))
@@ -178,13 +182,45 @@ void CMiddlewareDataWidget::InitFilterWidgets(QVBoxLayout* const pMainLayout)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos) const
+void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 {
 	QMenu* const pContextMenu = new QMenu();
 	auto const& selection = m_pTreeView->selectionModel()->selectedRows();
 
 	if (!selection.isEmpty())
 	{
+		if ((selection.count() == 1) && (m_pAssetsManager != nullptr))
+		{
+			IAudioSystemEditor const* const pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
+			if (pAudioImpl != nullptr)
+			{
+				CID const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::EMiddlewareDataAttributes::Id)).toInt();
+				IAudioSystemItem const* const pItem = pAudioImpl->GetControl(itemId);
+
+				if ((pItem != nullptr) && pItem->IsConnected())
+				{
+					QMenu* const pConnectionsMenu = new QMenu();
+					pContextMenu->addMenu(pConnectionsMenu);
+					pContextMenu->addSeparator();
+
+					auto const controls = m_pAssetsManager->GetControls();
+					int count = 0;
+
+					for (auto const pControl : controls)
+					{
+						if (pControl->GetConnection(pItem) != nullptr)
+						{
+							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]() { SelectConnectedSystemControl(pControl); });
+							++count;
+						}
+					}
+
+					pConnectionsMenu->setTitle(tr("Connections (" + ToString(count) + ")"));
+				}
+			}
+		}
+
 		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(m_pTreeView->GetSelectedIndexes()); });
 		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(m_pTreeView->GetSelectedIndexes()); });
 		pContextMenu->addSeparator();

@@ -24,9 +24,25 @@ endif()
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
 if(WIN32 OR WIN64)
 	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
-	option(PLUGIN_VR_OCULUS "Oculus support" ON)
-	option(PLUGIN_VR_OSVR "OSVR support" ON)
-	option(PLUGIN_VR_OPENVR "OpenVR support" ON)
+	
+	if(EXISTS "${SDK_DIR}/OculusSDK")
+		option(PLUGIN_VR_OCULUS "Oculus support" ON)
+	else()
+		option(PLUGIN_VR_OCULUS "Oculus support" OFF)
+	endif()
+
+	if(EXISTS "${SDK_DIR}/OSVR")
+		option(PLUGIN_VR_OSVR "OSVR support" ON)
+	else()
+		option(PLUGIN_VR_OSVR "OSVR support" OFF)
+	endif()
+
+	if(EXISTS "${SDK_DIR}/OpenVR")
+		option(PLUGIN_VR_OPENVR "OpenVR support" ON)
+	else()
+		option(PLUGIN_VR_OPENVR "OpenVR support" OFF)
+	endif()
+
 	option(OPTION_CRYMONO "C# support" OFF)
 	
 	if (OPTION_CRYMONO)

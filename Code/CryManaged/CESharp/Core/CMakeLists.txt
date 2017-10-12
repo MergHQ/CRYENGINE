@@ -1,8 +1,7 @@
-if(OPTION_BUILD_CSHARP_WITH_MCS)
+if(OPTION_BUILD_CSHARP_WITH_CSC)
 	project(CESharp NONE)
 
-	set(SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../SDKs")
-	set(MCS_PATH "${SDK_DIR}/Mono/bin/mcs.bat")
+	set(SDK_DIR "${CMAKE_SOURCE_DIR}/Code/SDKs")
 	create_mono_compiler_settings()
 	
 	set(AI_FILES AI/Attributes.cs AI/BehaviorTreeNode.cs AI/BehaviorTreeNodeFactory.cs AI/LastingMovementRequest.cs)
@@ -116,7 +115,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	set(SOURCE ${AI_FILES} ${Animations_FILES} ${Audio_Native_FILES} ${Audio_FILES} ${Compilation_FILES} ${Console_Native_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_Attributes_FILES} ${EntitySystem_Native_FILES} ${EntitySystem_FILES} ${FileSystem_FILES} ${Input_Enums_FILES} ${Input_FILES} ${Lights_FILES} ${Math_FILES} ${Particles_FILES} ${Physics_Enums_FILES} ${Physics_Parameters_FILES} ${Physics_PhysicalizeParameters_FILES} ${Physics_PhysicsStatus_FILES} ${Physics_FILES} ${Rendering_FILES} ${Resources_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
 
 	add_custom_target(CryEngine.Core ALL
-		COMMAND "${MCS_PATH}" -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml "${MONO_SWIG_OUTPUT_ASSEMBLY_REFERENCE}" ${SOURCE} "-out:${OUTPUT_DIRECTORY}/CryEngine.Core.dll" "-doc:${OUTPUT_DIRECTORY}/CryEngine.Core.xml"
+		COMMAND "${CSC_PATH}" /target:library /langversion:${MONO_LANGUAGE_VERSION} /platform:${MONO_CPU_PLATFORM} /optimize /debug:portable /define:${MONO_PREPROCESSOR_DEFINE} /reference:System.dll /reference:System.Data.dll /reference:System.Drawing.dll /reference:System.Runtime.Serialization.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll "${MONO_SWIG_OUTPUT_ASSEMBLY_REFERENCE}" ${SOURCE} /out:"${OUTPUT_DIRECTORY}/CryEngine.Core.dll" /doc:"${OUTPUT_DIRECTORY}/CryEngine.Core.xml"
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 		SOURCES ${SOURCE})
 		

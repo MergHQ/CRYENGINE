@@ -871,7 +871,7 @@ int CSoftEntity::Action(pe_action *_action, int bThreadSafe)
 		pe_action_target_vtx *action = (pe_action_target_vtx*)_action;
 		if (is_unused(action->points) || !action->points)	{
 			float scale=1.0f;
-			if (is_unused(action->posHost) && m_vtx[m_vtx[0].idx].pContactEnt)
+			if (is_unused(action->posHost) && m_nVtx && m_vtx[m_vtx[0].idx].pContactEnt)
 				m_vtx[m_vtx[0].idx].pContactEnt->GetLocTransform(m_vtx[m_vtx[0].idx].iContactPart,action->posHost,action->qHost,scale,this);
 			for(int i=0; i<m_nVtx; i++) if (!m_vtx[i].bAttached) 
 				m_vtx[i].ptAttach = (m_vtx[i].pos-action->posHost)*action->qHost;

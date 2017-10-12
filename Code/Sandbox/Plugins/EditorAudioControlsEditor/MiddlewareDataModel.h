@@ -31,6 +31,7 @@ public:
 		Connected,
 		Placeholder,
 		Localized,
+		Id,
 	};
 
 	CMiddlewareDataModel();

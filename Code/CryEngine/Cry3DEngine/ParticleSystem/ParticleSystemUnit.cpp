@@ -323,20 +323,21 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		table.AddAttribute(attr);
 
 		attr.m_name = "Color";
-		attr.m_defaultValue = ColorAttr(50, 100, 150, 255);
+		attr.m_defaultValue = ColorB(50, 100, 150, 255);
 		table.AddAttribute(attr);
 
-		CRY_PFX2_UNIT_TEST_ASSERT(table.GetAttribute(1).GetType() == EAttributeType::Boolean);
+		CRY_PFX2_UNIT_TEST_ASSERT(table.GetAttribute(1).GetType() == IParticleAttributes::ET_Boolean);
 
 		CAttributeInstance inst;
 		inst.Reset(pTable);
 
 		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetNumAttributes() == 3);
 		uint id = inst.FindAttributeIdByName("Color");
-		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAttributeType(id) == CAttributeInstance::ET_Color);
+		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAttributeType(id) == IParticleAttributes::ET_Color);
 		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsBoolean(id, false) == true);
 		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsInteger(id, 0) == 91);
-		CRY_PFX2_UNIT_TEST_ASSERT(IsEquivalent(inst.SetAsFloat(id, 0.5f), 0.5f, 0.002f));
+		inst.SetAsFloat(id, 0.5f);
+		CRY_PFX2_UNIT_TEST_ASSERT(IsEquivalent(inst.GetAsFloat(id), 0.5f, 0.002f));
 
 		id = inst.FindAttributeIdByName("Float");
 		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsInteger(id, 0) == -3);
@@ -345,6 +346,13 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsFloat(id, 0.0f) == 1.0f);
 		inst.ResetValue(id);
 		CRY_PFX2_UNIT_TEST_ASSERT(inst.GetAsFloat(id, 0.0f) == -3.0f);
+
+		IParticleAttributes::TValue value;
+		value.SetType(IParticleAttributes::ET_Color);
+		CRY_PFX2_UNIT_TEST_ASSERT(value.Type() == IParticleAttributes::ET_Color);
+
+		auto type = table.GetAttribute(0).GetType();
+		DO_FOR_ATTRIBUTE_TYPE(type, T, value = T());
 	};
 
 

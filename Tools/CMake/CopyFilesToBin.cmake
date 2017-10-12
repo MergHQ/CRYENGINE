@@ -41,8 +41,8 @@ macro(add_optional_runtime_files)
 	endif()
 	
 	if (OPTION_CRYMONO)
-		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/Mono/bin/x64/mono-2.0.dll")
-		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/Mono/bin/x86/mono-2.0.dll")
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/Mono/bin/x64/mono-2.0-sgen.dll")
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/Mono/bin/x86/mono-2.0-sgen.dll")
 	endif()
 
 	if (PLUGIN_VR_OCULUS OR AUDIO_OCULUS_HRTF)

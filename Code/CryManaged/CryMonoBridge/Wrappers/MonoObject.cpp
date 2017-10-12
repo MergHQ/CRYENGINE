@@ -39,8 +39,12 @@ void CMonoObject::ReleaseGCHandle()
 
 std::shared_ptr<CMonoString> CMonoObject::ToString() const
 {
-	MonoInternals::MonoObject* pException = nullptr;
+	if (MonoInternals::mono_object_get_class(m_pObject) == MonoInternals::mono_get_string_class())
+	{
+		return CMonoDomain::CreateString(reinterpret_cast<MonoInternals::MonoString*>(m_pObject));
+	}
 
+	MonoInternals::MonoObject* pException = nullptr;
 	MonoInternals::MonoString* pStr = MonoInternals::mono_object_to_string(m_pObject, &pException);
 	if (pException != nullptr)
 	{

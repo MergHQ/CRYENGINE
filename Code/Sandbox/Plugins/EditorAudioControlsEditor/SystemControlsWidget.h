@@ -34,7 +34,8 @@ public:
 	virtual ~CSystemControlsWidget() override;
 
 	bool                        IsEditing() const;
-	std::vector<CAudioControl*> GetSelectedControls();
+	std::vector<CAudioControl*> GetSelectedControls() const;
+	void                        SelectConnectedSystemControl(CAudioControl const* const pControl);
 	void                        Reload();
 	void                        BackupTreeViewStates();
 	void                        RestoreTreeViewStates();

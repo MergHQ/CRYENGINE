@@ -1639,6 +1639,8 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 	               "Whether to use OBBs rather than AABBs for the entity grid setup for brushes");
 	REGISTER_CVAR2("p_num_startup_overload_checks", &pVars->nStartupOverloadChecks, pVars->nStartupOverloadChecks, 0,
 	               "For this many frames after loading a level, check if the physics gets overloaded and freezes non-player physicalized objects that are slow enough");
+	REGISTER_CVAR2("p_break_on_awake_ent_id", &pVars->idEntBreakOnAwake, pVars->idEntBreakOnAwake, 0,
+	               "Sets the id of the entity that will trigger debug break if awoken");
 
 	pVars->flagsColliderDebris = geom_colltype_debris;
 	pVars->flagsANDDebris = ~(geom_colltype_vehicle | geom_colltype6);

@@ -268,6 +268,7 @@ CPhysicalWorld::CPhysicalWorld(ILog *pLog) : m_nWorkerThreads(0)
 	0;
 #endif
 	m_vars.breakageMinAxisInertia = 0.01f;
+	m_vars.idEntBreakOnAwake = -1000;
 
 	memset(m_grpProfileData, 0, sizeof(m_grpProfileData));
 	m_grpProfileData[ 0].pName = "Rigid bodies";

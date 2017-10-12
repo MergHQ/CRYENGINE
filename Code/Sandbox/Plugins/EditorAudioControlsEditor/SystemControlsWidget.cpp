@@ -39,7 +39,6 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
@@ -359,7 +358,7 @@ bool CSystemControlsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<CAudioControl*> CSystemControlsWidget::GetSelectedControls()
+std::vector<CAudioControl*> CSystemControlsWidget::GetSelectedControls() const
 {
 	QModelIndexList const& indexes = m_pTreeView->selectionModel()->selectedIndexes();
 	std::vector<CAudioLibrary*> libraries;
@@ -845,5 +844,21 @@ void CSystemControlsWidget::RestoreTreeViewStates()
 bool CSystemControlsWidget::IsEditing() const
 {
 	return m_pTreeView->IsEditing();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControlsWidget::SelectConnectedSystemControl(CAudioControl const* const pControl)
+{
+	if (pControl != nullptr)
+	{
+		ResetFilters();
+		auto const matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(EDataRole::Id), pControl->GetId(), 1, Qt::MatchRecursive);
+
+		if (!matches.isEmpty())
+		{
+			m_pTreeView->setFocus();
+			m_pTreeView->selectionModel()->setCurrentIndex(matches.first(), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+		}
+	}
 }
 } // namespace ACE
