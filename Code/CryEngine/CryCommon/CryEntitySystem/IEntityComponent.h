@@ -436,7 +436,12 @@ public:
 
 	//! Return Transformation of the entity component relative to the owning entity or parent component
 	const CryTransform::CTransformPtr& GetTransform() const;
+
+	//! Sets the transformation form a matrix. If the component doesn't have a transformation yet the function will add one.
 	void SetTransformMatrix(const Matrix34& transform);
+
+	//! Sets the transformation from another transformation.  If the component doesn't have a transformation yet the function will add one.
+	void SetTransformMatrix(const CryTransform::CTransformPtr& transform);
 
 	//! Return Transformation of the entity component relative to the world
 	Matrix34 GetWorldTransformMatrix() const;

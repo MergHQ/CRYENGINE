@@ -55,6 +55,7 @@ public:
 	CAngle operator/=(const CAngle rhs) { *this = *this / rhs; return *this; }
 	CAngle operator*=(const float rhs)  { *this = *this * rhs; return *this; }
 	CAngle operator/=(const float rhs)  { *this = *this / rhs; return *this; }
+	void operator=(const CAngle rhs) { m_value = rhs.m_value; }
 
 	static void ReflectType(Schematyc::CTypeDesc<CAngle>& desc)
 	{
@@ -113,12 +114,25 @@ public:
 
 	inline bool operator==(const CAngles3 &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
+	inline void operator=(const CAngles3& angles)
+	{
+		x = angles.x;
+		y = angles.y;
+		z = angles.z;
+	}
+
 	constexpr CAngles3 operator*(float rhs) const { return CAngles3(x * rhs, y * rhs, z * rhs); }
 	constexpr CAngles3 operator-() const { return CAngles3(-x, -y, -z); }
 
 	CAngles3 operator*=(float rhs) { *this = *this * rhs; return *this; }
 
 	Ang3 ToAng3() const { return Ang3(x.ToRadians(), y.ToRadians(), z.ToRadians()); }
+
+	// Converts the angles to degree
+	inline Vec3 ToDegrees() const
+	{
+		return Vec3(x.ToDegrees(), y.ToDegrees(), z.ToDegrees());
+	}
 
 	inline void Serialize(Serialization::IArchive& archive)
 	{
