@@ -926,33 +926,6 @@ void CShaderMan::mfInitLookups()
 	dirdatafilename += "lookupdata.bin";
 	m_ResLookupDataMan[CACHE_USER].LoadData(dirdatafilename.c_str(), CParserBin::m_bEndians, false);
 }
-void CShaderMan::mfInitLevelPolicies(void)
-{
-	SAFE_DELETE(m_pLevelsPolicies);
-
-	SShaderLevelPolicies* pPL = NULL;
-	char szN[256];
-	cry_strcpy(szN, "Shaders/");
-	cry_strcat(szN, "Levels.txt");
-	FILE* fp = gEnv->pCryPak->FOpen(szN, "rb", ICryPak::FOPEN_HINT_QUIET);
-	if (fp)
-	{
-		pPL = new SShaderLevelPolicies;
-		gEnv->pCryPak->FSeek(fp, 0, SEEK_END);
-		int ln = gEnv->pCryPak->FTell(fp);
-		char* buf = new char[ln + 1];
-		if (buf)
-		{
-			buf[ln] = 0;
-			gEnv->pCryPak->FSeek(fp, 0, SEEK_SET);
-			gEnv->pCryPak->FRead(buf, ln, fp);
-			mfCompileShaderLevelPolicies(pPL, buf);
-			delete[] buf;
-		}
-		gEnv->pCryPak->FClose(fp);
-	}
-	m_pLevelsPolicies = pPL;
-}
 
 void CShaderMan::mfInitGlobal(void)
 {
@@ -1140,7 +1113,6 @@ void CShaderMan::mfInit(void)
 		//memset(&CShader::m_Shaders_known[0], 0, sizeof(CShader *)*MAX_SHADERS);
 
 		mfInitGlobal();
-		mfInitLevelPolicies();
 
 		//mfInitLookups();
 

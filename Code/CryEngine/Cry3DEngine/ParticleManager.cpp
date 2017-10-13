@@ -30,7 +30,6 @@
 
 #define LIBRARY_PATH    "Libs/"
 #define EFFECTS_SUBPATH LIBRARY_PATH "Particles/"
-#define LEVEL_PATH      "Levels/"
 
 using namespace minigui;
 
@@ -933,8 +932,8 @@ class CLibPathIterator
 {
 public:
 
-	CLibPathIterator(cstr sLevelPath = "")
-		: sPath(*sLevelPath ? sLevelPath : LEVEL_PATH), bDone(false)
+	CLibPathIterator(cstr sLevelPath)
+		: sPath(sLevelPath), bDone(false)
 	{}
 	operator bool() const
 	{ return !bDone; }

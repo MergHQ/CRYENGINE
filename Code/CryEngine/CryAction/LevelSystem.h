@@ -198,7 +198,7 @@ class CLevelSystem :
 	public ISystem::ILoadingProgressListener
 {
 public:
-	CLevelSystem(ISystem* pSystem, const char* levelsFolder);
+	CLevelSystem(ISystem* pSystem);
 	virtual ~CLevelSystem();
 
 	void Release() { delete this; };
@@ -251,9 +251,6 @@ private:
 	void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount);
 	void OnUnloadComplete(ILevelInfo* pLevel);
 
-	// lowercase string and replace backslashes with forward slashes
-	// TODO: move this to a more general place in CryEngine
-	string& UnifyName(string& name);
 	void    ScanFolder(const char* subfolder, bool modFolder, const uint32 tag);
 	void    LogLoadingTime();
 	bool    LoadLevelInfo(CLevelInfo& levelInfo);
