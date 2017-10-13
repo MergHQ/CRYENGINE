@@ -1716,7 +1716,7 @@ void CFrameProfileSystem::RenderMemoryInfo()
 	//////////////////////////////////////////////////////////////////////////
 	// Show memory usage.
 	//////////////////////////////////////////////////////////////////////////
-	int memUsage = 0;//CryMemoryGetAllocatedSize();
+	uint64 memUsage = 0;//CryMemoryGetAllocatedSize();
 	int64 totalAll = 0;
 	int luaMemUsage = gEnv->pScriptSystem->GetScriptAllocSize();
 
@@ -1730,30 +1730,30 @@ void CFrameProfileSystem::RenderMemoryInfo()
 	if (m_bLogMemoryInfo) pLog->Log(szText);
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
-	float col1 = col + 15;
-	float col2 = col1 + 8;
+	float col1 = col + 20;
+	float col2 = col1 + 20;
 		#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 	float col3 = col2;
 		#else
-	float col3 = col2 + 7;
+	float col3 = col2 + 12;
 		#endif
-	float col4 = col3 + 7;
+	float col4 = col3 + 12;
 
 	DrawLabel(col, row++, HeaderColor, 0, "-----------------------------------------------------------------------------------------------------------------------------------", fLabelScale);
 	DrawLabel(col, row, HeaderColor, 0, "Module", fLabelScale);
-	DrawLabel(col1, row, HeaderColor, 0, "Dynamic(KB)", fLabelScale);
+	DrawLabel(col1, row, HeaderColor, 0, "Dynamic(MB)", fLabelScale);
 		#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
 	DrawLabel(col2, row, HeaderColor, 0, "Static(KB)", fLabelScale);
 		#endif
 	DrawLabel(col3, row, HeaderColor, 0, "Num Allocs", fLabelScale);
 	DrawLabel(col4, row, HeaderColor, 0, "Total Allocs(KB)", fLabelScale);
-	float col5 = col4 + 10;
+	float col5 = col4 + 20;
 	DrawLabel(col5, row, HeaderColor, 0, "Total Wasted(KB)", fLabelScale);
 	int totalUsedInModulesStatic = 0;
 
 	row++;
 
-	int totalUsedInModules = 0;
+	uint64 totalUsedInModules = 0;
 	int countedMemoryModules = 0;
 	uint64 totalAllocatedInModules = 0;
 	int totalNumAllocsInModules = 0;
@@ -1829,7 +1829,7 @@ void CFrameProfileSystem::RenderMemoryInfo()
 			fpCryModuleGetAllocatedMemory(&memInfo);
 		#endif
 
-		int usedInModule = (int)(memInfo.allocated - memInfo.freed);
+		uint64 usedInModule = memInfo.allocated - memInfo.freed;
 		#ifndef _LIB
 
 			#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
@@ -1854,15 +1854,17 @@ void CFrameProfileSystem::RenderMemoryInfo()
 		#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
 		totalUsedInModulesStatic += moduleStaticSize;
 		#endif
-		cry_sprintf(szText, "%s", szModule);
+		string szModuleName = PathUtil::GetFileName(szModule);
+		
+		cry_sprintf(szText, "%.19s", szModuleName.c_str());
 		DrawLabel(col, row, ModuleColor, 0, szText, fLabelScale);
-		cry_sprintf(szText, "%5.2f", usedInModule / 1024.0f / 1024.0f);
+		cry_sprintf(szText, "%9.2f", usedInModule / 1024.0f / 1024.0f);
 		DrawLabel(col1, row, StaticColor, 0, szText, fLabelScale);
 		#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
 		cry_sprintf(szText, "%d", moduleStaticSize / 1024);
 		DrawLabel(col2, row, StaticColor, 0, szText, fLabelScale);
 		#endif
-		cry_sprintf(szText, "%d", memInfo.num_allocations);
+		cry_sprintf(szText, "%d",  memInfo.num_allocations);
 		DrawLabel(col3, row, NumColor, 0, szText, fLabelScale);
 		cry_sprintf(szText, "%" PRIu64, memInfo.allocated / 1024u);
 
@@ -1895,7 +1897,7 @@ void CFrameProfileSystem::RenderMemoryInfo()
 	DrawLabel(col, row++, HeaderColor, 0, "-----------------------------------------------------------------------------------------------------------------------------------", fLabelScale);
 	cry_sprintf(szText, "Sum %d Modules", countedMemoryModules);
 	DrawLabel(col, row, HeaderColor, 0, szText, fLabelScale);
-	cry_sprintf(szText, "%d", totalUsedInModules / 1024);
+	cry_sprintf(szText, "%d", totalUsedInModules / 1024 / 1024);
 	DrawLabel(col1, row, HeaderColor, 0, szText, fLabelScale);
 		#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
 	cry_sprintf(szText, "%d", totalUsedInModulesStatic / 1024);
