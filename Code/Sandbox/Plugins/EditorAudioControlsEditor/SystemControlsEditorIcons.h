@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AudioAssets.h"
+#include <ACETypes.h>
 #include <CryIcon.h>
 
 namespace ACE

@@ -37,7 +37,7 @@ bool CImplementationManager::LoadImplementation()
 	signalImplementationAboutToChange();
 	GetIEditor()->GetIUndoManager()->Suspend();
 
-	bool bReturn = true;
+	bool isLoaded = true;
 	ICVar* pCVar = gEnv->pConsole->GetCVar(g_sImplementationCVarName);
 	if (pCVar)
 	{
@@ -60,7 +60,7 @@ bool CImplementationManager::LoadImplementation()
 		if (!ms_hMiddlewarePlugin)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] Couldn't load the middleware specific editor dll.");
-			bReturn = false;
+			isLoaded = false;
 		}
 		else
 		{
@@ -69,7 +69,7 @@ bool CImplementationManager::LoadImplementation()
 			{
 				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] Couldn't get middleware interface from loaded dll.");
 				FreeLibrary(ms_hMiddlewarePlugin);
-				bReturn = false;
+				isLoaded = false;
 			}
 			else
 			{
@@ -92,12 +92,12 @@ bool CImplementationManager::LoadImplementation()
 	else
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", g_sImplementationCVarName);
-		bReturn = false;
+		isLoaded = false;
 	}
 
 	GetIEditor()->GetIUndoManager()->Resume();
 	signalImplementationChanged();
-	return bReturn;
+	return isLoaded;
 }
 
 void CImplementationManager::Release()

@@ -93,7 +93,7 @@ CUndoControlAdd::CUndoControlAdd(CID id)
 	m_id = id;
 }
 
-void CUndoControlAdd::Undo(bool bUndo)
+void CUndoControlAdd::Undo(bool isUndo)
 {
 	RemoveStoredControl();
 }
@@ -118,7 +118,7 @@ CUndoControlRemove::CUndoControlRemove(std::shared_ptr<CAudioControl>& pControl)
 	   }*/
 }
 
-void CUndoControlRemove::Undo(bool bUndo)
+void CUndoControlRemove::Undo(bool isUndo)
 {
 	AddStoredControl();
 }
@@ -170,7 +170,7 @@ void IUndoFolderOperation::RemoveItem()
    {
    }*/
 
-void CUndoFolderRemove::Undo(bool bUndo)
+void CUndoFolderRemove::Undo(bool isUndo)
 {
 	AddFolderItem();
 }
@@ -185,7 +185,7 @@ void CUndoFolderRemove::Redo()
    {
    }*/
 
-void CUndoFolderAdd::Undo(bool bUndo)
+void CUndoFolderAdd::Undo(bool isUndo)
 {
 	RemoveItem();
 }
@@ -205,13 +205,13 @@ CUndoControlModified::CUndoControlModified(CID id) : m_id(id)
 	   {
 	    m_name = pControl->GetName();
 	    m_scope = pControl->GetScope();
-	    m_bAutoLoad = pControl->IsAutoLoad();
+	    m_isAutoLoad = pControl->IsAutoLoad();
 	    m_connectedControls = pControl->m_connectedControls;
 	   }
 	   }*/
 }
 
-void CUndoControlModified::Undo(bool bUndo)
+void CUndoControlModified::Undo(bool isUndo)
 {
 	SwapData();
 }
@@ -232,7 +232,7 @@ void CUndoControlModified::SwapData()
 		{
 			string name = pControl->GetName();
 			Scope scope = pControl->GetScope();
-			bool bAutoLoad = pControl->IsAutoLoad();
+			bool isAutoLoad = pControl->IsAutoLoad();
 
 			std::vector<ConnectionPtr> connectedControls;
 			const size_t size = pControl->GetConnectionCount();
@@ -244,7 +244,7 @@ void CUndoControlModified::SwapData()
 
 			pControl->SetName(m_name);
 			pControl->SetScope(m_scope);
-			pControl->SetAutoLoad(m_bAutoLoad);
+			pControl->SetAutoLoad(m_isAutoLoad);
 
 			for (ConnectionPtr& c : m_connectedControls)
 			{
@@ -253,13 +253,13 @@ void CUndoControlModified::SwapData()
 
 			m_name = name;
 			m_scope = scope;
-			m_bAutoLoad = bAutoLoad;
+			m_isAutoLoad = isAutoLoad;
 			m_connectedControls = connectedControls;
 		}
 	}
 }
 
-void CUndoItemMove::Undo(bool bUndo)
+void CUndoItemMove::Undo(bool isUndo)
 {
 	/*QATLTreeModel* pTree = CAudioControlsEditorPlugin::GetControlsTree();
 	   if (pTree)
@@ -299,7 +299,7 @@ void CUndoItemMove::Redo()
    }
    }*/
 
-CUndoItemMove::CUndoItemMove() : bModifiedInitialised(false)
+CUndoItemMove::CUndoItemMove() : m_isModifiedInitialised(false)
 {
 	/*QATLTreeModel* pTree = CAudioControlsEditorPlugin::GetControlsTree();
 	   if (pTree)

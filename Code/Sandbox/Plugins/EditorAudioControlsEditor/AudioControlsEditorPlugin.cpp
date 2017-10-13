@@ -81,7 +81,7 @@ void CAudioControlsEditorPlugin::SaveModels()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorPlugin::ReloadModels(bool const bReloadImplementation)
+void CAudioControlsEditorPlugin::ReloadModels(bool const reloadImplementation)
 {
 	// Do not call signalAboutToLoad and signalLoaded in here!
 	GetIEditor()->GetIUndoManager()->Suspend();
@@ -92,7 +92,7 @@ void CAudioControlsEditorPlugin::ReloadModels(bool const bReloadImplementation)
 	{
 		s_assetsManager.Clear();
 
-		if (bReloadImplementation)
+		if (reloadImplementation)
 		{
 			pImpl->Reload();
 		}

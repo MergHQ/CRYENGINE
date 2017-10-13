@@ -4,8 +4,10 @@
 
 #include "StdAfx.h"
 #include "AudioSystemEditor.h"
+
 #include "ProjectLoader.h"
 #include "AudioSystemControl.h"
+
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/CryCrc32.h>
@@ -17,43 +19,54 @@
 
 namespace ACE
 {
-const string CAudioSystemEditor::s_eventConnectionTag = "PortAudioEvent";
-const string CAudioSystemEditor::s_sampleConnectionTag = "PortAudioSample";
-const string CAudioSystemEditor::s_itemNameTag = "portaudio_name";
-const string CAudioSystemEditor::s_pathNameTag = "portaudio_path";
-const string CAudioSystemEditor::s_panningEnabledTag = "enable_panning";
-const string CAudioSystemEditor::s_attenuationEnabledTag = "enable_distance_attenuation";
-const string CAudioSystemEditor::s_attenuationDistMin = "attenuation_dist_min";
-const string CAudioSystemEditor::s_attenuationDistMax = "attenuation_dist_max";
-const string CAudioSystemEditor::s_volumeTag = "volume";
-const string CAudioSystemEditor::s_loopCountTag = "loop_count";
-const string CAudioSystemEditor::s_connectionTypeTag = "event_type";
+string const CAudioSystemEditor::s_eventConnectionTag = "PortAudioEvent";
+string const CAudioSystemEditor::s_sampleConnectionTag = "PortAudioSample";
+string const CAudioSystemEditor::s_itemNameTag = "portaudio_name";
+string const CAudioSystemEditor::s_pathNameTag = "portaudio_path";
+string const CAudioSystemEditor::s_panningEnabledTag = "enable_panning";
+string const CAudioSystemEditor::s_attenuationEnabledTag = "enable_distance_attenuation";
+string const CAudioSystemEditor::s_attenuationDistMin = "attenuation_dist_min";
+string const CAudioSystemEditor::s_attenuationDistMax = "attenuation_dist_max";
+string const CAudioSystemEditor::s_volumeTag = "volume";
+string const CAudioSystemEditor::s_loopCountTag = "loop_count";
+string const CAudioSystemEditor::s_connectionTypeTag = "event_type";
 
-const string g_userSettingsFile = "%USER%/audiocontrolseditor_portaudio.user";
+string const g_userSettingsFile = "%USER%/audiocontrolseditor_portaudio.user";
 
+//////////////////////////////////////////////////////////////////////////
+void CImplementationSettings::SetProjectPath(char const* szPath)
+{
+	m_projectPath = szPath;
+	Serialization::SaveJsonFile(g_userSettingsFile.c_str(), *this);
+}
+
+//////////////////////////////////////////////////////////////////////////
 CAudioSystemEditor::CAudioSystemEditor()
 {
 	Serialization::LoadJsonFile(m_settings, g_userSettingsFile.c_str());
 }
 
+//////////////////////////////////////////////////////////////////////////
 CAudioSystemEditor::~CAudioSystemEditor()
 {
 	Clear();
 }
 
-void CAudioSystemEditor::Reload(bool bPreserveConnectionStatus)
+//////////////////////////////////////////////////////////////////////////
+void CAudioSystemEditor::Reload(bool const preserveConnectionStatus)
 {
 	Clear();
 
 	CProjectLoader(m_settings.GetProjectPath(), m_root);
 	CreateControlCache(&m_root);
 
-	for (auto controlPair : m_connectionsByID)
+	for (auto const controlPair : m_connectionsByID)
 	{
 		if (controlPair.second.size() > 0)
 		{
-			IAudioSystemItem* pControl = GetControl(controlPair.first);
-			if (pControl)
+			IAudioSystemItem* const pControl = GetControl(controlPair.first);
+
+			if (pControl != nullptr)
 			{
 				pControl->SetConnected(true);
 			}
@@ -61,41 +74,13 @@ void CAudioSystemEditor::Reload(bool bPreserveConnectionStatus)
 	}
 }
 
-void CAudioSystemEditor::Clear()
-{
-	// Delete all the controls
-	for (IAudioSystemItem* pControl : m_controlsCache)
-	{
-		delete pControl;
-	}
-	m_controlsCache.clear();
-
-	// Clean up the root control
-	m_root = IAudioSystemItem();
-}
-
-void CAudioSystemEditor::CreateControlCache(IAudioSystemItem* pParent)
-{
-	if (pParent)
-	{
-		const size_t count = pParent->ChildCount();
-		for (size_t i = 0; i < count; ++i)
-		{
-			IAudioSystemItem* pChild = pParent->GetChildAt(i);
-			if (pChild)
-			{
-				m_controlsCache.push_back(pChild);
-				CreateControlCache(pChild);
-			}
-		}
-	}
-}
-
-IAudioSystemItem* CAudioSystemEditor::GetControl(CID id) const
+//////////////////////////////////////////////////////////////////////////
+IAudioSystemItem* CAudioSystemEditor::GetControl(CID const id) const
 {
 	if (id >= 0)
 	{
-		size_t size = m_controlsCache.size();
+		size_t const size = m_controlsCache.size();
+
 		for (size_t i = 0; i < size; ++i)
 		{
 			if (m_controlsCache[i]->GetId() == id)
@@ -104,140 +89,23 @@ IAudioSystemItem* CAudioSystemEditor::GetControl(CID id) const
 			}
 		}
 	}
+
 	return nullptr;
 }
 
-ConnectionPtr CAudioSystemEditor::CreateConnectionToControl(EItemType eATLControlType, IAudioSystemItem* pMiddlewareControl)
+//////////////////////////////////////////////////////////////////////////
+TImplControlTypeMask CAudioSystemEditor::GetCompatibleTypes(EItemType const controlType) const
 {
-	std::shared_ptr<CConnection> pConnection = std::make_shared<CConnection>(pMiddlewareControl->GetId());
-	pMiddlewareControl->SetConnected(true);
-	m_connectionsByID[pMiddlewareControl->GetId()].push_back(pConnection);
-	return pConnection;
-}
-
-ConnectionPtr CAudioSystemEditor::CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType eATLControlType)
-{
-	if (pNode)
+	switch (controlType)
 	{
-		const string nodeTag = pNode->getTag();
-		if (nodeTag == s_eventConnectionTag || nodeTag == s_sampleConnectionTag)
-		{
-			const string name = pNode->getAttr(s_itemNameTag);
-			const string path = pNode->getAttr(s_pathNameTag);
-
-			CID id;
-			if (path.empty())
-			{
-				id = GetId(name);
-			}
-			else
-			{
-				id = GetId(path + CRY_NATIVE_PATH_SEPSTR + name);
-			}
-
-			IAudioSystemItem* pControl = GetControl(id);
-			if (!pControl)
-			{
-				pControl = new IAudioSystemControl(name, id, ePortAudioTypes_Event);
-				pControl->SetPlaceholder(true);
-				m_controlsCache.push_back(pControl);
-			}
-
-			if (pControl)
-			{
-				PortAudioConnectionPtr pConnection = std::make_shared<CConnection>(pControl->GetId());
-				pControl->SetConnected(true);
-				m_connectionsByID[pControl->GetId()].push_back(pConnection);
-				const string connectionType = pNode->getAttr(s_connectionTypeTag);
-				pConnection->type = connectionType == "stop" ? ePortAudioConnectionType_Stop : ePortAudioConnectionType_Start;
-
-				const string enablePanning = pNode->getAttr(s_panningEnabledTag);
-				pConnection->bPanningEnabled = enablePanning == "true" ? true : false;
-
-				const string enableDistAttenuation = pNode->getAttr(s_attenuationEnabledTag);
-				pConnection->bAttenuationEnabled = enableDistAttenuation == "true" ? true : false;
-
-				pNode->getAttr(s_attenuationDistMin, pConnection->minAttenuation);
-				pNode->getAttr(s_attenuationDistMax, pConnection->maxAttenuation);
-				pNode->getAttr(s_volumeTag, pConnection->volume);
-				pNode->getAttr(s_loopCountTag, pConnection->loopCount);
-
-				if (pConnection->loopCount == -1)
-				{
-					pConnection->bInfiniteLoop = true;
-				}
-
-				return pConnection;
-			}
-
-		}
+	case EItemType::Trigger:
+		return ePortAudioTypes_Event;
 	}
-	return nullptr;
+	return AUDIO_SYSTEM_INVALID_TYPE;
 }
 
-XmlNodeRef CAudioSystemEditor::CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EItemType eATLControlType)
-{
-	std::shared_ptr<const CConnection> pSDLMixerConnection = std::static_pointer_cast<const CConnection>(pConnection);
-	const IAudioSystemItem* pControl = GetControl(pConnection->GetID());
-	if (pControl && pSDLMixerConnection && eATLControlType == EItemType::Trigger)
-	{
-		XmlNodeRef pConnectionNode = GetISystem()->CreateXmlNode(s_eventConnectionTag);
-		pConnectionNode->setAttr(s_itemNameTag, pControl->GetName());
-
-		string path;
-		const IAudioSystemItem* pParent = pControl->GetParent();
-		while (pParent)
-		{
-			const string parentName = pParent->GetName();
-			if (!parentName.empty())
-			{
-				if (path.empty())
-				{
-					path = parentName;
-				}
-				else
-				{
-					path = parentName + CRY_NATIVE_PATH_SEPSTR + path;
-				}
-			}
-			pParent = pParent->GetParent();
-		}
-
-		pConnectionNode->setAttr(s_pathNameTag, path);
-
-		if (pSDLMixerConnection->type == ePortAudioConnectionType_Start)
-		{
-			pConnectionNode->setAttr(s_connectionTypeTag, "start");
-			pConnectionNode->setAttr(s_panningEnabledTag, pSDLMixerConnection->bPanningEnabled ? "true" : "false");
-			pConnectionNode->setAttr(s_attenuationEnabledTag, pSDLMixerConnection->bAttenuationEnabled ? "true" : "false");
-			pConnectionNode->setAttr(s_attenuationDistMin, pSDLMixerConnection->minAttenuation);
-			pConnectionNode->setAttr(s_attenuationDistMax, pSDLMixerConnection->maxAttenuation);
-			pConnectionNode->setAttr(s_volumeTag, pSDLMixerConnection->volume);
-			if (pSDLMixerConnection->bInfiniteLoop)
-			{
-				pConnectionNode->setAttr(s_loopCountTag, -1);
-			}
-			else
-			{
-				pConnectionNode->setAttr(s_loopCountTag, pSDLMixerConnection->loopCount);
-			}
-		}
-		else
-		{
-			pConnectionNode->setAttr(s_connectionTypeTag, "stop");
-		}
-
-		return pConnectionNode;
-	}
-	return nullptr;
-}
-
-ACE::CID CAudioSystemEditor::GetId(const string& sName) const
-{
-	return CCrc32::ComputeLowercase(sName);
-}
-
-const char* CAudioSystemEditor::GetTypeIcon(ItemType type) const
+//////////////////////////////////////////////////////////////////////////
+char const* CAudioSystemEditor::GetTypeIcon(ItemType const type) const
 {
 	switch (type)
 	{
@@ -249,9 +117,16 @@ const char* CAudioSystemEditor::GetTypeIcon(ItemType type) const
 	return "Editor/Icons/audio/portaudio/Audio_Event.png";
 }
 
-ACE::EItemType CAudioSystemEditor::ImplTypeToATLType(ItemType type) const
+//////////////////////////////////////////////////////////////////////////
+string CAudioSystemEditor::GetName() const
 {
-	switch (type)
+	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
+}
+
+//////////////////////////////////////////////////////////////////////////
+EItemType CAudioSystemEditor::ImplTypeToSystemType(ItemType const itemType) const
+{
+	switch (itemType)
 	{
 	case ePortAudioTypes_Event:
 		return EItemType::Trigger;
@@ -259,30 +134,186 @@ ACE::EItemType CAudioSystemEditor::ImplTypeToATLType(ItemType type) const
 	return EItemType::Invalid;
 }
 
-ACE::TImplControlTypeMask CAudioSystemEditor::GetCompatibleTypes(EItemType eATLControlType) const
+//////////////////////////////////////////////////////////////////////////
+ConnectionPtr CAudioSystemEditor::CreateConnectionToControl(EItemType const controlType, IAudioSystemItem* const pMiddlewareControl)
 {
-	switch (eATLControlType)
+	std::shared_ptr<CConnection> const pConnection = std::make_shared<CConnection>(pMiddlewareControl->GetId());
+	pMiddlewareControl->SetConnected(true);
+	m_connectionsByID[pMiddlewareControl->GetId()].push_back(pConnection);
+	return pConnection;
+}
+
+//////////////////////////////////////////////////////////////////////////
+ConnectionPtr CAudioSystemEditor::CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType const controlType)
+{
+	if (pNode != nullptr)
 	{
-	case EItemType::Trigger:
-		return ePortAudioTypes_Event;
+		string const nodeTag = pNode->getTag();
+
+		if ((nodeTag == s_eventConnectionTag) || (nodeTag == s_sampleConnectionTag))
+		{
+			string const name = pNode->getAttr(s_itemNameTag);
+			string const path = pNode->getAttr(s_pathNameTag);
+
+			CID id;
+
+			if (path.empty())
+			{
+				id = GetId(name);
+			}
+			else
+			{
+				id = GetId(path + CRY_NATIVE_PATH_SEPSTR + name);
+			}
+
+			IAudioSystemItem* pControl = GetControl(id);
+
+			if (pControl == nullptr)
+			{
+				pControl = new IAudioSystemControl(name, id, ePortAudioTypes_Event);
+				pControl->SetPlaceholder(true);
+				m_controlsCache.push_back(pControl);
+			}
+
+			if (pControl != nullptr)
+			{
+				PortAudioConnectionPtr const pConnection = std::make_shared<CConnection>(pControl->GetId());
+				pControl->SetConnected(true);
+				m_connectionsByID[pControl->GetId()].push_back(pConnection);
+				string const connectionType = pNode->getAttr(s_connectionTypeTag);
+				pConnection->m_type = connectionType == "stop" ? ePortAudioConnectionType_Stop : ePortAudioConnectionType_Start;
+
+				string const enablePanning = pNode->getAttr(s_panningEnabledTag);
+				pConnection->m_isPanningEnabled = enablePanning == "true" ? true : false;
+
+				string const enableDistAttenuation = pNode->getAttr(s_attenuationEnabledTag);
+				pConnection->m_isAttenuationEnabled = enableDistAttenuation == "true" ? true : false;
+
+				pNode->getAttr(s_attenuationDistMin, pConnection->m_minAttenuation);
+				pNode->getAttr(s_attenuationDistMax, pConnection->m_maxAttenuation);
+				pNode->getAttr(s_volumeTag, pConnection->m_volume);
+				pNode->getAttr(s_loopCountTag, pConnection->m_loopCount);
+
+				if (pConnection->m_loopCount == -1)
+				{
+					pConnection->m_isInfiniteLoop = true;
+				}
+
+				return pConnection;
+			}
+
+		}
 	}
-	return AUDIO_SYSTEM_INVALID_TYPE;
+
+	return nullptr;
 }
 
-string CAudioSystemEditor::GetName() const
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef CAudioSystemEditor::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EItemType const controlType)
 {
-	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
+	std::shared_ptr<const CConnection> const pSDLMixerConnection = std::static_pointer_cast<const CConnection>(pConnection);
+	IAudioSystemItem const* const pControl = GetControl(pConnection->GetID());
+	if ((pControl != nullptr) && (pSDLMixerConnection != nullptr) && (controlType == EItemType::Trigger))
+	{
+		XmlNodeRef const pConnectionNode = GetISystem()->CreateXmlNode(s_eventConnectionTag);
+		pConnectionNode->setAttr(s_itemNameTag, pControl->GetName());
+
+		string path;
+		IAudioSystemItem const* pParent = pControl->GetParent();
+
+		while (pParent != nullptr)
+		{
+			string const parentName = pParent->GetName();
+
+			if (!parentName.empty())
+			{
+				if (path.empty())
+				{
+					path = parentName;
+				}
+				else
+				{
+					path = parentName + CRY_NATIVE_PATH_SEPSTR + path;
+				}
+			}
+
+			pParent = pParent->GetParent();
+		}
+
+		pConnectionNode->setAttr(s_pathNameTag, path);
+
+		if (pSDLMixerConnection->m_type == ePortAudioConnectionType_Start)
+		{
+			pConnectionNode->setAttr(s_connectionTypeTag, "start");
+			pConnectionNode->setAttr(s_panningEnabledTag, pSDLMixerConnection->m_isPanningEnabled ? "true" : "false");
+			pConnectionNode->setAttr(s_attenuationEnabledTag, pSDLMixerConnection->m_isAttenuationEnabled ? "true" : "false");
+			pConnectionNode->setAttr(s_attenuationDistMin, pSDLMixerConnection->m_minAttenuation);
+			pConnectionNode->setAttr(s_attenuationDistMax, pSDLMixerConnection->m_maxAttenuation);
+			pConnectionNode->setAttr(s_volumeTag, pSDLMixerConnection->m_volume);
+
+			if (pSDLMixerConnection->m_isInfiniteLoop)
+			{
+				pConnectionNode->setAttr(s_loopCountTag, -1);
+			}
+			else
+			{
+				pConnectionNode->setAttr(s_loopCountTag, pSDLMixerConnection->m_loopCount);
+			}
+		}
+		else
+		{
+			pConnectionNode->setAttr(s_connectionTypeTag, "stop");
+		}
+
+		return pConnectionNode;
+	}
+
+	return nullptr;
 }
 
-void CImplementationSettings::SetProjectPath(const char* szPath)
+//////////////////////////////////////////////////////////////////////////
+CID CAudioSystemEditor::GetId(const string& name) const
 {
-	m_projectPath = szPath;
-	Serialization::SaveJsonFile(g_userSettingsFile.c_str(), *this);
+	return CCrc32::ComputeLowercase(name);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioSystemEditor::CreateControlCache(IAudioSystemItem const* const pParent)
+{
+	if (pParent != nullptr)
+	{
+		size_t const count = pParent->ChildCount();
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			IAudioSystemItem* const pChild = pParent->GetChildAt(i);
+
+			if (pChild != nullptr)
+			{
+				m_controlsCache.push_back(pChild);
+				CreateControlCache(pChild);
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioSystemEditor::Clear()
+{
+	// Delete all the controls
+	for (IAudioSystemItem const* const pControl : m_controlsCache)
+	{
+		delete pControl;
+	}
+
+	m_controlsCache.clear();
+
+	// Clean up the root control
+	m_root = IAudioSystemItem();
 }
 
 SERIALIZATION_ENUM_BEGIN(EPortAudioConnectionType, "Event Type")
 SERIALIZATION_ENUM(ePortAudioConnectionType_Start, "start", "Start")
 SERIALIZATION_ENUM(ePortAudioConnectionType_Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
-
-}
+} // namespace ACE

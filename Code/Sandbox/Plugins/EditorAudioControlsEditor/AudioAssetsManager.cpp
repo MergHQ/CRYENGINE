@@ -567,7 +567,7 @@ CAudioAsset* CAudioAssetsManager::CreateAndConnectImplItemsRecursively(IAudioSys
 	IAudioSystemEditor* const pImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 
 	string name = pImplItem->GetName();
-	EItemType const type = pImpl->ImplTypeToATLType(pImplItem->GetType());
+	EItemType const type = pImpl->ImplTypeToSystemType(pImplItem->GetType());
 
 	if (type != EItemType::Invalid)
 	{

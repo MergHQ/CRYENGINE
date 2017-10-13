@@ -38,13 +38,13 @@ using ConnectionPtr = std::shared_ptr<IAudioConnection>;
 struct SScopeInfo
 {
 	SScopeInfo() = default;
-	SScopeInfo(string const& name_, bool const bOnlyLocal_) : name(name_), bOnlyLocal(bOnlyLocal_) {}
+	SScopeInfo(string const& name_, bool const isLocalOnly_) : name(name_), isLocalOnly(isLocalOnly_) {}
 	string name;
 
 	// if true, there is a level in the game audio
 	// data that doesn't exist in the global list
 	// of levels for your project
-	bool bOnlyLocal;
+	bool isLocalOnly;
 };
 
 typedef uint32                  Scope;

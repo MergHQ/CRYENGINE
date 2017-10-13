@@ -16,24 +16,25 @@ using namespace PathUtil;
 
 namespace ACE
 {
-CSdlMixerProjectLoader::CSdlMixerProjectLoader(const string& assetsPath, IAudioSystemItem& rootItem)
+CSdlMixerProjectLoader::CSdlMixerProjectLoader(string const& assetsPath, IAudioSystemItem& rootItem)
 	: m_assetsPath(assetsPath)
 {
 	LoadFolder("", rootItem);
 }
 
-void CSdlMixerProjectLoader::LoadFolder(const string& folderPath, IAudioSystemItem& parent)
+void CSdlMixerProjectLoader::LoadFolder(string const& folderPath, IAudioSystemItem& parent)
 {
-
 	_finddata_t fd;
-	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(m_assetsPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+	ICryPak* const pCryPak = gEnv->pCryPak;
+	intptr_t const handle = pCryPak->FindFirst(m_assetsPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+
 	if (handle != -1)
 	{
 		do
 		{
-			const string name = fd.name;
-			if (name != "." && name != ".." && !name.empty())
+			string const name = fd.name;
+
+			if ((name != ".") && (name != "..") && !name.empty())
 			{
 				if (fd.attrib & _A_SUBDIR)
 				{
@@ -48,12 +49,13 @@ void CSdlMixerProjectLoader::LoadFolder(const string& folderPath, IAudioSystemIt
 				}
 				else
 				{
-					string::size_type posExtension = name.rfind('.');
+					string::size_type const posExtension = name.rfind('.');
+
 					if (posExtension != string::npos)
 					{
-						if (stricmp(name.data() + posExtension, ".mp3") == 0
-						    || stricmp(name.data() + posExtension, ".ogg") == 0
-						    || stricmp(name.data() + posExtension, ".wav") == 0)
+						if ((stricmp(name.data() + posExtension, ".mp3") == 0) ||
+							(stricmp(name.data() + posExtension, ".ogg") == 0) ||
+							(stricmp(name.data() + posExtension, ".wav") == 0))
 						{
 							// Create the event with the same name as the file
 							CreateItem(name, folderPath, eSdlMixerTypes_Event, parent);
@@ -63,13 +65,15 @@ void CSdlMixerProjectLoader::LoadFolder(const string& folderPath, IAudioSystemIt
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
+
 		pCryPak->FindClose(handle);
 	}
 }
 
-IAudioSystemItem* CSdlMixerProjectLoader::CreateItem(const string& name, const string& path, ItemType type, IAudioSystemItem& rootItem)
+IAudioSystemItem* CSdlMixerProjectLoader::CreateItem(string const& name, string const& path, ItemType const type, IAudioSystemItem& rootItem)
 {
 	CID id;
+
 	if (path.empty())
 	{
 		id = CCrc32::ComputeLowercase(name);
@@ -78,7 +82,8 @@ IAudioSystemItem* CSdlMixerProjectLoader::CreateItem(const string& name, const s
 	{
 		id = CCrc32::ComputeLowercase(path + CRY_NATIVE_PATH_SEPSTR + name);
 	}
-	IAudioSystemControl_sdlmixer* pControl = new IAudioSystemControl_sdlmixer(name, id, type);
+
+	IAudioSystemControl_sdlmixer* const pControl = new IAudioSystemControl_sdlmixer(name, id, type);
 	rootItem.AddChild(pControl);
 	return pControl;
 }

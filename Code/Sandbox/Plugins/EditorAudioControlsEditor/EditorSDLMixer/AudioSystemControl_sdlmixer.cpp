@@ -7,7 +7,8 @@
 
 namespace ACE
 {
-IAudioSystemControl_sdlmixer::IAudioSystemControl_sdlmixer(const string& name, CID id, ItemType type)
+//////////////////////////////////////////////////////////////////////////
+IAudioSystemControl_sdlmixer::IAudioSystemControl_sdlmixer(string const& name, CID const id, ItemType const type)
 	: IAudioSystemItem(name, id, type)
 {
 }

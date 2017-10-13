@@ -9,7 +9,7 @@ namespace ACE
 {
 enum ESdlMixerTypes
 {
-	eSdlMixerTypes_Invalid,
+	eSdlMixerTypes_Invalid = 0,
 	eSdlMixerTypes_Event,
 	eSdlMixerTypes_Folder,
 };
@@ -18,6 +18,6 @@ class IAudioSystemControl_sdlmixer final : public IAudioSystemItem
 {
 public:
 	IAudioSystemControl_sdlmixer() = default;
-	IAudioSystemControl_sdlmixer(const string& name, CID id, ItemType type);
+	IAudioSystemControl_sdlmixer(string const& name, CID const id, ItemType const type);
 };
 } // namespace ACE

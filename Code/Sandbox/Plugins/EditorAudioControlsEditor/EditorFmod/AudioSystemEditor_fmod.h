@@ -5,29 +5,33 @@
 #include "IAudioSystemEditor.h"
 #include "IAudioConnection.h"
 #include "IAudioSystemItem.h"
+
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 
 namespace ACE
 {
-
 enum EFmodItemType
 {
-	eFmodItemType_Invalid           = 0,
-	eFmodItemType_Folder            = BIT(0),
-	eFmodItemType_Event             = BIT(1),
-	eFmodItemType_EventParameter    = BIT(2),
-	eFmodItemType_Snapshot          = BIT(3),
-	eFmodItemType_SnapshotParameter = BIT(4),
-	eFmodItemType_Bank              = BIT(5),
-	eFmodItemType_Return            = BIT(6),
-	eFmodItemType_Group             = BIT(7),
+	eFmodItemType_Invalid = 0,
+	eFmodItemType_Folder,
+	eFmodItemType_Event,
+	eFmodItemType_EventParameter,
+	eFmodItemType_Snapshot,
+	eFmodItemType_SnapshotParameter,
+	eFmodItemType_Bank,
+	eFmodItemType_Return,
+	eFmodItemType_Group,
 };
 
 class CFmodFolder final : public IAudioSystemItem
 {
 public:
-	CFmodFolder(const string& name, CID id) : IAudioSystemItem(name, id, eFmodItemType_Folder) {}
+
+	CFmodFolder(string const& name, CID const id)
+		: IAudioSystemItem(name, id, eFmodItemType_Folder)
+	{}
+
 	virtual bool     IsConnected() const override { return true; }
 	virtual ItemType GetType() const override     { return eFmodItemType_Folder; }
 };
@@ -35,7 +39,11 @@ public:
 class CFmodGroup final : public IAudioSystemItem
 {
 public:
-	CFmodGroup(const string& name, CID id) : IAudioSystemItem(name, id, eFmodItemType_Group) {}
+
+	CFmodGroup(string const& name, CID const id)
+		: IAudioSystemItem(name, id, eFmodItemType_Group)
+	{}
+
 	virtual bool     IsConnected() const override { return true; }
 	virtual ItemType GetType() const override     { return eFmodItemType_Group; }
 };
@@ -43,12 +51,15 @@ public:
 class CImplementationSettings_fmod final : public IImplementationSettings
 {
 public:
+
 	CImplementationSettings_fmod()
 		: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "fmod_project")
-		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "fmod") {}
-	virtual const char* GetSoundBanksPath() const { return m_soundBanksPath.c_str(); }
-	virtual const char* GetProjectPath() const    { return m_projectPath.c_str(); }
-	virtual void        SetProjectPath(const char* szPath);
+		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "fmod")
+	{}
+
+	virtual char const* GetSoundBanksPath() const { return m_soundBanksPath.c_str(); }
+	virtual char const* GetProjectPath() const    { return m_projectPath.c_str(); }
+	virtual void        SetProjectPath(char const* szPath);
 
 	void                Serialize(Serialization::IArchive& ar)
 	{
@@ -56,56 +67,57 @@ public:
 	}
 
 private:
+
 	string       m_projectPath;
-	const string m_soundBanksPath;
+	string const m_soundBanksPath;
 };
 
 class CAudioSystemEditor_fmod final : public IAudioSystemEditor
 {
 public:
+
 	CAudioSystemEditor_fmod();
 	virtual ~CAudioSystemEditor_fmod();
 
-	//////////////////////////////////////////////////////////
-	// IAudioSystemEditor implementation
-	/////////////////////////////////////////////////////////
-	virtual void                     Reload(bool bPreserveConnectionStatus = true) override;
+	// IAudioSystemEditor
+	virtual void                     Reload(bool const preserveConnectionStatus = true) override;
 	virtual IAudioSystemItem*        GetRoot() override { return &m_root; }
-	virtual IAudioSystemItem*        GetControl(CID id) const override;
-	virtual EItemType                ImplTypeToATLType(ItemType type) const override;
-	virtual TImplControlTypeMask     GetCompatibleTypes(EItemType controlType) const override;
-	virtual ConnectionPtr            CreateConnectionToControl(EItemType controlType, IAudioSystemItem* pMiddlewareControl) override;
-	virtual ConnectionPtr            CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType controlType) override;
-	virtual XmlNodeRef               CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EItemType eATLControlType) override;
-	virtual const char*              GetTypeIcon(ItemType type) const override;
+	virtual IAudioSystemItem*        GetControl(CID const id) const override;
+	virtual TImplControlTypeMask     GetCompatibleTypes(EItemType const controlType) const override;
+	virtual char const*              GetTypeIcon(ItemType const type) const override;
 	virtual string                   GetName() const override;
-	virtual void                     EnableConnection(ConnectionPtr pConnection) override;
-	virtual void                     DisableConnection(ConnectionPtr pConnection) override;
 	virtual IImplementationSettings* GetSettings() override { return &m_settings; }
-	//////////////////////////////////////////////////////////
+	virtual EItemType                ImplTypeToSystemType(ItemType const itemType) const override;
+	virtual ConnectionPtr            CreateConnectionToControl(EItemType const controlType, IAudioSystemItem* const pMiddlewareControl) override;
+	virtual ConnectionPtr            CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType const controlType) override;
+	virtual XmlNodeRef               CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EItemType const controlType) override;
+	virtual void                     EnableConnection(ConnectionPtr const pConnection) override;
+	virtual void                     DisableConnection(ConnectionPtr const pConnection) override;
+	// ~IAudioSystemEditor
 
 private:
-	IAudioSystemItem* CreateItem(EFmodItemType type, IAudioSystemItem* pParent, const string& name);
-	CID               GetId(EFmodItemType type, const string& name, IAudioSystemItem* pParent) const;
-	string            GetFullPathName(IAudioSystemItem* pItem) const;
-	string            GetTypeName(EFmodItemType type) const;
 
-	void              ParseFolder(const string& folderPath);
-	void              ParseFile(const string& filepath);
+	IAudioSystemItem* CreateItem(EFmodItemType const type, IAudioSystemItem* const pParent, string const& name);
+	CID               GetId(EFmodItemType const type, string const& name, IAudioSystemItem* const pParent) const;
+	string            GetFullPathName(IAudioSystemItem const* const pItem) const;
+	string            GetTypeName(EFmodItemType const type) const;
 
-	IAudioSystemItem* GetContainer(const string& id, EFmodItemType type);
-	IAudioSystemItem* LoadContainer(XmlNodeRef pNode, EFmodItemType type, const string& relationshipParamName);
-	IAudioSystemItem* LoadFolder(XmlNodeRef pNode);
-	IAudioSystemItem* LoadGroup(XmlNodeRef pNode);
+	void              ParseFolder(string const& folderPath);
+	void              ParseFile(string const& filepath);
 
-	IAudioSystemItem* LoadItem(XmlNodeRef pNode, EFmodItemType type);
-	IAudioSystemItem* LoadEvent(XmlNodeRef pNode);
-	IAudioSystemItem* LoadSnapshot(XmlNodeRef pNode);
-	IAudioSystemItem* LoadReturn(XmlNodeRef pNode);
-	IAudioSystemItem* LoadParameter(XmlNodeRef pNode, EFmodItemType type, IAudioSystemItem& parentEvent);
+	IAudioSystemItem* GetContainer(string const& id, EFmodItemType const type);
+	IAudioSystemItem* LoadContainer(XmlNodeRef const pNode, EFmodItemType const type, string const& relationshipParamName);
+	IAudioSystemItem* LoadFolder(XmlNodeRef const pNode);
+	IAudioSystemItem* LoadGroup(XmlNodeRef const pNode);
 
-	IAudioSystemItem* GetItemFromPath(const string& fullpath);
-	IAudioSystemItem* CreatePlaceholderFolderPath(const string& path);
+	IAudioSystemItem* LoadItem(XmlNodeRef const pNode, EFmodItemType const type);
+	IAudioSystemItem* LoadEvent(XmlNodeRef const pNode);
+	IAudioSystemItem* LoadSnapshot(XmlNodeRef const pNode);
+	IAudioSystemItem* LoadReturn(XmlNodeRef const pNode);
+	IAudioSystemItem* LoadParameter(XmlNodeRef const pNode, EFmodItemType const type, IAudioSystemItem& parentEvent);
+
+	IAudioSystemItem* GetItemFromPath(string const& fullpath);
+	IAudioSystemItem* CreatePlaceholderFolderPath(string const& path);
 
 	std::map<CID, int>                  m_connectionsByID;
 
@@ -114,4 +126,4 @@ private:
 	std::map<string, IAudioSystemItem*> m_containerIdMap;
 	CImplementationSettings_fmod        m_settings;
 };
-}
+} // namespace ACE

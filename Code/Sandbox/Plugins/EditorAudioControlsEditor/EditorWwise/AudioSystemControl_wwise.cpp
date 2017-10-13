@@ -7,8 +7,9 @@
 
 namespace ACE
 {
-IAudioSystemControl_wwise::IAudioSystemControl_wwise(const string& name, CID id, ItemType type)
+//////////////////////////////////////////////////////////////////////////
+IAudioSystemControl_wwise::IAudioSystemControl_wwise(string const& name, CID const id, ItemType const type)
 	: IAudioSystemItem(name, id, type)
 {
 }
-}
+} //namespace ACE

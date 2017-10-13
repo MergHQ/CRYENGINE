@@ -32,7 +32,7 @@ public:
 	const char*                    GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
 
 	static void                    SaveModels();
-	static void                    ReloadModels(bool const bReloadImplementation);
+	static void                    ReloadModels(bool const reloadImplementation);
 	static void                    ReloadScopes();
 	static CAudioAssetsManager*    GetAssetsManager();
 	static CImplementationManager* GetImplementationManger();

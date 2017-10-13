@@ -7,8 +7,8 @@
 
 namespace ACE
 {
-IAudioSystemControl::IAudioSystemControl(const string& name, CID id, ItemType type)
+IAudioSystemControl::IAudioSystemControl(string const& name, CID const id, ItemType const type)
 	: IAudioSystemItem(name, id, type)
 {
 }
-}
+} // namespace ACE

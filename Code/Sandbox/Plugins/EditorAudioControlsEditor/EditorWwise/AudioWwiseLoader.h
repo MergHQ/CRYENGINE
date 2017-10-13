@@ -2,30 +2,31 @@
 
 #pragma once
 
+#include "AudioSystemControl_wwise.h"
 #include <CrySystem/XML/IXml.h>
 #include <ACETypes.h>
 #include <IAudioSystemEditor.h>
-#include "AudioSystemControl_wwise.h"
 
 namespace ACE
 {
-
 class CAudioWwiseLoader
 {
 public:
-	CAudioWwiseLoader(const string& projectPath, const string& soundbanksPath, IAudioSystemItem& root);
+
+	CAudioWwiseLoader(string const& projectPath, string const& soundbanksPath, IAudioSystemItem& root);
 
 private:
-	void              LoadSoundBanks(string const& folderPath, bool const bLocalized, IAudioSystemItem& parent);
+
+	void              LoadSoundBanks(string const& folderPath, bool const isLocalized, IAudioSystemItem& parent);
 	void              LoadFolder(string const& folderPath, string const& folderName, IAudioSystemItem& parent);
-	void              LoadWorkUnitFile(const string& filePath, IAudioSystemItem& parent);
-	void              LoadXml(XmlNodeRef root, IAudioSystemItem& parent);
-	IAudioSystemItem* CreateItem(const string& name, EWwiseItemTypes type, IAudioSystemItem& pParent);
-	void              LoadEventsMetadata(const string& soundbanksPath);
+	void              LoadWorkUnitFile(string const& filePath, IAudioSystemItem& parent);
+	void              LoadXml(XmlNodeRef const root, IAudioSystemItem& parent);
+	IAudioSystemItem* CreateItem(string const& name, EWwiseItemTypes const type, IAudioSystemItem& pParent);
+	void              LoadEventsMetadata(string const& soundbanksPath);
 
-	IAudioSystemItem* GetControlByName(const string& name, bool bIsLocalised = false, IAudioSystemItem* pParent = nullptr) const;
+	IAudioSystemItem* GetControlByName(string const& name, bool const isLocalised = false, IAudioSystemItem const* const pParent = nullptr) const;
 
-	void              BuildFileCache(const string& folderPath);
+	void              BuildFileCache(string const& folderPath);
 
 private:
 
@@ -53,4 +54,4 @@ private:
 	// List of already loaded work unit files
 	std::set<uint32> m_filesLoaded;
 };
-}
+} // namespace ACE

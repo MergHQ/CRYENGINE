@@ -5,6 +5,7 @@
 #include "MiddlewareDataModel.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
+#include "ItemStatusHelper.h"
 
 #include <IAudioSystemEditor.h>
 #include <IAudioSystemItem.h>
@@ -15,7 +16,6 @@
 
 #include <QMimeData>
 #include <QDataStream>
-#include <QColor>
 
 namespace ACE
 {
@@ -97,12 +97,12 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 					case Qt::ForegroundRole:
 						if (pItem->IsLocalised())
 						{
-							return QColor(36, 180, 245);
+							return GetItemStatusColor(EItemStatus::Localized);
 						}
-						else if (!pItem->IsConnected() && (m_pAudioSystem->ImplTypeToATLType(pItem->GetType()) != EItemType::Invalid))
+						else if (!pItem->IsConnected() && (m_pAudioSystem->ImplTypeToSystemType(pItem->GetType()) != EItemType::Invalid))
 						{
 							// Tint non connected controls that can actually be connected to something (ie. exclude folders)
-							return QColor(255, 150, 50);
+							return GetItemStatusColor(EItemStatus::NoConnection);
 						}
 						break;
 					case Qt::ToolTipRole:
@@ -112,7 +112,7 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 						}
 						else if (!pItem->IsConnected())
 						{
-							return tr("Item is not connected to any ATL control");
+							return tr("Item is not connected to any audio system control");
 						}
 						break;
 					case static_cast<int>(EMiddlewareDataAttributes::Type):
@@ -159,7 +159,7 @@ Qt::ItemFlags CMiddlewareDataModel::flags(QModelIndex const& index) const
 	{
 		IAudioSystemItem const* const pItem = ItemFromIndex(index);
 
-		if ((pItem != nullptr) && !pItem->IsPlaceholder() && (m_pAudioSystem->ImplTypeToATLType(pItem->GetType()) != EItemType::NumTypes))
+		if ((pItem != nullptr) && !pItem->IsPlaceholder() && (m_pAudioSystem->ImplTypeToSystemType(pItem->GetType()) != EItemType::NumTypes))
 		{
 			flag |= Qt::ItemIsDragEnabled;
 		}
