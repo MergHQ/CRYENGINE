@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CrySystem/XML/IXml.h>
-#include "ACETypes.h"
+#include <ACETypes.h>
 
 namespace ACE
 {
@@ -12,12 +12,14 @@ class IAudioSystemItem;
 class CProjectLoader
 {
 public:
-	CProjectLoader(const string& sAssetsPath, IAudioSystemItem& rootItem);
+
+	CProjectLoader(string const& sAssetsPath, IAudioSystemItem& rootItem);
 
 private:
-	IAudioSystemItem* CreateItem(const string& name, const string& path, ItemType type, IAudioSystemItem& rootItem);
-	void              LoadFolder(const string& folderPath, IAudioSystemItem& parent);
+
+	IAudioSystemItem* CreateItem(string const& name, string const& path, ItemType const type, IAudioSystemItem& rootItem);
+	void              LoadFolder(string const& folderPath, IAudioSystemItem& parent);
 
 	string m_assetsPath;
 };
-}
+} // namespace ACE

@@ -34,7 +34,7 @@ public:
 	explicit inline CTransform(const Matrix34& transform)
 		: m_translation(transform.GetTranslation())
 		, m_rotation(Matrix33(transform))
-		, m_scale(1.0f, 1.0f, 1.0f)
+		, m_scale(transform.GetScale())
 	{}
 
 	inline CTransform(const CTransform& rhs)
@@ -80,7 +80,7 @@ public:
 
 	inline Matrix34 ToMatrix34() const
 	{
-		Matrix34 output = Matrix34::CreateRotationXYZ(m_rotation.ToAngles().ToAng3());
+		Matrix34 output = m_rotation.ToMatrix();
 		output = output * Matrix34::CreateScale(m_scale);
 		output.SetTranslation(m_translation);
 		return output;
@@ -98,14 +98,21 @@ public:
 	{
 		m_translation = transform.t;
 		m_rotation = transform.q;
-		m_scale.Set(1.0f, 1.0f, 1.0f);
+		m_scale.Set(m_scale.x, m_scale.y, m_scale.z);
 	}
 
 	inline void operator=(const Matrix34& transform)
 	{
 		m_translation = transform.GetTranslation();
 		m_rotation = Matrix33(transform);
-		m_scale.Set(1.0f, 1.0f, 1.0f); //@TODO, read scale from transform matrix
+		m_scale = transform.GetScale();
+	}
+
+	inline void operator=(const CTransform& transform)
+	{
+		m_translation = transform.GetTranslation();
+		m_rotation = transform.GetRotation();
+		m_scale = transform.GetScale();
 	}
 
 	inline bool operator==(const CTransform& rhs) const

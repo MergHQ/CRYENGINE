@@ -2,20 +2,22 @@
 
 #include "StdAfx.h"
 #include "ConnectionsModel.h"
-#include <IAudioSystemEditor.h>
-#include <IAudioSystemItem.h>
+
 #include "AudioAssets.h"
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
-#include "IUndoObject.h"
-#include "EditorStyleHelper.h"
+#include "ItemStatusHelper.h"
+
+#include <IAudioSystemEditor.h>
+#include <IAudioSystemItem.h>
+#include <IUndoObject.h>
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 #include <CryIcon.h>
 #include <QtUtil.h>
+#include <ConfigurationManager.h>
 
 #include <QMimeData>
-#include <ConfigurationManager.h>
 
 namespace ACE
 {
@@ -157,7 +159,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 					case Qt::ForegroundRole:
 						if (pItem->IsPlaceholder())
 						{
-							return GetStyleHelper()->errorColor();
+							return GetItemStatusColor(EItemStatus::Placeholder);
 						}
 						break;
 					case Qt::ToolTipRole:

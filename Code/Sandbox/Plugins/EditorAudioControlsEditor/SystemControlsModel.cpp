@@ -6,19 +6,15 @@
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
 #include "SystemControlsEditorIcons.h"
+#include "ItemStatusHelper.h"
 
 #include <IAudioSystemItem.h>
 #include <QtUtil.h>
-#include <EditorStyleHelper.h>
 
 #include <DragDrop.h>
 
 namespace ACE
 {
-static QColor s_placeholderColor = GetStyleHelper()->errorColor();
-static QColor s_noConnectionColor = QColor(255, 150, 50);
-static QColor s_noControlColor = QColor(50, 150, 255);
-
 //////////////////////////////////////////////////////////////////////////
 bool IsParentValid(CAudioAsset const& parent, EItemType const type)
 {
@@ -73,7 +69,7 @@ bool CanDropMimeData(QMimeData const* pData, CAudioAsset const& parent)
 
 		for (IAudioSystemItem const* const pImplItem : implItems)
 		{
-			if (!IsParentValid(parent, pImpl->ImplTypeToATLType(pImplItem->GetType())))
+			if (!IsParentValid(parent, pImpl->ImplTypeToSystemType(pImplItem->GetType())))
 			{
 				return false;
 			}
@@ -184,15 +180,15 @@ QVariant CSystemControlsModel::data(QModelIndex const& index, int role) const
 
 			if (pLibrary->HasPlaceholderConnection())
 			{
-				return s_placeholderColor;
+				return GetItemStatusColor(EItemStatus::Placeholder);
 			}
 			else if (!pLibrary->HasConnection())
 			{
-				return s_noConnectionColor;
+				return GetItemStatusColor(EItemStatus::NoConnection);
 			}
 			else if (!pLibrary->HasControl())
 			{
-				return s_noControlColor;
+				return GetItemStatusColor(EItemStatus::NoControl);
 			}
 			
 			break;
@@ -482,15 +478,15 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 
 			if (pItem->HasPlaceholderConnection())
 			{
-				return s_placeholderColor;
+				return GetItemStatusColor(EItemStatus::Placeholder);
 			}
 			else if (!pItem->HasConnection())
 			{
-				return s_noConnectionColor;
+				return GetItemStatusColor(EItemStatus::NoConnection);
 			}
 			else if (((itemType == EItemType::Folder) || (itemType == EItemType::Switch)) && !pItem->HasControl())
 			{
-				return s_noControlColor;
+				return GetItemStatusColor(EItemStatus::NoControl);
 			}
 
 			break;

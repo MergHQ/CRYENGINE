@@ -227,8 +227,6 @@ private:
 
 	CShader*       mfNewShader(const char* szName);
 
-	void           mfCompileLevelsList(std::vector<string>& List, char* scr);
-	bool           mfCompileShaderLevelPolicies(SShaderLevelPolicies* pPL, char* scr);
 	bool           mfCompileShaderGen(SShaderGen* shg, char* scr);
 	SShaderGenBit* mfCompileShaderGenProperty(char* scr);
 
@@ -352,7 +350,6 @@ public:
 
 	const SInputShaderResources* m_pCurInputResources;
 	SShaderGen*                  m_pGlobalExt;
-	SShaderLevelPolicies*        m_pLevelsPolicies;
 
 	Vec4                         m_TempVecs[16];
 	Vec4                         m_RTRect;
@@ -458,7 +455,6 @@ public:
 	uint64            mfGetShaderGlobalMaskGenFromString(const char* szShaderGen);
 
 	void              mfInitGlobal(void);
-	void              mfInitLevelPolicies(void);
 	void              mfInitLookups(void);
 
 	void              mfPreloadShaderExts(void);

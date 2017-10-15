@@ -562,6 +562,9 @@ template<typename F> struct Matrix34_tpl
 	// Gets the transformation's scale if it is uniform
 	ILINE F GetUniformScale() const  { return GetColumn0().GetLength(); }
 
+	// Gets the transformation's scale
+	ILINE Vec3 GetScale() const { return Vec3(GetColumn0().GetLength(), GetColumn1().GetLength(), GetColumn2().GetLength()); }
+
 	// helper functions to access matrix-members
 
 	F*                       GetData()                              { return &m00; }

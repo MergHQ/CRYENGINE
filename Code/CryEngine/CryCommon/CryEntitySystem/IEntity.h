@@ -1415,6 +1415,18 @@ inline void IEntityComponent::SetTransformMatrix(const Matrix34& transform)
 	GetEntity()->UpdateSlotForComponent(this);
 }
 
+inline void IEntityComponent::SetTransformMatrix(const CryTransform::CTransformPtr& transform)
+{
+	if (m_pTransform == nullptr)
+	{
+		m_componentFlags.Add(EEntityComponentFlags::Transform);
+		m_pTransform = std::make_shared<CryTransform::CTransform>();
+	}
+
+	*m_pTransform = *transform;
+	GetEntity()->UpdateSlotForComponent(this);
+}
+
 //////////////////////////////////////////////////////////////////////////
 inline Matrix34 IEntityComponent::GetWorldTransformMatrix() const
 {

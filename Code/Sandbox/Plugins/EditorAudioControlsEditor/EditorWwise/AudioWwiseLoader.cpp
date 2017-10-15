@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "AudioWwiseLoader.h"
+
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILocalizationManager.h>
@@ -14,19 +15,20 @@ using namespace PathUtil;
 
 namespace ACE
 {
-const string g_gameParametersFolder = "Game Parameters";
-const string g_gameStatesPath = "States";
-const string g_switchesFolder = "Switches";
-const string g_eventsFolder = "Events";
-const string g_environmentsFolder = "Master-Mixer Hierarchy";
-const string g_soundBanksPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise";
-const string g_soundBanksInfoFilename = "SoundbanksInfo.xml";
+string const g_gameParametersFolder = "Game Parameters";
+string const g_gameStatesPath = "States";
+string const g_switchesFolder = "Switches";
+string const g_eventsFolder = "Events";
+string const g_environmentsFolder = "Master-Mixer Hierarchy";
+string const g_soundBanksPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise";
+string const g_soundBanksInfoFilename = "SoundbanksInfo.xml";
 
-EWwiseItemTypes TagToItemType(const string& tag)
+//////////////////////////////////////////////////////////////////////////
+EWwiseItemTypes TagToItemType(string const& tag)
 {
 	if (tag == "GameParameter")
 	{
-		return eWwiseItemTypes_Rtpc;
+		return eWwiseItemTypes_Parameter;
 	}
 	else if (tag == "Event")
 	{
@@ -63,20 +65,23 @@ EWwiseItemTypes TagToItemType(const string& tag)
 	return eWwiseItemTypes_Invalid;
 }
 
-string BuildPath(IAudioSystemItem* pItem)
+//////////////////////////////////////////////////////////////////////////
+string BuildPath(IAudioSystemItem const* const pItem)
 {
-	if (pItem)
+	if (pItem != nullptr)
 	{
 		if (pItem->GetParent())
 		{
 			return BuildPath(pItem->GetParent()) + CRY_NATIVE_PATH_SEPSTR + pItem->GetName();
 		}
+
 		return pItem->GetName();
 	}
 	return "";
 }
 
-CAudioWwiseLoader::CAudioWwiseLoader(const string& projectPath, const string& soundbanksPath, IAudioSystemItem& root)
+//////////////////////////////////////////////////////////////////////////
+CAudioWwiseLoader::CAudioWwiseLoader(string const& projectPath, string const& soundbanksPath, IAudioSystemItem& root)
 	: m_root(root)
 	, m_projectRoot(projectPath)
 {
@@ -119,7 +124,7 @@ CAudioWwiseLoader::CAudioWwiseLoader(const string& projectPath, const string& so
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioWwiseLoader::LoadSoundBanks(string const& folderPath, bool const bLocalized, IAudioSystemItem& parent)
+void CAudioWwiseLoader::LoadSoundBanks(string const& folderPath, bool const isLocalized, IAudioSystemItem& parent)
 {
 	_finddata_t fd;
 	intptr_t const handle = gEnv->pCryPak->FindFirst(folderPath + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
@@ -130,7 +135,7 @@ void CAudioWwiseLoader::LoadSoundBanks(string const& folderPath, bool const bLoc
 		{
 			string const name = fd.name;
 
-			if (name != "." && name != ".." && !name.empty())
+			if ((name != ".") && (name != "..") && !name.empty())
 			{
 				if ((fd.attrib & _A_SUBDIR) == 0)
 				{
@@ -142,10 +147,10 @@ void CAudioWwiseLoader::LoadSoundBanks(string const& folderPath, bool const bLoc
 
 						if (pControl == nullptr)
 						{
-							IAudioSystemControl_wwise* pNewControl = new IAudioSystemControl_wwise(name, id, eWwiseItemTypes_SoundBank);
+							IAudioSystemControl_wwise* const pNewControl = new IAudioSystemControl_wwise(name, id, eWwiseItemTypes_SoundBank);
 							parent.AddChild(pNewControl);
 							pNewControl->SetParent(&parent);
-							pNewControl->SetLocalised(bLocalized);
+							pNewControl->SetLocalised(isLocalized);
 							m_controlsCache[id] = pNewControl;
 						}
 					}
@@ -153,11 +158,12 @@ void CAudioWwiseLoader::LoadSoundBanks(string const& folderPath, bool const bLoc
 				else
 				{
 					IAudioSystemItem* const pParent = CreateItem(name, eWwiseItemTypes_PhysicalFolder, parent);
-					LoadSoundBanks(folderPath + CRY_NATIVE_PATH_SEPSTR + name, bLocalized, *pParent);
+					LoadSoundBanks(folderPath + CRY_NATIVE_PATH_SEPSTR + name, isLocalized, *pParent);
 				}
 			}
 		}
 		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+
 		gEnv->pCryPak->FindClose(handle);
 	}
 }
@@ -166,8 +172,9 @@ void CAudioWwiseLoader::LoadSoundBanks(string const& folderPath, bool const bLoc
 void CAudioWwiseLoader::LoadFolder(string const& folderPath, string const& folderName, IAudioSystemItem& parent)
 {
 	_finddata_t fd;
-	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + folderName + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+	ICryPak* const pCryPak = gEnv->pCryPak;
+	intptr_t const handle = pCryPak->FindFirst(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + folderName + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+
 	if (handle != -1)
 	{
 		IAudioSystemItem* const pParent = CreateItem(folderName, eWwiseItemTypes_PhysicalFolder, parent);
@@ -176,7 +183,7 @@ void CAudioWwiseLoader::LoadFolder(string const& folderPath, string const& folde
 		{
 			string const name = fd.name;
 
-			if (name != "." && name != ".." && !name.empty())
+			if ((name != ".") && (name != "..") && !name.empty())
 			{
 				if ((fd.attrib & _A_SUBDIR) != 0)
 				{
@@ -189,6 +196,7 @@ void CAudioWwiseLoader::LoadFolder(string const& folderPath, string const& folde
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
+
 		pCryPak->FindClose(handle);
 	}
 }
@@ -198,16 +206,16 @@ void CAudioWwiseLoader::LoadWorkUnitFile(const string& filePath, IAudioSystemIte
 {
 	XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + filePath);
 
-	if (pRoot)
+	if (pRoot != nullptr)
 	{
-		const uint32 fileId = CCrc32::ComputeLowercase(pRoot->getAttr("ID"));
+		uint32 const fileId = CCrc32::ComputeLowercase(pRoot->getAttr("ID"));
 
 		if (m_filesLoaded.count(fileId) == 0)
 		{
 			// Make sure we've loaded any work units we depend on before loading
 			if (pRoot->haveAttr("RootDocumentID"))
 			{
-				const uint32 parentDocumentId = CCrc32::ComputeLowercase(pRoot->getAttr("RootDocumentID"));
+				uint32 const parentDocumentId = CCrc32::ComputeLowercase(pRoot->getAttr("RootDocumentID"));
 
 				if (m_items.count(parentDocumentId) == 0)
 				{
@@ -226,7 +234,7 @@ void CAudioWwiseLoader::LoadWorkUnitFile(const string& filePath, IAudioSystemIte
 			}
 
 			// Each files starts with the type of controls and then the WorkUnit
-			const int childCount = pRoot->getChildCount();
+			int const childCount = pRoot->getChildCount();
 
 			for (int i = 0; i < childCount; ++i)
 			{
@@ -239,17 +247,17 @@ void CAudioWwiseLoader::LoadWorkUnitFile(const string& filePath, IAudioSystemIte
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioWwiseLoader::LoadXml(XmlNodeRef pRoot, IAudioSystemItem& parent)
+void CAudioWwiseLoader::LoadXml(XmlNodeRef const pRoot, IAudioSystemItem& parent)
 {
-	if (pRoot)
+	if (pRoot != nullptr)
 	{
 		IAudioSystemItem* pControl = &parent;
-		const EWwiseItemTypes type = TagToItemType(pRoot->getTag());
+		EWwiseItemTypes const type = TagToItemType(pRoot->getTag());
+
 		if (type != eWwiseItemTypes_Invalid)
 		{
-			string name = pRoot->getAttr("Name");
-
-			const uint32 itemId = CCrc32::ComputeLowercase(pRoot->getAttr("ID"));
+			string const name = pRoot->getAttr("Name");
+			uint32 const itemId = CCrc32::ComputeLowercase(pRoot->getAttr("ID"));
 
 			// Check if this item has not been created before. It could have been created in
 			// a different Work Unit as a reference
@@ -266,10 +274,11 @@ void CAudioWwiseLoader::LoadXml(XmlNodeRef pRoot, IAudioSystemItem& parent)
 			}
 		}
 
-		XmlNodeRef pChildren = pRoot->findChild("ChildrenList");
-		if (pChildren)
+		XmlNodeRef const pChildren = pRoot->findChild("ChildrenList");
+
+		if (pChildren != nullptr)
 		{
-			const int childCount = pChildren->getChildCount();
+			int const childCount = pChildren->getChildCount();
 			for (int i = 0; i < childCount; ++i)
 			{
 				LoadXml(pChildren->getChild(i), *pControl);
@@ -279,26 +288,30 @@ void CAudioWwiseLoader::LoadXml(XmlNodeRef pRoot, IAudioSystemItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IAudioSystemItem* CAudioWwiseLoader::CreateItem(const string& name, EWwiseItemTypes type, IAudioSystemItem& parent)
+IAudioSystemItem* CAudioWwiseLoader::CreateItem(const string& name, EWwiseItemTypes const type, IAudioSystemItem& parent)
 {
-	const string path = BuildPath(&parent);
-	const string fullPathName = path.empty() ? name : path + CRY_NATIVE_PATH_SEPSTR + name;
+	string const path = BuildPath(&parent);
+	string const fullPathName = path.empty() ? name : path + CRY_NATIVE_PATH_SEPSTR + name;
 
 	// The id is always the path of the control from the root of the wwise project
-	CID id = CCrc32::ComputeLowercase(fullPathName);
+	CID const id = CCrc32::ComputeLowercase(fullPathName);
 
 	IAudioSystemItem* pControl = stl::find_in_map(m_controlsCache, id, nullptr);
+
 	if (pControl == nullptr)
 	{
 		pControl = new IAudioSystemControl_wwise(name, id, type);
+
 		if (type == eWwiseItemTypes_Event)
 		{
 			pControl->SetRadius(m_eventsInfoMap[CCrc32::ComputeLowercase(name.c_str())].maxRadius);
 		}
+
 		parent.AddChild(pControl);
 		pControl->SetParent(&parent);
 		m_controlsCache[id] = pControl;
 	}
+
 	return pControl;
 }
 
@@ -308,32 +321,41 @@ void CAudioWwiseLoader::LoadEventsMetadata(const string& soundbanksPath)
 	m_eventsInfoMap.clear();
 	string path = soundbanksPath;
 	path += CRY_NATIVE_PATH_SEPSTR + g_soundBanksInfoFilename;
-	XmlNodeRef pRootNode = GetISystem()->LoadXmlFromFile(path.c_str());
-	if (pRootNode)
+	XmlNodeRef const pRootNode = GetISystem()->LoadXmlFromFile(path.c_str());
+
+	if (pRootNode != nullptr)
 	{
-		XmlNodeRef pSoundBanksNode = pRootNode->findChild("SoundBanks");
-		if (pSoundBanksNode)
+		XmlNodeRef const pSoundBanksNode = pRootNode->findChild("SoundBanks");
+
+		if (pSoundBanksNode != nullptr)
 		{
-			const int numSoundBankNodes = pSoundBanksNode->getChildCount();
+			int const numSoundBankNodes = pSoundBanksNode->getChildCount();
+
 			for (int i = 0; i < numSoundBankNodes; ++i)
 			{
-				XmlNodeRef pSoundBankNode = pSoundBanksNode->getChild(i);
-				if (pSoundBankNode)
+				XmlNodeRef const pSoundBankNode = pSoundBanksNode->getChild(i);
+
+				if (pSoundBankNode != nullptr)
 				{
-					XmlNodeRef pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
-					if (pIncludedEventsNode)
+					XmlNodeRef const pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
+
+					if (pIncludedEventsNode != nullptr)
 					{
-						const int numEventNodes = pIncludedEventsNode->getChildCount();
+						int const numEventNodes = pIncludedEventsNode->getChildCount();
+
 						for (int j = 0; j < numEventNodes; ++j)
 						{
-							XmlNodeRef pEventNode = pIncludedEventsNode->getChild(j);
-							if (pEventNode)
+							XmlNodeRef const pEventNode = pIncludedEventsNode->getChild(j);
+
+							if (pEventNode != nullptr)
 							{
 								SEventInfo info;
+
 								if (!pEventNode->getAttr("MaxAttenuation", info.maxRadius))
 								{
 									info.maxRadius = 0.0f;
 								}
+
 								m_eventsInfoMap[CCrc32::ComputeLowercase(pEventNode->getAttr("Name"))] = info;
 							}
 						}
@@ -345,10 +367,11 @@ void CAudioWwiseLoader::LoadEventsMetadata(const string& soundbanksPath)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ACE::IAudioSystemItem* CAudioWwiseLoader::GetControlByName(const string& name, bool bIsLocalised, IAudioSystemItem* pParent) const
+IAudioSystemItem* CAudioWwiseLoader::GetControlByName(string const& name, bool const isLocalised, IAudioSystemItem const* const pParent) const
 {
-	string fullName = (pParent) ? pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + name : name;
-	if (bIsLocalised)
+	string fullName = (pParent != nullptr) ? (pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + name) : name;
+
+	if (isLocalised)
 	{
 		fullName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + fullName;
 	}
@@ -357,17 +380,19 @@ ACE::IAudioSystemItem* CAudioWwiseLoader::GetControlByName(const string& name, b
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioWwiseLoader::BuildFileCache(const string& folderPath)
+void CAudioWwiseLoader::BuildFileCache(string const& folderPath)
 {
 	_finddata_t fd;
-	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
+	ICryPak* const pCryPak = gEnv->pCryPak;
+	intptr_t const handle = pCryPak->FindFirst(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
+
 	if (handle != -1)
 	{
 		do
 		{
-			string name = fd.name;
-			if (name != "." && name != ".." && !name.empty())
+			string const name = fd.name;
+
+			if ((name != ".") && (name != "..") && !name.empty())
 			{
 				if (fd.attrib & _A_SUBDIR)
 				{
@@ -375,9 +400,10 @@ void CAudioWwiseLoader::BuildFileCache(const string& folderPath)
 				}
 				else
 				{
-					string path = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
-					XmlNodeRef pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + path);
-					if (pRoot)
+					string const path = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
+					XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + path);
+
+					if (pRoot != nullptr)
 					{
 						m_filesCache[CCrc32::ComputeLowercase(pRoot->getAttr("ID"))] = path;
 					}
@@ -385,8 +411,8 @@ void CAudioWwiseLoader::BuildFileCache(const string& folderPath)
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
+
 		pCryPak->FindClose(handle);
 	}
-
 }
-}
+} // namespace ACE

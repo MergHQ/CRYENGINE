@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "SDLMixerProjectLoader.h"
+
 #include <IAudioSystemEditor.h>
 #include <IAudioConnection.h>
 #include <IAudioSystemItem.h>
@@ -11,12 +13,10 @@
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Enum.h>
 #include <CrySerialization/ClassFactory.h>
-#include "SDLMixerProjectLoader.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace ACE
 {
-
 enum ESdlMixerConnectionType
 {
 	eSdlMixerConnectionType_Start = 0,
@@ -27,30 +27,31 @@ enum ESdlMixerConnectionType
 class CSdlMixerConnection final : public IAudioConnection
 {
 public:
-	explicit CSdlMixerConnection(CID id)
+
+	explicit CSdlMixerConnection(CID const id)
 		: IAudioConnection(id)
-		, type(eSdlMixerConnectionType_Start)
-		, bPanningEnabled(true)
-		, bAttenuationEnabled(true)
-		, minAttenuation(0.0f)
-		, maxAttenuation(100.0f)
-		, volume(-14.0f)
-		, loopCount(1)
-		, bInfiniteLoop(false)
+		, m_type(eSdlMixerConnectionType_Start)
+		, m_isPanningEnabled(true)
+		, m_isAttenuationEnabled(true)
+		, m_minAttenuation(0.0f)
+		, m_maxAttenuation(100.0f)
+		, m_volume(-14.0f)
+		, m_loopCount(1)
+		, m_isInfiniteLoop(false)
 	{}
 
-	virtual bool HasProperties() override { return true; }
+	virtual bool HasProperties() const override { return true; }
 
 	virtual void Serialize(Serialization::IArchive& ar) override;
 
-	ESdlMixerConnectionType type;
-	float                   minAttenuation;
-	float                   maxAttenuation;
-	float                   volume;
-	uint                    loopCount;
-	bool                    bPanningEnabled;
-	bool                    bAttenuationEnabled;
-	bool                    bInfiniteLoop;
+	ESdlMixerConnectionType m_type;
+	float                   m_minAttenuation;
+	float                   m_maxAttenuation;
+	float                   m_volume;
+	uint                    m_loopCount;
+	bool                    m_isPanningEnabled;
+	bool                    m_isAttenuationEnabled;
+	bool                    m_isInfiniteLoop;
 };
 
 using SdlConnectionPtr = std::shared_ptr<CSdlMixerConnection>;
@@ -58,12 +59,15 @@ using SdlConnectionPtr = std::shared_ptr<CSdlMixerConnection>;
 class CImplementationSettings_sdlmixer final : public IImplementationSettings
 {
 public:
+
 	CImplementationSettings_sdlmixer()
 		: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer")
-		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer") {}
-	virtual const char* GetSoundBanksPath() const override { return m_soundBanksPath.c_str(); }
-	virtual const char* GetProjectPath() const override    { return m_projectPath.c_str(); }
-	virtual void        SetProjectPath(const char* szPath) override;
+		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer")
+	{}
+
+	virtual char const* GetSoundBanksPath() const override { return m_soundBanksPath.c_str(); }
+	virtual char const* GetProjectPath() const override    { return m_projectPath.c_str(); }
+	virtual void        SetProjectPath(char const* szPath) override;
 
 	void                Serialize(Serialization::IArchive& ar)
 	{
@@ -71,55 +75,55 @@ public:
 	}
 
 private:
+
 	string       m_projectPath;
-	const string m_soundBanksPath;
+	string const m_soundBanksPath;
 };
 
 class CAudioSystemEditor_sdlmixer final : public IAudioSystemEditor
 {
-
 public:
+
 	CAudioSystemEditor_sdlmixer();
 	virtual ~CAudioSystemEditor_sdlmixer() override;
 
-	//////////////////////////////////////////////////////////
-	// IAudioSystemEditor implementation
-	/////////////////////////////////////////////////////////
-	virtual void                     Reload(bool bPreserveConnectionStatus = true) override;
+	// IAudioSystemEditor
+	virtual void                     Reload(bool const preserveConnectionStatus = true) override;
 	virtual IAudioSystemItem*        GetRoot() override { return &m_root; }
-	virtual IAudioSystemItem*        GetControl(CID id) const override;
-	virtual EItemType                ImplTypeToATLType(ItemType type) const override;
-	virtual TImplControlTypeMask     GetCompatibleTypes(EItemType eATLControlType) const override;
-	virtual ConnectionPtr            CreateConnectionToControl(EItemType eATLControlType, IAudioSystemItem* pMiddlewareControl) override;
-	virtual ConnectionPtr            CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType eATLControlType) override;
-	virtual XmlNodeRef               CreateXMLNodeFromConnection(const ConnectionPtr pConnection, const EItemType eATLControlType) override;
-	virtual void                     EnableConnection(ConnectionPtr pConnection) override;
-	virtual void                     DisableConnection(ConnectionPtr pConnection) override;
-	virtual const char*              GetTypeIcon(ItemType type) const override;
+	virtual IAudioSystemItem*        GetControl(CID const id) const override;
+	virtual TImplControlTypeMask     GetCompatibleTypes(EItemType const controlType) const override;
+	virtual char const*              GetTypeIcon(ItemType const type) const override;
 	virtual string                   GetName() const override;
 	virtual IImplementationSettings* GetSettings() override { return &m_settings; }
-	//////////////////////////////////////////////////////////
+	virtual EItemType                ImplTypeToSystemType(ItemType const itemType) const override;
+	virtual ConnectionPtr            CreateConnectionToControl(EItemType const controlType, IAudioSystemItem* const pMiddlewareControl) override;
+	virtual ConnectionPtr            CreateConnectionFromXMLNode(XmlNodeRef pNode, EItemType const controlType) override;
+	virtual XmlNodeRef               CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EItemType const controlType) override;
+	virtual void                     EnableConnection(ConnectionPtr const pConnection) override;
+	virtual void                     DisableConnection(ConnectionPtr const pConnection) override;
+	// ~IAudioSystemEditor
 
 private:
 
-	CID  GetId(const string& sName) const;
-	void CreateControlCache(IAudioSystemItem* pParent);
+	CID  GetId(string const& sName) const;
+	void CreateControlCache(IAudioSystemItem const* const pParent);
 	void Clear();
 
-	static const string              s_itemNameTag;
-	static const string              s_pathNameTag;
-	static const string              s_eventConnectionTag;
-	static const string              s_sampleConnectionTag;
-	static const string              s_connectionTypeTag;
-	static const string              s_panningEnabledTag;
-	static const string              s_attenuationEnabledTag;
-	static const string              s_attenuationDistMin;
-	static const string              s_attenuationDistMax;
-	static const string              s_volumeTag;
-	static const string              s_loopCountTag;
+	static string const s_itemNameTag;
+	static string const s_pathNameTag;
+	static string const s_eventConnectionTag;
+	static string const s_sampleConnectionTag;
+	static string const s_connectionTypeTag;
+	static string const s_panningEnabledTag;
+	static string const s_attenuationEnabledTag;
+	static string const s_attenuationDistMin;
+	static string const s_attenuationDistMax;
+	static string const s_volumeTag;
+	static string const s_loopCountTag;
+
+	using SdlMixerConnections = std::map<CID, std::vector<SdlConnectionPtr>>;
 
 	IAudioSystemItem                 m_root;
-	using SdlMixerConnections = std::map<CID, std::vector<SdlConnectionPtr>>;
 	SdlMixerConnections              m_connectionsByID;
 	std::vector<IAudioSystemItem*>   m_controlsCache;
 	CImplementationSettings_sdlmixer m_settings;

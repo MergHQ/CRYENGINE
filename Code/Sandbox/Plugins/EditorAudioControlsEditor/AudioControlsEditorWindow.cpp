@@ -135,6 +135,12 @@ void CAudioControlsEditorWindow::InitToolbar(QVBoxLayout* const pWindowLayout)
 			QObject::connect(pReloadAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Reload);
 		}
 
+		{
+			QAction* const pRefreshAudioSystemAction = pToolBar->addAction(CryIcon("icons:Audio/Refresh_Audio.ico"), QString());
+			pRefreshAudioSystemAction->setToolTip(tr("Refresh Audio System"));
+			QObject::connect(pRefreshAudioSystemAction, &QAction::triggered, this, &CAudioControlsEditorWindow::RefreshAudioSystem);
+		}
+
 		pToolBarsLayout->addWidget(pToolBar, 0, Qt::AlignLeft);
 	}
 
@@ -444,18 +450,7 @@ void CAudioControlsEditorWindow::Save()
 
 			if (messageBox->Execute() == QDialogButtonBox::Yes)
 			{
-				QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-				char const* szLevelName = GetIEditor()->GetLevelName();
-
-				if (_stricmp(szLevelName, "Untitled") == 0)
-				{
-					// Rather pass nullptr to indicate that no level is loaded!
-					szLevelName = nullptr;
-				}
-
-				CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
-				gEnv->pAudioSystem->Refresh(szLevelName, data);
-				QGuiApplication::restoreOverrideCursor();
+				RefreshAudioSystem();
 			}
 		}
 
@@ -469,6 +464,23 @@ void CAudioControlsEditorWindow::UpdateAudioSystemData()
 	string levelPath = CRY_NATIVE_PATH_SEPSTR "levels" CRY_NATIVE_PATH_SEPSTR;
 	levelPath += GetIEditor()->GetLevelName();
 	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsEditorWindow::RefreshAudioSystem()
+{
+	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+	char const* szLevelName = GetIEditor()->GetLevelName();
+
+	if (_stricmp(szLevelName, "Untitled") == 0)
+	{
+		// Rather pass nullptr to indicate that no level is loaded!
+		szLevelName = nullptr;
+	}
+
+	CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking);
+	gEnv->pAudioSystem->Refresh(szLevelName, data);
+	QGuiApplication::restoreOverrideCursor();
 }
 
 //////////////////////////////////////////////////////////////////////////

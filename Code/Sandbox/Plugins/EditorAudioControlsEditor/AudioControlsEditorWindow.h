@@ -83,6 +83,7 @@ private:
 	void SaveBeforeImplementationChange();
 	void CheckErrorMask();
 	void UpdateAudioSystemData();
+	void RefreshAudioSystem();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
 	void SelectConnectedSystemControl(CAudioControl const* const pControl);

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <CryString/CryString.h>
 #include "ACETypes.h"
+#include <CryString/CryString.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
 #include <CrySystem/ISystem.h>
@@ -14,7 +14,8 @@ namespace ACE
 class IAudioConnection
 {
 public:
-	IAudioConnection(CID id)
+
+	IAudioConnection(CID const id)
 		: m_id(id)
 	{
 		m_configurationsMask = std::numeric_limits<uint>::max();
@@ -23,13 +24,13 @@ public:
 	virtual ~IAudioConnection() = default;
 
 	CID          GetID() const                          { return m_id; }
-	virtual bool HasProperties()                        { return false; }
+	virtual bool HasProperties() const                  { return false; }
 	virtual void Serialize(Serialization::IArchive& ar) {};
 
 	//
-	void EnableForPlatform(const uint platformIndex, bool bEnable)
+	void EnableForPlatform(uint const platformIndex, bool const isEnabled)
 	{
-		if (bEnable)
+		if (isEnabled)
 		{
 			m_configurationsMask |= 1 << platformIndex;
 		}
@@ -41,7 +42,7 @@ public:
 		signalConnectionChanged();
 	}
 
-	bool IsPlatformEnabled(const uint platformIndex)
+	bool IsPlatformEnabled(uint const platformIndex)
 	{
 		return (m_configurationsMask & (1 << platformIndex)) > 0;
 	}
@@ -58,6 +59,7 @@ public:
 	CCrySignal<void()> signalConnectionChanged;
 
 private:
+
 	CID  m_id;
 	uint m_configurationsMask;
 };

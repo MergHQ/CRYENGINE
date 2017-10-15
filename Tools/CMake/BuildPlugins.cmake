@@ -30,3 +30,10 @@ endif()
 
 # UQS: Optional plugin; option PLUGIN_CRYUQS to enable/disable it resides in its own sub directory
 add_subdirectory(Code/CryPlugins/CryUQS)
+
+if (OPTION_ENGINE AND WIN32)
+	option(PLUGIN_HTTP "HTTP plug-in" ON)
+	if(PLUGIN_HTTP)
+		add_subdirectory(Code/CryPlugins/CryHTTP/Module)
+	endif()
+endif()

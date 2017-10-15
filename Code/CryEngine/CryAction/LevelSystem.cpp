@@ -879,7 +879,7 @@ struct SLevelNameAutoComplete : public IConsoleArgumentAutoComplete
 SLevelNameAutoComplete g_LevelNameAutoComplete;
 
 //------------------------------------------------------------------------
-CLevelSystem::CLevelSystem(ISystem* pSystem, const char* levelsFolder)
+CLevelSystem::CLevelSystem(ISystem* pSystem)
 	: m_pSystem(pSystem),
 	m_pCurrentLevelInfo(nullptr),
 	m_pLoadingLevelInfo(nullptr)
@@ -903,7 +903,7 @@ CLevelSystem::CLevelSystem(ISystem* pSystem, const char* levelsFolder)
 	}
 
 	//if (!gEnv->IsEditor())
-	Rescan(levelsFolder, ILevelSystem::TAG_MAIN);
+	Rescan("", ILevelSystem::TAG_MAIN);
 
 	// register with system to get loading progress events
 	m_pSystem->SetLoadingProgressListener(this);
@@ -949,8 +949,6 @@ void CLevelSystem::Rescan(const char* levelsFolder, const uint32 tag)
 		m_levelsFolder = levelsFolder;
 	}
 
-	CRY_ASSERT(!m_levelsFolder.empty());
-
 	m_levelInfos.reserve(64);
 	ScanFolder(0, false, tag);
 
@@ -995,68 +993,69 @@ void CLevelSystem::LoadRotation()
 //------------------------------------------------------------------------
 void CLevelSystem::ScanFolder(const char* subfolder, bool modFolder, const uint32 tag)
 {
-	//CryLog("[DLC] ScanFolder:'%s' tag:'%.4s'", subfolder, (char*)&tag);
-	string folder;
-	if (subfolder && subfolder[0])
-		folder = subfolder;
+	string searchedPath(m_levelsFolder);
+	if (subfolder != nullptr && subfolder[0] != '\0')
+	{
+		searchedPath = PathUtil::Make(searchedPath, subfolder);
+	}
 
-	string search(m_levelsFolder);
-	if (!folder.empty())
-		search += string("/") + folder;
-	search += "/*.*";
+	if (!searchedPath.empty())
+	{
+		searchedPath += CRY_NATIVE_PATH_SEPSTR;
+	}
 
-	ICryPak* pPak = gEnv->pCryPak;
+	string rootFolder = searchedPath;
+	searchedPath += "*.*";
 
 	_finddata_t fd;
 	intptr_t handle = 0;
 
-	//CryLog("[DLC] ScanFolder: search:'%s'", search.c_str());
-	// --kenzo
-	// allow this find first to actually touch the file system
-	// (causes small overhead but with minimal amount of levels this should only be around 150ms on actual DVD Emu)
-	handle = pPak->FindFirst(search.c_str(), &fd, 0, true);
+	handle = gEnv->pCryPak->FindFirst(searchedPath.c_str(), &fd, 0, true);
 
 	if (handle > -1)
 	{
 		do
 		{
-			if (!(fd.attrib & _A_SUBDIR) || !strcmp(fd.name, ".") || !strcmp(fd.name, ".."))
+			if (!strcmp(fd.name, ".") || !strcmp(fd.name, ".."))
+			{
+				continue;
+			}
+
+			if (fd.attrib & _A_SUBDIR)
+			{
+				if (!rootFolder.empty())
+				{
+					ScanFolder(rootFolder + CRY_NATIVE_PATH_SEPSTR + fd.name, modFolder, tag);
+				}
+				else
+				{
+					ScanFolder(fd.name, modFolder, tag);
+				}
+
+				continue;
+			}
+
+			const char* szFileName = PathUtil::GetFile(fd.name);
+			if (stricmp(szFileName, "level.pak"))
 			{
 				continue;
 			}
 
 			CLevelInfo levelInfo;
 
-			string levelFolder = (folder.empty() ? "" : (folder + "/")) + string(fd.name);
-			string levelPath = m_levelsFolder + "/" + levelFolder;
-			string paks = levelPath + string("/*.pak");
-
-			//CryLog("[DLC] ScanFolder fd:'%s' levelPath:'%s'", fd.name, levelPath.c_str());
-
-			const string levelPakName = levelPath + "/level.pak";
-			const string levelXmlName = levelPath + "/" + fd.name + ".xml";
-#if 0
-			if (pPak->IsFileExist(levelPakName.c_str(), ICryPak::eFileLocation_OnDisk))
+			levelInfo.m_levelPaks = rootFolder + fd.name;
+			levelInfo.m_levelPath = PathUtil::GetPathWithoutFilename(levelInfo.m_levelPaks);
+			if (levelInfo.m_levelPath[levelInfo.m_levelPath.size() - 1] == '/')
 			{
-				CryLog("[DLC] %s found on disk", levelPakName.c_str());
+				levelInfo.m_levelPath.erase(levelInfo.m_levelPath.size() - 1);
 			}
-			if (pPak->IsFileExist(levelXmlName.c_str()))
+			else if (levelInfo.m_levelPath[levelInfo.m_levelPath.size() - 1] == '\\')
 			{
-				CryLog("[DLC] %s found", levelXmlName.c_str());
-			}
-#endif
-
-			if (!pPak->IsFileExist(levelPakName.c_str(), ICryPak::eFileLocation_OnDisk) && !pPak->IsFileExist(levelXmlName.c_str()))
-			{
-				ScanFolder(levelFolder.c_str(), modFolder, tag);
-				continue;
+				levelInfo.m_levelPath.erase(levelInfo.m_levelPath.size() - 1);
 			}
 
-			//CryLog("[DLC] ScanFolder adding level:'%s'", levelPath.c_str());
-			levelInfo.m_levelPath = levelPath;
-			levelInfo.m_levelPaks = paks;
-			levelInfo.m_levelName = levelFolder;
-			levelInfo.m_levelName = UnifyName(levelInfo.m_levelName);
+			levelInfo.m_levelName = PathUtil::GetFile(levelInfo.m_levelPath);
+
 			levelInfo.m_isModLevel = modFolder;
 			levelInfo.m_scanTag = tag;
 			levelInfo.m_levelTag = ILevelSystem::TAG_UNKNOWN;
@@ -1085,9 +1084,9 @@ void CLevelSystem::ScanFolder(const char* subfolder, bool modFolder, const uint3
 			}
 
 		}
-		while (pPak->FindNext(handle, &fd) >= 0);
+		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 
-		pPak->FindClose(handle);
+		gEnv->pCryPak->FindClose(handle);
 	}
 }
 
@@ -1769,15 +1768,6 @@ void CLevelSystem::OnLoadingProgress(int steps)
 	m_fLastTime = gEnv->pTimer->GetAsyncCurTime();
 
 	OnLoadingProgress(m_pLoadingLevelInfo, (int)m_fFilteredProgress);
-}
-
-//------------------------------------------------------------------------
-string& CLevelSystem::UnifyName(string& name)
-{
-	//name.MakeLower();
-	name.replace('\\', '/');
-
-	return name;
 }
 
 //////////////////////////////////////////////////////////////////////////

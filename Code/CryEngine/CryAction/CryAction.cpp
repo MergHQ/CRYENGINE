@@ -1859,7 +1859,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pEffectSystem = new CEffectSystem;
 	m_pEffectSystem->Init();
 	m_pUIDraw = new CUIDraw;
-	m_pLevelSystem = new CLevelSystem(m_pSystem, "levels");
+	m_pLevelSystem = new CLevelSystem(m_pSystem);
 
 	InlineInitializationProcessing("CCryAction::Init CLevelSystem");
 
