@@ -49,10 +49,12 @@ static CPipeUser* GetPipeUser(EntityId entityId)
 #if defined (DEBUG_MODULAR_BEHAVIOR_TREE_WEB)
 IGameWebDebugService* GetIGameWebDebugService()
 {
-	if (gEnv)
+	if (gEnv && gEnv->pGameFramework != nullptr)
 	{
-		if (auto* pGame = gEnv->pGameFramework->GetIGame())
+		if (IGame* pGame = gEnv->pGameFramework->GetIGame())
+		{
 			return pGame->GetIWebDebugService();
+		}
 	}
 
 	return nullptr;
