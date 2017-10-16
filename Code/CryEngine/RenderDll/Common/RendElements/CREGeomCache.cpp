@@ -134,6 +134,7 @@ bool CREGeomCache::Update(const int flags, const bool bTessellation)
 			bool bSucceed = pRenderMesh->RT_CheckUpdate(pVertexContainer, pRenderMesh->GetVertexFormat(), flags | VSM_MASK, bTessellation);
 			if (bSucceed)
 			{
+				AUTO_LOCK(CRenderMesh::m_sLinkLock);
 				pRenderMesh->m_Modified[threadId].erase();
 			}
 

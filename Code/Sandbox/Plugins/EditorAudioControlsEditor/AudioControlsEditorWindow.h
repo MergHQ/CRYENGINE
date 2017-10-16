@@ -55,6 +55,7 @@ protected:
 
 	// CEditor
 	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
+	virtual bool CanQuit(std::vector<string>& unsavedChanges) override;
 	// ~CEditor
 
 protected slots:
@@ -87,6 +88,7 @@ private:
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
 	void SelectConnectedSystemControl(CAudioControl const* const pControl);
+	bool TryClose();
 
 	std::vector<CAudioControl*> GetSelectedSystemControls();
 
@@ -101,5 +103,6 @@ private:
 	QAction*                                m_pSaveAction;
 	std::unique_ptr<CFileMonitorSystem>     m_pMonitorSystem;
 	std::unique_ptr<CFileMonitorMiddleware> m_pMonitorMiddleware;
+	bool                                    m_isModified = false;
 };
 } // namespace ACE

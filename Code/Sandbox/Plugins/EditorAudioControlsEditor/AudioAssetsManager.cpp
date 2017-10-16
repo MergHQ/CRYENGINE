@@ -328,34 +328,46 @@ void CAudioAssetsManager::OnConnectionRemoved(CAudioControl* const pControl, IAu
 void CAudioAssetsManager::OnControlModified(CAudioControl* const pControl)
 {
 	signalControlModified(pControl);
-	m_controlTypesModified.emplace_back(pControl->GetType());
-	signalIsDirty(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::SetAssetModified(CAudioAsset* const pAsset)
 {
 	UpdateLibraryConnectionStates(pAsset);
-	m_controlTypesModified.emplace_back(pAsset->GetType());
+	auto const type = pAsset->GetType();
+
+	if (!(std::find(m_modifiedTypes.begin(), m_modifiedTypes.end(), type) != m_modifiedTypes.end()))
+	{
+		m_modifiedTypes.emplace_back(type);
+	}
+
+	auto const  name = pAsset->GetName();
+
+	if ((type == EItemType::Library) && !(std::find(m_modifiedLibraries.begin(), m_modifiedLibraries.end(), name) != m_modifiedLibraries.end()))
+	{
+		m_modifiedLibraries.emplace_back(name);
+	}
+
 	signalIsDirty(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CAudioAssetsManager::IsDirty() const
 {
-	return !m_controlTypesModified.empty();
+	return !m_modifiedTypes.empty();
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CAudioAssetsManager::IsTypeDirty(EItemType const type) const
 {
-	return std::find(m_controlTypesModified.begin(), m_controlTypesModified.end(), type) != m_controlTypesModified.end();
+	return std::find(m_modifiedTypes.begin(), m_modifiedTypes.end(), type) != m_modifiedTypes.end();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioAssetsManager::ClearDirtyFlags()
 {
-	m_controlTypesModified.clear();
+	m_modifiedTypes.clear();
+	m_modifiedLibraries.clear();
 	signalIsDirty(false);
 }
 

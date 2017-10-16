@@ -83,6 +83,8 @@ public:
 	void UpdateLibraryConnectionStates(CAudioAsset* pAsset);
 	void UpdateAssetConnectionStates(CAudioAsset* const pAsset);
 
+	std::vector<string> GetModifiedLibraries() const { return m_modifiedLibraries; }
+
 	// Dirty flags signal
 	CCrySignal<void(bool)> signalIsDirty;
 
@@ -117,7 +119,8 @@ private:
 	static CID                  m_nextId;
 	Controls                    m_controls;
 	std::map<Scope, SScopeInfo> m_scopeMap;
-	std::vector<EItemType>      m_controlTypesModified;
+	std::vector<EItemType>      m_modifiedTypes;
+	std::vector<string>         m_modifiedLibraries;
 	bool                        m_isLoading = false;
 };
 

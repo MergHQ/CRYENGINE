@@ -39,7 +39,8 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	, m_pMiddlewareDataWidget(nullptr)
 {
 	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	
+	m_isModified = m_pAssetsManager->IsDirty();
+
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
 
@@ -81,6 +82,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 
 	m_pAssetsManager->signalIsDirty.Connect([&](bool const isDirty)
 	{
+		m_isModified = isDirty;
 		m_pSaveAction->setEnabled(isDirty);
 	}, reinterpret_cast<uintptr_t>(this));
 
@@ -125,7 +127,7 @@ void CAudioControlsEditorWindow::InitToolbar(QVBoxLayout* const pWindowLayout)
 		{
 			m_pSaveAction = pToolBar->addAction(CryIcon("icons:General/File_Save.ico"), QString());
 			m_pSaveAction->setToolTip(tr("Save all changes"));
-			m_pSaveAction->setEnabled(m_pAssetsManager->IsDirty());
+			m_pSaveAction->setEnabled(m_isModified);
 			QObject::connect(m_pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
 		}
 
@@ -264,41 +266,13 @@ void CAudioControlsEditorWindow::CreateDefaultLayout(CDockableContainer* pSender
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 {
-	if ((m_pAssetsManager != nullptr) && m_pAssetsManager->IsDirty())
+	if (TryClose())
 	{
-		CQuestionDialog* const messageBox = new CQuestionDialog();
-		messageBox->SetupQuestion(tr(GetEditorName()), tr("There are unsaved changes.\nDo you want to save your changes?"), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
-
-		switch (messageBox->Execute())
-		{
-		case QDialogButtonBox::Save:
-			Save();
-			pEvent->accept();
-			break;
-		case QDialogButtonBox::Discard:
-		{
-			IAudioSystemEditor* const pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
-
-			if (pAudioSystemEditorImpl != nullptr)
-			{
-				pAudioSystemEditorImpl->Reload(false);
-			}
-
-			CAudioControlsEditorPlugin::signalAboutToLoad();
-			CAudioControlsEditorPlugin::ReloadModels(false);
-			CAudioControlsEditorPlugin::signalLoaded();
-
-			pEvent->accept();
-		}
-		break;
-		default:
-			pEvent->ignore();
-			break;
-		}
+		pEvent->accept();
 	}
 	else
 	{
-		pEvent->accept();
+		pEvent->ignore();
 	}
 }
 
@@ -337,7 +311,7 @@ void CAudioControlsEditorWindow::Reload()
 
 		bool shouldReload = true;
 
-		if (m_pAssetsManager->IsDirty())
+		if (m_isModified)
 		{
 			CQuestionDialog* const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion(tr(GetEditorName()), tr("If you reload you will lose all your unsaved changes.\nAre you sure you want to reload?"), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
@@ -395,7 +369,7 @@ void CAudioControlsEditorWindow::SaveBeforeImplementationChange()
 {
 	if (m_pAssetsManager != nullptr)
 	{
-		if (m_pAssetsManager->IsDirty())
+		if (m_isModified)
 		{
 			CQuestionDialog* const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion(tr(GetEditorName()), tr("Middleware implementation changed.\nThere are unsaved changes.\nDo you want to save before reloading?"), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
@@ -507,7 +481,7 @@ void CAudioControlsEditorWindow::ReloadSystemData()
 		bool shouldReload = true;
 		char const* messageText;
 
-		if (m_pAssetsManager->IsDirty())
+		if (m_isModified)
 		{
 			messageText = "External changes have been made to audio controls files.\nIf you reload you will lose all your unsaved changes.\nAre you sure you want to reload?";
 		}
@@ -537,7 +511,7 @@ void CAudioControlsEditorWindow::ReloadMiddlewareData()
 {
 	if (m_pAssetsManager != nullptr)
 	{
-		if (m_pAssetsManager->IsDirty())
+		if (m_isModified)
 		{
 			m_pMonitorMiddleware->Disable();
 
@@ -665,5 +639,68 @@ void CAudioControlsEditorWindow::SelectConnectedSystemControl(CAudioControl cons
 	{
 		m_pSystemControlsWidget->SelectConnectedSystemControl(pControl);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CAudioControlsEditorWindow::TryClose()
+{
+	if (!m_isModified)
+	{
+		return true;
+	}
+
+	bool canClose = true;
+
+	if (!GetIEditor()->IsMainFrameClosing())
+	{
+		QString const title = tr("Closing %1").arg(GetEditorName());
+		auto const button = CQuestionDialog::SQuestion(title, tr("There are unsaved changes.\nDo you want to save your changes?"), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Cancel);
+
+		switch (button)
+		{
+		case QDialogButtonBox::Save:
+			Save();
+			canClose = true;
+			break;
+		case QDialogButtonBox::Discard:
+		{
+			IAudioSystemEditor* const pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+
+			if (pAudioSystemEditorImpl != nullptr)
+			{
+				pAudioSystemEditorImpl->Reload(false);
+			}
+
+			CAudioControlsEditorPlugin::signalAboutToLoad();
+			CAudioControlsEditorPlugin::ReloadModels(false);
+			CAudioControlsEditorPlugin::signalLoaded();
+			canClose = true;
+			break;
+		}
+		case QDialogButtonBox::Cancel: // Intentional fall-through.
+		default:
+			canClose = false;
+			break;
+		}
+	}
+
+	return canClose;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CAudioControlsEditorWindow::CanQuit(std::vector<string>& unsavedChanges)
+{
+	if ((m_pAssetsManager != nullptr) && m_isModified)
+	{
+		for (char const* const modifiedLibrary : m_pAssetsManager->GetModifiedLibraries())
+		{
+			string const reason = QtUtil::ToString(tr("'%1' has unsaved modifications.").arg(modifiedLibrary));
+			unsavedChanges.emplace_back(reason);
+		}
+
+		return false;
+	}
+
+	return true;
 }
 } // namespace ACE

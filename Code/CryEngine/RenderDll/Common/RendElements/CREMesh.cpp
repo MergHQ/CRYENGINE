@@ -113,6 +113,7 @@ bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTesse
 		bSucceed = m_pRenderMesh->RT_CheckUpdate(pVContainer, eVertFormat, Flags | VSM_MASK, bTessellation);
 		if (bSucceed)
 		{
+			AUTO_LOCK(CRenderMesh::m_sLinkLock);
 			m_pRenderMesh->m_Modified[threadId].erase();
 		}
 	}

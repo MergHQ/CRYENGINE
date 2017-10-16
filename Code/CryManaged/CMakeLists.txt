@@ -13,10 +13,11 @@ macro(create_mono_compiler_settings)
 		set(MONO_CPU_PLATFORM anycpu)
 		set(MONO_PREPROCESSOR_DEFINE WIN64)
 	endif()
+	set(MONO_PREPROCESSOR_DEFINE ${MONO_PREPROCESSOR_DEFINE}$<SEMICOLON>$<UPPER_CASE:$<CONFIG>>)
 endmacro()
 
 # .Compiler options for net assemblies (dll) using mono are similar to ms c# compiler options
-# currently .net assemblies are compiled to "anycpu" 
+# currently .net assemblies are compiled to "anycpu"
 # From microsoft :
 # On a 64-bit Windows operating system:
 # Assemblies compiled with /platform:x86 execute on the 32-bit CLR running under WOW64.
