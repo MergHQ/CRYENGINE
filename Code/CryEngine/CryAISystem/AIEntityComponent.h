@@ -19,6 +19,7 @@ public:
 	static void ReflectType(Schematyc::CTypeDesc<CAIEntityComponent>& desc)
 	{
 		desc.SetGUID("{435E4CAE-2A4D-453C-BAAB-F3006E329DA7}"_cry_guid);
+		desc.SetComponentFlags({ IEntityComponent::EFlags::NoSave });
 	}
 
 	tAIObjectID GetAIObjectID() const { return m_objectReference.GetObjectID(); }
