@@ -4242,7 +4242,7 @@ bool CPipeUser::AdjustPathAroundObstacles()
 	{
 		CalculatePathObstacles();
 
-		return m_Path.AdjustPathAroundObstacles(m_pathAdjustmentObstacles, m_movementAbility.pathfindingProperties.navCapMask);
+		return m_Path.AdjustPathAroundObstacles(m_pathAdjustmentObstacles, m_movementAbility.pathfindingProperties.navCapMask, nullptr);
 	}
 
 	return true;

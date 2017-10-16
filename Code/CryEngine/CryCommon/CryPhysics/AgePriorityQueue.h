@@ -291,6 +291,7 @@ protected:
 		if (!slot.free && (slot.user == _user(id)))
 		{
 			slot.free = true;
+			slot.value.~value_type();
 			m_free.push_back(id);
 		}
 	}

@@ -5,6 +5,60 @@
 
 #include "Components/Navigation/NavigationComponent.h"
 
+namespace NavigationComponentHelpers
+{
+	void SAgentTypesMask::Serialize(Serialization::IArchive& archive)
+	{
+		if (!archive.isEdit())
+		{
+			archive(mask, "mask");
+			return;
+		}
+
+		NavigationSystem* pNavigationSystem = gAIEnv.pNavigationSystem;
+
+		if (archive.isOutput())
+		{
+			const size_t agentCount = pNavigationSystem->GetAgentTypeCount();
+			archive(agentCount, "AgentsCount", "");
+
+			for (size_t i = 0; i < agentCount; ++i)
+			{
+				NavigationAgentTypeID agentID = pNavigationSystem->GetAgentTypeID(i);
+				const char* szName = pNavigationSystem->GetAgentTypeName(agentID);
+
+				bool bEnabled = (mask & BIT(i)) != 0;
+				archive(bEnabled, szName, szName);
+			}
+		}
+		else
+		{
+			size_t agentCount = 0;
+			archive(agentCount, "AgentsCount", "");
+
+			mask = 0;
+			for (size_t i = 0; i < agentCount; ++i)
+			{
+				NavigationAgentTypeID agentID = pNavigationSystem->GetAgentTypeID(i);
+				const char* szName = pNavigationSystem->GetAgentTypeName(agentID);
+
+				bool bEnabled = false;
+				archive(bEnabled, szName, szName);
+
+				if (bEnabled)
+				{
+					mask |= BIT(i);
+				}
+			}
+		}
+	}
+
+	bool Serialize(Serialization::IArchive& archive, SAnnotationFlagsMask& value, const char* szName, const char* szLabel)
+	{
+		return archive(NavigationSerialization::NavigationAreaFlagsMask(value.mask), szName, szLabel);
+	}
+}
+
 namespace NavigationSystemSchematyc
 {
 	bool NearestNavmeshPositionSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& location, float vrange, float hrange, Vec3& meshLocation)
@@ -15,8 +69,9 @@ namespace NavigationSystemSchematyc
 
 	bool TestRaycastHitOnNavmeshSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, Vec3& hitPos)
 	{
+		//TODO: add query filter as a parameter
 		MNM::SRayHitOutput hit;
-		bool bResult = gAIEnv.pNavigationSystem->NavMeshTestRaycastHit(agentTypeID, startPos, endPos, &hit);
+		bool bResult = gAIEnv.pNavigationSystem->NavMeshTestRaycastHit(agentTypeID, startPos, endPos, nullptr, &hit);
 		if (bResult)
 		{
 			hitPos = hit.position;
@@ -36,7 +91,10 @@ namespace NavigationSystemSchematyc
 
 		//Register Types
 		navigationScope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(NavigationAgentTypeID));
+		navigationScope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(NavigationAreaFlagID));
+		
 		navigationScope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(CEntityAINavigationComponent::SMovementProperties));
+		navigationScope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(NavigationComponentHelpers::SAnnotationFlagsMask));
 
 		//NearestNavmeshPositionSchematyc
 		{

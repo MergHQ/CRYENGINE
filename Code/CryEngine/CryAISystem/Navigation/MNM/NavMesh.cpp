@@ -230,7 +230,7 @@ void CNavMesh::Init(const SGridParams& params)
 	m_tiles.Init(params.tileCount);
 }
 
-//! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea
+//! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea, without NavMesh query filter
 struct CNavMesh::SMinIslandAreaQueryTrianglesFilter
 {
 	SMinIslandAreaQueryTrianglesFilter(const CNavMesh& navMesh_, float minIslandArea_)
@@ -238,16 +238,30 @@ struct CNavMesh::SMinIslandAreaQueryTrianglesFilter
 		, minIslandArea(minIslandArea_)
 	{}
 
-	bool                                    IsAcceptAll() const { return minIslandArea <= 0.f; }
-
-	NavMesh::IQueryTrianglesFilter::EResult Check(const TriangleID triangleId) const
+	bool PassFilter(const Tile::STriangle& triangle) const
 	{
-		return
-		  (navMesh.GetIslandAreaForTriangle(triangleId) >= minIslandArea)
-		  ? NavMesh::IQueryTrianglesFilter::EResult::Accepted
-		  : NavMesh::IQueryTrianglesFilter::EResult::Rejected;
+		return navMesh.GetIslandArea(triangle.islandID) >= minIslandArea;
 	}
 
+	const CNavMesh& navMesh;
+	float           minIslandArea;
+};
+
+//! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea, with NavMesh query filter
+struct SNavigationQueryFilterWithMinIslandFilter
+{
+	SNavigationQueryFilterWithMinIslandFilter(const INavMeshQueryFilter& filter, const CNavMesh& navMesh, float minIslandArea)
+		: filter(filter)
+		, navMesh(navMesh)
+		, minIslandArea(minIslandArea)
+	{}
+
+	bool PassFilter(const Tile::STriangle& triangle) const
+	{
+		return filter.PassFilter(triangle) && (navMesh.GetIslandArea(triangle.islandID) >= minIslandArea);
+	}
+
+	const INavMeshQueryFilter& filter;
 	const CNavMesh& navMesh;
 	float           minIslandArea;
 };
@@ -274,7 +288,7 @@ size_t CNavMesh::QueryTileTrianglesLinear(const TileID tileID, const STile& tile
 		{
 			const TriangleID triangleID = ComputeTriangleID(tileID, static_cast<uint16>(i));
 
-			if (filter.Check(triangleID) == NavMesh::IQueryTrianglesFilter::EResult::Accepted)
+			if (filter.PassFilter(triangle))
 			{
 				pOutTriangles[triCount++] = triangleID;
 
@@ -311,8 +325,9 @@ size_t CNavMesh::QueryTileTrianglesBV(const TileID tileID, const STile& tile, co
 			{
 				const uint16 triangleIdx = node.offset;
 				const TriangleID triangleID = ComputeTriangleID(tileID, triangleIdx);
+				const Tile::STriangle& triangle = GetTriangleUnsafe(tileID, triangleIdx);
 
-				if (filter.Check(triangleID) == NavMesh::IQueryTrianglesFilter::EResult::Accepted)
+				if (filter.PassFilter(triangle))
 				{
 					pOutTriangles[triCount++] = triangleID;
 
@@ -402,12 +417,6 @@ size_t CNavMesh::QueryTrianglesWithFilterInternal(const aabb_t& queryAabbWorld, 
 	return triCount;
 }
 
-size_t CNavMesh::QueryTrianglesNoFilterInternal(const aabb_t& queryAabbWorld, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
-{
-	SAcceptAllQueryTrianglesFilter filter;
-	return QueryTrianglesWithFilterInternal(queryAabbWorld, filter, maxTrianglesCount, pOutTriangles);
-}
-
 TriangleID CNavMesh::FindClosestTriangleInternal(
   const vector3_t& queryPosWorld,
   const TriangleID* pCandidateTriangles,
@@ -460,21 +469,37 @@ TriangleID CNavMesh::FindClosestTriangleInternal(
 
 #pragma warning(push)
 #pragma warning(disable:28285)
-size_t CNavMesh::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, float minIslandArea) const
+size_t CNavMesh::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
-	SMinIslandAreaQueryTrianglesFilter filter(*this, minIslandArea);
-	if (filter.IsAcceptAll())
+	if (minIslandArea <= 0.0f)
 	{
-		return QueryTrianglesNoFilterInternal(aabb, maxTriCount, triangles);
+		if (pFilter)
+		{
+			return QueryTrianglesWithFilterInternal(aabb, *pFilter, maxTriCount, triangles);
+		}
+		else
+		{
+			SAcceptAllQueryTrianglesFilter filter;
+			return QueryTrianglesWithFilterInternal(aabb, filter, maxTriCount, triangles);
+		}
 	}
 	else
 	{
-		return QueryTrianglesWithFilterInternal(aabb, filter, maxTriCount, triangles);
+		if (pFilter)
+		{
+			SNavigationQueryFilterWithMinIslandFilter filter(*pFilter, *this, minIslandArea);
+			return QueryTrianglesWithFilterInternal(aabb, filter, maxTriCount, triangles);
+		}
+		else
+		{
+			SMinIslandAreaQueryTrianglesFilter filter(*this, minIslandArea);
+			return QueryTrianglesWithFilterInternal(aabb, filter, maxTriCount, triangles);
+		}
 	}
 }
 #pragma warning(pop)
 
-TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, float minIslandArea) const
+TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
 	const MNM::aabb_t aabb(
 	  MNM::vector3_t(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z - verticalDownwardRange)),
@@ -485,7 +510,7 @@ TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verti
 
 	TriangleID closestID = 0;
 
-	const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, minIslandArea);
+	const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, pFilter, minIslandArea);
 	MNM::real_t::unsigned_overflow_type distMinSq = std::numeric_limits<MNM::real_t::unsigned_overflow_type>::max();
 
 	if (candidateCount)
@@ -513,56 +538,10 @@ TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verti
 	return closestID;
 }
 
-TriangleID CNavMesh::GetTriangleEdgeAlongLine(const vector3_t& startLocation, const vector3_t& endLocation,
-                                              const real_t verticalDownwardRange, const real_t verticalUpwardRange, vector3_t& hit, float minIslandArea) const
-{
-	// Determine bounding box
-	real_t minX, minY, minZ;
-	real_t maxX = (startLocation.x > endLocation.x) ? (minX = endLocation.x, startLocation.x) : (minX = startLocation.x, endLocation.x);
-	real_t maxY = (startLocation.y > endLocation.y) ? (minY = endLocation.y, startLocation.y) : (minY = startLocation.y, endLocation.y);
-	real_t maxZ = (startLocation.z > endLocation.z) ? (minZ = endLocation.z, startLocation.z) : (minZ = startLocation.z, endLocation.z);
-
-	const aabb_t aabb(vector3_t(minX, minY, minZ - verticalDownwardRange), vector3_t(maxX, maxY, maxZ + verticalUpwardRange));
-
-	// Gather intersecting triangles
-	const size_t MaxTriCandidateCount = 1024;
-	TriangleID candidates[MaxTriCandidateCount];
-	const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount /*, minIslandArea parameter is no longer supported*/);
-
-	TriangleID triangleID = 0;
-
-	if (candidateCount)
-	{
-		vector3_t verts[3];
-		real_t s, t;
-		real_t closest = real_t::max();
-
-		for (size_t i = 0; i < candidateCount; ++i)
-		{
-			if (GetVertices(candidates[i], verts))
-			{
-				for (uint8 v = 0; v < 3; ++v)
-				{
-					if (IntersectSegmentSegment(startLocation, endLocation, verts[v], verts[next_mod3(v)], s, t))
-					{
-						if (s < closest)
-						{
-							closest = s;
-							vector3_t d = (endLocation - startLocation);
-							hit = startLocation + (d * s);
-							triangleID = candidates[i];
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return triangleID;
-}
-
 bool CNavMesh::IsTriangleAcceptableForLocation(const vector3_t& location, TriangleID triangleID) const
 {
+	//TODO: Use filter?
+
 	const MNM::real_t range = MNM::real_t(1.0f);
 	if (triangleID)
 	{
@@ -573,7 +552,7 @@ bool CNavMesh::IsTriangleAcceptableForLocation(const vector3_t& location, Triang
 		const size_t MaxTriCandidateCount = 1024;
 		TriangleID candidates[MaxTriCandidateCount];
 
-		const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount);
+		const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, nullptr);
 		MNM::real_t distMinSq = MNM::real_t::max();
 
 		if (candidateCount)
@@ -596,7 +575,7 @@ bool CNavMesh::IsTriangleAcceptableForLocation(const vector3_t& location, Triang
 	return false;
 }
 
-TriangleID CNavMesh::GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distance,
+TriangleID CNavMesh::GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, const INavMeshQueryFilter* pFilter, real_t* distance,
                                         vector3_t* closest, float minIslandArea) const
 {
 	const MNM::aabb_t aabb(
@@ -606,7 +585,7 @@ TriangleID CNavMesh::GetClosestTriangle(const vector3_t& location, real_t vrange
 	const size_t MaxTriCandidateCount = 1024;
 	TriangleID candidates[MaxTriCandidateCount];
 
-	const size_t candidatesCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, minIslandArea);
+	const size_t candidatesCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, pFilter, minIslandArea);
 	real_t::unsigned_overflow_type distanceSq;
 	const TriangleID resultClosestTriangleId = FindClosestTriangleInternal(location, candidates, candidatesCount, closest, &distanceSq);
 
@@ -677,6 +656,46 @@ bool CNavMesh::GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) con
 		return true;
 	}
 
+	return false;
+}
+
+const AreaAnnotation* CNavMesh::GetTriangleAnnotation(TriangleID triangleID) const
+{
+	if (const TileID tileID = ComputeTileID(triangleID))
+	{
+		const TileContainer& container = m_tiles[tileID - 1];
+		const uint16 triIndex = ComputeTriangleIndex(triangleID);
+		CRY_ASSERT(triIndex < container.tile.triangleCount);
+		Tile::STriangle& triangle = container.tile.triangles[triIndex];
+		return &triangle.areaAnnotation;
+	}
+	return nullptr;
+}
+
+void CNavMesh::SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles)
+{
+	for (size_t i = 0; i < trianglesCount; ++i)
+	{
+		const MNM::TriangleID triangleId = pTrianglesArray[i];
+		if (const MNM::TileID tileId = MNM::ComputeTileID(triangleId))
+		{
+			const uint16 triangleIndex = MNM::ComputeTriangleIndex(triangleId);
+			MNM::Tile::STriangle& triangle = GetTriangleUnsafe(tileId, triangleIndex);
+			triangle.areaAnnotation = areaAnnotation;
+
+			stl::push_back_unique(affectedTiles, MNM::ComputeTileID(triangleId));
+		}
+	}
+}
+
+bool CNavMesh::CanTrianglePassFilter(const TriangleID triangleID, const INavMeshQueryFilter& filter) const
+{
+	if (const TileID tileID = ComputeTileID(triangleID))
+	{
+		const TileContainer& container = m_tiles[tileID - 1];
+		Tile::STriangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
+		return filter.PassFilter(triangle);
+	}
 	return false;
 }
 
@@ -976,6 +995,20 @@ void CNavMesh::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangl
 
 CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const
 {
+	if (inputRequest.GetFilter())
+	{
+		return FindWayInternal(inputRequest, workingSet, *inputRequest.GetFilter(), result);
+	}
+	else
+	{
+		SAcceptAllQueryTrianglesFilter filter;
+		return FindWayInternal(inputRequest, workingSet, filter, result);
+	}
+}
+
+template<typename TFilter>
+CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, const TFilter& filter, WayQueryResult& result) const
+{
 	result.SetWaySize(0);
 	if (result.GetWayMaxSize() < 2)
 	{
@@ -1038,11 +1071,19 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQu
 
 						if (link.side == Tile::SLink::Internal)
 						{
+							Tile::STriangle& neighbourTriangle = GetTriangleUnsafe(tileID, link.triangle);
+							if (!filter.PassFilter(neighbourTriangle))
+							{
+								continue;
+							}
 							nextTri.triangleID = ComputeTriangleID(tileID, link.triangle);
 							nextTri.incidentEdge = link.edge;
+							nextTri.costMultiplier = filter.GetCostMultiplier(triangle);
+							workingSet.nextLinkedTriangles.push_back(nextTri);
 						}
 						else if (link.side == Tile::SLink::OffMesh)
 						{
+							//TODO: apply filter also to offmesh links
 							OffMeshNavigation::QueryLinksResult links = inputRequest.GetOffMeshNavigation().GetLinksForTriangle(bestNodeID.triangleID, link.triangle);
 							while (nextTri = links.GetNextTriangle())
 							{
@@ -1057,19 +1098,17 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQu
 						else
 						{
 							TileID neighbourTileID = GetNeighbourTileID(container.x, container.y, container.z, link.side);
+							Tile::STriangle& neighbourTriangle = GetTriangleUnsafe(neighbourTileID, link.triangle);
+							if (!filter.PassFilter(neighbourTriangle))
+							{
+								continue;
+							}
 							nextTri.triangleID = ComputeTriangleID(neighbourTileID, link.triangle);
 							nextTri.incidentEdge = link.edge;
+							nextTri.costMultiplier = filter.GetCostMultiplier(triangle);
+							workingSet.nextLinkedTriangles.push_back(nextTri);
 						}
 
-						Vec3 edgeMidPoint;
-						if (CalculateMidEdge(bestNodeID.triangleID, nextTri.triangleID, edgeMidPoint))
-						{
-							const uint32 flags = 0;
-							if (inputRequest.IsPointValidForAgent(edgeMidPoint, flags))
-							{
-								workingSet.nextLinkedTriangles.push_back(nextTri);
-							}
-						}
 						//////////////////////////////////////////////////////////////////////////
 						// NOTE: This is user defined only at compile time
 
@@ -1340,7 +1379,7 @@ inline size_t OppositeSide(size_t side)
 }
 
 CNavMesh::ERayCastResult CNavMesh::RayCast(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri,
-                                           RaycastRequestBase& raycastRequest) const
+                                           RaycastRequestBase& raycastRequest, const INavMeshQueryFilter* pFilter) const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
@@ -1352,8 +1391,18 @@ CNavMesh::ERayCastResult CNavMesh::RayCast(const vector3_t& from, TriangleID fro
 		return RayCast_v2(from, fromTri, to, toTri, raycastRequest);
 	case 2:
 	default:
+	{
 		// toTri parameter not used in this version
-		return RayCast_v3(from, fromTri, to, raycastRequest);
+		if (pFilter)
+		{
+			return RayCast_v3(from, fromTri, to, *pFilter, raycastRequest);
+		}
+		else
+		{
+			SAcceptAllQueryTrianglesFilter filter;
+			return RayCast_v3(from, fromTri, to, filter, raycastRequest);
+		}
+	}
 	}
 }
 
@@ -1596,8 +1645,11 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v2(const vector3_t& from, TriangleID 
 	return ConstructRaycastResult(eRayCastResult_Hit, rayHit, furtherNodeVisited.triangleID, cameFrom, raycastRequest);
 }
 
-CNavMesh::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromPos, TriangleID fromTriangleID, const vector3_t& toPos, RaycastRequestBase& raycastRequest) const
+template<typename TFilter>
+CNavMesh::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromPos, TriangleID fromTriangleID, const vector3_t& toPos, const TFilter& filter, RaycastRequestBase& raycastRequest) const
 {
+	//TODO: take area costs into account and return total cost to traverse the ray
+	
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	if (!IsLocationInTriangle(fromPos, fromTriangleID))
@@ -1666,7 +1718,7 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromPos, Triangle
 			rayHit.distance = rayIntersectionParam;
 		}
 		
-		const TriangleID neighbourTriangleID = StepOverEdgeToNeighbourTriangle(fromPos, toPos, currentTileID, currentTriangleID, intersectionEdgeIndex);
+		const TriangleID neighbourTriangleID = StepOverEdgeToNeighbourTriangle(fromPos, toPos, currentTileID, currentTriangleID, intersectionEdgeIndex, filter);
 		
 		if (neighbourTriangleID != MNM::Constants::InvalidTriangleID)
 		{
@@ -1678,14 +1730,15 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromPos, Triangle
 	return ConstructRaycastResult(eRayCastResult_Hit, rayHit, rayHit.triangleID, cameFrom, raycastRequest);
 }
 
-MNM::TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, const vector3_t& rayEnd, const TileID currentTileID, const TriangleID currentTriangleID, const uint16 edgeIndex) const
+template<typename TFilter>
+MNM::TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, const vector3_t& rayEnd, const TileID currentTileID, const TriangleID currentTriangleID, const uint16 edgeIndex, const TFilter& filter) const
 {
 	const TileContainer& currentContainer = m_tiles[currentTileID - 1];
 	const STile& currentTile = currentContainer.tile;
 
 	const uint16 currentTriangleIndex = ComputeTriangleIndex(currentTriangleID);
 	const Tile::STriangle& currentTriangle = currentTile.triangles[currentTriangleIndex];
-	
+
 	for (size_t linkIndex = 0; linkIndex < currentTriangle.linkCount; ++linkIndex)
 	{
 		// Find link to neighbour triangle corresponding to found edge
@@ -1702,13 +1755,18 @@ MNM::TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& raySt
 		if (side == Tile::SLink::Internal)
 		{
 			// Internal link between two triangles in the same tile
-			return ComputeTriangleID(currentTileID, link.triangle);
+			Tile::STriangle& neighbourTriangle = GetTriangleUnsafe(currentTileID, link.triangle);
+			return filter.PassFilter(neighbourTriangle) ? ComputeTriangleID(currentTileID, link.triangle) : MNM::Constants::InvalidTriangleID;
 		}
 
 		// Edge is on the tile boundaries, there can be more neighbour triangles adjacent to this edge
 		TileID neighbourTileID = GetNeighbourTileID(currentContainer.x, currentContainer.y, currentContainer.z, link.side);
 		const TileContainer& neighbourContainer = m_tiles[neighbourTileID - 1];
 		const Tile::STriangle& neighbourTriangle = neighbourContainer.tile.triangles[link.triangle];
+		
+		if(!filter.PassFilter(neighbourTriangle))
+			continue;
+
 		const uint16 currentOppositeSide = static_cast<uint16>(OppositeSide(side));
 
 		for (size_t reciprocalLinkIndex = 0; reciprocalLinkIndex < neighbourTriangle.linkCount; ++reciprocalLinkIndex)
@@ -2319,7 +2377,7 @@ void CNavMesh::Swap(CNavMesh& other)
 	std::swap(m_profiler, other.m_profiler);
 }
 
-void CNavMesh::Draw(size_t drawFlags, TileID excludeID) const
+void CNavMesh::Draw(size_t drawFlags, const ITriangleColorSelector& colorSelector, TileID excludeID) const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
@@ -2352,7 +2410,7 @@ void CNavMesh::Draw(size_t drawFlags, TileID excludeID) const
 		Vec3 min = origin.GetVec3();
 		if (cameraPos.GetSquaredDistance2D(min) < maxDistanceToRenderSqr && camera.IsAABBVisible_F(AABB(min, min + m_params.tileSize)))
 		{
-			container.tile.Draw(drawFlags, origin, it->second, islandAreas);
+			container.tile.Draw(drawFlags, origin, it->second, islandAreas, colorSelector);
 		}
 	}
 }
@@ -2481,7 +2539,7 @@ TileID CNavMesh::FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const
 	return GetTileID(nx, ny, nz);
 }
 
-size_t CNavMesh::QueryTriangles(const aabb_t& queryAabbWorld, MNM::NavMesh::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+size_t CNavMesh::QueryTriangles(const aabb_t& queryAabbWorld, INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
 {
 	CRY_ASSERT(pOutTriangles);
 	CRY_ASSERT(maxTrianglesCount > 0);
@@ -2497,7 +2555,8 @@ size_t CNavMesh::QueryTriangles(const aabb_t& queryAabbWorld, MNM::NavMesh::IQue
 	}
 	else
 	{
-		return QueryTrianglesNoFilterInternal(queryAabbWorld, maxTrianglesCount, pOutTriangles);
+		SAcceptAllQueryTrianglesFilter filter;
+		return QueryTrianglesWithFilterInternal(queryAabbWorld, filter, maxTrianglesCount, pOutTriangles);
 	}
 }
 
