@@ -53,7 +53,7 @@ namespace
 
 	static inline void RelinkTail(util::list<CRenderMesh>& instance, util::list<CRenderMesh>& list)
 	{
-		CConditionalLock lock(CRenderMesh::m_sLinkLock, !(gRenDev->m_pRT->IsMultithreaded() && gRenDev->m_pRT->IsRenderThread()));
+		AUTO_LOCK(CRenderMesh::m_sLinkLock);
 		instance.relink_tail(&list);
 	}
 
@@ -551,8 +551,8 @@ CRenderMesh::~CRenderMesh()
 		AUTO_LOCK(m_sLinkLock);
 		for (int i=0; i<2; ++i)
 			m_Dirty[i].erase(), m_Modified[i].erase();
-    m_Chain.erase();
-  }
+		m_Chain.erase();
+	}
 
 	Cleanup();
 }
@@ -4051,7 +4051,7 @@ bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
   CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	bool cleared = false; 
 	bool bKeepSystem = false; 
-	CConditionalLock lock(m_sLinkLock, bAcquireLock);
+	AUTO_LOCK(m_sLinkLock);
 	// Clean up the stale mesh temporary data
   for (util::list<CRenderMesh>* iter=s_MeshDirtyList[threadId].next, *pos=iter->next; iter != &s_MeshDirtyList[threadId]; iter=pos, pos=pos->next)
   {
@@ -4107,31 +4107,44 @@ void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 {
   MEMORY_SCOPE_CHECK_HEAP();
   CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-	CConditionalLock lock(m_sLinkLock, bAcquireLock);
+
 	// Update device buffers on modified meshes
-	for (util::list<CRenderMesh>* iter=s_MeshModifiedList[threadId].next, *pos=iter->next; iter != &s_MeshModifiedList[threadId]; iter=pos, pos=pos->next)
+	std::vector<CRenderMesh*> modifiedMeshes;
 	{
-		CRenderMesh* pRM = iter->item<&CRenderMesh::m_Modified>(threadId);
-		if (pRM->m_sResLock.TryLock() == false)
-			continue;
-    if (pRM->m_nThreadAccessCounter)
-      goto modified_done;
-  	// Do not block on async updates to the buffers (unless in renderloadingvideomode), they will block on the drawcall
+		AUTO_LOCK(CRenderMesh::m_sLinkLock);
+		for (util::list<CRenderMesh>* iter = s_MeshModifiedList[threadId].next, *pos = iter->next; iter != &s_MeshModifiedList[threadId]; iter = pos, pos = pos->next)
+			modifiedMeshes.push_back(iter->item<&CRenderMesh::m_Modified>(threadId));
+
+		s_MeshModifiedList[threadId].clear();
+	}
+
+	for (auto pMesh : modifiedMeshes)
+	{
+		bool updateSuccess = false;
+
+		if (pMesh->m_sResLock.TryLock())
 		{
-			const bool isVideoPlaying = gRenDev->m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled;
-			if (pRM->SyncAsyncUpdate(gRenDev->m_RP.m_nProcessThreadID, isVideoPlaying) == true)
+			if (pMesh->m_nThreadAccessCounter == 0)
 			{
-				// ToDo :
-				// - mark the mesh to not update itself if depending on how the async update was scheduled
-				// - returns true if no streams need further processing
-				if (pRM->RT_CheckUpdate(pRM, pRM->_GetVertexFormat(), VSM_MASK, false, true))
+				// Do not block on async updates to the buffers (unless in renderloadingvideomode), they will block on the drawcall
 				{
-					pRM->m_Modified[threadId].erase();
+					const bool isVideoPlaying = gRenDev->m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled;
+					if (pMesh->SyncAsyncUpdate(gRenDev->m_RP.m_nProcessThreadID, isVideoPlaying) == true)
+					{
+						// ToDo :
+						// - mark the mesh to not update itself if depending on how the async update was scheduled
+						// - returns true if no streams need further processing
+						updateSuccess = pMesh->RT_CheckUpdate(pMesh, pMesh->_GetVertexFormat(), VSM_MASK, false, true);
+					}
+				}
 			}
-			}
+			pMesh->m_sResLock.Unlock();
 		}
-    modified_done:
-		pRM->m_sResLock.Unlock();
+
+		if (!updateSuccess)
+		{
+			pMesh->m_Modified[threadId].relink_tail(s_MeshModifiedList[threadId]);
+		}
 	}
 }
 
