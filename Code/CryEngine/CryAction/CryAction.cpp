@@ -2272,9 +2272,6 @@ bool CCryAction::CompleteInit()
 
 	CBreakReplicator::RegisterClasses();
 
-	if (gEnv->pAISystem)
-		gEnv->pAISystem->CompleteInit();
-
 	if (gEnv->pRenderer)
 	{
 		gEnv->pRenderer->StopRenderIntroMovies(true);

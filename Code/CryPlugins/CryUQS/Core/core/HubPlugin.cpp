@@ -14,14 +14,13 @@ namespace UQS
 {
 	namespace Core
 	{
-
 		//===================================================================================
 		//
 		// CHubPlugin
 		//
 		//===================================================================================
 
-		class CHubPlugin : public IHubPlugin, public ISystemEventListener
+		class CHubPlugin : public IHubPlugin
 		{
 			CRYINTERFACE_BEGIN()
 			CRYINTERFACE_ADD(IHubPlugin)
@@ -31,7 +30,7 @@ namespace UQS
 			CRYGENERATE_SINGLETONCLASS_GUID(CHubPlugin, "Plugin_UQS", "2a2f00e0-f068-4baf-b31b-b3c8f78b3477"_cry_guid)
 
 			CHubPlugin();
-			virtual ~CHubPlugin();
+			virtual ~CHubPlugin() = default;
 
 		private:
 			// ICryPlugin (forwarded by IHubPlugin)
@@ -48,10 +47,6 @@ namespace UQS
 			virtual void                         TearDownHubImplementation() override;
 			// ~IHubPlugin
 
-			// ISystemEventListener
-			virtual void                         OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
-			// ~ISystemEventListener
-
 		private:
 			std::unique_ptr<CHub>                m_pHub;
 			std::list<IHubPluginEventListener*>  m_hubPluginEventListeners;
@@ -64,15 +59,8 @@ namespace UQS
 		CHubPlugin::CHubPlugin()
 		{
 			m_updateFlags = 0;  // the ctor of ICryPlugin base class should have done that, but didn't
-			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CHubPlugin");
-		}
 
-		CHubPlugin::~CHubPlugin()
-		{
-			if (ISystem* pSystem = GetISystem())
-			{
-				pSystem->GetISystemEventDispatcher()->RemoveListener(this);
-			}			
+			m_pHub = stl::make_unique<CHub>();
 		}
 
 		const char* CHubPlugin::GetName() const
@@ -179,17 +167,5 @@ namespace UQS
 				m_pHub.reset();
 			}
 		}
-
-		void CHubPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-		{
-			switch (event)
-			{
-			case ESYSTEM_EVENT_GAME_POST_INIT:
-				assert(!m_pHub.get());
-				m_pHub.reset(new CHub);
-				break;
-			}
-		}
-
 	}
 }
