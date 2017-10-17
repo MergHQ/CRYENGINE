@@ -274,12 +274,6 @@ void CEntitySlot::OnXForm(int nWhyFlags)
 	if (m_pRenderNode)
 	{
 		m_pRenderNode->SetMatrix(m_worldTM);
-
-		if (nWhyFlags & ENTITY_XFORM_EDITOR)
-		{
-			// When entity moved in editor,Force shadow cache re-compute
-			gEnv->p3DEngine->OnObjectModified(m_pRenderNode, m_pRenderNode->GetRndFlags());
-		}
 	}
 }
 
