@@ -64,15 +64,6 @@ CPerceptionManager::CPerceptionManager() :
 		m_stimulusTypes[i].Reset();
 	}
 
-	if (gEnv->pAISystem)
-	{
-		gEnv->pAISystem->RegisterSystemComponent(this);
-		gEnv->pAISystem->Callbacks().ObjectCreated().Add(functor(*this, &CPerceptionManager::OnAIObjectCreated));
-		gEnv->pAISystem->Callbacks().ObjectRemoved().Add(functor(*this, &CPerceptionManager::OnAIObjectRemoved));
-
-		m_bRegistered = true;
-	}
-
 	m_cVars.Init();
 
 	CRY_ASSERT(s_pInstance == nullptr);
@@ -95,7 +86,9 @@ CPerceptionManager::~CPerceptionManager()
 
 void CPerceptionManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
-	if (event == ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE)
+	switch (event)
+	{
+	case ESYSTEM_EVENT_GAME_POST_INIT:
 	{
 		CRY_ASSERT(gEnv->pAISystem);
 		if (!m_bRegistered && gEnv->pAISystem)
@@ -106,6 +99,13 @@ void CPerceptionManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT
 
 			m_bRegistered = true;
 		}
+		if (!m_pScriptBind)
+		{
+			m_pScriptBind = new CScriptBind_PerceptionManager(gEnv->pSystem);
+		}
+	}
+	default:
+		break;
 	}
 }
 
@@ -191,24 +191,6 @@ bool CPerceptionManager::RegisterStimulusDesc(EAIStimulusType type, const SAISti
 {
 	m_stimulusTypes[type] = desc;
 	return true;
-}
-
-//-----------------------------------------------------------------------------------------------------------
-void CPerceptionManager::Init()
-{
-	if (!m_pScriptBind)
-	{
-		m_pScriptBind = new CScriptBind_PerceptionManager(gEnv->pSystem);
-	}
-}
-
-//-----------------------------------------------------------------------------------------------------------
-void CPerceptionManager::PostInit()
-{
-	if (!m_pScriptBind)
-	{
-		m_pScriptBind = new CScriptBind_PerceptionManager(gEnv->pSystem);
-	}
 }
 
 //-----------------------------------------------------------------------------------------------------------
