@@ -3,20 +3,20 @@
 #pragma once
 
 #include <QWidget>
-#include <ACETypes.h>
+#include <SystemTypes.h>
 
 class QToolButton;
 class QVBoxLayout;
 
 namespace ACE
 {
-class CAudioAssetsManager;
-class CAudioControl;
+class CSystemAssetsManager;
+class CSystemControl;
 class CMiddlewareDataFilterProxyModel;
 class CMiddlewareDataModel;
 class CAudioTreeView;
 class CElidedLabel;
-class IAudioSystemItem;
+class CImplItem;
 
 class CMiddlewareDataWidget final : public QWidget
 {
@@ -24,7 +24,7 @@ class CMiddlewareDataWidget final : public QWidget
 
 public:
 
-	CMiddlewareDataWidget(CAudioAssetsManager* pAssetsManager);
+	CMiddlewareDataWidget(CSystemAssetsManager* pAssetsManager);
 	virtual ~CMiddlewareDataWidget() override;
 
 	void Reset();
@@ -33,7 +33,7 @@ public:
 
 signals:
 
-	void SelectConnectedSystemControl(CAudioControl const* const pControl);
+	void SelectConnectedSystemControl(CSystemControl const* const pControl);
 
 private slots:
 
@@ -43,7 +43,7 @@ private:
 
 	void InitFilterWidgets(QVBoxLayout* const pMainLayout);
 
-	CAudioAssetsManager* const             m_pAssetsManager;
+	CSystemAssetsManager* const            m_pAssetsManager;
 	CMiddlewareDataFilterProxyModel* const m_pFilterProxyModel;
 	CMiddlewareDataModel* const            m_pAssetsModel;
 	CElidedLabel* const                    m_pImplNameLabel;

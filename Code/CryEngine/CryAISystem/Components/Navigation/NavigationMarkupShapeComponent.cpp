@@ -24,7 +24,7 @@ CAINavigationMarkupShapeComponent::CAINavigationMarkupShapeComponent()
 void CAINavigationMarkupShapeComponent::ReflectType(Schematyc::CTypeDesc<CAINavigationMarkupShapeComponent>& desc)
 {
 	desc.SetGUID(CAINavigationMarkupShapeComponent::IID());
-	desc.SetLabel("NavigationMarkupShape");
+	desc.SetLabel("AI Navigation Markup Shape");
 	desc.SetDescription("Navigation Markup Shape Component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
@@ -237,6 +237,3 @@ IEntityComponentPreviewer* CAINavigationMarkupShapeComponent::GetPreviewer()
 	return &previewer;
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-CRY_STATIC_AUTO_REGISTER_FUNCTION(&CAINavigationMarkupShapeComponent::Register)

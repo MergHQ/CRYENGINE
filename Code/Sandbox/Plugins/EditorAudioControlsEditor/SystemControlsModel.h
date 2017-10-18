@@ -3,15 +3,15 @@
 #pragma once
 
 #include <ProxyModels/DeepFilterProxyModel.h>
-#include <ACETypes.h>
+#include <SystemTypes.h>
 
 namespace ACE
 {
-class CAudioControl;
-class CAudioLibrary;
-class CAudioFolder;
-class CAudioAsset;
-class CAudioAssetsManager;
+class CSystemControl;
+class CSystemLibrary;
+class CSystemFolder;
+class CSystemAsset;
+class CSystemAssetsManager;
 
 enum class EDataRole
 {
@@ -23,15 +23,15 @@ enum class EDataRole
 
 namespace AudioModelUtils
 {
-void         GetAssetsFromIndices(QModelIndexList const& list, std::vector<CAudioLibrary*>& outLibraries, std::vector<CAudioFolder*>& outFolders, std::vector<CAudioControl*>& outControls);
-CAudioAsset* GetAssetFromIndex(QModelIndex const& index);
+void         GetAssetsFromIndices(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls);
+CSystemAsset* GetAssetFromIndex(QModelIndex const& index);
 } // namespace AudioModelUtils
 
 class CSystemControlsModel : public QAbstractItemModel
 {
 public:
 
-	CSystemControlsModel(CAudioAssetsManager* pAssetsManager);
+	CSystemControlsModel(CSystemAssetsManager* pAssetsManager);
 	virtual ~CSystemControlsModel() override;
 
 protected:
@@ -53,21 +53,21 @@ protected:
 
 	void ConnectToSystem();
 	void DisconnectFromSystem();
-	CAudioAssetsManager* m_pAssetsManager = nullptr;
+	CSystemAssetsManager* m_pAssetsManager = nullptr;
 };
 
 class CAudioLibraryModel : public QAbstractItemModel
 {
 public:
 
-	CAudioLibraryModel(CAudioAssetsManager* pAssetsManager, CAudioLibrary* pLibrary);
+	CAudioLibraryModel(CSystemAssetsManager* pAssetsManager, CSystemLibrary* pLibrary);
 	virtual ~CAudioLibraryModel() override;
 
 	void DisconnectFromSystem();
 
 protected:
 
-	QModelIndex IndexFromItem(CAudioAsset const* pItem) const;
+	QModelIndex IndexFromItem(CSystemAsset const* pItem) const;
 
 	// QAbstractItemModel
 	virtual int             rowCount(QModelIndex const& parent) const override;
@@ -87,8 +87,8 @@ protected:
 
 	void ConnectToSystem();
 
-	CAudioAssetsManager* m_pAssetsManager = nullptr;
-	CAudioLibrary*       m_pLibrary = nullptr;
+	CSystemAssetsManager* m_pAssetsManager = nullptr;
+	CSystemLibrary*       m_pLibrary = nullptr;
 };
 
 class CSystemControlsFilterProxyModel final : public QDeepFilterProxyModel
@@ -105,7 +105,7 @@ public:
 	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
 	// ~QSortFilterProxyModel
 
-	void EnableControl(bool const isEnabled, EItemType const type);
+	void EnableControl(bool const isEnabled, ESystemItemType const type);
 
 private:
 

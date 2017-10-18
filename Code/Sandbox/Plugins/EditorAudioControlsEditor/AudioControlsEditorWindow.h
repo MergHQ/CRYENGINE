@@ -4,7 +4,7 @@
 
 #include <EditorFramework/Editor.h>
 #include <IEditor.h>
-#include "AudioAssetsManager.h"
+#include "SystemAssetsManager.h"
 #include <QFileSystemWatcher>
 #include <QtViewPane.h>
 #include <qobjectdefs.h>
@@ -14,11 +14,11 @@ class QVBoxLayout;
 
 namespace ACE
 {
-class CAudioAssetsManager;
+class CSystemAssetsManager;
 class CSystemControlsWidget;
 class CPropertiesWidget;
 class CMiddlewareDataWidget;
-class CAudioControl;
+class CSystemControl;
 class CFileMonitorSystem;
 class CFileMonitorMiddleware;
 
@@ -36,7 +36,7 @@ public:
 	// ~IEditorNotifyListener
 
 	// CDockableEditor
-	virtual const char* GetEditorName() const override { return "Audio Controls Editor"; }
+	virtual char const* GetEditorName() const override { return "Audio Controls Editor"; }
 	// ~CDockableEditor
 
 	// IPane
@@ -87,16 +87,16 @@ private:
 	void RefreshAudioSystem();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
-	void SelectConnectedSystemControl(CAudioControl const* const pControl);
+	void SelectConnectedSystemControl(CSystemControl const* const pControl);
 	bool TryClose();
 
-	std::vector<CAudioControl*> GetSelectedSystemControls();
+	std::vector<CSystemControl*> GetSelectedSystemControls();
 
 	CSystemControlsWidget* CreateSystemControlsWidget();
 	CPropertiesWidget*     CreatePropertiesWidget();
 	CMiddlewareDataWidget* CreateMiddlewareDataWidget();
 
-	CAudioAssetsManager*                    m_pAssetsManager;
+	CSystemAssetsManager*                   m_pAssetsManager;
 	CSystemControlsWidget*                  m_pSystemControlsWidget;
 	CPropertiesWidget*                      m_pPropertiesWidget;
 	CMiddlewareDataWidget*                  m_pMiddlewareDataWidget;

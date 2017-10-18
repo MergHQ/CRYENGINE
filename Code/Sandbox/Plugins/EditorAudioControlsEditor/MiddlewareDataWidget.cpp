@@ -6,12 +6,12 @@
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
-#include "AudioAssetsManager.h"
+#include "SystemAssetsManager.h"
 #include "SystemControlsEditorIcons.h"
 #include "AudioTreeView.h"
 
-#include <IAudioSystemEditor.h>
-#include <IAudioSystemItem.h>
+#include <IEditorImpl.h>
+#include <ImplItem.h>
 #include <CryIcon.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
@@ -63,7 +63,7 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-CMiddlewareDataWidget::CMiddlewareDataWidget(CAudioAssetsManager* pAssetsManager)
+CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pFilterProxyModel(new CMiddlewareDataFilterProxyModel(this))
 	, m_pAssetsModel(new CMiddlewareDataModel())
@@ -79,11 +79,11 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CAudioAssetsManager* pAssetsManager
 	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
-	IAudioSystemEditor const* const pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 
-	if (pAudioImpl != nullptr)
+	if (pEditorImpl != nullptr)
 	{
-		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
+		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pEditorImpl->GetName()));
 	}
 
 	pMainLayout->addWidget(m_pImplNameLabel);
@@ -104,11 +104,11 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CAudioAssetsManager* pAssetsManager
 	
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 	{
-		IAudioSystemEditor const* const pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 
-		if (pAudioImpl != nullptr)
+		if (pEditorImpl != nullptr)
 		{
-			m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pAudioImpl->GetName()));
+			m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pEditorImpl->GetName()));
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 }
@@ -191,14 +191,14 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 	{
 		if ((selection.count() == 1) && (m_pAssetsManager != nullptr))
 		{
-			IAudioSystemEditor const* const pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 
-			if (pAudioImpl != nullptr)
+			if (pEditorImpl != nullptr)
 			{
 				CID const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::EMiddlewareDataAttributes::Id)).toInt();
-				IAudioSystemItem const* const pItem = pAudioImpl->GetControl(itemId);
+				CImplItem const* const pImplControl = pEditorImpl->GetControl(itemId);
 
-				if ((pItem != nullptr) && pItem->IsConnected())
+				if ((pImplControl != nullptr) && pImplControl->IsConnected())
 				{
 					QMenu* const pConnectionsMenu = new QMenu();
 					pContextMenu->addMenu(pConnectionsMenu);
@@ -209,7 +209,7 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 
 					for (auto const pControl : controls)
 					{
-						if (pControl->GetConnection(pItem) != nullptr)
+						if (pControl->GetConnection(pImplControl) != nullptr)
 						{
 							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]() { SelectConnectedSystemControl(pControl); });
 							++count;

@@ -1743,7 +1743,7 @@ void CTileGenerator::TraceContour(CTileGenerator::TracerPath& path, const Tracer
 	while (tracer != start);
 }
 
-int CTileGenerator::LabelTracerPath(const CTileGenerator::TracerPath& path, size_t climbableVoxelCount, Region& region, Contour& contour, const uint16 internalLabel, const uint16 internalLabelFlags, const uint16 externalLabel)
+int CTileGenerator::LabelTracerPath(const CTileGenerator::TracerPath& path, size_t climbableVoxelCount, Region& region, Contour& contour, const uint16 internalLabel, const uint16 internalLabelFlags, const uint16 externalLabel, const bool bIsHole)
 {
 	const int numSteps = path.steps.size();
 	contour.reserve(numSteps);
@@ -1774,7 +1774,7 @@ int CTileGenerator::LabelTracerPath(const CTileGenerator::TracerPath& path, size
 		DetermineContourVertex(Vec2i(curr.pos), curr.GetDir(), curr.pos.z, static_cast<uint16>(climbableVoxelCount), *&vertex, bInternalContour, pDebugInfo);
 
 		// Get the paint values for the current neighbour and the next neighbour. If they don't match then we must have a vert.
-		const bool bImportantVert = (m_paint[curr.indexOut] != m_paint[next.indexOut]);
+		const bool bImportantVert = bIsHole ? (m_paint[curr.indexIn] != m_paint[next.indexIn]) : (m_paint[curr.indexOut] != m_paint[next.indexOut]);
 		if (bImportantVert)
 		{
 			vertex.flags |= ContourVertex::Unremovable;
@@ -2438,7 +2438,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 							Region& region = m_regions.back();
 							region.paint = paint;
 
-							region.spanCount += LabelTracerPath(path, climbableVoxelCount, region, region.contour, newLabel, ExternalContour, NoLabel);
+							region.spanCount += LabelTracerPath(path, climbableVoxelCount, region, region.contour, newLabel, ExternalContour, NoLabel, false);
 
 							// Also trace the hole contour for the previous painted colour.
 							if ((prev.label & ExternalContour) == 0 && (label & InternalContour) == 0)
@@ -2451,7 +2451,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 								holeReq.notPaint = prev.paint;
 
 								TraceContour(path, startTracer, erosion, climbableVoxelCount, holeReq);
-								LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label);
+								LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label, true);
 
 								// Store for Debugging.
 								CacheTracerPath(path);
@@ -2484,7 +2484,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 						Region& region = m_regions.back();
 						region.paint = paint;
 
-						region.spanCount += LabelTracerPath(path, climbableVoxelCount, region, region.contour, newLabel, ExternalContour, NoLabel);
+						region.spanCount += LabelTracerPath(path, climbableVoxelCount, region, region.contour, newLabel, ExternalContour, NoLabel, false);
 					}
 					else
 					{
@@ -2508,7 +2508,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 							holeReq.notPaint = prev.paint;
 
 							TraceContour(path, startTracer, erosion, climbableVoxelCount, holeReq);
-							LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label);
+							LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label, true);
 
 							// Store for Debugging.
 							CacheTracerPath(path);

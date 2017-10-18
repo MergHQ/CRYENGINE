@@ -3,7 +3,7 @@
 #pragma once
 
 #include <QWidget>
-#include <ACETypes.h>
+#include <SystemTypes.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 class QAction;
@@ -16,9 +16,9 @@ class CMountingProxyModel;
 
 namespace ACE
 {
-class CAudioAsset;
-class CAudioControl;
-class CAudioAssetsManager;
+class CSystemAsset;
+class CSystemControl;
+class CSystemAssetsManager;
 class CSystemControlsModel;
 class CSystemControlsFilterProxyModel;
 class CAudioLibraryModel;
@@ -30,15 +30,15 @@ class CSystemControlsWidget final : public QWidget
 
 public:
 
-	CSystemControlsWidget(CAudioAssetsManager* pAssetsManager);
+	CSystemControlsWidget(CSystemAssetsManager* pAssetsManager);
 	virtual ~CSystemControlsWidget() override;
 
-	bool                        IsEditing() const;
-	std::vector<CAudioControl*> GetSelectedControls() const;
-	void                        SelectConnectedSystemControl(CAudioControl const* const pControl);
-	void                        Reload();
-	void                        BackupTreeViewStates();
-	void                        RestoreTreeViewStates();
+	bool                         IsEditing() const;
+	std::vector<CSystemControl*> GetSelectedControls() const;
+	void                         SelectConnectedSystemControl(CSystemControl const* const pControl);
+	void                         Reload();
+	void                         BackupTreeViewStates();
+	void                         RestoreTreeViewStates();
 
 signals:
 
@@ -65,18 +65,18 @@ private:
 	void InitFilterWidgets(QVBoxLayout* const pMainLayout);
 	void InitTypeFilters();
 	void ResetFilters();
-	void ShowControlType(EItemType const type, bool const isVisible);
+	void ShowControlType(ESystemItemType const type, bool const isVisible);
 	void SelectNewAsset(QModelIndex const& parent, int const row);
 
-	CAudioControl*      CreateControl(string const& name, EItemType type, CAudioAsset* const pParent);
-	CAudioAsset*        CreateFolder(CAudioAsset* const pParent);
+	CSystemControl*     CreateControl(string const& name, ESystemItemType type, CSystemAsset* const pParent);
+	CSystemAsset*       CreateFolder(CSystemAsset* const pParent);
 	void                CreateParentFolder();
 	bool                IsParentFolderAllowed();
 
 	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
-	CAudioAsset*        GetSelectedAsset() const;
+	CSystemAsset*       GetSelectedAsset() const;
 
-	CAudioAssetsManager* const             m_pAssetsManager;
+	CSystemAssetsManager* const            m_pAssetsManager;
 	QSearchBox* const                      m_pSearchBox;
 	QToolButton* const                     m_pFilterButton;
 	CAudioTreeView* const                  m_pTreeView;
