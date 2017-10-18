@@ -178,7 +178,7 @@ public:
 		AddParamBool("Dof_Active", m_pActive, 0);
 		AddParamFloatNoTransition("Dof_FocusDistance", m_pFocusDistance, 3.5f);
 		AddParamFloatNoTransition("Dof_FocusRange", m_pFocusRange, 0.0f);
-		AddParamFloatNoTransition("Dof_FocusMin", m_pFocusMin, 2.0f);
+		AddParamFloatNoTransition("Dof_FocusMin", m_pFocusMin, 0.4f);
 		AddParamFloatNoTransition("Dof_FocusMax", m_pFocusMax, 10.0f);
 		AddParamFloatNoTransition("Dof_FocusLimit", m_pFocusLimit, 100.0f);
 		AddParamFloatNoTransition("Dof_MaxCoC", m_pMaxCoC, 12.0f);

@@ -61,7 +61,7 @@ SDepthOfFieldParams CDepthOfField::GetParams()
 		if (fFocusRange < 0.0f)
 		{
 			pParams.bGameMode = true;
-			float fFocusMin = 0.4f;//m_pFocusMin->GetParam();
+			float fFocusMin = m_pFocusMin->GetParam();
 			float fFocusMax = m_pFocusMax->GetParam();
 			float fFocusLimit = m_pFocusLimit->GetParam();
 
