@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AudioAssets.h"
+#include "SystemAssets.h"
 #include "IUndoObject.h"
 #include "SystemControlsModel.h"
 
@@ -26,7 +26,7 @@ protected:
 
 	TPath                          m_path;
 	CID                            m_id;
-	std::shared_ptr<CAudioControl> m_pStoredControl;
+	std::shared_ptr<CSystemControl> m_pStoredControl;
 };
 
 class CUndoControlAdd : public IUndoControlOperation
@@ -43,7 +43,7 @@ protected:
 class CUndoControlRemove : public IUndoControlOperation
 {
 public:
-	explicit CUndoControlRemove(std::shared_ptr<CAudioControl>& pControl);
+	explicit CUndoControlRemove(std::shared_ptr<CSystemControl>& pControl);
 protected:
 	virtual const char* GetDescription() override { return "Undo Control Remove"; };
 

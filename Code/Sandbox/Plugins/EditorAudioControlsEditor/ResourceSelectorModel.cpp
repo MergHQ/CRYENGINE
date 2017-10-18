@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "ResourceSelectorModel.h"
 
-#include "AudioAssets.h"
+#include "SystemAssets.h"
 #include "SystemControlsEditorIcons.h"
 
 #include <QtUtil.h>
@@ -13,7 +13,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceControlModel::data(QModelIndex const& index, int role) const
 {
-	CAudioLibrary const* const pLibrary = static_cast<CAudioLibrary*>(index.internalPointer());
+	CSystemLibrary const* const pLibrary = static_cast<CSystemLibrary*>(index.internalPointer());
 
 	if (pLibrary != nullptr)
 	{
@@ -24,11 +24,11 @@ QVariant CResourceControlModel::data(QModelIndex const& index, int role) const
 			break;
 
 		case Qt::DecorationRole:
-			return GetItemTypeIcon(EItemType::Library);
+			return GetItemTypeIcon(ESystemItemType::Library);
 			break;
 
 		case static_cast<int>(EDataRole::ItemType):
-			return static_cast<int>(EItemType::Library);
+			return static_cast<int>(ESystemItemType::Library);
 			break;
 
 		case static_cast<int>(EDataRole::InternalPointer):
@@ -45,7 +45,7 @@ bool CResourceControlModel::setData(QModelIndex const& index, QVariant const& va
 {
 	if (index.isValid())
 	{
-		CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
@@ -81,11 +81,11 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 		return QVariant();
 	}
 
-	CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+	CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 	if (pItem != nullptr)
 	{
-		EItemType const itemType = pItem->GetType();
+		ESystemItemType const itemType = pItem->GetType();
 
 		switch (role)
 		{
@@ -115,7 +115,7 @@ bool CResourceLibraryModel::setData(QModelIndex const& index, QVariant const& va
 {
 	if (index.isValid())
 	{
-		CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{

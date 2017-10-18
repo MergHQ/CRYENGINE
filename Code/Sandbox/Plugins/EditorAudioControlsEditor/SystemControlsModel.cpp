@@ -8,7 +8,7 @@
 #include "SystemControlsEditorIcons.h"
 #include "ItemStatusHelper.h"
 
-#include <IAudioSystemItem.h>
+#include <ImplItem.h>
 #include <QtUtil.h>
 
 #include <DragDrop.h>
@@ -16,20 +16,20 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-bool IsParentValid(CAudioAsset const& parent, EItemType const type)
+bool IsParentValid(CSystemAsset const& parent, ESystemItemType const type)
 {
 	switch (parent.GetType())
 	{
-	case EItemType::Folder:
-	case EItemType::Library: // intentional fall through
-		return type != EItemType::State;
+	case ESystemItemType::Folder:
+	case ESystemItemType::Library: // intentional fall through
+		return type != ESystemItemType::State;
 	default: // assumes the rest are actual controls
 		{
-			CAudioControl const* const pControl = static_cast<CAudioControl const*>(&parent);
+			CSystemControl const* const pControl = static_cast<CSystemControl const*>(&parent);
 
-			if ((pControl != nullptr) && (pControl->GetType() == EItemType::Switch))
+			if ((pControl != nullptr) && (pControl->GetType() == ESystemItemType::Switch))
 			{
-				return type == EItemType::State;
+				return type == ESystemItemType::State;
 			}
 		}
 	}
@@ -38,7 +38,7 @@ bool IsParentValid(CAudioAsset const& parent, EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DecodeMimeData(QMimeData const* pData, std::vector<CAudioAsset*>& outItems)
+void DecodeMimeData(QMimeData const* pData, std::vector<CSystemAsset*>& outItems)
 {
 	CDragDropData const* const dragDropData = CDragDropData::FromMimeData(pData);
 
@@ -51,25 +51,25 @@ void DecodeMimeData(QMimeData const* pData, std::vector<CAudioAsset*>& outItems)
 		{
 			intptr_t ptr;
 			stream >> ptr;
-			outItems.push_back(reinterpret_cast<CAudioAsset*>(ptr));
+			outItems.push_back(reinterpret_cast<CSystemAsset*>(ptr));
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CanDropMimeData(QMimeData const* pData, CAudioAsset const& parent)
+bool CanDropMimeData(QMimeData const* pData, CSystemAsset const& parent)
 {
 	// Handle first if mime data is an external (from the implementation side) source
-	std::vector<IAudioSystemItem*> implItems;
+	std::vector<CImplItem*> implItems;
 	AudioModelUtils::DecodeImplMimeData(pData, implItems);
 
 	if (!implItems.empty())
 	{
-		IAudioSystemEditor const* const pImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 
-		for (IAudioSystemItem const* const pImplItem : implItems)
+		for (CImplItem const* const pImplItem : implItems)
 		{
-			if (!IsParentValid(parent, pImpl->ImplTypeToSystemType(pImplItem->GetType())))
+			if (!IsParentValid(parent, pEditorImpl->ImplTypeToSystemType(pImplItem)))
 			{
 				return false;
 			}
@@ -80,7 +80,7 @@ bool CanDropMimeData(QMimeData const* pData, CAudioAsset const& parent)
 	else
 	{
 		// Handle if mime data is an internal move (rearranging controls)
-		std::vector<CAudioAsset*> droppedItems;
+		std::vector<CSystemAsset*> droppedItems;
 		DecodeMimeData(pData, droppedItems);
 
 		for (auto const pItem : droppedItems)
@@ -98,33 +98,33 @@ bool CanDropMimeData(QMimeData const* pData, CAudioAsset const& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DropMimeData(QMimeData const* const pData, CAudioAsset& parent)
+void DropMimeData(QMimeData const* const pData, CSystemAsset& parent)
 {
 	// Handle first if mime data is an external (from the implementation side) source
-	std::vector<IAudioSystemItem*> implItems;
+	std::vector<CImplItem*> implItems;
 	AudioModelUtils::DecodeImplMimeData(pData, implItems);
 
 	if (!implItems.empty())
 	{
-		CAudioAssetsManager* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+		CSystemAssetsManager* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 
-		for (IAudioSystemItem* const pImplControl : implItems)
+		for (CImplItem* const pImplControl : implItems)
 		{
 			pAssetsManager->CreateAndConnectImplItems(pImplControl, &parent);
 		}
 	}
 	else
 	{
-		std::vector<CAudioAsset*> droppedItems;
+		std::vector<CSystemAsset*> droppedItems;
 		DecodeMimeData(pData, droppedItems);
-		std::vector<CAudioAsset*> topLevelDroppedItems;
+		std::vector<CSystemAsset*> topLevelDroppedItems;
 		Utils::SelectTopLevelAncestors(droppedItems, topLevelDroppedItems);
 		CAudioControlsEditorPlugin::GetAssetsManager()->MoveItems(&parent, topLevelDroppedItems);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControlsModel::CSystemControlsModel(CAudioAssetsManager* pAssetsManager)
+CSystemControlsModel::CSystemControlsModel(CSystemAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 {
 	ConnectToSystem();
@@ -156,7 +156,7 @@ int CSystemControlsModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CSystemControlsModel::data(QModelIndex const& index, int role) const
 {
-	CAudioLibrary const* const pLibrary = static_cast<CAudioLibrary*>(index.internalPointer());
+	CSystemLibrary const* const pLibrary = static_cast<CSystemLibrary*>(index.internalPointer());
 
 	if (pLibrary != nullptr)
 	{
@@ -211,11 +211,11 @@ QVariant CSystemControlsModel::data(QModelIndex const& index, int role) const
 			break;
 
 		case Qt::DecorationRole:
-			return GetItemTypeIcon(EItemType::Library);
+			return GetItemTypeIcon(ESystemItemType::Library);
 			break;
 
 		case static_cast<int>(EDataRole::ItemType):
-			return static_cast<int>(EItemType::Library);
+			return static_cast<int>(ESystemItemType::Library);
 			break;
 
 		case static_cast<int>(EDataRole::InternalPointer):
@@ -232,7 +232,7 @@ bool CSystemControlsModel::setData(QModelIndex const& index, QVariant const& val
 {
 	if (index.isValid())
 	{
-		CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+		CSystemAsset* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
@@ -308,7 +308,7 @@ bool CSystemControlsModel::canDropMimeData(QMimeData const* pData, Qt::DropActio
 {
 	if (parent.isValid())
 	{
-		CAudioAsset const* const pAsset = static_cast<CAudioAsset*>(parent.internalPointer());
+		CSystemAsset const* const pAsset = static_cast<CSystemAsset*>(parent.internalPointer());
 		CRY_ASSERT(pAsset != nullptr);
 		return CanDropMimeData(pData, *pAsset);
 	}
@@ -321,7 +321,7 @@ bool CSystemControlsModel::dropMimeData(QMimeData const* pData, Qt::DropAction a
 {
 	if (parent.isValid())
 	{
-		CAudioLibrary* const pLibrary = static_cast<CAudioLibrary*>(parent.internalPointer());
+		CSystemLibrary* const pLibrary = static_cast<CSystemLibrary*>(parent.internalPointer());
 		CRY_ASSERT(pLibrary != nullptr);
 		DropMimeData(pData, *pLibrary);
 		return true;
@@ -354,9 +354,9 @@ void CSystemControlsModel::ConnectToSystem()
 		beginInsertRows(QModelIndex(), row, row);
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalLibraryAdded.Connect([&](CAudioLibrary* const pLibrary) { endInsertRows(); }, reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalLibraryAdded.Connect([&](CSystemLibrary* const pLibrary) { endInsertRows(); }, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalLibraryAboutToBeRemoved.Connect([&](CAudioLibrary* const pLibrary)
+	m_pAssetsManager->signalLibraryAboutToBeRemoved.Connect([&](CSystemLibrary* const pLibrary)
 	{
 		int const libCount = m_pAssetsManager->GetLibraryCount();
 
@@ -383,7 +383,7 @@ void CSystemControlsModel::DisconnectFromSystem()
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-CAudioLibraryModel::CAudioLibraryModel(CAudioAssetsManager* pAssetsManager, CAudioLibrary* pLibrary)
+CAudioLibraryModel::CAudioLibraryModel(CSystemAssetsManager* pAssetsManager, CSystemLibrary* pLibrary)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pLibrary(pLibrary)
 {
@@ -397,11 +397,11 @@ CAudioLibraryModel::~CAudioLibraryModel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CAudioLibraryModel::IndexFromItem(CAudioAsset const* pItem) const
+QModelIndex CAudioLibraryModel::IndexFromItem(CSystemAsset const* pItem) const
 {
 	if (pItem != nullptr)
 	{
-		CAudioAsset const* const pParent = pItem->GetParent();
+		CSystemAsset const* const pParent = pItem->GetParent();
 
 		if (pParent != nullptr)
 		{
@@ -428,7 +428,7 @@ int CAudioLibraryModel::rowCount(QModelIndex const& parent) const
 		return m_pLibrary->ChildCount();
 	}
 
-	CAudioAsset const* const pAsset = static_cast<CAudioAsset*>(parent.internalPointer());
+	CSystemAsset const* const pAsset = static_cast<CSystemAsset*>(parent.internalPointer());
 
 	if (pAsset != nullptr)
 	{
@@ -452,11 +452,11 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 		return QVariant();
 	}
 
-	CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+	CSystemAsset* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 	if (pItem != nullptr)
 	{
-		EItemType const itemType = pItem->GetType();
+		ESystemItemType const itemType = pItem->GetType();
 
 		switch (role)
 		{
@@ -484,7 +484,7 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 			{
 				return GetItemStatusColor(EItemStatus::NoConnection);
 			}
-			else if (((itemType == EItemType::Folder) || (itemType == EItemType::Switch)) && !pItem->HasControl())
+			else if (((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch)) && !pItem->HasControl())
 			{
 				return GetItemStatusColor(EItemStatus::NoControl);
 			}
@@ -495,7 +495,7 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 
 			if (pItem->HasPlaceholderConnection())
 			{
-				if ((itemType == EItemType::Folder) || (itemType == EItemType::Switch))
+				if ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch))
 				{
 					return tr("Contains item that has an invalid connection");
 				}
@@ -506,7 +506,7 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 			}
 			else if (!pItem->HasConnection())
 			{
-				if ((itemType == EItemType::Folder) || (itemType == EItemType::Switch))
+				if ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch))
 				{
 					return tr("Contains item that is not connected to any audio control");
 				}
@@ -515,11 +515,11 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 					return tr("Item is not connected to any audio control");
 				}
 			}
-			else if ((itemType == EItemType::Folder) && !pItem->HasControl())
+			else if ((itemType == ESystemItemType::Folder) && !pItem->HasControl())
 			{
 				return tr("Contains no audio control");
 			}
-			else if ((itemType == EItemType::Switch) && !pItem->HasControl())
+			else if ((itemType == ESystemItemType::Switch) && !pItem->HasControl())
 			{
 				return tr("Contains no state");
 			}
@@ -538,9 +538,9 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 			return reinterpret_cast<intptr_t>(pItem);
 			break;
 		case static_cast<int>(EDataRole::Id):
-			if (itemType != EItemType::Folder)
+			if (itemType != ESystemItemType::Folder)
 			{
-				CAudioControl const* const pControl = static_cast<CAudioControl*>(pItem);
+				CSystemControl const* const pControl = static_cast<CSystemControl*>(pItem);
 
 				if (pControl != nullptr)
 				{
@@ -560,7 +560,7 @@ bool CAudioLibraryModel::setData(QModelIndex const& index, QVariant const& value
 {
 	if (index.isValid())
 	{
-		CAudioAsset* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+		CSystemAsset* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
@@ -575,20 +575,20 @@ bool CAudioLibraryModel::setData(QModelIndex const& index, QVariant const& value
 
 						if (!newName.empty() && newName.compareNoCase(oldName) != 0)
 						{
-							EItemType const itemType = pItem->GetType();
+							ESystemItemType const itemType = pItem->GetType();
 
 							switch (itemType)
 							{
-							case EItemType::Preload:
-							case EItemType::Parameter:
-							case EItemType::State:
-							case EItemType::Switch:
-							case EItemType::Trigger:
-							case EItemType::Environment:
+							case ESystemItemType::Preload:
+							case ESystemItemType::Parameter:
+							case ESystemItemType::State:
+							case ESystemItemType::Switch:
+							case ESystemItemType::Trigger:
+							case ESystemItemType::Environment:
 								pItem->SetName(Utils::GenerateUniqueControlName(newName, itemType, *m_pAssetsManager));
 								pItem->SetModified(true);
 								break;
-							case EItemType::Folder:
+							case ESystemItemType::Folder:
 								pItem->SetName(Utils::GenerateUniqueName(newName, itemType, pItem->GetParent()));
 								pItem->SetModified(true);
 								break;
@@ -640,11 +640,11 @@ QModelIndex CAudioLibraryModel::index(int row, int column, QModelIndex const& pa
 	{
 		if (parent.isValid())
 		{
-			CAudioAsset const* const pParent = static_cast<CAudioAsset*>(parent.internalPointer());
+			CSystemAsset const* const pParent = static_cast<CSystemAsset*>(parent.internalPointer());
 
 			if ((pParent != nullptr) && (row < pParent->ChildCount()))
 			{
-				CAudioAsset const* const pChild = pParent->GetChild(row);
+				CSystemAsset const* const pChild = pParent->GetChild(row);
 
 				if (pChild != nullptr)
 				{
@@ -666,11 +666,11 @@ QModelIndex CAudioLibraryModel::parent(QModelIndex const& index) const
 {
 	if (index.isValid())
 	{
-		CAudioAsset const* const pItem = static_cast<CAudioAsset*>(index.internalPointer());
+		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
-			if (pItem->GetParent()->GetType() != EItemType::Library)
+			if (pItem->GetParent()->GetType() != ESystemItemType::Library)
 			{
 				return IndexFromItem(pItem->GetParent());
 			}
@@ -685,7 +685,7 @@ bool CAudioLibraryModel::canDropMimeData(QMimeData const* pData, Qt::DropAction 
 {
 	if (parent.isValid())
 	{
-		CAudioAsset const* const pAsset = static_cast<CAudioAsset*>(parent.internalPointer());
+		CSystemAsset const* const pAsset = static_cast<CSystemAsset*>(parent.internalPointer());
 		CRY_ASSERT(pAsset != nullptr);
 		return CanDropMimeData(pData, *pAsset);
 	}
@@ -698,7 +698,7 @@ bool CAudioLibraryModel::dropMimeData(QMimeData const* pData, Qt::DropAction act
 {
 	if (parent.isValid())
 	{
-		CAudioAsset* const pAsset = static_cast<CAudioAsset*>(parent.internalPointer());
+		CSystemAsset* const pAsset = static_cast<CSystemAsset*>(parent.internalPointer());
 		CRY_ASSERT(pAsset != nullptr);
 		DropMimeData(pData, *pAsset);
 		return true;
@@ -741,14 +741,14 @@ QStringList CAudioLibraryModel::mimeTypes() const
 //////////////////////////////////////////////////////////////////////////
 void CAudioLibraryModel::ConnectToSystem()
 {
-	CAudioAssetsManager* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	pAssetsManager->signalItemAboutToBeAdded.Connect([&](CAudioAsset* const pParent)
+	CSystemAssetsManager* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+	pAssetsManager->signalItemAboutToBeAdded.Connect([&](CSystemAsset* const pParent)
 	{
 		if (Utils::GetParentLibrary(pParent) == m_pLibrary)
 		{
 			int const row = pParent->ChildCount();
 
-			if (pParent->GetType() == EItemType::Library)
+			if (pParent->GetType() == ESystemItemType::Library)
 			{
 				CRY_ASSERT(pParent == m_pLibrary);
 				beginInsertRows(QModelIndex(), row, row);
@@ -761,7 +761,7 @@ void CAudioLibraryModel::ConnectToSystem()
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	pAssetsManager->signalItemAdded.Connect([&](CAudioAsset* const pAsset)
+	pAssetsManager->signalItemAdded.Connect([&](CSystemAsset* const pAsset)
 	{
 		if (Utils::GetParentLibrary(pAsset) == m_pLibrary)
 		{
@@ -769,18 +769,18 @@ void CAudioLibraryModel::ConnectToSystem()
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	pAssetsManager->signalItemAboutToBeRemoved.Connect([&](CAudioAsset* const pAsset)
+	pAssetsManager->signalItemAboutToBeRemoved.Connect([&](CSystemAsset* const pAsset)
 	{
 		if (Utils::GetParentLibrary(pAsset) == m_pLibrary)
 		{
-			CAudioAsset const* const pParent = pAsset->GetParent();
+			CSystemAsset const* const pParent = pAsset->GetParent();
 			int const childCount = pParent->ChildCount();
 
 			for (int i = 0; i < childCount; ++i)
 			{
 				if (pParent->GetChild(i) == pAsset)
 				{
-					if (pParent->GetType() == EItemType::Library)
+					if (pParent->GetType() == ESystemItemType::Library)
 					{
 						CRY_ASSERT(pParent == m_pLibrary);
 						beginRemoveRows(QModelIndex(), i, i);
@@ -797,7 +797,7 @@ void CAudioLibraryModel::ConnectToSystem()
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	pAssetsManager->signalItemRemoved.Connect([&](CAudioAsset* const pParent, CAudioAsset* const pAsset)
+	pAssetsManager->signalItemRemoved.Connect([&](CSystemAsset* const pParent, CSystemAsset* const pAsset)
 	{
 		if (Utils::GetParentLibrary(pParent) == m_pLibrary)
 		{
@@ -809,7 +809,7 @@ void CAudioLibraryModel::ConnectToSystem()
 //////////////////////////////////////////////////////////////////////////
 void CAudioLibraryModel::DisconnectFromSystem()
 {
-	CAudioAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+	CSystemAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	pAssetsManager->signalItemAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalItemAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -831,7 +831,7 @@ bool CSystemControlsFilterProxyModel::rowMatchesFilter(int source_row, QModelInd
 
 		if (index.isValid())
 		{
-			CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
+			CSystemAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
 
 			if ((pAsset != nullptr) && pAsset->IsHiddenDefault())
 			{
@@ -842,9 +842,9 @@ bool CSystemControlsFilterProxyModel::rowMatchesFilter(int source_row, QModelInd
 			if (m_validControlsMask != std::numeric_limits<uint>::max())
 			{
 				// Has type filtering.
-				EItemType const itemType = (EItemType)sourceModel()->data(index, static_cast<int>(EDataRole::ItemType)).toUInt();
+				ESystemItemType const itemType = (ESystemItemType)sourceModel()->data(index, static_cast<int>(EDataRole::ItemType)).toUInt();
 
-				if (itemType < EItemType::Folder)
+				if (itemType < ESystemItemType::Folder)
 				{
 					return m_validControlsMask & (1 << static_cast<int>(itemType));
 				}
@@ -866,12 +866,12 @@ bool CSystemControlsFilterProxyModel::lessThan(QModelIndex const& left, QModelIn
 {
 	if (left.column() == right.column())
 	{
-		EItemType const leftType = static_cast<EItemType>(sourceModel()->data(left, static_cast<int>(EDataRole::ItemType)).toInt());
-		EItemType const rightType = static_cast<EItemType>(sourceModel()->data(right, static_cast<int>(EDataRole::ItemType)).toInt());
+		ESystemItemType const leftType = static_cast<ESystemItemType>(sourceModel()->data(left, static_cast<int>(EDataRole::ItemType)).toInt());
+		ESystemItemType const rightType = static_cast<ESystemItemType>(sourceModel()->data(right, static_cast<int>(EDataRole::ItemType)).toInt());
 
 		if (leftType != rightType)
 		{
-			return rightType < EItemType::Folder;
+			return rightType < ESystemItemType::Folder;
 		}
 
 		QVariant const& valueLeft = sourceModel()->data(left, Qt::DisplayRole);
@@ -884,7 +884,7 @@ bool CSystemControlsFilterProxyModel::lessThan(QModelIndex const& left, QModelIn
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsFilterProxyModel::EnableControl(bool const isEnabled, EItemType const type)
+void CSystemControlsFilterProxyModel::EnableControl(bool const isEnabled, ESystemItemType const type)
 {
 	if (isEnabled)
 	{
@@ -901,7 +901,7 @@ void CSystemControlsFilterProxyModel::EnableControl(bool const isEnabled, EItemT
 namespace AudioModelUtils
 {
 //////////////////////////////////////////////////////////////////////////
-void GetAssetsFromIndices(QModelIndexList const& list, std::vector<CAudioLibrary*>& outLibraries, std::vector<CAudioFolder*>& outFolders, std::vector<CAudioControl*>& outControls)
+void GetAssetsFromIndices(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls)
 {
 	for (auto const& index : list)
 	{
@@ -913,14 +913,14 @@ void GetAssetsFromIndices(QModelIndexList const& list, std::vector<CAudioLibrary
 
 			switch (type.toInt())
 			{
-			case static_cast<int>(EItemType::Library):
-				outLibraries.push_back(reinterpret_cast<CAudioLibrary*>(internalPtr.value<intptr_t>()));
+			case static_cast<int>(ESystemItemType::Library):
+				outLibraries.push_back(reinterpret_cast<CSystemLibrary*>(internalPtr.value<intptr_t>()));
 				break;
-			case static_cast<int>(EItemType::Folder):
-				outFolders.push_back(reinterpret_cast<CAudioFolder*>(internalPtr.value<intptr_t>()));
+			case static_cast<int>(ESystemItemType::Folder):
+				outFolders.push_back(reinterpret_cast<CSystemFolder*>(internalPtr.value<intptr_t>()));
 				break;
 			default:
-				outControls.push_back(reinterpret_cast<CAudioControl*>(internalPtr.value<intptr_t>()));
+				outControls.push_back(reinterpret_cast<CSystemControl*>(internalPtr.value<intptr_t>()));
 				break;
 			}
 		}
@@ -928,13 +928,13 @@ void GetAssetsFromIndices(QModelIndexList const& list, std::vector<CAudioLibrary
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioAsset* GetAssetFromIndex(QModelIndex const& index)
+CSystemAsset* GetAssetFromIndex(QModelIndex const& index)
 {
 	QVariant const internalPtr = index.data(static_cast<int>(EDataRole::InternalPointer));
 
 	if (internalPtr.isValid())
 	{
-		return reinterpret_cast<CAudioAsset*>(internalPtr.value<intptr_t>());
+		return reinterpret_cast<CSystemAsset*>(internalPtr.value<intptr_t>());
 	}
 
 	return nullptr;

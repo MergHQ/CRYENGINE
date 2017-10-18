@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "AudioControlsEditorUndo.h"
-#include "AudioAssetsManager.h"
+#include "SystemAssetsManager.h"
 #include "AudioControlsEditorPlugin.h"
 #include "QtUtil.h"
 
@@ -103,7 +103,7 @@ void CUndoControlAdd::Redo()
 	AddStoredControl();
 }
 
-CUndoControlRemove::CUndoControlRemove(std::shared_ptr<CAudioControl>& pControl)
+CUndoControlRemove::CUndoControlRemove(std::shared_ptr<CSystemControl>& pControl)
 {
 	/*CScopedSuspendUndo suspendUndo;
 	   m_pStoredControl = pControl;
@@ -224,10 +224,10 @@ void CUndoControlModified::Redo()
 void CUndoControlModified::SwapData()
 {
 	const CScopedSuspendUndo suspendUndo;
-	CAudioAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+	CSystemAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	if (pAssetsManager)
 	{
-		CAudioControl* pControl = pAssetsManager->GetControlByID(m_id);
+		CSystemControl* pControl = pAssetsManager->GetControlByID(m_id);
 		if (pControl)
 		{
 			string name = pControl->GetName();

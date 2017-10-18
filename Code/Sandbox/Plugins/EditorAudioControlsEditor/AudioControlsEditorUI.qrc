@@ -1,10 +1,31 @@
 <RCC>
     <qresource prefix="/">
-        <file>Icons/Environment.ico</file>
-        <file>Icons/Parameter.ico</file>
-        <file>Icons/Switch.ico</file>
-        <file>Icons/Trigger.ico</file>
-        <file>Icons/Preload.ico</file>
-        <file>Icons/State.ico</file>
+        <file>Icons/fmod/bank.ico</file>
+        <file>Icons/fmod/event.ico</file>
+        <file>Icons/fmod/folder_closed.ico</file>
+        <file>Icons/fmod/folder_open.ico</file>
+        <file>Icons/fmod/group.ico</file>
+        <file>Icons/fmod/return.ico</file>
+        <file>Icons/fmod/snapshot.ico</file>
+        <file>Icons/fmod/tag.ico</file>
+        <file>Icons/portaudio/event.ico</file>
+        <file>Icons/sdlmixer/event.ico</file>
+        <file>Icons/system/environment.ico</file>
+        <file>Icons/system/parameter.ico</file>
+        <file>Icons/system/preload.ico</file>
+        <file>Icons/system/state.ico</file>
+        <file>Icons/system/switch.ico</file>
+        <file>Icons/system/trigger.ico</file>
+        <file>Icons/wwise/auxbus.ico</file>
+        <file>Icons/wwise/event.ico</file>
+        <file>Icons/wwise/gameparameter.ico</file>
+        <file>Icons/wwise/physicalfolder.ico</file>
+        <file>Icons/wwise/soundbank.ico</file>
+        <file>Icons/wwise/state.ico</file>
+        <file>Icons/wwise/stategroup.ico</file>
+        <file>Icons/wwise/switch.ico</file>
+        <file>Icons/wwise/switchgroup.ico</file>
+        <file>Icons/wwise/virtualfolder.ico</file>
+        <file>Icons/wwise/workunit.ico</file>
     </qresource>
 </RCC>

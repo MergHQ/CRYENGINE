@@ -6,12 +6,12 @@
 
 namespace ACE
 {
-class IAudioSystemEditor;
-class IAudioSystemItem;
+struct IEditorImpl;
+class CImplItem;
 
 namespace AudioModelUtils
 {
-	void DecodeImplMimeData(const QMimeData* pData, std::vector<IAudioSystemItem*>& outItems);
+	void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems);
 } // namespace AudioModelUtils
 
 class CMiddlewareDataModel final : public QAbstractItemModel
@@ -49,15 +49,15 @@ public:
 	virtual QMimeData*      mimeData(QModelIndexList const& indexes) const override;
 	// ~QAbstractItemModel
 
-	IAudioSystemItem* ItemFromIndex(QModelIndex const& index) const;
-	QModelIndex       IndexFromItem(IAudioSystemItem const* const pItem) const;
-	void              Reset();
+	CImplItem*  ItemFromIndex(QModelIndex const& index) const;
+	QModelIndex IndexFromItem(CImplItem const* const pImplItem) const;
+	void        Reset();
 
 	static char const* const ms_szMimeType;
 
 private:
 
-	IAudioSystemEditor* m_pAudioSystem;
+	IEditorImpl* m_pEditorImpl;
 };
 
 class CMiddlewareDataFilterProxyModel final : public QDeepFilterProxyModel

@@ -6,14 +6,14 @@
 
 namespace ACE
 {
-class CAudioLibrary;
-class CAudioAssetsManager;
+class CSystemLibrary;
+class CSystemAssetsManager;
 
 class CResourceControlModel final : public CSystemControlsModel
 {
 public:
 
-	CResourceControlModel(CAudioAssetsManager* pAssetsManager)
+	CResourceControlModel(CSystemAssetsManager* pAssetsManager)
 		: CSystemControlsModel(pAssetsManager)
 	{}
 
@@ -31,7 +31,7 @@ class CResourceLibraryModel final : public CAudioLibraryModel
 {
 public:
 
-	CResourceLibraryModel(CAudioAssetsManager* pAssetsManager, CAudioLibrary* pLibrary)
+	CResourceLibraryModel(CSystemAssetsManager* pAssetsManager, CSystemLibrary* pLibrary)
 		:CAudioLibraryModel(pAssetsManager, pLibrary)
 	{}
 

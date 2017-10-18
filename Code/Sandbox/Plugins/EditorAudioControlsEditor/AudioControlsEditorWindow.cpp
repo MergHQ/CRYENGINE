@@ -6,7 +6,7 @@
 #include "AudioControlsEditorPlugin.h"
 #include "SystemControlsEditorIcons.h"
 #include "PreferencesDialog.h"
-#include "AudioAssetsManager.h"
+#include "SystemAssetsManager.h"
 #include "ImplementationManager.h"
 #include "SystemControlsWidget.h"
 #include "PropertiesWidget.h"
@@ -396,11 +396,11 @@ void CAudioControlsEditorWindow::CheckErrorMask()
 	}
 	else if ((errorCodeMask & EErrorCode::NonMatchedActivityRadius) != 0)
 	{
-		IAudioSystemEditor const* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
-		if (pAudioSystemImpl != nullptr)
+		if (pEditorImpl != nullptr)
 		{
-			QString const middlewareName = pAudioSystemImpl->GetName();
+			QString const middlewareName = pEditorImpl->GetName();
 			CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
 		}
 	}
@@ -417,7 +417,7 @@ void CAudioControlsEditorWindow::Save()
 		QGuiApplication::restoreOverrideCursor();
 
 		// if preloads have been modified, ask the user if s/he wants to refresh the audio system
-		if (m_pAssetsManager->IsTypeDirty(EItemType::Preload))
+		if (m_pAssetsManager->IsTypeDirty(ESystemItemType::Preload))
 		{
 			CQuestionDialog* const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion(tr(GetEditorName()), tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
@@ -531,12 +531,12 @@ void CAudioControlsEditorWindow::ReloadMiddlewareData()
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	BackupTreeViewStates();
 
-	IAudioSystemEditor* const pAudioSystemImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+	IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 
-	if (pAudioSystemImpl != nullptr)
+	if (pEditorImpl != nullptr)
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
-		pAudioSystemImpl->Reload();
+		pEditorImpl->Reload();
 	}
 
 	m_pAssetsManager->ClearAllConnections();
@@ -620,9 +620,9 @@ void CAudioControlsEditorWindow::OnPreferencesDialog()
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<CAudioControl*> CAudioControlsEditorWindow::GetSelectedSystemControls()
+std::vector<CSystemControl*> CAudioControlsEditorWindow::GetSelectedSystemControls()
 {
-	std::vector<CAudioControl*> controls;
+	std::vector<CSystemControl*> controls;
 
 	if (m_pSystemControlsWidget != nullptr)
 	{
@@ -633,7 +633,7 @@ std::vector<CAudioControl*> CAudioControlsEditorWindow::GetSelectedSystemControl
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorWindow::SelectConnectedSystemControl(CAudioControl const* const pControl)
+void CAudioControlsEditorWindow::SelectConnectedSystemControl(CSystemControl const* const pControl)
 {
 	if ((m_pSystemControlsWidget != nullptr) && (pControl != nullptr))
 	{
@@ -664,11 +664,11 @@ bool CAudioControlsEditorWindow::TryClose()
 			break;
 		case QDialogButtonBox::Discard:
 		{
-			IAudioSystemEditor* const pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+			IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 
-			if (pAudioSystemEditorImpl != nullptr)
+			if (pEditorImpl != nullptr)
 			{
-				pAudioSystemEditorImpl->Reload(false);
+				pEditorImpl->Reload(false);
 			}
 
 			CAudioControlsEditorPlugin::signalAboutToLoad();

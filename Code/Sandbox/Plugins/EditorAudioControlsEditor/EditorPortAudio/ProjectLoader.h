@@ -2,24 +2,27 @@
 
 #pragma once
 
+#include "ImplControl.h"
+
 #include <CrySystem/XML/IXml.h>
-#include <ACETypes.h>
+#include <SystemTypes.h>
 
 namespace ACE
 {
-class IAudioSystemItem;
-
+namespace PortAudio
+{
 class CProjectLoader
 {
 public:
 
-	CProjectLoader(string const& sAssetsPath, IAudioSystemItem& rootItem);
+	CProjectLoader(string const& sAssetsPath, CImplItem& rootItem);
 
 private:
 
-	IAudioSystemItem* CreateItem(string const& name, string const& path, ItemType const type, IAudioSystemItem& rootItem);
-	void              LoadFolder(string const& folderPath, IAudioSystemItem& parent);
+	CImplItem* CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem);
+	void       LoadFolder(string const& folderPath, CImplItem& parent);
 
 	string m_assetsPath;
 };
+} // namespace PortAudio
 } // namespace ACE

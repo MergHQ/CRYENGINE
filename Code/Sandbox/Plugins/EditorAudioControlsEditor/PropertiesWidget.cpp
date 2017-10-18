@@ -3,11 +3,11 @@
 #include "StdAfx.h"
 #include "PropertiesWidget.h"
 
-#include "AudioAssetsManager.h"
+#include "SystemAssetsManager.h"
 #include "ConnectionsWidget.h"
 #include "SystemControlsEditorIcons.h"
 
-#include <ACETypes.h>
+#include <SystemTypes.h>
 #include <IEditor.h>
 #include <QtUtil.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
@@ -16,12 +16,10 @@
 #include <QString>
 #include <QVBoxLayout>
 
-using namespace QtUtil;
-
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CPropertiesWidget::CPropertiesWidget(CAudioAssetsManager* pAssetsManager)
+CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pPropertyTree(new QPropertyTree())
 	, m_pConnectionsWidget(new CConnectionsWidget())
@@ -79,7 +77,7 @@ void CPropertiesWidget::Reload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::SetSelectedControls(std::vector<CAudioControl*> const& selectedControls)
+void CPropertiesWidget::SetSelectedControls(std::vector<CSystemControl*> const& selectedControls)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
@@ -96,9 +94,9 @@ void CPropertiesWidget::SetSelectedControls(std::vector<CAudioControl*> const& s
 	// Update connections
 	if (selectedControls.size() == 1)
 	{
-		CAudioControl* const pControl = selectedControls[0];
+		CSystemControl* const pControl = selectedControls[0];
 
-		if (pControl->GetType() != EItemType::Switch)
+		if (pControl->GetType() != ESystemItemType::Switch)
 		{
 			m_pConnectionsWidget->SetControl(pControl);
 			m_pConnectionsWidget->setHidden(false);

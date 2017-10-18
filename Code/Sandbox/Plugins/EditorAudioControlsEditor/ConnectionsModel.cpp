@@ -3,14 +3,14 @@
 #include "StdAfx.h"
 #include "ConnectionsModel.h"
 
-#include "AudioAssets.h"
+#include "SystemAssets.h"
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
 #include "ItemStatusHelper.h"
 
-#include <IAudioSystemEditor.h>
-#include <IAudioSystemItem.h>
+#include <IEditorImpl.h>
+#include <ImplItem.h>
 #include <IUndoObject.h>
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 #include <CryIcon.h>
@@ -24,7 +24,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CConnectionModel::CConnectionModel()
 	: m_pControl(nullptr)
-	, m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
+	, m_pEditorImpl(CAudioControlsEditorPlugin::GetImplEditor())
 {
 	auto resetFunction = [&]()
 	{
@@ -33,7 +33,7 @@ CConnectionModel::CConnectionModel()
 		endResetModel();
 	};
 
-	CAudioAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+	CSystemAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	pAssetsManager->signalItemAdded.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalItemRemoved.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalControlModified.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
@@ -41,14 +41,14 @@ CConnectionModel::CConnectionModel()
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
 			beginResetModel();
-			m_pAudioSystem = nullptr;
+			m_pEditorImpl = nullptr;
 			m_connectionsCache.clear();
 			endResetModel();
 	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
-			m_pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+			m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 			beginResetModel();
 			ResetCache();
 			endResetModel();
@@ -67,14 +67,14 @@ CConnectionModel::~CConnectionModel()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
+	CSystemAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionModel::Init(CAudioControl* const pControl)
+void CConnectionModel::Init(CSystemControl* const pControl)
 {
 	beginResetModel();
 	m_pControl = pControl;
@@ -85,7 +85,7 @@ void CConnectionModel::Init(CAudioControl* const pControl)
 //////////////////////////////////////////////////////////////////////////
 int CConnectionModel::rowCount(QModelIndex const& parent) const
 {
-	if ((m_pControl != nullptr) && (m_pAudioSystem != nullptr))
+	if ((m_pControl != nullptr) && (m_pEditorImpl != nullptr))
 	{
 		if ((parent.row() < 0) || (parent.column() < 0))
 		{
@@ -105,7 +105,7 @@ int CConnectionModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 {
-	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr) && index.isValid())
+	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr) && index.isValid())
 	{
 		if (index.row() < m_connectionsCache.size())
 		{
@@ -113,9 +113,9 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 
 			if (pConnection != nullptr)
 			{
-				IAudioSystemItem const* const pItem = m_pAudioSystem->GetControl(pConnection->GetID());
+				CImplItem const* const pImplItem = m_pEditorImpl->GetControl(pConnection->GetID());
 
-				if (pItem != nullptr)
+				if (pImplItem != nullptr)
 				{
 					switch (role)
 					{
@@ -123,15 +123,15 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 						switch (index.column())
 						{
 						case static_cast<int>(EConnectionModelColumns::Name):
-							return (const char*)pItem->GetName();
+							return static_cast<char const*>(pImplItem->GetName());
 						case static_cast<int>(EConnectionModelColumns::Path):
 							{
 								QString path;
-								IAudioSystemItem const* pParent = pItem->GetParent();
+								CImplItem const* pImplItemParent = pImplItem->GetParent();
 
-								while (pParent != nullptr)
+								while (pImplItemParent != nullptr)
 								{
-									QString parentName = QString((const char*)pParent->GetName());
+									QString parentName = QString(static_cast<char const*>(pImplItemParent->GetName()));
 									if (!parentName.isEmpty())
 									{
 										if (path.isEmpty())
@@ -143,7 +143,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 											path = parentName + "/" + path;
 										}
 									}
-									pParent = pParent->GetParent();
+									pImplItemParent = pImplItemParent->GetParent();
 								}
 
 								return path;
@@ -153,24 +153,24 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 					case Qt::DecorationRole:
 						if (index.column() == static_cast<int>(EConnectionModelColumns::Name))
 						{
-							return CryIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
+							return CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
 						}
 						break;
 					case Qt::ForegroundRole:
-						if (pItem->IsPlaceholder())
+						if (pImplItem->IsPlaceholder())
 						{
 							return GetItemStatusColor(EItemStatus::Placeholder);
 						}
 						break;
 					case Qt::ToolTipRole:
-						if (pItem->IsPlaceholder())
+						if (pImplItem->IsPlaceholder())
 						{
 							return tr("Control not found in the audio middleware project");
 						}
 						break;
 					case Qt::CheckStateRole:
 						{
-							if ((m_pControl->GetType() == EItemType::Preload) && (index.column() >= static_cast<int>(EConnectionModelColumns::Size)))
+							if ((m_pControl->GetType() == ESystemItemType::Preload) && (index.column() >= static_cast<int>(EConnectionModelColumns::Size)))
 							{
 								return pConnection->IsPlatformEnabled(index.column() - static_cast<int>(EConnectionModelColumns::Size)) ? Qt::Checked : Qt::Unchecked;
 							}
@@ -179,7 +179,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 					case static_cast<int>(EConnectionModelRoles::Id):
 						if (index.column() == static_cast<int>(EConnectionModelColumns::Name))
 						{
-							return pItem->GetId();
+							return pImplItem->GetId();
 						}
 						break;
 					}
@@ -246,7 +246,7 @@ bool CConnectionModel::setData(QModelIndex const& index, QVariant const& value, 
 //////////////////////////////////////////////////////////////////////////
 QModelIndex CConnectionModel::index(int row, int column, QModelIndex const& parent /*= QModelIndex()*/) const
 {
-	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr))
+	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr))
 	{
 		if ((row >= 0) && (column >= 0))
 		{
@@ -256,9 +256,9 @@ QModelIndex CConnectionModel::index(int row, int column, QModelIndex const& pare
 
 				if (pConnection != nullptr)
 				{
-					IAudioSystemItem const* const pItem = m_pAudioSystem->GetControl(pConnection->GetID());
+					CImplItem const* const pImplItem = m_pEditorImpl->GetControl(pConnection->GetID());
 
-					if (pItem != nullptr)
+					if (pImplItem != nullptr)
 					{
 						return createIndex(row, column);
 					}
@@ -279,19 +279,19 @@ QModelIndex CConnectionModel::parent(QModelIndex const& index) const
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
-	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr))
+	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr))
 	{
 		std::vector<CID> ids;
 		DecodeMimeData(pData, ids);
 
 		for (auto const id : ids)
 		{
-			IAudioSystemItem const* const pItem = m_pAudioSystem->GetControl(id);
+			CImplItem const* const pImplItem = m_pEditorImpl->GetControl(id);
 
-			if (pItem != nullptr)
+			if (pImplItem != nullptr)
 			{
 				// is the type being dragged compatible?
-				if (!(m_pAudioSystem->GetCompatibleTypes(m_pControl->GetType()) & pItem->GetType()))
+				if (!(m_pEditorImpl->GetCompatibleTypes(m_pControl->GetType()) & pImplItem->GetType()))
 				{
 					return false;
 				}
@@ -313,7 +313,7 @@ QStringList CConnectionModel::mimeTypes() const
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent)
 {
-	if ((m_pAudioSystem != nullptr) && (m_pControl != nullptr))
+	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr))
 	{
 		std::vector<CID> ids;
 		DecodeMimeData(pData, ids);
@@ -321,15 +321,15 @@ bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction actio
 
 		for (auto const id : ids)
 		{
-			IAudioSystemItem* const pItem = m_pAudioSystem->GetControl(id);
+			CImplItem* const pImplItem = m_pEditorImpl->GetControl(id);
 
-			if (pItem != nullptr)
+			if (pImplItem != nullptr)
 			{
-				ConnectionPtr pConnection = m_pControl->GetConnection(pItem);
+				ConnectionPtr pConnection = m_pControl->GetConnection(pImplItem);
 
 				if (pConnection == nullptr)
 				{
-					pConnection = m_pAudioSystem->CreateConnectionToControl(m_pControl->GetType(), pItem);
+					pConnection = m_pEditorImpl->CreateConnectionToControl(m_pControl->GetType(), pImplItem);
 
 					if (pConnection != nullptr)
 					{

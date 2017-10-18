@@ -6,9 +6,13 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorFmod_uber_0.cpp"
 	SOURCE_GROUP "Root"
-		"AudioSystemEditor_fmod.cpp"
-		"AudioSystemEditor_fmod.h"
+		"EditorImpl.cpp"
+		"EditorImpl.h"
+		"ImplControl.cpp"
+		"ImplControl.h"
 		"main.cpp"
+		"ProjectLoader.h"
+		"ProjectLoader.cpp"
 		"StdAfx.h"
 		"StdAfx.cpp"
 )

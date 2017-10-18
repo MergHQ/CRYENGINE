@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Controls/EditorDialog.h>
-#include <ACETypes.h>
+#include <SystemTypes.h>
 
 class QAdvancedTreeView;
 class QDeepFilterProxyModel;
@@ -14,7 +14,7 @@ class QModelIndex;
 
 namespace ACE
 {
-class CAudioAssetsManager;
+class CSystemAssetsManager;
 class CResourceControlModel;
 class CResourceLibraryModel;
 
@@ -24,7 +24,7 @@ class CResourceSelectorDialog final : public CEditorDialog
 
 public:
 
-	CResourceSelectorDialog(QWidget* pParent, EItemType const eType);
+	CResourceSelectorDialog(QWidget* pParent, ESystemItemType const eType);
 	~CResourceSelectorDialog();
 
 private slots:
@@ -38,7 +38,7 @@ private slots:
 public:
 
 	void        SetScope(Scope const scope);
-	const char* ChooseItem(const char* currentValue);
+	char const* ChooseItem(char const* currentValue);
 	QSize       sizeHint() const override;
 
 private:
@@ -55,16 +55,16 @@ private:
 
 	// Filtering
 	QString                             m_sFilter;
-	EItemType                           m_eType;
+	ESystemItemType                     m_eType;
 	Scope                               m_scope;
 	bool                                m_selectionIsValid = false;
 
 	static string                       s_previousControlName;
-	static EItemType                    s_previousControlType;
+	static ESystemItemType              s_previousControlType;
 	QAdvancedTreeView* const            m_pTreeView;
 	QDialogButtonBox* const             m_pDialogButtons;
 
-	CAudioAssetsManager*                m_pAssetsManager;
+	CSystemAssetsManager*               m_pAssetsManager;
 	QDeepFilterProxyModel*              m_pFilterProxyModel;
 	CResourceControlModel*              m_pAssetsModel;
 	CMountingProxyModel*                m_pMountingProxyModel;

@@ -5,7 +5,7 @@
 
 #include "ResourceSelectorModel.h"
 #include "AudioControlsEditorPlugin.h"
-#include "AudioAssetsManager.h"
+#include "SystemAssetsManager.h"
 
 #include <QtUtil.h>
 #include <QAdvancedTreeView.h>
@@ -24,10 +24,10 @@
 namespace ACE
 {
 string CResourceSelectorDialog::s_previousControlName = "";
-EItemType CResourceSelectorDialog::s_previousControlType = EItemType::Invalid;
+ESystemItemType CResourceSelectorDialog::s_previousControlType = ESystemItemType::Invalid;
 
 //////////////////////////////////////////////////////////////////////////
-CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, EItemType const eType)
+CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, ESystemItemType const eType)
 	: CEditorDialog("AudioControlsResourceSelectorDialog", pParent)
 	, m_eType(eType)
 	, m_pTreeView(new QAdvancedTreeView())
@@ -117,7 +117,7 @@ QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelI
 }
 
 //////////////////////////////////////////////////////////////////////////
-const char* CResourceSelectorDialog::ChooseItem(const char* szCurrentValue)
+char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 {
 	if (std::strcmp(szCurrentValue, "") != 0)
 	{
@@ -152,7 +152,7 @@ void CResourceSelectorDialog::UpdateSelectedControl()
 
 		if (index.isValid())
 		{
-			CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
+			CSystemAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
 			m_selectionIsValid = ((pAsset != nullptr) && (pAsset->GetType() == m_eType));
 
 			if (m_selectionIsValid)
@@ -224,7 +224,7 @@ bool CResourceSelectorDialog::ApplyFilter(QModelIndex const& parent)
 		}
 
 		// If it has valid children or it is a valid control (not a folder), show it
-		CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(parent);
+		CSystemAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(parent);
 
 		if (isChildValid || ((pAsset != nullptr) && pAsset->GetType() == m_eType && IsValid(parent)))
 		{
@@ -248,11 +248,11 @@ bool CResourceSelectorDialog::IsValid(QModelIndex const& index)
 
 	if (m_sFilter.isEmpty() || name.contains(m_sFilter, Qt::CaseInsensitive))
 	{
-		CAudioAsset* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
+		CSystemAsset* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
 
 		if ((pAsset != nullptr) && (pAsset->GetType() == m_eType))
 		{
-			CAudioControl const* const pControl = static_cast<CAudioControl*>(pAsset);
+			CSystemControl const* const pControl = static_cast<CSystemControl*>(pAsset);
 
 			if (pControl != nullptr)
 			{
@@ -291,11 +291,11 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 	
 	if (!indexes.empty())
 	{
-		CAudioAsset* const pAsset = AudioModelUtils::GetAssetFromIndex(indexes[0]);
+		CSystemAsset* const pAsset = AudioModelUtils::GetAssetFromIndex(indexes[0]);
 
 		if (pAsset != nullptr)
 		{
-			CAudioControl const* const pControl = static_cast<CAudioControl*>(pAsset);
+			CSystemControl const* const pControl = static_cast<CSystemControl*>(pAsset);
 
 			if (pControl != nullptr)
 			{
@@ -325,9 +325,9 @@ bool CResourceSelectorDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 
 			if (index.isValid())
 			{
-				CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
+				CSystemAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
 
-				if ((pAsset != nullptr) && (pAsset->GetType() == EItemType::Trigger))
+				if ((pAsset != nullptr) && (pAsset->GetType() == ESystemItemType::Trigger))
 				{
 					CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
 				}
@@ -349,7 +349,7 @@ void CResourceSelectorDialog::ItemDoubleClicked(QModelIndex const& modelIndex)
 {
 	if (m_selectionIsValid)
 	{
-		CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(modelIndex);
+		CSystemAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(modelIndex);
 
 		if ((pAsset != nullptr) && (pAsset->GetType() == m_eType))
 		{
@@ -366,9 +366,9 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 
 	if (index.isValid())
 	{
-		CAudioAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
+		CSystemAsset const* const pAsset = AudioModelUtils::GetAssetFromIndex(index);
 
-		if ((pAsset != nullptr) && (pAsset->GetType() == EItemType::Trigger))
+		if ((pAsset != nullptr) && (pAsset->GetType() == ESystemItemType::Trigger))
 		{
 			QMenu* const pContextMenu = new QMenu();
 

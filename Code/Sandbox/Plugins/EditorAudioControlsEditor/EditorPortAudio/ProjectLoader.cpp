@@ -3,28 +3,27 @@
 #include "StdAfx.h"
 #include "ProjectLoader.h"
 
-#include "AudioSystemControl.h"
+#include <IEditorImpl.h>
+#include <ImplItem.h>
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CryString/CryPath.h>
-#include <IAudioSystemEditor.h>
-#include <IAudioSystemItem.h>
 #include <CryCore/CryCrc32.h>
-
-using namespace PathUtil;
 
 namespace ACE
 {
+namespace PortAudio
+{
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& assetsPath, IAudioSystemItem& rootItem)
+CProjectLoader::CProjectLoader(string const& assetsPath, CImplItem& rootItem)
 	: m_assetsPath(assetsPath)
 {
 	LoadFolder("", rootItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadFolder(string const& folderPath, IAudioSystemItem& parent)
+void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
@@ -40,11 +39,11 @@ void CProjectLoader::LoadFolder(string const& folderPath, IAudioSystemItem& pare
 				{
 					if (folderPath.empty())
 					{
-						LoadFolder(name, *CreateItem(name, folderPath, ePortAudioTypes_Folder, parent));
+						LoadFolder(name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
 					}
 					else
 					{
-						LoadFolder(folderPath + CRY_NATIVE_PATH_SEPSTR + name, *CreateItem(name, folderPath, ePortAudioTypes_Folder, parent));
+						LoadFolder(folderPath + CRY_NATIVE_PATH_SEPSTR + name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
 					}
 				}
 				else
@@ -56,7 +55,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, IAudioSystemItem& pare
 						if ((_stricmp(name.data() + posExtension, ".ogg") == 0) || (_stricmp(name.data() + posExtension, ".wav") == 0))
 						{
 							// Create the event with the same name as the file
-							CreateItem(name, folderPath, ePortAudioTypes_Event, parent);
+							CreateItem(name, folderPath, EImpltemType::Event, parent);
 						}
 					}
 				}
@@ -69,7 +68,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, IAudioSystemItem& pare
 }
 
 //////////////////////////////////////////////////////////////////////////
-IAudioSystemItem* CProjectLoader::CreateItem(string const& name, string const& path, ItemType const type, IAudioSystemItem& rootItem)
+CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem)
 {
 	CID id;
 
@@ -82,8 +81,9 @@ IAudioSystemItem* CProjectLoader::CreateItem(string const& name, string const& p
 		id = CCrc32::ComputeLowercase(path + CRY_NATIVE_PATH_SEPSTR + name);
 	}
 
-	IAudioSystemControl* const pControl = new IAudioSystemControl(name, id, type);
+	CImplControl* const pControl = new CImplControl(name, id, static_cast<ItemType>(type));
 	rootItem.AddChild(pControl);
 	return pControl;
 }
+} // namespace PortAudio
 } // namespace ACE
