@@ -305,7 +305,9 @@ endfunction()
 macro(use_fbx_sdk)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/FbxSdk/include")
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DFBXSDK_NEW_API=1 -DTOOLS_ENABLE_FBX_SDK)
-	if (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
+		set(FBX_SUBFOLDER vs2015)
+	elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
 		set(FBX_SUBFOLDER vs2015)
 	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
 		set(FBX_SUBFOLDER vs2013)
