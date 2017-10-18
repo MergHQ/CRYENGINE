@@ -4,6 +4,7 @@
 #include "NavigationSystemSchematyc.h"
 
 #include "Components/Navigation/NavigationComponent.h"
+#include "Components/Navigation/NavigationMarkupShapeComponent.h"
 
 namespace NavigationComponentHelpers
 {
@@ -83,6 +84,7 @@ namespace NavigationSystemSchematyc
 	{
 		//Register Components
 		CEntityAINavigationComponent::Register(registrar);
+		CAINavigationMarkupShapeComponent::Register(registrar);
 
 		const CryGUID NavigationSystemGUID = "ad6ac254-13b8-4a79-827c-cd6a5a8e89da"_cry_guid;
 
