@@ -332,24 +332,27 @@ void CSystemAssetsManager::OnControlModified(CSystemControl* const pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemAssetsManager::SetAssetModified(CSystemAsset* const pAsset)
+void CSystemAssetsManager::SetAssetModified(CSystemAsset* const pAsset, bool const isModified)
 {
-	UpdateLibraryConnectionStates(pAsset);
-	auto const type = pAsset->GetType();
-
-	if (!(std::find(m_modifiedTypes.begin(), m_modifiedTypes.end(), type) != m_modifiedTypes.end()))
+	if (isModified)
 	{
-		m_modifiedTypes.emplace_back(type);
+		UpdateLibraryConnectionStates(pAsset);
+		auto const type = pAsset->GetType();
+
+		if (!(std::find(m_modifiedTypes.begin(), m_modifiedTypes.end(), type) != m_modifiedTypes.end()))
+		{
+			m_modifiedTypes.emplace_back(type);
+		}
+
+		auto const  name = pAsset->GetName();
+
+		if ((type == ESystemItemType::Library) && !(std::find(m_modifiedLibraries.begin(), m_modifiedLibraries.end(), name) != m_modifiedLibraries.end()))
+		{
+			m_modifiedLibraries.emplace_back(name);
+		}
+
+		signalIsDirty(true);
 	}
-
-	auto const  name = pAsset->GetName();
-
-	if ((type == ESystemItemType::Library) && !(std::find(m_modifiedLibraries.begin(), m_modifiedLibraries.end(), name) != m_modifiedLibraries.end()))
-	{
-		m_modifiedLibraries.emplace_back(name);
-	}
-
-	signalIsDirty(true);
 }
 
 //////////////////////////////////////////////////////////////////////////

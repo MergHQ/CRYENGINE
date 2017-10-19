@@ -77,7 +77,7 @@ public:
 	void ClearDirtyFlags();
 	bool IsLoading() const { return m_isLoading; }
 
-	void SetAssetModified(CSystemAsset* const pAsset);
+	void SetAssetModified(CSystemAsset* const pAsset, bool const isModified);
 
 	void UpdateAllConnectionStates();
 	void UpdateLibraryConnectionStates(CSystemAsset* pAsset);

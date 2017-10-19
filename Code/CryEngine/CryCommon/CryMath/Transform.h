@@ -19,7 +19,7 @@ public:
 		, m_scale(1.0f, 1.0f, 1.0f)
 	{}
 
-	explicit inline CTransform(const Vec3& translation, const CRotation& rotation, const Vec3& scale)
+	inline CTransform(const Vec3& translation, const CRotation& rotation, const Vec3& scale)
 		: m_translation(translation)
 		, m_rotation(rotation)
 		, m_scale(scale)
@@ -35,12 +35,6 @@ public:
 		: m_translation(transform.GetTranslation())
 		, m_rotation(Matrix33(transform))
 		, m_scale(transform.GetScale())
-	{}
-
-	inline CTransform(const CTransform& rhs)
-		: m_translation(rhs.m_translation)
-		, m_rotation(rhs.m_rotation)
-		, m_scale(rhs.m_scale)
 	{}
 
 	inline void SetTranslation(const Vec3& translation)
@@ -108,16 +102,14 @@ public:
 		m_scale = transform.GetScale();
 	}
 
-	inline void operator=(const CTransform& transform)
-	{
-		m_translation = transform.GetTranslation();
-		m_rotation = transform.GetRotation();
-		m_scale = transform.GetScale();
-	}
-
 	inline bool operator==(const CTransform& rhs) const
 	{
 		return m_translation == rhs.m_translation && m_rotation == rhs.m_rotation && m_scale == rhs.m_scale;
+	}
+
+	inline bool operator!=(const CTransform& rhs) const
+	{
+		return !(*this == rhs);
 	}
 
 	static inline void ReflectType(Schematyc::CTypeDesc<CTransform>& type)

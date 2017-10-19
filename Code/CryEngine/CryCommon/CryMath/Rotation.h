@@ -30,10 +30,6 @@ public:
 		: m_value(rotation)
 	{}
 
-	inline CRotation(const CRotation& rhs)
-		: m_value(rhs.m_value)
-	{}
-
 	inline CAngles3 ToAngles() const
 	{
 		Ang3 ang(m_value);
@@ -71,14 +67,14 @@ public:
 		m_value = Quat(rotation);
 	}
 
-	inline void operator=(const CRotation& rotation)
-	{
-		m_value = rotation.ToQuat();
-	}
-
 	inline bool operator==(const CRotation& rhs) const
 	{
 		return m_value == rhs.m_value;
+	}
+
+	inline bool operator!=(const CRotation& rhs) const
+	{
+		return m_value != rhs.m_value;
 	}
 
 	static inline void ReflectType(Schematyc::CTypeDesc<CRotation>& desc)

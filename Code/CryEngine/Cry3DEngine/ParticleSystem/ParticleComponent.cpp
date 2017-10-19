@@ -299,6 +299,9 @@ void CParticleComponent::PreCompile()
 	m_componentParams = {};
 	m_GPUComponentParams = {};
 
+	m_parent = nullptr;
+	m_children.clear();
+
 	static_cast<SFeatureDispatchers&>(*this) = {};
 	m_gpuFeatures.clear();
 

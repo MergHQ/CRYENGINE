@@ -677,7 +677,6 @@ namespace UQS
 			assert(taskToUpdate.pWorkingData->bitsDiscardedByInstantEvaluators == 0);
 			assert(taskToUpdate.pWorkingData->bitsDiscardedByDeferredEvaluators == 0);
 			assert(taskToUpdate.pWorkingData->bitsWorkingDeferredEvaluators != 0);
-			assert(taskToUpdate.pWorkingData->bitsFinishedDeferredEvaluators == 0);
 			assert(!taskToUpdate.pWorkingData->bDisqualifiedDueToBadScore);
 			assert(taskToUpdate.pWorkingData->bitsExceptionByInstantEvaluatorFunctionCalls == 0);
 			assert(taskToUpdate.pWorkingData->bitsExceptionByInstantEvaluatorsThemselves == 0);

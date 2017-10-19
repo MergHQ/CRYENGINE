@@ -492,7 +492,14 @@ void CharacterToolForm::Serialize(Serialization::IArchive& ar)
 
 void CharacterToolForm::OnIdleUpdate()
 {
-	if (gViewportPreferences.toolsRenderUpdateMutualExclusive && !m_bHasFocus) return;
+	if (gViewportPreferences.toolsRenderUpdateMutualExclusive)
+	{
+		// determine, if CT or any related widget has keyboard focus or is active window
+		bool hasCharacterToolOrAnyAccordingWidgetFocus = m_bHasFocus || m_blendSpacePreview->hasFocus() || m_blendSpacePreview->isActiveWindow();
+		for (auto const& it : m_dockWidgets) hasCharacterToolOrAnyAccordingWidgetFocus = hasCharacterToolOrAnyAccordingWidgetFocus || it->hasFocus() || it->isActiveWindow();
+
+		if (!hasCharacterToolOrAnyAccordingWidgetFocus) return;
+	}
 
 	if (m_splitViewport)
 	{
