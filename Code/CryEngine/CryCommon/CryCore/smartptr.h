@@ -55,11 +55,12 @@ public:
 	_I*         get() const { return p; }
 	_smart_ptr& operator=(_I* newp)
 	{
-		if (newp)
-			newp->AddRef();
-		if (p)
-			p->Release();
+		_I* oldp = p;
 		p = newp;
+		if (p)
+			p->AddRef();
+		if (oldp)
+			oldp->Release();
 		return *this;
 	}
 
