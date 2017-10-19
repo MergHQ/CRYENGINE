@@ -58,7 +58,7 @@ void CSystemAsset::SetModified(bool const isModified, bool const isForced /* = f
 {
 	if ((m_pParent != nullptr) && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || isForced))
 	{
-		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this);
+		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this, isModified);
 		m_isModified = isModified;
 		// Note: This need to get changed once undo is working.
 		// Then we can't set the parent to be not modified if it still could contain other modified children.
@@ -563,7 +563,7 @@ void CSystemLibrary::SetModified(bool const isModified, bool const isForced /* =
 {
 	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || isForced)
 	{
-		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this);
+		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this, isModified);
 		m_isModified = isModified;
 	}
 }
