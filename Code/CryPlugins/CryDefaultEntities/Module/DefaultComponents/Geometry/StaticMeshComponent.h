@@ -18,7 +18,7 @@ protected:
 	// IEntityComponent
 	virtual void   Initialize() final;
 
-	virtual void   ProcessEvent(SEntityEvent& event) final;
+	virtual void   ProcessEvent(const SEntityEvent& event) final;
 	// ~IEntityComponent
 
 public:

@@ -109,8 +109,13 @@ void CSnow::HandleEvent(const SGameObjectEvent &event)
 {
 }
 
+uint64 CSnow::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_DONE);
+}
+
 //------------------------------------------------------------------------
-void CSnow::ProcessEvent(SEntityEvent &event)
+void CSnow::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{

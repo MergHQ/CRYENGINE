@@ -615,7 +615,7 @@ void CGameObject::ForceUpdateExtension(IGameObjectExtension* pExt, int slot)
 }
 
 //------------------------------------------------------------------------
-void CGameObject::ProcessEvent(SEntityEvent& event)
+void CGameObject::ProcessEvent(const SEntityEvent& event)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 

@@ -83,7 +83,7 @@ void CAnimatedMeshComponent::ResetObject()
 	}
 }
 
-void CAnimatedMeshComponent::ProcessEvent(SEntityEvent& event)
+void CAnimatedMeshComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 	{

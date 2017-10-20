@@ -174,7 +174,7 @@ void CProjectorLightComponent::Initialize()
 	m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
 }
 
-void CProjectorLightComponent::ProcessEvent(SEntityEvent& event)
+void CProjectorLightComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 	{

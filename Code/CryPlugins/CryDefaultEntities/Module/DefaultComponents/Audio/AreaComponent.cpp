@@ -119,7 +119,7 @@ uint64 CAreaComponent::GetEventMask() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaComponent::ProcessEvent(SEntityEvent& event)
+void CAreaComponent::ProcessEvent(const SEntityEvent& event)
 {
 	EntityId const entityId = static_cast<EntityId>(event.nParam[0]);
 	IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);

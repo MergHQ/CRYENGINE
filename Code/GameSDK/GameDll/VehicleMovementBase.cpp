@@ -2291,7 +2291,7 @@ void CVehicleMovementBase::PostSerialize()
 }
 
 //------------------------------------------------------------------------
-void CVehicleMovementBase::ProcessEvent(SEntityEvent& event)
+void CVehicleMovementBase::ProcessEvent(const SEntityEvent& event)
 { 
 }
 

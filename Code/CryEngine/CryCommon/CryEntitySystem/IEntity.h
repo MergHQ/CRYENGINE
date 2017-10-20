@@ -415,8 +415,8 @@ struct SEntityPreviewContext
 struct IEntityEventListener
 {
 	// <interfuscator:shuffle>
-	virtual ~IEntityEventListener() {}
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) = 0;
+	virtual ~IEntityEventListener() = default;
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -678,7 +678,7 @@ public:
 
 	//! Sends event to the entity.
 	//! \param event Event description (event id, parameters).
-	virtual bool SendEvent(SEntityEvent& event) = 0;
+	virtual bool SendEvent(const SEntityEvent& event) = 0;
 
 	//! Adds a listener that can receive the specified event from this entity
 	virtual void AddEventListener(EEntityEvent event, IEntityEventListener* pListener) = 0;

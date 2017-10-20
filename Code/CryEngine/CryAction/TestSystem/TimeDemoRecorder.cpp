@@ -2152,7 +2152,7 @@ void CTimeDemoRecorder::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTimeDemoRecorder::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CTimeDemoRecorder::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	CRY_ASSERT(m_bRecording);
 

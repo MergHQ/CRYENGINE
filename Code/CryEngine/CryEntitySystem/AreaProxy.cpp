@@ -151,7 +151,7 @@ void CEntityComponentArea::OnEnable(bool bIsEnable, bool bIsCallScript)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentArea::ProcessEvent(SEntityEvent& event)
+void CEntityComponentArea::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{

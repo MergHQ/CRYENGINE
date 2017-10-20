@@ -246,7 +246,7 @@ uint64 CEntityAINavigationComponent::GetEventMask() const
 	return eventMask;
 }
 
-void CEntityAINavigationComponent::ProcessEvent(SEntityEvent& event)
+void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{

@@ -52,7 +52,7 @@ namespace Cry
 			}
 		}
 
-		void CPointConstraintComponent::ProcessEvent(SEntityEvent& event)
+		void CPointConstraintComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			if (event.event == ENTITY_EVENT_START_GAME)
 			{

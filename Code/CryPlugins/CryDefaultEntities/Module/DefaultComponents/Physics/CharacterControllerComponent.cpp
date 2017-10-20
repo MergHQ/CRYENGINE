@@ -100,7 +100,7 @@ void CCharacterControllerComponent::Initialize()
 	}
 }
 
-void CCharacterControllerComponent::ProcessEvent(SEntityEvent& event)
+void CCharacterControllerComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_UPDATE)
 	{

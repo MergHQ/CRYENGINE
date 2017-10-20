@@ -113,7 +113,7 @@ void CRigidBodyComponent::Physicalize()
 	Enable(m_bEnabledByDefault);
 }
 
-void CRigidBodyComponent::ProcessEvent(SEntityEvent& event)
+void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 {
 
 	switch (event.event)

@@ -54,7 +54,7 @@ namespace Cry
 			}
 		}
 
-		void CPlaneConstraintComponent::ProcessEvent(SEntityEvent& event)
+		void CPlaneConstraintComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			if (event.event == ENTITY_EVENT_START_GAME)
 			{

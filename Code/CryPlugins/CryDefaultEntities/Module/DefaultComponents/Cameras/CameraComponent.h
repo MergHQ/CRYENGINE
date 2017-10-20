@@ -57,7 +57,7 @@ namespace Cry
 				}
 			}
 
-		virtual void ProcessEvent(SEntityEvent& event) override
+		virtual void ProcessEvent(const SEntityEvent& event) override
 		{
 			if (event.event == ENTITY_EVENT_UPDATE)
 			{

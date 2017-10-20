@@ -29,7 +29,7 @@ namespace Cry
 			PreloadTextures();
 		}
 
-		void CRainComponent::ProcessEvent(SEntityEvent& event)
+		void CRainComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			switch (event.event)
 			{

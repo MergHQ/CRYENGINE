@@ -14,7 +14,7 @@ public:
 	virtual void PreInit(const SInitParams& params) override;
 	virtual void Initialize() override;
 
-	virtual	void ProcessEvent(SEntityEvent &event) override;
+	virtual	void ProcessEvent(const SEntityEvent &event) override;
 	virtual uint64 GetEventMask() const override { return m_factory.m_eventMask; }
 	// ~IEntityComponent
 

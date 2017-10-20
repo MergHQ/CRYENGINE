@@ -102,7 +102,7 @@ void CAINavigationMarkupShapeComponent::OnNavigationEvent(const INavigationSyste
 	}
 }
 
-void CAINavigationMarkupShapeComponent::ProcessEvent(SEntityEvent& event)
+void CAINavigationMarkupShapeComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{

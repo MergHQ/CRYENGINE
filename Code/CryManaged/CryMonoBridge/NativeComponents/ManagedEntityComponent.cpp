@@ -49,7 +49,7 @@ void CManagedEntityComponent::Initialize()
 	}
 }
 
-void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
+void CManagedEntityComponent::ProcessEvent(const SEntityEvent &event)
 {
 	switch (event.event)
 	{
@@ -95,7 +95,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 		case ENTITY_EVENT_RESET:
 			{
 				void* pParams[1];
-				pParams[0] = &event.nParam[0];
+				pParams[0] = const_cast<intptr_t*>(&event.nParam[0]);
 
 				m_factory.m_pGameModeChangeMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
@@ -124,7 +124,7 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 		case ENTITY_EVENT_PREPHYSICSUPDATE:
 			{
 				void* pParams[1];
-				pParams[0] = &event.fParam[0];
+				pParams[0] = const_cast<float*>(&event.fParam[0]);
 
 				m_factory.m_pPrePhysicsUpdateMethod->Invoke(m_pMonoObject.get(), pParams);
 			}

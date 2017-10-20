@@ -94,7 +94,7 @@ namespace Cry
 
 		}
 
-		void CPointLightComponent::ProcessEvent(SEntityEvent& event)
+		void CPointLightComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{

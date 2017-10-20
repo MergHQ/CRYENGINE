@@ -102,7 +102,7 @@ uint64 CEntityComponentAudio::GetEventMask() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::ProcessEvent(SEntityEvent& event)
+void CEntityComponentAudio::ProcessEvent(const SEntityEvent& event)
 {
 	if (m_pEntity != nullptr)
 	{
