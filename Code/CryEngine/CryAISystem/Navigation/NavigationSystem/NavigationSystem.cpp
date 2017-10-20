@@ -270,7 +270,7 @@ bool NavigationSystem::GetAgentTypeProperties(const NavigationAgentTypeID agentT
 
 MNM::AreaAnnotation NavigationSystem::GetAreaTypeAnnotation(const NavigationAreaTypeID areaTypeID) const
 {
-	const MNM::SAreaType* pAreaType = areaTypeID ? m_annotationsLibrary.GetAreaType(areaTypeID) : &m_annotationsLibrary.GetDefaultAreaType();
+	const MNM::SAreaType* pAreaType = areaTypeID.IsValid() ? m_annotationsLibrary.GetAreaType(areaTypeID) : &m_annotationsLibrary.GetDefaultAreaType();
 	CRY_ASSERT(pAreaType);
 	
 	MNM::AreaAnnotation annotation;
@@ -2298,7 +2298,7 @@ bool NavigationSystem::ReloadConfig()
 					const char* szFlagName = agentTypeChildNode->getContent();
 
 					NavigationAreaFlagID flagId = m_annotationsLibrary.GetAreaFlagID(szFlagName);
-					if (flagId)
+					if (flagId.IsValid())
 					{
 						const MNM::SAreaFlag* pFlag = m_annotationsLibrary.GetAreaFlag(flagId);
 						areaFlags |= pFlag->value;

@@ -161,13 +161,8 @@ void CAINavigationMarkupShapeComponent::ResetAnotation()
 
 void CAINavigationMarkupShapeComponent::UpdateAnnotation()
 {
-	const MNM::SAreaType* pAreaType = gEnv->pAISystem->GetNavigationSystem()->GetAnnotationLibrary().GetAreaType(m_areaTypeId);
-	if (pAreaType)
-	{
-		m_defaultAreaAnotation.SetType(pAreaType->id);
-		m_defaultAreaAnotation.SetFlags(pAreaType->defaultFlags);
-		m_currentAreaAnotation = m_defaultAreaAnotation;
-	}
+	m_defaultAreaAnotation = gEnv->pAISystem->GetNavigationSystem()->GetAreaTypeAnnotation(m_areaTypeId);
+	m_currentAreaAnotation = m_defaultAreaAnotation;
 }
 
 void CAINavigationMarkupShapeComponent::UpdateVolume()
