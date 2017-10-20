@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "ImplControl.h"
+#include "ImplControls.h"
 
 #include <CrySystem/XML/IXml.h>
 #include <SystemTypes.h>
@@ -11,7 +11,7 @@ namespace ACE
 {
 namespace PortAudio
 {
-class CProjectLoader
+class CProjectLoader final
 {
 public:
 

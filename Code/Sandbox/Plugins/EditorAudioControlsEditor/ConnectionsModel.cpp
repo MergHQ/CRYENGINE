@@ -291,7 +291,7 @@ bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction ac
 			if (pImplItem != nullptr)
 			{
 				// is the type being dragged compatible?
-				if (!(m_pEditorImpl->GetCompatibleTypes(m_pControl->GetType()) & pImplItem->GetType()))
+				if (!(m_pEditorImpl->IsTypeCompatible(m_pControl->GetType(), pImplItem)))
 				{
 					return false;
 				}

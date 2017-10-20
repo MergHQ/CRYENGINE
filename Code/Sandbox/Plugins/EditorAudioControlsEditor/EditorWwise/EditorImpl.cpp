@@ -1,19 +1,16 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#pragma once
-
 #include "StdAfx.h"
 #include "EditorImpl.h"
 
+#include "ImplConnections.h"
 #include "ProjectLoader.h"
 
 #include <CryAudio/IAudioSystem.h>
 #include <CryAudio/IProfileData.h>
-#include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/CryCrc32.h>
 #include <SystemTypes.h>
-#include <CryString/CryPath.h>
 #include <CryCore/StlUtils.h>
 #include <CrySerialization/IArchiveHost.h>
 
@@ -146,6 +143,12 @@ void CImplSettings::SetProjectPath(char const* szPath)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CImplSettings::Serialize(Serialization::IArchive& ar)
+{
+	ar(m_projectPath, "projectPath", "Project Path");
+}
+
+//////////////////////////////////////////////////////////////////////////
 CEditorImpl::CEditorImpl()
 {
 	Serialization::LoadJsonFile(m_implSettings, g_userSettingsFile.c_str());
@@ -162,14 +165,24 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 {
 	Clear();
 
-	// reload data
-	CProjectLoader loader(GetSettings()->GetProjectPath(), GetSettings()->GetSoundBanksPath(), m_rootControl);
+	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetSoundBanksPath(), m_rootControl);
 
 	CreateControlCache(&m_rootControl);
 
 	if (preserveConnectionStatus)
 	{
-		UpdateConnectedStatus();
+		for (auto const connection : m_connectionsByID)
+		{
+			if (connection.second > 0)
+			{
+				CImplItem* const pImplControl = GetControl(connection.first);
+
+				if (pImplControl != nullptr)
+				{
+					pImplControl->SetConnected(true);
+				}
+			}
+		}
 	}
 	else
 	{
@@ -189,33 +202,6 @@ CImplItem* CEditorImpl::GetControl(CID const id) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-TImplControlTypeMask CEditorImpl::GetCompatibleTypes(ESystemItemType const systemType) const
-{
-	switch (systemType)
-	{
-	case ESystemItemType::Trigger:
-		return static_cast<TImplControlTypeMask>(EImpltemType::Event);
-		break;
-	case ESystemItemType::Parameter:
-		return static_cast<TImplControlTypeMask>(EImpltemType::Parameter);
-		break;
-	case ESystemItemType::Switch:
-		return static_cast<TImplControlTypeMask>(EImpltemType::Invalid);
-		break;
-	case ESystemItemType::State:
-		return (static_cast<TImplControlTypeMask>(EImpltemType::Switch) | static_cast<TImplControlTypeMask>(EImpltemType::State) | static_cast<TImplControlTypeMask>(EImpltemType::Parameter));
-		break;
-	case ESystemItemType::Environment:
-		return (static_cast<TImplControlTypeMask>(EImpltemType::AuxBus) | static_cast<TImplControlTypeMask>(EImpltemType::Switch) | static_cast<TImplControlTypeMask>(EImpltemType::State) | static_cast<TImplControlTypeMask>(EImpltemType::Parameter));
-		break;
-	case ESystemItemType::Preload:
-		return static_cast<TImplControlTypeMask>(EImpltemType::SoundBank);
-		break;
-	}
-	return static_cast<TImplControlTypeMask>(EImpltemType::Invalid);
-}
-
-//////////////////////////////////////////////////////////////////////////
 char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 {
 	auto const type = static_cast<EImpltemType>(pImplItem->GetType());
@@ -224,37 +210,26 @@ char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 	{
 	case EImpltemType::Event:
 		return ":Icons/wwise/event.ico";
-		break;
 	case EImpltemType::Parameter:
 		return ":Icons/wwise/gameparameter.ico";
-		break;
 	case EImpltemType::Switch:
 		return ":Icons/wwise/switch.ico";
-		break;
 	case EImpltemType::AuxBus:
 		return ":Icons/wwise/auxbus.ico";
-		break;
 	case EImpltemType::SoundBank:
 		return ":Icons/wwise/soundbank.ico";
-		break;
 	case EImpltemType::State:
 		return ":Icons/wwise/state.ico";
-		break;
 	case EImpltemType::SwitchGroup:
 		return ":Icons/wwise/switchgroup.ico";
-		break;
 	case EImpltemType::StateGroup:
 		return ":Icons/wwise/stategroup.ico";
-		break;
 	case EImpltemType::WorkUnit:
 		return ":Icons/wwise/workunit.ico";
-		break;
 	case EImpltemType::VirtualFolder:
 		return ":Icons/wwise/virtualfolder.ico";
-		break;
 	case EImpltemType::PhysicalFolder:
 		return ":Icons/wwise/physicalfolder.ico";
-		break;
 	}
 	return "icons:Dialogs/dialog-error.ico";
 }
@@ -266,6 +241,29 @@ string CEditorImpl::GetName() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
+{
+	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
+
+	switch (systemType)
+	{
+	case ESystemItemType::Trigger:
+		return implType == EImpltemType::Event;
+	case ESystemItemType::Parameter:
+		return implType == EImpltemType::Parameter;
+	case ESystemItemType::Switch:
+		return implType == EImpltemType::Invalid;
+	case ESystemItemType::State:
+		return (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
+	case ESystemItemType::Environment:
+		return (implType == EImpltemType::AuxBus) || (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
+	case ESystemItemType::Preload:
+		return implType == EImpltemType::SoundBank;
+	}
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
 ESystemItemType CEditorImpl::ImplTypeToSystemType(CImplItem const* const pImplItem) const
 {
 	auto const itemType = static_cast<EImpltemType>(pImplItem->GetType());
@@ -274,24 +272,18 @@ ESystemItemType CEditorImpl::ImplTypeToSystemType(CImplItem const* const pImplIt
 	{
 	case EImpltemType::Event:
 		return ESystemItemType::Trigger;
-		break;
 	case EImpltemType::Parameter:
 		return ESystemItemType::Parameter;
-		break;
 	case EImpltemType::Switch:
 	case EImpltemType::State:
 		return ESystemItemType::State;
-		break;
 	case EImpltemType::AuxBus:
 		return ESystemItemType::Environment;
-		break;
 	case EImpltemType::SoundBank:
 		return ESystemItemType::Preload;
-		break;
 	case EImpltemType::StateGroup:
 	case EImpltemType::SwitchGroup:
 		return ESystemItemType::Switch;
-		break;
 	}
 	return ESystemItemType::Invalid;
 }
@@ -406,14 +398,14 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 						{
 							ParameterConnectionPtr const pConnection = std::make_shared<CParameterConnection>(pImplControl->GetId());
 
-							pNode->getAttr(g_multAttribute, pConnection->mult);
-							pNode->getAttr(g_shiftAttribute, pConnection->shift);
+							pNode->getAttr(g_multAttribute, pConnection->m_mult);
+							pNode->getAttr(g_shiftAttribute, pConnection->m_shift);
 							return pConnection;
 						}
 					case ESystemItemType::State:
 						{
 							StateConnectionPtr const pConnection = std::make_shared<CStateToParameterConnection>(pImplControl->GetId());
-							pNode->getAttr(g_valueAttribute, pConnection->value);
+							pNode->getAttr(g_valueAttribute, pConnection->m_value);
 							return pConnection;
 						}
 					}
@@ -467,20 +459,20 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				if (controlType == ESystemItemType::Parameter)
 				{
 					std::shared_ptr<const CParameterConnection> pParameterConnection = std::static_pointer_cast<const CParameterConnection>(pConnection);
-					if (pParameterConnection->mult != 1.0f)
+					if (pParameterConnection->m_mult != 1.0f)
 					{
-						pConnectionNode->setAttr(g_multAttribute, pParameterConnection->mult);
+						pConnectionNode->setAttr(g_multAttribute, pParameterConnection->m_mult);
 					}
-					if (pParameterConnection->shift != 0.0f)
+					if (pParameterConnection->m_shift != 0.0f)
 					{
-						pConnectionNode->setAttr(g_shiftAttribute, pParameterConnection->shift);
+						pConnectionNode->setAttr(g_shiftAttribute, pParameterConnection->m_shift);
 					}
 
 				}
 				else if (controlType == ESystemItemType::State)
 				{
 					std::shared_ptr<const CStateToParameterConnection> pStateConnection = std::static_pointer_cast<const CStateToParameterConnection>(pConnection);
-					pConnectionNode->setAttr(g_valueAttribute, pStateConnection->value);
+					pConnectionNode->setAttr(g_valueAttribute, pStateConnection->m_value);
 				}
 
 				return pConnectionNode;
@@ -587,26 +579,6 @@ void CEditorImpl::CreateControlCache(CImplItem const* const pParent)
 			{
 				m_controlsCache[pChild->GetId()] = pChild;
 				CreateControlCache(pChild);
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEditorImpl::UpdateConnectedStatus()
-{
-	TConnectionsMap::iterator it = m_connectionsByID.begin();
-	TConnectionsMap::iterator end = m_connectionsByID.end();
-
-	for (; it != end; ++it)
-	{
-		if (it->second > 0)
-		{
-			CImplItem* const pImplControl = GetControl(it->first);
-
-			if (pImplControl != nullptr)
-			{
-				pImplControl->SetConnected(true);
 			}
 		}
 	}

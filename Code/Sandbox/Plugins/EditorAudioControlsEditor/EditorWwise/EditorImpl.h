@@ -3,8 +3,8 @@
 #pragma once
 
 #include <IEditorImpl.h>
-#include <ImplConnection.h>
-#include <ImplItem.h>
+
+#include "ImplControls.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
@@ -13,61 +13,6 @@ namespace ACE
 {
 namespace Wwise
 {
-class CParameterConnection : public CImplConnection
-{
-public:
-
-	explicit CParameterConnection(CID const id)
-		: CImplConnection(id)
-		, mult(1.0f)
-		, shift(0.0f)
-	{}
-
-	virtual bool HasProperties() const override { return true; }
-
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		ar(mult, "mult", "Multiply");
-		ar(shift, "shift", "Shift");
-
-		if (ar.isInput())
-		{
-			signalConnectionChanged();
-		}
-	}
-
-	float mult;
-	float shift;
-};
-
-typedef std::shared_ptr<CParameterConnection> ParameterConnectionPtr;
-
-class CStateToParameterConnection : public CImplConnection
-{
-public:
-
-	explicit CStateToParameterConnection(CID const id)
-		: CImplConnection(id)
-		, value(0.0f)
-	{}
-
-	virtual bool HasProperties() const override { return true; }
-
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		ar(value, "value", "Value");
-
-		if (ar.isInput())
-		{
-			signalConnectionChanged();
-		}
-	}
-
-	float value;
-};
-
-typedef std::shared_ptr<CStateToParameterConnection> StateConnectionPtr;
-
 class CImplSettings final : public IImplSettings
 {
 public:
@@ -77,14 +22,13 @@ public:
 		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise")
 	{}
 
-	virtual char const* GetSoundBanksPath() const { return m_soundBanksPath.c_str(); }
-	virtual char const* GetProjectPath() const    { return m_projectPath.c_str(); }
-	virtual void        SetProjectPath(char const* szPath);
+	// IImplSettings
+	virtual char const* GetSoundBanksPath() const override { return m_soundBanksPath.c_str(); }
+	virtual char const* GetProjectPath() const override    { return m_projectPath.c_str(); }
+	virtual void        SetProjectPath(char const* szPath) override;
+	// ~IImplSettings
 
-	void                Serialize(Serialization::IArchive& ar)
-	{
-		ar(m_projectPath, "projectPath", "Project Path");
-	}
+	void Serialize(Serialization::IArchive& ar);
 
 private:
 
@@ -99,29 +43,28 @@ class CEditorImpl final : public IEditorImpl
 public:
 
 	CEditorImpl();
-	~CEditorImpl();
+	virtual ~CEditorImpl() override;
 
-	// IAudioSystemEditor
-	virtual void                 Reload(bool const preserveConnectionStatus = true) override;
-	virtual CImplItem*           GetRoot() override { return &m_rootControl; }
-	virtual CImplItem*           GetControl(CID const id) const override;
-	virtual TImplControlTypeMask GetCompatibleTypes(ESystemItemType const systemType) const override;
-	virtual char const*          GetTypeIcon(CImplItem const* const pImplItem) const override;
-	virtual string               GetName() const override;
-	virtual IImplSettings*       GetSettings() override { return &m_implSettings; }
-	virtual ESystemItemType      ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
-	virtual ConnectionPtr        CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem) override;
-	virtual ConnectionPtr        CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType) override;
-	virtual XmlNodeRef           CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType) override;
-	virtual void                 EnableConnection(ConnectionPtr const pConnection) override;
-	virtual void                 DisableConnection(ConnectionPtr const pConnection) override;
-	// ~IAudioSystemEditor
+	// IEditorImpl
+	virtual void            Reload(bool const preserveConnectionStatus = true) override;
+	virtual CImplItem*      GetRoot() override { return &m_rootControl; }
+	virtual CImplItem*      GetControl(CID const id) const override;
+	virtual char const*     GetTypeIcon(CImplItem const* const pImplItem) const override;
+	virtual string          GetName() const override;
+	virtual IImplSettings*  GetSettings() override { return &m_implSettings; }
+	virtual bool            IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const override;
+	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
+	virtual ConnectionPtr   CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem) override;
+	virtual ConnectionPtr   CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType) override;
+	virtual XmlNodeRef      CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType) override;
+	virtual void            EnableConnection(ConnectionPtr const pConnection) override;
+	virtual void            DisableConnection(ConnectionPtr const pConnection) override;
+	// ~IEditorImpl
 
 private:
 
 	void Clear();
 	void CreateControlCache(CImplItem const* const pParent);
-	void UpdateConnectedStatus();
 
 	// Generates the ID of the control given its full path name.
 	CID GenerateID(string const& controlName, bool isLocalized, CImplItem* pParent) const;
@@ -130,13 +73,13 @@ private:
 	// Localized controls live in different areas of disk so we also need to know if its localized.
 	CID GenerateID(string const& fullPathName) const;
 
-	typedef std::map<CID, CImplItem*> ControlMap;
-	typedef std::map<CID, int> TConnectionsMap;
+	typedef std::map<CID, CImplItem*> ControlsCache;
+	typedef std::map<CID, int> ConnectionsMap;
 
-	CImplItem       m_rootControl;
-	ControlMap      m_controlsCache; // cache of the controls stored by id for faster access
-	TConnectionsMap m_connectionsByID;
-	CImplSettings   m_implSettings;
+	CImplItem      m_rootControl;
+	ControlsCache  m_controlsCache; // cache of the controls stored by id for faster access
+	ConnectionsMap m_connectionsByID;
+	CImplSettings  m_implSettings;
 };
 } // namespace Wwise
 } // namespace ACE

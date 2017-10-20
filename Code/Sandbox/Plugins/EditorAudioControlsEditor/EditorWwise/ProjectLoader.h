@@ -2,17 +2,16 @@
 
 #pragma once
 
-#include "ImplControl.h"
+#include "ImplControls.h"
 
 #include <CrySystem/XML/IXml.h>
 #include <SystemTypes.h>
-#include <IEditorImpl.h>
 
 namespace ACE
 {
 namespace Wwise
 {
-class CProjectLoader
+class CProjectLoader final
 {
 public:
 
@@ -46,7 +45,7 @@ private:
 	EventsInfoMap m_eventsInfoMap;
 	CImplItem&    m_root;
 	ControlsCache m_controlsCache;
-	string        m_projectRoot;
+	string        m_projectPath;
 
 	// This maps holds the items with the internal IDs given in the Wwise files.
 	Items m_items;

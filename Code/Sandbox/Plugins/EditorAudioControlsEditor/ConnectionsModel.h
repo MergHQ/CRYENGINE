@@ -51,7 +51,7 @@ private:
 	void ResetCache();
 	void DecodeMimeData(QMimeData const* pData, std::vector<CID>& ids) const;
 
-	CSystemControl*             m_pControl;
+	CSystemControl*            m_pControl;
 	IEditorImpl*               m_pEditorImpl;
 	std::vector<ConnectionPtr> m_connectionsCache;
 	std::vector<QString>       m_platformNames;

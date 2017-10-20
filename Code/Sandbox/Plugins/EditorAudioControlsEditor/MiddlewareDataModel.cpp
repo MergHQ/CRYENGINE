@@ -115,9 +115,6 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 							return tr("Item is not connected to any audio system control");
 						}
 						break;
-					case static_cast<int>(EMiddlewareDataAttributes::Type):
-						return pImplItem->GetType();
-						break;
 					case static_cast<int>(EMiddlewareDataAttributes::Connected):
 						return pImplItem->IsConnected();
 						break;

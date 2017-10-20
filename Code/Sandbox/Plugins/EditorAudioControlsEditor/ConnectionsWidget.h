@@ -40,7 +40,7 @@ private:
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
 
-	CSystemControl*               m_pControl;
+	CSystemControl*              m_pControl;
 	QPropertyTree* const         m_pConnectionProperties;
 	QDeepFilterProxyModel* const m_pFilterProxyModel;
 	CConnectionModel* const      m_pConnectionModel;

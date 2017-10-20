@@ -17,8 +17,6 @@ namespace ACE
 class CImplItem;
 class CImplConnection;
 
-typedef uint TImplControlTypeMask;
-
 struct IImplSettings
 {
 	virtual char const* GetSoundBanksPath() const = 0;
@@ -60,28 +58,6 @@ struct IEditorImpl
 	//      GetRoot
 	virtual CImplItem* GetControl(CID const id) const = 0;
 
-	// <title ImplTypeToSystemType>
-	// Description:
-	//      The ACE lets the user create an audio system control out of a middleware control, for this it needs to convert a middleware control type to an audio system control type.
-	// Arguments:
-	//      pItem - Middleware control
-	// Returns:
-	//      An audio system control type that corresponds to the middleware control type passed as argument.
-	// See Also:
-	//      GetCompatibleTypes
-	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pItem) const = 0;
-
-	// <title GetCompatibleTypes>
-	// Description:
-	//      Given an audio system control type this function returns all the middleware control types that can be connected to it.
-	// Arguments:
-	//      systemType - An audio system control type.
-	// Returns:
-	//      A mask representing all the middleware control types that can be connected to the audio system control type passed as argument.
-	// See Also:
-	//      ImplTypeToSystemType
-	virtual TImplControlTypeMask GetCompatibleTypes(ESystemItemType const systemType) const = 0;
-
 	// <title GetTypeIcon>
 	// Description:
 	//      Returns the icon corresponding to the middleware control passed as argument.
@@ -105,6 +81,29 @@ struct IEditorImpl
 	//      Gets the settings for this implementation
 	virtual IImplSettings* GetSettings() = 0;
 
+	// <title IsTypeCompatible>
+	// Description:
+	//      Checks is the given audio system control type and middleware control are compatible.
+	// Arguments:
+	//      systemType - An audio system control type.
+	//      pImplItem - A middleware control.
+	// Returns:
+	//      A bool if the types are compatible or not.
+	// See Also:
+	//      ImplTypeToSystemType
+	virtual bool IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const = 0;
+
+	// <title ImplTypeToSystemType>
+	// Description:
+	//      The ACE lets the user create an audio system control out of a middleware control, for this it needs to convert a middleware control type to an audio system control type.
+	// Arguments:
+	//      pItem - Middleware control
+	// Returns:
+	//      An audio system control type that corresponds to the middleware control type passed as argument.
+	// See Also:
+	//      GetCompatibleTypes
+	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pItem) const = 0;
+
 	// <title CreateConnectionToControl>
 	// Description:
 	//      Creates and returns a connection to a middleware control. The connection object is owned by this class.
@@ -115,6 +114,7 @@ struct IEditorImpl
 	//      A pointer to the newly created connection
 	// See Also:
 	//      CreateConnectionFromXMLNode
+
 	virtual ConnectionPtr CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pMiddlewareControl) = 0;
 
 	// <title CreateConnectionFromXMLNode>

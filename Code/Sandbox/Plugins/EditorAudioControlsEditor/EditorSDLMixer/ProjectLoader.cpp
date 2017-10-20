@@ -3,8 +3,7 @@
 #include "StdAfx.h"
 #include "ProjectLoader.h"
 
-#include <IEditorImpl.h>
-#include <ImplItem.h>
+#include "EditorImpl.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
@@ -15,13 +14,15 @@ namespace ACE
 {
 namespace SDLMixer
 {
-ProjectLoader::ProjectLoader(string const& assetsPath, CImplItem& rootItem)
+//////////////////////////////////////////////////////////////////////////
+CProjectLoader::CProjectLoader(string const& assetsPath, CImplItem& rootItem)
 	: m_assetsPath(assetsPath)
 {
 	LoadFolder("", rootItem);
 }
 
-void ProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
+//////////////////////////////////////////////////////////////////////////
+void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
@@ -69,7 +70,8 @@ void ProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 	}
 }
 
-CImplItem* ProjectLoader::CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem)
+//////////////////////////////////////////////////////////////////////////
+CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem)
 {
 	CID id;
 

@@ -1,18 +1,16 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#pragma once
-
 #include "StdAfx.h"
-#include "ImplControl.h"
+#include "ImplControls.h"
 
 namespace ACE
 {
-namespace SDLMixer
+namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
 CImplControl::CImplControl(string const& name, CID const id, ItemType const type)
 	: CImplItem(name, id, type)
 {
 }
-} // namespace SDLMixer
-} // namespace ACE
+} // namespace Fmod
+} //namespace ACE
