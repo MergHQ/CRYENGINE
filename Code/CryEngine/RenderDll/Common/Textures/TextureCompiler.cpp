@@ -625,6 +625,13 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 
 	while (item)
 	{
+		// Try to spin for some time if there is a file lock on the source
+		for( int i = 0; IsFileOpened(item->src.c_str()) && (i < 5); ++i)
+		{
+			Sleep(300);
+			continue;
+		}
+
 		{
 			m_rwLockNotify.RLock();
 			std::for_each(m_sNotifyList.begin(), m_sNotifyList.end(), [=](IAsyncTextureCompileListener* notify)
@@ -740,7 +747,8 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 			// It can be that the file is still being opened for writing.
 			if (IsFileOpened(sSrcFile))
 			{
-				// Force texture-compiling 
+				// Force the texture-compiling, the compilation queue will try to wait for the end of the file operation.
+				// see CTextureCompiler::ConsumeQueuedResourceCompiler
 				bInvokeResourceCompiler = true;
 			}
 			pSrcFile = gEnv->pCryPak->FOpen(sSrcFile, "rb");
