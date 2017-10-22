@@ -3,8 +3,7 @@
 #include "StdAfx.h"
 #include "ProjectLoader.h"
 
-#include <IEditorImpl.h>
-#include <ImplItem.h>
+#include "EditorImpl.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
@@ -28,11 +27,13 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
 	intptr_t const handle = pCryPak->FindFirst(m_assetsPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+
 	if (handle != -1)
 	{
 		do
 		{
 			string const name = fd.name;
+
 			if ((name != ".") && (name != "..") && !name.empty())
 			{
 				if (fd.attrib & _A_SUBDIR)

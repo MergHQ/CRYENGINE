@@ -3,25 +3,18 @@
 #pragma once
 
 #include <ImplItem.h>
+#include "ImplTypes.h"
 
 namespace ACE
 {
-namespace PortAudio
+namespace SDLMixer
 {
-enum class EImpltemType
-{
-	Invalid = 0,
-	Event,
-	Folder,
-};
-
 class CImplControl final : public CImplItem
 {
 public:
 
 	CImplControl() = default;
 	CImplControl(string const& name, CID const id, ItemType const type);
-	virtual ~CImplControl() {}
 };
-} // namespace PortAudio
+} // namespace SDLMixer
 } // namespace ACE

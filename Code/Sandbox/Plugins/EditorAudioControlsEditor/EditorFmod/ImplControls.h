@@ -3,31 +3,18 @@
 #pragma once
 
 #include <ImplItem.h>
+#include "ImplTypes.h"
 
 namespace ACE
 {
 namespace Fmod
 {
-enum class EImpltemType
-{
-	Invalid = 0,
-	Folder,
-	Event,
-	EventParameter,
-	Snapshot,
-	SnapshotParameter,
-	Bank,
-	Return,
-	Group,
-};
-
 class CImplControl final : public CImplItem
 {
 public:
 
 	CImplControl() = default;
 	CImplControl(string const& name, CID const id, ItemType const type);
-	virtual ~CImplControl() {}
 };
 
 class CImplFolder final : public CImplItem
@@ -38,7 +25,9 @@ public:
 		: CImplItem(name, id, static_cast<ItemType>(EImpltemType::Folder))
 	{}
 
+	// CImplItem
 	virtual bool IsConnected() const override { return true; }
+	// ~CImplItem
 };
 
 class CImplGroup final : public CImplItem
@@ -49,7 +38,9 @@ public:
 		: CImplItem(name, id, static_cast<ItemType>(EImpltemType::Group))
 	{}
 
+	// CImplItem
 	virtual bool IsConnected() const override { return true; }
+	// ~CImplItem
 };
 } // namespace Fmod
 } // namespace ACE

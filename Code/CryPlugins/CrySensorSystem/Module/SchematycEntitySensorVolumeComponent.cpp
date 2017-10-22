@@ -286,7 +286,7 @@ namespace Cry
 			return BIT64(ENTITY_EVENT_XFORM);
 		}
 
-		void CSchematycEntitySensorVolumeComponent::ProcessEvent(SEntityEvent& event)
+		void CSchematycEntitySensorVolumeComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			switch (event.event)
 			{

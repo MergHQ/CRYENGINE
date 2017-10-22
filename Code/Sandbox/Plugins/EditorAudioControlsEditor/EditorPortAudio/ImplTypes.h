@@ -2,16 +2,15 @@
 
 #pragma once
 
-#include "StdAfx.h"
-#include "ImplControl.h"
-
 namespace ACE
 {
 namespace PortAudio
 {
-CImplControl::CImplControl(string const& name, CID const id, ItemType const type)
-	: CImplItem(name, id, type)
+enum class EImpltemType
 {
-}
+	Invalid = 0,
+	Event,
+	Folder,
+};
 } // namespace PortAudio
 } // namespace ACE

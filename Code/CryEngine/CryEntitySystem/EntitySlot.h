@@ -1,17 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   EntitySlot.h
-//  Version:     v1.00
-//  Created:     18/5/2004 by Timur.
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __EntityObject_h__
-#define __EntityObject_h__
 #pragma once
 
 // forward declaration.
@@ -206,5 +194,3 @@ inline void CEntitySlot::operator delete(void* ptr)
 	if (ptr)
 		g_Alloc_EntitySlot->Deallocate(ptr);
 }
-
-#endif // __EntityObject_h__

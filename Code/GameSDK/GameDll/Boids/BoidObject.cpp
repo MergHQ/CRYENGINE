@@ -176,7 +176,7 @@ int CBoidObject::GetGeometrySurfaceType()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidObject::OnEntityEvent( SEntityEvent &event )
+void CBoidObject::OnEntityEvent( const SEntityEvent &event )
 {
 	switch (event.event)
 	{
@@ -193,7 +193,7 @@ void CBoidObject::OnEntityEvent( SEntityEvent &event )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidObject::OnCollision( SEntityEvent &event )
+void CBoidObject::OnCollision( const SEntityEvent &event )
 {
 	EventPhysCollision *pCollision = (EventPhysCollision *)(event.nParam[0]);
 

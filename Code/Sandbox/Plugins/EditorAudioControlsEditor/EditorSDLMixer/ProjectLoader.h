@@ -2,22 +2,20 @@
 
 #pragma once
 
-#include "ImplControl.h"
+#include "ImplControls.h"
 
 #include <CrySystem/XML/IXml.h>
 #include <SystemTypes.h>
 
 namespace ACE
 {
-class CImplItem;
-
 namespace SDLMixer
 {
-class ProjectLoader
+class CProjectLoader final
 {
 public:
 
-	ProjectLoader(string const& sAssetsPath, CImplItem& rootItem);
+	CProjectLoader(string const& sAssetsPath, CImplItem& rootItem);
 
 private:
 

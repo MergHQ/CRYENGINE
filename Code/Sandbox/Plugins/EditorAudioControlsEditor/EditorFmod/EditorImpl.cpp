@@ -3,31 +3,20 @@
 #include "StdAfx.h"
 #include "EditorImpl.h"
 
+#include "ImplConnections.h"
 #include "ProjectLoader.h"
-
-#include <ImplConnection.h>
 
 #include <CryAudio/IAudioSystem.h>
 #include <CryAudio/IProfileData.h>
-#include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CryString/CryPath.h>
 #include <CryCore/StlUtils.h>
 #include <CrySerialization/IArchiveHost.h>
-#include <CrySerialization/Enum.h>
 
 namespace ACE
 {
 namespace Fmod
 {
 const string g_userSettingsFile = "%USER%/audiocontrolseditor_fmod.user";
-
-// Paths
-string const g_foldersPath = "/metadata/eventfolder/";
-string const g_groupsPath = "/metadata/group/";
-string const g_eventsPath = "/metadata/event/";
-string const g_snapshotsPath = "/metadata/snapshot/";
-string const g_returnsPath = "/metadata/return/";
 
 // XML tags
 string const g_eventTag = "FmodEvent";
@@ -36,12 +25,16 @@ string const g_snapshotTag = "FmodSnapshot";
 string const g_snapshotParameterTag = "FmodSnapshotParameter";
 string const g_bankTag = "FmodFile";
 string const g_returnTag = "FmodBus";
+
+// XML attributes
 string const g_nameAttribute = "fmod_name";
 string const g_pathAttribute = "fmod_path";
 string const g_valueAttribute = "fmod_value";
 string const g_multAttribute = "fmod_value_multiplier";
 string const g_shiftAttribute = "fmod_value_shift";
 string const g_eventTypeAttribute = "fmod_event_type";
+string const g_localizedAttribute = "fmod_localized";
+string const g_trueAttribute = "true";
 
 //////////////////////////////////////////////////////////////////////////
 EImpltemType TagToType(string const& tag)
@@ -96,84 +89,27 @@ string TypeToTag(EImpltemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
-enum class EEventType
+CImplItem* SearchForControl(CImplItem* const pImplItem, string const& name, ItemType const type)
 {
-	Start = 0,
-	Stop,
-};
-
-//////////////////////////////////////////////////////////////////////////
-class CEventConnection : public CImplConnection
-{
-public:
-
-	explicit CEventConnection(CID const nID)
-		: CImplConnection(nID)
-	{}
-
-	virtual bool HasProperties() const override { return true; }
-
-	virtual void Serialize(Serialization::IArchive& ar) override
+	if ((pImplItem->GetName() == name) && (pImplItem->GetType() == type))
 	{
-		ar(type, "action", "Action");
-		if (ar.isInput())
+		return pImplItem;
+	}
+
+	int const count = pImplItem->ChildCount();
+
+	for (int i = 0; i < count; ++i)
+	{
+		CImplItem* const pFoundImplControl = SearchForControl(pImplItem->GetChildAt(i), name, type);
+
+		if (pFoundImplControl != nullptr)
 		{
-			signalConnectionChanged();
+			return pFoundImplControl;
 		}
 	}
 
-	EEventType type = EEventType::Start;
-};
-
-//////////////////////////////////////////////////////////////////////////
-class CParamConnection : public CImplConnection
-{
-public:
-
-	explicit CParamConnection(CID const nID)
-		: CImplConnection(nID)
-	{}
-
-	virtual bool HasProperties() const override { return true; }
-
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		ar(mult, "mult", "Multiply");
-		ar(shift, "shift", "Shift");
-
-		if (ar.isInput())
-		{
-			signalConnectionChanged();
-		}
-	}
-
-	float mult = 1.0f;
-	float shift = 0.0f;
-};
-
-//////////////////////////////////////////////////////////////////////////
-class CParamToStateConnection : public CImplConnection
-{
-public:
-
-	explicit CParamToStateConnection(CID const id)
-		: CImplConnection(id)
-	{}
-
-	virtual bool HasProperties() const override { return true; }
-
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		ar(m_value, "value", "Value");
-
-		if (ar.isInput())
-		{
-			signalConnectionChanged();
-		}
-	}
-
-	float m_value = 1.0f;
-};
+	return nullptr;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CImplSettings::SetProjectPath(char const* szPath)
@@ -183,86 +119,31 @@ void CImplSettings::SetProjectPath(char const* szPath)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CImplSettings::Serialize(Serialization::IArchive& ar)
+{
+	ar(m_projectPath, "projectPath", "Project Path");
+}
+
+//////////////////////////////////////////////////////////////////////////
 CEditorImpl::CEditorImpl()
-	: m_root("", ACE_INVALID_ID, AUDIO_SYSTEM_INVALID_TYPE)
 {
 	Serialization::LoadJsonFile(m_implSettings, g_userSettingsFile.c_str());
-	Reload();
 }
 
 //////////////////////////////////////////////////////////////////////////
 CEditorImpl::~CEditorImpl()
 {
-	m_containerIdMap.clear();
-	std::for_each(m_items.begin(), m_items.end(), stl::container_object_deleter());
+	Clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEditorImpl::Reload(bool const preserveConnectionStatus)
 {
-	// set all the controls as placeholder as we don't know if
-	// any of them have been removed but still have connections to them
-	for (CImplItem* const pImplItem : m_items)
-	{
-		if (pImplItem != nullptr)
-		{
-			pImplItem->SetPlaceholder(true);
-			pImplItem->SetConnected(false);
-		}
-	}
+	Clear();
 
-	// Load banks
-	{
-		_finddata_t fd;
-		ICryPak* const pCryPak = gEnv->pCryPak;
-		string const path = m_implSettings.GetSoundBanksPath();
-		intptr_t const handle = pCryPak->FindFirst(path + "/*.bank", &fd);
+	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetSoundBanksPath(), m_rootControl);
 
-		if (handle != -1)
-		{
-			// We have to exclude the Master Bank, for this we look
-			// for the file that ends with "strings.bank" as it is guaranteed
-			// to have the same name as the Master Bank and there should be unique
-			std::vector<string> banks;
-			string masterBankName = "";
-
-			do
-			{
-				string const filename = fd.name;
-
-				if ((filename != ".") && (filename != "..") && !filename.empty())
-				{
-					int const pos = filename.rfind(".strings.bank");
-
-					if (pos != string::npos)
-					{
-						masterBankName = filename.substr(0, pos);
-					}
-					else
-					{
-						banks.push_back(filename);
-					}
-				}
-			}
-			while (pCryPak->FindNext(handle, &fd) >= 0);
-
-			for (string const& filename : banks)
-			{
-				if (filename.compare(0, masterBankName.length(), masterBankName) != 0)
-				{
-					CreateItem(EImpltemType::Bank, nullptr, filename);
-				}
-			}
-
-			pCryPak->FindClose(handle);
-		}
-	}
-
-	ParseFolder(m_implSettings.GetProjectPath() + g_foldersPath);    // folders
-	ParseFolder(m_implSettings.GetProjectPath() + g_groupsPath);     // groups
-	ParseFolder(m_implSettings.GetProjectPath() + g_eventsPath);     // events
-	ParseFolder(m_implSettings.GetProjectPath() + g_snapshotsPath);  // snapshots
-	ParseFolder(m_implSettings.GetProjectPath() + g_returnsPath);    // returns
+	CreateControlCache(&m_rootControl);
 
 	if (preserveConnectionStatus)
 	{
@@ -288,40 +169,12 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CEditorImpl::GetControl(CID const id) const
 {
-	for (CImplItem* const pImplItem : m_items)
+	if (id >= 0)
 	{
-
-		if (pImplItem->GetId() == id)
-		{
-			return pImplItem;
-		}
+		return stl::find_in_map(m_controlsCache, id, nullptr);
 	}
 
 	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-TImplControlTypeMask CEditorImpl::GetCompatibleTypes(ESystemItemType const systemType) const
-{
-	switch (systemType)
-	{
-	case ESystemItemType::Trigger:
-		return static_cast<TImplControlTypeMask>(EImpltemType::Event) | static_cast<TImplControlTypeMask>(EImpltemType::Snapshot);
-		break;
-	case ESystemItemType::Parameter:
-		return static_cast<TImplControlTypeMask>(EImpltemType::EventParameter) | static_cast<TImplControlTypeMask>(EImpltemType::SnapshotParameter);
-		break;
-	case ESystemItemType::Preload:
-		return static_cast<TImplControlTypeMask>(EImpltemType::Bank);
-		break;
-	case ESystemItemType::State:
-		return static_cast<TImplControlTypeMask>(EImpltemType::EventParameter) | static_cast<TImplControlTypeMask>(EImpltemType::SnapshotParameter);
-		break;
-	case ESystemItemType::Environment:
-		return static_cast<int>(static_cast<TImplControlTypeMask>(EImpltemType::Return));
-		break;
-	}
-	return static_cast<TImplControlTypeMask>(EImpltemType::Invalid);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -355,6 +208,27 @@ char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 string CEditorImpl::GetName() const
 {
 	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
+{
+	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
+
+	switch (systemType)
+	{
+	case ESystemItemType::Trigger:
+		return (implType == EImpltemType::Event) || (implType == EImpltemType::Snapshot);
+	case ESystemItemType::Parameter:
+		return (implType == EImpltemType::EventParameter) || (implType == EImpltemType::SnapshotParameter);
+	case ESystemItemType::Preload:
+		return implType == EImpltemType::Bank;
+	case ESystemItemType::State:
+		return (implType == EImpltemType::EventParameter) || (implType == EImpltemType::SnapshotParameter);
+	case ESystemItemType::Environment:
+		return implType == EImpltemType::Return;
+	}
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -418,9 +292,10 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 
 		if (type != EImpltemType::Invalid)
 		{
-
 			string name = pNode->getAttr(g_nameAttribute);
 			string path = pNode->getAttr(g_pathAttribute);
+			string const localizedAttribute = pNode->getAttr(g_localizedAttribute);
+			bool const isLocalized = (localizedAttribute.compareNoCase(g_trueAttribute) == 0);
 
 			if (!path.empty())
 			{
@@ -459,7 +334,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				{
 					string const eventType = pNode->getAttr(g_eventTypeAttribute);
 					auto const pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
-					pConnection->type = (eventType == "stop") ? EEventType::Stop : EEventType::Start;
+					pConnection->m_type = (eventType == "stop") ? EEventType::Stop : EEventType::Start;
 					return pConnection;
 				}
 				break;
@@ -484,8 +359,8 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 							shift = (float)std::atof(value.c_str());
 						}
 
-						pConnection->mult = mult;
-						pConnection->shift = shift;
+						pConnection->m_mult = mult;
+						pConnection->m_shift = shift;
 						return pConnection;
 					}
 					else if (controlType == ESystemItemType::State)
@@ -525,10 +400,10 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 		case EImpltemType::Event:
 		case EImpltemType::Snapshot:
 			{
-				pNode->setAttr(g_nameAttribute, GetFullPathName(pImplControl));
+				pNode->setAttr(g_nameAttribute, GetPathName(pImplControl));
 				auto const pEventConnection = static_cast<const CEventConnection*>(pConnection.get());
 
-				if ((pEventConnection != nullptr) && (pEventConnection->type == EEventType::Stop))
+				if ((pEventConnection != nullptr) && (pEventConnection->m_type == EEventType::Stop))
 				{
 					pNode->setAttr(g_eventTypeAttribute, "stop");
 				}
@@ -536,14 +411,14 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 			break;
 		case EImpltemType::Return:
 			{
-				pNode->setAttr(g_nameAttribute, GetFullPathName(pImplControl));
+				pNode->setAttr(g_nameAttribute, GetPathName(pImplControl));
 			}
 			break;
 		case EImpltemType::EventParameter:
 		case EImpltemType::SnapshotParameter:
 			{
 				pNode->setAttr(g_nameAttribute, pImplControl->GetName());
-				pNode->setAttr(g_pathAttribute, GetFullPathName(pImplControl->GetParent()));
+				pNode->setAttr(g_pathAttribute, GetPathName(pImplControl->GetParent()));
 
 				if (controlType == ESystemItemType::State)
 				{
@@ -558,21 +433,21 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				{
 					auto const pParamConnection = static_cast<const CParamConnection*>(pConnection.get());
 
-					if (pParamConnection->mult != 1.0f)
+					if (pParamConnection->m_mult != 1.0f)
 					{
-						pNode->setAttr(g_multAttribute, pParamConnection->mult);
+						pNode->setAttr(g_multAttribute, pParamConnection->m_mult);
 					}
 
-					if (pParamConnection->shift != 0.0f)
+					if (pParamConnection->m_shift != 0.0f)
 					{
-						pNode->setAttr(g_shiftAttribute, pParamConnection->shift);
+						pNode->setAttr(g_shiftAttribute, pParamConnection->m_shift);
 					}
 				}
 			}
 			break;
 		case EImpltemType::Bank:
 			{
-				pNode->setAttr(g_nameAttribute, GetFullPathName(pImplControl));
+				pNode->setAttr(g_nameAttribute, GetPathName(pImplControl));
 			}
 			break;
 		}
@@ -615,7 +490,47 @@ void CEditorImpl::DisableConnection(ConnectionPtr const pConnection)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::CreateItem(EImpltemType const type, CImplItem* const pParent, const string& name)
+void CEditorImpl::Clear()
+{
+	// Delete all the controls
+	for (auto const controlPair : m_controlsCache)
+	{
+		CImplItem const* const pImplControl = controlPair.second;
+
+		if (pImplControl != nullptr)
+		{
+			delete pImplControl;
+		}
+	}
+
+	m_controlsCache.clear();
+
+	// Clean up the root control
+	m_rootControl = CImplItem();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEditorImpl::CreateControlCache(CImplItem const* const pParent)
+{
+	if (pParent != nullptr)
+	{
+		size_t const count = pParent->ChildCount();
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			CImplItem* const pChild = pParent->GetChildAt(i);
+
+			if (pChild != nullptr)
+			{
+				m_controlsCache[pChild->GetId()] = pChild;
+				CreateControlCache(pChild);
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+CImplItem* CEditorImpl::CreateItem(EImpltemType const type, CImplItem* const pParent, string const& name)
 {
 	CID const id = GetId(type, name, pParent);
 
@@ -656,10 +571,11 @@ CImplItem* CEditorImpl::CreateItem(EImpltemType const type, CImplItem* const pPa
 		}
 		else
 		{
-			m_root.AddChild(pImplItem);
-			pImplItem->SetParent(&m_root);
+			m_rootControl.AddChild(pImplItem);
+			pImplItem->SetParent(&m_rootControl);
 		}
-		m_items.push_back(pImplItem);
+
+		m_controlsCache[id] = pImplItem;
 
 	}
 
@@ -669,18 +585,19 @@ CImplItem* CEditorImpl::CreateItem(EImpltemType const type, CImplItem* const pPa
 //////////////////////////////////////////////////////////////////////////
 CID CEditorImpl::GetId(EImpltemType const type, string const& name, CImplItem* const pParent) const
 {
-	string const fullname = GetTypeName(type) + GetFullPathName(pParent) + CRY_NATIVE_PATH_SEPSTR + name;
+	string const fullname = GetTypeName(type) + GetPathName(pParent) + CRY_NATIVE_PATH_SEPSTR + name;
 	return CCrc32::Compute(fullname);
 }
 
 //////////////////////////////////////////////////////////////////////////
-string CEditorImpl::GetFullPathName(CImplItem const* const pImplItem) const
+string CEditorImpl::GetPathName(CImplItem const* const pImplItem) const
 {
 	if (pImplItem != nullptr)
 	{
 		string fullname = pImplItem->GetName();
 		CImplItem const* pParent = pImplItem->GetParent();
-		while ((pParent != nullptr) && (pParent != &m_root))
+
+		while ((pParent != nullptr) && (pParent != &m_rootControl))
 		{
 			// The id needs to represent the full path, as we can have items with the same name in different folders
 			fullname = pParent->GetName() + "/" + fullname;
@@ -719,293 +636,9 @@ string CEditorImpl::GetTypeName(EImpltemType const type) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEditorImpl::ParseFolder(string const& folderPath)
-{
-	_finddata_t fd;
-	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(folderPath + "*.xml", &fd);
-
-	if (handle != -1)
-	{
-		do
-		{
-			string const filename = fd.name;
-
-			if ((filename != ".") && (filename != "..") && !filename.empty())
-			{
-				ParseFile(folderPath + filename);
-			}
-		} while (pCryPak->FindNext(handle, &fd) >= 0);
-
-		pCryPak->FindClose(handle);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEditorImpl::ParseFile(string const& filepath)
-{
-	if (GetISystem()->GetIPak()->IsFileExist(filepath))
-	{
-		XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(filepath);
-		if (pRoot != nullptr)
-		{
-			CImplItem* pImplItem = nullptr;
-			int const size = pRoot->getChildCount();
-
-			for (int i = 0; i < size; ++i)
-			{
-				XmlNodeRef const pChild = pRoot->getChild(i);
-
-				if (pChild != nullptr)
-				{
-					string const className = pChild->getAttr("class");
-
-					if (className == "EventFolder")
-					{
-						pImplItem = LoadFolder(pChild);
-					}
-					else if (className == "Event")
-					{
-						pImplItem = LoadEvent(pChild);
-					}
-					else if (className == "Snapshot")
-					{
-						pImplItem = LoadSnapshot(pChild);
-					}
-					else if (className == "GameParameter")
-					{
-						if (pImplItem != nullptr)
-						{
-							if (static_cast<EImpltemType>(pImplItem->GetType()) == EImpltemType::Event)
-							{
-								LoadParameter(pChild, EImpltemType::EventParameter, *pImplItem);
-							}
-							else
-							{
-								LoadParameter(pChild, EImpltemType::SnapshotParameter, *pImplItem);
-							}
-						}
-						else
-						{
-							CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] [Fmod] Found GameParameter tag before Event in file %s", filepath.c_str());
-						}
-					}
-					else if (className == "MixerReturn")
-					{
-						LoadReturn(pChild);
-					}
-					else if (className == "MixerGroup")
-					{
-						LoadGroup(pChild);
-					}
-				}
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::GetContainer(string const& id, EImpltemType const type)
-{
-	auto folder = m_containerIdMap.find(id);
-
-	if (folder != m_containerIdMap.end())
-	{
-		return (*folder).second;
-	}
-
-	// If folder not found parse the file corresponding to it and try looking for it again
-	if (type == EImpltemType::Folder)
-	{
-		ParseFile(m_implSettings.GetProjectPath() + g_foldersPath + id + ".xml");
-	}
-	else if (type == EImpltemType::Group)
-	{
-		ParseFile(m_implSettings.GetProjectPath() + g_groupsPath + id + ".xml");
-	}
-
-	folder = m_containerIdMap.find(id);
-
-	if (folder != m_containerIdMap.end())
-	{
-		return (*folder).second;
-	}
-
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadContainer(XmlNodeRef const pNode, EImpltemType const type, string const& relationshipParamName)
-{
-	if (pNode != nullptr)
-	{
-		string containerName = "";
-		CImplItem* pParent = nullptr;
-
-		int const size = pNode->getChildCount();
-
-		for (int i = 0; i < size; ++i)
-		{
-			XmlNodeRef const pChild = pNode->getChild(i);
-			string const name = pChild->getAttr("name");
-
-			if (name == "name")
-			{
-				// Get the container name
-				XmlNodeRef const pContainerNameNode = pChild->getChild(0);
-
-				if (pContainerNameNode != nullptr)
-				{
-					containerName = pContainerNameNode->getContent();
-				}
-			}
-			else if (name == relationshipParamName)
-			{
-				// Get the container parent
-				XmlNodeRef const pParentContainerNode = pChild->getChild(0);
-				if (pParentContainerNode != nullptr)
-				{
-					string const parentContainerId = pParentContainerNode->getContent();
-					pParent = GetContainer(parentContainerId, type);
-				}
-			}
-		}
-
-		CImplItem* const pContainer = CreateItem(type, pParent, containerName);
-		m_containerIdMap[pNode->getAttr("id")] = pContainer;
-		return pContainer;
-	}
-
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadFolder(XmlNodeRef const pNode)
-{
-	return LoadContainer(pNode, EImpltemType::Folder, "folder");
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadGroup(XmlNodeRef const pNode)
-{
-	return LoadContainer(pNode, EImpltemType::Group, "output");
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadItem(XmlNodeRef const pNode, EImpltemType const type)
-{
-	if (pNode != nullptr)
-	{
-		string name = "";
-		CImplItem* pParent = nullptr;
-		int const size = pNode->getChildCount();
-
-		for (int i = 0; i < size; ++i)
-		{
-			XmlNodeRef const pChild = pNode->getChild(i);
-
-			if (pChild != nullptr)
-			{
-				string const tag = pChild->getTag();
-
-				if (tag == "property")
-				{
-					string const paramName = pChild->getAttr("name");
-
-					if (paramName == "name")
-					{
-						XmlNodeRef const pValue = pChild->getChild(0);
-
-						if (pValue != nullptr)
-						{
-							name = pValue->getContent();
-						}
-					}
-				}
-				else if (tag == "relationship")
-				{
-					string const name = pChild->getAttr("name");
-
-					if (name == "folder" || name == "output")
-					{
-						XmlNodeRef const pValue = pChild->getChild(0);
-
-						if (pValue != nullptr)
-						{
-							string const parentContainerId = pValue->getContent();
-							auto const folder = m_containerIdMap.find(parentContainerId);
-
-							if (folder != m_containerIdMap.end())
-							{
-								pParent = (*folder).second;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return CreateItem(type, pParent, name);
-	}
-
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadEvent(XmlNodeRef const pNode)
-{
-	return LoadItem(pNode, EImpltemType::Event);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadSnapshot(XmlNodeRef const pNode)
-{
-	return LoadItem(pNode, EImpltemType::Snapshot);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadReturn(XmlNodeRef const pNode)
-{
-	return LoadItem(pNode, EImpltemType::Return);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::LoadParameter(XmlNodeRef const pNode, EImpltemType const type, CImplItem& parentEvent)
-{
-	if (pNode != nullptr)
-	{
-		int const size = pNode->getChildCount();
-
-		for (int i = 0; i < size; ++i)
-		{
-			XmlNodeRef const pChild = pNode->getChild(i);
-
-			if (pChild != nullptr)
-			{
-				string const name = pChild->getAttr("name");
-
-				if (name == "name")
-				{
-					XmlNodeRef const pValue = pChild->getChild(0);
-
-					if (pValue != nullptr)
-					{
-						string const value = pValue->getContent();
-						CImplItem* const pImplItem = CreateItem(type, &parentEvent, value);
-						return pImplItem;
-					}
-				}
-			}
-		}
-	}
-
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
 CImplItem* CEditorImpl::GetItemFromPath(string const& fullpath)
 {
-	CImplItem* pImplItem = &m_root;
+	CImplItem* pImplItem = &m_rootControl;
 	int start = 0;
 	string token = fullpath.Tokenize("/", start);
 
@@ -1041,7 +674,7 @@ CImplItem* CEditorImpl::GetItemFromPath(string const& fullpath)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CEditorImpl::CreatePlaceholderFolderPath(string const& path)
 {
-	CImplItem* pImplItem = &m_root;
+	CImplItem* pImplItem = &m_rootControl;
 	int start = 0;
 	string token = path.Tokenize("/", start);
 
@@ -1067,16 +700,12 @@ CImplItem* CEditorImpl::CreatePlaceholderFolderPath(string const& path)
 			pFoundChild = CreateItem(EImpltemType::Folder, pImplItem, token);
 			pFoundChild->SetPlaceholder(true);
 		}
+
 		pImplItem = pFoundChild;
 		token = path.Tokenize("/", start);
 	}
 
 	return pImplItem;
 }
-
-SERIALIZATION_ENUM_BEGIN(EEventType, "Event Type")
-SERIALIZATION_ENUM(EEventType::Start, "start", "Start")
-SERIALIZATION_ENUM(EEventType::Stop, "stop", "Stop")
-SERIALIZATION_ENUM_END()
 } // namespace Fmod
 } // namespace ACE

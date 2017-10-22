@@ -3,130 +3,17 @@
 #pragma once
 
 #include <IEditorImpl.h>
-#include <ImplConnection.h>
-#include <ImplItem.h>
+
+#include "ImplControls.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
-
-#include <CrySerialization/Decorators/Range.h>
-#include <CrySerialization/Enum.h>
-#include <CrySerialization/ClassFactory.h>
-#include "ProjectLoader.h"
-#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace ACE
 {
 namespace PortAudio
 {
-enum class EConnectionType
-{
-	Start = 0,
-	Stop,
-	NumTypes,
-};
-
-class CConnection : public CImplConnection
-{
-public:
-
-	explicit CConnection(CID const id)
-		: CImplConnection(id)
-		, m_type(EConnectionType::Start)
-		, m_isPanningEnabled(true)
-		, m_isAttenuationEnabled(true)
-		, m_minAttenuation(0.0f)
-		, m_maxAttenuation(100.0f)
-		, m_volume(-14.0f)
-		, m_loopCount(1)
-		, m_isInfiniteLoop(false)
-	{}
-
-	virtual bool HasProperties() const override { return true; }
-
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		ar(m_type, "action", "Action");
-		ar(m_isPanningEnabled, "panning", "Enable Panning");
-
-		if (ar.openBlock("DistanceAttenuation", "+Distance Attenuation"))
-		{
-			ar(m_isAttenuationEnabled, "attenuation", "Enable");
-
-			if (m_isAttenuationEnabled)
-			{
-				if (ar.isInput())
-				{
-					float minAtt = m_minAttenuation;
-					float maxAtt = m_maxAttenuation;
-					ar(minAtt, "min_att", "Min Distance");
-					ar(maxAtt, "max_att", "Max Distance");
-
-					if (minAtt > maxAtt)
-					{
-						if (minAtt != m_minAttenuation)
-						{
-							maxAtt = minAtt;
-						}
-						else
-						{
-							minAtt = maxAtt;
-						}
-					}
-
-					m_minAttenuation = minAtt;
-					m_maxAttenuation = maxAtt;
-				}
-				else
-				{
-					ar(m_minAttenuation, "min_att", "Min Distance");
-					ar(m_maxAttenuation, "max_att", "Max Distance");
-				}
-			}
-			else
-			{
-				ar(m_minAttenuation, "min_att", "!Min Distance");
-				ar(m_maxAttenuation, "max_att", "!Max Distance");
-			}
-
-			ar.closeBlock();
-		}
-
-		ar(Serialization::Range(m_volume, -96.0f, 0.0f), "vol", "Volume (dB)");
-
-		if (ar.openBlock("Looping", "+Looping"))
-		{
-			ar(m_isInfiniteLoop, "infinite", "Infinite");
-
-			if (m_isInfiniteLoop)
-			{
-				ar(m_loopCount, "loop_count", "!Count");
-			}
-			else
-			{
-				ar(m_loopCount, "loop_count", "Count");
-			}
-
-			ar.closeBlock();
-		}
-
-		if (ar.isInput())
-		{
-			signalConnectionChanged();
-		}
-	}
-
-	EConnectionType m_type;
-	float           m_minAttenuation;
-	float           m_maxAttenuation;
-	float           m_volume;
-	uint            m_loopCount;
-	bool            m_isPanningEnabled;
-	bool            m_isAttenuationEnabled;
-	bool            m_isInfiniteLoop;
-};
-
-typedef std::shared_ptr<CConnection> PortAudioConnectionPtr;
+class CConnection;
 
 class CImplSettings final : public IImplSettings
 {
@@ -137,14 +24,13 @@ public:
 		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "portaudio")
 	{}
 
-	virtual char const* GetSoundBanksPath() const { return m_soundBanksPath.c_str(); }
-	virtual char const* GetProjectPath() const    { return m_projectPath.c_str(); }
-	virtual void        SetProjectPath(char const* szPath);
+	// IImplSettings
+	virtual char const* GetSoundBanksPath() const override { return m_soundBanksPath.c_str(); }
+	virtual char const* GetProjectPath() const override    { return m_projectPath.c_str(); }
+	virtual void        SetProjectPath(char const* szPath) override;
+	// ~IImplSettings
 
-	void                Serialize(Serialization::IArchive& ar)
-	{
-		ar(m_projectPath, "projectPath", "Project Path");
-	}
+	void Serialize(Serialization::IArchive& ar);
 
 private:
 
@@ -154,30 +40,34 @@ private:
 
 class CEditorImpl final : public IEditorImpl
 {
+	friend class CProjectLoader;
+
 public:
 
 	CEditorImpl();
-	virtual ~CEditorImpl();
+	virtual ~CEditorImpl() override;
 
-	// IAudioSystemEditor
-	virtual void                 Reload(bool const preserveConnectionStatus = true) override;
-	virtual CImplItem*           GetRoot() override { return &m_root; }
-	virtual CImplItem*           GetControl(CID const id) const override;
-	virtual TImplControlTypeMask GetCompatibleTypes(ESystemItemType const systemType) const override;
-	virtual char const*          GetTypeIcon(CImplItem const* const pImplItem) const override;
-	virtual string               GetName() const override;
-	virtual IImplSettings*       GetSettings() override { return &m_implSettings; }
-	virtual ESystemItemType      ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
-	virtual ConnectionPtr        CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem) override;
-	virtual ConnectionPtr        CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType) override;
-	virtual XmlNodeRef           CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType) override;
-	// ~IAudioSystemEditor
+	// IEditorImpl
+	virtual void            Reload(bool const preserveConnectionStatus = true) override;
+	virtual CImplItem*      GetRoot() override { return &m_rootControl; }
+	virtual CImplItem*      GetControl(CID const id) const override;
+	virtual char const*     GetTypeIcon(CImplItem const* const pImplItem) const override;
+	virtual string          GetName() const override;
+	virtual IImplSettings*  GetSettings() override { return &m_implSettings; }
+	virtual bool            IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const override;
+	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
+	virtual ConnectionPtr   CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem) override;
+	virtual ConnectionPtr   CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType) override;
+	virtual XmlNodeRef      CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType) override;
+	virtual void            EnableConnection(ConnectionPtr const pConnection) override;
+	virtual void            DisableConnection(ConnectionPtr const pConnection) override;
+	// ~IEditorImpl
 
 private:
 
-	CID  GetId(string const& name) const;
-	void CreateControlCache(CImplItem const* const pParent);
 	void Clear();
+	void CreateControlCache(CImplItem const* const pParent);
+	CID  GetId(string const& name) const;
 
 	static string const s_itemNameTag;
 	static string const s_pathNameTag;
@@ -191,11 +81,12 @@ private:
 	static string const s_volumeTag;
 	static string const s_loopCountTag;
 
-	typedef std::map<CID, std::vector<PortAudioConnectionPtr>> Connections;
+	typedef std::map<CID, CImplItem*> ControlsCache;
+	typedef std::map<CID, int> ConnectionsMap;
 
-	CImplItem               m_root;
-	Connections             m_connectionsByID;
-	std::vector<CImplItem*> m_controlsCache;
+	CImplItem               m_rootControl;
+	ControlsCache           m_controlsCache; // cache of the controls stored by id for faster access
+	ConnectionsMap          m_connectionsByID;
 	CImplSettings           m_implSettings;
 };
 } // namespace PortAudio

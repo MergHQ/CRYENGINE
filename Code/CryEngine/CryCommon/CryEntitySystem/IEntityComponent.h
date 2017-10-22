@@ -381,7 +381,7 @@ protected:
 	//! By overriding this function component will be able to handle events sent from the host Entity.
 	//! Requires returning the desired event flag in GetEventMask.
 	//! \param event Event structure, contains event id and parameters.
-	virtual void ProcessEvent(SEntityEvent& event) {}
+	virtual void ProcessEvent(const SEntityEvent& event) {}
 
 public:
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent
@@ -389,6 +389,7 @@ public:
 	//! Only events matching the returned bit mask will be sent to the ProcessEvent method
 	virtual uint64                 GetEventMask() const                      { return 0; }
 
+	//! Determines the order in which this component will receive entity events (including update). Lower number indicates a higher priority.
 	virtual ComponentEventPriority GetEventPriority() const                  { return (ComponentEventPriority)GetProxyType(); }
 
 	//! \brief Network serialization. Override to provide a mask of active network aspects

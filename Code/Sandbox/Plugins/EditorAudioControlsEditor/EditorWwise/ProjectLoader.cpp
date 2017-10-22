@@ -5,9 +5,6 @@
 
 #include "EditorImpl.h"
 
-#include <IEditorImpl.h>
-#include <ImplItem.h>
-
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILocalizationManager.h>
@@ -85,7 +82,7 @@ string BuildPath(CImplItem const* const pImplItem)
 //////////////////////////////////////////////////////////////////////////
 CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root)
 	: m_root(root)
-	, m_projectRoot(projectPath)
+	, m_projectPath(projectPath)
 {
 	LoadEventsMetadata(soundbanksPath);
 
@@ -141,7 +138,7 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 			{
 				if ((fd.attrib & _A_SUBDIR) == 0)
 				{
-					if (name.find(".bnk") != string::npos && name.compareNoCase("Init.bnk") != 0)
+					if ((name.find(".bnk") != string::npos) && (name.compareNoCase("Init.bnk") != 0))
 					{
 						string const fullname = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
 						CID const id = CCrc32::ComputeLowercase(fullname);
@@ -175,7 +172,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + folderName + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(m_projectPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + folderName + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -206,7 +203,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 //////////////////////////////////////////////////////////////////////////
 void CProjectLoader::LoadWorkUnitFile(const string& filePath, CImplItem& parent)
 {
-	XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + filePath);
+	XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + CRY_NATIVE_PATH_SEPSTR + filePath);
 
 	if (pRoot != nullptr)
 	{
@@ -386,7 +383,7 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(m_projectPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -403,7 +400,7 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 				else
 				{
 					string const path = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
-					XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectRoot + CRY_NATIVE_PATH_SEPSTR + path);
+					XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + CRY_NATIVE_PATH_SEPSTR + path);
 
 					if (pRoot != nullptr)
 					{

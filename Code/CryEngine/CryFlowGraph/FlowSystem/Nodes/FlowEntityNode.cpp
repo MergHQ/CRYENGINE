@@ -355,7 +355,7 @@ void CFlowEntityNode::SendEventToEntity(SActivationInfo* pActInfo, IEntity* pEnt
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowEntityNode::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CFlowEntityNode::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	if (!m_pGraph->IsEnabled() || m_pGraph->IsSuspended() || !m_pGraph->IsActive())
 		return;
@@ -557,7 +557,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 	{
 		if (!m_pGraph || !m_pGraph->IsEnabled() || m_pGraph->IsSuspended() || !m_pGraph->IsActive())
 			return;
@@ -1523,7 +1523,7 @@ public:
 		resMat.SetFromVectors(xAxis.GetNormalized(), yAxis.GetNormalized(), zAxis.GetNormalized(), worldPos);
 	}
 
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) {}
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) {}
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
@@ -1699,7 +1699,7 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	void         OnEntityEvent(IEntity* pEntity, SEntityEvent& event) {}
+	void         OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) {}
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
@@ -1910,7 +1910,7 @@ public:
 		return DoResolveScriptTable(pTable, key, outKey);
 	}
 
-	void         OnEntityEvent(IEntity* pEntity, SEntityEvent& event) {}
+	void         OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) {}
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
@@ -2185,7 +2185,7 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	void         OnEntityEvent(IEntity* pEntity, SEntityEvent& event) {}
+	void         OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) {}
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
@@ -2712,7 +2712,7 @@ public:
 		}
 	}
 
-	void OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+	void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 	{
 	}
 

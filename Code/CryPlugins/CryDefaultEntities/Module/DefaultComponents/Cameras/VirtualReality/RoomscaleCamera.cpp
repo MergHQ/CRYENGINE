@@ -46,7 +46,7 @@ namespace Cry
 				}
 			}
 
-			void CRoomscaleCameraComponent::ProcessEvent(SEntityEvent& event)
+			void CRoomscaleCameraComponent::ProcessEvent(const SEntityEvent& event)
 			{
 				if (event.event == ENTITY_EVENT_UPDATE)
 				{

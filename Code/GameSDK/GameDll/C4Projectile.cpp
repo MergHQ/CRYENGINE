@@ -155,7 +155,7 @@ void CC4Projectile::HandleEvent(const SGameObjectEvent &event)
 }
 
 //--------------------------------------------
-void CC4Projectile::ProcessEvent(SEntityEvent &event)
+void CC4Projectile::ProcessEvent(const SEntityEvent& event)
 {
 	BaseClass::ProcessEvent(event);
 

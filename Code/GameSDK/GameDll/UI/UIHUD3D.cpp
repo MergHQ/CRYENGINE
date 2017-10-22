@@ -94,7 +94,7 @@ void CUIHUD3D::OnSystemEvent( ESystemEvent event, UINT_PTR wparam, UINT_PTR lpar
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIHUD3D::OnEntityEvent( IEntity *pEntity, SEntityEvent &event )
+void CUIHUD3D::OnEntityEvent( IEntity *pEntity, const SEntityEvent& event )
 {
 	if(event.event == ENTITY_EVENT_DONE)
 	{

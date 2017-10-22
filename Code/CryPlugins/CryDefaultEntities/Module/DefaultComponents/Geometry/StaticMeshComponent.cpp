@@ -82,7 +82,7 @@ void CStaticMeshComponent::ResetObject()
 	}
 }
 
-void CStaticMeshComponent::ProcessEvent(SEntityEvent& event)
+void CStaticMeshComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 	{

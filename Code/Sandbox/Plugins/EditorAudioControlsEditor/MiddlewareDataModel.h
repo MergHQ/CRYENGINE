@@ -27,8 +27,7 @@ public:
 	// TODO: Should be replaced with the new attribute system
 	enum class EMiddlewareDataAttributes
 	{
-		Type = Qt::UserRole + 1,
-		Connected,
+		Connected = Qt::UserRole + 1,
 		Placeholder,
 		Localized,
 		Id,

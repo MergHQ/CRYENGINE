@@ -69,7 +69,7 @@ namespace Cry
 				}
 			}
 
-			void CInteractionComponent::ProcessEvent(SEntityEvent& event)
+			void CInteractionComponent::ProcessEvent(const SEntityEvent& event)
 			{
 				if (event.event == ENTITY_EVENT_UPDATE)
 				{

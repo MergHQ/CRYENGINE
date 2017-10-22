@@ -6331,7 +6331,7 @@ void CRecordingSystem::OnReused(IEntity *pEntity, SEntitySpawnParams &params)
 	CRY_ASSERT_MESSAGE(false, "CRecordingSystem::OnReused needs implementing");
 }
 
-void CRecordingSystem::OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+void CRecordingSystem::OnEntityEvent( IEntity *pEntity, const SEntityEvent& event )
 {
 	const EntityId entityId = pEntity->GetId();
 

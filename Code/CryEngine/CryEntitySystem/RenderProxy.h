@@ -1,18 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   RenderProxy.h
-//  Version:     v1.00
-//  Created:     19/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __RenderProxy_h__
-#define __RenderProxy_h__
 #pragma once
 
 #include "EntitySystem.h"
@@ -42,7 +29,7 @@ public:
 
 	// Must be called after constructor.
 	void PostInit();
-	void ProcessEvent(SEntityEvent& event);
+	void ProcessEvent(const SEntityEvent& event);
 
 	void Serialize(TSerialize ser);
 	bool NeedNetworkSerialize();
@@ -177,5 +164,3 @@ private:
 	// Rendering related member variables, Passed to 3d engine render nodes.
 	IEntity::SRenderNodeParams m_renderNodeParams;
 };
-
-#endif // __RenderProxy_h__

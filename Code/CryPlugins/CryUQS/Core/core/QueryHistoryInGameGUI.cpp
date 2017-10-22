@@ -55,18 +55,23 @@ namespace UQS
 			, m_scrollIndexInHistoricQueries(s_noScrollIndex)
 		{
 			m_queryHistoryManager.RegisterQueryHistoryListener(this);
-			if (IInput* pInput = GetISystem()->GetIInput())
-			{
-				pInput->AddEventListener(this);
-			}
+
+			// react on ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE so that we can safely subscribe to a by-then valid IInput pointer
+			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CQueryHistoryInGameGUI");
 		}
 
 		CQueryHistoryInGameGUI::~CQueryHistoryInGameGUI()
 		{
 			m_queryHistoryManager.UnregisterQueryHistoryListener(this);
-			if (IInput* pInput = GetISystem()->GetIInput())
+
+			if (ISystem* pSystem = GetISystem())
 			{
-				pInput->RemoveEventListener(this);
+				pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+
+				if (IInput* pInput = pSystem->GetIInput())
+				{
+					pInput->RemoveEventListener(this);
+				}
 			}
 		}
 
@@ -169,6 +174,19 @@ namespace UQS
 		void CQueryHistoryInGameGUI::AddDeferredEvaluatorName(const char* szDeferredEvaluatorName)
 		{
 			// nothing (we don't request the names of all deferred-evaluators by calling IQueryHistoryManager::EnumerateDeferredEvaluatorNames())
+		}
+
+		void CQueryHistoryInGameGUI::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+		{
+			switch (event)
+			{
+			case ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE:
+				if (IInput* pInput = GetISystem()->GetIInput()) // FYI: if this fails, then we're most likely running on a dedicated server that has no input device attached
+				{
+					pInput->AddEventListener(this);
+				}
+				break;
+			}
 		}
 
 		bool CQueryHistoryInGameGUI::OnInputEvent(const SInputEvent& event)

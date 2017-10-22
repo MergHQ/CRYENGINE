@@ -1,16 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   Entity.h
-//  Version:     v1.00
-//  Created:     18/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "stdafx.h"
 #include "Entity.h"
 #include "AffineParts.h"
@@ -172,7 +161,7 @@ void CEntity::SetFlagsExtended(uint32 flagsExtended)
 };
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntity::SendEvent(SEntityEvent& event)
+bool CEntity::SendEvent(const SEntityEvent& event)
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "Entity::SendEvent");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("Entity::SendEvent");
@@ -3019,7 +3008,7 @@ struct SEventName
 };
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::LogEvent(SEntityEvent& event, CTimeValue dt)
+void CEntity::LogEvent(const SEntityEvent& event, CTimeValue dt)
 {
 	static int s_LastLoggedFrame = 0;
 

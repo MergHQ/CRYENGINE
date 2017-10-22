@@ -141,7 +141,7 @@ void CAreaComponent::Physicalize()
 	}
 }
 
-void CAreaComponent::ProcessEvent(SEntityEvent& event)
+void CAreaComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 	{
