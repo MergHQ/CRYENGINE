@@ -3,6 +3,7 @@
 #pragma once
 
 #include "SystemTypes.h"
+
 #include <CrySystem/XML/IXml.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
@@ -15,7 +16,6 @@
 namespace ACE
 {
 class CImplItem;
-class CImplConnection;
 
 struct IImplSettings
 {

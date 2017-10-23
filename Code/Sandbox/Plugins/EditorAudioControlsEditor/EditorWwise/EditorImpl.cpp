@@ -10,7 +10,6 @@
 #include <CryAudio/IProfileData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/CryCrc32.h>
-#include <SystemTypes.h>
 #include <CryCore/StlUtils.h>
 #include <CrySerialization/IArchiveHost.h>
 

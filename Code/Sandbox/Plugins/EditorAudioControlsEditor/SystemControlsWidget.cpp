@@ -79,9 +79,11 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* pAssetsManage
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragDrop);
 	m_pTreeView->setDefaultDropAction(Qt::MoveAction);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_pTreeView->setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_pTreeView->setModel(m_pFilterProxyModel);
 	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
+	m_pTreeView->viewport()->installEventFilter(this);
 	m_pTreeView->installEventFilter(this);
 	pSplitter->addWidget(m_pTreeView);
 	
@@ -350,6 +352,12 @@ bool CSystemControlsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 			}
 		}
 	}
+	else if (pEvent->type() == QEvent::Drop)
+	{
+		m_pTreeView->selectionModel()->clearSelection();
+		m_pTreeView->selectionModel()->clearCurrentIndex();
+	}
+
 	return QWidget::eventFilter(pObject, pEvent);
 }
 
@@ -700,18 +708,31 @@ CSystemAsset* CSystemControlsWidget::GetSelectedAsset() const
 //////////////////////////////////////////////////////////////////////////
 void CSystemControlsWidget::SelectNewAsset(QModelIndex const& parent, int const row)
 {
-	if (m_isCreatedFromMenu)
+	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
 	{
 		QModelIndex const& assetIndex = m_pFilterProxyModel->mapFromSource(m_pMountingProxyModel->index(row, 0, parent));
-		m_pTreeView->setCurrentIndex(assetIndex);
-		m_pTreeView->edit(assetIndex);
-		m_isCreatedFromMenu = false;
-	}
-	else if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
-	{
-		QModelIndex const& parentIndex = m_pFilterProxyModel->mapFromSource(parent);
-		m_pTreeView->expand(parentIndex);
-		m_pTreeView->setCurrentIndex(parentIndex);
+
+		if (m_isCreatedFromMenu)
+		{
+			m_pTreeView->setCurrentIndex(assetIndex);
+			m_pTreeView->edit(assetIndex);
+			m_isCreatedFromMenu = false;
+		}
+		else
+		{
+			QModelIndex const& parentIndex = m_pFilterProxyModel->mapFromSource(parent);
+			m_pTreeView->expand(parentIndex);
+			m_pTreeView->selectionModel()->select(assetIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+
+			if (m_pTreeView->selectionModel()->selectedRows().size() == 1)
+			{
+				m_pTreeView->setCurrentIndex(assetIndex);
+			}
+			else
+			{
+				m_pTreeView->scrollTo(assetIndex);
+			}
+		}
 	}
 }
 

@@ -1858,9 +1858,9 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 	{
 		HMODULE hGameDll;
 
-#if !defined(_LIB)
-		CCryLibrary gameLibrary(pLegacyGameDllCVar->GetString());
-		hGameDll = gameLibrary.m_hModule;
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+		m_gameLibrary.Set(pLegacyGameDllCVar->GetString());
+		hGameDll = m_gameLibrary.m_hModule;
 #else
 		hGameDll = CryGetCurrentModule();
 #endif
