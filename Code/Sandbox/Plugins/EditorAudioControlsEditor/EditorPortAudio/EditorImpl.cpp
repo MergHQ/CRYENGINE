@@ -13,7 +13,6 @@
 #include <CryAudio/IProfileData.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/ClassFactory.h>
-#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace ACE
 {

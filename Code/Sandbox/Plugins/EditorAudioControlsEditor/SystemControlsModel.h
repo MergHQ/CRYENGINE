@@ -23,7 +23,7 @@ enum class EDataRole
 
 namespace AudioModelUtils
 {
-void         GetAssetsFromIndices(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls);
+void          GetAssetsFromIndices(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls);
 CSystemAsset* GetAssetFromIndex(QModelIndex const& index);
 } // namespace AudioModelUtils
 
