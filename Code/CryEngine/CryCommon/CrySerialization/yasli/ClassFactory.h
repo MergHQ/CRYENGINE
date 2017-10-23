@@ -15,46 +15,64 @@
 #include "Assert.h"
 #include "ClassFactoryBase.h"
 #include "TypeID.h"
-
-// #ifdef _MSC_VER
-// # pragma warning(disable : 4251)
-// #endif
+#if CRY_PLATFORM_WINDOWS && !defined(CRY_IS_MONOLITHIC_BUILD)
+#include <CryCore/Platform/CryLibrary.h>
+#endif
 
 namespace yasli{
 
 class Archive;
 
-
-
 class ClassFactoryManager{
 public:
-	static ClassFactoryManager& the(){
-		static ClassFactoryManager factoryManager;
-		return factoryManager;
+	static ClassFactoryManager& the()
+	{
+#if CRY_PLATFORM_WINDOWS && !defined(CRY_IS_MONOLITHIC_BUILD)
+		// As this code is part of CryCommon, using a normal Singleton would result in one instance inside each DLL.
+		// To prevent this, we need to load the exported variable from the executable and store a pointer to it.
+		// The declaration of g_pClassFactoryManager can be found in platform_impl.h
+		static ClassFactoryManager** pManager = reinterpret_cast<ClassFactoryManager**>(CryGetProcAddress(CryGetCurrentModule(), "g_pClassFactoryManager"));
+		if (*pManager == nullptr)
+		{
+			*pManager = new ClassFactoryManager();
+		}
+
+		return **pManager;
+#else
+		static ClassFactoryManager manager;
+		return manager;
+#endif
 	}
 
-	const ClassFactoryBase* find(TypeID baseType) const{
-		Factories::const_iterator it = factories_.find(baseType);
-		if(it == factories_.end())
-			return 0;
-		else
-			return it->second;
+	ClassFactoryBase* find(TypeID baseType) const
+	{
+		const auto it = m_factories.find(baseType);
+		return it != m_factories.cend() ? it->second : nullptr;
 	}
 
-	void registerFactory(TypeID type, const ClassFactoryBase* factory){
-		factories_[type] = factory;
+	void registerFactory(TypeID type, ClassFactoryBase* const pFactory)
+	{
+		m_factories[type] = pFactory;
 	}
+
 protected:
-	typedef std::map<TypeID, const ClassFactoryBase*> Factories;
-	Factories factories_;
+	typedef std::map<TypeID, ClassFactoryBase*> Factories;
+	Factories m_factories;
 };
 
 template<class BaseType>
 class ClassFactory : public ClassFactoryBase{
 public:
-	static ClassFactory& the(){
-		static ClassFactory factory;
-		return factory;
+	static ClassFactory& the()
+	{
+		// As this code is part of CryCommon, using a normal Singleton would result in one instance inside each DLL.
+		// This problem is already fixed in ClassFactoryManager so we just get the instance pointer from there.
+		ClassFactoryBase* pFactory = ClassFactoryManager::the().find(TypeID::get<BaseType>());
+		if (pFactory == nullptr)
+		{
+			pFactory = new ClassFactory(); // The constructor takes care of registering the instance with the ClassFactoryManager
+		}
+		return static_cast<ClassFactory&>(*pFactory);
 	}
 
 	class CreatorBase{

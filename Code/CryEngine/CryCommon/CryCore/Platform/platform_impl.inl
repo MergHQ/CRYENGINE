@@ -43,6 +43,12 @@ STRUCT_INFO_T_INSTANTIATE(Color_tpl, <float>)
 STRUCT_INFO_T_INSTANTIATE(Color_tpl, <uint8>)
 #endif
 
+#if CRY_PLATFORM_WINDOWS && !defined(CRY_IS_MONOLITHIC_BUILD) && (defined(SANDBOX_EXPORTS) || defined(_LAUNCHER))
+// This belongs to the ClassFactoryManager::the() singleton in ClassFactory.h and must only exist in executables, not in DLLs.
+namespace yasli { class ClassFactoryManager; }
+extern "C" DLL_EXPORT yasli::ClassFactoryManager* g_pClassFactoryManager = nullptr;
+#endif
+
 #if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
 //The reg factory is used for registering the different modules along the whole project
 struct SRegFactoryNode* g_pHeadToRegFactories = nullptr;
