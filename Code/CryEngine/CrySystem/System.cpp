@@ -212,6 +212,8 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 CSystem::CSystem(const SSystemInitParams& startupParams)
 #if defined(SYS_ENV_AS_STRUCT)
 	: m_env(gEnv)
+#elif !defined(CRY_IS_MONOLITHIC_BUILD)
+	: m_gameLibrary(nullptr)
 #endif
 {
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.

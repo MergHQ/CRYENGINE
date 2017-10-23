@@ -1033,6 +1033,10 @@ protected: // -------------------------------------------------------------
 
 	CMemoryFragmentationProfiler              m_MemoryFragmentationProfiler;
 
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+	CCryLibrary m_gameLibrary;
+#endif
+
 	struct SErrorMessage
 	{
 		string m_Message;
