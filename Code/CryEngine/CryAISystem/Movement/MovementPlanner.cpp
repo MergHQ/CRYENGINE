@@ -56,7 +56,7 @@ void GenericPlanner::StartWorkingOnRequest_Internal(const MovementRequestID& req
 		{
 			// Future: We could path find from a bit further along the current plan.
 
-			context.actor.RequestPathTo(request.destination, request.lengthToTrimFromThePathEnd, request.dangersFlags, request.considerActorsAsPathObstacles, request.pCustomPathCostComputer);
+			context.actor.RequestPathTo(request.destination, request.lengthToTrimFromThePathEnd, request.snappingRules, request.dangersFlags, request.considerActorsAsPathObstacles, request.pCustomPathCostComputer);
 			m_pathfinderRequestQueued = true;
 
 			//

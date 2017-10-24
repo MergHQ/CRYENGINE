@@ -528,41 +528,24 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 
 	Vec3 safeStartLocation(request.requestParams.startLocation);
 	MNM::TriangleID triangleStartID;
-	if (!(triangleStartID = navMesh.GetTriangleAt(startLocation - origin, verticalRange, verticalUpwardRange, pFilter)))
+	if (!ApplySnappingRules(navMesh, request.requestParams.snappingRules, triangleStartID, safeStartLocation, startLocation - origin, verticalRange, verticalUpwardRange, horizontalRange, pFilter))
 	{
-		MNM::vector3_t closest;
-		if (!(triangleStartID = navMesh.GetClosestTriangle(startLocation - origin, verticalRange, horizontalRange, pFilter, nullptr, &closest)))
-		{
-			const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
-			AIWarning("Navigation system couldn't find NavMesh triangle at path start point (%.2f, %2f, %2f) for agent '%s'.",
-				request.requestParams.startLocation.x, request.requestParams.startLocation.y, request.requestParams.startLocation.z,
-				pEntity ? pEntity->GetName() : "'missing entity'");
-			return false;
-		}
-		else
-		{
-			safeStartLocation = closest.GetVec3();
-		}
+		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
+		AIWarning("Navigation system couldn't find NavMesh triangle at path start point (%.2f, %2f, %2f) for agent '%s'.",
+			request.requestParams.startLocation.x, request.requestParams.startLocation.y, request.requestParams.startLocation.z,
+			pEntity ? pEntity->GetName() : "'missing entity'");
+		return false;
 	}
 
 	Vec3 safeEndLocation(request.requestParams.endLocation);
-	MNM::TriangleID triangleEndID = navMesh.GetTriangleAt(endLocation - origin, verticalRange, verticalRange, pFilter);
-	if (!triangleEndID)
+	MNM::TriangleID triangleEndID;
+	if (!ApplySnappingRules(navMesh, request.requestParams.snappingRules, triangleEndID, safeEndLocation, endLocation - origin, verticalRange, verticalUpwardRange, horizontalRange, pFilter))
 	{
-		MNM::vector3_t closest;
-		triangleEndID = navMesh.GetClosestTriangle(endLocation - origin, verticalRange, horizontalRange, pFilter, nullptr, &closest);
-		if (triangleEndID)
-		{
-			safeEndLocation = closest.GetVec3();
-		}
-		else
-		{
-			const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
-			AIWarning("Navigation system couldn't find NavMesh triangle at path destination point (%.2f, %.2f, %.2f) for agent '%s'.",
-				request.requestParams.endLocation.x, request.requestParams.endLocation.y, request.requestParams.endLocation.z,
-				pEntity ? pEntity->GetName() : "'missing entity'");
-			return false;
-		}
+		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
+		AIWarning("Navigation system couldn't find NavMesh triangle at path destination point (%.2f, %.2f, %.2f) for agent '%s'.",
+			request.requestParams.endLocation.x, request.requestParams.endLocation.y, request.requestParams.endLocation.z,
+			pEntity ? pEntity->GetName() : "'missing entity'");
+		return false;
 	}
 
 	// The data for MNM are good until this point so we can set up the path finding
@@ -579,6 +562,29 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 	processingContext.workingSet.aStarOpenList.SetUpForPathSolving(mesh.navMesh.GetTriangleCount(), triangleStartID, startLocation, startToEndDist);
 
 	return true;
+}
+
+bool CMNMPathfinder::ApplySnappingRules(const MNM::CNavMesh& navMesh, const SSnapToNavMeshRulesInfo& snappingRules, MNM::TriangleID& triangleID, Vec3& safeLocation, const MNM::vector3_t& locationRelToOrigin, const MNM::real_t vDefaultRange, const MNM::real_t vUpwardRange, const MNM::real_t hDefaultRange, const INavMeshQueryFilter* pFilter)
+{
+	if (snappingRules.bVerticalSearch)
+	{
+		if (triangleID = navMesh.GetTriangleAt(locationRelToOrigin, vDefaultRange, vUpwardRange, pFilter))
+		{
+			return true;
+		}
+
+	}
+	if (snappingRules.bBoxSearch)
+	{
+		MNM::vector3_t closestLocation;
+		if (triangleID = navMesh.GetClosestTriangle(locationRelToOrigin, vDefaultRange, hDefaultRange, pFilter, nullptr, &closestLocation))
+		{
+			safeLocation = closestLocation.GetVec3();
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void CMNMPathfinder::ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext& processingContext)
