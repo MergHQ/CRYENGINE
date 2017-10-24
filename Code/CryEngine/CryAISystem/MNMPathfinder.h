@@ -394,6 +394,7 @@ private:
 	bool              SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request);
 
+	bool			  ApplySnappingRules(const MNM::CNavMesh& navMesh, const SSnapToNavMeshRulesInfo& snappingRules, MNM::TriangleID& triangleID, Vec3& safeLocation, const MNM::vector3_t& locationRelToOrigin, const MNM::real_t vDefaultRange, const MNM::real_t vUpwardRange, const MNM::real_t hDefaultRange, const INavMeshQueryFilter* pFilter);
 	void              CancelResultDispatchingForRequest(MNM::QueuedPathID requestId);
 
 	void              DebugAllStatistics();

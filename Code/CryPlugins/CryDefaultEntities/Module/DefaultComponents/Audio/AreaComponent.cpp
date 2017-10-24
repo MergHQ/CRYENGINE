@@ -216,7 +216,6 @@ void CAreaComponent::ProcessEvent(const SEntityEvent& event)
 								if (pAreaProxyLow != nullptr && pAreaProxyHigh != nullptr)
 								{
 									Vec3 const pos(pIEntity->GetWorldPos());
-									EntityId const entityId = pIEntity->GetId();
 									bool const bInsideLow = pAreaProxyLow->CalcPointWithin(entityId, pos);
 
 									if (bInsideLow)

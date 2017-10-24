@@ -905,20 +905,20 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pTrigger != nullptr)
 			{
-				CATLAudioObject* const pObject = new CATLAudioObject;
-				m_audioObjectMgr.RegisterObject(pObject);
+				CATLAudioObject* const pNewObject = new CATLAudioObject;
+				m_audioObjectMgr.RegisterObject(pNewObject);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				pObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
+				pNewObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
 #else
-				pObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
+				pNewObject->Init(nullptr, m_pIImpl->ConstructObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
 #endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 
-				result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
+				result = pNewObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 
 				if (pRequestData->bSetCurrentEnvironments)
 				{
-					SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
+					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
 				}
 
 				if (pRequestData->occlusionType < EOcclusionType::Count)
@@ -932,13 +932,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 						if (pState != nullptr)
 						{
-							result = pObject->HandleSetSwitchState(pSwitch, pState);
+							result = pNewObject->HandleSetSwitchState(pSwitch, pState);
 						}
 					}
 				}
 
-				result = pObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				pObject->RemoveFlag(EObjectFlags::InUse);
+				result = pNewObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				pNewObject->RemoveFlag(EObjectFlags::InUse);
 			}
 			else
 			{
@@ -968,7 +968,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 	case EAudioObjectRequestType::StopAllTriggers:
 		{
 			result = pObject->StopAllTriggers();
-			;
 
 			break;
 		}

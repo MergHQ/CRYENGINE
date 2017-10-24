@@ -8,6 +8,7 @@
 #include <CrySystem/IWindowMessageHandler.h>
 
 #include <CryMath/Random.h>
+#include <CryCore/Platform/CryLibrary.h>
 
 #include "Timer.h"
 #include <CrySystem/CryVersion.h>

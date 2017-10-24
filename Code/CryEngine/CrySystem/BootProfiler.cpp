@@ -328,8 +328,7 @@ CBootProfilerSession::CBootProfilerSession(const char* szName) : m_name(szName)
 
 CBootProfilerSession::~CBootProfilerSession()
 {
-	const unsigned int nThreadCount = gThreadsInterface.GetThreadCount();
-	for (unsigned int i = 0; i < nThreadCount; ++i)
+	for (unsigned int i = 0; i < eMAX_THREADS_TO_PROFILE; ++i)
 	{
 		SThreadEntry& entry = m_threadEntry[i];
 		delete entry.m_pRecordsPool;

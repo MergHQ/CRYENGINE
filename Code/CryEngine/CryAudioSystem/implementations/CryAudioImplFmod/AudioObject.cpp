@@ -313,9 +313,7 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 		else
 		{
 			StopEvent(pTrigger->m_eventPathId);
-
-			// Return failure here so the ATL does not keep track of this event.
-			requestResult = ERequestStatus::Failure;
+			requestResult = ERequestStatus::SuccessfullyStopped;
 		}
 	}
 	else
