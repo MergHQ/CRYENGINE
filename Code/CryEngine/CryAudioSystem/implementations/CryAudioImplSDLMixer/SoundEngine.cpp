@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "SoundEngine.h"
@@ -573,13 +573,14 @@ bool SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTr
 		}
 		else
 		{
-			// stop event in audio object
-			const SampleId id = pTrigger->m_sampleId;
-			for (CEvent* pEvent : pObject->m_events)
+			// Stop event in audio object.
+			SampleId const sampleId = pTrigger->m_sampleId;
+
+			for (auto const pEventToStop : pObject->m_events)
 			{
-				if (pEvent && (id == pEvent->m_pTrigger->m_sampleId))
+				if (pEventToStop->m_pTrigger->m_sampleId == sampleId)
 				{
-					SoundEngine::StopEvent(pEvent);
+					SoundEngine::StopEvent(pEventToStop);
 				}
 			}
 		}
