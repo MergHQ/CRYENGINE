@@ -18,6 +18,12 @@
 #include <IRCLog.h>
 #include <CryMath/Random.h>
 
+#if CRY_PLATFORM_WINDOWS && !defined(CRY_IS_MONOLITHIC_BUILD) && defined(CRY_IS_APPLICATION)
+// This belongs to the ClassFactoryManager::the() singleton in ClassFactory.h and must only exist in executables, not in DLLs.
+namespace yasli { class ClassFactoryManager; }
+extern "C" DLL_EXPORT yasli::ClassFactoryManager* g_pClassFactoryManager = nullptr;
+#endif
+
 struct SSystemGlobalEnvironment;
 SSystemGlobalEnvironment* gEnv = 0;
 IRCLog* g_pRCLog = 0;

@@ -239,6 +239,11 @@ macro(apply_compile_settings)
 	if(MODULE_SOLUTION_FOLDER)
 		set_solution_folder("${MODULE_SOLUTION_FOLDER}" ${THIS_PROJECT})
 	endif()	
+
+	get_target_property(target_type ${THIS_PROJECT} TYPE)
+	if (target_type MATCHES "EXECUTABLE")
+		target_compile_options(${THIS_PROJECT} PRIVATE -DCRY_IS_APPLICATION)
+	endif()
 endmacro()
 
 macro(set_rc_flags)

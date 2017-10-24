@@ -510,6 +510,11 @@ macro(apply_compile_settings)
 		set_target_properties(${THIS_PROJECT} PROPERTIES EXCLUDE_FROM_ALL TRUE)
 		set_target_properties(${THIS_PROJECT} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE)
 	endif()
+
+	get_target_property(target_type ${THIS_PROJECT} TYPE)
+	if (target_type MATCHES "EXECUTABLE")
+		target_compile_options(${THIS_PROJECT} PRIVATE -DCRY_IS_APPLICATION)
+	endif()
 endmacro()
 
 function(CryEngineModule target)
