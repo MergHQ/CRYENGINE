@@ -342,7 +342,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 	ReportStartedTriggerInstance(s_triggerInstanceIdCounter++, pOwner, pUserData, pUserDataOwner, flags);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (result != ERequestStatus::Success)
+	if (result != ERequestStatus::Success && result != ERequestStatus::SuccessfullyStopped)
 	{
 		// No TriggerImpl generated an active event.
 		g_logger.Log(ELogType::Warning, R"(Trigger "%s" failed on AudioObject "%s")", pTrigger->m_name.c_str(), m_name.c_str());
@@ -356,6 +356,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 ERequestStatus CATLAudioObject::HandleStopTrigger(CATLTrigger const* const pTrigger)
 {
 	ERequestStatus result = ERequestStatus::Failure;
+
 	for (auto const pEvent : m_activeEvents)
 	{
 		if ((pEvent != nullptr) && pEvent->IsPlaying() && (pEvent->m_pTrigger == pTrigger))
@@ -396,6 +397,7 @@ ERequestStatus CATLAudioObject::HandleSetSwitchState(CATLSwitch const* const pSw
 ERequestStatus CATLAudioObject::HandleSetParameter(CParameter const* const pParameter, float const value)
 {
 	ERequestStatus result = ERequestStatus::Failure;
+
 	for (auto const pParameterImpl : pParameter->m_implPtrs)
 	{
 		result = pParameterImpl->Set(*this, value);
@@ -427,6 +429,7 @@ ERequestStatus CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const*
 			result = ERequestStatus::Success;
 		}
 	}
+
 	if (result == ERequestStatus::Success)
 	{
 		if (amount > 0.0f)
@@ -470,6 +473,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 	{
 		ETriggerStatus triggerStatus = ETriggerStatus::None;
 		ObjectTriggerImplStates::const_iterator iPlace = m_triggerImplStates.end();
+
 		if (FindPlaceConst(m_triggerImplStates, pTriggerImpl->m_audioTriggerImplId, iPlace))
 		{
 			triggerStatus = iPlace->second.flags;
@@ -497,7 +501,6 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 			pEvent->m_pAudioObject = this;
 			pEvent->m_pTrigger = pTrigger;
 			pEvent->m_audioTriggerImplId = pTriggerImpl->m_audioTriggerImplId;
-
 			pEvent->m_state = bLoad ? EEventState::Loading : EEventState::Unloading;
 		}
 
@@ -583,12 +586,12 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 
 	if ((audioTriggerInstanceState.flags & ETriggerStatus::Loaded) != 0)
 	{
-		// if the trigger instance was manually loaded -- keep it
+		// If the trigger instance was manually loaded -- keep it
 		audioTriggerInstanceState.flags &= ~ETriggerStatus::Playing;
 	}
 	else
 	{
-		//if the trigger instance wasn't loaded -- kill it
+		// If the trigger instance wasn't loaded -- kill it
 		m_triggerStates.erase(iter);
 	}
 }
@@ -1624,7 +1627,6 @@ ERequestStatus CATLAudioObject::HandleSetName(char const* const szName)
 	m_name = szName;
 	return m_pImplData->SetName(szName);
 }
-
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////

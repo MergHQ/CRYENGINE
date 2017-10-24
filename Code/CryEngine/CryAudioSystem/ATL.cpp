@@ -968,7 +968,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 	case EAudioObjectRequestType::StopAllTriggers:
 		{
 			result = pObject->StopAllTriggers();
-			;
 
 			break;
 		}

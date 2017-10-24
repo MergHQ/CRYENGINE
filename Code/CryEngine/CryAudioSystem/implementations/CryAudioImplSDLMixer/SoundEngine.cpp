@@ -503,34 +503,38 @@ bool SoundEngine::StopEvent(CEvent const* const pEvent)
 	return false;
 }
 
-bool SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent)
+ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent)
 {
-	bool bSuccess = false;
+	ERequestStatus requestStatus = ERequestStatus::Failure;
 
 	if (pObject != nullptr && pTrigger != nullptr && pEvent != nullptr)
 	{
 		if (pTrigger->m_bStartEvent)
 		{
-			// start playing samples
+			// Start playing samples
 			pEvent->m_pTrigger = pTrigger;
 
 			Mix_Chunk* pSample = stl::find_in_map(g_sampleData, pTrigger->m_sampleId, nullptr);
+
 			if (pSample == nullptr)
 			{
 				// Trying to play sample that hasn't been loaded yet, load it in place
 				// NOTE: This should be avoided as it can cause lag in audio playback
-				const string& samplePath = g_samplePaths[pTrigger->m_sampleId];
+				string const& samplePath = g_samplePaths[pTrigger->m_sampleId];
+
 				if (LoadSampleImpl(pTrigger->m_sampleId, samplePath))
 				{
 					pSample = stl::find_in_map(g_sampleData, pTrigger->m_sampleId, nullptr);
 				}
+
 				if (pSample == nullptr)
 				{
-					return false;
+					return ERequestStatus::Failure;
 				}
 			}
 
 			int loopCount = pTrigger->m_numLoops;
+
 			if (loopCount > 0)
 			{
 				// For SDL Mixer 0 loops means play only once, 1 loop play twice, etc ...
@@ -539,7 +543,8 @@ bool SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTr
 
 			if (!g_freeChannels.empty())
 			{
-				int channelID = Mix_PlayChannel(g_freeChannels.front(), pSample, loopCount);
+				int const channelID = Mix_PlayChannel(g_freeChannels.front(), pSample, loopCount);
+
 				if (channelID >= 0)
 				{
 					g_freeChannels.pop();
@@ -566,9 +571,9 @@ bool SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTr
 
 			if (!pEvent->m_channels.empty())
 			{
-				// if any sample was added then add the event to the audio object
+				// If any sample was added then add the event to the audio object
 				pObject->m_events.push_back(pEvent);
-				bSuccess = true;
+				requestStatus = ERequestStatus::Success;
 			}
 		}
 		else
@@ -583,10 +588,12 @@ bool SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTr
 					SoundEngine::StopEvent(pEventToStop);
 				}
 			}
+
+			requestStatus = ERequestStatus::SuccessfullyStopped;
 		}
 	}
 
-	return bSuccess;
+	return requestStatus;
 }
 
 bool SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
