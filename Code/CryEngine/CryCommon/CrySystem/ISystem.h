@@ -1774,20 +1774,9 @@ struct ConsoleRegistrationHelper
 	template<class T, class U>
 	static CRY_FORCE_INLINE ICVar* Register(const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
 	{
-		static_assert(std::is_same<T, int>::value || std::is_same<T, float>::value || std::is_same<T, const char*>::value, "Invalid template type!");
-		static_assert(std::is_convertible<U, T>::value, "Invalid default value type!");
-
-		CRY_ASSERT(gEnv && gEnv->pConsole);
-		if (gEnv && gEnv->pConsole)
-		{
-			MODULE_REGISTER_CVAR(szName);
-			return gEnv->pConsole->Register(szName, pSrc, static_cast<T>(defaultValue), flags, szHelp, pChangeFunc, bAllowModify);
-		}
-		else
-		{
-			return nullptr;
-		}
+		return RegisterImpl(get_enum_tag<T>(), szName, pSrc, defaultValue, flags, szHelp, pChangeFunc, bAllowModify);
 	}
+
 	static CRY_FORCE_INLINE ICVar* Register(ICVar* pVar)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
@@ -1795,6 +1784,39 @@ struct ConsoleRegistrationHelper
 		{
 			MODULE_REGISTER_CVAR(pVar->GetName());
 			return gEnv->pConsole->Register(pVar);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
+private:
+	struct enum_tag {};
+	struct non_enum_tag {};
+
+	template<class T>
+	struct get_enum_tag : std::conditional<std::is_enum<T>::value, enum_tag, non_enum_tag>::type {};
+
+	template<class T, class U>
+	static CRY_FORCE_INLINE ICVar* RegisterImpl(enum_tag, const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
+	{
+		using ET = typename std::underlying_type<T>::type;
+		static_assert(std::is_same<ET, int>::value, "Invalid template type!");
+		return RegisterImpl(non_enum_tag(), szName, reinterpret_cast<ET*>(pSrc), static_cast<ET>(defaultValue), flags, szHelp, pChangeFunc, bAllowModify);
+	}
+
+
+	template<class T, class U>
+	static CRY_FORCE_INLINE ICVar* RegisterImpl(non_enum_tag, const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
+	{
+		static_assert(std::is_same<T, int>::value || std::is_same<T, float>::value || std::is_same<T, const char*>::value, "Invalid template type!");
+		static_assert(std::is_convertible<U, T>::value, "Invalid default value type!");
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		if (gEnv && gEnv->pConsole)
+		{
+			MODULE_REGISTER_CVAR(szName);
+			return gEnv->pConsole->Register(szName, pSrc, static_cast<T>(defaultValue), flags, szHelp, pChangeFunc, bAllowModify);
 		}
 		else
 		{
