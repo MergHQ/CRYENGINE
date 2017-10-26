@@ -394,7 +394,7 @@ void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItem
 
 			if (pImplControl != nullptr)
 			{
-				outItems.push_back(pImplControl);
+				outItems.emplace_back(pImplControl);
 			}
 		}
 	}

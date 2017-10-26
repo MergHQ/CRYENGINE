@@ -1,10 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "EditorImpl.h"
 
 #include <CryCore/Platform/platform.h>
 #include <CryCore/Platform/platform_impl.inl>
-#include "EditorImpl.h"
 #include <CrySystem/ISystem.h>
 
 ACE::Wwise::CEditorImpl* g_pWwiseInterface;

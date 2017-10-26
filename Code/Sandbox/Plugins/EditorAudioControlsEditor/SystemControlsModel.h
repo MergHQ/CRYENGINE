@@ -27,12 +27,12 @@ void          GetAssetsFromIndices(QModelIndexList const& list, std::vector<CSys
 CSystemAsset* GetAssetFromIndex(QModelIndex const& index);
 } // namespace AudioModelUtils
 
-class CSystemControlsModel : public QAbstractItemModel
+class CAudioLibraryModel : public QAbstractItemModel
 {
 public:
 
-	CSystemControlsModel(CSystemAssetsManager* pAssetsManager);
-	virtual ~CSystemControlsModel() override;
+	CAudioLibraryModel(CSystemAssetsManager* const pAssetsManager);
+	virtual ~CAudioLibraryModel() override;
 
 protected:
 
@@ -53,15 +53,15 @@ protected:
 
 	void ConnectToSystem();
 	void DisconnectFromSystem();
-	CSystemAssetsManager* m_pAssetsManager = nullptr;
+	CSystemAssetsManager* const m_pAssetsManager;
 };
 
-class CAudioLibraryModel : public QAbstractItemModel
+class CSystemControlsModel : public QAbstractItemModel
 {
 public:
 
-	CAudioLibraryModel(CSystemAssetsManager* pAssetsManager, CSystemLibrary* pLibrary);
-	virtual ~CAudioLibraryModel() override;
+	CSystemControlsModel(CSystemAssetsManager* const pAssetsManager, CSystemLibrary* const pLibrary);
+	virtual ~CSystemControlsModel() override;
 
 	void DisconnectFromSystem();
 
@@ -87,8 +87,8 @@ protected:
 
 	void ConnectToSystem();
 
-	CSystemAssetsManager* m_pAssetsManager = nullptr;
-	CSystemLibrary*       m_pLibrary = nullptr;
+	CSystemAssetsManager* const m_pAssetsManager;
+	CSystemLibrary* const       m_pLibrary;
 };
 
 class CSystemControlsFilterProxyModel final : public QDeepFilterProxyModel

@@ -44,8 +44,8 @@ public:
 
 	// Libraries
 	CSystemLibrary* CreateLibrary(string const& name);
-	CSystemLibrary* GetLibrary(size_t const index) const { return m_audioLibraries[index]; }
-	size_t          GetLibraryCount() const              { return m_audioLibraries.size(); }
+	CSystemLibrary* GetLibrary(size_t const index) const { return m_systemLibraries[index]; }
+	size_t          GetLibraryCount() const              { return m_systemLibraries.size(); }
 
 	//
 	CSystemAsset*   CreateFolder(string const& name, CSystemAsset* const pParent = nullptr);
@@ -83,7 +83,8 @@ public:
 	void UpdateLibraryConnectionStates(CSystemAsset* pAsset);
 	void UpdateAssetConnectionStates(CSystemAsset* const pAsset);
 
-	std::vector<string> GetModifiedLibraries() const { return m_modifiedLibraries; }
+	using ModifiedLibraryNames = std::set<string>;
+	ModifiedLibraryNames GetModifiedLibraries() const { return m_modifiedLibraryNames; }
 
 	// Dirty flags signal
 	CCrySignal<void(bool)> signalIsDirty;
@@ -107,21 +108,24 @@ public:
 private:
 
 	CSystemAsset* CreateAndConnectImplItemsRecursively(CImplItem* const pImplItem, CSystemAsset* const pParent);
-	void         OnControlAboutToBeModified(CSystemControl* const pControl);
-	void         OnControlModified(CSystemControl* const pControl);
-	void         OnConnectionAdded(CSystemControl* const pControl, CImplItem* const pImplControl);
-	void         OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl);
+	void          OnControlAboutToBeModified(CSystemControl* const pControl);
+	void          OnControlModified(CSystemControl* const pControl);
+	void          OnConnectionAdded(CSystemControl* const pControl, CImplItem* const pImplControl);
+	void          OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl);
 
-	CID          GenerateUniqueId() { return m_nextId++; }
+	CID           GenerateUniqueId() { return m_nextId++; }
 
-	std::vector<CSystemLibrary*> m_audioLibraries;
+	using ScopesInfo = std::map<Scope, SScopeInfo>;
+	using SystemLibraries = std::vector<CSystemLibrary*>;
+	using ModifiedSystemTypes = std::set<ESystemItemType>;
 
-	static CID                   m_nextId;
-	Controls                     m_controls;
-	std::map<Scope, SScopeInfo>  m_scopeMap;
-	std::vector<ESystemItemType> m_modifiedTypes;
-	std::vector<string>          m_modifiedLibraries;
-	bool                         m_isLoading = false;
+	SystemLibraries      m_systemLibraries;
+	static CID           m_nextId;
+	Controls             m_controls;
+	ScopesInfo           m_scopes;
+	ModifiedSystemTypes  m_modifiedTypes;
+	ModifiedLibraryNames m_modifiedLibraryNames;
+	bool                 m_isLoading = false;
 };
 
 namespace Utils

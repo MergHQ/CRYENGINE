@@ -40,8 +40,6 @@ private:
 
 class CEditorImpl final : public IEditorImpl
 {
-	friend class CProjectLoader;
-
 public:
 
 	CEditorImpl();

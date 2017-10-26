@@ -28,7 +28,7 @@ void CSystemAsset::SetParent(CSystemAsset* const pParent)
 //////////////////////////////////////////////////////////////////////////
 void CSystemAsset::AddChild(CSystemAsset* const pChildControl)
 {
-	m_children.push_back(pChildControl);
+	m_children.emplace_back(pChildControl);
 	SetModified(true);
 }
 
@@ -162,7 +162,7 @@ void CSystemControl::AddConnection(ConnectionPtr const pConnection)
 				pEditorImpl->EnableConnection(pConnection);
 
 				pConnection->signalConnectionChanged.Connect(this, &CSystemControl::SignalConnectionModified);
-				m_connectedControls.push_back(pConnection);
+				m_connectedControls.emplace_back(pConnection);
 
 				if (m_matchRadiusAndAttenuation)
 				{
@@ -410,7 +410,7 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 		
 		for (auto const& scope : scopeInfoList)
 		{
-			scopeList.push_back(scope.name);
+			scopeList.emplace_back(scope.name);
 		}
 
 		Serialization::StringListValue const selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);

@@ -177,7 +177,7 @@ void CConnectionsWidget::RemoveSelectedConnection()
 					for (QModelIndex const& index : selectedIndices)
 					{
 						CID const id = index.data(static_cast<int>(CConnectionModel::EConnectionModelRoles::Id)).toInt();
-						implItems.push_back(pEditorImpl->GetControl(id));
+						implItems.emplace_back(pEditorImpl->GetControl(id));
 					}
 
 					for (CImplItem* const pImplItem : implItems)
