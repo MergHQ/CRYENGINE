@@ -71,6 +71,9 @@ typedef std::shared_ptr<const CAttributeTable> TAttributeTablePtr;
 class CAttributeInstance : public IParticleAttributes
 {
 public:
+	CAttributeInstance() {}
+	CAttributeInstance(TAttributeTablePtr pTable) { Reset(pTable); }
+
 	// IParticleAttributes
 	void          Reset(const IParticleAttributes* pCopySource = nullptr) override;
 	void          Serialize(IArchive& ar) override;

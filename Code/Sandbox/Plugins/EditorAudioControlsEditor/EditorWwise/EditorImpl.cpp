@@ -170,7 +170,7 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 
 	if (preserveConnectionStatus)
 	{
-		for (auto const connection : m_connectionsByID)
+		for (auto const& connection : m_connectionsByID)
 		{
 			if (connection.second > 0)
 			{
@@ -547,7 +547,7 @@ void CEditorImpl::DisableConnection(ConnectionPtr const pConnection)
 void CEditorImpl::Clear()
 {
 	// Delete all the controls
-	for (auto const controlPair : m_controlsCache)
+	for (auto const& controlPair : m_controlsCache)
 	{
 		CImplItem const* const pImplControl = controlPair.second;
 

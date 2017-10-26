@@ -633,8 +633,9 @@ Vec2 CFFont::GetTextSizeUInternal(const char* pStr, const bool asciiMultiLine, c
 
 		// parse the string, ignoring control characters
 		Unicode::CIterator<const char*, false> pChar(pStr);
-		while (uint32_t ch = *pChar++)
+		while (uint32_t ch = *pChar)
 		{
+			++pChar;
 			switch (ch)
 			{
 			case '\\':
@@ -788,8 +789,9 @@ void CFFont::WrapText(string& result, float maxWidth, const char* pStr, const ST
 
 	int curChar = 0;
 	Unicode::CIterator<const char*, false> pChar(result.c_str());
-	while (uint32_t ch = *pChar++)
+	while (uint32_t ch = *pChar)
 	{
+		++pChar;
 		// ignore color codes
 		if (ch == '$')
 		{

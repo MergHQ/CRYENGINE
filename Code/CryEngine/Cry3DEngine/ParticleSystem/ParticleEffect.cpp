@@ -252,6 +252,11 @@ Serialization::SStruct CParticleEffect::GetEffectOptionsSerializer() const
 	return Serialization::SStruct(*m_pAttributes);
 }
 
+TParticleAttributesPtr CParticleEffect::CreateAttributesInstance() const
+{
+	return TParticleAttributesPtr(new CAttributeInstance(m_pAttributes));
+}
+
 const ParticleParams& CParticleEffect::GetDefaultParams() const
 {
 	static ParticleParams paramsStandard;

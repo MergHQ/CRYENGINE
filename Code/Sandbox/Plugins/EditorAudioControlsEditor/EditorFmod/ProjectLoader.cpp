@@ -67,7 +67,7 @@ void CProjectLoader::LoadBanks(string const& folderPath)
 				}
 				else
 				{
-					banks.push_back(filename);
+					banks.emplace_back(filename);
 				}
 			}
 		}

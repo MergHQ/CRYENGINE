@@ -3213,13 +3213,13 @@ int64 CCachedFileData::ReadData(void* pBuffer, int64 nFileOffset, int64 nReadSiz
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCachedFileData::AddRef()
+void CCachedFileData::AddRef() const
 {
 	CryInterlockedIncrement(&m_nRefCounter);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCachedFileData::Release()
+void CCachedFileData::Release() const
 {
 	const int nCount = CryInterlockedDecrement(&m_nRefCounter);
 	assert(nCount >= 0);

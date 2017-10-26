@@ -38,11 +38,11 @@ CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, ESystemItemTy
 
 	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 	m_pFilterProxyModel = new QDeepFilterProxyModel();
-	m_pAssetsModel = new CResourceControlModel(m_pAssetsManager);
+	m_pLibraryModel = new CResourceLibraryModel(m_pAssetsManager);
 
-	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CResourceSelectorDialog::CreateLibraryModelFromIndex));
+	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CResourceSelectorDialog::CreateControlsModelFromIndex));
 	m_pMountingProxyModel->SetHeaderDataCallbacks(1, &GetHeaderData);
-	m_pMountingProxyModel->SetSourceModel(m_pAssetsModel);
+	m_pMountingProxyModel->SetSourceModel(m_pLibraryModel);
 
 	m_pFilterProxyModel->setSourceModel(m_pMountingProxyModel);
 
@@ -93,27 +93,27 @@ CResourceSelectorDialog::~CResourceSelectorDialog()
 }
 
 //////////////////////////////////////////////////////////////////////////
-QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelIndex const& sourceIndex)
+QAbstractItemModel* CResourceSelectorDialog::CreateControlsModelFromIndex(QModelIndex const& sourceIndex)
 {
-	if (sourceIndex.model() != m_pAssetsModel)
+	if (sourceIndex.model() != m_pLibraryModel)
 	{
 		return nullptr;
 	}
 
-	int const numLibraries = m_libraryModels.size();
-	int const row = sourceIndex.row();
+	size_t const numLibraries = m_controlsModels.size();
+	size_t const row = static_cast<size_t>(sourceIndex.row());
 
-	if (row >= m_libraryModels.size())
+	if (row >= numLibraries)
 	{
-		m_libraryModels.resize(row + 1);
+		m_controlsModels.resize(row + 1);
 
-		for (uint i = numLibraries; i < row + 1; ++i)
+		for (size_t i = numLibraries; i < row + 1; ++i)
 		{
-			m_libraryModels[i] = new CResourceLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
+			m_controlsModels[i] = new CResourceControlsModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
 		}
 	}
 
-	return m_libraryModels[row];
+	return m_controlsModels[row];
 }
 
 //////////////////////////////////////////////////////////////////////////

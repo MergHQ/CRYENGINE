@@ -160,7 +160,7 @@ public:
 	buffer_size_t      GetSize() const { return m_size; }
 
 protected:
-	virtual void DeleteThis() override { delete this; }
+	virtual void DeleteThis() const override { delete this; }
 
 private:
 	buffer_size_t                                      m_size;

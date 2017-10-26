@@ -40,7 +40,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
-	, m_pAssetsModel(new CSystemControlsModel(m_pAssetsManager))
+	, m_pLibraryModel(new CAudioLibraryModel(m_pAssetsManager))
 	, m_pFilterProxyModel(new CSystemControlsFilterProxyModel(this))
 	, m_pSearchBox(new QSearchBox())
 	, m_pFilterButton(new QToolButton())
@@ -48,16 +48,16 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* pAssetsManage
 	, m_pTreeView(new CAudioTreeView())
 {
 	auto const libCount = m_pAssetsManager->GetLibraryCount();
-	m_libraryModels.resize(libCount);
+	m_controlsModels.resize(libCount);
 
 	for (int i = 0; i < libCount; ++i)
 	{
-		m_libraryModels[i] = new CAudioLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
+		m_controlsModels[i] = new CSystemControlsModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
 	}
 
-	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CSystemControlsWidget::CreateLibraryModelFromIndex));
+	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CSystemControlsWidget::CreateControlsModelFromIndex));
 	m_pMountingProxyModel->SetHeaderDataCallbacks(1, &GetHeaderData);
-	m_pMountingProxyModel->SetSourceModel(m_pAssetsModel);
+	m_pMountingProxyModel->SetSourceModel(m_pLibraryModel);
 
 	m_pFilterProxyModel->setSourceModel(m_pMountingProxyModel);
 	m_pFilterProxyModel->setDynamicSortFilter(true);
@@ -116,8 +116,8 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* pAssetsManage
 		{
 			if (m_pAssetsManager->GetLibrary(i) == pLibrary)
 			{
-				m_libraryModels[i]->deleteLater();
-				m_libraryModels.erase(m_libraryModels.begin() + i);
+				m_controlsModels[i]->deleteLater();
+				m_controlsModels.erase(m_controlsModels.begin() + i);
 				break;
 			}
 		}
@@ -132,17 +132,15 @@ CSystemControlsWidget::~CSystemControlsWidget()
 	m_pAssetsManager->signalLibraryAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	StopControlExecution();
-	delete m_pAssetsModel;
+	delete m_pLibraryModel;
 
-	int const libCount = m_libraryModels.size();
-
-	for (int i = 0; i < libCount; ++i)
+	for (auto const pControlsModel : m_controlsModels)
 	{
-		m_libraryModels[i]->DisconnectFromSystem();
-		delete m_libraryModels[i];
+		pControlsModel->DisconnectFromSystem();
+		delete pControlsModel;
 	}
 
-	m_libraryModels.clear();
+	m_controlsModels.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -636,7 +634,7 @@ void CSystemControlsWidget::DeleteSelectedControl()
 			{
 				if (index.isValid())
 				{
-					selectedItems.push_back(AudioModelUtils::GetAssetFromIndex(index));
+					selectedItems.emplace_back(AudioModelUtils::GetAssetFromIndex(index));
 				}
 			}
 
@@ -669,27 +667,27 @@ void CSystemControlsWidget::StopControlExecution()
 }
 
 //////////////////////////////////////////////////////////////////////////
-QAbstractItemModel* CSystemControlsWidget::CreateLibraryModelFromIndex(QModelIndex const& sourceIndex)
+QAbstractItemModel* CSystemControlsWidget::CreateControlsModelFromIndex(QModelIndex const& sourceIndex)
 {
-	if (sourceIndex.model() != m_pAssetsModel)
+	if (sourceIndex.model() != m_pLibraryModel)
 	{
 		return nullptr;
 	}
 
-	size_t const numLibraries = m_libraryModels.size();
+	size_t const numLibraries = m_controlsModels.size();
 	size_t const row = static_cast<size_t>(sourceIndex.row());
 
 	if (row >= numLibraries)
 	{
-		m_libraryModels.resize(row + 1);
+		m_controlsModels.resize(row + 1);
 
 		for (size_t i = numLibraries; i < row + 1; ++i)
 		{
-			m_libraryModels[i] = new CAudioLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
+			m_controlsModels[i] = new CSystemControlsModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i));
 		}
 	}
 
-	return m_libraryModels[row];
+	return m_controlsModels[row];
 }
 
 //////////////////////////////////////////////////////////////////////////

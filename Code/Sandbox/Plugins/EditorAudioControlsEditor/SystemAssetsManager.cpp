@@ -23,7 +23,7 @@ CID CSystemAssetsManager::m_nextId = 1;
 CSystemAssetsManager::CSystemAssetsManager()
 {
 	ClearDirtyFlags();
-	m_scopeMap[Utils::GetGlobalScope()] = SScopeInfo("global", false);
+	m_scopes[Utils::GetGlobalScope()] = SScopeInfo("global", false);
 	m_controls.reserve(8192);
 }
 
@@ -81,7 +81,7 @@ CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemI
 
 			CSystemControl* const pControl = new CSystemControl(name, GenerateUniqueId(), type);
 
-			m_controls.push_back(pControl);
+			m_controls.emplace_back(pControl);
 
 			pControl->SetParent(pParent);
 			pParent->AddChild(pControl);
@@ -138,7 +138,7 @@ void CSystemAssetsManager::DeleteItem(CSystemAsset* const pItem)
 
 		if (type == ESystemItemType::Library)
 		{
-			m_audioLibraries.erase(std::remove(m_audioLibraries.begin(), m_audioLibraries.end(), static_cast<CSystemLibrary*>(pItem)), m_audioLibraries.end());
+			m_systemLibraries.erase(std::remove(m_systemLibraries.begin(), m_systemLibraries.end(), static_cast<CSystemLibrary*>(pItem)), m_systemLibraries.end());
 			signalLibraryRemoved();
 		}
 		else
@@ -179,30 +179,30 @@ CSystemControl* CSystemAssetsManager::GetControlByID(CID const id) const
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::ClearScopes()
 {
-	m_scopeMap.clear();
+	m_scopes.clear();
 
 	// The global scope must always exist
-	m_scopeMap[Utils::GetGlobalScope()] = SScopeInfo("global", false);
+	m_scopes[Utils::GetGlobalScope()] = SScopeInfo("global", false);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::AddScope(string const& name, bool const isLocalOnly)
 {
 	string scopeName = name;
-	m_scopeMap[CCrc32::Compute(scopeName.MakeLower())] = SScopeInfo(scopeName, isLocalOnly);
+	m_scopes[CCrc32::Compute(scopeName.MakeLower())] = SScopeInfo(scopeName, isLocalOnly);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CSystemAssetsManager::ScopeExists(string const& name) const
 {
 	string scopeName = name;
-	return m_scopeMap.find(CCrc32::Compute(scopeName.MakeLower())) != m_scopeMap.end();
+	return m_scopes.find(CCrc32::Compute(scopeName.MakeLower())) != m_scopes.end();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::GetScopeInfoList(ScopeInfoList& scopeList) const
 {
-	stl::map_to_vector(m_scopeMap, scopeList);
+	stl::map_to_vector(m_scopes, scopeList);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -216,13 +216,13 @@ Scope CSystemAssetsManager::GetScope(string const& name) const
 //////////////////////////////////////////////////////////////////////////
 SScopeInfo CSystemAssetsManager::GetScopeInfo(Scope const id) const
 {
-	return stl::find_in_map(m_scopeMap, id, SScopeInfo());
+	return stl::find_in_map(m_scopes, id, SScopeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::Clear()
 {
-	std::vector<CSystemLibrary*> const libraries = m_audioLibraries;
+	std::vector<CSystemLibrary*> const libraries = m_systemLibraries;
 
 	for (auto const pLibrary : libraries)
 	{
@@ -230,7 +230,7 @@ void CSystemAssetsManager::Clear()
 	}
 
 	CRY_ASSERT(m_controls.empty());
-	CRY_ASSERT(m_audioLibraries.empty());
+	CRY_ASSERT(m_systemLibraries.empty());
 	ClearScopes();
 	ClearDirtyFlags();
 }
@@ -240,11 +240,11 @@ CSystemLibrary* CSystemAssetsManager::CreateLibrary(string const& name)
 {
 	if (!name.empty())
 	{
-		size_t const size = m_audioLibraries.size();
+		size_t const size = m_systemLibraries.size();
 
 		for (size_t i = 0; i < size; ++i)
 		{
-			CSystemLibrary* const pLibrary = m_audioLibraries[i];
+			CSystemLibrary* const pLibrary = m_systemLibraries[i];
 
 			if ((pLibrary != nullptr) && (name.compareNoCase(pLibrary->GetName()) == 0))
 			{
@@ -254,7 +254,7 @@ CSystemLibrary* CSystemAssetsManager::CreateLibrary(string const& name)
 
 		signalLibraryAboutToBeAdded();
 		CSystemLibrary* const pLibrary = new CSystemLibrary(name);
-		m_audioLibraries.push_back(pLibrary);
+		m_systemLibraries.emplace_back(pLibrary);
 		signalLibraryAdded(pLibrary);
 		pLibrary->SetModified(true);
 		return pLibrary;
@@ -339,16 +339,11 @@ void CSystemAssetsManager::SetAssetModified(CSystemAsset* const pAsset, bool con
 		UpdateLibraryConnectionStates(pAsset);
 		auto const type = pAsset->GetType();
 
-		if (!(std::find(m_modifiedTypes.begin(), m_modifiedTypes.end(), type) != m_modifiedTypes.end()))
-		{
-			m_modifiedTypes.emplace_back(type);
-		}
+		m_modifiedTypes.emplace(type);
 
-		auto const  name = pAsset->GetName();
-
-		if ((type == ESystemItemType::Library) && !(std::find(m_modifiedLibraries.begin(), m_modifiedLibraries.end(), name) != m_modifiedLibraries.end()))
+		if (type == ESystemItemType::Library)
 		{
-			m_modifiedLibraries.emplace_back(name);
+			m_modifiedLibraryNames.emplace(pAsset->GetName());
 		}
 
 		signalIsDirty(true);
@@ -364,14 +359,14 @@ bool CSystemAssetsManager::IsDirty() const
 //////////////////////////////////////////////////////////////////////////
 bool CSystemAssetsManager::IsTypeDirty(ESystemItemType const type) const
 {
-	return std::find(m_modifiedTypes.begin(), m_modifiedTypes.end(), type) != m_modifiedTypes.end();
+	return m_modifiedTypes.find(type) != m_modifiedTypes.end();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::ClearDirtyFlags()
 {
 	m_modifiedTypes.clear();
-	m_modifiedLibraries.clear();
+	m_modifiedLibraryNames.clear();
 	signalIsDirty(false);
 }
 
@@ -438,7 +433,7 @@ void CSystemAssetsManager::ReloadAllConnections()
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::UpdateAllConnectionStates()
 {
-	for (auto const pLibrary : m_audioLibraries)
+	for (auto const pLibrary : m_systemLibraries)
 	{
 		UpdateAssetConnectionStates(pLibrary);
 	}
@@ -601,7 +596,7 @@ CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(CImplIt
 		CSystemControl* const pControl = new CSystemControl(name, GenerateUniqueId(), type);
 		pControl->SetParent(pParent);
 		pParent->AddChild(pControl);
-		m_controls.push_back(pControl);
+		m_controls.emplace_back(pControl);
 
 		ConnectionPtr const pAudioConnection = pEditorImpl->CreateConnectionToControl(pControl->GetType(), pImplItem);
 
@@ -751,7 +746,7 @@ void SelectTopLevelAncestors(std::vector<CSystemAsset*> const& source, std::vect
 
 		if (!isAncestorAlsoSelected)
 		{
-			dest.push_back(pItem);
+			dest.emplace_back(pItem);
 		}
 	}
 }

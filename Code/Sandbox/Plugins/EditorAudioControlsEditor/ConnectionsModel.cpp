@@ -58,7 +58,7 @@ CConnectionModel::CConnectionModel()
 
 	for (auto const& platform : platforms)
 	{
-		m_platformNames.push_back(QtUtil::ToQStringSafe(platform.c_str()));
+		m_platformNames.emplace_back(QtUtil::ToQStringSafe(platform.c_str()));
 	}
 }
 
@@ -366,7 +366,7 @@ void CConnectionModel::ResetCache()
 
 			if (pConnection != nullptr)
 			{
-				m_connectionsCache.push_back(pConnection);
+				m_connectionsCache.emplace_back(pConnection);
 			}
 		}
 	}
@@ -389,7 +389,7 @@ void CConnectionModel::DecodeMimeData(QMimeData const* pData, std::vector<CID>& 
 
 			if (id != ACE_INVALID_ID)
 			{
-				ids.push_back(id);
+				ids.emplace_back(id);
 			}
 		}
 	}

@@ -12,11 +12,7 @@ namespace pfx2
 template<typename T> using TVarArray   = Array<T, uint>;
 template<typename T> using TConstArray = Array<const T, uint>;
 
-class CParticleComponentRuntime;
 struct IParticleFeature;
-struct IParticleEffectPfx2;
-typedef _smart_ptr<IParticleEffectPfx2> PParticleEffect;
-typedef _smart_ptr<IParticleEmitter>    PParticleEmitter;
 
 typedef Serialization::IArchive IArchive;
 
@@ -106,9 +102,13 @@ struct IParticleEffectPfx2 : public IParticleEffect
 	virtual IParticleComponent*    AddComponent() = 0;
 	virtual void                   RemoveComponent(uint componentIdx) = 0;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const = 0;
+	virtual TParticleAttributesPtr CreateAttributesInstance() const = 0;
 	virtual bool                   IsSubstitutedPfx1() const = 0;
 	virtual void                   SetSubstitutedPfx1(bool b) = 0;
 };
+
+using PParticleEffect     = _smart_ptr<IParticleEffectPfx2>;
+using PParticleEmitter    = _smart_ptr<IParticleEmitter>;
 
 struct IParticleSystem : public ICryUnknown
 {

@@ -19,9 +19,9 @@ namespace ACE
 class CSystemAsset;
 class CSystemControl;
 class CSystemAssetsManager;
-class CSystemControlsModel;
-class CSystemControlsFilterProxyModel;
 class CAudioLibraryModel;
+class CSystemControlsFilterProxyModel;
+class CSystemControlsModel;
 class CAudioTreeView;
 
 class CSystemControlsWidget final : public QWidget
@@ -73,17 +73,17 @@ private:
 	void                CreateParentFolder();
 	bool                IsParentFolderAllowed();
 
-	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
+	QAbstractItemModel* CreateControlsModelFromIndex(QModelIndex const& sourceIndex);
 	CSystemAsset*       GetSelectedAsset() const;
 
 	CSystemAssetsManager* const            m_pAssetsManager;
 	QSearchBox* const                      m_pSearchBox;
 	QToolButton* const                     m_pFilterButton;
 	CAudioTreeView* const                  m_pTreeView;
-	CSystemControlsModel* const            m_pAssetsModel;
+	CAudioLibraryModel* const              m_pLibraryModel;
 	CSystemControlsFilterProxyModel* const m_pFilterProxyModel;
 	CMountingProxyModel*                   m_pMountingProxyModel;
-	std::vector<CAudioLibraryModel*>       m_libraryModels;
+	std::vector<CSystemControlsModel*>     m_controlsModels;
 
 	QString                                m_filter;
 	QWidget*                               m_pFilterWidget;
