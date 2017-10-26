@@ -1371,6 +1371,83 @@ CRY_UNIT_TEST(CUT_AlignedVector)
 	CRY_UNIT_TEST_ASSERT(((INT_PTR)(&vec[0]) % 16) == 0);
 }
 
+CRY_UNIT_TEST_SUITE(SmartPointer)
+{
+	bool gHasCalledDtor = false;
+
+	template<typename TargetType>
+	class I : public TargetType
+	{
+	public:
+		virtual ~I() {
+			gHasCalledDtor = true;
+		}
+		virtual int GetValue() const = 0;
+	};
+
+	template<typename TargetType>
+	class C : public I<TargetType>
+	{
+		int value = 0;
+	public:
+
+		C() = default;
+		C(const C&) = default;
+		explicit C(int _val) : value(_val) {}
+
+		virtual int GetValue() const override
+		{
+			return value;
+		}
+	};
+
+	CRY_UNIT_TEST(CUT_SmartPtr)
+	{
+		typedef _smart_ptr<I<_i_reference_target_t>> Ptr;
+		gHasCalledDtor = false;
+		{
+			Ptr ptr = new C<_i_reference_target_t>();
+			CRY_UNIT_TEST_CHECK_EQUAL(ptr->UseCount(), 1);
+			{
+				Ptr ptr2 = ptr;
+				CRY_UNIT_TEST_CHECK_EQUAL(ptr->UseCount(), 2);
+				CRY_UNIT_TEST_CHECK_EQUAL(ptr2->UseCount(), 2);
+
+				Ptr ptr3 = nullptr;
+				ptr3 = ptr2;
+				CRY_UNIT_TEST_CHECK_EQUAL(ptr->UseCount(), 3);
+				CRY_UNIT_TEST_CHECK_EQUAL(ptr2->UseCount(), 3);
+				CRY_UNIT_TEST_CHECK_EQUAL(ptr3->UseCount(), 3);
+			}
+			CRY_UNIT_TEST_CHECK_EQUAL(ptr->UseCount(), 1);
+		}
+		CRY_UNIT_TEST_ASSERT(gHasCalledDtor);
+	}
+
+	CRY_UNIT_TEST(CUT_SmartPtr_Copy)
+	{
+		typedef C<_i_reference_target_t> MyType;
+		typedef _smart_ptr<MyType> Ptr;
+		Ptr ptr1 = new MyType(42);
+		Ptr ptr2 = new MyType(0x1337);
+		Ptr ptr3 = ptr2;
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr1->UseCount(), 1);
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr2->UseCount(), 2);
+
+		//when object pointed by _smart_ptr gets assigned, it should copy the value but not the refcount
+		*ptr2 = *ptr1;
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr1->UseCount(), 1);
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr2->UseCount(), 2);
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr1->GetValue(), 42);
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr2->GetValue(), 42);
+
+		//when a new object is copy constructed, it should copy the value but not the refcount
+		_smart_ptr<I<_i_reference_target_t>> ptr4 = new MyType(*ptr2);
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr4->GetValue(), 42);
+		CRY_UNIT_TEST_CHECK_EQUAL(ptr4->UseCount(), 1);
+	}
+}
+
 struct Counts
 {
 	int construct = 0, copy_init = 0, copy_assign = 0, move_init = 0, move_assign = 0, destruct = 0;
