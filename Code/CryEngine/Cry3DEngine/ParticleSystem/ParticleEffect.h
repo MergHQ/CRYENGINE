@@ -41,6 +41,7 @@ public:
 	virtual void                   RemoveComponent(uint componentIdx) override;
 	virtual void                   SetChanged() override;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const override;
+	virtual TParticleAttributesPtr CreateAttributesInstance() const override;
 	// ~pfx2 IParticleEffect
 
 	// pfx1 IParticleEffect
@@ -67,7 +68,7 @@ public:
 	virtual void                  Reload(bool bChildren) override                                    {}
 	virtual bool                  IsSubstitutedPfx1() const override                                 { return m_substitutedPfx1; }
 	virtual void                  SetSubstitutedPfx1(bool b) override                                { m_substitutedPfx1 = b; }
-	// ~pfx1 IParticleEmitter
+	// pfx1 IParticleEffect
 
 	void                      Compile();
 	TComponents&              GetComponents()                                               { return m_components; }

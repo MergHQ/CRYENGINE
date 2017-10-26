@@ -97,7 +97,7 @@ public:
 
 		if (isPc)
 		{
-			return
+			return m_PC &&
 				(particleSpec >= uint(m_minimumConfig)) &&
 				(particleSpec <= uint(m_maximumConfig));
 		}
