@@ -79,6 +79,7 @@ namespace Cry
 					desc.AddMember(&CFogComponent::SOptions::m_heightFallOffShift, 'hesh', "HeightFalloffShift", "Height Falloff Shift", nullptr, 0.f);
 					desc.AddMember(&CFogComponent::SOptions::m_heightFallOffScale, 'hesc', "HeightFalloffScale", "Height Falloff Scale", nullptr, 1.f);
 					desc.AddMember(&CFogComponent::SOptions::m_rampStart, 'rast', "RampStart", "Ramp Start", nullptr, 0.f);
+					desc.AddMember(&CFogComponent::SOptions::m_HDRDynamic, 'hdrd', "HDRDynamic", "HDR Dynamic", nullptr, 0.f);
 					desc.AddMember(&CFogComponent::SOptions::m_rampEnd, 'raen', "RampEnd", "Ramp End", nullptr, 50.f);
 					desc.AddMember(&CFogComponent::SOptions::m_rampInfluence, 'rain', "RampInfluence", "Ramp Influence", nullptr, 0.f);
 					desc.AddMember(&CFogComponent::SOptions::m_windInfluence, 'wiin', "WindInfluence", "Wind Influence", nullptr, 1.f);
@@ -92,6 +93,7 @@ namespace Cry
 				bool m_bIgnoreVisAreas = false;
 				bool m_bAffectsOnlyThisArea = false;
 				Schematyc::Range<0, 10000> m_globalDensity = 1.f;
+				Schematyc::Range<0, 10000> m_HDRDynamic = 0.f;
 				Schematyc::Range<0, 100> m_densityOffset = 0.f;
 				Schematyc::Range<0, 100> m_nearCutoff = 0.f;
 				Schematyc::Range<0, 1, 0, 1, float> m_softEdges = 1.f;
@@ -120,7 +122,10 @@ namespace Cry
 					fogProperties.m_emission = m_emission.toVec3();
 
 					fogProperties.m_useGlobalFogColor = m_options.m_bUseGlobalFogColor;
-					fogProperties.m_fHDRDynamic = 0.f;
+					fogProperties.m_fHDRDynamic = m_options.m_HDRDynamic;
+
+					fogProperties.m_affectsThisAreaOnly = m_options.m_bAffectsOnlyThisArea;
+					fogProperties.m_ignoresVisAreas = m_options.m_bIgnoreVisAreas;
 
 					fogProperties.m_globalDensity = m_options.m_globalDensity;
 					fogProperties.m_densityOffset = m_options.m_densityOffset;
