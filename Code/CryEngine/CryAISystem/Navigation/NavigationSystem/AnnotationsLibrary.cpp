@@ -244,7 +244,7 @@ bool CAnnotationsLibrary::GetFirstFlagColor(const AreaAnnotation::value_type fla
 
 	for (const SAreaFlag& areaFlag : m_areaFlags)
 	{
-		if (areaFlag.id & flags)
+		if (areaFlag.value & flags)
 		{
 			color = areaFlag.color;
 			return true;

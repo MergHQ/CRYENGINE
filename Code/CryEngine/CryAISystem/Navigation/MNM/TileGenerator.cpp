@@ -2443,18 +2443,26 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 							// Also trace the hole contour for the previous painted colour.
 							if ((prev.label & ExternalContour) == 0 && (label & InternalContour) == 0)
 							{
-								Region& holeRegion = m_regions[prevLabelSafe];
-								holeRegion.holes.reserve(64);
-								holeRegion.holes.resize(holeRegion.holes.size() + 1);
+								if (prevLabelSafe < m_regions.size())
+								{
+									Region& holeRegion = m_regions[prevLabelSafe];
+									holeRegion.holes.reserve(64);
+									holeRegion.holes.resize(holeRegion.holes.size() + 1);
 
-								NeighbourInfoRequirements holeReq;
-								holeReq.notPaint = prev.paint;
+									NeighbourInfoRequirements holeReq;
+									holeReq.notPaint = prev.paint;
 
-								TraceContour(path, startTracer, erosion, climbableVoxelCount, holeReq);
-								LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label, true);
+									TraceContour(path, startTracer, erosion, climbableVoxelCount, holeReq);
+									LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label, true);
 
-								// Store for Debugging.
-								CacheTracerPath(path);
+									// Store for Debugging.
+									CacheTracerPath(path);
+								}
+								else
+								{
+									CRY_ASSERT(prevLabelSafe < m_regions.size());
+									AIWarning("[MNM] Contour tracing wanted to create hole in invalid region. Tile origin [%.2f, %.2f, %.2f]", m_params.origin.x, m_params.origin.y, m_params.origin.z);
+								}
 							}
 						}
 						else
