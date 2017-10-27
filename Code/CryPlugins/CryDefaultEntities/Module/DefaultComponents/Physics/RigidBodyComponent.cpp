@@ -110,6 +110,12 @@ void CRigidBodyComponent::Physicalize()
 	physParams.nSlot = std::numeric_limits<int>::max();
 	m_pEntity->Physicalize(physParams);
 
+	pe_params_buoyancy buoyancyParams;
+	buoyancyParams.waterDensity = m_buoyancyParameters.density;
+	buoyancyParams.waterResistance = m_buoyancyParameters.resistance;
+	buoyancyParams.waterDamping = m_buoyancyParameters.damping;
+	m_pEntity->GetPhysicalEntity()->SetParams(&buoyancyParams);
+
 	Enable(m_bEnabledByDefault);
 }
 
@@ -131,7 +137,7 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 			IEntity* pOtherEntity = gEnv->pEntitySystem->GetEntityFromPhysics(physCollision->pEntity[0]);
 			ISurfaceType* pSurfaceType = pSurfaceTypeManager->GetSurfaceType(physCollision->idmat[0]);
 
-			if (pOtherEntity == m_pEntity)
+			if (pOtherEntity == m_pEntity || pOtherEntity == nullptr)
 			{
 				pSurfaceType = pSurfaceTypeManager->GetSurfaceType(physCollision->idmat[1]);
 				pOtherEntity = gEnv->pEntitySystem->GetEntityFromPhysics(physCollision->pEntity[1]);
@@ -140,6 +146,11 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 			if (pSurfaceType != nullptr)
 			{
 				surfaceTypeName = pSurfaceType->GetName();
+			}
+
+			if (pOtherEntity == nullptr)
+			{
+				return;
 			}
 
 			otherEntityId = pOtherEntity->GetId();
