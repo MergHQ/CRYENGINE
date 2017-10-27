@@ -663,9 +663,11 @@ QModelIndex CSystemControlsModel::parent(QModelIndex const& index) const
 
 		if (pItem != nullptr)
 		{
-			if (pItem->GetParent()->GetType() != ESystemItemType::Library)
+			CSystemAsset const* const pParent = pItem->GetParent();
+
+			if ((pParent != nullptr) && (pParent->GetType() != ESystemItemType::Library))
 			{
-				return IndexFromItem(pItem->GetParent());
+				return IndexFromItem(pParent);
 			}
 		}
 	}
@@ -745,8 +747,7 @@ QStringList CSystemControlsModel::mimeTypes() const
 //////////////////////////////////////////////////////////////////////////
 void CSystemControlsModel::ConnectToSystem()
 {
-	CSystemAssetsManager* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	pAssetsManager->signalItemAboutToBeAdded.Connect([&](CSystemAsset* const pParent)
+	m_pAssetsManager->signalItemAboutToBeAdded.Connect([&](CSystemAsset* const pParent)
 	{
 		if (Utils::GetParentLibrary(pParent) == m_pLibrary)
 		{
@@ -765,7 +766,7 @@ void CSystemControlsModel::ConnectToSystem()
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	pAssetsManager->signalItemAdded.Connect([&](CSystemAsset* const pAsset)
+	m_pAssetsManager->signalItemAdded.Connect([&](CSystemAsset* const pAsset)
 	{
 		if (Utils::GetParentLibrary(pAsset) == m_pLibrary)
 		{
@@ -773,35 +774,39 @@ void CSystemControlsModel::ConnectToSystem()
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	pAssetsManager->signalItemAboutToBeRemoved.Connect([&](CSystemAsset* const pAsset)
+	m_pAssetsManager->signalItemAboutToBeRemoved.Connect([&](CSystemAsset* const pAsset)
 	{
 		if (Utils::GetParentLibrary(pAsset) == m_pLibrary)
 		{
 			CSystemAsset const* const pParent = pAsset->GetParent();
-			int const childCount = pParent->ChildCount();
 
-			for (int i = 0; i < childCount; ++i)
+			if (pParent != nullptr)
 			{
-				if (pParent->GetChild(i) == pAsset)
-				{
-					if (pParent->GetType() == ESystemItemType::Library)
-					{
-						CRY_ASSERT(pParent == m_pLibrary);
-						beginRemoveRows(QModelIndex(), i, i);
-					}
-					else
-					{
-						QModelIndex const& parent = IndexFromItem(pParent);
-						beginRemoveRows(parent, i, i);
-					}
+				int const childCount = pParent->ChildCount();
 
-					break;
+				for (int i = 0; i < childCount; ++i)
+				{
+					if (pParent->GetChild(i) == pAsset)
+					{
+						if (pParent->GetType() == ESystemItemType::Library)
+						{
+							CRY_ASSERT(pParent == m_pLibrary);
+							beginRemoveRows(QModelIndex(), i, i);
+						}
+						else
+						{
+							QModelIndex const& parent = IndexFromItem(pParent);
+							beginRemoveRows(parent, i, i);
+						}
+
+						break;
+					}
 				}
 			}
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	pAssetsManager->signalItemRemoved.Connect([&](CSystemAsset* const pParent, CSystemAsset* const pAsset)
+	m_pAssetsManager->signalItemRemoved.Connect([&](CSystemAsset* const pParent, CSystemAsset* const pAsset)
 	{
 		if (Utils::GetParentLibrary(pParent) == m_pLibrary)
 		{
@@ -813,11 +818,10 @@ void CSystemControlsModel::ConnectToSystem()
 //////////////////////////////////////////////////////////////////////////
 void CSystemControlsModel::DisconnectFromSystem()
 {
-	CSystemAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	pAssetsManager->signalItemAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalItemAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

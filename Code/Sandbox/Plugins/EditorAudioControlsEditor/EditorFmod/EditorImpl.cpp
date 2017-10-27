@@ -185,21 +185,21 @@ char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 	switch (type)
 	{
 	case EImpltemType::Folder:
-		return ":Icons/fmod/folder_closed.ico";
+		return "icons:audio/fmod/folder_closed.ico";
 	case EImpltemType::Event:
-		return ":Icons/fmod/event.ico";
+		return "icons:audio/fmod/event.ico";
 	case EImpltemType::EventParameter:
-		return ":Icons/fmod/tag.ico";
+		return "icons:audio/fmod/tag.ico";
 	case EImpltemType::Snapshot:
-		return ":Icons/fmod/snapshot.ico";
+		return "icons:audio/fmod/snapshot.ico";
 	case EImpltemType::SnapshotParameter:
-		return ":Icons/fmod/tag.ico";
+		return "icons:audio/fmod/tag.ico";
 	case EImpltemType::Bank:
-		return ":Icons/fmod/bank.ico";
+		return "icons:audio/fmod/bank.ico";
 	case EImpltemType::Return:
-		return ":Icons/fmod/return.ico";
+		return "icons:audio/fmod/return.ico";
 	case EImpltemType::Group:
-		return ":Icons/fmod/group.ico";
+		return "icons:audio/fmod/group.ico";
 	}
 	return "icons:Dialogs/dialog-error.ico";
 }

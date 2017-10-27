@@ -29,41 +29,42 @@ class CSystemAsset
 {
 public:
 
-	CSystemAsset(string const& name) : m_name(name) {}
+	CSystemAsset(string const& name, ESystemItemType const type);
 
-	virtual ESystemItemType GetType() const { return ESystemItemType::Invalid; }
+	ESystemItemType GetType() const { return m_type; }
 
-	CSystemAsset* GetParent() const { return m_pParent; }
-	void          SetParent(CSystemAsset* const pParent);
+	CSystemAsset*   GetParent() const { return m_pParent; }
+	void            SetParent(CSystemAsset* const pParent);
 
-	size_t        ChildCount() const { return m_children.size(); }
-	CSystemAsset* GetChild(size_t const index) const { return m_children[index]; }
-	void          AddChild(CSystemAsset* const pChildControl);
-	void          RemoveChild(CSystemAsset const* const pChildControl);
+	size_t          ChildCount() const { return m_children.size(); }
+	CSystemAsset*   GetChild(size_t const index) const;
+	void            AddChild(CSystemAsset* const pChildControl);
+	void            RemoveChild(CSystemAsset const* const pChildControl);
 
-	string        GetName() const { return m_name; }
-	virtual void  SetName(string const& name) { m_name = name; }
+	string          GetName() const { return m_name; }
+	virtual void    SetName(string const& name) { m_name = name; }
 
-	bool          IsHiddenDefault() const { return m_isHiddenDefault; }
-	void          SetHiddenDefault(bool const isHiddenDefault);
+	bool            IsHiddenDefault() const { return m_isHiddenDefault; }
+	void            SetHiddenDefault(bool const isHiddenDefault);
 
-	virtual bool  IsModified() const { return m_isModified; }
-	virtual void  SetModified(bool const isModified, bool const isForced = false);
+	virtual bool    IsModified() const { return m_isModified; }
+	virtual void    SetModified(bool const isModified, bool const isForced = false);
 
-	bool          HasPlaceholderConnection() const { return m_hasPlaceholderConnection; }
-	void          SetHasPlaceholderConnection(bool const hasPlaceholder) { m_hasPlaceholderConnection = hasPlaceholder; }
+	bool            HasPlaceholderConnection() const { return m_hasPlaceholderConnection; }
+	void            SetHasPlaceholderConnection(bool const hasPlaceholder) { m_hasPlaceholderConnection = hasPlaceholder; }
 	
-	bool          HasConnection() const { return m_hasConnection; }
-	void          SetHasConnection(bool const hasConnection) { m_hasConnection = hasConnection; }
+	bool            HasConnection() const { return m_hasConnection; }
+	void            SetHasConnection(bool const hasConnection) { m_hasConnection = hasConnection; }
 	
-	bool          HasControl() const { return m_hasControl; }
-	void          SetHasControl(bool const hasControl) { m_hasControl = hasControl; }
+	bool            HasControl() const { return m_hasControl; }
+	void            SetHasControl(bool const hasControl) { m_hasControl = hasControl; }
 
 protected:
 
 	CSystemAsset*              m_pParent = nullptr;
 	std::vector<CSystemAsset*> m_children;
 	string                     m_name;
+	ESystemItemType const      m_type;
 	bool                       m_isHiddenDefault = false;
 	bool                       m_isModified = false;
 	bool                       m_hasPlaceholderConnection = false;
@@ -80,11 +81,10 @@ class CSystemControl final : public CSystemAsset
 public:
 
 	CSystemControl() = default;
-	CSystemControl(string const& controlName, CID const id, ESystemItemType const type);
+	CSystemControl(string const& name, CID const id, ESystemItemType const type);
 	~CSystemControl();
 
 	CID             GetId() const            { return m_id; }
-	ESystemItemType GetType() const override { return m_type; }
 
 	virtual void    SetName(string const& name) override;
 
@@ -126,7 +126,6 @@ private:
 	void SignalConnectionModified();
 
 	CID                        m_id = ACE_INVALID_ID;
-	ESystemItemType            m_type = ESystemItemType::Trigger;
 	Scope                      m_scope = 0;
 	std::vector<ConnectionPtr> m_connectedControls;
 	float                      m_radius = 0.0f;
@@ -146,9 +145,8 @@ class CSystemLibrary final : public CSystemAsset
 {
 public:
 
-	CSystemLibrary(string const& name) : CSystemAsset(name) {}
+	CSystemLibrary(string const& name) : CSystemAsset(name, ESystemItemType::Library ){}
 
-	virtual ESystemItemType GetType() const override { return ESystemItemType::Library; }
 	virtual void            SetModified(bool const isModified, bool const isForced = false) override;
 };
 
@@ -156,8 +154,6 @@ class CSystemFolder final : public CSystemAsset
 {
 public:
 
-	CSystemFolder(string const& name) : CSystemAsset(name) {}
-
-	virtual ESystemItemType GetType() const override { return ESystemItemType::Folder; }
+	CSystemFolder(string const& name) : CSystemAsset(name, ESystemItemType::Folder) {}
 };
 } // namespace ACE

@@ -106,7 +106,7 @@ char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 	switch (type)
 	{
 	case EImpltemType::Event:
-		return ":Icons/portaudio/event.ico";
+		return "icons:audio/portaudio/event.ico";
 	case EImpltemType::Folder:
 		return "icons:General/Folder.ico";
 	}

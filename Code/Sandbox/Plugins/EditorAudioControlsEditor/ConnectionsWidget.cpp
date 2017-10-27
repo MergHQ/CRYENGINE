@@ -100,6 +100,7 @@ CConnectionsWidget::~CConnectionsWidget()
 {
 	CAudioControlsEditorPlugin::GetAssetsManager()->signalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	delete m_pConnectionModel;
 }
 
 //////////////////////////////////////////////////////////////////////////

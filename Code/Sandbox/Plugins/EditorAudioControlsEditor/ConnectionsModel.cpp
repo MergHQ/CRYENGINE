@@ -25,6 +25,7 @@ namespace ACE
 CConnectionModel::CConnectionModel()
 	: m_pControl(nullptr)
 	, m_pEditorImpl(CAudioControlsEditorPlugin::GetImplEditor())
+	, m_pAssetsManager(CAudioControlsEditorPlugin::GetAssetsManager())
 {
 	auto resetFunction = [&]()
 	{
@@ -33,10 +34,9 @@ CConnectionModel::CConnectionModel()
 		endResetModel();
 	};
 
-	CSystemAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	pAssetsManager->signalItemAdded.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalItemRemoved.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalControlModified.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemAdded.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemRemoved.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalControlModified.Connect(resetFunction, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
@@ -67,10 +67,9 @@ CConnectionModel::~CConnectionModel()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CSystemAssetsManager* pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -360,6 +359,7 @@ void CConnectionModel::ResetCache()
 	if (m_pControl != nullptr)
 	{
 		int const size = m_pControl->GetConnectionCount();
+
 		for (int i = 0; i < size; ++i)
 		{
 			ConnectionPtr const pConnection = m_pControl->GetConnectionAt(i);

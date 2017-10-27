@@ -19,6 +19,20 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
+CSystemAsset::CSystemAsset(string const& name, ESystemItemType const type)
+	: m_name(name)
+	, m_type(type)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+CSystemAsset* CSystemAsset::GetChild(size_t const index) const
+{
+	CRY_ASSERT_MESSAGE(index < m_children.size(), "Index out of bounds.");
+	return m_children[index];
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystemAsset::SetParent(CSystemAsset* const pParent)
 {
 	m_pParent = pParent;
@@ -67,10 +81,9 @@ void CSystemAsset::SetModified(bool const isModified, bool const isForced /* = f
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControl::CSystemControl(string const& controlName, CID const id, ESystemItemType const type)
-	: CSystemAsset(controlName)
+CSystemControl::CSystemControl(string const& name, CID const id, ESystemItemType const type)
+	: CSystemAsset(name, type)
 	, m_id(id)
-	, m_type(type)
 	, m_modifiedSignalEnabled(true)
 {
 	m_scope = Utils::GetGlobalScope();
