@@ -61,6 +61,18 @@ void CStaticMeshComponent::SetObject(IStatObj* pObject, bool bSetDefaultMass)
 			m_physics.m_mass = 10;
 		}
 	}
+
+	ResetObject();
+}
+
+void CStaticMeshComponent::SetObject(const char* szPath, bool bSetDefaultMass)
+{
+	IStatObj* pObject = gEnv->p3DEngine->LoadStatObj(szPath);
+
+	if (pObject != nullptr)
+	{
+		SetObject(pObject, bSetDefaultMass);
+	}
 }
 
 void CStaticMeshComponent::ResetObject()

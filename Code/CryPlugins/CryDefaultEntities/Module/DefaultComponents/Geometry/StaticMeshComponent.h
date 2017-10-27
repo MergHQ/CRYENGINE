@@ -47,7 +47,11 @@ public:
 	const char*     GetFilePath() const { return m_filePath.value.c_str(); }
 
 	virtual void LoadFromDisk();
+	// Sets an new object for this component. 
 	virtual void SetObject(IStatObj* pObject, bool bSetDefaultMass = false);
+	// Sets an new object for this component. Path is relative to the asset directory. Example path: "Objects/MyAsset.cfg"
+	virtual void SetObject(const char* szPath, bool bSetDefaultMass = false);
+	// Reloads the object
 	virtual void ResetObject();
 
 	// Helper to allow exposing derived function to Schematyc
