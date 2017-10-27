@@ -835,7 +835,7 @@ void SEntityGrid::Setup(int axisz, Vec3 org, int nx,int ny, float stepx,float st
 	origin = org;
 	Basis.SetIdentity();
 	AllocateGrid(cells, size);
-	log2PODscale = log2PODscale;
+	log2PODscale = _log2PODscale;
 	PODstride.set(1,ny>>3+log2PODscale);
 	bCyclic = _bCyclic;
 }
