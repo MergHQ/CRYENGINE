@@ -149,6 +149,9 @@ struct IGame
 	//! Interface hook to load all game exported data when the level is loaded.
 	virtual void LoadExportedLevelData(const char* levelName, const char* missionName) = 0;
 
+	//! Interface hook to sync game exported data from level paks when the level is loaded in editor
+	virtual void LoadExportedLevelDataInEditor(const char* szLevelName, const char* szMissionName) {}
+
 	//! Access to game interface.
 	virtual void* GetGameInterface() = 0;
 

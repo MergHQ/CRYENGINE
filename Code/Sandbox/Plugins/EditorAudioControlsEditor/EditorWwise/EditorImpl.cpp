@@ -208,27 +208,27 @@ char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 	switch (type)
 	{
 	case EImpltemType::Event:
-		return ":Icons/wwise/event.ico";
+		return "icons:audio/wwise/event.ico";
 	case EImpltemType::Parameter:
-		return ":Icons/wwise/gameparameter.ico";
+		return "icons:audio/wwise/gameparameter.ico";
 	case EImpltemType::Switch:
-		return ":Icons/wwise/switch.ico";
+		return "icons:audio/wwise/switch.ico";
 	case EImpltemType::AuxBus:
-		return ":Icons/wwise/auxbus.ico";
+		return "icons:audio/wwise/auxbus.ico";
 	case EImpltemType::SoundBank:
-		return ":Icons/wwise/soundbank.ico";
+		return "icons:audio/wwise/soundbank.ico";
 	case EImpltemType::State:
-		return ":Icons/wwise/state.ico";
+		return "icons:audio/wwise/state.ico";
 	case EImpltemType::SwitchGroup:
-		return ":Icons/wwise/switchgroup.ico";
+		return "icons:audio/wwise/switchgroup.ico";
 	case EImpltemType::StateGroup:
-		return ":Icons/wwise/stategroup.ico";
+		return "icons:audio/wwise/stategroup.ico";
 	case EImpltemType::WorkUnit:
-		return ":Icons/wwise/workunit.ico";
+		return "icons:audio/wwise/workunit.ico";
 	case EImpltemType::VirtualFolder:
-		return ":Icons/wwise/virtualfolder.ico";
+		return "icons:audio/wwise/virtualfolder.ico";
 	case EImpltemType::PhysicalFolder:
-		return ":Icons/wwise/physicalfolder.ico";
+		return "icons:audio/wwise/physicalfolder.ico";
 	}
 	return "icons:Dialogs/dialog-error.ico";
 }

@@ -88,6 +88,7 @@ int CBootProfiler::CV_sys_bp_frames_sample_period = 0;
 int CBootProfiler::CV_sys_bp_frames_sample_period_rnd = 0;
 float CBootProfiler::CV_sys_bp_frames_threshold = 0.0f;
 float CBootProfiler::CV_sys_bp_time_threshold = 0.0f;
+EBootProfilerFormat CBootProfiler::CV_sys_bp_output_formats = EBootProfilerFormat::XML;
 
 class CProfileBlockTimes
 {
@@ -636,16 +637,8 @@ static void SaveProfileSessionToChromeTraceJson(const float funcMinTimeThreshold
 	GetISystem()->GetArchiveHost()->SaveJsonFile(filePath,Serialization::SStruct(BootProfilerSessionSerializerToJSON(pSession,funcMinTimeThreshold)));
 }
 
-static void SaveProfileSessionToDisk(const float funcMinTimeThreshold, CBootProfilerSession* pSession)
+static void SaveProfileSessionToXML(CBootProfilerSession* pSession, const float funcMinTimeThreshold)
 {
-	if (!(gEnv && gEnv->pCryPak))
-	{
-		CBootProfiler::GetInstance().QueueSessionToDelete(pSession);
-		return;
-	}
-
-	SaveProfileSessionToChromeTraceJson(funcMinTimeThreshold, pSession);
-
 	static const char* szTestResults = "%USER%/TestResults";
 	stack_string filePath;
 	filePath.Format("%s\\bp_%s.xml", szTestResults, pSession->GetName());
@@ -656,7 +649,6 @@ static void SaveProfileSessionToDisk(const float funcMinTimeThreshold, CBootProf
 	FILE* pFile = ::fopen(path, "wb");
 	if (!pFile)
 	{
-		CBootProfiler::GetInstance().QueueSessionToDelete(pSession);
 		return; //TODO: use accessible path when punning from package on durango
 	}
 
@@ -699,6 +691,24 @@ static void SaveProfileSessionToDisk(const float funcMinTimeThreshold, CBootProf
 	fprintf(pFile, "%s", buf);
 
 	::fclose(pFile);
+}
+
+static void SaveProfileSessionToDisk(const float funcMinTimeThreshold, CBootProfilerSession* pSession, EBootProfilerFormat outputFormat)
+{
+	if (!(gEnv && gEnv->pCryPak))
+	{
+		CBootProfiler::GetInstance().QueueSessionToDelete(pSession);
+		return;
+	}
+
+	if (outputFormat == EBootProfilerFormat::XML)
+	{
+		SaveProfileSessionToXML(pSession, funcMinTimeThreshold);
+	}
+	else if (outputFormat == EBootProfilerFormat::ChromeTraceJSON)
+	{
+		SaveProfileSessionToChromeTraceJson(funcMinTimeThreshold, pSession);
+	}
 
 	CBootProfiler::GetInstance().QueueSessionToDelete(pSession);
 }
@@ -711,7 +721,7 @@ void CBootProfilerSession::CollectResults(const float functionMinTimeThreshold)
 	}
 	else
 	{
-		SaveProfileSessionToDisk(functionMinTimeThreshold, this);
+		SaveProfileSessionToDisk(functionMinTimeThreshold, this, CBootProfiler::GetInstance().CV_sys_bp_output_formats);
 	}
 }
 
@@ -970,7 +980,7 @@ void CBootProfiler::ThreadEntry()
 
 		for (size_t i = 0; i < m_sessionsToSave.size(); ++i)
 		{
-			SaveProfileSessionToDisk(m_sessionsToSave[i].functionMinTimeThreshold, m_sessionsToSave[i].pSession);
+			SaveProfileSessionToDisk(m_sessionsToSave[i].functionMinTimeThreshold, m_sessionsToSave[i].pSession, CV_sys_bp_output_formats);
 		}
 
 		m_sessionsToSave.clear();
@@ -991,6 +1001,7 @@ void CBootProfiler::RegisterCVars()
 	REGISTER_CVAR2("sys_bp_frames_sample_period_rnd", &CV_sys_bp_frames_sample_period_rnd, 0, VF_DEV_ONLY, "When in threshold mode, the random offset at which we are going to dump a next frame.");
 	REGISTER_CVAR2("sys_bp_frames_threshold", &CV_sys_bp_frames_threshold, 0, VF_DEV_ONLY, "Starts frame profiling but gathers the results for frames that frame time exceeded the threshold");
 	REGISTER_CVAR2("sys_bp_time_threshold", &CV_sys_bp_time_threshold, 0.1f, VF_DEV_ONLY, "If greater than 0 don't write blocks that took less time (default 0.1 ms)");
+	REGISTER_CVAR2("sys_bp_format", &CV_sys_bp_output_formats, EBootProfilerFormat::XML, VF_DEV_ONLY, "Determines the output format for the boot profiler.\n0 = XML\n1 = Chrome Trace JSON");
 
 	if (CV_sys_bp_frames_worker_thread)
 	{

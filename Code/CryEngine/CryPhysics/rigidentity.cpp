@@ -1210,7 +1210,7 @@ masktype CRigidEntity::MaskIgnoredColliders(int iCaller, int bScheduleForStep)
 	for(i=0; i<NMASKBITS && getmask(i)<=m_constraintMask; i++) 
 		if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].flags & constraint_ignore_buddy && !(m_pConstraints[i].pent[1]->m_bProcessed & 1<<iCaller)) { 
 			AtomicAdd(&m_pConstraints[i].pent[1]->m_bProcessed, 1<<iCaller);
-			if (bScheduleForStep & inrange(m_pConstraints[i].pent[1]->m_iSimClass,2,5))
+			if (bScheduleForStep & inrange(m_pConstraints[i].pent[1]->m_iSimClass,2,5) && !(m_pConstraintInfos[i].flags & constraint_inactive))
 				m_pWorld->ScheduleForStep(m_pConstraints[i].pent[1],m_lastTimeStep);
 		}
 	return m_constraintMask;
@@ -2776,6 +2776,7 @@ int CRigidEntity::Step(float time_interval)
 		ip.bNoIntersection = bSlowRot;//bUseSimpleSolver;
 		ip.maxSurfaceGapAngle = DEG2RAD(3.5f);
 		m_qNew.Normalize();
+		m_sizeFastDir *= (m_bSmallAndFastForced^1 | bHasContacts); // force sweep if no contacts and small_and_fast was set manually (for projectiles)
 
 		if (!EnforceConstraints(time_interval) && m_velFastDir*(time_interval-bNoUnproj)>m_sizeFastDir*0.5f*(1-m_alwaysSweep)) {
 			SweepAgain:

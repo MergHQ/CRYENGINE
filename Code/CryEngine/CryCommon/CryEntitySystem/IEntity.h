@@ -250,7 +250,8 @@ enum EEntityFlagsExtended
 	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(5), // Bit1 of entity GI mode, see IRenderNode::EGIMode
 	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(6), // Bit2 of entity GI mode, see IRenderNode::EGIMode
 	ENTITY_FLAG_EXTENDED_PREVIEW                        = BIT(7), //!< Entity is spawn for the previewing
-	ENTITY_FLAG_EXTENDED_CLONED                         = BIT(8)  //!< Entity was cloned from another
+	ENTITY_FLAG_EXTENDED_CLONED                         = BIT(8), //!< Entity was cloned from another
+	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT(9), //!< Entity's geometry doesn't contribute to NavMesh generation
 };
 
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 5                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended.

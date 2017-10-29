@@ -9,14 +9,6 @@
 namespace MNM
 {
 
-struct SMarkupVolumeParams
-{
-	AreaAnnotation areaAnnotation;
-	float height;
-	bool bStoreTriangles;
-	bool bExpandByAgentRadius;
-};
-
 struct SMarkupVolumeData
 {
 	struct MeshTriangles

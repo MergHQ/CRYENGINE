@@ -90,6 +90,16 @@ CResourceSelectorDialog::CResourceSelectorDialog(QWidget* pParent, ESystemItemTy
 CResourceSelectorDialog::~CResourceSelectorDialog()
 {
 	StopTrigger();
+
+	delete m_pLibraryModel;
+
+	for (auto const pControlsModel : m_controlsModels)
+	{
+		pControlsModel->DisconnectFromSystem();
+		delete pControlsModel;
+	}
+
+	m_controlsModels.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

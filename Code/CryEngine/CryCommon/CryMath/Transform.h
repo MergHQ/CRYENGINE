@@ -84,8 +84,7 @@ public:
 	{
 		archive(Serialization::SPosition(m_translation), "translation", "Translation");
 		archive(m_rotation, "rotation", "Rotation");
-		bool uniform = true;
-		archive(Serialization::SUniformScale(m_scale, uniform), "scale", "Scale");
+		archive(Serialization::SUniformScale(m_scale), "scale", "Scale");
 	}
 
 	inline void operator=(const QuatT& transform)

@@ -791,7 +791,7 @@ inline ETEX_Format TextureFormatForName(const char* sETF)
 // Warning: duplicate code.
 inline const char* NameForTextureType(ETEX_Type eTT)
 {
-	char* sETT;
+	const char* sETT;
 	switch (eTT)
 	{
 	case eTT_1D:
