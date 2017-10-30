@@ -578,17 +578,14 @@ ERequestStatus CImpl::OnBeforeShutDown()
 {
 	AK::SoundEngine::Query::AkGameObjectsList objectList;
 	AK::SoundEngine::Query::GetActiveGameObjects(objectList);
-	AkUInt32 playingIdsCount = 256;
-	AkPlayingID playingIds[256];
 	AkUInt32 const length = objectList.Length();
+	
 	for (AkUInt32 i = 0; i < length; ++i)
 	{
-		AK::SoundEngine::Query::GetPlayingIDsFromGameObject(objectList[i], playingIdsCount, playingIds);
-		for (AkUInt32 j = 0; j < playingIdsCount; ++j)
-		{
-			AK::SoundEngine::CancelEventCallback(playingIds[j]);
-		}
+		// This call requires at least Wwise v2017.1.0.
+		AK::SoundEngine::CancelEventCallbackGameObject(objectList[i]);
 	}
+
 	objectList.Term();
 
 	return ERequestStatus::Success;
