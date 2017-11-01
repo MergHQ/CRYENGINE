@@ -406,8 +406,14 @@ void BehaviorTreeManager::Update()
 		instance.variables.ResetChanged();
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
+		const bool debugThisAgent = (GetAISystem()->GetAgentDebugTarget() == entityId);
 		DebugTree debugTree;
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
+
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE_WEB
+		TGameWebDebugClientId webDebugClientId;
+		const bool webDebugThisAgent = DoesEntityWantToDoWebDebugging(entityId, &webDebugClientId);
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE_WEB
 
 		UpdateContext updateContext(
 		  entityId
@@ -419,7 +425,11 @@ void BehaviorTreeManager::Update()
 		  , instance.behaviorLog
 #endif // USING_BEHAVIOR_TREE_LOG
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-		  , &debugTree
+#	ifdef DEBUG_MODULAR_BEHAVIOR_TREE_WEB
+		  , (debugThisAgent || webDebugThisAgent) ? &debugTree : nullptr
+#	else
+		  , debugThisAgent ? &debugTree : nullptr
+#	endif // DEBUG_MODULAR_BEHAVIOR_TREE_WEB
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 		  );
 
@@ -449,7 +459,6 @@ void BehaviorTreeManager::Update()
 		}
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-		const bool debugThisAgent = (GetAISystem()->GetAgentDebugTarget() == entityId);
 		if (debugThisAgent)
 		{
 			UpdateDebugVisualization(updateContext, entityId, debugTree, instance, agentEntity);
@@ -462,7 +471,10 @@ void BehaviorTreeManager::Update()
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE_WEB
-		UpdateWebDebugChannel(entityId, updateContext, debugTree, instance, bExecutionError);
+		if (webDebugThisAgent)
+		{
+			UpdateWebDebugChannel(webDebugClientId, updateContext, debugTree, instance, bExecutionError);
+		}
 #endif
 	}
 
@@ -587,24 +599,32 @@ void BehaviorTreeManager::UpdateExecutionStackLogging(UpdateContext updateContex
 #endif
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE_WEB
-void BehaviorTreeManager::UpdateWebDebugChannel(const EntityId entityId, UpdateContext& updateContext, DebugTree& debugTree, BehaviorTreeInstance& instance, const bool bExecutionError)
+bool BehaviorTreeManager::DoesEntityWantToDoWebDebugging(const EntityId entityIdToCheckForWebDebugging, TGameWebDebugClientId* pOutClientId) const
 {
-	if (!m_bRegisteredAsDebugChannel)
-		return;
-
-	TGameWebDebugClientId clientId = GAME_WEBDEBUG_INVALID_CLIENT_ID;
-	for (WebSubscribers::const_iterator it = m_webSubscribers.begin(); it != m_webSubscribers.end(); ++it)
+	if (m_bRegisteredAsDebugChannel)
 	{
-		if (it->second != entityId)
-			continue;
-
-		clientId = it->first;
-		break;
+		for (WebSubscribers::const_iterator it = m_webSubscribers.begin(); it != m_webSubscribers.end(); ++it)
+		{
+			if (it->second == entityIdToCheckForWebDebugging)
+			{
+				if (pOutClientId)
+				{
+					*pOutClientId = it->first;
+				}
+				return true;
+			}
+		}
 	}
 
-	if (clientId == GAME_WEBDEBUG_INVALID_CLIENT_ID)
-		return;
+	if (pOutClientId)
+	{
+		*pOutClientId = GAME_WEBDEBUG_INVALID_CLIENT_ID;
+	}
+	return false;
+}
 
+void BehaviorTreeManager::UpdateWebDebugChannel(const TGameWebDebugClientId clientId, UpdateContext& updateContext, DebugTree& debugTree, BehaviorTreeInstance& instance, const bool bExecutionError)
+{
 	IGameWebDebugService* pWebDebugService = GetIGameWebDebugService();
 	if (pWebDebugService)
 	{
