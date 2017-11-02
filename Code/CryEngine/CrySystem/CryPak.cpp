@@ -1637,6 +1637,11 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 		nAdjustFlags |= FLAGS_PATH_REAL;
 	}
 
+	if (nInputFlags & FLAGS_NO_LOWCASE)
+	{
+		nAdjustFlags |= FLAGS_NO_LOWCASE;
+	}
+
 	const char* szFullPath = AdjustFileName(pName, szFullPathBuf, nAdjustFlags);
 
 	if (nOSFlags & (_O_WRONLY | _O_RDWR))

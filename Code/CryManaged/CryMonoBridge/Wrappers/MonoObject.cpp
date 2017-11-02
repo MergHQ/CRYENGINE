@@ -119,3 +119,16 @@ void* CMonoObject::UnboxObject()
 {
 	return mono_object_unbox(m_pObject);
 }
+
+bool CMonoObject::ReferenceEquals(const CMonoObject& other) const
+{
+	return ReferenceEquals(other.GetManagedObject());
+}
+
+bool CMonoObject::ReferenceEquals(MonoInternals::MonoObject* pOtherObject) const
+{
+	MonoInternals::MonoException* pException = nullptr;
+	MonoInternals::MonoBoolean isEqual = const_cast<CMonoObject*>(this)->GetClass()->GetAssembly()->GetDomain()->GetReferenceEqualsMethod()(m_pObject, pOtherObject, &pException);
+
+	return isEqual != 0 && pException == nullptr;
+}

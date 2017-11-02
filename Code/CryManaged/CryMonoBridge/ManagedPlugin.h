@@ -16,7 +16,8 @@ class CMonoLibrary;
 
 // Main entry-point handler for managed code, indirectly created by the plugin manager
 class CManagedPlugin final
-	: public ICryPlugin
+	: public IManagedPlugin
+	, public ICryPlugin
 	, public ISystemEventListener
 	, public INetworkedClientListener
 {
@@ -44,6 +45,12 @@ public:
 	CManagedPlugin(CMonoLibrary* pLibrary);
 	virtual ~CManagedPlugin();
 
+	// IManagedPlugin
+	virtual void Load(CAppDomain* pDomain) override;
+	virtual void OnCoreLibrariesDeserialized() override;
+	virtual void OnPluginLibrariesDeserialized() override;
+	// ~IManagedPlugin
+
 	// ICryUnknown
 	virtual ICryFactory* GetFactory() const override { return nullptr; }
 
@@ -64,9 +71,6 @@ public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
-	void Load(CAppDomain* pDomain);
-	void OnReloaded();
-
 	// INetworkedClientListener
 	virtual void OnLocalClientDisconnected(EDisconnectionCause cause, const char* description) {}
 
@@ -79,10 +83,8 @@ public:
 	void RegisterSchematycPackageContents(Schematyc::IEnvRegistrar& registrar) const;
 	const CryGUID& GetGUID() const { return m_guid; }
 
-	typedef std::map <MonoInternals::MonoReflectionType*, std::shared_ptr <CManagedEntityComponentFactory>> TComponentFactoryMap;
-
 	// The plug-in that is currently registering types in CManagedPlugin::InitializePlugin
-	static TComponentFactoryMap* s_pCurrentlyRegisteringFactory;
+	static std::vector<std::shared_ptr<CManagedEntityComponentFactory>>* s_pCurrentlyRegisteringFactory;
 
 protected:
 	void InitializePlugin();
@@ -99,5 +101,5 @@ protected:
 	CryGUID m_guid;
 
 	// Map containing entity component factories for this module
-	TComponentFactoryMap m_entityComponentFactoryMap;
+	std::vector<std::shared_ptr<CManagedEntityComponentFactory>> m_entityComponentFactories;
 };

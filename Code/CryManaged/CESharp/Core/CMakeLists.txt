@@ -3,7 +3,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 
 	set(SDK_DIR "${CMAKE_SOURCE_DIR}/Code/SDKs")
 	create_mono_compiler_settings()
-	
+
 	set(AI_FILES AI/Attributes.cs AI/BehaviorTreeNode.cs AI/BehaviorTreeNodeFactory.cs AI/LastingMovementRequest.cs)
 	source_group("AI" FILES ${AI_FILES})
 
@@ -118,7 +118,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 		COMMAND "${CSC_PATH}" /target:library /langversion:${MONO_LANGUAGE_VERSION} /platform:${MONO_CPU_PLATFORM} /optimize /debug:portable /define:${MONO_PREPROCESSOR_DEFINE} /reference:System.dll /reference:System.Data.dll /reference:System.Drawing.dll /reference:System.Runtime.Serialization.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll "${MONO_SWIG_OUTPUT_ASSEMBLY_REFERENCE}" ${SOURCE} /out:"${OUTPUT_DIRECTORY}/CryEngine.Core.dll" /doc:"${OUTPUT_DIRECTORY}/CryEngine.Core.xml"
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 		SOURCES ${SOURCE})
-		
+
 	#Doesn't seem to do anything...
 	set_target_properties(CryEngine.Core PROPERTIES VS_DOTNET_REFERENCES "System;System.Data")
 else()

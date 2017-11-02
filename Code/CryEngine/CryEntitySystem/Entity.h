@@ -203,6 +203,7 @@ public:
 	virtual bool              AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntityComponent::SInitParams *pInitParams) final;
 	virtual void              RemoveComponent(IEntityComponent* pComponent) final;
 	virtual void              RemoveAllComponents() final;
+	virtual void              ReplaceComponent(IEntityComponent* pExistingComponent, std::shared_ptr<IEntityComponent> pNewComponent) final;
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const final;
 	virtual void              GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const final;
 	virtual IEntityComponent* GetComponentByGUID(const CryGUID& guid) const final;

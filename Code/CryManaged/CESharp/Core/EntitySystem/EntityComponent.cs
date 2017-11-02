@@ -6,11 +6,9 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Text;
 using CryEngine.Common;
 using CryEngine.EntitySystem;
-
 
 namespace CryEngine
 {
@@ -18,12 +16,19 @@ namespace CryEngine
 	/// Represents a component that can be attached to an entity at runtime
 	/// Automatically exposes itself to Schematyc for usage by designers.
 	/// 
-	/// Systems reference entity components by GUID, for example when serializing to file to detect which type a component belongs to.
-	/// By default we generate a GUID automatically based on the EntityComponent implementation type, however this will result in serialization breaking if you rename it.
-	/// To circumvent this, use System.Runtime.Interopservices.GuidAttribute to explicitly specify your desired GUID:
-	/// 
-	/// [Guid("C47DF64B-E1F9-40D1-8063-2C533A1CE7D5")]
-	/// public class MyComponent : public EntityComponent {}
+	/// Systems reference entity components by GUID, for example when serializing 
+	/// to file to detect which type a component belongs to.
+	/// By default we generate a GUID automatically based on the EntityComponent 
+	/// implementation type, however this will result in serialization breaking 
+	/// if you rename it.
+	/// To circumvent this, use either System.Runtime.Interopservices.GuidAttribute 
+	/// or the Guid property of the CryEngine.EntityComponent to explicitly specify your desired GUID.
+	/// Example:
+	/// <c>[Guid("C47DF64B-E1F9-40D1-8063-2C533A1CE7D5")]
+	/// public class MyComponent : public EntityComponent {}</c>
+	/// or
+	/// <c>[EntityComponent(Guid="C47DF64B-E1F9-40D1-8063-2C533A1CE7D5")]
+	/// public class MyComponent : public EntityComponent {}</c>
 	/// </summary>
 	public abstract class EntityComponent
 	{
@@ -53,6 +58,7 @@ namespace CryEngine
             public List<Signal> signals;
 		}
 
+		[NonSerialized]
 		internal static List<TypeInfo> _componentTypes = new List<TypeInfo>();
 
 		internal static GUID GetComponentTypeGUID<T>()
@@ -72,6 +78,19 @@ namespace CryEngine
 
 			throw new KeyNotFoundException("Component was not registered!");
 		}
+
+        internal static Type GetComponentTypeByGUID(GUID guid)
+        {
+            foreach (var typeInfo in _componentTypes)
+            {
+                if (typeInfo.guid.hipart == guid.hipart && typeInfo.guid.lopart == guid.lopart)
+                {
+                    return typeInfo.type;
+                }
+            }
+
+            throw new KeyNotFoundException("Component was not registered!");
+        }
 
 		public Entity Entity { get; private set; }
 
@@ -192,16 +211,37 @@ namespace CryEngine
             };
 			_componentTypes.Add(typeInfo);
 
-			var guidAttribute = (GuidAttribute)entityComponentType.GetCustomAttributes(typeof(GuidAttribute), false).FirstOrDefault();
+			var guidAttribute = entityComponentType.GetCustomAttribute<GuidAttribute>(false);
+			var componentAttribute = entityComponentType.GetCustomAttribute<EntityComponentAttribute>(false);
+			bool hasGuid = false;
             if (guidAttribute != null)
             {
-                var guid = new Guid(guidAttribute.Value);
-
-                var guidArray = guid.ToByteArray();
-                typeInfo.guid.hipart = BitConverter.ToUInt64(guidArray, 0);
-                typeInfo.guid.lopart = BitConverter.ToUInt64(guidArray, 8);
+				Guid guid;
+				if(ValidateGuid(entityComponentType.Name, guidAttribute.Value, out guid))
+				{
+					var guidArray = guid.ToByteArray();
+					typeInfo.guid.hipart = BitConverter.ToUInt64(guidArray, 0);
+					typeInfo.guid.lopart = BitConverter.ToUInt64(guidArray, 8);
+					hasGuid = true;
+				}
             }
-            else
+
+			if(!hasGuid && componentAttribute != null)
+			{
+				if(!string.IsNullOrWhiteSpace(componentAttribute.Guid))
+				{
+					Guid guid;
+					if(ValidateGuid(entityComponentType.Name, componentAttribute.Guid, out guid))
+					{
+						var guidArray = guid.ToByteArray();
+						typeInfo.guid.hipart = BitConverter.ToUInt64(guidArray, 0);
+						typeInfo.guid.lopart = BitConverter.ToUInt64(guidArray, 8);
+						hasGuid = true;
+					}
+				}
+			}
+
+			if(!hasGuid)
             {
                 // Fall back to generating GUID based on type
                 var guidString = Engine.TypeToHash(entityComponentType);
@@ -216,7 +256,6 @@ namespace CryEngine
                 }
             }
 
-            var componentAttribute = (EntityComponentAttribute)entityComponentType.GetCustomAttributes(typeof(EntityComponentAttribute), false).FirstOrDefault();
             if (componentAttribute == null)
             {
                 componentAttribute = new EntityComponentAttribute();
@@ -255,6 +294,36 @@ namespace CryEngine
 			{
 				RegisterComponentProperties(typeInfo);
 			}
+		}
+
+		private static bool ValidateGuid(string componentName, string guidString, out Guid guid)
+		{
+			try
+			{
+				guid = new Guid(guidString);
+			}
+			catch(FormatException)
+			{
+				Log.Error("Encountered a FormatException while parsing GUID with value \"{0}\" on {1}! " +
+				          "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", guidString, componentName);
+				guid = new Guid();
+				return false;
+			}
+			catch(OverflowException)
+			{
+				Log.Error("Encountered an OverFlowException while parsing GUID with value \"{0}\" on {1}! " +
+				          "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", guidString, componentName);
+				guid = new Guid();
+				return false;
+			}
+			catch(ArgumentNullException)
+			{
+				Log.Error("Encountered an ArgumentNullException while parsing GUID on {0}! " +
+				          "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", componentName);
+				guid = new Guid();
+				return false;
+			}
+			return true;
 		}
 
 		private static void RegisterComponentProperties(TypeInfo componentTypeInfo)

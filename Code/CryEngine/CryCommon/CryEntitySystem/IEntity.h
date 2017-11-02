@@ -779,6 +779,11 @@ public:
 	//! Removes and shut downs all components that entity contains.
 	virtual void RemoveAllComponents() = 0;
 
+	//! Replaces an existing component in the entity with another, without shutting down the existing component
+	//! Used for reallocating components at run-time while keeping internal state intact
+	//! Note that this function does *not* copy any data between the components, that is up to the caller.
+	virtual void ReplaceComponent(IEntityComponent* pExistingComponent, std::shared_ptr<IEntityComponent> pNewComponent) = 0;
+
 	//! Return first component of the entity with the specified class ID.
 	//! \param interfaceID Identifier for the component implementation.
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const = 0;
