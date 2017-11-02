@@ -357,6 +357,31 @@ namespace UQS
 			OnGetStatistics(out);
 		}
 
+		void CQueryBase::EmitTimeExcessWarningToConsoleAndQueryHistory(const CTimeValue& timeGranted, const CTimeValue& timeUsed) const
+		{
+			stack_string commonWarningMessage;
+			commonWarningMessage.Format("Exceeded time-budget in current frame: granted time = %f ms, actually consumed = %f ms", timeGranted.GetMilliSeconds(), timeUsed.GetMilliSeconds());
+
+			// print a warning to the console
+			{
+				Shared::CUqsString queryIdAsString;
+				m_queryID.ToString(queryIdAsString);
+				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "[UQS] QueryID #%s: %s / %s: %s",
+					queryIdAsString.c_str(),
+					m_pQueryBlueprint->GetName(),
+					m_querierName.c_str(),
+					commonWarningMessage.c_str());
+			}
+
+			// log the warning to the query history
+			{
+				if (m_pHistory)
+				{
+					m_pHistory->OnWarningOccurred(commonWarningMessage.c_str());
+				}
+			}
+		}
+
 		QueryResultSetUniquePtr CQueryBase::ClaimResultSet()
 		{
 			return std::move(m_pResultSet);

@@ -66,6 +66,7 @@ struct SQuery
 	UQS::Core::CQueryID  queryID;
 	bool                 bFoundTooFewItems;
 	bool                 bExceptionEncountered;
+	bool                 bEncounteredSomeWarnings;
 	UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks evaluatorDrawMasks;
 
 	std::vector<string> instantEvaluatorNames;
@@ -82,6 +83,7 @@ struct SQuery
 		, queryID(overview.queryID)
 		, bFoundTooFewItems(overview.bFoundTooFewItems)
 		, bExceptionEncountered(overview.bQueryEncounteredAnException)
+		, bEncounteredSomeWarnings(overview.bQueryEncounteredSomeWarnings)
 		, evaluatorDrawMasks(UQS::Core::IQueryHistoryManager::SEvaluatorDrawMasks::CreateAllBitsSet())
 	{
 		UpdateInformation(overview);
@@ -121,6 +123,7 @@ struct SQuery
 		this->dataPerColumn[Column_TimestampQueryDestroyed] = QtUtil::ToQString(timestampQueryDestroyedAsString.c_str());
 		this->bFoundTooFewItems = overview.bFoundTooFewItems;
 		this->bExceptionEncountered = overview.bQueryEncounteredAnException;
+		this->bEncounteredSomeWarnings = overview.bQueryEncounteredSomeWarnings;
 	}
 
 	static void HelpSerializeEvaluatorsBitfield(Serialization::IArchive& ar, UQS::Core::evaluatorsBitfield_t& bitfieldToSerialize, const std::vector<string>& evaluatorNames, const std::vector<string>& evaluatorLabelsForUI)
@@ -171,6 +174,20 @@ struct SQuery
 		}
 
 		return nullptr;
+	}
+
+	bool ContainsWarningsDownwardsAlongHierarchy() const
+	{
+		if (this->bEncounteredSomeWarnings)
+			return true;
+
+		for (const SQuery* pChild : this->children)
+		{
+			if (pChild->ContainsWarningsDownwardsAlongHierarchy())
+				return true;
+		}
+
+		return false;
 	}
 };
 
@@ -299,6 +316,21 @@ public:
 				if (pQuery->bExceptionEncountered)
 				{
 					return QtUtil::ToQColor(ColorB(255, 0, 0));
+				}
+
+				// *orange* text if the query encountered some warnings
+				if (pQuery->bEncounteredSomeWarnings)
+				{
+					return QtUtil::ToQColor(ColorB(255, 165, 0));	// RGB values taken from Col_Orange
+				}
+
+				//
+				// bonus: propagate warning's *orange* color up the query hierarchy (although the parent queries will *not* the actual warning messages of their children)
+				//
+				{
+					// see if any of our children contains a warning
+					if (pQuery->ContainsWarningsDownwardsAlongHierarchy())
+						return QtUtil::ToQColor(ColorB(255, 165, 0));	// RGB values taken from Col_Orange
 				}
 
 				// *yellow* text if too few items were found
