@@ -1746,6 +1746,34 @@ void CEntity::RemoveAllComponents()
 	m_componentChangeState++;
 }
 
+void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared_ptr<IEntityComponent> pNewComponent)
+{
+	m_components.ForEach([this, pExistingComponent, &pNewComponent](SEntityComponentRecord& componentRecord)
+	{
+		if (componentRecord.pComponent.get() == pExistingComponent)
+		{
+			componentRecord.pComponent = pNewComponent;
+
+			componentRecord.registeredEventsMask = componentRecord.pComponent->GetEventMask();
+			componentRecord.eventPriority = componentRecord.pComponent->GetEventPriority();
+
+			// Check if the remaining components are still interested in updates
+			m_bRequiresComponentUpdate = 0;
+
+			for (const SEntityComponentRecord& otherComponentRecord : m_components.GetVector())
+			{
+				if (otherComponentRecord.pComponent && (otherComponentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0)
+				{
+					m_bRequiresComponentUpdate = 1;
+					break;
+				}
+			}
+
+			OnComponentMaskChanged(*componentRecord.pComponent, componentRecord.registeredEventsMask);
+		}
+	});
+}
+
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& typeId) const
 {

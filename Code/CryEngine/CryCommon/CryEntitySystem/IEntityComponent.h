@@ -351,6 +351,22 @@ public:
 
 public:
 	IEntityComponent() {}
+	IEntityComponent(IEntityComponent&& other)
+		: m_pEntity(other.m_pEntity)
+		, m_componentFlags(other.m_componentFlags)
+		, m_guid(other.m_guid)
+		, m_name(other.m_name.c_str())
+		, m_pTransform(std::move(other.m_pTransform))
+		, m_pParent(other.m_pParent)
+		, m_pClassDesc(other.m_pClassDesc)
+		, m_entitySlotId(other.m_entitySlotId) 
+	{
+		other.m_pTransform.reset();
+		other.m_entitySlotId = EmptySlotId;
+	}
+	IEntityComponent(const IEntityComponent&) = default;
+	IEntityComponent& operator=(const IEntityComponent&) = default;
+	IEntityComponent& operator=(IEntityComponent&&) = default;
 	virtual ~IEntityComponent() {}
 
 	//! Return ClassDesc for this component

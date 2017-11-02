@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+
+using CryEngine;
 
 namespace CryEngine.Serialization
 {
@@ -37,6 +40,7 @@ namespace CryEngine.Serialization
 		static Type _decimalType = typeof(decimal);
 
 		static Type _serializableType = typeof(ISerializable);
+        static Type _entityComponentType = typeof(EntityComponent);
 
 		static Type _monoType;
         static Type _monoAssemblyType;
@@ -92,7 +96,11 @@ namespace CryEngine.Serialization
 			{
 				_serializedType = SerializedObjectType.ISerializable;
 			}
-			else
+			else if(_entityComponentType.IsAssignableFrom(type) && _type.GetCustomAttributes(typeof(GuidAttribute), true).Length > 0)
+            {
+                _serializedType = SerializedObjectType.EntityComponent;
+            }
+            else
 			{
 				_serializedType = SerializedObjectType.Object;
 			}

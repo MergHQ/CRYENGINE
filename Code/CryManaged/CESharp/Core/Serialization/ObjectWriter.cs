@@ -201,12 +201,17 @@ namespace CryEngine.Serialization
 								WriteISerializable(obj, cachedTypeInfo._type);
 							}
 							break;
-						case SerializedObjectType.Object:
-							{
-								WriteObject(obj, cachedTypeInfo._type);
-							}
-							break;
-					}
+                        case SerializedObjectType.EntityComponent:
+                            {
+                                WriteEntityComponent(obj, cachedTypeInfo._type);
+                            }
+                            break;
+                        case SerializedObjectType.Object:
+                            {
+                                WriteObject(obj, cachedTypeInfo._type);
+                            }
+                            break;
+                    }
 				}
 			}
 		}
@@ -223,31 +228,58 @@ namespace CryEngine.Serialization
 			return cachedTypeInfo;
 		}
 
-		void WriteObject(object obj, Type objectType)
+        void WriteEntityComponent(object obj, Type objectType)
+        {
+            var componentTypeGUID = EntityComponent.GetComponentTypeGUID(objectType);
+            Write(componentTypeGUID);
+
+            WriteObjectMembers(obj, objectType);
+        }
+
+        void WriteObject(object obj, Type objectType)
 		{
-			var types = new List<Type>();
+			WriteType(objectType);
 
-			while (objectType != CachedTypeInfo._objectType)
-			{
-				types.Add(objectType);
+            WriteObjectMembers(obj, objectType);
+        }
 
-				objectType = objectType.BaseType;
-			}
+        void WriteObjectMembers(object obj, Type objectType)
+        {
+            var baseType = objectType.BaseType;
+            var baseTypes = new List<Type>();
 
-			Writer.Write(types.Count);
+            while (baseType != CachedTypeInfo._objectType && baseType != null)
+            {
+                baseTypes.Add(baseType);
 
-			foreach (var storedType in types)
-			{
-				WriteType(storedType);
+                baseType = baseType.BaseType;
+            }
 
-				WriteObjectMembers(obj, storedType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Instance);
-			}
-		}
+            Writer.Write(baseTypes.Count);
+
+            WriteObjectMembers(obj, objectType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Instance);
+
+            foreach (var storedType in baseTypes)
+            {
+                WriteType(storedType);
+
+                WriteObjectMembers(obj, storedType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Instance);
+            }
+        }
 
 		void WriteObjectMembers(object obj, Type objectType, BindingFlags flags)
 		{
-			var fields = objectType.GetFields(flags);
-			Writer.Write(fields.Length);
+			var fields = new List<FieldInfo>(objectType.GetFields(flags));
+			for(int i = fields.Count - 1; i > -1; --i)
+			{
+				var field = fields[i];
+				if(field.Attributes.HasFlag(FieldAttributes.NotSerialized) || field.GetCustomAttribute<NonSerializedAttribute>(true) != null)
+				{
+					fields.RemoveAt(i);
+				}
+			}
+
+			Writer.Write(fields.Count);
 			foreach (var field in fields)
 			{
 				Writer.Write(field.Name);

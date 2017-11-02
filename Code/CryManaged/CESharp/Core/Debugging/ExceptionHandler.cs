@@ -1,4 +1,5 @@
 using System;
+using CryEngine.Compilation;
 
 namespace CryEngine.Debugging
 {

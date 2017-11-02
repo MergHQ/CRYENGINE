@@ -93,7 +93,7 @@ namespace CryEngine
 
 		private static void UnloadListener()
 		{
-			_listener.Dispose();
+			_listener?.Dispose();
 			_listener = null;
 		}
 

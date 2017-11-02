@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
+using CryEngine;
+
 namespace CryEngine.Serialization
 {
 	public class ObjectReader
@@ -82,7 +84,9 @@ namespace CryEngine.Serialization
 					return ReadMemberInfo();
 				case SerializedObjectType.ISerializable:
 					return ReadISerializable();
-			}
+                case SerializedObjectType.EntityComponent:
+                    return ReadEntityComponent();
+            }
 
 			throw new ArgumentException("Tried to deserialize unknown object type!");
 		}
@@ -102,7 +106,7 @@ namespace CryEngine.Serialization
 
 				var type = ReadType();
 
-				ReadObjectMembers(null, type, fieldFlags);
+				ReadObjectBaseTypeMembers(null, type, fieldFlags);
 			}
 		}
 
@@ -119,7 +123,16 @@ namespace CryEngine.Serialization
 			var referenceId = Reader.ReadInt32();
 			var type = ReadType();
 
-			return _typeObjects[type][referenceId];
+			Dictionary<int, object> dict;
+			if(_typeObjects.TryGetValue(type, out dict))
+			{
+				object obj;
+				if(dict.TryGetValue(referenceId, out obj))
+				{
+					return obj;
+				}
+			}
+			return null;
 		}
 
 		void AddReference(Type type, object obj, int referenceId)
@@ -135,43 +148,60 @@ namespace CryEngine.Serialization
 		}
 
 		#region Reference types
+        object ReadEntityComponent()
+        {
+            var referenceId = Reader.ReadInt32();
+            var componentTypeGuid = (EntityComponent.GUID)Read();
+
+            var type = EntityComponent.GetComponentTypeByGUID(componentTypeGuid);
+            var obj = type != null ? FormatterServices.GetUninitializedObject(type) : null;
+            if (type != null)
+            {
+                AddReference(type, obj, referenceId);
+            }
+
+            ReadObjectMembers(obj, type);
+
+            return obj;
+        }
+
 		object ReadObject()
 		{
 			var referenceId = Reader.ReadInt32();
-			var numTypes = Reader.ReadInt32();
+			var type = ReadType();
 
-			object obj = null;
-
-			var fieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-
-			bool hasDeserializeCallback = false;
-
-			for (var i = 0; i < numTypes; i++)
+			var obj = type != null ? FormatterServices.GetUninitializedObject(type) : null;
+			if(type != null)
 			{
-				var type = ReadType();
-
-				if (obj == null)
-				{
-					// Create the object, first type is the actual implementation
-					obj = FormatterServices.GetUninitializedObject(type);
-
-					AddReference(type, obj, referenceId);
-
-					hasDeserializeCallback = _deserializationCallbackType.IsAssignableFrom(type);
-				}
-
-				ReadObjectMembers(obj, type, fieldFlags);
+				AddReference(type, obj, referenceId);
 			}
 
-			if (hasDeserializeCallback)
-			{
-				_deserializationMethod.Invoke(obj, new object[] { this });
-			}
+            ReadObjectMembers(obj, type);
 
-			return obj;
+            return obj;
 		}
 
-		void ReadObjectMembers(object obj, Type objectType, BindingFlags flags)
+        void ReadObjectMembers(object obj, Type type)
+        {
+            var numBaseTypes = Reader.ReadInt32();
+            var fieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+            ReadObjectBaseTypeMembers(obj, type, fieldFlags);
+
+            for (var i = 0; i < numBaseTypes; i++)
+            {
+                var baseType = ReadType();
+
+                ReadObjectBaseTypeMembers(obj, baseType, fieldFlags);
+            }
+
+            if (_deserializationCallbackType.IsAssignableFrom(type))
+            {
+                _deserializationMethod.Invoke(obj, new object[] { this });
+            }
+        }
+
+		void ReadObjectBaseTypeMembers(object obj, Type objectType, BindingFlags flags)
 		{
 			var numFields = Reader.ReadInt32();
 			for (var iField = 0; iField < numFields; iField++)
@@ -182,7 +212,7 @@ namespace CryEngine.Serialization
                 if (objectType != null)
                 {
                     var fieldInfo = objectType.GetField(fieldName, flags);
-                    if (fieldInfo != null && !fieldInfo.IsLiteral)
+					if (fieldInfo != null && !fieldInfo.IsLiteral && (obj == null) == fieldInfo.IsStatic)
                     {
                         fieldInfo.SetValue(obj, fieldValue);
                     }

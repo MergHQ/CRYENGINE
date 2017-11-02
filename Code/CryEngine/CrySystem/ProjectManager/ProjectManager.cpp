@@ -564,7 +564,7 @@ void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
 			sourceFileRelativePath = fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
 		}
 
-		includes += "<Compile Include=\"" + PathUtil::ToDosPath(sourceFileRelativePath) + "\" />\n";
+		includes += "    <Compile Include=\"" + PathUtil::ToDosPath(sourceFileRelativePath) + "\" />\n";
 	}
 
 	string csProjName = "Game.csproj";
@@ -648,7 +648,7 @@ void CProjectManager::FindSourceFilesInDirectoryRecursive(const char* szDirector
 	string searchPath = PathUtil::Make(szDirectory, szExtension);
 
 	_finddata_t fd;
-	intptr_t handle = gEnv->pCryPak->FindFirst(searchPath, &fd);
+	intptr_t handle = gEnv->pCryPak->FindFirst(searchPath, &fd, ICryPak::FLAGS_NEVER_IN_PAK);
 	if (handle != -1)
 	{
 		do
@@ -662,7 +662,7 @@ void CProjectManager::FindSourceFilesInDirectoryRecursive(const char* szDirector
 	// Find additional directories
 	searchPath = PathUtil::Make(szDirectory, "*.*");
 
-	handle = gEnv->pCryPak->FindFirst(searchPath, &fd);
+	handle = gEnv->pCryPak->FindFirst(searchPath, &fd, ICryPak::FLAGS_NEVER_IN_PAK);
 	if (handle != -1)
 	{
 		do
