@@ -82,6 +82,7 @@ CBootProfiler gProfilerInstance;
 CBootProfilerThreadsInterface gThreadsInterface;
 }
 
+int CBootProfiler::CV_sys_bp_enabled = 1;
 int CBootProfiler::CV_sys_bp_frames_worker_thread = 0;
 int CBootProfiler::CV_sys_bp_frames = 0;
 int CBootProfiler::CV_sys_bp_frames_sample_period = 0;
@@ -776,6 +777,11 @@ CBootProfiler::~CBootProfiler()
 // start session
 void CBootProfiler::StartSession(const char* sessionName)
 {
+	if (!CV_sys_bp_enabled)
+	{
+		return;
+	}
+
 	if (m_pCurrentSession)
 	{
 		CryLogAlways("BootProfiler: failed to start session '%s' as another one is active '%s'", sessionName, m_pCurrentSession->GetName());
@@ -995,6 +1001,7 @@ void CBootProfiler::Init(ISystem* pSystem)
 
 void CBootProfiler::RegisterCVars()
 {
+	REGISTER_CVAR2("sys_bp_enabled", &CV_sys_bp_enabled, 1, VF_DEV_ONLY, "If this is set to false, new boot profiler sessions will not be started.");
 	REGISTER_CVAR2("sys_bp_frames_worker_thread", &CV_sys_bp_frames_worker_thread, 0, VF_DEV_ONLY | VF_REQUIRE_APP_RESTART, "If this is set to true. The system will dump the profiled session from a different thread.");
 	REGISTER_CVAR2("sys_bp_frames", &CV_sys_bp_frames, 0, VF_DEV_ONLY, "Starts frame profiling for specified number of frames using BootProfiler");
 	REGISTER_CVAR2("sys_bp_frames_sample_period", &CV_sys_bp_frames_sample_period, 0, VF_DEV_ONLY, "When in threshold mode, the period at which we are going to dump a frame.");

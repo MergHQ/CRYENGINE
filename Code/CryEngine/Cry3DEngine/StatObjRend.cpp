@@ -555,6 +555,29 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
 			}
 			break;
+		case 8:
+			{
+				if (pObj && pObj->m_pRenderNode)
+				{
+					IRenderNode* pRenderNode = (IRenderNode*)pObj->m_pRenderNode;
+					float perObjectMaxViewDist = pRenderNode->m_ucViewDistRatio;
+
+					ColorF clr = ColorF(0.f, 1.f, 0.f, 1.0f);
+					Vec3 red, green;
+					ColorF(1.f, 0.f, 0.f, 1.0f).toHSV(red.x, red.y, red.z);
+					ColorF(0.f, 1.f, 0.f, 1.0f).toHSV(green.x, green.y, green.z);
+
+					float interpValue = perObjectMaxViewDist / 255.0f;
+					Vec3 c = Vec3::CreateLerp(green, red, interpValue);
+					clr.fromHSV(c.x, c.y, c.z);
+
+					float fontSize = 1.3f;
+					fontSize = LERP(fontSize, 2.3f, interpValue);
+
+					IRenderAuxText::DrawLabelExF(pos, fontSize, clr, true, true, "%.1f", perObjectMaxViewDist);
+				}
+			}
+			break;
 
 		case 16:
 			{

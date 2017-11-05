@@ -130,7 +130,7 @@ void CVars::Init()
 	                   " 5: Display color coded number of render materials\n"
 	                   " 6: Display ambient color\n"
 	                   " 7: Display tri count, number of render materials, texture memory\n"
-	                   " 8: Free slot\n"
+	                   " 8: Display per object editor MaxViewDistance\n"
 	                   " 9: Free slot\n"
 	                   "10: Render geometry with simple lines and triangles\n"
 	                   "11: Free slot\n"
