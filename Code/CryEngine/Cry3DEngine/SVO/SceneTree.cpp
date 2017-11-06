@@ -321,7 +321,7 @@ bool CSvoEnv::Render()
 		{
 			ILightSource* pRN = (ILightSource*)arrObjects[nL];
 
-			CDLight& rLight = pRN->GetLightProperties();
+			SRenderLight& rLight = pRN->GetLightProperties();
 
 			if (rLight.m_fRadius > fMaxRadius && rLight.m_Flags & DLF_DEFERRED_CUBEMAPS)
 			{
@@ -375,7 +375,7 @@ bool CSvoEnv::Render()
 
 	CRenderObject* pObjVox = 0;
 	{
-		pObjVox = Cry3DEngineBase::GetIdentityCRenderObject((*CVoxelSegment::m_pCurrPassInfo).ThreadID());
+		pObjVox = Cry3DEngineBase::GetIdentityCRenderObject((*CVoxelSegment::m_pCurrPassInfo));
 		pObjVox->m_II.m_AmbColor = Cry3DEngineBase::Get3DEngine()->GetSkyColor();
 		pObjVox->m_II.m_Matrix.SetIdentity();
 		pObjVox->m_nSort = 0;
@@ -581,6 +581,8 @@ bool CSvoEnv::Render()
 	}
 	else if (GetCVars()->e_svoDVR > 1)
 	{
+		auto& camera = GetISystem()->GetViewCamera();
+
 		SVF_P3F_C4B_T2F arrVerts[4];
 		ZeroStruct(arrVerts);
 		uint16 arrIndices[] = { 0, 2, 1, 2, 3, 1 };
@@ -590,8 +592,9 @@ bool CSvoEnv::Render()
 			for (int y = 0; y < 2; y++)
 			{
 				int i = x * 2 + y;
-				float X = (float)(GetRenderer()->GetWidth() * x);
-				float Y = (float)(GetRenderer()->GetHeight() * y);
+				float X = (float)(camera.GetViewSurfaceX() * x);
+				float Y = (float)(camera.GetViewSurfaceZ() * y);
+
 				GetRenderer()->UnProjectFromScreen(X, Y, 0.05f, &arrVerts[i].xyz.x, &arrVerts[i].xyz.y, &arrVerts[i].xyz.z);
 			}
 		}
@@ -1242,11 +1245,6 @@ CSvoEnv::~CSvoEnv()
 		for (int i = 0; i < CVoxelSegment::m_arrLockedMaterials.Count(); i++)
 			CVoxelSegment::m_arrLockedMaterials[i]->Release();
 		CVoxelSegment::m_arrLockedMaterials.Reset();
-	}
-
-	if (gEnv->pRenderer)
-	{
-		gEnv->pRenderer->FreeResources(FRR_SVOGI);
 	}
 }
 
@@ -2133,7 +2131,7 @@ void CSvoEnv::DetectMovement_StatLights()
 					{
 						ILightSource* pLS = (ILightSource*)pNode;
 
-						CDLight& m_light = pLS->GetLightProperties();
+						SRenderLight& m_light = pLS->GetLightProperties();
 
 						if (!Overlap::Sphere_AABB(Sphere(m_light.m_BaseOrigin, m_light.m_fRadius), pSeg->m_pNode->m_nodeBox))
 							continue;
@@ -2283,7 +2281,7 @@ void CSvoEnv::CheckUpdateMeshPools()
 			gEnv->pRenderer->RemoveTexture(rAr.m_nTexId);
 			rAr.m_nTexId = 0;
 
-			rAr.m_nTexId = gEnv->pRenderer->DownLoadToVideoMemory3D((byte*)rAr.GetElements(),
+			rAr.m_nTexId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
 			                                                        CVoxelSegment::nVoxTexPoolDimXY, CVoxelSegment::nVoxTexPoolDimXY, CVoxelSegment::nVoxTexPoolDimZ, eTF_R32G32B32A32F, eTF_R32G32B32A32F, 1, false, FILTER_POINT, rAr.m_nTexId, 0, FT_DONT_STREAM);
 
 			rAr.m_bModified = 0;
@@ -2300,7 +2298,7 @@ void CSvoEnv::CheckUpdateMeshPools()
 			gEnv->pRenderer->RemoveTexture(rAr.m_nTexId);
 			rAr.m_nTexId = 0;
 
-			rAr.m_nTexId = gEnv->pRenderer->DownLoadToVideoMemory3D((byte*)rAr.GetElements(),
+			rAr.m_nTexId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
 			                                                        CVoxelSegment::nVoxTexPoolDimXY, CVoxelSegment::nVoxTexPoolDimXY, CVoxelSegment::nVoxTexPoolDimZ, m_nVoxTexFormat, m_nVoxTexFormat, 1, false, FILTER_POINT, rAr.m_nTexId, 0, FT_DONT_STREAM);
 
 			rAr.m_bModified = 0;
@@ -2317,7 +2315,7 @@ void CSvoEnv::CheckUpdateMeshPools()
 			gEnv->pRenderer->RemoveTexture(rAr.m_nTexId);
 			rAr.m_nTexId = 0;
 
-			rAr.m_nTexId = gEnv->pRenderer->DownLoadToVideoMemory3D((byte*)rAr.GetElements(),
+			rAr.m_nTexId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
 			                                                        CVoxelSegment::nVoxTexPoolDimXY, CVoxelSegment::nVoxTexPoolDimXY, CVoxelSegment::nVoxTexPoolDimZ, m_nVoxTexFormat, m_nVoxTexFormat, 1, false, FILTER_POINT, rAr.m_nTexId, 0, FT_DONT_STREAM);
 
 			rAr.m_bModified = 0;
@@ -2456,6 +2454,8 @@ void CVars::RegisterTICVars()
 {
 	#define CVAR_CPP
 	#include "SceneTreeCVars.inl"
+
+	GetRenderer()->GetISvoRenderer()->InitCVarValues(); // allocate SVO sub-system in renderer
 }
 
 static int32 SLightTI_Compare(const void* v1, const void* v2)
@@ -2499,7 +2499,7 @@ void CSvoEnv::CollectLights()
 
 			static ICVar* e_svoMinNodeSize = gEnv->pConsole->GetCVar("e_svoMinNodeSize");
 
-			CDLight& rLight = pRN->GetLightProperties();
+			SRenderLight& rLight = pRN->GetLightProperties();
 
 			I3DEngine::SLightTI lightTI;
 			ZeroStruct(lightTI);

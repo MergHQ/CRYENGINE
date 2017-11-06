@@ -20,7 +20,6 @@ struct IEntitySerializationContext;
 struct IScriptTable;
 struct AABB;
 class XmlNodeRef;
-class CDLight;
 struct AIObjectParams;
 struct IParticleEffect;
 struct SpawnParams;
@@ -31,6 +30,7 @@ struct IStatObj;
 struct INetEntity;
 struct SGeometryDebugDrawInfo;
 struct SFogVolumeProperties;
+struct SRenderLight;
 
 //////////////////////////////////////////////////////////////////////////
 struct IGameObject;
@@ -1192,7 +1192,7 @@ public:
 
 	//! Loads a light source to the specified slot, or to next available slot.
 	//! \return Slot id where the light source was loaded, or -1 if loading failed.
-	virtual int LoadLight(int nSlot, CDLight* pLight) = 0;
+	virtual int LoadLight(int nSlot, SRenderLight* pLight) = 0;
 
 	//! Loads a fog volume to the specified slot, or to the next available slot.
 	//! \return Slot id where the fog volume was loaded, or -1 if loading failed.

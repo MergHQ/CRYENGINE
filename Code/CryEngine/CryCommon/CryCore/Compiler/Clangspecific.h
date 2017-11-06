@@ -31,6 +31,8 @@
 //! PREfast not supported
 #define PREFAST_SUPPRESS_WARNING(W)
 #define PREFAST_ASSUME(cond)
+#define _Out_writes_z_(x)
+#define _Inout_updates_z_(x)
 
 //! Mark function as deprecated
 #define CRY_DEPRECATED(func) __attribute__((deprecated)) func

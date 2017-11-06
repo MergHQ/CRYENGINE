@@ -692,10 +692,10 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 		if (!pEntity->m_guid.IsNull())
 			UnregisterEntityGuid(pEntity->m_guid);
 
-		delete pEntity;
-
 		// Make sure 3dengine does not keep references to this entity
 		gEnv->p3DEngine->OnEntityDeleted(pEntity);
+
+		delete pEntity;
 	}
 }
 

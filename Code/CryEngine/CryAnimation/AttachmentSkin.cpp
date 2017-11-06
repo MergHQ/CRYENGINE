@@ -503,7 +503,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 	//---------------------------------------------------------------------------------------------
 	//---------------------------------------------------------------------------------------------
 	//---------------------------------------------------------------------------------------------
-	CRenderObject* pObj = g_pIRenderer->EF_GetObject_Temp(passInfo.ThreadID());
+	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	if (!pObj)
 		return;
 
@@ -602,7 +602,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 		}
 	}
 
-	pD->m_pSkinningData = GetVertexTransformationData(bUseCPUDeformation, nRenderLOD);
+	pD->m_pSkinningData = GetVertexTransformationData(bUseCPUDeformation, nRenderLOD, passInfo);
 
 	Vec3 skinOffset = m_pModelSkin->m_arrModelMeshes[nRenderLOD].m_vRenderMeshOffset;
 	pD->m_pSkinningData->vecPrecisionOffset[0] = skinOffset.x;
@@ -623,7 +623,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 		if (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS)
 			pD->m_pSkinningData->nHWSkinningFlags |= eHWS_DC_Deformation_Tangents;
 	
-		g_pIRenderer->EF_EnqueueComputeSkinningData(pD->m_pSkinningData);
+		g_pIRenderer->EF_EnqueueComputeSkinningData(passInfo.GetIRenderView(), pD->m_pSkinningData);
 
 		pRenderMesh->Render(pObj,passInfo);
 		return;
@@ -787,7 +787,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 		CModelMesh* pModelMesh = m_pModelSkin->GetModelMesh(nRenderLOD);
 		static ICVar *p_e_debug_draw = gEnv->pConsole->GetCVar("e_DebugDraw");
 		if(p_e_debug_draw && p_e_debug_draw->GetIVal() > 0)
-			pModelMesh->DrawDebugInfo(pMaster->m_pDefaultSkeleton, nRenderLOD, RenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose.GetAABB() );
+			pModelMesh->DrawDebugInfo(pMaster->m_pDefaultSkeleton, nRenderLOD, RenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose.GetAABB(),passInfo );
 #endif
 		pRenderMesh->Render(pObj, passInfo);
 
@@ -837,7 +837,7 @@ void CAttachmentSKIN::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRend
 	m_pModelSkin->m_arrModelMeshes[nDesiredRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 }
 
-SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimation, uint8 nRenderLOD)
+SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimation, uint8 nRenderLOD, const SRenderingPassInfo& passInfo)
 {
 	DEFINE_PROFILER_FUNCTION();
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
@@ -859,7 +859,7 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 
 	if(pMaster->arrSkinningRendererData[nList].nFrameID != nFrameID )
 	{
-		pMaster->GetSkinningData(); // force master to compute skinning data if not available
+		pMaster->GetSkinningData(passInfo); // force master to compute skinning data if not available
 		assert(pMaster->arrSkinningRendererData[nList].nFrameID == nFrameID);
 		assert(pMaster->arrSkinningRendererData[nList].pSkinningData);
 	}
@@ -928,7 +928,7 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 	const uint32 skinningQuatCountMax = pMaster->arrSkinningRendererData[nList].pSkinningData->nNumBones;
 	const uint32 nNumBones = std::min(skinningQuatCount, skinningQuatCountMax);
 
-	SSkinningData *pSkinningData = gEnv->pRenderer->EF_CreateRemappedSkinningData(nNumBones, pMaster->arrSkinningRendererData[nList].pSkinningData, nCustomDataSize, pMaster->m_pDefaultSkeleton->GetGuid());	
+	SSkinningData *pSkinningData = gEnv->pRenderer->EF_CreateRemappedSkinningData(passInfo.GetIRenderView(), nNumBones, pMaster->arrSkinningRendererData[nList].pSkinningData, nCustomDataSize, pMaster->m_pDefaultSkeleton->GetGuid());	
 	pSkinningData->pCustomTag = this;
 	pSkinningData->pRenderMesh = m_pModelSkin->GetIRenderMesh(nRenderLOD);
 	if (nCustomDataSize)

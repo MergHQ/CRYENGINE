@@ -30,9 +30,9 @@ IParticleComponentRuntime* CManager::CreateParticleContainer(const SComponentPar
 	return pRuntime;
 }
 
-void CManager::RenderThreadUpdate()
+void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 {
-	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_GpuParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
+	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_ComputeParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
 	const bool bReadbackBoundingBox = CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes ? false : true;
 
 	if (!CRenderer::CV_r_GpuParticles)
@@ -64,6 +64,7 @@ void CManager::RenderThreadUpdate()
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{
 		gpu_pfx2::SUpdateContext context;
+		context.pRenderView = pRenderView;
 		context.pCounterBuffer = &m_counter.GetBuffer();
 		context.pScratchBuffer = &m_scratch.GetBuffer();
 		context.pReadbackBuffer = &m_readback.GetBuffer();
@@ -119,7 +120,7 @@ void CManager::RenderThreadUpdate()
 	}
 }
 
-void CManager::RenderThreadPreUpdate()
+void CManager::RenderThreadPreUpdate(CRenderView* pRenderView)
 {
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{
@@ -134,7 +135,7 @@ void CManager::RenderThreadPreUpdate()
 	}
 }
 
-void CManager::RenderThreadPostUpdate()
+void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 {
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{

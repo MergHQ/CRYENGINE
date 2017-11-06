@@ -112,7 +112,7 @@ struct SPerInstanceResources
 	CComputeRenderPass passDeformWithMorphs;
 	CComputeRenderPass passTriangleTangents;
 	CComputeRenderPass passVertexTangents;
-	int                lastFrameInUse;
+	int64              lastFrameInUse;
 
 	size_t             GetSizeBytes();
 
@@ -128,9 +128,9 @@ public:
 	virtual CGpuBuffer*                    GetOutputVertices(const void* pCustomTag) override;
 
 	void                                   RetirePerMeshResources();
-	void                                   RetirePerInstanceResources();
+	void                                   RetirePerInstanceResources(int64 frameId);
 	std::shared_ptr<SPerMeshResources>     GetPerMeshResources(CRenderMesh* pMesh);
-	std::shared_ptr<SPerInstanceResources> GetOrCreatePerInstanceResources(const void* pCustomTag, const int numVertices, const int numTriangles);
+	std::shared_ptr<SPerInstanceResources> GetOrCreatePerInstanceResources(int64 frameId,const void* pCustomTag, const int numVertices, const int numTriangles);
 	void                                   DebugDraw();
 
 private:
@@ -150,16 +150,17 @@ class CComputeSkinningStage : public CGraphicsPipelineStage
 {
 public:
 	CComputeSkinningStage();
-	virtual void                               Init() override;
-	virtual void                               Prepare(CRenderView* pRenderView) override;
 
-	void                                       Execute(CRenderView* pRenderView);
+	void                                       Execute();
 
 	compute_skinning::IComputeSkinningStorage& GetStorage() { return m_storage; }
 private:
-	void                                       DispatchComputeShaders(CRenderView* pRenderView);
+	void                                       DispatchComputeShaders();
 	void                                       SetupDeformPass();
 
 	compute_skinning::CStorage m_storage;
+
+#if !defined(_RELEASE) // !NDEBUG
 	int32                      m_oldFrameIdExecute = -1;
+#endif
 };

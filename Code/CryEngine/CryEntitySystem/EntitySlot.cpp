@@ -669,7 +669,7 @@ void CEntitySlot::GetSlotInfo(SEntitySlotInfo& slotInfo) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySlot::SetAsLight(const CDLight& lightData, uint16 layerId)
+void CEntitySlot::SetAsLight(const SRenderLight& lightData, uint16 layerId)
 {
 	if (m_pRenderNode && m_pRenderNode->GetRenderNodeType() != eERType_Light)
 	{
@@ -685,7 +685,7 @@ void CEntitySlot::SetAsLight(const CDLight& lightData, uint16 layerId)
 	pLightNode->SetLayerId(layerId);
 	pLightNode->SetLightProperties(lightData);
 
-	CDLight& newLightData = pLightNode->GetLightProperties();
+	SRenderLight& newLightData = pLightNode->GetLightProperties();
 	newLightData.m_sName = m_pEntity->GetName(); // For debugging only.
 	newLightData.m_nEntityId = m_pEntity->GetId();
 

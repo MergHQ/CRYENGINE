@@ -895,8 +895,8 @@ void CSystem::Quit()
 	if (m_pTextModeConsole)
 		m_pTextModeConsole->OnShutdown();
 
-	if (GetIRenderer())
-		GetIRenderer()->RestoreGamma();
+	if (m_env.pRenderer)
+		m_env.pRenderer->RestoreGamma();
 
 	if (m_pCVarQuit && m_pCVarQuit->GetIVal() != 0)
 	{
@@ -915,11 +915,10 @@ void CSystem::Quit()
 		if (gEnv->pFlashUI)
 			gEnv->pFlashUI->Shutdown();
 
-		if (GetIRenderer())
+		if (m_env.pRenderer)
 		{
-			GetIRenderer()->StopRenderIntroMovies(false);
-			GetIRenderer()->StopLoadtimeFlashPlayback();
-			GetIRenderer()->ShutDownFast();
+			m_env.pRenderer->StopRenderIntroMovies(false);
+			m_env.pRenderer->StopLoadtimeFlashPlayback();
 		}
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
@@ -932,6 +931,9 @@ void CSystem::Quit()
 			gEnv->pScaleformHelper = nullptr;
 		}
 #endif
+
+		if (m_env.pRenderer)
+			m_env.pRenderer->ShutDownFast();
 
 		CryLogAlways("System:Quit");
 
@@ -1530,7 +1532,7 @@ void CSystem::RunMainLoop()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool CSystem::DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
+bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	// The frame profile system already creates an "overhead" profile label
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
@@ -1570,7 +1572,7 @@ bool CSystem::DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
 	}
 
-	RenderBegin();
+	RenderBegin(hWnd != 0 ? hWnd : reinterpret_cast<uintptr_t>(m_hWnd));
 
 	bool continueRunning = true;
 
@@ -1648,7 +1650,6 @@ bool CSystem::DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	}
 
 	Render();
-	m_env.p3DEngine->EndOcclusion();
 
 	if (m_env.pGameFramework != nullptr)
 	{
@@ -1803,23 +1804,27 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 	if (!gEnv->IsEditor() && gEnv->pRenderer)
 	{
+		CCamera& rCamera = GetViewCamera();
+
 		// if aspect ratio changes or is different from default we need to update camera
-		float fCurrentProjRatio = GetViewCamera().GetProjRatio();
-		float fNewProjRatio = fCurrentProjRatio;
+		const float fNewAspectRatio = gEnv->pRenderer->GetPixelAspectRatio();
+		const int   nNewWidth       = gEnv->pRenderer->GetOverlayWidth();
+		const int   nNewHeight      = gEnv->pRenderer->GetOverlayHeight();
 
-		float fPAR = gEnv->pRenderer->GetPixelAspectRatio();
-
-		uint32 dwWidth = m_rWidth->GetIVal();
-		uint32 dwHeight = m_rHeight->GetIVal();
-
-		float fHeight = ((float)dwHeight) * fPAR;
-
-		if (fHeight > 0.0f)
-			fNewProjRatio = (float)dwWidth / fHeight;
-
-		if (fNewProjRatio != fCurrentProjRatio)
-			GetViewCamera().SetFrustum(m_rWidth->GetIVal(), m_rHeight->GetIVal(), GetViewCamera().GetFov(), GetViewCamera().GetNearPlane(), GetViewCamera().GetFarPlane(), fPAR);
+		if ((fNewAspectRatio != rCamera.GetPixelAspectRatio()) ||
+		    (nNewWidth       != rCamera.GetViewSurfaceX()) ||
+		    (nNewHeight      != rCamera.GetViewSurfaceZ()))
+		{
+			rCamera.SetFrustum(
+				nNewWidth,
+				nNewHeight,
+				rCamera.GetFov(),
+				rCamera.GetNearPlane(),
+				rCamera.GetFarPlane(),
+				fNewAspectRatio);
+		}
 	}
+
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
 	if (m_pTestSystem)
 		m_pTestSystem->Update();
@@ -2468,6 +2473,19 @@ XmlNodeRef CSystem::CreateXmlNode(const char* sNodeName, bool bReuseStrings)
 IXmlUtils* CSystem::GetXmlUtils()
 {
 	return m_pXMLUtils;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::SetViewCamera(CCamera& Camera)
+{
+	m_ViewCamera = Camera;
+	m_ViewCamera.CalculateRenderMatrices();
+
+	IRenderAuxGeom* pAuxGeom = IRenderAuxGeom::GetAux();
+	if (pAuxGeom)
+	{
+		pAuxGeom->SetCamera(Camera);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

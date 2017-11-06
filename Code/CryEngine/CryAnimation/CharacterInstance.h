@@ -105,7 +105,7 @@ public:
 
 	void RuntimeInit(CDefaultSkeleton * pExtDefaultSkeleton);
 
-	SSkinningData* GetSkinningData();
+	SSkinningData* GetSkinningData(const SRenderingPassInfo& passInfo);
 
 	void           SetFilePath(const string& filePath) { m_strFilePath = filePath; }
 

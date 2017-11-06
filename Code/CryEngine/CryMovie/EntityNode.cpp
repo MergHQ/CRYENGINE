@@ -2691,7 +2691,7 @@ void CAnimEntityNode::AnimateLookAt(CLookAtTrack* pTrack, SAnimContext& animCont
 		// Override _LocalPlayer position with camera position - looks a lot better
 		if (m_lookAtLocalPlayer)
 		{
-			pos = gEnv->pRenderer->GetCamera().GetPosition();
+			pos = GetISystem()->GetViewCamera().GetPosition();
 		}
 		else
 		{

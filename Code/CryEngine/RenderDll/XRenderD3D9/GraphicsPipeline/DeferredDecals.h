@@ -15,8 +15,7 @@ public:
 	CDeferredDecalsStage();
 	virtual ~CDeferredDecalsStage();
 
-	void Init();
-	void Prepare(CRenderView* pRenderView) final;
+	void Init() final;
 	void Execute();
 
 private:

@@ -1095,7 +1095,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	if (!gSvoEnv->m_nTexRgb0PoolId)
 	{
-		gSvoEnv->m_nTexRgb0PoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+		gSvoEnv->m_nTexRgb0PoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 		                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 		m_nSvoDataPoolsCounter++;
 	}
@@ -1105,7 +1105,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		// direct lighting
 		if (!gSvoEnv->m_nTexRgb1PoolId)
 		{
-			gSvoEnv->m_nTexRgb1PoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexRgb1PoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 			m_nSvoDataPoolsCounter++;
 		}
@@ -1113,7 +1113,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		// dyn direct lighting
 		if (!gSvoEnv->m_nTexDynlPoolId && Cry3DEngineBase::GetCVars()->e_svoTI_DynLights)
 		{
-			gSvoEnv->m_nTexDynlPoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexDynlPoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 			m_nSvoDataPoolsCounter++;
 		}
@@ -1121,7 +1121,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		// propagation
 		if (!gSvoEnv->m_nTexRgb2PoolId && Cry3DEngineBase::GetCVars()->e_svoTI_NumberOfBounces > 1)
 		{
-			gSvoEnv->m_nTexRgb2PoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexRgb2PoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 			m_nSvoDataPoolsCounter++;
 		}
@@ -1129,7 +1129,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		// propagation
 		if (!gSvoEnv->m_nTexRgb3PoolId && Cry3DEngineBase::GetCVars()->e_svoTI_NumberOfBounces > 2)
 		{
-			gSvoEnv->m_nTexRgb3PoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexRgb3PoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 			m_nSvoDataPoolsCounter++;
 		}
@@ -1138,7 +1138,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		#ifdef FEATURE_SVO_GI_USE_MESH_RT
 		if (!gSvoEnv->m_nTexTrisPoolId && Cry3DEngineBase::GetCVars()->e_svoTI_RT_MaxDist)
 		{
-			gSvoEnv->m_nTexTrisPoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexTrisPoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 			m_nSvoDataPoolsCounter++;
 		}
@@ -1146,7 +1146,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		// snow
 		if (!gSvoEnv->m_nTexRgb4PoolId && Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Snow_Height)
 		{
-			gSvoEnv->m_nTexRgb4PoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexRgb4PoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 			m_nSvoDataPoolsCounter++;
 		}
@@ -1155,14 +1155,14 @@ void CVoxelSegment::CheckAllocateTexturePool()
 	{
 		if (!gSvoEnv->m_nTexNormPoolId)
 		{
-			gSvoEnv->m_nTexNormPoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexNormPoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadOnly);
 			m_nSvoDataPoolsCounter++;
 		}
 
 		if (!gSvoEnv->m_nTexAldiPoolId && Cry3DEngineBase::GetCVars()->e_svoTI_Diffuse_Cache)
 		{
-			gSvoEnv->m_nTexAldiPoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
+			gSvoEnv->m_nTexAldiPoolId = gEnv->pRenderer->UploadToVideoMemory3D(NULL,
 			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
 			m_nSvoDataPoolsCounter++;
 		}
@@ -1179,11 +1179,11 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		byte * pDataZero = 0;
 #endif
 
-		gSvoEnv->m_nTexOpasPoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(pDataZero,
+		gSvoEnv->m_nTexOpasPoolId = gEnv->pRenderer->UploadToVideoMemory3D(pDataZero,
 			nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadOnly);
 		m_nSvoDataPoolsCounter++;
 
-		gSvoEnv->m_nTexNodePoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(pDataZero,
+		gSvoEnv->m_nTexNodePoolId = gEnv->pRenderer->UploadToVideoMemory3D(pDataZero,
 			nVoxNodPoolDimXY, nVoxNodPoolDimXY, nVoxNodPoolDimZ, eTF_R32G32B32A32F, eTF_R32G32B32A32F, 1, false, FILTER_POINT, 0, 0, nFlagsReadOnly);
 
 #ifndef _RELEASE

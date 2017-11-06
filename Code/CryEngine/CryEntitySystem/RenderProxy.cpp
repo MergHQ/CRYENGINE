@@ -951,7 +951,7 @@ int CEntityRender::LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, Spaw
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CEntityRender::LoadLight(int nSlot, CDLight* pLight, uint16 layerId)
+int CEntityRender::LoadLight(int nSlot, SRenderLight* pLight, uint16 layerId)
 {
 	assert(pLight);
 	CEntitySlot* pSlot = GetOrMakeSlot(nSlot);

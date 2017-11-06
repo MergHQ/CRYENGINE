@@ -282,7 +282,7 @@ namespace UQS
 			if (!gEnv->pRenderer)
 				return;
 
-			const float xPos = (float)(gEnv->pRenderer->GetWidth() / 2 + 50);        // position found out by trial and error
+			const float xPos = (float)(gEnv->pRenderer->GetOverlayWidth() / 2 + 50);        // position found out by trial and error
 			int row = 1;
 
 			row = DrawQueryHistoryOverview(IQueryHistoryManager::EHistoryOrigin::Live, "live", xPos, row);

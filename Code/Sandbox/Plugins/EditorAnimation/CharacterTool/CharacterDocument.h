@@ -41,7 +41,6 @@ namespace Serialization
 {
 struct INavigationProvider;
 }
-class CDLight;
 
 namespace CharacterTool {
 

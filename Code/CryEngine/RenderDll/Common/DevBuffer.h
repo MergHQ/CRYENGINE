@@ -114,7 +114,7 @@ public:
 		if (CryInterlockedDecrement(&m_nRefCount) == 0)
 			ReturnToPool();
 	}
-
+	
 	inline D3DBuffer* GetD3D() const
 	{
 		return m_buffer->GetBuffer();
@@ -197,15 +197,6 @@ class CDeviceBufferManager
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Debug consistency functions
 	// Should only be called from the below befriended function! Please do not abuse!
-#if defined(CD3D9RENDERER_DEBUG_CONSISTENCY_CHECK)
-	// Wanted to only expose the actual function using these, however impossible to forward declare a method
-	// without including the full renderer here
-	friend class CD3D9Renderer;
-	void* BeginReadDirectIB(D3DIndexBuffer*, buffer_size_t size, buffer_size_t offset);
-	void* BeginReadDirectVB(D3DVertexBuffer*, buffer_size_t size, buffer_size_t offset);
-	void  EndReadDirectIB(D3DIndexBuffer*);
-	void  EndReadDirectVB(D3DVertexBuffer*);
-#endif
 
 	friend class CGuardedDeviceBufferManager;
 	friend class CSubmissionQueue_DX11;
@@ -219,6 +210,8 @@ class CDeviceBufferManager
 	void            EndReadWrite_Locked(buffer_handle_t handle);
 	bool            UpdateBuffer_Locked(buffer_handle_t handle, const void*, buffer_size_t, buffer_size_t = 0);
 	buffer_size_t   Size_Locked(buffer_handle_t);
+	
+	CConstantBuffer* CreateConstantBufferRaw(buffer_size_t size, bool dynamic = true, bool needslock = false);
 
 public:
 	CDeviceBufferManager();
@@ -264,7 +257,6 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// ConstantBuffer creation
-	CConstantBuffer*          CreateConstantBufferRaw(buffer_size_t size, bool dynamic = true, bool needslock = false);
 	inline CConstantBufferPtr CreateConstantBuffer(buffer_size_t size, bool dynamic = true, bool needslock = false)
 	{
 		CConstantBufferPtr result;

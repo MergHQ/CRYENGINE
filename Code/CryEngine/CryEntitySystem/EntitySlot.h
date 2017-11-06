@@ -79,7 +79,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	void UpdateRenderNode(bool bForceRecreateNode=false);
 
-	void SetAsLight( const CDLight &lightData,uint16 layerId=0 );
+	void SetAsLight( const SRenderLight &lightData,uint16 layerId=0 );
 
 	IRenderNode* GetRenderNode() const { return m_pRenderNode; }
 	void SetRenderNode(IRenderNode* pRenderNode);

@@ -1657,7 +1657,8 @@ uint32 CharacterManager::GetRendererMainThreadId()
 
 void CharacterManager::UpdateRendererFrame()
 {
-	s_renderFrameIdLocal++;
+	if (!s_bPaused)
+		s_renderFrameIdLocal++;
 }
 
 // should be called every frame

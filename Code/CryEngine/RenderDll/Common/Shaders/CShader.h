@@ -245,7 +245,6 @@ private:
 
 	CShader*       mfCompile(CShader* ef, char* scr);
 
-	bool           mfUpdateMergeStatus(SShaderTechnique* hs, std::vector<SCGParam>* p);
 	void           mfRefreshResources(CShaderResources* Res, const IRenderer::SLoadShaderItemArgs* pArgs = 0);
 
 	bool           mfReloadShaderFile(const char* szName, int nFlags);
@@ -352,7 +351,7 @@ public:
 	SShaderGen*                  m_pGlobalExt;
 
 	Vec4                         m_TempVecs[16];
-	Vec4                         m_RTRect;
+
 	std::vector<SShaderGenComb>  m_SGC;
 
 	int                          m_nCombinationsProcess;
@@ -407,8 +406,6 @@ public:
 	typedef ShaderExt::iterator                  ShaderExtItor;
 	ShaderExt   m_ShaderExts;
 
-	SCGParamsPF m_PF[RT_COMMAND_BUF_COUNT];
-
 	// Concatenated list of shader names using automatic masks generation
 	string m_pShadersRemapList;
 
@@ -423,23 +420,7 @@ public:
 	};
 
 public:
-	CShaderMan()
-	{
-		m_bInitialized = false;
-		m_bLoadedSystem = false;
-		s_DefaultShader = NULL;
-		m_pGlobalExt = NULL;
-		g_pShaderParserHelper = &m_shaderParserHelper;
-		m_nCombinationsProcess = -1;
-		m_nCombinationsProcessOverall = -1;
-		m_nCombinationsCompiled = -1;
-		m_nCombinationsEmpty = -1;
-		m_szShaderPrecache = NULL;
-		memset(m_TempVecs, 0, sizeof(Vec4) * 16);
-		memset(&m_RTRect, 0, sizeof(Vec4));
-		m_eCacheMode = eSC_Normal;
-		m_nFrameSubmit = 1;
-	}
+	CShaderMan();
 
 	void              ShutDown();
 	void              mfReleaseShaders();

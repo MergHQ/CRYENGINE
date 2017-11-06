@@ -9,6 +9,7 @@
 #include <IAudioImpl.h>
 #include <CryString/HashedString.h>
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryMath/Cry_Camera.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include <CryRenderer/IRenderAuxGeom.h>
@@ -1002,10 +1003,11 @@ void CATLAudioObject::DrawDebugInfo(
 
 	if (IRenderer* const pRenderer = gEnv->pRenderer)
 	{
+		auto& camera = GetISystem()->GetViewCamera();
 		pRenderer->ProjectToScreen(position.x, position.y, position.z, &screenPos.x, &screenPos.y, &screenPos.z);
 
-		screenPos.x = screenPos.x * 0.01f * pRenderer->GetWidth();
-		screenPos.y = screenPos.y * 0.01f * pRenderer->GetHeight();
+		screenPos.x = screenPos.x * 0.01f * camera.GetViewSurfaceX();
+		screenPos.y = screenPos.y * 0.01f * camera.GetViewSurfaceZ();
 	}
 	else
 	{

@@ -704,8 +704,8 @@ void CBoidObject::UpdateDisplay(SBoidContext& bc)
 	if(bc.animationMaxDistanceSq ==0)
 		return;
 
-	Vec3 cameraPos( gEnv->pRenderer->GetCamera().GetPosition());
-	Vec3 cameraDir(gEnv->pRenderer->GetCamera().GetMatrix().GetColumn1());
+	Vec3 cameraPos(GetISystem()->GetViewCamera().GetPosition());
+	Vec3 cameraDir(GetISystem()->GetViewCamera().GetMatrix().GetColumn1());
 
 	float  dot = (m_pos - cameraPos).Dot(cameraDir);
 

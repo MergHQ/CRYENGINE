@@ -106,7 +106,7 @@ public:
 		m_pRender = gEnv->pRenderer;
 		m_pRenderAux = m_pRender->GetIRenderAuxGeom();
 		m_prevFlags = m_pRenderAux->GetRenderFlags();
-		m_screenSize = Vec2(float(m_pRender->GetWidth()), float(m_pRender->GetHeight()));
+		m_screenSize = Vec2(float(m_pRenderAux->GetCamera().GetViewSurfaceX()), float(m_pRenderAux->GetCamera().GetViewSurfaceZ()));
 		SAuxGeomRenderFlags curFlags = m_prevFlags;
 		curFlags.SetMode2D3DFlag(e_Mode2D);
 		curFlags.SetDepthTestFlag(e_DepthTestOff);
@@ -437,7 +437,10 @@ void CParticleProfiler::DrawMemoryStats()
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 	CStatisticsDisplay output;
 
-	const Vec2 pixSz = Vec2(1.0f / gEnv->pRenderer->GetWidth(), 1.0f / gEnv->pRenderer->GetHeight());
+	const float screenWidth  = float(pRenderAux->GetCamera().GetViewSurfaceX());
+	const float screenHeight = float(pRenderAux->GetCamera().GetViewSurfaceZ());
+
+	const Vec2 pixSz = Vec2(1.0f / screenWidth, 1.0f / screenHeight);
 	const Vec2 offset = Vec2(0.25, 0.025f);
 	const float widthPerByte = 1.0f / float(1 << 15);
 	const float height = 1.0f / 64.0f;

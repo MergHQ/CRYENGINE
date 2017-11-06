@@ -292,10 +292,10 @@ public:
 	#endif
 	virtual int                        SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize = false) final;
 	virtual int                        LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params = NULL, bool bPrime = false, bool bSerialize = false) final;
-	virtual int                        LoadLight(int nSlot, CDLight* pLight) final;
-	int                                LoadLightImpl(int nSlot, CDLight* pLight);
+	virtual int                        LoadLight(int nSlot, SRenderLight* pLight) final;
+	int                                LoadLightImpl(int nSlot, SRenderLight* pLight);
 
-	virtual bool                       UpdateLightClipBounds(CDLight& light);
+	virtual bool                       UpdateLightClipBounds(SRenderLight& light);
 	int                                LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties);
 	virtual int                        LoadFogVolume(int nSlot, const SFogVolumeProperties& properties) override;
 

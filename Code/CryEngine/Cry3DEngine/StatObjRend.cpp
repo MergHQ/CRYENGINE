@@ -43,7 +43,7 @@ void CStatObj::Render(const SRendParams& rParams, const SRenderingPassInfo& pass
 	}
 #endif // _RELEASE
 
-	CRenderObject* pObj = GetRenderer()->EF_GetObject_Temp(passInfo.ThreadID());
+	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	FillRenderObject(rParams, rParams.pRenderNode, m_pMaterial, NULL, pObj, passInfo);
 
 	RenderInternal(pObj, rParams.nSubObjHideMask, rParams.lodValue, passInfo);
@@ -300,7 +300,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 	// Convert "camera space" to "world space"
 	if (pObj->m_ObjFlags & FOB_NEAREST)
 	{
-		tm.AddTranslation(gEnv->pRenderer->GetCamera().GetPosition());
+		tm.AddTranslation(passInfo.GetCamera().GetPosition());
 	}
 
 	bool bOnlyBoxes = GetCVars()->e_DebugDraw == -1;
@@ -1092,7 +1092,7 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 						
 						if (lodValue.LodA() >= 0)
 						{
-						RenderSubObject(pRenderObject, lodValue.LodA(), i, renderTM, passInfo);
+							RenderSubObject(pRenderObject, lodValue.LodA(), i, renderTM, passInfo);
 						}
 
 						if (pRenderObjectB && lodValue.LodB()>=0)
@@ -1121,10 +1121,10 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 		// draw mesh, don't even try to render childs
 		if (lodValue.LodA() >= 0)
 		{
-		RenderObjectInternal(pRenderObject, lodValue.LodA(), lodValue.DissolveRefA(), true, passInfo);
+			RenderObjectInternal(pRenderObject, lodValue.LodA(), lodValue.DissolveRefA(), true, passInfo);
 		}
 
-		if (lodValue.DissolveRefB() != 255 && lodValue.LodB()>=0) // check here since we're passing in A's ref.
+		if (lodValue.DissolveRefB() != 255 && lodValue.LodB() >= 0) // check here since we're passing in A's ref.
 		{
 			pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 			RenderObjectInternal(pRenderObject, lodValue.LodB(), lodValue.DissolveRefA(), false, passInfo);
@@ -1161,18 +1161,17 @@ void CStatObj::RenderSubObject(CRenderObject* pRenderObject, int nLod,
 			SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
 			pRenderObjectData->m_uniqueObjectId = pRenderObjectData->m_uniqueObjectId + nSubObjId;
 		}
-
-		pStatObj->RenderSubObjectInternal(pRenderObject, nLod, passInfo);
 	}
 	else
 	{
 		pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 		pRenderObject->m_II.m_Matrix = renderTM * subObj.tm;
+
 		SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
 		pRenderObjectData->m_uniqueObjectId = pRenderObjectData->m_uniqueObjectId + nSubObjId;
-
-		pStatObj->RenderSubObjectInternal(pRenderObject, nLod, passInfo);
 	}
+
+	pStatObj->RenderSubObjectInternal(pRenderObject, nLod, passInfo);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

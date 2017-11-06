@@ -420,6 +420,7 @@ inline void ZeroStruct(T& t)
 template<class T>
 inline void ZeroArray(T& t)
 {
+	PREFAST_SUPPRESS_WARNING(6260)
 	memset(&t, 0, sizeof(t[0]) * CRY_ARRAY_COUNT(t));
 }
 

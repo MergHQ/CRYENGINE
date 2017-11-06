@@ -1131,9 +1131,9 @@ struct ISystem
 
 	//! Starts a new frame, updates engine systems, game logic and finally renders.
 	//! \return Returns true if the engine should continue running, false to quit.
-	virtual bool DoFrame(CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
+	virtual bool DoFrame(uintptr_t hWnd = 0, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
 
-	virtual void RenderBegin() = 0;
+	virtual void RenderBegin(uintptr_t hWnd) = 0;
 	virtual void RenderEnd(bool bRenderStats = true) = 0;
 
 	//! Updates the engine's systems without creating a rendered frame

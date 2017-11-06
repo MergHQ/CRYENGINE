@@ -1149,15 +1149,16 @@ int CResFile::mfFileRead(SDirEntry* de)
 		else if (m_version == RESVERSION_DEBUG)
 		{
 			gEnv->pCryPak->FReadRaw(buf, de->size, 1, m_handle);
-			pOE->pData = new byte[de->size - 20];
-			de->flags |= RF_TEMPDATA;
-			if (!pOE->pData)
+			int allocSize = (int)de->size - 20;
+			if (allocSize < 0 || allocSize > 128*1024*1024)
 			{
+				mfSetError("FileRead - Corrupt DirEntiy size");
 				SAFE_DELETE_ARRAY(buf);
-				mfSetError("FileRead - Allocation fault");
 				return 0;
 			}
-			memcpy(pOE->pData, &buf[10], de->size - 20);
+			pOE->pData = new byte[allocSize];
+			de->flags |= RF_TEMPDATA;
+			memcpy(pOE->pData, &buf[10], allocSize);
 		}
 		else
 		{
@@ -1953,8 +1954,7 @@ ResDir* CResFile::mfGetDirectory()
 }
 
 //======================================================================
-
-void fpStripExtension(const char* const in, char* const out, const size_t bytes)
+void fpStripExtension(const char* in, _Out_writes_z_(bytes) char* out, size_t bytes)
 {
 	assert(in && out && (bytes || in == out)); // if this hits, check the call site
 	const size_t inlen = strlen(in);
@@ -2009,7 +2009,7 @@ const char* fpGetExtension(const char* in)
 	return NULL;
 }
 
-void fpAddExtension(char* path, const char* extension, size_t bytes)
+void fpAddExtension(_Inout_updates_z_(bytes) char* path, const char* extension, size_t bytes)
 {
 	assert(path && extension && bytes); // if this hits, check the call site
 	char* src;
@@ -2028,7 +2028,7 @@ void fpAddExtension(char* path, const char* extension, size_t bytes)
 	strcat(path, extension);
 }
 
-void fpConvertDOSToUnixName(char* dst, const char* src, size_t bytes)
+void fpConvertDOSToUnixName(_Out_writes_z_(bytes) char* dst, const char* src, size_t bytes)
 {
 	assert(dst && src && bytes); // if this hits, check the call site
 	assert(bytes > strlen(src)); // if this hits, bad buffer was passed in
@@ -2044,7 +2044,7 @@ void fpConvertDOSToUnixName(char* dst, const char* src, size_t bytes)
 	*dst = 0;
 }
 
-void fpConvertUnixToDosName(char* dst, const char* src, size_t bytes)
+void fpConvertUnixToDosName(_Out_writes_z_(bytes) char* dst, const char* src, size_t bytes)
 {
 	assert(dst && src && bytes); // if this hits, check the call site
 	assert(bytes > strlen(src)); // if this hits, bad buffer was passed in
@@ -2060,7 +2060,7 @@ void fpConvertUnixToDosName(char* dst, const char* src, size_t bytes)
 	*dst = 0;
 }
 
-void fpUsePath(const char* name, const char* path, char* dst, size_t bytes)
+void fpUsePath(const char* name, const char* path, _Out_writes_z_(bytes) char* dst, size_t bytes)
 {
 	assert(name && dst && bytes); // if this hits, check the call site
 

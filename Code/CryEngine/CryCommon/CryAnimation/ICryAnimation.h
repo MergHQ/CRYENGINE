@@ -96,7 +96,6 @@ struct CryCharMorphParams;
 struct IMaterial;
 struct IStatObj;
 struct IRenderMesh;
-class CDLight;
 
 class CDefaultSkeleton;
 
