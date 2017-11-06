@@ -737,9 +737,8 @@ CRY_UNIT_TEST_SUITE(Math)
 
 #ifdef CRY_HARDWARE_VECTOR4
 
-#ifndef _DEBUG
-	#define VECTOR_PROFILE
-#endif
+// Enable this macro only to get vector timing results. Normally off, as it slows down compilation.
+// #define VECTOR_PROFILE
 
 CRY_UNIT_TEST_SUITE(MathVector)
 {
@@ -814,7 +813,7 @@ CRY_UNIT_TEST_SUITE(MathVector)
 		{
 			auto res1 = code1(tester1.elems[i]);
 			auto res2 = code2(tester2.elems[i]);
-			CRY_ASSERT_MESSAGE(IsEquivalent(res1, res2, tolerance), message);
+			CRY_ASSERT_MESSAGE(IsEquivalent(res1, res2, tolerance), message, i);
 		}
 	}
 
@@ -827,7 +826,8 @@ CRY_UNIT_TEST_SUITE(MathVector)
 
 	void VectorTest(TestMode mode)
 	{
-		#define	VECTOR_PROFILE_CODE(tester, code) { \
+	#ifdef VECTOR_PROFILE
+		#define	VECTOR_PROFILE_TESTER(tester, code) { \
 			auto& e = tester.elems[0]; \
 			typedef decltype(code) Result; \
 			Result results[VCount]; \
@@ -842,23 +842,31 @@ CRY_UNIT_TEST_SUITE(MathVector)
 				tester.times[stat] += time; \
 		}
 
+		#define	VECTOR_PROFILE_CODE(code)  { \
+			VECTOR_PROFILE_TESTER(test4H, code) \
+			VECTOR_PROFILE_TESTER(test4,  code) \
+			VECTOR_PROFILE_TESTER(test3H, code) \
+			VECTOR_PROFILE_TESTER(test3,  code) \
+			++stat; \
+		}
+
+	#else
+		#define	VECTOR_PROFILE_CODE(code)
+	#endif
+
 		#define	VECTOR_TEST_CODE(code, tolerance) \
 			if (mode == TestMode::Verify) \
 			{ \
 				if (add_names) TestNames.push_back(#code); \
-				VerifyCode<Element4H, Element4>("mismatch: " #code, test4H, test4, [](Element4H& e) { return (code); }, [](Element4& e) { return (code); }, tolerance); \
-				VerifyCode<Element3H, Element3>("mismatch: " #code, test3H, test3, [](Element3H& e) { return (code); }, [](Element3& e) { return (code); }, tolerance); \
+				VerifyCode<Element4H, Element4>("mismatch 4/4H #%d: " #code, test4H, test4, [](Element4H& e) { return (code); }, [](Element4& e) { return (code); }, tolerance); \
+				VerifyCode<Element3H, Element3>("mismatch 3/3H #%d: " #code, test3H, test3, [](Element3H& e) { return (code); }, [](Element3& e) { return (code); }, tolerance); \
 			} \
 			else \
 			{ \
-				VECTOR_PROFILE_CODE(test4H, code) \
-				VECTOR_PROFILE_CODE(test4,  code) \
-				VECTOR_PROFILE_CODE(test3H, code) \
-				VECTOR_PROFILE_CODE(test3,  code) \
-				++stat; \
+				VECTOR_PROFILE_CODE(code) \
 			} \
 
-		static const float Tolerance = -1e5f;
+		static const float Tolerance = -1e-5f;
 		bool add_names = TestNames.empty();
 
 		int stat = 0;
