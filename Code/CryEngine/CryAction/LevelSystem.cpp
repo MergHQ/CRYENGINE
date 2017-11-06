@@ -2011,12 +2011,8 @@ void CLevelSystem::UnLoadLevel()
 		gEnv->pRenderer->EndFrame();
 
 		// force a black screen as last render command
-		gEnv->pRenderer->BeginFrame();
-		gEnv->pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
-		gEnv->pRenderer->Draw2dImage(0, 0, 800, 600, -1, 0.0f, 0.0f, 1.0f, 1.0f, 0.f,
+		IRenderAuxImage::Draw2dImage(0, 0, 800, 600, -1, 0.0f, 0.0f, 1.0f, 1.0f, 0.f,
 		                             0.0f, 0.0f, 0.0f, 1.0, 0.f);
-		gEnv->pRenderer->EndFrame();
-
 		//flush any outstanding texture requests
 		gEnv->pRenderer->FlushPendingTextureTasks();
 	}
@@ -2164,6 +2160,7 @@ void CLevelSystem::UnLoadLevel()
 	m_pCurrentLevelInfo = nullptr;
 
 	// Force to clean render resources left after deleting all objects and materials.
+	const int flags = gEnv->IsEditor() ? FRR_LEVEL_UNLOAD_SANDBOX : FRR_LEVEL_UNLOAD_LAUNCHER;
 	IRenderer* pRenderer = gEnv->pRenderer;
 	if (pRenderer)
 	{
@@ -2172,8 +2169,7 @@ void CLevelSystem::UnLoadLevel()
 		CryComment("Deleting Render meshes, render resources and flush texture streaming");
 		
 		// This may also release some of the materials.
-		const int flags = gEnv->IsEditor() ? FRR_LEVEL_UNLOAD_SANDBOX : FRR_LEVEL_UNLOAD_LAUNCHER;
-		pRenderer->FreeResources(flags);
+		pRenderer->FreeSystemResources(flags);
 
 		CryComment("done");
 	}
@@ -2186,6 +2182,11 @@ void CLevelSystem::UnLoadLevel()
 	// Must be sent last.
 	// Cleanup all containers
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_POST_UNLOAD, 0, 0);
+
+	if (pRenderer)
+	{
+		pRenderer->InitSystemResources(flags);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -413,8 +413,8 @@ Device* Device::CreateInstance(vr::IVRSystem* pSystem)
 // -------------------------------------------------------------------------
 void Device::GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const
 {
-	float fNear = gEnv->pRenderer->GetCamera().GetNearPlane();
-	float fFar = gEnv->pRenderer->GetCamera().GetFarPlane();
+	float fNear = GetISystem()->GetViewCamera().GetNearPlane();
+	float fFar = GetISystem()->GetViewCamera().GetFarPlane();
 
 	vr::HmdMatrix44_t proj = m_system->GetProjectionMatrix(vr::EVREye::Eye_Left, fNear, fFar);
 
@@ -675,8 +675,8 @@ void Device::CreateDevice()
 		gEnv->pLog->Log("[HMD][OpenVR] Could not create overlay: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
 	}
 
-	float fNear = gEnv->pRenderer->GetCamera().GetNearPlane();
-	float fFar = gEnv->pRenderer->GetCamera().GetFarPlane();
+	float fNear = GetISystem()->GetViewCamera().GetNearPlane();
+	float fFar = GetISystem()->GetViewCamera().GetFarPlane();
 
 	vr::HmdMatrix44_t proj = m_system->GetProjectionMatrix(vr::EVREye::Eye_Left, fNear, fFar);
 

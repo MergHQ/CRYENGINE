@@ -796,7 +796,7 @@ public:
 
 	virtual EType GetAttachmentType() override { return eAttachment_Light; }
 
-	void          LoadLight(const CDLight& light)
+	void          LoadLight(const SRenderLight& light)
 	{
 		m_pLightSource = gEnv->p3DEngine->CreateLightSource();
 		if (m_pLightSource)
@@ -809,7 +809,7 @@ public:
 	{
 		if (m_pLightSource)
 		{
-			CDLight& light = m_pLightSource->GetLightProperties();
+			SRenderLight& light = m_pLightSource->GetLightProperties();
 			Matrix34 worldMatrix = Matrix34(pIAttachment->GetAttWorldAbsolute());
 			Vec3 origin = worldMatrix.GetTranslation();
 			light.SetPosition(origin);

@@ -31,7 +31,7 @@ namespace Cry
 				return;
 			}
 
-			CDLight light;
+			SRenderLight light;
 
 			light.m_nLightStyle = m_animations.m_style;
 			light.SetAnimSpeed(m_animations.m_speed);

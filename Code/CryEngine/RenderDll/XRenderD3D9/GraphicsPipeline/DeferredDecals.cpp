@@ -52,10 +52,6 @@ void CDeferredDecalsStage::Init()
 	}
 }
 
-void CDeferredDecalsStage::Prepare(CRenderView* pRenderView)
-{
-}
-
 void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRenderPrimitive& primitive, _smart_ptr<IRenderShaderResources>& pShaderResources)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
@@ -132,13 +128,13 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 	primitive.SetSampler(1, diffuseMapSampler);
 	primitive.SetSampler(9, EDefaultSamplerStates::PointClamp);  // Used by gbuffer normal encoding
 
-	primitive.SetTexture(0, CTexture::s_ptexZTarget);
-	primitive.SetTexture(1, (CTexture*)CTexture::s_ptexBackBuffer);  // Contains copy of scene normals
+	primitive.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+	primitive.SetTexture(1, (CTexture*)CRendererResources::s_ptexBackBuffer);  // Contains copy of scene normals
 	primitive.SetTexture(2, (CTexture*)pDiffuseMap);
 	primitive.SetTexture(3, (CTexture*)pNormalMap);
 	primitive.SetTexture(4, (CTexture*)pSmoothnessMap);
 	primitive.SetTexture(5, (CTexture*)pOpacityMap);
-	primitive.SetTexture(30, CTexture::s_ptexNormalsFitting);
+	primitive.SetTexture(30, CRendererResources::s_ptexNormalsFitting);
 
 	bool bCameraInVolume;
 
@@ -147,17 +143,17 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		auto& constantManager = primitive.GetConstantManager();
 		auto constants = constantManager.BeginTypedConstantUpdate<SDecalConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel | EShaderStage_Vertex);
 
-		CStandardGraphicsPipeline::SViewInfo viewInfo[2];
-		int viewInfoCount = gcpRendD3D->GetGraphicsPipeline().GetViewInfo(viewInfo);
+		SRenderViewInfo viewInfo[2];
+		size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
 
 		const Vec3 vBasisX = decal.projMatrix.GetColumn0();
 		const Vec3 vBasisY = decal.projMatrix.GetColumn1();
 		const Vec3 vBasisZ = decal.projMatrix.GetColumn2();
 
-		Vec3 camFront = viewInfo[0].pRenderCamera->vZ.normalized();
-		Vec3 camPos = viewInfo[0].pRenderCamera->vOrigin;
-		float camFar = viewInfo[0].pRenderCamera->fFar;
-		float camNear = viewInfo[0].pRenderCamera->fNear;
+		Vec3  camFront = viewInfo[0].cameraVZ.normalized();
+		Vec3  camPos   = viewInfo[0].cameraOrigin;
+		float camFar   = viewInfo[0].farClipPlane;
+		float camNear  = viewInfo[0].nearClipPlane;
 	
 		const float r = fabs(vBasisX.dot(camFront)) + fabs(vBasisY.dot(camFront)) + fabs(vBasisZ.dot(camFront));
 		const float s = camFront.dot(decal.projMatrix.GetTranslation() - camPos);
@@ -225,7 +221,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		// MipLevel = log2 --------------------------------------------------------
 		//                 screenResolution * dot(viewVector, decalNormal)
 
-		const float screenRes = (float)CTexture::s_ptexSceneNormalsMap->GetWidth() * 0.5f + (float)CTexture::s_ptexSceneNormalsMap->GetHeight() * 0.5f;
+		const float screenRes = (float)CRendererResources::s_ptexSceneNormalsMap->GetWidth() * 0.5f + (float)CRendererResources::s_ptexSceneNormalsMap->GetHeight() * 0.5f;
 		const float decalSize = max(vBasisX.GetLength() * 2.0f, vBasisY.GetLength() * 2.0f);
 		const float texScale = max(
 			texMatrix.GetColumn(0).GetLength() * decal.rectTexture.w,
@@ -277,28 +273,33 @@ void CDeferredDecalsStage::Execute()
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	auto& deferredDecals = rd->GetGraphicsPipeline().GetCurrentRenderView()->GetDeferredDecals();
+	auto& deferredDecals = RenderView()->GetDeferredDecals();
 	assert(deferredDecals.size() <= kMaxDeferredDecals);
-	
+
+#if !CRY_PLATFORM_ORBIS
+	// Want the buffer cleared or we'll just get black out
+	if (deferredDecals.empty())
+#endif
+		return;
+
 	PROFILE_LABEL_SCOPE("DEFERRED_DECALS");
 
 	// Create temporary copy to enable reads from normal target
-	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(CTexture::s_ptexSceneNormalsMap->GetDevTexture(), CTexture::s_ptexBackBuffer->GetDevTexture());
+	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(CRendererResources::s_ptexSceneNormalsMap->GetDevTexture(), CRendererResources::s_ptexBackBuffer->GetDevTexture());
 	
 	// Sort decals
 	std::stable_sort(deferredDecals.begin(), deferredDecals.end(), DecalSortComparison());
 
-	CTexture* pSceneSpecular = CTexture::s_ptexSceneSpecular;
+	CTexture* pSceneSpecular = CRendererResources::s_ptexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
-	pSceneSpecular = CTexture::s_ptexSceneSpecularESRAM;
+	pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
 #endif
-	m_decalPass.SetRenderTarget(0, CTexture::s_ptexSceneNormalsMap);
-	m_decalPass.SetRenderTarget(1, CTexture::s_ptexSceneDiffuse );
+	m_decalPass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
+	m_decalPass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
 	m_decalPass.SetRenderTarget(2, pSceneSpecular);
-	m_decalPass.SetDepthTarget(rd->m_pZTexture);
+	m_decalPass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
 	
-	D3DViewPort viewport = { 0.f, 0.f, float(rd->m_MainViewport.nWidth), float(rd->m_MainViewport.nHeight), 0.0f, 1.0f };
-	m_decalPass.SetViewport(viewport);
+	m_decalPass.SetViewport(RenderView()->GetViewport());
 		
 	m_decalPass.BeginAddingPrimitives();
 		

@@ -41,7 +41,7 @@ namespace Cry
 			break;
 			case ENTITY_EVENT_UPDATE:
 			{
-					const Vec3 vCamPos = gEnv->pRenderer->GetCamera().GetPosition();
+					const Vec3 vCamPos = GetISystem()->GetViewCamera().GetPosition();
 					Vec3 vR = (GetEntity()->GetWorldPos() - vCamPos) / max(static_cast<float>(m_radius), 1e-3f);
 					float fAttenAmount = max(0.f, 1.0f - vR.dot(vR));
 					fAttenAmount *= m_amount;

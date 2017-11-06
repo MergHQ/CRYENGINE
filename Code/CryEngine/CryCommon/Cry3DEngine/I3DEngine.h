@@ -1720,12 +1720,6 @@ struct I3DEngine : public IProcess
 	//! \return A pointer to an IPhysMaterialEnumerator derived object.
 	virtual IPhysMaterialEnumerator* GetPhysMaterialEnumerator() = 0;
 
-	// Internal functions.
-
-	// Summary:
-	//	 Allows to enable fog in editor
-	virtual void SetupDistanceFog() = 0;
-
 	// Summary:
 	//	 Loads environment settings for specified mission
 	virtual void LoadMissionDataFromXMLNode(const char* szMissionName) = 0;
@@ -1925,8 +1919,8 @@ struct I3DEngine : public IProcess
 	virtual void DeleteLightSource(ILightSource* pLightSource) = 0;
 
 	//! Gives access to the list holding all static light sources.
-	//! \return An array holding all the CDLight pointers.
-	virtual const PodArray<CDLight*>*      GetStaticLightSources() = 0;
+	//! \return An array holding all the SRenderLight pointers.
+	virtual const PodArray<SRenderLight*>*      GetStaticLightSources() = 0;
 	virtual const PodArray<ILightSource*>* GetLightEntities() = 0;
 
 	//! Gives access to list holding all lighting volumes.
@@ -2143,7 +2137,7 @@ struct I3DEngine : public IProcess
 	//! Gives 3dengine access to original and most precise heighmap data in the editor
 	virtual void                SetEditorHeightmapCallback(IEditorHeightmap* pCallBack) = 0;
 
-	virtual PodArray<CDLight*>* GetDynamicLightSources() = 0;
+	virtual PodArray<SRenderLight*>* GetDynamicLightSources() = 0;
 
 	virtual IParticleManager*   GetParticleManager() = 0;
 
@@ -2483,12 +2477,13 @@ struct SRenderingPassInfo
 	};
 
 	//! Creating function for RenderingPassInfo, the create functions will fetch all other necessary information like thread id/frame id, etc.
-	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false);
+	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, uintptr_t displayContextHandle=0);
 	static SRenderingPassInfo CreateRecursivePassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_RECURSIVE_FLAGS);
-	static SRenderingPassInfo CreateShadowPassRenderingInfo(CRenderView* pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
+	static SRenderingPassInfo CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
 	static SRenderingPassInfo CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS);
 	static SRenderingPassInfo CreateTempRenderingInfo(const CCamera& rCamera, const SRenderingPassInfo& rPassInfo);
 	static SRenderingPassInfo CreateTempRenderingInfo(uint32 nRenderingFlags, const SRenderingPassInfo& rPassInfo);
+	static SRenderingPassInfo CreateTempRenderingInfo(SRendItemSorter s, const SRenderingPassInfo& rPassInfo);
 
 	// state getter
 	bool             IsGeneralPass() const;
@@ -2547,11 +2542,13 @@ struct SRenderingPassInfo
 	SRendItemSorter& GetRendItemSorter() const                   { return m_renderItemSorter; };
 	void             OverrideRenderItemSorter(SRendItemSorter s) { m_renderItemSorter = s; }
 
+	CryDisplayContextHandle  GetDisplayContextHandle() const     { return m_displayContextHandle; }
+
 	// Job state associated with rendering to this view
 	void  SetWriteMutex(void* jobState) { m_pJobState = jobState; }
 	void* WriteMutex() const            { return m_pJobState; };
 
-	SRenderingPassInfo(threadID id) : SRenderingPassInfo()
+	SRenderingPassInfo(threadID id)
 	{
 		SetThreadID(id);
 	}
@@ -2560,63 +2557,56 @@ private:
 
 	//! Private constructor, creation is only allowed with create functions.
 	SRenderingPassInfo()
-		: pShadowGenMask(NULL)
-		, nShadowSide(0)
-		, nShadowLod(0)
-		, nShadowFrustumId(0)
-		, m_bAuxWindow(0)
-		, m_nRenderStackLevel(0)
-		, m_eShadowMapRendering(static_cast<uint8>(SHADOW_MAP_NONE))
-		, m_bCameraUnderWater(0)
-		, m_nRenderingFlags(0)
-		, m_fZoomFactor(0.0f)
-		, m_pCamera(NULL)
-		, m_nZoomInProgress(0)
-		, m_nZoomMode(0)
-		, m_pJobState(nullptr)
 	{
 		threadID nThreadID = 0;
 		gEnv->pRenderer->EF_Query(EFQ_MainThreadList, nThreadID);
 		m_nThreadID = static_cast<uint8>(nThreadID);
-		m_nRenderFrameID = gEnv->pRenderer->GetFrameID();
-		m_nRenderMainFrameID = gEnv->pRenderer->GetFrameID(false);
+		m_nRenderMainFrameID = gEnv->nMainFrameID;
 	}
 
 	void InitRenderingFlags(uint32 nRenderingFlags);
 	void SetCamera(const CCamera& cam);
-	void SetRenderView(CRenderView* pRenderView);
 
-	uint8  m_nThreadID;
-	uint8  m_nRenderStackLevel;
-	uint8  m_eShadowMapRendering;   //!< State flag denoting what type of shadow map is being currently rendered into.
-	uint8  m_bCameraUnderWater;
+	void SetRenderView(int nThreadID, IRenderView::EViewType Type = IRenderView::eViewType_Default);
+	void SetRenderView(IRenderViewPtr pRenderView);
+	void SetRenderView(IRenderView* pRenderView);
 
-	uint32 m_nRenderingFlags;
+	uint8  m_nThreadID           = 0;
+	uint8  m_nRenderStackLevel   = 0;
+	uint8  m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_NONE);   //!< State flag denoting what type of shadow map is being currently rendered into.
+	uint8  m_bCameraUnderWater   = false;
 
-	float  m_fZoomFactor;
+	uint32 m_nRenderingFlags     = 0;
 
-	int    m_nRenderFrameID;
-	uint32 m_nRenderMainFrameID;
+	float  m_fZoomFactor         = 0.0f;
+
+	uint32 m_nRenderMainFrameID  = 0;
 
 	// Current pass render item sorter.
 	mutable SRendItemSorter m_renderItemSorter;
 
-	const CCamera*          m_pCamera;
+	const CCamera*          m_pCamera = nullptr;
 
 	// Render view used for this rendering pass
-	CRenderView* m_pRenderView;
+	IRenderViewPtr m_pRenderView;
 
 	// members used only in shadow pass
-	uint32* pShadowGenMask;
-	uint32  nShadowFrustumId;
+	uint32* pShadowGenMask    = nullptr;
+	uint32  nShadowFrustumId  = 0;
 	uint8   nShadowSide : 4;
 	uint8   nShadowLod  : 4;
-	uint8   m_nZoomInProgress;
-	uint8   m_nZoomMode;
-	uint8   m_bAuxWindow;
+	uint8   m_nZoomInProgress = false;
+	uint8   m_nZoomMode       = 0;
+	uint8   m_bAuxWindow      = false;
 
 	// Job state to use for all jobs spawned by rendering with this pass.
-	void* m_pJobState;
+	void* m_pJobState = nullptr;
+
+	// Windows handle of the target Display Context in the multi-context rendering (in Editor)
+	CryDisplayContextHandle m_displayContextHandle = 0;
+
+	// Optional render target clear color.
+	ColorB m_clearColor = {0,0,0,0};
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2672,7 +2662,7 @@ inline threadID SRenderingPassInfo::ThreadID() const
 ///////////////////////////////////////////////////////////////////////////////
 inline int SRenderingPassInfo::GetFrameID() const
 {
-	return m_nRenderFrameID;
+	return (int)m_nRenderMainFrameID;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2854,18 +2844,19 @@ inline uint8 SRenderingPassInfo::ShadowFrustumLod() const
 ////////////////////////////////////////////////////////////////////////////////
 inline CRenderView* SRenderingPassInfo::GetRenderView() const
 {
-	return m_pRenderView;
+	return reinterpret_cast<CRenderView*>(m_pRenderView.get());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 inline IRenderView* SRenderingPassInfo::GetIRenderView() const
 {
-	return (IRenderView*)m_pRenderView;
+	return m_pRenderView.get();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 inline void SRenderingPassInfo::SetCamera(const CCamera& cam)
 {
+	cam.CalculateRenderMatrices();
 	m_pCamera = gEnv->p3DEngine->GetRenderingPassCamera(cam);
 	m_bCameraUnderWater = gEnv->p3DEngine->IsUnderWater(cam.GetPosition());
 	m_fZoomFactor = 0.2f + 0.8f * (RAD2DEG(cam.GetFov()) / 60.f);
@@ -2920,11 +2911,27 @@ inline void SRenderingPassInfo::InitRenderingFlags(uint32 nRenderingFlags)
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline void SRenderingPassInfo::SetRenderView(CRenderView* pRenderView)
+
+inline void SRenderingPassInfo::SetRenderView(int nThreadID, IRenderView::EViewType Type)
+{
+	m_pRenderView = reinterpret_cast<IRenderView*>(gEnv->pRenderer->GetOrCreateRenderView(Type));
+	SetRenderView(m_pRenderView.get());
+}
+
+inline void SRenderingPassInfo::SetRenderView(IRenderViewPtr pRenderView)
 {
 	m_pRenderView = pRenderView;
-	GetIRenderView()->SetSkipRenderingFlags(m_nRenderingFlags);
-	SetWriteMutex(GetIRenderView()->GetWriteMutex());
+	SetRenderView(pRenderView.get());
+}
+
+inline void SRenderingPassInfo::SetRenderView(IRenderView* pRenderView)
+{
+	pRenderView->SetSkipRenderingFlags(m_nRenderingFlags);
+	pRenderView->SetFrameId(GetFrameID());
+	pRenderView->SetFrameTime(gEnv->pTimer->GetFrameStartTime(ITimer::ETIMER_UI));
+	pRenderView->SetViewport(SRenderViewport(0, 0, m_pCamera->GetViewSurfaceX(), m_pCamera->GetViewSurfaceZ()));
+
+	SetWriteMutex(pRenderView->GetWriteMutex());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2933,19 +2940,20 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateBillBoardGenPassRenderingInf
 	const CCamera& rCameraToSet = rCamera;
 
 	SRenderingPassInfo passInfo;
+
 	passInfo.SetCamera(rCameraToSet);
 	passInfo.InitRenderingFlags(nRenderingFlags);
+	passInfo.SetRenderView(passInfo.ThreadID(), IRenderView::eViewType_BillboardGen);
+
 	passInfo.m_bAuxWindow = false;
-
+	passInfo.m_displayContextHandle = 0;
 	passInfo.m_renderItemSorter.nValue = 0;
-
-	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_BillboardGen));
 
 	return passInfo;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow)
+inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow, CryDisplayContextHandle displayContextHandle)
 {
 	static ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
 
@@ -2953,14 +2961,18 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(con
 	const CCamera& rCameraToSet = (pCameraFreeze && pCameraFreeze->GetIVal() != 0) ? gEnv->p3DEngine->GetRenderingCamera() : rCamera;
 
 	SRenderingPassInfo passInfo;
+
 	passInfo.SetCamera(rCameraToSet);
 	passInfo.InitRenderingFlags(nRenderingFlags);
+	passInfo.SetRenderView(passInfo.ThreadID(), IRenderView::eViewType_Default);
+
 	passInfo.m_bAuxWindow = bAuxWindow;
+	passInfo.m_displayContextHandle = displayContextHandle;
+	passInfo.m_renderItemSorter.nValue = 0;
 
 	// update general pass zoom factor
-	passInfo.m_nZoomMode = gEnv->p3DEngine->GetZoomMode();
 	float fPrevZoomFactor = gEnv->p3DEngine->GetPrevZoomFactor();
-
+	passInfo.m_nZoomMode = gEnv->p3DEngine->GetZoomMode();
 	passInfo.m_nZoomInProgress = passInfo.m_nZoomMode && fabs(fPrevZoomFactor - passInfo.m_fZoomFactor) > 0.02f;
 
 	int nZoomMode = passInfo.m_nZoomMode;
@@ -2977,10 +2989,6 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(con
 	gEnv->p3DEngine->SetPrevZoomFactor(passInfo.m_fZoomFactor);
 	gEnv->p3DEngine->SetZoomMode(passInfo.m_nZoomMode);
 
-	passInfo.m_renderItemSorter.nValue = 0;
-
-	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_Default));
-
 	return passInfo;
 }
 
@@ -2990,28 +2998,33 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateRecursivePassRenderingInfo(c
 	static ICVar* pRecursionViewDistRatio = gEnv->pConsole->GetCVar("e_RecursionViewDistRatio");
 
 	SRenderingPassInfo passInfo;
-	passInfo.m_nRenderStackLevel = 1;
+
 	passInfo.SetCamera(rCamera);
+	passInfo.InitRenderingFlags(nRenderingFlags);
+	passInfo.SetRenderView(passInfo.ThreadID(), IRenderView::eViewType_Recursive);
+
+//	passInfo.m_bAuxWindow = bAuxWindow;
+//	passInfo.m_displayContextHandle = displayContextHandle;
+	passInfo.m_renderItemSorter.nValue = SRendItemSorter::eRecursivePassMask;
+	passInfo.m_nRenderStackLevel = 1;
 
 	// adjust view distance in recursive mode by adjusting the ZoomFactor
 	passInfo.m_fZoomFactor /= pRecursionViewDistRatio->GetFVal();
-
-	passInfo.InitRenderingFlags(nRenderingFlags);
-
-	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_Recursive));
-
-	passInfo.m_renderItemSorter.nValue = SRendItemSorter::eRecursivePassMask;
 
 	return passInfo;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(CRenderView* pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags)
+inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags)
 {
 	SRenderingPassInfo passInfo;
+
 	passInfo.SetCamera(rCamera);
 	passInfo.InitRenderingFlags(nRenderingFlags);
 	passInfo.SetRenderView(pRenderView);
+	
+	passInfo.m_renderItemSorter.nValue = passInfo.ShadowFrustumID();
+//	passInfo.m_renderItemSorter.nValue |= passInfo.IsRecursivePass() ? SRendItemSorter::eRecursivePassMask : 0;
 
 	// set correct shadow map type
 	if (nLightFlags & DLF_SUN)
@@ -3032,9 +3045,6 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(CRen
 	passInfo.nShadowLod = nShadowMapLod;
 	passInfo.nShadowFrustumId = nShadowFrustumID;
 
-	passInfo.m_renderItemSorter.nValue = passInfo.ShadowFrustumID();
-	//passInfo.m_renderItemSorter.nValue |= passInfo.IsRecursivePass() ? SRendItemSorter::eRecursivePassMask : 0;
-
 	return passInfo;
 }
 
@@ -3042,6 +3052,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(CRen
 inline SRenderingPassInfo SRenderingPassInfo::CreateTempRenderingInfo(const CCamera& rCamera, const SRenderingPassInfo& rPassInfo)
 {
 	SRenderingPassInfo passInfo = rPassInfo;
+
 	passInfo.SetCamera(rCamera);
 
 	passInfo.pShadowGenMask = NULL;
@@ -3055,7 +3066,20 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateTempRenderingInfo(const CCam
 inline SRenderingPassInfo SRenderingPassInfo::CreateTempRenderingInfo(uint32 nRenderingFlags, const SRenderingPassInfo& rPassInfo)
 {
 	SRenderingPassInfo passInfo = rPassInfo;
+
+	passInfo.SetRenderView(nullptr);
 	passInfo.m_nRenderingFlags = nRenderingFlags;
 	passInfo.GetIRenderView()->SetSkipRenderingFlags(nRenderingFlags);
+
+	return passInfo;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline SRenderingPassInfo SRenderingPassInfo::CreateTempRenderingInfo(SRendItemSorter s, const SRenderingPassInfo& rPassInfo)
+{
+	SRenderingPassInfo passInfo = rPassInfo;
+
+	passInfo.OverrideRenderItemSorter(s);
+
 	return passInfo;
 }

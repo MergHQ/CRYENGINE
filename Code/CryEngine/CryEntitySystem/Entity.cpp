@@ -2723,19 +2723,19 @@ int CEntity::LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParam
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CEntity::LoadLight(int nSlot, CDLight* pLight)
+int CEntity::LoadLight(int nSlot, SRenderLight* pLight)
 {
 	return LoadLightImpl(nSlot, pLight);
 }
 
-int CEntity::LoadLightImpl(int nSlot, CDLight* pLight)
+int CEntity::LoadLightImpl(int nSlot, SRenderLight* pLight)
 {
 	uint16 layerId = ~0;
 	return m_render.LoadLight(nSlot, pLight, layerId);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntity::UpdateLightClipBounds(CDLight& light)
+bool CEntity::UpdateLightClipBounds(SRenderLight& light)
 {
 	bool bLightBoxValid = false;
 	for (IEntityLink* pLink = m_pEntityLinks; pLink; pLink = pLink->next)

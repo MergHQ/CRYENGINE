@@ -86,3 +86,15 @@ void CGraphicsPipelineStateLocalCache::Put(const SGraphicsPipelineStateDescripti
 	cache.m_pipelineStates = states;
 	m_states.push_back(cache);
 }
+
+//////////////////////////////////////////////////////////////////////////
+const SRenderViewport& CGraphicsPipelineStage::GetViewport() const
+{
+	return m_pRenderView->GetViewport();
+}
+
+//////////////////////////////////////////////////////////////////////////
+const SRenderViewInfo& CGraphicsPipelineStage::GetCurrentViewInfo() const
+{
+	return m_pRenderView->GetViewInfo(CCamera::eEye_Left);
+}

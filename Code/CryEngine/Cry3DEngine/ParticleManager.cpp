@@ -1373,7 +1373,7 @@ void CParticleManager::ListEffects()
 	for (auto& me : mapEffectStats)
 	{
 		SParticleCounts const& counts = me.second;
-		float fPixToScreen = 1.f / ((float)GetRenderer()->GetWidth() * (float)GetRenderer()->GetHeight());
+		float fPixToScreen = 1.f / ((float)GetRenderer()->GetOverlayWidth() * (float)GetRenderer()->GetOverlayHeight());
 		CryLogAlways(
 		  "%s, "
 		  "%.0f, %.0f, %.0f, "
@@ -1439,7 +1439,7 @@ void CParticleManager::DumpAndResetVertexIndexPoolUsage()
 		float fTextColorOutOfMemory[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 		float fTextColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		float* pColor = bOutOfMemory ? fTextColorOutOfMemory : fTextColor;
-		float fScreenPix = (float)(GetRenderer()->GetWidth() * GetRenderer()->GetHeight());
+		float fScreenPix = (float)(GetRenderer()->GetOverlayWidth() * GetRenderer()->GetOverlayHeight());
 
 		SParticleCounts CurCounts;
 		m_pPartManager->GetCounts(CurCounts);

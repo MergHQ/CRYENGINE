@@ -104,7 +104,7 @@ std::shared_ptr<compute_skinning::IPerMeshDataSupply> CStorage::GetOrCreateCompu
 	return m_perMeshResources[pMesh];
 }
 
-std::shared_ptr<SPerInstanceResources> CStorage::GetOrCreatePerInstanceResources(const void* pCustomTag, const int numVertices, const int numTriangles)
+std::shared_ptr<SPerInstanceResources> CStorage::GetOrCreatePerInstanceResources(int64 frameId,const void* pCustomTag, const int numVertices, const int numTriangles)
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csInstance);
 	auto it = m_perInstanceResources.find(pCustomTag);
@@ -114,7 +114,7 @@ std::shared_ptr<SPerInstanceResources> CStorage::GetOrCreatePerInstanceResources
 		it = m_perInstanceResources.insert(std::make_pair(pCustomTag, element)).first;
 	}
 
-	it->second->lastFrameInUse = gcpRendD3D->GetFrameID(false);
+	it->second->lastFrameInUse = frameId;
 	return it->second;
 }
 
@@ -143,10 +143,10 @@ void CStorage::RetirePerMeshResources()
 	}
 }
 
-void CStorage::RetirePerInstanceResources()
+void CStorage::RetirePerInstanceResources(int64 frameId)
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csInstance);
-	const int curFrameID = gcpRendD3D->GetFrameID(false);
+	const int64 curFrameID = frameId;
 
 	for (auto iter = m_perInstanceResources.begin(); iter != m_perInstanceResources.end(); )
 	{
@@ -198,37 +198,30 @@ CComputeSkinningStage::CComputeSkinningStage()
 {
 }
 
-void CComputeSkinningStage::Init()
+void CComputeSkinningStage::Execute()
 {
-}
+	CRenderView* pRenderView = RenderView();
 
-void CComputeSkinningStage::Prepare(CRenderView* pRenderView)
-{
-
-}
-
-void CComputeSkinningStage::Execute(CRenderView* pRenderView)
-{
-	int32 CurrentFrameID = gcpRendD3D.GetFrameID(false);
-
+#if !defined(_RELEASE) // !NDEBUG
+	int32 CurrentFrameID = pRenderView->GetFrameId();
 	if (CurrentFrameID == m_oldFrameIdExecute)
-	{
 		return;
-	}
-
 	m_oldFrameIdExecute = CurrentFrameID;
+#endif
 
 	PROFILE_LABEL_SCOPE("CHARACTER_DEFORMATION");
 
 	// Delete resources which weren't used last frame.
 	m_storage.RetirePerMeshResources();
-	m_storage.RetirePerInstanceResources();
+	m_storage.RetirePerInstanceResources(pRenderView->GetFrameId());
 
-	DispatchComputeShaders(pRenderView);
+	DispatchComputeShaders();
 }
 
-void CComputeSkinningStage::DispatchComputeShaders(CRenderView* pRenderView)
+void CComputeSkinningStage::DispatchComputeShaders()
 {
+	CRenderView* pRenderView = RenderView();
+
 	static ICVar* cvar_gdMorphs = gEnv->pConsole->GetCVar("r_ComputeSkinningMorphs");
 	static ICVar* cvar_gdTangents = gEnv->pConsole->GetCVar("r_ComputeSkinningTangents");
 	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_ComputeSkinning - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
@@ -237,8 +230,8 @@ void CComputeSkinningStage::DispatchComputeShaders(CRenderView* pRenderView)
 	bool bDoTangents = cvar_gdTangents && cvar_gdTangents->GetIVal();
 
 	// TODO:/NOTE: possibly multi-threadable recording
-	auto& list = gcpRendD3D.GetComputeSkinningDataListRT();
-	for (auto iter = list.begin(); iter != list.end(); ++iter)
+	auto* pList = pRenderView->GetSkinningDataPools().pDataComputeSkinning;
+	for (auto iter = pList->begin(); iter != pList->end(); ++iter)
 	{
 		SScopedComputeCommandList pComputeInterface(bAsynchronousCompute);
 
@@ -255,7 +248,7 @@ void CComputeSkinningStage::DispatchComputeShaders(CRenderView* pRenderView)
 			continue;
 		}
 
-		auto ir = m_storage.GetOrCreatePerInstanceResources(pSD->pCustomTag, mr->indicesIn.GetSize(), mr->indicesIn.GetSize() / 3);
+		auto ir = m_storage.GetOrCreatePerInstanceResources(pRenderView->GetFrameId(), pSD->pCustomTag, mr->indicesIn.GetSize(), mr->indicesIn.GetSize() / 3);
 
 		// bind output skinning
 		ir->passDeform.SetOutputUAV(0, &ir->verticesOut.GetBuffer());
@@ -282,7 +275,7 @@ void CComputeSkinningStage::DispatchComputeShaders(CRenderView* pRenderView)
 		// to the GPU and replace the #define PRE_MORPH inside the shader with an if()
 		const Vec4 params(
 		  (f32)pRenderMesh->GetVerticesCount(),
-		  cvar_gdMorphs->GetIVal() ? (f32)pSD->nNumActiveMorphs : 0,
+		  bDoPreMorphs ? (f32)pSD->nNumActiveMorphs : 0,
 		  (f32)pRenderMesh->m_nMorphs,
 		  (f32)numMorphMasks);
 

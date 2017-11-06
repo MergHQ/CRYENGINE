@@ -78,10 +78,6 @@ void CObjManager::UnloadObjects(bool bDeleteAll)
 
 	CleanStreamingData();
 
-	if (m_REFarTreeSprites)
-		m_REFarTreeSprites->Release(true);
-	m_REFarTreeSprites = 0;
-
 	m_pRMBox = 0;
 
 	m_decalsToPrecreate.resize(0);
@@ -635,7 +631,7 @@ CObjManager::CObjManager() :
 	m_bGarbageCollectionEnabled = true;
 
 	m_decalsToPrecreate.reserve(128);
-	m_REFarTreeSprites = 0;
+
 
 	// init queue for check occlusion
 	m_CheckOcclusionQueue.Init(GetCVars()->e_CheckOcclusionQueueSize);
@@ -1164,7 +1160,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		if (passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))))
 		{
 			// Recursive and Debug passes do not support permanent render objects now...
-			pRenderObject = gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID());
+			pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 			return false;
 		}
 
@@ -1213,7 +1209,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		return false;
 	}
 
-	pRenderObject = gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID());
+	pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 
 	return false;
 }

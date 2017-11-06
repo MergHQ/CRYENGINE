@@ -383,11 +383,6 @@ SResourceDimension CDeviceTexture::GetDimension(uint8 mip /*= 0*/, uint8 slices 
 	return Dimension;
 }
 
-void CDeviceTexture::Unbind()
-{
-	VK_NOT_IMPLEMENTED;
-}
-
 #ifdef DEVRES_USE_STAGING_POOL
 
 void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTransfer)

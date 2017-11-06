@@ -124,7 +124,6 @@ bool CShaderMan::mfReloadAllShaders(int nFlags, uint32 nFlagsHW)
 
 	if (!gRenDev->IsShaderCacheGenMode())
 	{
-		gRenDev->m_pRT->RC_ResetToDefault();
 		gRenDev->FlushRTCommands(true, true, true);
 	}
 
@@ -763,8 +762,13 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 	cry_sprintf(nameNew, "%sCryFX/%s.cfx", m_ShadersPath, nameEf);
 	ef->m_NameFile = nameNew;
 	ef->m_Flags |= flags;
-	gRenDev->m_pRT->RC_ParseShader(ef, nMaskGen | nMaskGenHW, flags, (CShaderResources*)Res);
-	return ef;
+	
+	_smart_ptr<CShader> pShader(ef);
+	_smart_ptr<CShaderResources> pResources( const_cast<CShaderResources*>(Res) );
+	gRenDev->ExecuteRenderThreadCommand(
+		[=]{ this->RT_ParseShader(pShader, nMaskGen | nMaskGenHW, flags, pResources); },
+		ERenderCommandFlags::LevelLoadingThread_defer
+	);
 
 	return ef;
 }

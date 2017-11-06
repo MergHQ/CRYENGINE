@@ -135,9 +135,9 @@ pixout ParticleCustomRenderPS(OutputCustomRenderVS IN)
 
   cDiffuseMap *= saturate(IN.Color);
 
-#ifndef SIMPLE_PARTICLE
-	clip(cDiffuseMap.w - PBAlphaTest.w);
-#endif
+//#ifndef SIMPLE_PARTICLE
+	//clip(cDiffuseMap.w - PBAlphaTest.w);
+//#endif
 
 #if USE_MATERIAL    
 	VisionParams.x = saturate( VisionMtlParams.x + VisionParams.x );

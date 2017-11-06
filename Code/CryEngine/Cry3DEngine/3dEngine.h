@@ -138,7 +138,7 @@ struct SOptimizedOutdoorWindArea
 
 struct DLightAmount
 {
-	CDLight* pLight;
+	SRenderLight* pLight;
 	float    fAmount;
 };
 
@@ -376,7 +376,6 @@ public:
 	virtual void      PostLoadLevel();
 	virtual bool      InitLevelForEditor(const char* szFolderName, const char* szMissionName);
 	virtual void      DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStepY, const bool bEnhanced);
-	virtual void      SetupDistanceFog();
 	virtual IStatObj* LoadStatObj(const char* szFileName, const char* szGeomName = NULL, /*[Out]*/ IStatObj::SSubObject** ppSubObject = NULL, bool bUseStreaming = true, unsigned long nLoadingFlags = 0);
 	virtual IStatObj* FindStatObjectByFilename(const char* filename);
 	virtual void      RegisterEntity(IRenderNode* pEnt);
@@ -457,9 +456,9 @@ public:
 	virtual IPhysMaterialEnumerator* GetPhysMaterialEnumerator();
 	virtual void                     LoadMissionDataFromXMLNode(const char* szMissionName);
 
-	void                             AddDynamicLightSource(const class CDLight& LSource, ILightSource* pEnt, int nEntityLightId, float fFadeout, const SRenderingPassInfo& passInfo);
+	void                             AddDynamicLightSource(const SRenderLight& LSource, ILightSource* pEnt, int nEntityLightId, float fFadeout, const SRenderingPassInfo& passInfo);
 
-	inline void                      AddLightToRenderer(const CDLight& light, float fMult, const SRenderingPassInfo& passInfo)
+	inline void                      AddLightToRenderer(const SRenderLight& light, float fMult, const SRenderingPassInfo& passInfo)
 	{
 		const uint32 nLightID = passInfo.GetIRenderView()->GetLightsCount(eDLT_DeferredLight);
 		//passInfo.GetIRenderView()->AddLight(eDLT_DeferredLight,light);
@@ -550,7 +549,7 @@ public:
 
 	virtual struct ILightSource*      CreateLightSource();
 	virtual void                      DeleteLightSource(ILightSource* pLightSource);
-	virtual const PodArray<CDLight*>* GetStaticLightSources();
+	virtual const PodArray<SRenderLight*>* GetStaticLightSources();
 	virtual bool                      IsTerrainHightMapModifiedByGame();
 	virtual bool                      RestoreTerrainFromDisk();
 	virtual void                      CheckMemoryHeap();
@@ -615,7 +614,7 @@ public:
 	void           SetShadowsCascadesBias(const float* pCascadeConstBias, const float* pCascadeSlopeBias);
 	const float*   GetShadowsCascadesConstBias() const { return m_pShadowCascadeConstBias; }
 	const float*   GetShadowsCascadesSlopeBias() const { return m_pShadowCascadeSlopeBias; }
-	int            GetShadowsCascadeCount(const CDLight* pLight) const;
+	int            GetShadowsCascadeCount(const SRenderLight* pLight) const;
 
 	virtual uint32 GetObjectsByType(EERType objType, IRenderNode** pObjects);
 	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects, uint64 dwFlags = ~0);
@@ -949,7 +948,7 @@ private:
 	// without calling high level functions like panorama screenshot
 	void RenderInternal(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName);
 
-	void RegisterLightSourceInSectors(CDLight* pDynLight, const SRenderingPassInfo& passInfo);
+	void RegisterLightSourceInSectors(SRenderLight* pDynLight, const SRenderingPassInfo& passInfo);
 
 	bool IsCameraAnd3DEngineInvalid(const SRenderingPassInfo& passInfo, const char* szCaller);
 
@@ -991,7 +990,7 @@ public:
 	virtual void SaveInternalState(struct IDataWriteStream& writer, const AABB& filterArea, const bool bTerrain, const uint32 objectMask);
 	virtual void LoadInternalState(struct IDataReadStream& reader, const uint8* pVisibleLayersMask, const uint16* pLayerIdTranslation);
 
-	void         SetupLightScissors(CDLight* pLight, const SRenderingPassInfo& passInfo);
+	void         SetupLightScissors(SRenderLight* pLight, const SRenderingPassInfo& passInfo);
 	bool         IsTerrainTextureStreamingInProgress() { return m_bTerrainTextureStreamingInProgress; }
 
 	bool         IsTerrainSyncLoad()                   { return m_bContentPrecacheRequested && GetCVars()->e_AutoPrecacheTerrainAndProcVeget; }
@@ -1030,23 +1029,23 @@ public:
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	void                        FreeLightSourceComponents(CDLight* pLight, bool bDeleteLight = true);
+	void                        FreeLightSourceComponents(SRenderLight* pLight, bool bDeleteLight = true);
 	void                        RemoveEntityLightSources(IRenderNode* pEntity);
 
 	void                        CheckPhysicalized(const Vec3& vBoxMin, const Vec3& vBoxMax);
 
-	virtual PodArray<CDLight*>* GetDynamicLightSources() { return &m_lstDynLights; }
+	virtual PodArray<SRenderLight*>* GetDynamicLightSources() { return &m_lstDynLights; }
 
 	int                         GetRealLightsNum()       { return m_nRealLightsNum; }
-	void                        SetupClearColor();
-	void                        CheckAddLight(CDLight* pLight, const SRenderingPassInfo& passInfo);
+	void                        SetupClearColor(const SRenderingPassInfo &passInfo);
+	void                        CheckAddLight(SRenderLight* pLight, const SRenderingPassInfo& passInfo);
 
 	void                        DrawTextRightAligned(const float x, const float y, const char* format, ...) PRINTF_PARAMS(4, 5);
 	void                        DrawTextRightAligned(const float x, const float y, const float scale, const ColorF& color, const char* format, ...) PRINTF_PARAMS(6, 7);
 	void                        DrawTextLeftAligned(const float x, const float y, const float scale, const ColorF& color, const char* format, ...) PRINTF_PARAMS(6, 7);
 	void                        DrawTextAligned(int flags, const float x, const float y, const float scale, const ColorF& color, const char* format, ...) PRINTF_PARAMS(7, 8);
 
-	float                       GetLightAmount(CDLight* pLight, const AABB& objBox);
+	float                       GetLightAmount(SRenderLight* pLight, const AABB& objBox);
 
 	IStatObj*                   CreateStatObj();
 	virtual IStatObj*           CreateStatObjOptionalIndexedMesh(bool createIndexedMesh);
@@ -1146,7 +1145,7 @@ public:
 		}
 		else if (GetRenderer())
 		{
-			return GetRenderer()->GetWidth();
+			return std::max(GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight());
 		}
 		return 1;
 	}
@@ -1244,13 +1243,13 @@ private:
 	IPhysMaterialEnumerator* m_pPhysMaterialEnumerator;
 
 	// data containers
-	PodArray<CDLight*>                        m_lstDynLights;
-	PodArray<CDLight*>                        m_lstDynLightsNoLight;
+	PodArray<SRenderLight*>                        m_lstDynLights;
+	PodArray<SRenderLight*>                        m_lstDynLightsNoLight;
 	int                                       m_nRealLightsNum;
 
 	PodArray<ILightSource*>                   m_lstStaticLights;
 	PodArray<PodArray<struct ILightSource*>*> m_lstAffectingLightsCombinations;
-	PodArray<CDLight*>                        m_tmpLstLights;
+	PodArray<SRenderLight*>                        m_tmpLstLights;
 	PodArray<struct ILightSource*>            m_tmpLstAffectingLights;
 
 	PodArray<SCollisionClass>                 m_collisionClasses;

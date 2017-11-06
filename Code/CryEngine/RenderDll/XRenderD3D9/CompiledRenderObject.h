@@ -104,7 +104,7 @@ public:
 	struct SPermanentRendItem
 	{
 		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
-		CRenderElement*          m_pRenderElement;  //!< Mesh subset, or a special rendering object
+		CRenderElement*        m_pRenderElement;  //!< Mesh subset, or a special rendering object
 		uint32                 m_objSort;         //!< Custom object sorting value.
 		uint32                 m_sortValue;       //!< Encoded sort value, keeping info about material.
 		uint32                 m_nBatchFlags;     //!< see EBatchFlags, batch flags describe on what passes this object will be used (transparent,z-prepass,etc...)
@@ -251,9 +251,6 @@ public:
 	// DrawCall parameters, store separate values for merged shadow-gen draw calls
 	SDrawParams m_drawParams[eDrawParam_Count];
 
-	// Skinning constant buffers, primary and previous
-	CConstantBufferPtr m_skinningCB[2];
-
 private:
 	// These 2 members must be initialized prior to calling Compile
 	CRenderElement*     m_pRenderElement;
@@ -284,7 +281,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(CRenderObject* pRenderObject);
+	bool Compile(CRenderObject* pRenderObject,CRenderView *pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;
@@ -314,7 +311,7 @@ private:
 	void CompilePerInstanceExtraResources(CRenderObject* pRenderObject);
 	void CompileInstancingData(CRenderObject* pRenderObject, bool bForce);
 	void UpdatePerInstanceCB(void* pData, size_t size);
-#if !defined(_RELEASE)
+#ifdef DO_RENDERSTATS
 	void TrackStats(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CRenderObject* pRenderObject) const;
 #endif
 private:

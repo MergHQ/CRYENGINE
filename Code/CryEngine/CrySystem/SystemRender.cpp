@@ -150,7 +150,7 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::RenderBegin()
+void CSystem::RenderBegin(uintptr_t hWnd)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
@@ -165,7 +165,7 @@ void CSystem::RenderBegin()
 	//start the rendering pipeline
 	if (rndAvail)
 	{
-		m_env.pRenderer->BeginFrame();
+		m_env.pRenderer->BeginFrame(hWnd);
 		gEnv->nMainFrameID = m_env.pRenderer->GetFrameID(false);
 	}
 	else
@@ -727,13 +727,11 @@ void CSystem::Render()
 					if ((!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) && (!IsLoading())) || // never pass undefined camera to p3DEngine->RenderWorld()
 						m_env.IsDedicated() || m_env.pRenderer->IsPost3DRendererEnabled())
 					{
-						GetIRenderer()->SetViewport(0, 0, GetIRenderer()->GetWidth(), GetIRenderer()->GetHeight());
 						m_env.p3DEngine->RenderWorld(SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_ViewCamera), __FUNCTION__);
 					}
 					else
 					{
-						// clear screen to black
-						m_env.pRenderer->ClearTargetsImmediately(FRT_CLEAR_COLOR, Col_Black);
+						m_env.pRenderer->FillFrame(Col_Black);
 					}
 				}
 
@@ -755,7 +753,6 @@ void CSystem::Render()
 		}
 		else
 		{
-			GetIRenderer()->SetViewport(0, 0, GetIRenderer()->GetWidth(), GetIRenderer()->GetHeight());
 			m_pProcess->RenderWorld(SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_ViewCamera), __FUNCTION__);
 		}
 	}
@@ -764,10 +761,6 @@ void CSystem::Render()
 #if !defined (_RELEASE) && CRY_PLATFORM_DURANGO
 	RenderPhysicsHelpers();
 #endif
-	if (m_env.pRenderer)
-	{
-		m_env.pRenderer->SwitchToNativeResolutionBackbuffer();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -923,8 +916,8 @@ void CSystem::RenderOverscanBorders()
 			const float width  = VIRTUAL_SCREEN_WIDTH - (2.0f * overscanBorderWidth);
 			const float height = VIRTUAL_SCREEN_HEIGHT - (2.0f * overscanBorderHeight);
 
-			m_env.pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
-			m_env.pRenderer->Draw2dImage(xPos, yPos,
+			//m_env.pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
+			IRenderAuxImage::Draw2dImage(xPos, yPos,
 			  width, height,
 			  whiteTextureId,
 			  uv, uv, uv, uv,

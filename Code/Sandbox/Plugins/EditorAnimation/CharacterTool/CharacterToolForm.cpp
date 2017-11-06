@@ -88,7 +88,7 @@ struct ViewportPlaybackHotkeyConsumer : public QViewportConsumer
 
 	void OnViewportKey(const SKeyEvent& ev) override
 	{
-		if (ev.type == ev.PRESS && ev.key != Qt::Key_Delete && ev.key != Qt::Key_D && ev.key != Qt::Key_Z)
+		if (ev.type == ev.TYPE_PRESS && ev.key != Qt::Key_Delete && ev.key != Qt::Key_D && ev.key != Qt::Key_Z)
 			playbackPanel->HandleKeyEvent(ev.key);
 	}
 };

@@ -742,20 +742,6 @@ SResourceDimension CDeviceTexture::GetDimension(uint8 mip /*= 0*/, uint8 slices 
 	return Dimension;
 }
 
-void CDeviceTexture::Unbind()
-{
-	for (uint32 i = 0; i < MAX_TMU; i++)
-	{
-		if (CTexture::s_TexStages[i].m_DevTexture == this)
-		{
-			CTexture::s_TexStages[i].m_DevTexture = NULL;
-
-			ID3D11ShaderResourceView* RV = NULL;
-			gcpRendD3D->GetDeviceContext().PSSetShaderResources(i, 1, &RV);
-		}
-	}
-}
-
 #ifdef DEVRES_USE_STAGING_POOL
 
 void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTransfer)

@@ -95,7 +95,7 @@ void CSnow::Update(SEntityUpdateContext &ctx, int updateSlot)
 	const IActor * pClient = g_pGame->GetIGameFramework()->GetClientActor();
 	if (pClient && Reset())
 	{
-		const Vec3 vCamPos = gEnv->pRenderer->GetCamera().GetPosition();
+		const Vec3 vCamPos = GetISystem()->GetViewCamera().GetPosition();
 		Vec3 vR = (GetEntity()->GetWorldPos() - vCamPos) / max(m_fRadius, 1e-3f);
 
 		// todo: only update when things have changed.

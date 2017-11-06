@@ -1215,8 +1215,6 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 			const CCamera& currentCamera = gEnv->pSystem->GetViewCamera();
 			static CCamera previousCamera = gEnv->pSystem->GetViewCamera();
 
-			GetRenderer()->SetCamera(currentCamera);
-
 			if (auto pRenderView = passInfo.GetIRenderView())
 			{
 				pRenderView->SetCameras(&currentCamera, 1);
@@ -1231,17 +1229,14 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 		CCamera previousCam = m_RenderingCamera;
 		m_RenderingCamera = newCam;
 
-		// alwasy set camera to request postion for the renderer, allows debugging with e_camerafreeze
+		// always set camera to request position for the renderer, allows debugging with e_camerafreeze
 		if (GetRenderer())
 		{
-			GetRenderer()->SetCamera(newCam);
-
 			if (auto pRenderView = passInfo.GetIRenderView())
 			{
 				pRenderView->SetCameras(&newCam, 1);
 				pRenderView->SetPreviousFrameCameras(&previousCam, 1);
 			}
-
 		}
 	}
 
@@ -1666,10 +1661,6 @@ void C3DEngine::SetFrameLodInfo(const SFrameLodInfo& frameLodInfo)
 void C3DEngine::SetFogColor(const Vec3& vFogColor)
 {
 	m_vFogColor = vFogColor;
-	if (GetRenderer())
-	{
-		GetRenderer()->SetClearColor(m_vFogColor);
-	}
 }
 
 Vec3 C3DEngine::GetFogColor()
@@ -4738,7 +4729,7 @@ void C3DEngine::SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrateg
 
 	if (IRenderer* const pRenderer = GetRenderer())
 	{
-		if (GetCVars()->e_DynamicDistanceShadows != 0 && pNode->m_pOcNode != nullptr)
+		if (GetCVars()->e_DynamicDistanceShadows != 0 && pNode && pNode->m_pOcNode != nullptr)
 		{
 			ERNListType nodeListType = IRenderNode::GetRenderNodeListId(pNode->GetRenderNodeType());
 
@@ -4754,7 +4745,7 @@ void C3DEngine::SetShadowsCascadesBias(const float* pCascadeConstBias, const flo
 	memcpy(m_pShadowCascadeSlopeBias, pCascadeSlopeBias, sizeof(float) * MAX_SHADOW_CASCADES_NUM);
 }
 
-int C3DEngine::GetShadowsCascadeCount(const CDLight* pLight) const
+int C3DEngine::GetShadowsCascadeCount(const SRenderLight* pLight) const
 {
 	int nCascadeCount = m_eShadowMode == ESM_HIGHQUALITY ? MAX_GSM_LODS_NUM : GetCVars()->e_GsmLodsNum;
 	return clamp_tpl(nCascadeCount, 0, MAX_GSM_LODS_NUM);
@@ -5207,8 +5198,8 @@ void C3DEngine::PrecacheRenderNode(IRenderNode* pObj, float fEntDistanceReal)
 		pObj->m_dwRndFlags &= ~ERF_HIDDEN;
 
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->pSystem->GetViewCamera());
-
 		m_pObjManager->UpdateRenderNodeStreamingPriority(pObj, fEntDistanceReal, 1.0f, fEntDistanceReal < GetFloatCVar(e_StreamCgfFastUpdateMaxDistance), passInfo, true);
+
 		pObj->m_dwRndFlags = dwOldRndFlags;
 	}
 }

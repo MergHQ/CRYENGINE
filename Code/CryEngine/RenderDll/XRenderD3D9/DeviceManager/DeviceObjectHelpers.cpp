@@ -46,12 +46,12 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 			{
 				if (shaderStage == eHWSC_Geometry && pHWShaderD3D)
 				{
-					// TODO: do this without global variables!!
-					CHWShader_D3D::s_pCurInstVS = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(result[eHWSC_Vertex].pHwShaderInstance);
+					// TODO: do this without global variables!! (Needed in mfGenerateScript)
+					//CHWShader_D3D::s_pCurInstVS = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(result[eHWSC_Vertex].pHwShaderInstance);
 					CHWShader_D3D::s_pCurHWVS = result[eHWSC_Vertex].pHwShader;
 
-					if (!CHWShader_D3D::s_pCurInstVS || !CHWShader_D3D::s_pCurHWVS)
-						continue;
+					//if (!CHWShader_D3D::s_pCurInstVS || !CHWShader_D3D::s_pCurHWVS)
+						//continue;
 				}
 			}
 
@@ -67,7 +67,7 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 
 				if (auto pInstance = pHWShaderD3D->mfGetInstance(pShader, Ident, 0))
 				{
-					if (pHWShaderD3D->mfCheckActivation(pShader, pInstance, 0))
+					if (pHWShaderD3D->CheckActivation(pShader, pInstance, 0))
 					{
 						if (pInstance->m_Handle.m_pShader->m_bDisabled)
 						{
@@ -340,7 +340,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::BeginNamedConstantUpdate()
 	}
 }
 
-void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate()
+void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate(const D3DViewPort* pVP)
 {
 	CRY_ASSERT(m_pShaderReflection);
 
@@ -358,7 +358,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate()
 			if (pShaderInstance->m_nParams[0] >= 0)
 			{
 				SCGParamsGroup& Group = CGParamManager::s_Groups[pShaderInstance->m_nParams[0]];
-				CHWShader_D3D::mfSetParameters(Group.pParams, Group.nParams, eHWSC_Num, -1, (Vec4*)updateContext.pMappedData, cb.pBuffer->m_size);
+				CHWShader_D3D::mfSetParameters(Group.pParams, Group.nParams, eHWSC_Num, -1, (Vec4*)updateContext.pMappedData, cb.pBuffer->m_size, pVP);
 			}
 
 			cb.pBuffer->EndWrite();

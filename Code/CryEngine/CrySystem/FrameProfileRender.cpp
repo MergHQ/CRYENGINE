@@ -111,10 +111,8 @@ void CFrameProfileSystem::DrawLabel(float col, float row, float* fColor, float g
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::DrawRect(float x1, float y1, float x2, float y2, float* fColor)
 {
-	//m_pRenderer->SetMaterialColor( fColor[0],fColor[1],fColor[2],fColor[3] );
-	//m_pRenderer->SetMaterialColor( fColor[0],fColor[1],fColor[2],fColor[3] );
-	int w = m_pRenderer->GetWidth();
-	int h = m_pRenderer->GetHeight();
+	int w = m_pRenderer->GetOverlayWidth();
+	int h = m_pRenderer->GetOverlayHeight();
 
 	y1 -= m_offset;
 	y2 -= m_offset;
@@ -367,7 +365,7 @@ void CFrameProfileSystem::Render()
 
 	if (m_pRenderer)
 	{
-		m_pRenderer->Set2DMode(true, m_pRenderer->GetWidth(), m_pRenderer->GetHeight());
+		m_pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(true, 0.0f, static_cast<float>(m_pRenderer->GetOverlayWidth()), static_cast<float>(m_pRenderer->GetOverlayHeight()), 0.0f);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -450,7 +448,7 @@ void CFrameProfileSystem::Render()
 
 	if (m_pRenderer)
 	{
-		m_pRenderer->Set2DMode(false, 0, 0);
+		m_pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(false);
 	}
 
 	if (m_bEnableHistograms)
@@ -580,8 +578,8 @@ void CFrameProfileSystem::RenderProfilers(float col, float row, bool bExtended)
 			break;
 		}
 
-		int width = m_pRenderer ? m_pRenderer->GetWidth() : 800;
-		int height = m_pRenderer ? m_pRenderer->GetHeight() : 600;
+		int width  = m_pRenderer ? m_pRenderer->GetOverlayWidth () : 800;
+		int height = m_pRenderer ? m_pRenderer->GetOverlayHeight() : 600;
 
 		float rectX1 = col * COL_SIZE;
 		float rectX2 = width - 2.0f;
@@ -1146,6 +1144,7 @@ void DrawMeter(IRenderer* pRenderer, float& x, float& y, float scale, float scre
 	flags.SetDepthTestFlag(e_DepthTestOff);
 	flags.SetDepthWriteFlag(e_DepthWriteOff);
 	flags.SetCullMode(e_CullModeNone);
+	flags.SetMode2D3DFlag(e_ModeUnit);
 	pAuxRenderer->SetRenderFlags(flags);
 
 	// draw frame for meter
@@ -1278,7 +1277,6 @@ void CFrameProfileSystem::DrawGraph()
 	const float VALUE_EPSILON = 0.000001f;
 
 	#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
-
 	if (!m_ThreadFrameStats)
 		return;
 
@@ -1299,9 +1297,11 @@ void CFrameProfileSystem::DrawGraph()
 	float labelColorSuspended[4] = { 0.25f, 0.25f, 0.25f, 1.f };
 	ColorF graphColor(0, 0.85, 0, 1);
 
+	IRenderAuxGeom* pRenderAux = m_pRenderer->GetIRenderAuxGeom();
+
 	// RT Area
-	const float nRtWidth = (float)m_pRenderer->GetWidth();
-	const float nRtHeight = (float)m_pRenderer->GetHeight();
+	const float nRtWidth  = float(pRenderAux->GetCamera().GetViewSurfaceX());
+	const float nRtHeight = float(pRenderAux->GetCamera().GetViewSurfaceZ());
 
 	// Calculate overscan adjustment (for those elements that do not obey it)(see r_OverScanBoarder)
 	Vec2 overscanBorder = Vec2(0.0f, 0.0f);
@@ -1584,14 +1584,14 @@ void CFrameProfileSystem::RenderHistograms()
 	ColorF HistColor(0, 1, 0, 1);
 
 	// Draw histograms.
-	int h = m_pRenderer->GetHeight();
-	int w = m_pRenderer->GetWidth();
+	int h = m_pRenderer->GetOverlayHeight();
+	int w = m_pRenderer->GetOverlayWidth();
 
 	int graphStyle = 2; // histogram.
 
 	float fScale = 1.0f; // histogram.
 
-	m_pRenderer->SetMaterialColor(1, 1, 1, 1);
+
 	for (int i = 0; i < (int)m_displayedProfilers.size(); i++)
 	{
 		if (i > MAX_DISPLAY_ROWS)

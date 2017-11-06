@@ -17,6 +17,7 @@ struct IUtilityRenderPass
 		DepthDownsamplePass,
 		GaussianBlurPass,
 		MipmapGenPass,
+		ClearSurfacePass,
 		ClearRegionPass,
 		AnisotropicVerticalBlurPass,
 
@@ -34,10 +35,16 @@ class CStretchRectPass : public IUtilityRenderPass
 public:
 	void Execute(CTexture* pSrcRT, CTexture* pDestRT);
 
+	static CStretchRectPass &GetPass();
+	static void Shutdown();
+
 	static EPassId GetPassId() { return EPassId::StretchRectPass; }
 
 protected:
 	CFullscreenPass m_pass;
+
+private:
+	static CStretchRectPass *s_pPass;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,7 +197,24 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class CClearRegionPass : public IUtilityRenderPass
+class CClearSurfacePass : public IUtilityRenderPass
+{
+public:
+	CClearSurfacePass();
+	virtual ~CClearSurfacePass();
+
+	static void Execute(const CTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil);
+	static void Execute(const CTexture* pTex, const ColorF& cClear);
+
+	static EPassId GetPassId() { return EPassId::ClearSurfacePass; }
+
+protected:
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class CClearRegionPass : public CClearSurfacePass
 {
 public:
 	CClearRegionPass();

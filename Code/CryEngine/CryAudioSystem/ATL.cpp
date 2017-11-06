@@ -1688,8 +1688,6 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		}
 		
 		DrawATLComponentDebugInfo(*pAuxGeom, posX, posY);
-
-		pAuxGeom->Commit(7);
 	}
 }
 

@@ -610,7 +610,6 @@ Property
   Precache = GlowVS
   Precache = MotionBlurVS
   Precache = FurVS
-  Precache = SoftAlphaTestPassVS
   Precache = CustomRenderVS
   Precache = MethaGenVS
   Precache = DebugPassVS
@@ -795,7 +794,6 @@ Property
   Precache = GlowVS
   Precache = MotionBlurVS
   Precache = FurVS
-  Precache = SoftAlphaTestPassVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = CloakVS
@@ -822,7 +820,6 @@ Property
   Precache = GlowVS
   Precache = MotionBlurVS
   Precache = FurVS
-  Precache = SoftAlphaTestPassVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = CloakVS
@@ -1204,7 +1201,6 @@ Property
 		Precache = GlowVS
 		Precache = MotionBlurVS
 		Precache = FurVS
-		Precache = SoftAlphaTestPassVS
 		Precache = CustomRenderVS
 		Precache = EffectLayerVS
 		Precache = CloakVS

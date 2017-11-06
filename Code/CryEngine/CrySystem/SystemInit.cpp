@@ -584,6 +584,9 @@ static void OnSysSpecChange(ICVar* pVar)
 	if (gEnv->p3DEngine)
 		gEnv->p3DEngine->GetMaterialManager()->RefreshMaterialRuntime();
 
+	if (gEnv->pRenderer)
+		gEnv->pRenderer->FlushPendingUploads();
+
 	no_recursive = false;
 }
 
@@ -1251,7 +1254,20 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 
 		WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
 
-		m_hWnd = m_env.pRenderer->Init(0, 0, m_rWidth->GetIVal(), m_rHeight->GetIVal(), m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(), m_rFullscreen->GetIVal() ? true : false, hwnd, false, startupParams.bShaderCacheGen);
+		int width  = m_rWidth ->GetIVal();
+		int height = m_rHeight->GetIVal();
+		if (gEnv->IsEditor())
+		{
+			// In Editor base default Display Context is not really used, so it is allocated with the minimal resolution.
+			width  = 32;
+			height = 32;
+		}
+
+		m_hWnd = m_env.pRenderer->Init(
+			0, 0, width, height,
+			m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
+			m_rFullscreen->GetIVal() ? true : false, hwnd, false, startupParams.bShaderCacheGen);
+
 		startupParams.hWnd = m_hWnd;
 
 		m_env.pAuxGeomRenderer = m_env.pRenderer->GetIRenderAuxGeom();
@@ -3169,10 +3185,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			m_env.pRenderer->InitSystemResources(FRR_SYSTEM_RESOURCES);
 			m_env.pRenderer->StartRenderIntroMovies();
 		}
-		else if (g_cvars.sys_rendersplashscreen && bStartScreensAllowed)
+		else if (g_cvars.sys_splashscreen != nullptr && bStartScreensAllowed && g_cvars.sys_splashscreen->GetString()[0] != '\0')
 		{
 			LOADING_TIME_PROFILE_SECTION_NAMED("Rendering Splash Screen");
-			ITexture* pTex = m_env.pRenderer->EF_LoadTexture("Libs/UI/textures/startscreen.tif", FT_DONT_STREAM | FT_NOMIPS);
+			ITexture* pTex = m_env.pRenderer->EF_LoadTexture(g_cvars.sys_splashscreen->GetString(), FT_DONT_STREAM | FT_NOMIPS);
 			if (pTex)
 			{
 				const int splashWidth = pTex->GetWidth();
@@ -3193,19 +3209,11 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 					const float x = (screenWidth - w) * 0.5f;
 					const float y = (screenHeight - h) * 0.5f;
 
-					const float vx = (800.0f / (float) screenWidth);
-					const float vy = (600.0f / (float) screenHeight);
-
-					m_env.pRenderer->SetViewport(0, 0, screenWidth, screenHeight);
 					// make sure it's rendered in full screen mode when triple buffering is enabled as well
 					for (size_t n = 0; n < 3; n++)
 					{
-						m_env.pRenderer->BeginFrame();
-						m_env.pRenderer->SetCullMode(R_CULL_NONE);
-						m_env.pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
-						m_env.pRenderer->Draw2dImageStretchMode(true);
-						m_env.pRenderer->Draw2dImage(x * vx, y * vy, w * vx, h * vy, pTex->GetTextureID(), 0.0f, 1.0f, 1.0f, 0.0f);
-						m_env.pRenderer->Draw2dImageStretchMode(false);
+						m_env.pRenderer->BeginFrame(0);
+						IRenderAuxImage::Draw2dImage(x, y, w, h, pTex->GetTextureID(), 0.0f, 1.0f, 1.0f, 0.0f);
 						m_env.pRenderer->EndFrame();
 					}
 				}
@@ -4864,14 +4872,11 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR2("sys_intromoviesduringinit", &g_cvars.sys_intromoviesduringinit, 0, VF_NULL, "Render the intro movies during game initialization");
 
-	{
-		int nDefaultRenderSplashScreen = 1;
-#if CRY_PLATFORM_ORBIS
-		nDefaultRenderSplashScreen = 0;
+#ifndef CRY_PLATFORM_ORBIS
+	g_cvars.sys_splashscreen = REGISTER_STRING("sys_splashscreen", "", 0, "Specifies the path to the splashscreen texture to render at startup");
+#else
+	g_cvars.sys_splashscreen = nullptr;
 #endif
-		REGISTER_CVAR2("sys_rendersplashscreen", &g_cvars.sys_rendersplashscreen, nDefaultRenderSplashScreen, VF_NULL,
-		               "Render the splash screen during game initialization");
-	}
 
 	REGISTER_CVAR2("sys_deferAudioUpdateOptim", &g_cvars.sys_deferAudioUpdateOptim, 1, VF_NULL,
 	               "0 - disable optimisation\n"

@@ -2391,8 +2391,8 @@ bool CDeviceRenderPass::InitVkFrameBuffer(const CDeviceRenderPassDesc& passDesc)
 	if (imageViewCount > 0)
 	{
 		CTexture* pTex = renderTargetCount > 0 ? renderTargets[0].pTexture : depthTarget.pTexture;
-		m_frameBufferExtent.width = uint32(pTex->GetWidthNonVirtual());
-		m_frameBufferExtent.height = uint32(pTex->GetHeightNonVirtual());
+		m_frameBufferExtent.width = uint32(pTex->GetWidth());
+		m_frameBufferExtent.height = uint32(pTex->GetHeight());
 
 		VkFramebufferCreateInfo frameBufferCreateInfo;
 

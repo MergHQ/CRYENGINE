@@ -111,7 +111,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	renderContext.m_distance = GetPos().GetDistance(passInfo.GetCamera().GetPosition());
 	ColorF fogVolumeContrib;
 	CFogVolumeRenderNode::TraceFogVolumes(GetPos(), fogVolumeContrib, passInfo);
-	renderContext.m_fogVolumeId = GetRenderer()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
+	renderContext.m_fogVolumeId = passInfo.GetIRenderView()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
 	
 	for (auto& pRuntime : m_componentRuntimes)
 	{
@@ -249,7 +249,7 @@ float CParticleEmitter::GetMaxViewDist()
 {
 	IRenderer* pRenderer = GetRenderer();
 	const float angularDensity =
-		(pRenderer ? GetPSystem()->GetMaxAngularDensity(pRenderer->GetCamera()) : 1080.0f)
+		(pRenderer ? GetPSystem()->GetMaxAngularDensity(GetISystem()->GetViewCamera()) : 1080.0f)
 		* m_viewDistRatio;
 
 	float maxViewDist = 0.0f;

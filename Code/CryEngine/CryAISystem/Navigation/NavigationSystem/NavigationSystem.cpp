@@ -5133,20 +5133,23 @@ void NavigationSystemDebugDraw::NavigationSystemWorkingProgress::Draw()
 
 	BeginDraw();
 
-	const float width = (float)gEnv->pRenderer->GetWidth();
-	const float height = (float)gEnv->pRenderer->GetHeight();
+	IRenderAuxGeom *pAux = gEnv->pRenderer->GetIRenderAuxGeom();
+	const CCamera& rCamera = pAux->GetCamera();
+
+	const float width  = (float)rCamera.GetViewSurfaceX();
+	const float height = (float)rCamera.GetViewSurfaceZ();
 
 	const ColorB backGroundColor(0, 255, 0, CLAMP((int)(0.35f * m_timeUpdating * 255.0f), 0, 255));
 	const ColorB progressColor(0, 255, 0, CLAMP((int)(0.8f * m_timeUpdating * 255.0f), 0, 255));
 
 	const float progressFraction = (m_initialQueueSize > 0) ? clamp_tpl(1.0f - ((float)m_currentQueueSize / (float)m_initialQueueSize), 0.0f, 1.0f) : 1.0f;
 
-	const Vec2 progressBarLocation(0.1f, 0.91f);
-	const Vec2 progressBarSize(0.2f, 0.025f);
+	Vec2 progressBarLocation(0.1f * width, 0.91f * height);
+	Vec2 progressBarSize(0.2f * width, 0.025f * height);
 
 	const float white[4] = { 1.0f, 1.0f, 1.0f, 0.85f * m_timeUpdating };
 
-	IRenderAuxText::Draw2dLabel(progressBarLocation.x * width, (progressBarLocation.y * height) - 18.0f, 1.4f, white, false, "Processing Navigation Meshes");
+	IRenderAuxText::Draw2dLabel(progressBarLocation.x, progressBarLocation.y - 18.0f, 1.4f, white, false, "Processing Navigation Meshes");
 
 	DrawQuad(progressBarLocation, progressBarSize, backGroundColor);
 	DrawQuad(progressBarLocation, Vec2(progressBarSize.x * progressFraction, progressBarSize.y), progressColor);
@@ -5161,8 +5164,7 @@ void NavigationSystemDebugDraw::NavigationSystemWorkingProgress::BeginDraw()
 	{
 		m_oldRenderFlags = pRenderAux->GetRenderFlags();
 
-		SAuxGeomRenderFlags newFlags = e_Def3DPublicRenderflags;
-		newFlags.SetMode2D3DFlag(e_Mode2D);
+		SAuxGeomRenderFlags newFlags = e_Def2DPublicRenderflags;
 		newFlags.SetAlphaBlendMode(e_AlphaBlended);
 
 		pRenderAux->SetRenderFlags(newFlags);
@@ -5180,25 +5182,17 @@ void NavigationSystemDebugDraw::NavigationSystemWorkingProgress::EndDraw()
 
 void NavigationSystemDebugDraw::NavigationSystemWorkingProgress::DrawQuad(const Vec2& origin, const Vec2& size, const ColorB& color)
 {
-	Vec3 quadVertices[4];
-	const vtx_idx auxIndices[6] = { 2, 1, 0, 2, 3, 1 };
-
-	quadVertices[0] = Vec3(origin.x, origin.y, 1.0f);
-	quadVertices[1] = Vec3(origin.x + size.x, origin.y, 1.0f);
-	quadVertices[2] = Vec3(origin.x, origin.y + size.y, 1.0f);
-	quadVertices[3] = Vec3(origin.x + size.x, origin.y + size.y, 1.0f);
-
-	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
-	if (pRenderAux)
+	if (IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom())
 	{
-		const SAuxGeomRenderFlags oldFlags = pRenderAux->GetRenderFlags();
-		SAuxGeomRenderFlags flags = oldFlags;
-		flags.SetMode2D3DFlag(e_Mode2D);
-		flags.SetDrawInFrontMode(e_DrawInFrontOn);
-		flags.SetDepthTestFlag(e_DepthTestOff);
-		pRenderAux->SetRenderFlags(flags);
+		Vec3 quadVertices[4];
+		const vtx_idx auxIndices[6] = { 2, 1, 0, 2, 3, 1 };
+
+		quadVertices[0] = Vec3(origin.x, origin.y, 1.0f);
+		quadVertices[1] = Vec3(origin.x + size.x, origin.y, 1.0f);
+		quadVertices[2] = Vec3(origin.x, origin.y + size.y, 1.0f);
+		quadVertices[3] = Vec3(origin.x + size.x, origin.y + size.y, 1.0f);
+
 		pRenderAux->DrawTriangles(quadVertices, 4, auxIndices, 6, color);
-		pRenderAux->SetRenderFlags(oldFlags);
 	}
 }
 
