@@ -939,7 +939,7 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 			szMode = "triangle count, number of render materials, texture memory in KB";
 			break;
 		case  8:
-			szMode = "Free slot";
+			szMode = "Per Object MaxViewDist (color coded)";
 			break;
 		case  9:
 			szMode = "Free slot";
