@@ -2327,8 +2327,8 @@ bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, 
 	}
 
 	Comb.pShader = this;
-	if (Comb.nRTNew != Comb.nRTOrg || Comb.nGLNew != Comb.nGLOrg || Comb.nLTNew != Comb.nLTOrg)
-		SEmptyCombination::s_Combinations.push_back(Comb);
+	//if (Comb.nRTNew != Comb.nRTOrg || Comb.nGLNew != Comb.nGLOrg || Comb.nLTNew != Comb.nLTOrg)
+	//	SEmptyCombination::s_Combinations.push_back(Comb);
 
 	m_nMaskGenShader = nGL;
 
