@@ -3744,6 +3744,11 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 	m_pManualFrameStepController = new CManualFrameStepController();
 
+	if (startupParams.bShaderCacheGen)
+	{
+		GetIConsole()->ExecuteString("r_PrecacheShaderList");
+	}
+
 	return (true);
 }
 
