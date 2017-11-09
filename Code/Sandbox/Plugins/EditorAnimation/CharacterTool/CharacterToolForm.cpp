@@ -345,7 +345,7 @@ QRect CharacterToolForm::GetPaneRect()
 
 ExplorerPanel* CharacterToolForm::CreateExplorerPanel()
 {
-	auto panel = new ExplorerPanel(this, &*m_system->explorerData);
+	auto panel = new ExplorerPanel(this, m_system->explorerData.get());
 	m_system->explorerPanels.push_back(panel);
 
 	EXPECTED(connect(panel, &ExplorerPanel::destroyed, this, &CharacterToolForm::OnPanelDestroyed));
