@@ -993,7 +993,7 @@ void CharacterDocument::OnCharacterModified(EntryModifiedEvent& ev)
 
 	bool skinSetChanged = false;
 	if (m_compressedCharacter.get())
-		entry->content.cdf.ApplyToCharacter(&skinSetChanged, m_compressedCharacter.get(), GetIEditor()->GetSystem()->GetIAnimationSystem(), true);
+		entry->content.cdf.ApplyToCharacter(&skinSetChanged, m_compressedCharacter.get(), GetIEditor()->GetSystem()->GetIAnimationSystem(), true, !!strcmp(ev.reason, "Revert"));
 	if (m_uncompressedCharacter.get())
 		entry->content.cdf.ApplyToCharacter(&skinSetChanged, m_uncompressedCharacter.get(), GetIEditor()->GetSystem()->GetIAnimationSystem(), false);
 
@@ -1017,6 +1017,8 @@ void CharacterDocument::OnCharacterModified(EntryModifiedEvent& ev)
 		if (m_uncompressedCharacter)
 			emptyRig.ApplyToCharacter(m_uncompressedCharacter);
 	}
+
+	Physicalize();
 
 	if (!ev.continuousChange)
 		SignalActiveCharacterChanged();
