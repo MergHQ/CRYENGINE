@@ -1718,11 +1718,16 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromPos, Triangle
 			rayHit.distance = rayIntersectionParam;
 		}
 		
-		const TriangleID neighbourTriangleID = StepOverEdgeToNeighbourTriangle(fromPos, toPos, currentTileID, currentTriangleID, intersectionEdgeIndex, filter);
-		
+		TriangleID neighbourTriangleID = StepOverEdgeToNeighbourTriangle(fromPos, toPos, currentTileID, currentTriangleID, intersectionEdgeIndex, filter);
 		if (neighbourTriangleID != MNM::Constants::InvalidTriangleID)
 		{
-			cameFrom[neighbourTriangleID] = currentTriangleID;
+			std::pair<RaycastCameFromMap::iterator, bool> insertResult = cameFrom.insert({ neighbourTriangleID, currentTriangleID });
+			if (!insertResult.second)
+			{
+				// Triangle was already visited, we have a loop
+				// This shouldn't happen in normal circumstances and it can mean that we have e.g. degenerate triangle
+				neighbourTriangleID = MNM::Constants::InvalidEdgeIndex;
+			}
 		}
 		currentTriangleID = neighbourTriangleID;
 	}
