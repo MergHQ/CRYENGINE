@@ -390,6 +390,8 @@ public:
 	virtual IBSPTree3D*              CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) final;
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) final;
 
+	void RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately = false, bool ignoreSinks = false);
+
 private: // -----------------------------------------------------------------
 	void DoUpdateLoop(float fFrameTime);
 
