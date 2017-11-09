@@ -1507,17 +1507,14 @@ void CDeviceComputeCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindS
 	{
 		const NCryDX12::CView& View = it.second->GetDX12View();
 		NCryDX12::CResource& Resource = View.GetDX12Resource();
-
-		const D3D12_RESOURCE_STATES desiredState =
-			(it.first.stages &  EShaderStage_Pixel ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE     : D3D12_RESOURCE_STATE_COMMON) |
-			(it.first.stages & ~EShaderStage_Pixel ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON);
+		const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
 		if (Resource.InitHasBeenDeferred())
 		{
 			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
-		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && !(Resource.GetTargetState() & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 		pCommandListDX12->PrepareResourceCRVUsage(Resource, View, desiredState);
 	}
@@ -1533,7 +1530,7 @@ void CDeviceComputeCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindS
 			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 
-		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && !(Resource.GetTargetState() & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 		pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
 	}
@@ -1588,9 +1585,7 @@ void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const
 	{
 		const NCryDX12::CView& View = it.second->GetDX12View();
 		NCryDX12::CResource& Resource = View.GetDX12Resource();
-		const D3D12_RESOURCE_STATES desiredState =
-			(it.first.stages &  EShaderStage_Pixel ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE     : D3D12_RESOURCE_STATE_COMMON) |
-			(it.first.stages & ~EShaderStage_Pixel ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON);
+		const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
 		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
 

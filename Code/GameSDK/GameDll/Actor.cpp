@@ -410,6 +410,14 @@ CActor::~CActor()
 	UnRegisterDBAGroups();
 	ReleaseLegsColliders();
 	CActorManager::GetActorManager()->ActorRemoved(this);
+
+	if (IAIObject *pAI = GetEntity()->GetAI())
+	{
+		if (pAI->GetProxy())
+		{
+			pAI->GetProxy()->OnActorRemoved();
+		}
+	}
 }
 
 //------------------------------------------------------------------------
