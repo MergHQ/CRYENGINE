@@ -81,10 +81,9 @@ namespace Serialization
 				else
 				{
 					selectedLabel = Serialization::StringListValue(value.m_labels, StringList::npos);
-					value.m_value = value.m_fallback;
 				}
 
-				return (ar(selectedLabel, "", label) && ar(value.m_value, name));
+				return ar(selectedLabel, "", label);
 			}
 		}
 		else
@@ -177,9 +176,9 @@ static bool Serialize(Serialization::IArchive& ar, SMotionParametersPool::SSelec
 	auto& pool = *ar.context<SMotionParametersPool>();
 
 	const bool result = self.onlyParamsWithExtractionFlag
-		? ar(Serialization::ListSelector(self.value, pool.extractionFlaggedParams, pool.extractionFlaggedLabels, pool.extractionFlaggedParams[0]), name, label)
-		: ar(Serialization::ListSelector(self.value, pool.allParams, pool.allLabels, pool.allParams[0]), name, label);
-		
+		? ar(Serialization::ListSelector(self.value, pool.extractionFlaggedParams, pool.extractionFlaggedLabels, int32(eMotionParamID_INVALID)), name, label)
+		: ar(Serialization::ListSelector(self.value, pool.allParams, pool.allLabels, int32(eMotionParamID_INVALID)), name, label);
+
 	// Remove selected parameter from the pool, to make sure subsequent entries do not duplicate it.
 	const auto itParams = std::find(pool.allParams.begin(), pool.allParams.end(), self.value);
 	if (itParams != pool.allParams.end())

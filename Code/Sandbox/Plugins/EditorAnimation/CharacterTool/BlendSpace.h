@@ -24,7 +24,7 @@ struct BlendSpaceDimension
 	bool   locked;
 
 	BlendSpaceDimension()
-		: parameterId(0)
+		: parameterId(eMotionParamID_INVALID)
 		, minimal(0)
 		, maximal(1)
 		, cellCount(8)
@@ -80,7 +80,7 @@ struct BlendSpaceAdditionalExtraction
 	int32 parameterId;
 
 	BlendSpaceAdditionalExtraction()
-		: parameterId(eMotionParamID_TravelSpeed)
+		: parameterId(eMotionParamID_INVALID)
 	{
 	}
 
@@ -227,7 +227,8 @@ struct CombinedBlendSpaceDimension
 	bool   chooseBlendSpace;
 
 	CombinedBlendSpaceDimension()
-		: locked(false)
+		: parameterId(eMotionParamID_INVALID)
+		, locked(false)
 		, parameterScale(1.0f)
 		, chooseBlendSpace(false)
 	{
