@@ -563,7 +563,6 @@ void CharacterDocument::ConnectExternalSignals()
 	EXPECTED(connect(m_system->scene.get(), SIGNAL(SignalLayerActivated()), this, SLOT(OnSceneLayerActivated())));
 	EXPECTED(connect(m_system->scene.get(), SIGNAL(SignalNewLayerActivated()), this, SLOT(OnSceneNewLayerActivated())));
 	EXPECTED(connect(m_system->explorerData.get(), SIGNAL(SignalEntryModified(ExplorerEntryModifyEvent &)), this, SLOT(OnExplorerEntryModified(ExplorerEntryModifyEvent &))));
-	EXPECTED(connect(m_system->explorerData.get(), &ExplorerData::SignalSelectedEntryClicked, this, &CharacterDocument::OnExplorerSelectedEntryClicked));
 	EXPECTED(connect(m_system->explorerData.get(), &ExplorerData::SignalEntrySavedAs, this, &CharacterDocument::OnExplorerEntrySavedAs));
 	EXPECTED(connect(m_system->characterList.get(), SIGNAL(SignalEntryModified(EntryModifiedEvent &)), this, SLOT(OnCharacterModified(EntryModifiedEvent &))));
 	EXPECTED(connect(m_system->characterList.get(), &ExplorerFileList::SignalEntrySavedAs, this, &CharacterDocument::OnCharacterSavedAs));
@@ -1178,17 +1177,6 @@ void CharacterDocument::OnExplorerEntryModified(ExplorerEntryModifyEvent& ev)
 				}
 			}
 		}
-	}
-}
-
-void CharacterDocument::OnExplorerSelectedEntryClicked(ExplorerEntry* entry)
-{
-	if (!entry)
-		return;
-
-	if (m_system->animationList->OwnsAssetEntry(entry))
-	{
-		TriggerAnimationPreview(PREVIEW_ALLOW_REWIND);
 	}
 }
 
