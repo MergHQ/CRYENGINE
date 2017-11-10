@@ -1,3 +1,5 @@
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+
 using System;
 using System.ComponentModel;
 using System.Collections.Generic;
@@ -38,24 +40,24 @@ namespace CryEngine
 			public ulong hipart;
 		}
 
-        /// <summary>
-        /// Unique information for each registered component type
-        /// </summary>
+		/// <summary>
+		/// Unique information for each registered component type
+		/// </summary>
 		internal class TypeInfo
 		{
-            /// <summary>
-            /// Represents a Schematyc signal, and the information required to execute it
-            /// </summary>
-            public struct Signal
-            {
-                public int id;
-                public Type delegateType;
-            }
+			/// <summary>
+			/// Represents a Schematyc signal, and the information required to execute it
+			/// </summary>
+			public struct Signal
+			{
+				public int id;
+				public Type delegateType;
+			}
 
-            public Type type;
+			public Type type;
 			public GUID guid;
-            // Signals that can be sent to Schematyc
-            public List<Signal> signals;
+			// Signals that can be sent to Schematyc
+			public List<Signal> signals;
 		}
 
 		[NonSerialized]
@@ -79,60 +81,60 @@ namespace CryEngine
 			throw new KeyNotFoundException("Component was not registered!");
 		}
 
-        internal static Type GetComponentTypeByGUID(GUID guid)
-        {
-            foreach (var typeInfo in _componentTypes)
-            {
-                if (typeInfo.guid.hipart == guid.hipart && typeInfo.guid.lopart == guid.lopart)
-                {
-                    return typeInfo.type;
-                }
-            }
+		internal static Type GetComponentTypeByGUID(GUID guid)
+		{
+			foreach(var typeInfo in _componentTypes)
+			{
+				if(typeInfo.guid.hipart == guid.hipart && typeInfo.guid.lopart == guid.lopart)
+				{
+					return typeInfo.type;
+				}
+			}
 
-            throw new KeyNotFoundException("Component was not registered!");
-        }
+			throw new KeyNotFoundException("Component was not registered!");
+		}
 
 		public Entity Entity { get; private set; }
 
-        #region Functions
-        internal void SetEntity(IntPtr entityHandle, uint id)
-        {
-            Entity = new Entity(new IEntity(entityHandle, false), id);
-        }
+		#region Functions
+		internal void SetEntity(IntPtr entityHandle, uint id)
+		{
+			Entity = new Entity(new IEntity(entityHandle, false), id);
+		}
 
-        /// <summary>
-        /// Sends a signal attributed with [SchematycSignal] to Schematyc
-        /// </summary>
-        /// <typeparam name="T">A delegate contained in an EntityComponent decorated with [SchematycSignal]</typeparam>
-        /// <param name="args">The exact arguments specified with the specified delegate</param>
-        public void SendSignal<T>(params object[] args) where T : class
-        {
-            var thisType = GetType();
+		/// <summary>
+		/// Sends a signal attributed with [SchematycSignal] to Schematyc
+		/// </summary>
+		/// <typeparam name="T">A delegate contained in an EntityComponent decorated with [SchematycSignal]</typeparam>
+		/// <param name="args">The exact arguments specified with the specified delegate</param>
+		public void SendSignal<T>(params object[] args) where T : class
+		{
+			var thisType = GetType();
 
-            foreach (var typeInfo in _componentTypes)
-            {
-                if (typeInfo.type == thisType)
-                {
-                    if(typeInfo.signals != null)
-                    {
-                        foreach (var signal in typeInfo.signals)
-                        {
-                            if (signal.delegateType == typeof(T))
-                            {
-                                NativeInternals.Entity.SendComponentSignal(Entity.NativeEntityPointer, typeInfo.guid.hipart, typeInfo.guid.lopart, signal.id, args);
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
+			foreach(var typeInfo in _componentTypes)
+			{
+				if(typeInfo.type == thisType)
+				{
+					if(typeInfo.signals != null)
+					{
+						foreach(var signal in typeInfo.signals)
+						{
+							if(signal.delegateType == typeof(T))
+							{
+								NativeInternals.Entity.SendComponentSignal(Entity.NativeEntityPointer, typeInfo.guid.hipart, typeInfo.guid.lopart, signal.id, args);
+								return;
+							}
+						}
+					}
+				}
+			}
 
-            throw new ArgumentException("Tried to send invalid signal to component!");
-        }
-        #endregion
+			throw new ArgumentException("Tried to send invalid signal to component!");
+		}
+		#endregion
 
-        #region Entity Event Methods
-        protected virtual void OnTransformChanged() { }
+		#region Entity Event Methods
+		protected virtual void OnTransformChanged() { }
 
 		protected virtual void OnInitialize() { }
 
@@ -206,16 +208,16 @@ namespace CryEngine
 			}
 
 			var typeInfo = new TypeInfo
-            {
-                type = entityComponentType
-            };
+			{
+				type = entityComponentType
+			};
 			_componentTypes.Add(typeInfo);
 
 			var guidAttribute = entityComponentType.GetCustomAttribute<GuidAttribute>(false);
 			var componentAttribute = entityComponentType.GetCustomAttribute<EntityComponentAttribute>(false);
 			bool hasGuid = false;
-            if (guidAttribute != null)
-            {
+			if(guidAttribute != null)
+			{
 				Guid guid;
 				if(ValidateGuid(entityComponentType.Name, guidAttribute.Value, out guid))
 				{
@@ -224,7 +226,7 @@ namespace CryEngine
 					typeInfo.guid.lopart = BitConverter.ToUInt64(guidArray, 8);
 					hasGuid = true;
 				}
-            }
+			}
 
 			if(!hasGuid && componentAttribute != null)
 			{
@@ -242,53 +244,53 @@ namespace CryEngine
 			}
 
 			if(!hasGuid)
-            {
-                // Fall back to generating GUID based on type
-                var guidString = Engine.TypeToHash(entityComponentType);
-                var half = (int)(guidString.Length / 2.0f);
-                if (!ulong.TryParse(guidString.Substring(0, half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out typeInfo.guid.hipart))
-                {
-                    Log.Error("Failed to parse {0} to UInt64", guidString.Substring(0, half));
-                }
-                if (!ulong.TryParse(guidString.Substring(half, guidString.Length - half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out typeInfo.guid.lopart))
-                {
-                    Log.Error("Failed to parse {0} to UInt64", guidString.Substring(half, guidString.Length - half));
-                }
-            }
+			{
+				// Fall back to generating GUID based on type
+				var guidString = Engine.TypeToHash(entityComponentType);
+				var half = (int)(guidString.Length / 2.0f);
+				if(!ulong.TryParse(guidString.Substring(0, half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out typeInfo.guid.hipart))
+				{
+					Log.Error("Failed to parse {0} to UInt64", guidString.Substring(0, half));
+				}
+				if(!ulong.TryParse(guidString.Substring(half, guidString.Length - half), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out typeInfo.guid.lopart))
+				{
+					Log.Error("Failed to parse {0} to UInt64", guidString.Substring(half, guidString.Length - half));
+				}
+			}
 
-            if (componentAttribute == null)
-            {
-                componentAttribute = new EntityComponentAttribute();
-            }
+			if(componentAttribute == null)
+			{
+				componentAttribute = new EntityComponentAttribute();
+			}
 
-            if (componentAttribute.Name.Length == 0)
-            {
-                componentAttribute.Name = entityComponentType.Name;
-            }
+			if(componentAttribute.Name.Length == 0)
+			{
+				componentAttribute.Name = entityComponentType.Name;
+			}
 
-            if (entityComponentType.IsAbstract || entityComponentType.IsInterface)
-            {
-                // By passing an empty string as the name the component will still be registered, 
-                // but the Sandbox will not show it in the AddComponent menu.
-                componentAttribute.Name = string.Empty;
-            }
+			if(entityComponentType.IsAbstract || entityComponentType.IsInterface)
+			{
+				// By passing an empty string as the name the component will still be registered, 
+				// but the Sandbox will not show it in the AddComponent menu.
+				componentAttribute.Name = string.Empty;
+			}
 
-            NativeInternals.Entity.RegisterComponent(entityComponentType,
-                                                     typeInfo.guid.hipart,
-                                                     typeInfo.guid.lopart,
-                                                     componentAttribute.Name,
-                                                     componentAttribute.Category,
-                                                     componentAttribute.Description,
-                                                     componentAttribute.Icon);
+			NativeInternals.Entity.RegisterComponent(entityComponentType,
+													 typeInfo.guid.hipart,
+													 typeInfo.guid.lopart,
+													 componentAttribute.Name,
+													 componentAttribute.Category,
+													 componentAttribute.Description,
+													 componentAttribute.Icon);
 
-            // Register all bases, note that the base has to have been registered before the component we're registering right now!
-            var baseType = entityComponentType.BaseType;
-            while (baseType != typeof(object))
-            {
-                NativeInternals.Entity.AddComponentBase(entityComponentType, baseType);
+			// Register all bases, note that the base has to have been registered before the component we're registering right now!
+			var baseType = entityComponentType.BaseType;
+			while(baseType != typeof(object))
+			{
+				NativeInternals.Entity.AddComponentBase(entityComponentType, baseType);
 
-                baseType = baseType.BaseType;
-            }
+				baseType = baseType.BaseType;
+			}
 
 			if(!entityComponentType.IsAbstract)
 			{
@@ -305,21 +307,21 @@ namespace CryEngine
 			catch(FormatException)
 			{
 				Log.Error("Encountered a FormatException while parsing GUID with value \"{0}\" on {1}! " +
-				          "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", guidString, componentName);
+						  "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", guidString, componentName);
 				guid = new Guid();
 				return false;
 			}
 			catch(OverflowException)
 			{
 				Log.Error("Encountered an OverFlowException while parsing GUID with value \"{0}\" on {1}! " +
-				          "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", guidString, componentName);
+						  "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", guidString, componentName);
 				guid = new Guid();
 				return false;
 			}
 			catch(ArgumentNullException)
 			{
 				Log.Error("Encountered an ArgumentNullException while parsing GUID on {0}! " +
-				          "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", componentName);
+						  "Please provide GUIDs in the format: \"C47DF64B-E1F9-40D1-8063-2C533A1CE7D5\"", componentName);
 				guid = new Guid();
 				return false;
 			}
@@ -365,52 +367,52 @@ namespace CryEngine
 
 				// Register the property in native code.
 				NativeInternals.Entity.RegisterComponentProperty(componentTypeInfo.type, propertyInfo, propertyInfo.Name, propertyInfo.Name, attribute.Description, attribute.Type, defaultValue);
-            }
+			}
 
-            // Register all Schematyc functions
-            var methods = componentTypeInfo.type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            foreach (MethodInfo methodInfo in methods)
-            {
-                var attribute = (SchematycMethodAttribute)methodInfo.GetCustomAttributes(typeof(SchematycMethodAttribute), false).FirstOrDefault();
-                if (attribute == null)
-                    continue;
+			// Register all Schematyc functions
+			var methods = componentTypeInfo.type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			foreach(MethodInfo methodInfo in methods)
+			{
+				var attribute = (SchematycMethodAttribute)methodInfo.GetCustomAttributes(typeof(SchematycMethodAttribute), false).FirstOrDefault();
+				if(attribute == null)
+					continue;
 
-                NativeInternals.Entity.RegisterComponentFunction(componentTypeInfo.type, methodInfo);
-            }
+				NativeInternals.Entity.RegisterComponentFunction(componentTypeInfo.type, methodInfo);
+			}
 
-            // Register all Schematyc signals
-            var nestedTypes = componentTypeInfo.type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
-            foreach (Type nestedType in nestedTypes)
-            {
-                var attribute = (SchematycSignalAttribute)nestedType.GetCustomAttributes(typeof(SchematycSignalAttribute), false).FirstOrDefault();
-                if (attribute == null)
-                    continue;
+			// Register all Schematyc signals
+			var nestedTypes = componentTypeInfo.type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
+			foreach(Type nestedType in nestedTypes)
+			{
+				var attribute = (SchematycSignalAttribute)nestedType.GetCustomAttributes(typeof(SchematycSignalAttribute), false).FirstOrDefault();
+				if(attribute == null)
+					continue;
 
-                int signalId = NativeInternals.Entity.RegisterComponentSignal(componentTypeInfo.type, nestedType.Name);
-                
-                MethodInfo invoke = nestedType.GetMethod("Invoke");
-                ParameterInfo[] pars = invoke.GetParameters();
+				int signalId = NativeInternals.Entity.RegisterComponentSignal(componentTypeInfo.type, nestedType.Name);
 
-                List<ParameterInfo> parameters = new List<ParameterInfo>();
+				MethodInfo invoke = nestedType.GetMethod("Invoke");
+				ParameterInfo[] pars = invoke.GetParameters();
 
-                foreach (ParameterInfo p in pars)
-                {
-                    NativeInternals.Entity.AddComponentSignalParameter(componentTypeInfo.type, signalId, p.Name, p.ParameterType);
+				List<ParameterInfo> parameters = new List<ParameterInfo>();
 
-                    parameters.Add(p);
-                }
-                if(componentTypeInfo.signals == null)
-                {
-                    componentTypeInfo.signals = new List<TypeInfo.Signal>();
-                }
+				foreach(ParameterInfo p in pars)
+				{
+					NativeInternals.Entity.AddComponentSignalParameter(componentTypeInfo.type, signalId, p.Name, p.ParameterType);
 
-                componentTypeInfo.signals.Add(new TypeInfo.Signal
-                {
-                    id = signalId,
-                    delegateType = nestedType
-                });
-            }
-        }
+					parameters.Add(p);
+				}
+				if(componentTypeInfo.signals == null)
+				{
+					componentTypeInfo.signals = new List<TypeInfo.Signal>();
+				}
+
+				componentTypeInfo.signals.Add(new TypeInfo.Signal
+				{
+					id = signalId,
+					delegateType = nestedType
+				});
+			}
+		}
 		#endregion
 	}
 }

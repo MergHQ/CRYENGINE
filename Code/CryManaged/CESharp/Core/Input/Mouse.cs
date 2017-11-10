@@ -8,6 +8,9 @@ namespace CryEngine
 	/// </summary>
 	public class Mouse : IHardwareMouseEventListener, IGameUpdateReceiver
 	{
+		/// <summary>
+		/// Interface for overriding mouse input.
+		/// </summary>
 		public interface IMouseOverride
 		{
 			event MouseEventHandler LeftButtonDown;
@@ -21,12 +24,33 @@ namespace CryEngine
 		/// Used by all Mouse events.
 		/// </summary>
 		public delegate void MouseEventHandler(int x, int y);
+		/// <summary>
+		/// Invoked when the left mouse button is pressed down.
+		/// </summary>
 		public static event MouseEventHandler OnLeftButtonDown;
+		/// <summary>
+		/// Invoked when the left mouse button is released after being pressed down.
+		/// </summary>
 		public static event MouseEventHandler OnLeftButtonUp;
+		/// <summary>
+		/// Invoked when the right mouse button is pressed down.
+		/// </summary>
 		public static event MouseEventHandler OnRightButtonDown;
+		/// <summary>
+		/// Invoked when the right mouse button is released after being pressed down.
+		/// </summary>
 		public static event MouseEventHandler OnRightButtonUp;
+		/// <summary>
+		/// Invoked when the mouse has moved.
+		/// </summary>
 		public static event MouseEventHandler OnMove;
+		/// <summary>
+		/// Invoked when the mouse moves outside of a window.
+		/// </summary>
 		public static event MouseEventHandler OnWindowLeave;
+		/// <summary>
+		/// Invoked when the mouse enters a window.
+		/// </summary>
 		public static event MouseEventHandler OnWindowEnter;
 
 		internal static Mouse Instance { get; set; }
@@ -200,6 +224,10 @@ namespace CryEngine
 				OnMove(x, y);
 		}
 
+		/// <summary>
+		/// Overrides the mouse input.
+		/// </summary>
+		/// <param name="mouseOverride"></param>
 		public static void SetOverride(IMouseOverride mouseOverride)
 		{
 			if (s_override != null)
@@ -264,6 +292,11 @@ namespace CryEngine
 			}
 		}
 
+		/// <summary>
+		/// Fires a raycast to check if UI is hit at the specified coordinates.
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="y"></param>
 		public static void HitScenes(int x, int y)
 		{
 			if(!Global.gEnv.pGameFramework.GetILevelSystem().IsLevelLoaded())
@@ -300,12 +333,15 @@ namespace CryEngine
 			HitEntityUV = new Vector2();
 		}
 
-		void AddListener()
+		private void AddListener()
 		{
 			GameFramework.RegisterForUpdate(this);
 			Global.gEnv.pHardwareMouse.AddListener(this);
 		}
 
+		/// <summary>
+		/// Disposes this instance.
+		/// </summary>
 		public override void Dispose()
 		{
 			GameFramework.UnregisterFromUpdate(this);

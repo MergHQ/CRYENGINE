@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -6,13 +6,25 @@ using CryEngine.Common;
 
 namespace CryEngine
 {
+	/// <summary>
+	/// Interface that can be registered in the <see cref="GameFramework"/> to receive update calls after the engine has updated.
+	/// </summary>
 	public interface IGameUpdateReceiver
 	{
+		/// <summary>
+		/// Called every frame when registered in the <see cref="GameFramework"/>.
+		/// </summary>
 		void OnUpdate();
 	}
 
+	/// <summary>
+	/// Interface that can be registered in the <see cref="GameFramework"/> to receive update calls right before the frame is rendered.
+	/// </summary>
 	public interface IGameRenderReceiver
 	{
+		/// <summary>
+		/// Called right before the frame is rendered when registered in the <see cref="GameFramework"/>
+		/// </summary>
 		void OnRender();
 	}
 
@@ -33,26 +45,45 @@ namespace CryEngine
 		private static List<IGameUpdateReceiver> _updateReceivers = new List<IGameUpdateReceiver>();
 		private static List<IGameRenderReceiver> _renderReceivers = new List<IGameRenderReceiver>();
 
+		/// <summary>
+		/// Called when the engine saves the game.
+		/// </summary>
+		/// <param name="pSaveGame"></param>
 		public override void OnSaveGame(ISaveGame pSaveGame)
 		{
 			Log.Info<GameFramework>("OnSaveGame");
 		}
 
+		/// <summary>
+		/// Called by the engine when a game is loaded.
+		/// </summary>
+		/// <param name="pLoadGame"></param>
 		public override void OnLoadGame(ILoadGame pLoadGame)
 		{
 			// nada
 		}
 
+		/// <summary>
+		/// Called by the engine when loading is forced with Flash.
+		/// </summary>
 		public override void OnForceLoadingWithFlash()
 		{
 			// nada
 		}
 
+		/// <summary>
+		/// Called by the engine when the level has ended.
+		/// </summary>
+		/// <param name="nextLevel"></param>
 		public override void OnLevelEnd(string nextLevel)
 		{
 			// nada
 		}
 
+		/// <summary>
+		/// Called by the engine when the savegame file has loaded.
+		/// </summary>
+		/// <param name="pLevelName"></param>
 		public override void OnSavegameFileLoadedInMemory(string pLevelName)
 		{
 			// nada
@@ -131,7 +162,7 @@ namespace CryEngine
 			}
 
 			var updateReceivers = new List<IGameUpdateReceiver>(_updateReceivers);
-			foreach (IGameUpdateReceiver obj in updateReceivers)
+			foreach(IGameUpdateReceiver obj in updateReceivers)
 			{
 				obj.OnUpdate();
 			}
@@ -151,9 +182,9 @@ namespace CryEngine
 					action.RenderDone = true;
 				}
 			}
-			
+
 			var renderReceivers = new List<IGameRenderReceiver>(_renderReceivers);
-			foreach (IGameRenderReceiver obj in renderReceivers)
+			foreach(IGameRenderReceiver obj in renderReceivers)
 			{
 				obj.OnRender();
 			}
@@ -166,11 +197,14 @@ namespace CryEngine
 			Engine.EndReload += AddListener;
 		}
 
-		void AddListener()
+		private void AddListener()
 		{
 			Engine.GameFramework.RegisterListener(this, "MonoGameFramework", EFRAMEWORKLISTENERPRIORITY.FRAMEWORKLISTENERPRIORITY_DEFAULT);
 		}
 
+		/// <summary>
+		/// Disposes of this instance.
+		/// </summary>
 		public override void Dispose()
 		{
 			Engine.GameFramework.UnregisterListener(this);
