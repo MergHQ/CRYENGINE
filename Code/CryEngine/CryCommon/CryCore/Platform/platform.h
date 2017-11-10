@@ -360,7 +360,7 @@ inline int IsHeapValid()
 enum EQuestionResult
 {
 	eQR_None,
-	eQR_Cancel = eQR_None,
+	eQR_Cancel,
 	eQR_Yes,
 	eQR_No,
 	eQR_Abort,
