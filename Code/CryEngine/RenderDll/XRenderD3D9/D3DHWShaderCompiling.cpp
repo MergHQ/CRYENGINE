@@ -2764,8 +2764,7 @@ SShaderCache* CHWShader::mfInitCache(const char* name, CHWShader* pSH, bool bChe
 	//	LOADING_TIME_PROFILE_SECTION(iSystem);
 
 	CHWShader_D3D* pSHHW = (CHWShader_D3D*)pSH;
-	char nameCache[256];
-
+	
 	if (!CRenderer::CV_r_shadersAllowCompilation)
 		bCheckValid = false;
 
@@ -2776,9 +2775,8 @@ SShaderCache* CHWShader::mfInitCache(const char* name, CHWShader* pSH, bool bChe
 	{
 		char namedst[256];
 		pSHHW->mfGetDstFileName(pSHHW->m_pCurInst, pSHHW, namedst, 256, 0);
-		fpStripExtension(namedst, nameCache);
-		fpAddExtension(nameCache, ".fxcb");
-		name = nameCache;
+		PathUtil::ReplaceExtension(namedst, "fxcb");
+		name = namedst;
 	}
 
 	SShaderCache* pCache = NULL;
@@ -4033,8 +4031,9 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 		    return false;
 		   }*/
 		mfGetDstFileName(pInst, this, nameCacheUnstripped, 256, 0);
-		fpStripExtension(nameCacheUnstripped, nameCache);
-		fpAddExtension(nameCache, ".fxcb");
+
+		cry_strcpy(nameCache, nameCacheUnstripped);
+		PathUtil::ReplaceExtension(nameCache, "fxcb");
 		if (!m_pDevCache)
 			m_pDevCache = mfInitDevCache(nameCache, this);
 
@@ -4055,8 +4054,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 			if (gRenDev->m_cEF.m_nCombinationsProcess >= 0)
 			{
 				mfGetDstFileName(pInst, this, nameCache, 256, 0);
-				fpStripExtension(nameCache, nameCache);
-				fpAddExtension(nameCache, ".fxcb");
+				PathUtil::ReplaceExtension(nameCache, "fxcb");
 				FXShaderCacheNamesItor it = m_ShaderCacheList.find(nameCache);
 				if (it == m_ShaderCacheList.end())
 					m_ShaderCacheList.insert(FXShaderCacheNamesItor::value_type(nameCache, m_CRC32));

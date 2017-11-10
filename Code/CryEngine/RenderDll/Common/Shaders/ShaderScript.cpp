@@ -96,7 +96,7 @@ bool CShaderMan::mfReloadShaderIncludes(const char* szPath, int nFlags)
 				continue;
 			if (!stricmp(&nmf[len], ".cfi"))
 			{
-				fpStripExtension(fileinfo.name, nmf);
+				PathUtil::RemoveExtension(nmf);
 				bool bCh = false;
 				SShaderBin* pBin = m_Bin.GetBinShader(nmf, true, 0, &bCh);
 				if (bCh)
@@ -253,7 +253,7 @@ bool CShaderMan::mfReloadFile(const char* szPath, const char* szName, int nFlags
 
 	m_nFrameForceReload++;
 
-	const char* szExt = fpGetExtension(szName);
+	const char* szExt = PathUtil::GetExt(szName);
 	if (!stricmp(szExt, ".cfx"))
 	{
 		m_bReload = true;

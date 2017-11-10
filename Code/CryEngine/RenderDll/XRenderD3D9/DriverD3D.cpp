@@ -1100,7 +1100,7 @@ bool CD3D9Renderer::RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc
 
 	bool captureSuccess = false;
 
-	const char* pReqFileFormatExt(fpGetExtension(szFilePath));
+	const char* pReqFileFormatExt(PathUtil::GetExt(szFilePath));
 	SCaptureFormatInfo::ECaptureFileFormat captureFormat = SCaptureFormatInfo::GetCaptureFormatByExtension(++pReqFileFormatExt);
 
 	bool formatBGRA = pSrc->GetDevTexture()->GetNativeFormat() == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;

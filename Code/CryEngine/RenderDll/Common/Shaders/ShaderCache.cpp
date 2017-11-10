@@ -2380,7 +2380,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 			continue;
 		if (fileinfo.attrib & _A_SUBDIR)
 			continue;
-		const char* szExt = fpGetExtension(fileinfo.name);
+		const char* szExt = PathUtil::GetExt(fileinfo.name);
 		if (!stricmp(szExt, ".cfib"))
 			FilesCFI.push_back(fileinfo.name);
 		else if (!stricmp(szExt, ".cfxb"))
@@ -2402,7 +2402,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 
 			const string& file = FilesCFI[i];
 			cry_strcpy(sName, file.c_str());
-			fpStripExtension(sName, sName);
+			PathUtil::RemoveExtension(sName);
 			SShaderBin* pBin = m_Bin.GetBinShader(sName, true, 0);
 			assert(pBin);
 		}
@@ -2417,7 +2417,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 
 			const string& file = FilesCFX[i];
 			cry_strcpy(sName, file.c_str());
-			fpStripExtension(sName, sName);
+			PathUtil::RemoveExtension(sName);
 			SShaderBin* pBin = m_Bin.GetBinShader(sName, false, 0);
 			assert(pBin);
 		}
