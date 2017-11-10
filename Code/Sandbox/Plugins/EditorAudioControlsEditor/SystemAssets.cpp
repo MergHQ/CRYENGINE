@@ -499,6 +499,7 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 			}
 
 			ar(Serialization::Range<float>(fadeOutDistance, 0.0f, radius), "fadeOutDistance", "Occlusion Fade-Out Distance");
+			ar.closeBlock();
 		}
 
 		if (ar.isInput())
@@ -513,6 +514,8 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 			m_modifiedSignalEnabled = true;
 			SignalControlModified();
 		}
+
+		ar.closeBlock();
 	}
 }
 

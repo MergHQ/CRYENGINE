@@ -23,11 +23,9 @@ public:
 
 	CImplFolder(string const& name, CID const id)
 		: CImplItem(name, id, static_cast<ItemType>(EImpltemType::Folder))
-	{}
-
-	// CImplItem
-	virtual bool IsConnected() const override { return true; }
-	// ~CImplItem
+	{
+		SetContainer(true);
+	}
 };
 
 class CImplGroup final : public CImplItem
@@ -36,11 +34,9 @@ public:
 
 	CImplGroup(string const& name, CID const id)
 		: CImplItem(name, id, static_cast<ItemType>(EImpltemType::Group))
-	{}
-
-	// CImplItem
-	virtual bool IsConnected() const override { return true; }
-	// ~CImplItem
+	{
+		SetContainer(true);
+	}
 };
 } // namespace Fmod
 } // namespace ACE

@@ -83,6 +83,12 @@ CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EI
 	}
 
 	CImplControl* const pControl = new CImplControl(name, id, static_cast<ItemType>(type));
+
+	if (type == EImpltemType::Folder)
+	{
+		pControl->SetContainer(true);
+	}
+
 	rootItem.AddChild(pControl);
 	return pControl;
 }

@@ -305,6 +305,10 @@ CImplItem* CProjectLoader::CreateItem(const string& name, EImpltemType const typ
 		{
 			pImplControl->SetRadius(m_eventsInfoMap[CCrc32::ComputeLowercase(name.c_str())].maxRadius);
 		}
+		else if ((type == EImpltemType::WorkUnit) || (type == EImpltemType::PhysicalFolder) || (type == EImpltemType::VirtualFolder))
+		{
+			pImplControl->SetContainer(true);
+		}
 
 		parent.AddChild(pImplControl);
 		pImplControl->SetParent(&parent);
