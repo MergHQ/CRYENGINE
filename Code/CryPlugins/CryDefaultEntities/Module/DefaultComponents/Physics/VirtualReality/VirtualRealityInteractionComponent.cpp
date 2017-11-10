@@ -36,6 +36,29 @@ namespace Cry
 					LoadHandModel(m_leftHandModelPath.value, EHand::Left);
 					LoadHandModel(m_rightHandModelPath.value, EHand::Right);
 				}
+
+
+				pe_params_flags pf; 
+				pf.flagsOR = pef_never_affect_triggers;
+
+				primitives::sphere sph;
+				sph.center.zero();
+				sph.r = 0.05f;
+
+				IGeomManager* pGeoman = gEnv->pPhysicalWorld->GetGeomManager();
+				phys_geometry* pGeom = pGeoman->RegisterGeometry(pGeoman->CreatePrimitive(primitives::sphere::type, &sph));
+
+				pe_geomparams gp;
+				gp.flags = gp.flagsCollider = 0;
+
+				for (int i = 0; i < 2; ++i)
+				{
+					m_hands[i].pAttachedEntity = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_RIGID, &pf);
+					m_hands[i].pAttachedEntity->AddGeometry(pGeom, &gp);
+				}
+
+				pGeom->pGeom->Release();
+				pGeoman->UnregisterGeometry(pGeom);
 			}
 
 			void CInteractionComponent::LoadHandModel(const char* szModelPath, EHand handType)
@@ -95,8 +118,8 @@ namespace Cry
 							releaseHeldItemKeyId = eKI_Motion_OpenVR_TouchPadBtn;
 						}
 
-						Vec3 linearVelocity;
-						Vec3 angularVelocity;
+						Vec3 linearVelocity, linearAcceleration;
+						Vec3 angularVelocity, angularAcceleration;
 
 						const HmdTrackingState& trackingState = pDevice->GetController()->GetLocalTrackingState(hand.controllerId);
 						if (trackingState.CheckStatusFlags(EHmdStatus::eHmdStatus_OrientationTracked))
@@ -110,31 +133,37 @@ namespace Cry
 
 							linearVelocity = worldTransform.TransformVector(trackingState.pose.linearVelocity);
 							angularVelocity = worldTransform.TransformVector(trackingState.pose.angularVelocity);
+
+							linearAcceleration = worldTransform.TransformVector(trackingState.pose.linearAcceleration);
+							angularAcceleration = worldTransform.TransformVector(trackingState.pose.angularAcceleration);
 						}
 						else
 						{
 							linearVelocity = ZERO;
 							angularVelocity = ZERO;
+							linearAcceleration = ZERO;
+							angularAcceleration = ZERO;
 						}
 
 						constexpr float triggerHoldThreshold = 0.95f;
 						bool isHoldingTrigger = pDevice->GetController()->GetTriggerValue(hand.controllerId, triggerKeyId) > triggerHoldThreshold;
 
-						if (!isHoldingTrigger && hand.m_holdingTrigger)
+						if (!isHoldingTrigger && hand.holdingTrigger)
 						{
-							hand.m_holdingTrigger = false;
+							hand.holdingTrigger = false;
 						}
 
-						if (isHoldingTrigger && !hand.m_holdingTrigger && hand.heldEntityId == INVALID_ENTITYID)
+						if (isHoldingTrigger && !hand.holdingTrigger && hand.heldEntityId == INVALID_ENTITYID)
 						{
-							hand.m_holdingTrigger = true;
+							hand.holdingTrigger = true;
 
-							if (IEntity* pUsableEntity = FindPickableEntity(hand))
+							SPickableEntity pickableEntity = FindPickableEntity(hand);
+							if (pickableEntity.pEntity != nullptr)
 							{
-								PickUpObject(hand, pUsableEntity);
+								PickUpObject(hand, pickableEntity);
 							}
 						}
-						else if (pDevice->GetController()->IsButtonPressed(hand.controllerId, releaseHeldItemKeyId))
+						else if ((m_bReleaseWithPressKey && !isHoldingTrigger) || pDevice->GetController()->IsButtonPressed(hand.controllerId, releaseHeldItemKeyId))
 						{
 							ReleaseObject(hand, linearVelocity, angularVelocity);
 						}
@@ -142,8 +171,19 @@ namespace Cry
 						{
 							if (IEntity* pHeldEntity = gEnv->pEntitySystem->GetEntity(hand.heldEntityId))
 							{
-								const Matrix34& handTransform = m_pEntity->GetSlotWorldTM(hand.slotId);
-								pHeldEntity->SetWorldTM(handTransform);
+								pe_params_pos pp;
+								pp.pos = m_pEntity->GetSlotWorldTM(hand.slotId).GetTranslation();
+								pp.q = IDENTITY;
+								hand.pAttachedEntity->SetParams(&pp);
+								/*float t = gEnv->pTimer->GetCurrTime();
+								if (t > m_timeMove + gEnv->pTimer->GetFrameTime() * 0.5f)
+								{
+									pe_action_set_velocity asv;
+									asv.v = (pp.pos - m_lastAttachPos) / (t - m_timeMove);
+									m_pEntAttach->Action(&asv);
+									m_lastAttachPos = pp.pos;
+									m_timeMove = t;
+								}*/
 							}
 						}
 					}
@@ -159,23 +199,17 @@ namespace Cry
 			{
 				if (IEntity* pHeldEntity = gEnv->pEntitySystem->GetEntity(hand.heldEntityId))
 				{
-					pHeldEntity->EnablePhysics(true);
-
-					if (IPhysicalEntity* pPhysicalEntity = pHeldEntity->GetPhysicalEntity())
+					if (IPhysicalEntity* pHeldPhysicalEntity = pHeldEntity->GetPhysicalEntity())
 					{
-						Matrix34 tm = pHeldEntity->GetWorldTM();
-						pe_params_pos posParams;
-						posParams.pMtx3x4 = &tm;
-						pPhysicalEntity->SetParams(&posParams);
-
-						pe_action_awake awake;
-						awake.bAwake = 1;
-						pPhysicalEntity->Action(&awake);
+						pe_action_update_constraint auc;
+						auc.idConstraint = hand.constraintId;
+						auc.bRemove = 1;
+						pHeldPhysicalEntity->Action(&auc);
 
 						pe_action_set_velocity setVel;
 						setVel.v = linearVelocity;
 						setVel.w = angularVelocity;
-						pPhysicalEntity->Action(&setVel);
+						pHeldPhysicalEntity->Action(&setVel);
 					}
 
 					DynArray<IInteractableComponent*> usableEntityComponents;
@@ -191,30 +225,44 @@ namespace Cry
 				hand.heldEntityId = INVALID_ENTITYID;
 			}
 
-			void CInteractionComponent::PickUpObject(SHand& hand, IEntity* pObjectEntity)
+			void CInteractionComponent::PickUpObject(SHand& hand, const SPickableEntity& pickableEntity)
 			{
 				// Disable render of the held item
 				m_pEntity->SetSlotFlags(hand.slotId, 0);
-				hand.heldEntityId = pObjectEntity->GetId();
+				hand.heldEntityId = pickableEntity.pEntity->GetId();
+				
+				pe_params_pos pp;
+				pp.pos = m_pEntity->GetSlotWorldTM(hand.slotId).GetTranslation();
 
-				// Temporarily disable physics on the held item
-				pObjectEntity->EnablePhysics(false);
+				pe_status_dynamics dynStatus;
+				pickableEntity.pPhysicalEntity->GetStatus(&dynStatus);
+
+				pe_action_add_constraint aac;
+				aac.pt[0] = pp.pos;
+				aac.flags = constraint_no_tears | constraint_no_enforcement;
+				aac.partid[0] = pickableEntity.partId;
+				aac.maxPullForce = dynStatus.mass * 100;
+				aac.maxBendTorque = dynStatus.mass * 1000;
+				aac.hardnessLin = 5;
+				aac.pBuddy = hand.pAttachedEntity;
+				pp.q = IDENTITY;
+				hand.constraintId = pickableEntity.pPhysicalEntity->Action(&aac, (1 - hand.pAttachedEntity->SetParams(&pp)) >> 31);
 
 				DynArray<IInteractableComponent*> usableEntityComponents;
-				pObjectEntity->GetAllComponents<IInteractableComponent>(usableEntityComponents);
+				pickableEntity.pEntity->GetAllComponents<IInteractableComponent>(usableEntityComponents);
 				for (IInteractableComponent* pUsableEntityComponent : usableEntityComponents)
 				{
 					pUsableEntityComponent->OnPickedUp(hand.controllerId);
 				}
 			}
 
-			IEntity* CInteractionComponent::FindPickableEntity(const SHand& hand)
+			CInteractionComponent::SPickableEntity CInteractionComponent::FindPickableEntity(const SHand& hand)
 			{
 				Matrix34 handTransformation = m_pEntity->GetSlotWorldTM(hand.slotId);
 				IStatObj* pHandGeometry = m_pEntity->GetStatObj(hand.slotId);
 				if (pHandGeometry == nullptr)
 				{
-					return nullptr;
+					return SPickableEntity();
 				}
 
 				AABB searchBox = pHandGeometry->GetAABB();
@@ -225,7 +273,7 @@ namespace Cry
 
 				std::array<IPhysicalEntity*, 1> skipEntities = { { m_pEntity->GetPhysicalEntity() } };
 
-				std::vector<IEntity*> usableEntities;
+				std::vector<SPickableEntity> usableEntities;
 				usableEntities.resize(entityCount);
 
 				// Remove invalid entities for an early out to avoid intersection
@@ -242,11 +290,12 @@ namespace Cry
 							pe_status_dynamics dynStatus;
 							if ((ppEntityList[iEntity]->GetStatus(&dynStatus) && dynStatus.mass > 0.f))
 							{
-								usableEntities[iEntity] = pUsableEntity;
+								usableEntities[iEntity].pEntity = pUsableEntity;
+								usableEntities[iEntity].pPhysicalEntity = ppEntityList[iEntity];
 							}
 						}
 
-						bValid = usableEntities[iEntity] != nullptr;
+						bValid = usableEntities[iEntity].pEntity != nullptr;
 					}
 
 					if (!bValid || stl::find(skipEntities, ppEntityList[iEntity]))
@@ -309,11 +358,12 @@ namespace Cry
 
 							bestContact = pContacts[iContact].t;
 							bestEntityIt = usableEntities.begin() + iUsableEntity;
+							bestEntityIt->partId = iUsableEntityPart;
 						}
 					}
 				}
 
-				return bestEntityIt != usableEntities.end() ? *bestEntityIt : nullptr;
+				return bestEntityIt != usableEntities.end() ? *bestEntityIt : SPickableEntity();
 			}
 		}
 	}
