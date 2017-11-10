@@ -1,5 +1,5 @@
 {
-	"version": 2,
+	"version": 3,
 	"type": "CRYENGINE Project",
 	"info": { "name": "HUNT", "guid": "8c593d2d-28a9-7a36-d1a9-251d521ddd58" },
 	"content": {
@@ -16,7 +16,9 @@
 		"engine": "engine-5.4",
 		"plugins": [
 			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
-			{ "type": "EPluginType::Native", "path": "CryUQS_Core" }
+			{ "type": "EPluginType::Native", "path": "CryUQS_Core" },
+			{ "type": "EPluginType::Native", "path": "CryGamePlatform" },
+			{ "type": "EPluginType::Native", "path": "CryLobby" }
 		]
 	},
 	"console_variables": [
@@ -47,5 +49,6 @@
 		{ "name": "g_PlayerSilhouettes", "value": "0" },
 		
 		{ "name": "e_LodFaceAreaTargetSize", "value": "0.01" }
-	]
+	],
+	"console_commands": [ ]
 }
