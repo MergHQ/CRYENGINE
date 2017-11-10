@@ -4904,13 +4904,8 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 
 			if (gEnv->pScriptSystem)
 			{
-				static bool physicsLuaLoaded = false;
-				if (!physicsLuaLoaded)
-				{
-					// Load explosion shapes.
-					gEnv->pScriptSystem->ExecuteFile("scripts/physics.lua", true, true);
-					physicsLuaLoaded = true;
-				}
+				// Load explosion shapes.
+				gEnv->pScriptSystem->ExecuteFile("scripts/physics.lua", true, true);
 			}
 		}
 		break;
