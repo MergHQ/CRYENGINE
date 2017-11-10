@@ -239,7 +239,9 @@ bool CTexture::Resolve(int nTarget, bool bUseViewportSize)
 	assert(pDestSurf != NULL);
 
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-	gcpRendD3D->GetDeviceContext().ResolveSubresource(pDestSurf->Get2DTexture(), 0, pSrcSurf->Get2DTexture(), 0, (DXGI_FORMAT)m_pPixelFormat->DeviceFormat);
+	const SPixFormat* pPF;
+	ETEX_Format eDstFormat = CTexture::GetClosestFormatSupported(m_eDstFormat, pPF);
+	gcpRendD3D->GetDeviceContext().ResolveSubresource(pDestSurf->Get2DTexture(), 0, pSrcSurf->Get2DTexture(), 0, (DXGI_FORMAT)pPF->DeviceFormat);
 #endif
 	return true;
 }
