@@ -3418,6 +3418,8 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 				pAsync->m_fMinDistance = pSH->m_fMinVisibleDistance;
 		}
 
+		mfPrintCompileInfo(pInst);
+
 		mfGetDstFileName(pInst, this, nmDst, 256, 3);
 		gEnv->pCryPak->AdjustFileName(nmDst, nameSrc, 0);
 		if (pAsync->m_pFXShader && pAsync->m_pFXShader->m_HWTechniques.Num())
@@ -3879,7 +3881,7 @@ void CHWShader_D3D::mfPrintCompileInfo(SHWSInstance* pInst)
 		string pName;
 		SShaderCombIdent Ident(m_nMaskGenFX, pInst->m_Ident);
 		gRenDev->m_cEF.mfInsertNewCombination(Ident, pInst->m_eClass, szGenName, 0, &pName, false);
-		CryLog(" Compile %s (%d instructions, %d tempregs, %d/%d constants) ... ", pName.c_str(), pInst->m_nInstructions, pInst->m_nTempRegs, nParams, nConsts);
+		CryLog(" Compile (FX:0x%I64x, GL:0x%I64x) %s (%d instructions, %d tempregs, %d/%d constants) ... ", m_nMaskGenFX, pInst->m_Ident.m_GLMask, pName.c_str(), pInst->m_nInstructions, pInst->m_nTempRegs, nParams, nConsts);
 		int nSize = strlen(szGenName);
 		mfGenName(pInst, &szGenName[nSize], 512 - nSize, 1);
 		CryLog("           --- Cache entry: %s", szGenName);
@@ -3973,10 +3975,6 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 				CryLog("%d: Compile %s %s (%d out of %d) ... ", nThread,
 				       mfProfileString(pInst->m_eClass), pSH->GetName(), nCombination, gRenDev->m_cEF.m_nCombinationsProcessOverall);
 			}
-		}
-		else
-		{
-			pSH->mfPrintCompileInfo(pInst);
 		}
 	}
 

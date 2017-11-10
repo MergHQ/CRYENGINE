@@ -3064,7 +3064,13 @@ void CD3D9Renderer::EndFrame()
 	{
 		// Prepares aux geometry command buffer collector for next frame in case someone was generating aux commands before beginning next frame.
 		SetCurrentAuxGeomCollector(GetOrCreateAuxGeomCollector());
-		m_currentAuxGeomCBCollector->Get(0)->SetCamera(pCurrentCollector->Get(0)->GetCamera());
+
+		auto width = pCurrentCollector->Get(0)->GetCamera().GetViewSurfaceX();
+		
+		// Setting the current main thread's aux geometry command buffer to the collector and all containing aux geometry command buffers' camera.
+		// Technically this is not correct but it fixes current issues.
+		m_currentAuxGeomCBCollector->SetCamera(pCurrentCollector->Get(0)->GetCamera());
+		gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
 
 		// Commit all Aux Geom buffers except ones from the Render Thread,
 		// Render Thread will commit it's own buffer right before final rendering

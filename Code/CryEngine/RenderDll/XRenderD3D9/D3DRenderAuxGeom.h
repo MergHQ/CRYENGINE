@@ -86,6 +86,7 @@ private:
 		using AUXJobMap = std::map<void*, CAuxGeomCB*>;
 		CAuxGeomCB*       m_cbCurrent;
 		AUXJobMap         m_auxJobMap;
+		CCamera			  m_camera;
 		mutable CryRWLock m_rwlLocal;
 	public:
 		SThread();
@@ -93,15 +94,18 @@ private:
 		CAuxGeomCB* Get(void* jobID, threadID tid);
 		//void AppendJob(AUXJobs& auxJobs);
 		void FreeMemory();
+		void SetCamera(const CCamera& camera);
 		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
 	AUXThreadMap      m_auxThreadMap;
 	mutable CryRWLock m_rwGlobal;
+	CCamera m_camera;
 public:
 	~CAuxGeomCBCollector();
 	CAuxGeomCB* Get(void* jobID);
 	void FreeMemory();
 	AUXJobs SubmitAuxGeomsAndPrepareForRendering();
+	void SetCamera(const CCamera& camera);
 
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 };

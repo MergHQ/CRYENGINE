@@ -1817,6 +1817,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				rCamera.GetNearPlane(),
 				rCamera.GetFarPlane(),
 				fNewAspectRatio);
+
+			if (auto pAux = gEnv->pAuxGeomRenderer)
+			{
+				pAux->SetCamera(rCamera);
+			}
 		}
 	}
 
