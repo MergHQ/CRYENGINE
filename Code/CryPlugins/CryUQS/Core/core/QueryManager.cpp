@@ -302,12 +302,12 @@ namespace UQS
 					else if (bThisQueryRequiresSomeTimeBudgetForExecution)
 					{
 						//
-						// check for having  exceeded the granted time by some percentage
+						// check for having exceeded the granted time by some percentage
 						// -> if this is the case, then issue a warning to the console and to the query history
 						//
 
 						const float allowedTimeBudgetExcess = (SCvars::timeBudgetExcessThresholdInPercentBeforeWarning * 0.01f) * timeBudgetForThisQuery.GetMilliSeconds();
-						const bool bExceededTimeBudgetTooMuch = (timeUsedByThisQuery - timeBudgetForThisQuery) > allowedTimeBudgetExcess;
+						const bool bExceededTimeBudgetTooMuch = (timeUsedByThisQuery - timeBudgetForThisQuery).GetMilliSeconds() > allowedTimeBudgetExcess;
 
 						if (bExceededTimeBudgetTooMuch)
 						{

@@ -247,6 +247,10 @@ namespace UQS
 
 		CQueryBase::EUpdateState CQueryBase::Update(const CTimeValue& amountOfGrantedTime, Shared::CUqsString& error)
 		{
+			m_timeBudgetForCurrentUpdate.Restart(amountOfGrantedTime);
+
+			const CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
+
 			++m_totalElapsedFrames;
 
 			// immediate debug-rendering ON/OFF
@@ -258,8 +262,6 @@ namespace UQS
 			{
 				m_blackboard.pDebugRenderWorldImmediate = nullptr;
 			}
-
-			const CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
 
 			bool bCorruptionOccurred = false;
 
@@ -287,7 +289,6 @@ namespace UQS
 			// allow the derived class to update itself if no item corruption has occurred yet
 			//
 
-			m_timeBudgetForCurrentUpdate.Restart(amountOfGrantedTime);
 			const EUpdateState state = bCorruptionOccurred ? EUpdateState::ExceptionOccurred : OnUpdate(error);
 
 			//

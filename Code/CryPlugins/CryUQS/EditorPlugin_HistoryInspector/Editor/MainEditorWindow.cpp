@@ -558,7 +558,8 @@ void CMainEditorWindow::CUQSHistoryPostRenderer::OnPostRender() const
 }
 
 CMainEditorWindow::CMainEditorWindow()
-	: m_pQueryHistoryManager(nullptr)
+	: m_windowTitle("UQS History")
+	, m_pQueryHistoryManager(nullptr)
 	, m_pFreshlyAddedOrUpdatedQuery(nullptr)
 	, m_pHistoryPostRenderer(nullptr)
 {
@@ -663,7 +664,7 @@ const char* CMainEditorWindow::GetPaneTitle() const
 	// check for whether the UQS engine plugin has been loaded
 	if (UQS::Core::IHubPlugin::GetHubPtr())
 	{
-		return "UQS History";
+		return m_windowTitle;
 	}
 	else
 	{
@@ -830,6 +831,12 @@ void CMainEditorWindow::OnSaveLiveHistoryToFile()
 			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "UQS Query History Inspector: %s", error.c_str());
 			QMessageBox::warning(this, "Error saving the live query history", error.c_str());
 		}
+		else
+		{
+			// change the window title to also show the file name
+			m_windowTitle.Format("UQS History - %s", sFilePath.c_str());
+			setWindowTitle(QtUtil::ToQString(m_windowTitle));
+		}
 	}
 }
 
@@ -844,6 +851,10 @@ void CMainEditorWindow::OnLoadHistoryFromFile()
 		{
 			// ensure the "deserialized" entry in the history origin combo-box is selected
 			m_pComboBoxHistoryOrigin->setCurrentIndex(1);
+
+			// change the window title to also show the file name
+			m_windowTitle.Format("UQS History - %s", sFilePath.c_str());
+			setWindowTitle(QtUtil::ToQString(m_windowTitle));
 		}
 		else
 		{
