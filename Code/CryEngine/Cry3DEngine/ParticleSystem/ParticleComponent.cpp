@@ -281,6 +281,8 @@ void CParticleComponent::RenderAll(CParticleEmitter* pEmitter, CParticleComponen
 
 bool CParticleComponent::CanMakeRuntime(CParticleEmitter* pEmitter) const
 {
+	if (!IsEnabled())
+		return false;
 	for (auto& pFeature : m_features)
 	{
 		if (pFeature->IsEnabled() && !pFeature->CanMakeRuntime(pEmitter))
