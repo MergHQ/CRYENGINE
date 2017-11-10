@@ -40,7 +40,6 @@ CCSharpOutputWindow::~CCSharpOutputWindow()
 		pPlugin->UnregisterMessageListener(this);
 	}
 	m_pCompileTextWidget->RemoveTextEventListener(this);
-	delete m_pCompileTextWidget;
 }
 
 void CCSharpOutputWindow::OnMessageDoubleClicked(QMouseEvent* event)
