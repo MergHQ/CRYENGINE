@@ -17,7 +17,7 @@ class CMonoLibrary;
 // Main entry-point handler for managed code, indirectly created by the plugin manager
 class CManagedPlugin final
 	: public IManagedPlugin
-	, public ICryPlugin
+	, public Cry::IEnginePlugin
 	, public ISystemEventListener
 	, public INetworkedClientListener
 {
@@ -63,8 +63,6 @@ public:
 	virtual const char* GetCategory() const override { return "Managed"; }
 
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override { return true; }
-
-	virtual void OnPluginUpdate(EPluginUpdateType updateType) override {}
 	// ~ICryPlugin
 
 	// ISystemEventListener

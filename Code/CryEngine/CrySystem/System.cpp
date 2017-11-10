@@ -100,10 +100,6 @@
 
 WATERMARKDATA(_m);
 
-#if USE_STEAM
-	#include "Steamworks/public/steam/steam_api.h"
-#endif
-
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	#include <CrySystem/Scaleform/IScaleformHelper.h>
 #endif
@@ -437,8 +433,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_PlatformOSCreateFlags = 0;
 
 	m_bHasRenderedErrorMessage = false;
-	m_bIsSteamInitialized = false;
-
+	
 	m_pImeManager = nullptr;
 	RegisterWindowMessageHandler(this);
 
@@ -1481,7 +1476,7 @@ void CSystem::PrePhysicsUpdate()
 
 	if (m_pPluginManager)
 	{
-		m_pPluginManager->Update(IPluginUpdateListener::EUpdateType_PrePhysicsUpdate);
+		m_pPluginManager->UpdateBeforePhysics();
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -1561,6 +1556,8 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		m_env.pGameFramework->PreSystemUpdate();
 	}
 
+	m_pPluginManager->UpdateBeforeSystem();
+
 	if (ITextModeConsole* pTextModeConsole = GetITextModeConsole())
 	{
 		pTextModeConsole->BeginDraw();
@@ -1609,30 +1606,7 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		}
 	}
 
-	ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
-	const bool isCameraFrozen = pCameraFreeze && pCameraFreeze->GetIVal() != 0;
-
-	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
-	{
-		// Camera should now be valid, prepare occlusion
-		const CCamera& rCameraToSet = isCameraFrozen ? m_env.p3DEngine->GetRenderingCamera() : m_ViewCamera;
-		m_env.p3DEngine->PrepareOcclusion(rCameraToSet);
-	
-		// Synchronize all animations so ensure that their computations have finished
-		if (!IsLoading())
-		{
-			m_env.pCharacterManager->SyncAllAnimations();
-		}
-
-		Render();
-
-		if (m_env.pGameFramework != nullptr)
-		{
-			m_env.pGameFramework->PostRender(updateFlags);
-		}
-
-		return continueRunning;
-	}
+	m_pPluginManager->UpdateAfterSystem();
 
 	// Synchronize all animations so ensure that their computation have finished
 	// Has to be done before view update, in case camera depends on a joint
@@ -1641,10 +1615,15 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		m_env.pCharacterManager->SyncAllAnimations();
 	}
 
-	if (m_env.pGameFramework != nullptr && !updateFlags.Check(ESYSUPDATE_EDITOR_ONLY))
+	if (m_env.pGameFramework != nullptr && !updateFlags.Check(ESYSUPDATE_EDITOR_ONLY) && !updateFlags.Check(ESYSUPDATE_EDITOR_AI_PHYSICS))
 	{
 		m_env.pGameFramework->PreFinalizeCamera(updateFlags);
 	}
+
+	m_pPluginManager->UpdateBeforeFinalizeCamera();
+
+	ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
+	const bool isCameraFrozen = pCameraFreeze && pCameraFreeze->GetIVal() != 0;
 
 	const CCamera& rCameraToSet = isCameraFrozen ? m_env.p3DEngine->GetRenderingCamera() : m_ViewCamera;
 	m_env.p3DEngine->PrepareOcclusion(rCameraToSet);
@@ -1654,11 +1633,20 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		m_env.pGameFramework->PreRender();
 	}
 
+	m_pPluginManager->UpdateBeforeRender();
+
 	Render();
 
 	if (m_env.pGameFramework != nullptr)
 	{
 		m_env.pGameFramework->PostRender(updateFlags);
+	}
+
+	m_pPluginManager->UpdateAfterRender();
+
+	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
+	{
+		return continueRunning;
 	}
 
 #if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
@@ -1671,6 +1659,8 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 	{
 		m_env.pGameFramework->PostRenderSubmit();
 	}
+
+	m_pPluginManager->UpdateAfterRenderSubmit();
 
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
 	{
@@ -2335,11 +2325,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (gEnv->pSchematyc != nullptr)
 	{
 		gEnv->pSchematyc->Update();
-	}
-
-	if (m_pPluginManager)
-	{
-		m_pPluginManager->Update(IPluginUpdateListener::EUpdateType_Update);
 	}
 
 	if (m_env.pHardwareMouse != nullptr)
@@ -3142,46 +3127,6 @@ void CSystem::SetLoadOrigin(LevelLoadOrigin origin)
 	m_checkpointLoadCount = 0;
 }
 #endif
-
-bool CSystem::SteamInit()
-{
-#if USE_STEAM
-	if (m_bIsSteamInitialized)
-		return true;
-
-	////////////////////////////////////////////////////////////////////////////
-	// ** DEVELOPMENT ONLY ** - creates the appropriate steam_appid.txt file needed to call SteamAPI_Init()
-	#if !defined(RELEASE)
-	char buff[MAX_PATH];
-	CryGetExecutableFolder(CRY_ARRAY_COUNT(buff), buff);
-	const string appIdPath = PathUtil::Make(buff, "steam_appid", "txt");
-	FILE* const pSteamAppID = fopen(appIdPath.c_str(), "wt");
-	fprintf(pSteamAppID, "%d", g_cvars.sys_steamAppId);
-	fclose(pSteamAppID);
-	#endif // !defined(RELEASE)
-	// ** END DEVELOPMENT ONLY **
-	////////////////////////////////////////////////////////////////////////////
-
-	if (!SteamAPI_Init())
-	{
-		CryLog("[STEAM] SteamApi_Init failed");
-		return false;
-	}
-
-	////////////////////////////////////////////////////////////////////////////
-	// ** DEVELOPMENT ONLY ** - deletes the appropriate steam_appid.txt file as it's no longer needed
-	#if !defined(RELEASE)
-	remove(appIdPath);
-	#endif // !defined(RELEASE)
-	// ** END DEVELOPMENT ONLY **
-	////////////////////////////////////////////////////////////////////////////
-
-	m_bIsSteamInitialized = true;
-	return true;
-#else
-	return false;
-#endif
-}
 
 //////////////////////////////////////////////////////////////////////
 void CSystem::OnLanguageCVarChanged(ICVar* const pLanguage)

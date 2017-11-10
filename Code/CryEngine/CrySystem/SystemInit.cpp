@@ -109,11 +109,6 @@
 #include "CrySchematyc/ICore.h"
 #include "ManualFrameStep.h"
 
-#if USE_STEAM
-	#include "Steamworks/public/steam/steam_api.h"
-	#include "Steamworks/public/steam/isteamremotestorage.h"
-#endif
-
 #if CRY_PLATFORM_IOS
 	#include "IOSConsole.h"
 #endif
@@ -352,24 +347,6 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 		}
 	}
 }
-
-#if USE_STEAM
-//////////////////////////////////////////////////////////////////////////
-static void CmdWipeSteamCloud(IConsoleCmdArgs* pArgs)
-{
-	if (!gEnv->pSystem->SteamInit())
-		return;
-
-	int32 fileCount = SteamRemoteStorage()->GetFileCount();
-	for (int i = 0; i < fileCount; i++)
-	{
-		int32 size = 0;
-		const char* name = SteamRemoteStorage()->GetFileNameAndSize(i, &size);
-		bool success = SteamRemoteStorage()->FileDelete(name);
-		CryLog("Deleting file: %s - success: %d", name, success);
-	}
-}
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 class CCrashTestThread : public IThread
@@ -4888,13 +4865,6 @@ void CSystem::CreateSystemVars()
 	               "1 - enable optimisation\n"
 	               "Default is 1");
 
-#if USE_STEAM
-	#ifndef RELEASE
-	REGISTER_CVAR2("sys_steamAppId", &g_cvars.sys_steamAppId, 0, VF_NULL, "steam appId used for development testing");
-	REGISTER_COMMAND("sys_wipeSteamCloud", CmdWipeSteamCloud, VF_CHEAT, "Delete all files from steam cloud for this user");
-	#endif // RELEASE
-	REGISTER_CVAR2("sys_useSteamCloudForPlatformSaving", &g_cvars.sys_useSteamCloudForPlatformSaving, 0, VF_NULL, "Use steam cloud for save games and profile on PC (instead of the user folder)");
-#endif
 	REGISTER_CVAR2("sys_filesystemCaseSensitivity", &g_cvars.sys_filesystemCaseSensitivity, 0, VF_NULL, "0 = Ignore letter casing mismatches, 1 = Show warning on mismatch, 2 = Show error on mismatch");
 
 	m_sysNoUpdate = REGISTER_INT("sys_noupdate", 0, VF_CHEAT,

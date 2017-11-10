@@ -112,11 +112,15 @@ struct IRemoteCommandManager;
 struct IWindowMessageHandler;
 struct SFunctor;
 struct IScaleformHelper;
-struct ICryPluginManager;
 struct IProjectManager;
 class IImeManager;
 
 class CBootProfilerRecord;
+
+namespace Cry
+{
+	struct IPluginManager;
+}
 
 namespace UIFramework
 {
@@ -1258,7 +1262,7 @@ struct ISystem
 	virtual IConsole*               GetIConsole() = 0;
 	virtual IRemoteConsole*         GetIRemoteConsole() = 0;
 	virtual IUserAnalyticsSystem*   GetIUserAnalyticsSystem() = 0;
-	virtual ICryPluginManager*      GetIPluginManager() = 0;
+	virtual Cry::IPluginManager*    GetIPluginManager() = 0;
 	virtual IProjectManager*        GetIProjectManager() = 0;
 
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
@@ -1557,9 +1561,6 @@ struct ISystem
 #if !defined(_RELEASE)
 	virtual bool IsSavingResourceList() const = 0;
 #endif
-
-	//! Initializes Steam if needed and returns if it was successful.
-	virtual bool SteamInit() = 0;
 
 	//! Loads a dynamic library and returns the first factory with the specified interface id contained inside the module
 	virtual ICryFactory* LoadModuleWithFactory(const char* szDllName, const CryInterfaceID& moduleInterfaceId) = 0;

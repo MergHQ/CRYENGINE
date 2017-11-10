@@ -15,7 +15,7 @@ struct ISystemUserCallback;
 struct IGameStartup
 {
 	//! Entry function used to create a new instance of the game.
-	//! This is considered deprecated, in favor of ICryPlugin, and will be removed in the future
+	//! This is considered deprecated, in favor of Cry::IEnginePlugin, and will be removed in the future
 	//! \return A new instance of the game startup.
 	typedef IGameStartup*(* TEntryFunction)();
 

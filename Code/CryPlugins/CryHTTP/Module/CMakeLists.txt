@@ -1,4 +1,4 @@
-if (WIN32 OR LINUX OR APPLE)
+if ((WIN32 OR ORBIS) AND OPTION_ENGINE)
 	option(PLUGIN_HTTP "Enable HTTP support" ON)
 else()
 	option(PLUGIN_HTTP "Enable HTTP support" OFF)
@@ -18,10 +18,17 @@ add_sources("CryHTTP_uber_0.cpp"
 )
 
 sources_platform(WIN32 LINUX APPLE)
-add_sources("CryHTTP_uber_0.cpp"
+add_sources("CryHTTP_cURL_uber_0.cpp"
 	SOURCE_GROUP "Implementation"
 		"HttpImplementation_cURL.cpp"
 		"HttpImplementation_cURL.h"
+)
+
+sources_platform(ORBIS)
+add_sources("CryHTTP_sce_uber_0.cpp"
+	SOURCE_GROUP "Implementation"
+		"HttpImplementation_SCE.cpp"
+		"HttpImplementation_SCE.h"
 )
 
 add_sources("NoUberFile"

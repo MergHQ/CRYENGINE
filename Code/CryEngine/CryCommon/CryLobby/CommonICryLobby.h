@@ -164,7 +164,7 @@ struct SCryLobbyParameters
 	uint16 m_connectPort;       //!< Connect port the lobby service will use for connections.
 };
 
-struct ICryLobby : public ICryPlugin
+struct ICryLobby : public Cry::IEnginePlugin
 {
 public:
 	CRYINTERFACE_DECLARE_GUID(ICryLobby, "{3ED8EF88-5332-4BDF-A5CB-5A3AD5016279"_cry_guid);

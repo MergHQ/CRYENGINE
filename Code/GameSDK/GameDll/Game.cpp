@@ -38,7 +38,7 @@
 #include "ItemScheduler.h"
 #include "Utility/CryWatch.h"
 
-#include <CryExtension/ICryPluginManager.h>
+#include <CrySystem/ICryPluginManager.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CryString/CryPath.h>
 #include <IActionMapManager.h>
@@ -929,7 +929,6 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 			}
 		}
 #endif
-		gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::Native, "CryLobby");
 
 		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
 		if (pLobby)

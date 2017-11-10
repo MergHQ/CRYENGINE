@@ -179,7 +179,7 @@ void CMonoRuntime::Shutdown()
 	m_nodeCreators.clear();
 }
 
-std::shared_ptr<ICryPlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)
+std::shared_ptr<Cry::IEnginePlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)
 {
 	std::shared_ptr<CManagedPlugin> pPlugin = std::make_shared<CManagedPlugin>(szBinaryPath);
 	m_plugins.emplace_back(pPlugin);

@@ -2,7 +2,7 @@
 
 #include <StdAfx.h>
 #include <CryCore/Platform/platform_impl.inl>
-#include <CryExtension/ICryPluginManager.h>
+#include <CrySystem/ICryPluginManager.h>
 #include "CSharpOutputWindow.h"
 #include "CSharpEditorPlugin.h"
 #include "EditorStyleHelper.h"

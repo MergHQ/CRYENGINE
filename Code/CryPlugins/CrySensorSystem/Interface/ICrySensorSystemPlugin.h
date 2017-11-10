@@ -10,7 +10,7 @@ namespace Cry
 	{
 		struct ISensorSystem;
 
-		struct ICrySensorSystemPlugin : public ICryPlugin
+		struct ICrySensorSystemPlugin : public Cry::IEnginePlugin
 		{
 			CRYINTERFACE_DECLARE_GUID(ICrySensorSystemPlugin, "43678bb8-48cd-4bb8-ae11-8f6b0a347d9a"_cry_guid);
 

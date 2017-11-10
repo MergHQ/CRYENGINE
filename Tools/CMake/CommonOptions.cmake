@@ -27,8 +27,6 @@ else()
 	list(APPEND global_defines UQS_SCHEMATYC_SUPPORT=0)
 endif()
 
-option(OPTION_STEAM "Enable Steam" OFF)
-
 if (WIN32 OR WIN64 OR LINUX)
 	option(OPTION_DEDICATED_SERVER "Build engine in Dedicated Server mode" OFF)
 endif()

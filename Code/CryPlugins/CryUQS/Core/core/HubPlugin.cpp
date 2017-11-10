@@ -24,7 +24,7 @@ namespace UQS
 		{
 			CRYINTERFACE_BEGIN()
 			CRYINTERFACE_ADD(IHubPlugin)
-			CRYINTERFACE_ADD(ICryPlugin)
+			CRYINTERFACE_ADD(Cry::IEnginePlugin)
 			CRYINTERFACE_END()
 
 			CRYGENERATE_SINGLETONCLASS_GUID(CHubPlugin, "Plugin_UQS", "2a2f00e0-f068-4baf-b31b-b3c8f78b3477"_cry_guid)
@@ -33,12 +33,12 @@ namespace UQS
 			virtual ~CHubPlugin() = default;
 
 		private:
-			// ICryPlugin (forwarded by IHubPlugin)
+			// Cry::IEnginePlugin
 			virtual const char*                  GetName() const override;
 			virtual const char*                  GetCategory() const override;
 			virtual bool                         Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
-			virtual void                         OnPluginUpdate(EPluginUpdateType updateType) override;
-			// ~ICryPlugin
+			virtual void                         MainUpdate(float frameTime) override;
+			// ~Cry::IEnginePlugin
 
 			// IHubPlugin
 			virtual void                         RegisterHubPluginEventListener(IHubPluginEventListener* pListenerToRegister) override;
@@ -58,8 +58,6 @@ namespace UQS
 
 		CHubPlugin::CHubPlugin()
 		{
-			m_updateFlags = 0;  // the ctor of ICryPlugin base class should have done that, but didn't
-
 			m_pHub = stl::make_unique<CHub>();
 		}
 
@@ -77,14 +75,12 @@ namespace UQS
 		{
 			// Notice: we currently do *not* yet instantiate the UQS Hub here, because some of its sub-systems rely on the presence of sub-systems of ISystem, like IInput, which
 			// are still NULL at this point in time. So instead, we instantiate the UQS Hub upon ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE (see OnSystemEvent()).
-			m_updateFlags = IPluginUpdateListener::EUpdateType_Update;
+			EnableUpdate(EUpdateStep::MainUpdate, true);
 			return true;
 		}
 
-		void CHubPlugin::OnPluginUpdate(EPluginUpdateType updateType)
+		void CHubPlugin::MainUpdate(float frameTime)
 		{
-			assert(updateType == IPluginUpdateListener::EUpdateType_Update);
-
 			if (gEnv->IsEditing())
 				return;	// leave it to the UQS editor-plugins to update the IHub
 
