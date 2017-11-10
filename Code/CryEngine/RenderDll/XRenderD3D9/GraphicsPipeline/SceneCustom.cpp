@@ -318,6 +318,7 @@ void CSceneCustomStage::ExecuteDebugger()
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = gcpRendD3D->GetWireframeMode() != R_SOLID_MODE;
 
+	m_debugViewPass.SetLabel("DEBUG_VIEW");
 	m_debugViewPass.SetViewport(pRenderView->GetViewport());
 
 	{
@@ -366,6 +367,7 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 
+	m_debugViewPass.SetLabel("DEBUG_OVERLAY");
 	m_debugViewPass.SetViewport(pRenderView->GetViewport());
 
 	{
@@ -419,6 +421,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 	CTexture* pTargetRT = CRendererResources::s_ptexSceneSelectionIDs;
 	CTexture* pTargetDS = CRendererResources::s_ptexSceneDepth;
 
+	m_selectionIDPass.SetLabel("EDITOR_SELECTION_HIGHLIGHT");
 	m_selectionIDPass.SetViewport(D3DViewPort{
 		0.f,
 		0.f,
@@ -535,7 +538,11 @@ void CSceneCustomStage::ExecuteHelpers()
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 
-	PROFILE_LABEL_SCOPE("CUSTOM_SCENE_PASSE_DEBUG_HELPER");
+	// first check if we actually have anything worth drawing
+	if (!pRenderView->GetRenderItems(EFSLIST_DEBUG_HELPER).size())
+		return;
+
+	m_debugViewPass.SetLabel("DEBUG_HELPERS");
 
 	{
 		bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
