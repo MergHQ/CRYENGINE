@@ -964,7 +964,7 @@ void CEntity::ActivateEntityIfNecessary()
 {
 	bool bEnable = ShouldActivate();
 
-	if (bEnable != m_bInActiveList)
+	if (bEnable != (m_bInActiveList != 0))
 	{
 		g_pIEntitySystem->ActivateEntity(this, bEnable);
 	}
@@ -2490,9 +2490,7 @@ ICharacterInstance* CEntity::GetCharacter(int nSlot)
 //////////////////////////////////////////////////////////////////////////
 int CEntity::SetCharacter(ICharacterInstance* pCharacter, int nSlot, bool bUpdatePhysics)
 {
-	int nUsedSlot = -1;
-
-	nUsedSlot = m_render.SetSlotCharacter(nSlot, pCharacter);
+	int nUsedSlot = m_render.SetSlotCharacter(nSlot, pCharacter);
 	if (bUpdatePhysics)
 	{
 		m_physics.UpdateSlotGeometry(nUsedSlot);

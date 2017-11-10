@@ -512,7 +512,6 @@ float CEntityComponentAudio::GetGreatestFadeDistance() const
 //////////////////////////////////////////////////////////////////////////
 CryAudio::AuxObjectId CEntityComponentAudio::CreateAudioAuxObject()
 {
-	CryAudio::AuxObjectId audioAuxObjectId = CryAudio::InvalidAuxObjectId;
 	char const* szName = nullptr;
 
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
@@ -541,9 +540,7 @@ CryAudio::AuxObjectId CEntityComponentAudio::CreateAudioAuxObject()
 	CryAudio::SCreateObjectData const objectData(szName, CryAudio::EOcclusionType::Ignore, m_pEntity->GetWorldTM(), m_pEntity->GetId(), true);
 	CryAudio::IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
 	m_mapAuxObjects.insert(AuxObjectPair(++m_auxObjectIdCounter, SAuxObjectWrapper(pIObject)));
-	audioAuxObjectId = m_auxObjectIdCounter;
-
-	return audioAuxObjectId;
+	return m_auxObjectIdCounter;
 }
 
 //////////////////////////////////////////////////////////////////////////

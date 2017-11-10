@@ -40,6 +40,7 @@ private:
 struct IEntityRegistrator
 {
 	IEntityRegistrator()
+		: m_pNext(nullptr)
 	{
 		if (g_pFirst == nullptr)
 		{

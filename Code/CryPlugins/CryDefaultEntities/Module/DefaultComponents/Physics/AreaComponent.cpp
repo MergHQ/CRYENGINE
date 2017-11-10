@@ -17,6 +17,7 @@ void CAreaComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 
 CAreaComponent::CAreaComponent()
 	: m_shapeParameters{ this } 
+	, m_type(CAreaComponent::EType::Box)
 {
 }
 
