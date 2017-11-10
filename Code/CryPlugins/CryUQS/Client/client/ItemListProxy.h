@@ -80,7 +80,7 @@ namespace UQS
 		public:
 			explicit                  CItemListProxy_Writable(Core::IItemList& itemList);
 			void                      CreateItemsByItemFactory(size_t numItemsToCreate);
-			void                      CloneItems(const void* pOriginalItems, size_t numItemsToClone);
+			void                      CloneItems(const TItem* pOriginalItems, size_t numItemsToClone);
 			TItem&                    GetItemAtIndex(size_t index);
 			Core::IItemList&          GetUnderlyingItemList();
 
@@ -120,7 +120,7 @@ namespace UQS
 		}
 
 		template <class TItem>
-		void CItemListProxy_Writable<TItem>::CloneItems(const void* pOriginalItems, size_t numItemsToClone)
+		void CItemListProxy_Writable<TItem>::CloneItems(const TItem* pOriginalItems, size_t numItemsToClone)
 		{
 			assert(pOriginalItems);
 
