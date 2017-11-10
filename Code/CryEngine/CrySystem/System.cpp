@@ -1609,11 +1609,15 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		}
 	}
 
+	ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
+	const bool isCameraFrozen = pCameraFreeze && pCameraFreeze->GetIVal() != 0;
+
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
 	{
 		// Camera should now be valid, prepare occlusion
-		m_env.p3DEngine->PrepareOcclusion(m_ViewCamera);
-
+		const CCamera& rCameraToSet = isCameraFrozen ? m_env.p3DEngine->GetRenderingCamera() : m_ViewCamera;
+		m_env.p3DEngine->PrepareOcclusion(rCameraToSet);
+	
 		// Synchronize all animations so ensure that their computations have finished
 		if (!IsLoading())
 		{
@@ -1642,7 +1646,8 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		m_env.pGameFramework->PreFinalizeCamera(updateFlags);
 	}
 
-	m_env.p3DEngine->PrepareOcclusion(m_ViewCamera);
+	const CCamera& rCameraToSet = isCameraFrozen ? m_env.p3DEngine->GetRenderingCamera() : m_ViewCamera;
+	m_env.p3DEngine->PrepareOcclusion(rCameraToSet);
 
 	if (m_env.pGameFramework != nullptr)
 	{
