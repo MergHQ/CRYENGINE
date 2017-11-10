@@ -1655,7 +1655,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 		iLog->Log(" HDR Rendering: %s", m_nHDRType == 1 ? "FP16" : m_nHDRType == 2 ? "MRT" : "Disabled");
 		iLog->Log(" Occlusion queries: %s", (m_Features & RFT_OCCLUSIONTEST) ? "Supported" : "Not supported");
 		iLog->Log(" Geometry instancing: %s", (m_bDeviceSupportsInstancing) ? "Supported" : "Not supported");
-		iLog->Log(" NormalMaps compression : %s", m_hwTexFormatSupport.m_FormatBC5U.IsValid() ? "Supported" : "Not supported");
+		iLog->Log(" NormalMaps compression : %s", CRendererResources::s_hwTexFormatSupport.m_FormatBC5U.IsValid() ? "Supported" : "Not supported");
 		iLog->Log(" Gamma control: %s", (m_Features & RFT_HWGAMMA) ? "Hardware" : "Software");
 
 		CRenderer::OnChange_GeomInstancingThreshold(0);   // to get log printout and to set the internal value (vendor dependent)
@@ -2400,15 +2400,19 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	// Handle the texture formats we need.
 	{
 		// Find the needed texture formats.
-		rd->m_hwTexFormatSupport.CheckFormatSupport();
+		CRendererResources::s_hwTexFormatSupport.CheckFormatSupport();
 
-		if (rd->m_hwTexFormatSupport.m_FormatBC1.IsValid() || rd->m_hwTexFormatSupport.m_FormatBC2.IsValid() || rd->m_hwTexFormatSupport.m_FormatBC3.IsValid())
+		if (CRendererResources::s_hwTexFormatSupport.m_FormatBC1.IsValid() ||
+			CRendererResources::s_hwTexFormatSupport.m_FormatBC2.IsValid() ||
+			CRendererResources::s_hwTexFormatSupport.m_FormatBC3.IsValid())
+		{
 			rd->m_Features |= RFT_COMPRESSTEXTURE;
+		}
 
 		// One of the two needs to be supported
-		if ((rd->m_zbpp == 32) && !rd->m_hwTexFormatSupport.m_FormatD32FS8.IsValid())
+		if ((rd->m_zbpp == 32) && !CRendererResources::s_hwTexFormatSupport.m_FormatD32FS8.IsValid())
 			rd->m_zbpp = 24;
-		if ((rd->m_zbpp == 24) && !rd->m_hwTexFormatSupport.m_FormatD24S8.IsValid())
+		if ((rd->m_zbpp == 24) && !CRendererResources::s_hwTexFormatSupport.m_FormatD24S8.IsValid())
 			rd->m_zbpp = 32;
 
 		iLog->Log(" Renderer DepthBits: %d", rd->m_zbpp);

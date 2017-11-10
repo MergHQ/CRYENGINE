@@ -1012,7 +1012,6 @@ class CTexture : public ITexture, public CBaseResource
 
 private:
 	CDeviceTexture*   m_pDevTexture;
-	const SPixFormat* m_pPixelFormat;
 
 	// Start block that should fit in one cache-line
 	// Reason is to minimize cache misses during texture streaming update job
@@ -1173,7 +1172,7 @@ public:
 		assert((m_eTT != eTT_Cube && m_eTT != eTT_CubeArray) || !(m_nArraySize % 6));
 		const STextureLayout Layout =
 		{
-			m_pPixelFormat,
+			CTexture::GetPixFormat(m_eDstFormat),
 			m_nWidth, m_nHeight, m_nDepth, m_nArraySize, m_nMips,
 			m_eSrcFormat, m_eDstFormat, m_eTT,
 			/* TODO: change FT_... to CDeviceObjectFactory::... */
@@ -1376,7 +1375,6 @@ public:
 	D3DSurface*        GetSurface(int nCMSide, int nLevel);
 	D3DSurface*        GetSurface(int nCMSide, int nLevel) const;
 
-	const SPixFormat*  GetPixelFormat() const { return m_pPixelFormat; }
 	bool               Invalidate(int nNewWidth, int nNewHeight, ETEX_Format eTF);
 	const char*        GetSourceName() const  { return m_SrcName.c_str(); }
 	const int          GetSize(bool bIncludePool) const;
@@ -1660,6 +1658,7 @@ public:
 	static void         ExpandMipFromFile(byte* dest, const int destSize, const byte* src, const int srcSize, const ETEX_Format srcFmt, const ETEX_Format dstFmt);
 	static uint32       TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM = eTM_None);
 
+	static const SPixFormat* GetPixFormat(ETEX_Format eTFDst);
 	static ETEX_Format  GetClosestFormatSupported(ETEX_Format eTFDst, const SPixFormat*& pPF);
 	ETEX_Format         SetClosestFormatSupported();
 

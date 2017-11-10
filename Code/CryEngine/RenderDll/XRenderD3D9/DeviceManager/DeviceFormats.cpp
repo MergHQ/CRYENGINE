@@ -69,8 +69,8 @@ bool SPixFormat::CheckSupport(D3DFormat Format, const char* szDescr)
 		else
 			iLog->Log("  %s", szDescr);
 
-		Next = rd->m_hwTexFormatSupport.m_FirstPixelFormat;
-		rd->m_hwTexFormatSupport.m_FirstPixelFormat = this;
+		Next = CRendererResources::s_hwTexFormatSupport.m_FirstPixelFormat;
+		CRendererResources::s_hwTexFormatSupport.m_FirstPixelFormat = this;
 
 		bRes = true;
 	}

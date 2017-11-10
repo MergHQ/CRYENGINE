@@ -304,7 +304,7 @@ public:
 
 	virtual int  EnumDisplayFormats(SDispFormat* formats) override;
 
-	virtual bool IsTextureFormatSupported(ETEX_Format eTF) final { return m_hwTexFormatSupport.IsFormatSupported(eTF); }
+	virtual bool IsTextureFormatSupported(ETEX_Format eTF) final { return CRendererResources::s_hwTexFormatSupport.IsFormatSupported(eTF); }
 
 	virtual void Reset(void) override;
 
@@ -737,8 +737,6 @@ public:
 	int16            m_nQuadVBSize;
 
 	//////////////////////////////////////////////////////////////////////////
-	SPixFormatSupport           m_hwTexFormatSupport;
-
 	byte                        m_GammmaTable[256];
 
 	int                         m_fontBlendMode;

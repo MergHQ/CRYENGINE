@@ -151,6 +151,10 @@ public:
 	static ETEX_Format s_eTFZ;
 
 	// ==============================================================================
+	// Capabilities
+	static SPixFormatSupport s_hwTexFormatSupport;
+
+	// ==============================================================================
 	// Memory/Texture pools
 	static SEnvTexture* FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate);
 

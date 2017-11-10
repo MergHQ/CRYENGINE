@@ -192,7 +192,6 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_nUpdateFrameID = -1;
 	m_nAccessFrameID = -1;
 	m_nCustomID = -1;
-	m_pPixelFormat = NULL;
 	m_pDevTexture = NULL;
 
 	m_bAsyncDevTexCreation = false;
@@ -406,7 +405,6 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 		m_nMips        = Layput.m_nMips;
 		m_eSrcFormat   = Layput.m_eSrcFormat;
 		m_eDstFormat   = Layput.m_eDstFormat;
-		m_pPixelFormat = Layput.m_pPixelFormat;
 		m_eTT          = Layput.m_eTT;
 		m_eFlags       = Layput.m_eFlags; /* TODO: change FT_... to CDeviceObjectFactory::... */
 		m_bIsSRGB      = Layput.m_bIsSRGB;
@@ -1216,7 +1214,7 @@ ETEX_Format CTexture::FormatFixup(ETEX_Format eFormat)
 	case eTF_R4G4B4A4:
 	{
 		const SPixFormat* pPF;
-		return GetClosestFormatSupported(eFormat, pPF);
+		return CTexture::GetClosestFormatSupported(eFormat, pPF);
 	}
 
 	default:

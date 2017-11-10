@@ -88,7 +88,7 @@ void CDepthOfFieldStage::Execute()
 
 	assert(pTexDofLayersTmp[0]->GetWidth() == CRendererResources::s_ptexHDRDofLayers[0]->GetWidth() && pTexDofLayersTmp[0]->GetHeight() == CRendererResources::s_ptexHDRDofLayers[0]->GetHeight());
 	assert(pTexDofLayersTmp[1]->GetWidth() == CRendererResources::s_ptexHDRDofLayers[1]->GetWidth() && pTexDofLayersTmp[1]->GetHeight() == CRendererResources::s_ptexHDRDofLayers[1]->GetHeight());
-	assert(pTexDofLayersTmp[0]->GetPixelFormat() == CRendererResources::s_ptexHDRDofLayers[0]->GetPixelFormat() && pTexDofLayersTmp[1]->GetPixelFormat() == CRendererResources::s_ptexHDRDofLayers[1]->GetPixelFormat());
+	assert(pTexDofLayersTmp[0]->GetDstFormat() == CRendererResources::s_ptexHDRDofLayers[0]->GetDstFormat() && pTexDofLayersTmp[1]->GetDstFormat() == CRendererResources::s_ptexHDRDofLayers[1]->GetDstFormat());
 
 	static CCryNameR dofFocusParam0Name("vDofParamsFocus0");
 	static CCryNameR dofFocusParam1Name("vDofParamsFocus1");

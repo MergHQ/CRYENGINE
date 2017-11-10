@@ -111,6 +111,8 @@ bool SRenderTargetPool::CreateRenderTargetList()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+SPixFormatSupport CRendererResources::s_hwTexFormatSupport;
+
 CTexture* CRendererResources::s_ptexNoTexture;
 CTexture* CRendererResources::s_ptexNoTextureCM;
 CTexture* CRendererResources::s_ptexWhite;
@@ -1342,7 +1344,7 @@ void CRendererResources::CreateCachedShadowMaps()
 		const int nTexRes = (int)clamp_tpl(CRendererCVars::CV_r_HeightMapAOResolution, 0.f, 16384.f);
 		ETEX_Format texFormatMips = texFormat == eTF_D32F ? eTF_R32F : eTF_R16;
 		// Allow non-supported SNORM/UNORM to fall back to a FLOAT format with slightly less precision
-		texFormatMips = gcpRendD3D->m_hwTexFormatSupport.GetLessPreciseFormatSupported(texFormatMips);
+		texFormatMips = CRendererResources::s_hwTexFormatSupport.GetLessPreciseFormatSupported(texFormatMips);
 
 		if (!s_ptexHeightMapAODepth[0])
 		{
