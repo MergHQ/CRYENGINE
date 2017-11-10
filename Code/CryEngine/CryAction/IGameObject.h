@@ -595,17 +595,21 @@ struct IGameObjectView
 };
 
 // Declare game object as deprecated except for the legacy modules that expose functionality for it
-#if (eCryModule != eCryM_GameFramework && eCryModule != eCryM_LegacyGameDLL && eCryModule != eCryM_FlowGraph && eCryModule != eCryM_Editor)
-#define CRY_DEPRECATED_GAMEOBJECT CRY_DEPRECATED
+#if !defined(eCryModule) || (eCryModule != eCryM_GameFramework && eCryModule != eCryM_LegacyGameDLL \
+	&& eCryModule != eCryM_FlowGraph && eCryModule != eCryM_Editor && eCryModule != eCryM_Movie     \
+	&& eCryModule != eCryM_Legacy)
+
+	#define CRY_DEPRECATED_GAMEOBJECT CRY_DEPRECATED("(v5.4) IGameObjectExtension has been replaced with IEntityComponent, and will be removed in a future update.")
+
 #else
-#define CRY_DEPRECATED_GAMEOBJECT
+	#define CRY_DEPRECATED_GAMEOBJECT
 #endif
 
 // Summary
 //   Interface used to implement legacy game object extensions, superseded by IEntityComponent
-struct CRY_DEPRECATED_GAMEOBJECT IGameObjectExtension : public IEntityComponent
+struct IGameObjectExtension : public IEntityComponent
 {
-	IGameObjectExtension() : m_pGameObject(0) {}
+	CRY_DEPRECATED_GAMEOBJECT IGameObjectExtension() : m_pGameObject(0) {}
 
 	// IEntityComponent
 	//! GetEventMask implementation is now required for the legacy game object extensions, as a valid value is now needed for performance reasons.

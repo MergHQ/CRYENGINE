@@ -14,7 +14,6 @@
 #include <CrySerialization/DynArray.h>
 #include <CrySerialization/Math.h>
 #include <CryExtension/CryCreateClassInstance.h>
-#include <CrySandbox/IEditorGame.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 
 #include <IEditor.h>

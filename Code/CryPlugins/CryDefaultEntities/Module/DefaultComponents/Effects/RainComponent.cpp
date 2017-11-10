@@ -1,6 +1,5 @@
 #include "StdAfx.h"
 #include "RainComponent.h"
-#include <CryGame/IGameFramework.h>
 
 namespace Cry
 {

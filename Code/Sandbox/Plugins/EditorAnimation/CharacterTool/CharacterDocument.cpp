@@ -6,7 +6,6 @@
 #include <CryExtension/CryCreateClassInstance.h>
 #include "Serialization.h"
 #include <CrySystem/ISystem.h>
-#include <CryGame/IGameFramework.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <IEditor.h>
 #include <CryInput/IInput.h>

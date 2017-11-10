@@ -31,12 +31,26 @@ struct IGameToEditorInterface;
 struct IGameWebDebugService;
 struct IGameplayListener;
 
-//! Main interface used for the game central object.
+// Declare legacy GameDLL as deprecated except for the legacy modules that expose functionality for it
+#if !defined(eCryModule) || (eCryModule != eCryM_GameFramework && eCryModule != eCryM_LegacyGameDLL     \
+	&& eCryModule != eCryM_Editor && eCryModule != eCryM_FlowGraph && eCryModule != eCryM_AudioSystem   \
+	&& eCryModule != eCryM_3DEngine && eCryModule != eCryM_AISystem && eCryModule != eCryM_EntitySystem \
+	&& eCryModule != eCryM_Movie && eCryModule != eCryM_System && eCryModule != eCryM_Legacy)
+
+	#define CRY_DEPRECATED_GAME_DLL CRY_DEPRECATED("(v5.3) IGame, IEditorGame and IGameStartup have been replaced by ICryPlugin and will be removed in a future update.")
+
+#else
+	#define CRY_DEPRECATED_GAME_DLL
+#endif
+
+//! Legacy functionality for the Main interface of a game, replaced with ICryPlugin (see templates for example implementation)
 //! The IGame interface should be implemented in the GameDLL.
 //! Game systems residing in the GameDLL can be initialized and updated inside the Game object.
 //! \see IEditorGame.
 struct IGame
 {
+	CRY_DEPRECATED_GAME_DLL IGame() = default;
+
 	//! Interface used to communicate what entities/entity archetypes need to be precached.
 	//! Game code can further do some data mining to figure out the resources needed for the entities
 	struct IResourcesPreCache

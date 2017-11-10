@@ -1,7 +1,6 @@
 #pragma once
 
 #include <CrySystem/ICryPlugin.h>
-#include <CryGame/IGameFramework.h>
 #include <CryEntitySystem/IEntityClass.h>
 #include <CryNetwork/INetwork.h>
 

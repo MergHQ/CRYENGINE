@@ -12,7 +12,7 @@ struct IValidator;
 struct ISystemUserCallback;
 
 //! Interfaces used to initialize a legacy game using CRYENGINE.
-struct IGameStartup
+struct CRY_DEPRECATED_GAME_DLL IGameStartup
 {
 	//! Entry function used to create a new instance of the game.
 	//! This is considered deprecated, in favor of Cry::IEnginePlugin, and will be removed in the future
@@ -20,6 +20,7 @@ struct IGameStartup
 	typedef IGameStartup*(* TEntryFunction)();
 
 	// <interfuscator:shuffle>
+	CRY_DEPRECATED_GAME_DLL IGameStartup() = default;
 	virtual ~IGameStartup(){}
 
 	//! Initialize the game and/or any MOD, and get the IGameMod interface.

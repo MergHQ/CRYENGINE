@@ -4,10 +4,10 @@
 
 #include <bitset>
 
-#include <CryGame/IGameFramework.h>
 #include <ICryMannequin.h>
 #include <CrySchematyc/Utils/SharedString.h>
 #include <CryCore/Containers/CryArray.h>
+#include <CryGame/IGameFramework.h>
 
 #include <Animation/PoseAligner/PoseAligner.h>
 

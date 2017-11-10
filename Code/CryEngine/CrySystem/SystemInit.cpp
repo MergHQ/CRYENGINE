@@ -18,6 +18,7 @@
 #include <CrySystem/ICryPlugin.h>
 #include <CryExtension/CryCreateClassInstance.h>
 #include <CryMono/IMonoRuntime.h>
+#include <CryGame/IGameStartup.h>
 
 #if (CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !defined(DEDICATED_SERVER)
 	#include <dlfcn.h>

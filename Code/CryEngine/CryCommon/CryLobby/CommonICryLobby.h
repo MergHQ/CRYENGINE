@@ -113,6 +113,8 @@ struct ICryReward;
 struct ICryOnlineStorage;
 struct IHostMigrationEventListener;
 struct ICryLobbyService;
+struct ICryMatchMakingPrivate;
+struct ICryMatchMakingConsoleCommands;
 
 #if USE_STEAM
 	#define USE_LOBBYIDADDR 1

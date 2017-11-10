@@ -33,8 +33,6 @@
 #include "EntityLoadManager.h"
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CryEntitySystem/IBreakableManager.h>
-#include <CryGame/IGame.h>
-#include <CryGame/IGameFramework.h>
 #include "GeomCacheAttachmentManager.h"
 #include "CharacterBoneAttachmentManager.h"
 #include <CryCore/TypeInfo_impl.h>  // CRY_ARRAY_COUNT
@@ -55,6 +53,7 @@
 #include <CrySystem/File/IResourceManager.h>
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryNetwork/IRemoteCommand.h>
+#include <CryGame/IGameFramework.h>
 
 #include "EntityComponentsCache.h"
 

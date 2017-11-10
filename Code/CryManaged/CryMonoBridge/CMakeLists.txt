@@ -72,7 +72,6 @@ if (OPTION_CRYMONO_SWIG)
 			"SWIG/CryDynamicResponseSystem.i"
 			"SWIG/CryEntitySystem.i"
 			"SWIG/CryFont.i"
-			"SWIG/CryGame.i"
 			"SWIG/CryInput.i"
 			"SWIG/CryMonoBridge.i"
 			"SWIG/CryLiveCreate.i"

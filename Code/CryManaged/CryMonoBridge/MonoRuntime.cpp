@@ -24,6 +24,7 @@
 
 #include "NativeToManagedInterfaces/IMonoNativeToManagedInterface.h"
 #include <CryInput/IHardwareMouse.h>
+#include <CrySystem/ICmdLine.h>
 
 // Must be included only once in DLL module.
 #include <CryCore/Platform/platform_impl.inl>
