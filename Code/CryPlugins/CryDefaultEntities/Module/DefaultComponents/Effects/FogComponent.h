@@ -54,6 +54,7 @@ namespace Cry
 				desc.AddMember(&CFogComponent::m_size, 'size', "Size", "Size", "Size of the fog volume", Vec3(1.f));
 				desc.AddMember(&CFogComponent::m_color, 'col', "Color", "Color", "Color of the fog volume", ColorF(1.f));
 				desc.AddMember(&CFogComponent::m_emission, 'emi', "Emission", "Emission", "Emissive Color of the fog volume", ColorF(0.f));
+				desc.AddMember(&CFogComponent::m_EmissionIntensity, 'emii', "EmissionIntensity", "Emission Intensity", "Specifies how much luminance (kcd/m2) the fog emits.", 0.0f);
 
 				desc.AddMember(&CFogComponent::m_options, 'opti', "Options", "Options", nullptr, CFogComponent::SOptions());
 			}
@@ -108,6 +109,7 @@ namespace Cry
 				Schematyc::Range<0, 20> m_densityNoiseScale = 0.f;
 				Schematyc::Range<-20, 20, -20, 20, float> m_densityNoiseOffset = 0.f;
 				Schematyc::Range<0, 10> m_densityNoiseTimeFrequency = 0.f;
+
 				Vec3 m_densityNoiseFrequency = Vec3(1.f);
 			};
 
@@ -119,8 +121,6 @@ namespace Cry
 					fogProperties.m_volumeType = m_type;
 					fogProperties.m_size = m_size;
 					fogProperties.m_color = m_color;
-					fogProperties.m_emission = m_emission.toVec3();
-
 					fogProperties.m_useGlobalFogColor = m_options.m_bUseGlobalFogColor;
 					fogProperties.m_fHDRDynamic = m_options.m_HDRDynamic;
 
@@ -146,6 +146,10 @@ namespace Cry
 
 					const float kiloScale = 1000.0f;
 					const float toLightUnitScale = kiloScale / RENDERER_LIGHT_UNIT_SCALE;
+
+					m_emission.adjust_luminance(m_EmissionIntensity * toLightUnitScale);
+
+					fogProperties.m_emission = m_emission.toVec3();
 
 					m_pEntity->LoadFogVolume(GetOrMakeEntitySlotId(), fogProperties);
 				}
@@ -179,6 +183,7 @@ namespace Cry
 			Vec3 m_size = Vec3(1.f);
 			ColorF m_color = ColorF(1.f);
 			ColorF m_emission = ColorF(0.f);
+			Schematyc::Range<0, 100> m_EmissionIntensity = 0.f;
 
 			SOptions m_options;
 		};
