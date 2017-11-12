@@ -12,20 +12,10 @@ namespace Cry
 {
 	namespace SensorSystem
 	{
-		const char* CCrySensorSystemPlugin::GetName() const
-		{
-			return "CrySensorSystem";
-		}
-
-		const char* CCrySensorSystemPlugin::GetCategory() const
-		{
-			return "Plugin";
-		}
-
 		bool CCrySensorSystemPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 		{
 			m_pSensorSystem.reset(new CSensorSystem());
-			ICryPlugin::SetUpdateFlags(EUpdateType_Update);
+			EnableUpdate(EUpdateStep::MainUpdate, true);
 			return true;
 		}
 
@@ -35,16 +25,9 @@ namespace Cry
 			return *m_pSensorSystem.get();
 		}
 
-		void CCrySensorSystemPlugin::OnPluginUpdate(EPluginUpdateType updateType)
+		void CCrySensorSystemPlugin::MainUpdate(float frameTime)
 		{
-			switch (updateType)
-			{
-				case IPluginUpdateListener::EUpdateType_Update:
-				{
-					m_pSensorSystem->Update();
-					break;
-				}
-			}
+			m_pSensorSystem->Update();
 		}
 
 		CRYREGISTER_SINGLETON_CLASS(CCrySensorSystemPlugin)

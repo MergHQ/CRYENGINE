@@ -83,6 +83,7 @@ CBootProfilerThreadsInterface gThreadsInterface;
 }
 
 int CBootProfiler::CV_sys_bp_enabled = 1;
+int CBootProfiler::CV_sys_bp_level_load = 1;
 int CBootProfiler::CV_sys_bp_frames_worker_thread = 0;
 int CBootProfiler::CV_sys_bp_frames = 0;
 int CBootProfiler::CV_sys_bp_frames_sample_period = 0;
@@ -1002,6 +1003,7 @@ void CBootProfiler::Init(ISystem* pSystem)
 void CBootProfiler::RegisterCVars()
 {
 	REGISTER_CVAR2("sys_bp_enabled", &CV_sys_bp_enabled, 1, VF_DEV_ONLY, "If this is set to false, new boot profiler sessions will not be started.");
+	REGISTER_CVAR2("sys_bp_level_load", &CV_sys_bp_level_load, 1, VF_DEV_ONLY, "If this is set to true, a boot profiler session will be started to profile the level loading. Ignored if sys_bp_enabled is false.");
 	REGISTER_CVAR2("sys_bp_frames_worker_thread", &CV_sys_bp_frames_worker_thread, 0, VF_DEV_ONLY | VF_REQUIRE_APP_RESTART, "If this is set to true. The system will dump the profiled session from a different thread.");
 	REGISTER_CVAR2("sys_bp_frames", &CV_sys_bp_frames, 0, VF_DEV_ONLY, "Starts frame profiling for specified number of frames using BootProfiler");
 	REGISTER_CVAR2("sys_bp_frames_sample_period", &CV_sys_bp_frames_sample_period, 0, VF_DEV_ONLY, "When in threshold mode, the period at which we are going to dump a frame.");
@@ -1050,7 +1052,10 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 	case ESYSTEM_EVENT_LEVEL_LOAD_PREPARE:
 		{
 			CV_sys_bp_time_threshold = 0.1f;
-			StartSession("level");
+			if (CV_sys_bp_level_load)
+			{
+				StartSession("level");
+			}
 			break;
 		}
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
@@ -1059,9 +1064,12 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 		}
 	case ESYSTEM_EVENT_LEVEL_PRECACHE_END:
 		{
-			//level loading can be stopped here, or m_levelLoadAdditionalFrames can be used to prolong dump for this amount of frames
-			StopSession();
-			//m_levelLoadAdditionalFrames = 20;
+			if (m_pCurrentSession)
+			{
+				//level loading can be stopped here, or m_levelLoadAdditionalFrames can be used to prolong dump for this amount of frames
+				StopSession();
+				//m_levelLoadAdditionalFrames = 20;
+			}
 
 			CV_sys_bp_time_threshold = 0.0f; //gather all blocks when in runtime
 			break;

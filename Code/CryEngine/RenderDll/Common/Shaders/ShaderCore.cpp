@@ -446,7 +446,7 @@ void CShaderResources::PostLoad(CShader* pSH)
 			char path[1024];
 			cry_strcpy(sky, m_Textures[EFTT_DIFFUSE]->m_Name.c_str());
 			int size = strlen(sky);
-			const char* ext = fpGetExtension(sky);
+			const char* ext = PathUtil::GetExt(sky);
 			while (sky[size] != '_')
 			{
 				size--;
@@ -1554,7 +1554,7 @@ bool CShaderMan::mfGatherShadersList(const char* szPath, bool bCheckIncludes, bo
 		{
 			if (!stricmp(&nmf[len], ".cfi"))
 			{
-				fpStripExtension(fileinfo.name, nmf);
+				PathUtil::RemoveExtension(nmf);
 				SShaderBin* pBin = m_Bin.GetBinShader(nmf, true, 0, &bChanged);
 
 				// If any include file was not found in the read only cache, we'll need to update the CRCs
@@ -1570,7 +1570,7 @@ bool CShaderMan::mfGatherShadersList(const char* szPath, bool bCheckIncludes, bo
 		}
 		if (stricmp(&nmf[len], ".cfx"))
 			continue;
-		fpStripExtension(fileinfo.name, nmf);
+		PathUtil::RemoveExtension(nmf);
 		mfAddFXShaderNames(nmf, Names, bUpdateCRC);
 	}
 	while (gEnv->pCryPak->FindNext(handle, &fileinfo) != -1);
@@ -1677,7 +1677,8 @@ void CShaderMan::mfPreloadShaderExts(void)
 		if (!stricmp(fileinfo.name, "runtime.ext"))
 			continue;
 		char s[256];
-		fpStripExtension(fileinfo.name, s);
+		cry_strcpy(s, fileinfo.name);
+		PathUtil::RemoveExtension(s);
 		SShaderGen* pShGen = mfCreateShaderGenInfo(s, false);
 		assert(pShGen);
 	}

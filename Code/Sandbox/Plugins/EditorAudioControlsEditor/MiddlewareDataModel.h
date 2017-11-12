@@ -28,6 +28,7 @@ public:
 	enum class EMiddlewareDataAttributes
 	{
 		Connected = Qt::UserRole + 1,
+		Container,
 		Placeholder,
 		Localized,
 		Id,
@@ -74,6 +75,7 @@ public:
 	// ~QDeepFilterProxyModel
 
 	void SetHideConnected(bool const hideConnected);
+	bool IsHideConnected() const { return m_hideConnected; }
 	
 private:
 

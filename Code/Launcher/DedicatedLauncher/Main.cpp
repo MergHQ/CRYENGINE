@@ -4,7 +4,6 @@
 #include <CryCore/Platform/platform_impl.inl>
 #include "resource.h"
 #include <CryCore/Platform/CryLibrary.h>
-#include <CryGame/IGameFramework.h>
 #include <CrySystem/IConsole.h>
 
 #include <CryCore/Platform/CryWindows.h>

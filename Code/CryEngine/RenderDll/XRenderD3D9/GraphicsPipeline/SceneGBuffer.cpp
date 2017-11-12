@@ -418,8 +418,6 @@ void CSceneGBufferStage::ExecuteSceneOverlays()
 	CRenderView* pRenderView = RenderView();
 
 	{
-		PROFILE_LABEL_SCOPE("OVERLAYS");
-
 		m_overlayPass.BeginExecution();
 		m_overlayPass.DrawRenderItems(pRenderView, EFSLIST_TERRAINLAYER);
 		m_overlayPass.DrawRenderItems(pRenderView, EFSLIST_DECAL);

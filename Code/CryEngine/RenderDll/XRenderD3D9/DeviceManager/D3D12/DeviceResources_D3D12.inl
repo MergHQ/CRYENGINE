@@ -373,7 +373,8 @@ STextureLayout CDeviceTexture::GetLayout() const
 {
 	STextureLayout Layout = { };
 
-	Layout.m_eDstFormat = Layout.m_eSrcFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_pPixelFormat);
+	Layout.m_eSrcFormat =
+	Layout.m_eDstFormat = CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(DeviceFormats::ConvertToTexFormat(m_eNativeFormat), Layout.m_pPixelFormat);
 	Layout.m_eTT = m_eTT;
 	Layout.m_eFlags = m_eFlags;
 	Layout.m_bIsSRGB = m_bIsSrgb;
@@ -684,7 +685,9 @@ STextureLayout CDeviceTexture::GetLayout(D3DBaseView* pView)
 	nDepth = std::max(nDepth >> nFirstMip, 1U);
 
 	STextureLayout Layout = {};
-	Layout.m_eDstFormat = Layout.m_eSrcFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(eTF, Layout.m_pPixelFormat);
+
+	Layout.m_eSrcFormat =
+	Layout.m_eDstFormat = CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(eTF, Layout.m_pPixelFormat);
 	Layout.m_eTT = eTT;
 	Layout.m_eFlags = nFlags;
 	Layout.m_nWidth = nWidth;

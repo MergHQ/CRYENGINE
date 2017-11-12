@@ -192,12 +192,6 @@ D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel)
 	if (!m_pDevTexture)
 		return NULL;
 
-	if (DeviceFormats::IsTypeless(m_pPixelFormat->DeviceFormat))
-	{
-		iLog->Log("Error: CTexture::GetSurface: typeless formats can't be specified for RTVs, failed to create surface for the texture %s", GetSourceName());
-		return NULL;
-	}
-
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "Create Render Target: %s", GetSourceName());
@@ -213,12 +207,6 @@ D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel) const
 {
 	if (!m_pDevTexture)
 		return NULL;
-
-	if (DeviceFormats::IsTypeless(m_pPixelFormat->DeviceFormat))
-	{
-		iLog->Log("Error: CTexture::GetSurface: typeless formats can't be specified for RTVs, failed to create surface for the texture %s", GetSourceName());
-		return NULL;
-	}
 
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
 
@@ -251,14 +239,15 @@ bool CTexture::Resolve(int nTarget, bool bUseViewportSize)
 	assert(pDestSurf != NULL);
 
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-	gcpRendD3D->GetDeviceContext().ResolveSubresource(pDestSurf->Get2DTexture(), 0, pSrcSurf->Get2DTexture(), 0, (DXGI_FORMAT)m_pPixelFormat->DeviceFormat);
+	const SPixFormat* pPF;
+	ETEX_Format eDstFormat = CTexture::GetClosestFormatSupported(m_eDstFormat, pPF);
+	gcpRendD3D->GetDeviceContext().ResolveSubresource(pDestSurf->Get2DTexture(), 0, pSrcSurf->Get2DTexture(), 0, (DXGI_FORMAT)pPF->DeviceFormat);
 #endif
 	return true;
 }
 
 bool CTexture::CreateDeviceTexture(const void* pData[])
 {
-	CRY_ASSERT(m_pPixelFormat);
 	CRY_ASSERT(m_eDstFormat != eTF_Unknown);
 	CRY_ASSERT(!pData || !*pData || m_eSrcTileMode != eTM_Unspecified);
 
@@ -405,17 +394,19 @@ void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thread
 	m_bNoTexture = false;
 }
 
+const SPixFormat* CTexture::GetPixFormat(ETEX_Format eTFDst)
+{
+	return CRendererResources::s_hwTexFormatSupport.GetPixFormat(eTFDst);
+}
+
 ETEX_Format CTexture::GetClosestFormatSupported(ETEX_Format eTFDst, const SPixFormat*& pPF)
 {
-	return gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(eTFDst, pPF);
+	return CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(eTFDst, pPF);
 }
 
 ETEX_Format CTexture::SetClosestFormatSupported()
 {
-	if (m_eSrcFormat != eTF_Unknown)
-		return m_eDstFormat = gcpRendD3D->m_hwTexFormatSupport.GetClosestFormatSupported(m_eSrcFormat, m_pPixelFormat);
-	else
-		return m_eDstFormat = eTF_Unknown;
+	return m_eDstFormat = CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(m_eSrcFormat);
 }
 
 void SSamplerState::SetComparisonFilter(bool bEnable)

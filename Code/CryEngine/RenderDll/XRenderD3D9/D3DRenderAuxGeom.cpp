@@ -1419,6 +1419,16 @@ CAuxGeomCBCollector::AUXJobs CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRen
 	return auxJobs;
 }
 
+void CAuxGeomCBCollector::SetCamera(const CCamera& camera)
+{
+	m_camera = camera;
+
+	for (AUXThreadMap::iterator it = m_auxThreadMap.begin(); it != m_auxThreadMap.end(); ++it)
+	{
+		it->second->SetCamera(camera);
+	}
+}
+
 void CAuxGeomCBCollector::FreeMemory()
 {
 	m_rwGlobal.WLock();
@@ -1427,8 +1437,6 @@ void CAuxGeomCBCollector::FreeMemory()
 		cbit->second->FreeMemory();
 	}
 	m_rwGlobal.WUnlock();
-
-	m_auxThreadMap.clear();
 }
 
 CAuxGeomCB* CAuxGeomCBCollector::Get(void* jobID)
@@ -1445,6 +1453,7 @@ CAuxGeomCB* CAuxGeomCBCollector::Get(void* jobID)
 	if (auxThread == nullptr)
 	{
 		auxThread = new SThread;
+		auxThread->SetCamera(m_camera);
 
 		m_rwGlobal.WLock();
 		m_auxThreadMap.insert(AUXThreadMap::value_type(tid, auxThread));
@@ -1460,6 +1469,7 @@ CAuxGeomCBCollector::~CAuxGeomCBCollector()
 	{
 		delete cbit.second;
 	}
+	m_auxThreadMap.clear();
 }
 
 void CAuxGeomCBCollector::SThread::GetMemoryUsage(ICrySizer* pSizer) const
@@ -1472,6 +1482,16 @@ void CAuxGeomCBCollector::SThread::GetMemoryUsage(ICrySizer* pSizer) const
 		job.second->GetMemoryUsage(pSizer);
 	}
 	m_rwlLocal.RUnlock();
+}
+
+void CAuxGeomCBCollector::SThread::SetCamera(const CCamera & camera)
+{
+	m_camera = camera;
+
+	for (auto& auxGeomCB : m_auxJobMap)
+	{
+		auxGeomCB.second->SetCamera(camera);
+	}
 }
 
 void CAuxGeomCBCollector::SThread::FreeMemory()
@@ -1496,11 +1516,6 @@ CAuxGeomCBCollector::SThread::~SThread()
 
 CAuxGeomCB* CAuxGeomCBCollector::SThread::Get(void* jobID, threadID tid)
 {
-	/*if (jobID == nullptr && m_cbCurrent)
-	{
-		return m_cbCurrent;
-	}*/
-
 	m_rwlLocal.RLock();
 
 	AUXJobMap::const_iterator it = m_auxJobMap.find(jobID);
@@ -1514,6 +1529,7 @@ CAuxGeomCB* CAuxGeomCBCollector::SThread::Get(void* jobID, threadID tid)
 		gRenDev->GetThreadIDs(mainThreadID, renderThreadID);
 
 		pAuxGeomCB = new CAuxGeomCB;
+		pAuxGeomCB->SetCamera(m_camera);
 
 		m_rwlLocal.WLock();
 		m_auxJobMap.insert(AUXJobMap::value_type(jobID, pAuxGeomCB));

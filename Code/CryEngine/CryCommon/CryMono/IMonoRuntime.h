@@ -52,7 +52,7 @@ struct IMonoEngineModule : public Cry::IDefaultModule
 
 	virtual void                        Shutdown() = 0;
 
-	virtual std::shared_ptr<ICryPlugin> LoadBinary(const char* szBinaryPath) = 0;
+	virtual std::shared_ptr<Cry::IEnginePlugin> LoadBinary(const char* szBinaryPath) = 0;
 	
 	virtual void                        Update(int updateFlags = 0, int nPauseMode = 0) = 0;
 

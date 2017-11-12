@@ -33,8 +33,6 @@
 #include "EntityLoadManager.h"
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CryEntitySystem/IBreakableManager.h>
-#include <CryGame/IGame.h>
-#include <CryGame/IGameFramework.h>
 #include "GeomCacheAttachmentManager.h"
 #include "CharacterBoneAttachmentManager.h"
 #include <CryCore/TypeInfo_impl.h>  // CRY_ARRAY_COUNT
@@ -55,6 +53,7 @@
 #include <CrySystem/File/IResourceManager.h>
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryNetwork/IRemoteCommand.h>
+#include <CryGame/IGameFramework.h>
 
 #include "EntityComponentsCache.h"
 
@@ -748,18 +747,28 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 {
 	ENTITY_PROFILER
 	
-	//
 	if (CVar::es_debugEntityLifetime)
 	{
 		CryLog("CEntitySystem::RemoveEntity %s %s 0x%x", pEntity ? pEntity->GetClass()->GetName() : "null", pEntity ? pEntity->GetName() : "null", pEntity ? pEntity->GetId() : 0);
 	}
-	//
+
 	if (pEntity)
 	{
 		if (m_bLocked)
+		{
 			CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, "Removing entity during system lock : %s with id %i", pEntity->GetName(), pEntity->GetId());
+		}
 
-		if (!pEntity->m_bGarbage)
+		if (pEntity->m_bGarbage)
+		{
+			// Entity was already queued for deletion
+			// Check if we request immediate removal, and if so delete immediately if it was in the pending deletion queue
+			if (forceRemoveImmediately && stl::find_and_erase(m_deletedEntities, pEntity))
+			{
+				DeleteEntity(pEntity);
+			}
+		}
+		else
 		{
 			const std::vector<IEntitySystemSink*>& sinks = m_sinks[stl::static_log2<(size_t)IEntitySystem::OnRemove>::value];
 
@@ -810,10 +819,6 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 					m_deferredUsedEntities.push_back(pEntity);
 				}
 			}
-		}
-		else if (forceRemoveImmediately)
-		{
-			DeleteEntity(pEntity);
 		}
 	}
 }

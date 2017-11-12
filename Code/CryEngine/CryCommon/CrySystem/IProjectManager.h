@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CryExtension/CryGUID.h>
+
 // Interface for CrySystem and Editor to initialize game projects
 struct IProjectManager
 {

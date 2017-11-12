@@ -424,8 +424,8 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 	tx = NULL;
 
 	cry_strcpy(name, na);
-	const char* ext = fpGetExtension(na);
-	fpStripExtension(name, name);
+	const char* ext = PathUtil::GetExt(na);
+	PathUtil::RemoveExtension(name);
 
 	char chSep = '#';
 	nm = strchr(name, chSep);

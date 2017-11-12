@@ -38,8 +38,10 @@ namespace Cry
 					int slotId = -1;
 					IGeometry* pPhysicsGeometry = nullptr;
 					EHmdController controllerId;
-					bool m_holdingTrigger = false;
+					bool holdingTrigger = false;
 					EntityId heldEntityId = INVALID_ENTITYID;
+					int constraintId = -1;
+					_smart_ptr<IPhysicalEntity> pAttachedEntity;
 				};
 
 				enum class EHand : uint8
@@ -59,6 +61,7 @@ namespace Cry
 					desc.SetComponentFlags({ IEntityComponent::EFlags::ClientOnly });
 					desc.AddMember(&CInteractionComponent::m_leftHandModelPath, 'left', "LeftHandModel", "Left Hand Model", nullptr, "");
 					desc.AddMember(&CInteractionComponent::m_rightHandModelPath, 'righ', "RightHandModel", "Right Hand Model", nullptr, "");
+					desc.AddMember(&CInteractionComponent::m_bReleaseWithPressKey, 'relw', "ReleaseWithPressKey", "Release On Hold Release", "Whether to release the object when the key used to hold is released", false);
 				}
 
 				// IEntityComponent
@@ -69,16 +72,25 @@ namespace Cry
 				// ~IEntityComponent
 
 			protected:
+				struct SPickableEntity
+				{
+					IEntity* pEntity = nullptr;
+					IPhysicalEntity* pPhysicalEntity = nullptr;
+					int partId = 0;
+				};
+
 				void LoadHandModel(const char* szModelPath, EHand hand);
-				void PickUpObject(SHand& hand, IEntity* pObjectEntity);
+				void PickUpObject(SHand& hand, const SPickableEntity& pickableEntity);
 				void ReleaseObject(SHand& hand, const Vec3& linearVelocity, const Vec3& angularVelocity);
-				IEntity* FindPickableEntity(const SHand& hand);
+				
+				SPickableEntity FindPickableEntity(const SHand& hand);
 
 			protected:
 				Schematyc::GeomFileName m_leftHandModelPath;
 				Schematyc::GeomFileName m_rightHandModelPath;
 
 				std::array<SHand, 2> m_hands;
+				bool m_bReleaseWithPressKey = false;
 			};
 		}
 	}

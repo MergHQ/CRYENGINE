@@ -4,9 +4,6 @@
 #include "PerceptionManager.h"
 #include "ScriptBind_PerceptionManager.h"
 
-#include <CryGame/IGame.h>
-#include <CryGame/IGameFramework.h>
-
 #include <CryAISystem/IAISystem.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAIObject.h>

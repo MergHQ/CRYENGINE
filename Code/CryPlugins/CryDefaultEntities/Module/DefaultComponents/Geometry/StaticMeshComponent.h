@@ -2,6 +2,8 @@
 
 #include "BaseMeshComponent.h"
 
+#include <CrySchematyc/Utils/SharedString.h>
+
 class CPlugin_CryDefaultEntities;
 
 namespace Cry
@@ -48,9 +50,9 @@ public:
 
 	virtual void LoadFromDisk();
 	// Sets an new object for this component. 
-	virtual void SetObject(IStatObj* pObject, bool bSetDefaultMass = false);
+	virtual void SetObjectDirect(IStatObj* pObject, bool bSetDefaultMass = false);
 	// Sets an new object for this component. Path is relative to the asset directory. Example path: "Objects/MyAsset.cfg"
-	virtual void SetObject(const char* szPath, bool bSetDefaultMass = false);
+	virtual void SetObject(Schematyc::CSharedString path, bool bSetDefaultMass = false);
 	// Reloads the object
 	virtual void ResetObject();
 

@@ -2,7 +2,6 @@
 #include "DebugDrawComponent.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
-
 #include <CryGame/IGameFramework.h>
 
 namespace Cry

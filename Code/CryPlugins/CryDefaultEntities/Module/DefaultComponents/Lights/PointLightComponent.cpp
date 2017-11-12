@@ -2,7 +2,6 @@
 #include "PointLightComponent.h"
 
 #include <CrySystem/IProjectManager.h>
-#include <CryGame/IGameFramework.h>
 #include <ILevelSystem.h>
 #include <Cry3DEngine/IRenderNode.h>
 

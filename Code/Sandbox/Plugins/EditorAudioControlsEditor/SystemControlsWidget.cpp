@@ -350,6 +350,10 @@ bool CSystemControlsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 			}
 		}
 	}
+	else if ((pEvent->type() == QEvent::MouseButtonDblClick) && !m_pTreeView->IsEditing())
+	{
+		ExecuteControl();
+	}
 	else if (pEvent->type() == QEvent::Drop)
 	{
 		m_pTreeView->selectionModel()->clearSelection();

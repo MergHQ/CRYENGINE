@@ -27,6 +27,7 @@
 
 #if defined (DEBUG_MODULAR_BEHAVIOR_TREE_WEB)
 	#include <CryGame/IGameFramework.h>
+	#include <CryGame/IGame.h>
 	#include <CrySerialization/IArchiveHost.h>
 #endif
 

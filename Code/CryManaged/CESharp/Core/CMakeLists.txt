@@ -100,7 +100,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 	source_group("Resources" FILES ${Resources_FILES})
 
 
-	set(Serialization_FILES Serialization/CachedTypeInfo.cs Serialization/DomainSerializer.cs Serialization/ObjectReader.cs Serialization/ObjectWriter.cs)
+	set(Serialization_FILES Serialization/CachedTypeInfo.cs Serialization/DomainSerializer.cs Serialization/ObjectReader.cs Serialization/ObjectWriter.cs Serialization/ISerializedObject.cs)
 	source_group("Serialization" FILES ${Serialization_FILES})
 
 
@@ -108,7 +108,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 	source_group("Util" FILES ${Util_FILES})
 
 
-	set(Core_FILES Attributes.cs Camera.cs Engine.cs Extensions.cs GameFramework.cs ICryEnginePlugin.cs LevelSystem.cs Random.cs SystemEventHandler.cs Timer.cs)
+	set(Core_FILES Camera.cs Engine.cs Extensions.cs GameFramework.cs ICryEnginePlugin.cs LevelSystem.cs Random.cs SystemEventHandler.cs Timer.cs)
 	source_group("Core" FILES ${Core_FILES})
 
 

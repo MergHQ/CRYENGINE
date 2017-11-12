@@ -672,7 +672,7 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 		}
 
 		event.pEntity[0] = this; event.pForeignData[0] = m_pForeignData; event.iForeignData[0] = m_iForeignData;
-		if (iCaller<MAX_PHYS_THREADS) for(i=0; i<nhits; i++) {	// register all hits in history 
+		for(i=0; i<nhits; i++) {	// register all hits in history 
 			j = i+1 & i-(nhits-bHit)>>31;
 			event.pt = hits[j].pt;//-heading0*m_dim;	// store not contact, but position of particle center at the time of contact
 			event.n = hits[j].n;									// it's better for explosions to be created at some distance from the wall

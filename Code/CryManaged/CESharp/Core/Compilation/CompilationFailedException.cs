@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿//Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 
 namespace CryEngine.Compilation
 {
-	public class CompilationFailedException : Exception
+	internal class CompilationFailedException : Exception
 	{
 		public CompilationFailedException() { }
 

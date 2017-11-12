@@ -1249,7 +1249,7 @@ bool CXmlNode::saveToFile(const char* fileName)
 	}
 	else
 	{
-		FILE* file = gEnv->pCryPak->FOpen(fileName, "wt", ICryPak::FLAGS_NO_LOWCASE);
+		FILE* file = gEnv->pCryPak->FOpen(fileName, "wt");
 		if (file)
 		{
 #if CRY_PLATFORM_WINDOWS

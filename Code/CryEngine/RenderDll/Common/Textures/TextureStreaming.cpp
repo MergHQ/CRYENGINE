@@ -647,7 +647,7 @@ bool CTexture::StreamPrepare(bool bFromLoad)
 
 	if (!m_pFileTexMips)
 	{
-		const char* szExt = fpGetExtension(m_SrcName.c_str());
+		const char* szExt = PathUtil::GetExt(m_SrcName.c_str());
 		if (szExt != 0 && (!stricmp(szExt, ".tif") || !stricmp(szExt, ".hdr")) && !gEnv->pCryPak->IsFileExist(m_SrcName.c_str()))
 		{
 			m_SrcName = PathUtil::ReplaceExtension(m_SrcName, "dds");
@@ -719,10 +719,7 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 	if ((nWidth <= DDSSplitted::etexLowerMipMaxSize || nHeight <= DDSSplitted::etexLowerMipMaxSize) || nMips <= nMipsPersistent || nMipsPersistent == 0)
 		bStreamable = false;
 
-	const SPixFormat* pPF = NULL;
-
-	GetClosestFormatSupported(eDstFormat, pPF);
-
+	const SPixFormat* pPF = CTexture::GetPixFormat(eDstFormat);
 	if (!pPF && !DDSFormats::IsNormalMap(eDstFormat)) // special case for 3DC and CTX1
 	{
 		assert(0);
@@ -835,9 +832,8 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 	}
 
 	// set up pixel format and check if it's supported for
-	m_pPixelFormat = pPF;
-	if (m_pPixelFormat)
-		m_bIsSRGB &= !!(m_pPixelFormat->Options & FMTSUPPORT_SRGB);
+	if (pPF)
+		m_bIsSRGB &= !!(pPF->Options & FMTSUPPORT_SRGB);
 	else
 		m_bIsSRGB = false;
 

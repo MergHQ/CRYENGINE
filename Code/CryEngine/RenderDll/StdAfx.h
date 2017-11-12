@@ -1417,43 +1417,6 @@ inline D3DViewPort RenderViewportToD3D11Viewport(const SRenderViewport &vp)
 	return viewport;
 }
 
-// Get the sub-string starting at the last . in the string, or NULL if the string contains no dot
-// Note: The returned pointer refers to a location inside the provided string, no allocation is performed
-const char* fpGetExtension(const char* in);
-
-// Remove extension from string, including the .
-// If the string has no extension, the whole string will be copied into the buffer
-// Note: The out buffer must have space to store a copy of the in-string and a null-terminator
-void fpStripExtension(const char* in, _Out_writes_z_(bytes) char* out, size_t bytes);
-template<size_t bytes>
-void fpStripExtension(const char* in, _Out_writes_z_(bytes) char (&out)[bytes]) { fpStripExtension(in, out, bytes); }
-
-// Adds an extension to the path, if an extension is already present the function does nothing
-// The extension should include the .
-// Note: The path buffer must have enough unused space to store a copy of the extension string
-void fpAddExtension(_Inout_updates_z_(bytes) char* path, const char* extension, size_t bytes);
-template<size_t bytes>
-void fpAddExtension(_Inout_updates_z_(bytes) char (&path)[bytes], const char* extension) { fpAddExtension(path, extension, bytes); }
-
-// Converts DOS slashes to UNIX slashes
-// Note: The dst buffer must have space to store a copy of src and a null-terminator
-void fpConvertDOSToUnixName(_Out_writes_z_(bytes) char* dst, const char* src, size_t bytes);
-template<size_t bytes>
-void fpConvertDOSToUnixName(_Out_writes_z_(bytes) char (&dst)[bytes], const char* src) { fpConvertDOSToUnixName(dst, src, bytes); }
-
-// Converts UNIX slashes to DOS slashes
-// Note: the dst buffer must have space to store a copy of src and a null-terminator
-void fpConvertUnixToDosName(_Out_writes_z_(bytes) char* dst, const char* src, size_t bytes);
-template<size_t bytes>
-void fpConvertUnixToDosName(_Out_writes_z_(bytes) char (&dst)[bytes], const char* src) { fpConvertUnixToDosName(dst, src, bytes); }
-
-// Combines the path and name strings, inserting a UNIX slash as required, and stores the result into the dst buffer
-// path may be NULL, in which case name will be copied into the dst buffer, and the UNIX slash is NOT inserted
-// Note: the dst buffer must have space to store: a copy of name, a copy of path (if not null), a UNIX slash (if path doesn't end with one) and a null-terminator
-void fpUsePath(const char* name, const char* path,_Out_writes_z_(bytes) char* dst, size_t bytes);
-template<size_t bytes>
-void fpUsePath(const char* name, const char* path, _Out_writes_z_(bytes) char (&dst)[bytes]) { fpUsePath(name, path, dst, bytes); }
-
 //=========================================================================================
 //
 // Normal timing.

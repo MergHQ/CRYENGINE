@@ -2764,8 +2764,7 @@ SShaderCache* CHWShader::mfInitCache(const char* name, CHWShader* pSH, bool bChe
 	//	LOADING_TIME_PROFILE_SECTION(iSystem);
 
 	CHWShader_D3D* pSHHW = (CHWShader_D3D*)pSH;
-	char nameCache[256];
-
+	
 	if (!CRenderer::CV_r_shadersAllowCompilation)
 		bCheckValid = false;
 
@@ -2776,9 +2775,8 @@ SShaderCache* CHWShader::mfInitCache(const char* name, CHWShader* pSH, bool bChe
 	{
 		char namedst[256];
 		pSHHW->mfGetDstFileName(pSHHW->m_pCurInst, pSHHW, namedst, 256, 0);
-		fpStripExtension(namedst, nameCache);
-		fpAddExtension(nameCache, ".fxcb");
-		name = nameCache;
+		PathUtil::ReplaceExtension(namedst, "fxcb");
+		name = namedst;
 	}
 
 	SShaderCache* pCache = NULL;
@@ -3420,6 +3418,8 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 				pAsync->m_fMinDistance = pSH->m_fMinVisibleDistance;
 		}
 
+		mfPrintCompileInfo(pInst);
+
 		mfGetDstFileName(pInst, this, nmDst, 256, 3);
 		gEnv->pCryPak->AdjustFileName(nmDst, nameSrc, 0);
 		if (pAsync->m_pFXShader && pAsync->m_pFXShader->m_HWTechniques.Num())
@@ -3881,7 +3881,7 @@ void CHWShader_D3D::mfPrintCompileInfo(SHWSInstance* pInst)
 		string pName;
 		SShaderCombIdent Ident(m_nMaskGenFX, pInst->m_Ident);
 		gRenDev->m_cEF.mfInsertNewCombination(Ident, pInst->m_eClass, szGenName, 0, &pName, false);
-		CryLog(" Compile %s (%d instructions, %d tempregs, %d/%d constants) ... ", pName.c_str(), pInst->m_nInstructions, pInst->m_nTempRegs, nParams, nConsts);
+		CryLog(" Compile (FX:0x%I64x, GL:0x%I64x) %s (%d instructions, %d tempregs, %d/%d constants) ... ", m_nMaskGenFX, pInst->m_Ident.m_GLMask, pName.c_str(), pInst->m_nInstructions, pInst->m_nTempRegs, nParams, nConsts);
 		int nSize = strlen(szGenName);
 		mfGenName(pInst, &szGenName[nSize], 512 - nSize, 1);
 		CryLog("           --- Cache entry: %s", szGenName);
@@ -3976,10 +3976,6 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 				       mfProfileString(pInst->m_eClass), pSH->GetName(), nCombination, gRenDev->m_cEF.m_nCombinationsProcessOverall);
 			}
 		}
-		else
-		{
-			pSH->mfPrintCompileInfo(pInst);
-		}
 	}
 
 	mfGatherFXParameters(pInst, &pInst->m_pBindVars, &InstBindVars, pSH, bShaderThread ? 1 : 0, pFXShader);
@@ -4033,8 +4029,9 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 		    return false;
 		   }*/
 		mfGetDstFileName(pInst, this, nameCacheUnstripped, 256, 0);
-		fpStripExtension(nameCacheUnstripped, nameCache);
-		fpAddExtension(nameCache, ".fxcb");
+
+		cry_strcpy(nameCache, nameCacheUnstripped);
+		PathUtil::ReplaceExtension(nameCache, "fxcb");
 		if (!m_pDevCache)
 			m_pDevCache = mfInitDevCache(nameCache, this);
 
@@ -4055,8 +4052,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 			if (gRenDev->m_cEF.m_nCombinationsProcess >= 0)
 			{
 				mfGetDstFileName(pInst, this, nameCache, 256, 0);
-				fpStripExtension(nameCache, nameCache);
-				fpAddExtension(nameCache, ".fxcb");
+				PathUtil::ReplaceExtension(nameCache, "fxcb");
 				FXShaderCacheNamesItor it = m_ShaderCacheList.find(nameCache);
 				if (it == m_ShaderCacheList.end())
 					m_ShaderCacheList.insert(FXShaderCacheNamesItor::value_type(nameCache, m_CRC32));

@@ -97,7 +97,7 @@ public:
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
 	virtual void Shutdown() override;
 
-	virtual std::shared_ptr<ICryPlugin> LoadBinary(const char* szBinaryPath) override;
+	virtual std::shared_ptr<Cry::IEnginePlugin> LoadBinary(const char* szBinaryPath) override;
 
 	virtual void                        Update(int updateFlags, int nPauseMode) override;
 

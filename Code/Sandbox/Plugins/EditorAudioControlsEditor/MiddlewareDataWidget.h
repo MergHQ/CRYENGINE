@@ -28,6 +28,7 @@ public:
 	virtual ~CMiddlewareDataWidget() override;
 
 	void Reset();
+	void InvalidateFilter();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
 

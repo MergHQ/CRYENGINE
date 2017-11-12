@@ -244,6 +244,18 @@ void CharacterToolForm::Initialize()
 			EXPECTED(connect(m_displayParametersButton, SIGNAL(toggled(bool)), this, SLOT(OnDisplayParametersButton())));
 			topLayout->addWidget(m_displayParametersButton);
 
+			m_createProxyModeButton = new QToolButton();
+			m_createProxyModeButton->setText("Edit Proxies");
+			m_createProxyModeButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+			m_createProxyModeButton->setCheckable(true);
+			m_createProxyModeButton->setIcon(CryIcon("icons:common/animation_skeleton.ico"));
+			topLayout->addWidget(m_createProxyModeButton);
+
+			m_clearProxiesButton = new QToolButton();
+			m_clearProxiesButton->setText("Clear Proxies");
+			EXPECTED(connect(m_clearProxiesButton, SIGNAL(clicked()), this, SLOT(OnClearProxiesButton())));
+			topLayout->addWidget(m_clearProxiesButton);
+
 			centralLayout->addLayout(topLayout, 0);
 		}
 
@@ -804,6 +816,19 @@ void CharacterToolForm::OnDisplayOptionsChanged(const DisplayOptions& settings)
 	vpSettings.grid.showGrid = false;
 	m_blendSpacePreview->GetViewport()->SetSettings(vpSettings);
 
+}
+
+void CharacterToolForm::OnClearProxiesButton()
+{
+	if (CharacterDefinition* cdf = m_system->document->GetLoadedCharacterDefinition())
+	{
+		cdf->RemoveRagdollAttachments();
+		GetPropertiesPanel()->PropertyTree()->revert();
+		GetPropertiesPanel()->OnChanged();
+		EntryModifiedEvent ev;
+		ev.id = m_system->document->GetActiveCharacterEntry()->id;
+		m_system->document->OnCharacterModified(ev);
+	}
 }
 
 void CharacterToolForm::OnPreRenderCompressed(const SRenderContext& context)

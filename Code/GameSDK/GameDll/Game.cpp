@@ -38,7 +38,7 @@
 #include "ItemScheduler.h"
 #include "Utility/CryWatch.h"
 
-#include <CryExtension/ICryPluginManager.h>
+#include <CrySystem/ICryPluginManager.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CryString/CryPath.h>
 #include <IActionMapManager.h>
@@ -929,7 +929,6 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 			}
 		}
 #endif
-		gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::Native, "CryLobby");
 
 		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
 		if (pLobby)
@@ -4904,13 +4903,8 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 
 			if (gEnv->pScriptSystem)
 			{
-				static bool physicsLuaLoaded = false;
-				if (!physicsLuaLoaded)
-				{
-					// Load explosion shapes.
-					gEnv->pScriptSystem->ExecuteFile("scripts/physics.lua", true, true);
-					physicsLuaLoaded = true;
-				}
+				// Load explosion shapes.
+				gEnv->pScriptSystem->ExecuteFile("scripts/physics.lua", true, true);
 			}
 		}
 		break;

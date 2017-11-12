@@ -2,7 +2,7 @@
 
 #include <StdAfx.h>
 #include <CryCore/Platform/platform_impl.inl>
-#include <CryExtension/ICryPluginManager.h>
+#include <CrySystem/ICryPluginManager.h>
 #include "CSharpOutputWindow.h"
 #include "CSharpEditorPlugin.h"
 #include "EditorStyleHelper.h"
@@ -40,7 +40,6 @@ CCSharpOutputWindow::~CCSharpOutputWindow()
 		pPlugin->UnregisterMessageListener(this);
 	}
 	m_pCompileTextWidget->RemoveTextEventListener(this);
-	delete m_pCompileTextWidget;
 }
 
 void CCSharpOutputWindow::OnMessageDoubleClicked(QMouseEvent* event)

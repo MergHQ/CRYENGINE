@@ -45,6 +45,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryCore/Platform/IPlatformOS.h>
+#include <CryGame/IGame.h>
 #include "WaterRippleManager.h"
 
 #if defined(FEATURE_SVO_GI)

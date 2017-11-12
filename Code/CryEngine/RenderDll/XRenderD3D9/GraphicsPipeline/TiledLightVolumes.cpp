@@ -495,7 +495,7 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, TextureAtlas& at
 	if (!pTexInput->IsLoaded() ||
 		pTexInput->GetWidth() < atlas.texArray->GetWidth() ||
 		pTexInput->GetWidth() != pTexInput->GetHeight() ||
-		pTexInput->GetPixelFormat() != atlas.texArray->GetPixelFormat() ||
+		pTexInput->GetDstFormat() != atlas.texArray->GetDstFormat() ||
 		(pTexInput->IsStreamed() && pTexInput->IsPartiallyLoaded()))
 	{
 		atlas.items[arrayIndex].invalid = true;
@@ -509,7 +509,7 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, TextureAtlas& at
 			iLog->LogError("TiledShading: Texture not fully streamed so impossible to add: %s (W:%i H:%i F:%s)",
 				pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName());
 		}
-		else if (pTexInput->GetPixelFormat() != atlas.texArray->GetPixelFormat())
+		else if (pTexInput->GetDstFormat() != atlas.texArray->GetDstFormat())
 		{
 			iLog->LogError("TiledShading: Unsupported texture format: %s (W:%i H:%i F:%s), it has to be equal to the tile-atlas (F:%s), please change the texture's preset by re-exporting with CryTif",
 				pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName(), atlas.texArray->GetFormatName());

@@ -169,7 +169,7 @@ SShaderBin* CShaderManBin::SaveBinShader(
 				++buf;
 			com[n] = 0;
 
-			fpStripExtension(com, com);
+			PathUtil::RemoveExtension(com);
 
 			SShaderBin* pBIncl = GetBinShader(com, true, 0);
 			//

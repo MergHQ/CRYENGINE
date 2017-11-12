@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace CryEngine.Compilation
 {
-	public static class Compiler
+	internal static class Compiler
 	{
 		private static List<Assembly> defaultNetFrameworkAssemblies = new List<Assembly>();
 

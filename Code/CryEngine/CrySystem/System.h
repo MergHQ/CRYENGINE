@@ -163,12 +163,6 @@ struct SSystemCVars
 	ICVar* sys_splashscreen;
 
 	int sys_deferAudioUpdateOptim;
-#if USE_STEAM
-	#ifndef RELEASE
-	int     sys_steamAppId;
-	#endif // RELEASE
-	int     sys_useSteamCloudForPlatformSaving;
-#endif // USE_STEAM
 	int     sys_filesystemCaseSensitivity;
 
 	PakVars pakVars;
@@ -303,8 +297,6 @@ public:
 	virtual void SetLoadOrigin(LevelLoadOrigin origin) override;
 #endif
 
-	virtual bool                 SteamInit() override;
-
 	void                         Relaunch(bool bRelaunch) override;
 	bool                         IsRelaunch() const override        { return m_bRelaunch; };
 	void                         SerializingFile(int mode) override { m_iLoadingMode = mode; }
@@ -359,7 +351,7 @@ public:
 	ISystemEventDispatcher*      GetISystemEventDispatcher() override { return m_pSystemEventDispatcher; }
 	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem.get(); }
 	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override   { return m_pUserAnalyticsSystem; }
-	ICryPluginManager*           GetIPluginManager() override         { return m_pPluginManager; }
+	Cry::IPluginManager*         GetIPluginManager() override         { return m_pPluginManager; }
 	IProjectManager*             GetIProjectManager() override;
 
 	IResourceManager*            GetIResourceManager() override;
@@ -1059,8 +1051,6 @@ protected: // -------------------------------------------------------------
 	friend struct SDefaultValidator;
 	friend struct SCryEngineFoldersLoader;
 	//	friend void ScreenshotCmd( IConsoleCmdArgs *pParams );
-
-	bool m_bIsSteamInitialized;
 
 	std::vector<IWindowMessageHandler*> m_windowMessageHandlers;
 	IImeManager*                        m_pImeManager;

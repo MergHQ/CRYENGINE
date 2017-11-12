@@ -78,6 +78,7 @@ private:
 
 	static EBootProfilerFormat CV_sys_bp_output_formats;
 	static int                 CV_sys_bp_enabled;
+	static int                 CV_sys_bp_level_load;
 	static int                 CV_sys_bp_frames_worker_thread;
 	static int                 CV_sys_bp_frames;
 	static int                 CV_sys_bp_frames_sample_period;

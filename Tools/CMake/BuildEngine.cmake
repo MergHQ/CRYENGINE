@@ -397,7 +397,11 @@ if (OPTION_ENGINE)
 	#libs
 	add_subdirectory ("Code/Libs/bigdigits")
 	
-	if (WIN32)
+	if(PLUGIN_VR_OCULUS)
+		add_subdirectory("Code/Libs/oculus")
+	endif()
+	
+	if (PLUGIN_HTTP OR WIN32)
 		add_subdirectory ("Code/Libs/curl")
 	endif ()
 	add_subdirectory ("Code/Libs/freetype")

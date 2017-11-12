@@ -201,9 +201,6 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 				if ((pImplControl != nullptr) && pImplControl->IsConnected())
 				{
 					QMenu* const pConnectionsMenu = new QMenu();
-					pContextMenu->addMenu(pConnectionsMenu);
-					pContextMenu->addSeparator();
-
 					auto const controls = m_pAssetsManager->GetControls();
 					int count = 0;
 
@@ -216,7 +213,12 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 						}
 					}
 
-					pConnectionsMenu->setTitle(tr("Connections (" + ToString(count) + ")"));
+					if (count > 0)
+					{
+						pConnectionsMenu->setTitle(tr("Connections (" + ToString(count) + ")"));
+						pContextMenu->addMenu(pConnectionsMenu);
+						pContextMenu->addSeparator();
+					}
 				}
 			}
 		}
@@ -237,6 +239,15 @@ void CMiddlewareDataWidget::Reset()
 {
 	m_pAssetsModel->Reset();
 	m_pFilterProxyModel->invalidate();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMiddlewareDataWidget::InvalidateFilter()
+{
+	if (m_pFilterProxyModel->IsHideConnected())
+	{
+		m_pFilterProxyModel->invalidate();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

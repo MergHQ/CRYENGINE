@@ -24,6 +24,7 @@
 
 #include "NativeToManagedInterfaces/IMonoNativeToManagedInterface.h"
 #include <CryInput/IHardwareMouse.h>
+#include <CrySystem/ICmdLine.h>
 
 // Must be included only once in DLL module.
 #include <CryCore/Platform/platform_impl.inl>
@@ -179,7 +180,7 @@ void CMonoRuntime::Shutdown()
 	m_nodeCreators.clear();
 }
 
-std::shared_ptr<ICryPlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)
+std::shared_ptr<Cry::IEnginePlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)
 {
 	std::shared_ptr<CManagedPlugin> pPlugin = std::make_shared<CManagedPlugin>(szBinaryPath);
 	m_plugins.emplace_back(pPlugin);

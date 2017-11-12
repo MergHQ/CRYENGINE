@@ -689,7 +689,7 @@ STexPoolItem* CTexture::StreamGetPoolItem(int nStartMip, int nMips, bool bShould
 	pLayout.m_nDepth     = wSize;
 	pLayout.m_nArraySize = nArraySize;
 	pLayout.m_nMips      = nMips;
-	pLayout.m_eDstFormat     = CTexture::GetClosestFormatSupported(pLayout.m_eDstFormat, pLayout.m_pPixelFormat);
+	pLayout.m_eDstFormat = CTexture::GetClosestFormatSupported(pLayout.m_eDstFormat, pLayout.m_pPixelFormat);
 
 	// For end of C3, preserve existing (idle wait) console behaviour
 	bool bGPIMustWaitForIdle = !bForStreamOut;

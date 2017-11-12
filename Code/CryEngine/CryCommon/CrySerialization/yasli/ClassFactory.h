@@ -8,14 +8,14 @@
  */
 
 #pragma once
-#include <map>
+#include <array>
 #include <vector>
 
 #include "Config.h"
 #include "Assert.h"
 #include "ClassFactoryBase.h"
 #include "TypeID.h"
-#if CRY_PLATFORM_WINDOWS && !defined(CRY_IS_MONOLITHIC_BUILD)
+#if CRY_PLATFORM_WINAPI
 #include <CryCore/Platform/CryLibrary.h>
 #endif
 
@@ -27,37 +27,63 @@ class ClassFactoryManager{
 public:
 	static ClassFactoryManager& the()
 	{
-#if CRY_PLATFORM_WINDOWS && !defined(CRY_IS_MONOLITHIC_BUILD)
+#if CRY_PLATFORM_WINAPI
 		// As this code is part of CryCommon, using a normal Singleton would result in one instance inside each DLL.
 		// To prevent this, we need to load the exported variable from the executable and store a pointer to it.
-		// The declaration of g_pClassFactoryManager can be found in platform_impl.h
-		static ClassFactoryManager** pManager = reinterpret_cast<ClassFactoryManager**>(CryGetProcAddress(CryGetCurrentModule(), "g_pClassFactoryManager"));
-		if (*pManager == nullptr)
-		{
-			*pManager = new ClassFactoryManager();
-		}
-
-		return **pManager;
+		// The declaration of GetYasliClassFactoryManager can be found in platform_impl.h
+		typedef yasli::ClassFactoryManager*(*TGetFactoryManager)();
+		static const TGetFactoryManager getYasliClassFactoryManager = reinterpret_cast<TGetFactoryManager>(CryGetProcAddress(CryGetCurrentModule(), "GetYasliClassFactoryManager"));
+		static ClassFactoryManager* const s_pManager = getYasliClassFactoryManager();
+		return *s_pManager;
 #else
 		static ClassFactoryManager manager;
 		return manager;
 #endif
 	}
 
-	ClassFactoryBase* find(TypeID baseType) const
+	ClassFactoryManager()
+		: m_factoryCount(0)
+	{}
+	ClassFactoryManager(const ClassFactoryManager&) = delete;
+	ClassFactoryManager& operator=(const ClassFactoryManager& other) = delete;
+	ClassFactoryManager(const ClassFactoryManager&&) = delete;
+	ClassFactoryManager& operator=(const ClassFactoryManager&& other) = delete;
+
+	// The functions below are marked virtual even though there is no inheriting class in order to force a
+	// vtable lookup which makes sure that all modules use the function that was compiled into the executable.
+	// Otherwise we might run into crashes when using mixed builds due to iterator size differences.
+
+	virtual ClassFactoryBase* find(TypeID baseType) const
 	{
-		const auto it = m_factories.find(baseType);
-		return it != m_factories.cend() ? it->second : nullptr;
+		const auto end = m_factories.cbegin() + m_factoryCount;
+		const auto it = std::find_if(m_factories.cbegin(), end, [baseType](const Factories::value_type& lhs) { return lhs.first == baseType; });
+		return it != end ? it->second : nullptr;
 	}
 
-	void registerFactory(TypeID type, ClassFactoryBase* const pFactory)
+	virtual void registerFactory(TypeID type, ClassFactoryBase* const pFactory)
 	{
-		m_factories[type] = pFactory;
+		const auto end = m_factories.begin() + m_factoryCount;
+		const auto it = std::find_if(m_factories.begin(), end, [type](const Factories::value_type& lhs) { return lhs.first == type; });
+		if (it == end)
+		{
+			CRY_ASSERT_MESSAGE(m_factoryCount < m_factories.size(), "Too many factories registered. Increase MAX_FACTORIES to fix this.");
+			if (m_factoryCount < m_factories.size())
+			{
+				m_factories[m_factoryCount] = std::make_pair(type, pFactory);
+				++m_factoryCount;
+			}
+		}
+		else
+		{
+			it->second = pFactory;
+		}
 	}
 
 protected:
-	typedef std::map<TypeID, ClassFactoryBase*> Factories;
+	static constexpr size_t MAX_FACTORIES = 1024;
+	typedef std::array<std::pair<TypeID, ClassFactoryBase*>, MAX_FACTORIES> Factories; // Needs to be a fixed size array as the memorymanager might not be available yet
 	Factories m_factories;
+	size_t m_factoryCount;
 };
 
 template<class BaseType>

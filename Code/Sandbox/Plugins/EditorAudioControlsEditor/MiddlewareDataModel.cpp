@@ -118,6 +118,9 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 					case static_cast<int>(EMiddlewareDataAttributes::Connected):
 						return pImplItem->IsConnected();
 						break;
+					case static_cast<int>(EMiddlewareDataAttributes::Container) :
+						return pImplItem->IsContainer();
+						break;
 					case static_cast<int>(EMiddlewareDataAttributes::Placeholder):
 						return pImplItem->IsPlaceholder();
 						break;
@@ -322,6 +325,11 @@ bool CMiddlewareDataFilterProxyModel::rowMatchesFilter(int source_row, const QMo
 					return false;
 				}
 
+				if (sourceModel()->data(index, static_cast<int>(CMiddlewareDataModel::EMiddlewareDataAttributes::Container)).toBool())
+				{
+					return false;
+				}
+
 				if (sourceModel()->hasChildren(index))
 				{
 					int const rowCount = sourceModel()->rowCount(index);
@@ -332,15 +340,16 @@ bool CMiddlewareDataFilterProxyModel::rowMatchesFilter(int source_row, const QMo
 						{
 							return true;
 						}
-
-						return false;
 					}
+
+					return false;
 				}
 			}
 
 			return true;
 		}
 	}
+
 	return false;
 }
 

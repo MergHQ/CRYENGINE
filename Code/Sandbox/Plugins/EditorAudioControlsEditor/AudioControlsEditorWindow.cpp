@@ -84,6 +84,11 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	{
 		m_isModified = isDirty;
 		m_pSaveAction->setEnabled(isDirty);
+
+		if (isDirty && (m_pMiddlewareDataWidget != nullptr))
+		{
+			m_pMiddlewareDataWidget->InvalidateFilter();
+		}
 	}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(this, &CAudioControlsEditorWindow::SaveBeforeImplementationChange);

@@ -31,9 +31,9 @@
 #include "ClipVolumeProxy.h"
 #include "DynamicResponseProxy.h"
 #include <CryExtension/CryCreateClassInstance.h>
-#include <CryGame/IGameFramework.h>
 #include <CrySchematyc/CoreAPI.h>
 #include <CrySchematyc/Utils/ClassProperties.h>
+#include <CryGame/IGameFramework.h>
 
 // enable this to check nan's on position updates... useful for debugging some weird crashes
 #define ENABLE_NAN_CHECK
@@ -964,7 +964,7 @@ void CEntity::ActivateEntityIfNecessary()
 {
 	bool bEnable = ShouldActivate();
 
-	if (bEnable != m_bInActiveList)
+	if (bEnable != (m_bInActiveList != 0))
 	{
 		g_pIEntitySystem->ActivateEntity(this, bEnable);
 	}
@@ -2490,9 +2490,7 @@ ICharacterInstance* CEntity::GetCharacter(int nSlot)
 //////////////////////////////////////////////////////////////////////////
 int CEntity::SetCharacter(ICharacterInstance* pCharacter, int nSlot, bool bUpdatePhysics)
 {
-	int nUsedSlot = -1;
-
-	nUsedSlot = m_render.SetSlotCharacter(nSlot, pCharacter);
+	int nUsedSlot = m_render.SetSlotCharacter(nSlot, pCharacter);
 	if (bUpdatePhysics)
 	{
 		m_physics.UpdateSlotGeometry(nUsedSlot);
@@ -3145,7 +3143,7 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 	}
 
 	// We only want to reset when we return from game mode to editor mode.
-	if (m_pSchematycObject && !bEnterGameMode)
+	if (m_pSchematycObject != nullptr)
 	{
 		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
 	}

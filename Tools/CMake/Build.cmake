@@ -49,10 +49,15 @@ if(OPTION_ENGINE AND NOT PROJECT_BUILD)
 	add_subdirectories_glob("Code/Game*")
 endif()
 	
-# 3. Plugins
-include ("${TOOLS_CMAKE_DIR}/BuildPlugins.cmake")
+# 3. Extensions (deprecated / legacy)
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Code/CryExtensions")
+	add_subdirectory(Code/CryExtensions)
+endif()
 
-# 4. Launchers
+# 4. Plug-ins
+add_subdirectory(Code/CryPlugins)
+
+# 5. Launchers
 include ("${TOOLS_CMAKE_DIR}/BuildLaunchers.cmake")
 
 if (OPTION_CRYMONO)

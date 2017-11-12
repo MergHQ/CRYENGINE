@@ -192,7 +192,6 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_nUpdateFrameID = -1;
 	m_nAccessFrameID = -1;
 	m_nCustomID = -1;
-	m_pPixelFormat = NULL;
 	m_pDevTexture = NULL;
 
 	m_bAsyncDevTexCreation = false;
@@ -406,7 +405,6 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 		m_nMips        = Layput.m_nMips;
 		m_eSrcFormat   = Layput.m_eSrcFormat;
 		m_eDstFormat   = Layput.m_eDstFormat;
-		m_pPixelFormat = Layput.m_pPixelFormat;
 		m_eTT          = Layput.m_eTT;
 		m_eFlags       = Layput.m_eFlags; /* TODO: change FT_... to CDeviceObjectFactory::... */
 		m_bIsSRGB      = Layput.m_bIsSRGB;
@@ -1216,7 +1214,7 @@ ETEX_Format CTexture::FormatFixup(ETEX_Format eFormat)
 	case eTF_R4G4B4A4:
 	{
 		const SPixFormat* pPF;
-		return GetClosestFormatSupported(eFormat, pPF);
+		return CTexture::GetClosestFormatSupported(eFormat, pPF);
 	}
 
 	default:
@@ -2225,9 +2223,6 @@ bool CTexture::ReloadFile_Request(const char* szFileName)
 
 bool CTexture::ReloadFile(const char* szFileName)
 {
-	char realNameBuffer[256]="";
-	fpConvertDOSToUnixName(realNameBuffer, szFileName);
-
 	char gameFolderPath[256];
 	cry_strcpy(gameFolderPath, PathUtil::GetGameFolder());
 	PREFAST_SUPPRESS_WARNING(6054); // it is nullterminated
@@ -2242,8 +2237,8 @@ bool CTexture::ReloadFile(const char* szFileName)
 		gameFolderPath[gameFolderPathLength] = 0;
 	}
 
-	char* realName = realNameBuffer;
-	if (strlen(realNameBuffer) >= (uint32)gameFolderPathLength && memcmp(realName, gameFolderPath, gameFolderPathLength) == 0)
+	string realName = PathUtil::ToUnixPath(szFileName);
+	if (realName.size() >= (uint32)gameFolderPathLength && memcmp(realName.data(), gameFolderPath, gameFolderPathLength) == 0)
 		realName += gameFolderPathLength;
 
 	bool bStatus = true;
@@ -2262,9 +2257,7 @@ bool CTexture::ReloadFile(const char* szFileName)
 
 			if (!(tp->m_eFlags & FT_FROMIMAGE))
 				continue;
-			char srcNameBuffer[MAX_PATH + 1];
-			fpConvertDOSToUnixName(srcNameBuffer, tp->m_SrcName.c_str());
-			char* srcName = srcNameBuffer;
+			string srcName = PathUtil::ToUnixPath(tp->m_SrcName);
 			if (strlen(srcName) >= (uint32)gameFolderPathLength && _strnicmp(srcName, gameFolderPath, gameFolderPathLength) == 0)
 				srcName += gameFolderPathLength;
 			//CryLogAlways("realName = %s srcName = %s gameFolderPath = %s szFileName = %s", realName, srcName, gameFolderPath, szFileName);
@@ -2714,7 +2707,7 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::CreateIn
 		char name[_MAX_PATH];
 		cry_strcpy(name, layoutName);
 		PathUtil::RemoveExtension(name);
-		const char* pExt = fpGetExtension(layoutName);
+		const char* pExt = PathUtil::GetExt(layoutName);
 		if (!pExt || strcmpi(pExt, ".layout") != 0)
 		{
 			return;
@@ -2938,7 +2931,7 @@ bool CFlashTextureSourceBase::IsFlashFile(const char* pFlashFileName)
 {
 	if (pFlashFileName)
 	{
-		const char* pExt = fpGetExtension(pFlashFileName);
+		const char* pExt = PathUtil::GetExt(pFlashFileName);
 		const bool bPath = strchr(pFlashFileName, '/') || strchr(pFlashFileName, '\\');
 
 		if (pExt)
@@ -2961,7 +2954,7 @@ bool CFlashTextureSourceBase::IsFlashUIFile(const char* pFlashFileName)
 {
 	if (pFlashFileName)
 	{
-		const char* pExt = fpGetExtension(pFlashFileName);
+		const char* pExt = PathUtil::GetExt(pFlashFileName);
 		const bool bPath = strchr(pFlashFileName, '/') || strchr(pFlashFileName, '\\');
 
 		if (pExt)
@@ -2981,7 +2974,7 @@ bool CFlashTextureSourceBase::IsFlashUILayoutFile(const char* pFlashFileName)
 {
 	if (pFlashFileName)
 	{
-		const char* pExt = fpGetExtension(pFlashFileName);
+		const char* pExt = PathUtil::GetExt(pFlashFileName);
 
 		if (pExt)
 		{

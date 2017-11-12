@@ -6,8 +6,12 @@ using System;
 namespace CryEngine
 {
 	/// <summary>
-	/// Used to specify specific parameters for entity components, if not used defaults will be in place
-	/// Default name is the entity component class name
+	/// Used to specify specific parameters for entity components. If a parameter is not set, a default value will be set by the engine.
+	/// Default name is the entity component class name.
+	/// Default category is General.
+	/// Default description will be empty.
+	/// Default icon will be empty (entity components still receive an icon in the Sandbox by default).
+	/// Default guid will be retrieved from a GUID-attribute if available. Otherwise it will be generated based on the class's fullname.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class)]
 	public sealed class EntityComponentAttribute : Attribute
@@ -40,6 +44,19 @@ namespace CryEngine
 		#endregion
 
 		#region Constructors
+		/// <summary>
+		/// Used to specify specific parameters for entity components. If a parameter is not set, a default value will be set by the engine.
+		/// Default name is the entity component class name.
+		/// Default category is General.
+		/// Default description will be empty.
+		/// Default icon will be empty (entity components still receive an icon in the Sandbox by default).
+		/// Default guid will be retrieved from a GUID-attribute if available. Otherwise it will be generated based on the class's fullname.
+		/// </summary>
+		/// <param name="uiName">The name of the component as it will be shown in the Sandbox.</param>
+		/// <param name="category">The category in the Create Object and Add Component menu of the Sandbox that this component will be shown in.</param>
+		/// <param name="description">Description of the component that will be shown in tooltips.</param>
+		/// <param name="icon">Path to an icon in the icon folder.</param>
+		/// <param name="guid">GUID in the format of XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</param>
 		public EntityComponentAttribute(string uiName = "", string category = "", string description = "", string icon = "", string guid = "")
 		{
 			Name = uiName;

@@ -939,9 +939,6 @@ bool CRenderer::WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* nam,
 		}
 		dat = data;
 	}
-	char name[256];
-	fpStripExtension(nam, name);
-	cry_strcat(name, ".dds");
 
 	bool bMips = false;
 	if (NumMips != 1)
@@ -950,6 +947,10 @@ bool CRenderer::WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* nam,
 	byte* dst = CTexture::Convert(dat, wdt, hgt, NumMips, eTF_R8G8B8A8, eFDst, NumMips, nDxtSize, true);
 	if (dst)
 	{
+		char name[256];
+		cry_strcpy(name, nam);
+		PathUtil::ReplaceExtension(name, "dds");
+
 		::WriteDDS(dst, wdt, hgt, 1, name, eFDst, NumMips, eTT_2D);
 		delete[] dst;
 	}
@@ -1076,9 +1077,6 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 		// enabled, so we explicitly run the resource compiler here.
 		memcpy(realName + nameLength - extensionLength, tifExtension, extensionLength);
 
-		char unixNameBuffer[MAX_PATH + 1];
-		fpConvertDOSToUnixName(unixNameBuffer, realName);
-
 		char gameFolderPath[256];
 		cry_strcpy(gameFolderPath, PathUtil::GetGameFolder());
 		int gameFolderPathLength = strlen(gameFolderPath);
@@ -1092,12 +1090,12 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 			gameFolderPath[gameFolderPathLength]   = 0;
 		}
 
-		char* gameRelativePath = unixNameBuffer;
-		if (strlen(gameRelativePath) >= (uint32)gameFolderPathLength && memcmp(gameRelativePath, gameFolderPath, gameFolderPathLength) == 0)
+		string gameRelativePath = PathUtil::ToUnixPath(realName);
+		if (gameRelativePath.size() >= (uint32)gameFolderPathLength && memcmp(gameRelativePath.c_str(), gameFolderPath, gameFolderPathLength) == 0)
 			gameRelativePath += gameFolderPathLength;
 
 		char buffer[512];
-		return CTextureCompiler::GetInstance().ProcessTextureIfNeeded(gameRelativePath, buffer, sizeof(buffer));
+		return CTextureCompiler::GetInstance().ProcessTextureIfNeeded(gameRelativePath, buffer, sizeof(buffer), false);
 	}
 #endif //defined(CRY_ENABLE_RC_HELPER)
 
@@ -1206,12 +1204,13 @@ ITexture* CRenderer::EF_GetTextureByName(const char* nameTex, uint32 flags)
 	{
 		INDENT_LOG_DURING_SCOPE(true, "While trying to find texture '%s' flags=0x%x...", nameTex, flags);
 
-		const char* ext = fpGetExtension(nameTex);
+		const char* ext = PathUtil::GetExt(nameTex);
 		if (ext != 0 && (stricmp(ext, ".tif") == 0 || stricmp(ext, ".hdr") == 0))
 		{
 			// for compilable files, register by the dds file name (to not load it twice)
 			char nameDDS[256];
-			fpStripExtension(nameTex, nameDDS);
+			cry_strcpy(nameDDS, nameTex);
+			PathUtil::RemoveExtension(nameDDS);
 			cry_strcat(nameDDS, ".dds");
 
 			return CTexture::GetByName(nameDDS, flags);
@@ -1223,24 +1222,19 @@ ITexture* CRenderer::EF_GetTextureByName(const char* nameTex, uint32 flags)
 	return NULL;
 }
 
-ITexture* CRenderer::EF_LoadTexture(const char* nameTex, const uint32 flags)
+ITexture* CRenderer::EF_LoadTexture(const char* szName, const uint32 flags)
 {
-	if (nameTex)
+	if (szName)
 	{
 		INDENT_LOG_DURING_SCOPE(true, "While trying to load texture '%s' flags=0x%x...", nameTex, flags);
 
-		const char* ext = fpGetExtension(nameTex);
-		if (ext != 0 && (stricmp(ext, ".tif") == 0 || stricmp(ext, ".hdr") == 0))
+		const char* szExtension = PathUtil::GetExt(szName);
+		if (szExtension != nullptr && (!stricmp(szExtension, ".tif") || !stricmp(szExtension, ".hdr")))
 		{
 			// for compilable files, register by the dds file name (to not load it twice)
-			char nameDDS[256];
-			fpStripExtension(nameTex, nameDDS);
-			cry_strcat(nameDDS, ".dds");
-
-			return CTexture::ForName(nameDDS, flags, eTF_Unknown);
+			return CTexture::ForName(PathUtil::ReplaceExtension(szName, "dds"), flags, eTF_Unknown);
 		}
-		else
-			return CTexture::ForName(nameTex, flags, eTF_Unknown);
+		return CTexture::ForName(szName, flags, eTF_Unknown);
 	}
 
 	return NULL;
