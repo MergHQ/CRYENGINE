@@ -217,7 +217,7 @@ struct INavigationSystem
 	//! Returns all borders (unconnected edges) in the specified AABB.
 	//! There are 3 Vec3's per border edge, vert 0, vert 1, and a normal pointing out from the edge.
 	//! You can pass NULL for pBorders to return the total number of borders (multiply this by 3 to get the total number of Vec3's you need to pass in).
-	virtual size_t GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, float minIslandArea = 0.f) const = 0;
+	virtual size_t GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
 
 	//! Gets triangle centers, and island ids - this is used to compute spawn points for an area.
 	virtual size_t GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, float minIslandArea = 0.f) const = 0;

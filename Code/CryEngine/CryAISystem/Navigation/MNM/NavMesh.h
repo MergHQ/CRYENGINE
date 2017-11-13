@@ -300,6 +300,8 @@ public:
 	bool          GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const;
 	bool          GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const;
 
+	size_t        GetMeshBorders(const aabb_t& aabb, const INavMeshQueryFilter* pFilter, Vec3* pBorders, size_t maxBorderCount, float minIslandArea = 0.f) const;
+
 	bool          PushPointInsideTriangle(const TriangleID triangleID, vector3_t& location, real_t amount) const;
 
 	void          IncrementCountOfPathsPassingThroughTriangleId(TriangleID triangleID);
@@ -554,6 +556,9 @@ private:
 	size_t     QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
 
 	TriangleID FindClosestTriangleInternal(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, real_t::unsigned_overflow_type* pOutClosestDistanceSq) const;
+
+	size_t     GetTrianglesBordersNoFilter(const TriangleID* triangleIDs, const size_t triangleCount, Vec3* pBorders, const size_t maxBorderCount) const;
+	size_t     GetTrianglesBordersWithFilter(const TriangleID* triangleIDs, const size_t triangleCount, const INavMeshQueryFilter& filter, Vec3* pBorders, const size_t maxBorderCount) const;
 
 protected:
 	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile);
