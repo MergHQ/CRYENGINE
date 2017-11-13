@@ -89,7 +89,9 @@ void CUndoFolderAdd::Redo()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CUndoControlModified::CUndoControlModified(CID id) : m_id(id)
+CUndoControlModified::CUndoControlModified(CID id)
+	: m_id(id)
+	, m_isAutoLoad(false)
 {
 }
 
