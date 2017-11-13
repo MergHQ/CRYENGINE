@@ -89,13 +89,16 @@ struct SPerMeshResources : public compute_skinning::IPerMeshDataSupply
 
 	enum SState
 	{
-		sState_NonInitialized,
-		sState_PartlyInitialized,
-		sState_FullyInitialized
+		sState_NonInitialized     = 0,
+
+		sState_PosesInitialized   = BIT(0),
+		sState_WeightsInitialized = BIT(1),
+		sState_MorphsInitialized  = BIT(2)
 	};
-	volatile int state;
-	SPerMeshResources() : state(0){}
-	bool IsFullyInitialized() const { return state == sState_FullyInitialized; }
+
+	std::atomic<uint32> uploadState;
+	SPerMeshResources() : uploadState(sState_NonInitialized) {}
+	bool IsInitialized(uint32 wantedState) const { return (uploadState & wantedState) == wantedState; }
 
 	// per mesh data supply implementation
 	virtual void PushMorphs(const int numMorps, const int numMorphsBitField, const Vec4* morphsDeltas, const uint64* morphsBitField) override;
@@ -151,13 +154,14 @@ class CComputeSkinningStage : public CGraphicsPipelineStage
 public:
 	CComputeSkinningStage();
 
-	void                                       Execute();
+	void Update() final;
+	void Prepare();
+	void Execute();
+	void PreDraw();
 
 	compute_skinning::IComputeSkinningStorage& GetStorage() { return m_storage; }
-private:
-	void                                       DispatchComputeShaders();
-	void                                       SetupDeformPass();
 
+private:
 	compute_skinning::CStorage m_storage;
 
 #if !defined(_RELEASE) // !NDEBUG

@@ -1662,7 +1662,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 			}
 
 			if (bRecompile ||
-			    pRenderObject->m_bInstanceDataDirty ||
+			     pRenderObject->m_bInstanceDataDirty ||
 			    !pRenderObject->m_bAllCompiledValid ||
 			    bInvalidateChildObjects)
 			{

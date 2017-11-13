@@ -584,10 +584,16 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 	}
 
 	// get skinning data		
-	static ICVar* cvar_gdMorphs = gEnv->pConsole->GetCVar("r_ComputeSkinningMorphs");
-	static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
-	bool bUseGPUComputeDeformation = (nRenderLOD == 0) && (cvar_gd && cvar_gd->GetIVal()) && m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING;
-	bool bUseCPUDeformation = !bUseGPUComputeDeformation && (nRenderLOD == 0) && ShouldSwSkin() && (Console::GetInst().ca_vaEnable != 0);
+	static ICVar* cvar_gd         = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+	static ICVar* cvar_gdMorphs   = gEnv->pConsole->GetCVar("r_ComputeSkinningMorphs");
+	static ICVar* cvar_gdTangents = gEnv->pConsole->GetCVar("r_ComputeSkinningTangents");
+	
+	bool bAllowGPUComputeDeformation = (cvar_gd         && (cvar_gd        ->GetIVal() == 2)) || (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING);
+	bool bAllowGPUComputePreMorphs   = (cvar_gdMorphs   && (cvar_gdMorphs  ->GetIVal() == 2)) || (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS);
+	bool bAllowGPUComputeTagent      = (cvar_gdTangents && (cvar_gdTangents->GetIVal() == 2)) || (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS);
+
+	bool bUseGPUComputeDeformation = (nRenderLOD == 0) && (cvar_gd && cvar_gd->GetIVal()) && bAllowGPUComputeDeformation;
+	bool bUseCPUDeformation        = !bUseGPUComputeDeformation && (nRenderLOD == 0) && ShouldSwSkin() && (Console::GetInst().ca_vaEnable != 0);
 
 	IF (!bUseCPUDeformation, 1) 
 		pObj->m_ObjFlags |= FOB_SKINNED;
@@ -618,9 +624,9 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 			pObj->m_pCurrMaterial = m_pModelSkin->GetIMaterial(0);
 
 		pD->m_pSkinningData->nHWSkinningFlags |= eHWS_DC_deformation_Skinning;
-		if (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS)
+		if (bAllowGPUComputePreMorphs)
 			pD->m_pSkinningData->nHWSkinningFlags |= eHWS_DC_Deformation_PreMorphs;
-		if (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS)
+		if (bAllowGPUComputeTagent)
 			pD->m_pSkinningData->nHWSkinningFlags |= eHWS_DC_Deformation_Tangents;
 	
 		g_pIRenderer->EF_EnqueueComputeSkinningData(passInfo.GetIRenderView(), pD->m_pSkinningData);
@@ -634,7 +640,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 
 	if(bUseCPUDeformation && pRenderMesh) 
 	{
-	SVertexAnimationJob *pVertexAnimation = static_cast<SVertexAnimationJob*>(pD->m_pSkinningData->pCustomData);
+		SVertexAnimationJob *pVertexAnimation = static_cast<SVertexAnimationJob*>(pD->m_pSkinningData->pCustomData);
 		uint iCurrentRenderMeshID = m_vertexAnimation.m_RenderMeshId & 1;
 
 		if (bNewFrame)
@@ -887,13 +893,14 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 	}
 	else
 	{
-		static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+		static ICVar* cvar_gd       = gEnv->pConsole->GetCVar("r_ComputeSkinning");
 		static ICVar* cvar_gdMorphs = gEnv->pConsole->GetCVar("r_ComputeSkinningMorphs");
 
-		bool bUpdateActiveMorphs = (cvar_gd && cvar_gd->GetIVal()) && 
-				(cvar_gdMorphs && cvar_gdMorphs->GetIVal()) &&
-				(m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING) &&
-				(m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS);
+		bool bAllowGPUComputeDeformation = (cvar_gd       && (cvar_gd      ->GetIVal() == 2)) || (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING);
+		bool bAllowGPUComputePreMorphs   = (cvar_gdMorphs && (cvar_gdMorphs->GetIVal() == 2)) || (m_AttFlags & FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS);
+		bool bUpdateActiveMorphs = 
+			(cvar_gd       && cvar_gd      ->GetIVal()) && bAllowGPUComputeDeformation &&
+			(cvar_gdMorphs && cvar_gdMorphs->GetIVal()) && bAllowGPUComputePreMorphs;
 
 		if (bUpdateActiveMorphs)
 		{

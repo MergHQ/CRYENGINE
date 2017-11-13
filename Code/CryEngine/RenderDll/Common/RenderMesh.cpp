@@ -1547,11 +1547,11 @@ void CRenderMesh::ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh)
 	m_nMorphs = mesh.m_numMorphs;
 
 	m_computeSkinningDataSupply = gcpRendD3D->GetComputeSkinningStorage()->GetOrCreateComputeSkinningPerMeshData(this);
+	m_computeSkinningDataSupply->PushBindPoseBuffers(m_nVerts, m_nInds, adjTriangles.size(), &vertices[0], mesh.m_pIndices, &adjTriangles[0]);
 	if (mesh.m_vertexDeltas.size())
 	{
 		m_computeSkinningDataSupply->PushMorphs(mesh.m_vertexDeltas.size(), mesh.m_vertexMorphsBitfield.size(), &mesh.m_vertexDeltas[0], &mesh.m_vertexMorphsBitfield[0]);
 	}
-	m_computeSkinningDataSupply->PushBindPoseBuffers(m_nVerts, m_nInds, adjTriangles.size(), &vertices[0], mesh.m_pIndices, &adjTriangles[0]);
 }
 
 void CRenderMesh::ComputeSkinningCreateSkinningBuffers(const SVF_W4B_I4S* pBoneMapping, const SMeshBoneMapping_uint16* pExtraBoneMapping)

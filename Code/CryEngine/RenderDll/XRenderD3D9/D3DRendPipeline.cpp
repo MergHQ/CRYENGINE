@@ -640,7 +640,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 		gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(pRenderView);
 		GetGraphicsPipeline().Update(pRenderView, EShaderRenderingFlags(nFlags));
 
-		// Creating CompiledRenederObjects should happen after Prepare call of the GraphicsPipeline, as it requires access to initialized Render Targets
+		// Creating CompiledRenederObjects should happen after Update() call of the GraphicsPipeline, as it requires access to initialized Render Targets
+		// If some pipeline stage manages/retires resources used in compiled objects, they should also be handled in Update()
 		pRenderView->CompileModifiedRenderObjects();
 
 		if (pRenderView->IsBillboardGenView())

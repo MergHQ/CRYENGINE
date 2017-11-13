@@ -11,6 +11,7 @@
 //////////////////////////////////////////////////////////////////////////
 #include "GraphicsPipeline/ShadowMap.h"
 #include "GraphicsPipeline/SceneGBuffer.h"
+#include "GraphicsPipeline/ComputeSkinning.h"
 
 //////////////////////////////////////////////////////////////////////////
 CRenderObjectsPools* CPermanentRenderObject::s_pPools;
@@ -352,14 +353,16 @@ void CCompiledRenderObject::CompileInstancingData(CRenderObject* pRenderObject, 
 //////////////////////////////////////////////////////////////////////////
 void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRenderObject)
 {
+	auto& pGraphicsPipeline = gcpRendD3D->GetGraphicsPipeline();
+
 	if (!m_bHasTessellation && !pRenderObject->m_data.m_pSkinningData) // only needed for skinning and tessellation at the moment
 	{
-		m_perInstanceExtraResources = gcpRendD3D->GetGraphicsPipeline().GetDefaultInstanceExtraResourceSet();
+		m_perInstanceExtraResources = pGraphicsPipeline.GetDefaultInstanceExtraResourceSet();
 		assert(m_perInstanceExtraResources && m_perInstanceExtraResources->IsValid() && "Bad shared default resources");
 		return;
 	}
 
-	CDeviceResourceSetDesc perInstanceExtraResources(gcpRendD3D->GetGraphicsPipeline().GetDefaultInstanceExtraResources(), nullptr, nullptr);
+	CDeviceResourceSetDesc perInstanceExtraResources(pGraphicsPipeline.GetDefaultInstanceExtraResources(), nullptr, nullptr);
 
 	// TODO: only bind to hs and ds stages when tessellation is enabled
 	const EShaderStage shaderStages = EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel;
@@ -368,24 +371,27 @@ void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRen
 	{
 		CD3D9Renderer::SCharacterInstanceCB* const pCurSkinningData = alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSkinningData->pCharInstCB);
 
-		static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
-		bool bDoComputeDeformation = (cvar_gd && cvar_gd->GetIVal()) && (pSkinningData->nHWSkinningFlags & eHWS_DC_deformation_Skinning);
+		bool bDoComputeDeformation = (pSkinningData->nHWSkinningFlags & eHWS_DC_deformation_Skinning ? true : false);
 		if (bDoComputeDeformation)
 		{
-			CGpuBuffer* pBuffer = gcpRendD3D->GetComputeSkinningStorage()->GetOutputVertices(pSkinningData->pCustomTag);
+			CGpuBuffer* pBuffer = pGraphicsPipeline.GetComputeSkinningStage()->GetStorage().GetOutputVertices(pSkinningData->pCustomTag);
+
 			if (pBuffer)
+			{
 				perInstanceExtraResources.SetBuffer(EReservedTextureSlot_ComputeSkinVerts, pBuffer, EDefaultResourceViews::Default, shaderStages);
+			}
 		}
 		else
 		{
 			perInstanceExtraResources.SetConstantBuffer(eConstantBufferShaderSlot_SkinQuat, pCurSkinningData->boneTransformsBuffer, shaderStages);
+
 			if (pSkinningData->pPreviousSkinningRenderData)
 			{
 				CD3D9Renderer::SCharacterInstanceCB* const pPrevSkinningData = alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSkinningData->pPreviousSkinningRenderData->pCharInstCB);
 				perInstanceExtraResources.SetConstantBuffer(eConstantBufferShaderSlot_SkinQuatPrev, pPrevSkinningData->boneTransformsBuffer, shaderStages);
 			}
 
-			if (m_pExtraSkinWeights && !m_pExtraSkinWeights->IsNullBuffer())
+			if (m_pExtraSkinWeights)
 			{
 				perInstanceExtraResources.SetBuffer(EReservedTextureSlot_SkinExtraWeights, m_pExtraSkinWeights, EDefaultResourceViews::Default, shaderStages);
 			}
@@ -397,7 +403,7 @@ void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRen
 		perInstanceExtraResources.SetBuffer(EReservedTextureSlot_AdjacencyInfo, m_pTessellationAdjacencyBuffer, EDefaultResourceViews::Default, shaderStages);
 	}
 
-	m_perInstanceExtraResources = GetDeviceObjectFactory().CreateResourceSet();
+	m_perInstanceExtraResources = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_perInstanceExtraResources->Update(perInstanceExtraResources);
 }
 
@@ -462,7 +468,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView)
 {
 	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
 	//{ char buf[1024]; cry_sprintf(buf,"compiled: %p : frame(%d) \r\n", pRenderObject, nFrameId); OutputDebugString(buf); }
@@ -475,7 +481,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject,CRenderView *pR
 
 	// Optimization to only update per instance constant buffer and not recompile PSO,
 	// Object must be fully compiled already for this flag to have a per instance only effect.
-	bool bInstanceDataUpdateOnly = pRenderObject->m_bInstanceDataDirty && !m_bIncomplete;
+	const bool bInstanceDataUpdateOnly = !m_bIncomplete && pRenderObject->m_bInstanceDataDirty;
 
 	// Only objects with RenderElements can be compiled
 	if (!m_pRenderElement)
@@ -528,6 +534,12 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject,CRenderView *pR
 	CompilePerInstanceConstantBuffer(pRenderObject);
 	CompilePerInstanceExtraResources(pRenderObject);
 
+	// Data may come in later
+	if (!m_perInstanceExtraResources || !m_perInstanceExtraResources->IsValid())
+	{
+		return true;
+	}
+
 	if (!pRenderObject->m_Instances.empty() || m_bDynamicInstancingPossible)
 	{
 		CompileInstancingData(pRenderObject, m_bDynamicInstancingPossible);
@@ -537,7 +549,6 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject,CRenderView *pR
 	{
 		// Issue the barriers on the core command-list, which executes directly before the Draw()s in multi-threaded jobs
 		PrepareForUse(GetDeviceObjectFactory().GetCoreCommandList(), true);
-
 		return true;
 	}
 
@@ -668,8 +679,12 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 
 	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *passContext.pCommandList->GetGraphicsInterface();
 
+	const bool bIncompleteResourceSets =
+		!m_materialResourceSet || !m_materialResourceSet->IsValid() ||
+		!m_perInstanceExtraResources || !m_perInstanceExtraResources->IsValid();
+
 #if defined(ENABLE_PROFILING_CODE)
-	if (m_bIncomplete || !m_materialResourceSet || !m_materialResourceSet->IsValid())
+	if (m_bIncomplete || bIncompleteResourceSets)
 	{
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nIncompleteCompiledObjects);
 	}
@@ -679,7 +694,7 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 	//assert(passContext.passID < MAX_PIPELINE_SCENE_STAGE_PASSES);
 	const CDeviceGraphicsPSOPtr& pPso = m_pso[passContext.stageID][passContext.passID];
 
-	if (!pPso || !pPso->IsValid() || !m_materialResourceSet || !m_materialResourceSet->IsValid())
+	if (!pPso || !pPso->IsValid() || bIncompleteResourceSets)
 		return;
 
 	//assert(m_perInstanceExtraResources->IsValid());
