@@ -646,6 +646,159 @@ bool CNavMesh::GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const
 	return false;
 }
 
+size_t CNavMesh::GetMeshBorders(const aabb_t& aabb, const INavMeshQueryFilter* pFilter, Vec3* pBorders, const size_t maxBorderCount, const float minIslandArea /* = 0.0f*/) const
+{
+	const size_t maxTriangleCount = 4096;
+	TriangleID triangleIDs[maxTriangleCount];
+	const size_t triangleCount = GetTriangles(aabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
+
+	if (pFilter)
+	{
+		return GetTrianglesBordersWithFilter(triangleIDs, triangleCount, *pFilter, pBorders, maxBorderCount);
+	}
+	else
+	{
+		return GetTrianglesBordersNoFilter(triangleIDs, triangleCount, pBorders, maxBorderCount);
+	}
+}
+
+size_t CNavMesh::GetTrianglesBordersNoFilter(const TriangleID* triangleIDs, const size_t triangleCount, Vec3* pBorders, const size_t maxBorderCount) const
+{
+	size_t numBorders = 0;
+	for (size_t i = 0; i < triangleCount; ++i)
+	{
+		const TileID tileID = ComputeTileID(triangleIDs[i]);
+		uint16 triangleIdx = ComputeTriangleIndex(triangleIDs[i]);
+		if (!tileID)
+			continue;
+
+		const TileContainer& container = m_tiles[tileID - 1];
+		const Tile::STriangle& triangle = container.tile.triangles[triangleIdx];
+
+		size_t linkedEdges = 0;
+		for (size_t l = 0; l < triangle.linkCount; ++l)
+		{
+			const Tile::SLink& link = container.tile.links[triangle.firstLink + l];
+			const size_t edge = link.edge;
+			linkedEdges |= static_cast<size_t>(1) << edge;
+		}
+
+		if (linkedEdges == 7)
+			continue;
+
+		const vector3_t origin(real_t(container.x * m_params.tileSize.x), real_t(container.y * m_params.tileSize.y), real_t(container.z * m_params.tileSize.z));
+		vector3_t verts[3];
+		verts[0] = origin + vector3_t(container.tile.vertices[triangle.vertex[0]]);
+		verts[1] = origin + vector3_t(container.tile.vertices[triangle.vertex[1]]);
+		verts[2] = origin + vector3_t(container.tile.vertices[triangle.vertex[2]]);
+
+		for (size_t e = 0; e < 3; ++e)
+		{
+			if ((linkedEdges & (size_t(1) << e)) == 0)
+			{
+				if (pBorders != NULL)
+				{
+					const Vec3 v0 = verts[e].GetVec3();
+					const Vec3 v1 = verts[(e + 1) % 3].GetVec3();
+					const Vec3 vOther = verts[(e + 2) % 3].GetVec3();
+
+					const Vec3 edge = Vec3(v0 - v1).GetNormalized();
+					const Vec3 otherEdge = Vec3(v0 - vOther).GetNormalized();
+					const Vec3 up = edge.Cross(otherEdge);
+					const Vec3 out = up.Cross(edge);
+
+					pBorders[numBorders * 3 + 0] = v0;
+					pBorders[numBorders * 3 + 1] = v1;
+					pBorders[numBorders * 3 + 2] = out;
+				}
+
+				++numBorders;
+
+				if (pBorders != NULL && numBorders == maxBorderCount)
+					return numBorders;
+			}
+		}
+	}
+	return numBorders;
+}
+
+size_t CNavMesh::GetTrianglesBordersWithFilter(const TriangleID* triangleIDs, const size_t triangleCount, const INavMeshQueryFilter& filter, Vec3* pBorders, const size_t maxBorderCount) const
+{
+	size_t numBorders = 0;
+	for (size_t i = 0; i < triangleCount; ++i)
+	{
+		const TileID tileID = ComputeTileID(triangleIDs[i]);
+		uint16 triangleIdx = ComputeTriangleIndex(triangleIDs[i]);
+		if (!tileID)
+			continue;
+
+		const TileContainer& container = m_tiles[tileID - 1];
+		const Tile::STriangle& triangle = container.tile.triangles[triangleIdx];
+
+		size_t linkedEdges = 0;
+		for (size_t l = 0; l < triangle.linkCount; ++l)
+		{
+			const Tile::SLink& link = container.tile.links[triangle.firstLink + l];
+			const size_t edge = link.edge;
+
+			if (link.side == Tile::SLink::Internal)
+			{
+				Tile::STriangle& neighbourTriangle = GetTriangleUnsafe(tileID, link.triangle);
+				if (filter.PassFilter(neighbourTriangle))
+				{
+					linkedEdges |= static_cast<size_t>(1) << edge;
+				}
+			}
+			else if (link.side != Tile::SLink::OffMesh)
+			{
+				TileID neighbourTileID = GetNeighbourTileID(container.x, container.y, container.z, link.side);
+				Tile::STriangle& neighbourTriangle = GetTriangleUnsafe(neighbourTileID, link.triangle);
+				if (filter.PassFilter(neighbourTriangle))
+				{
+					linkedEdges |= static_cast<size_t>(1) << edge;
+				}
+			}
+		}
+
+		if (linkedEdges == 7)
+			continue;
+
+		const vector3_t origin(real_t(container.x * m_params.tileSize.x), real_t(container.y * m_params.tileSize.y), real_t(container.z * m_params.tileSize.z));
+		vector3_t verts[3];
+		verts[0] = origin + vector3_t(container.tile.vertices[triangle.vertex[0]]);
+		verts[1] = origin + vector3_t(container.tile.vertices[triangle.vertex[1]]);
+		verts[2] = origin + vector3_t(container.tile.vertices[triangle.vertex[2]]);
+
+		for (size_t e = 0; e < 3; ++e)
+		{
+			if ((linkedEdges & (size_t(1) << e)) == 0)
+			{
+				if (pBorders != NULL)
+				{
+					const Vec3 v0 = verts[e].GetVec3();
+					const Vec3 v1 = verts[(e + 1) % 3].GetVec3();
+					const Vec3 vOther = verts[(e + 2) % 3].GetVec3();
+
+					const Vec3 edge = Vec3(v0 - v1).GetNormalized();
+					const Vec3 otherEdge = Vec3(v0 - vOther).GetNormalized();
+					const Vec3 up = edge.Cross(otherEdge);
+					const Vec3 out = up.Cross(edge);
+
+					pBorders[numBorders * 3 + 0] = v0;
+					pBorders[numBorders * 3 + 1] = v1;
+					pBorders[numBorders * 3 + 2] = out;
+				}
+
+				++numBorders;
+
+				if (pBorders != NULL && numBorders == maxBorderCount)
+					return numBorders;
+			}
+		}
+	}
+	return numBorders;
+}
+
 bool CNavMesh::GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const
 {
 	if (const TileID tileID = ComputeTileID(triangleID))

@@ -89,6 +89,7 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 			for (uint32 i = 0; i < numRuntimes; ++i)
 			{
 				// TODO: convert to array of command-lists pattern
+				// TODO: profile single command list vs. multiple command lists
 				SScopedComputeCommandList pComputeInterface(bAsynchronousCompute);
 
 				auto& pRuntime = GetReadRuntimes()[i];

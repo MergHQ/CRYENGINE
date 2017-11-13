@@ -28,7 +28,10 @@ CManagedPlugin::CManagedPlugin(CMonoLibrary* pLibrary)
 
 CManagedPlugin::~CManagedPlugin()
 {
-	gEnv->pGameFramework->RemoveNetworkedClientListener(*this);
+	if (gEnv->pGameFramework)
+	{
+		gEnv->pGameFramework->RemoveNetworkedClientListener(*this);
+	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 

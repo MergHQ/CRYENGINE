@@ -386,9 +386,7 @@ struct AgentType
 	MarkupVolumes markups;
 	//////////////////////////////////////////////////////////////////////////
 
-	typedef std::vector<NavigationMeshChangeCallback> Callbacks;
-	Callbacks callbacks;
-
+	CFunctorsList<NavigationMeshChangeCallback> callbacks;
 	CFunctorsList<NavigationMeshChangeCallback> annotationCallbacks;
 
 	NavigationMeshEntityCallback                meshEntityCallback;
@@ -505,7 +503,7 @@ public:
 
 	virtual size_t                           GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, float minIslandArea = 0.f) const override;
 
-	virtual size_t                           GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, float minIslandArea = 0.f) const override;
+	virtual size_t                           GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
 	virtual size_t                           GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, float minIslandArea = 0.f) const override;
 	virtual MNM::GlobalIslandID              GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) override;
 

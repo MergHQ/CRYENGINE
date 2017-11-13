@@ -133,8 +133,14 @@ bool CProjectManager::ParseProjectFile()
 		m_project.filePath = projectFile.c_str();
 	}
 
+#ifndef CRY_FORCE_CRYPROJECT_IN_PAK
+	int flags = ICryPak::FOPEN_ONDISK;
+#else
+	int flags = 0;
+#endif
 	CCryFile file;
-	file.Open(m_project.filePath.c_str(), "rb", ICryPak::FOPEN_ONDISK);
+	file.Open(m_project.filePath.c_str(), "rb", flags);
+
 	std::vector<char> projectFileJson;
 	if (file.GetHandle() != nullptr)
 	{

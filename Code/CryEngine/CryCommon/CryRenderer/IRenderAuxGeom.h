@@ -539,10 +539,10 @@ enum EAuxGeomPublicRenderflagBitMasks
 //! \see EAuxGeomPublicRenderflagBitMasks
 enum EAuxGeomPublicRenderflags_Mode2D3D
 {
-	e_Mode3D   = 0x0 << e_Mode2D3DShift,
-	e_Mode2D   = 0x1 << e_Mode2D3DShift,
-	e_ModeText = 0x2 << e_Mode2D3DShift,
-	e_ModeUnit = 0x3 << e_Mode2D3DShift,
+	e_Mode3D   = 0x0 << e_Mode2D3DShift, // the coordinates are expected to be in world coordinates
+	e_Mode2D   = 0x1 << e_Mode2D3DShift, // the coordinates are expected to be in screen space coordinate (in ([0,width-1], [0,height-1]) ranges)
+	e_ModeText = 0x2 << e_Mode2D3DShift, // 
+	e_ModeUnit = 0x3 << e_Mode2D3DShift, // the coordinates are expected to be in normalized device coordinates (in ([0,1], [0,1]) ranges)
 };
 
 //! Don't change the xxxShift values blindly as they affect the rendering output.

@@ -155,19 +155,6 @@ namespace Cry
 				m_pEntity->UpdateComponentEventMask(this);
 			}
 
-			virtual void Ragdollize()
-			{
-				SEntityPhysicalizeParams physParams;
-				physParams.type = PE_ARTICULATED;
-
-				physParams.mass = m_physics.m_mass;
-				physParams.nSlot = GetEntitySlotId();
-
-				physParams.bCopyJointVelocities = true;
-
-				m_pEntity->Physicalize(physParams);
-			}
-
 			struct SPhysics
 			{
 				inline bool operator==(const SPhysics &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }

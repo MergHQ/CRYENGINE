@@ -127,6 +127,7 @@ enum EBitMask : uint8
 // using neighbour classes.
 // Indexing order: left, front-left, front.
 // TODO pavloi 2016.03.21: s_CornerTable and s_PinchCornerTable can be merged together (bitmask).
+
 static const uint8 s_PinchCornerTable[3][3][3] =
 {
 	// *INDENT-OFF* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
@@ -149,6 +150,34 @@ static const uint8 s_PinchCornerTable[3][3][3] =
 		{ 0          , 0   , 0    }, // WB
 	},
 	// *INDENT-ON* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
+};
+
+// Paint pinch corner table used to detect unremovable pinch points on contours using paint differences.
+// SamePaint       (SP) = 1,
+// DifferentPaint1 (D1) = 0,
+// DifferentPaint2 (D2) = 2,
+static const uint8 s_PaintPinchCornerTable[3][3][3] =
+{
+	//*INDENT-OFF* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
+	{// D1
+	 //  D1, SP, D2
+		{ 0, 0, 1 }, // D1
+		{ 1, 0, 1 }, // SP
+		{ 1, 1, 1 }, // D2
+	},
+	{// SP
+	 //  D1, SP, D2
+		{ 0, 1, 1 }, // D1
+		{ 0, 0, 0 }, // SP
+		{ 1, 1, 0 }, // D2
+	},
+	{// D2
+	 //  D1, SP, D2
+		{ 1, 1, 1 }, // D1
+		{ 1, 0, 1 }, // SP
+		{ 1, 0, 0 }, // D2
+	},
+	//*INDENT-ON* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
 };
 
 }
@@ -1492,6 +1521,52 @@ bool CTileGenerator::GatherSurroundingInfo(const Vec2i& vertex, const Vec2i& dir
 	return result;
 }
 
+inline bool IsPaintPinchPoint(const size_t index, const size_t lIndex, const size_t flIndex, const size_t fIndex, const CTileGenerator::SpanExtraInfo& paints)
+{
+	enum NeighbourPinchClassification
+	{
+		SamePaint = 1,
+		DifferentPaint1 = 0,
+		DifferentPaint2 = 2,
+	};
+
+	NeighbourPinchClassification lPinchClass = SamePaint;
+	NeighbourPinchClassification flPinchClass = SamePaint;
+	NeighbourPinchClassification fPinchClass = SamePaint;
+	NeighbourPinchClassification currDifferent = DifferentPaint1;
+
+	const uint16 paint = paints[index];
+	if (paints[lIndex] != paint)
+	{
+		lPinchClass = currDifferent;
+	}
+	if (paints[flIndex] != paint)
+	{
+		if (paints[flIndex] == paints[lIndex])
+		{
+			flPinchClass = lPinchClass;
+		}
+		else
+		{
+			currDifferent = NeighbourPinchClassification(currDifferent ^ DifferentPaint2);
+			flPinchClass = currDifferent;
+		}
+	}
+	if (paints[fIndex] != paint)
+	{
+		if (paints[fIndex] == paints[flIndex])
+		{
+			fPinchClass = flPinchClass;
+		}
+		else
+		{
+			currDifferent = NeighbourPinchClassification(currDifferent ^ DifferentPaint2);
+			fPinchClass = currDifferent;
+		}
+	}
+	return PinchCornerTable::s_PaintPinchCornerTable[lPinchClass][flPinchClass][fPinchClass] != 0;
+}
+
 void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& direction, const uint16 top,
                                             const uint16 climbableVoxelCount, ContourVertex& contourVertex, const bool bInternalContour, SContourVertexDebugInfo* pDebugInfo) const
 {
@@ -1502,9 +1577,9 @@ void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& di
 	const size_t cy = vertex.y + yoffs;
 	size_t cz = top;
 
+	size_t index = -1;
 	bool internalBorderV = false;
 	{
-		size_t index;
 		// TODO pavloi 2016.03.15: can't we pass index in this function instead searching for it again?
 
 		// TODO pavloi 2016.03.21: how current vertex can ever be BorderLabelV? Any border voxels are unwalkable
@@ -1514,6 +1589,7 @@ void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& di
 			internalBorderV = (m_labels[index] & BorderLabelV) != 0;
 
 		assert((internalBorderV && bInternalContour) || !internalBorderV);
+		assert(index != -1);
 	}
 
 	// NOTE pavloi 2016.03.15: either we above lower borderV, or we're hitting an upper borderV.
@@ -1632,10 +1708,7 @@ void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& di
 					DebugAddContourVertexUnremovableReason(pDebugInfo, "BndV BorderChange");
 				}
 			}
-		}
 
-		if (flags & ContourVertex::TileBoundaryV)
-		{
 			if (cz < borderV + Top(m_params))
 				cz = borderV;
 		}
@@ -1646,6 +1719,14 @@ void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& di
 	{
 		flags |= ContourVertex::Unremovable;
 		DebugAddContourVertexUnremovableReason(pDebugInfo, "Pinch");
+	}
+	else
+	{
+		if (IsPaintPinchPoint(index, left.index, frontLeft.index, front.index, m_paint))
+		{
+			flags |= ContourVertex::Unremovable;
+			DebugAddContourVertexUnremovableReason(pDebugInfo, "PaintPinch");
+		}
 	}
 
 	contourVertex.x = static_cast<uint16>(cx);
@@ -1773,13 +1854,6 @@ int CTileGenerator::LabelTracerPath(const CTileGenerator::TracerPath& path, size
 		// Add a vertex at each point.
 		DetermineContourVertex(Vec2i(curr.pos), curr.GetDir(), curr.pos.z, static_cast<uint16>(climbableVoxelCount), *&vertex, bInternalContour, pDebugInfo);
 
-		// Get the paint values for the current neighbour and the next neighbour. If they don't match then we must have a vert.
-		const bool bImportantVert = bIsHole ? (m_paint[curr.indexIn] != m_paint[next.indexIn]) : (m_paint[curr.indexOut] != m_paint[next.indexOut]);
-		if (bImportantVert)
-		{
-			vertex.flags |= ContourVertex::Unremovable;
-			DebugAddContourVertexUnremovableReason(pDebugInfo, "Paint change");
-		}
 		if (next.bPinchPoint)
 		{
 			if (!(vertex.flags & ContourVertex::Unremovable))
@@ -2597,9 +2671,9 @@ void CTileGenerator::FilterBadRegions(size_t minSpanCount)
 	{
 		Region& region = m_regions[i];
 
-		if (((region.flags & Region::TileBoundary) == 0)
-		    && ((region.flags & Region::TileBoundaryV) == 0)
-		    && (region.spanCount && (region.spanCount <= minSpanCount)))
+		if (((region.flags & (Region::TileBoundary | Region::TileBoundaryV)) == 0)
+		    && (region.spanCount && (region.spanCount <= minSpanCount))
+			&& region.paint <= Paint::OkPaintStart)
 		{
 			Region().swap(region);
 		}

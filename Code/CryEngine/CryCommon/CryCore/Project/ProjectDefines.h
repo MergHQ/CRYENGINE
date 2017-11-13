@@ -324,6 +324,11 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 #include "ProjectDefinesInclude.h"
 
+#ifdef RELEASE
+// Forces the .cryproject and system.cfg file to be read from a .pak file instead of directly from disk.
+#define CRY_FORCE_CRYPROJECT_IN_PAK
+#endif
+
 //Encryption & security defines
 
 //! Defines for various encryption methodologies that we support (or did support at some stage).

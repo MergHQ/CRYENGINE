@@ -772,9 +772,13 @@ void CStandardGraphicsPipeline::Execute()
 
 	if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
 	{
+		// Compute algorithms
 		m_pComputeParticlesStage->Execute();
-		m_pComputeParticlesStage->PreDraw();
 		m_pComputeSkinningStage->Execute();
+
+		// Revert resource states to graphics pipeline
+		m_pComputeParticlesStage->PreDraw();
+		m_pComputeSkinningStage->PreDraw();
 
 		m_pRainStage->ExecuteRainOcclusion();
 	}

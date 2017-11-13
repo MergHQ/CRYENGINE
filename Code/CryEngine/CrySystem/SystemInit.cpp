@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "SystemInit.h"
@@ -1832,19 +1832,25 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 
 	((CCryPak*)m_env.pCryPak)->SetLog(m_env.pLog);
 
+	const char* szConfigPakPath = "%ENGINEROOT%/config.pak";
+	m_env.pCryPak->OpenPack(szConfigPakPath);
+
 	// Load value of sys_game_folder from system.cfg into the sys_game_folder console variable
 	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
 #if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
 	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
 	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit);
 #else
-	LoadConfiguration("system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
+	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
 #endif
 
 	if (!m_pProjectManager->ParseProjectFile())
 	{
+		m_env.pCryPak->ClosePack(szConfigPakPath);
 		return false;
 	}
+
+	m_env.pCryPak->ClosePack(szConfigPakPath);
 
 	// Legacy support for setting decryption key from IGameStartup interface
 	// Should be removed when legacy game dll's are gone
@@ -1873,7 +1879,7 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 			}
 		}
 	}
-	
+
 	bool bRes = m_env.pCryPak->Init("");
 
 	if (bRes)
@@ -2512,7 +2518,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 #if defined(CVARS_WHITELIST)
 	m_pCVarsWhitelist = startupParams.pCVarsWhitelist;
 #endif // defined(CVARS_WHITELIST)
-	
+
 #if !defined(_RELEASE)
 	if (!startupParams.bDedicatedServer)
 	{
@@ -2521,7 +2527,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		{
 			startupParams.bDedicatedServer = true;
 		}
-}
+	}
 #endif // !defined(_RELEASE)
 
 #if defined(DEDICATED_SERVER)
@@ -2691,6 +2697,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	InlineInitializationProcessing("CSystem::Init PlatformOS");
 
 	{
+		m_FrameProfileSystem.Init();
+
 		//////////////////////////////////////////////////////////////////////////
 		// File system, must be very early
 		//////////////////////////////////////////////////////////////////////////
@@ -2756,8 +2764,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// Set this as soon as the system cvars got initialized.
 		static_cast<CCryPak* const>(m_env.pCryPak)->SetLocalizationFolder(g_cvars.sys_localization_folder->GetString());
 
-		m_FrameProfileSystem.Init();
-
 		//////////////////////////////////////////////////////////////////////////
 		//Load engine files
 		//////////////////////////////////////////////////////////////////////////
@@ -2785,8 +2791,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 
 		CryGetIMemReplay()->EnableAsynchMode();
-
-		m_FrameProfileSystem.Init();
 
 		m_pResourceManager->Init();
 
@@ -2860,7 +2864,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			{
 				pSysSpecCVar->Set(curSpecVal);
 			}
-		}		
+		}
 
 		if (!startupParams.bSkipRenderer)
 		{
@@ -2972,7 +2976,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		if (m_env.IsEditor())
 		{
 			if (!(stricmp(m_rDriver->GetString(), STR_DX11_RENDERER) == 0 ||
-				  stricmp(m_rDriver->GetString(), STR_DX12_RENDERER) == 0))
+			      stricmp(m_rDriver->GetString(), STR_DX12_RENDERER) == 0))
 			{
 				m_env.pLog->LogWarning("Editor only supports DX11 & DX12. Switching to DX11 Renderer.");
 				m_rDriver->Set(STR_DX11_RENDERER);
@@ -4981,7 +4985,7 @@ void CSystem::CreateSystemVars()
 	                                          "Sets the scale of profiling histograms.\n"
 	                                          "Usage: profileGraphScale 100");
 	m_sys_profile_pagefaultsgraph = REGISTER_INT("profile_pagefaults", 0, 0,
-	                                             "Enable drawing of page faults graph.");	
+	                                             "Enable drawing of page faults graph.");
 	m_sys_profile_network = REGISTER_INT("profile_network", 0, 0,
 	                                     "Enables network profiling");
 	m_sys_profile_peak = REGISTER_FLOAT("profile_peak", 10.0f, 0,
@@ -5434,11 +5438,11 @@ const char* CSystem::GetLoadingProfilerCallstack()
 #endif
 }
 
-CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args,EProfileDescription type)
+CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args, EProfileDescription type)
 {
 #if defined(ENABLE_LOADING_PROFILER)
 	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	return profiler.StartBlock(name, args,type);
+	return profiler.StartBlock(name, args, type);
 #else
 	return NULL;
 #endif

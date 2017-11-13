@@ -276,8 +276,11 @@ bool NavigationSystem::GetAgentTypeProperties(const NavigationAgentTypeID agentT
 
 MNM::AreaAnnotation NavigationSystem::GetAreaTypeAnnotation(const NavigationAreaTypeID areaTypeID) const
 {
-	const MNM::SAreaType* pAreaType = areaTypeID.IsValid() ? m_annotationsLibrary.GetAreaType(areaTypeID) : &m_annotationsLibrary.GetDefaultAreaType();
-	CRY_ASSERT(pAreaType);
+	const MNM::SAreaType* pAreaType = areaTypeID.IsValid() ? m_annotationsLibrary.GetAreaType(areaTypeID) : nullptr;
+	if (!pAreaType)
+	{
+		pAreaType = &m_annotationsLibrary.GetDefaultAreaType();
+	}
 	
 	MNM::AreaAnnotation annotation;
 	annotation.SetType(pAreaType->id);
@@ -446,8 +449,7 @@ void NavigationSystem::AddMeshChangeCallback(NavigationAgentTypeID agentTypeID,
 	if (agentTypeID && (agentTypeID <= m_agentTypes.size()))
 	{
 		AgentType& agentType = m_agentTypes[agentTypeID - 1];
-
-		stl::push_back_unique(agentType.callbacks, callback);
+		agentType.callbacks.AddUnique(callback);
 	}
 }
 
@@ -457,8 +459,7 @@ void NavigationSystem::RemoveMeshChangeCallback(NavigationAgentTypeID agentTypeI
 	if (agentTypeID && (agentTypeID <= m_agentTypes.size()))
 	{
 		AgentType& agentType = m_agentTypes[agentTypeID - 1];
-
-		stl::find_and_erase(agentType.callbacks, callback);
+		agentType.callbacks.Remove(callback);
 	}
 }
 
@@ -878,7 +879,7 @@ void NavigationSystem::ApplyAnnotationChanges()
 			AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
 			for (MNM::TileID tileId : affectedTiles)
 			{
-				agentType.annotationCallbacks.Call(mesh.agentTypeID, meshTriangles.meshId, tileId);
+				agentType.annotationCallbacks.CallSafe(mesh.agentTypeID, meshTriangles.meshId, tileId);
 			}
 		}
 	}
@@ -1511,15 +1512,8 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 			m_offMeshNavigationManager.RefreshConnections(result.meshID, tileID);
 			gAIEnv.pMNMPathfinder->OnNavigationMeshChanged(result.meshID, tileID);
 
-			const AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
-			AgentType::Callbacks::const_iterator cit = agentType.callbacks.begin();
-			AgentType::Callbacks::const_iterator cend = agentType.callbacks.end();
-
-			for (; cit != cend; ++cit)
-			{
-				const NavigationMeshChangeCallback& callback = *cit;
-				callback(mesh.agentTypeID, result.meshID, tileID);
-			}
+			AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
+			agentType.callbacks.CallSafe(mesh.agentTypeID, result.meshID, tileID);
 		}
 		break;
 	case TileTaskResult::Failed:
@@ -1533,15 +1527,8 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 				m_offMeshNavigationManager.RefreshConnections(result.meshID, tileID);
 				gAIEnv.pMNMPathfinder->OnNavigationMeshChanged(result.meshID, tileID);
 
-				const AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
-				AgentType::Callbacks::const_iterator cit = agentType.callbacks.begin();
-				AgentType::Callbacks::const_iterator cend = agentType.callbacks.end();
-
-				for (; cit != cend; ++cit)
-				{
-					const NavigationMeshChangeCallback& callback = *cit;
-					callback(mesh.agentTypeID, result.meshID, tileID);
-				}
+				AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
+				agentType.callbacks.CallSafe(mesh.agentTypeID, result.meshID, tileID);
 			}
 		}
 		break;
@@ -2867,64 +2854,18 @@ size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID
 	return 0;
 }
 
-size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, float minIslandArea) const
+size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea /*= 0.0f*/) const
 {
-	//TODO: Use filter?
-	
 	size_t numBorders = 0;
+	if (!m_meshes.validate(meshID))
+		return numBorders;
 
-	if (m_meshes.validate(meshID))
-	{
-		const MNM::vector3_t min(MNM::real_t(aabb.min.x), MNM::real_t(aabb.min.y), MNM::real_t(aabb.min.z));
-		const MNM::vector3_t max(MNM::real_t(aabb.max.x), MNM::real_t(aabb.max.y), MNM::real_t(aabb.max.z));
-		const NavigationMesh& mesh = m_meshes[meshID];
-		const MNM::aabb_t aabb(min, max);
-		const size_t maxTriangleCount = 4096;
-		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, nullptr, minIslandArea);
-		//MNM::Tile::Triangle triangle;
+	const MNM::vector3_t min(MNM::real_t(aabb.min.x), MNM::real_t(aabb.min.y), MNM::real_t(aabb.min.z));
+	const MNM::vector3_t max(MNM::real_t(aabb.max.x), MNM::real_t(aabb.max.y), MNM::real_t(aabb.max.z));
+	const NavigationMesh& mesh = m_meshes[meshID];
+	const MNM::aabb_t mnmAABB(min, max);
 
-		if (triangleCount > 0)
-		{
-			MNM::vector3_t verts[3];
-
-			for (size_t i = 0; i < triangleCount; ++i)
-			{
-				size_t linkedEdges = 0;
-				mesh.navMesh.GetLinkedEdges(triangleIDs[i], linkedEdges);
-				mesh.navMesh.GetVertices(triangleIDs[i], verts[0], verts[1], verts[2]);
-
-				for (size_t e = 0; e < 3; ++e)
-				{
-					if ((linkedEdges & (size_t(1) << e)) == 0)
-					{
-						if (pBorders != NULL)
-						{
-							const Vec3 v0 = verts[e].GetVec3();
-							const Vec3 v1 = verts[(e + 1) % 3].GetVec3();
-							const Vec3 vOther = verts[(e + 2) % 3].GetVec3();
-
-							const Vec3 edge = Vec3(v0 - v1).GetNormalized();
-							const Vec3 otherEdge = Vec3(v0 - vOther).GetNormalized();
-							const Vec3 up = edge.Cross(otherEdge);
-							const Vec3 out = up.Cross(edge);
-
-							pBorders[numBorders * 3 + 0] = v0;
-							pBorders[numBorders * 3 + 1] = v1;
-							pBorders[numBorders * 3 + 2] = out;
-						}
-
-						++numBorders;
-
-						if (pBorders != NULL && numBorders == maxBorderCount)
-							return numBorders;
-					}
-				}
-			}
-		}
-	}
-
-	return numBorders;
+	return mesh.navMesh.GetMeshBorders(mnmAABB, pFilter, pBorders, maxBorderCount, minIslandArea);
 }
 
 size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, float minIslandArea) const
