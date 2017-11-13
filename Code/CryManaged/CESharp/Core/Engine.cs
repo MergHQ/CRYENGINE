@@ -96,7 +96,7 @@ namespace CryEngine
 			// Make sure we unify shutdown behavior with unload
 			OnUnloadStart();
 
-			GameFramework.Dispose();
+			CryEngine.GameFramework.Instance?.Dispose();
 
 			GC.Collect();
 			GC.WaitForPendingFinalizers();

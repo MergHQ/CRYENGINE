@@ -207,7 +207,7 @@ namespace CryEngine
 		/// </summary>
 		public override void Dispose()
 		{
-			Engine.GameFramework.UnregisterListener(this);
+			Engine.GameFramework?.UnregisterListener(this);
 			_updateReceivers.Clear();
 			_renderReceivers.Clear();
 

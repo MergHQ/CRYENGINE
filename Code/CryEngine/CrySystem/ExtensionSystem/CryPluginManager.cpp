@@ -380,7 +380,7 @@ void CCryPluginManager::OnPluginUnloaded(Cry::IEnginePlugin* pPlugin)
 {
 	for (uint8 i = 0; i < static_cast<uint8>(Cry::IEnginePlugin::EUpdateStep::Count); ++i)
 	{
-		std::vector<Cry::IEnginePlugin*>& updatedPlugins = GetUpdatedPluginsForStep(static_cast<Cry::IEnginePlugin::EUpdateStep>(i));
+		std::vector<Cry::IEnginePlugin*>& updatedPlugins = GetUpdatedPluginsForStep(static_cast<Cry::IEnginePlugin::EUpdateStep>(1 << i));
 
 		stl::find_and_erase(updatedPlugins, pPlugin);
 	}
