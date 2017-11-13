@@ -268,9 +268,9 @@ public:
 		OkPaintStart,
 	};
 
-protected:
-
 	typedef std::vector<uint16> SpanExtraInfo;
+
+protected:
 
 	struct ContourVertex
 	{

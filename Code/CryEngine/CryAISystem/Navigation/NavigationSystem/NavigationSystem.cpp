@@ -276,8 +276,11 @@ bool NavigationSystem::GetAgentTypeProperties(const NavigationAgentTypeID agentT
 
 MNM::AreaAnnotation NavigationSystem::GetAreaTypeAnnotation(const NavigationAreaTypeID areaTypeID) const
 {
-	const MNM::SAreaType* pAreaType = areaTypeID.IsValid() ? m_annotationsLibrary.GetAreaType(areaTypeID) : &m_annotationsLibrary.GetDefaultAreaType();
-	CRY_ASSERT(pAreaType);
+	const MNM::SAreaType* pAreaType = areaTypeID.IsValid() ? m_annotationsLibrary.GetAreaType(areaTypeID) : nullptr;
+	if (!pAreaType)
+	{
+		pAreaType = &m_annotationsLibrary.GetDefaultAreaType();
+	}
 	
 	MNM::AreaAnnotation annotation;
 	annotation.SetType(pAreaType->id);
