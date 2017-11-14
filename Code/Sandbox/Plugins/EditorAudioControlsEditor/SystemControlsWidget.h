@@ -33,12 +33,12 @@ public:
 	CSystemControlsWidget(CSystemAssetsManager* pAssetsManager);
 	virtual ~CSystemControlsWidget() override;
 
-	bool                         IsEditing() const;
-	std::vector<CSystemControl*> GetSelectedControls() const;
-	void                         SelectConnectedSystemControl(CSystemControl const* const pControl);
-	void                         Reload();
-	void                         BackupTreeViewStates();
-	void                         RestoreTreeViewStates();
+	bool                       IsEditing() const;
+	std::vector<CSystemAsset*> GetSelectedAssets() const;
+	void                       SelectConnectedSystemControl(CSystemControl const* const pControl);
+	void                       Reload();
+	void                       BackupTreeViewStates();
+	void                       RestoreTreeViewStates();
 
 signals:
 

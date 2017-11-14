@@ -58,7 +58,9 @@ private:
 	void GetScopes(CSystemAsset const* const pItem, std::unordered_set<Scope>& scopes);
 	void WriteControlToXML(XmlNodeRef const pNode, CSystemControl* pControl, string const& path);
 	void WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, int const platformIndex = -1);
-	void WriteEditorData(CSystemAsset const* const pLibrary, XmlNodeRef const pParentNode) const;
+	void WriteLibraryEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const;
+	void WriteFolderEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const;
+	void WriteControlsEditorData(CSystemAsset const& parentAsset, XmlNodeRef const pParentNode) const;
 
 	void CheckOutFile(string const& filepath);
 	void DeleteLibraryFile(string const& filepath);

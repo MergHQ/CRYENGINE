@@ -942,7 +942,7 @@ void CLevelSystem::Rescan(const char* levelsFolder, const uint32 tag)
 			if (m_pSystem->IsMODValid(pModArg->GetValue()))
 			{
 				m_levelsFolder.Format("Mods/%s/%s/%s", pModArg->GetValue(), PathUtil::GetGameFolder().c_str(), levelsFolder);
-				ScanFolder(0, true, tag);
+				ScanFolder(m_levelsFolder, true, tag);
 			}
 		}
 
@@ -950,7 +950,7 @@ void CLevelSystem::Rescan(const char* levelsFolder, const uint32 tag)
 	}
 
 	m_levelInfos.reserve(64);
-	ScanFolder(0, false, tag);
+	ScanFolder(m_levelsFolder, false, tag);
 
 	g_LevelNameAutoComplete.levels.clear();
 	for (int i = 0; i < (int)m_levelInfos.size(); i++)
@@ -991,21 +991,9 @@ void CLevelSystem::LoadRotation()
 }
 
 //------------------------------------------------------------------------
-void CLevelSystem::ScanFolder(const char* subfolder, bool modFolder, const uint32 tag)
+void CLevelSystem::ScanFolder(const string& rootFolder, bool modFolder, const uint32 tag)
 {
-	string searchedPath(m_levelsFolder);
-	if (subfolder != nullptr && subfolder[0] != '\0')
-	{
-		searchedPath = PathUtil::Make(searchedPath, subfolder);
-	}
-
-	if (!searchedPath.empty())
-	{
-		searchedPath += CRY_NATIVE_PATH_SEPSTR;
-	}
-
-	string rootFolder = searchedPath;
-	searchedPath += "*.*";
+	string searchedPath = PathUtil::Make(rootFolder, "*.*");
 
 	_finddata_t fd;
 	intptr_t handle = 0;
@@ -1025,7 +1013,8 @@ void CLevelSystem::ScanFolder(const char* subfolder, bool modFolder, const uint3
 			{
 				if (!rootFolder.empty())
 				{
-					ScanFolder(rootFolder + CRY_NATIVE_PATH_SEPSTR + fd.name, modFolder, tag);
+					string nextRootFolder = PathUtil::Make(rootFolder, fd.name);
+					ScanFolder(nextRootFolder, modFolder, tag);
 				}
 				else
 				{
@@ -1043,17 +1032,8 @@ void CLevelSystem::ScanFolder(const char* subfolder, bool modFolder, const uint3
 
 			CLevelInfo levelInfo;
 
-			levelInfo.m_levelPaks = rootFolder + fd.name;
-			levelInfo.m_levelPath = PathUtil::GetPathWithoutFilename(levelInfo.m_levelPaks);
-			if (levelInfo.m_levelPath[levelInfo.m_levelPath.size() - 1] == '/')
-			{
-				levelInfo.m_levelPath.erase(levelInfo.m_levelPath.size() - 1);
-			}
-			else if (levelInfo.m_levelPath[levelInfo.m_levelPath.size() - 1] == '\\')
-			{
-				levelInfo.m_levelPath.erase(levelInfo.m_levelPath.size() - 1);
-			}
-
+			levelInfo.m_levelPaks = PathUtil::Make(rootFolder, fd.name);
+			levelInfo.m_levelPath = rootFolder;
 			levelInfo.m_levelName = PathUtil::GetFile(levelInfo.m_levelPath);
 
 			levelInfo.m_isModLevel = modFolder;
@@ -1063,7 +1043,7 @@ void CLevelSystem::ScanFolder(const char* subfolder, bool modFolder, const uint3
 			SwapEndian(levelInfo.m_scanTag, eBigEndian);
 			SwapEndian(levelInfo.m_levelTag, eBigEndian);
 
-			CLevelInfo* pExistingInfo = GetLevelInfoInternal(levelInfo.m_levelName);
+			CLevelInfo* pExistingInfo = GetLevelInfoByPathInternal(levelInfo.m_levelPath);
 			if (pExistingInfo && pExistingInfo->MetadataLoaded() == false)
 			{
 				//Reload metadata if it failed to load
@@ -1122,36 +1102,35 @@ ILevelInfo* CLevelSystem::GetLevelInfo(const char* levelName)
 //------------------------------------------------------------------------
 CLevelInfo* CLevelSystem::GetLevelInfoInternal(const char* levelName)
 {
-	// If level not found by full name try comparing with only filename
+	if (CLevelInfo* pLevelInfo = GetLevelInfoByPathInternal(levelName))
+	{
+		return pLevelInfo;
+	}
+
+	// Try stripping out the folder to find the raw level name
+	string sLevelName = PathUtil::GetFile(levelName);
 	for (std::vector<CLevelInfo>::iterator it = m_levelInfos.begin(); it != m_levelInfos.end(); ++it)
 	{
-		if (!strcmpi(it->GetName(), levelName))
+		if (!strcmpi(it->GetName(), sLevelName))
 		{
 			return &(*it);
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
+	return nullptr;
+}
+
+//------------------------------------------------------------------------
+CLevelInfo* CLevelSystem::GetLevelInfoByPathInternal(const char* szLevelPath)
+{
 	for (std::vector<CLevelInfo>::iterator it = m_levelInfos.begin(); it != m_levelInfos.end(); ++it)
 	{
-		if (!strcmpi(PathUtil::GetFileName(it->GetName()), levelName))
+		if (!strcmpi(it->GetPath(), szLevelPath))
 		{
 			return &(*it);
 		}
 	}
-
-	// Try stripping out the folder to find the raw filename
-	string sLevelName(levelName);
-	size_t lastSlash = sLevelName.find_last_of('\\');
-	if (lastSlash == string::npos)
-		lastSlash = sLevelName.find_last_of('/');
-	if (lastSlash != string::npos)
-	{
-		sLevelName = sLevelName.substr(lastSlash + 1, sLevelName.size() - lastSlash - 1);
-		return GetLevelInfoInternal(sLevelName.c_str());
-	}
-
-	return 0;
+	return nullptr;
 }
 
 //------------------------------------------------------------------------

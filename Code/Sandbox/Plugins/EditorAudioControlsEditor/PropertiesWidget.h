@@ -13,7 +13,7 @@ namespace ACE
 class CConnectionsWidget;
 class CSystemAssetsManager;
 class CImplItem;
-class CSystemControl;
+class CSystemAsset;
 
 class CPropertiesWidget final : public QWidget
 {
@@ -30,7 +30,7 @@ public:
 
 public slots:
 
-	void SetSelectedControls(std::vector<CSystemControl*> const& selectedControls);
+	void SetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets);
 
 private:
 

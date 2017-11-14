@@ -35,9 +35,12 @@ private:
 
 	void            LoadScopesImpl(string const& path);
 
-	void            LoadEditorData(XmlNodeRef const pEditorDataNode, CSystemAsset* const pRootItem);
-	void            LoadAllFolders(XmlNodeRef const pRootFoldersNode, CSystemAsset* const pParentItem);
-	void            LoadFolderData(XmlNodeRef const pRootFoldersNode, CSystemAsset* const pParentItem);
+	void            LoadEditorData(XmlNodeRef const pEditorDataNode, CSystemAsset& library);
+	void            LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CSystemAsset& library);
+	void            LoadAllFolders(XmlNodeRef const pFoldersNode, CSystemAsset& library);
+	void            LoadFolderData(XmlNodeRef const pFolderNode, CSystemAsset& parentAsset);
+	void            LoadAllControlsEditorData(XmlNodeRef const pControlsNode);
+	void            LoadControlsEditorData(XmlNodeRef const pParentNode);
 
 	CSystemAsset*   AddUniqueFolderPath(CSystemAsset* pParent, QString const& path);
 

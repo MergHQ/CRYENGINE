@@ -42,7 +42,10 @@ public:
 	void            RemoveChild(CSystemAsset const* const pChildControl);
 
 	string          GetName() const { return m_name; }
-	virtual void    SetName(string const& name) { m_name = name; }
+	virtual void    SetName(string const& name);
+
+	string          GetDescription() const { return m_description; }
+	virtual void    SetDescription(string const& description);
 
 	bool            IsHiddenDefault() const { return m_isHiddenDefault; }
 	void            SetHiddenDefault(bool const isHiddenDefault);
@@ -59,11 +62,14 @@ public:
 	bool            HasControl() const { return m_hasControl; }
 	void            SetHasControl(bool const hasControl) { m_hasControl = hasControl; }
 
+	virtual void    Serialize(Serialization::IArchive& ar);
+
 protected:
 
 	CSystemAsset*              m_pParent = nullptr;
 	std::vector<CSystemAsset*> m_children;
 	string                     m_name;
+	string                     m_description = "";
 	ESystemItemType const      m_type;
 	bool                       m_isHiddenDefault = false;
 	bool                       m_isModified = false;
@@ -74,48 +80,50 @@ protected:
 
 class CSystemControl final : public CSystemAsset
 {
-	friend class CAudioControlsLoader;
-	friend class CAudioControlsWriter;
-	friend class CUndoControlModified;
-
 public:
 
 	CSystemControl() = default;
 	CSystemControl(string const& name, CID const id, ESystemItemType const type);
 	~CSystemControl();
 
-	CID             GetId() const            { return m_id; }
+	CID           GetId() const            { return m_id; }
 
-	virtual void    SetName(string const& name) override;
+	virtual void  SetName(string const& name) override;
 
-	Scope           GetScope() const { return m_scope; }
-	void            SetScope(Scope const scope);
+	virtual void  SetDescription(string const& description) override;
 
-	bool            IsAutoLoad() const { return m_isAutoLoad; }
-	void            SetAutoLoad(bool const isAutoLoad);
+	Scope         GetScope() const { return m_scope; }
+	void          SetScope(Scope const scope);
 
-	float           GetRadius() const { return m_radius; }
-	void            SetRadius(float const radius) { m_radius = radius; }
+	bool          IsAutoLoad() const { return m_isAutoLoad; }
+	void          SetAutoLoad(bool const isAutoLoad);
 
-	float           GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
-	void            SetOcclusionFadeOutDistance(float const fadeOutArea);
+	float         GetRadius() const { return m_radius; }
+	void          SetRadius(float const radius) { m_radius = radius; }
 
-	size_t          GetConnectionCount() const { return m_connectedControls.size(); }
-	void            AddConnection(ConnectionPtr const pConnection);
-	void            RemoveConnection(ConnectionPtr const pConnection);
-	void            RemoveConnection(CImplItem* const pImplControl);
-	void            ClearConnections();
-	ConnectionPtr   GetConnectionAt(int const index) const;
-	ConnectionPtr   GetConnection(CID const id) const;
-	ConnectionPtr   GetConnection(CImplItem const* const pImplControl) const;
-	void            ReloadConnections();
-	void            LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
+	float         GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
+	void          SetOcclusionFadeOutDistance(float const fadeOutArea);
 
-	void            MatchRadiusToAttenuation();
-	bool            IsMatchRadiusToAttenuationEnabled() const { return m_matchRadiusAndAttenuation; }
-	void            SetMatchRadiusToAttenuationEnabled(bool const isEnabled) { m_matchRadiusAndAttenuation = isEnabled; }
+	size_t        GetConnectionCount() const { return m_connectedControls.size(); }
+	void          AddConnection(ConnectionPtr const pConnection);
+	void          RemoveConnection(ConnectionPtr const pConnection);
+	void          RemoveConnection(CImplItem* const pImplControl);
+	void          ClearConnections();
+	ConnectionPtr GetConnectionAt(int const index) const;
+	ConnectionPtr GetConnection(CID const id) const;
+	ConnectionPtr GetConnection(CImplItem const* const pImplControl) const;
+	void          ReloadConnections();
+	void          LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
 
-	void            Serialize(Serialization::IArchive& ar);
+	void          MatchRadiusToAttenuation();
+	bool          IsMatchRadiusToAttenuationEnabled() const { return m_matchRadiusAndAttenuation; }
+	void          SetMatchRadiusToAttenuationEnabled(bool const isEnabled) { m_matchRadiusAndAttenuation = isEnabled; }
+
+	virtual void  Serialize(Serialization::IArchive& ar) override;
+
+	// All the raw connection nodes. Used for reloading the data when switching middleware.
+	void          AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
+	XMLNodeList&  GetRawXMLConnections(int const platformIndex = -1);
 
 private:
 
@@ -133,9 +141,6 @@ private:
 	bool                       m_isAutoLoad = true;
 	bool                       m_matchRadiusAndAttenuation = true;
 
-	// All the raw connection nodes. Used for reloading the data when switching middleware.
-	void         AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
-	XMLNodeList& GetRawXMLConnections(int const platformIndex = -1);
 	std::map<int, XMLNodeList> m_connectionNodes;
 
 	bool                       m_modifiedSignalEnabled = true;

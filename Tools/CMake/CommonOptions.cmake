@@ -30,3 +30,9 @@ endif()
 if (WIN32 OR WIN64 OR LINUX)
 	option(OPTION_DEDICATED_SERVER "Build engine in Dedicated Server mode" OFF)
 endif()
+
+option(OPTION_LTCG "Enable link-time code generation/optimization" OFF)
+
+if (MSVC_VERSION)
+option(OPTION_SHOW_COMPILE_METRICS "Show MSVC compilation metrics" OFF)
+endif()

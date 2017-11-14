@@ -1212,7 +1212,7 @@ endif()
 if (RENDERER_VULKAN)
 	add_subdirectory("${CRY_LIBS_DIR}/spirv-cross" "${CMAKE_CURRENT_BINARY_DIR}/spirv-cross")
 
-	CryEngineModule(CryRenderVulkan PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+	CryEngineModule(CryRenderVulkan FORCE_SHARED_WIN PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_RENDERER_VULKAN=10 -DDO_RENDERSTATS -D_RENDERER)
 	target_include_directories(${THIS_PROJECT} PRIVATE ..)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/squish-ccr")

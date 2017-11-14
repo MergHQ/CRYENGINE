@@ -18,6 +18,7 @@ class CSystemAssetsManager;
 class CSystemControlsWidget;
 class CPropertiesWidget;
 class CMiddlewareDataWidget;
+class CSystemAsset;
 class CSystemControl;
 class CFileMonitorSystem;
 class CFileMonitorMiddleware;
@@ -90,7 +91,7 @@ private:
 	void SelectConnectedSystemControl(CSystemControl const* const pControl);
 	bool TryClose();
 
-	std::vector<CSystemControl*> GetSelectedSystemControls();
+	std::vector<CSystemAsset*> GetSelectedSystemAssets();
 
 	CSystemControlsWidget* CreateSystemControlsWidget();
 	CPropertiesWidget*     CreatePropertiesWidget();

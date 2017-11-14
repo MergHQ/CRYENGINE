@@ -30,10 +30,6 @@ static QVariant GetHeaderData(int const section, Qt::Orientation const orientati
 
 class CSystemAssetsManager
 {
-	friend class IUndoControlOperation;
-	friend class CUndoControlModified;
-	friend class CSystemControl;
-
 public:
 
 	CSystemAssetsManager();
@@ -83,6 +79,12 @@ public:
 	void UpdateLibraryConnectionStates(CSystemAsset* pAsset);
 	void UpdateAssetConnectionStates(CSystemAsset* const pAsset);
 
+	void OnControlAboutToBeModified(CSystemControl* const pControl);
+	void OnControlModified(CSystemControl* const pControl);
+	void OnConnectionAdded(CSystemControl* const pControl, CImplItem* const pImplControl);
+	void OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl);
+	void OnAssetRenamed();
+
 	using ModifiedLibraryNames = std::set<string>;
 	ModifiedLibraryNames GetModifiedLibraries() const { return m_modifiedLibraryNames; }
 
@@ -100,6 +102,7 @@ public:
 	CCrySignal<void(CSystemAsset*)>                signalItemAdded;
 	CCrySignal<void(CSystemAsset*)>                signalItemAboutToBeRemoved;
 	CCrySignal<void(CSystemAsset*, CSystemAsset*)> signalItemRemoved;
+	CCrySignal<void()>                             signalAssetRenamed;
 
 	CCrySignal<void(CSystemControl*)>              signalControlModified;
 	CCrySignal<void(CSystemControl*)>              signalConnectionAdded;
@@ -108,11 +111,6 @@ public:
 private:
 
 	CSystemAsset* CreateAndConnectImplItemsRecursively(CImplItem* const pImplItem, CSystemAsset* const pParent);
-	void          OnControlAboutToBeModified(CSystemControl* const pControl);
-	void          OnControlModified(CSystemControl* const pControl);
-	void          OnConnectionAdded(CSystemControl* const pControl, CImplItem* const pImplControl);
-	void          OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl);
-
 	CID           GenerateUniqueId() { return m_nextId++; }
 
 	using ScopesInfo = std::map<Scope, SScopeInfo>;

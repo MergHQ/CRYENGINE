@@ -39,7 +39,6 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	, m_pMiddlewareDataWidget(nullptr)
 {
 	m_pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	m_isModified = m_pAssetsManager->IsDirty();
 
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
@@ -47,10 +46,6 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	QVBoxLayout* const pWindowLayout = new QVBoxLayout();
 	pWindowLayout->setContentsMargins(0, 0, 0, 0);
 	SetContent(pWindowLayout);
-
-	InitMenu();
-	InitToolbar(pWindowLayout);
-	RegisterWidgets();
 
 	if (m_pAssetsManager->IsLoading())
 	{
@@ -63,6 +58,12 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		CAudioControlsEditorPlugin::ReloadModels(true);
 		CAudioControlsEditorPlugin::signalLoaded();
 	}
+
+	m_isModified = m_pAssetsManager->IsDirty();
+
+	InitMenu();
+	InitToolbar(pWindowLayout);
+	RegisterWidgets();
 
 	m_pAssetsManager->UpdateAllConnectionStates();
 	CheckErrorMask();
@@ -84,11 +85,6 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	{
 		m_isModified = isDirty;
 		m_pSaveAction->setEnabled(isDirty);
-
-		if (isDirty && (m_pMiddlewareDataWidget != nullptr))
-		{
-			m_pMiddlewareDataWidget->InvalidateFilter();
-		}
 	}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(this, &CAudioControlsEditorWindow::SaveBeforeImplementationChange);
@@ -196,7 +192,7 @@ CPropertiesWidget* CAudioControlsEditorWindow::CreatePropertiesWidget()
 	{
 		if (m_pPropertiesWidget != nullptr)
 		{
-			m_pPropertiesWidget->SetSelectedControls(GetSelectedSystemControls());
+			m_pPropertiesWidget->SetSelectedAssets(GetSelectedSystemAssets());
 		}
 	});
 	
@@ -204,7 +200,7 @@ CPropertiesWidget* CAudioControlsEditorWindow::CreatePropertiesWidget()
 	QObject::connect(this, &CAudioControlsEditorWindow::OnStopTextFiltering, pPropertiesWidget, &CPropertiesWidget::RestoreTreeViewStates);
 	QObject::connect(pPropertiesWidget, &QObject::destroyed, this, &CAudioControlsEditorWindow::OnPropertiesWidgetDestruction);
 
-	m_pPropertiesWidget->SetSelectedControls(GetSelectedSystemControls());
+	m_pPropertiesWidget->SetSelectedAssets(GetSelectedSystemAssets());
 	return pPropertiesWidget;
 }
 
@@ -625,16 +621,16 @@ void CAudioControlsEditorWindow::OnPreferencesDialog()
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<CSystemControl*> CAudioControlsEditorWindow::GetSelectedSystemControls()
+std::vector<CSystemAsset*> CAudioControlsEditorWindow::GetSelectedSystemAssets()
 {
-	std::vector<CSystemControl*> controls;
+	std::vector<CSystemAsset*> assets;
 
 	if (m_pSystemControlsWidget != nullptr)
 	{
-		controls = m_pSystemControlsWidget->GetSelectedControls();
+		assets = m_pSystemControlsWidget->GetSelectedAssets();
 	}
 
-	return controls;
+	return assets;
 }
 
 //////////////////////////////////////////////////////////////////////////

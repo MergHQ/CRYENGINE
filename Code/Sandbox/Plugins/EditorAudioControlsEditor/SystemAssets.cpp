@@ -54,6 +54,27 @@ void CSystemAsset::RemoveChild(CSystemAsset const* const pChildControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystemAsset::SetName(string const& name)
+{
+	if (name != m_name)
+	{
+		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
+		SetModified(true);
+		CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAsset::SetDescription(string const& description)
+{
+	if (description != m_description)
+	{
+		m_description = description;
+		SetModified(true);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystemAsset::SetHiddenDefault(bool const isHiddenDefault)
 {
 	m_isHiddenDefault = isHiddenDefault;
@@ -81,6 +102,29 @@ void CSystemAsset::SetModified(bool const isModified, bool const isForced /* = f
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystemAsset::Serialize(Serialization::IArchive& ar)
+{
+	if (ar.openBlock("properties", "+Properties"))
+	{
+		// Name
+		string const newName = m_name;
+		ar(newName, "name", "Name");
+
+		// Description
+		string const newDescription = m_description;
+		ar(newDescription, "description", "Description");
+
+		if (ar.isInput())
+		{
+			SetName(newName);
+			SetDescription(newDescription);
+		}
+
+		ar.closeBlock();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CSystemControl::CSystemControl(string const& name, CID const id, ESystemItemType const type)
 	: CSystemAsset(name, type)
 	, m_id(id)
@@ -102,6 +146,18 @@ void CSystemControl::SetName(string const& name)
 	{
 		SignalControlAboutToBeModified();
 		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
+		SignalControlModified();
+		CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControl::SetDescription(string const& description)
+{
+	if (description != m_description)
+	{
+		SignalControlAboutToBeModified();
+		m_description = description;
 		SignalControlModified();
 	}
 }
@@ -416,6 +472,10 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 		string const newName = m_name;
 		ar(newName, "name", "Name");
 
+		// Description
+		string const newDescription = m_description;
+		ar(newDescription, "description", "Description");
+
 		// Scope
 		Serialization::StringList scopeList;
 		ScopeInfoList scopeInfoList;
@@ -507,6 +567,7 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 			SignalControlAboutToBeModified();
 			m_modifiedSignalEnabled = false; // we are manually sending the signals and don't want the other SetX functions to send anymore
 			SetName(newName);
+			SetDescription(newDescription);
 			SetScope(newScope);
 			SetAutoLoad(isAutoLoad);
 			SetRadius(radius);
