@@ -304,7 +304,7 @@ struct IRenderAuxGeom
 
 	static IRenderAuxGeom* GetAux()
 	{
-		return gEnv->pRenderer ? gEnv->pRenderer->GetIRenderAuxGeom() : nullptr;
+		return gEnv->pRenderer ? gEnv->pRenderer->GetIRenderAuxGeom() : gEnv->pAuxGeomRenderer;
 	}
 };
 

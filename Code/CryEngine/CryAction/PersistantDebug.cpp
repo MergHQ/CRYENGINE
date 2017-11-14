@@ -247,12 +247,10 @@ void CPersistantDebug::Update(float frameTime)
 	if (m_objects.empty())
 		return;
 
-	if (!gEnv->pRenderer)
-	{
+	IRenderAuxGeom* pAux = IRenderAuxGeom::GetAux();
+	if(pAux == nullptr)
 		return;
-	}
 
-	IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 	static const int flags3D = e_Mode3D | e_AlphaBlended | e_DrawInFrontOff | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn;
 	static const int flags2D = e_Mode2D | e_AlphaBlended;
 

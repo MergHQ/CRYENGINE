@@ -4821,7 +4821,7 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 {
 #if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
 	if (m_pWorld->m_vars.netDebugDraw && m_pNetStateHistory && m_bAwake) {
-		IRenderAuxGeom* pAux = gEnv->pRenderer ? gEnv->pRenderer->GetIRenderAuxGeom() : NULL;
+		IRenderAuxGeom* pAux = IRenderAuxGeom::GetAux();
 		if (pAux) {
 			{
 				ReadLock lock(m_lockNetInterp);
