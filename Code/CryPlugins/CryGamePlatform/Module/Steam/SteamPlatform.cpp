@@ -53,6 +53,12 @@ namespace Cry
 
 			bool CPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 			{
+				if (env.IsEditor())
+				{
+					// Don't use Steam integration in Sandbox
+					return true;
+				}
+
 				int steam_appId = 0;
 				REGISTER_CVAR(steam_appId, steam_appId, VF_REQUIRE_APP_RESTART, "Override Steam application id, only possible during development! Requires application restart.");
 
