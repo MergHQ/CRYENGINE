@@ -68,7 +68,7 @@ CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemI
 	{
 		ESystemItemType const parentType = pParent->GetType();
 
-		if ((parentType == ESystemItemType::Folder || parentType == ESystemItemType::Library) || (parentType == ESystemItemType::Switch && type == ESystemItemType::State))
+		if (((parentType == ESystemItemType::Folder) || (parentType == ESystemItemType::Library)) || ((parentType == ESystemItemType::Switch) && (type == ESystemItemType::State)))
 		{
 			CSystemControl* const pFoundControl = FindControl(name, type, pParent);
 
@@ -323,6 +323,12 @@ void CSystemAssetsManager::OnConnectionAdded(CSystemControl* const pControl, CIm
 void CSystemAssetsManager::OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl)
 {
 	signalConnectionRemoved(pControl);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAssetsManager::OnAssetRenamed()
+{
+	signalAssetRenamed();
 }
 
 //////////////////////////////////////////////////////////////////////////

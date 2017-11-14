@@ -200,6 +200,10 @@ QVariant CAudioLibraryModel::data(QModelIndex const& index, int role) const
 			{
 				return tr("Contains no audio control");
 			}
+			else if (!pLibrary->GetDescription().IsEmpty())
+			{
+				return tr(pLibrary->GetDescription());
+			}
 
 			break;
 
@@ -241,7 +245,6 @@ bool CAudioLibraryModel::setData(QModelIndex const& index, QVariant const& value
 						if (!newName.empty() && newName.compareNoCase(oldName) != 0)
 						{
 							pItem->SetName(Utils::GenerateUniqueLibraryName(newName, *m_pAssetsManager));
-							pItem->SetModified(true);
 						}
 
 						return true;
@@ -516,6 +519,10 @@ QVariant CSystemControlsModel::data(QModelIndex const& index, int role) const
 			{
 				return tr("Contains no state");
 			}
+			else if (!pItem->GetDescription().IsEmpty())
+			{
+				return tr(pItem->GetDescription());
+			}
 
 			break;
 
@@ -579,11 +586,9 @@ bool CSystemControlsModel::setData(QModelIndex const& index, QVariant const& val
 							case ESystemItemType::Trigger:
 							case ESystemItemType::Environment:
 								pItem->SetName(Utils::GenerateUniqueControlName(newName, itemType, *m_pAssetsManager));
-								pItem->SetModified(true);
 								break;
 							case ESystemItemType::Folder:
 								pItem->SetName(Utils::GenerateUniqueName(newName, itemType, pItem->GetParent()));
-								pItem->SetModified(true);
 								break;
 							default:
 								CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] The item type '%d' is not handled!)", itemType);
@@ -909,7 +914,7 @@ void CSystemControlsFilterProxyModel::EnableControl(bool const isEnabled, ESyste
 namespace AudioModelUtils
 {
 //////////////////////////////////////////////////////////////////////////
-void GetAssetsFromIndices(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls)
+void GetAssetsFromIndexesSeparated(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls)
 {
 	for (auto const& index : list)
 	{
@@ -931,6 +936,20 @@ void GetAssetsFromIndices(QModelIndexList const& list, std::vector<CSystemLibrar
 				outControls.emplace_back(reinterpret_cast<CSystemControl*>(internalPtr.value<intptr_t>()));
 				break;
 			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void GetAssetsFromIndexesCombined(QModelIndexList const& list, std::vector<CSystemAsset*>& outAssets)
+{
+	for (auto const& index : list)
+	{
+		QVariant const internalPtr = index.data(static_cast<int>(EDataRole::InternalPointer));
+
+		if (internalPtr.isValid())
+		{
+			outAssets.emplace_back(reinterpret_cast<CSystemAsset*>(internalPtr.value<intptr_t>()));
 		}
 	}
 }

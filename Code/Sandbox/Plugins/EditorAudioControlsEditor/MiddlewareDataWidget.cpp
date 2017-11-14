@@ -111,12 +111,24 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* pAssetsManage
 			m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pEditorImpl->GetName()));
 		}
 	}, reinterpret_cast<uintptr_t>(this));
+
+	m_pAssetsManager->signalIsDirty.Connect([&](bool const isDirty)
+	{
+		if (isDirty)
+		{
+			if (m_pFilterProxyModel->IsHideConnected())
+			{
+				m_pFilterProxyModel->invalidate();
+			}
+		}
+	}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -239,15 +251,6 @@ void CMiddlewareDataWidget::Reset()
 {
 	m_pAssetsModel->Reset();
 	m_pFilterProxyModel->invalidate();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::InvalidateFilter()
-{
-	if (m_pFilterProxyModel->IsHideConnected())
-	{
-		m_pFilterProxyModel->invalidate();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

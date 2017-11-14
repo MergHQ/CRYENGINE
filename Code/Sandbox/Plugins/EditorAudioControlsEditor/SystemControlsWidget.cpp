@@ -122,6 +122,12 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* pAssetsManage
 			}
 		}
 	}, reinterpret_cast<uintptr_t>(this));
+
+	m_pAssetsManager->signalAssetRenamed.Connect([&]()
+	{
+		m_pFilterProxyModel->invalidate();
+		m_pTreeView->scrollTo(m_pTreeView->currentIndex());
+	}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,6 +136,7 @@ CSystemControlsWidget::~CSystemControlsWidget()
 	m_pAssetsManager->signalLibraryAboutToBeRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalItemAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalLibraryAboutToBeAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	StopControlExecution();
 	delete m_pLibraryModel;
@@ -364,14 +371,12 @@ bool CSystemControlsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<CSystemControl*> CSystemControlsWidget::GetSelectedControls() const
+std::vector<CSystemAsset*> CSystemControlsWidget::GetSelectedAssets() const
 {
 	QModelIndexList const& indexes = m_pTreeView->selectionModel()->selectedIndexes();
-	std::vector<CSystemLibrary*> libraries;
-	std::vector<CSystemFolder*> folders;
-	std::vector<CSystemControl*> controls;
-	AudioModelUtils::GetAssetsFromIndices(indexes, libraries, folders, controls);
-	return controls;
+	std::vector<CSystemAsset*> assets;
+	AudioModelUtils::GetAssetsFromIndexesCombined(indexes, assets);
+	return assets;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -423,7 +428,7 @@ void CSystemControlsWidget::CreateParentFolder()
 	std::vector<CSystemAsset*> assetsToMove;
 
 	auto const& selection = m_pTreeView->selectionModel()->selectedRows();
-	AudioModelUtils::GetAssetsFromIndices(selection, libraries, folders, controls);
+	AudioModelUtils::GetAssetsFromIndexesSeparated(selection, libraries, folders, controls);
 
 	for (auto const pFolder : folders)
 	{
@@ -464,7 +469,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 		std::vector<CSystemFolder*> folders;
 		std::vector<CSystemControl*> controls;
 
-		AudioModelUtils::GetAssetsFromIndices(selection, libraries, folders, controls);
+		AudioModelUtils::GetAssetsFromIndexesSeparated(selection, libraries, folders, controls);
 
 		if (IsParentFolderAllowed())
 		{
@@ -790,7 +795,7 @@ bool CSystemControlsWidget::IsParentFolderAllowed()
 		std::vector<CSystemFolder*> folders;
 		std::vector<CSystemControl*> controls;
 
-		AudioModelUtils::GetAssetsFromIndices(selection, libraries, folders, controls);
+		AudioModelUtils::GetAssetsFromIndexesSeparated(selection, libraries, folders, controls);
 
 		if (libraries.empty() && (!folders.empty() || !controls.empty()))
 		{

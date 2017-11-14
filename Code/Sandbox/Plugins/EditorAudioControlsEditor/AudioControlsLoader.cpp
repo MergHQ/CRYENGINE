@@ -51,7 +51,7 @@ ESystemItemType TagToType(string const& tag)
 	{
 		return ESystemItemType::Preload;
 	}
-	return ESystemItemType::NumTypes;
+	return ESystemItemType::Invalid;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -192,7 +192,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
   // Always create a library file, even if no proper formatting is present.
 	CSystemLibrary* const pLibrary = m_pAssetsManager->CreateLibrary(filename);
 
-	if (pRoot != nullptr)
+	if ((pRoot != nullptr) && (pLibrary != nullptr))
 	{
 		int const controlTypeCount = pRoot->getChildCount();
 
@@ -204,7 +204,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 			{
 				if (pNode->isTag("EditorData"))
 				{
-					LoadEditorData(pNode, pLibrary);
+					LoadEditorData(pNode, *pLibrary);
 				}
 				else
 				{
@@ -260,6 +260,7 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 				case ESystemItemType::Switch:
 					{
 						int const stateCount = pNode->getChildCount();
+
 						for (int i = 0; i < stateCount; ++i)
 						{
 							LoadControl(pNode->getChild(i), scope, version, pControl);
@@ -693,50 +694,110 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CSyste
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadEditorData(XmlNodeRef const pEditorDataNode, CSystemAsset* const pRootItem)
+void CAudioControlsLoader::LoadEditorData(XmlNodeRef const pEditorDataNode, CSystemAsset& library)
 {
-	if ((pEditorDataNode != nullptr) && (pRootItem != nullptr))
+	int const size = pEditorDataNode->getChildCount();
+
+	for (int i = 0; i < size; ++i)
 	{
-		int const size = pEditorDataNode->getChildCount();
+		XmlNodeRef const pChild = pEditorDataNode->getChild(i);
 
-		for (int i = 0; i < size; ++i)
+		if (pChild->isTag("Library"))
 		{
-			XmlNodeRef const pChild = pEditorDataNode->getChild(i);
-
-			if (pChild->isTag("Folders"))
-			{
-				LoadAllFolders(pChild, pRootItem);
-			}
+			LoadLibraryEditorData(pChild, library);
+		}
+		else if (pChild->isTag("Folders"))
+		{
+			LoadAllFolders(pChild, library);
+		}
+		else if (pChild->isTag("Controls"))
+		{
+			LoadAllControlsEditorData(pChild);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pRootFoldersNode, CSystemAsset* const pParentItem)
+void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CSystemAsset& library)
 {
-	if ((pRootFoldersNode != nullptr) && (pParentItem != nullptr))
+	string description = "";
+	pLibraryNode->getAttr("description", description);
+
+	if (!description.IsEmpty())
 	{
-		int const size = pRootFoldersNode->getChildCount();
+		library.SetDescription(description);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CSystemAsset& library)
+{
+	if (pFoldersNode != nullptr)
+	{
+		int const size = pFoldersNode->getChildCount();
 
 		for (int i = 0; i < size; ++i)
 		{
-			LoadFolderData(pRootFoldersNode->getChild(i), pParentItem);
+			LoadFolderData(pFoldersNode->getChild(i), library);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadFolderData(XmlNodeRef const pFolderNode, CSystemAsset* const pParentItem)
+void CAudioControlsLoader::LoadFolderData(XmlNodeRef const pFolderNode, CSystemAsset& parentAsset)
 {
-	CSystemAsset* const pItem = AddUniqueFolderPath(pParentItem, pFolderNode->getAttr("name"));
+	CSystemAsset* const pItem = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr("name"));
 
 	if (pItem != nullptr)
 	{
+		string description = "";
+		pFolderNode->getAttr("description", description);
+
+		if (!description.IsEmpty())
+		{
+			pItem->SetDescription(description);
+		}
+
 		int const size = pFolderNode->getChildCount();
 
 		for (int i = 0; i < size; ++i)
 		{
-			LoadFolderData(pFolderNode->getChild(i), pItem);
+			LoadFolderData(pFolderNode->getChild(i), *pItem);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsLoader::LoadAllControlsEditorData(XmlNodeRef const pControlsNode)
+{
+	if (pControlsNode != nullptr)
+	{
+		int const size = pControlsNode->getChildCount();
+
+		for (int i = 0; i < size; ++i)
+		{
+			LoadControlsEditorData(pControlsNode->getChild(i));
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsLoader::LoadControlsEditorData(XmlNodeRef const pParentNode)
+{
+	if (pParentNode != nullptr)
+	{
+		ESystemItemType const controlType = TagToType(pParentNode->getTag());
+		string description = "";
+		pParentNode->getAttr("description", description);
+
+		if ((controlType != ESystemItemType::Invalid) && !description.IsEmpty())
+		{
+			 CSystemControl* const pControl = m_pAssetsManager->FindControl(pParentNode->getAttr("name"), controlType);
+
+			if (pControl != nullptr)
+			{
+				pControl->SetDescription(description);
+			}
 		}
 	}
 }

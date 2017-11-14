@@ -74,37 +74,50 @@ void CPropertiesWidget::Reload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::SetSelectedControls(std::vector<CSystemControl*> const& selectedControls)
+void CPropertiesWidget::SetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
 	Serialization::SStructs serializers;
 
-	for (auto const pControl : selectedControls)
+	for (auto const pAsset : selectedAssets)
 	{
-		CRY_ASSERT(pControl != nullptr);
-		serializers.emplace_back(*pControl);
+		CRY_ASSERT(pAsset != nullptr);
+		serializers.emplace_back(*pAsset);
 	}
 
 	m_pPropertyTree->attach(serializers);
 
 	// Update connections
-	if (selectedControls.size() == 1)
+	if (selectedAssets.size() == 1)
 	{
-		CSystemControl* const pControl = selectedControls[0];
+		ESystemItemType const type = selectedAssets[0]->GetType();
 
-		if (pControl->GetType() != ESystemItemType::Switch)
+		if ((type != ESystemItemType::Library) && (type != ESystemItemType::Folder))
 		{
-			m_pConnectionsWidget->SetControl(pControl);
-			m_pConnectionsWidget->setHidden(false);
-			m_pConnectionsLabel->setAlignment(Qt::AlignLeft);
-			m_pConnectionsLabel->setText(tr("Connections"));
+			CSystemControl* const pControl = static_cast<CSystemControl*>(selectedAssets[0]);
+
+			if (type != ESystemItemType::Switch)
+			{
+				m_pConnectionsWidget->SetControl(pControl);
+				m_pConnectionsWidget->setHidden(false);
+				m_pConnectionsLabel->setAlignment(Qt::AlignLeft);
+				m_pConnectionsLabel->setText(tr("Connections"));
+			}
+			else
+			{
+				m_pConnectionsWidget->setHidden(true);
+				m_pConnectionsWidget->SetControl(nullptr);
+				m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
+				m_pConnectionsLabel->setText(tr("Select a switch state to see its connections!"));
+			}
 		}
 		else
 		{
 			m_pConnectionsWidget->setHidden(true);
+			m_pConnectionsWidget->SetControl(nullptr);
 			m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
-			m_pConnectionsLabel->setText(tr("Select a switch state to see its connections!"));
+			m_pConnectionsLabel->setText(*m_pUsageHint);
 		}
 	}
 	else
