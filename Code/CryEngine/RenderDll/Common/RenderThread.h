@@ -410,9 +410,7 @@ inline bool SRenderThread::IsRenderThread(bool bAlwaysCheck) const
 	return true;
 #else
 	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
-	if (d == m_nRenderThreadLoading || d == m_nRenderThread)
-		return true;
-	return false;
+	return (d == m_nRenderThreadLoading || d == m_nRenderThread);
 #endif
 }
 
@@ -422,9 +420,7 @@ inline bool SRenderThread::IsRenderLoadingThread(bool bAlwaysCheck)
 	return false;
 #else
 	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
-	if (d == m_nRenderThreadLoading)
-		return true;
-	return false;
+	return (d == m_nRenderThreadLoading);
 #endif
 }
 
@@ -436,9 +432,7 @@ inline bool SRenderThread::IsLevelLoadingThread(bool bAlwaysCheck) const
 	if (!m_nLevelLoadingThread)
 		return false;
 	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
-	if (d == m_nLevelLoadingThread)
-		return true;
-	return false;
+	return (d == m_nLevelLoadingThread);
 #endif
 }
 
@@ -448,9 +442,7 @@ inline bool SRenderThread::IsMainThread(bool bAlwaysCheck) const
 	return false;
 #else
 	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
-	if (d == m_nMainThread)
-		return true;
-	return false;
+	return (d == m_nMainThread);
 #endif
 }
 

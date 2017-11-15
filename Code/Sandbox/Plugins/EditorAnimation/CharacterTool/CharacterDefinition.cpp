@@ -80,6 +80,7 @@ static DynArray<SJointProperty> GetPhysInfoProperties_ROPE(const CryBonePhysics&
 		res.push_back(SJointProperty("SimpleBlending", !(pi.flags & 4)));
 		res.push_back(SJointProperty("Mass", RAD2DEG(fabs_tpl(pi.min[1]))));
 		res.push_back(SJointProperty("Thickness", RAD2DEG(fabs_tpl(pi.min[2]))));
+		res.push_back(SJointProperty("SleepSpeed", pi.damping[0] - 1.0f));
 		res.push_back(SJointProperty("HingeY", (pi.flags & 8) != 0));
 		res.push_back(SJointProperty("HingeZ", (pi.flags & 16) != 0));
 		res.push_back(SJointProperty("StiffnessControlBone", (float)FtoI(pi.framemtx[0][1] - 1.0f) * (pi.framemtx[0][1] >= 2.0f && pi.framemtx[0][1] < 100.0f)));

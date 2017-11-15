@@ -637,7 +637,7 @@ void PlaybackPanel::WriteTimeline()
 			eventCopy.startTime = -1.0f;
 			eventCopy.endTime = -1.0f;
 			SerializeToMemory(&e.userSideLoad, Serialization::SStruct(eventCopy));
-			unsigned int hash = CCrc32::Compute(e.userSideLoad.data(), e.userSideLoad.size());
+			unsigned int hash = CCrc32::Compute(static_cast<void*>(e.userSideLoad.data()), e.userSideLoad.size());
 			EventContentToColorMap::const_iterator it = std::lower_bound(eventContentToColor.begin(), eventContentToColor.end(), std::make_pair(hash, ColorB()),
 			                                                             [&](const std::pair<unsigned int, ColorB>& a, const std::pair<unsigned int, ColorB>& b) { return a.first < b.first; }
 			                                                             );

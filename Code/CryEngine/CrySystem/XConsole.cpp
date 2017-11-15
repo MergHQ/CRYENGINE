@@ -584,7 +584,7 @@ void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 		  (isConst || isCheat || isReadOnly || isDeprecated))
 		{
 			allowChange = !isDeprecated && ((gEnv->pSystem->IsDevMode()) || (gEnv->IsEditor()));
-			if ((strcmp(pCVar->GetString(), var.m_value.c_str()) != 0) && (!(gEnv->IsEditor()) || isDeprecated))
+			if (pCVar->GetString() != var.m_value && !allowChange)
 			{
 #if LOG_CVAR_INFRACTIONS
 				LogChangeMessage(pCVar->GetName(), isConst, isCheat,

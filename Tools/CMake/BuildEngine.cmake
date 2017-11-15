@@ -20,6 +20,8 @@ if(OPTION_DEDICATED_SERVER)
 	set(OPTION_SCALEFORMHELPER OFF)
 endif()
 
+option(OPTION_DEVELOPER_CONSOLE_IN_RELEASE "Enables the developer console in Release builds" ON)
+
 #Plugins
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
 if(WIN32 OR WIN64)

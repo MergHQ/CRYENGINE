@@ -2455,7 +2455,10 @@ void CVars::RegisterTICVars()
 	#define CVAR_CPP
 	#include "SceneTreeCVars.inl"
 
-	GetRenderer()->GetISvoRenderer()->InitCVarValues(); // allocate SVO sub-system in renderer
+	if (GetRenderer())
+	{
+		GetRenderer()->GetISvoRenderer()->InitCVarValues(); // allocate SVO sub-system in renderer
+	}
 }
 
 static int32 SLightTI_Compare(const void* v1, const void* v2)
