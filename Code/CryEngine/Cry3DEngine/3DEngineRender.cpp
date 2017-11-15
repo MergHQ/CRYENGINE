@@ -1700,11 +1700,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		RenderSkyBox(GetSkyMaterial(), passInfo);
 	}
 
-#if defined(FEATURE_SVO_GI)
-	if (passInfo.IsGeneralPass() && (nRenderFlags & SHDF_ALLOW_AO))
-		CSvoManager::Render();
-#endif
-
 	if (GetCVars()->e_ObjectLayersActivation == 4)
 	{
 		for (int l = 0; l < m_arrObjectLayersActivity.Count(); l++)
@@ -1799,6 +1794,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	// render terrain ground
 	if (m_pTerrain)
 		m_pTerrain->DrawVisibleSectors(passInfo);
+
+#if defined(FEATURE_SVO_GI)
+	if (passInfo.IsGeneralPass() && (nRenderFlags & SHDF_ALLOW_AO))
+		CSvoManager::Render();
+#endif
 
 	pfx2::CParticleSystem* pParticleSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
 	if (pParticleSystem)

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -38,12 +38,11 @@ struct IAIObject;
 struct IMaterial;
 //////////////////////////////////////////////////////////////////////////
 
-
 namespace Schematyc
 {
-	// Forward declarations.
-	struct IObject;
-	struct IEnvRegistrar;
+// Forward declarations.
+struct IObject;
+struct IEnvRegistrar;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -112,7 +111,7 @@ struct SEntitySpawnParams
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Used to set the parent of the spawned entity before initialization.
-	IEntity* pParent;
+	IEntity*           pParent;
 	//! Used when pParent is specified, same behavior as pParent->AttachChild(this, attachmentParams).
 	SChildAttachParams attachmentParams;
 
@@ -184,8 +183,8 @@ enum EEntityHideFlags
 {
 	ENTITY_HIDE_NO_FLAG = 0,
 
-	ENTITY_HIDE_LAYER = BIT(0),
-	ENTITY_HIDE_PARENT = BIT(1),
+	ENTITY_HIDE_LAYER   = BIT(0),
+	ENTITY_HIDE_PARENT  = BIT(1),
 };
 
 //! Updates policy defines in which cases to call entity update function every frame.
@@ -254,7 +253,7 @@ enum EEntityFlagsExtended
 	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT(9), //!< Entity's geometry doesn't contribute to NavMesh generation
 };
 
-#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 5                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended.
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 4               // Bit offset of entity GI mode in EEntityFlagsExtended. Must be equal to the bit id of ENTITY_FLAG_EXTENDED_GI_MODE_BIT0
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK   (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
 
 //! Flags can be passed to IEntity::Serialize().
@@ -402,11 +401,11 @@ struct SEntitySlotInfo
 //! Parameters passed to the IEntity::PreviewRender
 struct SEntityPreviewContext
 {
-	SEntityPreviewContext( SGeometryDebugDrawInfo &debugDrawInfo_ ) : debugDrawInfo(debugDrawInfo_) {}
+	SEntityPreviewContext(SGeometryDebugDrawInfo& debugDrawInfo_) : debugDrawInfo(debugDrawInfo_) {}
 
 	bool                             bNoRenderNodes = false;
-	bool                             bSelected      = false;
-	bool                             bRenderSlots   = true;
+	bool                             bSelected = false;
+	bool                             bRenderSlots = true;
 
 	SGeometryDebugDrawInfo&          debugDrawInfo;
 	const struct SRendParams*        pRenderParams = nullptr;
@@ -464,10 +463,10 @@ struct IEntity
 		void SetViewDistRatio(int nViewDistRatio)   { viewDistRatio = (uint8)std::min(255, std::max(0, nViewDistRatio)); }
 		void SetMinSpec(ESystemConfigSpec spec)     { minSpec = spec; }
 	};
-	
+
 	//! Callback used for visiting components
 	//! @see IEntity::VisitComponents method
-	typedef std::function<void(IEntityComponent*)> ComponentsVisitor;
+	typedef std::function<void (IEntityComponent*)> ComponentsVisitor;
 
 public:
 	// <interfuscator:shuffle>
@@ -697,7 +696,7 @@ public:
 	//! will override old timer, and old timer will not send finish event.
 	//! \param nTimerId Timer ID, multiple timers with different IDs are possible. (specify IEntity::CREATE_NEW_UNIQUE_TIMER_ID to let the system generate a new and unique Id)
 	//! \param nMilliSeconds Timer timeout time in milliseconds.
-	//! \return the (generated) timerId 
+	//! \return the (generated) timerId
 	virtual int SetTimer(int nTimerId, int nMilliSeconds) = 0;
 
 	//! Stops already started entity timer with this id.
@@ -722,11 +721,11 @@ public:
 	virtual bool IsInvisible() const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const IAIObject*  GetAI() const = 0;
-	virtual IAIObject*  GetAI() = 0;
-	virtual bool        HasAI() const = 0;
-	virtual tAIObjectID GetAIObjectID() const = 0;
-	virtual void        SetAIObjectID(tAIObjectID id) = 0;
+	virtual const IAIObject* GetAI() const = 0;
+	virtual IAIObject*       GetAI() = 0;
+	virtual bool             HasAI() const = 0;
+	virtual tAIObjectID      GetAIObjectID() const = 0;
+	virtual void             SetAIObjectID(tAIObjectID id) = 0;
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Retrieve access to the rendering functionality of the Entity.
@@ -764,13 +763,13 @@ public:
 	//! \param interfaceId The GUID of the component we want to add
 	//! \param pInitParams Optional initialization parameters to determine the initial state of the component
 	//! \return The newly created entity component pointer (owned by the entity), or null if creation failed.
-	virtual IEntityComponent* CreateComponentByInterfaceID(const CryInterfaceID& interfaceId, IEntityComponent::SInitParams *pInitParams = nullptr) = 0;
+	virtual IEntityComponent* CreateComponentByInterfaceID(const CryInterfaceID& interfaceId, IEntityComponent::SInitParams* pInitParams = nullptr) = 0;
 
 	//! Adds an already created component to the entity
 	//! \param pComponent A shared pointer to the component we want to add, can not be null!
 	//! \param pInitParams Optional initialization parameters to determine the initial state of the component
 	//! \return True if the component was added, otherwise false.
-	virtual bool AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntityComponent::SInitParams *pInitParams = nullptr) = 0;
+	virtual bool AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntityComponent::SInitParams* pInitParams = nullptr) = 0;
 
 	//! Remove previously created component from the Entity
 	//! \param pComponent Component pointer to remove from the Entity
@@ -790,13 +789,13 @@ public:
 	//! Return all components with the specified class ID contained in the entity.
 	//! \param interfaceID Identifier for the component implementation.
 	virtual void GetComponentsByTypeId(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const = 0;
-	
+
 	//! Return component with the unique GUID.
 	//! \param guid Identifier for the component.
 	virtual IEntityComponent* GetComponentByGUID(const CryGUID& guid) const = 0;
 
 	//! Queries an array of entity components implementing the specified component interface
-	virtual void QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*> &components) const = 0;
+	virtual void              QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, DynArray<IEntityComponent*>& components) const = 0;
 	//! Queries an entity component implementing the specified component interface
 	virtual IEntityComponent* QueryComponentByInterfaceID(const CryInterfaceID& interfaceID) const = 0;
 
@@ -815,19 +814,19 @@ public:
 
 	// New Schematyc component type
 	template<class ComponentType>
-	struct SComponentType<ComponentType, typename std::enable_if<IsComponentReflected<ComponentType>::value && std::is_convertible<ComponentType, IEntityComponent>::value>::type>
+	struct SComponentType<ComponentType, typename std::enable_if<IsComponentReflected<ComponentType>::value&& std::is_convertible<ComponentType, IEntityComponent>::value>::type>
 	{
-		static const CryGUID& GetGUID() 
+		static const CryGUID& GetGUID()
 		{
 			static const CryGUID s_guid = Schematyc::GetTypeGUID<ComponentType>();
 			return s_guid;
 		}
 
-		template<typename... TArgs>
-		static ComponentType* CreateInEntity(IEntity* pEntity, TArgs&&... args)
+		template<typename ... TArgs>
+		static ComponentType* CreateInEntity(IEntity* pEntity, TArgs&& ... args)
 		{
-			std::shared_ptr<ComponentType> pComponent = std::make_shared<ComponentType>(std::forward<TArgs>(args)...);
-			IEntityComponent::SInitParams initParams = IEntityComponent::SInitParams{ pEntity, CryGUID::Create(), "", &Schematyc::GetTypeDesc<ComponentType>(), EEntityComponentFlags::None, nullptr, nullptr };
+			std::shared_ptr<ComponentType> pComponent = std::make_shared<ComponentType>(std::forward<TArgs>(args) ...);
+			IEntityComponent::SInitParams initParams = IEntityComponent::SInitParams { pEntity, CryGUID::Create(), "", &Schematyc::GetTypeDesc<ComponentType>(), EEntityComponentFlags::None, nullptr, nullptr };
 			if (pEntity->AddComponent(pComponent, &initParams))
 			{
 				static_cast<IEntityComponent*>(pComponent.get())->Initialize();
@@ -841,17 +840,17 @@ public:
 
 	// Legacy entity components
 	template<class ComponentType>
-	struct SComponentType<ComponentType, typename std::enable_if<!IsComponentReflected<ComponentType>::value && std::is_convertible<ComponentType, IEntityComponent>::value>::type>
+	struct SComponentType<ComponentType, typename std::enable_if<!IsComponentReflected<ComponentType>::value&& std::is_convertible<ComponentType, IEntityComponent>::value>::type>
 	{
 		static const CryGUID& GetGUID()
 		{
 			return cryiidof<ComponentType>();
 		}
 
-		template<typename... TArgs>
-		static ComponentType* CreateInEntity(IEntity* pEntity, TArgs&&... args)
+		template<typename ... TArgs>
+		static ComponentType* CreateInEntity(IEntity* pEntity, TArgs&& ... args)
 		{
-			std::shared_ptr<ComponentType> pComponent = std::make_shared<ComponentType>(std::forward<TArgs>(args)...);
+			std::shared_ptr<ComponentType> pComponent = std::make_shared<ComponentType>(std::forward<TArgs>(args) ...);
 			if (pEntity->AddComponent(pComponent))
 			{
 				static_cast<IEntityComponent*>(pComponent.get())->Initialize();
@@ -913,7 +912,7 @@ public:
 	void GetAllComponents(DynArray<ComponentType*>& components, bool bCheckHierarchy = true) const
 	{
 		// Hack to avoid copy of vectors, seeing as the interface querying guarantees that the pointers inside are compatible
-		DynArray<IEntityComponent*>* pRawComponents = (DynArray<IEntityComponent*>*)(void*)&components;
+		DynArray<IEntityComponent*>* pRawComponents = (DynArray<IEntityComponent*>*)(void*) & components;
 		if (bCheckHierarchy)
 		{
 			QueryComponentsByInterfaceID(SComponentType<ComponentType>::GetGUID(), *pRawComponents);
@@ -926,20 +925,20 @@ public:
 		// Static cast all types from IEntityComponent* to ComponentType*
 		for (auto it = pRawComponents->begin(); it != pRawComponents->end(); ++it)
 		{
-			*it = static_cast<ComponentType*>((IEntityComponent*)(void*)*it);
+			* it = static_cast<ComponentType*>((IEntityComponent*)(void*)*it);
 		}
 	}
 
 	//! Create a new initialized component using a new operator of the class type.
-	template<class ComponentType, typename... TArgs>
-	ComponentType* CreateComponentClass(TArgs&&... args)
+	template<class ComponentType, typename ... TArgs>
+	ComponentType* CreateComponentClass(TArgs&& ... args)
 	{
-		return SComponentType<ComponentType>::CreateInEntity(this, std::forward<TArgs>(args)...);
+		return SComponentType<ComponentType>::CreateInEntity(this, std::forward<TArgs>(args) ...);
 	}
 
 	//! Get existing or Create a new initialized component using the new operator of the class type, typeid of the component is null guid.
-	template<class ComponentType, typename... TArgs>
-	ComponentType* GetOrCreateComponentClass(TArgs&&... args)
+	template<class ComponentType, typename ... TArgs>
+	ComponentType* GetOrCreateComponentClass(TArgs&& ... args)
 	{
 		if (ComponentType* pComponent = GetComponent<ComponentType>())
 		{
@@ -947,7 +946,7 @@ public:
 		}
 		else
 		{
-			return CreateComponentClass<ComponentType>(std::forward<TArgs>(args)...);
+			return CreateComponentClass<ComponentType>(std::forward<TArgs>(args) ...);
 		}
 	}
 #endif // !defined(SWIG)
@@ -957,14 +956,14 @@ public:
 	virtual void CloneComponentsFrom(IEntity& otherEntity) = 0;
 
 	//! Retrieve array of entity components
-	virtual void GetComponents( DynArray<IEntityComponent*> &components ) const = 0;
+	virtual void GetComponents(DynArray<IEntityComponent*>& components) const = 0;
 
 	//! Retrieve nu number of components in the entity.
 	virtual uint32 GetComponentsCount() const = 0;
 
 	//! Calls a callback on all of the components in the entity
 	//! This is a more efficient way to operate on components then using GetComponents method as it is not require temporary allocations
-	virtual void VisitComponents(const ComponentsVisitor &visitor) = 0;
+	virtual void VisitComponents(const ComponentsVisitor& visitor) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
@@ -1070,7 +1069,7 @@ public:
 	virtual bool SetParentSlot(int nParentIndex, int nChildIndex) = 0;
 
 	//! Prepare and update an entity slot to be used with component
-	virtual void UpdateSlotForComponent( IEntityComponent *pComponent ) = 0;
+	virtual void UpdateSlotForComponent(IEntityComponent* pComponent) = 0;
 
 	//! Assigns a custom material to the specified object slot.
 	//! \param nSlot Index of the slot, if -1 assign this material to all existing slots.
@@ -1215,7 +1214,7 @@ public:
 	//! Render a preview of the Entity
 	//! This method is not used when entity is normally rendered
 	//! But only used for previewing the entity in the Sandbox Editor
-	virtual void         PreviewRender(SEntityPreviewContext &context) = 0;
+	virtual void PreviewRender(SEntityPreviewContext& context) = 0;
 
 	//! Sets common parameters that are applied on all render nodes for this render proxy.
 	virtual void                       SetRenderNodeParams(const IEntity::SRenderNodeParams& params) = 0;
@@ -1266,9 +1265,9 @@ public:
 	//! so it should be set by editor and have a 1-1 correspondence with a baseobject. This is intended as a
 	//! runtime ID and does not need to be serialized
 	virtual uint32 GetEditorObjectID() const = 0;
-	virtual void SetObjectID(uint32 ID) = 0;
-	virtual void GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const = 0;
-	virtual void SetEditorObjectInfo(bool bSelected, bool bHighlighted) = 0;
+	virtual void   SetObjectID(uint32 ID) = 0;
+	virtual void   GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const = 0;
+	virtual void   SetEditorObjectInfo(bool bSelected, bool bHighlighted) = 0;
 
 	//! Retrieve current simulation mode of the Entity
 	virtual EEntitySimulationMode GetSimulationMode() const = 0;
@@ -1276,8 +1275,8 @@ public:
 	// </interfuscator:shuffle>
 
 	//! Schematyc Object associated with this entity
-	virtual	Schematyc::IObject* GetSchematycObject() const = 0;
-	virtual void OnSchematycObjectDestroyed() = 0;
+	virtual Schematyc::IObject* GetSchematycObject() const = 0;
+	virtual void                OnSchematycObjectDestroyed() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Helper methods
@@ -1291,7 +1290,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Returns the forward facing direction of the entity
-	Vec3 GetForwardDir() const 
+	Vec3 GetForwardDir() const
 	{
 		if (!GetScale().IsUnit())
 		{
@@ -1300,7 +1299,7 @@ public:
 			return auxTM.GetColumn1();
 		}
 
-		return GetWorldRotation().GetColumn1(); 
+		return GetWorldRotation().GetColumn1();
 	}
 	//! Returns the right facing direction of the entity
 	Vec3 GetRightDir() const
@@ -1362,7 +1361,6 @@ inline void IEntity::SetOpacity(float fAmount)
 	params.opacity = fAmount;
 	SetRenderNodeParams(params);
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // IEntityComponent methods that depend on the IEntity interface
@@ -1444,40 +1442,40 @@ inline Matrix34 IEntityComponent::GetWorldTransformMatrix() const
 namespace EntityPhysicsUtils
 {
 #if !defined(SWIG)
-	enum EPartIds
-	{
-		PARTID_MAX_SLOTS_log2 = 9,
-		PARTID_MAX_SLOTS = 1 << PARTID_MAX_SLOTS_log2, //!< The maximum amount of slots in entity/skeleton/compound statobj.
-		PARTID_MAX_ATTACHMENTS = 32,                         //!< The maximum amount of physicalized entity attachments(must be a power of 2 and <32).
-		PARTID_LINKED = 1 << 30,                    //!< Marks partids that belong to linked entities.
-	};
+enum EPartIds
+{
+	PARTID_MAX_SLOTS_log2  = 9,
+	PARTID_MAX_SLOTS       = 1 << PARTID_MAX_SLOTS_log2, //!< The maximum amount of slots in entity/skeleton/compound statobj.
+	PARTID_MAX_ATTACHMENTS = 32,                         //!< The maximum amount of physicalized entity attachments(must be a power of 2 and <32).
+	PARTID_LINKED          = 1 << 30,                    //!< Marks partids that belong to linked entities.
+};
 #endif
 
-	//! Phys part id format:.
-	//! Bit 31 = 0 (since partids can't be negative).
-	//! Bit 30 - 1 if part belongs to an attached entity.
-	//! Bits 29,28 - count of nested levels (numLevels) - 1, i.e. compound statobj within a cga within an entity.
-	//! Lowest PARTID_MAX_SLOTS_log2*numLevels bits - indices of slots at the corresponding level.
-	//! Bits directly above those - attachment id if bit 30 is set.
-	inline int ParsePartId(int partId, int& nLevels, int& nSlotBits)
-	{
-		nSlotBits = (nLevels = (partId >> 28 & 3) + 1) * PARTID_MAX_SLOTS_log2;
-		return partId >> 30 & 1;
-	}
+//! Phys part id format:.
+//! Bit 31 = 0 (since partids can't be negative).
+//! Bit 30 - 1 if part belongs to an attached entity.
+//! Bits 29,28 - count of nested levels (numLevels) - 1, i.e. compound statobj within a cga within an entity.
+//! Lowest PARTID_MAX_SLOTS_log2*numLevels bits - indices of slots at the corresponding level.
+//! Bits directly above those - attachment id if bit 30 is set.
+inline int ParsePartId(int partId, int& nLevels, int& nSlotBits)
+{
+	nSlotBits = (nLevels = (partId >> 28 & 3) + 1) * PARTID_MAX_SLOTS_log2;
+	return partId >> 30 & 1;
+}
 
-	//! Allocate next level of slots.
-	inline int AllocPartIdRange(int partId, int nSlots)
-	{
-		int nLevels, nBits;
-		ParsePartId(partId, nLevels, nBits);
-		return partId & 1 << 30 | nLevels << 28 | (partId & (1 << 28) - 1) << PARTID_MAX_SLOTS_log2;
-	}
+//! Allocate next level of slots.
+inline int AllocPartIdRange(int partId, int nSlots)
+{
+	int nLevels, nBits;
+	ParsePartId(partId, nLevels, nBits);
+	return partId & 1 << 30 | nLevels << 28 | (partId & (1 << 28) - 1) << PARTID_MAX_SLOTS_log2;
+}
 
-	//! Extract slot index from partid; 0 = top level.
-	inline int GetSlotIdx(int partId, int level = 0)
-	{
-		int nLevels, nBits;
-		ParsePartId(partId, nLevels, nBits);
-		return partId >> (nLevels - 1 - level) * PARTID_MAX_SLOTS_log2 & PARTID_MAX_SLOTS - 1;
-	}
+//! Extract slot index from partid; 0 = top level.
+inline int GetSlotIdx(int partId, int level = 0)
+{
+	int nLevels, nBits;
+	ParsePartId(partId, nLevels, nBits);
+	return partId >> (nLevels - 1 - level) * PARTID_MAX_SLOTS_log2 & PARTID_MAX_SLOTS - 1;
+}
 }
