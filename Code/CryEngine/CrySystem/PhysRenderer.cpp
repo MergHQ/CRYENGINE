@@ -369,10 +369,6 @@ void CPhysRenderer::DrawGeometry(int itype, const void* pGeomData, geom_world_da
 	primitives::box bbox;
 	ColorB clrlit[4], clr = clr0;
 	IRenderAuxGeom* aux = IRenderAuxGeom::GetAux();
-	SAuxGeomRenderFlags rflags = aux->GetRenderFlags();
-	EAuxGeomPublicRenderflags_DrawInFrontMode difmode = rflags.GetDrawInFrontMode();
-	rflags.SetDrawInFrontMode(e_DrawInFrontOn);
-	aux->SetRenderFlags(rflags);
 	int i, j;
 #define FIAT_LUX(color)                                                                                                  \
   t = (n * ldir0) * -0.5f; l = t + fabs_tpl(t); t = (n * ldir1) * -0.1f; l += t + fabs_tpl(t); l = min(1.0f, l + 0.05f); \
@@ -674,8 +670,6 @@ void CPhysRenderer::DrawGeometry(int itype, const void* pGeomData, geom_world_da
 			break;
 		}
 	}
-	rflags.SetDrawInFrontMode(difmode);
-	aux->SetRenderFlags(rflags);
 }
 
 #pragma warning(pop)
