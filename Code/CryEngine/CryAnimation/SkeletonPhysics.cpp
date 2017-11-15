@@ -997,6 +997,10 @@ void ParsePhysInfoProps(const CryBonePhysics& physInfo, int nLod, pe_params_rope
 	pr.friction = physInfo.spring_tension[2];
 	if (fabs_tpl(physInfo.spring_angle[2]) <= 10.0f)
 		pr.jointLimitDecay = -physInfo.spring_angle[2];
+	if (physInfo.damping[0] >= 1.0f)
+		simp.minEnergy = sqr(physInfo.damping[0] - 1.0f);
+	else if (!nLod)
+		simp.minEnergy = 0;
 	pr.bTargetPoseActive = 2 * isneg(-pr.stiffnessAnim);
 	pf.flagsOR = pef_traceable;
 	if (!(physInfo.flags & 4))
@@ -1483,11 +1487,11 @@ cloth_aux:
 		{
 			MARK_UNUSED pr.bTargetPoseActive, pr.jointLimit, pr.stiffnessAnim, pr.dampingAnim, pr.stiffnessDecayAnim, simp.gravity, simp.maxTimeStep;
 			m_auxPhys[j].bPhysical = false;
+			if (!nLod)
+				simp.minEnergy = 0;
 		}
 		pr.surface_idx = *(int*)(physInfo.spring_angle + 1);
 		pr.noCollDist = 0;
-		if (!nLod)
-			simp.minEnergy = 0;
 
 		m_auxPhys[j].pPhysEnt->SetParams(&pr);
 		m_auxPhys[j].pPhysEnt->SetParams(&simp);

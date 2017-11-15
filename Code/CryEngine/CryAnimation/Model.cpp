@@ -506,6 +506,8 @@ bool CDefaultSkeleton::ParsePhysInfoProperties_ROPE(CryBonePhysics& pi, const Dy
 				pi.min[2] = DEG2RAD(-props[i].fval);
 			if (!strcmp(props[i].name, "StiffnessControlBone"))
 				pi.framemtx[0][1] = props[i].fval + (props[i].fval > 0.0f);
+			if (!strcmp(props[i].name, "SleepSpeed"))
+				pi.damping[0] = props[i].fval + 1.0f;
 			else if (!strcmp(props[i].name, "HingeY"))
 				(pi.flags &= ~8) |= (props[i].bval ? 8 : 0);
 			else if (!strcmp(props[i].name, "HingeZ"))
@@ -591,6 +593,7 @@ DynArray<SJointProperty> CDefaultSkeleton::GetPhysInfoProperties_ROPE(const CryB
 		res.push_back(SJointProperty("SimpleBlending", !(pi.flags & 4)));
 		res.push_back(SJointProperty("Mass", RAD2DEG(fabs_tpl(pi.min[1]))));
 		res.push_back(SJointProperty("Thickness", RAD2DEG(fabs_tpl(pi.min[2]))));
+		res.push_back(SJointProperty("SleepSpeed", pi.damping[0] - 1.0f));
 		res.push_back(SJointProperty("HingeY", (pi.flags & 8) != 0));
 		res.push_back(SJointProperty("HingeZ", (pi.flags & 16) != 0));
 		res.push_back(SJointProperty("StiffnessControlBone", (float)FtoI(pi.framemtx[0][1] - 1.0f) * (pi.framemtx[0][1] >= 2.0f && pi.framemtx[0][1] < 100.0f)));
