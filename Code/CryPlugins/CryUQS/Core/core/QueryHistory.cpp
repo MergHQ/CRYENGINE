@@ -1148,21 +1148,17 @@ namespace UQS
 
 			if (parentQueryID.IsValid())
 			{
-				for (auto it = m_history.begin(); it != m_history.end(); )
+				// search backwards from the end as this will find the insert position quicker
+				// (this leverages the fact that child queries will often get started at roughly the same time as their parent, thus having them reside quite at the end)
+				for (auto rit = m_history.rbegin(), rendIt = m_history.rend(); rit != rendIt; ++rit)
 				{
-					const CHistoricQuery* pCurrentHistoricQuery = it->get();
+					const CHistoricQuery* pCurrentHistoricQuery = rit->get();
 
-					++it;
-
-					// found our parent? -> remember for possibly inserting after him
-					if (pCurrentHistoricQuery->GetQueryID() == parentQueryID)
+					// found a child of our parent or our parent itself? => insert after this query then
+					if (pCurrentHistoricQuery->GetParentQueryID() == parentQueryID || pCurrentHistoricQuery->GetQueryID() == parentQueryID)
 					{
-						insertPos = it;
-					}
-					// found another child of our parent? -> remember for possibly inserting after it
-					else if (pCurrentHistoricQuery->GetParentQueryID() == parentQueryID)
-					{
-						insertPos = it;
+						insertPos = rit.base();  // notice: this conversion from reverse- to forward-iterator will make insertPos point to exactly where we want to insert the new historic query
+						break;
 					}
 				}
 			}
