@@ -2016,11 +2016,6 @@ void CTileGenerator::PaintMarkups(const AABB& tileAabb)
 		return;
 	
 	const int borderH = (int)BorderSizeH(m_params);
-
-	const int gridWidth = (int)m_spanGrid.GetWidth();
-	const int gridWithNoBorder = gridWidth - borderH;
-	const int gridHeight = (int)m_spanGrid.GetHeight() - borderH;
-
 	const Vec2i canvasSize(m_spanGrid.GetWidth(), m_spanGrid.GetHeight());
 	const Vec2i borderSize(borderH, borderH);
 
@@ -2122,8 +2117,9 @@ void CTileGenerator::PaintMarkupDirect(const MarkupData& markupData, const AABB&
 				{
 					const size_t index = cell.index + s;
 					const CompactSpanGrid::Span& span = m_spanGrid.GetSpan(index);
+					const uint32 spanTop = span.bottom + span.height;
 
-					if (span.bottom >= zStart && span.bottom + span.height <= zEnd)
+					if (spanTop >= zStart && spanTop <= zEnd)
 					{
 						m_paint[index] = OkPaintStart + markupData.paintIdx;
 					}
@@ -2347,10 +2343,11 @@ void CTileGenerator::PaintMarkupExpanded(const MarkupData& markupData, const AAB
 			{
 				const size_t index = cell.index + s;
 				const CompactSpanGrid::Span& span = m_spanGrid.GetSpan(index);
+				const uint32 spanTop = span.bottom + span.height;
 
-				if (span.bottom >= zStart && span.bottom + span.height <= zEnd)
+				if (spanTop >= zStart && spanTop <= zEnd)
 				{
-					m_paint[index] = paint;
+					m_paint[index] = OkPaintStart + markupData.paintIdx;
 				}
 			}
 		}
