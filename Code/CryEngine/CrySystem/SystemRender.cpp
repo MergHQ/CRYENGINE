@@ -710,7 +710,7 @@ void CSystem::Render()
 	//draw
 	m_env.p3DEngine->PreWorldStreamUpdate(m_ViewCamera);
 
-	if (m_pProcess && !m_env.IsDedicated())
+	if (m_env.pRenderer)
 	{
 		if (m_pProcess->GetFlags() & PROC_3DENGINE)
 		{
@@ -722,7 +722,7 @@ void CSystem::Render()
 					m_pTestSystem->BeforeRender();
 #endif
 
-				if (m_env.pRenderer && m_env.p3DEngine && !m_env.IsFMVPlaying())
+				if (m_env.p3DEngine && !m_env.IsFMVPlaying())
 				{
 					if ((!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) && (!IsLoading())) || // never pass undefined camera to p3DEngine->RenderWorld()
 						m_env.IsDedicated() || m_env.pRenderer->IsPost3DRendererEnabled())

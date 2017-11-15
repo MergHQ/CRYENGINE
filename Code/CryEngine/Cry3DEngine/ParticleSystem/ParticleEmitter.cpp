@@ -194,6 +194,9 @@ void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 
 void CParticleEmitter::DebugRender() const
 {
+	if (!GetRenderer())
+		return;
+
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 
 	if (m_bounds.IsReset())
@@ -570,12 +573,18 @@ void CParticleEmitter::UpdateRuntimes()
 			pRuntime->AddSubInstances({&instance, 1});
 		}
 		CParticleComponent* pComponent = pRuntime->GetComponent();
-		pComponent->PrepareRenderObjects(this, pComponent, true);
+		if (GetRenderer())
+		{
+			pComponent->PrepareRenderObjects(this, pComponent, true);
+		}
 	}
 }
 
 void CParticleEmitter::ResetRenderObjects()
 {
+	if (!GetRenderer())
+		return;
+
 	if (!m_pEffect)
 		return;
 

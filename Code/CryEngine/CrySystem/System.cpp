@@ -400,6 +400,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pTextModeConsole = nullptr;
 	m_pThreadProfiler = nullptr;
 	m_pDiskProfiler = nullptr;
+	m_ttMemStatSS = 0;
 
 #if defined(ENABLE_LOADING_PROFILER)
 	if (!startupParams.bShaderCacheGen)
@@ -1275,28 +1276,31 @@ void CSystem::SleepIfInactive()
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	WIN_HWND hRendWnd = GetIRenderer()->GetHWND();
-	if (!hRendWnd)
-		return;
-
-	// Loop here waiting for window to be activated.
-	for (int nLoops = 0; nLoops < 5; nLoops++)
+	if (GetIRenderer())
 	{
-		WIN_HWND hActiveWnd = ::GetActiveWindow();
-		if (hActiveWnd == hRendWnd)
-			break;
+		WIN_HWND hRendWnd = GetIRenderer()->GetHWND();
+		if (!hRendWnd)
+			return;
 
-		if (m_hWnd)
+		// Loop here waiting for window to be activated.
+		for (int nLoops = 0; nLoops < 5; nLoops++)
 		{
-			PumpWindowMessage(true, m_hWnd);
-		}
-		if (gEnv->pGameFramework)
-		{
-			// During the time demo, do not sleep even in inactive window.
-			if (gEnv->pGameFramework->IsInTimeDemo())
+			WIN_HWND hActiveWnd = ::GetActiveWindow();
+			if (hActiveWnd == hRendWnd)
 				break;
+
+			if (m_hWnd)
+			{
+				PumpWindowMessage(true, m_hWnd);
+			}
+			if (gEnv->pGameFramework)
+			{
+				// During the time demo, do not sleep even in inactive window.
+				if (gEnv->pGameFramework->IsInTimeDemo())
+					break;
+			}
+			Sleep(5);
 		}
-		Sleep(5);
 	}
 #endif
 }

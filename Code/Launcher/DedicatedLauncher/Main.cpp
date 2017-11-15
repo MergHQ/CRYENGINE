@@ -63,6 +63,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	SSystemInitParams startupParams;
 	startupParams.sLogFileName = "Server.log";
 	startupParams.bDedicatedServer = true;
+	startupParams.bSkipInput = true;
 	cry_strcpy(startupParams.szSystemCmdLine, cmdLine.c_str());
 
 	unsigned buf[4];

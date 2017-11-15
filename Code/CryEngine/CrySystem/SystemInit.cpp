@@ -2469,13 +2469,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 	LOADING_TIME_PROFILE_SECTION;
 
-	if (strstr(startupParams.szSystemCmdLine, "-norandom"))
-		startupParams.bNoRandom = true;
-
-	// set unit test flag at start so multiple systems could handle initialization differently when needed
-	if (strstr(startupParams.szSystemCmdLine, "-run_unit_tests"))
-		startupParams.bTesting = true;
-
 	SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_INIT);
 	gEnv->mMainThreadId = GetCurrentThreadId();     //Set this ASAP on startup
 
@@ -2485,6 +2478,29 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	m_szCmdLine = startupParams.szSystemCmdLine;
 
 	m_pCmdLine = new CCmdLine(startupParams.szSystemCmdLine);
+
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "norandom"))
+	{
+		startupParams.bNoRandom = true;
+	}
+
+	// set unit test flag at start so multiple systems could handle initialization differently when needed
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "run_unit_tests"))
+	{
+		startupParams.bTesting = true;
+	}
+
+	// Skipping renderer is useful for automation modes when visual output is unnecessary
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "skiprenderer"))
+	{
+		startupParams.bSkipRenderer = true;
+	}
+
+	// Skipping input is useful for automation modes
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "skipinput"))
+	{
+		startupParams.bSkipInput = true;
+	}
 
 	m_env.szCmdLine = m_szCmdLine.c_str();
 	m_env.bTesting = startupParams.bTesting;
@@ -2645,22 +2661,36 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		#endif
 		m_pTextModeConsole = static_cast<ITextModeConsole*>(pConsole);
 
-		if (m_pUserCallback == NULL && m_env.IsDedicated())
+		if (m_pUserCallback == NULL)
 		{
-			m_pUserCallback = pConsole;
-			pConsole->SetRequireDedicatedServer(true);
-
-			headerName.append("Dedicated Server");
-			if (gEnv->bDedicatedArbitrator)
+			auto getProductVersion = [this] 
 			{
-				headerName.append(" Arbitrator");
-			}
-			headerName.append(" - Version ");
+				char version[64];
+				GetProductVersion().ToString(version);
+				return string(version);
+			};
 
-			char version[64];
-			GetProductVersion().ToString(version);
-			headerName.append(version);
-			pConsole->SetHeader(headerName.c_str());
+			if (m_env.IsDedicated())
+			{
+				m_pUserCallback = pConsole;
+				pConsole->SetRequireDedicatedServer(true);
+				headerName.append("Dedicated Server");
+				if (gEnv->bDedicatedArbitrator)
+				{
+					headerName.append(" Arbitrator");
+				}
+				headerName.append(" - Version ");
+				headerName.append(getProductVersion());
+				pConsole->SetHeader(headerName.c_str());
+			}
+			else if (m_pCmdLine->FindArg(eCLAT_Pre, "console"))
+			{
+				m_pUserCallback = pConsole;
+				pConsole->SetRequireDedicatedServer(false);
+				headerName.append("Client - Version ");
+				headerName.append(getProductVersion());
+				pConsole->SetHeader(headerName.c_str());
+			}
 		}
 	}
 		#if !defined(_RELEASE)
