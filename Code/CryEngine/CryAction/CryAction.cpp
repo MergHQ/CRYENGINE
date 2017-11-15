@@ -330,6 +330,10 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pScriptBindUIAction(0),
 	m_pPersistantDebug(0),
 	m_pColorGradientManager(nullptr),
+#ifdef USE_NETWORK_STALL_TICKER_THREAD
+	m_pNetworkStallTickerThread(nullptr),
+	m_networkStallTickerReferences(0),
+#endif // #ifdef USE_NETWORK_STALL_TICKER_THREAD
 	m_pMaterialEffectsCVars(0),
 	m_pEnableLoadingScreen(0),
 	m_pShowLanBrowserCVAR(0),
