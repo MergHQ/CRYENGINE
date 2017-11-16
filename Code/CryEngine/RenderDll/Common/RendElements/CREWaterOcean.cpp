@@ -52,18 +52,6 @@ struct SCompiledWaterOcean : NoCopy
 		, m_reserved(0)
 	{}
 
-	~SCompiledWaterOcean()
-	{
-		ReleaseDeviceResources();
-	}
-
-	void ReleaseDeviceResources()
-	{
-		m_pMaterialResourceSet.reset();
-		m_pPerInstanceResourceSet.reset();
-		m_pPerInstanceCB.reset();
-	}
-
 	CDeviceResourceSetPtr     m_pMaterialResourceSet;
 	CDeviceResourceSetPtr     m_pPerInstanceResourceSet;
 	CConstantBufferPtr        m_pPerInstanceCB;
@@ -166,21 +154,6 @@ CREWaterOcean::CREWaterOcean()
 CREWaterOcean::~CREWaterOcean()
 {
 	ReleaseOcean();
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CREWaterOcean::Release(bool bForce /*= false*/)
-{
-	// NOTE: ReleaseDeviceResources() must be called here because a device resource set holds the pointer to ocean reflection texture grabbed from SHRenderTarget::GetEnv2D(),
-	//       and it has to be released before SDynTexture::ShutDown() is called. Otherwise a assertion happens in SDynTexture::ReleaseDynamicRT().
-	if (m_pCompiledObject)
-	{
-		m_pCompiledObject->ReleaseDeviceResources();
-	}
-
-	CRenderElement::Release(bForce);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
