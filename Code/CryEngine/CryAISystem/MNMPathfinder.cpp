@@ -444,10 +444,10 @@ void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, cons
 		MNM::PathfinderUtils::ProcessingRequest& processingRequest = processingContext.processingRequest;
 
 		if (!processingRequest.IsValid())
-			return;
+			continue;
 
 		if (processingRequest.meshID != meshId)
-			return;
+			continue;
 
 		if (!processingContext.workingSet.aStarOpenList.TileWasVisited(tileId))
 		{
@@ -468,7 +468,7 @@ void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, cons
 			}
 
 			if (!neighbourTileWasVisited)
-				return;
+				continue;
 		}
 
 		//////////////////////////////////////////////////////////////////////////
