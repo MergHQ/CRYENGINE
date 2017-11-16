@@ -58,6 +58,12 @@ struct IParticleFeature : public _i_reference_target_t
 	virtual const char*                   GetResourceName(uint resourceId) const = 0;
 };
 
+struct TParticleFeatures: std::vector<_smart_ptr<IParticleFeature>>
+{
+	uint m_editVersion = 0;
+};
+
+
 struct IParticleComponent : public _i_reference_target_t
 {
 	virtual void                SetChanged() = 0;

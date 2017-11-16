@@ -222,7 +222,7 @@ void CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent
 	if (delayed)
 		m_componentParams.m_emitterLifeTime.end = gInfinity;
 	auto& children = pParentComponent->m_children;
-	stl::append_unique(children, this);
+	stl::push_back_unique(children, this);
 }
 
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
