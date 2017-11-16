@@ -99,7 +99,7 @@ public:
 	void          SetAutoLoad(bool const isAutoLoad);
 
 	float         GetRadius() const { return m_radius; }
-	void          SetRadius(float const radius) { m_radius = radius; }
+	void          SetRadius(float const radius);
 
 	float         GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
 	void          SetOcclusionFadeOutDistance(float const fadeOutArea);
@@ -142,23 +142,21 @@ private:
 	bool                       m_matchRadiusAndAttenuation = true;
 
 	std::map<int, XMLNodeList> m_connectionNodes;
-
-	bool                       m_modifiedSignalEnabled = true;
 };
 
 class CSystemLibrary final : public CSystemAsset
 {
 public:
 
-	CSystemLibrary(string const& name) : CSystemAsset(name, ESystemItemType::Library ){}
+	CSystemLibrary(string const& name);
 
-	virtual void            SetModified(bool const isModified, bool const isForced = false) override;
+	virtual void SetModified(bool const isModified, bool const isForced = false) override;
 };
 
 class CSystemFolder final : public CSystemAsset
 {
 public:
 
-	CSystemFolder(string const& name) : CSystemAsset(name, ESystemItemType::Folder) {}
+	CSystemFolder(string const& name);
 };
 } // namespace ACE
