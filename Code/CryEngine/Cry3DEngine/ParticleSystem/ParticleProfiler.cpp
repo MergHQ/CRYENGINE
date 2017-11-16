@@ -76,10 +76,16 @@ public:
 		cstr effectName = pEffect->GetFullName();
 		cstr componentName = pComponent->GetName();
 		cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
+		bool isIndependent = pEmitter->IsIndependent();
+		bool isChild = !!pComponent->GetParentComponent();
+		bool isImmortal = pComponent->ComponentParams().IsImmortal();
 
-		Column(entityName);
+		Column(string().Format("%s%s", entityName, isIndependent ? " [Independent]" : ""));
 		Column(effectName);
-		Column(componentName);
+		Column(string().Format("%s%s%s", 
+			componentName, 
+			isImmortal ? " [Immortal]" : "",
+			isChild ? " [Child]" : ""));
 		for (const auto& stat : statisticsOutput)
 			Column(string().Format("%d", statistics.m_values[stat.m_stat]));
 		NewLine();
@@ -209,7 +215,11 @@ void CParticleProfiler::Display()
 		{
 #ifndef _RELEASE
 			if (GetCVars()->e_ParticlesProfiler & AlphaBit('f'))
+			{
 				SaveToFile();
+				if (!(GetCVars()->e_ParticlesProfiler & AlphaBit('s')))
+					GetCVars()->e_ParticlesProfiler &= ~AlphaBit('f');
+			}
 #endif
 			if (GetCVars()->e_ParticlesProfiler & 1)
 				DrawPerfomanceStats();

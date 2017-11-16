@@ -56,7 +56,7 @@ void CSystemAsset::RemoveChild(CSystemAsset const* const pChildControl)
 //////////////////////////////////////////////////////////////////////////
 void CSystemAsset::SetName(string const& name)
 {
-	if (name != m_name)
+	if ((!name.IsEmpty()) && (name != m_name))
 	{
 		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
 		SetModified(true);
@@ -104,20 +104,20 @@ void CSystemAsset::SetModified(bool const isModified, bool const isForced /* = f
 //////////////////////////////////////////////////////////////////////////
 void CSystemAsset::Serialize(Serialization::IArchive& ar)
 {
-	if (ar.openBlock("properties", "+Properties"))
+	if (ar.openBlock("properties", "Properties"))
 	{
-		// Name
-		string const newName = m_name;
-		ar(newName, "name", "Name");
+		string const name = m_name;
+		ar(name, "name", "Name");
+		ar.doc(name);
 
-		// Description
-		string const newDescription = m_description;
-		ar(newDescription, "description", "Description");
+		string const description = m_description;
+		ar(description, "description", "Description");
+		ar.doc(description);
 
 		if (ar.isInput())
 		{
-			SetName(newName);
-			SetDescription(newDescription);
+			SetName(name);
+			SetDescription(description);
 		}
 
 		ar.closeBlock();
@@ -128,7 +128,6 @@ void CSystemAsset::Serialize(Serialization::IArchive& ar)
 CSystemControl::CSystemControl(string const& name, CID const id, ESystemItemType const type)
 	: CSystemAsset(name, type)
 	, m_id(id)
-	, m_modifiedSignalEnabled(true)
 {
 	m_scope = Utils::GetGlobalScope();
 }
@@ -142,7 +141,7 @@ CSystemControl::~CSystemControl()
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::SetName(string const& name)
 {
-	if (name != m_name)
+	if ((!name.IsEmpty()) && (name != m_name))
 	{
 		SignalControlAboutToBeModified();
 		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
@@ -180,6 +179,17 @@ void CSystemControl::SetAutoLoad(bool const isAutoLoad)
 	{
 		SignalControlAboutToBeModified();
 		m_isAutoLoad = isAutoLoad;
+		SignalControlModified();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControl::SetRadius(float const radius)
+{
+	if (radius != m_radius)
+	{
+		SignalControlAboutToBeModified();
+		m_radius = radius;
 		SignalControlModified();
 	}
 }
@@ -346,7 +356,7 @@ void CSystemControl::RemoveConnection(CImplItem* const pImplControl)
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::SignalControlModified()
 {
-	if (m_modifiedSignalEnabled && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading()))
+	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
 	{
 		CAudioControlsEditorPlugin::GetAssetsManager()->OnControlModified(this);
 		SetModified(true);
@@ -356,7 +366,7 @@ void CSystemControl::SignalControlModified()
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::SignalControlAboutToBeModified()
 {
-	if (m_modifiedSignalEnabled && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading()))
+	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading())
 	{
 		CAudioControlsEditorPlugin::GetAssetsManager()->OnControlAboutToBeModified(this);
 	}
@@ -466,33 +476,35 @@ void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const p
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::Serialize(Serialization::IArchive& ar)
 {
-	if (ar.openBlock("properties", "+Properties"))
+	if (ar.openBlock("properties", "Properties"))
 	{
 		// Name
-		string const newName = m_name;
-		ar(newName, "name", "Name");
+		string const name = m_name;
+		ar(name, "name", "Name");
+		ar.doc(name);
 
 		// Description
-		string const newDescription = m_description;
-		ar(newDescription, "description", "Description");
+		string const description = m_description;
+		ar(description, "description", "Description");
+		ar.doc(description);
 
 		// Scope
 		Serialization::StringList scopeList;
 		ScopeInfoList scopeInfoList;
 		CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
-		
-		for (auto const& scope : scopeInfoList)
+
+		for (auto const& scopeInfo : scopeInfoList)
 		{
-			scopeList.emplace_back(scope.name);
+			scopeList.emplace_back(scopeInfo.name);
 		}
 
 		Serialization::StringListValue const selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
-		Scope newScope = m_scope;
+		Scope scope = m_scope;
 
 		if (m_type != ESystemItemType::State)
 		{
 			ar(selectedScope, "scope", "Scope");
-			newScope = CAudioControlsEditorPlugin::GetAssetsManager()->GetScope(scopeList[selectedScope.index()]);
+			scope = CAudioControlsEditorPlugin::GetAssetsManager()->GetScope(scopeList[selectedScope.index()]);
 		}
 
 		// Auto Load
@@ -564,16 +576,12 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 
 		if (ar.isInput())
 		{
-			SignalControlAboutToBeModified();
-			m_modifiedSignalEnabled = false; // we are manually sending the signals and don't want the other SetX functions to send anymore
-			SetName(newName);
-			SetDescription(newDescription);
-			SetScope(newScope);
+			SetName(name);
+			SetDescription(description);
+			SetScope(scope);
 			SetAutoLoad(isAutoLoad);
 			SetRadius(radius);
 			SetOcclusionFadeOutDistance(fadeOutDistance);
-			m_modifiedSignalEnabled = true;
-			SignalControlModified();
 		}
 
 		ar.closeBlock();
@@ -636,6 +644,12 @@ void CSystemControl::MatchRadiusToAttenuation()
 }
 
 //////////////////////////////////////////////////////////////////////////
+CSystemLibrary::CSystemLibrary(string const& name)
+	: CSystemAsset(name, ESystemItemType::Library)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystemLibrary::SetModified(bool const isModified, bool const isForced /* = false */)
 {
 	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || isForced)
@@ -643,5 +657,11 @@ void CSystemLibrary::SetModified(bool const isModified, bool const isForced /* =
 		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this, isModified);
 		m_isModified = isModified;
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+CSystemFolder::CSystemFolder(string const& name)
+	: CSystemAsset(name, ESystemItemType::Folder)
+{
 }
 } // namespace ACE

@@ -32,6 +32,7 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* pAssetsManager)
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
 	m_pPropertyTree->setSizeToContent(true);
+	m_pPropertyTree->setExpandLevels(2);
 	pMainLayout->addWidget(m_pPropertyTree);
 
 	m_pUsageHint = std::make_unique<QString>(tr("Select an audio control from the left pane to see its properties!"));
@@ -54,6 +55,7 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* pAssetsManager)
 	pAssetsManager->signalItemAdded.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalItemRemoved.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 	pAssetsManager->signalControlModified.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
+	pAssetsManager->signalAssetRenamed.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
 
 	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_supressUpdates = true; });
 	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_supressUpdates = false; });
@@ -65,6 +67,7 @@ CPropertiesWidget::~CPropertiesWidget()
 	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	m_pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

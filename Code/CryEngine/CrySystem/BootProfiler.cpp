@@ -965,6 +965,8 @@ void CBootProfiler::StopSaveSessionsThread()
 {
 	m_quitSaveThread = true;
 	m_saveThreadWakeUpEvent.Set();
+
+	gEnv->pThreadManager->JoinThread(this, eJM_Join);
 }
 
 void CBootProfiler::QueueSessionToDelete(CBootProfilerSession*pSession)

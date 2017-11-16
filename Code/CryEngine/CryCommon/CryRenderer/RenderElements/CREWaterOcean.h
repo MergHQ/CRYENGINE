@@ -23,8 +23,6 @@ public:
 	CREWaterOcean();
 	virtual ~CREWaterOcean();
 
-	virtual void Release(bool bForce = false) override;
-
 	virtual void mfGetPlane(Plane& pl) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override

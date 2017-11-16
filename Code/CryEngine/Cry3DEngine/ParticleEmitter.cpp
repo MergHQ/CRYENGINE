@@ -607,11 +607,6 @@ void CParticleEmitter::UpdateContainers()
 		Register(false);
 }
 
-bool CParticleEmitter::IsInstant() const
-{
-	return GetStopAge() + GetSpawnParams().fPulsePeriod == 0.f;
-}
-
 void CParticleEmitter::SetEmitGeom(GeomRef const& geom)
 {
 	if (geom != GetEmitGeom())

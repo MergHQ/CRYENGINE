@@ -209,15 +209,6 @@ typename C::value_type find_value_if(const C& container, const P& pred)
 	return it != container.end() ? *it : typename C::value_type();
 }
 
-template<typename C, typename V>
-bool append_unique(C& container, const V& value)
-{
-	if (has_value(container, value))
-		return false;
-	container.push_back(value);
-	return true;
-}
-
 //////////////////////////////////////////////////////////////////////////
 //! Find and erase element from container.
 //! \return true if item was find and erased, false if item not found.
@@ -261,9 +252,20 @@ template<class CONTAINER, class PREDICATE> inline bool find_and_erase_if(CONTAIN
 template<class Container>
 inline void find_and_erase_all(Container& container, const typename Container::value_type& value)
 {
-	// Shuffles all elements != value to the front and returns the start of the removed elements.
+	// Shuffles all elements == value to the end and returns the start of the removed elements.
 	typename Container::iterator endIter(container.end());
 	typename Container::iterator newEndIter(std::remove(container.begin(), endIter, value));
+
+	// Delete the removed range at the back of the container (low-cost for vector).
+	container.erase(newEndIter, endIter);
+}
+
+template<class Container, class Predicate> 
+inline void find_and_erase_all_if(Container& container, const Predicate& predicate)
+{
+	// Shuffles all elements == predicate to the front and returns the start of the removed elements.
+	typename Container::iterator endIter(container.end());
+	typename Container::iterator newEndIter(std::remove_if(container.begin(), endIter, predicate));
 
 	// Delete the removed range at the back of the container (low-cost for vector).
 	container.erase(newEndIter, endIter);

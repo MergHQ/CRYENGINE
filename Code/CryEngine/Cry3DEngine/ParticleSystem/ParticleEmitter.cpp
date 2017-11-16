@@ -373,6 +373,14 @@ void CParticleEmitter::Activate(bool activate)
 	m_active = activate;
 }
 
+bool CParticleEmitter::IsAlive() const
+{
+	for (auto const& pRuntime : m_componentRuntimes)
+		if (pRuntime->IsAlive())
+			return true;
+	return false;
+}
+
 void CParticleEmitter::Restart()
 {
 	Activate(false);
@@ -441,8 +449,11 @@ void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 
 void CParticleEmitter::SetEmitterFeatures(TParticleFeatures& features)
 {
-	m_emitterFeatures = features;
-	m_emitterEditVersion++;
+	if (features.m_editVersion != m_emitterEditVersion)
+	{
+		m_emitterFeatures = features;
+		m_emitterEditVersion = features.m_editVersion;
+	}
 }
 
 void CParticleEmitter::SetEntity(IEntity* pEntity, int nSlot)

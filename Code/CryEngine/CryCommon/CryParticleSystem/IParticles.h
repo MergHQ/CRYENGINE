@@ -341,8 +341,7 @@ typedef std::shared_ptr<IParticleAttributes> TParticleAttributesPtr;
 
 namespace pfx2
 {
-	struct IParticleFeature;
-	typedef std::vector<_smart_ptr<IParticleFeature>> TParticleFeatures;
+	struct TParticleFeatures;
 };
 
 //! Interface to control a particle effect.
@@ -481,9 +480,6 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 
 	//! Returns whether emitter still alive in engine.
 	virtual bool IsAlive() const = 0;
-
-	//! Returns whether emitter requires no further attachment.
-	virtual bool IsInstant() const = 0;
 
 	//! Sets emitter state to active or inactive. Emitters are initially active.
 	//! if bActive is true, Emitter updates and emits as normal, and deletes itself if limited lifetime.

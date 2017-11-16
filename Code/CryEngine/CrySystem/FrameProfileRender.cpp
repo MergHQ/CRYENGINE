@@ -37,9 +37,6 @@ LINK_SYSTEM_LIBRARY("psapi.lib")
 
 #ifdef USE_FRAME_PROFILER
 
-//! Time is in milliseconds.
-	#define PROFILER_MIN_DISPLAY_TIME 0.01f
-
 	#define VARIANCE_MULTIPLIER       2.0f
 
 //! 5 seconds from hot to cold in peaks.
@@ -302,7 +299,7 @@ void CFrameProfileSystem::CalcDisplayedProfilers()
 		if (m_bSubsystemFilterEnabled && pProfiler->m_subsystem != (uint8)m_subsystemFilter)
 			continue;
 
-		if (pProfiler->m_displayedValue > PROFILER_MIN_DISPLAY_TIME)
+		if (pProfiler->m_displayedValue > profile_min_display_ms)
 		{
 			SProfilerDisplayInfo info;
 			info.level = 0;
@@ -338,7 +335,13 @@ void CFrameProfileSystem::Render()
 {
 	m_textModeBaseExtra = 0;
 
-	if (m_bDisplayMemoryInfo)
+	static int memProfileValueOld = 0;
+	if (memProfileValueOld != profile_meminfo)
+	{
+		m_bLogMemoryInfo = true;
+		memProfileValueOld = profile_meminfo;
+	}
+	if (profile_meminfo)
 		RenderMemoryInfo();
 
 	if (!m_bDisplay)
@@ -346,11 +349,11 @@ void CFrameProfileSystem::Render()
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	m_baseY = 80;
-
 	m_textModeBaseExtra = 2;
 	ROW_SIZE = 10;
 	COL_SIZE = 11;
+
+	m_baseY = profile_row * ROW_SIZE;
 
 	m_pRenderer = GetISystem()->GetIRenderer();
 
@@ -359,7 +362,7 @@ void CFrameProfileSystem::Render()
 		m_selectedRow = -1;
 	}
 
-	float colText = 60.0f - 4 * gEnv->IsDedicated();
+	float colText = profile_col - 4 * gEnv->IsDedicated();
 	float colExtended = 1.0f;
 	float row = 0;
 
@@ -428,19 +431,19 @@ void CFrameProfileSystem::Render()
 	}
 
 	// Render Peaks.
-	if (m_displayQuantity == PEAK_TIME || m_bDrawGraph || m_bPageFaultsGraph)
+	if (m_displayQuantity == PEAK_TIME || profile_graph || profile_pagefaults)
 	{
 		DrawGraph();
 	}
 
 	float fpeaksLastRow = 0;
 
-	if (m_peaks.size() > 0 && m_displayQuantity != PEAK_TIME)
+	if (m_peaks.size() > 0 && m_displayQuantity != PEAK_TIME && profile_peak_display > 0.0f)
 	{
 		fpeaksLastRow = RenderPeaks();
 	}
 
-	if (GetAdditionalSubsystems())
+	if (profile_additionalsub)
 	{
 		float colPeaks = 16.0f;
 		RenderSubSystems(colPeaks, 30.0f);  // can visually collide with waiting peaks
@@ -471,11 +474,12 @@ void CFrameProfileSystem::RenderProfilers(float col, float row, bool bExtended)
 
 	if (CFrameProfileSystem::profile_log)
 	{
-		CryLogAlways("======================= Start Profiler Frame %d ==========================", gEnv->pRenderer->GetFrameID(false));
+		CryLogAlways("====================Start Profiler Frame %d, Time %.2f ======================", gEnv->pRenderer->GetFrameID(false), m_frameSecAvg * 1000.f);
 		CryLogAlways("|\tCount\t|\tSelf\t|\tTotal\t|\tModule\t|");
 		CryLogAlways("|\t____\t|\t_____\t|\t_____\t|\t_____\t|");
 
 		int logType = abs(CFrameProfileSystem::profile_log);
+
 		for (int i = 0; i < (int)m_displayedProfilers.size(); i++)
 		{
 			CFrameProfiler* pProfiler = m_displayedProfilers[i].pProfiler;
@@ -565,6 +569,9 @@ void CFrameProfileSystem::RenderProfilers(float col, float row, bool bExtended)
 	}
 	#endif // JOBMANAGER_SUPPORT_FRAMEPROFILER
 
+	int width  = GetISystem()->GetViewCamera().GetViewSurfaceX();
+	int height = GetISystem()->GetViewCamera().GetViewSurfaceZ();
+
 	// Go through all profilers.
 	for (int i = 0; i < (int)m_displayedProfilers.size(); i++)
 	{
@@ -578,9 +585,6 @@ void CFrameProfileSystem::RenderProfilers(float col, float row, bool bExtended)
 			break;
 		}
 
-		int width  = m_pRenderer ? m_pRenderer->GetOverlayWidth () : 800;
-		int height = m_pRenderer ? m_pRenderer->GetOverlayHeight() : 600;
-
 		float rectX1 = col * COL_SIZE;
 		float rectX2 = width - 2.0f;
 		float rectY1 = m_baseY + row * ROW_SIZE + 2;
@@ -591,17 +595,6 @@ void CFrameProfileSystem::RenderProfilers(float col, float row, bool bExtended)
 
 		if (dispInfo.y - m_offset + ROW_SIZE >= height)
 			continue;
-
-		/*
-		   if (m_bCollectionPaused)
-		   {
-		   if (m_mouseX > rectX1 && m_mouseX < rectX2 && m_mouseY > rectY1 && m_mouseY < rectY2)
-		   {
-		   // Mouse inside this rectangle.
-		   m_selectedRow = i;
-		   }
-		   }
-		 */
 
 		if (i == m_selectedRow && m_bCollectionPaused)
 		{
@@ -834,7 +827,7 @@ void CFrameProfileSystem::RenderProfiler(CFrameProfiler* pProfiler, int level, f
 
 	float colTextOfs = 5.0f + 4 * gEnv->IsDedicated();
 	float colThreadfs = -10.0f + 4 * gEnv->IsDedicated();
-	float colCountOfs = -4.5f - 3 * gEnv->IsDedicated();
+	float colCountOfs = -5.0f - 3 * gEnv->IsDedicated();
 	float glow = 0;
 
 	const char* sValueFormat = "%4.2f";
@@ -945,6 +938,7 @@ void CFrameProfileSystem::RenderProfiler(CFrameProfiler* pProfiler, int level, f
 		cmax = pProfiler->m_countHistory.GetMax();
 		cave = pProfiler->m_countHistory.GetAverage();
 		cnow = pProfiler->m_countHistory.GetLast();
+
 		// Extensive info.
 		cry_sprintf(szText, sValueFormat, tmax);
 		DrawLabel(col, row, ValueColor, 0, szText);
@@ -1018,7 +1012,7 @@ float CFrameProfileSystem::RenderPeaks()
 	float PageFaultsColor[4] = { 1, 0.2f, 1, 1 };
 
 	// changed from define to adjustable value
-	float fHotToColdTime = GetPeakDisplayDuration();
+	float fHotToColdTime = profile_peak_display;
 	float colPeaks = 8.0f;
 	float row = 0.0f;
 	float waitRow = 35.0f;
