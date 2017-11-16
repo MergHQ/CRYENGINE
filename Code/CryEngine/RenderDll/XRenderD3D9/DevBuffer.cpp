@@ -1473,6 +1473,11 @@ retry:
 				return false;
 			}
 
+#ifdef CRY_RENDERER_VULKAN
+			auto setLayout = GetDeviceObjectFactory().GetInlineConstantBufferLayout();
+			buffer->GetBaseBuffer()->AsDynamicOffsetBuffer()->CreateDynamicDescriptorSet(setLayout, nsize);
+#endif
+
 			uint8* base_ptr;
 			CDeviceObjectFactory::ExtractBasePointer(buffer->GetBuffer(), D3D11_MAP_WRITE_NO_OVERWRITE, base_ptr);
 
