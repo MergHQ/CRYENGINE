@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ATL.h"
@@ -6,6 +6,7 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "PoolObject_impl.h"
+#include "Common/Logger.h"
 #include <CrySystem/ISystem.h>
 #include <CryPhysics/IPhysics.h>
 #include <CryRenderer/IRenderer.h>
@@ -42,7 +43,7 @@ inline ERequestResult ConvertToRequestResult(ERequestStatus const eAudioRequestS
 		}
 	default:
 		{
-			g_logger.Log(ELogType::Error, "Invalid AudioRequestStatus '%u'. Cannot be converted to an AudioRequestResult. ", eAudioRequestStatus);
+			Cry::Audio::Log(ELogType::Error, "Invalid AudioRequestStatus '%u'. Cannot be converted to an AudioRequestResult. ", eAudioRequestStatus);
 			CRY_ASSERT(false);
 			result = ERequestResult::Failure;
 			break;
@@ -61,21 +62,21 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	if (g_cvars.m_audioObjectPoolSize < 1)
 	{
 		g_cvars.m_audioObjectPoolSize = 1;
-		g_logger.Log(ELogType::Warning, R"(Audio Object pool size should be greater than zero. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
+		Cry::Audio::Log(ELogType::Warning, R"(Audio Object pool size should be greater than zero. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
 	}
 	CATLAudioObject::CreateAllocator(g_cvars.m_audioObjectPoolSize);
 
 	if (g_cvars.m_audioEventPoolSize < 1)
 	{
 		g_cvars.m_audioEventPoolSize = 1;
-		g_logger.Log(ELogType::Warning, R"(Audio Event pool size should be greater than zero. Forcing the cvar "s_AudioEventPoolSize" to 1!)");
+		Cry::Audio::Log(ELogType::Warning, R"(Audio Event pool size should be greater than zero. Forcing the cvar "s_AudioEventPoolSize" to 1!)");
 	}
 	CATLEvent::CreateAllocator(g_cvars.m_audioEventPoolSize);
 
 	if (g_cvars.m_audioStandaloneFilePoolSize < 1)
 	{
 		g_cvars.m_audioStandaloneFilePoolSize = 1;
-		g_logger.Log(ELogType::Warning, R"(Audio Standalone File pool size should be greater than zero. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
+		Cry::Audio::Log(ELogType::Warning, R"(Audio Standalone File pool size should be greater than zero. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
 	}
 	CATLStandaloneFile::CreateAllocator(g_cvars.m_audioStandaloneFilePoolSize);
 
@@ -165,7 +166,7 @@ void CAudioTranslationLayer::ProcessRequest(CAudioRequest& request)
 			}
 		default:
 			{
-				g_logger.Log(ELogType::Error, "Unknown audio request type: %d", static_cast<int>(request.GetData()->type));
+				Cry::Audio::Log(ELogType::Error, "Unknown audio request type: %d", static_cast<int>(request.GetData()->type));
 				CRY_ASSERT(false);
 
 				break;
@@ -423,7 +424,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 				}
 				else
 				{
-					g_logger.Log(ELogType::Warning, "Could not find definition of lose focus trigger");
+					Cry::Audio::Log(ELogType::Warning, "Could not find definition of lose focus trigger");
 				}
 
 				result = m_pIImpl->OnLoseFocus();
@@ -448,7 +449,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 				}
 				else
 				{
-					g_logger.Log(ELogType::Warning, "Could not find definition of get focus trigger");
+					Cry::Audio::Log(ELogType::Warning, "Could not find definition of get focus trigger");
 				}
 			}
 
@@ -464,7 +465,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			}
 			else
 			{
-				g_logger.Log(ELogType::Warning, "Could not find definition of mute all trigger");
+				Cry::Audio::Log(ELogType::Warning, "Could not find definition of mute all trigger");
 			}
 
 			result = m_pIImpl->MuteAll();
@@ -501,7 +502,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			}
 			else
 			{
-				g_logger.Log(ELogType::Warning, "Could not find definition of unmute trigger");
+				Cry::Audio::Log(ELogType::Warning, "Could not find definition of unmute trigger");
 			}
 
 			break;
@@ -654,7 +655,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		}
 	default:
 		{
-			g_logger.Log(ELogType::Warning, "ATL received an unknown AudioManager request: %u", pRequestDataBase->type);
+			Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioManager request: %u", pRequestDataBase->type);
 			result = ERequestStatus::FailureInvalidRequest;
 
 			break;
@@ -785,7 +786,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 	default:
 		{
 			result = ERequestStatus::FailureInvalidRequest;
-			g_logger.Log(ELogType::Warning, "ATL received an unknown AudioCallbackManager request: %u", pRequestDataBase->type);
+			Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioCallbackManager request: %u", pRequestDataBase->type);
 
 			break;
 		}
@@ -983,7 +984,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			}
 			else
 			{
-				g_logger.Log(ELogType::Warning, "ATL received a request to set a position on a global object");
+				Cry::Audio::Log(ELogType::Warning, "ATL received a request to set a position on a global object");
 			}
 
 			break;
@@ -1050,7 +1051,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			}
 			else
 			{
-				g_logger.Log(ELogType::Warning, "ATL received a request to set an environment on a global object");
+				Cry::Audio::Log(ELogType::Warning, "ATL received a request to set an environment on a global object");
 			}
 
 			break;
@@ -1109,7 +1110,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			}
 			else
 			{
-				g_logger.Log(ELogType::Warning, "ATL received a request to release the GlobalAudioObject");
+				Cry::Audio::Log(ELogType::Warning, "ATL received a request to release the GlobalAudioObject");
 			}
 
 			break;
@@ -1147,7 +1148,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	default:
 		{
-			g_logger.Log(ELogType::Warning, "ATL received an unknown AudioObject request type: %u", pBaseRequestData->type);
+			Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioObject request type: %u", pBaseRequestData->type);
 			result = ERequestStatus::FailureInvalidRequest;
 			break;
 		}
@@ -1204,7 +1205,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 		break;
 	default:
 		result = ERequestStatus::FailureInvalidRequest;
-		g_logger.Log(ELogType::Warning, "ATL received an unknown AudioListener request type: %u", pPassedRequestData->type);
+		Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioListener request type: %u", pPassedRequestData->type);
 		break;
 	}
 
@@ -1224,7 +1225,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 
 	if (m_pIImpl == nullptr)
 	{
-		g_logger.Log(ELogType::Warning, "nullptr passed to SetImpl, will run with the null implementation");
+		Cry::Audio::Log(ELogType::Warning, "nullptr passed to SetImpl, will run with the null implementation");
 
 		auto const pImpl = new Impl::Null::CImpl();
 		CRY_ASSERT(pImpl != nullptr);
@@ -1236,7 +1237,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 	if (result != ERequestStatus::Success)
 	{
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
-		g_logger.Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_pIImpl->GetName());
+		Cry::Audio::Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_pIImpl->GetName());
 
 		// There's no need to call Shutdown when the initialization failed as
 		// we expect the implementation to clean-up itself if it couldn't be initialized
@@ -1317,7 +1318,7 @@ void CAudioTranslationLayer::ReleaseImpl()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLevelName)
 {
-	g_logger.Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
+	Cry::Audio::Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
 
 	ERequestStatus result = m_pIImpl->StopAllSounds();
 	CRY_ASSERT(result == ERequestStatus::Success);
@@ -1359,14 +1360,14 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 
 		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
 		result = m_fileCacheMgr.TryLoadRequest(preloadRequestId, true, true);
-		
+
 		if (result != ERequestStatus::Success)
 		{
-			g_logger.Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
+			Cry::Audio::Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
 		}
 	}
 
-	g_logger.Log(ELogType::Warning, "Done refreshing the AudioSystem!");
+	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");
 
 	return ERequestStatus::Success;
 }
@@ -1483,9 +1484,8 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		if ((g_cvars.m_drawAudioDebug & objectDebugMask) != 0)
 		{
 			DrawAudioObjectDebugInfo(*pAuxGeom); // needs to be called first so that the rest of the labels are printed
-												 // on top (Draw2dLabel doesn't provide a way set which labels are printed on top)
+			// on top (Draw2dLabel doesn't provide a way set which labels are printed on top)
 		}
-		
 
 		float posX = 8.0f;
 		float posY = 4.0f;
@@ -1510,8 +1510,8 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 			posY += lineHeightClause;
 			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorWhite, false,
-				"[Audio System] Total Memory Used: %uKiB",
-				static_cast<uint32>((memInfo.allocated - memInfo.freed) / 1024));
+			                      "[Audio System] Total Memory Used: %uKiB",
+			                      static_cast<uint32>((memInfo.allocated - memInfo.freed) / 1024));
 
 			posX += indentation;
 			{
@@ -1546,15 +1546,15 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 				posY += lineHeightClause;
 				pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorWhite, false, "[Impl] Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
-					static_cast<uint32>(memoryInfo.totalMemory / 1024),
-					(memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
-					(memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
-					static_cast<int>(memoryInfo.secondaryPoolAllocations));
+				                      static_cast<uint32>(memoryInfo.totalMemory / 1024),
+				                      (memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
+				                      (memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
+				                      static_cast<int>(memoryInfo.secondaryPoolAllocations));
 
 				posX += indentation;
 				posY += lineHeight;
 				pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorGrey, false, "[Impl Object Pool] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
-					memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+				                      memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
 				posX -= indentation;
 			}
 
@@ -1585,8 +1585,8 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			}
 
 			pAuxGeom->Draw2dLabel(posX, posY, textSize, s_colorBlue, false,
-				"Objects: %3" PRISIZE_T "/%3" PRISIZE_T " Events: %3" PRISIZE_T " EventListeners %3" PRISIZE_T " Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
-				numActiveObjects, numObjects, numEvents, numEventListeners, numListeners, syncRays, asyncRays);
+			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " Events: %3" PRISIZE_T " EventListeners %3" PRISIZE_T " Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
+			                      numActiveObjects, numObjects, numEvents, numEventListeners, numListeners, syncRays, asyncRays);
 
 			posY += lineHeightClause;
 		}
@@ -1686,7 +1686,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 			posY += lineHeightClause;
 		}
-		
+
 		DrawATLComponentDebugInfo(*pAuxGeom, posX, posY);
 	}
 }
