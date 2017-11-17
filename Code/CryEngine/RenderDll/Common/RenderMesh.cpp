@@ -4425,38 +4425,15 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const uint pairGuid, const TRend
 			if (touched[vIdx])
 				continue;
 			touched[vIdx] = true;
-#if 1
+
 			for (int l = 0; l < 4; ++l)
 			{
 				remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
 				remappedIndices[vIdx].indices[l] = pIndicesWeights[vIdx].indices[l];
 			}
-#else
-			// Sokov: The code below doesn't look really safe/logical:
-			// 1) Calling CreateRemappedBoneIndicesPair() assumes that bones are used,
-			// so why to check m_bUsesBones here? Do we have cases when some chunks use bones
-			// and some others do not use bones? 
-			// 2) There is a risk, that some unaware code uses bones but forgets to
-			// set m_bUsesBones to 'true' so it leads to killing all linking (see '= 0;').
-			if (chunk.m_bUsesBones)
-			{
-				for (int l = 0; l < 4; ++l)
-				{
-					remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
-					remappedIndices[vIdx].indices[l] = pIndicesWeights[vIdx].indices[l];
-				}
-			}
-			else
-			{
-				for (int l = 0; l < 4; ++l)
-				{
-					remappedIndices[vIdx].weights.bcolor[l] = 0;
-					remappedIndices[vIdx].indices[l] = 0;
-				}
-			}
-#endif
 		}
 	}
+
 	UnlockStream(VSF_HWSKIN_INFO);
 	UnlockIndexStream();
 
@@ -4507,39 +4484,28 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arr
 			if (touched[vIdx])
 				continue;
 			touched[vIdx] = true;
-#if 1
+
 			for (int l = 0; l < 4; ++l)
 			{
 				remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
 				remappedIndices[vIdx].indices[l] = arrRemapTable[pIndicesWeights[vIdx].indices[l]];
 			}
-#else
-
-			// Sokov: The code below doesn't look really safe/logical:
-			// 1) Calling CreateRemappedBoneIndicesPair() assumes that bones are used,
-			// so why to check m_bUsesBones here? Do we have cases when some chunks use bones
-			// and some others do not use bones? 
-			// 2) There is a risk, that some unaware code uses bones but forgets to
-			// set m_bUsesBones to 'true' so it leads to killing all linking (see '= 0;').
-			if (chunk.m_bUsesBones)
-			{
-				for (int l = 0; l < 4; ++l)
-				{
-					remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
-					remappedIndices[vIdx].indices[l] = arrRemapTable[pIndicesWeights[vIdx].indices[l]];
-				}
-			}
-			else
-			{
-				for (int l = 0; l < 4; ++l)
-				{
-					remappedIndices[vIdx].weights.bcolor[l] = 0;
-					remappedIndices[vIdx].indices[l] = 0;
-				}
-			}
-#endif
 		}
 	}
+
+	// bone mapping for extra bones (8 weight skinning; map weights 5 to 8 from skin bone indices to skeleton bone indices)
+	if (m_pExtraBoneMapping)
+	{
+		for (int i = 0; i < vtxCount; ++i)
+		{
+			for (int l = 0; l < 4; ++l)
+			{
+				auto& boneIdx = m_pExtraBoneMapping[i].boneIds[l];
+				boneIdx = (boneIdx == 0) ? 0 : arrRemapTable[boneIdx];
+			}
+		}
+	}
+
 	UnlockStream(VSF_HWSKIN_INFO);
 	UnlockIndexStream();
 
