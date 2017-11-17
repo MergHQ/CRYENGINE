@@ -759,13 +759,20 @@ void CD3D9Renderer::BeginFrame(CryDisplayContextHandle hWnd)
 		gRenDev->FlushRTCommands(true, true, true);
 	}
 
-	auto camera = GetIRenderAuxGeom()->GetCamera();
-
+	const CCamera& camera = gEnv->pSystem->GetViewCamera();
+	
 	m_pRT->ExecuteRenderThreadCommand(
-		[=]
-		{
-			GetIRenderAuxGeom()->SetCamera(camera);
-		}, ERenderCommandFlags::None);
+	[=]
+	{
+		// Initialize render thread's aux geometry command buffer's camera
+		GetIRenderAuxGeom()->SetCamera(camera);
+
+		// Setting all aux geometries command buffers of the collector to the new camera.
+		// Technically this may not be correct but for now it fixes the issues.
+		m_currentAuxGeomCBCollector->SetCamera(camera);
+		m_currentAuxGeomCBCollector->SetDisplayContextHandle(hWnd);
+
+	}, ERenderCommandFlags::None);
 
 	m_pRT->RC_BeginFrame(hWnd);
 }

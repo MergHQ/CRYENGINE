@@ -1429,6 +1429,16 @@ void CAuxGeomCBCollector::SetCamera(const CCamera& camera)
 	}
 }
 
+void CAuxGeomCBCollector::SetDisplayContextHandle(CryDisplayContextHandle hWnd)
+{
+	m_hWnd = hWnd;
+
+	for (AUXThreadMap::iterator it = m_auxThreadMap.begin(); it != m_auxThreadMap.end(); ++it)
+	{
+		it->second->SetDisplayContextHandle(hWnd);
+	}
+}
+
 void CAuxGeomCBCollector::FreeMemory()
 {
 	m_rwGlobal.WLock();
@@ -1493,6 +1503,17 @@ void CAuxGeomCBCollector::SThread::SetCamera(const CCamera & camera)
 		auxGeomCB.second->SetCamera(camera);
 	}
 }
+
+void CAuxGeomCBCollector::SThread::SetDisplayContextHandle(CryDisplayContextHandle hWnd)
+{
+	m_hWnd = hWnd;
+
+	for (auto& auxGeomCB : m_auxJobMap)
+	{
+		auxGeomCB.second->SetCurrentDisplayContext(hWnd);
+	}
+}
+
 
 void CAuxGeomCBCollector::SThread::FreeMemory()
 {

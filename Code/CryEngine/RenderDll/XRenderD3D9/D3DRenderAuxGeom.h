@@ -87,6 +87,7 @@ private:
 		CAuxGeomCB*       m_cbCurrent;
 		AUXJobMap         m_auxJobMap;
 		CCamera			  m_camera;
+		CryDisplayContextHandle m_hWnd;
 		mutable CryRWLock m_rwlLocal;
 	public:
 		SThread();
@@ -95,17 +96,20 @@ private:
 		//void AppendJob(AUXJobs& auxJobs);
 		void FreeMemory();
 		void SetCamera(const CCamera& camera);
+		void SetDisplayContextHandle(CryDisplayContextHandle hWnd);
 		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
 	AUXThreadMap      m_auxThreadMap;
 	mutable CryRWLock m_rwGlobal;
 	CCamera m_camera;
+	CryDisplayContextHandle m_hWnd;
 public:
 	~CAuxGeomCBCollector();
 	CAuxGeomCB* Get(void* jobID);
 	void FreeMemory();
 	AUXJobs SubmitAuxGeomsAndPrepareForRendering();
 	void SetCamera(const CCamera& camera);
+	void SetDisplayContextHandle(CryDisplayContextHandle hWnd);
 
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 };
