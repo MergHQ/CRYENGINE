@@ -675,6 +675,17 @@ private:
 
 	void GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const;
 
+	// Returns false when the capacity is reached and no new element can be inserted
+	template<class IdMap>
+	bool GrowIdMapIfNeeded(IdMap& idMap)
+	{
+		if (idMap.size() >= idMap.capacity())
+		{
+			return idMap.grow(idMap.capacity()) > 0;
+		}
+		return true;
+	}
+
 	typedef std::vector<uint16> RunningTasks;
 	RunningTasks m_runningTasks;
 	size_t       m_maxRunningTaskCount;
@@ -692,16 +703,11 @@ private:
 	typedef id_map<uint32, MNM::BoundingVolume> Volumes;
 	Volumes m_volumes;
 
-	//////////////////////////////////////////////////////////////////////////
-	//TODO: we need something dynamic, there can be many markup volumes
-	//typedef std::unordered_map<NavigationVolumeID, MNM::MarkupVolume> MarkupVolumes;
+	// Markup volumes
 	typedef id_map<uint32, MNM::SMarkupVolume> MarkupVolumes;
 	MarkupVolumes                                   m_markupVolumes;
-
 	id_map<uint32, MNM::SMarkupVolumeData>          m_markupsData;
-
 	std::unordered_map<uint32, MNM::AreaAnnotation> m_markupAnnotationChangesToApply;
-	//////////////////////////////////////////////////////////////////////////
 
 #ifdef SW_NAVMESH_USE_GUID
 	typedef std::map<NavigationMeshGUID, NavigationMeshID> MeshMap;
