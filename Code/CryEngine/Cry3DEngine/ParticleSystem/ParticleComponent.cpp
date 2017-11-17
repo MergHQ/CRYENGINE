@@ -391,7 +391,7 @@ IMaterial* CParticleComponent::MakeMaterial()
 		if (pMaterial)
 		{
 			IShader* pShader = pMaterial->GetShaderItem().m_pShader;
-			if (!pShader || pShader->GetShaderType() != m_componentParams.m_requiredShaderType)
+			if (!pShader || (pShader->GetFlags() & EF_LOADED && pShader->GetShaderType() != m_componentParams.m_requiredShaderType))
 				pMaterial = nullptr;
 		}
 	}
