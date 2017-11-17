@@ -57,7 +57,7 @@ public:
 	~CStretchRegionPass() {};
 
 	void Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect=NULL, const RECT *pDstRect=NULL, bool bBigDownsample=false);
-	void PreparePrimitive(CRenderPrimitive& prim, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDstRT);
+	bool PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDstRT);
 
 	static CStretchRegionPass &GetPass();
 	static void Shutdown();
@@ -226,7 +226,7 @@ public:
 	static EPassId GetPassId() { return EPassId::ClearRegionPass; }
 
 protected:
-	void PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport);
+	bool PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport);
 
 	CPrimitiveRenderPass          m_clearPass;
 	std::vector<CRenderPrimitive> m_clearPrimitives;
