@@ -217,6 +217,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceG
 	CryStackAllocWithSizeVectorCleared(Vec4, maxVectorCount, zeroMem, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	// allocate constant buffers and fill with zeros
+	bool allBuffersValid = true;
 	for (int i = 0, end = m_pShaderReflection->bufferCount; i < end; ++i)
 	{
 		auto& updateContext = m_pShaderReflection->bufferUpdateContexts[i];
@@ -235,11 +236,11 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceG
 		if (bufferSize)
 		{
 			m_constantBuffers[updateContext.bufferIndex].pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize);
-			m_constantBuffers[updateContext.bufferIndex].pBuffer->UpdateBuffer(zeroMem, updateSize);
-
-			m_pShaderReflection->bValid = true;
+			allBuffersValid &= m_constantBuffers[updateContext.bufferIndex].pBuffer->UpdateBuffer(zeroMem, updateSize);
 		}
 	}
+
+	m_pShaderReflection->bValid = m_pShaderReflection->bufferCount > 0 && allBuffersValid;
 }
 
 void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceComputePSO& pipelineState)

@@ -179,13 +179,14 @@ void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT
 
 	// FIXME: I had to Reset primitive here because otherwise it doesn't recognize texture change
 	m_Primitive.Reset();
-	PreparePrimitive(m_Primitive, rcS, renderState, viewport, bResample, bBigDownsample, pSrcRT, pDestRT);
-
-	m_pass.AddPrimitive(&m_Primitive);
-	m_pass.Execute();
+	if (PreparePrimitive(m_Primitive, m_pass, rcS, renderState, viewport, bResample, bBigDownsample, pSrcRT, pDestRT))
+	{
+		m_pass.AddPrimitive(&m_Primitive);
+		m_pass.Execute();
+	}
 }
 
-void CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDestRT)
+bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDestRT)
 {
 	static CCryNameTSCRC techTexToTex("TextureToTexture");
 	static CCryNameTSCRC techTexToTexResampled("TextureToTextureResampledReg");
@@ -226,14 +227,21 @@ void CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, const RECT& rc
 	prim.SetTexture(0, pSrcRT);
 	prim.SetSampler(0, bResample ? EDefaultSamplerStates::LinearClamp : EDefaultSamplerStates::PointClamp);
 
-	auto& constantManager = prim.GetConstantManager();
-	constantManager.BeginNamedConstantUpdate();
+	if (prim.Compile(targetPass) == CRenderPrimitive::eDirty_None)
+	{
+		auto& constantManager = prim.GetConstantManager();
+		constantManager.BeginNamedConstantUpdate();
 
-	constantManager.SetNamedConstant(param0Name, params0, eHWSC_Pixel);
-	constantManager.SetNamedConstant(param1Name, params1, eHWSC_Pixel);
-	constantManager.SetNamedConstant(paramTCName, ParamsTC, eHWSC_Vertex);
+		constantManager.SetNamedConstant(param0Name, params0, eHWSC_Pixel);
+		constantManager.SetNamedConstant(param1Name, params1, eHWSC_Pixel);
+		constantManager.SetNamedConstant(paramTCName, ParamsTC, eHWSC_Vertex);
 
-	constantManager.EndNamedConstantUpdate(&m_pass.GetViewport());
+		constantManager.EndNamedConstantUpdate(&targetPass.GetViewport());
+
+		return true;
+	}
+
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -800,16 +808,17 @@ void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint 
 	for (int i = 0; i < numRects; ++i)
 	{
 		auto& prim = m_clearPrimitives[i];
-		PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport);
-
-		m_clearPass.AddPrimitive(&prim);
+		if (PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport))
+		{
+			m_clearPass.AddPrimitive(&prim);
+		}
 	}
 
 	m_clearPass.Execute();
 #endif
 }
 
-void CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport)
+bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport)
 {
 	static CCryNameTSCRC techClear("Clear");
 
@@ -819,31 +828,37 @@ void CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState,
 	prim.SetStencilState(stencilState, stencilRef);
 	prim.SetCustomVertexStream(m_quadVertices, EDefaultInputLayouts::P3F, sizeof(SVF_P3F));
 	prim.SetDrawInfo(eptTriangleList, 0, 0, 6);
-	prim.Compile(m_clearPass);
 
-	auto& constantManager = prim.GetConstantManager();
-	constantManager.BeginNamedConstantUpdate();
+	if (prim.Compile(m_clearPass) == CRenderPrimitive::eDirty_None)
+	{
+		auto& constantManager = prim.GetConstantManager();
+		constantManager.BeginNamedConstantUpdate();
 
-	float clipSpaceL = rect.left   / targetViewport.Width  *  2.0f - 1.0f;
-	float clipSpaceT = rect.top    / targetViewport.Height * -2.0f + 1.0f;
-	float clipSpaceR = rect.right  / targetViewport.Width  *  2.0f - 1.0f;
-	float clipSpaceB = rect.bottom / targetViewport.Height * -2.0f + 1.0f;
+		float clipSpaceL = rect.left / targetViewport.Width  *  2.0f - 1.0f;
+		float clipSpaceT = rect.top / targetViewport.Height * -2.0f + 1.0f;
+		float clipSpaceR = rect.right / targetViewport.Width  *  2.0f - 1.0f;
+		float clipSpaceB = rect.bottom / targetViewport.Height * -2.0f + 1.0f;
 
-	Vec4 vClearRect;
-	vClearRect.x = (clipSpaceR - clipSpaceL) * 0.5f;
-	vClearRect.y = (clipSpaceT - clipSpaceB) * 0.5f;
-	vClearRect.z = (clipSpaceR + clipSpaceL) * 0.5f;
-	vClearRect.w = (clipSpaceT + clipSpaceB) * 0.5f;
+		Vec4 vClearRect;
+		vClearRect.x = (clipSpaceR - clipSpaceL) * 0.5f;
+		vClearRect.y = (clipSpaceT - clipSpaceB) * 0.5f;
+		vClearRect.z = (clipSpaceR + clipSpaceL) * 0.5f;
+		vClearRect.w = (clipSpaceT + clipSpaceB) * 0.5f;
 
-	static CCryNameR paramClearRect("vClearRect");
-	static CCryNameR paramClearDepth("vClearDepth");
-	static CCryNameR paramClearColor("vClearColor");
+		static CCryNameR paramClearRect("vClearRect");
+		static CCryNameR paramClearDepth("vClearDepth");
+		static CCryNameR paramClearColor("vClearColor");
 
-	constantManager.SetNamedConstant(paramClearRect, vClearRect, eHWSC_Vertex);
-	constantManager.SetNamedConstant(paramClearDepth, Vec4(cDepth, 0, 0, 0), eHWSC_Vertex);
-	constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
+		constantManager.SetNamedConstant(paramClearRect, vClearRect, eHWSC_Vertex);
+		constantManager.SetNamedConstant(paramClearDepth, Vec4(cDepth, 0, 0, 0), eHWSC_Vertex);
+		constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
 
-	constantManager.EndNamedConstantUpdate(&m_clearPass.GetViewport());
+		constantManager.EndNamedConstantUpdate(&m_clearPass.GetViewport());
+
+		return true;
+	}
+
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

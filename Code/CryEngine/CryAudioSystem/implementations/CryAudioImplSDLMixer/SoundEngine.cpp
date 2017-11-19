@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "SoundEngine.h"
 #include "SoundEngineUtil.h"
+#include <Logger.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 
@@ -105,7 +106,7 @@ void SoundEngine::UnloadSample(const SampleId nID)
 	}
 	else
 	{
-		g_implLogger.Log(ELogType::Error, "Could not find sample with id %d", nID);
+		Cry::Audio::Log(ELogType::Error, "Could not find sample with id %d", nID);
 	}
 }
 
@@ -236,20 +237,20 @@ bool SoundEngine::Init()
 {
 	if (SDL_Init(SDL_INIT_AUDIO) < 0)
 	{
-		g_implLogger.Log(ELogType::Error, "SDL::SDL_Init() returned: %s", SDL_GetError());
+		Cry::Audio::Log(ELogType::Error, "SDL::SDL_Init() returned: %s", SDL_GetError());
 		return false;
 	}
 
 	int loadedFormats = Mix_Init(s_supportedFormats);
 	if ((loadedFormats & s_supportedFormats) != s_supportedFormats)
 	{
-		g_implLogger.Log(ELogType::Error, "SDLMixer::Mix_Init() failed to init support for format flags %d with error \"%s\"", s_supportedFormats, Mix_GetError());
+		Cry::Audio::Log(ELogType::Error, "SDLMixer::Mix_Init() failed to init support for format flags %d with error \"%s\"", s_supportedFormats, Mix_GetError());
 		return false;
 	}
 
 	if (Mix_OpenAudio(s_sampleRate, MIX_DEFAULT_FORMAT, 2, s_bufferSize) < 0)
 	{
-		g_implLogger.Log(ELogType::Error, "SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error \"%s\"", Mix_GetError());
+		Cry::Audio::Log(ELogType::Error, "SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error \"%s\"", Mix_GetError());
 		return false;
 	}
 
@@ -311,7 +312,7 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t siz
 	if (pSample != nullptr)
 	{
 		Mix_FreeChunk(pSample);
-		g_implLogger.Log(ELogType::Warning, "Loading sample %s which had already been loaded", samplePath.c_str());
+		Cry::Audio::Log(ELogType::Warning, "Loading sample %s which had already been loaded", samplePath.c_str());
 	}
 	SDL_RWops* pData = SDL_RWFromMem(pMemory, size);
 	if (pData)
@@ -325,12 +326,12 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t siz
 		}
 		else
 		{
-			g_implLogger.Log(ELogType::Error, "SDL Mixer failed to load sample. Error: \"%s\"", Mix_GetError());
+			Cry::Audio::Log(ELogType::Error, "SDL Mixer failed to load sample. Error: \"%s\"", Mix_GetError());
 		}
 	}
 	else
 	{
-		g_implLogger.Log(ELogType::Error, "SDL Mixer failed to transform the audio data. Error: \"%s\"", SDL_GetError());
+		Cry::Audio::Log(ELogType::Error, "SDL Mixer failed to transform the audio data. Error: \"%s\"", SDL_GetError());
 	}
 	return s_invalidSampleId;
 }
@@ -345,11 +346,11 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 		SampleNameMap::const_iterator it = g_samplePaths.find(id);
 		if (it != g_samplePaths.end() && it->second != samplePath)
 		{
-			g_implLogger.Log(ELogType::Error, "Loaded a Sample with the already existing ID %u, but from a different path source path '%s' <-> '%s'.", static_cast<uint>(id), it->second.c_str(), samplePath.c_str());
+			Cry::Audio::Log(ELogType::Error, "Loaded a Sample with the already existing ID %u, but from a different path source path '%s' <-> '%s'.", static_cast<uint>(id), it->second.c_str(), samplePath.c_str());
 		}
 		if (stl::find_in_map(g_sampleData, id, nullptr) != nullptr)
 		{
-			g_implLogger.Log(ELogType::Error, "Loading sample '%s' which had already been loaded", samplePath.c_str());
+			Cry::Audio::Log(ELogType::Error, "Loading sample '%s' which had already been loaded", samplePath.c_str());
 		}
 #endif
 		g_sampleData[id] = pSample;
@@ -367,7 +368,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 			const SampleId newId = SoundEngine::LoadSampleFromMemory(pData, fileSize, samplePath, id);
 			if (newId == s_invalidSampleId)
 			{
-				g_implLogger.Log(ELogType::Error, "SDL Mixer failed to load sample %s. Error: \"%s\"", samplePath.c_str(), Mix_GetError());
+				Cry::Audio::Log(ELogType::Error, "SDL Mixer failed to load sample %s. Error: \"%s\"", samplePath.c_str(), Mix_GetError());
 				bSuccess = false;
 			}
 			CryModuleFree(pData);
@@ -483,7 +484,7 @@ void SetChannelPosition(const CTrigger* pStaticData, const int channelID, const 
 	}
 	else
 	{
-		g_implLogger.Log(ELogType::Error, "The minimum attenuation distance value is higher than the maximum");
+		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance value is higher than the maximum");
 	}
 }
 
@@ -561,12 +562,12 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 				}
 				else
 				{
-					g_implLogger.Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
+					Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 				}
 			}
 			else
 			{
-				g_implLogger.Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
+				Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
 			}
 
 			if (!pEvent->m_channels.empty())
@@ -652,12 +653,12 @@ bool SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStand
 		}
 		else
 		{
-			g_implLogger.Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
+			Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 		}
 	}
 	else
 	{
-		g_implLogger.Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
+		Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
 	}
 
 	if (!pStandaloneFile->m_channels.empty())

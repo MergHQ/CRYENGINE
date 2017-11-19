@@ -843,7 +843,7 @@ void CAttachmentSKIN::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRend
 	m_pModelSkin->m_arrModelMeshes[nDesiredRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 }
 
-SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimation, uint8 nRenderLOD, const SRenderingPassInfo& passInfo)
+SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool useSwSkinningCpu, uint8 nRenderLOD, const SRenderingPassInfo& passInfo)
 {
 	DEFINE_PROFILER_FUNCTION();
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
@@ -872,7 +872,7 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 
 	uint32 nCustomDataSize = 0;
 	uint commandBufferLength = 0;
-	if (bVertexAnimation)
+	if (useSwSkinningCpu)
 	{
 		// Make sure the software skinning command gets compiled.
 		SVertexSkinData vertexSkinData = SVertexSkinData();

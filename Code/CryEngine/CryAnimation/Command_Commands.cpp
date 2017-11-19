@@ -23,6 +23,8 @@ namespace Command
 
 void LoadControllers(const GlobalAnimationHeaderCAF& rGAH, const Command::CState& state, IController** controllers)
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	memset(controllers, 0, state.m_jointCount * sizeof(IController*));
 
 	if (rGAH.IsAssetOnDemand())
@@ -195,6 +197,8 @@ void SampleAddAnimFull::Execute(const CState& state, CEvaluationContext& context
 
 	if (rCAF.IsAssetAdditive())
 	{
+		CRY_PROFILE_REGION(PROFILE_ANIMATION, "SampleAddAnimFull::Execute:UpdatePoseAdd");
+
 		for (uint32 j = startingJointIndex; j < state.m_jointCount; ++j)
 		{
 			QuatT tempPose(defaultPose[j].q, defaultPose[j].t);
@@ -228,6 +232,8 @@ void SampleAddAnimFull::Execute(const CState& state, CEvaluationContext& context
 	}
 	else
 	{
+		CRY_PROFILE_REGION(PROFILE_ANIMATION, "SampleAddAnimFull::Execute:UpdatePose");
+
 		const QuatT* parrHemispherePose = Console::GetInst().ca_SampleQuatHemisphereFromCurrentPose ? outputRelPose : defaultPose; // joints to compare with in quaternion dot product
 		for (uint32 j = startingJointIndex; j < state.m_jointCount; ++j)
 		{

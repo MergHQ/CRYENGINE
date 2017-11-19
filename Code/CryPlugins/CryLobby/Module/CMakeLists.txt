@@ -126,7 +126,7 @@ elseif(WIN32)
 endif()
 mark_as_advanced(FORCE SPEEX)
 
-if (EXISTS "${SDK_DIR}/Steamworks" AND WIN32 OR LINUX OR APPLE)
+if (EXISTS "${SDK_DIR}/Steamworks" AND WIN32)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Steamworks)
 endif()
 

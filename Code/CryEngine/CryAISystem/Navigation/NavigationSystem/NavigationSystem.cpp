@@ -745,16 +745,34 @@ NavigationVolumeID NavigationSystem::CreateMarkupVolume(NavigationVolumeID reque
 {
 	NavigationVolumeID id = requestedID;
 	if (requestedID == NavigationVolumeID(0))
-		id = NavigationVolumeID(m_markupVolumes.insert(MNM::SMarkupVolume()));
+	{
+		if (GrowIdMapIfNeeded(m_markupVolumes))
+		{
+			id = NavigationVolumeID(m_markupVolumes.insert(MNM::SMarkupVolume()));
+		}
+		else
+		{
+			AIWarning("NavigationSystem::CreateMarkupVolume failed. Maximum number of markup volumes reached! %zu", MarkupVolumes::max_capacity());
+			id = NavigationVolumeID();
+		}
+	}
 	else
 	{
 		if (!m_markupVolumes.validate(requestedID))
 		{
-			m_markupVolumes.insert(requestedID, MNM::SMarkupVolume());
+			if (GrowIdMapIfNeeded(m_markupVolumes))
+			{
+				m_markupVolumes.insert(requestedID, MNM::SMarkupVolume());
+			}
+			else
+			{
+				AIWarning("NavigationSystem::CreateMarkupVolume failed. Maximum number of markup volumes reached! %zu", MarkupVolumes::max_capacity());
+				id = NavigationVolumeID();
+			}
 		}
 	}
 	
-	CRY_ASSERT(id != 0);
+	CRY_ASSERT(id.IsValid());
 	return id;
 }
 
@@ -1460,7 +1478,15 @@ void NavigationSystem::CommitMarkupData(const TileTaskResult& result, const MNM:
 
 		if (!m_markupsData.validate(markupID))
 		{
-			m_markupsData.insert(markupID, MNM::SMarkupVolumeData());
+			if (GrowIdMapIfNeeded(m_markupsData))
+			{
+				m_markupsData.insert(markupID, MNM::SMarkupVolumeData());
+			}
+			else
+			{
+				AIWarning("NavigationSystem: Storing markups data failed. Maximum number of markups data reached! %zu", decltype(m_markupsData)::max_capacity());
+				continue;
+			}
 		}
 
 		MNM::SMarkupVolumeData::MeshTriangles* pMeshMarkupTriangles = nullptr;

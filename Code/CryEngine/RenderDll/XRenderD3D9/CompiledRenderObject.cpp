@@ -38,7 +38,14 @@ CConstantBufferPtr CRenderObjectsPools::AllocatePerInstanceConstantBuffer()
 		CRY_ASSERT(ptr && !ptr->IsNullBuffer() && "Invalid cached pointer");
 		return ptr;
 	}
-	return gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerInstanceConstantBuffer_Skin)); // largest buffer type in use
+
+	static_assert(
+		sizeof(HLSL_PerInstanceConstantBuffer_TerrainVegetation) >= sizeof(HLSL_PerInstanceConstantBuffer_Skin) &&
+		sizeof(HLSL_PerInstanceConstantBuffer_TerrainVegetation) >= sizeof(HLSL_PerInstanceConstantBuffer_Base),
+		"HLSL_PerInstanceConstantBuffer_TerrainVegetation has not the largest constant buffer size."
+	);
+
+	return gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerInstanceConstantBuffer_TerrainVegetation));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -45,10 +45,40 @@ CDeferredDecalsStage::~CDeferredDecalsStage()
 
 void CDeferredDecalsStage::Init()
 {
-	for (int i = 0; i < kMaxDeferredDecals; ++i)
+	// Preallocate 64 decals
+	ResizeDecalBuffers(64);
+}
+
+void CDeferredDecalsStage::ResizeDecalBuffers(size_t requiredDecalCount)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+
+	const size_t allocatedDecalCount = m_decalPrimitives.size();
+
+	if (allocatedDecalCount < requiredDecalCount)
 	{
+		m_decalPrimitives.reserve(requiredDecalCount);
+		m_decalShaderResources.reserve(requiredDecalCount);
+
+		for (int i = allocatedDecalCount; i < requiredDecalCount; ++i)
+		{
 			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SDecalConstants));
-			m_decalPrimitives[i].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
+
+			m_decalPrimitives.emplace_back();
+			m_decalPrimitives.back().SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
+
+			m_decalShaderResources.emplace_back();
+		}
+	}
+	else if (allocatedDecalCount > requiredDecalCount && allocatedDecalCount > MaxPersistentDecals)
+	{
+		const size_t desiredDecalCount = max(requiredDecalCount, size_t(MaxPersistentDecals));
+
+		for (int i = allocatedDecalCount; i > desiredDecalCount; --i)
+		{
+			m_decalPrimitives.pop_back();
+			m_decalShaderResources.pop_back();
+		}
 	}
 }
 
@@ -274,7 +304,8 @@ void CDeferredDecalsStage::Execute()
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	auto& deferredDecals = RenderView()->GetDeferredDecals();
-	assert(deferredDecals.size() <= kMaxDeferredDecals);
+
+	ResizeDecalBuffers(deferredDecals.size());
 
 #if !CRY_PLATFORM_ORBIS
 	// Want the buffer cleared or we'll just get black out
@@ -303,7 +334,7 @@ void CDeferredDecalsStage::Execute()
 		
 	m_decalPass.BeginAddingPrimitives();
 		
-	for (uint32 i = 0, count = std::min(deferredDecals.size(), (size_t)kMaxDeferredDecals); i < count; i++)
+	for (uint32 i = 0, count = deferredDecals.size(); i < count; i++)
 	{
 		SetupDecalPrimitive(deferredDecals[i], m_decalPrimitives[i], m_decalShaderResources[i]);
 	}

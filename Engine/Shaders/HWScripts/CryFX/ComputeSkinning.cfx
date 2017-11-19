@@ -261,7 +261,7 @@ void DeformCS(
 	{
 		const GDSkinning skinning = g_skinning[offset + i];
 
-		const float weight = (skinning.weightIndex * (1.0f / 0xFF000000));
+		const float weight = (float)(skinning.weightIndex >> 24) / 255.0f;
 		const uint index   = (skinning.weightIndex & 0x00FFFFFF);
 
 		dualQuat.rotation    += _g_SkinQuat_Cur[index][0] * weight;

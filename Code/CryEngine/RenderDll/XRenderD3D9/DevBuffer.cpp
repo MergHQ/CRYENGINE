@@ -4050,7 +4050,7 @@ void CConstantBuffer::EndWrite(bool requires_flush)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-void CConstantBuffer::UpdateBuffer(const void* src, buffer_size_t size, buffer_size_t offset /*= 0*/, int numDataBlocks /*= 1*/)
+bool CConstantBuffer::UpdateBuffer(const void* src, buffer_size_t size, buffer_size_t offset /*= 0*/, int numDataBlocks /*= 1*/)
 {
 	assert(m_dynamic || size == m_size);
 	
@@ -4082,7 +4082,7 @@ void CConstantBuffer::UpdateBuffer(const void* src, buffer_size_t size, buffer_s
 		if (!(m_buffer = CDeviceBuffer::Create(Layout, nullptr)))
 		{
 			CryLogAlways("CConstantBuffer::BeginWrite: could not allocate buffer of size %" PRISIZE_T, m_size);
-			return;
+			return false;
 		}
 
 		m_used = 1;
@@ -4105,6 +4105,8 @@ void CConstantBuffer::UpdateBuffer(const void* src, buffer_size_t size, buffer_s
 	}
 #endif
 	m_nUpdCount++;
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
