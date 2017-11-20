@@ -303,7 +303,7 @@ void CRenderPipelineProfiler::ResetBasicStats(RPProfilerStats* pBasicStats, bool
 	}
 }
 
-void CRenderPipelineProfiler::ComputeAverageStats()
+void CRenderPipelineProfiler::ComputeAverageStats(SFrameData& frameData)
 {
 	static int s_frameCounter = 0;
 	const int kUpdateFrequency = 60;
@@ -311,11 +311,17 @@ void CRenderPipelineProfiler::ComputeAverageStats()
 	const uint32 processThreadID = (uint32)gRenDev->GetRenderThreadID();
 	const uint32 fillThreadID = (uint32)gRenDev->GetMainThreadID();
 
+	// Simple Exponential Smoothing Weight
+	// (1-a) * oldVal  + a * newVal
+	// Range of "a": [0.0,1.0]
+	const float smoothWeightDataOld = 1.f - CRenderer::CV_r_profilerSmoothingWeight;
+	const float smoothWeightDataNew = CRenderer::CV_r_profilerSmoothingWeight;
+
 	// GPU times
 	for (uint32 i = 0; i < RPPSTATS_NUM; ++i)
 	{
 		RPProfilerStats& basicStat = m_basicStats[processThreadID][i];
-		basicStat.gpuTimeSmoothed = 0.9f * m_basicStats[fillThreadID][i].gpuTimeSmoothed + 0.1f * basicStat.gpuTime;
+		basicStat.gpuTimeSmoothed = smoothWeightDataOld * m_basicStats[fillThreadID][i].gpuTimeSmoothed + smoothWeightDataNew * basicStat.gpuTime;
 		float gpuTimeMax = std::max(basicStat._gpuTimeMaxNew, m_basicStats[fillThreadID][i]._gpuTimeMaxNew);
 		basicStat._gpuTimeMaxNew = std::max(gpuTimeMax, basicStat.gpuTime);
 
@@ -324,6 +330,13 @@ void CRenderPipelineProfiler::ComputeAverageStats()
 			basicStat.gpuTimeMax = basicStat._gpuTimeMaxNew;
 			basicStat._gpuTimeMaxNew = 0;
 		}
+	}
+
+	for (uint32 i = 0; i < frameData.m_numSections; ++i)
+	{
+		SProfilerSection& section = frameData.m_sections[i];
+		section.gpuTimeSmoothed = smoothWeightDataOld * section.gpuTimeSmoothed + smoothWeightDataNew * section.gpuTime;
+		section.cpuTimeSmoothed = smoothWeightDataOld * section.cpuTimeSmoothed + smoothWeightDataNew * section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU) * 1000.0f;
 	}
 
 	s_frameCounter += 1;
@@ -539,7 +552,7 @@ void CRenderPipelineProfiler::UpdateBasicStats(uint32 frameDataIndex)
 
 	AddToStats(pBasicStats[eRPPSTATS_OverallFrame], frameData.m_sections[0]);
 
-	ComputeAverageStats();
+	ComputeAverageStats(frameData);
 }
 
 void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
@@ -627,8 +640,8 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 
 		it->second.bUsed = true;
 
-		float gpuTime = section.gpuTime;
-		float cpuTime = section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU);
+		float gpuTimeSmoothed = section.gpuTimeSmoothed;
+		float cpuTimeSmoothed = section.cpuTimeSmoothed;
 		float ypos = 30.0f + (it->second.nPos % elemsPerColumn) * 16.0f;
 		float xpos = 20.0f + ((int)(it->second.nPos / elemsPerColumn)) * 600.0f;
 		
@@ -639,16 +652,16 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 		else
 		{
 			// Highlight items which are more expensive relative to the other items in the list
-			color.r = color.g = color.b = 0.4f + 0.3f * std::min(gpuTime / medianTimeGPU, 2.0f);
+			color.r = color.g = color.b = 0.4f + 0.3f * std::min(gpuTimeSmoothed / medianTimeGPU, 2.0f);
 			// Tint items which are expensive relative to the overall frame time
-			color.b *= clamp_tpl(1.2f - (gpuTime / frameTimeGPU) * 8.0f, 0.0f, 1.0f);
+			color.b *= clamp_tpl(1.2f - (gpuTimeSmoothed / frameTimeGPU) * 8.0f, 0.0f, 1.0f);
 		}
 		
 		IRenderAuxText::Draw2dLabel(xpos + max((int)(abs(section.recLevel) - 2), 0) * 15.0f, ypos, 1.5f, &color.r, false, "%s", section.name);
-		IRenderAuxText::Draw2dLabel(xpos + 300, ypos, 1.5f, &color.r, false, "%.2fms", gpuTime);
+		IRenderAuxText::Draw2dLabel(xpos + 300, ypos, 1.5f, &color.r, false, "%.2fms", gpuTimeSmoothed);
 		if (!(section.flags & eProfileSectionFlags_MultithreadedSection))
 		{
-			IRenderAuxText::Draw2dLabel(xpos + 380, ypos, 1.5f, &color.r, false, "%.2fms", cpuTime * 1000.0f);
+			IRenderAuxText::Draw2dLabel(xpos + 380, ypos, 1.5f, &color.r, false, "%.2fms", cpuTimeSmoothed);
 		}
 		else
 		{

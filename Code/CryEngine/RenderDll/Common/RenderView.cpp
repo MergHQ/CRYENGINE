@@ -71,7 +71,6 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 		for (uint32 j = 0; j < m_tempRenderObjects.numObjectsInPool; j++)
 		{
 			CRenderObject* pRendObj = new(&m_tempRenderObjects.pRenderObjectsPool[j])CRenderObject();
-			pRendObj->Init();
 			arrPrefill[j] = &m_tempRenderObjects.pRenderObjectsPool[j];
 		}
 		m_tempRenderObjects.tempObjects.PrefillContainer(arrPrefill, m_tempRenderObjects.numObjectsInPool);
@@ -183,6 +182,9 @@ void CRenderView::Clear()
 	m_skipRenderingFlags = 0;
 
 	m_tempRenderObjects.tempObjects.resize(0);
+
+	m_permanentObjects.CoalesceMemory();
+	m_permanentObjects.clear();
 
 	m_bClearTarget = false;
 	m_targetClearColor = ColorF(0,0,0,0);
@@ -886,6 +888,21 @@ void CRenderView::AddPermanentObjectInline(CPermanentRenderObject* pObject, SRen
 void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo)
 {
 	assert(pObject->m_bPermanent);
+
+#ifndef NDEBUG
+	// Expand normal render items
+	for (int obj = 0, numObj = m_permanentObjects.size(); obj < numObj; obj++)
+	{
+		const SPermanentObjectRecord& RESTRICT_REFERENCE record = m_permanentObjects[obj];
+		CPermanentRenderObject* RESTRICT_POINTER pRenderObject = record.pRenderObject;
+		assert(pRenderObject->m_bPermanent);
+
+		CRY_ASSERT_MESSAGE(pRenderObject != pObject, "Adding RenderObject twice is suspicious!");
+		if (pRenderObject == pObject)
+			return;
+	}
+#endif
+
 	AddPermanentObjectInline(static_cast<CPermanentRenderObject*>(pObject), passInfo.GetRendItemSorter(), passInfo.ShadowFrustumSide());
 }
 

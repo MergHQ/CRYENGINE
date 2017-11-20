@@ -296,14 +296,8 @@ public:
 	const SPerInstanceShaderData& GetInstancingData() const { return m_instanceShaderData; };
 
 public:
-	static CCompiledRenderObject* AllocateFromPool()
-	{
-		return s_pPools->m_compiledObjectsPool.New();
-	}
-	static void FreeToPool(CCompiledRenderObject* ptr)
-	{
-		s_pPools->m_compiledObjectsPool.Delete(ptr);
-	}
+	static CCompiledRenderObject* AllocateFromPool();
+	static void FreeToPool(CCompiledRenderObject* ptr);
 	static void SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:

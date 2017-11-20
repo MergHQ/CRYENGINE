@@ -55,6 +55,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_statsMinDrawcalls);
 AllocateConstIntCVar(CRendererCVars, CV_r_stats);
 AllocateConstIntCVar(CRendererCVars, CV_r_profiler);
 float CRendererCVars::CV_r_profilerTargetFPS;
+float CRendererCVars::CV_r_profilerSmoothingWeight;
 AllocateConstIntCVar(CRendererCVars, CV_r_log);
 AllocateConstIntCVar(CRendererCVars, CV_r_logTexStreaming);
 AllocateConstIntCVar(CRendererCVars, CV_r_logShaders);
@@ -2510,6 +2511,11 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_profilerTargetFPS", CV_r_profilerTargetFPS, 30.0f, VF_NULL,
 	               "Target framerate for application.");
+
+	REGISTER_CVAR3("r_profilerSmoothingWeight", CV_r_profilerSmoothingWeight, 0.1f, VF_NULL,
+		"Set how much the current time measurement weights into the previous one.\n"
+		"  Single Exponential Smoothing -> (1-a)*oldVal + a*newVal\n"
+		"  Range: [0.0, 1.0]");
 
 	REGISTER_CVAR3("r_VSync", CV_r_vsync, 1, VF_RESTRICTEDMODE | VF_DUMPTODISK,
 	               "Toggles vertical sync.\n"

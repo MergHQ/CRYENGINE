@@ -4655,8 +4655,7 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 	if (pSrc->m_bPermanent)
 	{
 		// Clone object and attach to the end of linked list of the source object
-
-		CPermanentRenderObject* pObjNew = CPermanentRenderObject::AllocateFromPool();
+		CPermanentRenderObject* pObjNew = reinterpret_cast<CPermanentRenderObject*>(CRenderer::EF_GetObject());
 
 		uint32 nId = pObjNew->m_Id;
 		pObjNew->CloneObject(pSrc);
@@ -4679,5 +4678,6 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 
 	CRenderObject* pObjNew = passInfo.GetRenderView()->AllocateTemporaryRenderObject();
 	pObjNew->CloneObject(pSrc);
+	pObjNew->m_pCompiledObject = nullptr;
 	return pObjNew;
 }

@@ -102,7 +102,11 @@ struct SMeshStream
 #define FRM_ENABLE_NORMALSTREAM   BIT(6)
 #define FRM_SKINNED_EIGHT_WEIGHTS BIT(7)
 
-#define MAX_RELEASED_MESH_FRAMES (2)
+#if defined(FEATURE_SVO_GI)
+  #define MAX_RELEASED_MESH_FRAMES (4) // GI voxelization threads may keep using render mesh for several frames
+#else
+  #define MAX_RELEASED_MESH_FRAMES (2)
+#endif
 
 struct SSetMeshIntData
 {

@@ -35,7 +35,9 @@ CConstantBufferPtr CRenderObjectsPools::AllocatePerInstanceConstantBuffer()
 	{
 		CConstantBufferPtr ptr = std::move(m_freeConstantBuffers.back());
 		m_freeConstantBuffers.pop_back();
-		CRY_ASSERT(ptr && !ptr->IsNullBuffer() && "Invalid cached pointer");
+		
+		CRY_ASSERT_MESSAGE(!ptr || (ptr->m_nRefCount == 1), "Someones hold a ref-count, can't reuse ConstantBuffer!");
+		CRY_ASSERT_MESSAGE(ptr && !ptr->IsNullBuffer(), "Invalid cached pointer");
 		return ptr;
 	}
 
@@ -70,7 +72,7 @@ CCompiledRenderObject::~CCompiledRenderObject()
 
 	if (m_bOwnPerInstanceCB)
 	{
-		CRY_ASSERT(m_perInstanceCB && "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		CRY_ASSERT_MESSAGE(m_perInstanceCB, "CompiledRenderObject tagged as owning a buffer, but no buffer present");
 		if (m_perInstanceCB)
 		{
 			s_pPools->FreePerInstanceConstantBuffer(std::move(m_perInstanceCB));
@@ -137,13 +139,14 @@ void CCompiledRenderObject::UpdatePerInstanceCB(void* pData, size_t size)
 {
 	if (!m_perInstanceCB)
 	{
-		CRY_ASSERT(!m_bOwnPerInstanceCB && "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		CRY_ASSERT_MESSAGE(!m_bOwnPerInstanceCB, "CompiledRenderObject tagged as owning a buffer, but no buffer present");
 		if (!(m_perInstanceCB = s_pPools->AllocatePerInstanceConstantBuffer()))
 		{
 			return;
 		}
 		m_bOwnPerInstanceCB = true;
 	}
+	CRY_ASSERT_MESSAGE(!m_perInstanceCB->IsNullBuffer(), "Not allowed to write into the Null resource!");
 	m_perInstanceCB->UpdateBuffer(pData, size);
 }
 
@@ -807,10 +810,20 @@ CPermanentRenderObject::~CPermanentRenderObject()
 	}
 }
 
+CCompiledRenderObject* CCompiledRenderObject::AllocateFromPool()
+{
+	CCompiledRenderObject* pObject = s_pPools->m_compiledObjectsPool.New();
+	return pObject;
+}
+
+void CCompiledRenderObject::FreeToPool(CCompiledRenderObject* ptr)
+{
+	s_pPools->m_compiledObjectsPool.Delete(ptr);
+}
+
 CPermanentRenderObject* CPermanentRenderObject::AllocateFromPool()
 {
 	CPermanentRenderObject* pObject = s_pPools->m_permanentRenderObjectsPool.New();
-
 	return pObject;
 }
 

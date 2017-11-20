@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   3dengine.cpp
@@ -148,6 +148,7 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	// Level info
 	m_fSunSpecMult = 1.f;
 	m_bAreaActivationInUse = false;
+	m_objectLayersModificationId = 0;
 
 	CVegetation::InitVegDecomprTable();
 
@@ -813,7 +814,7 @@ void C3DEngine::ProcessCVarsChange()
 	}
 
 	{
-		float fNewCVarsSumm2 = GetCVars()->e_LodRatio +
+		float fNewCVarsSumm2 = GetCVars()->e_LodRatio + GetCVars()->e_LodFaceAreaTargetSize +
 		                       GetCVars()->e_PermanentRenderObjects;
 
 		if (m_bEditor)
@@ -3199,22 +3200,27 @@ static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
 void C3DEngine::AddForcedWindArea(const Vec3& vPos, float fAmountOfForce, float fRadius)
 {
 	SOptimizedOutdoorWindArea area;
-	area.point[4].x = vPos.x; area.point[4].y = vPos.y;
+	area.point[4].x = vPos.x;
+	area.point[4].y = vPos.y;
 
 	Vec3 vSpeed = cry_random(Vec3(-1, -1, -1), Vec3(1, 1, 1));
 	vSpeed.Normalize();
 	area.windSpeed[4] = vSpeed * fAmountOfForce;
 
-	area.point[0].x = vPos.x - fRadius; area.point[0].y = vPos.y - fRadius;
+	area.point[0].x = vPos.x - fRadius;
+	area.point[0].y = vPos.y - fRadius;
 	area.windSpeed[0] = Vec3(-0.01f, -0.01f, 0);
 
-	area.point[1].x = vPos.x + fRadius; area.point[1].y = vPos.y - fRadius;
+	area.point[1].x = vPos.x + fRadius;
+	area.point[1].y = vPos.y - fRadius;
 	area.windSpeed[1] = Vec3(0.01f, -0.01f, 0);
 
-	area.point[2].x = vPos.x + fRadius; area.point[2].y = vPos.y + fRadius;
+	area.point[2].x = vPos.x + fRadius;
+	area.point[2].y = vPos.y + fRadius;
 	area.windSpeed[2] = Vec3(0.01f, 0.01f, 0);
 
-	area.point[3].x = vPos.x - fRadius; area.point[3].y = vPos.y + fRadius;
+	area.point[3].x = vPos.x - fRadius;
+	area.point[3].y = vPos.y + fRadius;
 	area.windSpeed[3] = Vec3(-0.01f, 0.01f, 0);
 
 	m_forcedWindAreas.push_back(area);
@@ -3239,19 +3245,19 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	RasterWindAreas(pWindAreas, vGlobalWind);
 
 	// Fade forced wind out
-	for (size_t i=0; i<pWindAreas->size(); i++)
+	for (size_t i = 0; i < pWindAreas->size(); i++)
 	{
 		SOptimizedOutdoorWindArea& WA = (*pWindAreas)[i];
 		WA.windSpeed[4].x *= 1.0f - fElapsedTime;
 		if (WA.windSpeed->IsZero(0.001f))
 		{
-			pWindAreas->erase(pWindAreas->begin()+i);
+			pWindAreas->erase(pWindAreas->begin() + i);
 			i--;
 		}
 	}
 }
 
-void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea> *pWindAreas, const Vec3& vGlobalWind)
+void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea>* pWindAreas, const Vec3& vGlobalWind)
 {
 	static const float fBEND_RESPONSE = 0.25f;
 	static const float fMAX_BENDING = 2.f;
@@ -4706,7 +4712,7 @@ void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 	if (IRenderer* const pRenderer = GetRenderer())
 	{
 		// refresh cached shadow casters
-		if (GetCVars()->e_DynamicDistanceShadows != 0 && m_pObjectsTree) 
+		if (GetCVars()->e_DynamicDistanceShadows != 0 && m_pObjectsTree)
 		{
 			static int lastFrameId = 0;
 
@@ -4777,7 +4783,7 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 		if (*ppInputTempData)
 		{
 			(*ppInputTempData)->MarkForDelete();
-			*ppInputTempData = nullptr;
+			(*ppInputTempData) = nullptr;
 		}
 
 		SRenderNodeTempData* pNewTempData = m_visibleNodesManager.AllocateTempData(passInfo.GetFrameID());
@@ -5107,6 +5113,8 @@ void C3DEngine::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys
 	m_arrObjectLayersActivity.CheckAllocated(nLayerId + 1);
 	m_arrObjectLayersActivity[nLayerId].bActive = bActivate;
 
+	m_objectLayersModificationId++;
+
 	if (bActivate && m_nFramesSinceLevelStart <= 1)
 		m_vPrevMainFrameCamPos.Set(-1000000.f, -1000000.f, -1000000.f);
 
@@ -5144,6 +5152,8 @@ bool C3DEngine::IsObjectsLayerHidden(uint16 nLayerId, const AABB& objBox)
 			m_arrObjectLayersActivity[nLayerId].objectsBox.Add(objBox);
 		else
 			m_arrObjectLayersActivity[nLayerId].objectsBox = objBox;
+
+		m_objectLayersModificationId++;
 
 		return !m_arrObjectLayersActivity[nLayerId].bActive;
 	}
@@ -6295,11 +6305,11 @@ bool C3DEngine::IsStatObjBufferRenderTasksAllowed() const
 {
 	auto bDebugDrawEnabled = gEnv->pConsole->GetCVar("e_DebugDraw") != nullptr && gEnv->pConsole->GetCVar("e_DebugDraw")->GetIVal() != 0;
 	auto bMnDebugEnabled = gEnv->pConsole->GetCVar("mn_debug") != nullptr && strlen(gEnv->pConsole->GetCVar("mn_debug")->GetString()) != 0;
-	auto bStatObjBufferRenderTasksEnabled = 
-		gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks") != nullptr && gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks")->GetIVal() != 0;
+	auto bStatObjBufferRenderTasksEnabled =
+	  gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks") != nullptr && gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks")->GetIVal() != 0;
 
 	return !bDebugDrawEnabled && !bMnDebugEnabled && bStatObjBufferRenderTasksEnabled;
-		
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -6347,7 +6357,7 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 		break;
 	case eERType_Brush:
 	case eERType_MovableBrush:
-	{
+		{
 			CBrush* pBrush = static_cast<CBrush*>(pRenderNode);
 			const CLodValue lodValue = pBrush->ComputeLod(wantedLod, passInfo);
 			pBrush->Render(lodValue, passInfo, NULL, NULL);
@@ -6428,7 +6438,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 
 	if (m_bIntegrateObjectsIntoTerrain && eERType == eERType_MovableBrush && pEnt->GetGIMode() == IRenderNode::eGM_IntegrateIntoTerrain)
 	{
-		// update meshes integrated into terrain 
+		// update meshes integrated into terrain
 		AABB nodeBox = pEnt->GetBBox();
 		GetTerrain()->ResetTerrainVertBuffers(&nodeBox);
 	}
@@ -6486,7 +6496,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		if (fObjRadiusSqr > sqr(MAX_VALID_OBJECT_VOLUME) || !_finite(fObjRadiusSqr))
 		{
 			Warning("I3DEngine::RegisterEntity: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f",
-				pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
+			        pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
 			return; // skip invalid objects - usually only objects with invalid very big scale will reach this point
 		}
 
@@ -6526,12 +6536,6 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 	//////////////////////////////////////////////////////////////////////////
 	if (pEnt->m_dwRndFlags & ERF_OUTDOORONLY || !(m_pVisAreaManager && m_pVisAreaManager->SetEntityArea(pEnt, aabb, fObjRadiusSqr)))
 	{
-// 		if (!m_pObjectsTree)
-// 		{
-// 			const float terrainSize = (float)GetTerrainSize();
-// 			m_pObjectsTree = COctreeNode::Create(AABB(Vec3(0, 0, 0), Vec3(terrainSize, terrainSize, terrainSize)), NULL);
-// 		}
-
 		if (m_pObjectsTree)
 		{
 			m_pObjectsTree->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
@@ -6569,6 +6573,8 @@ void C3DEngine::UpdateObjectsLayerAABB(IRenderNode* pEnt)
 			m_arrObjectLayersActivity[nLayerId].objectsBox.Add(pEnt->GetBBox());
 		else
 			m_arrObjectLayersActivity[nLayerId].objectsBox = pEnt->GetBBox();
+
+		m_objectLayersModificationId++;
 	}
 }
 
@@ -6619,7 +6625,7 @@ bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
 
 	if (m_bIntegrateObjectsIntoTerrain && eRenderNodeType == eERType_MovableBrush && pEnt->GetGIMode() == IRenderNode::eGM_IntegrateIntoTerrain)
 	{
-		// update meshes integrated into terrain 
+		// update meshes integrated into terrain
 		AABB nodeBox = pEnt->GetBBox();
 		GetTerrain()->ResetTerrainVertBuffers(&nodeBox);
 	}
@@ -6670,7 +6676,7 @@ Vec3 C3DEngine::GetSunDirNormalized() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void C3DEngine::OnEntityDeleted(IEntity * pEntity)
+void C3DEngine::OnEntityDeleted(IEntity* pEntity)
 {
 	m_visibleNodesManager.OnEntityDeleted(pEntity);
 }

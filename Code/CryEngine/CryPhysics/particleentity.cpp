@@ -661,7 +661,7 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 			nhits = m_pWorld->RayWorldIntersection(
 				rp.Init(pos0,pos-pos0+heading0*m_dim, m_collTypes|ent_water,
 					m_iPierceability|(geom_colltype_ray|geom_colltype13)<<rwi_colltype_bit|rwi_colltype_any|
-					rwi_force_pierceable_noncoll|rwi_ignore_solid_back_faces, m_collisionClass, hits,8, 
+					rwi_force_pierceable_noncoll|rwi_ignore_solid_back_faces|rwi_separate_important_hits, m_collisionClass, hits,8, 
 					pIgnoredColliders+1-bHasIgnore,1+bHasIgnore, 0,0,0, portals,CRY_ARRAY_COUNT(portals)-1),
 				"RayWorldIntersection(PhysParticles)", iCaller);
 			bHit = isneg(-nhits) & (isneg(hits[0].dist+0.5f)^1);
