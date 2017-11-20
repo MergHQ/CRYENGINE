@@ -203,6 +203,7 @@ public:
 	void                 AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
 	                                   SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward) threadsafe;
 
+	bool       CheckPermanentRenderObjects() const { return !m_permanentObjects.empty(); }
 	void       AddPermanentObjectInline(CPermanentRenderObject* pObject, SRendItemSorter sorter, int shadowFrustumSide);
 
 	ItemsRange GetItemsRange(ERenderListID renderList);

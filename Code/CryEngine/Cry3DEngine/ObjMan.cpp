@@ -1178,19 +1178,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		uint32 passId = passInfo.IsShadowPass() ? 1 : 0;
 		uint32 passMask = 1 << passId;
 
-		// Do we have to create a new permanent render object?
-		if (pTempData->userData.arrPermanentRenderObjects[nLod] == nullptr)
-		{
-			// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-			WriteLock lock(pTempData->userData.permanentObjectCreateLock);
-
-			// Did another thread succeed in creating the object in the meantime?
-			if (pTempData->userData.arrPermanentRenderObjects[nLod] == nullptr)
-				pTempData->userData.arrPermanentRenderObjects[nLod] = gEnv->pRenderer->EF_GetObject();
-		}
-
-		pRenderObject = pTempData->userData.arrPermanentRenderObjects[nLod];
-		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
+		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject = pTempData->GetRenderObject(nLod), passInfo);
 
 		// Has this object already been filled?
 		int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);

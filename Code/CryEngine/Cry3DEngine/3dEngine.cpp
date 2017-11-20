@@ -4777,7 +4777,7 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 		if (*ppInputTempData)
 		{
 			(*ppInputTempData)->MarkForDelete();
-			*ppInputTempData = nullptr;
+			(*ppInputTempData) = nullptr;
 		}
 
 		SRenderNodeTempData* pNewTempData = m_visibleNodesManager.AllocateTempData(passInfo.GetFrameID());

@@ -74,6 +74,8 @@ CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRen
 	pShadowsView->SetFrameId(pMainRenderView->GetFrameId());
 	pShadowsView->SetSkinningDataPools(pMainRenderView->GetSkinningDataPools());
 
+	CRY_ASSERT_MESSAGE(!((CRenderView*)pShadowsView)->CheckPermanentRenderObjects(), "There shouldn't be any permanent render-object be present in the view!");
+
 	return pShadowsView;
 }
 
