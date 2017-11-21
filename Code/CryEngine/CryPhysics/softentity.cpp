@@ -1754,20 +1754,21 @@ int CSoftEntity::RayTrace(SRayTraceRes& rtr)
 		prim_inters inters;
 		triangle atri;
 		int i,j;
+		float mindist=1e10f, dist;
 
 		for(i=0;i<pMesh->m_nTris;i++) {
 			for(j=0;j<3;j++) atri.pt[j] = m_vtx[pMesh->m_pIndices[i*3+j]].pos+m_pos+m_offs0;
 			atri.n = atri.pt[1]-atri.pt[0] ^ atri.pt[2]-atri.pt[0];
-			if (ray_tri_intersection(&rtr.pRay->m_ray,&atri,&inters)) {
+			if (ray_tri_intersection(&rtr.pRay->m_ray,&atri,&inters) && (dist = (inters.pt[0]-rtr.pRay->m_ray.origin)*rtr.pRay->m_dirn) < mindist) {
 				rtr.pcontacts = &g_SoftContact[get_iCaller()];
 				rtr.pcontacts->pt = inters.pt[0];
-				rtr.pcontacts->t = (inters.pt[0]-rtr.pRay->m_ray.origin)*rtr.pRay->m_dirn;
+				rtr.pcontacts->t = mindist = dist;
 				rtr.pcontacts->id[0] = pMesh->m_pIds ? pMesh->m_pIds[i] : m_parts[0].surface_idx;
 				rtr.pcontacts->iNode[0] = i;
 				rtr.pcontacts->n = atri.n.normalized()*-sgnnz(atri.n*rtr.pRay->m_dirn);
-				return 1;
 			}
 		}
+		return mindist < 1e10f;
 	}
 
 	return 0;

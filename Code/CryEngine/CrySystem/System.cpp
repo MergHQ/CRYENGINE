@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "System.h"
@@ -44,6 +44,7 @@
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryMono/IMonoRuntime.h>
 #include <CrySchematyc/ICore.h>
+#include <CrySchematyc2/Schematyc_IFramework.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -75,6 +76,7 @@
 #include <CryLiveCreate/ILiveCreateManager.h>
 #include "OverloadSceneManager/OverloadSceneManager.h"
 #include <CryThreading/IThreadManager.h>
+#include <CryReflection/IReflection.h>
 
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include <CrySystem/ZLib/IZlibDecompressor.h>
@@ -653,6 +655,7 @@ void CSystem::ShutDown()
 	}
 
 	UnloadEngineModule("CrySchematyc");
+	UnloadEngineModule("CrySchematyc2");
 
 	if (gEnv->pGameFramework != nullptr)
 	{
@@ -712,7 +715,7 @@ void CSystem::ShutDown()
 	UnloadEngineModule("CryPhysics");
 
 	UnloadEngineModule("CryMonoBridge");
-	
+
 	if (m_env.pConsole)
 		((CXConsole*)m_env.pConsole)->FreeRenderResources();
 	SAFE_RELEASE(m_pIZLibCompressor);
@@ -828,6 +831,8 @@ void CSystem::ShutDown()
 #if defined(MAP_LOADING_SLICING)
 	delete gEnv->pSystemScheduler;
 #endif // defined(MAP_LOADING_SLICING)
+
+	SAFE_DELETE(m_env.pReflection);
 
 #if CAPTURE_REPLAY_LOG
 	CryGetIMemReplay()->Stop();
@@ -1464,6 +1469,11 @@ void CSystem::PrePhysicsUpdate()
 			gEnv->pSchematyc->PrePhysicsUpdate();
 		}
 
+		if (gEnv->pSchematyc2 != nullptr)
+		{
+			gEnv->pSchematyc2->PrePhysicsUpdate();
+		}
+
 		m_env.pEntitySystem->PrePhysicsUpdate();
 	}
 }
@@ -1836,7 +1846,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 #endif
 
 	if (m_pStreamEngine)
-	{		
+	{
 		m_pStreamEngine->Update();
 	}
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
@@ -2306,6 +2316,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (gEnv->pSchematyc != nullptr)
 	{
 		gEnv->pSchematyc->Update();
+	}
+
+	if (gEnv->pSchematyc2 != nullptr)
+	{
+		gEnv->pSchematyc2->Update();
 	}
 
 	if (m_env.pHardwareMouse != nullptr)
@@ -3564,7 +3579,6 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 			}
 			break;
 		}
-		
 
 	// Any other event doesn't interest us
 	default:

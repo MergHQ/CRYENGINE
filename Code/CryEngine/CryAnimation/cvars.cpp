@@ -286,6 +286,7 @@ void Console::Init()
 	REGISTER_CVAR(ca_FacialAnimationRadius, 30.f, VF_CHEAT, "Maximum distance at which facial animations are updated - handles zooming correctly");
 
 	//sampling
+	REGISTER_CVAR(ca_ResetCulledJointsToBindPose, 0, 0, "Specifies whether culled joints should be reset to bind pose or preserve their transform from last evaluated frame (0 = preserve, 1 = reset).");
 	DefineConstIntCVar(ca_SampleQuatHemisphereFromCurrentPose, 0, VF_NULL, "For override animation sampling, use current pose for quat hemisphere sign");
 
 	DefineConstIntCVar(ca_DrawCloth, 1, VF_CHEAT, "bitfield: 2 shows particles, 4 shows proxies, 6 shows both");

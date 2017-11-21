@@ -916,7 +916,7 @@ public:
 	Vec4&   GetHighlightParams()        { return m_highlightParams; }
 
 	//misc
-	virtual bool                ScreenShot(const char* filename = NULL, int width = 0, CryDisplayContextHandle displayContext=0) override = 0;
+	virtual bool                ScreenShot(const char* filename = NULL, CryDisplayContextHandle displayContext = 0) override = 0;
 	virtual bool                ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) override = 0;
 
 	virtual int                 GetColorBpp() override   { return m_cbpp; }

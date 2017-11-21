@@ -597,7 +597,7 @@ struct IGameObjectView
 // Declare game object as deprecated except for the legacy modules that expose functionality for it
 #if !defined(eCryModule) || (eCryModule != eCryM_GameFramework && eCryModule != eCryM_LegacyGameDLL \
 	&& eCryModule != eCryM_FlowGraph && eCryModule != eCryM_Editor && eCryModule != eCryM_Movie     \
-	&& eCryModule != eCryM_Legacy)
+	&& eCryModule != eCryM_Legacy && eCryModule != eCryM_Schematyc2)
 
 	#define CRY_DEPRECATED_GAMEOBJECT CRY_DEPRECATED("(v5.4) IGameObjectExtension has been replaced with IEntityComponent, and will be removed in a future update.")
 

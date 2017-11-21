@@ -190,8 +190,19 @@ template<int> void _CryMemoryManagerPoolHelper::BindMemoryFunctionPointers()
 
 	if (!hMod || !_CryMalloc || !_CryRealloc || !_CryFree || !_CryGetMemSize || !_CryCrtMalloc || !_CryCrtFree || !_CryCrtSize || !_CryGetIMemoryManagerInterface)
 	{
-		const char* errMsg = hMod ? "Memory Manager: Unable to bind memory management functions."
-			: "Memory Manager: Unable to bind memory management functions. Could not access " CryLibraryDefName("CrySystem")" (check working directory)";
+		char errMsg[10240];
+		if (hMod)
+		{
+			sprintf(errMsg, "%s", "Memory Manager: Unable to bind memory management functions.");
+		}
+		else
+		{
+#ifdef CRY_PLATFORM_LINUX
+			sprintf(errMsg, "%s\nError details: %s", "Memory Manager: Unable to bind memory management functions. Could not access " CryLibraryDefName("CrySystem")" (check working directory)", dlerror());
+#else
+			sprintf(errMsg, "%s", "Memory Manager: Unable to bind memory management functions. Could not access " CryLibraryDefName("CrySystem")" (check working directory)");
+#endif
+		}
 
 		CryMessageBox(errMsg, "Memory Manager", eMB_Error);
 		__debugbreak();

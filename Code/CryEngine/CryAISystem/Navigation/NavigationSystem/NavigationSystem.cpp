@@ -741,12 +741,28 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
 	}
 }
 
+bool NavigationSystem::GrowMarkupsIfNeeded()
+{
+	if (!GrowIdMapIfNeeded(m_markupVolumes))
+	{
+		AIWarning("NavigationSystem::CreateMarkupVolume failed. Maximum number of markup volumes reached! %zu", MarkupVolumes::max_capacity());
+		return false;
+	}
+
+	if (m_markupVolumes.capacity() > m_markupsData.capacity())
+	{
+		// keep the same capacity for markups data
+		m_markupsData.grow(m_markupVolumes.capacity() - m_markupsData.capacity());
+	}
+	return true;
+}
+
 NavigationVolumeID NavigationSystem::CreateMarkupVolume(NavigationVolumeID requestedID)
 {
 	NavigationVolumeID id = requestedID;
 	if (requestedID == NavigationVolumeID(0))
 	{
-		if (GrowIdMapIfNeeded(m_markupVolumes))
+		if (GrowMarkupsIfNeeded())
 		{
 			id = NavigationVolumeID(m_markupVolumes.insert(MNM::SMarkupVolume()));
 		}
@@ -760,7 +776,7 @@ NavigationVolumeID NavigationSystem::CreateMarkupVolume(NavigationVolumeID reque
 	{
 		if (!m_markupVolumes.validate(requestedID))
 		{
-			if (GrowIdMapIfNeeded(m_markupVolumes))
+			if (GrowMarkupsIfNeeded())
 			{
 				m_markupVolumes.insert(requestedID, MNM::SMarkupVolume());
 			}
@@ -1432,6 +1448,8 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 
 void NavigationSystem::CommitMarkupData(const TileTaskResult& result, const MNM::TileID tileId)
 {
+	CRY_ASSERT(m_markupsData.capacity() == m_markupVolumes.capacity());
+	
 	const VolumeDefCopy& def = m_volumeDefCopy[result.volumeCopy];
 	const NavigationMesh& mesh = m_meshes[result.meshID];
 
@@ -1478,15 +1496,7 @@ void NavigationSystem::CommitMarkupData(const TileTaskResult& result, const MNM:
 
 		if (!m_markupsData.validate(markupID))
 		{
-			if (GrowIdMapIfNeeded(m_markupsData))
-			{
-				m_markupsData.insert(markupID, MNM::SMarkupVolumeData());
-			}
-			else
-			{
-				AIWarning("NavigationSystem: Storing markups data failed. Maximum number of markups data reached! %zu", decltype(m_markupsData)::max_capacity());
-				continue;
-			}
+			m_markupsData.insert(markupID, MNM::SMarkupVolumeData());
 		}
 
 		MNM::SMarkupVolumeData::MeshTriangles* pMeshMarkupTriangles = nullptr;

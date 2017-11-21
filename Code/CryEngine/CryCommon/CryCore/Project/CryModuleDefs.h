@@ -31,5 +31,6 @@
 
 #define eCryM_EnginePlugin 27
 #define eCryM_EditorPlugin 28
+#define eCryM_Schematyc2 29
 
-#define eCryM_Num 29
+#define eCryM_Num 30

@@ -1108,7 +1108,7 @@ bool CD3D9Renderer::RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc
 	bool captureSuccess = false;
 
 	const char* pReqFileFormatExt(PathUtil::GetExt(szFilePath));
-	SCaptureFormatInfo::ECaptureFileFormat captureFormat = SCaptureFormatInfo::GetCaptureFormatByExtension(++pReqFileFormatExt);
+	SCaptureFormatInfo::ECaptureFileFormat captureFormat = SCaptureFormatInfo::GetCaptureFormatByExtension(pReqFileFormatExt);
 
 	bool formatBGRA = pSrc->GetDevTexture()->GetNativeFormat() == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
 	bool needRBSwap = (captureFormat == SCaptureFormatInfo::eCaptureFormat_TGA ? !formatBGRA : formatBGRA);	SResourceDimension srcDimensions = pSrc->GetDevTexture()->GetDimension();
@@ -3422,7 +3422,7 @@ void CD3D9Renderer::RT_EndFrame()
 #if !defined(_RELEASE) || CRY_PLATFORM_WINDOWS || defined(ENABLE_LW_PROFILERS)
 	if (CV_r_GetScreenShot)
 	{
-		ScreenShot();
+		ScreenShot(nullptr, (IsEditorMode() ? GetActiveDisplayContext()->GetHandle() : 0));
 		CV_r_GetScreenShot = 0;
 	}
 #endif
@@ -3543,7 +3543,7 @@ void CD3D9Renderer::RT_PresentFast()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CD3D9Renderer::RT_ScreenShot(const char* filename, int width, CryDisplayContextHandle displayContext)
+bool CD3D9Renderer::RT_ScreenShot(const char* filename, CryDisplayContextHandle displayContext)
 {
 	// ignore invalid file access for screenshots
 	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
@@ -3670,12 +3670,12 @@ bool CD3D9Renderer::ShouldTrackStats()
 	return bShouldTrackStats;
 }
 
-bool CD3D9Renderer::ScreenShot(const char* filename, int iPreWidth, CryDisplayContextHandle displayContext)
+bool CD3D9Renderer::ScreenShot(const char* filename, CryDisplayContextHandle displayContext)
 {
 	bool bResult = false;
 
 	ExecuteRenderThreadCommand(
-		[=, &bResult] { bResult = RT_ScreenShot(filename, iPreWidth, displayContext); },
+		[=, &bResult] { bResult = RT_ScreenShot(filename, displayContext); },
 		ERenderCommandFlags::FlushAndWait
 	);
 

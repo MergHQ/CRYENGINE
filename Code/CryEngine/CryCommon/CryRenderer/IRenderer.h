@@ -1400,7 +1400,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Take a screenshot and save it to a file
 	//! \return true on success
-	virtual bool ScreenShot(const char* filename = nullptr, int width = 0, CryDisplayContextHandle displayContext = 0) = 0;
+	virtual bool ScreenShot(const char* filename = nullptr, CryDisplayContextHandle displayContext = 0) = 0;
 
 	//! Copy frame buffer into destination memory buffer.
 	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) = 0;

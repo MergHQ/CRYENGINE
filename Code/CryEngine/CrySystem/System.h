@@ -548,6 +548,7 @@ private:
 	bool Init3DEngine(const SSystemInitParams& startupParams);
 	bool InitAnimationSystem(const SSystemInitParams& startupParams);
 	bool InitMovieSystem(const SSystemInitParams& startupParams);
+	bool InitReflectionSystem(const SSystemInitParams& startupParams);
 	bool InitSchematyc(const SSystemInitParams& startupParams);
 	bool InitEntitySystem(const SSystemInitParams& startupParams);
 	bool InitDynamicResponseSystem(const SSystemInitParams& startupParams);
