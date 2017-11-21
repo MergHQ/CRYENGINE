@@ -175,6 +175,8 @@ struct CRY_ALIGN(128) Console
 	f32 ca_cloth_damping;
 	f32 ca_cloth_air_resistance;
 
+	int32 ca_ResetCulledJointsToBindPose;
+
 	f32 ca_MotionBlurMovementThreshold;
 
 	int32 ca_vaEnable;
