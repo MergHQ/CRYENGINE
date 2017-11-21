@@ -128,8 +128,8 @@ private:
 	ValueType m_value;
 };
 
-typedef Index<uint16, ~0> TypeIndex;
-typedef Index<uint16, ~0> ExtensionIndex;
+typedef Index<size_t, ~0> TypeIndex;
+typedef Index<size_t, ~0> ExtensionIndex;
 
 struct SSourceFileInfo
 {
