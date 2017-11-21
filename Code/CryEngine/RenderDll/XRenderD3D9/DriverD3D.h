@@ -457,7 +457,7 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Single frame capture interface
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	virtual bool ScreenShot(const char* filename = NULL, int width = 0, CryDisplayContextHandle displayContext = 0) override;
+	virtual bool ScreenShot(const char* filename = NULL, CryDisplayContextHandle displayContext = 0) override;
 	void         CaptureFrameBuffer();
 	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) override;
 
@@ -574,7 +574,7 @@ public:
 private:
 	//friend class CStandardGraphicsPipeline;
 
-	bool RT_ScreenShot(const char* filename, int width, CryDisplayContextHandle displayContext=0);
+	bool RT_ScreenShot(const char* filename, CryDisplayContextHandle displayContext = 0);
 
 public:
 	bool        ShouldTrackStats();
